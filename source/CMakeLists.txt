@@ -128,17 +128,19 @@ if( BUILD_COMPILER )
 	function( CompileLLFile ll_file )
 		get_filename_component( source_name ${ll_file} NAME_WE )
 		set( bc_name ${source_name}.bc )
-		set( bc_object_name ${source_name}.o )
+		set( bc_header_path ${CMAKE_CURRENT_BINARY_DIR}/${source_name}.h )
 		add_custom_command(
 			OUTPUT ${bc_name}
 			DEPENDS ${CMAKE_SOURCE_DIR}/ustlib/src/${ll_file}
 			DEPENDS ${LLVM_UTILS_DIR}/llvm-as
 			COMMAND ${LLVM_UTILS_DIR}/llvm-as ${CMAKE_SOURCE_DIR}/ustlib/src/${ll_file} -o ${bc_name} )
 		add_custom_command(
-			OUTPUT ${bc_object_name}
+			OUTPUT ${bc_header_path}
 			DEPENDS ${bc_name}
-			COMMAND ld -r -b binary -o ${bc_object_name} ${bc_name} ) # Convert binary file to object file, using "ld"
-		set( BC_FILE ${bc_object_name} PARENT_SCOPE )
+			DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/bin2c.cmake ${bc_name}
+			COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/bin2c.cmake ${bc_name} ${bc_header_path} c_${source_name}_file_content
+			)
+		set( BC_FILE ${bc_header_path} PARENT_SCOPE )
 	endfunction()
 
 	CompileLLFile( asm_funcs.ll )
@@ -155,6 +157,7 @@ if( BUILD_COMPILER )
 	add_executable( Compiler ${COMPILER_SOURCES} ${bc_files} ${USTLIB_SOURCES} ${USTLIB_TEST_SOURCES} )
 	target_link_libraries( Compiler CompilerLib ${LLVM_LIBS_FOR_COMPILER} )
 	target_compile_definitions( Compiler PRIVATE "SPRACHE_VERSION=${PROJECT_VERSION}" )
+	target_include_directories( Compiler PRIVATE ${CMAKE_CURRENT_BINARY_DIR} )
 endif( BUILD_COMPILER )
 
 #
