@@ -18,3 +18,4 @@
    enums
    structs
    halt
+   constexpr
