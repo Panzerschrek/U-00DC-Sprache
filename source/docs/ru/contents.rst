@@ -17,3 +17,4 @@
    types
    enums
    structs
+   halt
