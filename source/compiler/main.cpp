@@ -26,6 +26,9 @@
 namespace U
 {
 
+namespace
+{
+
 namespace fs= llvm::sys::fs;
 namespace fsp= llvm::sys::path;
 
@@ -147,9 +150,7 @@ private:
 	const std::vector<fs_path> include_dirs_;
 };
 
-} // namespace U
-
-static std::string GetFeaturesStr( const llvm::ArrayRef<std::string> features_list )
+std::string GetFeaturesStr( const llvm::ArrayRef<std::string> features_list )
 {
 	llvm::SubtargetFeatures features;
 	for( auto& f : features_list )
@@ -157,7 +158,7 @@ static std::string GetFeaturesStr( const llvm::ArrayRef<std::string> features_li
 	return features.getString();
 }
 
-static std::string GetNativeTargetFeaturesStr()
+std::string GetNativeTargetFeaturesStr()
 {
 	llvm::SubtargetFeatures features;
 
@@ -171,26 +172,26 @@ static std::string GetNativeTargetFeaturesStr()
 	return features.getString();
 }
 
-static void PrintErrors( const U::SourceGraph& source_graph, const U::CodeBuilderErrorsContainer& errors )
+void PrintErrors( const SourceGraph& source_graph, const CodeBuilderErrorsContainer& errors )
 {
-	for( const U::CodeBuilderError& error : errors )
+	for( const CodeBuilderError& error : errors )
 	{
-		if( error.code == U::CodeBuilderErrorCode::TemplateContext )
+		if( error.code == CodeBuilderErrorCode::TemplateContext )
 		{
 			U_ASSERT( error.template_context != nullptr );
 
-			std::cerr << U::ToUTF8( source_graph.nodes_storage[ error.template_context->template_declaration_file_pos.file_index ].file_path ) << ": "
-				<< "In instantiation of \"" << U::ToUTF8( error.template_context->template_name )
-				<< "\" " << U::ToUTF8( error.template_context->parameters_description )
+			std::cerr << ToUTF8( source_graph.nodes_storage[ error.template_context->template_declaration_file_pos.file_index ].file_path ) << ": "
+				<< "In instantiation of \"" << ToUTF8( error.template_context->template_name )
+				<< "\" " << ToUTF8( error.template_context->parameters_description )
 				<< "\n";
 
-			std::cerr << U::ToUTF8( source_graph.nodes_storage[error.file_pos.file_index ].file_path )
+			std::cerr << ToUTF8( source_graph.nodes_storage[error.file_pos.file_index ].file_path )
 				<< ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << ": required from here: " << "\n";
 		}
 		else
 		{
-			std::cerr << U::ToUTF8( source_graph.nodes_storage[error.file_pos.file_index ].file_path )
-				<< ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << ": error: " << U::ToUTF8( error.text ) << "\n";
+			std::cerr << ToUTF8( source_graph.nodes_storage[error.file_pos.file_index ].file_path )
+				<< ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << ": error: " << ToUTF8( error.text ) << "\n";
 		}
 
 		if( error.template_context != nullptr )
@@ -198,7 +199,7 @@ static void PrintErrors( const U::SourceGraph& source_graph, const U::CodeBuilde
 	}
 }
 
-static void PrintAvailableTargets()
+void PrintAvailableTargets()
 {
 	std::string targets_list;
 	for( const llvm::Target& target : llvm::TargetRegistry::targets() )
@@ -215,23 +216,23 @@ namespace Options
 
 namespace cl= llvm::cl;
 
-static cl::OptionCategory options_category( "Ü compier options" );
+cl::OptionCategory options_category( "Ü compier options" );
 
-static cl::list<std::string> input_files(
+cl::list<std::string> input_files(
 	cl::Positional,
 	cl::desc("<source0> [... <sourceN>]"),
 	cl::value_desc("iinput files"),
 	cl::OneOrMore,
 	cl::cat(options_category) );
 
-static cl::opt<std::string> output_file_name(
+cl::opt<std::string> output_file_name(
 	"o",
 	cl::desc("Output filename"),
 	cl::value_desc("filename"),
 	cl::Required,
 	cl::cat(options_category) );
 
-static cl::list<std::string> include_dir(
+cl::list<std::string> include_dir(
 	"include-dir",
 	cl::Prefix,
 	cl::desc("<dir0> [... <dirN>]"),
@@ -240,7 +241,7 @@ static cl::list<std::string> include_dir(
 	cl::cat(options_category));
 
 enum class FileType{ BC, LL, Obj, Asm };
-static cl::opt< FileType > file_type(
+cl::opt< FileType > file_type(
 	"filetype",
 	cl::init(FileType::Obj),
 	cl::desc("Choose a file type (not all types are supported by all targets):"),
@@ -252,7 +253,7 @@ static cl::opt< FileType > file_type(
 		clEnumValEnd),
 	cl::cat(options_category) );
 
-static cl::opt<char> optimization_level(
+cl::opt<char> optimization_level(
 	"O",
 	cl::desc("Optimization level. [-O0, -O1, -O2, -O3, -Os or -Oz] (default = '-O0')"),
 	cl::Prefix,
@@ -260,27 +261,27 @@ static cl::opt<char> optimization_level(
 	cl::init('0'),
 	cl::cat(options_category) );
 
-static cl::opt<std::string> architecture(
+cl::opt<std::string> architecture(
 	"march",
 	cl::desc("Architecture to generate code for (see --version)"),
 	cl::init("native"),
 	cl::cat(options_category) );
 
-static cl::opt<std::string> target_cpu(
+cl::opt<std::string> target_cpu(
 	"mcpu",
 	cl::desc("Target a specific cpu type (-mcpu=help for details)"),
 	cl::value_desc("cpu-name"),
 	cl::init(""),
 	cl::cat(options_category) );
 
-static cl::list<std::string> target_attributes(
+cl::list<std::string> target_attributes(
 	"mattr",
 	cl::CommaSeparated,
 	cl::desc("Target specific attributes (-mattr=help for details)"),
 	cl::value_desc("a1,+a2,-a3,..."),
 	cl::cat(options_category) );
 
-static cl::opt<llvm::Reloc::Model> relocation_model(
+cl::opt<llvm::Reloc::Model> relocation_model(
 	"relocation-model",
 	cl::desc("Choose relocation model"),
 	cl::init(llvm::Reloc::Default),
@@ -292,19 +293,19 @@ static cl::opt<llvm::Reloc::Model> relocation_model(
 		clEnumValEnd),
 	cl::cat(options_category) );
 
-static cl::opt<bool> enable_pie(
+cl::opt<bool> enable_pie(
 	"enable-pie",
 	cl::desc("Assume the creation of a position independent executable."),
 	cl::init(false),
 	cl::cat(options_category) );
 
-static cl::opt<bool> tests_output(
+cl::opt<bool> tests_output(
 	"tests-output",
 	cl::desc("Print code builder errors in test mode."),
 	cl::init(false),
 	cl::cat(options_category) );
 
-static cl::opt<bool> print_llvm_asm(
+cl::opt<bool> print_llvm_asm(
 	"print-llvm-asm",
 	cl::desc("Print LLVM code."),
 	cl::init(false),
@@ -312,7 +313,7 @@ static cl::opt<bool> print_llvm_asm(
 
 } // namespace Options
 
-int main( const int argc, const char* const argv[])
+int Main( const int argc, const char* const argv[] )
 {
 	// Options
 
@@ -418,17 +419,17 @@ int main( const int argc, const char* const argv[])
 	}
 	const llvm::DataLayout data_layout= target_machine->createDataLayout();
 
-	const auto vfs= U::VfsOverSystemFS::Create( Options::include_dir );
+	const auto vfs= VfsOverSystemFS::Create( Options::include_dir );
 	if( vfs == nullptr )
 		return 1u;
 
 	// Compile multiple input files and link them together.
-	U::SourceGraphLoader source_graph_loader( vfs );
+	SourceGraphLoader source_graph_loader( vfs );
 	std::unique_ptr<llvm::Module> result_module;
 	bool have_some_errors= false;
 	for( const std::string& input_file : Options::input_files )
 	{
-		const U::SourceGraphPtr source_graph= source_graph_loader.LoadSource( U::DecodeUTF8( input_file.c_str() ) );
+		const SourceGraphPtr source_graph= source_graph_loader.LoadSource( DecodeUTF8( input_file.c_str() ) );
 		U_ASSERT( source_graph != nullptr );
 		if( source_graph->have_errors || !source_graph->lexical_errors.empty() || !source_graph->syntax_errors.empty() )
 		{
@@ -436,15 +437,15 @@ int main( const int argc, const char* const argv[])
 			continue;
 		}
 
-		U::CodeBuilder::BuildResult build_result=
-			U::CodeBuilder( target_triple_str, data_layout ).BuildProgram( *source_graph );
+		CodeBuilder::BuildResult build_result=
+			CodeBuilder( target_triple_str, data_layout ).BuildProgram( *source_graph );
 
 		if( Options::tests_output )
 		{
 			// For tests we print errors as "file.u 88 NameNotFound"
-			for( const U::CodeBuilderError& error : build_result.errors )
-				std::cout << U::ToUTF8( source_graph->nodes_storage[error.file_pos.file_index ].file_path )
-					<< " " << error.file_pos.line << " " << U::CodeBuilderErrorCodeToString( error.code ) << "\n";
+			for( const CodeBuilderError& error : build_result.errors )
+				std::cout << ToUTF8( source_graph->nodes_storage[error.file_pos.file_index ].file_path )
+					<< " " << error.file_pos.line << " " << CodeBuilderErrorCodeToString( error.code ) << "\n";
 		}
 		else
 		{
@@ -605,4 +606,14 @@ int main( const int argc, const char* const argv[])
 	}
 
 	return 0;
+}
+
+} // namespace U
+
+} // namespace
+
+int main( const int argc, const char* const argv[] )
+{
+	// Place actual "main" body inside "U" namespace.
+	return U::Main( argc, argv );
 }
