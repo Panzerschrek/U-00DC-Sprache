@@ -1225,7 +1225,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				current_node= std::move(ternary_operator);
 				current_node_ptr= boost::get<TernaryOperator>( &current_node );
 			}
-			else if( it_->text == Keywords::cast_ref )
+			else if( it_->text == Keywords::cast_ref_ )
 			{
 				CastRef cast( it_->file_pos );
 
@@ -1264,7 +1264,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				current_node= std::move(cast);
 				current_node_ptr= boost::get<CastRef>( &current_node );
 			}
-			else if( it_->text == Keywords::cast_ref_unsafe )
+			else if( it_->text == Keywords::cast_ref_unsafe_ )
 			{
 				CastRefUnsafe cast( it_->file_pos );
 
@@ -1303,7 +1303,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				current_node= std::move(cast);
 				current_node_ptr= boost::get<CastRefUnsafe>( &current_node );
 			}
-			else if( it_->text == Keywords::cast_imut )
+			else if( it_->text == Keywords::cast_imut_ )
 			{
 				CastImut cast( it_->file_pos );
 
@@ -1328,7 +1328,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				current_node= std::move(cast);
 				current_node_ptr= boost::get<CastImut>( &current_node );
 			}
-			else if( it_->text == Keywords::cast_mut )
+			else if( it_->text == Keywords::cast_mut_ )
 			{
 				CastMut cast( it_->file_pos );
 
