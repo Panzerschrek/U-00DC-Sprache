@@ -97,7 +97,12 @@ if( NOT WIN32 )
 else()
 	set( SPRACHE_COMPILER_PIC_OPTIONS "" )
 endif()
-add_compile_options( -Wall -Wextra -Wconversion )
+
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
+	add_compile_options( /utf-8 /W3 )
+else()
+	add_compile_options( -Wall -Wextra -Wconversion )
+endif()
 
 #
 # LexSyntLib
@@ -132,8 +137,8 @@ if( BUILD_COMPILER )
 		add_custom_command(
 			OUTPUT ${bc_name}
 			DEPENDS ${CMAKE_SOURCE_DIR}/ustlib/src/${ll_file}
-			DEPENDS ${LLVM_UTILS_DIR}/llvm-as
-			COMMAND ${LLVM_UTILS_DIR}/llvm-as ${CMAKE_SOURCE_DIR}/ustlib/src/${ll_file} -o ${bc_name} )
+			DEPENDS llvm-as
+			COMMAND llvm-as ${CMAKE_SOURCE_DIR}/ustlib/src/${ll_file} -o ${bc_name} )
 		add_custom_command(
 			OUTPUT ${bc_header_path}
 			DEPENDS ${bc_name}
