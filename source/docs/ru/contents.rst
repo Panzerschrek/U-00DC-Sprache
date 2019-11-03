@@ -16,6 +16,7 @@
    control_flow
    types
    enums
+   namespaces
    structs
    constructors
    classes
