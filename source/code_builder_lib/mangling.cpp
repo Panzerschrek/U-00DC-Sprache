@@ -9,6 +9,9 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
+namespace
+{
+
 // TODO
 // Covert unicode characters of ProgramString to names charset correctly.
 
@@ -18,7 +21,7 @@ struct NamePair final
 	ProgramString compressed_and_escaped;
 };
 
-static sprache_char Base36Digit( size_t value )
+sprache_char Base36Digit( size_t value )
 {
 	value %= 36u;
 	if( value < 10 )
@@ -72,7 +75,7 @@ private:
 };
 
 // Returns empty string if func_name is not operatorname.
-static const ProgramString& DecodeOperator( const ProgramString& func_name )
+const ProgramString& DecodeOperator( const ProgramString& func_name )
 {
 	static const ProgramStringMap<ProgramString> c_op_names
 	{
@@ -128,7 +131,7 @@ static const ProgramString& DecodeOperator( const ProgramString& func_name )
 	return c_empty;
 }
 
-static void GetNamespacePrefix_r( const NamesScope& names_scope, std::vector<ProgramString>& result )
+void GetNamespacePrefix_r( const NamesScope& names_scope, std::vector<ProgramString>& result )
 {
 	const NamesScope* const parent= names_scope.GetParent();
 	if( parent != nullptr )
@@ -141,7 +144,7 @@ static void GetNamespacePrefix_r( const NamesScope& names_scope, std::vector<Pro
 	}
 }
 
-static NamePair GetNestedName(
+NamePair GetNestedName(
 	const ProgramString& name, bool name_needs_num_prefix,
 	const NamesScope& parent_scope, const bool need_konst, NamesCache& names_cache, bool name_is_func_name= false )
 {
@@ -196,7 +199,7 @@ static NamePair GetNestedName(
 	}
 }
 
-static NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
+NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 {
 	NamePair result;
 
@@ -429,6 +432,8 @@ static NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 
 	return result;
 }
+
+} // namespace
 
 std::string MangleFunction(
 	const NamesScope& parent_scope,

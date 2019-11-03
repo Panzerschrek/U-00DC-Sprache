@@ -7,6 +7,7 @@ option( BUILD_COMPILER "Enable compilation of compiler" YES )
 option( BUILD_TESTS "Enable compilation of base tests" YES )
 option( BUILD_LINKAGE_TESTS "Enable compilation of linkage tests" YES )
 option( BUILD_PY_TESTS "Enable compilation of py_tests" YES )
+option( BUILD_UNICODE_FILE_NAMES_TEST "Enable compilation of unicode filenames test (such test may not work correctly is some environmens)" YES )
 
 if( BUILD_COMPILER )
 	message( STATUS "Build compiler" )
@@ -35,7 +36,7 @@ else()
 endif( BUILD_PY_TESTS )
 
 
-set( CMAKE_CXX_STANDARD 11 )
+set( CMAKE_CXX_STANDARD 14 )
 
 #
 # External dependencies
@@ -96,7 +97,12 @@ if( NOT WIN32 )
 else()
 	set( SPRACHE_COMPILER_PIC_OPTIONS "" )
 endif()
-add_compile_options( -Wall -Wextra -Wconversion )
+
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
+	add_compile_options( /utf-8 /W3 )
+else()
+	add_compile_options( -Wall -Wextra -Wconversion )
+endif()
 
 #
 # LexSyntLib
@@ -127,17 +133,19 @@ if( BUILD_COMPILER )
 	function( CompileLLFile ll_file )
 		get_filename_component( source_name ${ll_file} NAME_WE )
 		set( bc_name ${source_name}.bc )
-		set( bc_object_name ${source_name}.o )
+		set( bc_header_path ${CMAKE_CURRENT_BINARY_DIR}/${source_name}.h )
 		add_custom_command(
 			OUTPUT ${bc_name}
 			DEPENDS ${CMAKE_SOURCE_DIR}/ustlib/src/${ll_file}
-			DEPENDS ${LLVM_UTILS_DIR}/llvm-as
-			COMMAND ${LLVM_UTILS_DIR}/llvm-as ${CMAKE_SOURCE_DIR}/ustlib/src/${ll_file} -o ${bc_name} )
+			DEPENDS llvm-as
+			COMMAND llvm-as ${CMAKE_SOURCE_DIR}/ustlib/src/${ll_file} -o ${bc_name} )
 		add_custom_command(
-			OUTPUT ${bc_object_name}
+			OUTPUT ${bc_header_path}
 			DEPENDS ${bc_name}
-			COMMAND ld -r -b binary -o ${bc_object_name} ${bc_name} ) # Convert binary file to object file, using "ld"
-		set( BC_FILE ${bc_object_name} PARENT_SCOPE )
+			DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/bin2c.cmake ${bc_name}
+			COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/bin2c.cmake ${bc_name} ${bc_header_path} c_${source_name}_file_content
+			)
+		set( BC_FILE ${bc_header_path} PARENT_SCOPE )
 	endfunction()
 
 	CompileLLFile( asm_funcs.ll )
@@ -154,6 +162,7 @@ if( BUILD_COMPILER )
 	add_executable( Compiler ${COMPILER_SOURCES} ${bc_files} ${USTLIB_SOURCES} ${USTLIB_TEST_SOURCES} )
 	target_link_libraries( Compiler CompilerLib ${LLVM_LIBS_FOR_COMPILER} )
 	target_compile_definitions( Compiler PRIVATE "SPRACHE_VERSION=${PROJECT_VERSION}" )
+	target_include_directories( Compiler PRIVATE ${CMAKE_CURRENT_BINARY_DIR} )
 endif( BUILD_COMPILER )
 
 #
@@ -221,24 +230,24 @@ endif( BUILD_PY_TESTS )
 if( REALLY_BUILD_LINKAGE_TESTS )
 
 	# Build rule for "Ü" files
-	# Returns result in U_SOURCE_OBJECT
-	function( CompileUSource u_source_file )
+	# Returns result in ${out_object}
+	function( CompileUSource u_source_file out_object )
 		get_filename_component( source_name ${u_source_file} NAME_WE )
 		set( object_name ${source_name}.o )
 		add_custom_command(
 			OUTPUT ${object_name}
 			DEPENDS ${u_source_file} Compiler
 			COMMAND Compiler ${CMAKE_SOURCE_DIR}/${u_source_file} -o ${object_name} ${SPRACHE_COMPILER_PIC_OPTIONS} )
-		set( U_SOURCE_OBJECT ${object_name} PARENT_SCOPE )
+		set( ${out_object} ${object_name} PARENT_SCOPE )
 	endfunction()
 
-	# Returns list of objects in U_SOURCE_OBJECTS
-	function( CompileUSources u_source_files )
+	# Returns list of objects in ${out_objects}
+	function( CompileUSources u_source_files out_objects )
 		foreach( source ${u_source_files} )
-			CompileUSource( ${source} )
-			list( APPEND out_objects ${U_SOURCE_OBJECT} )
+			CompileUSource( ${source} out_object )
+			list( APPEND out_objects_local ${out_object} )
 		endforeach()
-		set( U_SOURCE_OBJECTS ${out_objects} PARENT_SCOPE )
+		set( ${out_objects} ${out_objects_local} PARENT_SCOPE )
 	endfunction()
 
 	#
@@ -246,8 +255,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	#
 	# Compile simple program on "Ü-Sprache", link it together with C++ program.
 	set( CPP_LINKAGE_SOURCES tests/cpp_linkage_test/cpp_linkage.u )
-	CompileUSources( "${CPP_LINKAGE_SOURCES}" )
-	set( CPP_LINKAGE_OBJECTS ${U_SOURCE_OBJECTS} )
+	CompileUSources( "${CPP_LINKAGE_SOURCES}" CPP_LINKAGE_OBJECTS )
 
 	add_executable( CPPLinkageTest tests/cpp_linkage_test/cpp_linkage.cpp ${CPP_LINKAGE_OBJECTS} )
 	add_dependencies( CPPLinkageTest Compiler )
@@ -260,8 +268,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 		tests/inline_linkage_test/a.u
 		tests/inline_linkage_test/b.u
 		tests/inline_linkage_test/c.u )
-	CompileUSources( "${INLINE_LINKAGE_SOURCES}" )
-	set( INLINE_LINKAGE_OBJECTS ${U_SOURCE_OBJECTS} )
+	CompileUSources( "${INLINE_LINKAGE_SOURCES}" INLINE_LINKAGE_OBJECTS )
 
 	add_executable( InlineLinkageTest tests/inline_linkage_test/entry.cpp ${INLINE_LINKAGE_OBJECTS} )
 	add_dependencies( InlineLinkageTest Compiler )
@@ -270,8 +277,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	# Imports test
 	#
 	set( IMPORT_TEST_SOURCES tests/import_test/root.u )
-	CompileUSources( "${IMPORT_TEST_SOURCES}" )
-	set( IMPORT_TEST_OBJECTS ${U_SOURCE_OBJECTS} )
+	CompileUSources( "${IMPORT_TEST_SOURCES}" IMPORT_TEST_OBJECTS )
 
 	add_executable( ImportTest tests/import_test/entry.c ${IMPORT_TEST_OBJECTS} )
 	add_dependencies( ImportTest Compiler )
@@ -279,12 +285,13 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	#
 	# Unciode file names test
 	#
+	if( BUILD_UNICODE_FILE_NAMES_TEST )
 	set( UNICODE_FILE_NAMES_SOURCES "tests/unicode_file_names_test/Entry ФшЯё_66.ü" )
-	CompileUSources( "${UNICODE_FILE_NAMES_SOURCES}" )
-	set( UNICODE_FILE_NAMES_OBJECTS ${U_SOURCE_OBJECTS} )
+	CompileUSources( "${UNICODE_FILE_NAMES_SOURCES}" UNICODE_FILE_NAMES_OBJECTS )
 
 	add_executable( UnicodeFileNamesTest tests/unicode_file_names_test/entry.c ${UNICODE_FILE_NAMES_OBJECTS} )
 	add_dependencies( UnicodeFileNamesTest Compiler )
+	endif()
 
 	#
 	# Include dirs test
@@ -307,8 +314,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	# type_id test
 	#
 	set( TYPE_ID_TEST_SOURCES tests/type_id_test/type_id_a.u tests/type_id_test/type_id_b.u )
-	CompileUSources( "${TYPE_ID_TEST_SOURCES}" )
-	set( TYPE_ID_TEST_OBJECTS ${U_SOURCE_OBJECTS} )
+	CompileUSources( "${TYPE_ID_TEST_SOURCES}" TYPE_ID_TEST_OBJECTS )
 
 	add_executable( TypeIdTest tests/type_id_test/entry.c ${TYPE_ID_TEST_OBJECTS} )
 	add_dependencies( TypeIdTest Compiler )

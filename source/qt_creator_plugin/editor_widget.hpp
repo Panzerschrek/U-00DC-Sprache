@@ -5,8 +5,8 @@
 
 #include <plugins/texteditor/texteditor.h>
 
-#include "program_model.h"
-#include "outline_widget_model.h"
+#include "program_model.hpp"
+#include "outline_widget_model.hpp"
 
 namespace U
 {
@@ -19,7 +19,7 @@ class OutlineTreeViewComboBox : public QComboBox
 	Q_OBJECT
 
 public:
-	OutlineTreeViewComboBox( QWidget* parent = nullptr );
+	explicit OutlineTreeViewComboBox( QWidget* parent = nullptr );
 
 	virtual bool eventFilter( QObject* object, QEvent* event ) override;
 	virtual void hidePopup() override;

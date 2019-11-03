@@ -313,7 +313,7 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 		{
 			if( cast_ref.type_ == nullptr || cast_ref.expression_ == nullptr )
 				return;
-			stream << KeywordAscii( Keywords::cast_ref ) << "</ ";
+			stream << KeywordAscii( Keywords::cast_ref_ ) << "</ ";
 			ElementWrite( *cast_ref.type_, stream );
 			stream << " />( ";
 			ElementWrite( *cast_ref.expression_, stream );
@@ -323,7 +323,7 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 		{
 			if( cast_ref_unsafe.type_ == nullptr || cast_ref_unsafe.expression_ == nullptr )
 				return;
-			stream << KeywordAscii( Keywords::cast_ref_unsafe ) << "</ ";
+			stream << KeywordAscii( Keywords::cast_ref_unsafe_ ) << "</ ";
 			ElementWrite( *cast_ref_unsafe.type_, stream );
 			stream << " />( ";
 			ElementWrite( *cast_ref_unsafe.expression_, stream );
@@ -333,7 +333,7 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 		{
 			if( cast_imut.expression_ == nullptr )
 				return;
-			stream << KeywordAscii( Keywords::cast_imut ) << "( ";
+			stream << KeywordAscii( Keywords::cast_imut_ ) << "( ";
 			ElementWrite( *cast_imut.expression_, stream );
 			stream << " )";
 		}
@@ -341,7 +341,7 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 		{
 			if( cast_mut.expression_ == nullptr )
 				return;
-			stream << KeywordAscii( Keywords::cast_mut ) << "( ";
+			stream << KeywordAscii( Keywords::cast_mut_ ) << "( ";
 			ElementWrite( *cast_mut.expression_, stream );
 			stream << " )";
 		}

@@ -1,6 +1,7 @@
 #pragma once
 #include <map>
 #include <memory>
+#include <set>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -685,7 +686,7 @@ struct Enum
 	Enum( const ProgramString& name, NamesScope* parent_scope );
 
 	NamesScope members;
-	uint64_t element_count= 0u;
+	size_t element_count= 0u;
 	FundamentalType underlaying_type; // must be integer
 
 	const Synt::Enum* syntax_element= nullptr; // Null if completed

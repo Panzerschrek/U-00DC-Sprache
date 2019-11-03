@@ -4,9 +4,9 @@
 #include "../lex_synt_lib/assert.hpp"
 #include "../lex_synt_lib/lexical_analyzer.hpp"
 #include "../lex_synt_lib/keywords.hpp"
-#include "strings.h"
+#include "strings.hpp"
 
-#include "syntax_highlighter.h"
+#include "syntax_highlighter.hpp"
 
 namespace U
 {

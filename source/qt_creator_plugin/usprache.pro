@@ -26,7 +26,7 @@ SOURCES+= \
 	../lex_synt_lib/*.cpp \
 
 HEADERS+= \
-	*.h \
+	*.hpp \
 	../lex_synt_lib/*.hpp \
 
 ## uncomment to build plugin into user config directory

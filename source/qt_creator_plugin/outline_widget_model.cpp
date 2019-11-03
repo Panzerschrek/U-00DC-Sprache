@@ -1,6 +1,6 @@
 #include <libs/cplusplus/Icons.h>
 
-#include "outline_widget_model.h"
+#include "outline_widget_model.hpp"
 
 namespace U
 {
@@ -112,7 +112,6 @@ int OutlineWidgetModel::rowCount( const QModelIndex& parent ) const
 
 	const Node* const element_ptr= reinterpret_cast<const Node*>(parent.internalPointer());
 	return int(element_ptr->childs.size());
-
 }
 
 int OutlineWidgetModel::columnCount( const QModelIndex& parent ) const
@@ -134,17 +133,13 @@ QVariant OutlineWidgetModel::data( const QModelIndex& index, const int role ) co
 
 	case Qt::DecorationRole:
 		return CPlusPlus::Icons::iconForType( GetIconType( *ptr ) );
-
-	case Qt::EditRole:
-	default:
-		break;
 	};
 	return QVariant();
 }
 
 Qt::ItemFlags OutlineWidgetModel::flags(const QModelIndex &index) const
 {
-	if (!index.isValid())
+	if( !index.isValid() )
 		return 0;
 
 	return Qt::ItemIsEnabled | Qt::ItemIsSelectable;

@@ -12,6 +12,9 @@ namespace U
 namespace Synt
 {
 
+namespace
+{
+
 struct ExpectedLexem
 {
 	ExpectedLexem( const Lexem::Type in_type ) : type(in_type) {}
@@ -21,7 +24,7 @@ struct ExpectedLexem
 	ProgramString text;
 };
 
-static const std::vector<ExpectedLexem> g_namespace_body_elements_start_lexems
+const std::vector<ExpectedLexem> g_namespace_body_elements_start_lexems
 {
 	ExpectedLexem(Keywords::namespace_),
 	ExpectedLexem(Keywords::class_), ExpectedLexem(Keywords::struct_),
@@ -30,7 +33,7 @@ static const std::vector<ExpectedLexem> g_namespace_body_elements_start_lexems
 	ExpectedLexem(Keywords::static_assert_),
 };
 
-static const std::vector<ExpectedLexem> g_class_body_elements_control_lexems
+const std::vector<ExpectedLexem> g_class_body_elements_control_lexems
 {
 	ExpectedLexem(Keywords::class_), ExpectedLexem(Keywords::struct_),
 	ExpectedLexem(Keywords::fn_), ExpectedLexem(Keywords::op_),
@@ -39,7 +42,7 @@ static const std::vector<ExpectedLexem> g_class_body_elements_control_lexems
 	ExpectedLexem(Lexem::Type::BraceRight),
 };
 
-static const std::vector<ExpectedLexem> g_block_body_elements_control_lexems
+const std::vector<ExpectedLexem> g_block_body_elements_control_lexems
 {
 	ExpectedLexem(Keywords::if_), ExpectedLexem(Keywords::static_if_), ExpectedLexem(Keywords::while_),
 	ExpectedLexem(Keywords::return_), ExpectedLexem(Keywords::break_), ExpectedLexem(Keywords::continue_),
@@ -48,17 +51,17 @@ static const std::vector<ExpectedLexem> g_block_body_elements_control_lexems
 	ExpectedLexem(Keywords::static_assert_),
 };
 
-static const std::vector<ExpectedLexem> g_function_arguments_list_control_lexems
+const std::vector<ExpectedLexem> g_function_arguments_list_control_lexems
 {
 	ExpectedLexem(Lexem::Type::Comma), ExpectedLexem(Lexem::Type::BracketRight),
 };
 
-static const std::vector<ExpectedLexem> g_template_arguments_list_control_lexems
+const std::vector<ExpectedLexem> g_template_arguments_list_control_lexems
 {
 	ExpectedLexem(Lexem::Type::Comma), ExpectedLexem(Lexem::Type::TemplateBracketRight),
 };
 
-static int GetBinaryOperatorPriority( const BinaryOperatorType binary_operator )
+int GetBinaryOperatorPriority( const BinaryOperatorType binary_operator )
 {
 	#define PRIORITY ( - __LINE__ )
 
@@ -94,9 +97,9 @@ static int GetBinaryOperatorPriority( const BinaryOperatorType binary_operator )
 	return PRIORITY;
 
 	#undef PRIORITY
-};
+}
 
-static bool IsBinaryOperator( const Lexem& lexem )
+bool IsBinaryOperator( const Lexem& lexem )
 {
 	return
 		lexem.type == Lexem::Type::Plus ||
@@ -123,7 +126,7 @@ static bool IsBinaryOperator( const Lexem& lexem )
 		lexem.type == Lexem::Type::Disjunction;
 }
 
-static BinaryOperatorType LexemToBinaryOperator( const Lexem& lexem )
+BinaryOperatorType LexemToBinaryOperator( const Lexem& lexem )
 {
 	switch( lexem.type )
 	{
@@ -156,7 +159,7 @@ static BinaryOperatorType LexemToBinaryOperator( const Lexem& lexem )
 	};
 }
 
-static bool IsAdditiveAssignmentOperator( const Lexem& lexem )
+bool IsAdditiveAssignmentOperator( const Lexem& lexem )
 {
 	switch(lexem.type)
 	{
@@ -177,7 +180,7 @@ static bool IsAdditiveAssignmentOperator( const Lexem& lexem )
 	return false;
 }
 
-static BinaryOperatorType GetAdditiveAssignmentOperator( const Lexem& lexem )
+BinaryOperatorType GetAdditiveAssignmentOperator( const Lexem& lexem )
 {
 	switch(lexem.type)
 	{
@@ -198,7 +201,7 @@ static BinaryOperatorType GetAdditiveAssignmentOperator( const Lexem& lexem )
 	};
 }
 
-static double PowI( const uint64_t base, const uint64_t pow )
+double PowI( const uint64_t base, const uint64_t pow )
 {
 	if( pow == 0u )
 		return 1.0;
@@ -1222,7 +1225,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				current_node= std::move(ternary_operator);
 				current_node_ptr= boost::get<TernaryOperator>( &current_node );
 			}
-			else if( it_->text == Keywords::cast_ref )
+			else if( it_->text == Keywords::cast_ref_ )
 			{
 				CastRef cast( it_->file_pos );
 
@@ -1261,7 +1264,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				current_node= std::move(cast);
 				current_node_ptr= boost::get<CastRef>( &current_node );
 			}
-			else if( it_->text == Keywords::cast_ref_unsafe )
+			else if( it_->text == Keywords::cast_ref_unsafe_ )
 			{
 				CastRefUnsafe cast( it_->file_pos );
 
@@ -1300,7 +1303,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				current_node= std::move(cast);
 				current_node_ptr= boost::get<CastRefUnsafe>( &current_node );
 			}
-			else if( it_->text == Keywords::cast_imut )
+			else if( it_->text == Keywords::cast_imut_ )
 			{
 				CastImut cast( it_->file_pos );
 
@@ -1325,7 +1328,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				current_node= std::move(cast);
 				current_node_ptr= boost::get<CastImut>( &current_node );
 			}
-			else if( it_->text == Keywords::cast_mut )
+			else if( it_->text == Keywords::cast_mut_ )
 			{
 				CastMut cast( it_->file_pos );
 
@@ -4370,6 +4373,8 @@ void SyntaxAnalyzer::PushErrorMessage()
 		last_error_repeats_= 0u;
 	}
 }
+
+} // namespace
 
 std::vector<Import> ParseImports( const Lexems& lexems )
 {

@@ -2077,10 +2077,10 @@ Value CodeBuilder::BuildIndexationOperator(
 			return ErrorValue();
 		}
 		const llvm::APInt index_value_raw= index.constexpr_value->getUniqueInteger();
-		const size_t index_value= index_value_raw.getLimitedValue();
+		const uint64_t index_value= index_value_raw.getLimitedValue();
 		if( IsSignedInteger(index_fundamental_type->fundamental_type) )
 		{
-			if( index_value >= tuple_type->elements.size() || index_value_raw.isNegative() )
+			if( index_value >= static_cast<uint64_t>(tuple_type->elements.size()) || index_value_raw.isNegative() )
 			{
 				REPORT_ERROR( TupleIndexOutOfBounds, names.GetErrors(), indexation_operator.file_pos_, index_value_raw.getSExtValue(), tuple_type->elements.size() );
 				return ErrorValue();
@@ -2088,7 +2088,7 @@ Value CodeBuilder::BuildIndexationOperator(
 		}
 		else
 		{
-			if( index_value >= tuple_type->elements.size() )
+			if( index_value >= static_cast<uint64_t>(tuple_type->elements.size()) )
 			{
 				REPORT_ERROR( TupleIndexOutOfBounds, names.GetErrors(), indexation_operator.file_pos_, index_value, tuple_type->elements.size() );
 				return ErrorValue();
@@ -2099,7 +2099,7 @@ Value CodeBuilder::BuildIndexationOperator(
 		result.location= Variable::Location::Pointer;
 		result.value_type= variable.value_type == ValueType::Reference ? ValueType::Reference : ValueType::ConstReference;
 		result.node= variable.node;
-		result.type= tuple_type->elements[index_value];
+		result.type= tuple_type->elements[static_cast<size_t>(index_value)];
 		result.llvm_value=
 			function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex(index_value) } );
 

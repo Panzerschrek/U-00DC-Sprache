@@ -3,16 +3,15 @@
 #include "../lex_synt_lib/lexical_analyzer.hpp"
 #include "../lex_synt_lib/program_string.hpp"
 #include "../lex_synt_lib/syntax_analyzer.hpp"
-#include "strings.h"
+#include "strings.hpp"
 
-#include "program_model.h"
+#include "program_model.hpp"
 
 namespace U
 {
 
 namespace QtCreatorPlugin
 {
-
 
 static ProgramString Stringify( const Synt::ComplexName& complex_name );
 static ProgramString Stringify( const Synt::TypeName& type_name );
@@ -71,31 +70,31 @@ static ProgramString Stringify( const Synt::Expression& expression )
 		{
 			if( cast_ref.type_ == nullptr || cast_ref.expression_ == nullptr )
 				return ProgramString();
-			return Keyword( Keywords::cast_ref ) + "</"_SpC + Stringify( *cast_ref.type_ ) + "/>("_SpC + Stringify( *cast_ref.expression_ ) + ")"_SpC;
+			return Keyword( Keywords::cast_ref_ ) + "</"_SpC + Stringify( *cast_ref.type_ ) + "/>("_SpC + Stringify( *cast_ref.expression_ ) + ")"_SpC;
 		}
 		ProgramString operator()( const Synt::CastRefUnsafe& cast_ref_unsafe )
 		{
 			if( cast_ref_unsafe.type_ == nullptr || cast_ref_unsafe.expression_ == nullptr )
 				return ProgramString();
-			return Keyword( Keywords::cast_ref_unsafe ) + "</"_SpC + Stringify( *cast_ref_unsafe.type_ ) + "/>("_SpC + Stringify( *cast_ref_unsafe.expression_ ) + ")"_SpC;
+			return Keyword( Keywords::cast_ref_unsafe_ ) + "</"_SpC + Stringify( *cast_ref_unsafe.type_ ) + "/>("_SpC + Stringify( *cast_ref_unsafe.expression_ ) + ")"_SpC;
 		}
 		ProgramString operator()( const Synt::CastImut& cast_imut )
 		{
 			if( cast_imut.expression_ == nullptr )
 				return ProgramString();
-			return Keyword( Keywords::cast_imut ) + "("_SpC + Stringify( *cast_imut.expression_ ) + ")"_SpC;
+			return Keyword( Keywords::cast_imut_ ) + "("_SpC + Stringify( *cast_imut.expression_ ) + ")"_SpC;
 		}
 		ProgramString operator()( const Synt::CastMut& cast_mut )
 		{
 			if( cast_mut.expression_ == nullptr )
 				return ProgramString();
-			return Keyword( Keywords::cast_mut ) + "("_SpC + Stringify( *cast_mut.expression_ ) + ")"_SpC;
+			return Keyword( Keywords::cast_mut_ ) + "("_SpC + Stringify( *cast_mut.expression_ ) + ")"_SpC;
 		}
 		ProgramString operator()( const Synt::TypeInfo& typeinfo_ )
 		{
 			if( typeinfo_.type_ == nullptr )
 				return ProgramString();
-			return Keyword( Keywords::cast_ref ) + "</"_SpC + Stringify( *typeinfo_.type_ )  + "/>"_SpC;
+			return Keyword( Keywords::cast_ref_ ) + "</"_SpC + Stringify( *typeinfo_.type_ )  + "/>"_SpC;
 		}
 	};
 
@@ -217,7 +216,6 @@ static ProgramString Stringify( const Synt::ComplexName& complex_name )
 
 	return result;
 }
-
 
 static ProgramString Stringify( const Synt::FunctionArgument& arg )
 {
