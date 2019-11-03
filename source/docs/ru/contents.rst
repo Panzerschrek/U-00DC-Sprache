@@ -19,5 +19,6 @@
    structs
    constructors
    classes
+   method_gen
    halt
    constexpr
