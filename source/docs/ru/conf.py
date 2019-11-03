@@ -5,3 +5,4 @@ html_theme = "sphinxdoc"
 language = "ru"
 html_title = "Ü документация"
 html_copy_source = False
+html_logo = "logo-Gebrochene-Grotesk.png"
