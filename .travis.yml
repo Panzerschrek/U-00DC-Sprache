@@ -1,4 +1,5 @@
 dist: xenial
+addons: { apt: { packages: python3-sphinx, sphinx-doc } }
 language: cpp
 compiler:
   - g++

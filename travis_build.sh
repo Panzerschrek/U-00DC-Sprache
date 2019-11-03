@@ -13,7 +13,7 @@ tar -xf boost_1_66_0.tar &&\
 # Configure build
 mkdir build-travis &&\
 cd build-travis &&\
-cmake ../source/ -DCMAKE_BUILD_TYPE=Release -DBOOST_ROOT=../boost_1_66_0 -DLLVM_SRC_DIR=../llvm-3.7.1.src -DLLVM_TARGETS_TO_BUILD=X86 &&\
+cmake ../source/ -DCMAKE_BUILD_TYPE=Release -DBOOST_ROOT=../boost_1_66_0 -DLLVM_SRC_DIR=../llvm-3.7.1.src -DLLVM_TARGETS_TO_BUILD=X86 -DLLVM_BUILD_DOCS=Yes -DLLVM_ENABLE_SPHINX=Yes -DSPHINX_WARNINGS_AS_ERRORS=No &&\
 \
 # Build it
 # travis-ci has 2 cpu cores
