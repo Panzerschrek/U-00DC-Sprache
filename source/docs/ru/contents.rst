@@ -17,5 +17,6 @@
    types
    enums
    structs
+   constructors
    halt
    constexpr
