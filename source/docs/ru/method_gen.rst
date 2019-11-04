@@ -29,7 +29,7 @@
 
 Примеры:
 
-.. code-block:: c++
+.. code-block:: u_spr
 
    class A
    {

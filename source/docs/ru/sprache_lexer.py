@@ -1,0 +1,111 @@
+from pygments.lexer import RegexLexer
+from pygments import token
+
+# Simple regexp-based lexer for Ü.
+
+class SpracheLexer(RegexLexer):
+	name = 'u_spr'
+	aliases = ['u_spr']
+	filenames = ['*.u']
+	
+	tokens = {
+		'root': [
+			# Comments
+			(r'//[^\n]*\n', token.Comment),
+			# Strings
+			(r'\"([^\\\"]|(\\n)|(\\r)|(\\t)|(\\b)|(\\f)|(\\\")|(\\0)|(\\\\)|(\\u[0-9a-fA-F]{4,4}))*\"', token.String),
+			# Whitespaces
+			(r'[\ \t\n\r]+', token.Whitespace),
+			# Numbers
+			(r'0b[0-1]+(\.[0-1]+)?', token.Number),
+			(r'0o[0-7]+(\.[0-7]+)?', token.Number),
+			(r'0x[0-9a-fA-F]+(\.[0-9a-fA-F]+)?', token.Number),
+			(r'[0-9]+(\.[0-9]+)?(e((-)|(\+))?[0-9]+)?', token.Number),
+			# Keywords
+			(r'fn', token.Keyword),
+			(r'op', token.Keyword),
+			(r'var', token.Keyword),
+			(r'auto', token.Keyword),
+			(r'lock_temps', token.Keyword),
+			(r'return', token.Keyword),
+			(r'while', token.Keyword),
+			(r'break', token.Keyword),
+			(r'continue', token.Keyword),
+			(r'if', token.Keyword),
+			(r'static_if', token.Keyword),
+			(r'enable_if', token.Keyword),
+			(r'else', token.Keyword),
+			(r'move', token.Keyword),
+			(r'select', token.Keyword),
+			(r'tup', token.Keyword),
+			(r'struct', token.Keyword),
+			(r'class', token.Keyword),
+			(r'final', token.Keyword),
+			(r'polymorph', token.Keyword),
+			(r'interface', token.Keyword),
+			(r'abstract', token.Keyword),
+			(r'ordered', token.Keyword),
+			(r'nomangle', token.Keyword),
+			(r'virtual', token.Keyword),
+			(r'override', token.Keyword),
+			(r'pure', token.Keyword),
+			(r'namespace', token.Keyword),
+			(r'public', token.Keyword),
+			(r'private', token.Keyword),
+			(r'protected', token.Keyword),
+			(r'void', token.Keyword),
+			(r'bool', token.Keyword),
+			(r'i8', token.Keyword),
+			(r'u8', token.Keyword),
+			(r'i16', token.Keyword),
+			(r'u16', token.Keyword),
+			(r'i32', token.Keyword),
+			(r'u32', token.Keyword),
+			(r'i64', token.Keyword),
+			(r'u64', token.Keyword),
+			(r'i128', token.Keyword),
+			(r'u128', token.Keyword),
+			(r'f32', token.Keyword),
+			(r'f64', token.Keyword),
+			(r'char8', token.Keyword),
+			(r'char16', token.Keyword),
+			(r'char32', token.Keyword),
+			(r'size_type', token.Keyword),
+			(r'true', token.Keyword),
+			(r'false', token.Keyword),
+			(r'mut', token.Keyword),
+			(r'imut', token.Keyword),
+			(r'constexpr', token.Keyword),
+			(r'zero_init', token.Keyword),
+			(r'uninitialized', token.Keyword),
+			(r'this', token.Keyword),
+			(r'base', token.Keyword),
+			(r'constructor', token.Keyword),
+			(r'destructor', token.Keyword),
+			(r'conversion_constructor', token.Keyword),
+			(r'static_assert', token.Keyword),
+			(r'halt', token.Keyword),
+			(r'safe', token.Keyword),
+			(r'unsafe', token.Keyword),
+			(r'type', token.Keyword),
+			(r'typeinfo', token.Keyword),
+			(r'typeof', token.Keyword),
+			(r'template', token.Keyword),
+			(r'enum', token.Keyword),
+			(r'cast_ref', token.Keyword),
+			(r'cast_ref_unsafe', token.Keyword),
+			(r'cast_imut', token.Keyword),
+			(r'cast_mut', token.Keyword),
+			(r'import', token.Keyword),
+			(r'default', token.Keyword),
+			(r'delete', token.Keyword),
+			(r'for', token.Keyword),
+			# Identifiers
+			(r'[a-zA-Z][a-zA-Z_0-9]*', token.Name),
+			# Other lexems
+			(r'(\()|(\)|(\[)|(\])|(\{)|(\}))', token.Punctuation),
+			(r'[,.:;?=+\-*/%<>&|\^~!\']', token.Operator),
+			(r'(</)|(/>)|(::)|(\+\+)|(--)|(==)|(!=)|(<=)|(>=)|(&&)|(\|\|)|(\+=)|(-=)|(\*=)|(/=)|(%=)|(&=)|(\|=)|(\^=)|(<<)|(>>)|(<-)|(->)', token.Operator),
+			(r'(<<=)|(>>=)|(\.\.\.)', token.Operator),
+		]
+	}

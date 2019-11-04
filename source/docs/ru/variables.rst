@@ -3,19 +3,19 @@
 
 Переменную можно объявить так:
 
-.. code-block:: c++
+.. code-block:: u_spr
 
    var i32 x= 0;
 
 Можно объявить сразу несколько переменных одного типа:
 
-.. code-block:: c++
+.. code-block:: u_spr
 
    var i32 x= 0, y= 1, z= 2;
 
 Модификаторы ссылки и мутабельности задаются индивидуально для каждой переменной:
 
-.. code-block:: c++
+.. code-block:: u_spr
 
    var i32 mut a= 0, imut b= 0;
    var i32 &mut a_ref= a, &imut b_ref= b, & b_ref2= b, imut y= 66, mut z= -56;

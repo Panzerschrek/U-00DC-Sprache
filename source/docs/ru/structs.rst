@@ -6,7 +6,7 @@
 
 Пример объявления структуры:
 
-.. code-block:: c++
+.. code-block:: u_spr
 
    // Структура с двумя полями
    struct SomeStruct
@@ -28,7 +28,7 @@
 
 Доступ к полям структур осуществляется с помощью оператора "." с именем поля после него.
 
-.. code-block:: c++
+.. code-block:: u_spr
 
    var SomeStruct mut s= zero_init;
    s.x= 5;
@@ -42,7 +42,7 @@
 
 Структура может иметь функции внутри:
 
-.. code-block:: c++
+.. code-block:: u_spr
 
    struct SomeStruct
    {
@@ -58,7 +58,7 @@
 В данном примере объявлена обычная свободная функция, хоть она и расположена внутри структуры.
 Вызвать её можно следующим образом:
 
-.. code-block:: c++
+.. code-block:: u_spr
 
    var SomeStruct s= zero_init;
    auto x= s.GetFieldCount(); // Можно обратиться через переменную типа структуры
@@ -78,7 +78,7 @@
 
 Пример объявления методов:
 
-.. code-block:: c++
+.. code-block:: u_spr
 
    struct Rect
    {
@@ -104,7 +104,7 @@
 
 Пример использования методов:
 
-.. code-block:: c++
+.. code-block:: u_spr
 
    var Rect mut rect= zero_init;
    rect.SetWidth( 5u );

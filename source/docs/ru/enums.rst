@@ -5,7 +5,7 @@
 
 Объявление перечисления:
 
-.. code-block:: c++
+.. code-block:: u_spr
 
    enum FixedColor
    {
@@ -28,7 +28,7 @@
 
 Использование:
 
-.. code-block:: c++
+.. code-block:: u_spr
 
    var FixedColor mut c= FixedColor::Black;
    c= FixedColor::Red;
