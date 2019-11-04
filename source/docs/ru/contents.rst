@@ -16,6 +16,7 @@
    control_flow
    types
    fundametal_types_operations
+   numeric_literals
    enums
    namespaces
    structs
