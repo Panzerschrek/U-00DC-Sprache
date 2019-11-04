@@ -17,6 +17,7 @@
    types
    fundametal_types_operations
    numeric_literals
+   string_literals
    enums
    namespaces
    structs
