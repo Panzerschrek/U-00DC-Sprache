@@ -108,9 +108,10 @@ CodeBuilder::ReferencesGraphNodeHolder::~ReferencesGraphNodeHolder()
 }
 
 CodeBuilder::CodeBuilder(
+	llvm::LLVMContext& llvm_context,
 	std::string target_triple_str,
 	const llvm::DataLayout& data_layout )
-	: llvm_context_( llvm::getGlobalContext() )
+	: llvm_context_( llvm_context )
 	, target_triple_str_(std::move(target_triple_str))
 	, data_layout_(data_layout)
 	, constexpr_function_evaluator_( data_layout_ )

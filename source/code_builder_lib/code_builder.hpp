@@ -25,6 +25,7 @@ class CodeBuilder final : public ICodeBuilder
 {
 public:
 	CodeBuilder(
+		llvm::LLVMContext& llvm_context,
 		std::string target_triple_str,
 		const llvm::DataLayout& data_layout );
 	virtual ~CodeBuilder() override= default;

@@ -47,11 +47,14 @@ private:
 	const char* const file_text_;
 };
 
+static llvm::ManagedStatic<llvm::LLVMContext> g_llvm_context;
+
 static std::unique_ptr<CodeBuilder> CreateCodeBuilder()
 {
 	return
 		std::unique_ptr<CodeBuilder>(
 			new CodeBuilder(
+				*g_llvm_context,
 				llvm::sys::getProcessTriple(),
 				llvm::DataLayout( GetTestsDataLayout() ) ) );
 }

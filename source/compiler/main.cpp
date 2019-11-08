@@ -425,6 +425,7 @@ int Main( const int argc, const char* const argv[] )
 
 	// Compile multiple input files and link them together.
 	SourceGraphLoader source_graph_loader( vfs );
+	llvm::LLVMContext llvm_context;
 	std::unique_ptr<llvm::Module> result_module;
 	bool have_some_errors= false;
 	for( const std::string& input_file : Options::input_files )
@@ -438,7 +439,7 @@ int Main( const int argc, const char* const argv[] )
 		}
 
 		CodeBuilder::BuildResult build_result=
-			CodeBuilder( target_triple_str, data_layout ).BuildProgram( *source_graph );
+			CodeBuilder( llvm_context, target_triple_str, data_layout ).BuildProgram( *source_graph );
 
 		if( Options::tests_output )
 		{

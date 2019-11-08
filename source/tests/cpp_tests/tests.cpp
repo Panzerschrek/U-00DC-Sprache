@@ -17,6 +17,8 @@ namespace U
 namespace
 {
 
+llvm::ManagedStatic<llvm::LLVMContext> g_llvm_context;
+
 class MultiFileVfs final : public IVfs
 {
 public:
@@ -74,6 +76,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 
 	ICodeBuilder::BuildResult build_result=
 		CodeBuilder(
+			*g_llvm_context,
 			llvm::sys::getProcessTriple(),
 			llvm::DataLayout( GetTestsDataLayout() ) ).BuildProgram( *source_graph );
 
@@ -95,6 +98,7 @@ ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
 
 	return
 		CodeBuilder(
+			*g_llvm_context,
 			llvm::sys::getProcessTriple(),
 			llvm::DataLayout( GetTestsDataLayout() ) ).BuildProgram( *source_graph );
 }
@@ -110,6 +114,7 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 
 	ICodeBuilder::BuildResult build_result=
 		CodeBuilder(
+			*g_llvm_context,
 			llvm::sys::getProcessTriple(),
 			llvm::DataLayout( GetTestsDataLayout() ) ).BuildProgram( *source_graph );
 
@@ -130,6 +135,7 @@ ICodeBuilder::BuildResult BuildMultisourceProgramWithErrors( std::vector<SourceE
 
 	return
 		CodeBuilder(
+			*g_llvm_context,
 			llvm::sys::getProcessTriple(),
 			llvm::DataLayout( GetTestsDataLayout() ) ).BuildProgram( *source_graph );
 }
