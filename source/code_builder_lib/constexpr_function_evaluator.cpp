@@ -147,7 +147,7 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 	const llvm::BasicBlock* prev_basic_block= nullptr;
 	const llvm::BasicBlock* current_basic_block= &llvm_function.getBasicBlockList().front();
 
-	const llvm::Instruction* instruction= current_basic_block->begin();
+	const llvm::Instruction* instruction= &*current_basic_block->begin();
 	while(true)
 	{
 		switch( instruction->getOpcode() )
@@ -191,7 +191,7 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 					else
 						current_basic_block= llvm::dyn_cast<llvm::BasicBlock>(instruction->getOperand(2u));
 				}
-				instruction= current_basic_block->begin();
+				instruction= &*current_basic_block->begin();
 			}
 			break;
 
