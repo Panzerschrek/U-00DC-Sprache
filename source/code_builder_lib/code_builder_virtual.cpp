@@ -309,7 +309,7 @@ void CodeBuilder::BuildClassVirtualTables_r( Class& the_class, const Type& class
 			llvm::GlobalValue::InternalLinkage,
 			 llvm::ConstantStruct::get( dst_class.virtual_table_llvm_type, initializer_values ),
 			vtable_name);
-	ancestor_vtable->setUnnamedAddr( true );
+	ancestor_vtable->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
 
 	U_ASSERT( the_class.ancestors_virtual_tables.find( dst_class_path ) == the_class.ancestors_virtual_tables.end() );
 	the_class.ancestors_virtual_tables[dst_class_path]= ancestor_vtable;
@@ -381,7 +381,7 @@ void CodeBuilder::BuildClassVirtualTables( Class& the_class, const Type& class_t
 			llvm::GlobalValue::InternalLinkage,
 			 llvm::ConstantStruct::get( the_class.virtual_table_llvm_type, initializer_values ),
 			"_vtable_main_" + MangleType(class_type) );
-	the_class.this_class_virtual_table->setUnnamedAddr( true );
+	the_class.this_class_virtual_table->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
 
 	// Recursive build virtual tables for all instances of all ancestors.
 	llvm::Value* const this_nullptr= llvm::Constant::getNullValue( the_class.llvm_type->getPointerTo() );
