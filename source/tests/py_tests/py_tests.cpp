@@ -15,6 +15,7 @@
 #include <llvm/ExecutionEngine/Interpreter.h>
 #include <llvm/Support/DynamicLibrary.h>
 #include <llvm/Support/ManagedStatic.h>
+#include <llvm/Support/raw_os_ostream.h>
 #include "../../code_builder_lib/pop_llvm_warnings.hpp"
 
 namespace U
@@ -135,7 +136,10 @@ static PyObject* BuildProgram( PyObject* const self, PyObject* const args )
 	}
 
 	if( print_llvm_asm != 0 )
-		module->dump();
+	{
+		llvm::raw_os_ostream stream(std::cout);
+		module->print( stream, nullptr );
+	}
 
 	g_current_engine.reset( llvm::EngineBuilder( std::move(module) ).create() );
 	if( g_current_engine == nullptr )

@@ -1,6 +1,9 @@
 #include <iostream>
 
+#include "../../code_builder_lib/push_disable_llvm_warnings.hpp"
 #include <llvm/Support/ManagedStatic.h>
+#include <llvm/Support/raw_os_ostream.h>
+#include "../../code_builder_lib/pop_llvm_warnings.hpp"
 
 #include "../../code_builder_lib/code_builder.hpp"
 #include "../../lex_synt_lib/assert.hpp"
@@ -145,7 +148,10 @@ EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, const bool needs_d
 	U_TEST_ASSERT( module != nullptr );
 
 	if( needs_dump )
-		module->dump();
+	{
+		llvm::raw_os_ostream stream(std::cout);
+		module->print( stream, nullptr );
+	}
 
 	llvm::EngineBuilder builder( std::move(module) );
 	llvm::ExecutionEngine* const engine= builder.create();
