@@ -1,0 +1,23 @@
+import "/math.u"
+
+fn nomangle main()
+{
+	halt;
+}
+
+fn Add( i32 x, i32 y ) : i32
+{
+	return x + y;
+}
+
+fn Div( i32 x, i32 y ) : i32
+{
+	return x / y;
+}
+
+fn MyCos( f32 x ) : f32
+{
+	return ust::cos(x);
+}
+
+fn MyExternal();
