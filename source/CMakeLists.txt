@@ -106,7 +106,7 @@ endif()
 
 if( NOT WIN32 )
 	add_compile_options( -fPIC )
-	set( SPRACHE_COMPILER_PIC_OPTIONS --relocation-model pic --enable-pie )
+	set( SPRACHE_COMPILER_PIC_OPTIONS --relocation-model pic )
 else()
 	set( SPRACHE_COMPILER_PIC_OPTIONS "" )
 endif()
