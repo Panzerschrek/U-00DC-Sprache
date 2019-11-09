@@ -7,6 +7,7 @@ option( BUILD_COMPILER "Enable compilation of compiler" YES )
 option( BUILD_TESTS "Enable compilation of base tests" YES )
 option( BUILD_LINKAGE_TESTS "Enable compilation of linkage tests" YES )
 option( BUILD_PY_TESTS "Enable compilation of py_tests" YES )
+option( BUILD_CPP_HEADER_CONVERTER "Enable compilation of c++ header converter (clang required)" YES )
 option( BUILD_UNICODE_FILE_NAMES_TEST "Enable compilation of unicode filenames test (such test may not work correctly is some environmens)" YES )
 
 if( BUILD_COMPILER )
@@ -81,6 +82,18 @@ llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_TESTS ExecutionEngine Interpreter )
 
 set( LLVM_UTILS_DIR ${CMAKE_BINARY_DIR}/llvm/bin )
+
+set( REALLY_BUILD_CPP_HEADER_CONVERTER NO )
+if( BUILD_CPP_HEADER_CONVERTER )
+	if( TARGET clangTooling )
+		set( REALLY_BUILD_CPP_HEADER_CONVERTER YES )
+		message( STATUS "Build c++ header converter" )
+	else()
+		message( STATUS "Clang not found, c++ header converter build disabled" )
+	endif()
+else()
+	message( STATUS "Skip c++ header converter" )
+endif()
 
 #
 # options for Ü-Sprache projects
@@ -169,7 +182,7 @@ endif( BUILD_COMPILER )
 # CppHeaderConverter
 #
 
-if( DEFINED LLVM_EXTERNAL_CLANG_SOURCE_DIR )
+if( REALLY_BUILD_CPP_HEADER_CONVERTER )
 	file( GLOB CPP_HEADER_CONVERTER_SOURCES "cpp_header_converter/*" )
 	add_executable( CppHeaderConverter ${CPP_HEADER_CONVERTER_SOURCES} )
 	target_link_libraries( CppHeaderConverter LexSyntLib )
@@ -329,7 +342,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	#
 	# CppHeaderConverter test
 	#
-	if( DEFINED LLVM_EXTERNAL_CLANG_SOURCE_DIR )
+	if( REALLY_BUILD_CPP_HEADER_CONVERTER )
 		add_custom_command(
 			OUTPUT c_converted.u
 			DEPENDS tests/cpp_header_converter_test/c_test.h CppHeaderConverter
