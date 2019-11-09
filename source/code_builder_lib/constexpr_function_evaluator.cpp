@@ -823,17 +823,17 @@ void ConstexprFunctionEvaluator::ProcessBinaryArithmeticInstruction( const llvm:
 
 	case llvm::Instruction::And:
 		U_ASSERT(type->isIntegerTy());
-		val.IntVal= op0.IntVal.And(op1.IntVal);
+		val.IntVal= op0.IntVal & op1.IntVal;
 		break;
 
 	case llvm::Instruction::Or:
 		U_ASSERT(type->isIntegerTy());
-		val.IntVal= op0.IntVal.Or(op1.IntVal);
+		val.IntVal= op0.IntVal | op1.IntVal;
 		break;
 
 	case llvm::Instruction::Xor:
 		U_ASSERT(type->isIntegerTy());
-		val.IntVal= op0.IntVal.Xor(op1.IntVal);
+		val.IntVal= op0.IntVal ^ op1.IntVal;
 		break;
 
 	case llvm::Instruction::Shl:
@@ -885,20 +885,16 @@ void ConstexprFunctionEvaluator::ProcessBinaryArithmeticInstruction( const llvm:
 
 	case llvm::Instruction::FRem:
 		{
-			// see llvm-3.7.1.src/lib/IR/ConstantFold.cpp:1190
-			const auto rounding_mode= llvm::APFloat::roundingMode::rmNearestTiesToEven;
 			if( type->isFloatTy() )
 			{
 				llvm::APFloat result_val(op0.FloatVal);
-				const llvm::APFloat::opStatus status= result_val.mod( llvm::APFloat(op1.FloatVal), rounding_mode );
-				U_ASSERT( status == llvm::APFloat::opStatus::opOK ); // TODO - generate error, if not ok.
+				result_val.mod( llvm::APFloat(op1.FloatVal));
 				val.FloatVal= result_val.convertToFloat();
 			}
 			else if( type->isDoubleTy() )
 			{
 				llvm::APFloat result_val(op0.DoubleVal);
-				const llvm::APFloat::opStatus status= result_val.mod( llvm::APFloat(op1.DoubleVal), rounding_mode );
-				U_ASSERT( status == llvm::APFloat::opStatus::opOK ); // TODO - generate error, if not ok.
+				result_val.mod( llvm::APFloat(op1.DoubleVal) );
 				val.DoubleVal= result_val.convertToDouble();
 			}
 			else U_ASSERT(false);
