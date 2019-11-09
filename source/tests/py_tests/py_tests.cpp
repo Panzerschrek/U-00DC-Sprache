@@ -74,7 +74,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	ICodeBuilder::BuildResult build_result= CreateCodeBuilder()->BuildProgram( *source_graph );
 
 	for( const CodeBuilderError& error : build_result.errors )
-		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToUTF8( error.text ) << "\n";
+		std::cerr << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToUTF8( error.text ) << "\n";
 
 	if( !build_result.errors.empty() )
 		return nullptr;
