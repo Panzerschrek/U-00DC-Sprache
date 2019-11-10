@@ -28,3 +28,4 @@
    method_gen
    halt
    constexpr
+   operators_overloading
