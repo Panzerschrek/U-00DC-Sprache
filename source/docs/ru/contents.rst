@@ -22,6 +22,7 @@
    namespaces
    structs
    constructors
+   destructors
    classes
    initializers
    method_gen
