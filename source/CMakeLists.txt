@@ -58,8 +58,6 @@ if( DEFINED LLVM_SRC_DIR )
 		set( LLVM_BUILD_TOOLS OFF CACHE BOOL "build llvm tools" )
 	endif()
 
-	set( LLVM_ENABLE_RTTI ON CACHE BOOL "rtti for llvm" )
-
 	add_subdirectory( ${LLVM_SRC_DIR} ${CMAKE_BINARY_DIR}/llvm )
 
 	include_directories( ${LLVM_SRC_DIR}/include ${CMAKE_BINARY_DIR}/llvm/include )
@@ -123,9 +121,20 @@ else()
 endif()
 
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
+
 	add_compile_options( /utf-8 /W3 )
+
+	if( NOT LLVM_ENABLE_RTTI )
+		add_compile_options( /GR- )
+	endif()
+
 else()
 	add_compile_options( -Wall -Wextra -Wconversion )
+
+	if( NOT LLVM_ENABLE_RTTI )
+		add_compile_options( -fno-rtti )
+	endif()
+
 endif()
 
 #
