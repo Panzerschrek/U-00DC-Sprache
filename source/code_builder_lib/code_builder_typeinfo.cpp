@@ -9,24 +9,29 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-static const ProgramString g_next_node_name= "next"_SpC;
-static const ProgramString g_name_field_name= "name"_SpC;
-static const ProgramString g_type_field_name= "type"_SpC;
-static const FilePos g_dummy_file_pos{ 0u, 0u, 0u };
+namespace
+{
 
-static const ProgramString g_typeinfo_root_class_name= "TI"_SpC;
-static const ProgramString g_typeinfo_enum_elements_list_node_class_name= "TIEL_"_SpC;
-static const ProgramString g_typeinfo_class_fields_list_node_class_name= "TICFL_"_SpC;
-static const ProgramString g_typeinfo_class_types_list_node_class_name= "TICTL_"_SpC;
-static const ProgramString g_typeinfo_class_functions_list_node_class_name= "TICFL_"_SpC;
-static const ProgramString g_typeinfo_class_parents_list_node_class_name= "TICPL_"_SpC;
-static const ProgramString g_typeinfo_function_arguments_list_node_class_name= "TIAL_"_SpC;
-static const ProgramString g_typeinfo_tuple_elements_list_node_class_name= "TITL_"_SpC;
+const ProgramString g_next_node_name= "next"_SpC;
+const ProgramString g_name_field_name= "name"_SpC;
+const ProgramString g_type_field_name= "type"_SpC;
+const FilePos g_dummy_file_pos{ 0u, 0u, 0u };
 
-static std::string GetTypeinfoVariableName( const ClassProxyPtr& typeinfo_class )
+const ProgramString g_typeinfo_root_class_name= "TI"_SpC;
+const ProgramString g_typeinfo_enum_elements_list_node_class_name= "TIEL_"_SpC;
+const ProgramString g_typeinfo_class_fields_list_node_class_name= "TICFL_"_SpC;
+const ProgramString g_typeinfo_class_types_list_node_class_name= "TICTL_"_SpC;
+const ProgramString g_typeinfo_class_functions_list_node_class_name= "TICFL_"_SpC;
+const ProgramString g_typeinfo_class_parents_list_node_class_name= "TICPL_"_SpC;
+const ProgramString g_typeinfo_function_arguments_list_node_class_name= "TIAL_"_SpC;
+const ProgramString g_typeinfo_tuple_elements_list_node_class_name= "TITL_"_SpC;
+
+std::string GetTypeinfoVariableName( const ClassProxyPtr& typeinfo_class )
 {
 	return "_val_of_" + std::string(typeinfo_class->class_->llvm_type->getName());
 }
+
+} // namespace
 
 Value CodeBuilder::BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, NamesScope& names, FunctionContext& function_context )
 {

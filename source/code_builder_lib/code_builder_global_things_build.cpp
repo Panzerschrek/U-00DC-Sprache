@@ -9,7 +9,10 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-static void AddAncestorsAccessRights_r( Class& the_class, const ClassProxyPtr& ancestor_class )
+namespace
+{
+
+void AddAncestorsAccessRights_r( Class& the_class, const ClassProxyPtr& ancestor_class )
 {
 	the_class.members.AddAccessRightsFor( ancestor_class, ClassMemberVisibility::Protected );
 	for( const Class::Parent& parent : ancestor_class->class_->parents )
@@ -42,7 +45,7 @@ private:
 	} \
 	GlobalsLoopsDetectorGuard glbals_loop_detector_guard( [this]{ global_things_stack_.pop_back(); } );
 
-static void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fields_llvm_types, const llvm::DataLayout& data_layout )
+void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fields_llvm_types, const llvm::DataLayout& data_layout )
 {
 	// Fields in original order
 	using FieldsMap= std::map< unsigned int, ClassField* >;
@@ -109,6 +112,8 @@ static void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fiel
 		fields.erase( best_field_it );
 	}
 }
+
+} // namespace
 
 //
 // CodeBuilder

@@ -5,6 +5,9 @@
 namespace U
 {
 
+namespace
+{
+
 class HaltException final : public std::exception
 {
 public:
@@ -14,17 +17,19 @@ public:
 	}
 };
 
-static llvm::GenericValue HaltCalled( llvm::FunctionType*, llvm::ArrayRef<llvm::GenericValue> )
+llvm::GenericValue HaltCalled( llvm::FunctionType*, llvm::ArrayRef<llvm::GenericValue> )
 {
 	// Return from interpreter, using native exception.
 	throw HaltException();
 }
 
-static void HaltTestPrepare()
+void HaltTestPrepare()
 {
 	// "lle_X_" - common prefix for all external functions, called from LLVM Interpreter
 	llvm::sys::DynamicLibrary::AddSymbol( "lle_X___U_halt", reinterpret_cast<void*>( &HaltCalled ) );
 }
+
+} // namespace
 
 U_TEST( HaltTest0 )
 {

@@ -13,10 +13,15 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-static constexpr size_t g_max_data_stack_size= 1024u * 1024u * 64u - 1u; // 64 Megabytes will be enough for stack.
-static constexpr size_t g_constants_segment_offset= g_max_data_stack_size + 1u;
-static constexpr size_t g_max_constants_stack_size =1024u * 1024u * 64u; // 64 Megabytes will be enough for constants.
-static constexpr size_t g_max_call_stack_depth = 1024u;
+namespace
+{
+
+constexpr size_t g_max_data_stack_size= 1024u * 1024u * 64u - 1u; // 64 Megabytes will be enough for stack.
+constexpr size_t g_constants_segment_offset= g_max_data_stack_size + 1u;
+constexpr size_t g_max_constants_stack_size =1024u * 1024u * 64u; // 64 Megabytes will be enough for constants.
+constexpr size_t g_max_call_stack_depth = 1024u;
+
+}
 
 ConstexprFunctionEvaluator::ConstexprFunctionEvaluator( const llvm::DataLayout& data_layout )
 	: data_layout_(data_layout)

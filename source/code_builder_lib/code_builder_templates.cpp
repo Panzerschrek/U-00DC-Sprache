@@ -20,11 +20,14 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-static const ProgramString g_name_for_generated_class= "_"_SpC;
-static const ProgramString g_template_parameters_namespace_prefix= "_tp_ns-"_SpC;
+namespace
+{
+
+const ProgramString g_name_for_generated_class= "_"_SpC;
+const ProgramString g_template_parameters_namespace_prefix= "_tp_ns-"_SpC;
 
 template< class TemplateParam >
-static ProgramString EncodeTemplateParameters( std::vector<TemplateParam>& deduced_template_args )
+ProgramString EncodeTemplateParameters( std::vector<TemplateParam>& deduced_template_args )
 {
 	ProgramString r;
 	for(const auto& arg : deduced_template_args )
@@ -58,7 +61,7 @@ static ProgramString EncodeTemplateParameters( std::vector<TemplateParam>& deduc
 	return r;
 }
 
-static void CreateTemplateErrorsContext(
+void CreateTemplateErrorsContext(
 	CodeBuilderErrorsContainer& errors_container,
 	const FilePos& file_pos,
 	const NamesScopePtr& template_parameters_namespace,
@@ -126,6 +129,8 @@ static void CreateTemplateErrorsContext(
 		template_error_context->template_name= std::move(name);
 	}
 }
+
+} // namesapce
 
 void CodeBuilder::PrepareTypeTemplate(
 	const Synt::TypeTemplateBase& type_template_declaration,

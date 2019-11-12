@@ -8,6 +8,9 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
+namespace
+{
+
 enum class ConversionsCompareResult
 {
 	Same,
@@ -16,7 +19,7 @@ enum class ConversionsCompareResult
 	Incomparable
 };
 
-static ConversionsCompareResult CompareConversionsTypes(
+ConversionsCompareResult CompareConversionsTypes(
 	const Type& src,
 	const Type& dst_left,
 	const Type& dst_right )
@@ -67,7 +70,7 @@ static ConversionsCompareResult CompareConversionsTypes(
 	return ConversionsCompareResult::Incomparable;
 }
 
-static ConversionsCompareResult CompareConversionsMutability(
+ConversionsCompareResult CompareConversionsMutability(
 	const Function::Arg& src,
 	const Function::Arg& dst_left,
 	const Function::Arg& dst_right)
@@ -87,7 +90,7 @@ static ConversionsCompareResult CompareConversionsMutability(
 	return ConversionsCompareResult::Incomparable;
 }
 
-static ConversionsCompareResult TemplateSpecializationCompare(
+ConversionsCompareResult TemplateSpecializationCompare(
 	const DeducedTemplateParameter& left_template_parameter,
 	const DeducedTemplateParameter& right_template_parameter )
 {
@@ -252,7 +255,7 @@ static ConversionsCompareResult TemplateSpecializationCompare(
 	return ConversionsCompareResult::Incomparable;
 }
 
-static ConversionsCompareResult CompareConversions(
+ConversionsCompareResult CompareConversions(
 	const Function::Arg& src,
 	const Function::Arg& dst_left,
 	const Function::Arg& dst_right)
@@ -274,7 +277,7 @@ static ConversionsCompareResult CompareConversions(
 	return ConversionsCompareResult::Incomparable;
 }
 
-static ConversionsCompareResult CompareConversions(
+ConversionsCompareResult CompareConversions(
 	const Function::Arg& src,
 	const Function::Arg& dst_left,
 	const Function::Arg& dst_right,
@@ -292,6 +295,8 @@ static ConversionsCompareResult CompareConversions(
 	// Compare template specializations, only if type conversions are not same.
 	return template_specialization_compare;
 }
+
+} // namespace
 
 FunctionVariable* CodeBuilder::GetFunctionWithSameType(
 	const Function& function_type,

@@ -29,10 +29,13 @@ bool operator<=( const FilePos& l, const FilePos& r )
 	return l < r || l == r;
 }
 
-using FixedLexemsMap= ProgramStringMap<Lexem::Type>;
-static const size_t g_max_fixed_lexem_size= 3;
+namespace
+{
 
-static const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
+using FixedLexemsMap= ProgramStringMap<Lexem::Type>;
+const size_t g_max_fixed_lexem_size= 3;
+
+const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
 {
 	FixedLexemsMap
 	{ // Zero symbol lexems.
@@ -116,24 +119,24 @@ static const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
 
 using Iterator= const sprache_char*;
 
-static bool IsWhitespace( sprache_char c )
+bool IsWhitespace( sprache_char c )
 {
 	return
 		c == ' ' || c == '\f' || c == '\n' || c == '\r' || c == '\t' || c == '\v' ||
 		c <= 0x1Fu || c == 0x7Fu;
 }
 
-static bool IsNewline( sprache_char c )
+bool IsNewline( sprache_char c )
 {
 	return c == '\n';
 }
 
-static bool IsNumberStartChar( sprache_char c )
+bool IsNumberStartChar( sprache_char c )
 {
 	return c >= '0' && c <= '9';
 }
 
-static bool IsIdentifierStartChar( sprache_char c )
+bool IsIdentifierStartChar( sprache_char c )
 {
 	// HACK - manually define allowed "letters".
 	// TODO - use something, like symbol category from unicode.
@@ -149,12 +152,12 @@ static bool IsIdentifierStartChar( sprache_char c )
 		( c >= 0x0180u && c <= 0x024Fu ) ;  // Extended latin part B
 }
 
-static bool IsIdentifierChar( sprache_char c )
+bool IsIdentifierChar( sprache_char c )
 {
 	return IsIdentifierStartChar(c) || IsNumberStartChar(c) || c == '_';
 }
 
-static void ParseNumberImpl(
+void ParseNumberImpl(
 		Iterator& it,
 		const Iterator it_end,
 		Lexem& result,
@@ -203,7 +206,7 @@ static void ParseNumberImpl(
 	}
 }
 
-static Lexem ParseString(
+Lexem ParseString(
 	Iterator& it,
 	const Iterator it_end,
 	LexicalErrorMessages& out_errors )
@@ -294,7 +297,7 @@ static Lexem ParseString(
 	return result;
 }
 
-static Lexem ParseNumber(
+Lexem ParseNumber(
 	Iterator& it,
 	const Iterator it_end )
 {
@@ -369,7 +372,7 @@ static Lexem ParseNumber(
 	return result;
 }
 
-static Lexem ParseIdentifier(
+Lexem ParseIdentifier(
 	Iterator& it,
 	const Iterator it_end )
 {
@@ -385,12 +388,12 @@ static Lexem ParseIdentifier(
 	return result;
 }
 
-static bool IsMacroIdentifierStartChar( const sprache_char c )
+bool IsMacroIdentifierStartChar( const sprache_char c )
 {
 	return c == '?';
 }
 
-static Lexem ParseMacroIdentifier(
+Lexem ParseMacroIdentifier(
 	Iterator& it,
 	const Iterator it_end )
 {
@@ -416,6 +419,8 @@ static Lexem ParseMacroIdentifier(
 
 	return result;
 }
+
+} // namespace
 
 LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text, const bool collect_comments )
 {
