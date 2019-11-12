@@ -216,8 +216,18 @@ endif()
 # PyTests
 #
 if( U_BUILD_PY_TESTS )
-	find_package( PythonLibs REQUIRED )
-	find_package( PythonInterp REQUIRED )
+	# Fix python search on systems with both python2/python3 installed.
+	# LLVM CMake file calls "FindPythonInterp" without version specified, so, version 2 may be found.
+	# If python2 found, search for python3 failed. To fix that, reset related cache variables.
+	unset( PYTHON_EXECUTABLE CACHE )
+	unset( PYTHONINTERP_FOUND CACHE )
+	unset( PYTHON_VERSION_STRING CACHE )
+	unset( PYTHON_VERSION_MAJOR CACHE )
+	unset( PYTHON_VERSION_MINOR CACHE )
+	unset( PYTHON_VERSION_PATCH CACHE )
+
+	find_package( PythonLibs 3 REQUIRED )
+	find_package( PythonInterp 3 REQUIRED )
 
 	set( PY_TESTS_SOURCES
 		tests/py_tests/py_tests.cpp
@@ -241,7 +251,7 @@ if( U_BUILD_PY_TESTS )
 	# Run result test.
 	add_custom_target(
 		PyTestsRun ALL
-		COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR} python3 tests/py_tests/py_tests.py
+		COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR} ${PYTHON_EXECUTABLE} tests/py_tests/py_tests.py
 		DEPENDS PyTestsLib
 		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 		SOURCES ${PY_TESTS_PY_SOURCES} )
