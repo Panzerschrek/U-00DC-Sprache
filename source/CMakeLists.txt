@@ -74,6 +74,9 @@ elseif( DEFINED LLVM_LIB_DIR )
 	set( LLVM_DIR ${LLVM_LIB_DIR}/cmake/llvm )
 	find_package( LLVM REQUIRED )
 
+	set( Clang_DIR ${LLVM_LIB_DIR}/cmake/clang )
+	find_package( Clang ) # Optional
+
 	include_directories( ${LLVM_INCLUDE_DIRS} )
 
 else()
