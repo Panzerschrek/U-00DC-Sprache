@@ -428,13 +428,7 @@ static ProgramString Stringify( const Synt::Function& function )
 
 static ProgramString Stringify( const Synt::TypeTemplateBase& type_template )
 {
-	ProgramString result;
-
-	if( const auto class_template= dynamic_cast<const Synt::ClassTemplate*>( &type_template ) )
-		result+= class_template->class_->name_;
-	else if( const auto typedef_template= dynamic_cast<const Synt::TypedefTemplate*>( &type_template) )
-		result+= typedef_template->name_;
-	else U_ASSERT(false);
+	ProgramString result= type_template.name_;
 
 	result+= "</"_SpC;
 	if( type_template.is_short_form_ )
