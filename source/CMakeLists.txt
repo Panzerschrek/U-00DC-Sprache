@@ -3,26 +3,26 @@
 project(Sprache)
 set( PROJECT_VERSION 0.5 )
 
-option( BUILD_COMPILER "Enable compilation of compiler" YES )
-option( BUILD_TESTS "Enable compilation of base tests" YES )
-option( BUILD_LINKAGE_TESTS "Enable compilation of linkage tests" YES )
-option( BUILD_PY_TESTS "Enable compilation of py_tests" YES )
-option( BUILD_CPP_HEADER_CONVERTER "Enable compilation of c++ header converter (clang required)" YES )
-option( BUILD_UNICODE_FILE_NAMES_TEST "Enable compilation of unicode filenames test (such test may not work correctly is some environmens)" YES )
+option( U_BUILD_COMPILER "Enable compilation of compiler" YES )
+option( U_BUILD_TESTS "Enable compilation of base tests" YES )
+option( U_BUILD_LINKAGE_TESTS "Enable compilation of linkage tests" YES )
+option( U_BUILD_PY_TESTS "Enable compilation of py_tests" YES )
+option( U_BUILD_CPP_HEADER_CONVERTER "Enable compilation of c++ header converter (clang required)" YES )
+option( U_BUILD_UNICODE_FILE_NAMES_TEST "Enable compilation of unicode filenames test (such test may not work correctly is some environmens)" YES )
 
-if( BUILD_COMPILER )
+if( U_BUILD_COMPILER )
 	message( STATUS "Build compiler" )
 else()
 	message( STATUS "Skip compiler" )
-endif( BUILD_COMPILER )
+endif()
 
-if( BUILD_TESTS )
+if( U_BUILD_TESTS )
 	message( STATUS "Build tests" )
 else()
 	message( STATUS "Skip tests" )
-endif( BUILD_TESTS )
+endif()
 
-if( BUILD_LINKAGE_TESTS AND BUILD_COMPILER )
+if( U_BUILD_LINKAGE_TESTS AND U_BUILD_COMPILER )
 	set( REALLY_BUILD_LINKAGE_TESTS YES )
 	message( STATUS "Build linkage tests" )
 else()
@@ -30,11 +30,11 @@ else()
 	message( STATUS "Skip linkage tests" )
 endif()
 
-if( BUILD_PY_TESTS )
+if( U_BUILD_PY_TESTS )
 	message( STATUS "Build py_tests" )
 else()
 	message( STATUS "Skip py_tests" )
-endif( BUILD_PY_TESTS )
+endif()
 
 
 set( CMAKE_CXX_STANDARD 14 )
@@ -95,7 +95,7 @@ llvm_map_components_to_libnames( LLVM_LIBS_FOR_TESTS ExecutionEngine Interpreter
 set( LLVM_UTILS_DIR ${CMAKE_BINARY_DIR}/llvm/bin )
 
 set( REALLY_BUILD_CPP_HEADER_CONVERTER NO )
-if( BUILD_CPP_HEADER_CONVERTER )
+if( U_BUILD_CPP_HEADER_CONVERTER )
 	if( TARGET clangTooling )
 		set( REALLY_BUILD_CPP_HEADER_CONVERTER YES )
 		message( STATUS "Build c++ header converter" )
@@ -163,7 +163,7 @@ endif()
 #
 # Compiler
 #
-if( BUILD_COMPILER )
+if( U_BUILD_COMPILER )
 	file( GLOB COMPILER_SOURCES "compiler/*" )
 
 	function( CompileLLFile ll_file )
@@ -199,7 +199,7 @@ if( BUILD_COMPILER )
 	target_link_libraries( Compiler CompilerLib ${LLVM_LIBS_FOR_COMPILER} )
 	target_compile_definitions( Compiler PRIVATE "SPRACHE_VERSION=${PROJECT_VERSION}" )
 	target_include_directories( Compiler PRIVATE ${CMAKE_CURRENT_BINARY_DIR} )
-endif( BUILD_COMPILER )
+endif()
 
 #
 # CppHeaderConverter
@@ -218,17 +218,17 @@ endif()
 #
 # Tests
 #
-if( BUILD_TESTS )
+if( U_BUILD_TESTS )
 	file( GLOB TESTS_SOURCES "tests/cpp_tests/*" )
 
 	add_executable( Tests ${TESTS_SOURCES}  )
 	target_link_libraries( Tests CompilerLib ${LLVM_LIBS_FOR_TESTS} )
-endif( BUILD_TESTS )
+endif()
 
 #
 # PyTests
 #
-if( BUILD_PY_TESTS )
+if( U_BUILD_PY_TESTS )
 	find_package( PythonLibs REQUIRED )
 	find_package( PythonInterp REQUIRED )
 
@@ -261,7 +261,7 @@ if( BUILD_PY_TESTS )
 		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 		SOURCES ${PY_TESTS_PY_SOURCES} )
 
-endif( BUILD_PY_TESTS )
+endif()
 
 if( REALLY_BUILD_LINKAGE_TESTS )
 
@@ -321,7 +321,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	#
 	# Unciode file names test
 	#
-	if( BUILD_UNICODE_FILE_NAMES_TEST )
+	if( U_BUILD_UNICODE_FILE_NAMES_TEST )
 	set( UNICODE_FILE_NAMES_SOURCES "tests/unicode_file_names_test/Entry ФшЯё_66.ü" )
 	CompileUSources( "${UNICODE_FILE_NAMES_SOURCES}" UNICODE_FILE_NAMES_OBJECTS )
 
