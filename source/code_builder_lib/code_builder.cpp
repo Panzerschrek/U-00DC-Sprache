@@ -173,7 +173,7 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 			module_.get() );
 	halt_func_->setDoesNotReturn();
 	halt_func_->setDoesNotThrow();
-	halt_func_->setUnnamedAddr( true );
+	halt_func_->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
 
 	// In some places outside functions we need to execute expression evaluation.
 	// Create for this function context.
@@ -1411,7 +1411,7 @@ Type CodeBuilder::BuildFuncCode(
 
 		// Merge functions with identical code.
 		// We doesn`t need different addresses for different functions.
-		llvm_function->setUnnamedAddr( true );
+		llvm_function->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
 
 		// Mark reference-parameters as nonnull.
 		// Mark mutable references as "noalias".
@@ -3795,7 +3795,7 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalConstantVariable(
 			initializer,
 			mangled_name );
 
-	val->setUnnamedAddr( true );
+	val->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
 
 	return val;
 }
@@ -3804,7 +3804,7 @@ void CodeBuilder::SetupGeneratedFunctionLinkageAttributes( llvm::Function& funct
 {
 	// Merge functions with identical code.
 	// We doesn`t need different addresses for different functions.
-	function.setUnnamedAddr( true );
+	function.setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
 
 	// Set comdat for correct linkage of same functions, emitted in several modules.
 	llvm::Comdat* const comdat= module_->getOrInsertComdat( function.getName() );

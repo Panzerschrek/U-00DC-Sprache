@@ -51,25 +51,37 @@ find_package( Boost )
 include_directories( ${Boost_INCLUDE_DIRS} )
 
 # LLVM
-if( NOT DEFINED LLVM_SRC_DIR )
-	message( FATAL_ERROR "LLVM_SRC_DIR not defined. You can define path to llvm library, using variable LLVM_SRC_DIR" )
+
+if( DEFINED LLVM_SRC_DIR )
+
+	if( REALLY_BUILD_LINKAGE_TESTS )
+		set( LLVM_BUILD_TOOLS OFF CACHE BOOL "build llvm tools" )
+	endif()
+
+	add_subdirectory( ${LLVM_SRC_DIR} ${CMAKE_BINARY_DIR}/llvm )
+
+	include_directories( ${LLVM_SRC_DIR}/include ${CMAKE_BINARY_DIR}/llvm/include )
+
+	# llvm does not export definitions as target properties, so, retrieve compile definitions manually.
+	get_directory_property( LLVM_COMPILE_DEFINITIONS DIRECTORY ${LLVM_SRC_DIR} COMPILE_DEFINITIONS )
+	foreach( d ${LLVM_COMPILE_DEFINITIONS} )
+		add_definitions( "-D${d}" )
+	endforeach()
+
+elseif( DEFINED LLVM_LIB_DIR )
+
+	set( LLVM_FOUND On )
+	set( LLVM_DIR ${LLVM_LIB_DIR}/cmake/llvm )
+	find_package( LLVM REQUIRED )
+
+	set( Clang_DIR ${LLVM_LIB_DIR}/cmake/clang )
+	find_package( Clang ) # Optional
+
+	include_directories( ${LLVM_INCLUDE_DIRS} )
+
+else()
+	message( FATAL_ERROR "llvm not found. Define LLVM_SRC_DIR for building llvm from sources, or define LLVM_LIB_DIR for installed llvm." )
 endif()
-
-if( REALLY_BUILD_LINKAGE_TESTS )
-	set( LLVM_BUILD_TOOLS OFF CACHE BOOL "build llvm tools" )
-endif()
-
-set( LLVM_ENABLE_RTTI ON CACHE BOOL "rtti for llvm" )
-
-add_subdirectory( ${LLVM_SRC_DIR} ${CMAKE_BINARY_DIR}/llvm )
-
-include_directories( ${LLVM_SRC_DIR}/include ${CMAKE_BINARY_DIR}/llvm/include )
-
-# llvm does not export definitions as target properties, so, retrieve compile definitions manually.
-get_directory_property( LLVM_COMPILE_DEFINITIONS DIRECTORY ${LLVM_SRC_DIR} COMPILE_DEFINITIONS )
-foreach( d ${LLVM_COMPILE_DEFINITIONS} )
-	add_definitions( "-D${d}" )
-endforeach()
 
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER_LIB Core )
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER
@@ -106,15 +118,26 @@ endif()
 
 if( NOT WIN32 )
 	add_compile_options( -fPIC )
-	set( SPRACHE_COMPILER_PIC_OPTIONS --relocation-model pic --enable-pie )
+	set( SPRACHE_COMPILER_PIC_OPTIONS --relocation-model pic )
 else()
 	set( SPRACHE_COMPILER_PIC_OPTIONS "" )
 endif()
 
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
+
 	add_compile_options( /utf-8 /W3 )
+
+	if( NOT LLVM_ENABLE_RTTI )
+		add_compile_options( /GR- )
+	endif()
+
 else()
 	add_compile_options( -Wall -Wextra -Wconversion )
+
+	if( NOT LLVM_ENABLE_RTTI )
+		add_compile_options( -fno-rtti )
+	endif()
+
 endif()
 
 #

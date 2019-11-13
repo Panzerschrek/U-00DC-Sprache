@@ -310,7 +310,13 @@ private:
 	ClassElements ParseClassBodyElements();
 	std::unique_ptr<Class> ParseClassBody();
 
-	TemplateBasePtr ParseTemplate();
+	using TemplateVar=
+		boost::variant<
+			EmptyVariant,
+			ClassTemplate,
+			TypedefTemplate,
+			FunctionTemplate >;
+	TemplateVar ParseTemplate();
 
 	const Macro* FetchMacro( const ProgramString& macro_name, const Macro::Context context );
 
@@ -800,19 +806,19 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
 		{
-			if( TemplateBasePtr template_= ParseTemplate() )
+			TemplateVar template_= ParseTemplate();
+			if( auto* const class_template= boost::get<ClassTemplate>(&template_) )
+				program_elements.emplace_back( std::move( *class_template ) );
+			else if( auto* const typedef_template= boost::get<TypedefTemplate>(&template_) )
+				program_elements.emplace_back( std::move( *typedef_template ) );
+			else if( auto* const function_template= boost::get<FunctionTemplate>(&template_) )
+				program_elements.emplace_back( std::move( *function_template ) );
+			else if( boost::get<EmptyVariant>(&template_) )
+			{}
+			else
 			{
-				if( ClassTemplate* const class_template= dynamic_cast<ClassTemplate*>(template_.get()) )
-					program_elements.emplace_back( ClassTemplate( std::move(*class_template) ) );
-				else if( TypedefTemplate* const typedef_template= dynamic_cast<TypedefTemplate*>(template_.get()) )
-					program_elements.emplace_back( TypedefTemplate( std::move(*typedef_template) ) );
-				else if( FunctionTemplate* const function_template= dynamic_cast<FunctionTemplate*>(template_.get()) )
-					program_elements.emplace_back( std::move( *function_template ) );
-				else
-				{
-					// TODO - push more relevant message.
-					PushErrorMessage();
-				}
+				// TODO - push more relevant message.
+				PushErrorMessage();
 			}
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
@@ -3564,19 +3570,20 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
 		{
-			if( TemplateBasePtr template_= ParseTemplate() )
+			TemplateVar template_= ParseTemplate();
+			
+			if( auto* const class_template= boost::get<ClassTemplate>(&template_) )
+				result.emplace_back( std::move( *class_template ) );
+			else if( auto* const typedef_template= boost::get<TypedefTemplate>(&template_) )
+				result.emplace_back( std::move( *typedef_template ) );
+			else if( auto* const function_template= boost::get<FunctionTemplate>(&template_) )
+				result.emplace_back( std::move( *function_template ) );
+			else if( boost::get<EmptyVariant>(&template_) )
+			{}
+			else
 			{
-				if( ClassTemplate* const class_template= dynamic_cast<ClassTemplate*>(template_.get()) )
-					result.emplace_back( std::move( *class_template ) );
-				else if( TypedefTemplate* const typedef_template= dynamic_cast<TypedefTemplate*>(template_.get()) )
-					result.emplace_back( std::move( *typedef_template ) );
-				else if( FunctionTemplate* const function_template= dynamic_cast<FunctionTemplate*>(template_.get()) )
-					result.emplace_back( std::move( *function_template ) );
-				else
-				{
-					// TODO - push more relevant message.
-					PushErrorMessage();
-				}
+				// TODO - push more relevant message.
+				PushErrorMessage();
 			}
 		}
 		else if( it_->type == Lexem::Type::Identifier &&
@@ -3702,7 +3709,7 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClassBody()
 	return result;
 }
 
-TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
+SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ );
 	const FilePos& template_file_pos= it_->file_pos;
@@ -3714,7 +3721,7 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 	if( it_->type != Lexem::Type::TemplateBracketLeft )
 	{
 		PushErrorMessage();
-		return nullptr;
+		return EmptyVariant();
 	}
 	NextLexem();
 
@@ -3740,7 +3747,7 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 		if( it_->type != Lexem::Type::Identifier )
 		{
 			PushErrorMessage();
-			return nullptr;
+			return EmptyVariant();
 		}
 
 		ComplexName name;
@@ -3770,7 +3777,7 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 	if( it_->type != Lexem::Type::Identifier )
 	{
 		PushErrorMessage();
-		return nullptr;
+		return EmptyVariant();
 	}
 
 	enum class TemplateKind
@@ -3792,7 +3799,7 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 		if( it_->type != Lexem::Type::Identifier )
 		{
 			PushErrorMessage();
-			return nullptr;
+			return EmptyVariant();
 		}
 		name= it_->text;
 		NextLexem();
@@ -3804,7 +3811,7 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 		if( it_->type != Lexem::Type::Identifier )
 		{
 			PushErrorMessage();
-			return nullptr;
+			return EmptyVariant();
 		}
 		name= it_->text;
 		NextLexem();
@@ -3812,21 +3819,21 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 	}
 	else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::fn_ || it_->text == Keywords::op_ ) )
 	{
-		std::unique_ptr<FunctionTemplate> function_template( new FunctionTemplate( template_file_pos ) );
-		function_template->args_= std::move(args);
-		function_template->function_= ParseFunction();
-		if( function_template->function_ != nullptr )
+		FunctionTemplate function_template( template_file_pos );
+		function_template.args_= std::move(args);
+		function_template.function_= ParseFunction();
+		if( function_template.function_ != nullptr )
 		{
-			function_template->function_->is_template_= true;
+			function_template.function_->is_template_= true;
 			return std::move(function_template);
 		}
 		else
-			return nullptr;
+			return EmptyVariant();
 	}
 	else
 	{
 		PushErrorMessage();
-		return nullptr;
+		return EmptyVariant();
 	}
 
 	// TypeTemplateBase parameters
@@ -3877,11 +3884,11 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 	case TemplateKind::Class:
 	case TemplateKind::Struct:
 		{
-			std::unique_ptr<ClassTemplate> class_template( new ClassTemplate( template_file_pos ) );
-			class_template->args_= std::move(args);
-			class_template->signature_args_= std::move(signature_args);
-			class_template->name_= name;
-			class_template->is_short_form_= is_short_form;
+			ClassTemplate class_template( template_file_pos );
+			class_template.args_= std::move(args);
+			class_template.signature_args_= std::move(signature_args);
+			class_template.name_= name;
+			class_template.is_short_form_= is_short_form;
 
 			ClassKindAttribute class_kind_attribute= ClassKindAttribute::Struct;
 			std::vector<ComplexName> class_parents_list;
@@ -3892,29 +3899,29 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 			}
 			const bool have_shared_state= TryParseClassSharedState();
 			const bool keep_fields_order= TryParseClassFieldsOrdered();
-			class_template->class_= ParseClassBody();
-			if( class_template->class_ != nullptr )
+			class_template.class_= ParseClassBody();
+			if( class_template.class_ != nullptr )
 			{
-				class_template->class_->file_pos_= template_thing_file_pos;
-				class_template->class_->name_= std::move(name);
-				class_template->class_->kind_attribute_= class_kind_attribute;
-				class_template->class_->have_shared_state_= have_shared_state;
-				class_template->class_->keep_fields_order_= keep_fields_order;
-				class_template->class_->parents_= std::move(class_parents_list);
+				class_template.class_->file_pos_= template_thing_file_pos;
+				class_template.class_->name_= std::move(name);
+				class_template.class_->kind_attribute_= class_kind_attribute;
+				class_template.class_->have_shared_state_= have_shared_state;
+				class_template.class_->keep_fields_order_= keep_fields_order;
+				class_template.class_->parents_= std::move(class_parents_list);
 			}
 			return std::move(class_template);
 		}
 
 	case TemplateKind::Typedef:
 		{
-			std::unique_ptr<TypedefTemplate> typedef_template( new TypedefTemplate( template_file_pos ) );
-			typedef_template->args_= std::move(args);
-			typedef_template->signature_args_= std::move(signature_args);
-			typedef_template->name_= name;
-			typedef_template->is_short_form_= is_short_form;
+			TypedefTemplate typedef_template( template_file_pos );
+			typedef_template.args_= std::move(args);
+			typedef_template.signature_args_= std::move(signature_args);
+			typedef_template.name_= name;
+			typedef_template.is_short_form_= is_short_form;
 
-			typedef_template->typedef_.reset( new Typedef( ParseTypedefBody() ) );
-			typedef_template->typedef_->name= std::move(name);
+			typedef_template.typedef_.reset( new Typedef( ParseTypedefBody() ) );
+			typedef_template.typedef_->name= std::move(name);
 			return std::move(typedef_template);
 		}
 
@@ -3923,7 +3930,7 @@ TemplateBasePtr SyntaxAnalyzer::ParseTemplate()
 	};
 
 	U_ASSERT(false);
-	return nullptr;
+	return EmptyVariant();
 }
 
 const Macro* SyntaxAnalyzer::FetchMacro( const ProgramString& macro_name, const Macro::Context context )

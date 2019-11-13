@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Get llvm
-wget http://releases.llvm.org/3.7.1/llvm-3.7.1.src.tar.xz &&\
-xz -d llvm-3.7.1.src.tar.xz &&\
-tar -xf llvm-3.7.1.src.tar &&\
+wget http://releases.llvm.org/9.0.0/clang+llvm-9.0.0-x86_64-linux-gnu-ubuntu-16.04.tar.xz &&\
+xz -d clang+llvm-9.0.0-x86_64-linux-gnu-ubuntu-16.04.tar.xz &&\
+tar -xf clang+llvm-9.0.0-x86_64-linux-gnu-ubuntu-16.04.tar &&\
 \
 # Get Boost
 wget https://dl.bintray.com/boostorg/release/1.66.0/source/boost_1_66_0.tar.gz &&\
@@ -13,7 +13,7 @@ tar -xf boost_1_66_0.tar &&\
 # Configure build
 mkdir build-travis &&\
 cd build-travis &&\
-cmake ../source/ -DCMAKE_BUILD_TYPE=Release -DBOOST_ROOT=../boost_1_66_0 -DLLVM_SRC_DIR=../llvm-3.7.1.src -DLLVM_TARGETS_TO_BUILD=X86 &&\
+cmake ../source/ -DCMAKE_BUILD_TYPE=Release -DBOOST_ROOT=../boost_1_66_0 -DLLVM_LIB_DIR=../clang+llvm-9.0.0-x86_64-linux-gnu-ubuntu-16.04/lib/ &&\
 \
 # Build it
 # travis-ci has 2 cpu cores

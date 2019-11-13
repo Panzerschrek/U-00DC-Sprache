@@ -3,7 +3,8 @@
 #include "../code_builder_lib/push_disable_llvm_warnings.hpp"
 #include <llvm/Analysis/TargetTransformInfo.h>
 #include <llvm/AsmParser/Parser.h>
-#include <llvm/Bitcode/ReaderWriter.h>
+#include <llvm/Bitcode/BitcodeReader.h>
+#include <llvm/Bitcode/BitcodeWriter.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/Linker/Linker.h>
@@ -249,8 +250,7 @@ cl::opt< FileType > file_type(
 		clEnumValN( FileType::BC, "bc", "Emit an llvm bitcode ('.bc') file" ),
 		clEnumValN( FileType::LL, "ll", "Emit an llvm asm ('.ll') file" ),
 		clEnumValN( FileType::Obj, "obj", "Emit a native object ('.o') file" ),
-		clEnumValN( FileType::Asm, "asm", "Emit an assembly ('.s') file" ),
-		clEnumValEnd),
+		clEnumValN( FileType::Asm, "asm", "Emit an assembly ('.s') file" )),
 	cl::cat(options_category) );
 
 cl::opt<char> optimization_level(
@@ -284,20 +284,26 @@ cl::list<std::string> target_attributes(
 cl::opt<llvm::Reloc::Model> relocation_model(
 	"relocation-model",
 	cl::desc("Choose relocation model"),
-	cl::init(llvm::Reloc::Default),
+	cl::init(llvm::Reloc::PIC_),
 	cl::values(
-		clEnumValN( llvm::Reloc::Default, "default", "Target default relocation model" ),
 		clEnumValN( llvm::Reloc::Static, "static", "Non-relocatable code" ),
 		clEnumValN( llvm::Reloc::PIC_, "pic", "Fully relocatable, position independent code" ),
 		clEnumValN( llvm::Reloc::DynamicNoPIC, "dynamic-no-pic", "Relocatable external references, non-relocatable code" ),
-		clEnumValEnd),
+		clEnumValN( llvm::Reloc::ROPI, "ropi", "Code and read-only data relocatable, accessed PC-relative" ),
+		clEnumValN( llvm::Reloc::RWPI, "rwpi", "Read-write data relocatable, accessed relative to static base" ),
+		clEnumValN( llvm::Reloc::ROPI_RWPI, "ropi-rwpi", "Combination of ropi and rwpi") ),
 	cl::cat(options_category) );
 
-cl::opt<bool> enable_pie(
-	"enable-pie",
-	cl::desc("Assume the creation of a position independent executable."),
-	cl::init(false),
-	cl::cat(options_category) );
+cl::opt<llvm::CodeModel::Model> code_model(
+	"code-model",
+	cl::desc("Choose code model"),
+	cl::values(
+		clEnumValN( llvm::CodeModel::Tiny, "tiny", "Tiny code model" ),
+		clEnumValN( llvm::CodeModel::Small, "small", "Small code model" ),
+		clEnumValN( llvm::CodeModel::Kernel, "kernel", "Kernel code model" ),
+		clEnumValN( llvm::CodeModel::Medium, "medium", "Medium code model" ),
+		clEnumValN( llvm::CodeModel::Large, "large", "Large code model") ),
+	cl::cat(options_category));
 
 cl::opt<bool> tests_output(
 	"tests-output",
@@ -318,7 +324,7 @@ int Main( const int argc, const char* const argv[] )
 	// Options
 
 	llvm::cl::SetVersionPrinter(
-		[] {
+		[]( llvm::raw_ostream& ) {
 			std::cout << "Ü-Sprache version " << SPRACHE_VERSION << ", llvm version " << LLVM_VERSION_STRING << std::endl;
 			llvm::InitializeAllTargets();
 			PrintAvailableTargets();
@@ -389,7 +395,6 @@ int Main( const int argc, const char* const argv[] )
 		}
 
 		llvm::TargetOptions target_options;
-		target_options.PositionIndependentExecutable= Options::enable_pie;
 
 		llvm::CodeGenOpt::Level code_gen_optimization_level;
 		if( optimization_level >= 2u || size_optimization_level > 0u )
@@ -407,8 +412,8 @@ int Main( const int argc, const char* const argv[] )
 				cpu_name,
 				features_str,
 				target_options,
-				Options::relocation_model,
-				llvm::CodeModel::Default,
+				Options::relocation_model.getValue(),
+				Options::code_model.getNumOccurrences() > 0 ? Options::code_model.getValue() : llvm::Optional<llvm::CodeModel::Model>(),
 				code_gen_optimization_level ) );
 
 		if( target_machine == nullptr )
@@ -464,7 +469,7 @@ int Main( const int argc, const char* const argv[] )
 		else
 		{
 			const bool not_ok=
-				llvm::Linker::LinkModules( result_module.get() , build_result.module.get() );
+				llvm::Linker::linkModules( *result_module, std::move(build_result.module) );
 			if( not_ok )
 			{
 				std::cout << "Error, linking file \"" << input_file << "\"" << std::endl;
@@ -493,7 +498,7 @@ int Main( const int argc, const char* const argv[] )
 	// Link stdlib with result module.
 	for( const llvm::StringRef& asm_funcs_module : asm_funcs_modules )
 	{
-		const llvm::ErrorOr<std::unique_ptr<llvm::Module>> std_lib_module=
+		llvm::Expected<std::unique_ptr<llvm::Module>> std_lib_module=
 			llvm::parseBitcodeFile(
 				llvm::MemoryBufferRef( asm_funcs_module, "ustlib asm file" ),
 				result_module->getContext() );
@@ -515,7 +520,7 @@ int Main( const int argc, const char* const argv[] )
 			return 1;
 		}
 
-		llvm::Linker::LinkModules( result_module.get(), std_lib_module.get().get() );
+		llvm::Linker::linkModules( *result_module, std::move(std_lib_module.get()) );
 	}
 
 	if( optimization_level > 0u || size_optimization_level > 0u )
@@ -534,7 +539,7 @@ int Main( const int argc, const char* const argv[] )
 			if( optimization_level == 0u )
 				pass_manager_builder.Inliner= nullptr;
 			else
-				pass_manager_builder.Inliner= llvm::createFunctionInliningPass( optimization_level, size_optimization_level );
+				pass_manager_builder.Inliner= llvm::createFunctionInliningPass( optimization_level, size_optimization_level, false );
 
 			pass_manager_builder.populateFunctionPassManager(function_pass_manager);
 			pass_manager_builder.populateModulePassManager(pass_manager);
@@ -560,7 +565,7 @@ int Main( const int argc, const char* const argv[] )
 	llvm::raw_fd_ostream out_file_stream( Options::output_file_name, file_error_code, llvm::sys::fs::F_None );
 
 	if( Options::file_type == Options::FileType::BC )
-		llvm::WriteBitcodeToFile( result_module.get(), out_file_stream );
+		llvm::WriteBitcodeToFile( *result_module, out_file_stream );
 	else if( Options::file_type == Options::FileType::LL )
 		result_module->print( out_file_stream, nullptr );
 	else
@@ -570,7 +575,7 @@ int Main( const int argc, const char* const argv[] )
 		llvm::initializeCodeGen(registry);
 		llvm::initializeLoopStrengthReducePass(registry);
 		llvm::initializeLowerIntrinsicsPass(registry);
-		llvm::initializeUnreachableBlockElimPass(registry);
+		// TODO - add more passes?
 
 		llvm::TargetMachine::CodeGenFileType file_type= llvm::TargetMachine::CGFT_Null;
 		switch( Options::file_type )
@@ -585,10 +590,12 @@ int Main( const int argc, const char* const argv[] )
 		const bool no_verify= true;
 
 		llvm::legacy::PassManager pass_manager;
+		
 
 		if( target_machine->addPassesToEmitFile(
 				pass_manager,
 				out_file_stream,
+				nullptr,
 				file_type,
 				no_verify ) )
 		{

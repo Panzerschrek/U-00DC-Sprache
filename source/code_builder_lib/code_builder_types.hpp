@@ -715,6 +715,13 @@ struct TypeTemplate final : TemplateBase
 	std::vector< const Synt::Expression* > default_signature_arguments;
 	size_t first_optional_signature_argument= ~0u;
 
+	enum class Kind
+	{
+		Class,
+		Typedef,
+	};
+
+	Kind kind= Kind::Class;
 	// Store syntax tree element for instantiation.
 	// Syntax tree must live longer, than this struct.
 	const Synt::TypeTemplateBase* syntax_element= nullptr;
