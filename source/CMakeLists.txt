@@ -88,8 +88,6 @@ llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER
 	)
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_TESTS ExecutionEngine Interpreter )
 
-set( LLVM_UTILS_DIR ${CMAKE_BINARY_DIR}/llvm/bin )
-
 set( REALLY_BUILD_CPP_HEADER_CONVERTER NO )
 if( U_BUILD_CPP_HEADER_CONVERTER )
 	if( TARGET clangTooling )
