@@ -48,7 +48,6 @@ if( NOT DEFINED BOOST_ROOT )
 	message( FATAL_ERROR "BOOST_ROOT not defined. You can define path to boost library, using variable BOOST_ROOT" )
 endif()
 find_package( Boost )
-include_directories( ${Boost_INCLUDE_DIRS} )
 
 # LLVM
 
@@ -146,6 +145,7 @@ endif()
 
 file( GLOB LEX_SYNT_LIB_SOURCES "lex_synt_lib/*" )
 add_library( LexSyntLib ${LEX_SYNT_LIB_SOURCES} )
+target_include_directories( LexSyntLib PUBLIC ${Boost_INCLUDE_DIRS} )
 
 #
 # CompilerLib
