@@ -1,6 +1,8 @@
 ﻿#include <algorithm>
 
+#include "../lex_synt_lib/push_disable_boost_warnings.hpp"
 #include <boost/range/adaptor/reversed.hpp>
+#include "../lex_synt_lib/pop_boost_warnings.hpp"
 
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Constant.h>

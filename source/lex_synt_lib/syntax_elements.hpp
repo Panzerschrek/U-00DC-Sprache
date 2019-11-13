@@ -3,8 +3,10 @@
 #include <memory>
 #include <vector>
 
+#include "push_disable_boost_warnings.hpp"
 #include <boost/optional.hpp>
 #include <boost/variant.hpp>
+#include "pop_boost_warnings.hpp"
 
 #include "lexical_analyzer.hpp"
 #include "operators.hpp"

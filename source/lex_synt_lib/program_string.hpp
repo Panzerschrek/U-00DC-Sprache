@@ -4,7 +4,10 @@
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
+
+#include "push_disable_boost_warnings.hpp"
 #include <boost/functional/hash.hpp>
+#include "pop_boost_warnings.hpp"
 
 namespace U
 {

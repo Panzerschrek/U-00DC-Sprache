@@ -1,6 +1,9 @@
 #pragma once
 #include <memory>
+
+#include "push_disable_boost_warnings.hpp"
 #include <boost/optional/optional.hpp>
+#include "pop_boost_warnings.hpp"
 
 #include "program_string.hpp"
 #include "syntax_analyzer.hpp"

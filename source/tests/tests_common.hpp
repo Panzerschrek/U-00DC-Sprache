@@ -1,6 +1,9 @@
 #pragma once
 #include <string>
+
+#include "../lex_synt_lib/push_disable_boost_warnings.hpp"
 #include <boost/predef/detail/endian_compat.h>
+#include "../lex_synt_lib/pop_boost_warnings.hpp"
 
 namespace U
 {
