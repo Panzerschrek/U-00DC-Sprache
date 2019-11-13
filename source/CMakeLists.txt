@@ -53,10 +53,6 @@ find_package( Boost )
 
 if( DEFINED LLVM_SRC_DIR )
 
-	if( REALLY_BUILD_LINKAGE_TESTS )
-		set( LLVM_BUILD_TOOLS OFF CACHE BOOL "build llvm tools" )
-	endif()
-
 	add_subdirectory( ${LLVM_SRC_DIR} ${CMAKE_BINARY_DIR}/llvm )
 
 	include_directories( ${LLVM_SRC_DIR}/include ${CMAKE_BINARY_DIR}/llvm/include )
