@@ -150,9 +150,6 @@ file( GLOB COMPILER_LIB_SOURCES "code_builder_lib/*" )
 add_library( CompilerLib ${COMPILER_LIB_SOURCES} )
 target_link_libraries( CompilerLib ${LLVM_LIBS_FOR_COMPILER_LIB} )
 target_link_libraries( CompilerLib LexSyntLib )
-if( NOT WIN32 )
-	target_link_libraries( CompilerLib pthread dl )
-endif()
 
 #
 # Compiler
