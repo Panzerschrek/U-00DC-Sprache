@@ -80,13 +80,11 @@ endif()
 
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER_LIB Core )
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER
-	BitWriter # for writing of result bitcode
-	BitReader # for reading of stdlib bitcode
 	Linker # for linking of multiple llvm modules
 	IPO # for pass manager builder, etc.
 	${LLVM_TARGETS_TO_BUILD}
 	)
-llvm_map_components_to_libnames( LLVM_LIBS_FOR_TESTS ExecutionEngine Interpreter )
+llvm_map_components_to_libnames( LLVM_LIBS_FOR_TESTS Interpreter )
 
 set( REALLY_BUILD_CPP_HEADER_CONVERTER NO )
 if( U_BUILD_CPP_HEADER_CONVERTER )
