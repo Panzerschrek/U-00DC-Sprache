@@ -29,3 +29,4 @@
    halt
    constexpr
    operators_overloading
+   inheritance
