@@ -224,8 +224,8 @@ NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 		case U_FundamentalType::f32: result.full= "f"_SpC; break;
 		case U_FundamentalType::f64: result.full= "d"_SpC; break;
 		case U_FundamentalType::char8 : result.full= "c"_SpC; break; // C++ char
-		case U_FundamentalType::char16: result.full= "w"_SpC; break; // C++ wchar_t
-		case U_FundamentalType::char32: result.full= "u6char64"_SpC; break;  // Own type name for 32-bit char
+		case U_FundamentalType::char16: result.full= "Ds"_SpC; break; // C++ char16_t
+		case U_FundamentalType::char32: result.full= "Di"_SpC; break;  // C++ char32_t
 		};
 		result.compressed_and_escaped= result.full;
 	}
