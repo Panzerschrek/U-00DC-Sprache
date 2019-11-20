@@ -13,3 +13,7 @@ build*/
 
 # QtCreator settings
 *.pro.user
+CMakeLists.txt.user
+
+# Python cache
+__pycache__
