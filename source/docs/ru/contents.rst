@@ -31,3 +31,4 @@
    operators_overloading
    inheritance
    typedefs
+   type_templates
