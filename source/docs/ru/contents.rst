@@ -30,3 +30,4 @@
    constexpr
    operators_overloading
    inheritance
+   typedefs
