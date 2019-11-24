@@ -9,6 +9,7 @@ foreach( LANG_DIR ${LANG_DIRS} )
 		file( GLOB_RECURSE DOC_FILES "${LANG_DIR}/*" )
 		add_custom_target(
 			${DOC_TARGET_NAME}
+			ALL
 			DEPENDS ${DOC_FILES}
 			SOURCES ${DOC_FILES}
 			COMMENT "Generating ${DOC_TARGET_NAME}"
@@ -18,6 +19,5 @@ foreach( LANG_DIR ${LANG_DIRS} )
 			${LANG_DIR} #src
 			${CMAKE_BINARY_DIR}/docs/${LANG_NAME} #dst
 			)
-	add_dependencies( sphinx ${DOC_TARGET_NAME} )
 	endif()
 endforeach()
