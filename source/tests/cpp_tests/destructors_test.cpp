@@ -5,9 +5,12 @@
 namespace U
 {
 
-static std::vector<int> g_destructors_call_sequence;
+namespace
+{
 
-static llvm::GenericValue DestructorCalled(
+std::vector<int> g_destructors_call_sequence;
+
+llvm::GenericValue DestructorCalled(
 	llvm::FunctionType*,
 	llvm::ArrayRef<llvm::GenericValue> args )
 {
@@ -15,13 +18,15 @@ static llvm::GenericValue DestructorCalled(
 	return llvm::GenericValue();
 }
 
-static void DestructorTestPrepare()
+void DestructorTestPrepare()
 {
 	g_destructors_call_sequence.clear();
 
 	// "lle_X_" - common prefix for all external functions, called from LLVM Interpreter
 	llvm::sys::DynamicLibrary::AddSymbol( "lle_X__Z16DestructorCalledi", reinterpret_cast<void*>( &DestructorCalled ) );
 }
+
+} // namespace
 
 U_TEST(DestructorsTest0)
 {

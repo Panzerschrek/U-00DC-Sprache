@@ -1,6 +1,8 @@
 ﻿#include <algorithm>
 
+#include "../lex_synt_lib/push_disable_boost_warnings.hpp"
 #include <boost/range/adaptor/reversed.hpp>
+#include "../lex_synt_lib/pop_boost_warnings.hpp"
 
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Constant.h>
@@ -20,11 +22,14 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-static const ProgramString g_name_for_generated_class= "_"_SpC;
-static const ProgramString g_template_parameters_namespace_prefix= "_tp_ns-"_SpC;
+namespace
+{
+
+const ProgramString g_name_for_generated_class= "_"_SpC;
+const ProgramString g_template_parameters_namespace_prefix= "_tp_ns-"_SpC;
 
 template< class TemplateParam >
-static ProgramString EncodeTemplateParameters( std::vector<TemplateParam>& deduced_template_args )
+ProgramString EncodeTemplateParameters( std::vector<TemplateParam>& deduced_template_args )
 {
 	ProgramString r;
 	for(const auto& arg : deduced_template_args )
@@ -58,11 +63,12 @@ static ProgramString EncodeTemplateParameters( std::vector<TemplateParam>& deduc
 	return r;
 }
 
-static void CreateTemplateErrorsContext(
+void CreateTemplateErrorsContext(
 	CodeBuilderErrorsContainer& errors_container,
 	const FilePos& file_pos,
 	const NamesScopePtr& template_parameters_namespace,
 	const TemplateBase& template_,
+	const ProgramString& template_name,
 	const DeducibleTemplateParameters& template_args,
 	const std::vector< std::pair< ProgramString, Value > >& known_template_args= {} )
 {
@@ -116,16 +122,13 @@ static void CreateTemplateErrorsContext(
 		ProgramString name= template_.parent_namespace->ToString();
 		if( !name.empty() )
 			name+= "::"_SpC;
-
-		if( const auto type_template= dynamic_cast<const TypeTemplate*>(&template_) )
-			name+= type_template->syntax_element->name_;
-		else if( const auto function_template= dynamic_cast<const FunctionTemplate*>(&template_) )
-			name+= function_template->syntax_element->function_->name_.components.back().name;
-		else U_ASSERT(false);
+		name+= template_name;
 
 		template_error_context->template_name= std::move(name);
 	}
 }
+
+} // namesapce
 
 void CodeBuilder::PrepareTypeTemplate(
 	const Synt::TypeTemplateBase& type_template_declaration,
@@ -919,11 +922,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	const TypeTemplate& type_template= *type_template_ptr;
 	NamesScope& template_names_scope= *type_template.parent_namespace;
 
-	ProgramString type_template_name;
-	if( const auto template_class= dynamic_cast<const Synt::ClassTemplate*>( type_template.syntax_element ) )
-		type_template_name= template_class->class_->name_;
-	else if( const auto  typedef_template= dynamic_cast<const Synt::TypedefTemplate*>( type_template.syntax_element ) )
-		type_template_name= typedef_template->name_;
+	const ProgramString& type_template_name= type_template.syntax_element->name_;
 
 	if( template_arguments.size() < type_template.first_optional_signature_argument )
 		return result;
@@ -988,12 +987,12 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 			else if( const Type* const type= boost::get<Type>( &arg ) )
 			{
 				if( value->GetYetNotDeducedTemplateArg() != nullptr )
-					*value= Value( *type, type_template_ptr->syntax_element->file_pos_ /*TODO - set correctfile_pos */ );
+					*value= Value( *type, type_template.syntax_element->file_pos_ /*TODO - set correctfile_pos */ );
 			}
 			else if( const Variable* const variable= boost::get<Variable>( &arg ) )
 			{
 				if( value->GetYetNotDeducedTemplateArg() != nullptr )
-					*value= Value( *variable, type_template_ptr->syntax_element->file_pos_ /*TODO - set correctfile_pos */ );
+					*value= Value( *variable, type_template.syntax_element->file_pos_ /*TODO - set correctfile_pos */ );
 			}
 			else U_ASSERT( false );
 		}
@@ -1052,11 +1051,11 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	// Encode signature parameters for namespace. Each class template have different signature (parameters itslef may be same).
 	template_parameters_namespace->SetThisNamespaceName( g_template_parameters_namespace_prefix + type_template_name + EncodeTemplateParameters( result_signature_parameters ) );
 
-	generated_template_things_storage_.insert( std::make_pair( name_encoded, Value( template_parameters_namespace, type_template_ptr->syntax_element->file_pos_ ) ) );
+	generated_template_things_storage_.insert( std::make_pair( name_encoded, Value( template_parameters_namespace, type_template.syntax_element->file_pos_ ) ) );
 
-	CreateTemplateErrorsContext( arguments_names_scope.GetErrors(), file_pos, template_parameters_namespace, type_template, deduced_template_args );
+	CreateTemplateErrorsContext( arguments_names_scope.GetErrors(), file_pos, template_parameters_namespace, type_template, type_template.syntax_element->name_, deduced_template_args );
 
-	if( const Synt::ClassTemplate* const template_class= dynamic_cast<const Synt::ClassTemplate*>( type_template.syntax_element ) )
+	if( type_template.syntax_element->kind_ == Synt::TypeTemplateBase::Kind::Class )
 	{
 		const auto cache_class_it= template_classes_cache_.find( name_encoded );
 		if( cache_class_it != template_classes_cache_.end() )
@@ -1066,11 +1065,11 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 					g_name_for_generated_class,
 					Value(
 						cache_class_it->second,
-						type_template_ptr->syntax_element->file_pos_ /* TODO - check file_pos */ ) );
+						type_template.syntax_element->file_pos_ /* TODO - check file_pos */ ) );
 			return result;
 		}
 
-		const ClassProxyPtr class_proxy= NamesScopeFill( *template_parameters_namespace, *template_class->class_, g_name_for_generated_class );
+		const ClassProxyPtr class_proxy= NamesScopeFill( *template_parameters_namespace, *static_cast<const Synt::ClassTemplate*>( type_template.syntax_element )->class_, g_name_for_generated_class );
 		if( class_proxy == nullptr )
 			return result;
 
@@ -1098,9 +1097,9 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		result.type= template_parameters_namespace->GetThisScopeValue( g_name_for_generated_class );
 		return result;
 	}
-	else if( const Synt::TypedefTemplate* const typedef_template= dynamic_cast<const Synt::TypedefTemplate*>( type_template.syntax_element ) )
+	else if( type_template.syntax_element->kind_ == Synt::TypeTemplateBase::Kind::Typedef )
 	{
-		const Type type= PrepareType( typedef_template->typedef_->value, *template_parameters_namespace, *global_function_context_ );
+		const Type type= PrepareType( static_cast<const Synt::TypedefTemplate*>( type_template.syntax_element )->typedef_->value, *template_parameters_namespace, *global_function_context_ );
 
 		if( type == invalid_type_ )
 			return result;
@@ -1283,7 +1282,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	// Use encoded name only for cache search.
 	// For function template namespace use only default namespace name.
 	// Template namespace encoding does not needed, because in normal program each function (and template function) have different parameters and mangled name.
-	ProgramString name_encoded= g_template_parameters_namespace_prefix + function_template.syntax_element->function_->name_.components.front().name;
+	ProgramString name_encoded= g_template_parameters_namespace_prefix + func_name;
 	name_encoded+= EncodeTemplateParameters( deduced_template_args );
 	name_encoded+= ToProgramString( std::to_string( reinterpret_cast<uintptr_t>(&function_template) ) ); // HACK! use address of template object, because we can have multiple templates with same name.
 
@@ -1300,7 +1299,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		}
 	}
 
-	CreateTemplateErrorsContext( errors_container, file_pos, template_parameters_namespace, function_template, deduced_template_args, function_template.known_template_parameters );
+	CreateTemplateErrorsContext( errors_container, file_pos, template_parameters_namespace, function_template, func_name, deduced_template_args, function_template.known_template_parameters );
 
 	// First, prepare only as prototype.
 	NamesScopeFill( *template_parameters_namespace, *function_template.syntax_element->function_, function_template.base_class );

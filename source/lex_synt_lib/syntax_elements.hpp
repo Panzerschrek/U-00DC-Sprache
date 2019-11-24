@@ -3,8 +3,10 @@
 #include <memory>
 #include <vector>
 
+#include "push_disable_boost_warnings.hpp"
 #include <boost/optional.hpp>
 #include <boost/variant.hpp>
+#include "pop_boost_warnings.hpp"
 
 #include "lexical_analyzer.hpp"
 #include "operators.hpp"
@@ -841,13 +843,6 @@ struct TemplateBase : public SyntaxElementBase
 {
 public:
 	explicit TemplateBase( const FilePos& file_pos );
-	virtual ~TemplateBase()= default;
-
-	TemplateBase( const TemplateBase& )= delete;
-	TemplateBase( TemplateBase&& )= default;
-
-	TemplateBase& operator=( const TemplateBase& )= delete;
-	TemplateBase& operator=( TemplateBase&& )= default;
 
 	// For type arguments, like template</ type A, type B />, arg_type is empty.
 	// For value arguments, like template</ type A, A x, i32 y />, arg_type is comples name of argument.
@@ -863,12 +858,12 @@ public:
 	std::vector<Arg> args_;
 };
 
-using TemplateBasePtr= std::unique_ptr<TemplateBase>;
-
 struct TypeTemplateBase : public TemplateBase
 {
 public:
-	explicit TypeTemplateBase( const FilePos& file_pos );
+	enum class Kind{ Class, Typedef, }; // HACK! Replacement for RTTI.
+
+	explicit TypeTemplateBase( const FilePos& file_pos, Kind kind );
 
 	// Argument in template signature.
 	struct SignatureArg
@@ -877,6 +872,7 @@ public:
 		Expression default_value;
 	};
 
+	const Kind kind_;
 	std::vector<SignatureArg> signature_args_;
 	ProgramString name_;
 

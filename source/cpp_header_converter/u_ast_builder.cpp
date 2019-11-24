@@ -59,7 +59,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 		if( macro_info->isBuiltinMacro() )
 			continue;
 
-		if( macro_info->getNumArgs() != 0u || macro_info->isFunctionLike() )
+		if( macro_info->getNumParams() != 0u || macro_info->isFunctionLike() )
 			continue;
 		if( macro_info->getNumTokens() != 1u )
 			continue;

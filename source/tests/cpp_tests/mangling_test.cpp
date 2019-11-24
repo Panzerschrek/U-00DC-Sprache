@@ -408,6 +408,50 @@ U_TEST( OperatorsManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxixERKS_j" ) != nullptr ); // []
 }
 
+U_TEST( FundamentalTypesManglingTest )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo00(   i8 x ){}
+		fn Foo01(   u8 x ){}
+		fn Foo02(  i16 x ){}
+		fn Foo03(  u16 x ){}
+		fn Foo04(  i32 x ){}
+		fn Foo05(  u32 x ){}
+		fn Foo06(  i64 x ){}
+		fn Foo07(  u64 x ){}
+		fn Foo08( i128 x ){}
+		fn Foo09( u128 x ){}
+		fn Foo0A( f32 x ){}
+		fn Foo0B( f64 x ){}
+		fn Foo0C(  char8 x ){}
+		fn Foo0D( char16 x ){}
+		fn Foo0E( char32 x ){}
+		fn Foo0F( bool x ){}
+		fn Foo10(){}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z5Foo00a" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z5Foo01h" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z5Foo02s" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z5Foo03t" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z5Foo04i" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z5Foo05j" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z5Foo06x" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z5Foo07y" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z5Foo08n" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z5Foo09o" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z5Foo0Af" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z5Foo0Bd" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z5Foo0Cc" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z5Foo0DDs" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z5Foo0EDi" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z5Foo0Fb" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z5Foo10v" ) != nullptr );
+}
+
 U_TEST( FunctionTypesMangling_Test0 )
 {
 	static const char c_program_text[]=

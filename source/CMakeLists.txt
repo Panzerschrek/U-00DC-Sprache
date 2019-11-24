@@ -3,25 +3,26 @@
 project(Sprache)
 set( PROJECT_VERSION 0.5 )
 
-option( BUILD_COMPILER "Enable compilation of compiler" YES )
-option( BUILD_TESTS "Enable compilation of base tests" YES )
-option( BUILD_LINKAGE_TESTS "Enable compilation of linkage tests" YES )
-option( BUILD_PY_TESTS "Enable compilation of py_tests" YES )
-option( BUILD_UNICODE_FILE_NAMES_TEST "Enable compilation of unicode filenames test (such test may not work correctly is some environmens)" YES )
+option( U_BUILD_COMPILER "Enable compilation of compiler" YES )
+option( U_BUILD_TESTS "Enable compilation of base tests" YES )
+option( U_BUILD_LINKAGE_TESTS "Enable compilation of linkage tests" YES )
+option( U_BUILD_PY_TESTS "Enable compilation of py_tests" YES )
+option( U_BUILD_CPP_HEADER_CONVERTER "Enable compilation of c++ header converter (clang required)" YES )
+option( U_BUILD_UNICODE_FILE_NAMES_TEST "Enable compilation of unicode filenames test (such test may not work correctly is some environmens)" YES )
 
-if( BUILD_COMPILER )
+if( U_BUILD_COMPILER )
 	message( STATUS "Build compiler" )
 else()
 	message( STATUS "Skip compiler" )
-endif( BUILD_COMPILER )
+endif()
 
-if( BUILD_TESTS )
+if( U_BUILD_TESTS )
 	message( STATUS "Build tests" )
 else()
 	message( STATUS "Skip tests" )
-endif( BUILD_TESTS )
+endif()
 
-if( BUILD_LINKAGE_TESTS AND BUILD_COMPILER )
+if( U_BUILD_LINKAGE_TESTS AND U_BUILD_COMPILER )
 	set( REALLY_BUILD_LINKAGE_TESTS YES )
 	message( STATUS "Build linkage tests" )
 else()
@@ -29,11 +30,11 @@ else()
 	message( STATUS "Skip linkage tests" )
 endif()
 
-if( BUILD_PY_TESTS )
+if( U_BUILD_PY_TESTS )
 	message( STATUS "Build py_tests" )
 else()
 	message( STATUS "Skip py_tests" )
-endif( BUILD_PY_TESTS )
+endif()
 
 
 set( CMAKE_CXX_STANDARD 14 )
@@ -47,40 +48,55 @@ if( NOT DEFINED BOOST_ROOT )
 	message( FATAL_ERROR "BOOST_ROOT not defined. You can define path to boost library, using variable BOOST_ROOT" )
 endif()
 find_package( Boost )
-include_directories( ${Boost_INCLUDE_DIRS} )
 
 # LLVM
-if( NOT DEFINED LLVM_SRC_DIR )
-	message( FATAL_ERROR "LLVM_SRC_DIR not defined. You can define path to llvm library, using variable LLVM_SRC_DIR" )
+
+if( DEFINED LLVM_SRC_DIR )
+
+	add_subdirectory( ${LLVM_SRC_DIR} ${CMAKE_BINARY_DIR}/llvm )
+
+	include_directories( ${LLVM_SRC_DIR}/include ${CMAKE_BINARY_DIR}/llvm/include )
+
+	# llvm does not export definitions as target properties, so, retrieve compile definitions manually.
+	get_directory_property( LLVM_COMPILE_DEFINITIONS DIRECTORY ${LLVM_SRC_DIR} COMPILE_DEFINITIONS )
+	foreach( d ${LLVM_COMPILE_DEFINITIONS} )
+		add_definitions( "-D${d}" )
+	endforeach()
+
+elseif( DEFINED LLVM_LIB_DIR )
+
+	set( LLVM_FOUND On )
+	set( LLVM_DIR ${LLVM_LIB_DIR}/cmake/llvm )
+	find_package( LLVM REQUIRED )
+
+	set( Clang_DIR ${LLVM_LIB_DIR}/cmake/clang )
+	find_package( Clang ) # Optional
+
+	include_directories( ${LLVM_INCLUDE_DIRS} )
+
+else()
+	message( FATAL_ERROR "llvm not found. Define LLVM_SRC_DIR for building llvm from sources, or define LLVM_LIB_DIR for installed llvm." )
 endif()
-
-if( REALLY_BUILD_LINKAGE_TESTS )
-	set( LLVM_BUILD_TOOLS OFF CACHE BOOL "build llvm tools" )
-endif()
-
-set( LLVM_ENABLE_RTTI ON CACHE BOOL "rtti for llvm" )
-
-add_subdirectory( ${LLVM_SRC_DIR} ${CMAKE_BINARY_DIR}/llvm )
-
-include_directories( ${LLVM_SRC_DIR}/include ${CMAKE_BINARY_DIR}/llvm/include )
-
-# llvm does not export definitions as target properties, so, retrieve compile definitions manually.
-get_directory_property( LLVM_COMPILE_DEFINITIONS DIRECTORY ${LLVM_SRC_DIR} COMPILE_DEFINITIONS )
-foreach( d ${LLVM_COMPILE_DEFINITIONS} )
-	add_definitions( "-D${d}" )
-endforeach()
 
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER_LIB Core )
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER
-	BitWriter # for writing of result bitcode
-	BitReader # for reading of stdlib bitcode
 	Linker # for linking of multiple llvm modules
 	IPO # for pass manager builder, etc.
 	${LLVM_TARGETS_TO_BUILD}
 	)
-llvm_map_components_to_libnames( LLVM_LIBS_FOR_TESTS ExecutionEngine Interpreter )
+llvm_map_components_to_libnames( LLVM_LIBS_FOR_TESTS Interpreter )
 
-set( LLVM_UTILS_DIR ${CMAKE_BINARY_DIR}/llvm/bin )
+set( REALLY_BUILD_CPP_HEADER_CONVERTER NO )
+if( U_BUILD_CPP_HEADER_CONVERTER )
+	if( TARGET clangTooling )
+		set( REALLY_BUILD_CPP_HEADER_CONVERTER YES )
+		message( STATUS "Build c++ header converter" )
+	else()
+		message( STATUS "Clang not found, c++ header converter build disabled" )
+	endif()
+else()
+	message( STATUS "Skip c++ header converter" )
+endif()
 
 #
 # options for Ü-Sprache projects
@@ -93,15 +109,26 @@ endif()
 
 if( NOT WIN32 )
 	add_compile_options( -fPIC )
-	set( SPRACHE_COMPILER_PIC_OPTIONS --relocation-model pic --enable-pie )
+	set( SPRACHE_COMPILER_PIC_OPTIONS --relocation-model pic )
 else()
 	set( SPRACHE_COMPILER_PIC_OPTIONS "" )
 endif()
 
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
+
 	add_compile_options( /utf-8 /W3 )
+
+	if( NOT LLVM_ENABLE_RTTI )
+		add_compile_options( /GR- )
+	endif()
+
 else()
 	add_compile_options( -Wall -Wextra -Wconversion )
+
+	if( NOT LLVM_ENABLE_RTTI )
+		add_compile_options( -fno-rtti )
+	endif()
+
 endif()
 
 #
@@ -110,6 +137,7 @@ endif()
 
 file( GLOB LEX_SYNT_LIB_SOURCES "lex_synt_lib/*" )
 add_library( LexSyntLib ${LEX_SYNT_LIB_SOURCES} )
+target_include_directories( LexSyntLib PUBLIC ${Boost_INCLUDE_DIRS} )
 
 #
 # CompilerLib
@@ -120,14 +148,11 @@ file( GLOB COMPILER_LIB_SOURCES "code_builder_lib/*" )
 add_library( CompilerLib ${COMPILER_LIB_SOURCES} )
 target_link_libraries( CompilerLib ${LLVM_LIBS_FOR_COMPILER_LIB} )
 target_link_libraries( CompilerLib LexSyntLib )
-if( NOT WIN32 )
-	target_link_libraries( CompilerLib pthread dl )
-endif()
 
 #
 # Compiler
 #
-if( BUILD_COMPILER )
+if( U_BUILD_COMPILER )
 	file( GLOB COMPILER_SOURCES "compiler/*" )
 
 	function( CompileLLFile ll_file )
@@ -163,13 +188,13 @@ if( BUILD_COMPILER )
 	target_link_libraries( Compiler CompilerLib ${LLVM_LIBS_FOR_COMPILER} )
 	target_compile_definitions( Compiler PRIVATE "SPRACHE_VERSION=${PROJECT_VERSION}" )
 	target_include_directories( Compiler PRIVATE ${CMAKE_CURRENT_BINARY_DIR} )
-endif( BUILD_COMPILER )
+endif()
 
 #
 # CppHeaderConverter
 #
 
-if( DEFINED LLVM_EXTERNAL_CLANG_SOURCE_DIR )
+if( REALLY_BUILD_CPP_HEADER_CONVERTER )
 	file( GLOB CPP_HEADER_CONVERTER_SOURCES "cpp_header_converter/*" )
 	add_executable( CppHeaderConverter ${CPP_HEADER_CONVERTER_SOURCES} )
 	target_link_libraries( CppHeaderConverter LexSyntLib )
@@ -182,17 +207,17 @@ endif()
 #
 # Tests
 #
-if( BUILD_TESTS )
+if( U_BUILD_TESTS )
 	file( GLOB TESTS_SOURCES "tests/cpp_tests/*" )
 
 	add_executable( Tests ${TESTS_SOURCES}  )
 	target_link_libraries( Tests CompilerLib ${LLVM_LIBS_FOR_TESTS} )
-endif( BUILD_TESTS )
+endif()
 
 #
 # PyTests
 #
-if( BUILD_PY_TESTS )
+if( U_BUILD_PY_TESTS )
 	find_package( PythonLibs REQUIRED )
 	find_package( PythonInterp REQUIRED )
 
@@ -225,7 +250,7 @@ if( BUILD_PY_TESTS )
 		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 		SOURCES ${PY_TESTS_PY_SOURCES} )
 
-endif( BUILD_PY_TESTS )
+endif()
 
 if( REALLY_BUILD_LINKAGE_TESTS )
 
@@ -285,7 +310,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	#
 	# Unciode file names test
 	#
-	if( BUILD_UNICODE_FILE_NAMES_TEST )
+	if( U_BUILD_UNICODE_FILE_NAMES_TEST )
 	set( UNICODE_FILE_NAMES_SOURCES "tests/unicode_file_names_test/Entry ФшЯё_66.ü" )
 	CompileUSources( "${UNICODE_FILE_NAMES_SOURCES}" UNICODE_FILE_NAMES_OBJECTS )
 
@@ -329,7 +354,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	#
 	# CppHeaderConverter test
 	#
-	if( DEFINED LLVM_EXTERNAL_CLANG_SOURCE_DIR )
+	if( REALLY_BUILD_CPP_HEADER_CONVERTER )
 		add_custom_command(
 			OUTPUT c_converted.u
 			DEPENDS tests/cpp_header_converter_test/c_test.h CppHeaderConverter

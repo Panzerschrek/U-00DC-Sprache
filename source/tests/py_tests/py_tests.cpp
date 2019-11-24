@@ -15,9 +15,13 @@
 #include <llvm/ExecutionEngine/Interpreter.h>
 #include <llvm/Support/DynamicLibrary.h>
 #include <llvm/Support/ManagedStatic.h>
+#include <llvm/Support/raw_os_ostream.h>
 #include "../../code_builder_lib/pop_llvm_warnings.hpp"
 
 namespace U
+{
+
+namespace
 {
 
 class SingeFileVfs final : public IVfs
@@ -47,11 +51,14 @@ private:
 	const char* const file_text_;
 };
 
-static std::unique_ptr<CodeBuilder> CreateCodeBuilder()
+llvm::ManagedStatic<llvm::LLVMContext> g_llvm_context;
+
+std::unique_ptr<CodeBuilder> CreateCodeBuilder()
 {
 	return
 		std::unique_ptr<CodeBuilder>(
 			new CodeBuilder(
+				*g_llvm_context,
 				llvm::sys::getProcessTriple(),
 				llvm::DataLayout( GetTestsDataLayout() ) ) );
 }
@@ -71,15 +78,13 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	ICodeBuilder::BuildResult build_result= CreateCodeBuilder()->BuildProgram( *source_graph );
 
 	for( const CodeBuilderError& error : build_result.errors )
-		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToUTF8( error.text ) << "\n";
+		std::cerr << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToUTF8( error.text ) << "\n";
 
 	if( !build_result.errors.empty() )
 		return nullptr;
 
 	return std::move(build_result.module);
 }
-
-} // namespace U
 
 class HaltException final : public std::exception
 {
@@ -90,15 +95,15 @@ public:
 	}
 };
 
-static llvm::GenericValue HaltCalled( llvm::FunctionType*, llvm::ArrayRef<llvm::GenericValue> )
+llvm::GenericValue HaltCalled( llvm::FunctionType*, llvm::ArrayRef<llvm::GenericValue> )
 {
 	// Return from interpreter, using native exception.
 	throw HaltException();
 }
 
-static std::unique_ptr<llvm::ExecutionEngine> g_current_engine; // Can have only one.
+std::unique_ptr<llvm::ExecutionEngine> g_current_engine; // Can have only one.
 
-static PyObject* BuildProgram( PyObject* const self, PyObject* const args )
+PyObject* BuildProgram( PyObject* const self, PyObject* const args )
 {
 	U_UNUSED(self);
 
@@ -122,7 +127,7 @@ static PyObject* BuildProgram( PyObject* const self, PyObject* const args )
 		return nullptr;
 	}
 
-	std::unique_ptr<llvm::Module> module= U::BuildProgram( program_text );
+	std::unique_ptr<llvm::Module> module= BuildProgram( program_text );
 
 	if( module == nullptr )
 	{
@@ -132,7 +137,10 @@ static PyObject* BuildProgram( PyObject* const self, PyObject* const args )
 	}
 
 	if( print_llvm_asm != 0 )
-		module->dump();
+	{
+		llvm::raw_os_ostream stream(std::cout);
+		module->print( stream, nullptr );
+	}
 
 	g_current_engine.reset( llvm::EngineBuilder( std::move(module) ).create() );
 	if( g_current_engine == nullptr )
@@ -148,7 +156,7 @@ static PyObject* BuildProgram( PyObject* const self, PyObject* const args )
 	return Py_None;
 }
 
-static PyObject* FreeProgram( PyObject* const self, PyObject* const args )
+PyObject* FreeProgram( PyObject* const self, PyObject* const args )
 {
 	U_UNUSED(self);
 	U_UNUSED(args);
@@ -164,7 +172,7 @@ static PyObject* FreeProgram( PyObject* const self, PyObject* const args )
 	return Py_None;
 }
 
-static PyObject* RunFunction( PyObject* const self, PyObject* const args )
+PyObject* RunFunction( PyObject* const self, PyObject* const args )
 {
 	U_UNUSED(self);
 
@@ -301,7 +309,7 @@ static PyObject* RunFunction( PyObject* const self, PyObject* const args )
 }
 
 
-static PyObject* BuildFilePos( const U::FilePos& file_pos )
+PyObject* BuildFilePos( const FilePos& file_pos )
 {
 	PyObject* const file_pos_dict= PyDict_New();
 	PyDict_SetItemString( file_pos_dict, "file_index", PyLong_FromLongLong( file_pos.file_index ) );
@@ -310,23 +318,23 @@ static PyObject* BuildFilePos( const U::FilePos& file_pos )
 	return file_pos_dict;
 }
 
-static PyObject* BuildString( const U::ProgramString& str )
+PyObject* BuildString( const ProgramString& str )
 {
-	const std::string str_utf8= U::ToUTF8( str );
+	const std::string str_utf8= ToUTF8( str );
 	return PyUnicode_DecodeUTF8( str_utf8.data(), str_utf8.size(), nullptr );
 }
 
-static PyObject* BuildErrorsList( const U::CodeBuilderErrorsContainer& errors )
+PyObject* BuildErrorsList( const CodeBuilderErrorsContainer& errors )
 {
 	PyObject* const list= PyList_New(0);
 
-	for( const U::CodeBuilderError& error : errors )
+	for( const CodeBuilderError& error : errors )
 	{
 		PyObject* const dict= PyDict_New();
 
 		PyDict_SetItemString( dict, "file_pos", BuildFilePos( error.file_pos ) );
 
-		const char* const error_code_str= U::CodeBuilderErrorCodeToString( error.code );
+		const char* const error_code_str= CodeBuilderErrorCodeToString( error.code );
 		PyDict_SetItemString( dict, "code", PyUnicode_DecodeUTF8( error_code_str, std::strlen(error_code_str), nullptr ) );
 
 		PyDict_SetItemString( dict, "text", BuildString( error.text ) );
@@ -349,7 +357,7 @@ static PyObject* BuildErrorsList( const U::CodeBuilderErrorsContainer& errors )
 	return list;
 }
 
-static PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
+PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 {
 	U_UNUSED(self);
 
@@ -358,9 +366,9 @@ static PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const a
 	if( !PyArg_ParseTuple( args, "s", &program_text ) )
 		return nullptr;
 
-	const U::ProgramString file_path= U::ToProgramString("_");
-	const U::SourceGraphPtr source_graph=
-		U::SourceGraphLoader( std::make_shared<U::SingeFileVfs>( file_path, program_text ) ).LoadSource( file_path );
+	const ProgramString file_path= ToProgramString("_");
+	const SourceGraphPtr source_graph=
+		SourceGraphLoader( std::make_shared<SingeFileVfs>( file_path, program_text ) ).LoadSource( file_path );
 
 	if( source_graph == nullptr ||
 		!source_graph->lexical_errors.empty() ||
@@ -370,13 +378,13 @@ static PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const a
 		return nullptr;
 	}
 
-	PyObject* const list= BuildErrorsList( U::CreateCodeBuilder()->BuildProgram( *source_graph ).errors );
+	PyObject* const list= BuildErrorsList( CreateCodeBuilder()->BuildProgram( *source_graph ).errors );
 	llvm::llvm_shutdown();
 
 	return list;
 }
 
-static PyMethodDef g_methods[]=
+PyMethodDef g_methods[]=
 {
 	{ "build_program"           ,   BuildProgram,           METH_VARARGS, "Build program." },
 	{ "free_program"             ,  FreeProgram,            METH_VARARGS, "Free program."  },
@@ -385,7 +393,7 @@ static PyMethodDef g_methods[]=
 	{ nullptr, nullptr, 0, nullptr } // Sentinel
 };
 
-static struct PyModuleDef g_module=
+struct PyModuleDef g_module=
 {
 	PyModuleDef_HEAD_INIT,
 	"sprache_compiler_tests_py_lib",   // name of module
@@ -396,7 +404,11 @@ static struct PyModuleDef g_module=
 	0, 0, 0, 0,
 };
 
+} // namespace
+
+} // namespace U
+
 PyMODINIT_FUNC PyInit_sprache_compiler_tests_py_lib(void)
 {
-	return PyModule_Create( &g_module );
+	return PyModule_Create( &U::g_module );
 }

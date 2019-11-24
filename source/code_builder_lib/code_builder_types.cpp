@@ -11,10 +11,13 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
+namespace
+{
+
 static_assert( sizeof(Type) <= 40u, "Type is too heavy!" );
 static_assert( sizeof(Value) <= 160u, "Value is too heavy!" );
 
-static uint64_t GetFundamentalTypeSize( const U_FundamentalType type )
+uint64_t GetFundamentalTypeSize( const U_FundamentalType type )
 {
 	switch(type)
 	{
@@ -42,6 +45,8 @@ static uint64_t GetFundamentalTypeSize( const U_FundamentalType type )
 	U_ASSERT( false );
 	return 0u;
 }
+
+} // namespace
 
 //
 // Fundamental type

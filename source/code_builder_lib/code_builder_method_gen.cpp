@@ -305,7 +305,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 
 	llvm::Value* const this_llvm_value= &*llvm_constructor_function->args().begin();
 	this_llvm_value->setName( KeywordAscii( Keywords::this_ ) );
-	llvm::Value* const src_llvm_value= &*(++llvm_constructor_function->args().begin());
+	llvm::Value* const src_llvm_value= &*std::next(llvm_constructor_function->args().begin());
 	src_llvm_value->setName( "src" );
 
 	if( the_class.base_class != nullptr )
@@ -598,7 +598,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 
 	llvm::Value* const this_llvm_value= &*llvm_op_function->args().begin();
 	this_llvm_value->setName( KeywordAscii( Keywords::this_ ) );
-	llvm::Value* const src_llvm_value= &*(++llvm_op_function->args().begin());
+	llvm::Value* const src_llvm_value= &*std::next(llvm_op_function->args().begin());
 	src_llvm_value->setName( "src" );
 
 	if( the_class.base_class != nullptr )

@@ -6,8 +6,10 @@
 #include <unordered_set>
 #include <vector>
 
+#include "../lex_synt_lib/push_disable_boost_warnings.hpp"
 #include <boost/optional.hpp>
 #include <boost/variant.hpp>
+#include "../lex_synt_lib/pop_boost_warnings.hpp"
 
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Function.h>
@@ -715,6 +717,13 @@ struct TypeTemplate final : TemplateBase
 	std::vector< const Synt::Expression* > default_signature_arguments;
 	size_t first_optional_signature_argument= ~0u;
 
+	enum class Kind
+	{
+		Class,
+		Typedef,
+	};
+
+	Kind kind= Kind::Class;
 	// Store syntax tree element for instantiation.
 	// Syntax tree must live longer, than this struct.
 	const Synt::TypeTemplateBase* syntax_element= nullptr;

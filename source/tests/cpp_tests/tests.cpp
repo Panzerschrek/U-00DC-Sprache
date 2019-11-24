@@ -1,6 +1,9 @@
 #include <iostream>
 
+#include "../../code_builder_lib/push_disable_llvm_warnings.hpp"
 #include <llvm/Support/ManagedStatic.h>
+#include <llvm/Support/raw_os_ostream.h>
+#include "../../code_builder_lib/pop_llvm_warnings.hpp"
 
 #include "../../code_builder_lib/code_builder.hpp"
 #include "../../lex_synt_lib/assert.hpp"
@@ -16,6 +19,8 @@ namespace U
 
 namespace
 {
+
+llvm::ManagedStatic<llvm::LLVMContext> g_llvm_context;
 
 class MultiFileVfs final : public IVfs
 {
@@ -74,6 +79,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 
 	ICodeBuilder::BuildResult build_result=
 		CodeBuilder(
+			*g_llvm_context,
 			llvm::sys::getProcessTriple(),
 			llvm::DataLayout( GetTestsDataLayout() ) ).BuildProgram( *source_graph );
 
@@ -95,6 +101,7 @@ ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
 
 	return
 		CodeBuilder(
+			*g_llvm_context,
 			llvm::sys::getProcessTriple(),
 			llvm::DataLayout( GetTestsDataLayout() ) ).BuildProgram( *source_graph );
 }
@@ -110,6 +117,7 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 
 	ICodeBuilder::BuildResult build_result=
 		CodeBuilder(
+			*g_llvm_context,
 			llvm::sys::getProcessTriple(),
 			llvm::DataLayout( GetTestsDataLayout() ) ).BuildProgram( *source_graph );
 
@@ -130,6 +138,7 @@ ICodeBuilder::BuildResult BuildMultisourceProgramWithErrors( std::vector<SourceE
 
 	return
 		CodeBuilder(
+			*g_llvm_context,
 			llvm::sys::getProcessTriple(),
 			llvm::DataLayout( GetTestsDataLayout() ) ).BuildProgram( *source_graph );
 }
@@ -139,7 +148,10 @@ EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, const bool needs_d
 	U_TEST_ASSERT( module != nullptr );
 
 	if( needs_dump )
-		module->dump();
+	{
+		llvm::raw_os_ostream stream(std::cout);
+		module->print( stream, nullptr );
+	}
 
 	llvm::EngineBuilder builder( std::move(module) );
 	llvm::ExecutionEngine* const engine= builder.create();

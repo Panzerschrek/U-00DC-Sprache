@@ -13,10 +13,15 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-static constexpr size_t g_max_data_stack_size= 1024u * 1024u * 64u - 1u; // 64 Megabytes will be enough for stack.
-static constexpr size_t g_constants_segment_offset= g_max_data_stack_size + 1u;
-static constexpr size_t g_max_constants_stack_size =1024u * 1024u * 64u; // 64 Megabytes will be enough for constants.
-static constexpr size_t g_max_call_stack_depth = 1024u;
+namespace
+{
+
+constexpr size_t g_max_data_stack_size= 1024u * 1024u * 64u - 1u; // 64 Megabytes will be enough for stack.
+constexpr size_t g_constants_segment_offset= g_max_data_stack_size + 1u;
+constexpr size_t g_max_constants_stack_size =1024u * 1024u * 64u; // 64 Megabytes will be enough for constants.
+constexpr size_t g_max_call_stack_depth = 1024u;
+
+}
 
 ConstexprFunctionEvaluator::ConstexprFunctionEvaluator( const llvm::DataLayout& data_layout )
 	: data_layout_(data_layout)
@@ -147,7 +152,7 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 	const llvm::BasicBlock* prev_basic_block= nullptr;
 	const llvm::BasicBlock* current_basic_block= &llvm_function.getBasicBlockList().front();
 
-	const llvm::Instruction* instruction= current_basic_block->begin();
+	const llvm::Instruction* instruction= &*current_basic_block->begin();
 	while(true)
 	{
 		switch( instruction->getOpcode() )
@@ -191,7 +196,7 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 					else
 						current_basic_block= llvm::dyn_cast<llvm::BasicBlock>(instruction->getOperand(2u));
 				}
-				instruction= current_basic_block->begin();
+				instruction= &*current_basic_block->begin();
 			}
 			break;
 
@@ -823,17 +828,17 @@ void ConstexprFunctionEvaluator::ProcessBinaryArithmeticInstruction( const llvm:
 
 	case llvm::Instruction::And:
 		U_ASSERT(type->isIntegerTy());
-		val.IntVal= op0.IntVal.And(op1.IntVal);
+		val.IntVal= op0.IntVal & op1.IntVal;
 		break;
 
 	case llvm::Instruction::Or:
 		U_ASSERT(type->isIntegerTy());
-		val.IntVal= op0.IntVal.Or(op1.IntVal);
+		val.IntVal= op0.IntVal | op1.IntVal;
 		break;
 
 	case llvm::Instruction::Xor:
 		U_ASSERT(type->isIntegerTy());
-		val.IntVal= op0.IntVal.Xor(op1.IntVal);
+		val.IntVal= op0.IntVal ^ op1.IntVal;
 		break;
 
 	case llvm::Instruction::Shl:
@@ -885,20 +890,16 @@ void ConstexprFunctionEvaluator::ProcessBinaryArithmeticInstruction( const llvm:
 
 	case llvm::Instruction::FRem:
 		{
-			// see llvm-3.7.1.src/lib/IR/ConstantFold.cpp:1190
-			const auto rounding_mode= llvm::APFloat::roundingMode::rmNearestTiesToEven;
 			if( type->isFloatTy() )
 			{
 				llvm::APFloat result_val(op0.FloatVal);
-				const llvm::APFloat::opStatus status= result_val.mod( llvm::APFloat(op1.FloatVal), rounding_mode );
-				U_ASSERT( status == llvm::APFloat::opStatus::opOK ); // TODO - generate error, if not ok.
+				result_val.mod( llvm::APFloat(op1.FloatVal));
 				val.FloatVal= result_val.convertToFloat();
 			}
 			else if( type->isDoubleTy() )
 			{
 				llvm::APFloat result_val(op0.DoubleVal);
-				const llvm::APFloat::opStatus status= result_val.mod( llvm::APFloat(op1.DoubleVal), rounding_mode );
-				U_ASSERT( status == llvm::APFloat::opStatus::opOK ); // TODO - generate error, if not ok.
+				result_val.mod( llvm::APFloat(op1.DoubleVal) );
 				val.DoubleVal= result_val.convertToDouble();
 			}
 			else U_ASSERT(false);
