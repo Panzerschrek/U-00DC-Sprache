@@ -573,9 +573,14 @@ int Main( const int argc, const char* const argv[] )
 		llvm::PassRegistry& registry= *llvm::PassRegistry::getPassRegistry();
 		llvm::initializeCore(registry);
 		llvm::initializeCodeGen(registry);
+		llvm::initializeIPO(registry);
 		llvm::initializeLoopStrengthReducePass(registry);
 		llvm::initializeLowerIntrinsicsPass(registry);
-		// TODO - add more passes?
+		llvm::initializeScalarOpts(registry);
+		llvm::initializeVectorization(registry);
+		llvm::initializeScalarizeMaskedMemIntrinPass(registry);
+		llvm::initializeExpandReductionsPass(registry);
+		llvm::initializeHardwareLoopsPass(registry);
 
 		llvm::TargetMachine::CodeGenFileType file_type= llvm::TargetMachine::CGFT_Null;
 		switch( Options::file_type )
@@ -587,17 +592,13 @@ int Main( const int argc, const char* const argv[] )
 		U_ASSERT(false);
 		};
 
-		const bool no_verify= true;
-
 		llvm::legacy::PassManager pass_manager;
-		
 
 		if( target_machine->addPassesToEmitFile(
 				pass_manager,
 				out_file_stream,
 				nullptr,
-				file_type,
-				no_verify ) )
+				file_type ) )
 		{
 			std::cout << "Error, creating file emit pass." << std::endl;
 			return 1;
