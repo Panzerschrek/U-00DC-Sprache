@@ -2,7 +2,7 @@
 #include <string>
 
 #include "../lex_synt_lib/push_disable_boost_warnings.hpp"
-#include <boost/predef/detail/endian_compat.h>
+#include<boost/predef/other/endian.h>
 #include "../lex_synt_lib/pop_boost_warnings.hpp"
 
 namespace U
@@ -12,9 +12,8 @@ const std::string GetTestsDataLayout()
 {
 	std::string result;
 
-#ifdef BOOST_BIG_ENDIAN
+#if BOOST_ENDIAN_BIG_BYTE
 		result+= "E";
-	else
 #else
 		result+= "e";
 #endif
