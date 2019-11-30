@@ -27,6 +27,7 @@
    initializers
    method_gen
    halt
+   move
    constexpr
    operators_overloading
    inheritance
