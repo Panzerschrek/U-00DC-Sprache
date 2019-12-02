@@ -9,6 +9,7 @@
 #include <llvm/IR/Verifier.h>
 #include <llvm/Linker/Linker.h>
 #include <llvm/Support/FileSystem.h>
+#include <llvm/Support/InitLLVM.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/Path.h>
 #include <llvm/Support/raw_os_ostream.h>
@@ -319,10 +320,11 @@ cl::opt<bool> print_llvm_asm(
 
 } // namespace Options
 
-int Main( const int argc, const char* const argv[] )
+int Main( int argc, const char* argv[] )
 {
-	// Options
+	const llvm::InitLLVM llvm_initializer(argc, argv);
 
+	// Options
 	llvm::cl::SetVersionPrinter(
 		[]( llvm::raw_ostream& ) {
 			std::cout << "Ü-Sprache version " << SPRACHE_VERSION << ", llvm version " << LLVM_VERSION_STRING << std::endl;
@@ -621,7 +623,7 @@ int Main( const int argc, const char* const argv[] )
 
 } // namespace
 
-int main( const int argc, const char* const argv[] )
+int main( const int argc, const char* argv[] )
 {
 	// Place actual "main" body inside "U" namespace.
 	return U::Main( argc, argv );
