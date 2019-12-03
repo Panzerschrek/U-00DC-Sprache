@@ -1679,7 +1679,7 @@ Type CodeBuilder::BuildFuncCode(
 		if( function_type->return_type == void_type_ && !function_type->return_value_is_reference )
 		{
 			// Manually generate "return" for void-return functions.
-			CallDestructors( *function_context.stack_variables_stack.back(), function_names, function_context, block->end_file_pos_ );
+			CallDestructors( args_storage, function_names, function_context, block->end_file_pos_ );
 
 			if( function_context.destructor_end_block == nullptr )
 				function_context.llvm_ir_builder.CreateRetVoid();
@@ -1871,7 +1871,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			else
 				ApplyEmptyInitializer( field_name, constructor_initialization_list.file_pos_, field_variable, names_scope, function_context );
 		}
-		CallDestructors( *function_context.stack_variables_stack.back(), names_scope, function_context, constructor_initialization_list.file_pos_ );
+		CallDestructors( temp_variables_storage, names_scope, function_context, constructor_initialization_list.file_pos_ );
 	}
 	if( !base_initialized && base_class.base_class != nullptr )
 	{
@@ -1889,7 +1889,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		ApplyEmptyInitializer( base_class.base_class->class_->members.GetThisNamespaceName(), constructor_initialization_list.file_pos_, base_variable, names_scope, function_context );
 		function_context.base_initialized= true;
 
-		CallDestructors( *function_context.stack_variables_stack.back(), names_scope, function_context, constructor_initialization_list.file_pos_ );
+		CallDestructors( temp_variables_storage, names_scope, function_context, constructor_initialization_list.file_pos_ );
 	}
 
 	if( have_fields_errors )
@@ -1941,7 +1941,7 @@ void CodeBuilder::BuildConstructorInitialization(
 
 		function_context.uninitialized_this_fields.erase( field );
 
-		CallDestructors( *function_context.stack_variables_stack.back(), names_scope, function_context, Synt::GetInitializerFilePos( field_initializer.initializer ) );
+		CallDestructors( temp_variables_storage, names_scope, function_context, Synt::GetInitializerFilePos( field_initializer.initializer ) );
 	} // for fields initializers
 
 	SetupVirtualTablePointers( this_.llvm_value, base_class, function_context );
@@ -2126,8 +2126,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 
 	// If there are undconditional "break", "continue", "return" operators,
 	// we didn`t need call destructors, it must be called in this operators.
-	if( ! visitor.block_build_info.have_terminal_instruction_inside )
-		CallDestructors( *function_context.stack_variables_stack.back(), block_names, function_context, block.end_file_pos_ );
+	if( !visitor.block_build_info.have_terminal_instruction_inside )
+		CallDestructors( block_variables_storage, block_names, function_context, block.end_file_pos_ );
 
 	return visitor.block_build_info;
 }
@@ -2303,7 +2303,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		}
 
 		// After lock of references we can call destructors.
-		CallDestructors( *function_context.stack_variables_stack.back(), block_names, function_context, variable_declaration.file_pos );
+		CallDestructors( temp_variables_storage, block_names, function_context, variable_declaration.file_pos );
 	} // for variables
 }
 
@@ -2529,7 +2529,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	}
 
 	// After lock of references we can call destructors.
-	CallDestructors( *function_context.stack_variables_stack.back(), block_names, function_context, auto_variable_declaration.file_pos_ );
+	CallDestructors( temp_variables_storage, block_names, function_context, auto_variable_declaration.file_pos_ );
 }
 
 void CodeBuilder::BuildAssignmentOperatorCode(
@@ -2604,7 +2604,7 @@ void CodeBuilder::BuildAssignmentOperatorCode(
 		}
 	}
 	// Destruct temporary variables of right and left expressions.
-	CallDestructors( *function_context.stack_variables_stack.back(), block_names, function_context, assignment_operator.file_pos_ );
+	CallDestructors( temp_variables_storage, block_names, function_context, assignment_operator.file_pos_ );
 }
 
 void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
@@ -2696,7 +2696,7 @@ void CodeBuilder::BuildAdditiveAssignmentOperatorCode(
 		}
 	}
 	// Destruct temporary variables of right and left expressions.
-	CallDestructors( *function_context.stack_variables_stack.back(), block_names, function_context, additive_assignment_operator.file_pos_ );
+	CallDestructors( temp_variables_storage, block_names, function_context, additive_assignment_operator.file_pos_ );
 }
 
 void CodeBuilder::BuildDeltaOneOperatorCode(
@@ -2773,7 +2773,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 		return;
 	}
 
-	CallDestructors( *function_context.stack_variables_stack.back(), block_names, function_context, file_pos );
+	CallDestructors( temp_variables_storage, block_names, function_context, file_pos );
 }
 
 void CodeBuilder::BuildReturnOperatorCode(
@@ -2984,7 +2984,7 @@ void CodeBuilder::BuildWhileOperatorCode(
 	}
 
 	llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
-	CallDestructors( *function_context.stack_variables_stack.back(), names, function_context, condition_file_pos );
+	CallDestructors( temp_variables_storage, names, function_context, condition_file_pos );
 
 	llvm::BasicBlock* const while_block= llvm::BasicBlock::Create( llvm_context_ );
 	llvm::BasicBlock* const block_after_while= llvm::BasicBlock::Create( llvm_context_ );
@@ -3134,7 +3134,7 @@ void CodeBuilder::BuildForOperatorCode(
 
 			// TODO - create template errors context.
 			const BlockBuildInfo block_build_info= BuildBlockCode( for_operator.block_, loop_names, function_context );
-			CallDestructors( *function_context.stack_variables_stack.back(), names, function_context, for_operator.file_pos_ );
+			CallDestructors( element_pass_variables_storage, names, function_context, for_operator.file_pos_ );
 
 			// Overloading resolution uses addresses of syntax elements as keys. Reset it, because we use same syntax elements multiple times.
 			function_context.overloading_resolution_cache.clear();
@@ -3155,7 +3155,7 @@ void CodeBuilder::BuildForOperatorCode(
 		return;
 	}
 
-	CallDestructors( *function_context.stack_variables_stack.back(), names, function_context, for_operator.file_pos_ );
+	CallDestructors( temp_variables_storage, names, function_context, for_operator.file_pos_ );
 }
 
 void CodeBuilder::BuildBreakOperatorCode(
@@ -3255,7 +3255,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfOperatorCode(
 				else
 				{
 					llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
-					CallDestructors( *function_context.stack_variables_stack.back(), names, function_context, Synt::GetExpressionFilePos( branch.condition ) );
+					CallDestructors( temp_variables_storage, names, function_context, Synt::GetExpressionFilePos( branch.condition ) );
 
 					function_context.llvm_ir_builder.CreateCondBr( condition_in_register, body_block, next_condition_block );
 				}
@@ -3320,7 +3320,7 @@ void CodeBuilder::BuildStaticAssert( const Synt::StaticAssert& static_assert_, N
 
 	// Destruct temporary variables of right and left expressions.
 	// In non-error case, this call produces no code.
-	CallDestructors( *function_context.stack_variables_stack.back(), names, function_context, static_assert_.file_pos_ );
+	CallDestructors( temp_variables_storage, names, function_context, static_assert_.file_pos_ );
 
 	if( variable.type != bool_type_ )
 	{
@@ -3377,7 +3377,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildStaticIfOperatorCode(
 			if( condition_expression.constexpr_value->getUniqueInteger().getLimitedValue() != 0u )
 				return BuildBlockCode( branch.block, names, function_context ); // Ok, this static if produdes block.
 
-			CallDestructors( *function_context.stack_variables_stack.back(), names, function_context, condition_file_pos );
+			CallDestructors( temp_variables_storage, names, function_context, condition_file_pos );
 		}
 		else
 		{
@@ -3418,7 +3418,7 @@ void CodeBuilder::BuildHaltIf(const Synt::HaltIf& halt_if, NamesScope& names, Fu
 	}
 
 	llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
-	CallDestructors( *function_context.stack_variables_stack.back(), names, function_context, condition_expression_file_pos );
+	CallDestructors( temp_variables_storage, names, function_context, condition_expression_file_pos );
 
 	function_context.llvm_ir_builder.CreateCondBr( condition_in_register, true_block, false_block );
 

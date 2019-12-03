@@ -23,10 +23,8 @@ Value CodeBuilder::BuildExpressionCodeAndDestroyTemporaries(
 {
 	// Destruction frame for temporary variables of expression.
 	const StackVariablesStorage temp_variables_storage( function_context );
-
 	const Value result= BuildExpressionCode( expression, names, function_context );
-
-	CallDestructors( *function_context.stack_variables_stack.back(), names, function_context, Synt::GetExpressionFilePos( expression ) );
+	CallDestructors( temp_variables_storage, names, function_context, Synt::GetExpressionFilePos( expression ) );
 
 	return result;
 }
@@ -1147,7 +1145,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 		r_var_in_register= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 
 		// Destroy r_var temporaries in this branch.
-		CallDestructors( *function_context.stack_variables_stack.back(), names, function_context, file_pos );
+		CallDestructors( r_var_temp_variables_storage, names, function_context, file_pos );
 	}
 	function_context.variables_state= MergeVariablesStateAfterIf( { variables_state_before_r_branch, function_context.variables_state }, names.GetErrors(), file_pos );
 
@@ -1618,7 +1616,7 @@ Value CodeBuilder::BuildTernaryOperator( const Synt::TernaryOperator& ternary_op
 				}
 			}
 
-			CallDestructors( *function_context.stack_variables_stack.back(), names, function_context, ternary_operator.file_pos_ );
+			CallDestructors( branch_temp_variables_storage, names, function_context, ternary_operator.file_pos_ );
 			function_context.llvm_ir_builder.CreateBr( result_block );
 		}
 		branches_variables_state[i]= function_context.variables_state;
