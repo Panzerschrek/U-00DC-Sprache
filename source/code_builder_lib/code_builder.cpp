@@ -2170,6 +2170,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 		}
 
 		// Destruction frame for temporary variables of initializer expression.
+		StackVariablesStorage& prev_variables_storage= *function_context.stack_variables_stack.back();
 		const StackVariablesStorage temp_variables_storage( function_context );
 
 		Variable variable;
@@ -2191,7 +2192,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
 			variable.llvm_value->setName( ToUTF8( variable_declaration.name ) );
 
-			function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( std::make_pair( var_node, variable ) );
+			prev_variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
 			variable.node= var_node;
 
 			if( variable_declaration.initializer != nullptr )
@@ -2259,7 +2260,7 @@ void CodeBuilder::BuildVariablesDeclarationCode(
 			variable.llvm_value= result_ref;
 			variable.constexpr_value= expression_result.constexpr_value;
 
-			function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( std::make_pair( var_node, variable ) );
+			prev_variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
 			variable.node= var_node;
 
 			const bool is_mutable= variable.value_type == ValueType::Reference;
@@ -2313,6 +2314,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 	FunctionContext& function_context )
 {
 	// Destruction frame for temporary variables of initializer expression.
+	StackVariablesStorage& prev_variables_storage= *function_context.stack_variables_stack.back();
 	const StackVariablesStorage temp_variables_storage( function_context );
 
 	const Variable initializer_experrsion= BuildExpressionCodeEnsureVariable( auto_variable_declaration.initializer_expression, block_names, function_context );
@@ -2395,7 +2397,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 			}
 		}
 
-		function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( std::make_pair( var_node, variable ) );
+		prev_variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
 		variable.node= var_node;
 
 		const bool is_mutable= variable.value_type == ValueType::Reference;
@@ -2418,7 +2420,7 @@ void CodeBuilder::BuildAutoVariableDeclarationCode(
 
 		variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType(), nullptr, ToUTF8( auto_variable_declaration.name ) );
 
-		function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->RegisterVariable( std::make_pair( var_node, variable ) );
+		prev_variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
 		variable.node= var_node;
 
 		if( initializer_experrsion.value_type == ValueType::Value )
