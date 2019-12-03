@@ -1357,20 +1357,20 @@ Type CodeBuilder::BuildFuncCode(
 	const Synt::Block* const block,
 	const Synt::StructNamedInitializer* const constructor_initialization_list )
 {
-	Function* const function_type= func_variable.type.GetFunctionType();
-	function_type->llvm_function_type= GetLLVMFunctionType( *function_type );
+	Function& function_type= *func_variable.type.GetFunctionType();
+	function_type.llvm_function_type= GetLLVMFunctionType( function_type );
 
 	const bool first_arg_is_sret=
-		function_type->llvm_function_type->getReturnType()->isVoidTy() && function_type->return_type != void_type_;
+		function_type.llvm_function_type->getReturnType()->isVoidTy() && function_type.return_type != void_type_;
 
 	llvm::Function* llvm_function;
 	if( func_variable.llvm_function == nullptr )
 	{
 		llvm_function=
 			llvm::Function::Create(
-				function_type->llvm_function_type,
+				function_type.llvm_function_type,
 				llvm::Function::LinkageTypes::ExternalLinkage, // External - for prototype.
-				func_variable.no_mangle ? ToUTF8( func_name ) : MangleFunction( parent_names_scope, func_name, *function_type ),
+				func_variable.no_mangle ? ToUTF8( func_name ) : MangleFunction( parent_names_scope, func_name, function_type ),
 				module_.get() );
 
 		// Merge functions with identical code.
@@ -1379,10 +1379,10 @@ Type CodeBuilder::BuildFuncCode(
 
 		// Mark reference-parameters as nonnull.
 		// Mark mutable references as "noalias".
-		for( size_t i= 0u; i < function_type->args.size(); i++ )
+		for( size_t i= 0u; i < function_type.args.size(); i++ )
 		{
 			const unsigned int arg_attr_index= static_cast<unsigned int>(i + 1u + (first_arg_is_sret ? 1u : 0u ));
-			const Function::Arg& arg= function_type->args[i];
+			const Function::Arg& arg= function_type.args[i];
 			if( arg.is_reference || arg.type.GetClassType() != nullptr || arg.type.GetTupleType() )
 				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NonNull );
 			if( arg.is_reference && arg.is_mutable )
@@ -1401,7 +1401,7 @@ Type CodeBuilder::BuildFuncCode(
 	{
 		// This is only prototype, then, function preparing work is done.
 		func_variable.have_body= false;
-		return function_type->return_type;
+		return function_type.return_type;
 	}
 
 	// For functions with body we can use comdat.
@@ -1415,27 +1415,27 @@ Type CodeBuilder::BuildFuncCode(
 	func_variable.have_body= true;
 
 	// Ensure completeness only for functions body.
-	for( const Function::Arg& arg : function_type->args )
+	for( const Function::Arg& arg : function_type.args )
 	{
 		if( !arg.is_reference && arg.type != void_type_ &&
 			!EnsureTypeCompleteness( arg.type, TypeCompleteness::Complete ) )
 			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), args.front().file_pos_, arg.type );
 	}
-	if( !function_type->return_value_is_reference && function_type->return_type != void_type_ &&
-		!EnsureTypeCompleteness( function_type->return_type, TypeCompleteness::Complete ) )
-		REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_file_pos, function_type->return_type );
+	if( !function_type.return_value_is_reference && function_type.return_type != void_type_ &&
+		!EnsureTypeCompleteness( function_type.return_type, TypeCompleteness::Complete ) )
+		REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_file_pos, function_type.return_type );
 
 	NamesScope function_names( ""_SpC, &parent_names_scope );
 	FunctionContext function_context(
-		func_variable.return_type_is_auto ? boost::optional<Type>(): function_type->return_type,
-		function_type->return_value_is_mutable,
-		function_type->return_value_is_reference,
+		func_variable.return_type_is_auto ? boost::optional<Type>(): function_type.return_type,
+		function_type.return_value_is_mutable,
+		function_type.return_value_is_reference,
 		llvm_context_,
 		llvm_function );
 	const StackVariablesStorage args_storage( function_context );
 
 	// arg node + optional inner reference variable node.
-	ArgsVector< std::pair< ReferencesGraphNodePtr, ReferencesGraphNodePtr > > args_nodes( function_type->args.size() );
+	ArgsVector< std::pair< ReferencesGraphNodePtr, ReferencesGraphNodePtr > > args_nodes( function_type.args.size() );
 
 	// push args
 	Variable this_;
@@ -1453,7 +1453,7 @@ Type CodeBuilder::BuildFuncCode(
 			continue;
 		}
 
-		const Function::Arg& arg= function_type->args[ arg_number ];
+		const Function::Arg& arg= function_type.args[ arg_number ];
 
 		const Synt::FunctionArgument& declaration_arg= args[arg_number ];
 		const ProgramString& arg_name= declaration_arg.name_;
@@ -1540,9 +1540,9 @@ Type CodeBuilder::BuildFuncCode(
 	}
 
 	// Fill list of allowed for returning references.
-	if( function_type->return_value_is_reference || function_type->return_type.ReferencesTagsCount() > 0u )
+	if( function_type.return_value_is_reference || function_type.return_type.ReferencesTagsCount() > 0u )
 	{
-		for( const Function::ArgReference& arg_and_tag : function_type->return_references )
+		for( const Function::ArgReference& arg_and_tag : function_type.return_references )
 		{
 			const size_t arg_n= arg_and_tag.first;
 			U_ASSERT( arg_n < args_nodes.size() );
@@ -1602,7 +1602,7 @@ Type CodeBuilder::BuildFuncCode(
 		return
 			function_context.deduced_return_type
 				? *function_context.deduced_return_type
-				: ( function_type->return_value_is_reference ? void_type_ : void_type_for_ret_ );
+				: ( function_type.return_value_is_reference ? void_type_ : void_type_for_ret_ );
 	}
 
 	if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
@@ -1617,19 +1617,19 @@ Type CodeBuilder::BuildFuncCode(
 
 		if( !auto_contexpr )
 		{
-			if( function_type->return_type != void_type_for_ret_ && !EnsureTypeCompleteness( function_type->return_type, TypeCompleteness::Complete ) )
-				REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), func_variable.body_file_pos, function_type->return_type ); // Completeness required for constexpr possibility check.
+			if( function_type.return_type != void_type_for_ret_ && !EnsureTypeCompleteness( function_type.return_type, TypeCompleteness::Complete ) )
+				REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), func_variable.body_file_pos, function_type.return_type ); // Completeness required for constexpr possibility check.
 		}
 
-		if( function_type->unsafe ||
-			!function_type->return_type.CanBeConstexpr() ||
-			!function_type->references_pollution.empty() ) // Side effects, such pollution, not allowed.
+		if( function_type.unsafe ||
+			!function_type.return_type.CanBeConstexpr() ||
+			!function_type.references_pollution.empty() ) // Side effects, such pollution, not allowed.
 			can_be_constexpr= false;
 
-		if( function_type->return_type.GetFunctionPointerType() != nullptr ) // Currently function pointers not supported.
+		if( function_type.return_type.GetFunctionPointerType() != nullptr ) // Currently function pointers not supported.
 			can_be_constexpr= false;
 
-		for( const Function::Arg& arg : function_type->args )
+		for( const Function::Arg& arg : function_type.args )
 		{
 			if( !auto_contexpr )
 			{
@@ -1676,7 +1676,7 @@ Type CodeBuilder::BuildFuncCode(
 	// In other case, we have "return" in all branches and destructors call before each "return".
 	if( !block_build_info.have_terminal_instruction_inside )
 	{
-		if( function_type->return_type == void_type_ && !function_type->return_value_is_reference )
+		if( function_type.return_type == void_type_ && !function_type.return_value_is_reference )
 		{
 			// Manually generate "return" for void-return functions.
 			CallDestructors( args_storage, function_names, function_context, block->end_file_pos_ );
@@ -1692,12 +1692,12 @@ Type CodeBuilder::BuildFuncCode(
 		else
 		{
 			REPORT_ERROR( NoReturnInFunctionReturningNonVoid, function_names.GetErrors(), block->end_file_pos_ );
-			return function_type->return_type;
+			return function_type.return_type;
 		}
 	}
 
 	// Now, we can check references pollution. After this point only code is destructors calls, which can not link references.
-	for( size_t i= 0u; i < function_type->args.size(); ++i )
+	for( size_t i= 0u; i < function_type.args.size(); ++i )
 	{
 		const auto& node_pair= args_nodes[i];
 		if( node_pair.second != nullptr && function_context.variables_state.GetNodeInnerReference( node_pair.second ) != nullptr )
@@ -1713,7 +1713,7 @@ Type CodeBuilder::BuildFuncCode(
 				continue;
 
 			boost::optional<Function::ArgReference> reference;
-			for( size_t j= 0u; j < function_type->args.size(); ++j )
+			for( size_t j= 0u; j < function_type.args.size(); ++j )
 			{
 				if( accesible_variable == args_nodes[j].first )
 					reference= Function::ArgReference( j, Function::c_arg_reference_tag_number );
@@ -1729,10 +1729,10 @@ Type CodeBuilder::BuildFuncCode(
 				pollution.dst.second= 0u;
 				// Currently check both mutable and immutable. TODO - maybe akt more smarter?
 				pollution.src_is_mutable= true;
-				if( function_type->references_pollution.count( pollution ) != 0u )
+				if( function_type.references_pollution.count( pollution ) != 0u )
 					continue;
 				pollution.src_is_mutable= false;
-				if( function_type->references_pollution.count( pollution ) != 0u )
+				if( function_type.references_pollution.count( pollution ) != 0u )
 					continue;
 			}
 			REPORT_ERROR( UnallowedReferencePollution, function_names.GetErrors(), block->end_file_pos_);
@@ -1752,7 +1752,7 @@ Type CodeBuilder::BuildFuncCode(
 		function_context.llvm_ir_builder.CreateRetVoid();
 	}
 
-	return function_type->return_type;
+	return function_type.return_type;
 }
 
 void CodeBuilder::BuildConstructorInitialization(
