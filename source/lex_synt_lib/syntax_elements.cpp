@@ -299,7 +299,7 @@ Import::Import( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}
 
-struct GetFilePosVisitor final : public boost::static_visitor<FilePos>
+struct GetFilePosVisitor final
 {
 	FilePos operator()( const EmptyVariant& ) const
 	{

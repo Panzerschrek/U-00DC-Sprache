@@ -305,7 +305,7 @@ Value CodeBuilder::BuildExpressionCode(
 		}
 	}
 
-	struct Visitor final : public boost::static_visitor<Value>
+	struct Visitor final
 	{
 		CodeBuilder& this_;
 		NamesScope& names;
@@ -383,7 +383,7 @@ Value CodeBuilder::BuildExpressionCode(
 	Visitor visitor( *this, names, function_context );
 	Value result= boost::apply_visitor( visitor, expression );
 
-	struct ExpressionWithUnaryOperatorsVisitor final : public boost::static_visitor<const Synt::ExpressionComponentWithUnaryOperators*>
+	struct ExpressionWithUnaryOperatorsVisitor final
 	{
 		const Synt::ExpressionComponentWithUnaryOperators* operator()( const Synt::ExpressionComponentWithUnaryOperators& expression_with_unary_operators ) const
 		{

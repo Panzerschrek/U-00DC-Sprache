@@ -22,7 +22,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
-	struct Visitor final : public boost::static_visitor<llvm::Constant*>
+	struct Visitor final
 	{
 		CodeBuilder& this_;
 		const Variable& variable;

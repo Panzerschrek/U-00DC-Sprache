@@ -141,7 +141,7 @@ Type::Type( EnumPtr enum_type )
 
 Type& Type::operator=( const Type& other )
 {
-	struct Visitor final : public boost::static_visitor<>
+	struct Visitor final
 	{
 		Type& this_;
 
@@ -495,7 +495,7 @@ size_t Type::ReferencesTagsCount() const
 
 llvm::Type* Type::GetLLVMType() const
 {
-	struct Visitor final : public boost::static_visitor<llvm::Type*>
+	struct Visitor final
 	{
 		llvm::Type* operator()( const FundamentalType& fundamental ) const
 		{
@@ -541,7 +541,7 @@ llvm::Type* Type::GetLLVMType() const
 
 ProgramString Type::ToString() const
 {
-	struct Visitor final : public boost::static_visitor<ProgramString>
+	struct Visitor final
 	{
 		ProgramString operator()( const FundamentalType& fundamental ) const
 		{
@@ -1012,7 +1012,7 @@ int Value::GetKindIndex() const
 
 ProgramString Value::GetKindName() const
 {
-	struct Visitor final : public boost::static_visitor< ProgramString >
+	struct Visitor final
 	{
 		ProgramString operator()( const Variable& ) const { return "variable"_SpC; }
 		ProgramString operator()( const FunctionVariable& ) const { return "function variable"_SpC; }

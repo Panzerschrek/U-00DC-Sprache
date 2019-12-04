@@ -464,7 +464,7 @@ Type CodeBuilder::PrepareType(
 	NamesScope& names_scope,
 	FunctionContext& function_context )
 {
-	struct Visitor final : public boost::static_visitor<Type>
+	struct Visitor final
 	{
 		CodeBuilder& this_;
 		NamesScope& names_scope;
@@ -1955,7 +1955,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockCode(
 	NamesScope block_names( ""_SpC, &names );
 	const StackVariablesStorage block_variables_storage( function_context );
 
-	struct Visitor final : public boost::static_visitor<bool>
+	struct Visitor final
 	{
 		CodeBuilder& this_;
 		NamesScope& block_names;

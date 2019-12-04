@@ -11,7 +11,7 @@ namespace CodeBuilderPrivate
 
 void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements )
 {
-	struct Visitor final : public boost::static_visitor<>
+	struct Visitor final
 	{
 		CodeBuilder& this_;
 		NamesScope& names_scope;
@@ -264,7 +264,7 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 
 	if( !class_declaration.is_forward_declaration_ )
 	{
-		struct Visitor final : public boost::static_visitor<>
+		struct Visitor final
 		{
 			CodeBuilder& this_;
 			const Synt::Class& class_declaration;

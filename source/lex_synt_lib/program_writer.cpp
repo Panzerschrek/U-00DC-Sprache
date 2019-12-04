@@ -8,7 +8,7 @@ namespace U
 namespace Synt
 {
 
-class UniversalVisitor final : public boost::static_visitor<>
+class UniversalVisitor final
 {
 public:
 	explicit UniversalVisitor( std::ostream& in_stream ) : stream(in_stream) {}
@@ -181,7 +181,7 @@ static void ElementWrite( const TypeName& type_name, std::ostream& stream )
 
 static void ElementWrite( const Expression& expression, std::ostream& stream )
 {
-	class Visitor final : public boost::static_visitor<>
+	class Visitor final
 	{
 	public:
 		explicit Visitor( std::ostream& in_stream ) : stream(in_stream) {}
@@ -360,7 +360,7 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 
 	boost::apply_visitor( Visitor(stream), expression );
 
-	struct ExpressionWithUnaryOperatorsVisitor final : public boost::static_visitor<const ExpressionComponentWithUnaryOperators*>
+	struct ExpressionWithUnaryOperatorsVisitor final
 	{
 		const ExpressionComponentWithUnaryOperators* operator()( const ExpressionComponentWithUnaryOperators& expression_with_unary_operators ) const
 		{
@@ -378,7 +378,7 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 
 	if( const auto expression_with_unary_operators= boost::apply_visitor( ExpressionWithUnaryOperatorsVisitor(), expression ) )
 	{
-		struct PrefixVisitor final : public boost::static_visitor<ProgramString>
+		struct PrefixVisitor final
 		{
 			ProgramString operator()( const UnaryMinus& ) const
 			{
@@ -398,7 +398,7 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 			}
 		};
 
-		class PostifxVisitor final : public boost::static_visitor<>
+		class PostifxVisitor final
 		{
 		public:
 			explicit PostifxVisitor( std::ostream& in_stream ) : stream(in_stream) {}
