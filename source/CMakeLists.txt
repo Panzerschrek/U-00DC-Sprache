@@ -78,7 +78,7 @@ else()
 	message( FATAL_ERROR "llvm not found. Define LLVM_SRC_DIR for building llvm from sources, or define LLVM_LIB_DIR for installed llvm." )
 endif()
 
-llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER_LIB Core )
+llvm_map_components_to_libnames( LLVM_LIBS_FOR_CODE_BUILDER_LIB Core )
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER
 	Linker # for linking of multiple llvm modules
 	IPO # for pass manager builder, etc.
@@ -142,14 +142,12 @@ add_library( LexSyntLib ${LEX_SYNT_LIB_SOURCES} )
 target_include_directories( LexSyntLib PUBLIC ${Boost_INCLUDE_DIRS} )
 
 #
-# CompilerLib
+# CodeBuilderLib
 #
 
 file( GLOB COMPILER_LIB_SOURCES "code_builder_lib/*" )
-
-add_library( CompilerLib ${COMPILER_LIB_SOURCES} )
-target_link_libraries( CompilerLib ${LLVM_LIBS_FOR_COMPILER_LIB} )
-target_link_libraries( CompilerLib LexSyntLib )
+add_library( CodeBuilderLib ${COMPILER_LIB_SOURCES} )
+target_link_libraries( CodeBuilderLib LexSyntLib ${LLVM_LIBS_FOR_CODE_BUILDER_LIB} )
 
 #
 # Compiler
@@ -187,7 +185,7 @@ if( U_BUILD_COMPILER )
 	file( GLOB_RECURSE USTLIB_TEST_SOURCES "ustlib_test/*.u" )
 
 	add_executable( Compiler ${COMPILER_SOURCES} ${bc_files} ${USTLIB_SOURCES} ${USTLIB_TEST_SOURCES} )
-	target_link_libraries( Compiler CompilerLib ${LLVM_LIBS_FOR_COMPILER} )
+	target_link_libraries( Compiler CodeBuilderLib ${LLVM_LIBS_FOR_COMPILER} )
 	target_compile_definitions( Compiler PRIVATE "SPRACHE_VERSION=${PROJECT_VERSION}" )
 	target_include_directories( Compiler PRIVATE ${CMAKE_CURRENT_BINARY_DIR} )
 endif()
@@ -199,8 +197,7 @@ endif()
 if( REALLY_BUILD_CPP_HEADER_CONVERTER )
 	file( GLOB CPP_HEADER_CONVERTER_SOURCES "cpp_header_converter/*" )
 	add_executable( CppHeaderConverter ${CPP_HEADER_CONVERTER_SOURCES} )
-	target_link_libraries( CppHeaderConverter LexSyntLib )
-	target_link_libraries( CppHeaderConverter clangTooling )
+	target_link_libraries( CppHeaderConverter LexSyntLib clangTooling )
 	# Hack! Clang libraries does not exports their include directories, set it manually.
 	target_include_directories( CppHeaderConverter PRIVATE ${LLVM_EXTERNAL_CLANG_SOURCE_DIR}/include )
 	target_include_directories( CppHeaderConverter PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/llvm/tools/clang/include )
@@ -211,9 +208,8 @@ endif()
 #
 if( U_BUILD_TESTS )
 	file( GLOB TESTS_SOURCES "tests/cpp_tests/*" )
-
-	add_executable( Tests ${TESTS_SOURCES}  )
-	target_link_libraries( Tests CompilerLib ${LLVM_LIBS_FOR_TESTS} )
+	add_executable( Tests ${TESTS_SOURCES} )
+	target_link_libraries( Tests CodeBuilderLib ${LLVM_LIBS_FOR_TESTS} )
 endif()
 
 #
@@ -228,9 +224,7 @@ if( U_BUILD_PY_TESTS )
 		tests/tests_common.hpp )
 
 	add_library( PyTestsLib SHARED ${PY_TESTS_SOURCES} )
-	target_link_libraries( PyTestsLib CompilerLib )
-	target_link_libraries( PyTestsLib ${LLVM_LIBS_FOR_TESTS} )
-	target_link_libraries( PyTestsLib ${PYTHON_LIBRARIES} )
+	target_link_libraries( PyTestsLib CodeBuilderLib ${LLVM_LIBS_FOR_TESTS} ${PYTHON_LIBRARIES} )
 	target_include_directories( PyTestsLib PRIVATE ${PYTHON_INCLUDE_DIRS} )
 
 	# Set proper name for result dynamic library.
