@@ -2917,7 +2917,7 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	function_context.variables_state.AddLink( node, variable_lock.Node() );
 	variable.node= variable_lock.Node();
 
-	variable.constexpr_value= ApplyConstructorInitializer( variable, call_operator, names, function_context );
+	variable.constexpr_value= ApplyConstructorInitializer( call_operator, variable, names, function_context );
 	variable.value_type= ValueType::Value; // Make value after construction
 
 	variable.node= node;

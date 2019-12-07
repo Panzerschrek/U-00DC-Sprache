@@ -588,12 +588,15 @@ private:
 
 	// Initializers.
 	// Some initializers returns nonnul constant, if initializer is constant.
-
-	llvm::Constant* ApplyInitializer(
-		const Variable& variable,
-		const Synt::Initializer& initializer,
-		NamesScope& block_names,
-		FunctionContext& function_context );
+	
+	llvm::Constant* ApplyInitializer( const Synt::Initializer& initializer, const Variable& variable, NamesScope& names, FunctionContext& function_context );
+	llvm::Constant* ApplyInitializer( const Synt::EmptyVariant& initializer, const Variable& variable, NamesScope& names, FunctionContext& function_context );
+	llvm::Constant* ApplyInitializer( const Synt::ArrayInitializer& initializer, const Variable& variable, NamesScope& names, FunctionContext& function_context );
+	llvm::Constant* ApplyInitializer( const Synt::StructNamedInitializer& initializer, const Variable& variable, NamesScope& names, FunctionContext& function_context );
+	llvm::Constant* ApplyInitializer( const Synt::ConstructorInitializer& initializer, const Variable& variable, NamesScope& names, FunctionContext& function_context );
+	llvm::Constant* ApplyInitializer( const Synt::ExpressionInitializer& initializer, const Variable& variable, NamesScope& names, FunctionContext& function_context );
+	llvm::Constant* ApplyInitializer( const Synt::ZeroInitializer& initializer, const Variable& variable, NamesScope& names, FunctionContext& function_context );
+	llvm::Constant* ApplyInitializer( const Synt::UninitializedInitializer& uninitialized_initializer, const Variable& variable, NamesScope& names, FunctionContext& function_context );
 
 	void ApplyEmptyInitializer(
 		const ProgramString& variable_name,
@@ -602,39 +605,9 @@ private:
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
-	llvm::Constant* ApplyArrayInitializer(
-		const Variable& variable,
-		const Synt::ArrayInitializer& initializer,
-		NamesScope& block_names,
-		FunctionContext& function_context );
-
-	llvm::Constant* ApplyStructNamedInitializer(
-		const Variable& variable,
-		const Synt::StructNamedInitializer& initializer,
-		NamesScope& block_names,
-		FunctionContext& function_context );
-
 	llvm::Constant* ApplyConstructorInitializer(
-		const Variable& variable,
 		const Synt::CallOperator& call_operator,
-		NamesScope& block_names,
-		FunctionContext& function_context );
-
-	llvm::Constant* ApplyExpressionInitializer(
 		const Variable& variable,
-		const Synt::ExpressionInitializer& initializer,
-		NamesScope& block_names,
-		FunctionContext& function_context );
-
-	llvm::Constant* ApplyZeroInitializer(
-		const Variable& variable,
-		const Synt::ZeroInitializer& initializer,
-		NamesScope& block_names,
-		FunctionContext& function_context );
-
-	llvm::Constant* ApplyUninitializedInitializer(
-		const Variable& variable,
-		const Synt::UninitializedInitializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 

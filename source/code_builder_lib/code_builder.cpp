@@ -1906,7 +1906,7 @@ void CodeBuilder::BuildConstructorInitialization(
 					this_.llvm_value,
 					{ GetZeroGEPIndex(), GetFieldGEPIndex( 0u /* base class is allways first field */ ) } );
 
-			ApplyInitializer( base_variable, field_initializer.initializer, names_scope, function_context );
+			ApplyInitializer( field_initializer.initializer, base_variable, names_scope, function_context );
 			function_context.base_initialized= true;
 			continue;
 		}
@@ -1930,7 +1930,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			field_variable.llvm_value=
 				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex(field->index) } );
 
-			ApplyInitializer( field_variable, field_initializer.initializer, names_scope, function_context );
+			ApplyInitializer( field_initializer.initializer, field_variable, names_scope, function_context );
 		}
 
 		function_context.uninitialized_this_fields.erase( field );
@@ -2061,7 +2061,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 
 			if( variable_declaration.initializer != nullptr )
 				variable.constexpr_value=
-					ApplyInitializer( variable, *variable_declaration.initializer, names, function_context );
+					ApplyInitializer( *variable_declaration.initializer, variable, names, function_context );
 			else
 				ApplyEmptyInitializer( variable_declaration.name, variable_declaration.file_pos, variable, names, function_context );
 
