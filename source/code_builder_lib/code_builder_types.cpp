@@ -96,35 +96,6 @@ bool FunctionVariable::VirtuallyEquals( const FunctionVariable& other ) const
 		std::equal( l_type.args.begin() + 1, l_type.args.end(), r_type.args.begin() + 1 );  // Compare args, except first.
 }
 
-//
-// Class
-//
-
-Class::Class( const ProgramString& in_name, NamesScope* const parent_scope )
-	: members( in_name, parent_scope )
-{}
-
-Class::~Class()
-{}
-
-ClassMemberVisibility Class::GetMemberVisibility( const ProgramString& member_name ) const
-{
-	const auto it= members_visibility.find( member_name );
-	if( it == members_visibility.end() )
-		return ClassMemberVisibility::Public;
-	return it->second;
-}
-
-void Class::SetMemberVisibility( const ProgramString& member_name, const ClassMemberVisibility visibility )
-{
-	if( visibility == ClassMemberVisibility::Public )
-		return;
-	members_visibility[member_name]= visibility;
-}
-
-ClassField::ClassField( const ClassProxyPtr& in_class, Type in_type, const unsigned int in_index, const bool in_is_mutable, const bool in_is_reference )
-	: type(std::move(in_type)), class_(in_class), index(in_index), is_mutable(in_is_mutable), is_reference(in_is_reference)
-{}
 
 ArgOverloadingClass GetArgOverloadingClass( const bool is_reference, const bool is_mutable )
 {

@@ -8,6 +8,10 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
+//
+// Variable
+//
+
 Variable::Variable(
 	Type in_type,
 	const Location in_location, const ValueType in_value_type,
@@ -15,6 +19,15 @@ Variable::Variable(
 	: type(std::move(in_type)), location(in_location), value_type(in_value_type)
 	, llvm_value(in_llvm_value), constexpr_value(in_constexpr_value)
 {}
+
+//
+// ClassField
+//
+
+ClassField::ClassField( const ClassProxyPtr& in_class, Type in_type, const unsigned int in_index, const bool in_is_mutable, const bool in_is_reference )
+	: type(std::move(in_type)), class_(in_class), index(in_index), is_mutable(in_is_mutable), is_reference(in_is_reference)
+{}
+
 
 //
 // ThisOverloadedMethodsSet
