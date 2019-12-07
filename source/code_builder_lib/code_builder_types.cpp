@@ -9,34 +9,6 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-ArgOverloadingClass GetArgOverloadingClass( const bool is_reference, const bool is_mutable )
-{
-	if( is_reference && is_mutable )
-		return ArgOverloadingClass::MutalbeReference;
-	return ArgOverloadingClass::ImmutableReference;
-}
-
-ArgOverloadingClass GetArgOverloadingClass( const ValueType value_type )
-{
-	switch( value_type )
-	{
-	case ValueType::Value:
-	case ValueType::ConstReference:
-		return ArgOverloadingClass::ImmutableReference;
-
-	case ValueType::Reference:
-		return ArgOverloadingClass::MutalbeReference;
-	};
-
-	U_ASSERT(false);
-	return ArgOverloadingClass::ImmutableReference;
-}
-
-ArgOverloadingClass GetArgOverloadingClass( const Function::Arg& arg )
-{
-	return GetArgOverloadingClass( arg.is_mutable, arg.is_reference );
-}
-
 //
 // DeducedTemplateParameter
 //

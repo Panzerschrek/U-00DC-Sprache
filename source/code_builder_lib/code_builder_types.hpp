@@ -24,22 +24,6 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-using Synt::ClassMemberVisibility;
-
-// "Class" of function argument in terms of overloading.
-enum class ArgOverloadingClass
-{
-	// Value-args (both mutable and immutable), immutable references.
-	ImmutableReference,
-	// Mutable references.
-	MutalbeReference,
-	// SPRACHE_TODO - add class for move-references here
-};
-
-ArgOverloadingClass GetArgOverloadingClass( bool is_reference, bool is_mutable );
-ArgOverloadingClass GetArgOverloadingClass( ValueType value_type );
-ArgOverloadingClass GetArgOverloadingClass( const Function::Arg& arg );
-
 struct TemplateBase
 {
 	virtual ~TemplateBase()= default;
@@ -164,6 +148,6 @@ private:
 		Template> something_;
 };
 
-} //namespace CodeBuilderLLVMPrivate
+} //namespace CodeBuilderPrivate
 
 } // namespace U
