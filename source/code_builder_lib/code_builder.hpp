@@ -347,6 +347,22 @@ private:
 		const Synt::StructNamedInitializer& constructor_initialization_list );
 
 	// Expressions.
+	Value BuildExpressionCode( const Synt::Expression& expression, NamesScope& names, FunctionContext& function_context );
+	Value BuildExpressionCode( const Synt::EmptyVariant& expression, NamesScope& names, FunctionContext& function_context );
+	Value BuildExpressionCode( const Synt::BinaryOperator& binary_operator, NamesScope& names, FunctionContext& function_context );
+	Value BuildExpressionCode( const Synt::NamedOperand& named_operand, NamesScope& names, FunctionContext& function_context );
+	Value BuildExpressionCode( const Synt::TernaryOperator& ternary_operator, NamesScope& names, FunctionContext& function_context );
+	Value BuildExpressionCode( const Synt::TypeNameInExpression& type_name_in_expression, NamesScope& names, FunctionContext& function_context );
+	Value BuildExpressionCode( const Synt::NumericConstant& numeric_constant, NamesScope& names, FunctionContext& function_context );
+	Value BuildExpressionCode( const Synt::BracketExpression& bracket_expression, NamesScope& names, FunctionContext& function_context );
+	Value BuildExpressionCode( const Synt::BooleanConstant& boolean_constant, NamesScope& names, FunctionContext& function_context );
+	Value BuildExpressionCode( const Synt::StringLiteral& string_literal, NamesScope& names, FunctionContext& function_context );
+	Value BuildExpressionCode( const Synt::MoveOperator& move_operator, NamesScope& names, FunctionContext& function_context );
+	Value BuildExpressionCode( const Synt::CastMut& cast_mut, NamesScope& names, FunctionContext& function_context );
+	Value BuildExpressionCode( const Synt::CastImut& cast_imut, NamesScope& names, FunctionContext& function_context );
+	Value BuildExpressionCode( const Synt::CastRef& cast_ref, NamesScope& names, FunctionContext& function_context );
+	Value BuildExpressionCode( const Synt::CastRefUnsafe& cast_ref_unsafe, NamesScope& names, FunctionContext& function_context );
+	Value BuildExpressionCode( const Synt::TypeInfo& typeinfo, NamesScope& names, FunctionContext& function_context );
 
 	Value BuildExpressionCodeAndDestroyTemporaries(
 		const Synt::Expression& expression,
@@ -354,11 +370,6 @@ private:
 		FunctionContext& function_context );
 
 	Variable BuildExpressionCodeEnsureVariable(
-		const Synt::Expression& expression,
-		NamesScope& names,
-		FunctionContext& function_context );
-
-	Value BuildExpressionCode(
 		const Synt::Expression& expression,
 		NamesScope& names,
 		FunctionContext& function_context );
@@ -400,8 +411,6 @@ private:
 		NamesScope& names,
 		FunctionContext& function_context );
 
-	Value BuildCastRef( const Synt::CastRef& cast_ref, NamesScope& names, FunctionContext& function_context );
-	Value BuildCastRefUnsafe( const Synt::CastRefUnsafe& cast_ref_unsafe, NamesScope& names, FunctionContext& function_context );
 	Value DoReferenceCast(
 		const FilePos& file_pos,
 		const Synt::TypeName& type_name,
@@ -410,33 +419,10 @@ private:
 		NamesScope& names,
 		FunctionContext& function_context );
 
-	Value BuildCastImut( const Synt::CastImut& cast_imut, NamesScope& names, FunctionContext& function_context );
-	Value BuildCastMut( const Synt::CastMut& cast_mut, NamesScope& names, FunctionContext& function_context );
-
-	Value BuildNamedOperand( const Synt::NamedOperand& named_operand, NamesScope& names, FunctionContext& function_context );
-	Value BuildTernaryOperator( const Synt::TernaryOperator& ternary_operator, NamesScope& names, FunctionContext& function_context );
-	Value BuildMoveOpeator( const Synt::MoveOperator& move_operator, NamesScope& names, FunctionContext& function_context );
-	Value BuildNumericConstant( const Synt::NumericConstant& numeric_constant, NamesScope& names, FunctionContext& function_context );
-	Value BuildStringLiteral( const Synt::StringLiteral& string_literal, NamesScope& names, FunctionContext& function_context );
-	Variable BuildBooleanConstant( const Synt::BooleanConstant& boolean_constant, FunctionContext& function_context );
-
-	Value BuildIndexationOperator(
-		const Value& value,
-		const Synt::IndexationOperator& indexation_operator,
-		NamesScope& names,
-		FunctionContext& function_context );
-
-	Value BuildMemberAccessOperator(
-		const Value& value,
-		const Synt::MemberAccessOperator& member_access_operator,
-		NamesScope& names,
-		FunctionContext& function_context );
-
-	Value BuildCallOperator(
-		const Value& function_value,
-		const Synt::CallOperator& call_operator,
-		NamesScope& names,
-		FunctionContext& function_context );
+	// Postfix operators
+	Value BuildPostfixOperator( const Synt::CallOperator& call_operator, const Value& value, NamesScope& names, FunctionContext& function_context );
+	Value BuildPostfixOperator( const Synt::IndexationOperator& indexation_operator, const Value& value, NamesScope& names, FunctionContext& function_context );
+	Value BuildPostfixOperator( const Synt::MemberAccessOperator& member_access_operator, const Value& value, NamesScope& names, FunctionContext& function_context );
 
 	Value DoCallFunction(
 		llvm::Value* function,
@@ -463,27 +449,14 @@ private:
 		FunctionContext& function_context,
 		const FilePos& file_pos );
 
-	Value BuildUnaryMinus(
-		const Value& value,
-		const Synt::UnaryMinus& unary_minus,
-		NamesScope& names,
-		FunctionContext& function_context );
-
-	Value BuildLogicalNot(
-		const Value& value,
-		const Synt::LogicalNot& logical_not,
-		NamesScope& names,
-		FunctionContext& function_context );
-
-	Value BuildBitwiseNot(
-		const Value& value,
-		const Synt::BitwiseNot& bitwise_not,
-		NamesScope& names,
-		FunctionContext& function_context );
+	// Prefix operators
+	Value BuildPrefixOperator( const Synt::UnaryMinus& unary_minus, const Value& value, NamesScope& names, FunctionContext& function_context );
+	Value BuildPrefixOperator( const Synt::UnaryPlus& unary_plus, const Value& value, NamesScope& names, FunctionContext& function_context );
+	Value BuildPrefixOperator( const Synt::LogicalNot& logical_not, const Value& value, NamesScope& names, FunctionContext& function_context );
+	Value BuildPrefixOperator( const Synt::BitwiseNot& bitwise_not, 	const Value& value, NamesScope& names, FunctionContext& function_context );
 
 	// Typeinfo
 
-	Value BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, NamesScope& names, FunctionContext& function_context );
 	Variable BuildTypeInfo( const Type& type, NamesScope& root_namespace );
 	ClassProxyPtr CreateTypeinfoClass( NamesScope& root_namespace, const Type& src_type, const ProgramString& name );
 	Variable BuildTypeinfoPrototype( const Type& type, NamesScope& root_namespace );

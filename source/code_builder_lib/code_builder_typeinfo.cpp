@@ -33,15 +33,6 @@ std::string GetTypeinfoVariableName( const ClassProxyPtr& typeinfo_class )
 
 } // namespace
 
-Value CodeBuilder::BuildTypeinfoOperator( const Synt::TypeInfo& typeinfo_op, NamesScope& names, FunctionContext& function_context )
-{
-	const Type type= PrepareType( *typeinfo_op.type_, names, function_context );
-	if( type == invalid_type_ )
-		return ErrorValue();
-
-	return Value( BuildTypeInfo( type, *names.GetRoot() ), typeinfo_op.file_pos_ );
-}
-
 Variable CodeBuilder::BuildTypeInfo( const Type& type, NamesScope& root_namespace )
 {
 	// Search in cache.

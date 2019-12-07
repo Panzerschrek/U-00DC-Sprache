@@ -328,6 +328,24 @@ FilePos GetBlockElementFilePos( const BlockElement& block_element )
 	return boost::apply_visitor( GetFilePosVisitor(), block_element );
 }
 
+namespace
+{
+
+OverloadedOperator PrefixOperatorKind( const UnaryPlus& ) { return OverloadedOperator::Add; }
+OverloadedOperator PrefixOperatorKind( const UnaryMinus& ) { return OverloadedOperator::Sub; }
+OverloadedOperator PrefixOperatorKind( const LogicalNot& ) { return OverloadedOperator::LogicalNot; }
+OverloadedOperator PrefixOperatorKind( const BitwiseNot& ) { return OverloadedOperator::BitwiseNot; }
+
+}
+
+OverloadedOperator PrefixOperatorKind( const UnaryPrefixOperator& prefix_operator )
+{
+	return
+		boost::apply_visitor(
+			[]( const auto& t ) { return PrefixOperatorKind(t); },
+			prefix_operator );
+}
+
 } // namespace Synt
 
 } // namespace U

@@ -673,7 +673,7 @@ void CodeBuilder::ApplyEmptyInitializer(
 		// TODO - fix this.
 		// "CallOperator" pointer used as key in overloading resolution cache. Passing stack object is not safe.
 		const Synt::CallOperator call_operator( file_pos );
-		BuildCallOperator( std::move(this_overloaded_methods_set), call_operator, block_names, function_context );
+		BuildPostfixOperator( call_operator, std::move(this_overloaded_methods_set), block_names, function_context );
 	}
 	else U_ASSERT(false);
 }
@@ -1077,7 +1077,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		this_overloaded_methods_set.this_= variable;
 		this_overloaded_methods_set.GetOverloadedFunctionsSet()= *constructors_set;
 
-		BuildCallOperator( std::move(this_overloaded_methods_set), call_operator, block_names, function_context );
+		BuildPostfixOperator( call_operator, std::move(this_overloaded_methods_set), block_names, function_context );
 	}
 	else
 	{
