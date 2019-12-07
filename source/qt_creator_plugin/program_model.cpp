@@ -169,11 +169,11 @@ ProgramString Stringify( const Synt::BitwiseNot& )
 ProgramString Stringify( const Synt::Expression& expression )
 {
 	ProgramString result=
-		boost::apply_visitor(
+		std::visit(
 			[]( const auto& t ){ return Stringify(t); },
 			expression );
 
-	struct ExpressionWithUnaryOperatorsVisitor final : public boost::static_visitor<const Synt::ExpressionComponentWithUnaryOperators*>
+	struct ExpressionWithUnaryOperatorsVisitor final
 	{
 		const Synt::ExpressionComponentWithUnaryOperators* operator()( const Synt::ExpressionComponentWithUnaryOperators& expression_with_unary_operators ) const
 		{
@@ -189,17 +189,17 @@ ProgramString Stringify( const Synt::Expression& expression )
 		}
 	};
 
-	if( const auto expression_with_unary_operators= boost::apply_visitor( ExpressionWithUnaryOperatorsVisitor(), expression ) )
+	if( const auto expression_with_unary_operators= std::visit( ExpressionWithUnaryOperatorsVisitor(), expression ) )
 	{
 		for( const Synt::UnaryPostfixOperator& postfix_operator : expression_with_unary_operators->postfix_operators_ )
 			result+=
-				boost::apply_visitor(
+				std::visit(
 					[]( const auto& t ){ return Stringify(t); },
 					postfix_operator );
 		
 		for( const Synt::UnaryPrefixOperator& prefix_operator : expression_with_unary_operators->prefix_operators_ )
 			result=
-				boost::apply_visitor(
+				std::visit(
 					[]( const auto& t ){ return Stringify(t); },
 					prefix_operator ) +
 				result;
@@ -396,7 +396,7 @@ ProgramString Stringify( const Synt::NamedTypeName& named_type_name )
 ProgramString Stringify( const Synt::TypeName& type_name )
 {
 	return 
-		boost::apply_visitor(
+		std::visit(
 			[]( const auto& t ){ return Stringify(t); },
 			type_name );
 }
@@ -573,7 +573,7 @@ std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Enum
 
 std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::ClassElements& elements )
 {
-	struct Visitor final : public boost::static_visitor<>
+	struct Visitor final
 	{
 		std::vector<ProgramModel::ProgramTreeNode> result;
 		ProgramModel::Visibility current_visibility= ProgramModel::Visibility::Public;
@@ -700,14 +700,14 @@ std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Clas
 
 	Visitor visitor;
 	for( const Synt::ClassElement& class_element : elements )
-		boost::apply_visitor( visitor, class_element );
+		std::visit( visitor, class_element );
 
 	return std::move(visitor.result);
 }
 
 std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::ProgramElements& elements )
 {
-	struct Visitor final : public boost::static_visitor<>
+	struct Visitor final
 	{
 		std::vector<ProgramModel::ProgramTreeNode> result;
 
@@ -837,7 +837,7 @@ std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Prog
 
 	Visitor visitor;
 	for( const Synt::ProgramElement& program_element : elements )
-		boost::apply_visitor( visitor, program_element );
+		std::visit( visitor, program_element );
 
 	return std::move(visitor.result);
 }

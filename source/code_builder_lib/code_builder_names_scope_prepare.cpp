@@ -15,7 +15,7 @@ void CodeBuilder::NamesScopeFill(
 {
 	for( const Synt::ProgramElement& program_element : namespace_elements )
 	{
-		boost::apply_visitor(
+		std::visit(
 			[&]( const auto& t )
 			{
 				NamesScopeFill( t, names_scope );
@@ -321,7 +321,7 @@ ClassProxyPtr CodeBuilder::NamesScopeFill(
 
 		Visitor visitor( *this, class_declaration, class_type, the_class, class_name );
 		for( const Synt::ClassElement& class_element : class_declaration.elements_ )
-			boost::apply_visitor( visitor, class_element );
+			std::visit( visitor, class_element );
 	}
 
 	return class_type;
@@ -412,7 +412,7 @@ void CodeBuilder::NamesScopeFillOutOfLineElements(
 {
 	for (const Synt::ProgramElement& program_element : namespace_elements )
 	{
-		if( const auto func_ptr= boost::get< const Synt::FunctionPtr >( &program_element ) )
+		if( const auto func_ptr= std::get_if<Synt::FunctionPtr>( &program_element ) )
 		{
 			const Synt::Function& func= **func_ptr;
 			if( func.name_.components.size() != 1u )
@@ -426,7 +426,7 @@ void CodeBuilder::NamesScopeFillOutOfLineElements(
 				func_value->GetFunctionsSet()->out_of_line_syntax_elements.push_back(&func);
 			}
 		}
-		else if( const auto namespace_ptr= boost::get< const Synt::NamespacePtr >( &program_element ) )
+		else if( const auto namespace_ptr= std::get_if<Synt::NamespacePtr>( &program_element ) )
 		{
 			const Synt::Namespace& namespace_= **namespace_ptr;
 			if( const Value* const inner_namespace_value= names_scope.GetThisScopeValue( namespace_.name_ ) )

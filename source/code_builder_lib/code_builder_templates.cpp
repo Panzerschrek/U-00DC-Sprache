@@ -1,9 +1,5 @@
 ﻿#include <algorithm>
 
-#include "../lex_synt_lib/push_disable_boost_warnings.hpp"
-#include <boost/range/adaptor/reversed.hpp>
-#include "../lex_synt_lib/pop_boost_warnings.hpp"
-
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Constant.h>
 #include <llvm/IR/LLVMContext.h>
@@ -34,12 +30,12 @@ ProgramString EncodeTemplateParameters( std::vector<TemplateParam>& deduced_temp
 	ProgramString r;
 	for(const auto& arg : deduced_template_args )
 	{
-		if( const Type* const type= boost::get<Type>( &arg ) )
+		if( const Type* const type= std::get_if<Type>( &arg ) )
 		{
 			// We needs full mangled name of template parameter here, because short type names from different spaces may coincide.
 			r+= DecodeUTF8( MangleType( *type ) );
 		}
-		else if( const Variable* const variable= boost::get<Variable>( &arg ) )
+		else if( const Variable* const variable= std::get_if<Variable>( &arg ) )
 		{
 			// Currently, can be only integer, char or enum type.
 			FundamentalType raw_type;
@@ -104,9 +100,9 @@ void CreateTemplateErrorsContext(
 			const DeducibleTemplateParameter& arg= template_args[i];
 
 			args_description+= template_.template_parameters[i].name + " = "_SpC;
-			if( const Type* const type= boost::get<Type>( &arg ) )
+			if( const Type* const type= std::get_if<Type>( &arg ) )
 				args_description+= type->ToString();
-			else if( const Variable* const variable= boost::get<Variable>( &arg ) )
+			else if( const Variable* const variable= std::get_if<Variable>( &arg ) )
 				args_description+= ToProgramString( std::to_string( int64_t(variable->constexpr_value->getUniqueInteger().getLimitedValue()) ) );
 			else U_ASSERT(false);
 
@@ -184,7 +180,7 @@ void CodeBuilder::PrepareTypeTemplate(
 			PrepareTemplateSignatureParameter( signature_arg.name, template_parameters_namespace, template_parameters, template_parameters_usage_flags );
 			type_template->signature_arguments.push_back(&signature_arg.name);
 
-			if( boost::get<Synt::EmptyVariant>( &signature_arg.default_value ) == nullptr )
+			if( std::get_if<Synt::EmptyVariant>( &signature_arg.default_value ) == nullptr )
 			{
 				PrepareTemplateSignatureParameter( signature_arg.default_value, template_parameters_namespace, template_parameters, template_parameters_usage_flags );
 				type_template->default_signature_arguments.push_back(&signature_arg.default_value);
@@ -391,16 +387,16 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 {
 	bool special_expr_type= true;
 
-	if( const auto named_operand= boost::get<const Synt::NamedOperand>( &template_parameter ) )
+	if( const auto named_operand= std::get_if<Synt::NamedOperand>( &template_parameter ) )
 	{
 		if( named_operand->postfix_operators_.empty() && named_operand->prefix_operators_.empty() )
 			PrepareTemplateSignatureParameter( named_operand->file_pos_, named_operand->name_, names_scope, template_parameters, template_parameters_usage_flags );
 		else
 			special_expr_type= false;
 	}
-	else if( const auto type_name= boost::get<const Synt::TypeNameInExpression>( &template_parameter ) )
+	else if( const auto type_name= std::get_if<Synt::TypeNameInExpression>( &template_parameter ) )
 		PrepareTemplateSignatureParameter( type_name->type_name, names_scope, template_parameters, template_parameters_usage_flags );
-	else if( const auto bracket_expression= boost::get<const Synt::BracketExpression>( &template_parameter ) )
+	else if( const auto bracket_expression= std::get_if<Synt::BracketExpression>( &template_parameter ) )
 	{
 		if( bracket_expression->postfix_operators_.empty() && bracket_expression->prefix_operators_.empty() )
 			PrepareTemplateSignatureParameter( *bracket_expression->expression_, names_scope, template_parameters, template_parameters_usage_flags );
@@ -432,19 +428,19 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 	const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 	std::vector<bool>& template_parameters_usage_flags )
 {
-	if( const auto named_type_name= boost::get<const Synt::NamedTypeName>(&type_name_template_parameter) )
+	if( const auto named_type_name= std::get_if<Synt::NamedTypeName>(&type_name_template_parameter) )
 		PrepareTemplateSignatureParameter( named_type_name->file_pos_, named_type_name->name, names_scope, template_parameters, template_parameters_usage_flags );
-	else if( const auto array_type_name= boost::get<const Synt::ArrayTypeName>(&type_name_template_parameter) )
+	else if( const auto array_type_name= std::get_if<Synt::ArrayTypeName>(&type_name_template_parameter) )
 	{
 		PrepareTemplateSignatureParameter( *array_type_name->size, names_scope, template_parameters, template_parameters_usage_flags );
 		PrepareTemplateSignatureParameter( *array_type_name->element_type, names_scope, template_parameters, template_parameters_usage_flags );
 	}
-	else if( const auto tuple_type_name= boost::get<const Synt::TupleType>(&type_name_template_parameter) )
+	else if( const auto tuple_type_name= std::get_if<Synt::TupleType>(&type_name_template_parameter) )
 	{
 		for( const auto& element_type : tuple_type_name->element_types_ )
 			PrepareTemplateSignatureParameter( element_type, names_scope, template_parameters, template_parameters_usage_flags );
 	}
-	else if( const auto function_pointer_type_name_ptr= boost::get<const Synt::FunctionTypePtr>(&type_name_template_parameter) )
+	else if( const auto function_pointer_type_name_ptr= std::get_if<Synt::FunctionTypePtr>(&type_name_template_parameter) )
 	{
 		const Synt::FunctionType& function_pointer_type_name= **function_pointer_type_name_ptr;
 		// TODO - maybe check also reference tags?
@@ -488,7 +484,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 		}
 	}
 
-	if( const Variable* const variable= boost::get<Variable>(&template_parameter) )
+	if( const Variable* const variable= std::get_if<Variable>(&template_parameter) )
 	{
 		if( dependend_arg_index == ~0u )
 		{
@@ -545,11 +541,11 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 				variable->constexpr_value );
 		variable_for_insertion.constexpr_value= variable->constexpr_value;
 
-		if( boost::get<int>( &deducible_template_parameters[ dependend_arg_index ] ) != nullptr )
+		if( std::get_if<int>( &deducible_template_parameters[ dependend_arg_index ] ) != nullptr )
 			deducible_template_parameters[ dependend_arg_index ]= std::move( variable_for_insertion ); // Set empty arg.
-		else if( boost::get<Type>( &deducible_template_parameters[ dependend_arg_index ] ) != nullptr )
+		else if( std::get_if<Type>( &deducible_template_parameters[ dependend_arg_index ] ) != nullptr )
 			return DeducedTemplateParameter::Invalid(); // WTF?
-		else if( const Variable* const prev_variable_value= boost::get<Variable>( &deducible_template_parameters[ dependend_arg_index ] )  )
+		else if( const Variable* const prev_variable_value= std::get_if<Variable>( &deducible_template_parameters[ dependend_arg_index ] )  )
 		{
 			// Variable already known, Check conflicts.
 			// TODO - do real comparision
@@ -561,7 +557,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 		return DeducedTemplateParameter::TemplateParameter();
 	}
 
-	const Type& given_type= boost::get<Type>(template_parameter);
+	const Type& given_type= std::get<Type>(template_parameter);
 
 	// Try deduce simple arg.
 	if( dependend_arg_index != ~0u )
@@ -571,18 +567,18 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 			// Expected variable, but type given.
 			return DeducedTemplateParameter::Invalid();
 		}
-		else if( boost::get<int>( &deducible_template_parameters[ dependend_arg_index ] ) != nullptr )
+		else if( std::get_if<int>( &deducible_template_parameters[ dependend_arg_index ] ) != nullptr )
 		{
 			// Set empty arg.
 			deducible_template_parameters[ dependend_arg_index ]= given_type;
 		}
-		else if( const Type* const prev_type= boost::get<Type>( &deducible_template_parameters[ dependend_arg_index ] ) )
+		else if( const Type* const prev_type= std::get_if<Type>( &deducible_template_parameters[ dependend_arg_index ] ) )
 		{
 			// Type already known. Check conflicts.
 			if( *prev_type != given_type )
 				return DeducedTemplateParameter::Invalid();
 		}
-		else if( boost::get<Variable>( &deducible_template_parameters[ dependend_arg_index ] ) != nullptr )
+		else if( std::get_if<Variable>( &deducible_template_parameters[ dependend_arg_index ] ) != nullptr )
 		{
 			// Bind type argument to variable parameter.
 			return DeducedTemplateParameter::Invalid();
@@ -606,7 +602,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 		const Class* const given_type_class= given_type.GetClassType();
 		if( given_type_class == nullptr )
 			return DeducedTemplateParameter::Invalid();
-		if( given_type_class->base_template == boost::none )
+		if( given_type_class->base_template == std::nullopt )
 			return DeducedTemplateParameter::Invalid();
 
 		// TODO - build type templates set here
@@ -671,14 +667,14 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 	DeducibleTemplateParameters& deducible_template_parameters,
 	NamesScope& names_scope )
 {
-	if( const auto named_operand= boost::get<const Synt::NamedOperand>(&signature_parameter) )
+	if( const auto named_operand= std::get_if<Synt::NamedOperand>(&signature_parameter) )
 	{
 		if( named_operand->postfix_operators_.empty() && named_operand->prefix_operators_.empty() )
 			return DeduceTemplateArguments( template_, template_parameter, named_operand->name_, signature_parameter_file_pos, deducible_template_parameters, names_scope );
 	}
-	else if( const auto type_name= boost::get<const Synt::TypeNameInExpression>(&signature_parameter) )
+	else if( const auto type_name= std::get_if<Synt::TypeNameInExpression>(&signature_parameter) )
 		return DeduceTemplateArguments( template_, template_parameter, type_name->type_name, signature_parameter_file_pos, deducible_template_parameters, names_scope );
-	else if( const auto bracket_expression= boost::get<const Synt::BracketExpression>(&signature_parameter) )
+	else if( const auto bracket_expression= std::get_if<Synt::BracketExpression>(&signature_parameter) )
 	{
 		if( bracket_expression->postfix_operators_.empty() && bracket_expression->prefix_operators_.empty() )
 			return DeduceTemplateArguments( template_, template_parameter, *bracket_expression->expression_, signature_parameter_file_pos, deducible_template_parameters, names_scope );
@@ -686,7 +682,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 
 	// This is not special kind of template signature argument. So, process it as variable-expression.
 
-	const Variable* const param_var= boost::get<const Variable>( &template_parameter );
+	const Variable* const param_var= std::get_if<Variable>( &template_parameter );
 	if( param_var == nullptr )
 		return DeducedTemplateParameter::Invalid();
 	if( !TypeIsValidForTemplateVariableArgument( param_var->type ) )
@@ -716,11 +712,11 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 	DeducibleTemplateParameters& deducible_template_parameters,
 	NamesScope& names_scope )
 {
-	if( const auto named_type= boost::get<const Synt::NamedTypeName>(&signature_parameter) )
+	if( const auto named_type= std::get_if<Synt::NamedTypeName>(&signature_parameter) )
 		return DeduceTemplateArguments( template_, template_parameter, named_type->name, signature_parameter_file_pos, deducible_template_parameters, names_scope );
-	else if( const auto array_type= boost::get<const Synt::ArrayTypeName>(&signature_parameter) )
+	else if( const auto array_type= std::get_if<Synt::ArrayTypeName>(&signature_parameter) )
 	{
-		const Type* const param_type= boost::get<const Type>( &template_parameter );
+		const Type* const param_type= std::get_if<Type>( &template_parameter );
 		if( param_type == nullptr )
 			return DeducedTemplateParameter::Invalid();
 		const Array* const param_array_type= param_type->GetArrayType();
@@ -749,9 +745,9 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 
 		return std::move(result);
 	}
-	else if( const auto tuple_type_ptr= boost::get<const Synt::TupleType>(&signature_parameter) )
+	else if( const auto tuple_type_ptr= std::get_if<Synt::TupleType>(&signature_parameter) )
 	{
-		const Type* const param_type= boost::get<const Type>( &template_parameter );
+		const Type* const param_type= std::get_if<Type>( &template_parameter );
 		if( param_type == nullptr )
 			return DeducedTemplateParameter::Invalid();
 		const Tuple* const param_tuple_type= param_type->GetTupleType();
@@ -776,10 +772,10 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 		else
 			return std::move(result);
 	}
-	else if( const auto function_pointer_type_ptr= boost::get<const Synt::FunctionTypePtr>(&signature_parameter) )
+	else if( const auto function_pointer_type_ptr= std::get_if<Synt::FunctionTypePtr>(&signature_parameter) )
 	{
 		const Synt::FunctionType* const function_pointer_type= function_pointer_type_ptr->get();
-		const Type* const param_type= boost::get<const Type>( &template_parameter );
+		const auto param_type= std::get_if<Type>( &template_parameter );
 		if( param_type == nullptr )
 			return DeducedTemplateParameter::Invalid();
 		const FunctionPointer* const param_function_pointer_type= param_type->GetFunctionPointerType();
@@ -982,14 +978,14 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 			Value* const value= template_parameters_namespace->GetThisScopeValue( type_template.template_parameters[j].name );
 			U_ASSERT( value != nullptr );
 
-			if( boost::get<int>( &arg ) != nullptr )
+			if( std::get_if<int>( &arg ) != nullptr )
 			{} // Not deduced yet.
-			else if( const Type* const type= boost::get<Type>( &arg ) )
+			else if( const Type* const type= std::get_if<Type>( &arg ) )
 			{
 				if( value->GetYetNotDeducedTemplateArg() != nullptr )
 					*value= Value( *type, type_template.syntax_element->file_pos_ /*TODO - set correctfile_pos */ );
 			}
-			else if( const Variable* const variable= boost::get<Variable>( &arg ) )
+			else if( const Variable* const variable= std::get_if<Variable>( &arg ) )
 			{
 				if( value->GetYetNotDeducedTemplateArg() != nullptr )
 					*value= Value( *variable, type_template.syntax_element->file_pos_ /*TODO - set correctfile_pos */ );
@@ -1018,7 +1014,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	{
 		const auto& arg = deduced_template_args[i];
 
-		if( boost::get<int>( &arg ) != nullptr )
+		if( std::get_if<int>( &arg ) != nullptr )
 		{
 			// SPRACHE_TODO - maybe not generate this error?
 			// Other function templates, for example, can match given aruments.
@@ -1085,9 +1081,9 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		the_class.base_template->class_template= type_template_ptr;
 		for( const DeducibleTemplateParameter& arg : deduced_template_args )
 		{
-			if( const Type* const type= boost::get<Type>( &arg ) )
+			if( const Type* const type= std::get_if<Type>( &arg ) )
 				the_class.base_template->template_parameters.push_back( *type );
-			else if( const Variable* const variable= boost::get<Variable>( &arg ) )
+			else if( const Variable* const variable= std::get_if<Variable>( &arg ) )
 				the_class.base_template->template_parameters.push_back( *variable );
 			else U_ASSERT(false);
 		}
@@ -1179,7 +1175,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		{
 			// For named types we check, if reference or type conversion is possible, and if not, do arguments deduction.
 			bool deduced_specially= false;
-			if( const Synt::NamedTypeName* const named_type_name= boost::get<const Synt::NamedTypeName>( &function_argument.type_ ) )
+			if( const auto named_type_name= std::get_if<Synt::NamedTypeName>( &function_argument.type_ ) )
 			{
 				size_t dependend_arg_index= ~0u;
 				if( named_type_name->name.components.size() == 1u && !named_type_name->name.components.front().have_template_parameters )
@@ -1247,14 +1243,14 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 			Value* const value= template_parameters_namespace->GetThisScopeValue( function_template.template_parameters[j].name );
 			U_ASSERT( value != nullptr );
 
-			if( boost::get<int>( &arg ) != nullptr )
+			if( std::get_if<int>( &arg ) != nullptr )
 			{} // Not deduced yet.
-			else if( const Type* const type= boost::get<Type>( &arg ) )
+			else if( const Type* const type= std::get_if<Type>( &arg ) )
 			{
 				if( value->GetYetNotDeducedTemplateArg() != nullptr )
 					*value= Value( *type, function_template.file_pos /*TODO - set correctfile_pos */ );
 			}
-			else if( const Variable* const variable= boost::get<Variable>( &arg ) )
+			else if( const Variable* const variable= std::get_if<Variable>( &arg ) )
 			{
 				if( value->GetYetNotDeducedTemplateArg() != nullptr )
 					*value= Value( *variable, function_template.file_pos /*TODO - set correctfile_pos */ );
@@ -1271,7 +1267,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	{
 		const auto& arg = deduced_template_args[i];
 
-		if( boost::get<int>( &arg ) != nullptr )
+		if( std::get_if<int>( &arg ) != nullptr )
 		{
 			REPORT_ERROR( TemplateParametersDeductionFailed, errors_container, file_pos );
 			return nullptr;
@@ -1388,7 +1384,7 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 		for( size_t i= 0u; i < template_parameters.size(); ++i )
 		{
 			const TemplateBase::TemplateParameter& function_template_parameter= function_template.template_parameters[i];
-			if( boost::get<Type>( &template_parameters[i] ) != nullptr )
+			if( std::get_if<Type>( &template_parameters[i] ) != nullptr )
 			{
 				if( function_template_parameter.type_name != nullptr )
 				{
@@ -1396,7 +1392,7 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 					break;
 				}
 			}
-			else if( const Variable* const given_variable= boost::get<Variable>( &template_parameters[i] ) )
+			else if( const Variable* const given_variable= std::get_if<Variable>( &template_parameters[i] ) )
 			{
 				if( function_template_parameter.type_name == nullptr )
 				{
@@ -1419,7 +1415,7 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 				}
 				if( type_parameter_index != ~0u )
 				{
-					if( const Type* const expected_type= boost::get<Type>( &template_parameters[type_parameter_index] ) )
+					if( const Type* const expected_type= std::get_if<Type>( &template_parameters[type_parameter_index] ) )
 						ok= *expected_type == given_variable->type;
 					else
 						ok= false;
@@ -1463,9 +1459,9 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 		for( size_t i= 0u; i < template_parameters.size(); ++i )
 		{
 			const ProgramString& name= function_template.template_parameters[i].name;
-			if( const Type* const type= boost::get<Type>( &template_parameters[i] ) )
+			if( const Type* const type= std::get_if<Type>( &template_parameters[i] ) )
 				new_template->known_template_parameters.emplace_back( name, Value( *type, file_pos ) );
-			else if( const Variable* const variable= boost::get<Variable>( &template_parameters[i] ) )
+			else if( const Variable* const variable= std::get_if<Variable>( &template_parameters[i] ) )
 				new_template->known_template_parameters.emplace_back( name, Value( *variable, file_pos ) );
 			else U_ASSERT(false);
 		}
@@ -1549,7 +1545,7 @@ void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& fi
 							U_ASSERT( generated_class_type != nullptr );
 							Class* const generated_class= generated_class_type->GetClassType();
 							U_ASSERT( generated_class != nullptr );
-							U_ASSERT( generated_class->base_template != boost::none );
+							U_ASSERT( generated_class->base_template != std::nullopt );
 							ReportAboutIncompleteMembersOfTemplateClass( file_pos, *generated_class );
 						}
 					});

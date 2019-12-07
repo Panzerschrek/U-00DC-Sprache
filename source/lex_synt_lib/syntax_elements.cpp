@@ -315,17 +315,17 @@ struct GetFilePosVisitor final
 FilePos GetExpressionFilePos( const Expression& expression )
 {
 
-	return boost::apply_visitor( GetFilePosVisitor(), expression );
+	return std::visit( GetFilePosVisitor(), expression );
 }
 
 FilePos GetInitializerFilePos( const Initializer& initializer )
 {
-	return boost::apply_visitor( GetFilePosVisitor(), initializer );
+	return std::visit( GetFilePosVisitor(), initializer );
 }
 
 FilePos GetBlockElementFilePos( const BlockElement& block_element )
 {
-	return boost::apply_visitor( GetFilePosVisitor(), block_element );
+	return std::visit( GetFilePosVisitor(), block_element );
 }
 
 namespace
@@ -341,7 +341,7 @@ OverloadedOperator PrefixOperatorKind( const BitwiseNot& ) { return OverloadedOp
 OverloadedOperator PrefixOperatorKind( const UnaryPrefixOperator& prefix_operator )
 {
 	return
-		boost::apply_visitor(
+		std::visit(
 			[]( const auto& t ) { return PrefixOperatorKind(t); },
 			prefix_operator );
 }

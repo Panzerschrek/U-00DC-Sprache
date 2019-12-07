@@ -1,10 +1,6 @@
 #pragma once
 #include <memory>
 
-#include "push_disable_boost_warnings.hpp"
-#include <boost/optional/optional.hpp>
-#include "pop_boost_warnings.hpp"
-
 #include "program_string.hpp"
 #include "syntax_analyzer.hpp"
 
@@ -24,7 +20,7 @@ public:
 	virtual ~IVfs()= default;
 
 	// Empty "full_parent_file_path" means root file.
-	virtual boost::optional<LoadFileResult> LoadFileContent( const Path& file_path, const Path& full_parent_file_path )= 0;
+	virtual std::optional<LoadFileResult> LoadFileContent( const Path& file_path, const Path& full_parent_file_path )= 0;
 
 	virtual Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path )= 0;
 };

@@ -1,12 +1,9 @@
 #pragma once
 #include <limits>
 #include <memory>
+#include <optional>
+#include <variant>
 #include <vector>
-
-#include "push_disable_boost_warnings.hpp"
-#include <boost/optional.hpp>
-#include <boost/variant.hpp>
-#include "pop_boost_warnings.hpp"
 
 #include "lexical_analyzer.hpp"
 #include "operators.hpp"
@@ -93,7 +90,7 @@ using ClassPtr= std::unique_ptr<Class>;
 using FunctionPtr= std::unique_ptr<Function>;
 using NamespacePtr= std::unique_ptr<Namespace>;
 
-using TypeName= boost::variant<
+using TypeName= std::variant<
 	EmptyVariant,
 	ArrayTypeName,
 	TypeofTypeName,
@@ -101,18 +98,18 @@ using TypeName= boost::variant<
 	FunctionTypePtr,
 	TupleType >;
 
-using UnaryPrefixOperator= boost::variant<
+using UnaryPrefixOperator= std::variant<
 	UnaryPlus,
 	UnaryMinus,
 	LogicalNot,
 	BitwiseNot >;
 
-using UnaryPostfixOperator= boost::variant<
+using UnaryPostfixOperator= std::variant<
 	CallOperator,
 	IndexationOperator,
 	MemberAccessOperator >;
 
-using Expression= boost::variant<
+using Expression= std::variant<
 	EmptyVariant,
 	BinaryOperator,
 	NamedOperand,
@@ -129,7 +126,7 @@ using Expression= boost::variant<
 	CastRefUnsafe,
 	TypeInfo >;
 
-using Initializer= boost::variant<
+using Initializer= std::variant<
 	EmptyVariant,
 	ArrayInitializer,
 	StructNamedInitializer,
@@ -138,7 +135,7 @@ using Initializer= boost::variant<
 	ZeroInitializer,
 	UninitializedInitializer >;
 
-using BlockElement= boost::variant<
+using BlockElement= std::variant<
 	Block,
 	VariablesDeclaration,
 	AutoVariableDeclaration,
@@ -159,7 +156,7 @@ using BlockElement= boost::variant<
 	HaltIf
 >;
 
-using ClassElement= boost::variant<
+using ClassElement= std::variant<
 	VariablesDeclaration,
 	AutoVariableDeclaration,
 	StaticAssert,
@@ -175,7 +172,7 @@ using ClassElement= boost::variant<
 
 using ClassElements= std::vector<ClassElement>;
 
-using ProgramElement= boost::variant<
+using ProgramElement= std::variant<
 	VariablesDeclaration,
 	AutoVariableDeclaration,
 	StaticAssert,

@@ -354,7 +354,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 		( the_class.syntax_element != nullptr && the_class.syntax_element->is_forward_declaration_ ) )
 		return;
 
-	if( the_class.typeinfo_type != boost::none )
+	if( the_class.typeinfo_type != std::nullopt )
 	{
 		if( completeness <= TypeCompleteness::ReferenceTagsComplete )
 			return;
@@ -1025,9 +1025,9 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			variable.value_type= ValueType::ConstReference;
 
 			const Synt::Expression* initializer_expression= nullptr;
-			if( const auto expression_initializer= boost::get<const Synt::ExpressionInitializer>( variable_declaration.initializer.get() ) )
+			if( const auto expression_initializer= std::get_if<Synt::ExpressionInitializer>( variable_declaration.initializer.get() ) )
 				initializer_expression= &expression_initializer->expression;
-			else if( const auto constructor_initializer= boost::get<const Synt::ConstructorInitializer>( variable_declaration.initializer.get() ) )
+			else if( const auto constructor_initializer= std::get_if<Synt::ConstructorInitializer>( variable_declaration.initializer.get() ) )
 			{
 				if( constructor_initializer->call_operator.arguments_.size() != 1u )
 				{

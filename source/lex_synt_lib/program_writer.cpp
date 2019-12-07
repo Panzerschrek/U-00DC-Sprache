@@ -176,7 +176,7 @@ static void ElementWrite( const FunctionArgument& arg, std::ostream& stream )
 
 static void ElementWrite( const TypeName& type_name, std::ostream& stream )
 {
-	boost::apply_visitor( UniversalVisitor(stream), type_name );
+	std::visit( UniversalVisitor(stream), type_name );
 }
 
 static void ElementWrite( const Expression& expression, std::ostream& stream )
@@ -358,7 +358,7 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 		std::ostream& stream;
 	};
 
-	boost::apply_visitor( Visitor(stream), expression );
+	std::visit( Visitor(stream), expression );
 
 	struct ExpressionWithUnaryOperatorsVisitor final
 	{
@@ -376,7 +376,7 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 		}
 	};
 
-	if( const auto expression_with_unary_operators= boost::apply_visitor( ExpressionWithUnaryOperatorsVisitor(), expression ) )
+	if( const auto expression_with_unary_operators= std::visit( ExpressionWithUnaryOperatorsVisitor(), expression ) )
 	{
 		struct PrefixVisitor final
 		{
@@ -443,17 +443,17 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 
 		PrefixVisitor prefix_visitor;
 		for( const UnaryPrefixOperator& prefix_operator : expression_with_unary_operators->prefix_operators_ )
-			stream << ToUTF8( boost::apply_visitor( prefix_visitor, prefix_operator ) );
+			stream << ToUTF8( std::visit( prefix_visitor, prefix_operator ) );
 
 		PostifxVisitor postfix_visitor(stream);
 		for( const UnaryPostfixOperator& postfix_operator : expression_with_unary_operators->postfix_operators_ )
-			boost::apply_visitor( postfix_visitor, postfix_operator );
+			std::visit( postfix_visitor, postfix_operator );
 	}
 }
 
 static void ElementWrite( const Initializer& initializer, std::ostream& stream )
 {
-	if( const auto constructor_initializer= boost::get<ConstructorInitializer>( &initializer ) )
+	if( const auto constructor_initializer= std::get_if<ConstructorInitializer>( &initializer ) )
 	{
 		if( constructor_initializer->call_operator.arguments_.empty() )
 		{
@@ -533,7 +533,7 @@ static void ElementWrite( const Function& function, std::ostream& stream )
 	if( function.no_mangle_ )
 		stream << KeywordAscii( Keywords::nomangle_ ) << " ";
 
-	if( boost::get<EmptyVariant>(&function.condition_) == nullptr )
+	if( std::get_if<EmptyVariant>(&function.condition_) == nullptr )
 	{
 		stream << KeywordAscii( Keywords::enable_if_ ) << "( ";
 		ElementWrite( function.condition_, stream );
@@ -746,12 +746,12 @@ static void ElementWrite( const ClassVisibilityLabel& visibility_label, std::ost
 static void ElementWrite( const ClassElements& class_elements, std::ostream& stream )
 {
 	for( const ClassElement& element : class_elements )
-		boost::apply_visitor( UniversalVisitor( stream ), element );
+		std::visit( UniversalVisitor( stream ), element );
 }
 
 static void ElementWrite( const ProgramElement& element, std::ostream& stream )
 {
-	boost::apply_visitor( UniversalVisitor(stream), element );
+	std::visit( UniversalVisitor(stream), element );
 }
 
 static void ElementWrite( const ProgramElements& elements, std::ostream& stream )

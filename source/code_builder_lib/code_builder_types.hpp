@@ -1,15 +1,12 @@
 #pragma once
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <unordered_map>
 #include <unordered_set>
+#include <variant>
 #include <vector>
-
-#include "../lex_synt_lib/push_disable_boost_warnings.hpp"
-#include <boost/optional.hpp>
-#include <boost/variant.hpp>
-#include "../lex_synt_lib/pop_boost_warnings.hpp"
 
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Function.h>
@@ -151,7 +148,7 @@ private:
 	using FunctionPointerPtr= std::unique_ptr<FunctionPointer>;
 	using ArrayPtr= std::unique_ptr<Array>;
 
-	boost::variant<
+	std::variant<
 		FundamentalType,
 		FunctionPtr,
 		ArrayPtr,
@@ -404,7 +401,7 @@ public:
 	Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg );
 	Value( ErrorValue error_value );
 
-	int GetKindIndex() const;
+	size_t GetKindIndex() const;
 	ProgramString GetKindName() const;
 	const FilePos& GetFilePos() const;
 
@@ -451,7 +448,7 @@ public:
 	const ErrorValue* GetErrorValue() const;
 
 private:
-	boost::variant<
+	std::variant<
 		Variable,
 		FunctionVariable,
 		OverloadedFunctionsSet,
@@ -588,7 +585,7 @@ private:
 	CodeBuilderErrorsContainer* errors_= nullptr;
 };
 
-using TemplateParameter= boost::variant< Variable, Type >;
+using TemplateParameter= std::variant< Variable, Type >;
 
 class Class final
 {
@@ -658,10 +655,10 @@ public:
 	llvm::StructType* llvm_type;
 
 	// Exists only for classes, generated from class templates.
-	boost::optional<BaseTemplate> base_template;
+	std::optional<BaseTemplate> base_template;
 
 	// If this class is typeinfo, contains source type.
-	boost::optional<Type> typeinfo_type;
+	std::optional<Type> typeinfo_type;
 
 	Kind kind= Kind::Struct;
 
@@ -729,7 +726,7 @@ struct TypeTemplate final : TemplateBase
 	const Synt::TypeTemplateBase* syntax_element= nullptr;
 };
 
-using DeducibleTemplateParameter= boost::variant< int, Type, Variable >; // int means not deduced
+using DeducibleTemplateParameter= std::variant< int, Type, Variable >; // int means not deduced
 using DeducibleTemplateParameters= std::vector<DeducibleTemplateParameter>;
 
 struct FunctionTemplate final : public TemplateBase
@@ -807,7 +804,7 @@ public:
 	const Template* GetTemplate() const;
 
 private:
-	boost::variant<
+	std::variant<
 		Invalid,
 		Type,
 		Variable,

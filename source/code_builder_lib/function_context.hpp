@@ -11,7 +11,7 @@ namespace CodeBuilderPrivate
 {
 
 using OverloadingResolutionCache=
-	std::unordered_map< const Synt::SyntaxElementBase*, boost::optional<FunctionVariable> >;
+	std::unordered_map< const Synt::SyntaxElementBase*, std::optional<FunctionVariable> >;
 
 struct FunctionContext;
 
@@ -43,7 +43,7 @@ struct LoopFrame final
 struct FunctionContext
 {
 	FunctionContext(
-		const boost::optional<Type>& return_type,
+		const std::optional<Type>& return_type,
 		bool return_value_is_mutable,
 		bool return_value_is_reference,
 		llvm::LLVMContext& llvm_context,
@@ -51,8 +51,8 @@ struct FunctionContext
 
 	FunctionContext(const FunctionContext&)= delete;
 
-	const boost::optional<Type> return_type; // boost::none if type not known yet and must be deduced.
-	boost::optional<Type> deduced_return_type; // for functions with "auto" return type.
+	const std::optional<Type> return_type; // std::nullopt if type not known yet and must be deduced.
+	std::optional<Type> deduced_return_type; // for functions with "auto" return type.
 	const bool return_value_is_mutable;
 	const bool return_value_is_reference;
 

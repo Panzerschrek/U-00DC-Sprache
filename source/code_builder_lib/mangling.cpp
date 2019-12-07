@@ -265,7 +265,7 @@ NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 	}
 	else if( const Class* const class_type= type.GetClassType() )
 	{
-		if( class_type->typeinfo_type != boost::none )
+		if( class_type->typeinfo_type != std::nullopt )
 		{
 			result.full= class_type->members.GetThisNamespaceName();
 			result.compressed_and_escaped= result.full;

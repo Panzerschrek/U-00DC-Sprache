@@ -50,7 +50,7 @@ Variable CodeBuilder::BuildExpressionCodeEnsureVariable(
 	return std::move( *result_variable );
 }
 
-boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
+std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	const OverloadedOperator op,
 	const Synt::SyntaxElementBase& op_syntax_element,
 	const Synt::Expression&  left_expr,
@@ -64,7 +64,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 
 	const auto cache_it= function_context.overloading_resolution_cache.find( &op_syntax_element );
 	if( cache_it != function_context.overloading_resolution_cache.end() )
-		overloaded_operator= cache_it->second.get_ptr();
+		overloaded_operator= cache_it->second == std::nullopt ? nullptr : &*cache_it->second;
 	else
 	{
 		ArgsVector<Function::Arg> args;
@@ -134,7 +134,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		overloaded_operator= GetOverloadedOperator( args, op, names.GetErrors(), file_pos );
 
 		if( overloaded_operator == nullptr )
-			function_context.overloading_resolution_cache[ &op_syntax_element ]= boost::none;
+			function_context.overloading_resolution_cache[ &op_syntax_element ]= std::nullopt;
 		else
 			function_context.overloading_resolution_cache[ &op_syntax_element ]= *overloaded_operator;
 	}
@@ -168,7 +168,7 @@ boost::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 				function_context );
 	}
 
-	return boost::none;
+	return std::nullopt;
 }
 
 Value CodeBuilder::CallBinaryOperatorForTuple(
@@ -182,7 +182,7 @@ Value CodeBuilder::CallBinaryOperatorForTuple(
 	if( op == OverloadedOperator::Assign )
 	{
 		const Variable r_var= BuildExpressionCodeEnsureVariable( right_expr, names, function_context );
-		boost::optional<ReferencesGraphNodeHolder> r_var_lock;
+		std::optional<ReferencesGraphNodeHolder> r_var_lock;
 		if( r_var.node != nullptr )
 		{
 			if( function_context.variables_state.HaveOutgoingMutableNodes( r_var.node ) )
@@ -250,7 +250,7 @@ Value CodeBuilder::BuildExpressionCode(
 	FunctionContext& function_context )
 {
 	Value result=
-		boost::apply_visitor(
+		std::visit(
 			[&]( const auto& t )
 			{
 				return BuildExpressionCode( t, names, function_context );
@@ -274,12 +274,12 @@ Value CodeBuilder::BuildExpressionCode(
 		}
 	};
 
-	if( const auto expression_with_unary_operators= boost::apply_visitor( ExpressionWithUnaryOperatorsVisitor(), expression ) )
+	if( const auto expression_with_unary_operators= std::visit( ExpressionWithUnaryOperatorsVisitor(), expression ) )
 	{
 		for( const Synt::UnaryPostfixOperator& postfix_operator : expression_with_unary_operators->postfix_operators_ )
 		{
 			result=
-				boost::apply_visitor(
+				std::visit(
 					[&]( const auto& t )
 					{
 						return BuildPostfixOperator( t, result, names, function_context );
@@ -332,7 +332,7 @@ Value CodeBuilder::BuildExpressionCode(
 			else
 			{
 				result=
-					boost::apply_visitor(
+					std::visit(
 						[&]( const auto& t )
 						{
 							return BuildPrefixOperator( t, result, names, function_context );
@@ -372,7 +372,7 @@ Value CodeBuilder::BuildExpressionCode(
 				function_context );
 	}
 
-	boost::optional<Value> overloaded_operator_call_try=
+	std::optional<Value> overloaded_operator_call_try=
 		TryCallOverloadedBinaryOperator(
 			GetOverloadedOperatorForBinaryOperator( binary_operator.operator_type_ ),
 			binary_operator,
@@ -381,7 +381,7 @@ Value CodeBuilder::BuildExpressionCode(
 			binary_operator.file_pos_,
 			names,
 			function_context );
-	if( overloaded_operator_call_try != boost::none )
+	if( overloaded_operator_call_try != std::nullopt )
 		return std::move(*overloaded_operator_call_try);
 
 	Variable l_var=
@@ -1937,7 +1937,7 @@ Value CodeBuilder::BuildPostfixOperator(
 	const auto cache_it= function_context.overloading_resolution_cache.find( &call_operator );
 	if( cache_it != function_context.overloading_resolution_cache.end() &&
 		!call_operator.arguments_.empty() ) // empty check - hack for dummy call operator from empty initializer.
-		function_ptr= cache_it->second.get_ptr();
+		function_ptr= cache_it->second == std::nullopt ? nullptr : &*cache_it->second;
 	else
 	{
 		ArgsVector<Function::Arg> actual_args;
@@ -1972,7 +1972,7 @@ Value CodeBuilder::BuildPostfixOperator(
 			GetOverloadedFunction( *functions_set, actual_args, this_ != nullptr, names.GetErrors(), call_operator.file_pos_ );
 
 		if( function_ptr == nullptr )
-			function_context.overloading_resolution_cache[ &call_operator ]= boost::none;
+			function_context.overloading_resolution_cache[ &call_operator ]= std::nullopt;
 		else
 			function_context.overloading_resolution_cache[ &call_operator ]= *function_ptr;
 	}
@@ -2098,7 +2098,7 @@ Value CodeBuilder::BuildPostfixOperator(
 			function_context.overloading_resolution_cache[ &indexation_operator ]= *overloaded_operator;
 		}
 		else
-			function_context.overloading_resolution_cache[ &indexation_operator ]= boost::none;
+			function_context.overloading_resolution_cache[ &indexation_operator ]= std::nullopt;
 
 		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), indexation_operator.file_pos_, value.GetKindName() );
 		return ErrorValue();
@@ -2379,7 +2379,7 @@ Value CodeBuilder::BuildPostfixOperator(
 	if( variable.constexpr_value != nullptr )
 	{
 		llvm::Constant* var_constexpr_value= variable.constexpr_value;
-		if( class_type->typeinfo_type != boost::none ) // HACK!!! Replace old constexpr value with new for typeinfo, because constexpr value for incomplete type may be undef.
+		if( class_type->typeinfo_type != std::nullopt ) // HACK!!! Replace old constexpr value with new for typeinfo, because constexpr value for incomplete type may be undef.
 		{
 			for( const auto& typeinfo_cache_entry : typeinfo_cache_ )
 			{

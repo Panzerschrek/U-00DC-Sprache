@@ -431,7 +431,7 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 		enum_.name= enum_name;
 
 		Synt::TypeName type_name= TranslateType( *enum_decl.getIntegerType().getTypePtr() );
-		if( Synt::NamedTypeName* const named_type_name= boost::get<Synt::NamedTypeName>( &type_name ) )
+		if( Synt::NamedTypeName* const named_type_name= std::get_if<Synt::NamedTypeName>( &type_name ) )
 			enum_.underlaying_type_name= std::move(named_type_name->name);
 
 		for( const clang::EnumConstantDecl* const enumerator : enum_decl.enumerators() )

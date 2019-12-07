@@ -1,5 +1,3 @@
-#include "boost/functional/hash.hpp"
-
 #include "../lex_synt_lib/assert.hpp"
 #include "../lex_synt_lib/keywords.hpp"
 
@@ -189,23 +187,23 @@ Type& Type::operator=( const Type& other )
 	};
 
 	Visitor visitor( *this );
-	boost::apply_visitor( visitor, other.something_ );
+	std::visit( visitor, other.something_ );
 	return *this;
 }
 
 FundamentalType* Type::GetFundamentalType()
 {
-	return boost::get<FundamentalType>( &something_ );
+	return std::get_if<FundamentalType>( &something_ );
 }
 
 const FundamentalType* Type::GetFundamentalType() const
 {
-	return boost::get<FundamentalType>( &something_ );
+	return std::get_if<FundamentalType>( &something_ );
 }
 
 Function* Type::GetFunctionType()
 {
-	FunctionPtr* const function_type= boost::get<FunctionPtr>( &something_ );
+	FunctionPtr* const function_type= std::get_if<FunctionPtr>( &something_ );
 	if( function_type == nullptr )
 		return nullptr;
 	return function_type->get();
@@ -213,7 +211,7 @@ Function* Type::GetFunctionType()
 
 const Function* Type::GetFunctionType() const
 {
-	const FunctionPtr* const function_type= boost::get<FunctionPtr>( &something_ );
+	const FunctionPtr* const function_type= std::get_if<FunctionPtr>( &something_ );
 	if( function_type == nullptr )
 		return nullptr;
 	return function_type->get();
@@ -221,7 +219,7 @@ const Function* Type::GetFunctionType() const
 
 FunctionPointer* Type::GetFunctionPointerType()
 {
-	FunctionPointerPtr* const function_pointer_type= boost::get<FunctionPointerPtr>( &something_ );
+	FunctionPointerPtr* const function_pointer_type= std::get_if<FunctionPointerPtr>( &something_ );
 	if( function_pointer_type == nullptr )
 		return nullptr;
 	return function_pointer_type->get();
@@ -229,7 +227,7 @@ FunctionPointer* Type::GetFunctionPointerType()
 
 const FunctionPointer* Type::GetFunctionPointerType() const
 {
-	const FunctionPointerPtr* const function_pointer_type= boost::get<FunctionPointerPtr>( &something_ );
+	const FunctionPointerPtr* const function_pointer_type= std::get_if<FunctionPointerPtr>( &something_ );
 	if( function_pointer_type == nullptr )
 		return nullptr;
 	return function_pointer_type->get();
@@ -237,7 +235,7 @@ const FunctionPointer* Type::GetFunctionPointerType() const
 
 Array* Type::GetArrayType()
 {
-	ArrayPtr* const array_type= boost::get<ArrayPtr>( &something_ );
+	ArrayPtr* const array_type= std::get_if<ArrayPtr>( &something_ );
 	if( array_type == nullptr )
 		return nullptr;
 	return array_type->get();
@@ -245,7 +243,7 @@ Array* Type::GetArrayType()
 
 const Array* Type::GetArrayType() const
 {
-	const ArrayPtr* const array_type= boost::get<ArrayPtr>( &something_ );
+	const ArrayPtr* const array_type= std::get_if<ArrayPtr>( &something_ );
 	if( array_type == nullptr )
 		return nullptr;
 	return array_type->get();
@@ -253,17 +251,17 @@ const Array* Type::GetArrayType() const
 
 Tuple* Type::GetTupleType()
 {
-	return  boost::get<Tuple>( &something_ );
+	return  std::get_if<Tuple>( &something_ );
 }
 
 const Tuple* Type::GetTupleType() const
 {
-	return  boost::get<Tuple>( &something_ );
+	return  std::get_if<Tuple>( &something_ );
 }
 
 ClassProxyPtr Type::GetClassTypeProxy() const
 {
-	const ClassProxyPtr* const class_type= boost::get<ClassProxyPtr>( &something_ );
+	const ClassProxyPtr* const class_type= std::get_if<ClassProxyPtr>( &something_ );
 	if( class_type == nullptr )
 		return nullptr;
 	return *class_type;
@@ -279,7 +277,7 @@ Class* Type::GetClassType() const
 
 Enum* Type::GetEnumType() const
 {
-	const EnumPtr* enum_ptr= boost::get<EnumPtr>( &something_ );
+	const EnumPtr* enum_ptr= std::get_if<EnumPtr>( &something_ );
 	if( enum_ptr == nullptr )
 		return nullptr;
 	return *enum_ptr;
@@ -287,7 +285,7 @@ Enum* Type::GetEnumType() const
 
 EnumPtr Type::GetEnumTypePtr() const
 {
-	const EnumPtr* enum_ptr= boost::get<EnumPtr>( &something_ );
+	const EnumPtr* enum_ptr= std::get_if<EnumPtr>( &something_ );
 	if( enum_ptr == nullptr )
 		return nullptr;
 	return *enum_ptr;
@@ -321,17 +319,17 @@ bool Type::ReferenceIsConvertibleTo( const Type& other ) const
 
 bool Type::IsDefaultConstructible() const
 {
-	if( const ClassProxyPtr* const class_= boost::get<ClassProxyPtr>( &something_ ) )
+	if( const ClassProxyPtr* const class_= std::get_if<ClassProxyPtr>( &something_ ) )
 	{
 		U_ASSERT( *class_ != nullptr && (*class_)->class_ != nullptr );
 		return (*class_)->class_->is_default_constructible;
 	}
-	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
+	else if( const ArrayPtr* const array= std::get_if<ArrayPtr>( &something_ ) )
 	{
 		U_ASSERT( *array != nullptr );
 		return (*array)->size == 0u || (*array)->type.IsDefaultConstructible();
 	}
-	else if( const Tuple* const tuple= boost::get<Tuple>( &something_ ) )
+	else if( const Tuple* const tuple= std::get_if<Tuple>( &something_ ) )
 	{
 		bool default_constructible= true;
 		for( const Type& element : tuple->elements )
@@ -344,23 +342,23 @@ bool Type::IsDefaultConstructible() const
 
 bool Type::IsCopyConstructible() const
 {
-	if( boost::get<FundamentalType>( &something_ ) != nullptr ||
-		boost::get<EnumPtr>( &something_ ) != nullptr ||
-		boost::get<FunctionPointerPtr>( &something_ ) != nullptr )
+	if( std::get_if<FundamentalType>( &something_ ) != nullptr ||
+		std::get_if<EnumPtr>( &something_ ) != nullptr ||
+		std::get_if<FunctionPointerPtr>( &something_ ) != nullptr )
 	{
 		return true;
 	}
-	else if( const ClassProxyPtr* const class_= boost::get<ClassProxyPtr>( &something_ ) )
+	else if( const ClassProxyPtr* const class_= std::get_if<ClassProxyPtr>( &something_ ) )
 	{
 		U_ASSERT( *class_ != nullptr && (*class_)->class_ != nullptr );
 		return (*class_)->class_->is_copy_constructible;
 	}
-	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
+	else if( const ArrayPtr* const array= std::get_if<ArrayPtr>( &something_ ) )
 	{
 		U_ASSERT( *array != nullptr );
 		return (*array)->size == 0u || (*array)->type.IsCopyConstructible();
 	}
-	else if( const Tuple* const tuple= boost::get<Tuple>( &something_ ) )
+	else if( const Tuple* const tuple= std::get_if<Tuple>( &something_ ) )
 	{
 		bool copy_constructible= true;
 		for( const Type& element : tuple->elements )
@@ -375,17 +373,17 @@ bool Type::IsCopyAssignable() const
 {
 	if( GetFundamentalType() != nullptr || GetEnumType() != nullptr || GetFunctionPointerType() != nullptr )
 		return true;
-	else if( const ClassProxyPtr* const class_= boost::get<ClassProxyPtr>( &something_ ) )
+	else if( const ClassProxyPtr* const class_= std::get_if<ClassProxyPtr>( &something_ ) )
 	{
 		U_ASSERT( *class_ != nullptr && (*class_)->class_ != nullptr );
 		return (*class_)->class_->is_copy_assignable;
 	}
-	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
+	else if( const ArrayPtr* const array= std::get_if<ArrayPtr>( &something_ ) )
 	{
 		U_ASSERT( *array != nullptr );
 		return (*array)->size == 0u || (*array)->type.IsCopyAssignable();
 	}
-	else if( const Tuple* const tuple= boost::get<Tuple>( &something_ ) )
+	else if( const Tuple* const tuple= std::get_if<Tuple>( &something_ ) )
 	{
 		bool copy_assignable= true;
 		for( const Type& element : tuple->elements )
@@ -398,17 +396,17 @@ bool Type::IsCopyAssignable() const
 
 bool Type::HaveDestructor() const
 {
-	if( const ClassProxyPtr* const class_= boost::get<ClassProxyPtr>( &something_ ) )
+	if( const ClassProxyPtr* const class_= std::get_if<ClassProxyPtr>( &something_ ) )
 	{
 		U_ASSERT( *class_ != nullptr && (*class_)->class_ != nullptr );
 		return (*class_)->class_->have_destructor;
 	}
-	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
+	else if( const ArrayPtr* const array= std::get_if<ArrayPtr>( &something_ ) )
 	{
 		U_ASSERT( *array != nullptr );
 		return (*array)->type.HaveDestructor();
 	}
-	else if( const Tuple* const tuple= boost::get<Tuple>( &something_ ) )
+	else if( const Tuple* const tuple= std::get_if<Tuple>( &something_ ) )
 	{
 		bool have_destructor= false;
 		for( const Type& element : tuple->elements )
@@ -421,20 +419,20 @@ bool Type::HaveDestructor() const
 
 bool Type::CanBeConstexpr() const
 {
-	if( boost::get<FundamentalType>( &something_ ) != nullptr ||
-		boost::get<EnumPtr>( &something_ ) != nullptr ||
-		boost::get<FunctionPointerPtr>( &something_ ) != nullptr )
+	if( std::get_if<FundamentalType>( &something_ ) != nullptr ||
+		std::get_if<EnumPtr>( &something_ ) != nullptr ||
+		std::get_if<FunctionPointerPtr>( &something_ ) != nullptr )
 	{
 		return true;
 	}
-	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
+	else if( const ArrayPtr* const array= std::get_if<ArrayPtr>( &something_ ) )
 	{
 		U_ASSERT( *array != nullptr );
 		return (*array)->type.CanBeConstexpr();
 	}
 	else if( const Class* const class_= GetClassType() )
 		return class_->can_be_constexpr;
-	else if( const Tuple* const tuple= boost::get<Tuple>( &something_ ) )
+	else if( const Tuple* const tuple= std::get_if<Tuple>( &something_ ) )
 	{
 		bool can_be_constexpr= true;
 		for( const Type& element : tuple->elements )
@@ -447,20 +445,20 @@ bool Type::CanBeConstexpr() const
 
 bool Type::IsAbstract() const
 {
-	if( boost::get<FundamentalType>( &something_ ) != nullptr ||
-		boost::get<EnumPtr>( &something_ ) != nullptr ||
-		boost::get<FunctionPointerPtr>( &something_ ) != nullptr )
+	if( std::get_if<FundamentalType>( &something_ ) != nullptr ||
+		std::get_if<EnumPtr>( &something_ ) != nullptr ||
+		std::get_if<FunctionPointerPtr>( &something_ ) != nullptr )
 	{
 		return false;
 	}
-	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
+	else if( const ArrayPtr* const array= std::get_if<ArrayPtr>( &something_ ) )
 	{
 		U_ASSERT( *array != nullptr );
 		return (*array)->size > 0u && (*array)->type.IsAbstract();
 	}
 	else if( const Class* const class_= GetClassType() )
 		return class_->kind == Class::Kind::Abstract || class_->kind == Class::Kind::Interface;
-	else if( const Tuple* const tuple= boost::get<Tuple>( &something_ ) )
+	else if( const Tuple* const tuple= std::get_if<Tuple>( &something_ ) )
 	{
 		bool is_abstract= false;
 		for( const Type& element : tuple->elements )
@@ -477,12 +475,12 @@ size_t Type::ReferencesTagsCount() const
 	{
 		return class_type->references_tags_count;
 	}
-	else if( const ArrayPtr* const array= boost::get<ArrayPtr>( &something_ ) )
+	else if( const ArrayPtr* const array= std::get_if<ArrayPtr>( &something_ ) )
 	{
 		U_ASSERT( *array != nullptr );
 		return (*array)->type.ReferencesTagsCount();
 	}
-	else if( const Tuple* const tuple= boost::get<Tuple>( &something_ ) )
+	else if( const Tuple* const tuple= std::get_if<Tuple>( &something_ ) )
 	{
 		size_t res= 0u;
 		for( const Type& element : tuple->elements )
@@ -536,7 +534,7 @@ llvm::Type* Type::GetLLVMType() const
 		}
 	};
 
-	return boost::apply_visitor( Visitor(), something_ );
+	return std::visit( Visitor(), something_ );
 }
 
 ProgramString Type::ToString() const
@@ -577,7 +575,7 @@ ProgramString Type::ToString() const
 		ProgramString operator()( const ClassProxyPtr& class_ ) const
 		{
 			ProgramString result;
-			if( class_->class_->base_template != boost::none )
+			if( class_->class_->base_template != std::nullopt )
 			{
 				// Skip template parameters namespace.
 				const ProgramString template_namespace_name= class_->class_->members.GetParent()->GetParent()->ToString();
@@ -589,9 +587,9 @@ ProgramString Type::ToString() const
 				result+= "</"_SpC;
 				for( const TemplateParameter& param : class_->class_->base_template->signature_parameters )
 				{
-					if( const Type* const param_as_type = boost::get<Type>( &param ) )
+					if( const Type* const param_as_type = std::get_if<Type>( &param ) )
 						result+= param_as_type->ToString();
-					else if( const Variable* const param_as_variable= boost::get<Variable>( &param ) )
+					else if( const Variable* const param_as_variable= std::get_if<Variable>( &param ) )
 					{
 						U_ASSERT( param_as_variable->constexpr_value != nullptr );
 						const uint64_t param_numeric_value= param_as_variable->constexpr_value->getUniqueInteger().getLimitedValue();
@@ -671,39 +669,39 @@ ProgramString Type::ToString() const
 		}
 	};
 
-	return boost::apply_visitor( Visitor(), something_ );
+	return std::visit( Visitor(), something_ );
 }
 
 bool operator==( const Type& l, const Type& r )
 {
-	if( l.something_.which() != r.something_.which() )
+	if( l.something_.index() != r.something_.index() )
 		return false;
 
-	if( l.something_.which() == 0 )
+	if( l.something_.index() == 0 )
 	{
 		return *l.GetFundamentalType() == *r.GetFundamentalType();
 	}
-	else if( l.something_.which() == 1 )
+	else if( l.something_.index() == 1 )
 	{
 		return *l.GetFunctionType() == *r.GetFunctionType();
 	}
-	else if( l.something_.which() == 2 )
+	else if( l.something_.index() == 2 )
 	{
 		return *l.GetArrayType() == *r.GetArrayType();
 	}
-	else if( l.something_.which() == 3 )
+	else if( l.something_.index() == 3 )
 	{
 		return l.GetClassTypeProxy() == r.GetClassTypeProxy();
 	}
-	else if( l.something_.which() == 4 )
+	else if( l.something_.index() == 4 )
 	{
 		return l.GetEnumType() == r.GetEnumType();
 	}
-	else if( l.something_.which() == 5 )
+	else if( l.something_.index() == 5 )
 	{
 		return *l.GetFunctionPointerType() == *r.GetFunctionPointerType();
 	}
-	else if( l.something_.which() == 6 )
+	else if( l.something_.index() == 6 )
 	{
 		return *l.GetTupleType() == *r.GetTupleType();
 	}
@@ -1005,9 +1003,9 @@ Value::Value( ErrorValue error_value )
 	something_= std::move(error_value);
 }
 
-int Value::GetKindIndex() const
+size_t Value::GetKindIndex() const
 {
-	return something_.which();
+	return something_.index();
 }
 
 ProgramString Value::GetKindName() const
@@ -1029,7 +1027,7 @@ ProgramString Value::GetKindName() const
 		ProgramString operator()( const ErrorValue& ) const { return "error value"_SpC; }
 	};
 
-	return boost::apply_visitor( Visitor(), something_ );
+	return std::visit( Visitor(), something_ );
 }
 
 const FilePos& Value::GetFilePos() const
@@ -1049,67 +1047,67 @@ void Value::SetIsTemplateParameter( const bool is_template_parameter )
 
 Variable* Value::GetVariable()
 {
-	return boost::get<Variable>( &something_ );
+	return std::get_if<Variable>( &something_ );
 }
 
 const Variable* Value::GetVariable() const
 {
-	return boost::get<Variable>( &something_ );
+	return std::get_if<Variable>( &something_ );
 }
 
 FunctionVariable* Value::GetFunctionVariable()
 {
-	return boost::get<FunctionVariable>( &something_ );
+	return std::get_if<FunctionVariable>( &something_ );
 }
 
 const FunctionVariable* Value::GetFunctionVariable() const
 {
-	return boost::get<FunctionVariable>( &something_ );
+	return std::get_if<FunctionVariable>( &something_ );
 }
 
 OverloadedFunctionsSet* Value::GetFunctionsSet()
 {
-	return boost::get<OverloadedFunctionsSet>( &something_ );
+	return std::get_if<OverloadedFunctionsSet>( &something_ );
 }
 
 const OverloadedFunctionsSet* Value::GetFunctionsSet() const
 {
-	return boost::get<OverloadedFunctionsSet>( &something_ );
+	return std::get_if<OverloadedFunctionsSet>( &something_ );
 }
 
 Type* Value::GetTypeName()
 {
-	return boost::get<Type>( &something_ );
+	return std::get_if<Type>( &something_ );
 }
 
 const Type* Value::GetTypeName() const
 {
-	return boost::get<Type>( &something_ );
+	return std::get_if<Type>( &something_ );
 }
 
 ClassField* Value::GetClassField()
 {
-	return boost::get<ClassField>( &something_ );
+	return std::get_if<ClassField>( &something_ );
 }
 
 const ClassField* Value::GetClassField() const
 {
-	return boost::get<ClassField>( &something_ );
+	return std::get_if<ClassField>( &something_ );
 }
 
 ThisOverloadedMethodsSet* Value::GetThisOverloadedMethodsSet()
 {
-	return boost::get<ThisOverloadedMethodsSet>( &something_ );
+	return std::get_if<ThisOverloadedMethodsSet>( &something_ );
 }
 
 const ThisOverloadedMethodsSet* Value::GetThisOverloadedMethodsSet() const
 {
-	return boost::get<ThisOverloadedMethodsSet>( &something_ );
+	return std::get_if<ThisOverloadedMethodsSet>( &something_ );
 }
 
 NamesScopePtr Value::GetNamespace() const
 {
-	const NamesScopePtr* const namespace_= boost::get<NamesScopePtr>( &something_ );
+	const NamesScopePtr* const namespace_= std::get_if<NamesScopePtr>( &something_ );
 	if( namespace_ == nullptr )
 		return nullptr;
 	return *namespace_;
@@ -1117,62 +1115,62 @@ NamesScopePtr Value::GetNamespace() const
 
 TypeTemplatesSet* Value::GetTypeTemplatesSet()
 {
-	return boost::get<TypeTemplatesSet>( &something_ );
+	return std::get_if<TypeTemplatesSet>( &something_ );
 }
 
 const TypeTemplatesSet* Value::GetTypeTemplatesSet() const
 {
-	return boost::get<TypeTemplatesSet>( &something_ );
+	return std::get_if<TypeTemplatesSet>( &something_ );
 }
 
 StaticAssert* Value::GetStaticAssert()
 {
-	return boost::get<StaticAssert>( &something_ );
+	return std::get_if<StaticAssert>( &something_ );
 }
 
 const StaticAssert* Value::GetStaticAssert() const
 {
-	return boost::get<StaticAssert>( &something_ );
+	return std::get_if<StaticAssert>( &something_ );
 }
 
 Typedef* Value::GetTypedef()
 {
-	return boost::get<Typedef>( &something_ );
+	return std::get_if<Typedef>( &something_ );
 }
 
 const Typedef* Value::GetTypedef() const
 {
-	return boost::get<Typedef>( &something_ );
+	return std::get_if<Typedef>( &something_ );
 }
 
 IncompleteGlobalVariable* Value::GetIncompleteGlobalVariable()
 {
-	return boost::get<IncompleteGlobalVariable>( &something_ );
+	return std::get_if<IncompleteGlobalVariable>( &something_ );
 }
 
 const IncompleteGlobalVariable* Value::GetIncompleteGlobalVariable() const
 {
-	return boost::get<IncompleteGlobalVariable>( &something_ );
+	return std::get_if<IncompleteGlobalVariable>( &something_ );
 }
 
 YetNotDeducedTemplateArg* Value::GetYetNotDeducedTemplateArg()
 {
-	return boost::get<YetNotDeducedTemplateArg>( &something_ );
+	return std::get_if<YetNotDeducedTemplateArg>( &something_ );
 }
 
 const YetNotDeducedTemplateArg* Value::GetYetNotDeducedTemplateArg() const
 {
-	return boost::get<YetNotDeducedTemplateArg>( &something_ );
+	return std::get_if<YetNotDeducedTemplateArg>( &something_ );
 }
 
 ErrorValue* Value::GetErrorValue()
 {
-	return boost::get<ErrorValue>( &something_ );
+	return std::get_if<ErrorValue>( &something_ );
 }
 
 const ErrorValue* Value::GetErrorValue() const
 {
-	return boost::get<ErrorValue>( &something_ );
+	return std::get_if<ErrorValue>( &something_ );
 }
 
 ArgOverloadingClass GetArgOverloadingClass( const bool is_reference, const bool is_mutable )
@@ -1405,42 +1403,42 @@ DeducedTemplateParameter::DeducedTemplateParameter( Template template_ )
 
 bool DeducedTemplateParameter::IsInvalid() const
 {
-	return boost::get<Invalid>( &something_ ) != nullptr;
+	return std::get_if<Invalid>( &something_ ) != nullptr;
 }
 
 bool DeducedTemplateParameter::IsType() const
 {
-	return boost::get<Type>( &something_ ) != nullptr;
+	return std::get_if<Type>( &something_ ) != nullptr;
 }
 
 bool DeducedTemplateParameter::IsVariable() const
 {
-	return boost::get<Variable>( &something_ ) != nullptr;
+	return std::get_if<Variable>( &something_ ) != nullptr;
 }
 
 bool DeducedTemplateParameter::IsTemplateParameter() const
 {
-	return boost::get<TemplateParameter>( &something_ ) != nullptr;
+	return std::get_if<TemplateParameter>( &something_ ) != nullptr;
 }
 
 const DeducedTemplateParameter::Array* DeducedTemplateParameter::GetArray() const
 {
-	return boost::get<Array>( &something_ );
+	return std::get_if<Array>( &something_ );
 }
 
 const DeducedTemplateParameter::Tuple* DeducedTemplateParameter::GetTuple() const
 {
-	return boost::get<Tuple>( &something_ );
+	return std::get_if<Tuple>( &something_ );
 }
 
 const DeducedTemplateParameter::Function* DeducedTemplateParameter::GetFunction() const
 {
-	return boost::get<Function>( &something_ );
+	return std::get_if<Function>( &something_ );
 }
 
 const DeducedTemplateParameter::Template* DeducedTemplateParameter::GetTemplate() const
 {
-	return boost::get<Template>( &something_ );
+	return std::get_if<Template>( &something_ );
 }
 
 //

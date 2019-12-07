@@ -33,7 +33,7 @@ public:
 		: sources_( { SourceEntry{ file_path, text } } )
 	{}
 
-	virtual boost::optional<LoadFileResult> LoadFileContent( const Path& file_path, const Path& full_parent_file_path ) override
+	virtual std::optional<LoadFileResult> LoadFileContent( const Path& file_path, const Path& full_parent_file_path ) override
 	{
 		U_UNUSED( full_parent_file_path );
 		for( const SourceEntry& source_entry : sources_ )
@@ -41,7 +41,7 @@ public:
 			if( file_path == source_entry.file_path )
 				return LoadFileResult{ file_path, DecodeUTF8( source_entry.text ) };
 		}
-		return boost::none;
+		return std::nullopt;
 	}
 
 	virtual Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path ) override

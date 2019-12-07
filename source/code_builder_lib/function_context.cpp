@@ -26,7 +26,7 @@ void StackVariablesStorage::RegisterVariable( NodeAndVariable node_and_variable 
 }
 
 FunctionContext::FunctionContext(
-	const boost::optional<Type>& in_return_type,
+	const std::optional<Type>& in_return_type,
 	const bool in_return_value_is_mutable,
 	const bool in_return_value_is_reference,
 	llvm::LLVMContext& llvm_context,

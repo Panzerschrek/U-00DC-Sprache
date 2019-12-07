@@ -65,8 +65,8 @@ size_t SourceGraphLoader::LoadNode_r(
 
 	const size_t node_index= result.nodes_storage.size();
 
-	boost::optional<IVfs::LoadFileResult> loaded_file= vfs_->LoadFileContent( file_path, parent_file_path );
-	if( loaded_file == boost::none )
+	std::optional<IVfs::LoadFileResult> loaded_file= vfs_->LoadFileContent( file_path, parent_file_path );
+	if( loaded_file == std::nullopt )
 	{
 		Synt::SyntaxErrorMessage error_message;
 		error_message.text= "Can not read file \""_SpC + file_path + "\""_SpC;

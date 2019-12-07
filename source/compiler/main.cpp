@@ -76,18 +76,18 @@ public:
 	{}
 
 public:
-	virtual boost::optional<LoadFileResult> LoadFileContent( const Path& file_path, const Path& full_parent_file_path ) override
+	virtual std::optional<LoadFileResult> LoadFileContent( const Path& file_path, const Path& full_parent_file_path ) override
 	{
 		fs_path result_path= GetFullFilePathInternal( file_path, full_parent_file_path );
 		if( result_path.empty() )
-			return boost::none;
+			return std::nullopt;
 
 		LoadFileResult result;
 
 		llvm::ErrorOr< std::unique_ptr<llvm::MemoryBuffer> > file_mapped=
 			llvm::MemoryBuffer::getFile( result_path );
 		if( !file_mapped || *file_mapped == nullptr )
-			return boost::none;
+			return std::nullopt;
 
 		result.file_content= DecodeUTF8( (*file_mapped)->getBufferStart(), (*file_mapped)->getBufferEnd() );
 		result.full_file_path= ToProgramString( result_path.str().str() );

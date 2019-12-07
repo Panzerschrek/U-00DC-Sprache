@@ -341,7 +341,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 						REPORT_ERROR( Redefinition, dst.GetErrors(), src_member.GetFilePos(), src_name );
 						return;
 					}
-					if( src_class_proxy->class_->base_template != boost::none || dst_class_proxy->class_->base_template != boost::none )
+					if( src_class_proxy->class_->base_template != std::nullopt || dst_class_proxy->class_->base_template != std::nullopt )
 						return; // Skip class templates.
 
 					const auto& dst_class= dst_class_table[dst_class_proxy];
@@ -465,7 +465,7 @@ Type CodeBuilder::PrepareType(
 	FunctionContext& function_context )
 {
 	return
-		boost::apply_visitor(
+		std::visit(
 		[&](const auto& t)
 		{
 			return PrepareType( t, names_scope, function_context );
@@ -946,7 +946,7 @@ size_t CodeBuilder::PrepareFunction(
 		return ~0u;
 	}
 
-	if( boost::get<Synt::EmptyVariant>( &func.condition_ ) == nullptr )
+	if( std::get_if<Synt::EmptyVariant>( &func.condition_ ) == nullptr )
 	{
 		const Variable expression= BuildExpressionCodeEnsureVariable( func.condition_, names_scope, *global_function_context_ );
 		if( expression.type == bool_type_ )
@@ -972,7 +972,7 @@ size_t CodeBuilder::PrepareFunction(
 			function_type.return_type= void_type_for_ret_;
 		else
 		{
-			if( const auto named_return_type = boost::get<const Synt::NamedTypeName>(func.type_.return_type_.get()) )
+			if( const auto named_return_type = std::get_if<Synt::NamedTypeName>(func.type_.return_type_.get()) )
 			{
 				if( named_return_type->name.components.size() == 1u &&
 					!named_return_type->name.components.front().have_template_parameters &&
@@ -1031,7 +1031,7 @@ size_t CodeBuilder::PrepareFunction(
 			const bool is_this=
 				&arg == &func.type_.arguments_.front() &&
 				arg.name_ == Keywords::this_ &&
-				boost::get<Synt::EmptyVariant>(&arg.type_) != nullptr;
+				std::get_if<Synt::EmptyVariant>(&arg.type_) != nullptr;
 
 			if( !is_this && IsKeyword( arg.name_ ) )
 				REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), arg.file_pos_ );
@@ -1421,7 +1421,7 @@ Type CodeBuilder::BuildFuncCode(
 
 	NamesScope function_names( ""_SpC, &parent_names_scope );
 	FunctionContext function_context(
-		func_variable.return_type_is_auto ? boost::optional<Type>(): function_type.return_type,
+		func_variable.return_type_is_auto ? std::optional<Type>(): function_type.return_type,
 		function_type.return_value_is_mutable,
 		function_type.return_value_is_reference,
 		llvm_context_,
@@ -1706,7 +1706,7 @@ Type CodeBuilder::BuildFuncCode(
 			if( accesible_variable == node_pair.second )
 				continue;
 
-			boost::optional<Function::ArgReference> reference;
+			std::optional<Function::ArgReference> reference;
 			for( size_t j= 0u; j < function_type.args.size(); ++j )
 			{
 				if( accesible_variable == args_nodes[j].first )
@@ -1715,7 +1715,7 @@ Type CodeBuilder::BuildFuncCode(
 					reference= Function::ArgReference( j, 0u );
 			}
 
-			if( reference != boost::none )
+			if( reference != std::nullopt )
 			{
 				Function::ReferencePollution pollution;
 				pollution.src= *reference;
@@ -1968,7 +1968,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		++block_element_index;
 		
 		const BlockBuildInfo info=
-			boost::apply_visitor(
+			std::visit(
 				[&]( const auto& t )
 				{
 					return BuildBlockElement( t, block_names, function_context );
@@ -2082,9 +2082,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			}
 
 			const Synt::Expression* initializer_expression= nullptr;
-			if( const auto expression_initializer= boost::get<const Synt::ExpressionInitializer>( variable_declaration.initializer.get() ) )
+			if( const auto expression_initializer= std::get_if<Synt::ExpressionInitializer>( variable_declaration.initializer.get() ) )
 				initializer_expression= &expression_initializer->expression;
-			else if( const auto constructor_initializer= boost::get<const Synt::ConstructorInitializer>( variable_declaration.initializer.get() ) )
+			else if( const auto constructor_initializer= std::get_if<Synt::ConstructorInitializer>( variable_declaration.initializer.get() ) )
 			{
 				if( constructor_initializer->call_operator.arguments_.size() != 1u )
 				{
@@ -2410,9 +2410,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	BlockBuildInfo block_info;
 	block_info.have_terminal_instruction_inside= true;
 	
-	if( boost::get<Synt::EmptyVariant>(&return_operator.expression_) != nullptr )
+	if( std::get_if<Synt::EmptyVariant>(&return_operator.expression_) != nullptr )
 	{
-		if( function_context.return_type == boost::none )
+		if( function_context.return_type == std::nullopt )
 		{
 			if( function_context.return_value_is_reference )
 			{
@@ -2420,7 +2420,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 				return block_info;
 			}
 
-			if( function_context.deduced_return_type == boost::none )
+			if( function_context.deduced_return_type == std::nullopt )
 				function_context.deduced_return_type = void_type_for_ret_;
 			else if( *function_context.deduced_return_type != void_type_for_ret_ )
 				REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.file_pos_, *function_context.deduced_return_type, void_type_for_ret_ );
@@ -2458,9 +2458,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	}
 
 	// For functions with "auto" on return type use type of first return expression.
-	if( function_context.return_type == boost::none )
+	if( function_context.return_type == std::nullopt )
 	{
-		if( function_context.deduced_return_type == boost::none )
+		if( function_context.deduced_return_type == std::nullopt )
 			function_context.deduced_return_type = expression_result.type;
 		else if( *function_context.deduced_return_type != expression_result.type )
 			REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.file_pos_, *function_context.deduced_return_type, expression_result.type );
@@ -2592,7 +2592,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	const StackVariablesStorage temp_variables_storage( function_context );
 	const Variable sequence_expression= BuildExpressionCodeEnsureVariable( for_operator.sequence_, names, function_context );
 
-	boost::optional<ReferencesGraphNodeHolder> sequence_lock;
+	std::optional<ReferencesGraphNodeHolder> sequence_lock;
 	if( sequence_expression.node != nullptr )
 		sequence_lock.emplace(
 			std::make_shared<ReferencesGraphNode>(
@@ -2637,7 +2637,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 				variable.node= var_node;
 
 				const bool is_mutable= variable.value_type == ValueType::Reference;
-				if( sequence_lock != boost::none )
+				if( sequence_lock != std::nullopt )
 				{
 					if( is_mutable )
 					{
@@ -2874,7 +2874,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		function_context.function->getBasicBlockList().push_back( current_condition_block );
 		function_context.llvm_ir_builder.SetInsertPoint( current_condition_block );
 
-		if( boost::get<Synt::EmptyVariant>(&branch.condition) != nullptr )
+		if( std::get_if<Synt::EmptyVariant>(&branch.condition) != nullptr )
 		{
 			U_ASSERT( i + 1u == if_operator.branches_.size() );
 
@@ -2928,7 +2928,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 
 	U_ASSERT( next_condition_block == block_after_if );
 
-	if( boost::get<Synt::EmptyVariant>( &if_operator.branches_.back().condition ) == nullptr ) // Have no unconditional "else" at end.
+	if( std::get_if<Synt::EmptyVariant>( &if_operator.branches_.back().condition ) == nullptr ) // Have no unconditional "else" at end.
 	{
 		bracnhes_variables_state.push_back( conditions_variable_state );
 		if_operator_blocks_build_info.have_terminal_instruction_inside= false;
@@ -2957,7 +2957,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	for( unsigned int i= 0u; i < branches.size(); i++ )
 	{
 		const auto& branch= branches[i];
-		if( boost::get<Synt::EmptyVariant>(&branch.condition) == nullptr )
+		if( std::get_if<Synt::EmptyVariant>(&branch.condition) == nullptr )
 		{
 			const Synt::Expression& condition= branch.condition;
 			const FilePos condition_file_pos= Synt::GetExpressionFilePos( condition );
@@ -3017,7 +3017,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			true, // evaluate args in reverse order
 			assignment_operator.file_pos_,
 			names,
-			function_context ) == boost::none )
+			function_context ) == std::nullopt )
 	{ // Here process default assignment operator for fundamental types.
 		// Evaluate right part
 		Variable r_var= BuildExpressionCodeEnsureVariable( assignment_operator.r_value_, names, function_context );
@@ -3094,7 +3094,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			true, // evaluate args in reverse order
 			additive_assignment_operator.file_pos_,
 			names,
-			function_context ) == boost::none )
+			function_context ) == std::nullopt )
 	{ // Here process default additive assignment operators for fundamental types.
 		Variable r_var=
 			BuildExpressionCodeEnsureVariable(

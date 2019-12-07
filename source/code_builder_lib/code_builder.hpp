@@ -375,9 +375,9 @@ private:
 		FunctionContext& function_context );
 
 	// Returns Value, if overloaded operator selected or if arguments are template dependent or argumens are error values.
-	// Returns boost::none, if all ok, but there is no overloaded operator.
+	// Returns std::nullopt, if all ok, but there is no overloaded operator.
 	// In success call of overloaded operator arguments evaluated in left to right order.
-	boost::optional<Value> TryCallOverloadedBinaryOperator(
+	std::optional<Value> TryCallOverloadedBinaryOperator(
 		OverloadedOperator op,
 		const Synt::SyntaxElementBase& op_syntax_element,
 		const Synt::Expression&  left_expr,

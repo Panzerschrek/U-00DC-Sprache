@@ -23,7 +23,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 	FunctionContext& function_context )
 {
 	return
-		boost::apply_visitor(
+		std::visit(
 			[&]( const auto& t )
 			{
 				return ApplyInitializer( t, variable, names, function_context );
@@ -1100,11 +1100,11 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 
 	const FilePos initializer_file_pos= Synt::GetInitializerFilePos( initializer );
 	const Synt::Expression* initializer_expression= nullptr;
-	if( const auto expression_initializer= boost::get<const Synt::ExpressionInitializer>( &initializer ) )
+	if( const auto expression_initializer= std::get_if<Synt::ExpressionInitializer>( &initializer ) )
 	{
 		initializer_expression= &expression_initializer->expression;
 	}
-	else if( const auto constructor_initializer= boost::get<const Synt::ConstructorInitializer>( &initializer ) )
+	else if( const auto constructor_initializer= std::get_if<Synt::ConstructorInitializer>( &initializer ) )
 	{
 		if( constructor_initializer->call_operator.arguments_.size() != 1u )
 		{

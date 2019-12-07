@@ -236,7 +236,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 
 		add_bool_field( "is_interface"_SpC, class_type->kind == Class::Kind::Interface );
 
-		add_bool_field( "is_typeinfo"_SpC, class_type->typeinfo_type != boost::none );
+		add_bool_field( "is_typeinfo"_SpC, class_type->typeinfo_type != std::nullopt );
 		add_bool_field( "shared"_SpC, class_type->have_shared_state );
 	}
 	else if( const FunctionPointer* const function_pointer_type= type.GetFunctionPointerType() )

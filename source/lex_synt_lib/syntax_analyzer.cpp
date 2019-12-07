@@ -311,7 +311,7 @@ private:
 	std::unique_ptr<Class> ParseClassBody();
 
 	using TemplateVar=
-		boost::variant<
+		std::variant<
 			EmptyVariant,
 			ClassTemplate,
 			TypedefTemplate,
@@ -807,13 +807,13 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
 		{
 			TemplateVar template_= ParseTemplate();
-			if( auto* const class_template= boost::get<ClassTemplate>(&template_) )
+			if( auto* const class_template= std::get_if<ClassTemplate>(&template_) )
 				program_elements.emplace_back( std::move( *class_template ) );
-			else if( auto* const typedef_template= boost::get<TypedefTemplate>(&template_) )
+			else if( auto* const typedef_template= std::get_if<TypedefTemplate>(&template_) )
 				program_elements.emplace_back( std::move( *typedef_template ) );
-			else if( auto* const function_template= boost::get<FunctionTemplate>(&template_) )
+			else if( auto* const function_template= std::get_if<FunctionTemplate>(&template_) )
 				program_elements.emplace_back( std::move( *function_template ) );
-			else if( boost::get<EmptyVariant>(&template_) )
+			else if( std::get_if<EmptyVariant>(&template_) )
 			{}
 			else
 			{
@@ -1131,7 +1131,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 			default:
 				if( prefix_operators.empty() )
 				{
-					if( boost::get<EmptyVariant>( &root ) != nullptr )
+					if( std::get_if<EmptyVariant>( &root ) != nullptr )
 						PushErrorMessage();
 					return root;
 				}
@@ -1153,13 +1153,13 @@ Expression SyntaxAnalyzer::ParseExpression()
 			if( it_->text == Keywords::true_ )
 			{
 				current_node= BooleanConstant( it_->file_pos, true );
-				current_node_ptr= boost::get<BooleanConstant>( &current_node );
+				current_node_ptr= std::get_if<BooleanConstant>( &current_node );
 				NextLexem();
 			}
 			else if( it_->text == Keywords::false_ )
 			{
 				current_node= BooleanConstant( it_->file_pos, false );
-				current_node_ptr= boost::get<BooleanConstant>( &current_node );
+				current_node_ptr= std::get_if<BooleanConstant>( &current_node );
 				NextLexem();
 			}
 			else if( it_->text == Keywords::move_ )
@@ -1190,7 +1190,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				NextLexem();
 
 				current_node= std::move(move_operator);
-				current_node_ptr= boost::get<MoveOperator>( &current_node );
+				current_node_ptr= std::get_if<MoveOperator>( &current_node );
 			}
 			else if( it_->text == Keywords::select_ )
 			{
@@ -1229,7 +1229,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				NextLexem();
 
 				current_node= std::move(ternary_operator);
-				current_node_ptr= boost::get<TernaryOperator>( &current_node );
+				current_node_ptr= std::get_if<TernaryOperator>( &current_node );
 			}
 			else if( it_->text == Keywords::cast_ref_ )
 			{
@@ -1268,7 +1268,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				NextLexem();
 
 				current_node= std::move(cast);
-				current_node_ptr= boost::get<CastRef>( &current_node );
+				current_node_ptr= std::get_if<CastRef>( &current_node );
 			}
 			else if( it_->text == Keywords::cast_ref_unsafe_ )
 			{
@@ -1307,7 +1307,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				NextLexem();
 
 				current_node= std::move(cast);
-				current_node_ptr= boost::get<CastRefUnsafe>( &current_node );
+				current_node_ptr= std::get_if<CastRefUnsafe>( &current_node );
 			}
 			else if( it_->text == Keywords::cast_imut_ )
 			{
@@ -1332,7 +1332,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				NextLexem();
 
 				current_node= std::move(cast);
-				current_node_ptr= boost::get<CastImut>( &current_node );
+				current_node_ptr= std::get_if<CastImut>( &current_node );
 			}
 			else if( it_->text == Keywords::cast_mut_ )
 			{
@@ -1357,7 +1357,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				NextLexem();
 
 				current_node= std::move(cast);
-				current_node_ptr= boost::get<CastMut>( &current_node );
+				current_node_ptr= std::get_if<CastMut>( &current_node );
 			}
 			else if( it_->text == Keywords::typeinfo_ )
 			{
@@ -1380,7 +1380,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				NextLexem();
 
 				current_node= std::move(typeinfo_);
-				current_node_ptr= boost::get<TypeInfo>( &current_node );
+				current_node_ptr= std::get_if<TypeInfo>( &current_node );
 			}
 			else if( it_->text == Keywords::fn_ || it_->text == Keywords::typeof_ || it_->text == Keywords::tup_ )
 			{
@@ -1388,7 +1388,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				TypeNameInExpression type_name_in_expression( it_->file_pos );
 				type_name_in_expression.type_name= ParseTypeName();
 				current_node= std::move(type_name_in_expression);
-				current_node_ptr= boost::get<TypeNameInExpression>( &current_node );
+				current_node_ptr= std::get_if<TypeNameInExpression>( &current_node );
 			}
 			else
 			{
@@ -1396,31 +1396,31 @@ Expression SyntaxAnalyzer::ParseExpression()
 				{
 					const FilePos& macro_file_pos= it_->file_pos;
 					Expression macro_expression= ExpandMacro( *macro, &SyntaxAnalyzer::ParseExpression );
-					if( boost::get<EmptyVariant>( &macro_expression ) != nullptr )
+					if( std::get_if<EmptyVariant>( &macro_expression ) != nullptr )
 						return EmptyVariant();
 
 					BracketExpression bracket_expression( macro_file_pos );
 					bracket_expression.expression_.reset( new Expression( std::move(macro_expression) ) );
 
 					current_node= std::move(bracket_expression);
-					current_node_ptr= boost::get<BracketExpression>( &current_node );
+					current_node_ptr= std::get_if<BracketExpression>( &current_node );
 				}
 				else
 				{
 					current_node= NamedOperand( it_->file_pos, ParseComplexName() );
-					current_node_ptr= boost::get<NamedOperand>( &current_node );
+					current_node_ptr= std::get_if<NamedOperand>( &current_node );
 				}
 			}
 		}
 		else if( it_->type == Lexem::Type::Scope )
 		{
 			current_node= NamedOperand( it_->file_pos, ParseComplexName() );
-			current_node_ptr= boost::get<NamedOperand>( &current_node );
+			current_node_ptr= std::get_if<NamedOperand>( &current_node );
 		}
 		else if( it_->type == Lexem::Type::Number )
 		{
 			current_node= ParseNumericConstant();
-			current_node_ptr= boost::get<NumericConstant>( &current_node );
+			current_node_ptr= std::get_if<NumericConstant>( &current_node );
 			NextLexem();
 		}
 		else if( it_->type == Lexem::Type::String )
@@ -1444,7 +1444,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 			}
 
 			current_node= std::move(string_literal);
-			current_node_ptr= boost::get<StringLiteral>( &current_node );
+			current_node_ptr= std::get_if<StringLiteral>( &current_node );
 		}
 		else if( it_->type == Lexem::Type::BracketLeft )
 		{
@@ -1454,7 +1454,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 			bracket_expression.expression_.reset( new Expression( ParseExpression() ) );
 
 			current_node= std::move(bracket_expression);
-			current_node_ptr= boost::get<BracketExpression>( &current_node );
+			current_node_ptr= std::get_if<BracketExpression>( &current_node );
 
 			if( it_->type != Lexem::Type::BracketRight )
 			{
@@ -1469,7 +1469,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 			TypeNameInExpression type_name_in_expression(it_->file_pos );
 			type_name_in_expression.type_name= ParseTypeName();
 			current_node= std::move(type_name_in_expression);
-			current_node_ptr= boost::get<TypeNameInExpression>( &current_node );
+			current_node_ptr= std::get_if<TypeNameInExpression>( &current_node );
 		}
 		else U_ASSERT(false);
 
@@ -1565,18 +1565,18 @@ Expression SyntaxAnalyzer::ParseExpression()
 				break;
 		}
 
-		if( boost::get< EmptyVariant >( &root ) != nullptr )
+		if( std::get_if< EmptyVariant >( &root ) != nullptr )
 			root= std::move( current_node );
 		else
 		{
-			BinaryOperator* const root_as_binary_operator= boost::get<BinaryOperator>( &root );
+			BinaryOperator* const root_as_binary_operator= std::get_if<BinaryOperator>( &root );
 			U_ASSERT( root_as_binary_operator != nullptr );
 
 			// Place to existent tree last component.
 			BinaryOperator* most_right_with_null= root_as_binary_operator;
 			while( most_right_with_null->right_ != nullptr )
 			{
-				BinaryOperator* const right_as_binary_operator= boost::get<BinaryOperator>( most_right_with_null->right_.get() );
+				BinaryOperator* const right_as_binary_operator= std::get_if<BinaryOperator>( most_right_with_null->right_.get() );
 				U_ASSERT( right_as_binary_operator != nullptr );
 				most_right_with_null= right_as_binary_operator;
 			}
@@ -1590,14 +1590,14 @@ Expression SyntaxAnalyzer::ParseExpression()
 			binary_operator->operator_type_= binary_operator_type;
 			NextLexem();
 
-			if( BinaryOperator* const root_as_binary_operator= boost::get<BinaryOperator>( &root ) )
+			if( BinaryOperator* const root_as_binary_operator= std::get_if<BinaryOperator>( &root ) )
 			{
 				BinaryOperator* node_to_replace_parent= nullptr;
 				BinaryOperator* node_to_replace= root_as_binary_operator;
 				while( GetBinaryOperatorPriority( binary_operator->operator_type_ ) > GetBinaryOperatorPriority( node_to_replace->operator_type_ ) )
 				{
 					node_to_replace_parent= node_to_replace;
-					BinaryOperator* const right_as_binary_operator= boost::get<BinaryOperator>( node_to_replace->right_.get() );
+					BinaryOperator* const right_as_binary_operator= std::get_if<BinaryOperator>( node_to_replace->right_.get() );
 					if( right_as_binary_operator == nullptr )
 						break;
 					node_to_replace= right_as_binary_operator;
@@ -2254,7 +2254,7 @@ Initializer SyntaxAnalyzer::ParseStructNamedInitializer()
 		NextLexem();
 
 		Initializer initializer= ParseVariableInitializer();
-		if( boost::get<EmptyVariant>(&initializer) != nullptr )
+		if( std::get_if<EmptyVariant>(&initializer) != nullptr )
 			PushErrorMessage();
 
 		result.members_initializers.emplace_back();
@@ -2368,7 +2368,7 @@ VariablesDeclaration SyntaxAnalyzer::ParseVariablesDeclaration()
 		NextLexem();
 
 		Initializer variable_initializer=  ParseVariableInitializer();
-		if( boost::get<EmptyVariant>( &variable_initializer ) == nullptr )
+		if( std::get_if<EmptyVariant>( &variable_initializer ) == nullptr )
 			variable_entry.initializer.reset( new Initializer( std::move(variable_initializer) ) );
 
 		if( it_->type == Lexem::Type::Comma )
@@ -2688,7 +2688,7 @@ IfOperator SyntaxAnalyzer::ParseIfOperator()
 
 			branches.emplace_back( IfOperator::Branch{ std::move(condition), ParseBlock() } );
 
-			if( boost::get<EmptyVariant>( &branches.back().condition ) != nullptr )
+			if( std::get_if<EmptyVariant>( &branches.back().condition ) != nullptr )
 				break;
 		}
 		else
@@ -3473,7 +3473,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 
 				NextLexem();
 				initializer= ParseVariableInitializer();
-				if( boost::get<EmptyVariant>(&initializer) != nullptr )
+				if( std::get_if<EmptyVariant>(&initializer) != nullptr )
 					PushErrorMessage();
 
 				if( it_->type == Lexem::Type::Comma )
@@ -3572,13 +3572,13 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 		{
 			TemplateVar template_= ParseTemplate();
 			
-			if( auto* const class_template= boost::get<ClassTemplate>(&template_) )
+			if( auto* const class_template= std::get_if<ClassTemplate>(&template_) )
 				result.emplace_back( std::move( *class_template ) );
-			else if( auto* const typedef_template= boost::get<TypedefTemplate>(&template_) )
+			else if( auto* const typedef_template= std::get_if<TypedefTemplate>(&template_) )
 				result.emplace_back( std::move( *typedef_template ) );
-			else if( auto* const function_template= boost::get<FunctionTemplate>(&template_) )
+			else if( auto* const function_template= std::get_if<FunctionTemplate>(&template_) )
 				result.emplace_back( std::move( *function_template ) );
-			else if( boost::get<EmptyVariant>(&template_) )
+			else if( std::get_if<EmptyVariant>(&template_) )
 			{}
 			else
 			{
@@ -3658,7 +3658,7 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 			}
 
 			Initializer field_initializer= ParseVariableInitializer();
-			if( boost::get<EmptyVariant>( &field_initializer ) == nullptr )
+			if( std::get_if<EmptyVariant>( &field_initializer ) == nullptr )
 				field.initializer.reset( new Initializer( std::move(field_initializer) ) );
 
 			if( it_->type == Lexem::Type::Semicolon )
@@ -3740,7 +3740,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 		else
 		{
 			std::unique_ptr<Expression> arg_type( new Expression( NamedOperand( it_->file_pos, ParseComplexName() ) ) );
-			args.back().arg_type= &boost::get<NamedOperand>(arg_type.get())->name_;
+			args.back().arg_type= &std::get_if<NamedOperand>(arg_type.get())->name_;
 			args.back().arg_type_expr= std::move(arg_type);
 		}
 
@@ -3754,7 +3754,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 		name.components.emplace_back();
 		name.components.back().name= it_->text;
 		std::unique_ptr<Expression> name_ptr( new Expression( NamedOperand( it_->file_pos, std::move(name) ) ) );
-		args.back().name= &boost::get<NamedOperand>(name_ptr.get())->name_;
+		args.back().name= &std::get_if<NamedOperand>(name_ptr.get())->name_;
 		args.back().name_expr= std::move(name_ptr);
 
 		NextLexem();
@@ -4037,7 +4037,7 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 				ParsedMacroElement element;
 				element.begin= it_;
 				const Expression expression= ParseExpression();
-				if( boost::get<EmptyVariant>( &expression ) != nullptr )
+				if( std::get_if<EmptyVariant>( &expression ) != nullptr )
 				{
 					push_macro_error();
 					return false;
