@@ -14,9 +14,7 @@
 #include "pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/syntax_elements.hpp"
-#include "references_graph.hpp"
-#include "lang_types.hpp"
-#include "names_scope.hpp"
+#include "enum.hpp"
 #include "small_types.hpp"
 
 namespace U
@@ -134,17 +132,6 @@ public:
 	// Key - sequence of classes from child to parent. This class not included.
 	// Virtual table destination is lats key element.
 	std::map< std::vector<ClassProxyPtr>, llvm::GlobalVariable* > ancestors_virtual_tables;
-};
-
-struct Enum
-{
-	Enum( const ProgramString& name, NamesScope* parent_scope );
-
-	NamesScope members;
-	size_t element_count= 0u;
-	FundamentalType underlaying_type; // must be integer
-
-	const Synt::Enum* syntax_element= nullptr; // Null if completed
 };
 
 struct TemplateBase
