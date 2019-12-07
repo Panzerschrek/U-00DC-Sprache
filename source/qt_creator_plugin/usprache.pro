@@ -1,3 +1,4 @@
+CONFIG += c++1z
 DEFINES += USPRACHE_LIBRARY
 
 isEmpty( BOOST_ROOT ) {
