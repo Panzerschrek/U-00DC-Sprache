@@ -99,6 +99,12 @@ private:
 
 	// Function context required for accesing local constexpr variables.
 	Type PrepareType( const Synt::TypeName& type_name, NamesScope& names_scope, FunctionContext& function_context );
+	Type PrepareType( const Synt::EmptyVariant& type_name, NamesScope& names_scope, FunctionContext& function_context );
+	Type PrepareType( const Synt::ArrayTypeName& array_type_name, NamesScope& names_scope, FunctionContext& function_context );
+	Type PrepareType( const Synt::TypeofTypeName& typeof_type_name, NamesScope& names_scope, FunctionContext& function_context );
+	Type PrepareType( const Synt::FunctionTypePtr& function_type_name_ptr, NamesScope& names_scope, FunctionContext& function_context );
+	Type PrepareType( const Synt::TupleType& tuple_type_name, NamesScope& names_scope, FunctionContext& function_context );
+	Type PrepareType( const Synt::NamedTypeName& named_type_name, NamesScope& names_scope, FunctionContext& function_context );
 
 	llvm::FunctionType* GetLLVMFunctionType( const Function& function_type );
 
@@ -340,11 +346,6 @@ private:
 		FunctionContext& function_context,
 		const Synt::StructNamedInitializer& constructor_initialization_list );
 
-	BlockBuildInfo BuildBlockCode(
-		const Synt::Block& block,
-		NamesScope& names,
-		FunctionContext& function_context );
-
 	// Expressions.
 
 	Value BuildExpressionCodeAndDestroyTemporaries(
@@ -502,26 +503,24 @@ private:
 	Variable BuildypeinfoTupleElements( const Tuple& tuple_type, NamesScope& root_namespace );
 
 	// Block elements
-
-	void BuildVariablesDeclarationCode(
-		const Synt::VariablesDeclaration& variables_declaration,
-		NamesScope& block_names,
-		FunctionContext& function_context );
-
-	void BuildAutoVariableDeclarationCode(
-		const Synt::AutoVariableDeclaration& auto_variable_declaration,
-		NamesScope& block_names,
-		FunctionContext& function_context );
-
-	void BuildAssignmentOperatorCode(
-		const Synt::AssignmentOperator& assignment_operator,
-		NamesScope& block_names,
-		FunctionContext& function_context );
-
-	void BuildAdditiveAssignmentOperatorCode(
-		const Synt::AdditiveAssignmentOperator& additive_assignment_operator,
-		NamesScope& block_names,
-		FunctionContext& function_context );
+	BlockBuildInfo BuildBlockElement( const Synt::Block& block, NamesScope& names, FunctionContext& function_context );
+	BlockBuildInfo BuildBlockElement( const Synt::VariablesDeclaration& variables_declaration, NamesScope& names, FunctionContext& function_context );
+	BlockBuildInfo BuildBlockElement( const Synt::AutoVariableDeclaration& auto_variable_declaration, NamesScope& names, FunctionContext& function_context );
+	BlockBuildInfo BuildBlockElement( const Synt::ReturnOperator& return_operator, NamesScope& names, FunctionContext& function_context );
+	BlockBuildInfo BuildBlockElement( const Synt::ForOperator& for_operator, NamesScope& names, FunctionContext& function_context );
+	BlockBuildInfo BuildBlockElement( const Synt::WhileOperator& while_operator, NamesScope& names, FunctionContext& function_context );
+	BlockBuildInfo BuildBlockElement( const Synt::BreakOperator& break_operator, NamesScope& names, FunctionContext& function_context );
+	BlockBuildInfo BuildBlockElement( const Synt::ContinueOperator& continue_operator, NamesScope& names, FunctionContext& function_context );
+	BlockBuildInfo BuildBlockElement( const Synt::IfOperator& if_operator, NamesScope& names, FunctionContext& function_context );
+	BlockBuildInfo BuildBlockElement( const Synt::StaticIfOperator& static_if_operator, NamesScope& names, FunctionContext& function_context );
+	BlockBuildInfo BuildBlockElement( const Synt::SingleExpressionOperator& single_expression_operator, NamesScope& names, FunctionContext& function_context );
+	BlockBuildInfo BuildBlockElement( const Synt::AssignmentOperator& assignment_operator, NamesScope& names, FunctionContext& function_context );
+	BlockBuildInfo BuildBlockElement( const Synt::AdditiveAssignmentOperator& additive_assignment_operator, NamesScope& names, FunctionContext& function_context );
+	BlockBuildInfo BuildBlockElement( const Synt::IncrementOperator& increment_operator, NamesScope& names, FunctionContext& function_context );
+	BlockBuildInfo BuildBlockElement( const Synt::DecrementOperator& decrement_operator, NamesScope& names, FunctionContext& function_context );
+	BlockBuildInfo BuildBlockElement( const Synt::StaticAssert& static_assert_, NamesScope& names, FunctionContext& function_context );
+	BlockBuildInfo BuildBlockElement( const Synt::Halt& halt, NamesScope& names, FunctionContext& function_context );
+	BlockBuildInfo BuildBlockElement( const Synt::HaltIf& halt_if, NamesScope& names, FunctionContext& function_context );
 
 	// ++ and -- operations
 	void BuildDeltaOneOperatorCode(
@@ -531,46 +530,7 @@ private:
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
-	void BuildReturnOperatorCode(
-		const Synt::ReturnOperator& return_operator,
-		NamesScope& names,
-		FunctionContext& function_context );
-
-	void BuildWhileOperatorCode(
-		const Synt::WhileOperator& while_operator,
-		NamesScope& names,
-		FunctionContext& function_context );
-
-	void BuildForOperatorCode(
-		const Synt::ForOperator& for_operator,
-		NamesScope& names,
-		FunctionContext& function_context );
-
-	void BuildBreakOperatorCode(
-		const Synt::BreakOperator& break_operator,
-		NamesScope& names,
-		FunctionContext& function_context );
-
-	void BuildContinueOperatorCode(
-		const Synt::ContinueOperator& continue_operator,
-		NamesScope& names,
-		FunctionContext& function_context );
-
-	BlockBuildInfo BuildIfOperatorCode(
-		const Synt::IfOperator& if_operator,
-		NamesScope& names,
-		FunctionContext& function_context );
-
 	void BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names, FunctionContext& function_context );
-	void BuildStaticAssert( const Synt::StaticAssert& static_assert_, NamesScope& names, FunctionContext& function_context );
-
-	BlockBuildInfo BuildStaticIfOperatorCode(
-		const Synt::StaticIfOperator& static_if_operator,
-		NamesScope& names,
-		FunctionContext& function_context );
-
-	void BuildHalt( const Synt::Halt& halt, FunctionContext& function_context );
-	void BuildHaltIf( const Synt::HaltIf& halt_if, NamesScope& names, FunctionContext& function_context );
 
 	// Name resolving.
 	enum class ResolveMode
