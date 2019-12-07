@@ -119,18 +119,16 @@ fn U_Main() : i32
 	static_assert( typeinfo</UnionAlign4/>.size_of == 4s );
 	static_assert( typeinfo</UnionAlign4/>.align_of == 4s );
 
-	static_assert( i32(SequentialEnum::Red) == 0 );
-	static_assert( i32(SequentialEnum::Green) == 1 );
-	static_assert( i32(SequentialEnum::Blue) == 2 );
+	static_assert( i32(SEQ_Red) == 0 );
+	static_assert( i32(SEQ_Green) == 1 );
+	static_assert( i32(SEQ_Blue) == 2 );
 
-	static_assert( NonSequentialEnum_namespace::Zero == 0 );
-	static_assert( NonSequentialEnum_namespace::One == 1 );
-	static_assert( NonSequentialEnum_namespace::Ten == 10 );
-	static_assert( NonSequentialEnum_namespace::MinusTwo == -2 );
-	static_assert( NonSequentialEnum_namespace::Large32bit == 5000000 );
-	static_assert( NonSequentialEnum_namespace::LargeNegative == -142586 );
-
-	var NonSequentialEnum ersatz_vnum_value= NonSequentialEnum_namespace::Zero;
+	static_assert( NS_Zero == 0 );
+	static_assert( NS_One == 1 );
+	static_assert( NS_Ten == 10 );
+	static_assert( NS_MinusTwo == -2 );
+	static_assert( NS_Large32bit == 5000000 );
+	static_assert( NS_LargeNegative == -142586 );
 
 	return 0;
 }

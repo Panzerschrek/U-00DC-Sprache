@@ -87,10 +87,10 @@ union UnionForwardDeclaration;
 
 enum SequentialEnum
 {
-	Red, Green, Blue,
+	SEQ_Red, SEQ_Green, SEQ_Blue,
 };
 
 enum NonSequentialEnum
 {
-	Zero= 0, One= 1, Ten= 10, MinusTwo= -2, Large32bit= 5000000, LargeNegative= -142536 - 50
+	NS_Zero= 0, NS_One= 1, NS_Ten= 10, NS_MinusTwo= -2, NS_Large32bit= 5000000, NS_LargeNegative= -142536 - 50
 };

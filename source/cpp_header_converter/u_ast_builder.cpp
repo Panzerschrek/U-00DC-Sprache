@@ -402,6 +402,11 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 
 	// C++ enum can be Ü enum, if it`s members form sequence 0-N with step 1.
 	bool can_be_u_enum= true;
+	if( !enum_decl.isScoped() )
+	{
+		can_be_u_enum= false;
+		goto end_check;
+	}
 	{
 		auto it= enumerators_range.begin();
 		llvm::APSInt prev_val= it->getInitVal();
@@ -445,9 +450,6 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 	}
 	else
 	{
-		Synt::NamespacePtr enum_namespace_( new Synt::Namespace( g_dummy_file_pos ) );
-		enum_namespace_->name_= enum_name + "_namespace"_SpC;
-
 		Synt::VariablesDeclaration variables_declaration( g_dummy_file_pos );
 		variables_declaration.type= TranslateType( *enum_decl.getIntegerType().getTypePtr() );
 
@@ -474,13 +476,20 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 			variables_declaration.variables.push_back( std::move(var) );
 		}
 
-		enum_namespace_->elements_.push_back( std::move(variables_declaration) );
-		out_elements.push_back( std::move(enum_namespace_) );
-
-		Synt::Typedef typedef_( g_dummy_file_pos );
-		typedef_.name= enum_name;
-		typedef_.value= TranslateType( *enum_decl.getIntegerType().getTypePtr() );
-		out_elements.push_back( std::move( typedef_ ) );
+		if( enum_decl.isScoped() )
+		{
+			Synt::NamespacePtr enum_namespace_( new Synt::Namespace( g_dummy_file_pos ) );
+			enum_namespace_->name_= enum_name + "_namespace"_SpC;
+			enum_namespace_->elements_.push_back( std::move(variables_declaration) );
+			out_elements.push_back( std::move(enum_namespace_) );
+			
+			Synt::Typedef typedef_( g_dummy_file_pos );
+			typedef_.name= enum_name;
+			typedef_.value= TranslateType( *enum_decl.getIntegerType().getTypePtr() );
+			out_elements.push_back( std::move( typedef_ ) );
+		}
+		else
+			out_elements.push_back(std::move(variables_declaration));
 	}
 }
 
