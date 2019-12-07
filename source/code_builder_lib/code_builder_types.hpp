@@ -372,8 +372,6 @@ private:
 		Template> something_;
 };
 
-const ProgramString& GetFundamentalTypeName( U_FundamentalType fundamental_type );
-
 } //namespace CodeBuilderLLVMPrivate
 
 } // namespace U

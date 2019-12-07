@@ -1,4 +1,6 @@
 #pragma once
+#include <set>
+
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Type.h>
 #include "pop_llvm_warnings.hpp"
@@ -203,6 +205,8 @@ struct FunctionPointer
 
 bool operator==( const FunctionPointer& l, const FunctionPointer& r );
 bool operator!=( const FunctionPointer& l, const FunctionPointer& r );
+
+const ProgramString& GetFundamentalTypeName( U_FundamentalType fundamental_type );
 
 } //namespace CodeBuilderLLVMPrivate
 
