@@ -5,10 +5,6 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "push_disable_boost_warnings.hpp"
-#include <boost/functional/hash.hpp>
-#include "pop_boost_warnings.hpp"
-
 namespace U
 {
 
@@ -32,10 +28,7 @@ ProgramString DecodeUTF8( const std::string& str );
 // String map/set.
 struct ProgramStringHasher
 {
-	size_t operator()( const ProgramString& str ) const
-	{
-		return boost::hash_range( str.begin(), str.end() );
-	}
+	size_t operator()( const ProgramString& str ) const;
 };
 
 template<class T>

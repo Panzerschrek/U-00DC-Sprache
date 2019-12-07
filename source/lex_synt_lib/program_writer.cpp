@@ -1,3 +1,5 @@
+#include <ostream>
+
 #include "assert.hpp"
 #include "keywords.hpp"
 #include "program_writer.hpp"

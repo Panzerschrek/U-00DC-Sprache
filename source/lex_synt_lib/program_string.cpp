@@ -1,3 +1,7 @@
+#include "push_disable_boost_warnings.hpp"
+#include <boost/functional/hash.hpp>
+#include "pop_boost_warnings.hpp"
+
 #include "assert.hpp"
 
 #include "program_string.hpp"
@@ -186,6 +190,11 @@ ProgramString DecodeUTF8( const std::vector<char>& str )
 ProgramString DecodeUTF8( const std::string& str )
 {
 	return DecodeUTF8( str.data(), str.data() + str.size() );
+}
+
+size_t ProgramStringHasher::operator()( const ProgramString& str ) const
+{
+	return boost::hash_range( str.begin(), str.end() );
 }
 
 } // namespace U
