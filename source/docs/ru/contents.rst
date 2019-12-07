@@ -34,3 +34,4 @@
    typedefs
    type_templates
    function_templates
+   modules
