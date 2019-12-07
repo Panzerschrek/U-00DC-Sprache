@@ -13,93 +13,165 @@ namespace U
 namespace QtCreatorPlugin
 {
 
-static ProgramString Stringify( const Synt::ComplexName& complex_name );
-static ProgramString Stringify( const Synt::TypeName& type_name );
-
-static ProgramString Stringify( const Synt::Expression& expression )
+namespace
 {
-	struct Visitor final : public boost::static_visitor<ProgramString>
-	{
-		ProgramString operator()( const Synt::EmptyVariant& )
-		{
-			return ProgramString();
-		}
-		ProgramString operator()( const Synt::BinaryOperator& binary_operator )
-		{
-			if( binary_operator.left_ == nullptr || binary_operator.right_ == nullptr )
-				return ProgramString();
-			return Stringify( *binary_operator.left_ ) + " "_SpC + BinaryOperatorToString(binary_operator.operator_type_) + " "_SpC + Stringify( *binary_operator.right_ );
-		}
-		ProgramString operator()( const Synt::NamedOperand& named_operand )
-		{
-			return Stringify( named_operand.name_ );
-		}
-		ProgramString operator()( const Synt::TernaryOperator& ternary_operator )
-		{
-			if( ternary_operator.condition == nullptr || ternary_operator.true_branch == nullptr || ternary_operator.false_branch == nullptr )
-				return ProgramString();
-			return "select( "_SpC + Stringify( *ternary_operator.condition ) + " ? "_SpC + Stringify( *ternary_operator.true_branch ) + " : "_SpC + Stringify( *ternary_operator.false_branch ) + " )"_SpC;
-		}
-		ProgramString operator()( const Synt::NumericConstant& numeric_constant )
-		{
-			return QStringToProgramString( QString::number(numeric_constant.value_double_) ) + numeric_constant.type_suffix_.data();
-		}
-		ProgramString operator()( const Synt::StringLiteral& string_literal )
-		{
-			return "\""_SpC + string_literal.value_ + "\""_SpC + string_literal.type_suffix_.data();
-		}
-		ProgramString operator()( const Synt::BooleanConstant& boolean_constant )
-		{
-			return boolean_constant.value_ ? Keyword( Keywords::true_ ) : Keyword( Keywords::false_ );
-		}
-		ProgramString operator()( const Synt::BracketExpression& bracket_expression )
-		{
-			if( bracket_expression.expression_ == nullptr )
-				return ProgramString();
-			return "("_SpC + Stringify( *bracket_expression.expression_ ) + ")"_SpC;
-		}
-		ProgramString operator()( const Synt::TypeNameInExpression& type_name_in_expression )
-		{
-			return Stringify( type_name_in_expression.type_name );
-		}
-		ProgramString operator()( const Synt::MoveOperator& move_operator )
-		{
-			return Keyword( Keywords::move_ ) + "("_SpC + move_operator.var_name_ + ")"_SpC;
-		}
-		ProgramString operator()( const Synt::CastRef& cast_ref )
-		{
-			if( cast_ref.type_ == nullptr || cast_ref.expression_ == nullptr )
-				return ProgramString();
-			return Keyword( Keywords::cast_ref_ ) + "</"_SpC + Stringify( *cast_ref.type_ ) + "/>("_SpC + Stringify( *cast_ref.expression_ ) + ")"_SpC;
-		}
-		ProgramString operator()( const Synt::CastRefUnsafe& cast_ref_unsafe )
-		{
-			if( cast_ref_unsafe.type_ == nullptr || cast_ref_unsafe.expression_ == nullptr )
-				return ProgramString();
-			return Keyword( Keywords::cast_ref_unsafe_ ) + "</"_SpC + Stringify( *cast_ref_unsafe.type_ ) + "/>("_SpC + Stringify( *cast_ref_unsafe.expression_ ) + ")"_SpC;
-		}
-		ProgramString operator()( const Synt::CastImut& cast_imut )
-		{
-			if( cast_imut.expression_ == nullptr )
-				return ProgramString();
-			return Keyword( Keywords::cast_imut_ ) + "("_SpC + Stringify( *cast_imut.expression_ ) + ")"_SpC;
-		}
-		ProgramString operator()( const Synt::CastMut& cast_mut )
-		{
-			if( cast_mut.expression_ == nullptr )
-				return ProgramString();
-			return Keyword( Keywords::cast_mut_ ) + "("_SpC + Stringify( *cast_mut.expression_ ) + ")"_SpC;
-		}
-		ProgramString operator()( const Synt::TypeInfo& typeinfo_ )
-		{
-			if( typeinfo_.type_ == nullptr )
-				return ProgramString();
-			return Keyword( Keywords::cast_ref_ ) + "</"_SpC + Stringify( *typeinfo_.type_ )  + "/>"_SpC;
-		}
-	};
 
-	Visitor visitor;
-	ProgramString result= boost::apply_visitor( visitor, expression );
+ProgramString Stringify( const Synt::ComplexName& complex_name );
+ProgramString Stringify( const Synt::TypeName& type_name );
+ProgramString Stringify( const Synt::Expression& expression );
+
+ProgramString Stringify( const Synt::EmptyVariant& )
+{
+	return ProgramString();
+}
+
+ProgramString Stringify( const Synt::BinaryOperator& binary_operator )
+{
+	if( binary_operator.left_ == nullptr || binary_operator.right_ == nullptr )
+		return ProgramString();
+	return Stringify( *binary_operator.left_ ) + " "_SpC + BinaryOperatorToString(binary_operator.operator_type_) + " "_SpC + Stringify( *binary_operator.right_ );
+}
+
+ProgramString Stringify( const Synt::NamedOperand& named_operand )
+{
+	return Stringify( named_operand.name_ );
+}
+
+ProgramString Stringify( const Synt::TernaryOperator& ternary_operator )
+{
+	if( ternary_operator.condition == nullptr || ternary_operator.true_branch == nullptr || ternary_operator.false_branch == nullptr )
+		return ProgramString();
+	return "select( "_SpC + Stringify( *ternary_operator.condition ) + " ? "_SpC + Stringify( *ternary_operator.true_branch ) + " : "_SpC + Stringify( *ternary_operator.false_branch ) + " )"_SpC;
+}
+
+ProgramString Stringify( const Synt::NumericConstant& numeric_constant )
+{
+	return QStringToProgramString( QString::number(numeric_constant.value_double_) ) + numeric_constant.type_suffix_.data();
+}
+
+ProgramString Stringify( const Synt::StringLiteral& string_literal )
+{
+	return "\""_SpC + string_literal.value_ + "\""_SpC + string_literal.type_suffix_.data();
+}
+
+ProgramString Stringify( const Synt::BooleanConstant& boolean_constant )
+{
+	return boolean_constant.value_ ? Keyword( Keywords::true_ ) : Keyword( Keywords::false_ );
+}
+
+ProgramString Stringify( const Synt::BracketExpression& bracket_expression )
+{
+	if( bracket_expression.expression_ == nullptr )
+		return ProgramString();
+	return "("_SpC + Stringify( *bracket_expression.expression_ ) + ")"_SpC;
+}
+
+ProgramString Stringify( const Synt::TypeNameInExpression& type_name_in_expression )
+{
+	return Stringify( type_name_in_expression.type_name );
+}
+
+ProgramString Stringify( const Synt::MoveOperator& move_operator )
+{
+	return Keyword( Keywords::move_ ) + "("_SpC + move_operator.var_name_ + ")"_SpC;
+}
+
+ProgramString Stringify( const Synt::CastRef& cast_ref )
+{
+	if( cast_ref.type_ == nullptr || cast_ref.expression_ == nullptr )
+		return ProgramString();
+	return Keyword( Keywords::cast_ref_ ) + "</"_SpC + Stringify( *cast_ref.type_ ) + "/>("_SpC + Stringify( *cast_ref.expression_ ) + ")"_SpC;
+}
+
+ProgramString Stringify( const Synt::CastRefUnsafe& cast_ref_unsafe )
+{
+	if( cast_ref_unsafe.type_ == nullptr || cast_ref_unsafe.expression_ == nullptr )
+		return ProgramString();
+	return Keyword( Keywords::cast_ref_unsafe_ ) + "</"_SpC + Stringify( *cast_ref_unsafe.type_ ) + "/>("_SpC + Stringify( *cast_ref_unsafe.expression_ ) + ")"_SpC;
+}
+
+ProgramString Stringify( const Synt::CastImut& cast_imut )
+{
+	if( cast_imut.expression_ == nullptr )
+		return ProgramString();
+	return Keyword( Keywords::cast_imut_ ) + "("_SpC + Stringify( *cast_imut.expression_ ) + ")"_SpC;
+}
+
+ProgramString Stringify( const Synt::CastMut& cast_mut )
+{
+	if( cast_mut.expression_ == nullptr )
+		return ProgramString();
+	return Keyword( Keywords::cast_mut_ ) + "("_SpC + Stringify( *cast_mut.expression_ ) + ")"_SpC;
+}
+
+ProgramString Stringify( const Synt::TypeInfo& typeinfo_ )
+{
+	if( typeinfo_.type_ == nullptr )
+		return ProgramString();
+	return Keyword( Keywords::cast_ref_ ) + "</"_SpC + Stringify( *typeinfo_.type_ )  + "/>"_SpC;
+}
+
+ProgramString Stringify( const Synt::IndexationOperator& indexation_operator )
+{
+	return "["_SpC + Stringify( indexation_operator.index_ ) + "]"_SpC;
+}
+
+ProgramString Stringify( const Synt::MemberAccessOperator& member_access_operator )
+{
+	ProgramString result;
+	result+= "."_SpC + member_access_operator.member_name_;
+	if( member_access_operator.have_template_parameters )
+	{
+		result+= "</"_SpC;
+		for( const Synt::Expression& template_param : member_access_operator.template_parameters )
+		{
+			result+= Stringify(template_param);
+
+			if( &template_param != &member_access_operator.template_parameters.back() )
+				result+= ", "_SpC;
+		}
+		result+= "/>"_SpC;
+	}
+	return result;
+}
+
+ProgramString Stringify( const Synt::CallOperator& call_operator )
+{
+	ProgramString result= "("_SpC;
+	for( const Synt::Expression& arg : call_operator.arguments_ )
+	{
+		result+= Stringify(arg);
+
+		if( &arg != &call_operator.arguments_.back() )
+			result+= ", "_SpC;
+	}
+	result+= ")"_SpC;
+	return result;
+}
+
+ProgramString Stringify( const Synt::UnaryMinus& )
+{
+	return OverloadedOperatorToString( OverloadedOperator::Sub );
+}
+ProgramString Stringify( const Synt::UnaryPlus& )
+{
+	return OverloadedOperatorToString( OverloadedOperator::Add );
+}
+ProgramString Stringify( const Synt::LogicalNot& )
+{
+	return OverloadedOperatorToString( OverloadedOperator::LogicalNot );
+}
+ProgramString Stringify( const Synt::BitwiseNot& )
+{
+	return OverloadedOperatorToString( OverloadedOperator::BitwiseNot );
+}
+
+ProgramString Stringify( const Synt::Expression& expression )
+{
+	ProgramString result=
+		boost::apply_visitor(
+			[]( const auto& t ){ return Stringify(t); },
+			expression );
 
 	struct ExpressionWithUnaryOperatorsVisitor final : public boost::static_visitor<const Synt::ExpressionComponentWithUnaryOperators*>
 	{
@@ -119,78 +191,25 @@ static ProgramString Stringify( const Synt::Expression& expression )
 
 	if( const auto expression_with_unary_operators= boost::apply_visitor( ExpressionWithUnaryOperatorsVisitor(), expression ) )
 	{
-		struct PostifxVisitor final : public boost::static_visitor<ProgramString>
-		{
-			ProgramString operator()( const Synt::IndexationOperator& indexation_operator )
-			{
-				return "["_SpC + Stringify( indexation_operator.index_ ) + "]"_SpC;
-			}
-			ProgramString operator()( const Synt::MemberAccessOperator& member_access_operator )
-			{
-				ProgramString result;
-				result+= "."_SpC + member_access_operator.member_name_;
-				if( member_access_operator.have_template_parameters )
-				{
-					result+= "</"_SpC;
-					for( const Synt::Expression& template_param : member_access_operator.template_parameters )
-					{
-						result+= Stringify(template_param);
-
-						if( &template_param != &member_access_operator.template_parameters.back() )
-							result+= ", "_SpC;
-					}
-					result+= "/>"_SpC;
-				}
-				return result;
-			}
-			ProgramString operator()( const Synt::CallOperator& call_operator )
-			{
-				ProgramString result= "("_SpC;
-				for( const Synt::Expression& arg : call_operator.arguments_ )
-				{
-					result+= Stringify(arg);
-
-					if( &arg != &call_operator.arguments_.back() )
-						result+= ", "_SpC;
-				}
-				result+= ")"_SpC;
-				return result;
-			}
-		};
-
-		struct PrefixVisitor final : public boost::static_visitor<ProgramString>
-		{
-			ProgramString operator()( const Synt::UnaryMinus& )
-			{
-				return OverloadedOperatorToString( OverloadedOperator::Sub );
-			}
-			ProgramString operator()( const Synt::UnaryPlus& )
-			{
-				return OverloadedOperatorToString( OverloadedOperator::Add );
-			}
-			ProgramString operator()( const Synt::LogicalNot& )
-			{
-				return OverloadedOperatorToString( OverloadedOperator::LogicalNot );
-			}
-			ProgramString operator()( const Synt::BitwiseNot& )
-			{
-				return OverloadedOperatorToString( OverloadedOperator::BitwiseNot );
-			}
-		};
-
-		PostifxVisitor postfix_visitor;
 		for( const Synt::UnaryPostfixOperator& postfix_operator : expression_with_unary_operators->postfix_operators_ )
-			result+= boost::apply_visitor( postfix_visitor, postfix_operator );
-
-		PrefixVisitor prefix_visitor;
+			result+=
+				boost::apply_visitor(
+					[]( const auto& t ){ return Stringify(t); },
+					postfix_operator );
+		
 		for( const Synt::UnaryPrefixOperator& prefix_operator : expression_with_unary_operators->prefix_operators_ )
-			result= boost::apply_visitor( prefix_visitor, prefix_operator ) + result;
+			result=
+				boost::apply_visitor(
+					[]( const auto& t ){ return Stringify(t); },
+					prefix_operator ) +
+				result;
+		
 	}
 
 	return result;
 }
 
-static ProgramString Stringify( const Synt::ComplexName& complex_name )
+ProgramString Stringify( const Synt::ComplexName& complex_name )
 {
 	ProgramString result;
 	for( const Synt::ComplexName::Component& component : complex_name.components )
@@ -217,7 +236,7 @@ static ProgramString Stringify( const Synt::ComplexName& complex_name )
 	return result;
 }
 
-static ProgramString Stringify( const Synt::FunctionArgument& arg )
+ProgramString Stringify( const Synt::FunctionArgument& arg )
 {
 	ProgramString result;
 
@@ -263,7 +282,7 @@ static ProgramString Stringify( const Synt::FunctionArgument& arg )
 	return result;
 }
 
-static ProgramString StringifyFunctionTypeEnding( const Synt::FunctionType& function_type )
+ProgramString StringifyFunctionTypeEnding( const Synt::FunctionType& function_type )
 {
 	ProgramString result;
 	if( function_type.unsafe_ )
@@ -310,86 +329,79 @@ static ProgramString StringifyFunctionTypeEnding( const Synt::FunctionType& func
 	return result;
 }
 
-static ProgramString Stringify( const Synt::TypeName& type_name )
+ProgramString Stringify( const Synt::ArrayTypeName& array_type_name )
 {
-	struct Visitor final : public boost::static_visitor<ProgramString>
-	{
-		ProgramString operator()( const Synt::EmptyVariant& )
-		{
-			U_ASSERT(false);
-			return ProgramString();
-		}
+	ProgramString result;
 
-		ProgramString operator()( const Synt::ArrayTypeName& array_type_name )
-		{
-			ProgramString result;
+	result+= "[ "_SpC;
+	if( array_type_name.element_type != nullptr )
+		result+= Stringify( *array_type_name.element_type );
+	result+= ", "_SpC;
+	if( array_type_name.size != nullptr )
+		result+= Stringify( *array_type_name.size );
+	result+= " ]"_SpC;
 
-			result+= "[ "_SpC;
-			if( array_type_name.element_type != nullptr )
-				result+= Stringify( *array_type_name.element_type );
-			result+= ", "_SpC;
-			if( array_type_name.size != nullptr )
-				result+= Stringify( *array_type_name.size );
-			result+= " ]"_SpC;
-
-			return result;
-		}
-
-		ProgramString operator()( const Synt::TupleType& tuple_type_name )
-		{
-			ProgramString result;
-
-			result+= "tup[ "_SpC;
-			for( const Synt::TypeName& element_type : tuple_type_name.element_types_ )
-			{
-				result+= Stringify( element_type );
-				if( &element_type != &tuple_type_name.element_types_.back() )
-					result+= ", "_SpC;
-			}
-			result+= " ]"_SpC;
-
-			return result;
-		}
-
-		ProgramString operator()( const Synt::TypeofTypeName& typeof_type_name )
-		{
-			if( typeof_type_name.expression != nullptr )
-				return ProgramString();
-			return Keyword( Keywords::typeof_ ) + "("_SpC + Stringify( *typeof_type_name.expression ) + ")"_SpC;
-		}
-
-		ProgramString operator()( const Synt::FunctionTypePtr& function_type_name )
-		{
-			if( function_type_name == nullptr )
-				return ""_SpC;
-
-			ProgramString result;
-			result+= "fn("_SpC;
-
-			for( const Synt::FunctionArgument& arg : function_type_name->arguments_ )
-			{
-				result+= Stringify(arg);
-
-				if( &arg != &function_type_name->arguments_.back() )
-					result+= ", "_SpC;
-			}
-			result+=") "_SpC;
-
-			result+= StringifyFunctionTypeEnding( *function_type_name );
-			return result;
-		}
-
-		ProgramString operator()( const Synt::NamedTypeName& named_type_name )
-		{
-			return Stringify( named_type_name.name );
-		}
-	};
-
-	Visitor visitor;
-	return boost::apply_visitor( visitor, type_name );
+	return result;
 }
 
-static ProgramString Stringify( const Synt::Function& function )
+ProgramString Stringify( const Synt::TupleType& tuple_type_name )
+{
+	ProgramString result;
+
+	result+= "tup[ "_SpC;
+	for( const Synt::TypeName& element_type : tuple_type_name.element_types_ )
+	{
+		result+= Stringify( element_type );
+		if( &element_type != &tuple_type_name.element_types_.back() )
+			result+= ", "_SpC;
+	}
+	result+= " ]"_SpC;
+
+	return result;
+}
+
+ProgramString Stringify( const Synt::TypeofTypeName& typeof_type_name )
+{
+	if( typeof_type_name.expression != nullptr )
+		return ProgramString();
+	return Keyword( Keywords::typeof_ ) + "("_SpC + Stringify( *typeof_type_name.expression ) + ")"_SpC;
+}
+
+ProgramString Stringify( const Synt::FunctionTypePtr& function_type_name )
+{
+	if( function_type_name == nullptr )
+		return ""_SpC;
+
+	ProgramString result;
+	result+= "fn("_SpC;
+
+	for( const Synt::FunctionArgument& arg : function_type_name->arguments_ )
+	{
+		result+= Stringify(arg);
+
+		if( &arg != &function_type_name->arguments_.back() )
+			result+= ", "_SpC;
+	}
+	result+=") "_SpC;
+
+	result+= StringifyFunctionTypeEnding( *function_type_name );
+	return result;
+}
+
+ProgramString Stringify( const Synt::NamedTypeName& named_type_name )
+{
+	return Stringify( named_type_name.name );
+}
+
+ProgramString Stringify( const Synt::TypeName& type_name )
+{
+	return 
+		boost::apply_visitor(
+			[]( const auto& t ){ return Stringify(t); },
+			type_name );
+}
+
+ProgramString Stringify( const Synt::Function& function )
 {
 	ProgramString result;
 	if( function.overloaded_operator_ != OverloadedOperator::None )
@@ -426,7 +438,7 @@ static ProgramString Stringify( const Synt::Function& function )
 	return result;
 }
 
-static ProgramString Stringify( const Synt::TypeTemplateBase& type_template )
+ProgramString Stringify( const Synt::TypeTemplateBase& type_template )
 {
 	ProgramString result= type_template.name_;
 
@@ -455,7 +467,7 @@ static ProgramString Stringify( const Synt::TypeTemplateBase& type_template )
 	return result;
 }
 
-static ProgramString Stringify( const Synt::FunctionTemplate& function_template )
+ProgramString Stringify( const Synt::FunctionTemplate& function_template )
 {
 	ProgramString result;
 
@@ -476,7 +488,7 @@ static ProgramString Stringify( const Synt::FunctionTemplate& function_template 
 	return result;
 }
 
-static ProgramString Stringify( const Synt::ClassField& class_field )
+ProgramString Stringify( const Synt::ClassField& class_field )
 {
 	ProgramString result= class_field.name;
 	result+= ": "_SpC + Stringify( class_field.type ) + " "_SpC;
@@ -498,7 +510,7 @@ static ProgramString Stringify( const Synt::ClassField& class_field )
 	return result;
 }
 
-static ProgramString Stringify( const Synt::VariablesDeclaration::VariableEntry& varaible, const ProgramString& type )
+ProgramString Stringify( const Synt::VariablesDeclaration::VariableEntry& varaible, const ProgramString& type )
 {
 	ProgramString result= varaible.name;
 	result+= ": "_SpC + type + " "_SpC;
@@ -520,7 +532,7 @@ static ProgramString Stringify( const Synt::VariablesDeclaration::VariableEntry&
 	return result;
 }
 
-static ProgramString Stringify( const Synt::AutoVariableDeclaration& varaible )
+ProgramString Stringify( const Synt::AutoVariableDeclaration& varaible )
 {
 	ProgramString result= varaible.name;
 	result+= ": "_SpC + Keyword( Keywords::auto_ ) + " "_SpC;
@@ -542,7 +554,7 @@ static ProgramString Stringify( const Synt::AutoVariableDeclaration& varaible )
 	return result;
 }
 
-static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Enum& enum_ )
+std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Enum& enum_ )
 {
 	std::vector<ProgramModel::ProgramTreeNode> result;
 
@@ -559,7 +571,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 	return result;
 }
 
-static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::ClassElements& elements )
+std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::ClassElements& elements )
 {
 	struct Visitor final : public boost::static_visitor<>
 	{
@@ -693,7 +705,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 	return std::move(visitor.result);
 }
 
-static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::ProgramElements& elements )
+std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::ProgramElements& elements )
 {
 	struct Visitor final : public boost::static_visitor<>
 	{
@@ -830,7 +842,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Syn
 	return std::move(visitor.result);
 }
 
-static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModelMacros( const Synt::MacrosPtr& macros )
+std::vector<ProgramModel::ProgramTreeNode> BuildProgramModelMacros( const Synt::MacrosPtr& macros )
 {
 	std::vector<ProgramModel::ProgramTreeNode> result;
 	if( macros == nullptr )
@@ -859,7 +871,7 @@ static std::vector<ProgramModel::ProgramTreeNode> BuildProgramModelMacros( const
 	return result;
 }
 
-static void SetupParents( ProgramModel::ProgramTreeNode& tree )
+void SetupParents( ProgramModel::ProgramTreeNode& tree )
 {
 	size_t i= 0u;
 	for( ProgramModel::ProgramTreeNode& child : tree.childs )
@@ -895,6 +907,8 @@ const ProgramModel::ProgramTreeNode* GetNode_r( const std::vector<ProgramModel::
 
 	return nullptr;
 }
+
+} // namespace
 
 const ProgramModel::ProgramTreeNode* ProgramModel::GetNodeForFilePos( const FilePos& file_pos ) const
 {

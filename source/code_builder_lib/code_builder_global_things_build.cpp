@@ -1004,7 +1004,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			variable.llvm_value= global_variable= CreateGlobalConstantVariable( type, MangleGlobalVariable( names_scope, variable_declaration.name ) );
 
 			if( variable_declaration.initializer != nullptr )
-				variable.constexpr_value= ApplyInitializer( variable, *variable_declaration.initializer, names_scope, function_context );
+				variable.constexpr_value= ApplyInitializer( *variable_declaration.initializer, variable, names_scope, function_context );
 			else
 				ApplyEmptyInitializer( variable_declaration.name, variable_declaration.file_pos, variable, names_scope, function_context );
 

@@ -921,11 +921,13 @@ public:
 	ProgramString import_name;
 };
 
-// Utility functions for mani[ulations with variants.
+// Utility functions for manipulations with variants.
 
 FilePos GetExpressionFilePos( const Expression& expression );
 FilePos GetInitializerFilePos( const Initializer& initializer );
 FilePos GetBlockElementFilePos( const BlockElement& block_element );
+
+OverloadedOperator PrefixOperatorKind( const UnaryPrefixOperator& prefix_operator );
 
 } // namespace Synt
 
