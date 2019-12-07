@@ -6,7 +6,7 @@
 #include "pop_llvm_warnings.hpp"
 
 #include "code_builder_errors.hpp"
-#include "code_builder_types.hpp"
+#include "type.hpp"
 
 namespace U
 {

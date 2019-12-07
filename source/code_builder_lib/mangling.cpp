@@ -1,6 +1,8 @@
 #include "../lex_synt_lib/assert.hpp"
 #include "../lex_synt_lib/keywords.hpp"
 
+#include "class.hpp"
+#include "enum.hpp"
 #include "mangling.hpp"
 
 namespace U

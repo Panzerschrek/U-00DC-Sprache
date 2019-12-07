@@ -1,4 +1,5 @@
-#include "code_builder_types.hpp"
+#include "class.hpp"
+#include "template_types.hpp"
 #include "enum.hpp"
 
 

@@ -1,8 +1,9 @@
 #pragma once
 #include <set>
+#include <variant>
 
 #include "push_disable_llvm_warnings.hpp"
-#include <llvm/IR/Type.h>
+#include <llvm/IR/DerivedTypes.h>
 #include "pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/program_string.hpp"

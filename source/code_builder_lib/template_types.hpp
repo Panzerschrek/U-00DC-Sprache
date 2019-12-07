@@ -1,22 +1,7 @@
 #pragma once
-#include <map>
-#include <memory>
-#include <optional>
-#include <set>
-#include <unordered_map>
-#include <unordered_set>
-#include <variant>
-#include <vector>
-
-#include "push_disable_llvm_warnings.hpp"
-#include <llvm/IR/Function.h>
-#include <llvm/IR/Constants.h>
-#include "pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/syntax_elements.hpp"
-#include "class.hpp"
-#include "enum.hpp"
-#include "small_types.hpp"
+#include "names_scope.hpp"
 
 namespace U
 {

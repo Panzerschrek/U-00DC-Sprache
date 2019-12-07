@@ -2,7 +2,8 @@
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/IRBuilder.h>
 #include "pop_llvm_warnings.hpp"
-#include "code_builder_types.hpp"
+#include "template_types.hpp"
+#include "value.hpp"
 
 namespace U
 {
