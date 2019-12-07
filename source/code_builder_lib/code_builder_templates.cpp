@@ -1069,7 +1069,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 			return result;
 		}
 
-		const ClassProxyPtr class_proxy= NamesScopeFill( *template_parameters_namespace, *static_cast<const Synt::ClassTemplate*>( type_template.syntax_element )->class_, g_name_for_generated_class );
+		const ClassProxyPtr class_proxy= NamesScopeFill( static_cast<const Synt::ClassTemplate*>( type_template.syntax_element )->class_, *template_parameters_namespace, g_name_for_generated_class );
 		if( class_proxy == nullptr )
 			return result;
 
@@ -1302,7 +1302,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	CreateTemplateErrorsContext( errors_container, file_pos, template_parameters_namespace, function_template, func_name, deduced_template_args, function_template.known_template_parameters );
 
 	// First, prepare only as prototype.
-	NamesScopeFill( *template_parameters_namespace, *function_template.syntax_element->function_, function_template.base_class );
+	NamesScopeFill( function_template.syntax_element->function_, *template_parameters_namespace, function_template.base_class );
 	OverloadedFunctionsSet& result_functions_set= *template_parameters_namespace->GetThisScopeValue( func_name )->GetFunctionsSet();
 	GlobalThingBuildFunctionsSet( *template_parameters_namespace, result_functions_set, false );
 

@@ -219,8 +219,8 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 	SetCurrentClassTable( *result.class_table );
 
 	// Do work for this node.
-	NamesScopeFill( *result.names_map, source_graph_node.ast.program_elements );
-	NamesScopeFillOutOfLineElements( *result.names_map, source_graph_node.ast.program_elements );
+	NamesScopeFill( source_graph_node.ast.program_elements, *result.names_map );
+	NamesScopeFillOutOfLineElements( source_graph_node.ast.program_elements, *result.names_map );
 	GlobalThingBuildNamespace( *result.names_map );
 
 	// Take generated template things.

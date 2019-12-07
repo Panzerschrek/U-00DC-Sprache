@@ -9,84 +9,50 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements )
+void CodeBuilder::NamesScopeFill(
+	const Synt::ProgramElements& namespace_elements,
+	NamesScope& names_scope )
 {
-	struct Visitor final
+	for( const Synt::ProgramElement& program_element : namespace_elements )
 	{
-		CodeBuilder& this_;
-		NamesScope& names_scope;
-
-		Visitor( CodeBuilder& in_this, NamesScope& in_names_scope )
-			: this_(in_this), names_scope(in_names_scope)
-		{}
-
-		void operator()( const Synt::FunctionPtr& func )
-		{
-			this_.NamesScopeFill( names_scope, *func, nullptr );
-		}
-		void operator()( const Synt::ClassPtr& class_ )
-		{
-			this_.NamesScopeFill( names_scope, *class_ );
-		}
-		void operator()( const Synt::NamespacePtr& namespace_ )
-		{
-			NamesScope* result_scope= &names_scope;
-			if( const Value* const same_value= names_scope.GetThisScopeValue( namespace_->name_ ) )
+		boost::apply_visitor(
+			[&]( const auto& t )
 			{
-				if( const NamesScopePtr same_namespace= same_value->GetNamespace() )
-					result_scope= same_namespace.get(); // Extend existend namespace.
-				else
-					REPORT_ERROR( Redefinition, names_scope.GetErrors(), namespace_->file_pos_, namespace_->name_ );
-			}
-			else
-			{
-				if( IsKeyword( namespace_->name_ ) )
-					REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), namespace_->file_pos_ );
-				U_ASSERT( !this_.NameShadowsTemplateArgument( namespace_->name_, names_scope ) ); // There are no templates abowe namespace. Namespaces inside classes does not exists.
-
-				const auto new_names_scope= std::make_shared<NamesScope>( namespace_->name_, &names_scope );
-				names_scope.AddName( namespace_->name_, Value( new_names_scope, namespace_->file_pos_ ) );
-				result_scope= new_names_scope.get();
-			}
-
-			this_.NamesScopeFill( *result_scope, namespace_->elements_ );
-		}
-		void operator()( const Synt::VariablesDeclaration& variables_declaration )
-		{
-			this_.NamesScopeFill( names_scope, variables_declaration );
-		}
-		void operator()( const Synt::AutoVariableDeclaration& auto_variable_declaration )
-		{
-			this_.NamesScopeFill( names_scope, auto_variable_declaration );
-		}
-		void operator()( const Synt::StaticAssert& static_assert_ )
-		{
-			this_.NamesScopeFill( names_scope, static_assert_ );
-		}
-		void operator()( const Synt::Enum& enum_ )
-		{
-			this_.NamesScopeFill( names_scope, enum_ );
-		}
-		void operator()( const Synt::Typedef& typedef_ )
-		{
-			this_.NamesScopeFill( names_scope, typedef_ );
-		}
-		void operator()( const Synt::TypeTemplateBase& type_template )
-		{
-			this_.NamesScopeFill( names_scope, type_template, nullptr );
-		}
-		void operator()( const Synt::FunctionTemplate& function_template )
-		{
-			this_.NamesScopeFill( names_scope, function_template, nullptr );
-		}
-	};
-
-	Visitor visitor( *this, names_scope );
-	for (const Synt::ProgramElement& program_element : namespace_elements )
-		boost::apply_visitor( visitor, program_element );
+				NamesScopeFill( t, names_scope );
+			},
+			program_element );
+	}
 }
 
-void  CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration )
+void CodeBuilder::NamesScopeFill(
+	const Synt::NamespacePtr& namespace_,
+	NamesScope& names_scope )
+{
+	NamesScope* result_scope= &names_scope;
+	if( const Value* const same_value= names_scope.GetThisScopeValue( namespace_->name_ ) )
+	{
+		if( const NamesScopePtr same_namespace= same_value->GetNamespace() )
+			result_scope= same_namespace.get(); // Extend existend namespace.
+		else
+			REPORT_ERROR( Redefinition, names_scope.GetErrors(), namespace_->file_pos_, namespace_->name_ );
+	}
+	else
+	{
+		if( IsKeyword( namespace_->name_ ) )
+			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), namespace_->file_pos_ );
+		U_ASSERT( !NameShadowsTemplateArgument( namespace_->name_, names_scope ) ); // There are no templates abowe namespace. Namespaces inside classes does not exists.
+
+		const auto new_names_scope= std::make_shared<NamesScope>( namespace_->name_, &names_scope );
+		names_scope.AddName( namespace_->name_, Value( new_names_scope, namespace_->file_pos_ ) );
+		result_scope= new_names_scope.get();
+	}
+
+	NamesScopeFill( namespace_->elements_, *result_scope );
+}
+
+void CodeBuilder::NamesScopeFill(
+	const Synt::VariablesDeclaration& variables_declaration,
+	NamesScope& names_scope )
 {
 	for( const Synt::VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration.variables )
 	{
@@ -105,7 +71,9 @@ void  CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Variable
 	}
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::AutoVariableDeclaration& variable_declaration )
+void CodeBuilder::NamesScopeFill(
+	const Synt::AutoVariableDeclaration& variable_declaration,
+	NamesScope& names_scope )
 {
 	if( IsKeyword( variable_declaration.name ) )
 		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), variable_declaration.file_pos_ );
@@ -121,11 +89,13 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::AutoVaria
 }
 
 void CodeBuilder::NamesScopeFill(
+	const Synt::FunctionPtr& function_declaration_ptr,
 	NamesScope& names_scope,
-	const Synt::Function& function_declaration,
 	const ClassProxyPtr& base_class,
 	const ClassMemberVisibility visibility )
 {
+	const auto& function_declaration= *function_declaration_ptr;
+	
 	if( function_declaration.name_.components.size() != 1u )
 		return; // process out of line functions later.
 
@@ -162,8 +132,8 @@ void CodeBuilder::NamesScopeFill(
 }
 
 void CodeBuilder::NamesScopeFill(
-	NamesScope& names_scope,
 	const Synt::FunctionTemplate& function_template_declaration,
+	NamesScope& names_scope,
 	const ClassProxyPtr& base_class,
 	const ClassMemberVisibility visibility )
 {
@@ -205,8 +175,13 @@ void CodeBuilder::NamesScopeFill(
 	}
 }
 
-ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration, const ProgramString& override_name )
+ClassProxyPtr CodeBuilder::NamesScopeFill(
+	const Synt::ClassPtr& class_declaration_ptr,
+	NamesScope& names_scope,
+	const ProgramString& override_name )
 {
+	const auto& class_declaration= *class_declaration_ptr;
+
 	const ProgramString& class_name= override_name.empty() ? class_declaration.name_: override_name;
 	if( IsKeyword( class_name ) )
 		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), class_declaration.file_pos_ );
@@ -296,11 +271,11 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 			}
 			void operator()( const Synt::FunctionPtr& func )
 			{
-				this_.NamesScopeFill( the_class.members, *func, class_type, current_visibility );
+				this_.NamesScopeFill( func, the_class.members, class_type, current_visibility );
 			}
 			void operator()( const Synt::FunctionTemplate& func_template )
 			{
-				this_.NamesScopeFill( the_class.members, func_template, class_type, current_visibility );
+				this_.NamesScopeFill( func_template, the_class.members, class_type, current_visibility );
 			}
 			void operator()( const Synt::ClassVisibilityLabel& visibility_label )
 			{
@@ -310,36 +285,37 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 			}
 			void operator()( const Synt::TypeTemplateBase& type_template )
 			{
-				this_.NamesScopeFill( the_class.members, type_template, class_type, current_visibility );
+				this_.NamesScopeFill( type_template, the_class.members, class_type, current_visibility );
 			}
 			void operator()( const Synt::Enum& enum_ )
 			{
-				this_.NamesScopeFill( the_class.members, enum_ );
+				this_.NamesScopeFill( enum_, the_class.members );
 				the_class.SetMemberVisibility( enum_.name, current_visibility );
 			}
 			void operator()( const Synt::StaticAssert& static_assert_ )
 			{
-				this_.NamesScopeFill( the_class.members, static_assert_ );
+				this_.NamesScopeFill( static_assert_, the_class.members );
 			}
 			void operator()( const Synt::Typedef& typedef_ )
 			{
-				this_.NamesScopeFill( the_class.members, typedef_ );
+				this_.NamesScopeFill( typedef_, the_class.members );
 				the_class.SetMemberVisibility( typedef_.name, current_visibility );
 			}
 			void operator()( const Synt::VariablesDeclaration& variables_declaration )
 			{
-				this_.NamesScopeFill( the_class.members, variables_declaration );
+				this_.NamesScopeFill( variables_declaration, the_class.members );
 				for( const auto& variable_declaration : variables_declaration.variables )
 					the_class.SetMemberVisibility( variable_declaration.name, current_visibility );
 			}
 			void operator()( const Synt::AutoVariableDeclaration& auto_variable_declaration )
 			{
-				this_.NamesScopeFill( the_class.members, auto_variable_declaration );
+				this_.NamesScopeFill( auto_variable_declaration, the_class.members );
 				the_class.SetMemberVisibility( auto_variable_declaration.name, current_visibility );
 			}
 			void operator()( const Synt::ClassPtr& inner_class )
 			{
-				this_.NamesScopeFill( the_class.members, *inner_class );
+				this_.NamesScopeFill( inner_class, the_class.members );
+				the_class.SetMemberVisibility( inner_class->name_, current_visibility );
 			}
 		};
 
@@ -352,8 +328,8 @@ ClassProxyPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::
 }
 
 void CodeBuilder::NamesScopeFill(
-	NamesScope& names_scope,
 	const Synt::TypeTemplateBase& type_template_declaration,
+	NamesScope& names_scope,
 	const ClassProxyPtr& base_class,
 	const ClassMemberVisibility visibility )
 {
@@ -384,7 +360,9 @@ void CodeBuilder::NamesScopeFill(
 	}
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enum_declaration )
+void CodeBuilder::NamesScopeFill(
+	const Synt::Enum& enum_declaration,
+	NamesScope& names_scope )
 {
 	if( IsKeyword( enum_declaration.name ) )
 		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), enum_declaration.file_pos_ );
@@ -400,7 +378,9 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enu
 		REPORT_ERROR( Redefinition, names_scope.GetErrors(), enum_declaration.file_pos_, enum_declaration.name );
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Typedef& typedef_declaration )
+void CodeBuilder::NamesScopeFill(
+	const Synt::Typedef& typedef_declaration,
+	NamesScope& names_scope )
 {
 	if( IsKeyword( typedef_declaration.name ) )
 		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), typedef_declaration.file_pos_ );
@@ -414,7 +394,9 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Typedef& 
 		REPORT_ERROR( Redefinition, names_scope.GetErrors(), typedef_declaration.file_pos_, typedef_declaration.name );
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_declaration )
+void CodeBuilder::NamesScopeFill(
+	const Synt::StaticAssert& static_assert_declaration,
+	NamesScope& names_scope )
 {
 	StaticAssert static_assert_;
 	static_assert_.syntax_element= &static_assert_declaration;
@@ -424,7 +406,9 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::StaticAss
 		Value( static_assert_, static_assert_declaration.file_pos_ ) );
 }
 
-void CodeBuilder::NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements )
+void CodeBuilder::NamesScopeFillOutOfLineElements(
+	const Synt::ProgramElements& namespace_elements,
+	NamesScope& names_scope )
 {
 	for (const Synt::ProgramElement& program_element : namespace_elements )
 	{
@@ -448,7 +432,7 @@ void CodeBuilder::NamesScopeFillOutOfLineElements( NamesScope& names_scope, cons
 			if( const Value* const inner_namespace_value= names_scope.GetThisScopeValue( namespace_.name_ ) )
 			{
 				if( const NamesScopePtr inner_namespace= inner_namespace_value->GetNamespace() )
-					NamesScopeFillOutOfLineElements( *inner_namespace, namespace_.elements_ );
+					NamesScopeFillOutOfLineElements( namespace_.elements_, *inner_namespace );
 			}
 		}
 	}

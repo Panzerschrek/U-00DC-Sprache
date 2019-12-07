@@ -649,17 +649,18 @@ private:
 
 	// NamesScope fill
 
-	void NamesScopeFill( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::AutoVariableDeclaration& variable_declaration );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration, const ClassProxyPtr& base_class, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration, const ClassProxyPtr& base_class, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
-	ClassProxyPtr NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration, const ProgramString& override_name= ""_SpC );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeTemplateBase& type_template_declaration, const ClassProxyPtr& base_class, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enum_declaration );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::Typedef& typedef_declaration );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ );
-	void NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements );
+	void NamesScopeFill( const Synt::ProgramElements& namespace_elements, NamesScope& names_scope );
+	void NamesScopeFill( const Synt::NamespacePtr& namespace_, NamesScope& names_scope );
+	void NamesScopeFill( const Synt::VariablesDeclaration& variables_declaration , NamesScope& names_scope );
+	void NamesScopeFill( const Synt::AutoVariableDeclaration& variable_declaration, NamesScope& names_scope );
+	void NamesScopeFill( const Synt::FunctionPtr& function_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	void NamesScopeFill( const Synt::FunctionTemplate& function_template_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	ClassProxyPtr NamesScopeFill( const Synt::ClassPtr& class_declaration, NamesScope& names_scope, const ProgramString& override_name= ""_SpC );
+	void NamesScopeFill( const Synt::TypeTemplateBase& type_template_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	void NamesScopeFill( const Synt::Enum& enum_declaration, NamesScope& names_scope );
+	void NamesScopeFill( const Synt::Typedef& typedef_declaration, NamesScope& names_scope );
+	void NamesScopeFill( const Synt::StaticAssert& static_assert_, NamesScope& names_scope );
+	void NamesScopeFillOutOfLineElements( const Synt::ProgramElements& namespace_elements, NamesScope& names_scope );
 
 	// Global things build
 
