@@ -742,6 +742,60 @@ bool operator!=( const Array& l, const Array& r )
 // Function
 //
 
+bool Function::PointerCanBeConvertedTo( const Function& other ) const
+{
+	const Function&  src_function_type= *this;
+	const Function& dst_function_type= other;
+	if( src_function_type.return_type != dst_function_type.return_type ||
+		src_function_type.return_value_is_reference != dst_function_type.return_value_is_reference )
+		return false;
+
+	if( !src_function_type.return_value_is_mutable && dst_function_type.return_value_is_mutable )
+		return false; // Allow mutability conversions, except mut->imut
+
+	if( src_function_type.args.size() != dst_function_type.args.size() )
+		return false;
+	for( size_t i= 0u; i < src_function_type.args.size(); ++i )
+	{
+		if( src_function_type.args[i].type != dst_function_type.args[i].type ||
+			src_function_type.args[i].is_reference != dst_function_type.args[i].is_reference )
+			return false;
+
+		if( src_function_type.args[i].is_mutable && !dst_function_type.args[i].is_mutable )
+			return false; // Allow mutability conversions, except mut->imut
+	}
+
+	// We can convert function, returning less references to function, returning more referenes.
+	for( const Function::ArgReference& src_inner_arg_reference : src_function_type.return_references )
+	{
+		bool found= false;
+		for( const Function::ArgReference& dst_inner_arg_reference : dst_function_type.return_references )
+		{
+			if( dst_inner_arg_reference == src_inner_arg_reference )
+			{
+				found= true;
+				break;
+			}
+		}
+		if( !found )
+			return false;
+	}
+
+	// We can convert function, linkink less references to function, linking more references
+	for( const Function::ReferencePollution& src_pollution : src_function_type.references_pollution )
+	{
+		 // TODO - maybe compare with mutability conversion possibility?
+		if( dst_function_type.references_pollution.count(src_pollution) == 0u )
+			return false;
+	}
+
+	if( src_function_type.unsafe && !dst_function_type.unsafe )
+		return false; // Conversion from unsafe to safe function is forbidden.
+
+	// Finally, we check all conditions
+	return true;
+}
+
 bool operator==( const Function::Arg& l, const Function::Arg& r )
 {
 	return l.type == r.type && l.is_mutable == r.is_mutable && l.is_reference == r.is_reference;
@@ -750,6 +804,21 @@ bool operator==( const Function::Arg& l, const Function::Arg& r )
 bool operator!=( const Function::Arg& l, const Function::Arg& r )
 {
 	return !( l == r );
+}
+
+bool Function::ReferencePollution::operator==( const ReferencePollution& other ) const
+{
+	return this->dst == other.dst && this->src == other.src && this->src_is_mutable == other.src_is_mutable;
+}
+
+bool Function::ReferencePollution::operator<( const ReferencePollution& other ) const
+{
+	// Order is significant, because references pollution is part of stable function type.
+	if( this->dst != other.dst )
+		return this->dst < other.dst;
+	if( this->src != other.src )
+		return this->src < other.src;
+	return this->src_is_mutable < other.src_is_mutable;
 }
 
 bool operator==( const Function& l, const Function& r )
