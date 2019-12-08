@@ -1,6 +1,6 @@
 #include "../lex_synt_lib/assert.hpp"
 #include "../lex_synt_lib/keywords.hpp"
-#include "code_builder_types.hpp"
+#include "type.hpp"
 
 #include "code_builder_errors.hpp"
 

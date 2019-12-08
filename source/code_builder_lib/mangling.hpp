@@ -1,5 +1,5 @@
 #pragma once
-#include "code_builder_types.hpp"
+#include "names_scope.hpp"
 
 namespace U
 {

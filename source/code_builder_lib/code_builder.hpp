@@ -10,10 +10,13 @@
 #include "pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/syntax_elements.hpp"
+#include "class.hpp"
 #include "code_builder_errors.hpp"
 #include "constexpr_function_evaluator.hpp"
+#include "enum.hpp"
 #include "function_context.hpp"
 #include "i_code_builder.hpp"
+#include "template_types.hpp"
 
 namespace U
 {

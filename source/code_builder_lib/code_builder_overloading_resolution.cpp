@@ -11,6 +11,28 @@ namespace CodeBuilderPrivate
 namespace
 {
 
+// "Class" of function argument in terms of overloading.
+enum class ArgOverloadingClass
+{
+	// Value-args (both mutable and immutable), immutable references.
+	ImmutableReference,
+	// Mutable references.
+	MutalbeReference,
+	// SPRACHE_TODO - add class for move-references here
+};
+
+ArgOverloadingClass GetArgOverloadingClass( const bool is_reference, const bool is_mutable )
+{
+	if( is_reference && is_mutable )
+		return ArgOverloadingClass::MutalbeReference;
+	return ArgOverloadingClass::ImmutableReference;
+}
+
+ArgOverloadingClass GetArgOverloadingClass( const Function::Arg& arg )
+{
+	return GetArgOverloadingClass( arg.is_mutable, arg.is_reference );
+}
+
 enum class ConversionsCompareResult
 {
 	Same,

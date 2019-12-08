@@ -5,6 +5,7 @@
 #include "pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/assert.hpp"
+#include "class.hpp"
 #include "constexpr_function_evaluator.hpp"
 
 namespace U
