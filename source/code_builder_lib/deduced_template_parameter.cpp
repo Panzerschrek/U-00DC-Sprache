@@ -1,7 +1,4 @@
-#include "../lex_synt_lib/assert.hpp"
-#include "../lex_synt_lib/keywords.hpp"
-
-#include "template_types.hpp"
+#include "deduced_template_parameter.hpp"
 
 namespace U
 {
@@ -9,9 +6,6 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-//
-// DeducedTemplateParameter
-//
 
 DeducedTemplateParameter::Array::Array( const Array& other )
 {
@@ -117,6 +111,6 @@ const DeducedTemplateParameter::Template* DeducedTemplateParameter::GetTemplate(
 	return std::get_if<Template>( &something_ );
 }
 
-} //namespace CodeBuilderPrivate
+} // namespace CodeBuilderPrivate
 
 } // namespace U

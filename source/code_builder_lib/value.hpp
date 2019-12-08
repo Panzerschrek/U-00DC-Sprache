@@ -4,6 +4,7 @@
 #include <llvm/IR/Constants.h>
 #include "pop_llvm_warnings.hpp"
 
+#include "deduced_template_parameter.hpp"
 #include "references_graph.hpp"
 #include "type.hpp"
 
@@ -25,8 +26,6 @@ using TypeTemplatePtr= std::shared_ptr<TypeTemplate>;
 
 struct FunctionTemplate;
 using FunctionTemplatePtr= std::shared_ptr<FunctionTemplate>;
-
-class DeducedTemplateParameter;
 
 struct FunctionVariable final
 {

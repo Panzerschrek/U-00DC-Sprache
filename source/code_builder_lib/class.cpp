@@ -1,4 +1,3 @@
-#include "template_types.hpp"
 #include "class.hpp"
 
 

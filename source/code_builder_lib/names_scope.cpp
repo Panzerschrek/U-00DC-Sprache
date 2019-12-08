@@ -1,7 +1,6 @@
 #include "../lex_synt_lib/assert.hpp"
 #include "class.hpp"
 #include "enum.hpp"
-#include "template_types.hpp"
 #include "names_scope.hpp"
 
 namespace U
