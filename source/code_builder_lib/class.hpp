@@ -13,13 +13,9 @@ class Class final
 {
 public:
 	Class( const ProgramString& name, NamesScope* parent_scope );
-	~Class();
 
 	Class( const Class& )= delete;
-	Class( Class&& )= delete;
-
 	Class& operator=( const Class& )= delete;
-	Class& operator=( Class&& )= delete;
 
 	ClassMemberVisibility GetMemberVisibility( const ProgramString& member_name ) const;
 	void SetMemberVisibility( const ProgramString& member_name, ClassMemberVisibility visibility );

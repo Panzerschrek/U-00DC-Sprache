@@ -31,7 +31,6 @@ public:
 		llvm::LLVMContext& llvm_context,
 		std::string target_triple_str,
 		const llvm::DataLayout& data_layout );
-	virtual ~CodeBuilder() override= default;
 
 	virtual BuildResult BuildProgram( const SourceGraph& source_graph ) override;
 

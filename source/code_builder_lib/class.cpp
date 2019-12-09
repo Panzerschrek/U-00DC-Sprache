@@ -15,9 +15,6 @@ Class::Class( const ProgramString& in_name, NamesScope* const parent_scope )
 	: members( in_name, parent_scope )
 {}
 
-Class::~Class()
-{}
-
 ClassMemberVisibility Class::GetMemberVisibility( const ProgramString& member_name ) const
 {
 	const auto it= members_visibility.find( member_name );
