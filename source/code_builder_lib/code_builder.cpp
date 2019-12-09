@@ -119,10 +119,10 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 {
 	global_errors_.clear();
 
-	module_.reset(
-		new llvm::Module(
+	module_=
+		std::make_unique<llvm::Module>(
 			ToUTF8( source_graph.nodes_storage[ source_graph.root_node_index ].file_path ),
-			llvm_context_ ) );
+			llvm_context_ );
 
 	// Setup data layout
 	module_->setDataLayout(data_layout_);
@@ -190,9 +190,9 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 {
 	BuildResultInternal result;
 
-	result.names_map.reset( new NamesScope( ""_SpC, nullptr ) );
+	result.names_map= std::make_unique<NamesScope>( ""_SpC, nullptr );
 	result.names_map->SetErrors( global_errors_ );
-	result.class_table.reset( new ClassTable );
+	result.class_table= std::make_unique<ClassTable>();
 	FillGlobalNamesScope( *result.names_map );
 
 	U_ASSERT( node_index < source_graph.nodes_storage.size() );
@@ -224,7 +224,7 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 	GlobalThingBuildNamespace( *result.names_map );
 
 	// Take generated template things.
-	result.generated_template_things_storage.reset( new ProgramStringMap<Value>() );
+	result.generated_template_things_storage = std::make_unique< ProgramStringMap<Value> >();
 	result.generated_template_things_storage->swap( generated_template_things_storage_ );
 
 	return result;
@@ -388,7 +388,7 @@ void CodeBuilder::CopyClass(
 	// This needs for prevention of modification of source class and affection of imported file.
 
 	const Class& src= *src_class->class_;
-	std::unique_ptr<Class> copy( new Class( src.members.GetThisNamespaceName(), &dst_namespace ) );
+	auto copy= std::make_unique<Class>( src.members.GetThisNamespaceName(), &dst_namespace );
 
 	// Make deep copy of inner namespace.
 	MergeNameScopes( copy->members, src.members, dst_class_table );

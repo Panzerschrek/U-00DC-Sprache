@@ -843,7 +843,7 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::namespace_ )
 		{
-			std::unique_ptr<Namespace> namespace_( new Namespace( it_->file_pos ) );
+			auto namespace_= std::make_unique<Namespace>( it_->file_pos );
 			NextLexem();
 
 			ProgramString name;
@@ -1203,7 +1203,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 					return EmptyVariant();
 				}
 				NextLexem();
-				ternary_operator.condition.reset( new Expression( ParseExpression() ) );
+				ternary_operator.condition= std::make_unique<Expression>( ParseExpression() );
 
 				if( it_->type != Lexem::Type::Question )
 				{
@@ -1211,7 +1211,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 					return EmptyVariant();
 				}
 				NextLexem();
-				ternary_operator.true_branch.reset( new Expression( ParseExpression() ) );
+				ternary_operator.true_branch= std::make_unique<Expression>( ParseExpression() );
 
 				if( it_->type != Lexem::Type::Colon )
 				{
@@ -1219,7 +1219,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 					return EmptyVariant();
 				}
 				NextLexem();
-				ternary_operator.false_branch.reset( new Expression( ParseExpression() ) );
+				ternary_operator.false_branch= std::make_unique<Expression>( ParseExpression() );
 
 				if( it_->type != Lexem::Type::BracketRight )
 				{
@@ -1243,7 +1243,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				}
 				NextLexem();
 
-				cast.type_.reset( new TypeName( ParseTypeName() ) );
+				cast.type_= std::make_unique<TypeName>( ParseTypeName() );
 				if( it_->type != Lexem::Type::TemplateBracketRight )
 				{
 					PushErrorMessage();
@@ -1258,7 +1258,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				}
 				NextLexem();
 
-				cast.expression_.reset( new Expression( ParseExpression() ) );
+				cast.expression_= std::make_unique<Expression>( ParseExpression() );
 
 				if( it_->type != Lexem::Type::BracketRight )
 				{
@@ -1282,7 +1282,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				}
 				NextLexem();
 
-				cast.type_.reset( new TypeName( ParseTypeName() ) );
+				cast.type_= std::make_unique<TypeName>( ParseTypeName() );
 				if( it_->type != Lexem::Type::TemplateBracketRight )
 				{
 					PushErrorMessage();
@@ -1297,7 +1297,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				}
 				NextLexem();
 
-				cast.expression_.reset( new Expression( ParseExpression() ) );
+				cast.expression_= std::make_unique<Expression>( ParseExpression() );
 
 				if( it_->type != Lexem::Type::BracketRight )
 				{
@@ -1322,7 +1322,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				}
 				NextLexem();
 
-				cast.expression_.reset( new Expression( ParseExpression() ) );
+				cast.expression_= std::make_unique<Expression>( ParseExpression() );
 
 				if( it_->type != Lexem::Type::BracketRight )
 				{
@@ -1347,7 +1347,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				}
 				NextLexem();
 
-				cast.expression_.reset( new Expression( ParseExpression() ) );
+				cast.expression_= std::make_unique<Expression>( ParseExpression() );
 
 				if( it_->type != Lexem::Type::BracketRight )
 				{
@@ -1371,7 +1371,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				}
 				NextLexem();
 
-				typeinfo_.type_.reset( new TypeName( ParseTypeName() ) );
+				typeinfo_.type_= std::make_unique<TypeName>( ParseTypeName() );
 				if( it_->type != Lexem::Type::TemplateBracketRight )
 				{
 					PushErrorMessage();
@@ -1400,7 +1400,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 						return EmptyVariant();
 
 					BracketExpression bracket_expression( macro_file_pos );
-					bracket_expression.expression_.reset( new Expression( std::move(macro_expression) ) );
+					bracket_expression.expression_= std::make_unique<Expression>( std::move(macro_expression) );
 
 					current_node= std::move(bracket_expression);
 					current_node_ptr= std::get_if<BracketExpression>( &current_node );
@@ -1451,7 +1451,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 			NextLexem();
 
 			BracketExpression bracket_expression( (it_-1)->file_pos );
-			bracket_expression.expression_.reset( new Expression( ParseExpression() ) );
+			bracket_expression.expression_= std::make_unique<Expression>( ParseExpression() );
 
 			current_node= std::move(bracket_expression);
 			current_node_ptr= std::get_if<BracketExpression>( &current_node );
@@ -1580,13 +1580,13 @@ Expression SyntaxAnalyzer::ParseExpression()
 				U_ASSERT( right_as_binary_operator != nullptr );
 				most_right_with_null= right_as_binary_operator;
 			}
-			most_right_with_null->right_.reset( new Expression( std::move( current_node ) ) );
+			most_right_with_null->right_= std::make_unique<Expression>( std::move( current_node ) );
 		}
 
 		if( is_binary_operator )
 		{
 			const BinaryOperatorType binary_operator_type= LexemToBinaryOperator( *it_ );
-			std::unique_ptr<BinaryOperator> binary_operator( new BinaryOperator( it_->file_pos ) );
+			auto binary_operator= std::make_unique<BinaryOperator>( it_->file_pos );
 			binary_operator->operator_type_= binary_operator_type;
 			NextLexem();
 
@@ -1606,17 +1606,17 @@ Expression SyntaxAnalyzer::ParseExpression()
 				if( node_to_replace_parent != nullptr )
 				{
 					binary_operator->left_= std::move( node_to_replace_parent->right_ );
-					node_to_replace_parent->right_.reset( new Expression( std::move( *binary_operator ) ) );
+					node_to_replace_parent->right_= std::make_unique<Expression>( std::move( *binary_operator ) );
 				}
 				else
 				{
-					binary_operator->left_.reset( new Expression( std::move( root ) ) );
+					binary_operator->left_= std::make_unique<Expression>( std::move( root ) );
 					root= std::move( *binary_operator );
 				}
 			}
 			else
 			{
-				binary_operator->left_.reset( new Expression( std::move( root ) ) );
+				binary_operator->left_= std::make_unique<Expression>( std::move( root ) );
 				root= std::move( *binary_operator );
 			}
 		}
@@ -1707,7 +1707,7 @@ void SyntaxAnalyzer::ParseFunctionTypeEnding( FunctionType& result )
 	{
 		NextLexem();
 
-		result.return_type_.reset( new TypeName( ParseTypeName() ) );
+		result.return_type_= std::make_unique<TypeName>( ParseTypeName() );
 
 		if( it_->type == Lexem::Type::And )
 		{
@@ -1749,7 +1749,7 @@ void SyntaxAnalyzer::ParseFunctionTypeEnding( FunctionType& result )
 
 FunctionTypePtr SyntaxAnalyzer::ParseFunctionType()
 {
-	FunctionTypePtr result( new FunctionType( it_->file_pos ) );
+	auto result= std::make_unique<FunctionType>( it_->file_pos );
 
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ );
 	NextLexem();
@@ -1799,7 +1799,7 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 		NextLexem();
 
 		ArrayTypeName array_type_name(it_->file_pos);
-		array_type_name.element_type.reset( new TypeName( ParseTypeName() ) );
+		array_type_name.element_type= std::make_unique<TypeName>( ParseTypeName() );
 
 		if( it_->type != Lexem::Type::Comma )
 		{
@@ -1807,7 +1807,7 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 			return std::move(array_type_name);
 		}
 		NextLexem();
-		array_type_name.size.reset( new Expression( ParseExpression() ) );
+		array_type_name.size= std::make_unique<Expression>( ParseExpression() );
 
 		if( it_->type != Lexem::Type::SquareBracketRight )
 		{
@@ -1847,7 +1847,7 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 		}
 		NextLexem();
 
-		typeof_type_name.expression.reset( new Expression( ParseExpression() ) );
+		typeof_type_name.expression= std::make_unique<Expression>( ParseExpression() );
 
 		if( it_->type != Lexem::Type::BracketRight )
 		{
@@ -2369,7 +2369,7 @@ VariablesDeclaration SyntaxAnalyzer::ParseVariablesDeclaration()
 
 		Initializer variable_initializer=  ParseVariableInitializer();
 		if( std::get_if<EmptyVariant>( &variable_initializer ) == nullptr )
-			variable_entry.initializer.reset( new Initializer( std::move(variable_initializer) ) );
+			variable_entry.initializer= std::make_unique<Initializer>( std::move(variable_initializer) );
 
 		if( it_->type == Lexem::Type::Comma )
 			NextLexem();
@@ -3139,7 +3139,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 {
 	U_ASSERT( it_->text == Keywords::fn_ || it_->text == Keywords::op_ );
 
-	std::unique_ptr<Function> result( new Function( it_->file_pos ) );
+	auto result= std::make_unique<Function>( it_->file_pos );
 
 	const ProgramString& function_defenition_lexem= it_->text;
 	NextLexem();
@@ -3451,7 +3451,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 	{
 		if( it_->type == Lexem::Type::BracketLeft )
 		{
-			result->constructor_initialization_list_.reset( new StructNamedInitializer( it_->file_pos ) );
+			result->constructor_initialization_list_= std::make_unique<StructNamedInitializer>( it_->file_pos );
 			NextLexem();
 
 			while( NotEndOfFile() )
@@ -3482,7 +3482,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		}
 
 		if( it_->type == Lexem::Type::BraceLeft )
-			result->block_.reset( new Block( ParseBlock() ) );
+			result->block_= std::make_unique<Block>( ParseBlock() );
 		else
 		{
 			PushErrorMessage();
@@ -3659,7 +3659,7 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 
 			Initializer field_initializer= ParseVariableInitializer();
 			if( std::get_if<EmptyVariant>( &field_initializer ) == nullptr )
-				field.initializer.reset( new Initializer( std::move(field_initializer) ) );
+				field.initializer= std::make_unique<Initializer>( std::move(field_initializer) );
 
 			if( it_->type == Lexem::Type::Semicolon )
 				NextLexem();
@@ -3679,7 +3679,7 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 
 std::unique_ptr<Class> SyntaxAnalyzer::ParseClassBody()
 {
-	std::unique_ptr<Class> result( new Class( it_->file_pos ) );
+	auto result= std::make_unique<Class>( it_->file_pos );
 
 	if( it_->type == Lexem::Type::Semicolon )
 	{
@@ -3739,7 +3739,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 			NextLexem();
 		else
 		{
-			std::unique_ptr<Expression> arg_type( new Expression( NamedOperand( it_->file_pos, ParseComplexName() ) ) );
+			auto arg_type= std::make_unique<Expression>( NamedOperand( it_->file_pos, ParseComplexName() ) );
 			args.back().arg_type= &std::get_if<NamedOperand>(arg_type.get())->name_;
 			args.back().arg_type_expr= std::move(arg_type);
 		}
@@ -3753,7 +3753,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 		ComplexName name;
 		name.components.emplace_back();
 		name.components.back().name= it_->text;
-		std::unique_ptr<Expression> name_ptr( new Expression( NamedOperand( it_->file_pos, std::move(name) ) ) );
+		auto name_ptr= std::make_unique<Expression>( NamedOperand( it_->file_pos, std::move(name) ) );
 		args.back().name= &std::get_if<NamedOperand>(name_ptr.get())->name_;
 		args.back().name_expr= std::move(name_ptr);
 
@@ -3920,7 +3920,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 			typedef_template.name_= name;
 			typedef_template.is_short_form_= is_short_form;
 
-			typedef_template.typedef_.reset( new Typedef( ParseTypedefBody() ) );
+			typedef_template.typedef_= std::make_unique<Typedef>( ParseTypedefBody() );
 			typedef_template.typedef_->name= std::move(name);
 			return std::move(typedef_template);
 		}

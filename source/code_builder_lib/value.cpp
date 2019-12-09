@@ -57,11 +57,11 @@ ClassField::ClassField( const ClassProxyPtr& in_class, Type in_type, const unsig
 //
 
 ThisOverloadedMethodsSet::ThisOverloadedMethodsSet()
-	: overloaded_methods_set_(new OverloadedFunctionsSet() )
+	: overloaded_methods_set_( std::make_unique<OverloadedFunctionsSet>() )
 {}
 
 ThisOverloadedMethodsSet::ThisOverloadedMethodsSet( const ThisOverloadedMethodsSet& other )
-	: this_(other.this_), overloaded_methods_set_( new OverloadedFunctionsSet( *other.overloaded_methods_set_ ) )
+	: this_(other.this_), overloaded_methods_set_( std::make_unique<OverloadedFunctionsSet>( *other.overloaded_methods_set_ ) )
 {}
 
 ThisOverloadedMethodsSet& ThisOverloadedMethodsSet::operator=( const ThisOverloadedMethodsSet& other )

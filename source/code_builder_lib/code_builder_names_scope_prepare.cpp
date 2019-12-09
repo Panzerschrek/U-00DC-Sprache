@@ -216,7 +216,7 @@ ClassProxyPtr CodeBuilder::NamesScopeFill(
 	else
 	{
 		class_type= std::make_shared<ClassProxy>();
-		(*current_class_table_)[ class_type ].reset( new Class( class_name, &names_scope ) );
+		(*current_class_table_)[ class_type ]= std::make_unique<Class>( class_name, &names_scope );
 		class_type->class_= (*current_class_table_)[ class_type ].get();
 
 		names_scope.AddName( class_name, Value( Type( class_type ), class_declaration.file_pos_ ) );
@@ -369,7 +369,7 @@ void CodeBuilder::NamesScopeFill(
 	if( NameShadowsTemplateArgument( enum_declaration.name, names_scope ) )
 		REPORT_ERROR( DeclarationShadowsTemplateArgument, names_scope.GetErrors(), enum_declaration.file_pos_, enum_declaration.name );
 
-	enums_table_.emplace_back( new Enum( enum_declaration.name, &names_scope ) );
+	enums_table_.push_back( std::make_unique<Enum>( enum_declaration.name, &names_scope ) );
 	const EnumPtr enum_= enums_table_.back().get();
 
 	enum_->syntax_element= &enum_declaration;

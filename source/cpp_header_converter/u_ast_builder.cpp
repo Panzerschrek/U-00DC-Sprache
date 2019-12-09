@@ -198,7 +198,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 		ProcessEnum( *enum_decl, program_elements );
 	else if( const auto namespace_decl= llvm::dyn_cast<clang::NamespaceDecl>(&decl) )
 	{
-		Synt::NamespacePtr namespace_( new Synt::Namespace( g_dummy_file_pos ) );
+		auto namespace_= std::make_unique<Synt::Namespace>( g_dummy_file_pos );
 		namespace_->name_= TranslateIdentifier( namespace_decl->getName() );
 		for( const clang::Decl* const sub_decl : namespace_decl->decls() )
 			ProcessDecl( *sub_decl, namespace_->elements_, current_externc );
@@ -264,7 +264,7 @@ Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_de
 {
 	if( record_decl.isStruct() || record_decl.isClass() )
 	{
-		Synt::ClassPtr class_( new Synt::Class(g_dummy_file_pos) );
+		auto class_= std::make_unique<Synt::Class>(g_dummy_file_pos);
 		class_->name_= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
 		class_->keep_fields_order_= true; // C/C++ structs/classes have fixed fields order.
 
@@ -282,7 +282,7 @@ Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_de
 	{
 		// Emulate union, using array of ints with required alignment.
 
-		Synt::ClassPtr class_( new Synt::Class(g_dummy_file_pos) );
+		auto class_= std::make_unique<Synt::Class>(g_dummy_file_pos);
 		class_->name_= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
 		class_->keep_fields_order_= true; // C/C++ structs/classes have fixed fields order.
 
@@ -308,12 +308,12 @@ Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_de
 			named_type_name.name.components.back().name= std::move(int_name);
 
 			Synt::ArrayTypeName array_type( g_dummy_file_pos );
-			array_type.element_type.reset( new Synt::TypeName( std::move(named_type_name) ) );
+			array_type.element_type= std::make_unique<Synt::TypeName>( std::move(named_type_name) );
 
 			Synt::NumericConstant numeric_constant( g_dummy_file_pos );
 			numeric_constant.value_int_= num;
 			numeric_constant.value_double_= static_cast<double>(numeric_constant.value_int_);
-			array_type.size.reset( new Synt::Expression( std::move(numeric_constant) ) );
+			array_type.size= std::make_unique<Synt::Expression>( std::move(numeric_constant) );
 
 			Synt::ClassField field( g_dummy_file_pos );
 			field.name= "union_content"_SpC;
@@ -339,7 +339,7 @@ Synt::Typedef CppAstConsumer::ProcessTypedef( const clang::TypedefNameDecl& type
 
 Synt::FunctionPtr CppAstConsumer::ProcessFunction( const clang::FunctionDecl& func_decl, bool externc )
 {
-	Synt::FunctionPtr func( new Synt::Function(g_dummy_file_pos) );
+	auto func= std::make_unique<Synt::Function>(g_dummy_file_pos);
 
 	func->name_.components.emplace_back();
 	func->name_.components.back().name= TranslateIdentifier( func_decl.getName().str() );
@@ -387,7 +387,7 @@ Synt::FunctionPtr CppAstConsumer::ProcessFunction( const clang::FunctionDecl& fu
 		else
 			func->type_.return_value_mutability_modifier_= Synt::MutabilityModifier::Mutable;
 	}
-	func->type_.return_type_.reset( new Synt::TypeName( TranslateType( *return_type ) ) );
+	func->type_.return_type_= std::make_unique<Synt::TypeName>( TranslateType( *return_type ) );
 
 	return func;
 }
@@ -445,7 +445,7 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 	}
 	else
 	{
-		Synt::NamespacePtr enum_namespace_( new Synt::Namespace( g_dummy_file_pos ) );
+		auto enum_namespace_= std::make_unique<Synt::Namespace>( g_dummy_file_pos );
 		enum_namespace_->name_= enum_name + "_namespace"_SpC;
 
 		Synt::VariablesDeclaration variables_declaration( g_dummy_file_pos );
@@ -470,7 +470,7 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 
 			initializer.call_operator.arguments_.push_back( std::move(initializer_number) );
 
-			var.initializer.reset( new Synt::Initializer( std::move(initializer) ) );
+			var.initializer= std::make_unique<Synt::Initializer>( std::move(initializer) );
 			variables_declaration.variables.push_back( std::move(var) );
 		}
 
@@ -506,13 +506,13 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 	{
 		// For arrays with constant size use normal Ü array.
 		Synt::ArrayTypeName array_type(g_dummy_file_pos);
-		array_type.element_type.reset( new Synt::TypeName( TranslateType( *constna_array_type->getElementType().getTypePtr() ) ) );
+		array_type.element_type= std::make_unique<Synt::TypeName>( TranslateType( *constna_array_type->getElementType().getTypePtr() ) );
 
 		Synt::NumericConstant numeric_constant( g_dummy_file_pos );
 		numeric_constant.value_int_= constna_array_type->getSize().getLimitedValue();
 		numeric_constant.value_double_= static_cast<double>(numeric_constant.value_int_);
 		numeric_constant.type_suffix_[0]= 'u';
-		array_type.size.reset( new Synt::Expression( std::move(numeric_constant) ) );
+		array_type.size= std::make_unique<Synt::Expression>( std::move(numeric_constant) );
 
 		return std::move(array_type);
 	}
@@ -520,13 +520,13 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 	{
 		// For other variants of array types use zero size.
 		Synt::ArrayTypeName out_array_type(g_dummy_file_pos);
-		out_array_type.element_type.reset( new Synt::TypeName( TranslateType( *array_type->getElementType().getTypePtr() ) ) );
+		out_array_type.element_type= std::make_unique<Synt::TypeName>( TranslateType( *array_type->getElementType().getTypePtr() ) );
 
 		Synt::NumericConstant numeric_constant( g_dummy_file_pos );
 		numeric_constant.value_int_= 0;
 		numeric_constant.value_double_= 0.0;
 		numeric_constant.type_suffix_[0]= 'u';
-		out_array_type.size.reset( new Synt::Expression( std::move(numeric_constant) ) );
+		out_array_type.size= std::make_unique<Synt::Expression>( std::move(numeric_constant) );
 
 		return std::move(out_array_type);
 	}
@@ -629,7 +629,7 @@ Synt::NamedTypeName CppAstConsumer::TranslateNamedType( const std::string& cpp_t
 
 Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::FunctionProtoType& in_type )
 {
-	Synt::FunctionTypePtr function_type( new Synt::FunctionType( g_dummy_file_pos ) );
+	auto function_type= std::make_unique<Synt::FunctionType>( g_dummy_file_pos );
 
 	function_type->unsafe_= true; // All C/C++ functions is unsafe.
 
@@ -670,7 +670,7 @@ Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::Functi
 		else
 			function_type->return_value_mutability_modifier_= Synt::MutabilityModifier::Mutable;
 	}
-	function_type->return_type_.reset( new Synt::TypeName( TranslateType( *return_type ) ) );
+	function_type->return_type_= std::make_unique<Synt::TypeName>( TranslateType( *return_type ) );
 
 	return std::move(function_type);
 }
@@ -696,12 +696,11 @@ std::unique_ptr<clang::ASTConsumer> CppAstProcessor::CreateASTConsumer(
 	const llvm::StringRef in_file )
 {
 	return
-		std::unique_ptr<clang::ASTConsumer>(
-			new CppAstConsumer(
-				(*out_result_)[in_file.str()],
-				compiler_intance.getPreprocessor(),
-				compiler_intance.getLangOpts(),
-				compiler_intance.getASTContext() ) );
+		std::make_unique<CppAstConsumer>(
+			(*out_result_)[in_file.str()],
+			compiler_intance.getPreprocessor(),
+			compiler_intance.getLangOpts(),
+			compiler_intance.getASTContext() );
 }
 
 FrontendActionFactory::FrontendActionFactory( ParsedUnitsPtr out_result )

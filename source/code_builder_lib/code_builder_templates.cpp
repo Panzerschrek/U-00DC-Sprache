@@ -730,12 +730,12 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 			llvm::Constant::getIntegerValue( size_var.type.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), param_array_type->size ) );
 
 		DeducedTemplateParameter::Array result;
-		result.type.reset(
-			new DeducedTemplateParameter(
-				DeduceTemplateArguments( template_, param_array_type->type, *array_type->element_type, signature_parameter_file_pos, deducible_template_parameters, names_scope ) ) );
-		result.size.reset(
-			new DeducedTemplateParameter(
-				DeduceTemplateArguments( template_, size_var, *array_type->size, signature_parameter_file_pos, deducible_template_parameters, names_scope ) ) );
+		result.type=
+			std::make_unique<DeducedTemplateParameter>(
+				DeduceTemplateArguments( template_, param_array_type->type, *array_type->element_type, signature_parameter_file_pos, deducible_template_parameters, names_scope ) );
+		result.size=
+			std::make_unique<DeducedTemplateParameter>(
+				DeduceTemplateArguments( template_, size_var, *array_type->size, signature_parameter_file_pos, deducible_template_parameters, names_scope ) );
 		if( result.type->IsInvalid() || result.size->IsInvalid() ) // TODO - what is size is not variable, but type name? Check this.
 			return DeducedTemplateParameter::Invalid();
 
@@ -803,13 +803,13 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 					names_scope );
 			if( ret_type_result.IsInvalid() )
 				return DeducedTemplateParameter::Invalid();
-			result.return_type.reset( new DeducedTemplateParameter( std::move(ret_type_result) ) );
+			result.return_type= std::make_unique<DeducedTemplateParameter>( std::move(ret_type_result) );
 		}
 		else
 		{
 			if( param_function_pointer_type->function.return_type != void_type_ )
 				return DeducedTemplateParameter::Invalid();
-			result.return_type.reset( new DeducedTemplateParameter( DeducedTemplateParameter::Type() ) );
+			result.return_type= std::make_unique<DeducedTemplateParameter>( DeducedTemplateParameter::Type() );
 		}
 
 		if( !function_pointer_type->return_value_inner_reference_tags_.empty() ||

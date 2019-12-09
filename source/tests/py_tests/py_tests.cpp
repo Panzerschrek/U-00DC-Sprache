@@ -56,11 +56,10 @@ llvm::ManagedStatic<llvm::LLVMContext> g_llvm_context;
 std::unique_ptr<CodeBuilder> CreateCodeBuilder()
 {
 	return
-		std::unique_ptr<CodeBuilder>(
-			new CodeBuilder(
-				*g_llvm_context,
-				llvm::sys::getProcessTriple(),
-				llvm::DataLayout( GetTestsDataLayout() ) ) );
+		std::make_unique<CodeBuilder>(
+			*g_llvm_context,
+			llvm::sys::getProcessTriple(),
+			llvm::DataLayout( GetTestsDataLayout() ) );
 }
 
 std::unique_ptr<llvm::Module> BuildProgram( const char* const text )

@@ -28,12 +28,12 @@ SourceGraphLoader::SourceGraphLoader( IVfsPtr vfs )
 	, vfs_(std::move(vfs))
 {
 	U_ASSERT( built_in_macros_ != nullptr );
-	U_ASSERT( vfs_ != nullptr );	
+	U_ASSERT( vfs_ != nullptr );
 }
 
 SourceGraphPtr SourceGraphLoader::LoadSource( const IVfs::Path& root_file_path )
 {
-	SourceGraphPtr result( new SourceGraph );
+	auto result = std::make_unique<SourceGraph>();
 	result->root_node_index= LoadNode_r( root_file_path, ""_SpC, *result );
 
 	return result;

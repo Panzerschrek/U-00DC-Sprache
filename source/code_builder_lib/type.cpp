@@ -104,27 +104,27 @@ Type::Type( FundamentalType fundamental_type )
 
 Type::Type( const Function& function_type )
 {
-	something_= FunctionPtr( new Function( function_type ) );
+	something_= std::make_unique<Function>( function_type );
 }
 
 Type::Type( const FunctionPointer& function_pointer_type )
 {
-	something_= FunctionPointerPtr( new FunctionPointer( function_pointer_type ) );
+	something_= std::make_unique<FunctionPointer>( function_pointer_type );
 }
 
 Type::Type( Function&& function_type )
 {
-	something_= FunctionPtr( new Function( std::move( function_type ) ) );
+	something_= std::make_unique<Function>( std::move( function_type ) );
 }
 
 Type::Type( const Array& array_type )
 {
-	something_= ArrayPtr( new Array( array_type ) );
+	something_= std::make_unique<Array>( array_type );
 }
 
 Type::Type( Array&& array_type )
 {
-	something_= ArrayPtr( new Array( std::move( array_type ) ) );
+	something_= std::make_unique<Array>( std::move( array_type ) );
 }
 
 Type::Type( const Tuple& tuple_type )
@@ -165,13 +165,13 @@ Type& Type::operator=( const Type& other )
 		void operator()( const FunctionPtr& function )
 		{
 			U_ASSERT( function != nullptr );
-			this_.something_= FunctionPtr( new Function( *function ) );
+			this_.something_= std::make_unique<Function>( *function );
 		}
 
 		void operator()( const ArrayPtr& array )
 		{
 			U_ASSERT( array != nullptr );
-			this_.something_= ArrayPtr( new Array( *array ) );
+			this_.something_= std::make_unique<Array>( *array );
 		}
 
 		void operator()( const Tuple& tuple )
@@ -192,7 +192,7 @@ Type& Type::operator=( const Type& other )
 		void operator()( const FunctionPointerPtr& function_pointer )
 		{
 			U_ASSERT( function_pointer != nullptr );
-			this_.something_= FunctionPointerPtr( new FunctionPointer( *function_pointer ) );
+			this_.something_= std::make_unique<FunctionPointer>( *function_pointer );
 		}
 	};
 

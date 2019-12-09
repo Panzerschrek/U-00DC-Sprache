@@ -14,8 +14,8 @@ DeducedTemplateParameter::Array::Array( const Array& other )
 
 DeducedTemplateParameter::Array& DeducedTemplateParameter::Array::operator=( const Array& other )
 {
-	size.reset( new DeducedTemplateParameter( *other.size ) );
-	type.reset( new DeducedTemplateParameter( *other.type ) );
+	size= std::make_unique<DeducedTemplateParameter>( *other.size );
+	type= std::make_unique<DeducedTemplateParameter>( *other.type );
 	return *this;
 }
 
@@ -26,7 +26,7 @@ DeducedTemplateParameter::Function::Function( const Function& other )
 
 DeducedTemplateParameter::Function& DeducedTemplateParameter::Function::operator=( const Function& other )
 {
-	return_type.reset( new DeducedTemplateParameter( *other.return_type ) );
+	return_type= std::make_unique<DeducedTemplateParameter>( *other.return_type );
 	argument_types= other.argument_types;
 	return *this;
 }
