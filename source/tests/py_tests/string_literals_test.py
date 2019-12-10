@@ -13,6 +13,20 @@ def StringLiteral_Test0():
 	assert( call_result == ord('o') )
 
 
+def StringLiteralEmpty_Test0():
+	c_program_text= """
+		auto& s0 = "";
+		auto& s1 = ""u8;
+		auto& s2 = ""u16;
+		auto& s3 = ""u32;
+		static_assert( typeinfo</typeof(s0)/>.element_count == 0s );
+		static_assert( typeinfo</typeof(s1)/>.element_count == 0s );
+		static_assert( typeinfo</typeof(s2)/>.element_count == 0s );
+		static_assert( typeinfo</typeof(s3)/>.element_count == 0s );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def StringLiteralIsArray_Test0():
 	c_program_text= """
 		template</ type T /> fn AssertArray( T& t )
