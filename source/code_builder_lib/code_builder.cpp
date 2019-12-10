@@ -3701,6 +3701,11 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalConstantVariable(
 	const std::string& mangled_name,
 	llvm::Constant* const initializer )
 {
+	// Try to reuse global variable.
+	if( llvm::GlobalVariable* const prev_literal_name= module_->getNamedGlobal(mangled_name) )
+		if( prev_literal_name->getInitializer() == initializer ) // llvm reuses constants, so, for equal constants pointers will be same.
+			return prev_literal_name;
+	
 	llvm::GlobalVariable* const val=
 		new llvm::GlobalVariable(
 			*module_,

@@ -958,13 +958,7 @@ Value CodeBuilder::BuildExpressionCode(
 		md5.final(md5_result);
 		const std::string literal_name= ( "_string_literal_" + md5_result.digest() ).str();
 
-		// Try to reuse global variable.
-		if( llvm::GlobalVariable* const prev_literal_name= module_->getNamedGlobal(literal_name) )
-			if( prev_literal_name->getInitializer() == initializer ) // llvm reuses constants, so, for equal constants pointers will be same.
-				result.llvm_value= prev_literal_name;
-
-		if( result.llvm_value == nullptr )
-			result.llvm_value= CreateGlobalConstantVariable( result.type, literal_name, result.constexpr_value );
+		result.llvm_value= CreateGlobalConstantVariable( result.type, literal_name, result.constexpr_value );
 	}
 
 	return Value( std::move(result), string_literal.file_pos_ );
