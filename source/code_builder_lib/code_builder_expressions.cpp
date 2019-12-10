@@ -1,6 +1,7 @@
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Constant.h>
 #include <llvm/IR/LLVMContext.h>
+#include <llvm/Support/MD5.h>
 #include "pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/assert.hpp"
@@ -920,19 +921,20 @@ Value CodeBuilder::BuildExpressionCode(
 			REPORT_ERROR( InvalidSizeForCharLiteral, names.GetErrors(), string_literal.file_pos_, string_literal.value_ );
 	}
 	else
-	{
 		REPORT_ERROR( UnknownStringLiteralSuffix, names.GetErrors(), string_literal.file_pos_, type_suffix );
+	
+	if( initializer == nullptr )
 		return ErrorValue();
-	}
 
 	Variable result;
+	result.constexpr_value= initializer;
 	if( array_size == ~0u )
 	{
 		result.type= FundamentalType( char_type, GetFundamentalLLVMType( char_type ) );
 
 		result.value_type= ValueType::Value;
 		result.location= Variable::Location::LLVMRegister;
-		result.llvm_value= result.constexpr_value= initializer;
+		result.llvm_value= initializer;
 	}
 	else
 	{
@@ -945,12 +947,24 @@ Value CodeBuilder::BuildExpressionCode(
 		result.value_type= ValueType::ConstReference;
 		result.location= Variable::Location::Pointer;
 
-		result.constexpr_value= initializer;
-		result.llvm_value=
-			CreateGlobalConstantVariable(
-				result.type,
-				"_string_literal_" + std::to_string( reinterpret_cast<uintptr_t>(&string_literal) ),
-				result.constexpr_value );
+		// Use md5 for string literal names.
+		llvm::MD5 md5;
+		if( const auto constant_data_array = llvm::dyn_cast<llvm::ConstantDataArray>(initializer) )
+			md5.update( constant_data_array->getRawDataValues() );
+		else if( const auto all_zeros = llvm::dyn_cast<llvm::ConstantAggregateZero>(initializer) )
+			md5.update( std::string( all_zeros->getNumElements() * FundamentalType( char_type ).GetSize(), '\0' ) );
+		md5.update( llvm::ArrayRef<uint8_t>( reinterpret_cast<const uint8_t*>(&char_type), sizeof(U_FundamentalType) ) ); // Add type to hash for distinction of zero-sized strings with different types.
+		llvm::MD5::MD5Result md5_result;
+		md5.final(md5_result);
+		const std::string literal_name= ( "_string_literal_" + md5_result.digest() ).str();
+
+		// Try to reuse global variable.
+		if( llvm::GlobalVariable* const prev_literal_name= module_->getNamedGlobal(literal_name) )
+			if( prev_literal_name->getInitializer() == initializer ) // llvm reuses constants, so, for equal constants pointers will be same.
+				result.llvm_value= prev_literal_name;
+
+		if( result.llvm_value == nullptr )
+			result.llvm_value= CreateGlobalConstantVariable( result.type, literal_name, result.constexpr_value );
 	}
 
 	return Value( std::move(result), string_literal.file_pos_ );
