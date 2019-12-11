@@ -269,7 +269,7 @@ public:
 	}
 
 	template</ size_type array_size />
-	op==( this_type l, [ char_type, array_size ]& array ) : bool
+	op==( this_type& l, [ char_type, array_size ]& array ) : bool
 	{
 		if( l.size_ != array_size ) { return false; }
 
@@ -307,7 +307,7 @@ public:
 	}
 
 	template</ size_type array_size />
-	op!=( this_type l, [ char_type, array_size ]& array ) : bool
+	op!=( this_type& l, [ char_type, array_size ]& array ) : bool
 	{
 		return !( l == array );
 	}
