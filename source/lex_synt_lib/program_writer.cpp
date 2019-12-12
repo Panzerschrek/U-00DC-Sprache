@@ -271,18 +271,17 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 					escaped.push_back( '0' );
 					break;
 				default:
-					if( c < 32 )
+					if( sprache_char(c) < 32 )
 					{
 						escaped.push_back('\\');
 						escaped.push_back('u');
 						for( unsigned int i= 0u; i < 4u; ++i )
 						{
-							// TODO - convert to UTF-8.
-							const unsigned int val= ( c >> ((3u-i) * 4u ) ) & 15u;
+							const sprache_char val= ( c >> ((3u-i) * 4u ) ) & 15u;
 							if( val < 10u )
-								escaped.push_back( sprache_char( '0' + int(val) ) );
+								escaped.push_back( char( '0' + int(val) ) );
 							else
-								escaped.push_back( sprache_char( 'a' + int(val-10u) ) );
+								escaped.push_back( char( 'a' + int(val-10u) ) );
 						}
 					}
 					else
