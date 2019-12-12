@@ -29,7 +29,7 @@ public:
 		: sources_(std::move(sources))
 	{}
 
-	MultiFileVfs( ProgramString file_path, const char* text )
+	MultiFileVfs( std::string file_path, const char* text )
 		: sources_( { SourceEntry{ file_path, text } } )
 	{}
 
@@ -68,7 +68,7 @@ static void PrinteErrors_r( const CodeBuilderErrorsContainer& errors )
 
 std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 {
-	const ProgramString file_path= "_";
+	const std::string file_path= "_";
 	const SourceGraphPtr source_graph=
 		SourceGraphLoader( std::make_shared<MultiFileVfs>( file_path, text ) ).LoadSource( file_path );
 
@@ -91,7 +91,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 
 ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
 {
-	const ProgramString file_path= "_";
+	const std::string file_path= "_";
 	const SourceGraphPtr source_graph=
 		SourceGraphLoader( std::make_shared<MultiFileVfs>( file_path, text ) ).LoadSource( file_path );
 
@@ -106,7 +106,7 @@ ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
 			llvm::DataLayout( GetTestsDataLayout() ) ).BuildProgram( *source_graph );
 }
 
-std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const ProgramString& root_file_path )
+std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const std::string& root_file_path )
 {
 	const SourceGraphPtr source_graph=
 		SourceGraphLoader( std::make_shared<MultiFileVfs>( std::move(sources) ) ).LoadSource( root_file_path );
@@ -127,7 +127,7 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 	return std::move( build_result.module );
 }
 
-ICodeBuilder::BuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry> sources, const ProgramString& root_file_path )
+ICodeBuilder::BuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry> sources, const std::string& root_file_path )
 {
 	const SourceGraphPtr source_graph=
 		SourceGraphLoader( std::make_shared<MultiFileVfs>( std::move(sources) ) ).LoadSource( root_file_path );

@@ -15,7 +15,7 @@ struct TemplateBase
 
 	struct TemplateParameter
 	{
-		ProgramString name;
+		std::string name;
 		const Synt::ComplexName* type_name= nullptr; // Exists for value parameters.
 	};
 
@@ -52,7 +52,7 @@ struct FunctionTemplate final : public TemplateBase
 
 	ClassProxyPtr base_class;
 
-	std::vector< std::pair< ProgramString, Value > > known_template_parameters;
+	std::vector< std::pair< std::string, Value > > known_template_parameters;
 };
 
 using DeducibleTemplateParameter= std::variant< int, Type, Variable >; // int means not deduced

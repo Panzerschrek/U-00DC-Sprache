@@ -188,7 +188,7 @@ using ProgramElement= std::variant<
 
 using ProgramElements= std::vector<ProgramElement>;
 
-using ReferencesTagsList= std::vector<ProgramString>; // If last tag is empty string - means continuous tag - like arg' a, b, c... '
+using ReferencesTagsList= std::vector<std::string>; // If last tag is empty string - means continuous tag - like arg' a, b, c... '
 
 struct SyntaxElementBase
 {
@@ -228,7 +228,7 @@ struct ComplexName final
 	// If first component name is empty, name starts with "::".
 	struct Component
 	{
-		ProgramString name;
+		std::string name;
 		std::vector<Expression> template_parameters;
 		bool have_template_parameters= false;
 	};
@@ -271,10 +271,10 @@ public:
 
 struct ReferencePollutionSrc
 {
-	ProgramString name;
+	std::string name;
 	bool is_mutable= true;
 };
-using FunctionReferencesPollution= std::pair< ProgramString, ReferencePollutionSrc >;
+using FunctionReferencesPollution= std::pair< std::string, ReferencePollutionSrc >;
 using FunctionReferencesPollutionList= std::vector<FunctionReferencesPollution>;
 
 struct FunctionArgument;
@@ -286,7 +286,7 @@ public:
 	FunctionType( const FilePos& file_pos );
 
 	std::unique_ptr<TypeName> return_type_;
-	ProgramString return_value_reference_tag_;
+	std::string return_value_reference_tag_;
 	FunctionReferencesPollutionList referecnces_pollution_list_;
 	FunctionArgumentsDeclaration arguments_;
 	ReferencesTagsList return_value_inner_reference_tags_;
@@ -302,9 +302,9 @@ public:
 	FunctionArgument( const FilePos& file_pos );
 
 public:
-	ProgramString name_;
+	std::string name_;
 	TypeName type_;
-	ProgramString reference_tag_;
+	std::string reference_tag_;
 	ReferencesTagsList inner_arg_reference_tags_;
 	MutabilityModifier mutability_modifier_= MutabilityModifier::None;
 	ReferenceModifier reference_modifier_= ReferenceModifier::None;
@@ -352,7 +352,7 @@ struct MoveOperator final : public ExpressionComponentWithUnaryOperators
 public:
 	MoveOperator( const FilePos& file_pos );
 
-	ProgramString var_name_;
+	std::string var_name_;
 };
 
 struct CastRef final : public ExpressionComponentWithUnaryOperators
@@ -423,7 +423,7 @@ struct StringLiteral final : public ExpressionComponentWithUnaryOperators
 public:
 	StringLiteral( const FilePos& file_pos );
 
-	ProgramString value_;
+	std::string value_;
 	TypeSuffix type_suffix_;
 };
 
@@ -488,7 +488,7 @@ struct MemberAccessOperator final : public SyntaxElementBase
 public:
 	MemberAccessOperator( const FilePos& file_pos );
 
-	ProgramString member_name_;
+	std::string member_name_;
 	std::vector<Expression> template_parameters;
 	bool have_template_parameters= false;
 };
@@ -542,7 +542,7 @@ public:
 
 struct StructNamedInitializer::MemberInitializer
 {
-	ProgramString name;
+	std::string name;
 	Initializer initializer;
 };
 
@@ -570,7 +570,7 @@ struct VariablesDeclaration final : public SyntaxElementBase
 	struct VariableEntry
 	{
 		FilePos file_pos;
-		ProgramString name;
+		std::string name;
 		std::unique_ptr<Initializer> initializer; // May be null for types with default constructor.
 		MutabilityModifier mutability_modifier= MutabilityModifier::None;
 		ReferenceModifier reference_modifier= ReferenceModifier::None;
@@ -584,7 +584,7 @@ struct AutoVariableDeclaration final : public SyntaxElementBase
 {
 	explicit AutoVariableDeclaration( const FilePos& file_pos );
 
-	ProgramString name;
+	std::string name;
 	Expression initializer_expression;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
@@ -615,7 +615,7 @@ public:
 
 	ReferenceModifier reference_modifier_= ReferenceModifier::None;
 	MutabilityModifier mutability_modifier_= MutabilityModifier::None;
-	ProgramString loop_variable_name_;
+	std::string loop_variable_name_;
 	Expression sequence_;
 	Block block_;
 };
@@ -730,7 +730,7 @@ struct Typedef final : public SyntaxElementBase
 public:
 	explicit Typedef( const FilePos& file_pos );
 
-	ProgramString name;
+	std::string name;
 	TypeName value;
 };
 
@@ -742,10 +742,10 @@ public:
 	struct Member
 	{
 		FilePos file_pos;
-		ProgramString name;
+		std::string name;
 	};
 
-	ProgramString name;
+	std::string name;
 	ComplexName underlaying_type_name;
 	std::vector<Member> members;
 };
@@ -791,7 +791,7 @@ public:
 	explicit ClassField( const FilePos& file_pos );
 
 	TypeName type;
-	ProgramString name;
+	std::string name;
 	std::unique_ptr<Initializer> initializer; // May be null.
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
@@ -829,7 +829,7 @@ public:
 	explicit Class( const FilePos& file_pos );
 
 	ClassElements elements_;
-	ProgramString name_;
+	std::string name_;
 	std::vector<ComplexName> parents_;
 	ClassKindAttribute kind_attribute_ = ClassKindAttribute::Struct;
 	bool is_forward_declaration_= false;
@@ -872,7 +872,7 @@ public:
 
 	const Kind kind_;
 	std::vector<SignatureArg> signature_args_;
-	ProgramString name_;
+	std::string name_;
 
 	// Short form means that template argumenst are also signature arguments.
 	bool is_short_form_= false;
@@ -907,7 +907,7 @@ struct Namespace final : public SyntaxElementBase
 public:
 	explicit Namespace( const FilePos& file_pos );
 
-	ProgramString name_;
+	std::string name_;
 	ProgramElements elements_;
 };
 
@@ -916,7 +916,7 @@ struct Import final : public SyntaxElementBase
 public:
 	explicit Import( const FilePos& file_pos );
 
-	ProgramString import_name;
+	std::string import_name;
 };
 
 // Utility functions for manipulations with variants.

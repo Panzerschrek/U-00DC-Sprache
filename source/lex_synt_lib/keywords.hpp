@@ -15,16 +15,16 @@ enum class Keywords : unsigned int
 	LastKeyword,
 };
 
-bool IsKeyword( const ProgramString& str );
+bool IsKeyword( const std::string& str );
 
-const ProgramString& Keyword( Keywords keyword );
+const std::string& Keyword( Keywords keyword );
 const char* KeywordAscii( Keywords keyword );
 
 // Relation operators for program string and keyword enum.
 // This operators make posible to write "str == Keywords::var_".
-bool operator==( Keywords keyword, const ProgramString& str );
-bool operator==( const ProgramString& str, Keywords keyword );
-bool operator!=( Keywords keyword, const ProgramString& str );
-bool operator!=( const ProgramString& str, Keywords keyword );
+bool operator==( Keywords keyword, const std::string& str );
+bool operator==( const std::string& str, Keywords keyword );
+bool operator!=( Keywords keyword, const std::string& str );
+bool operator!=( const std::string& str, Keywords keyword );
 
 } // namespace U

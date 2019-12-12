@@ -15,7 +15,7 @@ struct KeywordEntry
 		, ascii( str )
 	{}
 
-	const ProgramString program_string;
+	const std::string program_string;
 	const char* const ascii;
 };
 
@@ -53,12 +53,12 @@ const Globals& GetGlobals()
 
 } // namespace
 
-bool IsKeyword( const ProgramString& str )
+bool IsKeyword( const std::string& str )
 {
 	return GetGlobals().keywords_set.count( str ) != 0;
 }
 
-const ProgramString& Keyword( Keywords keyword )
+const std::string& Keyword( Keywords keyword )
 {
 	U_ASSERT( keyword < Keywords::LastKeyword );
 
@@ -71,22 +71,22 @@ const char* KeywordAscii( const Keywords keyword )
 	return GetGlobals().keywords[ size_t(keyword) ].ascii;
 }
 
-bool operator==( Keywords keyword, const ProgramString& str )
+bool operator==( Keywords keyword, const std::string& str )
 {
 	return Keyword( keyword ) == str;
 }
 
-bool operator==( const ProgramString& str, Keywords keyword )
+bool operator==( const std::string& str, Keywords keyword )
 {
 	return keyword == str;
 }
 
-bool operator!=( Keywords keyword, const ProgramString& str )
+bool operator!=( Keywords keyword, const std::string& str )
 {
 	return Keyword( keyword ) != str;
 }
 
-bool operator!=( const ProgramString& str, Keywords keyword )
+bool operator!=( const std::string& str, Keywords keyword )
 {
 	return keyword != str;
 }

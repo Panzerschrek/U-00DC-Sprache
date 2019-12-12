@@ -6,7 +6,7 @@ namespace U
 {
 
 // TODO - return const char*
-ProgramString BinaryOperatorToString( const BinaryOperatorType op )
+std::string BinaryOperatorToString( const BinaryOperatorType op )
 {
 	const char* op_str= "";
 	switch( op )
@@ -40,7 +40,7 @@ ProgramString BinaryOperatorToString( const BinaryOperatorType op )
 	return op_str;
 }
 
-ProgramString OverloadedOperatorToString( const OverloadedOperator op )
+std::string OverloadedOperatorToString( const OverloadedOperator op )
 {
 	switch( op )
 	{

@@ -548,30 +548,30 @@ llvm::Type* Type::GetLLVMType() const
 	return std::visit( Visitor(), something_ );
 }
 
-ProgramString Type::ToString() const
+std::string Type::ToString() const
 {
 	struct Visitor final
 	{
-		ProgramString operator()( const FundamentalType& fundamental ) const
+		std::string operator()( const FundamentalType& fundamental ) const
 		{
 			return GetFundamentalTypeName( fundamental.fundamental_type );
 		}
 
-		ProgramString operator()( const FunctionPtr& function ) const
+		std::string operator()( const FunctionPtr& function ) const
 		{
 			return ProcessFunctionType( *function );
 		}
 
-		ProgramString operator()( const ArrayPtr& array ) const
+		std::string operator()( const ArrayPtr& array ) const
 		{
 			return
 				"[ " + array->type.ToString() + ", " +
 				std::to_string( array->size ) + " ]";
 		}
 
-		ProgramString operator()( const Tuple& tuple ) const
+		std::string operator()( const Tuple& tuple ) const
 		{
-			ProgramString res= "tup[ ";
+			std::string res= "tup[ ";
 
 			for( const Type& element_type : tuple.elements )
 			{
@@ -583,17 +583,17 @@ ProgramString Type::ToString() const
 			return res;
 		}
 
-		ProgramString operator()( const ClassProxyPtr& class_ ) const
+		std::string operator()( const ClassProxyPtr& class_ ) const
 		{
-			ProgramString result;
+			std::string result;
 			if( class_->class_->base_template != std::nullopt )
 			{
 				// Skip template parameters namespace.
-				const ProgramString template_namespace_name= class_->class_->members.GetParent()->GetParent()->ToString();
+				const std::string template_namespace_name= class_->class_->members.GetParent()->GetParent()->ToString();
 				if( !template_namespace_name.empty() )
 					result+= template_namespace_name + "::";
 
-				const ProgramString& class_name= class_->class_->base_template->class_template->syntax_element->name_;
+				const std::string& class_name= class_->class_->base_template->class_template->syntax_element->name_;
 				result+= class_name;
 				result+= "</";
 				for( const TemplateParameter& param : class_->class_->base_template->signature_parameters )
@@ -614,9 +614,9 @@ ProgramString Type::ToString() const
 						}
 						else if( const Enum* enum_type= param_as_variable->type.GetEnumType() )
 						{
-							ProgramString enum_member_name;
+							std::string enum_member_name;
 							enum_type->members.ForEachInThisScope(
-								[&]( const ProgramString& name, const Value& enum_member )
+								[&]( const std::string& name, const Value& enum_member )
 								{
 									if( const Variable* enum_variable= enum_member.GetVariable() )
 									{
@@ -642,21 +642,21 @@ ProgramString Type::ToString() const
 			return result;
 		}
 
-		ProgramString operator()( const EnumPtr& enum_ ) const
+		std::string operator()( const EnumPtr& enum_ ) const
 		{
 			return "enum " + enum_->members.GetThisNamespaceName();
 		}
 
-		ProgramString operator()( const FunctionPointerPtr& function_pointer ) const
+		std::string operator()( const FunctionPointerPtr& function_pointer ) const
 		{
 			return ProcessFunctionType( function_pointer->function );
 		}
 
 	private:
-		ProgramString ProcessFunctionType( const Function& function ) const
+		std::string ProcessFunctionType( const Function& function ) const
 		{
 			// TODO - actualize this
-			ProgramString result;
+			std::string result;
 			result+= "fn ";
 			result+= function.return_type.ToString();
 			result+= " ( ";
@@ -855,9 +855,9 @@ bool operator!=( const FunctionPointer& l, const FunctionPointer& r )
 	return !( r == l );
 }
 
-const ProgramString g_invalid_type_name= "InvalidType";
+const std::string g_invalid_type_name= "InvalidType";
 
-const ProgramString& GetFundamentalTypeName( const U_FundamentalType type )
+const std::string& GetFundamentalTypeName( const U_FundamentalType type )
 {
 	switch(type)
 	{

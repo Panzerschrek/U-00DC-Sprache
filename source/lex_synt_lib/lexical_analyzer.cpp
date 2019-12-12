@@ -423,7 +423,7 @@ Lexem ParseMacroIdentifier( Iterator& it, const Iterator it_end )
 
 } // namespace
 
-LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text, const bool collect_comments )
+LexicalAnalysisResult LexicalAnalysis( const std::string& program_text, const bool collect_comments )
 {
 	return LexicalAnalysis( program_text.data(), program_text.size(), collect_comments );
 }
@@ -440,7 +440,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 	unsigned short line= 1; // Count lines from "1", in human-readable format.
 	Iterator last_newline_it= program_text_data;
 
-	ProgramString fixed_lexem_str;
+	std::string fixed_lexem_str;
 	while( it < it_end )
 	{
 		const uint32_t c= GetUTF8FirstChar( it, it_end );

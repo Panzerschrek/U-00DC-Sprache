@@ -117,7 +117,7 @@ public:
 	llvm::Type* GetLLVMType() const;
 
 	// Convert type name to human-readable format.
-	ProgramString ToString() const;
+	std::string ToString() const;
 
 private:
 	friend bool operator==( const Type&, const Type&);
@@ -207,7 +207,7 @@ struct FunctionPointer
 bool operator==( const FunctionPointer& l, const FunctionPointer& r );
 bool operator!=( const FunctionPointer& l, const FunctionPointer& r );
 
-const ProgramString& GetFundamentalTypeName( U_FundamentalType fundamental_type );
+const std::string& GetFundamentalTypeName( U_FundamentalType fundamental_type );
 
 } //namespace CodeBuilderLLVMPrivate
 

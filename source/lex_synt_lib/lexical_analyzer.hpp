@@ -112,7 +112,7 @@ struct Lexem
 		EndOfFile,
 	};
 
-	ProgramString text; // Non-empty for identifiers, strings, numbers. Empty for simple lexems.
+	std::string text; // Non-empty for identifiers, strings, numbers. Empty for simple lexems.
 	FilePos file_pos;
 	Type type= Type::None;
 };
@@ -128,7 +128,7 @@ struct LexicalAnalysisResult
 	LexicalErrorMessages error_messages;
 };
 
-LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text, bool collect_comments= false );
+LexicalAnalysisResult LexicalAnalysis( const std::string& program_text, bool collect_comments= false );
 LexicalAnalysisResult LexicalAnalysis( const char* program_text_data, size_t program_text_size, bool collect_comments= false );
 
 } // namespace U

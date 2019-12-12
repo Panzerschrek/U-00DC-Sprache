@@ -233,7 +233,7 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, ClassTable& dst_class_table )
 {
 	src.ForEachInThisScope(
-		[&]( const ProgramString& src_name, const Value& src_member )
+		[&]( const std::string& src_name, const Value& src_member )
 		{
 			Value* const dst_member= dst.GetThisScopeValue(src_name );
 			if( dst_member == nullptr )
@@ -919,7 +919,7 @@ size_t CodeBuilder::PrepareFunction(
 	const Synt::Function& func,
 	const bool is_out_of_line_function )
 {
-	const ProgramString& func_name= func.name_.components.back().name;
+	const std::string& func_name= func.name_.components.back().name;
 	const bool is_constructor= func_name == Keywords::constructor_;
 	const bool is_destructor= func_name == Keywords::destructor_;
 	const bool is_special_method= is_constructor || is_destructor;
@@ -1346,7 +1346,7 @@ Type CodeBuilder::BuildFuncCode(
 	FunctionVariable& func_variable,
 	const ClassProxyPtr& base_class,
 	NamesScope& parent_names_scope,
-	const ProgramString& func_name,
+	const std::string& func_name,
 	const Synt::FunctionArgumentsDeclaration& args,
 	const Synt::Block* const block,
 	const Synt::StructNamedInitializer* const constructor_initialization_list )
@@ -1450,7 +1450,7 @@ Type CodeBuilder::BuildFuncCode(
 		const Function::Arg& arg= function_type.args[ arg_number ];
 
 		const Synt::FunctionArgument& declaration_arg= args[arg_number ];
-		const ProgramString& arg_name= declaration_arg.name_;
+		const std::string& arg_name= declaration_arg.name_;
 
 		const bool is_this= arg_number == 0u && arg_name == Keywords::this_;
 		U_ASSERT( !( is_this && !arg.is_reference ) );
@@ -1831,7 +1831,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		} );
 
 	// Initialize fields, missing in initializer list.
-	for( const ProgramString& field_name : uninitialized_fields )
+	for( const std::string& field_name : uninitialized_fields )
 	{
 		const StackVariablesStorage temp_variables_storage( function_context );
 
@@ -3398,7 +3398,7 @@ Value* CodeBuilder::ResolveValue(
 	const ResolveMode resolve_mode )
 {
 	U_ASSERT( component_count > 0u );
-	const ProgramString& last_component_name= components[component_count-1u].name;
+	const std::string& last_component_name= components[component_count-1u].name;
 
 	NamesScope* last_space= &names_scope;
 	if( components[0].name.empty() )
@@ -3410,7 +3410,7 @@ Value* CodeBuilder::ResolveValue(
 	}
 	else
 	{
-		const ProgramString& start= components[0].name;
+		const std::string& start= components[0].name;
 		NamesScope* space= &names_scope;
 		while(true)
 		{
@@ -3552,7 +3552,7 @@ Value* CodeBuilder::ResolveValue(
 
 U_FundamentalType CodeBuilder::GetNumericConstantType( const Synt::NumericConstant& number )
 {
-	const ProgramString type_suffix= number.type_suffix_.data();
+	const std::string type_suffix= number.type_suffix_.data();
 	if( type_suffix.empty() )
 	{
 		if( number.has_fractional_point_ )

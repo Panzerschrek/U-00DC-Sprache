@@ -50,7 +50,7 @@ size_t SourceGraphLoader::LoadNode_r(
 	const auto prev_file_it= std::find( processed_files_stack_.begin(), processed_files_stack_.end(), full_file_path );
 	if( prev_file_it != processed_files_stack_.end() )
 	{
-		ProgramString imports_loop_str;
+		std::string imports_loop_str;
 		for( auto it= prev_file_it; it != processed_files_stack_.end(); ++it )
 			imports_loop_str+= *it + " -> ";
 		imports_loop_str+= full_file_path;

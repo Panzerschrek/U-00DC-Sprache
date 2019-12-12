@@ -19,8 +19,8 @@ namespace
 
 struct NamePair final
 {
-	ProgramString full;
-	ProgramString compressed_and_escaped;
+	std::string full;
+	std::string compressed_and_escaped;
 };
 
 char Base36Digit( size_t value )
@@ -35,31 +35,31 @@ char Base36Digit( size_t value )
 class NamesCache final
 {
 public:
-	size_t GetRepalcement( const ProgramString& name )
+	size_t GetRepalcement( const std::string& name )
 	{
-		for( const ProgramString& candidate : names_container_ )
+		for( const std::string& candidate : names_container_ )
 			if( name == candidate )
 				return size_t(&candidate - names_container_.data());
 
 		return std::numeric_limits<size_t>::max();
 	}
 
-	void AddName( ProgramString name )
+	void AddName( std::string name )
 	{
-		for( const ProgramString& candidate : names_container_ )
+		for( const std::string& candidate : names_container_ )
 			if( candidate == name )
 				return;
 		names_container_.push_back( std::move(name) );
 	}
 
-	ProgramString RetReplacementString( size_t n )
+	std::string RetReplacementString( size_t n )
 	{
 		U_ASSERT( n < names_container_.size() );
 		if( n == 0u )
 			return "S_";
 
 		--n;
-		ProgramString result;
+		std::string result;
 
 		do // Converto to 36-base number representation.
 		{
@@ -73,13 +73,13 @@ public:
 	}
 
 private:
-	std::vector<ProgramString> names_container_;
+	std::vector<std::string> names_container_;
 };
 
 // Returns empty string if func_name is not operatorname.
-const ProgramString& DecodeOperator( const ProgramString& func_name )
+const std::string& DecodeOperator( const std::string& func_name )
 {
-	static const ProgramStringMap<ProgramString> c_op_names
+	static const ProgramStringMap<std::string> c_op_names
 	{
 		{ "+", "pl" },
 		{ "-", "mi" },
@@ -124,7 +124,7 @@ const ProgramString& DecodeOperator( const ProgramString& func_name )
 		{ "()", "cl" },
 		{ "[]", "ix" },
 	};
-	static const ProgramString c_empty;
+	static const std::string c_empty;
 
 	const auto it= c_op_names.find( func_name );
 	if( it != c_op_names.end() )
@@ -133,13 +133,13 @@ const ProgramString& DecodeOperator( const ProgramString& func_name )
 	return c_empty;
 }
 
-void GetNamespacePrefix_r( const NamesScope& names_scope, std::vector<ProgramString>& result )
+void GetNamespacePrefix_r( const NamesScope& names_scope, std::vector<std::string>& result )
 {
 	const NamesScope* const parent= names_scope.GetParent();
 	if( parent != nullptr )
 		GetNamespacePrefix_r( *parent, result );
 
-	const ProgramString& name= names_scope.GetThisNamespaceName();
+	const std::string& name= names_scope.GetThisNamespaceName();
 	if( !name.empty() )
 	{
 		result.push_back( std::to_string( name.size() ) + name );
@@ -147,26 +147,26 @@ void GetNamespacePrefix_r( const NamesScope& names_scope, std::vector<ProgramStr
 }
 
 NamePair GetNestedName(
-	const ProgramString& name, bool name_needs_num_prefix,
+	const std::string& name, bool name_needs_num_prefix,
 	const NamesScope& parent_scope, const bool need_konst, NamesCache& names_cache, bool name_is_func_name= false )
 {
 	// "N" - prefix for all names inside namespaces or classes.
 	// "K" prefix for "this-call" methods with immutable "this".
 	// "E" postfix fol all names inside namespaces or classes.
 
-	std::vector<ProgramString> result_splitted;
+	std::vector<std::string> result_splitted;
 	GetNamespacePrefix_r( parent_scope, result_splitted );
 	if( name_needs_num_prefix )
 		result_splitted.push_back( std::to_string( name.size() ) + name );
 	else
 		result_splitted.push_back( name );
 
-	ProgramString name_combined;
-	const ProgramString konst= need_konst ? "K" : "";
+	std::string name_combined;
+	const std::string konst= need_konst ? "K" : "";
 
 	size_t replacement_n= std::numeric_limits<size_t>::max();
 	size_t replacement_pos= 0u;
-	for( const ProgramString& comp : result_splitted )
+	for( const std::string& comp : result_splitted )
 	{
 		name_combined+= comp;
 		const size_t replacement_candidate= names_cache.GetRepalcement(name_combined );
@@ -191,7 +191,7 @@ NamePair GetNestedName(
 		return NamePair{ konst + name_combined, konst + names_cache.RetReplacementString( replacement_n ) };
 	else
 	{
-		ProgramString compressed_name;
+		std::string compressed_name;
 		compressed_name= "N" + konst + names_cache.RetReplacementString( replacement_n );
 		for( size_t i= replacement_pos + 1u; i < result_splitted.size(); i++ )
 			compressed_name+= result_splitted[i];
@@ -233,7 +233,7 @@ NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 	}
 	else if( const Array* const array_type= type.GetArrayType() )
 	{
-		ProgramString array_prefix= "A" + std::to_string( array_type->size ) + "_";
+		std::string array_prefix= "A" + std::to_string( array_type->size ) + "_";
 
 		const NamePair type_name= GetTypeName_r( array_type->type, names_cache );
 		result.full= array_prefix + type_name.full;
@@ -290,7 +290,7 @@ NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 	}
 	else if( const FunctionPointer* const function_pointer= type.GetFunctionPointerType() )
 	{
-		const ProgramString prefix= "P";
+		const std::string prefix= "P";
 		const NamePair function_type_name= GetTypeName_r( function_pointer->function, names_cache );
 		result.full= prefix + function_type_name.full;
 
@@ -328,8 +328,8 @@ NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 			NamePair type_name= GetTypeName_r( arg.type, names_cache );
 			if( !arg.is_mutable && arg.is_reference ) // push "Konst" for reference immutable arguments
 			{
-				const ProgramString prefix= "K";
-				const ProgramString prefixed_type_name= prefix + type_name.full;
+				const std::string prefix= "K";
+				const std::string prefixed_type_name= prefix + type_name.full;
 				type_name.full= prefixed_type_name;
 
 				const size_t replacement_candidate= names_cache.GetRepalcement( prefixed_type_name );
@@ -343,8 +343,8 @@ NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 			}
 			if( arg.is_reference )
 			{
-				const ProgramString prefix= "R";
-				const ProgramString prefixed_type_name= prefix + type_name.full;
+				const std::string prefix= "R";
+				const std::string prefixed_type_name= prefix + type_name.full;
 				type_name.full= prefixed_type_name;
 
 				const size_t replacement_candidate= names_cache.GetRepalcement( prefixed_type_name );
@@ -363,7 +363,7 @@ NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 
 		if( !function->return_references.empty() )
 		{
-			ProgramString rr;
+			std::string rr;
 			rr+= "_RR";
 
 			U_ASSERT( function->return_references.size() < 36u );
@@ -386,7 +386,7 @@ NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 		}
 		if( !function->references_pollution.empty() )
 		{
-			ProgramString rp;
+			std::string rp;
 			rp+= "_RP";
 
 			U_ASSERT( function->references_pollution.size() < 36u );
@@ -416,9 +416,9 @@ NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 			result.compressed_and_escaped+= rp;
 		}
 
-		const ProgramString function_prefix= ProgramString("F") + (function->unsafe ? "unsafe" : "");
-		const ProgramString function_postfix= "E";
-		const ProgramString prefixed_type_name= function_prefix + result.full + function_postfix;
+		const std::string function_prefix= std::string("F") + (function->unsafe ? "unsafe" : "");
+		const std::string function_postfix= "E";
+		const std::string prefixed_type_name= function_prefix + result.full + function_postfix;
 		result.full= prefixed_type_name;
 
 		const size_t replacement_candidate= names_cache.GetRepalcement( prefixed_type_name );
@@ -439,11 +439,11 @@ NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 
 std::string MangleFunction(
 	const NamesScope& parent_scope,
-	const ProgramString& function_name,
+	const std::string& function_name,
 	const Function& function_type )
 {
 	NamesCache names_cache;
-	ProgramString result;
+	std::string result;
 
 	// "_Z" - common prefix for all symbols.
 	result+= "_Z";
@@ -460,7 +460,7 @@ std::string MangleFunction(
 	}
 	else
 	{
-		const ProgramString& op_name= DecodeOperator( function_name );
+		const std::string& op_name= DecodeOperator( function_name );
 		const bool is_op= !op_name.empty();
 
 		result+=
@@ -482,8 +482,8 @@ std::string MangleFunction(
 
 		if( !arg.is_mutable && arg.is_reference ) // push "Konst" for reference immutable arguments
 		{
-			const ProgramString prefix= "K";
-			const ProgramString prefixed_type_name= prefix + type_name.full;
+			const std::string prefix= "K";
+			const std::string prefixed_type_name= prefix + type_name.full;
 
 			type_name.full= prefixed_type_name;
 
@@ -498,8 +498,8 @@ std::string MangleFunction(
 		}
 		if( arg.is_reference )
 		{
-			const ProgramString prefix= "R";
-			const ProgramString prefixed_type_name= prefix + type_name.full;
+			const std::string prefix= "R";
+			const std::string prefixed_type_name= prefix + type_name.full;
 
 			type_name.full= prefixed_type_name;
 
@@ -523,14 +523,14 @@ std::string MangleFunction(
 
 std::string MangleGlobalVariable(
 	const NamesScope& parent_scope,
-	const ProgramString& variable_name )
+	const std::string& variable_name )
 {
 	// Variables inside global namespace have simple names.
 	if( parent_scope.GetParent() == nullptr )
 		return variable_name;
 
 	NamesCache names_cache;
-	ProgramString result= "_Z";
+	std::string result= "_Z";
 
 	result+= GetNestedName( variable_name, true, parent_scope, false, names_cache ).compressed_and_escaped;
 

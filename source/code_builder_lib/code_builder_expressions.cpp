@@ -462,7 +462,7 @@ Value CodeBuilder::BuildExpressionCode(
 		return ErrorValue();
 	}
 
-	const ProgramString& back_name_component= named_operand.name_.components.back().name;
+	const std::string& back_name_component= named_operand.name_.components.back().name;
 	if( !function_context.is_in_unsafe_block &&
 		( back_name_component == Keywords::constructor_ || back_name_component == Keywords::destructor_ ) )
 		REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names.GetErrors(), named_operand.file_pos_, back_name_component );
@@ -859,7 +859,7 @@ Value CodeBuilder::BuildExpressionCode(
 	uint64_t array_size= ~0u; // ~0 - means non-array
 	llvm::Constant* initializer= nullptr;
 
-	const ProgramString type_suffix= string_literal.type_suffix_.data();
+	const std::string type_suffix= string_literal.type_suffix_.data();
 
 	if( type_suffix.empty() || type_suffix == "u8" )
 	{

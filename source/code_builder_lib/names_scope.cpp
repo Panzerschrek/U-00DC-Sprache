@@ -9,7 +9,7 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-NamesScope::NamesScope( ProgramString name, NamesScope* const parent )
+NamesScope::NamesScope( std::string name, NamesScope* const parent )
 	: name_(std::move(name) )
 	, parent_(parent)
 {}
@@ -27,17 +27,17 @@ bool NamesScope::IsAncestorFor( const NamesScope& other ) const
 	return false;
 }
 
-const ProgramString& NamesScope::GetThisNamespaceName() const
+const std::string& NamesScope::GetThisNamespaceName() const
 {
 	return name_;
 }
 
-void NamesScope::SetThisNamespaceName( ProgramString name )
+void NamesScope::SetThisNamespaceName( std::string name )
 {
 	name_= std::move(name);
 }
 
-ProgramString NamesScope::ToString() const
+std::string NamesScope::ToString() const
 {
 	if( parent_ == nullptr ) // Global namespace have no name.
 		return "";
@@ -47,7 +47,7 @@ ProgramString NamesScope::ToString() const
 }
 
 Value* NamesScope::AddName(
-	const ProgramString& name,
+	const std::string& name,
 	Value value )
 {
 	U_ASSERT( iterating_ == 0u );
@@ -66,7 +66,7 @@ Value* NamesScope::AddName(
 	return nullptr;
 }
 
-Value* NamesScope::GetThisScopeValue( const ProgramString& name )
+Value* NamesScope::GetThisScopeValue( const std::string& name )
 {
 	const auto it= names_map_.find( name );
 	if( it != names_map_.end() )
@@ -74,7 +74,7 @@ Value* NamesScope::GetThisScopeValue( const ProgramString& name )
 	return nullptr;
 }
 
-const Value* NamesScope::GetThisScopeValue( const ProgramString& name ) const
+const Value* NamesScope::GetThisScopeValue( const std::string& name ) const
 {
 	return const_cast<NamesScope*>(this)->GetThisScopeValue( name );
 }

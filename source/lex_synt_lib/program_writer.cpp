@@ -105,7 +105,7 @@ static void ElementWriteFunctionTypeEnding( const FunctionType& function_type, s
 	if( !function_type.return_value_inner_reference_tags_.empty() )
 	{
 		stream << "'";
-		for( const ProgramString& tag : function_type.return_value_inner_reference_tags_ )
+		for( const std::string& tag : function_type.return_value_inner_reference_tags_ )
 		{
 			if( tag.empty() )
 				stream << "...";
@@ -163,7 +163,7 @@ static void ElementWrite( const FunctionArgument& arg, std::ostream& stream )
 	if( !arg.inner_arg_reference_tags_.empty() )
 	{
 		stream << "'";
-		for( const ProgramString& tag : arg.inner_arg_reference_tags_ )
+		for( const std::string& tag : arg.inner_arg_reference_tags_ )
 		{
 			if( tag.empty() )
 				stream << "...";
@@ -233,7 +233,7 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 		}
 		void operator()( const StringLiteral& string_literal ) const
 		{
-			ProgramString escaped;
+			std::string escaped;
 			for( const char c : string_literal.value_ )
 			{
 				switch(c)
@@ -383,19 +383,19 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 	{
 		struct PrefixVisitor final
 		{
-			ProgramString operator()( const UnaryMinus& ) const
+			std::string operator()( const UnaryMinus& ) const
 			{
 				return OverloadedOperatorToString( OverloadedOperator::Sub );
 			}
-			ProgramString operator()( const UnaryPlus& ) const
+			std::string operator()( const UnaryPlus& ) const
 			{
 				return OverloadedOperatorToString( OverloadedOperator::Add );
 			}
-			ProgramString operator()( const LogicalNot& ) const
+			std::string operator()( const LogicalNot& ) const
 			{
 				return OverloadedOperatorToString( OverloadedOperator::LogicalNot );
 			}
-			ProgramString operator()( const BitwiseNot& ) const
+			std::string operator()( const BitwiseNot& ) const
 			{
 				return OverloadedOperatorToString( OverloadedOperator::BitwiseNot );
 			}

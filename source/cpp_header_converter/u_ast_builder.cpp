@@ -292,7 +292,7 @@ Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_de
 			const auto int_size= ast_context_.getTypeAlign( record_decl.getTypeForDecl() ) / 8u;
 			const auto num= ( size + int_size - 1u ) / int_size;
 
-			ProgramString int_name;
+			std::string int_name;
 			switch(int_size)
 			{
 			case  1: int_name= Keyword( Keywords::  u8_ ); break;
@@ -397,7 +397,7 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 	if( !enum_decl.isComplete() )
 		return;
 
-	const ProgramString enum_name= TranslateIdentifier( enum_decl.getName().str() );
+	const std::string enum_name= TranslateIdentifier( enum_decl.getName().str() );
 	const auto enumerators_range= enum_decl.enumerators();
 
 	// C++ enum can be Ü enum, if it`s members form sequence 0-N with step 1.
@@ -554,7 +554,7 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 	return TranslateNamedType( "void" );
 }
 
-ProgramString CppAstConsumer::TranslateRecordType( const clang::RecordType& in_type )
+std::string CppAstConsumer::TranslateRecordType( const clang::RecordType& in_type )
 {
 	const std::string name= in_type.getDecl()->getName().str();
 	if( name.empty() )
@@ -564,7 +564,7 @@ ProgramString CppAstConsumer::TranslateRecordType( const clang::RecordType& in_t
 			return it->second;
 		else
 		{
-			const ProgramString& anon_name= "ü_anon_record" + std::to_string( ++unique_name_index_ );
+			const std::string& anon_name= "ü_anon_record" + std::to_string( ++unique_name_index_ );
 			anon_records_names_cache_[ &in_type ]= anon_name;
 			return anon_name;
 		}
@@ -573,7 +573,7 @@ ProgramString CppAstConsumer::TranslateRecordType( const clang::RecordType& in_t
 		return TranslateIdentifier( name );
 }
 
-ProgramString CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& in_type )
+std::string CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& in_type )
 {
 	switch( in_type.getKind() )
 	{
@@ -675,7 +675,7 @@ Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::Functi
 	return std::move(function_type);
 }
 
-ProgramString CppAstConsumer::TranslateIdentifier( const std::string& identifier )
+std::string CppAstConsumer::TranslateIdentifier( const std::string& identifier )
 {
 	// For case of errors or something anonimous, generate unqiue identifier.
 	if( identifier.empty() )

@@ -608,7 +608,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 }
 
 void CodeBuilder::ApplyEmptyInitializer(
-	const ProgramString& variable_name,
+	const std::string& variable_name,
 	const FilePos& file_pos,
 	const Variable& variable,
 	NamesScope& block_names,

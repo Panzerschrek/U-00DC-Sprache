@@ -28,7 +28,7 @@ class SingeFileVfs final : public IVfs
 {
 public:
 
-	SingeFileVfs( ProgramString file_path, const char* const text )
+	SingeFileVfs( std::string file_path, const char* const text )
 		: file_path_(file_path), file_text_(text)
 	{}
 
@@ -47,7 +47,7 @@ public:
 	}
 
 private:
-	const ProgramString file_path_;
+	const std::string file_path_;
 	const char* const file_text_;
 };
 
@@ -64,7 +64,7 @@ std::unique_ptr<CodeBuilder> CreateCodeBuilder()
 
 std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 {
-	const ProgramString file_path= "_"_SpC;
+	const std::string file_path= "_"_SpC;
 	const SourceGraphPtr source_graph=
 		SourceGraphLoader( std::make_shared<SingeFileVfs>( file_path, text ) ).LoadSource( file_path );
 
@@ -317,7 +317,7 @@ PyObject* BuildFilePos( const FilePos& file_pos )
 	return file_pos_dict;
 }
 
-PyObject* BuildString( const ProgramString& str )
+PyObject* BuildString( const std::string& str )
 {
 	const std::string str_utf8= ToUTF8( str );
 	return PyUnicode_DecodeUTF8( str_utf8.data(), str_utf8.size(), nullptr );
@@ -365,7 +365,7 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 	if( !PyArg_ParseTuple( args, "s", &program_text ) )
 		return nullptr;
 
-	const ProgramString file_path= ToProgramString("_");
+	const std::string file_path= ToProgramString("_");
 	const SourceGraphPtr source_graph=
 		SourceGraphLoader( std::make_shared<SingeFileVfs>( file_path, program_text ) ).LoadSource( file_path );
 

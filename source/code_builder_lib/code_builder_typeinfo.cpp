@@ -12,19 +12,19 @@ namespace CodeBuilderPrivate
 namespace
 {
 
-const ProgramString g_next_node_name= "next";
-const ProgramString g_name_field_name= "name";
-const ProgramString g_type_field_name= "type";
+const std::string g_next_node_name= "next";
+const std::string g_name_field_name= "name";
+const std::string g_type_field_name= "type";
 const FilePos g_dummy_file_pos{ 0u, 0u, 0u };
 
-const ProgramString g_typeinfo_root_class_name= "TI";
-const ProgramString g_typeinfo_enum_elements_list_node_class_name= "TIEL_";
-const ProgramString g_typeinfo_class_fields_list_node_class_name= "TICFL_";
-const ProgramString g_typeinfo_class_types_list_node_class_name= "TICTL_";
-const ProgramString g_typeinfo_class_functions_list_node_class_name= "TICFL_";
-const ProgramString g_typeinfo_class_parents_list_node_class_name= "TICPL_";
-const ProgramString g_typeinfo_function_arguments_list_node_class_name= "TIAL_";
-const ProgramString g_typeinfo_tuple_elements_list_node_class_name= "TITL_";
+const std::string g_typeinfo_root_class_name= "TI";
+const std::string g_typeinfo_enum_elements_list_node_class_name= "TIEL_";
+const std::string g_typeinfo_class_fields_list_node_class_name= "TICFL_";
+const std::string g_typeinfo_class_types_list_node_class_name= "TICTL_";
+const std::string g_typeinfo_class_functions_list_node_class_name= "TICFL_";
+const std::string g_typeinfo_class_parents_list_node_class_name= "TICPL_";
+const std::string g_typeinfo_function_arguments_list_node_class_name= "TIAL_";
+const std::string g_typeinfo_tuple_elements_list_node_class_name= "TITL_";
 
 std::string GetTypeinfoVariableName( const ClassProxyPtr& typeinfo_class )
 {
@@ -44,7 +44,7 @@ Variable CodeBuilder::BuildTypeInfo( const Type& type, NamesScope& root_namespac
 	return typeinfo_cache_.back().second;
 }
 
-ClassProxyPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Type& src_type, const ProgramString& name )
+ClassProxyPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Type& src_type, const std::string& name )
 {
 	// Currently, give "random" names for typeinfo classes.
 	llvm::StructType* const llvm_type= llvm::StructType::create( llvm_context_ );
@@ -97,7 +97,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	ClassFieldsVector<llvm::Constant*> fields_initializers;
 
 	const auto add_bool_field=
-	[&]( const ProgramString& name, const bool value )
+	[&]( const std::string& name, const bool value )
 	{
 		typeinfo_class.members.AddName(
 			name,
@@ -107,7 +107,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	};
 
 	const auto add_size_field=
-	[&]( const ProgramString& name, const uint64_t value )
+	[&]( const std::string& name, const uint64_t value )
 	{
 		typeinfo_class.members.AddName(
 			name,
@@ -120,7 +120,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	};
 
 	const auto add_typeinfo_field=
-	[&]( const ProgramString& name, const Type& dependent_type )
+	[&]( const std::string& name, const Type& dependent_type )
 	{
 		const Variable dependent_type_typeinfo= BuildTypeInfo( dependent_type, root_namespace );
 
@@ -132,7 +132,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	};
 
 	const auto add_list_field=
-	[&]( const ProgramString& name, const Variable& variable )
+	[&]( const std::string& name, const Variable& variable )
 	{
 		typeinfo_class.members.AddName(
 			name,
@@ -288,7 +288,7 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, N
 	list_elements_initializers.reserve( enum_type->element_count );
 
 	enum_type->members.ForEachInThisScope(
-		[&]( const ProgramString& name, const Value& enum_member )
+		[&]( const std::string& name, const Value& enum_member )
 		{
 			const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace, enum_type, g_typeinfo_enum_elements_list_node_class_name + name );
 			Class& node_type_class= *node_type->class_;
@@ -337,7 +337,7 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, N
 
 void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
 	const Class& class_, const ClassProxyPtr& node_class_proxy,
-	const ProgramString& member_name,
+	const std::string& member_name,
 	ClassFieldsVector<llvm::Type*>& fields_llvm_types, ClassFieldsVector<llvm::Constant*>& fields_initializers )
 {
 	Class& node_class= *node_class_proxy->class_;
@@ -386,7 +386,7 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 	list_elements_initializers.reserve( class_type->class_->field_count );
 
 	class_type->class_->members.ForEachInThisScope(
-		[&]( const ProgramString& member_name, const Value& class_member )
+		[&]( const std::string& member_name, const Value& class_member )
 		{
 			const ClassField* const class_field= class_member.GetClassField();
 			if( class_field == nullptr )
@@ -480,7 +480,7 @@ Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassProxyPtr& class_ty
 	std::vector< llvm::Constant* > list_elements_initializers;
 
 	class_type->class_->members.ForEachInThisScope(
-		[&]( const ProgramString& name, Value& class_member )
+		[&]( const std::string& name, Value& class_member )
 		{
 			if( class_member.GetTypedef() != nullptr ) // Event in complete class typedefs may be not yet complete. Complete it now.
 				GlobalThingBuildTypedef( class_type->class_->members, class_member );
@@ -532,7 +532,7 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 	std::vector< llvm::Constant* > list_elements_initializers;
 
 	class_type->class_->members.ForEachInThisScope(
-		[&]( const ProgramString& name, const Value& class_member )
+		[&]( const std::string& name, const Value& class_member )
 		{
 			const OverloadedFunctionsSet* const functions_set= class_member.GetFunctionsSet();
 			if( functions_set == nullptr )

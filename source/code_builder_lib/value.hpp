@@ -173,7 +173,7 @@ struct IncompleteGlobalVariable
 	const Synt::AutoVariableDeclaration* auto_variable_declaration= nullptr;
 
 	size_t element_index= ~0u; // For VariablesDeclaration - index of variable.
-	ProgramString name;
+	std::string name;
 };
 
 struct YetNotDeducedTemplateArg final
@@ -201,7 +201,7 @@ public:
 	Value( ErrorValue error_value );
 
 	size_t GetKindIndex() const;
-	ProgramString GetKindName() const;
+	std::string GetKindName() const;
 	const FilePos& GetFilePos() const;
 
 	bool IsTemplateParameter() const;

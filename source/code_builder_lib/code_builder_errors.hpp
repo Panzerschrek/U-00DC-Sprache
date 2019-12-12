@@ -29,14 +29,14 @@ struct TemplateErrorsContext
 	CodeBuilderErrorsContainer errors;
 	FilePos template_declaration_file_pos;
 
-	ProgramString template_name;
-	ProgramString parameters_description;
+	std::string template_name;
+	std::string parameters_description;
 };
 using TemplateErrorsContextPtr= std::shared_ptr<TemplateErrorsContext>;
 
 struct CodeBuilderError
 {
-	ProgramString text;
+	std::string text;
 	TemplateErrorsContextPtr template_context; // For errors of type "TemplateContext"
 	CodeBuilderErrorCode code;
 	FilePos file_pos;
@@ -61,7 +61,7 @@ const char* GetErrorMessagePattern( CodeBuilderErrorCode code );
 
 std::string PreprocessArg( const CodeBuilderPrivate::Type& type );
 std::string PreprocessArg( const Synt::ComplexName& name );
-const std::string& PreprocessArg( const ProgramString& str );
+const std::string& PreprocessArg( const std::string& str );
 
 template<class T>
 const T& PreprocessArg( const T& t )

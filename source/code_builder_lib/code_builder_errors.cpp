@@ -78,7 +78,7 @@ const char* GetErrorMessagePattern( CodeBuilderErrorCode code )
 	return "";
 }
 
-const std::string& PreprocessArg( const ProgramString& str )
+const std::string& PreprocessArg( const std::string& str )
 {
 	return str;
 }
@@ -90,7 +90,7 @@ std::string PreprocessArg( const CodeBuilderPrivate::Type& type )
 
 std::string PreprocessArg( const Synt::ComplexName& name )
 {
-	ProgramString str;
+	std::string str;
 	for( const Synt::ComplexName::Component& component : name.components )
 	{
 		str+= component.name;
