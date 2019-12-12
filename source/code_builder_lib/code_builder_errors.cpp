@@ -85,7 +85,7 @@ const std::string& PreprocessArg( const ProgramString& str )
 
 std::string PreprocessArg( const CodeBuilderPrivate::Type& type )
 {
-	return ToUTF8(type.ToString());
+	return type.ToString();
 }
 
 std::string PreprocessArg( const Synt::ComplexName& name )
@@ -97,7 +97,7 @@ std::string PreprocessArg( const Synt::ComplexName& name )
 		if( &component != &name.components.back() )
 			str+= "::";
 	}
-	return ToUTF8(str);
+	return str;
 }
 
 } // namespace ErrorReportingImpl

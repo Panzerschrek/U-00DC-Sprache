@@ -47,7 +47,7 @@ static void ElementWrite( const ComplexName& complex_name, std::ostream& stream 
 {
 	for( const ComplexName::Component& component : complex_name.components )
 	{
-		stream << ToUTF8( component.name );
+		stream << component.name;
 		if( component.have_template_parameters )
 		{
 			stream << "</";
@@ -110,7 +110,7 @@ static void ElementWriteFunctionTypeEnding( const FunctionType& function_type, s
 			if( tag.empty() )
 				stream << "...";
 			else
-				stream << ToUTF8( tag );
+				stream << tag;
 			if( &tag != &function_type.return_value_inner_reference_tags_.back() && !function_type.return_value_inner_reference_tags_.back().empty() )
 				stream << ", ";
 		}
@@ -119,7 +119,7 @@ static void ElementWriteFunctionTypeEnding( const FunctionType& function_type, s
 
 	ElementWrite( function_type.return_value_reference_modifier_, stream );
 	if( !function_type.return_value_reference_tag_.empty() )
-		stream << "'" << ToUTF8( function_type.return_value_reference_tag_ );
+		stream << "'" << function_type.return_value_reference_tag_;
 
 	if( function_type.return_value_mutability_modifier_ != MutabilityModifier::None )
 	{
@@ -150,7 +150,7 @@ static void ElementWrite( const FunctionArgument& arg, std::ostream& stream )
 	if( !arg.reference_tag_.empty() )
 	{
 		stream << "'";
-		stream << ToUTF8( arg.reference_tag_ );
+		stream << arg.reference_tag_;
 	}
 
 	stream << " ";
@@ -158,7 +158,7 @@ static void ElementWrite( const FunctionArgument& arg, std::ostream& stream )
 
 	if( arg.mutability_modifier_ != MutabilityModifier::None )
 		stream << " ";
-	stream << ToUTF8( arg.name_ );
+	stream << arg.name_;
 
 	if( !arg.inner_arg_reference_tags_.empty() )
 	{
@@ -168,7 +168,7 @@ static void ElementWrite( const FunctionArgument& arg, std::ostream& stream )
 			if( tag.empty() )
 				stream << "...";
 			else
-				stream << ToUTF8(tag);
+				stream << tag;
 			if( &tag != &arg.inner_arg_reference_tags_.back() && !arg.inner_arg_reference_tags_.back().empty() )
 				stream << ", ";
 		}
@@ -197,7 +197,7 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 			if( binary_operator.left_ == nullptr || binary_operator.right_ == nullptr )
 				return;
 			ElementWrite( *binary_operator.left_ , stream );
-			stream << " " << ToUTF8( BinaryOperatorToString(binary_operator.operator_type_) ) << " ";
+			stream << " " << BinaryOperatorToString(binary_operator.operator_type_) << " ";
 			ElementWrite( *binary_operator.right_, stream );
 		}
 		void operator()( const NamedOperand& named_operand ) const
@@ -229,7 +229,7 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 				stream.flags( stream.flags() & (~std::ios_base::showpoint) );
 				stream << numeric_constant.value_int_;
 			}
-			stream << ToUTF8( numeric_constant.type_suffix_.data() );
+			stream << numeric_constant.type_suffix_.data();
 		}
 		void operator()( const StringLiteral& string_literal ) const
 		{
@@ -290,7 +290,7 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 					break;
 				};
 			}
-			stream << "\"" << ToUTF8(escaped) << "\"" << ToUTF8( string_literal.type_suffix_.data() );
+			stream << "\"" << escaped << "\"" << string_literal.type_suffix_.data();
 		}
 		void operator()( const BooleanConstant& boolean_constant ) const
 		{
@@ -310,7 +310,7 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 		}
 		void operator()( const MoveOperator& move_operator ) const
 		{
-			stream << KeywordAscii( Keywords::move_ ) << "( " << ToUTF8( move_operator.var_name_ ) << " )";
+			stream << KeywordAscii( Keywords::move_ ) << "( " << move_operator.var_name_ << " )";
 		}
 		void operator()( const CastRef& cast_ref ) const
 		{
@@ -446,7 +446,7 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 
 		PrefixVisitor prefix_visitor;
 		for( const UnaryPrefixOperator& prefix_operator : expression_with_unary_operators->prefix_operators_ )
-			stream << ToUTF8( std::visit( prefix_visitor, prefix_operator ) );
+			stream << std::visit( prefix_visitor, prefix_operator );
 
 		PostifxVisitor postfix_visitor(stream);
 		for( const UnaryPostfixOperator& postfix_operator : expression_with_unary_operators->postfix_operators_ )
@@ -582,7 +582,7 @@ static void ElementWrite( const Function& function, std::ostream& stream )
 static void ElementWrite( const Class& class_, std::ostream& stream )
 {
 	stream << KeywordAscii(class_.kind_attribute_ == ClassKindAttribute::Struct ? Keywords::struct_ : Keywords::class_ );
-	stream << " " << ToUTF8( class_.name_ ) << " ";
+	stream << " " << class_.name_ << " ";
 
 	switch( class_.kind_attribute_ )
 	{
@@ -631,7 +631,7 @@ static void ElementWrite( const Class& class_, std::ostream& stream )
 
 static void ElementWrite( const Namespace& namespace_, std::ostream& stream )
 {
-	stream << KeywordAscii( Keywords::namespace_ ) << " " << ToUTF8( namespace_.name_ ) << "\n{\n\n";
+	stream << KeywordAscii( Keywords::namespace_ ) << " " << namespace_.name_ << "\n{\n\n";
 	ElementWrite( namespace_.elements_, stream );
 	stream << "\n}\n";
 }
@@ -647,7 +647,7 @@ static void ElementWrite( const VariablesDeclaration& variables_declaration, std
 		stream << "\t";
 		ElementWrite( var.reference_modifier, stream );
 		ElementWrite( var.mutability_modifier, stream );
-		stream << " "  << ToUTF8( var.name );
+		stream << " "  << var.name;
 
 		if( var.initializer != nullptr )
 			ElementWrite( *var.initializer, stream );
@@ -667,7 +667,7 @@ static void ElementWrite( const AutoVariableDeclaration& auto_variable_declarati
 	if( auto_variable_declaration.mutability_modifier != MutabilityModifier::None )
 		stream << " ";
 
-	stream << ToUTF8( auto_variable_declaration.name );
+	stream << auto_variable_declaration.name;
 	stream << " = ";
 	ElementWrite( auto_variable_declaration.initializer_expression, stream );
 	stream << ";\n";
@@ -683,7 +683,7 @@ static void ElementWrite( const StaticAssert& static_assert_, std::ostream& stre
 
 static void ElementWrite( const Enum& enum_, std::ostream& stream )
 {
-	stream << KeywordAscii( Keywords::enum_ ) << " " << ToUTF8( enum_.name );
+	stream << KeywordAscii( Keywords::enum_ ) << " " << enum_.name;
 	if( !enum_.underlaying_type_name.components.empty() )
 	{
 		stream << " : ";
@@ -691,13 +691,13 @@ static void ElementWrite( const Enum& enum_, std::ostream& stream )
 	}
 	stream << "\n{\n";
 	for( const Enum::Member& enum_member : enum_.members )
-		stream << "\t" << ToUTF8( enum_member.name ) << ",\n";
+		stream << "\t" << enum_member.name << ",\n";
 	stream << "}\n";
 }
 
 static void ElementWrite( const Typedef& typedef_, std::ostream& stream )
 {
-	stream << KeywordAscii( Keywords::type_ ) << " " << ToUTF8( typedef_.name ) << " = ";
+	stream << KeywordAscii( Keywords::type_ ) << " " << typedef_.name << " = ";
 	ElementWrite( typedef_.value, stream );
 	stream << ";\n";
 }
@@ -727,7 +727,7 @@ static void ElementWrite( const ClassField& class_field, std::ostream& stream )
 	ElementWrite( class_field.mutability_modifier, stream );
 	if( class_field.mutability_modifier != MutabilityModifier::None )
 		stream << " ";
-	stream << ToUTF8( class_field.name ) << ";\n";
+	stream << class_field.name << ";\n";
 }
 
 static void ElementWrite( const ClassVisibilityLabel& visibility_label, std::ostream& stream )

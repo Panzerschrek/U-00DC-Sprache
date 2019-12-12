@@ -121,7 +121,7 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 
 	module_=
 		std::make_unique<llvm::Module>(
-			ToUTF8( source_graph.nodes_storage[ source_graph.root_node_index ].file_path ),
+			source_graph.nodes_storage[ source_graph.root_node_index ].file_path,
 			llvm_context_ );
 
 	// Setup data layout
@@ -1364,7 +1364,7 @@ Type CodeBuilder::BuildFuncCode(
 			llvm::Function::Create(
 				function_type.llvm_function_type,
 				llvm::Function::LinkageTypes::ExternalLinkage, // External - for prototype.
-				func_variable.no_mangle ? ToUTF8( func_name ) : MangleFunction( parent_names_scope, func_name, function_type ),
+				func_variable.no_mangle ? func_name : MangleFunction( parent_names_scope, func_name, function_type ),
 				module_.get() );
 
 		// Merge functions with identical code.
@@ -1475,7 +1475,7 @@ Type CodeBuilder::BuildFuncCode(
 				// Move parameters to stack for assignment possibility.
 				// TODO - do it, only if parameters are not constant.
 				llvm::Value* address= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
-				address->setName( ToUTF8( arg_name ) );
+				address->setName( arg_name );
 				function_context.llvm_ir_builder.CreateStore( var.llvm_value, address );
 
 				var.llvm_value= address;
@@ -1529,7 +1529,7 @@ Type CodeBuilder::BuildFuncCode(
 				REPORT_ERROR( Redefinition, function_names.GetErrors(), declaration_arg.file_pos_, arg_name );
 		}
 
-		llvm_arg.setName( "_arg_" + ToUTF8( arg_name ) );
+		llvm_arg.setName( "_arg_" + arg_name );
 		++arg_number;
 	}
 
@@ -2054,7 +2054,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
 			variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
-			variable.llvm_value->setName( ToUTF8( variable_declaration.name ) );
+			variable.llvm_value->setName( variable_declaration.name );
 
 			prev_variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
 			variable.node= var_node;
@@ -2284,7 +2284,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		if( !variable.type.CanBeConstexpr() )
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
-		variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType(), nullptr, ToUTF8( auto_variable_declaration.name ) );
+		variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType(), nullptr, auto_variable_declaration.name );
 
 		prev_variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
 		variable.node= var_node;
@@ -2662,7 +2662,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 					continue;
 				}
 
-				variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( element_type.GetLLVMType(), nullptr, ToUTF8( for_operator.loop_variable_name_ ) + std::to_string(element_index) );
+				variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( element_type.GetLLVMType(), nullptr, for_operator.loop_variable_name_ + std::to_string(element_index) );
 				function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( var_node, variable ) );
 				variable.node= var_node;
 

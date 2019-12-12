@@ -102,7 +102,7 @@ public:
 private:
 	fs_path GetFullFilePathInternal( const Path& file_path, const Path& full_parent_file_path )
 	{
-		const fs_path file_path_r( ToUTF8(file_path) );
+		const fs_path file_path_r( file_path );
 		fs_path result_path;
 
 		if( full_parent_file_path.empty() )
@@ -127,7 +127,7 @@ private:
 		}
 		else
 		{
-			result_path= fsp::parent_path( llvm::StringRef( ToUTF8(full_parent_file_path) ) );
+			result_path= fsp::parent_path( full_parent_file_path );
 			fsp::append( result_path, file_path_r );
 		}
 		return NormalizePath( result_path );
@@ -182,18 +182,18 @@ void PrintErrors( const SourceGraph& source_graph, const CodeBuilderErrorsContai
 		{
 			U_ASSERT( error.template_context != nullptr );
 
-			std::cerr << ToUTF8( source_graph.nodes_storage[ error.template_context->template_declaration_file_pos.file_index ].file_path ) << ": "
-				<< "In instantiation of \"" << ToUTF8( error.template_context->template_name )
-				<< "\" " << ToUTF8( error.template_context->parameters_description )
+			std::cerr << source_graph.nodes_storage[ error.template_context->template_declaration_file_pos.file_index ].file_path << ": "
+				<< "In instantiation of \"" << error.template_context->template_name
+				<< "\" " << error.template_context->parameters_description
 				<< "\n";
 
-			std::cerr << ToUTF8( source_graph.nodes_storage[error.file_pos.file_index ].file_path )
+			std::cerr << source_graph.nodes_storage[error.file_pos.file_index ].file_path
 				<< ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << ": required from here: " << "\n";
 		}
 		else
 		{
-			std::cerr << ToUTF8( source_graph.nodes_storage[error.file_pos.file_index ].file_path )
-				<< ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << ": error: " << ToUTF8( error.text ) << "\n";
+			std::cerr << source_graph.nodes_storage[error.file_pos.file_index ].file_path
+				<< ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << ": error: " << error.text << "\n";
 		}
 
 		if( error.template_context != nullptr )
@@ -452,7 +452,7 @@ int Main( int argc, const char* argv[] )
 		{
 			// For tests we print errors as "file.u 88 NameNotFound"
 			for( const CodeBuilderError& error : build_result.errors )
-				std::cout << ToUTF8( source_graph->nodes_storage[error.file_pos.file_index ].file_path )
+				std::cout << source_graph->nodes_storage[error.file_pos.file_index ].file_path
 					<< " " << error.file_pos.line << " " << CodeBuilderErrorCodeToString( error.code ) << "\n";
 		}
 		else

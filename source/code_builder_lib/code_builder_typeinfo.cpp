@@ -303,17 +303,16 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, N
 			fields_initializers.push_back( enum_member.GetVariable()->constexpr_value );
 
 			{
-				const std::string name_str= ToUTF8( name );
 				Array name_type;
 				name_type.type= FundamentalType( U_FundamentalType::char8, fundamental_llvm_types_.char8 );
-				name_type.size= name_str.size();
+				name_type.size= name.size();
 				name_type.llvm_type= llvm::ArrayType::get( name_type.type.GetLLVMType(), name_type.size );
 
 				ClassField field( node_type, name_type, static_cast<unsigned int>(fields_llvm_types.size()), true, false );
 
 				node_type_class.members.AddName( g_name_field_name, Value( std::move(field), g_dummy_file_pos ) );
 				fields_llvm_types.push_back( name_type.llvm_type );
-				fields_initializers.push_back( llvm::ConstantDataArray::getString( llvm_context_, name_str, false /* not null terminated */ ) );
+				fields_initializers.push_back( llvm::ConstantDataArray::getString( llvm_context_, name, false /* not null terminated */ ) );
 			}
 
 			FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
@@ -344,17 +343,16 @@ void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
 	Class& node_class= *node_class_proxy->class_;
 
 	{
-		const std::string name_str= ToUTF8( member_name );
 		Array name_type;
 		name_type.type= FundamentalType( U_FundamentalType::char8, fundamental_llvm_types_.char8 );
-		name_type.size= name_str.size();
+		name_type.size= member_name.size();
 		name_type.llvm_type= llvm::ArrayType::get( name_type.type.GetLLVMType(), name_type.size );
 
 		node_class.members.AddName(
 			g_name_field_name,
 			Value( ClassField( node_class_proxy, name_type, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_file_pos ) );
 		fields_llvm_types.push_back( name_type.llvm_type );
-		fields_initializers.push_back( llvm::ConstantDataArray::getString( llvm_context_, name_str, false /* not null terminated */ ) );
+		fields_initializers.push_back( llvm::ConstantDataArray::getString( llvm_context_, member_name, false /* not null terminated */ ) );
 	}
 
 	const ClassMemberVisibility member_visibility= class_.GetMemberVisibility( member_name );

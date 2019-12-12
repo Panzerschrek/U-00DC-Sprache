@@ -321,7 +321,7 @@ void CodeBuilder::ProcessTemplateArgs(
 			Variable variable;
 			variable.type= *type;
 			variable.constexpr_value= llvm::UndefValue::get( type->GetLLVMType() );
-			variable.llvm_value= CreateGlobalConstantVariable( *type, ToUTF8( arg_name ), variable.constexpr_value );
+			variable.llvm_value= CreateGlobalConstantVariable( *type, arg_name, variable.constexpr_value );
 
 			inserted_template_parameter=
 				template_parameters_namespace.AddName( arg_name, Value( std::move(variable), file_pos ) /* TODO - set correct file_pos */ );
@@ -537,7 +537,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 		variable_for_insertion.llvm_value=
 			CreateGlobalConstantVariable(
 				variable->type,
-				ToUTF8( template_.template_parameters[ dependend_arg_index ].name ),
+				template_.template_parameters[ dependend_arg_index ].name,
 				variable->constexpr_value );
 		variable_for_insertion.constexpr_value= variable->constexpr_value;
 

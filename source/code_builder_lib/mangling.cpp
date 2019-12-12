@@ -518,7 +518,7 @@ std::string MangleFunction(
 	if( function_type.args.empty() )
 		result+= "v";
 
-	return ToUTF8( result );
+	return result;
 }
 
 std::string MangleGlobalVariable(
@@ -527,20 +527,20 @@ std::string MangleGlobalVariable(
 {
 	// Variables inside global namespace have simple names.
 	if( parent_scope.GetParent() == nullptr )
-		return ToUTF8( variable_name );
+		return variable_name;
 
 	NamesCache names_cache;
 	ProgramString result= "_Z";
 
 	result+= GetNestedName( variable_name, true, parent_scope, false, names_cache ).compressed_and_escaped;
 
-	return ToUTF8( result );
+	return result;
 }
 
 std::string MangleType( const Type& type )
 {
 	NamesCache names_cache;
-	return ToUTF8( GetTypeName_r( type, names_cache ).compressed_and_escaped );
+	return GetTypeName_r( type, names_cache ).compressed_and_escaped;
 }
 
 } // namespace CodeBuilderPrivate

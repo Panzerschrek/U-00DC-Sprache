@@ -13,7 +13,6 @@ using ProgramString= std::string;
 using sprache_char = uint32_t;
 
 size_t GetUTF8CharBytes( sprache_char c );
-std::string ToUTF8( const ProgramString& str );
 
 sprache_char ReadNextUTF8Char( const char*& start, const char* end );
 sprache_char GetUTF8FirstChar( const char* start, const char* end );
