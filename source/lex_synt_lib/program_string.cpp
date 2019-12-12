@@ -1,9 +1,4 @@
-#include "push_disable_boost_warnings.hpp"
-#include <boost/functional/hash.hpp>
-#include "pop_boost_warnings.hpp"
-
 #include "assert.hpp"
-
 #include "program_string.hpp"
 
 namespace U
@@ -162,11 +157,6 @@ sprache_char ReadNextUTF8Char( const char*& start, const char* const end )
 sprache_char GetUTF8FirstChar( const char* start, const char* const end )
 {
 	return ReadNextUTF8Char( start, end );
-}
-
-size_t ProgramStringHasher::operator()( const ProgramString& str ) const
-{
-	return boost::hash_range( str.begin(), str.end() );
 }
 
 } // namespace U
