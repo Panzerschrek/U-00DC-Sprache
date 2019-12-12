@@ -89,7 +89,7 @@ public:
 		if( !file_mapped || *file_mapped == nullptr )
 			return std::nullopt;
 
-		result.file_content= DecodeUTF8( (*file_mapped)->getBufferStart(), (*file_mapped)->getBufferEnd() );
+		result.file_content.assign( (*file_mapped)->getBufferStart(), (*file_mapped)->getBufferEnd() );
 		result.full_file_path= result_path.str();
 		return std::move(result);
 	}
@@ -437,7 +437,7 @@ int Main( int argc, const char* argv[] )
 	bool have_some_errors= false;
 	for( const std::string& input_file : Options::input_files )
 	{
-		const SourceGraphPtr source_graph= source_graph_loader.LoadSource( DecodeUTF8( input_file.c_str() ) );
+		const SourceGraphPtr source_graph= source_graph_loader.LoadSource( input_file.c_str() );
 		U_ASSERT( source_graph != nullptr );
 		if( source_graph->have_errors || !source_graph->lexical_errors.empty() || !source_graph->syntax_errors.empty() )
 		{

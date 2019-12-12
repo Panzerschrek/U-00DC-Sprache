@@ -136,7 +136,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 				auto_variable_declaration.name= TranslateIdentifier( name );
 
 				Synt::StringLiteral string_constant( g_dummy_file_pos );
-				string_constant.value_= DecodeUTF8( string_literal_parser.GetString().str() );
+				string_constant.value_= string_literal_parser.GetString().str();
 				string_constant.value_.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
 
 				auto_variable_declaration.initializer_expression= std::move(string_constant);
@@ -564,7 +564,7 @@ ProgramString CppAstConsumer::TranslateRecordType( const clang::RecordType& in_t
 			return it->second;
 		else
 		{
-			const ProgramString& anon_name= DecodeUTF8("ü_anon_record") + std::to_string( ++unique_name_index_ );
+			const ProgramString& anon_name= "ü_anon_record" + std::to_string( ++unique_name_index_ );
 			anon_records_names_cache_[ &in_type ]= anon_name;
 			return anon_name;
 		}

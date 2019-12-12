@@ -14,7 +14,7 @@ extern const char c_build_in_macros_text[]=
 
 static Synt::MacrosPtr PrepareBuiltInMacros()
 {
-	const LexicalAnalysisResult lex_result= LexicalAnalysis( DecodeUTF8( c_build_in_macros_text ) );
+	const LexicalAnalysisResult lex_result= LexicalAnalysis( c_build_in_macros_text, sizeof(c_build_in_macros_text) );
 	U_ASSERT( lex_result.error_messages.empty() );
 
 	Synt::SyntaxAnalysisResult synt_result= Synt::SyntaxAnalysis( lex_result.lexems, std::make_shared<Synt::MacrosByContextMap>() );

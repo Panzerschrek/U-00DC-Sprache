@@ -33,7 +33,7 @@ ProgramString EncodeTemplateParameters( std::vector<TemplateParam>& deduced_temp
 		if( const Type* const type= std::get_if<Type>( &arg ) )
 		{
 			// We needs full mangled name of template parameter here, because short type names from different spaces may coincide.
-			r+= DecodeUTF8( MangleType( *type ) );
+			r+= MangleType( *type );
 		}
 		else if( const Variable* const variable= std::get_if<Variable>( &arg ) )
 		{

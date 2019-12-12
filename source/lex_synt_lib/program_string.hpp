@@ -15,10 +15,6 @@ using sprache_char = uint32_t;
 size_t GetUTF8CharBytes( sprache_char c );
 std::string ToUTF8( const ProgramString& str );
 
-ProgramString DecodeUTF8( const char* start, const char* end );
-ProgramString DecodeUTF8( const std::vector<char>& str );
-ProgramString DecodeUTF8( const std::string& str );
-
 sprache_char ReadNextUTF8Char( const char*& start, const char* end );
 sprache_char GetUTF8FirstChar( const char* start, const char* end );
 

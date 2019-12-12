@@ -78,9 +78,9 @@ const char* GetErrorMessagePattern( CodeBuilderErrorCode code )
 	return "";
 }
 
-std::string PreprocessArg( const ProgramString& str )
+const std::string& PreprocessArg( const ProgramString& str )
 {
-	return ToUTF8(str);
+	return str;
 }
 
 std::string PreprocessArg( const CodeBuilderPrivate::Type& type )
