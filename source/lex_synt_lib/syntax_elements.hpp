@@ -405,7 +405,7 @@ public:
 	bool value_;
 };
 
-using TypeSuffix= std::array<sprache_char, 7>;
+using TypeSuffix= std::array<char, 7>;
 
 struct NumericConstant final : public ExpressionComponentWithUnaryOperators
 {

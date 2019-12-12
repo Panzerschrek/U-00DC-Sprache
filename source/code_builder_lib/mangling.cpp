@@ -23,13 +23,13 @@ struct NamePair final
 	ProgramString compressed_and_escaped;
 };
 
-sprache_char Base36Digit( size_t value )
+char Base36Digit( size_t value )
 {
 	value %= 36u;
 	if( value < 10 )
-		return sprache_char('0' + value);
+		return char('0' + value);
 	else
-		return sprache_char('A' + ( value - 10 ) );
+		return char('A' + ( value - 10 ) );
 }
 
 class NamesCache final

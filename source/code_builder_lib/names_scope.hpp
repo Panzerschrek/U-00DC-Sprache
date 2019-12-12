@@ -52,9 +52,7 @@ public:
 		name.reserve(max_key_size_);
 		for( auto& inserted_name : names_map_ )
 		{
-			name.assign(
-				reinterpret_cast<const sprache_char*>(inserted_name.getKeyData()),
-				inserted_name.getKeyLength() / sizeof(sprache_char) );
+			name.assign( inserted_name.getKeyData(), inserted_name.getKeyLength() );
 			func( const_cast<const ProgramString&>(name), inserted_name.second );
 		}
 		--iterating_;
@@ -68,9 +66,7 @@ public:
 		name.reserve(max_key_size_);
 		for( const auto& inserted_name : names_map_ )
 		{
-			name.assign(
-				reinterpret_cast<const sprache_char*>(inserted_name.getKeyData()),
-				inserted_name.getKeyLength() / sizeof(sprache_char) );
+			name.assign( inserted_name.getKeyData(), inserted_name.getKeyLength() );
 			func( const_cast<const ProgramString&>(name), inserted_name.second );
 		}
 		--iterating_;

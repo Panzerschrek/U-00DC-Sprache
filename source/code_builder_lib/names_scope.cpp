@@ -54,7 +54,7 @@ Value* NamesScope::AddName(
 	auto it_bool_pair=
 		names_map_.insert(
 			std::make_pair(
-				llvm::StringRef( reinterpret_cast<const char*>(name.data()), name.size() * sizeof(sprache_char) ),
+				name,
 				std::move( value ) ) );
 
 	if( it_bool_pair.second )
@@ -68,8 +68,7 @@ Value* NamesScope::AddName(
 
 Value* NamesScope::GetThisScopeValue( const ProgramString& name )
 {
-	const auto it= names_map_.find(
-		llvm::StringRef( reinterpret_cast<const char*>(name.data()), name.size() * sizeof(sprache_char) ) );
+	const auto it= names_map_.find( name );
 	if( it != names_map_.end() )
 		return &it->second;
 	return nullptr;

@@ -119,26 +119,26 @@ const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
 	},
 };
 
-using Iterator= const sprache_char*;
+using Iterator= const char*;
 
-bool IsWhitespace( sprache_char c )
+bool IsWhitespace( const sprache_char c )
 {
 	return
 		c == ' ' || c == '\f' || c == '\n' || c == '\r' || c == '\t' || c == '\v' ||
 		c <= 0x1Fu || c == 0x7Fu;
 }
 
-bool IsNewline( sprache_char c )
+bool IsNewline( const sprache_char c )
 {
 	return c == '\n';
 }
 
-bool IsNumberStartChar( sprache_char c )
+bool IsNumberStartChar( const sprache_char c )
 {
 	return c >= '0' && c <= '9';
 }
 
-bool IsIdentifierStartChar( sprache_char c )
+bool IsIdentifierStartChar( const sprache_char c )
 {
 	// HACK - manually define allowed "letters".
 	// TODO - use something, like symbol category from unicode.
@@ -154,17 +154,17 @@ bool IsIdentifierStartChar( sprache_char c )
 		( c >= 0x0180u && c <= 0x024Fu ) ;  // Extended latin part B
 }
 
-bool IsIdentifierChar( sprache_char c )
+bool IsIdentifierChar( const sprache_char c )
 {
-	return IsIdentifierStartChar(c) || IsNumberStartChar(c) || c == '_';
+	return IsIdentifierStartChar(c) || IsNumberStartChar(char(c)) || c == '_';
 }
 
 void ParseNumberImpl(
-		Iterator& it,
-		const Iterator it_end,
-		Lexem& result,
-		bool (*is_digit_func)(sprache_char c),
-		bool exponent_allowed= false )
+	Iterator& it,
+	const Iterator it_end,
+	Lexem& result,
+	bool (*is_digit_func)(char c),
+	bool exponent_allowed= false )
 {
 	// Integer part
 	while( it < it_end && is_digit_func(*it) )
@@ -208,10 +208,7 @@ void ParseNumberImpl(
 	}
 }
 
-Lexem ParseString(
-	Iterator& it,
-	const Iterator it_end,
-	LexicalErrorMessages& out_errors )
+Lexem ParseString( Iterator& it, const Iterator it_end, LexicalErrorMessages& out_errors )
 {
 	U_ASSERT( *it == '"' );
 	++it;
@@ -228,7 +225,7 @@ Lexem ParseString(
 			++it;
 			break;
 		}
-		else if( ( /* *it >= 0x00u && */ *it < 0x20u ) || *it == 0x7Fu ) // TODO - is this correct control character?
+		else if( ( /* *it >= 0x00u && */ *it < 0x20 ) || *it == 0x7F ) // TODO - is this correct control character?
 		{
 			out_errors.push_back( "control character inside string" );
 			return result;
@@ -264,10 +261,10 @@ Lexem ParseString(
 						return result;
 					}
 
-					uint32_t char_code= 0u;
+					sprache_char char_code= 0u;
 					for( size_t i= 0u; i < 4u; i++ )
 					{
-						uint32_t digit;
+						sprache_char digit;
 							 if( *it >= '0' && *it <= '9' ) digit= uint32_t( *it - '0' );
 						else if( *it >= 'a' && *it <= 'f' ) digit= uint32_t( *it - 'a' + 10 );
 						else if( *it >= 'A' && *it <= 'F' ) digit= uint32_t( *it - 'A' + 10 );
@@ -280,7 +277,7 @@ Lexem ParseString(
 						++it;
 					}
 
-					result.text.push_back( sprache_char(char_code) ); // TODO - maybe convert to UTF-16?
+					result.text.push_back(char_code ); // TODO - maybe convert to UTF-16?
 				}
 				break;
 
@@ -299,9 +296,7 @@ Lexem ParseString(
 	return result;
 }
 
-Lexem ParseNumber(
-	Iterator& it,
-	const Iterator it_end )
+Lexem ParseNumber( Iterator& it, const Iterator it_end )
 {
 	Lexem result;
 	result.type= Lexem::Type::Number;
@@ -316,7 +311,7 @@ Lexem ParseNumber(
 			it+= 2;
 			ParseNumberImpl(
 				it, it_end, result,
-				[]( sprache_char c ) -> bool
+				[]( char c ) -> bool
 				{
 					return c == '0' || c == '1';
 				} );
@@ -328,7 +323,7 @@ Lexem ParseNumber(
 			it+= 2;
 			ParseNumberImpl(
 				it, it_end, result,
-				[]( sprache_char c ) -> bool
+				[]( char c ) -> bool
 				{
 					return c >= '0' && c <= '7';
 				} );
@@ -340,9 +335,9 @@ Lexem ParseNumber(
 			it+= 2;
 			ParseNumberImpl(
 				it, it_end, result,
-				[]( sprache_char c ) -> bool
+				[]( char c ) -> bool
 				{
-					return IsNumberStartChar(c) || ( c >= 'a' && c <= 'f' ) || ( c >= 'A' && c <= 'F' );
+					return ( c >= '0' && c <= '9' ) || ( c >= 'a' && c <= 'f' ) || ( c >= 'A' && c <= 'F' );
 				} );
 
 			break;
@@ -356,9 +351,9 @@ Lexem ParseNumber(
 	parse_decimal:
 		ParseNumberImpl(
 			it, it_end, result,
-			[]( sprache_char c ) -> bool
+			[]( char c ) -> bool
 			{
-				return IsNumberStartChar(c);
+				return ( c >= '0' && c <= '9' );
 			},
 			true );
 	}
@@ -374,17 +369,19 @@ Lexem ParseNumber(
 	return result;
 }
 
-Lexem ParseIdentifier(
-	Iterator& it,
-	const Iterator it_end )
+Lexem ParseIdentifier( Iterator& it, const Iterator it_end )
 {
 	Lexem result;
 	result.type= Lexem::Type::Identifier;
 
-	while( it < it_end && IsIdentifierChar(*it) )
+	while( it < it_end )
 	{
-		result.text.push_back(*it);
-		++it;
+		auto it_next= it;
+		if( !IsIdentifierChar( ReadNextUTF8Char( it_next, it_end ) ) )
+			break;
+
+		result.text.insert( result.text.end(), it, it_next );
+		it= it_next;
 	}
 
 	return result;
@@ -395,9 +392,7 @@ bool IsMacroIdentifierStartChar( const sprache_char c )
 	return c == '?';
 }
 
-Lexem ParseMacroIdentifier(
-	Iterator& it,
-	const Iterator it_end )
+Lexem ParseMacroIdentifier( Iterator& it, const Iterator it_end )
 {
 	Lexem result;
 	result.type= Lexem::Type::MacroIdentifier;
@@ -413,10 +408,14 @@ Lexem ParseMacroIdentifier(
 		++it;
 	}
 
-	while( it < it_end && IsIdentifierChar(*it) )
+	while( it < it_end )
 	{
-		result.text.push_back(*it);
-		++it;
+		auto it_next= it;
+		if( !IsIdentifierChar( ReadNextUTF8Char( it_next, it_end ) ) )
+			break;
+
+		result.text.insert( result.text.end(), it, it_next );
+		it= it_next;
 	}
 
 	return result;
@@ -429,7 +428,7 @@ LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text, const 
 	return LexicalAnalysis( program_text.data(), program_text.size(), collect_comments );
 }
 
-LexicalAnalysisResult LexicalAnalysis( const sprache_char* const program_text_data, const size_t program_text_size, const bool collect_comments )
+LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, const size_t program_text_size, const bool collect_comments )
 {
 	LexicalAnalysisResult result;
 
@@ -444,7 +443,7 @@ LexicalAnalysisResult LexicalAnalysis( const sprache_char* const program_text_da
 	ProgramString fixed_lexem_str;
 	while( it < it_end )
 	{
-		const sprache_char c= *it;
+		const uint32_t c= GetUTF8FirstChar( it, it_end );
 		Lexem lexem;
 		const auto pos_in_line= static_cast<unsigned short>( it - last_newline_it );
 
@@ -524,7 +523,7 @@ LexicalAnalysisResult LexicalAnalysis( const sprache_char* const program_text_da
 		else if( c == '"' )
 		{
 			lexem= ParseString( it, it_end, result.error_messages );
-			if( it < it_end && IsIdentifierStartChar( *it ) )
+			if( IsIdentifierStartChar( GetUTF8FirstChar( it, it_end ) ) )
 			{
 				// Parse string suffix.
 				lexem.file_pos.line= line;
