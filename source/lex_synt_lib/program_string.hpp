@@ -10,8 +10,6 @@ namespace U
 
 using sprache_char = uint32_t;
 
-size_t GetUTF8CharBytes( sprache_char c );
-
 sprache_char ReadNextUTF8Char( const char*& start, const char* end );
 sprache_char GetUTF8FirstChar( const char* start, const char* end );
 

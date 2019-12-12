@@ -4,16 +4,6 @@
 namespace U
 {
 
-size_t GetUTF8CharBytes( const sprache_char c )
-{
-	if( c <= 0x7Fu )
-		return 1u;
-	else if( c <= 0x7FFu )
-		return 2u;
-	else
-		return 3u;
-}
-
 sprache_char ReadNextUTF8Char( const char*& start, const char* const end )
 {
 	// c_bit_masks[4] - menas save first 4 bits
