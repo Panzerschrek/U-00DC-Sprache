@@ -225,7 +225,7 @@ Lexem ParseString( Iterator& it, const Iterator it_end, LexicalErrorMessages& ou
 			++it;
 			break;
 		}
-		else if( ( /* *it >= 0x00u && */ *it < 0x20 ) || *it == 0x7F ) // TODO - is this correct control character?
+		else if( ( /* *it >= 0x00u && */ sprache_char(*it) < 0x20u ) || *it == 0x7F ) // TODO - is this correct control character?
 		{
 			out_errors.push_back( "control character inside string" );
 			return result;
@@ -277,7 +277,19 @@ Lexem ParseString( Iterator& it, const Iterator it_end, LexicalErrorMessages& ou
 						++it;
 					}
 
-					result.text.push_back(char_code ); // TODO - maybe convert to UTF-16?
+					if( char_code <= 0x7Fu )
+						result.text.push_back( char(char_code) );
+					else if( char_code <= 0x7FFu )
+					{
+						result.text.push_back( char( 0b11000000u | (char_code >>  6u) ) );
+						result.text.push_back( char( 0b10000000u | (char_code &  63u) ) );
+					}
+					else
+					{
+						result.text.push_back( char( 0b11100000u |  (char_code >> 12u) ) );
+						result.text.push_back( char( 0b11000000u | ((char_code >> 6u) & 63u) ) );
+						result.text.push_back( char( 0b10000000u |  (char_code  & 63u) ) );
+					}
 				}
 				break;
 

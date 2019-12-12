@@ -2,6 +2,7 @@
 #include <llvm/IR/Constant.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/Support/MD5.h>
+#include <llvm/Support/ConvertUTF.h>
 #include "pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/assert.hpp"
@@ -869,11 +870,8 @@ Value CodeBuilder::BuildExpressionCode(
 	}
 	else if( type_suffix == "u16" )
 	{
-		// TODO - convert utf-8 to utf-16.
-		std::vector<uint32_t> str;
-		str.resize( string_literal.value_.size() );
-		for( size_t i= 0u; i < string_literal.value_.size(); ++i )
-			str[i]= string_literal.value_[i];
+		llvm::SmallVector<llvm::UTF16, 32> str;
+		llvm::convertUTF8ToUTF16String( string_literal.value_, str );
 
 		char_type= U_FundamentalType::char16;
 		array_size= str.size();
@@ -881,11 +879,9 @@ Value CodeBuilder::BuildExpressionCode(
 	}
 	else if( type_suffix == "u32" )
 	{
-		// TODO - convert utf-8 to utf-32.
 		std::vector<uint32_t> str;
-		str.resize( string_literal.value_.size() );
-		for( size_t i= 0u; i < string_literal.value_.size(); ++i )
-			str[i]= string_literal.value_[i];
+		for( auto it = string_literal.value_.data(), it_end= it + string_literal.value_.size(); it < it_end; )
+			str.push_back( ReadNextUTF8Char( it, it_end ) );
 
 		char_type= U_FundamentalType::char32;
 		array_size= str.size();
@@ -894,7 +890,7 @@ Value CodeBuilder::BuildExpressionCode(
 	// If string literal have char suffix, process it as single char literal.
 	else if( type_suffix ==  "c8" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char8  ) )
 	{
-		if( string_literal.value_.size() == 1u && GetUTF8CharBytes(string_literal.value_[0]) == 1u )
+		if( string_literal.value_.size() == 1u )
 		{
 			char_type= U_FundamentalType::char8 ;
 			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char8 , uint64_t(string_literal.value_[0]), false );
@@ -904,20 +900,26 @@ Value CodeBuilder::BuildExpressionCode(
 	}
 	else if( type_suffix == "c16" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char16 ) )
 	{
-		if( string_literal.value_.size() == 1u )
+		const char* it_start= string_literal.value_.data();
+		const char* const it_end= it_start + string_literal.value_.size();
+		const sprache_char c= ReadNextUTF8Char( it_start, it_end );
+		if( it_start == it_end && c <= 65535u )
 		{
 			char_type= U_FundamentalType::char16;
-			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char16, uint64_t(string_literal.value_[0]), false );
+			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char16, uint64_t(c), false );
 		}
 		else
 			REPORT_ERROR( InvalidSizeForCharLiteral, names.GetErrors(), string_literal.file_pos_, string_literal.value_ );
 	}
 	else if( type_suffix == "c32" || type_suffix== GetFundamentalTypeName( U_FundamentalType::char32 ) )
 	{
-		if( string_literal.value_.size() == 1u )
+		const char* it_start= string_literal.value_.data();
+		const char* const it_end= it_start + string_literal.value_.size() ;
+		const sprache_char c= ReadNextUTF8Char( it_start, it_end );
+		if( it_start == it_end )
 		{
 			char_type= U_FundamentalType::char32;
-			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char32, uint64_t(string_literal.value_[0]), false );
+			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char32, uint64_t(c), false );
 		}
 		else
 			REPORT_ERROR( InvalidSizeForCharLiteral, names.GetErrors(), string_literal.file_pos_, string_literal.value_ );
