@@ -900,35 +900,35 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 	const std::string& text= it_->text;
 
 	uint64_t base= 10;
-	uint64_t (*number_func)( sprache_char) =
-		[]( sprache_char c ) -> uint64_t
+	uint64_t (*number_func)( char) =
+		[]( char c ) -> uint64_t
 		{
 			U_ASSERT( c >= '0' && c <= '9' );
 			return c - '0';
 		};
 
-	bool (*is_number_func)( sprache_char) =
-		[]( sprache_char c ) -> bool { return std::isdigit(c); };
+	bool (*is_number_func)( char ) =
+		[]( char c ) -> bool { return std::isdigit(c); };
 
 	std::string::const_iterator it= text.begin();
 	const std::string::const_iterator it_end= text.end();
 
 	if( text.size() >= 2 && text[0] == '0' )
 	{
-		sprache_char d= text[1];
+		const char d= text[1];
 		switch(d)
 		{
 		case 'b':
 			it+= 2;
 			base= 2;
 			number_func=
-				[]( sprache_char c ) -> uint64_t
+				[]( char c ) -> uint64_t
 				{
 					U_ASSERT( c >= '0' && c <= '1' );
 					return c - '0';
 				};
 			is_number_func=
-				[]( sprache_char c ) -> bool
+				[]( char c ) -> bool
 				{
 					return c == '0' || c == '1';
 				};
@@ -938,13 +938,13 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 			it+= 2;
 			base= 8;
 			number_func=
-				[]( sprache_char c ) -> uint64_t
+				[]( char c ) -> uint64_t
 				{
 					U_ASSERT( c >= '0' && c <= '7' );
 					return c - '0';
 				};
 			is_number_func=
-				[]( sprache_char c ) -> bool
+				[]( char c ) -> bool
 				{
 					return c >= '0' && c <= '7';
 				};
@@ -954,7 +954,7 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 			it+= 2;
 			base= 16;
 			number_func=
-				[]( sprache_char c ) -> uint64_t
+				[]( char c ) -> uint64_t
 				{
 					if( c >= '0' && c <= '9' )
 						return c - '0';
@@ -966,7 +966,7 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 						return c - 'A' + 10;
 					}
 				};
-			is_number_func= []( sprache_char c ) -> bool { return std::isxdigit(c); };
+			is_number_func= []( char c ) -> bool { return std::isxdigit(c); };
 			break;
 
 		default: break;

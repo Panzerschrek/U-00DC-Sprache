@@ -166,7 +166,7 @@ bool IsIdentifierStartChar( const sprache_char c )
 
 bool IsIdentifierChar( const sprache_char c )
 {
-	return IsIdentifierStartChar(c) || IsNumberStartChar(char(c)) || c == '_';
+	return IsIdentifierStartChar(c) || IsNumberStartChar(c) || c == '_';
 }
 
 void ParseNumberImpl(
@@ -325,7 +325,7 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end )
 
 	if( it_end - it >= 2 && *it == '0' )
 	{
-		sprache_char d= *(it+1);
+		const char d= *(it+1);
 		switch(d)
 		{
 		case 'b':
@@ -382,7 +382,7 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end )
 
 	// TODO - produce separate lexem for it.
 	// Type suffix.
-	while( it < it_end && IsIdentifierChar(*it) )
+	while( it < it_end && IsIdentifierChar(sprache_char(*it)) )
 	{
 		result.text.push_back(*it);
 		++it;
@@ -423,7 +423,7 @@ Lexem ParseMacroIdentifier( Iterator& it, const Iterator it_end )
 	result.text.push_back(*it);
 	++it;
 
-	if( it < it_end && IsMacroIdentifierStartChar(*it) )
+	if( it < it_end && IsMacroIdentifierStartChar(sprache_char(*it)) )
 	{
 		result.type= Lexem::Type::MacroUniqueIdentifier;
 		result.text.push_back(*it);
@@ -489,7 +489,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 				comment_lexem.file_pos.pos_in_line= static_cast<unsigned short>(pos_in_line);
 				comment_lexem.type= Lexem::Type::Comment;
 
-				while( it < it_end && !IsNewline(*it) )
+				while( it < it_end && !IsNewline(sprache_char(*it)) )
 				{
 					comment_lexem.text.push_back(*it);
 					++it;
@@ -497,7 +497,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 				result.lexems.emplace_back( std::move(comment_lexem) );
 			}
 			else
-				while( it < it_end && !IsNewline(*it) ) ++it;
+				while( it < it_end && !IsNewline(sprache_char(*it)) ) ++it;
 
 			if( it == it_end ) break;
 
@@ -580,7 +580,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 		else if( IsMacroIdentifierStartChar(c) &&
 				std::next(it) < it_end &&
 				*std::next(it) != '>' &&
-				( IsIdentifierChar(*std::next(it)) || IsMacroIdentifierStartChar(*std::next(it)) ) )
+				( IsIdentifierChar(sprache_char(*std::next(it))) || IsMacroIdentifierStartChar(sprache_char(*std::next(it))) ) )
 			lexem= ParseMacroIdentifier( it, it_end );
 		else
 		{

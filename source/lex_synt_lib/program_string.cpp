@@ -36,8 +36,8 @@ sprache_char ReadNextUTF8Char( const char*& start, const char* const end )
 		}
 
 		code=
-			( (start[0] & c_bit_masks[5]) << 6u ) |
-			( (start[1] & c_bit_masks[6]) << 0u );
+			( (sprache_char(start[0]) & c_bit_masks[5]) << 6u ) |
+			( (sprache_char(start[1]) & c_bit_masks[6]) << 0u );
 
 		start+= 2;
 	}
@@ -50,9 +50,9 @@ sprache_char ReadNextUTF8Char( const char*& start, const char* const end )
 		}
 
 		code=
-			( (start[0] & c_bit_masks[4]) << 12u ) |
-			( (start[1] & c_bit_masks[6]) <<  6u ) |
-			( (start[2] & c_bit_masks[6]) <<  0u );
+			( (sprache_char(start[0]) & c_bit_masks[4]) << 12u ) |
+			( (sprache_char(start[1]) & c_bit_masks[6]) <<  6u ) |
+			( (sprache_char(start[2]) & c_bit_masks[6]) <<  0u );
 
 		start+= 3;
 	}
@@ -65,10 +65,10 @@ sprache_char ReadNextUTF8Char( const char*& start, const char* const end )
 		}
 
 		code=
-			( (start[0] & c_bit_masks[3]) << 18u ) |
-			( (start[1] & c_bit_masks[6]) << 12u ) |
-			( (start[2] & c_bit_masks[6]) <<  6u ) |
-			( (start[3] & c_bit_masks[6]) <<  0u );
+			( (sprache_char(start[0]) & c_bit_masks[3]) << 18u ) |
+			( (sprache_char(start[1]) & c_bit_masks[6]) << 12u ) |
+			( (sprache_char(start[2]) & c_bit_masks[6]) <<  6u ) |
+			( (sprache_char(start[3]) & c_bit_masks[6]) <<  0u );
 
 		start+= 4;
 	}
@@ -81,11 +81,11 @@ sprache_char ReadNextUTF8Char( const char*& start, const char* const end )
 		}
 
 		code=
-			( (start[0] & c_bit_masks[2]) << 24u ) |
-			( (start[1] & c_bit_masks[6]) << 18u ) |
-			( (start[2] & c_bit_masks[6]) << 12u ) |
-			( (start[3] & c_bit_masks[6]) <<  6u ) |
-			( (start[4] & c_bit_masks[6]) <<  0u );
+			( (sprache_char(start[0]) & c_bit_masks[2]) << 24u ) |
+			( (sprache_char(start[1]) & c_bit_masks[6]) << 18u ) |
+			( (sprache_char(start[2]) & c_bit_masks[6]) << 12u ) |
+			( (sprache_char(start[3]) & c_bit_masks[6]) <<  6u ) |
+			( (sprache_char(start[4]) & c_bit_masks[6]) <<  0u );
 
 		start+= 5;
 	}
@@ -98,12 +98,12 @@ sprache_char ReadNextUTF8Char( const char*& start, const char* const end )
 		}
 
 		code=
-			( (start[0] & c_bit_masks[1]) << 30u ) |
-			( (start[1] & c_bit_masks[6]) << 24u ) |
-			( (start[2] & c_bit_masks[6]) << 18u ) |
-			( (start[3] & c_bit_masks[6]) << 12u ) |
-			( (start[4] & c_bit_masks[6]) <<  6u ) |
-			( (start[5] & c_bit_masks[6]) <<  0u );
+			( (sprache_char(start[0]) & c_bit_masks[1]) << 30u ) |
+			( (sprache_char(start[1]) & c_bit_masks[6]) << 24u ) |
+			( (sprache_char(start[2]) & c_bit_masks[6]) << 18u ) |
+			( (sprache_char(start[3]) & c_bit_masks[6]) << 12u ) |
+			( (sprache_char(start[4]) & c_bit_masks[6]) <<  6u ) |
+			( (sprache_char(start[5]) & c_bit_masks[6]) <<  0u );
 
 		start+= 6;
 	}
