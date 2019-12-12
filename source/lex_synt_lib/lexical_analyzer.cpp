@@ -570,7 +570,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 		else if( IsMacroIdentifierStartChar(c) &&
 				std::next(it) < it_end &&
 				*std::next(it) != '>' &&
-				( IsIdentifierChar(sprache_char(*std::next(it))) || IsMacroIdentifierStartChar(sprache_char(*std::next(it))) ) )
+				( IsIdentifierChar(GetUTF8FirstChar(std::next(it), it_end)) || IsMacroIdentifierStartChar(GetUTF8FirstChar(std::next(it), it_end)) ) )
 			lexem= ParseMacroIdentifier( it, it_end );
 		else
 		{

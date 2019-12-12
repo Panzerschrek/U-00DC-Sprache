@@ -377,7 +377,7 @@ NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 				rr.push_back( Base36Digit(arg_and_tag.first) );
 				rr.push_back(
 					arg_and_tag.second == Function::c_arg_reference_tag_number
-					? sprache_char('_') :
+					? '_' :
 					Base36Digit(arg_and_tag.second) );
 			}
 
@@ -402,12 +402,12 @@ NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 				rp.push_back( Base36Digit(pollution.dst.first) );
 				rp.push_back(
 					pollution.dst.second == Function::c_arg_reference_tag_number
-					? sprache_char('_') :
+					? '_' :
 					Base36Digit(pollution.dst.second) );
 				rp.push_back( Base36Digit(pollution.src.first) );
 				rp.push_back(
 					pollution.src.second == Function::c_arg_reference_tag_number
-					? sprache_char('_') :
+					? '_' :
 					Base36Digit(pollution.src.second) );
 				rp.push_back( pollution.src_is_mutable ? '1' : '0' );
 			}
