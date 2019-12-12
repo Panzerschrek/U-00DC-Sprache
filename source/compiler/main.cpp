@@ -90,13 +90,13 @@ public:
 			return std::nullopt;
 
 		result.file_content= DecodeUTF8( (*file_mapped)->getBufferStart(), (*file_mapped)->getBufferEnd() );
-		result.full_file_path= ToProgramString( result_path.str().str() );
+		result.full_file_path= result_path.str();
 		return std::move(result);
 	}
 
 	virtual Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path ) override
 	{
-		return ToProgramString( GetFullFilePathInternal( file_path, full_parent_file_path ).str().str() );
+		return GetFullFilePathInternal( file_path, full_parent_file_path ).str().str();
 	}
 
 private:

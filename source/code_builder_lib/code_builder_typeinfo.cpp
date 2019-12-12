@@ -545,7 +545,7 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 					CreateTypeinfoClass(
 						root_namespace,
 						class_type,
-						g_typeinfo_class_functions_list_node_class_name + ToProgramString( function.llvm_function->getName().str() ) );
+						g_typeinfo_class_functions_list_node_class_name + function.llvm_function->getName().str() );
 				Class& node_type_class= *node_type->class_;
 
 				ClassFieldsVector<llvm::Type*> fields_llvm_types;
@@ -620,7 +620,7 @@ Variable CodeBuilder::BuildeTypeinfoClassParentsList( const ClassProxyPtr& class
 
 	for( size_t i= 0u; i < class_.parents.size(); ++i )
 	{
-		const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace, class_type, g_typeinfo_class_parents_list_node_class_name + ToProgramString( std::to_string(i) ) );
+		const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace, class_type, g_typeinfo_class_parents_list_node_class_name + std::to_string(i) );
 		Class& node_type_class= *node_type->class_;
 
 		ClassFieldsVector<llvm::Type*> fields_llvm_types;
@@ -673,7 +673,7 @@ Variable CodeBuilder::BuildTypeinfoFunctionArguments( const Function& function_t
 	for( const Function::Arg& arg : function_type.args )
 	{
 		const size_t arg_index= size_t(&arg - function_type.args.data());
-		const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace, function_type, g_typeinfo_function_arguments_list_node_class_name + ToProgramString( std::to_string(arg_index) ) );
+		const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace, function_type, g_typeinfo_function_arguments_list_node_class_name + std::to_string(arg_index) );
 		Class& node_type_class= *node_type->class_;
 
 		ClassFieldsVector<llvm::Type*> fields_llvm_types;
@@ -736,7 +736,7 @@ Variable CodeBuilder::BuildypeinfoTupleElements( const Tuple& tuple_type, NamesS
 	{
 		const size_t element_index= size_t( &element_type - tuple_type.elements.data() );
 
-		const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace, tuple_type, g_typeinfo_tuple_elements_list_node_class_name + ToProgramString( std::to_string(element_index) ) );
+		const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace, tuple_type, g_typeinfo_tuple_elements_list_node_class_name + std::to_string(element_index) );
 		Class& node_type_class= *node_type->class_;
 
 		ClassFieldsVector<llvm::Type*> fields_llvm_types;

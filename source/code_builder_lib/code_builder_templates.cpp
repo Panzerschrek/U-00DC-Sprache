@@ -49,9 +49,9 @@ ProgramString EncodeTemplateParameters( std::vector<TemplateParam>& deduced_temp
 
 			const llvm::APInt& int_value= variable->constexpr_value->getUniqueInteger();
 			if( IsSignedInteger( raw_type.fundamental_type ) && int_value.isNegative() )
-				r+= ToProgramString( std::to_string(  int64_t(int_value.getLimitedValue()) ) );
+				r+= std::to_string(  int64_t(int_value.getLimitedValue()) );
 			else
-				r+= ToProgramString( std::to_string( uint64_t(int_value.getLimitedValue()) ) );
+				r+= std::to_string( uint64_t(int_value.getLimitedValue()) );
 		}
 		else U_ASSERT(false);
 		r += "_"_SpC;
@@ -86,7 +86,7 @@ void CreateTemplateErrorsContext(
 			if( const Type* const type= known_arg.second.GetTypeName() )
 				args_description+= type->ToString();
 			else if( const Variable* const variable= known_arg.second.GetVariable() )
-				args_description+= ToProgramString( std::to_string( int64_t(variable->constexpr_value->getUniqueInteger().getLimitedValue()) ) );
+				args_description+= std::to_string( int64_t(variable->constexpr_value->getUniqueInteger().getLimitedValue()) );
 			else U_ASSERT(false);
 
 			++args_processed;
@@ -103,7 +103,7 @@ void CreateTemplateErrorsContext(
 			if( const Type* const type= std::get_if<Type>( &arg ) )
 				args_description+= type->ToString();
 			else if( const Variable* const variable= std::get_if<Variable>( &arg ) )
-				args_description+= ToProgramString( std::to_string( int64_t(variable->constexpr_value->getUniqueInteger().getLimitedValue()) ) );
+				args_description+= std::to_string( int64_t(variable->constexpr_value->getUniqueInteger().getLimitedValue()) );
 			else U_ASSERT(false);
 
 			++args_processed;
@@ -1031,7 +1031,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	// Encode name.
 	ProgramString name_encoded= g_template_parameters_namespace_prefix + type_template.syntax_element->name_;
 	name_encoded+= EncodeTemplateParameters( deduced_template_args );
-	name_encoded+= ToProgramString( std::to_string( reinterpret_cast<uintptr_t>(&type_template) ) ); // Encode also template itself, because we can have multiple templates with same name.
+	name_encoded+= std::to_string( reinterpret_cast<uintptr_t>(&type_template) ); // Encode also template itself, because we can have multiple templates with same name.
 
 	{ // Check, if already type generated.
 		const auto it= generated_template_things_storage_.find( name_encoded );
@@ -1280,7 +1280,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	// Template namespace encoding does not needed, because in normal program each function (and template function) have different parameters and mangled name.
 	ProgramString name_encoded= g_template_parameters_namespace_prefix + func_name;
 	name_encoded+= EncodeTemplateParameters( deduced_template_args );
-	name_encoded+= ToProgramString( std::to_string( reinterpret_cast<uintptr_t>(&function_template) ) ); // HACK! use address of template object, because we can have multiple templates with same name.
+	name_encoded+= std::to_string( reinterpret_cast<uintptr_t>(&function_template) ); // HACK! use address of template object, because we can have multiple templates with same name.
 
 	{
 		const auto it= generated_template_things_storage_.find( name_encoded );

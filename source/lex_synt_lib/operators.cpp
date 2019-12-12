@@ -5,6 +5,7 @@
 namespace U
 {
 
+// TODO - return const char*
 ProgramString BinaryOperatorToString( const BinaryOperatorType op )
 {
 	const char* op_str= "";
@@ -36,7 +37,7 @@ ProgramString BinaryOperatorToString( const BinaryOperatorType op )
 	case BinaryOperatorType::Last: U_ASSERT(false); break;
 	};
 
-	return ToProgramString( op_str );
+	return op_str;
 }
 
 ProgramString OverloadedOperatorToString( const OverloadedOperator op )

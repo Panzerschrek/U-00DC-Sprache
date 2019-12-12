@@ -24,27 +24,6 @@ ProgramString operator "" _SpC( const char* str, size_t size )
 	return result;
 }
 
-ProgramString ToProgramString( const char* str )
-{
-	/*
-	ProgramString result;
-
-	while( *str != 0 )
-	{
-		result.push_back( *str );
-		++str;
-	}
-
-	return result;
-	*/
-	return str;
-}
-
-ProgramString ToProgramString( const std::string& str )
-{
-	return ToProgramString( str.c_str() );
-}
-
 size_t GetUTF8CharBytes( const sprache_char c )
 {
 	if( c <= 0x7Fu )

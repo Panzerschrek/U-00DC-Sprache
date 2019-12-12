@@ -811,7 +811,7 @@ Value CodeBuilder::BuildExpressionCode(
 
 	result.llvm_value= result.constexpr_value;
 
-	const ReferencesGraphNodePtr node= std::make_shared<ReferencesGraphNode>( ToProgramString( "numeric constant " + std::to_string(numeric_constant.value_double_) ), ReferencesGraphNode::Kind::Variable );
+	const ReferencesGraphNodePtr node= std::make_shared<ReferencesGraphNode>( "numeric constant " + std::to_string(numeric_constant.value_double_), ReferencesGraphNode::Kind::Variable );
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
 	result.node= node;
 	return Value( std::move(result), numeric_constant.file_pos_ );
@@ -2509,7 +2509,7 @@ Value CodeBuilder::DoCallFunction(
 
 				// Lock references.
 				locked_args_references.emplace_back(
-					std::make_shared<ReferencesGraphNode>( ToProgramString( "reference_arg_" + std::to_string(i) ), ReferencesGraphNode::Kind::ReferenceMut ),
+					std::make_shared<ReferencesGraphNode>( "reference_arg_" + std::to_string(i), ReferencesGraphNode::Kind::ReferenceMut ),
 					function_context );
 				const auto& arg_node= locked_args_references.back().Node();
 				if( expr.node != nullptr )
@@ -2548,7 +2548,7 @@ Value CodeBuilder::DoCallFunction(
 
 				// Lock references.
 				locked_args_references.emplace_back(
-					std::make_shared<ReferencesGraphNode>( ToProgramString( "reference_arg_" + std::to_string(i) ), ReferencesGraphNode::Kind::ReferenceImut ),
+					std::make_shared<ReferencesGraphNode>("reference_arg_" + std::to_string(i), ReferencesGraphNode::Kind::ReferenceImut ),
 					function_context );
 				const auto& arg_node= locked_args_references.back().Node();
 				if( expr.node != nullptr )
@@ -2575,7 +2575,7 @@ Value CodeBuilder::DoCallFunction(
 
 						locked_args_inner_references.emplace_back(
 							std::make_shared<ReferencesGraphNode>(
-								ToProgramString( "arg_lock_" + std::to_string(i) ),
+								"arg_lock_" + std::to_string(i),
 								is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut ),
 							function_context );
 						for( const ReferencesGraphNodePtr& inner_reference : inner_references )
@@ -2592,7 +2592,7 @@ Value CodeBuilder::DoCallFunction(
 		else
 		{
 			locked_args_references.emplace_back(
-				std::make_shared<ReferencesGraphNode>( ToProgramString( "value_arg_" + std::to_string(i) ), ReferencesGraphNode::Kind::Variable ),
+				std::make_shared<ReferencesGraphNode>( "value_arg_" + std::to_string(i), ReferencesGraphNode::Kind::Variable ),
 				function_context );
 
 			if( !ReferenceIsConvertible( expr.type, arg.type, names.GetErrors(), call_file_pos ) &&
@@ -2628,7 +2628,7 @@ Value CodeBuilder::DoCallFunction(
 					for( const ReferencesGraphNodePtr& inner_reference : inner_references )
 						is_mutable= is_mutable || inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut;
 
-					const auto value_arg_inner_node= std::make_shared<ReferencesGraphNode>( ToProgramString( "value_arg_inner_reference_" + std::to_string(i) ), is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+					const auto value_arg_inner_node= std::make_shared<ReferencesGraphNode>( "value_arg_inner_reference_" + std::to_string(i), is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
 					function_context.variables_state.SetNodeInnerReference( locked_args_references.back().Node(), value_arg_inner_node );
 
 					for( const ReferencesGraphNodePtr inner_reference : inner_references )
@@ -2847,7 +2847,7 @@ Value CodeBuilder::DoCallFunction(
 				{
 					inner_reference=
 						std::make_shared<ReferencesGraphNode>(
-							"arg"_SpC + ToProgramString(std::to_string(dst_arg)) + "_inner variable"_SpC,
+							"arg"_SpC + std::to_string(dst_arg) + "_inner variable"_SpC,
 							src_variables_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
 					function_context.variables_state.SetNodeInnerReference( dst_node, inner_reference );
 				}

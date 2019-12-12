@@ -402,7 +402,7 @@ void CodeBuilder::NamesScopeFill(
 	static_assert_.syntax_element= &static_assert_declaration;
 
 	names_scope.AddName(
-		"_sa_"_SpC + ToProgramString( std::to_string(reinterpret_cast<uintptr_t>(&static_assert_declaration)) ),
+		"_sa_"_SpC + std::to_string(reinterpret_cast<uintptr_t>(&static_assert_declaration)),
 		Value( static_assert_, static_assert_declaration.file_pos_ ) );
 }
 

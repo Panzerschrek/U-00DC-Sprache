@@ -353,7 +353,7 @@ Synt::FunctionPtr CppAstConsumer::ProcessFunction( const clang::FunctionDecl& fu
 		Synt::FunctionArgument arg( g_dummy_file_pos );
 		arg.name_= TranslateIdentifier( param->getName().str() );
 		if( arg.name_.empty() )
-			arg.name_= ToProgramString( "arg" + std::to_string(i) );
+			arg.name_= "arg" + std::to_string(i);
 		if( IsKeyword( arg.name_ ) )
 			arg.name_+= "_"_SpC;
 
@@ -564,7 +564,7 @@ ProgramString CppAstConsumer::TranslateRecordType( const clang::RecordType& in_t
 			return it->second;
 		else
 		{
-			const ProgramString& anon_name= DecodeUTF8("ü_anon_record") + ToProgramString( std::to_string( ++unique_name_index_ ) );
+			const ProgramString& anon_name= DecodeUTF8("ü_anon_record") + std::to_string( ++unique_name_index_ );
 			anon_records_names_cache_[ &in_type ]= anon_name;
 			return anon_name;
 		}
@@ -638,7 +638,7 @@ Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::Functi
 	for( const clang::QualType& param_qual : in_type.getParamTypes() )
 	{
 		Synt::FunctionArgument arg( g_dummy_file_pos );
-		arg.name_= ToProgramString( "arg" + std::to_string(i) );
+		arg.name_= "arg" + std::to_string(i);
 
 		const clang::Type* arg_type= param_qual.getTypePtr();
 		if( ( arg_type->isPointerType() || arg_type->isReferenceType() ) && !arg_type->isFunctionPointerType() )
@@ -679,12 +679,12 @@ ProgramString CppAstConsumer::TranslateIdentifier( const std::string& identifier
 {
 	// For case of errors or something anonimous, generate unqiue identifier.
 	if( identifier.empty() )
-		return ToProgramString( "ident" + std::to_string( ++unique_name_index_ ) );
+		return "ident" + std::to_string( ++unique_name_index_ );
 	// In Ü identifier can not start with "_", shadow it. "_" in C++ used for impl identiferes, so, it may not needed.
 	else if( identifier[0] == '_' )
-		return DecodeUTF8("ü") + ToProgramString( identifier );
+		return "ü" + identifier;
 
-	return ToProgramString(identifier);
+	return identifier;
 }
 
 CppAstProcessor::CppAstProcessor( ParsedUnitsPtr out_result )

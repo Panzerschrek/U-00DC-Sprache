@@ -142,7 +142,7 @@ void GetNamespacePrefix_r( const NamesScope& names_scope, std::vector<ProgramStr
 	const ProgramString& name= names_scope.GetThisNamespaceName();
 	if( !name.empty() )
 	{
-		result.push_back( ToProgramString( std::to_string( name.size() ) ) + name );
+		result.push_back( std::to_string( name.size() ) + name );
 	}
 }
 
@@ -157,7 +157,7 @@ NamePair GetNestedName(
 	std::vector<ProgramString> result_splitted;
 	GetNamespacePrefix_r( parent_scope, result_splitted );
 	if( name_needs_num_prefix )
-		result_splitted.push_back( ToProgramString( std::to_string( name.size() ) ) + name );
+		result_splitted.push_back( std::to_string( name.size() ) + name );
 	else
 		result_splitted.push_back( name );
 
@@ -233,7 +233,7 @@ NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 	}
 	else if( const Array* const array_type= type.GetArrayType() )
 	{
-		ProgramString array_prefix= "A"_SpC + ToProgramString( std::to_string( array_type->size ) ) + "_"_SpC;
+		ProgramString array_prefix= "A"_SpC + std::to_string( array_type->size ) + "_"_SpC;
 
 		const NamePair type_name= GetTypeName_r( array_type->type, names_cache );
 		result.full= array_prefix + type_name.full;

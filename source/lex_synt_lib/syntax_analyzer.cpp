@@ -4202,7 +4202,8 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 					l.text= it->second;
 				else
 				{
-					l.text= ToProgramString( "macro_ident_" + std::to_string( reinterpret_cast<uintptr_t>( &unique_macro_identifier_map ) ) + "_" + std::to_string( unique_macro_identifier_map.size() ) );
+					// TODO - Do not use pointer here.
+					l.text= "macro_ident_" + std::to_string( reinterpret_cast<uintptr_t>( &unique_macro_identifier_map ) ) + "_" + std::to_string( unique_macro_identifier_map.size() );
 					unique_macro_identifier_map[ result_element.lexem.text ]= l.text;
 				}
 

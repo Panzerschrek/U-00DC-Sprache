@@ -11,7 +11,7 @@ namespace
 struct KeywordEntry
 {
 	KeywordEntry( const char* str )
-		: program_string( ToProgramString(str) )
+		: program_string( str )
 		, ascii( str )
 	{}
 
