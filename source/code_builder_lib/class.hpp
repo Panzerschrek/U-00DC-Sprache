@@ -1,4 +1,5 @@
 #pragma once
+#include "../lex_synt_lib/program_string.hpp"
 #include "names_scope.hpp"
 
 namespace U

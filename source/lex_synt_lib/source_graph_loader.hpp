@@ -1,7 +1,6 @@
 #pragma once
 #include <memory>
 
-#include "program_string.hpp"
 #include "syntax_analyzer.hpp"
 
 namespace U

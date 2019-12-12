@@ -3,7 +3,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include "../lex_synt_lib/program_string.hpp"
 #include "code_builder_errors.hpp"
 
 namespace U

@@ -6,7 +6,6 @@
 #include <llvm/IR/DerivedTypes.h>
 #include "pop_llvm_warnings.hpp"
 
-#include "../lex_synt_lib/program_string.hpp"
 #include "lang_types.hpp"
 #include "small_types.hpp"
 

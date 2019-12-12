@@ -1,4 +1,3 @@
-#include "assert.hpp"
 #include "program_string.hpp"
 
 namespace U

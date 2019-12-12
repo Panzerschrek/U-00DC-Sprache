@@ -2,6 +2,7 @@
 
 #include "assert.hpp"
 #include "keywords.hpp"
+#include "program_string.hpp"
 #include "program_writer.hpp"
 
 namespace U

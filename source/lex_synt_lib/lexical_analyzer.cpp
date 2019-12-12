@@ -1,7 +1,7 @@
 #include <algorithm>
 
 #include "assert.hpp"
-
+#include "program_string.hpp"
 #include "lexical_analyzer.hpp"
 
 namespace U

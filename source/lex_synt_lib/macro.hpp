@@ -68,7 +68,7 @@ struct Macro
 	std::vector<ResultElement> result_template_elements;
 };
 
-using MacroMap= std::map< std::string, Macro >;
+using MacroMap= ProgramStringMap< Macro >;
 using MacrosByContextMap= std::map< Macro::Context, MacroMap >;
 
 using MacrosPtr= std::shared_ptr<MacrosByContextMap>;
