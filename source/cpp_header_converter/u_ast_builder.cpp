@@ -542,7 +542,7 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 	else if( in_type.isPointerType() )
 	{
 		// Ü does not spports pointers. Use int with size of pointer.
-		return TranslateNamedType( KeywordAscii( Keywords::size_type_ ) );
+		return TranslateNamedType( Keyword( Keywords::size_type_ ) );
 	}
 	else if( const auto decltype_type= llvm::dyn_cast<clang::DecltypeType>( &in_type ) )
 		return TranslateType( *decltype_type->desugar().getTypePtr() );

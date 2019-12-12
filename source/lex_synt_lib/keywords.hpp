@@ -18,7 +18,6 @@ enum class Keywords : unsigned int
 bool IsKeyword( const std::string& str );
 
 const std::string& Keyword( Keywords keyword );
-const char* KeywordAscii( Keywords keyword );
 
 // Relation operators for program string and keyword enum.
 // This operators make posible to write "str == Keywords::var_".

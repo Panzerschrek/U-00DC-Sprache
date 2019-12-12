@@ -51,11 +51,7 @@ Value* NamesScope::AddName(
 	Value value )
 {
 	U_ASSERT( iterating_ == 0u );
-	auto it_bool_pair=
-		names_map_.insert(
-			std::make_pair(
-				name,
-				std::move( value ) ) );
+	auto it_bool_pair= names_map_.insert( std::make_pair( name, std::move( value ) ) );
 
 	if( it_bool_pair.second )
 	{

@@ -110,7 +110,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		llvm_constructor_function );
 	StackVariablesStorage function_variables_storage( function_context );
 	llvm::Value* const this_llvm_value= llvm_constructor_function->args().begin();
-	this_llvm_value->setName( KeywordAscii( Keywords::this_ ) );
+	this_llvm_value->setName( Keyword( Keywords::this_ ) );
 
 	if( the_class.base_class != nullptr )
 	{
@@ -304,7 +304,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		llvm_constructor_function );
 
 	llvm::Value* const this_llvm_value= &*llvm_constructor_function->args().begin();
-	this_llvm_value->setName( KeywordAscii( Keywords::this_ ) );
+	this_llvm_value->setName( Keyword( Keywords::this_ ) );
 	llvm::Value* const src_llvm_value= &*std::next(llvm_constructor_function->args().begin());
 	src_llvm_value->setName( "src" );
 
@@ -424,7 +424,7 @@ void CodeBuilder::GenerateDestructorBody( Class& the_class, const Type& class_ty
 	const Function& destructor_type= *destructor_function .type.GetFunctionType();
 
 	llvm::Value* const this_llvm_value= &*destructor_function .llvm_function->args().begin();
-	this_llvm_value->setName( KeywordAscii( Keywords::this_ ) );
+	this_llvm_value->setName( Keyword( Keywords::this_ ) );
 
 	Variable this_;
 	this_.type= class_type;
@@ -597,7 +597,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 		llvm_op_function );
 
 	llvm::Value* const this_llvm_value= &*llvm_op_function->args().begin();
-	this_llvm_value->setName( KeywordAscii( Keywords::this_ ) );
+	this_llvm_value->setName( Keyword( Keywords::this_ ) );
 	llvm::Value* const src_llvm_value= &*std::next(llvm_op_function->args().begin());
 	src_llvm_value->setName( "src" );
 

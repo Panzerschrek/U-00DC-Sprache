@@ -8,20 +8,9 @@ namespace U
 namespace
 {
 
-struct KeywordEntry
-{
-	KeywordEntry( const char* str )
-		: program_string( str )
-		, ascii( str )
-	{}
-
-	const std::string program_string;
-	const char* const ascii;
-};
-
 struct Globals
 {
-	const KeywordEntry (&keywords)[ size_t(Keywords::LastKeyword) ];
+	const std::string (&keywords)[ size_t(Keywords::LastKeyword) ];
 	const ProgramStringSet& keywords_set;
 };
 
@@ -29,7 +18,7 @@ struct Globals
 // Use in-function static variables for cross-module initialization order setup.
 const Globals& GetGlobals()
 {
-	static const KeywordEntry c_keywords[ size_t(Keywords::LastKeyword) ]
+	static const std::string c_keywords[ size_t(Keywords::LastKeyword) ]
 	{
 		#define PROCESS_KEYWORD(x) #x,
 		#include "keywords_list.hpp"
@@ -40,8 +29,8 @@ const Globals& GetGlobals()
 	[]() -> ProgramStringSet
 	{
 		ProgramStringSet result;
-		for( const KeywordEntry& k : c_keywords )
-			result.emplace( k.program_string );
+		for( const std::string& k : c_keywords )
+			result.emplace( k );
 		return result;
 	}
 	();
@@ -62,13 +51,7 @@ const std::string& Keyword( Keywords keyword )
 {
 	U_ASSERT( keyword < Keywords::LastKeyword );
 
-	return GetGlobals().keywords[ size_t(keyword) ].program_string;
-}
-
-const char* KeywordAscii( const Keywords keyword )
-{
-	U_ASSERT( keyword < Keywords::LastKeyword );
-	return GetGlobals().keywords[ size_t(keyword) ].ascii;
+	return GetGlobals().keywords[ size_t(keyword) ];
 }
 
 bool operator==( Keywords keyword, const std::string& str )
