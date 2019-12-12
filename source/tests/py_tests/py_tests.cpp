@@ -36,7 +36,7 @@ public:
 	{
 		U_UNUSED( full_parent_file_path );
 		if( file_path == file_path_ )
-			return LoadFileResult{ file_path_, DecodeUTF8( file_text_ ) };
+			return LoadFileResult{ file_path_, file_text_ };
 		return std::nullopt;
 	}
 
@@ -64,7 +64,7 @@ std::unique_ptr<CodeBuilder> CreateCodeBuilder()
 
 std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 {
-	const std::string file_path= "_"_SpC;
+	const std::string file_path= "_";
 	const SourceGraphPtr source_graph=
 		SourceGraphLoader( std::make_shared<SingeFileVfs>( file_path, text ) ).LoadSource( file_path );
 
@@ -77,7 +77,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	ICodeBuilder::BuildResult build_result= CreateCodeBuilder()->BuildProgram( *source_graph );
 
 	for( const CodeBuilderError& error : build_result.errors )
-		std::cerr << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << ToUTF8( error.text ) << "\n";
+		std::cerr << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << error.text << "\n";
 
 	if( !build_result.errors.empty() )
 		return nullptr;
@@ -319,8 +319,7 @@ PyObject* BuildFilePos( const FilePos& file_pos )
 
 PyObject* BuildString( const std::string& str )
 {
-	const std::string str_utf8= ToUTF8( str );
-	return PyUnicode_DecodeUTF8( str_utf8.data(), str_utf8.size(), nullptr );
+	return PyUnicode_DecodeUTF8( str.data(), str.size(), nullptr );
 }
 
 PyObject* BuildErrorsList( const CodeBuilderErrorsContainer& errors )
@@ -365,7 +364,7 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 	if( !PyArg_ParseTuple( args, "s", &program_text ) )
 		return nullptr;
 
-	const std::string file_path= ToProgramString("_");
+	const std::string file_path= "_";
 	const SourceGraphPtr source_graph=
 		SourceGraphLoader( std::make_shared<SingeFileVfs>( file_path, program_text ) ).LoadSource( file_path );
 
