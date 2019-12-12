@@ -67,7 +67,7 @@ static void DoTest(
 		}
 	}
 
-	llvm::Function* function= engine->FindFunctionNamed( func_name.c_str() );
+	llvm::Function* function= engine->FindFunctionNamed( func_name );
 	U_TEST_ASSERT( function != nullptr );
 
 	for( const std::vector<T>& args : args_set )
