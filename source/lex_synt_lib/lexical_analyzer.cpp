@@ -31,6 +31,16 @@ bool operator<=( const FilePos& l, const FilePos& r )
 	return l < r || l == r;
 }
 
+bool operator==(const Lexem& l, const Lexem& r )
+{
+	return l.text == r.text && l.file_pos == r.file_pos && l.type == r.type;
+}
+
+bool operator!=(const Lexem& l, const Lexem& r )
+{
+	return !(l == r );
+}
+
 namespace
 {
 
@@ -450,14 +460,24 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 	int comments_depth= 0;
 
 	unsigned short line= 1; // Count lines from "1", in human-readable format.
-	Iterator last_newline_it= program_text_data;
+	unsigned int pos_in_line= 0u;
 
 	std::string fixed_lexem_str;
 	while( it < it_end )
 	{
+		auto it_prev= it;
+		const auto advance_pos_in_line=
+		[&]
+		{
+			while( it_prev < it )
+			{
+				ReadNextUTF8Char( it_prev, it );
+				++pos_in_line;
+			}
+		};
+
 		const uint32_t c= GetUTF8FirstChar( it, it_end );
 		Lexem lexem;
-		const auto pos_in_line= static_cast<unsigned short>( it - last_newline_it );
 
 		// line comment.
 		if( c == '/' && it_end - it > 1 && *(it+1) == '/' )
@@ -466,7 +486,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 			{
 				Lexem comment_lexem;
 				comment_lexem.file_pos.line= line;
-				comment_lexem.file_pos.pos_in_line= pos_in_line;
+				comment_lexem.file_pos.pos_in_line= static_cast<unsigned short>(pos_in_line);
 				comment_lexem.type= Lexem::Type::Comment;
 
 				while( it < it_end && !IsNewline(*it) )
@@ -483,22 +503,24 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 
 			++line;
 			++it;
-			last_newline_it= it;
+			pos_in_line= 0u;
 			continue;
 		}
-		if( c == '/' && it_end - it > 1 && *(it+1) == '*' )
+		if( c == '/' && it_end - it > 1 && *std::next(it) == '*' )
 		{
 			++comments_depth;
 			if( collect_comments )
 			{
 				Lexem comment_lexem;
 				comment_lexem.file_pos.line= line;
-				comment_lexem.file_pos.pos_in_line= pos_in_line;
+				comment_lexem.file_pos.pos_in_line= static_cast<unsigned short>(pos_in_line);
 				comment_lexem.type= Lexem::Type::Comment;
 				comment_lexem.text= "/*";
+				advance_pos_in_line();
 				result.lexems.emplace_back( std::move(comment_lexem) );
 			}
 			it+= 2;
+			pos_in_line+= 2u;
 			continue;
 		}
 		if( c == '*' && it_end - it > 1 && *(it+1) == '/' )
@@ -508,28 +530,31 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 			{
 				Lexem comment_lexem;
 				comment_lexem.file_pos.line= line;
-				comment_lexem.file_pos.pos_in_line= pos_in_line;
+				comment_lexem.file_pos.pos_in_line= static_cast<unsigned short>(pos_in_line);
 				comment_lexem.type= Lexem::Type::Comment;
 				comment_lexem.text= "*/";
-				result.lexems.emplace_back( std::move(comment_lexem) );
+				advance_pos_in_line();
+				result.lexems.push_back( std::move(comment_lexem) );
 			}
 			else if( comments_depth < 0 )
 				result.error_messages.emplace_back(
-					std::to_string(line) + ":" + std::to_string(it - last_newline_it) +
+					std::to_string(line) + ":" + std::to_string(pos_in_line) +
 					" Lexical error: unexpected */" );
 			it+= 2;
+			pos_in_line+= 2u;
 			continue;
 		}
 		else if( IsNewline(c) )
 		{
 			++line;
 			++it;
-			last_newline_it= it;
+			pos_in_line= 0u;
 			continue;
 		}
 		else if( IsWhitespace(c) )
 		{
 			++it;
+			++pos_in_line;
 			continue;
 		}
 		else if( c == '"' )
@@ -539,9 +564,10 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 			{
 				// Parse string suffix.
 				lexem.file_pos.line= line;
-				lexem.file_pos.pos_in_line= pos_in_line;
+				lexem.file_pos.pos_in_line= static_cast<unsigned short>(pos_in_line);
+				advance_pos_in_line();
 				if( comments_depth == 0 || collect_comments )
-					result.lexems.emplace_back( std::move(lexem) );
+					result.lexems.push_back( std::move(lexem) );
 
 				lexem= ParseIdentifier( it, it_end );
 				lexem.type= Lexem::Type::LiteralSuffix;
@@ -578,27 +604,27 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 
 			if( comments_depth == 0 )
 				result.error_messages.emplace_back(
-					std::to_string(line) + ":" + std::to_string(it - last_newline_it) +
+					std::to_string(line) + ":" + std::to_string(pos_in_line) +
 					" Lexical error: unrecognized character: " + std::to_string(*it) );
 			++it;
 			continue;
 		}
 
 	push_lexem:
-		if( comments_depth != 0 && !collect_comments )
-			continue;
-
 		lexem.file_pos.file_index= 0;
 		lexem.file_pos.line= line;
-		lexem.file_pos.pos_in_line= static_cast<unsigned short>( pos_in_line );
+		lexem.file_pos.pos_in_line= static_cast<unsigned short>(pos_in_line);
 
-		result.lexems.emplace_back( std::move(lexem) );
+		advance_pos_in_line();
+
+		if( !( comments_depth != 0 && !collect_comments ) )
+			result.lexems.push_back( std::move(lexem) );
 	} // while not end
 
 	if( !collect_comments )
 		for( int i= 0; i < comments_depth; ++i )
 			result.error_messages.emplace_back(
-				std::to_string(line) + ":" + std::to_string(it - last_newline_it) +
+				std::to_string(line) + ":" + std::to_string(pos_in_line) +
 				" Lexical error: expected */" );
 
 	Lexem eof_lexem;
@@ -606,7 +632,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 	eof_lexem.text= "EOF";
 	eof_lexem.file_pos.file_index= 0;
 	eof_lexem.file_pos.line= static_cast<unsigned short>(line);
-	eof_lexem.file_pos.pos_in_line= static_cast<unsigned short>( it - last_newline_it );
+	eof_lexem.file_pos.pos_in_line= static_cast<unsigned short>(pos_in_line);
 
 	result.lexems.emplace_back( std::move(eof_lexem) );
 
