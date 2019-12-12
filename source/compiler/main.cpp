@@ -96,7 +96,7 @@ public:
 
 	virtual Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path ) override
 	{
-		return GetFullFilePathInternal( file_path, full_parent_file_path ).str().str();
+		return GetFullFilePathInternal( file_path, full_parent_file_path ).str();
 	}
 
 private:
@@ -208,7 +208,7 @@ void PrintAvailableTargets()
 	{
 		if( !targets_list.empty() )
 			targets_list+= ", ";
-		targets_list+= std::string(target.getName());
+		targets_list+= target.getName();
 	}
 	std::cout << "Available targets: " << targets_list << std::endl;
 }

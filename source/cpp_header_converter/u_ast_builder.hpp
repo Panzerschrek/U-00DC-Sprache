@@ -37,7 +37,7 @@ private:
 	Synt::NamedTypeName TranslateNamedType( const std::string& cpp_type_name );
 	Synt::FunctionTypePtr TranslateFunctionType( const clang::FunctionProtoType& in_type );
 
-	std::string TranslateIdentifier( const std::string& identifier );
+	std::string TranslateIdentifier( llvm::StringRef identifier );
 
 private:
 	Synt::ProgramElements& root_program_elements_;
