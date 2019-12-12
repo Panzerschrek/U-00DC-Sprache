@@ -8,8 +8,8 @@
 namespace U
 {
 
-using sprache_char= std::uint16_t;
-using ProgramString= std::basic_string<sprache_char>;
+using sprache_char= char;
+using ProgramString= std::string;
 
 // Char to program string literal.
 ProgramString operator "" _SpC( const char* str, size_t size );

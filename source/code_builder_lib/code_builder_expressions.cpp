@@ -863,23 +863,25 @@ Value CodeBuilder::BuildExpressionCode(
 
 	if( type_suffix.empty() || type_suffix == "u8"_SpC )
 	{
-		const std::string value= ToUTF8( string_literal.value_ );
-
 		char_type= U_FundamentalType::char8;
-		array_size= value.size();
-		initializer= llvm::ConstantDataArray::getString( llvm_context_, value, false /* not null terminated */ );
+		array_size= string_literal.value_.size();
+		initializer= llvm::ConstantDataArray::getString( llvm_context_, string_literal.value_, false /* not null terminated */ );
 	}
 	else if( type_suffix == "u16"_SpC )
 	{
+		// TODO - convert utf-8 to utf-16.
+		std::vector<uint32_t> str;
+		str.resize( string_literal.value_.size() );
+		for( size_t i= 0u; i < string_literal.value_.size(); ++i )
+			str[i]= string_literal.value_[i];
+
 		char_type= U_FundamentalType::char16;
-		array_size= string_literal.value_.size();
-		initializer=
-			llvm::ConstantDataArray::get(
-				llvm_context_,
-				llvm::ArrayRef<uint16_t>(string_literal.value_.data(), string_literal.value_.size() ) );
+		array_size= str.size();
+		initializer= llvm::ConstantDataArray::get( llvm_context_, str );
 	}
 	else if( type_suffix == "u32"_SpC )
 	{
+		// TODO - convert utf-8 to utf-32.
 		std::vector<uint32_t> str;
 		str.resize( string_literal.value_.size() );
 		for( size_t i= 0u; i < string_literal.value_.size(); ++i )
@@ -922,7 +924,7 @@ Value CodeBuilder::BuildExpressionCode(
 	}
 	else
 		REPORT_ERROR( UnknownStringLiteralSuffix, names.GetErrors(), string_literal.file_pos_, type_suffix );
-	
+
 	if( initializer == nullptr )
 		return ErrorValue();
 

@@ -26,6 +26,7 @@ ProgramString operator "" _SpC( const char* str, size_t size )
 
 ProgramString ToProgramString( const char* str )
 {
+	/*
 	ProgramString result;
 
 	while( *str != 0 )
@@ -35,6 +36,8 @@ ProgramString ToProgramString( const char* str )
 	}
 
 	return result;
+	*/
+	return str;
 }
 
 ProgramString ToProgramString( const std::string& str )
@@ -78,6 +81,7 @@ std::string ToUTF8( const ProgramString& str )
 
 ProgramString DecodeUTF8( const char* start, const char* end )
 {
+	/*
 	U_ASSERT( start <= end );
 
 	// c_bit_masks[4] - menas save first 4 bits
@@ -180,6 +184,8 @@ ProgramString DecodeUTF8( const char* start, const char* end )
 	}
 
 	return result;
+	*/
+	return ProgramString( start, end );
 }
 
 ProgramString DecodeUTF8( const std::vector<char>& str )
