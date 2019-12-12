@@ -494,6 +494,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 					comment_lexem.text.push_back(*it);
 					++it;
 				}
+				advance_pos_in_line();
 				result.lexems.emplace_back( std::move(comment_lexem) );
 			}
 			else

@@ -4,7 +4,6 @@
 #include "../lex_synt_lib/assert.hpp"
 #include "../lex_synt_lib/lexical_analyzer.hpp"
 #include "../lex_synt_lib/keywords.hpp"
-#include "strings.hpp"
 
 #include "syntax_highlighter.hpp"
 
@@ -56,7 +55,8 @@ SyntaxHighlighter::SyntaxHighlighter()
 
 void SyntaxHighlighter::highlightBlock( const QString& text )
 {
-	LexicalAnalysisResult lex_result= LexicalAnalysis( text.utf16(), size_t(text.size()), true );
+	const std::string text_utf8= text.toStdString();
+	LexicalAnalysisResult lex_result= LexicalAnalysis( text_utf8.data(), text_utf8.size(), true );
 	if( !lex_result.error_messages.empty() )
 	{
 		setFormat( 0, text.size(), formatForCategory( int(Formats::LexicalError) ) );
@@ -93,9 +93,9 @@ void SyntaxHighlighter::highlightBlock( const QString& text )
 		{
 		case Lexem::Type::Comment:
 			format= Formats::Comment;
-			if( lexem.text == "/*"_SpC )
+			if( lexem.text == "/*" )
 				++cur_comments_state;
-			else if( lexem.text == "*/"_SpC )
+			else if( lexem.text == "*/" )
 				--cur_comments_state;
 			break;
 
