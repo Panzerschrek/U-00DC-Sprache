@@ -238,7 +238,7 @@ void CppAstConsumer::ProcessClassDecl( const clang::Decl& decl, Synt::ClassEleme
 		field.type= TranslateType( *field_type );
 		field.name= TranslateIdentifier( field_decl->getName().str() );
 		if( IsKeyword( field.name ) )
-			field.name+= "_"_SpC;
+			field.name+= "_";
 
 		class_elements.push_back( std::move(field) );
 	}
@@ -316,7 +316,7 @@ Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_de
 			array_type.size= std::make_unique<Synt::Expression>( std::move(numeric_constant) );
 
 			Synt::ClassField field( g_dummy_file_pos );
-			field.name= "union_content"_SpC;
+			field.name= "union_content";
 			field.type= std::move(array_type);
 			class_->elements_.push_back( std::move(field) );
 		}
@@ -355,7 +355,7 @@ Synt::FunctionPtr CppAstConsumer::ProcessFunction( const clang::FunctionDecl& fu
 		if( arg.name_.empty() )
 			arg.name_= "arg" + std::to_string(i);
 		if( IsKeyword( arg.name_ ) )
-			arg.name_+= "_"_SpC;
+			arg.name_+= "_";
 
 		const clang::Type* arg_type= param->getType().getTypePtr();
 		if( ( arg_type->isPointerType() || arg_type->isReferenceType() ) && ! arg_type->isFunctionPointerType() )
@@ -446,7 +446,7 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 	else
 	{
 		auto enum_namespace_= std::make_unique<Synt::Namespace>( g_dummy_file_pos );
-		enum_namespace_->name_= enum_name + "_namespace"_SpC;
+		enum_namespace_->name_= enum_name + "_namespace";
 
 		Synt::VariablesDeclaration variables_declaration( g_dummy_file_pos );
 		variables_declaration.type= TranslateType( *enum_decl.getIntegerType().getTypePtr() );

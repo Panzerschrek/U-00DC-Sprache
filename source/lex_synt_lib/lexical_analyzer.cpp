@@ -44,78 +44,78 @@ const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
 	},
 	FixedLexemsMap
 	{ // One symbol lexems.
-		{ "("_SpC, Lexem::Type::BracketLeft },
-		{ ")"_SpC, Lexem::Type::BracketRight },
-		{ "["_SpC, Lexem::Type::SquareBracketLeft },
-		{ "]"_SpC, Lexem::Type::SquareBracketRight },
-		{ "{"_SpC, Lexem::Type::BraceLeft },
-		{ "}"_SpC, Lexem::Type::BraceRight },
+		{ "(", Lexem::Type::BracketLeft },
+		{ ")", Lexem::Type::BracketRight },
+		{ "[", Lexem::Type::SquareBracketLeft },
+		{ "]", Lexem::Type::SquareBracketRight },
+		{ "{", Lexem::Type::BraceLeft },
+		{ "}", Lexem::Type::BraceRight },
 
-		{ ","_SpC, Lexem::Type::Comma },
-		{ "."_SpC, Lexem::Type::Dot },
-		{ ":"_SpC, Lexem::Type::Colon },
-		{ ";"_SpC, Lexem::Type::Semicolon },
-		{ "?"_SpC, Lexem::Type::Question },
+		{ ",", Lexem::Type::Comma },
+		{ ".", Lexem::Type::Dot },
+		{ ":", Lexem::Type::Colon },
+		{ ";", Lexem::Type::Semicolon },
+		{ "?", Lexem::Type::Question },
 
-		{ "="_SpC, Lexem::Type::Assignment },
-		{ "+"_SpC, Lexem::Type::Plus },
-		{ "-"_SpC, Lexem::Type::Minus },
-		{ "*"_SpC, Lexem::Type::Star },
-		{ "/"_SpC, Lexem::Type::Slash },
-		{ "%"_SpC, Lexem::Type::Percent },
+		{ "=", Lexem::Type::Assignment },
+		{ "+", Lexem::Type::Plus },
+		{ "-", Lexem::Type::Minus },
+		{ "*", Lexem::Type::Star },
+		{ "/", Lexem::Type::Slash },
+		{ "%", Lexem::Type::Percent },
 
-		{ "<"_SpC, Lexem::Type::CompareLess },
-		{ ">"_SpC, Lexem::Type::CompareGreater },
+		{ "<", Lexem::Type::CompareLess },
+		{ ">", Lexem::Type::CompareGreater },
 
-		{ "&"_SpC, Lexem::Type::And },
-		{ "|"_SpC, Lexem::Type::Or },
-		{ "^"_SpC, Lexem::Type::Xor },
-		{ "~"_SpC, Lexem::Type::Tilda },
-		{ "!"_SpC, Lexem::Type::Not },
+		{ "&", Lexem::Type::And },
+		{ "|", Lexem::Type::Or },
+		{ "^", Lexem::Type::Xor },
+		{ "~", Lexem::Type::Tilda },
+		{ "!", Lexem::Type::Not },
 
-		{ "'"_SpC, Lexem::Type::Apostrophe },
+		{ "'", Lexem::Type::Apostrophe },
 	},
 	FixedLexemsMap
 	{ // Two symbol lexems.
-		{ "</"_SpC, Lexem::Type::TemplateBracketLeft  },
-		{ "/>"_SpC, Lexem::Type::TemplateBracketRight },
+		{ "</", Lexem::Type::TemplateBracketLeft  },
+		{ "/>", Lexem::Type::TemplateBracketRight },
 
-		{ "<?"_SpC, Lexem::Type::MacroBracketLeft  },
-		{ "?>"_SpC, Lexem::Type::MacroBracketRight },
+		{ "<?", Lexem::Type::MacroBracketLeft  },
+		{ "?>", Lexem::Type::MacroBracketRight },
 
-		{ "::"_SpC, Lexem::Type::Scope },
+		{ "::", Lexem::Type::Scope },
 
-		{ "++"_SpC, Lexem::Type::Increment },
-		{ "--"_SpC, Lexem::Type::Decrement },
+		{ "++", Lexem::Type::Increment },
+		{ "--", Lexem::Type::Decrement },
 
-		{ "=="_SpC, Lexem::Type::CompareEqual },
-		{ "!="_SpC, Lexem::Type::CompareNotEqual },
-		{ "<="_SpC, Lexem::Type::CompareLessOrEqual },
-		{ ">="_SpC, Lexem::Type::CompareGreaterOrEqual },
+		{ "==", Lexem::Type::CompareEqual },
+		{ "!=", Lexem::Type::CompareNotEqual },
+		{ "<=", Lexem::Type::CompareLessOrEqual },
+		{ ">=", Lexem::Type::CompareGreaterOrEqual },
 
-		{ "&&"_SpC, Lexem::Type::Conjunction },
-		{ "||"_SpC, Lexem::Type::Disjunction },
+		{ "&&", Lexem::Type::Conjunction },
+		{ "||", Lexem::Type::Disjunction },
 
-		{ "+="_SpC, Lexem::Type::AssignAdd },
-		{ "-="_SpC, Lexem::Type::AssignSub },
-		{ "*="_SpC, Lexem::Type::AssignMul },
-		{ "/="_SpC, Lexem::Type::AssignDiv },
-		{ "%="_SpC, Lexem::Type::AssignRem },
-		{ "&="_SpC, Lexem::Type::AssignAnd },
-		{ "|="_SpC, Lexem::Type::AssignOr  },
-		{ "^="_SpC, Lexem::Type::AssignXor },
+		{ "+=", Lexem::Type::AssignAdd },
+		{ "-=", Lexem::Type::AssignSub },
+		{ "*=", Lexem::Type::AssignMul },
+		{ "/=", Lexem::Type::AssignDiv },
+		{ "%=", Lexem::Type::AssignRem },
+		{ "&=", Lexem::Type::AssignAnd },
+		{ "|=", Lexem::Type::AssignOr  },
+		{ "^=", Lexem::Type::AssignXor },
 
-		{ "<<"_SpC, Lexem::Type::ShiftLeft  },
-		{ ">>"_SpC, Lexem::Type::ShiftRight },
+		{ "<<", Lexem::Type::ShiftLeft  },
+		{ ">>", Lexem::Type::ShiftRight },
 
-		{ "<-"_SpC, Lexem::Type::LeftArrow  },
-		{ "->"_SpC, Lexem::Type::RightArrow },
+		{ "<-", Lexem::Type::LeftArrow  },
+		{ "->", Lexem::Type::RightArrow },
 	},
 	FixedLexemsMap
 	{ // Three symbol lexems.
-		{ "<<="_SpC, Lexem::Type::AssignShiftLeft  },
-		{ ">>="_SpC, Lexem::Type::AssignShiftRight },
-		{ "..."_SpC, Lexem::Type::Ellipsis },
+		{ "<<=", Lexem::Type::AssignShiftLeft  },
+		{ ">>=", Lexem::Type::AssignShiftRight },
+		{ "...", Lexem::Type::Ellipsis },
 	},
 };
 
@@ -483,7 +483,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 				comment_lexem.file_pos.line= line;
 				comment_lexem.file_pos.pos_in_line= pos_in_line;
 				comment_lexem.type= Lexem::Type::Comment;
-				comment_lexem.text= "/*"_SpC;
+				comment_lexem.text= "/*";
 				result.lexems.emplace_back( std::move(comment_lexem) );
 			}
 			it+= 2;
@@ -498,7 +498,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 				comment_lexem.file_pos.line= line;
 				comment_lexem.file_pos.pos_in_line= pos_in_line;
 				comment_lexem.type= Lexem::Type::Comment;
-				comment_lexem.text= "*/"_SpC;
+				comment_lexem.text= "*/";
 				result.lexems.emplace_back( std::move(comment_lexem) );
 			}
 			else if( comments_depth < 0 )
@@ -591,7 +591,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 
 	Lexem eof_lexem;
 	eof_lexem.type= Lexem::Type::EndOfFile;
-	eof_lexem.text= "EOF"_SpC;
+	eof_lexem.text= "EOF";
 	eof_lexem.file_pos.file_index= 0;
 	eof_lexem.file_pos.line= static_cast<unsigned short>(line);
 	eof_lexem.file_pos.pos_in_line= static_cast<unsigned short>( it - last_newline_it );

@@ -40,10 +40,10 @@ void NamesScope::SetThisNamespaceName( ProgramString name )
 ProgramString NamesScope::ToString() const
 {
 	if( parent_ == nullptr ) // Global namespace have no name.
-		return ""_SpC;
+		return "";
 	if( parent_->parent_ == nullptr )
 		return name_;
-	return parent_->ToString() + "::"_SpC + name_;
+	return parent_->ToString() + "::" + name_;
 }
 
 Value* NamesScope::AddName(

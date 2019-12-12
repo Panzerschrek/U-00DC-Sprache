@@ -190,7 +190,7 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 {
 	BuildResultInternal result;
 
-	result.names_map= std::make_unique<NamesScope>( ""_SpC, nullptr );
+	result.names_map= std::make_unique<NamesScope>( "", nullptr );
 	result.names_map->SetErrors( global_errors_ );
 	result.class_table= std::make_unique<ClassTable>();
 	FillGlobalNamesScope( *result.names_map );
@@ -1419,7 +1419,7 @@ Type CodeBuilder::BuildFuncCode(
 		!EnsureTypeCompleteness( function_type.return_type, TypeCompleteness::Complete ) )
 		REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_file_pos, function_type.return_type );
 
-	NamesScope function_names( ""_SpC, &parent_names_scope );
+	NamesScope function_names( "", &parent_names_scope );
 	FunctionContext function_context(
 		func_variable.return_type_is_auto ? std::optional<Type>(): function_type.return_type,
 		function_type.return_value_is_mutable,
@@ -1502,10 +1502,10 @@ Type CodeBuilder::BuildFuncCode(
 		if (arg.type.ReferencesTagsCount() > 0u )
 		{
 			// Create inner node + root variable.
-			const auto accesible_variable= std::make_shared<ReferencesGraphNode>( arg_name + " inner variable"_SpC, ReferencesGraphNode::Kind::Variable );
+			const auto accesible_variable= std::make_shared<ReferencesGraphNode>( arg_name + " inner variable", ReferencesGraphNode::Kind::Variable );
 			function_context.variables_state.AddNode( accesible_variable );
 
-			const auto inner_reference= std::make_shared<ReferencesGraphNode>( arg_name + " inner reference"_SpC, ReferencesGraphNode::Kind::ReferenceMut );
+			const auto inner_reference= std::make_shared<ReferencesGraphNode>( arg_name + " inner reference", ReferencesGraphNode::Kind::ReferenceMut );
 			function_context.variables_state.SetNodeInnerReference( var_node, inner_reference );
 			function_context.variables_state.AddLink( accesible_variable, inner_reference );
 
@@ -1946,7 +1946,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
-	NamesScope block_names( ""_SpC, &names );
+	NamesScope block_names( "", &names );
 	const StackVariablesStorage block_variables_storage( function_context );
 
 	// Save unsafe flag.
@@ -2300,7 +2300,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 				if( initializer_expression_inner_node != nullptr )
 				{
 					const ReferencesGraphNodePtr inner_reference= std::make_shared<ReferencesGraphNode>(
-						"var"_SpC + auto_variable_declaration.name + " inner node"_SpC,
+						"var" + auto_variable_declaration.name + " inner node",
 						initializer_expression_inner_node->kind);
 					function_context.variables_state.SetNodeInnerReference( var_node, inner_reference );
 					function_context.variables_state.AddLink( initializer_expression_inner_node, inner_reference );
@@ -2332,7 +2332,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 					for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
 						node_is_mutable= node_is_mutable || src_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut;
 
-					const auto dst_node_inner_reference= std::make_shared<ReferencesGraphNode>( var_node->name + " inner variable"_SpC, node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+					const auto dst_node_inner_reference= std::make_shared<ReferencesGraphNode>( var_node->name + " inner variable", node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
 					function_context.variables_state.SetNodeInnerReference( var_node, dst_node_inner_reference );
 					for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
 						function_context.variables_state.AddLink( src_node_inner_reference, dst_node_inner_reference );
@@ -2489,7 +2489,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		{ // Lock references to return value variables.
 			ReferencesGraphNodeHolder return_value_lock(
 				std::make_shared<ReferencesGraphNode>(
-					"ret result"_SpC,
+					"ret result",
 					function_context.return_value_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut ),
 				function_context );
 			if( expression_result.node != nullptr )
@@ -2596,7 +2596,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	if( sequence_expression.node != nullptr )
 		sequence_lock.emplace(
 			std::make_shared<ReferencesGraphNode>(
-				sequence_expression.node->name + " seequence lock"_SpC,
+				sequence_expression.node->name + " seequence lock",
 				sequence_expression.value_type == ValueType::Reference ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut ),
 			function_context );
 
@@ -2608,7 +2608,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		for( const Type& element_type : tuple_type->elements )
 		{
 			const size_t element_index= size_t( &element_type - tuple_type->elements.data() );
-			NamesScope loop_names( ""_SpC, &names );
+			NamesScope loop_names( "", &names );
 			const StackVariablesStorage element_pass_variables_storage( function_context );
 
 			Variable variable;
@@ -2677,7 +2677,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 						for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
 							node_is_mutable= node_is_mutable || src_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut;
 
-						const auto dst_node_inner_reference= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable"_SpC, node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+						const auto dst_node_inner_reference= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable", node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
 						function_context.variables_state.SetNodeInnerReference( dst_node, dst_node_inner_reference );
 						for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
 							function_context.variables_state.AddLink( src_node_inner_reference, dst_node_inner_reference );
@@ -3533,7 +3533,7 @@ Value* CodeBuilder::ResolveValue(
 	}
 
 	if( value != nullptr && value->GetYetNotDeducedTemplateArg() != nullptr )
-		REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope.GetErrors(), file_pos, value == nullptr ? ""_SpC : last_component_name );
+		REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope.GetErrors(), file_pos, value == nullptr ? "" : last_component_name );
 
 	// Complete some things in resolve.
 	if( value != nullptr && resolve_mode != ResolveMode::ForDeclaration )
@@ -3563,20 +3563,20 @@ U_FundamentalType CodeBuilder::GetNumericConstantType( const Synt::NumericConsta
 
 	// Allow simple "u" suffix for unsigned 32bit values.
 	// SPRACHE_TODO - maybe add "i" suffix for i32 type?
-	if( type_suffix == "u"_SpC )
+	if( type_suffix == "u" )
 		return U_FundamentalType::u32;
 	// Suffix for size_type
-	else if( type_suffix == "s"_SpC )
+	else if( type_suffix == "s" )
 		return size_type_.GetFundamentalType()->fundamental_type;
 	// Simple "f" suffix for 32bit floats.
-	else if( type_suffix == "f"_SpC )
+	else if( type_suffix == "f" )
 		return U_FundamentalType::f32;
 	// Short suffixes for chars
-	else if( type_suffix ==  "c8"_SpC )
+	else if( type_suffix ==  "c8" )
 		return U_FundamentalType::char8 ;
-	else if( type_suffix == "c16"_SpC )
+	else if( type_suffix == "c16" )
 		return U_FundamentalType::char16;
-	else if( type_suffix == "c32"_SpC )
+	else if( type_suffix == "c32" )
 		return U_FundamentalType::char32;
 
 	auto it= g_types_map.find( type_suffix );

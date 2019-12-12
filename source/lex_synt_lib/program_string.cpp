@@ -9,21 +9,6 @@
 namespace U
 {
 
-ProgramString operator "" _SpC( const char* str, size_t size )
-{
-	ProgramString result;
-	result.reserve( size );
-
-	const char* end= str + size;
-	while( str < end )
-	{
-		result.push_back( *str );
-		++str;
-	}
-
-	return result;
-}
-
 size_t GetUTF8CharBytes( const sprache_char c )
 {
 	if( c <= 0x7Fu )

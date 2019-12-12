@@ -12,19 +12,19 @@ namespace CodeBuilderPrivate
 namespace
 {
 
-const ProgramString g_next_node_name= "next"_SpC;
-const ProgramString g_name_field_name= "name"_SpC;
-const ProgramString g_type_field_name= "type"_SpC;
+const ProgramString g_next_node_name= "next";
+const ProgramString g_name_field_name= "name";
+const ProgramString g_type_field_name= "type";
 const FilePos g_dummy_file_pos{ 0u, 0u, 0u };
 
-const ProgramString g_typeinfo_root_class_name= "TI"_SpC;
-const ProgramString g_typeinfo_enum_elements_list_node_class_name= "TIEL_"_SpC;
-const ProgramString g_typeinfo_class_fields_list_node_class_name= "TICFL_"_SpC;
-const ProgramString g_typeinfo_class_types_list_node_class_name= "TICTL_"_SpC;
-const ProgramString g_typeinfo_class_functions_list_node_class_name= "TICFL_"_SpC;
-const ProgramString g_typeinfo_class_parents_list_node_class_name= "TICPL_"_SpC;
-const ProgramString g_typeinfo_function_arguments_list_node_class_name= "TIAL_"_SpC;
-const ProgramString g_typeinfo_tuple_elements_list_node_class_name= "TITL_"_SpC;
+const ProgramString g_typeinfo_root_class_name= "TI";
+const ProgramString g_typeinfo_enum_elements_list_node_class_name= "TIEL_";
+const ProgramString g_typeinfo_class_fields_list_node_class_name= "TICFL_";
+const ProgramString g_typeinfo_class_types_list_node_class_name= "TICTL_";
+const ProgramString g_typeinfo_class_functions_list_node_class_name= "TICFL_";
+const ProgramString g_typeinfo_class_parents_list_node_class_name= "TICPL_";
+const ProgramString g_typeinfo_function_arguments_list_node_class_name= "TIAL_";
+const ProgramString g_typeinfo_tuple_elements_list_node_class_name= "TITL_";
 
 std::string GetTypeinfoVariableName( const ClassProxyPtr& typeinfo_class )
 {
@@ -150,50 +150,50 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 			llvm_type= fundamental_llvm_types_.void_;
 
 		// see llvm/lib/IR/DataLayout.cpp:40
-		add_size_field( "size_of"_SpC , data_layout_.getTypeAllocSize   ( llvm_type ) );
-		add_size_field( "align_of"_SpC, data_layout_.getABITypeAlignment( llvm_type ) );
+		add_size_field( "size_of" , data_layout_.getTypeAllocSize   ( llvm_type ) );
+		add_size_field( "align_of", data_layout_.getABITypeAlignment( llvm_type ) );
 	}
 
-	add_size_field( "references_tags_count"_SpC, type.ReferencesTagsCount() );
+	add_size_field( "references_tags_count", type.ReferencesTagsCount() );
 
-	add_bool_field( "is_fundamental"_SpC     , type.GetFundamentalType()     != nullptr );
-	add_bool_field( "is_enum"_SpC            , type.GetEnumType()            != nullptr );
-	add_bool_field( "is_array"_SpC           , type.GetArrayType()           != nullptr );
-	add_bool_field( "is_tuple"_SpC           , type.GetTupleType()           != nullptr );
-	add_bool_field( "is_class"_SpC           , type.GetClassType()           != nullptr );
-	add_bool_field( "is_function_pointer"_SpC, type.GetFunctionPointerType() != nullptr );
-	add_bool_field( "is_function"_SpC        , type.GetFunctionType()        != nullptr );
+	add_bool_field( "is_fundamental"     , type.GetFundamentalType()     != nullptr );
+	add_bool_field( "is_enum"            , type.GetEnumType()            != nullptr );
+	add_bool_field( "is_array"           , type.GetArrayType()           != nullptr );
+	add_bool_field( "is_tuple"           , type.GetTupleType()           != nullptr );
+	add_bool_field( "is_class"           , type.GetClassType()           != nullptr );
+	add_bool_field( "is_function_pointer", type.GetFunctionPointerType() != nullptr );
+	add_bool_field( "is_function"        , type.GetFunctionType()        != nullptr );
 
-	add_bool_field( "is_default_constructible"_SpC, type.IsDefaultConstructible() );
-	add_bool_field( "is_copy_constructible"_SpC   , type.IsCopyConstructible()    );
-	add_bool_field( "is_copy_assignable"_SpC      , type.IsCopyAssignable()       );
+	add_bool_field( "is_default_constructible", type.IsDefaultConstructible() );
+	add_bool_field( "is_copy_constructible"   , type.IsCopyConstructible()    );
+	add_bool_field( "is_copy_assignable"      , type.IsCopyAssignable()       );
 
 	if( const FundamentalType* const fundamental_type= type.GetFundamentalType() )
 	{
-		add_bool_field( "is_integer"_SpC         , IsInteger        ( fundamental_type->fundamental_type ) );
-		add_bool_field( "is_numeric"_SpC         , IsNumericType    ( fundamental_type->fundamental_type ) );
-		add_bool_field( "is_signed_integer"_SpC  , IsSignedInteger  ( fundamental_type->fundamental_type ) );
-		add_bool_field( "is_unsigned_integer"_SpC, IsUnsignedInteger( fundamental_type->fundamental_type ) );
-		add_bool_field( "is_float"_SpC           , IsFloatingPoint  ( fundamental_type->fundamental_type ) );
-		add_bool_field( "is_char"_SpC            , IsChar           ( fundamental_type->fundamental_type ) );
-		add_bool_field( "is_bool"_SpC            , fundamental_type->fundamental_type == U_FundamentalType::Bool );
-		add_bool_field( "is_void"_SpC            , fundamental_type->fundamental_type == U_FundamentalType::Void );
+		add_bool_field( "is_integer"         , IsInteger        ( fundamental_type->fundamental_type ) );
+		add_bool_field( "is_numeric"         , IsNumericType    ( fundamental_type->fundamental_type ) );
+		add_bool_field( "is_signed_integer"  , IsSignedInteger  ( fundamental_type->fundamental_type ) );
+		add_bool_field( "is_unsigned_integer", IsUnsignedInteger( fundamental_type->fundamental_type ) );
+		add_bool_field( "is_float"           , IsFloatingPoint  ( fundamental_type->fundamental_type ) );
+		add_bool_field( "is_char"            , IsChar           ( fundamental_type->fundamental_type ) );
+		add_bool_field( "is_bool"            , fundamental_type->fundamental_type == U_FundamentalType::Bool );
+		add_bool_field( "is_void"            , fundamental_type->fundamental_type == U_FundamentalType::Void );
 	}
 	else if( const Enum* const enum_type= type.GetEnumType() )
 	{
-		add_size_field( "element_count"_SpC, enum_type->element_count );
-		add_typeinfo_field( "underlaying_type"_SpC, enum_type->underlaying_type );
-		add_list_field( "elements_list"_SpC, BuildTypeinfoEnumElementsList( type.GetEnumTypePtr(), root_namespace ) );
+		add_size_field( "element_count", enum_type->element_count );
+		add_typeinfo_field( "underlaying_type", enum_type->underlaying_type );
+		add_list_field( "elements_list", BuildTypeinfoEnumElementsList( type.GetEnumTypePtr(), root_namespace ) );
 	}
 	else if( const Array* const array_type= type.GetArrayType() )
 	{
-		add_size_field( "element_count"_SpC, array_type->size );
-		add_typeinfo_field( "element_type"_SpC, array_type->type );
+		add_size_field( "element_count", array_type->size );
+		add_typeinfo_field( "element_type", array_type->type );
 	}
 	else if( const Tuple* const tuple_type= type.GetTupleType() )
 	{
-		add_size_field( "element_count"_SpC, tuple_type->elements.size() );
-		add_list_field( "elements_list"_SpC, BuildypeinfoTupleElements( *tuple_type, root_namespace ) );
+		add_size_field( "element_count", tuple_type->elements.size() );
+		add_list_field( "elements_list", BuildypeinfoTupleElements( *tuple_type, root_namespace ) );
 	}
 	else if( const Class* const class_type= type.GetClassType() )
 	{
@@ -205,51 +205,51 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 			class_type->kind == Class::Kind::PolymorphNonFinal ||
 			class_type->kind == Class::Kind::PolymorphFinal;
 
-		add_size_field( "field_count"_SpC, class_type->field_count );
-		add_size_field( "parent_count"_SpC, class_type->parents.size() );
+		add_size_field( "field_count", class_type->field_count );
+		add_size_field( "parent_count", class_type->parents.size() );
 
 		const ClassProxyPtr class_proxy= type.GetClassTypeProxy();
-		add_list_field( "fields_list"_SpC   , BuildTypeinfoClassFieldsList(    class_proxy, root_namespace ) );
-		add_list_field( "types_list"_SpC    , BuildTypeinfoClassTypesList(     class_proxy, root_namespace ) );
-		add_list_field( "functions_list"_SpC, BuildTypeinfoClassFunctionsList( class_proxy, root_namespace ) );
-		add_list_field( "parents_list"_SpC  , BuildeTypeinfoClassParentsList(  class_proxy, root_namespace ) );
+		add_list_field( "fields_list"   , BuildTypeinfoClassFieldsList(    class_proxy, root_namespace ) );
+		add_list_field( "types_list"    , BuildTypeinfoClassTypesList(     class_proxy, root_namespace ) );
+		add_list_field( "functions_list", BuildTypeinfoClassFunctionsList( class_proxy, root_namespace ) );
+		add_list_field( "parents_list"  , BuildeTypeinfoClassParentsList(  class_proxy, root_namespace ) );
 
 		if( is_polymorph )
 		{
 			U_ASSERT( class_type->polymorph_type_id != nullptr );
 			typeinfo_class.members.AddName(
-				"type_id"_SpC,
+				"type_id",
 				Value( ClassField( typeinfo_class_proxy, size_type_, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_file_pos ) );
 			fields_llvm_types.push_back( fundamental_llvm_types_.int_ptr->getPointerTo() );
 			fields_initializers.push_back( class_type->polymorph_type_id );
 		}
 
-		add_bool_field( "is_struct"_SpC, class_type->kind == Class::Kind::Struct );
-		add_bool_field( "is_polymorph"_SpC, is_polymorph );
-		add_bool_field( "is_final"_SpC,
+		add_bool_field( "is_struct", class_type->kind == Class::Kind::Struct );
+		add_bool_field( "is_polymorph", is_polymorph );
+		add_bool_field( "is_final",
 			class_type->kind == Class::Kind::Struct ||
 			class_type->kind == Class::Kind::NonPolymorph ||
 			class_type->kind == Class::Kind::PolymorphFinal );
-		add_bool_field( "is_abstract"_SpC,
+		add_bool_field( "is_abstract",
 			class_type->kind == Class::Kind::Abstract ||
 			class_type->kind == Class::Kind::Interface );
 
-		add_bool_field( "is_interface"_SpC, class_type->kind == Class::Kind::Interface );
+		add_bool_field( "is_interface", class_type->kind == Class::Kind::Interface );
 
-		add_bool_field( "is_typeinfo"_SpC, class_type->typeinfo_type != std::nullopt );
-		add_bool_field( "shared"_SpC, class_type->have_shared_state );
+		add_bool_field( "is_typeinfo", class_type->typeinfo_type != std::nullopt );
+		add_bool_field( "shared", class_type->have_shared_state );
 	}
 	else if( const FunctionPointer* const function_pointer_type= type.GetFunctionPointerType() )
 	{
-		add_typeinfo_field( "element_type"_SpC, function_pointer_type->function );
+		add_typeinfo_field( "element_type", function_pointer_type->function );
 	}
 	else if( const Function* const function_type= type.GetFunctionType() )
 	{
-		add_typeinfo_field( "return_type"_SpC, function_type->return_type );
-		add_list_field( "arguments_list"_SpC      , BuildTypeinfoFunctionArguments( *function_type, root_namespace ) );
-		add_bool_field( "return_value_is_reference"_SpC, function_type->return_value_is_reference );
-		add_bool_field( "return_value_is_mutable"_SpC  , function_type->return_value_is_mutable );
-		add_bool_field( "unsafe"_SpC                   , function_type->unsafe );
+		add_typeinfo_field( "return_type", function_type->return_type );
+		add_list_field( "arguments_list"      , BuildTypeinfoFunctionArguments( *function_type, root_namespace ) );
+		add_bool_field( "return_value_is_reference", function_type->return_value_is_reference );
+		add_bool_field( "return_value_is_mutable"  , function_type->return_value_is_mutable );
+		add_bool_field( "unsafe"                   , function_type->unsafe );
 		// SPRACHE_TODO - add also reference pollution.
 	}
 	else U_ASSERT(false);
@@ -297,7 +297,7 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, N
 			ClassFieldsVector<llvm::Constant*> fields_initializers;
 
 			node_type_class.members.AddName(
-				"value"_SpC,
+				"value",
 				Value( ClassField( node_type, enum_type->underlaying_type, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_file_pos ) );
 			fields_llvm_types.push_back( enum_type->underlaying_type.llvm_type );
 			fields_initializers.push_back( enum_member.GetVariable()->constexpr_value );
@@ -360,19 +360,19 @@ void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
 	const ClassMemberVisibility member_visibility= class_.GetMemberVisibility( member_name );
 
 	node_class.members.AddName(
-		"is_public"_SpC,
+		"is_public",
 		Value( ClassField( node_class_proxy, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_file_pos ) );
 	fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 	fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, member_visibility == ClassMemberVisibility::Public    ) ) );
 
 	node_class.members.AddName(
-		"is_protected"_SpC,
+		"is_protected",
 		Value( ClassField( node_class_proxy, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_file_pos ) );
 	fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 	fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, member_visibility == ClassMemberVisibility::Protected ) ) );
 
 	node_class.members.AddName(
-		"is_private"_SpC,
+		"is_private",
 		Value( ClassField( node_class_proxy, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_file_pos ) );
 	fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 	fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, member_visibility == ClassMemberVisibility::Private   ) ) );
@@ -412,7 +412,7 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 				const Variable fields_class_type_typeinfo= BuildTypeInfo( class_field->class_.lock(), root_namespace );
 				ClassField field( node_type, fields_class_type_typeinfo.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true );
 
-				node_type_class.members.AddName( "class_type"_SpC, Value( std::move(field), g_dummy_file_pos ) );
+				node_type_class.members.AddName( "class_type", Value( std::move(field), g_dummy_file_pos ) );
 				fields_llvm_types.push_back( fields_class_type_typeinfo.type.GetLLVMType()->getPointerTo() );
 				fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( fields_class_type_typeinfo.llvm_value ) );
 			}
@@ -436,20 +436,20 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 				}
 
 				node_type_class.members.AddName(
-					"offset"_SpC,
+					"offset",
 					Value( ClassField( node_type, size_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_file_pos ) );
 				fields_llvm_types.push_back( size_type_.GetLLVMType() );
 				fields_initializers.push_back( llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), offset ) ) );
 			}
 
 			node_type_class.members.AddName(
-				"is_reference"_SpC,
+				"is_reference",
 				Value( ClassField( node_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_file_pos ) );
 			fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 			fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, class_field->is_reference ) ) );
 
 			node_type_class.members.AddName(
-				"is_mutable"_SpC,
+				"is_mutable",
 				Value( ClassField( node_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_file_pos ) );
 			fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 			fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, class_field->is_mutable ) ) );
@@ -561,25 +561,25 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 				}
 
 				node_type_class.members.AddName(
-					"is_this_call"_SpC,
+					"is_this_call",
 					Value( ClassField( node_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_file_pos ) );
 				fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 				fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, function.is_this_call ) ) );
 
 				node_type_class.members.AddName(
-					"is_generated"_SpC,
+					"is_generated",
 					Value( ClassField( node_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_file_pos ) );
 				fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 				fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, function.is_generated ) ) );
 
 				node_type_class.members.AddName(
-					"is_deleted"_SpC,
+					"is_deleted",
 					Value( ClassField( node_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_file_pos ) );
 				fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 				fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, function.is_deleted ) ) );
 
 				node_type_class.members.AddName(
-					"is_virtual"_SpC,
+					"is_virtual",
 					Value( ClassField( node_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_file_pos ) );
 				fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 				fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, function.virtual_table_index != ~0u ) ) );
@@ -637,7 +637,7 @@ Variable CodeBuilder::BuildeTypeinfoClassParentsList( const ClassProxyPtr& class
 
 		const uint64_t parent_field_offset= struct_layout->getElementOffset( class_.parents[i].field_number );
 		node_type_class.members.AddName(
-			"offset"_SpC,
+			"offset",
 			Value( ClassField( node_type, size_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_file_pos ) );
 		fields_llvm_types.push_back( size_type_.GetLLVMType() );
 		fields_initializers.push_back( llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), parent_field_offset ) ) );
@@ -689,13 +689,13 @@ Variable CodeBuilder::BuildTypeinfoFunctionArguments( const Function& function_t
 		}
 
 		node_type_class.members.AddName(
-			"is_reference"_SpC,
+			"is_reference",
 			Value( ClassField( node_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_file_pos ) );
 		fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 		fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, arg.is_reference ) ) );
 
 		node_type_class.members.AddName(
-			"is_mutable"_SpC,
+			"is_mutable",
 			Value( ClassField( node_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_file_pos ) );
 		fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 		fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, arg.is_mutable ) ) );
@@ -753,7 +753,7 @@ Variable CodeBuilder::BuildypeinfoTupleElements( const Tuple& tuple_type, NamesS
 		}
 		{
 			node_type_class.members.AddName(
-				"index"_SpC,
+				"index",
 				Value( ClassField( node_type, size_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_file_pos ) );
 			fields_llvm_types.push_back( size_type_.GetLLVMType() );
 			fields_initializers.push_back( llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), element_index ) ) );
@@ -761,7 +761,7 @@ Variable CodeBuilder::BuildypeinfoTupleElements( const Tuple& tuple_type, NamesS
 		{
 			const auto offset= struct_layout->getElementOffset( static_cast<unsigned int>(element_index) );
 			node_type_class.members.AddName(
-				"offset"_SpC,
+				"offset",
 				Value( ClassField( node_type, size_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_file_pos ) );
 			fields_llvm_types.push_back( size_type_.GetLLVMType() );
 			fields_initializers.push_back( llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), offset ) ) );

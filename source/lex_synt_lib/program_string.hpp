@@ -10,9 +10,6 @@ namespace U
 
 using ProgramString= std::string;
 
-// Char to program string literal.
-ProgramString operator "" _SpC( const char* str, size_t size );
-
 using sprache_char = uint32_t;
 
 size_t GetUTF8CharBytes( sprache_char c );

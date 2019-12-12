@@ -68,7 +68,7 @@ static void PrinteErrors_r( const CodeBuilderErrorsContainer& errors )
 
 std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 {
-	const ProgramString file_path= "_"_SpC;
+	const ProgramString file_path= "_";
 	const SourceGraphPtr source_graph=
 		SourceGraphLoader( std::make_shared<MultiFileVfs>( file_path, text ) ).LoadSource( file_path );
 
@@ -91,7 +91,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 
 ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
 {
-	const ProgramString file_path= "_"_SpC;
+	const ProgramString file_path= "_";
 	const SourceGraphPtr source_graph=
 		SourceGraphLoader( std::make_shared<MultiFileVfs>( file_path, text ) ).LoadSource( file_path );
 

@@ -174,19 +174,19 @@ ProgramString Value::GetKindName() const
 {
 	struct Visitor final
 	{
-		ProgramString operator()( const Variable& ) const { return "variable"_SpC; }
-		ProgramString operator()( const FunctionVariable& ) const { return "function variable"_SpC; }
-		ProgramString operator()( const OverloadedFunctionsSet& ) const { return "functions set"_SpC; }
-		ProgramString operator()( const Type& ) const { return "typename"_SpC; }
-		ProgramString operator()( const ClassField& ) const { return "class field"_SpC; }
-		ProgramString operator()( const ThisOverloadedMethodsSet& ) const { return "this + functions set"_SpC; }
-		ProgramString operator()( const NamesScopePtr& ) const { return "namespace"_SpC; }
-		ProgramString operator()( const TypeTemplatesSet& ) const { return "type templates set"_SpC; }
-		ProgramString operator()( const StaticAssert& ) const { return "static assert"_SpC; }
-		ProgramString operator()( const Typedef& ) const { return "incomplete typedef"_SpC; }
-		ProgramString operator()( const IncompleteGlobalVariable& ) const { return "incomplete global variable"_SpC; }
-		ProgramString operator()( const YetNotDeducedTemplateArg& ) const { return "yet not deduced template arg"_SpC; }
-		ProgramString operator()( const ErrorValue& ) const { return "error value"_SpC; }
+		ProgramString operator()( const Variable& ) const { return "variable"; }
+		ProgramString operator()( const FunctionVariable& ) const { return "function variable"; }
+		ProgramString operator()( const OverloadedFunctionsSet& ) const { return "functions set"; }
+		ProgramString operator()( const Type& ) const { return "typename"; }
+		ProgramString operator()( const ClassField& ) const { return "class field"; }
+		ProgramString operator()( const ThisOverloadedMethodsSet& ) const { return "this + functions set"; }
+		ProgramString operator()( const NamesScopePtr& ) const { return "namespace"; }
+		ProgramString operator()( const TypeTemplatesSet& ) const { return "type templates set"; }
+		ProgramString operator()( const StaticAssert& ) const { return "static assert"; }
+		ProgramString operator()( const Typedef& ) const { return "incomplete typedef"; }
+		ProgramString operator()( const IncompleteGlobalVariable& ) const { return "incomplete global variable"; }
+		ProgramString operator()( const YetNotDeducedTemplateArg& ) const { return "yet not deduced template arg"; }
+		ProgramString operator()( const ErrorValue& ) const { return "error value"; }
 	};
 
 	return std::visit( Visitor(), something_ );

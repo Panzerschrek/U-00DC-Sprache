@@ -884,7 +884,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_, TypeCompleteness co
 				if( fundamental_type == nullptr || !IsInteger( fundamental_type->fundamental_type ) )
 				{
 					// SPRACHE_TODO - maybe allow inheritance of enums?
-					REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), enum_decl.file_pos_, "any integer type"_SpC, type );
+					REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), enum_decl.file_pos_, "any integer type", type );
 				}
 				else
 					enum_->underlaying_type= *fundamental_type;
@@ -1194,7 +1194,7 @@ void CodeBuilder::GlobalThingReportAboutLoop( const size_t loop_start_stack_inde
 	for( size_t i= loop_start_stack_index; i < global_things_stack_.size(); ++i )
 	{
 		min_file_pos= std::min( min_file_pos, global_things_stack_[i].file_pos );
-		description+= global_things_stack_[i].name + " -> "_SpC;
+		description+= global_things_stack_[i].name + " -> ";
 	}
 	description+= last_loop_element_name;
 

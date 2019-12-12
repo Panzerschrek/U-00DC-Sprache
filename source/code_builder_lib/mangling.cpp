@@ -56,7 +56,7 @@ public:
 	{
 		U_ASSERT( n < names_container_.size() );
 		if( n == 0u )
-			return "S_"_SpC;
+			return "S_";
 
 		--n;
 		ProgramString result;
@@ -69,7 +69,7 @@ public:
 		}
 		while( n > 0u );
 
-		return "S"_SpC + result + "_"_SpC;
+		return "S" + result + "_";
 	}
 
 private:
@@ -81,48 +81,48 @@ const ProgramString& DecodeOperator( const ProgramString& func_name )
 {
 	static const ProgramStringMap<ProgramString> c_op_names
 	{
-		{ "+"_SpC, "pl"_SpC },
-		{ "-"_SpC, "mi"_SpC },
-		{ "*"_SpC, "ml"_SpC },
-		{ "/"_SpC, "dv"_SpC },
-		{ "%"_SpC, "rm"_SpC },
+		{ "+", "pl" },
+		{ "-", "mi" },
+		{ "*", "ml" },
+		{ "/", "dv" },
+		{ "%", "rm" },
 
-		{ "=="_SpC, "eq"_SpC },
-		{ "!="_SpC, "ne"_SpC },
-		{  ">"_SpC, "gt"_SpC },
-		{ ">="_SpC, "ge"_SpC },
-		{  "<"_SpC, "lt"_SpC },
-		{ "<="_SpC, "le"_SpC },
+		{ "==", "eq" },
+		{ "!=", "ne" },
+		{  ">", "gt" },
+		{ ">=", "ge" },
+		{  "<", "lt" },
+		{ "<=", "le" },
 
-		{ "&"_SpC, "an"_SpC },
-		{ "|"_SpC, "or"_SpC },
-		{ "^"_SpC, "eo"_SpC },
+		{ "&", "an" },
+		{ "|", "or" },
+		{ "^", "eo" },
 
-		{ "<<"_SpC, "ls"_SpC },
-		{ ">>"_SpC, "rs"_SpC },
+		{ "<<", "ls" },
+		{ ">>", "rs" },
 
-		{ "+="_SpC, "pL"_SpC },
-		{ "-="_SpC, "mI"_SpC },
-		{ "*="_SpC, "mL"_SpC },
-		{ "/="_SpC, "dV"_SpC },
-		{ "%="_SpC, "rM"_SpC },
+		{ "+=", "pL" },
+		{ "-=", "mI" },
+		{ "*=", "mL" },
+		{ "/=", "dV" },
+		{ "%=", "rM" },
 
-		{ "&="_SpC, "aN"_SpC },
-		{ "|="_SpC, "oR"_SpC },
-		{ "^="_SpC, "eO"_SpC },
+		{ "&=", "aN" },
+		{ "|=", "oR" },
+		{ "^=", "eO" },
 
-		{ "<<="_SpC, "lS"_SpC },
-		{ ">>="_SpC, "rS"_SpC },
+		{ "<<=", "lS" },
+		{ ">>=", "rS" },
 
-		{ "!"_SpC, "nt"_SpC },
-		{ "~"_SpC, "co"_SpC },
+		{ "!", "nt" },
+		{ "~", "co" },
 
-		{ "="_SpC, "aS"_SpC },
-		{ "++"_SpC, "pp"_SpC },
-		{ "--"_SpC, "mm"_SpC },
+		{ "=", "aS" },
+		{ "++", "pp" },
+		{ "--", "mm" },
 
-		{ "()"_SpC, "cl"_SpC },
-		{ "[]"_SpC, "ix"_SpC },
+		{ "()", "cl" },
+		{ "[]", "ix" },
 	};
 	static const ProgramString c_empty;
 
@@ -162,7 +162,7 @@ NamePair GetNestedName(
 		result_splitted.push_back( name );
 
 	ProgramString name_combined;
-	const ProgramString konst= need_konst ? "K"_SpC : ""_SpC;
+	const ProgramString konst= need_konst ? "K" : "";
 
 	size_t replacement_n= std::numeric_limits<size_t>::max();
 	size_t replacement_pos= 0u;
@@ -184,7 +184,7 @@ NamePair GetNestedName(
 	{
 		if( result_splitted.size() == 1u )
 			return NamePair{ name_combined, name_combined };
-		return NamePair{ konst + name_combined, "N"_SpC + konst + name_combined + "E"_SpC };
+		return NamePair{ konst + name_combined, "N" + konst + name_combined + "E" };
 	}
 
 	if( replacement_pos + 1u == result_splitted.size() )
@@ -192,10 +192,10 @@ NamePair GetNestedName(
 	else
 	{
 		ProgramString compressed_name;
-		compressed_name= "N"_SpC + konst + names_cache.RetReplacementString( replacement_n );
+		compressed_name= "N" + konst + names_cache.RetReplacementString( replacement_n );
 		for( size_t i= replacement_pos + 1u; i < result_splitted.size(); i++ )
 			compressed_name+= result_splitted[i];
-		compressed_name+= "E"_SpC;
+		compressed_name+= "E";
 
 		return NamePair{ name_combined, compressed_name };
 	}
@@ -211,29 +211,29 @@ NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 		{
 		case U_FundamentalType::InvalidType: break;
 		case U_FundamentalType::LastType: break;
-		case U_FundamentalType::Void: result.full= "v"_SpC; break;
-		case U_FundamentalType::Bool: result.full= "b"_SpC; break;
-		case U_FundamentalType:: i8: result.full= "a"_SpC; break; // C++ signed char
-		case U_FundamentalType:: u8: result.full= "h"_SpC; break; // C++ unsigned char
-		case U_FundamentalType::i16: result.full= "s"_SpC; break;
-		case U_FundamentalType::u16: result.full= "t"_SpC; break;
-		case U_FundamentalType::i32: result.full= "i"_SpC; break;
-		case U_FundamentalType::u32: result.full= "j"_SpC; break;
-		case U_FundamentalType::i64: result.full= "x"_SpC; break;
-		case U_FundamentalType::u64: result.full= "y"_SpC; break;
-		case U_FundamentalType::i128: result.full= "n"_SpC; break;
-		case U_FundamentalType::u128: result.full= "o"_SpC; break;
-		case U_FundamentalType::f32: result.full= "f"_SpC; break;
-		case U_FundamentalType::f64: result.full= "d"_SpC; break;
-		case U_FundamentalType::char8 : result.full= "c"_SpC; break; // C++ char
-		case U_FundamentalType::char16: result.full= "Ds"_SpC; break; // C++ char16_t
-		case U_FundamentalType::char32: result.full= "Di"_SpC; break;  // C++ char32_t
+		case U_FundamentalType::Void: result.full= "v"; break;
+		case U_FundamentalType::Bool: result.full= "b"; break;
+		case U_FundamentalType:: i8: result.full= "a"; break; // C++ signed char
+		case U_FundamentalType:: u8: result.full= "h"; break; // C++ unsigned char
+		case U_FundamentalType::i16: result.full= "s"; break;
+		case U_FundamentalType::u16: result.full= "t"; break;
+		case U_FundamentalType::i32: result.full= "i"; break;
+		case U_FundamentalType::u32: result.full= "j"; break;
+		case U_FundamentalType::i64: result.full= "x"; break;
+		case U_FundamentalType::u64: result.full= "y"; break;
+		case U_FundamentalType::i128: result.full= "n"; break;
+		case U_FundamentalType::u128: result.full= "o"; break;
+		case U_FundamentalType::f32: result.full= "f"; break;
+		case U_FundamentalType::f64: result.full= "d"; break;
+		case U_FundamentalType::char8 : result.full= "c"; break; // C++ char
+		case U_FundamentalType::char16: result.full= "Ds"; break; // C++ char16_t
+		case U_FundamentalType::char32: result.full= "Di"; break;  // C++ char32_t
 		};
 		result.compressed_and_escaped= result.full;
 	}
 	else if( const Array* const array_type= type.GetArrayType() )
 	{
-		ProgramString array_prefix= "A"_SpC + std::to_string( array_type->size ) + "_"_SpC;
+		ProgramString array_prefix= "A" + std::to_string( array_type->size ) + "_";
 
 		const NamePair type_name= GetTypeName_r( array_type->type, names_cache );
 		result.full= array_prefix + type_name.full;
@@ -250,14 +250,14 @@ NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 	else if( const Tuple* const tuple_type= type.GetTupleType() )
 	{
 		// Encode tuples, like in "Rust".
-		result.full= "T"_SpC;
+		result.full= "T";
 		for( const Type& element_type : tuple_type->elements )
 		{
 			const NamePair element_type_name= GetTypeName_r( element_type, names_cache );
 			result.full+= element_type_name.full;
 			result.compressed_and_escaped+= element_type_name.compressed_and_escaped;
 		}
-		result.full+= "E"_SpC;
+		result.full+= "E";
 
 		const size_t replacement_candidate= names_cache.GetRepalcement( result.full );
 		if( replacement_candidate != std::numeric_limits<size_t>::max() )
@@ -290,7 +290,7 @@ NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 	}
 	else if( const FunctionPointer* const function_pointer= type.GetFunctionPointerType() )
 	{
-		const ProgramString prefix= "P"_SpC;
+		const ProgramString prefix= "P";
 		const NamePair function_type_name= GetTypeName_r( function_pointer->function, names_cache );
 		result.full= prefix + function_type_name.full;
 
@@ -328,7 +328,7 @@ NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 			NamePair type_name= GetTypeName_r( arg.type, names_cache );
 			if( !arg.is_mutable && arg.is_reference ) // push "Konst" for reference immutable arguments
 			{
-				const ProgramString prefix= "K"_SpC;
+				const ProgramString prefix= "K";
 				const ProgramString prefixed_type_name= prefix + type_name.full;
 				type_name.full= prefixed_type_name;
 
@@ -343,7 +343,7 @@ NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 			}
 			if( arg.is_reference )
 			{
-				const ProgramString prefix= "R"_SpC;
+				const ProgramString prefix= "R";
 				const ProgramString prefixed_type_name= prefix + type_name.full;
 				type_name.full= prefixed_type_name;
 
@@ -364,7 +364,7 @@ NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 		if( !function->return_references.empty() )
 		{
 			ProgramString rr;
-			rr+= "_RR"_SpC;
+			rr+= "_RR";
 
 			U_ASSERT( function->return_references.size() < 36u );
 			rr.push_back( Base36Digit(function->return_references.size()) );
@@ -387,7 +387,7 @@ NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 		if( !function->references_pollution.empty() )
 		{
 			ProgramString rp;
-			rp+= "_RP"_SpC;
+			rp+= "_RP";
 
 			U_ASSERT( function->references_pollution.size() < 36u );
 			rp.push_back( Base36Digit(function->references_pollution.size()) );
@@ -416,8 +416,8 @@ NamePair GetTypeName_r( const Type& type, NamesCache& names_cache )
 			result.compressed_and_escaped+= rp;
 		}
 
-		const ProgramString function_prefix= "F"_SpC + (function->unsafe ? "unsafe"_SpC : ""_SpC);
-		const ProgramString function_postfix= "E"_SpC;
+		const ProgramString function_prefix= ProgramString("F") + (function->unsafe ? "unsafe" : "");
+		const ProgramString function_postfix= "E";
 		const ProgramString prefixed_type_name= function_prefix + result.full + function_postfix;
 		result.full= prefixed_type_name;
 
@@ -446,17 +446,17 @@ std::string MangleFunction(
 	ProgramString result;
 
 	// "_Z" - common prefix for all symbols.
-	result+= "_Z"_SpC;
+	result+= "_Z";
 
 	if( function_name == Keywords::constructor_ )
 	{
 		// Itanium ABI requires at least 2  cnstructors - "C1" and "C2".
 		// 2 constructors required for virtual inheritance. Ü has no virtual inheritanse, so, second constructor does not needed.
-		result+= GetNestedName( "C1"_SpC, false, parent_scope, false, names_cache, true ).compressed_and_escaped;
+		result+= GetNestedName( "C1", false, parent_scope, false, names_cache, true ).compressed_and_escaped;
 	}
 	else if( function_name == Keywords::destructor_ )
 	{
-		result+= GetNestedName( "D0"_SpC, false, parent_scope, false, names_cache, true ).compressed_and_escaped;
+		result+= GetNestedName( "D0", false, parent_scope, false, names_cache, true ).compressed_and_escaped;
 	}
 	else
 	{
@@ -482,7 +482,7 @@ std::string MangleFunction(
 
 		if( !arg.is_mutable && arg.is_reference ) // push "Konst" for reference immutable arguments
 		{
-			const ProgramString prefix= "K"_SpC;
+			const ProgramString prefix= "K";
 			const ProgramString prefixed_type_name= prefix + type_name.full;
 
 			type_name.full= prefixed_type_name;
@@ -498,7 +498,7 @@ std::string MangleFunction(
 		}
 		if( arg.is_reference )
 		{
-			const ProgramString prefix= "R"_SpC;
+			const ProgramString prefix= "R";
 			const ProgramString prefixed_type_name= prefix + type_name.full;
 
 			type_name.full= prefixed_type_name;
@@ -516,7 +516,7 @@ std::string MangleFunction(
 		result+= type_name.compressed_and_escaped;
 	}
 	if( function_type.args.empty() )
-		result+= "v"_SpC;
+		result+= "v";
 
 	return ToUTF8( result );
 }
@@ -530,7 +530,7 @@ std::string MangleGlobalVariable(
 		return ToUTF8( variable_name );
 
 	NamesCache names_cache;
-	ProgramString result= "_Z"_SpC;
+	ProgramString result= "_Z";
 
 	result+= GetNestedName( variable_name, true, parent_scope, false, names_cache ).compressed_and_escaped;
 

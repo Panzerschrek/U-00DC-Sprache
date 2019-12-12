@@ -489,7 +489,7 @@ void CodeBuilder::TryGenerateDestructor( Class& the_class, const Type& class_typ
 
 void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Type& class_type )
 {
-	static const ProgramString op_name= "="_SpC;
+	static const ProgramString op_name= "=";
 
 	// Search for explicit assignment operator.
 	FunctionVariable* prev_operator_variable= nullptr;
@@ -798,7 +798,7 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 
 		// Search copy-assignment aoperator.
 		const Value* op_value=
-			class_type.members.GetThisScopeValue( "="_SpC );
+			class_type.members.GetThisScopeValue( "=" );
 		U_ASSERT( op_value != nullptr );
 		const OverloadedFunctionsSet* const operators_set= op_value->GetFunctionsSet();
 		U_ASSERT( operators_set != nullptr );

@@ -25,10 +25,10 @@ U_TEST( ImportsTest0 )
 
 	BuildMultisourceProgram(
 		{
-			{ "a"_SpC, c_program_text_a },
-			{ "root"_SpC, c_program_text_root }
+			{ "a", c_program_text_a },
+			{ "root", c_program_text_root }
 		},
-		"root"_SpC );
+		"root" );
 }
 
 U_TEST( ImportsTest1_FunctionPrototypeInOneFileAndBodyInAnother )
@@ -57,10 +57,10 @@ U_TEST( ImportsTest1_FunctionPrototypeInOneFileAndBodyInAnother )
 		CreateEngine(
 			BuildMultisourceProgram(
 				{
-					{ "a"_SpC, c_program_text_a },
-					{ "root"_SpC, c_program_text_root }
+					{ "a", c_program_text_a },
+					{ "root", c_program_text_root }
 				},
-				"root"_SpC ) );
+				"root" ) );
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -99,10 +99,10 @@ U_TEST( ImportsTest2_FunctionsWithDifferentSignaturesInDifferentFiles )
 		CreateEngine(
 			BuildMultisourceProgram(
 				{
-					{ "a"_SpC, c_program_text_a },
-					{ "root"_SpC, c_program_text_root }
+					{ "a", c_program_text_a },
+					{ "root", c_program_text_root }
 				},
-				"root"_SpC ) );
+				"root" ) );
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -135,10 +135,10 @@ U_TEST( ImportsTest3_MultipleInportOfSameFile_Test0 )
 
 	BuildMultisourceProgram(
 		{
-			{ "a"_SpC, c_program_text_a },
-			{ "root"_SpC, c_program_text_root }
+			{ "a", c_program_text_a },
+			{ "root", c_program_text_root }
 		},
-		"root"_SpC );
+		"root" );
 }
 
 U_TEST( ImportsTest4_MultipleInportOfSameFile_Test1 )
@@ -162,11 +162,11 @@ U_TEST( ImportsTest4_MultipleInportOfSameFile_Test1 )
 
 	BuildMultisourceProgram(
 		{
-			{ "a"_SpC, c_program_text_a },
-			{ "b"_SpC, c_program_text_b },
-			{ "root"_SpC, c_program_text_root }
+			{ "a", c_program_text_a },
+			{ "b", c_program_text_b },
+			{ "root", c_program_text_root }
 		},
-		"root"_SpC );
+		"root" );
 }
 
 U_TEST( ImportsTest5_ImportContentOfNamespace )
@@ -192,10 +192,10 @@ U_TEST( ImportsTest5_ImportContentOfNamespace )
 		CreateEngine(
 			BuildMultisourceProgram(
 				{
-					{ "a"_SpC, c_program_text_a },
-					{ "root"_SpC, c_program_text_root }
+					{ "a", c_program_text_a },
+					{ "root", c_program_text_root }
 				},
-				"root"_SpC ) );
+				"root" ) );
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -234,10 +234,10 @@ U_TEST( ImportsTest6_ImportClass )
 		CreateEngine(
 			BuildMultisourceProgram(
 				{
-					{ "a"_SpC, c_program_text_a },
-					{ "root"_SpC, c_program_text_root }
+					{ "a", c_program_text_a },
+					{ "root", c_program_text_root }
 				},
-				"root"_SpC ) );
+				"root" ) );
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -274,11 +274,11 @@ U_TEST( ImportsTest7_ImportFileWithFunctionPrototypeAfterFileWithFunctionBody )
 		CreateEngine(
 			BuildMultisourceProgram(
 				{
-					{ "a"_SpC, c_program_text_a },
-					{ "b"_SpC, c_program_text_b },
-					{ "root"_SpC, c_program_text_root }
+					{ "a", c_program_text_a },
+					{ "b", c_program_text_b },
+					{ "root", c_program_text_root }
 				},
-				"root"_SpC ) );
+				"root" ) );
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -315,11 +315,11 @@ U_TEST( ImportsTest8_ImportFileWithFunctionBodyAfterFileWithFunctionPrototype )
 		CreateEngine(
 			BuildMultisourceProgram(
 				{
-					{ "a"_SpC, c_program_text_a },
-					{ "b"_SpC, c_program_text_b },
-					{ "root"_SpC, c_program_text_root }
+					{ "a", c_program_text_a },
+					{ "b", c_program_text_b },
+					{ "root", c_program_text_root }
 				},
-				"root"_SpC ) );
+				"root" ) );
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -360,11 +360,11 @@ U_TEST( ImportsTest9_ImportFileWithClassPrototypeAfterFileWithClassBody )
 		CreateEngine(
 			BuildMultisourceProgram(
 				{
-					{ "a"_SpC, c_program_text_a },
-					{ "b"_SpC, c_program_text_b },
-					{ "root"_SpC, c_program_text_root }
+					{ "a", c_program_text_a },
+					{ "b", c_program_text_b },
+					{ "root", c_program_text_root }
 				},
-				"root"_SpC ) );
+				"root" ) );
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -405,11 +405,11 @@ U_TEST( ImportsTest10_ImportFileWithClassBodyAfterFileWithClassPrototype )
 		CreateEngine(
 			BuildMultisourceProgram(
 				{
-					{ "a"_SpC, c_program_text_a },
-					{ "b"_SpC, c_program_text_b },
-					{ "root"_SpC, c_program_text_root }
+					{ "a", c_program_text_a },
+					{ "b", c_program_text_b },
+					{ "root", c_program_text_root }
 				},
-				"root"_SpC ) );
+				"root" ) );
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -462,12 +462,12 @@ U_TEST( ImportsTest11_MultipleImportOfSameGeneratedTemplateClass )
 		CreateEngine(
 			BuildMultisourceProgram(
 				{
-					{ "a"_SpC, c_program_text_a },
-					{ "b"_SpC, c_program_text_b },
-					{ "c"_SpC, c_program_text_c },
-					{ "root"_SpC, c_program_text_root }
+					{ "a", c_program_text_a },
+					{ "b", c_program_text_b },
+					{ "c", c_program_text_c },
+					{ "root", c_program_text_root }
 				},
-				"root"_SpC ) );
+				"root" ) );
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -516,12 +516,12 @@ U_TEST( ImportsTest12_MultipleImportOfSameGeneratedTemplateClass )
 		CreateEngine(
 			BuildMultisourceProgram(
 				{
-					{ "a"_SpC, c_program_text_a },
-					{ "b"_SpC, c_program_text_b },
-					{ "c"_SpC, c_program_text_c },
-					{ "root"_SpC, c_program_text_root }
+					{ "a", c_program_text_a },
+					{ "b", c_program_text_b },
+					{ "c", c_program_text_c },
+					{ "root", c_program_text_root }
 				},
-				"root"_SpC ) );
+				"root" ) );
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -576,12 +576,12 @@ U_TEST( ImportsTest13_MultipleImportOfSameGeneratedTemplateClassInsideTemplateCl
 		CreateEngine(
 			BuildMultisourceProgram(
 				{
-					{ "a"_SpC, c_program_text_a },
-					{ "b"_SpC, c_program_text_b },
-					{ "c"_SpC, c_program_text_c },
-					{ "root"_SpC, c_program_text_root }
+					{ "a", c_program_text_a },
+					{ "b", c_program_text_b },
+					{ "c", c_program_text_c },
+					{ "root", c_program_text_root }
 				},
-				"root"_SpC ) );
+				"root" ) );
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -621,10 +621,10 @@ U_TEST( ImportsTest14_ImportFunctionTemplate0 )
 		CreateEngine(
 			BuildMultisourceProgram(
 				{
-					{ "a"_SpC, c_program_text_a },
-					{ "root"_SpC, c_program_text_root }
+					{ "a", c_program_text_a },
+					{ "root", c_program_text_root }
 				},
-				"root"_SpC ) );
+				"root" ) );
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -669,11 +669,11 @@ U_TEST( ImportsTest14_ImportFunctionTemplate1 )
 		CreateEngine(
 			BuildMultisourceProgram(
 				{
-					{ "a"_SpC, c_program_text_a },
-					{ "b"_SpC, c_program_text_b },
-					{ "root"_SpC, c_program_text_root }
+					{ "a", c_program_text_a },
+					{ "b", c_program_text_b },
+					{ "root", c_program_text_root }
 				},
-				"root"_SpC ) );
+				"root" ) );
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -713,10 +713,10 @@ U_TEST( ImportsTest15_NewSymbolsNotVisibleInImportedFunctionTemplate )
 		CreateEngine(
 			BuildMultisourceProgram(
 				{
-					{ "a"_SpC, c_program_text_a },
-					{ "root"_SpC, c_program_text_root }
+					{ "a", c_program_text_a },
+					{ "root", c_program_text_root }
 				},
-				"root"_SpC ) );
+				"root" ) );
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -759,10 +759,10 @@ U_TEST( ImportsTest16_NewSymbolsNotVisibleInImportedClassTemplate )
 		CreateEngine(
 			BuildMultisourceProgram(
 				{
-					{ "a"_SpC, c_program_text_a },
-					{ "root"_SpC, c_program_text_root }
+					{ "a", c_program_text_a },
+					{ "root", c_program_text_root }
 				},
-				"root"_SpC ) );
+				"root" ) );
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -805,10 +805,10 @@ U_TEST( ImportsTest17_NewSymbolsNotVisibleInImportedClassTemplate )
 		CreateEngine(
 			BuildMultisourceProgram(
 				{
-					{ "a"_SpC, c_program_text_a },
-					{ "root"_SpC, c_program_text_root }
+					{ "a", c_program_text_a },
+					{ "root", c_program_text_root }
 				},
-				"root"_SpC ) );
+				"root" ) );
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -838,10 +838,10 @@ U_TEST( ImportMacro_Test0 )
 		CreateEngine(
 			BuildMultisourceProgram(
 				{
-					{ "a"_SpC, c_program_text_a },
-					{ "root"_SpC, c_program_text_root }
+					{ "a", c_program_text_a },
+					{ "root", c_program_text_root }
 				},
-				"root"_SpC ) );
+				"root" ) );
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );

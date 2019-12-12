@@ -565,21 +565,21 @@ ProgramString Type::ToString() const
 		ProgramString operator()( const ArrayPtr& array ) const
 		{
 			return
-				"[ "_SpC + array->type.ToString() + ", "_SpC +
-				std::to_string( array->size ) + " ]"_SpC;
+				"[ " + array->type.ToString() + ", " +
+				std::to_string( array->size ) + " ]";
 		}
 
 		ProgramString operator()( const Tuple& tuple ) const
 		{
-			ProgramString res= "tup[ "_SpC;
+			ProgramString res= "tup[ ";
 
 			for( const Type& element_type : tuple.elements )
 			{
 				res+= element_type.ToString();
 				if( &element_type != & tuple.elements.back() )
-					res+= ", "_SpC;
+					res+= ", ";
 			}
-			res+= " ]"_SpC;
+			res+= " ]";
 			return res;
 		}
 
@@ -591,11 +591,11 @@ ProgramString Type::ToString() const
 				// Skip template parameters namespace.
 				const ProgramString template_namespace_name= class_->class_->members.GetParent()->GetParent()->ToString();
 				if( !template_namespace_name.empty() )
-					result+= template_namespace_name + "::"_SpC;
+					result+= template_namespace_name + "::";
 
 				const ProgramString& class_name= class_->class_->base_template->class_template->syntax_element->name_;
 				result+= class_name;
-				result+= "</"_SpC;
+				result+= "</";
 				for( const TemplateParameter& param : class_->class_->base_template->signature_parameters )
 				{
 					if( const Type* const param_as_type = std::get_if<Type>( &param ) )
@@ -626,16 +626,16 @@ ProgramString Type::ToString() const
 									}
 								});
 							U_ASSERT( !enum_member_name.empty() );
-							result+= enum_type->members.ToString() + "::"_SpC + enum_member_name;
+							result+= enum_type->members.ToString() + "::" + enum_member_name;
 						}
 						else U_ASSERT(false);
 					}
 					else U_ASSERT(false);
 
 					if( &param != &class_->class_->base_template->signature_parameters.back() )
-						result+= ", "_SpC;
+						result+= ", ";
 				}
-				result+= "/>"_SpC;
+				result+= "/>";
 			}
 			else
 				result+= class_->class_->members.ToString();
@@ -644,7 +644,7 @@ ProgramString Type::ToString() const
 
 		ProgramString operator()( const EnumPtr& enum_ ) const
 		{
-			return "enum "_SpC + enum_->members.GetThisNamespaceName();
+			return "enum " + enum_->members.GetThisNamespaceName();
 		}
 
 		ProgramString operator()( const FunctionPointerPtr& function_pointer ) const
@@ -657,25 +657,25 @@ ProgramString Type::ToString() const
 		{
 			// TODO - actualize this
 			ProgramString result;
-			result+= "fn "_SpC;
+			result+= "fn ";
 			result+= function.return_type.ToString();
-			result+= " ( "_SpC;
+			result+= " ( ";
 			for( const Function::Arg& arg : function.args )
 			{
 				if( arg.is_reference )
-					result+= "&"_SpC;
+					result+= "&";
 				if( arg.is_mutable )
-					result+= "mut "_SpC;
+					result+= "mut ";
 				else
-					result+= "imut "_SpC;
+					result+= "imut ";
 
 				result+= arg.type.ToString();
 				if( &arg != &function.args.back() )
-					result+= ", "_SpC;
+					result+= ", ";
 			}
-			result+= " )"_SpC;
+			result+= " )";
 			if( function.unsafe )
-				result+= " unsafe"_SpC;
+				result+= " unsafe";
 			return result;
 		}
 	};
@@ -855,7 +855,7 @@ bool operator!=( const FunctionPointer& l, const FunctionPointer& r )
 	return !( r == l );
 }
 
-const ProgramString g_invalid_type_name= "InvalidType"_SpC;
+const ProgramString g_invalid_type_name= "InvalidType";
 
 const ProgramString& GetFundamentalTypeName( const U_FundamentalType type )
 {

@@ -21,8 +21,8 @@ namespace CodeBuilderPrivate
 namespace
 {
 
-const ProgramString g_name_for_generated_class= "_"_SpC;
-const ProgramString g_template_parameters_namespace_prefix= "_tp_ns-"_SpC;
+const ProgramString g_name_for_generated_class= "_";
+const ProgramString g_template_parameters_namespace_prefix= "_tp_ns-";
 
 template< class TemplateParam >
 ProgramString EncodeTemplateParameters( std::vector<TemplateParam>& deduced_template_args )
@@ -45,7 +45,7 @@ ProgramString EncodeTemplateParameters( std::vector<TemplateParam>& deduced_temp
 				raw_type= enum_type->underlaying_type;
 			else U_ASSERT( false );
 
-			r+= "_val_of_t_"_SpC + GetFundamentalTypeName( raw_type.fundamental_type ) + "_"_SpC;
+			r+= "_val_of_t_" + GetFundamentalTypeName( raw_type.fundamental_type ) + "_";
 
 			const llvm::APInt& int_value= variable->constexpr_value->getUniqueInteger();
 			if( IsSignedInteger( raw_type.fundamental_type ) && int_value.isNegative() )
@@ -54,7 +54,7 @@ ProgramString EncodeTemplateParameters( std::vector<TemplateParam>& deduced_temp
 				r+= std::to_string( uint64_t(int_value.getLimitedValue()) );
 		}
 		else U_ASSERT(false);
-		r += "_"_SpC;
+		r += "_";
 	}
 	return r;
 }
@@ -76,13 +76,13 @@ void CreateTemplateErrorsContext(
 
 	{
 		ProgramString args_description;
-		args_description+= "[ with "_SpC;
+		args_description+= "[ with ";
 
 		size_t total_args= known_template_args.size() + template_args.size();
 		size_t args_processed= 0u;
 		for( const auto& known_arg : known_template_args )
 		{
-			args_description+= known_arg.first + " = "_SpC;
+			args_description+= known_arg.first + " = ";
 			if( const Type* const type= known_arg.second.GetTypeName() )
 				args_description+= type->ToString();
 			else if( const Variable* const variable= known_arg.second.GetVariable() )
@@ -91,7 +91,7 @@ void CreateTemplateErrorsContext(
 
 			++args_processed;
 			if( args_processed < total_args )
-				args_description+= ", "_SpC;
+				args_description+= ", ";
 		}
 
 		U_ASSERT( template_.template_parameters.size() == template_args.size() );
@@ -99,7 +99,7 @@ void CreateTemplateErrorsContext(
 		{
 			const DeducibleTemplateParameter& arg= template_args[i];
 
-			args_description+= template_.template_parameters[i].name + " = "_SpC;
+			args_description+= template_.template_parameters[i].name + " = ";
 			if( const Type* const type= std::get_if<Type>( &arg ) )
 				args_description+= type->ToString();
 			else if( const Variable* const variable= std::get_if<Variable>( &arg ) )
@@ -108,16 +108,16 @@ void CreateTemplateErrorsContext(
 
 			++args_processed;
 			if( args_processed < total_args )
-				args_description+= ", "_SpC;
+				args_description+= ", ";
 		}
 
-		args_description+= " ]"_SpC;
+		args_description+= " ]";
 		template_error_context->parameters_description= std::move(args_description);
 	}
 	{
 		ProgramString name= template_.parent_namespace->ToString();
 		if( !name.empty() )
-			name+= "::"_SpC;
+			name+= "::";
 		name+= template_name;
 
 		template_error_context->template_name= std::move(name);

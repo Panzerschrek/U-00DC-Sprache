@@ -34,7 +34,7 @@ SourceGraphLoader::SourceGraphLoader( IVfsPtr vfs )
 SourceGraphPtr SourceGraphLoader::LoadSource( const IVfs::Path& root_file_path )
 {
 	auto result = std::make_unique<SourceGraph>();
-	result->root_node_index= LoadNode_r( root_file_path, ""_SpC, *result );
+	result->root_node_index= LoadNode_r( root_file_path, "", *result );
 
 	return result;
 }
@@ -52,7 +52,7 @@ size_t SourceGraphLoader::LoadNode_r(
 	{
 		ProgramString imports_loop_str;
 		for( auto it= prev_file_it; it != processed_files_stack_.end(); ++it )
-			imports_loop_str+= *it + " -> "_SpC;
+			imports_loop_str+= *it + " -> ";
 		imports_loop_str+= full_file_path;
 		std::cerr << ToUTF8( parent_file_path ) << ": 1:1: Import loop detected: " << ToUTF8( imports_loop_str ) << std::endl;
 		result.have_errors= true;
@@ -70,7 +70,7 @@ size_t SourceGraphLoader::LoadNode_r(
 	if( loaded_file == std::nullopt )
 	{
 		Synt::SyntaxErrorMessage error_message;
-		error_message.text= "Can not read file \""_SpC + file_path + "\""_SpC;
+		error_message.text= "Can not read file \"" + file_path + "\"";
 		error_message.file_pos= FilePos{ 0u, 0u, static_cast<unsigned short>(node_index) };
 
 		std::cerr << ToUTF8(error_message.text) << std::endl;
@@ -126,7 +126,7 @@ size_t SourceGraphLoader::LoadNode_r(
 					macro_map_pair.second.file_pos != dst_map.find(macro_map_pair.first)->second.file_pos )
 				{
 					Synt::SyntaxErrorMessage error_message;
-					error_message.text= "Macro \""_SpC + macro_map_pair.first + "\" redefinition."_SpC;
+					error_message.text= "Macro \"" + macro_map_pair.first + "\" redefinition.";
 					error_message.file_pos= FilePos{ 0u, 0u, static_cast<unsigned short>(node_index) };
 
 					std::cout << ToUTF8(error_message.text) << std::endl;

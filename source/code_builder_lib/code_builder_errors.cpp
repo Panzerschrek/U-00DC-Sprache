@@ -95,7 +95,7 @@ std::string PreprocessArg( const Synt::ComplexName& name )
 	{
 		str+= component.name;
 		if( &component != &name.components.back() )
-			str+= "::"_SpC;
+			str+= "::";
 	}
 	return ToUTF8(str);
 }
