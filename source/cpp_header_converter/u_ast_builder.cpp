@@ -157,7 +157,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 			auto_variable_declaration.name= TranslateIdentifier( name );
 
 			Synt::StringLiteral string_constant( g_dummy_file_pos );
-			string_constant.value_.push_back( char_literal_parser.getValue() );
+			string_constant.value_.push_back( char(char_literal_parser.getValue()) );
 			string_constant.type_suffix_[0]= 'c';
 			string_constant.type_suffix_[1]= '8';
 
