@@ -5,39 +5,36 @@
 namespace U
 {
 
-// TODO - return const char*
 std::string BinaryOperatorToString( const BinaryOperatorType op )
 {
-	const char* op_str= "";
 	switch( op )
 	{
-	case BinaryOperatorType::Add: op_str= "+"; break;
-	case BinaryOperatorType::Sub: op_str= "-"; break;
-	case BinaryOperatorType::Mul: op_str= "*"; break;
-	case BinaryOperatorType::Div: op_str= "/"; break;
-	case BinaryOperatorType::Rem: op_str= "%"; break;
+	case BinaryOperatorType::Add: return "+";
+	case BinaryOperatorType::Sub: return "-";
+	case BinaryOperatorType::Mul: return "*";
+	case BinaryOperatorType::Div: return "/";
+	case BinaryOperatorType::Rem: return "%";
 
-	case BinaryOperatorType::Equal: op_str= "=="; break;
-	case BinaryOperatorType::NotEqual: op_str= "!="; break;
-	case BinaryOperatorType::Less: op_str= "<"; break;
-	case BinaryOperatorType::LessEqual: op_str= "<="; break;
-	case BinaryOperatorType::Greater: op_str= ">"; break;
-	case BinaryOperatorType::GreaterEqual: op_str= ">="; break;
+	case BinaryOperatorType::Equal: return "==";
+	case BinaryOperatorType::NotEqual: return "!=";
+	case BinaryOperatorType::Less: return "<";
+	case BinaryOperatorType::LessEqual: return "<=";
+	case BinaryOperatorType::Greater: return ">";
+	case BinaryOperatorType::GreaterEqual: return ">=";
 
-	case BinaryOperatorType::And: op_str= "&"; break;
-	case BinaryOperatorType::Or: op_str= "|"; break;
-	case BinaryOperatorType::Xor: op_str= "^"; break;
+	case BinaryOperatorType::And: return "&";
+	case BinaryOperatorType::Or: return "|";
+	case BinaryOperatorType::Xor: return "^";
 
-	case BinaryOperatorType::ShiftLeft : op_str= "<<"; break;
-	case BinaryOperatorType::ShiftRight: op_str= ">>"; break;
+	case BinaryOperatorType::ShiftLeft : return "<<";
+	case BinaryOperatorType::ShiftRight: return ">>";
 
-	case BinaryOperatorType::LazyLogicalAnd: op_str= "&&"; break;
-	case BinaryOperatorType::LazyLogicalOr: op_str= "||"; break;
-
-	case BinaryOperatorType::Last: U_ASSERT(false); break;
+	case BinaryOperatorType::LazyLogicalAnd: return "&&";
+	case BinaryOperatorType::LazyLogicalOr: return "||";
 	};
 
-	return op_str;
+	U_ASSERT(false);
+	return "";
 }
 
 std::string OverloadedOperatorToString( const OverloadedOperator op )

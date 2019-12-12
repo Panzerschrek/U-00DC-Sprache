@@ -1708,7 +1708,6 @@ Value CodeBuilder::BuildBinaryOperator(
 
 	case BinaryOperatorType::LazyLogicalAnd:
 	case BinaryOperatorType::LazyLogicalOr:
-	case BinaryOperatorType::Last:
 		U_ASSERT(false);
 		break;
 	};

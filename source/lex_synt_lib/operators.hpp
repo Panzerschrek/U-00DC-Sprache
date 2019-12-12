@@ -28,8 +28,6 @@ enum class BinaryOperatorType : uint8_t
 
 	LazyLogicalAnd,
 	LazyLogicalOr,
-
-	Last,
 };
 
 enum class OverloadedOperator : uint8_t

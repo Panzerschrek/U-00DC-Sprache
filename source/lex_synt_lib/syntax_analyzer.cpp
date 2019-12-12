@@ -89,8 +89,6 @@ int GetBinaryOperatorPriority( const BinaryOperatorType binary_operator )
 	case BinaryOperatorType::Xor: return PRIORITY;
 	case BinaryOperatorType::LazyLogicalAnd: return PRIORITY;
 	case BinaryOperatorType::LazyLogicalOr: return PRIORITY;
-
-	case BinaryOperatorType::Last: break;
 	};
 
 	U_ASSERT(false);
