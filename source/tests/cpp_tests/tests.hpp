@@ -73,12 +73,12 @@ ICodeBuilder::BuildResult BuildProgramWithErrors( const char* text );
 
 struct SourceEntry
 {
-	ProgramString file_path;
+	std::string file_path;
 	const char* text;
 };
 
-std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const ProgramString& root_file_path );
-ICodeBuilder::BuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry> sources, const ProgramString& root_file_path );
+std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const std::string& root_file_path );
+ICodeBuilder::BuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry> sources, const std::string& root_file_path );
 
 EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, bool needs_dump= false );
 

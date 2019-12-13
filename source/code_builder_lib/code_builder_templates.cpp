@@ -21,19 +21,19 @@ namespace CodeBuilderPrivate
 namespace
 {
 
-const ProgramString g_name_for_generated_class= "_"_SpC;
-const ProgramString g_template_parameters_namespace_prefix= "_tp_ns-"_SpC;
+const std::string g_name_for_generated_class= "_";
+const std::string g_template_parameters_namespace_prefix= "_tp_ns-";
 
 template< class TemplateParam >
-ProgramString EncodeTemplateParameters( std::vector<TemplateParam>& deduced_template_args )
+std::string EncodeTemplateParameters( std::vector<TemplateParam>& deduced_template_args )
 {
-	ProgramString r;
+	std::string r;
 	for(const auto& arg : deduced_template_args )
 	{
 		if( const Type* const type= std::get_if<Type>( &arg ) )
 		{
 			// We needs full mangled name of template parameter here, because short type names from different spaces may coincide.
-			r+= DecodeUTF8( MangleType( *type ) );
+			r+= MangleType( *type );
 		}
 		else if( const Variable* const variable= std::get_if<Variable>( &arg ) )
 		{
@@ -45,16 +45,16 @@ ProgramString EncodeTemplateParameters( std::vector<TemplateParam>& deduced_temp
 				raw_type= enum_type->underlaying_type;
 			else U_ASSERT( false );
 
-			r+= "_val_of_t_"_SpC + GetFundamentalTypeName( raw_type.fundamental_type ) + "_"_SpC;
+			r+= "_val_of_t_" + GetFundamentalTypeName( raw_type.fundamental_type ) + "_";
 
 			const llvm::APInt& int_value= variable->constexpr_value->getUniqueInteger();
 			if( IsSignedInteger( raw_type.fundamental_type ) && int_value.isNegative() )
-				r+= ToProgramString( std::to_string(  int64_t(int_value.getLimitedValue()) ) );
+				r+= std::to_string(  int64_t(int_value.getLimitedValue()) );
 			else
-				r+= ToProgramString( std::to_string( uint64_t(int_value.getLimitedValue()) ) );
+				r+= std::to_string( uint64_t(int_value.getLimitedValue()) );
 		}
 		else U_ASSERT(false);
-		r += "_"_SpC;
+		r += "_";
 	}
 	return r;
 }
@@ -64,9 +64,9 @@ void CreateTemplateErrorsContext(
 	const FilePos& file_pos,
 	const NamesScopePtr& template_parameters_namespace,
 	const TemplateBase& template_,
-	const ProgramString& template_name,
+	const std::string& template_name,
 	const DeducibleTemplateParameters& template_args,
-	const std::vector< std::pair< ProgramString, Value > >& known_template_args= {} )
+	const std::vector< std::pair< std::string, Value > >& known_template_args= {} )
 {
 	REPORT_ERROR( TemplateContext, errors_container, file_pos );
 	const auto template_error_context= std::make_shared<TemplateErrorsContext>();
@@ -75,23 +75,23 @@ void CreateTemplateErrorsContext(
 	template_parameters_namespace->SetErrors( template_error_context->errors );
 
 	{
-		ProgramString args_description;
-		args_description+= "[ with "_SpC;
+		std::string args_description;
+		args_description+= "[ with ";
 
 		size_t total_args= known_template_args.size() + template_args.size();
 		size_t args_processed= 0u;
 		for( const auto& known_arg : known_template_args )
 		{
-			args_description+= known_arg.first + " = "_SpC;
+			args_description+= known_arg.first + " = ";
 			if( const Type* const type= known_arg.second.GetTypeName() )
 				args_description+= type->ToString();
 			else if( const Variable* const variable= known_arg.second.GetVariable() )
-				args_description+= ToProgramString( std::to_string( int64_t(variable->constexpr_value->getUniqueInteger().getLimitedValue()) ) );
+				args_description+= std::to_string( int64_t(variable->constexpr_value->getUniqueInteger().getLimitedValue()) );
 			else U_ASSERT(false);
 
 			++args_processed;
 			if( args_processed < total_args )
-				args_description+= ", "_SpC;
+				args_description+= ", ";
 		}
 
 		U_ASSERT( template_.template_parameters.size() == template_args.size() );
@@ -99,25 +99,25 @@ void CreateTemplateErrorsContext(
 		{
 			const DeducibleTemplateParameter& arg= template_args[i];
 
-			args_description+= template_.template_parameters[i].name + " = "_SpC;
+			args_description+= template_.template_parameters[i].name + " = ";
 			if( const Type* const type= std::get_if<Type>( &arg ) )
 				args_description+= type->ToString();
 			else if( const Variable* const variable= std::get_if<Variable>( &arg ) )
-				args_description+= ToProgramString( std::to_string( int64_t(variable->constexpr_value->getUniqueInteger().getLimitedValue()) ) );
+				args_description+= std::to_string( int64_t(variable->constexpr_value->getUniqueInteger().getLimitedValue()) );
 			else U_ASSERT(false);
 
 			++args_processed;
 			if( args_processed < total_args )
-				args_description+= ", "_SpC;
+				args_description+= ", ";
 		}
 
-		args_description+= " ]"_SpC;
+		args_description+= " ]";
 		template_error_context->parameters_description= std::move(args_description);
 	}
 	{
-		ProgramString name= template_.parent_namespace->ToString();
+		std::string name= template_.parent_namespace->ToString();
 		if( !name.empty() )
-			name+= "::"_SpC;
+			name+= "::";
 		name+= template_name;
 
 		template_error_context->template_name= std::move(name);
@@ -211,7 +211,7 @@ void CodeBuilder::PrepareFunctionTemplate(
 	const ClassProxyPtr& base_class )
 {
 	const Synt::ComplexName& complex_name = function_template_declaration.function_->name_;
-	const ProgramString& function_template_name= complex_name.components.front().name;
+	const std::string& function_template_name= complex_name.components.front().name;
 
 	if( complex_name.components.size() > 1u )
 		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), function_template_declaration.file_pos_ );
@@ -260,7 +260,7 @@ void CodeBuilder::ProcessTemplateArgs(
 	for( const Synt::TemplateBase::Arg& arg : args )
 	{
 		U_ASSERT( arg.name->components.size() == 1u );
-		const ProgramString& arg_name= arg.name->components.front().name;
+		const std::string& arg_name= arg.name->components.front().name;
 
 		// Check redefinition
 		for( const auto& prev_arg : template_parameters )
@@ -321,7 +321,7 @@ void CodeBuilder::ProcessTemplateArgs(
 			Variable variable;
 			variable.type= *type;
 			variable.constexpr_value= llvm::UndefValue::get( type->GetLLVMType() );
-			variable.llvm_value= CreateGlobalConstantVariable( *type, ToUTF8( arg_name ), variable.constexpr_value );
+			variable.llvm_value= CreateGlobalConstantVariable( *type, arg_name, variable.constexpr_value );
 
 			inserted_template_parameter=
 				template_parameters_namespace.AddName( arg_name, Value( std::move(variable), file_pos ) /* TODO - set correct file_pos */ );
@@ -537,7 +537,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 		variable_for_insertion.llvm_value=
 			CreateGlobalConstantVariable(
 				variable->type,
-				ToUTF8( template_.template_parameters[ dependend_arg_index ].name ),
+				template_.template_parameters[ dependend_arg_index ].name,
 				variable->constexpr_value );
 		variable_for_insertion.constexpr_value= variable->constexpr_value;
 
@@ -918,7 +918,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	const TypeTemplate& type_template= *type_template_ptr;
 	NamesScope& template_names_scope= *type_template.parent_namespace;
 
-	const ProgramString& type_template_name= type_template.syntax_element->name_;
+	const std::string& type_template_name= type_template.syntax_element->name_;
 
 	if( template_arguments.size() < type_template.first_optional_signature_argument )
 		return result;
@@ -1029,9 +1029,9 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	}
 
 	// Encode name.
-	ProgramString name_encoded= g_template_parameters_namespace_prefix + type_template.syntax_element->name_;
+	std::string name_encoded= g_template_parameters_namespace_prefix + type_template.syntax_element->name_;
 	name_encoded+= EncodeTemplateParameters( deduced_template_args );
-	name_encoded+= ToProgramString( std::to_string( reinterpret_cast<uintptr_t>(&type_template) ) ); // Encode also template itself, because we can have multiple templates with same name.
+	name_encoded+= std::to_string( reinterpret_cast<uintptr_t>(&type_template) ); // Encode also template itself, because we can have multiple templates with same name.
 
 	{ // Check, if already type generated.
 		const auto it= generated_template_things_storage_.find( name_encoded );
@@ -1118,7 +1118,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 {
 	const FunctionTemplate& function_template= *function_template_ptr;
 	const Synt::Function& function_declaration= *function_template.syntax_element->function_;
-	const ProgramString& func_name= function_declaration.name_.components.back().name;
+	const std::string& func_name= function_declaration.name_.components.back().name;
 
 	NamesScope& template_names_scope= *function_template.parent_namespace;
 
@@ -1278,9 +1278,9 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	// Use encoded name only for cache search.
 	// For function template namespace use only default namespace name.
 	// Template namespace encoding does not needed, because in normal program each function (and template function) have different parameters and mangled name.
-	ProgramString name_encoded= g_template_parameters_namespace_prefix + func_name;
+	std::string name_encoded= g_template_parameters_namespace_prefix + func_name;
 	name_encoded+= EncodeTemplateParameters( deduced_template_args );
-	name_encoded+= ToProgramString( std::to_string( reinterpret_cast<uintptr_t>(&function_template) ) ); // HACK! use address of template object, because we can have multiple templates with same name.
+	name_encoded+= std::to_string( reinterpret_cast<uintptr_t>(&function_template) ); // HACK! use address of template object, because we can have multiple templates with same name.
 
 	{
 		const auto it= generated_template_things_storage_.find( name_encoded );
@@ -1363,7 +1363,7 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 		return nullptr;
 
 	// Encode name, based on set of function templates and given tempate parameters.
-	ProgramString name_encoded= g_template_parameters_namespace_prefix + function_templates.front()->syntax_element->function_->name_.components.front().name;
+	std::string name_encoded= g_template_parameters_namespace_prefix + function_templates.front()->syntax_element->function_->name_.components.front().name;
 	name_encoded+= EncodeTemplateParameters( template_parameters );
 
 	{
@@ -1458,7 +1458,7 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 		// Fill set of known parameters.
 		for( size_t i= 0u; i < template_parameters.size(); ++i )
 		{
-			const ProgramString& name= function_template.template_parameters[i].name;
+			const std::string& name= function_template.template_parameters[i].name;
 			if( const Type* const type= std::get_if<Type>( &template_parameters[i] ) )
 				new_template->known_template_parameters.emplace_back( name, Value( *type, file_pos ) );
 			else if( const Variable* const variable= std::get_if<Variable>( &template_parameters[i] ) )
@@ -1478,7 +1478,7 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 	return & generated_template_things_storage_.insert( std::make_pair( name_encoded, result ) ).first->second;
 }
 
-bool CodeBuilder::NameShadowsTemplateArgument( const ProgramString& name, NamesScope& names_scope )
+bool CodeBuilder::NameShadowsTemplateArgument( const std::string& name, NamesScope& names_scope )
 {
 	// Not implemented correctly yet.
 	U_UNUSED(name);
@@ -1507,7 +1507,7 @@ bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
 void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& file_pos, Class& class_ )
 {
 	class_.members.ForEachInThisScope(
-		[this, file_pos, &class_]( const ProgramString& name, const Value& value )
+		[this, file_pos, &class_]( const std::string& name, const Value& value )
 		{
 			if( const Type* const type= value.GetTypeName() )
 			{
@@ -1533,11 +1533,11 @@ void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& fi
 			{}
 			else if( const NamesScopePtr inner_namespace= value.GetNamespace() )
 			{
-				const ProgramString& generated_class_name= g_name_for_generated_class;
+				const std::string& generated_class_name= g_name_for_generated_class;
 
 				// This must be only namespace for class template instantiation.
 				inner_namespace->ForEachInThisScope(
-					[&]( const ProgramString& name, const Value& inner_namespace_value )
+					[&]( const std::string& name, const Value& inner_namespace_value )
 					{
 						if( name == generated_class_name )
 						{

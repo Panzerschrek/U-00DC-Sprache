@@ -89,20 +89,20 @@ public:
 		if( !file_mapped || *file_mapped == nullptr )
 			return std::nullopt;
 
-		result.file_content= DecodeUTF8( (*file_mapped)->getBufferStart(), (*file_mapped)->getBufferEnd() );
-		result.full_file_path= ToProgramString( result_path.str().str() );
+		result.file_content.assign( (*file_mapped)->getBufferStart(), (*file_mapped)->getBufferEnd() );
+		result.full_file_path= result_path.str();
 		return std::move(result);
 	}
 
 	virtual Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path ) override
 	{
-		return ToProgramString( GetFullFilePathInternal( file_path, full_parent_file_path ).str().str() );
+		return GetFullFilePathInternal( file_path, full_parent_file_path ).str();
 	}
 
 private:
 	fs_path GetFullFilePathInternal( const Path& file_path, const Path& full_parent_file_path )
 	{
-		const fs_path file_path_r( ToUTF8(file_path) );
+		const fs_path file_path_r( file_path );
 		fs_path result_path;
 
 		if( full_parent_file_path.empty() )
@@ -127,7 +127,7 @@ private:
 		}
 		else
 		{
-			result_path= fsp::parent_path( llvm::StringRef( ToUTF8(full_parent_file_path) ) );
+			result_path= fsp::parent_path( full_parent_file_path );
 			fsp::append( result_path, file_path_r );
 		}
 		return NormalizePath( result_path );
@@ -182,18 +182,18 @@ void PrintErrors( const SourceGraph& source_graph, const CodeBuilderErrorsContai
 		{
 			U_ASSERT( error.template_context != nullptr );
 
-			std::cerr << ToUTF8( source_graph.nodes_storage[ error.template_context->template_declaration_file_pos.file_index ].file_path ) << ": "
-				<< "In instantiation of \"" << ToUTF8( error.template_context->template_name )
-				<< "\" " << ToUTF8( error.template_context->parameters_description )
+			std::cerr << source_graph.nodes_storage[ error.template_context->template_declaration_file_pos.file_index ].file_path << ": "
+				<< "In instantiation of \"" << error.template_context->template_name
+				<< "\" " << error.template_context->parameters_description
 				<< "\n";
 
-			std::cerr << ToUTF8( source_graph.nodes_storage[error.file_pos.file_index ].file_path )
+			std::cerr << source_graph.nodes_storage[error.file_pos.file_index ].file_path
 				<< ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << ": required from here: " << "\n";
 		}
 		else
 		{
-			std::cerr << ToUTF8( source_graph.nodes_storage[error.file_pos.file_index ].file_path )
-				<< ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << ": error: " << ToUTF8( error.text ) << "\n";
+			std::cerr << source_graph.nodes_storage[error.file_pos.file_index ].file_path
+				<< ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << ": error: " << error.text << "\n";
 		}
 
 		if( error.template_context != nullptr )
@@ -208,7 +208,7 @@ void PrintAvailableTargets()
 	{
 		if( !targets_list.empty() )
 			targets_list+= ", ";
-		targets_list+= std::string(target.getName());
+		targets_list+= target.getName();
 	}
 	std::cout << "Available targets: " << targets_list << std::endl;
 }
@@ -437,7 +437,7 @@ int Main( int argc, const char* argv[] )
 	bool have_some_errors= false;
 	for( const std::string& input_file : Options::input_files )
 	{
-		const SourceGraphPtr source_graph= source_graph_loader.LoadSource( DecodeUTF8( input_file.c_str() ) );
+		const SourceGraphPtr source_graph= source_graph_loader.LoadSource( input_file );
 		U_ASSERT( source_graph != nullptr );
 		if( source_graph->have_errors || !source_graph->lexical_errors.empty() || !source_graph->syntax_errors.empty() )
 		{
@@ -452,7 +452,7 @@ int Main( int argc, const char* argv[] )
 		{
 			// For tests we print errors as "file.u 88 NameNotFound"
 			for( const CodeBuilderError& error : build_result.errors )
-				std::cout << ToUTF8( source_graph->nodes_storage[error.file_pos.file_index ].file_path )
+				std::cout << source_graph->nodes_storage[error.file_pos.file_index ].file_path
 					<< " " << error.file_pos.line << " " << CodeBuilderErrorCodeToString( error.code ) << "\n";
 		}
 		else

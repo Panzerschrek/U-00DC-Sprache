@@ -12,24 +12,24 @@ using Synt::ClassMemberVisibility;
 class NamesScope final
 {
 public:
-	NamesScope( ProgramString name, NamesScope* parent );
+	NamesScope( std::string name, NamesScope* parent );
 
 	NamesScope( const NamesScope&)= delete;
 	NamesScope& operator=( const NamesScope&)= delete;
 
 	bool IsAncestorFor( const NamesScope& other ) const;
-	const ProgramString& GetThisNamespaceName() const;
-	void SetThisNamespaceName( ProgramString name );
+	const std::string& GetThisNamespaceName() const;
+	void SetThisNamespaceName( std::string name );
 
 	// Get full name (with enclosing namespaces) un human-readable format.
-	ProgramString ToString() const;
+	std::string ToString() const;
 
 	// Returns nullptr, if name already exists in this scope.
-	Value* AddName( const ProgramString& name, Value value );
+	Value* AddName( const std::string& name, Value value );
 
 	// Resolve simple name only in this scope.
-	Value* GetThisScopeValue( const ProgramString& name );
-	const Value* GetThisScopeValue( const ProgramString& name ) const;
+	Value* GetThisScopeValue( const std::string& name );
+	const Value* GetThisScopeValue( const std::string& name ) const;
 
 	NamesScope* GetParent();
 	const NamesScope* GetParent() const;
@@ -48,14 +48,12 @@ public:
 	void ForEachInThisScope( const Func& func )
 	{
 		++iterating_;
-		ProgramString name;
+		std::string name;
 		name.reserve(max_key_size_);
 		for( auto& inserted_name : names_map_ )
 		{
-			name.assign(
-				reinterpret_cast<const sprache_char*>(inserted_name.getKeyData()),
-				inserted_name.getKeyLength() / sizeof(sprache_char) );
-			func( const_cast<const ProgramString&>(name), inserted_name.second );
+			name.assign( inserted_name.getKeyData(), inserted_name.getKeyLength() );
+			func( const_cast<const std::string&>(name), inserted_name.second );
 		}
 		--iterating_;
 	}
@@ -64,14 +62,12 @@ public:
 	void ForEachInThisScope( const Func& func ) const
 	{
 		++iterating_;
-		ProgramString name;
+		std::string name;
 		name.reserve(max_key_size_);
 		for( const auto& inserted_name : names_map_ )
 		{
-			name.assign(
-				reinterpret_cast<const sprache_char*>(inserted_name.getKeyData()),
-				inserted_name.getKeyLength() / sizeof(sprache_char) );
-			func( const_cast<const ProgramString&>(name), inserted_name.second );
+			name.assign( inserted_name.getKeyData(), inserted_name.getKeyLength() );
+			func( const_cast<const std::string&>(name), inserted_name.second );
 		}
 		--iterating_;
 	}
@@ -95,12 +91,9 @@ public:
 	}
 
 private:
-	ProgramString name_;
+	std::string name_;
 	NamesScope* parent_;
 
-	// Use StringMap here, with "const char*" key.
-	// interpritate ProgramString bytes as chars.
-	// TODO - maybe replace "ProgramString" with UTF-8 std::string?
 	llvm::StringMap< Value > names_map_;
 	size_t max_key_size_= 0u;
 

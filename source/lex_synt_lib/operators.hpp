@@ -1,5 +1,5 @@
 #pragma once
-#include "program_string.hpp"
+#include <string>
 
 namespace U
 {
@@ -28,8 +28,6 @@ enum class BinaryOperatorType : uint8_t
 
 	LazyLogicalAnd,
 	LazyLogicalOr,
-
-	Last,
 };
 
 enum class OverloadedOperator : uint8_t
@@ -80,8 +78,8 @@ enum class OverloadedOperator : uint8_t
 	Call,
 };
 
-ProgramString BinaryOperatorToString( BinaryOperatorType op );
-ProgramString OverloadedOperatorToString( OverloadedOperator op );
+std::string BinaryOperatorToString( BinaryOperatorType op );
+std::string OverloadedOperatorToString( OverloadedOperator op );
 
 OverloadedOperator GetOverloadedOperatorForBinaryOperator( const BinaryOperatorType binary_operator_type );
 OverloadedOperator GetOverloadedOperatorForAdditiveAssignmentOperator( const BinaryOperatorType operator_type );

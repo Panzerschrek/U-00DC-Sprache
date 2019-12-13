@@ -9,7 +9,7 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-NamesScope::NamesScope( ProgramString name, NamesScope* const parent )
+NamesScope::NamesScope( std::string name, NamesScope* const parent )
 	: name_(std::move(name) )
 	, parent_(parent)
 {}
@@ -27,35 +27,31 @@ bool NamesScope::IsAncestorFor( const NamesScope& other ) const
 	return false;
 }
 
-const ProgramString& NamesScope::GetThisNamespaceName() const
+const std::string& NamesScope::GetThisNamespaceName() const
 {
 	return name_;
 }
 
-void NamesScope::SetThisNamespaceName( ProgramString name )
+void NamesScope::SetThisNamespaceName( std::string name )
 {
 	name_= std::move(name);
 }
 
-ProgramString NamesScope::ToString() const
+std::string NamesScope::ToString() const
 {
 	if( parent_ == nullptr ) // Global namespace have no name.
-		return ""_SpC;
+		return "";
 	if( parent_->parent_ == nullptr )
 		return name_;
-	return parent_->ToString() + "::"_SpC + name_;
+	return parent_->ToString() + "::" + name_;
 }
 
 Value* NamesScope::AddName(
-	const ProgramString& name,
+	const std::string& name,
 	Value value )
 {
 	U_ASSERT( iterating_ == 0u );
-	auto it_bool_pair=
-		names_map_.insert(
-			std::make_pair(
-				llvm::StringRef( reinterpret_cast<const char*>(name.data()), name.size() * sizeof(sprache_char) ),
-				std::move( value ) ) );
+	auto it_bool_pair= names_map_.insert( std::make_pair( name, std::move( value ) ) );
 
 	if( it_bool_pair.second )
 	{
@@ -66,16 +62,15 @@ Value* NamesScope::AddName(
 	return nullptr;
 }
 
-Value* NamesScope::GetThisScopeValue( const ProgramString& name )
+Value* NamesScope::GetThisScopeValue( const std::string& name )
 {
-	const auto it= names_map_.find(
-		llvm::StringRef( reinterpret_cast<const char*>(name.data()), name.size() * sizeof(sprache_char) ) );
+	const auto it= names_map_.find( name );
 	if( it != names_map_.end() )
 		return &it->second;
 	return nullptr;
 }
 
-const Value* NamesScope::GetThisScopeValue( const ProgramString& name ) const
+const Value* NamesScope::GetThisScopeValue( const std::string& name ) const
 {
 	return const_cast<NamesScope*>(this)->GetThisScopeValue( name );
 }

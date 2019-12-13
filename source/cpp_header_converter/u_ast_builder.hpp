@@ -32,12 +32,12 @@ private:
 	void ProcessEnum( const clang::EnumDecl& enum_decl, Synt::ProgramElements& out_elements );
 
 	Synt::TypeName TranslateType( const clang::Type& in_type );
-	ProgramString TranslateRecordType( const clang::RecordType& in_type );
-	ProgramString GetUFundamentalType( const clang::BuiltinType& in_type );
+	std::string TranslateRecordType( const clang::RecordType& in_type );
+	std::string GetUFundamentalType( const clang::BuiltinType& in_type );
 	Synt::NamedTypeName TranslateNamedType( const std::string& cpp_type_name );
 	Synt::FunctionTypePtr TranslateFunctionType( const clang::FunctionProtoType& in_type );
 
-	ProgramString TranslateIdentifier( const std::string& identifier );
+	std::string TranslateIdentifier( llvm::StringRef identifier );
 
 private:
 	Synt::ProgramElements& root_program_elements_;
@@ -48,7 +48,7 @@ private:
 	const clang::ASTContext& ast_context_;
 
 	size_t unique_name_index_= 0u;
-	std::unordered_map< const clang::RecordType*, ProgramString > anon_records_names_cache_;
+	std::unordered_map< const clang::RecordType*, std::string > anon_records_names_cache_;
 };
 
 using ParsedUnits= std::map< std::string, Synt::ProgramElements >;

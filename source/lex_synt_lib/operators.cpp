@@ -5,92 +5,90 @@
 namespace U
 {
 
-ProgramString BinaryOperatorToString( const BinaryOperatorType op )
-{
-	const char* op_str= "";
-	switch( op )
-	{
-	case BinaryOperatorType::Add: op_str= "+"; break;
-	case BinaryOperatorType::Sub: op_str= "-"; break;
-	case BinaryOperatorType::Mul: op_str= "*"; break;
-	case BinaryOperatorType::Div: op_str= "/"; break;
-	case BinaryOperatorType::Rem: op_str= "%"; break;
-
-	case BinaryOperatorType::Equal: op_str= "=="; break;
-	case BinaryOperatorType::NotEqual: op_str= "!="; break;
-	case BinaryOperatorType::Less: op_str= "<"; break;
-	case BinaryOperatorType::LessEqual: op_str= "<="; break;
-	case BinaryOperatorType::Greater: op_str= ">"; break;
-	case BinaryOperatorType::GreaterEqual: op_str= ">="; break;
-
-	case BinaryOperatorType::And: op_str= "&"; break;
-	case BinaryOperatorType::Or: op_str= "|"; break;
-	case BinaryOperatorType::Xor: op_str= "^"; break;
-
-	case BinaryOperatorType::ShiftLeft : op_str= "<<"; break;
-	case BinaryOperatorType::ShiftRight: op_str= ">>"; break;
-
-	case BinaryOperatorType::LazyLogicalAnd: op_str= "&&"; break;
-	case BinaryOperatorType::LazyLogicalOr: op_str= "||"; break;
-
-	case BinaryOperatorType::Last: U_ASSERT(false); break;
-	};
-
-	return ToProgramString( op_str );
-}
-
-ProgramString OverloadedOperatorToString( const OverloadedOperator op )
+std::string BinaryOperatorToString( const BinaryOperatorType op )
 {
 	switch( op )
 	{
-	case OverloadedOperator::None: return ""_SpC;
+	case BinaryOperatorType::Add: return "+";
+	case BinaryOperatorType::Sub: return "-";
+	case BinaryOperatorType::Mul: return "*";
+	case BinaryOperatorType::Div: return "/";
+	case BinaryOperatorType::Rem: return "%";
 
-	case OverloadedOperator::Add: return "+"_SpC;
-	case OverloadedOperator::Sub: return "-"_SpC;
-	case OverloadedOperator::Mul: return "*"_SpC;
-	case OverloadedOperator::Div: return "/"_SpC;
-	case OverloadedOperator::Rem: return "%"_SpC;
+	case BinaryOperatorType::Equal: return "==";
+	case BinaryOperatorType::NotEqual: return "!=";
+	case BinaryOperatorType::Less: return "<";
+	case BinaryOperatorType::LessEqual: return "<=";
+	case BinaryOperatorType::Greater: return ">";
+	case BinaryOperatorType::GreaterEqual: return ">=";
 
-	case OverloadedOperator::Equal: return "=="_SpC;
-	case OverloadedOperator::NotEqual: return "!="_SpC;
-	case OverloadedOperator::Less: return "<"_SpC;
-	case OverloadedOperator::LessEqual: return "<="_SpC;
-	case OverloadedOperator::Greater: return ">"_SpC;
-	case OverloadedOperator::GreaterEqual: return ">="_SpC;
+	case BinaryOperatorType::And: return "&";
+	case BinaryOperatorType::Or: return "|";
+	case BinaryOperatorType::Xor: return "^";
 
-	case OverloadedOperator::And: return "&"_SpC;
-	case OverloadedOperator::Or : return "|"_SpC;
-	case OverloadedOperator::Xor: return "^"_SpC;
+	case BinaryOperatorType::ShiftLeft : return "<<";
+	case BinaryOperatorType::ShiftRight: return ">>";
 
-	case OverloadedOperator::ShiftLeft : return "<<"_SpC;
-	case OverloadedOperator::ShiftRight: return ">>"_SpC;
-
-	case OverloadedOperator::AssignAdd: return "+="_SpC;
-	case OverloadedOperator::AssignSub: return "-="_SpC;
-	case OverloadedOperator::AssignMul: return "*="_SpC;
-	case OverloadedOperator::AssignDiv: return "/="_SpC;
-	case OverloadedOperator::AssignRem: return "%="_SpC;
-
-	case OverloadedOperator::AssignAnd: return "&="_SpC;
-	case OverloadedOperator::AssignOr : return "|="_SpC;
-	case OverloadedOperator::AssignXor: return "^="_SpC;
-
-	case OverloadedOperator::AssignShiftLeft : return "<<="_SpC;
-	case OverloadedOperator::AssignShiftRight: return ">>="_SpC;
-
-	case OverloadedOperator::LogicalNot: return "!"_SpC;
-	case OverloadedOperator::BitwiseNot: return "~"_SpC;
-
-	case OverloadedOperator::Assign: return "="_SpC;
-	case OverloadedOperator::Increment: return "++"_SpC;
-	case OverloadedOperator::Decrement: return "--"_SpC;
-
-	case OverloadedOperator::Indexing: return "[]"_SpC;
-	case OverloadedOperator::Call: return "()"_SpC;
+	case BinaryOperatorType::LazyLogicalAnd: return "&&";
+	case BinaryOperatorType::LazyLogicalOr: return "||";
 	};
 
 	U_ASSERT(false);
-	return ""_SpC;
+	return "";
+}
+
+std::string OverloadedOperatorToString( const OverloadedOperator op )
+{
+	switch( op )
+	{
+	case OverloadedOperator::None: return "";
+
+	case OverloadedOperator::Add: return "+";
+	case OverloadedOperator::Sub: return "-";
+	case OverloadedOperator::Mul: return "*";
+	case OverloadedOperator::Div: return "/";
+	case OverloadedOperator::Rem: return "%";
+
+	case OverloadedOperator::Equal: return "==";
+	case OverloadedOperator::NotEqual: return "!=";
+	case OverloadedOperator::Less: return "<";
+	case OverloadedOperator::LessEqual: return "<=";
+	case OverloadedOperator::Greater: return ">";
+	case OverloadedOperator::GreaterEqual: return ">=";
+
+	case OverloadedOperator::And: return "&";
+	case OverloadedOperator::Or : return "|";
+	case OverloadedOperator::Xor: return "^";
+
+	case OverloadedOperator::ShiftLeft : return "<<";
+	case OverloadedOperator::ShiftRight: return ">>";
+
+	case OverloadedOperator::AssignAdd: return "+=";
+	case OverloadedOperator::AssignSub: return "-=";
+	case OverloadedOperator::AssignMul: return "*=";
+	case OverloadedOperator::AssignDiv: return "/=";
+	case OverloadedOperator::AssignRem: return "%=";
+
+	case OverloadedOperator::AssignAnd: return "&=";
+	case OverloadedOperator::AssignOr : return "|=";
+	case OverloadedOperator::AssignXor: return "^=";
+
+	case OverloadedOperator::AssignShiftLeft : return "<<=";
+	case OverloadedOperator::AssignShiftRight: return ">>=";
+
+	case OverloadedOperator::LogicalNot: return "!";
+	case OverloadedOperator::BitwiseNot: return "~";
+
+	case OverloadedOperator::Assign: return "=";
+	case OverloadedOperator::Increment: return "++";
+	case OverloadedOperator::Decrement: return "--";
+
+	case OverloadedOperator::Indexing: return "[]";
+	case OverloadedOperator::Call: return "()";
+	};
+
+	U_ASSERT(false);
+	return "";
 }
 
 OverloadedOperator GetOverloadedOperatorForBinaryOperator( const BinaryOperatorType binary_operator_type )

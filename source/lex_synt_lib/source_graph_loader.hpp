@@ -1,7 +1,6 @@
 #pragma once
 #include <memory>
 
-#include "program_string.hpp"
 #include "syntax_analyzer.hpp"
 
 namespace U
@@ -10,11 +9,11 @@ namespace U
 class IVfs
 {
 public:
-	using Path=ProgramString;
+	using Path=std::string;
 	struct LoadFileResult
 	{
 		Path full_file_path;
-		ProgramString file_content;
+		std::string file_content;
 	};
 
 	virtual ~IVfs()= default;

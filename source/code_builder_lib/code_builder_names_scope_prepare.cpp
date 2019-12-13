@@ -99,7 +99,7 @@ void CodeBuilder::NamesScopeFill(
 	if( function_declaration.name_.components.size() != 1u )
 		return; // process out of line functions later.
 
-	const ProgramString& func_name= function_declaration.name_.components.back().name;
+	const std::string& func_name= function_declaration.name_.components.back().name;
 	if( IsKeyword( func_name ) && func_name != Keywords::constructor_ && func_name != Keywords::destructor_ )
 		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), function_declaration.file_pos_ );
 	if( NameShadowsTemplateArgument( func_name, names_scope ) )
@@ -138,7 +138,7 @@ void CodeBuilder::NamesScopeFill(
 	const ClassMemberVisibility visibility )
 {
 	const Synt::ComplexName& complex_name = function_template_declaration.function_->name_;
-	const ProgramString& function_template_name= complex_name.components.front().name;
+	const std::string& function_template_name= complex_name.components.front().name;
 
 	if( complex_name.components.size() > 1u )
 		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), function_template_declaration.file_pos_ );
@@ -178,11 +178,11 @@ void CodeBuilder::NamesScopeFill(
 ClassProxyPtr CodeBuilder::NamesScopeFill(
 	const Synt::ClassPtr& class_declaration_ptr,
 	NamesScope& names_scope,
-	const ProgramString& override_name )
+	const std::string& override_name )
 {
 	const auto& class_declaration= *class_declaration_ptr;
 
-	const ProgramString& class_name= override_name.empty() ? class_declaration.name_: override_name;
+	const std::string& class_name= override_name.empty() ? class_declaration.name_: override_name;
 	if( IsKeyword( class_name ) )
 		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), class_declaration.file_pos_ );
 	if( NameShadowsTemplateArgument( class_name, names_scope ) )
@@ -245,11 +245,11 @@ ClassProxyPtr CodeBuilder::NamesScopeFill(
 			const Synt::Class& class_declaration;
 			ClassProxyPtr& class_type;
 			Class& the_class;
-			const ProgramString& class_name;
+			const std::string& class_name;
 			ClassMemberVisibility current_visibility= ClassMemberVisibility::Public;
 			unsigned int field_number= 0u;
 
-			Visitor( CodeBuilder& in_this, const Synt::Class& in_class_declaration, ClassProxyPtr& in_class_type, Class& in_the_class, const ProgramString& in_class_name )
+			Visitor( CodeBuilder& in_this, const Synt::Class& in_class_declaration, ClassProxyPtr& in_class_type, Class& in_the_class, const std::string& in_class_name )
 				: this_(in_this), class_declaration(in_class_declaration), class_type(in_class_type), the_class(in_the_class), class_name(in_class_name)
 			{}
 
@@ -333,7 +333,7 @@ void CodeBuilder::NamesScopeFill(
 	const ClassProxyPtr& base_class,
 	const ClassMemberVisibility visibility )
 {
-	const ProgramString type_template_name= type_template_declaration.name_;
+	const std::string type_template_name= type_template_declaration.name_;
 	if( IsKeyword( type_template_name ) )
 		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), type_template_declaration.file_pos_ );
 	if( NameShadowsTemplateArgument( type_template_name, names_scope ) )
@@ -402,7 +402,7 @@ void CodeBuilder::NamesScopeFill(
 	static_assert_.syntax_element= &static_assert_declaration;
 
 	names_scope.AddName(
-		"_sa_"_SpC + ToProgramString( std::to_string(reinterpret_cast<uintptr_t>(&static_assert_declaration)) ),
+		"_sa_" + std::to_string(reinterpret_cast<uintptr_t>(&static_assert_declaration)),
 		Value( static_assert_, static_assert_declaration.file_pos_ ) );
 }
 

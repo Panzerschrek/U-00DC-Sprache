@@ -21,7 +21,7 @@ struct ExpectedLexem
 	ExpectedLexem( const Keywords keyword ) : type(Lexem::Type::Identifier), text( Keyword( keyword) ) {}
 
 	Lexem::Type type;
-	ProgramString text;
+	std::string text;
 };
 
 const std::vector<ExpectedLexem> g_namespace_body_elements_start_lexems
@@ -89,8 +89,6 @@ int GetBinaryOperatorPriority( const BinaryOperatorType binary_operator )
 	case BinaryOperatorType::Xor: return PRIORITY;
 	case BinaryOperatorType::LazyLogicalAnd: return PRIORITY;
 	case BinaryOperatorType::LazyLogicalOr: return PRIORITY;
-
-	case BinaryOperatorType::Last: break;
 	};
 
 	U_ASSERT(false);
@@ -232,16 +230,16 @@ private:
 	{
 		Lexems::const_iterator begin;
 		Lexems::const_iterator end;
-		std::vector< std::map<ProgramString, ParsedMacroElement> > sub_elements;
+		std::vector< std::map<std::string, ParsedMacroElement> > sub_elements;
 		Macro::MatchElementKind kind= Macro::MatchElementKind::Lexem;
 	};
 
 	struct MacroNamesMap
 	{
 		const MacroNamesMap* prev= nullptr;
-		const std::map<ProgramString, ParsedMacroElement>* names= nullptr;
+		const std::map<std::string, ParsedMacroElement>* names= nullptr;
 
-		const ParsedMacroElement* GetElement( const ProgramString& name ) const
+		const ParsedMacroElement* GetElement( const std::string& name ) const
 		{
 			const auto it= names->find(name);
 			if( it != names->end() ) return &it->second;
@@ -318,20 +316,20 @@ private:
 			FunctionTemplate >;
 	TemplateVar ParseTemplate();
 
-	const Macro* FetchMacro( const ProgramString& macro_name, const Macro::Context context );
+	const Macro* FetchMacro( const std::string& macro_name, const Macro::Context context );
 
 	template<typename ParseFnResult>
 	ParseFnResult ExpandMacro( const Macro& macro, ParseFnResult (SyntaxAnalyzer::*parse_fn)() );
 
 	bool MatchMacroBlock(
 		const std::vector<Macro::MatchElement>& match_elements,
-		const ProgramString& macro_name,
-		std::map<ProgramString, ParsedMacroElement>& out_elements );
+		const std::string& macro_name,
+		std::map<std::string, ParsedMacroElement>& out_elements );
 
 	Lexems DoExpandMacro(
 		const MacroNamesMap& parsed_elements,
 		const std::vector<Macro::ResultElement>& result_elements,
-		ProgramStringMap<ProgramString>& unique_macro_identifier_map );
+		ProgramStringMap<std::string>& unique_macro_identifier_map );
 
 	void NextLexem();
 	bool NotEndOfFile();
@@ -373,7 +371,7 @@ SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
 	result.imports= ParseImports();
 	while( NotEndOfFile() )
 	{
-		if( !( it_->type == Lexem::Type::MacroIdentifier && it_->text == "?macro"_SpC ) )
+		if( !( it_->type == Lexem::Type::MacroIdentifier && it_->text == "?macro" ) )
 			break;
 
 		ParseMacro();
@@ -428,7 +426,7 @@ void SyntaxAnalyzer::ParseMacro()
 	Macro macro;
 	Macro::Context macro_context= Macro::Context::Expression;
 
-	U_ASSERT( it_->type == Lexem::Type::MacroIdentifier && it_->text == "?macro"_SpC );
+	U_ASSERT( it_->type == Lexem::Type::MacroIdentifier && it_->text == "?macro" );
 	NextLexem();
 
 	// Match body
@@ -453,7 +451,7 @@ void SyntaxAnalyzer::ParseMacro()
 	{
 		SyntaxErrorMessage msg;
 		msg.file_pos= macro.file_pos;
-		msg.text= "Using keyword as macro name"_SpC;
+		msg.text= "Using keyword as macro name";
 		error_messages_.push_back(std::move(msg));
 	}
 
@@ -469,22 +467,22 @@ void SyntaxAnalyzer::ParseMacro()
 		PushErrorMessage();
 		return;
 	}
-	const ProgramString& context_str= it_->text;
+	const std::string& context_str= it_->text;
 	NextLexem();
 
-	if( context_str == "expr"_SpC )
+	if( context_str == "expr" )
 		macro_context= Macro::Context::Expression;
-	else if( context_str == "block"_SpC )
+	else if( context_str == "block" )
 		macro_context= Macro::Context::Block;
-	else if( context_str == "class"_SpC )
+	else if( context_str == "class" )
 		macro_context= Macro::Context::Class;
-	else if( context_str == "namespace"_SpC )
+	else if( context_str == "namespace" )
 		macro_context= Macro::Context::Namespace;
 	else
 	{
 		SyntaxErrorMessage msg;
 		msg.file_pos= macro.file_pos;
-		msg.text= "\""_SpC + context_str + "\" unknown macro context"_SpC;
+		msg.text= "\"" + context_str + "\" unknown macro context";
 		error_messages_.push_back(std::move(msg));
 	}
 
@@ -524,7 +522,7 @@ void SyntaxAnalyzer::ParseMacro()
 	{
 		SyntaxErrorMessage msg;
 		msg.file_pos= macro.file_pos;
-		msg.text= "\""_SpC + macro.name + "\" macro redefinition."_SpC;
+		msg.text= "\"" + macro.name + "\" macro redefinition.";
 		error_messages_.push_back(std::move(msg));
 	}
 	else
@@ -534,7 +532,7 @@ void SyntaxAnalyzer::ParseMacro()
 std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 {
 	std::vector<Macro::MatchElement> result;
-	std::set<ProgramString> elements_set;
+	std::set<std::string> elements_set;
 
 	while( NotEndOfFile() )
 	{
@@ -554,14 +552,14 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 			{
 				SyntaxErrorMessage msg;
 				msg.file_pos= it_->file_pos;
-				msg.text= "\""_SpC + element.name + "\" macro parameter redefinition."_SpC;
+				msg.text= "\"" + element.name + "\" macro parameter redefinition.";
 				error_messages_.push_back(std::move(msg));
 			}
 			if( IsKeyword( element.name ) )
 			{
 				SyntaxErrorMessage msg;
 				msg.file_pos= it_->file_pos;
-				msg.text= "Using keyword as macro element name"_SpC;
+				msg.text= "Using keyword as macro element name";
 				error_messages_.push_back(std::move(msg));
 			}
 			NextLexem();
@@ -578,26 +576,26 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 				PushErrorMessage();
 				return result;
 			}
-			const ProgramString& element_type_str= it_->text;
+			const std::string& element_type_str= it_->text;
 			NextLexem();
 
-			if( element_type_str == "ident"_SpC )
+			if( element_type_str == "ident" )
 				element.kind= Macro::MatchElementKind::Identifier;
-			else if( element_type_str == "ty"_SpC )
+			else if( element_type_str == "ty" )
 				element.kind= Macro::MatchElementKind::Typename;
-			else if( element_type_str == "expr"_SpC )
+			else if( element_type_str == "expr" )
 				element.kind= Macro::MatchElementKind::Expression;
-			else if( element_type_str == "block"_SpC )
+			else if( element_type_str == "block" )
 				element.kind= Macro::MatchElementKind::Block;
-			else if( element_type_str == "opt"_SpC )
+			else if( element_type_str == "opt" )
 				element.kind= Macro::MatchElementKind::Optional;
-			else if( element_type_str == "rep"_SpC )
+			else if( element_type_str == "rep" )
 				element.kind= Macro::MatchElementKind::Repeated;
 			else
 			{
 				SyntaxErrorMessage msg;
 				msg.file_pos= it_->file_pos;
-				msg.text= "\""_SpC + element_type_str + "\" unknown macro variable type"_SpC;
+				msg.text= "\"" + element_type_str + "\" unknown macro variable type";
 				error_messages_.push_back(std::move(msg));
 			}
 
@@ -670,7 +668,7 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 			{
 				SyntaxErrorMessage msg;
 				msg.file_pos= it_->file_pos;
-				msg.text= "Expected lexem at start or after \""_SpC + result[i].name + "\" element."_SpC;
+				msg.text= "Expected lexem at start or after \"" + result[i].name + "\" element.";
 				error_messages_.push_back(std::move(msg));
 			}
 
@@ -682,7 +680,7 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 				{
 					SyntaxErrorMessage msg;
 					msg.file_pos= it_->file_pos;
-					msg.text= "Start lexem of optional macro block must be different from first lexem after optional block."_SpC;
+					msg.text= "Start lexem of optional macro block must be different from first lexem after optional block.";
 					error_messages_.push_back(std::move(msg));
 				}
 
@@ -692,7 +690,7 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 				{
 					SyntaxErrorMessage msg;
 					msg.file_pos= it_->file_pos;
-					msg.text= "Separator lexem of repeated macro block must be different from first lexem after repeated block."_SpC;
+					msg.text= "Separator lexem of repeated macro block must be different from first lexem after repeated block.";
 					error_messages_.push_back(std::move(msg));
 				}
 
@@ -703,7 +701,7 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 				{
 					SyntaxErrorMessage msg;
 					msg.file_pos= it_->file_pos;
-					msg.text= "Start lexem of repeated macro block without separator must be different from first lexem after repeated block."_SpC;
+					msg.text= "Start lexem of repeated macro block without separator must be different from first lexem after repeated block.";
 					error_messages_.push_back(std::move(msg));
 				}
 			}
@@ -846,7 +844,7 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 			auto namespace_= std::make_unique<Namespace>( it_->file_pos );
 			NextLexem();
 
-			ProgramString name;
+			std::string name;
 			if( it_->type == Lexem::Type::Identifier )
 			{
 				name= it_->text;
@@ -899,38 +897,38 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 
 NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 {
-	const ProgramString& text= it_->text;
+	const std::string& text= it_->text;
 
 	uint64_t base= 10;
-	uint64_t (*number_func)( sprache_char) =
-		[]( sprache_char c ) -> uint64_t
+	uint64_t (*number_func)( char) =
+		[]( char c ) -> uint64_t
 		{
 			U_ASSERT( c >= '0' && c <= '9' );
 			return c - '0';
 		};
 
-	bool (*is_number_func)( sprache_char) =
-		[]( sprache_char c ) -> bool { return std::isdigit(c); };
+	bool (*is_number_func)( char ) =
+		[]( char c ) -> bool { return std::isdigit(c); };
 
-	ProgramString::const_iterator it= text.begin();
-	const ProgramString::const_iterator it_end= text.end();
+	std::string::const_iterator it= text.begin();
+	const std::string::const_iterator it_end= text.end();
 
 	if( text.size() >= 2 && text[0] == '0' )
 	{
-		sprache_char d= text[1];
+		const char d= text[1];
 		switch(d)
 		{
 		case 'b':
 			it+= 2;
 			base= 2;
 			number_func=
-				[]( sprache_char c ) -> uint64_t
+				[]( char c ) -> uint64_t
 				{
 					U_ASSERT( c >= '0' && c <= '1' );
 					return c - '0';
 				};
 			is_number_func=
-				[]( sprache_char c ) -> bool
+				[]( char c ) -> bool
 				{
 					return c == '0' || c == '1';
 				};
@@ -940,13 +938,13 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 			it+= 2;
 			base= 8;
 			number_func=
-				[]( sprache_char c ) -> uint64_t
+				[]( char c ) -> uint64_t
 				{
 					U_ASSERT( c >= '0' && c <= '7' );
 					return c - '0';
 				};
 			is_number_func=
-				[]( sprache_char c ) -> bool
+				[]( char c ) -> bool
 				{
 					return c >= '0' && c <= '7';
 				};
@@ -956,7 +954,7 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 			it+= 2;
 			base= 16;
 			number_func=
-				[]( sprache_char c ) -> uint64_t
+				[]( char c ) -> uint64_t
 				{
 					if( c >= '0' && c <= '9' )
 						return c - '0';
@@ -968,7 +966,7 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 						return c - 'A' + 10;
 					}
 				};
-			is_number_func= []( sprache_char c ) -> bool { return std::isxdigit(c); };
+			is_number_func= []( char c ) -> bool { return std::isxdigit(c); };
 			break;
 
 		default: break;
@@ -989,7 +987,7 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 		{
 			SyntaxErrorMessage msg;
 			msg.file_pos= it_->file_pos;
-			msg.text= "Integer part of numeric literal is too long"_SpC;
+			msg.text= "Integer part of numeric literal is too long";
 			error_messages_.push_back( msg );
 			break;
 		}
@@ -1011,7 +1009,7 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 			{
 				SyntaxErrorMessage msg;
 				msg.file_pos= it_->file_pos;
-				msg.text= "Fractional part of numeric literal is too long"_SpC;
+				msg.text= "Fractional part of numeric literal is too long";
 				error_messages_.push_back( msg );
 				break;
 			}
@@ -1078,7 +1076,7 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 	{
 		SyntaxErrorMessage msg;
 		msg.file_pos= it_->file_pos;
-		msg.text= "Type suffix of numeric literal is too long"_SpC;
+		msg.text= "Type suffix of numeric literal is too long";
 		error_messages_.push_back( msg );
 		return result;
 	}
@@ -1435,7 +1433,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				{
 					SyntaxErrorMessage msg;
 					msg.file_pos= it_->file_pos;
-					msg.text= "String literal is too long"_SpC;
+					msg.text= "String literal is too long";
 					error_messages_.push_back( msg );
 					return EmptyVariant();
 				}
@@ -2250,7 +2248,7 @@ Initializer SyntaxAnalyzer::ParseStructNamedInitializer()
 			PushErrorMessage();
 			return std::move(result);
 		}
-		ProgramString name= it_->text;
+		std::string name= it_->text;
 		NextLexem();
 
 		Initializer initializer= ParseVariableInitializer();
@@ -3102,7 +3100,7 @@ Typedef SyntaxAnalyzer::ParseTypedef()
 		return Typedef( it_->file_pos );
 	}
 
-	const ProgramString& name= it_->text;
+	const std::string& name= it_->text;
 	NextLexem();
 
 	Typedef result= ParseTypedefBody();
@@ -3141,7 +3139,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 
 	auto result= std::make_unique<Function>( it_->file_pos );
 
-	const ProgramString& function_defenition_lexem= it_->text;
+	const std::string& function_defenition_lexem= it_->text;
 	NextLexem();
 
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::virtual_ )
@@ -3505,7 +3503,7 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()
 		PushErrorMessage();
 		return nullptr;
 	}
-	ProgramString name= it_->text;
+	std::string name= it_->text;
 	NextLexem();
 
 	ClassKindAttribute class_kind_attribute= ClassKindAttribute::Struct;
@@ -3789,7 +3787,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 	};
 	TemplateKind template_kind= TemplateKind::Invalid;
 
-	ProgramString name;
+	std::string name;
 	const FilePos& template_thing_file_pos= it_->file_pos;
 	if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::struct_ || it_->text == Keywords::class_ ) )
 	{
@@ -3933,7 +3931,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 	return EmptyVariant();
 }
 
-const Macro* SyntaxAnalyzer::FetchMacro( const ProgramString& macro_name, const Macro::Context context )
+const Macro* SyntaxAnalyzer::FetchMacro( const std::string& macro_name, const Macro::Context context )
 {
 	const MacroMap& macro_map= (*macros_)[context];
 	const auto it= macro_map.find(macro_name);
@@ -3949,7 +3947,7 @@ ParseFnResult SyntaxAnalyzer::ExpandMacro( const Macro& macro, ParseFnResult (Sy
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == macro.name );
 	NextLexem();
 
-	std::map<ProgramString, ParsedMacroElement> elements_map;
+	std::map<std::string, ParsedMacroElement> elements_map;
 	if( !MatchMacroBlock( macro.match_template_elements, macro.name, elements_map ) )
 		return ParseFnResult();
 
@@ -3957,7 +3955,7 @@ ParseFnResult SyntaxAnalyzer::ExpandMacro( const Macro& macro, ParseFnResult (Sy
 	names_map.prev= nullptr;
 	names_map.names= &elements_map;
 
-	ProgramStringMap<ProgramString> unique_macro_identifier_map;
+	ProgramStringMap<std::string> unique_macro_identifier_map;
 	Lexems result_lexems= DoExpandMacro( names_map, macro.result_template_elements, unique_macro_identifier_map );
 
 	Lexem eof;
@@ -3975,15 +3973,15 @@ ParseFnResult SyntaxAnalyzer::ExpandMacro( const Macro& macro, ParseFnResult (Sy
 
 bool SyntaxAnalyzer::MatchMacroBlock(
 	const std::vector<Macro::MatchElement>& match_elements,
-	const ProgramString& macro_name,
-	std::map<ProgramString, ParsedMacroElement>& out_elements )
+	const std::string& macro_name,
+	std::map<std::string, ParsedMacroElement>& out_elements )
 {
 	const auto push_macro_error=
 	[&]
 	{
 		SyntaxErrorMessage msg;
 		msg.file_pos= it_->file_pos;
-		msg.text= "Unexpected lexem - \""_SpC + it_->text + "\". (In expansion of macro \""_SpC + macro_name + "\")"_SpC;
+		msg.text= "Unexpected lexem - \"" + it_->text + "\". (In expansion of macro \"" + macro_name + "\")";
 		error_messages_.push_back(std::move(msg));
 	};
 
@@ -4071,7 +4069,7 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 					{} // Optional is empty
 					else
 					{
-						std::map<ProgramString, ParsedMacroElement> optional_elements;
+						std::map<std::string, ParsedMacroElement> optional_elements;
 						if( MatchMacroBlock( match_element.sub_elements, macro_name, optional_elements ) )
 							element.sub_elements.push_back( std::move(optional_elements) );
 						else
@@ -4084,7 +4082,7 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 					const Lexem& check_lexem= match_element.sub_elements.front().lexem;
 					if( it_->type == check_lexem.type && it_->text == check_lexem.text )
 					{
-						std::map<ProgramString, ParsedMacroElement> optional_elements;
+						std::map<std::string, ParsedMacroElement> optional_elements;
 						if( MatchMacroBlock( match_element.sub_elements, macro_name, optional_elements ) )
 							element.sub_elements.push_back( std::move(optional_elements) );
 						else
@@ -4111,7 +4109,7 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 						if( it_->type == terminator_lexem.type && it_->text == terminator_lexem.text )
 							break;
 
-						std::map<ProgramString, ParsedMacroElement> optional_elements;
+						std::map<std::string, ParsedMacroElement> optional_elements;
 						if( MatchMacroBlock( match_element.sub_elements, macro_name, optional_elements ) )
 							element.sub_elements.push_back( std::move(optional_elements) );
 						else
@@ -4144,7 +4142,7 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 						if( !( it_->type == check_lexem.type && it_->text == check_lexem.text ) )
 							break;
 
-						std::map<ProgramString, ParsedMacroElement> optional_elements;
+						std::map<std::string, ParsedMacroElement> optional_elements;
 						if( MatchMacroBlock( match_element.sub_elements, macro_name, optional_elements ) )
 							element.sub_elements.push_back( std::move(optional_elements) );
 						else
@@ -4182,7 +4180,7 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 Lexems SyntaxAnalyzer::DoExpandMacro(
 	const MacroNamesMap& parsed_elements,
 	const std::vector<Macro::ResultElement>& result_elements,
-	ProgramStringMap<ProgramString>& unique_macro_identifier_map )
+	ProgramStringMap<std::string>& unique_macro_identifier_map )
 {
 	Lexems result_lexems;
 	for( const Macro::ResultElement& result_element : result_elements )
@@ -4202,7 +4200,8 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 					l.text= it->second;
 				else
 				{
-					l.text= ToProgramString( "macro_ident_" + std::to_string( reinterpret_cast<uintptr_t>( &unique_macro_identifier_map ) ) + "_" + std::to_string( unique_macro_identifier_map.size() ) );
+					// TODO - Do not use pointer here.
+					l.text= "macro_ident_" + std::to_string( reinterpret_cast<uintptr_t>( &unique_macro_identifier_map ) ) + "_" + std::to_string( unique_macro_identifier_map.size() );
 					unique_macro_identifier_map[ result_element.lexem.text ]= l.text;
 				}
 
@@ -4219,7 +4218,7 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 				{
 					SyntaxErrorMessage msg;
 					msg.file_pos= result_element.lexem.file_pos;
-					msg.text= result_element.name + " not found"_SpC;
+					msg.text= result_element.name + " not found";
 					error_messages_.push_back( std::move(msg) );
 					return result_lexems;
 				}
@@ -4235,7 +4234,7 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 				{
 					SyntaxErrorMessage msg;
 					msg.file_pos= result_element.lexem.file_pos;
-					msg.text= result_element.name + " not found"_SpC;
+					msg.text= result_element.name + " not found";
 					error_messages_.push_back( std::move(msg) );
 					return result_lexems;
 				}
@@ -4261,7 +4260,7 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 					{
 						SyntaxErrorMessage msg;
 						msg.file_pos= result_element.lexem.file_pos;
-						msg.text= "Expected optional or loop."_SpC;
+						msg.text= "Expected optional or loop.";
 						error_messages_.push_back( std::move(msg) );
 						return result_lexems;
 					}
@@ -4358,7 +4357,7 @@ void SyntaxAnalyzer::PushErrorMessage()
 	{
 		SyntaxErrorMessage error_message;
 		error_message.file_pos= it_->file_pos;
-		error_message.text= "Syntax error - unexpected lexem \""_SpC + it_->text + "\""_SpC;
+		error_message.text= "Syntax error - unexpected lexem \"" + it_->text + "\"";
 		error_messages_.push_back( std::move(error_message) );
 	}
 

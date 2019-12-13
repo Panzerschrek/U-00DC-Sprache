@@ -240,7 +240,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 	if( !functions_set.syntax_elements.empty() || !functions_set.out_of_line_syntax_elements.empty() || !functions_set.template_syntax_elements.empty() )
 	{
 		FilePos functions_set_file_pos{ 0u, 0u, 0u };
-		ProgramString functions_set_name;
+		std::string functions_set_name;
 		if( !functions_set.syntax_elements.empty() )
 		{
 			functions_set_file_pos= functions_set.syntax_elements.front()->file_pos_;
@@ -371,7 +371,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 	}
 
 	const Synt::Class& class_declaration= *the_class.syntax_element;
-	const ProgramString& class_name= class_declaration.name_;
+	const std::string& class_name= class_declaration.name_;
 
 	if( completeness >= TypeCompleteness::ReferenceTagsComplete && the_class.completeness < TypeCompleteness::ReferenceTagsComplete )
 	{
@@ -748,7 +748,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 		{
 			const Class* const parent_class= parent.class_->class_;
 			parent_class->members.ForEachInThisScope(
-				[&]( const ProgramString& name, const Value& value )
+				[&]( const std::string& name, const Value& value )
 				{
 					if( parent_class->GetMemberVisibility( name ) == ClassMemberVisibility::Private )
 						return; // Do not inherit private members.
@@ -830,7 +830,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 
 		// Immediately build constexpr functions.
 		the_class.members.ForEachInThisScope(
-			[&]( const ProgramString& name, Value& value )
+			[&]( const std::string& name, Value& value )
 			{
 				OverloadedFunctionsSet* const functions_set= value.GetFunctionsSet();
 				if( functions_set == nullptr )
@@ -884,7 +884,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_, TypeCompleteness co
 				if( fundamental_type == nullptr || !IsInteger( fundamental_type->fundamental_type ) )
 				{
 					// SPRACHE_TODO - maybe allow inheritance of enums?
-					REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), enum_decl.file_pos_, "any integer type"_SpC, type );
+					REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), enum_decl.file_pos_, "any integer type", type );
 				}
 				else
 					enum_->underlaying_type= *fundamental_type;
@@ -1186,15 +1186,15 @@ size_t CodeBuilder::GlobalThingDetectloop( const GlobalThing& global_thing )
 	return ~0u;
 }
 
-void CodeBuilder::GlobalThingReportAboutLoop( const size_t loop_start_stack_index, const ProgramString& last_loop_element_name, const FilePos& last_loop_element_file_pos )
+void CodeBuilder::GlobalThingReportAboutLoop( const size_t loop_start_stack_index, const std::string& last_loop_element_name, const FilePos& last_loop_element_file_pos )
 {
-	ProgramString description;
+	std::string description;
 
 	FilePos min_file_pos= last_loop_element_file_pos;
 	for( size_t i= loop_start_stack_index; i < global_things_stack_.size(); ++i )
 	{
 		min_file_pos= std::min( min_file_pos, global_things_stack_[i].file_pos );
-		description+= global_things_stack_[i].name + " -> "_SpC;
+		description+= global_things_stack_[i].name + " -> ";
 	}
 	description+= last_loop_element_name;
 

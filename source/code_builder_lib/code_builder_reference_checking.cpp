@@ -90,7 +90,7 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 		{
 			for( size_t arg_tag_number= 0u; arg_tag_number < regular_tag_count; ++arg_tag_number )
 			{
-				const ProgramString& arg_tag= in_arg.inner_arg_reference_tags_[arg_tag_number];
+				const std::string& arg_tag= in_arg.inner_arg_reference_tags_[arg_tag_number];
 				for( size_t ret_tag_number= 0u; ret_tag_number < return_value_regular_tag_count; ++ ret_tag_number )
 				{
 					if( arg_tag == func.return_value_inner_reference_tags_[ret_tag_number] )
@@ -109,7 +109,7 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 			{
 				for( size_t arg_tag_number= regular_tag_count; arg_tag_number < arg_reference_tag_count; ++arg_tag_number )
 				{
-					const ProgramString& arg_tag= in_arg.inner_arg_reference_tags_[regular_tag_count];
+					const std::string& arg_tag= in_arg.inner_arg_reference_tags_[regular_tag_count];
 					for( size_t ret_tag_number= 0u; ret_tag_number < return_value_regular_tag_count; ++ ret_tag_number )
 					{
 						if( arg_tag == func.return_value_inner_reference_tags_[ret_tag_number] )
@@ -154,7 +154,7 @@ void CodeBuilder::ProcessFunctionReturnValueReferenceTags(
 		// Check names of tags, report about unknown tag names.
 		for( size_t i= 0u; i < regular_tag_count; ++i )
 		{
-			const ProgramString& tag = func.return_value_inner_reference_tags_[i];
+			const std::string& tag = func.return_value_inner_reference_tags_[i];
 
 			bool found= false;
 			for( const Synt::FunctionArgument& arg : func.arguments_ )
@@ -164,7 +164,7 @@ void CodeBuilder::ProcessFunctionReturnValueReferenceTags(
 					found= true;
 					break;
 				}
-				for( const ProgramString& inner_arg_tag : arg.inner_arg_reference_tags_ )
+				for( const std::string& inner_arg_tag : arg.inner_arg_reference_tags_ )
 				{
 					if( tag == inner_arg_tag )
 					{
@@ -193,7 +193,7 @@ void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
 			bool tag_found= false;
 			for( const Synt::FunctionArgument& arg : func.arguments_ )
 			{
-				for( const ProgramString& tag : arg.inner_arg_reference_tags_ )
+				for( const std::string& tag : arg.inner_arg_reference_tags_ )
 					if( tag == func.return_value_reference_tag_ )
 						tag_found= true;
 				if( arg.reference_tag_ == func.return_value_reference_tag_ )
@@ -281,7 +281,7 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 	const bool first_arg_is_implicit_this )
 {
 	const auto get_references=
-	[&]( const ProgramString& name ) -> ArgsVector<Function::ArgReference>
+	[&]( const std::string& name ) -> ArgsVector<Function::ArgReference>
 	{
 		ArgsVector<Function::ArgReference> result;
 		bool any_ref_found= false;

@@ -50,7 +50,7 @@ struct Macro
 		MatchElementKind kind= MatchElementKind::Lexem;
 		BlockCheckLexemKind block_check_lexem_kind= BlockCheckLexemKind::LexemAfterBlockEnd; // For optionals and loops.
 		Lexem lexem; // lexem for lexem elements, separator or EOF for loops
-		ProgramString name; // for non-lexems
+		std::string name; // for non-lexems
 		std::vector<MatchElement> sub_elements; // For optionals, loops
 	};
 
@@ -58,17 +58,17 @@ struct Macro
 	{
 		ResultElementKind kind= ResultElementKind::Lexem;
 		Lexem lexem; // lexem for SimpleElement, separator or EOF for loops
-		ProgramString name; // for non-lexems
+		std::string name; // for non-lexems
 		std::vector<ResultElement> sub_elements; // For optionals, loops
 	};
 
 	FilePos file_pos;
-	ProgramString name;
+	std::string name;
 	std::vector<MatchElement> match_template_elements;
 	std::vector<ResultElement> result_template_elements;
 };
 
-using MacroMap= std::map< ProgramString, Macro >;
+using MacroMap= ProgramStringMap< Macro >;
 using MacrosByContextMap= std::map< Macro::Context, MacroMap >;
 
 using MacrosPtr= std::shared_ptr<MacrosByContextMap>;

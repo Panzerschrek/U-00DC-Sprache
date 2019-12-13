@@ -18,7 +18,7 @@ U_TEST( AdditionalSymbolsForIdentifiersTest0 )
 	)";
 	;
 
-	 BuildProgram( c_program_text );
+	BuildProgram( c_program_text );
 }
 
 U_TEST(SimpleProgramTest)

@@ -13,7 +13,7 @@ namespace Synt
 
 struct SyntaxErrorMessage
 {
-	ProgramString text;
+	std::string text;
 	FilePos file_pos;
 };
 

@@ -3,7 +3,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include "../lex_synt_lib/program_string.hpp"
 #include "code_builder_errors.hpp"
 
 namespace U
@@ -21,10 +20,10 @@ struct ReferencesGraphNode
 		ReferenceImut,
 	};
 
-	const ProgramString name;
+	const std::string name;
 	const Kind kind= Kind::Variable;
 
-	ReferencesGraphNode( ProgramString in_name, Kind in_kind ) : name(std::move(in_name)), kind(in_kind) {}
+	ReferencesGraphNode( std::string in_name, Kind in_kind ) : name(std::move(in_name)), kind(in_kind) {}
 };
 
 using ReferencesGraphNodePtr= std::shared_ptr<const ReferencesGraphNode>;

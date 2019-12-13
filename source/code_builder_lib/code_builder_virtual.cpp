@@ -99,7 +99,7 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, FunctionVariabl
 {
 	U_ASSERT( the_class.completeness != TypeCompleteness::Complete );
 
-	const ProgramString& function_name= function.syntax_element->name_.components.back().name;
+	const std::string& function_name= function.syntax_element->name_.components.back().name;
 	const FilePos& file_pos= function.syntax_element->file_pos_;
 	CodeBuilderErrorsContainer& errors_container= the_class.members.GetErrors();
 

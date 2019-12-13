@@ -45,7 +45,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 	{
 		const clang::IdentifierInfo* ident_info= macro_pair.first;
 
-		const std::string name= ident_info->getName().str();
+		const std::string name= ident_info->getName();
 		if( name.empty() )
 			continue;
 		if( preprocessor_.getPredefines().find( "#define " + name ) != std::string::npos )
@@ -136,7 +136,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 				auto_variable_declaration.name= TranslateIdentifier( name );
 
 				Synt::StringLiteral string_constant( g_dummy_file_pos );
-				string_constant.value_= DecodeUTF8( string_literal_parser.GetString().str() );
+				string_constant.value_= string_literal_parser.GetString();
 				string_constant.value_.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
 
 				auto_variable_declaration.initializer_expression= std::move(string_constant);
@@ -157,7 +157,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 			auto_variable_declaration.name= TranslateIdentifier( name );
 
 			Synt::StringLiteral string_constant( g_dummy_file_pos );
-			string_constant.value_.push_back( sprache_char( char_literal_parser.getValue() ) );
+			string_constant.value_.push_back( char(char_literal_parser.getValue()) );
 			string_constant.type_suffix_[0]= 'c';
 			string_constant.type_suffix_[1]= '8';
 
@@ -236,9 +236,9 @@ void CppAstConsumer::ProcessClassDecl( const clang::Decl& decl, Synt::ClassEleme
 		}
 
 		field.type= TranslateType( *field_type );
-		field.name= TranslateIdentifier( field_decl->getName().str() );
+		field.name= TranslateIdentifier( field_decl->getName() );
 		if( IsKeyword( field.name ) )
-			field.name+= "_"_SpC;
+			field.name+= "_";
 
 		class_elements.push_back( std::move(field) );
 	}
@@ -292,7 +292,7 @@ Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_de
 			const auto int_size= ast_context_.getTypeAlign( record_decl.getTypeForDecl() ) / 8u;
 			const auto num= ( size + int_size - 1u ) / int_size;
 
-			ProgramString int_name;
+			std::string int_name;
 			switch(int_size)
 			{
 			case  1: int_name= Keyword( Keywords::  u8_ ); break;
@@ -316,7 +316,7 @@ Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_de
 			array_type.size= std::make_unique<Synt::Expression>( std::move(numeric_constant) );
 
 			Synt::ClassField field( g_dummy_file_pos );
-			field.name= "union_content"_SpC;
+			field.name= "union_content";
 			field.type= std::move(array_type);
 			class_->elements_.push_back( std::move(field) );
 		}
@@ -332,7 +332,7 @@ Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_de
 Synt::Typedef CppAstConsumer::ProcessTypedef( const clang::TypedefNameDecl& typedef_decl )
 {
 	Synt::Typedef typedef_( g_dummy_file_pos );
-	typedef_.name= TranslateIdentifier( typedef_decl.getName().str() );
+	typedef_.name= TranslateIdentifier( typedef_decl.getName() );
 	typedef_.value= TranslateType( *typedef_decl.getUnderlyingType().getTypePtr() );
 	return typedef_;
 }
@@ -342,7 +342,7 @@ Synt::FunctionPtr CppAstConsumer::ProcessFunction( const clang::FunctionDecl& fu
 	auto func= std::make_unique<Synt::Function>(g_dummy_file_pos);
 
 	func->name_.components.emplace_back();
-	func->name_.components.back().name= TranslateIdentifier( func_decl.getName().str() );
+	func->name_.components.back().name= TranslateIdentifier( func_decl.getName() );
 	func->no_mangle_= externc;
 	func->type_.unsafe_= true; // All C/C++ functions is unsafe.
 
@@ -351,11 +351,11 @@ Synt::FunctionPtr CppAstConsumer::ProcessFunction( const clang::FunctionDecl& fu
 	for( const clang::ParmVarDecl* const param : func_decl.parameters() )
 	{
 		Synt::FunctionArgument arg( g_dummy_file_pos );
-		arg.name_= TranslateIdentifier( param->getName().str() );
+		arg.name_= TranslateIdentifier( param->getName() );
 		if( arg.name_.empty() )
-			arg.name_= ToProgramString( "arg" + std::to_string(i) );
+			arg.name_= "arg" + std::to_string(i);
 		if( IsKeyword( arg.name_ ) )
-			arg.name_+= "_"_SpC;
+			arg.name_+= "_";
 
 		const clang::Type* arg_type= param->getType().getTypePtr();
 		if( ( arg_type->isPointerType() || arg_type->isReferenceType() ) && ! arg_type->isFunctionPointerType() )
@@ -397,7 +397,7 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 	if( !enum_decl.isComplete() )
 		return;
 
-	const ProgramString enum_name= TranslateIdentifier( enum_decl.getName().str() );
+	const std::string enum_name= TranslateIdentifier( enum_decl.getName() );
 	const auto enumerators_range= enum_decl.enumerators();
 
 	// C++ enum can be Ü enum, if it`s members form sequence 0-N with step 1.
@@ -438,7 +438,7 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 		{
 			enum_.members.emplace_back();
 			enum_.members.back().file_pos= g_dummy_file_pos;
-			enum_.members.back().name= TranslateIdentifier( enumerator->getName().str() );
+			enum_.members.back().name= TranslateIdentifier( enumerator->getName() );
 		}
 
 		out_elements.push_back( std::move(enum_) );
@@ -446,7 +446,7 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 	else
 	{
 		auto enum_namespace_= std::make_unique<Synt::Namespace>( g_dummy_file_pos );
-		enum_namespace_->name_= enum_name + "_namespace"_SpC;
+		enum_namespace_->name_= enum_name + "_namespace";
 
 		Synt::VariablesDeclaration variables_declaration( g_dummy_file_pos );
 		variables_declaration.type= TranslateType( *enum_decl.getIntegerType().getTypePtr() );
@@ -455,7 +455,7 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 		{
 			Synt::VariablesDeclaration::VariableEntry var;
 			var.file_pos= g_dummy_file_pos;
-			var.name= TranslateIdentifier( enumerator->getName().str() );
+			var.name= TranslateIdentifier( enumerator->getName() );
 			var.mutability_modifier= Synt::MutabilityModifier::Constexpr;
 
 			Synt::ConstructorInitializer initializer( g_dummy_file_pos );
@@ -501,7 +501,7 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 		return std::move(named_type);
 	}
 	else if( const auto typedef_type= llvm::dyn_cast<clang::TypedefType>(&in_type) )
-		return TranslateNamedType( typedef_type->getDecl()->getName().str() );
+		return TranslateNamedType( typedef_type->getDecl()->getName() );
 	else if( const auto constna_array_type= llvm::dyn_cast<clang::ConstantArrayType>(&in_type) )
 	{
 		// For arrays with constant size use normal Ü array.
@@ -542,7 +542,7 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 	else if( in_type.isPointerType() )
 	{
 		// Ü does not spports pointers. Use int with size of pointer.
-		return TranslateNamedType( KeywordAscii( Keywords::size_type_ ) );
+		return TranslateNamedType( Keyword( Keywords::size_type_ ) );
 	}
 	else if( const auto decltype_type= llvm::dyn_cast<clang::DecltypeType>( &in_type ) )
 		return TranslateType( *decltype_type->desugar().getTypePtr() );
@@ -554,9 +554,9 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 	return TranslateNamedType( "void" );
 }
 
-ProgramString CppAstConsumer::TranslateRecordType( const clang::RecordType& in_type )
+std::string CppAstConsumer::TranslateRecordType( const clang::RecordType& in_type )
 {
-	const std::string name= in_type.getDecl()->getName().str();
+	const llvm::StringRef name= in_type.getDecl()->getName();
 	if( name.empty() )
 	{
 		const auto it= anon_records_names_cache_.find( &in_type );
@@ -564,7 +564,7 @@ ProgramString CppAstConsumer::TranslateRecordType( const clang::RecordType& in_t
 			return it->second;
 		else
 		{
-			const ProgramString& anon_name= DecodeUTF8("ü_anon_record") + ToProgramString( std::to_string( ++unique_name_index_ ) );
+			const std::string& anon_name= "ü_anon_record" + std::to_string( ++unique_name_index_ );
 			anon_records_names_cache_[ &in_type ]= anon_name;
 			return anon_name;
 		}
@@ -573,7 +573,7 @@ ProgramString CppAstConsumer::TranslateRecordType( const clang::RecordType& in_t
 		return TranslateIdentifier( name );
 }
 
-ProgramString CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& in_type )
+std::string CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& in_type )
 {
 	switch( in_type.getKind() )
 	{
@@ -638,7 +638,7 @@ Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::Functi
 	for( const clang::QualType& param_qual : in_type.getParamTypes() )
 	{
 		Synt::FunctionArgument arg( g_dummy_file_pos );
-		arg.name_= ToProgramString( "arg" + std::to_string(i) );
+		arg.name_= "arg" + std::to_string(i);
 
 		const clang::Type* arg_type= param_qual.getTypePtr();
 		if( ( arg_type->isPointerType() || arg_type->isReferenceType() ) && !arg_type->isFunctionPointerType() )
@@ -675,16 +675,16 @@ Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::Functi
 	return std::move(function_type);
 }
 
-ProgramString CppAstConsumer::TranslateIdentifier( const std::string& identifier )
+std::string CppAstConsumer::TranslateIdentifier( const llvm::StringRef identifier )
 {
 	// For case of errors or something anonimous, generate unqiue identifier.
 	if( identifier.empty() )
-		return ToProgramString( "ident" + std::to_string( ++unique_name_index_ ) );
+		return "ident" + std::to_string( ++unique_name_index_ );
 	// In Ü identifier can not start with "_", shadow it. "_" in C++ used for impl identiferes, so, it may not needed.
 	else if( identifier[0] == '_' )
-		return DecodeUTF8("ü") + ToProgramString( identifier );
+		return ( "ü" + identifier ).str();
 
-	return ToProgramString(identifier);
+	return identifier;
 }
 
 CppAstProcessor::CppAstProcessor( ParsedUnitsPtr out_result )
@@ -697,7 +697,7 @@ std::unique_ptr<clang::ASTConsumer> CppAstProcessor::CreateASTConsumer(
 {
 	return
 		std::make_unique<CppAstConsumer>(
-			(*out_result_)[in_file.str()],
+			(*out_result_)[in_file],
 			compiler_intance.getPreprocessor(),
 			compiler_intance.getLangOpts(),
 			compiler_intance.getASTContext() );

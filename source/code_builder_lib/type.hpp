@@ -6,7 +6,6 @@
 #include <llvm/IR/DerivedTypes.h>
 #include "pop_llvm_warnings.hpp"
 
-#include "../lex_synt_lib/program_string.hpp"
 #include "lang_types.hpp"
 #include "small_types.hpp"
 
@@ -117,7 +116,7 @@ public:
 	llvm::Type* GetLLVMType() const;
 
 	// Convert type name to human-readable format.
-	ProgramString ToString() const;
+	std::string ToString() const;
 
 private:
 	friend bool operator==( const Type&, const Type&);
@@ -207,7 +206,7 @@ struct FunctionPointer
 bool operator==( const FunctionPointer& l, const FunctionPointer& r );
 bool operator!=( const FunctionPointer& l, const FunctionPointer& r );
 
-const ProgramString& GetFundamentalTypeName( U_FundamentalType fundamental_type );
+const std::string& GetFundamentalTypeName( U_FundamentalType fundamental_type );
 
 } //namespace CodeBuilderLLVMPrivate
 

@@ -58,11 +58,11 @@ private:
 	struct GlobalThing // TODO - move struct out of here
 	{
 		const void* thing_ptr= nullptr;
-		ProgramString name;
+		std::string name;
 		FilePos file_pos;
 		TypeCompleteness completeness= TypeCompleteness::Incomplete;
 
-		GlobalThing( const void* const in_thing_ptr, const ProgramString& in_name, const FilePos& in_file_pos, const TypeCompleteness in_completeness )
+		GlobalThing( const void* const in_thing_ptr, const std::string& in_name, const FilePos& in_file_pos, const TypeCompleteness in_completeness )
 			: thing_ptr(in_thing_ptr), name(in_name), file_pos(in_file_pos), completeness(in_completeness)
 		{}
 	};
@@ -235,7 +235,7 @@ private:
 		const std::vector<Synt::Expression>& template_arguments,
 		NamesScope& arguments_names_scope );
 
-	bool NameShadowsTemplateArgument( const ProgramString& name, NamesScope& names_scope );
+	bool NameShadowsTemplateArgument( const std::string& name, NamesScope& names_scope );
 
 	bool TypeIsValidForTemplateVariableArgument( const Type& type );
 
@@ -336,7 +336,7 @@ private:
 		FunctionVariable& func,
 		const ClassProxyPtr& base_class,
 		NamesScope& parent_names_scope,
-		const ProgramString& func_name,
+		const std::string& func_name,
 		const Synt::FunctionArgumentsDeclaration& args,
 		const Synt::Block* block, // null for prototypes.
 		const Synt::StructNamedInitializer* constructor_initialization_list );
@@ -460,7 +460,7 @@ private:
 	// Typeinfo
 
 	Variable BuildTypeInfo( const Type& type, NamesScope& root_namespace );
-	ClassProxyPtr CreateTypeinfoClass( NamesScope& root_namespace, const Type& src_type, const ProgramString& name );
+	ClassProxyPtr CreateTypeinfoClass( NamesScope& root_namespace, const Type& src_type, std::string name );
 	Variable BuildTypeinfoPrototype( const Type& type, NamesScope& root_namespace );
 	void BuildFullTypeinfo( const Type& type, Variable& typeinfo_variable, NamesScope& root_namespace );
 	const Variable& GetTypeinfoListEndNode( NamesScope& root_namespace );
@@ -468,7 +468,7 @@ private:
 	Variable BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, NamesScope& root_namespace );
 	void CreateTypeinfoClassMembersListNodeCommonFields(
 		const Class& class_, const ClassProxyPtr& node_class_proxy,
-		const ProgramString& member_name,
+		const std::string& member_name,
 		ClassFieldsVector<llvm::Type*>& fields_llvm_types, ClassFieldsVector<llvm::Constant*>& fields_initializers );
 	Variable BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_type, NamesScope& root_namespace );
 	Variable BuildTypeinfoClassTypesList( const ClassProxyPtr& class_type, NamesScope& root_namespace );
@@ -574,7 +574,7 @@ private:
 	llvm::Constant* ApplyInitializer( const Synt::UninitializedInitializer& uninitialized_initializer, const Variable& variable, NamesScope& names, FunctionContext& function_context );
 
 	void ApplyEmptyInitializer(
-		const ProgramString& variable_name,
+		const std::string& variable_name,
 		const FilePos& file_pos,
 		const Variable& variable,
 		NamesScope& block_names,
@@ -657,7 +657,7 @@ private:
 	void NamesScopeFill( const Synt::AutoVariableDeclaration& variable_declaration, NamesScope& names_scope );
 	void NamesScopeFill( const Synt::FunctionPtr& function_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( const Synt::FunctionTemplate& function_template_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
-	ClassProxyPtr NamesScopeFill( const Synt::ClassPtr& class_declaration, NamesScope& names_scope, const ProgramString& override_name= ""_SpC );
+	ClassProxyPtr NamesScopeFill( const Synt::ClassPtr& class_declaration, NamesScope& names_scope, const std::string& override_name= "" );
 	void NamesScopeFill( const Synt::TypeTemplateBase& type_template_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( const Synt::Enum& enum_declaration, NamesScope& names_scope );
 	void NamesScopeFill( const Synt::Typedef& typedef_declaration, NamesScope& names_scope );
@@ -678,7 +678,7 @@ private:
 	void GlobalThingBuildTypedef( NamesScope& names_scope, Value& typedef_value );
 	void GlobalThingBuildVariable( NamesScope& names_scope, Value& global_variable_value );
 	size_t GlobalThingDetectloop( const GlobalThing& global_thing ); // returns loop start index or ~0u
-	void GlobalThingReportAboutLoop( size_t loop_start_stack_index, const ProgramString& last_loop_element_name, const FilePos& last_loop_element_file_pos );
+	void GlobalThingReportAboutLoop( size_t loop_start_stack_index, const std::string& last_loop_element_name, const FilePos& last_loop_element_file_pos );
 
 	// Other stuff
 

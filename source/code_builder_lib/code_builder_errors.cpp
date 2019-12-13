@@ -78,26 +78,26 @@ const char* GetErrorMessagePattern( CodeBuilderErrorCode code )
 	return "";
 }
 
-std::string PreprocessArg( const ProgramString& str )
+const std::string& PreprocessArg( const std::string& str )
 {
-	return ToUTF8(str);
+	return str;
 }
 
 std::string PreprocessArg( const CodeBuilderPrivate::Type& type )
 {
-	return ToUTF8(type.ToString());
+	return type.ToString();
 }
 
 std::string PreprocessArg( const Synt::ComplexName& name )
 {
-	ProgramString str;
+	std::string str;
 	for( const Synt::ComplexName::Component& component : name.components )
 	{
 		str+= component.name;
 		if( &component != &name.components.back() )
-			str+= "::"_SpC;
+			str+= "::";
 	}
-	return ToUTF8(str);
+	return str;
 }
 
 } // namespace ErrorReportingImpl

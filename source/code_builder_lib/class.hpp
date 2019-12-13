@@ -1,4 +1,5 @@
 #pragma once
+#include "../lex_synt_lib/program_string.hpp"
 #include "names_scope.hpp"
 
 namespace U
@@ -12,13 +13,13 @@ using TemplateParameter= std::variant< Variable, Type >;
 class Class final
 {
 public:
-	Class( const ProgramString& name, NamesScope* parent_scope );
+	Class( std::string name, NamesScope* parent_scope );
 
 	Class( const Class& )= delete;
 	Class& operator=( const Class& )= delete;
 
-	ClassMemberVisibility GetMemberVisibility( const ProgramString& member_name ) const;
-	void SetMemberVisibility( const ProgramString& member_name, ClassMemberVisibility visibility );
+	ClassMemberVisibility GetMemberVisibility( const std::string& member_name ) const;
+	void SetMemberVisibility( const std::string& member_name, ClassMemberVisibility visibility );
 
 public:
 	struct BaseTemplate
@@ -40,7 +41,7 @@ public:
 
 	struct VirtualTableEntry
 	{
-		ProgramString name;
+		std::string name;
 		FunctionVariable function_variable;
 		bool is_pure= false;
 		bool is_final= false;

@@ -121,7 +121,7 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 
 	module_=
 		std::make_unique<llvm::Module>(
-			ToUTF8( source_graph.nodes_storage[ source_graph.root_node_index ].file_path ),
+			source_graph.nodes_storage[ source_graph.root_node_index ].file_path,
 			llvm_context_ );
 
 	// Setup data layout
@@ -190,7 +190,7 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 {
 	BuildResultInternal result;
 
-	result.names_map= std::make_unique<NamesScope>( ""_SpC, nullptr );
+	result.names_map= std::make_unique<NamesScope>( "", nullptr );
 	result.names_map->SetErrors( global_errors_ );
 	result.class_table= std::make_unique<ClassTable>();
 	FillGlobalNamesScope( *result.names_map );
@@ -233,7 +233,7 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, ClassTable& dst_class_table )
 {
 	src.ForEachInThisScope(
-		[&]( const ProgramString& src_name, const Value& src_member )
+		[&]( const std::string& src_name, const Value& src_member )
 		{
 			Value* const dst_member= dst.GetThisScopeValue(src_name );
 			if( dst_member == nullptr )
@@ -919,7 +919,7 @@ size_t CodeBuilder::PrepareFunction(
 	const Synt::Function& func,
 	const bool is_out_of_line_function )
 {
-	const ProgramString& func_name= func.name_.components.back().name;
+	const std::string& func_name= func.name_.components.back().name;
 	const bool is_constructor= func_name == Keywords::constructor_;
 	const bool is_destructor= func_name == Keywords::destructor_;
 	const bool is_special_method= is_constructor || is_destructor;
@@ -1346,7 +1346,7 @@ Type CodeBuilder::BuildFuncCode(
 	FunctionVariable& func_variable,
 	const ClassProxyPtr& base_class,
 	NamesScope& parent_names_scope,
-	const ProgramString& func_name,
+	const std::string& func_name,
 	const Synt::FunctionArgumentsDeclaration& args,
 	const Synt::Block* const block,
 	const Synt::StructNamedInitializer* const constructor_initialization_list )
@@ -1364,7 +1364,7 @@ Type CodeBuilder::BuildFuncCode(
 			llvm::Function::Create(
 				function_type.llvm_function_type,
 				llvm::Function::LinkageTypes::ExternalLinkage, // External - for prototype.
-				func_variable.no_mangle ? ToUTF8( func_name ) : MangleFunction( parent_names_scope, func_name, function_type ),
+				func_variable.no_mangle ? func_name : MangleFunction( parent_names_scope, func_name, function_type ),
 				module_.get() );
 
 		// Merge functions with identical code.
@@ -1419,7 +1419,7 @@ Type CodeBuilder::BuildFuncCode(
 		!EnsureTypeCompleteness( function_type.return_type, TypeCompleteness::Complete ) )
 		REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_file_pos, function_type.return_type );
 
-	NamesScope function_names( ""_SpC, &parent_names_scope );
+	NamesScope function_names( "", &parent_names_scope );
 	FunctionContext function_context(
 		func_variable.return_type_is_auto ? std::optional<Type>(): function_type.return_type,
 		function_type.return_value_is_mutable,
@@ -1450,7 +1450,7 @@ Type CodeBuilder::BuildFuncCode(
 		const Function::Arg& arg= function_type.args[ arg_number ];
 
 		const Synt::FunctionArgument& declaration_arg= args[arg_number ];
-		const ProgramString& arg_name= declaration_arg.name_;
+		const std::string& arg_name= declaration_arg.name_;
 
 		const bool is_this= arg_number == 0u && arg_name == Keywords::this_;
 		U_ASSERT( !( is_this && !arg.is_reference ) );
@@ -1475,7 +1475,7 @@ Type CodeBuilder::BuildFuncCode(
 				// Move parameters to stack for assignment possibility.
 				// TODO - do it, only if parameters are not constant.
 				llvm::Value* address= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
-				address->setName( ToUTF8( arg_name ) );
+				address->setName( arg_name );
 				function_context.llvm_ir_builder.CreateStore( var.llvm_value, address );
 
 				var.llvm_value= address;
@@ -1502,10 +1502,10 @@ Type CodeBuilder::BuildFuncCode(
 		if (arg.type.ReferencesTagsCount() > 0u )
 		{
 			// Create inner node + root variable.
-			const auto accesible_variable= std::make_shared<ReferencesGraphNode>( arg_name + " inner variable"_SpC, ReferencesGraphNode::Kind::Variable );
+			const auto accesible_variable= std::make_shared<ReferencesGraphNode>( arg_name + " inner variable", ReferencesGraphNode::Kind::Variable );
 			function_context.variables_state.AddNode( accesible_variable );
 
-			const auto inner_reference= std::make_shared<ReferencesGraphNode>( arg_name + " inner reference"_SpC, ReferencesGraphNode::Kind::ReferenceMut );
+			const auto inner_reference= std::make_shared<ReferencesGraphNode>( arg_name + " inner reference", ReferencesGraphNode::Kind::ReferenceMut );
 			function_context.variables_state.SetNodeInnerReference( var_node, inner_reference );
 			function_context.variables_state.AddLink( accesible_variable, inner_reference );
 
@@ -1529,7 +1529,7 @@ Type CodeBuilder::BuildFuncCode(
 				REPORT_ERROR( Redefinition, function_names.GetErrors(), declaration_arg.file_pos_, arg_name );
 		}
 
-		llvm_arg.setName( "_arg_" + ToUTF8( arg_name ) );
+		llvm_arg.setName( "_arg_" + arg_name );
 		++arg_number;
 	}
 
@@ -1831,7 +1831,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		} );
 
 	// Initialize fields, missing in initializer list.
-	for( const ProgramString& field_name : uninitialized_fields )
+	for( const std::string& field_name : uninitialized_fields )
 	{
 		const StackVariablesStorage temp_variables_storage( function_context );
 
@@ -1946,7 +1946,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
-	NamesScope block_names( ""_SpC, &names );
+	NamesScope block_names( "", &names );
 	const StackVariablesStorage block_variables_storage( function_context );
 
 	// Save unsafe flag.
@@ -2054,7 +2054,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
 			variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
-			variable.llvm_value->setName( ToUTF8( variable_declaration.name ) );
+			variable.llvm_value->setName( variable_declaration.name );
 
 			prev_variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
 			variable.node= var_node;
@@ -2284,7 +2284,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		if( !variable.type.CanBeConstexpr() )
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
-		variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType(), nullptr, ToUTF8( auto_variable_declaration.name ) );
+		variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType(), nullptr, auto_variable_declaration.name );
 
 		prev_variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
 		variable.node= var_node;
@@ -2300,7 +2300,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 				if( initializer_expression_inner_node != nullptr )
 				{
 					const ReferencesGraphNodePtr inner_reference= std::make_shared<ReferencesGraphNode>(
-						"var"_SpC + auto_variable_declaration.name + " inner node"_SpC,
+						"var" + auto_variable_declaration.name + " inner node",
 						initializer_expression_inner_node->kind);
 					function_context.variables_state.SetNodeInnerReference( var_node, inner_reference );
 					function_context.variables_state.AddLink( initializer_expression_inner_node, inner_reference );
@@ -2332,7 +2332,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 					for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
 						node_is_mutable= node_is_mutable || src_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut;
 
-					const auto dst_node_inner_reference= std::make_shared<ReferencesGraphNode>( var_node->name + " inner variable"_SpC, node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+					const auto dst_node_inner_reference= std::make_shared<ReferencesGraphNode>( var_node->name + " inner variable", node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
 					function_context.variables_state.SetNodeInnerReference( var_node, dst_node_inner_reference );
 					for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
 						function_context.variables_state.AddLink( src_node_inner_reference, dst_node_inner_reference );
@@ -2489,7 +2489,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		{ // Lock references to return value variables.
 			ReferencesGraphNodeHolder return_value_lock(
 				std::make_shared<ReferencesGraphNode>(
-					"ret result"_SpC,
+					"ret result",
 					function_context.return_value_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut ),
 				function_context );
 			if( expression_result.node != nullptr )
@@ -2596,7 +2596,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	if( sequence_expression.node != nullptr )
 		sequence_lock.emplace(
 			std::make_shared<ReferencesGraphNode>(
-				sequence_expression.node->name + " seequence lock"_SpC,
+				sequence_expression.node->name + " seequence lock",
 				sequence_expression.value_type == ValueType::Reference ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut ),
 			function_context );
 
@@ -2608,7 +2608,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		for( const Type& element_type : tuple_type->elements )
 		{
 			const size_t element_index= size_t( &element_type - tuple_type->elements.data() );
-			NamesScope loop_names( ""_SpC, &names );
+			NamesScope loop_names( "", &names );
 			const StackVariablesStorage element_pass_variables_storage( function_context );
 
 			Variable variable;
@@ -2662,7 +2662,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 					continue;
 				}
 
-				variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( element_type.GetLLVMType(), nullptr, ToUTF8( for_operator.loop_variable_name_ ) + std::to_string(element_index) );
+				variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( element_type.GetLLVMType(), nullptr, for_operator.loop_variable_name_ + std::to_string(element_index) );
 				function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( var_node, variable ) );
 				variable.node= var_node;
 
@@ -2677,7 +2677,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 						for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
 							node_is_mutable= node_is_mutable || src_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut;
 
-						const auto dst_node_inner_reference= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable"_SpC, node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+						const auto dst_node_inner_reference= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable", node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
 						function_context.variables_state.SetNodeInnerReference( dst_node, dst_node_inner_reference );
 						for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
 							function_context.variables_state.AddLink( src_node_inner_reference, dst_node_inner_reference );
@@ -3398,7 +3398,7 @@ Value* CodeBuilder::ResolveValue(
 	const ResolveMode resolve_mode )
 {
 	U_ASSERT( component_count > 0u );
-	const ProgramString& last_component_name= components[component_count-1u].name;
+	const std::string& last_component_name= components[component_count-1u].name;
 
 	NamesScope* last_space= &names_scope;
 	if( components[0].name.empty() )
@@ -3410,7 +3410,7 @@ Value* CodeBuilder::ResolveValue(
 	}
 	else
 	{
-		const ProgramString& start= components[0].name;
+		const std::string& start= components[0].name;
 		NamesScope* space= &names_scope;
 		while(true)
 		{
@@ -3533,7 +3533,7 @@ Value* CodeBuilder::ResolveValue(
 	}
 
 	if( value != nullptr && value->GetYetNotDeducedTemplateArg() != nullptr )
-		REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope.GetErrors(), file_pos, value == nullptr ? ""_SpC : last_component_name );
+		REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope.GetErrors(), file_pos, value == nullptr ? "" : last_component_name );
 
 	// Complete some things in resolve.
 	if( value != nullptr && resolve_mode != ResolveMode::ForDeclaration )
@@ -3552,7 +3552,7 @@ Value* CodeBuilder::ResolveValue(
 
 U_FundamentalType CodeBuilder::GetNumericConstantType( const Synt::NumericConstant& number )
 {
-	const ProgramString type_suffix= number.type_suffix_.data();
+	const std::string type_suffix= number.type_suffix_.data();
 	if( type_suffix.empty() )
 	{
 		if( number.has_fractional_point_ )
@@ -3563,20 +3563,20 @@ U_FundamentalType CodeBuilder::GetNumericConstantType( const Synt::NumericConsta
 
 	// Allow simple "u" suffix for unsigned 32bit values.
 	// SPRACHE_TODO - maybe add "i" suffix for i32 type?
-	if( type_suffix == "u"_SpC )
+	if( type_suffix == "u" )
 		return U_FundamentalType::u32;
 	// Suffix for size_type
-	else if( type_suffix == "s"_SpC )
+	else if( type_suffix == "s" )
 		return size_type_.GetFundamentalType()->fundamental_type;
 	// Simple "f" suffix for 32bit floats.
-	else if( type_suffix == "f"_SpC )
+	else if( type_suffix == "f" )
 		return U_FundamentalType::f32;
 	// Short suffixes for chars
-	else if( type_suffix ==  "c8"_SpC )
+	else if( type_suffix ==  "c8" )
 		return U_FundamentalType::char8 ;
-	else if( type_suffix == "c16"_SpC )
+	else if( type_suffix == "c16" )
 		return U_FundamentalType::char16;
-	else if( type_suffix == "c32"_SpC )
+	else if( type_suffix == "c32" )
 		return U_FundamentalType::char32;
 
 	auto it= g_types_map.find( type_suffix );

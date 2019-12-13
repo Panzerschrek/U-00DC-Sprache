@@ -11,11 +11,11 @@ namespace CodeBuilderPrivate
 // Class
 //
 
-Class::Class( const ProgramString& in_name, NamesScope* const parent_scope )
-	: members( in_name, parent_scope )
+Class::Class( std::string in_name, NamesScope* const parent_scope )
+	: members( std::move(in_name), parent_scope )
 {}
 
-ClassMemberVisibility Class::GetMemberVisibility( const ProgramString& member_name ) const
+ClassMemberVisibility Class::GetMemberVisibility( const std::string& member_name ) const
 {
 	const auto it= members_visibility.find( member_name );
 	if( it == members_visibility.end() )
@@ -23,7 +23,7 @@ ClassMemberVisibility Class::GetMemberVisibility( const ProgramString& member_na
 	return it->second;
 }
 
-void Class::SetMemberVisibility( const ProgramString& member_name, const ClassMemberVisibility visibility )
+void Class::SetMemberVisibility( const std::string& member_name, const ClassMemberVisibility visibility )
 {
 	if( visibility == ClassMemberVisibility::Public )
 		return;

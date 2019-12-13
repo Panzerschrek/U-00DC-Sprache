@@ -608,7 +608,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 	CodeBuilderErrorsContainer& errors_container,
 	const FilePos& file_pos )
 {
-	const ProgramString op_name= OverloadedOperatorToString( op );
+	const std::string op_name= OverloadedOperatorToString( op );
 
 	for( const Function::Arg& arg : actual_args )
 	{

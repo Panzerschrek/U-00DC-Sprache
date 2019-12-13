@@ -29,14 +29,14 @@ struct TemplateErrorsContext
 	CodeBuilderErrorsContainer errors;
 	FilePos template_declaration_file_pos;
 
-	ProgramString template_name;
-	ProgramString parameters_description;
+	std::string template_name;
+	std::string parameters_description;
 };
 using TemplateErrorsContextPtr= std::shared_ptr<TemplateErrorsContext>;
 
 struct CodeBuilderError
 {
-	ProgramString text;
+	std::string text;
 	TemplateErrorsContextPtr template_context; // For errors of type "TemplateContext"
 	CodeBuilderErrorCode code;
 	FilePos file_pos;
@@ -55,14 +55,13 @@ void NormalizeErrors( CodeBuilderErrorsContainer& errors );
 namespace ErrorReportingImpl
 {
 
-// Using formatter for UTF-8, because formatter for "sprache_char" works incorrectly.
 using Formatter= boost::format;
 
 const char* GetErrorMessagePattern( CodeBuilderErrorCode code );
 
 std::string PreprocessArg( const CodeBuilderPrivate::Type& type );
 std::string PreprocessArg( const Synt::ComplexName& name );
-std::string PreprocessArg( const ProgramString& str );
+const std::string& PreprocessArg( const std::string& str );
 
 template<class T>
 const T& PreprocessArg( const T& t )
@@ -88,7 +87,7 @@ CodeBuilderError ReportError( const CodeBuilderErrorCode code, const FilePos& fi
 
 	Formatter f( GetErrorMessagePattern(code) );
 	FeedArgs( f, args... );
-	error.text= DecodeUTF8( f.str() );
+	error.text= f.str();
 	return error;
 }
 

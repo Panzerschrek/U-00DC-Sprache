@@ -1,7 +1,7 @@
 #include <algorithm>
 
 #include "assert.hpp"
-
+#include "program_string.hpp"
 #include "lexical_analyzer.hpp"
 
 namespace U
@@ -31,6 +31,16 @@ bool operator<=( const FilePos& l, const FilePos& r )
 	return l < r || l == r;
 }
 
+bool operator==(const Lexem& l, const Lexem& r )
+{
+	return l.text == r.text && l.file_pos == r.file_pos && l.type == r.type;
+}
+
+bool operator!=(const Lexem& l, const Lexem& r )
+{
+	return !(l == r );
+}
+
 namespace
 {
 
@@ -44,101 +54,101 @@ const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
 	},
 	FixedLexemsMap
 	{ // One symbol lexems.
-		{ "("_SpC, Lexem::Type::BracketLeft },
-		{ ")"_SpC, Lexem::Type::BracketRight },
-		{ "["_SpC, Lexem::Type::SquareBracketLeft },
-		{ "]"_SpC, Lexem::Type::SquareBracketRight },
-		{ "{"_SpC, Lexem::Type::BraceLeft },
-		{ "}"_SpC, Lexem::Type::BraceRight },
+		{ "(", Lexem::Type::BracketLeft },
+		{ ")", Lexem::Type::BracketRight },
+		{ "[", Lexem::Type::SquareBracketLeft },
+		{ "]", Lexem::Type::SquareBracketRight },
+		{ "{", Lexem::Type::BraceLeft },
+		{ "}", Lexem::Type::BraceRight },
 
-		{ ","_SpC, Lexem::Type::Comma },
-		{ "."_SpC, Lexem::Type::Dot },
-		{ ":"_SpC, Lexem::Type::Colon },
-		{ ";"_SpC, Lexem::Type::Semicolon },
-		{ "?"_SpC, Lexem::Type::Question },
+		{ ",", Lexem::Type::Comma },
+		{ ".", Lexem::Type::Dot },
+		{ ":", Lexem::Type::Colon },
+		{ ";", Lexem::Type::Semicolon },
+		{ "?", Lexem::Type::Question },
 
-		{ "="_SpC, Lexem::Type::Assignment },
-		{ "+"_SpC, Lexem::Type::Plus },
-		{ "-"_SpC, Lexem::Type::Minus },
-		{ "*"_SpC, Lexem::Type::Star },
-		{ "/"_SpC, Lexem::Type::Slash },
-		{ "%"_SpC, Lexem::Type::Percent },
+		{ "=", Lexem::Type::Assignment },
+		{ "+", Lexem::Type::Plus },
+		{ "-", Lexem::Type::Minus },
+		{ "*", Lexem::Type::Star },
+		{ "/", Lexem::Type::Slash },
+		{ "%", Lexem::Type::Percent },
 
-		{ "<"_SpC, Lexem::Type::CompareLess },
-		{ ">"_SpC, Lexem::Type::CompareGreater },
+		{ "<", Lexem::Type::CompareLess },
+		{ ">", Lexem::Type::CompareGreater },
 
-		{ "&"_SpC, Lexem::Type::And },
-		{ "|"_SpC, Lexem::Type::Or },
-		{ "^"_SpC, Lexem::Type::Xor },
-		{ "~"_SpC, Lexem::Type::Tilda },
-		{ "!"_SpC, Lexem::Type::Not },
+		{ "&", Lexem::Type::And },
+		{ "|", Lexem::Type::Or },
+		{ "^", Lexem::Type::Xor },
+		{ "~", Lexem::Type::Tilda },
+		{ "!", Lexem::Type::Not },
 
-		{ "'"_SpC, Lexem::Type::Apostrophe },
+		{ "'", Lexem::Type::Apostrophe },
 	},
 	FixedLexemsMap
 	{ // Two symbol lexems.
-		{ "</"_SpC, Lexem::Type::TemplateBracketLeft  },
-		{ "/>"_SpC, Lexem::Type::TemplateBracketRight },
+		{ "</", Lexem::Type::TemplateBracketLeft  },
+		{ "/>", Lexem::Type::TemplateBracketRight },
 
-		{ "<?"_SpC, Lexem::Type::MacroBracketLeft  },
-		{ "?>"_SpC, Lexem::Type::MacroBracketRight },
+		{ "<?", Lexem::Type::MacroBracketLeft  },
+		{ "?>", Lexem::Type::MacroBracketRight },
 
-		{ "::"_SpC, Lexem::Type::Scope },
+		{ "::", Lexem::Type::Scope },
 
-		{ "++"_SpC, Lexem::Type::Increment },
-		{ "--"_SpC, Lexem::Type::Decrement },
+		{ "++", Lexem::Type::Increment },
+		{ "--", Lexem::Type::Decrement },
 
-		{ "=="_SpC, Lexem::Type::CompareEqual },
-		{ "!="_SpC, Lexem::Type::CompareNotEqual },
-		{ "<="_SpC, Lexem::Type::CompareLessOrEqual },
-		{ ">="_SpC, Lexem::Type::CompareGreaterOrEqual },
+		{ "==", Lexem::Type::CompareEqual },
+		{ "!=", Lexem::Type::CompareNotEqual },
+		{ "<=", Lexem::Type::CompareLessOrEqual },
+		{ ">=", Lexem::Type::CompareGreaterOrEqual },
 
-		{ "&&"_SpC, Lexem::Type::Conjunction },
-		{ "||"_SpC, Lexem::Type::Disjunction },
+		{ "&&", Lexem::Type::Conjunction },
+		{ "||", Lexem::Type::Disjunction },
 
-		{ "+="_SpC, Lexem::Type::AssignAdd },
-		{ "-="_SpC, Lexem::Type::AssignSub },
-		{ "*="_SpC, Lexem::Type::AssignMul },
-		{ "/="_SpC, Lexem::Type::AssignDiv },
-		{ "%="_SpC, Lexem::Type::AssignRem },
-		{ "&="_SpC, Lexem::Type::AssignAnd },
-		{ "|="_SpC, Lexem::Type::AssignOr  },
-		{ "^="_SpC, Lexem::Type::AssignXor },
+		{ "+=", Lexem::Type::AssignAdd },
+		{ "-=", Lexem::Type::AssignSub },
+		{ "*=", Lexem::Type::AssignMul },
+		{ "/=", Lexem::Type::AssignDiv },
+		{ "%=", Lexem::Type::AssignRem },
+		{ "&=", Lexem::Type::AssignAnd },
+		{ "|=", Lexem::Type::AssignOr  },
+		{ "^=", Lexem::Type::AssignXor },
 
-		{ "<<"_SpC, Lexem::Type::ShiftLeft  },
-		{ ">>"_SpC, Lexem::Type::ShiftRight },
+		{ "<<", Lexem::Type::ShiftLeft  },
+		{ ">>", Lexem::Type::ShiftRight },
 
-		{ "<-"_SpC, Lexem::Type::LeftArrow  },
-		{ "->"_SpC, Lexem::Type::RightArrow },
+		{ "<-", Lexem::Type::LeftArrow  },
+		{ "->", Lexem::Type::RightArrow },
 	},
 	FixedLexemsMap
 	{ // Three symbol lexems.
-		{ "<<="_SpC, Lexem::Type::AssignShiftLeft  },
-		{ ">>="_SpC, Lexem::Type::AssignShiftRight },
-		{ "..."_SpC, Lexem::Type::Ellipsis },
+		{ "<<=", Lexem::Type::AssignShiftLeft  },
+		{ ">>=", Lexem::Type::AssignShiftRight },
+		{ "...", Lexem::Type::Ellipsis },
 	},
 };
 
-using Iterator= const sprache_char*;
+using Iterator= const char*;
 
-bool IsWhitespace( sprache_char c )
+bool IsWhitespace( const sprache_char c )
 {
 	return
 		c == ' ' || c == '\f' || c == '\n' || c == '\r' || c == '\t' || c == '\v' ||
 		c <= 0x1Fu || c == 0x7Fu;
 }
 
-bool IsNewline( sprache_char c )
+bool IsNewline( const sprache_char c )
 {
 	return c == '\n';
 }
 
-bool IsNumberStartChar( sprache_char c )
+bool IsNumberStartChar( const sprache_char c )
 {
 	return c >= '0' && c <= '9';
 }
 
-bool IsIdentifierStartChar( sprache_char c )
+bool IsIdentifierStartChar( const sprache_char c )
 {
 	// HACK - manually define allowed "letters".
 	// TODO - use something, like symbol category from unicode.
@@ -154,17 +164,17 @@ bool IsIdentifierStartChar( sprache_char c )
 		( c >= 0x0180u && c <= 0x024Fu ) ;  // Extended latin part B
 }
 
-bool IsIdentifierChar( sprache_char c )
+bool IsIdentifierChar( const sprache_char c )
 {
 	return IsIdentifierStartChar(c) || IsNumberStartChar(c) || c == '_';
 }
 
 void ParseNumberImpl(
-		Iterator& it,
-		const Iterator it_end,
-		Lexem& result,
-		bool (*is_digit_func)(sprache_char c),
-		bool exponent_allowed= false )
+	Iterator& it,
+	const Iterator it_end,
+	Lexem& result,
+	bool (*is_digit_func)(char c),
+	bool exponent_allowed= false )
 {
 	// Integer part
 	while( it < it_end && is_digit_func(*it) )
@@ -208,10 +218,7 @@ void ParseNumberImpl(
 	}
 }
 
-Lexem ParseString(
-	Iterator& it,
-	const Iterator it_end,
-	LexicalErrorMessages& out_errors )
+Lexem ParseString( Iterator& it, const Iterator it_end, LexicalErrorMessages& out_errors )
 {
 	U_ASSERT( *it == '"' );
 	++it;
@@ -228,7 +235,7 @@ Lexem ParseString(
 			++it;
 			break;
 		}
-		else if( ( /* *it >= 0x00u && */ *it < 0x20u ) || *it == 0x7Fu ) // TODO - is this correct control character?
+		else if( ( /* *it >= 0x00u && */ sprache_char(*it) < 0x20u ) || *it == 0x7F ) // TODO - is this correct control character?
 		{
 			out_errors.push_back( "control character inside string" );
 			return result;
@@ -264,10 +271,10 @@ Lexem ParseString(
 						return result;
 					}
 
-					uint32_t char_code= 0u;
+					sprache_char char_code= 0u;
 					for( size_t i= 0u; i < 4u; i++ )
 					{
-						uint32_t digit;
+						sprache_char digit;
 							 if( *it >= '0' && *it <= '9' ) digit= uint32_t( *it - '0' );
 						else if( *it >= 'a' && *it <= 'f' ) digit= uint32_t( *it - 'a' + 10 );
 						else if( *it >= 'A' && *it <= 'F' ) digit= uint32_t( *it - 'A' + 10 );
@@ -279,8 +286,7 @@ Lexem ParseString(
 						char_code|= digit << ( ( 3u - i ) * 4u );
 						++it;
 					}
-
-					result.text.push_back( sprache_char(char_code) ); // TODO - maybe convert to UTF-16?
+					PushCharToUTF8String( char_code, result.text );
 				}
 				break;
 
@@ -299,16 +305,14 @@ Lexem ParseString(
 	return result;
 }
 
-Lexem ParseNumber(
-	Iterator& it,
-	const Iterator it_end )
+Lexem ParseNumber( Iterator& it, const Iterator it_end )
 {
 	Lexem result;
 	result.type= Lexem::Type::Number;
 
 	if( it_end - it >= 2 && *it == '0' )
 	{
-		sprache_char d= *(it+1);
+		const char d= *(it+1);
 		switch(d)
 		{
 		case 'b':
@@ -316,7 +320,7 @@ Lexem ParseNumber(
 			it+= 2;
 			ParseNumberImpl(
 				it, it_end, result,
-				[]( sprache_char c ) -> bool
+				[]( char c ) -> bool
 				{
 					return c == '0' || c == '1';
 				} );
@@ -328,7 +332,7 @@ Lexem ParseNumber(
 			it+= 2;
 			ParseNumberImpl(
 				it, it_end, result,
-				[]( sprache_char c ) -> bool
+				[]( char c ) -> bool
 				{
 					return c >= '0' && c <= '7';
 				} );
@@ -340,9 +344,9 @@ Lexem ParseNumber(
 			it+= 2;
 			ParseNumberImpl(
 				it, it_end, result,
-				[]( sprache_char c ) -> bool
+				[]( char c ) -> bool
 				{
-					return IsNumberStartChar(c) || ( c >= 'a' && c <= 'f' ) || ( c >= 'A' && c <= 'F' );
+					return ( c >= '0' && c <= '9' ) || ( c >= 'a' && c <= 'f' ) || ( c >= 'A' && c <= 'F' );
 				} );
 
 			break;
@@ -356,16 +360,16 @@ Lexem ParseNumber(
 	parse_decimal:
 		ParseNumberImpl(
 			it, it_end, result,
-			[]( sprache_char c ) -> bool
+			[]( char c ) -> bool
 			{
-				return IsNumberStartChar(c);
+				return ( c >= '0' && c <= '9' );
 			},
 			true );
 	}
 
 	// TODO - produce separate lexem for it.
 	// Type suffix.
-	while( it < it_end && IsIdentifierChar(*it) )
+	while( it < it_end && IsIdentifierChar(sprache_char(*it)) )
 	{
 		result.text.push_back(*it);
 		++it;
@@ -374,17 +378,19 @@ Lexem ParseNumber(
 	return result;
 }
 
-Lexem ParseIdentifier(
-	Iterator& it,
-	const Iterator it_end )
+Lexem ParseIdentifier( Iterator& it, const Iterator it_end )
 {
 	Lexem result;
 	result.type= Lexem::Type::Identifier;
 
-	while( it < it_end && IsIdentifierChar(*it) )
+	while( it < it_end )
 	{
-		result.text.push_back(*it);
-		++it;
+		auto it_next= it;
+		if( !IsIdentifierChar( ReadNextUTF8Char( it_next, it_end ) ) )
+			break;
+
+		result.text.insert( result.text.end(), it, it_next );
+		it= it_next;
 	}
 
 	return result;
@@ -395,9 +401,7 @@ bool IsMacroIdentifierStartChar( const sprache_char c )
 	return c == '?';
 }
 
-Lexem ParseMacroIdentifier(
-	Iterator& it,
-	const Iterator it_end )
+Lexem ParseMacroIdentifier( Iterator& it, const Iterator it_end )
 {
 	Lexem result;
 	result.type= Lexem::Type::MacroIdentifier;
@@ -406,17 +410,21 @@ Lexem ParseMacroIdentifier(
 	result.text.push_back(*it);
 	++it;
 
-	if( it < it_end && IsMacroIdentifierStartChar(*it) )
+	if( it < it_end && IsMacroIdentifierStartChar(sprache_char(*it)) )
 	{
 		result.type= Lexem::Type::MacroUniqueIdentifier;
 		result.text.push_back(*it);
 		++it;
 	}
 
-	while( it < it_end && IsIdentifierChar(*it) )
+	while( it < it_end )
 	{
-		result.text.push_back(*it);
-		++it;
+		auto it_next= it;
+		if( !IsIdentifierChar( ReadNextUTF8Char( it_next, it_end ) ) )
+			break;
+
+		result.text.insert( result.text.end(), it, it_next );
+		it= it_next;
 	}
 
 	return result;
@@ -424,12 +432,12 @@ Lexem ParseMacroIdentifier(
 
 } // namespace
 
-LexicalAnalysisResult LexicalAnalysis( const ProgramString& program_text, const bool collect_comments )
+LexicalAnalysisResult LexicalAnalysis( const std::string& program_text, const bool collect_comments )
 {
 	return LexicalAnalysis( program_text.data(), program_text.size(), collect_comments );
 }
 
-LexicalAnalysisResult LexicalAnalysis( const sprache_char* const program_text_data, const size_t program_text_size, const bool collect_comments )
+LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, const size_t program_text_size, const bool collect_comments )
 {
 	LexicalAnalysisResult result;
 
@@ -439,14 +447,24 @@ LexicalAnalysisResult LexicalAnalysis( const sprache_char* const program_text_da
 	int comments_depth= 0;
 
 	unsigned short line= 1; // Count lines from "1", in human-readable format.
-	Iterator last_newline_it= program_text_data;
+	unsigned int pos_in_line= 0u;
 
-	ProgramString fixed_lexem_str;
+	std::string fixed_lexem_str;
 	while( it < it_end )
 	{
-		const sprache_char c= *it;
+		auto it_prev= it;
+		const auto advance_pos_in_line=
+		[&]
+		{
+			while( it_prev < it )
+			{
+				ReadNextUTF8Char( it_prev, it );
+				++pos_in_line;
+			}
+		};
+
+		const uint32_t c= GetUTF8FirstChar( it, it_end );
 		Lexem lexem;
-		const auto pos_in_line= static_cast<unsigned short>( it - last_newline_it );
 
 		// line comment.
 		if( c == '/' && it_end - it > 1 && *(it+1) == '/' )
@@ -455,39 +473,42 @@ LexicalAnalysisResult LexicalAnalysis( const sprache_char* const program_text_da
 			{
 				Lexem comment_lexem;
 				comment_lexem.file_pos.line= line;
-				comment_lexem.file_pos.pos_in_line= pos_in_line;
+				comment_lexem.file_pos.pos_in_line= static_cast<unsigned short>(pos_in_line);
 				comment_lexem.type= Lexem::Type::Comment;
 
-				while( it < it_end && !IsNewline(*it) )
+				while( it < it_end && !IsNewline(sprache_char(*it)) )
 				{
 					comment_lexem.text.push_back(*it);
 					++it;
 				}
+				advance_pos_in_line();
 				result.lexems.emplace_back( std::move(comment_lexem) );
 			}
 			else
-				while( it < it_end && !IsNewline(*it) ) ++it;
+				while( it < it_end && !IsNewline(sprache_char(*it)) ) ++it;
 
 			if( it == it_end ) break;
 
 			++line;
 			++it;
-			last_newline_it= it;
+			pos_in_line= 0u;
 			continue;
 		}
-		if( c == '/' && it_end - it > 1 && *(it+1) == '*' )
+		if( c == '/' && it_end - it > 1 && *std::next(it) == '*' )
 		{
 			++comments_depth;
 			if( collect_comments )
 			{
 				Lexem comment_lexem;
 				comment_lexem.file_pos.line= line;
-				comment_lexem.file_pos.pos_in_line= pos_in_line;
+				comment_lexem.file_pos.pos_in_line= static_cast<unsigned short>(pos_in_line);
 				comment_lexem.type= Lexem::Type::Comment;
-				comment_lexem.text= "/*"_SpC;
+				comment_lexem.text= "/*";
+				advance_pos_in_line();
 				result.lexems.emplace_back( std::move(comment_lexem) );
 			}
 			it+= 2;
+			pos_in_line+= 2u;
 			continue;
 		}
 		if( c == '*' && it_end - it > 1 && *(it+1) == '/' )
@@ -496,41 +517,47 @@ LexicalAnalysisResult LexicalAnalysis( const sprache_char* const program_text_da
 			if( collect_comments )
 			{
 				Lexem comment_lexem;
+				lexem.file_pos.file_index= 0u;
 				comment_lexem.file_pos.line= line;
-				comment_lexem.file_pos.pos_in_line= pos_in_line;
+				comment_lexem.file_pos.pos_in_line= static_cast<unsigned short>(pos_in_line);
 				comment_lexem.type= Lexem::Type::Comment;
-				comment_lexem.text= "*/"_SpC;
-				result.lexems.emplace_back( std::move(comment_lexem) );
+				comment_lexem.text= "*/";
+				advance_pos_in_line();
+				result.lexems.push_back( std::move(comment_lexem) );
 			}
 			else if( comments_depth < 0 )
 				result.error_messages.emplace_back(
-					std::to_string(line) + ":" + std::to_string(it - last_newline_it) +
+					std::to_string(line) + ":" + std::to_string(pos_in_line) +
 					" Lexical error: unexpected */" );
 			it+= 2;
+			pos_in_line+= 2u;
 			continue;
 		}
 		else if( IsNewline(c) )
 		{
 			++line;
 			++it;
-			last_newline_it= it;
+			pos_in_line= 0u;
 			continue;
 		}
 		else if( IsWhitespace(c) )
 		{
 			++it;
+			++pos_in_line;
 			continue;
 		}
 		else if( c == '"' )
 		{
 			lexem= ParseString( it, it_end, result.error_messages );
-			if( it < it_end && IsIdentifierStartChar( *it ) )
+			if( IsIdentifierStartChar( GetUTF8FirstChar( it, it_end ) ) )
 			{
 				// Parse string suffix.
+				lexem.file_pos.file_index= 0u;
 				lexem.file_pos.line= line;
-				lexem.file_pos.pos_in_line= pos_in_line;
+				lexem.file_pos.pos_in_line= static_cast<unsigned short>(pos_in_line);
+				advance_pos_in_line();
 				if( comments_depth == 0 || collect_comments )
-					result.lexems.emplace_back( std::move(lexem) );
+					result.lexems.push_back( std::move(lexem) );
 
 				lexem= ParseIdentifier( it, it_end );
 				lexem.type= Lexem::Type::LiteralSuffix;
@@ -543,7 +570,7 @@ LexicalAnalysisResult LexicalAnalysis( const sprache_char* const program_text_da
 		else if( IsMacroIdentifierStartChar(c) &&
 				std::next(it) < it_end &&
 				*std::next(it) != '>' &&
-				( IsIdentifierChar(*std::next(it)) || IsMacroIdentifierStartChar(*std::next(it)) ) )
+				( IsIdentifierChar(GetUTF8FirstChar(std::next(it), it_end)) || IsMacroIdentifierStartChar(GetUTF8FirstChar(std::next(it), it_end)) ) )
 			lexem= ParseMacroIdentifier( it, it_end );
 		else
 		{
@@ -567,35 +594,35 @@ LexicalAnalysisResult LexicalAnalysis( const sprache_char* const program_text_da
 
 			if( comments_depth == 0 )
 				result.error_messages.emplace_back(
-					std::to_string(line) + ":" + std::to_string(it - last_newline_it) +
+					std::to_string(line) + ":" + std::to_string(pos_in_line) +
 					" Lexical error: unrecognized character: " + std::to_string(*it) );
 			++it;
 			continue;
 		}
 
 	push_lexem:
-		if( comments_depth != 0 && !collect_comments )
-			continue;
-
-		lexem.file_pos.file_index= 0;
+		lexem.file_pos.file_index= 0u;
 		lexem.file_pos.line= line;
-		lexem.file_pos.pos_in_line= static_cast<unsigned short>( pos_in_line );
+		lexem.file_pos.pos_in_line= static_cast<unsigned short>(pos_in_line);
 
-		result.lexems.emplace_back( std::move(lexem) );
+		advance_pos_in_line();
+
+		if( !( comments_depth != 0 && !collect_comments ) )
+			result.lexems.push_back( std::move(lexem) );
 	} // while not end
 
 	if( !collect_comments )
 		for( int i= 0; i < comments_depth; ++i )
 			result.error_messages.emplace_back(
-				std::to_string(line) + ":" + std::to_string(it - last_newline_it) +
+				std::to_string(line) + ":" + std::to_string(pos_in_line) +
 				" Lexical error: expected */" );
 
 	Lexem eof_lexem;
 	eof_lexem.type= Lexem::Type::EndOfFile;
-	eof_lexem.text= "EOF"_SpC;
+	eof_lexem.text= "EOF";
 	eof_lexem.file_pos.file_index= 0;
 	eof_lexem.file_pos.line= static_cast<unsigned short>(line);
-	eof_lexem.file_pos.pos_in_line= static_cast<unsigned short>( it - last_newline_it );
+	eof_lexem.file_pos.pos_in_line= static_cast<unsigned short>(pos_in_line);
 
 	result.lexems.emplace_back( std::move(eof_lexem) );
 
