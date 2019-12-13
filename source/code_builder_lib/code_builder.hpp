@@ -460,7 +460,7 @@ private:
 	// Typeinfo
 
 	Variable BuildTypeInfo( const Type& type, NamesScope& root_namespace );
-	ClassProxyPtr CreateTypeinfoClass( NamesScope& root_namespace, const Type& src_type, const std::string& name );
+	ClassProxyPtr CreateTypeinfoClass( NamesScope& root_namespace, const Type& src_type, std::string name );
 	Variable BuildTypeinfoPrototype( const Type& type, NamesScope& root_namespace );
 	void BuildFullTypeinfo( const Type& type, Variable& typeinfo_variable, NamesScope& root_namespace );
 	const Variable& GetTypeinfoListEndNode( NamesScope& root_namespace );

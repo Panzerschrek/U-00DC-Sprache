@@ -44,13 +44,13 @@ Variable CodeBuilder::BuildTypeInfo( const Type& type, NamesScope& root_namespac
 	return typeinfo_cache_.back().second;
 }
 
-ClassProxyPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Type& src_type, const std::string& name )
+ClassProxyPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Type& src_type, std::string name )
 {
 	// Currently, give "random" names for typeinfo classes.
 	llvm::StructType* const llvm_type= llvm::StructType::create( llvm_context_ );
 
 	const ClassProxyPtr typeinfo_class_proxy= std::make_shared<ClassProxy>();
-	typeinfo_class_table_[typeinfo_class_proxy]= std::make_unique<Class>( name, &root_namespace );
+	typeinfo_class_table_[typeinfo_class_proxy]= std::make_unique<Class>( std::move(name), &root_namespace );
 	typeinfo_class_proxy->class_= typeinfo_class_table_[typeinfo_class_proxy].get();
 	typeinfo_class_proxy->class_->llvm_type= llvm_type;
 	typeinfo_class_proxy->class_->typeinfo_type= src_type;

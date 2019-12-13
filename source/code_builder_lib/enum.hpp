@@ -9,7 +9,7 @@ namespace CodeBuilderPrivate
 
 struct Enum
 {
-	Enum( const std::string& name, NamesScope* parent_scope );
+	Enum( std::string name, NamesScope* parent_scope );
 
 	NamesScope members;
 	size_t element_count= 0u;

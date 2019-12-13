@@ -13,7 +13,7 @@ using TemplateParameter= std::variant< Variable, Type >;
 class Class final
 {
 public:
-	Class( const std::string& name, NamesScope* parent_scope );
+	Class( std::string name, NamesScope* parent_scope );
 
 	Class( const Class& )= delete;
 	Class& operator=( const Class& )= delete;

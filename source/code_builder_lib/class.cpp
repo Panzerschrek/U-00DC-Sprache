@@ -11,8 +11,8 @@ namespace CodeBuilderPrivate
 // Class
 //
 
-Class::Class( const std::string& in_name, NamesScope* const parent_scope )
-	: members( in_name, parent_scope )
+Class::Class( std::string in_name, NamesScope* const parent_scope )
+	: members( std::move(in_name), parent_scope )
 {}
 
 ClassMemberVisibility Class::GetMemberVisibility( const std::string& member_name ) const
