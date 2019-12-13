@@ -78,12 +78,12 @@ auto& str= "киррилическая строка"; fn Große_Lüge();
 
 	const Lexems expected_result
 	{
-		{ "auto"                , FilePos{ 0, 2,  0 }, Lexem::Type::Identifier },
-		{ "&"                   , FilePos{ 0, 2,  4 }, Lexem::Type::And        },
-		{ "str"                 , FilePos{ 0, 2,  6 }, Lexem::Type::Identifier },
-		{ "="                   , FilePos{ 0, 2,  9 }, Lexem::Type::Assignment },
-		{ "киррилическая строка", FilePos{ 0, 2, 11 }, Lexem::Type::String     },
-		{ ";"                   , FilePos{ 0, 2, 33 }, Lexem::Type::Semicolon  },
+		{ "auto"                , FilePos{ 0, 2,  0 }, Lexem::Type::Identifier   },
+		{ "&"                   , FilePos{ 0, 2,  4 }, Lexem::Type::And          },
+		{ "str"                 , FilePos{ 0, 2,  6 }, Lexem::Type::Identifier   },
+		{ "="                   , FilePos{ 0, 2,  9 }, Lexem::Type::Assignment   },
+		{ "киррилическая строка", FilePos{ 0, 2, 11 }, Lexem::Type::String       },
+		{ ";"                   , FilePos{ 0, 2, 33 }, Lexem::Type::Semicolon    },
 		{ "fn"                  , FilePos{ 0, 2, 35 }, Lexem::Type::Identifier   },
 		{ "Große_Lüge"          , FilePos{ 0, 2, 38 }, Lexem::Type::Identifier   },
 		{ "("                   , FilePos{ 0, 2, 48 }, Lexem::Type::BracketLeft  },

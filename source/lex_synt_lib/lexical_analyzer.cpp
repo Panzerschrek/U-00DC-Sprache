@@ -530,6 +530,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 			if( collect_comments )
 			{
 				Lexem comment_lexem;
+				lexem.file_pos.file_index= 0u;
 				comment_lexem.file_pos.line= line;
 				comment_lexem.file_pos.pos_in_line= static_cast<unsigned short>(pos_in_line);
 				comment_lexem.type= Lexem::Type::Comment;
@@ -564,6 +565,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 			if( IsIdentifierStartChar( GetUTF8FirstChar( it, it_end ) ) )
 			{
 				// Parse string suffix.
+				lexem.file_pos.file_index= 0u;
 				lexem.file_pos.line= line;
 				lexem.file_pos.pos_in_line= static_cast<unsigned short>(pos_in_line);
 				advance_pos_in_line();
@@ -612,7 +614,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 		}
 
 	push_lexem:
-		lexem.file_pos.file_index= 0;
+		lexem.file_pos.file_index= 0u;
 		lexem.file_pos.line= line;
 		lexem.file_pos.pos_in_line= static_cast<unsigned short>(pos_in_line);
 
