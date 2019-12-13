@@ -11,6 +11,7 @@ namespace U
 using sprache_char = uint32_t;
 sprache_char ReadNextUTF8Char( const char*& start, const char* end );
 sprache_char GetUTF8FirstChar( const char* start, const char* end );
+void PushCharToUTF8String( sprache_char c, std::string& str );
 
 template<class T>
 using ProgramStringMap= std::unordered_map< std::string, T >;

@@ -121,4 +121,22 @@ sprache_char GetUTF8FirstChar( const char* start, const char* const end )
 	return ReadNextUTF8Char( start, end );
 }
 
+void PushCharToUTF8String( const sprache_char c, std::string& str )
+{
+	if( c <= 0x7Fu )
+		str.push_back( char(c) );
+	else if( c <= 0x7FFu )
+	{
+		str.push_back( char( 0b11000000u | (c >>  6u) ) );
+		str.push_back( char( 0b10000000u | (c &  63u) ) );
+	}
+	// TODO - support codes with more, than 3 bytes in UTF-8 representation.
+	else
+	{
+		str.push_back( char( 0b11100000u |  (c >> 12u) ) );
+		str.push_back( char( 0b11000000u | ((c >> 6u) & 63u) ) );
+		str.push_back( char( 0b10000000u |  (c  & 63u) ) );
+	}
+}
+
 } // namespace U

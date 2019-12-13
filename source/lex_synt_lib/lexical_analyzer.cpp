@@ -286,20 +286,7 @@ Lexem ParseString( Iterator& it, const Iterator it_end, LexicalErrorMessages& ou
 						char_code|= digit << ( ( 3u - i ) * 4u );
 						++it;
 					}
-
-					if( char_code <= 0x7Fu )
-						result.text.push_back( char(char_code) );
-					else if( char_code <= 0x7FFu )
-					{
-						result.text.push_back( char( 0b11000000u | (char_code >>  6u) ) );
-						result.text.push_back( char( 0b10000000u | (char_code &  63u) ) );
-					}
-					else
-					{
-						result.text.push_back( char( 0b11100000u |  (char_code >> 12u) ) );
-						result.text.push_back( char( 0b11000000u | ((char_code >> 6u) & 63u) ) );
-						result.text.push_back( char( 0b10000000u |  (char_code  & 63u) ) );
-					}
+					PushCharToUTF8String( char_code, result.text );
 				}
 				break;
 
