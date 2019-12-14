@@ -329,7 +329,7 @@ double PowI( const uint64_t base, const uint64_t pow )
 
 Lexem ParseNumber( Iterator& it, const Iterator it_end, LexicalErrorMessages& out_errors )
 {
-	uint64_t base= 10;
+	uint64_t base= 10u;
 	// Returns -1 for non-numbers
 	uint64_t (*number_func)(char) =
 		[]( const char c ) -> uint64_t
@@ -436,7 +436,7 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, LexicalErrorMessages& ou
 	}
 
 	// Exponent
-	if( it < it_end && *it == 'e' )
+	if( base == 10u && it < it_end && *it == 'e' )
 	{
 		++it;
 
