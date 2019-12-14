@@ -15,34 +15,6 @@
 namespace U
 {
 
-namespace
-{
-
-using TypesMap= ProgramStringMap< U_FundamentalType >;
-
-const TypesMap g_types_map=
-{
-	{ Keyword( Keywords::void_ ), U_FundamentalType::Void },
-	{ Keyword( Keywords::bool_ ), U_FundamentalType::Bool },
-	{ Keyword( Keywords::i8_  ), U_FundamentalType::i8  },
-	{ Keyword( Keywords::u8_  ), U_FundamentalType::u8  },
-	{ Keyword( Keywords::i16_ ), U_FundamentalType::i16 },
-	{ Keyword( Keywords::u16_ ), U_FundamentalType::u16 },
-	{ Keyword( Keywords::i32_ ), U_FundamentalType::i32 },
-	{ Keyword( Keywords::u32_ ), U_FundamentalType::u32 },
-	{ Keyword( Keywords::i64_ ), U_FundamentalType::i64 },
-	{ Keyword( Keywords::u64_ ), U_FundamentalType::u64 },
-	{ Keyword( Keywords::i128_ ), U_FundamentalType::i128 },
-	{ Keyword( Keywords::u128_ ), U_FundamentalType::u128 },
-	{ Keyword( Keywords::f32_ ), U_FundamentalType::f32 },
-	{ Keyword( Keywords::f64_ ), U_FundamentalType::f64 },
-	{ Keyword( Keywords::char8_  ), U_FundamentalType::char8  },
-	{ Keyword( Keywords::char16_ ), U_FundamentalType::char16 },
-	{ Keyword( Keywords::char32_ ), U_FundamentalType::char32 },
-};
-
-} // namespace
-
 namespace CodeBuilderPrivate
 {
 
@@ -447,12 +419,13 @@ void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
 	fundamental_globals_file_pos.line= static_cast<unsigned short>(~0u);
 	fundamental_globals_file_pos.pos_in_line= static_cast<unsigned short>(~0u);
 
-	for( const auto& fundamental_type_value : g_types_map )
+	for( size_t i= size_t(U_FundamentalType::Void); i < size_t(U_FundamentalType::LastType); ++i )
 	{
+		const U_FundamentalType fundamental_type= U_FundamentalType(i);
 		global_names_scope.AddName(
-			fundamental_type_value.first,
+			GetFundamentalTypeName(fundamental_type),
 			Value(
-				FundamentalType( fundamental_type_value.second, GetFundamentalLLVMType( fundamental_type_value.second ) ),
+				FundamentalType( fundamental_type, GetFundamentalLLVMType( fundamental_type ) ),
 				fundamental_globals_file_pos ) );
 	}
 
@@ -3579,11 +3552,7 @@ U_FundamentalType CodeBuilder::GetNumericConstantType( const Synt::NumericConsta
 	else if( type_suffix == "c32" )
 		return U_FundamentalType::char32;
 
-	auto it= g_types_map.find( type_suffix );
-	if( it == g_types_map.end() )
-		return U_FundamentalType::InvalidType;
-
-	return it->second;
+	return GetFundamentalTypeByName( type_suffix );
 }
 
 llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundmantal_type )

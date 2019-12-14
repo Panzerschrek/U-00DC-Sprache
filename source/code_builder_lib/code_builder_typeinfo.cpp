@@ -12,7 +12,6 @@ namespace CodeBuilderPrivate
 namespace
 {
 
-const std::string g_next_node_name= "next";
 const std::string g_name_field_name= "name";
 const std::string g_type_field_name= "type";
 const FilePos g_dummy_file_pos{ 0u, 0u, 0u };

@@ -206,8 +206,6 @@ struct FunctionPointer
 bool operator==( const FunctionPointer& l, const FunctionPointer& r );
 bool operator!=( const FunctionPointer& l, const FunctionPointer& r );
 
-const std::string& GetFundamentalTypeName( U_FundamentalType fundamental_type );
-
 } //namespace CodeBuilderLLVMPrivate
 
 } // namespace U

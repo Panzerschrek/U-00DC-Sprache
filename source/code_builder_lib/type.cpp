@@ -855,37 +855,6 @@ bool operator!=( const FunctionPointer& l, const FunctionPointer& r )
 	return !( r == l );
 }
 
-const std::string g_invalid_type_name= "InvalidType";
-
-const std::string& GetFundamentalTypeName( const U_FundamentalType type )
-{
-	switch(type)
-	{
-	case U_FundamentalType::InvalidType: return g_invalid_type_name;
-	case U_FundamentalType::Void: return Keyword( Keywords::void_ );
-	case U_FundamentalType::Bool: return Keyword( Keywords::bool_ );
-	case U_FundamentalType::i8 : return Keyword( Keywords::i8_ );
-	case U_FundamentalType::u8 : return Keyword( Keywords::u8_ );
-	case U_FundamentalType::i16: return Keyword( Keywords::i16_ );
-	case U_FundamentalType::u16: return Keyword( Keywords::u16_ );
-	case U_FundamentalType::i32: return Keyword( Keywords::i32_ );
-	case U_FundamentalType::u32: return Keyword( Keywords::u32_ );
-	case U_FundamentalType::i64: return Keyword( Keywords::i64_ );
-	case U_FundamentalType::u64: return Keyword( Keywords::u64_ );
-	case U_FundamentalType::i128: return Keyword( Keywords::i128_ );
-	case U_FundamentalType::u128: return Keyword( Keywords::u128_ );
-	case U_FundamentalType::f32: return Keyword( Keywords::f32_ );
-	case U_FundamentalType::f64: return Keyword( Keywords::f64_ );
-	case U_FundamentalType::char8 : return Keyword( Keywords::char8_  );
-	case U_FundamentalType::char16: return Keyword( Keywords::char16_ );
-	case U_FundamentalType::char32: return Keyword( Keywords::char32_ );
-	case U_FundamentalType::LastType: break;
-	};
-
-	U_ASSERT( false );
-	return g_invalid_type_name;
-}
-
 } //namespace CodeBuilderLLVMPrivate
 
 } // namespace U

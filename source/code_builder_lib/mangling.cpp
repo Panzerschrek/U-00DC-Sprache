@@ -76,61 +76,62 @@ private:
 	std::vector<std::string> names_container_;
 };
 
+const ProgramStringMap<std::string> g_op_names
+{
+	{ "+", "pl" },
+	{ "-", "mi" },
+	{ "*", "ml" },
+	{ "/", "dv" },
+	{ "%", "rm" },
+
+	{ "==", "eq" },
+	{ "!=", "ne" },
+	{  ">", "gt" },
+	{ ">=", "ge" },
+	{  "<", "lt" },
+	{ "<=", "le" },
+
+	{ "&", "an" },
+	{ "|", "or" },
+	{ "^", "eo" },
+
+	{ "<<", "ls" },
+	{ ">>", "rs" },
+
+	{ "+=", "pL" },
+	{ "-=", "mI" },
+	{ "*=", "mL" },
+	{ "/=", "dV" },
+	{ "%=", "rM" },
+
+	{ "&=", "aN" },
+	{ "|=", "oR" },
+	{ "^=", "eO" },
+
+	{ "<<=", "lS" },
+	{ ">>=", "rS" },
+
+	{ "!", "nt" },
+	{ "~", "co" },
+
+	{ "=", "aS" },
+	{ "++", "pp" },
+	{ "--", "mm" },
+
+	{ "()", "cl" },
+	{ "[]", "ix" },
+};
+
+const std::string g_empty_op_name;
+
 // Returns empty string if func_name is not operatorname.
 const std::string& DecodeOperator( const std::string& func_name )
 {
-	static const ProgramStringMap<std::string> c_op_names
-	{
-		{ "+", "pl" },
-		{ "-", "mi" },
-		{ "*", "ml" },
-		{ "/", "dv" },
-		{ "%", "rm" },
-
-		{ "==", "eq" },
-		{ "!=", "ne" },
-		{  ">", "gt" },
-		{ ">=", "ge" },
-		{  "<", "lt" },
-		{ "<=", "le" },
-
-		{ "&", "an" },
-		{ "|", "or" },
-		{ "^", "eo" },
-
-		{ "<<", "ls" },
-		{ ">>", "rs" },
-
-		{ "+=", "pL" },
-		{ "-=", "mI" },
-		{ "*=", "mL" },
-		{ "/=", "dV" },
-		{ "%=", "rM" },
-
-		{ "&=", "aN" },
-		{ "|=", "oR" },
-		{ "^=", "eO" },
-
-		{ "<<=", "lS" },
-		{ ">>=", "rS" },
-
-		{ "!", "nt" },
-		{ "~", "co" },
-
-		{ "=", "aS" },
-		{ "++", "pp" },
-		{ "--", "mm" },
-
-		{ "()", "cl" },
-		{ "[]", "ix" },
-	};
-	static const std::string c_empty;
-
-	const auto it= c_op_names.find( func_name );
-	if( it != c_op_names.end() )
+	const auto it= g_op_names.find( func_name );
+	if( it != g_op_names.end() )
 		return it->second;
 
-	return c_empty;
+	return g_empty_op_name;
 }
 
 void GetNamespacePrefix_r( const NamesScope& names_scope, std::vector<std::string>& result )

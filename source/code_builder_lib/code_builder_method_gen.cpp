@@ -489,7 +489,7 @@ void CodeBuilder::TryGenerateDestructor( Class& the_class, const Type& class_typ
 
 void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Type& class_type )
 {
-	static const std::string op_name= "=";
+	const std::string op_name= OverloadedOperatorToString( OverloadedOperator::Assign );
 
 	// Search for explicit assignment operator.
 	FunctionVariable* prev_operator_variable= nullptr;

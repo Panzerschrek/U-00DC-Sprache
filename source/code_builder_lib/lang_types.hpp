@@ -39,4 +39,7 @@ bool IsFloatingPoint( U_FundamentalType type );
 bool IsNumericType( U_FundamentalType type );
 bool IsChar( U_FundamentalType type );
 
+const std::string& GetFundamentalTypeName( U_FundamentalType type );
+U_FundamentalType GetFundamentalTypeByName( const std::string& name );
+
 } // namespace U
