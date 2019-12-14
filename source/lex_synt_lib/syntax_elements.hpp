@@ -407,15 +407,10 @@ public:
 
 using TypeSuffix= std::array<char, 7>;
 
-struct NumericConstant final : public ExpressionComponentWithUnaryOperators
+struct NumericConstant final : public ExpressionComponentWithUnaryOperators, public NumberLexemData
 {
 public:
 	NumericConstant( const FilePos& file_pos );
-
-	double value_double_;
-	uint64_t value_int_;
-	TypeSuffix type_suffix_;
-	bool has_fractional_point_= false;
 };
 
 struct StringLiteral final : public ExpressionComponentWithUnaryOperators

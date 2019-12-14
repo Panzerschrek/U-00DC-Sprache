@@ -145,7 +145,6 @@ BooleanConstant::BooleanConstant( const FilePos& file_pos, bool value )
 NumericConstant::NumericConstant( const FilePos& file_pos )
 	: ExpressionComponentWithUnaryOperators(file_pos)
 {
-	std::fill( type_suffix_.begin(), type_suffix_.end(), 0 );
 }
 
 StringLiteral::StringLiteral( const FilePos& file_pos )

@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cstring>
 
 #include "assert.hpp"
 #include "program_string.hpp"
@@ -169,55 +170,6 @@ bool IsIdentifierChar( const sprache_char c )
 	return IsIdentifierStartChar(c) || IsNumberStartChar(c) || c == '_';
 }
 
-void ParseNumberImpl(
-	Iterator& it,
-	const Iterator it_end,
-	Lexem& result,
-	bool (*is_digit_func)(char c),
-	bool exponent_allowed= false )
-{
-	// Integer part
-	while( it < it_end && is_digit_func(*it) )
-	{
-		result.text.push_back(*it);
-		++it;
-	}
-
-	// Fractional part
-	if( it < it_end && *it == '.' )
-	{
-		result.text.push_back(*it);
-		++it;
-
-		while( it < it_end && is_digit_func(*it) )
-		{
-			result.text.push_back(*it);
-			++it;
-		}
-	}
-
-	// Exponent
-	if( exponent_allowed && it < it_end && *it == 'e' )
-	{
-		result.text.push_back(*it);
-		++it;
-
-		if( it < it_end && *it == '-' )
-		{
-			result.text.push_back(*it);
-			++it;
-		}
-		else if( it < it_end && *it == '+' )
-			++it;
-
-		while( it < it_end && is_digit_func(*it) )
-		{
-			result.text.push_back(*it);
-			++it;
-		}
-	}
-}
-
 Lexem ParseString( Iterator& it, const Iterator it_end, LexicalErrorMessages& out_errors )
 {
 	U_ASSERT( *it == '"' );
@@ -305,79 +257,6 @@ Lexem ParseString( Iterator& it, const Iterator it_end, LexicalErrorMessages& ou
 	return result;
 }
 
-Lexem ParseNumber( Iterator& it, const Iterator it_end )
-{
-	Lexem result;
-	result.type= Lexem::Type::Number;
-
-	if( it_end - it >= 2 && *it == '0' )
-	{
-		const char d= *(it+1);
-		switch(d)
-		{
-		case 'b':
-			result.text.append( it, it + 2 );
-			it+= 2;
-			ParseNumberImpl(
-				it, it_end, result,
-				[]( char c ) -> bool
-				{
-					return c == '0' || c == '1';
-				} );
-
-			break;
-
-		case 'o':
-			result.text.append( it, it + 2 );
-			it+= 2;
-			ParseNumberImpl(
-				it, it_end, result,
-				[]( char c ) -> bool
-				{
-					return c >= '0' && c <= '7';
-				} );
-
-			break;
-
-		case 'x':
-			result.text.append( it, it + 2 );
-			it+= 2;
-			ParseNumberImpl(
-				it, it_end, result,
-				[]( char c ) -> bool
-				{
-					return ( c >= '0' && c <= '9' ) || ( c >= 'a' && c <= 'f' ) || ( c >= 'A' && c <= 'F' );
-				} );
-
-			break;
-
-		default:
-			goto parse_decimal;
-		};
-	}
-	else
-	{
-	parse_decimal:
-		ParseNumberImpl(
-			it, it_end, result,
-			[]( char c ) -> bool
-			{
-				return ( c >= '0' && c <= '9' );
-			},
-			true );
-	}
-
-	// TODO - produce separate lexem for it.
-	// Type suffix.
-	while( it < it_end && IsIdentifierChar(sprache_char(*it)) )
-	{
-		result.text.push_back(*it);
-		++it;
-	}
-
-	return result;
-}
-
 Lexem ParseIdentifier( Iterator& it, const Iterator it_end )
 {
 	Lexem result;
@@ -428,6 +307,208 @@ Lexem ParseMacroIdentifier( Iterator& it, const Iterator it_end )
 	}
 
 	return result;
+}
+
+
+double PowI( const uint64_t base, const uint64_t pow )
+{
+	if( pow == 0u )
+		return 1.0;
+	if( pow == 1u )
+		return double(base);
+	if( pow == 2u )
+		return double(base * base);
+
+	const uint64_t half_pow= pow / 2u;
+	double res= PowI( base, half_pow );
+	res= res * res;
+	if( half_pow * 2u != pow )
+		res*= double(base);
+	return res;
+}
+
+Lexem ParseNumber( Iterator& it, const Iterator it_end, LexicalErrorMessages& out_errors )
+{
+	uint64_t base= 10;
+	// Returns -1 for non-numbers
+	uint64_t (*number_func)(char) =
+		[]( const char c ) -> uint64_t
+		{
+			if( c >= '0' && c <= '9' )
+				return c - '0';
+			return uint64_t(-1);
+		};
+
+	if( *it == '0' && std::next(it) < it_end )
+	{
+		const char d= *std::next(it);
+		switch(d)
+		{
+		case 'b':
+			it+= 2;
+			base= 2;
+			number_func=
+				[]( const char c ) -> uint64_t
+				{
+					if( c >= '0' && c <= '1' )
+						return c - '0';
+					return uint64_t(-1);
+				};
+			break;
+
+		case 'o':
+			it+= 2;
+			base= 8;
+			number_func=
+				[]( const char c ) -> uint64_t
+				{
+					if( c >= '0' && c <= '7' )
+						return c - '0';
+					return uint64_t(-1);
+				};
+			break;
+
+		case 'x':
+			it+= 2;
+			base= 16;
+			number_func=
+				[]( const char c ) -> uint64_t
+				{
+					if( c >= '0' && c <= '9' )
+						return c - '0';
+					else if( c >= 'a' && c <= 'f' )
+						return c - 'a' + 10;
+					else if( c >= 'A' && c <= 'F' )
+						return c - 'A' + 10;
+					else
+						return uint64_t(-1);
+				};
+			break;
+
+		default:
+			break;
+		};
+	}
+
+	uint64_t integer_part= 0, fractional_part= 0;
+	int fractional_part_digits= 0, exponent= 0;
+	bool has_fraction_point= false;
+
+	while( it < it_end )
+	{
+		const uint64_t num= number_func( *it );
+		if( num == uint64_t(-1) )
+			break;
+
+		const uint64_t integer_part_before= integer_part;
+		integer_part= integer_part * base + num;
+		++it;
+
+		if( integer_part < integer_part_before ) // Check overflow
+		{
+			out_errors.push_back( "Integer part of numeric literal is too long" );
+			break;
+		}
+	}
+
+	if( it < it_end && *it == '.' )
+	{
+		++it;
+		has_fraction_point= true;
+
+		while( it < it_end )
+		{
+			const uint64_t num= number_func( *it );
+			if( num == uint64_t(-1) )
+				break;
+
+			const uint64_t fractional_part_before= fractional_part;
+			fractional_part= fractional_part * base + num;
+			++fractional_part_digits;
+			++it;
+
+			if( fractional_part < fractional_part_before ) // Check overflow
+			{
+				out_errors.push_back( "Fractional part of numeric literal is too long" );
+				break;
+			}
+		}
+	}
+
+	// Exponent
+	if( it < it_end && *it == 'e' )
+	{
+		++it;
+
+		U_ASSERT( base == 10 );
+		bool is_negative= false;
+
+		if( it < it_end && *it == '-' )
+		{
+			is_negative= true;
+			++it;
+		}
+		else if( it < it_end && *it == '+' )
+			++it;
+
+		while( it < it_end )
+		{
+			const uint64_t num= number_func( *it );
+			if( num == uint64_t(-1) )
+				break;
+
+			exponent= exponent * int(base) + int(num);
+			++it;
+		}
+		if( is_negative )
+			exponent= -exponent;
+	}
+
+	NumberLexemData result;
+
+	// For double calculate only powers > 0, because pow( base, positive ) is always integer and have exact double representation.
+	// pow( base, negative ) may have not exact double representation (1/10 for example).
+	// Example:
+	// 3 / 10 - right
+	// 3 * (1/10) - wrong
+	if( exponent >= 0 )
+		result.value_double= double(integer_part) * PowI( base, exponent );
+	else
+		result.value_double= double(integer_part) / PowI( base, -exponent );
+	if( exponent >= fractional_part_digits )
+		result.value_double+= double(fractional_part) * PowI( base, exponent - fractional_part_digits );
+	else
+		result.value_double+= double(fractional_part) / PowI( base, fractional_part_digits - exponent );
+
+	result.value_int= integer_part;
+	for( int i= 0; i < exponent; ++i )
+		result.value_int*= base;
+	for( int i= 0; i < -exponent; ++i )
+		result.value_int/= base;
+
+	uint64_t fractional_part_corrected= fractional_part;
+	for( int i= 0; i < exponent - fractional_part_digits; ++i )
+		fractional_part_corrected*= base;
+	for( int i= 0; i < fractional_part_digits - exponent; ++i )
+		fractional_part_corrected/= base;
+	result.value_int+= fractional_part_corrected;
+
+	result.has_fractional_point= has_fraction_point;
+
+	if( IsIdentifierStartChar( GetUTF8FirstChar( it, it_end ) ) )
+	{
+		const Lexem type_suffix= ParseIdentifier( it, it_end );
+		if( type_suffix.text.size() >= sizeof(result.type_suffix) )
+			out_errors.push_back( "Type suffix of numeric literal is too long" );
+
+		std::memcpy( result.type_suffix.data(), type_suffix.text.data(), std::min( type_suffix.text.size(), sizeof(result.type_suffix) ) );
+	}
+
+	Lexem result_lexem;
+	result_lexem.type= Lexem::Type::Number;
+	result_lexem.text.resize( sizeof(NumberLexemData) );
+	std::memcpy( result_lexem.text.data(), &result, sizeof(NumberLexemData) );
+	return result_lexem;
 }
 
 } // namespace
@@ -564,7 +645,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 			}
 		}
 		else if( IsNumberStartChar(c) )
-			lexem= ParseNumber( it, it_end );
+			lexem= ParseNumber( it, it_end, result.error_messages );
 		else if( IsIdentifierStartChar(c) )
 			lexem= ParseIdentifier( it, it_end );
 		else if( IsMacroIdentifierStartChar(c) &&

@@ -791,7 +791,7 @@ Value CodeBuilder::BuildExpressionCode(
 	const U_FundamentalType type= GetNumericConstantType( numeric_constant );
 	if( type == U_FundamentalType::InvalidType )
 	{
-		REPORT_ERROR( UnknownNumericConstantType, names.GetErrors(), numeric_constant.file_pos_, numeric_constant.type_suffix_.data() );
+		REPORT_ERROR( UnknownNumericConstantType, names.GetErrors(), numeric_constant.file_pos_, numeric_constant.type_suffix.data() );
 		return ErrorValue();
 	}
 	llvm::Type* const llvm_type= GetFundamentalLLVMType( type );
@@ -803,16 +803,16 @@ Value CodeBuilder::BuildExpressionCode(
 
 	if( IsInteger( type ) || IsChar( type ) )
 		result.constexpr_value=
-			llvm::Constant::getIntegerValue( llvm_type, llvm::APInt( llvm_type->getIntegerBitWidth(), numeric_constant.value_int_ ) );
+			llvm::Constant::getIntegerValue( llvm_type, llvm::APInt( llvm_type->getIntegerBitWidth(), numeric_constant.value_int ) );
 	else if( IsFloatingPoint( type ) )
 		result.constexpr_value=
-			llvm::ConstantFP::get( llvm_type, numeric_constant.value_double_ );
+			llvm::ConstantFP::get( llvm_type, numeric_constant.value_double );
 	else
 		U_ASSERT(false);
 
 	result.llvm_value= result.constexpr_value;
 
-	const ReferencesGraphNodePtr node= std::make_shared<ReferencesGraphNode>( "numeric constant " + std::to_string(numeric_constant.value_double_), ReferencesGraphNode::Kind::Variable );
+	const ReferencesGraphNodePtr node= std::make_shared<ReferencesGraphNode>( "numeric constant " + std::to_string(numeric_constant.value_double), ReferencesGraphNode::Kind::Variable );
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
 	result.node= node;
 	return Value( std::move(result), numeric_constant.file_pos_ );

@@ -11,7 +11,19 @@ void TestLexResult( const char* const program_text, const Lexems& expected_resul
 	LexicalAnalysisResult lex_result = LexicalAnalysis( program_text );
 	if( !lex_result.lexems.empty() && lex_result.lexems.back().type == Lexem::Type::EndOfFile )
 		lex_result.lexems.pop_back();
-	U_TEST_ASSERT( lex_result.lexems == expected_result );
+
+	U_TEST_ASSERT( lex_result.lexems.size() == expected_result.size() );
+	for( size_t i= 0; i < expected_result.size(); ++i )
+	{
+		U_TEST_ASSERT( lex_result.lexems[i].type == expected_result[i].type );
+		U_TEST_ASSERT( lex_result.lexems[i].file_pos == expected_result[i].file_pos );
+
+		// Do not compare number text, because in number lexem text actually stored special struct.
+		if( expected_result[i].type != Lexem::Type::Number )
+		{
+			U_TEST_ASSERT( lex_result.lexems[i].text == expected_result[i].text );
+		}
+	}
 }
 
 } // namespace

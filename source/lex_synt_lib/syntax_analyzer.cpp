@@ -1,4 +1,5 @@
 #include <cctype>
+#include <cstring>
 #include <map>
 #include <set>
 
@@ -197,23 +198,6 @@ BinaryOperatorType GetAdditiveAssignmentOperator( const Lexem& lexem )
 		U_ASSERT(false);
 		return BinaryOperatorType::Add;
 	};
-}
-
-double PowI( const uint64_t base, const uint64_t pow )
-{
-	if( pow == 0u )
-		return 1.0;
-	if( pow == 1u )
-		return double(base);
-	if( pow == 2u )
-		return double(base * base);
-
-	const uint64_t half_pow= pow / 2u;
-	double res= PowI( base, half_pow );
-	res= res * res;
-	if( half_pow * 2u != pow )
-		res*= double(base);
-	return res;
 }
 
 class SyntaxAnalyzer final
@@ -897,191 +881,14 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 
 NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 {
-	const std::string& text= it_->text;
-
-	uint64_t base= 10;
-	uint64_t (*number_func)( char) =
-		[]( char c ) -> uint64_t
-		{
-			U_ASSERT( c >= '0' && c <= '9' );
-			return c - '0';
-		};
-
-	bool (*is_number_func)( char ) =
-		[]( char c ) -> bool { return std::isdigit(c); };
-
-	std::string::const_iterator it= text.begin();
-	const std::string::const_iterator it_end= text.end();
-
-	if( text.size() >= 2 && text[0] == '0' )
-	{
-		const char d= text[1];
-		switch(d)
-		{
-		case 'b':
-			it+= 2;
-			base= 2;
-			number_func=
-				[]( char c ) -> uint64_t
-				{
-					U_ASSERT( c >= '0' && c <= '1' );
-					return c - '0';
-				};
-			is_number_func=
-				[]( char c ) -> bool
-				{
-					return c == '0' || c == '1';
-				};
-			break;
-
-		case 'o':
-			it+= 2;
-			base= 8;
-			number_func=
-				[]( char c ) -> uint64_t
-				{
-					U_ASSERT( c >= '0' && c <= '7' );
-					return c - '0';
-				};
-			is_number_func=
-				[]( char c ) -> bool
-				{
-					return c >= '0' && c <= '7';
-				};
-			break;
-
-		case 'x':
-			it+= 2;
-			base= 16;
-			number_func=
-				[]( char c ) -> uint64_t
-				{
-					if( c >= '0' && c <= '9' )
-						return c - '0';
-					else if( c >= 'a' && c <= 'f' )
-						return c - 'a' + 10;
-					else
-					{
-						U_ASSERT( c >= 'A' && c <= 'F' );
-						return c - 'A' + 10;
-					}
-				};
-			is_number_func= []( char c ) -> bool { return std::isxdigit(c); };
-			break;
-
-		default: break;
-		};
-	}
-
-	uint64_t integer_part= 0, fractional_part= 0;
-	int fractional_part_digits= 0, exponent= 0;
-	bool has_fraction_point= false;
-
-	while( it < it_end && is_number_func( *it ) )
-	{
-		const uint64_t integer_part_before= integer_part;
-		integer_part= integer_part * base + number_func( *it );
-		++it;
-
-		if( integer_part < integer_part_before ) // Check overflow
-		{
-			SyntaxErrorMessage msg;
-			msg.file_pos= it_->file_pos;
-			msg.text= "Integer part of numeric literal is too long";
-			error_messages_.push_back( msg );
-			break;
-		}
-	}
-
-	if( it < it_end && *it == '.' )
-	{
-		++it;
-		has_fraction_point= true;
-
-		while( it < it_end && is_number_func(*it) )
-		{
-			const uint64_t fractional_part_before= fractional_part;
-			fractional_part= fractional_part * base + number_func( *it );
-			++fractional_part_digits;
-			++it;
-
-			if( fractional_part < fractional_part_before ) // Check overflow
-			{
-				SyntaxErrorMessage msg;
-				msg.file_pos= it_->file_pos;
-				msg.text= "Fractional part of numeric literal is too long";
-				error_messages_.push_back( msg );
-				break;
-			}
-		}
-	}
-
-	// Exponent
-	if( it < it_end && *it == 'e' )
-	{
-		++it;
-
-		U_ASSERT( base == 10 );
-		bool is_negative= false;
-
-		if( it < it_end && *it == '-' )
-		{
-			is_negative= true;
-			++it;
-		}
-		else if( it < it_end && *it == '+' )
-			++it;
-
-		while( it < it_end && is_number_func(*it) )
-		{
-			exponent= exponent * int(base) + int(number_func(*it));
-			++it;
-		}
-		if( is_negative )
-			exponent= -exponent;
-	}
-
+	U_ASSERT( it_->type == Lexem::Type::Number );
+	U_ASSERT( it_->text.size() == sizeof(NumberLexemData) );
+	
 	NumericConstant result( it_->file_pos );
-
-	// For double calculate only powers > 0, because pow( base, positive ) is always integer and have exact double representation.
-	// pow( base, negative ) may have not exact double representation (1/10 for example).
-	// Example:
-	// 3 / 10 - right
-	// 3 * (1/10) - wrong
-	if( exponent >= 0 )
-		result.value_double_= double(integer_part) * PowI( base, exponent );
-	else
-		result.value_double_= double(integer_part) / PowI( base, -exponent );
-	if( exponent >= fractional_part_digits )
-		result.value_double_+= double(fractional_part) * PowI( base, exponent - fractional_part_digits );
-	else
-		result.value_double_+= double(fractional_part) / PowI( base, fractional_part_digits - exponent );
-
-	result.value_int_= integer_part;
-	for( int i= 0; i < exponent; ++i )
-		result.value_int_*= base;
-	for( int i= 0; i < -exponent; ++i )
-		result.value_int_/= base;
-
-	uint64_t fractional_part_corrected= fractional_part;
-	for( int i= 0; i < exponent - fractional_part_digits; ++i )
-		fractional_part_corrected*= base;
-	for( int i= 0; i < fractional_part_digits - exponent; ++i )
-		fractional_part_corrected/= base;
-	result.value_int_+= fractional_part_corrected;
-
-	result.has_fractional_point_= has_fraction_point;
-
-	if( size_t(it_end - it) > sizeof(TypeSuffix) / sizeof(TypeSuffix::value_type) - 1 )
-	{
-		SyntaxErrorMessage msg;
-		msg.file_pos= it_->file_pos;
-		msg.text= "Type suffix of numeric literal is too long";
-		error_messages_.push_back( msg );
-		return result;
-	}
-	std::copy( it, it_end, result.type_suffix_.begin() );
-
+	
+	std::memcpy( static_cast<NumberLexemData*>(&result), it_->text.data(), sizeof(NumberLexemData) );
+	
+	NextLexem();
 	return result;
 }
 
@@ -1419,7 +1226,6 @@ Expression SyntaxAnalyzer::ParseExpression()
 		{
 			current_node= ParseNumericConstant();
 			current_node_ptr= std::get_if<NumericConstant>( &current_node );
-			NextLexem();
 		}
 		else if( it_->type == Lexem::Type::String )
 		{

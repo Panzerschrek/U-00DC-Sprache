@@ -3552,10 +3552,10 @@ Value* CodeBuilder::ResolveValue(
 
 U_FundamentalType CodeBuilder::GetNumericConstantType( const Synt::NumericConstant& number )
 {
-	const std::string type_suffix= number.type_suffix_.data();
+	const std::string type_suffix= number.type_suffix.data();
 	if( type_suffix.empty() )
 	{
-		if( number.has_fractional_point_ )
+		if( number.has_fractional_point )
 			return U_FundamentalType::f64;
 		else
 			return U_FundamentalType::i32;

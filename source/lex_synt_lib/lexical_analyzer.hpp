@@ -19,6 +19,14 @@ bool operator!=( const FilePos& l, const FilePos& r );
 bool operator< ( const FilePos& l, const FilePos& r );
 bool operator<=( const FilePos& l, const FilePos& r );
 
+struct NumberLexemData
+{
+	double value_double= 0.0f;
+	uint64_t value_int= 0u;
+	bool has_fractional_point= false;
+	std::array<char, 7> type_suffix{0};
+};
+
 struct Lexem
 {
 	enum class Type : uint8_t
@@ -111,7 +119,7 @@ struct Lexem
 		EndOfFile,
 	};
 
-	std::string text; // Non-empty for identifiers, strings, numbers. Empty for simple lexems.
+	std::string text; // Contains text for all lexem types, except numbers. Contains data of "struct NumberLexemData" for numbers.
 	FilePos file_pos;
 	Type type= Type::None;
 };
