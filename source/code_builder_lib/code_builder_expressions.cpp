@@ -788,7 +788,29 @@ Value CodeBuilder::BuildExpressionCode(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
-	const U_FundamentalType type= GetNumericConstantType( numeric_constant );
+	U_FundamentalType type= U_FundamentalType::InvalidType;
+	const std::string type_suffix= numeric_constant.type_suffix.data();
+
+	if( type_suffix.empty() )
+		type= numeric_constant.has_fractional_point ? U_FundamentalType::f64 : U_FundamentalType::i32;
+	else if( type_suffix == "u" )
+		type= U_FundamentalType::u32;
+	// Suffix for size_type
+	else if( type_suffix == "s" )
+		type= size_type_.GetFundamentalType()->fundamental_type;
+	// Simple "f" suffix for 32bit floats.
+	else if( type_suffix == "f" )
+		type= U_FundamentalType::f32;
+	// Short suffixes for chars
+	else if( type_suffix ==  "c8" )
+		type= U_FundamentalType::char8 ;
+	else if( type_suffix == "c16" )
+		type= U_FundamentalType::char16;
+	else if( type_suffix == "c32" )
+		type= U_FundamentalType::char32;
+	else
+		type=GetFundamentalTypeByName( type_suffix );
+
 	if( type == U_FundamentalType::InvalidType )
 	{
 		REPORT_ERROR( UnknownNumericConstantType, names.GetErrors(), numeric_constant.file_pos_, numeric_constant.type_suffix.data() );

@@ -3523,38 +3523,6 @@ Value* CodeBuilder::ResolveValue(
 	return value;
 }
 
-U_FundamentalType CodeBuilder::GetNumericConstantType( const Synt::NumericConstant& number )
-{
-	const std::string type_suffix= number.type_suffix.data();
-	if( type_suffix.empty() )
-	{
-		if( number.has_fractional_point )
-			return U_FundamentalType::f64;
-		else
-			return U_FundamentalType::i32;
-	}
-
-	// Allow simple "u" suffix for unsigned 32bit values.
-	// SPRACHE_TODO - maybe add "i" suffix for i32 type?
-	if( type_suffix == "u" )
-		return U_FundamentalType::u32;
-	// Suffix for size_type
-	else if( type_suffix == "s" )
-		return size_type_.GetFundamentalType()->fundamental_type;
-	// Simple "f" suffix for 32bit floats.
-	else if( type_suffix == "f" )
-		return U_FundamentalType::f32;
-	// Short suffixes for chars
-	else if( type_suffix ==  "c8" )
-		return U_FundamentalType::char8 ;
-	else if( type_suffix == "c16" )
-		return U_FundamentalType::char16;
-	else if( type_suffix == "c32" )
-		return U_FundamentalType::char32;
-
-	return GetFundamentalTypeByName( type_suffix );
-}
-
 llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundmantal_type )
 {
 	switch( fundmantal_type )

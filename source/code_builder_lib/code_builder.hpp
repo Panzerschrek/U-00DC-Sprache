@@ -682,8 +682,6 @@ private:
 
 	// Other stuff
 
-	U_FundamentalType GetNumericConstantType( const Synt::NumericConstant& number );
-
 	llvm::Type* GetFundamentalLLVMType( U_FundamentalType fundmantal_type );
 
 	// If variable is on stack, creates move to rigister instruction.
