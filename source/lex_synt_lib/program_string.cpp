@@ -6,7 +6,7 @@ namespace U
 sprache_char ReadNextUTF8Char( const char*& start, const char* const end )
 {
 	// c_bit_masks[4] - menas save first 4 bits
-	static const uint32_t c_bit_masks[9]=
+	static const sprache_char c_bit_masks[9]=
 	{
 		(1 << 0) - 1,
 		(1 << 1) - 1,
@@ -72,44 +72,9 @@ sprache_char ReadNextUTF8Char( const char*& start, const char* const end )
 
 		start+= 4;
 	}
-	else if( ( c & 0b11111100 ) == 0b11111000 )
-	{
-		if( start + 5 > end )
-		{
-			start= end;
-			return code;
-		}
-
-		code=
-			( (sprache_char(start[0]) & c_bit_masks[2]) << 24u ) |
-			( (sprache_char(start[1]) & c_bit_masks[6]) << 18u ) |
-			( (sprache_char(start[2]) & c_bit_masks[6]) << 12u ) |
-			( (sprache_char(start[3]) & c_bit_masks[6]) <<  6u ) |
-			( (sprache_char(start[4]) & c_bit_masks[6]) <<  0u );
-
-		start+= 5;
-	}
-	else if( ( c & 0b11111110 ) == 0b11111100 )
-	{
-		if( start + 6 > end )
-		{
-			start= end;
-			return code;
-		}
-
-		code=
-			( (sprache_char(start[0]) & c_bit_masks[1]) << 30u ) |
-			( (sprache_char(start[1]) & c_bit_masks[6]) << 24u ) |
-			( (sprache_char(start[2]) & c_bit_masks[6]) << 18u ) |
-			( (sprache_char(start[3]) & c_bit_masks[6]) << 12u ) |
-			( (sprache_char(start[4]) & c_bit_masks[6]) <<  6u ) |
-			( (sprache_char(start[5]) & c_bit_masks[6]) <<  0u );
-
-		start+= 6;
-	}
 	else
 	{
-		// WTF-?
+		// Codes above unicode range - wtf?
 		++start;
 	}
 
@@ -130,12 +95,22 @@ void PushCharToUTF8String( const sprache_char c, std::string& str )
 		str.push_back( char( 0b11000000u | (c >>  6u) ) );
 		str.push_back( char( 0b10000000u | (c &  63u) ) );
 	}
-	// TODO - support codes with more, than 3 bytes in UTF-8 representation.
-	else
+	else if( c <= 0xFFFFu )
 	{
 		str.push_back( char( 0b11100000u |  (c >> 12u) ) );
-		str.push_back( char( 0b11000000u | ((c >> 6u) & 63u) ) );
+		str.push_back( char( 0b10000000u | ((c >> 6u) & 63u) ) );
 		str.push_back( char( 0b10000000u |  (c  & 63u) ) );
+	}
+	else if( c <= 0x10FFFFu )
+	{
+		str.push_back( char( 0b11110000u | ((c >> 18u) &  7u) ) );
+		str.push_back( char( 0b10000000u | ((c >> 12u) & 63u) ) );
+		str.push_back( char( 0b10000000u | ((c >>  6u) & 63u) ) );
+		str.push_back( char( 0b10000000u |  (c  & 63u) ) );
+	}
+	else
+	{
+		// Codes above unicode range - wtf?
 	}
 }
 

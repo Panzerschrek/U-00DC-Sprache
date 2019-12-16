@@ -195,6 +195,8 @@ def StringLiteral_UTF8_Test0():
 		static_assert( ArraySize( "строка" ) == size_type( 6 * 2 ) ); // Each cyrillic letter converted into 2-bytes symbol.
 		static_assert( ArraySize( "string" ) == size_type( 6 ) ); // Here all letter are ASCII, so, size of each letter is 1.
 		static_assert( ArraySize( "ღთႭა" ) == size_type( 4 * 3 ) ); // Georgian letters have size 3.
+		static_assert( ArraySize( "☭" ) == 3s );
+		static_assert( ArraySize( "😀" ) == 4s );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -205,6 +207,16 @@ def StringLiteral_UTF16_Test0():
 		static_assert( ArraySize( "строка"u16 ) == size_type( 6 ) );
 		static_assert( ArraySize( "string"u16 ) == size_type( 6 ) );
 		static_assert( ArraySize( "ღთႭა"u16 ) == size_type( 4 ) );
+		static_assert( ArraySize( "😀"u16 ) == 2s );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StringLiteral_UTF32_Test0():
+	c_program_text= """
+		template</ type T, size_type S /> fn constexpr ArraySize( [ T, S ]& arr ) : size_type {  return S;  }
+		static_assert( ArraySize( "😀"u32 ) == 1s );
+		static_assert( "😀"c32 == char32(0x1F600) );
 	"""
 	tests_lib.build_program( c_program_text )
 
