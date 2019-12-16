@@ -38,6 +38,9 @@ endif()
 
 
 set( CMAKE_CXX_STANDARD 17 )
+if( MSVC )
+	add_definitions( -D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS )
+endif()
 
 #
 # External dependencies
@@ -114,7 +117,7 @@ else()
 	set( SPRACHE_COMPILER_PIC_OPTIONS "" )
 endif()
 
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
+if(MSVC)
 
 	add_compile_options( /utf-8 /W3 )
 
