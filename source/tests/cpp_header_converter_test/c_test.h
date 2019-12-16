@@ -12,6 +12,10 @@
 #define STRING_CONSTANT_ASCII "WTF?009a"
 #define STRING_CONSTANT_UTF8_IMPLICIT "Чё?"
 #define STRING_CONSTANT_WITH_SPECIAL_SYMBOLS "\u00DC \x13 one \t two \n quote \' double \" slash \\ "
+#define STRING_CONSTANT_WIDE L"широченный чар - wide char str"
+#define STRING_CONSTANT_UTF8 u8" утф8 - наше всё"
+#define STRING_CONSTANT_UTF16 u"Таки да, utf-16 это"
+#define STRING_CONSTANT_UTF32 U"да даже utf-32 могём"
 #define CHAR_CONSTANT 'Z'
 
 void Function_ZeroArgs();

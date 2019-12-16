@@ -4,10 +4,12 @@
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Lex/LiteralSupport.h>
 #include <clang/Lex/Preprocessor.h>
+#include <llvm/Support/ConvertUTF.h>
 #include "../code_builder_lib/pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/assert.hpp"
 #include "../lex_synt_lib/keywords.hpp"
+#include "../lex_synt_lib/program_string.hpp"
 
 #include "u_ast_builder.hpp"
 
@@ -128,16 +130,50 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 		{
 			clang::StringLiteralParser string_literal_parser( { token }, preprocessor_ );
 
+			Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_file_pos );
+			auto_variable_declaration.reference_modifier= Synt::ReferenceModifier::Reference;
+			auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+			auto_variable_declaration.name= TranslateIdentifier( name );
+
+			Synt::StringLiteral string_constant( g_dummy_file_pos );
+
 			if( string_literal_parser.isAscii() || string_literal_parser.isUTF8() )
 			{
-				Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_file_pos );
-				auto_variable_declaration.reference_modifier= Synt::ReferenceModifier::Reference;
-				auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
-				auto_variable_declaration.name= TranslateIdentifier( name );
-
-				Synt::StringLiteral string_constant( g_dummy_file_pos );
 				string_constant.value_= string_literal_parser.GetString();
 				string_constant.value_.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
+
+				auto_variable_declaration.initializer_expression= std::move(string_constant);
+				root_program_elements_.push_back( std::move( auto_variable_declaration ) );
+			}
+			else if( string_literal_parser.isUTF16() ||
+				( string_literal_parser.isWide() && ast_context_.getTypeSize(ast_context_.getWCharType()) == 16 ) )
+			{
+				llvm::convertUTF16ToUTF8String(
+					llvm::ArrayRef<llvm::UTF16>(
+						reinterpret_cast<const llvm::UTF16*>(string_literal_parser.GetString().data()),
+						string_literal_parser.GetNumStringChars() ),
+					string_constant.value_ );
+				string_constant.value_.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
+
+				string_constant.type_suffix_[0]= 'u';
+				string_constant.type_suffix_[1]= '1';
+				string_constant.type_suffix_[2]= '6';
+
+				auto_variable_declaration.initializer_expression= std::move(string_constant);
+				root_program_elements_.push_back( std::move( auto_variable_declaration ) );
+			}
+			else if( string_literal_parser.isUTF32() ||
+				( string_literal_parser.isWide() && ast_context_.getTypeSize(ast_context_.getWCharType()) == 32 ) )
+			{
+				const auto string_ref = string_literal_parser.GetString();
+				for( size_t i= 0u; i < string_literal_parser.GetNumStringChars(); ++i )
+					PushCharToUTF8String( reinterpret_cast<const sprache_char*>(string_ref.data())[i], string_constant.value_ );
+
+				string_constant.value_.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
+
+				string_constant.type_suffix_[0]= 'u';
+				string_constant.type_suffix_[1]= '3';
+				string_constant.type_suffix_[2]= '2';
 
 				auto_variable_declaration.initializer_expression= std::move(string_constant);
 				root_program_elements_.push_back( std::move( auto_variable_declaration ) );

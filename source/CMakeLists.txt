@@ -369,7 +369,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 			DEPENDS tests/cpp_header_converter_test/c_test.h CppHeaderConverter
 			COMMAND
 				CppHeaderConverter -o c_converted.u
-				${CMAKE_SOURCE_DIR}/tests/cpp_header_converter_test/c_test.h -- -std=c99 )
+				${CMAKE_SOURCE_DIR}/tests/cpp_header_converter_test/c_test.h -- -std=c11 )
 
 		add_custom_command(
 			OUTPUT cpp_header_converter_test.o
