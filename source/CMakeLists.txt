@@ -356,11 +356,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	add_dependencies( TypeIdTest Compiler )
 
 	# Run type_id test
-	add_custom_target(
-		TypeIdTestRun ALL
-		COMMAND TypeIdTest
-		DEPENDS TypeIdTest
-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR} )
+	add_custom_command( TARGET TypeIdTest POST_BUILD COMMAND TypeIdTest )
 
 	#
 	# CppHeaderConverter test
