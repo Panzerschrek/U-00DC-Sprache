@@ -215,6 +215,7 @@ if( U_BUILD_TESTS )
 	file( GLOB TESTS_SOURCES "tests/cpp_tests/*" )
 	add_executable( Tests ${TESTS_SOURCES} )
 	target_link_libraries( Tests CodeBuilderLib ${LLVM_LIBS_FOR_TESTS} )
+	add_custom_command( TARGET Tests POST_BUILD COMMAND Tests )
 endif()
 
 #
