@@ -35,3 +35,4 @@
    type_templates
    function_templates
    modules
+   reference_checking
