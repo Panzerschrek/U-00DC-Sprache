@@ -36,3 +36,4 @@
    function_templates
    modules
    reference_checking
+   reference_casting
