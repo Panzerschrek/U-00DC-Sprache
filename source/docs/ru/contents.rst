@@ -27,6 +27,7 @@
    initializers
    method_gen
    halt
+   static_assert
    move
    constexpr
    operators_overloading
