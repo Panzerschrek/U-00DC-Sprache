@@ -37,3 +37,4 @@
    modules
    reference_checking
    reference_casting
+   typeinfo
