@@ -39,3 +39,4 @@
    reference_checking
    reference_casting
    typeinfo
+   unsafe
