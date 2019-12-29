@@ -19,6 +19,7 @@
    numeric_literals
    string_literals
    enums
+   function_pointers
    namespaces
    structs
    constructors
