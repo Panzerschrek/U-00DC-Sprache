@@ -501,3 +501,20 @@ def CastMut_Test5_OperationIsUnsafe():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "MutableReferenceCastOutsideUnsafeBlock" )
 	assert( errors_list[0].file_pos.line == 5 )
+
+
+def CastMut_Test6_ConstexprLostInConversion():
+	c_program_text= """
+		fn Foo()
+		{
+			auto imut x= 0;
+			unsafe
+			{
+				auto &constexpr x_ref= cast_mut(x);
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "VariableInitializerIsNotConstantExpression" )
+	assert( errors_list[0].file_pos.line == 7 )

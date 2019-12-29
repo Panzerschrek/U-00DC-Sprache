@@ -1083,6 +1083,7 @@ Value CodeBuilder::BuildExpressionCode(
 	const Variable var= BuildExpressionCodeEnsureVariable( *cast_mut.expression_, names, function_context );
 
 	Variable result= var;
+	result.constexpr_value= nullptr; // Reset constexprness for mutable reference.
 	result.value_type= ValueType::Reference;
 
 	if( var.location == Variable::Location::LLVMRegister )
@@ -1855,7 +1856,7 @@ Value CodeBuilder::DoReferenceCast(
 
 	Variable result;
 	result.type= type;
-	result.value_type= var.value_type == ValueType::Reference ? ValueType::Reference : ValueType::ConstReference; // "ValueType" here converts inot ConstReference.
+	result.value_type= var.value_type == ValueType::Reference ? ValueType::Reference : ValueType::ConstReference; // "ValueType" here converts into ConstReference.
 	result.location= Variable::Location::Pointer;
 	result.node= var.node;
 
