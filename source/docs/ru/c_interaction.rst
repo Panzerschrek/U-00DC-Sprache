@@ -63,7 +63,7 @@
 .. code-block:: cpp
   :caption: C++ код
 
-   struct A ordered
+   struct A
    {
        bool x;
        int32_t y;
