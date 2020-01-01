@@ -82,6 +82,7 @@
 ***************
 *static_assert*
 ***************
+См. :doc:`static_assert`.
 
 ***********
 *static_if*
