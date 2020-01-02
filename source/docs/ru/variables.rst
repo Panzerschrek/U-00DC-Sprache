@@ -67,3 +67,27 @@
    
    var [ bool, 16 ] arr= zero_init;
    auto& arr_ref= arr;// Неизменяемая auto ссылка. Тип будет равен "[ bool, 16 ]".
+
+***********************
+*глобальные переменные*
+***********************
+
+Переменные можно объявлять также вне тела функций - в глобальном пространстве, в пространствах имён, внутри структур и классов.
+Но у таких переменных есть ограничение - они должны быть константами времени сборки (``constexpr``).
+
+.. code-block:: u_spr
+
+   auto global_var = 55;
+   var f32 global_f0= 0.25f, global_f1 = 555.1f;
+   
+   namespace NN
+   {
+       auto constexpr nn_var = global_var;
+       var bool imut b = global_f0 < 66.0f;
+   }
+   
+   struct S
+   {
+       var [ i32, 42 ] zeros = zero_init;
+       auto constexpr zero24_plus2 = zeros[24] + 2;
+   }
