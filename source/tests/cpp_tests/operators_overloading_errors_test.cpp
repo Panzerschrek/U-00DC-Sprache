@@ -118,6 +118,14 @@ U_TEST( InvalidReturnTypeForOperator_Test )
 			op--( S &mut a ) : void& {} // Expected non-reference
 			op/=( S &mut dst, S &imut src ) : S &mut {} // Expected void
 			op+=( S &mut dst, S &imut src ) : void & {} // Expected non-reference
+
+			// Expected bool
+			op==( S &mut a, S &mut b );
+			op!=( S &mut a, S &mut b ) : void;
+			op<( S &mut a, S &mut b ) : i32;
+			op<=( S &mut a, S &mut b ) : bool &;
+			op>( S &mut a, S &mut b ) : S;
+			op>=( S &mut a, S &mut b ) : f64;
 		}
 	)";
 
@@ -127,6 +135,13 @@ U_TEST( InvalidReturnTypeForOperator_Test )
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 6u ) );
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 7u ) );
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 8u ) );
+
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 11u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 12u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 13u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 14u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 15u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 16u ) );
 }
 
 U_TEST( UsingIncompleteTypeForOperator )

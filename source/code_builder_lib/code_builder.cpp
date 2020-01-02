@@ -1239,15 +1239,21 @@ void CodeBuilder::CheckOverloadedOperator(
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, file_pos );
 		break;
 
-	case OverloadedOperator::Mul:
-	case OverloadedOperator::Div:
-	case OverloadedOperator::Rem:
 	case OverloadedOperator::Equal:
 	case OverloadedOperator::NotEqual:
 	case OverloadedOperator::Less:
 	case OverloadedOperator::LessEqual:
 	case OverloadedOperator::Greater:
 	case OverloadedOperator::GreaterEqual:
+		if( func_type.args.size() != 2u )
+			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, file_pos );
+		if( !( func_type.return_type == bool_type_ && !func_type.return_value_is_reference ) )
+			REPORT_ERROR( InvalidReturnTypeForOperator, errors_container, file_pos, void_type_ );
+		break;
+		
+	case OverloadedOperator::Mul:
+	case OverloadedOperator::Div:
+	case OverloadedOperator::Rem:
 	case OverloadedOperator::And:
 	case OverloadedOperator::Or :
 	case OverloadedOperator::Xor:
