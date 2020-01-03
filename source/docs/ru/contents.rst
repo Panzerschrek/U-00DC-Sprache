@@ -9,10 +9,10 @@
    control_flow
    types
    fundametal_types_operations
-   numeric_literals
-   string_literals
    enums
    function_pointers
+   numeric_literals
+   string_literals
    namespaces
    structs
    constructors
@@ -21,17 +21,17 @@
    initializers
    method_gen
    halt
+   constexpr
    static_assert
    move
-   constexpr
    operators_overloading
    inheritance
    typedefs
    type_templates
    function_templates
-   modules
    reference_checking
    reference_casting
    typeinfo
    unsafe
+   modules
    c_interaction
