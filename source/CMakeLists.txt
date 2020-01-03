@@ -9,6 +9,7 @@ option( U_BUILD_LINKAGE_TESTS "Enable compilation of linkage tests" YES )
 option( U_BUILD_PY_TESTS "Enable compilation of py_tests" YES )
 option( U_BUILD_CPP_HEADER_CONVERTER "Enable compilation of c++ header converter (clang required)" YES )
 option( U_BUILD_UNICODE_FILE_NAMES_TEST "Enable compilation of unicode filenames test (such test may not work correctly is some environmens)" YES )
+option( U_BUILD_DOCS "Enable Ǖ docs (Sphinx Required)" YES )
 
 if( U_BUILD_COMPILER )
 	message( STATUS "Build compiler" )
@@ -68,12 +69,19 @@ if( DEFINED LLVM_SRC_DIR )
 
 elseif( DEFINED LLVM_LIB_DIR )
 
-	set( LLVM_FOUND On )
-	set( LLVM_DIR ${LLVM_LIB_DIR}/cmake/llvm )
-	find_package( LLVM REQUIRED )
+	set( CMAKE_PREFIX_PATH
+		${CMAKE_PREFIX_PATH}
+		${LLVM_LIB_DIR}/cmake/llvm
+		${LLVM_LIB_DIR}/cmake/clang )
 
-	set( Clang_DIR ${LLVM_LIB_DIR}/cmake/clang )
+	set( CMAKE_MODULE_PATH
+		${CMAKE_MODULE_PATH}
+		${LLVM_LIB_DIR}/cmake/llvm
+		${LLVM_LIB_DIR}/cmake/clang )
+
+	find_package( LLVM REQUIRED )
 	find_package( Clang ) # Optional
+	find_package( Sphinx ) # Optional
 
 	include_directories( ${LLVM_INCLUDE_DIRS} )
 
@@ -384,3 +392,16 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	endif()
 
 endif( REALLY_BUILD_LINKAGE_TESTS )
+
+#
+# Docs
+#
+
+if( U_BUILD_DOCS )
+	if( LLVM_ENABLE_SPHINX OR Sphinx_FOUND )
+		message( "Include Ü docs" )
+		add_subdirectory( docs )
+	else()
+		message( "Sphinx not found, skip Ü docs" )
+	endif()
+endif()

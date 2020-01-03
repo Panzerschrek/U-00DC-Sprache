@@ -1,0 +1,37 @@
+Оглавление
+==========
+.. toctree::
+   index
+   basics
+   functions
+   variables
+   block_elements
+   control_flow
+   types
+   fundametal_types_operations
+   enums
+   function_pointers
+   numeric_literals
+   string_literals
+   namespaces
+   structs
+   constructors
+   destructors
+   classes
+   initializers
+   method_gen
+   halt
+   constexpr
+   static_assert
+   move
+   operators_overloading
+   inheritance
+   typedefs
+   type_templates
+   function_templates
+   reference_checking
+   reference_casting
+   typeinfo
+   unsafe
+   modules
+   c_interaction
