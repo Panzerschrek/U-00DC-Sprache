@@ -96,7 +96,7 @@
    
    class B polymorph
    {
-       fn virtual Bar( mut this, f32 y ){}
+       fn virtual Bar( mut this, f32 y );
    }
    
    class C : A, B
