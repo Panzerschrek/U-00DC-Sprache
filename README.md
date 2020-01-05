@@ -5,8 +5,10 @@ Experimental programming language.
 It is a compilable, statically-typed C++-like language.
 
 Here is a compiler for this language. 
-Currently, there are no docs for this language, all knowledges are concentrated inside compiler, tests and my mind. 
-So, this is reference compiler for this language.
+
+### Documentation
+
+Documentation available [here](https://u-00dc-sprache.readthedocs.io/ru/latest/contents.html). Currently only russian documentation exists.
 
 ### How to build
 * Install boost (version 1.71.0 used).  
@@ -20,4 +22,4 @@ So, this is reference compiler for this language.
 * Run qmake for qt_creator_plugin/usprace.pro. You must set path to QtCreator sources and binaries in qmake arguments.
 
 ### Authors
-Copyright © 2016-2019 Artöm "Panzerscrek" Kunz.
+Copyright © 2016-2020 Artöm "Panzerscrek" Kunz.
