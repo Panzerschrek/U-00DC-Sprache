@@ -4,4 +4,4 @@ language: cpp
 compiler:
   - g++
   - clang
-script: ./travis_build.sh
+script: ./ci_build.sh
