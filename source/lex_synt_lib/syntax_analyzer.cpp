@@ -979,13 +979,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				}
 				NextLexem();
 
-				if( it_->type != Lexem::Type::Identifier )
-				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
-				move_operator.var_name_= it_->text;
-				NextLexem();
+				move_operator.expression_= std::make_unique<Expression>(ParseExpression());
 
 				if( it_->type != Lexem::Type::BracketRight )
 				{

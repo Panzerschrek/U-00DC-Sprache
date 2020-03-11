@@ -995,14 +995,16 @@ Value CodeBuilder::BuildExpressionCode(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
-	Synt::ComplexName complex_name;
-	complex_name.components.emplace_back();
-	complex_name.components.back().name= move_operator.var_name_;
+	const Synt::ComplexName* complex_name= nullptr;
+	if( const auto named_operand= std::get_if<Synt::NamedOperand>(move_operator.expression_.get()) )
+	{
+		complex_name= &named_operand->name_;
+	}
 
-	const Value* const resolved_value= ResolveValue( move_operator.file_pos_, names, complex_name );
+	const Value* const resolved_value= ResolveValue( move_operator.file_pos_, names, *complex_name );
 	if( resolved_value == nullptr )
 	{
-		REPORT_ERROR( NameNotFound, names.GetErrors(), move_operator.file_pos_, move_operator.var_name_ );
+		REPORT_ERROR( NameNotFound, names.GetErrors(), move_operator.file_pos_, *complex_name );
 		return ErrorValue();
 	}
 	const Variable* const variable_for_move= resolved_value->GetVariable();

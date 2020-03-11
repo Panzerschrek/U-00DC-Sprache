@@ -352,7 +352,7 @@ struct MoveOperator final : public ExpressionComponentWithUnaryOperators
 public:
 	MoveOperator( const FilePos& file_pos );
 
-	std::string var_name_;
+	std::unique_ptr<Expression> expression_;
 };
 
 struct CastRef final : public ExpressionComponentWithUnaryOperators
