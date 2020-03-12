@@ -116,3 +116,52 @@ def MoveForValueVariable_Test2():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def MoveForConstReference_Test0():
+	c_program_text= """
+		// Move from struct.
+		struct S
+		{
+			i32 x;
+			fn constructor() ( x= 0 ) {}
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { x= -1; }
+			fn constructor( mut this, S &imut other )= delete;
+			op=( mut this, S &imut other )= delete;
+		}
+		struct T{ S s; }
+		fn Foo()
+		{
+			var T t{ .s(666) };
+			move(t.s);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
+	assert( errors_list[0].file_pos.line == 16 )
+
+
+def MoveForConstReference_Test1():
+	c_program_text= """
+		// Move from array.
+		struct S
+		{
+			i32 x;
+			fn constructor() ( x= 0 ) {}
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { x= -1; }
+			fn constructor( mut this, S &imut other )= delete;
+			op=( mut this, S &imut other )= delete;
+		}
+		fn Foo()
+		{
+			var [ S, 3 ] arr[ (1), (2), (3) ];
+			move(arr[1]);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
+	assert( errors_list[0].file_pos.line == 15 )
