@@ -48,3 +48,71 @@ def MoveForPart_Test1():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def MoveForValueVariable_Test0():
+	c_program_text= """
+		// Move temp value.
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { x= -1; }
+			fn constructor( mut this, S &imut other )= delete;
+			op=( mut this, S &imut other )= delete;
+		}
+		fn Foo()
+		{
+			var S s= move(S(56789));
+			halt if(s.x != 56789);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def MoveForValueVariable_Test1():
+	c_program_text= """
+		// Move value, returned from function.
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { x= -1; }
+			fn constructor( mut this, S &imut other )= delete;
+			op=( mut this, S &imut other )= delete;
+		}
+		fn GetS() : S
+		{
+			return S(321);
+		}
+		fn Foo()
+		{
+			var S s= move(GetS());
+			halt if(s.x != 321);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def MoveForValueVariable_Test2():
+	c_program_text= """
+		// Move moved value.
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { x= -1; }
+			fn constructor( mut this, S &imut other )= delete;
+			op=( mut this, S &imut other )= delete;
+		}
+		fn Foo()
+		{
+			var S mut s0(5555);
+			var S s1= move(move(s0));
+			halt if(s1.x != 5555);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
