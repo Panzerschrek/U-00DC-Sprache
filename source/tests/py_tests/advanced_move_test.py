@@ -165,3 +165,94 @@ def MoveForConstReference_Test1():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
 	assert( errors_list[0].file_pos.line == 15 )
+
+
+def MovedVariableHaveReferences_Test0():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn constructor( mut this, S &imut other )= delete;
+			op=( mut this, S &imut other )= delete;
+		}
+		struct T{ S s; }
+		fn Foo()
+		{
+			var T mut t{ .s(666) };
+			auto& ref= t; // Reference to variable.
+			move(t.s);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "MovedVariableHaveReferences" )
+	assert( errors_list[0].file_pos.line == 14 )
+
+
+def MovedVariableHaveReferences_Test1():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn constructor( mut this, S &imut other )= delete;
+			op=( mut this, S &imut other )= delete;
+		}
+		struct T{ S s; }
+		fn Foo()
+		{
+			var T mut t{ .s(666) };
+			auto& ref= t.s; // Reference to member.
+			move(t.s);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "MovedVariableHaveReferences" )
+	assert( errors_list[0].file_pos.line == 14 )
+
+
+def MovedVariableHaveReferences_Test2():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn constructor( mut this, S &imut other )= delete;
+			op=( mut this, S &imut other )= delete;
+		}
+		struct T{ S s; }
+		fn Foo()
+		{
+			var T mut t{ .s(666) };
+			auto &mut ref= t.s; // Mutable reference to member.
+			move(t.s);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "MovedVariableHaveReferences" )
+	assert( errors_list[0].file_pos.line == 14 )
+
+
+def MovedVariableHaveReferences_Test3():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn constructor()( x= 0 ) {}
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+		}
+		struct T{ S s; }
+		fn Bar(S &imut a, S b){}
+		fn Foo()
+		{
+			var T mut t{ .s(666) };
+			Bar(t.s, move(t.s)); // Reference exists in argument.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 1 )
+	assert( errors_list[1].error_code == "MovedVariableHaveReferences" )
+	assert( errors_list[1].file_pos.line == 13 )
