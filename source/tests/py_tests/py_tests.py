@@ -19,7 +19,6 @@ def GetTestsList( tests_modules_list ):
 
 def main():
 	tests_modules_list= [
-		"advanced_move_test",
 		"auto_constexpr_function_templates_test",
 		"auto_for_return_type_test",
 		"auto_for_return_type_errors_test",
@@ -53,6 +52,7 @@ def main():
 		"stack_variables_move_errors_test",
 		"stack_variables_move_test",
 		"string_literals_test",
+		"take_operator_test",
 		"tuples_test",
 		"ternary_operator_errors_test",
 		"ternary_operator_test",
