@@ -1,9 +1,9 @@
 from py_tests_common import *
 
 
-def MoveForPart_Test0():
+def TakeForPart_Test0():
 	c_program_text= """
-		// Move from struct.
+		// Take from struct.
 		struct S
 		{
 			i32 x;
@@ -17,7 +17,7 @@ def MoveForPart_Test0():
 		fn Foo()
 		{
 			var T mut t{ .s(666) };
-			var S s= move(t.s);
+			var S s= take(t.s);
 			halt if( t.s.x != 0 );
 			halt if( s.x != 666 );
 		}
@@ -26,9 +26,9 @@ def MoveForPart_Test0():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def MoveForPart_Test1():
+def TakeForPart_Test1():
 	c_program_text= """
-		// Move from array.
+		// Take from array.
 		struct S
 		{
 			i32 x;
@@ -41,7 +41,7 @@ def MoveForPart_Test1():
 		fn Foo()
 		{
 			var [ S, 3 ] mut arr[ (55), (77), (99) ];
-			var S s= move(arr[1]);
+			var S s= take(arr[1]);
 			halt if( arr[1].x != 0 );
 			halt if( s.x != 77 );
 		}
@@ -50,9 +50,9 @@ def MoveForPart_Test1():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def MoveForValueVariable_Test0():
+def TakeForValueVariable_Test0():
 	c_program_text= """
-		// Move temp value.
+		// Take temp value.
 		struct S
 		{
 			i32 x;
@@ -63,7 +63,7 @@ def MoveForValueVariable_Test0():
 		}
 		fn Foo()
 		{
-			var S s= move(S(56789));
+			var S s= take(S(56789));
 			halt if(s.x != 56789);
 		}
 	"""
@@ -71,9 +71,9 @@ def MoveForValueVariable_Test0():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def MoveForValueVariable_Test1():
+def TakeForValueVariable_Test1():
 	c_program_text= """
-		// Move value, returned from function.
+		// Take value, returned from function.
 		struct S
 		{
 			i32 x;
@@ -88,7 +88,7 @@ def MoveForValueVariable_Test1():
 		}
 		fn Foo()
 		{
-			var S s= move(GetS());
+			var S s= take(GetS());
 			halt if(s.x != 321);
 		}
 	"""
@@ -96,9 +96,9 @@ def MoveForValueVariable_Test1():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def MoveForValueVariable_Test2():
+def TakeForValueVariable_Test2():
 	c_program_text= """
-		// Move moved value.
+		// Take moved value.
 		struct S
 		{
 			i32 x;
@@ -110,7 +110,7 @@ def MoveForValueVariable_Test2():
 		fn Foo()
 		{
 			var S mut s0(5555);
-			var S s1= move(move(s0));
+			var S s1= take(move(s0));
 			halt if(s1.x != 5555);
 		}
 	"""
@@ -118,9 +118,9 @@ def MoveForValueVariable_Test2():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def MoveForConstReference_Test0():
+def TakeForConstReference_Test0():
 	c_program_text= """
-		// Move from struct.
+		// Take from struct.
 		struct S
 		{
 			i32 x;
@@ -134,7 +134,7 @@ def MoveForConstReference_Test0():
 		fn Foo()
 		{
 			var T t{ .s(666) };
-			move(t.s);
+			take(t.s);
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -143,9 +143,9 @@ def MoveForConstReference_Test0():
 	assert( errors_list[0].file_pos.line == 16 )
 
 
-def MoveForConstReference_Test1():
+def TakeForConstReference_Test1():
 	c_program_text= """
-		// Move from array.
+		// Take from array.
 		struct S
 		{
 			i32 x;
@@ -158,7 +158,7 @@ def MoveForConstReference_Test1():
 		fn Foo()
 		{
 			var [ S, 3 ] arr[ (1), (2), (3) ];
-			move(arr[1]);
+			take(arr[1]);
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -167,7 +167,7 @@ def MoveForConstReference_Test1():
 	assert( errors_list[0].file_pos.line == 15 )
 
 
-def MovedVariableHaveReferences_Test0():
+def TakenVariableHaveReferences_Test0():
 	c_program_text= """
 		struct S
 		{
@@ -181,7 +181,7 @@ def MovedVariableHaveReferences_Test0():
 		{
 			var T mut t{ .s(666) };
 			auto& ref= t; // Reference to variable.
-			move(t.s);
+			take(t.s);
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -190,7 +190,7 @@ def MovedVariableHaveReferences_Test0():
 	assert( errors_list[0].file_pos.line == 14 )
 
 
-def MovedVariableHaveReferences_Test1():
+def TakenVariableHaveReferences_Test1():
 	c_program_text= """
 		struct S
 		{
@@ -204,7 +204,7 @@ def MovedVariableHaveReferences_Test1():
 		{
 			var T mut t{ .s(666) };
 			auto& ref= t.s; // Reference to member.
-			move(t.s);
+			take(t.s);
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -213,7 +213,7 @@ def MovedVariableHaveReferences_Test1():
 	assert( errors_list[0].file_pos.line == 14 )
 
 
-def MovedVariableHaveReferences_Test2():
+def TakenVariableHaveReferences_Test2():
 	c_program_text= """
 		struct S
 		{
@@ -227,7 +227,7 @@ def MovedVariableHaveReferences_Test2():
 		{
 			var T mut t{ .s(666) };
 			auto &mut ref= t.s; // Mutable reference to member.
-			move(t.s);
+			take(t.s);
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -236,7 +236,7 @@ def MovedVariableHaveReferences_Test2():
 	assert( errors_list[0].file_pos.line == 14 )
 
 
-def MovedVariableHaveReferences_Test3():
+def TakenVariableHaveReferences_Test3():
 	c_program_text= """
 		struct S
 		{
@@ -249,7 +249,7 @@ def MovedVariableHaveReferences_Test3():
 		fn Foo()
 		{
 			var T mut t{ .s(666) };
-			Bar(t.s, move(t.s)); // Reference exists in argument.
+			Bar(t.s, take(t.s)); // Reference exists in argument.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

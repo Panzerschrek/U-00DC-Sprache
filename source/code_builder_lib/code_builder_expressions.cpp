@@ -995,93 +995,101 @@ Value CodeBuilder::BuildExpressionCode(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
-	// If expression in operator is name and this name is name of local variable - move it purely.
-	// In other cases - move with empty replace.
+	Synt::ComplexName complex_name;
+	complex_name.components.emplace_back();
+	complex_name.components.back().name= move_operator.var_name_;
 
-	const auto named_operand= std::get_if<Synt::NamedOperand>(move_operator.expression_.get());
-	if( named_operand != nullptr && named_operand->prefix_operators_.empty() && named_operand->postfix_operators_.empty() )
+	const Value* const resolved_value= ResolveValue( move_operator.file_pos_, names, complex_name );
+	if( resolved_value == nullptr )
 	{
-		const Synt::ComplexName& complex_name= named_operand->name_;
+		REPORT_ERROR( NameNotFound, names.GetErrors(), move_operator.file_pos_, move_operator.var_name_ );
+		return ErrorValue();
+	}
+	const Variable* const variable_for_move= resolved_value->GetVariable();
+	if( variable_for_move == nullptr ||
+		variable_for_move->node == nullptr ||
+		variable_for_move->node->kind != ReferencesGraphNode::Kind::Variable )
+	{
+		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.file_pos_, resolved_value->GetKindName() );
+		return ErrorValue();
+	}
+	const ReferencesGraphNodePtr& node= variable_for_move->node;
 
-		const Value* const resolved_value= ResolveValue( move_operator.file_pos_, names, complex_name );
-		if( resolved_value == nullptr )
+	bool found_in_variables= false;
+	for( const auto& stack_frame : function_context.stack_variables_stack )
+	for( const StackVariablesStorage::NodeAndVariable& arg_node : stack_frame->variables_ )
+	{
+		if( arg_node.first == node )
 		{
-			REPORT_ERROR( NameNotFound, names.GetErrors(), move_operator.file_pos_, complex_name );
-			return ErrorValue();
-		}
-		if( const Variable* const variable_for_move= resolved_value->GetVariable() )
-		{
-			const ReferencesGraphNodePtr& node= variable_for_move->node;
-
-			bool found_in_variables= false;
-			for( const auto& stack_frame : function_context.stack_variables_stack )
-			for( const StackVariablesStorage::NodeAndVariable& arg_node : stack_frame->variables_ )
-			{
-				if( arg_node.first == node )
-				{
-					found_in_variables= true;
-					goto end_variable_search;
-				}
-			}
-
-			end_variable_search:
-			if( found_in_variables )
-			{
-				// TODO - maybe allow moving for immutable variables?
-				if( variable_for_move->value_type != ValueType::Reference )
-				{
-					REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), move_operator.file_pos_ );
-					return ErrorValue();
-				}
-				if( function_context.variables_state.NodeMoved( node ) )
-				{
-					REPORT_ERROR( AccessingMovedVariable, names.GetErrors(), move_operator.file_pos_, node->name );
-					return ErrorValue();
-				}
-
-				// If this is mutable variable - it is stack variable or value argument.
-				// This can not be temp variable, global variable, or inner argument variable.
-
-				if( function_context.variables_state.HaveOutgoingLinks( node ) )
-				{
-					REPORT_ERROR( MovedVariableHaveReferences, names.GetErrors(), move_operator.file_pos_, node->name );
-					return ErrorValue();
-				}
-
-				Variable content= *variable_for_move;
-				content.value_type= ValueType::Value;
-
-				const ReferencesGraphNodePtr moved_result= std::make_shared<ReferencesGraphNode>( "_moved_" + node->name, ReferencesGraphNode::Kind::Variable );
-				content.node= moved_result;
-				function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( moved_result, content ) );
-
-				// We must save inner references of moved variable.
-				if( const auto move_variable_inner_node= function_context.variables_state.GetNodeInnerReference( node ) )
-				{
-					const auto inner_node= std::make_shared<ReferencesGraphNode>( moved_result->name + " inner node", move_variable_inner_node->kind );
-					function_context.variables_state.SetNodeInnerReference( moved_result, inner_node );
-					function_context.variables_state.AddLink( move_variable_inner_node, inner_node );
-				}
-				function_context.variables_state.MoveNode( node );
-
-				return Value( std::move(content), move_operator.file_pos_ );
-			}
+			found_in_variables= true;
+			goto end_variable_search;
 		}
 	}
+	end_variable_search:
+	if( !found_in_variables )
+	{
+		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.file_pos_, resolved_value->GetKindName() );
+		return ErrorValue();
+	}
 
-	Variable expression_result= BuildExpressionCodeEnsureVariable( *move_operator.expression_, names, function_context );
+	// TODO - maybe allow moving for immutable variables?
+	if( variable_for_move->value_type != ValueType::Reference )
+	{
+		REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), move_operator.file_pos_ );
+		return ErrorValue();
+	}
+	if( function_context.variables_state.NodeMoved( node ) )
+	{
+		REPORT_ERROR( AccessingMovedVariable, names.GetErrors(), move_operator.file_pos_, node->name );
+		return ErrorValue();
+	}
+
+	// If this is mutable variable - it is stack variable or value argument.
+	// This can not be temp variable, global variable, or inner argument variable.
+
+	if( function_context.variables_state.HaveOutgoingLinks( node ) )
+	{
+		REPORT_ERROR( MovedVariableHaveReferences, names.GetErrors(), move_operator.file_pos_, node->name );
+		return ErrorValue();
+	}
+
+	Variable content= *variable_for_move;
+	content.value_type= ValueType::Value;
+
+	const ReferencesGraphNodePtr moved_result= std::make_shared<ReferencesGraphNode>( "_moved_" + node->name, ReferencesGraphNode::Kind::Variable );
+	content.node= moved_result;
+	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( moved_result, content ) );
+
+	// We must save inner references of moved variable.
+	if( const auto move_variable_inner_node= function_context.variables_state.GetNodeInnerReference( node ) )
+	{
+		const auto inner_node= std::make_shared<ReferencesGraphNode>( moved_result->name + " inner node", move_variable_inner_node->kind );
+		function_context.variables_state.SetNodeInnerReference( moved_result, inner_node );
+		function_context.variables_state.AddLink( move_variable_inner_node, inner_node );
+	}
+	function_context.variables_state.MoveNode( node );
+
+	return Value( std::move(content), move_operator.file_pos_ );
+}
+
+Value CodeBuilder::BuildExpressionCode(
+	const Synt::TakeOperator& take_operator,
+	NamesScope& names,
+	FunctionContext& function_context )
+{
+	Variable expression_result= BuildExpressionCodeEnsureVariable( *take_operator.expression_, names, function_context );
 	if( expression_result.value_type == ValueType::Value ) // If it is value - just pass it.
-		return Value( std::move(expression_result), move_operator.file_pos_ );
+		return Value( std::move(expression_result), take_operator.file_pos_ );
 
 	if( expression_result.value_type != ValueType::Reference )
 	{
-		REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), move_operator.file_pos_ );
+		REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), take_operator.file_pos_ );
 		return ErrorValue();
 	}
 
 	if( function_context.variables_state.HaveOutgoingLinks( expression_result.node ) )
 	{
-		REPORT_ERROR( MovedVariableHaveReferences, names.GetErrors(), move_operator.file_pos_, expression_result.node->name );
+		REPORT_ERROR( MovedVariableHaveReferences, names.GetErrors(), take_operator.file_pos_, expression_result.node->name );
 		return ErrorValue();
 	}
 
@@ -1108,9 +1116,9 @@ Value CodeBuilder::BuildExpressionCode(
 	function_context.variables_state.AddLink( result_node, variable_lock.Node() );
 
 	// Construct empty value in old place.
-	ApplyEmptyInitializer( expression_result.node->name, move_operator.file_pos_, expression_result, names, function_context );
+	ApplyEmptyInitializer( expression_result.node->name, take_operator.file_pos_, expression_result, names, function_context );
 
-	return Value( std::move(result), move_operator.file_pos_ );
+	return Value( std::move(result), take_operator.file_pos_ );
 }
 
 Value CodeBuilder::BuildExpressionCode(

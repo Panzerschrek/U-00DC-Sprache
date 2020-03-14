@@ -310,8 +310,12 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 		}
 		void operator()( const MoveOperator& move_operator ) const
 		{
-			stream << Keyword( Keywords::move_ ) << "( ";
-			ElementWrite( *move_operator.expression_, stream );
+			stream << Keyword( Keywords::move_ ) << "( " << move_operator.var_name_ << " )";
+		}
+		void operator()( const TakeOperator& take_operator ) const
+		{
+			stream << Keyword( Keywords::take_ ) << "( ";
+			ElementWrite( *take_operator.expression_, stream );
 			stream << " )";
 		}
 		void operator()( const CastRef& cast_ref ) const

@@ -38,8 +38,53 @@ def ExpectedReferenceValue_ForMove_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
+	assert( errors_list[0].error_code == "ExpectedVariable" )
 	assert( errors_list[0].file_pos.line == 5 )
+
+
+def ExpectedVariable_ForMove_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut x= 0;
+			auto &mut r= x;
+			move(r); // Expected variable, got reference
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ExpectedVariable" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def ExpectedVariable_ForMove_Test1():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn Foo( this )
+			{
+				move(x); // Error, moving field
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ExpectedVariable" )
+	assert( errors_list[0].file_pos.line == 7 )
+
+
+def ExpectedVariable_ForMove_Test2():
+	c_program_text= """
+		fn Foo( i32 &mut x )
+		{
+			move(x);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ExpectedVariable" )
+	assert( errors_list[0].file_pos.line == 4 )
 
 
 def AccessingMovedVariable_Test0():
