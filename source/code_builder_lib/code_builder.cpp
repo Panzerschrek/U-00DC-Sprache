@@ -3426,6 +3426,10 @@ Value* CodeBuilder::ResolveValue(
 		NamesScope* next_space= nullptr;
 		ClassProxyPtr next_space_class= nullptr;
 
+		// In case of typedef convert it to type before other checks.
+		if( value->GetTypedef() != nullptr )
+			GlobalThingBuildTypedef( *last_space, *value );
+
 		if( const NamesScopePtr inner_namespace= value->GetNamespace() )
 			next_space= inner_namespace.get();
 		else if( const Type* const type= value->GetTypeName() )
