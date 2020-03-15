@@ -256,3 +256,30 @@ def TakenVariableHaveReferences_Test3():
 	assert( len(errors_list) > 1 )
 	assert( errors_list[1].error_code == "MovedVariableHaveReferences" )
 	assert( errors_list[1].file_pos.line == 13 )
+
+
+def InnereReferenceTransferedInTakeOperator_Test0():
+	c_program_text= """
+		struct S
+		{
+			i32& r;
+
+			auto constexpr default_value= 0;
+			fn constructor()( r= default_value ) {}
+			fn constructor( this'tag0', i32 &'tag1 in_r ) ' tag0 <- tag1 ' ( r= in_r ) {}
+		}
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S mut s0;
+			{
+				var S mut s1(x);
+				s0= take(s1);
+			}
+			++x; // 's0' contains reference to 'x'
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].file_pos.line == 18 )

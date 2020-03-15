@@ -1061,6 +1061,7 @@ Value CodeBuilder::BuildExpressionCode(
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( moved_result, content ) );
 
 	// We must save inner references of moved variable.
+	// TODO - maybe reset inner node of moved variable?
 	if( const auto move_variable_inner_node= function_context.variables_state.GetNodeInnerReference( node ) )
 	{
 		const auto inner_node= std::make_shared<ReferencesGraphNode>( moved_result->name + " inner node", move_variable_inner_node->kind );
@@ -1104,7 +1105,13 @@ Value CodeBuilder::BuildExpressionCode(
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( result_node, result ) );
 	result.node= result_node;
 
-	// TODO - fix references.
+	// We must save inner references of moved variable.
+	if( const auto move_variable_inner_node= function_context.variables_state.GetNodeInnerReference( expression_result.node ) )
+	{
+		const auto inner_node= std::make_shared<ReferencesGraphNode>( result_node->name + " inner node", move_variable_inner_node->kind );
+		function_context.variables_state.SetNodeInnerReference( result_node, inner_node );
+		function_context.variables_state.AddLink( move_variable_inner_node, inner_node );
+	}
 
 	// Copy content to new variable.
 	CopyBytes( expression_result.llvm_value, result.llvm_value, result.type, function_context );
