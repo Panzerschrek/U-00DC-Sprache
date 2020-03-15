@@ -117,6 +117,10 @@ MoveOperator::MoveOperator( const FilePos& file_pos )
 	: ExpressionComponentWithUnaryOperators(file_pos)
 {}
 
+TakeOperator::TakeOperator( const FilePos& file_pos )
+	: ExpressionComponentWithUnaryOperators(file_pos)
+{}
+
 CastRef::CastRef( const FilePos& file_pos )
 	: ExpressionComponentWithUnaryOperators(file_pos)
 {}

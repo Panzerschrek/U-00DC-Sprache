@@ -1061,6 +1061,7 @@ Value CodeBuilder::BuildExpressionCode(
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( moved_result, content ) );
 
 	// We must save inner references of moved variable.
+	// TODO - maybe reset inner node of moved variable?
 	if( const auto move_variable_inner_node= function_context.variables_state.GetNodeInnerReference( node ) )
 	{
 		const auto inner_node= std::make_shared<ReferencesGraphNode>( moved_result->name + " inner node", move_variable_inner_node->kind );
@@ -1070,6 +1071,61 @@ Value CodeBuilder::BuildExpressionCode(
 	function_context.variables_state.MoveNode( node );
 
 	return Value( std::move(content), move_operator.file_pos_ );
+}
+
+Value CodeBuilder::BuildExpressionCode(
+	const Synt::TakeOperator& take_operator,
+	NamesScope& names,
+	FunctionContext& function_context )
+{
+	Variable expression_result= BuildExpressionCodeEnsureVariable( *take_operator.expression_, names, function_context );
+	if( expression_result.value_type == ValueType::Value ) // If it is value - just pass it.
+		return Value( std::move(expression_result), take_operator.file_pos_ );
+
+	if( expression_result.value_type != ValueType::Reference )
+	{
+		REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), take_operator.file_pos_ );
+		return ErrorValue();
+	}
+
+	if( function_context.variables_state.HaveOutgoingLinks( expression_result.node ) )
+	{
+		REPORT_ERROR( MovedVariableHaveReferences, names.GetErrors(), take_operator.file_pos_, expression_result.node->name );
+		return ErrorValue();
+	}
+
+	// Allocate variable for result.
+	Variable result;
+	result.location= Variable::Location::Pointer;
+	result.type= expression_result.type;
+	result.value_type= ValueType::Value;
+	result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( result.type.GetLLVMType() );
+	const auto result_node= std::make_shared<ReferencesGraphNode>( "_moved_" + expression_result.node->name, ReferencesGraphNode::Kind::Variable );
+	result.llvm_value->setName( result_node->name );
+	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( result_node, result ) );
+	result.node= result_node;
+
+	// We must save inner references of moved variable.
+	if( const auto move_variable_inner_node= function_context.variables_state.GetNodeInnerReference( expression_result.node ) )
+	{
+		const auto inner_node= std::make_shared<ReferencesGraphNode>( result_node->name + " inner node", move_variable_inner_node->kind );
+		function_context.variables_state.SetNodeInnerReference( result_node, inner_node );
+		function_context.variables_state.AddLink( move_variable_inner_node, inner_node );
+	}
+
+	// Copy content to new variable.
+	CopyBytes( expression_result.llvm_value, result.llvm_value, result.type, function_context );
+
+	// Lock variable, for preventing of result destruction during re-initialization of source variable.
+	const ReferencesGraphNodeHolder variable_lock(
+		std::make_shared<ReferencesGraphNode>( result_node->name + " temp variable lock", ReferencesGraphNode::Kind::ReferenceMut ),
+		function_context );
+	function_context.variables_state.AddLink( result_node, variable_lock.Node() );
+
+	// Construct empty value in old place.
+	ApplyEmptyInitializer( expression_result.node->name, take_operator.file_pos_, expression_result, names, function_context );
+
+	return Value( std::move(result), take_operator.file_pos_ );
 }
 
 Value CodeBuilder::BuildExpressionCode(

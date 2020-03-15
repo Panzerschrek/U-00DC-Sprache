@@ -41,6 +41,7 @@ struct BracketExpression;
 struct BooleanConstant;
 struct StringLiteral;
 struct MoveOperator;
+struct TakeOperator;
 struct CastMut;
 struct CastImut;
 struct CastRef;
@@ -121,6 +122,7 @@ using Expression= std::variant<
 	BooleanConstant,
 	StringLiteral,
 	MoveOperator,
+	TakeOperator,
 	CastMut,
 	CastImut,
 	CastRef,
@@ -353,6 +355,14 @@ public:
 	MoveOperator( const FilePos& file_pos );
 
 	std::string var_name_;
+};
+
+struct TakeOperator final : public ExpressionComponentWithUnaryOperators
+{
+public:
+	TakeOperator( const FilePos& file_pos );
+
+	std::unique_ptr<Expression> expression_;
 };
 
 struct CastRef final : public ExpressionComponentWithUnaryOperators

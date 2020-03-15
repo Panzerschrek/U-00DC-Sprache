@@ -52,6 +52,7 @@ def main():
 		"stack_variables_move_errors_test",
 		"stack_variables_move_test",
 		"string_literals_test",
+		"take_operator_test",
 		"tuples_test",
 		"ternary_operator_errors_test",
 		"ternary_operator_test",

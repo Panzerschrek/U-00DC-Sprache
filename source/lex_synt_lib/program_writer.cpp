@@ -312,6 +312,12 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 		{
 			stream << Keyword( Keywords::move_ ) << "( " << move_operator.var_name_ << " )";
 		}
+		void operator()( const TakeOperator& take_operator ) const
+		{
+			stream << Keyword( Keywords::take_ ) << "( ";
+			ElementWrite( *take_operator.expression_, stream );
+			stream << " )";
+		}
 		void operator()( const CastRef& cast_ref ) const
 		{
 			if( cast_ref.type_ == nullptr || cast_ref.expression_ == nullptr )

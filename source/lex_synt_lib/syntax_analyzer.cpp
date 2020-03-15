@@ -997,6 +997,30 @@ Expression SyntaxAnalyzer::ParseExpression()
 				current_node= std::move(move_operator);
 				current_node_ptr= std::get_if<MoveOperator>( &current_node );
 			}
+			else if( it_->text == Keywords::take_ )
+			{
+				TakeOperator take_operator( it_->file_pos );
+
+				NextLexem();
+				if( it_->type != Lexem::Type::BracketLeft )
+				{
+					PushErrorMessage();
+					return EmptyVariant();
+				}
+				NextLexem();
+
+				take_operator.expression_= std::make_unique<Expression>(ParseExpression());
+
+				if( it_->type != Lexem::Type::BracketRight )
+				{
+					PushErrorMessage();
+					return EmptyVariant();
+				}
+				NextLexem();
+
+				current_node= std::move(take_operator);
+				current_node_ptr= std::get_if<TakeOperator>( &current_node );
+			}
 			else if( it_->text == Keywords::select_ )
 			{
 				TernaryOperator ternary_operator( it_->file_pos );

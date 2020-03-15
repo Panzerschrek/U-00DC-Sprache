@@ -360,6 +360,7 @@ private:
 	Value BuildExpressionCode( const Synt::BooleanConstant& boolean_constant, NamesScope& names, FunctionContext& function_context );
 	Value BuildExpressionCode( const Synt::StringLiteral& string_literal, NamesScope& names, FunctionContext& function_context );
 	Value BuildExpressionCode( const Synt::MoveOperator& move_operator, NamesScope& names, FunctionContext& function_context );
+	Value BuildExpressionCode( const Synt::TakeOperator& move_operator, NamesScope& names, FunctionContext& function_context );
 	Value BuildExpressionCode( const Synt::CastMut& cast_mut, NamesScope& names, FunctionContext& function_context );
 	Value BuildExpressionCode( const Synt::CastImut& cast_imut, NamesScope& names, FunctionContext& function_context );
 	Value BuildExpressionCode( const Synt::CastRef& cast_ref, NamesScope& names, FunctionContext& function_context );
