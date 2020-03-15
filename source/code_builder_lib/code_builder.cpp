@@ -195,6 +195,14 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 	NamesScopeFillOutOfLineElements( source_graph_node.ast.program_elements, *result.names_map );
 	GlobalThingBuildNamespace( *result.names_map );
 
+	// Finalize building template classes.
+	for( auto& class_pair : generated_template_things_storage_ )
+	{
+		Value& value= class_pair.second;
+		if( const auto namespace_= value.GetNamespace() )
+		GlobalThingBuildNamespace( *namespace_ );
+	}
+
 	// Take generated template things.
 	result.generated_template_things_storage = std::make_unique< ProgramStringMap<Value> >();
 	result.generated_template_things_storage->swap( generated_template_things_storage_ );
