@@ -101,11 +101,6 @@ const NamesScope* NamesScope::GetRoot() const
 	return root;
 }
 
-void NamesScope::SetParent( NamesScope* const parent )
-{
-	parent_= parent;
-}
-
 void NamesScope::AddAccessRightsFor( const ClassProxyPtr& class_, const ClassMemberVisibility visibility )
 {
 	access_rights_[class_]= visibility;

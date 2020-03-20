@@ -35,7 +35,6 @@ public:
 	const NamesScope* GetParent() const;
 	NamesScope* GetRoot();
 	const NamesScope* GetRoot() const;
-	void SetParent( NamesScope* parent );
 
 	void AddAccessRightsFor( const ClassProxyPtr& class_, ClassMemberVisibility visibility );
 	ClassMemberVisibility GetAccessFor( const ClassProxyPtr& class_ ) const;
