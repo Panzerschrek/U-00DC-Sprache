@@ -196,12 +196,21 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 	GlobalThingBuildNamespace( *result.names_map );
 
 	// Finalize building template classes.
-	for( auto& class_pair : generated_template_things_storage_ )
+	// Do this in loop and with copy of template things storage, because it may change over iteration.
+	while(true)
 	{
-		Value& value= class_pair.second;
-		if( const auto namespace_= value.GetNamespace() )
-		GlobalThingBuildNamespace( *namespace_ );
-	}
+		auto storage_copy= generated_template_things_storage_;
+		for( auto& thing_pair : storage_copy )
+		{
+			if( const auto namespace_= thing_pair.second.GetNamespace() )
+				GlobalThingBuildNamespace( *namespace_ );
+		}
+
+		const bool changed= storage_copy.size() != generated_template_things_storage_.size();
+		generated_template_things_storage_= std::move(storage_copy);
+		if(!changed)
+			break;
+	};
 
 	// Take generated template things.
 	result.generated_template_things_storage = std::make_unique< ProgramStringMap<Value> >();
