@@ -195,6 +195,23 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 	NamesScopeFillOutOfLineElements( source_graph_node.ast.program_elements, *result.names_map );
 	GlobalThingBuildNamespace( *result.names_map );
 
+	// Finalize building template classes.
+	// Do this in loop and with copy of template things storage, because it may change over iteration.
+	while(true)
+	{
+		auto storage_copy= generated_template_things_storage_;
+		for( auto& thing_pair : storage_copy )
+		{
+			if( const auto namespace_= thing_pair.second.GetNamespace() )
+				GlobalThingBuildNamespace( *namespace_ );
+		}
+
+		const bool changed= storage_copy.size() != generated_template_things_storage_.size();
+		generated_template_things_storage_= std::move(storage_copy);
+		if(!changed)
+			break;
+	};
+
 	// Take generated template things.
 	result.generated_template_things_storage = std::make_unique< ProgramStringMap<Value> >();
 	result.generated_template_things_storage->swap( generated_template_things_storage_ );
@@ -3417,6 +3434,10 @@ Value* CodeBuilder::ResolveValue(
 
 		NamesScope* next_space= nullptr;
 		ClassProxyPtr next_space_class= nullptr;
+
+		// In case of typedef convert it to type before other checks.
+		if( value->GetTypedef() != nullptr )
+			GlobalThingBuildTypedef( *last_space, *value );
 
 		if( const NamesScopePtr inner_namespace= value->GetNamespace() )
 			next_space= inner_namespace.get();

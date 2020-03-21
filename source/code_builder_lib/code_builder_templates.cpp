@@ -1070,7 +1070,6 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 			return result;
 
 		GlobalThingBuildClass( class_proxy, TypeCompleteness::Complete );
-		GlobalThingBuildNamespace( class_proxy->class_->members );
 
 		if( class_proxy->class_->completeness != TypeCompleteness::Complete )
 			return result;
