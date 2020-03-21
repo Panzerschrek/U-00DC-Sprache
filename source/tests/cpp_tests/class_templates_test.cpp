@@ -1742,4 +1742,40 @@ U_TEST( ArrayAsTemplateSignatureParameter_Test2 )
 	U_TEST_ASSERT( static_cast<uint64_t>( ( 8547 - 3214 ) * 11 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( LazyClassFunctionsBuild_Test0 )
+{
+
+	static const char c_program_text[]=
+	R"(
+		template</type T/>
+		struct A
+		{
+			fn Foo(this, u32 x)
+			{
+				if(x > 0u)
+				{
+					B</T/>().Bar(x-1u);
+				}
+			}
+		}
+
+		template</type T/>
+		struct B
+		{
+			fn Bar(this, u32 x)
+			{
+				if(x > 0u)
+				{
+					A</T/>().Foo(x-1u);
+				}
+			}
+		}
+
+		type Ai= A</i32/>;
+		type Bi= B</i32/>;
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 } // namespace U
