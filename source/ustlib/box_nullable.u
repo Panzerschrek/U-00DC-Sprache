@@ -144,7 +144,7 @@ private:
 	}
 
 private:
-	//ContainerTag</ T /> container_tag_;
+	ContainerTag</ T /> container_tag_;
 	raw_ptr_mut</ T /> ptr_;
 }
 
