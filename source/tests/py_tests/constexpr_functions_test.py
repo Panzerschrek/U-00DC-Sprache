@@ -877,3 +877,28 @@ def ConstexprFunction_RecursiveCall_Test0():
 		static_assert( Factorial( 6u) == 720u );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ConstexprFunction_RecursiveCall_Test1():
+	c_program_text= """
+		namespace S
+		{
+
+		template</ type T />
+		fn constexpr Factorial( T x ) : T
+		{
+			if( x <= T(1) ) { return T(1); }
+			return x * S::Factorial( x - T(1) );
+		}
+
+		static_assert( Factorial( 0u) ==   1u );
+		static_assert( Factorial( 1u) ==   1u );
+		static_assert( Factorial( 2u) ==   2u );
+		static_assert( Factorial( 3u) ==   6u );
+		static_assert( Factorial( 4u) ==  24u );
+		static_assert( Factorial( 5u) == 120u );
+		static_assert( Factorial( 6u) == 720u );
+
+		} // namespace S
+	"""
+	tests_lib.build_program( c_program_text )

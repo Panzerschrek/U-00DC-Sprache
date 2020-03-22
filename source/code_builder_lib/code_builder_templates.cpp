@@ -1293,6 +1293,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 			return &result_functions_set.functions.front();
 		}
 	}
+	generated_template_things_storage_.insert( std::make_pair( name_encoded, Value( template_parameters_namespace, function_declaration.file_pos_ ) ) );
 
 	CreateTemplateErrorsContext( errors_container, file_pos, template_parameters_namespace, function_template, func_name, deduced_template_args, function_template.known_template_parameters );
 
@@ -1306,8 +1307,6 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 
 	FunctionVariable& function_variable= result_functions_set.functions.front();
 	function_variable.deduced_temlpate_parameters= std::move(deduced_temlpate_parameters);
-
-	generated_template_things_storage_.insert( std::make_pair( name_encoded, Value( template_parameters_namespace, function_declaration.file_pos_ ) ) );
 
 	// And generate function body after insertion of prototype.
 	if( !function_variable.have_body ) // if function is constexpr, body may be already generated.
