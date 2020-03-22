@@ -30,6 +30,13 @@ class I1 interface {}
 class Impl : I0, I1 { i32 x=0; }
 class ImplDerived : Impl { i32 y= 0; }
 
+// Ths class should be ok.
+class BoxRecursive
+{
+	i32 data;
+	ust::box_nullable</BoxRecursive/> next;
+}
+
 fn U_Main() : i32
 {
 	// Box have pointer size.
