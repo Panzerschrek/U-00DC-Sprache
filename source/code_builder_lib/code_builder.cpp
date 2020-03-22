@@ -196,21 +196,33 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 	GlobalThingBuildNamespace( *result.names_map );
 
 	// Finalize building template classes.
-	// Do this in loop and with copy of template things storage, because it may change over iteration.
-	while(true)
+	// Save and update keys separately, because "generated_template_things_storage_" may change during iterations.
 	{
-		auto storage_copy= generated_template_things_storage_;
-		for( auto& thing_pair : storage_copy )
-		{
-			if( const auto namespace_= thing_pair.second.GetNamespace() )
-				GlobalThingBuildNamespace( *namespace_ );
-		}
+		ProgramStringSet generated_template_things_keys;
+		for( const auto& thing_pair : generated_template_things_storage_ )
+			generated_template_things_keys.insert(thing_pair.first);
+		ProgramStringSet new_generated_template_things_keys= generated_template_things_keys;
 
-		const bool changed= storage_copy.size() != generated_template_things_storage_.size();
-		generated_template_things_storage_= std::move(storage_copy);
-		if(!changed)
-			break;
-	};
+		while(!new_generated_template_things_keys.empty())
+		{
+			for( const std::string& key : new_generated_template_things_keys )
+			{
+				if( const auto namespace_= generated_template_things_storage_[key].GetNamespace() )
+					GlobalThingBuildNamespace( *namespace_ );
+			}
+
+			// Collect keys of new things, replace keys set with new one.
+			new_generated_template_things_keys.clear();
+			for( const auto& thing_pair : generated_template_things_storage_ )
+			{
+				if( generated_template_things_keys.count(thing_pair.first) == 0 )
+				{
+					generated_template_things_keys.insert(thing_pair.first);
+					new_generated_template_things_keys.insert(thing_pair.first);
+				}
+			}
+		};
+	}
 
 	// Take generated template things.
 	result.generated_template_things_storage = std::make_unique< ProgramStringMap<Value> >();
