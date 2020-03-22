@@ -7,6 +7,13 @@ struct B{}
 class C : polymorph {}
 class D {}
 
+struct SWithRef
+{
+	i32& x;
+}
+
+type SBox= ust::box_nullable</SWithRef/>; //##expect_error TemplateContext
+
 fn U_Main() : i32
 {
 	{ // box_nullable is not copyable.
