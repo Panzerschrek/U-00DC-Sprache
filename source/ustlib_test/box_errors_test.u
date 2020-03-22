@@ -14,7 +14,10 @@ struct SWithRef
 	i32& x;
 }
 
-type SBox= ust::box</SWithRef/>; //##expect_error TemplateContext
+type SWithRefBox= ust::box</SWithRef/>; //##expect_error TemplateContext
+
+struct SShared shared{}
+type SSharedBox= ust::box</SShared/>; //##expect_error TemplateContext
 
 fn U_Main() : i32
 {
