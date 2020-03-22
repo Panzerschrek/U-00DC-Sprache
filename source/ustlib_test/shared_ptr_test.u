@@ -28,6 +28,8 @@ static_assert( ust::have_shared_state</IntPtrNullableImut/>() );
 static_assert( ust::have_shared_state</IntPtrWeakMut />() );
 static_assert( ust::have_shared_state</IntPtrWeakImut/>() );
 
+static_assert( ust::have_shared_state</ ust::box</ IntPtrMut /> />() );
+static_assert( ust::have_shared_state</ ust::box_nullable</ IntPtrMut /> />() );
 static_assert( ust::have_shared_state</ ust::optional</ IntPtrMut /> />() );
 static_assert( ust::have_shared_state</ ust::optional_ref</ IntPtrMut, true /> />() );
 static_assert( ust::have_shared_state</ ust::random_access_range</ IntPtrMut, true /> />() );

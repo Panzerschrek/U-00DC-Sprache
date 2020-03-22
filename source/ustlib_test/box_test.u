@@ -30,6 +30,9 @@ class I1 interface {}
 class Impl : I0, I1 { i32 x=0; }
 class ImplDerived : Impl { i32 y= 0; }
 
+struct SShared shared{}
+type SSharedBox= ust::box</SShared/>; // Should be ok for types with "shared" tag
+
 fn U_Main() : i32
 {
 	// Box have pointer size.

@@ -14,9 +14,6 @@ struct SWithRef
 
 type SWithRefBox= ust::box</SWithRef/>; //##expect_error TemplateContext
 
-struct SShared shared{}
-type SSharedBox= ust::box</SShared/>; //##expect_error TemplateContext
-
 fn U_Main() : i32
 {
 	{ // box_nullable is not copyable.
