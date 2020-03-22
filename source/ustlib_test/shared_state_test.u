@@ -58,6 +58,41 @@ static_assert( ust::have_shared_state</ W />() );
 
 }
 
+namespace Test4
+{
+
+struct A shared{}
+
+struct B
+{
+	type element_type_for_shared_check= A;
+}
+
+struct C
+{
+	B b;
+}
+
+static_assert( ust::have_shared_state</ A />() );
+static_assert( ust::have_shared_state</ B />() );
+static_assert( ust::have_shared_state</ C />() );
+static_assert( ust::have_shared_state</ [ A, 2 ] />() );
+static_assert( ust::have_shared_state</ [ B, 2 ] />() );
+static_assert( ust::have_shared_state</ [ C, 3 ] />() );
+
+}
+
+namespace Test5
+{
+
+struct SelfTypedefTest
+{
+	type T= SelfTypedefTest;
+}
+
+static_assert( !ust::have_shared_state</ SelfTypedefTest />() );
+
+}
 
 fn U_Main() : i32
 {

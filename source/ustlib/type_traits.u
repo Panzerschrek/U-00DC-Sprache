@@ -74,6 +74,7 @@ fn constexpr have_shared_state_impl( TypeinfoType& typeinfo_ ) : bool
 		}
 		return
 			class_have_shared_state_fields ( typeinfo_.fields_list  ) ||
+			class_have_shared_check_typedef( typeinfo_.types_list   ) ||
 			class_have_shared_state_parents( typeinfo_.parents_list );
 	}
 	else if( is_array_typeinfo_type</ TypeinfoType />() )
@@ -84,6 +85,22 @@ fn constexpr have_shared_state_impl( TypeinfoType& typeinfo_ ) : bool
 	{
 		return false;
 	}
+}
+
+template</ type ListType />
+fn constexpr class_have_shared_check_typedef( ListType& types_list ) : bool
+{
+	for( &list_element : types_list )
+	{
+		if( type_traits_impl::string_equals( list_element.name, "element_type_for_shared_check" ) )
+		{
+			if( have_shared_state_impl( list_element.type ) )
+			{
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
 template</ type ListType />
