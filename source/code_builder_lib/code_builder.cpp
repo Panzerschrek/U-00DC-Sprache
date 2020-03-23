@@ -129,6 +129,22 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	const StackVariablesStorage global_function_variables_storage( global_function_context );
 	global_function_context_= &global_function_context;
 
+	// Prepare debug info builder.
+	module_->addModuleFlag( llvm::Module::Warning, "Debug Info Version", 3 );
+
+	llvm::DIBuilder debug_info_builder(*module_);
+	debug_info_.builder= &debug_info_builder;
+
+	debug_info_.file= debug_info_.builder->createFile( source_graph.nodes_storage[ source_graph.root_node_index ].file_path, "");
+	debug_info_.compile_unit=
+		debug_info_.builder->createCompileUnit(
+			llvm::dwarf::DW_LANG_C, // TODO - select more situable language
+			debug_info_.file,
+			"some version",
+			false, // optimized
+			"some flags",
+			0 /* runtime version */ );
+
 	// Build graph.
 	BuildProgramInternal( source_graph, source_graph.root_node_index );
 
@@ -141,6 +157,9 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 			typeinfo_entry.second.type.GetClassType()->llvm_type->setBody( llvm::ArrayRef<llvm::Type*>() );
 	}
 
+	// We must finalize it.
+	debug_info_.builder->finalize();
+
 	// Clear internal structures.
 	compiled_sources_cache_.clear();
 	current_class_table_= nullptr;
@@ -148,6 +167,9 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	template_classes_cache_.clear();
 	typeinfo_cache_.clear();
 	typeinfo_class_table_.clear();
+	debug_info_.builder= nullptr;
+	debug_info_.file= nullptr;
+	debug_info_.compile_unit= nullptr;
 
 	NormalizeErrors( global_errors_ );
 
@@ -1396,6 +1418,21 @@ Type CodeBuilder::BuildFuncCode(
 			llvm_function->addAttribute( 1u, llvm::Attribute::StructRet );
 
 		func_variable.llvm_function= llvm_function;
+
+		{
+			const auto di_type= debug_info_.builder->createSubroutineType({});
+			//module_->addModuleFlag( di_type );
+			const auto di_function= debug_info_.builder->createFunction(
+				debug_info_.compile_unit,
+				func_name,
+				MangleFunction( parent_names_scope, func_name, function_type ),
+				debug_info_.file,
+				0,
+				di_type,
+				0);
+			//llvm_function->addMetadata( llvm::LLVMContext::MD_dbg, *di_function );
+			llvm_function->setSubprogram(di_function);
+		}
 	}
 	else
 		llvm_function= func_variable.llvm_function;

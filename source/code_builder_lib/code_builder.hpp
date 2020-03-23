@@ -5,6 +5,7 @@
 #include <unordered_map>
 
 #include "push_disable_llvm_warnings.hpp"
+#include <llvm/IR/DIBuilder.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 #include "pop_llvm_warnings.hpp"
@@ -778,6 +779,13 @@ private:
 	ProgramStringMap<Value> generated_template_things_storage_;
 
 	std::vector<GlobalThing> global_things_stack_;
+
+	struct
+	{
+		llvm::DIBuilder* builder= nullptr;
+		llvm::DIFile* file= nullptr;
+		llvm::DICompileUnit* compile_unit= nullptr;
+	} debug_info_;
 };
 
 using MutabilityModifier= Synt::MutabilityModifier;
