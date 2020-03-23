@@ -1421,16 +1421,16 @@ Type CodeBuilder::BuildFuncCode(
 
 		{
 			const auto di_type= debug_info_.builder->createSubroutineType({});
-			//module_->addModuleFlag( di_type );
 			const auto di_function= debug_info_.builder->createFunction(
 				debug_info_.compile_unit,
 				func_name,
 				MangleFunction( parent_names_scope, func_name, function_type ),
 				debug_info_.file,
-				0,
+				func_variable.body_file_pos.line,
 				di_type,
-				0);
-			//llvm_function->addMetadata( llvm::LLVMContext::MD_dbg, *di_function );
+				func_variable.body_file_pos.line,
+				llvm::DINode::FlagPrototyped,
+				llvm::DISubprogram::SPFlagDefinition);
 			llvm_function->setSubprogram(di_function);
 		}
 	}
