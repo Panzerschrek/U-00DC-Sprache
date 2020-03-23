@@ -2394,7 +2394,7 @@ Value CodeBuilder::BuildPostfixOperator(
 		REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names.GetErrors(), member_access_operator.file_pos_,  member_access_operator.member_name_ );
 
 	if( names.GetAccessFor( variable.type.GetClassTypeProxy() ) < class_type->GetMemberVisibility( member_access_operator.member_name_ ) )
-		REPORT_ERROR( AccessingNonpublicClassMember, names.GetErrors(), member_access_operator.file_pos_, class_type->members.GetThisNamespaceName(), member_access_operator.member_name_ );
+		REPORT_ERROR( AccessingNonpublicClassMember, names.GetErrors(), member_access_operator.file_pos_, member_access_operator.member_name_, class_type->members.GetThisNamespaceName() );
 
 	if( const OverloadedFunctionsSet* functions_set= class_member->GetFunctionsSet() )
 	{

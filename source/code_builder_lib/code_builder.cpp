@@ -3535,7 +3535,7 @@ Value* CodeBuilder::ResolveValue(
 
 			if( next_space_class != nullptr && resolve_mode != ResolveMode::ForDeclaration &&
 				names_scope.GetAccessFor( next_space_class ) < next_space_class->class_->GetMemberVisibility( components[1].name ) )
-				REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), file_pos, next_space_class->class_->members.GetThisNamespaceName(), components[1].name );
+				REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), file_pos, components[1].name, next_space_class->class_->members.GetThisNamespaceName() );
 		}
 		else
 			return nullptr;
