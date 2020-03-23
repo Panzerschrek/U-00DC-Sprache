@@ -45,7 +45,7 @@ std::string Stringify( const Synt::TernaryOperator& ternary_operator )
 
 std::string Stringify( const Synt::NumericConstant& numeric_constant )
 {
-	return std::to_string(numeric_constant.value_double_) + numeric_constant.type_suffix_.data();
+	return std::to_string(numeric_constant.value_double) + numeric_constant.type_suffix.data();
 }
 
 std::string Stringify( const Synt::StringLiteral& string_literal )
@@ -73,6 +73,11 @@ std::string Stringify( const Synt::TypeNameInExpression& type_name_in_expression
 std::string Stringify( const Synt::MoveOperator& move_operator )
 {
 	return Keyword( Keywords::move_ ) + "(" + move_operator.var_name_ + ")";
+}
+
+std::string Stringify( const Synt::TakeOperator& take_operator )
+{
+	return Keyword( Keywords::take_ ) + "(" + Stringify(take_operator) + ")";
 }
 
 std::string Stringify( const Synt::CastRef& cast_ref )
