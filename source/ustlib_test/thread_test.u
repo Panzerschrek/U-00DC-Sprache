@@ -5,12 +5,15 @@ import "../ustlib/vector.u"
 
 fn Bar(){}
 
+type IntShared= ust::shared_ptr_mt_mut</i32/>;
+
 struct CallableObject
 {
-	i32 &mut x;
+	IntShared x;
 	op()( mut this )
 	{
-		++x;
+		auto mut l= x.lock_mut();
+		++l.get_ref();
 	}
 }
 
@@ -21,7 +24,7 @@ fn Get42() : i32
 
 struct Incrementer
 {
-	ust::shared_ptr_mt_mut</ i32 /> ptr;
+	IntShared ptr;
 	op()( mut this )
 	{
 		auto mut lock= ptr.lock_mut();
@@ -37,7 +40,8 @@ fn U_Main() : i32
 	}
 	{
 		// Can create thread for callable object.
-		var i32 mut x= 0, mut y= 0;
+		var IntShared x(0);
+		var i32 mut y= 0;
 		var CallableObject mut obj{ .x= x };
 
 		{
@@ -45,17 +49,17 @@ fn U_Main() : i32
 			// While thread is alive, we can do something.
 			++y;
 		}
-		halt if( x != 1 );
+		halt if( x.lock_imut().get_ref() != 1 );
 		halt if( y != 1 );
 	}
 	{
-		// Can het result of thread.
+		// Can get result of thread.
 		var ust::thread_ret</ fn() : i32, i32 /> mut thread( (fn() : i32 )( Get42 ) );
 		var i32 res= thread.join( move(thread) );
 		halt if( res != 42 );
 	}
 	{
-		var ust::shared_ptr_mt_mut</ i32 /> ptr(0);
+		var IntShared ptr(0);
 		var size_type mut i(0);
 		var ust::vector</ ust::thread</Incrementer/> /> mut threads;
 		while( i < size_type(64) )

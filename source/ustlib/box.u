@@ -16,7 +16,7 @@ public:
 public:
 	fn constructor()= delete;
 
-	fn constructor( mut this'a...', T mut val'b...' ) ' a <- b '
+	fn constructor( mut this, T mut val )
 	{
 		unsafe
 		{
@@ -27,7 +27,7 @@ public:
 
 	template</ type U />
 	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
-	conversion_constructor( mut this'a...', box</U/> mut val'b...' ) ' a <- b '
+	conversion_constructor( mut this, box</U/> mut val )
 	{
 		unsafe
 		{
@@ -68,7 +68,14 @@ public:
 	}
 
 private:
-	ContainerTag</ T /> container_tag_;
+	fn check_type()
+	{
+		static_assert( typeinfo</T/>.references_tags_count == 0s );
+	}
+
+	type element_type_for_shared_check= T;
+
+private:
 	raw_ptr_mut</ T /> ptr_;
 }
 

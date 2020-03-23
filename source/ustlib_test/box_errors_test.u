@@ -9,6 +9,13 @@ struct B{}
 class C : polymorph {}
 class D {}
 
+struct SWithRef
+{
+	i32& x;
+}
+
+type SWithRefBox= ust::box</SWithRef/>; //##expect_error TemplateContext
+
 fn U_Main() : i32
 {
 	{ // box have no default constructor.

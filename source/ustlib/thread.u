@@ -67,6 +67,7 @@ private:
 
 private:
 	// Store function inside box, because we send raw pointer to it to thread function.
+	// TODO - use container, that supports types with references inside.
 	FuncBox func_;
 	pthread_t thread_id_(0);
 }
