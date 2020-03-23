@@ -620,6 +620,9 @@ void ConstexprFunctionEvaluator::ProcessCall( const llvm::Instruction* const ins
 	U_ASSERT(function != nullptr);
 	U_ASSERT( function->arg_size() == instruction->getNumOperands() - 1u );
 
+	if(function->getName() == "llvm.dbg.declare")
+		return;
+
 	InstructionsMap new_instructions_map;
 
 	const size_t prev_stack_size= stack_.size();
