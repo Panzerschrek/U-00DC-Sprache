@@ -66,6 +66,10 @@ void EditorWidget::finalizeInitialization()
 	connect( &timer_, &QTimer::timeout, this, &EditorWidget::OnTimerExpired );
 	connect( &combo_box_, static_cast<void(QComboBox::*)(int)>(&QComboBox::activated), this, &EditorWidget::OnItemActivated );
 	connect( this, &EditorWidget::cursorPositionChanged, this, &EditorWidget::OnCursorPositionChanged );
+
+	// Allow adding breakpoints.
+	setRequestMarkEnabled(true);
+	setMarksVisible(true);
 }
 
 void EditorWidget::OnTextChanged()
