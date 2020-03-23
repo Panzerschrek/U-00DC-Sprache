@@ -37,8 +37,10 @@ else()
 	message( STATUS "Skip py_tests" )
 endif()
 
-
+# Setup C++ version
 set( CMAKE_CXX_STANDARD 17 )
+set( CMAKE_CXX_STANDARD_REQUIRED On )
+set( CMAKE_CXX_EXTENSIONS Off )
 if( MSVC )
 	add_definitions( -D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS )
 endif()
@@ -110,19 +112,18 @@ else()
 endif()
 
 #
-# options for Ü-Sprache projects
+# Compiler options for Ü-Sprache projects
 #
 
 if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
 	add_definitions( -DU_DEBUG )
-else()
 endif()
 
-if( NOT WIN32 )
+if( WIN32 )
+	set( SPRACHE_COMPILER_PIC_OPTIONS "" )
+else()
 	add_compile_options( -fPIC )
 	set( SPRACHE_COMPILER_PIC_OPTIONS --relocation-model pic )
-else()
-	set( SPRACHE_COMPILER_PIC_OPTIONS "" )
 endif()
 
 if(MSVC)
@@ -331,11 +332,11 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	# Unciode file names test
 	#
 	if( U_BUILD_UNICODE_FILE_NAMES_TEST )
-	set( UNICODE_FILE_NAMES_SOURCES "tests/unicode_file_names_test/Entry ФшЯё_66.ü" )
-	CompileUSources( "${UNICODE_FILE_NAMES_SOURCES}" UNICODE_FILE_NAMES_OBJECTS )
+		set( UNICODE_FILE_NAMES_SOURCES "tests/unicode_file_names_test/Entry ФшЯё_66.ü" )
+		CompileUSources( "${UNICODE_FILE_NAMES_SOURCES}" UNICODE_FILE_NAMES_OBJECTS )
 
-	add_executable( UnicodeFileNamesTest tests/unicode_file_names_test/entry.c ${UNICODE_FILE_NAMES_OBJECTS} )
-	add_dependencies( UnicodeFileNamesTest Compiler )
+		add_executable( UnicodeFileNamesTest tests/unicode_file_names_test/entry.c ${UNICODE_FILE_NAMES_OBJECTS} )
+		add_dependencies( UnicodeFileNamesTest Compiler )
 	endif()
 
 	#
