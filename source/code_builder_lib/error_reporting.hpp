@@ -1,7 +1,7 @@
 #pragma once
-#include "../lex_synt_lib/push_disable_boost_warnings.hpp"
-#include <boost/format.hpp>
-#include "../lex_synt_lib/pop_boost_warnings.hpp"
+#include "push_disable_llvm_warnings.hpp"
+#include <llvm/Support/FormatVariadic.h>
+#include "pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/syntax_elements.hpp"
 #include "code_builder_errors.hpp"
@@ -15,28 +15,11 @@ namespace U
 namespace ErrorReportingImpl
 {
 
-using Formatter= boost::format;
-
 const char* GetErrorMessagePattern( CodeBuilderErrorCode code );
 
 std::string PreprocessArg( const CodeBuilderPrivate::Type& type );
 std::string PreprocessArg( const Synt::ComplexName& name );
-const std::string& PreprocessArg( const std::string& str );
-
-template<class T>
-const T& PreprocessArg( const T& t )
-{
-	return t;
-}
-
-inline void FeedArgs( Formatter& ){}
-
-template<class T, class ... Args>
-void FeedArgs( Formatter& format, const T& arg0, const Args& ... args )
-{
-	format % PreprocessArg(arg0);
-	FeedArgs( format, args... );
-}
+template<class T> const T& PreprocessArg( const T& t ) { return t; }
 
 template<class ... Args>
 CodeBuilderError ReportError( const CodeBuilderErrorCode code, const FilePos& file_pos, const Args& ... args )
@@ -44,10 +27,7 @@ CodeBuilderError ReportError( const CodeBuilderErrorCode code, const FilePos& fi
 	CodeBuilderError error;
 	error.code= code;
 	error.file_pos= file_pos;
-
-	Formatter f( GetErrorMessagePattern(code) );
-	FeedArgs( f, args... );
-	error.text= f.str();
+	error.text= llvm::formatv( GetErrorMessagePattern(code), PreprocessArg(args)... ).str();
 	return error;
 }
 

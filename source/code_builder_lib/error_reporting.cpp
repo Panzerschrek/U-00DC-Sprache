@@ -21,11 +21,6 @@ const char* GetErrorMessagePattern( CodeBuilderErrorCode code )
 	return "";
 }
 
-const std::string& PreprocessArg( const std::string& str )
-{
-	return str;
-}
-
 std::string PreprocessArg( const CodeBuilderPrivate::Type& type )
 {
 	return type.ToString();
