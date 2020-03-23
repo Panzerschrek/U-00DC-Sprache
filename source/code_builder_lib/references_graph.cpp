@@ -1,4 +1,5 @@
 #include "../lex_synt_lib/assert.hpp"
+#include "error_reporting.hpp"
 #include "references_graph.hpp"
 
 namespace U

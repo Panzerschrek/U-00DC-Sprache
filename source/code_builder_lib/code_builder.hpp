@@ -11,7 +11,6 @@
 
 #include "../lex_synt_lib/syntax_elements.hpp"
 #include "class.hpp"
-#include "code_builder_errors.hpp"
 #include "constexpr_function_evaluator.hpp"
 #include "enum.hpp"
 #include "function_context.hpp"

@@ -6,6 +6,7 @@
 
 #include "../lex_synt_lib/assert.hpp"
 #include "class.hpp"
+#include "error_reporting.hpp"
 #include "constexpr_function_evaluator.hpp"
 
 namespace U

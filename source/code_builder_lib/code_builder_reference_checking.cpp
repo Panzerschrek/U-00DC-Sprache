@@ -1,5 +1,6 @@
 #include "../lex_synt_lib/assert.hpp"
 #include "../lex_synt_lib/keywords.hpp"
+#include "error_reporting.hpp"
 #include "code_builder.hpp"
 
 namespace U
