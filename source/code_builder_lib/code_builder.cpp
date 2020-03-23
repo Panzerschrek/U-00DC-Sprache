@@ -1474,6 +1474,8 @@ Type CodeBuilder::BuildFuncCode(
 		llvm_function );
 	const StackVariablesStorage args_storage( function_context );
 
+	function_context.llvm_ir_builder.SetCurrentDebugLocation(llvm::DebugLoc::get(block->file_pos_.line, block->file_pos_.pos_in_line, llvm_function->getSubprogram()));
+
 	// arg node + optional inner reference variable node.
 	ArgsVector< std::pair< ReferencesGraphNodePtr, ReferencesGraphNodePtr > > args_nodes( function_type.args.size() );
 
@@ -2017,6 +2019,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			std::visit(
 				[&]( const auto& t )
 				{
+				function_context.llvm_ir_builder.SetCurrentDebugLocation(
+					llvm::DebugLoc::get(
+						t.file_pos_.line, t.file_pos_.pos_in_line, function_context.function->getSubprogram()));
+
 					return BuildBlockElement( t, block_names, function_context );
 				},
 				block_element );
