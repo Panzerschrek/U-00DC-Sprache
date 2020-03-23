@@ -2108,6 +2108,20 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
 			variable.llvm_value->setName( variable_declaration.name );
 
+			const auto di_local_variable=
+				debug_info_.builder->createAutoVariable(
+					function_context.function->getSubprogram(),
+					variable_declaration.name,
+					debug_info_.file,
+					variable_declaration.file_pos.line,
+					debug_info_.builder->createBasicType("i32", 32, llvm::dwarf::DW_ATE_signed) /* TODO - create real type */ );
+			debug_info_.builder->insertDeclare(
+				variable.llvm_value,
+				di_local_variable,
+				debug_info_.builder->createExpression(),
+				llvm::DebugLoc::get(variable_declaration.file_pos.line, variable_declaration.file_pos.pos_in_line, function_context.function->getSubprogram()),
+				function_context.llvm_ir_builder.GetInsertBlock());
+
 			prev_variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
 			variable.node= var_node;
 
