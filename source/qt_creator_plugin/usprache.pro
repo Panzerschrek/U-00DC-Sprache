@@ -1,12 +1,6 @@
 CONFIG += c++1z
 DEFINES += USPRACHE_LIBRARY
 
-isEmpty( BOOST_ROOT ) {
-	error( "BOOST_ROOT not defined. You can define path to boost library, using variable BOOST_ROOT" )
-} else {
-	INCLUDEPATH+= $$BOOST_ROOT
-}
-
 isEmpty( QT_CREATOR_SOURCE_ROOT ) {
 	error( "QT_CREATOR_SOURCE_ROOT not defined. You can define path to QtCreator sources, using variable QT_CREATOR_SOURCE_ROOT" )
 } else {

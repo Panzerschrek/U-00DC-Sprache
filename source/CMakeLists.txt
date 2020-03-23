@@ -49,12 +49,6 @@ endif()
 # External dependencies
 #
 
-# Boost
-if( NOT DEFINED BOOST_ROOT )
-	message( FATAL_ERROR "BOOST_ROOT not defined. You can define path to boost library, using variable BOOST_ROOT" )
-endif()
-find_package( Boost )
-
 # LLVM
 
 if( DEFINED LLVM_SRC_DIR )
@@ -153,7 +147,6 @@ endif()
 
 file( GLOB LEX_SYNT_LIB_SOURCES "lex_synt_lib/*" )
 add_library( LexSyntLib ${LEX_SYNT_LIB_SOURCES} )
-target_include_directories( LexSyntLib PUBLIC ${Boost_INCLUDE_DIRS} )
 
 #
 # CodeBuilderLib
