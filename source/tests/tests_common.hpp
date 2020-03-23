@@ -1,9 +1,7 @@
 #pragma once
-#include <string>
-
-#include "../lex_synt_lib/push_disable_boost_warnings.hpp"
-#include<boost/predef/other/endian.h>
-#include "../lex_synt_lib/pop_boost_warnings.hpp"
+#include "../code_builder_lib/push_disable_llvm_warnings.hpp"
+#include <llvm/Support/Host.h>
+#include "../code_builder_lib/pop_llvm_warnings.hpp"
 
 namespace U
 {
@@ -12,12 +10,7 @@ const std::string GetTestsDataLayout()
 {
 	std::string result;
 
-#if BOOST_ENDIAN_BIG_BYTE
-		result+= "E";
-#else
-		result+= "e";
-#endif
-
+	result+= llvm::sys::IsBigEndianHost ? "E" : "e";
 	const bool is_32_bit= sizeof(void*) <= 4u;
 	result+= is_32_bit ? "-p:32:32" : "-p:64:64";
 	result+= is_32_bit ? "-n8:16:32" : "-n8:16:32:64";
