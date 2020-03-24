@@ -337,7 +337,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	#
 	add_custom_command(
 		OUTPUT include_dirs_test.o
-		DEPENDS ${u_source_file} Compiler
+		DEPENDS Compiler
 		COMMAND
 			Compiler
 			${CMAKE_SOURCE_DIR}/tests/include_dirs_test/root.u -o include_dirs_test.o
@@ -360,6 +360,24 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 
 	# Run type_id test
 	add_custom_command( TARGET TypeIdTest POST_BUILD COMMAND TypeIdTest )
+
+	#
+	# Debug info test
+	#
+	set( DEBUG_INFO_TEST_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tests/debug_info_test/debug_info_test.u )
+	set( DEBUG_INFO_TEST_FILE_OUT ${CMAKE_CURRENT_BINARY_DIR}/debug_info_test.o )
+	add_custom_command(
+		OUTPUT ${DEBUG_INFO_TEST_FILE_OUT}
+		DEPENDS Compiler ${DEBUG_INFO_TEST_FILE}
+		COMMAND
+			Compiler
+			${DEBUG_INFO_TEST_FILE} -o ${DEBUG_INFO_TEST_FILE_OUT}
+			${SPRACHE_COMPILER_PIC_OPTIONS}
+			-O0 # Disable optimization
+		)
+
+	add_executable( DebugInfoTest tests/debug_info_test/entry.cpp ${DEBUG_INFO_TEST_FILE_OUT} )
+	add_dependencies( DebugInfoTest Compiler )
 
 	#
 	# CppHeaderConverter test
