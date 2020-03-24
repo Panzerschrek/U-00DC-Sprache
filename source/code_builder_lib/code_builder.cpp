@@ -2114,7 +2114,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 					variable_declaration.name,
 					debug_info_.file,
 					variable_declaration.file_pos.line,
-					debug_info_.builder->createBasicType("i32", 32, llvm::dwarf::DW_ATE_signed) /* TODO - create real type */ );
+					CreateDIType(type) );
 			debug_info_.builder->insertDeclare(
 				variable.llvm_value,
 				di_local_variable,

@@ -1,4 +1,26 @@
+fn FundamentalTypesTest()
+{
+	var i32 x= -666;
+	var u32 y= 3000000000u;
+	var f32 f= 3.1415926535f;
+	var f64 d= 2.718281828;
+	var bool true_value= true, false_value= false;
+	var u64 value64= 9870000000000u64;
+	var i128 loooong_int= i128(1.23e42);
+	return;
+}
+
+fn ArrayTypesTest()
+{
+	var [ i32, 3 ] i3= zero_init;
+	var [ bool, 4 ] b4[ true, true, false, true ];
+	var [ f32, 0 ] f0[];
+	return;
+}
+
 fn U_Main() : i32
 {
+	FundamentalTypesTest();
+	ArrayTypesTest();
 	return 0;
 }
