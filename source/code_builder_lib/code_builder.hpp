@@ -686,7 +686,7 @@ private:
 	llvm::DIType* CreateDIType( const Type& type );
 	llvm::DIBasicType* CreateDIFundamentalType( const FundamentalType& type );
 	llvm::DICompositeType* CreateDIArrayType( const Array& type );
-	llvm::DICompositeType* CreateDIClassType( const Class& type );
+	llvm::DICompositeType* CreateDIClassType( const ClassProxyPtr& type );
 
 	// Other stuff
 
