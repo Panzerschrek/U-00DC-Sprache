@@ -42,12 +42,15 @@ llvm::DIBasicType* CodeBuilder::CreateDIFundamentalType( const FundamentalType& 
 
 llvm::DICompositeType* CodeBuilder::CreateDIArrayType( const Array& type )
 {
+	llvm::SmallVector<llvm::Metadata*, 1> subscripts;
+	subscripts.push_back( debug_info_.builder->getOrCreateSubrange( 0, type.size ) );
+
 	return
 		debug_info_.builder->createArrayType(
 			type.size,
-			data_layout_.getABITypeAlignment( type.llvm_type ), // TODO - what if it is incomplete?
+			8u * data_layout_.getABITypeAlignment( type.llvm_type ), // TODO - what if it is incomplete?
 			CreateDIType( type.type ),
-			llvm::DINodeArray() );
+			debug_info_.builder->getOrCreateArray(subscripts) );
 }
 
 llvm::DICompositeType* CodeBuilder::CreateDIClassType( const ClassProxyPtr& type )
