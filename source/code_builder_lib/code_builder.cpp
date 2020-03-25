@@ -2108,19 +2108,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
 			variable.llvm_value->setName( variable_declaration.name );
 
-			const auto di_local_variable=
-				debug_info_.builder->createAutoVariable(
-					function_context.function->getSubprogram(),
-					variable_declaration.name,
-					debug_info_.file,
-					variable_declaration.file_pos.line,
-					CreateDIType(type) );
-			debug_info_.builder->insertDeclare(
-				variable.llvm_value,
-				di_local_variable,
-				debug_info_.builder->createExpression(),
-				llvm::DebugLoc::get(variable_declaration.file_pos.line, variable_declaration.file_pos.pos_in_line, function_context.function->getSubprogram()),
-				function_context.llvm_ir_builder.GetInsertBlock());
+			CreateVariableDebugInfo( variable, variable_declaration.name, variable_declaration.file_pos, function_context );
 
 			prev_variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
 			variable.node= var_node;
@@ -2351,6 +2339,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
 		variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType(), nullptr, auto_variable_declaration.name );
+
+		CreateVariableDebugInfo( variable, auto_variable_declaration.name, auto_variable_declaration.file_pos_, function_context );
 
 		prev_variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
 		variable.node= var_node;

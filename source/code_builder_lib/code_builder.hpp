@@ -681,7 +681,13 @@ private:
 	size_t GlobalThingDetectloop( const GlobalThing& global_thing ); // returns loop start index or ~0u
 	void GlobalThingReportAboutLoop( size_t loop_start_stack_index, const std::string& last_loop_element_name, const FilePos& last_loop_element_file_pos );
 
-	// Typeinfo
+	// Debug info
+
+	void CreateVariableDebugInfo(
+		const Variable& variable,
+		const std::string& variable_name,
+		const FilePos& file_pos,
+		FunctionContext& function_context );
 
 	llvm::DIType* CreateDIType( const Type& type );
 	llvm::DIBasicType* CreateDIFundamentalType( const FundamentalType& type );

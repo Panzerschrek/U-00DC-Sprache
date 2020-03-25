@@ -6,6 +6,28 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
+void CodeBuilder::CreateVariableDebugInfo(
+	const Variable& variable,
+	const std::string& variable_name,
+	const FilePos& file_pos,
+	FunctionContext& function_context )
+{
+	const auto di_local_variable=
+		debug_info_.builder->createAutoVariable(
+			function_context.function->getSubprogram(),
+			variable_name,
+			debug_info_.file,
+			file_pos.line,
+			CreateDIType(variable.type) );
+
+	debug_info_.builder->insertDeclare(
+		variable.llvm_value,
+		di_local_variable,
+		debug_info_.builder->createExpression(),
+		llvm::DebugLoc::get(file_pos.line, file_pos.pos_in_line, function_context.function->getSubprogram()),
+		function_context.llvm_ir_builder.GetInsertBlock() );
+}
+
 llvm::DIType* CodeBuilder::CreateDIType( const Type& type )
 {
 	llvm::DIType* result_type= nullptr;

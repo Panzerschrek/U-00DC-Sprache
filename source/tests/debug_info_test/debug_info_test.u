@@ -41,10 +41,26 @@ fn StructTypesTest()
 	return;
 }
 
+fn MakeS1() : S1
+{
+	var S1 s= zero_init;
+	return s;
+}
+
+fn AutoVariablesTest()
+{
+	auto i = 1488;
+	auto u= 228u;
+	auto s= MakeS1();
+	auto f= -1241525.5454f + s.s0.y;
+	return;
+}
+
 fn U_Main() : i32
 {
 	FundamentalTypesTest();
 	ArrayTypesTest();
 	StructTypesTest();
+	AutoVariablesTest();
 	return 0;
 }
