@@ -690,9 +690,10 @@ private:
 		FunctionContext& function_context );
 
 	llvm::DIType* CreateDIType( const Type& type );
-	llvm::DIBasicType* CreateDIFundamentalType( const FundamentalType& type );
-	llvm::DICompositeType* CreateDIArrayType( const Array& type );
-	llvm::DICompositeType* CreateDIClassType( const ClassProxyPtr& type );
+	llvm::DIBasicType* CreateDIType( const FundamentalType& type );
+	llvm::DICompositeType* CreateDIType( const Array& type );
+	llvm::DICompositeType* CreateDIType( const Tuple& type );
+	llvm::DICompositeType* CreateDIType( const ClassProxyPtr& type );
 
 	// Other stuff
 

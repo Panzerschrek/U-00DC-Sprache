@@ -20,6 +20,16 @@ fn ArrayTypesTest()
 	return;
 }
 
+fn TupleTypesTest()
+{
+	var tup[] t0;
+	var tup[ i32, f32 ] t1[ 5, 6.0f ];
+	var tup[ i32, f32 ] t1_same[ -5, -6.0f ];
+	var tup[ bool, bool, bool ] t2= zero_init;
+	var tup[ i32, tup[ i16, u16 ], f64 ] t3[ 5, [ -256i16, 13u16 ], 65.32 ];
+	return;
+}
+
 struct S0
 {
 	i32 x;
@@ -71,6 +81,7 @@ fn U_Main() : i32
 {
 	FundamentalTypesTest();
 	ArrayTypesTest();
+	TupleTypesTest();
 	StructTypesTest();
 	AutoVariablesTest();
 	ParametersTest();
