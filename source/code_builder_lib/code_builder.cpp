@@ -2020,9 +2020,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			std::visit(
 				[&]( const auto& t )
 				{
-				function_context.llvm_ir_builder.SetCurrentDebugLocation(
-					llvm::DebugLoc::get(
-						t.file_pos_.line, t.file_pos_.pos_in_line, function_context.function->getSubprogram()));
+					function_context.llvm_ir_builder.SetCurrentDebugLocation(
+						llvm::DebugLoc::get(
+							t.file_pos_.line,
+							t.file_pos_.pos_in_line,
+							function_context.function->getSubprogram()));
 
 					return BuildBlockElement( t, block_names, function_context );
 				},
@@ -2037,6 +2039,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 
 	if( block_element_index < block.elements_.size() )
 		REPORT_ERROR( UnreachableCode, names.GetErrors(), Synt::GetBlockElementFilePos( block.elements_[ block_element_index ] ) );
+
+	function_context.llvm_ir_builder.SetCurrentDebugLocation(
+		llvm::DebugLoc::get(
+			block.end_file_pos_.line,
+			block.end_file_pos_.pos_in_line,
+			function_context.function->getSubprogram()));
 
 	// If there are undconditional "break", "continue", "return" operators,
 	// we didn`t need call destructors, it must be called in this operators.

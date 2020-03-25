@@ -168,6 +168,16 @@ fn StepInto0()
 	StepInto1();
 }
 
+struct StructWithDestructor
+{
+	fn destructor(){}
+}
+
+fn DestructorDebugLocationTest()
+{
+	var StructWithDestructor s;
+}
+
 fn U_Main() : i32
 {
 	FundamentalTypesTest();
@@ -181,5 +191,6 @@ fn U_Main() : i32
 	FunctionPointersTest();
 	EnumTypesTest();
 	StepInto0();
+	DestructorDebugLocationTest();
 	return 0;
 }
