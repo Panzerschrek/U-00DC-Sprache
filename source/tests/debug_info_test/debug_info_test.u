@@ -119,6 +119,11 @@ fn ToInt( f32 f ) : i32
 	return i32(f);
 }
 
+fn FooRet() : f64
+{
+	return 0.0;
+}
+
 fn RefPass( i32& x ) : i32&
 {
 	return x;
@@ -130,6 +135,7 @@ fn FunctionPointersTest()
 	var (fn(i32 a, f32 b, S1 c)) p1= ParametersTestImpl;
 	var (fn(f32 a) : i32) p2= ToInt;
 	var (fn(i32& a) : i32&) p3= RefPass;
+	var (fn() : f64) p4= FooRet;
 	return;
 }
 

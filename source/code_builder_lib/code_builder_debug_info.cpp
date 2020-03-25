@@ -164,7 +164,7 @@ llvm::DISubroutineType* CodeBuilder::CreateDIType( const Function& type )
 	{
 		llvm::DIType* di_type= CreateDIType( type.return_type );
 		if( type.return_value_is_reference )
-			di_type= debug_info_.builder->createReferenceType( 0u, di_type );
+			di_type= debug_info_.builder->createPointerType( di_type, data_layout_.getTypeAllocSizeInBits( type.return_type.GetLLVMType()->getPointerTo() ) );
 		args.push_back( di_type );
 	}
 
@@ -172,7 +172,7 @@ llvm::DISubroutineType* CodeBuilder::CreateDIType( const Function& type )
 	{
 		llvm::DIType* di_type= CreateDIType( arg.type );
 		if( arg.is_reference )
-			di_type= debug_info_.builder->createReferenceType( 0u, di_type );
+			di_type= debug_info_.builder->createPointerType( di_type, data_layout_.getTypeAllocSizeInBits( arg.type.GetLLVMType()->getPointerTo() ) );
 		args.push_back( di_type );
 	}
 
