@@ -197,6 +197,26 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 			fields.push_back(member);
 		});
 
+	for( const Class::Parent& parent : the_class.parents )
+	{
+		llvm::Type* const parent_type_llvm= parent.class_->class_->llvm_type;
+		llvm::DIType* parent_type_di= CreateDIType( parent.class_ );
+
+		// If this type is complete, parent types are complete too.
+		const auto member =
+			debug_info_.builder->createMemberType(
+				debug_info_.compile_unit,
+				parent.class_->class_->members.GetThisNamespaceName(),
+				debug_info_.file,
+				0u, // TODO - file_pos
+				data_layout_.getTypeAllocSizeInBits( parent_type_llvm ),
+				8u * data_layout_.getABITypeAlignment( parent_type_llvm ),
+				struct_layout.getElementOffsetInBits( parent.field_number ),
+				llvm::DINode::DIFlags(),
+				parent_type_di );
+		fields.push_back(member);
+	}
+
 	return debug_info_.builder->createStructType(
 		debug_info_.compile_unit,
 		the_class.members.GetThisNamespaceName(),

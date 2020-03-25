@@ -92,6 +92,28 @@ fn StructsWithReferencesTest()
 	return;
 }
 
+namespace Polymorph
+{
+
+class A interface {}
+class B polymorph
+{
+	i32 x= 25;
+}
+
+class C : B, A
+{
+	f32 y= 033.7f;
+}
+
+fn PolymorphClassTest()
+{
+	var C c;
+	return;
+}
+
+}
+
 fn U_Main() : i32
 {
 	FundamentalTypesTest();
@@ -101,5 +123,6 @@ fn U_Main() : i32
 	AutoVariablesTest();
 	ParametersTest();
 	StructsWithReferencesTest();
+	Polymorph::PolymorphClassTest();
 	return 0;
 }
