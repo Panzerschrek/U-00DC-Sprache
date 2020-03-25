@@ -69,6 +69,10 @@ llvm::DIType* CodeBuilder::CreateDIType( const Type& type )
 		result_type= CreateDIType( *array_type );
 	else if( const auto tuple_type= type.GetTupleType() )
 		result_type= CreateDIType( *tuple_type );
+	else if( const auto function_type= type.GetFunctionType() )
+		result_type= CreateDIType( *function_type );
+	else if( const auto function_pointer_type= type.GetFunctionPointerType() )
+		result_type= CreateDIType( *function_pointer_type );
 	else if( const auto class_type= type.GetClassTypeProxy() )
 		result_type= CreateDIType( class_type );
 
@@ -150,6 +154,37 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const Tuple& type )
 		llvm::DINode::DIFlags(),
 		nullptr,
 		llvm::MDTuple::get( llvm_context_, elements ) );
+}
+
+llvm::DISubroutineType* CodeBuilder::CreateDIType( const Function& type )
+{
+	ArgsVector<llvm::Metadata*> args;
+	args.reserve( type.args.size() + 1u );
+
+	{
+		llvm::DIType* di_type= CreateDIType( type.return_type );
+		if( type.return_value_is_reference )
+			di_type= debug_info_.builder->createReferenceType( 0u, di_type );
+		args.push_back( di_type );
+	}
+
+	for( const Function::Arg& arg : type.args )
+	{
+		llvm::DIType* di_type= CreateDIType( arg.type );
+		if( arg.is_reference )
+			di_type= debug_info_.builder->createReferenceType( 0u, di_type );
+		args.push_back( di_type );
+	}
+
+	return debug_info_.builder->createSubroutineType( debug_info_.builder->getOrCreateTypeArray(args) );
+}
+
+llvm::DIDerivedType* CodeBuilder::CreateDIType( const FunctionPointer& type )
+{
+	return
+		debug_info_.builder->createPointerType(
+			CreateDIType(type.function),
+			data_layout_.getTypeAllocSizeInBits(type.llvm_function_pointer_type) );
 }
 
 llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )

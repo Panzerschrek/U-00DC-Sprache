@@ -112,6 +112,25 @@ fn PolymorphClassTest()
 	return;
 }
 
+} // namespace Polymorph
+
+fn ToInt( f32 f ) : i32
+{
+	return i32(f);
+}
+
+fn RefPass( i32& x ) : i32&
+{
+	return x;
+}
+
+fn FunctionPointersTest()
+{
+	var (fn()) p0= ParametersTest;
+	var (fn(i32 a, f32 b, S1 c)) p1= ParametersTestImpl;
+	var (fn(f32 a) : i32) p2= ToInt;
+	var (fn(i32& a) : i32&) p3= RefPass;
+	return;
 }
 
 fn U_Main() : i32
@@ -124,5 +143,6 @@ fn U_Main() : i32
 	ParametersTest();
 	StructsWithReferencesTest();
 	Polymorph::PolymorphClassTest();
+	FunctionPointersTest();
 	return 0;
 }

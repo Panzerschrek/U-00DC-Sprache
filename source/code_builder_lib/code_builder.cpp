@@ -1420,14 +1420,13 @@ Type CodeBuilder::BuildFuncCode(
 		func_variable.llvm_function= llvm_function;
 
 		{
-			const auto di_type= debug_info_.builder->createSubroutineType({});
 			const auto di_function= debug_info_.builder->createFunction(
 				debug_info_.compile_unit,
 				func_name,
-				MangleFunction( parent_names_scope, func_name, function_type ),
+				llvm_function->getName(),
 				debug_info_.file,
 				func_variable.body_file_pos.line,
-				di_type,
+				CreateDIType( function_type ),
 				func_variable.body_file_pos.line,
 				llvm::DINode::FlagPrototyped,
 				llvm::DISubprogram::SPFlagDefinition);

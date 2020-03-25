@@ -693,6 +693,8 @@ private:
 	llvm::DIBasicType* CreateDIType( const FundamentalType& type );
 	llvm::DICompositeType* CreateDIType( const Array& type );
 	llvm::DICompositeType* CreateDIType( const Tuple& type );
+	llvm::DISubroutineType* CreateDIType( const Function& type );
+	llvm::DIDerivedType* CreateDIType( const FunctionPointer& type );
 	llvm::DICompositeType* CreateDIType( const ClassProxyPtr& type );
 
 	// Other stuff
