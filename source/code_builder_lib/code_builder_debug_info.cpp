@@ -11,7 +11,7 @@ namespace
 {
 
 // For debug info purposes do not ensure type completeness, just check it.
-IsTypeComplete( const Type& type )
+bool IsTypeComplete( const Type& type )
 {
 	if( const auto fundamental_type= type.GetFundamentalType() )
 		return fundamental_type->fundamental_type != U_FundamentalType::Void;
