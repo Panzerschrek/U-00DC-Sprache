@@ -1535,6 +1535,8 @@ Type CodeBuilder::BuildFuncCode(
 				var.location= Variable::Location::Pointer;
 			}
 			else U_ASSERT(false);
+
+			CreateVariableDebugInfo( var, arg_name, declaration_arg.file_pos_, function_context );
 		}
 
 		// Create variable node, because only variable node can have inner reference node.

@@ -56,11 +56,23 @@ fn AutoVariablesTest()
 	return;
 }
 
+fn ParametersTestImpl( i32 x, f32 y, S1 s1 )
+{
+	return;
+}
+
+fn ParametersTest()
+{
+	var S1 s1{ .i= zero_init, .d= 2.718281828, .s0{ .x= 25, .y= zero_init } };
+	ParametersTestImpl( 55, 0.25f, s1 );
+}
+
 fn U_Main() : i32
 {
 	FundamentalTypesTest();
 	ArrayTypesTest();
 	StructTypesTest();
 	AutoVariablesTest();
+	ParametersTest();
 	return 0;
 }
