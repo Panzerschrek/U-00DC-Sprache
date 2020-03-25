@@ -1,3 +1,4 @@
+#include "../lex_synt_lib/assert.hpp"
 #include "code_builder.hpp"
 
 namespace U
@@ -5,6 +6,37 @@ namespace U
 
 namespace CodeBuilderPrivate
 {
+
+namespace
+{
+
+// For debug info purposes do not ensure type completeness, just check it.
+IsTypeComplete( const Type& type )
+{
+	if( const auto fundamental_type= type.GetFundamentalType() )
+		return fundamental_type->fundamental_type != U_FundamentalType::Void;
+	else if( const auto array_type= type.GetArrayType() )
+		return IsTypeComplete( array_type->type );
+	else if( const auto tuple_type= type.GetTupleType() )
+	{
+		bool all_complete= true;
+		for( const Type& element_type : tuple_type->elements )
+			all_complete= all_complete && IsTypeComplete( element_type );
+	}
+	else if( const auto class_type= type.GetClassType() )
+		return class_type->completeness == TypeCompleteness::Complete;
+	else if(
+		type.GetEnumType() != nullptr ||
+		type.GetFunctionType() != nullptr ||
+		type.GetFunctionPointerType() != nullptr )
+		return true;
+	else
+		U_ASSERT(false);
+
+	return true;
+}
+
+} // namespace
 
 void CodeBuilder::CreateVariableDebugInfo(
 	const Variable& variable,
@@ -43,7 +75,7 @@ llvm::DIType* CodeBuilder::CreateDIType( const Type& type )
 	if( result_type != nullptr )
 		return result_type;
 
-	return debug_info_.builder->createBasicType( "i32", 32, llvm::dwarf::DW_ATE_signed );
+	return debug_info_.builder->createBasicType( "_stub_debug_type", 8, llvm::dwarf::DW_ATE_signed );
 }
 
 llvm::DIBasicType* CodeBuilder::CreateDIType( const FundamentalType& type )
@@ -66,13 +98,16 @@ llvm::DIBasicType* CodeBuilder::CreateDIType( const FundamentalType& type )
 
 llvm::DICompositeType* CodeBuilder::CreateDIType( const Array& type )
 {
+	const uint32_t alignment=
+		IsTypeComplete( type.type ) ? data_layout_.getABITypeAlignment( type.llvm_type ) : 0u;
+
 	llvm::SmallVector<llvm::Metadata*, 1> subscripts;
 	subscripts.push_back( debug_info_.builder->getOrCreateSubrange( 0, type.size ) );
 
 	return
 		debug_info_.builder->createArrayType(
 			type.size,
-			8u * data_layout_.getABITypeAlignment( type.llvm_type ), // TODO - what if it is incomplete?
+			8u * alignment,
 			CreateDIType( type.type ),
 			debug_info_.builder->getOrCreateArray(subscripts) );
 }
@@ -86,6 +121,9 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const Tuple& type )
 
 	for( const Type& element_type : type.elements )
 	{
+		if( !IsTypeComplete( element_type ) )
+			continue;
+
 		const size_t element_index= size_t(&element_type - type.elements.data());
 		const auto element =
 			debug_info_.builder->createMemberType(
@@ -117,17 +155,10 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const Tuple& type )
 llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 {
 	const Class& the_class= *type->class_;
+
+	// Ignore incomplete type - do not create debug info for it.
 	if( the_class.completeness != TypeCompleteness::Complete )
-		return debug_info_.builder->createStructType(
-			debug_info_.compile_unit,
-			"__StubStruct",
-			debug_info_.file,
-			0u,
-			8u,
-			8u,
-			llvm::DINode::DIFlags(),
-			nullptr,
-			llvm::DINodeArray());
+		return nullptr;
 
 	const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( the_class.llvm_type );
 
@@ -145,6 +176,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 
 			llvm::DIType* const field_type= CreateDIType( class_field->type );
 
+			// It will be fine - use here data layout queries, because for complete struct type non-reference fields are complete too.
 			const auto member =
 				debug_info_.builder->createMemberType(
 					debug_info_.compile_unit,
