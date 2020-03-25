@@ -154,6 +154,20 @@ fn EnumTypesTest()
 	return;
 }
 
+fn StepInto2(){}
+fn StepInto1()
+{
+	StepInto2();
+	StepInto2();
+}
+
+fn StepInto0()
+{
+	StepInto1();
+	StepInto1();
+	StepInto1();
+}
+
 fn U_Main() : i32
 {
 	FundamentalTypesTest();
@@ -166,5 +180,6 @@ fn U_Main() : i32
 	Polymorph::PolymorphClassTest();
 	FunctionPointersTest();
 	EnumTypesTest();
+	StepInto0();
 	return 0;
 }
