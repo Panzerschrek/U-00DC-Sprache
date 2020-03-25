@@ -77,6 +77,21 @@ fn ParametersTest()
 	ParametersTestImpl( 55, 0.25f, s1 );
 }
 
+struct StructWithRef
+{
+	void& v;
+	i32 x= 0;
+	S0& s0;
+}
+
+fn StructsWithReferencesTest()
+{
+	auto b= false;
+	var S0 s0{ .x= 661215, .y= -6532.1f };
+	var StructWithRef struct_with_ref{ .v= b, .x= -5555, .s0= s0 };
+	return;
+}
+
 fn U_Main() : i32
 {
 	FundamentalTypesTest();
@@ -85,5 +100,6 @@ fn U_Main() : i32
 	StructTypesTest();
 	AutoVariablesTest();
 	ParametersTest();
+	StructsWithReferencesTest();
 	return 0;
 }
