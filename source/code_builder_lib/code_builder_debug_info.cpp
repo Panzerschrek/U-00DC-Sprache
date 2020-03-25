@@ -7,38 +7,6 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-namespace
-{
-
-// For debug info purposes do not ensure type completeness, just check it.
-bool IsTypeComplete( const Type& type )
-{
-	if( const auto fundamental_type= type.GetFundamentalType() )
-		return fundamental_type->fundamental_type != U_FundamentalType::Void;
-	else if( const auto array_type= type.GetArrayType() )
-		return IsTypeComplete( array_type->type );
-	else if( const auto tuple_type= type.GetTupleType() )
-	{
-		bool all_complete= true;
-		for( const Type& element_type : tuple_type->elements )
-			all_complete= all_complete && IsTypeComplete( element_type );
-	}
-	else if( const auto class_type= type.GetClassType() )
-		return class_type->completeness == TypeCompleteness::Complete;
-	else if( const auto enum_type= type.GetEnumType() )
-		return enum_type->syntax_element == nullptr;
-	else if(
-		type.GetFunctionType() != nullptr ||
-		type.GetFunctionPointerType() != nullptr )
-		return true;
-	else
-		U_ASSERT(false);
-
-	return true;
-}
-
-} // namespace
-
 void CodeBuilder::CreateVariableDebugInfo(
 	const Variable& variable,
 	const std::string& variable_name,

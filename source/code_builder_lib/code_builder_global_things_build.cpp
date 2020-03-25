@@ -130,11 +130,20 @@ bool CodeBuilder::IsTypeComplete( const Type& type ) const
 		return enum_type->syntax_element == nullptr;
 	else if( const auto array_type= type.GetArrayType() )
 		return IsTypeComplete( array_type->type );
+	else if( const auto tuple_type= type.GetTupleType() )
+	{
+		bool all_complete= true;
+		for( const Type& element_type : tuple_type->elements )
+			all_complete= all_complete && IsTypeComplete( element_type );
+		return all_complete;
+	}
 	else if( const auto class_type= type.GetClassTypeProxy() )
 		return class_type->class_->completeness == TypeCompleteness::Complete;
-	else U_ASSERT(false);
-
-	return false;
+	else
+	{
+		U_ASSERT(false);
+		return false;
+	}
 }
 
 bool CodeBuilder::EnsureTypeCompleteness( const Type& type, const TypeCompleteness completeness )
