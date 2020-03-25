@@ -139,6 +139,21 @@ fn FunctionPointersTest()
 	return;
 }
 
+enum SomeEnum
+{
+	Red,
+	Green,
+	Blue,
+	FiftyShadesOfGrey
+}
+
+fn EnumTypesTest()
+{
+	auto g= SomeEnum::Green;
+	var [ SomeEnum, 4 ] arr[ SomeEnum::Blue, SomeEnum::Green, SomeEnum::FiftyShadesOfGrey, SomeEnum::Red ];
+	return;
+}
+
 fn U_Main() : i32
 {
 	FundamentalTypesTest();
@@ -150,5 +165,6 @@ fn U_Main() : i32
 	StructsWithReferencesTest();
 	Polymorph::PolymorphClassTest();
 	FunctionPointersTest();
+	EnumTypesTest();
 	return 0;
 }

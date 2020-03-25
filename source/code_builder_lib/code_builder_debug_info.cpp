@@ -25,8 +25,9 @@ bool IsTypeComplete( const Type& type )
 	}
 	else if( const auto class_type= type.GetClassType() )
 		return class_type->completeness == TypeCompleteness::Complete;
+	else if( const auto enum_type= type.GetEnumType() )
+		return enum_type->syntax_element == nullptr;
 	else if(
-		type.GetEnumType() != nullptr ||
 		type.GetFunctionType() != nullptr ||
 		type.GetFunctionPointerType() != nullptr )
 		return true;
@@ -75,6 +76,8 @@ llvm::DIType* CodeBuilder::CreateDIType( const Type& type )
 		result_type= CreateDIType( *function_pointer_type );
 	else if( const auto class_type= type.GetClassTypeProxy() )
 		result_type= CreateDIType( class_type );
+	else if( const auto enum_type= type.GetEnumType() )
+		result_type= CreateDIType( *enum_type );
 
 	if( result_type != nullptr )
 		return result_type;
@@ -265,6 +268,39 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 		llvm::DINode::DIFlags(),
 		nullptr,
 		llvm::MDTuple::get(llvm_context_, fields) );
+}
+
+llvm::DIType* CodeBuilder::CreateDIType( const Enum& type )
+{
+	if( type.syntax_element != nullptr ) // Incomplete
+		return nullptr;
+
+	std::vector<llvm::Metadata*> elements;
+	type.members.ForEachInThisScope(
+		[&]( const std::string& name, const Value& value )
+		{
+			const Variable* const variable= value.GetVariable();
+			if( variable == nullptr )
+				return;
+
+			U_ASSERT( variable->constexpr_value != nullptr );
+
+			elements.push_back(
+				debug_info_.builder->createEnumerator(
+					name,
+					variable->constexpr_value->getUniqueInteger().getLimitedValue(),
+					false ) );
+		} );
+
+	return debug_info_.builder->createEnumerationType(
+		debug_info_.compile_unit,
+		type.members.GetThisNamespaceName(),
+		debug_info_.file,
+		0u, // TODO - file_pos
+		8u * type.underlaying_type.GetSize(),
+		data_layout_.getABITypeAlignment( type.underlaying_type.llvm_type ),
+		debug_info_.builder->getOrCreateArray(elements),
+		CreateDIType( type.underlaying_type ) );
 }
 
 } // namespace CodeBuilderPrivate

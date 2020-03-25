@@ -696,6 +696,7 @@ private:
 	llvm::DISubroutineType* CreateDIType( const Function& type );
 	llvm::DIDerivedType* CreateDIType( const FunctionPointer& type );
 	llvm::DICompositeType* CreateDIType( const ClassProxyPtr& type );
+	llvm::DIType* CreateDIType( const Enum& type );
 
 	// Other stuff
 
