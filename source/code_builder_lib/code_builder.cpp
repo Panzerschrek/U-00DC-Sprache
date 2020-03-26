@@ -1419,19 +1419,7 @@ Type CodeBuilder::BuildFuncCode(
 
 		func_variable.llvm_function= llvm_function;
 
-		{
-			const auto di_function= debug_info_.builder->createFunction(
-				debug_info_.compile_unit,
-				func_name,
-				llvm_function->getName(),
-				debug_info_.file,
-				func_variable.body_file_pos.line,
-				CreateDIType( function_type ),
-				func_variable.body_file_pos.line,
-				llvm::DINode::FlagPrototyped,
-				llvm::DISubprogram::SPFlagDefinition);
-			llvm_function->setSubprogram(di_function);
-		}
+		CreateFunctionDebugInfo( func_variable, func_name );
 	}
 	else
 		llvm_function= func_variable.llvm_function;
@@ -1473,7 +1461,7 @@ Type CodeBuilder::BuildFuncCode(
 		llvm_function );
 	const StackVariablesStorage args_storage( function_context );
 
-	function_context.llvm_ir_builder.SetCurrentDebugLocation(llvm::DebugLoc::get(block->file_pos_.line, block->file_pos_.pos_in_line, llvm_function->getSubprogram()));
+	SetCurrentDebugLocation( func_variable.body_file_pos, function_context );
 
 	// arg node + optional inner reference variable node.
 	ArgsVector< std::pair< ReferencesGraphNodePtr, ReferencesGraphNodePtr > > args_nodes( function_type.args.size() );
@@ -2020,12 +2008,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			std::visit(
 				[&]( const auto& t )
 				{
-					function_context.llvm_ir_builder.SetCurrentDebugLocation(
-						llvm::DebugLoc::get(
-							t.file_pos_.line,
-							t.file_pos_.pos_in_line,
-							function_context.function->getSubprogram()));
-
+					SetCurrentDebugLocation( t.file_pos_, function_context );
 					return BuildBlockElement( t, block_names, function_context );
 				},
 				block_element );
@@ -2040,11 +2023,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	if( block_element_index < block.elements_.size() )
 		REPORT_ERROR( UnreachableCode, names.GetErrors(), Synt::GetBlockElementFilePos( block.elements_[ block_element_index ] ) );
 
-	function_context.llvm_ir_builder.SetCurrentDebugLocation(
-		llvm::DebugLoc::get(
-			block.end_file_pos_.line,
-			block.end_file_pos_.pos_in_line,
-			function_context.function->getSubprogram()));
+	SetCurrentDebugLocation( block.end_file_pos_, function_context );
 
 	// If there are undconditional "break", "continue", "return" operators,
 	// we didn`t need call destructors, it must be called in this operators.

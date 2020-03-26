@@ -29,6 +29,34 @@ void CodeBuilder::CreateVariableDebugInfo(
 		function_context.llvm_ir_builder.GetInsertBlock() );
 }
 
+void CodeBuilder::CreateFunctionDebugInfo(
+	const FunctionVariable& func_variable,
+	const std::string& function_name )
+{
+	const auto di_function= debug_info_.builder->createFunction(
+		debug_info_.compile_unit,
+		function_name,
+		func_variable.llvm_function->getName(),
+		debug_info_.file,
+		func_variable.body_file_pos.line,
+		CreateDIType( *func_variable.type.GetFunctionType() ),
+		func_variable.body_file_pos.line,
+		llvm::DINode::FlagPrototyped,
+		llvm::DISubprogram::SPFlagDefinition );
+	func_variable.llvm_function->setSubprogram( di_function );
+}
+
+void CodeBuilder::SetCurrentDebugLocation(
+	const FilePos& file_pos,
+	FunctionContext& function_context )
+{
+	function_context.llvm_ir_builder.SetCurrentDebugLocation(
+		llvm::DebugLoc::get(
+			file_pos.line,
+			file_pos.pos_in_line,
+			function_context.function->getSubprogram() ) );
+}
+
 llvm::DIType* CodeBuilder::CreateDIType( const Type& type )
 {
 	llvm::DIType* result_type= nullptr;

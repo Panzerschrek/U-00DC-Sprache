@@ -689,6 +689,14 @@ private:
 		const FilePos& file_pos,
 		FunctionContext& function_context );
 
+	void CreateFunctionDebugInfo(
+		const FunctionVariable& func_variable,
+		const std::string& function_name );
+
+	void SetCurrentDebugLocation(
+		const FilePos& file_pos,
+		FunctionContext& function_context );
+
 	llvm::DIType* CreateDIType( const Type& type );
 	llvm::DIBasicType* CreateDIType( const FundamentalType& type );
 	llvm::DICompositeType* CreateDIType( const Array& type );
