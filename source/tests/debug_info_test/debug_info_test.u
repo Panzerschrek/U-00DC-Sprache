@@ -178,6 +178,21 @@ fn DestructorDebugLocationTest()
 	var StructWithDestructor s;
 }
 
+template</type T/>
+fn TemplateFunc(T x) : T
+{
+	return x * T(2);
+}
+
+fn FunctionTemplatesTest()
+{
+	auto mut i= 72;
+	auto mut f= 27.0f;
+	TemplateFunc(i);
+	TemplateFunc(f);
+	return;
+}
+
 fn U_Main() : i32
 {
 	FundamentalTypesTest();
@@ -192,5 +207,6 @@ fn U_Main() : i32
 	EnumTypesTest();
 	StepInto0();
 	DestructorDebugLocationTest();
+	FunctionTemplatesTest();
 	return 0;
 }
