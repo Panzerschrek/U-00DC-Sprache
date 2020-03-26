@@ -7,6 +7,20 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
+llvm::DIFile* CodeBuilder::GetDIFile(const size_t file_index)
+{
+	if(file_index < debug_info_.source_file_entries.size())
+		return debug_info_.source_file_entries[file_index].file;
+	return debug_info_.source_file_entries.front().file;
+}
+
+llvm::DICompileUnit* CodeBuilder::GetDICompileUnit(const size_t file_index)
+{
+	if(file_index < debug_info_.source_file_entries.size())
+		return debug_info_.source_file_entries[file_index].compile_unit;
+	return debug_info_.source_file_entries.front().compile_unit;
+}
+
 void CodeBuilder::CreateVariableDebugInfo(
 	const Variable& variable,
 	const std::string& variable_name,
@@ -20,7 +34,7 @@ void CodeBuilder::CreateVariableDebugInfo(
 		debug_info_.builder->createAutoVariable(
 			function_context.function->getSubprogram(),
 			variable_name,
-			debug_info_.file,
+			GetDIFile( file_pos.file_index ),
 			file_pos.line,
 			CreateDIType(variable.type) );
 
@@ -40,10 +54,10 @@ void CodeBuilder::CreateFunctionDebugInfo(
 		return;
 
 	const auto di_function= debug_info_.builder->createFunction(
-		debug_info_.compile_unit,
+		GetDICompileUnit( func_variable.body_file_pos.file_index ),
 		function_name,
 		func_variable.llvm_function->getName(),
-		debug_info_.file,
+		GetDIFile( func_variable.body_file_pos.file_index ),
 		func_variable.body_file_pos.line,
 		CreateDIType( *func_variable.type.GetFunctionType() ),
 		func_variable.body_file_pos.line,
@@ -139,6 +153,9 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const Tuple& type )
 	std::vector<llvm::Metadata*> elements;
 	elements.reserve( type.elements.size() );
 
+	const auto di_compile_unit= GetDICompileUnit(0);
+	const auto di_file= GetDIFile(0);
+
 	for( const Type& element_type : type.elements )
 	{
 		if( !IsTypeComplete( element_type ) )
@@ -147,9 +164,9 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const Tuple& type )
 		const size_t element_index= size_t(&element_type - type.elements.data());
 		const auto element =
 			debug_info_.builder->createMemberType(
-				debug_info_.compile_unit,
+				di_compile_unit,
 				std::to_string( element_index ),
-				debug_info_.file,
+				di_file,
 				0u, // TODO - file_pos
 				data_layout_.getTypeAllocSizeInBits( element_type.GetLLVMType() ),
 				8u * data_layout_.getABITypeAlignment( element_type.GetLLVMType() ),
@@ -161,9 +178,9 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const Tuple& type )
 	}
 
 	return debug_info_.builder->createStructType(
-		debug_info_.compile_unit,
+		di_compile_unit,
 		"", // TODO - name
-		debug_info_.file,
+		di_file,
 		0u, // TODO - file_pos
 		data_layout_.getTypeAllocSizeInBits( type.llvm_type ),
 		8u * data_layout_.getABITypeAlignment( type.llvm_type ),
@@ -222,6 +239,10 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 
 	const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( the_class.llvm_type );
 
+	// TODO - get FilePos for enum
+	const auto di_compile_unit= GetDICompileUnit( the_class.body_file_pos.file_index );
+	const auto di_file= GetDIFile( the_class.body_file_pos.file_index );
+
 	std::vector<llvm::Metadata*> fields;
 	if( the_class.typeinfo_type == std::nullopt ) // Skip typeinfo, because it may contain recursive structures.
 	{
@@ -247,9 +268,9 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 				// It will be fine - use here data layout queries, because for complete struct type non-reference fields are complete too.
 				const auto member =
 					debug_info_.builder->createMemberType(
-						debug_info_.compile_unit,
+						di_compile_unit,
 						name,
-						debug_info_.file,
+						di_file,
 						0u, // TODO - file_pos
 						data_layout_.getTypeAllocSizeInBits( field_type_llvm ),
 						8u * data_layout_.getABITypeAlignment( field_type_llvm ),
@@ -267,9 +288,9 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 			// If this type is complete, parent types are complete too.
 			const auto member =
 				debug_info_.builder->createMemberType(
-					debug_info_.compile_unit,
+					di_compile_unit,
 					parent.class_->class_->members.GetThisNamespaceName(),
-					debug_info_.file,
+					di_file,
 					0u, // TODO - file_pos
 					data_layout_.getTypeAllocSizeInBits( parent_type_llvm ),
 					8u * data_layout_.getABITypeAlignment( parent_type_llvm ),
@@ -282,9 +303,9 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 
 	const auto result=
 		debug_info_.builder->createStructType(
-			debug_info_.compile_unit,
+			di_compile_unit,
 			the_class.members.GetThisNamespaceName(),
-			debug_info_.file,
+			di_file,
 			the_class.body_file_pos.line,
 			data_layout_.getTypeAllocSizeInBits( the_class.llvm_type ),
 			8u * data_layout_.getABITypeAlignment( the_class.llvm_type ),
@@ -323,11 +344,15 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const EnumPtr& type )
 					false ) );
 		} );
 
+	// TODO - get FilePos for enum
+	const auto di_compile_unit= GetDICompileUnit(0);
+	const auto di_file= GetDIFile(0);
+
 	const auto result=
 		debug_info_.builder->createEnumerationType(
-			debug_info_.compile_unit,
+			di_compile_unit,
 			type->members.GetThisNamespaceName(),
-			debug_info_.file,
+			di_file,
 			0u, // TODO - file_pos
 			8u * type->underlaying_type.GetSize(),
 			data_layout_.getABITypeAlignment( type->underlaying_type.llvm_type ),

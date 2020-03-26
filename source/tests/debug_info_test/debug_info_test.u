@@ -1,3 +1,5 @@
+import "inc.u"
+
 fn FundamentalTypesTest()
 {
 	var i32 x= -666;
@@ -208,5 +210,6 @@ fn U_Main() : i32
 	StepInto0();
 	DestructorDebugLocationTest();
 	FunctionTemplatesTest();
+	ImportedFunc();
 	return 0;
 }

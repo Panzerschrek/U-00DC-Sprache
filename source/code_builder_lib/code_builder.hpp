@@ -684,6 +684,9 @@ private:
 
 	// Debug info
 
+	llvm::DIFile* GetDIFile(size_t file_index);
+	llvm::DICompileUnit* GetDICompileUnit(size_t file_index);
+
 	void CreateVariableDebugInfo(
 		const Variable& variable,
 		const std::string& variable_name,
@@ -807,11 +810,18 @@ private:
 
 	std::vector<GlobalThing> global_things_stack_;
 
+	// Debug info.
+	struct DebugSourceFileEntry
+	{
+		llvm::DIFile* file= nullptr;
+		llvm::DICompileUnit* compile_unit= nullptr;
+	};
+
 	struct
 	{
 		std::unique_ptr<llvm::DIBuilder> builder;
-		llvm::DIFile* file= nullptr;
-		llvm::DICompileUnit* compile_unit= nullptr;
+
+		std::vector<DebugSourceFileEntry> source_file_entries; // Entry for each file in sources graph.
 
 		// Build debug info for classes and enums once and put it to cache.
 		std::unordered_map<ClassProxyPtr, llvm::DICompositeType*> classes_di_cache;

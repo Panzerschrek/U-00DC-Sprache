@@ -138,17 +138,24 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 
 		module_->addModuleFlag( llvm::Module::Warning, "Debug Info Version", 3 );
 
-		debug_info_.file= debug_info_.builder->createFile( source_graph.nodes_storage[ source_graph.root_node_index ].file_path, "");
-
 		const uint32_t c_dwarf_language_id= 0x8000 /* first user-defined language code */ + 0xDC /* code of "Ü" letter */;
-		debug_info_.compile_unit=
-			debug_info_.builder->createCompileUnit(
-				c_dwarf_language_id,
-				debug_info_.file,
-				"some version", // TODO - pass compiler version
-				false, // optimized
-				"",
-				0 /* runtime version */ );
+
+		debug_info_.source_file_entries.reserve( source_graph.nodes_storage.size() );
+		for( const SourceGraph::Node& source_graph_node : source_graph.nodes_storage )
+		{
+			const auto file= debug_info_.builder->createFile( source_graph_node.file_path, "");
+
+			const auto compile_unit=
+				debug_info_.builder->createCompileUnit(
+					c_dwarf_language_id,
+					file,
+					"some version", // TODO - pass compiler version
+					false, // optimized
+					"",
+					0 /* runtime version */ );
+
+			debug_info_.source_file_entries.push_back( DebugSourceFileEntry{ file, compile_unit } );
+		}
 	}
 
 	// Build graph.
@@ -174,8 +181,9 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	typeinfo_cache_.clear();
 	typeinfo_class_table_.clear();
 	debug_info_.builder= nullptr;
-	debug_info_.file= nullptr;
-	debug_info_.compile_unit= nullptr;
+	debug_info_.source_file_entries.clear();
+	debug_info_.classes_di_cache.clear();
+	debug_info_.enums_di_cache.clear();
 
 	NormalizeErrors( global_errors_ );
 

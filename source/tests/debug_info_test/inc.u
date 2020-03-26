@@ -1,0 +1,14 @@
+struct ImportedStruct
+{
+	f64 x;
+	f64 y;
+}
+
+enum ImportedEnum{ A, B, C }
+
+fn ImportedFunc()
+{
+	var ImportedStruct s= zero_init;
+	auto e= ImportedEnum::B;
+	return;
+}
