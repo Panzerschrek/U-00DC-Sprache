@@ -44,8 +44,8 @@ llvm::DIType* CodeBuilder::CreateDIType( const Type& type )
 		result_type= CreateDIType( *function_pointer_type );
 	else if( const auto class_type= type.GetClassTypeProxy() )
 		result_type= CreateDIType( class_type );
-	else if( const auto enum_type= type.GetEnumType() )
-		result_type= CreateDIType( *enum_type );
+	else if( const auto enum_type= type.GetEnumTypePtr() )
+		result_type= CreateDIType( enum_type );
 
 	if( result_type != nullptr )
 		return result_type;
@@ -166,6 +166,9 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 	if( the_class.completeness != TypeCompleteness::Complete )
 		return nullptr;
 
+	if( const auto it= debug_info_.classes_di_cache.find(type); it != debug_info_.classes_di_cache.end() )
+		return it->second;
+
 	const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( the_class.llvm_type );
 
 	std::vector<llvm::Metadata*> fields;
@@ -226,25 +229,32 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 		}
 	}
 
-	return debug_info_.builder->createStructType(
-		debug_info_.compile_unit,
-		the_class.members.GetThisNamespaceName(),
-		debug_info_.file,
-		the_class.body_file_pos.line,
-		data_layout_.getTypeAllocSizeInBits( the_class.llvm_type ),
-		8u * data_layout_.getABITypeAlignment( the_class.llvm_type ),
-		llvm::DINode::DIFlags(),
-		nullptr,
-		llvm::MDTuple::get(llvm_context_, fields) );
+	const auto result=
+		debug_info_.builder->createStructType(
+			debug_info_.compile_unit,
+			the_class.members.GetThisNamespaceName(),
+			debug_info_.file,
+			the_class.body_file_pos.line,
+			data_layout_.getTypeAllocSizeInBits( the_class.llvm_type ),
+			8u * data_layout_.getABITypeAlignment( the_class.llvm_type ),
+			llvm::DINode::DIFlags(),
+			nullptr,
+			llvm::MDTuple::get(llvm_context_, fields) );
+
+	debug_info_.classes_di_cache.insert( std::make_pair( type, result ) );
+	return result;
 }
 
-llvm::DIType* CodeBuilder::CreateDIType( const Enum& type )
+llvm::DICompositeType* CodeBuilder::CreateDIType( const EnumPtr& type )
 {
-	if( type.syntax_element != nullptr ) // Incomplete
+	if( type->syntax_element != nullptr ) // Incomplete
 		return nullptr;
 
+	if( const auto it= debug_info_.enums_di_cache.find(type); it != debug_info_.enums_di_cache.end() )
+		return it->second;
+
 	std::vector<llvm::Metadata*> elements;
-	type.members.ForEachInThisScope(
+	type->members.ForEachInThisScope(
 		[&]( const std::string& name, const Value& value )
 		{
 			const Variable* const variable= value.GetVariable();
@@ -260,15 +270,19 @@ llvm::DIType* CodeBuilder::CreateDIType( const Enum& type )
 					false ) );
 		} );
 
-	return debug_info_.builder->createEnumerationType(
-		debug_info_.compile_unit,
-		type.members.GetThisNamespaceName(),
-		debug_info_.file,
-		0u, // TODO - file_pos
-		8u * type.underlaying_type.GetSize(),
-		data_layout_.getABITypeAlignment( type.underlaying_type.llvm_type ),
-		debug_info_.builder->getOrCreateArray(elements),
-		CreateDIType( type.underlaying_type ) );
+	const auto result=
+		debug_info_.builder->createEnumerationType(
+			debug_info_.compile_unit,
+			type->members.GetThisNamespaceName(),
+			debug_info_.file,
+			0u, // TODO - file_pos
+			8u * type->underlaying_type.GetSize(),
+			data_layout_.getABITypeAlignment( type->underlaying_type.llvm_type ),
+			debug_info_.builder->getOrCreateArray(elements),
+			CreateDIType( type->underlaying_type ) );
+
+	debug_info_.enums_di_cache.insert( std::make_pair( type, result ) );
+	return result;
 }
 
 } // namespace CodeBuilderPrivate

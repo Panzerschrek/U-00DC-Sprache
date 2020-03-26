@@ -696,7 +696,7 @@ private:
 	llvm::DISubroutineType* CreateDIType( const Function& type );
 	llvm::DIDerivedType* CreateDIType( const FunctionPointer& type );
 	llvm::DICompositeType* CreateDIType( const ClassProxyPtr& type );
-	llvm::DIType* CreateDIType( const Enum& type );
+	llvm::DICompositeType* CreateDIType( const EnumPtr& type );
 
 	// Other stuff
 
@@ -802,6 +802,10 @@ private:
 		llvm::DIBuilder* builder= nullptr;
 		llvm::DIFile* file= nullptr;
 		llvm::DICompileUnit* compile_unit= nullptr;
+
+		// Build debug info for classes and enums once and put it to cache.
+		std::unordered_map<ClassProxyPtr, llvm::DICompositeType*> classes_di_cache;
+		std::unordered_map<EnumPtr, llvm::DICompositeType*> enums_di_cache;
 	} debug_info_;
 };
 
