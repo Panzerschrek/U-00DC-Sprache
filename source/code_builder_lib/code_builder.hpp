@@ -30,7 +30,8 @@ public:
 	CodeBuilder(
 		llvm::LLVMContext& llvm_context,
 		std::string target_triple_str,
-		const llvm::DataLayout& data_layout );
+		const llvm::DataLayout& data_layout,
+		bool build_debug_info );
 
 	virtual BuildResult BuildProgram( const SourceGraph& source_graph ) override;
 
@@ -740,6 +741,7 @@ private:
 	llvm::LLVMContext& llvm_context_;
 	const std::string target_triple_str_;
 	const llvm::DataLayout data_layout_;
+	const bool build_debug_info_;
 
 	struct
 	{
@@ -807,7 +809,7 @@ private:
 
 	struct
 	{
-		llvm::DIBuilder* builder= nullptr;
+		std::unique_ptr<llvm::DIBuilder> builder;
 		llvm::DIFile* file= nullptr;
 		llvm::DICompileUnit* compile_unit= nullptr;
 

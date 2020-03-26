@@ -13,6 +13,9 @@ void CodeBuilder::CreateVariableDebugInfo(
 	const FilePos& file_pos,
 	FunctionContext& function_context )
 {
+	if( !build_debug_info_ )
+		return;
+
 	const auto di_local_variable=
 		debug_info_.builder->createAutoVariable(
 			function_context.function->getSubprogram(),
@@ -33,6 +36,9 @@ void CodeBuilder::CreateFunctionDebugInfo(
 	const FunctionVariable& func_variable,
 	const std::string& function_name )
 {
+	if( !build_debug_info_ )
+		return;
+
 	const auto di_function= debug_info_.builder->createFunction(
 		debug_info_.compile_unit,
 		function_name,
@@ -50,6 +56,9 @@ void CodeBuilder::SetCurrentDebugLocation(
 	const FilePos& file_pos,
 	FunctionContext& function_context )
 {
+	if( !build_debug_info_ )
+		return;
+
 	function_context.llvm_ir_builder.SetCurrentDebugLocation(
 		llvm::DebugLoc::get(
 			file_pos.line,
@@ -59,6 +68,8 @@ void CodeBuilder::SetCurrentDebugLocation(
 
 llvm::DIType* CodeBuilder::CreateDIType( const Type& type )
 {
+	U_ASSERT(build_debug_info_);
+
 	llvm::DIType* result_type= nullptr;
 	if( const auto fundamental_type= type.GetFundamentalType() )
 		result_type= CreateDIType( *fundamental_type );
@@ -83,6 +94,8 @@ llvm::DIType* CodeBuilder::CreateDIType( const Type& type )
 
 llvm::DIBasicType* CodeBuilder::CreateDIType( const FundamentalType& type )
 {
+	U_ASSERT(build_debug_info_);
+
 	unsigned int type_encoding= llvm::dwarf::DW_ATE_unsigned;
 	if( type.fundamental_type == U_FundamentalType::Bool )
 		type_encoding= llvm::dwarf::DW_ATE_boolean;
@@ -101,6 +114,8 @@ llvm::DIBasicType* CodeBuilder::CreateDIType( const FundamentalType& type )
 
 llvm::DICompositeType* CodeBuilder::CreateDIType( const Array& type )
 {
+	U_ASSERT(build_debug_info_);
+
 	const uint32_t alignment=
 		IsTypeComplete( type.type ) ? data_layout_.getABITypeAlignment( type.llvm_type ) : 0u;
 
@@ -117,6 +132,8 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const Array& type )
 
 llvm::DICompositeType* CodeBuilder::CreateDIType( const Tuple& type )
 {
+	U_ASSERT(build_debug_info_);
+
 	const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( type.llvm_type );
 
 	std::vector<llvm::Metadata*> elements;
@@ -157,6 +174,8 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const Tuple& type )
 
 llvm::DISubroutineType* CodeBuilder::CreateDIType( const Function& type )
 {
+	U_ASSERT(build_debug_info_);
+
 	ArgsVector<llvm::Metadata*> args;
 	args.reserve( type.args.size() + 1u );
 
@@ -180,6 +199,8 @@ llvm::DISubroutineType* CodeBuilder::CreateDIType( const Function& type )
 
 llvm::DIDerivedType* CodeBuilder::CreateDIType( const FunctionPointer& type )
 {
+	U_ASSERT(build_debug_info_);
+
 	return
 		debug_info_.builder->createPointerType(
 			CreateDIType(type.function),
@@ -188,6 +209,8 @@ llvm::DIDerivedType* CodeBuilder::CreateDIType( const FunctionPointer& type )
 
 llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 {
+	U_ASSERT(build_debug_info_);
+
 	const Class& the_class= *type->class_;
 
 	// Ignore incomplete type - do not create debug info for it.
@@ -275,6 +298,8 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 
 llvm::DICompositeType* CodeBuilder::CreateDIType( const EnumPtr& type )
 {
+	U_ASSERT(build_debug_info_);
+
 	if( type->syntax_element != nullptr ) // Incomplete
 		return nullptr;
 

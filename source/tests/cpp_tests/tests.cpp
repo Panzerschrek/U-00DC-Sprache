@@ -20,6 +20,8 @@ namespace U
 namespace
 {
 
+const bool g_build_debug_info= true;
+
 llvm::ManagedStatic<llvm::LLVMContext> g_llvm_context;
 
 class MultiFileVfs final : public IVfs
@@ -81,7 +83,8 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 		CodeBuilder(
 			*g_llvm_context,
 			llvm::sys::getProcessTriple(),
-			llvm::DataLayout( GetTestsDataLayout() ) ).BuildProgram( *source_graph );
+			llvm::DataLayout( GetTestsDataLayout() ),
+			g_build_debug_info ).BuildProgram( *source_graph );
 
 	PrinteErrors_r( build_result.errors );
 	U_TEST_ASSERT( build_result.errors.empty() );
@@ -103,7 +106,8 @@ ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
 		CodeBuilder(
 			*g_llvm_context,
 			llvm::sys::getProcessTriple(),
-			llvm::DataLayout( GetTestsDataLayout() ) ).BuildProgram( *source_graph );
+			llvm::DataLayout( GetTestsDataLayout() ),
+			g_build_debug_info ).BuildProgram( *source_graph );
 }
 
 std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const std::string& root_file_path )
@@ -119,7 +123,8 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 		CodeBuilder(
 			*g_llvm_context,
 			llvm::sys::getProcessTriple(),
-			llvm::DataLayout( GetTestsDataLayout() ) ).BuildProgram( *source_graph );
+			llvm::DataLayout( GetTestsDataLayout() ),
+			g_build_debug_info ).BuildProgram( *source_graph );
 
 	PrinteErrors_r( build_result.errors );
 	U_TEST_ASSERT( build_result.errors.empty() );
@@ -140,7 +145,8 @@ ICodeBuilder::BuildResult BuildMultisourceProgramWithErrors( std::vector<SourceE
 		CodeBuilder(
 			*g_llvm_context,
 			llvm::sys::getProcessTriple(),
-			llvm::DataLayout( GetTestsDataLayout() ) ).BuildProgram( *source_graph );
+			llvm::DataLayout( GetTestsDataLayout() ),
+			g_build_debug_info ).BuildProgram( *source_graph );
 }
 
 EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, const bool needs_dump )

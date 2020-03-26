@@ -374,6 +374,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 			${DEBUG_INFO_TEST_FILE} -o ${DEBUG_INFO_TEST_FILE_OUT}
 			${SPRACHE_COMPILER_PIC_OPTIONS}
 			-O0 # Disable optimization
+			-g # Generate debug info
 		)
 
 	add_executable( DebugInfoTest tests/debug_info_test/entry.cpp ${DEBUG_INFO_TEST_FILE_OUT} )

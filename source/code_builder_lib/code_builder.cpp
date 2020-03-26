@@ -47,10 +47,12 @@ CodeBuilder::ReferencesGraphNodeHolder::~ReferencesGraphNodeHolder()
 CodeBuilder::CodeBuilder(
 	llvm::LLVMContext& llvm_context,
 	std::string target_triple_str,
-	const llvm::DataLayout& data_layout )
+	const llvm::DataLayout& data_layout,
+	bool build_debug_info )
 	: llvm_context_( llvm_context )
 	, target_triple_str_(std::move(target_triple_str))
 	, data_layout_(data_layout)
+	, build_debug_info_( build_debug_info )
 	, constexpr_function_evaluator_( data_layout_ )
 {
 	fundamental_llvm_types_.i8 = llvm::Type::getInt8Ty( llvm_context_ );
@@ -130,22 +132,24 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	global_function_context_= &global_function_context;
 
 	// Prepare debug info builder.
-	module_->addModuleFlag( llvm::Module::Warning, "Debug Info Version", 3 );
+	if( build_debug_info_ )
+	{
+		debug_info_.builder= std::make_unique<llvm::DIBuilder>( *module_ );
 
-	llvm::DIBuilder debug_info_builder(*module_);
-	debug_info_.builder= &debug_info_builder;
+		module_->addModuleFlag( llvm::Module::Warning, "Debug Info Version", 3 );
 
-	debug_info_.file= debug_info_.builder->createFile( source_graph.nodes_storage[ source_graph.root_node_index ].file_path, "");
+		debug_info_.file= debug_info_.builder->createFile( source_graph.nodes_storage[ source_graph.root_node_index ].file_path, "");
 
-	const uint32_t c_dwarf_language_id= 0x8000 /* first user-defined language code */ + 0xDC /* code of "Ü" letter */;
-	debug_info_.compile_unit=
-		debug_info_.builder->createCompileUnit(
-			c_dwarf_language_id,
-			debug_info_.file,
-			"some version", // TODO - pass compiler version
-			false, // optimized
-			"",
-			0 /* runtime version */ );
+		const uint32_t c_dwarf_language_id= 0x8000 /* first user-defined language code */ + 0xDC /* code of "Ü" letter */;
+		debug_info_.compile_unit=
+			debug_info_.builder->createCompileUnit(
+				c_dwarf_language_id,
+				debug_info_.file,
+				"some version", // TODO - pass compiler version
+				false, // optimized
+				"",
+				0 /* runtime version */ );
+	}
 
 	// Build graph.
 	BuildProgramInternal( source_graph, source_graph.root_node_index );
@@ -159,8 +163,8 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 			typeinfo_entry.second.type.GetClassType()->llvm_type->setBody( llvm::ArrayRef<llvm::Type*>() );
 	}
 
-	// We must finalize it.
-	debug_info_.builder->finalize();
+	if( build_debug_info_ )
+		debug_info_.builder->finalize(); // We must finalize it.
 
 	// Clear internal structures.
 	compiled_sources_cache_.clear();

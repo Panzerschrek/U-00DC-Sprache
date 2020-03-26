@@ -262,6 +262,12 @@ cl::opt<char> optimization_level(
 	cl::init('0'),
 	cl::cat(options_category) );
 
+cl::opt<bool> generate_debug_info(
+	"g",
+	cl::desc("Generate debug information."),
+	cl::init(false),
+	cl::cat(options_category) );
+
 cl::opt<std::string> architecture(
 	"march",
 	cl::desc("Architecture to generate code for (see --version)"),
@@ -446,7 +452,11 @@ int Main( int argc, const char* argv[] )
 		}
 
 		CodeBuilder::BuildResult build_result=
-			CodeBuilder( llvm_context, target_triple_str, data_layout ).BuildProgram( *source_graph );
+			CodeBuilder(
+				llvm_context,
+				target_triple_str,
+				data_layout,
+				Options::generate_debug_info ).BuildProgram( *source_graph );
 
 		if( Options::tests_output )
 		{
