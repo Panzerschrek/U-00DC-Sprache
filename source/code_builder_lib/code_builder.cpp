@@ -136,13 +136,15 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	debug_info_.builder= &debug_info_builder;
 
 	debug_info_.file= debug_info_.builder->createFile( source_graph.nodes_storage[ source_graph.root_node_index ].file_path, "");
+
+	const uint32_t c_dwarf_language_id= 0x8000 /* first user-defined language code */ + 0xDC /* code of "Ü" letter */;
 	debug_info_.compile_unit=
 		debug_info_.builder->createCompileUnit(
-			llvm::dwarf::DW_LANG_C, // TODO - select more situable language
+			c_dwarf_language_id,
 			debug_info_.file,
-			"some version",
+			"some version", // TODO - pass compiler version
 			false, // optimized
-			"some flags",
+			"",
 			0 /* runtime version */ );
 
 	// Build graph.
