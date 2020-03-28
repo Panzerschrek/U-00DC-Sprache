@@ -128,7 +128,7 @@ if(MSVC)
 	endif()
 
 else()
-	add_compile_options( -Wall -Wextra -Wconversion )
+	add_compile_options( -Werror -Wall -Wextra -Wconversion )
 	add_compile_options( -fvisibility=hidden -fvisibility-inlines-hidden )
 
 	if( NOT LLVM_ENABLE_RTTI )
