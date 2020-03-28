@@ -5,7 +5,7 @@ class FilePos:
 	def __init__(self):
 		self.file_index= 0
 		self.line= 0
-		self.pos_in_line= 0
+		self.column= 0
 
 
 class TemplateErrorsContext:
@@ -33,7 +33,7 @@ def ConvertErrors( errors_list ):
 		out_error.text= error["text"]
 		out_error.file_pos.file_index= error["file_pos"]["file_index"]
 		out_error.file_pos.line= error["file_pos"]["line"]
-		out_error.file_pos.pos_in_line= error["file_pos"]["pos_in_line"]
+		out_error.file_pos.column= error["file_pos"]["column"]
 
 		if error.get("template_context") != None:
 			out_error.template_errors.errors= ConvertErrors( error["template_context"]["errors"] )
@@ -41,7 +41,7 @@ def ConvertErrors( errors_list ):
 			out_error.template_errors.parameters_description= error["template_context"]["parameters_description"]
 			out_error.template_errors.file_pos.file_index= error["template_context"]["file_pos"]["file_index"]
 			out_error.template_errors.file_pos.line= error["template_context"]["file_pos"]["line"]
-			out_error.template_errors.file_pos.pos_in_line= error["template_context"]["file_pos"]["pos_in_line"]
+			out_error.template_errors.file_pos.column= error["template_context"]["file_pos"]["column"]
 
 		result.append( out_error )
 

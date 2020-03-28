@@ -104,7 +104,7 @@ void EditorWidget::OnItemActivated()
 	Core::EditorManager::addCurrentPositionToNavigationHistory();
 
 	setFocus();
-	gotoLine( node_ptr->file_pos.line, node_ptr->file_pos.pos_in_line );
+	gotoLine( node_ptr->file_pos.line, node_ptr->file_pos.column );
 
 	block_cursor_sync_= false;
 }
@@ -117,12 +117,12 @@ void EditorWidget::OnCursorPositionChanged()
 	if( program_model_ == nullptr )
 		return;
 
-	int line= 0, pos_in_line= 0;
-	convertPosition( position(), &line, &pos_in_line );
+	int line= 0, column= 0;
+	convertPosition( position(), &line, &column );
 
 	FilePos file_pos;
 	file_pos.line= static_cast<unsigned short>(line);
-	file_pos.pos_in_line= static_cast<unsigned short>(pos_in_line);
+	file_pos.column= static_cast<unsigned short>(column);
 	file_pos.file_index= 0;
 
 	if( const auto node= program_model_->GetNodeForFilePos( file_pos ) )

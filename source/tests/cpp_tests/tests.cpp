@@ -62,7 +62,7 @@ static void PrinteErrors_r( const CodeBuilderErrorsContainer& errors )
 {
 	for( const CodeBuilderError& error : errors)
 	{
-		std::cout << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << error.text << "\n";
+		std::cout << error.file_pos.line << ":" << error.file_pos.column << " " << error.text << "\n";
 		if( error.template_context != nullptr )
 			PrinteErrors_r( error.template_context->errors );
 	}

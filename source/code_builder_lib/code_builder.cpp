@@ -484,7 +484,7 @@ void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
 	FilePos fundamental_globals_file_pos;
 	fundamental_globals_file_pos.file_index= static_cast<unsigned short>(~0u);
 	fundamental_globals_file_pos.line= static_cast<unsigned short>(~0u);
-	fundamental_globals_file_pos.pos_in_line= static_cast<unsigned short>(~0u);
+	fundamental_globals_file_pos.column= static_cast<unsigned short>(~0u);
 
 	for( size_t i= size_t(U_FundamentalType::Void); i < size_t(U_FundamentalType::LastType); ++i )
 	{

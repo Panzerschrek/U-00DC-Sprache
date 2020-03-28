@@ -42,7 +42,7 @@ void CodeBuilder::CreateVariableDebugInfo(
 		variable.llvm_value,
 		di_local_variable,
 		debug_info_.builder->createExpression(),
-		llvm::DebugLoc::get(file_pos.line, file_pos.pos_in_line, function_context.current_debug_info_scope),
+		llvm::DebugLoc::get(file_pos.line, file_pos.column, function_context.current_debug_info_scope),
 		function_context.llvm_ir_builder.GetInsertBlock() );
 }
 
@@ -76,7 +76,7 @@ void CodeBuilder::SetCurrentDebugLocation(
 	function_context.llvm_ir_builder.SetCurrentDebugLocation(
 		llvm::DebugLoc::get(
 			file_pos.line,
-			file_pos.pos_in_line,
+			file_pos.column,
 			function_context.current_debug_info_scope ) );
 }
 
@@ -88,7 +88,7 @@ void CodeBuilder::DebugInfoStartBlock( const FilePos& file_pos, FunctionContext&
 				function_context.current_debug_info_scope,
 				GetDIFile( file_pos.file_index ),
 				file_pos.line,
-				file_pos.pos_in_line );
+				file_pos.column );
 }
 
 void CodeBuilder::DebugInfoEndBlock( FunctionContext& function_context )

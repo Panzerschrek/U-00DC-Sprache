@@ -898,7 +898,7 @@ const ProgramModel::ProgramTreeNode* GetNode_r( const std::vector<ProgramModel::
 		if( i + 1u < nodes.size() )
 			next_file_pos= nodes[i+1u].file_pos;
 		else
-			next_file_pos.line= next_file_pos.pos_in_line= next_file_pos.file_index= static_cast<unsigned short>(~0u);
+			next_file_pos.line= next_file_pos.column= next_file_pos.file_index= static_cast<unsigned short>(~0u);
 
 		if( node.file_pos <= file_pos && file_pos < next_file_pos )
 		{

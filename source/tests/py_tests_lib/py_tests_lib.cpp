@@ -79,7 +79,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	ICodeBuilder::BuildResult build_result= CreateCodeBuilder()->BuildProgram( *source_graph );
 
 	for( const CodeBuilderError& error : build_result.errors )
-		std::cerr << error.file_pos.line << ":" << error.file_pos.pos_in_line << " " << error.text << "\n";
+		std::cerr << error.file_pos.line << ":" << error.file_pos.column << " " << error.text << "\n";
 
 	if( !build_result.errors.empty() )
 		return nullptr;
@@ -315,7 +315,7 @@ PyObject* BuildFilePos( const FilePos& file_pos )
 	PyObject* const file_pos_dict= PyDict_New();
 	PyDict_SetItemString( file_pos_dict, "file_index", PyLong_FromLongLong( file_pos.file_index ) );
 	PyDict_SetItemString( file_pos_dict, "line", PyLong_FromLongLong( file_pos.line ) );
-	PyDict_SetItemString( file_pos_dict, "pos_in_line", PyLong_FromLongLong( file_pos.pos_in_line ) );
+	PyDict_SetItemString( file_pos_dict, "column", PyLong_FromLongLong( file_pos.column ) );
 	return file_pos_dict;
 }
 

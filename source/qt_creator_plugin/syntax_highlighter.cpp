@@ -81,11 +81,11 @@ void SyntaxHighlighter::highlightBlock( const QString& text )
 		else
 		{
 			next_file_pos.file_index= 0;
-			next_file_pos.line= next_file_pos.pos_in_line= text.size();
+			next_file_pos.line= next_file_pos.column= text.size();
 		}
 		// TODO - what if we have more, then one line?
-		const int current_linear_pos= lexem.file_pos.pos_in_line;
-		const int next_linear_pos= next_file_pos.pos_in_line;
+		const int current_linear_pos= lexem.file_pos.column;
+		const int next_linear_pos= next_file_pos.column;
 
 		// Setup highlighting.
 		Formats format;

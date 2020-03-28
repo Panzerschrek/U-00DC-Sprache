@@ -189,12 +189,12 @@ void PrintErrors( const SourceGraph& source_graph, const CodeBuilderErrorsContai
 				<< "\n";
 
 			std::cerr << source_graph.nodes_storage[error.file_pos.file_index ].file_path
-				<< ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << ": required from here: " << "\n";
+				<< ":" << error.file_pos.line << ":" << error.file_pos.column << ": required from here: " << "\n";
 		}
 		else
 		{
 			std::cerr << source_graph.nodes_storage[error.file_pos.file_index ].file_path
-				<< ":" << error.file_pos.line << ":" << error.file_pos.pos_in_line << ": error: " << error.text << "\n";
+				<< ":" << error.file_pos.line << ":" << error.file_pos.column << ": error: " << error.text << "\n";
 		}
 
 		if( error.template_context != nullptr )
