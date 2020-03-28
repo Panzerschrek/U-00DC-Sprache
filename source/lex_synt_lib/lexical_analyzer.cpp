@@ -285,7 +285,7 @@ Lexem ParseMacroIdentifier( Iterator& it, const Iterator it_end )
 	Lexem result;
 	result.type= Lexem::Type::MacroIdentifier;
 
-	U_ASSERT(IsMacroIdentifierStartChar(*it));
+	U_ASSERT(IsMacroIdentifierStartChar(sprache_char(*it)));
 	result.text.push_back(*it);
 	++it;
 
@@ -335,7 +335,7 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, LexicalErrorMessages& ou
 		[]( const char c ) -> uint64_t
 		{
 			if( c >= '0' && c <= '9' )
-				return c - '0';
+				return uint64_t(c - '0');
 			return uint64_t(-1);
 		};
 
@@ -351,7 +351,7 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, LexicalErrorMessages& ou
 				[]( const char c ) -> uint64_t
 				{
 					if( c >= '0' && c <= '1' )
-						return c - '0';
+						return uint64_t(c - '0');
 					return uint64_t(-1);
 				};
 			break;
@@ -363,7 +363,7 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, LexicalErrorMessages& ou
 				[]( const char c ) -> uint64_t
 				{
 					if( c >= '0' && c <= '7' )
-						return c - '0';
+						return uint64_t(c - '0');
 					return uint64_t(-1);
 				};
 			break;
@@ -375,11 +375,11 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, LexicalErrorMessages& ou
 				[]( const char c ) -> uint64_t
 				{
 					if( c >= '0' && c <= '9' )
-						return c - '0';
+						return uint64_t(c - '0');
 					else if( c >= 'a' && c <= 'f' )
-						return c - 'a' + 10;
+						return uint64_t(c - 'a' + 10);
 					else if( c >= 'A' && c <= 'F' )
-						return c - 'A' + 10;
+						return uint64_t(c - 'A' + 10);
 					else
 						return uint64_t(-1);
 				};
@@ -472,13 +472,13 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, LexicalErrorMessages& ou
 	// 3 / 10 - right
 	// 3 * (1/10) - wrong
 	if( exponent >= 0 )
-		result.value_double= double(integer_part) * PowI( base, exponent );
+		result.value_double= double(integer_part) * PowI( base, uint64_t(exponent) );
 	else
-		result.value_double= double(integer_part) / PowI( base, -exponent );
+		result.value_double= double(integer_part) / PowI( base, uint64_t(-exponent) );
 	if( exponent >= fractional_part_digits )
-		result.value_double+= double(fractional_part) * PowI( base, exponent - fractional_part_digits );
+		result.value_double+= double(fractional_part) * PowI( base, uint64_t( exponent - fractional_part_digits ) );
 	else
-		result.value_double+= double(fractional_part) / PowI( base, fractional_part_digits - exponent );
+		result.value_double+= double(fractional_part) / PowI( base, uint64_t( fractional_part_digits - exponent ) );
 
 	result.value_int= integer_part;
 	for( int i= 0; i < exponent; ++i )

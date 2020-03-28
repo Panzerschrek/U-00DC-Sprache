@@ -312,7 +312,7 @@ Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_de
 		else
 			class_->is_forward_declaration_= true;
 
-		return std::move(class_);
+		return class_;
 	}
 	else if( record_decl.isUnion() )
 	{
@@ -359,7 +359,7 @@ Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_de
 		else
 			class_->is_forward_declaration_= true;
 
-		return std::move(class_);
+		return class_;
 	}
 
 	return nullptr;
@@ -499,7 +499,7 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 
 			const llvm::APSInt val= enumerator->getInitVal();
 			if( val.isNegative() )
-				initializer_number.value_int= val.getExtValue();
+				initializer_number.value_int= uint64_t(val.getExtValue());
 			else
 				initializer_number.value_int= val.getLimitedValue();
 			initializer_number.value_double= static_cast<double>(initializer_number.value_int);
@@ -660,7 +660,7 @@ Synt::NamedTypeName CppAstConsumer::TranslateNamedType( const std::string& cpp_t
 	named_type.name.components.emplace_back();
 	named_type.name.components.back().name= TranslateIdentifier( cpp_type_name );
 
-	return std::move(named_type);
+	return named_type;
 }
 
 Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::FunctionProtoType& in_type )
@@ -708,7 +708,7 @@ Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::Functi
 	}
 	function_type->return_type_= std::make_unique<Synt::TypeName>( TranslateType( *return_type ) );
 
-	return std::move(function_type);
+	return function_type;
 }
 
 std::string CppAstConsumer::TranslateIdentifier( const llvm::StringRef identifier )

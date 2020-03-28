@@ -24,7 +24,7 @@ sprache_char ReadNextUTF8Char( const char*& start, const char* const end )
 
 	if( ( c & 0b10000000 ) == 0 )
 	{
-		code= c;
+		code= sprache_char(c);
 		++start;
 	}
 	else if( ( c & 0b11100000 ) == 0b11000000 )

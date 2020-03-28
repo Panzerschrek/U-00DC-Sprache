@@ -153,7 +153,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const Array& type )
 		IsTypeComplete( type.type ) ? data_layout_.getABITypeAlignment( type.llvm_type ) : 0u;
 
 	llvm::SmallVector<llvm::Metadata*, 1> subscripts;
-	subscripts.push_back( debug_info_.builder->getOrCreateSubrange( 0, type.size ) );
+	subscripts.push_back( debug_info_.builder->getOrCreateSubrange( 0, int64_t(type.size) ) );
 
 	return
 		debug_info_.builder->createArrayType(
@@ -359,8 +359,8 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const EnumPtr& type )
 			elements.push_back(
 				debug_info_.builder->createEnumerator(
 					name,
-					variable->constexpr_value->getUniqueInteger().getLimitedValue(),
-					false ) );
+					int64_t(variable->constexpr_value->getUniqueInteger().getLimitedValue()),
+					true ) );
 		} );
 
 	// TODO - get FilePos for enum
