@@ -296,7 +296,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	set( CPP_LINKAGE_SOURCES tests/cpp_linkage_test/cpp_linkage.u )
 	CompileUSources( "${CPP_LINKAGE_SOURCES}" CPP_LINKAGE_OBJECTS )
 
-	add_executable( CPPLinkageTest tests/cpp_linkage_test/cpp_linkage.cpp ${CPP_LINKAGE_OBJECTS} )
+	add_executable( CPPLinkageTest tests/cpp_linkage_test/cpp_linkage.cpp ${CPP_LINKAGE_SOURCES} ${CPP_LINKAGE_OBJECTS} )
 	add_dependencies( CPPLinkageTest Compiler )
 
 	#
@@ -309,7 +309,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 		tests/inline_linkage_test/c.u )
 	CompileUSources( "${INLINE_LINKAGE_SOURCES}" INLINE_LINKAGE_OBJECTS )
 
-	add_executable( InlineLinkageTest tests/inline_linkage_test/entry.cpp ${INLINE_LINKAGE_OBJECTS} )
+	add_executable( InlineLinkageTest tests/inline_linkage_test/entry.cpp ${INLINE_LINKAGE_SOURCES} ${INLINE_LINKAGE_OBJECTS} )
 	add_dependencies( InlineLinkageTest Compiler )
 
 	#
@@ -318,7 +318,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	set( IMPORT_TEST_SOURCES tests/import_test/root.u )
 	CompileUSources( "${IMPORT_TEST_SOURCES}" IMPORT_TEST_OBJECTS )
 
-	add_executable( ImportTest tests/import_test/entry.c ${IMPORT_TEST_OBJECTS} )
+	add_executable( ImportTest tests/import_test/entry.c ${IMPORT_TEST_SOURCES} ${IMPORT_TEST_OBJECTS} )
 	add_dependencies( ImportTest Compiler )
 
 	#
@@ -328,7 +328,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 		set( UNICODE_FILE_NAMES_SOURCES "tests/unicode_file_names_test/Entry ФшЯё_66.ü" )
 		CompileUSources( "${UNICODE_FILE_NAMES_SOURCES}" UNICODE_FILE_NAMES_OBJECTS )
 
-		add_executable( UnicodeFileNamesTest tests/unicode_file_names_test/entry.c ${UNICODE_FILE_NAMES_OBJECTS} )
+		add_executable( UnicodeFileNamesTest tests/unicode_file_names_test/entry.c ${UNICODE_FILE_NAMES_SOURCES} ${UNICODE_FILE_NAMES_OBJECTS} )
 		add_dependencies( UnicodeFileNamesTest Compiler )
 	endif()
 
@@ -346,7 +346,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 			--include-dir ${CMAKE_SOURCE_DIR}/tests/include_dirs_test/b
 			--include-dir ${CMAKE_SOURCE_DIR}/tests/include_dirs_test/c )
 
-	add_executable( IncludeDirsTest tests/include_dirs_test/entry.c include_dirs_test.o )
+	add_executable( IncludeDirsTest tests/include_dirs_test/entry.c tests/include_dirs_test/root.u include_dirs_test.o )
 	add_dependencies( IncludeDirsTest Compiler )
 
 	#
@@ -355,7 +355,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	set( TYPE_ID_TEST_SOURCES tests/type_id_test/type_id_a.u tests/type_id_test/type_id_b.u )
 	CompileUSources( "${TYPE_ID_TEST_SOURCES}" TYPE_ID_TEST_OBJECTS )
 
-	add_executable( TypeIdTest tests/type_id_test/entry.c ${TYPE_ID_TEST_OBJECTS} )
+	add_executable( TypeIdTest tests/type_id_test/entry.c ${TYPE_ID_TEST_SOURCES} ${TYPE_ID_TEST_OBJECTS} )
 	add_dependencies( TypeIdTest Compiler )
 
 	# Run type_id test
@@ -377,7 +377,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 			-g # Generate debug info
 		)
 
-	add_executable( DebugInfoTest tests/debug_info_test/entry.cpp ${DEBUG_INFO_TEST_FILE_OUT} )
+	add_executable( DebugInfoTest tests/debug_info_test/entry.cpp ${DEBUG_INFO_TEST_FILE} ${DEBUG_INFO_TEST_FILE_OUT} )
 	add_dependencies( DebugInfoTest Compiler )
 
 	#
