@@ -1,7 +1,6 @@
 ﻿cmake_minimum_required(VERSION 2.8)
 
 project(Sprache)
-set( PROJECT_VERSION 0.5 )
 
 option( U_BUILD_COMPILER "Enable compilation of compiler" YES )
 option( U_BUILD_TESTS "Enable compilation of base tests" YES )
@@ -141,6 +140,8 @@ else()
 
 endif()
 
+add_subdirectory(sprache_version)
+
 #
 # LexSyntLib
 #
@@ -154,7 +155,7 @@ add_library( LexSyntLib ${LEX_SYNT_LIB_SOURCES} )
 
 file( GLOB COMPILER_LIB_SOURCES "code_builder_lib/*" )
 add_library( CodeBuilderLib ${COMPILER_LIB_SOURCES} )
-target_link_libraries( CodeBuilderLib LexSyntLib ${LLVM_LIBS_FOR_CODE_BUILDER_LIB} )
+target_link_libraries( CodeBuilderLib LexSyntLib SpracheVersion ${LLVM_LIBS_FOR_CODE_BUILDER_LIB} )
 
 #
 # Compiler
@@ -193,7 +194,6 @@ if( U_BUILD_COMPILER )
 
 	add_executable( Compiler ${COMPILER_SOURCES} ${bc_files} ${USTLIB_SOURCES} ${USTLIB_TEST_SOURCES} )
 	target_link_libraries( Compiler CodeBuilderLib ${LLVM_LIBS_FOR_COMPILER} )
-	target_compile_definitions( Compiler PRIVATE "SPRACHE_VERSION=${PROJECT_VERSION}" )
 	target_include_directories( Compiler PRIVATE ${CMAKE_CURRENT_BINARY_DIR} )
 endif()
 

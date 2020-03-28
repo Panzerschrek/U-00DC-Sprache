@@ -24,6 +24,7 @@
 #include "../lex_synt_lib/assert.hpp"
 #include "../lex_synt_lib/source_graph_loader.hpp"
 #include "../code_builder_lib/code_builder.hpp"
+#include "../sprache_version/sprache_version.hpp"
 
 namespace U
 {
@@ -333,7 +334,7 @@ int Main( int argc, const char* argv[] )
 	// Options
 	llvm::cl::SetVersionPrinter(
 		[]( llvm::raw_ostream& ) {
-			std::cout << "Ü-Sprache version " << SPRACHE_VERSION << ", llvm version " << LLVM_VERSION_STRING << std::endl;
+			std::cout << "Ü-Sprache version " << getFullVersion() << ", llvm version " << LLVM_VERSION_STRING << std::endl;
 			llvm::InitializeAllTargets();
 			PrintAvailableTargets();
 		} );

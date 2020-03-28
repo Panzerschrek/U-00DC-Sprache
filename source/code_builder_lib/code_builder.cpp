@@ -8,6 +8,7 @@
 
 #include "../lex_synt_lib/assert.hpp"
 #include "../lex_synt_lib/keywords.hpp"
+#include "../sprache_version/sprache_version.hpp"
 #include "error_reporting.hpp"
 #include "mangling.hpp"
 
@@ -149,7 +150,7 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 				debug_info_.builder->createCompileUnit(
 					c_dwarf_language_id,
 					file,
-					"some version", // TODO - pass compiler version
+					"Ü-Sprache compiler " + getFullVersion(),
 					false, // optimized
 					"",
 					0 /* runtime version */ );
