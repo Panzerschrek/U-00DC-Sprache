@@ -134,6 +134,8 @@ llvm::DIBasicType* CodeBuilder::CreateDIType( const FundamentalType& type )
 		type_encoding= llvm::dwarf::DW_ATE_signed;
 	else if( IsUnsignedInteger( type.fundamental_type ) )
 		type_encoding= llvm::dwarf::DW_ATE_unsigned;
+	else if( IsChar( type.fundamental_type ) )
+		type_encoding= llvm::dwarf::DW_ATE_unsigned_char;
 	else if( IsFloatingPoint( type.fundamental_type ) )
 		type_encoding= llvm::dwarf::DW_ATE_float;
 
