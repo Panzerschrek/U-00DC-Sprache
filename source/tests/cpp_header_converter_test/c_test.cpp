@@ -1,3 +1,6 @@
+extern "C"
+{
+
 #include "c_test.h"
 
 void Function_ZeroArgs()
@@ -43,4 +46,6 @@ void Function_UnnamedArgs( int a, float b, double c )
 void DuplicatedProto( int xx )
 {
 	(void)xx;
+}
+
 }
