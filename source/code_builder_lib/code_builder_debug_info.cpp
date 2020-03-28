@@ -32,7 +32,7 @@ void CodeBuilder::CreateVariableDebugInfo(
 
 	const auto di_local_variable=
 		debug_info_.builder->createAutoVariable(
-			function_context.function->getSubprogram(),
+			function_context.current_debug_info_scope,
 			variable_name,
 			GetDIFile( file_pos.file_index ),
 			file_pos.line,
@@ -42,7 +42,7 @@ void CodeBuilder::CreateVariableDebugInfo(
 		variable.llvm_value,
 		di_local_variable,
 		debug_info_.builder->createExpression(),
-		llvm::DebugLoc::get(file_pos.line, file_pos.pos_in_line, function_context.function->getSubprogram()),
+		llvm::DebugLoc::get(file_pos.line, file_pos.pos_in_line, function_context.current_debug_info_scope),
 		function_context.llvm_ir_builder.GetInsertBlock() );
 }
 
@@ -54,7 +54,7 @@ void CodeBuilder::CreateFunctionDebugInfo(
 		return;
 
 	const auto di_function= debug_info_.builder->createFunction(
-		GetDICompileUnit( func_variable.body_file_pos.file_index ),
+		GetDIFile( func_variable.body_file_pos.file_index ),
 		function_name,
 		func_variable.llvm_function->getName(),
 		GetDIFile( func_variable.body_file_pos.file_index ),
@@ -77,7 +77,24 @@ void CodeBuilder::SetCurrentDebugLocation(
 		llvm::DebugLoc::get(
 			file_pos.line,
 			file_pos.pos_in_line,
-			function_context.function->getSubprogram() ) );
+			function_context.current_debug_info_scope ) );
+}
+
+void CodeBuilder::DebugInfoStartBlock( const FilePos& file_pos, FunctionContext& function_context )
+{
+	if( build_debug_info_ )
+		function_context.current_debug_info_scope=
+			debug_info_.builder->createLexicalBlock(
+				function_context.current_debug_info_scope,
+				GetDIFile( file_pos.file_index ),
+				file_pos.line,
+				file_pos.pos_in_line );
+}
+
+void CodeBuilder::DebugInfoEndBlock( FunctionContext& function_context )
+{
+	if( build_debug_info_ )
+		function_context.current_debug_info_scope= function_context.current_debug_info_scope->getScope();
 }
 
 llvm::DIType* CodeBuilder::CreateDIType( const Type& type )

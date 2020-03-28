@@ -701,6 +701,9 @@ private:
 		const FilePos& file_pos,
 		FunctionContext& function_context );
 
+	void DebugInfoStartBlock( const FilePos& file_pos, FunctionContext& function_context );
+	void DebugInfoEndBlock( FunctionContext& function_context );
+
 	llvm::DIType* CreateDIType( const Type& type );
 	llvm::DIBasicType* CreateDIType( const FundamentalType& type );
 	llvm::DICompositeType* CreateDIType( const Array& type );

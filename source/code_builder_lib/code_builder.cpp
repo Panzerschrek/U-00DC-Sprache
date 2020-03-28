@@ -1997,6 +1997,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
+	DebugInfoStartBlock( block.file_pos_, function_context );
+
 	NamesScope block_names( "", &names );
 	const StackVariablesStorage block_variables_storage( function_context );
 
@@ -2047,6 +2049,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	// Restire unsafe flag.
 	function_context.is_in_unsafe_block= prev_unsafe;
 	
+	DebugInfoEndBlock( function_context );
+
 	return block_build_info;
 }
 

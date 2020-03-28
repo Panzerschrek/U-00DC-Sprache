@@ -195,6 +195,21 @@ fn FunctionTemplatesTest()
 	return;
 }
 
+fn ScopesTest()
+{
+	auto x= 1;
+	{
+		auto x= 2.0f;
+		{
+			auto x= MakeS1();
+			{
+				auto x= 4s;
+				return;
+			}
+		}
+	}
+}
+
 fn U_Main() : i32
 {
 	FundamentalTypesTest();
@@ -211,5 +226,6 @@ fn U_Main() : i32
 	DestructorDebugLocationTest();
 	FunctionTemplatesTest();
 	ImportedFunc();
+	ScopesTest();
 	return 0;
 }
