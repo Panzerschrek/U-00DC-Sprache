@@ -1,5 +1,6 @@
 #pragma once
 #include "push_disable_llvm_warnings.hpp"
+#include <llvm/IR/DebugInfoMetadata.h>
 #include <llvm/IR/IRBuilder.h>
 #include "pop_llvm_warnings.hpp"
 #include "value.hpp"
@@ -90,6 +91,8 @@ struct FunctionContext
 	OverloadingResolutionCache overloading_resolution_cache;
 
 	llvm::BasicBlock* destructor_end_block= nullptr; // exists, if function is destructor
+
+	llvm::DIScope* current_debug_info_scope= nullptr;
 };
 
 } // namespace CodeBuilderPrivate

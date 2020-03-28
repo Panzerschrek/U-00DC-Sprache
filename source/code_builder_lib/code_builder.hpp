@@ -5,6 +5,7 @@
 #include <unordered_map>
 
 #include "push_disable_llvm_warnings.hpp"
+#include <llvm/IR/DIBuilder.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 #include "pop_llvm_warnings.hpp"
@@ -29,7 +30,8 @@ public:
 	CodeBuilder(
 		llvm::LLVMContext& llvm_context,
 		std::string target_triple_str,
-		const llvm::DataLayout& data_layout );
+		const llvm::DataLayout& data_layout,
+		bool build_debug_info );
 
 	virtual BuildResult BuildProgram( const SourceGraph& source_graph ) override;
 
@@ -680,6 +682,37 @@ private:
 	size_t GlobalThingDetectloop( const GlobalThing& global_thing ); // returns loop start index or ~0u
 	void GlobalThingReportAboutLoop( size_t loop_start_stack_index, const std::string& last_loop_element_name, const FilePos& last_loop_element_file_pos );
 
+	// Debug info
+
+	llvm::DIFile* GetDIFile(size_t file_index);
+	llvm::DICompileUnit* GetDICompileUnit(size_t file_index);
+
+	void CreateVariableDebugInfo(
+		const Variable& variable,
+		const std::string& variable_name,
+		const FilePos& file_pos,
+		FunctionContext& function_context );
+
+	void CreateFunctionDebugInfo(
+		const FunctionVariable& func_variable,
+		const std::string& function_name );
+
+	void SetCurrentDebugLocation(
+		const FilePos& file_pos,
+		FunctionContext& function_context );
+
+	void DebugInfoStartBlock( const FilePos& file_pos, FunctionContext& function_context );
+	void DebugInfoEndBlock( FunctionContext& function_context );
+
+	llvm::DIType* CreateDIType( const Type& type );
+	llvm::DIBasicType* CreateDIType( const FundamentalType& type );
+	llvm::DICompositeType* CreateDIType( const Array& type );
+	llvm::DICompositeType* CreateDIType( const Tuple& type );
+	llvm::DISubroutineType* CreateDIType( const Function& type );
+	llvm::DIDerivedType* CreateDIType( const FunctionPointer& type );
+	llvm::DICompositeType* CreateDIType( const ClassProxyPtr& type );
+	llvm::DICompositeType* CreateDIType( const EnumPtr& type );
+
 	// Other stuff
 
 	llvm::Type* GetFundamentalLLVMType( U_FundamentalType fundmantal_type );
@@ -714,6 +747,7 @@ private:
 	llvm::LLVMContext& llvm_context_;
 	const std::string target_triple_str_;
 	const llvm::DataLayout data_layout_;
+	const bool build_debug_info_;
 
 	struct
 	{
@@ -778,6 +812,24 @@ private:
 	ProgramStringMap<Value> generated_template_things_storage_;
 
 	std::vector<GlobalThing> global_things_stack_;
+
+	// Debug info.
+	struct DebugSourceFileEntry
+	{
+		llvm::DIFile* file= nullptr;
+		llvm::DICompileUnit* compile_unit= nullptr;
+	};
+
+	struct
+	{
+		std::unique_ptr<llvm::DIBuilder> builder;
+
+		std::vector<DebugSourceFileEntry> source_file_entries; // Entry for each file in sources graph.
+
+		// Build debug info for classes and enums once and put it to cache.
+		std::unordered_map<ClassProxyPtr, llvm::DICompositeType*> classes_di_cache;
+		std::unordered_map<EnumPtr, llvm::DICompositeType*> enums_di_cache;
+	} debug_info_;
 };
 
 using MutabilityModifier= Synt::MutabilityModifier;

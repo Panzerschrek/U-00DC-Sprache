@@ -39,6 +39,7 @@ FunctionContext::FunctionContext(
 	, alloca_ir_builder( alloca_basic_block )
 	, function_basic_block( llvm::BasicBlock::Create( llvm_context, "func_code", function ) )
 	, llvm_ir_builder( function_basic_block )
+	, current_debug_info_scope( function->getSubprogram() )
 {
 }
 

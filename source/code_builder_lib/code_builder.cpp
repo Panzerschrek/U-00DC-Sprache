@@ -47,10 +47,12 @@ CodeBuilder::ReferencesGraphNodeHolder::~ReferencesGraphNodeHolder()
 CodeBuilder::CodeBuilder(
 	llvm::LLVMContext& llvm_context,
 	std::string target_triple_str,
-	const llvm::DataLayout& data_layout )
+	const llvm::DataLayout& data_layout,
+	bool build_debug_info )
 	: llvm_context_( llvm_context )
 	, target_triple_str_(std::move(target_triple_str))
 	, data_layout_(data_layout)
+	, build_debug_info_( build_debug_info )
 	, constexpr_function_evaluator_( data_layout_ )
 {
 	fundamental_llvm_types_.i8 = llvm::Type::getInt8Ty( llvm_context_ );
@@ -129,6 +131,33 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	const StackVariablesStorage global_function_variables_storage( global_function_context );
 	global_function_context_= &global_function_context;
 
+	// Prepare debug info builder.
+	if( build_debug_info_ )
+	{
+		debug_info_.builder= std::make_unique<llvm::DIBuilder>( *module_ );
+
+		module_->addModuleFlag( llvm::Module::Warning, "Debug Info Version", 3 );
+
+		const uint32_t c_dwarf_language_id= 0x8000 /* first user-defined language code */ + 0xDC /* code of "Ü" letter */;
+
+		debug_info_.source_file_entries.reserve( source_graph.nodes_storage.size() );
+		for( const SourceGraph::Node& source_graph_node : source_graph.nodes_storage )
+		{
+			const auto file= debug_info_.builder->createFile( source_graph_node.file_path, "");
+
+			const auto compile_unit=
+				debug_info_.builder->createCompileUnit(
+					c_dwarf_language_id,
+					file,
+					"some version", // TODO - pass compiler version
+					false, // optimized
+					"",
+					0 /* runtime version */ );
+
+			debug_info_.source_file_entries.push_back( DebugSourceFileEntry{ file, compile_unit } );
+		}
+	}
+
 	// Build graph.
 	BuildProgramInternal( source_graph, source_graph.root_node_index );
 
@@ -141,6 +170,9 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 			typeinfo_entry.second.type.GetClassType()->llvm_type->setBody( llvm::ArrayRef<llvm::Type*>() );
 	}
 
+	if( build_debug_info_ )
+		debug_info_.builder->finalize(); // We must finalize it.
+
 	// Clear internal structures.
 	compiled_sources_cache_.clear();
 	current_class_table_= nullptr;
@@ -148,6 +180,10 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	template_classes_cache_.clear();
 	typeinfo_cache_.clear();
 	typeinfo_class_table_.clear();
+	debug_info_.builder= nullptr;
+	debug_info_.source_file_entries.clear();
+	debug_info_.classes_di_cache.clear();
+	debug_info_.enums_di_cache.clear();
 
 	NormalizeErrors( global_errors_ );
 
@@ -1396,6 +1432,8 @@ Type CodeBuilder::BuildFuncCode(
 			llvm_function->addAttribute( 1u, llvm::Attribute::StructRet );
 
 		func_variable.llvm_function= llvm_function;
+
+		CreateFunctionDebugInfo( func_variable, func_name );
 	}
 	else
 		llvm_function= func_variable.llvm_function;
@@ -1436,6 +1474,8 @@ Type CodeBuilder::BuildFuncCode(
 		llvm_context_,
 		llvm_function );
 	const StackVariablesStorage args_storage( function_context );
+
+	SetCurrentDebugLocation( func_variable.body_file_pos, function_context );
 
 	// arg node + optional inner reference variable node.
 	ArgsVector< std::pair< ReferencesGraphNodePtr, ReferencesGraphNodePtr > > args_nodes( function_type.args.size() );
@@ -1496,6 +1536,8 @@ Type CodeBuilder::BuildFuncCode(
 				var.location= Variable::Location::Pointer;
 			}
 			else U_ASSERT(false);
+
+			CreateVariableDebugInfo( var, arg_name, declaration_arg.file_pos_, function_context );
 		}
 
 		// Create variable node, because only variable node can have inner reference node.
@@ -1955,6 +1997,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
+	DebugInfoStartBlock( block.file_pos_, function_context );
+
 	NamesScope block_names( "", &names );
 	const StackVariablesStorage block_variables_storage( function_context );
 
@@ -1980,6 +2024,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			std::visit(
 				[&]( const auto& t )
 				{
+					SetCurrentDebugLocation( t.file_pos_, function_context );
 					return BuildBlockElement( t, block_names, function_context );
 				},
 				block_element );
@@ -1994,6 +2039,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	if( block_element_index < block.elements_.size() )
 		REPORT_ERROR( UnreachableCode, names.GetErrors(), Synt::GetBlockElementFilePos( block.elements_[ block_element_index ] ) );
 
+	SetCurrentDebugLocation( block.end_file_pos_, function_context );
+
 	// If there are undconditional "break", "continue", "return" operators,
 	// we didn`t need call destructors, it must be called in this operators.
 	if( !block_build_info.have_terminal_instruction_inside )
@@ -2002,6 +2049,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	// Restire unsafe flag.
 	function_context.is_in_unsafe_block= prev_unsafe;
 	
+	DebugInfoEndBlock( function_context );
+
 	return block_build_info;
 }
 
@@ -2064,6 +2113,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		{
 			variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
 			variable.llvm_value->setName( variable_declaration.name );
+
+			CreateVariableDebugInfo( variable, variable_declaration.name, variable_declaration.file_pos, function_context );
 
 			prev_variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
 			variable.node= var_node;
@@ -2294,6 +2345,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
 		variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType(), nullptr, auto_variable_declaration.name );
+
+		CreateVariableDebugInfo( variable, auto_variable_declaration.name, auto_variable_declaration.file_pos_, function_context );
 
 		prev_variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
 		variable.node= var_node;

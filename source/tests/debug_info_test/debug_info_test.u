@@ -1,0 +1,231 @@
+import "inc.u"
+
+fn FundamentalTypesTest()
+{
+	var i32 x= -666;
+	var u32 y= 3000000000u;
+	var f32 f= 3.1415926535f;
+	var f64 d= 2.718281828;
+	var bool true_value= true, false_value= false;
+	var u64 value64= 9870000000000u64;
+	var i128 loooong_int= i128(1.23e42);
+	return;
+}
+
+fn ArrayTypesTest()
+{
+	var [ i32, 3 ] i3= zero_init;
+	var [ bool, 4 ] b4[ true, true, false, true ];
+	var [ f32, 0 ] f0[];
+	var[ [ i16, 13 ], 27 ] mut large_array= zero_init;
+	large_array[25][3]= 6i16;
+	return;
+}
+
+fn TupleTypesTest()
+{
+	var tup[] t0;
+	var tup[ i32, f32 ] t1[ 5, 6.0f ];
+	var tup[ i32, f32 ] t1_same[ -5, -6.0f ];
+	var tup[ bool, bool, bool ] t2= zero_init;
+	var tup[ i32, tup[ i16, u16 ], f64 ] t3[ 5, [ -256i16, 13u16 ], 65.32 ];
+	return;
+}
+
+struct S0
+{
+	i32 x;
+	f32 y;
+}
+
+struct S1
+{
+	i16 i;
+	S0 s0;
+	f64 d;
+	[ f64, 8 ] arr= zero_init;
+	f32 value_after_arr= 66.6f;
+}
+
+fn StructTypesTest()
+{
+	var S1 s1{ .i(5), .s0{ .x= -5, .y= -1e16f }, .d= 2.5 };
+	return;
+}
+
+fn MakeS1() : S1
+{
+	var S1 s= zero_init;
+	return s;
+}
+
+fn AutoVariablesTest()
+{
+	auto i = 1488;
+	auto u= 228u;
+	auto s= MakeS1();
+	auto f= -1241525.5454f + s.s0.y;
+	return;
+}
+
+fn ParametersTestImpl( i32 x, f32 y, S1 s1 )
+{
+	return;
+}
+
+fn ParametersTest()
+{
+	var S1 s1{ .i= zero_init, .d= 2.718281828, .s0{ .x= 25, .y= zero_init } };
+	ParametersTestImpl( 55, 0.25f, s1 );
+}
+
+struct StructWithRef
+{
+	void& v;
+	i32 x= 0;
+	S0& s0;
+}
+
+fn StructsWithReferencesTest()
+{
+	auto b= false;
+	var S0 s0{ .x= 661215, .y= -6532.1f };
+	var StructWithRef struct_with_ref{ .v= b, .x= -5555, .s0= s0 };
+	return;
+}
+
+namespace Polymorph
+{
+
+class A interface {}
+class B polymorph
+{
+	i32 x= 25;
+}
+
+class C : B, A
+{
+	f32 y= 033.7f;
+}
+
+fn PolymorphClassTest()
+{
+	var C c;
+	return;
+}
+
+} // namespace Polymorph
+
+fn ToInt( f32 f ) : i32
+{
+	return i32(f);
+}
+
+fn FooRet() : f64
+{
+	return 0.0;
+}
+
+fn RefPass( i32& x ) : i32&
+{
+	return x;
+}
+
+fn FunctionPointersTest()
+{
+	var (fn()) p0= ParametersTest;
+	var (fn(i32 a, f32 b, S1 c)) p1= ParametersTestImpl;
+	var (fn(f32 a) : i32) p2= ToInt;
+	var (fn(i32& a) : i32&) p3= RefPass;
+	var (fn() : f64) p4= FooRet;
+	return;
+}
+
+enum SomeEnum
+{
+	Red,
+	Green,
+	Blue,
+	FiftyShadesOfGrey
+}
+
+fn EnumTypesTest()
+{
+	auto g= SomeEnum::Green;
+	var [ SomeEnum, 4 ] arr[ SomeEnum::Blue, SomeEnum::Green, SomeEnum::FiftyShadesOfGrey, SomeEnum::Red ];
+	return;
+}
+
+fn StepInto2(){}
+fn StepInto1()
+{
+	StepInto2();
+	StepInto2();
+}
+
+fn StepInto0()
+{
+	StepInto1();
+	StepInto1();
+	StepInto1();
+}
+
+struct StructWithDestructor
+{
+	fn destructor(){}
+}
+
+fn DestructorDebugLocationTest()
+{
+	var StructWithDestructor s;
+}
+
+template</type T/>
+fn TemplateFunc(T x) : T
+{
+	return x * T(2);
+}
+
+fn FunctionTemplatesTest()
+{
+	auto mut i= 72;
+	auto mut f= 27.0f;
+	TemplateFunc(i);
+	TemplateFunc(f);
+	return;
+}
+
+fn ScopesTest()
+{
+	auto x= 1;
+	{
+		auto x= 2.0f;
+		{
+			auto x= MakeS1();
+			{
+				auto x= 4s;
+				return;
+			}
+		}
+	}
+}
+
+fn U_Main() : i32
+{
+	FundamentalTypesTest();
+	ArrayTypesTest();
+	TupleTypesTest();
+	StructTypesTest();
+	AutoVariablesTest();
+	ParametersTest();
+	StructsWithReferencesTest();
+	Polymorph::PolymorphClassTest();
+	FunctionPointersTest();
+	EnumTypesTest();
+	StepInto0();
+	DestructorDebugLocationTest();
+	FunctionTemplatesTest();
+	ImportedFunc();
+	ScopesTest();
+	return 0;
+}
