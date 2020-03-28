@@ -142,7 +142,7 @@ size_t SourceGraphLoader::LoadNode_r(
 	Synt::SyntaxAnalysisResult synt_result= Synt::SyntaxAnalysis( lex_result.lexems, std::move(merged_macroses) );
 	for( const Synt::SyntaxErrorMessage& syntax_error_message : synt_result.error_messages )
 		std::cerr << full_file_path << ":"
-			<< std::to_string(syntax_error_message.file_pos.line) << ":" << std::to_string(syntax_error_message.file_pos.column) << ": error: " << syntax_error_message.text << "\n";
+			<< syntax_error_message.file_pos.line << ":" << syntax_error_message.file_pos.column << ": error: " << syntax_error_message.text << "\n";
 
 	result.syntax_errors.insert( result.syntax_errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
 	if( !synt_result.error_messages.empty() )
