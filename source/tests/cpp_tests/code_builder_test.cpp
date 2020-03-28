@@ -33,15 +33,15 @@ U_TEST(SimpleProgramTest)
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	int arg0= 100500, arg1= 1488, arg2= 42;
+	int32_t arg0= 100500, arg1= 1488, arg2= 42;
 
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooiii" );
 	U_TEST_ASSERT( function != nullptr );
 
 	llvm::GenericValue args[3];
-	args[0].IntVal= llvm::APInt( 32, arg0 );
-	args[1].IntVal= llvm::APInt( 32, arg1 );
-	args[2].IntVal= llvm::APInt( 32, arg2 );
+	args[0].IntVal= llvm::APInt( 32, uint64_t(arg0) );
+	args[1].IntVal= llvm::APInt( 32, uint64_t(arg1) );
+	args[2].IntVal= llvm::APInt( 32, uint64_t(arg2) );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
@@ -94,11 +94,11 @@ U_TEST(VariablesTest0)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooii" );
 	U_TEST_ASSERT( function != nullptr );
 
-	int arg0= 1488, arg1= 77;
+	int32_t arg0= 1488, arg1= 77;
 
 	llvm::GenericValue args[2];
-	args[0].IntVal= llvm::APInt( 32, arg0 );
-	args[1].IntVal= llvm::APInt( 32, arg1 );
+	args[0].IntVal= llvm::APInt( 32, uint64_t(arg0) );
+	args[1].IntVal= llvm::APInt( 32, uint64_t(arg1) );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
@@ -126,11 +126,11 @@ U_TEST(VariablesTest1)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooii" );
 	U_TEST_ASSERT( function != nullptr );
 
-	int arg0= 1488, arg1= 77;
+	int32_t arg0= 1488, arg1= 77;
 
 	llvm::GenericValue args[2];
-	args[0].IntVal= llvm::APInt( 32, arg0 );
-	args[1].IntVal= llvm::APInt( 32, arg1 );
+	args[0].IntVal= llvm::APInt( 32, uint64_t(arg0) );
+	args[1].IntVal= llvm::APInt( 32, uint64_t(arg1) );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
@@ -155,11 +155,11 @@ U_TEST(NumericConstantsTest0)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z5Foo32ii" );
 	U_TEST_ASSERT( function != nullptr );
 
-	int arg0= 1488, arg1= 77;
+	int32_t arg0= 1488, arg1= 77;
 
 	llvm::GenericValue args[2];
-	args[0].IntVal= llvm::APInt( 32, arg0 );
-	args[1].IntVal= llvm::APInt( 32, arg1 );
+	args[0].IntVal= llvm::APInt( 32, uint64_t(arg0) );
+	args[1].IntVal= llvm::APInt( 32, uint64_t(arg1) );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
@@ -234,9 +234,9 @@ U_TEST(ArraysTest0)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooi" );
 	U_TEST_ASSERT( function != nullptr );
 
-	int arg_value= 54785;
+	int32_t arg_value= 54785;
 	llvm::GenericValue arg;
-	arg.IntVal= llvm::APInt( 32, arg_value );
+	arg.IntVal= llvm::APInt( 32, uint64_t(arg_value) );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
@@ -263,9 +263,9 @@ U_TEST(ArraysTest1)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooi" );
 	U_TEST_ASSERT( function != nullptr );
 
-	int arg_value= 54785;
+	int32_t arg_value= 54785;
 	llvm::GenericValue arg;
-	arg.IntVal= llvm::APInt( 32, arg_value );
+	arg.IntVal= llvm::APInt( 32, uint64_t(arg_value) );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
@@ -330,11 +330,11 @@ U_TEST(CallTest0)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooii" );
 	U_TEST_ASSERT( function != nullptr );
 
-	int arg0= 77, arg1= 1488;
+	int32_t arg0= 77, arg1= 1488;
 
 	llvm::GenericValue args[2];
-	args[0].IntVal= llvm::APInt( 32, arg0 );
-	args[1].IntVal= llvm::APInt( 32, arg1 );
+	args[0].IntVal= llvm::APInt( 32, uint64_t(arg0) );
+	args[1].IntVal= llvm::APInt( 32, uint64_t(arg1) );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
@@ -369,11 +369,11 @@ U_TEST(CallTest1)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooii" );
 	U_TEST_ASSERT( function != nullptr );
 
-	int arg0= 775678, arg1= 1488;
+	int32_t arg0= 775678, arg1= 1488;
 
 	llvm::GenericValue args[2];
-	args[0].IntVal= llvm::APInt( 32, arg0 );
-	args[1].IntVal= llvm::APInt( 32, arg1 );
+	args[0].IntVal= llvm::APInt( 32, uint64_t(arg0) );
+	args[1].IntVal= llvm::APInt( 32, uint64_t(arg1) );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
@@ -739,11 +739,11 @@ U_TEST(WhileOperatorTest)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooii" );
 	U_TEST_ASSERT( function != nullptr );
 
-	int arg0= 77, arg1= 1488;
+	int32_t arg0= 77, arg1= 1488;
 
 	llvm::GenericValue args[2];
-	args[0].IntVal= llvm::APInt( 32, arg0 );
-	args[1].IntVal= llvm::APInt( 32, arg1 );
+	args[0].IntVal= llvm::APInt( 32, uint64_t(arg0) );
+	args[1].IntVal= llvm::APInt( 32, uint64_t(arg1) );
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
@@ -783,7 +783,7 @@ U_TEST(IfOperatorTest0)
 		U_TEST_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
 	}
 	{
-		arg.IntVal= llvm::APInt( 32, -2564 );
+		arg.IntVal= llvm::APInt( 32, uint64_t(-2564) );
 		llvm::GenericValue result_value=
 			engine->runFunction(
 				function,
@@ -1076,7 +1076,7 @@ U_TEST(BreakOperatorTest0)
 		U_TEST_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
 	}
 	{
-		arg.IntVal= llvm::APInt( 32, -2564 );
+		arg.IntVal= llvm::APInt( 32, uint64_t(-2564) );
 		llvm::GenericValue result_value=
 			engine->runFunction(
 				function,
@@ -1251,12 +1251,12 @@ U_TEST(StructTest0)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooiii" );
 	U_TEST_ASSERT( function != nullptr );
 
-	int arg0= 1488, arg1= 77, arg2= 546;
+	int32_t arg0= 1488, arg1= 77, arg2= 546;
 
 	llvm::GenericValue args[3];
-	args[0].IntVal= llvm::APInt( 32, arg0 );
-	args[1].IntVal= llvm::APInt( 32, arg1 );
-	args[2].IntVal= llvm::APInt( 32, arg2 );
+	args[0].IntVal= llvm::APInt( 32, uint64_t(arg0) );
+	args[1].IntVal= llvm::APInt( 32, uint64_t(arg1) );
+	args[2].IntVal= llvm::APInt( 32, uint64_t(arg2) );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
@@ -1331,11 +1331,11 @@ U_TEST(BlocksTest)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooii" );
 	U_TEST_ASSERT( function != nullptr );
 
-	int arg0= 1488, arg1= 77;
+	int32_t arg0= 1488, arg1= 77;
 
 	llvm::GenericValue args[2];
-	args[0].IntVal= llvm::APInt( 32, arg0 );
-	args[1].IntVal= llvm::APInt( 32, arg1 );
+	args[0].IntVal= llvm::APInt( 32, uint64_t(arg0) );
+	args[1].IntVal= llvm::APInt( 32, uint64_t(arg1) );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
@@ -1426,11 +1426,11 @@ U_TEST(ReferencesTest2)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooii" );
 	U_TEST_ASSERT( function != nullptr );
 
-	int arg0= 1488, arg1= 77;
+	int32_t arg0= 1488, arg1= 77;
 
 	llvm::GenericValue args[2];
-	args[0].IntVal= llvm::APInt( 32, arg0 );
-	args[1].IntVal= llvm::APInt( 32, arg1 );
+	args[0].IntVal= llvm::APInt( 32, uint64_t(arg0) );
+	args[1].IntVal= llvm::APInt( 32, uint64_t(arg1) );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
@@ -1484,10 +1484,10 @@ U_TEST(ReferencesTest4)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooi" );
 	U_TEST_ASSERT( function != nullptr );
 
-	int arg0= 148;
+	int32_t arg0= 148;
 
 	llvm::GenericValue args[1];
-	args[0].IntVal= llvm::APInt( 32, arg0 );
+	args[0].IntVal= llvm::APInt( 32, uint64_t(arg0) );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
@@ -1516,10 +1516,10 @@ U_TEST(ReferencesTest5)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooi" );
 	U_TEST_ASSERT( function != nullptr );
 
-	int arg0= 148;
+	int32_t arg0= 148;
 
 	llvm::GenericValue args[1];
-	args[0].IntVal= llvm::APInt( 32, arg0 );
+	args[0].IntVal= llvm::APInt( 32, uint64_t(arg0) );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
@@ -1549,10 +1549,10 @@ U_TEST(ReferencesTest6)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooi" );
 	U_TEST_ASSERT( function != nullptr );
 
-	int arg0= 148;
+	int32_t arg0= 148;
 
 	llvm::GenericValue args[1];
-	args[0].IntVal= llvm::APInt( 32, arg0 );
+	args[0].IntVal= llvm::APInt( 32, uint64_t(arg0) );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
@@ -1645,12 +1645,12 @@ U_TEST(ReferencesTest9)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooii" );
 	U_TEST_ASSERT( function != nullptr );
 
-	static const int cases_args[3][2]= { { 7, 567 }, { 48454, 758 }, { 4468, 4468 } };
+	static const int32_t cases_args[3][2]= { { 7, 567 }, { 48454, 758 }, { 4468, 4468 } };
 	for( unsigned int i= 0u; i < 3u; i++ )
 	{
 		llvm::GenericValue args[2];
-		args[0].IntVal= llvm::APInt( 32, cases_args[i][0] );
-		args[1].IntVal= llvm::APInt( 32, cases_args[i][1] );
+		args[0].IntVal= llvm::APInt( 32, uint64_t(cases_args[i][0]) );
+		args[1].IntVal= llvm::APInt( 32, uint64_t(cases_args[i][1]) );
 
 		llvm::GenericValue result_value=
 			engine->runFunction(
@@ -1686,12 +1686,12 @@ U_TEST(ReferencesTest10)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooii" );
 	U_TEST_ASSERT( function != nullptr );
 
-	static const int cases_args[3][2]= { { 7, 567 }, { 48454, 758 }, { 4468, 4468 } };
+	static const int32_t cases_args[3][2]= { { 7, 567 }, { 48454, 758 }, { 4468, 4468 } };
 	for( unsigned int i= 0u; i < 3u; i++ )
 	{
 		llvm::GenericValue args[2];
-		args[0].IntVal= llvm::APInt( 32, cases_args[i][0] );
-		args[1].IntVal= llvm::APInt( 32, cases_args[i][1] );
+		args[0].IntVal= llvm::APInt( 32, uint64_t(cases_args[i][0]) );
+		args[1].IntVal= llvm::APInt( 32, uint64_t(cases_args[i][1]) );
 
 		llvm::GenericValue result_value=
 			engine->runFunction(
@@ -1726,12 +1726,12 @@ U_TEST(ReferencesTest11)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooii" );
 	U_TEST_ASSERT( function != nullptr );
 
-	static const int cases_args[3][2]= { { 7, 567 }, { 48454, 758 }, { 4468, 4468 } };
+	static const int32_t cases_args[3][2]= { { 7, 567 }, { 48454, 758 }, { 4468, 4468 } };
 	for( unsigned int i= 0u; i < 3u; i++ )
 	{
 		llvm::GenericValue args[2];
-		args[0].IntVal= llvm::APInt( 32, cases_args[i][0] );
-		args[1].IntVal= llvm::APInt( 32, cases_args[i][1] );
+		args[0].IntVal= llvm::APInt( 32, uint64_t(cases_args[i][0]) );
+		args[1].IntVal= llvm::APInt( 32, uint64_t(cases_args[i][1]) );
 
 		llvm::GenericValue result_value=
 			engine->runFunction(
@@ -1762,10 +1762,10 @@ U_TEST(BindValueToConstReferenceTest0)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooi" );
 	U_TEST_ASSERT( function != nullptr );
 
-	int arg0= 666;
+	int32_t arg0= 666;
 
 	llvm::GenericValue args[1];
-	args[0].IntVal= llvm::APInt( 32, arg0 );
+	args[0].IntVal= llvm::APInt( 32, uint64_t(arg0) );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(

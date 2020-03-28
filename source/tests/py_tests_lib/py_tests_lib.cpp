@@ -229,31 +229,31 @@ PyObject* RunFunction( PyObject* const self, PyObject* const args )
 			{
 				int bool_param= 0;
 				parse_result= PyArg_Parse( function_args[i], "p", &bool_param );
-				llvm_args[i].IntVal= llvm::APInt( 1, bool_param );
+				llvm_args[i].IntVal= llvm::APInt( 1, uint64_t(bool_param) );
 			}
 			if( bit_width == 8 )
 			{
 				int8_t int_param= 0;
 				parse_result= PyArg_Parse( function_args[i], "b", &int_param );
-				llvm_args[i].IntVal= llvm::APInt( 8, int_param );
+				llvm_args[i].IntVal= llvm::APInt( 8, uint64_t(int_param) );
 			}
 			if( bit_width == 16 )
 			{
 				int16_t int_param= 0;
 				parse_result= PyArg_Parse( function_args[i], "h", &int_param );
-				llvm_args[i].IntVal= llvm::APInt( 16, int_param );
+				llvm_args[i].IntVal= llvm::APInt( 16, uint64_t(int_param) );
 			}
 			if( bit_width == 32 )
 			{
 				int32_t int_param= 0;
 				parse_result= PyArg_Parse( function_args[i], "i", &int_param );
-				llvm_args[i].IntVal= llvm::APInt( 32, int_param );
+				llvm_args[i].IntVal= llvm::APInt( 32, uint64_t(int_param) );
 			}
 			if( bit_width == 64 )
 			{
 				int64_t int_param= 0;
 				parse_result= PyArg_Parse( function_args[i], "L", &int_param );
-				llvm_args[i].IntVal= llvm::APInt( 64, int_param );
+				llvm_args[i].IntVal= llvm::APInt( 64, uint64_t(int_param) );
 			}
 		}
 		else if( arg_type->isFloatTy() )
@@ -321,7 +321,7 @@ PyObject* BuildFilePos( const FilePos& file_pos )
 
 PyObject* BuildString( const std::string& str )
 {
-	return PyUnicode_DecodeUTF8( str.data(), str.size(), nullptr );
+	return PyUnicode_DecodeUTF8( str.data(), Py_ssize_t(str.size()), nullptr );
 }
 
 PyObject* BuildErrorsList( const CodeBuilderErrorsContainer& errors )
@@ -335,7 +335,7 @@ PyObject* BuildErrorsList( const CodeBuilderErrorsContainer& errors )
 		PyDict_SetItemString( dict, "file_pos", BuildFilePos( error.file_pos ) );
 
 		const char* const error_code_str= CodeBuilderErrorCodeToString( error.code );
-		PyDict_SetItemString( dict, "code", PyUnicode_DecodeUTF8( error_code_str, std::strlen(error_code_str), nullptr ) );
+		PyDict_SetItemString( dict, "code", PyUnicode_DecodeUTF8( error_code_str, Py_ssize_t(std::strlen(error_code_str)), nullptr ) );
 
 		PyDict_SetItemString( dict, "text", BuildString( error.text ) );
 

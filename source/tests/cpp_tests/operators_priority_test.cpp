@@ -7,7 +7,7 @@ template<class T>
 void FillLLVMVal( llvm::GenericValue& llvm_val, const T& val )
 {
 	static_assert( std::is_integral<T>::value, "expected integer" );
-	llvm_val.IntVal= llvm::APInt( sizeof(T) * 8, val );
+	llvm_val.IntVal= llvm::APInt( sizeof(T) * 8, uint64_t(val) );
 }
 
 template<>

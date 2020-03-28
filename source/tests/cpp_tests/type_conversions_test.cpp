@@ -20,7 +20,7 @@ U_TEST( TypeConversionTest0 )
 
 	for( int i= std::numeric_limits<int8_t>::min(); i <= std::numeric_limits<int8_t>::max(); i++ )
 	{
-		llvm::GenericValue arg; arg.IntVal= llvm::APInt( 8, i );
+		llvm::GenericValue arg; arg.IntVal= llvm::APInt( 8, uint64_t(i) );
 		const llvm::GenericValue result_value=
 			engine->runFunction(
 				function,
@@ -47,7 +47,7 @@ U_TEST( TypeConversionTest1 )
 
 	for( int i= std::numeric_limits<int8_t>::min(); i <= std::numeric_limits<int8_t>::max(); i++ )
 	{
-		llvm::GenericValue arg; arg.IntVal= llvm::APInt( 8, i );
+		llvm::GenericValue arg; arg.IntVal= llvm::APInt( 8, uint64_t(i) );
 		const llvm::GenericValue result_value=
 			engine->runFunction(
 				function,
@@ -101,7 +101,7 @@ U_TEST( TypeConversionTest3 )
 
 	for( int i= std::numeric_limits<int8_t>::min(); i <= std::numeric_limits<int8_t>::max(); i++ )
 	{
-		llvm::GenericValue arg; arg.IntVal= llvm::APInt( 8, i );
+		llvm::GenericValue arg; arg.IntVal= llvm::APInt( 8, uint64_t(i) );
 		const llvm::GenericValue result_value=
 			engine->runFunction(
 				function,
@@ -172,7 +172,7 @@ U_TEST( TypeConversionTest5 )
 	};
 	for( const int32_t value : c_values )
 	{
-		llvm::GenericValue arg; arg.IntVal= llvm::APInt( 32, value );
+		llvm::GenericValue arg; arg.IntVal= llvm::APInt( 32, uint64_t(value) );
 		const llvm::GenericValue result_value=
 			engine->runFunction(
 				function,
@@ -209,7 +209,7 @@ U_TEST( TypeConversionTest6 )
 	};
 	for( const int32_t value : c_values )
 	{
-		llvm::GenericValue arg; arg.IntVal= llvm::APInt( 32, value );
+		llvm::GenericValue arg; arg.IntVal= llvm::APInt( 32, uint64_t(value) );
 		const llvm::GenericValue result_value=
 			engine->runFunction(
 				function,
@@ -352,7 +352,7 @@ U_TEST( TypeConversionTest10 )
 	};
 	for( const int32_t value : c_values )
 	{
-		llvm::GenericValue arg; arg.IntVal= llvm::APInt( 32, value );
+		llvm::GenericValue arg; arg.IntVal= llvm::APInt( 32, uint64_t(value) );
 		const llvm::GenericValue result_value=
 			engine->runFunction(
 				function,
@@ -492,7 +492,7 @@ U_TEST( TypeConversionTest14 )
 	};
 	for( const int32_t value : c_values )
 	{
-		llvm::GenericValue arg; arg.IntVal= llvm::APInt( 32, value );
+		llvm::GenericValue arg; arg.IntVal= llvm::APInt( 32, uint64_t(value) );
 		const llvm::GenericValue result_value=
 			engine->runFunction(
 				function,
