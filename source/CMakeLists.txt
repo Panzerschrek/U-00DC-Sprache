@@ -128,7 +128,7 @@ if(MSVC)
 	endif()
 
 else()
-	add_compile_options( -Wall -Wextra -Wconversion )
+	add_compile_options( -Werror -Wall -Wextra -Wconversion )
 	add_compile_options( -fvisibility=hidden -fvisibility-inlines-hidden )
 
 	if( NOT LLVM_ENABLE_RTTI )
@@ -318,7 +318,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	set( IMPORT_TEST_SOURCES tests/import_test/root.u )
 	CompileUSources( "${IMPORT_TEST_SOURCES}" IMPORT_TEST_OBJECTS )
 
-	add_executable( ImportTest tests/import_test/entry.c ${IMPORT_TEST_SOURCES} ${IMPORT_TEST_OBJECTS} )
+	add_executable( ImportTest tests/import_test/entry.cpp ${IMPORT_TEST_SOURCES} ${IMPORT_TEST_OBJECTS} )
 	add_dependencies( ImportTest Compiler )
 
 	#
@@ -328,7 +328,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 		set( UNICODE_FILE_NAMES_SOURCES "tests/unicode_file_names_test/Entry ФшЯё_66.ü" )
 		CompileUSources( "${UNICODE_FILE_NAMES_SOURCES}" UNICODE_FILE_NAMES_OBJECTS )
 
-		add_executable( UnicodeFileNamesTest tests/unicode_file_names_test/entry.c ${UNICODE_FILE_NAMES_SOURCES} ${UNICODE_FILE_NAMES_OBJECTS} )
+		add_executable( UnicodeFileNamesTest tests/unicode_file_names_test/entry.cpp ${UNICODE_FILE_NAMES_SOURCES} ${UNICODE_FILE_NAMES_OBJECTS} )
 		add_dependencies( UnicodeFileNamesTest Compiler )
 	endif()
 
@@ -346,7 +346,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 			--include-dir ${CMAKE_SOURCE_DIR}/tests/include_dirs_test/b
 			--include-dir ${CMAKE_SOURCE_DIR}/tests/include_dirs_test/c )
 
-	add_executable( IncludeDirsTest tests/include_dirs_test/entry.c tests/include_dirs_test/root.u include_dirs_test.o )
+	add_executable( IncludeDirsTest tests/include_dirs_test/entry.cpp tests/include_dirs_test/root.u include_dirs_test.o )
 	add_dependencies( IncludeDirsTest Compiler )
 
 	#
@@ -355,7 +355,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	set( TYPE_ID_TEST_SOURCES tests/type_id_test/type_id_a.u tests/type_id_test/type_id_b.u )
 	CompileUSources( "${TYPE_ID_TEST_SOURCES}" TYPE_ID_TEST_OBJECTS )
 
-	add_executable( TypeIdTest tests/type_id_test/entry.c ${TYPE_ID_TEST_SOURCES} ${TYPE_ID_TEST_OBJECTS} )
+	add_executable( TypeIdTest tests/type_id_test/entry.cpp ${TYPE_ID_TEST_SOURCES} ${TYPE_ID_TEST_OBJECTS} )
 	add_dependencies( TypeIdTest Compiler )
 
 	# Run type_id test
@@ -400,7 +400,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 				${SPRACHE_COMPILER_PIC_OPTIONS}
 				--include-dir ${CMAKE_BINARY_DIR} )
 
-		add_executable( CppHeaderConverterTest cpp_header_converter_test.o data/entry.cpp tests/cpp_header_converter_test/c_test.c )
+		add_executable( CppHeaderConverterTest cpp_header_converter_test.o data/entry.cpp tests/cpp_header_converter_test/c_test.cpp )
 		add_dependencies( CppHeaderConverterTest Compiler )
 	endif()
 

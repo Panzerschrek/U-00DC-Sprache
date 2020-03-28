@@ -20,12 +20,12 @@ U_TEST(BasicBinaryOperationsTest)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooiii" );
 	U_TEST_ASSERT( function != nullptr );
 
-	int arg0= 77, arg1= 1488, arg2= 42;
+	int32_t arg0= 77, arg1= 1488, arg2= 42;
 
 	llvm::GenericValue args[3];
-	args[0].IntVal= llvm::APInt( 32, arg0 );
-	args[1].IntVal= llvm::APInt( 32, arg1 );
-	args[2].IntVal= llvm::APInt( 32, arg2 );
+	args[0].IntVal= llvm::APInt( 32, uint64_t(arg0) );
+	args[1].IntVal= llvm::APInt( 32, uint64_t(arg1) );
+	args[2].IntVal= llvm::APInt( 32, uint64_t(arg2) );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
@@ -80,12 +80,12 @@ U_TEST(LogicalBinaryOperationsTest)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooiii" );
 	U_TEST_ASSERT( function != nullptr );
 
-	int arg0= 77, arg1= 1488, arg2= 42;
+	int32_t arg0= 77, arg1= 1488, arg2= 42;
 
 	llvm::GenericValue args[3];
-	args[0].IntVal= llvm::APInt( 32, arg0 );
-	args[1].IntVal= llvm::APInt( 32, arg1 );
-	args[2].IntVal= llvm::APInt( 32, arg2 );
+	args[0].IntVal= llvm::APInt( 32, uint64_t(arg0) );
+	args[1].IntVal= llvm::APInt( 32, uint64_t(arg1) );
+	args[2].IntVal= llvm::APInt( 32, uint64_t(arg2) );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
@@ -115,11 +115,11 @@ U_TEST(AdditiveOperationsTest0)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooii" );
 	U_TEST_ASSERT( function != nullptr );
 
-	int arg0= 1488, arg1= 77;
+	int32_t arg0= 1488, arg1= 77;
 
 	llvm::GenericValue args[2];
-	args[0].IntVal= llvm::APInt( 32, arg0 );
-	args[1].IntVal= llvm::APInt( 32, arg1 );
+	args[0].IntVal= llvm::APInt( 32, uint64_t(arg0) );
+	args[1].IntVal= llvm::APInt( 32, uint64_t(arg1) );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
@@ -147,11 +147,11 @@ U_TEST(AdditiveOperationsTest1)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooii" );
 	U_TEST_ASSERT( function != nullptr );
 
-	int arg0= 1488, arg1= 77;
+	int32_t arg0= 1488, arg1= 77;
 
 	llvm::GenericValue args[2];
-	args[0].IntVal= llvm::APInt( 32, arg0 );
-	args[1].IntVal= llvm::APInt( 32, arg1 );
+	args[0].IntVal= llvm::APInt( 32, uint64_t(arg0) );
+	args[1].IntVal= llvm::APInt( 32, uint64_t(arg1) );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
@@ -180,11 +180,11 @@ U_TEST(AdditiveOperationsTest2)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooii" );
 	U_TEST_ASSERT( function != nullptr );
 
-	int arg0= 1488, arg1= 77;
+	int32_t arg0= 1488, arg1= 77;
 
 	llvm::GenericValue args[2];
-	args[0].IntVal= llvm::APInt( 32, arg0 );
-	args[1].IntVal= llvm::APInt( 32, arg1 );
+	args[0].IntVal= llvm::APInt( 32, uint64_t(arg0) );
+	args[1].IntVal= llvm::APInt( 32, uint64_t(arg1) );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
@@ -217,7 +217,7 @@ U_TEST(LeftShiftTest0)
 	for( const int32_t value : values )
 	{
 		llvm::GenericValue args[2];
-		args[0].IntVal= llvm::APInt( 32, value );
+		args[0].IntVal= llvm::APInt( 32, uint64_t(value) );
 		for( unsigned int shift= 0u; shift < 32u; shift++ )
 		{
 			args[1].IntVal= llvm::APInt( 32, shift );
@@ -293,7 +293,7 @@ U_TEST(RightShiftTest0)
 	for( const int32_t value : values )
 	{
 		llvm::GenericValue args[2];
-		args[0].IntVal= llvm::APInt( 32, value );
+		args[0].IntVal= llvm::APInt( 32, uint64_t(value) );
 		for( unsigned int shift= 0u; shift < 32u; shift++ )
 		{
 			args[1].IntVal= llvm::APInt( 32, shift );
@@ -407,7 +407,7 @@ U_TEST(LeftShiftAndAssignTest0)
 	for( const int32_t value : values )
 	{
 		llvm::GenericValue args[2];
-		args[0].IntVal= llvm::APInt( 32, value );
+		args[0].IntVal= llvm::APInt( 32, uint64_t(value) );
 		for( unsigned int shift= 0u; shift < 32u; shift++ )
 		{
 			args[1].IntVal= llvm::APInt( 32, shift );
@@ -446,7 +446,7 @@ U_TEST(IncrementTest0)
 	for( const int32_t value : values )
 	{
 		llvm::GenericValue arg;
-		arg.IntVal= llvm::APInt( 32, value );
+		arg.IntVal= llvm::APInt( 32, uint64_t(value) );
 
 		const llvm::GenericValue result_value=
 			engine->runFunction(
@@ -516,7 +516,7 @@ U_TEST(DecrementTest0)
 	for( const int8_t value : values )
 	{
 		llvm::GenericValue arg;
-		arg.IntVal= llvm::APInt( 8, value );
+		arg.IntVal= llvm::APInt( 8, uint64_t(value) );
 
 		const llvm::GenericValue result_value=
 			engine->runFunction(
@@ -578,9 +578,9 @@ U_TEST(UnaryMinusTest)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooi" );
 	U_TEST_ASSERT( function != nullptr );
 
-	int arg_value= 54785;
+	int32_t arg_value= 54785;
 	llvm::GenericValue arg;
-	arg.IntVal= llvm::APInt( 32, arg_value );
+	arg.IntVal= llvm::APInt( 32, uint64_t(arg_value) );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
@@ -933,7 +933,7 @@ U_TEST(ComparisonSignedOperatorsTest)
 		// TODO - add more test-cases.
 
 		// Less
-		args[0].IntVal= llvm::APInt( 32, -1488 );
+		args[0].IntVal= llvm::APInt( 32, uint64_t(-1488) );
 		args[1].IntVal= llvm::APInt( 32, 51478 );
 		result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
 		U_TEST_ASSERT( static_cast<uint64_t>( c_true_matrix[ func_n ][0] ) == result_value.IntVal.getLimitedValue() );
@@ -1099,12 +1099,12 @@ U_TEST(EqualityOperatorsTest)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooiii" );
 	U_TEST_ASSERT( function != nullptr );
 
-	int arg0= 77, arg1= 1488, arg2= 42;
+	int32_t arg0= 77, arg1= 1488, arg2= 42;
 
 	llvm::GenericValue args[3];
-	args[0].IntVal= llvm::APInt( 32, arg0 );
-	args[1].IntVal= llvm::APInt( 32, arg1 );
-	args[2].IntVal= llvm::APInt( 32, arg2 );
+	args[0].IntVal= llvm::APInt( 32, uint64_t(arg0) );
+	args[1].IntVal= llvm::APInt( 32, uint64_t(arg1) );
+	args[2].IntVal= llvm::APInt( 32, uint64_t(arg2) );
 
 	llvm::GenericValue result_value=
 		engine->runFunction(
@@ -1216,8 +1216,8 @@ U_TEST( RemOperatorTest1 )
 			continue;
 
 		llvm::GenericValue args[2];
-		args[0].IntVal= llvm::APInt( 32, x );
-		args[1].IntVal= llvm::APInt( 32, y );
+		args[0].IntVal= llvm::APInt( 32, uint64_t(x) );
+		args[1].IntVal= llvm::APInt( 32, uint64_t(y) );
 		const llvm::GenericValue result=
 			engine->runFunction(
 				function,

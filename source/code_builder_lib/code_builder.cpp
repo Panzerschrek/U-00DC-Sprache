@@ -878,7 +878,7 @@ void CodeBuilder::CallDestructor(
 		{
 			if( element_type.HaveDestructor() )
 				CallDestructor(
-					function_context.llvm_ir_builder.CreateGEP( ptr, { GetZeroGEPIndex(), GetFieldGEPIndex( &element_type - tuple_type->elements.data() ) } ),
+					function_context.llvm_ir_builder.CreateGEP( ptr, { GetZeroGEPIndex(), GetFieldGEPIndex( size_t(&element_type - tuple_type->elements.data()) ) } ),
 					element_type,
 					function_context,
 					errors_container,
@@ -2451,8 +2451,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 				( accesible_variable_nodes .count( src_storage[i].first ) != 0 ||
 				indirect_accesible_variable_nodes.count( src_storage[i].first ) != 0 ) )
 			{
-				dst_storage.insert( dst_storage.begin() + dst_storage.size() - 1u, src_storage[i] ); // insert before declared variable storage.
-				src_storage.erase( src_storage.begin() + i );
+				dst_storage.insert( dst_storage.begin() + std::ptrdiff_t( dst_storage.size() - 1u ), src_storage[i] ); // insert before declared variable storage.
+				src_storage.erase( src_storage.begin() + std::ptrdiff_t(i) );
 			}
 			else
 				++i;

@@ -705,7 +705,7 @@ void CodeBuilder::BuildCopyConstructorPart(
 	{
 		for( const Type& element_type : tuple_type->elements )
 		{
-			llvm::Value* const index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex( &element_type - tuple_type->elements.data() ) };
+			llvm::Value* const index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex( size_t(&element_type - tuple_type->elements.data()) ) };
 			BuildCopyConstructorPart(
 				function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
 				function_context.llvm_ir_builder.CreateGEP( src, index_list ),
@@ -784,7 +784,7 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 	{
 		for( const Type& element_type : tuple_type->elements )
 		{
-			llvm::Value* const index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex( &element_type - tuple_type->elements.data() ) };
+			llvm::Value* const index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex( size_t(&element_type - tuple_type->elements.data()) ) };
 			BuildCopyAssignmentOperatorPart(
 				function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
 				function_context.llvm_ir_builder.CreateGEP( src, index_list ),
