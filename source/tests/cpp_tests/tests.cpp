@@ -220,7 +220,7 @@ int main()
 			func_data.func();
 			++passed;
 		}
-		catch( const DisableTestException& ex )
+		catch( const DisableTestException& )
 		{
 			std::cout << "Test " << func_data.name << " disabled\n";
 			disabled++;
