@@ -91,13 +91,15 @@ U_TEST( ClassmethodsManglingTest )
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	// Here is difference between Ü and C++. In Ü "this" processed as regular argument.
+	// Here is difference between Ü and C++:
+	// In Ü "this" processed as regular argument.
+	// Constructors and destructors named as "constructor" and "destructor", but not "C1" and "D0".
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN10SomeStruct3FooERKS_" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN10SomeStruct3BarERS_" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN10SomeStruct3BazEv" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN10SomeStructC1ERS_" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN10SomeStructC1ERS_if" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN10SomeStructD0ERS_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN10SomeStruct11constructorERS_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN10SomeStruct11constructorERS_if" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN10SomeStruct10destructorERS_" ) != nullptr );
 }
 
 U_TEST( NamesCompressionTest )

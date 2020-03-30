@@ -314,7 +314,7 @@ MangleGraphNode GetTypeName( const Type& type )
 	return result;
 }
 
-const ProgramStringMap<std::string> g_op_names
+const ProgramStringMap<std::string> g_special_funcs_table
 {
 	{ "+", "pl" },
 	{ "-", "mi" },
@@ -360,16 +360,14 @@ const ProgramStringMap<std::string> g_op_names
 	{ "[]", "ix" },
 };
 
-const std::string g_empty_op_name;
-
-// Returns empty string if func_name is not operatorname.
-const std::string& DecodeOperator( const std::string& func_name )
+// Returns empty string if func_name is not special.
+const std::string& DecodeSpecialFunction( const std::string& func_name )
 {
-	const auto it= g_op_names.find( func_name );
-	if( it != g_op_names.end() )
+	const auto it= g_special_funcs_table.find( func_name );
+	if( it != g_special_funcs_table.end() )
 		return it->second;
 
-	return g_empty_op_name;
+	return func_name;
 }
 
 } // namespace
@@ -379,11 +377,8 @@ std::string MangleFunction(
 	const std::string& function_name,
 	const Function& function_type )
 {
-	const std::string& operator_decoded= DecodeOperator( function_name );
-	const std::string& real_function_name= operator_decoded.empty() ? function_name : operator_decoded;
-
 	MangleGraphNode result;
-	result.childs.push_back( GetNestedName( real_function_name, parent_scope ) );
+	result.childs.push_back( GetNestedName( DecodeSpecialFunction(function_name), parent_scope ) );
 	result.childs.back().cachable= false;
 
 	for( const Function::Arg& arg : function_type.args )
