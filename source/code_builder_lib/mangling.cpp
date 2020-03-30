@@ -195,7 +195,13 @@ MangleGraphNode GetTypeName( const Type& type )
 	}
 	else if( const Class* const class_type= type.GetClassType() )
 	{
-		result= GetNestedName( class_type->members.GetThisNamespaceName(), *class_type->members.GetParent() );
+		if( class_type->typeinfo_type != std::nullopt )
+		{
+			result.prefix= class_type->members.GetThisNamespaceName();
+			result.childs.push_back( GetTypeName( *class_type->typeinfo_type ) );
+		}
+		else
+			result= GetNestedName( class_type->members.GetThisNamespaceName(), *class_type->members.GetParent() );
 	}
 	else if( const Enum* const enum_type= type.GetEnumType() )
 	{
