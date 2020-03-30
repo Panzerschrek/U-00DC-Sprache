@@ -31,7 +31,7 @@ char Base36Digit( size_t value )
 		return char('A' + ( value - 10 ) );
 }
 
-class NamesCache final
+class NamesCache
 {
 public:
 	static constexpr size_t c_no_replacement= std::numeric_limits<size_t>::max();
@@ -44,8 +44,7 @@ public:
 		names_container_.push_back( std::move(name) );
 	}
 
-
-	std::optional<std::string> GetReplacement( const std::string& name )
+	std::optional<std::string> GetReplacement( const std::string& name ) const
 	{
 		for( const std::string& candidate : names_container_ )
 			if( name == candidate )
@@ -76,10 +75,10 @@ private:
 	std::vector<std::string> names_container_;
 };
 
-struct NamePair final
+struct NamePair
 {
 	std::string full;
-	std::string compressed_and_escaped;
+	std::string compressed;
 };
 
 NamePair MangleGraphFinalize_r( NamesCache& names_cache, const MangleGraphNode& node )
@@ -87,20 +86,20 @@ NamePair MangleGraphFinalize_r( NamesCache& names_cache, const MangleGraphNode& 
 	NamePair result;
 
 	result.full+= node.prefix;
-	result.compressed_and_escaped+= node.prefix;
+	result.compressed+= node.prefix;
 	for( const MangleGraphNode& child_node : node.childs )
 	{
 		const NamePair child_node_result= MangleGraphFinalize_r( names_cache, child_node );
 		result.full+= child_node_result.full;
-		result.compressed_and_escaped+= child_node_result.compressed_and_escaped;
+		result.compressed+= child_node_result.compressed;
 	}
 	result.full+= node.postfix;
-	result.compressed_and_escaped+= node.postfix;
+	result.compressed+= node.postfix;
 
 	if( node.cachable )
 	{
 		if( const auto replacement = names_cache.GetReplacement( result.full ) )
-			result.compressed_and_escaped= *replacement;
+			result.compressed= *replacement;
 		else
 			names_cache.AddName( result.full );
 	}
@@ -111,7 +110,7 @@ NamePair MangleGraphFinalize_r( NamesCache& names_cache, const MangleGraphNode& 
 std::string MangleGraphFinalize( const MangleGraphNode& node )
 {
 	NamesCache names_cache;
-	return MangleGraphFinalize_r( names_cache, node ).compressed_and_escaped;
+	return MangleGraphFinalize_r( names_cache, node ).compressed;
 }
 
 MangleGraphNode GetNamespacePrefix_r( const NamesScope& names_scope )
@@ -151,7 +150,7 @@ MangleGraphNode GetTypeName( const Type& type )
 {
 	MangleGraphNode result;
 
-	if( const FundamentalType* const fundamental_type= type.GetFundamentalType() )
+	if( const auto fundamental_type= type.GetFundamentalType() )
 	{
 		switch( fundamental_type->fundamental_type )
 		{
@@ -185,6 +184,7 @@ MangleGraphNode GetTypeName( const Type& type )
 	}
 	else if( const Tuple* const tuple_type= type.GetTupleType() )
 	{
+		// Encode tuples, like in "Rust".
 		result.prefix= "T";
 
 		result.childs.reserve( tuple_type->elements.size() );
@@ -193,7 +193,7 @@ MangleGraphNode GetTypeName( const Type& type )
 
 		result.postfix= "E";
 	}
-	else if( const Class* const class_type= type.GetClassType() )
+	else if( const auto class_type= type.GetClassType() )
 	{
 		if( class_type->typeinfo_type != std::nullopt )
 		{
@@ -203,16 +203,16 @@ MangleGraphNode GetTypeName( const Type& type )
 		else
 			result= GetNestedName( class_type->members.GetThisNamespaceName(), *class_type->members.GetParent() );
 	}
-	else if( const Enum* const enum_type= type.GetEnumType() )
+	else if( const auto enum_type= type.GetEnumType() )
 	{
 		result= GetNestedName( enum_type->members.GetThisNamespaceName(), *enum_type->members.GetParent() );
 	}
-	else if( const FunctionPointer* const function_pointer= type.GetFunctionPointerType() )
+	else if( const auto function_pointer= type.GetFunctionPointerType() )
 	{
 		result.prefix= "P";
 		result.childs.push_back( GetTypeName( function_pointer->function ) );
 	}
-	else if( const Function* const function= type.GetFunctionType() )
+	else if( const auto function= type.GetFunctionType() )
 	{
 		std::vector<Function::Arg> signature;
 		{
@@ -435,9 +435,7 @@ std::string MangleGlobalVariable(
 	if( parent_scope.GetParent() == nullptr )
 		return variable_name;
 
-	MangleGraphNode result= GetNestedName( variable_name, parent_scope );
-
-	return "_Z" + MangleGraphFinalize( result );
+	return "_Z" + MangleGraphFinalize( GetNestedName( variable_name, parent_scope ) );
 }
 
 std::string MangleType( const Type& type )
