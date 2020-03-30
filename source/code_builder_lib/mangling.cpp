@@ -254,39 +254,33 @@ MangleGraphNode GetTypeName( const Type& type )
 
 		if( !function->return_references.empty() )
 		{
-			// TODO
-			/*
-			std::string rr;
-			rr+= "_RR";
+			MangleGraphNode rr_node;
+			rr_node.prefix= "_RR";
 
 			U_ASSERT( function->return_references.size() < 36u );
-			rr.push_back( Base36Digit(function->return_references.size()) );
+			rr_node.prefix.push_back( Base36Digit(function->return_references.size()) );
 
 			for( const Function::ArgReference& arg_and_tag : function->return_references )
 			{
 				U_ASSERT( arg_and_tag.first  < 36u );
 				U_ASSERT( arg_and_tag.second < 36u || arg_and_tag.second == Function::c_arg_reference_tag_number );
 
-				rr.push_back( Base36Digit(arg_and_tag.first) );
-				rr.push_back(
+				rr_node.prefix.push_back( Base36Digit(arg_and_tag.first) );
+				rr_node.prefix.push_back(
 					arg_and_tag.second == Function::c_arg_reference_tag_number
-					? '_' :
-					Base36Digit(arg_and_tag.second) );
+					? '_'
+					: Base36Digit(arg_and_tag.second) );
 			}
 
-			result.full+= rr;
-			result.compressed_and_escaped+= rr;
-			*/
+			result.childs.push_back( std::move( rr_node ) );
 		}
 		if( !function->references_pollution.empty() )
 		{
-			// TODO
-			/*
-			std::string rp;
-			rp+= "_RP";
+			MangleGraphNode rp_node;
+			rp_node.prefix= "_RP";
 
 			U_ASSERT( function->references_pollution.size() < 36u );
-			rp.push_back( Base36Digit(function->references_pollution.size()) );
+			rp_node.prefix.push_back( Base36Digit(function->references_pollution.size()) );
 
 			for( const Function::ReferencePollution& pollution : function->references_pollution )
 			{
@@ -295,27 +289,30 @@ MangleGraphNode GetTypeName( const Type& type )
 				U_ASSERT( pollution.src.first  < 36u );
 				U_ASSERT( pollution.src.second < 36u || pollution.src.second == Function::c_arg_reference_tag_number );
 
-				rp.push_back( Base36Digit(pollution.dst.first) );
-				rp.push_back(
+				rp_node.prefix.push_back( Base36Digit(pollution.dst.first) );
+				rp_node.prefix.push_back(
 					pollution.dst.second == Function::c_arg_reference_tag_number
-					? '_' :
-					Base36Digit(pollution.dst.second) );
-				rp.push_back( Base36Digit(pollution.src.first) );
-				rp.push_back(
+					? '_'
+					: Base36Digit(pollution.dst.second) );
+				rp_node.prefix.push_back( Base36Digit(pollution.src.first) );
+				rp_node.prefix.push_back(
 					pollution.src.second == Function::c_arg_reference_tag_number
-					? '_' :
-					Base36Digit(pollution.src.second) );
-				rp.push_back( pollution.src_is_mutable ? '1' : '0' );
+					? '_'
+					: Base36Digit(pollution.src.second) );
+				rp_node.prefix.push_back( pollution.src_is_mutable ? '1' : '0' );
 			}
 
-			result.full+= rp;
-			result.compressed_and_escaped+= rp;
-			*/
+			result.childs.push_back( std::move( rp_node ) );
+		}
+		if( function->unsafe )
+		{
+			MangleGraphNode unsafe_node;
+			unsafe_node.prefix= "unsafe";
+			result.childs.push_back( std::move(unsafe_node) );
 		}
 
 		result.prefix= "F";
 		result.postfix= "E";
-		// TODO - unsafe
 	}
 	else U_ASSERT(false);
 
