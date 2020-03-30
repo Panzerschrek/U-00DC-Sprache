@@ -127,18 +127,22 @@ MangleGraphNode GetNamespacePrefix_r( const NamesScope& names_scope )
 	return result;
 }
 
-MangleGraphNode GetNestedName( const std::string& name, const NamesScope& parent_scope )
+MangleGraphNode GetNestedName(
+	const std::string& name,
+	const NamesScope& parent_scope,
+	const bool no_name_num_prefix= false )
 {
 	MangleGraphNode result;
 
+	const std::string num_prefix=  no_name_num_prefix ? "" : std::to_string( name.size() );
 	if( parent_scope.GetParent() != nullptr )
 	{
 		result.prefix= "N";
 		result.childs.push_back( GetNamespacePrefix_r( parent_scope ) );
-		result.postfix= std::to_string( name.size() ) + name + "E";
+		result.postfix= num_prefix + name + "E";
 	}
 	else
-		result.postfix= std::to_string( name.size() ) + name;
+		result.postfix= num_prefix + name;
 
 	return result;
 }
@@ -314,7 +318,7 @@ MangleGraphNode GetTypeName( const Type& type )
 	return result;
 }
 
-const ProgramStringMap<std::string> g_special_funcs_table
+const ProgramStringMap<std::string> g_op_names
 {
 	{ "+", "pl" },
 	{ "-", "mi" },
@@ -360,14 +364,16 @@ const ProgramStringMap<std::string> g_special_funcs_table
 	{ "[]", "ix" },
 };
 
+const std::string g_empty_op_name;
+
 // Returns empty string if func_name is not special.
-const std::string& DecodeSpecialFunction( const std::string& func_name )
+const std::string& DecodeOperator( const std::string& func_name )
 {
-	const auto it= g_special_funcs_table.find( func_name );
-	if( it != g_special_funcs_table.end() )
+	const auto it= g_op_names.find( func_name );
+	if( it != g_op_names.end() )
 		return it->second;
 
-	return func_name;
+	return g_empty_op_name;
 }
 
 } // namespace
@@ -378,7 +384,11 @@ std::string MangleFunction(
 	const Function& function_type )
 {
 	MangleGraphNode result;
-	result.childs.push_back( GetNestedName( DecodeSpecialFunction(function_name), parent_scope ) );
+	const std::string& operator_decoded= DecodeOperator( function_name );
+	if( !operator_decoded.empty() )
+		result.childs.push_back( GetNestedName( operator_decoded, parent_scope, true ) );
+	else
+		result.childs.push_back( GetNestedName( function_name, parent_scope ) );
 	result.childs.back().cachable= false;
 
 	for( const Function::Arg& arg : function_type.args )
