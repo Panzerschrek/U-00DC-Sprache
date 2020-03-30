@@ -419,8 +419,7 @@ std::string MangleGlobalVariable(
 	if( parent_scope.GetParent() == nullptr )
 		return variable_name;
 
-	MangleGraphNode result;
-	result.childs.push_back( GetNestedName( variable_name, parent_scope ) );
+	MangleGraphNode result= GetNestedName( variable_name, parent_scope );
 
 	return "_Z" + MangleGraphFinalize( result );
 }
