@@ -21,18 +21,84 @@ struct MangleGraphNode
 	std::string postfix;
 };
 
-void MangleGraphFinalize_r( std::string& result, const MangleGraphNode& node )
+char Base36Digit( size_t value )
 {
-	result+= node.prefix;
+	value %= 36u;
+	if( value < 10 )
+		return char('0' + value);
+	else
+		return char('A' + ( value - 10 ) );
+}
+
+class NamesCache final
+{
+public:
+	static constexpr size_t c_no_replacement= std::numeric_limits<size_t>::max();
+
+	void AddName( std::string name )
+	{
+		for( const std::string& candidate : names_container_ )
+			if( candidate == name )
+				return;
+		names_container_.push_back( std::move(name) );
+	}
+
+
+	std::optional<std::string> GetReplacement( const std::string& name )
+	{
+		for( const std::string& candidate : names_container_ )
+			if( name == candidate )
+			{
+				const size_t index= size_t( &candidate - names_container_.data() );
+
+				if( index == 0u )
+					return "S_";
+
+				size_t n= index - 1u;
+				std::string result;
+
+				do // Converto to 36-base number representation.
+				{
+					const size_t base36_digit= n % 36u;
+					n/= 36u;
+					result.insert( result.begin(), Base36Digit( base36_digit ) );
+				}
+				while( n > 0u );
+
+				return "S" + result + "_";
+			}
+
+		return std::nullopt;
+	}
+
+private:
+	std::vector<std::string> names_container_;
+};
+
+
+void MangleGraphFinalize_r( std::string& result, NamesCache& names_cache, const MangleGraphNode& node )
+{
+	std::string this_node_result;
+
+	this_node_result+= node.prefix;
 	for( const MangleGraphNode& child_node : node.childs )
-		MangleGraphFinalize_r( result, child_node );
-	result+= node.postfix;
+		MangleGraphFinalize_r( this_node_result, names_cache, child_node );
+	this_node_result+= node.postfix;
+
+	if( const auto replacement = names_cache.GetReplacement( this_node_result ) )
+		result+= *replacement;
+	else
+	{
+		result+= this_node_result;
+		names_cache.AddName( std::move(this_node_result) );
+	}
 }
 
 std::string MangleGraphFinalize( const MangleGraphNode& node )
 {
 	std::string result;
-	MangleGraphFinalize_r( result, node );
+	NamesCache names_cache;
+	MangleGraphFinalize_r( result, names_cache, node );
 	return result;
 }
 
@@ -53,18 +119,20 @@ MangleGraphNode GetNestedName( const std::string& name, const NamesScope& parent
 {
 	MangleGraphNode result;
 
-	MangleGraphNode final_name_node;
 	if( parent_scope.GetParent() != nullptr )
-		final_name_node.childs.push_back( GetNamespacePrefix_r( parent_scope ) );
-	final_name_node.postfix= std::to_string( name.size() ) + name;
-	result.childs.push_back( std::move( final_name_node ) );
-
-	if( !result.childs.front().childs.empty() )
 	{
+		MangleGraphNode final_name_node;
+		final_name_node.childs.push_back( GetNamespacePrefix_r( parent_scope ) );
+		final_name_node.postfix= std::to_string( name.size() ) + name;
+		result.childs.push_back( std::move( final_name_node ) );
+
 		result.prefix= "N";
 		result.postfix= "E";
 	}
-
+	else
+	{
+		result.postfix= std::to_string( name.size() ) + name;
+	}
 	return result;
 }
 
