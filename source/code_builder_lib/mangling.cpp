@@ -34,8 +34,6 @@ char Base36Digit( size_t value )
 class NamesCache
 {
 public:
-	static constexpr size_t c_no_replacement= std::numeric_limits<size_t>::max();
-
 	void AddName( std::string name )
 	{
 		for( const std::string& candidate : names_container_ )
