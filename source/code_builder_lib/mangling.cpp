@@ -19,6 +19,7 @@ struct MangleGraphNode
 	std::string prefix;
 	std::vector<MangleGraphNode> childs;
 	std::string postfix;
+	bool can_be_replaced= true;
 };
 
 char Base36Digit( size_t value )
@@ -85,13 +86,17 @@ void MangleGraphFinalize_r( std::string& result, NamesCache& names_cache, const 
 		MangleGraphFinalize_r( this_node_result, names_cache, child_node );
 	this_node_result+= node.postfix;
 
-	if( const auto replacement = names_cache.GetReplacement( this_node_result ) )
-		result+= *replacement;
-	else
+	if( node.can_be_replaced )
 	{
-		result+= this_node_result;
-		names_cache.AddName( std::move(this_node_result) );
+		if( const auto replacement = names_cache.GetReplacement( this_node_result ) )
+		{
+			result+= *replacement;
+			return;
+		}
 	}
+
+	result+= this_node_result;
+	names_cache.AddName( std::move(this_node_result) );
 }
 
 std::string MangleGraphFinalize( const MangleGraphNode& node )
@@ -164,6 +169,8 @@ MangleGraphNode GetTypeName( const Type& type )
 		case U_FundamentalType::char16: result.prefix= "Ds"; break; // C++ char16_t
 		case U_FundamentalType::char32: result.prefix= "Di"; break;  // C++ char32_t
 		};
+
+		result.can_be_replaced= false; // Do not replace names of fundamental types
 	}
 	else if( const auto array_type= type.GetArrayType() )
 	{
