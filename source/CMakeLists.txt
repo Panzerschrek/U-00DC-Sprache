@@ -121,7 +121,7 @@ endif()
 
 if(MSVC)
 
-	add_compile_options( /utf-8 /W3 )
+	add_compile_options( /utf-8 /W3 /WX )
 
 	if( NOT LLVM_ENABLE_RTTI )
 		add_compile_options( /GR- )
