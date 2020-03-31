@@ -3,6 +3,7 @@
 
 #include "class.hpp"
 #include "enum.hpp"
+#include "template_types.hpp"
 #include "mangling.hpp"
 
 namespace U
@@ -111,16 +112,99 @@ std::string MangleGraphFinalize( const MangleGraphNode& node )
 	return MangleGraphFinalize_r( names_cache, node ).compressed;
 }
 
+MangleGraphNode GetTypeName( const Type& type );
+MangleGraphNode GetNamespacePrefix_r( const NamesScope& names_scope );
+
+MangleGraphNode EncodeTemplateParameters( const std::vector<TemplateParameter>& template_parameters )
+{
+	MangleGraphNode result;
+	result.prefix= "I";
+
+	for( const TemplateParameter& template_paremater : template_parameters )
+	{
+		if( const auto type= std::get_if<Type>( &template_paremater ) )
+			result.childs.push_back( GetTypeName( *type ) );
+		else if( const auto variable= std::get_if<Variable>( &template_paremater ) )
+		{
+			MangleGraphNode variable_param_node;
+			variable_param_node.prefix= "L";
+			variable_param_node.childs.push_back( GetTypeName( variable->type ) );
+
+			bool is_signed= false;
+			if( const auto fundamental_type= variable->type.GetFundamentalType() )
+				is_signed= IsSignedInteger( fundamental_type->fundamental_type );
+			else if( const auto enum_type= variable->type.GetEnumType() )
+				is_signed= IsSignedInteger( enum_type->underlaying_type.fundamental_type );
+			else U_ASSERT(false);
+
+			U_ASSERT( variable->constexpr_value != nullptr );
+			const llvm::APInt param_value= variable->constexpr_value->getUniqueInteger();
+			if( is_signed )
+			{
+				const int64_t value_signed= param_value.getSExtValue();
+				if( value_signed >= 0 )
+					variable_param_node.postfix= std::to_string( value_signed );
+				else
+					variable_param_node.postfix= "n" + std::to_string( -value_signed );
+			}
+			else
+				variable_param_node.postfix= std::to_string( param_value.getZExtValue() );
+
+			variable_param_node.postfix+= "E";
+
+			result.childs.push_back( std::move( variable_param_node ) );
+		}
+		else U_ASSERT(false);
+	}
+
+	result.postfix= "E";
+
+	return result;
+}
+
+MangleGraphNode GetTemplateClassName( const Class& the_class )
+{
+	U_ASSERT( the_class.base_template != std::nullopt );
+
+	MangleGraphNode name_node;
+	const std::string& class_name= the_class.base_template->class_template->syntax_element->name_;
+	name_node.postfix= std::to_string( class_name.size() ) + class_name;
+
+	// Skip template parameters namespace.
+	U_ASSERT( the_class.members.GetParent() != nullptr );
+	if( const auto parent= the_class.members.GetParent()->GetParent() )
+		if( !parent->GetThisNamespaceName().empty() )
+			name_node.childs.push_back( GetNamespacePrefix_r( *parent ) );
+
+	MangleGraphNode params_node= EncodeTemplateParameters( the_class.base_template->template_parameters );
+
+	MangleGraphNode result;
+	result.childs.push_back( std::move( name_node ) );
+	result.childs.push_back( std::move( params_node ) );
+	return result;
+}
+
 MangleGraphNode GetNamespacePrefix_r( const NamesScope& names_scope )
 {
+	const std::string& name= names_scope.GetThisNamespaceName();
+	if( name == Class::c_template_class_name )
+	{
+		// Assume, that "names_scope" is field "members" of "Class".
+		const auto names_scope_address= reinterpret_cast<const std::byte*>(&names_scope);
+		//const auto& the_class= *reinterpret_cast<const Class*>( names_scope_address - offsetof(Class, members) );
+		const auto& the_class= *reinterpret_cast<const Class*>( names_scope_address - 0 );
+		if( the_class.base_template != std::nullopt )
+			return GetTemplateClassName( the_class );
+	}
+
 	MangleGraphNode result;
 
 	if( const auto parent= names_scope.GetParent() )
 		if( !parent->GetThisNamespaceName().empty() )
 			result.childs.push_back( GetNamespacePrefix_r( *parent ) );
 
-	const std::string& name= names_scope.GetThisNamespaceName();
 	result.postfix= std::to_string( name.size() ) + name;
+
 	return result;
 }
 
@@ -198,6 +282,8 @@ MangleGraphNode GetTypeName( const Type& type )
 			result.prefix= class_type->members.GetThisNamespaceName();
 			result.childs.push_back( GetTypeName( *class_type->typeinfo_type ) );
 		}
+		else if( class_type->base_template != std::nullopt )
+			result= GetTemplateClassName( *class_type );
 		else
 			result= GetNestedName( class_type->members.GetThisNamespaceName(), *class_type->members.GetParent() );
 	}

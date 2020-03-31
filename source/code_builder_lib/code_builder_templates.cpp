@@ -22,7 +22,6 @@ namespace CodeBuilderPrivate
 namespace
 {
 
-const std::string g_name_for_generated_class= "_";
 const std::string g_template_parameters_namespace_prefix= "_tp_ns-";
 
 template< class TemplateParam >
@@ -1040,7 +1039,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		{
 			const NamesScopePtr template_parameters_space= it->second.GetNamespace();
 			U_ASSERT( template_parameters_space != nullptr );
-			result.type= template_parameters_space->GetThisScopeValue( g_name_for_generated_class );
+			result.type= template_parameters_space->GetThisScopeValue( Class::c_template_class_name );
 			return result;
 		}
 	}
@@ -1059,20 +1058,15 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		{
 			result.type=
 				template_parameters_namespace->AddName(
-					g_name_for_generated_class,
+					Class::c_template_class_name,
 					Value(
 						cache_class_it->second,
 						type_template.syntax_element->file_pos_ /* TODO - check file_pos */ ) );
 			return result;
 		}
 
-		const ClassProxyPtr class_proxy= NamesScopeFill( static_cast<const Synt::ClassTemplate*>( type_template.syntax_element )->class_, *template_parameters_namespace, g_name_for_generated_class );
+		const ClassProxyPtr class_proxy= NamesScopeFill( static_cast<const Synt::ClassTemplate*>( type_template.syntax_element )->class_, *template_parameters_namespace, Class::c_template_class_name );
 		if( class_proxy == nullptr )
-			return result;
-
-		GlobalThingBuildClass( class_proxy, TypeCompleteness::Complete );
-
-		if( class_proxy->class_->completeness != TypeCompleteness::Complete )
 			return result;
 
 		Class& the_class= *class_proxy->class_;
@@ -1090,7 +1084,10 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		the_class.base_template->signature_parameters= std::move(result_signature_parameters);
 
 		template_classes_cache_[name_encoded]= class_proxy;
-		result.type= template_parameters_namespace->GetThisScopeValue( g_name_for_generated_class );
+		result.type= template_parameters_namespace->GetThisScopeValue( Class::c_template_class_name );
+
+		GlobalThingBuildClass( class_proxy, TypeCompleteness::Complete );
+
 		return result;
 	}
 	else if( type_template.syntax_element->kind_ == Synt::TypeTemplateBase::Kind::Typedef )
@@ -1100,7 +1097,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		if( type == invalid_type_ )
 			return result;
 
-		result.type= template_parameters_namespace->AddName( g_name_for_generated_class, Value( type, file_pos /* TODO - check file_pos */ ) );
+		result.type= template_parameters_namespace->AddName( Class::c_template_class_name, Value( type, file_pos /* TODO - check file_pos */ ) );
 		return result;
 	}
 	else U_ASSERT(false);
@@ -1532,7 +1529,7 @@ void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& fi
 			{}
 			else if( const NamesScopePtr inner_namespace= value.GetNamespace() )
 			{
-				const std::string& generated_class_name= g_name_for_generated_class;
+				const std::string& generated_class_name= Class::c_template_class_name;
 
 				// This must be only namespace for class template instantiation.
 				inner_namespace->ForEachInThisScope(
