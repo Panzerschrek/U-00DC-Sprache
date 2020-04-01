@@ -152,6 +152,7 @@ MangleGraphNode EncodeTemplateParameters( const std::vector<TemplateParameter>& 
 
 			variable_param_node.postfix+= "E";
 
+			variable_param_node.cachable= false;
 			result.childs.push_back( std::move( variable_param_node ) );
 		}
 		else U_ASSERT(false);
@@ -159,6 +160,7 @@ MangleGraphNode EncodeTemplateParameters( const std::vector<TemplateParameter>& 
 
 	result.postfix= "E";
 
+	result.cachable= false;
 	return result;
 }
 

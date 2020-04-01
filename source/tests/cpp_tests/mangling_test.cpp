@@ -532,4 +532,26 @@ U_TEST( ClassTemplatesMangling_Test1 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1CIL1E2EE4FunCEv" ) != nullptr ); // C</ E::C />::FunC()
 }
 
+U_TEST( ClassTemplatesMangling_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ i32 x /> struct A{ fn FunA(){} }
+		fn Baz(A</13/> arg0, A</13/> arg1){}
+		fn Tatata(A</55/> arg0, A</77/> arg1){}
+
+		template</ type T /> struct Box{ T t; }
+		template</ type T /> struct Void{ }
+
+		namespace Abc{ namespace Def{ struct HH{} } }
+
+		fn Lol( Box</ Abc::Def::HH /> arg0,  Void</ Abc::Def::HH /> arg1 ){}
+	)";
+
+	const EnginePtr engine= CreateEngine(  BuildProgram( c_program_text ), true );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Baz1AILi13EES0_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z6Tatata1AILi55EES_ILi77EE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Lol3BoxIN3Abc3Def2HHEE4VoidIS2_E" ) != nullptr );
+}
+
 } // namespace U
