@@ -1086,6 +1086,8 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		template_classes_cache_[name_encoded]= class_proxy;
 		result.type= template_parameters_namespace->GetThisScopeValue( Class::c_template_class_name );
 
+		class_proxy->class_->llvm_type->setName( MangleType( class_proxy ) ); // Update llvm type name after setting base template.
+
 		GlobalThingBuildClass( class_proxy, TypeCompleteness::Complete );
 
 		return result;

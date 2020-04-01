@@ -520,11 +520,16 @@ U_TEST( ClassTemplatesMangling_Test1 )
 		type C_C= C</ E::C />;
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	auto module= BuildProgram( c_program_text );
+	U_TEST_ASSERT( module->getTypeByName( "1AILi66EE" ) != nullptr ); // A</ 66 />
+	U_TEST_ASSERT( module->getTypeByName( "1BILin5ELy666EE" ) != nullptr ); // B</ -5, 666u64 />
+	U_TEST_ASSERT( module->getTypeByName( "1CIL1E2EE" ) != nullptr ); // C</ E::C />::FunC()
+
+	const EnginePtr engine= CreateEngine( std::move(module) );
 
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1AILi66EE4FunAEv" ) != nullptr ); // A</ 66 />::FunA()
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1BILin5ELy666EE4FunBEv" ) != nullptr ); //B</ -5, 666u64 />::FunB()
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1CIL1E2EE4FunCEv" ) != nullptr ); //C</ E::C />::FunC()
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1BILin5ELy666EE4FunBEv" ) != nullptr ); // B</ -5, 666u64 />::FunB()
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1CIL1E2EE4FunCEv" ) != nullptr ); // C</ E::C />::FunC()
 }
 
 } // namespace U
