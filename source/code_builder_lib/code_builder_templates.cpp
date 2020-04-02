@@ -1319,6 +1319,43 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 			function_template.syntax_element->function_->block_.get(),
 			function_template.syntax_element->function_->constructor_initialization_list_.get() );
 
+	// Set correct mangled name
+	if( function_variable.llvm_function != nullptr )
+	{
+		std::vector<TemplateParameter> params_for_mangle;
+		for( const auto& known_param : function_template.known_template_parameters )
+		{
+			if( const auto type= known_param.second.GetTypeName() )
+				params_for_mangle.emplace_back( *type );
+			else if( const auto variable= known_param.second.GetVariable() )
+				params_for_mangle.emplace_back( *variable );
+			else U_ASSERT(false);
+		}
+
+		for(const auto& param : deduced_template_args)
+		{
+			if( const auto type= std::get_if<Type>( &param ) )
+				params_for_mangle.emplace_back( *type );
+			else if( const auto variable= std::get_if<Variable>( &param ) )
+				params_for_mangle.emplace_back( *variable );
+			else U_ASSERT(false);
+		}
+
+		const std::string mangled_name =
+			MangleFunction(
+				template_names_scope,
+				func_name,
+				*function_variable.type.GetFunctionType(),
+				&params_for_mangle );
+		function_variable.llvm_function->setName( mangled_name );
+		if( llvm::Comdat* const comdat= function_variable.llvm_function->getComdat() )
+		{
+			llvm::Comdat* const new_comdat= module_->getOrInsertComdat( mangled_name );
+			new_comdat->setSelectionKind( comdat->getSelectionKind() );
+			function_variable.llvm_function->setComdat( new_comdat );
+		}
+	}
+
 	// Two-step preparation needs for recursive function template call.
 
 	return &function_variable;

@@ -548,10 +548,76 @@ U_TEST( ClassTemplatesMangling_Test2 )
 		fn Lol( Box</ Abc::Def::HH /> arg0,  Void</ Abc::Def::HH /> arg1 ){}
 	)";
 
-	const EnginePtr engine= CreateEngine(  BuildProgram( c_program_text ), true );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Baz1AILi13EES0_" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z6Tatata1AILi55EES_ILi77EE" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Lol3BoxIN3Abc3Def2HHEE4VoidIS2_E" ) != nullptr );
+}
+
+U_TEST( FunctionTemplatesMangling_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> fn Foo(){}
+
+		struct Abc{}
+		fn Main()
+		{
+			Foo</i32/>();
+			Foo</f32/>();
+			Foo</Abc/>();
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooIiEvv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooIfEvv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooI3AbcEvv" ) != nullptr );
+}
+
+U_TEST( FunctionTemplatesMangling_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type A, type B, type C /> fn Foo(){}
+
+		struct Abc{}
+		fn Main()
+		{
+			Foo</i32, i32, i32/>();
+			Foo</i32, f32, i32/>();
+			Foo</bool, u16, u32/>();
+			Foo</Abc, Abc, Abc/>();
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooIiiiEvv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooIifiEvv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooIbtjEvv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooI3AbcS0_S0_Evv" ) != nullptr );
+
+}
+
+U_TEST( FunctionTemplatesMangling_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> fn Foo(T t){}
+
+		struct Abc{}
+		fn Main()
+		{
+			Foo(66);
+			Foo(0.25f);
+			Foo(Abc());
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooIiEvi" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooIfEvf" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooI3AbcEvS0_" ) != nullptr );
 }
 
 } // namespace U

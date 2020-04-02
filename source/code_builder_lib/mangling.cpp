@@ -470,7 +470,8 @@ const std::string& DecodeOperator( const std::string& func_name )
 std::string MangleFunction(
 	const NamesScope& parent_scope,
 	const std::string& function_name,
-	const Function& function_type )
+	const Function& function_type,
+	const std::vector<TemplateParameter>* template_parameters )
 {
 	MangleGraphNode result;
 	const std::string& operator_decoded= DecodeOperator( function_name );
@@ -479,6 +480,21 @@ std::string MangleFunction(
 	else
 		result.childs.push_back( GetNestedName( function_name, parent_scope ) );
 	result.childs.back().cachable= false;
+
+	// Normally we should use "T_" instead of "S_" for referencing template parameters in function signature.
+	// But without "T_" it works fine too.
+
+	if( template_parameters != nullptr )
+	{
+		MangleGraphNode params_node= EncodeTemplateParameters( *template_parameters );
+		params_node.postfix+= "v"; // I have no idea why, but this needed.
+
+		MangleGraphNode combined_node;
+		combined_node.childs.push_back( std::move(result) );
+		combined_node.childs.push_back( std::move(params_node) );
+
+		result= std::move(combined_node);
+	}
 
 	for( const Function::Arg& arg : function_type.args )
 	{
