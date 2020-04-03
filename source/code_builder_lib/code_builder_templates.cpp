@@ -1029,7 +1029,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	}
 
 	// Encode name.
-	std::string name_encoded= g_template_parameters_namespace_prefix + type_template.syntax_element->name_;
+	std::string name_encoded= g_template_parameters_namespace_prefix + type_template_name;
 	name_encoded+= EncodeTemplateParameters( deduced_template_args );
 	name_encoded+= std::to_string( reinterpret_cast<uintptr_t>(&type_template) ); // Encode also template itself, because we can have multiple templates with same name.
 
@@ -1043,9 +1043,6 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 			return result;
 		}
 	}
-
-	// Encode signature parameters for namespace. Each class template have different signature (parameters itslef may be same).
-	template_parameters_namespace->SetThisNamespaceName( g_template_parameters_namespace_prefix + type_template_name + EncodeTemplateParameters( result_signature_parameters ) );
 
 	generated_template_things_storage_.insert( std::make_pair( name_encoded, Value( template_parameters_namespace, type_template.syntax_element->file_pos_ ) ) );
 
@@ -1276,7 +1273,6 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	// Encode name.
 	// Use encoded name only for cache search.
 	// For function template namespace use only default namespace name.
-	// Template namespace encoding does not needed, because in normal program each function (and template function) have different parameters and mangled name.
 	std::string name_encoded= g_template_parameters_namespace_prefix + func_name;
 	name_encoded+= EncodeTemplateParameters( deduced_template_args );
 	name_encoded+= std::to_string( reinterpret_cast<uintptr_t>(&function_template) ); // HACK! use address of template object, because we can have multiple templates with same name.
