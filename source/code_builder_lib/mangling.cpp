@@ -178,7 +178,7 @@ MangleGraphNode GetTemplateClassName( const Class& the_class )
 		if( !parent->GetThisNamespaceName().empty() )
 			name_node.childs.push_back( GetNamespacePrefix_r( *parent ) );
 
-	MangleGraphNode params_node= EncodeTemplateParameters( the_class.base_template->template_parameters );
+	MangleGraphNode params_node= EncodeTemplateParameters( the_class.base_template->signature_parameters );
 
 	MangleGraphNode result;
 	result.childs.push_back( std::move( name_node ) );

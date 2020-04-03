@@ -554,6 +554,46 @@ U_TEST( ClassTemplatesMangling_Test2 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Lol3BoxIN3Abc3Def2HHEE4VoidIS2_E" ) != nullptr );
 }
 
+U_TEST( ClassTemplatesMangling_Test3 )
+{
+	static const char c_program_text[]=
+	R"(
+		template<//> struct Box</i32/>
+		{
+			fn FunA(){}
+		}
+
+		template<//> struct NumBox</0u/>
+		{
+			fn FunZero(){}
+		}
+
+		template</type T/> struct Box
+		{
+			fn FunRegular(){}
+		}
+
+		type IntBox= Box</i32/>;
+		type ZeroBox= NumBox</0u/>;
+		type FloatBox= Box</f32/>;
+		type Bool4Box= Box</ [ bool, 4s ] />;
+	)";
+
+	// Mangling uses signature parameters.
+
+	auto module= BuildProgram( c_program_text );
+	U_TEST_ASSERT( module->getTypeByName( "3BoxIiE" ) != nullptr );
+	U_TEST_ASSERT( module->getTypeByName( "6NumBoxILj0EE" ) != nullptr );
+	U_TEST_ASSERT( module->getTypeByName( "3BoxIfE" ) != nullptr );
+	U_TEST_ASSERT( module->getTypeByName( "3BoxIA4_bE" ) != nullptr );
+
+	const EnginePtr engine= CreateEngine( std::move(module) );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxIiE4FunAEv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN6NumBoxILj0EE7FunZeroEv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxIfE10FunRegularEv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxIA4_bE10FunRegularEv" ) != nullptr );
+}
+
 U_TEST( FunctionTemplatesMangling_Test0 )
 {
 	static const char c_program_text[]=
