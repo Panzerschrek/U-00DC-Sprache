@@ -22,42 +22,7 @@ namespace CodeBuilderPrivate
 namespace
 {
 
-const std::string g_template_parameters_namespace_prefix= "_tp_ns-";
-
-template< class TemplateParam >
-std::string EncodeTemplateParameters( std::vector<TemplateParam>& deduced_template_args )
-{
-	std::string r;
-	for(const auto& arg : deduced_template_args )
-	{
-		if( const Type* const type= std::get_if<Type>( &arg ) )
-		{
-			// We needs full mangled name of template parameter here, because short type names from different spaces may coincide.
-			r+= MangleType( *type );
-		}
-		else if( const Variable* const variable= std::get_if<Variable>( &arg ) )
-		{
-			// Currently, can be only integer, char or enum type.
-			FundamentalType raw_type;
-			if( const FundamentalType* const fundamental_type= variable->type.GetFundamentalType () )
-				raw_type= *fundamental_type;
-			else if( const Enum* const enum_type= variable->type.GetEnumType () )
-				raw_type= enum_type->underlaying_type;
-			else U_ASSERT( false );
-
-			r+= "_val_of_t_" + GetFundamentalTypeName( raw_type.fundamental_type ) + "_";
-
-			const llvm::APInt& int_value= variable->constexpr_value->getUniqueInteger();
-			if( IsSignedInteger( raw_type.fundamental_type ) && int_value.isNegative() )
-				r+= std::to_string(  int64_t(int_value.getLimitedValue()) );
-			else
-				r+= std::to_string( uint64_t(int_value.getLimitedValue()) );
-		}
-		else U_ASSERT(false);
-		r += "_";
-	}
-	return r;
-}
+const std::string g_template_parameters_namespace_name= "_tp_ns";
 
 void CreateTemplateErrorsContext(
 	CodeBuilderErrorsContainer& errors_container,
@@ -149,7 +114,7 @@ void CodeBuilder::PrepareTypeTemplate(
 	template_parameters.reserve( type_template_declaration.args_.size() );
 	std::vector<bool> template_parameters_usage_flags;
 
-	NamesScope template_parameters_namespace( g_template_parameters_namespace_prefix, &names_scope );
+	NamesScope template_parameters_namespace( g_template_parameters_namespace_name, &names_scope );
 
 	ProcessTemplateArgs(
 		type_template_declaration.args_,
@@ -231,7 +196,7 @@ void CodeBuilder::PrepareFunctionTemplate(
 
 	std::vector<bool> template_parameters_usage_flags; // Currently unused, because function template have no signature.
 
-	NamesScope template_parameters_namespace( g_template_parameters_namespace_prefix, &names_scope );
+	NamesScope template_parameters_namespace( g_template_parameters_namespace_name, &names_scope );
 
 	ProcessTemplateArgs(
 		function_template_declaration.args_,
@@ -918,14 +883,12 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	const TypeTemplate& type_template= *type_template_ptr;
 	NamesScope& template_names_scope= *type_template.parent_namespace;
 
-	const std::string& type_template_name= type_template.syntax_element->name_;
-
 	if( template_arguments.size() < type_template.first_optional_signature_argument )
 		return result;
 
 	DeducibleTemplateParameters deduced_template_args( type_template.template_parameters.size() );
 
-	const NamesScopePtr template_parameters_namespace= std::make_shared<NamesScope>( g_template_parameters_namespace_prefix, &template_names_scope );
+	const NamesScopePtr template_parameters_namespace= std::make_shared<NamesScope>( g_template_parameters_namespace_name, &template_names_scope );
 	for( const TypeTemplate::TemplateParameter& param : type_template.template_parameters )
 		template_parameters_namespace->AddName( param.name, YetNotDeducedTemplateArg() );
 
@@ -1028,10 +991,10 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		return result;
 	}
 
-	// Encode name.
-	std::string name_encoded= g_template_parameters_namespace_prefix + type_template_name;
-	name_encoded+= EncodeTemplateParameters( deduced_template_args );
-	name_encoded+= std::to_string( reinterpret_cast<uintptr_t>(&type_template) ); // Encode also template itself, because we can have multiple templates with same name.
+	// Encode name for caching. Name must be unique for each template and its parameters.
+	const std::string name_encoded=
+		std::to_string( reinterpret_cast<uintptr_t>(&type_template) ) + // Encode template address, because we needs unique keys for templates with same name.
+		MangleTemplateParameters( result_signature_parameters );
 
 	{ // Check, if already type generated.
 		const auto it= generated_template_things_storage_.find( name_encoded );
@@ -1133,11 +1096,11 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 
 	DeducibleTemplateParameters deduced_template_args( function_template.template_parameters.size() );
 
-	const auto template_parameters_namespace= std::make_shared<NamesScope>( g_template_parameters_namespace_prefix, &template_names_scope );
-	for( size_t i= 0u; i < function_template.template_parameters.size(); ++i )
-		template_parameters_namespace->AddName( function_template.template_parameters[i].name, YetNotDeducedTemplateArg() );
-	for( size_t i= 0u; i < function_template.known_template_parameters.size(); ++i )
-		template_parameters_namespace->AddName( function_template.known_template_parameters[i].first, function_template.known_template_parameters[i].second );
+	const auto template_parameters_namespace= std::make_shared<NamesScope>( g_template_parameters_namespace_name, &template_names_scope );
+	for( const auto& known_template_param : function_template.known_template_parameters )
+		template_parameters_namespace->AddName( known_template_param.first, known_template_param.second );
+	for( const auto& template_param : function_template.template_parameters )
+		template_parameters_namespace->AddName( template_param.name, YetNotDeducedTemplateArg() );
 
 	bool deduction_failed= false;
 	std::vector<DeducedTemplateParameter> deduced_temlpate_parameters( function_declaration.type_.arguments_.size() );
@@ -1259,6 +1222,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	if( deduction_failed )
 		return nullptr;
 
+	std::vector<TemplateParameter> result_template_parameters(deduced_template_args.size());
 	for( size_t i = 0u; i < deduced_template_args.size() ; ++i )
 	{
 		const auto& arg = deduced_template_args[i];
@@ -1268,14 +1232,17 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 			REPORT_ERROR( TemplateParametersDeductionFailed, errors_container, file_pos );
 			return nullptr;
 		}
+		else if( const auto type= std::get_if<Type>( &arg ) )
+			result_template_parameters[i]= *type;
+		else if( const auto variable= std::get_if<Variable>( &arg ) )
+			result_template_parameters[i]= *variable;
+		else U_ASSERT(false);
 	}
 
-	// Encode name.
-	// Use encoded name only for cache search.
-	// For function template namespace use only default namespace name.
-	std::string name_encoded= g_template_parameters_namespace_prefix + func_name;
-	name_encoded+= EncodeTemplateParameters( deduced_template_args );
-	name_encoded+= std::to_string( reinterpret_cast<uintptr_t>(&function_template) ); // HACK! use address of template object, because we can have multiple templates with same name.
+	// Encode name for caching. Name must be unique for each template and its parameters.
+	const std::string name_encoded=
+		std::to_string( reinterpret_cast<uintptr_t>(&function_template) ) + // Encode template address, because we needs unique keys for templates with same name.
+		MangleTemplateParameters(result_template_parameters);
 
 	{
 		const auto it= generated_template_things_storage_.find( name_encoded );
@@ -1366,7 +1333,7 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 {
 	U_ASSERT( !function_templates.empty() );
 
-	DeducibleTemplateParameters template_parameters;
+	std::vector<TemplateParameter> template_parameters;
 	bool something_is_wrong= false;
 	for( const Synt::Expression& expr : template_arguments )
 	{
@@ -1393,9 +1360,10 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 	if( something_is_wrong )
 		return nullptr;
 
-	// Encode name, based on set of function templates and given tempate parameters.
-	std::string name_encoded= g_template_parameters_namespace_prefix + function_templates.front()->syntax_element->function_->name_.components.front().name;
-	name_encoded+= EncodeTemplateParameters( template_parameters );
+	// We needs unique name here, so use for it address of function templates set and template parameters.
+	const std::string name_encoded=
+		std::to_string( reinterpret_cast<uintptr_t>( &function_templates ) ) +
+		MangleTemplateParameters( template_parameters );
 
 	{
 		const auto it= generated_template_things_storage_.find( name_encoded );

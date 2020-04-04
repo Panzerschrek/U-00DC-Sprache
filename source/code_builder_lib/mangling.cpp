@@ -542,6 +542,11 @@ std::string MangleType( const Type& type )
 	return MangleGraphFinalize( GetTypeName( type ) );
 }
 
+std::string MangleTemplateParameters( const std::vector<TemplateParameter>& template_parameters )
+{
+	return MangleGraphFinalize( EncodeTemplateParameters( template_parameters ) );
+}
+
 } // namespace CodeBuilderPrivate
 
 } // namespace U

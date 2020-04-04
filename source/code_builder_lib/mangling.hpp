@@ -22,6 +22,8 @@ std::string MangleGlobalVariable(
 
 std::string MangleType( const Type& type );
 
+std::string MangleTemplateParameters( const std::vector<TemplateParameter>& template_parameters );
+
 } // namespace CodeBuilderPrivate
 
 } // namespace U
