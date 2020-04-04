@@ -77,7 +77,6 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	U_TEST_ASSERT( source_graph != nullptr );
 	U_TEST_ASSERT( source_graph->lexical_errors.empty() );
 	U_TEST_ASSERT( source_graph->syntax_errors.empty() );
-	U_TEST_ASSERT( source_graph->root_node_index < source_graph->nodes_storage.size() );
 
 	ICodeBuilder::BuildResult build_result=
 		CodeBuilder(

@@ -97,7 +97,7 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 
 	module_=
 		std::make_unique<llvm::Module>(
-			source_graph.nodes_storage[ source_graph.root_node_index ].file_path,
+			source_graph.nodes_storage.front().file_path,
 			llvm_context_ );
 
 	// Setup data layout
@@ -160,7 +160,7 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	}
 
 	// Build graph.
-	BuildProgramInternal( source_graph, source_graph.root_node_index );
+	BuildProgramInternal( source_graph, 0u );
 
 	global_function->eraseFromParent(); // Kill global function.
 

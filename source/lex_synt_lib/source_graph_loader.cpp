@@ -34,7 +34,7 @@ SourceGraphLoader::SourceGraphLoader( IVfsPtr vfs )
 SourceGraphPtr SourceGraphLoader::LoadSource( const IVfs::Path& root_file_path )
 {
 	auto result = std::make_unique<SourceGraph>();
-	result->root_node_index= LoadNode_r( root_file_path, "", *result );
+	LoadNode_r( root_file_path, "", *result );
 
 	return result;
 }

@@ -72,8 +72,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 
 	if( source_graph == nullptr ||
 		!source_graph->lexical_errors.empty() ||
-		!source_graph->syntax_errors.empty() ||
-		!( source_graph->root_node_index < source_graph->nodes_storage.size() ) )
+		!source_graph->syntax_errors.empty() )
 		return nullptr;
 
 	ICodeBuilder::BuildResult build_result= CreateCodeBuilder()->BuildProgram( *source_graph );

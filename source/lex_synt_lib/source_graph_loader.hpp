@@ -37,8 +37,7 @@ struct SourceGraph final
 		// Here can be placed cached module.
 	};
 
-	std::vector<Node> nodes_storage;
-	size_t root_node_index= ~0u;
+	std::vector<Node> nodes_storage; // first element is root
 
 	LexicalErrorMessages lexical_errors;
 	Synt::SyntaxErrorMessages syntax_errors;
