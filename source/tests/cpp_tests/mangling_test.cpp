@@ -91,13 +91,15 @@ U_TEST( ClassmethodsManglingTest )
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	// Here is difference between Ü and C++. In Ü "this" processed as regular argument.
+	// Here is difference between Ü and C++:
+	// In Ü "this" processed as regular argument.
+	// Constructors and destructors named as "constructor" and "destructor", but not "C1" and "D0".
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN10SomeStruct3FooERKS_" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN10SomeStruct3BarERS_" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN10SomeStruct3BazEv" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN10SomeStructC1ERS_" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN10SomeStructC1ERS_if" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN10SomeStructD0ERS_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN10SomeStruct11constructorERS_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN10SomeStruct11constructorERS_if" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN10SomeStruct10destructorERS_" ) != nullptr );
 }
 
 U_TEST( NamesCompressionTest )
@@ -477,6 +479,248 @@ U_TEST( FunctionTypesMangling_Test0 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z9BinaryRetPFbffE" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4RetSPF1SvE" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4PassPF11OtherStructRKS_E" ) != nullptr );
+}
+
+U_TEST( ClassTemplatesMangling_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct Box
+		{
+			T t;
+			fn Foo(){}
+		}
+
+		type IntBox= Box</i32/>;
+		type FloatBox= Box</f32/>;
+		type IntBoxBox= Box</ Box</ i32 /> />;
+		type IntBoxBoxBox= Box</ Box</ Box</ i32 /> /> />;
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxIiE3FooEv" ) != nullptr ); // Box</i32/>::Foo()
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxIfE3FooEv" ) != nullptr ); // Box</f32/>::Foo()
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxIS_IiEE3FooEv" ) != nullptr ); // Box</ Box</ i32 /> />::Foo(), "S_" = "Box"
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxIS_IS_IiEEE3FooEv" ) != nullptr ); // Box</ Box</ Box</ i32 /> /> />::Foo(), "S_" = "Box"
+}
+
+U_TEST( ClassTemplatesMangling_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		enum E{ A, B, C }
+		template</ i32 x /> struct A{ fn FunA(){} }
+		template</ i32 x, u64 y /> struct B{ fn FunB(){} }
+		template</ E e /> struct C{ fn FunC(){} }
+
+		type A66= A</ 66 />;
+		type B_minus_5_plus_666= B</ -5, 666u64 />;
+		type C_C= C</ E::C />;
+	)";
+
+	auto module= BuildProgram( c_program_text );
+	U_TEST_ASSERT( module->getTypeByName( "1AILi66EE" ) != nullptr ); // A</ 66 />
+	U_TEST_ASSERT( module->getTypeByName( "1BILin5ELy666EE" ) != nullptr ); // B</ -5, 666u64 />
+	U_TEST_ASSERT( module->getTypeByName( "1CIL1E2EE" ) != nullptr ); // C</ E::C />::FunC()
+
+	const EnginePtr engine= CreateEngine( std::move(module) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1AILi66EE4FunAEv" ) != nullptr ); // A</ 66 />::FunA()
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1BILin5ELy666EE4FunBEv" ) != nullptr ); // B</ -5, 666u64 />::FunB()
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1CIL1E2EE4FunCEv" ) != nullptr ); // C</ E::C />::FunC()
+}
+
+U_TEST( ClassTemplatesMangling_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ i32 x /> struct A{ fn FunA(){} }
+		fn Baz(A</13/> arg0, A</13/> arg1){}
+		fn Tatata(A</55/> arg0, A</77/> arg1){}
+
+		template</ type T /> struct Box{ T t; }
+		template</ type T /> struct Void{ }
+
+		namespace Abc{ namespace Def{ struct HH{} } }
+
+		fn Lol( Box</ Abc::Def::HH /> arg0,  Void</ Abc::Def::HH /> arg1 ){}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Baz1AILi13EES0_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z6Tatata1AILi55EES_ILi77EE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Lol3BoxIN3Abc3Def2HHEE4VoidIS2_E" ) != nullptr );
+}
+
+U_TEST( ClassTemplatesMangling_Test3 )
+{
+	static const char c_program_text[]=
+	R"(
+		template<//> struct Box</i32/>
+		{
+			fn FunA(){}
+		}
+
+		template<//> struct NumBox</0u/>
+		{
+			fn FunZero(){}
+		}
+
+		template</type T/> struct Box
+		{
+			fn FunRegular(){}
+		}
+
+		type IntBox= Box</i32/>;
+		type ZeroBox= NumBox</0u/>;
+		type FloatBox= Box</f32/>;
+		type Bool4Box= Box</ [ bool, 4s ] />;
+	)";
+
+	// Mangling uses signature parameters.
+
+	auto module= BuildProgram( c_program_text );
+	U_TEST_ASSERT( module->getTypeByName( "3BoxIiE" ) != nullptr );
+	U_TEST_ASSERT( module->getTypeByName( "6NumBoxILj0EE" ) != nullptr );
+	U_TEST_ASSERT( module->getTypeByName( "3BoxIfE" ) != nullptr );
+	U_TEST_ASSERT( module->getTypeByName( "3BoxIA4_bE" ) != nullptr );
+
+	const EnginePtr engine= CreateEngine( std::move(module) );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxIiE4FunAEv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN6NumBoxILj0EE7FunZeroEv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxIfE10FunRegularEv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxIA4_bE10FunRegularEv" ) != nullptr );
+}
+
+U_TEST( ClassTemplatesMangling_Test4 )
+{
+	static const char c_program_text[]=
+	R"(
+		namespace Abc
+		{
+			template</type T/> struct shared_ptr_mut{}
+
+			template</type T/>
+			struct vector
+			{
+				fn Foo(){}
+			}
+
+			template</ type A, type B />
+			struct pair
+			{
+				fn Baz(){}
+			}
+		}
+
+		type VV= Abc::vector</ Abc::shared_ptr_mut</f32/> />;
+		type PP= Abc::pair</ Abc::shared_ptr_mut</i64/>, Abc::shared_ptr_mut</i64/> />;
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc6vectorINS_14shared_ptr_mutIfEEE3FooEv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc4pairINS_14shared_ptr_mutIxEES2_E3BazEv" ) != nullptr );
+}
+
+U_TEST( FunctionTemplatesMangling_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> fn Foo(){}
+
+		struct Abc{}
+		fn Main()
+		{
+			Foo</i32/>();
+			Foo</f32/>();
+			Foo</Abc/>();
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooIiEvv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooIfEvv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooI3AbcEvv" ) != nullptr );
+}
+
+U_TEST( FunctionTemplatesMangling_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type A, type B, type C /> fn Foo(){}
+
+		struct Abc{}
+		fn Main()
+		{
+			Foo</i32, i32, i32/>();
+			Foo</i32, f32, i32/>();
+			Foo</bool, u16, u32/>();
+			Foo</Abc, Abc, Abc/>();
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooIiiiEvv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooIifiEvv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooIbtjEvv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooI3AbcS0_S0_Evv" ) != nullptr );
+
+}
+
+U_TEST( FunctionTemplatesMangling_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> fn Foo(T t){}
+
+		struct Abc{}
+		fn Main()
+		{
+			Foo(66);
+			Foo(0.25f);
+			Foo(Abc());
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooIiEvi" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooIfEvf" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooI3AbcEvS0_" ) != nullptr );
+}
+
+U_TEST( FunctionTemplatesMangling_Test3 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> fn Foo(T t){}
+
+		namespace Abc
+		{
+			struct default_hasher
+			{
+				template</type T/> fn hash( T& t ) {}
+			}
+
+			struct InnerType{}
+		}
+
+		struct OuterType{}
+
+		fn Main()
+		{
+			Abc::default_hasher::hash(0u);
+			Abc::default_hasher::hash(Abc::InnerType());
+			Abc::default_hasher::hash(OuterType());
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc14default_hasher4hashIjEEvRKj" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc14default_hasher4hashINS_9InnerTypeEEEvRKS2_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc14default_hasher4hashI9OuterTypeEEvRKS2_" ) != nullptr );
 }
 
 } // namespace U

@@ -17,14 +17,15 @@ const std::string g_name_field_name= "name";
 const std::string g_type_field_name= "type";
 const FilePos g_dummy_file_pos{ 0u, 0u, 0u };
 
-const std::string g_typeinfo_root_class_name= "TI";
-const std::string g_typeinfo_enum_elements_list_node_class_name= "TIEL_";
-const std::string g_typeinfo_class_fields_list_node_class_name= "TICFL_";
-const std::string g_typeinfo_class_types_list_node_class_name= "TICTL_";
-const std::string g_typeinfo_class_functions_list_node_class_name= "TICFL_";
-const std::string g_typeinfo_class_parents_list_node_class_name= "TICPL_";
-const std::string g_typeinfo_function_arguments_list_node_class_name= "TIAL_";
-const std::string g_typeinfo_tuple_elements_list_node_class_name= "TITL_";
+// Use reserved by language names, started with "_";
+const std::string g_typeinfo_root_class_name= "_TI";
+const std::string g_typeinfo_enum_elements_list_node_class_name= "_TIEL_";
+const std::string g_typeinfo_class_fields_list_node_class_name= "_TICFiL_";
+const std::string g_typeinfo_class_types_list_node_class_name= "_TICTL_";
+const std::string g_typeinfo_class_functions_list_node_class_name= "_TICFuL_";
+const std::string g_typeinfo_class_parents_list_node_class_name= "_TICPL_";
+const std::string g_typeinfo_function_arguments_list_node_class_name= "_TIAL_";
+const std::string g_typeinfo_tuple_elements_list_node_class_name= "_TITL_";
 
 std::string GetTypeinfoVariableName( const ClassProxyPtr& typeinfo_class )
 {
@@ -272,10 +273,9 @@ void CodeBuilder::FinishTypeinfoClass( Class& class_, const ClassProxyPtr class_
 	// Other methods - constructors, assignment operators does not needs for typeinfo classes.
 	TryGenerateDestructor( class_, class_proxy );
 
-	// HACK! Correct destructor name, because regular mangling does not works correctly for it.
-	llvm::Function* const destructor= class_.members.GetThisScopeValue( Keyword( Keywords::destructor_ ) )->GetFunctionsSet()->functions.front().llvm_function;
-	destructor->setName( MangleType( class_proxy ) + "D0" );
-	destructor->setComdat( module_->getOrInsertComdat( destructor->getName() ) );
+	const FunctionVariable& destructor= class_.members.GetThisScopeValue( Keyword( Keywords::destructor_ ) )->GetFunctionsSet()->functions.front();
+	destructor.llvm_function->setName( MangleFunction( class_.members, Keyword( Keywords::destructor_ ), *destructor.type.GetFunctionType() ) );
+	destructor.llvm_function->setComdat( module_->getOrInsertComdat( destructor.llvm_function->getName() ) );
 }
 
 Variable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, NamesScope& root_namespace )
@@ -290,7 +290,13 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, N
 	enum_type->members.ForEachInThisScope(
 		[&]( const std::string& name, const Value& enum_member )
 		{
-			const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace, enum_type, g_typeinfo_enum_elements_list_node_class_name + name );
+			llvm::Constant* const enum_member_value= enum_member.GetVariable()->constexpr_value;
+
+			const ClassProxyPtr node_type=
+				CreateTypeinfoClass(
+					root_namespace,
+					enum_type,
+					g_typeinfo_enum_elements_list_node_class_name + std::to_string( enum_member_value->getUniqueInteger().getLimitedValue() ) );
 			Class& node_type_class= *node_type->class_;
 
 			ClassFieldsVector<llvm::Type*> fields_llvm_types;
@@ -300,7 +306,7 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, N
 				"value",
 				Value( ClassField( node_type, enum_type->underlaying_type, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_file_pos ) );
 			fields_llvm_types.push_back( enum_type->underlaying_type.llvm_type );
-			fields_initializers.push_back( enum_member.GetVariable()->constexpr_value );
+			fields_initializers.push_back( enum_member_value );
 
 			{
 				Array name_type;
@@ -537,13 +543,14 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 			const OverloadedFunctionsSet* const functions_set= class_member.GetFunctionsSet();
 			if( functions_set == nullptr )
 				return;
+
 			for( const FunctionVariable& function : functions_set->functions )
 			{
 				const ClassProxyPtr node_type=
 					CreateTypeinfoClass(
 						root_namespace,
 						class_type,
-						g_typeinfo_class_functions_list_node_class_name + function.llvm_function->getName().str() );
+						g_typeinfo_class_functions_list_node_class_name + std::to_string( &function - functions_set->functions.data() ) );
 				Class& node_type_class= *node_type->class_;
 
 				ClassFieldsVector<llvm::Type*> fields_llvm_types;

@@ -11,6 +11,8 @@ namespace CodeBuilderPrivate
 // Class
 //
 
+const std::string Class::c_template_class_name= "_";
+
 Class::Class( std::string in_name, NamesScope* const parent_scope )
 	: members( std::move(in_name), parent_scope )
 {}
