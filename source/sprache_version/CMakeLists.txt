@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 2.8)
-
 set( SPRACHE_VERSION "0.5" )
 
 # Custom target builds each time, but it changes file with revision only if needed.

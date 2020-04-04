@@ -1,6 +1,3 @@
-cmake_minimum_required(VERSION 2.8)
-
-
 file( GLOB LANG_DIRS "*" )
 foreach( LANG_DIR ${LANG_DIRS} )
 	if( IS_DIRECTORY ${LANG_DIR} )
