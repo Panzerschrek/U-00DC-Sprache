@@ -594,6 +594,37 @@ U_TEST( ClassTemplatesMangling_Test3 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxIA4_bE10FunRegularEv" ) != nullptr );
 }
 
+U_TEST( ClassTemplatesMangling_Test4 )
+{
+	static const char c_program_text[]=
+	R"(
+		namespace Abc
+		{
+			template</type T/> struct shared_ptr_mut{}
+
+			template</type T/>
+			struct vector
+			{
+				fn Foo(){}
+			}
+
+			template</ type A, type B />
+			struct pair
+			{
+				fn Baz(){}
+			}
+		}
+
+		type VV= Abc::vector</ Abc::shared_ptr_mut</f32/> />;
+		type PP= Abc::pair</ Abc::shared_ptr_mut</i64/>, Abc::shared_ptr_mut</i64/> />;
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ), true );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc6vectorINS_14shared_ptr_mutIfEEE3FooEv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc4pairINS_14shared_ptr_mutIxEES2_E3BazEv" ) != nullptr );
+}
+
 U_TEST( FunctionTemplatesMangling_Test0 )
 {
 	static const char c_program_text[]=

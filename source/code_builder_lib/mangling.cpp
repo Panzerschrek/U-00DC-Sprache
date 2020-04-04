@@ -285,7 +285,14 @@ MangleGraphNode GetTypeName( const Type& type )
 			result.childs.push_back( GetTypeName( *class_type->typeinfo_type ) );
 		}
 		else if( class_type->base_template != std::nullopt )
+		{
 			result= GetTemplateClassName( *class_type );
+			if( class_type->base_template->class_template->parent_namespace->GetParent() != nullptr )
+			{
+				result.prefix= "N";
+				result.postfix= "E";
+			}
+		}
 		else
 			result= GetNestedName( class_type->members.GetThisNamespaceName(), *class_type->members.GetParent() );
 	}
