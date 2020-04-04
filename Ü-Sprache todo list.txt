@@ -13,7 +13,7 @@ General:
 *) Function to function pointer assignment
 *) == and != methods generation
 *) Functions references info in "typeinfo".
-*) More float types (16 bit, 128 bit )
+*) More float types (1 6 bit, 128 bit )
 *) Constructor initializer for constexpr structs
 *) Function pointers inside constexpr functions
 *) Reference result of constexpr function evaluation
@@ -40,14 +40,12 @@ Standart library:
 *) More math functions
 
 Compiler:
-*) Safety, returning references and references pollution in function types
-	mangling
-*) Template functions mangling with all template parameters
 *) move-assignment without hacks.
 *) Standartized entry point, such "main" in some languages
 *) Virtual call for final function optimization
+*) Reference local variables in debug info
+*) Different "FilePos" for different macro expansions
 *) Return value optimization
-*) Debug info
 *) Precompiled modules
 
 QtCreator plugin:
@@ -57,4 +55,4 @@ QtCreator plugin:
 *) More advanced program model updating
 
 CPP Header converter:
-* fix "typedef struct X{} X;"
+*) fix "typedef struct X{} X;"
