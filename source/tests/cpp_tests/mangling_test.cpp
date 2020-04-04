@@ -619,7 +619,7 @@ U_TEST( ClassTemplatesMangling_Test4 )
 		type PP= Abc::pair</ Abc::shared_ptr_mut</i64/>, Abc::shared_ptr_mut</i64/> />;
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ), true );
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc6vectorINS_14shared_ptr_mutIfEEE3FooEv" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc4pairINS_14shared_ptr_mutIxEES2_E3BazEv" ) != nullptr );
@@ -689,6 +689,38 @@ U_TEST( FunctionTemplatesMangling_Test2 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooIiEvi" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooIfEvf" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooI3AbcEvS0_" ) != nullptr );
+}
+
+U_TEST( FunctionTemplatesMangling_Test3 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> fn Foo(T t){}
+
+		namespace Abc
+		{
+			struct default_hasher
+			{
+				template</type T/> fn hash( T& t ) {}
+			}
+
+			struct InnerType{}
+		}
+
+		struct OuterType{}
+
+		fn Main()
+		{
+			Abc::default_hasher::hash(0u);
+			Abc::default_hasher::hash(Abc::InnerType());
+			Abc::default_hasher::hash(OuterType());
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc14default_hasher4hashIjEEvRKj" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc14default_hasher4hashINS_9InnerTypeEEEvRKS2_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc14default_hasher4hashI9OuterTypeEEvRKS2_" ) != nullptr );
 }
 
 } // namespace U

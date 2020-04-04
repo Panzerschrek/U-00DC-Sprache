@@ -213,19 +213,53 @@ MangleGraphNode GetNamespacePrefix_r( const NamesScope& names_scope )
 MangleGraphNode GetNestedName(
 	const std::string& name,
 	const NamesScope& parent_scope,
-	const bool no_name_num_prefix= false )
+	const bool no_name_num_prefix= false,
+	const std::vector<TemplateParameter>* template_parameters= nullptr )
 {
 	MangleGraphNode result;
+
+	// Normally we should use "T_" instead of "S_" for referencing template parameters in function signature.
+	// But without "T_" it works fine too.
 
 	const std::string num_prefix=  no_name_num_prefix ? "" : std::to_string( name.size() );
 	if( parent_scope.GetParent() != nullptr )
 	{
-		result.prefix= "N";
-		result.childs.push_back( GetNamespacePrefix_r( parent_scope ) );
-		result.postfix= num_prefix + name + "E";
+		if( template_parameters != nullptr )
+		{
+			MangleGraphNode name_node;
+			name_node.postfix= num_prefix + name;
+			name_node.childs.push_back( GetNamespacePrefix_r( parent_scope ) );
+
+			MangleGraphNode params_node= EncodeTemplateParameters( *template_parameters );
+
+			result.prefix= "N";
+			result.childs.push_back( std::move( name_node ) );
+			result.childs.push_back( std::move( params_node ) );
+			result.postfix= "Ev";
+		}
+		else
+		{
+			result.prefix= "N";
+			result.childs.push_back( GetNamespacePrefix_r( parent_scope ) );
+			result.postfix= num_prefix + name + "E";
+		}
 	}
 	else
-		result.postfix= num_prefix + name;
+	{
+		if( template_parameters != nullptr )
+		{
+			MangleGraphNode name_node;
+			name_node.postfix= num_prefix + name;
+
+			MangleGraphNode params_node= EncodeTemplateParameters( *template_parameters );
+
+			result.childs.push_back( std::move( name_node ) );
+			result.childs.push_back( std::move( params_node ) );
+			result.postfix= "v";
+		}
+		else
+			result.prefix= num_prefix + name;
+	}
 
 	return result;
 }
@@ -483,25 +517,10 @@ std::string MangleFunction(
 	MangleGraphNode result;
 	const std::string& operator_decoded= DecodeOperator( function_name );
 	if( !operator_decoded.empty() )
-		result.childs.push_back( GetNestedName( operator_decoded, parent_scope, true ) );
+		result.childs.push_back( GetNestedName( operator_decoded, parent_scope, true, template_parameters ) );
 	else
-		result.childs.push_back( GetNestedName( function_name, parent_scope ) );
+		result.childs.push_back( GetNestedName( function_name, parent_scope, false, template_parameters ) );
 	result.childs.back().cachable= false;
-
-	// Normally we should use "T_" instead of "S_" for referencing template parameters in function signature.
-	// But without "T_" it works fine too.
-
-	if( template_parameters != nullptr )
-	{
-		MangleGraphNode params_node= EncodeTemplateParameters( *template_parameters );
-		params_node.postfix+= "v"; // I have no idea why, but this needed.
-
-		MangleGraphNode combined_node;
-		combined_node.childs.push_back( std::move(result) );
-		combined_node.childs.push_back( std::move(params_node) );
-
-		result= std::move(combined_node);
-	}
 
 	for( const Function::Arg& arg : function_type.args )
 	{
