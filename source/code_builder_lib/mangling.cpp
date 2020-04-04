@@ -315,8 +315,16 @@ MangleGraphNode GetTypeName( const Type& type )
 	{
 		if( class_type->typeinfo_type != std::nullopt )
 		{
-			result.prefix= class_type->members.GetThisNamespaceName();
-			result.childs.push_back( GetTypeName( *class_type->typeinfo_type ) );
+			MangleGraphNode name_node;
+			const std::string& class_name= class_type->members.GetThisNamespaceName();
+			name_node.postfix= std::to_string( class_name.size() ) + class_name;
+
+			std::vector<TemplateParameter> typeinfo_pseudo_parameters;
+			typeinfo_pseudo_parameters.push_back( *class_type->typeinfo_type );
+			MangleGraphNode params_node= EncodeTemplateParameters( typeinfo_pseudo_parameters );
+
+			result.childs.push_back( std::move( name_node ) );
+			result.childs.push_back( std::move( params_node ) );
 		}
 		else if( class_type->base_template != std::nullopt )
 		{
