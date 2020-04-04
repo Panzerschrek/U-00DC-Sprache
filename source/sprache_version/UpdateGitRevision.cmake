@@ -1,6 +1,6 @@
 option( OUTPUT_HEADER_PATH "Path to output header file" "" )
 
-find_package( Git REQUIRED )
+find_package( Git REQUIRED QUIET )
 
 execute_process(
 	COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
