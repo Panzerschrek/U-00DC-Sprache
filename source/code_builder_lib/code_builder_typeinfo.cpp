@@ -272,10 +272,9 @@ void CodeBuilder::FinishTypeinfoClass( Class& class_, const ClassProxyPtr class_
 	// Other methods - constructors, assignment operators does not needs for typeinfo classes.
 	TryGenerateDestructor( class_, class_proxy );
 
-	// HACK! Correct destructor name, because regular mangling does not works correctly for it.
-	llvm::Function* const destructor= class_.members.GetThisScopeValue( Keyword( Keywords::destructor_ ) )->GetFunctionsSet()->functions.front().llvm_function;
-	destructor->setName( MangleType( class_proxy ) + "D0" );
-	destructor->setComdat( module_->getOrInsertComdat( destructor->getName() ) );
+	const FunctionVariable& destructor= class_.members.GetThisScopeValue( Keyword( Keywords::destructor_ ) )->GetFunctionsSet()->functions.front();
+	destructor.llvm_function->setName( MangleFunction( class_.members, Keyword( Keywords::destructor_ ), *destructor.type.GetFunctionType() ) );
+	destructor.llvm_function->setComdat( module_->getOrInsertComdat( destructor.llvm_function->getName() ) );
 }
 
 Variable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, NamesScope& root_namespace )
