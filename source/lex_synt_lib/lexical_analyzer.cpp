@@ -8,40 +8,6 @@
 namespace U
 {
 
-bool operator==( const FilePos& l, const FilePos& r )
-{
-	return l.file_index == r.file_index && l.line == r.line && r.column == l.column;
-}
-
-bool operator!=( const FilePos& l, const FilePos& r )
-{
-	return !( l == r );
-}
-
-bool operator< ( const FilePos& l, const FilePos& r )
-{
-	if( l.file_index != r.file_index )
-		return l.file_index < r.file_index;
-	if( l.line != r.line )
-		return l.line < r.line;
-	return l.column < r.column;
-}
-
-bool operator<=( const FilePos& l, const FilePos& r )
-{
-	return l < r || l == r;
-}
-
-bool operator==(const Lexem& l, const Lexem& r )
-{
-	return l.text == r.text && l.file_pos == r.file_pos && l.type == r.type;
-}
-
-bool operator!=(const Lexem& l, const Lexem& r )
-{
-	return !(l == r );
-}
-
 namespace
 {
 
@@ -512,6 +478,16 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, LexicalErrorMessages& ou
 }
 
 } // namespace
+
+bool operator==(const Lexem& l, const Lexem& r )
+{
+	return l.text == r.text && l.file_pos == r.file_pos && l.type == r.type;
+}
+
+bool operator!=(const Lexem& l, const Lexem& r )
+{
+	return !(l == r );
+}
 
 LexicalAnalysisResult LexicalAnalysis( const std::string& program_text, const bool collect_comments )
 {

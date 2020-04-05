@@ -1,7 +1,8 @@
 #pragma once
 #include <memory>
 #include <string>
-#include "../lex_synt_lib/lexical_analyzer.hpp"
+#include <vector>
+#include "../lex_synt_lib/file_pos.hpp"
 
 
 namespace U
