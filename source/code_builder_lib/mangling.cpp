@@ -302,14 +302,21 @@ MangleGraphNode GetTypeName( const Type& type )
 	}
 	else if( const Tuple* const tuple_type= type.GetTupleType() )
 	{
-		// Encode tuples, like in "Rust".
-		result.prefix= "T";
+		// Encode tuples, like type templates.
+		MangleGraphNode name_node;
+		const std::string& keyword= Keyword( Keywords::tup_ );
+		name_node.postfix= std::to_string(keyword.size()) + keyword;
 
-		result.childs.reserve( tuple_type->elements.size() );
+		MangleGraphNode params_node;
+		params_node.prefix= "I";
+		params_node.childs.reserve( tuple_type->elements.size() );
 		for( const Type& element_type : tuple_type->elements )
-			result.childs.push_back( GetTypeName( element_type ) );
+			params_node.childs.push_back( GetTypeName( element_type ) );
+		params_node.postfix= "E";
+		params_node.cachable= false;
 
-		result.postfix= "E";
+		result.childs.push_back(std::move(name_node));
+		result.childs.push_back(std::move(params_node));
 	}
 	else if( const auto class_type= type.GetClassType() )
 	{

@@ -481,6 +481,30 @@ U_TEST( FunctionTypesMangling_Test0 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4PassPF11OtherStructRKS_E" ) != nullptr );
 }
 
+U_TEST( TupleTypesManglengTest )
+{
+	static const char c_program_text[]=
+	R"(
+		struct SomeStruct{}
+
+		fn Foo( tup[] t ) {}
+		fn Bar( tup[ bool ] t ) {}
+		fn Baz( tup[ i32, f32, char32 ] t ) {}
+		fn Lol( tup[ u16, u16, u16, u16 ] t ) {}
+		fn Double( tup[ f32 , f64 ] t0, tup[ f32, f64 ] t1 ) {}
+		fn SSS( tup[ SomeStruct, i32 ] t0, SomeStruct t1 ) {}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Foo3tupIE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Bar3tupIbE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Baz3tupIifDiE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Lol3tupIttttE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z6Double3tupIfdES0_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3SSS3tupI10SomeStructiES0_" ) != nullptr );
+}
+
 U_TEST( ClassTemplatesMangling_Test0 )
 {
 	static const char c_program_text[]=
