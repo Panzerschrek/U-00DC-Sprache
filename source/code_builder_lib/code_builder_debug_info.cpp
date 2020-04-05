@@ -167,6 +167,9 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const Tuple& type )
 {
 	U_ASSERT(build_debug_info_);
 
+	if( !IsTypeComplete( type ) )
+		return nullptr;
+
 	const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( type.llvm_type );
 
 	std::vector<llvm::Metadata*> elements;
