@@ -34,12 +34,12 @@ private:
 };
 #define DETECT_GLOBALS_LOOP( in_thing_ptr, in_name, in_file_pos, in_completeness ) \
 	{ \
-		const FilePos file_pos= in_file_pos; \
-		const GlobalThing global_thing( static_cast<const void*>(in_thing_ptr), in_name, file_pos, in_completeness ); \
+		const FilePos file_pos__= in_file_pos; \
+		const GlobalThing global_thing( static_cast<const void*>(in_thing_ptr), in_name, file_pos__, in_completeness ); \
 		const size_t loop_pos= GlobalThingDetectloop( global_thing ); \
 		if( loop_pos != ~0u ) \
 		{ \
-			GlobalThingReportAboutLoop( loop_pos, in_name, in_file_pos ); \
+			GlobalThingReportAboutLoop( loop_pos, in_name, file_pos__ ); \
 			return; \
 		} \
 		global_things_stack_.push_back( global_thing ); \
@@ -960,7 +960,7 @@ void CodeBuilder::GlobalThingBuildTypedef( NamesScope& names_scope, Value& typed
 	U_ASSERT( typedef_value.GetTypedef() != nullptr );
 	const Synt::Typedef& syntax_element= *typedef_value.GetTypedef()->syntax_element;
 
-	DETECT_GLOBALS_LOOP( &typedef_value, syntax_element.name, typedef_value.GetFilePos(), TypeCompleteness::Complete );
+	DETECT_GLOBALS_LOOP( &typedef_value, syntax_element.name, syntax_element.file_pos_, TypeCompleteness::Complete );
 
 	// Replace value in names map, when typedef is comlete.
 	typedef_value= Value( PrepareType( syntax_element.value, names_scope, *global_function_context_ ), syntax_element.file_pos_ );
@@ -971,7 +971,13 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 	U_ASSERT( global_variable_value.GetIncompleteGlobalVariable() != nullptr );
 	const IncompleteGlobalVariable incomplete_global_variable= *global_variable_value.GetIncompleteGlobalVariable();
 
-	DETECT_GLOBALS_LOOP( &global_variable_value, incomplete_global_variable.name, global_variable_value.GetFilePos(), TypeCompleteness::Complete );
+	FilePos file_pos{ 0u, 0u, 0u };
+	if( incomplete_global_variable.variables_declaration != nullptr )
+		file_pos= incomplete_global_variable.variables_declaration->variables[ incomplete_global_variable.element_index ].file_pos;
+	else if( incomplete_global_variable.auto_variable_declaration != nullptr )
+		file_pos= incomplete_global_variable.auto_variable_declaration->file_pos_;
+
+	DETECT_GLOBALS_LOOP( &global_variable_value, incomplete_global_variable.name, file_pos, TypeCompleteness::Complete );
 	#define FAIL_RETURN { global_variable_value= ErrorValue(); return; }
 
 	FunctionContext& function_context= *global_function_context_;

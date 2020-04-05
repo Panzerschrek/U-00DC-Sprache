@@ -1609,7 +1609,7 @@ Type CodeBuilder::BuildFuncCode(
 		if( constructor_initialization_list == nullptr )
 		{
 			// Create dummy initialization list for constructors without explicit initialization list.
-			const Synt::StructNamedInitializer dumy_initialization_list{ FilePos() };
+			const Synt::StructNamedInitializer dumy_initialization_list( block->file_pos_ );
 
 			BuildConstructorInitialization(
 				*function_context.this_,
@@ -1897,7 +1897,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		{
 			if( field->syntax_element->initializer == nullptr )
 			{
-				REPORT_ERROR( ExpectedInitializer, names_scope.GetErrors(), class_member->GetFilePos(), field_name );
+				REPORT_ERROR( ExpectedInitializer, names_scope.GetErrors(), constructor_initialization_list.file_pos_, field_name );
 				continue;
 			}
 			InitializeReferenceClassFieldWithInClassIninitalizer( this_, *field, function_context );

@@ -231,7 +231,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 					if( field->is_reference )
 					{
 						if( field->syntax_element->initializer == nullptr )
-							REPORT_ERROR( ExpectedInitializer, names.GetErrors(), class_member.GetFilePos(), field->syntax_element->name ); // References is not default-constructible.
+							REPORT_ERROR( ExpectedInitializer, names.GetErrors(),  initializer.file_pos_, field->syntax_element->name ); // References is not default-constructible.
 						else
 							constant_initializer= InitializeReferenceClassFieldWithInClassIninitalizer( variable, *field, function_context );
 					}

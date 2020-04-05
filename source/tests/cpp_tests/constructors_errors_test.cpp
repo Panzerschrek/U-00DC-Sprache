@@ -281,7 +281,7 @@ U_TEST( ExpectedInitializer_InConstructors_Test1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
-	U_TEST_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.file_pos.line == 7u );
 }
 
 U_TEST( InitializerForNonfieldStructMember_InConstructors_Test0 )
