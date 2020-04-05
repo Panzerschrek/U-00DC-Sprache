@@ -205,9 +205,6 @@ public:
 	std::string GetKindName() const;
 	const FilePos& GetFilePos() const;
 
-	bool IsTemplateParameter() const;
-	void SetIsTemplateParameter( bool is_template_parameter );
-
 	// Fundamental, class, array types
 	Variable* GetVariable();
 	const Variable* GetVariable() const;
@@ -267,7 +264,6 @@ private:
 	// Two values are 100% same, if their file_pos are identical.
 	// Not for all values file_pos required, so, fill it with zeros for it.
 	FilePos file_pos_= { 0u, 0u, 0u };
-	bool is_template_parameter_= false;
 };
 
 } //namespace CodeBuilderPrivate

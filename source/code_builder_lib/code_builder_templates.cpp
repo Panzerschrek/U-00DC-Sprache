@@ -301,9 +301,6 @@ void CodeBuilder::ProcessTemplateArgs(
 			inserted_template_parameter=
 				template_parameters_namespace.AddName( arg_name, Value( Type( FundamentalType( U_FundamentalType::i32, fundamental_llvm_types_.i32 ) ), file_pos ) ); // TODO - is this correct, use conncrete type?
 		}
-
-		if( inserted_template_parameter != nullptr )
-			inserted_template_parameter->SetIsTemplateParameter(true);
 	}
 
 	U_ASSERT( template_parameters_usage_flags.size() == template_parameters.size() );
