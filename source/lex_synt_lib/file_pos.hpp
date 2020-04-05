@@ -1,18 +1,36 @@
 #pragma once
+#include <cstdint>
+#include <limits>
 
 namespace U
 {
 
-struct FilePos
+class FilePos
 {
-	unsigned short file_index;
-	unsigned short line; // from 1
-	unsigned short column;
-};
+public:
+	static constexpr uint32_t c_max_file_index= std::numeric_limits<uint16_t>::max();
+	static constexpr uint32_t c_max_line= std::numeric_limits<uint16_t>::max();
+	static constexpr uint32_t c_max_column= std::numeric_limits<uint16_t>::max();
 
-bool operator==( const FilePos& l, const FilePos& r );
-bool operator!=( const FilePos& l, const FilePos& r );
-bool operator< ( const FilePos& l, const FilePos& r );
-bool operator<=( const FilePos& l, const FilePos& r );
+public:
+	FilePos();
+	FilePos( uint32_t file_index, uint32_t line, uint32_t column );
+
+	uint32_t GetFileIndex() const;
+	uint32_t GetLine() const;
+	uint32_t GetColumn() const;
+
+	void SetFileIndex( uint32_t file_index );
+
+	bool operator==( const FilePos& other ) const;
+	bool operator!=( const FilePos& other ) const;
+	bool operator< ( const FilePos& other ) const;
+	bool operator<=( const FilePos& other ) const;
+
+private:
+	uint16_t file_index_;
+	uint16_t line_; // from 1
+	uint16_t column_;
+};
 
 } // namespace U

@@ -46,7 +46,7 @@ U_TEST( ImportedNamespaceShouldNotBeModified_Test0 )
 
 	U_TEST_ASSERT( !result.errors.empty() );
 	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( result.errors[0u].file_pos.line == 5u );
+	U_TEST_ASSERT( result.errors[0u].file_pos.GetLine() == 5u );
 }
 
 U_TEST( ImportedNamespaceShouldNotBeModified_Test1 )
@@ -98,7 +98,7 @@ U_TEST( ImportedNamespaceShouldNotBeModified_Test1 )
 
 	U_TEST_ASSERT( !result.errors.empty() );
 	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( result.errors[0u].file_pos.line == 7u );
+	U_TEST_ASSERT( result.errors[0u].file_pos.GetLine() == 7u );
 }
 
 U_TEST( ImportedClassShouldNotBeModified_Test0 )
@@ -141,7 +141,7 @@ U_TEST( ImportedClassShouldNotBeModified_Test0 )
 
 	U_TEST_ASSERT( !result.errors.empty() );
 	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::UsingIncompleteType );
-	U_TEST_ASSERT( result.errors[0u].file_pos.line == 5u );
+	U_TEST_ASSERT( result.errors[0u].file_pos.GetLine() == 5u );
 }
 
 U_TEST( ImportedClassShouldNotBeModified_Test1 )
@@ -184,7 +184,7 @@ U_TEST( ImportedClassShouldNotBeModified_Test1 )
 
 	U_TEST_ASSERT( !result.errors.empty() );
 	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::UsingIncompleteType );
-	U_TEST_ASSERT( result.errors[0u].file_pos.line == 5u );
+	U_TEST_ASSERT( result.errors[0u].file_pos.GetLine() == 5u );
 }
 
 U_TEST( FunctionPrototypeDuplication_ForImports_Test0 )
@@ -218,7 +218,7 @@ U_TEST( FunctionPrototypeDuplication_ForImports_Test0 )
 
 	U_TEST_ASSERT( !result.errors.empty() );
 	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::FunctionPrototypeDuplication );
-	U_TEST_ASSERT( result.errors[0u].file_pos.line == 2u );
+	U_TEST_ASSERT( result.errors[0u].file_pos.GetLine() == 2u );
 }
 
 U_TEST( FunctionPrototypeDuplication_ForImports_Test1 )
@@ -252,7 +252,7 @@ U_TEST( FunctionPrototypeDuplication_ForImports_Test1 )
 
 	U_TEST_ASSERT( !result.errors.empty() );
 	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::FunctionPrototypeDuplication );
-	U_TEST_ASSERT( result.errors[0u].file_pos.line == 2u );
+	U_TEST_ASSERT( result.errors[0u].file_pos.GetLine() == 2u );
 }
 
 U_TEST( FunctionPrototypeDuplication_ForImports_Test2 )
@@ -286,7 +286,7 @@ U_TEST( FunctionPrototypeDuplication_ForImports_Test2 )
 
 	U_TEST_ASSERT( !result.errors.empty() );
 	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::FunctionPrototypeDuplication );
-	U_TEST_ASSERT( result.errors[0u].file_pos.line == 2u );
+	U_TEST_ASSERT( result.errors[0u].file_pos.GetLine() == 2u );
 }
 
 U_TEST( FunctionBodyDuplication_ForImports_Test0 )
@@ -328,7 +328,7 @@ U_TEST( FunctionBodyDuplication_ForImports_Test0 )
 
 	U_TEST_ASSERT( !result.errors.empty() );
 	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::FunctionBodyDuplication );
-	U_TEST_ASSERT( result.errors[0u].file_pos.line == 3u );
+	U_TEST_ASSERT( result.errors[0u].file_pos.GetLine() == 3u );
 }
 
 U_TEST( ClassPrototypeDuplication_ForImports_Test0 )
@@ -362,7 +362,7 @@ U_TEST( ClassPrototypeDuplication_ForImports_Test0 )
 
 	U_TEST_ASSERT( !result.errors.empty() );
 	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::Redefinition );
-	U_TEST_ASSERT( result.errors[0u].file_pos.line == 2u );
+	U_TEST_ASSERT( result.errors[0u].file_pos.GetLine() == 2u );
 }
 
 U_TEST( ClassPrototypeDuplication_ForImports_Test1 )
@@ -396,7 +396,7 @@ U_TEST( ClassPrototypeDuplication_ForImports_Test1 )
 
 	U_TEST_ASSERT( !result.errors.empty() );
 	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::Redefinition );
-	U_TEST_ASSERT( result.errors[0u].file_pos.line == 2u );
+	U_TEST_ASSERT( result.errors[0u].file_pos.GetLine() == 2u );
 }
 
 U_TEST( ClassBodyDuplication_ForImports_Test0 )
@@ -438,7 +438,7 @@ U_TEST( ClassBodyDuplication_ForImports_Test0 )
 
 	U_TEST_ASSERT( !result.errors.empty() );
 	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::ClassBodyDuplication );
-	U_TEST_ASSERT( result.errors[0u].file_pos.line == 3u );
+	U_TEST_ASSERT( result.errors[0u].file_pos.GetLine() == 3u );
 }
 
 U_TEST( Redefineition_ForImports_Test0 )
@@ -472,7 +472,7 @@ U_TEST( Redefineition_ForImports_Test0 )
 
 	U_TEST_ASSERT( !result.errors.empty() );
 	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::Redefinition );
-	U_TEST_ASSERT( result.errors[0u].file_pos.line == 2u );
+	U_TEST_ASSERT( result.errors[0u].file_pos.GetLine() == 2u );
 }
 
 U_TEST( Redefineition_ForImports_Test1 )
@@ -506,7 +506,7 @@ U_TEST( Redefineition_ForImports_Test1 )
 
 	U_TEST_ASSERT( !result.errors.empty() );
 	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::Redefinition );
-	U_TEST_ASSERT( result.errors[0u].file_pos.line == 2u );
+	U_TEST_ASSERT( result.errors[0u].file_pos.GetLine() == 2u );
 }
 
 U_TEST( Redefineition_ForImports_Test2 )
@@ -540,7 +540,7 @@ U_TEST( Redefineition_ForImports_Test2 )
 
 	U_TEST_ASSERT( !result.errors.empty() );
 	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::Redefinition );
-	U_TEST_ASSERT( result.errors[0u].file_pos.line == 2u );
+	U_TEST_ASSERT( result.errors[0u].file_pos.GetLine() == 2u );
 }
 
 U_TEST( Redefineition_ForImports_Test3 )
@@ -574,7 +574,7 @@ U_TEST( Redefineition_ForImports_Test3 )
 
 	U_TEST_ASSERT( !result.errors.empty() );
 	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::Redefinition );
-	U_TEST_ASSERT( result.errors[0u].file_pos.line == 2u );
+	U_TEST_ASSERT( result.errors[0u].file_pos.GetLine() == 2u );
 }
 
 U_TEST( Redefineition_ForImports_Test4 )
@@ -608,7 +608,7 @@ U_TEST( Redefineition_ForImports_Test4 )
 
 	U_TEST_ASSERT( !result.errors.empty() );
 	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::Redefinition );
-	U_TEST_ASSERT( result.errors[0u].file_pos.line == 2u );
+	U_TEST_ASSERT( result.errors[0u].file_pos.GetLine() == 2u );
 }
 
 U_TEST( Redefineition_ForImports_Test5 )
@@ -642,7 +642,7 @@ U_TEST( Redefineition_ForImports_Test5 )
 
 	U_TEST_ASSERT( !result.errors.empty() );
 	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::Redefinition );
-	U_TEST_ASSERT( result.errors[0u].file_pos.line == 2u );
+	U_TEST_ASSERT( result.errors[0u].file_pos.GetLine() == 2u );
 }
 
 U_TEST( Redefineition_ForImports_Test6 )
@@ -676,7 +676,7 @@ U_TEST( Redefineition_ForImports_Test6 )
 
 	U_TEST_ASSERT( !result.errors.empty() );
 	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::Redefinition );
-	U_TEST_ASSERT( result.errors[0u].file_pos.line == 2u );
+	U_TEST_ASSERT( result.errors[0u].file_pos.GetLine() == 2u );
 }
 
 } // namespace U

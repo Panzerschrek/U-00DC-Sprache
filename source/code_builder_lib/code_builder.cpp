@@ -481,10 +481,7 @@ void CodeBuilder::SetCurrentClassTable( ClassTable& table )
 
 void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
 {
-	FilePos fundamental_globals_file_pos;
-	fundamental_globals_file_pos.file_index=
-	fundamental_globals_file_pos.line=
-	fundamental_globals_file_pos.column= std::numeric_limits<unsigned short>::max();
+	const FilePos fundamental_globals_file_pos( FilePos::c_max_file_index, FilePos::c_max_line, FilePos::c_max_column );
 
 	for( size_t i= size_t(U_FundamentalType::Void); i < size_t(U_FundamentalType::LastType); ++i )
 	{

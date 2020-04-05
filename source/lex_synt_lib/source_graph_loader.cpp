@@ -90,7 +90,7 @@ size_t SourceGraphLoader::LoadNode_r(
 	}
 
 	for( Lexem& lexem :lex_result.lexems )
-		lexem.file_pos.file_index= static_cast<unsigned short>(node_index);
+		lexem.file_pos.SetFileIndex(uint32_t(node_index));
 
 	const std::vector<Synt::Import> imports= Synt::ParseImports( lex_result.lexems );
 
@@ -127,7 +127,7 @@ size_t SourceGraphLoader::LoadNode_r(
 				{
 					Synt::SyntaxErrorMessage error_message;
 					error_message.text= "Macro \"" + macro_map_pair.first + "\" redefinition.";
-					error_message.file_pos= FilePos{ 0u, 0u, static_cast<unsigned short>(node_index) };
+					error_message.file_pos= FilePos( 0u, 0u, uint32_t(node_index) );
 
 					std::cout << error_message.text << std::endl;
 					result.syntax_errors.push_back( std::move(error_message) );
@@ -142,7 +142,7 @@ size_t SourceGraphLoader::LoadNode_r(
 	Synt::SyntaxAnalysisResult synt_result= Synt::SyntaxAnalysis( lex_result.lexems, std::move(merged_macroses) );
 	for( const Synt::SyntaxErrorMessage& syntax_error_message : synt_result.error_messages )
 		std::cerr << full_file_path << ":"
-			<< syntax_error_message.file_pos.line << ":" << syntax_error_message.file_pos.column << ": error: " << syntax_error_message.text << "\n";
+			<< syntax_error_message.file_pos.GetLine() << ":" << syntax_error_message.file_pos.GetColumn() << ": error: " << syntax_error_message.text << "\n";
 
 	result.syntax_errors.insert( result.syntax_errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
 	if( !synt_result.error_messages.empty() )

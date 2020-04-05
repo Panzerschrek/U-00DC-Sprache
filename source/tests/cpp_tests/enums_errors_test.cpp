@@ -17,7 +17,7 @@ U_TEST( Redefinition_ForEnums )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
-	U_TEST_ASSERT( error.file_pos.line == 3u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
 }
 
 U_TEST( Redefinition_ForEnumMembers )
@@ -37,7 +37,7 @@ U_TEST( Redefinition_ForEnumMembers )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 U_TEST( EnumsRestrictionsTest )
@@ -61,17 +61,17 @@ U_TEST( EnumsRestrictionsTest )
 	U_TEST_ASSERT( build_result.errors.size() >= 6u );
 
 	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( build_result.errors[0].file_pos.line == 5u );
+	U_TEST_ASSERT( build_result.errors[0].file_pos.GetLine() == 5u );
 	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( build_result.errors[1].file_pos.line == 6u );
+	U_TEST_ASSERT( build_result.errors[1].file_pos.GetLine() == 6u );
 	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::TypesMismatch );
-	U_TEST_ASSERT( build_result.errors[2].file_pos.line == 7u );
+	U_TEST_ASSERT( build_result.errors[2].file_pos.GetLine() == 7u );
 	U_TEST_ASSERT( build_result.errors[3].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( build_result.errors[3].file_pos.line == 9u );
+	U_TEST_ASSERT( build_result.errors[3].file_pos.GetLine() == 9u );
 	U_TEST_ASSERT( build_result.errors[4].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( build_result.errors[4].file_pos.line == 10u );
+	U_TEST_ASSERT( build_result.errors[4].file_pos.GetLine() == 10u );
 	U_TEST_ASSERT( build_result.errors[5].code == CodeBuilderErrorCode::TypesMismatch );
-	U_TEST_ASSERT( build_result.errors[5].file_pos.line == 11u );
+	U_TEST_ASSERT( build_result.errors[5].file_pos.GetLine() == 11u );
 }
 
 U_TEST( NameNotFound_ForUnderlayingEnumType_Test )
@@ -90,7 +90,7 @@ U_TEST( NameNotFound_ForUnderlayingEnumType_Test )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 2u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
 }
 
 U_TEST( NameIsNotTypeName_ForUnderlayingEnumType_Test )
@@ -110,7 +110,7 @@ U_TEST( NameIsNotTypeName_ForUnderlayingEnumType_Test )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameIsNotTypeName );
-	U_TEST_ASSERT( error.file_pos.line == 3u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
 }
 
 U_TEST( TypesMismatch_ForUnderlayingEnumType_Test0 )
@@ -130,7 +130,7 @@ U_TEST( TypesMismatch_ForUnderlayingEnumType_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
-	U_TEST_ASSERT( error.file_pos.line == 2u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
 }
 
 U_TEST( TypesMismatch_ForUnderlayingEnumType_Test1 )
@@ -150,7 +150,7 @@ U_TEST( TypesMismatch_ForUnderlayingEnumType_Test1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
-	U_TEST_ASSERT( error.file_pos.line == 2u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
 }
 
 U_TEST( TypesMismatch_ForUnderlayingEnumType_Test2 )
@@ -171,7 +171,7 @@ U_TEST( TypesMismatch_ForUnderlayingEnumType_Test2 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
-	U_TEST_ASSERT( error.file_pos.line == 3u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
 }
 
 U_TEST( UnderlayingTypeIsTooSmall_Test )
@@ -198,7 +198,7 @@ U_TEST( UnderlayingTypeIsTooSmall_Test )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnderlayingTypeForEnumIsTooSmall );
-	U_TEST_ASSERT( error.file_pos.line == 2u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
 }
 
 } // namespace U

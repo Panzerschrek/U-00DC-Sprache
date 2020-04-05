@@ -17,7 +17,7 @@ U_TEST( ClassBodyDuplicationTest0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ClassBodyDuplication );
-	U_TEST_ASSERT( error.file_pos.line == 3u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
 }
 
 U_TEST( Redefinition_ForClassDeclarations_Test0 )
@@ -34,7 +34,7 @@ U_TEST( Redefinition_ForClassDeclarations_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
-	U_TEST_ASSERT( error.file_pos.line == 3u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
 }
 
 U_TEST( UsingIncompleteTypeTest0 )
@@ -55,7 +55,7 @@ U_TEST( UsingIncompleteTypeTest0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingIncompleteType );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 U_TEST( UsingIncompleteTypeTest1 )
@@ -76,7 +76,7 @@ U_TEST( UsingIncompleteTypeTest1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingIncompleteType );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 U_TEST( UsingIncompleteTypeTest2 )
@@ -97,7 +97,7 @@ U_TEST( UsingIncompleteTypeTest2 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingIncompleteType );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 U_TEST( UsingIncompleteTypeTest3 )
@@ -115,7 +115,7 @@ U_TEST( UsingIncompleteTypeTest3 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingIncompleteType );
-	U_TEST_ASSERT( error.file_pos.line == 3u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
 }
 
 U_TEST( UsingIncompleteTypeTest5 )
@@ -136,7 +136,7 @@ U_TEST( UsingIncompleteTypeTest5 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingIncompleteType );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 U_TEST( UsingIncompleteTypeTest6 )
@@ -168,7 +168,7 @@ U_TEST( UsingIncompleteTypeTest7 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingIncompleteType );
-	U_TEST_ASSERT( error.file_pos.line == 3u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
 }
 
 U_TEST( UsingIncompleteTypeTest8 )
@@ -224,7 +224,7 @@ U_TEST( UsingIncompleteTypeTest11 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingIncompleteType );
-	U_TEST_ASSERT( error.file_pos.line == 3u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
 }
 
 U_TEST( UsingIncompleteTypeTest12 )
@@ -286,7 +286,7 @@ U_TEST( UsingIncompleteTypeTest15 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingIncompleteType );
-	U_TEST_ASSERT( error.file_pos.line == 7u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 7u );
 }
 
 } // namespace U

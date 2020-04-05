@@ -21,7 +21,7 @@ U_TEST( InvalidValueAsTemplateArgumentTest0 )
 	const CodeBuilderError& error= build_result.errors[1u];
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InvalidValueAsTemplateArgument );
-	U_TEST_ASSERT( error.file_pos.line == 6u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 6u );
 }
 
 U_TEST( InvalidTypeOfTemplateVariableArgumentTest0 )
@@ -41,7 +41,7 @@ U_TEST( InvalidTypeOfTemplateVariableArgumentTest0 )
 	const CodeBuilderError& error= build_result.errors[1u];
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 // TODO - InvalidTypeOfTemplateVariableArgument for arrays, structs.
@@ -60,7 +60,7 @@ U_TEST( NameNotFound_ForClassTemplateSingatureArguments_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 2u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
 }
 
 U_TEST( NameNotFound_ForClassTemplateArguments_Test0 )
@@ -77,7 +77,7 @@ U_TEST( NameNotFound_ForClassTemplateArguments_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 2u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
 }
 
 U_TEST( NameNotFound_ForClassTemplateDefaultSignatureArguments_Test0 )
@@ -94,7 +94,7 @@ U_TEST( NameNotFound_ForClassTemplateDefaultSignatureArguments_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 2u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
 }
 
 U_TEST( ValueIsNotTemplateTest0 )
@@ -155,7 +155,7 @@ U_TEST( CouldNotOverloadFunction_ForClassTemplates_Test0 )
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TemplateContext );
 	U_TEST_ASSERT( error.template_context != nullptr );
 	U_TEST_ASSERT( error.template_context->errors.front().code == CodeBuilderErrorCode::CouldNotOverloadFunction );
-	U_TEST_ASSERT( error.template_context->errors.front().file_pos.line == 6u );
+	U_TEST_ASSERT( error.template_context->errors.front().file_pos.GetLine() == 6u );
 }
 
 U_TEST( CouldNotOverloadFunction_ForClassTemplates_Test1 )
@@ -187,11 +187,11 @@ U_TEST( CouldNotOverloadFunction_ForClassTemplates_Test1 )
 	U_TEST_ASSERT( errors.size() >= 3u );
 
 	U_TEST_ASSERT( errors[0].code == CodeBuilderErrorCode::CouldNotOverloadFunction );
-	U_TEST_ASSERT( errors[0].file_pos.line == 6u );
+	U_TEST_ASSERT( errors[0].file_pos.GetLine() == 6u );
 	U_TEST_ASSERT( errors[1].code == CodeBuilderErrorCode::FunctionBodyDuplication );
-	U_TEST_ASSERT( errors[1].file_pos.line == 7u );
+	U_TEST_ASSERT( errors[1].file_pos.GetLine() == 7u );
 	U_TEST_ASSERT( errors[2].code == CodeBuilderErrorCode::CouldNotOverloadFunction );
-	U_TEST_ASSERT( errors[2].file_pos.line == 10u );
+	U_TEST_ASSERT( errors[2].file_pos.GetLine() == 10u );
 }
 
 U_TEST( MandatoryTemplateSignatureArgumentAfterOptionalArgument_Test0 )
@@ -207,7 +207,7 @@ U_TEST( MandatoryTemplateSignatureArgumentAfterOptionalArgument_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::MandatoryTemplateSignatureArgumentAfterOptionalArgument );
-	U_TEST_ASSERT( error.file_pos.line == 2u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
 }
 
 U_TEST( TemplateArgumentIsNotDeducedYet_Test0 )
@@ -229,7 +229,7 @@ U_TEST( TemplateArgumentIsNotDeducedYet_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TemplateArgumentIsNotDeducedYet );
-	U_TEST_ASSERT( error.file_pos.line == 3u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
 }
 
 U_TEST( TemplateArgumentIsNotDeducedYet_Test1 )
@@ -264,7 +264,7 @@ U_TEST( TemplateArgumentNotUsedInSignature_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TemplateArgumentNotUsedInSignature );
-	U_TEST_ASSERT( error.file_pos.line == 2u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test0 )
@@ -282,7 +282,7 @@ U_TEST( TemplateParametersDeductionFailed_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test1 )
@@ -305,7 +305,7 @@ U_TEST( TemplateParametersDeductionFailed_Test1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 8u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 8u );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test2 )
@@ -328,7 +328,7 @@ U_TEST( TemplateParametersDeductionFailed_Test2 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 9u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 9u );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test3 )
@@ -350,7 +350,7 @@ U_TEST( TemplateParametersDeductionFailed_Test3 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 8u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 8u );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test4 )
@@ -372,7 +372,7 @@ U_TEST( TemplateParametersDeductionFailed_Test4 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 8u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 8u );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test5 )
@@ -393,7 +393,7 @@ U_TEST( TemplateParametersDeductionFailed_Test5 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 7u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 7u );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test6 )
@@ -414,7 +414,7 @@ U_TEST( TemplateParametersDeductionFailed_Test6 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 7u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 7u );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test7 )
@@ -433,7 +433,7 @@ U_TEST( TemplateParametersDeductionFailed_Test7 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test8 )
@@ -454,7 +454,7 @@ U_TEST( TemplateParametersDeductionFailed_Test8 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 7u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 7u );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test9 )
@@ -495,7 +495,7 @@ U_TEST( TemplateParametersDeductionFailed_Test10 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 7u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 7u );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test11 )
@@ -528,7 +528,7 @@ U_TEST( TemplateParametersDeductionFailed_Test11 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 18u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 18u );
 }
 
 U_TEST( ExpectedConstantExpression_InTemplateSignatureArgument_Test0 )
@@ -547,7 +547,7 @@ U_TEST( ExpectedConstantExpression_InTemplateSignatureArgument_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedConstantExpression );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 } // namespace U

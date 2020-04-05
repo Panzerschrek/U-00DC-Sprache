@@ -27,7 +27,7 @@ U_TEST( CopyAssignmentOperatorForStructsWithReferencesDeleted )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( error.file_pos.line == 12u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 12u );
 }
 
 U_TEST( StructsWithReferencesHaveNoGeneratedDefaultConstructor )
@@ -51,7 +51,7 @@ U_TEST( StructsWithReferencesHaveNoGeneratedDefaultConstructor )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
-	U_TEST_ASSERT( error.file_pos.line == 9u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 9u );
 }
 
 U_TEST( BindingConstReferenceToNonConstReference_InReferenceFieldInitialization_Test0 )
@@ -72,7 +72,7 @@ U_TEST( BindingConstReferenceToNonConstReference_InReferenceFieldInitialization_
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
-	U_TEST_ASSERT( error.file_pos.line == 6u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 6u );
 }
 
 U_TEST( BindingConstReferenceToNonConstReference_InReferenceFieldInitialization_Test1 )
@@ -94,7 +94,7 @@ U_TEST( BindingConstReferenceToNonConstReference_InReferenceFieldInitialization_
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
-	U_TEST_ASSERT( error.file_pos.line == 6u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 6u );
 }
 
 U_TEST( ExpectedVariable_InStructReferenceInitialization )
@@ -133,7 +133,7 @@ U_TEST( ExpectedReferenceValue_InStructReferenceInitialization )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_TEST_ASSERT( error.file_pos.line == 6u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 6u );
 }
 
 U_TEST( AssignToImmutableReferenceInsideStruct_Test0 )
@@ -156,7 +156,7 @@ U_TEST( AssignToImmutableReferenceInsideStruct_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_TEST_ASSERT( error.file_pos.line == 7u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 7u );
 }
 
 U_TEST( AssignToImmutableReferenceInsideStruct_Test1 )
@@ -178,7 +178,7 @@ U_TEST( AssignToImmutableReferenceInsideStruct_Test1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_TEST_ASSERT( error.file_pos.line == 7u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 7u );
 }
 
 } // namespace U
