@@ -505,6 +505,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 
 	uint32_t line= 1; // Count lines from "1", in human-readable format.
 	uint32_t column= 0u;
+	uint32_t max_column= 0u;
 
 	std::string fixed_lexem_str;
 	while( it < it_end )
@@ -517,6 +518,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 			{
 				ReadNextUTF8Char( it_prev, it );
 				++column;
+				max_column= std::max( max_column, column );
 			}
 		};
 
@@ -673,6 +675,19 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 	eof_lexem.file_pos= FilePos( 0u, line, column );
 
 	result.lexems.emplace_back( std::move(eof_lexem) );
+
+	if( line > FilePos::c_max_line )
+	{
+		result.error_messages.emplace_back(
+			std::to_string(1u) + ":" + std::to_string(0u) +
+			" Lexical error: line limit reached, max is " + std::to_string( FilePos::c_max_line ) );
+	}
+	if( max_column > FilePos::c_max_column )
+	{
+		result.error_messages.emplace_back(
+			std::to_string(1u) + ":" + std::to_string(0u) +
+			" Lexical error: column limit reached, max is " + std::to_string( FilePos::c_max_column ) );
+	}
 
 	return result;
 }
