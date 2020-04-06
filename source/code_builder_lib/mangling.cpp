@@ -523,6 +523,14 @@ const std::string& DecodeOperator( const std::string& func_name )
 
 } // namespace
 
+const std::string& GetOperatorMangledName( const std::string& function_name )
+{
+	const std::string& operator_decoded= DecodeOperator( function_name );
+	if( !operator_decoded.empty() )
+		return operator_decoded;
+	return function_name;
+}
+
 std::string MangleFunction(
 	const NamesScope& parent_scope,
 	const std::string& function_name,

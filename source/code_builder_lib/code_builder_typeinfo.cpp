@@ -544,13 +544,33 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 			if( functions_set == nullptr )
 				return;
 
-			for( const FunctionVariable& function : functions_set->functions )
+			// Sort functions with same name using its mangled type. Then, use sequential number in typeinfo class name.
+			std::vector< std::pair<size_t, std::string> > functions_with_mangled_type;
+			functions_with_mangled_type.reserve( functions_set->functions.size() );
+			if( functions_set->functions.size() == 1u )
+				functions_with_mangled_type.emplace_back( 0u, "" );
+			else
 			{
+				for( const FunctionVariable& function : functions_set->functions )
+					functions_with_mangled_type.emplace_back( functions_with_mangled_type.size(), MangleType( function.type ) );
+				std::sort(
+					functions_with_mangled_type.begin(),
+					functions_with_mangled_type.end(),
+					[]( const auto& l, const auto& r ) { return l.second > r.second; } );
+			}
+
+			const std::string name_translated= GetOperatorMangledName( name );
+			const std::string name_component= std::to_string( name_translated.size() ) + name_translated;
+
+			for( size_t i= 0u; i < functions_set->functions.size(); ++i )
+			{
+				const FunctionVariable& function= functions_set->functions[ functions_with_mangled_type[i].first ];
+
 				const ClassProxyPtr node_type=
 					CreateTypeinfoClass(
 						root_namespace,
 						class_type,
-						g_typeinfo_class_functions_list_node_class_name + std::to_string( &function - functions_set->functions.data() ) );
+						g_typeinfo_class_functions_list_node_class_name + name_component + std::to_string(i) );
 				Class& node_type_class= *node_type->class_;
 
 				ClassFieldsVector<llvm::Type*> fields_llvm_types;
@@ -746,7 +766,6 @@ Variable CodeBuilder::BuildypeinfoTupleElements( const Tuple& tuple_type, NamesS
 
 		ClassFieldsVector<llvm::Type*> fields_llvm_types;
 		ClassFieldsVector<llvm::Constant*> fields_initializers;
-
 
 		{
 			const Variable dependent_type_typeinfo= BuildTypeInfo( element_type, root_namespace );

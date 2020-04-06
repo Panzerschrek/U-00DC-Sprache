@@ -10,6 +10,9 @@ namespace CodeBuilderPrivate
 
 // Mangling with Itanium ABI rules.
 
+// Returns "pl" for "+", for example. Returns original function name non-operator.
+const std::string& GetOperatorMangledName( const std::string& function_name );
+
 std::string MangleFunction(
 	const NamesScope& parent_scope,
 	const std::string& function_name,
