@@ -204,7 +204,7 @@ class SyntaxAnalyzer final
 {
 public:
 	SyntaxAnalyzer();
-	SyntaxAnalyzer( const MacrosPtr& macros );
+	SyntaxAnalyzer( const MacrosPtr& macros, const MacroExpansionContextsPtr& macro_expansion_contexts );
 
 	SyntaxAnalysisResult DoAnalyzis( const Lexems& lexems );
 	std::vector<Import> ParseImportsOnly( const Lexems& lexems );
@@ -333,14 +333,16 @@ private:
 	size_t last_error_repeats_;
 
 	const MacrosPtr macros_;
+	const MacroExpansionContextsPtr macro_expansion_contexts_;
 };
 
 SyntaxAnalyzer::SyntaxAnalyzer()
 	: macros_(std::make_shared<MacrosByContextMap>())
+	, macro_expansion_contexts_(std::make_shared<MacroExpansionContexts>())
 {}
 
-SyntaxAnalyzer::SyntaxAnalyzer( const MacrosPtr& macros )
-	: macros_(macros)
+SyntaxAnalyzer::SyntaxAnalyzer( const MacrosPtr& macros, const MacroExpansionContextsPtr& macro_expansion_contexts )
+	: macros_(macros), macro_expansion_contexts_(macro_expansion_contexts)
 {}
 
 SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
@@ -365,6 +367,7 @@ SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
 
 	result.error_messages.swap( error_messages_ );
 	result.macros= macros_;
+	result.macro_expansion_contexts= macro_expansion_contexts_;
 
 	return result;
 }
@@ -3774,6 +3777,7 @@ const Macro* SyntaxAnalyzer::FetchMacro( const std::string& macro_name, const Ma
 template<typename ParseFnResult>
 ParseFnResult SyntaxAnalyzer::ExpandMacro( const Macro& macro, ParseFnResult (SyntaxAnalyzer::*parse_fn)() )
 {
+	const FilePos& expansion_file_pos = it_->file_pos;
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == macro.name );
 	NextLexem();
 
@@ -3792,7 +3796,15 @@ ParseFnResult SyntaxAnalyzer::ExpandMacro( const Macro& macro, ParseFnResult (Sy
 	eof.type= Lexem::Type::EndOfFile;
 	result_lexems.push_back(eof);
 
-	SyntaxAnalyzer result_analyzer( macros_ );
+	const uint32_t macro_expansion_index= uint32_t(macro_expansion_contexts_->size());
+	MacroExpansionContext macro_expansion_context;
+	macro_expansion_context.macro_name= macro.name;
+	macro_expansion_context.file_pos= expansion_file_pos;
+	macro_expansion_contexts_->push_back(macro_expansion_context);
+	for( Lexem& lexem : result_lexems )
+		lexem.file_pos.SetMacroExpansionIndex( macro_expansion_index );
+
+	SyntaxAnalyzer result_analyzer( macros_, macro_expansion_contexts_ );
 	result_analyzer.it_= result_lexems.begin();
 	result_analyzer.it_end_= result_lexems.end();
 
@@ -4219,8 +4231,11 @@ std::vector<Import> ParseImports( const Lexems& lexems )
 
 SyntaxAnalysisResult SyntaxAnalysis( const Lexems& lexems, const MacrosPtr& macros )
 {
-	MacrosPtr macros_copy= std::make_shared<MacrosByContextMap>( *macros );
-	return SyntaxAnalyzer( std::move(macros_copy) ).DoAnalyzis( lexems );
+	SyntaxAnalyzer syntax_analyzer(
+		std::make_shared<MacrosByContextMap>( *macros ), // Copy macros
+		std::make_shared<MacroExpansionContexts>() );
+
+	return syntax_analyzer.DoAnalyzis( lexems );
 }
 
 } // namespace Synt
