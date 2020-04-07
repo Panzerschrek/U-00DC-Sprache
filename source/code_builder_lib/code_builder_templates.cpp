@@ -239,8 +239,6 @@ void CodeBuilder::ProcessTemplateArgs(
 		if( NameShadowsTemplateArgument( arg_name, names_scope ) )
 			REPORT_ERROR( DeclarationShadowsTemplateArgument, names_scope.GetErrors(), file_pos, arg_name );
 
-		Value* inserted_template_parameter= nullptr;
-
 		if( arg.arg_type != nullptr )
 		{
 			// If template parameter is variable.
@@ -288,8 +286,7 @@ void CodeBuilder::ProcessTemplateArgs(
 			variable.constexpr_value= llvm::UndefValue::get( type->GetLLVMType() );
 			variable.llvm_value= CreateGlobalConstantVariable( *type, arg_name, variable.constexpr_value );
 
-			inserted_template_parameter=
-				template_parameters_namespace.AddName( arg_name, Value( std::move(variable), file_pos ) /* TODO - set correct file_pos */ );
+			template_parameters_namespace.AddName( arg_name, Value( std::move(variable), file_pos ) /* TODO - set correct file_pos */ );
 		}
 		else
 		{
@@ -298,8 +295,7 @@ void CodeBuilder::ProcessTemplateArgs(
 			template_parameters.emplace_back();
 			template_parameters.back().name= arg_name;
 			template_parameters_usage_flags.push_back(false);
-			inserted_template_parameter=
-				template_parameters_namespace.AddName( arg_name, Value( Type( FundamentalType( U_FundamentalType::i32, fundamental_llvm_types_.i32 ) ), file_pos ) ); // TODO - is this correct, use conncrete type?
+			template_parameters_namespace.AddName( arg_name, Value( Type( FundamentalType( U_FundamentalType::i32, fundamental_llvm_types_.i32 ) ), file_pos ) ); // TODO - is this correct, use conncrete type?
 		}
 	}
 
