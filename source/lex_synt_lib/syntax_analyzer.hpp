@@ -22,6 +22,7 @@ using SyntaxErrorMessages= std::vector<SyntaxErrorMessage>;
 struct MacroExpansionContext
 {
 	std::string macro_name;
+	FilePos macro_declaration_file_pos;
 	FilePos file_pos; // Contains also macro expansion context of parent macro.
 };
 

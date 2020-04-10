@@ -3796,6 +3796,7 @@ ParseFnResult SyntaxAnalyzer::ExpandMacro( const Macro& macro, ParseFnResult (Sy
 	const uint32_t macro_expansion_index= uint32_t(macro_expansion_contexts_->size());
 	MacroExpansionContext macro_expansion_context;
 	macro_expansion_context.macro_name= macro.name;
+	macro_expansion_context.macro_declaration_file_pos= macro.file_pos;
 	macro_expansion_context.file_pos= expansion_file_pos;
 	macro_expansion_contexts_->push_back(macro_expansion_context);
 	for( Lexem& lexem : result_lexems )
