@@ -35,7 +35,7 @@ void CreateTemplateErrorsContext(
 {
 	REPORT_ERROR( TemplateContext, errors_container, file_pos );
 	const auto template_error_context= std::make_shared<TemplateErrorsContext>();
-	template_error_context->template_declaration_file_pos= template_.file_pos;
+	template_error_context->context_declaration_file_pos= template_.file_pos;
 	errors_container.back().template_context= template_error_context;
 	template_parameters_namespace->SetErrors( template_error_context->errors );
 
@@ -85,7 +85,7 @@ void CreateTemplateErrorsContext(
 			name+= "::";
 		name+= template_name;
 
-		template_error_context->template_name= std::move(name);
+		template_error_context->context_name= std::move(name);
 	}
 }
 

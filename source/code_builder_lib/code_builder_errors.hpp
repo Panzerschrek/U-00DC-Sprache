@@ -23,12 +23,13 @@ enum class CodeBuilderErrorCode : uint16_t
 struct CodeBuilderError;
 using CodeBuilderErrorsContainer= std::vector<CodeBuilderError>;
 
+// Context for macros expansion and templates instantiation.
 struct TemplateErrorsContext
 {
 	CodeBuilderErrorsContainer errors;
-	FilePos template_declaration_file_pos;
+	FilePos context_declaration_file_pos; // Declaration position of context, macro.
 
-	std::string template_name;
+	std::string context_name; // Name of template, macro.
 	std::string parameters_description;
 };
 using TemplateErrorsContextPtr= std::shared_ptr<TemplateErrorsContext>;
@@ -36,7 +37,7 @@ using TemplateErrorsContextPtr= std::shared_ptr<TemplateErrorsContext>;
 struct CodeBuilderError
 {
 	std::string text;
-	TemplateErrorsContextPtr template_context; // For errors of type "TemplateContext"
+	TemplateErrorsContextPtr template_context; // For errors of type "TemplateContext" or "MacroExpansionContext"
 	CodeBuilderErrorCode code;
 	FilePos file_pos;
 };

@@ -183,10 +183,20 @@ void PrintErrors( const SourceGraph& source_graph, const CodeBuilderErrorsContai
 		{
 			U_ASSERT( error.template_context != nullptr );
 
-			std::cerr << source_graph.nodes_storage[ error.template_context->template_declaration_file_pos.GetFileIndex() ].file_path << ": "
-				<< "In instantiation of \"" << error.template_context->template_name
+			std::cerr << source_graph.nodes_storage[ error.template_context->context_declaration_file_pos.GetFileIndex() ].file_path << ": "
+				<< "In instantiation of \"" << error.template_context->context_name
 				<< "\" " << error.template_context->parameters_description
 				<< "\n";
+
+			std::cerr << source_graph.nodes_storage[error.file_pos.GetFileIndex() ].file_path
+				<< ":" << error.file_pos.GetLine() << ":" << error.file_pos.GetColumn() << ": required from here: " << "\n";
+		}
+		else if( error.code == CodeBuilderErrorCode::MacroExpansionContext )
+		{
+			U_ASSERT( error.template_context != nullptr );
+
+			std::cerr << source_graph.nodes_storage[ error.template_context->context_declaration_file_pos.GetFileIndex() ].file_path << ": "
+				<< "In expansion of macro \"" << error.template_context->context_name << "\n";
 
 			std::cerr << source_graph.nodes_storage[error.file_pos.GetFileIndex() ].file_path
 				<< ":" << error.file_pos.GetLine() << ":" << error.file_pos.GetColumn() << ": required from here: " << "\n";

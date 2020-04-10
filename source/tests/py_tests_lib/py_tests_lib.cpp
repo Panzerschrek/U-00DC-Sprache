@@ -343,8 +343,8 @@ PyObject* BuildErrorsList( const CodeBuilderErrorsContainer& errors )
 			PyObject* const template_context_dict= PyDict_New();
 
 			PyDict_SetItemString( template_context_dict, "errors", BuildErrorsList( error.template_context->errors ) );
-			PyDict_SetItemString( template_context_dict, "file_pos", BuildFilePos( error.template_context->template_declaration_file_pos ) );
-			PyDict_SetItemString( template_context_dict, "template_name", BuildString( error.template_context->template_name ) );
+			PyDict_SetItemString( template_context_dict, "file_pos", BuildFilePos( error.template_context->context_declaration_file_pos ) );
+			PyDict_SetItemString( template_context_dict, "template_name", BuildString( error.template_context->context_name ) );
 			PyDict_SetItemString( template_context_dict, "parameters_description", BuildString( error.template_context->parameters_description ) );
 
 			PyDict_SetItemString( dict, "template_context", template_context_dict );
