@@ -27,6 +27,11 @@ uint32_t FilePos::GetFileIndex() const
 	return file_index_;
 }
 
+uint32_t FilePos::GetMacroExpansionIndex() const
+{
+	return macro_expansion_index_;
+}
+
 uint32_t FilePos::GetLine() const
 {
 	return line_;
