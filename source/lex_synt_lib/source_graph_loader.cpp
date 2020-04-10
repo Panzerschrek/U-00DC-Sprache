@@ -17,7 +17,11 @@ static Synt::MacrosPtr PrepareBuiltInMacros()
 	const LexicalAnalysisResult lex_result= LexicalAnalysis( c_build_in_macros_text, sizeof(c_build_in_macros_text) );
 	U_ASSERT( lex_result.error_messages.empty() );
 
-	Synt::SyntaxAnalysisResult synt_result= Synt::SyntaxAnalysis( lex_result.lexems, Synt::MacrosByContextMap() );
+	const Synt::SyntaxAnalysisResult synt_result=
+		Synt::SyntaxAnalysis(
+			lex_result.lexems,
+			Synt::MacrosByContextMap(),
+			std::make_shared<Synt::MacroExpansionContexts>() );
 	U_ASSERT( synt_result.error_messages.empty() );
 
 	return synt_result.macros;
@@ -34,6 +38,7 @@ SourceGraphLoader::SourceGraphLoader( IVfsPtr vfs )
 SourceGraphPtr SourceGraphLoader::LoadSource( const IVfs::Path& root_file_path )
 {
 	auto result = std::make_unique<SourceGraph>();
+	result->macro_expansion_contexts= std::make_shared<Synt::MacroExpansionContexts>();
 	LoadNode_r( root_file_path, "", *result );
 
 	return result;
@@ -139,7 +144,12 @@ size_t SourceGraphLoader::LoadNode_r(
 	}
 
 	// Make syntax analysis, using imported macroses.
-	Synt::SyntaxAnalysisResult synt_result= Synt::SyntaxAnalysis( lex_result.lexems, std::move(merged_macroses) );
+	Synt::SyntaxAnalysisResult synt_result=
+		Synt::SyntaxAnalysis(
+		lex_result.lexems,
+		std::move(merged_macroses),
+		result.macro_expansion_contexts );
+
 	for( const Synt::SyntaxErrorMessage& syntax_error_message : synt_result.error_messages )
 		std::cerr << full_file_path << ":"
 			<< syntax_error_message.file_pos.GetLine() << ":" << syntax_error_message.file_pos.GetColumn() << ": error: " << syntax_error_message.text << "\n";

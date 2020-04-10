@@ -39,6 +39,9 @@ struct SourceGraph final
 
 	std::vector<Node> nodes_storage; // first element is root
 
+	// Use common storage of macro expansion context because macro declared in one file may be used in another one.
+	Synt::MacroExpansionContextsPtr macro_expansion_contexts;
+
 	LexicalErrorMessages lexical_errors;
 	Synt::SyntaxErrorMessages syntax_errors;
 	bool have_errors= false;
