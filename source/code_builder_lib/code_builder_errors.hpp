@@ -2,7 +2,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "../lex_synt_lib/file_pos.hpp"
+#include "../lex_synt_lib/syntax_analyzer.hpp"
 
 
 namespace U
@@ -46,6 +46,12 @@ bool operator!=( const CodeBuilderError& l, const CodeBuilderError& r );
 bool operator< ( const CodeBuilderError& l, const CodeBuilderError& r ); // For sorting, using file_pos
 
 const char* CodeBuilderErrorCodeToString( CodeBuilderErrorCode code );
+
 void NormalizeErrors( CodeBuilderErrorsContainer& errors );
+
+// Also normalizes errors.
+CodeBuilderErrorsContainer ExpandErrorsInMacros(
+	const CodeBuilderErrorsContainer& errors,
+	const Synt::MacroExpansionContexts& macro_expanisoin_contexts );
 
 } // namespace U

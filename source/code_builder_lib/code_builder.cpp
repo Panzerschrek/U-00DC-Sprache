@@ -186,7 +186,7 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	debug_info_.classes_di_cache.clear();
 	debug_info_.enums_di_cache.clear();
 
-	NormalizeErrors( global_errors_ );
+	global_errors_= ExpandErrorsInMacros( global_errors_, *source_graph.macro_expansion_contexts );
 
 	BuildResult build_result;
 	build_result.errors.swap( global_errors_ );
