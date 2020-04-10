@@ -4229,10 +4229,10 @@ std::vector<Import> ParseImports( const Lexems& lexems )
 	return SyntaxAnalyzer().ParseImportsOnly( lexems );
 }
 
-SyntaxAnalysisResult SyntaxAnalysis( const Lexems& lexems, const MacrosPtr& macros )
+SyntaxAnalysisResult SyntaxAnalysis( const Lexems& lexems, MacrosByContextMap macros )
 {
 	SyntaxAnalyzer syntax_analyzer(
-		std::make_shared<MacrosByContextMap>( *macros ), // Copy macros
+		std::make_shared<MacrosByContextMap>( std::move(macros) ),
 		std::make_shared<MacroExpansionContexts>() );
 
 	return syntax_analyzer.DoAnalyzis( lexems );

@@ -38,7 +38,7 @@ struct SyntaxAnalysisResult
 };
 
 std::vector<Import> ParseImports( const Lexems& lexems );
-SyntaxAnalysisResult SyntaxAnalysis( const Lexems& lexems, const MacrosPtr& macros );
+SyntaxAnalysisResult SyntaxAnalysis( const Lexems& lexems, MacrosByContextMap macros );
 
 } // namespace Synt
 

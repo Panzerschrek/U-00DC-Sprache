@@ -17,7 +17,7 @@ static Synt::MacrosPtr PrepareBuiltInMacros()
 	const LexicalAnalysisResult lex_result= LexicalAnalysis( c_build_in_macros_text, sizeof(c_build_in_macros_text) );
 	U_ASSERT( lex_result.error_messages.empty() );
 
-	Synt::SyntaxAnalysisResult synt_result= Synt::SyntaxAnalysis( lex_result.lexems, std::make_shared<Synt::MacrosByContextMap>() );
+	Synt::SyntaxAnalysisResult synt_result= Synt::SyntaxAnalysis( lex_result.lexems, Synt::MacrosByContextMap() );
 	U_ASSERT( synt_result.error_messages.empty() );
 
 	return synt_result.macros;
@@ -114,12 +114,12 @@ size_t SourceGraphLoader::LoadNode_r(
 	processed_files_stack_.pop_back();
 
 	// Merge macroses
-	Synt::MacrosPtr merged_macroses= std::make_shared<Synt::MacrosByContextMap>( *built_in_macros_ );
+	Synt::MacrosByContextMap merged_macroses= *built_in_macros_;
 	for( const Synt::MacrosPtr& macros : imported_macroses )
 	{
 		for( const auto& context_macro_map_pair : *macros )
 		{
-			Synt::MacroMap& dst_map= (*merged_macroses)[context_macro_map_pair.first];
+			Synt::MacroMap& dst_map= merged_macroses[context_macro_map_pair.first];
 			for( const auto& macro_map_pair : context_macro_map_pair.second )
 			{
 				if( dst_map.find(macro_map_pair.first) != dst_map.end() &&
