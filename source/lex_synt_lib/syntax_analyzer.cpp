@@ -364,11 +364,8 @@ SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
 	}
 
 	result.program_elements= ParseNamespaceBody( Lexem::Type::EndOfFile );
-
 	result.error_messages.swap( error_messages_ );
 	result.macros= macros_;
-	result.macro_expansion_contexts= macro_expansion_contexts_;
-
 	return result;
 }
 

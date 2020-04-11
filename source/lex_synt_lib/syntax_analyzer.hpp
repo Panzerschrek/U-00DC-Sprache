@@ -32,7 +32,6 @@ struct SyntaxAnalysisResult
 {
 	std::vector<Import> imports;
 	MacrosPtr macros;
-	MacroExpansionContextsPtr macro_expansion_contexts;
 	ProgramElements program_elements;
 	SyntaxErrorMessages error_messages;
 };

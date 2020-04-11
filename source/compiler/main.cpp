@@ -202,6 +202,53 @@ void PrintErrors( const SourceGraph& source_graph, const CodeBuilderErrorsContai
 	}
 }
 
+CodeBuilderErrorsContainer ExpandMacroContextsForErrors(
+	const CodeBuilderErrorsContainer& errors,
+	const Synt::MacroExpansionContexts& macro_expanisoin_contexts )
+{
+	CodeBuilderErrorsContainer macro_contexts_errors;
+	macro_contexts_errors.reserve( macro_expanisoin_contexts.size() );
+	for( const Synt::MacroExpansionContext& macro_expansion_context : macro_expanisoin_contexts )
+	{
+		CodeBuilderError macro_context_error;
+		macro_context_error.text = "in expansion of macro \"" + macro_expansion_context.macro_name + "\"";
+		macro_context_error.file_pos= macro_expansion_context.file_pos;
+		macro_context_error.code= CodeBuilderErrorCode::BuildFailed;
+		macro_context_error.template_context= std::make_shared<TemplateErrorsContext>();
+		macro_context_error.template_context->template_name= macro_expansion_context.macro_name;
+		macro_context_error.template_context->template_declaration_file_pos=  macro_expansion_context.file_pos; // TODO - set proper file_pos
+
+		macro_contexts_errors.push_back(std::move(macro_context_error));
+	}
+
+	CodeBuilderErrorsContainer out_errors;
+	out_errors.reserve( errors.size() + macro_expanisoin_contexts.size() );
+	for( const CodeBuilderError& error : errors )
+	{
+		if( error.file_pos.GetMacroExpansionIndex() == FilePos::c_max_macro_expanison_index )
+			out_errors.push_back( error );
+		else
+			macro_contexts_errors[ error.file_pos.GetMacroExpansionIndex() ].template_context->errors.push_back(error);
+	}
+
+	// TODO - put macro context into macro contexts here
+
+
+	macro_contexts_errors.erase(
+		std::remove_if(
+			macro_contexts_errors.begin(), macro_contexts_errors.end(),
+			[]( const CodeBuilderError& error ) -> bool
+			{
+				return error.template_context->errors.empty();
+			} ),
+		macro_contexts_errors.end() );
+
+	out_errors.insert( out_errors.end(), macro_contexts_errors.begin(), macro_contexts_errors.end() );
+	std::sort( out_errors.begin(), out_errors.end() );
+
+	return out_errors;
+}
+
 void PrintAvailableTargets()
 {
 	std::string targets_list;
@@ -468,7 +515,11 @@ int Main( int argc, const char* argv[] )
 		}
 		else
 		{
-			PrintErrors( *source_graph, build_result.errors );
+			PrintErrors(
+				*source_graph,
+				ExpandMacroContextsForErrors(
+					build_result.errors,
+					*source_graph->macro_expansion_contexts ) );
 		}
 
 		if( !build_result.errors.empty() )
