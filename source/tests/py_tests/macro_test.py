@@ -405,3 +405,34 @@ def UniqueMacroLexem_Test1():
 	assert( errors_list[0].error_code == "NameNotFound" )
 	assert( errors_list[0].file_pos.line == 6 )
 	assert( errors_list[0].text.find("i") != -1 )
+
+
+def MacroExpansionContext_Test0():
+	c_program_text= """
+	?macro <? TEST:namespace ?name:ident ?> -> <? fn ?name () { a; } ?>
+
+	TEST Foo
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].template_errors.errors[0].error_code == "NameNotFound" )
+	assert( errors_list[0].template_errors.errors[0].file_pos.line == 2 )
+
+
+def MacroExpansionContext_Test1():
+	c_program_text= """
+	?macro <? TEST_IMPL:namespace ?name:ident ?> -> <? fn ?name () { a; } ?>
+	?macro <? TEST:namespace ?name:ident ?> -> <? TEST_IMPL ?name ?>
+
+	TEST Foo
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "MacroExpansionContext" )
+	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].template_errors.errors[0].error_code == "MacroExpansionContext" )
+	assert( errors_list[0].template_errors.errors[0].file_pos.line == 3 )
+	assert( errors_list[0].template_errors.errors[0].template_errors.errors[0].error_code == "NameNotFound" )
+	assert( errors_list[0].template_errors.errors[0].template_errors.errors[0].file_pos.line == 2 )
