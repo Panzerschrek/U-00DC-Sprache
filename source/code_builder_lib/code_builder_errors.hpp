@@ -8,11 +8,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-	class Type;
-} // namespace CodeBuilderPrivate
-
 enum class CodeBuilderErrorCode : uint16_t
 {
 	#define PROCESS_ERROR( Code, Message ) Code,
