@@ -58,6 +58,7 @@ bool FilePos::operator==( const FilePos& other ) const
 {
 	return
 		this->file_index_ == other.file_index_ &&
+		this->macro_expansion_index_ == other.macro_expansion_index_ &&
 		this->line_ == other.line_ &&
 		this->column_ == other.column_;
 }
@@ -71,6 +72,8 @@ bool FilePos::operator< (const FilePos& other ) const
 {
 	if( this->file_index_ != other.file_index_ )
 		return this->file_index_ < other.file_index_;
+	if( this->macro_expansion_index_ != other.macro_expansion_index_ )
+		return this->macro_expansion_index_ < other.macro_expansion_index_;
 	if( this->line_ != other.line_ )
 		return this->line_ < other.line_;
 	return this->column_ < other.column_;
