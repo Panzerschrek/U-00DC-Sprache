@@ -3029,7 +3029,8 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 	if( function_defenition_lexem == Keywords::fn_ )
 	{
 		result->name_= ParseComplexName();
-		if( result->name_.components.back().name == Keywords::conversion_constructor_ )
+		if( !result->name_.components.empty() &&
+			result->name_.components.back().name == Keywords::conversion_constructor_ )
 		{
 			result->name_.components.back().name= Keyword( Keywords::constructor_ );
 			result->is_conversion_constructor_= true;
