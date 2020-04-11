@@ -3,7 +3,7 @@
 #include <llvm/Support/FormatVariadic.h>
 #include "pop_llvm_warnings.hpp"
 
-#include "../lex_synt_lib/syntax_elements.hpp"
+#include "../lex_synt_lib/syntax_analyzer.hpp"
 #include "code_builder_errors.hpp"
 
 namespace U
@@ -11,6 +11,11 @@ namespace U
 
 // Macro for errors reporting.
 #define REPORT_ERROR( error_code, errors_container, ... ) errors_container.push_back( ErrorReportingImpl::ReportError( CodeBuilderErrorCode::error_code, __VA_ARGS__ ) )
+
+// Also normalizes errors.
+CodeBuilderErrorsContainer ExpandErrorsInMacros(
+	const CodeBuilderErrorsContainer& errors,
+	const Synt::MacroExpansionContexts& macro_expanisoin_contexts );
 
 namespace ErrorReportingImpl
 {
