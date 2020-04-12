@@ -60,11 +60,15 @@ CodeBuilderErrorsContainer ExpandErrorsInMacros(
 	out_errors.reserve( errors.size() + macro_expanisoin_contexts.size() );
 	for( const CodeBuilderError& error : errors )
 	{
+		CodeBuilderError error_copy = error;
+		if( error_copy.template_context != nullptr && !error_copy.template_context->errors.empty() )
+			error_copy.template_context->errors= ExpandErrorsInMacros( error_copy.template_context->errors, macro_expanisoin_contexts );
+
 		const auto macro_expansion_index= error.file_pos.GetMacroExpansionIndex();
 		if( macro_expansion_index < macro_contexts_internals.size() )
-			macro_contexts_internals[ macro_expansion_index ]->errors.push_back(error);
+			macro_contexts_internals[ macro_expansion_index ]->errors.push_back( std::move(error_copy) );
 		else
-			out_errors.push_back( error );
+			out_errors.push_back( std::move(error_copy) );
 	}
 
 	for( CodeBuilderError& macro_context_error : macro_contexts_errors )
