@@ -47,7 +47,7 @@ public:
 
 		ProgramTreeNode* parent= nullptr;
 		size_t number_in_parent= 0;
-		FilePos file_pos= FilePos{ 0, 0, 0 };
+		FilePos file_pos;
 	};
 
 public:

@@ -898,7 +898,7 @@ const ProgramModel::ProgramTreeNode* GetNode_r( const std::vector<ProgramModel::
 		if( i + 1u < nodes.size() )
 			next_file_pos= nodes[i+1u].file_pos;
 		else
-			next_file_pos.line= next_file_pos.column= next_file_pos.file_index= static_cast<unsigned short>(~0u);
+			next_file_pos= FilePos( 0u, FilePos::c_max_line, FilePos::c_max_column );
 
 		if( node.file_pos <= file_pos && file_pos < next_file_pos )
 		{
@@ -925,7 +925,11 @@ ProgramModelPtr BuildProgramModel( const QString& program_text )
 	if( !lex_result.error_messages.empty() )
 		return nullptr;
 
-	U::Synt::SyntaxAnalysisResult synt_result= U::Synt::SyntaxAnalysis( lex_result.lexems, std::make_shared<Synt::MacrosByContextMap>() );
+	const Synt::SyntaxAnalysisResult synt_result=
+		Synt::SyntaxAnalysis(
+			lex_result.lexems,
+			Synt::MacrosByContextMap(),
+			std::make_shared<Synt::MacroExpansionContexts>() );
 	// Do NOT abort on errors, because in process of source code editing may occurs some errors.
 
 	const auto result= std::make_shared<ProgramModel>();
