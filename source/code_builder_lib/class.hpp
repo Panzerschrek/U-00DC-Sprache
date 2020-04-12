@@ -71,8 +71,8 @@ public:
 	bool can_be_constexpr= false;
 	bool have_shared_state= false;
 
-	FilePos forward_declaration_file_pos= FilePos{ 0u, 0u, 0u };
-	FilePos body_file_pos= FilePos{ 0u, 0u, 0u };
+	FilePos forward_declaration_file_pos;
+	FilePos body_file_pos;
 
 	llvm::StructType* llvm_type;
 

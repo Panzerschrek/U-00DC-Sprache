@@ -76,7 +76,7 @@ size_t SourceGraphLoader::LoadNode_r(
 	{
 		Synt::SyntaxErrorMessage error_message;
 		error_message.text= "Can not read file \"" + file_path + "\"";
-		error_message.file_pos= FilePos{ 0u, 0u, static_cast<unsigned short>(node_index) };
+		error_message.file_pos= FilePos( uint32_t(node_index), 0u, 0u );
 
 		std::cerr << error_message.text << std::endl;
 		result.syntax_errors.push_back( std::move(error_message) );

@@ -60,8 +60,8 @@ struct FunctionVariable final
 
 	llvm::Function* llvm_function= nullptr;
 
-	FilePos prototype_file_pos= FilePos{ 0u, 0u, 0u };
-	FilePos body_file_pos= FilePos{ 0u, 0u, 0u };
+	FilePos prototype_file_pos;
+	FilePos body_file_pos;
 
 	bool VirtuallyEquals( const FunctionVariable& other ) const;
 };
@@ -263,7 +263,7 @@ private:
 	// File_pos used as unique id for entry, needed for imports merging.
 	// Two values are 100% same, if their file_pos are identical.
 	// Not for all values file_pos required, so, fill it with zeros for it.
-	FilePos file_pos_= { 0u, 0u, 0u };
+	FilePos file_pos_;
 };
 
 } //namespace CodeBuilderPrivate

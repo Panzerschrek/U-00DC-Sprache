@@ -249,7 +249,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 {
 	if( !functions_set.syntax_elements.empty() || !functions_set.out_of_line_syntax_elements.empty() || !functions_set.template_syntax_elements.empty() )
 	{
-		FilePos functions_set_file_pos{ 0u, 0u, 0u };
+		FilePos functions_set_file_pos;
 		std::string functions_set_name;
 		if( !functions_set.syntax_elements.empty() )
 		{
@@ -971,7 +971,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 	U_ASSERT( global_variable_value.GetIncompleteGlobalVariable() != nullptr );
 	const IncompleteGlobalVariable incomplete_global_variable= *global_variable_value.GetIncompleteGlobalVariable();
 
-	FilePos file_pos{ 0u, 0u, 0u };
+	FilePos file_pos;
 	if( incomplete_global_variable.variables_declaration != nullptr )
 		file_pos= incomplete_global_variable.variables_declaration->variables[ incomplete_global_variable.element_index ].file_pos;
 	else if( incomplete_global_variable.auto_variable_declaration != nullptr )
