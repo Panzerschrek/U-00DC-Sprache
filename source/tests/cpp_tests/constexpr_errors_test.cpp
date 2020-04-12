@@ -21,7 +21,7 @@ U_TEST(ExpectedConstantExpressionTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedConstantExpression );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 U_TEST(ExpectedConstantExpressionTest1)
@@ -42,7 +42,7 @@ U_TEST(ExpectedConstantExpressionTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedConstantExpression );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 U_TEST( ViariableInitializerIsNotConstantExpressionTest0 )
@@ -63,7 +63,7 @@ U_TEST( ViariableInitializerIsNotConstantExpressionTest0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::VariableInitializerIsNotConstantExpression );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 U_TEST( ViariableInitializerIsNotConstantExpressionTest1 )
@@ -84,7 +84,7 @@ U_TEST( ViariableInitializerIsNotConstantExpressionTest1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::VariableInitializerIsNotConstantExpression );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 U_TEST( ViariableInitializerIsNotConstantExpressionTest2 )
@@ -105,7 +105,7 @@ U_TEST( ViariableInitializerIsNotConstantExpressionTest2 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::VariableInitializerIsNotConstantExpression );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 U_TEST( ViariableInitializerIsNotConstantExpressionTest3 )
@@ -126,7 +126,7 @@ U_TEST( ViariableInitializerIsNotConstantExpressionTest3 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::VariableInitializerIsNotConstantExpression );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 U_TEST( InvalidTypeForConstantExpressionVariableTest0 )
@@ -147,7 +147,7 @@ U_TEST( InvalidTypeForConstantExpressionVariableTest0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InvalidTypeForConstantExpressionVariable );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 U_TEST( ConstantExpressionResultIsUndefinedTest0 )
@@ -170,15 +170,15 @@ U_TEST( ConstantExpressionResultIsUndefinedTest0 )
 	U_TEST_ASSERT( build_result.errors.size() == 5u );
 
 	U_TEST_ASSERT( build_result.errors[0u].code == CodeBuilderErrorCode::ConstantExpressionResultIsUndefined );
-	U_TEST_ASSERT( build_result.errors[0u].file_pos.line == 4u );
+	U_TEST_ASSERT( build_result.errors[0u].file_pos.GetLine() == 4u );
 	U_TEST_ASSERT( build_result.errors[1u].code == CodeBuilderErrorCode::ConstantExpressionResultIsUndefined );
-	U_TEST_ASSERT( build_result.errors[1u].file_pos.line == 5u );
+	U_TEST_ASSERT( build_result.errors[1u].file_pos.GetLine() == 5u );
 	U_TEST_ASSERT( build_result.errors[2u].code == CodeBuilderErrorCode::ConstantExpressionResultIsUndefined );
-	U_TEST_ASSERT( build_result.errors[2u].file_pos.line == 8u );
+	U_TEST_ASSERT( build_result.errors[2u].file_pos.GetLine() == 8u );
 	U_TEST_ASSERT( build_result.errors[3u].code == CodeBuilderErrorCode::ConstantExpressionResultIsUndefined );
-	U_TEST_ASSERT( build_result.errors[3u].file_pos.line == 9u );
+	U_TEST_ASSERT( build_result.errors[3u].file_pos.GetLine() == 9u );
 	U_TEST_ASSERT( build_result.errors[4u].code == CodeBuilderErrorCode::ConstantExpressionResultIsUndefined );
-	U_TEST_ASSERT( build_result.errors[4u].file_pos.line ==10u );
+	U_TEST_ASSERT( build_result.errors[4u].file_pos.GetLine() ==10u );
 }
 
 U_TEST( StaticAssertExpressionMustHaveBoolTypeTest0 )
@@ -197,7 +197,7 @@ U_TEST( StaticAssertExpressionMustHaveBoolTypeTest0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::StaticAssertExpressionMustHaveBoolType );
-	U_TEST_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
 }
 
 U_TEST( StaticAssertExpressionMustHaveBoolTypeTest1 )
@@ -217,7 +217,7 @@ U_TEST( StaticAssertExpressionMustHaveBoolTypeTest1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::StaticAssertExpressionMustHaveBoolType );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 U_TEST( StaticAssertExpressionMustHaveBoolTypeTest2 )
@@ -236,7 +236,7 @@ U_TEST( StaticAssertExpressionMustHaveBoolTypeTest2 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::StaticAssertExpressionMustHaveBoolType );
-	U_TEST_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
 }
 
 U_TEST( StaticAssertExpressionIsNotConstantTest0 )
@@ -256,7 +256,7 @@ U_TEST( StaticAssertExpressionIsNotConstantTest0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::StaticAssertExpressionIsNotConstant );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 U_TEST( StaticAssertExpressionIsNotConstantTest1 )
@@ -276,7 +276,7 @@ U_TEST( StaticAssertExpressionIsNotConstantTest1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::StaticAssertExpressionIsNotConstant );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 U_TEST( ExpectedReferenceValue_ForConstexpr_Test0 )
@@ -298,11 +298,11 @@ U_TEST( ExpectedReferenceValue_ForConstexpr_Test0 )
 	U_TEST_ASSERT( build_result.errors.size() >= 3u );
 
 	U_TEST_ASSERT( build_result.errors[0u].code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_TEST_ASSERT( build_result.errors[0u].file_pos.line == 6u );
+	U_TEST_ASSERT( build_result.errors[0u].file_pos.GetLine() == 6u );
 	U_TEST_ASSERT( build_result.errors[1u].code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_TEST_ASSERT( build_result.errors[1u].file_pos.line == 7u );
+	U_TEST_ASSERT( build_result.errors[1u].file_pos.GetLine() == 7u );
 	U_TEST_ASSERT( build_result.errors[2u].code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_TEST_ASSERT( build_result.errors[2u].file_pos.line == 8u );
+	U_TEST_ASSERT( build_result.errors[2u].file_pos.GetLine() == 8u );
 }
 
 U_TEST( ExpectedReferenceValue_ForConstexpr_Test1 )
@@ -324,11 +324,11 @@ U_TEST( ExpectedReferenceValue_ForConstexpr_Test1 )
 	U_TEST_ASSERT( build_result.errors.size() >= 3u );
 
 	U_TEST_ASSERT( build_result.errors[0u].code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_TEST_ASSERT( build_result.errors[0u].file_pos.line == 6u );
+	U_TEST_ASSERT( build_result.errors[0u].file_pos.GetLine() == 6u );
 	U_TEST_ASSERT( build_result.errors[1u].code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_TEST_ASSERT( build_result.errors[1u].file_pos.line == 7u );
+	U_TEST_ASSERT( build_result.errors[1u].file_pos.GetLine() == 7u );
 	U_TEST_ASSERT( build_result.errors[2u].code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_TEST_ASSERT( build_result.errors[2u].file_pos.line == 8u );
+	U_TEST_ASSERT( build_result.errors[2u].file_pos.GetLine() == 8u );
 }
 
 U_TEST( ArrayIndexOutOfBoundsTest0 )
@@ -351,15 +351,15 @@ U_TEST( ArrayIndexOutOfBoundsTest0 )
 	U_TEST_ASSERT( build_result.errors.size() >= 5u );
 
 	U_TEST_ASSERT( build_result.errors[0u].code == CodeBuilderErrorCode::ArrayIndexOutOfBounds );
-	U_TEST_ASSERT( build_result.errors[0u].file_pos.line == 6u );
+	U_TEST_ASSERT( build_result.errors[0u].file_pos.GetLine() == 6u );
 	U_TEST_ASSERT( build_result.errors[1u].code == CodeBuilderErrorCode::ArrayIndexOutOfBounds );
-	U_TEST_ASSERT( build_result.errors[1u].file_pos.line == 7u );
+	U_TEST_ASSERT( build_result.errors[1u].file_pos.GetLine() == 7u );
 	U_TEST_ASSERT( build_result.errors[2u].code == CodeBuilderErrorCode::ArrayIndexOutOfBounds );
-	U_TEST_ASSERT( build_result.errors[2u].file_pos.line == 8u );
+	U_TEST_ASSERT( build_result.errors[2u].file_pos.GetLine() == 8u );
 	U_TEST_ASSERT( build_result.errors[3u].code == CodeBuilderErrorCode::ArrayIndexOutOfBounds );
-	U_TEST_ASSERT( build_result.errors[3u].file_pos.line == 9u );
+	U_TEST_ASSERT( build_result.errors[3u].file_pos.GetLine() == 9u );
 	U_TEST_ASSERT( build_result.errors[4u].code == CodeBuilderErrorCode::ArrayIndexOutOfBounds );
-	U_TEST_ASSERT( build_result.errors[4u].file_pos.line == 10u );
+	U_TEST_ASSERT( build_result.errors[4u].file_pos.GetLine() == 10u );
 }
 
 } // namespace U

@@ -62,7 +62,7 @@ static void PrinteErrors_r( const CodeBuilderErrorsContainer& errors )
 {
 	for( const CodeBuilderError& error : errors)
 	{
-		std::cout << error.file_pos.line << ":" << error.file_pos.column << " " << error.text << "\n";
+		std::cout << error.file_pos.GetLine() << ":" << error.file_pos.GetColumn() << " " << error.text << "\n";
 		if( error.template_context != nullptr )
 			PrinteErrors_r( error.template_context->errors );
 	}
@@ -192,7 +192,7 @@ bool HaveError( const std::vector<CodeBuilderError>& errors, const CodeBuilderEr
 {
 	for( const CodeBuilderError& error : errors )
 	{
-		if( error.code == code && error.file_pos.line == line )
+		if( error.code == code && error.file_pos.GetLine() == line )
 			return true;
 	}
 	return false;

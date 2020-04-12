@@ -34,15 +34,15 @@ void CodeBuilder::CreateVariableDebugInfo(
 		debug_info_.builder->createAutoVariable(
 			function_context.current_debug_info_scope,
 			variable_name,
-			GetDIFile( file_pos.file_index ),
-			file_pos.line,
+			GetDIFile( file_pos.GetFileIndex() ),
+			file_pos.GetLine(),
 			CreateDIType(variable.type) );
 
 	debug_info_.builder->insertDeclare(
 		variable.llvm_value,
 		di_local_variable,
 		debug_info_.builder->createExpression(),
-		llvm::DebugLoc::get(file_pos.line, file_pos.column, function_context.current_debug_info_scope),
+		llvm::DebugLoc::get(file_pos.GetLine(), file_pos.GetColumn(), function_context.current_debug_info_scope),
 		function_context.llvm_ir_builder.GetInsertBlock() );
 }
 
@@ -54,13 +54,13 @@ void CodeBuilder::CreateFunctionDebugInfo(
 		return;
 
 	const auto di_function= debug_info_.builder->createFunction(
-		GetDIFile( func_variable.body_file_pos.file_index ),
+		GetDIFile( func_variable.body_file_pos.GetFileIndex() ),
 		function_name,
 		func_variable.llvm_function->getName(),
-		GetDIFile( func_variable.body_file_pos.file_index ),
-		func_variable.body_file_pos.line,
+		GetDIFile( func_variable.body_file_pos.GetFileIndex() ),
+		func_variable.body_file_pos.GetLine(),
 		CreateDIType( *func_variable.type.GetFunctionType() ),
-		func_variable.body_file_pos.line,
+		func_variable.body_file_pos.GetLine(),
 		llvm::DINode::FlagPrototyped,
 		llvm::DISubprogram::SPFlagDefinition );
 	func_variable.llvm_function->setSubprogram( di_function );
@@ -75,8 +75,8 @@ void CodeBuilder::SetCurrentDebugLocation(
 
 	function_context.llvm_ir_builder.SetCurrentDebugLocation(
 		llvm::DebugLoc::get(
-			file_pos.line,
-			file_pos.column,
+			file_pos.GetLine(),
+			file_pos.GetColumn(),
 			function_context.current_debug_info_scope ) );
 }
 
@@ -86,9 +86,9 @@ void CodeBuilder::DebugInfoStartBlock( const FilePos& file_pos, FunctionContext&
 		function_context.current_debug_info_scope=
 			debug_info_.builder->createLexicalBlock(
 				function_context.current_debug_info_scope,
-				GetDIFile( file_pos.file_index ),
-				file_pos.line,
-				file_pos.column );
+				GetDIFile( file_pos.GetFileIndex() ),
+				file_pos.GetLine(),
+				file_pos.GetColumn() );
 }
 
 void CodeBuilder::DebugInfoEndBlock( FunctionContext& function_context )
@@ -262,8 +262,8 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 	const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( the_class.llvm_type );
 
 	// TODO - get FilePos for enum
-	const auto di_compile_unit= GetDICompileUnit( the_class.body_file_pos.file_index );
-	const auto di_file= GetDIFile( the_class.body_file_pos.file_index );
+	const auto di_compile_unit= GetDICompileUnit( the_class.body_file_pos.GetFileIndex() );
+	const auto di_file= GetDIFile( the_class.body_file_pos.GetFileIndex() );
 
 	std::vector<llvm::Metadata*> fields;
 	if( the_class.typeinfo_type == std::nullopt ) // Skip typeinfo, because it may contain recursive structures.
@@ -328,7 +328,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 			di_compile_unit,
 			the_class.members.GetThisNamespaceName(),
 			di_file,
-			the_class.body_file_pos.line,
+			the_class.body_file_pos.GetLine(),
 			data_layout_.getTypeAllocSizeInBits( the_class.llvm_type ),
 			8u * data_layout_.getABITypeAlignment( the_class.llvm_type ),
 			llvm::DINode::DIFlags(),

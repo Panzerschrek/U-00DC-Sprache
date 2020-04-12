@@ -23,7 +23,7 @@ U_TEST(ExpectedInitializerTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
-	U_TEST_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
 }
 
 U_TEST(ExpectedInitializerTest1)
@@ -43,7 +43,7 @@ U_TEST(ExpectedInitializerTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
-	U_TEST_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
 }
 
 U_TEST(ExpectedInitializerTest2)
@@ -64,7 +64,7 @@ U_TEST(ExpectedInitializerTest2)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 U_TEST(ArrayInitializerForNonArrayTest0)
@@ -84,7 +84,7 @@ U_TEST(ArrayInitializerForNonArrayTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ArrayInitializerForNonArray );
-	U_TEST_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
 }
 
 U_TEST(ArrayInitializerForNonArrayTest1)
@@ -105,7 +105,7 @@ U_TEST(ArrayInitializerForNonArrayTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ArrayInitializerForNonArray );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 U_TEST(ArrayInitializersCountMismatchTest0)
@@ -125,7 +125,7 @@ U_TEST(ArrayInitializersCountMismatchTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ArrayInitializersCountMismatch );
-	U_TEST_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
 }
 
 U_TEST(ArrayInitializersCountMismatchTest1)
@@ -145,7 +145,7 @@ U_TEST(ArrayInitializersCountMismatchTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ArrayInitializersCountMismatch );
-	U_TEST_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
 }
 
 
@@ -166,7 +166,7 @@ U_TEST(FundamentalTypesHaveConstructorsWithExactlyOneParameterTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FundamentalTypesHaveConstructorsWithExactlyOneParameter );
-	U_TEST_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
 }
 
 U_TEST(FundamentalTypesHaveConstructorsWithExactlyOneParameterTest1)
@@ -186,7 +186,7 @@ U_TEST(FundamentalTypesHaveConstructorsWithExactlyOneParameterTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FundamentalTypesHaveConstructorsWithExactlyOneParameter );
-	U_TEST_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
 }
 
 U_TEST(ReferencesHaveConstructorsWithExactlyOneParameterTest0)
@@ -206,7 +206,7 @@ U_TEST(ReferencesHaveConstructorsWithExactlyOneParameterTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferencesHaveConstructorsWithExactlyOneParameter );
-	U_TEST_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
 }
 
 U_TEST(ReferencesHaveConstructorsWithExactlyOneParameterTest1)
@@ -227,7 +227,7 @@ U_TEST(ReferencesHaveConstructorsWithExactlyOneParameterTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferencesHaveConstructorsWithExactlyOneParameter );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 U_TEST(UnsupportedInitializerForReferenceTest0)
@@ -248,7 +248,7 @@ U_TEST(UnsupportedInitializerForReferenceTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnsupportedInitializerForReference );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 U_TEST(ConstructorInitializerForUnsupportedTypeTest0)
@@ -268,7 +268,7 @@ U_TEST(ConstructorInitializerForUnsupportedTypeTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ConstructorInitializerForUnsupportedType );
-	U_TEST_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
 }
 
 U_TEST(StructInitializerForNonStructTest0)
@@ -288,7 +288,7 @@ U_TEST(StructInitializerForNonStructTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::StructInitializerForNonStruct );
-	U_TEST_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
 }
 
 U_TEST(StructInitializerForNonStructTest1)
@@ -309,7 +309,7 @@ U_TEST(StructInitializerForNonStructTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::StructInitializerForNonStruct );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 U_TEST(InitializerForNonfieldStructMemberTest0)
@@ -334,7 +334,7 @@ U_TEST(InitializerForNonfieldStructMemberTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InitializerForNonfieldStructMember );
-	U_TEST_ASSERT( error.file_pos.line == 9u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 9u );
 }
 
 U_TEST(DuplicatedStructMemberInitializerTest0)
@@ -354,7 +354,7 @@ U_TEST(DuplicatedStructMemberInitializerTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DuplicatedStructMemberInitializer );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 U_TEST(DuplicatedStructMemberInitializerTest1)
@@ -374,7 +374,7 @@ U_TEST(DuplicatedStructMemberInitializerTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DuplicatedStructMemberInitializer );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 U_TEST(InitializerDisabledBecauseClassHaveExplicitNoncopyConstructorsTest0)
@@ -399,7 +399,7 @@ U_TEST(InitializerDisabledBecauseClassHaveExplicitNoncopyConstructorsTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors );
-	U_TEST_ASSERT( error.file_pos.line == 9u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 9u );
 }
 
 U_TEST(InitializerDisabledBecauseClassHaveExplicitNoncopyConstructorsTest1)
@@ -424,7 +424,7 @@ U_TEST(InitializerDisabledBecauseClassHaveExplicitNoncopyConstructorsTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors );
-	U_TEST_ASSERT( error.file_pos.line == 9u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 9u );
 }
 
 U_TEST( InitializerForInvalidType_Test0 )
@@ -442,7 +442,7 @@ U_TEST( InitializerForInvalidType_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 2u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
 }
 
 U_TEST( InitializerForInvalidType_Test1 )
@@ -460,7 +460,7 @@ U_TEST( InitializerForInvalidType_Test1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 2u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
 }
 
 U_TEST( InitializerForInvalidType_Test2 )
@@ -478,7 +478,7 @@ U_TEST( InitializerForInvalidType_Test2 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 2u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
 }
 
 U_TEST( InitializerForInvalidType_Test3 )
@@ -496,7 +496,7 @@ U_TEST( InitializerForInvalidType_Test3 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 2u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
 }
 
 U_TEST( InitializerForInvalidType_Test4 )
@@ -514,7 +514,7 @@ U_TEST( InitializerForInvalidType_Test4 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 2u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
 }
 
 U_TEST(ZeroInitializerForClass_Test0)
@@ -535,7 +535,7 @@ U_TEST(ZeroInitializerForClass_Test0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ZeroInitializerForClass );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 
@@ -555,7 +555,7 @@ U_TEST(TuplesInitializersErrors_Test0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
-	U_TEST_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
 }
 
 U_TEST(TuplesInitializersErrors_Test1)
@@ -574,7 +574,7 @@ U_TEST(TuplesInitializersErrors_Test1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
-	U_TEST_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
 }
 
 U_TEST(TuplesInitializersErrors_Test2)
@@ -597,7 +597,7 @@ U_TEST(TuplesInitializersErrors_Test2)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors );
-	U_TEST_ASSERT( error.file_pos.line == 8u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 8u );
 }
 
 U_TEST(TuplesInitializersErrors_Test3)
@@ -616,7 +616,7 @@ U_TEST(TuplesInitializersErrors_Test3)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TupleInitializersCountMismatch );
-	U_TEST_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
 }
 
 U_TEST(TuplesInitializersErrors_Test4)
@@ -635,7 +635,7 @@ U_TEST(TuplesInitializersErrors_Test4)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TupleInitializersCountMismatch );
-	U_TEST_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
 }
 
 U_TEST(TuplesInitializersErrors_Test5)
@@ -654,7 +654,7 @@ U_TEST(TuplesInitializersErrors_Test5)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TupleInitializersCountMismatch );
-	U_TEST_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
 }
 
 U_TEST(TuplesInitializersErrors_Test6)
@@ -678,7 +678,7 @@ U_TEST(TuplesInitializersErrors_Test6)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( error.file_pos.line == 9u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 9u );
 }
 
 U_TEST(TuplesInitializersErrors_Test7)
@@ -697,7 +697,7 @@ U_TEST(TuplesInitializersErrors_Test7)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ConstructorInitializerForUnsupportedType );
-	U_TEST_ASSERT( error.file_pos.line == 4u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
 }
 
 U_TEST(TuplesInitializersErrors_Test8)
@@ -721,7 +721,7 @@ U_TEST(TuplesInitializersErrors_Test8)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( error.file_pos.line == 9u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 9u );
 }
 
 } // namespace U

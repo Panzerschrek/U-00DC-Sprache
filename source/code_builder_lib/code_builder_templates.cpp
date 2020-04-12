@@ -35,7 +35,7 @@ void CreateTemplateErrorsContext(
 {
 	REPORT_ERROR( TemplateContext, errors_container, file_pos );
 	const auto template_error_context= std::make_shared<TemplateErrorsContext>();
-	template_error_context->template_declaration_file_pos= template_.file_pos;
+	template_error_context->context_declaration_file_pos= template_.file_pos;
 	errors_container.back().template_context= template_error_context;
 	template_parameters_namespace->SetErrors( template_error_context->errors );
 
@@ -85,7 +85,7 @@ void CreateTemplateErrorsContext(
 			name+= "::";
 		name+= template_name;
 
-		template_error_context->template_name= std::move(name);
+		template_error_context->context_name= std::move(name);
 	}
 }
 
@@ -239,8 +239,6 @@ void CodeBuilder::ProcessTemplateArgs(
 		if( NameShadowsTemplateArgument( arg_name, names_scope ) )
 			REPORT_ERROR( DeclarationShadowsTemplateArgument, names_scope.GetErrors(), file_pos, arg_name );
 
-		Value* inserted_template_parameter= nullptr;
-
 		if( arg.arg_type != nullptr )
 		{
 			// If template parameter is variable.
@@ -288,8 +286,7 @@ void CodeBuilder::ProcessTemplateArgs(
 			variable.constexpr_value= llvm::UndefValue::get( type->GetLLVMType() );
 			variable.llvm_value= CreateGlobalConstantVariable( *type, arg_name, variable.constexpr_value );
 
-			inserted_template_parameter=
-				template_parameters_namespace.AddName( arg_name, Value( std::move(variable), file_pos ) /* TODO - set correct file_pos */ );
+			template_parameters_namespace.AddName( arg_name, Value( std::move(variable), file_pos ) /* TODO - set correct file_pos */ );
 		}
 		else
 		{
@@ -298,12 +295,8 @@ void CodeBuilder::ProcessTemplateArgs(
 			template_parameters.emplace_back();
 			template_parameters.back().name= arg_name;
 			template_parameters_usage_flags.push_back(false);
-			inserted_template_parameter=
-				template_parameters_namespace.AddName( arg_name, Value( Type( FundamentalType( U_FundamentalType::i32, fundamental_llvm_types_.i32 ) ), file_pos ) ); // TODO - is this correct, use conncrete type?
+			template_parameters_namespace.AddName( arg_name, Value( Type( FundamentalType( U_FundamentalType::i32, fundamental_llvm_types_.i32 ) ), file_pos ) ); // TODO - is this correct, use conncrete type?
 		}
-
-		if( inserted_template_parameter != nullptr )
-			inserted_template_parameter->SetIsTemplateParameter(true);
 	}
 
 	U_ASSERT( template_parameters_usage_flags.size() == template_parameters.size() );

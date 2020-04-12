@@ -186,7 +186,7 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	debug_info_.classes_di_cache.clear();
 	debug_info_.enums_di_cache.clear();
 
-	NormalizeErrors( global_errors_ );
+	global_errors_= ExpandErrorsInMacros( global_errors_, *source_graph.macro_expansion_contexts );
 
 	BuildResult build_result;
 	build_result.errors.swap( global_errors_ );
@@ -481,10 +481,7 @@ void CodeBuilder::SetCurrentClassTable( ClassTable& table )
 
 void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
 {
-	FilePos fundamental_globals_file_pos;
-	fundamental_globals_file_pos.file_index=
-	fundamental_globals_file_pos.line=
-	fundamental_globals_file_pos.column= std::numeric_limits<unsigned short>::max();
+	const FilePos fundamental_globals_file_pos( FilePos::c_max_file_index, FilePos::c_max_line, FilePos::c_max_column );
 
 	for( size_t i= size_t(U_FundamentalType::Void); i < size_t(U_FundamentalType::LastType); ++i )
 	{
@@ -1609,7 +1606,7 @@ Type CodeBuilder::BuildFuncCode(
 		if( constructor_initialization_list == nullptr )
 		{
 			// Create dummy initialization list for constructors without explicit initialization list.
-			const Synt::StructNamedInitializer dumy_initialization_list{ FilePos() };
+			const Synt::StructNamedInitializer dumy_initialization_list( block->file_pos_ );
 
 			BuildConstructorInitialization(
 				*function_context.this_,
@@ -1897,7 +1894,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		{
 			if( field->syntax_element->initializer == nullptr )
 			{
-				REPORT_ERROR( ExpectedInitializer, names_scope.GetErrors(), class_member->GetFilePos(), field_name );
+				REPORT_ERROR( ExpectedInitializer, names_scope.GetErrors(), constructor_initialization_list.file_pos_, field_name );
 				continue;
 			}
 			InitializeReferenceClassFieldWithInClassIninitalizer( this_, *field, function_context );

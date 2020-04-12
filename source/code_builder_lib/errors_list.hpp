@@ -3,6 +3,10 @@
 // Usage - define macro PROCESS_ERROR, include this file, undefune macro PROCESS_ERROR.
 PROCESS_ERROR( BuildFailed, "Build failed" ) // Common error code for all reasons.
 
+
+PROCESS_ERROR( TemplateContext, "Requered from here" )
+PROCESS_ERROR( MacroExpansionContext, "Requered from here" )
+
 PROCESS_ERROR( NameNotFound, "\"{0}\" was not declarated in this scope." )
 PROCESS_ERROR( UsingKeywordAsName, "Using keyword as name." )
 PROCESS_ERROR( Redefinition, "\"{0}\" redefinition." )
@@ -107,7 +111,6 @@ PROCESS_ERROR( MethodBodyGenerationFailed, "Method body generation failed." )
 PROCESS_ERROR( AccessingDeletedMethod, "Accessing deleted method." )
 
 // Template errors.
-PROCESS_ERROR( TemplateContext, "Requered from here" )
 PROCESS_ERROR( InvalidValueAsTemplateArgument, "Invalid value as template argument. Expected variable of type, got \"{0}\"." )
 PROCESS_ERROR( InvalidTypeOfTemplateVariableArgument, "Invalid type for template variable-argument: \"{0}\"." )
 PROCESS_ERROR( TemplateParametersDeductionFailed, "Template parameters deduction failed." )

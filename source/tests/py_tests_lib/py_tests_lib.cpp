@@ -78,7 +78,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	ICodeBuilder::BuildResult build_result= CreateCodeBuilder()->BuildProgram( *source_graph );
 
 	for( const CodeBuilderError& error : build_result.errors )
-		std::cerr << error.file_pos.line << ":" << error.file_pos.column << " " << error.text << "\n";
+		std::cerr << error.file_pos.GetLine() << ":" << error.file_pos.GetColumn() << " " << error.text << "\n";
 
 	if( !build_result.errors.empty() )
 		return nullptr;
@@ -312,9 +312,9 @@ PyObject* RunFunction( PyObject* const self, PyObject* const args )
 PyObject* BuildFilePos( const FilePos& file_pos )
 {
 	PyObject* const file_pos_dict= PyDict_New();
-	PyDict_SetItemString( file_pos_dict, "file_index", PyLong_FromLongLong( file_pos.file_index ) );
-	PyDict_SetItemString( file_pos_dict, "line", PyLong_FromLongLong( file_pos.line ) );
-	PyDict_SetItemString( file_pos_dict, "column", PyLong_FromLongLong( file_pos.column ) );
+	PyDict_SetItemString( file_pos_dict, "file_index", PyLong_FromLongLong( file_pos.GetFileIndex() ) );
+	PyDict_SetItemString( file_pos_dict, "line", PyLong_FromLongLong( file_pos.GetLine() ) );
+	PyDict_SetItemString( file_pos_dict, "column", PyLong_FromLongLong( file_pos.GetColumn() ) );
 	return file_pos_dict;
 }
 
@@ -343,8 +343,8 @@ PyObject* BuildErrorsList( const CodeBuilderErrorsContainer& errors )
 			PyObject* const template_context_dict= PyDict_New();
 
 			PyDict_SetItemString( template_context_dict, "errors", BuildErrorsList( error.template_context->errors ) );
-			PyDict_SetItemString( template_context_dict, "file_pos", BuildFilePos( error.template_context->template_declaration_file_pos ) );
-			PyDict_SetItemString( template_context_dict, "template_name", BuildString( error.template_context->template_name ) );
+			PyDict_SetItemString( template_context_dict, "file_pos", BuildFilePos( error.template_context->context_declaration_file_pos ) );
+			PyDict_SetItemString( template_context_dict, "template_name", BuildString( error.template_context->context_name ) );
 			PyDict_SetItemString( template_context_dict, "parameters_description", BuildString( error.template_context->parameters_description ) );
 
 			PyDict_SetItemString( dict, "template_context", template_context_dict );

@@ -197,16 +197,6 @@ const FilePos& Value::GetFilePos() const
 	return file_pos_;
 }
 
-bool Value::IsTemplateParameter() const
-{
-	return is_template_parameter_;
-}
-
-void Value::SetIsTemplateParameter( const bool is_template_parameter )
-{
-	is_template_parameter_= is_template_parameter;
-}
-
 Variable* Value::GetVariable()
 {
 	return std::get_if<Variable>( &something_ );

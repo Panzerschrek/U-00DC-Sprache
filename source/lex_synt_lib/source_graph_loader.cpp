@@ -17,7 +17,11 @@ static Synt::MacrosPtr PrepareBuiltInMacros()
 	const LexicalAnalysisResult lex_result= LexicalAnalysis( c_build_in_macros_text, sizeof(c_build_in_macros_text) );
 	U_ASSERT( lex_result.error_messages.empty() );
 
-	Synt::SyntaxAnalysisResult synt_result= Synt::SyntaxAnalysis( lex_result.lexems, std::make_shared<Synt::MacrosByContextMap>() );
+	const Synt::SyntaxAnalysisResult synt_result=
+		Synt::SyntaxAnalysis(
+			lex_result.lexems,
+			Synt::MacrosByContextMap(),
+			std::make_shared<Synt::MacroExpansionContexts>() );
 	U_ASSERT( synt_result.error_messages.empty() );
 
 	return synt_result.macros;
@@ -34,6 +38,7 @@ SourceGraphLoader::SourceGraphLoader( IVfsPtr vfs )
 SourceGraphPtr SourceGraphLoader::LoadSource( const IVfs::Path& root_file_path )
 {
 	auto result = std::make_unique<SourceGraph>();
+	result->macro_expansion_contexts= std::make_shared<Synt::MacroExpansionContexts>();
 	LoadNode_r( root_file_path, "", *result );
 
 	return result;
@@ -71,7 +76,7 @@ size_t SourceGraphLoader::LoadNode_r(
 	{
 		Synt::SyntaxErrorMessage error_message;
 		error_message.text= "Can not read file \"" + file_path + "\"";
-		error_message.file_pos= FilePos{ 0u, 0u, static_cast<unsigned short>(node_index) };
+		error_message.file_pos= FilePos( uint32_t(node_index), 0u, 0u );
 
 		std::cerr << error_message.text << std::endl;
 		result.syntax_errors.push_back( std::move(error_message) );
@@ -90,7 +95,7 @@ size_t SourceGraphLoader::LoadNode_r(
 	}
 
 	for( Lexem& lexem :lex_result.lexems )
-		lexem.file_pos.file_index= static_cast<unsigned short>(node_index);
+		lexem.file_pos.SetFileIndex(uint32_t(node_index));
 
 	const std::vector<Synt::Import> imports= Synt::ParseImports( lex_result.lexems );
 
@@ -114,12 +119,12 @@ size_t SourceGraphLoader::LoadNode_r(
 	processed_files_stack_.pop_back();
 
 	// Merge macroses
-	Synt::MacrosPtr merged_macroses= std::make_shared<Synt::MacrosByContextMap>( *built_in_macros_ );
+	Synt::MacrosByContextMap merged_macroses= *built_in_macros_;
 	for( const Synt::MacrosPtr& macros : imported_macroses )
 	{
 		for( const auto& context_macro_map_pair : *macros )
 		{
-			Synt::MacroMap& dst_map= (*merged_macroses)[context_macro_map_pair.first];
+			Synt::MacroMap& dst_map= merged_macroses[context_macro_map_pair.first];
 			for( const auto& macro_map_pair : context_macro_map_pair.second )
 			{
 				if( dst_map.find(macro_map_pair.first) != dst_map.end() &&
@@ -127,7 +132,7 @@ size_t SourceGraphLoader::LoadNode_r(
 				{
 					Synt::SyntaxErrorMessage error_message;
 					error_message.text= "Macro \"" + macro_map_pair.first + "\" redefinition.";
-					error_message.file_pos= FilePos{ 0u, 0u, static_cast<unsigned short>(node_index) };
+					error_message.file_pos= FilePos( 0u, 0u, uint32_t(node_index) );
 
 					std::cout << error_message.text << std::endl;
 					result.syntax_errors.push_back( std::move(error_message) );
@@ -139,10 +144,15 @@ size_t SourceGraphLoader::LoadNode_r(
 	}
 
 	// Make syntax analysis, using imported macroses.
-	Synt::SyntaxAnalysisResult synt_result= Synt::SyntaxAnalysis( lex_result.lexems, std::move(merged_macroses) );
+	Synt::SyntaxAnalysisResult synt_result=
+		Synt::SyntaxAnalysis(
+		lex_result.lexems,
+		std::move(merged_macroses),
+		result.macro_expansion_contexts );
+
 	for( const Synt::SyntaxErrorMessage& syntax_error_message : synt_result.error_messages )
 		std::cerr << full_file_path << ":"
-			<< syntax_error_message.file_pos.line << ":" << syntax_error_message.file_pos.column << ": error: " << syntax_error_message.text << "\n";
+			<< syntax_error_message.file_pos.GetLine() << ":" << syntax_error_message.file_pos.GetColumn() << ": error: " << syntax_error_message.text << "\n";
 
 	result.syntax_errors.insert( result.syntax_errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
 	if( !synt_result.error_messages.empty() )

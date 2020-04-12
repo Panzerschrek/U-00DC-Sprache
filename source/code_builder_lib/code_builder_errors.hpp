@@ -1,16 +1,12 @@
 #pragma once
 #include <memory>
 #include <string>
-#include "../lex_synt_lib/lexical_analyzer.hpp"
+#include <vector>
+#include "../lex_synt_lib/file_pos.hpp"
 
 
 namespace U
 {
-
-namespace CodeBuilderPrivate
-{
-	class Type;
-} // namespace CodeBuilderPrivate
 
 enum class CodeBuilderErrorCode : uint16_t
 {
@@ -22,12 +18,13 @@ enum class CodeBuilderErrorCode : uint16_t
 struct CodeBuilderError;
 using CodeBuilderErrorsContainer= std::vector<CodeBuilderError>;
 
+// Context for macros expansion and templates instantiation.
 struct TemplateErrorsContext
 {
 	CodeBuilderErrorsContainer errors;
-	FilePos template_declaration_file_pos;
+	FilePos context_declaration_file_pos; // Declaration position of context, macro.
 
-	std::string template_name;
+	std::string context_name; // Name of template, macro.
 	std::string parameters_description;
 };
 using TemplateErrorsContextPtr= std::shared_ptr<TemplateErrorsContext>;
@@ -35,7 +32,7 @@ using TemplateErrorsContextPtr= std::shared_ptr<TemplateErrorsContext>;
 struct CodeBuilderError
 {
 	std::string text;
-	TemplateErrorsContextPtr template_context; // For errors of type "TemplateContext"
+	TemplateErrorsContextPtr template_context; // For errors of type "TemplateContext" or "MacroExpansionContext"
 	CodeBuilderErrorCode code;
 	FilePos file_pos;
 };
@@ -45,6 +42,5 @@ bool operator!=( const CodeBuilderError& l, const CodeBuilderError& r );
 bool operator< ( const CodeBuilderError& l, const CodeBuilderError& r ); // For sorting, using file_pos
 
 const char* CodeBuilderErrorCodeToString( CodeBuilderErrorCode code );
-void NormalizeErrors( CodeBuilderErrorsContainer& errors );
 
 } // namespace U

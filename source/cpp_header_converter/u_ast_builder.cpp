@@ -16,7 +16,7 @@
 namespace U
 {
 
-static const FilePos g_dummy_file_pos{ 0u, 0u, 0u };
+static const FilePos g_dummy_file_pos;
 
 CppAstConsumer::CppAstConsumer(
 	Synt::ProgramElements& out_elements,

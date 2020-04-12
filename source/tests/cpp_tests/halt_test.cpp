@@ -149,7 +149,7 @@ U_TEST( HaltTest3_CodeAfterHaltMustBeUnreachable )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnreachableCode );
-	U_TEST_ASSERT( error.file_pos.line == 5u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
 U_TEST( HaltTest4_HaltIsLikeReturn )

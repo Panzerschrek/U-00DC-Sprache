@@ -40,26 +40,4 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 	return "";
 }
 
-void NormalizeErrors( CodeBuilderErrorsContainer& errors )
-{
-	// Soprt by file/line and left only unique error messages.
-	std::sort( errors.begin(), errors.end() );
-	errors.erase( std::unique( errors.begin(), errors.end() ), errors.end() );
-
-	for( const CodeBuilderError& error : errors )
-	{
-		if( error.template_context != nullptr )
-			NormalizeErrors( error.template_context->errors );
-	}
-
-	errors.erase(
-		std::remove_if(
-			errors.begin(), errors.end(),
-			[]( const CodeBuilderError& error ) -> bool
-			{
-				return error.template_context != nullptr && error.template_context->errors.empty();
-			} ),
-		errors.end() );
-}
-
 } // namespace U

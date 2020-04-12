@@ -16,7 +16,7 @@ U_TEST( NameNotFound_ForTypedef_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 2u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
 }
 
 U_TEST( NameNotFound_ForTypedef_Test1 )
@@ -32,7 +32,7 @@ U_TEST( NameNotFound_ForTypedef_Test1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.line == 2u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
 }
 
 U_TEST( NameIsNotTypeName_ForTypedef_Test0 )
@@ -49,7 +49,7 @@ U_TEST( NameIsNotTypeName_ForTypedef_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameIsNotTypeName );
-	U_TEST_ASSERT( error.file_pos.line == 3u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
 }
 
 U_TEST( NameIsNotTypeName_ForTypedef_Test1 )
@@ -66,7 +66,7 @@ U_TEST( NameIsNotTypeName_ForTypedef_Test1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameIsNotTypeName );
-	U_TEST_ASSERT( error.file_pos.line == 3u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
 }
 
 U_TEST( Redefinition_ForTypedef_Test0 )
@@ -83,7 +83,7 @@ U_TEST( Redefinition_ForTypedef_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
-	U_TEST_ASSERT( error.file_pos.line == 3u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
 }
 
 U_TEST( Redefinition_ForTypedef_Test1 )
@@ -100,7 +100,7 @@ U_TEST( Redefinition_ForTypedef_Test1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
-	U_TEST_ASSERT( error.file_pos.line == 3u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
 }
 
 U_TEST( NameNotFound_ForTypedefTemplate_Test0 )
@@ -116,13 +116,13 @@ U_TEST( NameNotFound_ForTypedefTemplate_Test0 )
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( build_result.errors.size() >= 2u );
-	const CodeBuilderError& error= build_result.errors[1u];
+	const CodeBuilderError& error= build_result.errors[0u];
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TemplateContext );
 	U_TEST_ASSERT( error.template_context != nullptr );
 	U_TEST_ASSERT( !error.template_context->errors.empty() );
 	U_TEST_ASSERT( error.template_context->errors.front().code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.template_context->errors.front().file_pos.line == 3u );
+	U_TEST_ASSERT( error.template_context->errors.front().file_pos.GetLine() == 3u );
 }
 
 U_TEST( NameNotFound_ForTypedefTemplate_Test1 )
@@ -151,7 +151,7 @@ U_TEST( TemplateArgumentNotUsedInSignature_ForTypedefTemplate_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TemplateArgumentNotUsedInSignature );
-	U_TEST_ASSERT( error.file_pos.line == 2u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
 }
 
 } // namespace U

@@ -8,40 +8,6 @@
 namespace U
 {
 
-bool operator==( const FilePos& l, const FilePos& r )
-{
-	return l.file_index == r.file_index && l.line == r.line && r.column == l.column;
-}
-
-bool operator!=( const FilePos& l, const FilePos& r )
-{
-	return !( l == r );
-}
-
-bool operator< ( const FilePos& l, const FilePos& r )
-{
-	if( l.file_index != r.file_index )
-		return l.file_index < r.file_index;
-	if( l.line != r.line )
-		return l.line < r.line;
-	return l.column < r.column;
-}
-
-bool operator<=( const FilePos& l, const FilePos& r )
-{
-	return l < r || l == r;
-}
-
-bool operator==(const Lexem& l, const Lexem& r )
-{
-	return l.text == r.text && l.file_pos == r.file_pos && l.type == r.type;
-}
-
-bool operator!=(const Lexem& l, const Lexem& r )
-{
-	return !(l == r );
-}
-
 namespace
 {
 
@@ -513,6 +479,16 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, LexicalErrorMessages& ou
 
 } // namespace
 
+bool operator==(const Lexem& l, const Lexem& r )
+{
+	return l.text == r.text && l.file_pos == r.file_pos && l.type == r.type;
+}
+
+bool operator!=(const Lexem& l, const Lexem& r )
+{
+	return !(l == r );
+}
+
 LexicalAnalysisResult LexicalAnalysis( const std::string& program_text, const bool collect_comments )
 {
 	return LexicalAnalysis( program_text.data(), program_text.size(), collect_comments );
@@ -527,8 +503,9 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 
 	int comments_depth= 0;
 
-	unsigned short line= 1; // Count lines from "1", in human-readable format.
-	unsigned int column= 0u;
+	uint32_t line= 1; // Count lines from "1", in human-readable format.
+	uint32_t column= 0u;
+	uint32_t max_column= 0u;
 
 	std::string fixed_lexem_str;
 	while( it < it_end )
@@ -541,6 +518,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 			{
 				ReadNextUTF8Char( it_prev, it );
 				++column;
+				max_column= std::max( max_column, column );
 			}
 		};
 
@@ -553,8 +531,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 			if( collect_comments )
 			{
 				Lexem comment_lexem;
-				comment_lexem.file_pos.line= line;
-				comment_lexem.file_pos.column= static_cast<unsigned short>(column);
+				comment_lexem.file_pos= FilePos( 0u, line, column );
 				comment_lexem.type= Lexem::Type::Comment;
 
 				while( it < it_end && !IsNewline(sprache_char(*it)) )
@@ -581,8 +558,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 			if( collect_comments )
 			{
 				Lexem comment_lexem;
-				comment_lexem.file_pos.line= line;
-				comment_lexem.file_pos.column= static_cast<unsigned short>(column);
+				comment_lexem.file_pos= FilePos( 0u, line, column );
 				comment_lexem.type= Lexem::Type::Comment;
 				comment_lexem.text= "/*";
 				advance_column();
@@ -598,9 +574,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 			if( collect_comments )
 			{
 				Lexem comment_lexem;
-				lexem.file_pos.file_index= 0u;
-				comment_lexem.file_pos.line= line;
-				comment_lexem.file_pos.column= static_cast<unsigned short>(column);
+				comment_lexem.file_pos= FilePos( 0u, line, column );
 				comment_lexem.type= Lexem::Type::Comment;
 				comment_lexem.text= "*/";
 				advance_column();
@@ -633,9 +607,8 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 			if( IsIdentifierStartChar( GetUTF8FirstChar( it, it_end ) ) )
 			{
 				// Parse string suffix.
-				lexem.file_pos.file_index= 0u;
-				lexem.file_pos.line= line;
-				lexem.file_pos.column= static_cast<unsigned short>(column);
+				lexem.file_pos= FilePos( 0u, line, column );
+
 				advance_column();
 				if( comments_depth == 0 || collect_comments )
 					result.lexems.push_back( std::move(lexem) );
@@ -682,9 +655,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 		}
 
 	push_lexem:
-		lexem.file_pos.file_index= 0u;
-		lexem.file_pos.line= line;
-		lexem.file_pos.column= static_cast<unsigned short>(column);
+		lexem.file_pos= FilePos( 0u, line, column );
 
 		advance_column();
 
@@ -701,11 +672,22 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 	Lexem eof_lexem;
 	eof_lexem.type= Lexem::Type::EndOfFile;
 	eof_lexem.text= "EOF";
-	eof_lexem.file_pos.file_index= 0;
-	eof_lexem.file_pos.line= static_cast<unsigned short>(line);
-	eof_lexem.file_pos.column= static_cast<unsigned short>(column);
+	eof_lexem.file_pos= FilePos( 0u, line, column );
 
 	result.lexems.emplace_back( std::move(eof_lexem) );
+
+	if( line > FilePos::c_max_line )
+	{
+		result.error_messages.emplace_back(
+			std::to_string(1u) + ":" + std::to_string(0u) +
+			" Lexical error: line limit reached, max is " + std::to_string( FilePos::c_max_line ) );
+	}
+	if( max_column > FilePos::c_max_column )
+	{
+		result.error_messages.emplace_back(
+			std::to_string(1u) + ":" + std::to_string(0u) +
+			" Lexical error: column limit reached, max is " + std::to_string( FilePos::c_max_column ) );
+	}
 
 	return result;
 }

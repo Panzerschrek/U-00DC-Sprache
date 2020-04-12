@@ -784,7 +784,7 @@ U_TEST( GeneratedCopyAssignmentOperatorTest2 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( error.file_pos.line == 10u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 10u );
 }
 
 U_TEST( GeneratedCopyAssignmentOperatorTest3 )
