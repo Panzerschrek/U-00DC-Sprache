@@ -893,3 +893,21 @@ def TypeinfoForTypeinfo_Test1():
 		static_assert( typeinfo</ typeof( typeinfo</ S />.fields_list[0] ) />.is_typeinfo );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def Typeinfo_SrcType_Test0():
+	c_program_text= """
+		template</ type T /> struct MustBeSame</ T, T /> {}
+		type SS= MustBeSame</ i32, i32 />;
+
+		template</type T/> struct PassType{ type type_passed= T; }
+
+		struct S{}
+
+		type TIF= typeof( typeinfo</f32/> );
+		type FS= MustBeSame</ TIF::src_type, f32 />;
+
+		type TA= MustBeSame</ PassType</ typeof(typeinfo</ [u64, 8] /> ) />::type_passed::src_type, [u64, 8] />;
+	"""
+
+	tests_lib.build_program( c_program_text )

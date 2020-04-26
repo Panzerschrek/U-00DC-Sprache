@@ -78,6 +78,9 @@ Variable CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope& root
 			GetTypeinfoVariableName( typeinfo_class_proxy ),
 			result.constexpr_value );
 
+	// This allows to get typename itself, using typeinfo variable and use such type as normal.
+	typeinfo_class_proxy->class_->members.AddName( "src_type", Value( type, g_dummy_file_pos ) );
+
 	return result;
 }
 
