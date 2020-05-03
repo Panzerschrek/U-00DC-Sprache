@@ -399,9 +399,9 @@ int Main( int argc, const char* argv[] )
 		}
 		else
 		{
-			llvm::Triple traget_triple;
-			target= llvm::TargetRegistry::lookupTarget( Options::architecture, traget_triple, error_str );
-			target_triple_str= traget_triple.getTriple();
+			llvm::Triple target_triple;
+			target= llvm::TargetRegistry::lookupTarget( Options::architecture, target_triple, error_str );
+			target_triple_str= target_triple.getTriple();
 			features_str= GetFeaturesStr( Options::target_attributes );
 			cpu_name= Options::target_cpu;
 		}
