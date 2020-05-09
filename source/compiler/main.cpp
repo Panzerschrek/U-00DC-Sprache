@@ -447,6 +447,33 @@ int Main( int argc, const char* argv[] )
 	if( vfs == nullptr )
 		return 1u;
 
+	{ // Check if rebuild needed.
+		bool needs_rebuild= false;
+
+		llvm::sys::fs::file_status out_file_status;
+		if( !llvm::sys::fs::status( Options::output_file_name, out_file_status ) )
+		{
+			const auto out_file_modification_time= out_file_status.getLastModificationTime();
+			for( const std::string& input_file : Options::input_files )
+			{
+				llvm::sys::fs::file_status in_file_status;
+				if( !llvm::sys::fs::status( input_file, in_file_status ) )
+				{
+					if( in_file_status.getLastModificationTime() > out_file_modification_time )
+					needs_rebuild= true;
+					break;
+				}
+				else
+					needs_rebuild= true;
+			}
+		}
+		else
+			needs_rebuild= true;
+		std::cout << "Needs rebuild: " << needs_rebuild << std::endl;
+		if(! needs_rebuild )
+			return 0;
+	}
+
 	// Compile multiple input files and link them together.
 	SourceGraphLoader source_graph_loader( vfs );
 	llvm::LLVMContext llvm_context;
