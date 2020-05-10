@@ -225,7 +225,18 @@ void PrintAvailableTargets()
 	std::cout << "Available targets: " << targets_list << std::endl;
 }
 
-bool NothingChanged(
+namespace DepFile
+{
+
+const char c_version[]= "version";
+const char c_args[]= "args";
+const char c_deps[]= "deps";
+
+const char file_prefix[]= ".u_deps";
+
+} // namespace DepFile
+
+bool DepFileNothingChanged(
 	const std::string& out_file_path,
 	const int argc, const char* const argv[] )
 {
@@ -235,7 +246,7 @@ bool NothingChanged(
 	const auto out_file_modification_time= out_file_status.getLastModificationTime();
 
 	const llvm::ErrorOr< std::unique_ptr<llvm::MemoryBuffer> > file_mapped=
-		llvm::MemoryBuffer::getFile( out_file_path + ".u_depends" );
+		llvm::MemoryBuffer::getFile( out_file_path + DepFile::file_prefix );
 
 	if( !file_mapped || *file_mapped == nullptr )
 		return false;
@@ -246,7 +257,7 @@ bool NothingChanged(
 
 	const llvm::json::Object& json_root= *json_parsed->getAsObject();
 
-	if( const llvm::json::Value* const version= json_root.get("version") )
+	if( const llvm::json::Value* const version= json_root.get(DepFile::c_version) )
 	{
 		if( version->kind() != llvm::json::Value::String )
 			return false;
@@ -256,7 +267,7 @@ bool NothingChanged(
 	else
 		return false;
 
-	if( const llvm::json::Value* const args= json_root.get("args") )
+	if( const llvm::json::Value* const args= json_root.get(DepFile::c_args) )
 	{
 		if( args->kind() != llvm::json::Value::Array )
 			return false;
@@ -277,7 +288,7 @@ bool NothingChanged(
 	else
 		return false;
 
-	if( const llvm::json::Value* const depends= json_root.get("depends") )
+	if( const llvm::json::Value* const depends= json_root.get(DepFile::c_deps) )
 	{
 		if( depends->kind() != llvm::json::Value::Array )
 			return false;
@@ -300,35 +311,34 @@ bool NothingChanged(
 	return true;
 }
 
-void WriteDependencyFile(
+void DepFileWrite(
 	const std::string& out_file_path,
 	const int argc, const char* const argv[],
-	const std::vector<IVfs::Path>& dependent_sources_list )
+	const std::vector<IVfs::Path>& deps_list )
 {
 	llvm::json::Object doc;
-	doc["version"]= getFullVersion();
+	doc[DepFile::c_version]= getFullVersion();
 
 	{
 		llvm::json::Array args;
 		args.reserve(size_t(argc));
 		for( int i= 0; i < argc; ++i )
 			args.push_back(argv[i]);
-		doc["args"]= std::move(args);
+		doc[DepFile::c_args]= std::move(args);
 	}
 
 	{
 		llvm::json::Array paths_arr;
-		paths_arr.reserve( dependent_sources_list.size() );
-		for( const IVfs::Path& path : dependent_sources_list )
+		paths_arr.reserve( deps_list.size() );
+		for( const IVfs::Path& path : deps_list )
 			paths_arr.push_back( path );
-		doc["depends"]= std::move(paths_arr);
+		doc[DepFile::c_deps]= std::move(paths_arr);
 	}
 
 	std::error_code file_error_code;
-	llvm::raw_fd_ostream out_file_stream( out_file_path, file_error_code, llvm::sys::fs::F_None );
+	llvm::raw_fd_ostream out_file_stream( out_file_path + DepFile::file_prefix, file_error_code, llvm::sys::fs::F_None );
 
 	out_file_stream << llvm::json::Value(std::move(doc));
-
 	out_file_stream.flush();
 }
 
@@ -487,7 +497,7 @@ int Main( int argc, const char* argv[] )
 		return 1;
 	}
 
-	if( NothingChanged( Options::output_file_name, argc, argv ) )
+	if( DepFileNothingChanged( Options::output_file_name, argc, argv ) )
 		return 0;
 
 	// Prepare target machine.
@@ -562,7 +572,7 @@ int Main( int argc, const char* argv[] )
 	SourceGraphLoader source_graph_loader( vfs );
 	llvm::LLVMContext llvm_context;
 	std::unique_ptr<llvm::Module> result_module;
-	std::vector<IVfs::Path> dependent_sources_list;
+	std::vector<IVfs::Path> deps_list;
 	bool have_some_errors= false;
 	for( const std::string& input_file : Options::input_files )
 	{
@@ -570,7 +580,7 @@ int Main( int argc, const char* argv[] )
 		U_ASSERT( source_graph != nullptr );
 
 		for( const SourceGraph::Node& node : source_graph->nodes_storage )
-			dependent_sources_list.push_back( node.file_path );
+			deps_list.push_back( node.file_path );
 
 		if( source_graph->have_errors || !source_graph->lexical_errors.empty() || !source_graph->syntax_errors.empty() )
 		{
@@ -753,13 +763,13 @@ int Main( int argc, const char* argv[] )
 		return 1;
 	}
 
-	// Left only unique paths in dependent sources list.
-	std::sort( dependent_sources_list.begin(), dependent_sources_list.end() );
-	dependent_sources_list.erase(
-		std::unique( dependent_sources_list.begin(), dependent_sources_list.end() ),
-		dependent_sources_list.end() );
+	// Left only unique paths in dependencies list.
+	std::sort( deps_list.begin(), deps_list.end() );
+	deps_list.erase(
+		std::unique( deps_list.begin(), deps_list.end() ),
+		deps_list.end() );
 
-	WriteDependencyFile( Options::output_file_name + ".u_depends", argc, argv, dependent_sources_list );
+	DepFileWrite( Options::output_file_name, argc, argv, deps_list );
 
 	return 0;
 }
