@@ -10,4 +10,4 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: build project
-      run: ./ci_build.sh
+      run: sudo apt-get install ninja-build && ./ci_build.sh
