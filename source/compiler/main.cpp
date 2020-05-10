@@ -10,6 +10,7 @@
 #include <llvm/Linker/Linker.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/InitLLVM.h>
+#include <llvm/Support/JSON.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/Path.h>
 #include <llvm/Support/raw_os_ostream.h>
@@ -222,6 +223,38 @@ void PrintAvailableTargets()
 		targets_list+= target.getName();
 	}
 	std::cout << "Available targets: " << targets_list << std::endl;
+}
+
+void WriteDependencyFile(
+	const std::string& out_file_path,
+	const int argc, const char* const argv[],
+	const std::vector<IVfs::Path>& dependent_sources_list )
+{
+	llvm::json::Object doc;
+	doc["version"]= getFullVersion();
+
+	{
+		llvm::json::Array args;
+		args.reserve(size_t(argc));
+		for( int i= 0; i < argc; ++i )
+			args.push_back(argv[i]);
+		doc["args"]= std::move(args);
+	}
+
+	{
+		llvm::json::Array paths_arr;
+		paths_arr.reserve( dependent_sources_list.size() );
+		for( const IVfs::Path& path : dependent_sources_list )
+			paths_arr.push_back( path );
+		doc["depends"]= std::move(paths_arr);
+	}
+
+	std::error_code file_error_code;
+	llvm::raw_fd_ostream out_file_stream( out_file_path, file_error_code, llvm::sys::fs::F_None );
+
+	out_file_stream << llvm::json::Value(std::move(doc));
+
+	out_file_stream.flush();
 }
 
 namespace Options
@@ -478,11 +511,16 @@ int Main( int argc, const char* argv[] )
 	SourceGraphLoader source_graph_loader( vfs );
 	llvm::LLVMContext llvm_context;
 	std::unique_ptr<llvm::Module> result_module;
+	std::vector<IVfs::Path> dependent_sources_list;
 	bool have_some_errors= false;
 	for( const std::string& input_file : Options::input_files )
 	{
 		const SourceGraphPtr source_graph= source_graph_loader.LoadSource( input_file );
 		U_ASSERT( source_graph != nullptr );
+
+		for( const SourceGraph::Node& node : source_graph->nodes_storage )
+			dependent_sources_list.push_back( node.file_path );
+
 		if( source_graph->have_errors || !source_graph->lexical_errors.empty() || !source_graph->syntax_errors.empty() )
 		{
 			have_some_errors= true;
@@ -663,6 +701,14 @@ int Main( int argc, const char* argv[] )
 		std::cout << "Error while writing output file \"" << Options::output_file_name << "\"" << std::endl;
 		return 1;
 	}
+
+	// Left only unique paths in dependent sources list.
+	std::sort( dependent_sources_list.begin(), dependent_sources_list.end() );
+	dependent_sources_list.erase(
+		std::unique( dependent_sources_list.begin(), dependent_sources_list.end() ),
+		dependent_sources_list.end() );
+
+	WriteDependencyFile( Options::output_file_name + ".u_depends", argc, argv, dependent_sources_list );
 
 	return 0;
 }
