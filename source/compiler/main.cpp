@@ -441,6 +441,12 @@ cl::opt<llvm::CodeModel::Model> code_model(
 		clEnumValN( llvm::CodeModel::Large, "large", "Large code model") ),
 	cl::cat(options_category));
 
+cl::opt<bool> deps_tracking(
+	"deps-tracking",
+	cl::desc("Create dependency file for output file, do not rebuild output file if input files listed in output dependency file not changed"),
+	cl::init(false),
+	cl::cat(options_category) );
+
 cl::opt<bool> tests_output(
 	"tests-output",
 	cl::desc("Print code builder errors in test mode."),
@@ -470,6 +476,9 @@ int Main( int argc, const char* argv[] )
 	llvm::cl::HideUnrelatedOptions( Options::options_category );
 	llvm::cl::ParseCommandLineOptions( argc, argv, "Ü-Sprache compiler\n" );
 
+	if( Options::deps_tracking && DepFileNothingChanged( Options::output_file_name, argc, argv ) )
+		return 0;
+
 	// Select optimization level.
 	unsigned int optimization_level= 0u;
 	unsigned int size_optimization_level= 0u;
@@ -496,9 +505,6 @@ int Main( int argc, const char* argv[] )
 		std::cout << "Unknown optimization: " << Options::optimization_level << std::endl;
 		return 1;
 	}
-
-	if( DepFileNothingChanged( Options::output_file_name, argc, argv ) )
-		return 0;
 
 	// Prepare target machine.
 	std::string target_triple_str;
@@ -763,13 +769,16 @@ int Main( int argc, const char* argv[] )
 		return 1;
 	}
 
-	// Left only unique paths in dependencies list.
-	std::sort( deps_list.begin(), deps_list.end() );
-	deps_list.erase(
-		std::unique( deps_list.begin(), deps_list.end() ),
-		deps_list.end() );
+	if( Options::deps_tracking )
+	{
+		// Left only unique paths in dependencies list.
+		std::sort( deps_list.begin(), deps_list.end() );
+		deps_list.erase(
+			std::unique( deps_list.begin(), deps_list.end() ),
+			deps_list.end() );
 
-	DepFileWrite( Options::output_file_name, argc, argv, deps_list );
+		DepFileWrite( Options::output_file_name, argc, argv, deps_list );
+	}
 
 	return 0;
 }
