@@ -1,0 +1,3 @@
+import "dep_included.u"
+
+auto x= 0;

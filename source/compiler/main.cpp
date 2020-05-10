@@ -10,6 +10,7 @@
 #include <llvm/Linker/Linker.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/InitLLVM.h>
+#include <llvm/Support/JSON.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/Path.h>
 #include <llvm/Support/raw_os_ostream.h>
@@ -224,6 +225,140 @@ void PrintAvailableTargets()
 	std::cout << "Available targets: " << targets_list << std::endl;
 }
 
+namespace UDepFile
+{
+
+const char c_version[]= "version";
+const char c_args[]= "args";
+const char c_deps[]= "deps";
+
+const char file_prefix[]= ".u_deps";
+
+} // namespace DepFile
+
+bool UDepFileNothingChanged(
+	const std::string& out_file_path,
+	const int argc, const char* const argv[] )
+{
+	llvm::sys::fs::file_status out_file_status;
+	if( llvm::sys::fs::status( out_file_path, out_file_status ) )
+		return false;
+	const auto out_file_modification_time= out_file_status.getLastModificationTime();
+
+	const llvm::ErrorOr< std::unique_ptr<llvm::MemoryBuffer> > file_mapped=
+		llvm::MemoryBuffer::getFile( out_file_path + UDepFile::file_prefix );
+
+	if( !file_mapped || *file_mapped == nullptr )
+		return false;
+
+	llvm::Expected<llvm::json::Value> json_parsed= llvm::json::parse( (*file_mapped)->getBuffer() );
+	if( !json_parsed || json_parsed->kind() != llvm::json::Value::Object )
+		return false;
+
+	const llvm::json::Object& json_root= *json_parsed->getAsObject();
+
+	if( const llvm::json::Value* const version= json_root.get(UDepFile::c_version) )
+	{
+		if( version->kind() != llvm::json::Value::String )
+			return false;
+		if( *(version->getAsString()) != getFullVersion() )
+			return false;
+	}
+	else
+		return false;
+
+	if( const llvm::json::Value* const args= json_root.get(UDepFile::c_args) )
+	{
+		if( args->kind() != llvm::json::Value::Array )
+			return false;
+
+		const llvm::json::Array& args_array= *args->getAsArray();
+		if( args_array.size() != size_t(argc) )
+			return false;
+
+		for( int i= 0; i < argc; ++i )
+		{
+			const llvm::json::Value& arg= args_array[size_t(i)];
+			if( arg.kind() != llvm::json::Value::String )
+				return false;
+			if( *(arg.getAsString()) != argv[i] )
+				return false;
+		}
+	}
+	else
+		return false;
+
+	if( const llvm::json::Value* const depends= json_root.get(UDepFile::c_deps) )
+	{
+		if( depends->kind() != llvm::json::Value::Array )
+			return false;
+
+		for( const llvm::json::Value& dependency : *(depends->getAsArray()) )
+		{
+			if( dependency.kind() != llvm::json::Value::String )
+				return false;
+
+			llvm::sys::fs::file_status file_status;
+			if( llvm::sys::fs::status( *(dependency.getAsString()), file_status ) )
+				return false;
+			if( file_status.getLastModificationTime() > out_file_modification_time )
+				return false;
+		}
+	}
+	else
+		return false;
+
+	return true;
+}
+
+void UDepFileWrite(
+	const std::string& out_file_path,
+	const int argc, const char* const argv[],
+	const std::vector<IVfs::Path>& deps_list )
+{
+	llvm::json::Object doc;
+	doc[UDepFile::c_version]= getFullVersion();
+
+	{
+		llvm::json::Array args;
+		args.reserve(size_t(argc));
+		for( int i= 0; i < argc; ++i )
+			args.push_back(argv[i]);
+		doc[UDepFile::c_args]= std::move(args);
+	}
+
+	{
+		llvm::json::Array paths_arr;
+		paths_arr.reserve( deps_list.size() );
+		for( const IVfs::Path& path : deps_list )
+			paths_arr.push_back( path );
+		doc[UDepFile::c_deps]= std::move(paths_arr);
+	}
+
+	std::error_code file_error_code;
+	llvm::raw_fd_ostream out_file_stream( out_file_path + UDepFile::file_prefix, file_error_code, llvm::sys::fs::F_None );
+
+	out_file_stream << llvm::json::Value(std::move(doc));
+	out_file_stream.flush();
+}
+
+std::string QuoteDepTargetString( const std::string& str )
+{
+	std::string result;
+	result.reserve( str.size() * 2u );
+
+	for( const char c : str )
+	{
+		if( c == ' ' || c == '\t' || c == '\\' || c == '#' )
+			result.push_back('\\');
+		if( c == '$' )
+			result.push_back('$');
+		result.push_back(c);
+	}
+
+	return result;
+}
+
 namespace Options
 {
 
@@ -323,6 +458,19 @@ cl::opt<llvm::CodeModel::Model> code_model(
 		clEnumValN( llvm::CodeModel::Large, "large", "Large code model") ),
 	cl::cat(options_category));
 
+cl::opt<std::string> dep_file_name(
+	"MF",
+	cl::desc("Output dependency file"),
+	cl::value_desc("filename"),
+	cl::Optional,
+	cl::cat(options_category) );
+
+cl::opt<bool> deps_tracking(
+	"deps-tracking",
+	cl::desc("Create dependency file for output file, do not rebuild output file if input files listed in output dependency file not changed"),
+	cl::init(false),
+	cl::cat(options_category) );
+
 cl::opt<bool> tests_output(
 	"tests-output",
 	cl::desc("Print code builder errors in test mode."),
@@ -351,6 +499,9 @@ int Main( int argc, const char* argv[] )
 
 	llvm::cl::HideUnrelatedOptions( Options::options_category );
 	llvm::cl::ParseCommandLineOptions( argc, argv, "Ü-Sprache compiler\n" );
+
+	if( Options::deps_tracking && UDepFileNothingChanged( Options::output_file_name, argc, argv ) )
+		return 0;
 
 	// Select optimization level.
 	unsigned int optimization_level= 0u;
@@ -451,11 +602,16 @@ int Main( int argc, const char* argv[] )
 	SourceGraphLoader source_graph_loader( vfs );
 	llvm::LLVMContext llvm_context;
 	std::unique_ptr<llvm::Module> result_module;
+	std::vector<IVfs::Path> deps_list;
 	bool have_some_errors= false;
 	for( const std::string& input_file : Options::input_files )
 	{
 		const SourceGraphPtr source_graph= source_graph_loader.LoadSource( input_file );
 		U_ASSERT( source_graph != nullptr );
+
+		for( const SourceGraph::Node& node : source_graph->nodes_storage )
+			deps_list.push_back( node.file_path );
+
 		if( source_graph->have_errors || !source_graph->lexical_errors.empty() || !source_graph->syntax_errors.empty() )
 		{
 			have_some_errors= true;
@@ -635,6 +791,38 @@ int Main( int argc, const char* argv[] )
 	{
 		std::cout << "Error while writing output file \"" << Options::output_file_name << "\"" << std::endl;
 		return 1;
+	}
+
+	// Left only unique paths in dependencies list.
+	std::sort( deps_list.begin(), deps_list.end() );
+	deps_list.erase(
+		std::unique( deps_list.begin(), deps_list.end() ),
+		deps_list.end() );
+
+	if( Options::deps_tracking )
+		UDepFileWrite( Options::output_file_name, argc, argv, deps_list );
+
+	if( !Options::dep_file_name.empty() )
+	{
+		std::string str= QuoteDepTargetString(Options::output_file_name) + ":";
+		for( const IVfs::Path& path : deps_list )
+		{
+			str+= " ";
+			str+= QuoteDepTargetString(path);
+			if( &path != &deps_list.back() )
+				str+= " \\\n";
+		}
+
+		std::error_code file_error_code;
+		llvm::raw_fd_ostream deps_file_stream( Options::dep_file_name, file_error_code, llvm::sys::fs::F_None );
+		deps_file_stream << str;
+
+		deps_file_stream.flush();
+		if( deps_file_stream.has_error() )
+		{
+			std::cout << "Error while writing dep file \"" << Options::dep_file_name << "\"" << std::endl;
+			return 1;
+		}
 	}
 
 	return 0;
