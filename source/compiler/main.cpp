@@ -225,7 +225,7 @@ void PrintAvailableTargets()
 	std::cout << "Available targets: " << targets_list << std::endl;
 }
 
-namespace DepFile
+namespace UDepFile
 {
 
 const char c_version[]= "version";
@@ -236,7 +236,7 @@ const char file_prefix[]= ".u_deps";
 
 } // namespace DepFile
 
-bool DepFileNothingChanged(
+bool UDepFileNothingChanged(
 	const std::string& out_file_path,
 	const int argc, const char* const argv[] )
 {
@@ -246,7 +246,7 @@ bool DepFileNothingChanged(
 	const auto out_file_modification_time= out_file_status.getLastModificationTime();
 
 	const llvm::ErrorOr< std::unique_ptr<llvm::MemoryBuffer> > file_mapped=
-		llvm::MemoryBuffer::getFile( out_file_path + DepFile::file_prefix );
+		llvm::MemoryBuffer::getFile( out_file_path + UDepFile::file_prefix );
 
 	if( !file_mapped || *file_mapped == nullptr )
 		return false;
@@ -257,7 +257,7 @@ bool DepFileNothingChanged(
 
 	const llvm::json::Object& json_root= *json_parsed->getAsObject();
 
-	if( const llvm::json::Value* const version= json_root.get(DepFile::c_version) )
+	if( const llvm::json::Value* const version= json_root.get(UDepFile::c_version) )
 	{
 		if( version->kind() != llvm::json::Value::String )
 			return false;
@@ -267,7 +267,7 @@ bool DepFileNothingChanged(
 	else
 		return false;
 
-	if( const llvm::json::Value* const args= json_root.get(DepFile::c_args) )
+	if( const llvm::json::Value* const args= json_root.get(UDepFile::c_args) )
 	{
 		if( args->kind() != llvm::json::Value::Array )
 			return false;
@@ -288,7 +288,7 @@ bool DepFileNothingChanged(
 	else
 		return false;
 
-	if( const llvm::json::Value* const depends= json_root.get(DepFile::c_deps) )
+	if( const llvm::json::Value* const depends= json_root.get(UDepFile::c_deps) )
 	{
 		if( depends->kind() != llvm::json::Value::Array )
 			return false;
@@ -311,20 +311,20 @@ bool DepFileNothingChanged(
 	return true;
 }
 
-void DepFileWrite(
+void UDepFileWrite(
 	const std::string& out_file_path,
 	const int argc, const char* const argv[],
 	const std::vector<IVfs::Path>& deps_list )
 {
 	llvm::json::Object doc;
-	doc[DepFile::c_version]= getFullVersion();
+	doc[UDepFile::c_version]= getFullVersion();
 
 	{
 		llvm::json::Array args;
 		args.reserve(size_t(argc));
 		for( int i= 0; i < argc; ++i )
 			args.push_back(argv[i]);
-		doc[DepFile::c_args]= std::move(args);
+		doc[UDepFile::c_args]= std::move(args);
 	}
 
 	{
@@ -332,14 +332,31 @@ void DepFileWrite(
 		paths_arr.reserve( deps_list.size() );
 		for( const IVfs::Path& path : deps_list )
 			paths_arr.push_back( path );
-		doc[DepFile::c_deps]= std::move(paths_arr);
+		doc[UDepFile::c_deps]= std::move(paths_arr);
 	}
 
 	std::error_code file_error_code;
-	llvm::raw_fd_ostream out_file_stream( out_file_path + DepFile::file_prefix, file_error_code, llvm::sys::fs::F_None );
+	llvm::raw_fd_ostream out_file_stream( out_file_path + UDepFile::file_prefix, file_error_code, llvm::sys::fs::F_None );
 
 	out_file_stream << llvm::json::Value(std::move(doc));
 	out_file_stream.flush();
+}
+
+std::string QuoteDepTargetString( const std::string& str )
+{
+	std::string result;
+	result.reserve( str.size() * 2u );
+
+	for( const char c : str )
+	{
+		if( c == ' ' || c == '\t' || c == '\\' || c == '#' )
+			result.push_back('\\');
+		if( c == '$' )
+			result.push_back('$');
+		result.push_back(c);
+	}
+
+	return result;
 }
 
 namespace Options
@@ -441,6 +458,13 @@ cl::opt<llvm::CodeModel::Model> code_model(
 		clEnumValN( llvm::CodeModel::Large, "large", "Large code model") ),
 	cl::cat(options_category));
 
+cl::opt<std::string> dep_file_name(
+	"MF",
+	cl::desc("Output dependency file"),
+	cl::value_desc("filename"),
+	cl::Optional,
+	cl::cat(options_category) );
+
 cl::opt<bool> deps_tracking(
 	"deps-tracking",
 	cl::desc("Create dependency file for output file, do not rebuild output file if input files listed in output dependency file not changed"),
@@ -476,7 +500,7 @@ int Main( int argc, const char* argv[] )
 	llvm::cl::HideUnrelatedOptions( Options::options_category );
 	llvm::cl::ParseCommandLineOptions( argc, argv, "Ü-Sprache compiler\n" );
 
-	if( Options::deps_tracking && DepFileNothingChanged( Options::output_file_name, argc, argv ) )
+	if( Options::deps_tracking && UDepFileNothingChanged( Options::output_file_name, argc, argv ) )
 		return 0;
 
 	// Select optimization level.
@@ -769,15 +793,36 @@ int Main( int argc, const char* argv[] )
 		return 1;
 	}
 
-	if( Options::deps_tracking )
-	{
-		// Left only unique paths in dependencies list.
-		std::sort( deps_list.begin(), deps_list.end() );
-		deps_list.erase(
-			std::unique( deps_list.begin(), deps_list.end() ),
-			deps_list.end() );
+	// Left only unique paths in dependencies list.
+	std::sort( deps_list.begin(), deps_list.end() );
+	deps_list.erase(
+		std::unique( deps_list.begin(), deps_list.end() ),
+		deps_list.end() );
 
-		DepFileWrite( Options::output_file_name, argc, argv, deps_list );
+	if( Options::deps_tracking )
+		UDepFileWrite( Options::output_file_name, argc, argv, deps_list );
+
+	if( !Options::dep_file_name.empty() )
+	{
+		std::string str= QuoteDepTargetString(Options::output_file_name) + ":";
+		for( const IVfs::Path& path : deps_list )
+		{
+			str+= " ";
+			str+= QuoteDepTargetString(path);
+			if( &path != &deps_list.back() )
+				str+= " \\\n";
+		}
+
+		std::error_code file_error_code;
+		llvm::raw_fd_ostream deps_file_stream( Options::dep_file_name, file_error_code, llvm::sys::fs::F_None );
+		deps_file_stream << str;
+
+		deps_file_stream.flush();
+		if( deps_file_stream.has_error() )
+		{
+			std::cout << "Error while writing dep file \"" << Options::dep_file_name << "\"" << std::endl;
+			return 1;
+		}
 	}
 
 	return 0;
