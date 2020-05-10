@@ -225,6 +225,81 @@ void PrintAvailableTargets()
 	std::cout << "Available targets: " << targets_list << std::endl;
 }
 
+bool NothingChanged(
+	const std::string& out_file_path,
+	const int argc, const char* const argv[] )
+{
+	llvm::sys::fs::file_status out_file_status;
+	if( llvm::sys::fs::status( out_file_path, out_file_status ) )
+		return false;
+	const auto out_file_modification_time= out_file_status.getLastModificationTime();
+
+	const llvm::ErrorOr< std::unique_ptr<llvm::MemoryBuffer> > file_mapped=
+		llvm::MemoryBuffer::getFile( out_file_path + ".u_depends" );
+
+	if( !file_mapped || *file_mapped == nullptr )
+		return false;
+
+	llvm::Expected<llvm::json::Value> json_parsed= llvm::json::parse( (*file_mapped)->getBuffer() );
+	if( !json_parsed || json_parsed->kind() != llvm::json::Value::Object )
+		return false;
+
+	const llvm::json::Object& json_root= *json_parsed->getAsObject();
+
+	if( const llvm::json::Value* const version= json_root.get("version") )
+	{
+		if( version->kind() != llvm::json::Value::String )
+			return false;
+		if( *(version->getAsString()) != getFullVersion() )
+			return false;
+	}
+	else
+		return false;
+
+	if( const llvm::json::Value* const args= json_root.get("args") )
+	{
+		if( args->kind() != llvm::json::Value::Array )
+			return false;
+
+		const llvm::json::Array& args_array= *args->getAsArray();
+		if( args_array.size() != size_t(argc) )
+			return false;
+
+		for( int i= 0; i < argc; ++i )
+		{
+			const llvm::json::Value& arg= args_array[size_t(i)];
+			if( arg.kind() != llvm::json::Value::String )
+				return false;
+			if( *(arg.getAsString()) != argv[i] )
+				return false;
+		}
+	}
+	else
+		return false;
+
+	if( const llvm::json::Value* const depends= json_root.get("depends") )
+	{
+		if( depends->kind() != llvm::json::Value::Array )
+			return false;
+
+		for( const llvm::json::Value& dependency : *(depends->getAsArray()) )
+		{
+			if( dependency.kind() != llvm::json::Value::String )
+				return false;
+
+			llvm::sys::fs::file_status file_status;
+			if( llvm::sys::fs::status( *(dependency.getAsString()), file_status ) )
+				return false;
+			if( file_status.getLastModificationTime() > out_file_modification_time )
+				return false;
+		}
+	}
+	else
+		return false;
+
+	return true;
+}
+
 void WriteDependencyFile(
 	const std::string& out_file_path,
 	const int argc, const char* const argv[],
@@ -412,6 +487,9 @@ int Main( int argc, const char* argv[] )
 		return 1;
 	}
 
+	if( NothingChanged( Options::output_file_name, argc, argv ) )
+		return 0;
+
 	// Prepare target machine.
 	std::string target_triple_str;
 	std::unique_ptr<llvm::TargetMachine> target_machine;
@@ -479,33 +557,6 @@ int Main( int argc, const char* argv[] )
 	const auto vfs= VfsOverSystemFS::Create( Options::include_dir );
 	if( vfs == nullptr )
 		return 1u;
-
-	{ // Check if rebuild needed.
-		bool needs_rebuild= false;
-
-		llvm::sys::fs::file_status out_file_status;
-		if( !llvm::sys::fs::status( Options::output_file_name, out_file_status ) )
-		{
-			const auto out_file_modification_time= out_file_status.getLastModificationTime();
-			for( const std::string& input_file : Options::input_files )
-			{
-				llvm::sys::fs::file_status in_file_status;
-				if( !llvm::sys::fs::status( input_file, in_file_status ) )
-				{
-					if( in_file_status.getLastModificationTime() > out_file_modification_time )
-					needs_rebuild= true;
-					break;
-				}
-				else
-					needs_rebuild= true;
-			}
-		}
-		else
-			needs_rebuild= true;
-		std::cout << "Needs rebuild: " << needs_rebuild << std::endl;
-		if(! needs_rebuild )
-			return 0;
-	}
 
 	// Compile multiple input files and link them together.
 	SourceGraphLoader source_graph_loader( vfs );
