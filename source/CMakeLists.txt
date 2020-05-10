@@ -381,6 +381,29 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	add_dependencies( DebugInfoTest Compiler )
 
 	#
+	# Dependency file test
+	#
+	if( ${CMAKE_GENERATOR} STREQUAL "Ninja" )
+		message( "Build DepFileTest" )
+
+		add_custom_command(
+			OUTPUT dep_main.o
+			DEPENDS Compiler
+			COMMAND
+				Compiler
+				${CMAKE_SOURCE_DIR}/tests/dep_file_test/dep_main.u -o dep_main.o -MF dep_main.d
+				${SPRACHE_COMPILER_PIC_OPTIONS}
+			DEPFILE dep_main.d # This works only for Ninja
+			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} )
+
+		add_executable( DepFileTest tests/dep_file_test/entry.cpp dep_main.o )
+		add_dependencies( DepFileTest Compiler )
+
+	else()
+		message( "DepFileTest test disabled because it is not supported by current cmake generator" )
+	endif()
+
+	#
 	# CppHeaderConverter test
 	#
 	if( REALLY_BUILD_CPP_HEADER_CONVERTER )
