@@ -932,24 +932,24 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, Cod
 			file_pos );
 	}
 
-	// TODO - maybe call destructors in exact order?
-	class_->members.ForEachValueInThisScope(
-		[&]( const Value& member )
-		{
-			const ClassField* const field= member.GetClassField();
-			if( field == nullptr || field->is_reference || !field->type.HaveDestructor() ||
-				field->class_.lock()->class_ != class_ )
-				return;
+	for( const std::string& field_name : class_->fields_order )
+	{
+		if( field_name.empty() )
+			continue;
 
-			CallDestructor(
-				function_context.llvm_ir_builder.CreateGEP(
-					function_context.this_->llvm_value,
-					{ GetZeroGEPIndex(), GetFieldGEPIndex(field->index ) } ),
-				field->type,
-				function_context,
-				errors_container,
-				file_pos );
-		} );
+		const ClassField& field= *class_->members.GetThisScopeValue( field_name )->GetClassField();
+		if( !field.type.HaveDestructor() )
+			continue;
+
+		CallDestructor(
+			function_context.llvm_ir_builder.CreateGEP(
+				function_context.this_->llvm_value,
+				{ GetZeroGEPIndex(), GetFieldGEPIndex(field.index) } ),
+			field.type,
+			function_context,
+			errors_container,
+			file_pos );
+	};
 }
 
 size_t CodeBuilder::PrepareFunction(
