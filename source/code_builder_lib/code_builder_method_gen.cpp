@@ -127,40 +127,37 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		ApplyEmptyInitializer( Keyword( Keywords::base_ ), FilePos()/*TODO*/, base_variable, the_class.members, function_context );
 	}
 
-	// TODO - maybe keep order of construction?
-	the_class.members.ForEachValueInThisScope(
-		[&](const Value& value )
+	for( const std::string& field_name : the_class.fields_order )
+	{
+		if( field_name.empty() )
+			continue;
+
+		const ClassField& field= *the_class.members.GetThisScopeValue( field_name )->GetClassField();
+
+		if( field.is_reference )
 		{
-			const ClassField* const field= value.GetClassField();
-			if( field == nullptr )
-				return;
-			if( field->class_.lock()->class_ != &the_class )
-				return; // Skip fields of parent classes.
+			U_ASSERT( field.syntax_element->initializer != nullptr ); // Can initialize reference field only with class field initializer.
+			Variable variable;
+			variable.type= class_type;
+			variable.value_type= ValueType::Reference;
+			variable.llvm_value= this_llvm_value;
+			InitializeReferenceClassFieldWithInClassIninitalizer( variable, field, function_context );
+		}
+		else
+		{
+			Variable field_variable;
+			field_variable.type= field.type;
+			field_variable.value_type= ValueType::Reference;
 
-			if( field->is_reference )
-			{
-				U_ASSERT( field->syntax_element->initializer != nullptr ); // Can initialize reference field only with class field initializer.
-				Variable variable;
-				variable.type= class_type;
-				variable.value_type= ValueType::Reference;
-				variable.llvm_value= this_llvm_value;
-				InitializeReferenceClassFieldWithInClassIninitalizer( variable, *field, function_context );
-			}
+			field_variable.llvm_value=
+				function_context.llvm_ir_builder.CreateGEP( this_llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field.index ) } );
+
+			if( field.syntax_element->initializer != nullptr )
+				InitializeClassFieldWithInClassIninitalizer( field_variable, field, function_context );
 			else
-			{
-				Variable field_variable;
-				field_variable.type= field->type;
-				field_variable.value_type= ValueType::Reference;
-
-				field_variable.llvm_value=
-					function_context.llvm_ir_builder.CreateGEP( this_llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field->index ) } );
-
-				if( field->syntax_element->initializer != nullptr )
-					InitializeClassFieldWithInClassIninitalizer( field_variable, *field, function_context );
-				else
-					ApplyEmptyInitializer( field->syntax_element->name, FilePos()/*TODO*/, field_variable, the_class.members, function_context );
-			}
-		} );
+				ApplyEmptyInitializer( field_name, FilePos()/*TODO*/, field_variable, the_class.members, function_context );
+		}
+	}
 
 	SetupVirtualTablePointers( this_llvm_value, the_class, function_context );
 
@@ -312,9 +309,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 
 	if( the_class.base_class != nullptr )
 	{
-		llvm::Value* index_list[2];
-		index_list[0]= GetZeroGEPIndex();
-		index_list[1]= GetFieldGEPIndex(  0u /*base class is allways first field */ );
+		llvm::Value* const index_list[2] { GetZeroGEPIndex(),  GetFieldGEPIndex(  0u /*base class is allways first field */ ) };
 		BuildCopyConstructorPart(
 			function_context.llvm_ir_builder.CreateGEP( this_llvm_value, index_list ),
 			function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list ),
@@ -322,33 +317,30 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 			function_context );
 	}
 
-	// TODO - maybe call constructors in predefined order?
-	the_class.members.ForEachValueInThisScope(
-		[&]( const Value& member )
+	for( const std::string& field_name : the_class.fields_order )
+	{
+		if( field_name.empty() )
+			continue;
+
+		const ClassField& field= *the_class.members.GetThisScopeValue( field_name )->GetClassField();
+
+		llvm::Value* const index_list[2] { GetZeroGEPIndex(), GetFieldGEPIndex( field.index ) };
+		llvm::Value* const src= function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list );
+		llvm::Value* const dst= function_context.llvm_ir_builder.CreateGEP( this_llvm_value, index_list );
+
+		if( field.is_reference )
 		{
-			const ClassField* const field= member.GetClassField();
-			if( field == nullptr || field->class_.lock()->class_ != &the_class )
-				return;
+			// Create simple load-store for references.
+			llvm::Value* const val= function_context.llvm_ir_builder.CreateLoad( src );
+			function_context.llvm_ir_builder.CreateStore( val, dst );
+		}
+		else
+		{
+			U_ASSERT( field.type.IsCopyConstructible() );
+			BuildCopyConstructorPart( dst, src, field.type, function_context );
+		}
 
-			llvm::Value* index_list[2];
-			index_list[0]= GetZeroGEPIndex();
-			index_list[1]= GetFieldGEPIndex( field->index );
-			llvm::Value* const src= function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list );
-			llvm::Value* const dst= function_context.llvm_ir_builder.CreateGEP( this_llvm_value, index_list );
-
-			if( field->is_reference )
-			{
-				// Create simple load-store for references.
-				llvm::Value* const val= function_context.llvm_ir_builder.CreateLoad( src );
-				function_context.llvm_ir_builder.CreateStore( val, dst );
-			}
-			else
-			{
-				U_ASSERT( field->type.IsCopyConstructible() );
-				BuildCopyConstructorPart( dst, src, field->type, function_context );
-			}
-
-		} ); // For fields.
+	}
 
 	SetupVirtualTablePointers( this_llvm_value, the_class, function_context );
 
@@ -616,25 +608,21 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 			function_context );
 	}
 
-	// TODO - maybe call assignment of members in predefined order?
-	the_class.members.ForEachValueInThisScope(
-		[&]( const Value& member )
-		{
-			const ClassField* const field= member.GetClassField();
-			if( field == nullptr )
-				return;
-			U_ASSERT( field->type.IsCopyAssignable() );
+	for( const std::string& field_name : the_class.fields_order )
+	{
+		if( field_name.empty() )
+			continue;
 
-			llvm::Value* index_list[2];
-			index_list[0]= GetZeroGEPIndex();
-			index_list[1]= GetFieldGEPIndex( field->index );
+		const ClassField& field= *the_class.members.GetThisScopeValue( field_name )->GetClassField();
+		U_ASSERT( field.type.IsCopyAssignable() );
 
-			BuildCopyAssignmentOperatorPart(
-				function_context.llvm_ir_builder.CreateGEP( this_llvm_value, index_list ),
-				function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list ),
-				field->type,
-				function_context );
-		} ); // For fields.
+		llvm::Value* const index_list[2] { GetZeroGEPIndex(), GetFieldGEPIndex( field.index ) };
+		BuildCopyAssignmentOperatorPart(
+			function_context.llvm_ir_builder.CreateGEP( this_llvm_value, index_list ),
+			function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list ),
+			field.type,
+			function_context );
+	}
 
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 	function_context.llvm_ir_builder.CreateRetVoid();
