@@ -32,6 +32,48 @@ std::string GetTypeinfoVariableName( const ClassProxyPtr& typeinfo_class )
 	return "_val_of_" + std::string(typeinfo_class->class_->llvm_type->getName());
 }
 
+struct TypeinfoListElement
+{
+	std::string name_for_ordering;
+	llvm::Constant* initializer;
+	ClassProxyPtr type;
+};
+
+Variable FinalizeTypeinfoList( llvm::LLVMContext& llvm_context, std::vector<TypeinfoListElement>& list )
+{
+	std::sort(
+		list.begin(), list.end(),
+		[]( const TypeinfoListElement& l, const TypeinfoListElement& r )
+		{
+			return l.name_for_ordering < r.name_for_ordering;
+		} );
+
+	Tuple list_type;
+	std::vector< llvm::Type* > list_elements_llvm_types;
+	std::vector< llvm::Constant* > list_elements_initializers;
+	list_type.elements.reserve( list.size() );
+	list_elements_llvm_types.reserve( list.size() );
+	list_elements_initializers.reserve( list.size() );
+
+	for( const TypeinfoListElement& list_element : list )
+	{
+		list_type.elements.emplace_back( list_element.type );
+		list_elements_llvm_types.push_back( list_element.type->class_->llvm_type );
+		list_elements_initializers.push_back( list_element.initializer );
+	}
+
+	list_type.llvm_type= llvm::StructType::get( llvm_context, list_elements_llvm_types );
+	llvm::Constant* const initializer= llvm::ConstantStruct::get( list_type.llvm_type, list_elements_initializers );
+
+	return
+		Variable(
+			std::move(list_type),
+			Variable::Location::LLVMRegister,
+			ValueType::Value,
+			initializer,
+			initializer );
+}
+
 } // namespace
 
 Variable CodeBuilder::BuildTypeInfo( const Type& type, NamesScope& root_namespace )
@@ -283,14 +325,9 @@ void CodeBuilder::FinishTypeinfoClass( Class& class_, const ClassProxyPtr class_
 
 Variable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, NamesScope& root_namespace )
 {
-	Tuple list_type;
-	std::vector< llvm::Type* > list_elements_llvm_types;
-	std::vector< llvm::Constant* > list_elements_initializers;
-	list_type.elements.reserve( enum_type->element_count );
-	list_elements_llvm_types.reserve( enum_type->element_count );
-	list_elements_initializers.reserve( enum_type->element_count );
+	std::vector<TypeinfoListElement> list_elements;
+	list_elements.reserve( enum_type->element_count );
 
-	// TODO - use predefined order here.
 	enum_type->members.ForEachInThisScope(
 		[&]( const std::string& name, const Value& enum_member )
 		{
@@ -327,22 +364,14 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, N
 
 			FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
 
-			list_type.elements.push_back( node_type );
-			list_elements_llvm_types.push_back( node_type_class.llvm_type );
-			list_elements_initializers.push_back( llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
+			list_elements.push_back(
+				TypeinfoListElement{
+					name,
+					llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ),
+					node_type } );
 		} );
 
-	list_type.llvm_type= llvm::StructType::get( llvm_context_, list_elements_llvm_types );
-
-	llvm::Constant* const initializer= llvm::ConstantStruct::get( list_type.llvm_type, list_elements_initializers );
-
-	return
-		Variable(
-			std::move(list_type),
-			Variable::Location::LLVMRegister,
-			ValueType::Value,
-			initializer,
-			initializer );
+	return FinalizeTypeinfoList( llvm_context_, list_elements );
 }
 
 void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
@@ -388,14 +417,8 @@ void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
 
 Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_type, NamesScope& root_namespace )
 {
-	Tuple list_type;
-	std::vector< llvm::Type* > list_elements_llvm_types;
-	std::vector< llvm::Constant* > list_elements_initializers;
-	list_type.elements.reserve( class_type->class_->field_count );
-	list_elements_llvm_types.reserve( class_type->class_->field_count );
-	list_elements_initializers.reserve( class_type->class_->field_count );
+	std::vector<TypeinfoListElement> list_elements;
 
-	// TODO - use predefined order here.
 	class_type->class_->members.ForEachInThisScope(
 		[&]( const std::string& member_name, const Value& class_member )
 		{
@@ -467,30 +490,20 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 
 			FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
 
-			list_type.elements.push_back( node_type );
-			list_elements_llvm_types.push_back( node_type_class.llvm_type );
-			list_elements_initializers.push_back( llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
+			list_elements.push_back(
+				TypeinfoListElement{
+					member_name,
+					llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ),
+					node_type } );
 		} ); // for class elements
 
-	list_type.llvm_type= llvm::StructType::get( llvm_context_, list_elements_llvm_types );
-	llvm::Constant* const initializer= llvm::ConstantStruct::get( list_type.llvm_type, list_elements_initializers );
-
-	return
-		Variable(
-			std::move(list_type),
-			Variable::Location::LLVMRegister,
-			ValueType::Value,
-			initializer,
-			initializer );
+	return FinalizeTypeinfoList( llvm_context_, list_elements );
 }
 
 Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassProxyPtr& class_type, NamesScope& root_namespace )
 {
-	Tuple list_type;
-	std::vector< llvm::Type* > list_elements_llvm_types;
-	std::vector< llvm::Constant* > list_elements_initializers;
+	std::vector<TypeinfoListElement> list_elements;
 
-	// TODO - use predefined order here.
 	class_type->class_->members.ForEachInThisScope(
 		[&]( const std::string& name, Value& class_member )
 		{
@@ -520,30 +533,20 @@ Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassProxyPtr& class_ty
 
 			FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
 
-			list_type.elements.push_back( node_type );
-			list_elements_llvm_types.push_back( node_type_class.llvm_type );
-			list_elements_initializers.push_back( llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
+			list_elements.push_back(
+				TypeinfoListElement{
+					name,
+					llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ),
+					node_type } );
 		} ); // for class elements
 
-	list_type.llvm_type= llvm::StructType::get( llvm_context_, list_elements_llvm_types );
-	llvm::Constant* const initializer= llvm::ConstantStruct::get( list_type.llvm_type, list_elements_initializers );
-
-	return
-		Variable(
-			std::move(list_type),
-			Variable::Location::LLVMRegister,
-			ValueType::Value,
-			initializer,
-			initializer );
+	return FinalizeTypeinfoList( llvm_context_, list_elements );
 }
 
 Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& class_type, NamesScope& root_namespace )
 {
-	Tuple list_type;
-	std::vector< llvm::Type* > list_elements_llvm_types;
-	std::vector< llvm::Constant* > list_elements_initializers;
+	std::vector<TypeinfoListElement> list_elements;
 
-	// TODO - use predefined order here.
 	class_type->class_->members.ForEachInThisScope(
 		[&]( const std::string& name, const Value& class_member )
 		{
@@ -551,33 +554,13 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 			if( functions_set == nullptr )
 				return;
 
-			// Sort functions with same name using its mangled type. Then, use sequential number in typeinfo class name.
-			std::vector< std::pair<size_t, std::string> > functions_with_mangled_type;
-			functions_with_mangled_type.reserve( functions_set->functions.size() );
-			if( functions_set->functions.size() == 1u )
-				functions_with_mangled_type.emplace_back( 0u, "" );
-			else
+			for( const FunctionVariable& function : functions_set->functions )
 			{
-				for( const FunctionVariable& function : functions_set->functions )
-					functions_with_mangled_type.emplace_back( functions_with_mangled_type.size(), MangleType( function.type ) );
-				std::sort(
-					functions_with_mangled_type.begin(),
-					functions_with_mangled_type.end(),
-					[]( const auto& l, const auto& r ) { return l.second > r.second; } );
-			}
-
-			const std::string name_translated= GetOperatorMangledName( name );
-			const std::string name_component= std::to_string( name_translated.size() ) + name_translated;
-
-			for( size_t i= 0u; i < functions_set->functions.size(); ++i )
-			{
-				const FunctionVariable& function= functions_set->functions[ functions_with_mangled_type[i].first ];
-
 				const ClassProxyPtr node_type=
 					CreateTypeinfoClass(
 						root_namespace,
 						class_type,
-						g_typeinfo_class_functions_list_node_class_name + name_component + std::to_string(i) );
+						g_typeinfo_class_functions_list_node_class_name + std::string(function.llvm_function->getName()) ); // Use mangled name for type name.
 				Class& node_type_class= *node_type->class_;
 
 				ClassFieldsVector<llvm::Type*> fields_llvm_types;
@@ -620,22 +603,15 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 
 				FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
 
-				list_type.elements.push_back( node_type );
-				list_elements_llvm_types.push_back( node_type_class.llvm_type );
-				list_elements_initializers.push_back( llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
-			} // for functions
+				list_elements.push_back(
+					TypeinfoListElement{
+						function.llvm_function->getName(), // Sort, using function mangled name.
+						llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ),
+						node_type } );
+			} // for functions with same name
 		} ); // for class elements
 
-	list_type.llvm_type= llvm::StructType::get( llvm_context_, list_elements_llvm_types );
-	llvm::Constant* const initializer= llvm::ConstantStruct::get( list_type.llvm_type, list_elements_initializers );
-
-	return
-		Variable(
-			std::move(list_type),
-			Variable::Location::LLVMRegister,
-			ValueType::Value,
-			initializer,
-			initializer );
+	return FinalizeTypeinfoList( llvm_context_, list_elements );
 }
 
 Variable CodeBuilder::BuildeTypeinfoClassParentsList( const ClassProxyPtr& class_type, NamesScope& root_namespace )
