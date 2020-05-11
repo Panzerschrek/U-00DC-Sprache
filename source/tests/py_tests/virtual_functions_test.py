@@ -671,6 +671,40 @@ def FunctionDoesNotOverride_Test0():
 	assert( errors_list[0].file_pos.line == 8 )
 
 
+def FunctionDoesNotOverride_Test1():
+	c_program_text= """
+		class A polymorph
+		{
+			fn virtual Foo(mut this){}
+		}
+		class B : A
+		{
+			fn virtual override Foo(imut this);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "FunctionDoesNotOverride" )
+	assert( errors_list[0].file_pos.line == 8 )
+
+
+def FunctionDoesNotOverride_Test2():
+	c_program_text= """
+		class A polymorph
+		{
+			fn virtual Foo(imut this){}
+		}
+		class B : A
+		{
+			fn virtual override Foo(mut this);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "FunctionDoesNotOverride" )
+	assert( errors_list[0].file_pos.line == 8 )
+
+
 def OverrideFinalFunction_Test0():
 	c_program_text= """
 		class A polymorph

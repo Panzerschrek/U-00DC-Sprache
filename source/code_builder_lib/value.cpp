@@ -28,6 +28,7 @@ bool FunctionVariable::VirtuallyEquals( const FunctionVariable& other ) const
 		l_type.references_pollution == r_type.references_pollution &&
 		l_type.unsafe == r_type.unsafe &&
 		l_type.args.size() == r_type.args.size() &&
+		l_type.args.size() > 0u && l_type.args.front().is_mutable == r_type.args.front().is_mutable &&
 		std::equal( l_type.args.begin() + 1, l_type.args.end(), r_type.args.begin() + 1 );  // Compare args, except first.
 }
 
