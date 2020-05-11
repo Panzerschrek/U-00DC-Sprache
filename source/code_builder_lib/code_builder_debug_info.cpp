@@ -268,39 +268,39 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 	std::vector<llvm::Metadata*> fields;
 	if( the_class.typeinfo_type == std::nullopt ) // Skip typeinfo, because it may contain recursive structures.
 	{
-		the_class.members.ForEachInThisScope(
-			[&]( const std::string& name, const Value& value )
+		for( const std::string& name : the_class.fields_order )
+		{
+			if( name.empty() )
+				continue;
+
+			const ClassField& class_field= *the_class.members.GetThisScopeValue( name )->GetClassField();
+
+			llvm::Type* field_type_llvm= class_field.type.GetLLVMType();
+			llvm::DIType* field_type_di= CreateDIType( class_field.type );
+			if( class_field.is_reference )
 			{
-				const ClassField* const class_field= value.GetClassField();
-				if( class_field == nullptr || class_field->class_.lock() != type )
-					return;
+				field_type_llvm= field_type_llvm->getPointerTo();
+				field_type_di=
+					debug_info_.builder->createPointerType(
+						field_type_di,
+						data_layout_.getTypeAllocSizeInBits(field_type_llvm),
+						8u * data_layout_.getABITypeAlignment(field_type_llvm) );
+			}
 
-				llvm::Type* field_type_llvm= class_field->type.GetLLVMType();
-				llvm::DIType* field_type_di= CreateDIType( class_field->type );
-				if( class_field->is_reference )
-				{
-					field_type_llvm= field_type_llvm->getPointerTo();
-					field_type_di=
-						debug_info_.builder->createPointerType(
-							field_type_di,
-							data_layout_.getTypeAllocSizeInBits(field_type_llvm),
-							8u * data_layout_.getABITypeAlignment(field_type_llvm) );
-				}
-
-				// It will be fine - use here data layout queries, because for complete struct type non-reference fields are complete too.
-				const auto member =
-					debug_info_.builder->createMemberType(
-						di_compile_unit,
-						name,
-						di_file,
-						0u, // TODO - file_pos
-						data_layout_.getTypeAllocSizeInBits( field_type_llvm ),
-						8u * data_layout_.getABITypeAlignment( field_type_llvm ),
-						struct_layout.getElementOffsetInBits(class_field->index),
-						llvm::DINode::DIFlags(),
-						field_type_di );
-				fields.push_back(member);
-			});
+			// It will be fine - use here data layout queries, because for complete struct type non-reference fields are complete too.
+			const auto member =
+				debug_info_.builder->createMemberType(
+					di_compile_unit,
+					name,
+					di_file,
+					0u, // TODO - file_pos
+					data_layout_.getTypeAllocSizeInBits( field_type_llvm ),
+					8u * data_layout_.getABITypeAlignment( field_type_llvm ),
+					struct_layout.getElementOffsetInBits(class_field.index),
+					llvm::DINode::DIFlags(),
+					field_type_di );
+			fields.push_back(member);
+		}
 
 		for( const Class::Parent& parent : the_class.parents )
 		{

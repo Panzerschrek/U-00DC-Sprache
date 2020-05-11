@@ -451,6 +451,8 @@ void CodeBuilder::CopyClass(
 	copy->forward_declaration_file_pos= src.forward_declaration_file_pos;
 	copy->body_file_pos= src.body_file_pos;
 
+	copy->fields_order= src.fields_order;
+
 	copy->llvm_type= src.llvm_type;
 	copy->base_template= src.base_template;
 	copy->typeinfo_type= src.typeinfo_type;
@@ -930,23 +932,24 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, Cod
 			file_pos );
 	}
 
-	class_->members.ForEachValueInThisScope(
-		[&]( const Value& member )
-		{
-			const ClassField* const field= member.GetClassField();
-			if( field == nullptr || field->is_reference || !field->type.HaveDestructor() ||
-				field->class_.lock()->class_ != class_ )
-				return;
+	for( const std::string& field_name : class_->fields_order )
+	{
+		if( field_name.empty() )
+			continue;
 
-			CallDestructor(
-				function_context.llvm_ir_builder.CreateGEP(
-					function_context.this_->llvm_value,
-					{ GetZeroGEPIndex(), GetFieldGEPIndex(field->index ) } ),
-				field->type,
-				function_context,
-				errors_container,
-				file_pos );
-		} );
+		const ClassField& field= *class_->members.GetThisScopeValue( field_name )->GetClassField();
+		if( !field.type.HaveDestructor() )
+			continue;
+
+		CallDestructor(
+			function_context.llvm_ir_builder.CreateGEP(
+				function_context.this_->llvm_value,
+				{ GetZeroGEPIndex(), GetFieldGEPIndex(field.index) } ),
+			field.type,
+			function_context,
+			errors_container,
+			file_pos );
+	};
 }
 
 size_t CodeBuilder::PrepareFunction(
@@ -1880,37 +1883,36 @@ void CodeBuilder::BuildConstructorInitialization(
 		} );
 
 	// Initialize fields, missing in initializer list.
-	for( const std::string& field_name : uninitialized_fields )
+	for( const std::string& field_name : base_class.fields_order )
 	{
+		if( field_name.empty() || uninitialized_fields.count(field_name) == 0 )
+			continue;
+
+		const ClassField& field= *base_class.members.GetThisScopeValue( field_name )->GetClassField();
+
 		const StackVariablesStorage temp_variables_storage( function_context );
 
-		const Value* const class_member=
-			base_class.members.GetThisScopeValue( field_name );
-		U_ASSERT( class_member != nullptr );
-		const ClassField* const field= class_member->GetClassField();
-		U_ASSERT( field != nullptr );
-
-		if( field->is_reference )
+		if( field.is_reference )
 		{
-			if( field->syntax_element->initializer == nullptr )
+			if( field.syntax_element->initializer == nullptr )
 			{
 				REPORT_ERROR( ExpectedInitializer, names_scope.GetErrors(), constructor_initialization_list.file_pos_, field_name );
 				continue;
 			}
-			InitializeReferenceClassFieldWithInClassIninitalizer( this_, *field, function_context );
+			InitializeReferenceClassFieldWithInClassIninitalizer( this_, field, function_context );
 		}
 		else
 		{
 			Variable field_variable;
-			field_variable.type= field->type;
+			field_variable.type= field.type;
 			field_variable.location= Variable::Location::Pointer;
 			field_variable.value_type= ValueType::Reference;
 
 			field_variable.llvm_value=
-				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field->index ) } );
+				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field.index ) } );
 
-			if( field->syntax_element->initializer != nullptr )
-				InitializeClassFieldWithInClassIninitalizer( field_variable, *field, function_context );
+			if( field.syntax_element->initializer != nullptr )
+				InitializeClassFieldWithInClassIninitalizer( field_variable, field, function_context );
 			else
 				ApplyEmptyInitializer( field_name, constructor_initialization_list.file_pos_, field_variable, names_scope, function_context );
 		}

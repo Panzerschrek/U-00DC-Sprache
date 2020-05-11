@@ -220,41 +220,41 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 	}
 
 	U_ASSERT( initialized_members_names.size() <= class_type->field_count );
-	class_type->members.ForEachValueInThisScope(
-		[&]( const Value& class_member )
+	for( const std::string& field_name : class_type->fields_order )
+	{
+		if( field_name.empty() )
+			continue;
+
+		const ClassField& field= *class_type->members.GetThisScopeValue( field_name )->GetClassField();
+		if( initialized_members_names.count( field_name ) != 0 )
+			continue;
+
+		llvm::Constant* constant_initializer= nullptr;
+		if( field.is_reference )
 		{
-			if( const ClassField* const field= class_member.GetClassField() )
-			{
-				if( initialized_members_names.count( field->syntax_element->name ) == 0 )
-				{
-					llvm::Constant* constant_initializer= nullptr;
-					if( field->is_reference )
-					{
-						if( field->syntax_element->initializer == nullptr )
-							REPORT_ERROR( ExpectedInitializer, names.GetErrors(),  initializer.file_pos_, field->syntax_element->name ); // References is not default-constructible.
-						else
-							constant_initializer= InitializeReferenceClassFieldWithInClassIninitalizer( variable, *field, function_context );
-					}
-					else
-					{
-						struct_member.type= field->type;
-						struct_member.llvm_value=
-							function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field->index ) } );
+			if( field.syntax_element->initializer == nullptr )
+				REPORT_ERROR( ExpectedInitializer, names.GetErrors(), initializer.file_pos_, field_name ); // References is not default-constructible.
+			else
+				constant_initializer= InitializeReferenceClassFieldWithInClassIninitalizer( variable, field, function_context );
+		}
+		else
+		{
+			struct_member.type= field.type;
+			struct_member.llvm_value=
+				function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field.index ) } );
 
-						if( field->syntax_element->initializer != nullptr )
-							constant_initializer=
-								InitializeClassFieldWithInClassIninitalizer( struct_member, *field, function_context );
-						else
-							ApplyEmptyInitializer( field->syntax_element->name, initializer.file_pos_, struct_member, names, function_context );
-					}
+			if( field.syntax_element->initializer != nullptr )
+				constant_initializer=
+					InitializeClassFieldWithInClassIninitalizer( struct_member, field, function_context );
+			else
+				ApplyEmptyInitializer( field_name, initializer.file_pos_, struct_member, names, function_context );
+		}
 
-					if( constant_initializer == nullptr )
-						all_fields_are_constant= false;
-					if( all_fields_are_constant )
-						constant_initializers[field->index]= constant_initializer;
-				}
-			}
-		});
+		if( constant_initializer == nullptr )
+			all_fields_are_constant= false;
+		if( all_fields_are_constant )
+			constant_initializers[field.index]= constant_initializer;
+	}
 
 	if( all_fields_are_constant && constant_initializers.size() == class_type->field_count )
 		return llvm::ConstantStruct::get( class_type->llvm_type, constant_initializers );
@@ -559,31 +559,31 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 		Variable struct_member= variable;
 		struct_member.location= Variable::Location::Pointer;
 
-		class_type->members.ForEachValueInThisScope(
-			[&]( const Value& member )
+		for( const std::string& field_name : class_type->fields_order )
+		{
+			if( field_name.empty() )
+				continue;
+
+			const ClassField& field= *class_type->members.GetThisScopeValue( field_name )->GetClassField();
+			if( field.is_reference )
 			{
-				const ClassField* const field= member.GetClassField();
-				if( field == nullptr || field->class_.lock() != variable.type )
-					return;
-				if( field->is_reference )
-				{
-					all_fields_are_constant= false;
-					REPORT_ERROR( UnsupportedInitializerForReference, names.GetErrors(), initializer.file_pos_ );
-					return;
-				}
+				all_fields_are_constant= false;
+				REPORT_ERROR( UnsupportedInitializerForReference, names.GetErrors(), initializer.file_pos_ );
+				continue;
+			}
 
-				struct_member.type= field->type;
-				struct_member.llvm_value=
-					function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field->index ) } );
+			struct_member.type= field.type;
+			struct_member.llvm_value=
+				function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field.index ) } );
 
-				llvm::Constant* const constant_initializer=
-					ApplyInitializer( initializer, struct_member, names, function_context );
+			llvm::Constant* const constant_initializer=
+				ApplyInitializer( initializer, struct_member, names, function_context );
 
-				if( constant_initializer == nullptr )
-					all_fields_are_constant= false;
-				if( all_fields_are_constant )
-					constant_initializers[field->index]= constant_initializer;
-			});
+			if( constant_initializer == nullptr )
+				all_fields_are_constant= false;
+			if( all_fields_are_constant )
+				constant_initializers[field.index]= constant_initializer;
+		}
 
 		if( all_fields_are_constant )
 			return llvm::ConstantStruct::get( class_type->llvm_type, constant_initializers );
