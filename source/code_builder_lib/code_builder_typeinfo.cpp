@@ -290,6 +290,7 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, N
 	list_elements_llvm_types.reserve( enum_type->element_count );
 	list_elements_initializers.reserve( enum_type->element_count );
 
+	// TODO - use predefined order here.
 	enum_type->members.ForEachInThisScope(
 		[&]( const std::string& name, const Value& enum_member )
 		{
@@ -394,6 +395,7 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 	list_elements_llvm_types.reserve( class_type->class_->field_count );
 	list_elements_initializers.reserve( class_type->class_->field_count );
 
+	// TODO - use predefined order here.
 	class_type->class_->members.ForEachInThisScope(
 		[&]( const std::string& member_name, const Value& class_member )
 		{
@@ -488,6 +490,7 @@ Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassProxyPtr& class_ty
 	std::vector< llvm::Type* > list_elements_llvm_types;
 	std::vector< llvm::Constant* > list_elements_initializers;
 
+	// TODO - use predefined order here.
 	class_type->class_->members.ForEachInThisScope(
 		[&]( const std::string& name, Value& class_member )
 		{
@@ -540,6 +543,7 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 	std::vector< llvm::Type* > list_elements_llvm_types;
 	std::vector< llvm::Constant* > list_elements_initializers;
 
+	// TODO - use predefined order here.
 	class_type->class_->members.ForEachInThisScope(
 		[&]( const std::string& name, const Value& class_member )
 		{

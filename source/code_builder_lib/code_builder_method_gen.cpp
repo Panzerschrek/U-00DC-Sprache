@@ -127,6 +127,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		ApplyEmptyInitializer( Keyword( Keywords::base_ ), FilePos()/*TODO*/, base_variable, the_class.members, function_context );
 	}
 
+	// TODO - maybe keep order of construction?
 	the_class.members.ForEachValueInThisScope(
 		[&](const Value& value )
 		{
@@ -321,6 +322,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 			function_context );
 	}
 
+	// TODO - maybe call constructors in predefined order?
 	the_class.members.ForEachValueInThisScope(
 		[&]( const Value& member )
 		{
@@ -614,6 +616,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 			function_context );
 	}
 
+	// TODO - maybe call assignment of members in predefined order?
 	the_class.members.ForEachValueInThisScope(
 		[&]( const Value& member )
 		{

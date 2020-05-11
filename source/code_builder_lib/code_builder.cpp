@@ -451,6 +451,8 @@ void CodeBuilder::CopyClass(
 	copy->forward_declaration_file_pos= src.forward_declaration_file_pos;
 	copy->body_file_pos= src.body_file_pos;
 
+	copy->fields_order= src.fields_order;
+
 	copy->llvm_type= src.llvm_type;
 	copy->base_template= src.base_template;
 	copy->typeinfo_type= src.typeinfo_type;
@@ -930,6 +932,7 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, Cod
 			file_pos );
 	}
 
+	// TODO - maybe call destructors in exact order?
 	class_->members.ForEachValueInThisScope(
 		[&]( const Value& member )
 		{
@@ -1880,6 +1883,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		} );
 
 	// Initialize fields, missing in initializer list.
+	// TODO - maybe add some predefined order?
 	for( const std::string& field_name : uninitialized_fields )
 	{
 		const StackVariablesStorage temp_variables_storage( function_context );

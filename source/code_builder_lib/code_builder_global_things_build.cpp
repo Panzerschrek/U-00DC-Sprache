@@ -595,8 +595,17 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				SortClassFields( the_class, fields_llvm_types, data_layout_ );
 		}
 
+		the_class.fields_order.resize( fields_llvm_types.size() );
+		the_class.members.ForEachInThisScope(
+			[&]( const std::string& name, const Value& value )
+			{
+				if( const auto field= value.GetClassField() )
+					the_class.fields_order[field->index]= name;
+			} );
+
 		// Complete another body elements.
 		// For class completeness we needs only fields, functions. Constants, types and type templates dones not needed.
+		// TODO - fix this. We needs exact order of virtual table members.
 		the_class.members.ForEachValueInThisScope(
 			[&]( Value& value )
 			{
@@ -839,6 +848,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 		CheckClassFieldsInitializers( class_type );
 
 		// Immediately build constexpr functions.
+		// TODO - maybe keep some order?
 		the_class.members.ForEachInThisScope(
 			[&]( const std::string& name, Value& value )
 			{

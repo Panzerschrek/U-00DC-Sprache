@@ -76,6 +76,9 @@ public:
 
 	llvm::StructType* llvm_type;
 
+	// Names of this class fields in order of field number. Empty string for parent classes fields.
+	std::vector<std::string> fields_order;
+
 	// Exists only for classes, generated from class templates.
 	std::optional<BaseTemplate> base_template;
 

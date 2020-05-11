@@ -220,6 +220,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 	}
 
 	U_ASSERT( initialized_members_names.size() <= class_type->field_count );
+	// TODO - maybe initialize members in predefined order?
 	class_type->members.ForEachValueInThisScope(
 		[&]( const Value& class_member )
 		{
@@ -559,6 +560,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 		Variable struct_member= variable;
 		struct_member.location= Variable::Location::Pointer;
 
+		// TODO - maybe keep some order of initialization here?
 		class_type->members.ForEachValueInThisScope(
 			[&]( const Value& member )
 			{
