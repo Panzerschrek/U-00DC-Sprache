@@ -595,6 +595,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				SortClassFields( the_class, fields_llvm_types, data_layout_ );
 		}
 
+		// Fill container with fileds names.
 		the_class.fields_order.resize( fields_llvm_types.size() );
 		the_class.members.ForEachInThisScope(
 			[&]( const std::string& name, const Value& value )
@@ -605,7 +606,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 
 		// Complete another body elements.
 		// For class completeness we needs only fields, functions. Constants, types and type templates dones not needed.
-		// TODO - fix this. We needs exact order of virtual table members.
+		std::vector< FunctionVariable* > class_functions;
 		the_class.members.ForEachValueInThisScope(
 			[&]( Value& value )
 			{
@@ -613,7 +614,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				{
 					GlobalThingBuildFunctionsSet( the_class.members, *functions_set, false );
 					for( FunctionVariable& function : functions_set->functions )
-						ProcessClassVirtualFunction( the_class, function );
+						class_functions.emplace_back( &function );
 				}
 				else if( value.GetClassField() != nullptr ) {} // Fields are already complete.
 				else if( value.GetTypeName() != nullptr ) {}
@@ -626,6 +627,16 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				else if( value.GetNamespace() != nullptr ) {} // Can be in case of type template parameters namespace.
 				else U_ASSERT(false);
 			});
+
+		// Wee needs strong order of functions in virtual table. So, sort them, using mangled name.
+		std::sort(
+			class_functions.begin(), class_functions.end(),
+			[]( const FunctionVariable* const l, const FunctionVariable* const r )
+			{
+				return l->llvm_function->getName() < r->llvm_function->getName();
+			} );
+		for( FunctionVariable* func : class_functions )
+			ProcessClassVirtualFunction( the_class, *func );
 
 		// Search for explicit noncopy constructors.
 		if( const Value* const constructors_value=
