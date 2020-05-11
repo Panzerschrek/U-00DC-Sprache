@@ -859,7 +859,6 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 		CheckClassFieldsInitializers( class_type );
 
 		// Immediately build constexpr functions.
-		// TODO - maybe keep some order?
 		the_class.members.ForEachInThisScope(
 			[&]( const std::string& name, Value& value )
 			{

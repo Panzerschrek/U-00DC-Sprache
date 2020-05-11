@@ -350,7 +350,6 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const EnumPtr& type )
 		return it->second;
 
 	std::vector<llvm::Metadata*> elements;
-	// TODO - maybe keep some order here?
 	type->members.ForEachInThisScope(
 		[&]( const std::string& name, const Value& value )
 		{
