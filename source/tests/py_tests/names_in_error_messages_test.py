@@ -223,6 +223,22 @@ def TypeNameInErrorMessage_ClassTemplate_Test7():
 	assert( errors_list[0].text.find( "Box</i32/>" ) != -1 )
 
 
+def TypeNameInErrorMessage_ClassTemplate_Test8():
+	c_program_text= """
+		template</ type T /> struct Box{}
+		fn Foo()
+		{
+			var i32 x= Box</ typeof(typeinfo</f64/>) />();
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TypesMismatch" )
+	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].text.find( "i32" ) != -1 )
+	assert( errors_list[0].text.find( "Box</typeof(typeinfo</f64/>)/>" ) != -1 )
+
+
 def TemplateParametersInErrorInsideTemplate_Test0():
 	c_program_text= """
 		template</ type T />

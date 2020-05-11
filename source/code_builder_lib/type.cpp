@@ -586,7 +586,17 @@ std::string Type::ToString() const
 		std::string operator()( const ClassProxyPtr& class_ ) const
 		{
 			std::string result;
-			if( class_->class_->base_template != std::nullopt )
+			if( class_->class_->typeinfo_type != std::nullopt )
+			{
+				result= Keyword(Keywords::typeof_);
+				result+= "(";
+				result+= Keyword(Keywords::typeinfo_);
+				result+= "</";
+				result+= class_->class_->typeinfo_type->ToString();
+				result+= "/>";
+				result+=")";
+			}
+			else if( class_->class_->base_template != std::nullopt )
 			{
 				// Skip template parameters namespace.
 				const std::string template_namespace_name= class_->class_->members.GetParent()->GetParent()->ToString();
