@@ -18,6 +18,13 @@ private:
 	size_type ref_;
 }
 
+struct DC
+{
+	i32 x= -1;
+	f32 y= 3.14f;
+	u64 z(123456);
+}
+
 type IntOrS= ust::variant</ tup[ i32, S ] />;
 
 fn U_Main() : i32
@@ -84,6 +91,25 @@ fn U_Main() : i32
 			halt if(  v.get</S/>().empty());
 		}
 		halt if( x != 0 );
+	}
+	{ // Variant is default constructible if first element is default constructible.
+		var ust::variant</ tup[ DC, S ] /> dc;
+		halt if( dc.get</DC/>().empty() );
+		halt if( dc.get</DC/>().get_ref().x != -1 );
+		halt if( dc.get</DC/>().get_ref().y != 3.14f );
+		halt if( dc.get</DC/>().get_ref().z != u64(123456) );
+	}
+	{ // Copy constructor vor variant.
+		var ust::variant</ tup[ i32, f32 ] /> vi(4), vf( 0.5f );
+		var ust::variant</ tup[ i32, f32 ] /> vic(vi), vfc(vf);
+
+		halt if(  vic.get</i32/>().empty() );
+		halt if( !vic.get</f32/>().empty() );
+		halt if(  vic.get</i32/>().get_ref() != 4 );
+
+		halt if( !vfc.get</i32/>().empty() );
+		halt if(  vfc.get</f32/>().empty() );
+		halt if(  vfc.get</f32/>().get_ref() != 0.5f );
 	}
 	return 0;
 }

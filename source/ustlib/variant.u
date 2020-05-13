@@ -29,6 +29,19 @@ fn constexpr get_max_tuple_element_alignment() : size_type
 	return a;
 }
 
+template</ type T />
+fn constexpr all_tuple_elements_is_copy_constructible() : bool
+{
+	for( & element : typeinfo</T/>.elements_list )
+	{
+		if( !element.type.is_copy_constructible )
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
 template</ type C, type Tup />
 fn constexpr type_is_one_of_tuple_elements() : bool
 {
@@ -60,6 +73,34 @@ public:
 	constructor()
 		( index_(0), storage_= zero_init )
 	{
+		auto& element_type_typeinfo= typeinfo</Y/>.elements_list[0].type;
+		var TypedefHelper</ typeof(element_type_typeinfo) />::TT::src_type mut val;
+		unsafe
+		{
+			move_unsafe( cast_ref_unsafe</ TypedefHelper</ typeof(element_type_typeinfo) />::TT::src_type />(storage_), move(val) );
+		}
+	}
+
+	fn
+	enable_if( all_tuple_elements_is_copy_constructible</Y/>() )
+	constructor( this_type& other )
+		( index_(other.index_), storage_= zero_init )
+	{
+		auto mut cur_index= 0s;
+		for( & element : typeinfo</Y/>.elements_list )
+		{
+			auto& element_type_typeinfo= element.type;
+			if( cur_index == size_type(other.index_) )
+			{
+				unsafe
+				{
+					auto mut copy = cast_ref_unsafe</ TypedefHelper</ typeof(element_type_typeinfo) />::TT::src_type />(other.storage_);
+					move_unsafe( cast_ref_unsafe</ TypedefHelper</ typeof(element_type_typeinfo) />::TT::src_type />(storage_), move(copy) );
+				}
+				return;
+			}
+			++cur_index;
+		}
 	}
 	
 	template</ type T />
