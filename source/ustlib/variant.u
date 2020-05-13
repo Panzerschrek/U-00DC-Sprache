@@ -154,6 +154,15 @@ public:
 	{
 		this = this_type( move(val) );
 	}
+
+	op
+	enable_if( all_tuple_elements_is_copy_constructible</Y/>() )
+	=( mut this, this_type& other )
+	{
+		// Implement assignment operator, using copy constructor.
+		// Native assignment operators for element types are not used here because it's not applicable in case where this.index_ != other.index_;
+		this = this_type(other);
+	}
 	
 	fn index(this) : size_type
 	{

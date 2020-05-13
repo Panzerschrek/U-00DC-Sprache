@@ -111,5 +111,29 @@ fn U_Main() : i32
 		halt if(  vfc.get</f32/>().empty() );
 		halt if(  vfc.get</f32/>().get_ref() != 0.5f );
 	}
+	{ // Copy assignment for variant.
+		var ust::variant</ tup[ i32, f32 ] /> mut v0( 33 ), v1(34.0f); // Different index of variant.
+
+		halt if( v0.get</i32/>().empty() );
+		halt if( v0.get</i32/>().get_ref() != 33 );
+		halt if( v1.get</f32/>().empty() );
+		halt if( v1.get</f32/>().get_ref() != 34.0f );
+
+		v0= v1;
+		halt if( v0.get</f32/>().empty() );
+		halt if( v0.get</f32/>().get_ref() != 34.0f );
+	}
+	{
+		var ust::variant</ tup[ i32, f32 ] /> mut v0( 11 ), v1(12); // Both variants have same index.
+
+		halt if( v0.get</i32/>().empty() );
+		halt if( v0.get</i32/>().get_ref() != 11 );
+		halt if( v1.get</i32/>().empty() );
+		halt if( v1.get</i32/>().get_ref() != 12 );
+
+		v0= v1;
+		halt if( v0.get</i32/>().empty() );
+		halt if( v0.get</i32/>().get_ref() != 12 );
+	}
 	return 0;
 }
