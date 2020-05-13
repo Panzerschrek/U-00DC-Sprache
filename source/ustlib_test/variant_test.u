@@ -57,5 +57,33 @@ fn U_Main() : i32
 		halt if( i.get</i32/>().empty() );
 		halt if( i.get</i32/>().get_ref() != 66 );
 	}
+	{ // Destructor called in assignment.
+
+		var i32 mut x= 99;
+
+		var IntOrS mut v( S(x) );
+		halt if( v.get</S/>().empty() );
+		halt if( x != 99 );
+
+		v= 32;
+		halt if( !v.get</S/>().empty() );
+		halt if(  v.get</i32/>().empty() );
+		halt if(  v.get</i32/>().get_ref() != 32 );
+		halt if( x != 0 );
+	}
+	{ // Destructor called after assignment.
+
+		var i32 mut x= 521;
+		{
+			var IntOrS mut v(55);
+			halt if( v.get</i32/>().empty() );
+			halt if( v.get</i32/>().get_ref() != 55 );
+
+			v= S(x);
+			halt if( !v.get</i32/>().empty() );
+			halt if(  v.get</S/>().empty());
+		}
+		halt if( x != 0 );
+	}
 	return 0;
 }

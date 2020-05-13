@@ -53,6 +53,8 @@ template</ type Y /> // Param - tuple
 class variant
 {
 public:
+	type this_type= variant</ Y />;
+
 	fn
 	enable_if( typeinfo</Y/>.elements_list[0].type.is_default_constructible )
 	constructor()
@@ -103,6 +105,13 @@ public:
 			}
 			++cur_index;
 		}
+	}
+
+	template</ type T />
+	op enable_if( type_is_one_of_tuple_elements</ T, Y />() )
+	=( mut this, T mut val )
+	{
+		this = this_type( move(val) );
 	}
 	
 	fn index(this) : size_type
