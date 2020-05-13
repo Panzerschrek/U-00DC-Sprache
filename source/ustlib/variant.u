@@ -1,0 +1,176 @@
+import "aligned_storage.u"
+import "container_utils.u"
+import "minmax.u"
+import "optional_ref.u"
+import "type_traits.u"
+
+namespace ust
+{
+
+template</ type T />
+fn constexpr get_max_tuple_element_size() : size_type
+{
+	var size_type mut s(0);
+	for( & element : typeinfo</T/>.elements_list )
+	{
+		s = max( s, element.type.size_of );
+	}
+	return s;
+}
+
+template</ type T />
+fn constexpr get_max_tuple_element_alignment() : size_type
+{
+	var size_type mut a(0);
+	for( & element : typeinfo</T/>.elements_list )
+	{
+		a = max( a, element.type.align_of );
+	}
+	return a;
+}
+
+template</ type C, type Tup />
+fn constexpr type_is_one_of_tuple_elements() : bool
+{
+	for( & element : typeinfo</Tup/>.elements_list )
+	{
+		auto& element_type_typeinfo= element.type;
+		static_if( is_same_type</ typeof(element_type_typeinfo), typeof(typeinfo</C/>) />() ) // types are same if typeinfo is same
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+template</type T/>
+struct TypedefHelper
+{
+	type TT= T;
+}
+
+template</ type Y /> // Param - tuple
+class variant
+{
+public:
+	fn
+	enable_if( typeinfo</Y/>.elements_list[0].type.is_default_constructible )
+	constructor()
+		( index_(0), storage_= zero_init )
+	{
+	}
+	
+	template</ type T />
+	fn enable_if( type_is_one_of_tuple_elements</ T, Y />() )
+	constructor(T mut val)
+		( index_(0), storage_= zero_init )
+	{
+		auto mut cur_index= 0s;
+		for( & element : typeinfo</Y/>.elements_list )
+		{
+			auto& element_type_typeinfo= element.type;
+			static_if( is_same_type</ typeof(element_type_typeinfo), typeof(typeinfo</T/>) />() )
+			{
+				unsafe
+				{
+					move_unsafe( cast_ref_unsafe</T/>(storage_), move(val) );
+				}
+
+				index_= u8(cur_index);
+				return;
+			}
+			else
+			{
+				++cur_index;
+			}
+		}
+		halt;
+	}
+	
+	fn destructor()
+	{
+		auto mut cur_index= 0s;
+		for( & element : typeinfo</Y/>.elements_list )
+		{
+			auto& element_type_typeinfo= element.type;
+			if( cur_index == size_type(index_) )
+			{
+				unsafe
+				{
+					call_destructor( cast_ref_unsafe</ TypedefHelper</ typeof(element_type_typeinfo) />::TT::src_type />(storage_) );
+				}
+				return;
+			}
+			++cur_index;
+		}
+	}
+	
+	fn index(this) : size_type
+	{
+		return size_type(index_);
+	}
+
+	template</ type T />
+	fn enable_if( type_is_one_of_tuple_elements</ T, Y />() )
+	get(this) : optional_ref</ T, false />
+	{
+		var optional_ref</ T, false /> mut res;
+		auto mut cur_index= 0s;
+		for( & element : typeinfo</Y/>.elements_list )
+		{
+			auto& element_type_typeinfo= element.type;
+			static_if( is_same_type</ typeof(element_type_typeinfo), typeof(typeinfo</T/>) />() )
+			{
+				if( cur_index == size_type(index_) )
+				{
+					unsafe
+					{
+						res.reset( cast_ref_unsafe</ TypedefHelper</ typeof(element_type_typeinfo) />::TT::src_type />(storage_) );
+					}
+				}
+			}
+			else
+			{
+				++cur_index;
+			}
+		}
+		return res;
+	}
+
+	template</ type T />
+	fn enable_if( type_is_one_of_tuple_elements</ T, Y />() )
+	get(mut this) : optional_ref</ T, true />
+	{
+		var optional_ref</ T, true /> mut res;
+		auto mut cur_index= 0s;
+		for( & element : typeinfo</Y/>.elements_list )
+		{
+			auto& element_type_typeinfo= element.type;
+			static_if( is_same_type</ typeof(element_type_typeinfo), typeof(typeinfo</T/>) />() )
+			{
+				if( cur_index == size_type(index_) )
+				{
+					unsafe
+					{
+						res.reset( cast_ref_unsafe</ TypedefHelper</ typeof(element_type_typeinfo) />::TT::src_type />(storage_) );
+					}
+				}
+			}
+			else
+			{
+				++cur_index;
+			}
+		}
+		return res;
+	}
+
+private:
+
+
+private:
+	aligned_storage</ get_max_tuple_element_size</Y/>(), get_max_tuple_element_alignment</Y/>() /> storage_;
+	u8 index_;
+}
+
+
+} // namespace ust

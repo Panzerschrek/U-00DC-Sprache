@@ -1,0 +1,61 @@
+//##success_test
+import "../ustlib/variant.u"
+
+class S
+{
+public:
+	// HACK! convert reference to integer because we can not put struct with reference inside into container.
+	fn constructor( i32 &mut x )
+		(ref_= ust::ref_to_int(x) )
+	{}
+
+	fn destructor()
+	{
+		unsafe{ cast_ref_unsafe</i32/>( cast_mut( ust::int_to_ref(ref_) ) )= 0; }
+	}
+
+private:
+	size_type ref_;
+}
+
+type IntOrS= ust::variant</ tup[ i32, S ] />;
+
+fn U_Main() : i32
+{
+	{
+		var ust::variant</ tup[ i32, f32 ] />
+			vi(4),
+			vf( 0.5f );
+
+		halt if(  vi.get</i32/>().empty() );
+		halt if( !vi.get</f32/>().empty() );
+		halt if(  vi.get</i32/>().get_ref() != 4 );
+
+		halt if( !vf.get</i32/>().empty() );
+		halt if(  vf.get</f32/>().empty() );
+		halt if(  vf.get</f32/>().get_ref() != 0.5f );
+	}
+	{ // Can modify contents of variant.
+		var ust::variant</ tup[ i32, f32 ] /> mut vi(66), mut vf(7.5f);
+
+		vi.get</i32/>().get_ref() /= 11;
+		halt if( vi.get</i32/>().get_ref() != 6 );
+
+		vf.get</f32/>().get_ref() *= 2.0f;
+		halt if( vf.get</f32/>().get_ref() != 15.0f );
+	}
+	{ // Variant calls destructor.
+		var i32 mut x= 66;
+		{
+			var IntOrS s( S(x) );
+			halt if( s.get</S/>().empty() );
+		}
+		halt if( x != 0 );
+	}
+	{
+		var IntOrS i(66);
+		halt if( i.get</i32/>().empty() );
+		halt if( i.get</i32/>().get_ref() != 66 );
+	}
+	return 0;
+}
