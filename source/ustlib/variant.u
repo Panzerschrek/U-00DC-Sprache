@@ -42,6 +42,31 @@ fn constexpr all_tuple_elements_is_copy_constructible() : bool
 	return true;
 }
 
+template</ type T />
+fn constexpr all_tuple_elements_is_unique() : bool
+{
+	auto mut i= 0s;
+	for( & element_i : typeinfo</T/>.elements_list )
+	{
+		auto mut j= 0s;
+		for( & element_j : typeinfo</T/>.elements_list )
+		{
+
+			auto& element_type_typeinfo_i= element_i.type;
+			auto& element_type_typeinfo_j= element_j.type;
+
+			if( i != j && is_same_type</ typeof(element_type_typeinfo_i), typeof(element_type_typeinfo_j) />() )
+			{
+				return false;
+			}
+
+			++j;
+		}
+		++i;
+	}
+	return true;
+}
+
 template</ type C, type Tup />
 fn constexpr type_is_one_of_tuple_elements() : bool
 {
@@ -62,12 +87,17 @@ struct TypedefHelper
 	type TT= T;
 }
 
-template</ type Y /> // Param - tuple
+template</ type Y /> // Param - nonempty tuple with unique types.
 class variant
 {
 public:
+	static_assert( typeinfo</Y/>.is_tuple );
+	static_assert( typeinfo</Y/>.element_count > 0s );
+	static_assert( all_tuple_elements_is_unique</Y/>() );
+
 	type this_type= variant</ Y />;
 
+public:
 	fn
 	enable_if( typeinfo</Y/>.elements_list[0].type.is_default_constructible )
 	constructor()
@@ -222,9 +252,6 @@ public:
 		}
 		return res;
 	}
-
-private:
-
 
 private:
 	aligned_storage</ get_max_tuple_element_size</Y/>(), get_max_tuple_element_alignment</Y/>() /> storage_;
