@@ -10,6 +10,13 @@ struct NC
 	fn constructor(mut this, NC &imut other)= delete;
 }
 
+struct R
+{
+	i32& R;
+}
+
+type VariantWithReferenceInside= ust::variant</ tup[ R ] />; //##expect_error TemplateContext
+
 fn U_Main() : i32
 {
 	{ // Try to get wrong type.

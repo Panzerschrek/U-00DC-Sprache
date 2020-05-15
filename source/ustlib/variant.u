@@ -254,6 +254,11 @@ public:
 	}
 
 private:
+	fn check_type()
+	{
+		static_assert( typeinfo</Y/>.references_tags_count == 0s );
+	}
+
 	type element_type_for_shared_check= Y;
 
 private:
