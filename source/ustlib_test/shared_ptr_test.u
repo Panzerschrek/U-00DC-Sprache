@@ -12,6 +12,7 @@ import "../ustlib/optional.u"
 import "../ustlib/optional_ref.u"
 import "../ustlib/random_access_range.u"
 import "../ustlib/unordered_map.u"
+import "../ustlib/variant.u"
 import "../ustlib/vector.u"
 
 type IntPtrMut=  ust::shared_ptr_mut </i32/>;
@@ -35,6 +36,7 @@ static_assert( ust::have_shared_state</ ust::optional_ref</ IntPtrMut, true /> /
 static_assert( ust::have_shared_state</ ust::random_access_range</ IntPtrMut, true /> />() );
 static_assert( ust::have_shared_state</ ust::unordered_map</ i32, IntPtrMut /> />() );
 static_assert( ust::have_shared_state</ ust::vector</ IntPtrMut /> />() );
+static_assert( ust::have_shared_state</ ust::variant</ tup[ IntPtrMut ] /> />() );
 
 class I0 interface {}
 class I1 interface {}

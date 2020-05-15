@@ -254,6 +254,9 @@ public:
 	}
 
 private:
+	type element_type_for_shared_check= Y;
+
+private:
 	aligned_storage</ get_max_tuple_element_size</Y/>(), get_max_tuple_element_alignment</Y/>() /> storage_;
 	u8 index_;
 }
