@@ -175,13 +175,11 @@ void CodeBuilder::PrepareFunctionTemplate(
 	NamesScope& names_scope,
 	const ClassProxyPtr& base_class )
 {
-	const Synt::ComplexName& complex_name = function_template_declaration.function_->name_;
-	const std::string& function_template_name= complex_name.components.front().name;
+	const auto& full_name= function_template_declaration.function_->name_;
+	const std::string& function_template_name= full_name.front();
 
-	if( complex_name.components.size() > 1u )
+	if( full_name.size() > 1u )
 		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), function_template_declaration.file_pos_ );
-	if( complex_name.components.front().have_template_parameters )
-		REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), function_template_declaration.file_pos_ );
 
 	if( function_template_declaration.function_->block_ == nullptr )
 		REPORT_ERROR( IncompleteMemberOfClassTemplate, names_scope.GetErrors(), function_template_declaration.file_pos_, function_template_name );
@@ -224,8 +222,8 @@ void CodeBuilder::ProcessTemplateArgs(
 	// Check and fill template parameters.
 	for( const Synt::TemplateBase::Arg& arg : args )
 	{
-		U_ASSERT( arg.name->components.size() == 1u );
-		const std::string& arg_name= arg.name->components.front().name;
+		U_ASSERT( std::get_if<std::string>( &arg.name->start_value ) != nullptr );
+		const std::string& arg_name= std::get<std::string>(arg.name->start_value);
 
 		// Check redefinition
 		for( const auto& prev_arg : template_parameters )
@@ -244,16 +242,11 @@ void CodeBuilder::ProcessTemplateArgs(
 			// If template parameter is variable.
 
 			// Resolve from outer space or from this template parameters.
-			const Value* const type_value= ResolveValue( file_pos, template_parameters_namespace, *arg.arg_type );
-			if( type_value == nullptr )
-			{
-				REPORT_ERROR( NameNotFound, names_scope.GetErrors(), file_pos, *arg.arg_type );
-				continue;
-			}
-			const Type* const type= type_value->GetTypeName();
+			const Value type_value= ResolveValue( file_pos, template_parameters_namespace, *global_function_context_, *arg.arg_type );
+			const Type* const type= type_value.GetTypeName();
 			if( type == nullptr )
 			{
-				REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), file_pos, arg.arg_type->components.back().name );
+				REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), file_pos, *arg.arg_type );
 				continue;
 			}
 
@@ -264,11 +257,12 @@ void CodeBuilder::ProcessTemplateArgs(
 			}
 
 			// If type is template parameter, set usage flag.
-			if( arg.arg_type->components.size() == 1u && !arg.arg_type->components.front().have_template_parameters )
+			const std::string* const arg_type_start= std::get_if<std::string>( &arg.arg_type->start_value );
+			if( arg_type_start != nullptr && arg.arg_type->tail == nullptr )
 			{
 				for( const TypeTemplate::TemplateParameter& template_parameter : template_parameters )
 				{
-					if( template_parameter.name == arg.arg_type->components.front().name )
+					if( template_parameter.name == *arg_type_start)
 					{
 						template_parameters_usage_flags[ size_t(&template_parameter - template_parameters.data()) ]= true;
 						break;
@@ -310,11 +304,12 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 	std::vector<bool>& template_parameters_usage_flags )
 {
 	// If signature parameter is template parameter, set usage flag.
-	if( signature_parameter.components.size() == 1u && !signature_parameter.components.front().have_template_parameters )
+	const std::string* const signature_parameter_start= std::get_if<std::string>( &signature_parameter.start_value );
+	if( signature_parameter_start != nullptr && signature_parameter.tail == nullptr )
 	{
 		for( const TypeTemplate::TemplateParameter& template_parameter : template_parameters )
 		{
-			if( template_parameter.name == signature_parameter.components.front().name )
+			if( template_parameter.name == *signature_parameter_start )
 			{
 				template_parameters_usage_flags[ size_t(&template_parameter - template_parameters.data()) ]= true;
 				break;
@@ -323,16 +318,28 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 	}
 
 	// Do recursive preresolve for subsequent deduction.
-	const Value* const start_value=
+	const Value start_value=
 		ResolveForTemplateSignatureParameter( file_pos, signature_parameter, names_scope );
-	if( start_value == nullptr )
+	if( start_value.GetTypeTemplatesSet() != nullptr )
 	{
-		REPORT_ERROR( NameNotFound, names_scope.GetErrors(), file_pos, signature_parameter );
-		return;
-	}
-	if( start_value->GetTypeTemplatesSet() != nullptr )
-	{
-		for( const Synt::Expression& template_parameter : signature_parameter.components.back().template_parameters )
+		const Synt::ComplexName2Component* name_component= signature_parameter.tail.get();
+		if( name_component == nullptr )
+		{
+			REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), file_pos, "TODO" );
+			return;
+		}
+
+		while( name_component->next != nullptr )
+			name_component= name_component->next.get();
+
+		const auto last_template_parameters= std::get_if< std::vector<Synt::Expression> >( &name_component->name_or_template_paramenters );
+		if( last_template_parameters == nullptr )
+		{
+			REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), file_pos, "TODO" );
+			return;
+		}
+
+		for( const Synt::Expression& template_parameter : *last_template_parameters )
 			PrepareTemplateSignatureParameter( template_parameter, names_scope, template_parameters, template_parameters_usage_flags );
 	}
 }
@@ -410,12 +417,12 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 	else U_ASSERT(false);
 }
 
-Value* CodeBuilder::ResolveForTemplateSignatureParameter(
+Value CodeBuilder::ResolveForTemplateSignatureParameter(
 	const FilePos& file_pos,
 	const Synt::ComplexName& signature_parameter,
 	NamesScope& names_scope )
 {
-	return ResolveValue( file_pos, names_scope, signature_parameter, ResolveMode::ForTemplateSignatureParameter );
+	return ResolveValue( file_pos, names_scope, *global_function_context_, signature_parameter, ResolveMode::ForTemplateSignatureParameter );
 }
 
 DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
@@ -430,11 +437,12 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 
 	// Look if signature argument refers to template argument.
 	size_t dependend_arg_index= ~0u;
-	if( signature_parameter.components.size() == 1u && !signature_parameter.components.front().have_template_parameters )
+	const std::string* const signature_parameter_start= std::get_if<std::string>( &signature_parameter.start_value );
+	if( signature_parameter_start != nullptr && signature_parameter.tail == nullptr )
 	{
 		for( const TypeTemplate::TemplateParameter& param : template_.template_parameters )
 		{
-			if( param.name == signature_parameter.components.front().name )
+			if( param.name == *signature_parameter_start )
 			{
 				dependend_arg_index= size_t(&param - template_.template_parameters.data());
 				break;
@@ -446,12 +454,10 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 	{
 		if( dependend_arg_index == ~0u )
 		{
-			const Value* const signature_parameter_value=
+			const Value signature_parameter_value=
 				ResolveForTemplateSignatureParameter( signature_parameter_file_pos, signature_parameter, names_scope );
-			if( signature_parameter_value == nullptr )
-				return DeducedTemplateParameter::Invalid();
 
-			if( const Variable* const named_variable= signature_parameter_value->GetVariable() )
+			if( const Variable* const named_variable= signature_parameter_value.GetVariable() )
 			{
 				if( named_variable->type == variable->type &&
 					TypeIsValidForTemplateVariableArgument( named_variable->type ) &&
@@ -544,18 +550,15 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 		return DeducedTemplateParameter::TemplateParameter();
 	}
 
-	const Value* const signature_parameter_value=
+	const Value signature_parameter_value=
 		ResolveForTemplateSignatureParameter( signature_parameter_file_pos, signature_parameter, names_scope );
-	if( signature_parameter_value == nullptr )
-		return DeducedTemplateParameter::Invalid();
-
-	if( const Type* const type= signature_parameter_value->GetTypeName() )
+	if( const Type* const type= signature_parameter_value.GetTypeName() )
 	{
 		if( *type == given_type )
 			return DeducedTemplateParameter::Type();
 		return DeducedTemplateParameter::Invalid();
 	}
-	else if( const TypeTemplatesSet* const inner_type_templates_set= signature_parameter_value->GetTypeTemplatesSet() )
+	else if( const TypeTemplatesSet* const inner_type_templates_set= signature_parameter_value.GetTypeTemplatesSet() )
 	{
 		const Class* const given_type_class= given_type.GetClassType();
 		if( given_type_class == nullptr )
@@ -576,20 +579,25 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 		if( inner_type_template == nullptr )
 			return DeducedTemplateParameter::Invalid();
 
-		const Synt::ComplexName::Component& name_component= signature_parameter.components.back();
-		if( !name_component.have_template_parameters )
+		const Synt::ComplexName2Component* name_component= signature_parameter.tail.get();
+		if( name_component == nullptr )
 			return DeducedTemplateParameter::Invalid();
-		if( name_component.template_parameters.size() < inner_type_template->first_optional_signature_argument )
+
+		while( name_component->next != nullptr )
+			name_component= name_component->next.get();
+
+		const auto template_parameters= std::get_if< std::vector<Synt::Expression> >( &name_component->name_or_template_paramenters );
+		if( template_parameters == nullptr || template_parameters->size() < inner_type_template->first_optional_signature_argument )
 			return DeducedTemplateParameter::Invalid();
 
 		DeducedTemplateParameter::Template result;
-		for( size_t i= 0u; i < name_component.template_parameters.size(); ++i)
+		for( size_t i= 0u; i < template_parameters->size(); ++i)
 		{
 			DeducedTemplateParameter deduced=
 				DeduceTemplateArguments(
 					template_,
 					given_type_class->base_template->signature_parameters[i],
-					name_component.template_parameters[i],
+					(*template_parameters)[i],
 					template_file_pos,
 					deducible_template_parameters,
 					names_scope );
@@ -833,7 +841,16 @@ Value* CodeBuilder::GenTemplateType(
 	NamesScope& arguments_names_scope )
 {
 	if( type_templates_set.type_templates.size() == 1u )
-		return GenTemplateType( file_pos, type_templates_set.type_templates.front(), template_arguments, arguments_names_scope, false ).type;
+	{
+		const auto res=
+			GenTemplateType( file_pos, type_templates_set.type_templates.front(), template_arguments, arguments_names_scope, false ).type;
+		if( res == nullptr )
+		{
+			REPORT_ERROR( TemplateParametersDeductionFailed, arguments_names_scope.GetErrors(), file_pos );
+			return nullptr;
+		}
+		return res;
+	}
 
 	std::vector<TemplateTypeGenerationResult> generated_types;
 	for( const TypeTemplatePtr& type_template : type_templates_set.type_templates )
@@ -850,6 +867,12 @@ Value* CodeBuilder::GenTemplateType(
 			generated_types.push_back( generated_type );
 			U_ASSERT(generated_type.deduced_template_parameters.size() >= template_arguments.size());
 		}
+	}
+
+	if( generated_types.empty() )
+	{
+		REPORT_ERROR( TemplateParametersDeductionFailed, arguments_names_scope.GetErrors(), file_pos );
+		return nullptr;
 	}
 
 	if( const TemplateTypeGenerationResult* const selected_template= SelectTemplateType( generated_types, template_arguments.size() ) )
@@ -1070,7 +1093,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 {
 	const FunctionTemplate& function_template= *function_template_ptr;
 	const Synt::Function& function_declaration= *function_template.syntax_element->function_;
-	const std::string& func_name= function_declaration.name_.components.back().name;
+	const std::string& func_name= function_declaration.name_.back();
 
 	NamesScope& template_names_scope= *function_template.parent_namespace;
 
@@ -1130,11 +1153,12 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 			if( const auto named_type_name= std::get_if<Synt::NamedTypeName>( &function_argument.type_ ) )
 			{
 				size_t dependend_arg_index= ~0u;
-				if( named_type_name->name.components.size() == 1u && !named_type_name->name.components.front().have_template_parameters )
+				const auto name_start= std::get_if<std::string>( &named_type_name->name.start_value );
+				if( name_start != nullptr && named_type_name->name.tail == nullptr )
 				{
 					for( const TypeTemplate::TemplateParameter& param : function_template.template_parameters )
 					{
-						if( param.name == named_type_name->name.components.front().name )
+						if( param.name == *name_start )
 						{
 							dependend_arg_index= size_t(&param - function_template.template_parameters.data());
 							break;
@@ -1145,14 +1169,9 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 				if( dependend_arg_index == ~0u )
 				{
 					// Not template parameter, must be type name or template.
-					const Value* const signature_parameter_value=
+					const Value signature_parameter_value=
 						ResolveForTemplateSignatureParameter( named_type_name->file_pos_, named_type_name->name, *template_parameters_namespace /*TODO - is this correct namespace? */ );
-					if( signature_parameter_value == nullptr )
-					{
-						deduction_failed= true;
-						continue;
-					}
-					if( const Type* const type= signature_parameter_value->GetTypeName() )
+					if( const Type* const type= signature_parameter_value.GetTypeName() )
 					{
 						if( *type == given_args[i].type || ReferenceIsConvertible( given_args[i].type, *type, errors_container, file_pos ) ||
 							( !expected_arg_is_mutalbe_reference && GetConversionConstructor( given_args[i].type, *type, errors_container, file_pos ) != nullptr ) )
@@ -1270,7 +1289,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 			function_variable,
 			function_template.base_class,
 			*template_parameters_namespace,
-			function_template.syntax_element->function_->name_.components.back().name,
+			function_template.syntax_element->function_->name_.back(),
 			function_template.syntax_element->function_->type_.arguments_,
 			function_template.syntax_element->function_->block_.get(),
 			function_template.syntax_element->function_->constructor_initialization_list_.get() );
@@ -1394,11 +1413,12 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 
 				// Check type.
 				size_t type_parameter_index= ~0u;
-				if( function_template_parameter.type_name->components.size() == 1 && !function_template_parameter.type_name->components.front().have_template_parameters )
+				const auto type_name= std::get_if<std::string>( &function_template_parameter.type_name->start_value );
+				if( type_name != nullptr && function_template_parameter.type_name->tail == nullptr )
 				{
 					for( size_t j= 0u; j < i; ++j )
 					{
-						if( function_template_parameter.type_name->components.front().name == function_template.template_parameters[j].name )
+						if( *type_name == function_template.template_parameters[j].name )
 						{
 							type_parameter_index= j;
 							break;
@@ -1414,14 +1434,10 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 				}
 				else
 				{
-					if( const Value* const type_value=
-							ResolveValue( function_template.file_pos, *function_template.parent_namespace, *function_template_parameter.type_name ) )
-					{
-						if( const Type* const expected_type= type_value->GetTypeName() )
-							ok= *expected_type == given_variable->type;
-						else
-							ok= false;
-					}
+					const Value type_value=
+						ResolveValue( function_template.file_pos, *function_template.parent_namespace, *global_function_context_, *function_template_parameter.type_name );
+					if( const Type* const expected_type= type_value.GetTypeName() )
+						ok= *expected_type == given_variable->type;
 					else
 						ok= false;
 				}
@@ -1463,7 +1479,7 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 
 	if( result.template_functions.empty() )
 	{
-		REPORT_ERROR( TemplateFunctionGenerationFailed, arguments_names_scope.GetErrors(), file_pos, function_templates.front()->syntax_element->function_->name_.components.back().name );
+		REPORT_ERROR( TemplateFunctionGenerationFailed, arguments_names_scope.GetErrors(), file_pos, "TODO - some template name" );
 		return nullptr;
 	}
 

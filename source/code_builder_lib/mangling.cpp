@@ -137,7 +137,8 @@ MangleGraphNode EncodeTemplateParameters( const std::vector<TemplateParameter>& 
 				is_signed= IsSignedInteger( enum_type->underlaying_type.fundamental_type );
 			else U_ASSERT(false);
 
-			U_ASSERT( variable->constexpr_value != nullptr );
+			if( variable->constexpr_value == nullptr )
+				continue; // May be in case of error.
 			const llvm::APInt param_value= variable->constexpr_value->getUniqueInteger();
 			if( is_signed )
 			{

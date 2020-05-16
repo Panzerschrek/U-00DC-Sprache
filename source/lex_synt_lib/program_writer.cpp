@@ -33,33 +33,52 @@ private:
 };
 
 // Prototypes start
-static void ElementWrite( const ProgramElements& elements, std::ostream& stream );
-static void ElementWrite( const EmptyVariant&, std::ostream& ){}
-static void ElementWrite( const TypeName& type_name, std::ostream& stream );
-static void ElementWrite( const Expression& expression, std::ostream& stream );
-static void ElementWrite( const ReferenceModifier& reference_modifier, std::ostream& stream );
-static void ElementWrite( const MutabilityModifier& mutability_modifier, std::ostream& stream );
-static void ElementWrite( const FunctionArgument& arg, std::ostream& stream );
-static void ElementWrite( const ClassElements& class_elements, std::ostream& stream );
+void ElementWrite( const ProgramElements& elements, std::ostream& stream );
+void ElementWrite( const EmptyVariant&, std::ostream& ){}
+void ElementWrite( const TypeName& type_name, std::ostream& stream );
+void ElementWrite( const Expression& expression, std::ostream& stream );
+void ElementWrite( const ReferenceModifier& reference_modifier, std::ostream& stream );
+void ElementWrite( const MutabilityModifier& mutability_modifier, std::ostream& stream );
+void ElementWrite( const FunctionArgument& arg, std::ostream& stream );
+void ElementWrite( const ClassElements& class_elements, std::ostream& stream );
+void ElementWrite( const TypeofTypeName& typeof_type_name, std::ostream& stream );
 
 // Prototypes end
 
-static void ElementWrite( const ComplexName& complex_name, std::ostream& stream )
+void ElementWrite( const ComplexName& complex_name, std::ostream& stream )
 {
-	for( const ComplexName::Component& component : complex_name.components )
+	if( std::get_if<EmptyVariant>(&complex_name.start_value) != nullptr )
+		stream << "::";
+	else if( const auto typeof_type_name= std::get_if<TypeofTypeName>(&complex_name.start_value) )
+		ElementWrite( *typeof_type_name, stream );
+	else if(const auto simple_name= std::get_if<std::string>(&complex_name.start_value) )
+		stream << *simple_name;
+
+	auto tail= complex_name.tail.get();
+	while(tail != nullptr)
 	{
-		stream << component.name;
-		if( component.have_template_parameters )
+		stream << "::";
+		if( const auto name= std::get_if<std::string>( &tail->name_or_template_paramenters ) )
+			stream << *name;
+		else if( const auto template_prameters= std::get_if< std::vector<Expression> >( &tail->name_or_template_paramenters ) )
 		{
-			stream << "</";
-			stream << "/>";
+			stream << "</ ";
+			for( const Expression& expr : *template_prameters )
+			{
+				ElementWrite( expr, stream );
+				if( &expr != &template_prameters->back() )
+					stream << ", ";
+			}
+			stream << " />";
 		}
-		if( &component != &complex_name.components.back() )
-			stream << "::";
+		else
+			U_ASSERT( false );
+
+		tail= tail->next.get();
 	}
 }
 
-static void ElementWrite( const ArrayTypeName& array_type_name, std::ostream& stream )
+void ElementWrite( const ArrayTypeName& array_type_name, std::ostream& stream )
 {
 	stream << "[ ";
 	ElementWrite( *array_type_name.element_type, stream );
@@ -68,7 +87,7 @@ static void ElementWrite( const ArrayTypeName& array_type_name, std::ostream& st
 	stream << " ]";
 }
 
-static void ElementWrite( const TupleType& tuple_type_name, std::ostream& stream )
+void ElementWrite( const TupleType& tuple_type_name, std::ostream& stream )
 {
 	stream << Keyword( Keywords::tup_ ) << "( ";
 	for( const TypeName& element_type : tuple_type_name.element_types_ )
@@ -80,19 +99,19 @@ static void ElementWrite( const TupleType& tuple_type_name, std::ostream& stream
 	stream << " )";
 }
 
-static void ElementWrite( const TypeofTypeName& typeof_type_name, std::ostream& stream )
+void ElementWrite( const TypeofTypeName& typeof_type_name, std::ostream& stream )
 {
 	stream << Keyword( Keywords::typeof_ ) << "( ";
 	ElementWrite( *typeof_type_name.expression, stream );
 	stream << " )";
 }
 
-static void ElementWrite( const NamedTypeName& named_type_name, std::ostream& stream )
+void ElementWrite( const NamedTypeName& named_type_name, std::ostream& stream )
 {
 	ElementWrite( named_type_name.name, stream );
 }
 
-static void ElementWriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& stream )
+void ElementWriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& stream )
 {
 	if( function_type.unsafe_ )
 		stream << " " << Keyword( Keywords::unsafe_ );
@@ -129,7 +148,7 @@ static void ElementWriteFunctionTypeEnding( const FunctionType& function_type, s
 	}
 }
 
-static void ElementWrite( const FunctionType& function_type_name, std::ostream& stream )
+void ElementWrite( const FunctionType& function_type_name, std::ostream& stream )
 {
 	stream << "( " << Keyword( Keywords::fn_ ) << "( ";
 	for( const FunctionArgument& arg : function_type_name.arguments_ )
@@ -143,7 +162,7 @@ static void ElementWrite( const FunctionType& function_type_name, std::ostream& 
 	stream << " )";
 }
 
-static void ElementWrite( const FunctionArgument& arg, std::ostream& stream )
+void ElementWrite( const FunctionArgument& arg, std::ostream& stream )
 {
 	ElementWrite( arg.type_, stream );
 	ElementWrite( arg.reference_modifier_, stream );
@@ -177,12 +196,12 @@ static void ElementWrite( const FunctionArgument& arg, std::ostream& stream )
 	}
 }
 
-static void ElementWrite( const TypeName& type_name, std::ostream& stream )
+void ElementWrite( const TypeName& type_name, std::ostream& stream )
 {
 	std::visit( UniversalVisitor(stream), type_name );
 }
 
-static void ElementWrite( const Expression& expression, std::ostream& stream )
+void ElementWrite( const Expression& expression, std::ostream& stream )
 {
 	class Visitor final
 	{
@@ -460,7 +479,7 @@ static void ElementWrite( const Expression& expression, std::ostream& stream )
 	}
 }
 
-static void ElementWrite( const Initializer& initializer, std::ostream& stream )
+void ElementWrite( const Initializer& initializer, std::ostream& stream )
 {
 	if( const auto constructor_initializer= std::get_if<ConstructorInitializer>( &initializer ) )
 	{
@@ -487,13 +506,13 @@ static void ElementWrite( const Initializer& initializer, std::ostream& stream )
 	}
 }
 
-static void ElementWrite( const ReferenceModifier& reference_modifier, std::ostream& stream )
+void ElementWrite( const ReferenceModifier& reference_modifier, std::ostream& stream )
 {
 	if( reference_modifier == ReferenceModifier::Reference )
 		stream << "&";
 }
 
-static void ElementWrite( const MutabilityModifier& mutability_modifier, std::ostream& stream )
+void ElementWrite( const MutabilityModifier& mutability_modifier, std::ostream& stream )
 {
 	switch(mutability_modifier)
 	{
@@ -511,7 +530,7 @@ static void ElementWrite( const MutabilityModifier& mutability_modifier, std::os
 	}
 }
 
-static void ElementWrite( const Function& function, std::ostream& stream )
+void ElementWrite( const Function& function, std::ostream& stream )
 {
 	if( function.overloaded_operator_ == OverloadedOperator::None )
 		stream << Keyword( Keywords::fn_ );
@@ -549,7 +568,12 @@ static void ElementWrite( const Function& function, std::ostream& stream )
 		stream << " ) ";
 	}
 
-	ElementWrite( function.name_, stream );
+	for( const std::string& component : function.name_ )
+	{
+		stream << component;
+		if( &component != &function.name_.back() )
+			stream << "::";
+	}
 
 	if( function.type_.arguments_.empty() )
 		stream << "()";
@@ -585,7 +609,7 @@ static void ElementWrite( const Function& function, std::ostream& stream )
 	{} // TODO
 }
 
-static void ElementWrite( const Class& class_, std::ostream& stream )
+void ElementWrite( const Class& class_, std::ostream& stream )
 {
 	stream << Keyword(class_.kind_attribute_ == ClassKindAttribute::Struct ? Keywords::struct_ : Keywords::class_ );
 	stream << " " << class_.name_ << " ";
@@ -635,14 +659,14 @@ static void ElementWrite( const Class& class_, std::ostream& stream )
 	}
 }
 
-static void ElementWrite( const Namespace& namespace_, std::ostream& stream )
+void ElementWrite( const Namespace& namespace_, std::ostream& stream )
 {
 	stream << Keyword( Keywords::namespace_ ) << " " << namespace_.name_ << "\n{\n\n";
 	ElementWrite( namespace_.elements_, stream );
 	stream << "\n}\n";
 }
 
-static void ElementWrite( const VariablesDeclaration& variables_declaration, std::ostream& stream )
+void ElementWrite( const VariablesDeclaration& variables_declaration, std::ostream& stream )
 {
 	stream << Keyword( Keywords::var_ ) << " ";
 	ElementWrite( variables_declaration.type, stream );
@@ -664,7 +688,7 @@ static void ElementWrite( const VariablesDeclaration& variables_declaration, std
 	stream << ";\n";
 }
 
-static void ElementWrite( const AutoVariableDeclaration& auto_variable_declaration, std::ostream& stream )
+void ElementWrite( const AutoVariableDeclaration& auto_variable_declaration, std::ostream& stream )
 {
 	stream << Keyword( Keywords::auto_ );
 	ElementWrite( auto_variable_declaration.reference_modifier, stream );
@@ -679,7 +703,7 @@ static void ElementWrite( const AutoVariableDeclaration& auto_variable_declarati
 	stream << ";\n";
 }
 
-static void ElementWrite( const StaticAssert& static_assert_, std::ostream& stream )
+void ElementWrite( const StaticAssert& static_assert_, std::ostream& stream )
 {
 	U_UNUSED(static_assert_);
 	U_UNUSED(stream);
@@ -687,28 +711,31 @@ static void ElementWrite( const StaticAssert& static_assert_, std::ostream& stre
 	// Not implemented yet.
 }
 
-static void ElementWrite( const Enum& enum_, std::ostream& stream )
+void ElementWrite( const Enum& enum_, std::ostream& stream )
 {
 	stream << Keyword( Keywords::enum_ ) << " " << enum_.name;
+	/*
 	if( !enum_.underlaying_type_name.components.empty() )
 	{
 		stream << " : ";
 		ElementWrite( enum_.underlaying_type_name, stream );
 	}
+	*/
+	// TODO
 	stream << "\n{\n";
 	for( const Enum::Member& enum_member : enum_.members )
 		stream << "\t" << enum_member.name << ",\n";
 	stream << "}\n";
 }
 
-static void ElementWrite( const Typedef& typedef_, std::ostream& stream )
+void ElementWrite( const Typedef& typedef_, std::ostream& stream )
 {
 	stream << Keyword( Keywords::type_ ) << " " << typedef_.name << " = ";
 	ElementWrite( typedef_.value, stream );
 	stream << ";\n";
 }
 
-static void ElementWrite( const TypeTemplateBase& type_template, std::ostream& stream )
+void ElementWrite( const TypeTemplateBase& type_template, std::ostream& stream )
 {
 	U_UNUSED(type_template);
 	U_UNUSED(stream);
@@ -716,7 +743,7 @@ static void ElementWrite( const TypeTemplateBase& type_template, std::ostream& s
 	// Not implemented yet.
 }
 
-static void ElementWrite( const FunctionTemplate& function_template, std::ostream& stream )
+void ElementWrite( const FunctionTemplate& function_template, std::ostream& stream )
 {
 	U_UNUSED(function_template);
 	U_UNUSED(stream);
@@ -724,7 +751,7 @@ static void ElementWrite( const FunctionTemplate& function_template, std::ostrea
 	// Not implemented yet.
 }
 
-static void ElementWrite( const ClassField& class_field, std::ostream& stream )
+void ElementWrite( const ClassField& class_field, std::ostream& stream )
 {
 	stream << "\t";
 	ElementWrite( class_field.type, stream );
@@ -736,7 +763,7 @@ static void ElementWrite( const ClassField& class_field, std::ostream& stream )
 	stream << class_field.name << ";\n";
 }
 
-static void ElementWrite( const ClassVisibilityLabel& visibility_label, std::ostream& stream )
+void ElementWrite( const ClassVisibilityLabel& visibility_label, std::ostream& stream )
 {
 	switch( visibility_label.visibility_ )
 	{
@@ -752,18 +779,18 @@ static void ElementWrite( const ClassVisibilityLabel& visibility_label, std::ost
 	};
 }
 
-static void ElementWrite( const ClassElements& class_elements, std::ostream& stream )
+void ElementWrite( const ClassElements& class_elements, std::ostream& stream )
 {
 	for( const ClassElement& element : class_elements )
 		std::visit( UniversalVisitor( stream ), element );
 }
 
-static void ElementWrite( const ProgramElement& element, std::ostream& stream )
+void ElementWrite( const ProgramElement& element, std::ostream& stream )
 {
 	std::visit( UniversalVisitor(stream), element );
 }
 
-static void ElementWrite( const ProgramElements& elements, std::ostream& stream )
+void ElementWrite( const ProgramElements& elements, std::ostream& stream )
 {
 	for( const ProgramElement& element : elements )
 		ElementWrite( element, stream );

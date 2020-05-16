@@ -97,10 +97,10 @@ void CodeBuilder::NamesScopeFill(
 {
 	const auto& function_declaration= *function_declaration_ptr;
 	
-	if( function_declaration.name_.components.size() != 1u )
+	if( function_declaration.name_.size() != 1u )
 		return; // process out of line functions later.
 
-	const std::string& func_name= function_declaration.name_.components.back().name;
+	const std::string& func_name= function_declaration.name_.back();
 	if( IsKeyword( func_name ) && func_name != Keywords::constructor_ && func_name != Keywords::destructor_ )
 		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), function_declaration.file_pos_ );
 	if( NameShadowsTemplateArgument( func_name, names_scope ) )
@@ -138,13 +138,11 @@ void CodeBuilder::NamesScopeFill(
 	const ClassProxyPtr& base_class,
 	const ClassMemberVisibility visibility )
 {
-	const Synt::ComplexName& complex_name = function_template_declaration.function_->name_;
-	const std::string& function_template_name= complex_name.components.front().name;
+	const auto& full_name = function_template_declaration.function_->name_;
+	const std::string& function_template_name= full_name.front();
 
-	if( complex_name.components.size() > 1u )
+	if( full_name.size() > 1u )
 		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), function_template_declaration.file_pos_ );
-	if( complex_name.components.front().have_template_parameters )
-		REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), function_template_declaration.file_pos_ );
 	if( IsKeyword( function_template_name ) && function_template_name != Keywords::constructor_ && function_template_name != Keywords::destructor_ )
 		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), function_template_declaration.file_pos_ );
 	if( NameShadowsTemplateArgument( function_template_name, names_scope ) )
@@ -416,16 +414,52 @@ void CodeBuilder::NamesScopeFillOutOfLineElements(
 		if( const auto func_ptr= std::get_if<Synt::FunctionPtr>( &program_element ) )
 		{
 			const Synt::Function& func= **func_ptr;
-			if( func.name_.components.size() != 1u )
+			if( func.name_.size() <= 1u )
+				continue;
+
+			NamesScope* src_space= &names_scope;
+			size_t component_index= 0u;
+			if( func.name_.front().empty() )
 			{
-				Value* const func_value= ResolveValue( func.file_pos_, names_scope, func.name_, ResolveMode::ForDeclaration );
-				if( func_value == nullptr || func_value->GetFunctionsSet() == nullptr )
-				{
-					REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), func.file_pos_ );
-					continue;
-				}
-				func_value->GetFunctionsSet()->out_of_line_syntax_elements.push_back(&func);
+				U_ASSERT( func.name_.size() >= 2u );
+				src_space= src_space->GetRoot();
+				++component_index;
 			}
+
+			Value* prev_value = nullptr;
+			while( prev_value == nullptr && src_space != nullptr )
+			{
+				prev_value= src_space->GetThisScopeValue( func.name_[component_index] );
+				src_space= src_space->GetParent();
+			}
+
+			if( prev_value == nullptr )
+			{
+				REPORT_ERROR( NameNotFound, names_scope.GetErrors(), func.file_pos_, func.name_.front() );
+				continue;
+			}
+
+			for( size_t i= component_index + 1u; prev_value != nullptr && i < func.name_.size(); ++i )
+			{
+				if( const auto namespace_= prev_value->GetNamespace() )
+					prev_value= namespace_->GetThisScopeValue( func.name_[i] );
+				else if( const auto type= prev_value->GetTypeName() )
+				{
+					if( const auto class_= type->GetClassType() )
+						prev_value= class_->members.GetThisScopeValue( func.name_[i] );
+				}
+				else
+				{
+					// TODO - error
+				}
+			}
+
+			if( prev_value == nullptr || prev_value->GetFunctionsSet() == nullptr )
+			{
+				REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), func.file_pos_ );
+				continue;
+			}
+			prev_value->GetFunctionsSet()->out_of_line_syntax_elements.push_back(&func);
 		}
 		else if( const auto namespace_ptr= std::get_if<Synt::NamespacePtr>( &program_element ) )
 		{

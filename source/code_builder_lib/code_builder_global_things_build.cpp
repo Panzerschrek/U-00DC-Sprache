@@ -254,12 +254,12 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 		if( !functions_set.syntax_elements.empty() )
 		{
 			functions_set_file_pos= functions_set.syntax_elements.front()->file_pos_;
-			functions_set_name= functions_set.syntax_elements.front()->name_.components.back().name;
+			functions_set_name= functions_set.syntax_elements.front()->name_.back();
 		}
 		else if( !functions_set.template_syntax_elements.empty() )
 		{
 			functions_set_file_pos= functions_set.template_syntax_elements.front()->file_pos_;
-			functions_set_name= functions_set.template_syntax_elements.front()->function_->name_.components.back().name;
+			functions_set_name= functions_set.template_syntax_elements.front()->function_->name_.back();
 		}
 		DETECT_GLOBALS_LOOP( &functions_set, functions_set_name, functions_set_file_pos, TypeCompleteness::Complete );
 
@@ -280,7 +280,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 						function_variable,
 						functions_set.base_class,
 						names_scope,
-						function_variable.syntax_element->name_.components.back().name,
+						functions_set_name,
 						function_variable.syntax_element->type_.arguments_,
 						function_variable.syntax_element->block_.get(),
 						function_variable.syntax_element->constructor_initialization_list_.get() );
@@ -298,7 +298,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 					function_variable,
 					functions_set.base_class,
 					names_scope,
-					function_variable.syntax_element->name_.components.back().name,
+					functions_set_name,
 					function_variable.syntax_element->type_.arguments_,
 					function_variable.syntax_element->block_.get(),
 					function_variable.syntax_element->constructor_initialization_list_.get() );
@@ -327,7 +327,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 					function_variable,
 					functions_set.base_class,
 					names_scope,
-					function_variable.syntax_element->name_.components.back().name,
+					function_variable.syntax_element->name_.back(),
 					function_variable.syntax_element->type_.arguments_,
 					function_variable.syntax_element->block_.get(),
 					function_variable.syntax_element->constructor_initialization_list_.get() );
@@ -346,7 +346,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 					function_variable,
 					functions_set.base_class,
 					names_scope,
-					function_variable.syntax_element->name_.components.back().name,
+					function_variable.syntax_element->name_.back(),
 					function_variable.syntax_element->type_.arguments_,
 					function_variable.syntax_element->block_.get(),
 					function_variable.syntax_element->constructor_initialization_list_.get() );
@@ -392,17 +392,12 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 		NamesScope& class_parent_namespace= *the_class.members.GetParent();
 		for( const Synt::ComplexName& parent : class_declaration.parents_ )
 		{
-			const Value* const parent_value= ResolveValue( class_declaration.file_pos_, class_parent_namespace, parent );
-			if( parent_value == nullptr )
-			{
-				REPORT_ERROR( NameNotFound, class_parent_namespace.GetErrors(), class_declaration.file_pos_, parent );
-				continue;
-			}
+			const Value parent_value= ResolveValue( class_declaration.file_pos_, class_parent_namespace, *global_function_context_, parent );
 
-			const Type* const type_name= parent_value->GetTypeName();
+			const Type* const type_name= parent_value.GetTypeName();
 			if( type_name == nullptr )
 			{
-				REPORT_ERROR( NameIsNotTypeName, class_parent_namespace.GetErrors(), class_declaration.file_pos_, parent.components.back().name );
+				REPORT_ERROR( NameIsNotTypeName, class_parent_namespace.GetErrors(), class_declaration.file_pos_, type_name->ToString() );
 				continue;
 			}
 
@@ -898,27 +893,22 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_, TypeCompleteness co
 	const Synt::Enum& enum_decl= *enum_->syntax_element;
 	NamesScope& names_scope= *enum_->members.GetParent();
 
-	if( !enum_decl.underlaying_type_name.components.empty() )
+	if( !( std::get_if<Synt::EmptyVariant>( &enum_decl.underlaying_type_name.start_value ) != nullptr && enum_decl.underlaying_type_name.tail == nullptr ) )
 	{
-		const Value* const type_value= ResolveValue( enum_decl.file_pos_, names_scope, enum_decl.underlaying_type_name );
-		if( type_value == nullptr )
-			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), enum_decl.file_pos_, enum_decl.underlaying_type_name );
+		const Value type_value= ResolveValue( enum_decl.file_pos_, names_scope, *global_function_context_, enum_decl.underlaying_type_name );
+		const Type* const type= type_value.GetTypeName();
+		if( type == nullptr )
+			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), enum_decl.file_pos_, enum_decl.underlaying_type_name );
 		else
 		{
-			const Type* const type= type_value->GetTypeName();
-			if( type == nullptr )
-				REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), enum_decl.file_pos_, enum_decl.underlaying_type_name.components.back().name );
-			else
+			const FundamentalType* const fundamental_type= type->GetFundamentalType();
+			if( fundamental_type == nullptr || !IsInteger( fundamental_type->fundamental_type ) )
 			{
-				const FundamentalType* const fundamental_type= type->GetFundamentalType();
-				if( fundamental_type == nullptr || !IsInteger( fundamental_type->fundamental_type ) )
-				{
-					// SPRACHE_TODO - maybe allow inheritance of enums?
-					REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), enum_decl.file_pos_, "any integer type", type );
-				}
-				else
-					enum_->underlaying_type= *fundamental_type;
+				// SPRACHE_TODO - maybe allow inheritance of enums?
+				REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), enum_decl.file_pos_, "any integer type", type );
 			}
+			else
+				enum_->underlaying_type= *fundamental_type;
 		}
 	}
 

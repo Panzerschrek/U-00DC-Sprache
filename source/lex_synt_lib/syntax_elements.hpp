@@ -217,24 +217,32 @@ enum class ReferenceModifier : uint8_t
 	// SPRACE_TODO - add "move" references here
 };
 
-struct ComplexName final
+struct TypeofTypeName final : public SyntaxElementBase
 {
-	// A
-	// A::b
-	// TheClass::Method
-	// ::Absolute::Name
-	// ::C_Function
-	// std::vector</i32/>
-	// std::map</f32, T/>::value_type
+public:
+	explicit TypeofTypeName( const FilePos& file_pos );
 
-	// If first component name is empty, name starts with "::".
-	struct Component
-	{
-		std::string name;
-		std::vector<Expression> template_parameters;
-		bool have_template_parameters= false;
-	};
-	std::vector<Component> components;
+	std::unique_ptr<Expression> expression;
+};
+
+struct ComplexName2Component
+{
+	std::variant<
+		std::string,
+		std::vector<Expression>
+		> name_or_template_paramenters;
+	std::unique_ptr<ComplexName2Component> next;
+};
+
+struct ComplexName
+{
+	std::variant<
+		EmptyVariant, // ::
+		TypeofTypeName, // typeof(x)
+		std::string // name
+		> start_value;
+
+	std::unique_ptr<ComplexName2Component> tail;
 };
 
 struct ArrayTypeName final : public SyntaxElementBase
@@ -253,14 +261,6 @@ public:
 
 public:
 	std::vector<TypeName> element_types_;
-};
-
-struct TypeofTypeName final : public SyntaxElementBase
-{
-public:
-	explicit TypeofTypeName( const FilePos& file_pos );
-
-	std::unique_ptr<Expression> expression;
 };
 
 struct NamedTypeName final : public SyntaxElementBase
@@ -776,7 +776,7 @@ public:
 		BodyGenerationDisabled,
 	};
 
-	ComplexName name_;
+	std::vector<std::string> name_; // A, A::B, A::B::C::D
 	Expression condition_;
 	FunctionType type_;
 	std::unique_ptr<StructNamedInitializer> constructor_initialization_list_;

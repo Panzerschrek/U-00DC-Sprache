@@ -277,12 +277,7 @@ U_TEST( TemplateParametersDeductionFailed_Test0 )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 4u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test1 )
@@ -300,12 +295,7 @@ U_TEST( TemplateParametersDeductionFailed_Test1 )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 8u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 8u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test2 )
@@ -319,16 +309,11 @@ U_TEST( TemplateParametersDeductionFailed_Test2 )
 		}
 
 		struct X{}
-		fn Foo( Box</ X /> &imut b ) {}  // Template requires N::X, but ::X given.
+		fn Foo( N::Box</ X /> &imut b ) {}  // Template requires N::X, but ::X given.
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 9u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 9u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test3 )
@@ -345,12 +330,7 @@ U_TEST( TemplateParametersDeductionFailed_Test3 )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 8u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 8u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test4 )
@@ -367,12 +347,7 @@ U_TEST( TemplateParametersDeductionFailed_Test4 )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 8u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 8u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test5 )
@@ -388,12 +363,7 @@ U_TEST( TemplateParametersDeductionFailed_Test5 )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 7u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 7u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test6 )
@@ -409,12 +379,7 @@ U_TEST( TemplateParametersDeductionFailed_Test6 )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 7u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 7u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test7 )
@@ -428,12 +393,7 @@ U_TEST( TemplateParametersDeductionFailed_Test7 )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 5u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test8 )
@@ -449,12 +409,7 @@ U_TEST( TemplateParametersDeductionFailed_Test8 )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 7u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 7u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test9 )
@@ -473,7 +428,7 @@ U_TEST( TemplateParametersDeductionFailed_Test9 )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 10u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 10u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test10 )
@@ -490,12 +445,7 @@ U_TEST( TemplateParametersDeductionFailed_Test10 )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 7u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 7u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test11 )
@@ -523,12 +473,7 @@ U_TEST( TemplateParametersDeductionFailed_Test11 )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 18u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 18u ) );
 }
 
 U_TEST( ExpectedConstantExpression_InTemplateSignatureArgument_Test0 )

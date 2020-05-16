@@ -117,12 +117,18 @@ std::string PreprocessArg( const CodeBuilderPrivate::Type& type )
 std::string PreprocessArg( const Synt::ComplexName& name )
 {
 	std::string str;
+	/*
 	for( const Synt::ComplexName::Component& component : name.components )
 	{
 		str+= component.name;
 		if( &component != &name.components.back() )
 			str+= "::";
 	}
+	*/
+
+	// TODO
+	(void)name;
+
 	return str;
 }
 
