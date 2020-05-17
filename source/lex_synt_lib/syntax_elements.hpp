@@ -95,7 +95,6 @@ using NamespacePtr= std::unique_ptr<Namespace>;
 using TypeName= std::variant<
 	EmptyVariant,
 	ArrayTypeName,
-	TypeofTypeName,
 	NamedTypeName,
 	FunctionTypePtr,
 	TupleType >;
