@@ -218,9 +218,8 @@ private:
 	TemplateTypeGenerationResult GenTemplateType(
 		const FilePos& file_pos,
 		const TypeTemplatePtr& type_template_ptr,
-		const std::vector<Synt::Expression>& template_arguments,
+		const std::vector<Value>& template_arguments,
 		NamesScope& arguments_names_scope,
-		FunctionContext& function_context,
 		bool skip_type_generation );
 
 	const FunctionVariable* GenTemplateFunction(

@@ -818,15 +818,19 @@ Value* CodeBuilder::GenTemplateType(
 	NamesScope& arguments_names_scope,
 	FunctionContext& function_context )
 {
+	std::vector<Value> arguments_calculated;
+	arguments_calculated.reserve( template_arguments.size() );
+	for( const Synt::Expression& expr : template_arguments )
+		arguments_calculated.push_back( BuildExpressionCode( expr, arguments_names_scope, function_context ) );
+
 	if( type_templates_set.type_templates.size() == 1u )
 	{
 		const auto res=
 			GenTemplateType(
 				file_pos,
 				type_templates_set.type_templates.front(),
-				template_arguments,
+				arguments_calculated,
 				arguments_names_scope,
-				function_context,
 				false ).type;
 		if( res == nullptr )
 		{
@@ -843,9 +847,8 @@ Value* CodeBuilder::GenTemplateType(
 			GenTemplateType(
 				file_pos,
 				type_template,
-				template_arguments,
+				arguments_calculated,
 				arguments_names_scope,
-				function_context,
 				true );
 		if( generated_type.type_template != nullptr )
 		{
@@ -865,9 +868,8 @@ Value* CodeBuilder::GenTemplateType(
 			GenTemplateType(
 				file_pos,
 				selected_template->type_template,
-				template_arguments,
+				arguments_calculated,
 				arguments_names_scope,
-				function_context,
 				false ).type;
 	else
 	{
@@ -879,9 +881,8 @@ Value* CodeBuilder::GenTemplateType(
 CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	const FilePos& file_pos,
 	const TypeTemplatePtr& type_template_ptr,
-	const std::vector<Synt::Expression>& template_arguments,
+	const std::vector<Value>& template_arguments,
 	NamesScope& arguments_names_scope,
-	FunctionContext& function_context,
 	const bool skip_type_generation )
 {
 	// This method does not generate some errors, because instantiation may fail
@@ -908,7 +909,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	{
 		Value value;
 		if( i < template_arguments.size() )
-			value= BuildExpressionCode( template_arguments[i], arguments_names_scope, function_context );
+			value= template_arguments[i];
 		else
 			value= BuildExpressionCode( *type_template.default_signature_arguments[i], *template_parameters_namespace, *global_function_context_ );
 
