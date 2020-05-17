@@ -1293,7 +1293,6 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 	U_ASSERT( !function_templates.empty() );
 
 	std::vector<TemplateParameter> template_parameters;
-	bool something_is_wrong= false;
 	for( const Synt::Expression& expr : template_arguments )
 	{
 		const Value value= BuildExpressionCode( expr, arguments_names_scope, function_context );
@@ -1309,14 +1308,11 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 				template_parameters.push_back( *variable );
 		}
 		else
-		{
 			REPORT_ERROR( InvalidValueAsTemplateArgument, arguments_names_scope.GetErrors(), file_pos, value.GetKindName() );
-			something_is_wrong= true;
-		}
 
 	} // for given template arguments.
 
-	if( something_is_wrong )
+	if( template_parameters.size() != template_arguments.size() )
 		return nullptr;
 
 	// We needs unique name here, so use for it address of function templates set and template parameters.
