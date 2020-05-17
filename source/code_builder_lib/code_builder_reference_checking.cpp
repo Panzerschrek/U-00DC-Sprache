@@ -233,11 +233,9 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	Function& function_type,
 	const ClassProxyPtr& base_class )
 {
-	const bool first_arg_is_implicit_this=
-		( func.name_.components.back().name == Keywords::destructor_ ) ||
-		( func.name_.components.back().name == Keywords::constructor_ && ( func.type_.arguments_.empty() || func.type_.arguments_.front().name_ != Keywords::this_ ) );
+	const bool first_arg_is_implicit_this= false; // Now syntax analyzer always adds "this".
 
-	if( func.name_.components.back().name == Keywords::constructor_ && IsCopyConstructor( function_type, base_class ) )
+	if( func.name_.back() == Keywords::constructor_ && IsCopyConstructor( function_type, base_class ) )
 	{
 		if( !func.type_.referecnces_pollution_list_.empty() )
 			REPORT_ERROR( ExplicitReferencePollutionForCopyConstructor, errors_container, func.file_pos_ );
@@ -254,7 +252,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 			function_type.references_pollution.insert(ref_pollution);
 		}
 	}
-	else if( func.name_.components.back().name == OverloadedOperatorToString( OverloadedOperator::Assign ) && IsCopyAssignmentOperator( function_type, base_class ) )
+	else if( func.name_.back() == OverloadedOperatorToString( OverloadedOperator::Assign ) && IsCopyAssignmentOperator( function_type, base_class ) )
 	{
 		if( !func.type_.referecnces_pollution_list_.empty() )
 			REPORT_ERROR( ExplicitReferencePollutionForCopyAssignmentOperator, errors_container, func.file_pos_ );

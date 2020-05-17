@@ -340,8 +340,7 @@ Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_de
 			};
 
 			Synt::NamedTypeName named_type_name(g_dummy_file_pos);
-			named_type_name.name.components.emplace_back();
-			named_type_name.name.components.back().name= std::move(int_name);
+			named_type_name.name.start_value= int_name;
 
 			Synt::ArrayTypeName array_type( g_dummy_file_pos );
 			array_type.element_type= std::make_unique<Synt::TypeName>( std::move(named_type_name) );
@@ -377,8 +376,7 @@ Synt::FunctionPtr CppAstConsumer::ProcessFunction( const clang::FunctionDecl& fu
 {
 	auto func= std::make_unique<Synt::Function>(g_dummy_file_pos);
 
-	func->name_.components.emplace_back();
-	func->name_.components.back().name= TranslateIdentifier( func_decl.getName() );
+	func->name_.push_back( TranslateIdentifier( func_decl.getName() ) );
 	func->no_mangle_= externc;
 	func->type_.unsafe_= true; // All C/C++ functions is unsafe.
 
@@ -525,15 +523,13 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 	if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>(&in_type) )
 	{
 		Synt::NamedTypeName named_type(g_dummy_file_pos);
-		named_type.name.components.emplace_back();
-		named_type.name.components.back().name= GetUFundamentalType( *built_in_type );
+		named_type.name.start_value= GetUFundamentalType( *built_in_type );
 		return std::move(named_type);
 	}
 	else if( const auto record_type= llvm::dyn_cast<clang::RecordType>(&in_type) )
 	{
 		Synt::NamedTypeName named_type(g_dummy_file_pos);
-		named_type.name.components.emplace_back();
-		named_type.name.components.back().name= TranslateRecordType( *record_type );
+		named_type.name.start_value= TranslateRecordType( *record_type );
 		return std::move(named_type);
 	}
 	else if( const auto typedef_type= llvm::dyn_cast<clang::TypedefType>(&in_type) )
@@ -657,9 +653,7 @@ std::string CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& in_ty
 Synt::NamedTypeName CppAstConsumer::TranslateNamedType( const std::string& cpp_type_name )
 {
 	Synt::NamedTypeName named_type(g_dummy_file_pos);
-	named_type.name.components.emplace_back();
-	named_type.name.components.back().name= TranslateIdentifier( cpp_type_name );
-
+	named_type.name.start_value= TranslateIdentifier( cpp_type_name );
 	return named_type;
 }
 

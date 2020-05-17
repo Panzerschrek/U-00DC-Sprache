@@ -1662,30 +1662,6 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 
 		return type_name;
 	}
-	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::typeof_ )
-	{
-		NextLexem();
-
-		TypeofTypeName typeof_type_name( it_->file_pos );
-
-		if( it_->type != Lexem::Type::BracketLeft )
-		{
-			PushErrorMessage();
-			return std::move(typeof_type_name);
-		}
-		NextLexem();
-
-		typeof_type_name.expression= std::make_unique<Expression>( ParseExpression() );
-
-		if( it_->type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-			return std::move(typeof_type_name);
-		}
-		NextLexem();
-
-		return std::move(typeof_type_name);
-	}
 	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::tup_ )
 	{
 		NextLexem();
@@ -1781,6 +1757,7 @@ std::vector<Expression> SyntaxAnalyzer::ParseTemplateParameters()
 ComplexName SyntaxAnalyzer::ParseComplexName()
 {
 	ComplexName complex_name;
+	std::unique_ptr<ComplexName::Component>* component= &complex_name.tail;
 
 	if( !( it_->type == Lexem::Type::Identifier || it_->type == Lexem::Type::Scope ) )
 	{
@@ -1790,33 +1767,72 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 
 	if( it_->type == Lexem::Type::Scope )
 	{
-		complex_name.components.emplace_back();
+		complex_name.start_value= EmptyVariant();
+		if( std::next(it_) < it_end_ && std::next(it_)->type != Lexem::Type::Identifier )
+		{
+			PushErrorMessage();
+			return complex_name;
+		}
+	}
+	else if( it_->text == Keywords::typeof_ )
+	{
 		NextLexem();
+
+		TypeofTypeName typeof_type_name( it_->file_pos );
+
+		if( it_->type != Lexem::Type::BracketLeft )
+		{
+			PushErrorMessage();
+			return complex_name;
+		}
+		NextLexem();
+
+		typeof_type_name.expression= std::make_unique<Expression>( ParseExpression() );
+
+		if( it_->type != Lexem::Type::BracketRight )
+		{
+			PushErrorMessage();
+			return complex_name;
+		}
+		NextLexem();
+
+		complex_name.start_value= std::move(typeof_type_name);
+	}
+	else
+	{
+		complex_name.start_value= it_->text;
+		NextLexem();
+
+		if( it_->type == Lexem::Type::TemplateBracketLeft )
+		{
+			*component= std::make_unique<ComplexName::Component>();
+			(*component)->name_or_template_paramenters= ParseTemplateParameters();
+			component= &((*component)->next);
+		}
 	}
 
-	do
+	while( NotEndOfFile() && it_->type == Lexem::Type::Scope )
 	{
+		NextLexem();
 		if( it_->type != Lexem::Type::Identifier )
 		{
 			PushErrorMessage();
 			return complex_name;
 		}
-		complex_name.components.emplace_back();
-		complex_name.components.back().name= it_->text;
+
+		*component= std::make_unique<ComplexName::Component>();
+		(*component)->name_or_template_paramenters= it_->text;
 		NextLexem();
 
 		if( it_->type == Lexem::Type::TemplateBracketLeft )
 		{
-			complex_name.components.back().have_template_parameters= true;
-			complex_name.components.back().template_parameters= ParseTemplateParameters();
+			component= &((*component)->next);
+			*component= std::make_unique<ComplexName::Component>();
+			(*component)->name_or_template_paramenters= ParseTemplateParameters();
 		}
 
-		if( it_->type == Lexem::Type::Scope )
-			NextLexem();
-		else
-			break;
-
-	} while( NotEndOfFile() );
+		component= &((*component)->next);
+	}
 
 	return complex_name;
 }
@@ -3026,48 +3042,56 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		NextLexem();
 	}
 
+	// Parse complex name before function name - such "fn MyStruct::A::B"
+	if( it_->type == Lexem::Type::Scope )
+	{
+		result->name_.push_back("");
+		NextLexem();
+	}
+	if( it_->type == Lexem::Type::Identifier )
+	{
+		while( NotEndOfFile() )
+		{
+			if( it_->type != Lexem::Type::Identifier )
+			{
+				PushErrorMessage();
+				return result;
+			}
+			result->name_.push_back(it_->text);
+			NextLexem();
+
+			if( it_->type == Lexem::Type::Scope )
+			{
+				NextLexem();
+
+				if( it_->type == Lexem::Type::Identifier )
+					continue;
+				else
+				{
+					if( function_defenition_lexem == Keywords::op_ )
+						break; // Allow op A::+
+					else
+					{
+						PushErrorMessage();
+						return result;
+					}
+				}
+			}
+			else
+				break;
+		}
+	}
+
 	if( function_defenition_lexem == Keywords::fn_ )
 	{
-		result->name_= ParseComplexName();
-		if( !result->name_.components.empty() &&
-			result->name_.components.back().name == Keywords::conversion_constructor_ )
+		if( !result->name_.empty() && result->name_.back() == Keywords::conversion_constructor_ )
 		{
-			result->name_.components.back().name= Keyword( Keywords::constructor_ );
+			result->name_.back()= Keyword( Keywords::constructor_ );
 			result->is_conversion_constructor_= true;
 		}
 	}
 	else
 	{
-		if( it_->type == Lexem::Type::Identifier || it_->type == Lexem::Type::Scope )
-		{
-			// Parse complex name before op name - such "op MyStruct::+"
-			if( it_->type == Lexem::Type::Scope )
-			{
-				result->name_.components.emplace_back();
-				NextLexem();
-			}
-
-			while( NotEndOfFile() )
-			{
-				if( it_->type != Lexem::Type::Identifier )
-				{
-					PushErrorMessage();
-					return nullptr;
-				}
-				result->name_.components.emplace_back();
-				result->name_.components.back().name= it_->text;
-				NextLexem();
-
-				if( it_->type == Lexem::Type::Scope )
-					NextLexem();
-
-				if( it_->type == Lexem::Type::Identifier )
-					continue;
-				else
-					break;
-			}
-		}
-
 		OverloadedOperator overloaded_operator= OverloadedOperator::None;
 		switch( it_->type )
 		{
@@ -3128,8 +3152,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			return nullptr;
 		};
 
-		result->name_.components.emplace_back();
-		result->name_.components.back().name= OverloadedOperatorToString( overloaded_operator );
+		result->name_.push_back( OverloadedOperatorToString( overloaded_operator ) );
 		result->overloaded_operator_= overloaded_operator;
 
 		NextLexem();
@@ -3236,7 +3259,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 
 	// If method is constructor or destructor and "this" not explicitly specified, add it.
 	// It's easier add "this" here, than dealing with implicit "this" in CodeBuilder.
-	if( ( result->name_.components.back().name == Keywords::constructor_ || result->name_.components.back().name == Keywords::destructor_ ) &&
+	if( ( result->name_.back() == Keywords::constructor_ || result->name_.back() == Keywords::destructor_ ) &&
 		( arguments.empty() || arguments.front().name_ != Keywords::this_ ) )
 	{
 		FunctionArgument this_argument( result->file_pos_ );
@@ -3580,8 +3603,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 		}
 
 		ComplexName name;
-		name.components.emplace_back();
-		name.components.back().name= it_->text;
+		name.start_value= it_->text;
 		auto name_ptr= std::make_unique<Expression>( NamedOperand( it_->file_pos, std::move(name) ) );
 		args.back().name= &std::get_if<NamedOperand>(name_ptr.get())->name_;
 		args.back().name_expr= std::move(name_ptr);

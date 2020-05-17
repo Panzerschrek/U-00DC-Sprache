@@ -648,17 +648,14 @@ Type CodeBuilder::PrepareType( const Synt::TupleType& tuple_type_name, NamesScop
 	return std::move(tuple);
 }
 
-Type CodeBuilder::PrepareType( const Synt::NamedTypeName& named_type_name, NamesScope& names_scope, FunctionContext& )
+Type CodeBuilder::PrepareType( const Synt::NamedTypeName& named_type_name, NamesScope& names_scope, FunctionContext& function_context )
 {
-	if( const Value* value= ResolveValue( named_type_name.file_pos_, names_scope, named_type_name.name ) )
-	{
-		if( const Type* const type= value->GetTypeName() )
-			return *type;
-		else
-			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), named_type_name.file_pos_, named_type_name.name.components.back().name );
-	}
+	const Value value= ResolveValue( named_type_name.file_pos_, names_scope, function_context, named_type_name.name );
+	if( const Type* const type= value.GetTypeName() )
+		return *type;
 	else
-		REPORT_ERROR( NameNotFound, names_scope.GetErrors(), named_type_name.file_pos_, named_type_name.name );
+		REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), named_type_name.file_pos_, named_type_name.name );
+
 	return invalid_type_;
 }
 
@@ -959,7 +956,7 @@ size_t CodeBuilder::PrepareFunction(
 	const Synt::Function& func,
 	const bool is_out_of_line_function )
 {
-	const std::string& func_name= func.name_.components.back().name;
+	const std::string& func_name= func.name_.back();
 	const bool is_constructor= func_name == Keywords::constructor_;
 	const bool is_destructor= func_name == Keywords::destructor_;
 	const bool is_special_method= is_constructor || is_destructor;
@@ -1014,9 +1011,10 @@ size_t CodeBuilder::PrepareFunction(
 		{
 			if( const auto named_return_type = std::get_if<Synt::NamedTypeName>(func.type_.return_type_.get()) )
 			{
-				if( named_return_type->name.components.size() == 1u &&
-					!named_return_type->name.components.front().have_template_parameters &&
-					named_return_type->name.components.front().name == Keywords::auto_ )
+				// TODO - set flag "auto" in syntax analyzer.
+				if( named_return_type->name.tail == nullptr &&
+					std::get_if<std::string>( &named_return_type->name.start_value ) != nullptr &&
+					std::get<std::string>( named_return_type->name.start_value ) == Keywords::auto_ )
 				{
 					func_variable.return_type_is_auto= true;
 					if( base_class != nullptr )
@@ -1864,7 +1862,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		}
 
 		initialized_fields.insert( field_initializer.name );
-		function_context.uninitialized_this_fields.insert( field );
+		function_context.uninitialized_this_fields.insert( field->syntax_element->name );
 	} // for fields initializers
 
 	ProgramStringSet uninitialized_fields;
@@ -1984,7 +1982,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			ApplyInitializer( field_initializer.initializer, field_variable, names_scope, function_context );
 		}
 
-		function_context.uninitialized_this_fields.erase( field );
+		function_context.uninitialized_this_fields.erase( field->syntax_element->name );
 
 		CallDestructors( temp_variables_storage, names_scope, function_context, Synt::GetInitializerFilePos( field_initializer.initializer ) );
 	} // for fields initializers
@@ -3447,162 +3445,163 @@ void CodeBuilder::BuildStaticAssert( StaticAssert& static_assert_, NamesScope& n
 	static_assert_.syntax_element= nullptr;
 }
 
-Value* CodeBuilder::ResolveValue( const FilePos& file_pos, NamesScope& names_scope, const Synt::ComplexName& complex_name, const ResolveMode resolve_mode )
-{
-	return ResolveValue( file_pos, names_scope, complex_name.components.data(), complex_name.components.size(), resolve_mode );
-}
-
-Value* CodeBuilder::ResolveValue(
+Value CodeBuilder::ResolveValue(
 	const FilePos& file_pos,
 	NamesScope& names_scope,
-	const Synt::ComplexName::Component* components,
-	size_t component_count,
+	FunctionContext& function_context,
+	const Synt::ComplexName& complex_name,
 	const ResolveMode resolve_mode )
 {
-	U_ASSERT( component_count > 0u );
-	const std::string& last_component_name= components[component_count-1u].name;
-
-	NamesScope* last_space= &names_scope;
-	if( components[0].name.empty() )
-	{
-		U_ASSERT( component_count >= 2u );
-		last_space= names_scope.GetRoot();
-		++components;
-		--component_count;
-	}
-	else
-	{
-		const std::string& start= components[0].name;
-		NamesScope* space= &names_scope;
-		while(true)
-		{
-			if( space->GetThisScopeValue( start ) != nullptr )
-				break;
-			space= space->GetParent();
-			if( space == nullptr )
-				return nullptr;
-		}
-		last_space= space;
-	}
-
 	Value* value= nullptr;
-	while( true )
+	Value temp_value_storage;
+	const Synt::ComplexName::Component* component= complex_name.tail.get();
+	NamesScope* last_space= &names_scope;
+
+	if( std::get_if<Synt::EmptyVariant>(&complex_name.start_value) != nullptr )
 	{
-		value= last_space->GetThisScopeValue( components[0].name );
+		const auto name= std::get_if<std::string>( &complex_name.tail->name_or_template_paramenters );
+		U_ASSERT( complex_name.tail != nullptr && name != nullptr )
+		last_space= names_scope.GetRoot();
+		value= last_space->GetThisScopeValue( *name );
+		component= complex_name.tail->next.get();
+
 		if( value == nullptr )
-			return nullptr;
+			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), file_pos, *name );
 
-		if( components[0].have_template_parameters && value->GetTypeTemplatesSet() == nullptr && value->GetFunctionsSet() == nullptr )
+		if( ( *name == Keywords::constructor_ || *name == Keywords::destructor_ ) && !function_context.is_in_unsafe_block )
+			REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope.GetErrors(), file_pos, *name );
+	}
+	else if( const auto typeof_type_name= std::get_if<Synt::TypeofTypeName>(&complex_name.start_value) )
+	{
+		temp_value_storage= Value( PrepareType( *typeof_type_name, names_scope, function_context ), file_pos );
+		value= &temp_value_storage;
+	}
+	else if(const auto simple_name= std::get_if<std::string>(&complex_name.start_value) )
+	{
+		do
 		{
-			REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), file_pos );
-			return nullptr;
-		}
+			value= last_space->GetThisScopeValue( *simple_name );
+			if( value != nullptr )
+				break;
+			last_space= last_space->GetParent();
+		} while( last_space != nullptr );
 
-		NamesScope* next_space= nullptr;
-		ClassProxyPtr next_space_class= nullptr;
+		if( value == nullptr )
+			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), file_pos, *simple_name );
+	}
+	else U_ASSERT(false);
+
+	if( value != nullptr && value->GetYetNotDeducedTemplateArg() != nullptr )
+		REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope.GetErrors(), file_pos, complex_name );
+
+	while( component != nullptr && value != nullptr )
+	{
+		if( resolve_mode == ResolveMode::ForTemplateSignatureParameter && component->next == nullptr &&
+			std::get_if< std::vector<Synt::Expression> >( &component->name_or_template_paramenters ) != nullptr )
+			break;
 
 		// In case of typedef convert it to type before other checks.
 		if( value->GetTypedef() != nullptr )
 			GlobalThingBuildTypedef( *last_space, *value );
 
-		if( const NamesScopePtr inner_namespace= value->GetNamespace() )
-			next_space= inner_namespace.get();
-		else if( const Type* const type= value->GetTypeName() )
+		if( const auto component_name= std::get_if<std::string>( &component->name_or_template_paramenters ) )
 		{
-			if( Class* const class_= type->GetClassType() )
+			if( const NamesScopePtr inner_namespace= value->GetNamespace() )
 			{
-				if( component_count >= 2u )
+				value= inner_namespace->GetThisScopeValue( *component_name );
+				last_space= inner_namespace.get();
+			}
+			else if( const Type* const type= value->GetTypeName() )
+			{
+				if( Class* const class_= type->GetClassType() )
 				{
 					if( class_->syntax_element != nullptr && class_->syntax_element->is_forward_declaration_ )
 					{
 						REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), file_pos, type );
-						return nullptr;
+						return ErrorValue();
 					}
-					if( resolve_mode != ResolveMode::ForDeclaration )
-						GlobalThingBuildClass( type->GetClassTypeProxy(), TypeCompleteness::Complete );
+
+					GlobalThingBuildClass( type->GetClassTypeProxy(), TypeCompleteness::Complete );
+
+					if( names_scope.GetAccessFor( type->GetClassTypeProxy() ) < class_->GetMemberVisibility( *component_name ) )
+						REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), file_pos, *component_name, class_->members.GetThisNamespaceName() );
+
+					if( ( *component_name == Keywords::constructor_ || *component_name == Keywords::destructor_ ) && !function_context.is_in_unsafe_block )
+						REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope.GetErrors(), file_pos, *component_name );
+
+					value= class_->members.GetThisScopeValue( *component_name );
+					last_space= & class_->members;
 				}
-				next_space= &class_->members;
-				next_space_class= type->GetClassTypeProxy();
+				else if( EnumPtr const enum_= type->GetEnumType() )
+				{
+					GlobalThingBuildEnum( enum_, TypeCompleteness::Complete );
+					value= enum_->members.GetThisScopeValue( *component_name );
+					last_space= &enum_->members;
+				}
 			}
-			else if( EnumPtr const enum_= type->GetEnumType() )
+			else if( value->GetTypeTemplatesSet() != nullptr )
 			{
-				GlobalThingBuildEnum( enum_, TypeCompleteness::Complete );
-				next_space= &enum_->members;
+				REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), file_pos, *component_name );
+				return ErrorValue();
 			}
+
+			if( value == nullptr )
+				REPORT_ERROR( NameNotFound, names_scope.GetErrors(), file_pos, *component_name );
 		}
-		else if( TypeTemplatesSet* const type_templates_set = value->GetTypeTemplatesSet() )
+		else if( const auto template_parameters= std::get_if< std::vector<Synt::Expression> >( &component->name_or_template_paramenters ) )
 		{
-			GlobalThingBuildTypeTemplatesSet( *last_space, *type_templates_set );
-			if( components[0].have_template_parameters && !( resolve_mode == ResolveMode::ForTemplateSignatureParameter && component_count == 1u ) )
+			if( TypeTemplatesSet* const type_templates_set= value->GetTypeTemplatesSet() )
 			{
-				Value* const generated_type=
+				GlobalThingBuildTypeTemplatesSet( *last_space, *type_templates_set );
+				value=
 					GenTemplateType(
 						file_pos,
 						*type_templates_set,
-						components[0].template_parameters,
-						names_scope );
-				if( generated_type == nullptr )
-					return nullptr;
+						*template_parameters,
+						names_scope,
+						function_context );
+				if( value == nullptr )
+					return ErrorValue();
 
-				const Type* const type= generated_type->GetTypeName();
+				const Type* const type= value->GetTypeName();
 				U_ASSERT( type != nullptr );
 				if( Class* const class_= type->GetClassType() )
-				{
-					next_space= &class_->members;
-					next_space_class= type->GetClassTypeProxy();
-				}
-				value= generated_type;
+					last_space= &class_->members;
 			}
-			else if( component_count >= 2u )
+			else if( OverloadedFunctionsSet* const functions_set= value->GetFunctionsSet() )
 			{
-				REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), file_pos, type_templates_set->type_templates.front()->syntax_element->name_ );
-				return nullptr;
-			}
-		}
-		else if( OverloadedFunctionsSet* const functions_set= value->GetFunctionsSet() )
-		{
-			if( resolve_mode != ResolveMode::ForDeclaration )
 				GlobalThingBuildFunctionsSet( *last_space, *functions_set, false );
-			if( components[0].have_template_parameters )
-			{
 				if( functions_set->template_functions.empty() )
 				{
 					REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), file_pos );
-					return nullptr;
+					return ErrorValue();
 				}
 
 				value=
 					GenTemplateFunctionsUsingTemplateParameters(
 						file_pos,
 						functions_set->template_functions,
-						components[0].template_parameters,
-						names_scope );
+						*template_parameters,
+						names_scope,
+						function_context );
+				if( value == nullptr )
+				{
+					REPORT_ERROR( TemplateFunctionGenerationFailed, names_scope.GetErrors(), file_pos, complex_name );
+					return ErrorValue();
+				}
+			}
+			else
+			{
+				REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), file_pos );
+				return ErrorValue();
 			}
 		}
 
-		if( component_count == 1u )
-			break;
-		else if( next_space != nullptr )
-		{
-			value= next_space->GetThisScopeValue( components[1].name );
-
-			if( next_space_class != nullptr && resolve_mode != ResolveMode::ForDeclaration &&
-				names_scope.GetAccessFor( next_space_class ) < next_space_class->class_->GetMemberVisibility( components[1].name ) )
-				REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), file_pos, components[1].name, next_space_class->class_->members.GetThisNamespaceName() );
-		}
-		else
-			return nullptr;
-
-		++components;
-		--component_count;
-		last_space= next_space;
+		component= component->next.get();
 	}
 
-	if( value != nullptr && value->GetYetNotDeducedTemplateArg() != nullptr )
-		REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope.GetErrors(), file_pos, value == nullptr ? "" : last_component_name );
-
 	// Complete some things in resolve.
-	if( value != nullptr && resolve_mode != ResolveMode::ForDeclaration )
+	if( value != nullptr )
 	{
 		if( OverloadedFunctionsSet* const functions_set= value->GetFunctionsSet() )
 			GlobalThingBuildFunctionsSet( *last_space, *functions_set, false );
@@ -3612,8 +3611,14 @@ Value* CodeBuilder::ResolveValue(
 			GlobalThingBuildTypedef( *last_space, *value );
 		else if( value->GetIncompleteGlobalVariable() != nullptr )
 			GlobalThingBuildVariable( *last_space, *value );
+		else if( const Type* const type= value->GetTypeName() )
+		{
+			if( const EnumPtr enum_= type->GetEnumTypePtr() )
+				GlobalThingBuildEnum( enum_, TypeCompleteness::Complete );
+		}
 	}
-	return value;
+
+	return value == nullptr ? ErrorValue() : *value;
 }
 
 llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundmantal_type )

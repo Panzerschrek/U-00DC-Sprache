@@ -1,4 +1,6 @@
+#include <sstream>
 #include "../lex_synt_lib/assert.hpp"
+#include "../lex_synt_lib/program_writer.hpp"
 #include "type.hpp"
 #include "error_reporting.hpp"
 
@@ -116,14 +118,11 @@ std::string PreprocessArg( const CodeBuilderPrivate::Type& type )
 
 std::string PreprocessArg( const Synt::ComplexName& name )
 {
-	std::string str;
-	for( const Synt::ComplexName::Component& component : name.components )
-	{
-		str+= component.name;
-		if( &component != &name.components.back() )
-			str+= "::";
-	}
-	return str;
+	std::stringstream ss;
+
+	WriteProgramElement( name, ss );
+
+	return ss.str();
 }
 
 } // namespace ErrorReportingImpl

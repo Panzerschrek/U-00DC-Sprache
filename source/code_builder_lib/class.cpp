@@ -32,6 +32,18 @@ void Class::SetMemberVisibility( const std::string& member_name, const ClassMemb
 	members_visibility[member_name]= visibility;
 }
 
+bool Class::HaveAncestor( const ClassProxyPtr& class_ ) const
+{
+	for( const auto& parent : parents )
+	{
+		if( parent.class_ == class_ )
+			return true;
+		if( parent.class_->class_->HaveAncestor( class_ ) )
+			return true;
+	}
+	return false;
+}
+
 } //namespace CodeBuilderPrivate
 
 } // namespace U

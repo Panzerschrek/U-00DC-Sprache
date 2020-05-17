@@ -24,6 +24,8 @@ public:
 	ClassMemberVisibility GetMemberVisibility( const std::string& member_name ) const;
 	void SetMemberVisibility( const std::string& member_name, ClassMemberVisibility visibility );
 
+	bool HaveAncestor( const ClassProxyPtr& class_ ) const;
+
 public:
 	struct BaseTemplate
 	{

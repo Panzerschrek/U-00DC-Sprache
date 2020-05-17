@@ -177,7 +177,7 @@ private:
 		std::vector<bool>& template_parameters_usage_flags );
 
 	// Resolve as deep, as can, but does not instantiate last component, if it is template.
-	Value* ResolveForTemplateSignatureParameter(
+	Value ResolveForTemplateSignatureParameter(
 		const FilePos& file_pos,
 		const Synt::ComplexName& signature_parameter,
 		NamesScope& names_scope );
@@ -212,7 +212,8 @@ private:
 		const FilePos& file_pos,
 		const TypeTemplatesSet& type_templates_set,
 		const std::vector<Synt::Expression>& template_arguments,
-		NamesScope& arguments_names_scope );
+		NamesScope& arguments_names_scope,
+		FunctionContext& function_context );
 
 	// Returns nullptr in case of fail.
 	TemplateTypeGenerationResult GenTemplateType(
@@ -220,6 +221,7 @@ private:
 		const TypeTemplatePtr& type_template_ptr,
 		const std::vector<Synt::Expression>& template_arguments,
 		NamesScope& arguments_names_scope,
+		FunctionContext& function_context,
 		bool skip_type_generation );
 
 	const FunctionVariable* GenTemplateFunction(
@@ -234,7 +236,8 @@ private:
 		const FilePos& file_pos,
 		const std::vector<FunctionTemplatePtr>& function_templates,
 		const std::vector<Synt::Expression>& template_arguments,
-		NamesScope& arguments_names_scope );
+		NamesScope& arguments_names_scope,
+		FunctionContext& function_context );
 
 	bool NameShadowsTemplateArgument( const std::string& name, NamesScope& names_scope );
 
@@ -513,17 +516,15 @@ private:
 	enum class ResolveMode
 	{
 		Regular,
-		ForDeclaration,
 		ForTemplateSignatureParameter,
 	};
-	Value* ResolveValue( const FilePos& file_pos, NamesScope& names_scope, const Synt::ComplexName& complex_name, ResolveMode resolve_mode= ResolveMode::Regular );
 
-	Value* ResolveValue(
+	Value ResolveValue(
 		const FilePos& file_pos,
 		NamesScope& names_scope,
-		const Synt::ComplexName::Component* components,
-		size_t component_count,
-		ResolveMode resolve_mode );
+		FunctionContext& function_context,
+		const Synt::ComplexName& complex_name,
+		ResolveMode resolve_mode= ResolveMode::Regular );
 
 	// Functions
 

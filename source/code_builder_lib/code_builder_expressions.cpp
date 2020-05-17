@@ -419,10 +419,10 @@ Value CodeBuilder::BuildExpressionCode(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
-	if( named_operand.name_.components.size() == 1u &&
-		named_operand.name_.components.back().template_parameters.empty() )
+	if( std::get_if<std::string>( &named_operand.name_.start_value ) != nullptr && named_operand.name_.tail == nullptr )
 	{
-		if( named_operand.name_.components.back().name == Keywords::this_ )
+		const std::string& start_name= std::get<std::string>( named_operand.name_.start_value );
+		if( start_name == Keywords::this_ )
 		{
 			if( function_context.this_ == nullptr || function_context.whole_this_is_unavailable )
 			{
@@ -431,7 +431,7 @@ Value CodeBuilder::BuildExpressionCode(
 			}
 			return Value( *function_context.this_, named_operand.file_pos_ );
 		}
-		else if( named_operand.name_.components.back().name == Keywords::base_ )
+		else if( start_name == Keywords::base_ )
 		{
 			if( function_context.this_ == nullptr )
 			{
@@ -457,23 +457,13 @@ Value CodeBuilder::BuildExpressionCode(
 		}
 	}
 
-	const Value* const value_entry= ResolveValue( named_operand.file_pos_, names, named_operand.name_ );
-	if( value_entry == nullptr )
-	{
-		REPORT_ERROR( NameNotFound, names.GetErrors(), named_operand.file_pos_, named_operand.name_ );
-		return ErrorValue();
-	}
+	const Value value_entry= ResolveValue( named_operand.file_pos_, names, function_context, named_operand.name_ );
 
-	const std::string& back_name_component= named_operand.name_.components.back().name;
-	if( !function_context.is_in_unsafe_block &&
-		( back_name_component == Keywords::constructor_ || back_name_component == Keywords::destructor_ ) )
-		REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names.GetErrors(), named_operand.file_pos_, back_name_component );
-
-	if( const ClassField* const field= value_entry->GetClassField() )
+	if( const ClassField* const field= value_entry.GetClassField() )
 	{
 		if( function_context.this_ == nullptr )
 		{
-			REPORT_ERROR( ClassFiledAccessInStaticMethod, names.GetErrors(), named_operand.file_pos_, named_operand.name_.components.back().name );
+			REPORT_ERROR( ClassFiledAccessInStaticMethod, names.GetErrors(), named_operand.file_pos_, field->syntax_element->name );
 			return ErrorValue();
 		}
 
@@ -499,7 +489,7 @@ Value CodeBuilder::BuildExpressionCode(
 			{
 				if( actual_field_class->class_->base_class == nullptr )
 				{
-					REPORT_ERROR( AccessOfNonThisClassField, names.GetErrors(), named_operand.file_pos_, named_operand.name_.components.back().name );
+					REPORT_ERROR( AccessOfNonThisClassField, names.GetErrors(), named_operand.file_pos_, field->syntax_element->name );
 					return ErrorValue();
 				}
 
@@ -510,9 +500,9 @@ Value CodeBuilder::BuildExpressionCode(
 		}
 
 		if( function_context.whole_this_is_unavailable &&
-			function_context.uninitialized_this_fields.find( field ) != function_context.uninitialized_this_fields.end() )
+			function_context.uninitialized_this_fields.find( field->syntax_element->name ) != function_context.uninitialized_this_fields.end() )
 		{
-			REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), named_operand.file_pos_, named_operand.name_.components.back().name );
+			REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), named_operand.file_pos_, field->syntax_element->name );
 			return ErrorValue();
 		}
 		if( function_context.whole_this_is_unavailable &&
@@ -540,7 +530,7 @@ Value CodeBuilder::BuildExpressionCode(
 
 			if( function_context.this_->node != nullptr )
 			{
-				const auto field_node= std::make_shared<ReferencesGraphNode>( "this." + back_name_component, field->is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+				const auto field_node= std::make_shared<ReferencesGraphNode>( "this." + field->syntax_element->name, field->is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
 				function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( field_node, field_variable ) );
 				field_variable.node= field_node;
 				for( const ReferencesGraphNodePtr& node : function_context.variables_state.GetAllAccessibleInnerNodes_r( function_context.this_->node ) )
@@ -556,37 +546,29 @@ Value CodeBuilder::BuildExpressionCode(
 
 		return Value( std::move(field_variable), named_operand.file_pos_ );
 	}
-	else if( const OverloadedFunctionsSet* const overloaded_functions_set= value_entry->GetFunctionsSet() )
+	else if( const OverloadedFunctionsSet* const overloaded_functions_set= value_entry.GetFunctionsSet() )
 	{
 		if( function_context.this_ != nullptr )
 		{
-			// Trying add "this" to functions set.
-			const Class* const class_= function_context.this_->type.GetClassType();
-
-			// SPRACHE_TODO - mabe this kind of search is incorrect?
-			const Value* const same_set_in_class=
-				class_->members.GetThisScopeValue( named_operand.name_.components.back().name );
-			// SPRACHE_TODO - add "this" for functions from parent classes.
-			if( value_entry == same_set_in_class )
+			// Trying add "this" to functions set, but only if whole "this" is available.
+			if( ( function_context.this_->type.GetClassTypeProxy() == overloaded_functions_set->base_class ||
+				  function_context.this_->type.GetClassTypeProxy()->class_->HaveAncestor( overloaded_functions_set->base_class ) ) &&
+				!function_context.whole_this_is_unavailable )
 			{
-				if( !function_context.whole_this_is_unavailable )
-				{
-					// Append "this" only if whole "this" is available.
-					ThisOverloadedMethodsSet this_overloaded_methods_set;
-					this_overloaded_methods_set.this_= *function_context.this_;
-					this_overloaded_methods_set.GetOverloadedFunctionsSet()= *overloaded_functions_set;
-					return std::move(this_overloaded_methods_set);
-				}
+				ThisOverloadedMethodsSet this_overloaded_methods_set;
+				this_overloaded_methods_set.this_= *function_context.this_;
+				this_overloaded_methods_set.GetOverloadedFunctionsSet()= *overloaded_functions_set;
+				return std::move(this_overloaded_methods_set);
 			}
 		}
 	}
-	else if( const Variable* const variable= value_entry->GetVariable() )
+	else if( const Variable* const variable= value_entry.GetVariable() )
 	{
 		if( variable->node != nullptr && function_context.variables_state.NodeMoved( variable->node ) )
 			REPORT_ERROR( AccessingMovedVariable, names.GetErrors(), named_operand.file_pos_, variable->node->name );
 	}
 
-	return *value_entry;
+	return value_entry;
 }
 
 Value CodeBuilder::BuildExpressionCode(
@@ -997,21 +979,15 @@ Value CodeBuilder::BuildExpressionCode(
 	FunctionContext& function_context )
 {
 	Synt::ComplexName complex_name;
-	complex_name.components.emplace_back();
-	complex_name.components.back().name= move_operator.var_name_;
+	complex_name.start_value= move_operator.var_name_;
 
-	const Value* const resolved_value= ResolveValue( move_operator.file_pos_, names, complex_name );
-	if( resolved_value == nullptr )
-	{
-		REPORT_ERROR( NameNotFound, names.GetErrors(), move_operator.file_pos_, move_operator.var_name_ );
-		return ErrorValue();
-	}
-	const Variable* const variable_for_move= resolved_value->GetVariable();
+	const Value resolved_value= ResolveValue( move_operator.file_pos_, names, function_context, complex_name );
+	const Variable* const variable_for_move= resolved_value.GetVariable();
 	if( variable_for_move == nullptr ||
 		variable_for_move->node == nullptr ||
 		variable_for_move->node->kind != ReferencesGraphNode::Kind::Variable )
 	{
-		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.file_pos_, resolved_value->GetKindName() );
+		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.file_pos_, resolved_value.GetKindName() );
 		return ErrorValue();
 	}
 	const ReferencesGraphNodePtr& node= variable_for_move->node;
@@ -1029,7 +1005,7 @@ Value CodeBuilder::BuildExpressionCode(
 	end_variable_search:
 	if( !found_in_variables )
 	{
-		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.file_pos_, resolved_value->GetKindName() );
+		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.file_pos_, resolved_value.GetKindName() );
 		return ErrorValue();
 	}
 
@@ -2409,7 +2385,8 @@ Value CodeBuilder::BuildPostfixOperator(
 						member_access_operator.file_pos_,
 						functions_set->template_functions,
 						member_access_operator.template_parameters,
-						names );
+						names,
+						function_context );
 				if( inserted_value == nullptr )
 					return ErrorValue();
 

@@ -13,17 +13,6 @@ def FunctionDeclarationOutsideItsScope_ForFunctionTemplates_Test0():
 	assert( errors_list[1].file_pos.line == 3 )
 
 
-def ValueIsNotTemplate_ForFunctionTemplates_Test0():
-	c_program_text= """
-		template</ type T />
-		fn Foo</ />(){}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "ValueIsNotTemplate" )
-	assert( errors_list[0].file_pos.line == 2 )
-
-
 def ValueIsNotTemplate_ForFunctionTemplates_Test1():
 	c_program_text= """
 		struct S
