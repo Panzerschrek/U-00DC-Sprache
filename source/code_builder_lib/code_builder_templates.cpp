@@ -127,7 +127,7 @@ void CodeBuilder::PrepareTypeTemplate(
 		// Assign template arguments to signature arguments.
 		for( const Synt::TypeTemplateBase::Arg& arg : type_template_declaration.args_ )
 		{
-			PrepareTemplateSignatureParameter( type_template_declaration.file_pos_, *arg.name, names_scope, template_parameters, template_parameters_usage_flags );
+			CheckTemplateSignatureParameter( type_template_declaration.file_pos_, *arg.name, names_scope, template_parameters, template_parameters_usage_flags );
 			type_template->signature_arguments.push_back(arg.name_expr.get());
 			type_template->default_signature_arguments.push_back(nullptr);
 		}
@@ -139,12 +139,12 @@ void CodeBuilder::PrepareTypeTemplate(
 		type_template->first_optional_signature_argument= 0u;
 		for( const Synt::TypeTemplateBase::SignatureArg& signature_arg : type_template_declaration.signature_args_ )
 		{
-			PrepareTemplateSignatureParameter( signature_arg.name, names_scope, template_parameters, template_parameters_usage_flags );
+			CheckTemplateSignatureParameter( signature_arg.name, names_scope, template_parameters, template_parameters_usage_flags );
 			type_template->signature_arguments.push_back(&signature_arg.name);
 
 			if( std::get_if<Synt::EmptyVariant>( &signature_arg.default_value ) == nullptr )
 			{
-				PrepareTemplateSignatureParameter( signature_arg.default_value, names_scope, template_parameters, template_parameters_usage_flags );
+				CheckTemplateSignatureParameter( signature_arg.default_value, names_scope, template_parameters, template_parameters_usage_flags );
 				type_template->default_signature_arguments.push_back(&signature_arg.default_value);
 			}
 			else
@@ -284,7 +284,7 @@ void CodeBuilder::ProcessTemplateArgs(
 	U_ASSERT( template_parameters_usage_flags.size() == template_parameters.size() );
 }
 
-void CodeBuilder::PrepareTemplateSignatureParameter(
+void CodeBuilder::CheckTemplateSignatureParameter(
 	const FilePos& file_pos,
 	const Synt::ComplexName& signature_parameter,
 	NamesScope& names_scope,
@@ -305,7 +305,6 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 		}
 	}
 
-	// Do recursive preresolve for subsequent deduction.
 	const Value start_value= ResolveForTemplateSignatureParameter( file_pos, signature_parameter, names_scope );
 	if( start_value.GetTypeTemplatesSet() != nullptr )
 	{
@@ -327,11 +326,11 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 		}
 
 		for( const Synt::Expression& template_parameter : *last_template_parameters )
-			PrepareTemplateSignatureParameter( template_parameter, names_scope, template_parameters, template_parameters_usage_flags );
+			CheckTemplateSignatureParameter( template_parameter, names_scope, template_parameters, template_parameters_usage_flags );
 	}
 }
 
-void CodeBuilder::PrepareTemplateSignatureParameter(
+void CodeBuilder::CheckTemplateSignatureParameter(
 	const Synt::Expression& template_parameter,
 	NamesScope& names_scope,
 	const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
@@ -340,14 +339,14 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 	if( const auto named_operand= std::get_if<Synt::NamedOperand>( &template_parameter ) )
 	{
 		if( named_operand->postfix_operators_.empty() && named_operand->prefix_operators_.empty() )
-			return PrepareTemplateSignatureParameter( named_operand->file_pos_, named_operand->name_, names_scope, template_parameters, template_parameters_usage_flags );
+			return CheckTemplateSignatureParameter( named_operand->file_pos_, named_operand->name_, names_scope, template_parameters, template_parameters_usage_flags );
 	}
 	else if( const auto type_name= std::get_if<Synt::TypeNameInExpression>( &template_parameter ) )
-		return PrepareTemplateSignatureParameter( type_name->type_name, names_scope, template_parameters, template_parameters_usage_flags );
+		return CheckTemplateSignatureParameter( type_name->type_name, names_scope, template_parameters, template_parameters_usage_flags );
 	else if( const auto bracket_expression= std::get_if<Synt::BracketExpression>( &template_parameter ) )
 	{
 		if( bracket_expression->postfix_operators_.empty() && bracket_expression->prefix_operators_.empty() )
-			return PrepareTemplateSignatureParameter( *bracket_expression->expression_, names_scope, template_parameters, template_parameters_usage_flags );
+			return CheckTemplateSignatureParameter( *bracket_expression->expression_, names_scope, template_parameters, template_parameters_usage_flags );
 	}
 
 	// If this is not special expression - assume that this is variable-expression.
@@ -361,32 +360,32 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 		REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), Synt::GetExpressionFilePos( template_parameter ) );
 }
 
-void CodeBuilder::PrepareTemplateSignatureParameter(
+void CodeBuilder::CheckTemplateSignatureParameter(
 	const Synt::TypeName& type_name_template_parameter,
 	NamesScope& names_scope,
 	const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 	std::vector<bool>& template_parameters_usage_flags )
 {
 	if( const auto named_type_name= std::get_if<Synt::NamedTypeName>(&type_name_template_parameter) )
-		PrepareTemplateSignatureParameter( named_type_name->file_pos_, named_type_name->name, names_scope, template_parameters, template_parameters_usage_flags );
+		CheckTemplateSignatureParameter( named_type_name->file_pos_, named_type_name->name, names_scope, template_parameters, template_parameters_usage_flags );
 	else if( const auto array_type_name= std::get_if<Synt::ArrayTypeName>(&type_name_template_parameter) )
 	{
-		PrepareTemplateSignatureParameter( *array_type_name->size, names_scope, template_parameters, template_parameters_usage_flags );
-		PrepareTemplateSignatureParameter( *array_type_name->element_type, names_scope, template_parameters, template_parameters_usage_flags );
+		CheckTemplateSignatureParameter( *array_type_name->size, names_scope, template_parameters, template_parameters_usage_flags );
+		CheckTemplateSignatureParameter( *array_type_name->element_type, names_scope, template_parameters, template_parameters_usage_flags );
 	}
 	else if( const auto tuple_type_name= std::get_if<Synt::TupleType>(&type_name_template_parameter) )
 	{
 		for( const auto& element_type : tuple_type_name->element_types_ )
-			PrepareTemplateSignatureParameter( element_type, names_scope, template_parameters, template_parameters_usage_flags );
+			CheckTemplateSignatureParameter( element_type, names_scope, template_parameters, template_parameters_usage_flags );
 	}
 	else if( const auto function_pointer_type_name_ptr= std::get_if<Synt::FunctionTypePtr>(&type_name_template_parameter) )
 	{
 		const Synt::FunctionType& function_pointer_type_name= **function_pointer_type_name_ptr;
 		// TODO - maybe check also reference tags?
 		if( function_pointer_type_name.return_type_ != nullptr )
-			PrepareTemplateSignatureParameter(*function_pointer_type_name.return_type_, names_scope, template_parameters, template_parameters_usage_flags );
+			CheckTemplateSignatureParameter(*function_pointer_type_name.return_type_, names_scope, template_parameters, template_parameters_usage_flags );
 		for( const Synt::FunctionArgument& arg : function_pointer_type_name.arguments_ )
-			PrepareTemplateSignatureParameter( arg.type_, names_scope, template_parameters, template_parameters_usage_flags );
+			CheckTemplateSignatureParameter( arg.type_, names_scope, template_parameters, template_parameters_usage_flags );
 	}
 	else U_ASSERT(false);
 }
