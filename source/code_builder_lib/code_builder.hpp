@@ -154,7 +154,6 @@ private:
 		NamesScope& names_scope,
 		const FilePos& file_pos,
 		std::vector<TypeTemplate::TemplateParameter>& template_parameters,
-		NamesScope& template_parameters_namespace,
 		std::vector<bool>& template_parameters_usage_flags );
 
 	void PrepareTemplateSignatureParameter(

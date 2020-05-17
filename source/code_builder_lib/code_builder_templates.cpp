@@ -114,14 +114,11 @@ void CodeBuilder::PrepareTypeTemplate(
 	template_parameters.reserve( type_template_declaration.args_.size() );
 	std::vector<bool> template_parameters_usage_flags;
 
-	NamesScope template_parameters_namespace( g_template_parameters_namespace_name, &names_scope );
-
 	ProcessTemplateArgs(
 		type_template_declaration.args_,
 		names_scope,
 		type_template_declaration.file_pos_,
 		template_parameters,
-		template_parameters_namespace,
 		template_parameters_usage_flags );
 
 	if( type_template_declaration.is_short_form_ )
@@ -130,7 +127,7 @@ void CodeBuilder::PrepareTypeTemplate(
 		// Assign template arguments to signature arguments.
 		for( const Synt::TypeTemplateBase::Arg& arg : type_template_declaration.args_ )
 		{
-			PrepareTemplateSignatureParameter( type_template_declaration.file_pos_, *arg.name, template_parameters_namespace, template_parameters, template_parameters_usage_flags );
+			PrepareTemplateSignatureParameter( type_template_declaration.file_pos_, *arg.name, names_scope, template_parameters, template_parameters_usage_flags );
 			type_template->signature_arguments.push_back(arg.name_expr.get());
 			type_template->default_signature_arguments.push_back(nullptr);
 		}
@@ -142,12 +139,12 @@ void CodeBuilder::PrepareTypeTemplate(
 		type_template->first_optional_signature_argument= 0u;
 		for( const Synt::TypeTemplateBase::SignatureArg& signature_arg : type_template_declaration.signature_args_ )
 		{
-			PrepareTemplateSignatureParameter( signature_arg.name, template_parameters_namespace, template_parameters, template_parameters_usage_flags );
+			PrepareTemplateSignatureParameter( signature_arg.name, names_scope, template_parameters, template_parameters_usage_flags );
 			type_template->signature_arguments.push_back(&signature_arg.name);
 
 			if( std::get_if<Synt::EmptyVariant>( &signature_arg.default_value ) == nullptr )
 			{
-				PrepareTemplateSignatureParameter( signature_arg.default_value, template_parameters_namespace, template_parameters, template_parameters_usage_flags );
+				PrepareTemplateSignatureParameter( signature_arg.default_value, names_scope, template_parameters, template_parameters_usage_flags );
 				type_template->default_signature_arguments.push_back(&signature_arg.default_value);
 			}
 			else
@@ -194,14 +191,11 @@ void CodeBuilder::PrepareFunctionTemplate(
 
 	std::vector<bool> template_parameters_usage_flags; // Currently unused, because function template have no signature.
 
-	NamesScope template_parameters_namespace( g_template_parameters_namespace_name, &names_scope );
-
 	ProcessTemplateArgs(
 		function_template_declaration.args_,
 		names_scope,
 		function_template_declaration.file_pos_,
 		function_template->template_parameters,
-		template_parameters_namespace,
 		template_parameters_usage_flags );
 
 	// TODO - check duplicates and function templates with same signature.
@@ -213,7 +207,6 @@ void CodeBuilder::ProcessTemplateArgs(
 	NamesScope& names_scope,
 	const FilePos& file_pos,
 	std::vector<TypeTemplate::TemplateParameter>& template_parameters,
-	NamesScope& template_parameters_namespace,
 	std::vector<bool>& template_parameters_usage_flags )
 {
 	U_ASSERT( template_parameters.empty() );
@@ -237,26 +230,16 @@ void CodeBuilder::ProcessTemplateArgs(
 		if( NameShadowsTemplateArgument( arg_name, names_scope ) )
 			REPORT_ERROR( DeclarationShadowsTemplateArgument, names_scope.GetErrors(), file_pos, arg_name );
 
+		template_parameters.emplace_back();
+		template_parameters.back().name= arg_name;
+		template_parameters_usage_flags.push_back(false);
+
 		if( arg.arg_type != nullptr )
 		{
 			// If template parameter is variable.
+			template_parameters.back().type_name= arg.arg_type;
 
-			// Resolve from outer space or from this template parameters.
-			const Value type_value= ResolveValue( file_pos, template_parameters_namespace, *global_function_context_, *arg.arg_type );
-			const Type* const type= type_value.GetTypeName();
-			if( type == nullptr )
-			{
-				REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), file_pos, *arg.arg_type );
-				continue;
-			}
-
-			if( !TypeIsValidForTemplateVariableArgument( *type ) )
-			{
-				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), file_pos, type );
-				continue;
-			}
-
-			// If type is template parameter, set usage flag.
+			bool arg_type_is_template= false;
 			const std::string* const arg_type_start= std::get_if<std::string>( &arg.arg_type->start_value );
 			if( arg_type_start != nullptr && arg.arg_type->tail == nullptr )
 			{
@@ -264,32 +247,30 @@ void CodeBuilder::ProcessTemplateArgs(
 				{
 					if( template_parameter.name == *arg_type_start)
 					{
+						arg_type_is_template= true;
 						template_parameters_usage_flags[ size_t(&template_parameter - template_parameters.data()) ]= true;
 						break;
 					}
 				}
 			}
 
-			template_parameters.emplace_back();
-			template_parameters.back().name= arg_name;
-			template_parameters.back().type_name= arg.arg_type;
-			template_parameters_usage_flags.push_back(false);
+			if( !arg_type_is_template )
+			{
+				// Resolve from outer space or from this template parameters.
+				const Value type_value= ResolveValue( file_pos, names_scope, *global_function_context_, *arg.arg_type );
+				const Type* const type= type_value.GetTypeName();
+				if( type == nullptr )
+				{
+					REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), file_pos, *arg.arg_type );
+					continue;
+				}
 
-			Variable variable;
-			variable.type= *type;
-			variable.constexpr_value= llvm::UndefValue::get( type->GetLLVMType() );
-			variable.llvm_value= CreateGlobalConstantVariable( *type, arg_name, variable.constexpr_value );
-
-			template_parameters_namespace.AddName( arg_name, Value( std::move(variable), file_pos ) /* TODO - set correct file_pos */ );
-		}
-		else
-		{
-			// If template parameter is type.
-
-			template_parameters.emplace_back();
-			template_parameters.back().name= arg_name;
-			template_parameters_usage_flags.push_back(false);
-			template_parameters_namespace.AddName( arg_name, Value( Type( FundamentalType( U_FundamentalType::i32, fundamental_llvm_types_.i32 ) ), file_pos ) ); // TODO - is this correct, use conncrete type?
+				if( !TypeIsValidForTemplateVariableArgument( *type ) )
+				{
+					REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), file_pos, type );
+					continue;
+				}
+			}
 		}
 	}
 
