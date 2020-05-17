@@ -224,15 +224,6 @@ public:
 	std::unique_ptr<Expression> expression;
 };
 
-struct ComplexName2Component
-{
-	std::variant<
-		std::string,
-		std::vector<Expression>
-		> name_or_template_paramenters;
-	std::unique_ptr<ComplexName2Component> next;
-};
-
 struct ComplexName
 {
 	std::variant<
@@ -241,7 +232,16 @@ struct ComplexName
 		std::string // name
 		> start_value;
 
-	std::unique_ptr<ComplexName2Component> tail;
+	struct Component
+	{
+		std::variant<
+			std::string,
+			std::vector<Expression>
+			> name_or_template_paramenters;
+		std::unique_ptr<Component> next;
+	};
+
+	std::unique_ptr<Component> tail;
 };
 
 struct ArrayTypeName final : public SyntaxElementBase

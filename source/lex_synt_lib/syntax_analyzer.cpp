@@ -1757,7 +1757,7 @@ std::vector<Expression> SyntaxAnalyzer::ParseTemplateParameters()
 ComplexName SyntaxAnalyzer::ParseComplexName()
 {
 	ComplexName complex_name;
-	std::unique_ptr<ComplexName2Component>* component= &complex_name.tail;
+	std::unique_ptr<ComplexName::Component>* component= &complex_name.tail;
 
 	if( !( it_->type == Lexem::Type::Identifier || it_->type == Lexem::Type::Scope ) )
 	{
@@ -1805,7 +1805,7 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 
 		if( it_->type == Lexem::Type::TemplateBracketLeft )
 		{
-			*component= std::make_unique<ComplexName2Component>();
+			*component= std::make_unique<ComplexName::Component>();
 			(*component)->name_or_template_paramenters= ParseTemplateParameters();
 			component= &((*component)->next);
 		}
@@ -1820,14 +1820,14 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 			return complex_name;
 		}
 
-		*component= std::make_unique<ComplexName2Component>();
+		*component= std::make_unique<ComplexName::Component>();
 		(*component)->name_or_template_paramenters= it_->text;
 		NextLexem();
 
 		if( it_->type == Lexem::Type::TemplateBracketLeft )
 		{
 			component= &((*component)->next);
-			*component= std::make_unique<ComplexName2Component>();
+			*component= std::make_unique<ComplexName::Component>();
 			(*component)->name_or_template_paramenters= ParseTemplateParameters();
 		}
 

@@ -3454,7 +3454,7 @@ Value CodeBuilder::ResolveValue(
 {
 	Value* value= nullptr;
 	Value temp_value_storage;
-	const Synt::ComplexName2Component* component= complex_name.tail.get();
+	const Synt::ComplexName::Component* component= complex_name.tail.get();
 	NamesScope* last_space= &names_scope;
 
 	if( std::get_if<Synt::EmptyVariant>(&complex_name.start_value) != nullptr )

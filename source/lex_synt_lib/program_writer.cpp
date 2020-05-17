@@ -48,18 +48,18 @@ void ElementWrite( const TypeofTypeName& typeof_type_name, std::ostream& stream 
 void ElementWrite( const ComplexName& complex_name, std::ostream& stream )
 {
 	if( std::get_if<EmptyVariant>(&complex_name.start_value) != nullptr )
-		stream << "::";
+	{}
 	else if( const auto typeof_type_name= std::get_if<TypeofTypeName>(&complex_name.start_value) )
 		ElementWrite( *typeof_type_name, stream );
 	else if(const auto simple_name= std::get_if<std::string>(&complex_name.start_value) )
 		stream << *simple_name;
+	else U_ASSERT(false);
 
 	auto tail= complex_name.tail.get();
 	while(tail != nullptr)
 	{
-		stream << "::";
 		if( const auto name= std::get_if<std::string>( &tail->name_or_template_paramenters ) )
-			stream << *name;
+			stream << "::" << *name;
 		else if( const auto template_prameters= std::get_if< std::vector<Expression> >( &tail->name_or_template_paramenters ) )
 		{
 			stream << "</ ";
@@ -794,6 +794,11 @@ void ElementWrite( const ProgramElements& elements, std::ostream& stream )
 {
 	for( const ProgramElement& element : elements )
 		ElementWrite( element, stream );
+}
+
+void WriteProgramElement( const ComplexName& complex_name, std::ostream& stream )
+{
+	ElementWrite( complex_name, stream );
 }
 
 void WriteProgram( const ProgramElements& program_elements, std::ostream& stream )

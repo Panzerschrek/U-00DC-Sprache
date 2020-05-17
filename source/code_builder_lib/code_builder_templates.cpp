@@ -322,7 +322,7 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 		ResolveForTemplateSignatureParameter( file_pos, signature_parameter, names_scope );
 	if( start_value.GetTypeTemplatesSet() != nullptr )
 	{
-		const Synt::ComplexName2Component* name_component= signature_parameter.tail.get();
+		const Synt::ComplexName::Component* name_component= signature_parameter.tail.get();
 		if( name_component == nullptr )
 		{
 			REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), file_pos, "TODO" );
@@ -579,7 +579,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 		if( inner_type_template == nullptr )
 			return DeducedTemplateParameter::Invalid();
 
-		const Synt::ComplexName2Component* name_component= signature_parameter.tail.get();
+		const Synt::ComplexName::Component* name_component= signature_parameter.tail.get();
 		if( name_component == nullptr )
 			return DeducedTemplateParameter::Invalid();
 
