@@ -823,23 +823,6 @@ Value* CodeBuilder::GenTemplateType(
 	for( const Synt::Expression& expr : template_arguments )
 		arguments_calculated.push_back( BuildExpressionCode( expr, arguments_names_scope, function_context ) );
 
-	if( type_templates_set.type_templates.size() == 1u )
-	{
-		const auto res=
-			GenTemplateType(
-				file_pos,
-				type_templates_set.type_templates.front(),
-				arguments_calculated,
-				arguments_names_scope,
-				false ).type;
-		if( res == nullptr )
-		{
-			REPORT_ERROR( TemplateParametersDeductionFailed, arguments_names_scope.GetErrors(), file_pos );
-			return nullptr;
-		}
-		return res;
-	}
-
 	std::vector<TemplateTypeGenerationResult> generated_types;
 	for( const TypeTemplatePtr& type_template : type_templates_set.type_templates )
 	{
@@ -852,8 +835,8 @@ Value* CodeBuilder::GenTemplateType(
 				true );
 		if( generated_type.type_template != nullptr )
 		{
-			generated_types.push_back( generated_type );
 			U_ASSERT(generated_type.deduced_template_parameters.size() >= template_arguments.size());
+			generated_types.push_back( std::move(generated_type) );
 		}
 	}
 
