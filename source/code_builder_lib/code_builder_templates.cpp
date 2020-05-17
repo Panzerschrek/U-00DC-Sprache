@@ -312,20 +312,19 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 			if( template_parameter.name == *signature_parameter_start )
 			{
 				template_parameters_usage_flags[ size_t(&template_parameter - template_parameters.data()) ]= true;
-				break;
+				return;
 			}
 		}
 	}
 
 	// Do recursive preresolve for subsequent deduction.
-	const Value start_value=
-		ResolveForTemplateSignatureParameter( file_pos, signature_parameter, names_scope );
+	const Value start_value= ResolveForTemplateSignatureParameter( file_pos, signature_parameter, names_scope );
 	if( start_value.GetTypeTemplatesSet() != nullptr )
 	{
 		const Synt::ComplexName::Component* name_component= signature_parameter.tail.get();
 		if( name_component == nullptr )
 		{
-			REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), file_pos, "TODO" );
+			REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), file_pos, "TODO: template name" );
 			return;
 		}
 
@@ -335,7 +334,7 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 		const auto last_template_parameters= std::get_if< std::vector<Synt::Expression> >( &name_component->name_or_template_paramenters );
 		if( last_template_parameters == nullptr )
 		{
-			REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), file_pos, "TODO" );
+			REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), file_pos, "TODO:  template name" );
 			return;
 		}
 
@@ -350,34 +349,21 @@ void CodeBuilder::PrepareTemplateSignatureParameter(
 	const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 	std::vector<bool>& template_parameters_usage_flags )
 {
-	bool special_expr_type= true;
-
 	if( const auto named_operand= std::get_if<Synt::NamedOperand>( &template_parameter ) )
 	{
 		if( named_operand->postfix_operators_.empty() && named_operand->prefix_operators_.empty() )
-			PrepareTemplateSignatureParameter( named_operand->file_pos_, named_operand->name_, names_scope, template_parameters, template_parameters_usage_flags );
-		else
-			special_expr_type= false;
+			return PrepareTemplateSignatureParameter( named_operand->file_pos_, named_operand->name_, names_scope, template_parameters, template_parameters_usage_flags );
 	}
 	else if( const auto type_name= std::get_if<Synt::TypeNameInExpression>( &template_parameter ) )
-		PrepareTemplateSignatureParameter( type_name->type_name, names_scope, template_parameters, template_parameters_usage_flags );
+		return PrepareTemplateSignatureParameter( type_name->type_name, names_scope, template_parameters, template_parameters_usage_flags );
 	else if( const auto bracket_expression= std::get_if<Synt::BracketExpression>( &template_parameter ) )
 	{
 		if( bracket_expression->postfix_operators_.empty() && bracket_expression->prefix_operators_.empty() )
-			PrepareTemplateSignatureParameter( *bracket_expression->expression_, names_scope, template_parameters, template_parameters_usage_flags );
-		else
-			special_expr_type= false;
+			return PrepareTemplateSignatureParameter( *bracket_expression->expression_, names_scope, template_parameters, template_parameters_usage_flags );
 	}
-	else
-		special_expr_type= false;
-
-	if( special_expr_type )
-		return;
 
 	// If this is not special expression - assume that this is variable-expression.
-
 	const Variable var= BuildExpressionCodeEnsureVariable( template_parameter, names_scope, *global_function_context_ );
-
 	if( !TypeIsValidForTemplateVariableArgument( var.type ) )
 	{
 		REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), Synt::GetExpressionFilePos( template_parameter ), var.type );
@@ -980,9 +966,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	} // for signature arguments
 
 	if( deduction_failed )
-	{
 		return result;
-	}
 	result.type_template= type_template_ptr;
 
 	for( size_t i = 0u; i < deduced_template_args.size() ; ++i )
