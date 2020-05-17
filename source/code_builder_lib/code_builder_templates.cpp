@@ -1432,31 +1432,9 @@ void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& fi
 						REPORT_ERROR( IncompleteMemberOfClassTemplate, class_.members.GetErrors(), file_pos, name );
 				}
 			}
-			else if( value.GetClassField() != nullptr )
-			{}
-			else if( value.GetTypeTemplatesSet() != nullptr )
-			{}
-			else if( const NamesScopePtr inner_namespace= value.GetNamespace() )
-			{
-				const std::string& generated_class_name= Class::c_template_class_name;
-
-				// This must be only namespace for class template instantiation.
-				inner_namespace->ForEachInThisScope(
-					[&]( const std::string& name, const Value& inner_namespace_value )
-					{
-						if( name == generated_class_name )
-						{
-							const Type* const generated_class_type= inner_namespace_value.GetTypeName();
-							U_ASSERT( generated_class_type != nullptr );
-							Class* const generated_class= generated_class_type->GetClassType();
-							U_ASSERT( generated_class != nullptr );
-							U_ASSERT( generated_class->base_template != std::nullopt );
-							ReportAboutIncompleteMembersOfTemplateClass( file_pos, *generated_class );
-						}
-					});
-			}
-			else if( value.GetVariable() != nullptr )
-			{}
+			else if( value.GetClassField() != nullptr ) {}
+			else if( value.GetTypeTemplatesSet() != nullptr ) {}
+			else if( value.GetVariable() != nullptr ) {}
 			else U_ASSERT(false);
 		} );
 }
