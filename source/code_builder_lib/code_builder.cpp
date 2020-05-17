@@ -3544,10 +3544,6 @@ Value CodeBuilder::ResolveValue(
 				REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), file_pos, *component_name );
 				return ErrorValue();
 			}
-			else
-			{
-				// TODO - error
-			}
 
 			if( value == nullptr )
 				REPORT_ERROR( NameNotFound, names_scope.GetErrors(), file_pos, *component_name );

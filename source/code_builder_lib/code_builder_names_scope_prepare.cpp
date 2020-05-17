@@ -448,10 +448,9 @@ void CodeBuilder::NamesScopeFillOutOfLineElements(
 					if( const auto class_= type->GetClassType() )
 						prev_value= class_->members.GetThisScopeValue( func.name_[i] );
 				}
-				else
-				{
-					// TODO - error
-				}
+
+				if( prev_value == nullptr )
+					REPORT_ERROR( NameNotFound, names_scope.GetErrors(), func.file_pos_, func.name_[i] );
 			}
 
 			if( prev_value == nullptr || prev_value->GetFunctionsSet() == nullptr )

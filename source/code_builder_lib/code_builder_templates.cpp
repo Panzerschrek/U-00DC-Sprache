@@ -1495,7 +1495,7 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 
 	if( result.template_functions.empty() )
 	{
-		REPORT_ERROR( TemplateFunctionGenerationFailed, arguments_names_scope.GetErrors(), file_pos, "TODO - some template name" );
+		REPORT_ERROR( TemplateFunctionGenerationFailed, arguments_names_scope.GetErrors(), file_pos, function_templates.front()->syntax_element->function_->name_.back() );
 		return nullptr;
 	}
 

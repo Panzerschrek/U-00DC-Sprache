@@ -516,7 +516,6 @@ private:
 	enum class ResolveMode
 	{
 		Regular,
-		ForDeclaration,
 		ForTemplateSignatureParameter,
 	};
 

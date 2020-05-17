@@ -775,7 +775,7 @@ public:
 		BodyGenerationDisabled,
 	};
 
-	std::vector<std::string> name_; // A, A::B, A::B::C::D
+	std::vector<std::string> name_; // A, A::B, A::B::C::D, ::A, ::A::B
 	Expression condition_;
 	FunctionType type_;
 	std::unique_ptr<StructNamedInitializer> constructor_initialization_list_;
