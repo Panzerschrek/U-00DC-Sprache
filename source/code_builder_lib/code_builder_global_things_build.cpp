@@ -397,7 +397,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 			const Type* const type_name= parent_value.GetTypeName();
 			if( type_name == nullptr )
 			{
-				REPORT_ERROR( NameIsNotTypeName, class_parent_namespace.GetErrors(), class_declaration.file_pos_, type_name->ToString() );
+				REPORT_ERROR( NameIsNotTypeName, class_parent_namespace.GetErrors(), class_declaration.file_pos_, parent );
 				continue;
 			}
 
