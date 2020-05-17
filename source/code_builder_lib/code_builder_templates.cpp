@@ -967,9 +967,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	}
 
 	if( skip_type_generation )
-	{
 		return result;
-	}
 
 	// Encode name for caching. Name must be unique for each template and its parameters.
 	const std::string name_encoded=
@@ -1053,7 +1051,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	const FunctionTemplatePtr& function_template_ptr,
 	const ArgsVector<Function::Arg>& actual_args,
 	const bool first_actual_arg_is_this,
-	bool skip_arguments )
+	const bool skip_arguments )
 {
 	const FunctionTemplate& function_template= *function_template_ptr;
 	const Synt::Function& function_declaration= *function_template.syntax_element->function_;
