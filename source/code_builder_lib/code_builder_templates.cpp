@@ -935,11 +935,6 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		else
 			value= BuildExpressionCode( *type_template.default_signature_arguments[i], *template_parameters_namespace, *global_function_context_ );
 
-		if( value.GetErrorValue() != nullptr )
-			continue;
-
-		const Synt::Expression& expr= *type_template.signature_arguments[i];
-
 		if( const Type* const type_name= value.GetTypeName() )
 			result_signature_parameters[i]= *type_name;
 		else if( const Variable* const variable= value.GetVariable() )
@@ -951,7 +946,13 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		}
 
 		const DeducedTemplateParameter deduced=
-			DeduceTemplateArguments( type_template, result_signature_parameters[i], expr, file_pos, deduced_template_args, template_names_scope );
+			DeduceTemplateArguments(
+				type_template,
+				result_signature_parameters[i],
+				*type_template.signature_arguments[i],
+				file_pos,
+				deduced_template_args,
+				template_names_scope );
 		if( deduced.IsInvalid() )
 		{
 			deduction_failed= true;
@@ -962,22 +963,18 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		// Update known arguments.
 		for( size_t j= 0u; j < deduced_template_args.size(); ++j )
 		{
-			const DeducibleTemplateParameter& arg= deduced_template_args[j];
 			Value* const value= template_parameters_namespace->GetThisScopeValue( type_template.template_parameters[j].name );
 			U_ASSERT( value != nullptr );
+			if( value->GetYetNotDeducedTemplateArg() == nullptr )
+				continue;
 
+			const DeducibleTemplateParameter& arg= deduced_template_args[j];
 			if( std::get_if<int>( &arg ) != nullptr )
 			{} // Not deduced yet.
-			else if( const Type* const type= std::get_if<Type>( &arg ) )
-			{
-				if( value->GetYetNotDeducedTemplateArg() != nullptr )
-					*value= Value( *type, type_template.syntax_element->file_pos_ /*TODO - set correctfile_pos */ );
-			}
-			else if( const Variable* const variable= std::get_if<Variable>( &arg ) )
-			{
-				if( value->GetYetNotDeducedTemplateArg() != nullptr )
-					*value= Value( *variable, type_template.syntax_element->file_pos_ /*TODO - set correctfile_pos */ );
-			}
+			else if( const auto type= std::get_if<Type>( &arg ) )
+				*value= Value( *type, type_template.syntax_element->file_pos_ /*TODO - set correct file_pos */ );
+			else if( const auto variable= std::get_if<Variable>( &arg ) )
+				*value= Value( *variable, type_template.syntax_element->file_pos_ /*TODO - set correct file_pos */ );
 			else U_ASSERT( false );
 		}
 	} // for signature arguments
