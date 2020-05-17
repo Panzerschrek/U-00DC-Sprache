@@ -154,23 +154,22 @@ private:
 		NamesScope& names_scope,
 		const FilePos& file_pos,
 		std::vector<TypeTemplate::TemplateParameter>& template_parameters,
-		NamesScope& template_parameters_namespace,
 		std::vector<bool>& template_parameters_usage_flags );
 
-	void PrepareTemplateSignatureParameter(
+	void CheckTemplateSignatureParameter(
 		const FilePos& file_pos,
 		const Synt::ComplexName& signature_parameter,
 		NamesScope& names_scope,
 		const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags );
 
-	void PrepareTemplateSignatureParameter(
+	void CheckTemplateSignatureParameter(
 		const Synt::Expression& template_parameter,
 		NamesScope& names_scope,
 		const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags );
 
-	void PrepareTemplateSignatureParameter(
+	void CheckTemplateSignatureParameter(
 		const Synt::TypeName& template_parameter,
 		NamesScope& names_scope,
 		const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
@@ -219,9 +218,8 @@ private:
 	TemplateTypeGenerationResult GenTemplateType(
 		const FilePos& file_pos,
 		const TypeTemplatePtr& type_template_ptr,
-		const std::vector<Synt::Expression>& template_arguments,
+		const std::vector<Value>& template_arguments,
 		NamesScope& arguments_names_scope,
-		FunctionContext& function_context,
 		bool skip_type_generation );
 
 	const FunctionVariable* GenTemplateFunction(
