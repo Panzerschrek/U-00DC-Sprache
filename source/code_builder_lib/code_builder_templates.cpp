@@ -1081,8 +1081,6 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		template_parameters_namespace->AddName( known_template_param.first, known_template_param.second );
 	for( const auto& template_param : function_template.template_parameters )
 		template_parameters_namespace->AddName( template_param.name, YetNotDeducedTemplateArg() );
-
-	bool deduction_failed= false;
 	std::vector<DeducedTemplateParameter> deduced_temlpate_parameters( function_declaration.type_.arguments_.size() );
 	for( size_t i= 0u; i < function_declaration.type_.arguments_.size() && !skip_arguments; ++i )
 	{
@@ -1094,20 +1092,13 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 
 		// Functin arg declared as "mut&", but given something immutable.
 		if( expected_arg_is_mutalbe_reference && !given_args[i].is_mutable )
-		{
-			deduction_failed= true;
-			continue;
-		}
+			return nullptr;
 
 		if( i == 0u && function_argument.name_ == Keywords::this_ )
 		{
 			if( function_template.base_class != nullptr &&
 				!( given_args[i].type == function_template.base_class || ReferenceIsConvertible( given_args[i].type, function_template.base_class, errors_container, file_pos ) ) )
-			{
-				// Givent type and type of "this" are different.
-				deduction_failed= true;
-				continue;
-			}
+				return nullptr;
 			deduced_temlpate_parameters[i]= DeducedTemplateParameter::Type();
 		}
 		else
@@ -1144,17 +1135,14 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 							deduced_specially= true;
 						}
 						else
-						{
-							deduction_failed= true;
-							continue;
-						}
+							return nullptr;
 					}
 				}
 			}
 
 			if( !deduced_specially )
 			{
-				DeducedTemplateParameter deduced=
+				deduced_temlpate_parameters[i]=
 					DeduceTemplateArguments(
 						function_template,
 						given_args[i].type,
@@ -1162,41 +1150,31 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 						function_argument.file_pos_,
 						deduced_template_args,
 						*template_parameters_namespace /*TODO - is this correct namespace? */ );
-				if( deduced.IsInvalid() )
-				{
-					deduction_failed= true;
-					continue;
-				}
-				deduced_temlpate_parameters[i]= std::move(deduced);
+				if( deduced_temlpate_parameters[i].IsInvalid() )
+					return nullptr;
 			}
 		}
 
 		// Update known arguments in names scope.
 		for( size_t j= 0u; j < deduced_template_args.size(); ++j )
 		{
-			const DeducibleTemplateParameter& arg= deduced_template_args[j];
 			Value* const value= template_parameters_namespace->GetThisScopeValue( function_template.template_parameters[j].name );
 			U_ASSERT( value != nullptr );
+			if( value->GetYetNotDeducedTemplateArg() == nullptr )
+				continue;
+
+			const DeducibleTemplateParameter& arg= deduced_template_args[j];
 
 			if( std::get_if<int>( &arg ) != nullptr )
 			{} // Not deduced yet.
 			else if( const Type* const type= std::get_if<Type>( &arg ) )
-			{
-				if( value->GetYetNotDeducedTemplateArg() != nullptr )
-					*value= Value( *type, function_template.file_pos /*TODO - set correctfile_pos */ );
-			}
+				*value= Value( *type, function_template.file_pos /*TODO - set correctfile_pos */ );
 			else if( const Variable* const variable= std::get_if<Variable>( &arg ) )
-			{
-				if( value->GetYetNotDeducedTemplateArg() != nullptr )
-					*value= Value( *variable, function_template.file_pos /*TODO - set correctfile_pos */ );
-			}
+				*value= Value( *variable, function_template.file_pos /*TODO - set correctfile_pos */ );
 			else U_ASSERT( false );
 		}
 
 	} // for template function arguments
-
-	if( deduction_failed )
-		return nullptr;
 
 	std::vector<TemplateParameter> result_template_parameters(deduced_template_args.size());
 	for( size_t i = 0u; i < deduced_template_args.size() ; ++i )
