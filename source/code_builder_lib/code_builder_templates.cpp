@@ -448,6 +448,9 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 		}
 
 		// Check given type and type from signature, deduce also some complex names.
+		if( template_.template_parameters[ dependend_arg_index ].type_name == nullptr )
+			return DeducedTemplateParameter::Invalid();
+
 		const DeducedTemplateParameter deduced_value_type=
 			DeduceTemplateArguments(
 				template_,
@@ -1351,64 +1354,21 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 		if( template_parameters.size() > function_template.template_parameters.size() )
 			continue;
 
-		// Check given arguments and template parameters.
 		bool ok= true;
+		DeducibleTemplateParameters deducible_template_parameters( function_template.template_parameters.size() );
 		for( size_t i= 0u; i < template_parameters.size(); ++i )
 		{
-			const TemplateBase::TemplateParameter& function_template_parameter= function_template.template_parameters[i];
-			if( std::get_if<Type>( &template_parameters[i] ) != nullptr )
-			{
-				if( function_template_parameter.type_name != nullptr )
-				{
-					ok= false; // Error, type parameter given, but value parameter expected.
-					break;
-				}
-			}
-			else if( const Variable* const given_variable= std::get_if<Variable>( &template_parameters[i] ) )
-			{
-				if( function_template_parameter.type_name == nullptr )
-				{
-					ok= false; // Error, value parameter given, but type parameter expected.
-					break;
-				}
-
-				// Check type.
-				size_t type_parameter_index= ~0u;
-				const auto type_name= std::get_if<std::string>( &function_template_parameter.type_name->start_value );
-				if( type_name != nullptr && function_template_parameter.type_name->tail == nullptr )
-				{
-					for( size_t j= 0u; j < i; ++j )
-					{
-						if( *type_name == function_template.template_parameters[j].name )
-						{
-							type_parameter_index= j;
-							break;
-						}
-					}
-				}
-				if( type_parameter_index != ~0u )
-				{
-					if( const Type* const expected_type= std::get_if<Type>( &template_parameters[type_parameter_index] ) )
-						ok= *expected_type == given_variable->type;
-					else
-						ok= false;
-				}
-				else
-				{
-					const Value type_value=
-						ResolveValue( function_template.file_pos, *function_template.parent_namespace, *global_function_context_, *function_template_parameter.type_name );
-					if( const Type* const expected_type= type_value.GetTypeName() )
-						ok= *expected_type == given_variable->type;
-					else
-						ok= false;
-				}
-
-				if( !ok )
-					break;
-			}
-			else U_ASSERT(false);
-
-		} // for given template parameters
+			const auto deduced=
+				DeduceTemplateArguments(
+					function_template,
+					template_parameters[i],
+					*function_template.syntax_element->args_[i].name,
+					Synt::GetExpressionFilePos( *function_template.syntax_element->args_[i].name_expr ),
+					deducible_template_parameters,
+					*function_template.parent_namespace );
+			if( deduced.IsInvalid() )
+				ok= false;
+		}
 
 		if( !ok )
 			continue;
