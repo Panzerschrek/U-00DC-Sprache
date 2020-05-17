@@ -11,6 +11,41 @@ namespace U
 namespace Synt
 {
 
+namespace
+{
+
+// Prototypes start
+void ElementWrite( const EmptyVariant& empty_variant, std::ostream& stream );
+void ElementWrite( const ComplexName& complex_name, std::ostream& stream );
+void ElementWrite( const ArrayTypeName& array_type_name, std::ostream& stream );
+void ElementWrite( const TupleType& tuple_type_name, std::ostream& stream );
+void ElementWrite( const TypeofTypeName& typeof_type_name, std::ostream& stream );
+void ElementWrite( const NamedTypeName& named_type_name, std::ostream& stream );
+void ElementWriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& stream );
+void ElementWrite( const FunctionType& function_type_name, std::ostream& stream );
+void ElementWrite( const FunctionArgument& arg, std::ostream& stream );
+void ElementWrite( const TypeName& type_name, std::ostream& stream );
+void ElementWrite( const Expression& expression, std::ostream& stream );
+void ElementWrite( const Initializer& initializer, std::ostream& stream );
+void ElementWrite( const ReferenceModifier& reference_modifier, std::ostream& stream );
+void ElementWrite( const MutabilityModifier& mutability_modifier, std::ostream& stream );
+void ElementWrite( const Function& function, std::ostream& stream );
+void ElementWrite( const Class& class_, std::ostream& stream );
+void ElementWrite( const Namespace& namespace_, std::ostream& stream );
+void ElementWrite( const VariablesDeclaration& variables_declaration, std::ostream& stream );
+void ElementWrite( const AutoVariableDeclaration& auto_variable_declaration, std::ostream& stream );
+void ElementWrite( const StaticAssert& static_assert_, std::ostream& stream );
+void ElementWrite( const Enum& enum_, std::ostream& stream );
+void ElementWrite( const Typedef& typedef_, std::ostream& stream );
+void ElementWrite( const TypeTemplateBase& type_template, std::ostream& stream );
+void ElementWrite( const FunctionTemplate& function_template, std::ostream& stream );
+void ElementWrite( const ClassField& class_field, std::ostream& stream );
+void ElementWrite( const ClassVisibilityLabel& visibility_label, std::ostream& stream );
+void ElementWrite( const ClassElements& class_elements, std::ostream& stream );
+void ElementWrite( const ProgramElement& element, std::ostream& stream );
+void ElementWrite( const ProgramElements& elements, std::ostream& stream );
+// Prototypes end
+
 class UniversalVisitor final
 {
 public:
@@ -32,18 +67,7 @@ private:
 	std::ostream& stream;
 };
 
-// Prototypes start
-void ElementWrite( const ProgramElements& elements, std::ostream& stream );
-void ElementWrite( const EmptyVariant&, std::ostream& ){}
-void ElementWrite( const TypeName& type_name, std::ostream& stream );
-void ElementWrite( const Expression& expression, std::ostream& stream );
-void ElementWrite( const ReferenceModifier& reference_modifier, std::ostream& stream );
-void ElementWrite( const MutabilityModifier& mutability_modifier, std::ostream& stream );
-void ElementWrite( const FunctionArgument& arg, std::ostream& stream );
-void ElementWrite( const ClassElements& class_elements, std::ostream& stream );
-void ElementWrite( const TypeofTypeName& typeof_type_name, std::ostream& stream );
-
-// Prototypes end
+void ElementWrite( const EmptyVariant&, std::ostream& ) {}
 
 void ElementWrite( const ComplexName& complex_name, std::ostream& stream )
 {
@@ -795,6 +819,8 @@ void ElementWrite( const ProgramElements& elements, std::ostream& stream )
 	for( const ProgramElement& element : elements )
 		ElementWrite( element, stream );
 }
+
+} // namespace
 
 void WriteProgramElement( const ComplexName& complex_name, std::ostream& stream )
 {
