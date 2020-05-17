@@ -939,32 +939,25 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 			continue;
 
 		const Synt::Expression& expr= *type_template.signature_arguments[i];
-		// TODO - maybe add some errors, if not deduced?
+
 		if( const Type* const type_name= value.GetTypeName() )
-		{
-			const DeducedTemplateParameter deduced= DeduceTemplateArguments( type_template, *type_name, expr, file_pos, deduced_template_args, template_names_scope );
-			if( deduced.IsInvalid() )
-			{
-				deduction_failed= true;
-				continue;
-			}
-			result.deduced_template_parameters[i]= deduced;
-		}
+			result_signature_parameters[i]= *type_name;
 		else if( const Variable* const variable= value.GetVariable() )
-		{
-			const DeducedTemplateParameter deduced= DeduceTemplateArguments( type_template, *variable, expr, file_pos, deduced_template_args, template_names_scope );
-			if( deduced.IsInvalid() )
-			{
-				deduction_failed= true;
-				continue;
-			}
-			result.deduced_template_parameters[i]= deduced;
-		}
+			result_signature_parameters[i]= *variable;
 		else
 		{
 			REPORT_ERROR( InvalidValueAsTemplateArgument, arguments_names_scope.GetErrors(), file_pos, value.GetKindName() );
 			continue;
 		}
+
+		const DeducedTemplateParameter deduced=
+			DeduceTemplateArguments( type_template, result_signature_parameters[i], expr, file_pos, deduced_template_args, template_names_scope );
+		if( deduced.IsInvalid() )
+		{
+			deduction_failed= true;
+			continue;
+		}
+		result.deduced_template_parameters[i]= deduced;
 
 		// Update known arguments.
 		for( size_t j= 0u; j < deduced_template_args.size(); ++j )
@@ -987,16 +980,6 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 			}
 			else U_ASSERT( false );
 		}
-
-		if( !deduction_failed )
-		{
-			const Value result_singature_parameter= BuildExpressionCode( expr, *template_parameters_namespace, *global_function_context_ );
-			if( const Type* const type_name= result_singature_parameter.GetTypeName() )
-				result_signature_parameters[i]= *type_name;
-			else if( const Variable* const variable= result_singature_parameter.GetVariable() )
-				result_signature_parameters[i]= *variable;
-		}
-
 	} // for signature arguments
 
 	if( deduction_failed )
