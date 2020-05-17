@@ -476,6 +476,45 @@ U_TEST( TemplateParametersDeductionFailed_Test11 )
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 18u ) );
 }
 
+U_TEST( TemplateParametersDeductionFailed_Test12 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ i32 x /> struct Box {}
+
+		type T= Box</ 0u />; // Value type mismatch - required "i32" used "u32"
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 4u ) );
+}
+
+U_TEST( TemplateParametersDeductionFailed_Test13 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type Y /> struct Box {}
+
+		type ZeroBox= Box</ 0 />; // Expected type, value given
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 4u ) );
+}
+
+U_TEST( TemplateParametersDeductionFailed_Test14 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ u32 S /> struct Box {}
+
+		type U32Box= Box</ u32 />; // Expected value, type given
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 4u ) );
+}
+
 U_TEST( ExpectedConstantExpression_InTemplateSignatureArgument_Test0 )
 {
 	static const char c_program_text[]=
