@@ -198,6 +198,13 @@ void CodeBuilder::PrepareFunctionTemplate(
 		function_template->template_parameters,
 		template_parameters_usage_flags );
 
+	// Do not report about unused template parameters because they may not be used in function signature or even in function type but used only inside body.
+	// For example:
+	// template</ type T /> fn Foo()
+	// {
+	//		T::DoSomething();
+	// }
+
 	// TODO - check duplicates and function templates with same signature.
 	functions_set.template_functions.push_back( function_template );
 }
