@@ -838,12 +838,19 @@ Value* CodeBuilder::GenTemplateType(
 	const FilePos& file_pos,
 	const TypeTemplatesSet& type_templates_set,
 	const std::vector<Synt::Expression>& template_arguments,
-	NamesScope& arguments_names_scope )
+	NamesScope& arguments_names_scope,
+	FunctionContext& function_context )
 {
 	if( type_templates_set.type_templates.size() == 1u )
 	{
 		const auto res=
-			GenTemplateType( file_pos, type_templates_set.type_templates.front(), template_arguments, arguments_names_scope, false ).type;
+			GenTemplateType(
+				file_pos,
+				type_templates_set.type_templates.front(),
+				template_arguments,
+				arguments_names_scope,
+				function_context,
+				false ).type;
 		if( res == nullptr )
 		{
 			REPORT_ERROR( TemplateParametersDeductionFailed, arguments_names_scope.GetErrors(), file_pos );
@@ -861,6 +868,7 @@ Value* CodeBuilder::GenTemplateType(
 				type_template,
 				template_arguments,
 				arguments_names_scope,
+				function_context,
 				true );
 		if( generated_type.type_template != nullptr )
 		{
@@ -876,7 +884,14 @@ Value* CodeBuilder::GenTemplateType(
 	}
 
 	if( const TemplateTypeGenerationResult* const selected_template= SelectTemplateType( generated_types, template_arguments.size() ) )
-		return GenTemplateType( file_pos, selected_template->type_template, template_arguments, arguments_names_scope, false ).type;
+		return
+			GenTemplateType(
+				file_pos,
+				selected_template->type_template,
+				template_arguments,
+				arguments_names_scope,
+				function_context,
+				false ).type;
 	else
 	{
 		REPORT_ERROR( CouldNotSelectMoreSpicializedTypeTemplate, arguments_names_scope.GetErrors(), file_pos );
@@ -889,6 +904,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	const TypeTemplatePtr& type_template_ptr,
 	const std::vector<Synt::Expression>& template_arguments,
 	NamesScope& arguments_names_scope,
+	FunctionContext& function_context,
 	const bool skip_type_generation )
 {
 	// This method does not generate some errors, because instantiation may fail
@@ -915,7 +931,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	{
 		Value value;
 		if( i < template_arguments.size() )
-			value= BuildExpressionCode( template_arguments[i], arguments_names_scope, *global_function_context_ );
+			value= BuildExpressionCode( template_arguments[i], arguments_names_scope, function_context );
 		else
 			value= BuildExpressionCode( *type_template.default_signature_arguments[i], *template_parameters_namespace, *global_function_context_ );
 
@@ -1336,12 +1352,12 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	return &function_variable;
 }
 
-// TODO - pass function context.
 Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 	const FilePos& file_pos,
 	const std::vector<FunctionTemplatePtr>& function_templates,
 	const std::vector<Synt::Expression>& template_arguments,
-	NamesScope& arguments_names_scope )
+	NamesScope& arguments_names_scope,
+	FunctionContext& function_context )
 {
 	U_ASSERT( !function_templates.empty() );
 
@@ -1349,7 +1365,7 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 	bool something_is_wrong= false;
 	for( const Synt::Expression& expr : template_arguments )
 	{
-		const Value value= BuildExpressionCode( expr, arguments_names_scope, *global_function_context_ );
+		const Value value= BuildExpressionCode( expr, arguments_names_scope, function_context );
 		if( const auto type_name= value.GetTypeName() )
 			template_parameters.push_back( *type_name );
 		else if( const auto variable= value.GetVariable() )

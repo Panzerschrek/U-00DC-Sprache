@@ -3562,7 +3562,8 @@ Value CodeBuilder::ResolveValue(
 						file_pos,
 						*type_templates_set,
 						*template_parameters,
-						names_scope );
+						names_scope,
+						function_context );
 				if( value == nullptr )
 					return ErrorValue();
 
@@ -3585,7 +3586,8 @@ Value CodeBuilder::ResolveValue(
 						file_pos,
 						functions_set->template_functions,
 						*template_parameters,
-						names_scope );
+						names_scope,
+						function_context );
 				if( value == nullptr )
 				{
 					REPORT_ERROR( TemplateFunctionGenerationFailed, names_scope.GetErrors(), file_pos, complex_name );

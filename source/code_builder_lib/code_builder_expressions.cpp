@@ -2385,7 +2385,8 @@ Value CodeBuilder::BuildPostfixOperator(
 						member_access_operator.file_pos_,
 						functions_set->template_functions,
 						member_access_operator.template_parameters,
-						names );
+						names,
+						function_context );
 				if( inserted_value == nullptr )
 					return ErrorValue();
 
