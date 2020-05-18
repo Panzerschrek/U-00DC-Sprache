@@ -51,11 +51,7 @@ fn constexpr all_tuple_elements_is_unique() : bool
 		auto mut j= 0s;
 		for( & element_j : typeinfo</T/>.elements_list )
 		{
-
-			auto& element_type_typeinfo_i= element_i.type;
-			auto& element_type_typeinfo_j= element_j.type;
-
-			if( i != j && is_same_type</ typeof(element_type_typeinfo_i), typeof(element_type_typeinfo_j) />() )
+			if( i != j && is_same_type</ typeof(element_i.type), typeof(element_j.type) />() )
 			{
 				return false;
 			}
@@ -72,19 +68,12 @@ fn constexpr type_is_one_of_tuple_elements() : bool
 {
 	for( & element : typeinfo</Tup/>.elements_list )
 	{
-		auto& element_type_typeinfo= element.type;
-		static_if( is_same_type</ typeof(element_type_typeinfo), typeof(typeinfo</C/>) />() ) // types are same if typeinfo is same
+		static_if( is_same_type</ typeof(element.type)::src_type, C />() )
 		{
 			return true;
 		}
 	}
 	return false;
-}
-
-template</type T/>
-struct TypedefHelper
-{
-	type TT= T;
 }
 
 template</ type Y /> // Param - nonempty tuple with unique types.
@@ -104,10 +93,10 @@ public:
 		( index_(0), storage_= zero_init )
 	{
 		auto& element_type_typeinfo= typeinfo</Y/>.elements_list[0].type;
-		var TypedefHelper</ typeof(element_type_typeinfo) />::TT::src_type mut val;
+		var typeof(element_type_typeinfo)::src_type mut val;
 		unsafe
 		{
-			move_unsafe( cast_ref_unsafe</ TypedefHelper</ typeof(element_type_typeinfo) />::TT::src_type />(storage_), move(val) );
+			move_unsafe( cast_ref_unsafe</ typeof(element_type_typeinfo)::src_type />(storage_), move(val) );
 		}
 	}
 
@@ -119,13 +108,12 @@ public:
 		auto mut cur_index= 0s;
 		for( & element : typeinfo</Y/>.elements_list )
 		{
-			auto& element_type_typeinfo= element.type;
 			if( cur_index == size_type(other.index_) )
 			{
 				unsafe
 				{
-					auto mut copy = cast_ref_unsafe</ TypedefHelper</ typeof(element_type_typeinfo) />::TT::src_type />(other.storage_);
-					move_unsafe( cast_ref_unsafe</ TypedefHelper</ typeof(element_type_typeinfo) />::TT::src_type />(storage_), move(copy) );
+					auto mut copy = cast_ref_unsafe</ typeof(element.type)::src_type />(other.storage_);
+					move_unsafe( cast_ref_unsafe</ typeof(element.type)::src_type />(storage_), move(copy) );
 				}
 				return;
 			}
@@ -141,8 +129,7 @@ public:
 		auto mut cur_index= 0s;
 		for( & element : typeinfo</Y/>.elements_list )
 		{
-			auto& element_type_typeinfo= element.type;
-			static_if( is_same_type</ typeof(element_type_typeinfo), typeof(typeinfo</T/>) />() )
+			static_if( is_same_type</ typeof(element.type)::src_type, T />() )
 			{
 				unsafe
 				{
@@ -165,12 +152,11 @@ public:
 		auto mut cur_index= 0s;
 		for( & element : typeinfo</Y/>.elements_list )
 		{
-			auto& element_type_typeinfo= element.type;
 			if( cur_index == size_type(index_) )
 			{
 				unsafe
 				{
-					call_destructor( cast_ref_unsafe</ TypedefHelper</ typeof(element_type_typeinfo) />::TT::src_type />(storage_) );
+					call_destructor( cast_ref_unsafe</ typeof(element.type)::src_type />(storage_) );
 				}
 				return;
 			}
@@ -207,14 +193,13 @@ public:
 		auto mut cur_index= 0s;
 		for( & element : typeinfo</Y/>.elements_list )
 		{
-			auto& element_type_typeinfo= element.type;
-			static_if( is_same_type</ typeof(element_type_typeinfo), typeof(typeinfo</T/>) />() )
+			static_if( is_same_type</ typeof(element.type)::src_type, T />() )
 			{
 				if( cur_index == size_type(index_) )
 				{
 					unsafe
 					{
-						res.reset( cast_ref_unsafe</ TypedefHelper</ typeof(element_type_typeinfo) />::TT::src_type />(storage_) );
+						res.reset( cast_ref_unsafe</T/>(storage_) );
 					}
 				}
 			}
@@ -234,14 +219,13 @@ public:
 		auto mut cur_index= 0s;
 		for( & element : typeinfo</Y/>.elements_list )
 		{
-			auto& element_type_typeinfo= element.type;
-			static_if( is_same_type</ typeof(element_type_typeinfo), typeof(typeinfo</T/>) />() )
+			static_if( is_same_type</ typeof(element.type)::src_type, T />() )
 			{
 				if( cur_index == size_type(index_) )
 				{
 					unsafe
 					{
-						res.reset( cast_ref_unsafe</ TypedefHelper</ typeof(element_type_typeinfo) />::TT::src_type />(storage_) );
+						res.reset( cast_ref_unsafe</T/>(storage_) );
 					}
 				}
 			}
