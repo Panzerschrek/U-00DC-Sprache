@@ -217,9 +217,6 @@ ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const 
 	std::vector< std::pair<ReferencesGraphNodePtr, ReferencesGraphNodePtr> > replaced_nodes; // First node replaced with second node.
 	for( const ReferencesGraph& branch_state : branches_variables_state )
 	{
-		// TODO - remove this assert. It's possible to create inner reference variable in one of if-else brances.
-		U_ASSERT( branch_state.nodes_.size() ==  branches_variables_state.front().nodes_.size() );
-
 		for( const auto& node_pair : branch_state.nodes_ )
 		{
 			if( result.nodes_.find( node_pair.first ) == result.nodes_.end() )
