@@ -34,6 +34,11 @@ fn U_Main() : i32
 		var ust::variant</ tup[ f32, bool, NC ] /> v(0.0f), mut v_dst(false);
 		v_dst= v; //##expect_error OperationNotSupportedForThisType
 	}
+	{ // Reference returned by "get" method linked to variant.
+		var ust::variant</ tup[ i32, f32 ] /> mut v(0);
+		var i32 &imut i= v.get</i32/>().get_ref();
+		v= 0.25f; //##expect_error ReferenceProtectionError
+	}
 
 	return 0;
 }
