@@ -1314,7 +1314,7 @@ void CodeBuilder::CheckOverloadedOperator(
 		if( func_type.args.size() != 2u )
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, file_pos );
 		if( !( func_type.return_type == bool_type_ && !func_type.return_value_is_reference ) )
-			REPORT_ERROR( InvalidReturnTypeForOperator, errors_container, file_pos, void_type_ );
+			REPORT_ERROR( InvalidReturnTypeForOperator, errors_container, file_pos, bool_type_ );
 		break;
 		
 	case OverloadedOperator::Mul:
