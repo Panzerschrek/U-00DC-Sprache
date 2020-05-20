@@ -441,3 +441,10 @@ if( U_BUILD_DOCS )
 		message( "Sphinx not found, skip Ü docs" )
 	endif()
 endif()
+
+
+if( U_BUILD_COMPILER )
+	set( CURRENT_COMPILER Compiler )
+	set( CURRENT_COMPLIER_GENERATION 1 )
+	add_subdirectory( compiler1 )
+endif()
