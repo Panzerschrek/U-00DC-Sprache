@@ -17,7 +17,7 @@ endfunction()
 
 # Returns list of objects in ${out_objects}
 function( CompileUSources u_source_files out_objects )
-	foreach( source ${u_source_files} )
+	foreach( source ${${u_source_files}} )
 		CompileUSource( ${source} out_object )
 		list( APPEND out_objects_local ${out_object} )
 	endforeach()
@@ -25,9 +25,10 @@ function( CompileUSources u_source_files out_objects )
 endfunction()
 
 file( GLOB LEX_SYNT_LIB_SOURCES "lex_synt_lib/*.u" )
-CompileUSources( ${LEX_SYNT_LIB_SOURCES} LEX_SYNT_LIB_OBJECTS )
+CompileUSources( LEX_SYNT_LIB_SOURCES LEX_SYNT_LIB_OBJECTS )
 add_library( LexSyntLib${CURRENT_COMPLIER_GENERATION} lib_stub.cpp ${LEX_SYNT_LIB_SOURCES} ${LEX_SYNT_LIB_OBJECTS} )
 
 file( GLOB TESTS_SOURCES "tests/*.u" )
-CompileUSources( ${TESTS_SOURCES} TESTS_OBJECTS )
+CompileUSources( TESTS_SOURCES TESTS_OBJECTS )
 add_executable( Tests${CURRENT_COMPLIER_GENERATION} ../data/entry.cpp ${TESTS_SOURCES} ${TESTS_OBJECTS} )
+target_link_libraries( Tests${CURRENT_COMPLIER_GENERATION} PRIVATE LexSyntLib${CURRENT_COMPLIER_GENERATION} )
