@@ -431,6 +431,7 @@ void CodeBuilder::CopyClass(
 
 	// Make deep copy of inner namespace.
 	MergeNameScopes( copy->members, src.members, dst_class_table );
+	copy->members.CopyAccessRightsFrom( src.members );
 
 	// Copy fields.
 	copy->members_visibility= src.members_visibility;

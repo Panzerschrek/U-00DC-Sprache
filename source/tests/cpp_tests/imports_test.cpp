@@ -850,4 +850,36 @@ U_TEST( ImportMacro_Test0 )
 	U_TEST_ASSERT( static_cast<uint64_t>(31 * 2) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( ImportAccessRight_Test0 )
+{
+	static const char c_program_text_a[]=
+	R"(
+		class A
+		{
+		public:
+			fn SetX( A &mut a, i32 x );
+
+		private:
+			i32 x_= 0;
+		}
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+
+		fn A::SetX( A &mut a, i32 x )
+		{
+			a.x_= x;
+		}
+	)";
+
+	BuildMultisourceProgram(
+		{
+			{ "a", c_program_text_a },
+			{ "root", c_program_text_root }
+		},
+		"root" );
+}
+
 } // namespace U
