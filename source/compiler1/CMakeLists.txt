@@ -10,6 +10,7 @@ function( CompileUSource u_source_file out_object )
 			-o ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.o
 			-MF ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
 			${SPRACHE_COMPILER_PIC_OPTIONS}
+			--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
 		DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} )
 	set( ${out_object} ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.o PARENT_SCOPE )
