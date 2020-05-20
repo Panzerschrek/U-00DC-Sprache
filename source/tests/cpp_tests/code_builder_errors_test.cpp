@@ -164,6 +164,26 @@ U_TEST(UsingKeywordAsName4)
 	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
 }
 
+U_TEST(UsingKeywordAsName5)
+{
+	// Class field
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			u32 type;
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingKeywordAsName );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+}
+
 U_TEST(Redefinition0)
 {
 	// Variable redefinition in same scope.

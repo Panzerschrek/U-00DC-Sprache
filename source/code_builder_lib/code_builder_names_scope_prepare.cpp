@@ -259,7 +259,7 @@ ClassProxyPtr CodeBuilder::NamesScopeFill(
 				class_field.original_index= field_number;
 
 				if( IsKeyword( in_class_field.name ) )
-					REPORT_ERROR( UsingKeywordAsName, the_class.members.GetErrors(), class_declaration.file_pos_ );
+					REPORT_ERROR( UsingKeywordAsName, the_class.members.GetErrors(), in_class_field.file_pos_ );
 				if( this_.NameShadowsTemplateArgument( in_class_field.name, the_class.members ) )
 					REPORT_ERROR( DeclarationShadowsTemplateArgument, the_class.members.GetErrors(), in_class_field.file_pos_, in_class_field.name );
 				if( the_class.members.AddName( in_class_field.name, Value( class_field, in_class_field.file_pos_ ) ) == nullptr )
