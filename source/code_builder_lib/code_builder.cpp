@@ -936,7 +936,7 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, Cod
 			continue;
 
 		const ClassField& field= *class_->members.GetThisScopeValue( field_name )->GetClassField();
-		if( !field.type.HaveDestructor() )
+		if( !field.type.HaveDestructor() || field.is_reference )
 			continue;
 
 		CallDestructor(

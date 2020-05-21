@@ -1136,7 +1136,7 @@ U_TEST(DestructorsTest27_DestructorForTuples)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 112,   2005, 212,   312,   4005, 412,   512,   6005, 612 } ) );
 }
 
-U_TEST(DestructorsTest27_MembersDestructorCallOrder)
+U_TEST(DestructorsTest28_MembersDestructorCallOrder)
 {
 	DestructorTestPrepare();
 
@@ -1183,6 +1183,41 @@ U_TEST(DestructorsTest27_MembersDestructorCallOrder)
 	engine->runFunction( function, {});
 
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 0, 1, 2, 3, 4, 5, 6} ) );
+}
+
+U_TEST(DestructorsTest29_DestructorNotCalledForReferenceField)
+{
+	DestructorTestPrepare();
+
+	// Destructors of members should be called in fields order.
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			fn destructor(){ DestructorCalled(5555); }
+		}
+
+		struct R
+		{
+			S& ref;
+		}
+
+		fn Foo()
+		{
+			var S s;
+			var R r{ .ref= s };
+		}
+		)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {});
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 5555 } ) );
 }
 
 U_TEST(EralyTempVariablesDestruction_Test0)
