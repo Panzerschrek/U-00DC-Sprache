@@ -1,4 +1,4 @@
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	return 0;
 }

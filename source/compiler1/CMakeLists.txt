@@ -31,5 +31,5 @@ add_library( LexSyntLib${CURRENT_COMPLIER_GENERATION} lib_stub.cpp ${LEX_SYNT_LI
 
 file( GLOB TESTS_SOURCES "tests/*.u" )
 CompileUSources( TESTS_SOURCES TESTS_OBJECTS )
-add_executable( Tests${CURRENT_COMPLIER_GENERATION} ../data/entry.cpp ${TESTS_SOURCES} ${TESTS_OBJECTS} )
+add_executable( Tests${CURRENT_COMPLIER_GENERATION} lib_stub.cpp ${TESTS_SOURCES} ${TESTS_OBJECTS} )
 target_link_libraries( Tests${CURRENT_COMPLIER_GENERATION} PRIVATE LexSyntLib${CURRENT_COMPLIER_GENERATION} )
