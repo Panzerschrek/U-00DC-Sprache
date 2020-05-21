@@ -1,1 +1,297 @@
 import "lexical_analyzer.uh"
+import "program_string.uh"
+
+
+namespace U
+{
+
+type Iterator= ust::array_view_imut</ char8 />;
+
+fn IsWhitespace( sprache_char c ) : bool
+{
+	return
+		c == " "c32 || c == "\f"c32 || c == "\n"c32 || c == "\r"c32 || c == "\t"c32 ||
+		c <= sprache_char(0x1Fu) || c == sprache_char(0x7Fu);
+}
+
+fn IsNewline( sprache_char c ) : bool
+{
+	return c == "\n"c32;
+}
+
+fn IsNumberStartChar( sprache_char c ) : bool
+{
+	return c >= "0"c32 && c <= "9"c32;
+}
+
+fn IsIdentifierStartChar( sprache_char c ) : bool
+{
+	// HACK - manually define allowed "letters".
+	// TODO - use something, like symbol category from unicode.
+	var u32 cc(c);
+	return
+		( c >= "a"c32 && c <= "z"c32 ) ||
+		( c >= "A"c32 && c <= "Z"c32 ) ||
+		( cc >= 0x0400u && cc <= 0x04FFu ) || // Cyrillic
+		( cc >= 0x0500u && cc <= 0x0527u ) || // Extended cyrillic
+		( cc >= 0x00C0u && cc <= 0x00D6u ) || // Additional latin symbols
+		( cc >= 0x00D8u && cc <= 0x00F6u ) || // Additional latin symbols
+		( cc >= 0x00F8u && cc <= 0x00FFu ) || // Additional latin symbols
+		( cc >= 0x0100u && cc <= 0x017Fu ) || // Extended latin part A
+		( cc >= 0x0180u && cc <= 0x024Fu ) ;  // Extended latin part B
+}
+
+fn IsIdentifierChar( sprache_char c ) : bool
+{
+	return IsIdentifierStartChar(c) || IsNumberStartChar(c) || c == "_"c32;
+}
+
+fn ParseIdentifier( Iterator &mut it ) : Lexem
+{
+	ReadNextUTF8Char( it );
+
+	var Lexem mut result;
+	result.lexem_type= Lexem::Type::Identifier;
+
+	while( !it.empty() )
+	{
+		auto mut it_next= it;
+		if( !IsIdentifierChar( ReadNextUTF8Char( it_next ) ) )
+		{
+			break;
+		}
+
+		//it= it_next; // TODO - fix this
+	}
+
+	return result;
+}
+
+fn PowI( u64 base_, u64 pow ) : f64
+{
+	if( pow == 0u64 )
+	{
+		return 1.0;
+	}
+	if( pow == 1u64 )
+	{
+		return f64(base_);
+	}
+	if( pow == 2u64 )
+	{
+		return f64(base_ * base_);
+	}
+
+	auto half_pow= pow >> 1u;
+	auto mut res= PowI( base_, half_pow );
+	res= res * res;
+	if( half_pow * 2u64 != pow )
+	{
+		res*= f64(base_);
+	}
+	return res;
+}
+
+fn NumberFunc2( char8 c ) : u64
+{
+	if( c >= "0"c8 && c <= "1"c8 )
+	{
+		return u64(c) - u64("0"c8);
+	}
+	return u64(-1);
+}
+
+fn NumberFunc8( char8 c ) : u64
+{
+	if( c >= "0"c8 && c <= "7"c8 )
+	{
+		return u64(c) - u64("0"c8);
+	}
+	return u64(-1);
+}
+
+fn NumberFunc10( char8 c ) : u64
+{
+	if( c >= "0"c8 && c <= "9"c8 )
+	{
+		return u64(c) - u64("0"c8);
+	}
+	return u64(-1);
+}
+
+fn NumberFunc16( char8 c ) : u64
+{
+	if( c >= "0"c8 && c <= "9"c8 )
+	{
+		return u64(c) - u64("0"c8);
+	}
+	if( c >= "a"c8 && c <= "f"c8 )
+	{
+		return u64(c) - u64("a"c8) + u64(10);
+	}
+	if( c >= "A"c8 && c <= "F"c8 )
+	{
+		return u64(c) - u64("A"c8) + u64(10);
+	}
+	return u64(-1);
+}
+
+fn ParseNumber( Iterator &mut it, LexicalErrorMessages &mut out_errors ) : Lexem
+{
+	var u64 base_(10);
+
+	var (fn (char8 c ) : u64 ) number_func= NumberFunc10;
+
+	// TODO - handle bin, oct, hex constants.
+
+	var u64 mut integer_part(0), mut fractional_part(0);
+	var i32 mut fractional_part_digits= 0, mut exponent= 0;
+	var bool mut has_fraction_point= false;
+
+	while( !it.empty() )
+	{
+		auto num= number_func( it.front() );
+		if( num == -1u64 )
+		{
+			break;
+		}
+
+		auto integer_part_before= integer_part;
+		integer_part= integer_part * base_ + num;
+		it.drop_front();
+
+		if( integer_part < integer_part_before ) // Check overflow
+		{
+			out_errors.push_back( "Integer part of numeric literal is too long" );
+			break;
+		}
+	}
+
+	if( !it.empty() && it.front() == "."c8 )
+	{
+		it.drop_front();
+		has_fraction_point= true;
+
+		while( !it.empty() )
+		{
+			var u64 num= number_func( it.front() );
+			if( num == -1u64 )
+			{
+				break;
+			}
+
+			var u64 fractional_part_before= fractional_part;
+			fractional_part= fractional_part * base_ + num;
+			++fractional_part_digits;
+			it.drop_front();
+
+			if( fractional_part < fractional_part_before ) // Check overflow
+			{
+				out_errors.push_back( "Fractional part of numeric literal is too long" );
+				break;
+			}
+		}
+	}
+
+	// TODO - parse exponent
+
+	var NumberLexemData mut result;
+
+	// For double calculate only powers > 0, because pow( base, positive ) is always integer and have exact double representation.
+	// pow( base, negative ) may have not exact double representation (1/10 for example).
+	// Example:
+	// 3 / 10 - right
+	// 3 * (1/10) - wrong
+	if( exponent >= 0 )
+	{
+		result.value_double= f64(integer_part) * PowI( base_, u64(exponent) );
+	}
+	else
+	{
+		result.value_double= f64(integer_part) / PowI( base_, u64(-exponent) );
+	}
+	if( exponent >= fractional_part_digits )
+	{
+		result.value_double+= f64(fractional_part) * PowI( base_, u64( exponent - fractional_part_digits ) );
+	}
+	else
+	{
+		result.value_double+= f64(fractional_part) / PowI( base_, u64( fractional_part_digits - exponent ) );
+	}
+
+	result.value_int= integer_part;
+
+	{
+		auto mut i= 0;
+		while( i < exponent )
+		{
+			result.value_int*= base_;
+			++i;
+		}
+		while( i < -exponent )
+		{
+			result.value_int/= base_;
+			++i;
+		}
+	}
+
+	auto mut fractional_part_corrected= fractional_part;
+
+	{
+		auto mut i= 0;
+		while( i < exponent - fractional_part_digits )
+		{
+			fractional_part_corrected*= base_;
+			++i;
+		}
+		while( i < fractional_part_digits - exponent )
+		{
+			fractional_part_corrected/= base_;
+			++i;
+		}
+	}
+
+	result.value_int+= fractional_part_corrected;
+	result.has_fractional_point= has_fraction_point;
+
+	if( IsIdentifierStartChar( GetUTF8FirstChar( it ) ) )
+	{
+		var Lexem type_suffix= ParseIdentifier( it );
+		if( type_suffix.text.size() >= typeinfo</ typeof(result.type_suffix) />.element_count )
+		{
+			out_errors.push_back( "Type suffix of numeric literal is too long" );
+		}
+
+		auto mut i= 0s;
+		while( i < ust::min( type_suffix.text.size(), typeinfo</ typeof(result.type_suffix) />.element_count ) )
+		{
+			result.type_suffix[i]= type_suffix.text[i];
+			++i;
+		}
+	}
+
+	var Lexem mut result_lexem;
+	result_lexem.lexem_type= Lexem::Type::Number;
+	result_lexem.text.resize( typeinfo</NumberLexemData/>.size_of, "\0"c8 );
+	unsafe{ ust::memory_copy( result_lexem.text[0s], result, typeinfo</NumberLexemData/>.size_of ); }
+	return result_lexem;
+}
+
+op Lexem::==( Lexem& l, Lexem& r ) : bool
+{
+	return l.text == r.text && l.file_pos == r.file_pos && l.lexem_type == r.lexem_type;
+}
+
+op Lexem::!=( Lexem& l, Lexem& r ) : bool
+{
+	return !(l == r );
+}
+
+fn LexicalAnalysis( ust::string8 & program_text ) : LexicalAnalysisResult
+{
+	var LexicalAnalysisResult result;
+
+	return result;
+}
+
+} // namespace U
