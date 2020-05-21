@@ -9,6 +9,7 @@ option( U_BUILD_PY_TESTS "Enable compilation of py_tests" YES )
 option( U_BUILD_CPP_HEADER_CONVERTER "Enable compilation of c++ header converter (clang required)" YES )
 option( U_BUILD_UNICODE_FILE_NAMES_TEST "Enable compilation of unicode filenames test (such test may not work correctly is some environmens)" YES )
 option( U_BUILD_DOCS "Enable Ǖ docs (Sphinx Required)" YES )
+option( U_BUILD_COMPILER1 "Build compiler1 (written on Ǖ)" YES)
 
 if( U_BUILD_COMPILER )
 	message( STATUS "Build compiler" )
@@ -443,7 +444,7 @@ if( U_BUILD_DOCS )
 endif()
 
 
-if( U_BUILD_COMPILER )
+if( U_BUILD_COMPILER AND U_BUILD_COMPILER1 )
 	set( CURRENT_COMPILER Compiler )
 	set( CURRENT_COMPLIER_GENERATION 1 )
 	add_subdirectory( compiler1 )
