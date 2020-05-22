@@ -48,6 +48,64 @@ U_TEST( BasicReferenceInsideClassUsage )
 	U_TEST_ASSERT( static_cast<uint64_t>( 42 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( MultipleReferencesInside )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32& x;
+			i32& y;
+		}
+
+		fn Foo() : i32
+		{
+			var i32 x= 66, y= 99;
+			var S s{ .x= x, .y= y };
+			return s.y - s.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 33 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( MultipleMutableReferencesInside )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 &mut x;
+			i32 &mut y;
+		}
+
+		fn Foo() : i32
+		{
+			var i32 mut x= 0, mut y= 0;
+			{
+				var S s{ .x= x, .y= y };
+				s.x= 365;
+				s.y= 73;
+			}
+			return x / y;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>( 367 / 73 ) == result_value.IntVal.getLimitedValue() );
+}
+
 U_TEST( GeneratedCopyConstructorForStructsWithReferencesTest )
 {
 	static const char c_program_text[]=
