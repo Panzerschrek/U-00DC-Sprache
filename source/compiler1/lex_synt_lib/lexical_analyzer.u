@@ -287,9 +287,138 @@ op Lexem::!=( Lexem& l, Lexem& r ) : bool
 	return !(l == r );
 }
 
-fn LexicalAnalysis( ust::string8 & program_text ) : LexicalAnalysisResult
+
+fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnalysisResult
 {
-	var LexicalAnalysisResult result;
+	var tup
+	[
+		[ tup[ ust::string8, Lexem::Type ],  0 ],
+		[ tup[ ust::string8, Lexem::Type ], 25 ],
+		[ tup[ ust::string8, Lexem::Type ], 25 ],
+		[ tup[ ust::string8, Lexem::Type ],  3 ]
+	]
+
+	c_fixed_lexems_table
+	[
+		[
+		],
+		[
+			[ "(", Lexem::Type::BracketLeft ],
+			[ ")", Lexem::Type::BracketRight ],
+			[ "[", Lexem::Type::SquareBracketLeft ],
+			[ "]", Lexem::Type::SquareBracketRight ],
+			[ "{", Lexem::Type::BraceLeft ],
+			[ "}", Lexem::Type::BraceRight ],
+			[ ",", Lexem::Type::Comma ],
+			[ ".", Lexem::Type::Dot ],
+			[ ":", Lexem::Type::Colon ],
+			[ ";", Lexem::Type::Semicolon ],
+			[ "?", Lexem::Type::Question ],
+			[ "=", Lexem::Type::Assignment ],
+			[ "+", Lexem::Type::Plus ],
+			[ "-", Lexem::Type::Minus ],
+			[ "*", Lexem::Type::Star ],
+			[ "/", Lexem::Type::Slash ],
+			[ "%", Lexem::Type::Percent ],
+			[ "<", Lexem::Type::CompareLess ],
+			[ ">", Lexem::Type::CompareGreater ],
+			[ "&", Lexem::Type::And ],
+			[ "|", Lexem::Type::Or ],
+			[ "^", Lexem::Type::Xor ],
+			[ "~", Lexem::Type::Tilda ],
+			[ "!", Lexem::Type::Not ],
+			[ "'", Lexem::Type::Apostrophe ],
+		],
+		[
+			[ "</", Lexem::Type::TemplateBracketLeft  ],
+			[ "/>", Lexem::Type::TemplateBracketRight ],
+			[ "<?", Lexem::Type::MacroBracketLeft  ],
+			[ "?>", Lexem::Type::MacroBracketRight ],
+			[ "::", Lexem::Type::Scope ],
+			[ "++", Lexem::Type::Increment ],
+			[ "--", Lexem::Type::Decrement ],
+			[ "==", Lexem::Type::CompareEqual ],
+			[ "!=", Lexem::Type::CompareNotEqual ],
+			[ "<=", Lexem::Type::CompareLessOrEqual ],
+			[ ">=", Lexem::Type::CompareGreaterOrEqual ],
+			[ "&&", Lexem::Type::Conjunction ],
+			[ "||", Lexem::Type::Disjunction ],
+			[ "+=", Lexem::Type::AssignAdd ],
+			[ "-=", Lexem::Type::AssignSub ],
+			[ "*=", Lexem::Type::AssignMul ],
+			[ "/=", Lexem::Type::AssignDiv ],
+			[ "%=", Lexem::Type::AssignRem ],
+			[ "&=", Lexem::Type::AssignAnd ],
+			[ "|=", Lexem::Type::AssignOr  ],
+			[ "^=", Lexem::Type::AssignXor ],
+			[ "<<", Lexem::Type::ShiftLeft  ],
+			[ ">>", Lexem::Type::ShiftRight ],
+			[ "<-", Lexem::Type::LeftArrow  ],
+			[ "->", Lexem::Type::RightArrow ],
+		],
+		[
+			[ "<<=", Lexem::Type::AssignShiftLeft  ],
+			[ ">>=", Lexem::Type::AssignShiftRight ],
+			[ "...", Lexem::Type::Ellipsis ],
+		],
+	];
+	auto c_max_fixed_lexem_size= 3s;
+
+	var LexicalAnalysisResult mut result;
+
+	auto mut it= program_text;
+
+	var u32 mut line= 1u; // Count lines from "1", in human-readable format.
+	var u32 mut column= 0u;
+
+	var ust::string8 mut fixed_lexem_str;
+
+	while( !it.empty() )
+	{
+		auto c= GetUTF8FirstChar(it);
+
+		var Lexem mut lexem;
+
+		// single line comment
+		if( c == "/"c32 && it.size() >= 2s && it[1s] == "/"c8 )
+		{
+			while( !it.empty()  && !IsNewline(sprache_char(it.front())) )
+			{
+				it.drop_front();
+			}
+
+			continue;
+		}
+		else if( IsNewline(c) )
+		{
+			it.drop_front();
+			++line;
+			column= 0u;
+			continue;
+		}
+		else if( IsWhitespace(c) )
+		{
+			it.drop_front();
+			++column;
+			continue;
+		}
+		else if( IsIdentifierStartChar(c) )
+		{
+			lexem= ParseIdentifier(it);
+		}
+		else if( IsNumberStartChar(c) )
+		{
+			lexem= ParseNumber( it, result.error_messages );
+		}
+		else
+		{
+
+			// TODO - handle fixed lexems.
+
+
+			it.drop_front();
+		}
+	}
 
 	return result;
 }

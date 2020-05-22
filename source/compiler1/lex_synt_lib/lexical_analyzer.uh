@@ -124,6 +124,6 @@ struct LexicalAnalysisResult
 	LexicalErrorMessages error_messages;
 }
 
-fn LexicalAnalysis( ust::string8 & program_text ) : LexicalAnalysisResult;
+fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnalysisResult;
 
 } // namespace U
