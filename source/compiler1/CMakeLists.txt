@@ -1,3 +1,9 @@
+if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
+	set( SPRACHE_COMPILER_OPT_OPTIONS -O0 -g )
+else()
+	set( SPRACHE_COMPILER_OPT_OPTIONS -O2 )
+endif()
+
 # Build rule for "Ü" files.
 function( CompileUSource u_source_file out_object )
 	file( RELATIVE_PATH u_source_file_relative ${CMAKE_CURRENT_SOURCE_DIR} ${u_source_file} )
@@ -9,7 +15,7 @@ function( CompileUSource u_source_file out_object )
 			${CMAKE_CURRENT_SOURCE_DIR}/${u_source_file_relative}
 			-o ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.o
 			-MF ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
-			${SPRACHE_COMPILER_PIC_OPTIONS}
+			${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS}
 			--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
 		DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} )
