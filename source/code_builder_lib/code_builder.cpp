@@ -132,31 +132,10 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	const StackVariablesStorage global_function_variables_storage( global_function_context );
 	global_function_context_= &global_function_context;
 
-	// Prepare debug info builder.
 	if( build_debug_info_ )
 	{
-		debug_info_.builder= std::make_unique<llvm::DIBuilder>( *module_ );
-
 		module_->addModuleFlag( llvm::Module::Warning, "Debug Info Version", 3 );
-
-		const uint32_t c_dwarf_language_id= 0x8000 /* first user-defined language code */ + 0xDC /* code of "Ü" letter */;
-
-		debug_info_.source_file_entries.reserve( source_graph.nodes_storage.size() );
-		for( const SourceGraph::Node& source_graph_node : source_graph.nodes_storage )
-		{
-			const auto file= debug_info_.builder->createFile( source_graph_node.file_path, "");
-
-			const auto compile_unit=
-				debug_info_.builder->createCompileUnit(
-					c_dwarf_language_id,
-					file,
-					"Ü-Sprache compiler " + getFullVersion(),
-					false, // optimized
-					"",
-					0 /* runtime version */ );
-
-			debug_info_.source_file_entries.push_back( DebugSourceFileEntry{ file, compile_unit } );
-		}
+		debug_info_.source_file_entries.resize( source_graph.nodes_storage.size() );
 	}
 
 	// Build graph.
@@ -170,9 +149,6 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 		if( !typeinfo_entry.second.type.GetLLVMType()->isSized() )
 			typeinfo_entry.second.type.GetClassType()->llvm_type->setBody( llvm::ArrayRef<llvm::Type*>() );
 	}
-
-	if( build_debug_info_ )
-		debug_info_.builder->finalize(); // We must finalize it.
 
 	// Clear internal structures.
 	compiled_sources_cache_.clear();
@@ -226,6 +202,23 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 		compiled_sources_cache_.emplace( child_node_inex, std::move( child_result ) );
 	}
 
+	if( build_debug_info_ )
+	{
+		const uint32_t c_dwarf_language_id= 0x8000 /* first user-defined language code */ + 0xDC /* code of "Ü" letter */;
+
+		debug_info_.builder= std::make_unique<llvm::DIBuilder>( *module_ );
+		debug_info_.source_file_entries[node_index]= debug_info_.builder->createFile( source_graph_node.file_path, "" );
+
+		debug_info_.compile_unit=
+			debug_info_.builder->createCompileUnit(
+				c_dwarf_language_id,
+				debug_info_.source_file_entries[node_index],
+				"Ü-Sprache compiler " + getFullVersion(),
+				false, // optimized
+				"",
+				0 /* runtime version */ );
+	}
+
 	SetCurrentClassTable( *result.class_table );
 
 	// Do work for this node.
@@ -265,6 +258,17 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 	// Take generated template things.
 	result.generated_template_things_storage = std::make_unique< ProgramStringMap<Value> >();
 	result.generated_template_things_storage->swap( generated_template_things_storage_ );
+
+	// Finish with debug info.
+	if( build_debug_info_ )
+	{
+		debug_info_.builder->finalize(); // We must finalize it.
+
+		// Clear caches.
+		debug_info_.classes_di_cache.clear();
+		debug_info_.enums_di_cache.clear();
+		debug_info_.builder= nullptr;
+	}
 
 	return result;
 }

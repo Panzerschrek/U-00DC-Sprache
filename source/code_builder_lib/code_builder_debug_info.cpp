@@ -10,15 +10,8 @@ namespace CodeBuilderPrivate
 llvm::DIFile* CodeBuilder::GetDIFile(const size_t file_index)
 {
 	if(file_index < debug_info_.source_file_entries.size())
-		return debug_info_.source_file_entries[file_index].file;
-	return debug_info_.source_file_entries.front().file;
-}
-
-llvm::DICompileUnit* CodeBuilder::GetDICompileUnit(const size_t file_index)
-{
-	if(file_index < debug_info_.source_file_entries.size())
-		return debug_info_.source_file_entries[file_index].compile_unit;
-	return debug_info_.source_file_entries.front().compile_unit;
+		return debug_info_.source_file_entries[file_index];
+	return debug_info_.source_file_entries.front();
 }
 
 void CodeBuilder::CreateVariableDebugInfo(
@@ -175,7 +168,6 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const Tuple& type )
 	std::vector<llvm::Metadata*> elements;
 	elements.reserve( type.elements.size() );
 
-	const auto di_compile_unit= GetDICompileUnit(0);
 	const auto di_file= GetDIFile(0);
 
 	for( const Type& element_type : type.elements )
@@ -186,7 +178,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const Tuple& type )
 		const size_t element_index= size_t(&element_type - type.elements.data());
 		const auto element =
 			debug_info_.builder->createMemberType(
-				di_compile_unit,
+				debug_info_.compile_unit,
 				std::to_string( element_index ),
 				di_file,
 				0u, // TODO - file_pos
@@ -200,7 +192,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const Tuple& type )
 	}
 
 	return debug_info_.builder->createStructType(
-		di_compile_unit,
+		debug_info_.compile_unit,
 		"", // TODO - name
 		di_file,
 		0u, // TODO - file_pos
@@ -262,7 +254,6 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 	const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( the_class.llvm_type );
 
 	// TODO - get FilePos for enum
-	const auto di_compile_unit= GetDICompileUnit( the_class.body_file_pos.GetFileIndex() );
 	const auto di_file= GetDIFile( the_class.body_file_pos.GetFileIndex() );
 
 	std::vector<llvm::Metadata*> fields;
@@ -290,7 +281,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 			// It will be fine - use here data layout queries, because for complete struct type non-reference fields are complete too.
 			const auto member =
 				debug_info_.builder->createMemberType(
-					di_compile_unit,
+					debug_info_.compile_unit,
 					name,
 					di_file,
 					0u, // TODO - file_pos
@@ -310,7 +301,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 			// If this type is complete, parent types are complete too.
 			const auto member =
 				debug_info_.builder->createMemberType(
-					di_compile_unit,
+					debug_info_.compile_unit,
 					parent.class_->class_->members.GetThisNamespaceName(),
 					di_file,
 					0u, // TODO - file_pos
@@ -325,7 +316,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 
 	const auto result=
 		debug_info_.builder->createStructType(
-			di_compile_unit,
+			debug_info_.compile_unit,
 			the_class.members.GetThisNamespaceName(),
 			di_file,
 			the_class.body_file_pos.GetLine(),
@@ -367,12 +358,11 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const EnumPtr& type )
 		} );
 
 	// TODO - get FilePos for enum
-	const auto di_compile_unit= GetDICompileUnit(0);
 	const auto di_file= GetDIFile(0);
 
 	const auto result=
 		debug_info_.builder->createEnumerationType(
-			di_compile_unit,
+			debug_info_.compile_unit,
 			type->members.GetThisNamespaceName(),
 			di_file,
 			0u, // TODO - file_pos
