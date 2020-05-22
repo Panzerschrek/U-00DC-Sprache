@@ -886,6 +886,45 @@ U_TEST(LazyLogicalOrTest2)
 	}
 }
 
+U_TEST(lazyLogicalCombinedTest)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( u32 c ) : bool
+		{
+			return c <= 16u || ( c >= 20u && c <= 30u );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooj" );
+	U_TEST_ASSERT( function != nullptr );
+
+	unsigned int test_data[][2]
+	{
+			{  0, 1 },
+			{ 16, 1 },
+			{ 17, 0 },
+			{ 20, 1 },
+			{ 25, 1 },
+			{ 30, 1 },
+			{ 31, 0 },
+			{ 40, 0 },
+	};
+
+	for( const auto& test_case : test_data )
+	{
+		llvm::GenericValue arg;
+		llvm::GenericValue ret;
+		arg.IntVal= llvm::APInt( 32, test_case[0] );
+		ret.IntVal= llvm::APInt(  1, test_case[1] );
+
+		const llvm::GenericValue result_value= engine->runFunction( function, {arg} );
+
+		U_TEST_ASSERT( result_value.IntVal.getLimitedValue() == ret.IntVal.getLimitedValue() );
+	}
+}
+
 U_TEST(ComparisonSignedOperatorsTest)
 {
 	static const char c_program_text[]=
