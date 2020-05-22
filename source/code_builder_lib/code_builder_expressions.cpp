@@ -223,8 +223,12 @@ Value CodeBuilder::CallBinaryOperatorForTuple(
 				for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
 					node_is_mutable= node_is_mutable || src_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut;
 
-				const auto dst_node_inner_reference= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable", node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
-				function_context.variables_state.SetNodeInnerReference( dst_node, dst_node_inner_reference );
+				ReferencesGraphNodePtr dst_node_inner_reference= function_context.variables_state.GetNodeInnerReference( dst_node );
+				if( dst_node_inner_reference == nullptr )
+				{
+					dst_node_inner_reference= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable", node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+					function_context.variables_state.SetNodeInnerReference( dst_node, dst_node_inner_reference );
+				}
 				for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
 					function_context.variables_state.AddLink( src_node_inner_reference, dst_node_inner_reference );
 			}
@@ -1815,7 +1819,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	else U_ASSERT(false);
 
 	function_context.function->getBasicBlockList().push_back( r_part_block );
-	function_context.llvm_ir_builder.SetInsertPoint( r_part_block );	
+	function_context.llvm_ir_builder.SetInsertPoint( r_part_block );
 
 	ReferencesGraph variables_state_before_r_branch= function_context.variables_state;
 
@@ -1840,13 +1844,15 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	}
 	function_context.variables_state= MergeVariablesStateAfterIf( { variables_state_before_r_branch, function_context.variables_state }, names.GetErrors(), file_pos );
 
+	llvm::BasicBlock* const r_part_end_block= function_context.llvm_ir_builder.GetInsertBlock();
+
 	function_context.llvm_ir_builder.CreateBr( block_after_operator );
 	function_context.function->getBasicBlockList().push_back( block_after_operator );
 	function_context.llvm_ir_builder.SetInsertPoint( block_after_operator );
 
 	llvm::PHINode* const phi= function_context.llvm_ir_builder.CreatePHI( fundamental_llvm_types_.bool_, 2u );
 	phi->addIncoming( l_var_in_register, l_part_block );
-	phi->addIncoming( r_var_in_register, r_part_block );
+	phi->addIncoming( r_var_in_register, r_part_end_block );
 
 	Variable result;
 	result.type= bool_type_;
