@@ -2874,12 +2874,16 @@ Value CodeBuilder::DoCallFunction(
 		U_ASSERT( dst_arg < function_type.args.size() );
 		U_ASSERT( function_type.args[ dst_arg ].type.ReferencesTagsCount() > 0u );
 
+		bool src_variables_is_mut= false;
 		std::unordered_set<ReferencesGraphNodePtr> src_nodes;
 		if( referene_pollution.src.second == Function::c_arg_reference_tag_number )
 		{
 			// Reference-arg itself
 			U_ASSERT( function_type.args[ referene_pollution.src.first ].is_reference );
 			src_nodes.emplace( locked_args_references[ referene_pollution.src.first ].Node() );
+
+			if( function_type.args[ referene_pollution.src.first ].is_mutable )
+				src_variables_is_mut= true;
 		}
 		else
 		{
@@ -2888,12 +2892,19 @@ Value CodeBuilder::DoCallFunction(
 			U_ASSERT( function_type.args[ referene_pollution.src.first ].type.ReferencesTagsCount() > 0u );
 
 			for( const ReferencesGraphNodePtr& inner_reference : function_context.variables_state.GetAllAccessibleInnerNodes_r( locked_args_references[ referene_pollution.src.first ].Node() ) )
+			{
 				src_nodes.insert( inner_reference );
+				if( inner_reference->kind != ReferencesGraphNode::Kind::ReferenceImut )
+					src_variables_is_mut= true;
+			}
 		}
 
 		if( function_type.args[ dst_arg ].is_reference )
 		{
 			const bool dst_inner_reference_is_mut= function_type.args[ dst_arg ].type.GetInnerReferenceType() == InnerReferenceType::Mut;
+			// Even if reference-pollution is mutable, but if src vars is immutable, link as immutable.
+			const bool result_node_is_mut= src_variables_is_mut && dst_inner_reference_is_mut;
+
 			for( const ReferencesGraphNodePtr& dst_node : function_context.variables_state.GetAllAccessibleVariableNodes_r( locked_args_references[ dst_arg ].Node() ) )
 			{
 				ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( dst_node );
@@ -2902,12 +2913,13 @@ Value CodeBuilder::DoCallFunction(
 					inner_reference=
 						std::make_shared<ReferencesGraphNode>(
 							"arg" + std::to_string(dst_arg) + "_inner variable",
-							dst_inner_reference_is_mut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+							result_node_is_mut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
 					function_context.variables_state.SetNodeInnerReference( dst_node, inner_reference );
 				}
-				if( inner_reference->kind != ReferencesGraphNode::Kind::ReferenceMut && dst_inner_reference_is_mut )
-					REPORT_ERROR( NotImplemented, names.GetErrors(), call_file_pos, "changind inner node reference kind immutable to mutable" );
+				if( inner_reference->kind != ReferencesGraphNode::Kind::ReferenceMut && result_node_is_mut )
+					REPORT_ERROR( NotImplemented, names.GetErrors(), call_file_pos, "changing inner node reference kind immutable to mutable" );
 
+				// TODO - check here for errors.
 				for( const ReferencesGraphNodePtr& src_node : src_nodes )
 					function_context.variables_state.AddLink( src_node, inner_reference );
 			}

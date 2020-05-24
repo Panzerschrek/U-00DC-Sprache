@@ -274,12 +274,6 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 	const Synt::FunctionType& func,
 	Function& function_type )
 {
-	// TODO - check cases of pseudo-mutable pollution and generate error. For example:
-	/*
-		struct S{ i32 &mut x; }
-		fn Foo( S& mut s'a', i32 &'b imut x ) 'a <- b ' {}
-	*/
-
 	const auto get_references=
 	[&]( const std::string& name ) -> ArgsVector<Function::ArgReference>
 	{
