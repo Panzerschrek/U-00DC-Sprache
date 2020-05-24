@@ -507,10 +507,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				++the_class.field_count;
 			} );
 
-		// TODO - ensure fields/parents reference tag completeness before setting up own references tags/references type.
-
-		// Count reference tags.
-		// SPRACHE_TODO - allow user explicitly set tag count.
+		// Determine inner reference type.
 		the_class.members.ForEachValueInThisScope(
 			[&]( const Value& value )
 			{
@@ -521,7 +518,11 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				if( field->is_reference )
 					the_class.inner_reference_type= std::max( the_class.inner_reference_type, field->is_mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
 				else
+				{
+					if( !EnsureTypeCompleteness( field->type, TypeCompleteness::ReferenceTagsComplete ) )
+						REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), field->syntax_element->file_pos_, field->type );
 					the_class.inner_reference_type= std::max( the_class.inner_reference_type, field->type.GetInnerReferenceType() );
+				}
 
 			});
 

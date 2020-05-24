@@ -1554,7 +1554,9 @@ Type CodeBuilder::BuildFuncCode(
 		args_nodes[ arg_number ].first= var_node;
 		var.node= var_node;
 
-		EnsureTypeCompleteness( arg.type, TypeCompleteness::ReferenceTagsComplete ); // TODO - report about error, if incomplete.
+		if( arg.type != void_type_ && !EnsureTypeCompleteness( arg.type, TypeCompleteness::ReferenceTagsComplete ) )
+			REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), declaration_arg.file_pos_, arg.type );
+
 		if (arg.type.ReferencesTagsCount() > 0u )
 		{
 			// Create inner node + root variable.

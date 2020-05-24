@@ -93,11 +93,7 @@ U_TEST( UsingIncompleteTypeTest2 )
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingIncompleteType );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UsingIncompleteType, 5u ) );
 }
 
 U_TEST( UsingIncompleteTypeTest3 )
@@ -185,14 +181,20 @@ U_TEST( UsingIncompleteTypeTest8 )
 
 U_TEST( UsingIncompleteTypeTest9 )
 {
-	// Reference arg for function with body is incomplete. Must be ok.
+	// Reference tag competeness required for reference arguments in functions body.
 	static const char c_program_text[]=
 	R"(
 		struct X;
 		fn Foo( X& x ){}
 	)";
 
-	BuildProgram( c_program_text );
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingIncompleteType );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
 }
 
 U_TEST( UsingIncompleteTypeTest10 )
