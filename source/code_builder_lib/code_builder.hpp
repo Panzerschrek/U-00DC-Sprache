@@ -640,8 +640,7 @@ private:
 	void ProcessFunctionTypeReferencesPollution(
 		CodeBuilderErrorsContainer& errors_container,
 		const Synt::FunctionType& func,
-		Function& function_type,
-		bool first_arg_is_implicit_this= false );
+		Function& function_type );
 
 	void DestroyUnusedTemporaryVariables( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const FilePos& file_pos );
 
