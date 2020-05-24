@@ -502,6 +502,28 @@ size_t Type::ReferencesTagsCount() const
 	return 0u;
 }
 
+InnerReferenceType Type::GetInnerReferenceType() const
+{
+	InnerReferenceType result= InnerReferenceType::None;
+
+	if( const Class* const class_type= GetClassType() )
+	{
+		result= class_type->inner_reference_type;
+	}
+	else if( const ArrayPtr* const array= std::get_if<ArrayPtr>( &something_ ) )
+	{
+		U_ASSERT( *array != nullptr );
+		result= (*array)->type.GetInnerReferenceType();
+	}
+	else if( const Tuple* const tuple= std::get_if<Tuple>( &something_ ) )
+	{
+		for( const Type& element : tuple->elements )
+			result= std::max( result, element.GetInnerReferenceType() );
+	}
+
+	return result;
+}
+
 llvm::Type* Type::GetLLVMType() const
 {
 	struct Visitor final

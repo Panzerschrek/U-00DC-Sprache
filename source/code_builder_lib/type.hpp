@@ -24,6 +24,13 @@ class Class;
 struct Enum;
 class Type;
 
+enum class InnerReferenceType
+{
+	None, // Type have no innere references
+	Imut, // Type have immutable inner ereference
+	Mut, // Type have mutable inner reference
+};
+
 struct ClassProxy
 {
 	// Observer pointer to class.
@@ -111,7 +118,9 @@ public:
 	bool HaveDestructor() const;
 	bool CanBeConstexpr() const;
 	bool IsAbstract() const;
+
 	size_t ReferencesTagsCount() const;
+	InnerReferenceType GetInnerReferenceType() const;
 
 	llvm::Type* GetLLVMType() const;
 
