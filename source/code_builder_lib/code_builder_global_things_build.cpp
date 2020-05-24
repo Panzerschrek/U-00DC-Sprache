@@ -518,21 +518,15 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				if( field == nullptr )
 					return;
 
-				if( field->is_reference || field->type.ReferencesTagsCount() != 0u )
-					the_class.references_tags_count= 1u;
-
 				if( field->is_reference )
 					the_class.inner_reference_type= std::max( the_class.inner_reference_type, field->is_mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
 				else
 					the_class.inner_reference_type= std::max( the_class.inner_reference_type, field->type.GetInnerReferenceType() );
 
 			});
+
 		for( const Class::Parent& parent : the_class.parents )
-		{
-			if( parent.class_->class_->references_tags_count != 0u )
-				the_class.references_tags_count= 1u;
 			the_class.inner_reference_type= std::max( the_class.inner_reference_type, parent.class_->class_->inner_reference_type );
-		}
 
 		the_class.completeness= TypeCompleteness::ReferenceTagsComplete;
 	} // if reference tags completeness required

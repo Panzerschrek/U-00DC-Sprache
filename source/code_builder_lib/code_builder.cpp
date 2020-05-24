@@ -442,7 +442,7 @@ void CodeBuilder::CopyClass(
 
 	copy->syntax_element= src.syntax_element;
 	copy->field_count= src.field_count;
-	copy->references_tags_count= src.references_tags_count;
+	copy->inner_reference_type= src.inner_reference_type;
 	copy->completeness= src.completeness;
 
 	copy->have_explicit_noncopy_constructors= src.have_explicit_noncopy_constructors;

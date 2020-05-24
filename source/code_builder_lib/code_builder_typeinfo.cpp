@@ -100,7 +100,7 @@ ClassProxyPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, cons
 
 	llvm_type->setName( MangleType( typeinfo_class_proxy ) );
 
-	typeinfo_class_proxy->class_->references_tags_count= 1u; // Almost all typeinfo have references to another typeinfo.
+	typeinfo_class_proxy->class_->inner_reference_type= InnerReferenceType::Imut; // Almost all typeinfo have references to another typeinfo.
 	typeinfo_class_proxy->class_->completeness=  TypeCompleteness::ReferenceTagsComplete;
 
 	return typeinfo_class_proxy;

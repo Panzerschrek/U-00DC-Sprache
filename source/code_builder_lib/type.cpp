@@ -482,24 +482,7 @@ bool Type::IsAbstract() const
 
 size_t Type::ReferencesTagsCount() const
 {
-	if( const Class* const class_type= GetClassType() )
-	{
-		return class_type->references_tags_count;
-	}
-	else if( const ArrayPtr* const array= std::get_if<ArrayPtr>( &something_ ) )
-	{
-		U_ASSERT( *array != nullptr );
-		return (*array)->type.ReferencesTagsCount();
-	}
-	else if( const Tuple* const tuple= std::get_if<Tuple>( &something_ ) )
-	{
-		size_t res= 0u;
-		for( const Type& element : tuple->elements )
-			res= std::max( res, element.ReferencesTagsCount() );
-		return res;
-	}
-
-	return 0u;
+	return GetInnerReferenceType() == InnerReferenceType::None ? 0 : 1;
 }
 
 InnerReferenceType Type::GetInnerReferenceType() const
