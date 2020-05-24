@@ -1933,21 +1933,7 @@ FunctionReferencesPollutionList SyntaxAnalyzer::ParseFunctionReferencesPollution
 
 		if( it_->type == Lexem::Type::Identifier )
 		{
-			if( it_->text == Keywords::mut_ )
-			{
-				result.back().second.is_mutable= true;
-				NextLexem();
-			}
-			else if( it_->text == Keywords::imut_ )
-			{
-				result.back().second.is_mutable= false;
-				NextLexem();
-			}
-		}
-
-		if( it_->type == Lexem::Type::Identifier )
-		{
-			result.back().second.name= it_->text;
+			result.back().second= it_->text;
 			NextLexem();
 		}
 		else

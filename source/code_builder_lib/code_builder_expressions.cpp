@@ -2874,16 +2874,12 @@ Value CodeBuilder::DoCallFunction(
 		U_ASSERT( dst_arg < function_type.args.size() );
 		U_ASSERT( function_type.args[ dst_arg ].type.ReferencesTagsCount() > 0u );
 
-		bool src_variables_is_mutable= referene_pollution.src_is_mutable;
 		std::unordered_set<ReferencesGraphNodePtr> src_nodes;
 		if( referene_pollution.src.second == Function::c_arg_reference_tag_number )
 		{
 			// Reference-arg itself
 			U_ASSERT( function_type.args[ referene_pollution.src.first ].is_reference );
 			src_nodes.emplace( locked_args_references[ referene_pollution.src.first ].Node() );
-
-			if( !function_type.args[ referene_pollution.src.first ].is_mutable )
-				src_variables_is_mutable= false; // Even if reference-pollution is mutable, but if src vars is immutable, link as immutable.
 		}
 		else
 		{
@@ -2891,19 +2887,13 @@ Value CodeBuilder::DoCallFunction(
 			U_ASSERT( referene_pollution.src.second == 0u );// Currently we support one tag per struct.
 			U_ASSERT( function_type.args[ referene_pollution.src.first ].type.ReferencesTagsCount() > 0u );
 
-			bool all_in_references_is_imut= true;
 			for( const ReferencesGraphNodePtr& inner_reference : function_context.variables_state.GetAllAccessibleInnerNodes_r( locked_args_references[ referene_pollution.src.first ].Node() ) )
-			{
 				src_nodes.insert( inner_reference );
-				if( inner_reference->kind != ReferencesGraphNode::Kind::ReferenceImut )
-					all_in_references_is_imut= false;
-			}
-			if( all_in_references_is_imut )
-				src_variables_is_mutable= false; // Even if reference-pollution is mutable, but if src vars is immutable, link as immutable.
 		}
 
 		if( function_type.args[ dst_arg ].is_reference )
 		{
+			const bool dst_inner_reference_is_mut= function_type.args[ dst_arg ].type.GetInnerReferenceType() == InnerReferenceType::Mut;
 			for( const ReferencesGraphNodePtr& dst_node : function_context.variables_state.GetAllAccessibleVariableNodes_r( locked_args_references[ dst_arg ].Node() ) )
 			{
 				ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( dst_node );
@@ -2912,10 +2902,10 @@ Value CodeBuilder::DoCallFunction(
 					inner_reference=
 						std::make_shared<ReferencesGraphNode>(
 							"arg" + std::to_string(dst_arg) + "_inner variable",
-							src_variables_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+							dst_inner_reference_is_mut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
 					function_context.variables_state.SetNodeInnerReference( dst_node, inner_reference );
 				}
-				if( inner_reference->kind != ReferencesGraphNode::Kind::ReferenceMut && src_variables_is_mutable )
+				if( inner_reference->kind != ReferencesGraphNode::Kind::ReferenceMut && dst_inner_reference_is_mut )
 					REPORT_ERROR( NotImplemented, names.GetErrors(), call_file_pos, "changind inner node reference kind immutable to mutable" );
 
 				for( const ReferencesGraphNodePtr& src_node : src_nodes )

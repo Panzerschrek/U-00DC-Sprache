@@ -246,7 +246,6 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 			ref_pollution.dst.second= 0u;
 			ref_pollution.src.first= 1u;
 			ref_pollution.src.second= 0u;
-			ref_pollution.src_is_mutable= true; // TODO - set correct mutability.
 			function_type.references_pollution.insert(ref_pollution);
 		}
 	}
@@ -263,7 +262,6 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 			ref_pollution.dst.second= 0u;
 			ref_pollution.src.first= 1u;
 			ref_pollution.src.second= 0u;
-			ref_pollution.src_is_mutable= true; // TODO - set correct mutability.
 			function_type.references_pollution.insert(ref_pollution);
 		}
 	}
@@ -276,6 +274,12 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 	const Synt::FunctionType& func,
 	Function& function_type )
 {
+	// TODO - check cases of pseudo-mutable pollution and generate error. For example:
+	/*
+		struct S{ i32 &mut x; }
+		fn Foo( S& mut s'a', i32 &'b imut x ) 'a <- b ' {}
+	*/
+
 	const auto get_references=
 	[&]( const std::string& name ) -> ArgsVector<Function::ArgReference>
 	{
@@ -316,14 +320,14 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 
 	for( const Synt::FunctionReferencesPollution& pollution : func.referecnces_pollution_list_ )
 	{
-		if( pollution.first == pollution.second.name )
+		if( pollution.first == pollution.second )
 		{
 			REPORT_ERROR( SelfReferencePollution, errors_container, func.file_pos_ );
 			continue;
 		}
 
 		const ArgsVector<Function::ArgReference> dst_references= get_references( pollution.first );
-		const ArgsVector<Function::ArgReference> src_references= get_references( pollution.second.name );
+		const ArgsVector<Function::ArgReference> src_references= get_references( pollution.second );
 
 		for( const Function::ArgReference& dst_ref : dst_references )
 		{
@@ -338,7 +342,6 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 				Function::ReferencePollution ref_pollution;
 				ref_pollution.dst= dst_ref;
 				ref_pollution.src= src_ref;
-				ref_pollution.src_is_mutable= pollution.second.is_mutable;
 				function_type.references_pollution.emplace(ref_pollution);
 			}
 		}

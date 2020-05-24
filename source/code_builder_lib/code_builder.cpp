@@ -1561,7 +1561,9 @@ Type CodeBuilder::BuildFuncCode(
 			const auto accesible_variable= std::make_shared<ReferencesGraphNode>( arg_name + " inner variable", ReferencesGraphNode::Kind::Variable );
 			function_context.variables_state.AddNode( accesible_variable );
 
-			const auto inner_reference= std::make_shared<ReferencesGraphNode>( arg_name + " inner reference", ReferencesGraphNode::Kind::ReferenceMut );
+			const auto inner_reference= std::make_shared<ReferencesGraphNode>(
+				arg_name + " inner reference",
+				arg.type.GetInnerReferenceType() == InnerReferenceType::Mut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
 			function_context.variables_state.SetNodeInnerReference( var_node, inner_reference );
 			function_context.variables_state.AddLink( accesible_variable, inner_reference );
 
@@ -1777,11 +1779,6 @@ Type CodeBuilder::BuildFuncCode(
 				pollution.src= *reference;
 				pollution.dst.first= i;
 				pollution.dst.second= 0u;
-				// Currently check both mutable and immutable. TODO - maybe akt more smarter?
-				pollution.src_is_mutable= true;
-				if( function_type.references_pollution.count( pollution ) != 0u )
-					continue;
-				pollution.src_is_mutable= false;
 				if( function_type.references_pollution.count( pollution ) != 0u )
 					continue;
 			}

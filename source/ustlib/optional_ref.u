@@ -19,18 +19,18 @@ public:
 
 	// Construct from reference
 	fn enable_if( is_mutable )
-	constructor( mut this'x', T &'y  mut ref ) ' x <-  mut y '
+	constructor( mut this'x', T &'y  mut ref ) ' x <- y '
 	( ptr_(ref) ) {}
 
 	fn enable_if( !is_mutable )
-	constructor( mut this'x', T &'y imut ref ) ' x <- imut y '
+	constructor( mut this'x', T &'y imut ref ) ' x <- y '
 	{
 		unsafe{  ptr_= ptr_type( cast_mut(ref) );  }
 	}
 
 	// Construct 'imut' reference from 'mut' reference.
 	op enable_if( !is_mutable )
-	=( mut this'x', optional_ref</ T, true />& other'y' ) ' x <- imut y'
+	=( mut this'x', optional_ref</ T, true />& other'y' ) ' x <- y'
 	{
 		if( !other.empty() )
 		{
@@ -81,13 +81,13 @@ public:
 	}
 
 	fn enable_if( is_mutable )
-	reset( mut this'x', T &'y  mut ref ) ' x <-  mut y '
+	reset( mut this'x', T &'y  mut ref ) ' x <-  y '
 	{
 		ptr_= ptr_type(ref);
 	}
 
 	fn enable_if( !is_mutable )
-	reset( mut this'x', T &'y imut ref ) ' x <- imut y '
+	reset( mut this'x', T &'y imut ref ) ' x <- y '
 	{
 		unsafe{  ptr_= ptr_type( cast_mut(ref) );  }
 	}

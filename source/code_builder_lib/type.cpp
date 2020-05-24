@@ -825,7 +825,7 @@ bool operator!=( const Function::Arg& l, const Function::Arg& r )
 
 bool Function::ReferencePollution::operator==( const ReferencePollution& other ) const
 {
-	return this->dst == other.dst && this->src == other.src && this->src_is_mutable == other.src_is_mutable;
+	return this->dst == other.dst && this->src == other.src;
 }
 
 bool Function::ReferencePollution::operator<( const ReferencePollution& other ) const
@@ -833,9 +833,7 @@ bool Function::ReferencePollution::operator<( const ReferencePollution& other ) 
 	// Order is significant, because references pollution is part of stable function type.
 	if( this->dst != other.dst )
 		return this->dst < other.dst;
-	if( this->src != other.src )
-		return this->src < other.src;
-	return this->src_is_mutable < other.src_is_mutable;
+	return this->src < other.src;
 }
 
 bool operator==( const Function& l, const Function& r )

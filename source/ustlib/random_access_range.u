@@ -11,15 +11,17 @@ public:
 	fn constructor( mut this )= delete;
 	fn constructor( mut this, this_type &imut other )= default;
 
+	op=( mut this, this_type &imut other )= default;
+
 	template</ size_type size />
 	fn enable_if( is_mutable )
-	conversion_constructor( mut this'a', [ T, size ] &'b  mut arr ) ' a <-  mut b '
+	conversion_constructor( mut this'a', [ T, size ] &'b  mut arr ) ' a <-  b '
 	( begin_(arr), end_(begin_ + size) )
 	{}
 
 	template</ size_type size />
 	fn enable_if( !is_mutable )
-	conversion_constructor( mut this'a', [ T, size ] &'b imut arr ) ' a <- imut b '
+	conversion_constructor( mut this'a', [ T, size ] &'b imut arr ) ' a <- b '
 	{
 		unsafe
 		{
@@ -29,7 +31,7 @@ public:
 	}
 
 	fn enable_if( !is_mutable )
-	conversion_constructor( mut this'a', random_access_range</ T, true />& src_range'b' ) ' a <- imut b '
+	conversion_constructor( mut this'a', random_access_range</ T, true />& src_range'b' ) ' a <- b '
 	{
 		unsafe
 		{	// Hack! we can not access begin_/end_ members of different range type, so, just copy memory.

@@ -301,7 +301,7 @@ private:
 	{
 		class element_imut
 		{
-			fn constructor( mut this'x', TableValue &'y imut table_value ) ' x <- imut y ' unsafe
+			fn constructor( mut this'x', TableValue &'y imut table_value ) ' x <- y ' unsafe
 			( table_value_(table_value) ) {}
 
 			fn key( this'x' ) : key_type &'x
@@ -320,7 +320,7 @@ private:
 
 		class element_mut
 		{
-			fn constructor( mut this'x', TableValue &'y  mut table_value ) ' x <-  mut y ' unsafe
+			fn constructor( mut this'x', TableValue &'y  mut table_value ) ' x <- y ' unsafe
 			( table_value_(table_value) ) {}
 
 			fn key( this'x' ) : key_type &'x

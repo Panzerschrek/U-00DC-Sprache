@@ -387,7 +387,7 @@ def MovedVariableHaveReferences_Test3():
 		struct S
 		{
 			i32& r;
-			fn constructor( this'a', i32&'b x ) ' a <- imut b '
+			fn constructor( this'a', i32&'b x ) ' a <- b '
 			( r= x ) {}
 		}
 		fn Bar( S s, i32 x ){}

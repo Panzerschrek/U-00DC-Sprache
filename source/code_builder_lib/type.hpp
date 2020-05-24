@@ -176,7 +176,6 @@ public:
 	{
 		ArgReference dst;
 		ArgReference src; // second = ~0, if reference itself, else - inner reference.
-		bool src_is_mutable= true;
 		bool operator==( const ReferencePollution& other ) const;
 		bool operator<( const ReferencePollution& other ) const;
 	};

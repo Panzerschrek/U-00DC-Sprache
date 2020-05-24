@@ -471,7 +471,7 @@ U_TEST( ReferencePollutionTest1 )
 		struct S{ i32 &imut x; }
 
 		// Function takes mutable argumebnt, but links it with other argument as immutable.
-		fn Foo( S &mut s'x', i32 &'y mut i ) ' x <- imut y '
+		fn Foo( S &mut s'x', i32 &'y mut i ) ' x <- y '
 		{}
 
 		fn Foo()
@@ -491,7 +491,7 @@ U_TEST( ReferencePollutionTest2_LinkAsImmutableIfAllLinkedVariablesAreMutable )
 	static const char c_program_text[]=
 	R"(
 		struct S{ i32 &imut x; }
-		fn Baz( S &mut s_dst'x', S &imut s_src'y' ) ' x <- mut y '
+		fn Baz( S &mut s_dst'x', S &imut s_src'y' ) ' x <- y '
 		{}
 
 		fn Foo()
@@ -520,7 +520,7 @@ U_TEST( ReferencePollutionTest3_LinkAsImmutableIfAllLinkedVariablesAreMutable )
 	static const char c_program_text[]=
 	R"(
 		struct S{ i32 &imut x; }
-		fn Baz( S &mut s_dst'x', i32 &'y imut i ) ' x <- mut y '
+		fn Baz( S &mut s_dst'x', i32 &'y imut i ) ' x <- y '
 		{}
 
 		fn Foo()
@@ -577,7 +577,7 @@ U_TEST( ConstructorLinksPassedReference_Test1 )
 		struct S
 		{
 			i32 &imut x;
-			fn constructor( this't', i32 &'p in_x ) ' t <- imut p '
+			fn constructor( this't', i32 &'p in_x ) ' t <- p '
 			( x(in_x) )
 			{}
 		}
@@ -610,7 +610,7 @@ U_TEST( ConvertedVariableCanLostInnerReference_Test0 )
 		class B : A
 		{
 			i32 &mut x;
-			fn constructor( this't', i32 &'p mut in_x ) ' t <- mut p '
+			fn constructor( this't', i32 &'p mut in_x ) ' t <- p '
 			( x(in_x) )
 			{}
 			fn constructor( B &imut other )= default;
@@ -639,7 +639,7 @@ U_TEST( ConvertedVariableCanLostInnerReference_Test1 )
 		class B : A
 		{
 			i32 &mut x;
-			fn constructor( this't', i32 &'p mut in_x ) ' t <- mut p '
+			fn constructor( this't', i32 &'p mut in_x ) ' t <- p '
 			( x(in_x) )
 			{}
 			fn constructor( B &imut other )= default;
@@ -667,7 +667,7 @@ U_TEST( AutoVariableContainsCopyOfReference_Test0 )
 		struct S
 		{
 			i32 &imut x;
-			fn constructor( this'st', i32 &'r x ) ' st <- imut r '
+			fn constructor( this'st', i32 &'r x ) ' st <- r '
 			( x= x )
 			{}
 		}
@@ -696,7 +696,7 @@ U_TEST( ExpressionInitializedVariableContainsCopyOfReference_Test0 )
 		struct S
 		{
 			i32 &imut x;
-			fn constructor( this'st', i32 &'r x ) ' st <- imut r '
+			fn constructor( this'st', i32 &'r x ) ' st <- r '
 			( x= x )
 			{}
 		}
@@ -725,7 +725,7 @@ U_TEST( CopyAssignmentOperator_PollutionTest )
 		struct S
 		{
 			i32 &mut x;
-			op=( this'x', S &imut other'y' ) ' x <- mut y '
+			op=( this'x', S &imut other'y' ) ' x <- y '
 			{} // Actually does nothing.
 		}
 
@@ -1100,7 +1100,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test2 )
 		struct R
 		{
 			i32& r;
-			fn constructor( this'a', i32&'b in_r ) ' a <- imut b '
+			fn constructor( this'a', i32&'b in_r ) ' a <- b '
 			( r= in_r ) {}
 		}
 		fn Foo()
@@ -1125,7 +1125,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test3 )
 		struct R
 		{
 			i32& r;
-			fn constructor( this'a', i32&'b in_r ) ' a <- imut b '
+			fn constructor( this'a', i32&'b in_r ) ' a <- b '
 			( r= in_r ) {}
 		}
 		fn Foo()
@@ -1150,7 +1150,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test4 )
 		struct R
 		{
 			i32& r;
-			fn constructor( this'a', i32&'b in_r ) ' a <- imut b '
+			fn constructor( this'a', i32&'b in_r ) ' a <- b '
 			( r= in_r ) {}
 		}
 		struct T{ R r; }
@@ -1176,7 +1176,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test5 )
 		struct R
 		{
 			i32& r;
-			fn constructor( this'a', i32&'b in_r ) ' a <- imut b '
+			fn constructor( this'a', i32&'b in_r ) ' a <- b '
 			( r= in_r ) {}
 		}
 		fn Foo()

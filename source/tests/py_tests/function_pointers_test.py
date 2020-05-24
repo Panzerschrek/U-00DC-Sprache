@@ -57,7 +57,7 @@ def FunctionTypeDeclaration_Test5():
 		struct F{ i32& r; }
 		struct S
 		{
-			( fn( F& mut f'a', i32&'b x ) ' a <- imut b '  ) some_function;
+			( fn( F& mut f'a', i32&'b x ) ' a <- b ' ) some_function;
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -362,7 +362,7 @@ def FunctionPointersConversions_Test3():
 
 		fn DoNotPollution( S &mut s, i32& a ) {}
 
-		type DoPollution= fn( S &mut s'x', i32&'y a ) ' x <- imut y ';
+		type DoPollution= fn( S &mut s'x', i32&'y a ) ' x <- y ';
 
 		fn Foo()
 		{
@@ -534,7 +534,7 @@ def ReferencePollution_ForFunctionPointer_Test0():
 	c_program_text= """
 		struct S{ i32& r; }
 
-		type DoPollutionType= fn( S& mut s'a', i32&'b x ) ' a <- imut b';
+		type DoPollutionType= fn( S& mut s'a', i32&'b x ) ' a <- b';
 
 		fn DoNotPollution( S&mut s, i32& x ){}
 

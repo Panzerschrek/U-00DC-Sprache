@@ -443,7 +443,6 @@ MangleGraphNode GetTypeName( const Type& type )
 					pollution.src.second == Function::c_arg_reference_tag_number
 					? '_'
 					: Base36Digit(pollution.src.second) );
-				rp_node.prefix.push_back( pollution.src_is_mutable ? '1' : '0' );
 			}
 
 			result.childs.push_back( std::move( rp_node ) );

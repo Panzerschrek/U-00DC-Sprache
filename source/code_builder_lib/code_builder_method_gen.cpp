@@ -270,7 +270,6 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		pollution.dst.second= i;
 		pollution.src.first= 1u;
 		pollution.src.second= i;
-		pollution.src_is_mutable= true; // TODO - set correct mutability.
 		constructor_type.references_pollution.emplace(pollution);
 	}
 
@@ -559,7 +558,6 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 		pollution.dst.second= i;
 		pollution.src.first= 1u;
 		pollution.src.second= i;
-		pollution.src_is_mutable= true; // TODO - set correct mutability.
 		op_type.references_pollution.emplace(pollution);
 	}
 

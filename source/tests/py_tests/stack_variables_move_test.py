@@ -38,7 +38,7 @@ def MoveOperatorTest0():
 		struct S
 		{
 			i32 &mut r;
-			fn constructor( this'a', i32 &'b mut in_r ) ' a <- mut b '
+			fn constructor( this'a', i32 &'b mut in_r ) ' a <- b '
 			( r= in_r ){}
 			fn destructor()
 			{
@@ -65,7 +65,7 @@ def MoveOperatorTest1():
 		struct S
 		{
 			i32 &mut r;
-			fn constructor( this'a', i32 &'b mut in_r ) ' a <- mut b '
+			fn constructor( this'a', i32 &'b mut in_r ) ' a <- b '
 			( r= in_r ){}
 		}
 
@@ -90,7 +90,7 @@ def MoveOperatorTest2():
 		struct S
 		{
 			i32 &mut r;
-			fn constructor( this'a', i32 &'b mut in_r ) ' a <- mut b '
+			fn constructor( this'a', i32 &'b mut in_r ) ' a <- b '
 			( r= in_r ){}
 		}
 
@@ -110,7 +110,7 @@ def MoveOperatorTest3():
 		struct S
 		{
 			i32 &mut r;
-			fn constructor( this'a', i32 &'b mut in_r ) ' a <- mut b '
+			fn constructor( this'a', i32 &'b mut in_r ) ' a <- b '
 			( r= in_r ){}
 		}
 

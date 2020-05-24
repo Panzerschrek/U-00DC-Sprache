@@ -463,3 +463,15 @@ def PassMutableReferenceTwoTimes_Tes6():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
 	assert( errors_list[0].file_pos.line == 6 )
+
+
+def PassImmutableReferenceTwoTimes_Test0():
+	c_program_text= """
+		struct S{ i32 & x; }
+		fn Bar( S& a, S& b ) { }
+		fn Foo( S& s )
+		{
+			Bar( s, s );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
