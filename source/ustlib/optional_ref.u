@@ -95,10 +95,8 @@ public:
 private:
 	type ptr_type= raw_ptr_mut</T/>;
 
-	struct ContainerTag{ T& t; }
-
 private:
-	[ ContainerTag, 0 ] container_tag_;
+	ReferenceContainerTag</ T, is_mutable /> container_tag_;
 	ptr_type ptr_;
 }
 

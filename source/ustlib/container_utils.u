@@ -7,6 +7,20 @@ namespace ust
 template</ type T /> struct ContainerTag{ [ T, 0 ] dummy; }
 
 template</ type T />
+struct ReferenceContainerTag</ T, false />
+{
+	struct Impl{ T &imut r; }
+	[ Impl, 0 ] dummy;
+}
+
+template</ type T />
+struct ReferenceContainerTag</ T, true  />
+{
+	struct Impl{ T & mut r; }
+	[ Impl, 0 ] dummy;
+}
+
+template</ type T />
 fn call_destructor( T&mut t ) unsafe
 {
 	static_if( typeinfo</T/>.is_class )

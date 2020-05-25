@@ -1,3 +1,4 @@
+import "container_utils.u"
 import "memory.u"
 import "pointer.u"
 
@@ -166,10 +167,8 @@ private:
 	type this_type= random_access_range</ T, is_mutable />;
 	type ptr_type= raw_ptr_mut</ T />;
 
-	struct ReferenceTag{ T& v; }
-
 private:
-	[ ReferenceTag, 0 ] reference_tag_;
+	ReferenceContainerTag</ T, is_mutable /> reference_tag_;
 
 private:
 	ptr_type begin_;
