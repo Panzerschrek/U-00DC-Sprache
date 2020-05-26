@@ -416,10 +416,7 @@ private:
 		}
 
 	private:
-		struct ReferenceTag{ TableValue& v; }
-
-	private:
-		[ ReferenceTag, 0 ] reference_tag_;
+		ReferenceContainerTag</ TableValue, is_mutable /> reference_tag_;
 		ptr_type table_;
 		size_type size_;
 		size_type capacity_;
