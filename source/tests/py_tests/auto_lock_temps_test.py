@@ -89,7 +89,7 @@ def AutoLockTemps_Test3():
 	struct S
 	{
 		i32& mut x;
-		fn constructor( this'a', i32 &'i mut in_x ) ' a <- mut i '
+		fn constructor( this'a', i32 &'i mut in_x ) ' a <- i '
 		( x= in_x) {}
 		fn destructor() { x= 0; }
 	}

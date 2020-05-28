@@ -119,17 +119,6 @@ def CastRef_Test5_ShouldCastValue():
 	tests_lib.build_program( c_program_text )
 
 
-def CastRef_Test6_ShouldCastToVoidReferenceOfIncompleteType():
-	c_program_text= """
-		struct S;
-		fn ToVoid( S& s ) : void&
-		{
-			return cast_ref</ void />(s);
-		}
-	"""
-	tests_lib.build_program( c_program_text )
-
-
 def CastRef_Test7_CompleteteTypeRequiredForSource():
 	c_program_text= """
 		class B;
@@ -140,18 +129,16 @@ def CastRef_Test7_CompleteteTypeRequiredForSource():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 1 )
-	assert( errors_list[1].error_code == "UsingIncompleteType" )
-	assert( errors_list[1].file_pos.line == 6 )
+	assert( HaveError( errors_list, "UsingIncompleteType", 6 ) )
 
 
 def CastRef_Test8_CompleteteTypeRequiredForDestination():
 	c_program_text= """
 		class A {}
 		class B;
-		fn ToA( B& b ) : A&
+		fn ToB( A& a ) : B&
 		{
-			return cast_ref</ A />(b);
+			return cast_ref</ B />(a);
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -343,9 +330,7 @@ def CastRefUnsafe_Test9_CompletenessStillRequiredForUnsafeCast():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "UsingIncompleteType" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( HaveError( errors_list, "UsingIncompleteType", 5 ) )
 
 
 def CastImut_Test0_CastMutableReferenceToImmutableReference():

@@ -507,20 +507,27 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				++the_class.field_count;
 			} );
 
-		// Count reference tags.
-		// SPRACHE_TODO - allow user explicitly set tag count.
+		// Determine inner reference type.
 		the_class.members.ForEachValueInThisScope(
 			[&]( const Value& value )
 			{
 				const ClassField* const field= value.GetClassField();
-				if( field != nullptr && ( field->is_reference || field->type.ReferencesTagsCount() != 0u ) )
-					the_class.references_tags_count= 1u;
+				if( field == nullptr )
+					return;
+
+				if( field->is_reference )
+					the_class.inner_reference_type= std::max( the_class.inner_reference_type, field->is_mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
+				else
+				{
+					if( !EnsureTypeCompleteness( field->type, TypeCompleteness::ReferenceTagsComplete ) )
+						REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), field->syntax_element->file_pos_, field->type );
+					the_class.inner_reference_type= std::max( the_class.inner_reference_type, field->type.GetInnerReferenceType() );
+				}
+
 			});
+
 		for( const Class::Parent& parent : the_class.parents )
-		{
-			if( parent.class_->class_->references_tags_count != 0u )
-				the_class.references_tags_count= 1u;
-		}
+			the_class.inner_reference_type= std::max( the_class.inner_reference_type, parent.class_->class_->inner_reference_type );
 
 		the_class.completeness= TypeCompleteness::ReferenceTagsComplete;
 	} // if reference tags completeness required

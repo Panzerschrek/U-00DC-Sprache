@@ -442,7 +442,7 @@ void CodeBuilder::CopyClass(
 
 	copy->syntax_element= src.syntax_element;
 	copy->field_count= src.field_count;
-	copy->references_tags_count= src.references_tags_count;
+	copy->inner_reference_type= src.inner_reference_type;
 	copy->completeness= src.completeness;
 
 	copy->have_explicit_noncopy_constructors= src.have_explicit_noncopy_constructors;
@@ -1554,13 +1554,18 @@ Type CodeBuilder::BuildFuncCode(
 		args_nodes[ arg_number ].first= var_node;
 		var.node= var_node;
 
+		if( arg.type != void_type_ && !EnsureTypeCompleteness( arg.type, TypeCompleteness::ReferenceTagsComplete ) )
+			REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), declaration_arg.file_pos_, arg.type );
+
 		if (arg.type.ReferencesTagsCount() > 0u )
 		{
 			// Create inner node + root variable.
 			const auto accesible_variable= std::make_shared<ReferencesGraphNode>( arg_name + " inner variable", ReferencesGraphNode::Kind::Variable );
 			function_context.variables_state.AddNode( accesible_variable );
 
-			const auto inner_reference= std::make_shared<ReferencesGraphNode>( arg_name + " inner reference", ReferencesGraphNode::Kind::ReferenceMut );
+			const auto inner_reference= std::make_shared<ReferencesGraphNode>(
+				arg_name + " inner reference",
+				arg.type.GetInnerReferenceType() == InnerReferenceType::Mut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
 			function_context.variables_state.SetNodeInnerReference( var_node, inner_reference );
 			function_context.variables_state.AddLink( accesible_variable, inner_reference );
 
@@ -1776,11 +1781,6 @@ Type CodeBuilder::BuildFuncCode(
 				pollution.src= *reference;
 				pollution.dst.first= i;
 				pollution.dst.second= 0u;
-				// Currently check both mutable and immutable. TODO - maybe akt more smarter?
-				pollution.src_is_mutable= true;
-				if( function_type.references_pollution.count( pollution ) != 0u )
-					continue;
-				pollution.src_is_mutable= false;
 				if( function_type.references_pollution.count( pollution ) != 0u )
 					continue;
 			}

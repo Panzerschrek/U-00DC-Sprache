@@ -456,7 +456,7 @@ U_TEST(TempVariablesMovingTest8_MoveVariableFromFunctionResultWithMutableReferen
 		struct Box
 		{
 			i32 &mut r;
-			fn constructor( this'x', i32 &'y mut in_r ) ' x <- mut y '
+			fn constructor( this'x', i32 &'y mut in_r ) ' x <- y '
 			( r= in_r )
 			{}
 		}

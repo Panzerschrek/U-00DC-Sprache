@@ -8,7 +8,7 @@ U_TEST( IfMergeTest0_PollutionAllowedInAllBranches )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- mut b '
+		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b '
 		{}
 		fn Foo()
 		{
@@ -34,7 +34,7 @@ U_TEST( IfMergeTest1_PollutionInOneBranchDoesNotAffectOtherBranch )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- mut b '
+		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b '
 		{}
 		fn Foo()
 		{
@@ -60,8 +60,8 @@ U_TEST( IfMergeTest2_MutablePollutionSelectedAsResult )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn LinkMut ( S &mut s'a', i32&'b  mut x ) ' a <-  mut b ' {}
-		fn LinkImut( S &mut s'a', i32&'b imut x ) ' a <- imut b ' {}
+		fn LinkMut ( S &mut s'a', i32&'b  mut x ) ' a <- b ' {}
+		fn LinkImut( S &mut s'a', i32&'b imut x ) ' a <- b ' {}
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -84,7 +84,7 @@ U_TEST( IfMergeTest3_ResultPollutionOccursIfPollutionOccursNotInAllBranches )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- mut b '
+		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b '
 		{}
 		fn Foo()
 		{
@@ -115,7 +115,7 @@ U_TEST( IfMergeTest4_BreakingReferenceProtectionInMergeResult0 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- mut b '
+		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b '
 		{}
 		fn Foo()
 		{
@@ -147,8 +147,8 @@ U_TEST( IfMergeTest5_BreakingReferenceProtectionInMergeResult1 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn LinkMut ( S &mut s'a', i32&'b  mut x ) ' a <-  mut b ' {}
-		fn LinkImut( S &mut s'a', i32&'b imut x ) ' a <- imut b ' {}
+		fn LinkMut ( S &mut s'a', i32&'b  mut x ) ' a <- b ' {}
+		fn LinkImut( S &mut s'a', i32&'b imut x ) ' a <- b ' {}
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0, mut z= 0;
@@ -179,7 +179,7 @@ U_TEST( IfMergeTest6_ConditionAffectsLowerBranches0 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- mut b ' : bool { return false; }
+		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ' : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -206,7 +206,7 @@ U_TEST( IfMergeTest7_ConditionAffectsLowerBranches1 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- mut b ' : bool { return false; }
+		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ' : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -234,7 +234,7 @@ U_TEST( IfMergeTest8_ConditionAffectsLowerBranches2 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- mut b ' : bool { return false; }
+		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ' : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -259,7 +259,7 @@ U_TEST( IfMergeTest9_ConditionAffectsLowerBranches3 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- mut b ' : bool { return false; }
+		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ' : bool { return false; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -279,7 +279,7 @@ U_TEST( WhileMergeTest0_MutablePollutionInsideLoop0 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &mut x; }
-		fn Link( S &mut s'a', i32&'b mut x ) ' a <- mut b ' {}
+		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ' {}
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y= 0;
@@ -325,7 +325,7 @@ U_TEST( WhileMergeTest2_MutablePollutionInsideLoop2 )
 	static const char c_program_text[]=
 	R"(
 		struct S { i32 &imut x; }
-		fn Link( S &mut s'a', i32&'b imut x ) ' a <- imut b ' {}
+		fn Link( S &mut s'a', i32&'b imut x ) ' a <- b ' {}
 		fn Foo()
 		{
 			var i32 imut x= 0, imut y= 0;

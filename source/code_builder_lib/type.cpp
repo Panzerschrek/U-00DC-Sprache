@@ -482,24 +482,29 @@ bool Type::IsAbstract() const
 
 size_t Type::ReferencesTagsCount() const
 {
+	return GetInnerReferenceType() == InnerReferenceType::None ? 0 : 1;
+}
+
+InnerReferenceType Type::GetInnerReferenceType() const
+{
+	InnerReferenceType result= InnerReferenceType::None;
+
 	if( const Class* const class_type= GetClassType() )
 	{
-		return class_type->references_tags_count;
+		result= class_type->inner_reference_type;
 	}
 	else if( const ArrayPtr* const array= std::get_if<ArrayPtr>( &something_ ) )
 	{
 		U_ASSERT( *array != nullptr );
-		return (*array)->type.ReferencesTagsCount();
+		result= (*array)->type.GetInnerReferenceType();
 	}
 	else if( const Tuple* const tuple= std::get_if<Tuple>( &something_ ) )
 	{
-		size_t res= 0u;
 		for( const Type& element : tuple->elements )
-			res= std::max( res, element.ReferencesTagsCount() );
-		return res;
+			result= std::max( result, element.GetInnerReferenceType() );
 	}
 
-	return 0u;
+	return result;
 }
 
 llvm::Type* Type::GetLLVMType() const
@@ -820,7 +825,7 @@ bool operator!=( const Function::Arg& l, const Function::Arg& r )
 
 bool Function::ReferencePollution::operator==( const ReferencePollution& other ) const
 {
-	return this->dst == other.dst && this->src == other.src && this->src_is_mutable == other.src_is_mutable;
+	return this->dst == other.dst && this->src == other.src;
 }
 
 bool Function::ReferencePollution::operator<( const ReferencePollution& other ) const
@@ -828,9 +833,7 @@ bool Function::ReferencePollution::operator<( const ReferencePollution& other ) 
 	// Order is significant, because references pollution is part of stable function type.
 	if( this->dst != other.dst )
 		return this->dst < other.dst;
-	if( this->src != other.src )
-		return this->src < other.src;
-	return this->src_is_mutable < other.src_is_mutable;
+	return this->src < other.src;
 }
 
 bool operator==( const Function& l, const Function& r )

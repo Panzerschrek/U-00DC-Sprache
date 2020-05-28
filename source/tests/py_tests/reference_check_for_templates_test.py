@@ -14,7 +14,7 @@ def ContinuousInnerReferenceTagUsedAsReturnReferenceTag_Test0():
 		struct S
 		{
 			i32& x;
-			fn constructor( this'a', i32&'b in_x ) ' a <- imut b '
+			fn constructor( this'a', i32&'b in_x ) ' a <- b '
 			( x(in_x) ) {}
 		}
 		fn Extract( S& s' a... ' ) : i32 &'a
@@ -57,7 +57,7 @@ def ContinuousInnerReferenceTagUsedAsReturnValueInnerReferenceTag_Test0():
 		struct S
 		{
 			i32& x;
-			fn constructor( this'a', i32&'b in_x ) ' a <- imut b '
+			fn constructor( this'a', i32&'b in_x ) ' a <- b '
 			( x(in_x) ) {}
 		}
 		fn Pass( S& s' a... ' ) : S' a '
@@ -83,7 +83,7 @@ def ContinuousInnerReferenceTagForReturnValue_Test0():
 		struct S
 		{
 			i32& x;
-			fn constructor( this'a', i32&'b in_x ) ' a <- imut b '
+			fn constructor( this'a', i32&'b in_x ) ' a <- b '
 			( x(in_x) ) {}
 		}
 		fn Box( i32&'a x ) : S' a... '
@@ -125,7 +125,7 @@ def ContinuousInnerReferenceTagForReturnValue_Test2():
 		struct S
 		{
 			i32& x;
-			fn constructor( this'a', i32&'b in_x ) ' a <- imut b '
+			fn constructor( this'a', i32&'b in_x ) ' a <- b '
 			( x(in_x) ) {}
 		}
 		fn Pass( S& s'a' ) : S' a... '
@@ -151,7 +151,7 @@ def ContinuousInnerReferenceTagForReturnValue_Test3():
 		struct S
 		{
 			i32& x;
-			fn constructor( this'a', i32&'b in_x ) ' a <- imut b '
+			fn constructor( this'a', i32&'b in_x ) ' a <- b '
 			( x(in_x) ) {}
 		}
 		fn Pass( S& s' a... ' ) : S' a... '   // Here we bind all inner tags of arg to all inner tags of return value
@@ -178,7 +178,7 @@ def ContinuousInnerReferenceTagForReturnValue_Test5():
 		struct S
 		{
 			i32& x;
-			fn constructor( this'a', i32&'b in_x ) ' a <- imut b '
+			fn constructor( this'a', i32&'b in_x ) ' a <- b '
 			( x(in_x) ) {}
 		}
 		auto constexpr global_constant= 42;
@@ -202,7 +202,7 @@ def ContinuousInnerReferenceTagForThis_Test0():
 		struct S
 		{
 			i32& x;
-			fn constructor( this'a...', i32&'b in_x ) ' a <- imut b '    // Pollution works here, because 'a...' expands to one reference tag.
+			fn constructor( this'a...', i32&'b in_x ) ' a <- b '    // Pollution works here, because 'a...' expands to one reference tag.
 			( x(in_x) ) {}
 		}
 
@@ -224,7 +224,7 @@ def ContinuousInnerReferenceTagForThis_Test1():
 		struct S
 		{
 			i32 x;
-			fn constructor( this'a...', i32&'b in_x ) ' a <- imut b '    // Pollution does not works here, because 'a...' expands to zero reference tags.
+			fn constructor( this'a...', i32&'b in_x ) ' a <- b '    // Pollution does not works here, because 'a...' expands to zero reference tags.
 			( x(in_x) ) {}
 		}
 
@@ -243,11 +243,11 @@ def ContinuousInnerReferenceTag_InPollution_Test0():
 		struct S
 		{
 			i32& x;
-			fn constructor( this'a', i32&'b in_x ) ' a <- imut b '
+			fn constructor( this'a', i32&'b in_x ) ' a <- b '
 			( x(in_x) ) {}
 		}
 
-		fn Bar( S &mut s'a...', i32&'b x ) ' a <- imut b' {}   // For pullution used continuous tag.
+		fn Bar( S &mut s'a...', i32&'b x ) ' a <- b' {}   // For pullution used continuous tag.
 
 		fn Foo()
 		{
@@ -266,7 +266,7 @@ def ContinuousInnerReferenceTag_InPollution_Test0():
 def ContinuousInnerReferenceTag_InPollution_Test1():
 	c_program_text= """
 		struct S{}
-		fn Bar( S &mut s'a...', i32&'b x ) ' a <- imut b' {}   // For pullution used continuous tag, but actual pollution not happens.
+		fn Bar( S &mut s'a...', i32&'b x ) ' a <- b' {}   // For pullution used continuous tag, but actual pollution not happens.
 
 		fn Foo()
 		{

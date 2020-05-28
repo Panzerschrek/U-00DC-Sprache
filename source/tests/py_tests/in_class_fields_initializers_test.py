@@ -302,7 +302,7 @@ def ImplicitInitializerUsedInsteadOf_InClassFieldInitializer_Test3():
 		struct S
 		{
 			i32& x= global_zero;
-			fn constructor( this'a', i32&'b in_x ) ' a <- imut b '
+			fn constructor( this'a', i32&'b in_x ) ' a <- b '
 			( x(in_x) )
 			{}
 		}

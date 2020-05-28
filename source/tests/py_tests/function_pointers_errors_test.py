@@ -143,7 +143,7 @@ def CouldNotConvertFunctionPointer_Test11():
 def CouldNotConvertFunctionPointer_Test12():
 	c_program_text= """
 		struct S{ i32& r; }
-		fn DoPolltion( S &mut s'a', i32&'b r ) ' a <- imut b ' {}
+		fn DoPolltion( S &mut s'a', i32&'b r ) ' a <- b ' {}
 		fn Foo(){  var ( fn( S &mut s, i32& r ) ) ptr= DoPolltion;  }   // Destination have less references pollution, than source function.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

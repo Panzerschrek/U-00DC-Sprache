@@ -233,14 +233,12 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	Function& function_type,
 	const ClassProxyPtr& base_class )
 {
-	const bool first_arg_is_implicit_this= false; // Now syntax analyzer always adds "this".
-
 	if( func.name_.back() == Keywords::constructor_ && IsCopyConstructor( function_type, base_class ) )
 	{
 		if( !func.type_.referecnces_pollution_list_.empty() )
 			REPORT_ERROR( ExplicitReferencePollutionForCopyConstructor, errors_container, func.file_pos_ );
 
-		if( base_class->class_->references_tags_count > 0u )
+		if( base_class->class_->inner_reference_type > InnerReferenceType::None )
 		{
 			// This is copy constructor. Generate reference pollution for it automatically.
 			Function::ReferencePollution ref_pollution;
@@ -248,7 +246,6 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 			ref_pollution.dst.second= 0u;
 			ref_pollution.src.first= 1u;
 			ref_pollution.src.second= 0u;
-			ref_pollution.src_is_mutable= true; // TODO - set correct mutability.
 			function_type.references_pollution.insert(ref_pollution);
 		}
 	}
@@ -257,7 +254,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 		if( !func.type_.referecnces_pollution_list_.empty() )
 			REPORT_ERROR( ExplicitReferencePollutionForCopyAssignmentOperator, errors_container, func.file_pos_ );
 
-		if( base_class->class_->references_tags_count > 0u )
+		if( base_class->class_->inner_reference_type > InnerReferenceType::None )
 		{
 			// This is copy assignment operator. Generate reference pollution for it automatically.
 			Function::ReferencePollution ref_pollution;
@@ -265,19 +262,17 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 			ref_pollution.dst.second= 0u;
 			ref_pollution.src.first= 1u;
 			ref_pollution.src.second= 0u;
-			ref_pollution.src_is_mutable= true; // TODO - set correct mutability.
 			function_type.references_pollution.insert(ref_pollution);
 		}
 	}
 	else
-		ProcessFunctionTypeReferencesPollution( errors_container, func.type_, function_type, first_arg_is_implicit_this );
+		ProcessFunctionTypeReferencesPollution( errors_container, func.type_, function_type );
 }
 
 void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 	CodeBuilderErrorsContainer& errors_container,
 	const Synt::FunctionType& func,
-	Function& function_type,
-	const bool first_arg_is_implicit_this )
+	Function& function_type )
 {
 	const auto get_references=
 	[&]( const std::string& name ) -> ArgsVector<Function::ArgReference>
@@ -287,10 +282,7 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 
 		for( size_t arg_n= 0u; arg_n < function_type.args.size(); ++arg_n )
 		{
-			if( arg_n == 0u && first_arg_is_implicit_this )
-				continue;
-
-			const Synt::FunctionArgument& in_arg= func.arguments_[ arg_n - ( first_arg_is_implicit_this ? 1u : 0u ) ];
+			const Synt::FunctionArgument& in_arg= func.arguments_[ arg_n ];
 
 			if( !in_arg.reference_tag_.empty() && in_arg.reference_tag_ == name )
 				result.emplace_back( arg_n, Function::c_arg_reference_tag_number );
@@ -322,14 +314,14 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 
 	for( const Synt::FunctionReferencesPollution& pollution : func.referecnces_pollution_list_ )
 	{
-		if( pollution.first == pollution.second.name )
+		if( pollution.first == pollution.second )
 		{
 			REPORT_ERROR( SelfReferencePollution, errors_container, func.file_pos_ );
 			continue;
 		}
 
 		const ArgsVector<Function::ArgReference> dst_references= get_references( pollution.first );
-		const ArgsVector<Function::ArgReference> src_references= get_references( pollution.second.name );
+		const ArgsVector<Function::ArgReference> src_references= get_references( pollution.second );
 
 		for( const Function::ArgReference& dst_ref : dst_references )
 		{
@@ -344,7 +336,6 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 				Function::ReferencePollution ref_pollution;
 				ref_pollution.dst= dst_ref;
 				ref_pollution.src= src_ref;
-				ref_pollution.src_is_mutable= pollution.second.is_mutable;
 				function_type.references_pollution.emplace(ref_pollution);
 			}
 		}
