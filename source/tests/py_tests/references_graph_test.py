@@ -475,3 +475,51 @@ def PassImmutableReferenceTwoTimes_Test0():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ReferencesLoop_Test0():
+	c_program_text= """
+		struct S{ i32 & x; }
+		fn DoPollution( S& mut s0'a', S &imut s1'b' ) ' a <- b ';
+		fn Foo()
+		{
+			var i32 x= 0;
+			var S mut s{ .x= x };
+			auto s_copy = s;
+			DoPollution( s, s_copy );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ReferencesLoop_Test1():
+	c_program_text= """
+		struct S
+		{
+			i32 & x;
+			op=( mut this, S &imut other ) {} // Does reference pollution
+		}
+		fn Foo()
+		{
+			var i32 x= 0;
+			var S mut s{ .x= x };
+			auto s_copy = s;
+			s= s_copy;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ReferencesLoop_Test3():
+	c_program_text= """
+		struct S{ i32 & x; }
+		fn DoPollution( S& mut s0'a', i32 &'b x ) ' a <- b ';
+		fn Foo()
+		{
+			var i32 x= 0;
+			var S mut s{ .x= x };
+			auto s_copy = s;
+			DoPollution( s, s_copy.x );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
