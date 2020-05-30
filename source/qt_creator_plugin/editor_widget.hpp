@@ -39,6 +39,13 @@ public:
 private:
 	virtual void finalizeInitialization() override;
 
+	virtual Utils::Link findLinkAt(
+		const QTextCursor& cursor,
+		bool resolveTarget,
+		bool inNextSplit) override;
+
+	virtual void contextMenuEvent(QContextMenuEvent *e) override;
+
 private:
 	void OnTextChanged();
 	void OnTimerExpired();

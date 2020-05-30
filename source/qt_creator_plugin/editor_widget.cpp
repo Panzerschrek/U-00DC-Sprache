@@ -1,3 +1,4 @@
+#include <QtWidgets/QMenu>
 #include <plugins/texteditor/textdocument.h>
 #include <coreplugin/editormanager/editormanager.h>
 #include "strings.h"
@@ -72,9 +73,36 @@ void EditorWidget::finalizeInitialization()
 	setMarksVisible(true);
 }
 
+Utils::Link EditorWidget::findLinkAt(
+	const QTextCursor& cursor,
+	bool resolveTarget,
+	bool inNextSplit)
+{
+	return Utils::Link(); // TODO - return link here.
+}
+
+void EditorWidget::contextMenuEvent(QContextMenuEvent *e)
+{
+	const auto menu= createStandardContextMenu(e->pos());
+
+	{
+		int line= 0, column= 0;
+		convertPosition( position(), &line, &column );
+		emit markContextMenuRequested(this, line, menu);
+	}
+
+	menu->addSeparator();
+	const auto action= new QAction("got to definition", this);
+	connect( action, &QAction::triggered, this, &EditorWidget::openLinkUnderCursor );
+	menu->addAction(action);
+
+	menu->exec(e->globalPos());
+	delete menu;
+	e->accept();
+}
+
 void EditorWidget::OnTextChanged()
 {
-	//Core::MessageManager::write( QString( "text changed" ) );
 	timer_.stop();
 	timer_.start();
 }
