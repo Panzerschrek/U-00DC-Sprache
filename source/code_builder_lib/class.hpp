@@ -63,7 +63,7 @@ public:
 	const Synt::Class* syntax_element= nullptr;
 
 	size_t field_count= 0u;
-	size_t references_tags_count= 0u;
+	InnerReferenceType inner_reference_type= InnerReferenceType::None;
 	TypeCompleteness completeness= TypeCompleteness::Incomplete;
 	bool have_explicit_noncopy_constructors= false;
 	bool is_default_constructible= false;

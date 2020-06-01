@@ -26,6 +26,9 @@ void ReferencesGraph::RemoveNode( const ReferencesGraphNodePtr& node )
 	std::vector<ReferencesGraphNodePtr> out_nodes;
 	for( const auto& link : links_ )
 	{
+		if( link.first == link.second ) // Self loop link.
+			continue;
+
 		if( link.first == node )
 			out_nodes.push_back( link.second );
 		if( link.second == node )
@@ -162,51 +165,60 @@ bool ReferencesGraph::NodeMoved( const ReferencesGraphNodePtr& node ) const
 	return it->second.moved;
 }
 
-std::unordered_set<ReferencesGraphNodePtr> ReferencesGraph::GetAllAccessibleInnerNodes_r( const ReferencesGraphNodePtr& node ) const
+ReferencesGraph::NodesSet ReferencesGraph::GetAllAccessibleInnerNodes( const ReferencesGraphNodePtr& node ) const
+{
+	NodesSet visited_nodes_set, result_set;
+	GetAllAccessibleInnerNodes_r( node, visited_nodes_set, result_set );
+	return result_set;
+}
+
+ReferencesGraph::NodesSet ReferencesGraph::GetAllAccessibleVariableNodes( const ReferencesGraphNodePtr& node ) const
+{
+	NodesSet visited_nodes_set, result_set;
+	GetAllAccessibleVariableNodes_r( node, visited_nodes_set, result_set );
+	return result_set;
+}
+
+void ReferencesGraph::GetAllAccessibleInnerNodes_r(
+	const ReferencesGraphNodePtr& node,
+	NodesSet& visited_nodes_set,
+	NodesSet& result_set ) const
 {
 	U_ASSERT( nodes_.find(node) != nodes_.end() );
+
+	if( !visited_nodes_set.insert(node).second )
+		return; // Already visited
 
 	std::unordered_set<ReferencesGraphNodePtr> result;
 
 	if( const ReferencesGraphNodePtr inner_reference= GetNodeInnerReference( node ) )
 	{
-		result.emplace( inner_reference );
-
-		auto inner_reference_inner_references= GetAllAccessibleInnerNodes_r( inner_reference );
-		result.insert( inner_reference_inner_references.begin(), inner_reference_inner_references.end() );
+		result_set.emplace( inner_reference );
+		GetAllAccessibleInnerNodes_r( inner_reference, visited_nodes_set, result_set );
 	}
 
 	for( const auto& link : links_ )
-	{
 		if( link.second == node )
-		{
-			auto accesible_inner_references= GetAllAccessibleInnerNodes_r( link.first );
-			result.insert( accesible_inner_references.begin(), accesible_inner_references.end() );
-		}
-	}
+			GetAllAccessibleInnerNodes_r( link.first, visited_nodes_set, result_set );
 
-	return result;
 }
 
-std::unordered_set<ReferencesGraphNodePtr> ReferencesGraph::GetAllAccessibleVariableNodes_r( const ReferencesGraphNodePtr& node ) const
+void ReferencesGraph::GetAllAccessibleVariableNodes_r(
+	const ReferencesGraphNodePtr& node,
+		NodesSet& visited_nodes_set,
+		NodesSet& result_set ) const
 {
 	U_ASSERT( nodes_.find(node) != nodes_.end() );
 
-	std::unordered_set<ReferencesGraphNodePtr> result;
+	if( !visited_nodes_set.insert(node).second )
+		return; // Already visited
 
 	if( node->kind == ReferencesGraphNode::Kind::Variable )
-		result.emplace( node );
+		result_set.emplace( node );
 
 	for( const auto& link : links_ )
-	{
 		if( link.second == node )
-		{
-			auto accesible_variable_nodes= GetAllAccessibleVariableNodes_r( link.first );
-			result.insert( accesible_variable_nodes.begin(), accesible_variable_nodes.end() );
-		}
-	}
-
-	return result;
+			GetAllAccessibleVariableNodes_r( link.first, visited_nodes_set, result_set );
 }
 
 ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const std::vector<ReferencesGraph>& branches_variables_state, const FilePos& file_pos )

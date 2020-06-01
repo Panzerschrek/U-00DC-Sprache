@@ -270,12 +270,7 @@ public:
 	ComplexName name;
 };
 
-struct ReferencePollutionSrc
-{
-	std::string name;
-	bool is_mutable= true;
-};
-using FunctionReferencesPollution= std::pair< std::string, ReferencePollutionSrc >;
+using FunctionReferencesPollution= std::pair< std::string, std::string >;
 using FunctionReferencesPollutionList= std::vector<FunctionReferencesPollution>;
 
 struct FunctionArgument;

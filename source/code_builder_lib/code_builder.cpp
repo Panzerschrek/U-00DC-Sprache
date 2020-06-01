@@ -442,7 +442,7 @@ void CodeBuilder::CopyClass(
 
 	copy->syntax_element= src.syntax_element;
 	copy->field_count= src.field_count;
-	copy->references_tags_count= src.references_tags_count;
+	copy->inner_reference_type= src.inner_reference_type;
 	copy->completeness= src.completeness;
 
 	copy->have_explicit_noncopy_constructors= src.have_explicit_noncopy_constructors;
@@ -1554,13 +1554,18 @@ Type CodeBuilder::BuildFuncCode(
 		args_nodes[ arg_number ].first= var_node;
 		var.node= var_node;
 
+		if( arg.type != void_type_ && !EnsureTypeCompleteness( arg.type, TypeCompleteness::ReferenceTagsComplete ) )
+			REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), declaration_arg.file_pos_, arg.type );
+
 		if (arg.type.ReferencesTagsCount() > 0u )
 		{
 			// Create inner node + root variable.
 			const auto accesible_variable= std::make_shared<ReferencesGraphNode>( arg_name + " inner variable", ReferencesGraphNode::Kind::Variable );
 			function_context.variables_state.AddNode( accesible_variable );
 
-			const auto inner_reference= std::make_shared<ReferencesGraphNode>( arg_name + " inner reference", ReferencesGraphNode::Kind::ReferenceMut );
+			const auto inner_reference= std::make_shared<ReferencesGraphNode>(
+				arg_name + " inner reference",
+				arg.type.GetInnerReferenceType() == InnerReferenceType::Mut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
 			function_context.variables_state.SetNodeInnerReference( var_node, inner_reference );
 			function_context.variables_state.AddLink( accesible_variable, inner_reference );
 
@@ -1756,7 +1761,7 @@ Type CodeBuilder::BuildFuncCode(
 		if( inner_reference == nullptr )
 			continue;
 
-		for( const ReferencesGraphNodePtr& accesible_variable : function_context.variables_state.GetAllAccessibleVariableNodes_r( inner_reference ) )
+		for( const ReferencesGraphNodePtr& accesible_variable : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
 		{
 			if( accesible_variable == node_pair.second )
 				continue;
@@ -1776,11 +1781,6 @@ Type CodeBuilder::BuildFuncCode(
 				pollution.src= *reference;
 				pollution.dst.first= i;
 				pollution.dst.second= 0u;
-				// Currently check both mutable and immutable. TODO - maybe akt more smarter?
-				pollution.src_is_mutable= true;
-				if( function_type.references_pollution.count( pollution ) != 0u )
-					continue;
-				pollution.src_is_mutable= false;
 				if( function_type.references_pollution.count( pollution ) != 0u )
 					continue;
 			}
@@ -2390,7 +2390,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			const ReferencesGraphNodePtr& src_node= initializer_experrsion.node;
 			if( src_node != nullptr )
 			{
-				const auto src_node_inner_references= function_context.variables_state.GetAllAccessibleInnerNodes_r( src_node );
+				const auto src_node_inner_references= function_context.variables_state.GetAllAccessibleInnerNodes( src_node );
 				if( !src_node_inner_references.empty() )
 				{
 					bool node_is_mutable= false;
@@ -2432,7 +2432,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 
 	if( auto_variable_declaration.lock_temps )
 	{
-		const auto accesible_variable_nodes= function_context.variables_state.GetAllAccessibleVariableNodes_r( var_node );
+		const auto accesible_variable_nodes= function_context.variables_state.GetAllAccessibleVariableNodes( var_node );
 		std::unordered_set<ReferencesGraphNodePtr> indirect_accesible_variable_nodes;
 
 		// Get accesible by inner references variables. Currently, we have onyl 1 level of indirection.
@@ -2440,7 +2440,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		{
 			if( const ReferencesGraphNodePtr& inner_reference = function_context.variables_state.GetNodeInnerReference( accesible_variable_node ) )
 			{
-				const auto accesible_variable_nodes2= function_context.variables_state.GetAllAccessibleVariableNodes_r( inner_reference );
+				const auto accesible_variable_nodes2= function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference );
 				indirect_accesible_variable_nodes.insert( accesible_variable_nodes2.begin(), accesible_variable_nodes2.end() );
 			}
 		}
@@ -2566,7 +2566,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		// Check correctness of returning reference.
 		if( expression_result.node != nullptr )
 		{
-			for( const ReferencesGraphNodePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes_r( expression_result.node ) )
+			for( const ReferencesGraphNodePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( expression_result.node ) )
 			{
 				if( function_context.allowed_for_returning_references.count( var_node ) == 0 )
 					REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), return_operator.file_pos_ );
@@ -2593,7 +2593,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			{
 				if( const ReferencesGraphNodePtr& inner_reference = function_context.variables_state.GetNodeInnerReference( expression_result.node ) )
 				{
-					for( const ReferencesGraphNodePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes_r( inner_reference ) )
+					for( const ReferencesGraphNodePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
 					{
 						if( function_context.allowed_for_returning_references.count( var_node ) == 0 )
 							REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), return_operator.file_pos_ );
@@ -2735,7 +2735,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 				const ReferencesGraphNodePtr& dst_node= var_node;
 				if( src_node != nullptr && dst_node != nullptr && variable.type.ReferencesTagsCount() > 0u )
 				{
-					const auto src_node_inner_references= function_context.variables_state.GetAllAccessibleInnerNodes_r( src_node );
+					const auto src_node_inner_references= function_context.variables_state.GetAllAccessibleInnerNodes( src_node );
 					if( !src_node_inner_references.empty() )
 					{
 						bool node_is_mutable= false;

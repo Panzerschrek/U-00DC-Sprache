@@ -49,8 +49,9 @@ public:
 	void MoveNode( const ReferencesGraphNodePtr& node );
 	bool NodeMoved( const ReferencesGraphNodePtr& node ) const;
 
-	std::unordered_set<ReferencesGraphNodePtr> GetAllAccessibleInnerNodes_r( const ReferencesGraphNodePtr& node ) const;
-	std::unordered_set<ReferencesGraphNodePtr> GetAllAccessibleVariableNodes_r( const ReferencesGraphNodePtr& node ) const;
+	using NodesSet= std::unordered_set<ReferencesGraphNodePtr>;
+	NodesSet GetAllAccessibleInnerNodes( const ReferencesGraphNodePtr& node ) const;
+	NodesSet GetAllAccessibleVariableNodes( const ReferencesGraphNodePtr& node ) const;
 
 	using MergeResult= std::pair<ReferencesGraph, std::vector<CodeBuilderError> >;
 	static MergeResult MergeVariablesStateAfterIf( const std::vector<ReferencesGraph>& branches_variables_state, const FilePos& file_pos );
@@ -62,6 +63,10 @@ private:
 		bool moved= false;
 		ReferencesGraphNodePtr inner_reference; // SPRACHE_TODO - make vector, when type can hold more, then one internal references storage.
 	};
+
+private:
+	void GetAllAccessibleInnerNodes_r( const ReferencesGraphNodePtr& node, NodesSet& visited_nodes_set, NodesSet& result_set ) const;
+	void GetAllAccessibleVariableNodes_r( const ReferencesGraphNodePtr& node, NodesSet& visited_nodes_set, NodesSet& result_set ) const;
 
 private:
 	std::unordered_map<ReferencesGraphNodePtr, NodeState> nodes_;

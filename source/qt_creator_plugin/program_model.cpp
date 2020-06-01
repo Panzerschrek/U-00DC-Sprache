@@ -216,25 +216,40 @@ std::string Stringify( const Synt::Expression& expression )
 std::string Stringify( const Synt::ComplexName& complex_name )
 {
 	std::string result;
-	for( const Synt::ComplexName::Component& component : complex_name.components )
+
+	if( std::get_if<Synt::EmptyVariant>(&complex_name.start_value) != nullptr )
+	{}
+	else if( const auto typeof_type_name = std::get_if<Synt::TypeofTypeName>(&complex_name.start_value) )
 	{
-		result+= component.name;
+		if( typeof_type_name->expression != nullptr )
+			result= Keyword( Keywords::typeof_ ) + "(" + Stringify( *typeof_type_name->expression ) + ")";
+	}
+	else if(const auto simple_name= std::get_if<std::string>(&complex_name.start_value) )
+		result= *simple_name;
 
-		if( component.have_template_parameters )
+	auto tail= complex_name.tail.get();
+	while(tail != nullptr)
+	{
+		if( const auto name= std::get_if<std::string>( &tail->name_or_template_paramenters ) )
 		{
-			result+= "</";
-			for( const Synt::Expression& template_param : component.template_parameters )
+			result+= "::";
+			result+= *name;
+		}
+		else if( const auto template_prameters= std::get_if< std::vector<Synt::Expression> >( &tail->name_or_template_paramenters ) )
+		{
+			result+= "</ ";
+			for( const Synt::Expression& expr : *template_prameters )
 			{
-				result+= Stringify(template_param);
-
-				if( &template_param != &component.template_parameters.back() )
+				result+= Stringify( expr );
+				if( &expr != &template_prameters->back() )
 					result+= ", ";
 			}
-			result+= "/>";
+			result+= " />";
 		}
+		else
+			U_ASSERT( false );
 
-		if( &component != &complex_name.components.back() )
-			result+= "::";
+		tail= tail->next.get();
 	}
 
 	return result;
@@ -364,13 +379,6 @@ std::string Stringify( const Synt::TupleType& tuple_type_name )
 	return result;
 }
 
-std::string Stringify( const Synt::TypeofTypeName& typeof_type_name )
-{
-	if( typeof_type_name.expression != nullptr )
-		return std::string();
-	return Keyword( Keywords::typeof_ ) + "(" + Stringify( *typeof_type_name.expression ) + ")";
-}
-
 std::string Stringify( const Synt::FunctionTypePtr& function_type_name )
 {
 	if( function_type_name == nullptr )
@@ -411,7 +419,7 @@ std::string Stringify( const Synt::Function& function )
 	if( function.overloaded_operator_ != OverloadedOperator::None )
 		result+= Keyword( Keywords::op_ ) + OverloadedOperatorToString( function.overloaded_operator_ );
 	else
-		result+= function.name_.components.back().name;
+		result+= function.name_.back();
 
 	result+= "(";
 

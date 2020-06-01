@@ -33,7 +33,7 @@ def InClassFieldInitializerCheck_Test2():
 		struct S
 		{
 			i32& x= 42;
-			fn constructor( this'a', i32&'b in_x ) ' a <- imut b '
+			fn constructor( this'a', i32&'b in_x ) ' a <- b '
 			( x= in_x )
 			{}  // Prevent calling of initializer in default constructor generation.
 		}

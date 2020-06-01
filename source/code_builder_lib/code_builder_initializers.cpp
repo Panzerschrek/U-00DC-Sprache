@@ -309,7 +309,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 		const ReferencesGraphNodePtr& dst_node= variable.node;
 		if( src_node != nullptr && dst_node != nullptr && variable.type.ReferencesTagsCount() > 0u )
 		{
-			const auto src_node_inner_references= function_context.variables_state.GetAllAccessibleInnerNodes_r( src_node );
+			const auto src_node_inner_references= function_context.variables_state.GetAllAccessibleInnerNodes( src_node );
 			if( !src_node_inner_references.empty() )
 			{
 				bool node_is_mutable= false;
@@ -383,7 +383,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 		const ReferencesGraphNodePtr& dst_node= variable.node;
 		if( src_node != nullptr && dst_node != nullptr && variable.type.ReferencesTagsCount() > 0u )
 		{
-			const auto src_node_inner_references= function_context.variables_state.GetAllAccessibleInnerNodes_r( src_node );
+			const auto src_node_inner_references= function_context.variables_state.GetAllAccessibleInnerNodes( src_node );
 			if( !src_node_inner_references.empty() )
 			{
 				bool node_is_mutable= false;
@@ -959,7 +959,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		const ReferencesGraphNodePtr& dst_node= variable.node;
 		if( src_node != nullptr && dst_node != nullptr && variable.type.ReferencesTagsCount() > 0u )
 		{
-			const auto src_node_inner_references= function_context.variables_state.GetAllAccessibleInnerNodes_r( src_node );
+			const auto src_node_inner_references= function_context.variables_state.GetAllAccessibleInnerNodes( src_node );
 			if( !src_node_inner_references.empty() )
 			{
 				bool node_is_mutable= false;
