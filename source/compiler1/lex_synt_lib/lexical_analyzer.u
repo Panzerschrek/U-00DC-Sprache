@@ -61,7 +61,7 @@ fn ParseIdentifier( Iterator &mut it ) : Lexem
 			break;
 		}
 
-		//it= it_next; // TODO - fix this
+		it= it_next; // TODO - fix this
 	}
 
 	return result;
@@ -417,6 +417,11 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 
 
 			it.drop_front();
+		}
+
+		if( lexem.lexem_type != Lexem::Type::None )
+		{
+			result.lexems.push_back(lexem);
 		}
 	}
 

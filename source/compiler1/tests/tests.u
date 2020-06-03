@@ -1,4 +1,23 @@
+import "../lex_synt_lib/lexical_analyzer.uh"
+
+namespace U
+{
+
+fn FirstTest()
+{
+	auto& c_program_text = "fn Foo() { }";
+	auto res= LexicalAnalysis(c_program_text);
+}
+
+fn Main() : i32
+{
+	FirstTest();
+	return 0;
+}
+
+} // namespace U
+
 fn nomangle main() : i32
 {
-	return 0;
+	return U::Main();
 }
