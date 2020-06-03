@@ -40,7 +40,6 @@ private:
 	struct BuildResultInternal
 	{
 		std::unique_ptr<NamesScope> names_map;
-		std::unique_ptr< ProgramStringMap< Value > > generated_template_things_storage;
 		std::unique_ptr<ClassTable> class_table;
 	};
 
