@@ -157,6 +157,7 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	template_classes_cache_.clear();
 	typeinfo_cache_.clear();
 	typeinfo_class_table_.clear();
+	generated_template_things_storage_.clear();
 	debug_info_.builder= nullptr;
 	debug_info_.source_file_entries.clear();
 	debug_info_.classes_di_cache.clear();
@@ -254,10 +255,6 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 			}
 		};
 	}
-
-	// Take generated template things.
-	result.generated_template_things_storage = std::make_unique< ProgramStringMap<Value> >();
-	result.generated_template_things_storage->swap( generated_template_things_storage_ );
 
 	// Finish with debug info.
 	if( build_debug_info_ )
