@@ -1,12 +1,26 @@
 import "../lex_synt_lib/lexical_analyzer.uh"
 
+fn nomangle printf( char8& c, i32 i ) unsafe;
+
 namespace U
 {
+
+fn PrintInt( i32 i )
+{
+	unsafe
+	{
+		printf( "%d"[0], i );
+	}
+}
 
 fn FirstTest()
 {
 	auto& c_program_text = "fn Foo() { }";
 	auto res= LexicalAnalysis(c_program_text);
+	foreach( & l : res.lexems )
+	{
+		PrintInt( i32(l.lexem_type) );
+	}
 }
 
 fn Main() : i32

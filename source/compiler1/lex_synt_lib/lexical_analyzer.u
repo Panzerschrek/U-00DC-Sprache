@@ -290,77 +290,64 @@ op Lexem::!=( Lexem& l, Lexem& r ) : bool
 
 fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnalysisResult
 {
-	var tup
-	[
-		[ tup[ ust::string8, Lexem::Type ],  0 ],
-		[ tup[ ust::string8, Lexem::Type ], 25 ],
-		[ tup[ ust::string8, Lexem::Type ], 25 ],
-		[ tup[ ust::string8, Lexem::Type ],  3 ]
-	]
-
+	var [ tup[ ust::string8, Lexem::Type ], 53 ]
 	c_fixed_lexems_table
 	[
-		[
-		],
-		[
-			[ "(", Lexem::Type::BracketLeft ],
-			[ ")", Lexem::Type::BracketRight ],
-			[ "[", Lexem::Type::SquareBracketLeft ],
-			[ "]", Lexem::Type::SquareBracketRight ],
-			[ "{", Lexem::Type::BraceLeft ],
-			[ "}", Lexem::Type::BraceRight ],
-			[ ",", Lexem::Type::Comma ],
-			[ ".", Lexem::Type::Dot ],
-			[ ":", Lexem::Type::Colon ],
-			[ ";", Lexem::Type::Semicolon ],
-			[ "?", Lexem::Type::Question ],
-			[ "=", Lexem::Type::Assignment ],
-			[ "+", Lexem::Type::Plus ],
-			[ "-", Lexem::Type::Minus ],
-			[ "*", Lexem::Type::Star ],
-			[ "/", Lexem::Type::Slash ],
-			[ "%", Lexem::Type::Percent ],
-			[ "<", Lexem::Type::CompareLess ],
-			[ ">", Lexem::Type::CompareGreater ],
-			[ "&", Lexem::Type::And ],
-			[ "|", Lexem::Type::Or ],
-			[ "^", Lexem::Type::Xor ],
-			[ "~", Lexem::Type::Tilda ],
-			[ "!", Lexem::Type::Not ],
-			[ "'", Lexem::Type::Apostrophe ],
-		],
-		[
-			[ "</", Lexem::Type::TemplateBracketLeft  ],
-			[ "/>", Lexem::Type::TemplateBracketRight ],
-			[ "<?", Lexem::Type::MacroBracketLeft  ],
-			[ "?>", Lexem::Type::MacroBracketRight ],
-			[ "::", Lexem::Type::Scope ],
-			[ "++", Lexem::Type::Increment ],
-			[ "--", Lexem::Type::Decrement ],
-			[ "==", Lexem::Type::CompareEqual ],
-			[ "!=", Lexem::Type::CompareNotEqual ],
-			[ "<=", Lexem::Type::CompareLessOrEqual ],
-			[ ">=", Lexem::Type::CompareGreaterOrEqual ],
-			[ "&&", Lexem::Type::Conjunction ],
-			[ "||", Lexem::Type::Disjunction ],
-			[ "+=", Lexem::Type::AssignAdd ],
-			[ "-=", Lexem::Type::AssignSub ],
-			[ "*=", Lexem::Type::AssignMul ],
-			[ "/=", Lexem::Type::AssignDiv ],
-			[ "%=", Lexem::Type::AssignRem ],
-			[ "&=", Lexem::Type::AssignAnd ],
-			[ "|=", Lexem::Type::AssignOr  ],
-			[ "^=", Lexem::Type::AssignXor ],
-			[ "<<", Lexem::Type::ShiftLeft  ],
-			[ ">>", Lexem::Type::ShiftRight ],
-			[ "<-", Lexem::Type::LeftArrow  ],
-			[ "->", Lexem::Type::RightArrow ],
-		],
-		[
-			[ "<<=", Lexem::Type::AssignShiftLeft  ],
-			[ ">>=", Lexem::Type::AssignShiftRight ],
-			[ "...", Lexem::Type::Ellipsis ],
-		],
+		[ "<<=", Lexem::Type::AssignShiftLeft  ],
+		[ ">>=", Lexem::Type::AssignShiftRight ],
+		[ "...", Lexem::Type::Ellipsis ],
+
+		[ "</", Lexem::Type::TemplateBracketLeft  ],
+		[ "/>", Lexem::Type::TemplateBracketRight ],
+		[ "<?", Lexem::Type::MacroBracketLeft  ],
+		[ "?>", Lexem::Type::MacroBracketRight ],
+		[ "::", Lexem::Type::Scope ],
+		[ "++", Lexem::Type::Increment ],
+		[ "--", Lexem::Type::Decrement ],
+		[ "==", Lexem::Type::CompareEqual ],
+		[ "!=", Lexem::Type::CompareNotEqual ],
+		[ "<=", Lexem::Type::CompareLessOrEqual ],
+		[ ">=", Lexem::Type::CompareGreaterOrEqual ],
+		[ "&&", Lexem::Type::Conjunction ],
+		[ "||", Lexem::Type::Disjunction ],
+		[ "+=", Lexem::Type::AssignAdd ],
+		[ "-=", Lexem::Type::AssignSub ],
+		[ "*=", Lexem::Type::AssignMul ],
+		[ "/=", Lexem::Type::AssignDiv ],
+		[ "%=", Lexem::Type::AssignRem ],
+		[ "&=", Lexem::Type::AssignAnd ],
+		[ "|=", Lexem::Type::AssignOr  ],
+		[ "^=", Lexem::Type::AssignXor ],
+		[ "<<", Lexem::Type::ShiftLeft  ],
+		[ ">>", Lexem::Type::ShiftRight ],
+		[ "<-", Lexem::Type::LeftArrow  ],
+		[ "->", Lexem::Type::RightArrow ],
+
+		[ "(", Lexem::Type::BracketLeft ],
+		[ ")", Lexem::Type::BracketRight ],
+		[ "[", Lexem::Type::SquareBracketLeft ],
+		[ "]", Lexem::Type::SquareBracketRight ],
+		[ "{", Lexem::Type::BraceLeft ],
+		[ "}", Lexem::Type::BraceRight ],
+		[ ",", Lexem::Type::Comma ],
+		[ ".", Lexem::Type::Dot ],
+		[ ":", Lexem::Type::Colon ],
+		[ ";", Lexem::Type::Semicolon ],
+		[ "?", Lexem::Type::Question ],
+		[ "=", Lexem::Type::Assignment ],
+		[ "+", Lexem::Type::Plus ],
+		[ "-", Lexem::Type::Minus ],
+		[ "*", Lexem::Type::Star ],
+		[ "/", Lexem::Type::Slash ],
+		[ "%", Lexem::Type::Percent ],
+		[ "<", Lexem::Type::CompareLess ],
+		[ ">", Lexem::Type::CompareGreater ],
+		[ "&", Lexem::Type::And ],
+		[ "|", Lexem::Type::Or ],
+		[ "^", Lexem::Type::Xor ],
+		[ "~", Lexem::Type::Tilda ],
+		[ "!", Lexem::Type::Not ],
+		[ "'", Lexem::Type::Apostrophe ],
 	];
 	auto c_max_fixed_lexem_size= 3s;
 
@@ -412,16 +399,24 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 		}
 		else
 		{
-
-			// TODO - handle fixed lexems.
-
-
-			it.drop_front();
+			foreach( &l : c_fixed_lexems_table )
+			{
+				if( l[0].size() <= it.size() && l[0] == it.subrange( 0s, l[0].size() ) )
+				{
+					lexem.lexem_type= l[1];
+					it= it.subrange( l[0].size(), it.size() );
+					break;
+				}
+			}
 		}
 
 		if( lexem.lexem_type != Lexem::Type::None )
 		{
 			result.lexems.push_back(lexem);
+		}
+		else
+		{
+			it.drop_front();
 		}
 	}
 
