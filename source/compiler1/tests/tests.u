@@ -1,6 +1,6 @@
 import "../lex_synt_lib/lexical_analyzer.uh"
 
-fn nomangle printf( char8& c, i32 i ) unsafe;
+fn nomangle printf( char8& c, size_type i ) unsafe;
 
 namespace U
 {
@@ -9,7 +9,17 @@ fn PrintInt( i32 i )
 {
 	unsafe
 	{
-		printf( "%d"[0], i );
+		printf( "%d\n\0"[0], size_type(i) );
+	}
+}
+
+fn PrintStr( ust::array_view_imut</ char8 /> str )
+{
+	var ust::string8 mut s_copy(str);
+	s_copy.push_back(0c8);
+	unsafe
+	{
+		printf( "%s\n\0"[0], ust::ref_to_int(s_copy[0s]) );
 	}
 }
 
@@ -20,6 +30,7 @@ fn FirstTest()
 	foreach( & l : res.lexems )
 	{
 		PrintInt( i32(l.lexem_type) );
+		PrintStr( l.text.range() );
 	}
 }
 

@@ -48,20 +48,20 @@ fn IsIdentifierChar( sprache_char c ) : bool
 
 fn ParseIdentifier( Iterator &mut it ) : Lexem
 {
-	ReadNextUTF8Char( it );
-
 	var Lexem mut result;
 	result.lexem_type= Lexem::Type::Identifier;
 
 	while( !it.empty() )
 	{
 		auto mut it_next= it;
-		if( !IsIdentifierChar( ReadNextUTF8Char( it_next ) ) )
+		auto c = ReadNextUTF8Char( it_next );
+		if( !IsIdentifierChar( c ) )
 		{
 			break;
 		}
 
-		it= it_next; // TODO - fix this
+		PushCharToUTF8String( c, result.text );
+		it= it_next;
 	}
 
 	return result;
