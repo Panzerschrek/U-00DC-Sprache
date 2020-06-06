@@ -116,7 +116,7 @@ fn NumberFunc10( char8 c ) : u64
 	{
 		return u64(c) - u64("0"c8);
 	}
-	return u64(-1);
+	return -1u64;
 }
 
 fn NumberFunc16( char8 c ) : u64
