@@ -1,0 +1,47 @@
+import "syntax_analyzer.uh"
+
+namespace U
+{
+
+namespace Synt
+{
+
+class SyntaxAnalyzer
+{
+public:
+	fn constructor( this'a', Lexems&'b lexems ) ' a <- b ';
+
+	fn DoAnalyzis( mut this ) : SyntaxAnalysisResult;
+
+private:
+	fn NotEndOfFile( this ) : bool;
+
+private:
+	ust::array_view_imut</Lexem/> it_;
+}
+
+fn SyntaxAnalyzer::constructor( this'a', Lexems&'b lexems ) ' a <- b '
+	( it_= lexems.range() )
+{
+}
+
+fn SyntaxAnalyzer::DoAnalyzis( mut this ) : SyntaxAnalysisResult
+{
+	var SyntaxAnalysisResult mut res;
+	return move(res);
+}
+
+fn SyntaxAnalyzer::NotEndOfFile( this ) : bool
+{
+	return it_.size() >= 2s;
+}
+
+fn SyntaxAnalysis( Lexems& lexems ) : SyntaxAnalysisResult
+{
+	var SyntaxAnalyzer mut analyzer(lexems);
+	return analyzer.DoAnalyzis();
+}
+
+} // namespace Synt
+
+} // namespace U
