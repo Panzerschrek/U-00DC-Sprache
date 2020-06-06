@@ -123,7 +123,7 @@ public:
 	
 	template</ type T />
 	fn enable_if( type_is_one_of_tuple_elements</ T, Y />() )
-	constructor(T mut val)
+	conversion_constructor(T mut val)
 		( index_(0), storage_= zero_init )
 	{
 		auto mut cur_index= 0s;
