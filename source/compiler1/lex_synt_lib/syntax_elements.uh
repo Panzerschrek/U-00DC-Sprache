@@ -1,0 +1,67 @@
+import "/box.u"
+import "/string.u"
+import "/variant.u"
+import "/vector.u"
+import "file_pos.uh"
+import "operators.uh"
+
+
+namespace U
+{
+
+namespace Synt
+{
+
+struct BinaryOperator
+{
+	ust::box</Expression/> l;
+	ust::box</Expression/> r;
+	BinaryOperatorType operator;
+}
+
+struct BracketExpression
+{
+	ust::box</Expression/> expr;
+}
+
+// HACK! use struct to prevent globals loop.
+struct Expression
+{
+	ust::variant</ tup[
+		BinaryOperator,
+		BracketExpression ] /> expr;
+}
+
+struct ReturnOperator
+{
+	Expression expr;
+}
+
+struct EmptyReturnOperator
+{
+}
+
+type BlockElement = ust::variant</ tup[
+	ReturnOperator,
+	EmptyReturnOperator ] />;
+
+struct Block
+{
+	FilePos file_pos;
+	FilePos end_file_pos;
+	ust::vector</BlockElement/> elements;
+}
+
+struct Function
+{
+	ust::box</Block/> block; // null for prototype
+}
+
+type ProgramElement= ust::variant</ tup[
+	Function ] />;
+
+type ProgramElements= ust::vector</ProgramElement/>;
+
+} // namespace Synt
+
+} // namespace U
