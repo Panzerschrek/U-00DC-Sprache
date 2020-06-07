@@ -12,14 +12,15 @@ function( CompileUSource u_source_file out_object )
 		DEPENDS ${u_source_file} ${CURRENT_COMPILER}
 		COMMAND
 			${CURRENT_COMPILER}
-			${CMAKE_CURRENT_SOURCE_DIR}/${u_source_file_relative}
-			-o ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.o
+			${u_source_file}
+			-o compiler1/${u_source_file_relative}.o
 			-MF ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
 			${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS}
 			--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
 		DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
-		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} )
-	set( ${out_object} ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.o PARENT_SCOPE )
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "compiler1/lex_syn_lib/file_pos.u.o:", but launches custom command in current binary directory
+		)
+	set( ${out_object} ${u_source_file_relative}.o PARENT_SCOPE )
 endfunction()
 
 # Returns list of objects in ${out_objects}
