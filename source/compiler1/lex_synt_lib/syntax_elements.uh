@@ -3,7 +3,7 @@ import "/box_nullable.u"
 import "/string.u"
 import "/variant.u"
 import "/vector.u"
-import "file_pos.uh"
+import "lexical_analyzer.uh"
 import "operators.uh"
 
 
@@ -12,6 +12,18 @@ namespace U
 
 namespace Synt
 {
+
+struct ComplexName
+{
+	// TODO - make really comples
+	ust::string8 name;
+}
+
+struct NumericConstant
+{
+	FilePos file_pos;
+	NumberLexemData num= zero_init;
+}
 
 struct BinaryOperator
 {
@@ -29,9 +41,27 @@ struct BracketExpression
 struct Expression
 {
 	ust::variant</ tup[
+		NumericConstant,
 		BinaryOperator,
 		BracketExpression ] /> expr;
 }
+
+struct FunctionType
+{
+	struct Arg
+	{
+		TypeName arg_type;
+		ust::string8 name;
+	}
+	ust::vector</Arg/> args;
+	TypeName return_type;
+}
+
+// HACK! use struct to prevent globals loop.
+type TypeName=
+	ust::variant</ tup[
+		ComplexName,
+		ust::box</FunctionType/> ] />;
 
 struct ReturnOperator
 {
@@ -57,6 +87,7 @@ struct Function
 {
 	FilePos file_pos;
 	ust::string8 name;
+	FunctionType function_type;
 	ust::box_nullable</Block/> block; // null for prototype
 }
 

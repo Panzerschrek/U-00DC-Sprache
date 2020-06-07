@@ -14,8 +14,13 @@ public:
 	fn DoAnalyzis( mut this ) : SyntaxAnalysisResult;
 
 private:
-
+	fn ParseExpression( mut this ) : Expression;
+	fn ParseTypeName( mut this ) : TypeName;
 	fn ParseFunction( mut this ) : Function;
+
+	fn ParseBlock( mut this ) : Block;
+
+	fn ParseReturnOperator( mut this ) : ReturnOperator;
 
 	fn NotEndOfFile( this ) : bool;
 	fn NextLexem( mut this );
@@ -50,6 +55,47 @@ fn SyntaxAnalyzer::DoAnalyzis( mut this ) : SyntaxAnalysisResult
 	return move(res);
 }
 
+fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
+{
+	if( it_.front().lexem_type == Lexem::Type::Number )
+	{
+		var NumericConstant mut numeric_constant;
+		halt if( it_.front().text.size() < typeinfo</NumberLexemData/>.size_of );
+
+		unsafe
+		{
+			ust::memory_copy( numeric_constant.num, it_.front().text.front(), typeinfo</NumberLexemData/>.size_of );
+		}
+
+		var Expression mut expr;
+		expr.expr= move(numeric_constant);
+		return move(expr);
+	}
+	else
+	{
+		PushErrorMessage();
+		return Expression();
+	}
+}
+
+fn SyntaxAnalyzer::ParseTypeName( mut this ) : TypeName
+{
+	if( it_.front().lexem_type == Lexem::Type::Identifier )
+	{
+		var ComplexName mut complex_name;
+		complex_name.name= it_.front().text;
+
+		NextLexem();
+
+		return TypeName( move(complex_name) );
+	}
+	else
+	{
+		PushErrorMessage();
+		return TypeName();
+	}
+}
+
 fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 {
 	var Function mut res{ .file_pos= it_.front().file_pos };
@@ -62,6 +108,102 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 		return Function();
 	}
 	res.name= it_.front().text;
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
+	{
+		PushErrorMessage();
+		return Function();
+	}
+	NextLexem();
+
+	while( NotEndOfFile() )
+	{
+		if( it_.front().lexem_type == Lexem::Type::BracketRight )
+		{
+			NextLexem();
+			break;
+		}
+
+		var FunctionType::Arg mut arg;
+		arg.arg_type= ParseTypeName();
+
+		if( it_.front().lexem_type != Lexem::Type::Identifier )
+		{
+			PushErrorMessage();
+			return Function();
+		}
+		arg.name= it_.front().text;
+		NextLexem();
+
+		res.function_type.args.push_back( move(arg) );
+
+		if( it_.front().lexem_type == Lexem::Type::BracketRight )
+		{
+			NextLexem();
+			break;
+		}
+		if( it_.front().lexem_type == Lexem::Type::Comma )
+		{
+			NextLexem();
+
+			if( it_.front().lexem_type == Lexem::Type::BracketRight ) // Prevent ')' after ','
+			{
+				PushErrorMessage();
+				return Function();
+			}
+		}
+	}
+
+	if( it_.front().lexem_type == Lexem::Type::BraceLeft )
+	{
+		res.block.reset( ParseBlock() );
+	}
+	else if( it_.front().lexem_type == Lexem::Type::Semicolon ){} // Prototype
+	else
+	{
+		PushErrorMessage();
+		return Function();
+	}
+
+	return move(res);
+}
+
+fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
+{
+	NextLexem(); // {
+
+	var Block mut block;
+
+	while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::BraceRight )
+	{
+		if( it_.front().lexem_type == Lexem::Type::Identifier && it_.front().text == "return" )
+		{
+			block.elements.push_back( ParseReturnOperator() );
+		}
+		else
+		{
+			PushErrorMessage();
+			break;
+		}
+	}
+
+	return move(block);
+}
+
+fn SyntaxAnalyzer::ParseReturnOperator( mut this ) : ReturnOperator
+{
+	NextLexem(); // return
+
+	var ReturnOperator mut res;
+
+	res.expr= ParseExpression();
+
+	if( it_.front().lexem_type != Lexem::Type::Semicolon )
+	{
+		PushErrorMessage();
+		return ReturnOperator();
+	}
 	NextLexem();
 
 	return move(res);

@@ -1,4 +1,5 @@
 import "../lex_synt_lib/lexical_analyzer.uh"
+import "../lex_synt_lib/syntax_analyzer.uh"
 
 fn nomangle printf( char8& c, size_type i ) unsafe;
 
@@ -25,13 +26,16 @@ fn PrintStr( ust::array_view_imut</ char8 /> str )
 
 fn FirstTest()
 {
-	auto& c_program_text = "fn Foo() { 663; }";
+	auto& c_program_text = "fn Foo() { return 42; }";
+
 	auto res= LexicalAnalysis(c_program_text);
 	foreach( & l : res.lexems )
 	{
 		PrintInt( i32(l.lexem_type) );
 		PrintStr( l.text.range() );
 	}
+
+	auto synt_res = Synt::SyntaxAnalysis( res.lexems );
 }
 
 fn Main() : i32
