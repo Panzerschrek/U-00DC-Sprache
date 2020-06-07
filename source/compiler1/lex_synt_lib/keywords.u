@@ -1,0 +1,21 @@
+import "keywords.uh"
+
+namespace U
+{
+
+fn KeywordToString( Keyword k ) : ust::array_view_imut</ char8 />
+{
+	for( &el : typeinfo</Keyword/>.elements_list )
+	{
+		if( el.value == u8(k) )
+		{
+			var ust::array_view_imut</ char8 /> mut res( el.name );
+			res.drop_back(); // remove '_'
+			return res;
+		}
+	}
+
+	return ust::array_view_imut</ char8 />( "" );
+}
+
+} // namespace U

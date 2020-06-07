@@ -1,3 +1,4 @@
+import "keywords.uh"
 import "syntax_analyzer.uh"
 
 namespace U
@@ -5,6 +6,11 @@ namespace U
 
 namespace Synt
 {
+
+fn IsKeyword( Lexem& l, Keyword k ) : bool
+{
+	return l.lexem_type == Lexem::Type::Identifier && l.text == KeywordToString(k);
+}
 
 class SyntaxAnalyzer
 {
@@ -42,7 +48,7 @@ fn SyntaxAnalyzer::DoAnalyzis( mut this ) : SyntaxAnalysisResult
 
 	while( NotEndOfFile() )
 	{
-		if( it_.front().text == "fn" )
+		if( IsKeyword( it_.front(), Keyword::fn_ ) )
 		{
 			res.program_elements.push_back( ParseFunction() );
 		}
@@ -177,7 +183,7 @@ fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 
 	while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::BraceRight )
 	{
-		if( it_.front().lexem_type == Lexem::Type::Identifier && it_.front().text == "return" )
+		if( IsKeyword( it_.front(), Keyword::return_ ) )
 		{
 			block.elements.push_back( ParseReturnOperator() );
 		}
