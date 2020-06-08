@@ -10,8 +10,10 @@ namespace U
 
 enum class CodeBuilderErrorCode : uint16_t
 {
+	// WARNING! Values of this enum must be equal to same values in Ü compiler1.
+	Invalid,
 	#define PROCESS_ERROR( Code, Message ) Code,
-	#include "errors_list.hpp"
+	#include "../errors_list.hpp"
 	#undef PROCESS_ERROR
 };
 

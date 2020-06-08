@@ -1,0 +1,9 @@
+import "/random_access_range.u"
+import "/code_builder_errors.uh"
+
+namespace U
+{
+
+fn GetErrorMessagePattern( CodeBuilderErrorCode e ) : ust::array_view_imut</ char8 />;
+
+} // namespace U

@@ -98,12 +98,13 @@ CodeBuilderErrorsContainer ExpandErrorsInMacros(
 namespace ErrorReportingImpl
 {
 
-const char* GetErrorMessagePattern( CodeBuilderErrorCode code )
+const char* GetErrorMessagePattern( const CodeBuilderErrorCode code )
 {
 	switch(code)
 	{
+	case CodeBuilderErrorCode::Invalid: return "";
 	#define PROCESS_ERROR(Code, Message) case CodeBuilderErrorCode::Code: return Message;
-	#include "errors_list.hpp"
+	#include "../errors_list.hpp"
 	#undef PROCESS_ERROR
 	};
 
