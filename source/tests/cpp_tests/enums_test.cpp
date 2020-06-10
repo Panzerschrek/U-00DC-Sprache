@@ -229,18 +229,31 @@ U_TEST( EnumAsClassFiled )
 	U_TEST_ASSERT( static_cast<uint64_t>( 2 ) == result_value.IntVal.getLimitedValue() );
 }
 
-U_TEST( UnderlayingTypeForEnumTest )
+U_TEST( UnderlayingTypeForEnumTest0 )
 {
 	static const char c_program_text[]=
 	R"(
 		enum CompactEnum : u8
 		{ A, B, C, }
 
-		enum largeEnum: i64
+		enum LargeEnum: i64
+		{ A, B, C, }
+
+		enum LargeUnsignedEnum: u64
+		{ A, B, C, }
+
+		enum SuperLargeSignedEnum: i128
+		{ A, B, C, }
+
+		enum SuperLargeUnsignedEnum: u128
 		{ A, B, C, }
 
 		static_assert( typeinfo</CompactEnum/>.size_of == typeinfo</u8/>.size_of );
-		static_assert( typeinfo</largeEnum/>.size_of == typeinfo</i64/>.size_of );
+		static_assert( typeinfo</LargeEnum/>.size_of == typeinfo</i64/>.size_of );
+		static_assert( typeinfo</LargeUnsignedEnum/>.size_of == typeinfo</u64/>.size_of );
+		static_assert( typeinfo</SuperLargeSignedEnum/>.size_of == typeinfo</i128/>.size_of );
+		static_assert( typeinfo</SuperLargeUnsignedEnum/>.size_of == typeinfo</u128/>.size_of );
+
 	)";
 
 	BuildProgram( c_program_text );
