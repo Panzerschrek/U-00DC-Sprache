@@ -1,5 +1,6 @@
 import "../lex_synt_lib/lexical_analyzer.uh"
 import "../lex_synt_lib/syntax_analyzer.uh"
+import "../code_builder_lib/code_builder.uh"
 
 fn nomangle printf( char8& c, size_type i ) unsafe;
 
@@ -35,7 +36,10 @@ fn FirstTest()
 		PrintStr( l.text.range() );
 	}
 
-	auto synt_res = Synt::SyntaxAnalysis( res.lexems );
+	auto synt_res= Synt::SyntaxAnalysis( res.lexems );
+
+	var CodeBuilder mut code_builder;
+	code_builder.BuildProgram( synt_res );
 }
 
 fn Main() : i32

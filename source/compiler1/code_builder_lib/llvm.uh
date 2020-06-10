@@ -1,0 +1,23 @@
+// This file contains prototypes of functions defined in llvm c interface.
+// This prototypes is written manually. If llvm updated, all this function should be revised.
+
+// Use enums for replacement of pointers, because Ü have no pointers.
+?macro <? DefineLLVMRef:namespace ?name:ident ?>
+	->
+<?
+	enum ?name : size_type { Null }
+?>
+
+// Types
+
+DefineLLVMRef LLVMContextRef
+DefineLLVMRef LLVMModuleRef
+DefineLLVMRef LLVMTypeRef
+DefineLLVMRef LLVMValueRef
+
+type NullTerminatedString= char8;
+
+// Functions
+
+fn nomangle LLVMModuleCreateWithName(NullTerminatedString& ModuleID) unsafe : LLVMModuleRef;
+fn nomangle LLVMDisposeModule(LLVMModuleRef M) unsafe;

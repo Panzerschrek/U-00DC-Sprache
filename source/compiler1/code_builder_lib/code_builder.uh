@@ -1,5 +1,6 @@
 import "../lex_synt_lib/syntax_analyzer.uh"
 import "/code_builder_errors.uh"
+import "llvm.uh"
 
 namespace U
 {
@@ -11,9 +12,10 @@ public:
 	struct BuildResult
 	{
 		ust::vector</CodeBuilderError/> errors;
+		LLVMModuleRef llvm_module;
 	}
 
-	fn BuildProgram(mut this, Synt::SyntaxAnalysisResult& ast) : BuildResult;
+	fn BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : BuildResult;
 
 private:
 }
