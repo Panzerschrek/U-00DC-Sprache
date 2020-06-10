@@ -948,12 +948,16 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_, TypeCompleteness co
 	}
 
 	{
-		const uint64_t max_value_plus_one=
-			uint64_t(1) << ( uint64_t(enum_->underlaying_type.llvm_type->getIntegerBitWidth()) - ( IsSignedInteger( enum_->underlaying_type.fundamental_type ) ? 1u : 0u ) );
-		const uint64_t max_value= max_value_plus_one - 1u;
+		const auto bit_width= enum_->underlaying_type.llvm_type->getIntegerBitWidth();
+		if( bit_width < 32 ) // Assume that 64 bits are enough for all enums.
+		{
+			const uint64_t max_value_plus_one=
+				uint64_t(1) << ( uint64_t(bit_width) - ( IsSignedInteger( enum_->underlaying_type.fundamental_type ) ? 1u : 0u ) );
+			const uint64_t max_value= max_value_plus_one - 1u;
 
-		if( enum_->element_count > max_value )
-			REPORT_ERROR( UnderlayingTypeForEnumIsTooSmall, names_scope.GetErrors(), enum_decl.file_pos_, enum_->element_count - 1u, max_value );
+			if( enum_->element_count > max_value )
+				REPORT_ERROR( UnderlayingTypeForEnumIsTooSmall, names_scope.GetErrors(), enum_decl.file_pos_, enum_->element_count - 1u, max_value );
+		}
 	}
 
 	enum_->syntax_element= nullptr;
