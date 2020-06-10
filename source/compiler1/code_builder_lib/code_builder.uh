@@ -1,0 +1,21 @@
+import "../lex_synt_lib/syntax_analyzer.uh"
+import "/code_builder_errors.uh"
+
+namespace U
+{
+
+class CodeBuilder
+{
+public:
+
+	struct BuildResult
+	{
+		ust::vector</CodeBuilderError/> errors;
+	}
+
+	fn BuildProgram(mut this, Synt::SyntaxAnalysisResult& ast) : BuildResult;
+
+private:
+}
+
+} // namespace U

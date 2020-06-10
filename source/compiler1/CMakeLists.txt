@@ -17,6 +17,7 @@ function( CompileUSource u_source_file out_object )
 			-MF ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
 			${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS}
 			--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
+			--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/
 			--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/code_builder_lib
 			--include-dir ${CMAKE_CURRENT_BINARY_DIR}
 		DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
