@@ -1,4 +1,46 @@
+import "/box.u"
+import "/variant.u"
+import "/vector.u"
+import "lang_types.uh"
+import "llvm.uh"
+
 namespace U
 {
+
+struct FundamentalType
+{
+	U_FundamentalType fundamental_type;
+	LLVMTypeRef llvm_type;
+}
+
+struct FunctionType
+{
+	struct Arg
+	{
+		ust::box</Type/> arg_type; // HACK! prevent dependency because ust::vector requires complete type.
+	}
+
+	ust::vector</Arg/> args;
+	ust::box</Type/> return_type; // HACK! prevent dependency loop
+}
+
+class Type
+{
+public:
+	fn conversion_constructor( FundamentalType mut fundamental_type );
+	fn conversion_constructor( FunctionType mut function_type );
+
+	fn GetFundamentalType(  mut this ) : ust::optional_ref</FundamentalType, true  />;
+	fn GetFundamentalType( imut this ) : ust::optional_ref</FundamentalType, false />;
+
+	fn GetFunctionType(  mut this ) : ust::optional_ref</FunctionType, true  />;
+	fn GetFunctionType( imut this ) : ust::optional_ref</FunctionType, false />;
+
+private:
+	ust::variant</ tup[
+		FundamentalType,
+		FunctionType
+	] /> something_;
+}
 
 } // namespace U

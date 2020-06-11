@@ -1,4 +1,34 @@
+import "type.uh"
+
 namespace U
 {
+
+fn Type::conversion_constructor( FundamentalType mut fundamental_type )
+	( something_( move(fundamental_type) ) )
+{}
+
+fn Type::conversion_constructor( FunctionType mut function_type )
+	( something_( move(function_type) ) )
+{}
+
+fn Type::GetFundamentalType(  mut this ) : ust::optional_ref</FundamentalType, true  />
+{
+	return something_.get</FundamentalType/>();
+}
+
+fn Type::GetFundamentalType( imut this ) : ust::optional_ref</FundamentalType, false />
+{
+	return something_.get</FundamentalType/>();
+}
+
+fn Type::GetFunctionType(  mut this ) : ust::optional_ref</FunctionType, true  />
+{
+	return something_.get</FunctionType/>();
+}
+
+fn Type::GetFunctionType( imut this ) : ust::optional_ref</FunctionType, false />
+{
+	return something_.get</FunctionType/>();
+}
 
 } // namespace U
