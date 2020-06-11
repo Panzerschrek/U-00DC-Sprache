@@ -1,0 +1,50 @@
+import "lang_types.uh"
+
+namespace U
+{
+
+fn IsUnsignedInteger( U_FundamentalType t ) : bool
+{
+	return
+		t == U_FundamentalType::u8_  ||
+		t == U_FundamentalType::u16_ ||
+		t == U_FundamentalType::u32_ ||
+		t == U_FundamentalType::u64_ ||
+		t == U_FundamentalType::u128_;
+}
+
+fn IsSignedInteger( U_FundamentalType t ) : bool
+{
+	return
+		t == U_FundamentalType::i8_  ||
+		t == U_FundamentalType::i16_ ||
+		t == U_FundamentalType::i32_ ||
+		t == U_FundamentalType::i64_ ||
+		t == U_FundamentalType::i128_;
+}
+
+fn IsInteger( U_FundamentalType t ) : bool
+{
+	return IsSignedInteger( t ) || IsUnsignedInteger( t );
+}
+
+fn IsFloatingPoint( U_FundamentalType t ) : bool
+{
+	return
+		t == U_FundamentalType::f32_ ||
+		t == U_FundamentalType::f64_;
+}
+
+fn IsNumericType( U_FundamentalType t ) : bool
+{
+	return IsInteger( t ) || IsFloatingPoint( t );
+}
+
+fn IsChar( U_FundamentalType t ) : bool
+{
+	return
+		t == U_FundamentalType::char8_  ||
+		t == U_FundamentalType::char16_ ||
+		t == U_FundamentalType::char32_;
+}
+} // namespace U

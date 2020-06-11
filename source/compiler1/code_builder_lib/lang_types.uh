@@ -1,0 +1,39 @@
+namespace U
+{
+
+// Fundamental language types.
+enum U_FundamentalType
+{
+	InvalidType,
+	void_,
+	bool_,
+
+	i8_ ,
+	u8_ ,
+	i16_,
+	u16_,
+	i32_,
+	u32_,
+	i64_,
+	u64_,
+	i128_,
+	u128_,
+
+	f32_,
+	f64_,
+
+	char8_,
+	char16_,
+	char32_,
+
+	LastType,
+}
+
+fn IsUnsignedInteger( U_FundamentalType t ) : bool;
+fn IsSignedInteger( U_FundamentalType t ) : bool;
+fn IsInteger( U_FundamentalType t ) : bool;
+fn IsFloatingPoint( U_FundamentalType t ) : bool;
+fn IsNumericType( U_FundamentalType t ) : bool;
+fn IsChar( U_FundamentalType t ) : bool;
+
+} // namespace U
