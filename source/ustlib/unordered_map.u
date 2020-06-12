@@ -22,6 +22,7 @@ public:
 	fn constructor()= default;
 
 	// Copy constructor.
+	// TODO - enable it only for copyable types.
 	fn constructor( mut this, this_type &imut other )
 	{
 		unsafe
