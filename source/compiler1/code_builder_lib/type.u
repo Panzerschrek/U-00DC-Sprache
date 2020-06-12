@@ -3,6 +3,10 @@ import "type.uh"
 namespace U
 {
 
+fn FundamentalType::constructor( U_FundamentalType in_fundamental_type, LLVMTypeRef in_llvm_type )
+	( fundamental_type= in_fundamental_type, llvm_type= in_llvm_type )
+{}
+
 fn FunctionType::constructor( mut this, FunctionType &imut other )
 	( return_type(other.return_type.get_ref()) )
 {

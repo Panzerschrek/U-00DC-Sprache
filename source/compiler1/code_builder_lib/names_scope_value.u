@@ -3,13 +3,28 @@ import "names_scope_value.uh"
 namespace U
 {
 
-fn NamesScopeValue::constructor( NamesScopeVariable mut variable )
+fn NamesScopeValue::conversion_constructor( Type mut t )
+	( something_(move(t)) )
+
+{}
+
+fn NamesScopeValue::conversion_constructor( NamesScopeVariable mut variable )
 	( something_(move(variable)) )
 {}
 
-fn NamesScopeValue::constructor( FunctionsSet mut functions_set )
+fn NamesScopeValue::conversion_constructor( FunctionsSet mut functions_set )
 		( something_(move(functions_set)) )
 {}
+
+fn NamesScopeValue::GetType(  mut this ) : ust::optional_ref</Type, true  />
+{
+	return something_.get</Type/>();
+}
+
+fn NamesScopeValue::GetType( imut this ) : ust::optional_ref</Type, false />
+{
+	return something_.get</Type/>();
+}
 
 fn NamesScopeValue::GetVariable(  mut this ) : ust::optional_ref</NamesScopeVariable, true  />
 {

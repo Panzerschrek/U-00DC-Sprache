@@ -10,7 +10,17 @@ fn NamesScope::constructor( ust::string8 mut name )
 
 fn NamesScope::GetThisScopeValue( mut this, ust::string8& name ) : ust::optional_ref</ NamesScopeValue, true />
 {
-	return values_map_.find( name );
+	return names_map_.find( name );
+}
+
+fn NamesScope::AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : ust::optional_ref</ NamesScopeValue, true />'this'
+{
+	if( !names_map_.find(name).empty() )
+	{
+		return ust::optional_ref</ NamesScopeValue, true />();
+	}
+
+	return ust::optional_ref</ NamesScopeValue, true />( names_map_.insert(move(name), move(value) ) );
 }
 
 } // namespace U

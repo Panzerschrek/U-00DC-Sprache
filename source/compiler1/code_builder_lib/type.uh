@@ -11,6 +11,9 @@ struct FundamentalType
 {
 	U_FundamentalType fundamental_type= U_FundamentalType::InvalidType;
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
+
+	fn constructor()= default;
+	fn constructor( U_FundamentalType in_fundamental_type, LLVMTypeRef in_llvm_type );
 }
 
 struct FunctionType

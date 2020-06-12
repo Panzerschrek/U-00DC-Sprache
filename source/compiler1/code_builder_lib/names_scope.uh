@@ -11,13 +11,15 @@ public:
 
 	fn GetThisScopeValue( mut this, ust::string8& name ) : ust::optional_ref</ NamesScopeValue, true />;
 
+	fn AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : ust::optional_ref</ NamesScopeValue, true />'this';
+
 private:
 	ust::string8 name_;
 
 	// TODO - use weak_ptr. Now use raw unsafe pointer to prevent globals loops.
 	ust::raw_ptr_mut</NamesScope/> parent_;
 
-	ust::unordered_map</ ust::string8, NamesScopeValue /> values_map_;
+	ust::unordered_map</ ust::string8, NamesScopeValue /> names_map_;
 }
 
 } // namespace U

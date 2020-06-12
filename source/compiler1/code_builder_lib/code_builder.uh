@@ -1,6 +1,7 @@
 import "../lex_synt_lib/syntax_analyzer.uh"
 import "/code_builder_errors.uh"
 import "llvm.uh"
+import "names_scope.uh"
 
 namespace U
 {
@@ -17,6 +18,9 @@ public:
 	}
 
 	fn BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : BuildResult;
+
+private:
+	fn FillGlobalNamesScope( this, NamesScope &mut names_scope );
 
 private:
 	LLVMContextRef llvm_context_;

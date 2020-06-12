@@ -35,8 +35,12 @@ public:
 	fn constructor( mut this, NamesScopeValue &imut other ) = default;
 	op=( mut this, NamesScopeValue &imut other ) = default;
 
-	fn constructor( NamesScopeVariable mut variable );
-	fn constructor( FunctionsSet mut functions_set );
+	fn conversion_constructor( Type mut t );
+	fn conversion_constructor( NamesScopeVariable mut variable );
+	fn conversion_constructor( FunctionsSet mut functions_set );
+
+	fn GetType(  mut this ) : ust::optional_ref</Type, true  />;
+	fn GetType( imut this ) : ust::optional_ref</Type, false />;
 
 	fn GetVariable(  mut this ) : ust::optional_ref</NamesScopeVariable, true  />;
 	fn GetVariable( imut this ) : ust::optional_ref</NamesScopeVariable, false />;
@@ -46,6 +50,7 @@ public:
 
 private:
 	ust::variant</ tup[
+		Type,
 		NamesScopeVariable,
 		FunctionsSet
 	] /> something_;

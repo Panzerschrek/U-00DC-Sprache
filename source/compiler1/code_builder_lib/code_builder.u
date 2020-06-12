@@ -1,3 +1,4 @@
+import "../lex_synt_lib/keywords.uh"
 import "code_builder.uh"
 
 namespace U
@@ -43,7 +44,32 @@ fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : Buil
 
 	unsafe{ res.llvm_module= LLVMModuleCreateWithName( "some_module\0"[0] ); }
 
+	var NamesScope mut global_names_scope( "" );
+
+	FillGlobalNamesScope( global_names_scope );
+
 	return move(res);
+}
+
+fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
+{
+	names_scope.AddName( KeywordToString(Keyword::void_), Type( FundamentalType( U_FundamentalType::void_, fundamental_llvm_types_.void_ ) ) );
+	names_scope.AddName( KeywordToString(Keyword::bool_), Type( FundamentalType( U_FundamentalType::bool_, fundamental_llvm_types_.bool_ ) ) );
+	names_scope.AddName( KeywordToString(Keyword::i8_  ), Type( FundamentalType( U_FundamentalType::i8_  , fundamental_llvm_types_.i8_   ) ) );
+	names_scope.AddName( KeywordToString(Keyword::u8_  ), Type( FundamentalType( U_FundamentalType::u8_  , fundamental_llvm_types_.u8_   ) ) );
+	names_scope.AddName( KeywordToString(Keyword::i16_ ), Type( FundamentalType( U_FundamentalType::i16_ , fundamental_llvm_types_.i16_  ) ) );
+	names_scope.AddName( KeywordToString(Keyword::u16_ ), Type( FundamentalType( U_FundamentalType::u16_ , fundamental_llvm_types_.u16_  ) ) );
+	names_scope.AddName( KeywordToString(Keyword::i32_ ), Type( FundamentalType( U_FundamentalType::i32_ , fundamental_llvm_types_.i32_  ) ) );
+	names_scope.AddName( KeywordToString(Keyword::u32_ ), Type( FundamentalType( U_FundamentalType::u32_ , fundamental_llvm_types_.u32_  ) ) );
+	names_scope.AddName( KeywordToString(Keyword::i64_ ), Type( FundamentalType( U_FundamentalType::i64_ , fundamental_llvm_types_.i64_  ) ) );
+	names_scope.AddName( KeywordToString(Keyword::u64_ ), Type( FundamentalType( U_FundamentalType::u64_ , fundamental_llvm_types_.u64_  ) ) );
+	names_scope.AddName( KeywordToString(Keyword::i128_), Type( FundamentalType( U_FundamentalType::i128_, fundamental_llvm_types_.i128_ ) ) );
+	names_scope.AddName( KeywordToString(Keyword::u128_), Type( FundamentalType( U_FundamentalType::u128_, fundamental_llvm_types_.u128_ ) ) );
+	names_scope.AddName( KeywordToString(Keyword::f32_ ), Type( FundamentalType( U_FundamentalType::f32_ , fundamental_llvm_types_.f32_  ) ) );
+	names_scope.AddName( KeywordToString(Keyword::f64_ ), Type( FundamentalType( U_FundamentalType::f64_ , fundamental_llvm_types_.f64_  ) ) );
+	names_scope.AddName( KeywordToString(Keyword::char8_ ), Type( FundamentalType( U_FundamentalType::char8_ , fundamental_llvm_types_.char8_  ) ) );
+	names_scope.AddName( KeywordToString(Keyword::char16_), Type( FundamentalType( U_FundamentalType::char16_, fundamental_llvm_types_.char16_ ) ) );
+	names_scope.AddName( KeywordToString(Keyword::char32_), Type( FundamentalType( U_FundamentalType::char32_, fundamental_llvm_types_.char32_ ) ) );
 }
 
 } // amespace U
