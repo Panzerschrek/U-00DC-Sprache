@@ -1,4 +1,16 @@
+import "names_scope.uh"
+
 namespace U
 {
+
+fn NamesScope::constructor( ust::string8 mut name )
+	( name_= move(name) )
+{
+}
+
+fn NamesScope::GetThisScopeValue( mut this, ust::string8& name ) : ust::optional_ref</ NamesScopeValue, true />
+{
+	return values_map_.find( name );
+}
 
 } // namespace U
