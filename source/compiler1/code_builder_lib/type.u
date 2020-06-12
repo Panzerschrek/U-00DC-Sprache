@@ -3,6 +3,28 @@ import "type.uh"
 namespace U
 {
 
+fn FunctionType::constructor( mut this, FunctionType &imut other )
+	( return_type(other.return_type.get_ref()) )
+{
+	foreach( & in_arg : other.args )
+	{
+		var Arg mut arg{ .arg_type( in_arg.arg_type.get_ref() ) };
+		args.push_back( move(arg) );
+	}
+}
+
+op FunctionType::=( mut this, FunctionType &imut other )
+{
+	return_type.get_ref()= other.return_type.get_ref();
+
+	args.clear();
+	foreach( & in_arg : other.args )
+	{
+		var Arg mut arg{ .arg_type( in_arg.arg_type.get_ref() ) };
+		args.push_back( move(arg) );
+	}
+}
+
 fn Type::conversion_constructor( FundamentalType mut fundamental_type )
 	( something_( move(fundamental_type) ) )
 {}

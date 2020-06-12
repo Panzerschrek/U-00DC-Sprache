@@ -1,0 +1,54 @@
+import "/shared/shared_ptr_imut.u"
+import "../lex_synt_lib/syntax_elements.uh"
+import "llvm.uh"
+import "type.uh"
+
+namespace U
+{
+
+struct NamesScopeVariable
+{
+	Type t;
+	bool is_mutable = false;
+	LLVMValueRef llvm_value= LLVMValueRef::Null;
+}
+
+struct FunctionVariable
+{
+	Type t; // FunctionType 100%
+	LLVMValueRef llvm_function= LLVMValueRef::Null;
+}
+
+// Set of functions and function templates with same name in one scope
+struct FunctionsSet
+{
+	ust::vector</FunctionVariable/> functions;
+
+	// Is incomplete, if there are some syntax elements in containers.
+	ust::vector</ ust::shared_ptr_imut</ Synt::Function /> /> syntax_elements;
+}
+
+class NamesScopeValue
+{
+public:
+	fn constructor() = default;
+	fn constructor( mut this, NamesScopeValue &imut other ) = default;
+	op=( mut this, NamesScopeValue &imut other ) = default;
+
+	fn constructor( NamesScopeVariable mut variable );
+	fn constructor( FunctionsSet mut functions_set );
+
+	fn GetVariable(  mut this ) : ust::optional_ref</NamesScopeVariable, true  />;
+	fn GetVariable( imut this ) : ust::optional_ref</NamesScopeVariable, false />;
+
+	fn GetFunctionsSet(  mut this ) : ust::optional_ref</FunctionsSet, true  />;
+	fn GetFunctionsSet( imut this ) : ust::optional_ref</FunctionsSet, false />;
+
+private:
+	ust::variant</ tup[
+		NamesScopeVariable,
+		FunctionsSet
+	] /> something_;
+}
+
+} // namespace U

@@ -9,8 +9,8 @@ namespace U
 
 struct FundamentalType
 {
-	U_FundamentalType fundamental_type;
-	LLVMTypeRef llvm_type;
+	U_FundamentalType fundamental_type= U_FundamentalType::InvalidType;
+	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
 }
 
 struct FunctionType
@@ -22,11 +22,18 @@ struct FunctionType
 
 	ust::vector</Arg/> args;
 	ust::box</Type/> return_type; // HACK! prevent dependency loop
+
+	fn constructor( mut this, FunctionType &imut other );
+	op=( mut this, FunctionType &imut other );
 }
 
 class Type
 {
 public:
+	fn constructor() = default;
+	fn constructor( mut this, Type &imut other ) = default;
+	op=( mut this, Type &imut other )= default;
+
 	fn conversion_constructor( FundamentalType mut fundamental_type );
 	fn conversion_constructor( FunctionType mut function_type );
 

@@ -1,16 +1,8 @@
-import "/pointer.u"
-import "/string.u"
 import "/unordered_map.u"
+import "names_scope_value.uh"
 
 namespace U
 {
-
-class NamesScopeValue
-{
-	// TODO
-	fn constructor( mut this, NamesScopeValue &imut other ) = default;
-	op=( mut this, NamesScopeValue &imut other ) = default;
-}
 
 class NamesScope
 {

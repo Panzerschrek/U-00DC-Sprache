@@ -1,0 +1,34 @@
+import "names_scope_value.uh"
+
+namespace U
+{
+
+fn NamesScopeValue::constructor( NamesScopeVariable mut variable )
+	( something_(move(variable)) )
+{}
+
+fn NamesScopeValue::constructor( FunctionsSet mut functions_set )
+		( something_(move(functions_set)) )
+{}
+
+fn NamesScopeValue::GetVariable(  mut this ) : ust::optional_ref</NamesScopeVariable, true  />
+{
+	return something_.get</NamesScopeVariable/>();
+}
+
+fn NamesScopeValue::GetVariable( imut this ) : ust::optional_ref</NamesScopeVariable, false />
+{
+	return something_.get</NamesScopeVariable/>();
+}
+
+fn NamesScopeValue::GetFunctionsSet(  mut this ) : ust::optional_ref</FunctionsSet, true  />
+{
+	return something_.get</FunctionsSet/>();
+}
+
+fn NamesScopeValue::GetFunctionsSet( imut this ) : ust::optional_ref</FunctionsSet, false />
+{
+	return something_.get</FunctionsSet/>();
+}
+
+} // namespace U
