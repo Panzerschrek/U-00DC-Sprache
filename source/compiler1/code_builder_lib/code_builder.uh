@@ -8,6 +8,7 @@ namespace U
 class CodeBuilder
 {
 public:
+	fn constructor( LLVMContextRef llvm_context );
 
 	struct BuildResult
 	{
@@ -18,6 +19,37 @@ public:
 	fn BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : BuildResult;
 
 private:
+	LLVMContextRef llvm_context_;
+
+	struct FundamentalLLVMTypes
+	{
+		LLVMTypeRef  i8_;
+		LLVMTypeRef  u8_;
+		LLVMTypeRef i16_;
+		LLVMTypeRef u16_;
+		LLVMTypeRef i32_;
+		LLVMTypeRef u32_;
+		LLVMTypeRef i64_;
+		LLVMTypeRef u64_;
+		LLVMTypeRef i128_;
+		LLVMTypeRef u128_;
+
+		LLVMTypeRef f32_;
+		LLVMTypeRef f64_;
+
+		LLVMTypeRef char8_ ;
+		LLVMTypeRef char16_;
+		LLVMTypeRef char32_;
+
+		LLVMTypeRef void_;
+		LLVMTypeRef void_for_ret_;
+		LLVMTypeRef invalid_type_;
+		LLVMTypeRef bool_;
+
+		LLVMTypeRef int_ptr; // Type with width of pointer.
+	}
+	FundamentalLLVMTypes fundamental_llvm_types_= zero_init;
+
 }
 
 } // namespace U

@@ -19,5 +19,21 @@ type NullTerminatedString= char8;
 
 // Functions
 
+// Context
+fn nomangle LLVMContextCreate() unsafe : LLVMContextRef;
+fn nomangle LLVMContextDispose(LLVMContextRef C);
+
+// Module
 fn nomangle LLVMModuleCreateWithName(NullTerminatedString& ModuleID) unsafe : LLVMModuleRef;
 fn nomangle LLVMDisposeModule(LLVMModuleRef M) unsafe;
+
+// Type
+fn nomangle LLVMInt1TypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
+fn nomangle LLVMInt8TypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
+fn nomangle LLVMInt16TypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
+fn nomangle LLVMInt32TypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
+fn nomangle LLVMInt64TypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
+fn nomangle LLVMInt128TypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
+fn nomangle LLVMFloatTypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
+fn nomangle LLVMDoubleTypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
+fn nomangle LLVMVoidTypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;

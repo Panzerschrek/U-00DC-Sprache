@@ -38,8 +38,20 @@ fn FirstTest()
 
 	auto synt_res= Synt::SyntaxAnalysis( res.lexems );
 
-	var CodeBuilder mut code_builder;
-	code_builder.BuildProgram( synt_res );
+	var LLVMContextRef mut llvm_context= LLVMContextRef::Null;
+	unsafe
+	{
+		llvm_context= LLVMContextCreate();
+	}
+
+	var CodeBuilder mut code_builder(llvm_context);
+	auto code_builder_res= code_builder.BuildProgram( synt_res );
+
+	unsafe
+	{
+		LLVMDisposeModule( code_builder_res.llvm_module );
+		LLVMContextDispose( llvm_context );
+	}
 }
 
 fn Main() : i32

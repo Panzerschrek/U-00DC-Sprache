@@ -3,6 +3,40 @@ import "code_builder.uh"
 namespace U
 {
 
+fn CodeBuilder::constructor( LLVMContextRef llvm_context )
+	(
+		llvm_context_(llvm_context)
+	)
+{
+	unsafe
+	{
+		fundamental_llvm_types_.i8_ = LLVMInt8TypeInContext( llvm_context_ );
+		fundamental_llvm_types_.u8_ = LLVMInt8TypeInContext( llvm_context_ );
+		fundamental_llvm_types_.i16_= LLVMInt16TypeInContext( llvm_context_ );
+		fundamental_llvm_types_.u16_= LLVMInt16TypeInContext( llvm_context_ );
+		fundamental_llvm_types_.i32_= LLVMInt32TypeInContext( llvm_context_ );
+		fundamental_llvm_types_.u32_= LLVMInt32TypeInContext( llvm_context_ );
+		fundamental_llvm_types_.i64_= LLVMInt64TypeInContext( llvm_context_ );
+		fundamental_llvm_types_.u64_= LLVMInt64TypeInContext( llvm_context_ );
+		fundamental_llvm_types_.i128_= LLVMInt128TypeInContext( llvm_context_ );
+		fundamental_llvm_types_.u128_= LLVMInt128TypeInContext( llvm_context_ );
+
+		fundamental_llvm_types_.f32_= LLVMFloatTypeInContext( llvm_context_ );
+		fundamental_llvm_types_.f64_= LLVMDoubleTypeInContext( llvm_context_ );
+
+		fundamental_llvm_types_.char8_ = LLVMInt8TypeInContext ( llvm_context_ );
+		fundamental_llvm_types_.char16_= LLVMInt16TypeInContext( llvm_context_ );
+		fundamental_llvm_types_.char32_= LLVMInt32TypeInContext( llvm_context_ );
+
+		fundamental_llvm_types_.invalid_type_= LLVMInt8TypeInContext( llvm_context_ );
+		fundamental_llvm_types_.void_= LLVMInt8TypeInContext( llvm_context_ );
+		fundamental_llvm_types_.void_for_ret_= LLVMVoidTypeInContext( llvm_context_ );
+		fundamental_llvm_types_.bool_= LLVMInt1TypeInContext( llvm_context_ );
+
+		fundamental_llvm_types_.int_ptr= LLVMInt64TypeInContext( llvm_context_ ); // TODO - use data layout to obtaint int_ptr type
+	}
+}
+
 fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : BuildResult
 {
 	var BuildResult mut res{ .llvm_module= LLVMModuleRef::Null };
