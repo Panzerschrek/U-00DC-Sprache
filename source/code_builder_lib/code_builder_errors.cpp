@@ -9,7 +9,7 @@ namespace U
 
 bool operator==( const CodeBuilderError& l, const CodeBuilderError& r )
 {
-	return l.code == r.code && l.file_pos == r.file_pos && l.text == r.text;
+	return l.code == r.code && l.file_pos == r.file_pos && l.text == r.text && l.template_context == r.template_context;
 }
 
 bool operator!=( const CodeBuilderError& l, const CodeBuilderError& r )
@@ -24,7 +24,9 @@ bool operator< ( const CodeBuilderError& l, const CodeBuilderError& r )
 		return l.file_pos < r.file_pos;
 	if( l.code != r.code )
 		return l.code < r.code;
-	return l.text < r.text;
+	if( l.text != r.text )
+		return l.text < r.text;
+	return l.template_context < r.template_context;
 }
 
 const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
