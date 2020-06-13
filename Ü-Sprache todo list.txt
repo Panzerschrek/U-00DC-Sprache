@@ -5,6 +5,8 @@ Delete the features from the list as soon as they are implemented.
 General:
 *) Dereference operator - for pointer-like classes
 *) Continious initializer for arrays
+*) Raw pointers (for C interaction)
+*) Less requirements of complete types (helps for recursive types)
 *) Different calling conventions (for API calls, for example)
 *) build-in "for" for array tupes.
 *) switch-case
@@ -13,7 +15,7 @@ General:
 *) Function to function pointer assignment
 *) == and != methods generation
 *) Functions references info in "typeinfo".
-*) More float types (1 6 bit, 128 bit )
+*) More float types ( 16 bit, 128 bit )
 *) Constructor initializer for constexpr structs
 *) Function pointers inside constexpr functions
 *) Reference result of constexpr function evaluation
@@ -41,12 +43,12 @@ Standart library:
 
 Compiler:
 *) move-assignment without hacks.
-*) Standartized entry point, such "main" in some languages
 *) Virtual call for final function optimization
 *) Reference local variables in debug info
-*) Different "FilePos" for different macro expansions
+*) Function arguments in debug info
 *) Return value optimization
 *) Precompiled modules
+*) Rework of "Value" class
 
 QtCreator plugin:
 *) Symbol table construction for document
@@ -56,3 +58,7 @@ QtCreator plugin:
 
 CPP Header converter:
 *) fix "typedef struct X{} X;"
+
+Documentation:
+*) Macros
+*) More, then one language

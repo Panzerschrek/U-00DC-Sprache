@@ -88,18 +88,10 @@ const OverloadedFunctionsSet& ThisOverloadedMethodsSet::GetOverloadedFunctionsSe
 
 static_assert( sizeof(Value) <= 160u, "Value is too heavy!" );
 
-Value::Value()
-{}
-
 Value::Value( Variable variable, const FilePos& file_pos )
 	: file_pos_(file_pos)
 {
 	something_= std::move(variable);
-}
-
-Value::Value( FunctionVariable function_variable )
-{
-	something_= std::move(function_variable);
 }
 
 Value::Value( OverloadedFunctionsSet functions_set )
@@ -206,16 +198,6 @@ Variable* Value::GetVariable()
 const Variable* Value::GetVariable() const
 {
 	return std::get_if<Variable>( &something_ );
-}
-
-FunctionVariable* Value::GetFunctionVariable()
-{
-	return std::get_if<FunctionVariable>( &something_ );
-}
-
-const FunctionVariable* Value::GetFunctionVariable() const
-{
-	return std::get_if<FunctionVariable>( &something_ );
 }
 
 OverloadedFunctionsSet* Value::GetFunctionsSet()

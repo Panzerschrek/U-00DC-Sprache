@@ -232,7 +232,6 @@ void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 			else if( const auto type_templates_set= value.GetTypeTemplatesSet() )
 				GlobalThingBuildTypeTemplatesSet( names_scope, *type_templates_set );
 			else if( value.GetClassField() != nullptr ) {} // Can be in classes.
-			else if( value.GetFunctionVariable() != nullptr ) {} // It is function, generating from template.
 			else if( value.GetVariable() != nullptr ){}
 			else if( value.GetErrorValue() != nullptr ){}
 			else if( const auto static_assert_= value.GetStaticAssert() )

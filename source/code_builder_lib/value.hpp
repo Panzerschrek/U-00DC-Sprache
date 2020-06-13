@@ -186,9 +186,8 @@ struct ErrorValue final
 class Value final
 {
 public:
-	Value();
+	Value() = default;
 	Value( Variable variable, const FilePos& file_pos );
-	Value( FunctionVariable function_variable );
 	Value( OverloadedFunctionsSet functions_set );
 	Value( Type type, const FilePos& file_pos );
 	Value( ClassField class_field, const FilePos& file_pos );
@@ -205,13 +204,9 @@ public:
 	std::string GetKindName() const;
 	const FilePos& GetFilePos() const;
 
-	// Fundamental, class, array types
 	Variable* GetVariable();
 	const Variable* GetVariable() const;
-	// Function types
-	FunctionVariable* GetFunctionVariable();
-	const FunctionVariable* GetFunctionVariable() const;
-	// Function set stub type
+	// Function set
 	OverloadedFunctionsSet* GetFunctionsSet();
 	const OverloadedFunctionsSet* GetFunctionsSet() const;
 	// Typename
@@ -225,7 +220,7 @@ public:
 	const ThisOverloadedMethodsSet* GetThisOverloadedMethodsSet() const;
 	// Namespace
 	NamesScopePtr GetNamespace() const;
-	// Type templates sel
+	// Type templates set
 	TypeTemplatesSet* GetTypeTemplatesSet();
 	const TypeTemplatesSet* GetTypeTemplatesSet() const;
 	// static assert
@@ -247,7 +242,6 @@ public:
 private:
 	std::variant<
 		Variable,
-		FunctionVariable,
 		OverloadedFunctionsSet,
 		Type,
 		ClassField,
