@@ -1,4 +1,4 @@
-import "/shared/shared_ptr_imut.u"
+import "/shared/shared_ptr_final.u"
 import "../lex_synt_lib/syntax_elements.uh"
 import "llvm.uh"
 import "type.uh"
@@ -25,7 +25,7 @@ struct FunctionsSet
 	ust::vector</FunctionVariable/> functions;
 
 	// Is incomplete, if there are some syntax elements in containers.
-	ust::vector</ ust::shared_ptr_imut</ Synt::Function /> /> syntax_elements;
+	ust::vector</ ust::shared_ptr_final</ Synt::Function /> /> syntax_elements;
 }
 
 class NamesScopeValue

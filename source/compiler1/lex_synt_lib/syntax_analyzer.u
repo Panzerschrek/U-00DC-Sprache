@@ -50,7 +50,7 @@ fn SyntaxAnalyzer::DoAnalyzis( mut this ) : SyntaxAnalysisResult
 	{
 		if( IsKeyword( it_.front(), Keyword::fn_ ) )
 		{
-			res.program_elements.push_back( ParseFunction() );
+			res.program_elements.push_back( ust::shared_ptr_final</Function/>( ParseFunction() ) );
 		}
 		else
 		{

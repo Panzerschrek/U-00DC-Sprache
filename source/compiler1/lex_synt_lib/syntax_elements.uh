@@ -1,5 +1,6 @@
 import "/box.u"
 import "/box_nullable.u"
+import "/shared/shared_ptr_final.u"
 import "/string.u"
 import "/variant.u"
 import "/vector.u"
@@ -92,7 +93,8 @@ struct Function
 }
 
 type ProgramElement= ust::variant</ tup[
-	Function ] />;
+	ust::shared_ptr_final</Function/>
+	 ] />;
 
 type ProgramElements= ust::vector</ProgramElement/>;
 

@@ -72,4 +72,25 @@ fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
 	names_scope.AddName( KeywordToString(Keyword::char32_), Type( FundamentalType( U_FundamentalType::char32_, fundamental_llvm_types_.char32_ ) ) );
 }
 
+fn CodeBuilder::NamesScopeFill( NamesScope &mut names_scope, Synt::ProgramElements& program_elements )
+{
+	foreach( & program_element : program_elements )
+	{
+		if_var( & function : program_element.get</ ust::shared_ptr_final</Synt::Function/> />() )
+		{
+			NamesScopeFill( names_scope, function );
+		}
+	}
+}
+
+fn CodeBuilder::NamesScopeFill( NamesScope &mut names_scope, ust::shared_ptr_final</Synt::Function/>& function )
+{
+	// TODO - reuse existing functions set, report about redefinition.
+	var FunctionsSet mut functions_set;
+
+	functions_set.syntax_elements.push_back( function );
+
+	names_scope.AddName( function.get_ref().name, NamesScopeValue( move(functions_set) ) );
+}
+
 } // amespace U

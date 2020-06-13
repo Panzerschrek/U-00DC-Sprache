@@ -22,6 +22,9 @@ public:
 private:
 	fn FillGlobalNamesScope( this, NamesScope &mut names_scope );
 
+	fn NamesScopeFill( NamesScope &mut names_scope, Synt::ProgramElements& program_elements );
+	fn NamesScopeFill( NamesScope &mut names_scope, ust::shared_ptr_final</Synt::Function/>& function );
+
 private:
 	LLVMContextRef llvm_context_;
 
