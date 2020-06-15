@@ -1213,8 +1213,10 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 			const NamesScopePtr template_parameters_space= it->second.GetNamespace();
 			U_ASSERT( template_parameters_space != nullptr );
 			OverloadedFunctionsSet& result_functions_set= *template_parameters_space->GetThisScopeValue( func_name )->GetFunctionsSet();
-			U_ASSERT( result_functions_set.functions.size() == 1u );
-			return &result_functions_set.functions.front();
+			if( result_functions_set.functions.size() >= 1u )
+				return &result_functions_set.functions.front();
+			else
+				return nullptr; // May be in case of error or in case of "enable_if".
 		}
 	}
 	generated_template_things_storage_.insert( std::make_pair( name_encoded, Value( template_parameters_namespace, function_declaration.file_pos_ ) ) );
