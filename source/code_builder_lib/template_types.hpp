@@ -52,7 +52,9 @@ struct FunctionTemplate final : public TemplateBase
 
 	ClassProxyPtr base_class;
 
+	// In case of manual parameters specifying, like foo</A, B, C/> we create new template and store known arguments and reference to base template.
 	std::vector< std::pair< std::string, Value > > known_template_parameters;
+	FunctionTemplatePtr parent;
 };
 
 using DeducibleTemplateParameter= std::variant< int, Type, Variable >; // int means not deduced

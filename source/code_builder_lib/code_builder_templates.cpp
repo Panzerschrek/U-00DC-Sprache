@@ -961,7 +961,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 
 	// Encode name for caching. Name must be unique for each template and its parameters.
 	const std::string name_encoded=
-		std::to_string( reinterpret_cast<uintptr_t>(&type_template) ) + // Encode template address, because we needs unique keys for templates with same name.
+		std::to_string( reinterpret_cast<uintptr_t>( &type_template ) ) + // Encode template address, because we needs unique keys for templates with same name.
 		MangleTemplateParameters( result_signature_parameters );
 
 	{ // Check, if already type generated.
@@ -1181,10 +1181,29 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		else U_ASSERT(false);
 	}
 
+	std::vector<TemplateParameter> params_for_mangle;
+	for( const auto& known_param : function_template.known_template_parameters )
+	{
+		if( const auto type= known_param.second.GetTypeName() )
+			params_for_mangle.emplace_back( *type );
+		else if( const auto variable= known_param.second.GetVariable() )
+			params_for_mangle.emplace_back( *variable );
+		else U_ASSERT(false);
+	}
+
+	for( const auto& param : deduced_template_args )
+	{
+		if( const auto type= std::get_if<Type>( &param ) )
+			params_for_mangle.emplace_back( *type );
+		else if( const auto variable= std::get_if<Variable>( &param ) )
+			params_for_mangle.emplace_back( *variable );
+		else U_ASSERT(false);
+	}
+
 	// Encode name for caching. Name must be unique for each template and its parameters.
 	const std::string name_encoded=
-		std::to_string( reinterpret_cast<uintptr_t>(&function_template) ) + // Encode template address, because we needs unique keys for templates with same name.
-		MangleTemplateParameters(result_template_parameters);
+		std::to_string( reinterpret_cast<uintptr_t>( function_template.parent != nullptr ? function_template.parent.get() : &function_template ) ) + // Encode template address, because we needs unique keys for templates with same name.
+		MangleTemplateParameters( params_for_mangle );
 
 	{
 		const auto it= generated_template_things_storage_.find( name_encoded );
@@ -1194,8 +1213,10 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 			const NamesScopePtr template_parameters_space= it->second.GetNamespace();
 			U_ASSERT( template_parameters_space != nullptr );
 			OverloadedFunctionsSet& result_functions_set= *template_parameters_space->GetThisScopeValue( func_name )->GetFunctionsSet();
-			U_ASSERT( result_functions_set.functions.size() == 1u );
-			return &result_functions_set.functions.front();
+			if( result_functions_set.functions.size() >= 1u )
+				return &result_functions_set.functions.front();
+			else
+				return nullptr; // May be in case of error or in case of "enable_if".
 		}
 	}
 	generated_template_things_storage_.insert( std::make_pair( name_encoded, Value( template_parameters_namespace, function_declaration.file_pos_ ) ) );
@@ -1227,25 +1248,6 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	// Set correct mangled name
 	if( function_variable.llvm_function != nullptr )
 	{
-		std::vector<TemplateParameter> params_for_mangle;
-		for( const auto& known_param : function_template.known_template_parameters )
-		{
-			if( const auto type= known_param.second.GetTypeName() )
-				params_for_mangle.emplace_back( *type );
-			else if( const auto variable= known_param.second.GetVariable() )
-				params_for_mangle.emplace_back( *variable );
-			else U_ASSERT(false);
-		}
-
-		for(const auto& param : deduced_template_args)
-		{
-			if( const auto type= std::get_if<Type>( &param ) )
-				params_for_mangle.emplace_back( *type );
-			else if( const auto variable= std::get_if<Variable>( &param ) )
-				params_for_mangle.emplace_back( *variable );
-			else U_ASSERT(false);
-		}
-
 		const std::string mangled_name =
 			MangleFunction(
 				template_names_scope,
@@ -1299,9 +1301,13 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 		return nullptr;
 
 	// We needs unique name here, so use for it address of function templates set and template parameters.
-	const std::string name_encoded=
-		std::to_string( reinterpret_cast<uintptr_t>( &function_templates ) ) +
-		MangleTemplateParameters( template_parameters );
+	std::string name_encoded= "</.../>";
+	for( const FunctionTemplatePtr& template_ : function_templates )
+	{
+		name_encoded+= std::to_string( reinterpret_cast<uintptr_t>( &template_ ) );
+		name_encoded+= "_";
+	}
+	name_encoded+= MangleTemplateParameters( template_parameters );
 
 	{
 		const auto it= generated_template_things_storage_.find( name_encoded );
@@ -1356,6 +1362,7 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 				new_template->known_template_parameters.emplace_back( name, Value( *variable, file_pos ) );
 			else U_ASSERT(false);
 		}
+		new_template->parent= function_template_ptr;
 
 		result.template_functions.push_back( new_template );
 	} // for function templates
