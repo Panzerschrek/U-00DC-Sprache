@@ -961,7 +961,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 
 	// Encode name for caching. Name must be unique for each template and its parameters.
 	const std::string name_encoded=
-		std::to_string( reinterpret_cast<uintptr_t>( type_template.syntax_element ) ) + // Encode template address, because we needs unique keys for templates with same name.
+		std::to_string( reinterpret_cast<uintptr_t>( &type_template ) ) + // Encode template address, because we needs unique keys for templates with same name.
 		MangleTemplateParameters( result_signature_parameters );
 
 	{ // Check, if already type generated.
@@ -1202,7 +1202,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 
 	// Encode name for caching. Name must be unique for each template and its parameters.
 	const std::string name_encoded=
-		std::to_string( reinterpret_cast<uintptr_t>( function_template.syntax_element ) ) + // Encode template address, because we needs unique keys for templates with same name.
+		std::to_string( reinterpret_cast<uintptr_t>( function_template.parent != nullptr ? function_template.parent.get() : &function_template ) ) + // Encode template address, because we needs unique keys for templates with same name.
 		MangleTemplateParameters( params_for_mangle );
 
 	{
@@ -1299,10 +1299,10 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 		return nullptr;
 
 	// We needs unique name here, so use for it address of function templates set and template parameters.
-	std::string name_encoded;
+	std::string name_encoded= "</.../>";
 	for( const FunctionTemplatePtr& template_ : function_templates )
 	{
-		name_encoded+= std::to_string( reinterpret_cast<uintptr_t>( template_->syntax_element ) );
+		name_encoded+= std::to_string( reinterpret_cast<uintptr_t>( &template_ ) );
 		name_encoded+= "_";
 	}
 	name_encoded+= MangleTemplateParameters( template_parameters );
@@ -1360,6 +1360,7 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 				new_template->known_template_parameters.emplace_back( name, Value( *variable, file_pos ) );
 			else U_ASSERT(false);
 		}
+		new_template->parent= function_template_ptr;
 
 		result.template_functions.push_back( new_template );
 	} // for function templates
