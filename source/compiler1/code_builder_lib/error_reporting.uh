@@ -1,9 +1,15 @@
 import "/random_access_range.u"
 import "/code_builder_errors.uh"
+?macro <? REPORT_ERROR:block ( ?names_scope:expr, ?error_code:ident, ?file_pos:expr ) ?> ->
+<?
+	?names_scope.GetErrors().push_back( ReportError( CodeBuilderErrorCode::?error_code, ?file_pos ) );
+?>
 
 namespace U
 {
 
 fn GetErrorMessagePattern( CodeBuilderErrorCode e ) : ust::array_view_imut</ char8 />;
+
+fn ReportError( CodeBuilderErrorCode code, FilePos file_pos ) : CodeBuilderError;
 
 } // namespace U

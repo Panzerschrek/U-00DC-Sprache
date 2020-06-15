@@ -23,4 +23,9 @@ fn NamesScope::AddName( mut this, ust::string8 mut name, NamesScopeValue mut val
 	return ust::optional_ref</ NamesScopeValue, true />( names_map_.insert(move(name), move(value) ) );
 }
 
+fn NamesScope::GetErrors( mut this ) : ust::vector</ CodeBuilderError /> &mut
+{
+	return errors_container_;
+}
+
 } // namespace U

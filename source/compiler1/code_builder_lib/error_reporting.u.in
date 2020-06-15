@@ -10,6 +10,16 @@ fn GetErrorMessagePattern( CodeBuilderErrorCode e ) : ust::array_view_imut</ cha
 	halt;
 }
 
+fn ReportError( CodeBuilderErrorCode code, FilePos file_pos ) : CodeBuilderError
+{
+	var CodeBuilderError mut err
+	{
+		.code= code,
+		.text= GetErrorMessagePattern( code ),
+		.file_pos= file_pos,
+	};
 
+	return move(err);
+}
 
 } // namespace U

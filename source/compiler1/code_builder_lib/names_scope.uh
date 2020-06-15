@@ -1,5 +1,6 @@
 import "/unordered_map.u"
 import "names_scope_value.uh"
+import "/code_builder_errors.uh"
 
 namespace U
 {
@@ -13,6 +14,8 @@ public:
 
 	fn AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : ust::optional_ref</ NamesScopeValue, true />'this';
 
+	fn GetErrors( mut this ) : ust::vector</ CodeBuilderError /> &mut;
+
 private:
 	ust::string8 name_;
 
@@ -20,6 +23,8 @@ private:
 	ust::raw_ptr_mut</NamesScope/> parent_;
 
 	ust::unordered_map</ ust::string8, NamesScopeValue /> names_map_;
+
+	ust::vector</ CodeBuilderError /> errors_container_;
 }
 
 } // namespace U
