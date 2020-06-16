@@ -48,6 +48,7 @@ fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : Buil
 	var NamesScope mut global_names_scope( "" );
 
 	FillGlobalNamesScope( global_names_scope );
+	NamesScopeFill( global_names_scope, ast.program_elements );
 
 	return move(res);
 }
@@ -98,6 +99,52 @@ fn CodeBuilder::NamesScopeFill( NamesScope &mut names_scope, ust::shared_ptr_fin
 	functions_set.syntax_elements.push_back( function );
 
 	names_scope.AddName( function.get_ref().name, NamesScopeValue( move(functions_set) ) );
+}
+
+fn CodeBuilder::NamesScopeBuild( NamesScope& names_scope )
+{
+	foreach( &el : names_scope.GetInternalContainer() )
+	{
+		auto functions_set= el.value().Get</ FunctionsSet />();
+		if( !functions_set.empty() )
+		{
+			NamesScopeBuildElement( names_scope, ust::to_non_nullable( functions_set ) );
+		}
+	}
+}
+
+fn CodeBuilder::NamesScopeBuildElement( NamesScope& names_scope, ust::shared_ptr_mut</FunctionsSet/> functions_set )
+{
+	{ // First, lock as imut and check if complete.
+		auto l= functions_set.lock_imut();
+		var FunctionsSet& functions_set= l.get_ref();
+		if( functions_set.syntax_elements.empty() ) // Already complete
+		{
+			return;
+		}
+	}
+
+	auto mut l= functions_set.lock_mut();
+	var FunctionsSet &mut functions_set= l.get_ref();
+
+	while( !functions_set.syntax_elements.empty() )
+	{
+		auto syntax_element_ptr= functions_set.syntax_elements.back();
+		PrepareFunction( syntax_element_ptr.get_ref(), names_scope, functions_set );
+		functions_set.syntax_elements.drop_back();
+	}
+}
+
+fn CodeBuilder::PrepareFunction(
+	Synt::Function& function_declaration,
+	NamesScope& names_scope,
+	FunctionsSet &mut functions_set ) : bool
+{
+	var FunctionVariable mut function_variable;
+
+	functions_set.functions.push_back( move(function_variable) );
+
+	return true;
 }
 
 } // amespace U

@@ -10,11 +10,17 @@ class NamesScope
 public:
 	fn constructor( ust::string8 mut name );
 
-	fn GetThisScopeValue( mut this, ust::string8& name ) : ust::optional_ref</ NamesScopeValue, true />;
+	fn GetThisScopeValue( this, ust::string8& name ) : ust::optional_ref</ NamesScopeValue, false />'this';
 
 	fn AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : ust::optional_ref</ NamesScopeValue, true />'this';
 
 	fn GetErrors( mut this ) : ust::vector</ CodeBuilderError /> &mut;
+
+	// HACK! for iteration. Remove this.
+	fn GetInternalContainer( imut this ) : ust::unordered_map</ ust::string8, NamesScopeValue /> &
+	{
+		return names_map_;
+	}
 
 private:
 	ust::string8 name_;

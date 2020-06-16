@@ -8,7 +8,7 @@ fn NamesScope::constructor( ust::string8 mut name )
 {
 }
 
-fn NamesScope::GetThisScopeValue( mut this, ust::string8& name ) : ust::optional_ref</ NamesScopeValue, true />
+fn NamesScope::GetThisScopeValue( this, ust::string8& name ) : ust::optional_ref</ NamesScopeValue, false />'this'
 {
 	return names_map_.find( name );
 }

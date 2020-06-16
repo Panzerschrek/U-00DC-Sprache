@@ -25,6 +25,15 @@ private:
 	fn NamesScopeFill( NamesScope &mut names_scope, Synt::ProgramElements& program_elements );
 	fn NamesScopeFill( NamesScope &mut names_scope, ust::shared_ptr_final</Synt::Function/>& function );
 
+	fn NamesScopeBuild( NamesScope& names_scope );
+	fn NamesScopeBuildElement( NamesScope& names_scope, ust::shared_ptr_mut</FunctionsSet/> functions_set );
+
+	// Returns "true" if ok.
+	fn PrepareFunction(
+		Synt::Function& function_declaration,
+		NamesScope& names_scope,
+		FunctionsSet &mut functions_set ) : bool;
+
 private:
 	LLVMContextRef llvm_context_;
 
