@@ -57,4 +57,18 @@ fn Type::GetFunctionType( imut this ) : ust::optional_ref</FunctionType, false /
 	return something_.get</FunctionType/>();
 }
 
+fn Type::GetLLVMType( imut this ) : LLVMTypeRef
+{
+	if_var( & fundamental_type : GetFundamentalType() )
+	{
+		return fundamental_type.llvm_type;
+	}
+	if_var( & function_type : GetFunctionType() )
+	{
+		return function_type.llvm_type;
+	}
+
+	halt;
+}
+
 } // namespace U

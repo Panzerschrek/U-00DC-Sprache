@@ -101,7 +101,7 @@ fn CodeBuilder::NamesScopeFill( NamesScope &mut names_scope, ust::shared_ptr_fin
 	names_scope.AddName( function.get_ref().name, NamesScopeValue( move(functions_set) ) );
 }
 
-fn CodeBuilder::NamesScopeBuild( NamesScope& names_scope )
+fn CodeBuilder::NamesScopeBuild( this, NamesScope& names_scope )
 {
 	foreach( &el : names_scope.GetInternalContainer() )
 	{
@@ -113,7 +113,7 @@ fn CodeBuilder::NamesScopeBuild( NamesScope& names_scope )
 	}
 }
 
-fn CodeBuilder::NamesScopeBuildElement( NamesScope& names_scope, ust::shared_ptr_mut</FunctionsSet/> functions_set )
+fn CodeBuilder::NamesScopeBuildElement( this, NamesScope& names_scope, ust::shared_ptr_mut</FunctionsSet/> functions_set )
 {
 	{ // First, lock as imut and check if complete.
 		auto l= functions_set.lock_imut();
@@ -136,15 +136,90 @@ fn CodeBuilder::NamesScopeBuildElement( NamesScope& names_scope, ust::shared_ptr
 }
 
 fn CodeBuilder::PrepareFunction(
+	this,
 	Synt::Function& function_declaration,
 	NamesScope& names_scope,
 	FunctionsSet &mut functions_set ) : bool
 {
 	var FunctionVariable mut function_variable;
+	function_variable.t= PrepareType( names_scope, function_declaration.function_type );
 
 	functions_set.functions.push_back( move(function_variable) );
 
 	return true;
+}
+
+fn CodeBuilder::PrepareType( this, NamesScope& names_scope, Synt::TypeName& type_name ) : Type
+{
+	if_var( &named_type : type_name.get</Synt::ComplexName/>() )
+	{
+		return PrepareType( names_scope, named_type );
+	}
+	if_var( &function_type : type_name.get</ ust::box</ Synt::FunctionType/> />() )
+	{
+		return PrepareType( names_scope, function_type.get_ref() );
+	}
+	halt;
+}
+
+fn CodeBuilder::PrepareType( this, NamesScope& names_scope, Synt::ComplexName& named_type ) : Type
+{
+	// TODO - call "ResolveValue"
+	auto value= names_scope.GetThisScopeValue( named_type.name );
+	if( value.empty() )
+	{
+		return Type( FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ ) );
+	}
+
+	auto value_as_type= value.get_ref().Get</Type/>();
+	if( value_as_type.empty() )
+	{
+		return Type( FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ ) );
+	}
+
+	return value_as_type.lock_imut().get_ref();
+}
+
+fn CodeBuilder::PrepareType( this, NamesScope& names_scope, Synt::FunctionType& function_type ) : Type
+{
+	var FunctionType mut res
+	{
+		.return_type( PrepareType( names_scope, function_type.return_type ) )
+	};
+
+	foreach( &arg : function_type.args )
+	{
+		var FunctionType::Arg mut out_arg{ .arg_type( PrepareType( names_scope, arg.arg_type ) ) };
+		res.args.push_back( move(out_arg) );
+	}
+
+	var ust::vector</LLVMTypeRef/> mut llvm_arg_types;
+	foreach( &arg : res.args )
+	{
+		llvm_arg_types.push_back( arg.arg_type.get_ref().GetLLVMType() );
+	}
+
+	unsafe
+	{
+		if( llvm_arg_types.empty() )
+		{
+			auto dummy= LLVMTypeRef::Null;
+			res.llvm_type=
+				LLVMFunctionType(
+					res.return_type.get_ref().GetLLVMType(),
+					dummy, 0u, LLVMBool::False );
+		}
+		else
+		{
+			auto s= u32(llvm_arg_types.size());
+			res.llvm_type=
+				LLVMFunctionType(
+					res.return_type.get_ref().GetLLVMType(),
+					llvm_arg_types.front(), s, LLVMBool::False );
+		}
+	}
+
+	return Type(move(res));
 }
 
 } // amespace U

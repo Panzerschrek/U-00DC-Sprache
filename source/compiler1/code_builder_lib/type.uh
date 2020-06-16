@@ -26,6 +26,8 @@ struct FunctionType
 	ust::vector</Arg/> args;
 	ust::box</Type/> return_type; // HACK! prevent dependency loop
 
+	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
+
 	fn constructor( mut this, FunctionType &imut other );
 	op=( mut this, FunctionType &imut other );
 }
@@ -45,6 +47,8 @@ public:
 
 	fn GetFunctionType(  mut this ) : ust::optional_ref</FunctionType, true  />;
 	fn GetFunctionType( imut this ) : ust::optional_ref</FunctionType, false />;
+
+	fn GetLLVMType( imut this ) : LLVMTypeRef;
 
 private:
 	ust::variant</ tup[

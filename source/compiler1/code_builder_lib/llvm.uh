@@ -17,6 +17,12 @@ DefineLLVMRef LLVMValueRef
 
 type NullTerminatedString= char8;
 
+enum LLVMBool
+{
+	True,
+	False,
+}
+
 // Functions
 
 // Context
@@ -37,3 +43,8 @@ fn nomangle LLVMInt128TypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
 fn nomangle LLVMFloatTypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
 fn nomangle LLVMDoubleTypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
 fn nomangle LLVMVoidTypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
+
+fn nomangle LLVMFunctionType(
+	LLVMTypeRef ReturnType,
+	LLVMTypeRef &ParamTypes, u32 ParamCount,
+	LLVMBool IsVarArg) unsafe : LLVMTypeRef;
