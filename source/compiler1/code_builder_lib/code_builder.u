@@ -184,7 +184,11 @@ fn CodeBuilder::PrepareType( this, NamesScope& names_scope, Synt::FunctionType& 
 {
 	var FunctionType mut res
 	{
-		.return_type( PrepareType( names_scope, function_type.return_type ) )
+		.return_type(
+			select(
+				function_type.return_type.empty()
+					? Type( FundamentalType( U_FundamentalType::void_, fundamental_llvm_types_.void_for_ret_ ) )
+					: PrepareType( names_scope, function_type.return_type.get_ref() ) ) )
 	};
 
 	foreach( &arg : function_type.args )

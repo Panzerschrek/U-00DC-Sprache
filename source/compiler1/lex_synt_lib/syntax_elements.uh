@@ -1,5 +1,6 @@
 import "/box.u"
 import "/box_nullable.u"
+import "/optional.u"
 import "/shared/shared_ptr_final.u"
 import "/string.u"
 import "/variant.u"
@@ -55,7 +56,7 @@ struct FunctionType
 		ust::string8 name;
 	}
 	ust::vector</Arg/> args;
-	TypeName return_type;
+	ust::optional</TypeName/> return_type; // Empty means "void"
 }
 
 // HACK! use struct to prevent globals loop.

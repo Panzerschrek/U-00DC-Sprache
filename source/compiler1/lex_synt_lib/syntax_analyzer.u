@@ -161,6 +161,12 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 		}
 	}
 
+	if( it_.front().lexem_type == Lexem::Type::Colon )
+	{
+		NextLexem();
+		res.function_type.return_type= ParseTypeName();
+	}
+
 	if( it_.front().lexem_type == Lexem::Type::BraceLeft )
 	{
 		res.block.reset( ParseBlock() );

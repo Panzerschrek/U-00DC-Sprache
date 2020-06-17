@@ -27,7 +27,7 @@ fn PrintStr( ust::array_view_imut</ char8 /> str )
 
 fn FirstTest()
 {
-	auto& c_program_text = "fn Foo() { return 42; }";
+	auto& c_program_text = "fn Foo() : i32 { return 42; }";
 
 	auto res= LexicalAnalysis(c_program_text);
 	foreach( & l : res.lexems )
