@@ -134,8 +134,8 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 
 	if( build_debug_info_ )
 	{
-		module_->addModuleFlag( llvm::Module::Warning, "Debug Info Version", 3 );
-		debug_info_.source_file_entries.resize( source_graph.nodes_storage.size() );
+		for( const auto& node : source_graph.nodes_storage )
+			debug_info_.source_file_entries.push_back( llvm::DIFile::get( llvm_context_, node.file_path, "" ) );
 	}
 
 	// Build graph.
@@ -208,13 +208,12 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 		const uint32_t c_dwarf_language_id= 0x8000 /* first user-defined language code */ + 0xDC /* code of "Ü" letter */;
 
 		debug_info_.builder= std::make_unique<llvm::DIBuilder>( *module_ );
-		debug_info_.source_file_entries[node_index]= debug_info_.builder->createFile( source_graph_node.file_path, "" );
 
 		debug_info_.compile_unit=
 			debug_info_.builder->createCompileUnit(
 				c_dwarf_language_id,
 				debug_info_.source_file_entries[node_index],
-				"Ü-Sprache compiler " + getFullVersion(),
+				"U+00DC-Sprache compiler " + getFullVersion(),
 				false, // optimized
 				"",
 				0 /* runtime version */ );
