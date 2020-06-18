@@ -215,7 +215,7 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 			debug_info_.builder->createCompileUnit(
 				c_dwarf_language_id,
 				debug_info_.source_file_entries[node_index],
-				"Ü-Sprache compiler " + getFullVersion(),
+				"U+00DC-Sprache compiler " + getFullVersion(),
 				false, // optimized
 				"",
 				0 /* runtime version */ );
