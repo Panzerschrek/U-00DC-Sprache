@@ -9,9 +9,8 @@ namespace CodeBuilderPrivate
 
 llvm::DIFile* CodeBuilder::GetDIFile(const size_t file_index)
 {
-	if(file_index < debug_info_.source_file_entries.size())
-		return debug_info_.source_file_entries[file_index];
-	return debug_info_.source_file_entries.front();
+	U_ASSERT( file_index < debug_info_.source_file_entries.size() );
+	return debug_info_.source_file_entries[file_index];
 }
 
 void CodeBuilder::CreateVariableDebugInfo(
