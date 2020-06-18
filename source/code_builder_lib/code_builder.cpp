@@ -134,8 +134,6 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 
 	if( build_debug_info_ )
 	{
-		module_->addModuleFlag( llvm::Module::Warning, "Debug Info Version", 3 );
-
 		for( const auto& node : source_graph.nodes_storage )
 			debug_info_.source_file_entries.push_back( llvm::DIFile::get( llvm_context_, node.file_path, "" ) );
 	}
