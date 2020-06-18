@@ -18,8 +18,7 @@ function( CompileUSource u_source_file out_object )
 			${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS}
 			--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
 			--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/
-			--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/code_builder_lib
-			--include-dir ${CMAKE_CURRENT_BINARY_DIR}
+			--include-dir ${CMAKE_CURRENT_BINARY_DIR}/
 		DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "compiler1/lex_syn_lib/file_pos.u.o:", but launches custom command in current binary directory
 		)
@@ -40,19 +39,23 @@ endfunction()
 #
 file( READ ../errors_list.hpp ERRORS_LIST_CONTENT )
 
-string( REGEX MATCHALL "PROCESS_ERROR\\( ([A-Za-z]+)" CODE_BUILDER_ERRORS_LIST ${ERRORS_LIST_CONTENT} )
-string( REPLACE "PROCESS_ERROR( " ",\n" CODE_BUILDER_ERRORS_LIST ${CODE_BUILDER_ERRORS_LIST} )
-
-configure_file( code_builder_lib/code_builder_errors.uh.in ${CMAKE_CURRENT_BINARY_DIR}/code_builder_errors.uh )
+set( ERRORS_LIST_REGEXP "PROCESS_ERROR\\( ([A-Za-z]+), (\\\"([^\\\"]|(\\\\\")|(\\\\\\n))+\\\") \\)" )
 
 string(
 	REGEX REPLACE
-	"PROCESS_ERROR\\( ([A-Za-z]+), (\\\"([^\\\"]|(\\\\\")|(\\\\\\n))+\\\") \\)"
-	"if( e == CodeBuilderErrorCode::\\1 ) { return ust::array_view_imut</ char8 />(\\2); }"
+	${ERRORS_LIST_REGEXP}
+	"	\\1,"
+	CODE_BUILDER_ERRORS_LIST
+	${ERRORS_LIST_CONTENT} )
+
+string(
+	REGEX REPLACE
+	${ERRORS_LIST_REGEXP}
+	"	if( e == CodeBuilderErrorCode::\\1 ) { return ust::array_view_imut</ char8 />(\\2); }"
 	ERROR_CODE_TO_STRING_LIST
 	${ERRORS_LIST_CONTENT} )
 
-configure_file( code_builder_lib/error_reporting.u.in ${CMAKE_CURRENT_BINARY_DIR}/error_reporting.u )
+configure_file( code_builder_lib/code_builder_errors.uh.in ${CMAKE_CURRENT_BINARY_DIR}/code_builder_errors.uh )
 
 #
 # LexSyntLib
@@ -70,7 +73,6 @@ add_library( LexSyntLib${CURRENT_COMPLIER_GENERATION} lib_stub.cpp ${LEX_SYNT_LI
 file( GLOB CODE_BUILDER_LIB_HEADERS "code_builder_lib/*.uh" )
 file( GLOB CODE_BUILDER_LIB_SOURCES "code_builder_lib/*.u" )
 set( CODE_BUILDER_LIB_HEADERS ${CODE_BUILDER_LIB_HEADERS} ${CMAKE_CURRENT_BINARY_DIR}/code_builder_errors.uh )
-set( CODE_BUILDER_LIB_SOURCES ${CODE_BUILDER_LIB_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/error_reporting.u )
 CompileUSources( CODE_BUILDER_LIB_SOURCES CODE_BUILDER_LIB_OBJECTS )
 add_library( CodeBuilderLib${CURRENT_COMPLIER_GENERATION} lib_stub.cpp ${CODE_BUILDER_LIB_HEADERS} ${CODE_BUILDER_LIB_SOURCES} ${CODE_BUILDER_LIB_OBJECTS} )
 target_link_libraries( CodeBuilderLib${CURRENT_COMPLIER_GENERATION} LexSyntLib${CURRENT_COMPLIER_GENERATION} ${LLVM_LIBS_FOR_CODE_BUILDER_LIB} )

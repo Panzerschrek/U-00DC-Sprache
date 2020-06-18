@@ -33,8 +33,6 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 {
 	switch(code)
 	{
-	case CodeBuilderErrorCode::Invalid: return "";
-
 	#define PROCESS_ERROR(Code, Message) case CodeBuilderErrorCode::Code: return #Code;
 	#include "../errors_list.hpp"
 	#undef PROCESS_ERROR

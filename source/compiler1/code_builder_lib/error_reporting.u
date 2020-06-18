@@ -1,14 +1,7 @@
-import "/error_reporting.uh"
+import "error_reporting.uh"
 
 namespace U
 {
-
-fn GetErrorMessagePattern( CodeBuilderErrorCode e ) : ust::array_view_imut</ char8 />
-{
-	@ERROR_CODE_TO_STRING_LIST@
-
-	halt;
-}
 
 fn ReportError( CodeBuilderErrorCode code, FilePos file_pos ) : CodeBuilderError
 {
