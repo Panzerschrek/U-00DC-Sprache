@@ -1,0 +1,19 @@
+import "llvm.uh"
+
+namespace U
+{
+
+class FunctionContext
+{
+public:
+	fn constructor( LLVMContextRef llvm_context, LLVMValueRef llvm_function );
+	fn destructor();
+
+	LLVMBasicBlockRef alloca_basic_block= LLVMBasicBlockRef::Null;
+	LLVMBuilderRef alloca_ir_builder= LLVMBuilderRef::Null;
+
+	LLVMBasicBlockRef function_basic_block= LLVMBasicBlockRef::Null;
+	LLVMBuilderRef llvm_ir_builder= LLVMBuilderRef::Null;
+}
+
+} // namespace U

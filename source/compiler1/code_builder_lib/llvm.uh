@@ -12,8 +12,10 @@
 
 DefineLLVMRef LLVMContextRef
 DefineLLVMRef LLVMModuleRef
+DefineLLVMRef LLVMBuilderRef
 DefineLLVMRef LLVMTypeRef
 DefineLLVMRef LLVMValueRef
+DefineLLVMRef LLVMBasicBlockRef
 
 type NullTerminatedString= char8;
 
@@ -53,6 +55,22 @@ fn nomangle LLVMFunctionType(
 
 fn nomangle LLVMAddFunction(LLVMModuleRef M, NullTerminatedString& Name, LLVMTypeRef FunctionTy) unsafe : LLVMValueRef;
 
+// Basic block
+
+fn nomangle LLVMAppendBasicBlockInContext(LLVMContextRef C, LLVMValueRef Fn, NullTerminatedString& Name) : LLVMBasicBlockRef;
+
 // Module helpers
 
 fn nomangle LLVMDumpModule(LLVMModuleRef M) unsafe;
+
+
+// IRBuilder
+
+fn nomangle LLVMCreateBuilderInContext(LLVMContextRef C) unsafe : LLVMBuilderRef;
+fn nomangle LLVMDisposeBuilder(LLVMBuilderRef Builder) unsafe;
+
+fn nomangle LLVMPositionBuilderAtEnd(LLVMBuilderRef Builder, LLVMBasicBlockRef Block) unsafe;
+
+// Instructions
+
+fn nomangle LLVMBuildBr(LLVMBuilderRef Builder, LLVMBasicBlockRef Dest) unsafe : LLVMValueRef;

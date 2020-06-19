@@ -1,6 +1,6 @@
 import "../lex_synt_lib/syntax_analyzer.uh"
 import "/code_builder_errors.uh"
-import "llvm.uh"
+import "function_context.uh"
 import "names_scope.uh"
 
 namespace U
@@ -38,6 +38,8 @@ private:
 	fn PrepareType( this, NamesScope& names_scope, Synt::TypeName& type_name ) : Type;
 	fn PrepareType( this, NamesScope& names_scope, Synt::ComplexName& named_type ) : Type;
 	fn PrepareType( this, NamesScope& names_scope, Synt::FunctionType& function_type) : Type;
+
+	fn BuildFuncCode( this, FunctionVariable &mut func_variable );
 
 private:
 	LLVMContextRef llvm_context_;

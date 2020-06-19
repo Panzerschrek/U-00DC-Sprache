@@ -1,0 +1,29 @@
+import "function_context.uh"
+
+namespace U
+{
+
+fn FunctionContext::constructor( LLVMContextRef llvm_context, LLVMValueRef llvm_function )
+{
+	unsafe
+	{
+		alloca_basic_block= LLVMAppendBasicBlockInContext( llvm_context, llvm_function, "allocations\0"[0] );
+		alloca_ir_builder= LLVMCreateBuilderInContext( llvm_context );
+		LLVMPositionBuilderAtEnd( alloca_ir_builder, alloca_basic_block );
+
+		function_basic_block= LLVMAppendBasicBlockInContext( llvm_context, llvm_function, "func_code\0"[0] );
+		llvm_ir_builder= LLVMCreateBuilderInContext( llvm_context );
+		LLVMPositionBuilderAtEnd( llvm_ir_builder, function_basic_block );
+	}
+}
+
+fn FunctionContext::destructor()
+{
+	unsafe
+	{
+		LLVMDisposeBuilder( llvm_ir_builder );
+		LLVMDisposeBuilder( alloca_ir_builder );
+	}
+}
+
+} // namespace U
