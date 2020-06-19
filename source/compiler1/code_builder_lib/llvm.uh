@@ -48,3 +48,7 @@ fn nomangle LLVMFunctionType(
 	LLVMTypeRef ReturnType,
 	LLVMTypeRef &ParamTypes, u32 ParamCount,
 	LLVMBool IsVarArg) unsafe : LLVMTypeRef;
+
+// Global value
+
+fn nomangle LLVMAddFunction(LLVMModuleRef M, NullTerminatedString& Name, LLVMTypeRef FunctionTy) unsafe : LLVMValueRef;

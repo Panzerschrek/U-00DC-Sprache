@@ -41,15 +41,15 @@ fn CodeBuilder::constructor( LLVMContextRef llvm_context )
 
 fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : BuildResult
 {
-	var BuildResult mut res{ .llvm_module= LLVMModuleRef::Null };
-
-	unsafe{ res.llvm_module= LLVMModuleCreateWithName( "some_module\0"[0] ); }
+	unsafe{ module_ = LLVMModuleCreateWithName( "some_module\0"[0] ); }
 
 	var NamesScope mut global_names_scope( "" );
 
 	FillGlobalNamesScope( global_names_scope );
 	NamesScopeFill( global_names_scope, ast.program_elements );
+	NamesScopeBuild( global_names_scope );
 
+	var BuildResult mut res{ .llvm_module= module_ };
 	return move(res);
 }
 
@@ -143,6 +143,10 @@ fn CodeBuilder::PrepareFunction(
 {
 	var FunctionVariable mut function_variable;
 	function_variable.t= PrepareType( names_scope, function_declaration.function_type );
+
+	var ust::string8 mut name= function_declaration.name;
+	name.push_back("\0"c8);
+	unsafe{ function_variable.llvm_function= LLVMAddFunction( module_, name.front(), function_variable.t.GetLLVMType() ); }
 
 	functions_set.functions.push_back( move(function_variable) );
 

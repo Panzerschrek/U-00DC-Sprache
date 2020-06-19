@@ -71,6 +71,7 @@ private:
 	}
 	FundamentalLLVMTypes fundamental_llvm_types_= zero_init;
 
+	LLVMModuleRef module_= LLVMModuleRef::Null;
 }
 
 } // namespace U
