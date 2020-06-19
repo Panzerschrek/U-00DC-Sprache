@@ -17,10 +17,10 @@ DefineLLVMRef LLVMValueRef
 
 type NullTerminatedString= char8;
 
-enum LLVMBool
+enum LLVMBool : i32
 {
-	True,
 	False,
+	True,
 }
 
 // Functions
