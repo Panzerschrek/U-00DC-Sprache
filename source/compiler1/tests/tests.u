@@ -49,6 +49,7 @@ fn FirstTest()
 
 	unsafe
 	{
+		LLVMDumpModule( code_builder_res.llvm_module );
 		LLVMDisposeModule( code_builder_res.llvm_module );
 		LLVMContextDispose( llvm_context );
 	}

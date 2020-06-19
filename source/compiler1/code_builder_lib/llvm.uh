@@ -52,3 +52,7 @@ fn nomangle LLVMFunctionType(
 // Global value
 
 fn nomangle LLVMAddFunction(LLVMModuleRef M, NullTerminatedString& Name, LLVMTypeRef FunctionTy) unsafe : LLVMValueRef;
+
+// Module helpers
+
+fn nomangle LLVMDumpModule(LLVMModuleRef M) unsafe;
