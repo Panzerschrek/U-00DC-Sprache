@@ -31,7 +31,7 @@ private:
 	// Returns "true" if ok.
 	fn PrepareFunction(
 		this,
-		Synt::Function& function_declaration,
+		ust::shared_ptr_final</Synt::Function/>& function_declaration_ptr,
 		NamesScope& names_scope,
 		FunctionsSet &mut functions_set ) : bool;
 
@@ -40,6 +40,9 @@ private:
 	fn PrepareType( this, NamesScope& names_scope, Synt::FunctionType& function_type) : Type;
 
 	fn BuildFuncCode( this, FunctionVariable &mut func_variable );
+
+	fn BuildBlockElement( this, FunctionContext &mut function_context, Synt::Block& block );
+	fn BuildBlockElement( this, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator );
 
 private:
 	LLVMContextRef llvm_context_;

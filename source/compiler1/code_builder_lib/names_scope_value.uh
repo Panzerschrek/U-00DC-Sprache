@@ -18,6 +18,8 @@ struct FunctionVariable
 {
 	Type t; // FunctionType 100%
 	LLVMValueRef llvm_function= LLVMValueRef::Null;
+
+	ust::shared_ptr_final</ Synt::Function /> syntax_element;
 }
 
 // Set of functions and function templates with same name in one scope
