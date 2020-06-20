@@ -73,8 +73,9 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 			ust::memory_copy( numeric_constant.num, it_.front().text.front(), typeinfo</NumberLexemData/>.size_of );
 		}
 
-		var Expression mut expr;
-		expr.expr= move(numeric_constant);
+		NextLexem();
+
+		var Expression mut expr{ .expr= move(numeric_constant) };
 		return move(expr);
 	}
 	else

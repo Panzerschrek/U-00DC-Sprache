@@ -1,4 +1,24 @@
+import "/variant.u"
+import "type.uh"
+
 namespace U
 {
+
+struct Variable
+{
+	enum Location
+	{
+		Pointer,
+		LLVMRegister,
+	}
+
+	Type t;
+	Location location= Location::Pointer;
+	LLVMValueRef llvm_value= LLVMValueRef::Null;
+}
+
+type Value= ust::variant</ tup[
+	Variable
+	] />;
 
 } // namespace U

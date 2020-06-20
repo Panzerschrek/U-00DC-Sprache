@@ -2,6 +2,7 @@ import "../lex_synt_lib/syntax_analyzer.uh"
 import "/code_builder_errors.uh"
 import "function_context.uh"
 import "names_scope.uh"
+import "value.uh"
 
 namespace U
 {
@@ -43,6 +44,10 @@ private:
 
 	fn BuildBlockElement( this, FunctionContext &mut function_context, Synt::Block& block );
 	fn BuildBlockElement( this, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator );
+
+	fn BuildExpressionCodeEnsureVariable( this, FunctionContext &mut function_context, Synt::Expression& expression ) : Variable;
+	fn BuildExpressionCode( this, FunctionContext &mut function_context, Synt::Expression& expression ) : Value;
+	fn BuildExpressionCode( this, FunctionContext &mut function_context, Synt::NumericConstant& numeric_constant ) : Value;
 
 private:
 	LLVMContextRef llvm_context_;

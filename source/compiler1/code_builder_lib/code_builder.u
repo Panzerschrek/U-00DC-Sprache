@@ -258,6 +258,37 @@ fn CodeBuilder::BuildBlockElement( this, FunctionContext &mut function_context, 
 
 fn CodeBuilder::BuildBlockElement( this, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator )
 {
+	var Variable expr= BuildExpressionCodeEnsureVariable( function_context, return_operator.expr );
+
+	unsafe{ LLVMBuildRet( function_context.llvm_ir_builder, expr.llvm_value ); }
+}
+
+fn CodeBuilder::BuildExpressionCode( this, FunctionContext &mut function_context, Synt::Expression& expression ) : Value
+{
+	if_var( numeric_constant : expression.expr.get</Synt::NumericConstant/>() )
+	{
+		return BuildExpressionCode( function_context, numeric_constant );
+	}
+	halt;
+}
+
+fn CodeBuilder::BuildExpressionCodeEnsureVariable( this, FunctionContext &mut function_context, Synt::Expression& expression ) : Variable
+{
+	var Value mut value= BuildExpressionCode( function_context, expression );
+
+	// TODO - fill dummy value if not variable.
+	return value.get</Variable/>().get_ref();
+}
+
+fn CodeBuilder::BuildExpressionCode( this, FunctionContext &mut function_context, Synt::NumericConstant& numeric_constant ) : Value
+{
+	var Variable mut res;
+	res.t= Type( FundamentalType( U_FundamentalType::i32_ , fundamental_llvm_types_.i32_ ) );
+	res.location= Variable::Location::LLVMRegister;
+
+	unsafe{ res.llvm_value= LLVMConstInt( res.t.GetLLVMType(), u64(numeric_constant.num.value_double), LLVMBool::True ); }
+
+	return Value( move(res) );
 }
 
 } // amespace U
