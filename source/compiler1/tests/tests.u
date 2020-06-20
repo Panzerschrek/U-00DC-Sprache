@@ -63,7 +63,7 @@ fn Main() : i32
 
 } // namespace U
 
-fn nomangle main() : i32
+fn nomangle old_main() : i32
 {
 	return U::Main();
 }

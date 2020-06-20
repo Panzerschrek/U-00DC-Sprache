@@ -219,6 +219,7 @@ if( U_BUILD_TESTS )
 	#
 	file( GLOB TESTS_SOURCES "tests/cpp_tests/*" )
 	add_library( TestsLib ${TESTS_SOURCES} )
+	target_link_libraries( TestsLib PUBLIC ${LLVM_LIBS_FOR_TESTS} )
 
 	# Hack! Force use static variables with initializers with tests registration
 	set( TESTS_LIB_WRAPPED TestsLib )
@@ -231,7 +232,7 @@ if( U_BUILD_TESTS )
 	#
 	file( GLOB TESTS_LAUNCHER0_SOURCES "tests/cpp_tests_launcher0/*" )
 	add_executable( Tests ${TESTS_LAUNCHER0_SOURCES} )
-	target_link_libraries( Tests CodeBuilderLib ${LLVM_LIBS_FOR_TESTS} ${TESTS_LIB_WRAPPED} )
+	target_link_libraries( Tests CodeBuilderLib ${TESTS_LIB_WRAPPED} )
 	add_custom_command( TARGET Tests POST_BUILD COMMAND Tests )
 
 endif()
