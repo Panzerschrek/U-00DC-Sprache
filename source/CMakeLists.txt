@@ -211,14 +211,29 @@ if( REALLY_BUILD_CPP_HEADER_CONVERTER )
 	target_include_directories( CppHeaderConverter PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/llvm/tools/clang/include )
 endif()
 
-#
-# Tests
-#
+
 if( U_BUILD_TESTS )
+
+	#
+	# C++ tests
+	#
 	file( GLOB TESTS_SOURCES "tests/cpp_tests/*" )
-	add_executable( Tests ${TESTS_SOURCES} )
-	target_link_libraries( Tests CodeBuilderLib ${LLVM_LIBS_FOR_TESTS} )
+	add_library( TestsLib ${TESTS_SOURCES} )
+
+	# Hack! Force use static variables with initializers with tests registration
+	set( TESTS_LIB_WRAPPED TestsLib )
+	if( NOT MSVC )
+		set( TESTS_LIB_WRAPPED -Wl,--whole-archive ${TESTS_LIB_WRAPPED} -Wl,--no-whole-archive )
+	endif()
+
+	#
+	# C++ tests launcher
+	#
+	file( GLOB TESTS_LAUNCHER0_SOURCES "tests/cpp_tests_launcher0/*" )
+	add_executable( Tests ${TESTS_LAUNCHER0_SOURCES} )
+	target_link_libraries( Tests CodeBuilderLib ${LLVM_LIBS_FOR_TESTS} ${TESTS_LIB_WRAPPED} )
 	add_custom_command( TARGET Tests POST_BUILD COMMAND Tests )
+
 endif()
 
 #

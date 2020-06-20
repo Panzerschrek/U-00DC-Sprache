@@ -12,7 +12,7 @@
 #include "../../lex_synt_lib/source_graph_loader.hpp"
 #include "../tests_common.hpp"
 
-#include "tests.hpp"
+#include "../cpp_tests/tests.hpp"
 
 namespace U
 {
@@ -168,26 +168,6 @@ EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, const bool needs_d
 	return EnginePtr(engine);
 }
 
-struct FuncData
-{
-	std::string name;
-	TestFunc* func;
-};
-
-using FuncsContainer= std::vector<FuncData>;
-
-static FuncsContainer& GetFuncsContainer()
-{
-	static FuncsContainer funcs_container;
-	return funcs_container;
-}
-
-TestId AddTestFuncPrivate( TestFunc* func, const char* const file_name, const char* const func_name )
-{
-	GetFuncsContainer().emplace_back( FuncData{ std::string(file_name) + ":" + func_name, func } );
-	return TestId();
-}
-
 bool HaveError( const std::vector<CodeBuilderError>& errors, const CodeBuilderErrorCode code, const unsigned int line )
 {
 	for( const CodeBuilderError& error : errors )
@@ -198,6 +178,7 @@ bool HaveError( const std::vector<CodeBuilderError>& errors, const CodeBuilderEr
 	return false;
 }
 
+
 } // namespace U
 
 // Entry point for tests executable.
@@ -205,14 +186,14 @@ int main()
 {
 	using namespace U;
 
-	FuncsContainer& funcs_container= GetFuncsContainer();
+	const TestsFuncsContainer& funcs_container= GetTestsFuncsContainer();
 
 	std::cout << "Run " << funcs_container.size() << " tests" << std::endl << std::endl;
 
 	unsigned int passed= 0u;
 	unsigned int disabled= 0u;
 	unsigned int failed= 0u;
-	for(const FuncData& func_data : funcs_container )
+	for(const TestFuncData& func_data : funcs_container )
 	{
 		try
 		{
