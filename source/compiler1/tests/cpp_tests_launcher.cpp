@@ -6,16 +6,45 @@
 #include "../../code_builder_lib/pop_llvm_warnings.hpp"
 
 #include "../../tests/tests_common.hpp"
-
 #include "../../tests/cpp_tests/tests.hpp"
+#include  "funcs_c.hpp"
 
 namespace U
 {
 
+namespace
+{
+
+llvm::ManagedStatic<llvm::LLVMContext> g_llvm_context;
+
+// Returns "true" if should enable test.
+bool FilterTest( const std::string& test_name )
+{
+	static const std::string c_tests_to_enable_pattern[]
+	{
+		"SimpliestProgramTest"
+	};
+
+	if( std::find_if(
+			std::begin(c_tests_to_enable_pattern),
+			std::end(c_tests_to_enable_pattern),
+			[&]( const std::string& pattern ) { return test_name.find( pattern ) != std::string::npos; } )
+		!= std::end(c_tests_to_enable_pattern) )
+		return true;
+
+	return false;
+}
+
+} // namespace
+
 std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 {
-	(void) text;
-	DISABLE_TEST;
+	llvm::LLVMContext& llvm_context= *g_llvm_context;
+
+	auto ptr= U1_BuildProgram( text, reinterpret_cast<LLVMContextRef>(&llvm_context) );
+	U_TEST_ASSERT( ptr != nullptr );
+
+	return std::unique_ptr<llvm::Module>( reinterpret_cast<llvm::Module*>(ptr) );
 }
 
 ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
@@ -55,7 +84,7 @@ EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, const bool needs_d
 	// So, we can correctly use unique_ptr for engine, because unique_ptr uses "delete" operator in destructor.
 
 	U_TEST_ASSERT( engine != nullptr );
-	DISABLE_TEST;
+	return EnginePtr(engine);
 }
 
 bool HaveError( const std::vector<CodeBuilderError>& errors, const CodeBuilderErrorCode code, const unsigned int line )
@@ -82,8 +111,15 @@ int main()
 	unsigned int passed= 0u;
 	unsigned int disabled= 0u;
 	unsigned int failed= 0u;
+	unsigned int filtered= 0u;
 	for(const TestFuncData& func_data : funcs_container )
 	{
+		if( !FilterTest( func_data.name ) )
+		{
+			filtered++;
+			continue;
+		}
+
 		try
 		{
 			func_data.func();
@@ -91,7 +127,7 @@ int main()
 		}
 		catch( const DisableTestException& )
 		{
-			std::cout << "Test " << func_data.name << " disabled\n";
+			// std::cout << "Test " << func_data.name << " disabled\n";
 			disabled++;
 		}
 		catch( const TestException& ex )
@@ -107,6 +143,7 @@ int main()
 	std::cout << std::endl <<
 		passed << " tests passed\n" <<
 		disabled << " tests disabled\n" <<
+		filtered << " tests filtered\n" <<
 		failed << " tests failed" << std::endl;
 
 	return -int(failed);

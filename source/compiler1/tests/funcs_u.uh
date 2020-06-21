@@ -1,0 +1,5 @@
+import "../code_builder_lib/llvm.uh"
+
+// If contents of this file changed, funcs_c.hpp must be changed too!
+
+fn nomangle U1_BuildProgram( char8& program_text_null_terminated, LLVMContextRef llvm_context ) unsafe : LLVMModuleRef;

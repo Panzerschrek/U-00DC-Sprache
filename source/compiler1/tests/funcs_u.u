@@ -1,0 +1,51 @@
+import "funcs_u.uh"
+import "../lex_synt_lib/lexical_analyzer.uh"
+import "../lex_synt_lib/syntax_analyzer.uh"
+import "../code_builder_lib/code_builder.uh"
+
+fn nomangle U1_BuildProgram( char8& program_text_null_terminated, LLVMContextRef llvm_context ) unsafe : LLVMModuleRef
+{
+	unsafe
+	{
+		return U::BuildProgramImpl( program_text_null_terminated, llvm_context );
+	}
+}
+
+namespace U
+{
+
+fn BuildProgramImpl( char8& program_text_null_terminated, LLVMContextRef llvm_context ) unsafe : LLVMModuleRef
+{
+	unsafe
+	{
+		auto program_text= NullTerminatedStringToArrayView( program_text_null_terminated );
+
+		safe
+		{
+			auto lex_res= LexicalAnalysis( program_text );
+
+			auto synt_res= Synt::SyntaxAnalysis( lex_res.lexems );
+
+			var CodeBuilder mut code_builder( llvm_context );
+			auto code_builder_res= code_builder.BuildProgram( synt_res );
+
+			return code_builder_res.llvm_module;
+		}
+	}
+}
+
+fn NullTerminatedStringToArrayView( char8 &'x string_null_terminated ) unsafe : ust::array_view_imut</ char8 />'x'
+{
+	unsafe
+	{
+		var ust::raw_ptr_mut</char8/> ptr( cast_mut(string_null_terminated) );
+
+		return ust::array_view_imut</ char8 />(
+			ptr,
+			ptr + strlen(string_null_terminated) );
+	}
+}
+
+} // namespace U
+
+fn nomangle strlen( char8& string_null_terminated ) unsafe : size_type;

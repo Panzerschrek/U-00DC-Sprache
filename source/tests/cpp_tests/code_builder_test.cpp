@@ -21,6 +21,22 @@ U_TEST( AdditionalSymbolsForIdentifiersTest0 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST(SimpliestProgramTest)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : i32 { return 42; }
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( result_value.IntVal.getLimitedValue() == uint64_t(42) );
+}
+
 U_TEST(SimpleProgramTest)
 {
 	static const char c_program_text[]=
