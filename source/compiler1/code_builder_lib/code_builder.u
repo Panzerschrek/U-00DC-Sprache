@@ -1,5 +1,6 @@
 import "../lex_synt_lib/keywords.uh"
 import "error_reporting.uh"
+import "mangling.uh"
 import "code_builder.uh"
 
 namespace U
@@ -147,9 +148,14 @@ fn CodeBuilder::PrepareFunction(
 
 	function_variable.t= PrepareType( names_scope, function_declaration.function_type );
 
-	var ust::string8 mut name= function_declaration.name;
-	name.push_back("\0"c8);
-	unsafe{ function_variable.llvm_function= LLVMAddFunction( module_, name.front(), function_variable.t.GetLLVMType() ); }
+	unsafe
+	{
+		function_variable.llvm_function=
+			LLVMAddFunction(
+				module_,
+				MangleFunction( function_declaration.name ).front(),
+				function_variable.t.GetLLVMType() );
+	}
 
 	functions_set.functions.push_back( move(function_variable) );
 

@@ -29,7 +29,7 @@ U_TEST(SimpliestProgramTest)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
-	llvm::Function* function= engine->FindFunctionNamed( "Foo" );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
 	const llvm::GenericValue result_value= engine->runFunction( function, {} );
