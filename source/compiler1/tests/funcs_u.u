@@ -1,7 +1,9 @@
-import "funcs_u.uh"
 import "../lex_synt_lib/lexical_analyzer.uh"
 import "../lex_synt_lib/syntax_analyzer.uh"
 import "../code_builder_lib/code_builder.uh"
+import "print.uh"
+import "funcs_u.uh"
+
 
 fn nomangle U1_BuildProgram( char8& program_text_null_terminated, LLVMContextRef llvm_context ) unsafe : LLVMModuleRef
 {
@@ -23,8 +25,35 @@ fn BuildProgramImpl( char8& program_text_null_terminated, LLVMContextRef llvm_co
 		safe
 		{
 			auto lex_res= LexicalAnalysis( program_text );
+			if( !lex_res.error_messages.empty() )
+			{
+				foreach( &err : lex_res.error_messages )
+				{
+					unsafe
+					{
+						U1_PrintStr( (err + "\n\0").front() );
+						U1_PrintEndl();
+					}
+				}
+				return LLVMModuleRef::Null;
+			}
 
 			auto synt_res= Synt::SyntaxAnalysis( lex_res.lexems );
+			if( !synt_res.error_messages.empty() )
+			{
+				foreach( &err : synt_res.error_messages )
+				{
+					unsafe
+					{
+						U1_PrintInt( i64(err.file_pos.GetLine()) );
+						U1_PrintStr( ":\0"[0] );
+						U1_PrintInt( i64(err.file_pos.GetColumn()) );
+						U1_PrintStr( (": " + err.text + "\n\0").front() );
+						U1_PrintEndl();
+					}
+				}
+				return LLVMModuleRef::Null;
+			}
 
 			var CodeBuilder mut code_builder( llvm_context );
 			auto code_builder_res= code_builder.BuildProgram( synt_res );

@@ -54,10 +54,12 @@ fn SyntaxAnalyzer::DoAnalyzis( mut this ) : SyntaxAnalysisResult
 		}
 		else
 		{
+			PushErrorMessage();
 			break;
 		}
 	}
 
+	res.error_messages= take(error_messages_);
 	return move(res);
 }
 
