@@ -88,6 +88,12 @@ if( U_BUILD_TESTS )
 	file( GLOB TESTS_CPP_SOURCES "tests/*.cpp" )
 	CompileUSources( TESTS_SOURCES TESTS_OBJECTS )
 	add_executable( Tests${CURRENT_COMPLIER_GENERATION} ${TESTS_CPP_SOURCES} ${TESTS_HEADERS} ${TESTS_SOURCES} ${TESTS_OBJECTS} )
-	target_link_libraries( Tests${CURRENT_COMPLIER_GENERATION} PRIVATE CodeBuilderLib${CURRENT_COMPLIER_GENERATION} ${TESTS_LIB_WRAPPED} )
+	target_link_libraries(
+		Tests${CURRENT_COMPLIER_GENERATION}
+		PRIVATE
+			CodeBuilderLib${CURRENT_COMPLIER_GENERATION}
+			${TESTS_LIB_WRAPPED}
+			LexSyntLib # Hack! Use C++ lib for "FilePos" class.
+		)
 
 endif()
