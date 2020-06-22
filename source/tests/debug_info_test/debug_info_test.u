@@ -214,6 +214,18 @@ fn ScopesTest()
 	}
 }
 
+fn VariableChangeTest()
+{
+	auto mut x= 0;
+	++x;
+	x*= 3;
+	x+= 55;
+	x/= 2;
+	x <<= 5u;
+	x -= 22;
+	return;
+}
+
 fn U_Main() : i32
 {
 	FundamentalTypesTest();
@@ -231,5 +243,6 @@ fn U_Main() : i32
 	FunctionTemplatesTest();
 	ImportedFunc();
 	ScopesTest();
+	VariableChangeTest();
 	return 0;
 }
