@@ -5,16 +5,22 @@ import "/code_builder_errors.uh"
 namespace U
 {
 
+type ErrorsContainer= ust::vector</ CodeBuilderError />;
+type ErrorsContainerPtr= ust::shared_ptr_mut</ErrorsContainer/>;
+
 class NamesScope
 {
 public:
-	fn constructor( ust::string8 mut name );
+	fn constructor( ust::string8 mut name, ErrorsContainerPtr errors_container );
 
 	fn GetThisScopeValue( this, ust::string8& name ) : ust::optional_ref</ NamesScopeValue, false />'this';
 
 	fn AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : ust::optional_ref</ NamesScopeValue, true />'this';
 
-	fn GetErrors( mut this ) : ust::vector</ CodeBuilderError /> &mut;
+	fn GetErrors( this ) : ErrorsContainerPtr
+	{
+		return errors_container_;
+	}
 
 	// HACK! for iteration. Remove this.
 	fn GetInternalContainer( imut this ) : ust::unordered_map</ ust::string8, NamesScopeValue /> &
@@ -30,7 +36,7 @@ private:
 
 	ust::unordered_map</ ust::string8, NamesScopeValue /> names_map_;
 
-	ust::vector</ CodeBuilderError /> errors_container_;
+	ErrorsContainerPtr errors_container_;
 }
 
 } // namespace U

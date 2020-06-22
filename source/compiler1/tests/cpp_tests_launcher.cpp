@@ -22,7 +22,8 @@ bool FilterTest( const std::string& test_name )
 {
 	static const std::string c_tests_to_enable_pattern[]
 	{
-		"SimpliestProgramTest"
+		"SimpliestProgramTest",
+		"NameNotFoundTest_Minus1",
 	};
 
 	if( std::find_if(
@@ -49,8 +50,34 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 
 ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
 {
-	(void) text;
-	DISABLE_TEST;
+	llvm::LLVMContext& llvm_context= *g_llvm_context;
+
+	ICodeBuilder::BuildResult build_result;
+	const auto error_handler=
+	[](
+		void* const data,
+		const uint32_t line,
+		const uint32_t column,
+		const uint32_t error_code,
+		const char* const error_text,
+		const size_t error_text_length )
+	{
+		CodeBuilderError error;
+		error.file_pos= FilePos( 0u, line, column );
+		error.code= CodeBuilderErrorCode(error_code);
+		error.text= std::string( error_text, error_text + error_text_length );
+		reinterpret_cast<ICodeBuilder::BuildResult*>(data)->errors.push_back( std::move(error) );
+	};
+
+	const bool ok=
+		U1_BuildProgramWithErrors(
+			text,
+			reinterpret_cast<LLVMContextRef>(&llvm_context),
+			error_handler,
+			&build_result );
+	U_TEST_ASSERT(ok);
+
+	return build_result;
 }
 
 std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const std::string& root_file_path )

@@ -44,13 +44,20 @@ fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : Buil
 {
 	unsafe{ module_ = LLVMModuleCreateWithName( "some_module\0"[0] ); }
 
-	var NamesScope mut global_names_scope( "" );
+	var ErrorsContainerPtr errors_container( ErrorsContainer() );
+
+	var NamesScope mut global_names_scope( "", errors_container );
 
 	FillGlobalNamesScope( global_names_scope );
 	NamesScopeFill( global_names_scope, ast.program_elements );
 	NamesScopeBuild( global_names_scope );
 
-	var BuildResult mut res{ .llvm_module= module_ };
+	var BuildResult mut res
+	{
+		.llvm_module= module_,
+		.errors= errors_container.lock_imut().get_ref(),
+	 };
+
 	return move(res);
 }
 
@@ -183,6 +190,7 @@ fn CodeBuilder::PrepareType( this, NamesScope& names_scope, Synt::ComplexName& n
 	auto value= names_scope.GetThisScopeValue( named_type.name );
 	if( value.empty() )
 	{
+		REPORT_ERROR( names_scope, NameNotFound, named_type.file_pos )
 		return Type( FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ ) );
 	}
 
