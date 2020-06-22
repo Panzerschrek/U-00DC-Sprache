@@ -306,10 +306,11 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	set( INLINE_LINKAGE_SOURCES
 		tests/inline_linkage_test/a.u
 		tests/inline_linkage_test/b.u
-		tests/inline_linkage_test/c.u )
+		tests/inline_linkage_test/c.u
+		tests/inline_linkage_test/entry.u )
 	CompileUSources( "${INLINE_LINKAGE_SOURCES}" INLINE_LINKAGE_OBJECTS )
 
-	add_executable( InlineLinkageTest tests/inline_linkage_test/entry.cpp ${INLINE_LINKAGE_SOURCES} ${INLINE_LINKAGE_OBJECTS} )
+	add_executable( InlineLinkageTest tests/dummy.cpp ${INLINE_LINKAGE_SOURCES} ${INLINE_LINKAGE_OBJECTS} )
 	add_dependencies( InlineLinkageTest Compiler )
 
 	#
@@ -328,7 +329,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 		set( UNICODE_FILE_NAMES_SOURCES "tests/unicode_file_names_test/Entry ФшЯё_66.ü" )
 		CompileUSources( "${UNICODE_FILE_NAMES_SOURCES}" UNICODE_FILE_NAMES_OBJECTS )
 
-		add_executable( UnicodeFileNamesTest tests/unicode_file_names_test/entry.cpp ${UNICODE_FILE_NAMES_SOURCES} ${UNICODE_FILE_NAMES_OBJECTS} )
+		add_executable( UnicodeFileNamesTest tests/dummy.cpp ${UNICODE_FILE_NAMES_SOURCES} ${UNICODE_FILE_NAMES_OBJECTS} )
 		add_dependencies( UnicodeFileNamesTest Compiler )
 	endif()
 
@@ -377,7 +378,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 			-g # Generate debug info
 		)
 
-	add_executable( DebugInfoTest tests/debug_info_test/entry.cpp ${DEBUG_INFO_TEST_FILE} ${DEBUG_INFO_TEST_FILE_OUT} )
+	add_executable( DebugInfoTest tests/dummy.cpp ${DEBUG_INFO_TEST_FILE} ${DEBUG_INFO_TEST_FILE_OUT} )
 	add_dependencies( DebugInfoTest Compiler )
 
 	#
@@ -423,7 +424,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 				${SPRACHE_COMPILER_PIC_OPTIONS}
 				--include-dir ${CMAKE_BINARY_DIR} )
 
-		add_executable( CppHeaderConverterTest cpp_header_converter_test.o data/entry.cpp tests/cpp_header_converter_test/c_test.cpp )
+		add_executable( CppHeaderConverterTest cpp_header_converter_test.o tests/cpp_header_converter_test/c_test.cpp )
 		add_dependencies( CppHeaderConverterTest Compiler )
 	endif()
 

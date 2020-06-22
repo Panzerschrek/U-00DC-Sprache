@@ -226,7 +226,7 @@ fn VariableChangeTest()
 	return;
 }
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	FundamentalTypesTest();
 	ArrayTypesTest();

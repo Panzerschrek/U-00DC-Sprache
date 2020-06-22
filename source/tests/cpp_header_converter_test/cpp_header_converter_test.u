@@ -37,7 +37,7 @@ fn constexpr string_equals( [ char_type, size0 ]& s0, [ char_type, size1 ]& s1 )
 	return true;
 }
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	var i32 one= ONE_CONSTANT;
 	static_assert( ONE_CONSTANT == 1 );
