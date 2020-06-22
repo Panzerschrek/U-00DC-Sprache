@@ -292,12 +292,14 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	#
 	# CPP-Linkage test
 	#
-	# Compile simple program on "Ü-Sprache", link it together with C++ program.
-	set( CPP_LINKAGE_SOURCES tests/cpp_linkage_test/cpp_linkage.u )
-	CompileUSources( "${CPP_LINKAGE_SOURCES}" CPP_LINKAGE_OBJECTS )
+	if( NOT MSVC ) # Eenable only on compiler with Itanium ABI mangling.
+		# Compile simple program on "Ü-Sprache", link it together with C++ program.
+		set( CPP_LINKAGE_SOURCES tests/cpp_linkage_test/cpp_linkage.u )
+		CompileUSources( "${CPP_LINKAGE_SOURCES}" CPP_LINKAGE_OBJECTS )
 
-	add_executable( CPPLinkageTest tests/cpp_linkage_test/cpp_linkage.cpp ${CPP_LINKAGE_SOURCES} ${CPP_LINKAGE_OBJECTS} )
-	add_dependencies( CPPLinkageTest Compiler )
+		add_executable( CPPLinkageTest tests/cpp_linkage_test/cpp_linkage.cpp ${CPP_LINKAGE_SOURCES} ${CPP_LINKAGE_OBJECTS} )
+		add_dependencies( CPPLinkageTest Compiler )
+	endif()
 
 	#
 	# Inline linkage test
