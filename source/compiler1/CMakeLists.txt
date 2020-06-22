@@ -105,4 +105,8 @@ if( U_BUILD_TESTS )
 			LexSyntLib # Hack! Use C++ lib for "FilePos" class.
 		)
 
+	if( MSVC )
+		set_target_properties( Tests${CURRENT_COMPLIER_GENERATION} PROPERTIES LINK_FLAGS /WHOLEARCHIVE:TestsLib )
+	endif()
+
 endif()

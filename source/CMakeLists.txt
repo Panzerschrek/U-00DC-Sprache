@@ -235,6 +235,10 @@ if( U_BUILD_TESTS )
 	target_link_libraries( Tests CodeBuilderLib ${TESTS_LIB_WRAPPED} )
 	add_custom_command( TARGET Tests POST_BUILD COMMAND Tests )
 
+	if( MSVC )
+		set_target_properties( Tests PROPERTIES LINK_FLAGS /WHOLEARCHIVE:TestsLib )
+	endif()
+
 endif()
 
 #
