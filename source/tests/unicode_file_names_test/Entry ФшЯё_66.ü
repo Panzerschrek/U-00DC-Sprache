@@ -1,3 +1,8 @@
 import "dir_Ё/include_πρςστ_ß.u"
 
 static_assert( Y == 2019 );
+
+fn nomangle main() : i32
+{
+	return 0;
+}

@@ -8,7 +8,9 @@ General:
 *) Raw pointers (for C interaction)
 *) Less requirements of complete types (helps for recursive types)
 *) Different calling conventions (for API calls, for example)
-*) build-in "for" for array tupes.
+*) Forbid inner reference kind changing in inheritance.
+*) Forbid "shared" tag changin in inheritance.
+*) build-in "for" for array tнpes.
 *) switch-case
 *) "Disassembly operator" - declare variables with initializer as members of
 	value of structure type.
@@ -32,7 +34,6 @@ Templates:
 *) Function templates with template-dependent reference and mutability modifiers
 	for arguments. Conditional move for such arguments.
 *) Equality comparison for type and function templates with same name
-*) Function pointers as template variable-parameters
 
 Standart library:
 *) Associative containers - map, set, unordered_set, string_map
@@ -51,6 +52,7 @@ Compiler:
 *) Rework of "Value" class
 
 QtCreator plugin:
+*) Syntax errors highlighting
 *) Symbol table construction for document
 *) "go to defenition" possibility
 *) Indentation in editor

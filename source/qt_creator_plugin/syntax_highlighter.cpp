@@ -37,6 +37,7 @@ SyntaxHighlighter::SyntaxHighlighter()
 		TextEditor::C_LOCAL,
 		TextEditor::C_PREPROCESSOR,
 		TextEditor::C_KEYWORD,
+		TextEditor::C_BINDING,
 		TextEditor::C_NUMBER,
 		TextEditor::C_STRING,
 		TextEditor::C_COMMENT,
@@ -100,7 +101,7 @@ void SyntaxHighlighter::highlightBlock( const QString& text )
 
 		case Lexem::Type::Identifier:
 			if( IsKeyword( lexem.text ) )
-				format= Formats::Keyword;
+				format= lexem.text == Keywords::unsafe_ ? Formats::UnsafeKeyword : Formats::Keyword;
 			else
 				format= Formats::Identifier;
 			break;

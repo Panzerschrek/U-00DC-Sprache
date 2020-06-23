@@ -1,6 +1,6 @@
 import "inc.u"
 
-fn GetSomeClassIdB() : size_type
+fn nomangle GetSomeClassIdB() : size_type
 {
 	var SomeClass some_class;
 	unsafe

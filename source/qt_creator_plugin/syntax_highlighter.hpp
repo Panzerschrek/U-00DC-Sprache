@@ -15,6 +15,7 @@ public:
 		Identifier,
 		MacroIdentifier,
 		Keyword,
+		UnsafeKeyword,
 		Number,
 		String,
 		Comment,

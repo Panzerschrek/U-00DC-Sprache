@@ -1,0 +1,1 @@
+// Dummy C++ file. Needed because CMake can't create pure Ü target

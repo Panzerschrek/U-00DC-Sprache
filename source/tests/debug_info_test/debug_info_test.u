@@ -72,7 +72,12 @@ fn AutoVariablesTest()
 	return;
 }
 
-fn ParametersTestImpl( i32 x, f32 y, S1 s1 )
+fn ParametersTestImpl(
+	i32 x,
+	f32 y,
+	S1 s1,
+	f64& r0,
+	S0& r1 )
 {
 	return;
 }
@@ -80,7 +85,7 @@ fn ParametersTestImpl( i32 x, f32 y, S1 s1 )
 fn ParametersTest()
 {
 	var S1 s1{ .i= zero_init, .d= 2.718281828, .s0{ .x= 25, .y= zero_init } };
-	ParametersTestImpl( 55, 0.25f, s1 );
+	ParametersTestImpl( 55, 0.25f, s1, -33.66, s1.s0 );
 }
 
 struct StructWithRef
@@ -138,7 +143,7 @@ fn RefPass( i32& x ) : i32&
 fn FunctionPointersTest()
 {
 	var (fn()) p0= ParametersTest;
-	var (fn(i32 a, f32 b, S1 c)) p1= ParametersTestImpl;
+	var (fn(i32 a, f32 b, S1 c, f64& r0, S0& r1)) p1= ParametersTestImpl;
 	var (fn(f32 a) : i32) p2= ToInt;
 	var (fn(i32& a) : i32&) p3= RefPass;
 	var (fn() : f64) p4= FooRet;
@@ -214,7 +219,29 @@ fn ScopesTest()
 	}
 }
 
-fn U_Main() : i32
+fn VariableChangeTest()
+{
+	auto mut x= 0;
+	++x;
+	x*= 3;
+	x+= 55;
+	x/= 2;
+	x <<= 5u;
+	x -= 22;
+	return;
+}
+
+fn ReferencesTest()
+{
+	var i32 x= 55584;
+	var i32& x_ref= x;
+
+	var[ f32, 2 ] mut arr[ 6.5f, 7.5f ];
+	auto &mut arr_ref= arr;
+	return;
+}
+
+fn nomangle main() : i32
 {
 	FundamentalTypesTest();
 	ArrayTypesTest();
@@ -231,5 +258,7 @@ fn U_Main() : i32
 	FunctionTemplatesTest();
 	ImportedFunc();
 	ScopesTest();
+	VariableChangeTest();
+	ReferencesTest();
 	return 0;
 }

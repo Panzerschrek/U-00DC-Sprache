@@ -40,8 +40,6 @@ typedef   signed int   CPP_i32;
 typedef unsigned int   CPP_u32;
 typedef   signed long long int CPP_i64;
 typedef unsigned long long int CPP_u64;
-typedef signed   __int128 CPP_i128;
-typedef unsigned __int128 CPP_u128;
 typedef float  CPP_f32;
 typedef double CPP_f64;
 typedef int ArrayType15[15];

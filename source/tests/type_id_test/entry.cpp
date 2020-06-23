@@ -1,8 +1,8 @@
 #include <cassert>
 #include <iostream>
 
-void* GetSomeClassIdA();
-void* GetSomeClassIdB();
+extern "C" void* GetSomeClassIdA();
+extern "C" void* GetSomeClassIdB();
 
 int main()
 {

@@ -1,0 +1,13 @@
+fn FunFromA();
+fn FunFromB();
+fn FunFromC();
+fn InlineFromInc();
+
+fn nomangle main() : i32
+{
+	FunFromA();
+	FunFromB();
+	FunFromC();
+	InlineFromInc();
+	return 0;
+}
