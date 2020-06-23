@@ -38,6 +38,35 @@ void CodeBuilder::CreateVariableDebugInfo(
 		function_context.llvm_ir_builder.GetInsertBlock() );
 }
 
+void CodeBuilder::CreateReferenceVariableDebugInfo(
+	const Variable& variable,
+	const std::string& variable_name,
+	const FilePos& file_pos,
+	FunctionContext& function_context )
+{
+	if( !build_debug_info_ )
+		return;
+
+	const auto di_local_variable=
+		debug_info_.builder->createAutoVariable(
+			function_context.current_debug_info_scope,
+			variable_name,
+			GetDIFile( file_pos.GetFileIndex() ),
+			file_pos.GetLine(),
+			debug_info_.builder->createPointerType( CreateDIType(variable.type), data_layout_.getPointerSizeInBits() ) );
+
+	// We needs address for reference, so, move it into stack variable.
+	auto address_for_ref= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType()->getPointerTo(), nullptr, variable_name );
+	function_context.llvm_ir_builder.CreateStore( variable.llvm_value, address_for_ref );
+
+	debug_info_.builder->insertDeclare(
+		address_for_ref,
+		di_local_variable,
+		debug_info_.builder->createExpression(),
+		llvm::DebugLoc::get(file_pos.GetLine(), file_pos.GetColumn(), function_context.current_debug_info_scope),
+		function_context.llvm_ir_builder.GetInsertBlock() );
+}
+
 void CodeBuilder::CreateFunctionDebugInfo(
 	const FunctionVariable& func_variable,
 	const std::string& function_name )

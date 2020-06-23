@@ -1514,7 +1514,10 @@ Type CodeBuilder::BuildFuncCode(
 			var.value_type= ValueType::ConstReference;
 
 		if( arg.is_reference )
+		{
 			var.location= Variable::Location::Pointer;
+			CreateReferenceVariableDebugInfo( var, arg_name, declaration_arg.file_pos_, function_context );
+		}
 		else
 		{
 			if( arg.type.GetFundamentalType() != nullptr ||
@@ -2183,6 +2186,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			variable.llvm_value= result_ref;
 			variable.constexpr_value= expression_result.constexpr_value;
 
+			CreateReferenceVariableDebugInfo( variable, variable_declaration.name, variable_declaration.file_pos, function_context );
+
 			prev_variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
 			variable.node= var_node;
 
@@ -2321,6 +2326,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 				return BlockBuildInfo();
 			}
 		}
+
+		CreateVariableDebugInfo( variable, auto_variable_declaration.name, auto_variable_declaration.file_pos_, function_context );
 
 		prev_variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
 		variable.node= var_node;

@@ -689,6 +689,12 @@ private:
 		const FilePos& file_pos,
 		FunctionContext& function_context );
 
+	void CreateReferenceVariableDebugInfo(
+		const Variable& variable,
+		const std::string& variable_name,
+		const FilePos& file_pos,
+		FunctionContext& function_context );
+
 	void CreateFunctionDebugInfo(
 		const FunctionVariable& func_variable,
 		const std::string& function_name );
