@@ -42,7 +42,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 {
 	llvm::LLVMContext& llvm_context= *g_llvm_context;
 
-	auto ptr= U1_BuildProgram( text, reinterpret_cast<LLVMContextRef>(&llvm_context) );
+	auto ptr= U1_BuildProgram( text, std::strlen(text), reinterpret_cast<LLVMContextRef>(&llvm_context) );
 	U_TEST_ASSERT( ptr != nullptr );
 
 	return std::unique_ptr<llvm::Module>( reinterpret_cast<llvm::Module*>(ptr) );
@@ -72,6 +72,7 @@ ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
 	const bool ok=
 		U1_BuildProgramWithErrors(
 			text,
+			std::strlen(text),
 			reinterpret_cast<LLVMContextRef>(&llvm_context),
 			error_handler,
 			&build_result );

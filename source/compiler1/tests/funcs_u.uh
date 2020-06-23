@@ -2,13 +2,14 @@ import "../code_builder_lib/llvm.uh"
 
 // If contents of this file changed, funcs_c.hpp must be changed too!
 
-fn nomangle U1_BuildProgram( char8& program_text_null_terminated, LLVMContextRef llvm_context ) unsafe : LLVMModuleRef;
+fn nomangle U1_BuildProgram( char8& program_text_start, size_type program_text_size, LLVMContextRef llvm_context ) unsafe : LLVMModuleRef;
 
 type ErrorHanglerFunc= fn( void &mut data, u32 line, u32 column, u32 error_code, char8& error_text, size_type error_text_length ) unsafe;
 
 // Returns false in case of lexical/syntax errors.
 fn nomangle U1_BuildProgramWithErrors(
-	char8& program_text_null_terminated,
+	char8& program_text_start,
+	size_type program_text_size,
 	LLVMContextRef llvm_context,
 	ErrorHanglerFunc error_handler_func,
 	void &mut data ) unsafe : bool;

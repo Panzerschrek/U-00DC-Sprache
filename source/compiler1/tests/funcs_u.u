@@ -5,38 +5,15 @@ import "print.uh"
 import "funcs_u.uh"
 
 
-fn nomangle U1_BuildProgram( char8& program_text_null_terminated, LLVMContextRef llvm_context ) unsafe : LLVMModuleRef
+fn nomangle U1_BuildProgram( char8& program_text_start, size_type program_text_size, LLVMContextRef llvm_context ) unsafe : LLVMModuleRef
 {
 	unsafe
 	{
-		return U::BuildProgramImpl( program_text_null_terminated, llvm_context );
-	}
-}
-
-fn nomangle U1_BuildProgramWithErrors(
-	char8& program_text_null_terminated,
-	LLVMContextRef llvm_context,
-	ErrorHanglerFunc error_handler_func,
-	void &mut data ) unsafe : bool
-{
-	unsafe
-	{
-		return U::BuildProgramWithErrorsImpl( program_text_null_terminated, llvm_context, error_handler_func, data );
-	}
-}
-
-namespace U
-{
-
-fn BuildProgramImpl( char8& program_text_null_terminated, LLVMContextRef llvm_context ) unsafe : LLVMModuleRef
-{
-	unsafe
-	{
-		auto program_text= NullTerminatedStringToArrayView( program_text_null_terminated );
+		auto program_text= U::StringToArrayView( program_text_start, program_text_size );
 
 		safe
 		{
-			auto lex_res= LexicalAnalysis( program_text );
+			auto lex_res= U::LexicalAnalysis( program_text );
 			if( !lex_res.error_messages.empty() )
 			{
 				foreach( &err : lex_res.error_messages )
@@ -50,7 +27,7 @@ fn BuildProgramImpl( char8& program_text_null_terminated, LLVMContextRef llvm_co
 				return LLVMModuleRef::Null;
 			}
 
-			auto synt_res= Synt::SyntaxAnalysis( lex_res.lexems );
+			auto synt_res= U::Synt::SyntaxAnalysis( lex_res.lexems );
 			if( !synt_res.error_messages.empty() )
 			{
 				foreach( &err : synt_res.error_messages )
@@ -67,7 +44,7 @@ fn BuildProgramImpl( char8& program_text_null_terminated, LLVMContextRef llvm_co
 				return LLVMModuleRef::Null;
 			}
 
-			var CodeBuilder mut code_builder( llvm_context );
+			var U::CodeBuilder mut code_builder( llvm_context );
 			auto code_builder_res= code_builder.BuildProgram( synt_res );
 
 			return code_builder_res.llvm_module;
@@ -75,19 +52,20 @@ fn BuildProgramImpl( char8& program_text_null_terminated, LLVMContextRef llvm_co
 	}
 }
 
-fn BuildProgramWithErrorsImpl(
-	char8& program_text_null_terminated,
+fn nomangle U1_BuildProgramWithErrors(
+	char8& program_text_start,
+	size_type program_text_size,
 	LLVMContextRef llvm_context,
 	ErrorHanglerFunc error_handler_func,
 	void &mut data ) unsafe : bool
 {
 	unsafe
 	{
-		auto program_text= NullTerminatedStringToArrayView( program_text_null_terminated );
+		auto program_text= U::StringToArrayView( program_text_start, program_text_size );
 
 		safe
 		{
-			auto lex_res= LexicalAnalysis( program_text );
+			auto lex_res= U::LexicalAnalysis( program_text );
 			if( !lex_res.error_messages.empty() )
 			{
 				foreach( &err : lex_res.error_messages )
@@ -101,7 +79,7 @@ fn BuildProgramWithErrorsImpl(
 				return false;
 			}
 
-			auto synt_res= Synt::SyntaxAnalysis( lex_res.lexems );
+			auto synt_res= U::Synt::SyntaxAnalysis( lex_res.lexems );
 			if( !synt_res.error_messages.empty() )
 			{
 				foreach( &err : synt_res.error_messages )
@@ -118,7 +96,7 @@ fn BuildProgramWithErrorsImpl(
 				return false;
 			}
 
-			var CodeBuilder mut code_builder( llvm_context );
+			var U::CodeBuilder mut code_builder( llvm_context );
 			auto code_builder_res= code_builder.BuildProgram( synt_res );
 
 			foreach( & err : code_builder_res.errors )
@@ -134,18 +112,19 @@ fn BuildProgramWithErrorsImpl(
 	return true;
 }
 
-fn NullTerminatedStringToArrayView( char8 &'x string_null_terminated ) unsafe : ust::array_view_imut</ char8 />'x'
+namespace U
+{
+
+fn StringToArrayView( char8 &'x string_start, size_type string_size ) unsafe : ust::array_view_imut</ char8 />'x'
 {
 	unsafe
 	{
-		var ust::raw_ptr_mut</char8/> ptr( cast_mut(string_null_terminated) );
+		var ust::raw_ptr_mut</char8/> ptr( cast_mut(string_start) );
 
 		return ust::array_view_imut</ char8 />(
 			ptr,
-			ptr + strlen(string_null_terminated) );
+			ptr + string_size );
 	}
 }
 
 } // namespace U
-
-fn nomangle strlen( char8& string_null_terminated ) unsafe : size_type;
