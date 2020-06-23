@@ -54,10 +54,12 @@ fn SyntaxAnalyzer::DoAnalyzis( mut this ) : SyntaxAnalysisResult
 		}
 		else
 		{
+			PushErrorMessage();
 			break;
 		}
 	}
 
+	res.error_messages= take(error_messages_);
 	return move(res);
 }
 
@@ -90,6 +92,7 @@ fn SyntaxAnalyzer::ParseTypeName( mut this ) : TypeName
 	if( it_.front().lexem_type == Lexem::Type::Identifier )
 	{
 		var ComplexName mut complex_name;
+		complex_name.file_pos= it_.front().file_pos;
 		complex_name.name= it_.front().text;
 
 		NextLexem();

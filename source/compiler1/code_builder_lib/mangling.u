@@ -1,0 +1,46 @@
+import "mangling.uh"
+
+namespace U
+{
+
+fn U32ToStr( u32 mut x, ust::string8 &mut out_str )
+{
+	auto constexpr zero_char= "0"[0u];
+	auto constexpr end_null= 0c8;
+
+	if( x == 0u )
+	{
+		out_str.push_back(zero_char);
+		return;
+	}
+	var u32 mut div= 1000000000u;
+
+	while( div > x )
+	{
+		div/= 10u;
+	}
+
+	while( div > 0u )
+	{
+		auto digit= x / div;
+		out_str.push_back( char8( digit + u32(zero_char) ) );
+		x-= digit * div;
+		div/= 10u;
+	}
+}
+
+fn MangleFunction( ust::string8& name ) : ust::string8
+{
+	var ust::string8 mut res;
+	res+= "_Z";
+
+	U32ToStr( u32(name.size()), res );
+	res+= name;
+
+	res+= "v"; // TODO - fill argument types
+
+	res.push_back(0c8);
+	return move(res);
+}
+
+} // namespace U

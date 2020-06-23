@@ -81,9 +81,32 @@ target_link_libraries( CodeBuilderLib${CURRENT_COMPLIER_GENERATION} LexSyntLib${
 # Tests
 #
 
-file( GLOB TESTS_HEADERS "tests/*.uh" )
-file( GLOB TESTS_SOURCES "tests/*.u" )
+if( U_BUILD_TESTS )
 
-CompileUSources( TESTS_SOURCES TESTS_OBJECTS )
-add_executable( Tests${CURRENT_COMPLIER_GENERATION} lib_stub.cpp ${TESTS_HEADERS} ${TESTS_SOURCES} ${TESTS_OBJECTS} )
-target_link_libraries( Tests${CURRENT_COMPLIER_GENERATION} PRIVATE CodeBuilderLib${CURRENT_COMPLIER_GENERATION} )
+	file( GLOB TESTS_HEADERS "tests/*.uh" )
+	file( GLOB TESTS_SOURCES "tests/*.u" )
+	file( GLOB TESTS_CPP_SOURCES "tests/*.cpp" )
+	file( GLOB TESTS_CPP_HEADERS "tests/*.hpp" )
+	CompileUSources( TESTS_SOURCES TESTS_OBJECTS )
+
+	add_executable(
+		Tests${CURRENT_COMPLIER_GENERATION}
+			${TESTS_CPP_SOURCES}
+			${TESTS_CPP_HEADERS}
+			${TESTS_SOURCES}
+			${TESTS_HEADERS}
+			${TESTS_OBJECTS} )
+
+	target_link_libraries(
+		Tests${CURRENT_COMPLIER_GENERATION}
+		PRIVATE
+			CodeBuilderLib${CURRENT_COMPLIER_GENERATION}
+			${TESTS_LIB_WRAPPED}
+			LexSyntLib # Hack! Use C++ lib for "FilePos" class.
+		)
+
+	if( MSVC )
+		set_target_properties( Tests${CURRENT_COMPLIER_GENERATION} PROPERTIES LINK_FLAGS /WHOLEARCHIVE:TestsLib )
+	endif()
+
+endif()

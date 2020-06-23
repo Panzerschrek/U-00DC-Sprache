@@ -1,0 +1,5 @@
+// If contents of this file changed, print.hpp must be changed too!
+
+fn nomangle U1_PrintStr( char8& string_null_termainated ) unsafe;
+fn nomangle U1_PrintInt( i64 i ) unsafe;
+fn nomangle U1_PrintEndl() unsafe;

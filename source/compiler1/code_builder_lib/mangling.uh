@@ -1,0 +1,9 @@
+import "/string.u"
+
+namespace U
+{
+
+// Return null terminated string.
+fn MangleFunction( ust::string8& name ) : ust::string8;
+
+} // namespace U

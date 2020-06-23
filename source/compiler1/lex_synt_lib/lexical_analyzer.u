@@ -412,6 +412,7 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 
 		if( lexem.lexem_type != Lexem::Type::None )
 		{
+			lexem.file_pos= FilePos( 0u, line, column );
 			result.lexems.push_back(lexem);
 		}
 		else

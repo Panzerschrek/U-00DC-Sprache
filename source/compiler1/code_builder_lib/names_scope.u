@@ -3,8 +3,11 @@ import "names_scope.uh"
 namespace U
 {
 
-fn NamesScope::constructor( ust::string8 mut name )
-	( name_= move(name) )
+fn NamesScope::constructor( ust::string8 mut name, ErrorsContainerPtr errors_container )
+	(
+		name_= move(name),
+		errors_container_(errors_container)
+	)
 {
 }
 
@@ -23,9 +26,5 @@ fn NamesScope::AddName( mut this, ust::string8 mut name, NamesScopeValue mut val
 	return ust::optional_ref</ NamesScopeValue, true />( names_map_.insert(move(name), move(value) ) );
 }
 
-fn NamesScope::GetErrors( mut this ) : ust::vector</ CodeBuilderError /> &mut
-{
-	return errors_container_;
-}
 
 } // namespace U

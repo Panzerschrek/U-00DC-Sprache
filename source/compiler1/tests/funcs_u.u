@@ -1,0 +1,130 @@
+import "../lex_synt_lib/lexical_analyzer.uh"
+import "../lex_synt_lib/syntax_analyzer.uh"
+import "../code_builder_lib/code_builder.uh"
+import "print.uh"
+import "funcs_u.uh"
+
+
+fn nomangle U1_BuildProgram( char8& program_text_start, size_type program_text_size, LLVMContextRef llvm_context ) unsafe : LLVMModuleRef
+{
+	unsafe
+	{
+		auto program_text= U::StringToArrayView( program_text_start, program_text_size );
+
+		safe
+		{
+			auto lex_res= U::LexicalAnalysis( program_text );
+			if( !lex_res.error_messages.empty() )
+			{
+				foreach( &err : lex_res.error_messages )
+				{
+					unsafe
+					{
+						U1_PrintStr( (err + "\n\0").front() );
+						U1_PrintEndl();
+					}
+				}
+				return LLVMModuleRef::Null;
+			}
+
+			auto synt_res= U::Synt::SyntaxAnalysis( lex_res.lexems );
+			if( !synt_res.error_messages.empty() )
+			{
+				foreach( &err : synt_res.error_messages )
+				{
+					unsafe
+					{
+						U1_PrintInt( i64(err.file_pos.GetLine()) );
+						U1_PrintStr( ":\0"[0] );
+						U1_PrintInt( i64(err.file_pos.GetColumn()) );
+						U1_PrintStr( (": " + err.text + "\n\0").front() );
+						U1_PrintEndl();
+					}
+				}
+				return LLVMModuleRef::Null;
+			}
+
+			var U::CodeBuilder mut code_builder( llvm_context );
+			auto code_builder_res= code_builder.BuildProgram( synt_res );
+
+			return code_builder_res.llvm_module;
+		}
+	}
+}
+
+fn nomangle U1_BuildProgramWithErrors(
+	char8& program_text_start,
+	size_type program_text_size,
+	LLVMContextRef llvm_context,
+	ErrorHanglerFunc error_handler_func,
+	void &mut data ) unsafe : bool
+{
+	unsafe
+	{
+		auto program_text= U::StringToArrayView( program_text_start, program_text_size );
+
+		safe
+		{
+			auto lex_res= U::LexicalAnalysis( program_text );
+			if( !lex_res.error_messages.empty() )
+			{
+				foreach( &err : lex_res.error_messages )
+				{
+					unsafe
+					{
+						U1_PrintStr( (err + "\n\0").front() );
+						U1_PrintEndl();
+					}
+				}
+				return false;
+			}
+
+			auto synt_res= U::Synt::SyntaxAnalysis( lex_res.lexems );
+			if( !synt_res.error_messages.empty() )
+			{
+				foreach( &err : synt_res.error_messages )
+				{
+					unsafe
+					{
+						U1_PrintInt( i64(err.file_pos.GetLine()) );
+						U1_PrintStr( ":\0"[0] );
+						U1_PrintInt( i64(err.file_pos.GetColumn()) );
+						U1_PrintStr( (": " + err.text + "\n\0").front() );
+						U1_PrintEndl();
+					}
+				}
+				return false;
+			}
+
+			var U::CodeBuilder mut code_builder( llvm_context );
+			auto code_builder_res= code_builder.BuildProgram( synt_res );
+
+			foreach( & err : code_builder_res.errors )
+			{
+				unsafe
+				{
+					error_handler_func( data, err.file_pos.GetLine(), err.file_pos.GetColumn(), u32(err.code), err.text.front(), err.text.size() );
+				}
+			}
+		}
+	}
+
+	return true;
+}
+
+namespace U
+{
+
+fn StringToArrayView( char8 &'x string_start, size_type string_size ) unsafe : ust::array_view_imut</ char8 />'x'
+{
+	unsafe
+	{
+		var ust::raw_ptr_mut</char8/> ptr( cast_mut(string_start) );
+
+		return ust::array_view_imut</ char8 />(
+			ptr,
+			ptr + string_size );
+	}
+}
+
+} // namespace U
