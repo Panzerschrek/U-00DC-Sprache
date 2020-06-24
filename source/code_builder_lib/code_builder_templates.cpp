@@ -1016,8 +1016,6 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 
 		class_proxy->class_->llvm_type->setName( MangleType( class_proxy ) ); // Update llvm type name after setting base template.
 
-		GlobalThingBuildClass( class_proxy, TypeCompleteness::Complete );
-
 		return result;
 	}
 	else if( type_template.syntax_element->kind_ == Synt::TypeTemplateBase::Kind::Typedef )
