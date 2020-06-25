@@ -1249,16 +1249,43 @@ size_t CodeBuilder::PrepareFunction(
 
 		FunctionVariable& inserted_func_variable= functions_set.functions.back();
 		inserted_func_variable.body_file_pos= inserted_func_variable.prototype_file_pos= func.file_pos_;
+		inserted_func_variable.have_body= false;
 		inserted_func_variable.syntax_element= &func;
 
-		BuildFuncCode(
-			inserted_func_variable,
-			base_class,
-			names_scope,
-			func_name,
-			func.type_.arguments_,
-			nullptr,
-			func.constructor_initialization_list_.get() );
+		Function& function_type= *inserted_func_variable.type.GetFunctionType();
+		function_type.llvm_function_type= GetLLVMFunctionType( function_type );
+
+		llvm::Function* const llvm_function=
+			llvm::Function::Create(
+				function_type.llvm_function_type,
+				llvm::Function::LinkageTypes::ExternalLinkage, // External - for prototype.
+				inserted_func_variable.no_mangle ? func_name : MangleFunction( names_scope, func_name, function_type ),
+				module_.get() );
+		inserted_func_variable.llvm_function= llvm_function;
+
+		const bool first_arg_is_sret=
+			function_type.llvm_function_type->getReturnType()->isVoidTy() && function_type.return_type != void_type_;
+
+		// Merge functions with identical code.
+		// We doesn`t need different addresses for different functions.
+		llvm_function->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
+
+		// Mark reference-parameters as nonnull.
+		// Mark mutable references as "noalias".
+		for( size_t i= 0u; i < function_type.args.size(); i++ )
+		{
+			const unsigned int arg_attr_index= static_cast<unsigned int>(i + 1u + (first_arg_is_sret ? 1u : 0u ));
+			const Function::Arg& arg= function_type.args[i];
+			if( arg.is_reference || arg.type.GetClassType() != nullptr || arg.type.GetTupleType() )
+				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NonNull );
+			if( arg.is_reference && arg.is_mutable )
+				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NoAlias );
+		}
+
+		if( first_arg_is_sret )
+			llvm_function->addAttribute( 1u, llvm::Attribute::StructRet );
+
+		CreateFunctionDebugInfo( inserted_func_variable, func_name );
 
 		return functions_set.functions.size() - 1u;
 	}
@@ -1399,44 +1426,7 @@ Type CodeBuilder::BuildFuncCode(
 	Function& function_type= *func_variable.type.GetFunctionType();
 	function_type.llvm_function_type= GetLLVMFunctionType( function_type );
 
-	const bool first_arg_is_sret=
-		function_type.llvm_function_type->getReturnType()->isVoidTy() && function_type.return_type != void_type_;
-
-	llvm::Function* llvm_function;
-	if( func_variable.llvm_function == nullptr )
-	{
-		llvm_function=
-			llvm::Function::Create(
-				function_type.llvm_function_type,
-				llvm::Function::LinkageTypes::ExternalLinkage, // External - for prototype.
-				func_variable.no_mangle ? func_name : MangleFunction( parent_names_scope, func_name, function_type ),
-				module_.get() );
-
-		// Merge functions with identical code.
-		// We doesn`t need different addresses for different functions.
-		llvm_function->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
-
-		// Mark reference-parameters as nonnull.
-		// Mark mutable references as "noalias".
-		for( size_t i= 0u; i < function_type.args.size(); i++ )
-		{
-			const unsigned int arg_attr_index= static_cast<unsigned int>(i + 1u + (first_arg_is_sret ? 1u : 0u ));
-			const Function::Arg& arg= function_type.args[i];
-			if( arg.is_reference || arg.type.GetClassType() != nullptr || arg.type.GetTupleType() )
-				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NonNull );
-			if( arg.is_reference && arg.is_mutable )
-				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NoAlias );
-		}
-
-		if( first_arg_is_sret )
-			llvm_function->addAttribute( 1u, llvm::Attribute::StructRet );
-
-		func_variable.llvm_function= llvm_function;
-
-		CreateFunctionDebugInfo( func_variable, func_name );
-	}
-	else
-		llvm_function= func_variable.llvm_function;
+	llvm::Function* const llvm_function= func_variable.llvm_function;
 
 	if( block == nullptr )
 	{
@@ -1489,7 +1479,7 @@ Type CodeBuilder::BuildFuncCode(
 	for( llvm::Argument& llvm_arg : llvm_function->args() )
 	{
 		// Skip "sret".
-		if( first_arg_is_sret && &llvm_arg == &*llvm_function->arg_begin() )
+		if( &llvm_arg == &*llvm_function->arg_begin() && llvm_arg.hasAttribute( llvm::Attribute::StructRet ) )
 		{
 			llvm_arg.setName( "_return_value" );
 			function_context.s_ret_= &llvm_arg;
