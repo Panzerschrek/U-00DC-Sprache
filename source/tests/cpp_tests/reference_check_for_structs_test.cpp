@@ -340,7 +340,7 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test0 )
 	R"(
 		template</ type T /> struct MutRef{ T &mut r; }
 
-		fn ToRef( i32 &mut x ) : MutRef</ i32 />
+		fn ToRef( i32 &'r mut x ) : MutRef</ i32 />'r'
 		{
 			var MutRef</ i32 /> r{ .r= x };
 			return r;

@@ -17,7 +17,7 @@ public:
 	{}
 	
 	// Construct with value.
-	fn constructor( mut this'a...', T mut val'b...' ) ' a <- b '
+	fn constructor( mut this'a', T mut val'b' ) ' a <- b '
 	( storage_= zero_init, has_value_= true  ) // TODO - initialize with unsafe 
 	{
 		unsafe
@@ -92,7 +92,7 @@ public:
 	}
 
 	// Assign value
-	op=( mut this'a...', T mut val'b...' ) ' a <- b '
+	op=( mut this'a', T mut val'b' ) ' a <- b '
 	{
 		unsafe
 		{
@@ -158,7 +158,7 @@ public:
 		} 
 	}
 
-	fn reset( mut this'a...', T mut val'b...' ) ' a <- b '
+	fn reset( mut this'a', T mut val'b' ) ' a <- b '
 	{
 		unsafe
 		{
