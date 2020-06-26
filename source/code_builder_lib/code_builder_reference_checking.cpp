@@ -17,26 +17,7 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 	const Function::Arg& out_arg,
 	const size_t arg_number )
 {
-	if( !in_arg.inner_arg_reference_tags_.empty() )
-	{
-		if( !EnsureTypeCompleteness( out_arg.type, TypeCompleteness::ReferenceTagsComplete ) )
-			REPORT_ERROR( UsingIncompleteType, errors_container, in_arg.file_pos_, out_arg.type );
-	}
-
-	const bool has_continuous_tag= !in_arg.inner_arg_reference_tags_.empty() && in_arg.inner_arg_reference_tags_.back().empty();
-	const size_t regular_tag_count= has_continuous_tag ? ( in_arg.inner_arg_reference_tags_.size() - 2u ) : in_arg.inner_arg_reference_tags_.size();
-	const size_t arg_reference_tag_count= out_arg.type.ReferencesTagsCount();
-
-	if( !in_arg.inner_arg_reference_tags_.empty() )
-	{
-		if( has_continuous_tag )
-		{
-			if( regular_tag_count > arg_reference_tag_count )
-				REPORT_ERROR( InvalidReferenceTagCount, errors_container, in_arg.file_pos_, regular_tag_count, arg_reference_tag_count );
-		}
-		else if( regular_tag_count != arg_reference_tag_count )
-			REPORT_ERROR( InvalidReferenceTagCount, errors_container, in_arg.file_pos_, regular_tag_count, arg_reference_tag_count );
-	}
+	U_UNUSED(errors_container); // TODO - remove it.
 
 	if( function_type.return_value_is_reference && !func.return_value_reference_tag_.empty() )
 	{
@@ -46,85 +27,35 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 			function_type.return_references.emplace( arg_number, Function::c_arg_reference_tag_number );
 
 		// Inner arg references to return reference
-		for( size_t tag_number= 0u; tag_number < regular_tag_count; ++tag_number )
+		for( size_t tag_number= 0u; tag_number < in_arg.inner_arg_reference_tags_.size(); ++tag_number )
 		{
 			if( in_arg.inner_arg_reference_tags_[tag_number] == func.return_value_reference_tag_ )
 				function_type.return_references.emplace( arg_number, tag_number );
 		}
-		if( has_continuous_tag )
-		{
-			for( size_t tag_number= regular_tag_count; tag_number < arg_reference_tag_count; ++tag_number )
-			{
-				if( in_arg.inner_arg_reference_tags_[regular_tag_count] == func.return_value_reference_tag_ )
-					function_type.return_references.emplace( arg_number, tag_number );
-			}
-		}
 	}
 
-	const bool return_value_has_continuous_tag= !func.return_value_inner_reference_tags_.empty() && func.return_value_inner_reference_tags_.back().empty();
-	const size_t return_value_regular_tag_count= return_value_has_continuous_tag ? ( func.return_value_inner_reference_tags_.size() - 2u ) : func.return_value_inner_reference_tags_.size();
-	const size_t return_value_reference_tag_count= function_type.return_type.ReferencesTagsCount();
-
-	if( !function_type.return_value_is_reference && !func.return_value_inner_reference_tags_.empty() &&
-		return_value_reference_tag_count > 0u )
+	if( !function_type.return_value_is_reference && !func.return_value_inner_reference_tags_.empty()  )
 	{
+		const size_t return_value_tag_count= func.return_value_inner_reference_tags_.size();
+
 		// In arg reference to return value references
 		if( out_arg.is_reference && !in_arg.reference_tag_.empty() )
 		{
-			for( size_t ret_tag_number= 0u; ret_tag_number < return_value_regular_tag_count; ++ ret_tag_number )
+			for( size_t ret_tag_number= 0u; ret_tag_number < return_value_tag_count; ++ret_tag_number )
 			{
 				if( func.return_value_inner_reference_tags_[ret_tag_number] == in_arg.reference_tag_ )
 					function_type.return_references.emplace( arg_number, Function::c_arg_reference_tag_number );
 			}
-			if( return_value_has_continuous_tag )
-			{
-				for( size_t ret_tag_number= return_value_regular_tag_count; ret_tag_number < return_value_reference_tag_count; ++ret_tag_number )
-				{
-					if( func.return_value_inner_reference_tags_[return_value_regular_tag_count] == in_arg.reference_tag_ )
-						function_type.return_references.emplace( arg_number, Function::c_arg_reference_tag_number );
-				}
-			}
 		}
 
 		// Inner arg references to return value references
-		if( !in_arg.inner_arg_reference_tags_.empty() )
+		for( size_t arg_tag_number= 0u; arg_tag_number < in_arg.inner_arg_reference_tags_.size(); ++arg_tag_number )
 		{
-			for( size_t arg_tag_number= 0u; arg_tag_number < regular_tag_count; ++arg_tag_number )
+			const std::string& arg_tag= in_arg.inner_arg_reference_tags_[arg_tag_number];
+			for( size_t ret_tag_number= 0u; ret_tag_number < return_value_tag_count; ++ ret_tag_number )
 			{
-				const std::string& arg_tag= in_arg.inner_arg_reference_tags_[arg_tag_number];
-				for( size_t ret_tag_number= 0u; ret_tag_number < return_value_regular_tag_count; ++ ret_tag_number )
-				{
-					if( arg_tag == func.return_value_inner_reference_tags_[ret_tag_number] )
-						function_type.return_references.emplace( arg_number, arg_tag_number );
-				}
-				if( return_value_has_continuous_tag )
-				{
-					for( size_t ret_tag_number= return_value_regular_tag_count; ret_tag_number < return_value_reference_tag_count; ++ret_tag_number )
-					{
-						if( arg_tag == func.return_value_inner_reference_tags_[return_value_regular_tag_count] )
-							function_type.return_references.emplace( arg_number, arg_tag_number );
-					}
-				}
-			}
-			if( has_continuous_tag )
-			{
-				for( size_t arg_tag_number= regular_tag_count; arg_tag_number < arg_reference_tag_count; ++arg_tag_number )
-				{
-					const std::string& arg_tag= in_arg.inner_arg_reference_tags_[regular_tag_count];
-					for( size_t ret_tag_number= 0u; ret_tag_number < return_value_regular_tag_count; ++ ret_tag_number )
-					{
-						if( arg_tag == func.return_value_inner_reference_tags_[ret_tag_number] )
-							function_type.return_references.emplace( arg_number, arg_tag_number );
-					}
-					if( return_value_has_continuous_tag )
-					{
-						for( size_t ret_tag_number= return_value_regular_tag_count; ret_tag_number < return_value_reference_tag_count; ++ret_tag_number )
-						{
-							if( arg_tag == func.return_value_inner_reference_tags_[return_value_regular_tag_count] )
-								function_type.return_references.emplace( arg_number, arg_tag_number );
-						}
-					}
-				}
+				if( arg_tag == func.return_value_inner_reference_tags_[ret_tag_number] )
+					function_type.return_references.emplace( arg_number, arg_tag_number );
 			}
 		}
 	}
@@ -135,25 +66,10 @@ void CodeBuilder::ProcessFunctionReturnValueReferenceTags(
 	const Synt::FunctionType& func,
 	const Function& function_type )
 {
-	if( !function_type.return_value_is_reference && !func.return_value_inner_reference_tags_.empty() )
+	if( !function_type.return_value_is_reference )
 	{
-		if( !EnsureTypeCompleteness( function_type.return_type, TypeCompleteness::ReferenceTagsComplete ) )
-			REPORT_ERROR( UsingIncompleteType, errors_container, func.file_pos_, function_type.return_type );
-
-		const bool has_continuous_tag= !func.return_value_inner_reference_tags_.empty() && func.return_value_inner_reference_tags_.back().empty();
-		const size_t regular_tag_count= has_continuous_tag ? ( func.return_value_inner_reference_tags_.size() - 2u ) : func.return_value_inner_reference_tags_.size();
-		const size_t reference_tag_count= function_type.return_type.ReferencesTagsCount();
-
-		if( has_continuous_tag )
-		{
-			if( regular_tag_count > reference_tag_count )
-				REPORT_ERROR( InvalidReferenceTagCount, errors_container, func.file_pos_, regular_tag_count, reference_tag_count );
-		}
-		else if( regular_tag_count != reference_tag_count )
-			REPORT_ERROR( InvalidReferenceTagCount, errors_container, func.file_pos_, regular_tag_count, reference_tag_count );
-
 		// Check names of tags, report about unknown tag names.
-		for( size_t i= 0u; i < regular_tag_count; ++i )
+		for( size_t i= 0u; i < func.return_value_inner_reference_tags_.size(); ++i )
 		{
 			const std::string& tag = func.return_value_inner_reference_tags_[i];
 

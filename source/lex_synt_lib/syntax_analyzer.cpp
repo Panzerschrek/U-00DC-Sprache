@@ -1851,46 +1851,30 @@ ReferencesTagsList SyntaxAnalyzer::ParseReferencesTagsList()
 		return result;
 	}
 
-	while( NotEndOfFile() )
+	if( it_->type == Lexem::Type::Identifier )
 	{
-		if( it_->type == Lexem::Type::Identifier )
-		{
-			result.push_back( it_->text );
-			NextLexem();
-		}
-		else
-		{
-			PushErrorMessage();
-			return result;
-		}
+		result.push_back( it_->text );
+		NextLexem();
+	}
+	else
+	{
+		PushErrorMessage();
+		return result;
+	}
 
-		if( it_->type == Lexem::Type::Comma )
-		{
-			NextLexem();
-			if( it_->type == Lexem::Type::Apostrophe ) // Disable things, like 'a, b, c,'
-			{
-				PushErrorMessage();
-				return result;
-			}
-		}
-		else if( it_->type == Lexem::Type::Apostrophe )
-		{
-			NextLexem();
-			break;
-		}
-		else if( it_->type == Lexem::Type::Ellipsis )
-		{
-			NextLexem();
-			result.emplace_back();
+	if( it_->type == Lexem::Type::Ellipsis )
+	{
+		NextLexem(); // TODO - remove this
+	}
 
-			if( it_->type != Lexem::Type::Apostrophe )
-			{
-				PushErrorMessage();
-				return result;
-			}
-			NextLexem();
-			break;
-		}
+	if( it_->type == Lexem::Type::Apostrophe )
+	{
+		NextLexem();
+	}
+	else
+	{
+		PushErrorMessage();
+		return result;
 	}
 
 	return result;
