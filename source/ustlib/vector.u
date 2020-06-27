@@ -284,7 +284,7 @@ public:
 		swap( size_type(i0), size_type(i1) );
 	}
 
-	fn push_back( mut this'a...', T mut val'b...' ) ' a <- b '
+	fn push_back( mut this'a', T mut val'b' ) ' a <- b '
 	{
 		unsafe
 		{
@@ -296,7 +296,7 @@ public:
 		}
 	}
 
-	fn enable_if( typeinfo</T/>.is_copy_constructible ) push_back( mut this'a...', size_type count, T& val'b...' ) ' a <- b '
+	fn enable_if( typeinfo</T/>.is_copy_constructible ) push_back( mut this'a', size_type count, T& val'b' ) ' a <- b '
 	{
 		unsafe
 		{
@@ -338,7 +338,7 @@ public:
 		}
 	}
 
-	fn pop_back( mut this'a...' ) : T'a...'
+	fn pop_back( mut this'a' ) : T'a'
 	{
 		halt if(empty());
 		unsafe
@@ -350,7 +350,7 @@ public:
 		}
 	}
 
-	fn pop_back_unsafe( mut this'a...' ) unsafe : T'a...'
+	fn pop_back_unsafe( mut this'a' ) unsafe : T'a'
 	{
 		unsafe
 		{
@@ -361,7 +361,7 @@ public:
 		}
 	}
 
-	fn enable_if( typeinfo</T/>.is_copy_constructible ) resize( mut this'a...', size_type new_size, T& val'b...' ) ' a <- b '
+	fn enable_if( typeinfo</T/>.is_copy_constructible ) resize( mut this'a', size_type new_size, T& val'b' ) ' a <- b '
 	{
 		// TODO - optimize. Calls to public methods contain unnecessary checks.
 		if( new_size > size_ )

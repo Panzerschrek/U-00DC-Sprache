@@ -189,8 +189,6 @@ using ProgramElement= std::variant<
 
 using ProgramElements= std::vector<ProgramElement>;
 
-using ReferencesTagsList= std::vector<std::string>; // If last tag is empty string - means continuous tag - like arg' a, b, c... '
-
 struct SyntaxElementBase
 {
 public:
@@ -285,7 +283,7 @@ public:
 	std::string return_value_reference_tag_;
 	FunctionReferencesPollutionList referecnces_pollution_list_;
 	FunctionArgumentsDeclaration arguments_;
-	ReferencesTagsList return_value_inner_reference_tags_;
+	std::string return_value_inner_reference_tag_;
 
 	MutabilityModifier return_value_mutability_modifier_= MutabilityModifier::None;
 	ReferenceModifier return_value_reference_modifier_= ReferenceModifier::None;
@@ -301,7 +299,7 @@ public:
 	std::string name_;
 	TypeName type_;
 	std::string reference_tag_;
-	ReferencesTagsList inner_arg_reference_tags_;
+	std::string inner_arg_reference_tag_;
 	MutabilityModifier mutability_modifier_= MutabilityModifier::None;
 	ReferenceModifier reference_modifier_= ReferenceModifier::None;
 };

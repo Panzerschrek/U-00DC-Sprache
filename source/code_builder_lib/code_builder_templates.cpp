@@ -754,7 +754,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 			result.return_type= std::make_unique<DeducedTemplateParameter>( DeducedTemplateParameter::Type() );
 		}
 
-		if( !function_pointer_type->return_value_inner_reference_tags_.empty() ||
+		if( !function_pointer_type->return_value_inner_reference_tag_.empty() ||
 			!function_pointer_type->return_value_reference_tag_.empty() )
 			REPORT_ERROR( NotImplemented, names_scope.GetErrors(), function_pointer_type->file_pos_, "reference tags for template signature parameters" );
 
@@ -778,7 +778,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 			if( result.argument_types.back().IsInvalid() )
 				return DeducedTemplateParameter::Invalid();
 
-			if( !expected_arg.inner_arg_reference_tags_.empty() || !expected_arg.reference_tag_.empty() )
+			if( !expected_arg.inner_arg_reference_tag_.empty() || !expected_arg.reference_tag_.empty() )
 				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), function_pointer_type->file_pos_, "reference tags for template signature parameters" );
 		}
 
@@ -1015,8 +1015,6 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		result.type= template_parameters_namespace->GetThisScopeValue( Class::c_template_class_name );
 
 		class_proxy->class_->llvm_type->setName( MangleType( class_proxy ) ); // Update llvm type name after setting base template.
-
-		GlobalThingBuildClass( class_proxy, TypeCompleteness::Complete );
 
 		return result;
 	}

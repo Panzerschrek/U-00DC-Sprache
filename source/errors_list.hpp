@@ -129,7 +129,6 @@ PROCESS_ERROR( ReferenceProtectionError, "Reference protection check for variabl
 PROCESS_ERROR( DestroyedVariableStillHaveReferences, "Destroyed variable \"{0}\" still have reference(s)." )
 PROCESS_ERROR( AccessingMovedVariable, "Accessing moved variable \"{0}\"." )
 PROCESS_ERROR( ReturningUnallowedReference, "Returning unallowed reference." )
-PROCESS_ERROR( InvalidReferenceTagCount, "Invalid reference tag count, expected {0}, got {1}." )
 PROCESS_ERROR( SelfReferencePollution, "Reference self-pollution." )
 PROCESS_ERROR( ArgReferencePollution, "Pollution of arg reference." )
 PROCESS_ERROR( MutableReferencePollutionOfOuterLoopVariable, "Mutable reference pollution for outer variables inside loop. \"{0}\" polluted by \"{1}\"." )

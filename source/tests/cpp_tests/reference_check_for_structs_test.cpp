@@ -340,7 +340,7 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test0 )
 	R"(
 		template</ type T /> struct MutRef{ T &mut r; }
 
-		fn ToRef( i32 &mut x ) : MutRef</ i32 />
+		fn ToRef( i32 &'r mut x ) : MutRef</ i32 />'r'
 		{
 			var MutRef</ i32 /> r{ .r= x };
 			return r;
@@ -357,11 +357,7 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test0 )
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 15u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 15u ) );
 }
 
 U_TEST( ReturnStructWithReferenceFromFunction_Test1 )
@@ -923,131 +919,6 @@ U_TEST( ReferencePollutionErrorsTest_ExplicitReferencePollutionForCopyAssignment
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExplicitReferencePollutionForCopyAssignmentOperator );
 	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
-}
-
-U_TEST( InnerTagsErrorsTest_InvalidReferenceTagCount_0 )
-{
-	static const char c_program_text[]=
-	R"(
-		fn Foo( i32 x'a, b, c' ); // tag list for fundamental type
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InvalidReferenceTagCount );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
-}
-
-U_TEST( InnerTagsErrorsTest_InvalidReferenceTagCount_1 )
-{
-	static const char c_program_text[]=
-	R"(
-		struct S{}
-		fn Foo( S s'a, b, c' ); // tag list for struct without references
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InvalidReferenceTagCount );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
-}
-
-U_TEST( InnerTagsErrorsTest_InvalidReferenceTagCount_2 )
-{
-	static const char c_program_text[]=
-	R"(
-		fn Foo( i32 &'x a, i32 &'y b, i32 &'z c ) : i32'x, y, z'; // tag list for return value
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InvalidReferenceTagCount );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
-}
-
-U_TEST( InnerTagsErrorsTest_InvalidReferenceTagCount_3 )
-{
-	static const char c_program_text[]=
-	R"(
-		// Invalid tag list for complete type.
-		struct S{}
-		fn Foo( S s' a, b, c ' );
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InvalidReferenceTagCount );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
-}
-
-U_TEST( InnerTagsErrorsTest_InvalidReferenceTagCount_4 )
-{
-	static const char c_program_text[]=
-	R"(
-		// Invalid tag list for incomplete type.
-		struct S;
-		fn Foo( S s'a, b, c' );
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingIncompleteType );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
-}
-
-U_TEST( InnerTagsErrorsTest_InvalidReferenceTagCount_5 )
-{
-	static const char c_program_text[]=
-	R"(
-		// Invalid tag list for complete type.
-		struct S{}
-		fn Foo() : S' a, b, c ';
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidReferenceTagCount, 4u ) );
-}
-
-U_TEST( InnerTagsErrorsTest_InvalidReferenceTagCount_6 )
-{
-	static const char c_program_text[]=
-	R"(
-		// Invalid tag list for incomplete type.
-		struct S;
-		fn Foo() : S'a, b, c';
-	)";
-
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UsingIncompleteType, 4u ) );
-}
-
-U_TEST( InnerTagsErrorsTest_InvalidReferenceTagCount_7 )
-{
-	static const char c_program_text[]=
-	R"(
-		struct S
-		{
-			fn Foo( this'r' ) {} // We process function after fields. So, we know here, that class have 1 reference tag.
-			i32& x;
-		}
-	)";
-
-	BuildProgram( c_program_text );
 }
 
 U_TEST( TryGrabReferenceToTempVariable_Test0 )

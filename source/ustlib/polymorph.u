@@ -61,13 +61,13 @@ fn polymorph_is_instance_of( B& b ) : bool
 }
 
 template</ type To, type From />
-fn polymorph_cast( From & mut from ) : optional_ref</ To, true  />
+fn polymorph_cast( From &'x mut from ) : optional_ref</ To, true  />'x'
 {
 	polymorph_impl::polymorph_cast_impl</To/>(from);
 }
 
 template</ type To, type From />
-fn polymorph_cast( From &imut from ) : optional_ref</ To, false />
+fn polymorph_cast( From &'x imut from ) : optional_ref</ To, false />'x'
 {
 	unsafe
 	{
@@ -112,7 +112,7 @@ fn constexpr is_polymorph() : bool
 }
 
 template</ type To, type From />
-fn polymorph_cast_impl( From & mut from ) : optional_ref</ To, true />
+fn polymorph_cast_impl( From &'x mut from ) : optional_ref</ To, true />'x'
 {
 	static_if( is_polymorph</From/>() && is_polymorph</To/>() )
 	{
