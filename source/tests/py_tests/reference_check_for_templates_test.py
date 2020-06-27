@@ -13,7 +13,7 @@ def ReferenceTagForTypeWithoutReferencesInside_UsedAsReturnReferenceTag_Test1():
 	c_program_text= """
 		struct S{}
 		auto constexpr global_constant= 42;
-		fn Extract( S& s' a ' ) : i32 &'a   // tag for struct with zero inner tags
+		fn Extract( S& s'a' ) : i32 &'a // tag for struct with zero inner tags
 		{
 			return global_constant;
 		}
@@ -29,7 +29,7 @@ def ReferenceTagForTypeWithoutReferencesInside_UsedAsReturnReferenceTag_Test1():
 def ReferenceTagForTypeWithoutReferencesInside_ForReturnValue_Test1():
 	c_program_text= """
 		struct S {}
-		fn Bar( i32&'a x ) : S' a '   // continuous tag for struct with zero inner tags
+		fn Bar( i32&'a x ) : S'a' //  tag for struct with zero inner tags
 		{
 			return S();
 		}
@@ -47,7 +47,7 @@ def ReferenceTagForTypeWithoutReferencesInside_ForThis_Test1():
 		struct S
 		{
 			i32 x;
-			fn constructor( this'a', i32&'b in_x ) ' a <- b '    // Pollution does not works here, because 'a' expands to zero reference tags.
+			fn constructor( this'a', i32&'b in_x ) ' a <- b ' // Pollution does not works here, because 'a' expands to zero reference tags.
 			( x(in_x) ) {}
 		}
 
@@ -64,7 +64,7 @@ def ReferenceTagForTypeWithoutReferencesInside_ForThis_Test1():
 def ReferenceTagForTypeWithoutReferencesInside_InPollution_Test1():
 	c_program_text= """
 		struct S{}
-		fn Bar( S &mut s'a', i32&'b x ) ' a <- b' {}   // For pullution used continuous tag, but actual pollution not happens.
+		fn Bar( S &mut s'a', i32&'b x ) ' a <- b' {}   // Actual pollution not happens, because "S" have no references inside.
 
 		fn Foo()
 		{
@@ -210,7 +210,7 @@ def VariativeReferenceTagsCount_InTemplateClass_Test4():
 def ReferenceTagsForTemplateDependentType_Test0():
 	c_program_text= """
 		template</ type T />
-		fn Foo( T t' a ' ){} // Inner references tag for template-dependent arg type.
+		fn Foo( T t'a' ){} // Inner references tag for template-dependent arg type.
 	"""
 	tests_lib.build_program( c_program_text )
 
