@@ -187,7 +187,7 @@ public:
 
 	template</ type T />
 	fn enable_if( type_is_one_of_tuple_elements</ T, Y />() )
-	get(this) : optional_ref</ T, false />
+	get( this ) : optional_ref</ T, false />'this'
 	{
 		var optional_ref</ T, false /> mut res;
 		auto mut cur_index= 0s;
@@ -213,7 +213,7 @@ public:
 
 	template</ type T />
 	fn enable_if( type_is_one_of_tuple_elements</ T, Y />() )
-	get(mut this) : optional_ref</ T, true />
+	get(mut this) : optional_ref</ T, true />'this'
 	{
 		var optional_ref</ T, true /> mut res;
 		auto mut cur_index= 0s;

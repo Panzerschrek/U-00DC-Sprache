@@ -2872,7 +2872,10 @@ Value CodeBuilder::DoCallFunction(
 	{
 		const size_t dst_arg= referene_pollution.dst.first;
 		U_ASSERT( dst_arg < function_type.args.size() );
-		U_ASSERT( function_type.args[ dst_arg ].type.ReferencesTagsCount() > 0u );
+
+		// It's possible that reference pollution is set for types without references inside.
+		if( function_type.args[ dst_arg ].type.ReferencesTagsCount() == 0 )
+			continue;
 
 		bool src_variables_is_mut= false;
 		std::unordered_set<ReferencesGraphNodePtr> src_nodes;
@@ -2889,7 +2892,9 @@ Value CodeBuilder::DoCallFunction(
 		{
 			// Variables, referenced by inner argument references.
 			U_ASSERT( referene_pollution.src.second == 0u );// Currently we support one tag per struct.
-			U_ASSERT( function_type.args[ referene_pollution.src.first ].type.ReferencesTagsCount() > 0u );
+
+			if( function_type.args[ referene_pollution.src.first ].type.ReferencesTagsCount() == 0 )
+				continue;
 
 			for( const ReferencesGraphNodePtr& inner_reference : function_context.variables_state.GetAllAccessibleInnerNodes( locked_args_references[ referene_pollution.src.first ].Node() ) )
 			{

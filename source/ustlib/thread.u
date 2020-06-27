@@ -11,7 +11,7 @@ namespace ust
 // Implementation of thread class, using "pthreads" library.
 
 template</ type Func />
-fn thread_create( Func mut func'a...' ) : thread</ Func />'a...'
+fn thread_create( Func mut func'a' ) : thread</ Func />'a'
 {
 	return thread</ Func />( move(func) );
 }
@@ -23,7 +23,7 @@ class thread
 	static_assert( !have_shared_state</ Func />() );
 
 public:
-	fn constructor( mut this'a...', Func mut func'b...' ) ' a <- b '
+	fn constructor( mut this'a', Func mut func'b' ) ' a <- b '
 	( func_(move(func)) )
 	{
 		unsafe
@@ -76,7 +76,7 @@ template</ type Func, type ResultType />
 class thread_ret
 {
 public:
-	fn constructor( mut this'a...', Func mut func'b...' ) ' a <- b '
+	fn constructor( mut this'a', Func mut func'b' ) ' a <- b '
 	( impl_( Impl(move(func)) ) )
 	{
 		unsafe
