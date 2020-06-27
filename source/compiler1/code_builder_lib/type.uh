@@ -42,11 +42,11 @@ public:
 	fn conversion_constructor( FundamentalType mut fundamental_type );
 	fn conversion_constructor( FunctionType mut function_type );
 
-	fn GetFundamentalType(  mut this ) : ust::optional_ref</FundamentalType, true  />;
-	fn GetFundamentalType( imut this ) : ust::optional_ref</FundamentalType, false />;
+	fn GetFundamentalType(  mut this ) : ust::optional_ref</FundamentalType, true  />'this';
+	fn GetFundamentalType( imut this ) : ust::optional_ref</FundamentalType, false />'this';
 
-	fn GetFunctionType(  mut this ) : ust::optional_ref</FunctionType, true  />;
-	fn GetFunctionType( imut this ) : ust::optional_ref</FunctionType, false />;
+	fn GetFunctionType(  mut this ) : ust::optional_ref</FunctionType, true  />'this';
+	fn GetFunctionType( imut this ) : ust::optional_ref</FunctionType, false />'this';
 
 	fn GetLLVMType( imut this ) : LLVMTypeRef;
 

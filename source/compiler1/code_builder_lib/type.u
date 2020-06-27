@@ -37,22 +37,22 @@ fn Type::conversion_constructor( FunctionType mut function_type )
 	( something_( move(function_type) ) )
 {}
 
-fn Type::GetFundamentalType(  mut this ) : ust::optional_ref</FundamentalType, true  />
+fn Type::GetFundamentalType(  mut this ) : ust::optional_ref</FundamentalType, true  />'this'
 {
 	return something_.get</FundamentalType/>();
 }
 
-fn Type::GetFundamentalType( imut this ) : ust::optional_ref</FundamentalType, false />
+fn Type::GetFundamentalType( imut this ) : ust::optional_ref</FundamentalType, false />'this'
 {
 	return something_.get</FundamentalType/>();
 }
 
-fn Type::GetFunctionType(  mut this ) : ust::optional_ref</FunctionType, true  />
+fn Type::GetFunctionType(  mut this ) : ust::optional_ref</FunctionType, true  />'this'
 {
 	return something_.get</FunctionType/>();
 }
 
-fn Type::GetFunctionType( imut this ) : ust::optional_ref</FunctionType, false />
+fn Type::GetFunctionType( imut this ) : ust::optional_ref</FunctionType, false />'this'
 {
 	return something_.get</FunctionType/>();
 }
