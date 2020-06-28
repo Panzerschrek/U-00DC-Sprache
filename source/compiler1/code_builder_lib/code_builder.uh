@@ -53,6 +53,8 @@ private:
 	fn BuildExpressionCode( this, NamesScope& names_scope, FunctionContext &mut function_context, Synt::NumericConstant& numeric_constant ) : Value;
 	fn BuildExpressionCode( this, NamesScope& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value;
 
+	fn CreateMoveToLLVMRegisterInstruction( Variable& variable, FunctionContext& function_context ) : LLVMValueRef;
+
 private:
 	LLVMContextRef llvm_context_;
 

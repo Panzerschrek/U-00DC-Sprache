@@ -85,5 +85,11 @@ fn nomangle LLVMConstInt(LLVMTypeRef IntTy, u64 N, LLVMBool SignExtend) unsafe :
 // Instructions
 
 fn nomangle LLVMBuildBr(LLVMBuilderRef Builder, LLVMBasicBlockRef Dest) unsafe : LLVMValueRef;
+
 fn nomangle LLVMBuildRetVoid(LLVMBuilderRef Builder) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildRet(LLVMBuilderRef Builder, LLVMValueRef V) unsafe : LLVMValueRef;
+
+fn nomangle LLVMBuildLoad(LLVMBuilderRef Builder, LLVMValueRef PointerVal, NullTerminatedString& name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildStore(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMValueRef Ptr) unsafe : LLVMValueRef;
+
+fn nomangle LLVMBuildAlloca(LLVMBuilderRef Builder, LLVMTypeRef Ty, NullTerminatedString& name) unsafe : LLVMValueRef ;

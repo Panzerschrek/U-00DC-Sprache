@@ -327,8 +327,12 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope_ptr, FunctionVar
 			auto arg_name= "_arg_" + in_arg.name;
 			unsafe
 			{
-				out_arg.llvm_value= LLVMGetParam( func_variable.llvm_function, arg_n );
-				LLVMSetValueName2( out_arg.llvm_value, arg_name.front(), arg_name.size() );
+				auto arg_value= LLVMGetParam( func_variable.llvm_function, arg_n );
+				LLVMSetValueName2( arg_value, arg_name.front(), arg_name.size() );
+
+				out_arg.llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, out_arg.t.GetLLVMType(), (in_arg.name + "\0").front() );
+
+				LLVMBuildStore( function_context.llvm_ir_builder, arg_value, out_arg.llvm_value );
 			}
 
 			++arg_n;
@@ -364,7 +368,11 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope_ptr, Functio
 {
 	var Variable expr= BuildExpressionCodeEnsureVariable( names_scope_ptr.lock_imut().get_ref(), function_context, return_operator.expr );
 
-	unsafe{ LLVMBuildRet( function_context.llvm_ir_builder, expr.llvm_value ); }
+	unsafe
+	{
+		auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr, function_context );
+		LLVMBuildRet( function_context.llvm_ir_builder, value_in_register );
+	}
 }
 
 fn CodeBuilder::BuildExpressionCode( this, NamesScope& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Value
@@ -402,6 +410,20 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScope& names_scope, FunctionCont
 fn CodeBuilder::BuildExpressionCode( this, NamesScope& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value
 {
 	return ResolveValue( names_scope, named_operand );
+}
+
+fn CodeBuilder::CreateMoveToLLVMRegisterInstruction( Variable& variable, FunctionContext& function_context ) : LLVMValueRef
+{
+	if( variable.location == Variable::Location::Pointer )
+	{
+		unsafe{  return LLVMBuildLoad( function_context.llvm_ir_builder, variable.llvm_value, "\0"[0] );  }
+	}
+	if( variable.location == Variable::Location::LLVMRegister )
+	{
+		return variable.llvm_value;
+	}
+
+	halt;
 }
 
 } // amespace U
