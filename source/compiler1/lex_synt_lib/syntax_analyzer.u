@@ -132,11 +132,11 @@ fn GetMostRightIncompleteBinaryOperatorInTree( BinaryOperator &mut o ) : BinaryO
 	return GetMostRightIncompleteBinaryOperatorInTree( o.r.get_ref().expr.get</BinaryOperator/>().get_ref() );
 }
 
-fn GetDeepestRightBinaryOperatorComponentWithNonLessPriority( BinaryOperator &mut o, BinaryOperatorType cur_op_type ) : BinaryOperator &mut
+fn GetDeepestRightBinaryOperatorComponentWithNonLessPriority( BinaryOperator &'x mut o, BinaryOperatorType cur_op_type ) : ust::optional_ref</BinaryOperator, true />'x'
 {
-	if( GetBinaryOperatorPriority( cur_op_type ) <= GetBinaryOperatorPriority( o.operator ) )
+	if( GetBinaryOperatorPriority( cur_op_type ) > GetBinaryOperatorPriority( o.operator ) )
 	{
-		return o;
+		return ust::optional_ref</BinaryOperator, true />(o);
 	}
 
 	if_var( &mut right_as_binary_operator : o.r.get_ref().expr.get</BinaryOperator/>() )
@@ -144,7 +144,7 @@ fn GetDeepestRightBinaryOperatorComponentWithNonLessPriority( BinaryOperator &mu
 		return GetDeepestRightBinaryOperatorComponentWithNonLessPriority( right_as_binary_operator, cur_op_type );
 	}
 
-	return o;
+	return ust::optional_ref</BinaryOperator, true />();
 }
 
 class SyntaxAnalyzer
@@ -265,9 +265,20 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 
 			if( !root.expr.get</BinaryOperator/>().empty() )
 			{
-				auto &mut dst= GetDeepestRightBinaryOperatorComponentWithNonLessPriority( root.expr.get</BinaryOperator/>().get_ref(), binary_operator.operator );
-				binary_operator.l.get_ref()= take(dst.r.get_ref());
-				dst.r.get_ref().expr= move(binary_operator);
+				auto mut dst_opt= GetDeepestRightBinaryOperatorComponentWithNonLessPriority( root.expr.get</BinaryOperator/>().get_ref(), binary_operator.operator );
+				if( !dst_opt.empty() )
+				{
+					auto &mut dst= dst_opt.get_ref();
+					binary_operator.l.get_ref()= take(dst.r.get_ref());
+					dst.r.get_ref().expr= move(binary_operator);
+					move(dst_opt);
+				}
+				else
+				{
+					move(dst_opt);
+					binary_operator.l.get_ref()= take(root);
+					root.expr= move(binary_operator);
+				}
 			}
 			else
 			{

@@ -23,6 +23,10 @@ bool FilterTest( const std::string& test_name )
 	static const std::string c_tests_to_enable_pattern[]
 	{
 		"NameNotFoundTest_Minus1",
+		"OperatorsPriorityTest0",
+		"OperatorsPriorityTest2",
+		"OperatorsPriorityTest4",
+		"OperatorsPriorityTest5",
 		"Redefinition5",
 		"SimpliestProgramTest",
 		"SimpleProgramTest",
