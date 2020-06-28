@@ -92,4 +92,11 @@ fn nomangle LLVMBuildRet(LLVMBuilderRef Builder, LLVMValueRef V) unsafe : LLVMVa
 fn nomangle LLVMBuildLoad(LLVMBuilderRef Builder, LLVMValueRef PointerVal, NullTerminatedString& name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildStore(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMValueRef Ptr) unsafe : LLVMValueRef;
 
-fn nomangle LLVMBuildAlloca(LLVMBuilderRef Builder, LLVMTypeRef Ty, NullTerminatedString& name) unsafe : LLVMValueRef ;
+fn nomangle LLVMBuildAlloca(LLVMBuilderRef Builder, LLVMTypeRef Ty, NullTerminatedString& name) unsafe : LLVMValueRef;
+
+// Arithmetic
+fn nomangle LLVMBuildAdd(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildSub(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildMul(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildUDiv(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildSDiv(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& name) unsafe : LLVMValueRef;

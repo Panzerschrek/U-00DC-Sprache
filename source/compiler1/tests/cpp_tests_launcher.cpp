@@ -22,9 +22,10 @@ bool FilterTest( const std::string& test_name )
 {
 	static const std::string c_tests_to_enable_pattern[]
 	{
-		"SimpliestProgramTest",
 		"NameNotFoundTest_Minus1",
 		"Redefinition5",
+		"SimpliestProgramTest",
+		"SimpleProgramTest",
 	};
 
 	if( std::find_if(

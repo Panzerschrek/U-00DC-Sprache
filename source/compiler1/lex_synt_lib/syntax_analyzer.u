@@ -123,7 +123,7 @@ fn LexemToBinaryOperator( Lexem& lexem ) : BinaryOperatorType
 
 fn GetMostRightIncompleteBinaryOperatorInTree( BinaryOperator &mut o ) : BinaryOperator &mut
 {
-	if( o.r.get_ref().expr.get</EmptyVariant/>().empty() )
+	if( !o.r.get_ref().expr.get</EmptyVariant/>().empty() )
 	{
 		return o;
 	}
@@ -134,7 +134,7 @@ fn GetMostRightIncompleteBinaryOperatorInTree( BinaryOperator &mut o ) : BinaryO
 
 fn GetDeepestRightBinaryOperatorComponentWithNonLessPriority( BinaryOperator &mut o, BinaryOperatorType cur_op_type ) : BinaryOperator &mut
 {
-	if( GetBinaryOperatorPriority( cur_op_type ) > GetBinaryOperatorPriority( o.operator ) )
+	if( GetBinaryOperatorPriority( cur_op_type ) <= GetBinaryOperatorPriority( o.operator ) )
 	{
 		return o;
 	}
@@ -261,6 +261,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 				.r( Expression() )
 			};
 
+			NextLexem();
 
 			if( !root.expr.get</BinaryOperator/>().empty() )
 			{

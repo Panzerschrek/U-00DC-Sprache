@@ -377,13 +377,17 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope_ptr, Functio
 
 fn CodeBuilder::BuildExpressionCode( this, NamesScope& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Value
 {
-	if_var( numeric_constant : expression.expr.get</Synt::NumericConstant/>() )
+	if_var( & numeric_constant : expression.expr.get</Synt::NumericConstant/>() )
 	{
 		return BuildExpressionCode( names_scope, function_context, numeric_constant );
 	}
-	if_var( named_operand : expression.expr.get</Synt::ComplexName/>() )
+	if_var( & named_operand : expression.expr.get</Synt::ComplexName/>() )
 	{
 		return BuildExpressionCode( names_scope, function_context, named_operand );
+	}
+	if_var( & binary_operator : expression.expr.get</Synt::BinaryOperator/>() )
+	{
+		return BuildExpressionCode( names_scope, function_context, binary_operator );
 	}
 	halt;
 }
@@ -410,6 +414,44 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScope& names_scope, FunctionCont
 fn CodeBuilder::BuildExpressionCode( this, NamesScope& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value
 {
 	return ResolveValue( names_scope, named_operand );
+}
+
+fn CodeBuilder::BuildExpressionCode( this, NamesScope& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
+{
+	var Variable l= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.l.get_ref() );
+	auto l_in_register= CreateMoveToLLVMRegisterInstruction( l, function_context );
+
+	var Variable r= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.r.get_ref() );
+	auto r_in_register= CreateMoveToLLVMRegisterInstruction( r, function_context );
+
+	// TODO - check types.
+
+	var Variable mut res;
+	res.t= l.t;
+	res.location= Variable::Location::LLVMRegister;
+
+	unsafe
+	{
+		if( binary_operator.operator == BinaryOperatorType::Add )
+		{
+			res.llvm_value= LLVMBuildAdd( function_context.llvm_ir_builder, l_in_register, r_in_register, "+\0"[0] );
+		}
+		if( binary_operator.operator == BinaryOperatorType::Sub )
+		{
+			res.llvm_value= LLVMBuildSub( function_context.llvm_ir_builder, l_in_register, r_in_register, "-\0"[0] );
+		}
+		if( binary_operator.operator == BinaryOperatorType::Mul )
+		{
+			res.llvm_value= LLVMBuildMul( function_context.llvm_ir_builder, l_in_register, r_in_register, "*\0"[0] );
+		}
+		if( binary_operator.operator == BinaryOperatorType::Div )
+		{
+			// TODO - select signed/unsigned
+			res.llvm_value= LLVMBuildSDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
+		}
+	}
+
+	return Value(move(res));
 }
 
 fn CodeBuilder::CreateMoveToLLVMRegisterInstruction( Variable& variable, FunctionContext& function_context ) : LLVMValueRef
