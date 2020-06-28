@@ -24,6 +24,7 @@ bool FilterTest( const std::string& test_name )
 	{
 		"SimpliestProgramTest",
 		"NameNotFoundTest_Minus1",
+		"Redefinition5",
 	};
 
 	if( std::find_if(

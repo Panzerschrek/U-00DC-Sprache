@@ -51,13 +51,21 @@ fn nomangle LLVMFunctionType(
 	LLVMTypeRef &ParamTypes, u32 ParamCount,
 	LLVMBool IsVarArg) unsafe : LLVMTypeRef;
 
+// Value
+
+fn nomangle LLVMSetValueName2(LLVMValueRef Val, char8& Name, size_type NameLen) unsafe;
+
 // Global value
 
 fn nomangle LLVMAddFunction(LLVMModuleRef M, NullTerminatedString& Name, LLVMTypeRef FunctionTy) unsafe : LLVMValueRef;
 
+// Function
+
+fn nomangle LLVMGetParam(LLVMValueRef Fn, u32 Index) unsafe : LLVMValueRef;
+
 // Basic block
 
-fn nomangle LLVMAppendBasicBlockInContext(LLVMContextRef C, LLVMValueRef Fn, NullTerminatedString& Name) : LLVMBasicBlockRef;
+fn nomangle LLVMAppendBasicBlockInContext(LLVMContextRef C, LLVMValueRef Fn, NullTerminatedString& Name) unsafe : LLVMBasicBlockRef;
 
 // Module helpers
 

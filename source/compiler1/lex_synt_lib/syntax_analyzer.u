@@ -80,6 +80,17 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 		var Expression mut expr{ .expr= move(numeric_constant) };
 		return move(expr);
 	}
+	else if( it_.front().lexem_type == Lexem::Type::Identifier )
+	{
+		var ComplexName mut complex_name;
+		complex_name.file_pos= it_.front().file_pos;
+		complex_name.name= it_.front().text;
+
+		NextLexem();
+
+		var Expression mut expr{ .expr= move(complex_name) };
+		return move(expr);
+	}
 	else
 	{
 		PushErrorMessage();
@@ -136,6 +147,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 		}
 
 		var FunctionType::Arg mut arg;
+		arg.file_pos= it_.front().file_pos;
 		arg.arg_type= ParseTypeName();
 
 		if( it_.front().lexem_type != Lexem::Type::Identifier )

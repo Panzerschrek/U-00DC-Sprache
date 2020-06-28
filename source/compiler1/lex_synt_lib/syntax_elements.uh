@@ -46,13 +46,15 @@ struct Expression
 	ust::variant</ tup[
 		NumericConstant,
 		BinaryOperator,
-		BracketExpression ] /> expr;
+		BracketExpression,
+		ComplexName ] /> expr;
 }
 
 struct FunctionType
 {
 	struct Arg
 	{
+		FilePos file_pos;
 		TypeName arg_type;
 		ust::string8 name;
 	}

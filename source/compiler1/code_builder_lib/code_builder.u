@@ -226,7 +226,7 @@ fn CodeBuilder::PrepareFunction(
 		function_variable.llvm_function=
 			LLVMAddFunction(
 				module_,
-				MangleFunction( function_declaration.name ).front(),
+				MangleFunction( function_declaration.name, function_variable.t.GetFunctionType().get_ref() ).front(),
 				function_variable.t.GetLLVMType() );
 	}
 
@@ -312,7 +312,36 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope_ptr, FunctionVar
 {
 	var FunctionContext mut function_context( llvm_context_, func_variable.llvm_function );
 
-	BuildBlockElement( names_scope_ptr, function_context, func_variable.syntax_element.get_ref().block.get_ref() );
+	var NamesScopePtr args_names_scope_ptr( NamesScope( "", names_scope_ptr ) );
+
+	{
+		auto mut args_names_scope_lock= args_names_scope_ptr.lock_mut();
+		auto &mut args_names_scope= args_names_scope_lock.get_ref();
+
+		auto mut arg_n= 0u;
+		foreach( &in_arg : func_variable.syntax_element.get_ref().function_type.args )
+		{
+			var NamesScopeVariable mut out_arg;
+			out_arg.t= PrepareType( names_scope_ptr.lock_imut().get_ref(), in_arg.arg_type );
+
+			auto arg_name= "_arg_" + in_arg.name;
+			unsafe
+			{
+				out_arg.llvm_value= LLVMGetParam( func_variable.llvm_function, arg_n );
+				LLVMSetValueName2( out_arg.llvm_value, arg_name.front(), arg_name.size() );
+			}
+
+			++arg_n;
+
+			var bool insert_ok= !args_names_scope.AddName( in_arg.name, NamesScopeValue( move(out_arg) ) ).empty();
+			if( !insert_ok )
+			{
+				REPORT_ERROR( args_names_scope, Redefinition, in_arg.file_pos )
+			}
+		}
+	}
+
+	BuildBlockElement( args_names_scope_ptr, function_context, func_variable.syntax_element.get_ref().block.get_ref() );
 
 	// Finsih function - add remaining instructions
 	unsafe{ LLVMBuildBr( function_context.alloca_ir_builder, function_context.function_basic_block ); }
@@ -333,29 +362,33 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope_ptr, Functio
 
 fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope_ptr, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator )
 {
-	var Variable expr= BuildExpressionCodeEnsureVariable( function_context, return_operator.expr );
+	var Variable expr= BuildExpressionCodeEnsureVariable( names_scope_ptr.lock_imut().get_ref(), function_context, return_operator.expr );
 
 	unsafe{ LLVMBuildRet( function_context.llvm_ir_builder, expr.llvm_value ); }
 }
 
-fn CodeBuilder::BuildExpressionCode( this, FunctionContext &mut function_context, Synt::Expression& expression ) : Value
+fn CodeBuilder::BuildExpressionCode( this, NamesScope& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Value
 {
 	if_var( numeric_constant : expression.expr.get</Synt::NumericConstant/>() )
 	{
-		return BuildExpressionCode( function_context, numeric_constant );
+		return BuildExpressionCode( names_scope, function_context, numeric_constant );
+	}
+	if_var( named_operand : expression.expr.get</Synt::ComplexName/>() )
+	{
+		return BuildExpressionCode( names_scope, function_context, named_operand );
 	}
 	halt;
 }
 
-fn CodeBuilder::BuildExpressionCodeEnsureVariable( this, FunctionContext &mut function_context, Synt::Expression& expression ) : Variable
+fn CodeBuilder::BuildExpressionCodeEnsureVariable( this, NamesScope& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Variable
 {
-	var Value mut value= BuildExpressionCode( function_context, expression );
+	var Value mut value= BuildExpressionCode( names_scope, function_context, expression );
 
 	// TODO - fill dummy value if not variable.
 	return value.get</Variable/>().get_ref();
 }
 
-fn CodeBuilder::BuildExpressionCode( this, FunctionContext &mut function_context, Synt::NumericConstant& numeric_constant ) : Value
+fn CodeBuilder::BuildExpressionCode( this, NamesScope& names_scope, FunctionContext &mut function_context, Synt::NumericConstant& numeric_constant ) : Value
 {
 	var Variable mut res;
 	res.t= Type( FundamentalType( U_FundamentalType::i32_ , fundamental_llvm_types_.i32_ ) );
@@ -364,6 +397,11 @@ fn CodeBuilder::BuildExpressionCode( this, FunctionContext &mut function_context
 	unsafe{ res.llvm_value= LLVMConstInt( res.t.GetLLVMType(), u64(numeric_constant.num.value_double), LLVMBool::True ); }
 
 	return Value( move(res) );
+}
+
+fn CodeBuilder::BuildExpressionCode( this, NamesScope& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value
+{
+	return ResolveValue( names_scope, named_operand );
 }
 
 } // amespace U
