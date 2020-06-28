@@ -12,6 +12,86 @@ fn IsKeyword( Lexem& l, Keyword k ) : bool
 	return l.lexem_type == Lexem::Type::Identifier && l.text == KeywordToString(k);
 }
 
+
+fn GetBinaryOperatorPriority( BinaryOperatorType binary_operator ) : i32
+{
+	// If this changed, same code in "syntax_analyzer.cpp" must be changed too!
+	if( binary_operator == BinaryOperatorType::Div ||
+		binary_operator == BinaryOperatorType::Mul ||
+		binary_operator == BinaryOperatorType::Rem )
+	{
+		return 9;
+	}
+	if( binary_operator == BinaryOperatorType::Add ||
+		binary_operator == BinaryOperatorType::Sub )
+	{
+		return 8;
+	}
+	if( binary_operator == BinaryOperatorType::ShiftLeft ||
+		binary_operator == BinaryOperatorType::ShiftRight )
+	{
+		return 7;
+	}
+	if( binary_operator == BinaryOperatorType::Equal ||
+		binary_operator == BinaryOperatorType::NotEqual ||
+		binary_operator == BinaryOperatorType::Less ||
+		binary_operator == BinaryOperatorType::LessEqual ||
+		binary_operator == BinaryOperatorType::Greater ||
+		binary_operator == BinaryOperatorType::GreaterEqual )
+	{
+		return 6;
+	}
+	if( binary_operator == BinaryOperatorType::And )
+	{
+		return 5;
+	}
+	if( binary_operator == BinaryOperatorType::Or )
+	{
+		return 4;
+	}
+	if( binary_operator == BinaryOperatorType::Xor )
+	{
+		return 3;
+	}
+	if( binary_operator == BinaryOperatorType::LazyLogicalAnd )
+	{
+		return 2;
+	}
+	if( binary_operator == BinaryOperatorType::LazyLogicalOr )
+	{
+		return 1;
+	}
+
+	halt;
+}
+
+fn IsBinaryOperator( Lexem& lexem ) : bool
+{
+	return
+		lexem.lexem_type == Lexem::Type::Plus ||
+		lexem.lexem_type == Lexem::Type::Minus ||
+		lexem.lexem_type == Lexem::Type::Star ||
+		lexem.lexem_type == Lexem::Type::Slash ||
+		lexem.lexem_type == Lexem::Type::Percent ||
+
+		lexem.lexem_type == Lexem::Type::CompareEqual ||
+		lexem.lexem_type == Lexem::Type::CompareNotEqual ||
+		lexem.lexem_type == Lexem::Type::CompareLess ||
+		lexem.lexem_type == Lexem::Type::CompareLessOrEqual ||
+		lexem.lexem_type == Lexem::Type::CompareGreater ||
+		lexem.lexem_type == Lexem::Type::CompareGreaterOrEqual ||
+
+		lexem.lexem_type == Lexem::Type::And ||
+		lexem.lexem_type == Lexem::Type::Or ||
+		lexem.lexem_type == Lexem::Type::Xor ||
+
+		lexem.lexem_type == Lexem::Type::ShiftLeft  ||
+		lexem.lexem_type == Lexem::Type::ShiftRight ||
+
+		lexem.lexem_type == Lexem::Type::Conjunction ||
+		lexem.lexem_type == Lexem::Type::Disjunction;
+}
+
 class SyntaxAnalyzer
 {
 public:
