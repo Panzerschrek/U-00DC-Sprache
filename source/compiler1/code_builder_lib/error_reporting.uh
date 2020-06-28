@@ -3,7 +3,7 @@ import "/code_builder_errors.uh"
 ?macro <? REPORT_ERROR:block ( ?names_scope:expr, ?error_code:ident, ?file_pos:expr ) ?> ->
 <?
 	{
-		auto ??container= ?names_scope.GetErrors();
+		auto ??container= ?names_scope.lock_imut().get_ref().GetErrors();
 		auto mut ??lock= ??container.lock_mut();
 		??lock.get_ref().push_back( ReportError( CodeBuilderErrorCode::?error_code, ?file_pos ) );
 	}

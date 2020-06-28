@@ -99,22 +99,16 @@ fn CodeBuilder::NamesScopeValueToValue( this, NamesScopeValue& names_scope_value
 	return Value( ErrorValue() );
 }
 
-fn CodeBuilder::ResolveValue( this, NamesScope& names_scope, Synt::ComplexName& complex_name ) : Value
+fn CodeBuilder::ResolveValue( this, NamesScopePtr& names_scope, Synt::ComplexName& complex_name ) : Value
 {
-	if_var( names_scope_value : names_scope.GetThisScopeValue( complex_name.name ) )
-	{
-		return NamesScopeValueToValue( names_scope_value );
-	}
-
-	var ust::shared_ptr_nullable_imut</NamesScope/> mut current_scope= names_scope.GetParent();
+	var ust::shared_ptr_nullable_imut</NamesScope/> mut current_scope(names_scope);
 	while( !current_scope.empty() )
 	{
 		if_var( names_scope_value : current_scope.lock_imut().get_ref().GetThisScopeValue( complex_name.name ) )
 		{
 			return NamesScopeValueToValue( names_scope_value );
 		}
-
-		current_scope= names_scope.GetParent();
+		current_scope= current_scope.lock_imut().get_ref().GetParent();
 	}
 
 	REPORT_ERROR( names_scope, NameNotFound, complex_name.file_pos )
@@ -160,7 +154,7 @@ fn CodeBuilder::NamesScopeFill( NamesScopePtr& names_scope_ptr, ust::shared_ptr_
 
 	if( !names_scope.GetThisScopeValue( function.get_ref().name ).empty() )
 	{
-		REPORT_ERROR( names_scope, Redefinition, function.get_ref().file_pos )
+		REPORT_ERROR( names_scope_ptr, Redefinition, function.get_ref().file_pos )
 		return;
 	}
 
@@ -219,7 +213,7 @@ fn CodeBuilder::PrepareFunction(
 
 	var FunctionVariable mut function_variable{ .syntax_element= function_declaration_ptr };
 
-	function_variable.t= PrepareType( names_scope_ptr.lock_imut().get_ref(), function_declaration.function_type );
+	function_variable.t= PrepareType( names_scope_ptr, function_declaration.function_type );
 
 	unsafe
 	{
@@ -237,7 +231,7 @@ fn CodeBuilder::PrepareFunction(
 	return true;
 }
 
-fn CodeBuilder::PrepareType( this, NamesScope& names_scope, Synt::TypeName& type_name ) : Type
+fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, Synt::TypeName& type_name ) : Type
 {
 	if_var( &named_type : type_name.get</Synt::ComplexName/>() )
 	{
@@ -250,7 +244,7 @@ fn CodeBuilder::PrepareType( this, NamesScope& names_scope, Synt::TypeName& type
 	halt;
 }
 
-fn CodeBuilder::PrepareType( this, NamesScope& names_scope, Synt::ComplexName& named_type ) : Type
+fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, Synt::ComplexName& named_type ) : Type
 {
 	var Value resolved_value= ResolveValue( names_scope, named_type );
 	if_var( & t : resolved_value.get</Type/>() )
@@ -262,7 +256,7 @@ fn CodeBuilder::PrepareType( this, NamesScope& names_scope, Synt::ComplexName& n
 	return Type( FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ ) );
 }
 
-fn CodeBuilder::PrepareType( this, NamesScope& names_scope, Synt::FunctionType& function_type ) : Type
+fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, Synt::FunctionType& function_type ) : Type
 {
 	var FunctionType mut res
 	{
@@ -308,11 +302,11 @@ fn CodeBuilder::PrepareType( this, NamesScope& names_scope, Synt::FunctionType& 
 	return Type(move(res));
 }
 
-fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope_ptr, FunctionVariable &mut func_variable )
+fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariable &mut func_variable )
 {
 	var FunctionContext mut function_context( llvm_context_, func_variable.llvm_function );
 
-	var NamesScopePtr args_names_scope_ptr( NamesScope( "", names_scope_ptr ) );
+	var NamesScopePtr args_names_scope_ptr( NamesScope( "", names_scope ) );
 
 	{
 		auto mut args_names_scope_lock= args_names_scope_ptr.lock_mut();
@@ -322,7 +316,7 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope_ptr, FunctionVar
 		foreach( &in_arg : func_variable.syntax_element.get_ref().function_type.args )
 		{
 			var NamesScopeVariable mut out_arg;
-			out_arg.t= PrepareType( names_scope_ptr.lock_imut().get_ref(), in_arg.arg_type );
+			out_arg.t= PrepareType( names_scope, in_arg.arg_type );
 
 			auto arg_name= "_arg_" + in_arg.name;
 			unsafe
@@ -340,7 +334,7 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope_ptr, FunctionVar
 			var bool insert_ok= !args_names_scope.AddName( in_arg.name, NamesScopeValue( move(out_arg) ) ).empty();
 			if( !insert_ok )
 			{
-				REPORT_ERROR( args_names_scope, Redefinition, in_arg.file_pos )
+				REPORT_ERROR( names_scope, Redefinition, in_arg.file_pos )
 			}
 		}
 	}
@@ -351,9 +345,9 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope_ptr, FunctionVar
 	unsafe{ LLVMBuildBr( function_context.alloca_ir_builder, function_context.function_basic_block ); }
 }
 
-fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope_ptr, FunctionContext &mut function_context, Synt::Block& block )
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block )
 {
-	var NamesScopePtr block_names_scope( NamesScope( "", names_scope_ptr ) );
+	var NamesScopePtr block_names_scope( NamesScope( "", names_scope ) );
 
 	foreach( &el : block.elements )
 	{
@@ -364,9 +358,9 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope_ptr, Functio
 	}
 }
 
-fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope_ptr, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator )
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator )
 {
-	var Variable expr= BuildExpressionCodeEnsureVariable( names_scope_ptr.lock_imut().get_ref(), function_context, return_operator.expr );
+	var Variable expr= BuildExpressionCodeEnsureVariable( names_scope, function_context, return_operator.expr );
 
 	unsafe
 	{
@@ -375,7 +369,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope_ptr, Functio
 	}
 }
 
-fn CodeBuilder::BuildExpressionCode( this, NamesScope& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Value
+fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Value
 {
 	if_var( & numeric_constant : expression.expr.get</Synt::NumericConstant/>() )
 	{
@@ -392,7 +386,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScope& names_scope, FunctionCont
 	halt;
 }
 
-fn CodeBuilder::BuildExpressionCodeEnsureVariable( this, NamesScope& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Variable
+fn CodeBuilder::BuildExpressionCodeEnsureVariable( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Variable
 {
 	var Value mut value= BuildExpressionCode( names_scope, function_context, expression );
 
@@ -400,7 +394,7 @@ fn CodeBuilder::BuildExpressionCodeEnsureVariable( this, NamesScope& names_scope
 	return value.get</Variable/>().get_ref();
 }
 
-fn CodeBuilder::BuildExpressionCode( this, NamesScope& names_scope, FunctionContext &mut function_context, Synt::NumericConstant& numeric_constant ) : Value
+fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NumericConstant& numeric_constant ) : Value
 {
 	var Variable mut res;
 	res.t= Type( FundamentalType( U_FundamentalType::i32_ , fundamental_llvm_types_.i32_ ) );
@@ -411,12 +405,12 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScope& names_scope, FunctionCont
 	return Value( move(res) );
 }
 
-fn CodeBuilder::BuildExpressionCode( this, NamesScope& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value
+fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value
 {
 	return ResolveValue( names_scope, named_operand );
 }
 
-fn CodeBuilder::BuildExpressionCode( this, NamesScope& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
+fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
 {
 	var Variable l= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.l.get_ref() );
 	auto l_in_register= CreateMoveToLLVMRegisterInstruction( l, function_context );

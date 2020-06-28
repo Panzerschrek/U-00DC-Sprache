@@ -22,7 +22,7 @@ public:
 
 private:
 	fn NamesScopeValueToValue( this, NamesScopeValue& names_scope_value ) : Value;
-	fn ResolveValue( this, NamesScope& names_scope, Synt::ComplexName& complex_name ) : Value;
+	fn ResolveValue( this, NamesScopePtr& names_scope, Synt::ComplexName& complex_name ) : Value;
 
 	fn FillGlobalNamesScope( this, NamesScope &mut names_scope );
 
@@ -39,20 +39,20 @@ private:
 		NamesScopePtr& names_scope_ptr,
 		FunctionsSet &mut functions_set ) : bool;
 
-	fn PrepareType( this, NamesScope& names_scope, Synt::TypeName& type_name ) : Type;
-	fn PrepareType( this, NamesScope& names_scope, Synt::ComplexName& named_type ) : Type;
-	fn PrepareType( this, NamesScope& names_scope, Synt::FunctionType& function_type) : Type;
+	fn PrepareType( this, NamesScopePtr& names_scope, Synt::TypeName& type_name ) : Type;
+	fn PrepareType( this, NamesScopePtr& names_scope, Synt::ComplexName& named_type ) : Type;
+	fn PrepareType( this, NamesScopePtr& names_scope, Synt::FunctionType& function_type) : Type;
 
 	fn BuildFuncCode( this, NamesScopePtr& names_scope_ptr, FunctionVariable &mut func_variable );
 
-	fn BuildBlockElement( this, NamesScopePtr& names_scope_ptr, FunctionContext &mut function_context, Synt::Block& block );
-	fn BuildBlockElement( this, NamesScopePtr& names_scope_ptr, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator );
+	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block );
+	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator );
 
-	fn BuildExpressionCodeEnsureVariable( this, NamesScope& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Variable;
-	fn BuildExpressionCode( this, NamesScope& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Value;
-	fn BuildExpressionCode( this, NamesScope& names_scope, FunctionContext &mut function_context, Synt::NumericConstant& numeric_constant ) : Value;
-	fn BuildExpressionCode( this, NamesScope& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value;
-	fn BuildExpressionCode( this, NamesScope& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value;
+	fn BuildExpressionCodeEnsureVariable( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Variable;
+	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Value;
+	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NumericConstant& numeric_constant ) : Value;
+	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value;
+	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value;
 
 	fn CreateMoveToLLVMRegisterInstruction( Variable& variable, FunctionContext& function_context ) : LLVMValueRef;
 
