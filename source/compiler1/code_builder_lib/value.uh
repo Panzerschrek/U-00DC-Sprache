@@ -17,8 +17,12 @@ struct Variable
 	LLVMValueRef llvm_value= LLVMValueRef::Null;
 }
 
+struct ErrorValue{}
+
 type Value= ust::variant</ tup[
-	Variable
+	Variable,
+	Type,
+	ErrorValue
 	] />;
 
 } // namespace U

@@ -21,6 +21,9 @@ public:
 	fn BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : BuildResult;
 
 private:
+	fn NamesScopeValueToValue( this, NamesScopeValue& names_scope_value ) : Value;
+	fn ResolveValue( this, NamesScope& names_scope, Synt::ComplexName& complex_name ) : Value;
+
 	fn FillGlobalNamesScope( this, NamesScope &mut names_scope );
 
 	fn NamesScopeFill( NamesScopePtr& names_scope_ptr, Synt::ProgramElements& program_elements );

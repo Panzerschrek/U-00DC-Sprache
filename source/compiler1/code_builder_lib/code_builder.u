@@ -68,6 +68,59 @@ fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : Buil
 	return move(res);
 }
 
+fn CodeBuilder::NamesScopeValueToValue( this, NamesScopeValue& names_scope_value ) : Value
+{
+	{
+		auto t= names_scope_value.Get</Type/>();
+		if( !t.empty() )
+		{
+			return Value( t.lock_imut().get_ref() );
+		}
+	}
+	{
+		auto f= names_scope_value.Get</FunctionsSet/>();
+		// TODO - build functions set.
+	}
+	{
+		auto var_ptr= names_scope_value.Get</NamesScopeVariable/>();
+		if( !var_ptr.empty() )
+		{
+			auto lock= var_ptr.lock_imut();
+			auto& v= lock.get_ref();
+
+			var Variable mut res;
+			res.t= v.t;
+			res.llvm_value= v.llvm_value;
+			res.location= Variable::Location::Pointer;
+			return Value( move(res) );
+		}
+	}
+
+	return Value( ErrorValue() );
+}
+
+fn CodeBuilder::ResolveValue( this, NamesScope& names_scope, Synt::ComplexName& complex_name ) : Value
+{
+	if_var( names_scope_value : names_scope.GetThisScopeValue( complex_name.name ) )
+	{
+		return NamesScopeValueToValue( names_scope_value );
+	}
+
+	var ust::shared_ptr_nullable_imut</NamesScope/> mut current_scope= names_scope.GetParent();
+	while( !current_scope.empty() )
+	{
+		if_var( names_scope_value : current_scope.lock_imut().get_ref().GetThisScopeValue( complex_name.name ) )
+		{
+			return NamesScopeValueToValue( names_scope_value );
+		}
+
+		current_scope= names_scope.GetParent();
+	}
+
+	REPORT_ERROR( names_scope, NameNotFound, complex_name.file_pos )
+	return Value( ErrorValue() );
+}
+
 fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
 {
 	names_scope.AddName( KeywordToString(Keyword::void_), Type( FundamentalType( U_FundamentalType::void_, fundamental_llvm_types_.void_ ) ) );
@@ -199,21 +252,14 @@ fn CodeBuilder::PrepareType( this, NamesScope& names_scope, Synt::TypeName& type
 
 fn CodeBuilder::PrepareType( this, NamesScope& names_scope, Synt::ComplexName& named_type ) : Type
 {
-	// TODO - call "ResolveValue"
-	auto value= names_scope.GetThisScopeValue( named_type.name );
-	if( value.empty() )
+	var Value resolved_value= ResolveValue( names_scope, named_type );
+	if_var( & t : resolved_value.get</Type/>() )
 	{
-		REPORT_ERROR( names_scope, NameNotFound, named_type.file_pos )
-		return Type( FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ ) );
+		return t;
 	}
 
-	auto value_as_type= value.get_ref().Get</Type/>();
-	if( value_as_type.empty() )
-	{
-		return Type( FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ ) );
-	}
-
-	return value_as_type.lock_imut().get_ref();
+	REPORT_ERROR( names_scope, NameIsNotTypeName, named_type.file_pos )
+	return Type( FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ ) );
 }
 
 fn CodeBuilder::PrepareType( this, NamesScope& names_scope, Synt::FunctionType& function_type ) : Type
