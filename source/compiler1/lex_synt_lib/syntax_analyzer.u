@@ -92,6 +92,61 @@ fn IsBinaryOperator( Lexem& lexem ) : bool
 		lexem.lexem_type == Lexem::Type::Disjunction;
 }
 
+
+fn LexemToBinaryOperator( Lexem& lexem ) : BinaryOperatorType
+{
+	if( lexem.lexem_type == Lexem::Type::Plus	){ return BinaryOperatorType::Add; }
+	if( lexem.lexem_type == Lexem::Type::Minus	){ return BinaryOperatorType::Sub; }
+	if( lexem.lexem_type == Lexem::Type::Star	){ return BinaryOperatorType::Mul; }
+	if( lexem.lexem_type == Lexem::Type::Slash	){ return BinaryOperatorType::Div; }
+	if( lexem.lexem_type == Lexem::Type::Percent){ return BinaryOperatorType::Rem; }
+
+	if( lexem.lexem_type == Lexem::Type::CompareEqual			){ return BinaryOperatorType::Equal			; }
+	if( lexem.lexem_type == Lexem::Type::CompareNotEqual		){ return BinaryOperatorType::NotEqual		; }
+	if( lexem.lexem_type == Lexem::Type::CompareLess			){ return BinaryOperatorType::Less			; }
+	if( lexem.lexem_type == Lexem::Type::CompareLessOrEqual		){ return BinaryOperatorType::LessEqual		; }
+	if( lexem.lexem_type == Lexem::Type::CompareGreater			){ return BinaryOperatorType::Greater		; }
+	if( lexem.lexem_type == Lexem::Type::CompareGreaterOrEqual	){ return BinaryOperatorType::GreaterEqual	; }
+
+	if( lexem.lexem_type == Lexem::Type::And ){ return BinaryOperatorType::And; }
+	if( lexem.lexem_type == Lexem::Type::Or  ){ return BinaryOperatorType::Or ; }
+	if( lexem.lexem_type == Lexem::Type::Xor ){ return BinaryOperatorType::Xor; }
+
+	if( lexem.lexem_type == Lexem::Type::ShiftLeft  ){ return BinaryOperatorType::ShiftLeft ; }
+	if( lexem.lexem_type == Lexem::Type::ShiftRight ){ return BinaryOperatorType::ShiftRight; }
+
+	if( lexem.lexem_type == Lexem::Type::Conjunction ){ return BinaryOperatorType::LazyLogicalAnd; }
+	if( lexem.lexem_type == Lexem::Type::Disjunction ){ return BinaryOperatorType::LazyLogicalOr ; }
+
+	halt;
+}
+
+fn GetMostRightIncompleteBinaryOperatorInTree( BinaryOperator &mut o ) : BinaryOperator &mut
+{
+	if( o.r.get_ref().expr.get</EmptyVariant/>().empty() )
+	{
+		return o;
+	}
+
+	// Should be binary operator.
+	return GetMostRightIncompleteBinaryOperatorInTree( o.r.get_ref().expr.get</BinaryOperator/>().get_ref() );
+}
+
+fn GetDeepestRightBinaryOperatorComponentWithNonLessPriority( BinaryOperator &mut o, BinaryOperatorType cur_op_type ) : BinaryOperator &mut
+{
+	if( GetBinaryOperatorPriority( cur_op_type ) > GetBinaryOperatorPriority( o.operator ) )
+	{
+		return o;
+	}
+
+	if_var( &mut right_as_binary_operator : o.r.get_ref().expr.get</BinaryOperator/>() )
+	{
+		return GetDeepestRightBinaryOperatorComponentWithNonLessPriority( right_as_binary_operator, cur_op_type );
+	}
+
+	return o;
+}
+
 class SyntaxAnalyzer
 {
 public:
@@ -145,37 +200,87 @@ fn SyntaxAnalyzer::DoAnalyzis( mut this ) : SyntaxAnalysisResult
 
 fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 {
-	if( it_.front().lexem_type == Lexem::Type::Number )
-	{
-		var NumericConstant mut numeric_constant;
-		halt if( it_.front().text.size() < typeinfo</NumberLexemData/>.size_of );
+	var Expression mut root;
 
-		unsafe
+	while( NotEndOfFile() )
+	{
+		var Expression mut current_node;
+
+		if( it_.front().lexem_type == Lexem::Type::Number )
 		{
-			ust::memory_copy( numeric_constant.num, it_.front().text.front(), typeinfo</NumberLexemData/>.size_of );
+			var NumericConstant mut numeric_constant;
+			halt if( it_.front().text.size() < typeinfo</NumberLexemData/>.size_of );
+
+			unsafe
+			{
+				ust::memory_copy( numeric_constant.num, it_.front().text.front(), typeinfo</NumberLexemData/>.size_of );
+			}
+
+			NextLexem();
+
+			var Expression mut expr{ .expr= move(numeric_constant) };
+			current_node= move(expr);
+		}
+		else if( it_.front().lexem_type == Lexem::Type::Identifier )
+		{
+			var ComplexName mut complex_name;
+			complex_name.file_pos= it_.front().file_pos;
+			complex_name.name= it_.front().text;
+
+			NextLexem();
+
+			var Expression mut expr{ .expr= move(complex_name) };
+			current_node= move(expr);
+		}
+		else
+		{
+			break;
 		}
 
-		NextLexem();
+		var bool is_binary_operator= IsBinaryOperator( it_.front() );
 
-		var Expression mut expr{ .expr= move(numeric_constant) };
-		return move(expr);
-	}
-	else if( it_.front().lexem_type == Lexem::Type::Identifier )
-	{
-		var ComplexName mut complex_name;
-		complex_name.file_pos= it_.front().file_pos;
-		complex_name.name= it_.front().text;
+		if( !root.expr.get</EmptyVariant/>().empty() )
+		{
+			root= move(current_node);
+		}
+		else
+		{
+			// Place to existent tree last component.
 
-		NextLexem();
+			// TODO - replace this call with loop.
+			auto &mut most_right_with_null= GetMostRightIncompleteBinaryOperatorInTree( root.expr.get</BinaryOperator/>().get_ref() );
+			most_right_with_null.r.get_ref()= move(current_node);
+		}
 
-		var Expression mut expr{ .expr= move(complex_name) };
-		return move(expr);
+		if( is_binary_operator )
+		{
+			var BinaryOperator mut binary_operator
+			{
+				.operator=LexemToBinaryOperator( it_.front() ),
+				.l( Expression() ),
+				.r( Expression() )
+			};
+
+
+			if( !root.expr.get</BinaryOperator/>().empty() )
+			{
+				auto &mut dst= GetDeepestRightBinaryOperatorComponentWithNonLessPriority( root.expr.get</BinaryOperator/>().get_ref(), binary_operator.operator );
+				binary_operator.l.get_ref()= take(dst.r.get_ref());
+				dst.r.get_ref().expr= move(binary_operator);
+			}
+			else
+			{
+				binary_operator.l.get_ref()= take(root);
+				root.expr= move(binary_operator);
+			}
+		}
+		else
+		{
+			break;
+		}
 	}
-	else
-	{
-		PushErrorMessage();
-		return Expression();
-	}
+
+	return move(root);
 }
 
 fn SyntaxAnalyzer::ParseTypeName( mut this ) : TypeName

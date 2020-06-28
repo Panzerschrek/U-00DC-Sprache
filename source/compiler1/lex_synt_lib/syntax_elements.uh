@@ -15,6 +15,8 @@ namespace U
 namespace Synt
 {
 
+struct EmptyVariant{} // used as stub
+
 struct ComplexName
 {
 	FilePos file_pos;
@@ -44,6 +46,7 @@ struct BracketExpression
 struct Expression
 {
 	ust::variant</ tup[
+		EmptyVariant,
 		NumericConstant,
 		BinaryOperator,
 		BracketExpression,
