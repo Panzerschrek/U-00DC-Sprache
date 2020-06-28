@@ -135,7 +135,7 @@ int main()
 
 	const TestsFuncsContainer& funcs_container= GetTestsFuncsContainer();
 
-	std::cout << "Run " << funcs_container.size() << " tests" << std::endl << std::endl;
+	std::cout << "Run " << funcs_container.size() << " Ü tests" << std::endl << std::endl;
 
 	unsigned int passed= 0u;
 	unsigned int disabled= 0u;
