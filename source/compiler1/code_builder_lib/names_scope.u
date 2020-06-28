@@ -3,10 +3,12 @@ import "names_scope.uh"
 namespace U
 {
 
-fn NamesScope::constructor( ust::string8 mut name, ErrorsContainerPtr errors_container )
+fn NamesScope::constructor(
+	ust::string8 mut name,
+	ust::shared_ptr_nullable_imut</NamesScope/>& parent )
 	(
 		name_= move(name),
-		errors_container_(errors_container)
+		parent_(parent)
 	)
 {
 }
@@ -26,5 +28,24 @@ fn NamesScope::AddName( mut this, ust::string8 mut name, NamesScopeValue mut val
 	return ust::optional_ref</ NamesScopeValue, true />( names_map_.insert(move(name), move(value) ) );
 }
 
+fn NamesScope::GetParent( this ) : ust::shared_ptr_nullable_imut</NamesScope/>
+{
+	return parent_.lock();
+}
+
+fn NamesScope::SetErrors( mut this, ErrorsContainerPtr errors_container )
+{
+	errors_container_= errors_container;
+}
+
+fn NamesScope::GetErrors( this ) : ErrorsContainerPtr
+{
+	if( errors_container_.empty() )
+	{
+		return parent_.lock().lock_imut().get_ref().GetErrors();
+	}
+
+	return errors_container_;
+}
 
 } // namespace U

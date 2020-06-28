@@ -46,9 +46,16 @@ fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : Buil
 
 	var ErrorsContainerPtr errors_container( ErrorsContainer() );
 
-	var NamesScope mut global_names_scope( "", errors_container );
+	var ust::shared_ptr_mut</NamesScope/> global_names_scope( NamesScope( "", ust::shared_ptr_nullable_imut</NamesScope/>() ) );
 
-	FillGlobalNamesScope( global_names_scope );
+	{
+		auto mut l= global_names_scope.lock_mut();
+		auto &mut n= l.get_ref();
+
+		n.SetErrors( errors_container );
+		FillGlobalNamesScope( n );
+	}
+
 	NamesScopeFill( global_names_scope, ast.program_elements );
 	NamesScopeBuild( global_names_scope );
 
@@ -82,19 +89,22 @@ fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
 	names_scope.AddName( KeywordToString(Keyword::char32_), Type( FundamentalType( U_FundamentalType::char32_, fundamental_llvm_types_.char32_ ) ) );
 }
 
-fn CodeBuilder::NamesScopeFill( NamesScope &mut names_scope, Synt::ProgramElements& program_elements )
+fn CodeBuilder::NamesScopeFill( NamesScopePtr& names_scope_ptr, Synt::ProgramElements& program_elements )
 {
 	foreach( & program_element : program_elements )
 	{
 		if_var( & function : program_element.get</ ust::shared_ptr_final</Synt::Function/> />() )
 		{
-			NamesScopeFill( names_scope, function );
+			NamesScopeFill( names_scope_ptr, function );
 		}
 	}
 }
 
-fn CodeBuilder::NamesScopeFill( NamesScope &mut names_scope, ust::shared_ptr_final</Synt::Function/>& function )
+fn CodeBuilder::NamesScopeFill( NamesScopePtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function )
 {
+	auto mut names_scope_lock= names_scope_ptr.lock_mut();
+	auto& mut names_scope= names_scope_lock.get_ref();
+
 	if( !names_scope.GetThisScopeValue( function.get_ref().name ).empty() )
 	{
 		REPORT_ERROR( names_scope, Redefinition, function.get_ref().file_pos )
@@ -109,19 +119,22 @@ fn CodeBuilder::NamesScopeFill( NamesScope &mut names_scope, ust::shared_ptr_fin
 	names_scope.AddName( function.get_ref().name, NamesScopeValue( move(functions_set) ) );
 }
 
-fn CodeBuilder::NamesScopeBuild( this, NamesScope& names_scope )
+fn CodeBuilder::NamesScopeBuild( this, NamesScopePtr& names_scope_ptr )
 {
+	auto lock= names_scope_ptr.lock_imut();
+	auto& names_scope= lock.get_ref();
+
 	foreach( &el : names_scope.GetInternalContainer() )
 	{
 		auto functions_set= el.value().Get</ FunctionsSet />();
 		if( !functions_set.empty() )
 		{
-			NamesScopeBuildElement( names_scope, ust::to_non_nullable( functions_set ) );
+			NamesScopeBuildElement( names_scope_ptr, ust::to_non_nullable( functions_set ) );
 		}
 	}
 }
 
-fn CodeBuilder::NamesScopeBuildElement( this, NamesScope& names_scope, ust::shared_ptr_mut</FunctionsSet/> functions_set )
+fn CodeBuilder::NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</FunctionsSet/> functions_set )
 {
 	{ // First, lock as imut and check if complete.
 		auto l= functions_set.lock_imut();
@@ -138,7 +151,7 @@ fn CodeBuilder::NamesScopeBuildElement( this, NamesScope& names_scope, ust::shar
 	while( !functions_set.syntax_elements.empty() )
 	{
 		auto syntax_element_ptr= functions_set.syntax_elements.back();
-		PrepareFunction( syntax_element_ptr, names_scope, functions_set );
+		PrepareFunction( syntax_element_ptr, names_scope_ptr, functions_set );
 		functions_set.syntax_elements.drop_back();
 	}
 }
@@ -146,14 +159,14 @@ fn CodeBuilder::NamesScopeBuildElement( this, NamesScope& names_scope, ust::shar
 fn CodeBuilder::PrepareFunction(
 	this,
 	ust::shared_ptr_final</Synt::Function/>& function_declaration_ptr,
-	NamesScope& names_scope,
+	NamesScopePtr& names_scope_ptr,
 	FunctionsSet &mut functions_set ) : bool
 {
 	auto& function_declaration= function_declaration_ptr.get_ref();
 
 	var FunctionVariable mut function_variable{ .syntax_element= function_declaration_ptr };
 
-	function_variable.t= PrepareType( names_scope, function_declaration.function_type );
+	function_variable.t= PrepareType( names_scope_ptr.lock_imut().get_ref(), function_declaration.function_type );
 
 	unsafe
 	{
@@ -166,7 +179,7 @@ fn CodeBuilder::PrepareFunction(
 
 	functions_set.functions.push_back( move(function_variable) );
 
-	BuildFuncCode( functions_set.functions.back() ); // TODO separate body build from prototype build.
+	BuildFuncCode( names_scope_ptr, functions_set.functions.back() ); // TODO separate body build from prototype build.
 
 	return true;
 }
@@ -249,28 +262,30 @@ fn CodeBuilder::PrepareType( this, NamesScope& names_scope, Synt::FunctionType& 
 	return Type(move(res));
 }
 
-fn CodeBuilder::BuildFuncCode( this, FunctionVariable &mut func_variable )
+fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope_ptr, FunctionVariable &mut func_variable )
 {
 	var FunctionContext mut function_context( llvm_context_, func_variable.llvm_function );
 
-	BuildBlockElement( function_context, func_variable.syntax_element.get_ref().block.get_ref() );
+	BuildBlockElement( names_scope_ptr, function_context, func_variable.syntax_element.get_ref().block.get_ref() );
 
 	// Finsih function - add remaining instructions
 	unsafe{ LLVMBuildBr( function_context.alloca_ir_builder, function_context.function_basic_block ); }
 }
 
-fn CodeBuilder::BuildBlockElement( this, FunctionContext &mut function_context, Synt::Block& block )
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope_ptr, FunctionContext &mut function_context, Synt::Block& block )
 {
+	var NamesScopePtr block_names_scope( NamesScope( "", names_scope_ptr ) );
+
 	foreach( &el : block.elements )
 	{
 		if_var( &return_operator : el.get</Synt::ReturnOperator/>() )
 		{
-			BuildBlockElement( function_context, return_operator );
+			BuildBlockElement( block_names_scope, function_context, return_operator );
 		}
 	}
 }
 
-fn CodeBuilder::BuildBlockElement( this, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator )
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope_ptr, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator )
 {
 	var Variable expr= BuildExpressionCodeEnsureVariable( function_context, return_operator.expr );
 

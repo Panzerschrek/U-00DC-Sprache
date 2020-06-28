@@ -23,27 +23,27 @@ public:
 private:
 	fn FillGlobalNamesScope( this, NamesScope &mut names_scope );
 
-	fn NamesScopeFill( NamesScope &mut names_scope, Synt::ProgramElements& program_elements );
-	fn NamesScopeFill( NamesScope &mut names_scope, ust::shared_ptr_final</Synt::Function/>& function );
+	fn NamesScopeFill( NamesScopePtr& names_scope_ptr, Synt::ProgramElements& program_elements );
+	fn NamesScopeFill( NamesScopePtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function );
 
-	fn NamesScopeBuild( this, NamesScope& names_scope );
-	fn NamesScopeBuildElement( this, NamesScope& names_scope, ust::shared_ptr_mut</FunctionsSet/> functions_set );
+	fn NamesScopeBuild( this, NamesScopePtr& names_scope_ptr );
+	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</FunctionsSet/> functions_set );
 
 	// Returns "true" if ok.
 	fn PrepareFunction(
 		this,
 		ust::shared_ptr_final</Synt::Function/>& function_declaration_ptr,
-		NamesScope& names_scope,
+		NamesScopePtr& names_scope_ptr,
 		FunctionsSet &mut functions_set ) : bool;
 
 	fn PrepareType( this, NamesScope& names_scope, Synt::TypeName& type_name ) : Type;
 	fn PrepareType( this, NamesScope& names_scope, Synt::ComplexName& named_type ) : Type;
 	fn PrepareType( this, NamesScope& names_scope, Synt::FunctionType& function_type) : Type;
 
-	fn BuildFuncCode( this, FunctionVariable &mut func_variable );
+	fn BuildFuncCode( this, NamesScopePtr& names_scope_ptr, FunctionVariable &mut func_variable );
 
-	fn BuildBlockElement( this, FunctionContext &mut function_context, Synt::Block& block );
-	fn BuildBlockElement( this, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator );
+	fn BuildBlockElement( this, NamesScopePtr& names_scope_ptr, FunctionContext &mut function_context, Synt::Block& block );
+	fn BuildBlockElement( this, NamesScopePtr& names_scope_ptr, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator );
 
 	fn BuildExpressionCodeEnsureVariable( this, FunctionContext &mut function_context, Synt::Expression& expression ) : Variable;
 	fn BuildExpressionCode( this, FunctionContext &mut function_context, Synt::Expression& expression ) : Value;

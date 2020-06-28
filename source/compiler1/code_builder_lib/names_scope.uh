@@ -1,3 +1,4 @@
+import "/shared/weak_ptr_imut.u"
 import "/unordered_map.u"
 import "names_scope_value.uh"
 import "/code_builder_errors.uh"
@@ -6,21 +7,23 @@ namespace U
 {
 
 type ErrorsContainer= ust::vector</ CodeBuilderError />;
-type ErrorsContainerPtr= ust::shared_ptr_mut</ErrorsContainer/>;
+type ErrorsContainerPtr= ust::shared_ptr_nullable_mut</ErrorsContainer/>;
+
+type NamesScopePtr= ust::shared_ptr_mut</NamesScope/>;
 
 class NamesScope
 {
 public:
-	fn constructor( ust::string8 mut name, ErrorsContainerPtr errors_container );
+	fn constructor( ust::string8 mut name, ust::shared_ptr_nullable_imut</NamesScope/>& parent );
 
 	fn GetThisScopeValue( this, ust::string8& name ) : ust::optional_ref</ NamesScopeValue, false />'this';
 
 	fn AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : ust::optional_ref</ NamesScopeValue, true />'this';
 
-	fn GetErrors( this ) : ErrorsContainerPtr
-	{
-		return errors_container_;
-	}
+	fn GetParent( this ) : ust::shared_ptr_nullable_imut</NamesScope/>;
+
+	fn SetErrors( mut this, ErrorsContainerPtr errors_container );
+	fn GetErrors( this ) : ErrorsContainerPtr;
 
 	// HACK! for iteration. Remove this.
 	fn GetInternalContainer( imut this ) : ust::unordered_map</ ust::string8, NamesScopeValue /> &
@@ -30,9 +33,7 @@ public:
 
 private:
 	ust::string8 name_;
-
-	// TODO - use weak_ptr. Now use raw unsafe pointer to prevent globals loops.
-	ust::raw_ptr_mut</NamesScope/> parent_;
+	ust::weak_ptr_imut</NamesScope/> parent_;
 
 	ust::unordered_map</ ust::string8, NamesScopeValue /> names_map_;
 
