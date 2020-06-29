@@ -17,7 +17,7 @@ struct R
 
 type VariantWithReferenceInside= ust::variant</ tup[ R ] />; //##expect_error TemplateContext
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	{ // Try to get wrong type.
 		var ust::variant</ tup[ i32, f32 ] /> v(0);

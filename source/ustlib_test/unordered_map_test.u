@@ -17,7 +17,7 @@ struct OneBitHash
 	op==( OneBitHash& a, OneBitHash& b ) : bool { return a.x == b.x; }
 }
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	{
 		var ust::unordered_map</ i32, i32 /> mut m;

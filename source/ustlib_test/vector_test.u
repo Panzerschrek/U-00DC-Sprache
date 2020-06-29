@@ -38,7 +38,7 @@ type NCVec= ust::vector</NC/>;
 template</ type T /> fn IsMutableReference( T & mut r ) : bool { return true ; }
 template</ type T /> fn IsMutableReference( T &imut r ) : bool { return false; }
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	{ // vector is default construtible. Default state is empty.
 		var I32Vec i;

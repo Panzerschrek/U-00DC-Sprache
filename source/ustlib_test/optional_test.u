@@ -23,7 +23,7 @@ struct R // Have destructor with side-effects.
 	}
 }
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	// Optional saves alignment.
 	static_assert( typeinfo</ ust::optional</ i8/> />.align_of >= typeinfo</ i8/>.align_of );

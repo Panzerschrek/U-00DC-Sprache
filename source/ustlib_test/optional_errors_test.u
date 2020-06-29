@@ -13,7 +13,7 @@ struct RM
 	fn constructor( this'a', i32&'b mut in_r ) ' a <- b ' ( r= in_r ) {}
 }
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	{ // constructor does reference-pollution.
 		var i32 mut x= 0;

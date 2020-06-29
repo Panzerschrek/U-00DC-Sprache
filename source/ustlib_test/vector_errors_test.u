@@ -20,7 +20,7 @@ struct S // Non-default-constructible.
 
 class C {} // Class is not copy-constructible by-default.
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	{ // "push_back" does reference-pollution.
 		var i32 mut x= 0;

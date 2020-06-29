@@ -10,7 +10,7 @@ class B : A { i32 y= 0; }
 
 class C : I0, I1 {}
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	{
 		var i32 x= 0;

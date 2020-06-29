@@ -14,7 +14,7 @@ fn GetCharRangeSize( ust::random_access_range_imut</char8/> char_range ) : size_
 	return char_range.size();
 }
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	{ // Can construct imut range from imut array.
 		var [ i32, 5 ] arr= zero_init;

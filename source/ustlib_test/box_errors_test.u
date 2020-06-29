@@ -16,7 +16,7 @@ struct SWithRef
 
 type SWithRefBox= ust::box</SWithRef/>; //##expect_error TemplateContext
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	{ // box have no default constructor.
 		var ust::box</ i32 /> b; //##expect_error ExpectedInitializer

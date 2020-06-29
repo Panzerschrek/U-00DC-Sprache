@@ -55,7 +55,7 @@ type VariantDCOrIntVec4= ust::variant</ tup[ DC, IntVec4 ] />;
 static_assert( typeinfo</ VariantDCOrIntVec4 />.size_of == ConstexprMax( typeinfo</ DC />.size_of, typeinfo</ IntVec4 />.align_of ) + ConstexprMax( typeinfo</ DC />.align_of,  typeinfo</ IntVec4 />.align_of ) );
 static_assert( typeinfo</ VariantDCOrIntVec4 />.align_of == ConstexprMax( typeinfo</ DC />.align_of, typeinfo</ IntVec4 />.align_of ) );
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	{
 		var ust::variant</ tup[ i32, f32 ] />

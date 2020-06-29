@@ -1,7 +1,7 @@
 //##success_test
 import "../ustlib/variant.u"
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	{
 		var ust::variant</ tup[ i32, f32 ] /> v(55);

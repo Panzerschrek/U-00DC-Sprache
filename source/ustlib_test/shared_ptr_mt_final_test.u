@@ -8,7 +8,7 @@ type IntPtrNullable= ust::shared_ptr_mt_final_nullable</i32/>;
 static_assert( !ust::have_shared_state</IntPtr/>() );
 static_assert( !ust::have_shared_state</IntPtrNullable/>() );
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	{ // Can directly get reference to content of shared_ptr_final
 		var IntPtr ptr(52);

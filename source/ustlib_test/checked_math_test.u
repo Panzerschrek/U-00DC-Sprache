@@ -1,7 +1,7 @@
 //##success_test
 import "../ustlib/checked_math.u"
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	halt if( ust::add_overflow_check_halt( 5, 78 ) != 5 + 78 );
 	halt if( ust::add_overflow_check_halt( 896u, 654u ) != 896u + 654u );

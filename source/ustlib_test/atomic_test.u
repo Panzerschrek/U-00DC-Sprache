@@ -1,7 +1,7 @@
 //##success_test
 import "../ustlib/atomic.u"
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	{
 		var i32 mut x=-77;

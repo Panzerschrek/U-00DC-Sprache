@@ -19,7 +19,6 @@ class ParseResult:
 
 
 g_compiler_executable= "Compiler"
-g_entry_point_source= "entry.cpp"
 g_cpp_compiler_executable= "g++"
 g_use_position_independent_code= False
 
@@ -177,7 +176,7 @@ def DoSuccessTest( file_path ):
 		print( "Compilation failed" )
 		return 1
 
-	if subprocess.call( [ g_cpp_compiler_executable, g_entry_point_source, object_file, "-o", executable_file, "-lpthread" ] ) != 0:
+	if subprocess.call( [ g_cpp_compiler_executable, object_file, "-o", executable_file, "-lpthread" ] ) != 0:
 		print( "linking failed" )
 		os.remove( object_file )
 		return 1
@@ -236,7 +235,6 @@ def main():
 	parser.add_argument( "--input-file", help= "input Ü test source", type=str )
 	parser.add_argument( "--input-dir", help= "input Ü test sources directory", type=str )
 	parser.add_argument( "--compiler-executable", help= "path to compiler executable", type=str )
-	parser.add_argument( "--entry-point-source", help= "path to entry point cpp file", type=str )
 	parser.add_argument( "--cpp-compiler-executable", help= "path to c++ compiler/linker executable", type=str )
 	parser.add_argument( "--use-position-independent-code", help= "use or not position independent code", action="store_true" )
 
@@ -245,10 +243,6 @@ def main():
 	if args.compiler_executable is not None:
 		global g_compiler_executable
 		g_compiler_executable= args.compiler_executable
-
-	if args.entry_point_source is not None:
-		global g_entry_point_source
-		g_entry_point_source= args.entry_point_source
 
 	if args.cpp_compiler_executable is not None:
 		global g_cpp_compiler_executable

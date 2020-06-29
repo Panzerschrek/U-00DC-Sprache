@@ -4,7 +4,7 @@ import "../ustlib/vector.u"
 type VecType= ust::vector</i32/>;
 
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	{
 		var VecType mut vec;

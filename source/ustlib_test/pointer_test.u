@@ -8,7 +8,7 @@ struct S
 	fn constructor() ( x= 0, y= 0 ) {}
 }
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	unsafe // Pointer is default constructible. Default value is null.
 	{

@@ -60,7 +60,7 @@ fn IsMut( void& imut r ) : bool
 	return false;
 }
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	//
 	// Common test with "shared_ptr"
