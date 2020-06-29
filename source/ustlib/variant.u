@@ -3,6 +3,22 @@ import "container_utils.u"
 import "minmax.u"
 import "optional_ref.u"
 import "type_traits.u"
+?macro <? variant_visit:block ( ?r:opt<? & ?> ?m:opt<? mut ?> ?var_name:ident : ?e:expr ) ?b:block ?>
+->
+<?
+	{
+		auto lock_temps& ?m<? mut ?> ??variant= ?e;
+		for( & ??element_type_typeinfo : typeinfo</ typeof(??variant)::elements_tuple />.elements_list )
+		{
+			auto ??ref= ??variant.get</ typeof(??element_type_typeinfo.type)::src_type />();
+			if( !??ref.empty() )
+			{
+				auto lock_temps ?r<? & ?> ?m<? mut ?> ?var_name= ??ref.get_ref();
+				?b
+			}
+		}
+	}
+?>
 
 namespace ust
 {
@@ -85,6 +101,7 @@ public:
 	static_assert( all_tuple_elements_is_unique</Y/>() );
 
 	type this_type= variant</ Y />;
+	type elements_tuple= Y;
 
 public:
 	fn
