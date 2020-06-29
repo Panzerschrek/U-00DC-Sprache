@@ -14,7 +14,7 @@ struct SWithRef
 
 type SWithRefBox= ust::box</SWithRef/>; //##expect_error TemplateContext
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	{ // box_nullable is not copyable.
 		var ust::box_nullable</ i32 /> b(0);

@@ -40,7 +40,7 @@ class BoxRecursive
 struct SShared shared{}
 type SSharedBox= ust::box_nullable</SShared/>; // Should be ok for types with "shared" tag
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	// Box have pointer size.
 	static_assert( typeinfo</ ust::box_nullable</ BigStruct /> />.size_of == typeinfo</S/>.size_of );

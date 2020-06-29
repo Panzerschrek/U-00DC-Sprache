@@ -22,7 +22,7 @@ struct SharedStruct shared {}
 // Multithreaded shared pointers disabled for types with singlethreaded shared pointers inside.
 type InvalidSharedStructPtr= ust::shared_ptr_mt_mut</SharedStruct/>; //##expect_error TemplateContext
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	//
 	// Common test with "shared_ptr"

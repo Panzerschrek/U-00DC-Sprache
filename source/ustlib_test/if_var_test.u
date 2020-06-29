@@ -5,7 +5,7 @@ import "../ustlib/optional.u"
 type IntBox= ust::box_nullable</i32/>;
 type IntOpt= ust::optional</i32/>;
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	{
 		var IntBox box(66);

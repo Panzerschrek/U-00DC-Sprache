@@ -1,7 +1,7 @@
 //##success_test
 import "../ustlib/string.u"
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	{
 		var ust::string8 str= "ratata";

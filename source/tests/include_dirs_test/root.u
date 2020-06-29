@@ -7,3 +7,8 @@ static_assert( aa == 9854 );
 static_assert( bb == -9863541 );
 static_assert( cc == 1125417 );
 static_assert( zero == 6666 );
+
+fn nomangle main() : i32
+{
+	return 0;
+}

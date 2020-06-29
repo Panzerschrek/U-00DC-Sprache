@@ -1,6 +1,6 @@
 //##success_test
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	{
 		var [ i32, 4 ] arr[ 4, 8, 15, 16 ];

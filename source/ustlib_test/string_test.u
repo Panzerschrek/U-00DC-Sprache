@@ -6,7 +6,7 @@ fn AcceptStringOnly( ust::string8 str )
 	halt if( str != "rtgbg__" );
 }
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	{ // string is default-constructible. Default state is empty.
 		var ust::string8  s8 ;

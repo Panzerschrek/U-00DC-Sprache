@@ -2,7 +2,7 @@
 import "../ustlib/pointer.u"
 
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	auto mut x= 98547;
 	var ust::raw_ptr_mut</i32/> ptr( x );

@@ -333,7 +333,7 @@ fn DoFloatsTest()
 	halt if( ust::trunc( ust::minus_inf</T/>() ) != ust::minus_inf</T/>() ); // result for minus infinity is minus infinity
 }
 
-fn U_Main() : i32
+fn nomangle main() : i32
 {
 	DoFloatsTest</f32/>();
 	DoFloatsTest</f64/>();

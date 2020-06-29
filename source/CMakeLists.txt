@@ -370,7 +370,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 			--include-dir ${CMAKE_SOURCE_DIR}/tests/include_dirs_test/b
 			--include-dir ${CMAKE_SOURCE_DIR}/tests/include_dirs_test/c )
 
-	add_executable( IncludeDirsTest tests/include_dirs_test/entry.cpp tests/include_dirs_test/root.u include_dirs_test.o )
+	add_executable( IncludeDirsTest tests/dummy.cpp tests/include_dirs_test/root.u include_dirs_test.o )
 	add_dependencies( IncludeDirsTest Compiler )
 
 	#
@@ -420,7 +420,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 			DEPFILE dep_main.d # This works only for Ninja
 			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} )
 
-		add_executable( DepFileTest tests/dep_file_test/entry.cpp dep_main.o )
+		add_executable( DepFileTest tests/dummy.cpp dep_main.o )
 		add_dependencies( DepFileTest Compiler )
 
 	else()
