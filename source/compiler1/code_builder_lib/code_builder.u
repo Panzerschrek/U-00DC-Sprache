@@ -233,14 +233,11 @@ fn CodeBuilder::PrepareFunction(
 
 fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, Synt::TypeName& type_name ) : Type
 {
-	if_var( &named_type : type_name.get</Synt::ComplexName/>() )
+	variant_visit( &t : type_name )
 	{
-		return PrepareType( names_scope, named_type );
+		return PrepareType( names_scope, t );
 	}
-	if_var( &function_type : type_name.get</ ust::box</ Synt::FunctionType/> />() )
-	{
-		return PrepareType( names_scope, function_type.get_ref() );
-	}
+
 	halt;
 }
 
@@ -254,6 +251,11 @@ fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, Synt::ComplexName
 
 	REPORT_ERROR( names_scope, NameIsNotTypeName, named_type.file_pos )
 	return Type( FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ ) );
+}
+
+fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, ust::box</Synt::FunctionType/>& function_type_ptr ) : Type
+{
+	return PrepareType( names_scope, function_type_ptr.get_ref() );
 }
 
 fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, Synt::FunctionType& function_type ) : Type

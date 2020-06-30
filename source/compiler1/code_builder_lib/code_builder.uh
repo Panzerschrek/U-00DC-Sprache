@@ -41,7 +41,8 @@ private:
 
 	fn PrepareType( this, NamesScopePtr& names_scope, Synt::TypeName& type_name ) : Type;
 	fn PrepareType( this, NamesScopePtr& names_scope, Synt::ComplexName& named_type ) : Type;
-	fn PrepareType( this, NamesScopePtr& names_scope, Synt::FunctionType& function_type) : Type;
+	fn PrepareType( this, NamesScopePtr& names_scope, ust::box</Synt::FunctionType/>& function_type_ptr ) : Type;
+	fn PrepareType( this, NamesScopePtr& names_scope, Synt::FunctionType& function_type ) : Type;
 
 	fn BuildFuncCode( this, NamesScopePtr& names_scope_ptr, FunctionVariable &mut func_variable );
 
