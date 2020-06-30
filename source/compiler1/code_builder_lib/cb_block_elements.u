@@ -1,0 +1,36 @@
+import "error_reporting.uh"
+import "code_builder.uh"
+
+namespace U
+{
+
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::Block/>& block_ptr )
+{
+	return BuildBlockElement( names_scope, function_context, block_ptr );
+}
+
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block )
+{
+	var NamesScopePtr block_names_scope( NamesScope( "", names_scope ) );
+
+	foreach( &block_element : block.elements )
+	{
+		variant_visit( &el : block_element )
+		{
+			BuildBlockElement( block_names_scope, function_context, el );
+		}
+	}
+}
+
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator )
+{
+	var Variable expr= BuildExpressionCodeEnsureVariable( names_scope, function_context, return_operator.expr );
+
+	unsafe
+	{
+		auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr, function_context );
+		LLVMBuildRet( function_context.llvm_ir_builder, value_in_register );
+	}
+}
+
+} // namespace U

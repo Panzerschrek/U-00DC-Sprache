@@ -46,6 +46,7 @@ private:
 
 	fn BuildFuncCode( this, NamesScopePtr& names_scope_ptr, FunctionVariable &mut func_variable );
 
+	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::Block/>& block_ptr );
 	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block );
 	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator );
 

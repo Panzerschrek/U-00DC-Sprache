@@ -77,13 +77,10 @@ struct ReturnOperator
 	Expression expr;
 }
 
-struct EmptyReturnOperator
-{
-}
-
 type BlockElement = ust::variant</ tup[
-	ReturnOperator,
-	EmptyReturnOperator ] />;
+	ust::box</Block/>,
+	ReturnOperator
+	] />;
 
 struct Block
 {
