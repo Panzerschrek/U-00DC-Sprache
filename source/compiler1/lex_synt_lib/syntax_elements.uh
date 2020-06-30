@@ -48,9 +48,10 @@ struct Expression
 	ust::variant</ tup[
 		EmptyVariant,
 		NumericConstant,
+		ComplexName,
 		BinaryOperator,
-		BracketExpression,
-		ComplexName ] /> expr;
+		BracketExpression
+		] /> expr;
 }
 
 struct FunctionType

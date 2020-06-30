@@ -1,0 +1,104 @@
+import "error_reporting.uh"
+import "code_builder.uh"
+
+namespace U
+{
+
+fn CodeBuilder::BuildExpressionCodeEnsureVariable( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Variable
+{
+	var Value mut value= BuildExpressionCode( names_scope, function_context, expression );
+
+	// TODO - fill dummy value if not variable.
+	return value.get</Variable/>().get_ref();
+}
+
+fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Value
+{
+	variant_visit( &el : expression.expr )
+	{
+		return BuildExpressionCode( names_scope, function_context, el );
+	}
+
+	halt;
+}
+
+fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : Value
+{
+	// "EmptyVariant" used only as stub during expression building in syntax analyzer. It should never be in final result.
+	halt;
+}
+
+fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NumericConstant& numeric_constant ) : Value
+{
+	var Variable mut res;
+	res.t= Type( FundamentalType( U_FundamentalType::i32_ , fundamental_llvm_types_.i32_ ) );
+	res.location= Variable::Location::LLVMRegister;
+
+	unsafe{ res.llvm_value= LLVMConstInt( res.t.GetLLVMType(), u64(numeric_constant.num.value_double), LLVMBool::True ); }
+
+	return Value( move(res) );
+}
+
+fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value
+{
+	return ResolveValue( names_scope, named_operand );
+}
+
+fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
+{
+	var Variable l= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.l.get_ref() );
+	auto l_in_register= CreateMoveToLLVMRegisterInstruction( l, function_context );
+
+	var Variable r= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.r.get_ref() );
+	auto r_in_register= CreateMoveToLLVMRegisterInstruction( r, function_context );
+
+	// TODO - check types.
+
+	var Variable mut res;
+	res.t= l.t;
+	res.location= Variable::Location::LLVMRegister;
+
+	unsafe
+	{
+		if( binary_operator.operator == BinaryOperatorType::Add )
+		{
+			res.llvm_value= LLVMBuildAdd( function_context.llvm_ir_builder, l_in_register, r_in_register, "+\0"[0] );
+		}
+		if( binary_operator.operator == BinaryOperatorType::Sub )
+		{
+			res.llvm_value= LLVMBuildSub( function_context.llvm_ir_builder, l_in_register, r_in_register, "-\0"[0] );
+		}
+		if( binary_operator.operator == BinaryOperatorType::Mul )
+		{
+			res.llvm_value= LLVMBuildMul( function_context.llvm_ir_builder, l_in_register, r_in_register, "*\0"[0] );
+		}
+		if( binary_operator.operator == BinaryOperatorType::Div )
+		{
+			// TODO - select signed/unsigned
+			res.llvm_value= LLVMBuildSDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
+		}
+	}
+
+	return Value(move(res));
+}
+
+fn CodeBuilder::CreateMoveToLLVMRegisterInstruction( Variable& variable, FunctionContext& function_context ) : LLVMValueRef
+{
+	if( variable.location == Variable::Location::Pointer )
+	{
+		unsafe{  return LLVMBuildLoad( function_context.llvm_ir_builder, variable.llvm_value, "\0"[0] );  }
+	}
+	if( variable.location == Variable::Location::LLVMRegister )
+	{
+		return variable.llvm_value;
+	}
+
+	halt;
+}
+
+fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BracketExpression& bracket_expression ) : Value
+{
+	return BuildExpressionCode( names_scope, function_context, bracket_expression.expr.get_ref() );
+}
+
+} // namespace U
