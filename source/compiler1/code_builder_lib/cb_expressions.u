@@ -39,6 +39,17 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	return Value( move(res) );
 }
 
+fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BooleanConstant& boolean_constant ) : Value
+{
+	var Variable mut res;
+	res.t= Type( FundamentalType( U_FundamentalType::bool_ , fundamental_llvm_types_.bool_ ) );
+	res.location= Variable::Location::LLVMRegister;
+
+	unsafe{ res.llvm_value= LLVMConstInt( res.t.GetLLVMType(), select( boolean_constant.value ? 1u64 : 0u64 ), LLVMBool::True ); }
+
+	return Value( move(res) );
+}
+
 fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value
 {
 	return ResolveValue( names_scope, named_operand );

@@ -44,6 +44,12 @@ struct NumericConstant
 	NumberLexemData num= zero_init;
 }
 
+struct BooleanConstant
+{
+	FilePos file_pos;
+	bool value;
+}
+
 struct BinaryOperator
 {
 	ust::box</Expression/> l;
@@ -59,6 +65,7 @@ struct BracketExpression
 type Expression= ust::variant</ tup[
 	EmptyVariant,
 	NumericConstant,
+	BooleanConstant,
 	ComplexName,
 	BinaryOperator,
 	BracketExpression
