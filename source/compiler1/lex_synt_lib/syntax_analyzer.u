@@ -396,9 +396,9 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 
 fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 {
-	NextLexem(); // {
+	var Block mut block{ .file_pos= it_.front().file_pos };
 
-	var Block mut block;
+	NextLexem(); // {
 
 	while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::BraceRight )
 	{
@@ -416,6 +416,8 @@ fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 			break;
 		}
 	}
+
+	block.end_file_pos= it_.front().file_pos;
 
 	if( it_.front().lexem_type == Lexem::Type::BraceRight )
 	{
