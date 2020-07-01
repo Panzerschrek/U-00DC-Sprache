@@ -1345,7 +1345,29 @@ U_TEST(StructTest1)
 	ASSERT_NEAR( arg0 - arg1, result_value.DoubleVal, 0.001 );
 }
 
-U_TEST(BlocksTest)
+U_TEST(BlocksTest0)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : i32
+		{
+			{
+				return 333;
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( result_value.IntVal.getLimitedValue() == uint64_t( 333 ) );
+}
+
+U_TEST(BlocksTest1)
 {
 	// Variable in inner block must shadow variable from outer block with same name.
 	static const char c_program_text[]=

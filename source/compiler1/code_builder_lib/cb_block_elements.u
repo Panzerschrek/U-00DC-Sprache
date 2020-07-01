@@ -6,7 +6,7 @@ namespace U
 
 fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::Block/>& block_ptr )
 {
-	return BuildBlockElement( names_scope, function_context, block_ptr );
+	return BuildBlockElement( names_scope, function_context, block_ptr.get_ref() );
 }
 
 fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block )
