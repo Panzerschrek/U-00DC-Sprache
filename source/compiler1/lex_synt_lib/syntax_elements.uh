@@ -56,17 +56,13 @@ struct BracketExpression
 	ust::box</Expression/> expr;
 }
 
-// HACK! use struct to prevent globals loop.
-struct Expression
-{
-	ust::variant</ tup[
-		EmptyVariant,
-		NumericConstant,
-		ComplexName,
-		BinaryOperator,
-		BracketExpression
-		] /> expr;
-}
+type Expression= ust::variant</ tup[
+	EmptyVariant,
+	NumericConstant,
+	ComplexName,
+	BinaryOperator,
+	BracketExpression
+	] />;
 
 struct FunctionType
 {
@@ -82,14 +78,12 @@ struct FunctionType
 	ust::optional</TypeName/> return_type; // Empty means "void"
 }
 
-// HACK! use struct to prevent globals loop.
-type TypeName=
-	ust::variant</ tup[
-		ComplexName,
-		ust::box</FunctionType/> ] />;
+type TypeName= ust::variant</ tup[
+	ComplexName,
+	ust::box</FunctionType/>
+	] />;
 
-type Initializer=
-	ust::variant</ tup [
+type Initializer= ust::variant</ tup [
 	EmptyVariant,
 	Expression
 	] />;
@@ -193,7 +187,7 @@ struct Function
 
 type ProgramElement= ust::variant</ tup[
 	ust::shared_ptr_final</Function/>
-	 ] />;
+	] />;
 
 type ProgramElements= ust::vector</ProgramElement/>;
 

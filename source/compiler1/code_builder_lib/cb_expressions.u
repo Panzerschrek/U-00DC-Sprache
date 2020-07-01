@@ -14,7 +14,7 @@ fn CodeBuilder::BuildExpressionCodeEnsureVariable( this, NamesScopePtr& names_sc
 
 fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Value
 {
-	variant_visit( &el : expression.expr )
+	variant_visit( &el : expression )
 	{
 		return BuildExpressionCode( names_scope, function_context, el );
 	}
