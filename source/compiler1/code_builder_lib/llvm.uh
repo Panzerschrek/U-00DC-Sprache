@@ -16,6 +16,7 @@ DefineLLVMRef LLVMBuilderRef
 DefineLLVMRef LLVMTypeRef
 DefineLLVMRef LLVMValueRef
 DefineLLVMRef LLVMBasicBlockRef
+DefineLLVMRef LLVMTargetDataRef // Actually this is DataLayout
 
 type NullTerminatedString= char8;
 
@@ -34,6 +35,7 @@ fn nomangle LLVMContextDispose(LLVMContextRef C);
 // Module
 fn nomangle LLVMModuleCreateWithName(NullTerminatedString& ModuleID) unsafe : LLVMModuleRef;
 fn nomangle LLVMDisposeModule(LLVMModuleRef M) unsafe;
+fn nomangle LLVMSetModuleDataLayout(LLVMModuleRef M, LLVMTargetDataRef DL) unsafe;
 
 // Type
 fn nomangle LLVMInt1TypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
@@ -45,6 +47,7 @@ fn nomangle LLVMInt128TypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
 fn nomangle LLVMFloatTypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
 fn nomangle LLVMDoubleTypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
 fn nomangle LLVMVoidTypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
+fn nomangle LLVMIntPtrTypeInContext(LLVMContextRef C, LLVMTargetDataRef TD) unsafe : LLVMTypeRef;
 
 fn nomangle LLVMFunctionType(
 	LLVMTypeRef ReturnType,

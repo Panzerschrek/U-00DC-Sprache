@@ -10,7 +10,8 @@ namespace U
 class CodeBuilder
 {
 public:
-	fn constructor( LLVMContextRef llvm_context );
+	// llvm context, data layout should live longer, than this class.
+	fn constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data_layout );
 
 	struct BuildResult
 	{
@@ -74,7 +75,8 @@ private:
 	fn CreateMoveToLLVMRegisterInstruction( Variable& variable, FunctionContext& function_context ) : LLVMValueRef;
 
 private:
-	LLVMContextRef llvm_context_;
+	LLVMContextRef imut llvm_context_;
+	LLVMTargetDataRef imut data_layout_;
 
 	struct FundamentalLLVMTypes
 	{

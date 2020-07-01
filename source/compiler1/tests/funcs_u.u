@@ -5,7 +5,11 @@ import "print.uh"
 import "funcs_u.uh"
 
 
-fn nomangle U1_BuildProgram( char8& program_text_start, size_type program_text_size, LLVMContextRef llvm_context ) unsafe : LLVMModuleRef
+fn nomangle U1_BuildProgram(
+	char8& program_text_start,
+	size_type program_text_size,
+	LLVMContextRef llvm_context,
+	LLVMTargetDataRef data_layout ) unsafe : LLVMModuleRef
 {
 	unsafe
 	{
@@ -44,7 +48,7 @@ fn nomangle U1_BuildProgram( char8& program_text_start, size_type program_text_s
 				return LLVMModuleRef::Null;
 			}
 
-			var U::CodeBuilder mut code_builder( llvm_context );
+			var U::CodeBuilder mut code_builder( llvm_context, data_layout );
 			auto code_builder_res= code_builder.BuildProgram( synt_res );
 
 			return code_builder_res.llvm_module;
@@ -56,6 +60,7 @@ fn nomangle U1_BuildProgramWithErrors(
 	char8& program_text_start,
 	size_type program_text_size,
 	LLVMContextRef llvm_context,
+	LLVMTargetDataRef data_layout,
 	ErrorHanglerFunc error_handler_func,
 	void &mut data ) unsafe : bool
 {
@@ -96,7 +101,7 @@ fn nomangle U1_BuildProgramWithErrors(
 				return false;
 			}
 
-			var U::CodeBuilder mut code_builder( llvm_context );
+			var U::CodeBuilder mut code_builder( llvm_context, data_layout );
 			auto code_builder_res= code_builder.BuildProgram( synt_res );
 
 			foreach( & err : code_builder_res.errors )

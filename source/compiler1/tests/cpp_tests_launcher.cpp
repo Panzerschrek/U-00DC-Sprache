@@ -54,7 +54,14 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 {
 	llvm::LLVMContext& llvm_context= *g_llvm_context;
 
-	auto ptr= U1_BuildProgram( text, std::strlen(text), reinterpret_cast<LLVMContextRef>(&llvm_context) );
+	llvm::DataLayout data_layout( GetTestsDataLayout() );
+
+	auto ptr=
+		U1_BuildProgram(
+			text,
+			std::strlen(text),
+			llvm::wrap(&llvm_context),
+			llvm::wrap(&data_layout) );
 	U_TEST_ASSERT( ptr != nullptr );
 
 	return std::unique_ptr<llvm::Module>( reinterpret_cast<llvm::Module*>(ptr) );
@@ -63,6 +70,8 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
 {
 	llvm::LLVMContext& llvm_context= *g_llvm_context;
+
+	llvm::DataLayout data_layout( GetTestsDataLayout() );
 
 	ICodeBuilder::BuildResult build_result;
 	const auto error_handler=
@@ -85,7 +94,8 @@ ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
 		U1_BuildProgramWithErrors(
 			text,
 			std::strlen(text),
-			reinterpret_cast<LLVMContextRef>(&llvm_context),
+			llvm::wrap(&llvm_context),
+			llvm::wrap(&data_layout),
 			error_handler,
 			&build_result );
 	U_TEST_ASSERT(ok);

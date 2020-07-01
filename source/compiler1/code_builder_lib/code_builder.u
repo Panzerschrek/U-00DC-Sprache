@@ -6,9 +6,10 @@ import "code_builder.uh"
 namespace U
 {
 
-fn CodeBuilder::constructor( LLVMContextRef llvm_context )
+fn CodeBuilder::constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data_layout )
 	(
-		llvm_context_(llvm_context)
+		llvm_context_(llvm_context),
+		data_layout_(data_layout),
 	)
 {
 	unsafe
@@ -36,13 +37,17 @@ fn CodeBuilder::constructor( LLVMContextRef llvm_context )
 		fundamental_llvm_types_.void_for_ret_= LLVMVoidTypeInContext( llvm_context_ );
 		fundamental_llvm_types_.bool_= LLVMInt1TypeInContext( llvm_context_ );
 
-		fundamental_llvm_types_.int_ptr= LLVMInt64TypeInContext( llvm_context_ ); // TODO - use data layout to obtaint int_ptr type
+		fundamental_llvm_types_.int_ptr= LLVMIntPtrTypeInContext( llvm_context_, data_layout_ );
 	}
 }
 
 fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : BuildResult
 {
-	unsafe{ module_ = LLVMModuleCreateWithName( "some_module\0"[0] ); }
+	unsafe
+	{
+		module_ = LLVMModuleCreateWithName( "some_module\0"[0] );
+		LLVMSetModuleDataLayout( module_, data_layout_ );
+	}
 
 	var ErrorsContainerPtr errors_container( ErrorsContainer() );
 
