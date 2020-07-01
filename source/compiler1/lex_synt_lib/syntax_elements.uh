@@ -138,13 +138,49 @@ struct AssignmentOperator
 	Expression r;
 }
 
+struct IfOperator
+{
+	struct Branch
+	{
+		FilePos file_pos;
+		// Condition - EmptyVariant for last if.
+		Expression condition;
+		ust::box</Block/> block;
+	}
+
+	FilePos file_pos;
+	FilePos end_file_pos;
+	ust::vector</Branch/> branches;
+}
+
+struct WhileOperator
+{
+	FilePos file_pos;
+	Expression condition;
+	ust::box</Block/> block;
+}
+
+struct BreakOperator
+{
+	FilePos file_pos;
+}
+
+struct ContinueOperator
+{
+	FilePos file_pos;
+}
+
 type BlockElement = ust::variant</ tup[
 	ust::box</Block/>,
 	VariablesDeclaration,
 	AutoVariableDeclaration,
 	ReturnOperator,
 	AssignmentOperator,
-	Expression
+	Expression,
+	IfOperator,
+	WhileOperator,
+	BreakOperator,
+	ContinueOperator
 	] />;
 
 struct Function

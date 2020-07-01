@@ -96,4 +96,28 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 	halt;
 }
 
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfOperator& if_operator )
+{
+	// TODO
+	halt;
+}
+
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WhileOperator& while_operator )
+{
+	// TODO
+	halt;
+}
+
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BreakOperator& break_operator )
+{
+	// TODO
+	halt;
+}
+
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ContinueOperator& continue_operator )
+{
+	// TODO
+	halt;
+}
+
 } // namespace U

@@ -92,7 +92,6 @@ fn IsBinaryOperator( Lexem& lexem ) : bool
 		lexem.lexem_type == Lexem::Type::Disjunction;
 }
 
-
 fn LexemToBinaryOperator( Lexem& lexem ) : BinaryOperatorType
 {
 	if( lexem.lexem_type == Lexem::Type::Plus	){ return BinaryOperatorType::Add; }
@@ -164,8 +163,11 @@ private:
 	fn ParseBlock( mut this ) : Block;
 	fn ParseVariablesDeclaration( mut this ) : VariablesDeclaration;
 	fn ParseAutoVariableDeclaration( mut this ) : AutoVariableDeclaration;
-
 	fn ParseReturnOperator( mut this ) : ReturnOperator;
+	fn ParseIfOperator( mut this ) : IfOperator;
+	fn ParseWhileOperator( mut this ) : WhileOperator;
+	fn ParseBreakOperator( mut this ) : BreakOperator;
+	fn ParseContinueOperator( mut this ) : ContinueOperator;
 
 	fn NotEndOfFile( this ) : bool;
 	fn NextLexem( mut this );
@@ -438,10 +440,6 @@ fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 		{
 			block.elements.push_back( ust::box</Block/>(ParseBlock()) );
 		}
-		else if( IsKeyword( it_.front(), Keyword::return_ ) )
-		{
-			block.elements.push_back( ParseReturnOperator() );
-		}
 		else if( IsKeyword( it_.front(), Keyword::var_ ) )
 		{
 			block.elements.push_back( ParseVariablesDeclaration() );
@@ -449,6 +447,26 @@ fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 		else if( IsKeyword( it_.front(), Keyword::auto_ ) )
 		{
 			block.elements.push_back( ParseAutoVariableDeclaration() );
+		}
+		else if( IsKeyword( it_.front(), Keyword::return_ ) )
+		{
+			block.elements.push_back( ParseReturnOperator() );
+		}
+		else if( IsKeyword( it_.front(), Keyword::if_ ) )
+		{
+			block.elements.push_back( ParseIfOperator() );
+		}
+		else if( IsKeyword( it_.front(), Keyword::while_ ) )
+		{
+			block.elements.push_back( ParseWhileOperator() );
+		}
+		else if( IsKeyword( it_.front(), Keyword::break_ ) )
+		{
+			block.elements.push_back( ParseBreakOperator() );
+		}
+		else if( IsKeyword( it_.front(), Keyword::continue_ ) )
+		{
+			block.elements.push_back( ParseContinueOperator() );
 		}
 		else
 		{
@@ -626,6 +644,156 @@ fn SyntaxAnalyzer::ParseReturnOperator( mut this ) : ReturnOperator
 	NextLexem();
 
 	return move(res);
+}
+
+fn SyntaxAnalyzer::ParseIfOperator( mut this ) : IfOperator
+{
+	auto start_file_pos= it_.front().file_pos;
+	NextLexem(); // if
+
+	var IfOperator mut if_operator{ .file_pos= start_file_pos };
+
+	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	auto mut if_expression= ParseExpression();
+
+	if( it_.front().lexem_type != Lexem::Type::BracketRight )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::BraceLeft )
+	{
+		PushErrorMessage();
+	}
+
+	var IfOperator::Branch mut first_branch
+	{
+		.file_pos= start_file_pos,
+		.condition= move(if_expression),
+		.block( ParseBlock() )
+	};
+
+	if_operator.branches.push_back( move(first_branch) );
+
+	while( NotEndOfFile() )
+	{
+		auto else_file_pos= it_.front().file_pos;
+		if( !IsKeyword( it_.front(), Keyword::else_ ) )
+		{
+			break;
+		}
+		NextLexem();
+
+		// Optional if.
+		var Expression mut condition;
+		if( IsKeyword( it_.front(), Keyword::if_ ) )
+		{
+			NextLexem();
+
+			if( it_.front().lexem_type != Lexem::Type::BracketLeft )
+			{
+				PushErrorMessage();
+			}
+
+			NextLexem();
+
+			condition= ParseExpression();
+
+			if( it_.front().lexem_type != Lexem::Type::BracketRight )
+			{
+				PushErrorMessage();
+			}
+
+			NextLexem();
+		}
+		// Block - common for "else" and "else if".
+		if( it_.front().lexem_type != Lexem::Type::BraceLeft )
+		{
+			PushErrorMessage();
+		}
+
+		var IfOperator::Branch mut branch
+		{
+			.file_pos= else_file_pos,
+			.condition= move(condition),
+			.block( ParseBlock() )
+		};
+		if_operator.branches.push_back( move(branch) );
+
+		if( !if_operator.branches.back().condition.expr.get</EmptyVariant/>().empty() )
+		{
+			break;
+		}
+	}
+
+	return move(if_operator);
+}
+
+fn SyntaxAnalyzer::ParseWhileOperator( mut this ) : WhileOperator
+{
+	auto start_file_pos= it_.front().file_pos;
+	NextLexem(); // while
+
+	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	auto mut condition= ParseExpression();
+
+	if( it_.front().lexem_type != Lexem::Type::BracketRight )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::BraceLeft )
+	{
+		PushErrorMessage();
+	}
+
+	var WhileOperator mut while_operator
+	{
+		.file_pos= start_file_pos,
+		.condition= move(condition),
+		.block( ParseBlock() )
+	};
+	return move(while_operator);
+}
+
+fn SyntaxAnalyzer::ParseBreakOperator( mut this ) : BreakOperator
+{
+	var BreakOperator mut break_operator{ .file_pos= it_.front().file_pos };
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::Semicolon )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	return move(break_operator);
+}
+
+fn SyntaxAnalyzer::ParseContinueOperator( mut this ) : ContinueOperator
+{
+	var ContinueOperator mut continue_operator{ .file_pos= it_.front().file_pos };
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::Semicolon )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	return move(continue_operator);
 }
 
 fn SyntaxAnalyzer::NotEndOfFile( this ) : bool

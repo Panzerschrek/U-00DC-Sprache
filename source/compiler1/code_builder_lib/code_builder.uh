@@ -57,6 +57,10 @@ private:
 	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator );
 	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AssignmentOperator& assignment_operator );
 	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression );
+	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfOperator& if_operator );
+	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WhileOperator& while_operator );
+	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BreakOperator& break_operator );
+	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ContinueOperator& continue_operator );
 
 	fn BuildExpressionCodeEnsureVariable( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Variable;
 
