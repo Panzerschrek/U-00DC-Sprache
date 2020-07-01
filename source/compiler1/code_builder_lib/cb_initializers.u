@@ -1,0 +1,30 @@
+import "error_reporting.uh"
+import "code_builder.uh"
+
+namespace U
+{
+
+fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Initializer& initializer )
+{
+	variant_visit( &i : initializer )
+	{
+		BuildInitializer( names_scope, function_context, variable, i );
+	}
+}
+
+fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::EmptyVariant& empty_initializer )
+{
+}
+
+fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Expression& expression_initializer )
+{
+	auto expr_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression_initializer );
+
+	unsafe
+	{
+		auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr_result, function_context );
+		LLVMBuildStore( function_context.llvm_ir_builder, value_in_register, variable.llvm_value );
+	}
+}
+
+} // namespace U

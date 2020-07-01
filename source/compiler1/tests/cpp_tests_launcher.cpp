@@ -32,6 +32,7 @@ bool FilterTest( const std::string& test_name )
 		"Redefinition5",
 		"SimpliestProgramTest",
 		"SimpleProgramTest",
+		"code_builder_test.cpp:VariablesTest0",
 	};
 
 	if( std::find_if(

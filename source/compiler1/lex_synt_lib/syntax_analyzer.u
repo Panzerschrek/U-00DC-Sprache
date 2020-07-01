@@ -159,7 +159,10 @@ private:
 	fn ParseTypeName( mut this ) : TypeName;
 	fn ParseFunction( mut this ) : Function;
 
+	fn ParseInitializer( mut this ) : Initializer;
+
 	fn ParseBlock( mut this ) : Block;
+	fn ParseVariablesDeclaration( mut this ) : VariablesDeclaration;
 
 	fn ParseReturnOperator( mut this ) : ReturnOperator;
 
@@ -394,6 +397,17 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 	return move(res);
 }
 
+fn SyntaxAnalyzer::ParseInitializer( mut this ) : Initializer
+{
+	if( it_.front().lexem_type == Lexem::Type::Assignment )
+	{
+		NextLexem();
+		return Initializer( ParseExpression() );
+	}
+
+	return Initializer( EmptyVariant() );
+}
+
 fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 {
 	var Block mut block{ .file_pos= it_.front().file_pos };
@@ -402,13 +416,17 @@ fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 
 	while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::BraceRight )
 	{
-		if( IsKeyword( it_.front(), Keyword::return_ ) )
+		if( it_.front().lexem_type == Lexem::Type::BraceLeft )
+		{
+			block.elements.push_back( ust::box</Block/>(ParseBlock()) );
+		}
+		else if( IsKeyword( it_.front(), Keyword::return_ ) )
 		{
 			block.elements.push_back( ParseReturnOperator() );
 		}
-		else if( it_.front().lexem_type == Lexem::Type::BraceLeft )
+		else if( IsKeyword( it_.front(), Keyword::var_ ) )
 		{
-			block.elements.push_back( ust::box</Block/>(ParseBlock()) );
+			block.elements.push_back( ParseVariablesDeclaration() );
 		}
 		else
 		{
@@ -429,6 +447,49 @@ fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 	}
 
 	return move(block);
+}
+
+fn SyntaxAnalyzer::ParseVariablesDeclaration( mut this ) : VariablesDeclaration
+{
+	var VariablesDeclaration mut variables_declaration{ .file_pos= it_.front().file_pos };
+
+	NextLexem(); // var
+
+	variables_declaration.t= ParseTypeName();
+
+	while( NotEndOfFile() )
+	{
+		if( it_.front().lexem_type != Lexem::Type::Identifier )
+		{
+			PushErrorMessage();
+			break;
+		}
+
+		var VariablesDeclaration::VariableEntry mut variable_entry
+		{
+			.file_pos= it_.front().file_pos,
+			.name= it_.front().text
+		};
+
+		NextLexem();
+
+		variable_entry.initializer= ParseInitializer();
+
+		variables_declaration.variables.push_back( move(variable_entry) );
+
+		if( it_.front().lexem_type == Lexem::Type::Comma )
+		{
+			NextLexem();
+			continue;
+		}
+		if( it_.front().lexem_type == Lexem::Type::Semicolon )
+		{
+			NextLexem();
+			break;
+		}
+	}
+
+	return move(variables_declaration);
 }
 
 fn SyntaxAnalyzer::ParseReturnOperator( mut this ) : ReturnOperator

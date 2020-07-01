@@ -82,20 +82,6 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	return Value(move(res));
 }
 
-fn CodeBuilder::CreateMoveToLLVMRegisterInstruction( Variable& variable, FunctionContext& function_context ) : LLVMValueRef
-{
-	if( variable.location == Variable::Location::Pointer )
-	{
-		unsafe{  return LLVMBuildLoad( function_context.llvm_ir_builder, variable.llvm_value, "\0"[0] );  }
-	}
-	if( variable.location == Variable::Location::LLVMRegister )
-	{
-		return variable.llvm_value;
-	}
-
-	halt;
-}
-
 fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BracketExpression& bracket_expression ) : Value
 {
 	return BuildExpressionCode( names_scope, function_context, bracket_expression.expr.get_ref() );

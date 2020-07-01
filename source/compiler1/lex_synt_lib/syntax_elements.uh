@@ -72,14 +72,10 @@ type TypeName=
 		ComplexName,
 		ust::box</FunctionType/> ] />;
 
-struct ReturnOperator
-{
-	Expression expr;
-}
-
-type BlockElement = ust::variant</ tup[
-	ust::box</Block/>,
-	ReturnOperator
+type Initializer=
+	ust::variant</ tup [
+	EmptyVariant,
+	Expression
 	] />;
 
 struct Block
@@ -88,6 +84,31 @@ struct Block
 	FilePos end_file_pos;
 	ust::vector</BlockElement/> elements;
 }
+
+struct VariablesDeclaration
+{
+	struct VariableEntry
+	{
+		FilePos file_pos;
+		ust::string8 name;
+		Initializer initializer;
+	}
+
+	FilePos file_pos;
+	TypeName t;
+	ust::vector</VariableEntry/> variables;
+}
+
+struct ReturnOperator
+{
+	Expression expr;
+}
+
+type BlockElement = ust::variant</ tup[
+	ust::box</Block/>,
+	VariablesDeclaration,
+	ReturnOperator
+	] />;
 
 struct Function
 {
