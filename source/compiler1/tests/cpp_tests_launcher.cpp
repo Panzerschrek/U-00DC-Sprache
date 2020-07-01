@@ -33,6 +33,8 @@ bool FilterTest( const std::string& test_name )
 		"Redefinition5",
 		"SimpliestProgramTest",
 		"SimpleProgramTest",
+
+		"auto_variables_test.cpp:AutoVariableTest0",
 		"code_builder_test.cpp:VariablesTest0",
 	};
 

@@ -117,6 +117,15 @@ struct VariablesDeclaration
 	ust::vector</VariableEntry/> variables;
 }
 
+struct AutoVariableDeclaration
+{
+	FilePos file_pos;
+	ReferenceModifier reference_modifier= ReferenceModifier::None;
+	MutabilityModifier mutability_modifier= MutabilityModifier::None;
+	ust::string8 name;
+	Expression initializer_expression;
+}
+
 struct ReturnOperator
 {
 	Expression expr;
@@ -132,6 +141,7 @@ struct AssignmentOperator
 type BlockElement = ust::variant</ tup[
 	ust::box</Block/>,
 	VariablesDeclaration,
+	AutoVariableDeclaration,
 	ReturnOperator,
 	AssignmentOperator,
 	Expression

@@ -43,6 +43,27 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 	}
 }
 
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration )
+{
+	// TODO - improve this, report about errors.
+	var Variable expr= BuildExpressionCodeEnsureVariable( names_scope, function_context, auto_variable_declaration.initializer_expression );
+
+	var NamesScopeVariable mut out_variable;
+	out_variable.t= expr.t;
+
+	unsafe
+	{
+		out_variable.llvm_value=
+			LLVMBuildAlloca( function_context.alloca_ir_builder, out_variable.t.GetLLVMType(), (auto_variable_declaration.name + "\0").front() );
+
+		auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr, function_context );
+		LLVMBuildStore( function_context.llvm_ir_builder, value_in_register, out_variable.llvm_value );
+	}
+
+	auto mut lock= names_scope.lock_mut();
+	lock.get_ref().AddName( auto_variable_declaration.name, NamesScopeValue( move(out_variable) ) );
+}
+
 fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator )
 {
 	var Variable expr= BuildExpressionCodeEnsureVariable( names_scope, function_context, return_operator.expr );
