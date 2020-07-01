@@ -54,4 +54,25 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 	}
 }
 
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AssignmentOperator& assignment_operator )
+{
+	// TODO - check for errors, check types, echec overloaded operator.
+
+	auto r= BuildExpressionCodeEnsureVariable( names_scope, function_context, assignment_operator.r );
+	auto r_in_register= CreateMoveToLLVMRegisterInstruction( r, function_context );
+
+	auto l= BuildExpressionCodeEnsureVariable( names_scope, function_context, assignment_operator.l );
+
+	unsafe
+	{
+		LLVMBuildStore( function_context.llvm_ir_builder, r_in_register, l.llvm_value );
+	}
+}
+
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression )
+{
+	// TODO
+	halt;
+}
+
 } // namespace U

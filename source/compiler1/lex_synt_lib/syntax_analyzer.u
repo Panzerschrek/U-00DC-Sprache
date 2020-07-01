@@ -350,6 +350,23 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 		arg.file_pos= it_.front().file_pos;
 		arg.arg_type= ParseTypeName();
 
+		if( it_.front().lexem_type == Lexem::Type::And )
+		{
+			arg.reference_modifier= ReferenceModifier::Reference;
+			NextLexem();
+		}
+
+		if( IsKeyword( it_.front(), Keyword::mut_ ) )
+		{
+			arg.mutability_modifier= MutabilityModifier::Mutable;
+			NextLexem();
+		}
+		else if( IsKeyword( it_.front(), Keyword::imut_ ) )
+		{
+			arg.mutability_modifier= MutabilityModifier::Immutable;
+			NextLexem();
+		}
+
 		if( it_.front().lexem_type != Lexem::Type::Identifier )
 		{
 			PushErrorMessage();
@@ -430,8 +447,30 @@ fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 		}
 		else
 		{
-			PushErrorMessage();
-			break;
+			auto mut expr= ParseExpression();
+			if( it_.front().lexem_type == Lexem::Type::Assignment )
+			{
+				var AssignmentOperator mut assignment_operator{ .file_pos= it_.front().file_pos };
+				NextLexem();
+
+				assignment_operator.l= move(expr);
+				assignment_operator.r= ParseExpression();
+
+				block.elements.push_back( move(assignment_operator) );
+			}
+			else
+			{
+				block.elements.push_back( move(expr) );
+			}
+
+			if( it_.front().lexem_type == Lexem::Type::Semicolon )
+			{
+				NextLexem();
+			}
+			else
+			{
+				PushErrorMessage();
+			}
 		}
 	}
 
@@ -459,18 +498,32 @@ fn SyntaxAnalyzer::ParseVariablesDeclaration( mut this ) : VariablesDeclaration
 
 	while( NotEndOfFile() )
 	{
+		var VariablesDeclaration::VariableEntry mut variable_entry;
+
+		if( it_.front().lexem_type == Lexem::Type::And )
+		{
+			variable_entry.reference_modifier= ReferenceModifier::Reference;
+			NextLexem();
+		}
+
+		if( IsKeyword( it_.front(), Keyword::mut_ ) )
+		{
+			variable_entry.mutability_modifier= MutabilityModifier::Mutable;
+			NextLexem();
+		}
+		else if( IsKeyword( it_.front(), Keyword::imut_ ) )
+		{
+			variable_entry.mutability_modifier= MutabilityModifier::Immutable;
+			NextLexem();
+		}
+
 		if( it_.front().lexem_type != Lexem::Type::Identifier )
 		{
 			PushErrorMessage();
 			break;
 		}
-
-		var VariablesDeclaration::VariableEntry mut variable_entry
-		{
-			.file_pos= it_.front().file_pos,
-			.name= it_.front().text
-		};
-
+		variable_entry.file_pos= it_.front().file_pos;
+		variable_entry.name= it_.front().text;
 		NextLexem();
 
 		variable_entry.initializer= ParseInitializer();

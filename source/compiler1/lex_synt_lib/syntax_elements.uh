@@ -15,6 +15,20 @@ namespace U
 namespace Synt
 {
 
+enum MutabilityModifier : u8
+{
+	None,
+	Mutable,
+	Immutable,
+	Constexpr,
+}
+
+enum ReferenceModifier : u8
+{
+	None,
+	Reference,
+}
+
 struct EmptyVariant{} // used as stub
 
 struct ComplexName
@@ -60,6 +74,8 @@ struct FunctionType
 	{
 		FilePos file_pos;
 		TypeName arg_type;
+		ReferenceModifier reference_modifier= ReferenceModifier::None;
+		MutabilityModifier mutability_modifier= MutabilityModifier::None;
 		ust::string8 name;
 	}
 	ust::vector</Arg/> args;
@@ -90,6 +106,8 @@ struct VariablesDeclaration
 	struct VariableEntry
 	{
 		FilePos file_pos;
+		ReferenceModifier reference_modifier= ReferenceModifier::None;
+		MutabilityModifier mutability_modifier= MutabilityModifier::None;
 		ust::string8 name;
 		Initializer initializer;
 	}
@@ -104,10 +122,19 @@ struct ReturnOperator
 	Expression expr;
 }
 
+struct AssignmentOperator
+{
+	FilePos file_pos;
+	Expression l;
+	Expression r;
+}
+
 type BlockElement = ust::variant</ tup[
 	ust::box</Block/>,
 	VariablesDeclaration,
-	ReturnOperator
+	ReturnOperator,
+	AssignmentOperator,
+	Expression
 	] />;
 
 struct Function
