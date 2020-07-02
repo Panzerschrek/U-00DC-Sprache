@@ -18,3 +18,10 @@ fn nomangle U1_BuildProgramWithErrors(
 	LLVMTargetDataRef data_layout,
 	ErrorHanglerFunc error_handler_func,
 	void &mut data ) unsafe : bool;
+
+enum CharPtr : size_type { Null }
+
+fn nomangle U1_CodeBuilderCodeToString(
+	u32 error_code,
+	CharPtr &mut out_text,
+	size_type &mut out_text_length );

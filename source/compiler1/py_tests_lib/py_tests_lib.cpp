@@ -263,54 +263,6 @@ PyObject* RunFunction( PyObject* const self, PyObject* const args )
 	Py_INCREF(Py_None);
 	return Py_None;
 }
-/*
-
-PyObject* BuildFilePos( const FilePos& file_pos )
-{
-	PyObject* const file_pos_dict= PyDict_New();
-	PyDict_SetItemString( file_pos_dict, "file_index", PyLong_FromLongLong( file_pos.GetFileIndex() ) );
-	PyDict_SetItemString( file_pos_dict, "line", PyLong_FromLongLong( file_pos.GetLine() ) );
-	PyDict_SetItemString( file_pos_dict, "column", PyLong_FromLongLong( file_pos.GetColumn() ) );
-	return file_pos_dict;
-}
-
-PyObject* BuildString( const std::string& str )
-{
-	return PyUnicode_DecodeUTF8( str.data(), Py_ssize_t(str.size()), nullptr );
-}
-
-PyObject* BuildErrorsList( const CodeBuilderErrorsContainer& errors )
-{
-	PyObject* const list= PyList_New(0);
-
-	for( const CodeBuilderError& error : errors )
-	{
-		PyObject* const dict= PyDict_New();
-
-		PyDict_SetItemString( dict, "file_pos", BuildFilePos( error.file_pos ) );
-
-		const char* const error_code_str= CodeBuilderErrorCodeToString( error.code );
-		PyDict_SetItemString( dict, "code", PyUnicode_DecodeUTF8( error_code_str, Py_ssize_t(std::strlen(error_code_str)), nullptr ) );
-
-		PyDict_SetItemString( dict, "text", BuildString( error.text ) );
-
-		if( error.template_context != nullptr )
-		{
-			PyObject* const template_context_dict= PyDict_New();
-
-			PyDict_SetItemString( template_context_dict, "errors", BuildErrorsList( error.template_context->errors ) );
-			PyDict_SetItemString( template_context_dict, "file_pos", BuildFilePos( error.template_context->context_declaration_file_pos ) );
-			PyDict_SetItemString( template_context_dict, "template_name", BuildString( error.template_context->context_name ) );
-			PyDict_SetItemString( template_context_dict, "parameters_description", BuildString( error.template_context->parameters_description ) );
-
-			PyDict_SetItemString( dict, "template_context", template_context_dict );
-		}
-
-		PyList_Append( list, dict );
-	}
-
-	return list;
-}
 
 PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 {
@@ -321,31 +273,67 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 	if( !PyArg_ParseTuple( args, "s", &program_text ) )
 		return nullptr;
 
-	const std::string file_path= "_";
-	const SourceGraphPtr source_graph=
-		SourceGraphLoader( std::make_shared<SingeFileVfs>( file_path, program_text ) ).LoadSource( file_path );
+	llvm::LLVMContext& llvm_context= *g_llvm_context;
+	llvm::DataLayout data_layout( GetTestsDataLayout() );
 
-	if( source_graph == nullptr ||
-		!source_graph->lexical_errors.empty() ||
-		!source_graph->syntax_errors.empty() )
+	PyObject* const errors_list= PyList_New(0);
+
+	const auto error_handler=
+	[](
+		void* const data,
+		const uint32_t line,
+		const uint32_t column,
+		const uint32_t error_code,
+		const char* const error_text,
+		const size_t error_text_length )
+	{
+		PyObject* const dict= PyDict_New();
+
+		{
+			PyObject* const file_pos_dict= PyDict_New();
+			PyDict_SetItemString( file_pos_dict, "file_index", PyLong_FromLongLong(0) );
+			PyDict_SetItemString( file_pos_dict, "line", PyLong_FromLongLong(line) );
+			PyDict_SetItemString( file_pos_dict, "column", PyLong_FromLongLong(column) );
+
+			PyDict_SetItemString( dict, "file_pos", file_pos_dict );
+		}
+
+		const char* error_code_str= nullptr;
+		size_t error_code_len= 0u;
+		U1_CodeBuilderCodeToString( error_code, error_code_str, error_code_len );
+		PyDict_SetItemString( dict, "code", PyUnicode_DecodeUTF8( error_code_str, Py_ssize_t(error_code_len), nullptr ) );
+
+		PyDict_SetItemString( dict, "text", PyUnicode_DecodeUTF8( error_text, Py_ssize_t(error_text_length), nullptr ) );
+
+		PyList_Append( reinterpret_cast<PyObject*>(data), dict );
+	};
+
+	const bool ok=
+		U1_BuildProgramWithErrors(
+			program_text,
+			std::strlen(program_text),
+			llvm::wrap(&llvm_context),
+			llvm::wrap(&data_layout),
+			error_handler,
+			errors_list );
+
+	llvm::llvm_shutdown();
+
+	if( !ok )
 	{
 		PyErr_SetString( PyExc_RuntimeError, "source tree build failed" );
 		return nullptr;
 	}
 
-	PyObject* const list= BuildErrorsList( CreateCodeBuilder()->BuildProgram( *source_graph ).errors );
-	llvm::llvm_shutdown();
-
-	return list;
+	return errors_list;
 }
-*/
 
 PyMethodDef g_methods[]=
 {
 	{ "build_program"           ,   BuildProgram,           METH_VARARGS, "Build program." },
 	{ "free_program"             ,  FreeProgram,            METH_VARARGS, "Free program."  },
 	{ "run_function"             ,  RunFunction,            METH_VARARGS, "Run function."  },
-	//{ "build_program_with_errors",  BuildProgramWithErrors, METH_VARARGS, "Build program with errors." },
+	{ "build_program_with_errors",  BuildProgramWithErrors, METH_VARARGS, "Build program with errors." },
 	{ nullptr, nullptr, 0, nullptr } // Sentinel
 };
 

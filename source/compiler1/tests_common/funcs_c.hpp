@@ -25,4 +25,10 @@ bool U1_BuildProgramWithErrors(
 	ErrorHanglerFunc error_handler_func,
 	void* data );
 
+// Returns static string for error code.
+void U1_CodeBuilderCodeToString(
+	uint32_t error_code,
+	const char*& out_text,
+	size_t& out_text_length );
+
 } // extern "C"
