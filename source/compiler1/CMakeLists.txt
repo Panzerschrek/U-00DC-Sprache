@@ -112,3 +112,14 @@ if( U_BUILD_TESTS )
 	add_custom_command( TARGET Tests${CURRENT_COMPLIER_GENERATION} POST_BUILD COMMAND Tests${CURRENT_COMPLIER_GENERATION} )
 
 endif()
+
+if( U_BUILD_PY_TESTS )
+	set( PY_TESTS_LIB_SOURCES
+		py_tests_lib/py_tests_lib.cpp
+		../tests/tests_common.hpp )
+
+	add_library( PyTestsLib${CURRENT_COMPLIER_GENERATION} SHARED ${PY_TESTS_LIB_SOURCES} )
+	target_link_libraries( PyTestsLib${CURRENT_COMPLIER_GENERATION} CodeBuilderLib ${LLVM_LIBS_FOR_TESTS} ${PYTHON_LIBRARIES} )
+	target_include_directories( PyTestsLib${CURRENT_COMPLIER_GENERATION} PRIVATE ${PYTHON_INCLUDE_DIRS} )
+
+endif()
