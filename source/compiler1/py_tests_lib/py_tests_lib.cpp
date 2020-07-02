@@ -345,6 +345,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 
 	static const std::string c_test_to_enable[]
 	{
+		"ErrorsTest1",
 		"SimpliestTest",
 		"SimplePassArgumentTest",
 	};

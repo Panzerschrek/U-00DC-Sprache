@@ -20,10 +20,17 @@ def OkTest():
 	assert( call_result == ( 3 * 7 ) + 0.50 )
 
 
-def ErrorsTest():
+def ErrorsTest0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( "fn Foo() : i32 {}" ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NoReturnInFunctionReturningNonVoid" )
+	assert( errors_list[0].file_pos.line == 1 )
+
+
+def ErrorsTest1():
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( "fn Foo() : UnknownType {}" ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
 	assert( errors_list[0].file_pos.line == 1 )
 
 
