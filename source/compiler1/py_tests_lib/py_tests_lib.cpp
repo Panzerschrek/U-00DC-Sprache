@@ -328,12 +328,32 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 	return errors_list;
 }
 
+PyObject* FilterTest( PyObject* const self, PyObject* const args )
+{
+	U_UNUSED(self);
+
+	PyObject* func_name_arg= nullptr;
+
+	if( !PyArg_UnpackTuple( args, "", 1, 1, &func_name_arg ) )
+		return nullptr; // Parse will raise
+
+	const char* func_name= nullptr;
+	if( !PyArg_Parse( func_name_arg, "s", &func_name ) )
+		return nullptr; // Parse will raise
+
+	// TODO - do actual filtering.
+
+	Py_INCREF(Py_False);
+	return Py_False;
+}
+
 PyMethodDef g_methods[]=
 {
-	{ "build_program"           ,   BuildProgram,           METH_VARARGS, "Build program." },
-	{ "free_program"             ,  FreeProgram,            METH_VARARGS, "Free program."  },
-	{ "run_function"             ,  RunFunction,            METH_VARARGS, "Run function."  },
-	{ "build_program_with_errors",  BuildProgramWithErrors, METH_VARARGS, "Build program with errors." },
+	{ "build_program"             , BuildProgram          , METH_VARARGS, "Build program."             },
+	{ "free_program"              , FreeProgram           , METH_VARARGS, "Free program."              },
+	{ "run_function"              , RunFunction           , METH_VARARGS, "Run function."              },
+	{ "build_program_with_errors" , BuildProgramWithErrors, METH_VARARGS, "Build program with errors." },
+	{ "filter_test"               , FilterTest            , METH_VARARGS, "Filter test returns False ih should skip test" },
 	{ nullptr, nullptr, 0, nullptr } // Sentinel
 };
 
