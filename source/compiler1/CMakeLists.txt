@@ -78,29 +78,43 @@ add_library( CodeBuilderLib${CURRENT_COMPLIER_GENERATION} lib_stub.cpp ${CODE_BU
 target_link_libraries( CodeBuilderLib${CURRENT_COMPLIER_GENERATION} LexSyntLib${CURRENT_COMPLIER_GENERATION} ${LLVM_LIBS_FOR_CODE_BUILDER_LIB} )
 
 #
+# TestsCommon
+#
+if( U_BUILD_TESTS OR U_BUILD_PY_TESTS )
+	file( GLOB TESTS_COMMON_HEADERS "tests_common/*.uh" )
+	file( GLOB TESTS_COMMON_SOURCES "tests_common/*.u" )
+	file( GLOB TESTS_COMMON_CPP_SOURCES "tests_common/*.cpp" )
+	file( GLOB TESTS_COMMON_CPP_HEADERS "tests_common/*.hpp" )
+	CompileUSources( TESTS_COMMON_SOURCES TESTS_COMMON_OBJECTS )
+
+	add_library(
+		TestsCommon${CURRENT_COMPLIER_GENERATION}
+			${TESTS_COMMON_CPP_SOURCES}
+			${TESTS_COMMON_CPP_HEADERS}
+			${TESTS_COMMON_SOURCES}
+			${TESTS_COMMON_HEADERS}
+			${TESTS_COMMON_OBJECTS} )
+
+	target_link_libraries(
+		TestsCommon${CURRENT_COMPLIER_GENERATION}
+		CodeBuilderLib${CURRENT_COMPLIER_GENERATION}
+		)
+endif()
+
+#
 # Tests
 #
 
 if( U_BUILD_TESTS )
 
-	file( GLOB TESTS_HEADERS "tests/*.uh" )
-	file( GLOB TESTS_SOURCES "tests/*.u" )
-	file( GLOB TESTS_CPP_SOURCES "tests/*.cpp" )
-	file( GLOB TESTS_CPP_HEADERS "tests/*.hpp" )
-	CompileUSources( TESTS_SOURCES TESTS_OBJECTS )
-
 	add_executable(
 		Tests${CURRENT_COMPLIER_GENERATION}
-			${TESTS_CPP_SOURCES}
-			${TESTS_CPP_HEADERS}
-			${TESTS_SOURCES}
-			${TESTS_HEADERS}
-			${TESTS_OBJECTS} )
+			tests/cpp_tests_launcher.cpp )
 
 	target_link_libraries(
 		Tests${CURRENT_COMPLIER_GENERATION}
 		PRIVATE
-			CodeBuilderLib${CURRENT_COMPLIER_GENERATION}
+			TestsCommon${CURRENT_COMPLIER_GENERATION}
 			${TESTS_LIB_WRAPPED}
 			LexSyntLib # Hack! Use C++ lib for "FilePos" class.
 		)
