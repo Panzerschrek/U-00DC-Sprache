@@ -341,7 +341,35 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 	if( !PyArg_Parse( func_name_arg, "s", &func_name ) )
 		return nullptr; // Parse will raise
 
-	// TODO - do actual filtering.
+	const std::string func_name_str= func_name;
+
+	static const std::string c_test_to_enable[]
+	{
+		"SimpliestTest",
+		"SimplePassArgumentTest",
+	};
+
+	if( std::find( std::begin(c_test_to_enable), std::end(c_test_to_enable), func_name_str )
+		!= std::end(c_test_to_enable) )
+	{
+		Py_INCREF(Py_True);
+		return Py_True;
+	}
+
+	static const std::string c_tests_to_enable_pattern[]
+	{
+		"NonExistentTest",
+	};
+
+	if( std::find_if(
+			std::begin(c_tests_to_enable_pattern),
+			std::end(c_tests_to_enable_pattern),
+			[&]( const std::string& pattern ) { return func_name_str.find( pattern ) != std::string::npos; } )
+		!= std::end(c_tests_to_enable_pattern) )
+	{
+		Py_INCREF(Py_True);
+		return Py_True;
+	}
 
 	Py_INCREF(Py_False);
 	return Py_False;

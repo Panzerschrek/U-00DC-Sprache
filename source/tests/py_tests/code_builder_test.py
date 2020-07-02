@@ -1,6 +1,18 @@
 from py_tests_common import *
 
 
+def SimpliestTest():
+	tests_lib.build_program( "fn GetTrue() : bool { return true; }" )
+	call_result= tests_lib.run_function( "_Z7GetTruev" )
+	assert( call_result == True )
+
+
+def SimplePassArgumentTest():
+	tests_lib.build_program( "fn GetBool(bool b) : bool { return b; }" )
+	assert( tests_lib.run_function( "_Z7GetBoolb", True  ) == True )
+	assert( tests_lib.run_function( "_Z7GetBoolb", False ) == False )
+
+
 def OkTest():
 	tests_lib.build_program( "fn Foo( i32 x, i32 y ) : f32 { return f32(x * y) + 0.5f; }" )
 

@@ -143,4 +143,23 @@ if( U_BUILD_PY_TESTS )
 
 	target_include_directories( PyTestsLib${CURRENT_COMPLIER_GENERATION} PRIVATE ${PYTHON_INCLUDE_DIRS} )
 
+	# Set proper name for result dynamic library.
+	if( WIN32 )
+		set_target_properties( PyTestsLib${CURRENT_COMPLIER_GENERATION}
+			PROPERTIES OUTPUT_NAME sprache_compiler_tests_py_lib.pyd PREFIX "" SUFFIX "" )
+	else()
+		set_target_properties( PyTestsLib${CURRENT_COMPLIER_GENERATION}
+			PROPERTIES OUTPUT_NAME sprache_compiler_tests_py_lib.so PREFIX "" SUFFIX "" )
+	endif()
+
+	file( GLOB PY_TESTS_SOURCES "../tests/py_tests/*.py" ) # Add all python files to sources list of target.
+
+	# Run result test.
+	add_custom_target(
+		PyTests1Run ALL
+		COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR} ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../tests/py_tests/py_tests.py
+		DEPENDS PyTestsLib${CURRENT_COMPLIER_GENERATION}
+		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+		SOURCES ${PY_TESTS_SOURCES} )
+
 endif()

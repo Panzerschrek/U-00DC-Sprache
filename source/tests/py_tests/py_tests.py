@@ -73,6 +73,7 @@ def main():
 	tests_list= GetTestsList( tests_modules_list )
 
 	print( "run " + str(len(tests_list)) + " py_tests" + "\n" )
+	tests_passed= 0
 	tests_failed= 0
 	tests_filtered= 0
 
@@ -89,8 +90,9 @@ def main():
 				print()
 				tests_failed= tests_failed + 1
 				tests_lib.free_program()
+			tests_passed= tests_passed + 1
 
-	print( str( len(tests_list) - tests_failed ) + " tests passed" )
+	print( str(tests_passed) + " tests passed" )
 	print( str(tests_filtered) + " tests filtered" )
 	print( str(tests_failed) + " tests failed" )
 	return tests_failed
