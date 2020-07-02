@@ -1,3 +1,5 @@
+import "/string.u"
+
 namespace U
 {
 
@@ -35,5 +37,7 @@ fn IsInteger( U_FundamentalType t ) : bool;
 fn IsFloatingPoint( U_FundamentalType t ) : bool;
 fn IsNumericType( U_FundamentalType t ) : bool;
 fn IsChar( U_FundamentalType t ) : bool;
+
+fn GetFundamentalTypeName( U_FundamentalType t ) : ust::array_view_imut</ char8 />;
 
 } // namespace U
