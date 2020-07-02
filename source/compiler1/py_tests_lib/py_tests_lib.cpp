@@ -4,6 +4,7 @@
 
 #include "../../lex_synt_lib/assert.hpp"
 #include "../../tests/tests_common.hpp"
+#include "../tests_common/funcs_c.hpp"
 
 #include "../../code_builder_lib/push_disable_llvm_warnings.hpp"
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
@@ -24,9 +25,21 @@ llvm::ManagedStatic<llvm::LLVMContext> g_llvm_context;
 
 std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 {
-	// TODO
-	U_UNUSED(text);
-	return nullptr;
+	llvm::LLVMContext& llvm_context= *g_llvm_context;
+
+	llvm::DataLayout data_layout( GetTestsDataLayout() );
+
+	auto ptr=
+		U1_BuildProgram(
+			text,
+			std::strlen(text),
+			llvm::wrap(&llvm_context),
+			llvm::wrap(&data_layout) );
+
+	if( ptr == nullptr )
+		return nullptr;
+
+	return std::unique_ptr<llvm::Module>( reinterpret_cast<llvm::Module*>(ptr) );
 }
 
 class HaltException final : public std::exception

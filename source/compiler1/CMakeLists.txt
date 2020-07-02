@@ -133,7 +133,14 @@ if( U_BUILD_PY_TESTS )
 		../tests/tests_common.hpp )
 
 	add_library( PyTestsLib${CURRENT_COMPLIER_GENERATION} SHARED ${PY_TESTS_LIB_SOURCES} )
-	target_link_libraries( PyTestsLib${CURRENT_COMPLIER_GENERATION} CodeBuilderLib ${LLVM_LIBS_FOR_TESTS} ${PYTHON_LIBRARIES} )
+	target_link_libraries(
+		PyTestsLib${CURRENT_COMPLIER_GENERATION}
+			PRIVATE
+				TestsCommon${CURRENT_COMPLIER_GENERATION}
+				${LLVM_LIBS_FOR_TESTS}
+				${PYTHON_LIBRARIES}
+			)
+
 	target_include_directories( PyTestsLib${CURRENT_COMPLIER_GENERATION} PRIVATE ${PYTHON_INCLUDE_DIRS} )
 
 endif()
