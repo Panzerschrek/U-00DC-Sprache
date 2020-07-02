@@ -7,12 +7,15 @@ from py_tests_common import *
 
 
 # Import tests modules and get list of all tests functions here.
+# Returns list of tuples(name, function)
 def GetTestsList( tests_modules_list ):
-	result=[]
+	result= []
 	for module_name in tests_modules_list:
 		importlib.import_module( module_name )
-		module_tests= [ obj for name, obj in inspect.getmembers(sys.modules[module_name]) if inspect.isfunction(obj) and obj != ConvertErrors and obj != HaveError ]
-		result = result + module_tests
+
+		for name, obj in inspect.getmembers(sys.modules[module_name]):
+			if inspect.isfunction(obj) and obj != ConvertErrors and obj != HaveError:
+				result.append((name, obj))
 
 	return result
 
@@ -70,20 +73,27 @@ def main():
 	tests_list= GetTestsList( tests_modules_list )
 
 	print( "run " + str(len(tests_list)) + " py_tests" + "\n" )
+	tests_passed= 0
 	tests_failed= 0
+	tests_filtered= 0
 
-	for test in tests_list:
-		try:
-			test()
-			tests_lib.free_program()
-		except Exception as ex:
-			print( "test " + str(test) + " failed" )
-			traceback.print_exc( file= sys.stdout )
-			print()
-			tests_failed= tests_failed + 1
-			tests_lib.free_program()
+	for test_name, test_func in tests_list:
+		if not tests_lib.filter_test( test_name ):
+			tests_filtered= tests_filtered + 1
+		else:
+			try:
+				test_func()
+				tests_lib.free_program()
+			except Exception as ex:
+				print( "test " + test_name + " failed" )
+				traceback.print_exc( file= sys.stdout )
+				print()
+				tests_failed= tests_failed + 1
+				tests_lib.free_program()
+			tests_passed= tests_passed + 1
 
-	print( str( len(tests_list) - tests_failed ) + " tests passed" )
+	print( str(tests_passed) + " tests passed" )
+	print( str(tests_filtered) + " tests filtered" )
 	print( str(tests_failed) + " tests failed" )
 	return tests_failed
 

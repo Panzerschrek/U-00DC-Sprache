@@ -78,29 +78,43 @@ add_library( CodeBuilderLib${CURRENT_COMPLIER_GENERATION} lib_stub.cpp ${CODE_BU
 target_link_libraries( CodeBuilderLib${CURRENT_COMPLIER_GENERATION} LexSyntLib${CURRENT_COMPLIER_GENERATION} ${LLVM_LIBS_FOR_CODE_BUILDER_LIB} )
 
 #
+# TestsCommon
+#
+if( U_BUILD_TESTS OR U_BUILD_PY_TESTS )
+	file( GLOB TESTS_COMMON_HEADERS "tests_common/*.uh" )
+	file( GLOB TESTS_COMMON_SOURCES "tests_common/*.u" )
+	file( GLOB TESTS_COMMON_CPP_SOURCES "tests_common/*.cpp" )
+	file( GLOB TESTS_COMMON_CPP_HEADERS "tests_common/*.hpp" )
+	CompileUSources( TESTS_COMMON_SOURCES TESTS_COMMON_OBJECTS )
+
+	add_library(
+		TestsCommon${CURRENT_COMPLIER_GENERATION}
+			${TESTS_COMMON_CPP_SOURCES}
+			${TESTS_COMMON_CPP_HEADERS}
+			${TESTS_COMMON_SOURCES}
+			${TESTS_COMMON_HEADERS}
+			${TESTS_COMMON_OBJECTS} )
+
+	target_link_libraries(
+		TestsCommon${CURRENT_COMPLIER_GENERATION}
+		CodeBuilderLib${CURRENT_COMPLIER_GENERATION}
+		)
+endif()
+
+#
 # Tests
 #
 
 if( U_BUILD_TESTS )
 
-	file( GLOB TESTS_HEADERS "tests/*.uh" )
-	file( GLOB TESTS_SOURCES "tests/*.u" )
-	file( GLOB TESTS_CPP_SOURCES "tests/*.cpp" )
-	file( GLOB TESTS_CPP_HEADERS "tests/*.hpp" )
-	CompileUSources( TESTS_SOURCES TESTS_OBJECTS )
-
 	add_executable(
 		Tests${CURRENT_COMPLIER_GENERATION}
-			${TESTS_CPP_SOURCES}
-			${TESTS_CPP_HEADERS}
-			${TESTS_SOURCES}
-			${TESTS_HEADERS}
-			${TESTS_OBJECTS} )
+			tests/cpp_tests_launcher.cpp )
 
 	target_link_libraries(
 		Tests${CURRENT_COMPLIER_GENERATION}
 		PRIVATE
-			CodeBuilderLib${CURRENT_COMPLIER_GENERATION}
+			TestsCommon${CURRENT_COMPLIER_GENERATION}
 			${TESTS_LIB_WRAPPED}
 			LexSyntLib # Hack! Use C++ lib for "FilePos" class.
 		)
@@ -110,5 +124,42 @@ if( U_BUILD_TESTS )
 	endif()
 
 	add_custom_command( TARGET Tests${CURRENT_COMPLIER_GENERATION} POST_BUILD COMMAND Tests${CURRENT_COMPLIER_GENERATION} )
+
+endif()
+
+if( U_BUILD_PY_TESTS )
+	set( PY_TESTS_LIB_SOURCES
+		py_tests_lib/py_tests_lib.cpp
+		../tests/tests_common.hpp )
+
+	add_library( PyTestsLib${CURRENT_COMPLIER_GENERATION} SHARED ${PY_TESTS_LIB_SOURCES} )
+	target_link_libraries(
+		PyTestsLib${CURRENT_COMPLIER_GENERATION}
+			PRIVATE
+				TestsCommon${CURRENT_COMPLIER_GENERATION}
+				${LLVM_LIBS_FOR_TESTS}
+				${PYTHON_LIBRARIES}
+			)
+
+	target_include_directories( PyTestsLib${CURRENT_COMPLIER_GENERATION} PRIVATE ${PYTHON_INCLUDE_DIRS} )
+
+	# Set proper name for result dynamic library.
+	if( WIN32 )
+		set_target_properties( PyTestsLib${CURRENT_COMPLIER_GENERATION}
+			PROPERTIES OUTPUT_NAME sprache_compiler_tests_py_lib.pyd PREFIX "" SUFFIX "" )
+	else()
+		set_target_properties( PyTestsLib${CURRENT_COMPLIER_GENERATION}
+			PROPERTIES OUTPUT_NAME sprache_compiler_tests_py_lib.so PREFIX "" SUFFIX "" )
+	endif()
+
+	file( GLOB PY_TESTS_SOURCES "../tests/py_tests/*.py" ) # Add all python files to sources list of target.
+
+	# Run result test.
+	add_custom_target(
+		PyTests1Run ALL
+		COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR} ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../tests/py_tests/py_tests.py
+		DEPENDS PyTestsLib${CURRENT_COMPLIER_GENERATION}
+		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+		SOURCES ${PY_TESTS_SOURCES} )
 
 endif()

@@ -7,7 +7,7 @@
 
 #include "../../tests/tests_common.hpp"
 #include "../../tests/cpp_tests/tests.hpp"
-#include  "funcs_c.hpp"
+#include  "../tests_common/funcs_c.hpp"
 
 namespace U
 {
