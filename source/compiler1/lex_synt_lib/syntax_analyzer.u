@@ -214,7 +214,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 
 		if( it_.front().lexem_type == Lexem::Type::Number )
 		{
-			var NumericConstant mut numeric_constant;
+			var NumericConstant mut numeric_constant{ .file_pos= it_.front().file_pos };
 			halt if( it_.front().text.size() < typeinfo</NumberLexemData/>.size_of );
 
 			unsafe
@@ -240,12 +240,8 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 		}
 		else if( it_.front().lexem_type == Lexem::Type::Identifier )
 		{
-			var ComplexName mut complex_name;
-			complex_name.file_pos= it_.front().file_pos;
-			complex_name.name= it_.front().text;
-
+			var ComplexName mut complex_name{ .file_pos= it_.front().file_pos, .name= it_.front().text };
 			NextLexem();
-
 			current_node= Expression( move(complex_name) );
 		}
 		else
@@ -315,12 +311,8 @@ fn SyntaxAnalyzer::ParseTypeName( mut this ) : TypeName
 {
 	if( it_.front().lexem_type == Lexem::Type::Identifier )
 	{
-		var ComplexName mut complex_name;
-		complex_name.file_pos= it_.front().file_pos;
-		complex_name.name= it_.front().text;
-
+		var ComplexName mut complex_name{ .file_pos= it_.front().file_pos, .name= it_.front().text };
 		NextLexem();
-
 		return TypeName( move(complex_name) );
 	}
 	else
@@ -823,9 +815,11 @@ fn SyntaxAnalyzer::PushErrorMessage( mut this )
 {
 	if( error_messages_.empty() || FilePos(error_messages_.back().file_pos) != it_.front().file_pos )
 	{
-		var SyntaxErrorMessage mut error_message;
-		error_message.file_pos= it_.front().file_pos;
-		error_message.text= "Syntax error - unexpected lexem";
+		var SyntaxErrorMessage mut error_message
+		{
+			.file_pos= it_.front().file_pos,
+			.text= "Syntax error - unexpected lexem"
+		};
 		error_messages_.push_back( move(error_message) );
 	}
 }
