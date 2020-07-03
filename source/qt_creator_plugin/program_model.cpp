@@ -283,18 +283,10 @@ std::string Stringify( const Synt::FunctionArgument& arg )
 	result+= " ";
 	result+= arg.name_;
 
-	if( !arg.inner_arg_reference_tags_.empty() )
+	if( !arg.inner_arg_reference_tag_.empty() )
 	{
 		result+= "'";
-		for( const std::string& tag : arg.inner_arg_reference_tags_ )
-		{
-			if( tag.empty() )
-				result+= "...";
-			else
-				result+= tag;
-			if( &tag != &arg.inner_arg_reference_tags_.back() && !arg.inner_arg_reference_tags_.back().empty() )
-				result+= ", ";
-		}
+		result+= arg.inner_arg_reference_tag_;
 		result+= "'";
 	}
 
@@ -314,18 +306,10 @@ std::string StringifyFunctionTypeEnding( const Synt::FunctionType& function_type
 	else
 		result+= Stringify( *function_type.return_type_ );
 
-	if( !function_type.return_value_inner_reference_tags_.empty() )
+	if( !function_type.return_value_inner_reference_tag_.empty() )
 	{
 		result+= "'";
-		for( const std::string& tag : function_type.return_value_inner_reference_tags_ )
-		{
-			if( tag.empty() )
-				result+= "...";
-			else
-				result+= tag;
-			if( &tag != &function_type.return_value_inner_reference_tags_.back() && !function_type.return_value_inner_reference_tags_.back().empty() )
-				result+= ", ";
-		}
+		result+= function_type.return_value_inner_reference_tag_;
 		result+= "'";
 	}
 
