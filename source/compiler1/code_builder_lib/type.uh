@@ -50,6 +50,9 @@ public:
 
 	fn GetLLVMType( imut this ) : LLVMTypeRef;
 
+	// Convert type name to human-readable format.
+	fn ToString( this ) : ust::string8;
+
 private:
 	ust::variant</ tup[
 		FundamentalType,

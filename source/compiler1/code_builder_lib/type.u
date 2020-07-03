@@ -1,7 +1,43 @@
+import "../lex_synt_lib/keywords.uh"
+import "lang_types.uh"
 import "type.uh"
 
 namespace U
 {
+
+namespace ToStringHelper
+{
+
+fn ToString( FundamentalType& fundamental_type ) : ust::string8
+{
+	return ust::string8( GetFundamentalTypeName( fundamental_type.fundamental_type ) );
+}
+
+fn ToString( FunctionType& function_type ) : ust::string8
+{
+	var ust::string8 mut result;
+
+	result+= KeywordToString( Keyword::fn_ );
+
+	result+= "(";
+	foreach( &arg : function_type.args )
+	{
+		result+= arg.arg_type.get_ref().ToString();
+		result+= " arg";
+
+		if( ust::ref_to_int(arg) != ust::ref_to_int(function_type.args.back()))
+		{
+			result+= ", ";
+		}
+	}
+	result+= ") : ";
+
+	result+= function_type.return_type.get_ref().ToString();
+
+	return move(result);
+}
+
+} // namespace ToStringHelper
 
 fn FundamentalType::constructor( U_FundamentalType in_fundamental_type, LLVMTypeRef in_llvm_type )
 	( fundamental_type= in_fundamental_type, llvm_type= in_llvm_type )
@@ -68,6 +104,15 @@ fn Type::GetLLVMType( imut this ) : LLVMTypeRef
 		return function_type.llvm_type;
 	}
 
+	halt;
+}
+
+fn Type::ToString( this ) : ust::string8
+{
+	variant_visit( &t : something_ )
+	{
+		return ToStringHelper::ToString(t);
+	}
 	halt;
 }
 
