@@ -2379,7 +2379,7 @@ Value CodeBuilder::DoCallFunction(
 				const auto inner_references= function_context.variables_state.GetAllAccessibleInnerNodes( expr.node );
 				if( !inner_references.empty() )
 				{
-					EnsureTypeCompleteness( arg.type, TypeCompleteness::ReferenceTagsComplete );
+					EnsureTypeCompleteness( arg.type, TypeCompleteness::Complete );
 					if( arg.type.ReferencesTagsCount() > 0 )
 					{
 						bool is_mutable= false;
@@ -2433,7 +2433,7 @@ Value CodeBuilder::DoCallFunction(
 				// Lock inner references.
 				// Do it only if arg type can contain any reference inside.
 				// Do it before potential moving.
-				EnsureTypeCompleteness( arg.type, TypeCompleteness::ReferenceTagsComplete ); // arg type for value arg must be already complete.
+				EnsureTypeCompleteness( arg.type, TypeCompleteness::Complete ); // arg type for value arg must be already complete.
 				if( expr.node != nullptr && arg.type.ReferencesTagsCount() > 0u )
 				{
 					const auto inner_references= function_context.variables_state.GetAllAccessibleInnerNodes( expr.node );
