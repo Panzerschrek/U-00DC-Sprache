@@ -1242,10 +1242,10 @@ Type CodeBuilder::BuildFuncCode(
 	func_variable.have_body= true;
 
 	// Ensure completeness only for functions body.
+	// Require full completeness even for reference arguments.
 	for( const Function::Arg& arg : function_type.args )
 	{
-		if( !arg.is_reference && arg.type != void_type_ &&
-			!EnsureTypeCompleteness( arg.type, TypeCompleteness::Complete ) )
+		if( arg.type != void_type_ && !EnsureTypeCompleteness( arg.type, TypeCompleteness::Complete ) )
 			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), args.front().file_pos_, arg.type );
 	}
 	if( !function_type.return_value_is_reference && function_type.return_type != void_type_ &&
@@ -1347,9 +1347,6 @@ Type CodeBuilder::BuildFuncCode(
 			function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( var_node, var ) );
 			var.node= var_node;
 		}
-
-		if( arg.type != void_type_ && !EnsureTypeCompleteness( arg.type, TypeCompleteness::ReferenceTagsComplete ) )
-			REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), declaration_arg.file_pos_, arg.type );
 
 		if (arg.type.ReferencesTagsCount() > 0u )
 		{
