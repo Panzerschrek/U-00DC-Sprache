@@ -55,6 +55,16 @@ fn FundamentalType::constructor( U_FundamentalType in_fundamental_type, LLVMType
 	( fundamental_type= in_fundamental_type, llvm_type= in_llvm_type )
 {}
 
+op FundamentalType::==( FundamentalType& l, FundamentalType& r ) : bool
+{
+	return l.fundamental_type == r.fundamental_type;
+}
+
+op FundamentalType::!=( FundamentalType& l, FundamentalType& r ) : bool
+{
+	return !(l == r);
+}
+
 fn ArrayType::constructor( mut this, ArrayType &imut other )
 	( element_type(other.element_type.get_ref()), element_count(other.element_count), llvm_type(other.llvm_type) )
 {}
@@ -64,6 +74,16 @@ op ArrayType::=( mut this, ArrayType &imut other )
 	this.element_type.get_ref()= other.element_type.get_ref();
 	this.element_count= other.element_count;
 	this.llvm_type= other.llvm_type;
+}
+
+op ArrayType::==( ArrayType& l, ArrayType& r ) : bool
+{
+	return l.element_type.get_ref() == r.element_type.get_ref() && l.element_count == r.element_count;
+}
+
+op ArrayType::!=( ArrayType& l, ArrayType& r ) : bool
+{
+	return !(l == r);
 }
 
 fn FunctionType::constructor( mut this, FunctionType &imut other )
@@ -88,6 +108,41 @@ op FunctionType::=( mut this, FunctionType &imut other )
 	}
 
 	this.llvm_type= other.llvm_type;
+}
+
+op FunctionType::Arg::==(Arg& l, Arg& r) : bool
+{
+	return l.arg_type.get_ref() == r.arg_type.get_ref();
+}
+
+op FunctionType::Arg::!=(Arg& l, Arg& r) : bool
+{
+	return !(l == r);
+}
+
+op FunctionType::==( FunctionType& l, FunctionType& r ) : bool
+{
+	if( l.args.size() != r.args.size() )
+	{
+		return false;
+	}
+
+	auto mut i= 0s;
+	while( i < l.args.size() )
+	{
+		if( l.args[i] != r.args[i] )
+		{
+			return false;
+		}
+		++i;
+	}
+
+	return l.return_type.get_ref() == r.return_type.get_ref();
+}
+
+op FunctionType::!=( FunctionType& l, FunctionType& r ) : bool
+{
+	return !(l == r);
 }
 
 fn Type::conversion_constructor( FundamentalType mut fundamental_type )
@@ -149,6 +204,21 @@ fn Type::ToString( this ) : ust::string8
 	{
 		return ToStringHelper::ToString(t);
 	}
+	halt;
+}
+
+op Type::==( Type& l, Type& r ) : bool
+{
+	if( l.something_.index() != r.something_.index() )
+	{
+		return false;
+	}
+
+	variant_visit( &l_t : l.something_ )
+	{
+		return l_t == r.something_.get</ typeof(l_t) />().get_ref();
+	}
+
 	halt;
 }
 
