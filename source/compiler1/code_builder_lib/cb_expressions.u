@@ -124,22 +124,34 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 
 	unsafe
 	{
-		if( binary_operator.operator == BinaryOperatorType::Add )
+			 if( binary_operator.operator == BinaryOperatorType::Add )
 		{
 			res.llvm_value= LLVMBuildAdd( function_context.llvm_ir_builder, l_in_register, r_in_register, "+\0"[0] );
 		}
-		if( binary_operator.operator == BinaryOperatorType::Sub )
+		else if( binary_operator.operator == BinaryOperatorType::Sub )
 		{
 			res.llvm_value= LLVMBuildSub( function_context.llvm_ir_builder, l_in_register, r_in_register, "-\0"[0] );
 		}
-		if( binary_operator.operator == BinaryOperatorType::Mul )
+		else if( binary_operator.operator == BinaryOperatorType::Mul )
 		{
 			res.llvm_value= LLVMBuildMul( function_context.llvm_ir_builder, l_in_register, r_in_register, "*\0"[0] );
 		}
-		if( binary_operator.operator == BinaryOperatorType::Div )
+		else if( binary_operator.operator == BinaryOperatorType::Div )
 		{
 			// TODO - select signed/unsigned
 			res.llvm_value= LLVMBuildSDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
+		}
+		else if( binary_operator.operator == BinaryOperatorType::And )
+		{
+			res.llvm_value= LLVMBuildAnd( function_context.llvm_ir_builder, l_in_register, r_in_register, "&\0"[0] );
+		}
+		else if( binary_operator.operator == BinaryOperatorType::Or  )
+		{
+			res.llvm_value= LLVMBuildOr ( function_context.llvm_ir_builder, l_in_register, r_in_register, "|\0"[0] );
+		}
+		else if( binary_operator.operator == BinaryOperatorType::Xor )
+		{
+			res.llvm_value= LLVMBuildXor( function_context.llvm_ir_builder, l_in_register, r_in_register, "^\0"[0] );
 		}
 	}
 

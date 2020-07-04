@@ -59,6 +59,7 @@ struct BinaryOperator
 
 struct BracketExpression
 {
+	FilePos file_pos;
 	ust::box</Expression/> expr;
 }
 

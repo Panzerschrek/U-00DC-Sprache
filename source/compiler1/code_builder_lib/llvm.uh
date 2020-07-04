@@ -106,8 +106,13 @@ fn nomangle LLVMBuildAlloca(LLVMBuilderRef Builder, LLVMTypeRef Ty, NullTerminat
 fn nomangle LLVMBuildGEP(LLVMBuilderRef B, LLVMValueRef Pointer, LLVMValueRef& Indices, u32 NumIndices, NullTerminatedString& Name) unsafe : LLVMValueRef;
 
 // Arithmetic
-fn nomangle LLVMBuildAdd(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildSub(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildMul(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildUDiv(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildSDiv(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildAdd(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildSub(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildMul(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildUDiv(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildSDiv(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+
+// Binary bitwise operators
+fn nomangle LLVMBuildAnd(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildOr(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildXor(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
