@@ -39,6 +39,19 @@ fn CodeBuilder::constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data
 
 		fundamental_llvm_types_.int_ptr= LLVMIntPtrTypeInContext( llvm_context_, data_layout_ );
 	}
+
+	invalid_type_= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
+	void_type_= FundamentalType( U_FundamentalType::void_, fundamental_llvm_types_.void_ );
+	void_type_for_ret_= FundamentalType( U_FundamentalType::void_, fundamental_llvm_types_.void_for_ret_ );
+	bool_type_= FundamentalType( U_FundamentalType::bool_, fundamental_llvm_types_.bool_ );
+
+	unsafe
+	{
+		size_type_= select(
+			LLVMGetIntTypeWidth( fundamental_llvm_types_.int_ptr ) == 32u
+			? FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ )
+			: FundamentalType( U_FundamentalType::u64_, fundamental_llvm_types_.u64_ ) );
+	}
 }
 
 fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : BuildResult

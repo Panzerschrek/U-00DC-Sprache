@@ -49,6 +49,8 @@ fn nomangle LLVMDoubleTypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
 fn nomangle LLVMVoidTypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
 fn nomangle LLVMIntPtrTypeInContext(LLVMContextRef C, LLVMTargetDataRef TD) unsafe : LLVMTypeRef;
 
+fn nomangle LLVMGetIntTypeWidth(LLVMTypeRef IntegerTy) unsafe : u32;
+
 fn nomangle LLVMArrayType(LLVMTypeRef ElementType, u32 ElementCount) unsafe : LLVMTypeRef;
 
 fn nomangle LLVMFunctionType(

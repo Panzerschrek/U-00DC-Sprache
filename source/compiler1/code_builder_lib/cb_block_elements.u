@@ -66,6 +66,17 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 
 fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator )
 {
+	if( !return_operator.expr.get</Synt::EmptyVariant/>().empty() )
+	{
+		if( function_context.return_type != void_type_ )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, return_operator.file_pos, function_context.return_type, void_type_ )
+			return;
+		}
+		unsafe{  LLVMBuildRetVoid( function_context.llvm_ir_builder );  }
+		return;
+	}
+
 	var Variable expr= BuildExpressionCodeEnsureVariable( names_scope, function_context, return_operator.expr );
 
 	// TODO - enable type conversions in "return".
