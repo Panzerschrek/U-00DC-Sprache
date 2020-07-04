@@ -8,8 +8,15 @@ fn CodeBuilder::BuildExpressionCodeEnsureVariable( this, NamesScopePtr& names_sc
 {
 	var Value mut value= BuildExpressionCode( names_scope, function_context, expression );
 
-	// TODO - fill dummy value if not variable.
-	return value.get</Variable/>().get_ref();
+	if_var( &mut v : value.get</Variable/>())
+	{
+		return take(v);
+	}
+
+	var Variable mut dummy;
+	dummy.t= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
+	unsafe{  dummy.llvm_value= LLVMGetUndef( fundamental_llvm_types_.invalid_type_ );  }
+	return move(dummy);
 }
 
 fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Value
@@ -142,6 +149,57 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BracketExpression& bracket_expression ) : Value
 {
 	return BuildExpressionCode( names_scope, function_context, bracket_expression.expr.get_ref() );
+}
+
+fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IndexationOperator& indexation_operator ) : Value
+{
+	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.value.get_ref() );
+	auto index= BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.index.get_ref() );
+
+	if_var( &variable_array_type : variable.t.GetArrayType() )
+	{
+		if_var( &index_fundamental_type : index.t.GetFundamentalType() )
+		{
+			// TODO - add runtime index check
+			// TODO - forbid non-constexpr signed indexes
+			if( IsInteger( index_fundamental_type.fundamental_type ) )
+			{
+				if( variable.location != Variable::Location::Pointer )
+				{
+					// TODO - Strange variable location.
+					return Value(ErrorValue());
+				}
+
+				var Variable mut result
+				{
+					.t= variable_array_type.element_type.get_ref(),
+					.location= Variable::Location::Pointer,
+				};
+
+				unsafe
+				{
+					var [ LLVMValueRef, 2 ] indexes
+					[
+						GetZeroGEPIndex(),
+						CreateMoveToLLVMRegisterInstruction( index, function_context ),
+					];
+
+					result.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] );
+				}
+
+				return Value( move(result) );
+			}
+			else
+			{
+				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, indexation_operator.file_pos, index.t )
+			}
+		}
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, indexation_operator.file_pos, index.t )
+	}
+
+	REPORT_ERROR( OperationNotSupportedForThisType, names_scope, indexation_operator.file_pos, variable.t )
+
+	return Value(ErrorValue());
 }
 
 } // namespace U

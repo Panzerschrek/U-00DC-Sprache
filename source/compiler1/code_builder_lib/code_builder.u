@@ -271,6 +271,8 @@ fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, ust::box</Synt::A
 		out_array_type.element_count= size_num.num.value_int;
 	}
 
+	unsafe{ out_array_type.llvm_type= LLVMArrayType( out_array_type.element_type.get_ref().GetLLVMType(), u32(out_array_type.element_count) ); }
+
 	return Type( move(out_array_type) );
 }
 
@@ -390,6 +392,11 @@ fn CodeBuilder::GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRe
 	if( t == U_FundamentalType::char32_		) { return fundamental_llvm_types_.char32_; }
 
 	halt;
+}
+
+fn CodeBuilder::GetZeroGEPIndex( this ) : LLVMValueRef
+{
+	unsafe{  return LLVMConstInt( fundamental_llvm_types_.i32_, 0u64, LLVMBool::False );  }
 }
 
 fn CodeBuilder::CreateMoveToLLVMRegisterInstruction( Variable& variable, FunctionContext& function_context ) : LLVMValueRef

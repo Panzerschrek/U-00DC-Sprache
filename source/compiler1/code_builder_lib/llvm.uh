@@ -49,6 +49,8 @@ fn nomangle LLVMDoubleTypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
 fn nomangle LLVMVoidTypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
 fn nomangle LLVMIntPtrTypeInContext(LLVMContextRef C, LLVMTargetDataRef TD) unsafe : LLVMTypeRef;
 
+fn nomangle LLVMArrayType(LLVMTypeRef ElementType, u32 ElementCount) unsafe : LLVMTypeRef;
+
 fn nomangle LLVMFunctionType(
 	LLVMTypeRef ReturnType,
 	LLVMTypeRef &ParamTypes, u32 ParamCount,
@@ -85,6 +87,7 @@ fn nomangle LLVMPositionBuilderAtEnd(LLVMBuilderRef Builder, LLVMBasicBlockRef B
 // Constants
 fn nomangle LLVMConstInt(LLVMTypeRef IntTy, u64 N, LLVMBool SignExtend) unsafe : LLVMValueRef;
 fn nomangle LLVMConstReal(LLVMTypeRef RealTy, f64 N) unsafe : LLVMValueRef;
+fn nomangle LLVMGetUndef(LLVMTypeRef Ty) unsafe : LLVMValueRef;
 
 // Instructions
 
@@ -97,6 +100,8 @@ fn nomangle LLVMBuildLoad(LLVMBuilderRef Builder, LLVMValueRef PointerVal, NullT
 fn nomangle LLVMBuildStore(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMValueRef Ptr) unsafe : LLVMValueRef;
 
 fn nomangle LLVMBuildAlloca(LLVMBuilderRef Builder, LLVMTypeRef Ty, NullTerminatedString& name) unsafe : LLVMValueRef;
+
+fn nomangle LLVMBuildGEP(LLVMBuilderRef B, LLVMValueRef Pointer, LLVMValueRef& Indices, u32 NumIndices, NullTerminatedString& Name) unsafe : LLVMValueRef;
 
 // Arithmetic
 fn nomangle LLVMBuildAdd(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& name) unsafe : LLVMValueRef;

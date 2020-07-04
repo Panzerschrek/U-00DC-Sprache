@@ -31,7 +31,7 @@ fn PreprocessErrorArg( T& x ) : ust::string8
 	}
 	else if( ust::is_same_type</T, Type/>() )
 	{
-		return t.ToString();
+		return x.ToString();
 	}
 	else
 	{

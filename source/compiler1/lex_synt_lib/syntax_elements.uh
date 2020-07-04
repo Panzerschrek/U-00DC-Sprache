@@ -62,13 +62,21 @@ struct BracketExpression
 	ust::box</Expression/> expr;
 }
 
+struct IndexationOperator
+{
+	FilePos file_pos;
+	ust::box</Expression/> value;
+	ust::box</Expression/> index;
+}
+
 type Expression= ust::variant</ tup[
 	EmptyVariant,
 	NumericConstant,
 	BooleanConstant,
 	ComplexName,
 	BinaryOperator,
-	BracketExpression
+	BracketExpression,
+	IndexationOperator
 	] />;
 
 struct ArrayType

@@ -135,13 +135,9 @@ fn Type::GetFunctionType( imut this ) : ust::optional_ref</FunctionType, false /
 
 fn Type::GetLLVMType( imut this ) : LLVMTypeRef
 {
-	if_var( & fundamental_type : GetFundamentalType() )
+	variant_visit( &t : something_ )
 	{
-		return fundamental_type.llvm_type;
-	}
-	if_var( & function_type : GetFunctionType() )
-	{
-		return function_type.llvm_type;
+		return t.llvm_type;
 	}
 
 	halt;
