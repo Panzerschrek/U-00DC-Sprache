@@ -3,7 +3,8 @@ import "function_context.uh"
 namespace U
 {
 
-fn FunctionContext::constructor( LLVMContextRef llvm_context, LLVMValueRef llvm_function )
+fn FunctionContext::constructor( LLVMContextRef llvm_context, LLVMValueRef llvm_function, Type mut in_return_type )
+	( return_type(in_return_type) )
 {
 	unsafe
 	{

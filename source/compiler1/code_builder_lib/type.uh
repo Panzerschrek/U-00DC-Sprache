@@ -80,6 +80,7 @@ public:
 	fn ToString( this ) : ust::string8;
 
 	op==( Type& l, Type& r ) : bool;
+	op!=( Type& l, Type& r ) : bool;
 
 private:
 	ust::variant</ tup[

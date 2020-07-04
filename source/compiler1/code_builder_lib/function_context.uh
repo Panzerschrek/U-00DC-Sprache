@@ -1,4 +1,4 @@
-import "llvm.uh"
+import "type.uh"
 
 namespace U
 {
@@ -6,8 +6,10 @@ namespace U
 class FunctionContext
 {
 public:
-	fn constructor( LLVMContextRef llvm_context, LLVMValueRef llvm_function );
+	fn constructor( LLVMContextRef llvm_context, LLVMValueRef llvm_function, Type mut in_return_type );
 	fn destructor();
+
+	Type imut return_type;
 
 	LLVMBasicBlockRef alloca_basic_block= LLVMBasicBlockRef::Null;
 	LLVMBuilderRef alloca_ir_builder= LLVMBuilderRef::Null;

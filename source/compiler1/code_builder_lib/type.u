@@ -222,4 +222,9 @@ op Type::==( Type& l, Type& r ) : bool
 	halt;
 }
 
+op Type::!=( Type& l, Type& r ) : bool
+{
+	return !(l == r);
+}
+
 } // namespace U

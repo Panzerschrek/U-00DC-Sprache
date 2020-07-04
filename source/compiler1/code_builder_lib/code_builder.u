@@ -238,7 +238,10 @@ fn CodeBuilder::PrepareFunction(
 
 fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariable &mut func_variable )
 {
-	var FunctionContext mut function_context( llvm_context_, func_variable.llvm_function );
+	var FunctionContext mut function_context(
+		llvm_context_,
+		func_variable.llvm_function,
+		func_variable.t.GetFunctionType().get_ref().return_type.get_ref() );
 
 	var NamesScopePtr args_names_scope_ptr( NamesScope( "", names_scope ) );
 

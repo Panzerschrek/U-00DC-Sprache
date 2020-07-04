@@ -157,6 +157,7 @@ struct AutoVariableDeclaration
 
 struct ReturnOperator
 {
+	FilePos file_pos;
 	Expression expr;
 }
 

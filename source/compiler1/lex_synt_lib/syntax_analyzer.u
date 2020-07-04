@@ -717,9 +717,8 @@ fn SyntaxAnalyzer::ParseAutoVariableDeclaration( mut this ) : AutoVariableDeclar
 
 fn SyntaxAnalyzer::ParseReturnOperator( mut this ) : ReturnOperator
 {
+	var ReturnOperator mut res{ .file_pos= it_.front().file_pos };
 	NextLexem(); // return
-
-	var ReturnOperator mut res;
 
 	res.expr= ParseExpression();
 

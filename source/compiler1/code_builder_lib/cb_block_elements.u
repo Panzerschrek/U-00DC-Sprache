@@ -68,6 +68,13 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 {
 	var Variable expr= BuildExpressionCodeEnsureVariable( names_scope, function_context, return_operator.expr );
 
+	// TODO - enable type conversions in "return".
+	if( expr.t != function_context.return_type )
+	{
+		REPORT_ERROR( TypesMismatch, names_scope, return_operator.file_pos, function_context.return_type, expr.t )
+		return;
+	}
+
 	unsafe
 	{
 		auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr, function_context );
