@@ -26,6 +26,8 @@ bool FilterTest( const std::string& test_name )
 		"BlocksTest0",
 		"NameNotFoundTest_Minus1",
 		"NumericConstantsTest0",
+		"NumericConstantsTest1",
+		"NumericConstantsTest2",
 		"OperatorsPriorityTest0",
 		"OperatorsPriorityTest2",
 		"OperatorsPriorityTest4",
@@ -36,6 +38,7 @@ bool FilterTest( const std::string& test_name )
 
 		"auto_variables_test.cpp:AutoVariableTest0",
 		"code_builder_test.cpp:VariablesTest0",
+		"code_builder_test.cpp:VariablesTest1",
 	};
 
 	if( std::find_if(

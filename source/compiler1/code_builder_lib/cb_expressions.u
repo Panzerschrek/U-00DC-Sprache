@@ -30,11 +30,57 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 
 fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NumericConstant& numeric_constant ) : Value
 {
+	var ust::array_view_imut</char8/> mut type_suffix( numeric_constant.num.type_suffix );
+	while( !type_suffix.empty() && type_suffix.back() == "\0"c8 )
+	{
+		type_suffix.drop_back();
+	}
+
+	auto mut t= U_FundamentalType::InvalidType;
+	if( type_suffix.empty() )
+	{
+		t= select( numeric_constant.num.has_fractional_point ? U_FundamentalType::f64_ : U_FundamentalType::i32_ );
+	}
+	else if( type_suffix == ust::string8("u") )
+	{
+		t= U_FundamentalType::u32_;
+	}
+	// TODO -size_type
+	else if( type_suffix == ust::string8("f") )
+	{
+		t= U_FundamentalType::f32_;
+	}
+	else
+	{
+		t= GetFundamentalTypeByName( type_suffix );
+	}
+
+	if( t == U_FundamentalType::InvalidType )
+	{
+		REPORT_ERROR( UnknownNumericConstantType, names_scope, numeric_constant.file_pos, ust::string8(type_suffix) )
+		return Value( ErrorValue() );
+	}
+
 	var Variable mut res;
-	res.t= Type( FundamentalType( U_FundamentalType::i32_ , fundamental_llvm_types_.i32_ ) );
+	res.t= Type( FundamentalType( t, GetFundamentalLLVMType(t) ) );
 	res.location= Variable::Location::LLVMRegister;
 
-	unsafe{ res.llvm_value= LLVMConstInt( res.t.GetLLVMType(), u64(numeric_constant.num.value_double), LLVMBool::True ); }
+	unsafe
+	{
+		if( IsFloatingPoint( t ) )
+		{
+			res.llvm_value= LLVMConstReal( res.t.GetLLVMType(), numeric_constant.num.value_double );
+		}
+		else if( IsSignedInteger( t ) )
+		{
+			res.llvm_value= LLVMConstInt( res.t.GetLLVMType(), numeric_constant.num.value_int, LLVMBool::True  );
+		}
+		else if( IsUnsignedInteger( t ) )
+		{
+			res.llvm_value= LLVMConstInt( res.t.GetLLVMType(), numeric_constant.num.value_int, LLVMBool::False );
+		}
+		else{ halt; }
+	}
 
 	return Value( move(res) );
 }

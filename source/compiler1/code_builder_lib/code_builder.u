@@ -352,6 +352,30 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariabl
 	unsafe{ LLVMBuildBr( function_context.alloca_ir_builder, function_context.function_basic_block ); }
 }
 
+fn CodeBuilder::GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef
+{
+	if( t == U_FundamentalType::InvalidType	) { return fundamental_llvm_types_.invalid_type_; }
+	if( t == U_FundamentalType::void_		) { return fundamental_llvm_types_.void_; }
+	if( t == U_FundamentalType::bool_		) { return fundamental_llvm_types_.bool_; }
+	if( t == U_FundamentalType::i8_			) { return fundamental_llvm_types_.i8_	; }
+	if( t == U_FundamentalType::u8_			) { return fundamental_llvm_types_.u8_	; }
+	if( t == U_FundamentalType::i16_		) { return fundamental_llvm_types_.i16_	; }
+	if( t == U_FundamentalType::u16_		) { return fundamental_llvm_types_.u16_	; }
+	if( t == U_FundamentalType::i32_		) { return fundamental_llvm_types_.i32_	; }
+	if( t == U_FundamentalType::u32_		) { return fundamental_llvm_types_.u32_	; }
+	if( t == U_FundamentalType::i64_		) { return fundamental_llvm_types_.i64_	; }
+	if( t == U_FundamentalType::u64_		) { return fundamental_llvm_types_.u64_	; }
+	if( t == U_FundamentalType::i128_		) { return fundamental_llvm_types_.i128_; }
+	if( t == U_FundamentalType::u128_		) { return fundamental_llvm_types_.u128_; }
+	if( t == U_FundamentalType::f32_		) { return fundamental_llvm_types_.f32_	; }
+	if( t == U_FundamentalType::f64_		) { return fundamental_llvm_types_.f64_	; }
+	if( t == U_FundamentalType::char8_		) { return fundamental_llvm_types_.char8_ ; }
+	if( t == U_FundamentalType::char16_		) { return fundamental_llvm_types_.char16_; }
+	if( t == U_FundamentalType::char32_		) { return fundamental_llvm_types_.char32_; }
+
+	halt;
+}
+
 fn CodeBuilder::CreateMoveToLLVMRegisterInstruction( Variable& variable, FunctionContext& function_context ) : LLVMValueRef
 {
 	if( variable.location == Variable::Location::Pointer )
