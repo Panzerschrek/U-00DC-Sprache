@@ -5,7 +5,7 @@ import "/vector.u"
 import "/code_builder_errors.uh"
 import "type.uh"
 
-?macro <? REPORT_ERROR:block ( ?names_scope:expr, ?error_code:ident, ?file_pos:expr ?args:rep<? , ?arg:expr ?> ) ?> ->
+?macro <? REPORT_ERROR:block ( ?error_code:ident, ?names_scope:expr, ?file_pos:expr ?args:rep<? , ?arg:expr ?> ) ?> ->
 <?
 	{
 		var ust::vector</ust::string8/> mut ??format_args;
