@@ -37,6 +37,7 @@ bool FilterTest( const std::string& test_name )
 		"Redefinition5",
 		"SimpliestProgramTest",
 		"SimpleProgramTest",
+		"TypesMismatchTest2",
 		"TypesMismatchTest3",
 
 		"auto_variables_test.cpp:AutoVariableTest0",
