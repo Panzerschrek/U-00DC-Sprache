@@ -214,4 +214,10 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	return Value(ErrorValue());
 }
 
+fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CallOperator& call_operator ) : Value
+{
+	// TODO
+	halt;
+}
+
 } // namespace U

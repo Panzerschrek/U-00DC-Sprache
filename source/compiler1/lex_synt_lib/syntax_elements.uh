@@ -70,6 +70,13 @@ struct IndexationOperator
 	ust::box</Expression/> index;
 }
 
+struct CallOperator
+{
+	FilePos file_pos;
+	ust::box</Expression/> value;
+	ust::vector</ ust::box</Expression/> /> args;
+}
+
 type Expression= ust::variant</ tup[
 	EmptyVariant,
 	NumericConstant,
@@ -77,7 +84,8 @@ type Expression= ust::variant</ tup[
 	ComplexName,
 	BinaryOperator,
 	BracketExpression,
-	IndexationOperator
+	IndexationOperator,
+	CallOperator
 	] />;
 
 struct ArrayType
