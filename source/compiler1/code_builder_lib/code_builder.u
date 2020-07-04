@@ -258,6 +258,22 @@ fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, Synt::ComplexName
 	return Type( FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ ) );
 }
 
+fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, ust::box</Synt::ArrayType/>& array_type ) : Type
+{
+	var ArrayType mut out_array_type
+	{
+		.element_type( PrepareType( names_scope, array_type.get_ref().element_type ) )
+	};
+
+	// TODO - process constexpr value. Now only extract number
+	if_var( size_num : array_type.get_ref().element_count.get</Synt::NumericConstant/>() )
+	{
+		out_array_type.element_count= size_num.num.value_int;
+	}
+
+	return Type( move(out_array_type) );
+}
+
 fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, ust::box</Synt::FunctionType/>& function_type_ptr ) : Type
 {
 	return PrepareType( names_scope, function_type_ptr.get_ref() );

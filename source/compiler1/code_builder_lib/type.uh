@@ -16,6 +16,16 @@ struct FundamentalType
 	fn constructor( U_FundamentalType in_fundamental_type, LLVMTypeRef in_llvm_type );
 }
 
+struct ArrayType
+{
+	ust::box</Type/> element_type;
+	u64 element_count= 0u64;
+	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
+
+	fn constructor( mut this, ArrayType &imut other );
+	op=( mut this, ArrayType &imut other );
+}
+
 struct FunctionType
 {
 	struct Arg
@@ -40,10 +50,14 @@ public:
 	op=( mut this, Type &imut other )= default;
 
 	fn conversion_constructor( FundamentalType mut fundamental_type );
+	fn conversion_constructor( ArrayType mut array_type );
 	fn conversion_constructor( FunctionType mut function_type );
 
 	fn GetFundamentalType(  mut this ) : ust::optional_ref</FundamentalType, true  />'this';
 	fn GetFundamentalType( imut this ) : ust::optional_ref</FundamentalType, false />'this';
+
+	fn GetArrayType(  mut this ) : ust::optional_ref</ArrayType, true  />'this';
+	fn GetArrayType( imut this ) : ust::optional_ref</ArrayType, false />'this';
 
 	fn GetFunctionType(  mut this ) : ust::optional_ref</FunctionType, true  />'this';
 	fn GetFunctionType( imut this ) : ust::optional_ref</FunctionType, false />'this';
@@ -56,6 +70,7 @@ public:
 private:
 	ust::variant</ tup[
 		FundamentalType,
+		ArrayType,
 		FunctionType
 	] /> something_;
 }

@@ -71,6 +71,13 @@ type Expression= ust::variant</ tup[
 	BracketExpression
 	] />;
 
+struct ArrayType
+{
+	FilePos file_pos;
+	TypeName element_type;
+	Expression element_count;
+}
+
 struct FunctionType
 {
 	struct Arg
@@ -87,12 +94,25 @@ struct FunctionType
 
 type TypeName= ust::variant</ tup[
 	ComplexName,
+	ust::box</ArrayType/>,
 	ust::box</FunctionType/>
 	] />;
 
+struct ZeroInitializer
+{
+	FilePos file_pos;
+}
+
+struct UninitializedInitializer
+{
+	FilePos file_pos;
+}
+
 type Initializer= ust::variant</ tup [
 	EmptyVariant,
-	Expression
+	Expression,
+	ZeroInitializer,
+	UninitializedInitializer
 	] />;
 
 struct Block

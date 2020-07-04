@@ -1,3 +1,4 @@
+import "/string_conversions.u"
 import "../lex_synt_lib/keywords.uh"
 import "lang_types.uh"
 import "type.uh"
@@ -11,6 +12,17 @@ namespace ToStringHelper
 fn ToString( FundamentalType& fundamental_type ) : ust::string8
 {
 	return ust::string8( GetFundamentalTypeName( fundamental_type.fundamental_type ) );
+}
+
+fn ToString( ArrayType& array_type ) : ust::string8
+{
+	var ust::string8 mut result;
+	result+= "[ ";
+	result+= array_type.element_type.get_ref().ToString();
+	result+= ", ";
+	result+= ust::to_string8(array_type.element_count);
+	result+= " ]";
+	return move(result);
 }
 
 fn ToString( FunctionType& function_type ) : ust::string8
@@ -43,8 +55,19 @@ fn FundamentalType::constructor( U_FundamentalType in_fundamental_type, LLVMType
 	( fundamental_type= in_fundamental_type, llvm_type= in_llvm_type )
 {}
 
+fn ArrayType::constructor( mut this, ArrayType &imut other )
+	( element_type(other.element_type.get_ref()), element_count(other.element_count), llvm_type(other.llvm_type) )
+{}
+
+op ArrayType::=( mut this, ArrayType &imut other )
+{
+	this.element_type.get_ref()= other.element_type.get_ref();
+	this.element_count= other.element_count;
+	this.llvm_type= other.llvm_type;
+}
+
 fn FunctionType::constructor( mut this, FunctionType &imut other )
-	( return_type(other.return_type.get_ref()) )
+	( return_type(other.return_type.get_ref()), llvm_type(other.llvm_type) )
 {
 	foreach( & in_arg : other.args )
 	{
@@ -63,10 +86,17 @@ op FunctionType::=( mut this, FunctionType &imut other )
 		var Arg mut arg{ .arg_type( in_arg.arg_type.get_ref() ) };
 		args.push_back( move(arg) );
 	}
+
+	this.llvm_type= other.llvm_type;
 }
 
 fn Type::conversion_constructor( FundamentalType mut fundamental_type )
 	( something_( move(fundamental_type) ) )
+{}
+
+
+fn Type::conversion_constructor( ArrayType mut array_type )
+	( something_( move(array_type) ) )
 {}
 
 fn Type::conversion_constructor( FunctionType mut function_type )
@@ -81,6 +111,16 @@ fn Type::GetFundamentalType(  mut this ) : ust::optional_ref</FundamentalType, t
 fn Type::GetFundamentalType( imut this ) : ust::optional_ref</FundamentalType, false />'this'
 {
 	return something_.get</FundamentalType/>();
+}
+
+fn Type::GetArrayType(  mut this ) : ust::optional_ref</ArrayType, true  />'this'
+{
+	return something_.get</ArrayType/>();
+}
+
+fn Type::GetArrayType( imut this ) : ust::optional_ref</ArrayType, false />'this'
+{
+	return something_.get</ArrayType/>();
 }
 
 fn Type::GetFunctionType(  mut this ) : ust::optional_ref</FunctionType, true  />'this'

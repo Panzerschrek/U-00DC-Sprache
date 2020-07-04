@@ -159,6 +159,7 @@ private:
 	fn ParseFunction( mut this ) : Function;
 
 	fn ParseInitializer( mut this ) : Initializer;
+	fn ParseVariableInitializer( mut this ) : Initializer;
 
 	fn ParseBlock( mut this ) : Block;
 	fn ParseVariablesDeclaration( mut this ) : VariablesDeclaration;
@@ -315,6 +316,29 @@ fn SyntaxAnalyzer::ParseTypeName( mut this ) : TypeName
 		NextLexem();
 		return TypeName( move(complex_name) );
 	}
+	else if( it_.front().lexem_type == Lexem::Type::SquareBracketLeft )
+	{
+		var ArrayType mut array_type{ .file_pos= it_.front().file_pos };
+		NextLexem();
+
+		array_type.element_type= ParseTypeName();
+
+		if( it_.front().lexem_type != Lexem::Type::Comma )
+		{
+			PushErrorMessage();
+		}
+		NextLexem();
+
+		array_type.element_count= ParseExpression();
+
+		if( it_.front().lexem_type != Lexem::Type::SquareBracketRight )
+		{
+			PushErrorMessage();
+		}
+		NextLexem();
+
+		return TypeName( ust::box</ArrayType/>( move(array_type) ) );
+	}
 	else
 	{
 		PushErrorMessage();
@@ -425,6 +449,39 @@ fn SyntaxAnalyzer::ParseInitializer( mut this ) : Initializer
 	{
 		NextLexem();
 		return Initializer( ParseExpression() );
+	}
+
+	return Initializer( EmptyVariant() );
+}
+
+fn SyntaxAnalyzer::ParseVariableInitializer( mut this ) : Initializer
+{
+	if( it_.front().lexem_type == Lexem::Type::Assignment )
+	{
+		NextLexem();
+		if( IsKeyword( it_.front(), Keyword::zero_init_ ) )
+		{
+			var ZeroInitializer mut zero_initializer{ .file_pos= it_.front().file_pos };
+			NextLexem();
+			return Initializer( move(zero_initializer) );
+		}
+		if( IsKeyword( it_.front(), Keyword::uninitialized_ ) )
+		{
+			var UninitializedInitializer mut uninitialized_initializer{ .file_pos= it_.front().file_pos };
+			NextLexem();
+			return Initializer( move(uninitialized_initializer) );
+		}
+		else
+		{
+			return Initializer( ParseExpression() );
+		}
+	}
+	else if(
+		it_.front().lexem_type == Lexem::Type::BracketLeft ||
+		it_.front().lexem_type == Lexem::Type::SquareBracketLeft ||
+		it_.front().lexem_type == Lexem::Type::BraceLeft )
+	{
+		return ParseInitializer();
 	}
 
 	return Initializer( EmptyVariant() );
@@ -556,7 +613,7 @@ fn SyntaxAnalyzer::ParseVariablesDeclaration( mut this ) : VariablesDeclaration
 		variable_entry.name= it_.front().text;
 		NextLexem();
 
-		variable_entry.initializer= ParseInitializer();
+		variable_entry.initializer= ParseVariableInitializer();
 
 		variables_declaration.variables.push_back( move(variable_entry) );
 
