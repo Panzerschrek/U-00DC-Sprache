@@ -1,0 +1,98 @@
+import "error_reporting.uh"
+import "code_builder.uh"
+
+namespace U
+{
+
+fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, Synt::TypeName& type_name ) : Type
+{
+	variant_visit( &t : type_name )
+	{
+		return PrepareType( names_scope, t );
+	}
+
+	halt;
+}
+
+fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, Synt::ComplexName& named_type ) : Type
+{
+	var Value resolved_value= ResolveValue( names_scope, named_type );
+	if_var( & t : resolved_value.get</Type/>() )
+	{
+		return t;
+	}
+
+	REPORT_ERROR( NameIsNotTypeName, names_scope, named_type.file_pos, named_type.name )
+	return Type( FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ ) );
+}
+
+fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, ust::box</Synt::ArrayType/>& array_type ) : Type
+{
+	var ArrayType mut out_array_type
+	{
+		.element_type( PrepareType( names_scope, array_type.get_ref().element_type ) )
+	};
+
+	// TODO - process constexpr value. Now only extract number
+	if_var( size_num : array_type.get_ref().element_count.get</Synt::NumericConstant/>() )
+	{
+		out_array_type.element_count= size_num.num.value_int;
+	}
+
+	unsafe{ out_array_type.llvm_type= LLVMArrayType( out_array_type.element_type.get_ref().GetLLVMType(), u32(out_array_type.element_count) ); }
+
+	return Type( move(out_array_type) );
+}
+
+fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, ust::box</Synt::FunctionType/>& function_type_ptr ) : Type
+{
+	return PrepareType( names_scope, function_type_ptr.get_ref() );
+}
+
+fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, Synt::FunctionType& function_type ) : Type
+{
+	var FunctionType mut res
+	{
+		.return_type(
+			select(
+				function_type.return_type.empty()
+					? Type( FundamentalType( U_FundamentalType::void_, fundamental_llvm_types_.void_for_ret_ ) )
+					: PrepareType( names_scope, function_type.return_type.get_ref() ) ) )
+	};
+
+	foreach( &arg : function_type.args )
+	{
+		var FunctionType::Arg mut out_arg{ .arg_type( PrepareType( names_scope, arg.arg_type ) ) };
+		res.args.push_back( move(out_arg) );
+	}
+
+	var ust::vector</LLVMTypeRef/> mut llvm_arg_types;
+	foreach( &arg : res.args )
+	{
+		llvm_arg_types.push_back( arg.arg_type.get_ref().GetLLVMType() );
+	}
+
+	unsafe
+	{
+		if( llvm_arg_types.empty() )
+		{
+			auto dummy= LLVMTypeRef::Null;
+			res.llvm_type=
+				LLVMFunctionType(
+					res.return_type.get_ref().GetLLVMType(),
+					dummy, 0u, LLVMBool::False );
+		}
+		else
+		{
+			auto s= u32(llvm_arg_types.size());
+			res.llvm_type=
+				LLVMFunctionType(
+					res.return_type.get_ref().GetLLVMType(),
+					llvm_arg_types.front(), s, LLVMBool::False );
+		}
+	}
+
+	return Type(move(res));
+}
+
+} // namespace U
