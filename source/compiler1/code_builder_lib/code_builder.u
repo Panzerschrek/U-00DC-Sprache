@@ -116,7 +116,7 @@ fn CodeBuilder::ResolveValue( this, NamesScopePtr& names_scope, Synt::ComplexNam
 		current_scope= current_scope.lock_imut().get_ref().GetParent();
 	}
 
-	REPORT_ERROR( names_scope, NameNotFound, complex_name.file_pos )
+	REPORT_ERROR( names_scope, NameNotFound, complex_name.file_pos, complex_name.name )
 	return Value( ErrorValue() );
 }
 
@@ -254,7 +254,7 @@ fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, Synt::ComplexName
 		return t;
 	}
 
-	REPORT_ERROR( names_scope, NameIsNotTypeName, named_type.file_pos )
+	REPORT_ERROR( names_scope, NameIsNotTypeName, named_type.file_pos, named_type.name )
 	return Type( FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ ) );
 }
 
@@ -341,7 +341,7 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariabl
 			var bool insert_ok= !args_names_scope.AddName( in_arg.name, NamesScopeValue( move(out_arg) ) ).empty();
 			if( !insert_ok )
 			{
-				REPORT_ERROR( names_scope, Redefinition, in_arg.file_pos )
+				REPORT_ERROR( names_scope, Redefinition, in_arg.file_pos, in_arg.name )
 			}
 		}
 	}

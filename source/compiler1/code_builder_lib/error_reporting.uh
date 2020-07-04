@@ -1,17 +1,42 @@
 import "/random_access_range.u"
+import "/string_conversions.u"
+import "/type_traits.u"
+import "/vector.u"
 import "/code_builder_errors.uh"
-?macro <? REPORT_ERROR:block ( ?names_scope:expr, ?error_code:ident, ?file_pos:expr ) ?> ->
+import "type.uh"
+
+?macro <? REPORT_ERROR:block ( ?names_scope:expr, ?error_code:ident, ?file_pos:expr ?args:rep<? , ?arg:expr ?> ) ?> ->
 <?
 	{
+		var ust::vector</ust::string8/> mut ??format_args;
+		?args<? ??format_args.push_back( PreprocessErrorArg( ?arg ) ); ?>
+
 		auto ??container= ?names_scope.lock_imut().get_ref().GetErrors();
 		auto mut ??lock= ??container.lock_mut();
-		??lock.get_ref().push_back( ReportError( CodeBuilderErrorCode::?error_code, ?file_pos ) );
+		??lock.get_ref().push_back( ReportError( CodeBuilderErrorCode::?error_code, ?file_pos, ??format_args ) );
 	}
 ?>
 
 namespace U
 {
 
-fn ReportError( CodeBuilderErrorCode code, FilePos file_pos ) : CodeBuilderError;
+fn ReportError( CodeBuilderErrorCode code, FilePos file_pos, ust::vector</ust::string8/>& format_args ) : CodeBuilderError;
+
+template</type T/>
+fn PreprocessErrorArg( T& x ) : ust::string8
+{
+	static_if( ust::is_same_type</T, ust::string8/>() )
+	{
+		return x;
+	}
+	else if( ust::is_same_type</T, Type/>() )
+	{
+		return t.ToString();
+	}
+	else
+	{
+		return ust::to_string8(x);
+	}
+}
 
 } // namespace U
