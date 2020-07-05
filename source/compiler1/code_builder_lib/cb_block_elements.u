@@ -11,7 +11,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 
 fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block )
 {
-	var NamesScopePtr block_names_scope( NamesScope( "", names_scope ) );
+	var NamesScopeMutPtr block_names_scope( NamesScope( "", names_scope ) );
 
 	foreach( &block_element : block.elements )
 	{
@@ -22,7 +22,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 	}
 }
 
-fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration& variables_declaration )
+fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration& variables_declaration )
 {
 	auto t= PrepareType( names_scope, variables_declaration.t );
 	foreach( &variable_declaration : variables_declaration.variables )
@@ -43,7 +43,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 	}
 }
 
-fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration )
+fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration )
 {
 	// TODO - improve this, report about errors.
 	var Variable expr= BuildExpressionCodeEnsureVariable( names_scope, function_context, auto_variable_declaration.initializer_expression );

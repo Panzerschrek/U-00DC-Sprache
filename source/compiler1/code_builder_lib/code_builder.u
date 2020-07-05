@@ -86,7 +86,7 @@ fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : Buil
 	return move(res);
 }
 
-fn CodeBuilder::NamesScopeValueToValue( this, NamesScopeValue& names_scope_value ) : Value
+fn CodeBuilder::NamesScopeValueToValue( this, NamesScopePtr& names_scope, NamesScopeValue& names_scope_value ) : Value
 {
 	{
 		auto t= names_scope_value.Get</Type/>();
@@ -96,8 +96,12 @@ fn CodeBuilder::NamesScopeValueToValue( this, NamesScopeValue& names_scope_value
 		}
 	}
 	{
-		auto f= names_scope_value.Get</NamesScopeFunctionsSet/>();
-		// TODO - build functions set.
+		auto f_ptr= names_scope_value.Get</NamesScopeFunctionsSet/>();
+		if( !f_ptr.empty() )
+		{
+			NamesScopeBuildElement( names_scope, ust::to_non_nullable( f_ptr ) );
+			return Value( f_ptr.lock_imut().get_ref().functions_set );
+		}
 	}
 	{
 		auto var_ptr= names_scope_value.Get</NamesScopeVariable/>();
@@ -120,11 +124,12 @@ fn CodeBuilder::NamesScopeValueToValue( this, NamesScopeValue& names_scope_value
 fn CodeBuilder::ResolveValue( this, NamesScopePtr& names_scope, Synt::ComplexName& complex_name ) : Value
 {
 	var ust::shared_ptr_nullable_imut</NamesScope/> mut current_scope(names_scope);
+
 	while( !current_scope.empty() )
 	{
 		if_var( names_scope_value : current_scope.lock_imut().get_ref().GetThisScopeValue( complex_name.name ) )
 		{
-			return NamesScopeValueToValue( names_scope_value );
+			return NamesScopeValueToValue( ust::to_non_nullable( current_scope ), names_scope_value );
 		}
 		current_scope= current_scope.lock_imut().get_ref().GetParent();
 	}
@@ -154,7 +159,7 @@ fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
 	names_scope.AddName( KeywordToString(Keyword::char32_), Type( FundamentalType( U_FundamentalType::char32_, fundamental_llvm_types_.char32_ ) ) );
 }
 
-fn CodeBuilder::NamesScopeFill( NamesScopePtr& names_scope_ptr, Synt::ProgramElements& program_elements )
+fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, Synt::ProgramElements& program_elements )
 {
 	foreach( & program_element : program_elements )
 	{
@@ -165,7 +170,7 @@ fn CodeBuilder::NamesScopeFill( NamesScopePtr& names_scope_ptr, Synt::ProgramEle
 	}
 }
 
-fn CodeBuilder::NamesScopeFill( NamesScopePtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function )
+fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function )
 {
 	auto mut names_scope_lock= names_scope_ptr.lock_mut();
 	auto& mut names_scope= names_scope_lock.get_ref();
@@ -256,7 +261,7 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariabl
 		func_variable.llvm_function,
 		func_variable.t.GetFunctionType().get_ref().return_type.get_ref() );
 
-	var NamesScopePtr args_names_scope_ptr( NamesScope( "", names_scope ) );
+	var NamesScopeMutPtr args_names_scope_ptr( NamesScope( "", names_scope ) );
 
 	{
 		auto mut args_names_scope_lock= args_names_scope_ptr.lock_mut();

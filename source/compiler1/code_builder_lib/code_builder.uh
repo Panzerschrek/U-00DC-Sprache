@@ -22,13 +22,13 @@ public:
 	fn BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : BuildResult;
 
 private:
-	fn NamesScopeValueToValue( this, NamesScopeValue& names_scope_value ) : Value;
+	fn NamesScopeValueToValue( this, NamesScopePtr& names_scope, NamesScopeValue& names_scope_value ) : Value;
 	fn ResolveValue( this, NamesScopePtr& names_scope, Synt::ComplexName& complex_name ) : Value;
 
 	fn FillGlobalNamesScope( this, NamesScope &mut names_scope );
 
-	fn NamesScopeFill( NamesScopePtr& names_scope_ptr, Synt::ProgramElements& program_elements );
-	fn NamesScopeFill( NamesScopePtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function );
+	fn NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, Synt::ProgramElements& program_elements );
+	fn NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function );
 
 	fn NamesScopeBuild( this, NamesScopePtr& names_scope_ptr );
 	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/> functions_set );
@@ -56,8 +56,8 @@ private:
 
 	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::Block/>& block_ptr );
 	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block );
-	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration& variables_declaration );
-	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration );
+	fn BuildBlockElement( this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration& variables_declaration );
+	fn BuildBlockElement( this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration );
 	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator );
 	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AssignmentOperator& assignment_operator );
 	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression );
