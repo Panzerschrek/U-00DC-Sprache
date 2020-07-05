@@ -116,8 +116,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 
 fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression )
 {
-	// TODO
-	halt;
+	BuildExpressionCode( names_scope, function_context, expression );
 }
 
 fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfOperator& if_operator )

@@ -27,6 +27,8 @@ bool FilterTest( const std::string& test_name )
 		"ArraysTest1",
 		"BlocksTest0",
 		"BooleanBasicTest",
+		"CallTest0",
+		"CallTest1",
 		"NameNotFoundTest_Minus1",
 		"NumericConstantsTest0",
 		"NumericConstantsTest1",

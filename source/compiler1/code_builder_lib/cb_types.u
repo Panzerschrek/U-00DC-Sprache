@@ -84,6 +84,7 @@ fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, Synt::FunctionTyp
 		}
 		else
 		{
+			// TODO - do not use temporary variable, fix reference protection error.
 			auto s= u32(llvm_arg_types.size());
 			res.llvm_type=
 				LLVMFunctionType(
