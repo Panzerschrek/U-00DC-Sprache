@@ -96,7 +96,7 @@ fn CodeBuilder::NamesScopeValueToValue( this, NamesScopeValue& names_scope_value
 		}
 	}
 	{
-		auto f= names_scope_value.Get</FunctionsSet/>();
+		auto f= names_scope_value.Get</NamesScopeFunctionsSet/>();
 		// TODO - build functions set.
 	}
 	{
@@ -177,7 +177,7 @@ fn CodeBuilder::NamesScopeFill( NamesScopePtr& names_scope_ptr, ust::shared_ptr_
 	}
 
 	// TODO - reuse existing functions set, report about redefinition.
-	var FunctionsSet mut functions_set;
+	var NamesScopeFunctionsSet mut functions_set;
 
 	functions_set.syntax_elements.push_back( function );
 
@@ -191,7 +191,7 @@ fn CodeBuilder::NamesScopeBuild( this, NamesScopePtr& names_scope_ptr )
 
 	foreach( &el : names_scope.GetInternalContainer() )
 	{
-		auto functions_set= el.value().Get</ FunctionsSet />();
+		auto functions_set= el.value().Get</ NamesScopeFunctionsSet />();
 		if( !functions_set.empty() )
 		{
 			NamesScopeBuildElement( names_scope_ptr, ust::to_non_nullable( functions_set ) );
@@ -199,11 +199,11 @@ fn CodeBuilder::NamesScopeBuild( this, NamesScopePtr& names_scope_ptr )
 	}
 }
 
-fn CodeBuilder::NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</FunctionsSet/> functions_set )
+fn CodeBuilder::NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/> functions_set )
 {
 	{ // First, lock as imut and check if complete.
 		auto l= functions_set.lock_imut();
-		var FunctionsSet& functions_set= l.get_ref();
+		var NamesScopeFunctionsSet& functions_set= l.get_ref();
 		if( functions_set.syntax_elements.empty() ) // Already complete
 		{
 			return;
@@ -211,12 +211,12 @@ fn CodeBuilder::NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, us
 	}
 
 	auto mut l= functions_set.lock_mut();
-	var FunctionsSet &mut functions_set= l.get_ref();
+	var NamesScopeFunctionsSet &mut functions_set= l.get_ref();
 
 	while( !functions_set.syntax_elements.empty() )
 	{
 		auto syntax_element_ptr= functions_set.syntax_elements.back();
-		PrepareFunction( syntax_element_ptr, names_scope_ptr, functions_set );
+		PrepareFunction( syntax_element_ptr, names_scope_ptr, functions_set.functions_set );
 		functions_set.syntax_elements.drop_back();
 	}
 }

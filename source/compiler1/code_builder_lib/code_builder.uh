@@ -31,7 +31,7 @@ private:
 	fn NamesScopeFill( NamesScopePtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function );
 
 	fn NamesScopeBuild( this, NamesScopePtr& names_scope_ptr );
-	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</FunctionsSet/> functions_set );
+	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/> functions_set );
 
 	// Returns "true" if ok.
 	fn PrepareFunction(

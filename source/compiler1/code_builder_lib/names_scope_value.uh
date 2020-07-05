@@ -1,8 +1,6 @@
 import "/shared/shared_ptr_mut.u"
 import "/shared/shared_ptr_nullable_mut.u"
-import "../lex_synt_lib/syntax_elements.uh"
-import "llvm.uh"
-import "type.uh"
+import "value.uh"
 
 namespace U
 {
@@ -14,18 +12,9 @@ struct NamesScopeVariable
 	LLVMValueRef llvm_value= LLVMValueRef::Null;
 }
 
-struct FunctionVariable
+struct NamesScopeFunctionsSet
 {
-	Type t; // FunctionType 100%
-	LLVMValueRef llvm_function= LLVMValueRef::Null;
-
-	ust::shared_ptr_final</ Synt::Function /> syntax_element;
-}
-
-// Set of functions and function templates with same name in one scope
-struct FunctionsSet
-{
-	ust::vector</FunctionVariable/> functions;
+	FunctionsSet functions_set;
 
 	// Is incomplete, if there are some syntax elements in containers.
 	ust::vector</ ust::shared_ptr_final</ Synt::Function /> /> syntax_elements;
@@ -59,7 +48,7 @@ private:
 	ust::variant</ tup[
 		ust::shared_ptr_mut</Type/>,
 		ust::shared_ptr_mut</NamesScopeVariable/>,
-		ust::shared_ptr_mut</FunctionsSet/>
+		ust::shared_ptr_mut</NamesScopeFunctionsSet/>
 	] /> something_;
 }
 

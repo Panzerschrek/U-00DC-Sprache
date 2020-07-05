@@ -1,4 +1,5 @@
 import "/variant.u"
+import "../lex_synt_lib/syntax_elements.uh"
 import "type.uh"
 
 namespace U
@@ -17,11 +18,26 @@ struct Variable
 	LLVMValueRef llvm_value= LLVMValueRef::Null;
 }
 
+struct FunctionVariable
+{
+	Type t; // FunctionType 100%
+	LLVMValueRef llvm_function= LLVMValueRef::Null;
+
+	ust::shared_ptr_final</ Synt::Function /> syntax_element;
+}
+
+// Set of functions and function templates with same name in one scope.
+struct FunctionsSet
+{
+	ust::vector</FunctionVariable/> functions;
+}
+
 struct ErrorValue{}
 
 type Value= ust::variant</ tup[
 	Variable,
 	Type,
+	FunctionsSet,
 	ErrorValue
 	] />;
 
