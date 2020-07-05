@@ -121,8 +121,87 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 
 fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfOperator& if_operator )
 {
-	// TODO
-	halt;
+	var LLVMBasicBlockRef mut block_after_if= zero_init, mut next_condition_block=zero_init;
+
+	unsafe
+	{
+		block_after_if= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+		next_condition_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+
+		// Break to first condition. We must push terminal instruction at end of current block.
+		LLVMBuildBr( function_context.llvm_ir_builder, next_condition_block );
+	}
+
+	auto mut i= 0s;
+	while( i < if_operator.branches.size() )
+	{
+		auto& branch= if_operator.branches[i];
+
+		var LLVMBasicBlockRef mut body_block= zero_init, current_condition_block= next_condition_block;
+		unsafe{  body_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );  }
+
+		if( i + 1s < if_operator.branches.size() )
+		{
+			unsafe{  next_condition_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );  }
+		}
+		else
+		{
+			next_condition_block= block_after_if;
+		}
+
+		// Build condition block.
+		unsafe
+		{
+			LLVMAppendExistingBasicBlock( function_context.llvm_function, current_condition_block );
+			LLVMInsertExistingBasicBlockAfterInsertBlock( function_context.llvm_ir_builder, current_condition_block );
+		}
+
+		if( !branch.condition.get</Synt::EmptyVariant/>().empty() )
+		{
+			// Make empty condition block - move to it unconditional break to body.
+			unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, body_block );  }
+		}
+		else
+		{
+			var Variable condition_expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, branch.condition );
+			if( condition_expression.t != bool_type_ )
+			{
+				REPORT_ERROR( TypesMismatch,
+					names_scope,
+					FilePos(), // TODO - set file_pos
+					bool_type_,
+					condition_expression.t )
+
+				return; // TODO - continue, but create stub
+			}
+			else
+			{
+				auto condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+
+				unsafe{  LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, body_block, next_condition_block );  }
+			}
+		}
+
+		// Make body block code.
+		unsafe
+		{
+			LLVMAppendExistingBasicBlock( function_context.llvm_function, body_block );
+			LLVMInsertExistingBasicBlockAfterInsertBlock( function_context.llvm_ir_builder, body_block );
+		}
+
+		BuildBlockElement( names_scope, function_context, branch.block );
+
+		// TODO - Create break instruction, only if block does not contains terminal instructions.
+		unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, block_after_if );  }
+
+		++i;
+	}
+
+	unsafe
+	{
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_if );
+		LLVMInsertExistingBasicBlockAfterInsertBlock( function_context.llvm_ir_builder, block_after_if );
+	}
 }
 
 fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WhileOperator& while_operator )

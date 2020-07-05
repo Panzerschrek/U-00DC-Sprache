@@ -6,10 +6,11 @@ namespace U
 class FunctionContext
 {
 public:
-	fn constructor( LLVMContextRef llvm_context, LLVMValueRef llvm_function, Type mut in_return_type );
+	fn constructor( LLVMContextRef llvm_context, LLVMValueRef in_llvm_function, Type mut in_return_type );
 	fn destructor();
 
 	Type imut return_type;
+	LLVMValueRef imut llvm_function;
 
 	LLVMBasicBlockRef alloca_basic_block= LLVMBasicBlockRef::Null;
 	LLVMBuilderRef alloca_ir_builder= LLVMBuilderRef::Null;
