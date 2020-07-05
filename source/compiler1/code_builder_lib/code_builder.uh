@@ -32,6 +32,7 @@ private:
 
 	fn NamesScopeBuild( this, NamesScopePtr& names_scope_ptr );
 	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/> functions_set );
+	fn BuildFunctionsSet( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/> functions_set, bool build_body );
 
 	// Returns "true" if ok.
 	fn PrepareFunction(
@@ -52,7 +53,7 @@ private:
 	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ZeroInitializer& zero_initializer );
 	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::UninitializedInitializer& uninitialized_initializer );
 
-	fn BuildFuncCode( this, NamesScopePtr& names_scope_ptr, FunctionVariable &mut func_variable );
+	fn BuildFuncCode( this, NamesScopePtr& names_scope_ptr, FunctionVariable& func_variable );
 
 	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::Block/>& block_ptr );
 	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block );

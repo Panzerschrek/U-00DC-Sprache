@@ -99,7 +99,8 @@ fn CodeBuilder::NamesScopeValueToValue( this, NamesScopePtr& names_scope, NamesS
 		auto f_ptr= names_scope_value.Get</NamesScopeFunctionsSet/>();
 		if( !f_ptr.empty() )
 		{
-			NamesScopeBuildElement( names_scope, ust::to_non_nullable( f_ptr ) );
+			// In case of access to functions set using function name, build only prototype, not full body.
+			BuildFunctionsSet( names_scope, ust::to_non_nullable( f_ptr ), false );
 			return Value( f_ptr.lock_imut().get_ref().functions_set );
 		}
 	}
@@ -206,23 +207,41 @@ fn CodeBuilder::NamesScopeBuild( this, NamesScopePtr& names_scope_ptr )
 
 fn CodeBuilder::NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/> functions_set )
 {
-	{ // First, lock as imut and check if complete.
-		auto l= functions_set.lock_imut();
-		var NamesScopeFunctionsSet& functions_set= l.get_ref();
-		if( functions_set.syntax_elements.empty() ) // Already complete
-		{
-			return;
+	BuildFunctionsSet( names_scope_ptr, functions_set, true );
+}
+
+fn CodeBuilder::BuildFunctionsSet( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/> functions_set_ptr, bool build_body )
+{
+	if( !build_body )
+	{
+		{ // First, lock as imut and check if complete.
+			auto l= functions_set_ptr.lock_imut();
+			var NamesScopeFunctionsSet& functions_set= l.get_ref();
+			if( functions_set.syntax_elements.empty() ) // Already complete
+			{
+				return;
+			}
 		}
 	}
 
-	auto mut l= functions_set.lock_mut();
-	var NamesScopeFunctionsSet &mut functions_set= l.get_ref();
+	{ 	// Preapare functions set itself.
+		auto mut l= functions_set_ptr.lock_mut();
+		var NamesScopeFunctionsSet &mut functions_set= l.get_ref();
 
-	while( !functions_set.syntax_elements.empty() )
+		while( !functions_set.syntax_elements.empty() )
+		{
+			auto syntax_element_ptr= functions_set.syntax_elements.back();
+			PrepareFunction( syntax_element_ptr, names_scope_ptr, functions_set.functions_set );
+			functions_set.syntax_elements.drop_back();
+		}
+	}
+
+	if( build_body )
 	{
-		auto syntax_element_ptr= functions_set.syntax_elements.back();
-		PrepareFunction( syntax_element_ptr, names_scope_ptr, functions_set.functions_set );
-		functions_set.syntax_elements.drop_back();
+		foreach( &func_variable : functions_set_ptr.lock_imut().get_ref().functions_set.functions )
+		{
+			BuildFuncCode( names_scope_ptr, func_variable );
+		}
 	}
 }
 
@@ -249,12 +268,10 @@ fn CodeBuilder::PrepareFunction(
 
 	functions_set.functions.push_back( move(function_variable) );
 
-	BuildFuncCode( names_scope_ptr, functions_set.functions.back() ); // TODO separate body build from prototype build.
-
 	return true;
 }
 
-fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariable &mut func_variable )
+fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariable& func_variable )
 {
 	var FunctionContext mut function_context(
 		llvm_context_,
