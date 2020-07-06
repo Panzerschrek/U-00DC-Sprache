@@ -1,1 +1,119 @@
 import "syntax_elements.uh"
+
+namespace U
+{
+
+namespace Synt
+{
+
+fn GetFilePosImpl( EmptyVariant& empty_variant ) : FilePos
+{
+	return FilePos();
+}
+
+fn GetFilePosImpl( NumericConstant& numeric_constant ) : FilePos
+{
+	return numeric_constant.file_pos;
+}
+
+fn GetFilePosImpl( BooleanConstant& boolean_constant ) : FilePos
+{
+	return boolean_constant.file_pos;
+}
+
+fn GetFilePosImpl( ComplexName& complex_name ) : FilePos
+{
+	return complex_name.file_pos;
+}
+
+fn GetFilePosImpl( BinaryOperator& binary_operator ) : FilePos
+{
+	return binary_operator.file_pos;
+}
+
+fn GetFilePosImpl( BracketExpression& bracket_expression ) : FilePos
+{
+	return bracket_expression.file_pos;
+}
+
+fn GetFilePosImpl( IndexationOperator& indexation_operator ) : FilePos
+{
+	return indexation_operator.file_pos;
+}
+
+fn GetFilePosImpl( CallOperator& call_operator ) : FilePos
+{
+	return call_operator.file_pos;
+}
+
+fn GetFilePosImpl( ust::box</Block/>& block ) : FilePos
+{
+	return block.get_ref().file_pos;
+}
+
+fn GetFilePosImpl( VariablesDeclaration& variables_declaration ) : FilePos
+{
+	return variables_declaration.file_pos;
+}
+
+fn GetFilePosImpl( AutoVariableDeclaration& auto_variable_declaration ) : FilePos
+{
+	return auto_variable_declaration.file_pos;
+}
+
+fn GetFilePosImpl( ReturnOperator& return_operator ) : FilePos
+{
+	return return_operator.file_pos;
+}
+
+fn GetFilePosImpl( AssignmentOperator& assignment_operator ) : FilePos
+{
+	return assignment_operator.file_pos;
+}
+
+fn GetFilePosImpl( Expression& expression ) : FilePos
+{
+	return GetFilePos(expression);
+}
+
+fn GetFilePosImpl( IfOperator& if_operator ) : FilePos
+{
+	return if_operator.file_pos;
+}
+
+fn GetFilePosImpl( WhileOperator& while_operator ) : FilePos
+{
+	return while_operator.file_pos;
+}
+
+fn GetFilePosImpl( BreakOperator& break_operator ) : FilePos
+{
+	return break_operator.file_pos;
+}
+
+fn GetFilePosImpl( ContinueOperator& continue_operator ) : FilePos
+{
+	return continue_operator.file_pos;
+}
+
+fn GetFilePos( Expression& expression ) : FilePos
+{
+	variant_visit( &el : expression )
+	{
+		return GetFilePosImpl(el);
+	}
+	halt;
+}
+
+fn GetFilePos( BlockElement& block_element ) : FilePos
+{
+	variant_visit( &el : block_element )
+	{
+		return GetFilePosImpl(el);
+	}
+	halt;
+}
+
+} // namespace Synt
+
+} // namespace U

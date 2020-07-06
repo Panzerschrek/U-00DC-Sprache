@@ -51,6 +51,23 @@ fn nomangle U1_BuildProgram(
 			var U::CodeBuilder mut code_builder( llvm_context, data_layout );
 			auto code_builder_res= code_builder.BuildProgram( synt_res );
 
+			foreach( & err : code_builder_res.errors )
+			{
+				unsafe
+				{
+					U1_PrintInt( i64(err.file_pos.GetLine()) );
+					U1_PrintStr( ":\0"[0] );
+					U1_PrintInt( i64(err.file_pos.GetColumn()) );
+					U1_PrintStr( (": " + err.text + "\n\0").front() );
+					U1_PrintEndl();
+				}
+			}
+			if( !code_builder_res.errors.empty() )
+			{
+				unsafe{  LLVMDisposeModule( code_builder_res.llvm_module );  }
+				return LLVMModuleRef::Null;
+			}
+
 			return code_builder_res.llvm_module;
 		}
 	}

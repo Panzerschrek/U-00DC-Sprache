@@ -117,7 +117,7 @@ fn nomangle LLVMGetParam(LLVMValueRef Fn, u32 Index) unsafe : LLVMValueRef;
 fn nomangle LLVMCreateBasicBlockInContext(LLVMContextRef C, NullTerminatedString& Name) unsafe : LLVMBasicBlockRef;
 fn nomangle LLVMAppendBasicBlockInContext(LLVMContextRef C, LLVMValueRef Fn, NullTerminatedString& Name) unsafe : LLVMBasicBlockRef;
 fn nomangle LLVMAppendExistingBasicBlock(LLVMValueRef Fn, LLVMBasicBlockRef BB) unsafe;
-fn nomangle LLVMInsertExistingBasicBlockAfterInsertBlock(LLVMBuilderRef Builder, LLVMBasicBlockRef BB) unsafe;
+fn nomangle LLVMDeleteBasicBlock(LLVMBasicBlockRef BB) unsafe;
 
 // Module helpers
 
@@ -130,6 +130,7 @@ fn nomangle LLVMCreateBuilderInContext(LLVMContextRef C) unsafe : LLVMBuilderRef
 fn nomangle LLVMDisposeBuilder(LLVMBuilderRef Builder) unsafe;
 
 fn nomangle LLVMPositionBuilderAtEnd(LLVMBuilderRef Builder, LLVMBasicBlockRef Block) unsafe;
+fn nomangle LLVMInsertExistingBasicBlockAfterInsertBlock(LLVMBuilderRef Builder, LLVMBasicBlockRef BB) unsafe;
 
 // Constants
 fn nomangle LLVMConstInt(LLVMTypeRef IntTy, u64 N, LLVMBool SignExtend) unsafe : LLVMValueRef;

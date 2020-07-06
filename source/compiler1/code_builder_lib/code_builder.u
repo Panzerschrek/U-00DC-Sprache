@@ -273,10 +273,12 @@ fn CodeBuilder::PrepareFunction(
 
 fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariable& func_variable )
 {
+	auto& function_type= func_variable.t.GetFunctionType().get_ref();
+
 	var FunctionContext mut function_context(
 		llvm_context_,
 		func_variable.llvm_function,
-		func_variable.t.GetFunctionType().get_ref().return_type.get_ref() );
+		function_type.return_type.get_ref() );
 
 	var NamesScopeMutPtr args_names_scope_ptr( NamesScope( "", names_scope ) );
 
@@ -311,7 +313,22 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariabl
 		}
 	}
 
-	BuildBlockElement( args_names_scope_ptr, function_context, func_variable.syntax_element.get_ref().block.get_ref() );
+	auto& block= func_variable.syntax_element.get_ref().block.get_ref();
+
+	auto block_build_info= BuildBlockElement( args_names_scope_ptr, function_context, block );
+	if( !block_build_info.have_terminal_instruction_inside )
+	{
+		if( function_type.return_type.get_ref() == void_type_ )
+		{
+			// Manually generate "return" for void-return functions.
+			unsafe{  LLVMBuildRetVoid( function_context.llvm_ir_builder );  }
+		}
+		else
+		{
+			REPORT_ERROR( NoReturnInFunctionReturningNonVoid, args_names_scope_ptr, block.end_file_pos )
+			return;
+		}
+	}
 
 	// Finsih function - add remaining instructions
 	unsafe{ LLVMBuildBr( function_context.alloca_ir_builder, function_context.function_basic_block ); }

@@ -237,6 +237,8 @@ type ProgramElement= ust::variant</ tup[
 
 type ProgramElements= ust::vector</ProgramElement/>;
 
+fn GetFilePos( BlockElement& block_element ) : FilePos;
+
 } // namespace Synt
 
 } // namespace U

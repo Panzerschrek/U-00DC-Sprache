@@ -4,25 +4,34 @@ import "code_builder.uh"
 namespace U
 {
 
-fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::Block/>& block_ptr )
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::Block/>& block_ptr ) : BlockElementBuildInfo
 {
 	return BuildBlockElement( names_scope, function_context, block_ptr.get_ref() );
 }
 
-fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block )
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block ) : BlockElementBuildInfo
 {
 	var NamesScopeMutPtr block_names_scope( NamesScope( "", names_scope ) );
 
+	var BlockElementBuildInfo mut block_element_build_info;
 	foreach( &block_element : block.elements )
 	{
+		if( block_element_build_info.have_terminal_instruction_inside )
+		{
+			REPORT_ERROR( UnreachableCode, block_names_scope, Synt::GetFilePos(block_element) )
+		}
+
 		variant_visit( &el : block_element )
 		{
-			BuildBlockElement( block_names_scope, function_context, el );
+			auto info = BuildBlockElement( block_names_scope, function_context, el );
+			block_element_build_info.have_terminal_instruction_inside |= info.have_terminal_instruction_inside;
 		}
 	}
+
+	return block_element_build_info;
 }
 
-fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration& variables_declaration )
+fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration& variables_declaration ) : BlockElementBuildInfo
 {
 	auto t= PrepareType( names_scope, variables_declaration.t );
 	foreach( &variable_declaration : variables_declaration.variables )
@@ -41,9 +50,11 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 		auto mut lock= names_scope.lock_mut();
 		lock.get_ref().AddName( variable_declaration.name, NamesScopeValue( move(out_variable) ) );
 	}
+
+	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration )
+fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration )  : BlockElementBuildInfo
 {
 	// TODO - improve this, report about errors.
 	var Variable expr= BuildExpressionCodeEnsureVariable( names_scope, function_context, auto_variable_declaration.initializer_expression );
@@ -62,19 +73,23 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 
 	auto mut lock= names_scope.lock_mut();
 	lock.get_ref().AddName( auto_variable_declaration.name, NamesScopeValue( move(out_variable) ) );
+
+	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator )
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator ) : BlockElementBuildInfo
 {
+	var BlockElementBuildInfo block_element_build_info{ .have_terminal_instruction_inside= true };
+
 	if( !return_operator.expr.get</Synt::EmptyVariant/>().empty() )
 	{
 		if( function_context.return_type != void_type_ )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope, return_operator.file_pos, function_context.return_type, void_type_ )
-			return;
+			return block_element_build_info;
 		}
 		unsafe{  LLVMBuildRetVoid( function_context.llvm_ir_builder );  }
-		return;
+		return block_element_build_info;
 	}
 
 	var Variable expr= BuildExpressionCodeEnsureVariable( names_scope, function_context, return_operator.expr );
@@ -83,7 +98,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 	if( expr.t != function_context.return_type )
 	{
 		REPORT_ERROR( TypesMismatch, names_scope, return_operator.file_pos, function_context.return_type, expr.t )
-		return;
+		return block_element_build_info;
 	}
 
 	unsafe
@@ -91,9 +106,11 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 		auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr, function_context );
 		LLVMBuildRet( function_context.llvm_ir_builder, value_in_register );
 	}
+
+	return block_element_build_info;
 }
 
-fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AssignmentOperator& assignment_operator )
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AssignmentOperator& assignment_operator ) : BlockElementBuildInfo
 {
 	// TODO - check for errors, check types, echec overloaded operator.
 
@@ -105,21 +122,24 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 	if( r.t != l.t )
 	{
 		REPORT_ERROR( TypesMismatch, names_scope, assignment_operator.file_pos, l.t, r.t )
-		return;
+		return BlockElementBuildInfo();
 	}
 
 	unsafe
 	{
 		LLVMBuildStore( function_context.llvm_ir_builder, r_in_register, l.llvm_value );
 	}
+
+	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression )
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : BlockElementBuildInfo
 {
 	BuildExpressionCode( names_scope, function_context, expression );
+	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfOperator& if_operator )
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfOperator& if_operator ) : BlockElementBuildInfo
 {
 	var LLVMBasicBlockRef mut block_after_if= zero_init, mut next_condition_block=zero_init;
 
@@ -131,6 +151,8 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 		// Break to first condition. We must push terminal instruction at end of current block.
 		LLVMBuildBr( function_context.llvm_ir_builder, next_condition_block );
 	}
+
+	var BlockElementBuildInfo mut block_element_build_info{ .have_terminal_instruction_inside= true };
 
 	auto mut i= 0s;
 	while( i < if_operator.branches.size() )
@@ -172,7 +194,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 					bool_type_,
 					condition_expression.t )
 
-				return; // TODO - continue, but create stub
+				return BlockElementBuildInfo(); // TODO - continue, but create stub
 			}
 			else
 			{
@@ -189,37 +211,58 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 			LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, body_block );
 		}
 
-		BuildBlockElement( names_scope, function_context, branch.block );
-
-		// TODO - Create break instruction, only if block does not contains terminal instructions.
-		unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, block_after_if );  }
+		auto info= BuildBlockElement( names_scope, function_context, branch.block );
+		if( !info.have_terminal_instruction_inside )
+		{
+			block_element_build_info.have_terminal_instruction_inside= false;
+			unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, block_after_if );  }
+		}
 
 		++i;
 	}
 
-	unsafe
+	if( if_operator.branches.back().condition.get</Synt::EmptyVariant/>().empty() )
 	{
-		LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_if );
-		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_if );
+		block_element_build_info.have_terminal_instruction_inside= false;
 	}
+
+	if( block_element_build_info.have_terminal_instruction_inside )
+	{
+		// Normally we should "delete block_after_if", but llvm-c interface have no such method.
+		unsafe
+		{
+			LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_if );
+			LLVMDeleteBasicBlock( block_after_if );
+		}
+	}
+	else
+	{
+		unsafe
+		{
+			LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_if );
+			LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_if );
+		}
+	}
+
+	return block_element_build_info;
 }
 
-fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WhileOperator& while_operator )
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WhileOperator& while_operator ) : BlockElementBuildInfo
 {
 	// TODO
-	halt;
+	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BreakOperator& break_operator )
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BreakOperator& break_operator ) : BlockElementBuildInfo
 {
 	// TODO
-	halt;
+	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ContinueOperator& continue_operator )
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ContinueOperator& continue_operator ) : BlockElementBuildInfo
 {
 	// TODO
-	halt;
+	return BlockElementBuildInfo();
 }
 
 } // namespace U
