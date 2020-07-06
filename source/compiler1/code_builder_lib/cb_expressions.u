@@ -15,6 +15,7 @@ fn CodeBuilder::BuildExpressionCodeEnsureVariable( this, NamesScopePtr& names_sc
 
 	var Variable mut dummy;
 	dummy.t= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
+	dummy.location= Variable::Location::LLVMRegister;
 	unsafe{  dummy.llvm_value= LLVMGetUndef( fundamental_llvm_types_.invalid_type_ );  }
 	return move(dummy);
 }

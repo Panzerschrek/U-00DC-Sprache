@@ -131,19 +131,16 @@ fn GetMostRightIncompleteBinaryOperatorInTree( BinaryOperator &mut o ) : BinaryO
 	return GetMostRightIncompleteBinaryOperatorInTree( o.r.get_ref().get</BinaryOperator/>().get_ref() );
 }
 
-fn GetDeepestRightBinaryOperatorComponentWithNonLessPriority( BinaryOperator &'x mut o, BinaryOperatorType cur_op_type ) : ust::optional_ref</BinaryOperator, true />'x'
+fn GetDeepestRightBinaryOperatorComponentWithNonLessPriority( BinaryOperator &'x mut o, BinaryOperatorType cur_op_type ) : BinaryOperator &mut
 {
-	if( GetBinaryOperatorPriority( cur_op_type ) > GetBinaryOperatorPriority( o.operator ) )
-	{
-		return ust::optional_ref</BinaryOperator, true />(o);
-	}
-
 	if_var( &mut right_as_binary_operator : o.r.get_ref().get</BinaryOperator/>() )
 	{
-		return GetDeepestRightBinaryOperatorComponentWithNonLessPriority( right_as_binary_operator, cur_op_type );
+		if( GetBinaryOperatorPriority( cur_op_type ) > GetBinaryOperatorPriority( right_as_binary_operator.operator ) )
+		{
+			return GetDeepestRightBinaryOperatorComponentWithNonLessPriority( right_as_binary_operator, cur_op_type );
+		}
 	}
-
-	return ust::optional_ref</BinaryOperator, true />();
+	return o;
 }
 
 class SyntaxAnalyzer
@@ -357,19 +354,16 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 
 			if( !root.get</BinaryOperator/>().empty() )
 			{
-				auto mut dst_opt= GetDeepestRightBinaryOperatorComponentWithNonLessPriority( root.get</BinaryOperator/>().get_ref(), binary_operator.operator );
-				if( !dst_opt.empty() )
+				if( GetBinaryOperatorPriority( binary_operator.operator ) <= GetBinaryOperatorPriority( root.get</BinaryOperator/>().get_ref().operator ) )
 				{
-					auto &mut dst= dst_opt.get_ref();
-					binary_operator.l.get_ref()= take(dst.r.get_ref());
-					dst.r.get_ref()= move(binary_operator);
-					move(dst_opt);
+					binary_operator.l.get_ref()= take(root);
+					root= move(binary_operator);
 				}
 				else
 				{
-					move(dst_opt);
-					binary_operator.l.get_ref()= take(root);
-					root= move(binary_operator);
+					auto &mut dst= GetDeepestRightBinaryOperatorComponentWithNonLessPriority( root.get</BinaryOperator/>().get_ref(), binary_operator.operator );
+					binary_operator.l.get_ref()= take(dst.r.get_ref());
+					dst.r.get_ref()= move(binary_operator);
 				}
 			}
 			else
