@@ -249,20 +249,99 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 
 fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WhileOperator& while_operator ) : BlockElementBuildInfo
 {
-	// TODO
+	var LLVMBasicBlockRef mut test_block= zero_init, mut while_block= zero_init, mut block_after_while= zero_init;
+	unsafe
+	{
+		test_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+
+		// Break to test block. We must push terminal instruction at and of current block.
+		LLVMBuildBr( function_context.llvm_ir_builder, test_block );
+
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, test_block );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, test_block );
+	}
+
+	// Test block code.
+
+	var Variable condition_expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, while_operator.condition );
+	var FilePos condition_file_pos= Synt::GetFilePos( while_operator.condition );
+	if( condition_expression.t != bool_type_ )
+	{
+		REPORT_ERROR( TypesMismatch,
+				names_scope,
+				condition_file_pos,
+				bool_type_,
+				condition_expression.t )
+		return BlockElementBuildInfo();
+	}
+
+	auto condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+
+	unsafe
+	{
+		while_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+		block_after_while= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+		LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, while_block, block_after_while );
+	}
+
+	// While block code.
+
+	var LoopFrame loop_frame
+	{
+		.block_for_break= block_after_while,
+		.block_for_continue= test_block,
+	};
+	function_context.loops_stack.push_back(loop_frame);
+
+	unsafe
+	{
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, while_block );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, while_block );
+	}
+
+	BuildBlockElement( names_scope, function_context, while_operator.block );
+	unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, test_block );  }
+
+	function_context.loops_stack.pop_back();
+
+	// Block after while code.
+	unsafe
+	{
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_while );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_while );
+	}
+
 	return BlockElementBuildInfo();
 }
 
 fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BreakOperator& break_operator ) : BlockElementBuildInfo
 {
-	// TODO
-	return BlockElementBuildInfo();
+	var BlockElementBuildInfo block_element_build_info{ .have_terminal_instruction_inside= true };
+
+	if( function_context.loops_stack.empty() )
+	{
+		REPORT_ERROR( BreakOutsideLoop, names_scope, break_operator.file_pos )
+		return block_element_build_info;
+	}
+
+	unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, function_context.loops_stack.back().block_for_break );  }
+
+	return block_element_build_info;
 }
 
 fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ContinueOperator& continue_operator ) : BlockElementBuildInfo
 {
-	// TODO
-	return BlockElementBuildInfo();
+	var BlockElementBuildInfo block_element_build_info{ .have_terminal_instruction_inside= true };
+
+	if( function_context.loops_stack.empty() )
+	{
+		REPORT_ERROR( ContinueOutsideLoop, names_scope, continue_operator.file_pos )
+		return block_element_build_info;
+	}
+
+	unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, function_context.loops_stack.back().block_for_continue );  }
+
+	return block_element_build_info;
 }
 
 } // namespace U

@@ -3,6 +3,12 @@ import "type.uh"
 namespace U
 {
 
+struct LoopFrame
+{
+	LLVMBasicBlockRef block_for_break;
+	LLVMBasicBlockRef block_for_continue;
+}
+
 class FunctionContext
 {
 public:
@@ -17,6 +23,8 @@ public:
 
 	LLVMBasicBlockRef function_basic_block= LLVMBasicBlockRef::Null;
 	LLVMBuilderRef llvm_ir_builder= LLVMBuilderRef::Null;
+
+	ust::vector</LoopFrame/> loops_stack;
 }
 
 } // namespace U
