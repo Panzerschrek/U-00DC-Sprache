@@ -523,13 +523,13 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 			if( llvm_args.empty() )
 			{
 				auto dummy= LLVMValueRef::Null;
-				result.llvm_value= LLVMBuildCall( function_context.llvm_ir_builder, function_variable.llvm_function, dummy, 0u, "()\0"[0] );
+				result.llvm_value= LLVMBuildCall( function_context.llvm_ir_builder, function_variable.llvm_function, dummy, 0u, "\0"[0] );
 			}
 			else
 			{
 				// TODO - do not use temporary variable, fix reference protection error.
 				auto s= u32(llvm_args.size());
-				result.llvm_value= LLVMBuildCall( function_context.llvm_ir_builder, function_variable.llvm_function, llvm_args.front(), s, "()\0"[0] );
+				result.llvm_value= LLVMBuildCall( function_context.llvm_ir_builder, function_variable.llvm_function, llvm_args.front(), s, "\0"[0] );
 			}
 		}
 

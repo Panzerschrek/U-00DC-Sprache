@@ -38,6 +38,7 @@ bool FilterTest( const std::string& test_name )
 		"OperatorsPriorityTest4",
 		"OperatorsPriorityTest5",
 		"Redefinition5",
+		"RecursiveCallTest",
 		"SimpliestProgramTest",
 		"SimpleProgramTest",
 		"TypesMismatchTest2",

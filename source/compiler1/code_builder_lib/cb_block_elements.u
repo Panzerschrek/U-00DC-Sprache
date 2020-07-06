@@ -153,7 +153,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 		unsafe
 		{
 			LLVMAppendExistingBasicBlock( function_context.llvm_function, current_condition_block );
-			LLVMInsertExistingBasicBlockAfterInsertBlock( function_context.llvm_ir_builder, current_condition_block );
+			LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, current_condition_block );
 		}
 
 		if( !branch.condition.get</Synt::EmptyVariant/>().empty() )
@@ -186,7 +186,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 		unsafe
 		{
 			LLVMAppendExistingBasicBlock( function_context.llvm_function, body_block );
-			LLVMInsertExistingBasicBlockAfterInsertBlock( function_context.llvm_ir_builder, body_block );
+			LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, body_block );
 		}
 
 		BuildBlockElement( names_scope, function_context, branch.block );
@@ -200,7 +200,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 	unsafe
 	{
 		LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_if );
-		LLVMInsertExistingBasicBlockAfterInsertBlock( function_context.llvm_ir_builder, block_after_if );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_if );
 	}
 }
 
