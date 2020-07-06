@@ -203,7 +203,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 					res.llvm_value=LLVMBuildUDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
 				}
 			}
-			else if( binary_operator.operator == BinaryOperatorType::And )
+			else if( binary_operator.operator == BinaryOperatorType::Rem )
 			{
 				if( is_float )
 				{

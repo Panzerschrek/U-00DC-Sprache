@@ -1312,5 +1312,4 @@ U_TEST( RemOperatorTest2 )
 	}
 }
 
-
 } // namespace U
