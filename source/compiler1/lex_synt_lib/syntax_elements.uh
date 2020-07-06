@@ -52,6 +52,7 @@ struct BooleanConstant
 
 struct BinaryOperator
 {
+	FilePos file_pos;
 	ust::box</Expression/> l;
 	ust::box</Expression/> r;
 	BinaryOperatorType operator;

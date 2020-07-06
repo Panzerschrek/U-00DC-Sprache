@@ -117,8 +117,17 @@ fn nomangle LLVMBuildSub(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef 
 fn nomangle LLVMBuildMul(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildUDiv(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildSDiv(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildURem(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildSRem(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
 
 // Binary bitwise operators
 fn nomangle LLVMBuildAnd(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildOr(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildXor(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+
+// Floating point arithmetic
+fn nomangle LLVMBuildFAdd(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildFSub(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildFMul(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildFDiv(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildFRem(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;

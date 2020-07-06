@@ -110,52 +110,165 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 
 fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
 {
-	var Variable l= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.l.get_ref() );
-	auto l_in_register= CreateMoveToLLVMRegisterInstruction( l, function_context );
+	var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.l.get_ref() );
+	auto l_in_register= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
 
-	var Variable r= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.r.get_ref() );
-	auto r_in_register= CreateMoveToLLVMRegisterInstruction( r, function_context );
+	var Variable r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.r.get_ref() );
+	auto r_in_register= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 
-	// TODO - check types.
+	var Type& l_type= l_var.t;
+	var Type& r_type= r_var.t;
+	auto l_fundamental_type= l_type.GetFundamentalType();
+	auto r_fundamental_type= r_type.GetFundamentalType();
 
-	var Variable mut res;
-	res.t= l.t;
-	res.location= Variable::Location::LLVMRegister;
-
-	unsafe
+	if(
+		binary_operator.operator == BinaryOperatorType::Add ||
+		binary_operator.operator == BinaryOperatorType::Sub ||
+		binary_operator.operator == BinaryOperatorType::Mul ||
+		binary_operator.operator == BinaryOperatorType::Div ||
+		binary_operator.operator == BinaryOperatorType::Rem )
 	{
-			 if( binary_operator.operator == BinaryOperatorType::Add )
+		if( l_type != r_type )
 		{
-			res.llvm_value= LLVMBuildAdd( function_context.llvm_ir_builder, l_in_register, r_in_register, "+\0"[0] );
+			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names_scope, binary_operator.file_pos, r_type, l_type, BinaryOperatorToString( binary_operator.operator ) )
+			return Value(ErrorValue());
 		}
-		else if( binary_operator.operator == BinaryOperatorType::Sub )
+		if( l_fundamental_type.empty() )
 		{
-			res.llvm_value= LLVMBuildSub( function_context.llvm_ir_builder, l_in_register, r_in_register, "-\0"[0] );
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, binary_operator.file_pos, l_type )
+			return Value(ErrorValue());
 		}
-		else if( binary_operator.operator == BinaryOperatorType::Mul )
-		{
-			res.llvm_value= LLVMBuildMul( function_context.llvm_ir_builder, l_in_register, r_in_register, "*\0"[0] );
-		}
-		else if( binary_operator.operator == BinaryOperatorType::Div )
-		{
-			// TODO - select signed/unsigned
-			res.llvm_value= LLVMBuildSDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
-		}
-		else if( binary_operator.operator == BinaryOperatorType::And )
-		{
-			res.llvm_value= LLVMBuildAnd( function_context.llvm_ir_builder, l_in_register, r_in_register, "&\0"[0] );
-		}
-		else if( binary_operator.operator == BinaryOperatorType::Or  )
-		{
-			res.llvm_value= LLVMBuildOr ( function_context.llvm_ir_builder, l_in_register, r_in_register, "|\0"[0] );
-		}
-		else if( binary_operator.operator == BinaryOperatorType::Xor )
-		{
-			res.llvm_value= LLVMBuildXor( function_context.llvm_ir_builder, l_in_register, r_in_register, "^\0"[0] );
-		}
-	}
 
-	return Value(move(res));
+		var bool is_float= IsFloatingPoint( l_fundamental_type.get_ref().fundamental_type );
+		if( !( IsInteger( l_fundamental_type.get_ref().fundamental_type  ) || is_float ) )
+		{
+			// this operations allowed only for integer and floating point operands.
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, binary_operator.file_pos, l_type )
+			return Value(ErrorValue());
+		}
+
+		var bool is_signed= IsSignedInteger( l_fundamental_type.get_ref().fundamental_type );
+
+		var Variable mut res;
+		res.t= l_type;
+		res.location= Variable::Location::LLVMRegister;
+
+		unsafe
+		{
+				 if( binary_operator.operator == BinaryOperatorType::Add )
+			{
+				if( is_float )
+				{
+					res.llvm_value= LLVMBuildFAdd( function_context.llvm_ir_builder, l_in_register, r_in_register, "+\0"[0] );
+				}
+				else
+				{
+					res.llvm_value =LLVMBuildAdd( function_context.llvm_ir_builder, l_in_register, r_in_register, "+\0"[0] );
+				}
+			}
+			else if( binary_operator.operator == BinaryOperatorType::Sub )
+			{
+				if( is_float )
+				{
+					res.llvm_value= LLVMBuildFSub( function_context.llvm_ir_builder, l_in_register, r_in_register, "-\0"[0] );
+				}
+				else
+				{
+					res.llvm_value= LLVMBuildSub( function_context.llvm_ir_builder, l_in_register, r_in_register, "-\0"[0] );
+				}
+			}
+			else if( binary_operator.operator == BinaryOperatorType::Mul )
+			{
+				if( is_float )
+				{
+					res.llvm_value= LLVMBuildFMul( function_context.llvm_ir_builder, l_in_register, r_in_register, "*\0"[0] );
+				}
+				else
+				{
+					res.llvm_value=LLVMBuildMul( function_context.llvm_ir_builder, l_in_register, r_in_register, "*\0"[0] );
+				}
+			}
+			else if( binary_operator.operator == BinaryOperatorType::Div )
+			{
+				if( is_float )
+				{
+					res.llvm_value= LLVMBuildFDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
+				}
+				else if( is_signed )
+				{
+					res.llvm_value=LLVMBuildSDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
+				}
+				else
+				{
+					res.llvm_value=LLVMBuildUDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
+				}
+			}
+			else if( binary_operator.operator == BinaryOperatorType::And )
+			{
+				if( is_float )
+				{
+					res.llvm_value= LLVMBuildFRem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] );
+				}
+				else if( is_signed )
+				{
+					res.llvm_value=LLVMBuildSRem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] );
+				}
+				else
+				{
+					res.llvm_value=LLVMBuildURem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] );
+				}
+			}
+		}
+
+		return Value(move(res));
+	}
+	else if(
+		binary_operator.operator == BinaryOperatorType::And ||
+		binary_operator.operator == BinaryOperatorType::Or  ||
+		binary_operator.operator == BinaryOperatorType::Xor )
+	{
+		if( l_type != r_type )
+		{
+			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names_scope, binary_operator.file_pos, r_type, l_type, BinaryOperatorToString( binary_operator.operator ) )
+			return Value(ErrorValue());
+		}
+		if( l_fundamental_type.empty() )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, binary_operator.file_pos, l_type )
+			return Value(ErrorValue());
+		}
+		if( !( IsInteger( l_fundamental_type.get_ref().fundamental_type ) || l_fundamental_type.get_ref().fundamental_type == U_FundamentalType::bool_ ) )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, binary_operator.file_pos, l_type )
+			return Value(ErrorValue());
+		}
+
+		var Variable mut res;
+		res.t= l_type;
+		res.location= Variable::Location::LLVMRegister;
+
+		unsafe
+		{
+				 if( binary_operator.operator == BinaryOperatorType::And )
+			{
+				res.llvm_value= LLVMBuildAnd( function_context.llvm_ir_builder, l_in_register, r_in_register, "&\0"[0] );
+			}
+			else if( binary_operator.operator == BinaryOperatorType::Or  )
+			{
+				res.llvm_value= LLVMBuildOr ( function_context.llvm_ir_builder, l_in_register, r_in_register, "|\0"[0] );
+			}
+			else if( binary_operator.operator == BinaryOperatorType::Xor )
+			{
+				res.llvm_value= LLVMBuildXor( function_context.llvm_ir_builder, l_in_register, r_in_register, "^\0"[0] );
+			}
+		}
+
+		return Value(move(res));
+	}
+	else
+	{
+		halt;
+	}
 }
 
 fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BracketExpression& bracket_expression ) : Value

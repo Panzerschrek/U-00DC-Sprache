@@ -348,11 +348,11 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 		{
 			var BinaryOperator mut binary_operator
 			{
+				.file_pos= it_.front().file_pos,
 				.operator=LexemToBinaryOperator( it_.front() ),
 				.l( Expression() ),
 				.r( Expression() )
 			};
-
 			NextLexem();
 
 			if( !root.get</BinaryOperator/>().empty() )
