@@ -115,6 +115,7 @@ fn CodeBuilder::NamesScopeValueToValue( this, NamesScopePtr& names_scope, NamesS
 			res.t= v.t;
 			res.llvm_value= v.llvm_value;
 			res.location= Variable::Location::Pointer;
+			res.value_type= select( v.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 			return Value( move(res) );
 		}
 	}

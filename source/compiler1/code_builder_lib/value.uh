@@ -5,6 +5,13 @@ import "type.uh"
 namespace U
 {
 
+enum ValueType
+{
+	Value,
+	ReferenceMut,
+	ReferenceImut,
+}
+
 struct Variable
 {
 	enum Location
@@ -15,6 +22,7 @@ struct Variable
 
 	Type t;
 	Location location= Location::Pointer;
+	ValueType value_type= ValueType::ReferenceImut;
 	LLVMValueRef llvm_value= LLVMValueRef::Null;
 }
 

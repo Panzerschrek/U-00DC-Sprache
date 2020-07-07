@@ -28,7 +28,7 @@ bool FilterTest( const std::string& test_name )
 		"BasicBinaryOperationsFloatTest",
 		"BasicBinaryOperationsTest",
 		"BitwiseNotTest",
-		"BlocksTest0",
+		"BlocksTest",
 		"BooleanBasicTest",
 		"BreakOperatorTest",
 		"CallTest0",
@@ -65,6 +65,11 @@ bool FilterTest( const std::string& test_name )
 		"WhileOperatorTest",
 
 		"auto_variables_test.cpp:AutoVariableTest0",
+		"code_builder_test.cpp:ReferencesTest0",
+		//"code_builder_test.cpp:ReferencesTest1",
+		"code_builder_test.cpp:ReferencesTest2",
+		"code_builder_test.cpp:ReferencesTest3",
+		"code_builder_test.cpp:ReferencesTest4",
 		"code_builder_test.cpp:VariablesTest0",
 		"code_builder_test.cpp:VariablesTest1",
 	};
