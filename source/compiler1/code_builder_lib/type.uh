@@ -46,6 +46,8 @@ struct FunctionType
 
 	ust::vector</Arg/> args;
 	ust::box</Type/> return_type; // HACK! prevent dependency loop
+	bool return_value_is_reference;
+	bool return_value_is_mutable;
 
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
 

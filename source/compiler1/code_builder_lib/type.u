@@ -100,7 +100,12 @@ op FunctionType::Arg::!=(Arg& l, Arg& r) : bool
 }
 
 fn FunctionType::constructor( mut this, FunctionType &imut other )
-	( return_type(other.return_type.get_ref()), llvm_type(other.llvm_type) )
+	(
+		return_type(other.return_type.get_ref()),
+		llvm_type(other.llvm_type),
+		return_value_is_reference(other.return_value_is_reference),
+		return_value_is_mutable(other.return_value_is_mutable)
+	)
 {
 	foreach( & in_arg : other.args )
 	{
@@ -117,6 +122,8 @@ fn FunctionType::constructor( mut this, FunctionType &imut other )
 op FunctionType::=( mut this, FunctionType &imut other )
 {
 	return_type.get_ref()= other.return_type.get_ref();
+	return_value_is_reference= other.return_value_is_reference;
+	return_value_is_mutable= other.return_value_is_mutable;
 
 	args.clear();
 	foreach( & in_arg : other.args )
@@ -150,7 +157,10 @@ op FunctionType::==( FunctionType& l, FunctionType& r ) : bool
 		++i;
 	}
 
-	return l.return_type.get_ref() == r.return_type.get_ref();
+	return
+		l.return_type.get_ref() == r.return_type.get_ref() &&
+		l.return_value_is_reference == r.return_value_is_reference &&
+		l.return_value_is_mutable == r.return_value_is_mutable;
 }
 
 op FunctionType::!=( FunctionType& l, FunctionType& r ) : bool

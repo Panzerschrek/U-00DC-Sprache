@@ -135,7 +135,10 @@ struct FunctionType
 		ust::string8 name;
 	}
 	ust::vector</Arg/> args;
+
 	ust::optional</TypeName/> return_type; // Empty means "void"
+	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
+	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
 }
 
 type TypeName= ust::variant</ tup[

@@ -58,6 +58,8 @@ fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, Synt::FunctionTyp
 				function_type.return_type.empty()
 					? Type( FundamentalType( U_FundamentalType::void_, fundamental_llvm_types_.void_for_ret_ ) )
 					: PrepareType( names_scope, function_type.return_type.get_ref() ) ) )
+		.return_value_is_reference= function_type.return_value_reference_modifier == Synt::ReferenceModifier::Reference,
+		.return_value_is_mutable= function_type.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable,
 	};
 
 	foreach( &arg : function_type.args )
@@ -84,22 +86,22 @@ fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, Synt::FunctionTyp
 
 	unsafe
 	{
+		auto mut ret_llvm_type= res.return_type.get_ref().GetLLVMType();
+		if( res.return_value_is_reference )
+		{
+			ret_llvm_type= LLVMPointerType( ret_llvm_type, 0u );
+		}
+
 		if( llvm_arg_types.empty() )
 		{
 			auto dummy= LLVMTypeRef::Null;
-			res.llvm_type=
-				LLVMFunctionType(
-					res.return_type.get_ref().GetLLVMType(),
-					dummy, 0u, LLVMBool::False );
+			res.llvm_type= LLVMFunctionType( ret_llvm_type, dummy, 0u, LLVMBool::False );
 		}
 		else
 		{
 			// TODO - do not use temporary variable, fix reference protection error.
 			auto s= u32(llvm_arg_types.size());
-			res.llvm_type=
-				LLVMFunctionType(
-					res.return_type.get_ref().GetLLVMType(),
-					llvm_arg_types.front(), s, LLVMBool::False );
+			res.llvm_type= LLVMFunctionType( ret_llvm_type, llvm_arg_types.front(), s, LLVMBool::False );
 		}
 	}
 
