@@ -62,6 +62,7 @@ bool FilterTest( const std::string& test_name )
 		"TypesMismatchTest3",
 		"UnaryMinusFloatTest",
 		"UnaryMinusTest",
+		"UnaryOperatorsOrderTest",
 		"UnreachableCodeTest",
 		"WhileOperatorTest",
 
