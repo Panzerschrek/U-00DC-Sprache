@@ -541,4 +541,91 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	return Value(ErrorValue());
 }
 
+fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnaryPlus& unary_plus ) : Value
+{
+	// Do nothing with unary plus.
+	// TODO - maybe check type or do something else?
+	return BuildExpressionCode( names_scope, function_context, unary_plus.expr.get_ref() );
+}
+
+fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnaryMinus& unary_minus ) : Value
+{
+	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, unary_minus.expr.get_ref() );
+	auto fundamental_type= variable.t.GetFundamentalType();
+	if( fundamental_type.empty() )
+	{
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, unary_minus.file_pos, variable.t )
+		return Value(ErrorValue());
+	}
+
+	auto value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+
+	var Variable mut result
+	{
+		.t= variable.t,
+		.location= Variable::Location::LLVMRegister,
+	};
+
+	if( IsInteger( fundamental_type.get_ref().fundamental_type ) )
+	{
+		unsafe{  result.llvm_value= LLVMBuildNeg( function_context.llvm_ir_builder, value_in_register, "-\0"[0] );  }
+	}
+	else if( IsFloatingPoint( fundamental_type.get_ref().fundamental_type ) )
+	{
+		unsafe{  result.llvm_value= LLVMBuildFNeg( function_context.llvm_ir_builder, value_in_register, "-\0"[0] );  }
+	}
+	else
+	{
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, unary_minus.file_pos, variable.t )
+		return Value(ErrorValue());
+	}
+
+	return Value( move(result) );
+}
+
+fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::LogicalNot& logical_not ) : Value
+{
+	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, logical_not.expr.get_ref() );
+	if( variable.t != bool_type_ )
+	{
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, logical_not.file_pos, variable.t )
+		return Value(ErrorValue());
+	}
+
+	auto value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+
+	var Variable mut result
+	{
+		.t= bool_type_,
+		.location= Variable::Location::LLVMRegister,
+	};
+
+	unsafe{  result.llvm_value= LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "!\0"[0] );  }
+
+	return Value( move(result) );
+}
+
+fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BitwiseNot& bitwise_not ) : Value
+{
+	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, bitwise_not.expr.get_ref() );
+	auto fundamental_type= variable.t.GetFundamentalType();
+	if( fundamental_type.empty() || !IsInteger( fundamental_type.get_ref().fundamental_type ) )
+	{
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, bitwise_not.file_pos, variable.t )
+		return Value(ErrorValue());
+	}
+
+	auto value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+
+	var Variable mut result
+	{
+		.t= variable.t,
+		.location= Variable::Location::LLVMRegister,
+	};
+
+	unsafe{  result.llvm_value= LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "~\0"[0] );  }
+
+	return Value( move(result) );
+}
+
 } // namespace U

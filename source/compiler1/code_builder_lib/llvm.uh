@@ -178,3 +178,8 @@ fn nomangle LLVMBuildFRem(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef
 // Compare
 fn nomangle LLVMBuildICmp(LLVMBuilderRef Builder, LLVMIntPredicate Op, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildFCmp(LLVMBuilderRef Builder, LLVMRealPredicate Op, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+
+// Unary arithmetic
+fn nomangle LLVMBuildNeg(LLVMBuilderRef Builder, LLVMValueRef V, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildFNeg(LLVMBuilderRef Builder, LLVMValueRef V, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildNot(LLVMBuilderRef Builder, LLVMValueRef V, NullTerminatedString& Name) unsafe : LLVMValueRef;

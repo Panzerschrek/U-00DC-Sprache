@@ -46,6 +46,26 @@ fn GetFilePosImpl( CallOperator& call_operator ) : FilePos
 	return call_operator.file_pos;
 }
 
+fn GetFilePosImpl( UnaryPlus& unary_plus ) : FilePos
+{
+	return unary_plus.file_pos;
+}
+
+fn GetFilePosImpl( UnaryMinus& unary_minus ) : FilePos
+{
+	return unary_minus.file_pos;
+}
+
+fn GetFilePosImpl( LogicalNot& logical_not ) : FilePos
+{
+	return logical_not.file_pos;
+}
+
+fn GetFilePosImpl( BitwiseNot& bitwise_not ) : FilePos
+{
+	return bitwise_not.file_pos;
+}
+
 fn GetFilePosImpl( ust::box</Block/>& block ) : FilePos
 {
 	return block.get_ref().file_pos;

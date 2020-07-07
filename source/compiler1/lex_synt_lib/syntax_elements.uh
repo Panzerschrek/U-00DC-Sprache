@@ -78,6 +78,30 @@ struct CallOperator
 	ust::vector</ ust::box</Expression/> /> args;
 }
 
+struct UnaryPlus
+{
+	FilePos file_pos;
+	ust::box</Expression/> expr;
+}
+
+struct UnaryMinus
+{
+	FilePos file_pos;
+	ust::box</Expression/> expr;
+}
+
+struct LogicalNot
+{
+	FilePos file_pos;
+	ust::box</Expression/> expr;
+}
+
+struct BitwiseNot
+{
+	FilePos file_pos;
+	ust::box</Expression/> expr;
+}
+
 type Expression= ust::variant</ tup[
 	EmptyVariant,
 	NumericConstant,
@@ -86,7 +110,11 @@ type Expression= ust::variant</ tup[
 	BinaryOperator,
 	BracketExpression,
 	IndexationOperator,
-	CallOperator
+	CallOperator,
+	UnaryPlus,
+	UnaryMinus,
+	LogicalNot,
+	BitwiseNot
 	] />;
 
 struct ArrayType
