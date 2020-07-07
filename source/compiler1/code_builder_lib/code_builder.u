@@ -279,7 +279,9 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariabl
 	var FunctionContext mut function_context(
 		llvm_context_,
 		func_variable.llvm_function,
-		function_type.return_type.get_ref() );
+		function_type.return_type.get_ref(),
+		function_type.return_value_is_reference,
+		function_type.return_value_is_mutable );
 
 	var NamesScopeMutPtr args_names_scope_ptr( NamesScope( "", names_scope ) );
 

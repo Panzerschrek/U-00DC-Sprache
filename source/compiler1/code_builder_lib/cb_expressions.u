@@ -537,8 +537,19 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 		var Variable mut result
 		{
 			.t= function_type.return_type.get_ref(),
-			.location= Variable::Location::LLVMRegister,
 		};
+
+		if( function_type.return_value_is_reference )
+		{
+			result.location= Variable::Location::Pointer;
+			result.value_type= select( function_type.return_value_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+		}
+		else
+		{
+			result.location= Variable::Location::LLVMRegister;
+			result.value_type= ValueType::Value;
+		}
+
 		unsafe
 		{
 			if( llvm_args.empty() )

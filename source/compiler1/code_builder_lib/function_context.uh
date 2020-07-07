@@ -12,11 +12,18 @@ struct LoopFrame
 class FunctionContext
 {
 public:
-	fn constructor( LLVMContextRef llvm_context, LLVMValueRef in_llvm_function, Type mut in_return_type );
+	fn constructor(
+		LLVMContextRef llvm_context,
+		LLVMValueRef in_llvm_function,
+		Type mut in_return_type,
+		bool in_return_value_is_reference,
+		bool in_return_value_is_mutable );
 	fn destructor();
 
 	Type imut return_type;
 	LLVMValueRef imut llvm_function;
+	bool imut return_value_is_reference;
+	bool imut return_value_is_mutable;
 
 	LLVMBasicBlockRef alloca_basic_block= LLVMBasicBlockRef::Null;
 	LLVMBuilderRef alloca_ir_builder= LLVMBuilderRef::Null;
