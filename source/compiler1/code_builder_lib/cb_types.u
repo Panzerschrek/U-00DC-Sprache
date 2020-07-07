@@ -62,14 +62,24 @@ fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, Synt::FunctionTyp
 
 	foreach( &arg : function_type.args )
 	{
-		var FunctionType::Arg mut out_arg{ .arg_type( PrepareType( names_scope, arg.arg_type ) ) };
+		var FunctionType::Arg mut out_arg
+		{
+			.arg_type( PrepareType( names_scope, arg.arg_type ) ),
+			.is_reference= arg.reference_modifier == Synt::ReferenceModifier::Reference,
+			.is_mutable= arg.mutability_modifier == Synt::MutabilityModifier::Mutable,
+		};
 		res.args.push_back( move(out_arg) );
 	}
 
 	var ust::vector</LLVMTypeRef/> mut llvm_arg_types;
 	foreach( &arg : res.args )
 	{
-		llvm_arg_types.push_back( arg.arg_type.get_ref().GetLLVMType() );
+		auto mut llvm_type= arg.arg_type.get_ref().GetLLVMType();
+		if( arg.is_reference )
+		{
+			unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  }
+		}
+		llvm_arg_types.push_back( llvm_type );
 	}
 
 	unsafe

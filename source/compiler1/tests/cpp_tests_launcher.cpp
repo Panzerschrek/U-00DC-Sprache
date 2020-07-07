@@ -70,6 +70,9 @@ bool FilterTest( const std::string& test_name )
 		"code_builder_test.cpp:ReferencesTest2",
 		"code_builder_test.cpp:ReferencesTest3",
 		"code_builder_test.cpp:ReferencesTest4",
+		"code_builder_test.cpp:ReferencesTest5",
+		"code_builder_test.cpp:ReferencesTest6",
+		"code_builder_test.cpp:ReferencesTest8",
 		"code_builder_test.cpp:VariablesTest0",
 		"code_builder_test.cpp:VariablesTest1",
 	};

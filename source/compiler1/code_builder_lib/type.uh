@@ -37,6 +37,8 @@ struct FunctionType
 	struct Arg
 	{
 		ust::box</Type/> arg_type; // HACK! prevent dependency because ust::vector requires complete type.
+		bool is_reference;
+		bool is_mutable;
 
 		op==(Arg& l, Arg& r) : bool;
 		op!=(Arg& l, Arg& r) : bool;

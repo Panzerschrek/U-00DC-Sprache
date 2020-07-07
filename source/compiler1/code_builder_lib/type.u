@@ -86,12 +86,30 @@ op ArrayType::!=( ArrayType& l, ArrayType& r ) : bool
 	return !(l == r);
 }
 
+op FunctionType::Arg::==(Arg& l, Arg& r) : bool
+{
+	return
+		l.arg_type.get_ref() == r.arg_type.get_ref() &&
+		l.is_reference == r.is_reference &&
+		l.is_mutable == r.is_mutable;
+}
+
+op FunctionType::Arg::!=(Arg& l, Arg& r) : bool
+{
+	return !(l == r);
+}
+
 fn FunctionType::constructor( mut this, FunctionType &imut other )
 	( return_type(other.return_type.get_ref()), llvm_type(other.llvm_type) )
 {
 	foreach( & in_arg : other.args )
 	{
-		var Arg mut arg{ .arg_type( in_arg.arg_type.get_ref() ) };
+		var Arg mut arg
+		{
+			.arg_type( in_arg.arg_type.get_ref() ),
+			.is_reference= in_arg.is_reference,
+			.is_mutable= in_arg.is_mutable,
+		};
 		args.push_back( move(arg) );
 	}
 }
@@ -103,21 +121,16 @@ op FunctionType::=( mut this, FunctionType &imut other )
 	args.clear();
 	foreach( & in_arg : other.args )
 	{
-		var Arg mut arg{ .arg_type( in_arg.arg_type.get_ref() ) };
+		var Arg mut arg
+		{
+			.arg_type( in_arg.arg_type.get_ref() ),
+			.is_reference= in_arg.is_reference,
+			.is_mutable= in_arg.is_mutable,
+		};
 		args.push_back( move(arg) );
 	}
 
 	this.llvm_type= other.llvm_type;
-}
-
-op FunctionType::Arg::==(Arg& l, Arg& r) : bool
-{
-	return l.arg_type.get_ref() == r.arg_type.get_ref();
-}
-
-op FunctionType::Arg::!=(Arg& l, Arg& r) : bool
-{
-	return !(l == r);
 }
 
 op FunctionType::==( FunctionType& l, FunctionType& r ) : bool
