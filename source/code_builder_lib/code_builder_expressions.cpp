@@ -294,8 +294,12 @@ Value CodeBuilder::BuildExpressionCode(
 					postfix_operator );
 		} // for unary postfix operators
 
-		for( const Synt::UnaryPrefixOperator& prefix_operator : expression_with_unary_operators->prefix_operators_ )
+		for( auto it= expression_with_unary_operators->prefix_operators_.rbegin();
+			 it != expression_with_unary_operators->prefix_operators_.rend();
+			 ++it )
 		{
+			const Synt::UnaryPrefixOperator& prefix_operator= *it;
+
 			const Variable* const var= result.GetVariable();
 			if( var == nullptr )
 			{

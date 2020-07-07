@@ -319,7 +319,7 @@ struct ExpressionComponentWithUnaryOperators : public SyntaxElementBase
 public:
 	explicit ExpressionComponentWithUnaryOperators( const FilePos& file_pos );
 
-	std::vector<UnaryPrefixOperator > prefix_operators_ ;
+	std::vector<UnaryPrefixOperator > prefix_operators_ ; // Should evaluate in reverse order.
 	std::vector<UnaryPostfixOperator> postfix_operators_;
 };
 

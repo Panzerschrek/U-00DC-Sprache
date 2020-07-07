@@ -680,6 +680,50 @@ U_TEST(UnaryMinusFloatTest)
 	ASSERT_NEAR( -( - arg_value ), result_value.DoubleVal, 0.01f );
 }
 
+U_TEST(UnaryOperatorsOrderTest)
+{
+	static const char c_program_text[]=
+	R"(
+		fn NegNot( i32 x ) : i32
+		{
+			return -~x;
+		}
+		fn NotNeg( i32 x ) : i32
+		{
+			return ~-x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const neg_not= engine->FindFunctionNamed( "_Z6NegNoti" );
+	llvm::Function* const not_neg= engine->FindFunctionNamed( "_Z6NotNegi" );
+	U_TEST_ASSERT( neg_not != nullptr );
+	U_TEST_ASSERT( not_neg != nullptr );
+
+	static const int32_t values[]=
+	{
+		0, -1, 1, 5, -7, 65434, -5436463, 66535, 65536, -65535, -65536,
+		std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::max(),
+	};
+	for( const int32_t value : values )
+	{
+		llvm::GenericValue arg;
+		arg.IntVal= llvm::APInt( 32u, uint64_t(value) );
+
+		const llvm::GenericValue result_value= engine->runFunction( neg_not, llvm::ArrayRef<llvm::GenericValue>( arg ) );
+		U_TEST_ASSERT( int32_t(result_value.IntVal.getLimitedValue()) == (-~value) );
+	}
+	for( const int32_t value : values )
+	{
+		llvm::GenericValue arg;
+		arg.IntVal= llvm::APInt( 32u, uint64_t(value) );
+
+		const llvm::GenericValue result_value= engine->runFunction( not_neg, llvm::ArrayRef<llvm::GenericValue>( arg ) );
+		U_TEST_ASSERT( int32_t(result_value.IntVal.getLimitedValue()) == (~-value) );
+	}
+}
+
 U_TEST(LazyLogicalAndTest0)
 {
 	static const char c_program_text[]=
