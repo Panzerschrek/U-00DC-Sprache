@@ -43,10 +43,12 @@ Standart library:
 *) More math functions
 
 Compiler:
+*) Fix "while" block references, reference merging
+*) Fix break/continue in range-for
+*) Implement type conversion in "return" operator
 *) move-assignment without hacks.
 *) Virtual call for final function optimization
-*) Reference local variables in debug info
-*) Function arguments in debug info
+*) Do not crash in some cases of code with errors
 *) Return value optimization
 *) Precompiled modules
 *) Rework of "Value" class
