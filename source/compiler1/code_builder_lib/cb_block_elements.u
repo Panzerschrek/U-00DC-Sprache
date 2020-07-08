@@ -269,7 +269,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 			{
 				REPORT_ERROR( TypesMismatch,
 					names_scope,
-					FilePos(), // TODO - set file_pos
+					Synt::GetFilePos( branch.condition ),
 					bool_type_,
 					condition_expression.t )
 
