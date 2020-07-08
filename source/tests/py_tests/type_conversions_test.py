@@ -230,6 +230,129 @@ def TypeConversion_InFunctionCall_Test5():
 	assert( call_result == 856 * 31 )
 
 
+def TypeConversion_InReturn_Test0():
+	#conversion for fundamental type
+	c_program_text= """
+		struct IntWrapper
+		{
+			i32 x;
+			fn conversion_constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor(){} // Prevent constexpr
+		}
+		fn Wrap( i32 x ) : IntWrapper
+		{
+			return x; // Should convert to "IntWrapper" here.
+		}
+		fn Foo() : i32
+		{
+			return Wrap(123098).x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 123098 )
+
+
+def TypeConversion_InReturn_Test1():
+	#conversion in return disabled if have no conversion constructors
+	c_program_text= """
+		struct IntWrapper
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {} // regular constructor, not conversion constructor
+			fn destructor(){} // Prevent constexpr
+		}
+		fn Wrap( i32 x ) : IntWrapper
+		{
+			return x; // Should not convert to "IntWrapper" here.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TypesMismatch" )
+	assert( errors_list[0].file_pos.line == 10 )
+
+
+def TypeConversion_InReturn_Test2():
+	# conversion for struct
+	c_program_text= """
+		struct A
+		{
+			i32 ax;
+		}
+		struct B
+		{
+			i32 bx;
+			fn conversion_constructor( A a ) ( bx= a.ax ) {}
+			fn destructor(){} // Prevent constexpr
+		}
+		fn Wrap( A a ) : B
+		{
+			return a; // Should convert to "B" here.
+		}
+		fn Foo() : i32
+		{
+			var A a{ .ax= 666786 };
+			return Wrap(a).bx;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 666786 )
+
+
+def TypeConversion_InReturn_Test3():
+	# conversion for noncopyable type
+	c_program_text= """
+		class A
+		{
+			i32 ax= 654321;
+		}
+		class B
+		{
+			i32 bx;
+			fn conversion_constructor( A a ) ( bx= a.ax ) {}
+			fn destructor(){} // Prevent constexpr
+		}
+		fn Wrap( A mut a ) : B
+		{
+			return move(a); // Should convert to "B" here.
+		}
+		fn Foo() : i32
+		{
+			var A mut a;
+			return Wrap( move(a) ).bx;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 654321 )
+
+
+def TypeConversion_InReturn_Test4():
+	# type conversion is disabled for reference result
+	c_program_text= """
+		struct A
+		{
+			i32 ax= 0;
+		}
+		struct B
+		{
+			i32 bx;
+			fn conversion_constructor( A a ) ( bx= a.ax ) {}
+			fn destructor(){} // Prevent constexpr
+		}
+		fn Wrap( A  a ) : B &
+		{
+			return a; // Should not convert to "B" here.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TypesMismatch" )
+	assert( errors_list[0].file_pos.line == 14 )
+
+
 def ConversionConstructorMustHaveOneArgument_Test0():
 	c_program_text= """
 		struct IntWrapper

@@ -2243,6 +2243,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
+	if( IsKeyword( auto_variable_declaration.name ) )
+		REPORT_ERROR( UsingKeywordAsName, names.GetErrors(), auto_variable_declaration.file_pos_ );
+
 	// Destruction frame for temporary variables of initializer expression.
 	StackVariablesStorage& prev_variables_storage= *function_context.stack_variables_stack.back();
 	const StackVariablesStorage temp_variables_storage( function_context );
@@ -2517,7 +2520,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	// Destruction frame for temporary variables of result expression.
 	const StackVariablesStorage temp_variables_storage( function_context );
 
-	const Variable expression_result= BuildExpressionCodeEnsureVariable( return_operator.expression_, names, function_context );
+	Variable expression_result= BuildExpressionCodeEnsureVariable( return_operator.expression_, names, function_context );
 	if( expression_result.type == invalid_type_ )
 	{
 		// Add "ret void", because we do not need to break llvm basic blocks structure.
@@ -2585,8 +2588,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	{
 		if( expression_result.type != function_context.return_type )
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.file_pos_, *function_context.return_type, expression_result.type );
-			return block_info;
+			if( const auto conversion_contructor = GetConversionConstructor( expression_result.type, *function_context.return_type, names.GetErrors(), return_operator.file_pos_ ) )
+				expression_result= ConvertVariable( expression_result, *function_context.return_type, *conversion_contructor, names, function_context, return_operator.file_pos_ );
+			else
+			{
+				REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.file_pos_, *function_context.return_type, expression_result.type );
+				return block_info;
+			}
 		}
 
 		if( expression_result.type.ReferencesTagsCount() > 0u )
