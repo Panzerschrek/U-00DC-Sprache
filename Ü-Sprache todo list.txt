@@ -45,7 +45,6 @@ Standart library:
 Compiler:
 *) Fix "while" block references, reference merging
 *) Fix break/continue in range-for
-*) Implement type conversion in "return" operator
 *) move-assignment without hacks.
 *) Virtual call for final function optimization
 *) Do not crash in some cases of code with errors
