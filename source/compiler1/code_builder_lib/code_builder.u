@@ -92,7 +92,7 @@ fn CodeBuilder::NamesScopeValueToValue( this, NamesScopePtr& names_scope, NamesS
 		auto t= names_scope_value.Get</Type/>();
 		if( !t.empty() )
 		{
-			return Value( t.lock_imut().get_ref() );
+			return t.lock_imut().get_ref();
 		}
 	}
 	{
@@ -101,7 +101,7 @@ fn CodeBuilder::NamesScopeValueToValue( this, NamesScopePtr& names_scope, NamesS
 		{
 			// In case of access to functions set using function name, build only prototype, not full body.
 			BuildFunctionsSet( names_scope, ust::to_non_nullable( f_ptr ), false );
-			return Value( f_ptr.lock_imut().get_ref().functions_set );
+			return f_ptr.lock_imut().get_ref().functions_set;
 		}
 	}
 	{
@@ -116,11 +116,11 @@ fn CodeBuilder::NamesScopeValueToValue( this, NamesScopePtr& names_scope, NamesS
 			res.llvm_value= v.llvm_value;
 			res.location= Variable::Location::Pointer;
 			res.value_type= select( v.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
-			return Value( move(res) );
+			return move(res);
 		}
 	}
 
-	return Value( ErrorValue() );
+	return ErrorValue();
 }
 
 fn CodeBuilder::ResolveValue( this, NamesScopePtr& names_scope, Synt::ComplexName& complex_name ) : Value
@@ -137,7 +137,7 @@ fn CodeBuilder::ResolveValue( this, NamesScopePtr& names_scope, Synt::ComplexNam
 	}
 
 	REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, complex_name.name )
-	return Value( ErrorValue() );
+	return ErrorValue();
 }
 
 fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )

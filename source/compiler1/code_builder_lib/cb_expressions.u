@@ -66,7 +66,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	if( t == U_FundamentalType::InvalidType )
 	{
 		REPORT_ERROR( UnknownNumericConstantType, names_scope, numeric_constant.file_pos, ust::string8(type_suffix) )
-		return Value( ErrorValue() );
+		return ErrorValue();
 	}
 
 	var Variable mut res;
@@ -90,7 +90,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 		else{ halt; }
 	}
 
-	return Value( move(res) );
+	return move(res);
 }
 
 fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BooleanConstant& boolean_constant ) : Value
@@ -101,7 +101,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 
 	unsafe{ res.llvm_value= LLVMConstInt( res.t.GetLLVMType(), select( boolean_constant.value ? 1u64 : 0u64 ), LLVMBool::True ); }
 
-	return Value( move(res) );
+	return move(res);
 }
 
 fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value
@@ -132,12 +132,12 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 		if( l_type != r_type )
 		{
 			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names_scope, binary_operator.file_pos, r_type, l_type, BinaryOperatorToString( binary_operator.operator ) )
-			return Value(ErrorValue());
+			return ErrorValue();
 		}
 		if( l_fundamental_type.empty() )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, binary_operator.file_pos, l_type )
-			return Value(ErrorValue());
+			return ErrorValue();
 		}
 
 		var bool is_float= IsFloatingPoint( l_fundamental_type.get_ref().fundamental_type );
@@ -145,7 +145,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 		{
 			// this operations allowed only for integer and floating point operands.
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, binary_operator.file_pos, l_type )
-			return Value(ErrorValue());
+			return ErrorValue();
 		}
 
 		var bool is_signed= IsSignedInteger( l_fundamental_type.get_ref().fundamental_type );
@@ -221,7 +221,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 			}
 		}
 
-		return Value(move(res));
+		return move(res);
 	}
 	else if(
 		binary_operator.operator == BinaryOperatorType::And ||
@@ -231,17 +231,17 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 		if( l_type != r_type )
 		{
 			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names_scope, binary_operator.file_pos, r_type, l_type, BinaryOperatorToString( binary_operator.operator ) )
-			return Value(ErrorValue());
+			return ErrorValue();
 		}
 		if( l_fundamental_type.empty() )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, binary_operator.file_pos, l_type )
-			return Value(ErrorValue());
+			return ErrorValue();
 		}
 		if( !( IsInteger( l_fundamental_type.get_ref().fundamental_type ) || l_fundamental_type.get_ref().fundamental_type == U_FundamentalType::bool_ ) )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, binary_operator.file_pos, l_type )
-			return Value(ErrorValue());
+			return ErrorValue();
 		}
 
 		var Variable mut res;
@@ -264,7 +264,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 			}
 		}
 
-		return Value(move(res));
+		return move(res);
 	}
 	else if(
 		binary_operator.operator == BinaryOperatorType::Equal ||
@@ -273,12 +273,12 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 		if( l_type != r_type )
 		{
 			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names_scope, binary_operator.file_pos, r_type, l_type, BinaryOperatorToString( binary_operator.operator ) )
-			return Value(ErrorValue());
+			return ErrorValue();
 		}
 		if( l_fundamental_type.empty() )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, binary_operator.file_pos, l_type )
-			return Value(ErrorValue());
+			return ErrorValue();
 		}
 
 		var bool if_float= IsFloatingPoint( l_fundamental_type.get_ref().fundamental_type );
@@ -314,7 +314,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 			}
 		}
 
-		return Value(move(res));
+		return move(res);
 	}
 	else if(
 		binary_operator.operator == BinaryOperatorType::Less ||
@@ -325,12 +325,12 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 		if( l_type != r_type )
 		{
 			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names_scope, binary_operator.file_pos, r_type, l_type, BinaryOperatorToString( binary_operator.operator ) )
-			return Value(ErrorValue());
+			return ErrorValue();
 		}
 		if( l_fundamental_type.empty() )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, binary_operator.file_pos, l_type )
-			return Value(ErrorValue());
+			return ErrorValue();
 		}
 
 		var bool if_float= IsFloatingPoint( l_fundamental_type.get_ref().fundamental_type );
@@ -339,7 +339,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 		if( !( IsInteger( l_fundamental_type.get_ref().fundamental_type ) || if_float || is_char ) )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, binary_operator.file_pos, l_type )
-			return Value(ErrorValue());
+			return ErrorValue();
 		}
 
 		var Variable mut res;
@@ -410,7 +410,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 			}
 		}
 
-		return Value(move(res));
+		return move(res);
 	}
 	else
 	{
@@ -439,7 +439,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 				if( variable.location != Variable::Location::Pointer )
 				{
 					// TODO - Strange variable location.
-					return Value(ErrorValue());
+					return ErrorValue();
 				}
 
 				var Variable mut result
@@ -459,7 +459,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 					result.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] );
 				}
 
-				return Value( move(result) );
+				return move(result);
 			}
 			else
 			{
@@ -471,7 +471,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 
 	REPORT_ERROR( OperationNotSupportedForThisType, names_scope, indexation_operator.file_pos, variable.t )
 
-	return Value(ErrorValue());
+	return ErrorValue();
 }
 
 fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CallOperator& call_operator ) : Value
@@ -483,7 +483,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 		if( functions_set.functions.size() != 1s )
 		{
 			REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, call_operator.file_pos )
-			return Value(ErrorValue());
+			return ErrorValue();
 		}
 
 		var FunctionVariable& function_variable= functions_set.functions.front();
@@ -492,7 +492,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 		if( function_type.args.size() != call_operator.args.size() )
 		{
 			REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, call_operator.file_pos )
-			return Value(ErrorValue());
+			return ErrorValue();
 		}
 
 		var ust::vector</LLVMValueRef/> mut llvm_args;
@@ -506,7 +506,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 			if( arg.t != expected_arg_type )
 			{
 				REPORT_ERROR( TypesMismatch, names_scope, call_operator.file_pos, arg.t, expected_arg_type )
-				return Value(ErrorValue());
+				return ErrorValue();
 			}
 
 			if( function_type.args[arg_n].is_reference )
@@ -565,11 +565,11 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 			}
 		}
 
-		return Value(move(result));
+		return move(result);
 	}
 
 	REPORT_ERROR( OperationNotSupportedForThisType, names_scope, call_operator.file_pos, ust::string8("non-function value") )
-	return Value(ErrorValue());
+	return ErrorValue();
 }
 
 fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MemberAccessOperator& member_access_operator ) : Value
@@ -592,7 +592,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	if( fundamental_type.empty() )
 	{
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, unary_minus.file_pos, variable.t )
-		return Value(ErrorValue());
+		return ErrorValue();
 	}
 
 	auto value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
@@ -614,10 +614,10 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	else
 	{
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, unary_minus.file_pos, variable.t )
-		return Value(ErrorValue());
+		return ErrorValue();
 	}
 
-	return Value( move(result) );
+	return move(result);
 }
 
 fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::LogicalNot& logical_not ) : Value
@@ -626,7 +626,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	if( variable.t != bool_type_ )
 	{
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, logical_not.file_pos, variable.t )
-		return Value(ErrorValue());
+		return ErrorValue();
 	}
 
 	auto value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
@@ -639,7 +639,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 
 	unsafe{  result.llvm_value= LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "!\0"[0] );  }
 
-	return Value( move(result) );
+	return move(result);
 }
 
 fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BitwiseNot& bitwise_not ) : Value
@@ -649,7 +649,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	if( fundamental_type.empty() || !IsInteger( fundamental_type.get_ref().fundamental_type ) )
 	{
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, bitwise_not.file_pos, variable.t )
-		return Value(ErrorValue());
+		return ErrorValue();
 	}
 
 	auto value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
@@ -662,7 +662,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 
 	unsafe{  result.llvm_value= LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "~\0"[0] );  }
 
-	return Value( move(result) );
+	return move(result);
 }
 
 } // namespace U

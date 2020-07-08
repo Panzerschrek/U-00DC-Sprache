@@ -284,25 +284,25 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 
 			NextLexem();
 
-			current_node= Expression( move(numeric_constant) );
+			current_node= move(numeric_constant);
 		}
 		else if( IsKeyword( it_.front(), Keyword::false_ ) )
 		{
 			var BooleanConstant mut boolean_constant{ .file_pos= it_.front().file_pos, .value= false };
 			NextLexem();
-			current_node= Expression( move(boolean_constant) );
+			current_node= move(boolean_constant);
 		}
 		else if( IsKeyword( it_.front(), Keyword::true_  ) )
 		{
 			var BooleanConstant mut boolean_constant{ .file_pos= it_.front().file_pos, .value= true  };
 			NextLexem();
-			current_node= Expression( move(boolean_constant) );
+			current_node= move(boolean_constant);
 		}
 		else if( it_.front().lexem_type == Lexem::Type::Identifier )
 		{
 			var ComplexName mut complex_name{ .file_pos= it_.front().file_pos, .name= it_.front().text };
 			NextLexem();
-			current_node= Expression( move(complex_name) );
+			current_node= move(complex_name);
 		}
 		else if( it_.front().lexem_type == Lexem::Type::BracketLeft )
 		{
@@ -317,7 +317,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 			}
 			NextLexem();
 
-			current_node= Expression( move(bracket_expression) );
+			current_node= move(bracket_expression);
 		}
 		else
 		{
@@ -470,7 +470,7 @@ fn SyntaxAnalyzer::ParseTypeName( mut this ) : TypeName
 	{
 		var ComplexName mut complex_name{ .file_pos= it_.front().file_pos, .name= it_.front().text };
 		NextLexem();
-		return TypeName( move(complex_name) );
+		return move(complex_name);
 	}
 	else if( it_.front().lexem_type == Lexem::Type::SquareBracketLeft )
 	{
@@ -493,7 +493,7 @@ fn SyntaxAnalyzer::ParseTypeName( mut this ) : TypeName
 		}
 		NextLexem();
 
-		return TypeName( ust::box</ArrayType/>( move(array_type) ) );
+		return ust::box</ArrayType/>( move(array_type) );
 	}
 	else
 	{
@@ -621,10 +621,10 @@ fn SyntaxAnalyzer::ParseInitializer( mut this ) : Initializer
 	if( it_.front().lexem_type == Lexem::Type::Assignment )
 	{
 		NextLexem();
-		return Initializer( ParseExpression() );
+		return ParseExpression();
 	}
 
-	return Initializer( EmptyVariant() );
+	return EmptyVariant();
 }
 
 fn SyntaxAnalyzer::ParseVariableInitializer( mut this ) : Initializer
@@ -642,11 +642,11 @@ fn SyntaxAnalyzer::ParseVariableInitializer( mut this ) : Initializer
 		{
 			var UninitializedInitializer mut uninitialized_initializer{ .file_pos= it_.front().file_pos };
 			NextLexem();
-			return Initializer( move(uninitialized_initializer) );
+			return move(uninitialized_initializer);
 		}
 		else
 		{
-			return Initializer( ParseExpression() );
+			return ParseExpression();
 		}
 	}
 	else if(
