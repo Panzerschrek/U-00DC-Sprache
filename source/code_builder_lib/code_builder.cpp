@@ -2243,6 +2243,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
+	if( IsKeyword( auto_variable_declaration.name ) )
+		REPORT_ERROR( UsingKeywordAsName, names.GetErrors(), auto_variable_declaration.file_pos_ );
+
 	// Destruction frame for temporary variables of initializer expression.
 	StackVariablesStorage& prev_variables_storage= *function_context.stack_variables_stack.back();
 	const StackVariablesStorage temp_variables_storage( function_context );
