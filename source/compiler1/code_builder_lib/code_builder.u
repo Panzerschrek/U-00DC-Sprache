@@ -197,6 +197,11 @@ fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_p
 	names_scope.AddName( function.get_ref().name, NamesScopeValue( move(functions_set) ) );
 }
 
+fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_ )
+{
+	// TODO
+}
+
 fn CodeBuilder::NamesScopeBuild( this, NamesScopePtr& names_scope_ptr )
 {
 	auto lock= names_scope_ptr.lock_imut();

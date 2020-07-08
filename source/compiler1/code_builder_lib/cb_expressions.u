@@ -572,6 +572,12 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	return Value(ErrorValue());
 }
 
+fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MemberAccessOperator& member_access_operator ) : Value
+{
+	// TODO
+	halt;
+}
+
 fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnaryPlus& unary_plus ) : Value
 {
 	// Do nothing with unary plus.

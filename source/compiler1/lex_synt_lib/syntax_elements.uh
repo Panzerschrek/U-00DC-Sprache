@@ -78,6 +78,12 @@ struct CallOperator
 	ust::vector</ ust::box</Expression/> /> args;
 }
 
+struct MemberAccessOperator
+{
+	FilePos file_pos;
+	ust::string8 member_name;
+}
+
 struct UnaryPlus
 {
 	FilePos file_pos;
@@ -111,6 +117,7 @@ type Expression= ust::variant</ tup[
 	BracketExpression,
 	IndexationOperator,
 	CallOperator,
+	MemberAccessOperator,
 	UnaryPlus,
 	UnaryMinus,
 	LogicalNot,
@@ -262,8 +269,30 @@ struct Function
 	ust::box_nullable</Block/> block; // null for prototype
 }
 
+struct ClassField
+{
+	FilePos file_pos;
+	ust::string8 name;
+	TypeName t;
+	MutabilityModifier mutability_modifier= MutabilityModifier::None;
+	ReferenceModifier reference_modifier= ReferenceModifier::None;
+}
+
+type ClassElement= ust::variant</ tup[
+	Function,
+	ClassField
+	] />;
+
+struct Class
+{
+	FilePos file_pos;
+	ust::string8 name;
+	ust::vector</ClassElement/> class_elements;
+}
+
 type ProgramElement= ust::variant</ tup[
-	ust::shared_ptr_final</Function/>
+	ust::shared_ptr_final</Function/>,
+	ust::shared_ptr_final</Class/>
 	] />;
 
 type ProgramElements= ust::vector</ProgramElement/>;
