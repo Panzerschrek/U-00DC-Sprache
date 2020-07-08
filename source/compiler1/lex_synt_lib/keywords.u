@@ -3,6 +3,21 @@ import "keywords.uh"
 namespace U
 {
 
+fn IsKeyword( ust::string8& str ) : bool
+{
+	for( &el : typeinfo</Keyword/>.elements_list )
+	{
+		var ust::array_view_imut</ char8 /> mut element_name( el.name );
+		element_name.drop_back(); // remove '_'
+		if( str == element_name )
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 fn KeywordToString( Keyword k ) : ust::array_view_imut</ char8 />
 {
 	for( &el : typeinfo</Keyword/>.elements_list )

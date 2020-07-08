@@ -1,3 +1,4 @@
+import "../lex_synt_lib/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
 
@@ -36,6 +37,11 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 	auto t= PrepareType( names_scope, variables_declaration.t );
 	foreach( &variable_declaration : variables_declaration.variables )
 	{
+		if( IsKeyword( variable_declaration.name ) )
+		{
+			REPORT_ERROR( UsingKeywordAsName, names_scope, variable_declaration.file_pos )
+		}
+
 		var NamesScopeVariable mut out_variable;
 		out_variable.t= t;
 
@@ -94,8 +100,15 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 		}
 		else{ halt; }
 
-		auto mut lock= names_scope.lock_mut();
-		lock.get_ref().AddName( variable_declaration.name, NamesScopeValue( move(out_variable) ) );
+		var bool mut insert_not_ok= false;
+		{
+			auto mut lock= names_scope.lock_mut();
+			insert_not_ok= lock.get_ref().AddName( variable_declaration.name, NamesScopeValue( move(out_variable) ) ).empty();
+		}
+		if( insert_not_ok )
+		{
+			REPORT_ERROR( Redefinition, names_scope, variable_declaration.file_pos, variable_declaration.name )
+		}
 	}
 
 	return BlockElementBuildInfo();
@@ -103,6 +116,11 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 
 fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration )  : BlockElementBuildInfo
 {
+	if( IsKeyword( auto_variable_declaration.name ) )
+	{
+		REPORT_ERROR( UsingKeywordAsName, names_scope, auto_variable_declaration.file_pos )
+	}
+
 	// TODO - improve this, report about errors.
 	var Variable expr= BuildExpressionCodeEnsureVariable( names_scope, function_context, auto_variable_declaration.initializer_expression );
 
@@ -118,8 +136,15 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 		LLVMBuildStore( function_context.llvm_ir_builder, value_in_register, out_variable.llvm_value );
 	}
 
-	auto mut lock= names_scope.lock_mut();
-	lock.get_ref().AddName( auto_variable_declaration.name, NamesScopeValue( move(out_variable) ) );
+	var bool mut insert_not_ok= false;
+	{
+		auto mut lock= names_scope.lock_mut();
+		insert_not_ok= lock.get_ref().AddName( auto_variable_declaration.name, NamesScopeValue( move(out_variable) ) ).empty();
+	}
+	if( insert_not_ok )
+	{
+		REPORT_ERROR( Redefinition, names_scope, auto_variable_declaration.file_pos, auto_variable_declaration.name )
+	}
 
 	return BlockElementBuildInfo();
 }

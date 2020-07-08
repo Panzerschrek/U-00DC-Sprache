@@ -1,4 +1,4 @@
-import "/random_access_range.u"
+import "/string.u"
 
 namespace U
 {
@@ -130,6 +130,7 @@ enum Keyword : u8
 	u4096_,
 }
 
+fn IsKeyword( ust::string8& str ) : bool;
 fn KeywordToString( Keyword k ) : ust::array_view_imut</ char8 />;
 
 } // namespace U
