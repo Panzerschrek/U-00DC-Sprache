@@ -1,0 +1,49 @@
+import "../lex_synt_lib/keywords.uh"
+import "error_reporting.uh"
+import "code_builder.uh"
+
+namespace U
+{
+
+fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, Synt::ProgramElements& program_elements )
+{
+	foreach( & program_element : program_elements )
+	{
+		if_var( & function : program_element.get</ ust::shared_ptr_final</Synt::Function/> />() )
+		{
+			NamesScopeFill( names_scope_ptr, function );
+		}
+	}
+}
+
+fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function )
+{
+	if( IsKeyword( function.get_ref().name ) )
+	{
+		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, function.get_ref().file_pos )
+		return;
+	}
+
+	auto mut names_scope_lock= names_scope_ptr.lock_mut();
+	auto& mut names_scope= names_scope_lock.get_ref();
+
+	if( !names_scope.GetThisScopeValue( function.get_ref().name ).empty() )
+	{
+		REPORT_ERROR( Redefinition, names_scope_ptr, function.get_ref().file_pos )
+		return;
+	}
+
+	// TODO - reuse existing functions set, report about redefinition.
+	var NamesScopeFunctionsSet mut functions_set;
+
+	functions_set.syntax_elements.push_back( function );
+
+	names_scope.AddName( function.get_ref().name, NamesScopeValue( move(functions_set) ) );
+}
+
+fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_ )
+{
+	// TODO
+}
+
+} // namespace U
