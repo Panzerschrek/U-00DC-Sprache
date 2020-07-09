@@ -91,6 +91,7 @@ bool FilterTest( const std::string& test_name )
 		"code_builder_test.cpp:ReferencesTest6",
 		"code_builder_test.cpp:ReferencesTest8",
 		"code_builder_test.cpp:ReferencesTest9",
+		"code_builder_test.cpp:StructTest0",
 		"code_builder_test.cpp:TypesMismatchTest1",
 		"code_builder_test.cpp:VariablesTest0",
 		"code_builder_test.cpp:VariablesTest1",

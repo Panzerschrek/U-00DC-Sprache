@@ -123,7 +123,9 @@ fn CodeBuilder::NamesScopeValueToValue( this, NamesScopePtr& names_scope, NamesS
 		auto class_type_ptr= names_scope_value.Get</ClassType/>();
 		if( !class_type_ptr.empty() )
 		{
-			return Type( ust::to_non_nullable(class_type_ptr) );
+			auto ptr_non_null= ust::to_non_nullable(class_type_ptr);
+			BuildClass( names_scope, ptr_non_null ); // TODO - do not build class here. Build only if completeness required.
+			return Type( ptr_non_null );
 		}
 	}
 
@@ -201,6 +203,38 @@ fn CodeBuilder::BuildFunctionsSet( this, NamesScopePtr& names_scope_ptr, ust::sh
 			BuildFuncCode( names_scope_ptr, func_variable );
 		}
 	}
+}
+
+fn CodeBuilder::BuildClass( this, NamesScopePtr& names_scope_ptr, ClassTypePtr& class_type )
+{
+	auto mut class_lock= class_type.lock_mut();
+	var ClassType &mut class_= class_lock.get_ref();
+
+	var ust::vector</ LLVMTypeRef /> mut fields_llvm_types;
+
+	foreach( &member : class_.members.lock_imut().get_ref().GetInternalContainer() )
+	{
+		auto field_ptr= member.value().Get</ ClassField />();
+		if( !field_ptr.empty() )
+		{
+			auto mut field_lock= field_ptr.lock_mut();
+			var ClassField &mut field= field_lock.get_ref();
+
+			field.t= PrepareType( class_.members, field.syntax_element.get_ref().t );
+			field.index= fields_llvm_types.size();
+			fields_llvm_types.push_back( field.t.GetLLVMType() );
+		}
+	}
+
+	unsafe
+	{
+		class_.llvm_type= LLVMStructCreateNamed( llvm_context_, (class_.syntax_element.get_ref().name + "\0").front() ); // TODO - mangle type
+
+		auto s= u32(fields_llvm_types.size()); // TODO - fix reference protection error
+		LLVMStructSetBody( class_.llvm_type, fields_llvm_types.front(), s, LLVMBool::False );
+	}
+
+	class_.is_complete= true;
 }
 
 fn CodeBuilder::PrepareFunction(

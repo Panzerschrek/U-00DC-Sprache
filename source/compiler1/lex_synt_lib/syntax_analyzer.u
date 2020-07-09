@@ -1098,7 +1098,7 @@ fn SyntaxAnalyzer::ParseClass( mut this ) : Class
 			}
 			NextLexem();
 
-			class_.class_elements.push_back( move(class_field) );
+			class_.class_elements.push_back( ust::shared_ptr_final</ ClassField />( move(class_field) ) );
 		}
 	}
 

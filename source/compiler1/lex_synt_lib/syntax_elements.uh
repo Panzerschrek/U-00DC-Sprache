@@ -280,8 +280,8 @@ struct ClassField
 }
 
 type ClassElement= ust::variant</ tup[
-	Function,
-	ClassField
+	ust::shared_ptr_final</Function/>,
+	ust::shared_ptr_final</ClassField/>
 	] />;
 
 type ClassElements= ust::vector</ClassElement/>;

@@ -102,6 +102,9 @@ fn nomangle LLVMFunctionType(
 
 fn nomangle LLVMPointerType(LLVMTypeRef ElementType, u32 AddressSpace) unsafe : LLVMTypeRef;
 
+fn nomangle LLVMStructCreateNamed(LLVMContextRef C, NullTerminatedString& Name) unsafe : LLVMTypeRef;
+fn nomangle LLVMStructSetBody(LLVMTypeRef StructTy, LLVMTypeRef& ElementTypes, u32 ElementCount, LLVMBool Packed) unsafe;
+
 // Value
 
 fn nomangle LLVMSetValueName2(LLVMValueRef Val, char8& Name, size_type NameLen) unsafe;

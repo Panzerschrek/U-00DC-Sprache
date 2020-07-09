@@ -9,16 +9,22 @@ fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, Synt::Program
 {
 	foreach( & program_element : program_elements )
 	{
-		if_var( & function : program_element.get</ ust::shared_ptr_final</Synt::Function/> />() )
+		variant_visit( & el : program_element )
 		{
-			NamesScopeFill( names_scope_ptr, function );
+			NamesScopeFill( names_scope_ptr, el );
 		}
 	}
 }
 
 fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, Synt::ClassElements& class_elements )
 {
-	// TODO
+	foreach( & class_element : class_elements )
+	{
+		variant_visit( & el : class_element )
+		{
+			NamesScopeFill( names_scope_ptr, el );
+		}
+	}
 }
 
 fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function )
@@ -68,6 +74,27 @@ fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_p
 	if( insert_not_ok )
 	{
 		REPORT_ERROR( Redefinition, names_scope_ptr, class_.get_ref().file_pos, class_name )
+	}
+}
+
+fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field )
+{
+	auto& field_name= class_field.get_ref().name;
+
+	var ClassField mut field
+	{
+		.syntax_element= class_field
+	};
+
+	var bool mut insert_not_ok= false;
+	{
+		auto mut lock= names_scope_ptr.lock_mut();
+		insert_not_ok= lock.get_ref().AddName( field_name, move(field) ).empty();
+	}
+
+	if( insert_not_ok )
+	{
+		REPORT_ERROR( Redefinition, names_scope_ptr, class_field.get_ref().file_pos, field_name )
 	}
 }
 
