@@ -16,6 +16,11 @@ fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, Synt::Program
 	}
 }
 
+fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, Synt::ClassElements& class_elements )
+{
+	// TODO
+}
+
 fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function )
 {
 	if( IsKeyword( function.get_ref().name ) )
@@ -43,7 +48,27 @@ fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_p
 
 fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_ )
 {
-	// TODO
+	auto& class_name= class_.get_ref().name;
+
+	var NamesScopeMutPtr class_members( NamesScope( class_name, names_scope_ptr ) );
+	NamesScopeFill( class_members, class_.get_ref().class_elements );
+
+	var ClassType mut class_type
+	{
+		.members= class_members,
+		.syntax_element= class_,
+	};
+
+	var bool mut insert_not_ok= false;
+	{
+		auto mut lock= names_scope_ptr.lock_mut();
+		insert_not_ok= lock.get_ref().AddName( class_name, move(class_type) ).empty();
+	}
+
+	if( insert_not_ok )
+	{
+		REPORT_ERROR( Redefinition, names_scope_ptr, class_.get_ref().file_pos, class_name )
+	}
 }
 
 } // namespace U

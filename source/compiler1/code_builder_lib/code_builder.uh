@@ -27,6 +27,7 @@ private:
 	fn FillGlobalNamesScope( this, NamesScope &mut names_scope );
 
 	fn NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, Synt::ProgramElements& program_elements );
+	fn NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, Synt::ClassElements& class_elements );
 	fn NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function );
 	fn NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_ );
 

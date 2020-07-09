@@ -46,6 +46,11 @@ fn GetFilePosImpl( CallOperator& call_operator ) : FilePos
 	return call_operator.file_pos;
 }
 
+fn GetFilePosImpl( MemberAccessOperator& member_access_operator ) : FilePos
+{
+	return member_access_operator.file_pos;
+}
+
 fn GetFilePosImpl( UnaryPlus& unary_plus ) : FilePos
 {
 	return unary_plus.file_pos;

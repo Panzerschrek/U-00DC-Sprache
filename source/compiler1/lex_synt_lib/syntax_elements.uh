@@ -81,6 +81,7 @@ struct CallOperator
 struct MemberAccessOperator
 {
 	FilePos file_pos;
+	ust::box</Expression/> value;
 	ust::string8 member_name;
 }
 
@@ -283,11 +284,13 @@ type ClassElement= ust::variant</ tup[
 	ClassField
 	] />;
 
+type ClassElements= ust::vector</ClassElement/>;
+
 struct Class
 {
 	FilePos file_pos;
 	ust::string8 name;
-	ust::vector</ClassElement/> class_elements;
+	ClassElements class_elements;
 }
 
 type ProgramElement= ust::variant</ tup[

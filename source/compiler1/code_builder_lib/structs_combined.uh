@@ -225,7 +225,8 @@ private:
 	ust::variant</ tup[
 		ust::shared_ptr_mut</Type/>,
 		ust::shared_ptr_mut</NamesScopeVariable/>,
-		ust::shared_ptr_mut</NamesScopeFunctionsSet/>
+		ust::shared_ptr_mut</NamesScopeFunctionsSet/>,
+		ClassTypePtr
 	] /> something_;
 }
 

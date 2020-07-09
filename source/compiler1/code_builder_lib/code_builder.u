@@ -119,6 +119,13 @@ fn CodeBuilder::NamesScopeValueToValue( this, NamesScopePtr& names_scope, NamesS
 			return move(res);
 		}
 	}
+	{
+		auto class_type_ptr= names_scope_value.Get</ClassType/>();
+		if( !class_type_ptr.empty() )
+		{
+			return Type( ust::to_non_nullable(class_type_ptr) );
+		}
+	}
 
 	return ErrorValue();
 }
