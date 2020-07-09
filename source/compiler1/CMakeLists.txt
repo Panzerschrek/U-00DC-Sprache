@@ -107,16 +107,20 @@ endif()
 
 if( U_BUILD_TESTS )
 
+	set( TESTS_SOURCES
+		tests/cpp_tests_launcher.cpp
+		../lex_synt_lib/file_pos.cpp # Hack! FilePos methods like "GetLine" and "constructor" used in tests.
+		)
+
 	add_executable(
 		Tests${CURRENT_COMPLIER_GENERATION}
-			tests/cpp_tests_launcher.cpp )
+			${TESTS_SOURCES} )
 
 	target_link_libraries(
 		Tests${CURRENT_COMPLIER_GENERATION}
 		PRIVATE
 			TestsCommon${CURRENT_COMPLIER_GENERATION}
 			${TESTS_LIB_WRAPPED}
-			LexSyntLib # Hack! Use C++ lib for "FilePos" class.
 		)
 
 	if( MSVC )
