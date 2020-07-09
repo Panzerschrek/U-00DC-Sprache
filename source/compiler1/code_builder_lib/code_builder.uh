@@ -1,8 +1,7 @@
 import "../lex_synt_lib/syntax_analyzer.uh"
 import "/code_builder_errors.uh"
 import "function_context.uh"
-import "names_scope.uh"
-import "value.uh"
+import "structs_combined.uh"
 
 namespace U
 {

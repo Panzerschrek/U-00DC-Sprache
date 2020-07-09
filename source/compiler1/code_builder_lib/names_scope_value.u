@@ -1,4 +1,4 @@
-import "names_scope_value.uh"
+import "structs_combined.uh"
 
 namespace U
 {

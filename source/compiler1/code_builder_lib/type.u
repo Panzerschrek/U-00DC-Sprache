@@ -1,7 +1,6 @@
 import "/string_conversions.u"
 import "../lex_synt_lib/keywords.uh"
-import "lang_types.uh"
-import "type.uh"
+import "structs_combined.uh"
 
 namespace U
 {

@@ -3,7 +3,7 @@ import "/string_conversions.u"
 import "/type_traits.u"
 import "/vector.u"
 import "/code_builder_errors.uh"
-import "type.uh"
+import "structs_combined.uh"
 
 ?macro <? REPORT_ERROR:block ( ?error_code:ident, ?names_scope:expr, ?file_pos:expr ?args:rep<? , ?arg:expr ?> ) ?> ->
 <?

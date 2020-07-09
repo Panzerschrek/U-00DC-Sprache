@@ -1,5 +1,5 @@
 import "/string.u"
-import "type.uh"
+import "structs_combined.uh"
 
 namespace U
 {
