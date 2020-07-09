@@ -48,4 +48,10 @@ fn NamesScope::GetErrors( this ) : ErrorsContainerPtr
 	return errors_container_;
 }
 
+fn NamesScope::ToString( this ) : ust::string8
+{
+	// TODO - print full name, like "A::B::C::D</i32/>::E
+	return name_;
+}
+
 } // namespace U

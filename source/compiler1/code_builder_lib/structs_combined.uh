@@ -74,6 +74,20 @@ struct FunctionType
 	op!=( FunctionType& l, FunctionType& r ) : bool;
 }
 
+struct ClassType
+{
+	NamesScopePtr members; // TODO - maybe inherit "ClassType" from "NamesScope" ?
+
+	ust::shared_ptr_final</ Synt::Class /> syntax_element;
+
+	ust::vector</ust::string8/> fields_order;
+
+	bool is_complete= false;
+	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
+}
+
+type ClassTypePtr= ust::shared_ptr_mut</ClassType/>;
+
 class Type
 {
 public:
@@ -84,6 +98,7 @@ public:
 	fn conversion_constructor( FundamentalType mut fundamental_type );
 	fn conversion_constructor( ArrayType mut array_type );
 	fn conversion_constructor( FunctionType mut function_type );
+	fn conversion_constructor( ClassTypePtr mut function_type );
 
 	fn GetFundamentalType(  mut this ) : ust::optional_ref</FundamentalType, true  />'this';
 	fn GetFundamentalType( imut this ) : ust::optional_ref</FundamentalType, false />'this';
@@ -93,6 +108,9 @@ public:
 
 	fn GetFunctionType(  mut this ) : ust::optional_ref</FunctionType, true  />'this';
 	fn GetFunctionType( imut this ) : ust::optional_ref</FunctionType, false />'this';
+
+	fn GetClassType(  mut this ) : ust::optional_ref</ClassTypePtr, true  />'this';
+	fn GetClassType( imut this ) : ust::optional_ref</ClassTypePtr, false />'this';
 
 	fn GetLLVMType( imut this ) : LLVMTypeRef;
 
@@ -106,7 +124,8 @@ private:
 	ust::variant</ tup[
 		FundamentalType,
 		ArrayType,
-		FunctionType
+		FunctionType,
+		ClassTypePtr
 	] /> something_;
 }
 
@@ -239,6 +258,9 @@ public:
 	{
 		return names_map_;
 	}
+
+	// Get full name (with enclosing namespaces) un human-readable format.
+	fn ToString( this ) : ust::string8;
 
 private:
 	ust::string8 name_;

@@ -48,6 +48,11 @@ fn ToString( FunctionType& function_type ) : ust::string8
 	return move(result);
 }
 
+fn ToString( ClassTypePtr& class_type ) : ust::string8
+{
+	return class_type.lock_imut().get_ref().members.lock_imut().get_ref().ToString();
+}
+
 } // namespace ToStringHelper
 
 fn FundamentalType::constructor( U_FundamentalType in_fundamental_type, LLVMTypeRef in_llvm_type )
@@ -171,13 +176,16 @@ fn Type::conversion_constructor( FundamentalType mut fundamental_type )
 	( something_( move(fundamental_type) ) )
 {}
 
-
 fn Type::conversion_constructor( ArrayType mut array_type )
 	( something_( move(array_type) ) )
 {}
 
 fn Type::conversion_constructor( FunctionType mut function_type )
 	( something_( move(function_type) ) )
+{}
+
+fn Type::conversion_constructor( ClassTypePtr mut class_type )
+	( something_( move(class_type) ) )
 {}
 
 fn Type::GetFundamentalType(  mut this ) : ust::optional_ref</FundamentalType, true  />'this'
@@ -210,11 +218,28 @@ fn Type::GetFunctionType( imut this ) : ust::optional_ref</FunctionType, false /
 	return something_.get</FunctionType/>();
 }
 
+fn Type::GetClassType(  mut this ) : ust::optional_ref</ClassTypePtr, true  />'this'
+{
+	return something_.get</ClassTypePtr/>();
+}
+
+fn Type::GetClassType( imut this ) : ust::optional_ref</ClassTypePtr, false />'this'
+{
+	return something_.get</ClassTypePtr/>();
+}
+
 fn Type::GetLLVMType( imut this ) : LLVMTypeRef
 {
 	variant_visit( &t : something_ )
 	{
-		return t.llvm_type;
+		static_if( ust::is_same_type</ typeof(t), ClassTypePtr />() )
+		{
+			return t.lock_imut().get_ref().llvm_type;
+		}
+		else
+		{
+			return t.llvm_type;
+		}
 	}
 
 	halt;
@@ -238,7 +263,17 @@ op Type::==( Type& l, Type& r ) : bool
 
 	variant_visit( &l_t : l.something_ )
 	{
-		return l_t == r.something_.get</ typeof(l_t) />().get_ref();
+		static_if( ust::is_same_type</ typeof(l_t), ClassTypePtr />() )
+		{
+			// TODO - add == for shared_ptr
+			return
+				ust::ref_to_int( l_t.lock_imut().get_ref() ) ==
+				ust::ref_to_int( r.something_.get</ typeof(l_t) />().get_ref().lock_imut().get_ref() );
+		}
+		else
+		{
+			return l_t == r.something_.get</ typeof(l_t) />().get_ref();
+		}
 	}
 
 	halt;
