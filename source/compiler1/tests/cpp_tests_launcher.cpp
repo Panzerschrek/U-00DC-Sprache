@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "../../code_builder_lib/push_disable_llvm_warnings.hpp"
+#include <llvm/Support/InitLLVM.h>
 #include <llvm/Support/ManagedStatic.h>
 #include <llvm/Support/raw_os_ostream.h>
 #include "../../code_builder_lib/pop_llvm_warnings.hpp"
@@ -209,9 +210,11 @@ bool HaveError( const std::vector<CodeBuilderError>& errors, const CodeBuilderEr
 } // namespace U
 
 // Entry point for tests executable.
-int main()
+int main(int argc, char* argv[])
 {
 	using namespace U;
+
+	const llvm::InitLLVM llvm_initializer(argc, argv);
 
 	const TestsFuncsContainer& funcs_container= GetTestsFuncsContainer();
 
