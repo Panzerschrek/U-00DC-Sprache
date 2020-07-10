@@ -1,6 +1,0 @@
-import "structs_combined.uh"
-
-namespace U
-{
-
-} // namespace U
