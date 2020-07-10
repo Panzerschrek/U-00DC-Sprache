@@ -55,6 +55,11 @@ fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_p
 fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_ )
 {
 	auto& class_name= class_.get_ref().name;
+	if( IsKeyword( class_name ) )
+	{
+		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, class_.get_ref().file_pos )
+		return;
+	}
 
 	var NamesScopeMutPtr class_members( NamesScope( class_name, names_scope_ptr ) );
 	NamesScopeFill( class_members, class_.get_ref().class_elements );
@@ -80,6 +85,11 @@ fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_p
 fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field )
 {
 	auto& field_name= class_field.get_ref().name;
+	if( IsKeyword( field_name ) )
+	{
+		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, class_field.get_ref().file_pos )
+		return;
+	}
 
 	var ClassField mut field
 	{

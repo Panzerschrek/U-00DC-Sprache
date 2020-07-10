@@ -71,7 +71,7 @@ U_TEST(NameNotFoundTest2)
 		struct S{}
 		fn Foo() : i32
 		{
-			var S x{};
+			var S x;
 			return x.unexistent_field;
 		}
 	)";

@@ -230,8 +230,16 @@ fn CodeBuilder::BuildClass( this, NamesScopePtr& names_scope_ptr, ClassTypePtr& 
 	{
 		class_.llvm_type= LLVMStructCreateNamed( llvm_context_, (class_.syntax_element.get_ref().name + "\0").front() ); // TODO - mangle type
 
-		auto s= u32(fields_llvm_types.size()); // TODO - fix reference protection error
-		LLVMStructSetBody( class_.llvm_type, fields_llvm_types.front(), s, LLVMBool::False );
+		if( fields_llvm_types.empty() )
+		{
+			var LLVMTypeRef dummy= zero_init;
+			LLVMStructSetBody( class_.llvm_type, dummy, 0u, LLVMBool::False );
+		}
+		else
+		{
+			auto s= u32(fields_llvm_types.size()); // TODO - fix reference protection error
+			LLVMStructSetBody( class_.llvm_type, fields_llvm_types.front(), s, LLVMBool::False );
+		}
 	}
 
 	class_.is_complete= true;
