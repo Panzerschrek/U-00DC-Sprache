@@ -76,18 +76,20 @@ public:
 		if( empty() ) { return; }
 		unsafe
 		{
-			--counter_.get_ref().use_count_total;
 			--counter_.get_ref().use_count_strong;
 			if( counter_.get_ref().use_count_strong == 0u )
 			{
 				call_destructor( value_.get_ref() );
 				memory_free( polymorph_restore_original_ref( value_.get_ref() ) );
-				if( counter_.get_ref().use_count_total == 0u )
-				{
-					memory_free( counter_.get_ref() );
-				}
 			}
 			value_= value_ptr();
+
+			--counter_.get_ref().use_count_total;
+			if( counter_.get_ref().use_count_total == 0u )
+			{
+				memory_free( counter_.get_ref() );
+			}
+
 			counter_= counter_ptr();
 		}
 	}
