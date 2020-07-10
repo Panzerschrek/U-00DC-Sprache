@@ -1,5 +1,5 @@
 import "/string.u"
-import "/lex_synt_lib/file_pos.u"
+import "/lex_synt_lib/file_pos.uh"
 
 namespace U
 {

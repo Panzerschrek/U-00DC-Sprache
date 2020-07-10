@@ -1,6 +1,6 @@
 import "/string.u"
 import "/vector.u"
-import "file_pos.u"
+import "file_pos.uh"
 
 namespace U
 {
