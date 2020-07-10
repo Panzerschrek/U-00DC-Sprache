@@ -35,6 +35,12 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration& variables_declaration ) : BlockElementBuildInfo
 {
 	auto t= PrepareType( names_scope, variables_declaration.t );
+	if( !EnsureTypeComplete( t ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope, variables_declaration.file_pos, t )
+		return BlockElementBuildInfo();
+	}
+
 	foreach( &variable_declaration : variables_declaration.variables )
 	{
 		if( IsKeyword( variable_declaration.name ) )

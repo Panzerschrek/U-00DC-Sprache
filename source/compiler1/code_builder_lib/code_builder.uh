@@ -26,11 +26,11 @@ private:
 
 	fn FillGlobalNamesScope( this, NamesScope &mut names_scope );
 
-	fn NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, Synt::ProgramElements& program_elements );
-	fn NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, Synt::ClassElements& class_elements );
-	fn NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function );
-	fn NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_ );
-	fn NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field );
+	fn NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, Synt::ProgramElements& program_elements );
+	fn NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, Synt::ClassElements& class_elements );
+	fn NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function );
+	fn NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_ );
+	fn NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field );
 
 	fn NamesScopeBuild( this, NamesScopePtr& names_scope_ptr );
 	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/>& functions_set );
@@ -92,6 +92,9 @@ private:
 	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnaryMinus& unary_minus ) : Value;
 	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::LogicalNot& logical_not ) : Value;
 	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BitwiseNot& bitwise_not ) : Value;
+
+	// Returns "false" if not complete.
+	fn EnsureTypeComplete( this, Type& t ) : bool;
 
 	fn GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef;
 	fn GetZeroGEPIndex( this ) : LLVMValueRef;

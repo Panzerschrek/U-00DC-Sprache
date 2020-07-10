@@ -586,7 +586,11 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, member_access_operator.value.get_ref() );
 	if_var( &class_type : variable.t.GetClassType() )
 	{
-		// TODO - ensure type completeness here.
+		if( !EnsureTypeComplete( variable.t ) )
+		{
+			REPORT_ERROR( UsingIncompleteType, names_scope, member_access_operator.file_pos, variable.t )
+			return ErrorValue();
+		}
 
 		auto class_type_lock= class_type.lock_imut();
 		auto class_members_lock= class_type_lock.get_ref().members.lock_imut();

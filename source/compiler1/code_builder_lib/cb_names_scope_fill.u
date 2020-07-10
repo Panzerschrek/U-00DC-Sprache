@@ -5,7 +5,7 @@ import "code_builder.uh"
 namespace U
 {
 
-fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, Synt::ProgramElements& program_elements )
+fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, Synt::ProgramElements& program_elements )
 {
 	foreach( & program_element : program_elements )
 	{
@@ -16,7 +16,7 @@ fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, Synt::Program
 	}
 }
 
-fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, Synt::ClassElements& class_elements )
+fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, Synt::ClassElements& class_elements )
 {
 	foreach( & class_element : class_elements )
 	{
@@ -27,7 +27,7 @@ fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, Synt::ClassEl
 	}
 }
 
-fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function )
+fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function )
 {
 	if( IsKeyword( function.get_ref().name ) )
 	{
@@ -52,7 +52,7 @@ fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_p
 	names_scope.AddName( function.get_ref().name, NamesScopeValue( move(functions_set) ) );
 }
 
-fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_ )
+fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_ )
 {
 	auto& class_name= class_.get_ref().name;
 	if( IsKeyword( class_name ) )
@@ -70,6 +70,11 @@ fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_p
 		.syntax_element= class_,
 	};
 
+	unsafe
+	{
+		class_type.llvm_type= LLVMStructCreateNamed( llvm_context_, (class_.get_ref().name + "\0").front() ); // TODO - mangle type
+	}
+
 	var bool mut insert_not_ok= false;
 	{
 		auto mut lock= names_scope_ptr.lock_mut();
@@ -82,7 +87,7 @@ fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_p
 	}
 }
 
-fn CodeBuilder::NamesScopeFill( NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field )
+fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field )
 {
 	auto& field_name= class_field.get_ref().name;
 	if( IsKeyword( field_name ) )
