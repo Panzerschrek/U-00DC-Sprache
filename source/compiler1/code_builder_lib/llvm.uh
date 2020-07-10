@@ -17,6 +17,7 @@ DefineLLVMRef LLVMTypeRef
 DefineLLVMRef LLVMValueRef
 DefineLLVMRef LLVMBasicBlockRef
 DefineLLVMRef LLVMTargetDataRef // Actually this is DataLayout
+DefineLLVMRef LLVMAttributeRef
 
 type NullTerminatedString= char8;
 
@@ -67,6 +68,11 @@ enum LLVMRealPredicate : u32
 	UNE,            /**< True if unordered or not equal */
 	PredicateTrue   /**< Always true (always folded) */
 }
+
+type LLVMAttributeIndex= u32;
+auto LLVMAttributeReturnIndex= 0u;
+auto LLVMAttributeFunctionIndex= ~0u;
+auto LLVMAttributeFirstParamIndex= 1u;
 
 // Functions
 
@@ -188,3 +194,9 @@ fn nomangle LLVMBuildFCmp(LLVMBuilderRef Builder, LLVMRealPredicate Op, LLVMValu
 fn nomangle LLVMBuildNeg(LLVMBuilderRef Builder, LLVMValueRef V, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildFNeg(LLVMBuilderRef Builder, LLVMValueRef V, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildNot(LLVMBuilderRef Builder, LLVMValueRef V, NullTerminatedString& Name) unsafe : LLVMValueRef;
+
+// Attributes
+fn nomangle LLVMCreateEnumAttribute(LLVMContextRef C, u32 KindID, u64 Val) unsafe : LLVMAttributeRef;
+fn nomangle LLVMGetEnumAttributeKindForName(char8& Name, size_type SLen) unsafe : u32;
+
+fn nomangle LLVMAddAttributeAtIndex(LLVMValueRef F, LLVMAttributeIndex Idx, LLVMAttributeRef A);

@@ -37,6 +37,7 @@ bool FilterTest( const std::string& test_name )
 		"BreakOutsideLoopTest",
 		"CallTest0",
 		"CallTest1",
+		"CallTest4",
 		"ComparisonFloatOperatorsTest",
 		"ComparisonSignedOperatorsTest",
 		"ComparisonUnsignedOperatorsTest",

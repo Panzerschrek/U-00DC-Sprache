@@ -528,7 +528,16 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 			}
 			else
 			{
-				llvm_args.push_back( CreateMoveToLLVMRegisterInstruction( arg, function_context ) );
+				if( !arg.t.GetClassType().empty() )
+				{
+					// Non-fundametals passed by reference.
+					// Now we use "byval". TODO - construct temporary variable, call destructor.
+					llvm_args.push_back( arg.llvm_value );
+				}
+				else
+				{
+					llvm_args.push_back( CreateMoveToLLVMRegisterInstruction( arg, function_context ) );
+				}
 			}
 
 			++arg_n;

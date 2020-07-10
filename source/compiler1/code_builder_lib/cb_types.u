@@ -81,6 +81,14 @@ fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, Synt::FunctionTyp
 		{
 			unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  }
 		}
+		else
+		{
+			// Pass non-fundamental types by-reference
+			if( !arg.arg_type.get_ref().GetClassType().empty() )
+			{
+				unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  }
+			}
+		}
 		llvm_arg_types.push_back( llvm_type );
 	}
 
