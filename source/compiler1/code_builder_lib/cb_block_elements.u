@@ -226,7 +226,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 
 fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfOperator& if_operator ) : BlockElementBuildInfo
 {
-	var LLVMBasicBlockRef mut block_after_if= zero_init, mut next_condition_block=zero_init;
+	var LLVMBasicBlockRef mut block_after_if= zero_init, mut next_condition_block= zero_init;
 
 	unsafe
 	{
@@ -279,7 +279,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 					bool_type_,
 					condition_expression.t )
 
-				return BlockElementBuildInfo(); // TODO - continue, but create stub
+				// TODO - continue here and create stub
 			}
 			else
 			{
