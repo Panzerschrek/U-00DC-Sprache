@@ -35,7 +35,45 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 
 fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::SequenceInitializer& sequence_initializer )
 {
-	// TODO - do something
+	if_var( &array_type : variable.t.GetArrayType() )
+	{
+		if( sequence_initializer.elements_initializers.size() != array_type.element_count )
+		{
+			REPORT_ERROR( ArrayInitializersCountMismatch,
+				names_scope,
+				sequence_initializer.file_pos,
+				array_type.element_count,
+				sequence_initializer.elements_initializers.size() )
+			return;
+		}
+
+		var NamesScopeVariable mut element_variable
+		{
+			.t= array_type.element_type.get_ref(),
+		};
+
+		auto mut i= 0s;
+		foreach( &element_initializer : sequence_initializer.elements_initializers )
+		{
+			unsafe
+			{
+				var [ LLVMValueRef, 2 ] indexes
+				[
+					GetZeroGEPIndex(),
+					LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
+				];
+
+				element_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] );
+			}
+
+			BuildInitializer( names_scope, function_context, element_variable, element_initializer.get_ref() );
+			++i;
+		}
+
+		return;
+	}
+
+	REPORT_ERROR( ArrayInitializerForNonArray, names_scope, sequence_initializer.file_pos )
 }
 
 fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::StructNamedInitializer& struct_named_initializer )
