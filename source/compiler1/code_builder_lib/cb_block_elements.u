@@ -61,7 +61,15 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 					LLVMBuildAlloca( function_context.alloca_ir_builder, t.GetLLVMType(), (variable_declaration.name + "\0").front() );
 			}
 
-			BuildInitializer( names_scope, function_context, out_variable, variable_declaration.initializer );
+			if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
+			{
+				BuildEmptyInitializer( names_scope, function_context, out_variable, variable_declaration.name, variable_declaration.file_pos );
+
+			}
+			else
+			{
+				BuildInitializer( names_scope, function_context, out_variable, variable_declaration.initializer );
+			}
 		}
 		else if( variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
 		{

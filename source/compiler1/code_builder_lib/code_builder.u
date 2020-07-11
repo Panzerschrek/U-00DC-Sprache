@@ -251,6 +251,8 @@ fn CodeBuilder::BuildClass( this, NamesScopePtr& names_scope_ptr, ClassTypePtr& 
 		}
 	}
 
+	class_.is_default_constructible= fields_llvm_types.empty();
+
 	class_.is_complete= true;
 }
 

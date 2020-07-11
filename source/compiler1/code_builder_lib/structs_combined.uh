@@ -84,8 +84,11 @@ struct ClassType
 
 	ust::vector</ust::string8/> fields_order;
 
-	bool is_complete= false;
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
+
+	bool is_complete= false;
+
+	bool is_default_constructible= false;
 }
 
 type ClassTypePtr= ust::shared_ptr_mut</ClassType/>;
@@ -114,7 +117,9 @@ public:
 	fn GetClassType(  mut this ) : ust::optional_ref</ClassTypePtr, true  />'this';
 	fn GetClassType( imut this ) : ust::optional_ref</ClassTypePtr, false />'this';
 
-	fn GetLLVMType( imut this ) : LLVMTypeRef;
+	fn GetLLVMType( this ) : LLVMTypeRef;
+
+	fn IsDefaultConstructible( this ) : bool;
 
 	// Convert type name to human-readable format.
 	fn ToString( this ) : ust::string8;

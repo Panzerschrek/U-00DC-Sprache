@@ -14,6 +14,7 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 
 fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::EmptyVariant& empty_initializer )
 {
+	halt;
 }
 
 fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Expression& expression_initializer )
@@ -248,6 +249,47 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::UninitializedInitializer& uninitialized_initializer )
 {
 	// TODO - do something
+}
+
+fn CodeBuilder::BuildEmptyInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::string8& variable_name, FilePos& file_pos )
+{
+	if( !variable.t.IsDefaultConstructible() )
+	{
+		REPORT_ERROR( ExpectedInitializer, names_scope, file_pos, variable_name )
+		return;
+	}
+
+	if_var( &array_type : variable.t.GetArrayType() )
+	{
+		var NamesScopeVariable mut element_variable
+		{
+			.t= array_type.element_type.get_ref()
+		};
+
+		auto mut i= 0u64;
+		while( i < array_type.element_count )
+		{
+			unsafe
+			{
+				var [ LLVMValueRef, 2 ] indexes
+				[
+					GetZeroGEPIndex(),
+					LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
+				];
+
+				element_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] );
+			}
+
+			BuildEmptyInitializer( names_scope, function_context, element_variable, variable_name, file_pos );
+			++i;
+		}
+		return;
+	}
+	if_var( &class_type_ptr : variable.t.GetClassType() )
+	{
+		// TODO - call default constructor.
+		return;
+	}
 }
 
 } // namespace U
