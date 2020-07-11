@@ -63,6 +63,30 @@ fn FundamentalType::constructor( U_FundamentalType in_fundamental_type, LLVMType
 	( fundamental_type= in_fundamental_type, llvm_type= in_llvm_type )
 {}
 
+fn FundamentalType::GetSize(this) : size_type
+{
+	if( fundamental_type ==  U_FundamentalType::InvalidType){ return 0s; }
+	if( fundamental_type ==  U_FundamentalType::void_  ){ return 0s; }
+	if( fundamental_type ==  U_FundamentalType::bool_ ){ return 1s; }
+	if( fundamental_type ==  U_FundamentalType::i8_   ){ return 1s; }
+	if( fundamental_type ==  U_FundamentalType::u8_   ){ return 1s; }
+	if( fundamental_type ==  U_FundamentalType::i16_  ){ return 2s; }
+	if( fundamental_type ==  U_FundamentalType::u16_  ){ return 2s; }
+	if( fundamental_type ==  U_FundamentalType::i32_  ){ return 4s; }
+	if( fundamental_type ==  U_FundamentalType::u32_  ){ return 4s; }
+	if( fundamental_type ==  U_FundamentalType::i64_  ){ return 8s; }
+	if( fundamental_type ==  U_FundamentalType::u64_  ){ return 8s; }
+	if( fundamental_type ==  U_FundamentalType::i128_ ){ return 16s; }
+	if( fundamental_type ==  U_FundamentalType::u128_ ){ return 16s; }
+	if( fundamental_type ==  U_FundamentalType::f32_ ){ return 4s; }
+	if( fundamental_type ==  U_FundamentalType::f64_ ){ return 8s; }
+	if( fundamental_type ==  U_FundamentalType::char8_  ){ return 1s; }
+	if( fundamental_type ==  U_FundamentalType::char16_ ){ return 2s; }
+	if( fundamental_type ==  U_FundamentalType::char32_ ){ return 4s; }
+
+	halt;
+}
+
 op FundamentalType::==( FundamentalType& l, FundamentalType& r ) : bool
 {
 	return l.fundamental_type == r.fundamental_type;

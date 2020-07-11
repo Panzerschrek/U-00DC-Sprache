@@ -33,6 +33,8 @@ struct FundamentalType
 
 	op==( FundamentalType& l, FundamentalType& r ) : bool;
 	op!=( FundamentalType& l, FundamentalType& r ) : bool;
+
+	fn GetSize(this) : size_type;
 }
 
 struct ArrayType

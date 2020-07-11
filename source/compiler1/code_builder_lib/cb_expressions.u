@@ -139,6 +139,12 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, binary_operator.file_pos, l_type )
 			return ErrorValue();
 		}
+		if( l_fundamental_type.get_ref().GetSize() < 4s )
+		{
+			// Operation supported only for 32 and 64bit operands
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, binary_operator.file_pos, l_type )
+			return ErrorValue();
+		}
 
 		var bool is_float= IsFloatingPoint( l_fundamental_type.get_ref().fundamental_type );
 		if( !( IsInteger( l_fundamental_type.get_ref().fundamental_type  ) || is_float ) )
