@@ -161,7 +161,88 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 
 fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ZeroInitializer& zero_initializer )
 {
-	// TODO - do something
+	if_var( &fundamental_type : variable.t.GetFundamentalType() )
+	{
+		var LLVMValueRef mut zero_value= zero_init;
+		if( fundamental_type.fundamental_type == U_FundamentalType::bool_ ||
+			IsInteger( fundamental_type.fundamental_type ) ||
+			IsChar( fundamental_type.fundamental_type ) )
+		{
+			unsafe{  zero_value= LLVMConstInt( fundamental_type.llvm_type, 0u64, LLVMBool::False );  }
+		}
+		else
+		{
+			unsafe{  zero_value= LLVMConstReal( fundamental_type.llvm_type, 0.0 );  }
+		}
+
+		unsafe{  LLVMBuildStore( function_context.llvm_ir_builder, zero_value, variable.llvm_value );  }
+		return;
+	}
+	if_var( &array_type : variable.t.GetArrayType() )
+	{
+		var NamesScopeVariable mut element_variable
+		{
+			.t= array_type.element_type.get_ref()
+		};
+
+		auto mut i= 0u64;
+		while( i < array_type.element_count )
+		{
+			unsafe
+			{
+				var [ LLVMValueRef, 2 ] indexes
+				[
+					GetZeroGEPIndex(),
+					LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
+				];
+
+				element_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] );
+			}
+
+			BuildInitializer( names_scope, function_context, element_variable, zero_initializer );
+			++i;
+		}
+		return;
+	}
+	if_var( &class_type_ptr : variable.t.GetClassType() )
+	{
+		auto class_type_lock= class_type_ptr.lock_imut();
+		var ClassType& class_type= class_type_lock.get_ref();
+		auto members_lock= class_type.members.lock_imut();
+		var NamesScope& class_members= members_lock.get_ref();
+
+		foreach( &class_member : class_members.GetInternalContainer() )
+		{
+			auto field_ptr= class_member.value().Get</ ClassField />();
+			if( !field_ptr.empty() )
+			{
+				auto mut field_lock= field_ptr.lock_mut();
+				var ClassField &mut field= field_lock.get_ref();
+
+				var NamesScopeVariable mut member_variable
+				{
+					.t= field.t
+				};
+
+				auto op_name_nt= "." + field.syntax_element.get_ref().name + "\0";
+				unsafe
+				{
+					var [ LLVMValueRef, 2 ] indexes
+					[
+						GetZeroGEPIndex(),
+						LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
+					];
+
+					member_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, op_name_nt.front() );
+				}
+
+				BuildInitializer( names_scope, function_context, member_variable, zero_initializer );
+			}
+		}
+		return;
+	}
+
+	halt;
 }
 
 fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::UninitializedInitializer& uninitialized_initializer )

@@ -103,6 +103,7 @@ bool FilterTest( const std::string& test_name )
 		"UsingKeywordAsName5",
 		"UsingKeywordAsName6",
 		"WhileOperatorTest",
+		"ZeroInitilaizerTest",
 
 		"auto_variables_test.cpp:AutoVariableTest0",
 		"code_builder_test.cpp:ExpectedReferenceValueTest0",

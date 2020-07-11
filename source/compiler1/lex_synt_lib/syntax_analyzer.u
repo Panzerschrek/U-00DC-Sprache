@@ -727,6 +727,18 @@ fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer
 
 		return move(struct_named_initializer);
 	}
+	else if( IsKeyword( it_.front(), Keyword::zero_init_ ) )
+	{
+		var ZeroInitializer mut zero_initializer{ .file_pos= it_.front().file_pos };
+		NextLexem();
+		return move(zero_initializer);
+	}
+	else if( IsKeyword( it_.front(), Keyword::uninitialized_ ) )
+	{
+		var UninitializedInitializer mut uninitialized_initializer{ .file_pos= it_.front().file_pos };
+		NextLexem();
+		return move(uninitialized_initializer);
+	}
 	else if( parse_expression_initializer )
 	{
 		// In some cases usage of expression in initializer is forbidden.
