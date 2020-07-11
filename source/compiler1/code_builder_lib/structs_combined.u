@@ -1,0 +1,370 @@
+import "/string_conversions.u"
+import "../lex_synt_lib/keywords.uh"
+import "structs_combined.uh"
+
+namespace U
+{
+
+//
+// Type
+//
+
+namespace ToStringHelper
+{
+
+fn ToString( FundamentalType& fundamental_type ) : ust::string8
+{
+	return ust::string8( GetFundamentalTypeName( fundamental_type.fundamental_type ) );
+}
+
+fn ToString( ArrayType& array_type ) : ust::string8
+{
+	var ust::string8 mut result;
+	result+= "[ ";
+	result+= array_type.element_type.get_ref().ToString();
+	result+= ", ";
+	result+= ust::to_string8(array_type.element_count);
+	result+= " ]";
+	return move(result);
+}
+
+fn ToString( FunctionType& function_type ) : ust::string8
+{
+	var ust::string8 mut result;
+
+	result+= KeywordToString( Keyword::fn_ );
+
+	result+= "(";
+	foreach( &arg : function_type.args )
+	{
+		result+= arg.arg_type.get_ref().ToString();
+		result+= " arg";
+
+		if( ust::ref_to_int(arg) != ust::ref_to_int(function_type.args.back()))
+		{
+			result+= ", ";
+		}
+	}
+	result+= ") : ";
+
+	result+= function_type.return_type.get_ref().ToString();
+
+	return move(result);
+}
+
+fn ToString( ClassTypePtr& class_type ) : ust::string8
+{
+	return class_type.lock_imut().get_ref().members.lock_imut().get_ref().ToString();
+}
+
+} // namespace ToStringHelper
+
+fn FundamentalType::constructor( U_FundamentalType in_fundamental_type, LLVMTypeRef in_llvm_type )
+	( fundamental_type= in_fundamental_type, llvm_type= in_llvm_type )
+{}
+
+fn FundamentalType::GetSize(this) : size_type
+{
+	if( fundamental_type ==  U_FundamentalType::InvalidType){ return 0s; }
+	if( fundamental_type ==  U_FundamentalType::void_  ){ return 0s; }
+	if( fundamental_type ==  U_FundamentalType::bool_ ){ return 1s; }
+	if( fundamental_type ==  U_FundamentalType::i8_   ){ return 1s; }
+	if( fundamental_type ==  U_FundamentalType::u8_   ){ return 1s; }
+	if( fundamental_type ==  U_FundamentalType::i16_  ){ return 2s; }
+	if( fundamental_type ==  U_FundamentalType::u16_  ){ return 2s; }
+	if( fundamental_type ==  U_FundamentalType::i32_  ){ return 4s; }
+	if( fundamental_type ==  U_FundamentalType::u32_  ){ return 4s; }
+	if( fundamental_type ==  U_FundamentalType::i64_  ){ return 8s; }
+	if( fundamental_type ==  U_FundamentalType::u64_  ){ return 8s; }
+	if( fundamental_type ==  U_FundamentalType::i128_ ){ return 16s; }
+	if( fundamental_type ==  U_FundamentalType::u128_ ){ return 16s; }
+	if( fundamental_type ==  U_FundamentalType::f32_ ){ return 4s; }
+	if( fundamental_type ==  U_FundamentalType::f64_ ){ return 8s; }
+	if( fundamental_type ==  U_FundamentalType::char8_  ){ return 1s; }
+	if( fundamental_type ==  U_FundamentalType::char16_ ){ return 2s; }
+	if( fundamental_type ==  U_FundamentalType::char32_ ){ return 4s; }
+
+	halt;
+}
+
+op FundamentalType::==( FundamentalType& l, FundamentalType& r ) : bool
+{
+	return l.fundamental_type == r.fundamental_type;
+}
+
+op FundamentalType::!=( FundamentalType& l, FundamentalType& r ) : bool
+{
+	return !(l == r);
+}
+
+fn ArrayType::constructor( mut this, ArrayType &imut other )
+	( element_type(other.element_type.get_ref()), element_count(other.element_count), llvm_type(other.llvm_type) )
+{}
+
+op ArrayType::=( mut this, ArrayType &imut other )
+{
+	this.element_type.get_ref()= other.element_type.get_ref();
+	this.element_count= other.element_count;
+	this.llvm_type= other.llvm_type;
+}
+
+op ArrayType::==( ArrayType& l, ArrayType& r ) : bool
+{
+	return l.element_type.get_ref() == r.element_type.get_ref() && l.element_count == r.element_count;
+}
+
+op ArrayType::!=( ArrayType& l, ArrayType& r ) : bool
+{
+	return !(l == r);
+}
+
+op FunctionType::Arg::==(Arg& l, Arg& r) : bool
+{
+	return
+		l.arg_type.get_ref() == r.arg_type.get_ref() &&
+		l.is_reference == r.is_reference &&
+		l.is_mutable == r.is_mutable;
+}
+
+op FunctionType::Arg::!=(Arg& l, Arg& r) : bool
+{
+	return !(l == r);
+}
+
+fn FunctionType::constructor( mut this, FunctionType &imut other )
+	(
+		return_type(other.return_type.get_ref()),
+		llvm_type(other.llvm_type),
+		return_value_is_reference(other.return_value_is_reference),
+		return_value_is_mutable(other.return_value_is_mutable)
+	)
+{
+	foreach( & in_arg : other.args )
+	{
+		var Arg mut arg
+		{
+			.arg_type( in_arg.arg_type.get_ref() ),
+			.is_reference= in_arg.is_reference,
+			.is_mutable= in_arg.is_mutable,
+		};
+		args.push_back( move(arg) );
+	}
+}
+
+op FunctionType::=( mut this, FunctionType &imut other )
+{
+	return_type.get_ref()= other.return_type.get_ref();
+	return_value_is_reference= other.return_value_is_reference;
+	return_value_is_mutable= other.return_value_is_mutable;
+
+	args.clear();
+	foreach( & in_arg : other.args )
+	{
+		var Arg mut arg
+		{
+			.arg_type( in_arg.arg_type.get_ref() ),
+			.is_reference= in_arg.is_reference,
+			.is_mutable= in_arg.is_mutable,
+		};
+		args.push_back( move(arg) );
+	}
+
+	this.llvm_type= other.llvm_type;
+}
+
+op FunctionType::==( FunctionType& l, FunctionType& r ) : bool
+{
+	if( l.args.size() != r.args.size() )
+	{
+		return false;
+	}
+
+	auto mut i= 0s;
+	while( i < l.args.size() )
+	{
+		if( l.args[i] != r.args[i] )
+		{
+			return false;
+		}
+		++i;
+	}
+
+	return
+		l.return_type.get_ref() == r.return_type.get_ref() &&
+		l.return_value_is_reference == r.return_value_is_reference &&
+		l.return_value_is_mutable == r.return_value_is_mutable;
+}
+
+op FunctionType::!=( FunctionType& l, FunctionType& r ) : bool
+{
+	return !(l == r);
+}
+
+fn Type::conversion_constructor( FundamentalType mut fundamental_type )
+	( something_( move(fundamental_type) ) )
+{}
+
+fn Type::conversion_constructor( ArrayType mut array_type )
+	( something_( move(array_type) ) )
+{}
+
+fn Type::conversion_constructor( FunctionType mut function_type )
+	( something_( move(function_type) ) )
+{}
+
+fn Type::conversion_constructor( ClassTypePtr mut class_type )
+	( something_( move(class_type) ) )
+{}
+
+fn Type::GetFundamentalType(  mut this ) : ust::optional_ref</FundamentalType, true  />'this'
+{
+	return something_.get</FundamentalType/>();
+}
+
+fn Type::GetFundamentalType( imut this ) : ust::optional_ref</FundamentalType, false />'this'
+{
+	return something_.get</FundamentalType/>();
+}
+
+fn Type::GetArrayType(  mut this ) : ust::optional_ref</ArrayType, true  />'this'
+{
+	return something_.get</ArrayType/>();
+}
+
+fn Type::GetArrayType( imut this ) : ust::optional_ref</ArrayType, false />'this'
+{
+	return something_.get</ArrayType/>();
+}
+
+fn Type::GetFunctionType(  mut this ) : ust::optional_ref</FunctionType, true  />'this'
+{
+	return something_.get</FunctionType/>();
+}
+
+fn Type::GetFunctionType( imut this ) : ust::optional_ref</FunctionType, false />'this'
+{
+	return something_.get</FunctionType/>();
+}
+
+fn Type::GetClassType(  mut this ) : ust::optional_ref</ClassTypePtr, true  />'this'
+{
+	return something_.get</ClassTypePtr/>();
+}
+
+fn Type::GetClassType( imut this ) : ust::optional_ref</ClassTypePtr, false />'this'
+{
+	return something_.get</ClassTypePtr/>();
+}
+
+fn Type::GetLLVMType( imut this ) : LLVMTypeRef
+{
+	variant_visit( &t : something_ )
+	{
+		static_if( ust::is_same_type</ typeof(t), ClassTypePtr />() )
+		{
+			return t.lock_imut().get_ref().llvm_type;
+		}
+		else
+		{
+			return t.llvm_type;
+		}
+	}
+
+	halt;
+}
+
+fn Type::ToString( this ) : ust::string8
+{
+	variant_visit( &t : something_ )
+	{
+		return ToStringHelper::ToString(t);
+	}
+	halt;
+}
+
+op Type::==( Type& l, Type& r ) : bool
+{
+	if( l.something_.index() != r.something_.index() )
+	{
+		return false;
+	}
+
+	variant_visit( &l_t : l.something_ )
+	{
+		static_if( ust::is_same_type</ typeof(l_t), ClassTypePtr />() )
+		{
+			// TODO - add == for shared_ptr
+			return
+				ust::ref_to_int( l_t.lock_imut().get_ref() ) ==
+				ust::ref_to_int( r.something_.get</ typeof(l_t) />().get_ref().lock_imut().get_ref() );
+		}
+		else
+		{
+			return l_t == r.something_.get</ typeof(l_t) />().get_ref();
+		}
+	}
+
+	halt;
+}
+
+op Type::!=( Type& l, Type& r ) : bool
+{
+	return !(l == r);
+}
+
+//
+// NamesScope
+//
+
+fn NamesScope::constructor(
+	ust::string8 mut name,
+	ust::shared_ptr_nullable_imut</NamesScope/>& parent )
+	(
+		name_= move(name),
+		parent_(parent)
+	)
+{
+}
+
+fn NamesScope::GetThisScopeValue( this, ust::string8& name ) : ust::optional_ref</ NamesScopeValue, false />'this'
+{
+	return names_map_.find( name );
+}
+
+fn NamesScope::AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : ust::optional_ref</ NamesScopeValue, true />'this'
+{
+	if( !names_map_.find(name).empty() )
+	{
+		return ust::optional_ref</ NamesScopeValue, true />();
+	}
+
+	return ust::optional_ref</ NamesScopeValue, true />( names_map_.insert(move(name), move(value) ) );
+}
+
+fn NamesScope::GetParent( this ) : ust::shared_ptr_nullable_imut</NamesScope/>
+{
+	return parent_.lock();
+}
+
+fn NamesScope::SetErrors( mut this, ErrorsContainerPtr errors_container )
+{
+	errors_container_= errors_container;
+}
+
+fn NamesScope::GetErrors( this ) : ErrorsContainerPtr
+{
+	if( errors_container_.empty() )
+	{
+		return parent_.lock().lock_imut().get_ref().GetErrors();
+	}
+
+	return errors_container_;
+}
+
+fn NamesScope::ToString( this ) : ust::string8
+{
+	// TODO - print full name, like "A::B::C::D</i32/>::E
+	return name_;
+}
+
+} // namespace U

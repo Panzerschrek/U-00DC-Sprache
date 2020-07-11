@@ -1,4 +1,4 @@
-#include "tests.hpp"
+#include "../cpp_tests/tests.hpp"
 
 namespace U
 {

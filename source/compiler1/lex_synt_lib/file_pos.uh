@@ -1,0 +1,40 @@
+namespace U
+{
+
+class FilePos
+{
+public:
+	var u32 c_max_file_index= 65535u;
+	var u32 c_max_macro_expanison_index= 65535u;
+	var u32 c_max_line= 65535u;
+	var u32 c_max_column= 65535u;
+
+public:
+	fn constructor()= default;
+	fn constructor( mut this, u32 file_index, u32 line, u32 column );
+
+	fn constructor( mut this, FilePos& other )= default;
+	op=( mut this, FilePos& other )= default;
+
+	fn GetFileIndex(this) : u32;
+	fn GetMacroExpansionIndex(this) : u32;
+	fn GetLine(this) : u32;
+	fn GetColumn(this) : u32;
+
+	// = max for non-macro
+	fn SetFileIndex( mut this, u32 file_index );
+	fn SetMacroExpansionIndex( mut this, u32 macro_expansion_index );
+
+	op==( FilePos& l, FilePos& r ) : bool;
+	op!=( FilePos& l, FilePos& r ) : bool;
+	op< ( FilePos& l, FilePos& r ) : bool;
+	op<=( FilePos& l, FilePos& r ) : bool;
+
+private:
+	u16 file_index_(0);
+	u16 macro_expansion_index_(c_max_macro_expanison_index);
+	u16 line_(0); // from 1
+	u16 column_(0);
+}
+
+} // namespace U

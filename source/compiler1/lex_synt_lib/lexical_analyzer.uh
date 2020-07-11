@@ -1,0 +1,129 @@
+import "/string.u"
+import "/vector.u"
+import "file_pos.uh"
+
+namespace U
+{
+
+struct NumberLexemData
+{
+	f64 value_double= 0.0;
+	u64 value_int(0);
+	bool has_fractional_point= false;
+	[ char8, 7 ] type_suffix= zero_init;
+}
+
+struct Lexem
+{
+	enum Type : u8
+	{
+		None,
+
+		Comment,
+
+		Identifier,
+		MacroIdentifier,
+		MacroUniqueIdentifier,
+		String,
+		Number,
+
+		LiteralSuffix, // For strings, numbers
+
+		BracketLeft, // (
+		BracketRight, // )
+
+		SquareBracketLeft, // [
+		SquareBracketRight, // ]
+
+		BraceLeft, // {
+		BraceRight, // }
+
+		TemplateBracketLeft , // </
+		TemplateBracketRight, // />
+
+		MacroBracketLeft,  // <?
+		MacroBracketRight, // ?>
+
+		Scope, // ::
+
+		Comma, // ,
+		Dot, // .
+		Colon, // :
+		Semicolon, // ;
+		Question, // ?
+
+		Assignment, // =
+		Plus, // +
+		Minus, // -
+		Star, // *
+		Slash, // /
+		Percent, // %
+
+		And, // &
+		Or, // |
+		Xor, // ^
+		Tilda, // ~
+		Not, // !
+
+		Apostrophe, // '
+
+		Increment, // ++
+		Decrement, // --
+
+		CompareLess, // <
+		CompareGreater, // >
+		CompareEqual, // ==
+		CompareNotEqual, // !=
+		CompareLessOrEqual, // <=
+		CompareGreaterOrEqual, // >=
+
+		Conjunction, // &&
+		Disjunction, // ||
+
+		AssignAdd, // +=
+		AssignSub, // -=
+		AssignMul, // *=
+		AssignDiv, // /=
+		AssignRem, // %=
+		AssignAnd, // &=
+		AssignOr,  // |=
+		AssignXor, // ^=
+
+		ShiftLeft , // <<
+		ShiftRight, // >>
+
+		AssignShiftLeft , // <<=
+		AssignShiftRight, // >>=
+
+		LeftArrow,  // <-
+		RightArrow, // ->
+
+		Ellipsis, // ...
+
+		// TODO - add other lexems.
+
+		EndOfFile,
+	}
+
+	ust::string8 text; // Contains text for all lexem types, except numbers. Contains data of "struct NumberLexemData" for numbers.
+	FilePos file_pos;
+	Type lexem_type= Type::None;
+
+	op==( Lexem& l, Lexem& r ) : bool;
+	op!=( Lexem& l, Lexem& r ) : bool;
+}
+
+type Lexems= ust::vector</Lexem/>;
+
+type LexicalErrorMessage= ust::string8;
+type LexicalErrorMessages= ust::vector</LexicalErrorMessage/>;
+
+struct LexicalAnalysisResult
+{
+	Lexems lexems;
+	LexicalErrorMessages error_messages;
+}
+
+fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnalysisResult;
+
+} // namespace U

@@ -21,6 +21,40 @@ U_TEST( AdditionalSymbolsForIdentifiersTest0 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST(SimpliestProgramTest0)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : i32 { return 42; }
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( result_value.IntVal.getLimitedValue() == uint64_t(42) );
+}
+
+U_TEST(SimpliestProgramTest1)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo(i32 x ) : i32 { return x; }
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooi" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue arg;
+	arg.IntVal= llvm::APInt( 32, uint64_t(852456) );
+	const llvm::GenericValue result_value= engine->runFunction( function, { arg } );
+
+	U_TEST_ASSERT( result_value.IntVal.getLimitedValue() == arg.IntVal );
+}
+
 U_TEST(SimpleProgramTest)
 {
 	static const char c_program_text[]=
@@ -1311,7 +1345,29 @@ U_TEST(StructTest1)
 	ASSERT_NEAR( arg0 - arg1, result_value.DoubleVal, 0.001 );
 }
 
-U_TEST(BlocksTest)
+U_TEST(BlocksTest0)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : i32
+		{
+			{
+				return 333;
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( result_value.IntVal.getLimitedValue() == uint64_t( 333 ) );
+}
+
+U_TEST(BlocksTest1)
 {
 	// Variable in inner block must shadow variable from outer block with same name.
 	static const char c_program_text[]=

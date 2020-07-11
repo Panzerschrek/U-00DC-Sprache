@@ -34,7 +34,7 @@ const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 	switch(code)
 	{
 	#define PROCESS_ERROR(Code, Message) case CodeBuilderErrorCode::Code: return #Code;
-	#include "errors_list.hpp"
+	#include "../errors_list.hpp"
 	#undef PROCESS_ERROR
 	};
 

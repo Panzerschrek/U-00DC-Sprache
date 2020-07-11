@@ -1,3 +1,5 @@
+// WARNING! If this changed, "keywords.uh" must be changed too!
+
 // Keywords list.
 // Usage - define macro PROCESS_KEYWORD, include this file, undefune macro PROCESS_KEYWORD.
 

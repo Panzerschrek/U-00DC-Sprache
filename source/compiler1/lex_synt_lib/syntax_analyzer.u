@@ -1,0 +1,1142 @@
+import "keywords.uh"
+import "syntax_analyzer.uh"
+
+namespace U
+{
+
+namespace Synt
+{
+
+fn IsKeyword( Lexem& l, Keyword k ) : bool
+{
+	return l.lexem_type == Lexem::Type::Identifier && l.text == KeywordToString(k);
+}
+
+
+fn GetBinaryOperatorPriority( BinaryOperatorType binary_operator ) : i32
+{
+	// If this changed, same code in "syntax_analyzer.cpp" must be changed too!
+	if( binary_operator == BinaryOperatorType::Div ||
+		binary_operator == BinaryOperatorType::Mul ||
+		binary_operator == BinaryOperatorType::Rem )
+	{
+		return 9;
+	}
+	if( binary_operator == BinaryOperatorType::Add ||
+		binary_operator == BinaryOperatorType::Sub )
+	{
+		return 8;
+	}
+	if( binary_operator == BinaryOperatorType::ShiftLeft ||
+		binary_operator == BinaryOperatorType::ShiftRight )
+	{
+		return 7;
+	}
+	if( binary_operator == BinaryOperatorType::Equal ||
+		binary_operator == BinaryOperatorType::NotEqual ||
+		binary_operator == BinaryOperatorType::Less ||
+		binary_operator == BinaryOperatorType::LessEqual ||
+		binary_operator == BinaryOperatorType::Greater ||
+		binary_operator == BinaryOperatorType::GreaterEqual )
+	{
+		return 6;
+	}
+	if( binary_operator == BinaryOperatorType::And )
+	{
+		return 5;
+	}
+	if( binary_operator == BinaryOperatorType::Or )
+	{
+		return 4;
+	}
+	if( binary_operator == BinaryOperatorType::Xor )
+	{
+		return 3;
+	}
+	if( binary_operator == BinaryOperatorType::LazyLogicalAnd )
+	{
+		return 2;
+	}
+	if( binary_operator == BinaryOperatorType::LazyLogicalOr )
+	{
+		return 1;
+	}
+
+	halt;
+}
+
+fn IsBinaryOperator( Lexem& lexem ) : bool
+{
+	return
+		lexem.lexem_type == Lexem::Type::Plus ||
+		lexem.lexem_type == Lexem::Type::Minus ||
+		lexem.lexem_type == Lexem::Type::Star ||
+		lexem.lexem_type == Lexem::Type::Slash ||
+		lexem.lexem_type == Lexem::Type::Percent ||
+
+		lexem.lexem_type == Lexem::Type::CompareEqual ||
+		lexem.lexem_type == Lexem::Type::CompareNotEqual ||
+		lexem.lexem_type == Lexem::Type::CompareLess ||
+		lexem.lexem_type == Lexem::Type::CompareLessOrEqual ||
+		lexem.lexem_type == Lexem::Type::CompareGreater ||
+		lexem.lexem_type == Lexem::Type::CompareGreaterOrEqual ||
+
+		lexem.lexem_type == Lexem::Type::And ||
+		lexem.lexem_type == Lexem::Type::Or ||
+		lexem.lexem_type == Lexem::Type::Xor ||
+
+		lexem.lexem_type == Lexem::Type::ShiftLeft  ||
+		lexem.lexem_type == Lexem::Type::ShiftRight ||
+
+		lexem.lexem_type == Lexem::Type::Conjunction ||
+		lexem.lexem_type == Lexem::Type::Disjunction;
+}
+
+fn LexemToBinaryOperator( Lexem& lexem ) : BinaryOperatorType
+{
+	if( lexem.lexem_type == Lexem::Type::Plus	){ return BinaryOperatorType::Add; }
+	if( lexem.lexem_type == Lexem::Type::Minus	){ return BinaryOperatorType::Sub; }
+	if( lexem.lexem_type == Lexem::Type::Star	){ return BinaryOperatorType::Mul; }
+	if( lexem.lexem_type == Lexem::Type::Slash	){ return BinaryOperatorType::Div; }
+	if( lexem.lexem_type == Lexem::Type::Percent){ return BinaryOperatorType::Rem; }
+
+	if( lexem.lexem_type == Lexem::Type::CompareEqual			){ return BinaryOperatorType::Equal			; }
+	if( lexem.lexem_type == Lexem::Type::CompareNotEqual		){ return BinaryOperatorType::NotEqual		; }
+	if( lexem.lexem_type == Lexem::Type::CompareLess			){ return BinaryOperatorType::Less			; }
+	if( lexem.lexem_type == Lexem::Type::CompareLessOrEqual		){ return BinaryOperatorType::LessEqual		; }
+	if( lexem.lexem_type == Lexem::Type::CompareGreater			){ return BinaryOperatorType::Greater		; }
+	if( lexem.lexem_type == Lexem::Type::CompareGreaterOrEqual	){ return BinaryOperatorType::GreaterEqual	; }
+
+	if( lexem.lexem_type == Lexem::Type::And ){ return BinaryOperatorType::And; }
+	if( lexem.lexem_type == Lexem::Type::Or  ){ return BinaryOperatorType::Or ; }
+	if( lexem.lexem_type == Lexem::Type::Xor ){ return BinaryOperatorType::Xor; }
+
+	if( lexem.lexem_type == Lexem::Type::ShiftLeft  ){ return BinaryOperatorType::ShiftLeft ; }
+	if( lexem.lexem_type == Lexem::Type::ShiftRight ){ return BinaryOperatorType::ShiftRight; }
+
+	if( lexem.lexem_type == Lexem::Type::Conjunction ){ return BinaryOperatorType::LazyLogicalAnd; }
+	if( lexem.lexem_type == Lexem::Type::Disjunction ){ return BinaryOperatorType::LazyLogicalOr ; }
+
+	halt;
+}
+
+fn GetMostRightIncompleteBinaryOperatorInTree( BinaryOperator &mut o ) : BinaryOperator &mut
+{
+	if( !o.r.get_ref().get</EmptyVariant/>().empty() )
+	{
+		return o;
+	}
+
+	// Should be binary operator.
+	return GetMostRightIncompleteBinaryOperatorInTree( o.r.get_ref().get</BinaryOperator/>().get_ref() );
+}
+
+fn GetDeepestRightBinaryOperatorComponentWithNonLessPriority( BinaryOperator &'x mut o, BinaryOperatorType cur_op_type ) : BinaryOperator &mut
+{
+	if_var( &mut right_as_binary_operator : o.r.get_ref().get</BinaryOperator/>() )
+	{
+		if( GetBinaryOperatorPriority( cur_op_type ) > GetBinaryOperatorPriority( right_as_binary_operator.operator ) )
+		{
+			return GetDeepestRightBinaryOperatorComponentWithNonLessPriority( right_as_binary_operator, cur_op_type );
+		}
+	}
+	return o;
+}
+
+fn GetMostRightExpressionInPrefixOperatorsChain( Expression &mut e ) : Expression &mut
+{
+	if_var( &mut unary_plus : e.get</UnaryPlus/>() )
+	{
+		return GetMostRightExpressionInPrefixOperatorsChain( unary_plus.expr.get_ref() );
+	}
+	if_var( &mut unary_minus : e.get</UnaryMinus/>() )
+	{
+		return GetMostRightExpressionInPrefixOperatorsChain( unary_minus.expr.get_ref() );
+	}
+	if_var( &mut logical_not : e.get</LogicalNot/>() )
+	{
+		return GetMostRightExpressionInPrefixOperatorsChain( logical_not.expr.get_ref() );
+	}
+	if_var( &mut bitwise_not : e.get</BitwiseNot/>() )
+	{
+		return GetMostRightExpressionInPrefixOperatorsChain( bitwise_not.expr.get_ref() );
+	}
+	return e;
+}
+
+class SyntaxAnalyzer
+{
+public:
+	fn constructor( this'a', Lexems&'b lexems ) ' a <- b ';
+
+	fn DoAnalyzis( mut this ) : SyntaxAnalysisResult;
+
+private:
+	fn ParseExpression( mut this ) : Expression;
+	fn ParseTypeName( mut this ) : TypeName;
+	fn ParseFunction( mut this ) : Function;
+
+	fn ParseInitializer( mut this ) : Initializer;
+	fn ParseVariableInitializer( mut this ) : Initializer;
+
+	fn ParseBlock( mut this ) : Block;
+	fn ParseVariablesDeclaration( mut this ) : VariablesDeclaration;
+	fn ParseAutoVariableDeclaration( mut this ) : AutoVariableDeclaration;
+	fn ParseReturnOperator( mut this ) : ReturnOperator;
+	fn ParseIfOperator( mut this ) : IfOperator;
+	fn ParseWhileOperator( mut this ) : WhileOperator;
+	fn ParseBreakOperator( mut this ) : BreakOperator;
+	fn ParseContinueOperator( mut this ) : ContinueOperator;
+
+	fn ParseClass( mut this ) : Class;
+
+	fn NotEndOfFile( this ) : bool;
+	fn NextLexem( mut this );
+	fn PushErrorMessage( mut this );
+
+private:
+	ust::array_view_imut</Lexem/> it_;
+	SyntaxErrorMessages error_messages_;
+}
+
+fn SyntaxAnalyzer::constructor( this'a', Lexems&'b lexems ) ' a <- b '
+	( it_= lexems.range() )
+{
+}
+
+fn SyntaxAnalyzer::DoAnalyzis( mut this ) : SyntaxAnalysisResult
+{
+	var SyntaxAnalysisResult mut res;
+
+	while( NotEndOfFile() )
+	{
+		if( IsKeyword( it_.front(), Keyword::fn_ ) )
+		{
+			res.program_elements.push_back( ust::shared_ptr_final</Function/>( ParseFunction() ) );
+		}
+		else if( IsKeyword( it_.front(), Keyword::struct_ ) )
+		{
+			res.program_elements.push_back( ust::shared_ptr_final</Class/>( ParseClass() ) );
+		}
+		else
+		{
+			PushErrorMessage();
+			break;
+		}
+	}
+
+	res.error_messages= take(error_messages_);
+	return move(res);
+}
+
+fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
+{
+	var Expression mut root;
+
+	while( NotEndOfFile() )
+	{
+		var Expression mut current_node;
+		var Expression mut prefix_operator;
+
+		// Prefix operators.
+		while( NotEndOfFile() )
+		{
+			if( it_.front().lexem_type == Lexem::Type::Plus )
+			{
+				var UnaryPlus mut unary_plus{ .file_pos= it_.front().file_pos, .expr(Expression()) };
+				NextLexem();
+				GetMostRightExpressionInPrefixOperatorsChain( prefix_operator )= move(unary_plus);
+			}
+			else if( it_.front().lexem_type == Lexem::Type::Minus )
+			{
+				var UnaryMinus mut unary_minus{ .file_pos= it_.front().file_pos, .expr(Expression()) };
+				NextLexem();
+				GetMostRightExpressionInPrefixOperatorsChain( prefix_operator )= move(unary_minus);
+			}
+			else if( it_.front().lexem_type == Lexem::Type::Not )
+			{
+				var LogicalNot mut logical_not{ .file_pos= it_.front().file_pos, .expr(Expression()) };
+				NextLexem();
+				GetMostRightExpressionInPrefixOperatorsChain( prefix_operator )= move(logical_not);
+			}
+			else if( it_.front().lexem_type == Lexem::Type::Tilda )
+			{
+				var BitwiseNot mut bitwise_not{ .file_pos= it_.front().file_pos, .expr(Expression()) };
+				NextLexem();
+				GetMostRightExpressionInPrefixOperatorsChain( prefix_operator )= move(bitwise_not);
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		// Main component.
+		if( it_.front().lexem_type == Lexem::Type::Number )
+		{
+			var NumericConstant mut numeric_constant{ .file_pos= it_.front().file_pos };
+			halt if( it_.front().text.size() < typeinfo</NumberLexemData/>.size_of );
+
+			unsafe
+			{
+				ust::memory_copy( numeric_constant.num, it_.front().text.front(), typeinfo</NumberLexemData/>.size_of );
+			}
+
+			NextLexem();
+
+			current_node= move(numeric_constant);
+		}
+		else if( IsKeyword( it_.front(), Keyword::false_ ) )
+		{
+			var BooleanConstant mut boolean_constant{ .file_pos= it_.front().file_pos, .value= false };
+			NextLexem();
+			current_node= move(boolean_constant);
+		}
+		else if( IsKeyword( it_.front(), Keyword::true_  ) )
+		{
+			var BooleanConstant mut boolean_constant{ .file_pos= it_.front().file_pos, .value= true  };
+			NextLexem();
+			current_node= move(boolean_constant);
+		}
+		else if( it_.front().lexem_type == Lexem::Type::Identifier )
+		{
+			var ComplexName mut complex_name{ .file_pos= it_.front().file_pos, .name= it_.front().text };
+			NextLexem();
+			current_node= move(complex_name);
+		}
+		else if( it_.front().lexem_type == Lexem::Type::BracketLeft )
+		{
+			var BracketExpression mut bracket_expression{ .file_pos= it_.front().file_pos, .expr(Expression()) };
+			NextLexem();
+
+			bracket_expression.expr.get_ref()= ParseExpression();
+
+			if( it_.front().lexem_type != Lexem::Type::BracketRight )
+			{
+				PushErrorMessage();
+			}
+			NextLexem();
+
+			current_node= move(bracket_expression);
+		}
+		else
+		{
+			break;
+		}
+
+		// Postfix operators.
+		while( NotEndOfFile() )
+		{
+			if( it_.front().lexem_type == Lexem::Type::SquareBracketLeft )
+			{
+				var IndexationOperator mut indexation_operator
+				{
+					.file_pos= it_.front().file_pos,
+					.value(take(current_node)),
+					.index(Expression())
+				};
+				NextLexem();
+
+				indexation_operator.index.get_ref()= ParseExpression();
+
+				if( it_.front().lexem_type != Lexem::Type::SquareBracketRight )
+				{
+					PushErrorMessage();
+				}
+				NextLexem();
+
+				current_node= move(indexation_operator);
+			}
+			else if( it_.front().lexem_type == Lexem::Type::BracketLeft )
+			{
+				var CallOperator mut call_operator
+				{
+					.file_pos= it_.front().file_pos,
+					.value(take(current_node))
+				};
+				NextLexem();
+
+				while( NotEndOfFile() )
+				{
+					if( it_.front().lexem_type == Lexem::Type::BracketRight )
+					{
+						NextLexem();
+						break;
+					}
+
+					call_operator.args.push_back( ust::box</Expression/>( ParseExpression() ) );
+
+					if( it_.front().lexem_type== Lexem::Type::Comma )
+					{
+						NextLexem();
+						if( it_.front().lexem_type== Lexem::Type::BracketRight )
+						{
+							PushErrorMessage();
+						}
+					}
+					else if( it_.front().lexem_type == Lexem::Type::BracketRight )
+					{
+						NextLexem();
+						break;
+					}
+				}
+
+				current_node= move(call_operator);
+			}
+			else if( it_.front().lexem_type == Lexem::Type::Dot )
+			{
+				var MemberAccessOperator mut member_access_operator
+				{
+					.file_pos =it_.front().file_pos,
+					.value(take(current_node))
+				};
+				NextLexem();
+
+				if( it_.front().lexem_type != Lexem::Type::Identifier )
+				{
+					PushErrorMessage();
+				}
+				member_access_operator.member_name= it_.front().text;
+				NextLexem();
+
+				current_node= move(member_access_operator);
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		if( prefix_operator.get</EmptyVariant/>().empty() )
+		{
+			GetMostRightExpressionInPrefixOperatorsChain( prefix_operator )= take(current_node);
+			current_node= take(prefix_operator);
+		}
+
+		var bool is_binary_operator= IsBinaryOperator( it_.front() );
+
+		if( !root.get</EmptyVariant/>().empty() )
+		{
+			root= move(current_node);
+		}
+		else
+		{
+			// Place to existent tree last component.
+
+			// TODO - replace this call with loop.
+			auto &mut most_right_with_null= GetMostRightIncompleteBinaryOperatorInTree( root.get</BinaryOperator/>().get_ref() );
+			most_right_with_null.r.get_ref()= move(current_node);
+		}
+
+		if( is_binary_operator )
+		{
+			var BinaryOperator mut binary_operator
+			{
+				.file_pos= it_.front().file_pos,
+				.operator=LexemToBinaryOperator( it_.front() ),
+				.l( Expression() ),
+				.r( Expression() )
+			};
+			NextLexem();
+
+			if( !root.get</BinaryOperator/>().empty() )
+			{
+				if( GetBinaryOperatorPriority( binary_operator.operator ) <= GetBinaryOperatorPriority( root.get</BinaryOperator/>().get_ref().operator ) )
+				{
+					binary_operator.l.get_ref()= take(root);
+					root= move(binary_operator);
+				}
+				else
+				{
+					auto &mut dst= GetDeepestRightBinaryOperatorComponentWithNonLessPriority( root.get</BinaryOperator/>().get_ref(), binary_operator.operator );
+					binary_operator.l.get_ref()= take(dst.r.get_ref());
+					dst.r.get_ref()= move(binary_operator);
+				}
+			}
+			else
+			{
+				binary_operator.l.get_ref()= take(root);
+				root= move(binary_operator);
+			}
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	return move(root);
+}
+
+fn SyntaxAnalyzer::ParseTypeName( mut this ) : TypeName
+{
+	if( it_.front().lexem_type == Lexem::Type::Identifier )
+	{
+		var ComplexName mut complex_name{ .file_pos= it_.front().file_pos, .name= it_.front().text };
+		NextLexem();
+		return move(complex_name);
+	}
+	else if( it_.front().lexem_type == Lexem::Type::SquareBracketLeft )
+	{
+		var ArrayType mut array_type{ .file_pos= it_.front().file_pos };
+		NextLexem();
+
+		array_type.element_type= ParseTypeName();
+
+		if( it_.front().lexem_type != Lexem::Type::Comma )
+		{
+			PushErrorMessage();
+		}
+		NextLexem();
+
+		array_type.element_count= ParseExpression();
+
+		if( it_.front().lexem_type != Lexem::Type::SquareBracketRight )
+		{
+			PushErrorMessage();
+		}
+		NextLexem();
+
+		return ust::box</ArrayType/>( move(array_type) );
+	}
+	else
+	{
+		PushErrorMessage();
+		return TypeName();
+	}
+}
+
+fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
+{
+	var Function mut res{ .file_pos= it_.front().file_pos };
+
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage();
+		return Function();
+	}
+	res.name= it_.front().text;
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
+	{
+		PushErrorMessage();
+		return Function();
+	}
+	NextLexem();
+
+	while( NotEndOfFile() )
+	{
+		if( it_.front().lexem_type == Lexem::Type::BracketRight )
+		{
+			NextLexem();
+			break;
+		}
+
+		var FunctionType::Arg mut arg;
+		arg.file_pos= it_.front().file_pos;
+		arg.arg_type= ParseTypeName();
+
+		if( it_.front().lexem_type == Lexem::Type::And )
+		{
+			arg.reference_modifier= ReferenceModifier::Reference;
+			NextLexem();
+		}
+
+		if( IsKeyword( it_.front(), Keyword::mut_ ) )
+		{
+			arg.mutability_modifier= MutabilityModifier::Mutable;
+			NextLexem();
+		}
+		else if( IsKeyword( it_.front(), Keyword::imut_ ) )
+		{
+			arg.mutability_modifier= MutabilityModifier::Immutable;
+			NextLexem();
+		}
+
+		if( it_.front().lexem_type != Lexem::Type::Identifier )
+		{
+			PushErrorMessage();
+			return Function();
+		}
+		arg.name= it_.front().text;
+		NextLexem();
+
+		res.function_type.args.push_back( move(arg) );
+
+		if( it_.front().lexem_type == Lexem::Type::BracketRight )
+		{
+			NextLexem();
+			break;
+		}
+		if( it_.front().lexem_type == Lexem::Type::Comma )
+		{
+			NextLexem();
+
+			if( it_.front().lexem_type == Lexem::Type::BracketRight ) // Prevent ')' after ','
+			{
+				PushErrorMessage();
+				return Function();
+			}
+		}
+	}
+
+	if( it_.front().lexem_type == Lexem::Type::Colon )
+	{
+		NextLexem();
+		res.function_type.return_type= ParseTypeName();
+
+		if( it_.front().lexem_type == Lexem::Type::And )
+		{
+			NextLexem();
+			res.function_type.return_value_reference_modifier= ReferenceModifier::Reference;
+
+			if( IsKeyword( it_.front(), Keyword::mut_ ) )
+			{
+				res.function_type.return_value_mutability_modifier= MutabilityModifier::Mutable;
+				NextLexem();
+			}
+			else if( IsKeyword( it_.front(), Keyword::imut_ ) )
+			{
+				res.function_type.return_value_mutability_modifier= MutabilityModifier::Immutable;
+				NextLexem();
+			}
+		}
+	}
+
+	if( it_.front().lexem_type == Lexem::Type::BraceLeft )
+	{
+		res.block.reset( ParseBlock() );
+	}
+	else if( it_.front().lexem_type == Lexem::Type::Semicolon ){} // Prototype
+	else
+	{
+		PushErrorMessage();
+		return Function();
+	}
+
+	return move(res);
+}
+
+fn SyntaxAnalyzer::ParseInitializer( mut this ) : Initializer
+{
+	if( it_.front().lexem_type == Lexem::Type::Assignment )
+	{
+		NextLexem();
+		return ParseExpression();
+	}
+
+	return EmptyVariant();
+}
+
+fn SyntaxAnalyzer::ParseVariableInitializer( mut this ) : Initializer
+{
+	if( it_.front().lexem_type == Lexem::Type::Assignment )
+	{
+		NextLexem();
+		if( IsKeyword( it_.front(), Keyword::zero_init_ ) )
+		{
+			var ZeroInitializer mut zero_initializer{ .file_pos= it_.front().file_pos };
+			NextLexem();
+			return Initializer( move(zero_initializer) );
+		}
+		if( IsKeyword( it_.front(), Keyword::uninitialized_ ) )
+		{
+			var UninitializedInitializer mut uninitialized_initializer{ .file_pos= it_.front().file_pos };
+			NextLexem();
+			return move(uninitialized_initializer);
+		}
+		else
+		{
+			return ParseExpression();
+		}
+	}
+	else if(
+		it_.front().lexem_type == Lexem::Type::BracketLeft ||
+		it_.front().lexem_type == Lexem::Type::SquareBracketLeft ||
+		it_.front().lexem_type == Lexem::Type::BraceLeft )
+	{
+		return ParseInitializer();
+	}
+
+	return Initializer( EmptyVariant() );
+}
+
+fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
+{
+	var Block mut block{ .file_pos= it_.front().file_pos };
+
+	NextLexem(); // {
+
+	while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::BraceRight )
+	{
+		if( it_.front().lexem_type == Lexem::Type::BraceLeft )
+		{
+			block.elements.push_back( ust::box</Block/>(ParseBlock()) );
+		}
+		else if( IsKeyword( it_.front(), Keyword::var_ ) )
+		{
+			block.elements.push_back( ParseVariablesDeclaration() );
+		}
+		else if( IsKeyword( it_.front(), Keyword::auto_ ) )
+		{
+			block.elements.push_back( ParseAutoVariableDeclaration() );
+		}
+		else if( IsKeyword( it_.front(), Keyword::return_ ) )
+		{
+			block.elements.push_back( ParseReturnOperator() );
+		}
+		else if( IsKeyword( it_.front(), Keyword::if_ ) )
+		{
+			block.elements.push_back( ParseIfOperator() );
+		}
+		else if( IsKeyword( it_.front(), Keyword::while_ ) )
+		{
+			block.elements.push_back( ParseWhileOperator() );
+		}
+		else if( IsKeyword( it_.front(), Keyword::break_ ) )
+		{
+			block.elements.push_back( ParseBreakOperator() );
+		}
+		else if( IsKeyword( it_.front(), Keyword::continue_ ) )
+		{
+			block.elements.push_back( ParseContinueOperator() );
+		}
+		else
+		{
+			auto mut expr= ParseExpression();
+			if( it_.front().lexem_type == Lexem::Type::Assignment )
+			{
+				var AssignmentOperator mut assignment_operator{ .file_pos= it_.front().file_pos };
+				NextLexem();
+
+				assignment_operator.l= move(expr);
+				assignment_operator.r= ParseExpression();
+
+				block.elements.push_back( move(assignment_operator) );
+			}
+			else
+			{
+				block.elements.push_back( move(expr) );
+			}
+
+			if( it_.front().lexem_type == Lexem::Type::Semicolon )
+			{
+				NextLexem();
+			}
+			else
+			{
+				PushErrorMessage();
+			}
+		}
+	}
+
+	block.end_file_pos= it_.front().file_pos;
+
+	if( it_.front().lexem_type == Lexem::Type::BraceRight )
+	{
+		NextLexem();
+	}
+	else
+	{
+		PushErrorMessage();
+	}
+
+	return move(block);
+}
+
+fn SyntaxAnalyzer::ParseVariablesDeclaration( mut this ) : VariablesDeclaration
+{
+	var VariablesDeclaration mut variables_declaration{ .file_pos= it_.front().file_pos };
+
+	NextLexem(); // var
+
+	variables_declaration.t= ParseTypeName();
+
+	while( NotEndOfFile() )
+	{
+		var VariablesDeclaration::VariableEntry mut variable_entry;
+
+		if( it_.front().lexem_type == Lexem::Type::And )
+		{
+			variable_entry.reference_modifier= ReferenceModifier::Reference;
+			NextLexem();
+		}
+
+		if( IsKeyword( it_.front(), Keyword::mut_ ) )
+		{
+			variable_entry.mutability_modifier= MutabilityModifier::Mutable;
+			NextLexem();
+		}
+		else if( IsKeyword( it_.front(), Keyword::imut_ ) )
+		{
+			variable_entry.mutability_modifier= MutabilityModifier::Immutable;
+			NextLexem();
+		}
+		else if( IsKeyword( it_.front(), Keyword::constexpr_ ) )
+		{
+			variable_entry.mutability_modifier= MutabilityModifier::Constexpr;
+			NextLexem();
+		}
+
+		if( it_.front().lexem_type != Lexem::Type::Identifier )
+		{
+			PushErrorMessage();
+			break;
+		}
+		variable_entry.file_pos= it_.front().file_pos;
+		variable_entry.name= it_.front().text;
+		NextLexem();
+
+		variable_entry.initializer= ParseVariableInitializer();
+
+		variables_declaration.variables.push_back( move(variable_entry) );
+
+		if( it_.front().lexem_type == Lexem::Type::Comma )
+		{
+			NextLexem();
+			continue;
+		}
+		if( it_.front().lexem_type == Lexem::Type::Semicolon )
+		{
+			NextLexem();
+			break;
+		}
+	}
+
+	return move(variables_declaration);
+}
+
+fn SyntaxAnalyzer::ParseAutoVariableDeclaration( mut this ) : AutoVariableDeclaration
+{
+	var AutoVariableDeclaration mut variable_declaration;
+
+	NextLexem(); // auto
+
+	if( it_.front().lexem_type == Lexem::Type::And )
+	{
+		variable_declaration.reference_modifier= ReferenceModifier::Reference;
+		NextLexem();
+	}
+
+	if( IsKeyword( it_.front(), Keyword::mut_ ) )
+	{
+		variable_declaration.mutability_modifier= MutabilityModifier::Mutable;
+		NextLexem();
+	}
+	else if( IsKeyword( it_.front(), Keyword::imut_ ) )
+	{
+		variable_declaration.mutability_modifier= MutabilityModifier::Immutable;
+		NextLexem();
+	}
+	else if( IsKeyword( it_.front(), Keyword::constexpr_ ) )
+	{
+		variable_declaration.mutability_modifier= MutabilityModifier::Constexpr;
+		NextLexem();
+	}
+
+	variable_declaration.name= it_.front().text;
+	variable_declaration.file_pos= it_.front().file_pos;
+	NextLexem();
+
+	if( it_.front().lexem_type == Lexem::Type::Assignment )
+	{
+		NextLexem();
+	}
+	else
+	{
+		PushErrorMessage();
+	}
+
+	variable_declaration.initializer_expression= ParseExpression();
+
+	if( it_.front().lexem_type == Lexem::Type::Semicolon )
+	{
+		NextLexem();
+	}
+	else
+	{
+		PushErrorMessage();
+	}
+
+	return move(variable_declaration);
+}
+
+fn SyntaxAnalyzer::ParseReturnOperator( mut this ) : ReturnOperator
+{
+	var ReturnOperator mut res{ .file_pos= it_.front().file_pos };
+	NextLexem(); // return
+
+	res.expr= ParseExpression();
+
+	if( it_.front().lexem_type != Lexem::Type::Semicolon )
+	{
+		PushErrorMessage();
+		return ReturnOperator();
+	}
+	NextLexem();
+
+	return move(res);
+}
+
+fn SyntaxAnalyzer::ParseIfOperator( mut this ) : IfOperator
+{
+	auto start_file_pos= it_.front().file_pos;
+	NextLexem(); // if
+
+	var IfOperator mut if_operator{ .file_pos= start_file_pos };
+
+	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	auto mut if_expression= ParseExpression();
+
+	if( it_.front().lexem_type != Lexem::Type::BracketRight )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::BraceLeft )
+	{
+		PushErrorMessage();
+	}
+
+	var IfOperator::Branch mut first_branch
+	{
+		.file_pos= start_file_pos,
+		.condition= move(if_expression),
+		.block( ParseBlock() )
+	};
+
+	if_operator.branches.push_back( move(first_branch) );
+
+	while( NotEndOfFile() )
+	{
+		auto else_file_pos= it_.front().file_pos;
+		if( !IsKeyword( it_.front(), Keyword::else_ ) )
+		{
+			break;
+		}
+		NextLexem();
+
+		// Optional if.
+		var Expression mut condition;
+		if( IsKeyword( it_.front(), Keyword::if_ ) )
+		{
+			NextLexem();
+
+			if( it_.front().lexem_type != Lexem::Type::BracketLeft )
+			{
+				PushErrorMessage();
+			}
+
+			NextLexem();
+
+			condition= ParseExpression();
+
+			if( it_.front().lexem_type != Lexem::Type::BracketRight )
+			{
+				PushErrorMessage();
+			}
+
+			NextLexem();
+		}
+		// Block - common for "else" and "else if".
+		if( it_.front().lexem_type != Lexem::Type::BraceLeft )
+		{
+			PushErrorMessage();
+		}
+
+		var IfOperator::Branch mut branch
+		{
+			.file_pos= else_file_pos,
+			.condition= move(condition),
+			.block( ParseBlock() )
+		};
+		if_operator.branches.push_back( move(branch) );
+
+		if( !if_operator.branches.back().condition.get</EmptyVariant/>().empty() )
+		{
+			break;
+		}
+	}
+
+	return move(if_operator);
+}
+
+fn SyntaxAnalyzer::ParseWhileOperator( mut this ) : WhileOperator
+{
+	auto start_file_pos= it_.front().file_pos;
+	NextLexem(); // while
+
+	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	auto mut condition= ParseExpression();
+
+	if( it_.front().lexem_type != Lexem::Type::BracketRight )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::BraceLeft )
+	{
+		PushErrorMessage();
+	}
+
+	var WhileOperator mut while_operator
+	{
+		.file_pos= start_file_pos,
+		.condition= move(condition),
+		.block( ParseBlock() )
+	};
+	return move(while_operator);
+}
+
+fn SyntaxAnalyzer::ParseBreakOperator( mut this ) : BreakOperator
+{
+	var BreakOperator mut break_operator{ .file_pos= it_.front().file_pos };
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::Semicolon )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	return move(break_operator);
+}
+
+fn SyntaxAnalyzer::ParseContinueOperator( mut this ) : ContinueOperator
+{
+	var ContinueOperator mut continue_operator{ .file_pos= it_.front().file_pos };
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::Semicolon )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	return move(continue_operator);
+}
+
+fn SyntaxAnalyzer::ParseClass( mut this ) : Class
+{
+	var Class mut class_;
+
+	if( !IsKeyword( it_.front(), Keyword::struct_ ) )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage();
+	}
+	class_.file_pos= it_.front().file_pos;
+	class_.name= it_.front().text;
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::BraceLeft )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	while( NotEndOfFile() )
+	{
+		if( it_.front().lexem_type == Lexem::Type::BraceRight )
+		{
+			NextLexem();
+			break;
+		}
+		else
+		{
+			var ClassField mut class_field;
+			class_field.t= ParseTypeName();
+
+			if( it_.front().lexem_type == Lexem::Type::And )
+			{
+				class_field.reference_modifier= ReferenceModifier::Reference;
+				NextLexem();
+			}
+
+			if( IsKeyword( it_.front(), Keyword::mut_ ) )
+			{
+				class_field.mutability_modifier= MutabilityModifier::Mutable;
+				NextLexem();
+			}
+			else if( IsKeyword( it_.front(), Keyword::imut_ ) )
+			{
+				class_field.mutability_modifier= MutabilityModifier::Immutable;
+				NextLexem();
+			}
+
+			if( it_.front().lexem_type != Lexem::Type::Identifier )
+			{
+				PushErrorMessage();
+			}
+			class_field.file_pos= it_.front().file_pos;
+			class_field.name= it_.front().text;
+			NextLexem();
+
+			if( it_.front().lexem_type != Lexem::Type::Semicolon )
+			{
+				PushErrorMessage();
+			}
+			NextLexem();
+
+			class_.class_elements.push_back( ust::shared_ptr_final</ ClassField />( move(class_field) ) );
+		}
+	}
+
+	return move(class_);
+}
+
+fn SyntaxAnalyzer::NotEndOfFile( this ) : bool
+{
+	return it_.size() >= 2s;
+}
+
+fn SyntaxAnalyzer::NextLexem( mut this )
+{
+	if( NotEndOfFile() )
+	{
+		it_.drop_front();
+	}
+}
+
+fn SyntaxAnalyzer::PushErrorMessage( mut this )
+{
+	if( error_messages_.empty() || FilePos(error_messages_.back().file_pos) != it_.front().file_pos )
+	{
+		var SyntaxErrorMessage mut error_message
+		{
+			.file_pos= it_.front().file_pos,
+			.text= "Syntax error - unexpected lexem"
+		};
+		error_messages_.push_back( move(error_message) );
+	}
+}
+
+fn SyntaxAnalysis( Lexems& lexems ) : SyntaxAnalysisResult
+{
+	var SyntaxAnalyzer mut analyzer(lexems);
+	return analyzer.DoAnalyzis();
+}
+
+} // namespace Synt
+
+} // namespace U

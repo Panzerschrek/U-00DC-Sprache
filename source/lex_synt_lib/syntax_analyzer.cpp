@@ -64,6 +64,8 @@ const std::vector<ExpectedLexem> g_template_arguments_list_control_lexems
 
 int GetBinaryOperatorPriority( const BinaryOperatorType binary_operator )
 {
+	// If this changed, same code in "syntax_analyzer.u" must be changed too!
+
 	#define PRIORITY ( - __LINE__ )
 
 	switch( binary_operator )

@@ -1,0 +1,427 @@
+import "lexical_analyzer.uh"
+import "program_string.uh"
+
+
+namespace U
+{
+
+type Iterator= ust::array_view_imut</ char8 />;
+
+fn IsWhitespace( sprache_char c ) : bool
+{
+	return
+		c == " "c32 || c == "\f"c32 || c == "\n"c32 || c == "\r"c32 || c == "\t"c32 ||
+		c <= sprache_char(0x1Fu) || c == sprache_char(0x7Fu);
+}
+
+fn IsNewline( sprache_char c ) : bool
+{
+	return c == "\n"c32;
+}
+
+fn IsNumberStartChar( sprache_char c ) : bool
+{
+	return c >= "0"c32 && c <= "9"c32;
+}
+
+fn IsIdentifierStartChar( sprache_char c ) : bool
+{
+	// HACK - manually define allowed "letters".
+	// TODO - use something, like symbol category from unicode.
+	var u32 cc(c);
+	return
+		( c >= "a"c32 && c <= "z"c32 ) ||
+		( c >= "A"c32 && c <= "Z"c32 ) ||
+		( cc >= 0x0400u && cc <= 0x04FFu ) || // Cyrillic
+		( cc >= 0x0500u && cc <= 0x0527u ) || // Extended cyrillic
+		( cc >= 0x00C0u && cc <= 0x00D6u ) || // Additional latin symbols
+		( cc >= 0x00D8u && cc <= 0x00F6u ) || // Additional latin symbols
+		( cc >= 0x00F8u && cc <= 0x00FFu ) || // Additional latin symbols
+		( cc >= 0x0100u && cc <= 0x017Fu ) || // Extended latin part A
+		( cc >= 0x0180u && cc <= 0x024Fu ) ;  // Extended latin part B
+}
+
+fn IsIdentifierChar( sprache_char c ) : bool
+{
+	return IsIdentifierStartChar(c) || IsNumberStartChar(c) || c == "_"c32;
+}
+
+fn ParseIdentifier( Iterator &mut it ) : Lexem
+{
+	var Lexem mut result;
+	result.lexem_type= Lexem::Type::Identifier;
+
+	while( !it.empty() )
+	{
+		auto mut it_next= it;
+		auto c = ReadNextUTF8Char( it_next );
+		if( !IsIdentifierChar( c ) )
+		{
+			break;
+		}
+
+		PushCharToUTF8String( c, result.text );
+		it= it_next;
+	}
+
+	return result;
+}
+
+fn PowI( u64 base_, u64 pow ) : f64
+{
+	if( pow == 0u64 )
+	{
+		return 1.0;
+	}
+	if( pow == 1u64 )
+	{
+		return f64(base_);
+	}
+	if( pow == 2u64 )
+	{
+		return f64(base_ * base_);
+	}
+
+	auto half_pow= pow >> 1u;
+	auto mut res= PowI( base_, half_pow );
+	res= res * res;
+	if( half_pow * 2u64 != pow )
+	{
+		res*= f64(base_);
+	}
+	return res;
+}
+
+fn NumberFunc2( char8 c ) : u64
+{
+	if( c >= "0"c8 && c <= "1"c8 )
+	{
+		return u64(c) - u64("0"c8);
+	}
+	return u64(-1);
+}
+
+fn NumberFunc8( char8 c ) : u64
+{
+	if( c >= "0"c8 && c <= "7"c8 )
+	{
+		return u64(c) - u64("0"c8);
+	}
+	return u64(-1);
+}
+
+fn NumberFunc10( char8 c ) : u64
+{
+	if( c >= "0"c8 && c <= "9"c8 )
+	{
+		return u64(c) - u64("0"c8);
+	}
+	return -1u64;
+}
+
+fn NumberFunc16( char8 c ) : u64
+{
+	if( c >= "0"c8 && c <= "9"c8 )
+	{
+		return u64(c) - u64("0"c8);
+	}
+	if( c >= "a"c8 && c <= "f"c8 )
+	{
+		return u64(c) - u64("a"c8) + u64(10);
+	}
+	if( c >= "A"c8 && c <= "F"c8 )
+	{
+		return u64(c) - u64("A"c8) + u64(10);
+	}
+	return u64(-1);
+}
+
+fn ParseNumber( Iterator &mut it, LexicalErrorMessages &mut out_errors ) : Lexem
+{
+	var u64 base_(10);
+
+	var (fn (char8 c ) : u64 ) number_func= NumberFunc10;
+
+	// TODO - handle bin, oct, hex constants.
+
+	var u64 mut integer_part(0), mut fractional_part(0);
+	var i32 mut fractional_part_digits= 0, mut exponent= 0;
+	var bool mut has_fraction_point= false;
+
+	while( !it.empty() )
+	{
+		auto num= number_func( it.front() );
+		if( num == -1u64 )
+		{
+			break;
+		}
+
+		auto integer_part_before= integer_part;
+		integer_part= integer_part * base_ + num;
+		it.drop_front();
+
+		if( integer_part < integer_part_before ) // Check overflow
+		{
+			out_errors.push_back( "Integer part of numeric literal is too long" );
+			break;
+		}
+	}
+
+	if( !it.empty() && it.front() == "."c8 )
+	{
+		it.drop_front();
+		has_fraction_point= true;
+
+		while( !it.empty() )
+		{
+			var u64 num= number_func( it.front() );
+			if( num == -1u64 )
+			{
+				break;
+			}
+
+			var u64 fractional_part_before= fractional_part;
+			fractional_part= fractional_part * base_ + num;
+			++fractional_part_digits;
+			it.drop_front();
+
+			if( fractional_part < fractional_part_before ) // Check overflow
+			{
+				out_errors.push_back( "Fractional part of numeric literal is too long" );
+				break;
+			}
+		}
+	}
+
+	// TODO - parse exponent
+
+	var NumberLexemData mut result;
+
+	// For double calculate only powers > 0, because pow( base, positive ) is always integer and have exact double representation.
+	// pow( base, negative ) may have not exact double representation (1/10 for example).
+	// Example:
+	// 3 / 10 - right
+	// 3 * (1/10) - wrong
+	if( exponent >= 0 )
+	{
+		result.value_double= f64(integer_part) * PowI( base_, u64(exponent) );
+	}
+	else
+	{
+		result.value_double= f64(integer_part) / PowI( base_, u64(-exponent) );
+	}
+	if( exponent >= fractional_part_digits )
+	{
+		result.value_double+= f64(fractional_part) * PowI( base_, u64( exponent - fractional_part_digits ) );
+	}
+	else
+	{
+		result.value_double+= f64(fractional_part) / PowI( base_, u64( fractional_part_digits - exponent ) );
+	}
+
+	result.value_int= integer_part;
+
+	{
+		auto mut i= 0;
+		while( i < exponent )
+		{
+			result.value_int*= base_;
+			++i;
+		}
+		while( i < -exponent )
+		{
+			result.value_int/= base_;
+			++i;
+		}
+	}
+
+	auto mut fractional_part_corrected= fractional_part;
+
+	{
+		auto mut i= 0;
+		while( i < exponent - fractional_part_digits )
+		{
+			fractional_part_corrected*= base_;
+			++i;
+		}
+		while( i < fractional_part_digits - exponent )
+		{
+			fractional_part_corrected/= base_;
+			++i;
+		}
+	}
+
+	result.value_int+= fractional_part_corrected;
+	result.has_fractional_point= has_fraction_point;
+
+	if( IsIdentifierStartChar( GetUTF8FirstChar( it ) ) )
+	{
+		var Lexem type_suffix= ParseIdentifier( it );
+		if( type_suffix.text.size() >= typeinfo</ typeof(result.type_suffix) />.element_count )
+		{
+			out_errors.push_back( "Type suffix of numeric literal is too long" );
+		}
+
+		auto mut i= 0s;
+		while( i < ust::min( type_suffix.text.size(), typeinfo</ typeof(result.type_suffix) />.element_count ) )
+		{
+			result.type_suffix[i]= type_suffix.text[i];
+			++i;
+		}
+	}
+
+	var Lexem mut result_lexem;
+	result_lexem.lexem_type= Lexem::Type::Number;
+	result_lexem.text.resize( typeinfo</NumberLexemData/>.size_of, "\0"c8 );
+	unsafe{ ust::memory_copy( result_lexem.text.front(), result, typeinfo</NumberLexemData/>.size_of ); }
+	return result_lexem;
+}
+
+op Lexem::==( Lexem& l, Lexem& r ) : bool
+{
+	return l.text == r.text && l.file_pos == r.file_pos && l.lexem_type == r.lexem_type;
+}
+
+op Lexem::!=( Lexem& l, Lexem& r ) : bool
+{
+	return !(l == r );
+}
+
+
+fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnalysisResult
+{
+	var [ tup[ ust::string8, Lexem::Type ], 53 ]
+	c_fixed_lexems_table
+	[
+		[ "<<=", Lexem::Type::AssignShiftLeft  ],
+		[ ">>=", Lexem::Type::AssignShiftRight ],
+		[ "...", Lexem::Type::Ellipsis ],
+
+		[ "</", Lexem::Type::TemplateBracketLeft  ],
+		[ "/>", Lexem::Type::TemplateBracketRight ],
+		[ "<?", Lexem::Type::MacroBracketLeft  ],
+		[ "?>", Lexem::Type::MacroBracketRight ],
+		[ "::", Lexem::Type::Scope ],
+		[ "++", Lexem::Type::Increment ],
+		[ "--", Lexem::Type::Decrement ],
+		[ "==", Lexem::Type::CompareEqual ],
+		[ "!=", Lexem::Type::CompareNotEqual ],
+		[ "<=", Lexem::Type::CompareLessOrEqual ],
+		[ ">=", Lexem::Type::CompareGreaterOrEqual ],
+		[ "&&", Lexem::Type::Conjunction ],
+		[ "||", Lexem::Type::Disjunction ],
+		[ "+=", Lexem::Type::AssignAdd ],
+		[ "-=", Lexem::Type::AssignSub ],
+		[ "*=", Lexem::Type::AssignMul ],
+		[ "/=", Lexem::Type::AssignDiv ],
+		[ "%=", Lexem::Type::AssignRem ],
+		[ "&=", Lexem::Type::AssignAnd ],
+		[ "|=", Lexem::Type::AssignOr  ],
+		[ "^=", Lexem::Type::AssignXor ],
+		[ "<<", Lexem::Type::ShiftLeft  ],
+		[ ">>", Lexem::Type::ShiftRight ],
+		[ "<-", Lexem::Type::LeftArrow  ],
+		[ "->", Lexem::Type::RightArrow ],
+
+		[ "(", Lexem::Type::BracketLeft ],
+		[ ")", Lexem::Type::BracketRight ],
+		[ "[", Lexem::Type::SquareBracketLeft ],
+		[ "]", Lexem::Type::SquareBracketRight ],
+		[ "{", Lexem::Type::BraceLeft ],
+		[ "}", Lexem::Type::BraceRight ],
+		[ ",", Lexem::Type::Comma ],
+		[ ".", Lexem::Type::Dot ],
+		[ ":", Lexem::Type::Colon ],
+		[ ";", Lexem::Type::Semicolon ],
+		[ "?", Lexem::Type::Question ],
+		[ "=", Lexem::Type::Assignment ],
+		[ "+", Lexem::Type::Plus ],
+		[ "-", Lexem::Type::Minus ],
+		[ "*", Lexem::Type::Star ],
+		[ "/", Lexem::Type::Slash ],
+		[ "%", Lexem::Type::Percent ],
+		[ "<", Lexem::Type::CompareLess ],
+		[ ">", Lexem::Type::CompareGreater ],
+		[ "&", Lexem::Type::And ],
+		[ "|", Lexem::Type::Or ],
+		[ "^", Lexem::Type::Xor ],
+		[ "~", Lexem::Type::Tilda ],
+		[ "!", Lexem::Type::Not ],
+		[ "'", Lexem::Type::Apostrophe ],
+	];
+	auto c_max_fixed_lexem_size= 3s;
+
+	var LexicalAnalysisResult mut result;
+
+	auto mut it= program_text;
+
+	var u32 mut line= 1u; // Count lines from "1", in human-readable format.
+	var u32 mut column= 0u;
+
+	var ust::string8 mut fixed_lexem_str;
+
+	while( !it.empty() )
+	{
+		auto c= GetUTF8FirstChar(it);
+
+		var Lexem mut lexem;
+
+		// single line comment
+		if( c == "/"c32 && it.size() >= 2s && it[1s] == "/"c8 )
+		{
+			while( !it.empty()  && !IsNewline(sprache_char(it.front())) )
+			{
+				it.drop_front();
+			}
+
+			continue;
+		}
+		else if( IsNewline(c) )
+		{
+			it.drop_front();
+			++line;
+			column= 0u;
+			continue;
+		}
+		else if( IsWhitespace(c) )
+		{
+			it.drop_front();
+			++column;
+			continue;
+		}
+		else if( IsIdentifierStartChar(c) )
+		{
+			lexem= ParseIdentifier(it);
+		}
+		else if( IsNumberStartChar(c) )
+		{
+			lexem= ParseNumber( it, result.error_messages );
+		}
+		else
+		{
+			foreach( &l : c_fixed_lexems_table )
+			{
+				if( l[0].size() <= it.size() && l[0] == it.subrange( 0s, l[0].size() ) )
+				{
+					lexem.lexem_type= l[1];
+					it= it.subrange( l[0].size(), it.size() );
+					break;
+				}
+			}
+		}
+
+		if( lexem.lexem_type != Lexem::Type::None )
+		{
+			lexem.file_pos= FilePos( 0u, line, column );
+			result.lexems.push_back(lexem);
+		}
+		else
+		{
+			it.drop_front();
+		}
+	}
+
+	return result;
+}
+
+} // namespace U

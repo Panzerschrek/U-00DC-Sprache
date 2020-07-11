@@ -1,0 +1,202 @@
+// This file contains prototypes of functions defined in llvm c interface.
+// This prototypes is written manually. If llvm updated, all this function should be revised.
+
+// Use enums for replacement of pointers, because Ü have no pointers.
+?macro <? DefineLLVMRef:namespace ?name:ident ?>
+	->
+<?
+	enum ?name : size_type { Null }
+?>
+
+// Types
+
+DefineLLVMRef LLVMContextRef
+DefineLLVMRef LLVMModuleRef
+DefineLLVMRef LLVMBuilderRef
+DefineLLVMRef LLVMTypeRef
+DefineLLVMRef LLVMValueRef
+DefineLLVMRef LLVMBasicBlockRef
+DefineLLVMRef LLVMTargetDataRef // Actually this is DataLayout
+DefineLLVMRef LLVMAttributeRef
+
+type NullTerminatedString= char8;
+
+enum LLVMBool : i32
+{
+	False,
+	True,
+}
+
+enum LLVMIntPredicate : u32
+{
+	Dummy00, Dymmy01, Dummy02, Dummy03, Dummy04, Dummy05, Dummy06, Dummy07,
+	Dummy08, Dymmy09, Dummy0A, Dummy0B, Dummy0C, Dummy0D, Dummy0E, Dummy0F,
+	Dummy10, Dymmy11, Dummy12, Dummy13, Dummy14, Dummy15, Dummy16, Dummy17,
+	Dummy18, Dymmy19, Dummy1A, Dummy1B, Dummy1C, Dummy1D, Dummy1E, Dummy1F,
+
+	// Shoud start with 32
+	EQ      , /**< equal */
+	NE,      /**< not equal */
+	UGT,     /**< unsigned greater than */
+	UGE,     /**< unsigned greater or equal */
+	ULT,     /**< unsigned less than */
+	ULE,     /**< unsigned less or equal */
+	SGT,     /**< signed greater than */
+	SGE,     /**< signed greater or equal */
+	SLT,     /**< signed less than */
+	SLE      /**< signed less or equal */
+}
+
+static_assert( u32(LLVMIntPredicate::EQ) == 32u );
+
+enum LLVMRealPredicate : u32
+{
+	PredicateFalse, /**< Always false (always folded) */
+	OEQ,            /**< True if ordered and equal */
+	OGT,            /**< True if ordered and greater than */
+	OGE,            /**< True if ordered and greater than or equal */
+	OLT,            /**< True if ordered and less than */
+	OLE,            /**< True if ordered and less than or equal */
+	ONE,            /**< True if ordered and operands are unequal */
+	ORD,            /**< True if ordered (no nans) */
+	UNO,            /**< True if unordered: isnan(X) | isnan(Y) */
+	UEQ,            /**< True if unordered or equal */
+	UGT,            /**< True if unordered or greater than */
+	UGE,            /**< True if unordered, greater than, or equal */
+	ULT,            /**< True if unordered or less than */
+	ULE,            /**< True if unordered, less than, or equal */
+	UNE,            /**< True if unordered or not equal */
+	PredicateTrue   /**< Always true (always folded) */
+}
+
+type LLVMAttributeIndex= u32;
+auto LLVMAttributeReturnIndex= 0u;
+auto LLVMAttributeFunctionIndex= ~0u;
+auto LLVMAttributeFirstParamIndex= 1u;
+
+// Functions
+
+// Context
+fn nomangle LLVMContextCreate() unsafe : LLVMContextRef;
+fn nomangle LLVMContextDispose(LLVMContextRef C);
+
+// Module
+fn nomangle LLVMModuleCreateWithName(NullTerminatedString& ModuleID) unsafe : LLVMModuleRef;
+fn nomangle LLVMDisposeModule(LLVMModuleRef M) unsafe;
+fn nomangle LLVMSetModuleDataLayout(LLVMModuleRef M, LLVMTargetDataRef DL) unsafe;
+
+// Type
+fn nomangle LLVMInt1TypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
+fn nomangle LLVMInt8TypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
+fn nomangle LLVMInt16TypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
+fn nomangle LLVMInt32TypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
+fn nomangle LLVMInt64TypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
+fn nomangle LLVMInt128TypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
+fn nomangle LLVMFloatTypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
+fn nomangle LLVMDoubleTypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
+fn nomangle LLVMVoidTypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
+fn nomangle LLVMIntPtrTypeInContext(LLVMContextRef C, LLVMTargetDataRef TD) unsafe : LLVMTypeRef;
+
+fn nomangle LLVMGetIntTypeWidth(LLVMTypeRef IntegerTy) unsafe : u32;
+
+fn nomangle LLVMArrayType(LLVMTypeRef ElementType, u32 ElementCount) unsafe : LLVMTypeRef;
+
+fn nomangle LLVMFunctionType(
+	LLVMTypeRef ReturnType,
+	LLVMTypeRef &ParamTypes, u32 ParamCount,
+	LLVMBool IsVarArg) unsafe : LLVMTypeRef;
+
+fn nomangle LLVMPointerType(LLVMTypeRef ElementType, u32 AddressSpace) unsafe : LLVMTypeRef;
+
+fn nomangle LLVMStructCreateNamed(LLVMContextRef C, NullTerminatedString& Name) unsafe : LLVMTypeRef;
+fn nomangle LLVMStructSetBody(LLVMTypeRef StructTy, LLVMTypeRef& ElementTypes, u32 ElementCount, LLVMBool Packed) unsafe;
+
+// Value
+
+fn nomangle LLVMSetValueName2(LLVMValueRef Val, char8& Name, size_type NameLen) unsafe;
+
+// Global value
+
+fn nomangle LLVMAddFunction(LLVMModuleRef M, NullTerminatedString& Name, LLVMTypeRef FunctionTy) unsafe : LLVMValueRef;
+
+// Function
+
+fn nomangle LLVMGetParam(LLVMValueRef Fn, u32 Index) unsafe : LLVMValueRef;
+
+// Basic block
+
+fn nomangle LLVMCreateBasicBlockInContext(LLVMContextRef C, NullTerminatedString& Name) unsafe : LLVMBasicBlockRef;
+fn nomangle LLVMAppendBasicBlockInContext(LLVMContextRef C, LLVMValueRef Fn, NullTerminatedString& Name) unsafe : LLVMBasicBlockRef;
+fn nomangle LLVMAppendExistingBasicBlock(LLVMValueRef Fn, LLVMBasicBlockRef BB) unsafe;
+fn nomangle LLVMDeleteBasicBlock(LLVMBasicBlockRef BB) unsafe;
+
+// Module helpers
+
+fn nomangle LLVMDumpModule(LLVMModuleRef M) unsafe;
+
+
+// IRBuilder
+
+fn nomangle LLVMCreateBuilderInContext(LLVMContextRef C) unsafe : LLVMBuilderRef;
+fn nomangle LLVMDisposeBuilder(LLVMBuilderRef Builder) unsafe;
+
+fn nomangle LLVMPositionBuilderAtEnd(LLVMBuilderRef Builder, LLVMBasicBlockRef Block) unsafe;
+fn nomangle LLVMInsertExistingBasicBlockAfterInsertBlock(LLVMBuilderRef Builder, LLVMBasicBlockRef BB) unsafe;
+
+// Constants
+fn nomangle LLVMConstInt(LLVMTypeRef IntTy, u64 N, LLVMBool SignExtend) unsafe : LLVMValueRef;
+fn nomangle LLVMConstReal(LLVMTypeRef RealTy, f64 N) unsafe : LLVMValueRef;
+fn nomangle LLVMGetUndef(LLVMTypeRef Ty) unsafe : LLVMValueRef;
+
+// Instructions
+
+fn nomangle LLVMBuildBr(LLVMBuilderRef Builder, LLVMBasicBlockRef Dest) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildCondBr(LLVMBuilderRef Builder, LLVMValueRef If, LLVMBasicBlockRef Then, LLVMBasicBlockRef Else) unsafe : LLVMValueRef;
+
+fn nomangle LLVMBuildRetVoid(LLVMBuilderRef Builder) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildRet(LLVMBuilderRef Builder, LLVMValueRef V) unsafe : LLVMValueRef;
+
+fn nomangle LLVMBuildLoad(LLVMBuilderRef Builder, LLVMValueRef PointerVal, NullTerminatedString& name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildStore(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMValueRef Ptr) unsafe : LLVMValueRef;
+
+fn nomangle LLVMBuildAlloca(LLVMBuilderRef Builder, LLVMTypeRef Ty, NullTerminatedString& name) unsafe : LLVMValueRef;
+
+fn nomangle LLVMBuildGEP(LLVMBuilderRef BBuilder, LLVMValueRef Pointer, LLVMValueRef& Indices, u32 NumIndices, NullTerminatedString& Name) unsafe : LLVMValueRef;
+
+fn nomangle LLVMBuildCall(LLVMBuilderRef Builder, LLVMValueRef Fn, LLVMValueRef& Args, u32 NumArgs, NullTerminatedString& Name) unsafe: LLVMValueRef;
+
+// Arithmetic
+fn nomangle LLVMBuildAdd(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildSub(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildMul(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildUDiv(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildSDiv(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildURem(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildSRem(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+
+// Binary bitwise operators
+fn nomangle LLVMBuildAnd(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildOr(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildXor(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+
+// Floating point arithmetic
+fn nomangle LLVMBuildFAdd(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildFSub(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildFMul(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildFDiv(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildFRem(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+
+// Compare
+fn nomangle LLVMBuildICmp(LLVMBuilderRef Builder, LLVMIntPredicate Op, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildFCmp(LLVMBuilderRef Builder, LLVMRealPredicate Op, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+
+// Unary arithmetic
+fn nomangle LLVMBuildNeg(LLVMBuilderRef Builder, LLVMValueRef V, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildFNeg(LLVMBuilderRef Builder, LLVMValueRef V, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildNot(LLVMBuilderRef Builder, LLVMValueRef V, NullTerminatedString& Name) unsafe : LLVMValueRef;
+
+// Attributes
+fn nomangle LLVMCreateEnumAttribute(LLVMContextRef C, u32 KindID, u64 Val) unsafe : LLVMAttributeRef;
+fn nomangle LLVMGetEnumAttributeKindForName(char8& Name, size_type SLen) unsafe : u32;
+
+fn nomangle LLVMAddAttributeAtIndex(LLVMValueRef F, LLVMAttributeIndex Idx, LLVMAttributeRef A);

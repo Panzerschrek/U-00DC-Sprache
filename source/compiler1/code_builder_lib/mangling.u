@@ -1,0 +1,60 @@
+import "/string_conversions.u"
+import "mangling.uh"
+
+namespace U
+{
+
+fn MangleType( Type& t ) : ust::string8
+{
+	if_var( fundamental_type : t.GetFundamentalType() )
+	{
+		auto f= fundamental_type.fundamental_type;
+		if( f == U_FundamentalType::InvalidType ){ return ust::string8(); }
+		if( f == U_FundamentalType::LastType	){ return ust::string8(		); }
+		if( f == U_FundamentalType::void_		){ return ust::string8( "v"	); }
+		if( f == U_FundamentalType::bool_		){ return ust::string8( "b"	); }
+		if( f == U_FundamentalType::i8_			){ return ust::string8( "a"	); } // C++ signed char
+		if( f == U_FundamentalType::u8_			){ return ust::string8( "h"	); } // C++ unsigned char
+		if( f == U_FundamentalType::i16_		){ return ust::string8( "s"	); }
+		if( f == U_FundamentalType::u16_		){ return ust::string8( "t"	); }
+		if( f == U_FundamentalType::i32_		){ return ust::string8( "i"	); }
+		if( f == U_FundamentalType::u32_		){ return ust::string8( "j"	); }
+		if( f == U_FundamentalType::i64_		){ return ust::string8( "x"	); }
+		if( f == U_FundamentalType::u64_		){ return ust::string8( "y"	); }
+		if( f == U_FundamentalType::i128_		){ return ust::string8( "n"	); }
+		if( f == U_FundamentalType::u128_		){ return ust::string8( "o"	); }
+		if( f == U_FundamentalType::f32_		){ return ust::string8( "f"	); }
+		if( f == U_FundamentalType::f64_		){ return ust::string8( "d"	); }
+		if( f == U_FundamentalType::char8_		){ return ust::string8( "c"	); }
+		if( f == U_FundamentalType::char16_		){ return ust::string8( "Ds"); }
+		if( f == U_FundamentalType::char32_		){ return ust::string8( "Di"); }
+	}
+
+	return ust::string8();
+}
+
+fn MangleFunction( ust::string8& name, FunctionType& function_type ) : ust::string8
+{
+	var ust::string8 mut res;
+	res+= "_Z";
+
+	res+= ust::to_string8( name.size() );
+	res+= name;
+
+	if( function_type.args.empty() )
+	{
+		res+= "v";
+	}
+	else
+	{
+		foreach( &arg : function_type.args )
+		{
+			res+= MangleType( arg.arg_type.get_ref() );
+		}
+	}
+
+	res.push_back(0c8);
+	return move(res);
+}
+
+} // namespace U

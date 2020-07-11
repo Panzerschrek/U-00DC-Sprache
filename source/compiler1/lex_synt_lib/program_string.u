@@ -1,0 +1,125 @@
+import "program_string.uh"
+
+namespace U
+{
+
+fn ReadNextUTF8Char( ust::array_view_imut</ char8 /> &mut start ) : sprache_char
+{
+	// c_bit_masks[4] - menas save first 4 bits
+	var [ u32, 9 ] constexpr c_bit_masks
+	[
+		-1u + (1u << 0u),
+		-1u + (1u << 1u),
+		-1u + (1u << 2u),
+		-1u + (1u << 3u),
+		-1u + (1u << 4u),
+		-1u + (1u << 5u),
+		-1u + (1u << 6u),
+		-1u + (1u << 7u),
+		-1u + (1u << 8u),
+	];
+
+	var u32 c( start.front() );
+	var sprache_char mut code(0);
+
+	if( ( c & 0b10000000u ) == 0u )
+	{
+		code= sprache_char(c);
+		start.drop_front();
+	}
+	else if( ( c & 0b11100000u ) == 0b11000000u )
+	{
+		if( start.size() < 2s )
+		{
+			return code;
+		}
+
+		code= sprache_char(
+			( (u32(start[0s]) & c_bit_masks[5]) << 6u ) |
+			( (u32(start[1s]) & c_bit_masks[6]) << 0u ) );
+
+		start.drop_front();
+		start.drop_front();
+	}
+	else if( ( c & 0b11110000u ) == 0b11100000u )
+	{
+		if( start.size() < 3s )
+		{
+			return code;
+		}
+
+		code= sprache_char(
+			( (u32(start[0s]) & c_bit_masks[4]) << 12u ) |
+			( (u32(start[1s]) & c_bit_masks[6]) <<  6u ) |
+			( (u32(start[2s]) & c_bit_masks[6]) <<  0u ) );
+
+		start.drop_front();
+		start.drop_front();
+		start.drop_front();
+	}
+	else if( ( c & 0b11111000u ) == 0b11110000u )
+	{
+		if( start.size() < 4s )
+		{
+			return code;
+		}
+
+		code= sprache_char(
+			( (u32(start[0s]) & c_bit_masks[3]) << 18u ) |
+			( (u32(start[1s]) & c_bit_masks[6]) << 12u ) |
+			( (u32(start[2s]) & c_bit_masks[6]) <<  6u ) |
+			( (u32(start[3s]) & c_bit_masks[6]) <<  0u ) );
+
+		// TODO - add method for dropping N elements in random_access_range
+		start.drop_front();
+		start.drop_front();
+		start.drop_front();
+		start.drop_front();
+	}
+	else
+	{
+		// Codes above unicode range - wtf?
+		start.drop_front();
+	}
+
+	return code;
+}
+
+fn GetUTF8FirstChar( ust::array_view_imut</ char8 /> start ) : sprache_char
+{
+	auto mut range_copy= start;
+	return ReadNextUTF8Char( range_copy );
+}
+
+fn PushCharToUTF8String( sprache_char c, ust::string8 &mut str )
+{
+	var u32 cc(c);
+	if( cc <= 0x7Fu )
+	{
+		str.push_back( char8(c) );
+	}
+	else if( cc <= 0x7FFu )
+	{
+		str.push_back( char8( 0b11000000u | (cc >>  6u) ) );
+		str.push_back( char8( 0b10000000u | (cc &  63u) ) );
+	}
+	else if( cc <= 0xFFFFu )
+	{
+		str.push_back( char8( 0b11100000u |  (cc >> 12u) ) );
+		str.push_back( char8( 0b10000000u | ((cc >> 6u) & 63u) ) );
+		str.push_back( char8( 0b10000000u |  (cc  & 63u) ) );
+	}
+	else if( cc <= 0x10FFFFu )
+	{
+		str.push_back( char8( 0b11110000u | ((cc >> 18u) &  7u) ) );
+		str.push_back( char8( 0b10000000u | ((cc >> 12u) & 63u) ) );
+		str.push_back( char8( 0b10000000u | ((cc >>  6u) & 63u) ) );
+		str.push_back( char8( 0b10000000u |  (cc  & 63u) ) );
+	}
+	else
+	{
+		// Codes above unicode range - wtf?
+	}
+}
+
+} // namespace U

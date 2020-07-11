@@ -1,0 +1,32 @@
+import "error_reporting.uh"
+import "code_builder.uh"
+
+namespace U
+{
+
+fn CodeBuilder::NamesScopeBuild( this, NamesScopePtr& names_scope_ptr )
+{
+	auto lock= names_scope_ptr.lock_imut();
+	auto& names_scope= lock.get_ref();
+
+	foreach( &el : names_scope.GetInternalContainer() )
+	{
+		auto functions_set= el.value().Get</ NamesScopeFunctionsSet />();
+		if( !functions_set.empty() )
+		{
+			NamesScopeBuildElement( names_scope_ptr, ust::to_non_nullable( functions_set ) );
+		}
+	}
+}
+
+fn CodeBuilder::NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/>& functions_set )
+{
+	BuildFunctionsSet( names_scope_ptr, functions_set, true );
+}
+
+fn CodeBuilder::NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</ClassType/>& class_type )
+{
+	BuildClass( names_scope_ptr, class_type );
+}
+
+} // namespace U

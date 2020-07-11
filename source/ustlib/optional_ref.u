@@ -100,4 +100,6 @@ private:
 	ptr_type ptr_;
 }
 
+// TODO - add typedefs for mut/imut ref
+
 } // namespace ust

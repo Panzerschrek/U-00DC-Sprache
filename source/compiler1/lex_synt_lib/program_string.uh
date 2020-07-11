@@ -1,0 +1,11 @@
+import "/string.u"
+
+namespace U
+{
+
+type sprache_char = char32;
+fn ReadNextUTF8Char( ust::array_view_imut</ char8 /> &mut start ) : sprache_char;
+fn GetUTF8FirstChar( ust::array_view_imut</ char8 /> start ) : sprache_char;
+fn PushCharToUTF8String( sprache_char c, ust::string8 &mut str );
+
+} // namespace U

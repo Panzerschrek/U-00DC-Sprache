@@ -1,0 +1,28 @@
+import "/string.u"
+import "/lex_synt_lib/file_pos.uh"
+
+namespace U
+{
+
+enum CodeBuilderErrorCode
+{
+
+@CODE_BUILDER_ERRORS_LIST@
+
+}
+
+fn GetErrorMessagePattern( CodeBuilderErrorCode e ) : ust::array_view_imut</ char8 />
+{
+	@ERROR_CODE_TO_STRING_LIST@
+
+	halt;
+}
+
+struct CodeBuilderError
+{
+	CodeBuilderErrorCode code;
+	FilePos file_pos;
+	ust::string8 text;
+}
+
+} // namespace U

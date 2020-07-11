@@ -1,0 +1,28 @@
+import "lexical_analyzer.uh"
+import "syntax_elements.uh"
+
+namespace U
+{
+
+namespace Synt
+{
+
+struct SyntaxErrorMessage
+{
+	ust::string8 text;
+	FilePos file_pos;
+}
+
+type SyntaxErrorMessages= ust::vector</SyntaxErrorMessage/>;
+
+struct SyntaxAnalysisResult
+{
+	ProgramElements program_elements;
+	SyntaxErrorMessages error_messages;
+}
+
+fn SyntaxAnalysis( Lexems& lexems ) : SyntaxAnalysisResult;
+
+} // namespace Synt
+
+} // namespace U

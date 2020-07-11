@@ -1,0 +1,100 @@
+import "../lex_synt_lib/keywords.uh"
+import "lang_types.uh"
+
+namespace U
+{
+
+fn IsUnsignedInteger( U_FundamentalType t ) : bool
+{
+	return
+		t == U_FundamentalType::u8_  ||
+		t == U_FundamentalType::u16_ ||
+		t == U_FundamentalType::u32_ ||
+		t == U_FundamentalType::u64_ ||
+		t == U_FundamentalType::u128_;
+}
+
+fn IsSignedInteger( U_FundamentalType t ) : bool
+{
+	return
+		t == U_FundamentalType::i8_  ||
+		t == U_FundamentalType::i16_ ||
+		t == U_FundamentalType::i32_ ||
+		t == U_FundamentalType::i64_ ||
+		t == U_FundamentalType::i128_;
+}
+
+fn IsInteger( U_FundamentalType t ) : bool
+{
+	return IsSignedInteger( t ) || IsUnsignedInteger( t );
+}
+
+fn IsFloatingPoint( U_FundamentalType t ) : bool
+{
+	return
+		t == U_FundamentalType::f32_ ||
+		t == U_FundamentalType::f64_;
+}
+
+fn IsNumericType( U_FundamentalType t ) : bool
+{
+	return IsInteger( t ) || IsFloatingPoint( t );
+}
+
+fn IsChar( U_FundamentalType t ) : bool
+{
+	return
+		t == U_FundamentalType::char8_  ||
+		t == U_FundamentalType::char16_ ||
+		t == U_FundamentalType::char32_;
+}
+
+fn GetFundamentalTypeName( U_FundamentalType t ) : ust::array_view_imut</ char8 />
+{
+	if( t == U_FundamentalType::InvalidType	) { return ust::array_view_imut</ char8 />("");}
+	if( t == U_FundamentalType::void_		) { return KeywordToString( Keyword::void_	); }
+	if( t == U_FundamentalType::bool_		) { return KeywordToString( Keyword::bool_	); }
+	if( t == U_FundamentalType::i8_			) { return KeywordToString( Keyword::i8_	); }
+	if( t == U_FundamentalType::u8_			) { return KeywordToString( Keyword::u8_	); }
+	if( t == U_FundamentalType::i16_		) { return KeywordToString( Keyword::i16_	); }
+	if( t == U_FundamentalType::u16_		) { return KeywordToString( Keyword::u16_	); }
+	if( t == U_FundamentalType::i32_		) { return KeywordToString( Keyword::i32_	); }
+	if( t == U_FundamentalType::u32_		) { return KeywordToString( Keyword::u32_	); }
+	if( t == U_FundamentalType::i64_		) { return KeywordToString( Keyword::i64_	); }
+	if( t == U_FundamentalType::u64_		) { return KeywordToString( Keyword::u64_	); }
+	if( t == U_FundamentalType::i128_		) { return KeywordToString( Keyword::i128_	); }
+	if( t == U_FundamentalType::u128_		) { return KeywordToString( Keyword::u128_	); }
+	if( t == U_FundamentalType::f32_		) { return KeywordToString( Keyword::f32_	); }
+	if( t == U_FundamentalType::f64_		) { return KeywordToString( Keyword::f64_	); }
+	if( t == U_FundamentalType::char8_		) { return KeywordToString( Keyword::char8_	); }
+	if( t == U_FundamentalType::char16_		) { return KeywordToString( Keyword::char16_); }
+	if( t == U_FundamentalType::char32_		) { return KeywordToString( Keyword::char32_); }
+
+	halt;
+}
+
+fn GetFundamentalTypeByName( ust::array_view_imut</ char8 /> name ) : U_FundamentalType
+{
+	var ust::string8 name_str= name;
+	if( name_str == KeywordToString( Keyword::void_ ) ) { return U_FundamentalType::void_; }
+	if( name_str == KeywordToString( Keyword::bool_ ) ) { return U_FundamentalType::bool_; }
+	if( name_str == KeywordToString( Keyword::i8_   ) ) { return U_FundamentalType::i8_  ; }
+	if( name_str == KeywordToString( Keyword::u8_   ) ) { return U_FundamentalType::u8_  ; }
+	if( name_str == KeywordToString( Keyword::i16_  ) ) { return U_FundamentalType::i16_ ; }
+	if( name_str == KeywordToString( Keyword::u16_  ) ) { return U_FundamentalType::u16_ ; }
+	if( name_str == KeywordToString( Keyword::i32_  ) ) { return U_FundamentalType::i32_ ; }
+	if( name_str == KeywordToString( Keyword::u32_  ) ) { return U_FundamentalType::u32_ ; }
+	if( name_str == KeywordToString( Keyword::i64_  ) ) { return U_FundamentalType::i64_ ; }
+	if( name_str == KeywordToString( Keyword::u64_  ) ) { return U_FundamentalType::u64_ ; }
+	if( name_str == KeywordToString( Keyword::i128_ ) ) { return U_FundamentalType::i128_; }
+	if( name_str == KeywordToString( Keyword::u128_ ) ) { return U_FundamentalType::u128_; }
+	if( name_str == KeywordToString( Keyword::f32_ ) ) { return U_FundamentalType::f32_; }
+	if( name_str == KeywordToString( Keyword::f64_ ) ) { return U_FundamentalType::f64_; }
+	if( name_str == KeywordToString( Keyword::char8_ )  ) { return U_FundamentalType::char8_ ; }
+	if( name_str == KeywordToString( Keyword::char16_ ) ) { return U_FundamentalType::char16_; }
+	if( name_str == KeywordToString( Keyword::char32_ ) ) { return U_FundamentalType::char32_; }
+
+	return U_FundamentalType::InvalidType;
+}
+
+} // namespace U

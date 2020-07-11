@@ -9,6 +9,7 @@ option( U_BUILD_PY_TESTS "Enable compilation of py_tests" YES )
 option( U_BUILD_CPP_HEADER_CONVERTER "Enable compilation of c++ header converter (clang required)" YES )
 option( U_BUILD_UNICODE_FILE_NAMES_TEST "Enable compilation of unicode filenames test (such test may not work correctly is some environmens)" YES )
 option( U_BUILD_DOCS "Enable Ǖ docs (Sphinx Required)" YES )
+option( U_BUILD_COMPILER1 "Build compiler1 (written on Ǖ)" YES)
 
 if( U_BUILD_COMPILER )
 	message( STATUS "Build compiler" )
@@ -210,14 +211,34 @@ if( REALLY_BUILD_CPP_HEADER_CONVERTER )
 	target_include_directories( CppHeaderConverter PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/llvm/tools/clang/include )
 endif()
 
-#
-# Tests
-#
+
 if( U_BUILD_TESTS )
+
+	#
+	# C++ tests
+	#
 	file( GLOB TESTS_SOURCES "tests/cpp_tests/*" )
-	add_executable( Tests ${TESTS_SOURCES} )
-	target_link_libraries( Tests CodeBuilderLib ${LLVM_LIBS_FOR_TESTS} )
+	add_library( TestsLib ${TESTS_SOURCES} )
+	target_link_libraries( TestsLib PUBLIC ${LLVM_LIBS_FOR_TESTS} )
+
+	# Hack! Force use static variables with initializers with tests registration
+	set( TESTS_LIB_WRAPPED TestsLib )
+	if( NOT MSVC )
+		set( TESTS_LIB_WRAPPED -Wl,--whole-archive ${TESTS_LIB_WRAPPED} -Wl,--no-whole-archive )
+	endif()
+
+	#
+	# C++ tests launcher
+	#
+	file( GLOB TESTS_LAUNCHER0_SOURCES "tests/cpp_tests_launcher0/*" )
+	add_executable( Tests ${TESTS_LAUNCHER0_SOURCES} )
+	target_link_libraries( Tests CodeBuilderLib ${TESTS_LIB_WRAPPED} )
 	add_custom_command( TARGET Tests POST_BUILD COMMAND Tests )
+
+	if( MSVC )
+		set_target_properties( Tests PROPERTIES LINK_FLAGS /WHOLEARCHIVE:TestsLib )
+	endif()
+
 endif()
 
 #
@@ -443,4 +464,11 @@ if( U_BUILD_DOCS )
 	else()
 		message( "Sphinx not found, skip Ü docs" )
 	endif()
+endif()
+
+
+if( U_BUILD_COMPILER AND U_BUILD_COMPILER1 )
+	set( CURRENT_COMPILER Compiler )
+	set( CURRENT_COMPLIER_GENERATION 1 )
+	add_subdirectory( compiler1 )
 endif()

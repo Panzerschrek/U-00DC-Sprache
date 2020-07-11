@@ -1,0 +1,116 @@
+import "../lex_synt_lib/keywords.uh"
+import "error_reporting.uh"
+import "code_builder.uh"
+
+namespace U
+{
+
+fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, Synt::ProgramElements& program_elements )
+{
+	foreach( & program_element : program_elements )
+	{
+		variant_visit( & el : program_element )
+		{
+			NamesScopeFill( names_scope_ptr, el );
+		}
+	}
+}
+
+fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, Synt::ClassElements& class_elements )
+{
+	foreach( & class_element : class_elements )
+	{
+		variant_visit( & el : class_element )
+		{
+			NamesScopeFill( names_scope_ptr, el );
+		}
+	}
+}
+
+fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function )
+{
+	if( IsKeyword( function.get_ref().name ) )
+	{
+		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, function.get_ref().file_pos )
+		return;
+	}
+
+	auto mut names_scope_lock= names_scope_ptr.lock_mut();
+	auto& mut names_scope= names_scope_lock.get_ref();
+
+	if( !names_scope.GetThisScopeValue( function.get_ref().name ).empty() )
+	{
+		REPORT_ERROR( Redefinition, names_scope_ptr, function.get_ref().file_pos )
+		return;
+	}
+
+	// TODO - reuse existing functions set, report about redefinition.
+	var NamesScopeFunctionsSet mut functions_set;
+
+	functions_set.syntax_elements.push_back( function );
+
+	names_scope.AddName( function.get_ref().name, NamesScopeValue( move(functions_set) ) );
+}
+
+fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_ )
+{
+	auto& class_name= class_.get_ref().name;
+	if( IsKeyword( class_name ) )
+	{
+		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, class_.get_ref().file_pos )
+		return;
+	}
+
+	var NamesScopeMutPtr class_members( NamesScope( class_name, names_scope_ptr ) );
+	NamesScopeFill( class_members, class_.get_ref().class_elements );
+
+	var ClassType mut class_type
+	{
+		.members= class_members,
+		.syntax_element= class_,
+	};
+
+	unsafe
+	{
+		class_type.llvm_type= LLVMStructCreateNamed( llvm_context_, (class_.get_ref().name + "\0").front() ); // TODO - mangle type
+	}
+
+	var bool mut insert_not_ok= false;
+	{
+		auto mut lock= names_scope_ptr.lock_mut();
+		insert_not_ok= lock.get_ref().AddName( class_name, move(class_type) ).empty();
+	}
+
+	if( insert_not_ok )
+	{
+		REPORT_ERROR( Redefinition, names_scope_ptr, class_.get_ref().file_pos, class_name )
+	}
+}
+
+fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field )
+{
+	auto& field_name= class_field.get_ref().name;
+	if( IsKeyword( field_name ) )
+	{
+		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, class_field.get_ref().file_pos )
+		return;
+	}
+
+	var ClassField mut field
+	{
+		.syntax_element= class_field
+	};
+
+	var bool mut insert_not_ok= false;
+	{
+		auto mut lock= names_scope_ptr.lock_mut();
+		insert_not_ok= lock.get_ref().AddName( field_name, move(field) ).empty();
+	}
+
+	if( insert_not_ok )
+	{
+		REPORT_ERROR( Redefinition, names_scope_ptr, class_field.get_ref().file_pos, field_name )
+	}
+}
+
+} // namespace U

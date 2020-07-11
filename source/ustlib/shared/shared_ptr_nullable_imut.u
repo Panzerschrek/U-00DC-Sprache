@@ -15,6 +15,11 @@ public:
 	( impl_( move(value) ) )
 	{}
 
+	fn conversion_constructor( shared_ptr_mut</T/> & ptr )
+	{
+		unsafe{  impl_= shared_ptr_base</ T />( ptr.get_impl() );  }
+	}
+
 	fn conversion_constructor( shared_ptr_imut</T/> & ptr )
 	{
 		unsafe{  impl_= shared_ptr_base</ T />( ptr.get_impl() );  }

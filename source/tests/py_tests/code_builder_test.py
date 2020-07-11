@@ -1,6 +1,18 @@
 from py_tests_common import *
 
 
+def SimpliestTest():
+	tests_lib.build_program( "fn GetTrue() : bool { return true; }" )
+	call_result= tests_lib.run_function( "_Z7GetTruev" )
+	assert( call_result == True )
+
+
+def SimplePassArgumentTest():
+	tests_lib.build_program( "fn GetBool(bool b) : bool { return b; }" )
+	assert( tests_lib.run_function( "_Z7GetBoolb", True  ) == True )
+	assert( tests_lib.run_function( "_Z7GetBoolb", False ) == False )
+
+
 def OkTest():
 	tests_lib.build_program( "fn Foo( i32 x, i32 y ) : f32 { return f32(x * y) + 0.5f; }" )
 
@@ -8,10 +20,17 @@ def OkTest():
 	assert( call_result == ( 3 * 7 ) + 0.50 )
 
 
-def ErrorsTest():
+def ErrorsTest0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( "fn Foo() : i32 {}" ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NoReturnInFunctionReturningNonVoid" )
+	assert( errors_list[0].file_pos.line == 1 )
+
+
+def ErrorsTest1():
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( "fn Foo() : UnknownType {}" ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
 	assert( errors_list[0].file_pos.line == 1 )
 
 

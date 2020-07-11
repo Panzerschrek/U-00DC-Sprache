@@ -2,12 +2,9 @@
 
 #include <Python.h>
 
-#include "../../code_builder_lib/code_builder.hpp"
 #include "../../lex_synt_lib/assert.hpp"
-#include "../../lex_synt_lib/lexical_analyzer.hpp"
-#include "../../lex_synt_lib/syntax_analyzer.hpp"
-#include "../../lex_synt_lib/source_graph_loader.hpp"
-#include "../tests_common.hpp"
+#include "../../tests/tests_common.hpp"
+#include "../tests_common/funcs_c.hpp"
 
 #include "../../code_builder_lib/push_disable_llvm_warnings.hpp"
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
@@ -24,66 +21,25 @@ namespace U
 namespace
 {
 
-class SingeFileVfs final : public IVfs
-{
-public:
-
-	SingeFileVfs( std::string file_path, const char* const text )
-		: file_path_(file_path), file_text_(text)
-	{}
-
-	virtual std::optional<LoadFileResult> LoadFileContent( const Path& file_path, const Path& full_parent_file_path ) override
-	{
-		U_UNUSED( full_parent_file_path );
-		if( file_path == file_path_ )
-			return LoadFileResult{ file_path_, file_text_ };
-		return std::nullopt;
-	}
-
-	virtual Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path ) override
-	{
-		U_UNUSED(full_parent_file_path);
-		return file_path;
-	}
-
-private:
-	const std::string file_path_;
-	const char* const file_text_;
-};
-
 llvm::ManagedStatic<llvm::LLVMContext> g_llvm_context;
-
-std::unique_ptr<CodeBuilder> CreateCodeBuilder()
-{
-	const bool build_debug_info= true;
-	return
-		std::make_unique<CodeBuilder>(
-			*g_llvm_context,
-			llvm::sys::getProcessTriple(),
-			llvm::DataLayout( GetTestsDataLayout() ),
-			build_debug_info );
-}
 
 std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 {
-	const std::string file_path= "_";
-	const SourceGraphPtr source_graph=
-		SourceGraphLoader( std::make_shared<SingeFileVfs>( file_path, text ) ).LoadSource( file_path );
+	llvm::LLVMContext& llvm_context= *g_llvm_context;
 
-	if( source_graph == nullptr ||
-		!source_graph->lexical_errors.empty() ||
-		!source_graph->syntax_errors.empty() )
+	llvm::DataLayout data_layout( GetTestsDataLayout() );
+
+	auto ptr=
+		U1_BuildProgram(
+			text,
+			std::strlen(text),
+			llvm::wrap(&llvm_context),
+			llvm::wrap(&data_layout) );
+
+	if( ptr == nullptr )
 		return nullptr;
 
-	ICodeBuilder::BuildResult build_result= CreateCodeBuilder()->BuildProgram( *source_graph );
-
-	for( const CodeBuilderError& error : build_result.errors )
-		std::cerr << error.file_pos.GetLine() << ":" << error.file_pos.GetColumn() << " " << error.text << "\n";
-
-	if( !build_result.errors.empty() )
-		return nullptr;
-
-	return std::move(build_result.module);
+	return std::unique_ptr<llvm::Module>( reinterpret_cast<llvm::Module*>(ptr) );
 }
 
 class HaltException final : public std::exception
@@ -308,54 +264,6 @@ PyObject* RunFunction( PyObject* const self, PyObject* const args )
 	return Py_None;
 }
 
-
-PyObject* BuildFilePos( const FilePos& file_pos )
-{
-	PyObject* const file_pos_dict= PyDict_New();
-	PyDict_SetItemString( file_pos_dict, "file_index", PyLong_FromLongLong( file_pos.GetFileIndex() ) );
-	PyDict_SetItemString( file_pos_dict, "line", PyLong_FromLongLong( file_pos.GetLine() ) );
-	PyDict_SetItemString( file_pos_dict, "column", PyLong_FromLongLong( file_pos.GetColumn() ) );
-	return file_pos_dict;
-}
-
-PyObject* BuildString( const std::string& str )
-{
-	return PyUnicode_DecodeUTF8( str.data(), Py_ssize_t(str.size()), nullptr );
-}
-
-PyObject* BuildErrorsList( const CodeBuilderErrorsContainer& errors )
-{
-	PyObject* const list= PyList_New(0);
-
-	for( const CodeBuilderError& error : errors )
-	{
-		PyObject* const dict= PyDict_New();
-
-		PyDict_SetItemString( dict, "file_pos", BuildFilePos( error.file_pos ) );
-
-		const char* const error_code_str= CodeBuilderErrorCodeToString( error.code );
-		PyDict_SetItemString( dict, "code", PyUnicode_DecodeUTF8( error_code_str, Py_ssize_t(std::strlen(error_code_str)), nullptr ) );
-
-		PyDict_SetItemString( dict, "text", BuildString( error.text ) );
-
-		if( error.template_context != nullptr )
-		{
-			PyObject* const template_context_dict= PyDict_New();
-
-			PyDict_SetItemString( template_context_dict, "errors", BuildErrorsList( error.template_context->errors ) );
-			PyDict_SetItemString( template_context_dict, "file_pos", BuildFilePos( error.template_context->context_declaration_file_pos ) );
-			PyDict_SetItemString( template_context_dict, "template_name", BuildString( error.template_context->context_name ) );
-			PyDict_SetItemString( template_context_dict, "parameters_description", BuildString( error.template_context->parameters_description ) );
-
-			PyDict_SetItemString( dict, "template_context", template_context_dict );
-		}
-
-		PyList_Append( list, dict );
-	}
-
-	return list;
-}
-
 PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 {
 	U_UNUSED(self);
@@ -365,22 +273,59 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 	if( !PyArg_ParseTuple( args, "s", &program_text ) )
 		return nullptr;
 
-	const std::string file_path= "_";
-	const SourceGraphPtr source_graph=
-		SourceGraphLoader( std::make_shared<SingeFileVfs>( file_path, program_text ) ).LoadSource( file_path );
+	llvm::LLVMContext& llvm_context= *g_llvm_context;
+	llvm::DataLayout data_layout( GetTestsDataLayout() );
 
-	if( source_graph == nullptr ||
-		!source_graph->lexical_errors.empty() ||
-		!source_graph->syntax_errors.empty() )
+	PyObject* const errors_list= PyList_New(0);
+
+	const auto error_handler=
+	[](
+		void* const data,
+		const uint32_t line,
+		const uint32_t column,
+		const uint32_t error_code,
+		const char* const error_text,
+		const size_t error_text_length )
+	{
+		PyObject* const dict= PyDict_New();
+
+		{
+			PyObject* const file_pos_dict= PyDict_New();
+			PyDict_SetItemString( file_pos_dict, "file_index", PyLong_FromLongLong(0) );
+			PyDict_SetItemString( file_pos_dict, "line", PyLong_FromLongLong(line) );
+			PyDict_SetItemString( file_pos_dict, "column", PyLong_FromLongLong(column) );
+
+			PyDict_SetItemString( dict, "file_pos", file_pos_dict );
+		}
+
+		const char* error_code_str= nullptr;
+		size_t error_code_len= 0u;
+		U1_CodeBuilderCodeToString( error_code, error_code_str, error_code_len );
+		PyDict_SetItemString( dict, "code", PyUnicode_DecodeUTF8( error_code_str, Py_ssize_t(error_code_len), nullptr ) );
+
+		PyDict_SetItemString( dict, "text", PyUnicode_DecodeUTF8( error_text, Py_ssize_t(error_text_length), nullptr ) );
+
+		PyList_Append( reinterpret_cast<PyObject*>(data), dict );
+	};
+
+	const bool ok=
+		U1_BuildProgramWithErrors(
+			program_text,
+			std::strlen(program_text),
+			llvm::wrap(&llvm_context),
+			llvm::wrap(&data_layout),
+			error_handler,
+			errors_list );
+
+	llvm::llvm_shutdown();
+
+	if( !ok )
 	{
 		PyErr_SetString( PyExc_RuntimeError, "source tree build failed" );
 		return nullptr;
 	}
 
-	PyObject* const list= BuildErrorsList( CreateCodeBuilder()->BuildProgram( *source_graph ).errors );
-	llvm::llvm_shutdown();
-
-	return list;
+	return errors_list;
 }
 
 PyObject* FilterTest( PyObject* const self, PyObject* const args )
@@ -396,8 +341,40 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 	if( !PyArg_Parse( func_name_arg, "s", &func_name ) )
 		return nullptr; // Parse will raise
 
-	Py_INCREF(Py_True);
-	return Py_True;
+	const std::string func_name_str= func_name;
+
+	static const std::string c_test_to_enable[]
+	{
+		"ErrorsTest0",
+		"ErrorsTest1",
+		"SimpliestTest",
+		"SimplePassArgumentTest",
+	};
+
+	if( std::find( std::begin(c_test_to_enable), std::end(c_test_to_enable), func_name_str )
+		!= std::end(c_test_to_enable) )
+	{
+		Py_INCREF(Py_True);
+		return Py_True;
+	}
+
+	static const std::string c_tests_to_enable_pattern[]
+	{
+		"NonExistentTest",
+	};
+
+	if( std::find_if(
+			std::begin(c_tests_to_enable_pattern),
+			std::end(c_tests_to_enable_pattern),
+			[&]( const std::string& pattern ) { return func_name_str.find( pattern ) != std::string::npos; } )
+		!= std::end(c_tests_to_enable_pattern) )
+	{
+		Py_INCREF(Py_True);
+		return Py_True;
+	}
+
+	Py_INCREF(Py_False);
+	return Py_False;
 }
 
 PyMethodDef g_methods[]=

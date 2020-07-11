@@ -1,0 +1,308 @@
+import "/box.u"
+import "/box_nullable.u"
+import "/optional.u"
+import "/shared/shared_ptr_final.u"
+import "/string.u"
+import "/variant.u"
+import "/vector.u"
+import "lexical_analyzer.uh"
+import "operators.uh"
+
+
+namespace U
+{
+
+namespace Synt
+{
+
+enum MutabilityModifier : u8
+{
+	None,
+	Mutable,
+	Immutable,
+	Constexpr,
+}
+
+enum ReferenceModifier : u8
+{
+	None,
+	Reference,
+}
+
+struct EmptyVariant{} // used as stub
+
+struct ComplexName
+{
+	FilePos file_pos;
+	// TODO - make really comples
+	ust::string8 name;
+}
+
+struct NumericConstant
+{
+	FilePos file_pos;
+	NumberLexemData num= zero_init;
+}
+
+struct BooleanConstant
+{
+	FilePos file_pos;
+	bool value;
+}
+
+struct BinaryOperator
+{
+	FilePos file_pos;
+	ust::box</Expression/> l;
+	ust::box</Expression/> r;
+	BinaryOperatorType operator;
+}
+
+struct BracketExpression
+{
+	FilePos file_pos;
+	ust::box</Expression/> expr;
+}
+
+struct IndexationOperator
+{
+	FilePos file_pos;
+	ust::box</Expression/> value;
+	ust::box</Expression/> index;
+}
+
+struct CallOperator
+{
+	FilePos file_pos;
+	ust::box</Expression/> value;
+	ust::vector</ ust::box</Expression/> /> args;
+}
+
+struct MemberAccessOperator
+{
+	FilePos file_pos;
+	ust::box</Expression/> value;
+	ust::string8 member_name;
+}
+
+struct UnaryPlus
+{
+	FilePos file_pos;
+	ust::box</Expression/> expr;
+}
+
+struct UnaryMinus
+{
+	FilePos file_pos;
+	ust::box</Expression/> expr;
+}
+
+struct LogicalNot
+{
+	FilePos file_pos;
+	ust::box</Expression/> expr;
+}
+
+struct BitwiseNot
+{
+	FilePos file_pos;
+	ust::box</Expression/> expr;
+}
+
+type Expression= ust::variant</ tup[
+	EmptyVariant,
+	NumericConstant,
+	BooleanConstant,
+	ComplexName,
+	BinaryOperator,
+	BracketExpression,
+	IndexationOperator,
+	CallOperator,
+	MemberAccessOperator,
+	UnaryPlus,
+	UnaryMinus,
+	LogicalNot,
+	BitwiseNot
+	] />;
+
+struct ArrayType
+{
+	FilePos file_pos;
+	TypeName element_type;
+	Expression element_count;
+}
+
+struct FunctionType
+{
+	struct Arg
+	{
+		FilePos file_pos;
+		TypeName arg_type;
+		ReferenceModifier reference_modifier= ReferenceModifier::None;
+		MutabilityModifier mutability_modifier= MutabilityModifier::None;
+		ust::string8 name;
+	}
+	ust::vector</Arg/> args;
+
+	ust::optional</TypeName/> return_type; // Empty means "void"
+	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
+	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
+}
+
+type TypeName= ust::variant</ tup[
+	ComplexName,
+	ust::box</ArrayType/>,
+	ust::box</FunctionType/>
+	] />;
+
+struct ZeroInitializer
+{
+	FilePos file_pos;
+}
+
+struct UninitializedInitializer
+{
+	FilePos file_pos;
+}
+
+type Initializer= ust::variant</ tup [
+	EmptyVariant,
+	Expression,
+	ZeroInitializer,
+	UninitializedInitializer
+	] />;
+
+struct Block
+{
+	FilePos file_pos;
+	FilePos end_file_pos;
+	ust::vector</BlockElement/> elements;
+}
+
+struct VariablesDeclaration
+{
+	struct VariableEntry
+	{
+		FilePos file_pos;
+		ReferenceModifier reference_modifier= ReferenceModifier::None;
+		MutabilityModifier mutability_modifier= MutabilityModifier::None;
+		ust::string8 name;
+		Initializer initializer;
+	}
+
+	FilePos file_pos;
+	TypeName t;
+	ust::vector</VariableEntry/> variables;
+}
+
+struct AutoVariableDeclaration
+{
+	FilePos file_pos;
+	ReferenceModifier reference_modifier= ReferenceModifier::None;
+	MutabilityModifier mutability_modifier= MutabilityModifier::None;
+	ust::string8 name;
+	Expression initializer_expression;
+}
+
+struct ReturnOperator
+{
+	FilePos file_pos;
+	Expression expr;
+}
+
+struct AssignmentOperator
+{
+	FilePos file_pos;
+	Expression l;
+	Expression r;
+}
+
+struct IfOperator
+{
+	struct Branch
+	{
+		FilePos file_pos;
+		// Condition - EmptyVariant for last if.
+		Expression condition;
+		ust::box</Block/> block;
+	}
+
+	FilePos file_pos;
+	FilePos end_file_pos;
+	ust::vector</Branch/> branches;
+}
+
+struct WhileOperator
+{
+	FilePos file_pos;
+	Expression condition;
+	ust::box</Block/> block;
+}
+
+struct BreakOperator
+{
+	FilePos file_pos;
+}
+
+struct ContinueOperator
+{
+	FilePos file_pos;
+}
+
+type BlockElement = ust::variant</ tup[
+	ust::box</Block/>,
+	VariablesDeclaration,
+	AutoVariableDeclaration,
+	ReturnOperator,
+	AssignmentOperator,
+	Expression,
+	IfOperator,
+	WhileOperator,
+	BreakOperator,
+	ContinueOperator
+	] />;
+
+struct Function
+{
+	FilePos file_pos;
+	ust::string8 name;
+	FunctionType function_type;
+	ust::box_nullable</Block/> block; // null for prototype
+}
+
+struct ClassField
+{
+	FilePos file_pos;
+	ust::string8 name;
+	TypeName t;
+	MutabilityModifier mutability_modifier= MutabilityModifier::None;
+	ReferenceModifier reference_modifier= ReferenceModifier::None;
+}
+
+type ClassElement= ust::variant</ tup[
+	ust::shared_ptr_final</Function/>,
+	ust::shared_ptr_final</ClassField/>
+	] />;
+
+type ClassElements= ust::vector</ClassElement/>;
+
+struct Class
+{
+	FilePos file_pos;
+	ust::string8 name;
+	ClassElements class_elements;
+}
+
+type ProgramElement= ust::variant</ tup[
+	ust::shared_ptr_final</Function/>,
+	ust::shared_ptr_final</Class/>
+	] />;
+
+type ProgramElements= ust::vector</ProgramElement/>;
+
+fn GetFilePos( Expression& expression ) : FilePos;
+fn GetFilePos( BlockElement& block_element ) : FilePos;
+
+} // namespace Synt
+
+} // namespace U

@@ -1,0 +1,459 @@
+import "../lex_synt_lib/keywords.uh"
+import "error_reporting.uh"
+import "mangling.uh"
+import "code_builder.uh"
+
+namespace U
+{
+
+fn CodeBuilder::constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data_layout )
+	(
+		llvm_context_(llvm_context),
+		data_layout_(data_layout),
+	)
+{
+	unsafe
+	{
+		fundamental_llvm_types_.i8_ = LLVMInt8TypeInContext( llvm_context_ );
+		fundamental_llvm_types_.u8_ = LLVMInt8TypeInContext( llvm_context_ );
+		fundamental_llvm_types_.i16_= LLVMInt16TypeInContext( llvm_context_ );
+		fundamental_llvm_types_.u16_= LLVMInt16TypeInContext( llvm_context_ );
+		fundamental_llvm_types_.i32_= LLVMInt32TypeInContext( llvm_context_ );
+		fundamental_llvm_types_.u32_= LLVMInt32TypeInContext( llvm_context_ );
+		fundamental_llvm_types_.i64_= LLVMInt64TypeInContext( llvm_context_ );
+		fundamental_llvm_types_.u64_= LLVMInt64TypeInContext( llvm_context_ );
+		fundamental_llvm_types_.i128_= LLVMInt128TypeInContext( llvm_context_ );
+		fundamental_llvm_types_.u128_= LLVMInt128TypeInContext( llvm_context_ );
+
+		fundamental_llvm_types_.f32_= LLVMFloatTypeInContext( llvm_context_ );
+		fundamental_llvm_types_.f64_= LLVMDoubleTypeInContext( llvm_context_ );
+
+		fundamental_llvm_types_.char8_ = LLVMInt8TypeInContext ( llvm_context_ );
+		fundamental_llvm_types_.char16_= LLVMInt16TypeInContext( llvm_context_ );
+		fundamental_llvm_types_.char32_= LLVMInt32TypeInContext( llvm_context_ );
+
+		fundamental_llvm_types_.invalid_type_= LLVMInt8TypeInContext( llvm_context_ );
+		fundamental_llvm_types_.void_= LLVMInt8TypeInContext( llvm_context_ );
+		fundamental_llvm_types_.void_for_ret_= LLVMVoidTypeInContext( llvm_context_ );
+		fundamental_llvm_types_.bool_= LLVMInt1TypeInContext( llvm_context_ );
+
+		fundamental_llvm_types_.int_ptr= LLVMIntPtrTypeInContext( llvm_context_, data_layout_ );
+	}
+
+	invalid_type_= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
+	void_type_= FundamentalType( U_FundamentalType::void_, fundamental_llvm_types_.void_ );
+	void_type_for_ret_= FundamentalType( U_FundamentalType::void_, fundamental_llvm_types_.void_for_ret_ );
+	bool_type_= FundamentalType( U_FundamentalType::bool_, fundamental_llvm_types_.bool_ );
+
+	unsafe
+	{
+		size_type_= select(
+			LLVMGetIntTypeWidth( fundamental_llvm_types_.int_ptr ) == 32u
+			? FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ )
+			: FundamentalType( U_FundamentalType::u64_, fundamental_llvm_types_.u64_ ) );
+	}
+}
+
+fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : BuildResult
+{
+	unsafe
+	{
+		module_ = LLVMModuleCreateWithName( "some_module\0"[0] );
+		LLVMSetModuleDataLayout( module_, data_layout_ );
+	}
+
+	var ErrorsContainerPtr errors_container( ErrorsContainer() );
+
+	var ust::shared_ptr_mut</NamesScope/> global_names_scope( NamesScope( "", ust::shared_ptr_nullable_imut</NamesScope/>() ) );
+
+	{
+		auto mut l= global_names_scope.lock_mut();
+		auto &mut n= l.get_ref();
+
+		n.SetErrors( errors_container );
+		FillGlobalNamesScope( n );
+	}
+
+	NamesScopeFill( global_names_scope, ast.program_elements );
+	NamesScopeBuild( global_names_scope );
+
+	var BuildResult mut res
+	{
+		.llvm_module= module_,
+		.errors= errors_container.lock_imut().get_ref(),
+	 };
+
+	return move(res);
+}
+
+fn CodeBuilder::NamesScopeValueToValue( this, NamesScopePtr& names_scope, NamesScopeValue& names_scope_value ) : Value
+{
+	{
+		auto t= names_scope_value.Get</Type/>();
+		if( !t.empty() )
+		{
+			return t.lock_imut().get_ref();
+		}
+	}
+	{
+		auto f_ptr= names_scope_value.Get</NamesScopeFunctionsSet/>();
+		if( !f_ptr.empty() )
+		{
+			// In case of access to functions set using function name, build only prototype, not full body.
+			BuildFunctionsSet( names_scope, ust::to_non_nullable( f_ptr ), false );
+			return f_ptr.lock_imut().get_ref().functions_set;
+		}
+	}
+	{
+		auto var_ptr= names_scope_value.Get</NamesScopeVariable/>();
+		if( !var_ptr.empty() )
+		{
+			auto lock= var_ptr.lock_imut();
+			auto& v= lock.get_ref();
+
+			var Variable mut res;
+			res.t= v.t;
+			res.llvm_value= v.llvm_value;
+			res.location= Variable::Location::Pointer;
+			res.value_type= select( v.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+			return move(res);
+		}
+	}
+	{
+		auto class_type_ptr= names_scope_value.Get</ClassType/>();
+		if( !class_type_ptr.empty() )
+		{
+			auto ptr_non_null= ust::to_non_nullable(class_type_ptr);
+			return Type( ptr_non_null );
+		}
+	}
+
+	return ErrorValue();
+}
+
+fn CodeBuilder::ResolveValue( this, NamesScopePtr& names_scope, Synt::ComplexName& complex_name ) : Value
+{
+	var ust::shared_ptr_nullable_imut</NamesScope/> mut current_scope(names_scope);
+
+	while( !current_scope.empty() )
+	{
+		if_var( names_scope_value : current_scope.lock_imut().get_ref().GetThisScopeValue( complex_name.name ) )
+		{
+			return NamesScopeValueToValue( ust::to_non_nullable( current_scope ), names_scope_value );
+		}
+		current_scope= current_scope.lock_imut().get_ref().GetParent();
+	}
+
+	REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, complex_name.name )
+	return ErrorValue();
+}
+
+fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
+{
+	names_scope.AddName( KeywordToString(Keyword::void_), Type( FundamentalType( U_FundamentalType::void_, fundamental_llvm_types_.void_ ) ) );
+	names_scope.AddName( KeywordToString(Keyword::bool_), Type( FundamentalType( U_FundamentalType::bool_, fundamental_llvm_types_.bool_ ) ) );
+	names_scope.AddName( KeywordToString(Keyword::i8_  ), Type( FundamentalType( U_FundamentalType::i8_  , fundamental_llvm_types_.i8_   ) ) );
+	names_scope.AddName( KeywordToString(Keyword::u8_  ), Type( FundamentalType( U_FundamentalType::u8_  , fundamental_llvm_types_.u8_   ) ) );
+	names_scope.AddName( KeywordToString(Keyword::i16_ ), Type( FundamentalType( U_FundamentalType::i16_ , fundamental_llvm_types_.i16_  ) ) );
+	names_scope.AddName( KeywordToString(Keyword::u16_ ), Type( FundamentalType( U_FundamentalType::u16_ , fundamental_llvm_types_.u16_  ) ) );
+	names_scope.AddName( KeywordToString(Keyword::i32_ ), Type( FundamentalType( U_FundamentalType::i32_ , fundamental_llvm_types_.i32_  ) ) );
+	names_scope.AddName( KeywordToString(Keyword::u32_ ), Type( FundamentalType( U_FundamentalType::u32_ , fundamental_llvm_types_.u32_  ) ) );
+	names_scope.AddName( KeywordToString(Keyword::i64_ ), Type( FundamentalType( U_FundamentalType::i64_ , fundamental_llvm_types_.i64_  ) ) );
+	names_scope.AddName( KeywordToString(Keyword::u64_ ), Type( FundamentalType( U_FundamentalType::u64_ , fundamental_llvm_types_.u64_  ) ) );
+	names_scope.AddName( KeywordToString(Keyword::i128_), Type( FundamentalType( U_FundamentalType::i128_, fundamental_llvm_types_.i128_ ) ) );
+	names_scope.AddName( KeywordToString(Keyword::u128_), Type( FundamentalType( U_FundamentalType::u128_, fundamental_llvm_types_.u128_ ) ) );
+	names_scope.AddName( KeywordToString(Keyword::f32_ ), Type( FundamentalType( U_FundamentalType::f32_ , fundamental_llvm_types_.f32_  ) ) );
+	names_scope.AddName( KeywordToString(Keyword::f64_ ), Type( FundamentalType( U_FundamentalType::f64_ , fundamental_llvm_types_.f64_  ) ) );
+	names_scope.AddName( KeywordToString(Keyword::char8_ ), Type( FundamentalType( U_FundamentalType::char8_ , fundamental_llvm_types_.char8_  ) ) );
+	names_scope.AddName( KeywordToString(Keyword::char16_), Type( FundamentalType( U_FundamentalType::char16_, fundamental_llvm_types_.char16_ ) ) );
+	names_scope.AddName( KeywordToString(Keyword::char32_), Type( FundamentalType( U_FundamentalType::char32_, fundamental_llvm_types_.char32_ ) ) );
+}
+
+fn CodeBuilder::BuildFunctionsSet( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/> functions_set_ptr, bool build_body )
+{
+	if( !build_body )
+	{
+		{ // First, lock as imut and check if complete.
+			auto l= functions_set_ptr.lock_imut();
+			var NamesScopeFunctionsSet& functions_set= l.get_ref();
+			if( functions_set.syntax_elements.empty() ) // Already complete
+			{
+				return;
+			}
+		}
+	}
+
+	{ 	// Preapare functions set itself.
+		auto mut l= functions_set_ptr.lock_mut();
+		var NamesScopeFunctionsSet &mut functions_set= l.get_ref();
+
+		while( !functions_set.syntax_elements.empty() )
+		{
+			auto syntax_element_ptr= functions_set.syntax_elements.back();
+			PrepareFunction( syntax_element_ptr, names_scope_ptr, functions_set.functions_set );
+			functions_set.syntax_elements.drop_back();
+		}
+	}
+
+	if( build_body )
+	{
+		foreach( &func_variable : functions_set_ptr.lock_imut().get_ref().functions_set.functions )
+		{
+			BuildFuncCode( names_scope_ptr, func_variable );
+		}
+	}
+}
+
+fn CodeBuilder::BuildClass( this, NamesScopePtr& names_scope_ptr, ClassTypePtr& class_type )
+{
+	if( class_type.lock_imut().get_ref().is_complete )
+	{
+		return;
+	}
+
+	auto mut class_lock= class_type.lock_mut();
+	var ClassType &mut class_= class_lock.get_ref();
+
+	var ust::vector</ LLVMTypeRef /> mut fields_llvm_types;
+
+	foreach( &member : class_.members.lock_imut().get_ref().GetInternalContainer() )
+	{
+		auto field_ptr= member.value().Get</ ClassField />();
+		if( !field_ptr.empty() )
+		{
+			auto mut field_lock= field_ptr.lock_mut();
+			var ClassField &mut field= field_lock.get_ref();
+
+			field.t= PrepareType( class_.members, field.syntax_element.get_ref().t );
+
+			if( !EnsureTypeComplete( field.t ) )
+			{
+				REPORT_ERROR( UsingIncompleteType, class_.members, field.syntax_element.get_ref().file_pos, field.t )
+				return; // TODO - continue instead
+			}
+
+			field.index= fields_llvm_types.size();
+			fields_llvm_types.push_back( field.t.GetLLVMType() );
+		}
+	}
+
+	unsafe
+	{
+		if( fields_llvm_types.empty() )
+		{
+			var LLVMTypeRef dummy= zero_init;
+			LLVMStructSetBody( class_.llvm_type, dummy, 0u, LLVMBool::False );
+		}
+		else
+		{
+			auto s= u32(fields_llvm_types.size()); // TODO - fix reference protection error
+			LLVMStructSetBody( class_.llvm_type, fields_llvm_types.front(), s, LLVMBool::False );
+		}
+	}
+
+	class_.is_complete= true;
+}
+
+fn CodeBuilder::PrepareFunction(
+	this,
+	ust::shared_ptr_final</Synt::Function/>& function_declaration_ptr,
+	NamesScopePtr& names_scope_ptr,
+	FunctionsSet &mut functions_set ) : bool
+{
+	auto& function_declaration= function_declaration_ptr.get_ref();
+
+	var FunctionVariable mut function_variable{ .syntax_element= function_declaration_ptr };
+
+	function_variable.t= PrepareType( names_scope_ptr, function_declaration.function_type );
+
+	unsafe
+	{
+		function_variable.llvm_function=
+			LLVMAddFunction(
+				module_,
+				MangleFunction( function_declaration.name, function_variable.t.GetFunctionType().get_ref() ).front(),
+				function_variable.t.GetLLVMType() );
+	}
+
+	functions_set.functions.push_back( move(function_variable) );
+
+	return true;
+}
+
+fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariable& func_variable )
+{
+	auto& function_type= func_variable.t.GetFunctionType().get_ref();
+
+	var FunctionContext mut function_context(
+		llvm_context_,
+		func_variable.llvm_function,
+		function_type.return_type.get_ref(),
+		function_type.return_value_is_reference,
+		function_type.return_value_is_mutable );
+
+	var NamesScopeMutPtr args_names_scope_ptr( NamesScope( "", names_scope ) );
+
+	var LLVMAttributeRef mut by_val_attr= zero_init;
+	unsafe
+	{
+		auto& by_val_name= "byval";
+		auto kind= LLVMGetEnumAttributeKindForName( by_val_name[0], typeinfo</typeof(by_val_name)/>.element_count );
+		by_val_attr= LLVMCreateEnumAttribute( llvm_context_, kind, 0u64 );
+	}
+
+	{
+		auto mut args_names_scope_lock= args_names_scope_ptr.lock_mut();
+		auto &mut args_names_scope= args_names_scope_lock.get_ref();
+
+		auto mut arg_n= 0u;
+		foreach( &in_arg : func_variable.syntax_element.get_ref().function_type.args )
+		{
+			var NamesScopeVariable mut out_arg
+			{
+				.t= function_type.args[arg_n].arg_type.get_ref(),
+				.is_mutable= function_type.args[arg_n].is_mutable,
+			};
+
+			// Ensure type completness even for reference args because of reference checking.
+			if( !EnsureTypeComplete( out_arg.t ) )
+			{
+				REPORT_ERROR( UsingIncompleteType, names_scope, in_arg.file_pos, out_arg.t )
+				return;
+			}
+
+			if( function_type.args[arg_n].is_reference )
+			{
+				unsafe
+				{
+					auto arg_value= LLVMGetParam( func_variable.llvm_function, arg_n );
+					LLVMSetValueName2( arg_value, in_arg.name.front(), in_arg.name.size() );
+					out_arg.llvm_value= arg_value;
+				}
+			}
+			else
+			{
+				if( !out_arg.t.GetClassType().empty() )
+				{
+					// Non-fundamentals are passed by reference.
+					unsafe
+					{
+						auto arg_value= LLVMGetParam( func_variable.llvm_function, arg_n );
+						LLVMSetValueName2( arg_value, in_arg.name.front(), in_arg.name.size() );
+						out_arg.llvm_value= arg_value;
+
+						// TODO - remove byval, call copy constructors manually or move.
+						LLVMAddAttributeAtIndex( func_variable.llvm_function, LLVMAttributeFirstParamIndex + arg_n, by_val_attr );
+					}
+				}
+				else
+				{
+					auto arg_name= "_arg_" + in_arg.name;
+					unsafe
+					{
+						auto arg_value= LLVMGetParam( func_variable.llvm_function, arg_n );
+						LLVMSetValueName2( arg_value, arg_name.front(), arg_name.size() );
+
+						out_arg.llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, out_arg.t.GetLLVMType(), (in_arg.name + "\0").front() );
+
+						LLVMBuildStore( function_context.llvm_ir_builder, arg_value, out_arg.llvm_value );
+					}
+				}
+			}
+
+			++arg_n;
+
+			if( IsKeyword( in_arg.name ) )
+			{
+				REPORT_ERROR( UsingKeywordAsName, names_scope, in_arg.file_pos )
+			}
+
+			var bool insert_ok= !args_names_scope.AddName( in_arg.name, NamesScopeValue( move(out_arg) ) ).empty();
+			if( !insert_ok )
+			{
+				REPORT_ERROR( Redefinition, names_scope, in_arg.file_pos, in_arg.name )
+			}
+		}
+	}
+
+	auto& block= func_variable.syntax_element.get_ref().block.get_ref();
+
+	auto block_build_info= BuildBlockElement( args_names_scope_ptr, function_context, block );
+	if( !block_build_info.have_terminal_instruction_inside )
+	{
+		if( function_type.return_type.get_ref() == void_type_ )
+		{
+			// Manually generate "return" for void-return functions.
+			unsafe{  LLVMBuildRetVoid( function_context.llvm_ir_builder );  }
+		}
+		else
+		{
+			REPORT_ERROR( NoReturnInFunctionReturningNonVoid, args_names_scope_ptr, block.end_file_pos )
+			return;
+		}
+	}
+
+	// Finsih function - add remaining instructions
+	unsafe{ LLVMBuildBr( function_context.alloca_ir_builder, function_context.function_basic_block ); }
+}
+
+fn CodeBuilder::EnsureTypeComplete( this, Type& t ) : bool
+{
+	if_var( &class_type_ptr : t.GetClassType() )
+	{
+		// TODO - maybe names scope is not needed here?
+		auto class_parent_scope= ust::to_non_nullable( class_type_ptr.lock_imut().get_ref().members.lock_imut().get_ref().GetParent() );
+
+		BuildClass( class_parent_scope, class_type_ptr );
+		return true;
+	}
+	if_var( &array_type : t.GetArrayType() )
+	{
+		return EnsureTypeComplete( array_type.element_type.get_ref() );
+	}
+
+	return true;
+}
+
+fn CodeBuilder::GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef
+{
+	if( t == U_FundamentalType::InvalidType	) { return fundamental_llvm_types_.invalid_type_; }
+	if( t == U_FundamentalType::void_		) { return fundamental_llvm_types_.void_; }
+	if( t == U_FundamentalType::bool_		) { return fundamental_llvm_types_.bool_; }
+	if( t == U_FundamentalType::i8_			) { return fundamental_llvm_types_.i8_	; }
+	if( t == U_FundamentalType::u8_			) { return fundamental_llvm_types_.u8_	; }
+	if( t == U_FundamentalType::i16_		) { return fundamental_llvm_types_.i16_	; }
+	if( t == U_FundamentalType::u16_		) { return fundamental_llvm_types_.u16_	; }
+	if( t == U_FundamentalType::i32_		) { return fundamental_llvm_types_.i32_	; }
+	if( t == U_FundamentalType::u32_		) { return fundamental_llvm_types_.u32_	; }
+	if( t == U_FundamentalType::i64_		) { return fundamental_llvm_types_.i64_	; }
+	if( t == U_FundamentalType::u64_		) { return fundamental_llvm_types_.u64_	; }
+	if( t == U_FundamentalType::i128_		) { return fundamental_llvm_types_.i128_; }
+	if( t == U_FundamentalType::u128_		) { return fundamental_llvm_types_.u128_; }
+	if( t == U_FundamentalType::f32_		) { return fundamental_llvm_types_.f32_	; }
+	if( t == U_FundamentalType::f64_		) { return fundamental_llvm_types_.f64_	; }
+	if( t == U_FundamentalType::char8_		) { return fundamental_llvm_types_.char8_ ; }
+	if( t == U_FundamentalType::char16_		) { return fundamental_llvm_types_.char16_; }
+	if( t == U_FundamentalType::char32_		) { return fundamental_llvm_types_.char32_; }
+
+	halt;
+}
+
+fn CodeBuilder::GetZeroGEPIndex( this ) : LLVMValueRef
+{
+	unsafe{  return LLVMConstInt( fundamental_llvm_types_.i32_, 0u64, LLVMBool::False );  }
+}
+
+fn CodeBuilder::CreateMoveToLLVMRegisterInstruction( Variable& variable, FunctionContext& function_context ) : LLVMValueRef
+{
+	if( variable.location == Variable::Location::Pointer )
+	{
+		unsafe{  return LLVMBuildLoad( function_context.llvm_ir_builder, variable.llvm_value, "\0"[0] );  }
+	}
+	if( variable.location == Variable::Location::LLVMRegister )
+	{
+		return variable.llvm_value;
+	}
+
+	halt;
+}
+} // namespace U

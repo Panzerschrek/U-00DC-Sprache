@@ -1,0 +1,37 @@
+import "structs_combined.uh"
+
+namespace U
+{
+
+struct LoopFrame
+{
+	LLVMBasicBlockRef block_for_break;
+	LLVMBasicBlockRef block_for_continue;
+}
+
+class FunctionContext
+{
+public:
+	fn constructor(
+		LLVMContextRef llvm_context,
+		LLVMValueRef in_llvm_function,
+		Type mut in_return_type,
+		bool in_return_value_is_reference,
+		bool in_return_value_is_mutable );
+	fn destructor();
+
+	Type imut return_type;
+	LLVMValueRef imut llvm_function;
+	bool imut return_value_is_reference;
+	bool imut return_value_is_mutable;
+
+	LLVMBasicBlockRef alloca_basic_block= LLVMBasicBlockRef::Null;
+	LLVMBuilderRef alloca_ir_builder= LLVMBuilderRef::Null;
+
+	LLVMBasicBlockRef function_basic_block= LLVMBasicBlockRef::Null;
+	LLVMBuilderRef llvm_ir_builder= LLVMBuilderRef::Null;
+
+	ust::vector</LoopFrame/> loops_stack;
+}
+
+} // namespace U

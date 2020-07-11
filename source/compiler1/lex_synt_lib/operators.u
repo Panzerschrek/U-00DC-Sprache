@@ -1,0 +1,40 @@
+import "operators.uh"
+
+namespace U
+{
+
+fn BinaryOperatorToString( BinaryOperatorType o ) : ust::array_view_imut</ char8 />
+{
+	if( o == BinaryOperatorType::Add ){ return ust::array_view_imut</ char8 />( "+" ); }
+	if( o == BinaryOperatorType::Sub ){ return ust::array_view_imut</ char8 />( "-" ); }
+	if( o == BinaryOperatorType::Mul ){ return ust::array_view_imut</ char8 />( "*" ); }
+	if( o == BinaryOperatorType::Div ){ return ust::array_view_imut</ char8 />( "/" ); }
+	if( o == BinaryOperatorType::Rem ){ return ust::array_view_imut</ char8 />( "%" ); }
+
+	if( o == BinaryOperatorType::NotEqual		){ return ust::array_view_imut</ char8 />( "==" ); }
+	if( o == BinaryOperatorType::NotEqual		){ return ust::array_view_imut</ char8 />( "!=" ); }
+	if( o == BinaryOperatorType::Less			){ return ust::array_view_imut</ char8 />( "<"  ); }
+	if( o == BinaryOperatorType::LessEqual		){ return ust::array_view_imut</ char8 />( "<=" ); }
+	if( o == BinaryOperatorType::Greater		){ return ust::array_view_imut</ char8 />( "<"  ); }
+	if( o == BinaryOperatorType::GreaterEqual	){ return ust::array_view_imut</ char8 />( ">=" ); }
+
+	if( o == BinaryOperatorType::And ){ return ust::array_view_imut</ char8 />( "&" ); }
+	if( o == BinaryOperatorType::Or  ){ return ust::array_view_imut</ char8 />( "|" ); }
+	if( o == BinaryOperatorType::Xor ){ return ust::array_view_imut</ char8 />( "^" ); }
+
+	if( o == BinaryOperatorType::ShiftLeft  ){ return ust::array_view_imut</ char8 />( "<<" ); }
+	if( o == BinaryOperatorType::ShiftRight ){ return ust::array_view_imut</ char8 />( ">>" ); }
+
+	if( o == BinaryOperatorType::LazyLogicalAnd ){ return ust::array_view_imut</ char8 />( "&&" ); }
+	if( o == BinaryOperatorType::LazyLogicalOr  ){ return ust::array_view_imut</ char8 />( "||" ); }
+
+	halt;
+}
+
+fn OverloadedOperatorToString( OverloadedOperator o ) : ust::array_view_imut</ char8 />
+{
+	// TODO
+	halt;
+}
+
+} // namespace U

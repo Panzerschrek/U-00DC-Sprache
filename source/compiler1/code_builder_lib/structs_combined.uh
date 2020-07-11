@@ -1,0 +1,284 @@
+import "/box.u"
+import "/shared/shared_ptr_final.u"
+import "/shared/weak_ptr_imut.u"
+import "/unordered_map.u"
+import "/variant.u"
+import "/vector.u"
+import "../lex_synt_lib/syntax_elements.uh"
+import "lang_types.uh"
+import "llvm.uh"
+import "/code_builder_errors.uh"
+
+/*
+
+This header contains defenitions of Type structs, Value structs, NamesScopeValue structs, NamesScope, Class.
+This needed, because of dependency loop Type->Class->NamesScope->Value->Type.
+
+*/
+
+namespace U
+{
+
+//
+// Type
+//
+
+struct FundamentalType
+{
+	U_FundamentalType fundamental_type= U_FundamentalType::InvalidType;
+	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
+
+	fn constructor()= default;
+	fn constructor( U_FundamentalType in_fundamental_type, LLVMTypeRef in_llvm_type );
+
+	op==( FundamentalType& l, FundamentalType& r ) : bool;
+	op!=( FundamentalType& l, FundamentalType& r ) : bool;
+
+	fn GetSize(this) : size_type;
+}
+
+struct ArrayType
+{
+	ust::box</Type/> element_type;
+	u64 element_count= 0u64;
+	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
+
+	fn constructor( mut this, ArrayType &imut other );
+	op=( mut this, ArrayType &imut other );
+
+	op==( ArrayType& l, ArrayType& r ) : bool;
+	op!=( ArrayType& l, ArrayType& r ) : bool;
+}
+
+struct FunctionType
+{
+	struct Arg
+	{
+		ust::box</Type/> arg_type; // HACK! prevent dependency because ust::vector requires complete type.
+		bool is_reference;
+		bool is_mutable;
+
+		op==(Arg& l, Arg& r) : bool;
+		op!=(Arg& l, Arg& r) : bool;
+	}
+
+	ust::vector</Arg/> args;
+	ust::box</Type/> return_type; // HACK! prevent dependency loop
+	bool return_value_is_reference;
+	bool return_value_is_mutable;
+
+	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
+
+	fn constructor( mut this, FunctionType &imut other );
+	op=( mut this, FunctionType &imut other );
+
+	op==( FunctionType& l, FunctionType& r ) : bool;
+	op!=( FunctionType& l, FunctionType& r ) : bool;
+}
+
+struct ClassType
+{
+	NamesScopePtr members; // TODO - maybe inherit "ClassType" from "NamesScope" ?
+
+	ust::shared_ptr_final</ Synt::Class /> syntax_element;
+
+	ust::vector</ust::string8/> fields_order;
+
+	bool is_complete= false;
+	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
+}
+
+type ClassTypePtr= ust::shared_ptr_mut</ClassType/>;
+
+class Type
+{
+public:
+	fn constructor() = default;
+	fn constructor( mut this, Type &imut other ) = default;
+	op=( mut this, Type &imut other )= default;
+
+	fn conversion_constructor( FundamentalType mut fundamental_type );
+	fn conversion_constructor( ArrayType mut array_type );
+	fn conversion_constructor( FunctionType mut function_type );
+	fn conversion_constructor( ClassTypePtr mut function_type );
+
+	fn GetFundamentalType(  mut this ) : ust::optional_ref</FundamentalType, true  />'this';
+	fn GetFundamentalType( imut this ) : ust::optional_ref</FundamentalType, false />'this';
+
+	fn GetArrayType(  mut this ) : ust::optional_ref</ArrayType, true  />'this';
+	fn GetArrayType( imut this ) : ust::optional_ref</ArrayType, false />'this';
+
+	fn GetFunctionType(  mut this ) : ust::optional_ref</FunctionType, true  />'this';
+	fn GetFunctionType( imut this ) : ust::optional_ref</FunctionType, false />'this';
+
+	fn GetClassType(  mut this ) : ust::optional_ref</ClassTypePtr, true  />'this';
+	fn GetClassType( imut this ) : ust::optional_ref</ClassTypePtr, false />'this';
+
+	fn GetLLVMType( imut this ) : LLVMTypeRef;
+
+	// Convert type name to human-readable format.
+	fn ToString( this ) : ust::string8;
+
+	op==( Type& l, Type& r ) : bool;
+	op!=( Type& l, Type& r ) : bool;
+
+private:
+	ust::variant</ tup[
+		FundamentalType,
+		ArrayType,
+		FunctionType,
+		ClassTypePtr
+	] /> something_;
+}
+
+//
+// Value
+//
+
+enum ValueType
+{
+	Value,
+	ReferenceMut,
+	ReferenceImut,
+}
+
+struct Variable
+{
+	enum Location
+	{
+		Pointer,
+		LLVMRegister,
+	}
+
+	Type t;
+	Location location= Location::Pointer;
+	ValueType value_type= ValueType::ReferenceImut;
+	LLVMValueRef llvm_value= LLVMValueRef::Null;
+}
+
+struct FunctionVariable
+{
+	Type t; // FunctionType 100%
+	LLVMValueRef llvm_function= LLVMValueRef::Null;
+
+	ust::shared_ptr_final</ Synt::Function /> syntax_element;
+}
+
+// Set of functions and function templates with same name in one scope.
+struct FunctionsSet
+{
+	ust::vector</FunctionVariable/> functions;
+}
+
+struct ErrorValue{}
+
+type Value= ust::variant</ tup[
+	Variable,
+	Type,
+	FunctionsSet,
+	ErrorValue
+	] />;
+
+//
+// NamesScopeValue
+//
+
+struct NamesScopeVariable
+{
+	Type t;
+	bool is_mutable = false;
+	LLVMValueRef llvm_value= LLVMValueRef::Null;
+}
+
+struct NamesScopeFunctionsSet
+{
+	FunctionsSet functions_set;
+
+	// Is incomplete, if there are some syntax elements in containers.
+	ust::vector</ ust::shared_ptr_final</ Synt::Function /> /> syntax_elements;
+}
+
+struct ClassField
+{
+	Type t;
+	size_type index= ~0s;
+	ust::shared_ptr_final</ Synt::ClassField /> syntax_element;
+}
+
+class NamesScopeValue
+{
+public:
+	fn constructor( mut this, NamesScopeValue &imut other ) = default;
+	op=( mut this, NamesScopeValue &imut other ) = default;
+
+	// TODO - add method for deep copy
+
+	template</ type T />
+	fn conversion_constructor( T mut t )
+		( something_( ust::shared_ptr_mut</T/>(move(t))) )
+	{}
+
+	template</type T/>
+	fn Get( imut this ) : ust::shared_ptr_nullable_mut</T/>
+	{
+		auto x= something_.get</ ust::shared_ptr_mut</T/> />();
+		if( x.empty() )
+		{
+			return ust::shared_ptr_nullable_mut</T/>();
+		}
+		return ust::shared_ptr_nullable_mut</T/>(x.get_ref());
+	}
+
+private:
+	ust::variant</ tup[
+		ust::shared_ptr_mut</Type/>,
+		ust::shared_ptr_mut</NamesScopeVariable/>,
+		ust::shared_ptr_mut</NamesScopeFunctionsSet/>,
+		ClassTypePtr,
+		ust::shared_ptr_mut</ClassField/>
+	] /> something_;
+}
+
+//
+// NamesScope
+//
+
+type ErrorsContainer= ust::vector</ CodeBuilderError />;
+type ErrorsContainerPtr= ust::shared_ptr_nullable_mut</ErrorsContainer/>;
+
+type NamesScopeMutPtr = ust::shared_ptr_mut </NamesScope/>;
+type NamesScopePtr= ust::shared_ptr_imut</NamesScope/>;
+
+class NamesScope
+{
+public:
+	fn constructor( ust::string8 mut name, ust::shared_ptr_nullable_imut</NamesScope/>& parent );
+
+	fn GetThisScopeValue( this, ust::string8& name ) : ust::optional_ref</ NamesScopeValue, false />'this';
+
+	fn AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : ust::optional_ref</ NamesScopeValue, true />'this';
+
+	fn GetParent( this ) : ust::shared_ptr_nullable_imut</NamesScope/>;
+
+	fn SetErrors( mut this, ErrorsContainerPtr errors_container );
+	fn GetErrors( this ) : ErrorsContainerPtr;
+
+	// HACK! for iteration. Remove this.
+	fn GetInternalContainer( imut this ) : ust::unordered_map</ ust::string8, NamesScopeValue /> &
+	{
+		return names_map_;
+	}
+
+	// Get full name (with enclosing namespaces) un human-readable format.
+	fn ToString( this ) : ust::string8;
+
+private:
+	ust::string8 name_;
+	ust::weak_ptr_imut</NamesScope/> parent_;
+
+	ust::unordered_map</ ust::string8, NamesScopeValue /> names_map_;
+
+	ErrorsContainerPtr errors_container_;
+}
+
+} // namespace U

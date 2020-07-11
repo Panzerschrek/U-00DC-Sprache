@@ -562,7 +562,30 @@ U_TEST(DecrementTest1)
 	}
 }
 
-U_TEST(UnaryMinusTest)
+U_TEST(UnaryMinusTest0)
+{
+	static const char c_program_text[]=
+	"\
+	fn Foo( i32 x ) : i32\
+	{\
+		return -x;\
+	}"
+	;
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooi" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const int32_t arg_value= -874;
+	llvm::GenericValue arg;
+	arg.IntVal= llvm::APInt( 32, uint64_t(arg_value) );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>( arg ) );
+	U_TEST_ASSERT( uint64_t( - arg_value ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(UnaryMinusTest1)
 {
 	static const char c_program_text[]=
 	"\
@@ -578,17 +601,14 @@ U_TEST(UnaryMinusTest)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooi" );
 	U_TEST_ASSERT( function != nullptr );
 
-	int32_t arg_value= 54785;
+	const int32_t arg_value= 54785;
 	llvm::GenericValue arg;
 	arg.IntVal= llvm::APInt( 32, uint64_t(arg_value) );
 
-	llvm::GenericValue result_value=
-		engine->runFunction(
-			function,
-			llvm::ArrayRef<llvm::GenericValue>( arg ) );
-
-	U_TEST_ASSERT( static_cast<uint64_t>( - - arg_value ) == result_value.IntVal.getLimitedValue() );
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>( arg ) );
+	U_TEST_ASSERT( uint64_t( - - arg_value ) == result_value.IntVal.getLimitedValue() );
 }
+
 
 U_TEST(LogicalNotTest)
 {
@@ -1355,6 +1375,5 @@ U_TEST( RemOperatorTest2 )
 		}
 	}
 }
-
 
 } // namespace U

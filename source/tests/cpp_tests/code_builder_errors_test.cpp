@@ -3,6 +3,25 @@
 namespace U
 {
 
+U_TEST(NameNotFoundTest_Minus1)
+{
+	// Unknown type.
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : unknown_type
+		{
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
+}
+
 U_TEST(NameNotFoundTest0)
 {
 	// Unknown named oberand.
@@ -52,7 +71,7 @@ U_TEST(NameNotFoundTest2)
 		struct S{}
 		fn Foo() : i32
 		{
-			var S x{};
+			var S x;
 			return x.unexistent_field;
 		}
 	)";
@@ -288,6 +307,23 @@ U_TEST( Redefinition4 )
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
 	U_TEST_ASSERT( error.file_pos.GetLine() == 9u );
+}
+
+U_TEST( Redefinition5 )
+{
+	// Arg redefinition
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x, f32 x ){}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
 }
 
 U_TEST(UnknownNumericConstantTypeTest0)

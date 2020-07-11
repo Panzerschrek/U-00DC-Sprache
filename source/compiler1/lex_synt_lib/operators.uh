@@ -1,0 +1,86 @@
+import "/random_access_range.u"
+
+namespace U
+{
+
+enum BinaryOperatorType : u8
+{
+	Add,
+	Sub,
+	Mul,
+	Div,
+	Rem,
+
+	Equal,
+	NotEqual,
+	Less,
+	LessEqual,
+	Greater,
+	GreaterEqual,
+
+	And,
+	Or,
+	Xor,
+
+	ShiftLeft ,
+	ShiftRight,
+
+	LazyLogicalAnd,
+	LazyLogicalOr,
+}
+
+enum OverloadedOperator : u8
+{
+	None,
+
+	Add, // for unary and binary +
+	Sub, // for unary and binary -
+	Mul,
+	Div,
+	Rem,
+
+	Equal,
+	NotEqual,
+	Less,
+	LessEqual,
+	Greater,
+	GreaterEqual,
+
+	And,
+	Or,
+	Xor,
+
+	ShiftLeft ,
+	ShiftRight,
+
+	AssignAdd,
+	AssignSub,
+	AssignMul,
+	AssignDiv,
+	AssignRem,
+
+	AssignAnd,
+	AssignOr ,
+	AssignXor,
+
+	AssignShiftLeft ,
+	AssignShiftRight,
+
+	LogicalNot,
+	BitwiseNot,
+
+	Assign,
+	Increment,
+	Decrement,
+
+	Indexing,
+	Call,
+}
+
+fn GetOverloadedOperatorForBinaryOperator( BinaryOperatorType binary_operator_type ) : OverloadedOperator;
+fn GetOverloadedOperatorForAdditiveAssignmentOperator( BinaryOperatorType operator_type ) : OverloadedOperator;
+
+fn BinaryOperatorToString( BinaryOperatorType o ) : ust::array_view_imut</ char8 />;
+fn OverloadedOperatorToString( OverloadedOperator o ) : ust::array_view_imut</ char8 />;
+
+} // namespace U

@@ -1,0 +1,145 @@
+import "../lex_synt_lib/syntax_analyzer.uh"
+import "/code_builder_errors.uh"
+import "function_context.uh"
+import "structs_combined.uh"
+
+namespace U
+{
+
+class CodeBuilder
+{
+public:
+	// llvm context, data layout should live longer, than this class.
+	fn constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data_layout );
+
+	struct BuildResult
+	{
+		ust::vector</CodeBuilderError/> errors;
+		LLVMModuleRef llvm_module;
+	}
+
+	fn BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : BuildResult;
+
+private:
+	fn NamesScopeValueToValue( this, NamesScopePtr& names_scope, NamesScopeValue& names_scope_value ) : Value;
+	fn ResolveValue( this, NamesScopePtr& names_scope, Synt::ComplexName& complex_name ) : Value;
+
+	fn FillGlobalNamesScope( this, NamesScope &mut names_scope );
+
+	fn NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, Synt::ProgramElements& program_elements );
+	fn NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, Synt::ClassElements& class_elements );
+	fn NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function );
+	fn NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_ );
+	fn NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field );
+
+	fn NamesScopeBuild( this, NamesScopePtr& names_scope_ptr );
+	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/>& functions_set );
+	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</ClassType/>& class_type );
+	fn BuildFunctionsSet( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/> functions_set, bool build_body );
+	fn BuildClass( this, NamesScopePtr& names_scope_ptr, ClassTypePtr& class_type );
+
+	// Returns "true" if ok.
+	fn PrepareFunction(
+		this,
+		ust::shared_ptr_final</Synt::Function/>& function_declaration_ptr,
+		NamesScopePtr& names_scope_ptr,
+		FunctionsSet &mut functions_set ) : bool;
+
+	fn PrepareType( this, NamesScopePtr& names_scope, Synt::TypeName& type_name ) : Type;
+	fn PrepareType( this, NamesScopePtr& names_scope, Synt::ComplexName& named_type ) : Type;
+	fn PrepareType( this, NamesScopePtr& names_scope, ust::box</Synt::ArrayType/>& array_type ) : Type;
+	fn PrepareType( this, NamesScopePtr& names_scope, ust::box</Synt::FunctionType/>& function_type_ptr ) : Type;
+	fn PrepareType( this, NamesScopePtr& names_scope, Synt::FunctionType& function_type ) : Type;
+
+	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Initializer& initializer );
+	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::EmptyVariant& empty_initializer );
+	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Expression& expression_initializer );
+	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ZeroInitializer& zero_initializer );
+	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::UninitializedInitializer& uninitialized_initializer );
+
+	fn BuildFuncCode( this, NamesScopePtr& names_scope_ptr, FunctionVariable& func_variable );
+
+	struct BlockElementBuildInfo
+	{
+		bool have_terminal_instruction_inside= false;
+	}
+
+	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::Block/>& block_ptr ) : BlockElementBuildInfo;
+	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block ) : BlockElementBuildInfo;
+	fn BuildBlockElement( this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration& variables_declaration ) : BlockElementBuildInfo;
+	fn BuildBlockElement( this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration ) : BlockElementBuildInfo;
+	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator ) : BlockElementBuildInfo;
+	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AssignmentOperator& assignment_operator ) : BlockElementBuildInfo;
+	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : BlockElementBuildInfo;
+	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfOperator& if_operator ) : BlockElementBuildInfo;
+	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WhileOperator& while_operator ) : BlockElementBuildInfo;
+	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BreakOperator& break_operator ) : BlockElementBuildInfo;
+	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ContinueOperator& continue_operator ) : BlockElementBuildInfo;
+
+	fn BuildExpressionCodeEnsureVariable( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Variable;
+
+	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Value;
+	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : Value;
+	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NumericConstant& numeric_constant ) : Value;
+	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BooleanConstant& boolean_constant ) : Value;
+	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value;
+	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value;
+	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BracketExpression& bracket_expression ) : Value;
+	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IndexationOperator& indexation_operator ) : Value;
+	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CallOperator& call_operator ) : Value;
+	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MemberAccessOperator& member_access_operator ) : Value;
+	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnaryPlus& unary_plus ) : Value;
+	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnaryMinus& unary_minus ) : Value;
+	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::LogicalNot& logical_not ) : Value;
+	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BitwiseNot& bitwise_not ) : Value;
+
+	// Returns "false" if not complete.
+	fn EnsureTypeComplete( this, Type& t ) : bool;
+
+	fn GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef;
+	fn GetZeroGEPIndex( this ) : LLVMValueRef;
+	fn CreateMoveToLLVMRegisterInstruction( Variable& variable, FunctionContext& function_context ) : LLVMValueRef;
+
+private:
+	LLVMContextRef imut llvm_context_;
+	LLVMTargetDataRef imut data_layout_;
+
+	struct FundamentalLLVMTypes
+	{
+		LLVMTypeRef  i8_;
+		LLVMTypeRef  u8_;
+		LLVMTypeRef i16_;
+		LLVMTypeRef u16_;
+		LLVMTypeRef i32_;
+		LLVMTypeRef u32_;
+		LLVMTypeRef i64_;
+		LLVMTypeRef u64_;
+		LLVMTypeRef i128_;
+		LLVMTypeRef u128_;
+
+		LLVMTypeRef f32_;
+		LLVMTypeRef f64_;
+
+		LLVMTypeRef char8_ ;
+		LLVMTypeRef char16_;
+		LLVMTypeRef char32_;
+
+		LLVMTypeRef void_;
+		LLVMTypeRef void_for_ret_;
+		LLVMTypeRef invalid_type_;
+		LLVMTypeRef bool_;
+
+		LLVMTypeRef int_ptr; // Type with width of pointer.
+	}
+	FundamentalLLVMTypes fundamental_llvm_types_= zero_init;
+
+	Type invalid_type_;
+	Type void_type_;
+	Type void_type_for_ret_;
+	Type bool_type_;
+	Type size_type_; // Alias for u32 or u64
+
+	LLVMModuleRef module_= LLVMModuleRef::Null;
+}
+
+} // namespace U
