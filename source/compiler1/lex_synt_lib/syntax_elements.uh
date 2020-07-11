@@ -155,6 +155,32 @@ type TypeName= ust::variant</ tup[
 	ust::box</FunctionType/>
 	] />;
 
+struct SequenceInitializer
+{
+	FilePos file_pos;
+	ust::vector</ ust::box</ Initializer /> /> elements_initializers;
+}
+
+struct StructNamedInitializer
+{
+	FilePos file_pos;
+
+	struct Member
+	{
+		FilePos file_pos;
+		ust::string8 name;
+		ust::box</ Initializer /> initializer;
+	}
+
+	ust::vector</ Member /> members_initializers;
+}
+
+struct ConstructorInitializer
+{
+	FilePos file_pos;
+	ust::vector</ Expression /> args;
+}
+
 struct ZeroInitializer
 {
 	FilePos file_pos;
@@ -168,6 +194,9 @@ struct UninitializedInitializer
 type Initializer= ust::variant</ tup [
 	EmptyVariant,
 	Expression,
+	SequenceInitializer,
+	StructNamedInitializer,
+	ConstructorInitializer,
 	ZeroInitializer,
 	UninitializedInitializer
 	] />;
