@@ -94,6 +94,16 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 
 	foreach( &member_initializer : struct_named_initializer.members_initializers )
 	{
+		// TODO - use unordered_set
+		foreach( &prev_initializer : struct_named_initializer.members_initializers )
+		{
+			if( ust::ref_to_int(prev_initializer) < ust::ref_to_int(member_initializer) &&
+				member_initializer.name == prev_initializer.name )
+			{
+				REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope, member_initializer.file_pos, member_initializer.name )
+			}
+		}
+
 		auto member_ref= class_members.GetThisScopeValue( member_initializer.name );
 		if( member_ref.empty() )
 		{
@@ -126,6 +136,49 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 			member_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, op_name_nt.front() );
 		}
 		BuildInitializer( names_scope, function_context, member_variable, member_initializer.initializer.get_ref() );
+	}
+
+	// Apply empty initializer for fileds, missing in struct named initializer.
+	foreach( &class_member : class_members.GetInternalContainer() )
+	{
+		auto field_ptr= class_member.value().Get</ ClassField />();
+		if( !field_ptr.empty() )
+		{
+			auto mut found= false;
+			foreach( &member_initializer : struct_named_initializer.members_initializers )
+			{
+				if( member_initializer.name == class_member.key() )
+				{
+					found= true;
+					break;
+				}
+			}
+
+			if( !found )
+			{
+				auto mut field_lock= field_ptr.lock_mut();
+				var ClassField &mut field= field_lock.get_ref();
+
+				var NamesScopeVariable mut member_variable
+				{
+					.t= field.t
+				};
+
+				auto op_name_nt= "." + field.syntax_element.get_ref().name + "\0";
+				unsafe
+				{
+					var [ LLVMValueRef, 2 ] indexes
+					[
+						GetZeroGEPIndex(),
+						LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
+					];
+
+					member_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, op_name_nt.front() );
+				}
+
+				BuildEmptyInitializer( names_scope, function_context, member_variable, class_member.key(), struct_named_initializer.file_pos );
+			}
+		}
 	}
 }
 
