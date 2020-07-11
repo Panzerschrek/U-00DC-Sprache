@@ -156,7 +156,7 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 		return;
 	}
 
-	// TODO - report not implemented
+	REPORT_ERROR( ConstructorInitializerForUnsupportedType, names_scope, constructor_initializer.file_pos )
 	return;
 }
 
