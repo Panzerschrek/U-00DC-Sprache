@@ -67,6 +67,27 @@ U_TEST(ExpectedInitializerTest2)
 	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
+U_TEST(ExpectedInitializerTest3)
+{
+	// Expected initializer for one of struct fileds.
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32 x; i32 y; }
+		fn Foo()
+		{
+			var S s{ .x= 678 }; // 'y' left uninitialized here
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+}
+
 U_TEST(ArrayInitializerForNonArrayTest0)
 {
 	// Array initializer for fundamental type.
