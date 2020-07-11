@@ -72,11 +72,20 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 			}
 
 			var ust::optional_ref</Synt::Expression, false/> mut initializer_expression;
-			if_var( &expression_initializer :  variable_declaration.initializer.get</Synt::Expression/>() )
+			if_var( &expression_initializer : variable_declaration.initializer.get</Synt::Expression/>() )
 			{
 				initializer_expression.reset(expression_initializer);
 			}
-			// TODO - support constructor initializer.
+			if_var( &constructor_initializer : variable_declaration.initializer.get</Synt::ConstructorInitializer/>() )
+			{
+				if( constructor_initializer.args.size() != 1s )
+				{
+					REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names_scope, constructor_initializer.file_pos )
+					return BlockElementBuildInfo(); // TODO - continue instead
+				}
+
+				initializer_expression.reset( constructor_initializer.args.front() );
+			}
 
 			if( initializer_expression.empty() )
 			{

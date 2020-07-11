@@ -45,6 +45,7 @@ bool FilterTest( const std::string& test_name )
 		"ComparisonUnsignedOperatorsTest",
 		"ConstructorInitializerForFundamentalTypesTest0",
 		"ConstructorInitializerForFundamentalTypesTest1",
+		"ConstructorInitializerForReferencesTest0",
 		"ContinueOperatorTest",
 		"ContinueOutsideLoopTest",
 		"EqualityFloatOperatorsTest",
