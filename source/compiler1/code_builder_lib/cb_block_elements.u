@@ -197,9 +197,13 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 
 fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AssignmentOperator& assignment_operator ) : BlockElementBuildInfo
 {
-	// TODO - check for errors, check types, echec overloaded operator.
-
 	auto r= BuildExpressionCodeEnsureVariable( names_scope, function_context, assignment_operator.r );
+	if( r.t.GetFundamentalType().empty() )
+	{
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, assignment_operator.file_pos, r.t )
+		return BlockElementBuildInfo();
+	}
+
 	auto r_in_register= CreateMoveToLLVMRegisterInstruction( r, function_context );
 
 	auto l= BuildExpressionCodeEnsureVariable( names_scope, function_context, assignment_operator.l );
@@ -207,6 +211,11 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 	if( r.t != l.t )
 	{
 		REPORT_ERROR( TypesMismatch, names_scope, assignment_operator.file_pos, l.t, r.t )
+		return BlockElementBuildInfo();
+	}
+	if( l.value_type != ValueType::ReferenceMut )
+	{
+		REPORT_ERROR( ExpectedReferenceValue, names_scope, assignment_operator.file_pos )
 		return BlockElementBuildInfo();
 	}
 

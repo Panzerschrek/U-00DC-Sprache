@@ -452,6 +452,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 				{
 					.t= variable_array_type.element_type.get_ref(),
 					.location= Variable::Location::Pointer,
+					.value_type= variable.value_type,
 				};
 
 				unsafe

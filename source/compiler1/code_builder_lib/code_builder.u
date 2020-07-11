@@ -308,8 +308,11 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariabl
 		auto mut arg_n= 0u;
 		foreach( &in_arg : func_variable.syntax_element.get_ref().function_type.args )
 		{
-			var NamesScopeVariable mut out_arg;
-			out_arg.t= function_type.args[arg_n].arg_type.get_ref();
+			var NamesScopeVariable mut out_arg
+			{
+				.t= function_type.args[arg_n].arg_type.get_ref(),
+				.is_mutable= function_type.args[arg_n].is_mutable,
+			};
 
 			// Ensure type completness even for reference args because of reference checking.
 			if( !EnsureTypeComplete( out_arg.t ) )
