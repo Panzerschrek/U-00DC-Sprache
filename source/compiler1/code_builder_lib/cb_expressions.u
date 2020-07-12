@@ -1,3 +1,4 @@
+import "../lex_synt_lib/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
 
@@ -106,6 +107,51 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 
 fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value
 {
+	if( named_operand.name == KeywordToString( Keyword::this_ ) )
+	{
+		if( function_context.this_.empty() )
+		{
+			REPORT_ERROR( ThisUnavailable, names_scope, named_operand.file_pos )
+			return ErrorValue();
+		}
+		return function_context.this_.get_ref();
+	}
+	else if( !function_context.this_.empty() )
+	{
+		var ClassTypePtr class_type= function_context.this_.get_ref().t.GetClassType().get_ref();
+		auto class_members= class_type.lock_imut().get_ref().members;
+		if_var( &member : class_members.lock_imut().get_ref().GetThisScopeValue( named_operand.name ) )
+		{
+			auto field_ptr= member.Get</ClassField/>();
+			if( !field_ptr.empty() )
+			{
+				auto field_lock= field_ptr.lock_imut();
+				auto& field= field_lock.get_ref();
+
+				var Variable mut result
+				{
+					.t= field.t,
+					.location= Variable::Location::Pointer,
+					.value_type= function_context.this_.get_ref().value_type,
+				};
+
+				auto op_name_nt= "." + named_operand.name + "\0";
+				unsafe
+				{
+					var [ LLVMValueRef, 2 ] indexes
+					[
+						GetZeroGEPIndex(),
+						LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
+					];
+
+					result.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, function_context.this_.get_ref().llvm_value, indexes[0], 2u, op_name_nt.front() );
+				}
+
+				return move(result);
+			}
+		}
+	}
+
 	return ResolveValue( names_scope, named_operand );
 }
 

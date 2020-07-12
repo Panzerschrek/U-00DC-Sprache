@@ -25,6 +25,8 @@ public:
 	bool imut return_value_is_reference;
 	bool imut return_value_is_mutable;
 
+	ust::optional</Variable/> this_;
+
 	LLVMBasicBlockRef alloca_basic_block= LLVMBasicBlockRef::Null;
 	LLVMBuilderRef alloca_ir_builder= LLVMBuilderRef::Null;
 

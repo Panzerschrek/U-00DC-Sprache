@@ -138,6 +138,7 @@ bool FilterTest( const std::string& test_name )
 		"code_builder_test.cpp:VariablesTest1",
 		//"methods_test.cpp:MethodTest0",
 		"methods_test.cpp:MethodTest2",
+		"methods_test.cpp:MethodTest3",
 	};
 
 	if( std::find_if(

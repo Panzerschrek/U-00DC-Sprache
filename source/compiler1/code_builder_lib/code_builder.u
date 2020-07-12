@@ -438,10 +438,24 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariabl
 
 			++arg_n;
 
-			var bool insert_ok= !args_names_scope.AddName( in_arg.name, NamesScopeValue( move(out_arg) ) ).empty();
-			if( !insert_ok )
+			if( in_arg.name == KeywordToString( Keyword::this_ ) )
 			{
-				REPORT_ERROR( Redefinition, names_scope, in_arg.file_pos, in_arg.name )
+				var Variable mut this_variable
+				{
+					.t= take(out_arg.t),
+					.value_type= select( out_arg.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+					.llvm_value= out_arg.llvm_value,
+				};
+				function_context.this_= move(this_variable);
+				move(out_arg);
+			}
+			else
+			{
+				var bool insert_ok= !args_names_scope.AddName( in_arg.name, NamesScopeValue( move(out_arg) ) ).empty();
+				if( !insert_ok )
+				{
+					REPORT_ERROR( Redefinition, names_scope, in_arg.file_pos, in_arg.name )
+				}
 			}
 		}
 	}
