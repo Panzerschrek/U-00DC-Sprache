@@ -29,6 +29,17 @@ fn MangleType( Type& t ) : ust::string8
 		if( f == U_FundamentalType::char16_		){ return ust::string8( "Ds"); }
 		if( f == U_FundamentalType::char32_		){ return ust::string8( "Di"); }
 	}
+	if_var( class_type : t.GetClassType() )
+	{
+		// TODO use "auto" for name.
+		var ust::string8 name= class_type.lock_imut().get_ref().members.lock_imut().get_ref().GetThisNamespaceName();
+		var ust::string8 mut res;
+		res+= "N";
+		res+= ust::to_string8( name.size() );
+		res+= name;
+		res+= "E";
+		return move(res);
+	}
 
 	return ust::string8();
 }
@@ -79,6 +90,14 @@ fn MangleFunction(
 	{
 		foreach( &arg : function_type.args )
 		{
+			if( !arg.is_mutable && arg.is_reference )
+			{
+				res+= "K"; // Konst
+			}
+			if( arg.is_reference )
+			{
+				res+= "R";
+			}
 			res+= MangleType( arg.arg_type.get_ref() );
 		}
 	}
