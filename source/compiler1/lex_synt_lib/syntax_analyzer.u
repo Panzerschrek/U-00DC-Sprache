@@ -527,6 +527,36 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 	}
 	NextLexem();
 
+	if( IsKeyword( it_.front(), Keyword::this_ ) )
+	{
+		var FunctionType::Arg mut this_arg
+		{
+			.file_pos= it_.front().file_pos,
+			.name= it_.front().text
+		};
+		NextLexem();
+		res.function_type.args.push_back( move(this_arg) );
+	}
+	else if( IsKeyword( it_.front(), Keyword::mut_ ) || IsKeyword( it_.front(), Keyword::imut_ ) )
+	{
+		auto mutability_modifier= select( IsKeyword( it_.front(), Keyword::mut_ ) ? MutabilityModifier::Mutable : MutabilityModifier::Immutable );
+		NextLexem();
+
+		if( !IsKeyword( it_.front(), Keyword::this_ ) )
+		{
+			PushErrorMessage();
+		}
+
+		var FunctionType::Arg mut this_arg
+		{
+			.file_pos= it_.front().file_pos,
+			.name= it_.front().text,
+			.mutability_modifier= mutability_modifier,
+		};
+		NextLexem();
+		res.function_type.args.push_back( move(this_arg) );
+	}
+
 	while( NotEndOfFile() )
 	{
 		if( it_.front().lexem_type == Lexem::Type::BracketRight )
@@ -535,9 +565,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 			break;
 		}
 
-		var FunctionType::Arg mut arg;
-		arg.file_pos= it_.front().file_pos;
-		arg.arg_type= ParseTypeName();
+		var FunctionType::Arg mut arg{ .file_pos= it_.front().file_pos, .arg_type= ParseTypeName() };
 
 		if( it_.front().lexem_type == Lexem::Type::And )
 		{
