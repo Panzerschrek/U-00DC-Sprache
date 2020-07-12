@@ -156,7 +156,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 				var ThisMethodsSet mut this_methods_set
 				{
 					.this_= function_context.this_.get_ref(),
-					.functions_set= functions_set_ptr.lock_imut().get_ref().functions_set, // Should be complete, because we in body of this-call method.
+					.functions_set= functions_set_ptr.lock_imut().get_ref().functions_set, // Should be complete, because we are in body of this-call method.
 				};
 				return move(this_methods_set);
 			}

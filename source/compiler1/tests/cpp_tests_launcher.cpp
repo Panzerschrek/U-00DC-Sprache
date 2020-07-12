@@ -140,6 +140,8 @@ bool FilterTest( const std::string& test_name )
 		"methods_test.cpp:MethodTest2",
 		"methods_test.cpp:MethodTest3",
 		"methods_test.cpp:MethodTest4",
+		"methods_test.cpp:MethodTest7",
+		"methods_test.cpp:MethodTest8",
 	};
 
 	if( std::find_if(
