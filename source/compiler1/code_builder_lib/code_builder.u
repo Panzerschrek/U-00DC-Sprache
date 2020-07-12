@@ -190,7 +190,8 @@ fn CodeBuilder::BuildFunctionsSet( this, NamesScopePtr& names_scope_ptr, ust::sh
 		while( !functions_set.syntax_elements.empty() )
 		{
 			auto syntax_element_ptr= functions_set.syntax_elements.back();
-			PrepareFunction( syntax_element_ptr, names_scope_ptr, functions_set.functions_set );
+			auto class_type_ptr= functions_set.class_;
+			PrepareFunction( syntax_element_ptr, names_scope_ptr, class_type_ptr, functions_set.functions_set );
 			functions_set.syntax_elements.drop_back();
 		}
 	}
@@ -211,31 +212,41 @@ fn CodeBuilder::BuildClass( this, NamesScopePtr& names_scope_ptr, ClassTypePtr& 
 		return;
 	}
 
-	auto mut class_lock= class_type.lock_mut();
-	var ClassType &mut class_= class_lock.get_ref();
-
 	var ust::vector</ LLVMTypeRef /> mut fields_llvm_types;
 
-	foreach( &member : class_.members.lock_imut().get_ref().GetInternalContainer() )
+	auto class_members= class_type.lock_imut().get_ref().members;
+	foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
 	{
-		auto field_ptr= member.value().Get</ ClassField />();
-		if( !field_ptr.empty() )
 		{
-			auto mut field_lock= field_ptr.lock_mut();
-			var ClassField &mut field= field_lock.get_ref();
-
-			field.t= PrepareType( class_.members, field.syntax_element.get_ref().t );
-
-			if( !EnsureTypeComplete( field.t ) )
+			auto field_ptr= member.value().Get</ ClassField />();
+			if( !field_ptr.empty() )
 			{
-				REPORT_ERROR( UsingIncompleteType, class_.members, field.syntax_element.get_ref().file_pos, field.t )
-				return; // TODO - continue instead
-			}
+				auto mut field_lock= field_ptr.lock_mut();
+				var ClassField &mut field= field_lock.get_ref();
 
-			field.index= fields_llvm_types.size();
-			fields_llvm_types.push_back( field.t.GetLLVMType() );
+				field.t= PrepareType( class_members, field.syntax_element.get_ref().t );
+
+				if( !EnsureTypeComplete( field.t ) )
+				{
+					REPORT_ERROR( UsingIncompleteType, class_members, field.syntax_element.get_ref().file_pos, field.t )
+					return; // TODO - continue instead
+				}
+
+				field.index= fields_llvm_types.size();
+				fields_llvm_types.push_back( field.t.GetLLVMType() );
+			}
+		}
+		{
+			auto functions_set_ptr= member.value().Get</ NamesScopeFunctionsSet />();
+			if( !functions_set_ptr.empty() )
+			{
+				BuildFunctionsSet( class_members, ust::to_non_nullable( functions_set_ptr ), false );
+			}
 		}
 	}
+
+	auto mut class_lock= class_type.lock_mut();
+	var ClassType &mut class_= class_lock.get_ref();
 
 	unsafe
 	{
@@ -260,6 +271,7 @@ fn CodeBuilder::PrepareFunction(
 	this,
 	ust::shared_ptr_final</Synt::Function/>& function_declaration_ptr,
 	NamesScopePtr& names_scope_ptr,
+	ust::shared_ptr_nullable_mut</ClassType/>& class_type,
 	FunctionsSet &mut functions_set ) : bool
 {
 	auto& function_declaration= function_declaration_ptr.get_ref();
@@ -274,7 +286,11 @@ fn CodeBuilder::PrepareFunction(
 		function_variable.body_syntax_element= function_declaration_ptr;
 	}
 
-	function_variable.t= PrepareType( names_scope_ptr, function_declaration.function_type );
+	function_variable.t= PrepareFunctionType( names_scope_ptr, function_declaration.function_type, class_type );
+
+	function_variable.is_this_call=
+		!function_declaration.function_type.args.empty() &&
+		function_declaration.function_type.args.front().name == KeywordToString( Keyword::this_ );
 
 	if_var( &mut prev_function : GetFunctionWithSameType( functions_set, function_variable.t ) )
 	{
@@ -307,6 +323,12 @@ fn CodeBuilder::PrepareFunction(
 			return false;
 		}
 
+		if( prev_function.is_this_call != function_variable.is_this_call )
+		{
+			REPORT_ERROR( ThiscallMismatch, names_scope_ptr, function_declaration.file_pos, function_declaration.name )
+			return false;
+		}
+
 		// TODO - detect here also attrubutes mismatch - virtual, thiscall, etc.
 
 		return true;
@@ -317,7 +339,10 @@ fn CodeBuilder::PrepareFunction(
 		function_variable.llvm_function=
 			LLVMAddFunction(
 				module_,
-				MangleFunction( function_declaration.name, function_variable.t.GetFunctionType().get_ref() ).front(),
+				MangleFunction(
+					names_scope_ptr.lock_imut().get_ref(),
+					function_declaration.name,
+					function_variable.t.GetFunctionType().get_ref() ).front(),
 				function_variable.t.GetLLVMType() );
 	}
 
@@ -413,15 +438,24 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariabl
 
 			++arg_n;
 
-			if( IsKeyword( in_arg.name ) )
+			if( in_arg.name == KeywordToString( Keyword::this_ ) && func_variable.is_this_call && !out_arg.t.GetClassType().empty() )
 			{
-				REPORT_ERROR( UsingKeywordAsName, names_scope, in_arg.file_pos )
+				var Variable mut this_variable
+				{
+					.t= take(out_arg.t),
+					.value_type= select( out_arg.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+					.llvm_value= out_arg.llvm_value,
+				};
+				function_context.this_= move(this_variable);
+				move(out_arg);
 			}
-
-			var bool insert_ok= !args_names_scope.AddName( in_arg.name, NamesScopeValue( move(out_arg) ) ).empty();
-			if( !insert_ok )
+			else
 			{
-				REPORT_ERROR( Redefinition, names_scope, in_arg.file_pos, in_arg.name )
+				var bool insert_ok= !args_names_scope.AddName( in_arg.name, NamesScopeValue( move(out_arg) ) ).empty();
+				if( !insert_ok )
+				{
+					REPORT_ERROR( Redefinition, names_scope, in_arg.file_pos, in_arg.name )
+				}
 			}
 		}
 	}

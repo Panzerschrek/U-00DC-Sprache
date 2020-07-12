@@ -166,6 +166,8 @@ struct FunctionVariable
 	Type t; // FunctionType 100%
 	LLVMValueRef llvm_function= LLVMValueRef::Null;
 
+	bool is_this_call= false;
+
 	ust::shared_ptr_final_nullable</ Synt::Function /> prototype_syntax_element;
 	ust::shared_ptr_final_nullable</ Synt::Function /> body_syntax_element;
 }
@@ -176,12 +178,19 @@ struct FunctionsSet
 	ust::vector</FunctionVariable/> functions;
 }
 
+struct ThisMethodsSet
+{
+	Variable this_;
+	FunctionsSet functions_set;
+}
+
 struct ErrorValue{}
 
 type Value= ust::variant</ tup[
 	Variable,
 	Type,
 	FunctionsSet,
+	ThisMethodsSet,
 	ErrorValue
 	] />;
 
@@ -199,6 +208,7 @@ struct NamesScopeVariable
 struct NamesScopeFunctionsSet
 {
 	FunctionsSet functions_set;
+	ust::shared_ptr_nullable_mut</ClassType/> class_; // Non-empty for function set in struct/class.
 
 	// Is incomplete, if there are some syntax elements in containers.
 	ust::vector</ ust::shared_ptr_final</ Synt::Function /> /> syntax_elements;
@@ -273,6 +283,11 @@ public:
 	fn GetInternalContainer( imut this ) : ust::unordered_map</ ust::string8, NamesScopeValue /> &
 	{
 		return names_map_;
+	}
+
+	fn GetThisNamespaceName( this ) : ust::string8&
+	{
+		return name_;
 	}
 
 	// Get full name (with enclosing namespaces) un human-readable format.

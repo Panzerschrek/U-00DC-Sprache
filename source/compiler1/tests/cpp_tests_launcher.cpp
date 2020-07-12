@@ -103,6 +103,7 @@ bool FilterTest( const std::string& test_name )
 		"StructNamedInitializersTest1",
 		"StructNamedInitializersTest2",
 		"StructNamedInitializersTest3",
+		"ThiscallMismatch_Test0",
 		"TwodimensionalArrayInitializerTest0",
 		"TypesMismatchTest0",
 		"TypesMismatchTest2",
@@ -135,6 +136,12 @@ bool FilterTest( const std::string& test_name )
 		"code_builder_test.cpp:TypesMismatchTest1",
 		"code_builder_test.cpp:VariablesTest0",
 		"code_builder_test.cpp:VariablesTest1",
+		//"methods_test.cpp:MethodTest0",
+		"methods_test.cpp:MethodTest2",
+		"methods_test.cpp:MethodTest3",
+		"methods_test.cpp:MethodTest4",
+		"methods_test.cpp:MethodTest7",
+		"methods_test.cpp:MethodTest8",
 	};
 
 	if( std::find_if(
