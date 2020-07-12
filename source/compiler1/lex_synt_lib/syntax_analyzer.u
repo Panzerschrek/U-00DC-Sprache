@@ -610,7 +610,10 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 	{
 		res.block.reset( ParseBlock() );
 	}
-	else if( it_.front().lexem_type == Lexem::Type::Semicolon ){} // Prototype
+	else if( it_.front().lexem_type == Lexem::Type::Semicolon )
+	{
+		NextLexem();
+	}
 	else
 	{
 		PushErrorMessage();

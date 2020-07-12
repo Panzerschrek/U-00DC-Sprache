@@ -1,5 +1,5 @@
 import "/box.u"
-import "/shared/shared_ptr_final.u"
+import "/shared/shared_ptr_final_nullable.u"
 import "/shared/weak_ptr_imut.u"
 import "/unordered_map.u"
 import "/variant.u"
@@ -166,7 +166,8 @@ struct FunctionVariable
 	Type t; // FunctionType 100%
 	LLVMValueRef llvm_function= LLVMValueRef::Null;
 
-	ust::shared_ptr_final</ Synt::Function /> syntax_element;
+	ust::shared_ptr_final_nullable</ Synt::Function /> prototype_syntax_element;
+	ust::shared_ptr_final_nullable</ Synt::Function /> body_syntax_element;
 }
 
 // Set of functions and function templates with same name in one scope.

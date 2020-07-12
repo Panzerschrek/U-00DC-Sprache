@@ -61,6 +61,8 @@ bool FilterTest( const std::string& test_name )
 		"ExpressionInitializerTest0",
 		"ExpressionInitializerTest1",
 		"ExpressionInitializerTest2",
+		"FunctionPrototypeTest0",
+		"FunctionPrototypeTest1",
 		"FundamentalTypesHaveConstructorsWithExactlyOneParameterTest0",
 		"FundamentalTypesHaveConstructorsWithExactlyOneParameterTest1",
 		"IfOperatorTest",
