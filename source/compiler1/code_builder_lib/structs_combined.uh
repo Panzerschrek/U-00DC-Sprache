@@ -247,6 +247,7 @@ public:
 
 private:
 	ust::variant</ tup[
+		NamesScopeMutPtr,
 		ust::shared_ptr_mut</Type/>,
 		ust::shared_ptr_mut</NamesScopeVariable/>,
 		ust::shared_ptr_mut</NamesScopeFunctionsSet/>,

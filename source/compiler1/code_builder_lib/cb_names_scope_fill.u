@@ -105,7 +105,26 @@ fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::sh
 
 fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Namespace/>& namespace_ )
 {
-	// TODO
+	if_var( prev_name : names_scope_ptr.lock_imut().get_ref().GetThisScopeValue( namespace_.get_ref().name ) )
+	{
+		auto prev_namespace= prev_name.Get</NamesScope/>();
+		if( !prev_namespace.empty() )
+		{
+			// Ok - extend previous namespace
+			NamesScopeFill( ust::to_non_nullable( prev_namespace ), namespace_.get_ref().elements );
+		}
+		else
+		{
+			REPORT_ERROR( Redefinition, names_scope_ptr, namespace_.get_ref().file_pos )
+		}
+		return;
+	}
+
+	var NamesScopeValue mut names_scope_value( NamesScope( namespace_.get_ref().name, names_scope_ptr ) );
+	NamesScopeFill( ust::to_non_nullable( names_scope_value.Get</NamesScope/>() ), namespace_.get_ref().elements );
+
+	auto mut lock= names_scope_ptr.lock_mut();
+	lock.get_ref().AddName( namespace_.get_ref().name, move(names_scope_value) );
 }
 
 fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field, ust::shared_ptr_nullable_mut</ClassType/>& class_type )

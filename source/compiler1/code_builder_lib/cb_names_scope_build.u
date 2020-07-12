@@ -11,19 +11,22 @@ fn CodeBuilder::NamesScopeBuild( this, NamesScopePtr& names_scope_ptr )
 
 	foreach( &el : names_scope.GetInternalContainer() )
 	{
+		auto functions_set= el.value().Get</ NamesScopeFunctionsSet />();
+		if( !functions_set.empty() )
 		{
-			auto functions_set= el.value().Get</ NamesScopeFunctionsSet />();
-			if( !functions_set.empty() )
-			{
-				NamesScopeBuildElement( names_scope_ptr, ust::to_non_nullable( functions_set ) );
-			}
+			NamesScopeBuildElement( names_scope_ptr, ust::to_non_nullable( functions_set ) );
 		}
+
+		auto class_type= el.value().Get</ ClassType />();
+		if( !class_type.empty() )
 		{
-			auto class_type= el.value().Get</ ClassType />();
-			if( !class_type.empty() )
-			{
-				NamesScopeBuildElement( names_scope_ptr, ust::to_non_nullable( class_type ) );
-			}
+			NamesScopeBuildElement( names_scope_ptr, ust::to_non_nullable( class_type ) );
+		}
+
+		auto namespace_= el.value().Get</ NamesScope />();
+		if( !namespace_.empty() )
+		{
+			NamesScopeBuild( ust::to_non_nullable( namespace_ ) );
 		}
 	}
 }
