@@ -103,6 +103,11 @@ fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::sh
 	}
 }
 
+fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Namespace/>& namespace_ )
+{
+	// TODO
+}
+
 fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field, ust::shared_ptr_nullable_mut</ClassType/>& class_type )
 {
 	auto& field_name= class_field.get_ref().name;

@@ -322,11 +322,22 @@ struct Class
 	ClassElements class_elements;
 }
 
-type ProgramElement= ust::variant</ tup[
+struct Namespace
+{
+	FilePos file_pos;
+	ust::string8 name;
+	NamespaceElements elements;
+}
+
+type NamespaceElement= ust::variant</ tup[
 	ust::shared_ptr_final</Function/>,
-	ust::shared_ptr_final</Class/>
+	ust::shared_ptr_final</Class/>,
+	ust::shared_ptr_final</Namespace/> // TODO do we really need shared_ptr here?
 	] />;
 
+type NamespaceElements= ust::vector</NamespaceElement/>;
+
+type ProgramElement= NamespaceElement;
 type ProgramElements= ust::vector</ProgramElement/>;
 
 fn GetFilePos( Expression& expression ) : FilePos;
