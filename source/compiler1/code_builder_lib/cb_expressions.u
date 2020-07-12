@@ -648,8 +648,13 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 			{
 				BuildFunctionsSet( class_type_lock.get_ref().members, ust::to_non_nullable( functions_set_ptr ), false );
 
-				// TODO - append "this"
-				return functions_set_ptr.lock_imut().get_ref().functions_set;
+				var ThisMethodsSet mut this_methods_set
+				{
+					.this_= variable,
+					.functions_set= functions_set_ptr.lock_imut().get_ref().functions_set,
+				};
+
+				return move(this_methods_set);
 			}
 		}
 	}

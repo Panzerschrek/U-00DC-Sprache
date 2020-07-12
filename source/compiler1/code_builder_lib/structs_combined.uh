@@ -178,12 +178,19 @@ struct FunctionsSet
 	ust::vector</FunctionVariable/> functions;
 }
 
+struct ThisMethodsSet
+{
+	Variable this_;
+	FunctionsSet functions_set;
+}
+
 struct ErrorValue{}
 
 type Value= ust::variant</ tup[
 	Variable,
 	Type,
 	FunctionsSet,
+	ThisMethodsSet,
 	ErrorValue
 	] />;
 
