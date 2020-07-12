@@ -1185,6 +1185,10 @@ fn SyntaxAnalyzer::ParseClass( mut this ) : Class
 			NextLexem();
 			break;
 		}
+		else if( IsKeyword( it_.front(), Keyword::fn_ ) )
+		{
+			class_.class_elements.push_back( ust::shared_ptr_final</Function/>( ParseFunction() ) );
+		}
 		else
 		{
 			var ClassField mut class_field;
