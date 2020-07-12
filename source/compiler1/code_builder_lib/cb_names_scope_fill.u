@@ -16,18 +16,23 @@ fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, Synt::P
 	}
 }
 
-fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, Synt::ClassElements& class_elements )
+fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, Synt::ClassElements& class_elements, ClassTypePtr& class_type )
 {
 	foreach( & class_element : class_elements )
 	{
 		variant_visit( & el : class_element )
 		{
-			NamesScopeFill( names_scope_ptr, el );
+			NamesScopeFill( names_scope_ptr, el, class_type );
 		}
 	}
 }
 
 fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function )
+{
+	NamesScopeFill( names_scope_ptr, function, ust::shared_ptr_nullable_mut</ClassType/>() );
+}
+
+fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function, ust::shared_ptr_nullable_mut</ClassType/>& class_type )
 {
 	auto& func_name= function.get_ref().name;
 	if( IsKeyword( func_name ) )
@@ -55,6 +60,7 @@ fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::sh
 
 	var NamesScopeFunctionsSet mut functions_set;
 
+	functions_set.class_= class_type;
 	functions_set.syntax_elements.push_back( function );
 
 	names_scope.AddName( func_name, NamesScopeValue( move(functions_set) ) );
@@ -70,8 +76,6 @@ fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::sh
 	}
 
 	var NamesScopeMutPtr class_members( NamesScope( class_name, names_scope_ptr ) );
-	NamesScopeFill( class_members, class_.get_ref().class_elements );
-
 	var ClassType mut class_type
 	{
 		.members= class_members,
@@ -83,10 +87,14 @@ fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::sh
 		class_type.llvm_type= LLVMStructCreateNamed( llvm_context_, (class_.get_ref().name + "\0").front() ); // TODO - mangle type
 	}
 
+	var NamesScopeValue mut names_scope_value( move(class_type) );
+
+	NamesScopeFill( class_members, class_.get_ref().class_elements, ust::to_non_nullable( names_scope_value.Get</ClassType/>() ) );
+
 	var bool mut insert_not_ok= false;
 	{
 		auto mut lock= names_scope_ptr.lock_mut();
-		insert_not_ok= lock.get_ref().AddName( class_name, move(class_type) ).empty();
+		insert_not_ok= lock.get_ref().AddName( class_name, move(names_scope_value) ).empty();
 	}
 
 	if( insert_not_ok )
@@ -95,7 +103,7 @@ fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::sh
 	}
 }
 
-fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field )
+fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field, ust::shared_ptr_nullable_mut</ClassType/>& class_type )
 {
 	auto& field_name= class_field.get_ref().name;
 	if( IsKeyword( field_name ) )

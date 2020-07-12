@@ -1,3 +1,4 @@
+import "../lex_synt_lib/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
 
@@ -51,6 +52,11 @@ fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, ust::box</Synt::F
 
 fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, Synt::FunctionType& function_type ) : Type
 {
+	return PrepareFunctionType( names_scope, function_type, ust::shared_ptr_nullable_mut</ClassType/>() );
+}
+
+fn CodeBuilder::PrepareFunctionType( this, NamesScopePtr& names_scope, Synt::FunctionType& function_type, ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : Type
+{
 	var FunctionType mut res
 	{
 		.return_type(
@@ -66,10 +72,37 @@ fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, Synt::FunctionTyp
 	{
 		var FunctionType::Arg mut out_arg
 		{
-			.arg_type( PrepareType( names_scope, arg.arg_type ) ),
+			.arg_type( invalid_type_ ),
 			.is_reference= arg.reference_modifier == Synt::ReferenceModifier::Reference,
 			.is_mutable= arg.mutability_modifier == Synt::MutabilityModifier::Mutable,
 		};
+
+		if( arg.name == KeywordToString( Keyword::this_ ) )
+		{
+			if( class_type.empty() )
+			{
+				REPORT_ERROR( ThisInNonclassFunction, names_scope, arg.file_pos, ust::string8("TODO - func name") )
+			}
+			else if( ust::ref_to_int(arg) != ust::ref_to_int(function_type.args.front() ) )
+			{
+				REPORT_ERROR( UsingKeywordAsName, names_scope, arg.file_pos )
+			}
+			else
+			{
+				out_arg.is_reference= true;
+				out_arg.arg_type.get_ref()= ust::to_non_nullable( class_type );
+			}
+		}
+		else
+		{
+			if( IsKeyword( arg.name ) )
+			{
+				REPORT_ERROR( UsingKeywordAsName, names_scope, arg.file_pos )
+			}
+
+			out_arg.arg_type.get_ref()= PrepareType( names_scope, arg.arg_type );
+		}
+
 		res.args.push_back( move(out_arg) );
 	}
 
