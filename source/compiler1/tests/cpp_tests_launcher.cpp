@@ -136,6 +136,8 @@ bool FilterTest( const std::string& test_name )
 		"code_builder_test.cpp:TypesMismatchTest1",
 		"code_builder_test.cpp:VariablesTest0",
 		"code_builder_test.cpp:VariablesTest1",
+		//"methods_test.cpp:MethodTest0",
+		"methods_test.cpp:MethodTest2",
 	};
 
 	if( std::find_if(
