@@ -591,56 +591,70 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MemberAccessOperator& member_access_operator ) : Value
 {
 	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, member_access_operator.value.get_ref() );
-	if_var( &class_type : variable.t.GetClassType() )
+	auto class_type_ref= variable.t.GetClassType() ;
+	if( class_type_ref.empty() )
 	{
-		if( !EnsureTypeComplete( variable.t ) )
-		{
-			REPORT_ERROR( UsingIncompleteType, names_scope, member_access_operator.file_pos, variable.t )
-			return ErrorValue();
-		}
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, member_access_operator.file_pos, variable.t )
+		return ErrorValue();
+	}
+	auto& class_type= class_type_ref.get_ref();
 
-		auto class_type_lock= class_type.lock_imut();
-		auto class_members_lock= class_type_lock.get_ref().members.lock_imut();
-		auto class_member= class_members_lock.get_ref().GetThisScopeValue( member_access_operator.member_name );
-		if( class_member.empty() )
-		{
-			REPORT_ERROR( NameNotFound, names_scope, member_access_operator.file_pos, member_access_operator.member_name )
-			return ErrorValue();
-		}
-
-		auto field_ptr= class_member.get_ref().Get</ClassField/>();
-		if( field_ptr.empty() )
-		{
-			REPORT_ERROR( NotImplemented, names_scope, member_access_operator.file_pos, ust::string8("class members, except fields or methods") )
-			return ErrorValue();
-		}
-
-		auto field_lock= field_ptr.lock_imut();
-		auto& field= field_lock.get_ref();
-
-		var Variable mut result
-		{
-			.t= field.t,
-			.location= Variable::Location::Pointer,
-			.value_type= variable.value_type,
-		};
-
-		auto op_name_nt= "." + member_access_operator.member_name + "\0";
-		unsafe
-		{
-			var [ LLVMValueRef, 2 ] indexes
-			[
-				GetZeroGEPIndex(),
-				LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
-			];
-
-			result.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, op_name_nt.front() );
-		}
-
-		return move(result);
+	if( !EnsureTypeComplete( variable.t ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope, member_access_operator.file_pos, variable.t )
+		return ErrorValue();
 	}
 
-	REPORT_ERROR( OperationNotSupportedForThisType, names_scope, member_access_operator.file_pos, variable.t )
+	auto class_type_lock= class_type.lock_imut();
+	auto class_members_lock= class_type_lock.get_ref().members.lock_imut();
+	auto class_member= class_members_lock.get_ref().GetThisScopeValue( member_access_operator.member_name );
+	if( class_member.empty() )
+	{
+		REPORT_ERROR( NameNotFound, names_scope, member_access_operator.file_pos, member_access_operator.member_name )
+		return ErrorValue();
+	}
+
+	{
+		auto field_ptr= class_member.get_ref().Get</ClassField/>();
+		if( !field_ptr.empty() )
+		{
+			auto field_lock= field_ptr.lock_imut();
+			auto& field= field_lock.get_ref();
+
+			var Variable mut result
+			{
+				.t= field.t,
+				.location= Variable::Location::Pointer,
+				.value_type= variable.value_type,
+			};
+
+			auto op_name_nt= "." + member_access_operator.member_name + "\0";
+			unsafe
+			{
+				var [ LLVMValueRef, 2 ] indexes
+				[
+					GetZeroGEPIndex(),
+					LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
+				];
+
+				result.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, op_name_nt.front() );
+			}
+
+			return move(result);
+		}
+		{
+			auto functions_set_ptr= class_member.get_ref().Get</NamesScopeFunctionsSet/>();
+			if( !functions_set_ptr.empty() )
+			{
+				BuildFunctionsSet( class_type_lock.get_ref().members, ust::to_non_nullable( functions_set_ptr ), false );
+
+				// TODO - append "this"
+				return functions_set_ptr.lock_imut().get_ref().functions_set;
+			}
+		}
+	}
+
+	REPORT_ERROR( NotImplemented, names_scope, member_access_operator.file_pos, ust::string8("class members, except fields or methods") )
 	return ErrorValue();
 }
 

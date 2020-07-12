@@ -27,6 +27,7 @@ fn CodeBuilder::NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, us
 fn CodeBuilder::NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</ClassType/>& class_type )
 {
 	BuildClass( names_scope_ptr, class_type );
+	NamesScopeBuild( class_type.lock_imut().get_ref().members );
 }
 
 } // namespace U
