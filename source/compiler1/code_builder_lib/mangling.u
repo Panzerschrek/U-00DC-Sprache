@@ -33,13 +33,43 @@ fn MangleType( Type& t ) : ust::string8
 	return ust::string8();
 }
 
-fn MangleFunction( ust::string8& name, FunctionType& function_type ) : ust::string8
+fn AppendNamespacePrefix( ust::string8& mut res, NamesScope& names_scope )
+{
+	auto parent= names_scope.GetParent();
+	if( !parent.empty() )
+	{
+		AppendNamespacePrefix( res, parent.lock_imut().get_ref() );
+	}
+
+	auto& name= names_scope.GetThisNamespaceName();
+	if( !name.empty() )
+	{
+		res+= ust::to_string8( name.size() );
+		res+= name;
+	}
+}
+
+fn MangleFunction(
+	NamesScope& parent_scope,
+	ust::string8& name,
+	FunctionType& function_type ) : ust::string8
 {
 	var ust::string8 mut res;
-	res+= "_Z";
 
-	res+= ust::to_string8( name.size() );
-	res+= name;
+	if( !parent_scope.GetParent().empty() )
+	{
+		res+= "_ZN";
+		AppendNamespacePrefix( res, parent_scope );
+		res+= ust::to_string8( name.size() );
+		res+= name;
+		res+= "E";
+	}
+	else
+	{
+		res+= "_Z";
+		res+= ust::to_string8( name.size() );
+		res+= name;
+	}
 
 	if( function_type.args.empty() )
 	{

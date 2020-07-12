@@ -326,7 +326,10 @@ fn CodeBuilder::PrepareFunction(
 		function_variable.llvm_function=
 			LLVMAddFunction(
 				module_,
-				MangleFunction( function_declaration.name, function_variable.t.GetFunctionType().get_ref() ).front(),
+				MangleFunction(
+					names_scope_ptr.lock_imut().get_ref(),
+					function_declaration.name,
+					function_variable.t.GetFunctionType().get_ref() ).front(),
 				function_variable.t.GetLLVMType() );
 	}
 

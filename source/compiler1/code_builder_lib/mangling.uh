@@ -5,6 +5,9 @@ namespace U
 {
 
 // Return null terminated string.
-fn MangleFunction( ust::string8& name, FunctionType& function_type ) : ust::string8;
+fn MangleFunction(
+	NamesScope& parent_scope,
+	ust::string8& name,
+	FunctionType& function_type ) : ust::string8;
 
 } // namespace U

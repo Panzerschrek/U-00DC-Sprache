@@ -275,6 +275,11 @@ public:
 		return names_map_;
 	}
 
+	fn GetThisNamespaceName( this ) : ust::string8&
+	{
+		return name_;
+	}
+
 	// Get full name (with enclosing namespaces) un human-readable format.
 	fn ToString( this ) : ust::string8;
 
