@@ -283,10 +283,32 @@ fn CodeBuilder::PrepareFunction(
 		{
 			prev_function.prototype_syntax_element= function_variable.prototype_syntax_element;
 		}
+		else if( !function_variable.prototype_syntax_element.empty() )
+		{
+			REPORT_ERROR(
+				FunctionPrototypeDuplication,
+				names_scope_ptr,
+				ust::max( function_declaration.file_pos, prev_function.prototype_syntax_element.get_ref().file_pos ),
+				function_declaration.name )
+			return false;
+		}
+
 		if( prev_function.body_syntax_element.empty() )
 		{
 			prev_function.body_syntax_element= function_variable.body_syntax_element;
 		}
+		else if( !function_variable.body_syntax_element.empty() )
+		{
+			REPORT_ERROR(
+				FunctionBodyDuplication,
+				names_scope_ptr,
+				ust::max( function_declaration.file_pos, prev_function.body_syntax_element.get_ref().file_pos ),
+				function_declaration.name )
+			return false;
+		}
+
+		// TODO - detect here also attrubutes mismatch - virtual, thiscall, etc.
+
 		return true;
 	}
 
