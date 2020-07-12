@@ -264,9 +264,53 @@ fn CodeBuilder::PrepareFunction(
 {
 	auto& function_declaration= function_declaration_ptr.get_ref();
 
-	var FunctionVariable mut function_variable{ .syntax_element= function_declaration_ptr };
+	var FunctionVariable mut function_variable;
+	if( function_declaration.block.empty() )
+	{
+		function_variable.prototype_syntax_element= function_declaration_ptr;
+	}
+	else
+	{
+		function_variable.body_syntax_element= function_declaration_ptr;
+	}
 
 	function_variable.t= PrepareType( names_scope_ptr, function_declaration.function_type );
+
+	if_var( &mut prev_function : GetFunctionWithSameType( functions_set, function_variable.t ) )
+	{
+		// TODO - report about duplicated body/prototype
+		if( prev_function.prototype_syntax_element.empty() )
+		{
+			prev_function.prototype_syntax_element= function_variable.prototype_syntax_element;
+		}
+		else if( !function_variable.prototype_syntax_element.empty() )
+		{
+			REPORT_ERROR(
+				FunctionPrototypeDuplication,
+				names_scope_ptr,
+				ust::max( function_declaration.file_pos, prev_function.prototype_syntax_element.get_ref().file_pos ),
+				function_declaration.name )
+			return false;
+		}
+
+		if( prev_function.body_syntax_element.empty() )
+		{
+			prev_function.body_syntax_element= function_variable.body_syntax_element;
+		}
+		else if( !function_variable.body_syntax_element.empty() )
+		{
+			REPORT_ERROR(
+				FunctionBodyDuplication,
+				names_scope_ptr,
+				ust::max( function_declaration.file_pos, prev_function.body_syntax_element.get_ref().file_pos ),
+				function_declaration.name )
+			return false;
+		}
+
+		// TODO - detect here also attrubutes mismatch - virtual, thiscall, etc.
+
+		return true;
+	}
 
 	unsafe
 	{
@@ -284,6 +328,11 @@ fn CodeBuilder::PrepareFunction(
 
 fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariable& func_variable )
 {
+	if( func_variable.body_syntax_element.empty() )
+	{
+		return;
+	}
+
 	auto& function_type= func_variable.t.GetFunctionType().get_ref();
 
 	var FunctionContext mut function_context(
@@ -308,7 +357,7 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariabl
 		auto &mut args_names_scope= args_names_scope_lock.get_ref();
 
 		auto mut arg_n= 0u;
-		foreach( &in_arg : func_variable.syntax_element.get_ref().function_type.args )
+		foreach( &in_arg : func_variable.body_syntax_element.get_ref().function_type.args )
 		{
 			var NamesScopeVariable mut out_arg
 			{
@@ -377,7 +426,7 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariabl
 		}
 	}
 
-	auto& block= func_variable.syntax_element.get_ref().block.get_ref();
+	auto& block= func_variable.body_syntax_element.get_ref().block.get_ref();
 
 	auto block_build_info= BuildBlockElement( args_names_scope_ptr, function_context, block );
 	if( !block_build_info.have_terminal_instruction_inside )
@@ -414,6 +463,19 @@ fn CodeBuilder::EnsureTypeComplete( this, Type& t ) : bool
 	}
 
 	return true;
+}
+
+fn CodeBuilder::GetFunctionWithSameType( FunctionsSet &'x mut functions_set, Type& function_type ) : ust::optional_ref</ FunctionVariable, true />'x'
+{
+	foreach( &mut function : functions_set.functions )
+	{
+		if( function.t == function_type )
+		{
+			return ust::optional_ref</ FunctionVariable, true />( function );
+		}
+	}
+
+	return ust::optional_ref</ FunctionVariable, true />();
 }
 
 fn CodeBuilder::GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef
