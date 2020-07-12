@@ -742,6 +742,16 @@ fn CodeBuilder::DoCallFunction(
 	}
 
 	var FunctionVariable& function_variable= functions_set.functions.front();
+	if( function_variable.is_this_call && this_.empty() )
+	{
+		REPORT_ERROR( CallOfThiscallFunctionUsingNonthisArgument, names_scope, file_pos )
+	}
+	/* TODO - what if we call non-this-call function using "this", like
+		struct S{ fn Foo( S& s ); }
+		fn Bar( S& s ) { s.Foo(); }
+	???
+	*/
+
 	var FunctionType& function_type= function_variable.t.GetFunctionType().get_ref();
 
 	if( total_args != function_type.args.size() )
