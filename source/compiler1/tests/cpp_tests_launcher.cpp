@@ -78,6 +78,8 @@ bool FilterTest( const std::string& test_name )
 		"NameNotFoundTest1",
 		"NameNotFoundTest2",
 		"NamespacesTest0",
+		"NamespacesTest1",
+		"NamespacesTest3",
 		"NoMatchBinaryOperatorForGivenTypesTest0",
 		"NoMatchBinaryOperatorForGivenTypesTest1",
 		"NoReturnInFunctionReturningNonVoidTest",
