@@ -34,8 +34,9 @@ struct EmptyVariant{} // used as stub
 struct ComplexName
 {
 	FilePos file_pos;
-	// TODO - make really comples
-	ust::string8 name;
+	ust::string8 name; // Empty for "::" start.
+
+	ust::vector</ ust::string8 /> tail;
 }
 
 struct NumericConstant
