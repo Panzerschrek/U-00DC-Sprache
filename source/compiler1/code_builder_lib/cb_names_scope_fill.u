@@ -120,7 +120,7 @@ fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::sh
 		}
 		else
 		{
-			REPORT_ERROR( Redefinition, names_scope_ptr, namespace_.get_ref().file_pos )
+			REPORT_ERROR( Redefinition, names_scope_ptr, namespace_.get_ref().file_pos, namespace_.get_ref().name )
 		}
 		return;
 	}

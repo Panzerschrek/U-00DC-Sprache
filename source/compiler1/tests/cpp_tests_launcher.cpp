@@ -99,6 +99,7 @@ bool FilterTest( const std::string& test_name )
 		"Redefinition5",
 		"RedefinitionTest0",
 		"RedefinitionTest1",
+		"Redefenition_ForNamespaces_Test0",
 		"ReferencesHaveConstructorsWithExactlyOneParameterTest0",
 		"ReferencesHaveConstructorsWithExactlyOneParameterTest1",
 		"RemOperatorTest0",
