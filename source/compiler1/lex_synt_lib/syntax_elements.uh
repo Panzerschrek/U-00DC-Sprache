@@ -295,7 +295,7 @@ type BlockElement = ust::variant</ tup[
 struct Function
 {
 	FilePos file_pos;
-	ust::string8 name;
+	ust::vector</ ust::string8 /> name; // A, A::B, A::B::C::D, ::A, ::A::B
 	FunctionType function_type;
 	ust::box_nullable</Block/> block; // null for prototype
 }
