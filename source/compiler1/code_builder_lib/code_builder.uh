@@ -26,12 +26,14 @@ private:
 
 	fn FillGlobalNamesScope( this, NamesScope &mut names_scope );
 
-	fn NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, Synt::ProgramElements& program_elements );
+	fn NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, Synt::NamespaceElements& namespace_elements );
 	fn NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, Synt::ClassElements& class_elements, ClassTypePtr& class_type );
 	fn NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function );
 	fn NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function, ust::shared_ptr_nullable_mut</ClassType/>& class_type );
 	fn NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_ );
+	fn NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Namespace/>& namespace_ );
 	fn NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field, ust::shared_ptr_nullable_mut</ClassType/>& class_type );
+	fn NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scope_ptr,Synt::NamespaceElements& namespace_elements );
 
 	fn NamesScopeBuild( this, NamesScopePtr& names_scope_ptr );
 	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/>& functions_set );
@@ -45,7 +47,8 @@ private:
 		ust::shared_ptr_final</Synt::Function/>& function_declaration_ptr,
 		NamesScopePtr& names_scope_ptr,
 		ust::shared_ptr_nullable_mut</ClassType/>& class_type,
-		FunctionsSet &mut functions_set ) : bool;
+		FunctionsSet &mut functions_set,
+		bool is_out_of_line_function ) : bool;
 
 	fn PrepareType( this, NamesScopePtr& names_scope, Synt::TypeName& type_name ) : Type;
 	fn PrepareType( this, NamesScopePtr& names_scope, Synt::ComplexName& named_type ) : Type;

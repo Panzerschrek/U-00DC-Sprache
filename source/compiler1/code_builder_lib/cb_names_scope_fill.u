@@ -1,15 +1,16 @@
 import "../lex_synt_lib/keywords.uh"
 import "error_reporting.uh"
+import "mangling.uh"
 import "code_builder.uh"
 
 namespace U
 {
 
-fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, Synt::ProgramElements& program_elements )
+fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, Synt::NamespaceElements& namespace_elements )
 {
-	foreach( & program_element : program_elements )
+	foreach( & namespace_element : namespace_elements )
 	{
-		variant_visit( & el : program_element )
+		variant_visit( & el : namespace_element )
 		{
 			NamesScopeFill( names_scope_ptr, el );
 		}
@@ -34,11 +35,16 @@ fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::sh
 
 fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function, ust::shared_ptr_nullable_mut</ClassType/>& class_type )
 {
-	auto& func_name= function.get_ref().name;
+	auto& func_name= function.get_ref().name.back();
 	if( IsKeyword( func_name ) )
 	{
 		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, function.get_ref().file_pos )
 		return;
+	}
+
+	if( function.get_ref().name.size() > 1s )
+	{
+		return; // Out of line function - fill it later.
 	}
 
 	auto mut names_scope_lock= names_scope_ptr.lock_mut();
@@ -82,14 +88,16 @@ fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::sh
 		.syntax_element= class_,
 	};
 
+	var NamesScopeValue mut names_scope_value( move(class_type) );
+	auto class_type_ptr= ust::to_non_nullable( names_scope_value.Get</ClassType/>() );
 	unsafe
 	{
-		class_type.llvm_type= LLVMStructCreateNamed( llvm_context_, (class_.get_ref().name + "\0").front() ); // TODO - mangle type
+		auto name_mangled= MangleType( class_type_ptr );
+		auto mut lock= class_type_ptr.lock_mut();
+		lock.get_ref().llvm_type= LLVMStructCreateNamed( llvm_context_, name_mangled.front() );
 	}
 
-	var NamesScopeValue mut names_scope_value( move(class_type) );
-
-	NamesScopeFill( class_members, class_.get_ref().class_elements, ust::to_non_nullable( names_scope_value.Get</ClassType/>() ) );
+	NamesScopeFill( class_members, class_.get_ref().class_elements, class_type_ptr );
 
 	var bool mut insert_not_ok= false;
 	{
@@ -101,6 +109,30 @@ fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::sh
 	{
 		REPORT_ERROR( Redefinition, names_scope_ptr, class_.get_ref().file_pos, class_name )
 	}
+}
+
+fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Namespace/>& namespace_ )
+{
+	if_var( prev_name : names_scope_ptr.lock_imut().get_ref().GetThisScopeValue( namespace_.get_ref().name ) )
+	{
+		auto prev_namespace= prev_name.Get</NamesScope/>();
+		if( !prev_namespace.empty() )
+		{
+			// Ok - extend previous namespace
+			NamesScopeFill( ust::to_non_nullable( prev_namespace ), namespace_.get_ref().elements );
+		}
+		else
+		{
+			REPORT_ERROR( Redefinition, names_scope_ptr, namespace_.get_ref().file_pos, namespace_.get_ref().name )
+		}
+		return;
+	}
+
+	var NamesScopeValue mut names_scope_value( NamesScope( namespace_.get_ref().name, names_scope_ptr ) );
+	NamesScopeFill( ust::to_non_nullable( names_scope_value.Get</NamesScope/>() ), namespace_.get_ref().elements );
+
+	auto mut lock= names_scope_ptr.lock_mut();
+	lock.get_ref().AddName( namespace_.get_ref().name, move(names_scope_value) );
 }
 
 fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field, ust::shared_ptr_nullable_mut</ClassType/>& class_type )
@@ -126,6 +158,110 @@ fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::sh
 	if( insert_not_ok )
 	{
 		REPORT_ERROR( Redefinition, names_scope_ptr, class_field.get_ref().file_pos, field_name )
+	}
+}
+
+fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scope_ptr, Synt::NamespaceElements& namespace_elements )
+{
+	foreach( & namespace_element : namespace_elements )
+	{
+		if_var( & function_declaration_ptr : namespace_element.get</ ust::shared_ptr_final</Synt::Function/> />() )
+		{
+			auto& function_declaration= function_declaration_ptr.get_ref();
+			auto& name_components = function_declaration.name;
+			if( name_components.size() > 1s )
+			{
+				var ust::shared_ptr_nullable_imut</NamesScope/> mut current_scope(names_scope_ptr);
+				var ust::optional</NamesScopeValue/> mut current_value;
+				while( !current_scope.empty() )
+				{
+					if_var( mut names_scope_value : current_scope.lock_imut().get_ref().GetThisScopeValue( name_components.front() ) )
+					{
+						current_value= move(names_scope_value);
+						break;
+					}
+					current_scope= current_scope.lock_imut().get_ref().GetParent();
+				}
+				if( current_scope.empty() )
+				{
+					REPORT_ERROR( NameNotFound, names_scope_ptr, function_declaration.file_pos, name_components.front() )
+				}
+				else
+				{
+					auto mut i= 1s;
+					while( i < name_components.size() )
+					{
+						auto& name_component= name_components[i];
+
+						auto namespace_= current_value.get_ref().Get</NamesScope/>();
+						auto class_= current_value.get_ref().Get</ClassType/>();
+						if( !namespace_.empty() )
+						{
+							auto namespace_lock= namespace_.lock_imut();
+							auto new_value= namespace_lock.get_ref().GetThisScopeValue( name_component );
+							if( new_value.empty() )
+							{
+								REPORT_ERROR( NameNotFound, names_scope_ptr, function_declaration.file_pos, name_component )
+								current_value.reset();
+								break;
+							}
+
+							current_value.get_ref()= new_value.get_ref();
+							current_scope= namespace_;
+						}
+						else if( !class_.empty() )
+						{
+							auto class_lock= class_.lock_imut();
+							auto namespace_lock= class_lock.get_ref().members.lock_imut();
+							auto new_value= namespace_lock.get_ref().GetThisScopeValue( name_component );
+							if( new_value.empty() )
+							{
+								REPORT_ERROR( NameNotFound, names_scope_ptr, function_declaration.file_pos, name_component )
+								current_value.reset();
+								break;
+							}
+
+							current_value.get_ref()= new_value.get_ref();
+							current_scope= class_lock.get_ref().members;
+						}
+						else
+						{
+							REPORT_ERROR( NameNotFound, names_scope_ptr, function_declaration.file_pos, name_components.front() ) // TODO -print more relevant error
+							current_value.reset();
+							break;
+						}
+
+						++i;
+					}
+
+					if( !current_value.empty() )
+					{
+						auto functions_set= current_value.get_ref().Get</NamesScopeFunctionsSet/>();
+						if( !functions_set.empty() )
+						{
+							auto mut lock= functions_set.lock_mut();
+							lock.get_ref().out_of_line_syntax_elements.push_back( function_declaration_ptr );
+						}
+						else
+						{
+							REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope_ptr, function_declaration.file_pos )
+						}
+					}
+				}
+			}
+		}
+
+		if_var( &namespace_ : namespace_element.get</ ust::shared_ptr_final</Synt::Namespace/> />() )
+		{
+			if_var( & inner_namespace_value : names_scope_ptr.lock_imut().get_ref().GetThisScopeValue( namespace_.get_ref().name ) )
+			{
+				auto inner_namespace_value= inner_namespace_value.Get</NamesScope/>();
+				if( !inner_namespace_value.empty() )
+				{
+					NamesScopeFillOutOfLineElements( ust::to_non_nullable( inner_namespace_value ), namespace_.get_ref().elements );
+				}
+			}
+		}
 	}
 }
 

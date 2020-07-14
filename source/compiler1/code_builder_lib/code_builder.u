@@ -75,6 +75,7 @@ fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : Buil
 	}
 
 	NamesScopeFill( global_names_scope, ast.program_elements );
+	NamesScopeFillOutOfLineElements( global_names_scope, ast.program_elements );
 	NamesScopeBuild( global_names_scope );
 
 	var BuildResult mut res
@@ -135,17 +136,92 @@ fn CodeBuilder::ResolveValue( this, NamesScopePtr& names_scope, Synt::ComplexNam
 {
 	var ust::shared_ptr_nullable_imut</NamesScope/> mut current_scope(names_scope);
 
-	while( !current_scope.empty() )
+	var ust::optional</NamesScopeValue/> mut current_value;
+	if( complex_name.name.empty() ) // ::
 	{
-		if_var( names_scope_value : current_scope.lock_imut().get_ref().GetThisScopeValue( complex_name.name ) )
+		while( true )
 		{
-			return NamesScopeValueToValue( ust::to_non_nullable( current_scope ), names_scope_value );
+			auto parent= current_scope.lock_imut().get_ref().GetParent();
+			if( parent.empty() )
+			{
+				break;
+			}
+			current_scope= parent;
 		}
-		current_scope= current_scope.lock_imut().get_ref().GetParent();
+
+		if_var( mut names_scope_value : current_scope.lock_imut().get_ref().GetThisScopeValue( complex_name.tail.front() ) )
+		{
+			current_value= move(names_scope_value);
+		}
+	}
+	else
+	{
+		while( !current_scope.empty() )
+		{
+			if_var( mut names_scope_value : current_scope.lock_imut().get_ref().GetThisScopeValue( complex_name.name ) )
+			{
+				current_value= move(names_scope_value);
+				break;
+			}
+			current_scope= current_scope.lock_imut().get_ref().GetParent();
+		}
 	}
 
-	REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, complex_name.name )
-	return ErrorValue();
+	if( current_value.empty() )
+	{
+		REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, complex_name.name )
+		return ErrorValue();
+	}
+
+	// TOOD - simplify this. After first component lookup do not use optional for "current_value" and nullable pointer for "current_scope"
+
+	auto mut i= select( complex_name.name.empty() ? 1s : 0s );
+	while( i < complex_name.tail.size() )
+	{
+		auto& name_component= complex_name.tail[i];
+
+		auto namespace_= current_value.get_ref().Get</NamesScope/>();
+		auto class_= current_value.get_ref().Get</ClassType/>();
+
+		if( !namespace_.empty() )
+		{
+			auto namespace_lock= namespace_.lock_imut();
+			auto new_value= namespace_lock.get_ref().GetThisScopeValue( name_component );
+			if( new_value.empty() )
+			{
+				REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, name_component )
+				return ErrorValue();
+			}
+
+			current_value.get_ref()= new_value.get_ref();
+			current_scope= namespace_;
+		}
+		else if( !class_.empty() )
+		{
+			// We do not need to build class here, because class namespace is already filled. Names itself will be built separately later.
+
+			auto class_lock= class_.lock_imut();
+			auto namespace_lock= class_lock.get_ref().members.lock_imut();
+			auto new_value= namespace_lock.get_ref().GetThisScopeValue( name_component );
+			if( new_value.empty() )
+			{
+				REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, name_component )
+				return ErrorValue();
+			}
+
+			current_value.get_ref()= new_value.get_ref();
+			current_scope= class_lock.get_ref().members;
+		}
+		else
+		{
+			REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, name_component ) // TODO -print more relevant error
+			return ErrorValue();
+		}
+
+		++i;
+	}
+
+	return NamesScopeValueToValue( ust::to_non_nullable(current_scope), current_value.get_ref() );
 }
 
 fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
@@ -176,7 +252,7 @@ fn CodeBuilder::BuildFunctionsSet( this, NamesScopePtr& names_scope_ptr, ust::sh
 		{ // First, lock as imut and check if complete.
 			auto l= functions_set_ptr.lock_imut();
 			var NamesScopeFunctionsSet& functions_set= l.get_ref();
-			if( functions_set.syntax_elements.empty() ) // Already complete
+			if( functions_set.syntax_elements.empty() && functions_set.out_of_line_syntax_elements.empty() ) // Already complete
 			{
 				return;
 			}
@@ -191,8 +267,15 @@ fn CodeBuilder::BuildFunctionsSet( this, NamesScopePtr& names_scope_ptr, ust::sh
 		{
 			auto syntax_element_ptr= functions_set.syntax_elements.back();
 			auto class_type_ptr= functions_set.class_;
-			PrepareFunction( syntax_element_ptr, names_scope_ptr, class_type_ptr, functions_set.functions_set );
+			PrepareFunction( syntax_element_ptr, names_scope_ptr, class_type_ptr, functions_set.functions_set, false );
 			functions_set.syntax_elements.drop_back();
+		}
+		while( !functions_set.out_of_line_syntax_elements.empty() )
+		{
+			auto syntax_element_ptr= functions_set.out_of_line_syntax_elements.back();
+			auto class_type_ptr= functions_set.class_;
+			PrepareFunction( syntax_element_ptr, names_scope_ptr, class_type_ptr, functions_set.functions_set, true );
+			functions_set.out_of_line_syntax_elements.drop_back();
 		}
 	}
 
@@ -272,9 +355,11 @@ fn CodeBuilder::PrepareFunction(
 	ust::shared_ptr_final</Synt::Function/>& function_declaration_ptr,
 	NamesScopePtr& names_scope_ptr,
 	ust::shared_ptr_nullable_mut</ClassType/>& class_type,
-	FunctionsSet &mut functions_set ) : bool
+	FunctionsSet &mut functions_set,
+	bool is_out_of_line_function ) : bool
 {
 	auto& function_declaration= function_declaration_ptr.get_ref();
+	auto& func_name= function_declaration.name.back();
 
 	var FunctionVariable mut function_variable;
 	if( function_declaration.block.empty() )
@@ -305,7 +390,7 @@ fn CodeBuilder::PrepareFunction(
 				FunctionPrototypeDuplication,
 				names_scope_ptr,
 				ust::max( function_declaration.file_pos, prev_function.prototype_syntax_element.get_ref().file_pos ),
-				function_declaration.name )
+				func_name )
 			return false;
 		}
 
@@ -319,19 +404,25 @@ fn CodeBuilder::PrepareFunction(
 				FunctionBodyDuplication,
 				names_scope_ptr,
 				ust::max( function_declaration.file_pos, prev_function.body_syntax_element.get_ref().file_pos ),
-				function_declaration.name )
+				func_name )
 			return false;
 		}
 
 		if( prev_function.is_this_call != function_variable.is_this_call )
 		{
-			REPORT_ERROR( ThiscallMismatch, names_scope_ptr, function_declaration.file_pos, function_declaration.name )
+			REPORT_ERROR( ThiscallMismatch, names_scope_ptr, function_declaration.file_pos, func_name )
 			return false;
 		}
 
 		// TODO - detect here also attrubutes mismatch - virtual, thiscall, etc.
 
 		return true;
+	}
+
+	if( is_out_of_line_function )
+	{
+		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope_ptr, function_declaration.file_pos )
+		return false;
 	}
 
 	unsafe
@@ -341,7 +432,7 @@ fn CodeBuilder::PrepareFunction(
 				module_,
 				MangleFunction(
 					names_scope_ptr.lock_imut().get_ref(),
-					function_declaration.name,
+					func_name,
 					function_variable.t.GetFunctionType().get_ref() ).front(),
 				function_variable.t.GetLLVMType() );
 	}

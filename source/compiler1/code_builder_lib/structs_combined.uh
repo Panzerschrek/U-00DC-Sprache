@@ -212,6 +212,7 @@ struct NamesScopeFunctionsSet
 
 	// Is incomplete, if there are some syntax elements in containers.
 	ust::vector</ ust::shared_ptr_final</ Synt::Function /> /> syntax_elements;
+	ust::vector</ ust::shared_ptr_final</ Synt::Function /> /> out_of_line_syntax_elements;
 }
 
 struct ClassField
@@ -247,6 +248,7 @@ public:
 
 private:
 	ust::variant</ tup[
+		NamesScopeMutPtr,
 		ust::shared_ptr_mut</Type/>,
 		ust::shared_ptr_mut</NamesScopeVariable/>,
 		ust::shared_ptr_mut</NamesScopeFunctionsSet/>,
