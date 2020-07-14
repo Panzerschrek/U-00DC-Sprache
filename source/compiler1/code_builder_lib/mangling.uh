@@ -4,10 +4,13 @@ import "structs_combined.uh"
 namespace U
 {
 
-// Return null terminated string.
+// Returns null terminated string.
 fn MangleFunction(
 	NamesScope& parent_scope,
 	ust::string8& name,
 	FunctionType& function_type ) : ust::string8;
+
+// Returns null terminated string.
+fn MangleType( Type& t ) : ust::string8;
 
 } // namespace U

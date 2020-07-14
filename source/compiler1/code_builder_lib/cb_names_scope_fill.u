@@ -1,5 +1,6 @@
 import "../lex_synt_lib/keywords.uh"
 import "error_reporting.uh"
+import "mangling.uh"
 import "code_builder.uh"
 
 namespace U
@@ -87,14 +88,16 @@ fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::sh
 		.syntax_element= class_,
 	};
 
+	var NamesScopeValue mut names_scope_value( move(class_type) );
+	auto class_type_ptr= ust::to_non_nullable( names_scope_value.Get</ClassType/>() );
 	unsafe
 	{
-		class_type.llvm_type= LLVMStructCreateNamed( llvm_context_, (class_.get_ref().name + "\0").front() ); // TODO - mangle type
+		auto name_mangled= MangleType( class_type_ptr );
+		auto mut lock= class_type_ptr.lock_mut();
+		lock.get_ref().llvm_type= LLVMStructCreateNamed( llvm_context_, name_mangled.front() );
 	}
 
-	var NamesScopeValue mut names_scope_value( move(class_type) );
-
-	NamesScopeFill( class_members, class_.get_ref().class_elements, ust::to_non_nullable( names_scope_value.Get</ClassType/>() ) );
+	NamesScopeFill( class_members, class_.get_ref().class_elements, class_type_ptr );
 
 	var bool mut insert_not_ok= false;
 	{
