@@ -127,6 +127,16 @@ private:
 	fn GetZeroGEPIndex( this ) : LLVMValueRef;
 	fn CreateMoveToLLVMRegisterInstruction( Variable& variable, FunctionContext& function_context ) : LLVMValueRef;
 
+	struct InstructionsState
+	{
+		LLVMValueRef current_block_last_instruction;
+		LLVMValueRef alloca_block_last_instruction;
+		LLVMBasicBlockRef current_block;
+	}
+
+	fn SaveInstructionsState( FunctionContext& function_context ) : InstructionsState;
+	fn RestoreInstructionsState( FunctionContext &mut function_context, InstructionsState& state );
+
 private:
 	LLVMContextRef imut llvm_context_;
 	LLVMTargetDataRef imut data_layout_;
