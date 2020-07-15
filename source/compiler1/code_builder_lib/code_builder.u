@@ -671,12 +671,12 @@ fn CodeBuilder::RestoreInstructionsState( FunctionContext &mut function_context,
 
 		while( LLVMGetLastInstruction( state.current_block ) != state.current_block_last_instruction )
 		{
-			LLVMInstructionRemoveFromParent( LLVMGetLastInstruction( state.current_block ) );
+			LLVMInstructionEraseFromParent( LLVMGetLastInstruction( state.current_block ) );
 		}
 
 		while( LLVMGetLastInstruction( function_context.alloca_basic_block ) != state.alloca_block_last_instruction )
 		{
-			LLVMInstructionRemoveFromParent( LLVMGetLastInstruction( function_context.alloca_basic_block ) );
+			LLVMInstructionEraseFromParent( LLVMGetLastInstruction( function_context.alloca_basic_block ) );
 		}
 
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, state.current_block );

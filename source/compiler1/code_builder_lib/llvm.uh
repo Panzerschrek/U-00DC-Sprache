@@ -127,7 +127,7 @@ fn nomangle LLVMGetLastBasicBlock(LLVMValueRef Fn) unsafe : LLVMBasicBlockRef;
 
 // Basic block
 
-fn nomangle LLVMInstructionRemoveFromParent(LLVMValueRef Inst) unsafe;
+fn nomangle LLVMInstructionEraseFromParent(LLVMValueRef Inst) unsafe;
 fn nomangle LLVMGetLastInstruction(LLVMBasicBlockRef BB) unsafe : LLVMValueRef;
 
 fn nomangle LLVMCreateBasicBlockInContext(LLVMContextRef C, NullTerminatedString& Name) unsafe : LLVMBasicBlockRef;
