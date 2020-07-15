@@ -112,6 +112,12 @@ private:
 		ust::vector</ ust::box</Synt::Expression/> />& args,
 		FilePos& file_pos ) : Value;
 
+	fn ApplyOverloadedFunction(
+		FunctionsSet &mut functions_set,
+		FunctionVariable mut function,
+		NamesScopePtr& names_scope,
+		FilePos& file_pos ) : bool;
+
 	fn GetOverloadedFunction(
 		FunctionsSet &'x functions_set,
 		ust::array_view_imut</FunctionType::Arg/> actual_args,

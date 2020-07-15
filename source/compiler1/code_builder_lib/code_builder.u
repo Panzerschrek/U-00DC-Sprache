@@ -437,9 +437,7 @@ fn CodeBuilder::PrepareFunction(
 				function_variable.t.GetLLVMType() );
 	}
 
-	functions_set.functions.push_back( move(function_variable) );
-
-	return true;
+	return ApplyOverloadedFunction( functions_set, move(function_variable), names_scope_ptr, function_declaration.file_pos );
 }
 
 fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariable& func_variable )

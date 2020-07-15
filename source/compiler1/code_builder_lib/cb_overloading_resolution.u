@@ -67,6 +67,62 @@ fn CompareConversions(
 	return CompareConversionsMutability( src, dst_left, dst_right );
 }
 
+fn CodeBuilder::ApplyOverloadedFunction(
+	FunctionsSet &mut functions_set,
+	FunctionVariable mut function,
+	NamesScopePtr& names_scope,
+	FilePos& file_pos ) : bool
+{
+	if( functions_set.functions.empty() )
+	{
+		functions_set.functions.push_back(function);
+		return true;
+	}
+
+	{
+		auto& function_type= function.t.GetFunctionType().get_ref();
+
+		/*
+		Algorithm for overloading applying:
+		If parameter count differs - overload function.
+		If "ArgOverloadingClass" of one or more arguments differs - overload function.
+		*/
+		foreach( & set_function : functions_set.functions )
+		{
+			auto& set_function_type= set_function.t.GetFunctionType().get_ref();
+
+			// If argument count differs - allow overloading.
+			// SPRACHE_TODO - handle default arguments.
+			if( function_type.args.size() == set_function_type.args.size() )
+			{
+				auto mut arg_is_same_count= 0s;
+				auto mut i= 0s;
+				while( i < function_type.args.size() )
+				{
+					auto& arg= function_type.args[i];
+					auto& set_arg= set_function_type.args[i];
+					if( arg.arg_type.get_ref() == set_arg.arg_type.get_ref() && GetArgOverloadingClass( arg ) == GetArgOverloadingClass( set_arg ) )
+					{
+						++arg_is_same_count;
+					}
+
+					++i;
+				}
+
+				if( arg_is_same_count == function_type.args.size() )
+				{
+					REPORT_ERROR( CouldNotOverloadFunction, names_scope, file_pos )
+					return false;
+				}
+			}
+		} // For functions in set.
+	}
+
+	// No error - add function to set.
+	functions_set.functions.push_back( move(function) );
+	return true;
+}
+
 // TODO - pass array of "Variable" instead of "FunctionType::Arg"
 fn CodeBuilder::GetOverloadedFunction(
 	FunctionsSet &'x functions_set,
