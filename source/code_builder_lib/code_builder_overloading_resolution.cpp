@@ -19,7 +19,6 @@ enum class ArgOverloadingClass
 	ImmutableReference,
 	// Mutable references.
 	MutalbeReference,
-	// SPRACHE_TODO - add class for move-references here
 };
 
 ArgOverloadingClass GetArgOverloadingClass( const bool is_reference, const bool is_mutable )
@@ -31,7 +30,7 @@ ArgOverloadingClass GetArgOverloadingClass( const bool is_reference, const bool 
 
 ArgOverloadingClass GetArgOverloadingClass( const Function::Arg& arg )
 {
-	return GetArgOverloadingClass( arg.is_mutable, arg.is_reference );
+	return GetArgOverloadingClass( arg.is_reference, arg.is_mutable );
 }
 
 enum class ConversionsCompareResult

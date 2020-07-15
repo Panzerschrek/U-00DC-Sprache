@@ -108,7 +108,7 @@ private:
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		ust::optional_ref</ Variable, false />& this_,
-		FunctionsSet& functions_set,
+		FunctionVariable& function,
 		ust::vector</ ust::box</Synt::Expression/> />& args,
 		FilePos& file_pos ) : Value;
 

@@ -59,7 +59,6 @@ U_TEST( FunctionDeclarationOutsideItsScopeTest2 )
 	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
 }
 
-
 U_TEST( Redefenition_ForNamespaces_Test0 )
 {
 	// Namespace have same name, as differend thing in same scope.

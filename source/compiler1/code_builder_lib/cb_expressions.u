@@ -542,24 +542,68 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 {
 	auto function= BuildExpressionCode( names_scope, function_context, call_operator.value.get_ref() );
 
-	if_var( & functions_set : function.get</FunctionsSet/>() )
+	var ust::optional_ref</ FunctionsSet, false /> mut functions_set;
+	var ust::optional_ref</ Variable, false /> mut this_;
+
+	if_var( & in_functions_set : function.get</FunctionsSet/>() )
 	{
-		return DoCallFunction( names_scope, function_context, ust::optional_ref</ Variable, false />(), functions_set, call_operator.args, call_operator.file_pos );
+		functions_set.reset(in_functions_set);
 	}
 	if_var( & this_methods_set : function.get</ThisMethodsSet/>() )
 	{
-		return DoCallFunction(
-			names_scope,
-			function_context,
-			ust::optional_ref</ Variable, false />(this_methods_set.this_),
-			this_methods_set.functions_set,
-			call_operator.args,
-			call_operator.file_pos );
+		functions_set.reset(this_methods_set.functions_set);
+		this_.reset(this_methods_set.this_);
 	}
 
+	if( functions_set.empty() )
+	{
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, call_operator.file_pos, ust::string8("non-function value") )
+		return ErrorValue();
+	}
 
-	REPORT_ERROR( OperationNotSupportedForThisType, names_scope, call_operator.file_pos, ust::string8("non-function value") )
-	return ErrorValue();
+	// Pre-evaluate arguments to know exact types and select exact function.
+	auto instructions_state= SaveInstructionsState( function_context );
+
+	var ust::vector</FunctionType::Arg/> mut args_evaluated;
+
+	if( !this_.empty() )
+	{
+		var FunctionType::Arg mut out_arg
+		{
+			.arg_type( this_.get_ref().t ),
+			.is_mutable= this_.get_ref().value_type == ValueType::ReferenceMut,
+			.is_reference= true,
+		};
+		args_evaluated.push_back( move(out_arg) );
+	}
+
+	foreach( &arg :call_operator.args )
+	{
+		auto arg_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg.get_ref() );
+		var FunctionType::Arg mut out_arg
+		{
+			.arg_type( arg_variable.t ),
+			.is_mutable= arg_variable.value_type == ValueType::ReferenceMut,
+			.is_reference= arg_variable.value_type != ValueType::Value,
+		};
+		args_evaluated.push_back( move(out_arg) );
+	}
+
+	RestoreInstructionsState( function_context, instructions_state );
+
+	auto function_selected= GetOverloadedFunction( functions_set.get_ref(), args_evaluated.range(), names_scope, call_operator.file_pos );
+	if( function_selected.empty() )
+	{
+		return ErrorValue();
+	}
+
+	return DoCallFunction(
+		names_scope,
+		function_context,
+		this_,
+		function_selected.get_ref(),
+		call_operator.args,
+		call_operator.file_pos );
 }
 
 fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MemberAccessOperator& member_access_operator ) : Value
@@ -729,20 +773,13 @@ fn CodeBuilder::DoCallFunction(
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
 	ust::optional_ref</ Variable, false />& this_,
-	FunctionsSet& functions_set,
+	FunctionVariable& function,
 	ust::vector</ ust::box</Synt::Expression/> />& args,
 	FilePos& file_pos ) : Value
 {
 	auto total_args= args.size() + select( this_.empty() ? 0s : 1s);
 
-	if( functions_set.functions.size() != 1s )
-	{
-		REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, file_pos )
-		return ErrorValue();
-	}
-
-	var FunctionVariable& function_variable= functions_set.functions.front();
-	if( function_variable.is_this_call && this_.empty() )
+	if( function.is_this_call && this_.empty() )
 	{
 		REPORT_ERROR( CallOfThiscallFunctionUsingNonthisArgument, names_scope, file_pos )
 	}
@@ -752,7 +789,7 @@ fn CodeBuilder::DoCallFunction(
 	???
 	*/
 
-	var FunctionType& function_type= function_variable.t.GetFunctionType().get_ref();
+	var FunctionType& function_type= function.t.GetFunctionType().get_ref();
 
 	if( total_args != function_type.args.size() )
 	{
@@ -833,13 +870,13 @@ fn CodeBuilder::DoCallFunction(
 		if( llvm_args.empty() )
 		{
 			auto dummy= LLVMValueRef::Null;
-			result.llvm_value= LLVMBuildCall( function_context.llvm_ir_builder, function_variable.llvm_function, dummy, 0u, "\0"[0] );
+			result.llvm_value= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, dummy, 0u, "\0"[0] );
 		}
 		else
 		{
 			// TODO - do not use temporary variable, fix reference protection error.
 			auto s= u32(llvm_args.size());
-			result.llvm_value= LLVMBuildCall( function_context.llvm_ir_builder, function_variable.llvm_function, llvm_args.front(), s, "\0"[0] );
+			result.llvm_value= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, llvm_args.front(), s, "\0"[0] );
 		}
 	}
 

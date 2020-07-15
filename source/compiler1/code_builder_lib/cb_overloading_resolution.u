@@ -4,7 +4,6 @@ import "code_builder.uh"
 namespace U
 {
 
-
 // "Class" of function argument in terms of overloading.
 enum ArgOverloadingClass
 {
@@ -24,7 +23,7 @@ fn GetArgOverloadingClass( bool is_reference, bool is_mutable ) : ArgOverloading
 
 fn GetArgOverloadingClass( FunctionType::Arg& arg ) : ArgOverloadingClass
 {
-	return GetArgOverloadingClass( arg.is_mutable, arg.is_reference );
+	return GetArgOverloadingClass( arg.is_reference, arg.is_mutable );
 }
 
 enum ConversionsCompareResult
@@ -68,6 +67,7 @@ fn CompareConversions(
 	return CompareConversionsMutability( src, dst_left, dst_right );
 }
 
+// TODO - pass array of "Variable" instead of "FunctionType::Arg"
 fn CodeBuilder::GetOverloadedFunction(
 	FunctionsSet &'x functions_set,
 	ust::array_view_imut</FunctionType::Arg/> actual_args,
