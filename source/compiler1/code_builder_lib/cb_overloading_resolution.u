@@ -1,0 +1,310 @@
+import "error_reporting.uh"
+import "code_builder.uh"
+
+namespace U
+{
+
+// "Class" of function argument in terms of overloading.
+enum ArgOverloadingClass
+{
+	// Value-args (both mutable and immutable), immutable references.
+	ImmutableReference,
+	// Mutable references.
+	MutalbeReference,
+}
+
+fn GetArgOverloadingClass( bool is_reference, bool is_mutable ) : ArgOverloadingClass
+{
+	return select(
+		is_reference && is_mutable
+			? ArgOverloadingClass::MutalbeReference
+			: ArgOverloadingClass::ImmutableReference );
+}
+
+fn GetArgOverloadingClass( FunctionType::Arg& arg ) : ArgOverloadingClass
+{
+	return GetArgOverloadingClass( arg.is_reference, arg.is_mutable );
+}
+
+enum ConversionsCompareResult
+{
+	Same,
+	LeftIsBetter,
+	RightIsBetter,
+	Incomparable
+}
+
+fn CompareConversionsMutability(
+	FunctionType::Arg& src,
+	FunctionType::Arg& dst_left,
+	FunctionType::Arg& dst_right ) : ConversionsCompareResult
+{
+	auto  left_overloding_class= GetArgOverloadingClass(dst_left );
+	auto right_overloding_class= GetArgOverloadingClass(dst_right);
+
+	if( left_overloding_class == right_overloding_class )
+	{
+		return ConversionsCompareResult::Same;
+	}
+	if( left_overloding_class == ArgOverloadingClass::MutalbeReference )
+	{
+		return ConversionsCompareResult::LeftIsBetter;
+	}
+	if( right_overloding_class == ArgOverloadingClass::MutalbeReference )
+	{
+		return ConversionsCompareResult::RightIsBetter;
+	}
+
+	return ConversionsCompareResult::Incomparable;
+}
+
+fn CompareConversions(
+	FunctionType::Arg& src,
+	FunctionType::Arg& dst_left,
+	FunctionType::Arg& dst_right ) : ConversionsCompareResult
+{
+	// TODO - compare type conversions too
+	return CompareConversionsMutability( src, dst_left, dst_right );
+}
+
+fn CodeBuilder::ApplyOverloadedFunction(
+	FunctionsSet &mut functions_set,
+	FunctionVariable mut function,
+	NamesScopePtr& names_scope,
+	FilePos& file_pos ) : bool
+{
+	if( functions_set.functions.empty() )
+	{
+		functions_set.functions.push_back(function);
+		return true;
+	}
+
+	{
+		auto& function_type= function.t.GetFunctionType().get_ref();
+
+		/*
+		Algorithm for overloading applying:
+		If parameter count differs - overload function.
+		If "ArgOverloadingClass" of one or more arguments differs - overload function.
+		*/
+		foreach( & set_function : functions_set.functions )
+		{
+			auto& set_function_type= set_function.t.GetFunctionType().get_ref();
+
+			// If argument count differs - allow overloading.
+			// SPRACHE_TODO - handle default arguments.
+			if( function_type.args.size() == set_function_type.args.size() )
+			{
+				auto mut arg_is_same_count= 0s;
+				auto mut i= 0s;
+				while( i < function_type.args.size() )
+				{
+					auto& arg= function_type.args[i];
+					auto& set_arg= set_function_type.args[i];
+					if( arg.arg_type.get_ref() == set_arg.arg_type.get_ref() && GetArgOverloadingClass( arg ) == GetArgOverloadingClass( set_arg ) )
+					{
+						++arg_is_same_count;
+					}
+
+					++i;
+				}
+
+				if( arg_is_same_count == function_type.args.size() )
+				{
+					REPORT_ERROR( CouldNotOverloadFunction, names_scope, file_pos )
+					return false;
+				}
+			}
+		} // For functions in set.
+	}
+
+	// No error - add function to set.
+	functions_set.functions.push_back( move(function) );
+	return true;
+}
+
+// TODO - pass array of "Variable" instead of "FunctionType::Arg"
+fn CodeBuilder::GetOverloadedFunction(
+	FunctionsSet &'x functions_set,
+	ust::array_view_imut</FunctionType::Arg/> actual_args,
+	bool first_actual_arg_is_this,
+	NamesScopePtr& names_scope,
+	FilePos& file_pos ) : ust::optional_ref</FunctionVariable, false/>'x'
+{
+	var ust::vector</size_type/> mut match_functions;
+	auto mut i= 0s;
+	foreach( & function : functions_set.functions )
+	{
+		var FunctionType& function_type= function.t.GetFunctionType().get_ref();
+
+		auto mut actual_args_corrected= actual_args;
+		if( first_actual_arg_is_this && !function.is_this_call )
+		{
+			actual_args_corrected.drop_front();
+		}
+
+		// TODO - fix foreach and use continue here.
+		if( function_type.args.size() == actual_args_corrected.size() )
+		{
+			auto mut all_args_is_compatible= true;
+			auto mut arg_n= 0s;
+			while( arg_n < actual_args_corrected.size() )
+			{
+				auto arg_overloading_class= GetArgOverloadingClass( actual_args_corrected[arg_n] );
+				auto parameter_overloading_class= GetArgOverloadingClass( function_type.args[arg_n] );
+
+				if( actual_args_corrected[arg_n].arg_type.get_ref() == function_type.args[arg_n].arg_type.get_ref() )
+				{} // ok
+				else
+				{
+					// TODO - apply here type/reference conversions
+					all_args_is_compatible= false;
+					break;
+				}
+
+				if( arg_overloading_class == parameter_overloading_class )
+				{} // All ok, exact match
+				else if( parameter_overloading_class == ArgOverloadingClass::MutalbeReference &&
+					arg_overloading_class != ArgOverloadingClass::MutalbeReference )
+				{
+					// We can only bind nonconst-reference arg to nonconst-reference parameter.
+					all_args_is_compatible= false;
+					break;
+				}
+				else if( parameter_overloading_class == ArgOverloadingClass::ImmutableReference &&
+					arg_overloading_class == ArgOverloadingClass::MutalbeReference )
+				{} // Ok, mut to imut conversion.
+				else{ halt; }
+
+				++arg_n;
+			}
+
+			if( all_args_is_compatible )
+			{
+				match_functions.push_back(i);
+			}
+		}
+		++i;
+	}
+
+	if( match_functions.empty() )
+	{
+		REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, file_pos )
+		return ust::optional_ref</FunctionVariable, false/>();
+	}
+
+	var ust::vector</bool/> mut best_functions;
+	best_functions.resize( match_functions.size(), true );
+
+	// For each argument search functions, which is better, than another functions.
+	// For NOT better (four current arg) functions set flags to false.
+	auto mut arg_n= 0s;
+	while( arg_n < actual_args.size() )
+	{
+		foreach( f_l : match_functions )
+		{
+			var FunctionVariable& l_function= functions_set.functions[f_l];
+			var FunctionType& l_type= l_function.t.GetFunctionType().get_ref();
+
+			auto mut l_arg_n= arg_n;
+			if( first_actual_arg_is_this && !l_function.is_this_call )
+			{
+				// TODO - continue if arg_n is zero
+				--l_arg_n;
+			}
+			if( l_arg_n < actual_args.size() )
+			{
+				auto mut is_best_function_for_current_arg= true;
+				foreach( f_r : match_functions )
+				{
+					var FunctionVariable& r_function= functions_set.functions[f_r];
+					var FunctionType& r_type= r_function.t.GetFunctionType().get_ref();
+
+					auto mut r_arg_n= arg_n;
+					if( first_actual_arg_is_this && !r_function.is_this_call )
+					{
+						// TODO - continue if arg_n is zero
+						--r_arg_n;
+					}
+					if( r_arg_n < actual_args.size() )
+					{
+						auto comp=
+							CompareConversions(
+								actual_args[arg_n],
+								l_type.args[l_arg_n],
+								r_type.args[r_arg_n] );
+
+						if( comp == ConversionsCompareResult::Same || comp == ConversionsCompareResult::LeftIsBetter )
+						{}
+						else
+						{
+							is_best_function_for_current_arg= false;
+							break;
+						}
+					}
+				} // for functions right
+
+				// Set best functions bits.
+				if( is_best_function_for_current_arg )
+				{
+					auto mut func_n= 0s;
+					while( func_n < match_functions.size() )
+					{
+						var FunctionVariable& r_function= functions_set.functions[cast_imut(match_functions)[func_n]];
+						var FunctionType& r_type= r_function.t.GetFunctionType().get_ref();
+
+						auto mut r_arg_n= arg_n;
+						if( first_actual_arg_is_this && !r_function.is_this_call )
+						{
+							// TODO - continue if arg_n is zero
+							--r_arg_n;
+						}
+						if( r_arg_n < actual_args.size() )
+						{
+							auto comp=
+								CompareConversions(
+									actual_args[arg_n],
+									l_type.args[l_arg_n],
+									r_type.args[r_arg_n] );
+							if( comp != ConversionsCompareResult::Same )
+							{
+								best_functions[func_n]= false;
+							}
+							++func_n;
+						}
+					}
+				}
+			}
+		} // for functions left
+
+		++arg_n;
+	}
+
+	var ust::optional_ref</FunctionVariable, false/> mut selected_function;
+	auto mut func_n= 0s;
+	while( func_n < match_functions.size() )
+	{
+		if( best_functions[func_n] )
+		{
+			if( selected_function.empty() )
+			{
+				selected_function.reset( functions_set.functions[ match_functions[func_n] ] );
+			}
+			else
+			{
+				selected_function.reset();
+				break;
+			}
+		}
+		++func_n;
+	}
+
+	if( selected_function.empty() )
+	{
+		REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope, file_pos )
+	}
+
+	return selected_function;
+}
+
+} // namespace U

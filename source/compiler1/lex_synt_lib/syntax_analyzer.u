@@ -627,6 +627,16 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 		};
 		NextLexem();
 		res.function_type.args.push_back( move(this_arg) );
+
+		if( it_.front().lexem_type == Lexem::Type::Comma )
+		{
+			NextLexem();
+			// Disallov constructions, like "fn f( mut this, ){}"
+			if( it_.front().lexem_type == Lexem::Type::BracketRight )
+			{
+				PushErrorMessage();
+			}
+		}
 	}
 	else if( IsKeyword( it_.front(), Keyword::mut_ ) || IsKeyword( it_.front(), Keyword::imut_ ) )
 	{
@@ -646,6 +656,16 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 		};
 		NextLexem();
 		res.function_type.args.push_back( move(this_arg) );
+
+		if( it_.front().lexem_type == Lexem::Type::Comma )
+		{
+			NextLexem();
+			// Disallov constructions, like "fn f( mut this, ){}"
+			if( it_.front().lexem_type == Lexem::Type::BracketRight )
+			{
+				PushErrorMessage();
+			}
+		}
 	}
 
 	while( NotEndOfFile() )
@@ -1371,7 +1391,7 @@ fn SyntaxAnalyzer::PushErrorMessage( mut this )
 		var SyntaxErrorMessage mut error_message
 		{
 			.file_pos= it_.front().file_pos,
-			.text= "Syntax error - unexpected lexem"
+			.text= "Syntax error - unexpected lexem: " + it_.front().text
 		};
 		error_messages_.push_back( move(error_message) );
 	}

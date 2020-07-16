@@ -1587,7 +1587,7 @@ U_TEST(CouldNotOverloadFunctionTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 2u || error.file_pos.GetLine() == 3u );
 }
 
 U_TEST(CouldNotOverloadFunctionTest2)
@@ -1605,7 +1605,7 @@ U_TEST(CouldNotOverloadFunctionTest2)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 2u || error.file_pos.GetLine() == 3u );
 }
 
 U_TEST(CouldNotOverloadFunctionTest3)

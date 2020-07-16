@@ -108,9 +108,22 @@ private:
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		ust::optional_ref</ Variable, false />& this_,
-		FunctionsSet& functions_set,
+		FunctionVariable& function,
 		ust::vector</ ust::box</Synt::Expression/> />& args,
 		FilePos& file_pos ) : Value;
+
+	fn ApplyOverloadedFunction(
+		FunctionsSet &mut functions_set,
+		FunctionVariable mut function,
+		NamesScopePtr& names_scope,
+		FilePos& file_pos ) : bool;
+
+	fn GetOverloadedFunction(
+		FunctionsSet &'x functions_set,
+		ust::array_view_imut</FunctionType::Arg/> actual_args,
+		bool first_actual_arg_is_this,
+		NamesScopePtr& names_scope, // Needed only for errors reporting
+		FilePos& file_pos ) : ust::optional_ref</FunctionVariable, false/>'x';
 
 	// Returns "false" if not complete.
 	fn EnsureTypeComplete( this, Type& t ) : bool;
@@ -120,6 +133,16 @@ private:
 	fn GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef;
 	fn GetZeroGEPIndex( this ) : LLVMValueRef;
 	fn CreateMoveToLLVMRegisterInstruction( Variable& variable, FunctionContext& function_context ) : LLVMValueRef;
+
+	struct InstructionsState
+	{
+		LLVMValueRef current_block_last_instruction;
+		LLVMValueRef alloca_block_last_instruction;
+		LLVMBasicBlockRef current_block;
+	}
+
+	fn SaveInstructionsState( FunctionContext& function_context ) : InstructionsState;
+	fn RestoreInstructionsState( FunctionContext &mut function_context, InstructionsState& state );
 
 private:
 	LLVMContextRef imut llvm_context_;
