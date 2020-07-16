@@ -175,6 +175,12 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 	}
 	else if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 	{
+		if( expr.t.GetFundamentalType().empty() )
+		{
+			REPORT_ERROR( NotImplemented, names_scope, auto_variable_declaration.file_pos, ust::string8("auto variables except fundamentals") )
+			return BlockElementBuildInfo();
+		}
+
 		unsafe
 		{
 			out_variable.llvm_value=
