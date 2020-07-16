@@ -28,7 +28,7 @@ U_TEST(InvalidTypeForAutoVariableTest0)
 
 U_TEST(InvalidTypeForAutoVariableTest1)
 {
-	// Assign function.
+	// Assign struct.
 	static const char c_program_text[]=
 	R"(
 		struct C{}
