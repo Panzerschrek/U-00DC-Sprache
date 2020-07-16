@@ -127,6 +127,7 @@ fn CodeBuilder::ApplyOverloadedFunction(
 fn CodeBuilder::GetOverloadedFunction(
 	FunctionsSet &'x functions_set,
 	ust::array_view_imut</FunctionType::Arg/> actual_args,
+	bool first_actual_arg_is_this,
 	NamesScopePtr& names_scope,
 	FilePos& file_pos ) : ust::optional_ref</FunctionVariable, false/>'x'
 {
@@ -134,19 +135,25 @@ fn CodeBuilder::GetOverloadedFunction(
 	auto mut i= 0s;
 	foreach( & function : functions_set.functions )
 	{
-		// TODO - fix foreach and use continue here.
 		var FunctionType& function_type= function.t.GetFunctionType().get_ref();
 
-		if( function_type.args.size() == actual_args.size() )
+		auto mut actual_args_corrected= actual_args;
+		if( first_actual_arg_is_this && !function.is_this_call )
+		{
+			actual_args_corrected.drop_front();
+		}
+
+		// TODO - fix foreach and use continue here.
+		if( function_type.args.size() == actual_args_corrected.size() )
 		{
 			auto mut all_args_is_compatible= true;
 			auto mut arg_n= 0s;
-			while( arg_n < actual_args.size() )
+			while( arg_n < actual_args_corrected.size() )
 			{
-				auto arg_overloading_class= GetArgOverloadingClass( actual_args[arg_n] );
+				auto arg_overloading_class= GetArgOverloadingClass( actual_args_corrected[arg_n] );
 				auto parameter_overloading_class= GetArgOverloadingClass( function_type.args[arg_n] );
 
-				if( actual_args[arg_n].arg_type.get_ref() == function_type.args[arg_n].arg_type.get_ref() )
+				if( actual_args_corrected[arg_n].arg_type.get_ref() == function_type.args[arg_n].arg_type.get_ref() )
 				{} // ok
 				else
 				{
@@ -196,47 +203,76 @@ fn CodeBuilder::GetOverloadedFunction(
 	{
 		foreach( f_l : match_functions )
 		{
-			var FunctionType& l_type= functions_set.functions[f_l].t.GetFunctionType().get_ref();
+			var FunctionVariable& l_function= functions_set.functions[f_l];
+			var FunctionType& l_type= l_function.t.GetFunctionType().get_ref();
 
-			auto mut is_best_function_for_current_arg= true;
-			foreach( f_r : match_functions )
+			auto mut l_arg_n= arg_n;
+			if( first_actual_arg_is_this && !l_function.is_this_call )
 			{
-				var FunctionType& r_type= functions_set.functions[f_r].t.GetFunctionType().get_ref();
-
-				auto comp=
-					CompareConversions(
-						actual_args[arg_n],
-						l_type.args[arg_n],
-						r_type.args[arg_n] );
-
-				if( comp == ConversionsCompareResult::Same || comp == ConversionsCompareResult::LeftIsBetter )
-				{}
-				else
-				{
-					is_best_function_for_current_arg= false;
-					break;
-				}
-			} // for functions right
-
-			// Set best functions bits.
-			if( is_best_function_for_current_arg )
+				// TODO - continue if arg_n is zero
+				--l_arg_n;
+			}
+			if( l_arg_n < actual_args.size() )
 			{
-				auto mut func_n= 0s;
-				while( func_n < match_functions.size() )
+				auto mut is_best_function_for_current_arg= true;
+				foreach( f_r : match_functions )
 				{
-					var FunctionVariable& function_r= functions_set.functions[cast_imut(match_functions)[func_n]];
-					var FunctionType& r_type= function_r.t.GetFunctionType().get_ref();
+					var FunctionVariable& r_function= functions_set.functions[f_r];
+					var FunctionType& r_type= r_function.t.GetFunctionType().get_ref();
 
-					auto comp=
-						CompareConversions(
-							actual_args[arg_n],
-							l_type.args[arg_n],
-							r_type.args[arg_n] );
-					if( comp != ConversionsCompareResult::Same )
+					auto mut r_arg_n= arg_n;
+					if( first_actual_arg_is_this && !r_function.is_this_call )
 					{
-						best_functions[func_n]= false;
+						// TODO - continue if arg_n is zero
+						--r_arg_n;
 					}
-					++func_n;
+					if( r_arg_n < actual_args.size() )
+					{
+						auto comp=
+							CompareConversions(
+								actual_args[arg_n],
+								l_type.args[l_arg_n],
+								r_type.args[r_arg_n] );
+
+						if( comp == ConversionsCompareResult::Same || comp == ConversionsCompareResult::LeftIsBetter )
+						{}
+						else
+						{
+							is_best_function_for_current_arg= false;
+							break;
+						}
+					}
+				} // for functions right
+
+				// Set best functions bits.
+				if( is_best_function_for_current_arg )
+				{
+					auto mut func_n= 0s;
+					while( func_n < match_functions.size() )
+					{
+						var FunctionVariable& r_function= functions_set.functions[cast_imut(match_functions)[func_n]];
+						var FunctionType& r_type= r_function.t.GetFunctionType().get_ref();
+
+						auto mut r_arg_n= arg_n;
+						if( first_actual_arg_is_this && !r_function.is_this_call )
+						{
+							// TODO - continue if arg_n is zero
+							--r_arg_n;
+						}
+						if( r_arg_n < actual_args.size() )
+						{
+							auto comp=
+								CompareConversions(
+									actual_args[arg_n],
+									l_type.args[l_arg_n],
+									r_type.args[r_arg_n] );
+							if( comp != ConversionsCompareResult::Same )
+							{
+								best_functions[func_n]= false;
+							}
+							++func_n;
+						}
+					}
 				}
 			}
 		} // for functions left

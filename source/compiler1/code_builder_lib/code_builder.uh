@@ -121,6 +121,7 @@ private:
 	fn GetOverloadedFunction(
 		FunctionsSet &'x functions_set,
 		ust::array_view_imut</FunctionType::Arg/> actual_args,
+		bool first_actual_arg_is_this,
 		NamesScopePtr& names_scope, // Needed only for errors reporting
 		FilePos& file_pos ) : ust::optional_ref</FunctionVariable, false/>'x';
 

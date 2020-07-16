@@ -591,10 +591,20 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 
 	RestoreInstructionsState( function_context, instructions_state );
 
-	auto function_selected= GetOverloadedFunction( functions_set.get_ref(), args_evaluated.range(), names_scope, call_operator.file_pos );
+	auto function_selected=
+		GetOverloadedFunction(
+			functions_set.get_ref(),
+			args_evaluated.range(), !this_.empty(),
+			names_scope,
+			call_operator.file_pos );
 	if( function_selected.empty() )
 	{
 		return ErrorValue();
+	}
+
+	if( !this_.empty() && !function_selected.get_ref().is_this_call )
+	{
+		this_.reset();
 	}
 
 	return DoCallFunction(
