@@ -1,6 +1,5 @@
 #include <plugins/texteditor/textdocument.h>
 #include <coreplugin/editormanager/editormanager.h>
-#include "strings.h"
 
 #include "editor_widget.hpp"
 

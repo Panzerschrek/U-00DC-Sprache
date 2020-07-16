@@ -77,7 +77,7 @@ std::string Stringify( const Synt::MoveOperator& move_operator )
 
 std::string Stringify( const Synt::TakeOperator& take_operator )
 {
-	return Keyword( Keywords::take_ ) + "(" + Stringify(take_operator) + ")";
+	return Keyword( Keywords::take_ ) + "(" + Stringify(*take_operator.expression_) + ")";
 }
 
 std::string Stringify( const Synt::CastRef& cast_ref )
