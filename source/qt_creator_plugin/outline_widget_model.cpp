@@ -8,55 +8,55 @@ namespace U
 namespace QtCreatorPlugin
 {
 
-static CPlusPlus::Icons::IconType GetIconType( const ProgramModel::ProgramTreeNode& node )
+static Utils::CodeModelIcon::Type GetIconType( const ProgramModel::ProgramTreeNode& node )
 {
 	switch( node.kind )
 	{
 		case ProgramModel::ElementKind::Unknown:
-			return CPlusPlus::Icons::UnknownIconType;
+			return Utils::CodeModelIcon::Unknown;
 
 		case ProgramModel::ElementKind::Macro:
-			return CPlusPlus::Icons::MacroIconType;
+			return Utils::CodeModelIcon::Macro;
 
 		case ProgramModel::ElementKind::Namespace:
-			return CPlusPlus::Icons::NamespaceIconType;
+			return Utils::CodeModelIcon::Namespace;
 
 		case ProgramModel::ElementKind::Struct:
-			return CPlusPlus::Icons::StructIconType;
+			return Utils::CodeModelIcon::Struct;
 
 		case ProgramModel::ElementKind::Class:
 		case ProgramModel::ElementKind::ClassTemplate:
 		case ProgramModel::ElementKind::TypeAlias:
 		case ProgramModel::ElementKind::TypeAliasTemplate:
-			return CPlusPlus::Icons::ClassIconType;
+			return Utils::CodeModelIcon::Class;
 
 		case ProgramModel::ElementKind::Enum:
-			return CPlusPlus::Icons::EnumIconType;
+			return Utils::CodeModelIcon::Enum;
 
 		case ProgramModel::ElementKind::EnumElement:
-			return CPlusPlus::Icons::EnumeratorIconType;
+			return Utils::CodeModelIcon::Enumerator;
 
 		case ProgramModel::ElementKind::Function:
 		case ProgramModel::ElementKind::FunctionTemplate:
 			switch( node.visibility )
 			{
-			case ProgramModel::Visibility::Public   : return CPlusPlus::Icons::FuncPublicIconType   ;
-			case ProgramModel::Visibility::Protected: return CPlusPlus::Icons::FuncProtectedIconType;
-			case ProgramModel::Visibility::Private  : return CPlusPlus::Icons::FuncPrivateIconType  ;
+			case ProgramModel::Visibility::Public   : return Utils::CodeModelIcon::FuncPublic   ;
+			case ProgramModel::Visibility::Protected: return Utils::CodeModelIcon::FuncProtected;
+			case ProgramModel::Visibility::Private  : return Utils::CodeModelIcon::FuncPrivate  ;
 			};
 
 		case ProgramModel::ElementKind::ClassField:
 		case ProgramModel::ElementKind::Variable:
 			switch( node.visibility )
 			{
-			case ProgramModel::Visibility::Public   : return CPlusPlus::Icons::VarPublicIconType   ;
-			case ProgramModel::Visibility::Protected: return CPlusPlus::Icons::VarProtectedIconType;
-			case ProgramModel::Visibility::Private  : return CPlusPlus::Icons::VarPrivateIconType  ;
+			case ProgramModel::Visibility::Public   : return Utils::CodeModelIcon::VarPublic   ;
+			case ProgramModel::Visibility::Protected: return Utils::CodeModelIcon::VarProtected;
+			case ProgramModel::Visibility::Private  : return Utils::CodeModelIcon::VarPrivate  ;
 			};
 	};
 
 	Q_ASSERT(false);
-	return CPlusPlus::Icons::UnknownIconType;
+	return Utils::CodeModelIcon::Unknown;
 }
 
 OutlineWidgetModel::OutlineWidgetModel( QObject *const parent )
@@ -132,7 +132,8 @@ QVariant OutlineWidgetModel::data( const QModelIndex& index, const int role ) co
 		return ptr->name;
 
 	case Qt::DecorationRole:
-		return CPlusPlus::Icons::iconForType( GetIconType( *ptr ) );
+		return Utils::CodeModelIcon::iconForType( GetIconType( *ptr ) );
+		break;
 	};
 	return QVariant();
 }

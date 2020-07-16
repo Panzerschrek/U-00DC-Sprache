@@ -1,4 +1,5 @@
 #include <coreplugin/coreconstants.h>
+#include <extensionsystem/pluginmanager.h>
 #include <coreplugin/editormanager/editormanager.h>
 #include "indenter.hpp"
 #include "editor_widget.hpp"
@@ -20,7 +21,7 @@ bool Plugin::initialize( const QStringList& arguments, QString* const error_stri
 	Q_UNUSED(arguments)
 	Q_UNUSED(error_string)
 
-	addAutoReleasedObject(new EditorFactory);
+	ExtensionSystem::PluginManager::addObject(new EditorFactory);
 	return true;
 }
 
