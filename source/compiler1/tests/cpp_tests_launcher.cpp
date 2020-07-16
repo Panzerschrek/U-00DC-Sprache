@@ -80,6 +80,9 @@ bool FilterTest( const std::string& test_name )
 		"FundamentalTypesHaveConstructorsWithExactlyOneParameterTest0",
 		"FundamentalTypesHaveConstructorsWithExactlyOneParameterTest1",
 		"IfOperatorTest",
+		"InnerClassTest0",
+		"InnerClassTest1",
+		"InnerClassTest2",
 		"LogicalBinaryOperationsTest",
 		"LogicalNotTest",
 		"NameIsNotTypeNameTest",
@@ -157,6 +160,8 @@ bool FilterTest( const std::string& test_name )
 		"methods_test.cpp:MethodTest6",
 		"methods_test.cpp:MethodTest7",
 		"methods_test.cpp:MethodTest8",
+		"methods_test.cpp:MethodTest9",
+		"methods_test.cpp:MethodTest10",
 	};
 
 	if( std::find_if(

@@ -231,7 +231,7 @@ fn SyntaxAnalyzer::ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : Names
 		{
 			namespace_elements.push_back( ust::shared_ptr_final</Function/>( ParseFunction() ) );
 		}
-		else if( IsKeyword( it_.front(), Keyword::struct_ ) )
+		else if( IsKeyword( it_.front(), Keyword::struct_ ) || IsKeyword( it_.front(), Keyword::class_ ) )
 		{
 			namespace_elements.push_back( ust::shared_ptr_final</Class/>( ParseClass() ) );
 		}
@@ -1297,7 +1297,7 @@ fn SyntaxAnalyzer::ParseClass( mut this ) : Class
 {
 	var Class mut class_;
 
-	if( !IsKeyword( it_.front(), Keyword::struct_ ) )
+	if( !( IsKeyword( it_.front(), Keyword::struct_ ) || IsKeyword( it_.front(), Keyword::class_ ) ) )
 	{
 		PushErrorMessage();
 	}
@@ -1327,6 +1327,10 @@ fn SyntaxAnalyzer::ParseClass( mut this ) : Class
 		else if( IsKeyword( it_.front(), Keyword::fn_ ) )
 		{
 			class_.class_elements.push_back( ust::shared_ptr_final</Function/>( ParseFunction() ) );
+		}
+		else if( IsKeyword( it_.front(), Keyword::struct_ ) || IsKeyword( it_.front(), Keyword::class_ ) )
+		{
+			class_.class_elements.push_back( ust::shared_ptr_final</Class/>( ParseClass() ) );
 		}
 		else
 		{

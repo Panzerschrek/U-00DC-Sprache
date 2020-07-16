@@ -111,6 +111,12 @@ fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::sh
 	}
 }
 
+fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_, ust::shared_ptr_nullable_mut</ClassType/>& class_type )
+{
+	// Ignore parent class
+	NamesScopeFill( names_scope_ptr, class_ );
+}
+
 fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Namespace/>& namespace_ )
 {
 	if_var( prev_name : names_scope_ptr.lock_imut().get_ref().GetThisScopeValue( namespace_.get_ref().name ) )
