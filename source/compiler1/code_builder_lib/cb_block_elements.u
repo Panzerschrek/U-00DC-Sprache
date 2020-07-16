@@ -48,10 +48,11 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 			REPORT_ERROR( UsingKeywordAsName, names_scope, variable_declaration.file_pos )
 		}
 
-		var NamesScopeVariable mut out_variable;
-		out_variable.t= t;
-
-		out_variable.is_mutable= variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable;
+		var NamesScopeVariable mut out_variable
+		{
+			.t= t,
+			.is_mutable= variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable,
+		};
 
 		if( variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 		{
@@ -144,8 +145,12 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 		REPORT_ERROR( UsingKeywordAsName, names_scope, auto_variable_declaration.file_pos )
 	}
 
-	// TODO - improve this, report about errors.
 	var Variable expr= BuildExpressionCodeEnsureVariable( names_scope, function_context, auto_variable_declaration.initializer_expression );
+	if( expr.t == invalid_type_ )
+	{
+		REPORT_ERROR( InvalidTypeForAutoVariable, names_scope, auto_variable_declaration.file_pos, auto_variable_declaration.name )
+		return BlockElementBuildInfo();
+	}
 
 	var NamesScopeVariable mut out_variable
 	{
@@ -155,6 +160,17 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 
 	if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
 	{
+		if( expr.value_type == ValueType::Value )
+		{
+			REPORT_ERROR( ExpectedReferenceValue,  names_scope, auto_variable_declaration.file_pos )
+			return BlockElementBuildInfo();
+		}
+		if( out_variable.is_mutable && expr.value_type != ValueType::ReferenceMut )
+		{
+			REPORT_ERROR( BindingConstReferenceToNonconstReference,  names_scope, auto_variable_declaration.file_pos )
+			return BlockElementBuildInfo();
+		}
+
 		out_variable.llvm_value= expr.llvm_value;
 	}
 	else if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
