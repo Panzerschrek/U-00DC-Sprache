@@ -140,6 +140,10 @@ bool FilterTest( const std::string& test_name )
 		"ZeroInitilaizerTest",
 
 		"auto_variables_test.cpp:AutoVariableTest0",
+		"auto_variables_test.cpp:AutoVariableTest1",
+		"auto_variables_test.cpp:AutoVariableTest2",
+		"auto_variables_test.cpp:AutoVariableTest3",
+		"auto_variables_test.cpp:AutoVariableTest4",
 		"code_builder_test.cpp:ExpectedReferenceValueTest0",
 		"code_builder_test.cpp:ExpectedReferenceValueTest2",
 		"code_builder_test.cpp:ExpectedReferenceValueTest3",
