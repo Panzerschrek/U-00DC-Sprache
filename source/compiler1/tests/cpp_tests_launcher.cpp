@@ -79,6 +79,8 @@ bool FilterTest( const std::string& test_name )
 		"DefaultConstructorNotFoundTest0",
 		"DefaultConstructorNotFoundTest1",
 		"DefaultConstructorNotFoundTest2",
+		"DefaultInitializationForStructMembersTest0",
+		"DefaultInitializationForStructMembersTest1",
 		"DestructorOutsideClassTest0",
 		"EmptyInitializerTest0",
 		"EqualityFloatOperatorsTest",
