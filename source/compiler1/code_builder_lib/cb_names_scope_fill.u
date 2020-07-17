@@ -36,7 +36,16 @@ fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::sh
 fn CodeBuilder::NamesScopeFill( this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function, ust::shared_ptr_nullable_mut</ClassType/>& class_type )
 {
 	auto& func_name= function.get_ref().name.back();
-	if( IsKeyword( func_name ) )
+
+	if( func_name == KeywordToString( Keyword::constructor_ ) || func_name == KeywordToString( Keyword::destructor_ ) )
+	{
+		if( class_type.empty() )
+		{
+			REPORT_ERROR( ConstructorOrDestructorOutsideClass, names_scope_ptr, function.get_ref().file_pos )
+			return;
+		}
+	}
+	else if( IsKeyword( func_name ) )
 	{
 		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, function.get_ref().file_pos )
 		return;
