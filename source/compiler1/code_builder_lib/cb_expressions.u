@@ -112,7 +112,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 {
 	if( named_operand.name == KeywordToString( Keyword::this_ ) )
 	{
-		if( function_context.this_.empty() )
+		if( function_context.this_.empty() || function_context.whole_this_is_unavailable )
 		{
 			REPORT_ERROR( ThisUnavailable, names_scope, named_operand.file_pos )
 			return ErrorValue();
@@ -128,6 +128,18 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 			auto field_ptr= member.Get</ClassField/>();
 			if( !field_ptr.empty() )
 			{
+				if( function_context.whole_this_is_unavailable )
+				{
+					foreach( &field_name : function_context.uninitialized_this_fields )
+					{
+						if( field_name == named_operand.name )
+						{
+							REPORT_ERROR( FieldIsNotInitializedYet, names_scope, named_operand.file_pos, field_name )
+							break;
+						}
+					}
+				}
+
 				auto field_lock= field_ptr.lock_imut();
 				auto& field= field_lock.get_ref();
 
@@ -154,7 +166,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 			}
 
 			auto functions_set_ptr= member.Get</NamesScopeFunctionsSet/>();
-			if( !functions_set_ptr.empty() )
+			if( !functions_set_ptr.empty() && !function_context.whole_this_is_unavailable )
 			{
 				var ThisMethodsSet mut this_methods_set
 				{

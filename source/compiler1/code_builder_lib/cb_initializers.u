@@ -458,6 +458,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 				else
 				{
 					initialized_fields.push_back( member_initializer.name );
+					function_context.uninitialized_this_fields.push_back( member_initializer.name );
 				}
 			}
 		}
@@ -546,6 +547,20 @@ fn CodeBuilder::BuildConstructorInitialization(
 		}
 
 		BuildInitializer( names_scope, function_context, field_variable, member_initializer.initializer.get_ref() );
+
+		// Erase field from list of uninitialized fields.
+		auto mut i= 0s;
+		while( i < function_context.uninitialized_this_fields.size() )
+		{
+			if( member_initializer.name == function_context.uninitialized_this_fields[i] )
+			{
+				auto back_index= function_context.uninitialized_this_fields.size() - 1s;
+				function_context.uninitialized_this_fields.swap( i, back_index );
+				function_context.uninitialized_this_fields.drop_back();
+				break;
+			}
+			++i;
+		}
 	}
 }
 
