@@ -668,6 +668,20 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 		}
 	}
 
+	// If method is constructor or destructor and "this" not explicitly specified, add it.
+	// It's easier add "this" here, than dealing with implicit "this" in CodeBuilder.
+	if( ( res.name.back() == KeywordToString( Keyword::constructor_ ) || res.name.back() == KeywordToString( Keyword::destructor_ ) ) &&
+		res.function_type.args.empty() )
+	{
+		var FunctionType::Arg mut this_arg
+		{
+			.file_pos= it_.front().file_pos,
+			.name= KeywordToString( Keyword::this_ ),
+			.mutability_modifier= MutabilityModifier::Mutable,
+		};
+		res.function_type.args.push_back( move(this_arg) );
+	}
+
 	while( NotEndOfFile() )
 	{
 		if( it_.front().lexem_type == Lexem::Type::BracketRight )
