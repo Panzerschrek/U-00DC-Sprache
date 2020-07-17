@@ -53,6 +53,7 @@ bool FilterTest( const std::string& test_name )
 		"ConstructorInitializerForUnsupportedTypeTest0",
 		"ConstructorOutsideClassTest0",
 		"ConstructorOutsideClassTest1",
+		"ConstructorTest0",
 		"ContinueOperatorTest",
 		"ContinueOutsideLoopTest",
 		"CouldNotOverloadFunctionTest1",

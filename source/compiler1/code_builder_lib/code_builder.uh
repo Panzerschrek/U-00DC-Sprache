@@ -110,6 +110,15 @@ private:
 	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::LogicalNot& logical_not ) : Value;
 	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BitwiseNot& bitwise_not ) : Value;
 
+	fn CallFunctionsSet(
+		this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		ust::optional_ref</ Variable, false /> mut this_,
+		FunctionsSet& functions_set,
+		ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args,
+		FilePos& file_pos ) : Value;
+
 	fn DoCallFunction(
 		this,
 		NamesScopePtr& names_scope,

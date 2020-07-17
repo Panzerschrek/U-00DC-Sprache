@@ -1,3 +1,4 @@
+import "../lex_synt_lib/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
 
@@ -205,6 +206,38 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 			auto value_in_register= CreateMoveToLLVMRegisterInstruction( src_var, function_context );
 			LLVMBuildStore( function_context.llvm_ir_builder, value_in_register, variable.llvm_value );
 		}
+
+		return;
+	}
+	if_var( &class_type : variable.t.GetClassType() )
+	{
+		auto class_members= class_type.lock_imut().get_ref().members;
+		auto members_lock= class_members.lock_imut();
+
+		auto member= members_lock.get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) );
+		if( member.empty() )
+		{
+			REPORT_ERROR( ClassHaveNoConstructors, names_scope, constructor_initializer.file_pos )
+			return;
+		}
+
+		auto constructors_ptr= member.get_ref().Get</NamesScopeFunctionsSet/>();
+		// Should be functions set 100%
+		// Should be complete here.
+
+		var Variable this_
+		{
+			.t= variable.t,
+			.value_type= ValueType::ReferenceMut,
+			.llvm_value= variable.llvm_value,
+		};
+		CallFunctionsSet(
+			names_scope,
+			function_context,
+			ust::optional_ref</ Variable, false />( this_ ),
+			constructors_ptr.lock_imut().get_ref().functions_set,
+			constructor_initializer.args,
+			constructor_initializer.file_pos );
 
 		return;
 	}

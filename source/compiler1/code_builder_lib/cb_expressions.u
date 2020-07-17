@@ -576,59 +576,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 		return ErrorValue();
 	}
 
-	// Pre-evaluate arguments to know exact types and select exact function.
-	auto instructions_state= SaveInstructionsState( function_context );
-
-	var ust::vector</FunctionType::Arg/> mut args_evaluated;
-
-	if( !this_.empty() )
-	{
-		var FunctionType::Arg mut out_arg
-		{
-			.arg_type( this_.get_ref().t ),
-			.is_mutable= this_.get_ref().value_type == ValueType::ReferenceMut,
-			.is_reference= true,
-		};
-		args_evaluated.push_back( move(out_arg) );
-	}
-
-	foreach( &arg :call_operator.args )
-	{
-		auto arg_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg.get_ref() );
-		var FunctionType::Arg mut out_arg
-		{
-			.arg_type( arg_variable.t ),
-			.is_mutable= arg_variable.value_type == ValueType::ReferenceMut,
-			.is_reference= arg_variable.value_type != ValueType::Value,
-		};
-		args_evaluated.push_back( move(out_arg) );
-	}
-
-	RestoreInstructionsState( function_context, instructions_state );
-
-	auto function_selected=
-		GetOverloadedFunction(
-			functions_set.get_ref(),
-			args_evaluated.range(), !this_.empty(),
-			names_scope,
-			call_operator.file_pos );
-	if( function_selected.empty() )
-	{
-		return ErrorValue();
-	}
-
-	if( !this_.empty() && !function_selected.get_ref().is_this_call )
-	{
-		this_.reset();
-	}
-
-	return DoCallFunction(
-		names_scope,
-		function_context,
-		this_,
-		function_selected.get_ref(),
-		call_operator.args,
-		call_operator.file_pos );
+	return CallFunctionsSet( names_scope, function_context, this_, functions_set.get_ref(), call_operator.args, call_operator.file_pos );
 }
 
 fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MemberAccessOperator& member_access_operator ) : Value
@@ -791,6 +739,71 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	unsafe{  result.llvm_value= LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "~\0"[0] );  }
 
 	return move(result);
+}
+
+fn CodeBuilder::CallFunctionsSet(
+	this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	ust::optional_ref</ Variable, false /> mut this_,
+	FunctionsSet& functions_set,
+	ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args,
+	FilePos& file_pos ) : Value
+{
+	// Pre-evaluate arguments to know exact types and select exact function.
+	auto instructions_state= SaveInstructionsState( function_context );
+
+	var ust::vector</FunctionType::Arg/> mut args_evaluated;
+
+	if( !this_.empty() )
+	{
+		var FunctionType::Arg mut out_arg
+		{
+			.arg_type( this_.get_ref().t ),
+			.is_mutable= this_.get_ref().value_type == ValueType::ReferenceMut,
+			.is_reference= true,
+		};
+		args_evaluated.push_back( move(out_arg) );
+	}
+
+	foreach( &arg : args )
+	{
+		auto arg_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg.get_ref() );
+		var FunctionType::Arg mut out_arg
+		{
+			.arg_type( arg_variable.t ),
+			.is_mutable= arg_variable.value_type == ValueType::ReferenceMut,
+			.is_reference= arg_variable.value_type != ValueType::Value,
+		};
+		args_evaluated.push_back( move(out_arg) );
+	}
+
+	RestoreInstructionsState( function_context, instructions_state );
+
+	auto function_selected=
+		GetOverloadedFunction(
+			functions_set,
+			args_evaluated.range(),
+			!this_.empty(),
+			names_scope,
+			file_pos );
+	if( function_selected.empty() )
+	{
+		return ErrorValue();
+	}
+
+	if( !this_.empty() && !function_selected.get_ref().is_this_call )
+	{
+		this_.reset();
+	}
+
+	return DoCallFunction(
+		names_scope,
+		function_context,
+		this_,
+		function_selected.get_ref(),
+		args,
+		file_pos );
 }
 
 fn CodeBuilder::DoCallFunction(

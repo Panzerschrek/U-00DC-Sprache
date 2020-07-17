@@ -179,7 +179,7 @@ struct StructNamedInitializer
 struct ConstructorInitializer
 {
 	FilePos file_pos;
-	ust::vector</ ust::shared_ptr_final</ Expression /> /> args;
+	ust::vector</ ust::shared_ptr_final</Expression/> /> args;
 }
 
 struct ZeroInitializer
