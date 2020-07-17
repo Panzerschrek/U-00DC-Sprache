@@ -409,6 +409,15 @@ fn CodeBuilder::PrepareFunction(
 		!function_declaration.function_type.args.empty() &&
 		function_declaration.function_type.args.front().name == KeywordToString( Keyword::this_ );
 
+	{
+		auto& function_type= function_variable.t.GetFunctionType().get_ref();
+		if( ( func_name == KeywordToString( Keyword::constructor_ ) || func_name == KeywordToString( Keyword::destructor_ ) ) &&
+			!(function_type.return_type.get_ref() == void_type_ && !function_type.return_value_is_reference ) )
+		{
+			REPORT_ERROR( ConstructorAndDestructorMustReturnVoid, names_scope_ptr, function_declaration.file_pos )
+		}
+	}
+
 	if_var( &mut prev_function : GetFunctionWithSameType( functions_set, function_variable.t ) )
 	{
 		// TODO - report about duplicated body/prototype

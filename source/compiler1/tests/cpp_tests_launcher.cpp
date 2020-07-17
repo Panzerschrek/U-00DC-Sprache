@@ -53,6 +53,8 @@ bool FilterTest( const std::string& test_name )
 		"ConstructorInitializerForUnsupportedTypeTest0",
 		"ConstructorOutsideClassTest0",
 		"ConstructorOutsideClassTest1",
+		"ConstructorMustReturnVoidTest0",
+		"ConstructorMustReturnVoidTest1",
 		"ConstructorTest0",
 		//"ConstructorTest1",
 		"ConstructorTest2",
