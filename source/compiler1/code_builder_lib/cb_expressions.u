@@ -799,7 +799,7 @@ fn CodeBuilder::DoCallFunction(
 	FunctionContext &mut function_context,
 	ust::optional_ref</ Variable, false />& this_,
 	FunctionVariable& function,
-	ust::vector</ ust::box</Synt::Expression/> />& args,
+	ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args,
 	FilePos& file_pos ) : Value
 {
 	auto total_args= args.size() + select( this_.empty() ? 0s : 1s);

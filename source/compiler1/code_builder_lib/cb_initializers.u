@@ -192,7 +192,7 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 			return;
 		}
 
-		var Variable src_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, constructor_initializer.args.front() );
+		var Variable src_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, constructor_initializer.args.front().get_ref() );
 		if( src_var.t != dst_type )
 		{
 			// TODO - allow cast
