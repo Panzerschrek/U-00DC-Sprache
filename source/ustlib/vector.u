@@ -1,3 +1,4 @@
+import "aligned_storage.u"
 import "checked_math.u"
 import "container_utils.u"
 import "hash.u"
@@ -265,7 +266,7 @@ public:
 			var ptr_type mut ptr0= ptr_ + i0;
 			var ptr_type mut ptr1= ptr_ + i1;
 
-			var T mut temp= uninitialized;
+			var aligned_storage</ typeinfo</T/>.size_of, typeinfo</T/>.align_of /> mut temp= uninitialized;
 			memory_copy( temp          , ptr0.get_ref(), c_element_size_ );
 			memory_copy( ptr0.get_ref(), ptr1.get_ref(), c_element_size_ );
 			memory_copy( ptr1.get_ref(), temp          , c_element_size_ );
