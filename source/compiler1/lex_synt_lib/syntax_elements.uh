@@ -298,6 +298,7 @@ struct Function
 	ust::vector</ ust::string8 /> name; // A, A::B, A::B::C::D, ::A, ::A::B
 	FunctionType function_type;
 	ust::box_nullable</Block/> block; // null for prototype
+	ust::box_nullable</StructNamedInitializer/> constructor_initializer_list;
 }
 
 struct ClassField

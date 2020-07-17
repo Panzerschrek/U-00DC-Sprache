@@ -745,20 +745,70 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 		}
 	}
 
-	if( it_.front().lexem_type == Lexem::Type::BraceLeft )
-	{
-		res.block.reset( ParseBlock() );
-	}
-	else if( it_.front().lexem_type == Lexem::Type::Semicolon )
+	if( it_.front().lexem_type == Lexem::Type::Semicolon )
 	{
 		NextLexem();
 	}
 	else
 	{
-		PushErrorMessage();
-		return Function();
-	}
+		if( it_.front().lexem_type == Lexem::Type::BracketLeft )
+		{
+			var StructNamedInitializer mut constructor_initializer_list{ .file_pos= it_.front().file_pos };
+			NextLexem();
 
+			while( NotEndOfFile() )
+			{
+				if( it_.front().lexem_type == Lexem::Type::BracketRight )
+				{
+					NextLexem();
+					break;
+				}
+
+				if( it_.front().lexem_type != Lexem::Type::Identifier )
+				{
+					PushErrorMessage();
+					break;
+				}
+
+				var StructNamedInitializer::Member mut member_initializer
+				{
+					.file_pos= it_.front().file_pos,
+					.name= it_.front().text,
+					.initializer( Initializer() ),
+				};
+				NextLexem();
+
+				member_initializer.initializer.get_ref()= ParseVariableInitializer();
+				if( !member_initializer.initializer.get_ref().get</EmptyVariant/>().empty() )
+				{
+					PushErrorMessage();
+				}
+
+				constructor_initializer_list.members_initializers.push_back( move(member_initializer) );
+
+				if( it_.front().lexem_type == Lexem::Type::Comma )
+				{
+					NextLexem();
+				}
+				else if( it_.front().lexem_type != Lexem::Type::BracketRight )
+				{
+					PushErrorMessage();
+					break;
+				}
+			}
+
+			res.constructor_initializer_list.reset( move(constructor_initializer_list) );
+		}
+
+		if( it_.front().lexem_type == Lexem::Type::BraceLeft )
+		{
+			res.block.reset( ParseBlock() );
+		}
+		else
+		{
+			PushErrorMessage();
+		}
+	}
 	return move(res);
 }
 
