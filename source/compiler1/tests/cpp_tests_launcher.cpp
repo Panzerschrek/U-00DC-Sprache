@@ -54,6 +54,8 @@ bool FilterTest( const std::string& test_name )
 		"ConstructorOutsideClassTest0",
 		"ConstructorOutsideClassTest1",
 		"ConstructorTest0",
+		//"ConstructorTest1",
+		"ConstructorTest2",
 		"ContinueOperatorTest",
 		"ContinueOutsideLoopTest",
 		"CouldNotOverloadFunctionTest1",
