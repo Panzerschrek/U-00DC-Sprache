@@ -373,7 +373,37 @@ fn CodeBuilder::BuildEmptyInitializer( this, NamesScopePtr& names_scope, Functio
 	}
 	if_var( &class_type_ptr : variable.t.GetClassType() )
 	{
-		// TODO - call default constructor.
+		auto class_members= class_type_ptr.lock_imut().get_ref().members;
+		auto members_lock= class_members.lock_imut();
+
+		auto member= members_lock.get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) );
+		if( member.empty() )
+		{
+			// TODO - generate default constructor
+			return;
+		}
+
+		auto constructors_ptr= member.get_ref().Get</NamesScopeFunctionsSet/>();
+		// Should be functions set 100%
+		// Should be complete here.
+
+		var Variable this_
+		{
+			.t= variable.t,
+			.value_type= ValueType::ReferenceMut,
+			.llvm_value= variable.llvm_value,
+		};
+
+		var ust::vector</ ust::shared_ptr_final</Synt::Expression/> /> empty_args_list;
+
+		CallFunctionsSet(
+			names_scope,
+			function_context,
+			ust::optional_ref</ Variable, false />( this_ ),
+			constructors_ptr.lock_imut().get_ref().functions_set,
+			empty_args_list,
+			file_pos );
+
 		return;
 	}
 }

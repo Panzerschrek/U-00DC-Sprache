@@ -347,6 +347,21 @@ fn CodeBuilder::BuildClass( this, NamesScopePtr& names_scope_ptr, ClassTypePtr& 
 
 	class_.is_default_constructible= fields_llvm_types.empty();
 
+	// Search for default constructos.
+	if_var( constructors : class_members.lock_imut().get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ) )
+	{
+		auto functions_set_ptr= constructors.Get</NamesScopeFunctionsSet/>();
+		// Should be functions set 100%
+		foreach( &function_variable : functions_set_ptr.lock_imut().get_ref().functions_set.functions )
+		{
+			if( function_variable.t.GetFunctionType().get_ref().args.size() == 1s )
+			{
+				class_.is_default_constructible= true;
+				break;
+			}
+		}
+	}
+
 	class_.is_complete= true;
 }
 
