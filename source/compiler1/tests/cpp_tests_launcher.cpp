@@ -108,6 +108,7 @@ bool FilterTest( const std::string& test_name )
 		"IfOperatorTest",
 		"InitializationListInNonconstructorTest0",
 		"InitializationListInNonconstructorTest1",
+		"InitializerDisabledBecauseClassHaveExplicitNoncopyConstructorsTest0",
 		"InitializerForNonfieldStructMember_InConstructors_Test0",
 		"InnerClassTest0",
 		"InnerClassTest1",

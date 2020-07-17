@@ -93,6 +93,11 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 	auto members_lock= class_type.members.lock_imut();
 	var NamesScope& class_members= members_lock.get_ref();
 
+	if( class_type.have_explicit_noncopy_constructors )
+	{
+		REPORT_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, names_scope, struct_named_initializer.file_pos )
+	}
+
 	foreach( &member_initializer : struct_named_initializer.members_initializers )
 	{
 		// TODO - use unordered_set

@@ -354,10 +354,22 @@ fn CodeBuilder::BuildClass( this, NamesScopePtr& names_scope_ptr, ClassTypePtr& 
 		// Should be functions set 100%
 		foreach( &function_variable : functions_set_ptr.lock_imut().get_ref().functions_set.functions )
 		{
-			if( function_variable.t.GetFunctionType().get_ref().args.size() == 1s )
+			auto& function_type= function_variable.t.GetFunctionType().get_ref();
+			if( function_type.args.size() == 1s )
 			{
 				class_.is_default_constructible= true;
-				break;
+				class_.have_explicit_noncopy_constructors= true;
+			}
+			else if(
+				function_type.args.size() == 2s &&
+				function_type.args.back().is_reference &&
+				!function_type.args.back().is_mutable
+				// && function_type.args.back().arg_type.get_ref() == class_type // HACK!!! TODO - uncomment this. Fix comparison of types when "class_" is locket as mutable.
+				 ) // Copy constructor
+			{}
+			else
+			{
+				class_.have_explicit_noncopy_constructors= true;
 			}
 		}
 	}

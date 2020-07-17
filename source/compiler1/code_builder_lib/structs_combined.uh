@@ -89,6 +89,7 @@ struct ClassType
 	bool is_complete= false;
 
 	bool is_default_constructible= false;
+	bool have_explicit_noncopy_constructors= false;
 }
 
 type ClassTypePtr= ust::shared_ptr_mut</ClassType/>;
