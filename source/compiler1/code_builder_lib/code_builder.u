@@ -523,14 +523,6 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariabl
 
 	var NamesScopeMutPtr args_names_scope_ptr( NamesScope( "", names_scope ) );
 
-	var LLVMAttributeRef mut by_val_attr= zero_init;
-	unsafe
-	{
-		auto& by_val_name= "byval";
-		auto kind= LLVMGetEnumAttributeKindForName( by_val_name[0], typeinfo</typeof(by_val_name)/>.element_count );
-		by_val_attr= LLVMCreateEnumAttribute( llvm_context_, kind, 0u64 );
-	}
-
 	{
 		auto mut args_names_scope_lock= args_names_scope_ptr.lock_mut();
 		auto &mut args_names_scope= args_names_scope_lock.get_ref();
@@ -570,9 +562,6 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariabl
 						auto arg_value= LLVMGetParam( func_variable.llvm_function, arg_n );
 						LLVMSetValueName2( arg_value, in_arg.name.front(), in_arg.name.size() );
 						out_arg.llvm_value= arg_value;
-
-						// TODO - remove byval, call copy constructors manually or move.
-						LLVMAddAttributeAtIndex( func_variable.llvm_function, LLVMAttributeFirstParamIndex + arg_n, by_val_attr );
 					}
 				}
 				else
