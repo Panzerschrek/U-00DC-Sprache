@@ -78,7 +78,7 @@ struct FunctionType
 
 struct ClassType
 {
-	NamesScopePtr members; // TODO - maybe inherit "ClassType" from "NamesScope" ?
+	NamesScopeMutPtr members; // TODO - maybe inherit "ClassType" from "NamesScope" ?
 
 	ust::shared_ptr_final</ Synt::Class /> syntax_element;
 
@@ -168,6 +168,7 @@ struct FunctionVariable
 	LLVMValueRef llvm_function= LLVMValueRef::Null;
 
 	bool is_this_call= false;
+	bool is_generated= false;
 
 	ust::shared_ptr_final_nullable</ Synt::Function /> prototype_syntax_element;
 	ust::shared_ptr_final_nullable</ Synt::Function /> body_syntax_element;

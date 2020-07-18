@@ -384,7 +384,7 @@ fn CodeBuilder::BuildEmptyInitializer( this, NamesScopePtr& names_scope, Functio
 		auto member= members_lock.get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) );
 		if( member.empty() )
 		{
-			// TODO - generate default constructor
+			// May be in case of error
 			return;
 		}
 

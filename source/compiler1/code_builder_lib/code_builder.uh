@@ -141,6 +141,8 @@ private:
 		NamesScopePtr& names_scope, // Needed only for errors reporting
 		FilePos& file_pos ) : ust::optional_ref</FunctionVariable, false/>'x';
 
+	fn TryGenerateDefaultConstructor( this, ClassTypePtr& class_type );
+
 	// Returns "false" if not complete.
 	fn EnsureTypeComplete( this, Type& t ) : bool;
 
