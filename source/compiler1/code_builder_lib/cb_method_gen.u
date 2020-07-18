@@ -24,12 +24,12 @@ fn CodeBuilder::TryGenerateDefaultConstructor( this, ClassTypePtr& class_type )
 			class_lock.get_ref().is_default_constructible= true;
 			return;
 		}
-			else if(
-				function_type.args.size() == 2s &&
-				function_type.args.back().is_reference &&
-				!function_type.args.back().is_mutable &&
-				function_type.args.back().arg_type.get_ref() == class_type ) // Copy constructor
-			{}
+		else if(
+			function_type.args.size() == 2s &&
+			function_type.args.back().is_reference &&
+			!function_type.args.back().is_mutable &&
+			function_type.args.back().arg_type.get_ref() == class_type ) // Copy constructor
+		{}
 		else
 		{
 			// Generation of default constructor disabled because class have explicit noncopy constructors.

@@ -89,6 +89,7 @@ struct ClassType
 	bool is_complete= false;
 
 	bool is_default_constructible= false;
+	bool is_copy_constructible= false;
 	bool have_explicit_noncopy_constructors= false;
 }
 
@@ -121,6 +122,7 @@ public:
 	fn GetLLVMType( this ) : LLVMTypeRef;
 
 	fn IsDefaultConstructible( this ) : bool;
+	fn IsCopyConstructible( this ) : bool;
 
 	// Convert type name to human-readable format.
 	fn ToString( this ) : ust::string8;
