@@ -1,3 +1,4 @@
+import "../lex_synt_lib/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
 
@@ -92,6 +93,11 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 	auto members_lock= class_type.members.lock_imut();
 	var NamesScope& class_members= members_lock.get_ref();
 
+	if( class_type.have_explicit_noncopy_constructors )
+	{
+		REPORT_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, names_scope, struct_named_initializer.file_pos )
+	}
+
 	foreach( &member_initializer : struct_named_initializer.members_initializers )
 	{
 		// TODO - use unordered_set
@@ -156,8 +162,8 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 
 			if( !found )
 			{
-				auto mut field_lock= field_ptr.lock_mut();
-				var ClassField &mut field= field_lock.get_ref();
+				auto field_lock= field_ptr.lock_imut();
+				var ClassField & field= field_lock.get_ref();
 
 				var NamesScopeVariable mut member_variable
 				{
@@ -192,7 +198,7 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 			return;
 		}
 
-		var Variable src_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, constructor_initializer.args.front() );
+		var Variable src_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, constructor_initializer.args.front().get_ref() );
 		if( src_var.t != dst_type )
 		{
 			// TODO - allow cast
@@ -205,6 +211,38 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 			auto value_in_register= CreateMoveToLLVMRegisterInstruction( src_var, function_context );
 			LLVMBuildStore( function_context.llvm_ir_builder, value_in_register, variable.llvm_value );
 		}
+
+		return;
+	}
+	if_var( &class_type : variable.t.GetClassType() )
+	{
+		auto class_members= class_type.lock_imut().get_ref().members;
+		auto members_lock= class_members.lock_imut();
+
+		auto member= members_lock.get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) );
+		if( member.empty() )
+		{
+			REPORT_ERROR( ClassHaveNoConstructors, names_scope, constructor_initializer.file_pos )
+			return;
+		}
+
+		auto constructors_ptr= member.get_ref().Get</NamesScopeFunctionsSet/>();
+		// Should be functions set 100%
+		// Should be complete here.
+
+		var Variable this_
+		{
+			.t= variable.t,
+			.value_type= ValueType::ReferenceMut,
+			.llvm_value= variable.llvm_value,
+		};
+		CallFunctionsSet(
+			names_scope,
+			function_context,
+			ust::optional_ref</ Variable, false />( this_ ),
+			constructors_ptr.lock_imut().get_ref().functions_set,
+			constructor_initializer.args,
+			constructor_initializer.file_pos );
 
 		return;
 	}
@@ -270,8 +308,8 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 			auto field_ptr= class_member.value().Get</ ClassField />();
 			if( !field_ptr.empty() )
 			{
-				auto mut field_lock= field_ptr.lock_mut();
-				var ClassField &mut field= field_lock.get_ref();
+				auto field_lock= field_ptr.lock_imut();
+				var ClassField& field= field_lock.get_ref();
 
 				var NamesScopeVariable mut member_variable
 				{
@@ -340,8 +378,194 @@ fn CodeBuilder::BuildEmptyInitializer( this, NamesScopePtr& names_scope, Functio
 	}
 	if_var( &class_type_ptr : variable.t.GetClassType() )
 	{
-		// TODO - call default constructor.
+		auto class_members= class_type_ptr.lock_imut().get_ref().members;
+		auto members_lock= class_members.lock_imut();
+
+		auto member= members_lock.get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) );
+		if( member.empty() )
+		{
+			// May be in case of error
+			return;
+		}
+
+		auto constructors_ptr= member.get_ref().Get</NamesScopeFunctionsSet/>();
+		// Should be functions set 100%
+		// Should be complete here.
+
+		var Variable this_
+		{
+			.t= variable.t,
+			.value_type= ValueType::ReferenceMut,
+			.llvm_value= variable.llvm_value,
+		};
+
+		var ust::vector</ ust::shared_ptr_final</Synt::Expression/> /> empty_args_list;
+
+		CallFunctionsSet(
+			names_scope,
+			function_context,
+			ust::optional_ref</ Variable, false />( this_ ),
+			constructors_ptr.lock_imut().get_ref().functions_set,
+			empty_args_list,
+			file_pos );
+
 		return;
+	}
+}
+
+fn CodeBuilder::BuildConstructorInitialization(
+	this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	Synt::StructNamedInitializer& constructor_initialization_list )
+{
+	// Function context should contain "this" with class type
+	auto class_type= function_context.this_.get_ref().t.GetClassType().get_ref();
+	auto class_members= class_type.lock_imut().get_ref().members;
+
+	// Check for errors, build list of initialized fields.
+	var ust::vector</ust::string8/> mut initialized_fields;
+	auto mut have_fields_errors= false;
+	foreach( &member_initializer : constructor_initialization_list.members_initializers )
+	{
+		auto class_members_lock= class_members.lock_imut();
+		auto member= class_members_lock.get_ref().GetThisScopeValue( member_initializer.name );
+		if( member.empty() )
+		{
+			have_fields_errors= true;
+			REPORT_ERROR( NameNotFound, names_scope, member_initializer.file_pos, member_initializer.name )
+		}
+		else
+		{
+			auto class_field_ptr= member.get_ref().Get</ClassField/>();
+			if( class_field_ptr.empty() )
+			{
+				have_fields_errors= true;
+				REPORT_ERROR( InitializerForNonfieldStructMember, names_scope, member_initializer.file_pos, member_initializer.name )
+			}
+			else
+			{
+				auto mut found= false;
+				foreach( &prev_field : initialized_fields )
+				{
+					if( member_initializer.name == prev_field )
+					{
+						found= true;
+						break;
+					}
+				}
+
+				if( found )
+				{
+					have_fields_errors= true;
+					REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope, member_initializer.file_pos, member_initializer.name )
+				}
+				else
+				{
+					initialized_fields.push_back( member_initializer.name );
+					function_context.uninitialized_this_fields.push_back( member_initializer.name );
+				}
+			}
+		}
+	}
+
+	var ust::vector</ust::string8/> mut uninitialized_fields;
+
+	foreach( &class_member : class_members.lock_imut().get_ref().GetInternalContainer() )
+	{
+		auto field_ptr= class_member.value().Get</ ClassField />();
+		if( !field_ptr.empty() )
+		{
+			auto mut found= false;
+			foreach( &prev_field : initialized_fields )
+			{
+				if( class_member.key() == prev_field )
+				{
+					found= true;
+					break;
+				}
+			}
+			if( !found )
+			{
+				uninitialized_fields.push_back( class_member.key() );
+			}
+		}
+	}
+
+	// Initialize fields, missing in initializer list.
+	// TODO - use fiedls order.
+	foreach( &field_name : uninitialized_fields )
+	{
+		auto field_ptr= class_members.lock_imut().get_ref().GetThisScopeValue( field_name ).get_ref().Get</ClassField/>();
+		auto field_lock= field_ptr.lock_imut();
+		var ClassField & class_field= field_lock.get_ref();
+
+		var NamesScopeVariable mut field_variable
+		{
+			.t= class_field.t,
+			.is_mutable= true,
+		};
+
+		auto op_name_nt= "." + field_name + "\0";
+		unsafe
+		{
+			var [ LLVMValueRef, 2 ] indexes
+			[
+				GetZeroGEPIndex(),
+				LLVMConstInt( fundamental_llvm_types_.u32_, u64(class_field.index), LLVMBool::False )
+			];
+
+			field_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, function_context.this_.get_ref().llvm_value, indexes[0], 2u, op_name_nt.front() );
+		}
+
+		BuildEmptyInitializer( names_scope, function_context, field_variable, field_name, constructor_initialization_list.file_pos );
+	}
+
+	if( have_fields_errors )
+	{
+		return;
+	}
+
+	// Apply explicit initializers.
+	foreach( &member_initializer : constructor_initialization_list.members_initializers )
+	{
+		auto field_ptr= class_members.lock_imut().get_ref().GetThisScopeValue( member_initializer.name ).get_ref().Get</ClassField/>();
+		auto field_lock= field_ptr.lock_imut();
+		var ClassField & class_field= field_lock.get_ref();
+
+		var NamesScopeVariable mut field_variable
+		{
+			.t= class_field.t,
+			.is_mutable= true,
+		};
+
+		auto op_name_nt= "." + member_initializer.name + "\0";
+		unsafe
+		{
+			var [ LLVMValueRef, 2 ] indexes
+			[
+				GetZeroGEPIndex(),
+				LLVMConstInt( fundamental_llvm_types_.u32_, u64(class_field.index), LLVMBool::False )
+			];
+
+			field_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, function_context.this_.get_ref().llvm_value, indexes[0], 2u, op_name_nt.front() );
+		}
+
+		BuildInitializer( names_scope, function_context, field_variable, member_initializer.initializer.get_ref() );
+
+		// Erase field from list of uninitialized fields.
+		auto mut i= 0s;
+		while( i < function_context.uninitialized_this_fields.size() )
+		{
+			if( member_initializer.name == function_context.uninitialized_this_fields[i] )
+			{
+				auto back_index= function_context.uninitialized_this_fields.size() - 1s;
+				function_context.uninitialized_this_fields.swap( i, back_index );
+				function_context.uninitialized_this_fields.drop_back();
+				break;
+			}
+			++i;
+		}
 	}
 }
 

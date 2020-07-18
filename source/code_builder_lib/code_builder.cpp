@@ -1057,7 +1057,7 @@ size_t CodeBuilder::PrepareFunction(
 			return ~0u;
 		}
 
-		if( is_special_method && function_type.return_type != void_type_ )
+		if( is_special_method && !( function_type.return_type == void_type_ && !function_type.return_value_is_reference ) )
 			REPORT_ERROR( ConstructorAndDestructorMustReturnVoid, names_scope.GetErrors(), func.file_pos_ );
 
 		ProcessFunctionReturnValueReferenceTags( names_scope.GetErrors(), func.type_, function_type );

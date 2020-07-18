@@ -112,7 +112,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 {
 	if( named_operand.name == KeywordToString( Keyword::this_ ) )
 	{
-		if( function_context.this_.empty() )
+		if( function_context.this_.empty() || function_context.whole_this_is_unavailable )
 		{
 			REPORT_ERROR( ThisUnavailable, names_scope, named_operand.file_pos )
 			return ErrorValue();
@@ -128,6 +128,18 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 			auto field_ptr= member.Get</ClassField/>();
 			if( !field_ptr.empty() )
 			{
+				if( function_context.whole_this_is_unavailable )
+				{
+					foreach( &field_name : function_context.uninitialized_this_fields )
+					{
+						if( field_name == named_operand.name )
+						{
+							REPORT_ERROR( FieldIsNotInitializedYet, names_scope, named_operand.file_pos, field_name )
+							break;
+						}
+					}
+				}
+
 				auto field_lock= field_ptr.lock_imut();
 				auto& field= field_lock.get_ref();
 
@@ -154,7 +166,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 			}
 
 			auto functions_set_ptr= member.Get</NamesScopeFunctionsSet/>();
-			if( !functions_set_ptr.empty() )
+			if( !functions_set_ptr.empty() && !function_context.whole_this_is_unavailable )
 			{
 				var ThisMethodsSet mut this_methods_set
 				{
@@ -576,59 +588,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 		return ErrorValue();
 	}
 
-	// Pre-evaluate arguments to know exact types and select exact function.
-	auto instructions_state= SaveInstructionsState( function_context );
-
-	var ust::vector</FunctionType::Arg/> mut args_evaluated;
-
-	if( !this_.empty() )
-	{
-		var FunctionType::Arg mut out_arg
-		{
-			.arg_type( this_.get_ref().t ),
-			.is_mutable= this_.get_ref().value_type == ValueType::ReferenceMut,
-			.is_reference= true,
-		};
-		args_evaluated.push_back( move(out_arg) );
-	}
-
-	foreach( &arg :call_operator.args )
-	{
-		auto arg_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg.get_ref() );
-		var FunctionType::Arg mut out_arg
-		{
-			.arg_type( arg_variable.t ),
-			.is_mutable= arg_variable.value_type == ValueType::ReferenceMut,
-			.is_reference= arg_variable.value_type != ValueType::Value,
-		};
-		args_evaluated.push_back( move(out_arg) );
-	}
-
-	RestoreInstructionsState( function_context, instructions_state );
-
-	auto function_selected=
-		GetOverloadedFunction(
-			functions_set.get_ref(),
-			args_evaluated.range(), !this_.empty(),
-			names_scope,
-			call_operator.file_pos );
-	if( function_selected.empty() )
-	{
-		return ErrorValue();
-	}
-
-	if( !this_.empty() && !function_selected.get_ref().is_this_call )
-	{
-		this_.reset();
-	}
-
-	return DoCallFunction(
-		names_scope,
-		function_context,
-		this_,
-		function_selected.get_ref(),
-		call_operator.args,
-		call_operator.file_pos );
+	return CallFunctionsSet( names_scope, function_context, this_, functions_set.get_ref(), call_operator.args, call_operator.file_pos );
 }
 
 fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MemberAccessOperator& member_access_operator ) : Value
@@ -793,13 +753,78 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	return move(result);
 }
 
+fn CodeBuilder::CallFunctionsSet(
+	this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	ust::optional_ref</ Variable, false /> mut this_,
+	FunctionsSet& functions_set,
+	ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args,
+	FilePos& file_pos ) : Value
+{
+	// Pre-evaluate arguments to know exact types and select exact function.
+	auto instructions_state= SaveInstructionsState( function_context );
+
+	var ust::vector</FunctionType::Arg/> mut args_evaluated;
+
+	if( !this_.empty() )
+	{
+		var FunctionType::Arg mut out_arg
+		{
+			.arg_type( this_.get_ref().t ),
+			.is_mutable= this_.get_ref().value_type == ValueType::ReferenceMut,
+			.is_reference= true,
+		};
+		args_evaluated.push_back( move(out_arg) );
+	}
+
+	foreach( &arg : args )
+	{
+		auto arg_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg.get_ref() );
+		var FunctionType::Arg mut out_arg
+		{
+			.arg_type( arg_variable.t ),
+			.is_mutable= arg_variable.value_type == ValueType::ReferenceMut,
+			.is_reference= arg_variable.value_type != ValueType::Value,
+		};
+		args_evaluated.push_back( move(out_arg) );
+	}
+
+	RestoreInstructionsState( function_context, instructions_state );
+
+	auto function_selected=
+		GetOverloadedFunction(
+			functions_set,
+			args_evaluated.range(),
+			!this_.empty(),
+			names_scope,
+			file_pos );
+	if( function_selected.empty() )
+	{
+		return ErrorValue();
+	}
+
+	if( !this_.empty() && !function_selected.get_ref().is_this_call )
+	{
+		this_.reset();
+	}
+
+	return DoCallFunction(
+		names_scope,
+		function_context,
+		this_,
+		function_selected.get_ref(),
+		args,
+		file_pos );
+}
+
 fn CodeBuilder::DoCallFunction(
 	this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
 	ust::optional_ref</ Variable, false />& this_,
 	FunctionVariable& function,
-	ust::vector</ ust::box</Synt::Expression/> />& args,
+	ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args,
 	FilePos& file_pos ) : Value
 {
 	auto total_args= args.size() + select( this_.empty() ? 0s : 1s);

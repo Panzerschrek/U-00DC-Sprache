@@ -448,7 +448,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 						break;
 					}
 
-					call_operator.args.push_back( ust::box</Expression/>( ParseExpression() ) );
+					call_operator.args.push_back( ust::shared_ptr_final</Expression/>( ParseExpression() ) );
 
 					if( it_.front().lexem_type== Lexem::Type::Comma )
 					{
@@ -668,6 +668,20 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 		}
 	}
 
+	// If method is constructor or destructor and "this" not explicitly specified, add it.
+	// It's easier add "this" here, than dealing with implicit "this" in CodeBuilder.
+	if( ( res.name.back() == KeywordToString( Keyword::constructor_ ) || res.name.back() == KeywordToString( Keyword::destructor_ ) ) &&
+		res.function_type.args.empty() )
+	{
+		var FunctionType::Arg mut this_arg
+		{
+			.file_pos= it_.front().file_pos,
+			.name= KeywordToString( Keyword::this_ ),
+			.mutability_modifier= MutabilityModifier::Mutable,
+		};
+		res.function_type.args.push_back( move(this_arg) );
+	}
+
 	while( NotEndOfFile() )
 	{
 		if( it_.front().lexem_type == Lexem::Type::BracketRight )
@@ -745,20 +759,70 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 		}
 	}
 
-	if( it_.front().lexem_type == Lexem::Type::BraceLeft )
-	{
-		res.block.reset( ParseBlock() );
-	}
-	else if( it_.front().lexem_type == Lexem::Type::Semicolon )
+	if( it_.front().lexem_type == Lexem::Type::Semicolon )
 	{
 		NextLexem();
 	}
 	else
 	{
-		PushErrorMessage();
-		return Function();
-	}
+		if( it_.front().lexem_type == Lexem::Type::BracketLeft )
+		{
+			var StructNamedInitializer mut constructor_initializer_list{ .file_pos= it_.front().file_pos };
+			NextLexem();
 
+			while( NotEndOfFile() )
+			{
+				if( it_.front().lexem_type == Lexem::Type::BracketRight )
+				{
+					NextLexem();
+					break;
+				}
+
+				if( it_.front().lexem_type != Lexem::Type::Identifier )
+				{
+					PushErrorMessage();
+					break;
+				}
+
+				var StructNamedInitializer::Member mut member_initializer
+				{
+					.file_pos= it_.front().file_pos,
+					.name= it_.front().text,
+					.initializer( Initializer() ),
+				};
+				NextLexem();
+
+				member_initializer.initializer.get_ref()= ParseVariableInitializer();
+				if( !member_initializer.initializer.get_ref().get</EmptyVariant/>().empty() )
+				{
+					PushErrorMessage();
+				}
+
+				constructor_initializer_list.members_initializers.push_back( move(member_initializer) );
+
+				if( it_.front().lexem_type == Lexem::Type::Comma )
+				{
+					NextLexem();
+				}
+				else if( it_.front().lexem_type != Lexem::Type::BracketRight )
+				{
+					PushErrorMessage();
+					break;
+				}
+			}
+
+			res.constructor_initializer_list.reset( move(constructor_initializer_list) );
+		}
+
+		if( it_.front().lexem_type == Lexem::Type::BraceLeft )
+		{
+			res.block.reset( ParseBlock() );
+		}
+		else
+		{
+			PushErrorMessage();
+		}
+	}
 	return move(res);
 }
 
@@ -798,7 +862,7 @@ fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer
 
 		while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::BracketRight )
 		{
-			constructor_initializer.args.push_back( ParseExpression() );
+			constructor_initializer.args.push_back( ust::shared_ptr_final</ Expression />( ParseExpression() ) );
 			if( it_.front().lexem_type  == Lexem::Type::Comma )
 			{
 				NextLexem();

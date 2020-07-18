@@ -76,7 +76,7 @@ struct CallOperator
 {
 	FilePos file_pos;
 	ust::box</Expression/> value;
-	ust::vector</ ust::box</Expression/> /> args;
+	ust::vector</ ust::shared_ptr_final</Expression/> /> args;
 }
 
 struct MemberAccessOperator
@@ -179,7 +179,7 @@ struct StructNamedInitializer
 struct ConstructorInitializer
 {
 	FilePos file_pos;
-	ust::vector</ Expression /> args;
+	ust::vector</ ust::shared_ptr_final</Expression/> /> args;
 }
 
 struct ZeroInitializer
@@ -298,6 +298,7 @@ struct Function
 	ust::vector</ ust::string8 /> name; // A, A::B, A::B::C::D, ::A, ::A::B
 	FunctionType function_type;
 	ust::box_nullable</Block/> block; // null for prototype
+	ust::box_nullable</StructNamedInitializer/> constructor_initializer_list;
 }
 
 struct ClassField

@@ -26,6 +26,8 @@ public:
 	bool imut return_value_is_mutable;
 
 	ust::optional</Variable/> this_;
+	ust::vector</ust::string8/> uninitialized_this_fields; // TODO - use something like "unordered_set"
+	bool whole_this_is_unavailable= false;
 
 	LLVMBasicBlockRef alloca_basic_block= LLVMBasicBlockRef::Null;
 	LLVMBuilderRef alloca_ir_builder= LLVMBuilderRef::Null;

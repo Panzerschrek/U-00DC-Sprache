@@ -328,24 +328,59 @@ fn CodeBuilder::BuildClass( this, NamesScopePtr& names_scope_ptr, ClassTypePtr& 
 		}
 	}
 
+	{
+		auto mut class_lock= class_type.lock_mut();
+		var ClassType &mut class_= class_lock.get_ref();
+
+		unsafe
+		{
+			if( fields_llvm_types.empty() )
+			{
+				var LLVMTypeRef dummy= zero_init;
+				LLVMStructSetBody( class_.llvm_type, dummy, 0u, LLVMBool::False );
+			}
+			else
+			{
+				auto s= u32(fields_llvm_types.size()); // TODO - fix reference protection error
+				LLVMStructSetBody( class_.llvm_type, fields_llvm_types.front(), s, LLVMBool::False );
+			}
+		}
+
+	}
+	TryGenerateDefaultConstructor( class_type );
+
 	auto mut class_lock= class_type.lock_mut();
 	var ClassType &mut class_= class_lock.get_ref();
 
-	unsafe
+	// Search for explicit noncopy constructors.
+	if_var( constructors : class_members.lock_imut().get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ) )
 	{
-		if( fields_llvm_types.empty() )
+		auto functions_set_ptr= constructors.Get</NamesScopeFunctionsSet/>();
+		// Should be functions set 100%
+		foreach( &function_variable : functions_set_ptr.lock_imut().get_ref().functions_set.functions )
 		{
-			var LLVMTypeRef dummy= zero_init;
-			LLVMStructSetBody( class_.llvm_type, dummy, 0u, LLVMBool::False );
-		}
-		else
-		{
-			auto s= u32(fields_llvm_types.size()); // TODO - fix reference protection error
-			LLVMStructSetBody( class_.llvm_type, fields_llvm_types.front(), s, LLVMBool::False );
+			if( !function_variable.is_generated )
+			{
+				auto& function_type= function_variable.t.GetFunctionType().get_ref();
+				if( function_type.args.size() == 1s )
+				{
+					class_.is_default_constructible= true;
+					class_.have_explicit_noncopy_constructors= true;
+				}
+				else if(
+					function_type.args.size() == 2s &&
+					function_type.args.back().is_reference &&
+					!function_type.args.back().is_mutable
+					// && function_type.args.back().arg_type.get_ref() == class_type // HACK!!! TODO - uncomment this. Fix comparison of types when "class_" is locket as mutable.
+					 ) // Copy constructor
+				{}
+				else
+				{
+					class_.have_explicit_noncopy_constructors= true;
+				}
+			}
 		}
 	}
-
-	class_.is_default_constructible= fields_llvm_types.empty();
 
 	class_.is_complete= true;
 }
@@ -360,6 +395,11 @@ fn CodeBuilder::PrepareFunction(
 {
 	auto& function_declaration= function_declaration_ptr.get_ref();
 	auto& func_name= function_declaration.name.back();
+
+	if( !function_declaration.constructor_initializer_list.empty() && func_name != KeywordToString( Keyword::constructor_ ) )
+	{
+		REPORT_ERROR( InitializationListInNonconstructor, names_scope_ptr, function_declaration.constructor_initializer_list.get_ref().file_pos )
+	}
 
 	var FunctionVariable mut function_variable;
 	if( function_declaration.block.empty() )
@@ -376,6 +416,15 @@ fn CodeBuilder::PrepareFunction(
 	function_variable.is_this_call=
 		!function_declaration.function_type.args.empty() &&
 		function_declaration.function_type.args.front().name == KeywordToString( Keyword::this_ );
+
+	{
+		auto& function_type= function_variable.t.GetFunctionType().get_ref();
+		if( ( func_name == KeywordToString( Keyword::constructor_ ) || func_name == KeywordToString( Keyword::destructor_ ) ) &&
+			!(function_type.return_type.get_ref() == void_type_ && !function_type.return_value_is_reference ) )
+		{
+			REPORT_ERROR( ConstructorAndDestructorMustReturnVoid, names_scope_ptr, function_declaration.file_pos )
+		}
+	}
 
 	if_var( &mut prev_function : GetFunctionWithSameType( functions_set, function_variable.t ) )
 	{
@@ -445,6 +494,13 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariabl
 	if( func_variable.body_syntax_element.empty() )
 	{
 		return;
+	}
+	unsafe
+	{
+		if( LLVMCountBasicBlocks( func_variable.llvm_function ) != 0u )
+		{
+			return; // Body already exists
+		}
 	}
 
 	auto& function_type= func_variable.t.GetFunctionType().get_ref();
@@ -547,6 +603,16 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariabl
 				}
 			}
 		}
+	}
+
+	if( !func_variable.body_syntax_element.get_ref().constructor_initializer_list.empty() && !function_context.this_.empty() )
+	{
+		function_context.whole_this_is_unavailable= true;
+		BuildConstructorInitialization(
+			args_names_scope_ptr,
+			function_context,
+			func_variable.body_syntax_element.get_ref().constructor_initializer_list.get_ref() );
+		function_context.whole_this_is_unavailable= false;
 	}
 
 	auto& block= func_variable.body_syntax_element.get_ref().block.get_ref();

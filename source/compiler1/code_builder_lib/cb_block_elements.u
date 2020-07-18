@@ -93,7 +93,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 					return BlockElementBuildInfo(); // TODO - continue instead
 				}
 
-				initializer_expression.reset( constructor_initializer.args.front() );
+				initializer_expression.reset( constructor_initializer.args.front().get_ref() );
 			}
 
 			if( initializer_expression.empty() )
