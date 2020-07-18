@@ -146,6 +146,14 @@ private:
 
 	fn BuildCopyConstructorPart( this, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t );
 
+	fn TryCallCopyConstructor(
+		this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		LLVMValueRef dst, LLVMValueRef src,
+		ClassTypePtr& class_type,
+		FilePos& file_pos );
+
 	// Returns "false" if not complete.
 	fn EnsureTypeComplete( this, Type& t ) : bool;
 

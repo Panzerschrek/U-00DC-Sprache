@@ -78,6 +78,7 @@ bool FilterTest( const std::string& test_name )
 		"ExpressionInitializerTest0",
 		"ExpressionInitializerTest1",
 		"ExpressionInitializerTest2",
+		"ExpressionInitializerTest3",
 		"ExpectedInitializer_InConstructors_Test0",
 		"FieldIsNotInitializedYetTest0",
 		"FieldIsNotInitializedYetTest1",
