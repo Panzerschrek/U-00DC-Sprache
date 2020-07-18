@@ -17,13 +17,19 @@ fn CodeBuilder::TryGenerateDefaultConstructor( this, ClassTypePtr& class_type )
 		auto constructors_ptr= constructors_value.Get</NamesScopeFunctionsSet/>();
 		foreach( &constructor_ : constructors_ptr.lock_imut().get_ref().functions_set.functions )
 		{
-			if( constructor_.t.GetFunctionType().get_ref().args.size() == 1s )
+			auto& function_type= constructor_.t.GetFunctionType().get_ref();
+			if( function_type.args.size() == 1s )
 			{
 				auto mut class_lock= class_type.lock_mut();
 				class_lock.get_ref().is_default_constructible= true;
 				return;
 			}
-			// TODO - check if copy constructor
+				else if(
+					function_type.args.size() == 2s &&
+					function_type.args.back().is_reference &&
+					!function_type.args.back().is_mutable &&
+					function_type.args.back().arg_type.get_ref() == class_type ) // Copy constructor
+				{}
 			else
 			{
 				// Generation of default constructor disabled because class have explicit noncopy constructors.
