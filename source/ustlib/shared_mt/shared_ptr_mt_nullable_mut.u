@@ -54,6 +54,16 @@ public:
 		return impl_.lock_imut();
 	}
 
+	op==( this_type& l, this_type& r ) : bool
+	{
+		return l.impl_ == r.impl_;
+	}
+
+	op!=( this_type& l, this_type& r ) : bool
+	{
+		return l.impl_ != r.impl_;
+	}
+
 public: // Methods for internal usage
 	fn constructor( shared_ptr_mt_base</ T /> mut impl ) unsafe
 	( impl_(move(impl)) )

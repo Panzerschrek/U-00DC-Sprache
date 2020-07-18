@@ -69,10 +69,13 @@ fn nomangle main() : i32
 		var IntPtrNullableImut empty_ptr_imut;
 		halt if( !empty_ptr_mut .empty() );
 		halt if( !empty_ptr_imut.empty() );
+		halt if( empty_ptr_mut != empty_ptr_imut ); // Empty pointers are equal
 	}
 	{ // Can reset empty nullable pointers.
 		var IntPtrNullableMut  mut ptr_mut (5);
 		var IntPtrNullableImut mut ptr_imut(7);
+
+		halt if( ptr_mut == ptr_imut ); // Different pointers are not equal.
 
 		{ auto mut l= ptr_mut.lock_mut(); halt if( l.get_ref() != 5 ); }
 		halt if( ptr_imut.lock_imut().get_ref() != 7 );
@@ -91,6 +94,8 @@ fn nomangle main() : i32
 	{ // Can share value
 		var IntPtrMut ptr0(42);
 		auto ptr1= ptr0;
+
+		halt if( ptr1 != ptr0 ); // Pointers with same shared value are equal.
 
 		halt if( ptr0.lock_imut().get_ref() != 42 );
 		halt if( ptr1.lock_imut().get_ref() != 42 );
@@ -124,10 +129,12 @@ fn nomangle main() : i32
 		var IntPtrMut mut ptr0(20);
 		auto ptr1= ptr0;
 
+		halt if( ptr1 != ptr0 );
 		halt if( ptr0.lock_imut().get_ref() != 20 );
 		halt if( ptr1.lock_imut().get_ref() != 20 );
 
 		ptr0.reset( 37 ); // Now, ptr0 and ptr1 have different values.
+		halt if( ptr1 == ptr0 );
 		halt if( ptr0.lock_imut().get_ref() != 37 );
 		halt if( ptr1.lock_imut().get_ref() != 20 );
 
@@ -140,6 +147,7 @@ fn nomangle main() : i32
 		halt if(  ptr0.empty() );
 		halt if( !ptr1.empty() );
 		ptr1= ptr0;
+		halt if( ptr1 != ptr0 );
 		halt if( ptr0.lock_imut().get_ref() != 56 );
 		halt if( ptr1.lock_imut().get_ref() != 56 );
 		halt if( ust::ref_to_int( ptr0.lock_imut().get_ref() ) != ust::ref_to_int( ptr1.lock_imut().get_ref() ) );
@@ -156,6 +164,7 @@ fn nomangle main() : i32
 
 		var IntPtrNullableMut mut ptr1( ptr_weak.lock() );
 
+		halt if( ptr1 != ptr0 );
 		halt if( ptr1.empty() );
 		halt if( ptr1.lock_imut().get_ref() != 11 );
 		halt if( ust::ref_to_int( ptr1.lock_imut().get_ref() ) != ust::ref_to_int( ptr0.lock_imut().get_ref() ) );
@@ -319,6 +328,61 @@ fn nomangle main() : i32
 			move(ptr0); // Let casted ptr free shared object.
 		}
 	}
+	// Compare
+	{
+		var IntPtrImut ptr0(12345);
+		var IntPtrImut ptr1(54321);
+		var IntPtrImut ptr0_copy(ptr0);
 
+		halt if(ptr0 == ptr1);
+		halt if(ptr1 == ptr0_copy);
+		halt if(ptr0_copy != ptr0);
+	}
+	{
+		var IntPtrImut ptr0(666);
+		var IntPtrImut ptr1(ptr0);
+		var IntPtrImut ptr2(ptr1);
+		var IntPtrImut ptr3(ptr1);
+
+		halt if(ptr0 != ptr0);
+		halt if(ptr0 != ptr1);
+		halt if(ptr0 != ptr2);
+		halt if(ptr0 != ptr3);
+		halt if(ptr1 != ptr0);
+		halt if(ptr1 != ptr1);
+		halt if(ptr1 != ptr2);
+		halt if(ptr1 != ptr3);
+		halt if(ptr2 != ptr0);
+		halt if(ptr2 != ptr1);
+		halt if(ptr2 != ptr2);
+		halt if(ptr2 != ptr3);
+		halt if(ptr3 != ptr0);
+		halt if(ptr3 != ptr1);
+		halt if(ptr3 != ptr2);
+		halt if(ptr3 != ptr3);
+	}
+	{
+		// Can compare even locked as mutable pointers.
+		var IntPtrMut ptr0(789);
+		var IntPtrMut ptr1(ptr0);
+		var IntPtrMut ptr2(-678);
+
+		auto mut ptr0_lock= ptr0.lock_mut();
+		auto mut ptr2_lock= ptr2.lock_mut();
+
+		halt if(ptr0 != ptr1);
+		halt if(ptr1 != ptr0);
+		halt if(!(ptr0 == ptr1));
+		halt if(!(ptr1 == ptr0));
+
+		halt if(ptr0 == ptr2);
+		halt if(ptr2 == ptr0);
+		halt if(ptr1 == ptr2);
+		halt if(ptr2 == ptr1);
+		halt if(!(ptr0 != ptr2));
+		halt if(!(ptr2 != ptr0));
+		halt if(!(ptr1 != ptr2));
+		halt if(!(ptr2 != ptr1));
+	}
 	return 0;
 }

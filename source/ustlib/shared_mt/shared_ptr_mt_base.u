@@ -123,6 +123,16 @@ public:
 		unsafe{  return lock_imut_t( value_.get_ref(), counter_ );  }
 	}
 
+	op==( this_type& l, this_type& r ) : bool
+	{
+		return l.value_ == r.value_;
+	}
+
+	op!=( this_type& l, this_type& r ) : bool
+	{
+		return l.value_ != r.value_;
+	}
+
 public: // Methods for internal usage.
 
 	fn get_value_ptr( this ) unsafe : raw_ptr_mut</T/>

@@ -85,6 +85,16 @@ public:
 		}
 	}
 
+	op==( this_type& l, this_type& r ) : bool
+	{
+		return l.ptr_ == r.ptr_;
+	}
+
+	op!=( this_type& l, this_type& r ) : bool
+	{
+		return l.ptr_ != r.ptr_;
+	}
+
 private:
 	type this_type= shared_ptr_mt_final_base</T/>;
 
