@@ -78,7 +78,7 @@ struct FunctionType
 
 struct ClassType
 {
-	NamesScopeMutPtr members; // TODO - maybe inherit "ClassType" from "NamesScope" ?
+	NamesScopePtr members; // TODO - maybe inherit "ClassType" from "NamesScope" ?
 
 	ust::shared_ptr_final</ Synt::Class /> syntax_element;
 

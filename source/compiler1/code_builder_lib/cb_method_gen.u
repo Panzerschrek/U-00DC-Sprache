@@ -12,29 +12,28 @@ fn CodeBuilder::TryGenerateDefaultConstructor( this, ClassTypePtr& class_type )
 
 	// Search for explicit default constructor.
 	auto mut have_explicit_noncopy_constructors= false;
-	if_var( & constructors_value : class_members.lock_imut().get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ) )
+
+	// Constructors value should always exists and should always be NamesScopeFunctionsSet.
+	auto constructors_ptr= class_members.lock_imut().get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).get_ref().Get</NamesScopeFunctionsSet/>();
+	foreach( &constructor_ : constructors_ptr.lock_imut().get_ref().functions_set.functions )
 	{
-		auto constructors_ptr= constructors_value.Get</NamesScopeFunctionsSet/>();
-		foreach( &constructor_ : constructors_ptr.lock_imut().get_ref().functions_set.functions )
+		auto& function_type= constructor_.t.GetFunctionType().get_ref();
+		if( function_type.args.size() == 1s )
 		{
-			auto& function_type= constructor_.t.GetFunctionType().get_ref();
-			if( function_type.args.size() == 1s )
-			{
-				auto mut class_lock= class_type.lock_mut();
-				class_lock.get_ref().is_default_constructible= true;
-				return;
-			}
-				else if(
-					function_type.args.size() == 2s &&
-					function_type.args.back().is_reference &&
-					!function_type.args.back().is_mutable &&
-					function_type.args.back().arg_type.get_ref() == class_type ) // Copy constructor
-				{}
-			else
-			{
-				// Generation of default constructor disabled because class have explicit noncopy constructors.
-				have_explicit_noncopy_constructors= true;
-			}
+			auto mut class_lock= class_type.lock_mut();
+			class_lock.get_ref().is_default_constructible= true;
+			return;
+		}
+			else if(
+				function_type.args.size() == 2s &&
+				function_type.args.back().is_reference &&
+				!function_type.args.back().is_mutable &&
+				function_type.args.back().arg_type.get_ref() == class_type ) // Copy constructor
+			{}
+		else
+		{
+			// Generation of default constructor disabled because class have explicit noncopy constructors.
+			have_explicit_noncopy_constructors= true;
 		}
 	}
 
@@ -165,21 +164,8 @@ fn CodeBuilder::TryGenerateDefaultConstructor( this, ClassTypePtr& class_type )
 	}
 
 	// Insert result variable
-	if_var( & constructors_value : class_members.lock_imut().get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ) )
-	{
-		auto constructors_ptr= constructors_value.Get</NamesScopeFunctionsSet/>();
-		auto mut constructors_lock= constructors_ptr.lock_mut();
-		constructors_lock.get_ref().functions_set.functions.push_back( take(function_variable) );
-		return;
-	}
-
-	var NamesScopeFunctionsSet mut new_functions_set;
-	new_functions_set.functions_set.functions.push_back( move(function_variable) );
-
-	// TODO Modifying names scope may be unsafe.
-	// Maybe always create empty constructors value while filling names scope?
-	auto mut members_lock= class_members.lock_mut();
-	members_lock.get_ref().AddName( KeywordToString( Keyword::constructor_ ), NamesScopeValue( move(new_functions_set) ) );
+	auto mut constructors_lock= constructors_ptr.lock_mut();
+	constructors_lock.get_ref().functions_set.functions.push_back( take(function_variable) );
 }
 
 } // namespace U

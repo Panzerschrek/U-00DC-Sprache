@@ -107,6 +107,16 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	}
 
 	class_table_.push_back( class_type_ptr );
+
+	// Create functions set for constructors/destructors. It's needed for later constructors/destructor generation.
+	{
+		auto mut lock= class_members.lock_mut();
+
+		var NamesScopeFunctionsSet functions_set{ .class_= class_type_ptr };
+		lock.get_ref().AddName( KeywordToString( Keyword::constructor_ ), functions_set );
+		lock.get_ref().AddName( KeywordToString( Keyword::destructor_  ), functions_set );
+	}
+
 	NamesScopeFill( class_members, class_.get_ref().class_elements, class_type_ptr );
 
 	var bool mut insert_not_ok= false;
