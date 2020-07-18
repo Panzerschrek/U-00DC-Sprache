@@ -324,8 +324,18 @@ fn CodeBuilder::BuildCopyConstructorPart( this, FunctionContext &mut function_co
 	{
 		unsafe
 		{
-			auto mut value= LLVMBuildLoad( function_context.llvm_ir_builder, src, "\0"[0] );
-			LLVMBuildStore( function_context.llvm_ir_builder, value, dst );
+			if( LLVMTypeOf( dst ) == LLVMTypeOf( src ) )
+			{
+				// two pointers - do load-store
+				auto mut value= LLVMBuildLoad( function_context.llvm_ir_builder, src, "\0"[0] );
+				LLVMBuildStore( function_context.llvm_ir_builder, value, dst );
+			}
+			else if( LLVMTypeOf( dst ) == LLVMPointerType( LLVMTypeOf( src ), 0u ) )
+			{
+				// pointer and value in llvm register - do simple store
+				LLVMBuildStore( function_context.llvm_ir_builder, src, dst );
+			}
+			else{ halt; }
 		}
 		return;
 	}
