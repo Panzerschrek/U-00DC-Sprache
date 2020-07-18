@@ -142,6 +142,9 @@ private:
 		FilePos& file_pos ) : ust::optional_ref</FunctionVariable, false/>'x';
 
 	fn TryGenerateDefaultConstructor( this, ClassTypePtr& class_type );
+	fn TryGenerateCopyConstructor( this, ClassTypePtr& class_type );
+
+	fn BuildCopyConstructorPart( this, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t );
 
 	// Returns "false" if not complete.
 	fn EnsureTypeComplete( this, Type& t ) : bool;

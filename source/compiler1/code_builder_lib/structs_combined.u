@@ -288,6 +288,10 @@ fn Type::IsDefaultConstructible( this ) : bool
 
 fn Type::IsCopyConstructible( this ) : bool
 {
+	if( !GetFundamentalType().empty() )
+	{
+		return true;
+	}
 	if_var( &array_type : GetArrayType() )
 	{
 		return array_type.element_count == 0u64 || array_type.element_type.get_ref().IsCopyConstructible();
