@@ -303,6 +303,20 @@ fn Type::IsCopyConstructible( this ) : bool
 	return false;
 }
 
+fn Type::CanBeConstexpr( this ) : bool
+{
+	if( !GetFundamentalType().empty() )
+	{
+		return true;
+	}
+	if_var( &array_type : GetArrayType() )
+	{
+		return array_type.element_type.get_ref().CanBeConstexpr();
+	}
+
+	return false;
+}
+
 fn Type::ToString( this ) : ust::string8
 {
 	variant_visit( &t : something_ )

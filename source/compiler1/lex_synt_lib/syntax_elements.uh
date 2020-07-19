@@ -279,6 +279,12 @@ struct ContinueOperator
 	FilePos file_pos;
 }
 
+struct StaticAssert
+{
+	FilePos file_pos;
+	Expression expression;
+}
+
 type BlockElement = ust::variant</ tup[
 	ust::box</Block/>,
 	VariablesDeclaration,
@@ -289,7 +295,8 @@ type BlockElement = ust::variant</ tup[
 	IfOperator,
 	WhileOperator,
 	BreakOperator,
-	ContinueOperator
+	ContinueOperator,
+	StaticAssert
 	] />;
 
 struct Function

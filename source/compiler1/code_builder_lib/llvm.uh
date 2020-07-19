@@ -115,6 +115,8 @@ fn nomangle LLVMStructSetBody(LLVMTypeRef StructTy, LLVMTypeRef& ElementTypes, u
 
 fn nomangle LLVMTypeOf(LLVMValueRef Val) unsafe : LLVMTypeRef;
 fn nomangle LLVMSetValueName2(LLVMValueRef Val, char8& Name, size_type NameLen) unsafe;
+fn nomangle LLVMConstIntGetZExtValue(LLVMValueRef ConstantVal) unsafe : u64;
+fn nomangle LLVMIsConstant(LLVMValueRef Val) unsafe : LLVMBool;
 
 // Global value
 
@@ -125,6 +127,7 @@ fn nomangle LLVMAddFunction(LLVMModuleRef M, NullTerminatedString& Name, LLVMTyp
 fn nomangle LLVMGetParam(LLVMValueRef Fn, u32 Index) unsafe : LLVMValueRef;
 fn nomangle LLVMCountBasicBlocks(LLVMValueRef Fn) unsafe : u32;
 fn nomangle LLVMGetLastBasicBlock(LLVMValueRef Fn) unsafe : LLVMBasicBlockRef;
+fn nomangle LLVMDeleteFunction(LLVMValueRef Fn) unsafe;
 
 // Basic block
 
@@ -155,6 +158,9 @@ fn nomangle LLVMInsertExistingBasicBlockAfterInsertBlock(LLVMBuilderRef Builder,
 fn nomangle LLVMConstInt(LLVMTypeRef IntTy, u64 N, LLVMBool SignExtend) unsafe : LLVMValueRef;
 fn nomangle LLVMConstReal(LLVMTypeRef RealTy, f64 N) unsafe : LLVMValueRef;
 fn nomangle LLVMGetUndef(LLVMTypeRef Ty) unsafe : LLVMValueRef;
+fn nomangle LLVMConstArray(LLVMTypeRef ElementTy, LLVMValueRef& ConstantVals, u32 Length)  unsafe : LLVMValueRef;
+
+fn nomangle LLVMConstExtractValue(LLVMValueRef AggConstant, u32& IdxList, u32 NumIdx) unsafe : LLVMValueRef;
 
 // Instructions
 

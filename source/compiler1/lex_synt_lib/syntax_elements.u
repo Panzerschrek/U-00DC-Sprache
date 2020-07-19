@@ -121,6 +121,11 @@ fn GetFilePosImpl( ContinueOperator& continue_operator ) : FilePos
 	return continue_operator.file_pos;
 }
 
+fn GetFilePosImpl( StaticAssert& static_assert_ ) : FilePos
+{
+	return static_assert_.file_pos;
+}
+
 fn GetFilePos( Expression& expression ) : FilePos
 {
 	variant_visit( &el : expression )

@@ -191,6 +191,7 @@ private:
 	fn ParseWhileOperator( mut this ) : WhileOperator;
 	fn ParseBreakOperator( mut this ) : BreakOperator;
 	fn ParseContinueOperator( mut this ) : ContinueOperator;
+	fn ParseStaticAssert( mut this ) : StaticAssert;
 
 	fn ParseClass( mut this ) : Class;
 
@@ -1030,6 +1031,10 @@ fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 		{
 			block.elements.push_back( ParseContinueOperator() );
 		}
+		else if( IsKeyword( it_.front(), Keyword::static_assert_ ) )
+		{
+			block.elements.push_back( ParseStaticAssert() );
+		}
 		else
 		{
 			auto mut expr= ParseExpression();
@@ -1355,6 +1360,39 @@ fn SyntaxAnalyzer::ParseContinueOperator( mut this ) : ContinueOperator
 	NextLexem();
 
 	return move(continue_operator);
+}
+
+fn SyntaxAnalyzer::ParseStaticAssert( mut this ) : StaticAssert
+{
+	if( !IsKeyword( it_.front(), Keyword::static_assert_ ) )
+	{
+		PushErrorMessage();
+	}
+
+	var StaticAssert mut static_assert_{ .file_pos= it_.front().file_pos };
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	static_assert_.expression= ParseExpression();
+
+	if( it_.front().lexem_type != Lexem::Type::BracketRight )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::Semicolon )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	return move(static_assert_);
 }
 
 fn SyntaxAnalyzer::ParseClass( mut this ) : Class

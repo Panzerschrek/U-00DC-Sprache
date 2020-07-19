@@ -123,6 +123,7 @@ public:
 
 	fn IsDefaultConstructible( this ) : bool;
 	fn IsCopyConstructible( this ) : bool;
+	fn CanBeConstexpr( this ) : bool;
 
 	// Convert type name to human-readable format.
 	fn ToString( this ) : ust::string8;
@@ -162,6 +163,7 @@ struct Variable
 	Location location= Location::Pointer;
 	ValueType value_type= ValueType::ReferenceImut;
 	LLVMValueRef llvm_value= LLVMValueRef::Null;
+	LLVMValueRef constexpr_value= LLVMValueRef::Null; // Exists only for constant expressions.
 }
 
 struct FunctionVariable
@@ -207,6 +209,7 @@ struct NamesScopeVariable
 	Type t;
 	bool is_mutable = false;
 	LLVMValueRef llvm_value= LLVMValueRef::Null;
+	LLVMValueRef constexpr_value= LLVMValueRef::Null; // Exists only for constant expressions.
 }
 
 struct NamesScopeFunctionsSet

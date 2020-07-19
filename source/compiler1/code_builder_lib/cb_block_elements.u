@@ -34,7 +34,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 
 fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration& variables_declaration ) : BlockElementBuildInfo
 {
-	auto t= PrepareType( names_scope, variables_declaration.t );
+	auto t= PrepareType( names_scope, function_context, variables_declaration.t );
 	if( !EnsureTypeComplete( t ) )
 	{
 		REPORT_ERROR( UsingIncompleteType, names_scope, variables_declaration.file_pos, t )
@@ -46,6 +46,11 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 		if( IsKeyword( variable_declaration.name ) )
 		{
 			REPORT_ERROR( UsingKeywordAsName, names_scope, variable_declaration.file_pos )
+		}
+
+		if( variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr && !t.CanBeConstexpr() )
+		{
+			REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope, variable_declaration.file_pos )
 		}
 
 		var NamesScopeVariable mut out_variable
@@ -69,7 +74,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 			}
 			else
 			{
-				BuildInitializer( names_scope, function_context, out_variable, variable_declaration.initializer );
+				out_variable.constexpr_value= BuildInitializer( names_scope, function_context, out_variable, variable_declaration.initializer );
 			}
 		}
 		else if( variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
@@ -121,8 +126,20 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 			}
 
 			out_variable.llvm_value= expression_result.llvm_value;
+			out_variable.constexpr_value= expression_result.constexpr_value;
 		}
 		else{ halt; }
+
+		if( variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr && out_variable.constexpr_value == LLVMValueRef::Null )
+		{
+			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope, variable_declaration.file_pos )
+		}
+
+		// Reset constant value for mutable variable
+		if( out_variable.is_mutable )
+		{
+			out_variable.constexpr_value= LLVMValueRef::Null;
+		}
 
 		var bool mut insert_not_ok= false;
 		{
@@ -156,6 +173,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 	{
 		.t= expr.t,
 		.is_mutable= auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable,
+		.constexpr_value= expr.constexpr_value
 	};
 
 	if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
@@ -190,6 +208,17 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 		BuildCopyConstructorPart( function_context, out_variable.llvm_value, expr.llvm_value, out_variable.t );
 	}
 	else { halt; }
+
+	if( auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr && out_variable.constexpr_value == LLVMValueRef::Null )
+	{
+		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope, auto_variable_declaration.file_pos )
+	}
+
+	// Reset constant value for mutable variable
+	if( out_variable.is_mutable )
+	{
+		out_variable.constexpr_value= LLVMValueRef::Null;
+	}
 
 	var bool mut insert_not_ok= false;
 	{
@@ -494,6 +523,36 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 	unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, function_context.loops_stack.back().block_for_continue );  }
 
 	return block_element_build_info;
+}
+
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StaticAssert& static_assert_ ) : BlockElementBuildInfo
+{
+	var Variable mut condition_variable;
+	{
+		auto instructions_state= SaveInstructionsState( function_context );
+		condition_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, static_assert_.expression );
+		RestoreInstructionsState( function_context, instructions_state );
+	}
+
+	if( condition_variable.t != bool_type_ )
+	{
+		REPORT_ERROR( StaticAssertExpressionMustHaveBoolType, names_scope, static_assert_.file_pos )
+		return BlockElementBuildInfo();
+	}
+	if( condition_variable.constexpr_value == LLVMValueRef::Null )
+	{
+		REPORT_ERROR( StaticAssertExpressionIsNotConstant, names_scope, static_assert_.file_pos )
+		return BlockElementBuildInfo();
+	}
+
+	var u64 mut val= zero_init;
+	unsafe{  val= LLVMConstIntGetZExtValue( condition_variable.constexpr_value );  }
+	if( val == 0u64 )
+	{
+		REPORT_ERROR( StaticAssertionFailed, names_scope, static_assert_.file_pos )
+	}
+
+	return BlockElementBuildInfo();
 }
 
 } // namespace U
