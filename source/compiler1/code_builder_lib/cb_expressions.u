@@ -572,6 +572,10 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	var ust::optional_ref</ FunctionsSet, false /> mut functions_set;
 	var ust::optional_ref</ Variable, false /> mut this_;
 
+	if_var( &t : function.get</Type/>() )
+	{
+		return BuildTempVariableConstruction( names_scope, function_context, t, call_operator.args, call_operator.file_pos );
+	}
 	if_var( & in_functions_set : function.get</FunctionsSet/>() )
 	{
 		functions_set.reset(in_functions_set);
@@ -947,6 +951,43 @@ fn CodeBuilder::DoCallFunction(
 	{
 		result.llvm_value= s_ret_value;
 		result.location= Variable::Location::Pointer;
+	}
+
+	return move(result);
+}
+
+fn CodeBuilder::BuildTempVariableConstruction(
+	this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	Type& t,
+	ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args,
+	FilePos& file_pos ) : Value
+{
+	if( !EnsureTypeComplete( t ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope, file_pos, t )
+		return ErrorValue();
+	}
+
+	var Variable mut result
+	{
+		.t= t,
+		.location= Variable::Location::Pointer,
+		.value_type= ValueType::Value,
+	};
+
+	auto name= "_temp_" + t.ToString() + "\0";
+	unsafe{  result.llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, t.GetLLVMType(), name.front() );  }
+
+	{
+		var NamesScopeVariable names_scope_variable
+		{
+			.t= t,
+			.is_mutable= true,
+			.llvm_value= result.llvm_value,
+		};
+		BuildConstructorInitializer( names_scope, function_context, names_scope_variable, args, file_pos );
 	}
 
 	return move(result);

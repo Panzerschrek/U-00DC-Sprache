@@ -211,65 +211,7 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 
 fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ConstructorInitializer& constructor_initializer )
 {
-	if_var( &dst_type : variable.t.GetFundamentalType() )
-	{
-		if( constructor_initializer.args.size() != 1s )
-		{
-			REPORT_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, names_scope, constructor_initializer.file_pos )
-			return;
-		}
-
-		var Variable src_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, constructor_initializer.args.front().get_ref() );
-		if( src_var.t != dst_type )
-		{
-			// TODO - allow cast
-			REPORT_ERROR( TypesMismatch, names_scope, constructor_initializer.file_pos, variable.t, src_var.t )
-			return;
-		}
-
-		unsafe
-		{
-			auto value_in_register= CreateMoveToLLVMRegisterInstruction( src_var, function_context );
-			LLVMBuildStore( function_context.llvm_ir_builder, value_in_register, variable.llvm_value );
-		}
-
-		return;
-	}
-	if_var( &class_type : variable.t.GetClassType() )
-	{
-		auto class_members= class_type.lock_imut().get_ref().members;
-		auto members_lock= class_members.lock_imut();
-
-		auto member= members_lock.get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) );
-		if( member.empty() )
-		{
-			REPORT_ERROR( ClassHaveNoConstructors, names_scope, constructor_initializer.file_pos )
-			return;
-		}
-
-		auto constructors_ptr= member.get_ref().Get</NamesScopeFunctionsSet/>();
-		// Should be functions set 100%
-		// Should be complete here.
-
-		var Variable this_
-		{
-			.t= variable.t,
-			.value_type= ValueType::ReferenceMut,
-			.llvm_value= variable.llvm_value,
-		};
-		CallFunctionsSet(
-			names_scope,
-			function_context,
-			ust::optional_ref</ Variable, false />( this_ ),
-			constructors_ptr.lock_imut().get_ref().functions_set,
-			constructor_initializer.args,
-			constructor_initializer.file_pos );
-
-		return;
-	}
-
-	REPORT_ERROR( ConstructorInitializerForUnsupportedType, names_scope, constructor_initializer.file_pos )
-	return;
+	BuildConstructorInitializer( names_scope, function_context, variable, constructor_initializer.args, constructor_initializer.file_pos );
 }
 
 fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ZeroInitializer& zero_initializer )
@@ -432,6 +374,174 @@ fn CodeBuilder::BuildEmptyInitializer( this, NamesScopePtr& names_scope, Functio
 
 		return;
 	}
+}
+
+fn CodeBuilder::BuildConstructorInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args, FilePos& file_pos )
+{
+	if_var( &dst_type : variable.t.GetFundamentalType() )
+	{
+		if( args.size() != 1s )
+		{
+			REPORT_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, names_scope, file_pos )
+			return;
+		}
+
+		var Variable src_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().get_ref() );
+		auto src_type_ref= src_var.t.GetFundamentalType();
+
+		if( src_type_ref.empty() )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, file_pos, variable.t, src_var.t )
+			return;
+		}
+		var FundamentalType& src_type= src_type_ref.get_ref();
+
+		auto mut llvm_value= CreateMoveToLLVMRegisterInstruction( src_var, function_context );
+		unsafe
+		{
+			if( src_type.fundamental_type == dst_type.fundamental_type )
+			{}
+			else if( IsInteger( dst_type.fundamental_type ) && IsInteger( src_type.fundamental_type ) )
+			{
+				// int to int
+				if( src_type.GetSize() < dst_type.GetSize() )
+				{
+					// We lost here some values in conversions, such i16 => u32, if src_type is signed.
+					if( IsUnsignedInteger( dst_type.fundamental_type ) )
+					{
+						llvm_value= LLVMBuildZExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+					}
+					else
+					{
+						llvm_value= LLVMBuildSExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+					}
+				}
+				else if( src_type.GetSize() > dst_type.GetSize() )
+				{
+					llvm_value= LLVMBuildTrunc( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+				}
+				else{} // Same size integers - do nothing
+			}
+			else if( IsFloatingPoint( dst_type.fundamental_type ) && IsFloatingPoint( src_type.fundamental_type ) )
+			{
+				// float to float
+				if( src_type.GetSize() < dst_type.GetSize() )
+				{
+					llvm_value= LLVMBuildFPExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+				}
+				else if( src_type.GetSize() > dst_type.GetSize() )
+				{
+					llvm_value= LLVMBuildFPTrunc( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+				}
+				else{ halt; } // WTF?
+			}
+			else if( IsFloatingPoint( dst_type.fundamental_type ) && IsInteger( src_type.fundamental_type ) )
+			{
+				// int to float
+				if( IsSignedInteger( src_type.fundamental_type ) )
+				{
+					llvm_value= LLVMBuildSIToFP( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+				}
+				else
+				{
+					llvm_value= LLVMBuildUIToFP( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+				}
+			}
+			else if( IsInteger( dst_type.fundamental_type ) && IsFloatingPoint( src_type.fundamental_type ) )
+			{
+				// float to int
+				if( IsSignedInteger( dst_type.fundamental_type ) )
+				{
+					llvm_value= LLVMBuildFPToSI( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+				}
+				else
+				{
+					llvm_value= LLVMBuildFPToUI( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+				}
+			}
+			else if( IsChar( dst_type.fundamental_type ) && ( IsInteger( src_type.fundamental_type ) || IsChar( src_type.fundamental_type ) ) )
+			{
+				// int to char or char to char
+				if( src_type.GetSize() < dst_type.GetSize() )
+				{
+					llvm_value= LLVMBuildZExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+				}
+				else if( src_type.GetSize() > dst_type.GetSize() )
+				{
+					llvm_value= LLVMBuildTrunc( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+				}
+			}
+			else if( IsInteger( dst_type.fundamental_type ) && IsChar( src_type.fundamental_type ) )
+			{
+				// char to int
+				if( src_type.GetSize() < dst_type.GetSize() )
+				{
+					// We lost here some values in conversions, such i16 => u32, if src_type is signed.
+					if( IsUnsignedInteger( dst_type.fundamental_type ) )
+					{
+						llvm_value= LLVMBuildZExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+					}
+					else
+					{
+						llvm_value= LLVMBuildSExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+					}
+				}
+				else if( src_type.GetSize() > dst_type.GetSize() )
+				{
+					llvm_value= LLVMBuildTrunc( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+				}
+				else{} // Same size - do nothing
+			}
+			else
+			{
+				if( dst_type.fundamental_type == U_FundamentalType::bool_ )
+				{
+					// TODO - error, bool have no constructors from other types
+				}
+				REPORT_ERROR( TypesMismatch, names_scope, file_pos, variable.t, src_var.t )
+				return;
+			}
+
+			LLVMBuildStore( function_context.llvm_ir_builder, llvm_value, variable.llvm_value );
+		}
+
+		return;
+	}
+	if_var( &class_type : variable.t.GetClassType() )
+	{
+		auto class_members= class_type.lock_imut().get_ref().members;
+		auto members_lock= class_members.lock_imut();
+
+		auto member= members_lock.get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) );
+		if( member.empty() )
+		{
+			REPORT_ERROR( ClassHaveNoConstructors, names_scope, file_pos )
+			return;
+		}
+
+		auto constructors_ptr= member.get_ref().Get</NamesScopeFunctionsSet/>();
+		// Should be functions set 100%
+		// Should be complete here.
+
+		var Variable this_
+		{
+			.t= variable.t,
+			.value_type= ValueType::ReferenceMut,
+			.llvm_value= variable.llvm_value,
+		};
+		CallFunctionsSet(
+			names_scope,
+			function_context,
+			ust::optional_ref</ Variable, false />( this_ ),
+			constructors_ptr.lock_imut().get_ref().functions_set,
+			args,
+			file_pos );
+
+		return;
+	}
+
+	REPORT_ERROR( ConstructorInitializerForUnsupportedType, names_scope, file_pos )
+	return;
 }
 
 fn CodeBuilder::BuildConstructorInitialization(
