@@ -234,6 +234,15 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 	}
 	else
 	{
+		auto ret_type= function_context.return_type;
+		if_var( &class_type : ret_type.GetClassType() )
+		{
+			auto s_ret= function_context.s_ret;
+			TryCallCopyConstructor( names_scope, function_context, s_ret, expr.llvm_value, class_type, return_operator.file_pos );
+			unsafe{  LLVMBuildRetVoid( function_context.llvm_ir_builder );  }
+			return block_element_build_info;
+		}
+
 		unsafe
 		{
 			auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr, function_context );

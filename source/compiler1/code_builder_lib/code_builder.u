@@ -527,7 +527,25 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariabl
 		auto mut args_names_scope_lock= args_names_scope_ptr.lock_mut();
 		auto &mut args_names_scope= args_names_scope_lock.get_ref();
 
+		auto is_s_ret= !function_type.return_value_is_reference && !function_type.return_type.get_ref().GetClassType().empty();
+		if( is_s_ret )
+		{
+			unsafe
+			{
+				var ust::array_view_imut</ char8 /> attr_name= "sret";
+				auto attr_kind= LLVMGetEnumAttributeKindForName( attr_name.front(), attr_name.size() );
+				auto attr= LLVMCreateEnumAttribute( llvm_context_, attr_kind, 0u64 );
+
+				LLVMAddAttributeAtIndex( func_variable.llvm_function, LLVMAttributeFirstParamIndex, attr );
+
+				function_context.s_ret= LLVMGetParam( func_variable.llvm_function, 0u );
+				var ust::array_view_imut</ char8 /> param_name= "_return_value";
+				LLVMSetValueName2( function_context.s_ret, param_name.front(), param_name.size() );
+			}
+		}
+
 		auto mut arg_n= 0u;
+		auto first_llvm_arg= select( is_s_ret ? 1u : 0u );
 		foreach( &in_arg : func_variable.body_syntax_element.get_ref().function_type.args )
 		{
 			var NamesScopeVariable mut out_arg
@@ -547,7 +565,7 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariabl
 			{
 				unsafe
 				{
-					auto arg_value= LLVMGetParam( func_variable.llvm_function, arg_n );
+					auto arg_value= LLVMGetParam( func_variable.llvm_function, first_llvm_arg + arg_n );
 					LLVMSetValueName2( arg_value, in_arg.name.front(), in_arg.name.size() );
 					out_arg.llvm_value= arg_value;
 				}
@@ -559,7 +577,7 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariabl
 					// Non-fundamentals are passed by reference.
 					unsafe
 					{
-						auto arg_value= LLVMGetParam( func_variable.llvm_function, arg_n );
+						auto arg_value= LLVMGetParam( func_variable.llvm_function, first_llvm_arg + arg_n );
 						LLVMSetValueName2( arg_value, in_arg.name.front(), in_arg.name.size() );
 						out_arg.llvm_value= arg_value;
 					}
@@ -569,7 +587,7 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariabl
 					auto arg_name= "_arg_" + in_arg.name;
 					unsafe
 					{
-						auto arg_value= LLVMGetParam( func_variable.llvm_function, arg_n );
+						auto arg_value= LLVMGetParam( func_variable.llvm_function, first_llvm_arg + arg_n );
 						LLVMSetValueName2( arg_value, arg_name.front(), arg_name.size() );
 
 						out_arg.llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, out_arg.t.GetLLVMType(), (in_arg.name + "\0").front() );
