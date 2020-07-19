@@ -357,6 +357,65 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 		return move(res);
 	}
 	else if(
+		binary_operator.operator == BinaryOperatorType::ShiftLeft ||
+		binary_operator.operator == BinaryOperatorType::ShiftRight )
+	{
+		if( l_fundamental_type.empty() || !IsInteger( l_fundamental_type.get_ref().fundamental_type ) )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, binary_operator.file_pos, l_type )
+			return ErrorValue();
+		}
+		if( r_fundamental_type.empty() || !IsUnsignedInteger( r_fundamental_type.get_ref().fundamental_type ) )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, binary_operator.file_pos, r_type )
+			return ErrorValue();
+		}
+
+		auto mut l_value_for_op= l_in_register;
+		auto mut r_value_for_op= r_in_register;
+
+		var Variable mut res
+		{
+			.t= l_type,
+			.location= Variable::Location::LLVMRegister,
+			.value_type= ValueType::Value,
+		};
+
+		unsafe
+		{
+			// Convert value of shift to type of shifted value. LLVM Reuqired this.
+			if( r_fundamental_type.get_ref().GetSize() > l_fundamental_type.get_ref().GetSize() )
+			{
+				r_value_for_op= LLVMBuildTrunc( function_context.llvm_ir_builder, r_value_for_op, l_type.GetLLVMType(), "\0"[0] );
+			}
+			else if( r_fundamental_type.get_ref().GetSize() < l_fundamental_type.get_ref().GetSize() )
+			{
+				r_value_for_op= LLVMBuildZExt( function_context.llvm_ir_builder, r_value_for_op, l_type.GetLLVMType(), "\0"[0] );
+			}
+
+			if( binary_operator.operator == BinaryOperatorType::ShiftLeft )
+			{
+				res.llvm_value= LLVMBuildShl( function_context.llvm_ir_builder, l_value_for_op, r_value_for_op, "\0"[0] );
+			}
+			else if( binary_operator.operator == BinaryOperatorType::ShiftRight )
+			{
+				if( IsSignedInteger( l_fundamental_type.get_ref().fundamental_type ) )
+				{
+					res.llvm_value= LLVMBuildAShr( function_context.llvm_ir_builder, l_value_for_op, r_value_for_op, "\0"[0] );
+				}
+				else
+				{
+					res.llvm_value= LLVMBuildLShr( function_context.llvm_ir_builder, l_value_for_op, r_value_for_op, "\0"[0] );
+				}
+			}
+			else{ halt; }
+
+			if( LLVMIsConstant( res.llvm_value ) == LLVMBool::True ){ res.constexpr_value= res.llvm_value; }
+		}
+
+		return move(res);
+	}
+	else if(
 		binary_operator.operator == BinaryOperatorType::Equal ||
 		binary_operator.operator == BinaryOperatorType::NotEqual )
 	{

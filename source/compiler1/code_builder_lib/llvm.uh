@@ -193,6 +193,11 @@ fn nomangle LLVMBuildAnd(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef 
 fn nomangle LLVMBuildOr(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildXor(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
 
+// Bit shift operators
+fn nomangle LLVMBuildShl(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildLShr(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildAShr(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+
 // Floating point arithmetic
 fn nomangle LLVMBuildFAdd(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildFSub(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
