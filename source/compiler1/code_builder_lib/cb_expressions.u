@@ -104,7 +104,8 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	res.t= Type( FundamentalType( U_FundamentalType::bool_ , fundamental_llvm_types_.bool_ ) );
 	res.location= Variable::Location::LLVMRegister;
 
-	unsafe{ res.llvm_value= LLVMConstInt( res.t.GetLLVMType(), select( boolean_constant.value ? 1u64 : 0u64 ), LLVMBool::True ); }
+	unsafe{ res.constexpr_value= LLVMConstInt( res.t.GetLLVMType(), select( boolean_constant.value ? 1u64 : 0u64 ), LLVMBool::True ); }
+	res.llvm_value= res.constexpr_value;
 
 	return move(res);
 }

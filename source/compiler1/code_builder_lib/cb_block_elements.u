@@ -510,4 +510,34 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 	return block_element_build_info;
 }
 
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StaticAssert& static_assert_ ) : BlockElementBuildInfo
+{
+	var Variable mut condition_variable;
+	{
+		auto instructions_state= SaveInstructionsState( function_context );
+		condition_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, static_assert_.expression );
+		RestoreInstructionsState( function_context, instructions_state );
+	}
+
+	if( condition_variable.t != bool_type_ )
+	{
+		REPORT_ERROR( StaticAssertExpressionMustHaveBoolType, names_scope, static_assert_.file_pos )
+		return BlockElementBuildInfo();
+	}
+	if( condition_variable.constexpr_value == LLVMValueRef::Null )
+	{
+		REPORT_ERROR( StaticAssertExpressionIsNotConstant, names_scope, static_assert_.file_pos )
+		return BlockElementBuildInfo();
+	}
+
+	var u64 mut val= zero_init;
+	unsafe{  val= LLVMConstIntGetZExtValue( condition_variable.constexpr_value );  }
+	if( val == 0u64 )
+	{
+		REPORT_ERROR( StaticAssertionFailed, names_scope, static_assert_.file_pos )
+	}
+
+	return BlockElementBuildInfo();
+}
+
 } // namespace U

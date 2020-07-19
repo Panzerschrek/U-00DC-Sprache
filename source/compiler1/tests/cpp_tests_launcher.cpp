@@ -149,6 +149,8 @@ bool FilterTest( const std::string& test_name )
 		"RemOperatorTest2",
 		"SimpliestProgramTest",
 		"SimpleProgramTest",
+		"StaticAssertTest0",
+		"StaticAssertTest1",
 		"StructInitializerForNonStructTest0",
 		"StructNamedInitializersTest0",
 		"StructNamedInitializersTest1",
