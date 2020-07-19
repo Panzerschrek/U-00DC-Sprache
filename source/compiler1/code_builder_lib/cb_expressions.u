@@ -532,49 +532,57 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	{
 		if_var( &index_fundamental_type : index.t.GetFundamentalType() )
 		{
-			// TODO - add runtime index check
-			// TODO - forbid non-constexpr signed indexes
-			if( IsInteger( index_fundamental_type.fundamental_type ) )
+			if( !(
+				IsUnsignedInteger( index_fundamental_type.fundamental_type ) ||
+				( IsSignedInteger( index_fundamental_type.fundamental_type ) && index.constexpr_value != LLVMValueRef::Null ) ) )
 			{
-				if( variable.location != Variable::Location::Pointer )
+				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, indexation_operator.file_pos, index.t )
+				return ErrorValue();
+			}
+			if( variable.location != Variable::Location::Pointer )
+			{
+				// TODO - Strange variable location.
+				return ErrorValue();
+			}
+
+			var LLVMValueRef mut index_value= CreateMoveToLLVMRegisterInstruction( index, function_context );
+			if( index.constexpr_value != LLVMValueRef::Null )
+			{
+				auto mut index_value_num= 0u64;
+				unsafe{  index_value_num= LLVMConstIntGetZExtValue( index_value );  }
+				if( index_value_num >= variable_array_type.element_count )
 				{
-					// TODO - Strange variable location.
+					REPORT_ERROR( ArrayIndexOutOfBounds, names_scope, indexation_operator.file_pos, index_value_num, variable_array_type.element_count )
 					return ErrorValue();
 				}
-
-				var Variable mut result
-				{
-					.t= variable_array_type.element_type.get_ref(),
-					.location= Variable::Location::Pointer,
-					.value_type= variable.value_type,
-				};
-
-				unsafe
-				{
-					var [ LLVMValueRef, 2 ] indexes
-					[
-						GetZeroGEPIndex(),
-						CreateMoveToLLVMRegisterInstruction( index, function_context ),
-					];
-
-					result.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] );
-				}
-
-				if( variable.constexpr_value != LLVMValueRef::Null && index.constexpr_value != LLVMValueRef::Null )
-				{
-					unsafe
-					{
-						var u32 index( LLVMConstIntGetZExtValue( index.constexpr_value ) ); // TODO - check bounds.
-						result.constexpr_value= LLVMConstExtractValue( variable.constexpr_value, index, 1u );
-					}
-				}
-
-				return move(result);
 			}
 			else
 			{
-				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, indexation_operator.file_pos, index.t )
+				// TODO - add runtime index check
 			}
+
+			var Variable mut result
+			{
+				.t= variable_array_type.element_type.get_ref(),
+				.location= Variable::Location::Pointer,
+				.value_type= variable.value_type,
+			};
+
+			unsafe
+			{
+				var [ LLVMValueRef, 2 ] indexes[ GetZeroGEPIndex(), index_value ];
+				result.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] );
+			}
+
+			if( variable.constexpr_value != LLVMValueRef::Null && index.constexpr_value != LLVMValueRef::Null )
+			{
+				unsafe
+				{
+					result.constexpr_value= LLVMConstExtractValue( variable.constexpr_value, u32( LLVMConstIntGetZExtValue( index_value ) ), 1u );
+				}
+			}
+
+			return move(result);
 		}
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, indexation_operator.file_pos, index.t )
 	}

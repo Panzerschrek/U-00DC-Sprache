@@ -25,6 +25,7 @@ bool FilterTest( const std::string& test_name )
 	{
 		"AdditionalSymbolsForIdentifiersTest0",
 		"ArgumentsAssignmentTest",
+		"ArrayIndexOutOfBoundsTest0",
 		"ArrayInitializerForFundamentalTypesTest0",
 		"ArrayInitializerForFundamentalTypesTest1",
 		"ArrayInitializerForNonArrayTest0",
