@@ -58,16 +58,17 @@ private:
 	fn PrepareType( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type ) : Type;
 	fn PrepareFunctionType( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type, ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : Type;
 
-	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Initializer& initializer );
-	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::EmptyVariant& empty_initializer );
-	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Expression& expression_initializer );
-	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::SequenceInitializer& sequence_initializer );
-	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::StructNamedInitializer& struct_named_initializer );
-	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ConstructorInitializer& constructor_initializer );
-	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ZeroInitializer& zero_initializer );
-	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::UninitializedInitializer& uninitialized_initializer );
+	// Returns constant value if initializer is contant
+	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Initializer& initializer ) : LLVMValueRef;
+	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::EmptyVariant& empty_initializer ) : LLVMValueRef;
+	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Expression& expression_initializer ) : LLVMValueRef;
+	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::SequenceInitializer& sequence_initializer ) : LLVMValueRef;
+	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::StructNamedInitializer& struct_named_initializer ) : LLVMValueRef;
+	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ConstructorInitializer& constructor_initializer ) : LLVMValueRef;
+	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ZeroInitializer& zero_initializer ) : LLVMValueRef;
+	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::UninitializedInitializer& uninitialized_initializer ) : LLVMValueRef;
 	fn BuildEmptyInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::string8& variable_name, FilePos& file_pos );
-	fn BuildConstructorInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args, FilePos& file_pos );
+	fn BuildConstructorInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args, FilePos& file_pos )  : LLVMValueRef;
 
 	fn BuildConstructorInitialization(
 		this,

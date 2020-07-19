@@ -69,7 +69,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 			}
 			else
 			{
-				BuildInitializer( names_scope, function_context, out_variable, variable_declaration.initializer );
+				out_variable.constexpr_value= BuildInitializer( names_scope, function_context, out_variable, variable_declaration.initializer );
 			}
 		}
 		else if( variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
@@ -121,8 +121,15 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 			}
 
 			out_variable.llvm_value= expression_result.llvm_value;
+			out_variable.constexpr_value= expression_result.constexpr_value;
 		}
 		else{ halt; }
+
+		// Reset constant value for mutable variable
+		if( out_variable.is_mutable )
+		{
+			out_variable.constexpr_value= LLVMValueRef::Null;
+		}
 
 		var bool mut insert_not_ok= false;
 		{
@@ -156,6 +163,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 	{
 		.t= expr.t,
 		.is_mutable= auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable,
+		.constexpr_value= expr.constexpr_value
 	};
 
 	if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
@@ -190,6 +198,12 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 		BuildCopyConstructorPart( function_context, out_variable.llvm_value, expr.llvm_value, out_variable.t );
 	}
 	else { halt; }
+
+	// Reset constant value for mutable variable
+	if( out_variable.is_mutable )
+	{
+		out_variable.constexpr_value= LLVMValueRef::Null;
+	}
 
 	var bool mut insert_not_ok= false;
 	{

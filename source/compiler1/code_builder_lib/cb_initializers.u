@@ -5,20 +5,21 @@ import "code_builder.uh"
 namespace U
 {
 
-fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Initializer& initializer )
+fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Initializer& initializer ) : LLVMValueRef
 {
 	variant_visit( &i : initializer )
 	{
-		BuildInitializer( names_scope, function_context, variable, i );
+		return BuildInitializer( names_scope, function_context, variable, i );
 	}
+	halt;
 }
 
-fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::EmptyVariant& empty_initializer )
+fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::EmptyVariant& empty_initializer ) : LLVMValueRef
 {
 	halt;
 }
 
-fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Expression& expression_initializer )
+fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Expression& expression_initializer ) : LLVMValueRef
 {
 	if( !variable.t.GetFundamentalType().empty() )
 	{
@@ -26,7 +27,7 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 		if( expr_result.t != variable.t )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope, Synt::GetFilePos(expression_initializer), variable.t, expr_result.t )
-			return;
+			return LLVMValueRef::Null;
 		}
 
 		unsafe
@@ -34,12 +35,12 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 			auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr_result, function_context );
 			LLVMBuildStore( function_context.llvm_ir_builder, value_in_register, variable.llvm_value );
 		}
-		return;
+		return expr_result.constexpr_value;
 	}
 	if( !variable.t.GetArrayType().empty() )
 	{
 		REPORT_ERROR( NotImplemented, names_scope, Synt::GetFilePos(expression_initializer), ust::string8("expression initialization for arrays") )
-		return;
+		return LLVMValueRef::Null;
 	}
 	if_var( &class_type : variable.t.GetClassType() )
 	{
@@ -47,16 +48,16 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 		if( expr_result.t != variable.t )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope, FilePos(), variable.t, expr_result.t )
-			return;
+			return LLVMValueRef::Null;
 		}
 		TryCallCopyConstructor( names_scope, function_context, variable.llvm_value, expr_result.llvm_value, class_type, Synt::GetFilePos(expression_initializer) );
-		return;
+		return LLVMValueRef::Null;
 	}
 
 	halt; // Unhandled type kind
 }
 
-fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::SequenceInitializer& sequence_initializer )
+fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::SequenceInitializer& sequence_initializer ) : LLVMValueRef
 {
 	if_var( &array_type : variable.t.GetArrayType() )
 	{
@@ -67,7 +68,7 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 				sequence_initializer.file_pos,
 				array_type.element_count,
 				sequence_initializer.elements_initializers.size() )
-			return;
+			return LLVMValueRef::Null;
 		}
 
 		var NamesScopeVariable mut element_variable
@@ -93,19 +94,20 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 			++i;
 		}
 
-		return;
+		return LLVMValueRef::Null;
 	}
 
 	REPORT_ERROR( ArrayInitializerForNonArray, names_scope, sequence_initializer.file_pos )
+	return LLVMValueRef::Null;
 }
 
-fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::StructNamedInitializer& struct_named_initializer )
+fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::StructNamedInitializer& struct_named_initializer ) : LLVMValueRef
 {
 	auto class_type_ref= variable.t.GetClassType();
 	if( class_type_ref.empty() )
 	{
 		REPORT_ERROR( StructInitializerForNonStruct, names_scope, struct_named_initializer.file_pos )
-		return;
+		return LLVMValueRef::Null;
 	}
 	var ClassTypePtr& class_type_ptr= class_type_ref.get_ref();
 	auto class_type_lock= class_type_ptr.lock_imut();
@@ -135,13 +137,13 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 		if( member_ref.empty() )
 		{
 			REPORT_ERROR( NameNotFound, names_scope, member_initializer.file_pos, member_initializer.name )
-			return; // TODO - continue instead
+			return LLVMValueRef::Null;
 		}
 		auto field_ptr= member_ref.get_ref().Get</ClassField/>();
 		if( field_ptr.empty() )
 		{
 			REPORT_ERROR( InitializerForNonfieldStructMember, names_scope, member_initializer.file_pos, member_initializer.name )
-			return; // TODO - continue instead
+			return LLVMValueRef::Null;
 		}
 		auto field_lock= field_ptr.lock_imut();
 		var ClassField& class_field= field_lock.get_ref();
@@ -207,14 +209,16 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 			}
 		}
 	}
+
+	return LLVMValueRef::Null;
 }
 
-fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ConstructorInitializer& constructor_initializer )
+fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ConstructorInitializer& constructor_initializer ) : LLVMValueRef
 {
-	BuildConstructorInitializer( names_scope, function_context, variable, constructor_initializer.args, constructor_initializer.file_pos );
+	return BuildConstructorInitializer( names_scope, function_context, variable, constructor_initializer.args, constructor_initializer.file_pos );
 }
 
-fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ZeroInitializer& zero_initializer )
+fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ZeroInitializer& zero_initializer ) : LLVMValueRef
 {
 	if_var( &fundamental_type : variable.t.GetFundamentalType() )
 	{
@@ -231,7 +235,7 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 		}
 
 		unsafe{  LLVMBuildStore( function_context.llvm_ir_builder, zero_value, variable.llvm_value );  }
-		return;
+		return zero_value;
 	}
 	if_var( &array_type : variable.t.GetArrayType() )
 	{
@@ -257,7 +261,7 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 			BuildInitializer( names_scope, function_context, element_variable, zero_initializer );
 			++i;
 		}
-		return;
+		return LLVMValueRef::Null;
 	}
 	if_var( &class_type_ptr : variable.t.GetClassType() )
 	{
@@ -294,15 +298,16 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 				BuildInitializer( names_scope, function_context, member_variable, zero_initializer );
 			}
 		}
-		return;
+		return LLVMValueRef::Null;
 	}
 
 	halt;
 }
 
-fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::UninitializedInitializer& uninitialized_initializer )
+fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::UninitializedInitializer& uninitialized_initializer ) : LLVMValueRef
 {
 	// TODO - emit error if not in unsafe block
+	return LLVMValueRef::Null;
 }
 
 fn CodeBuilder::BuildEmptyInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::string8& variable_name, FilePos& file_pos )
@@ -376,14 +381,14 @@ fn CodeBuilder::BuildEmptyInitializer( this, NamesScopePtr& names_scope, Functio
 	}
 }
 
-fn CodeBuilder::BuildConstructorInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args, FilePos& file_pos )
+fn CodeBuilder::BuildConstructorInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args, FilePos& file_pos )  : LLVMValueRef
 {
 	if_var( &dst_type : variable.t.GetFundamentalType() )
 	{
 		if( args.size() != 1s )
 		{
 			REPORT_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, names_scope, file_pos )
-			return;
+			return LLVMValueRef::Null;
 		}
 
 		var Variable src_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().get_ref() );
@@ -392,7 +397,7 @@ fn CodeBuilder::BuildConstructorInitializer( this, NamesScopePtr& names_scope, F
 		if( src_type_ref.empty() )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope, file_pos, variable.t, src_var.t )
-			return;
+			return LLVMValueRef::Null;
 		}
 		var FundamentalType& src_type= src_type_ref.get_ref();
 
@@ -499,13 +504,15 @@ fn CodeBuilder::BuildConstructorInitializer( this, NamesScopePtr& names_scope, F
 					// TODO - error, bool have no constructors from other types
 				}
 				REPORT_ERROR( TypesMismatch, names_scope, file_pos, variable.t, src_var.t )
-				return;
+				return LLVMValueRef::Null;
 			}
 
 			LLVMBuildStore( function_context.llvm_ir_builder, llvm_value, variable.llvm_value );
 		}
 
-		return;
+		unsafe{  if( LLVMIsConstant( llvm_value ) == LLVMBool::True ){ return llvm_value; }  }
+
+		return LLVMValueRef::Null;
 	}
 	if_var( &class_type : variable.t.GetClassType() )
 	{
@@ -516,7 +523,7 @@ fn CodeBuilder::BuildConstructorInitializer( this, NamesScopePtr& names_scope, F
 		if( member.empty() )
 		{
 			REPORT_ERROR( ClassHaveNoConstructors, names_scope, file_pos )
-			return;
+			return LLVMValueRef::Null;
 		}
 
 		auto constructors_ptr= member.get_ref().Get</NamesScopeFunctionsSet/>();
@@ -537,11 +544,11 @@ fn CodeBuilder::BuildConstructorInitializer( this, NamesScopePtr& names_scope, F
 			args,
 			file_pos );
 
-		return;
+		return LLVMValueRef::Null;
 	}
 
 	REPORT_ERROR( ConstructorInitializerForUnsupportedType, names_scope, file_pos )
-	return;
+	return LLVMValueRef::Null;
 }
 
 fn CodeBuilder::BuildConstructorInitialization(
