@@ -203,6 +203,18 @@ fn nomangle LLVMBuildNeg(LLVMBuilderRef Builder, LLVMValueRef V, NullTerminatedS
 fn nomangle LLVMBuildFNeg(LLVMBuilderRef Builder, LLVMValueRef V, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildNot(LLVMBuilderRef Builder, LLVMValueRef V, NullTerminatedString& Name) unsafe : LLVMValueRef;
 
+// Casts
+
+fn nomangle LLVMBuildTrunc(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildZExt(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildSExt(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildFPToUI(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildFPToSI(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildUIToFP(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildSIToFP(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildFPTrunc(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildFPExt(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
+
 // Attributes
 fn nomangle LLVMCreateEnumAttribute(LLVMContextRef C, u32 KindID, u64 Val) unsafe : LLVMAttributeRef;
 fn nomangle LLVMGetEnumAttributeKindForName(char8& Name, size_type SLen) unsafe : u32;
