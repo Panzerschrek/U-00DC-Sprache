@@ -327,6 +327,9 @@ U_TEST(ConstexprTest10)
 	R"(
 		fn Foo() : i32
 		{
+			var[ f32, 22 ] constexpr zero_arr= zero_init;
+			static_assert( zero_arr[7] == 0.0f );
+
 			var [ i32, 3 ] constexpr arr[ 2, 5, -8 ];
 			static_assert( arr[0u] == 2 );
 			static_assert( arr[1u] == 5 );

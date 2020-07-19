@@ -560,6 +560,15 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 					result.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] );
 				}
 
+				if( variable.constexpr_value != LLVMValueRef::Null && index.constexpr_value != LLVMValueRef::Null )
+				{
+					unsafe
+					{
+						var u32 index( LLVMConstIntGetZExtValue( index.constexpr_value ) ); // TODO - check bounds.
+						result.constexpr_value= LLVMConstExtractValue( variable.constexpr_value, index, 1u );
+					}
+				}
+
 				return move(result);
 			}
 			else

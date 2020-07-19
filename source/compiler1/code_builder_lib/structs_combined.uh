@@ -123,6 +123,7 @@ public:
 
 	fn IsDefaultConstructible( this ) : bool;
 	fn IsCopyConstructible( this ) : bool;
+	fn CanBeConstexpr( this ) : bool;
 
 	// Convert type name to human-readable format.
 	fn ToString( this ) : ust::string8;
