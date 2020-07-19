@@ -169,7 +169,6 @@ U_TEST(ArrayInitializersCountMismatchTest1)
 	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
 }
 
-
 U_TEST(FundamentalTypesHaveConstructorsWithExactlyOneParameterTest0)
 {
 	// Not enough parameters in constructor.
@@ -558,7 +557,6 @@ U_TEST(ZeroInitializerForClass_Test0)
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ZeroInitializerForClass );
 	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
-
 
 U_TEST(TuplesInitializersErrors_Test0)
 {

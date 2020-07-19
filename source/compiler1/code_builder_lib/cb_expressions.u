@@ -849,6 +849,14 @@ fn CodeBuilder::DoCallFunction(
 
 	var ust::vector</LLVMValueRef/> mut llvm_args;
 
+	auto mut s_ret_value= LLVMValueRef::Null;
+	auto is_s_ret= !function_type.return_value_is_reference && !function_type.return_type.get_ref().GetClassType().empty();
+	if( is_s_ret )
+	{
+		unsafe{  s_ret_value= LLVMBuildAlloca( function_context.alloca_ir_builder, function_type.return_type.get_ref().GetLLVMType(), "\0"[0] );  }
+		llvm_args.push_back( s_ret_value );
+	}
+
 	auto mut arg_n= 0s;
 	auto first_expr_arg= select( this_.empty() ? 0s : 1s );
 	while( arg_n < total_args )
@@ -886,9 +894,14 @@ fn CodeBuilder::DoCallFunction(
 		{
 			if( !arg.t.GetClassType().empty() )
 			{
-				// Non-fundametals passed by reference.
-				// Now we use "byval". TODO - construct temporary variable, call destructor.
-				llvm_args.push_back( arg.llvm_value );
+				auto mut var_copy= LLVMValueRef::Null;
+				unsafe
+				{
+					var_copy= LLVMBuildAlloca( function_context.alloca_ir_builder, arg.t.GetLLVMType(), "\0"[0] );
+				}
+				TryCallCopyConstructor( names_scope, function_context, var_copy, arg.llvm_value, arg.t.GetClassType().get_ref(), file_pos );
+
+				llvm_args.push_back( var_copy );
 			}
 			else
 			{
@@ -928,6 +941,12 @@ fn CodeBuilder::DoCallFunction(
 			auto s= u32(llvm_args.size());
 			result.llvm_value= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, llvm_args.front(), s, "\0"[0] );
 		}
+	}
+
+	if( is_s_ret )
+	{
+		result.llvm_value= s_ret_value;
+		result.location= Variable::Location::Pointer;
 	}
 
 	return move(result);

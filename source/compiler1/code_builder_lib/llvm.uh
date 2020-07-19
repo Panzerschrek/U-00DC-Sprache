@@ -113,6 +113,7 @@ fn nomangle LLVMStructSetBody(LLVMTypeRef StructTy, LLVMTypeRef& ElementTypes, u
 
 // Value
 
+fn nomangle LLVMTypeOf(LLVMValueRef Val) unsafe : LLVMTypeRef;
 fn nomangle LLVMSetValueName2(LLVMValueRef Val, char8& Name, size_type NameLen) unsafe;
 
 // Global value

@@ -25,6 +25,8 @@ public:
 	bool imut return_value_is_reference;
 	bool imut return_value_is_mutable;
 
+	LLVMValueRef s_ret= LLVMValueRef::Null;
+
 	ust::optional</Variable/> this_;
 	ust::vector</ust::string8/> uninitialized_this_fields; // TODO - use something like "unordered_set"
 	bool whole_this_is_unavailable= false;

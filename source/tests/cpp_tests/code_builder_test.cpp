@@ -514,7 +514,6 @@ U_TEST(CallTest4)
 	U_TEST_ASSERT( static_cast<uint64_t>(11145) == result_value.IntVal.getLimitedValue() );
 }
 
-
 U_TEST(CallTest5)
 {
 	// return structure.

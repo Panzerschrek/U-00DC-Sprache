@@ -107,6 +107,14 @@ fn CodeBuilder::PrepareFunctionType( this, NamesScopePtr& names_scope, Synt::Fun
 	}
 
 	var ust::vector</LLVMTypeRef/> mut llvm_arg_types;
+
+	// s_ret
+	auto is_s_ret= !res.return_value_is_reference && !res.return_type.get_ref().GetClassType().empty();
+	if( is_s_ret )
+	{
+		unsafe{  llvm_arg_types.push_back( LLVMPointerType( res.return_type.get_ref().GetLLVMType(), 0u ) );  }
+	}
+
 	foreach( &arg : res.args )
 	{
 		auto mut llvm_type= arg.arg_type.get_ref().GetLLVMType();
@@ -131,6 +139,10 @@ fn CodeBuilder::PrepareFunctionType( this, NamesScopePtr& names_scope, Synt::Fun
 		if( res.return_value_is_reference )
 		{
 			ret_llvm_type= LLVMPointerType( ret_llvm_type, 0u );
+		}
+		else if( is_s_ret )
+		{
+			ret_llvm_type= fundamental_llvm_types_.void_for_ret_;
 		}
 
 		if( llvm_arg_types.empty() )
