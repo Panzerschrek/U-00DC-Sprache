@@ -62,6 +62,12 @@ fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : Buil
 		LLVMSetModuleDataLayout( module_, data_layout_ );
 	}
 
+	unsafe
+	{
+		auto global_function_llvm_type= LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, LLVMTypeRef::Null, 0u, LLVMBool::False );
+		global_llvm_function_= LLVMAddFunction( module_, "\0"[0], global_function_llvm_type );
+	}
+
 	var ErrorsContainerPtr errors_container( ErrorsContainer() );
 
 	var NamesScopeMutPtr global_names_scope( NamesScope( "", ust::shared_ptr_nullable_imut</NamesScope/>() ) );
@@ -78,6 +84,9 @@ fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : Buil
 	NamesScopeFillOutOfLineElements( global_names_scope, ast.program_elements );
 	NamesScopeBuild( global_names_scope );
 
+	unsafe{  LLVMDeleteFunction( global_llvm_function_ );  }
+	global_llvm_function_= LLVMValueRef::Null;
+
 	{ // Clear classes internals to break strong shared pointers loop and avoid memory leaks.
 		var NamesScopeMutPtr dummy_class_names_scope( NamesScope( "", ust::shared_ptr_nullable_imut</NamesScope/>() ) );
 		foreach( &class_type : class_table_ )
@@ -86,6 +95,7 @@ fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : Buil
 			lock.get_ref().members= dummy_class_names_scope;
 		}
 	}
+	class_table_.clear();
 
 	var BuildResult mut res
 	{
@@ -304,6 +314,7 @@ fn CodeBuilder::BuildClass( this, NamesScopePtr& names_scope_ptr, ClassTypePtr& 
 		return;
 	}
 
+	auto mut global_function_context= CreateGlobalFunctionContext();
 	var ust::vector</ LLVMTypeRef /> mut fields_llvm_types;
 
 	auto class_members= class_type.lock_imut().get_ref().members;
@@ -316,7 +327,7 @@ fn CodeBuilder::BuildClass( this, NamesScopePtr& names_scope_ptr, ClassTypePtr& 
 				auto mut field_lock= field_ptr.lock_mut();
 				var ClassField &mut field= field_lock.get_ref();
 
-				field.t= PrepareType( class_members, field.syntax_element.get_ref().t );
+				field.t= PrepareType( class_members, global_function_context, field.syntax_element.get_ref().t );
 
 				if( !EnsureTypeComplete( field.t ) )
 				{
@@ -420,7 +431,8 @@ fn CodeBuilder::PrepareFunction(
 		function_variable.body_syntax_element= function_declaration_ptr;
 	}
 
-	function_variable.t= PrepareFunctionType( names_scope_ptr, function_declaration.function_type, class_type );
+	auto mut global_function_context= CreateGlobalFunctionContext();
+	function_variable.t= PrepareFunctionType( names_scope_ptr, global_function_context, function_declaration.function_type, class_type );
 
 	function_variable.is_this_call=
 		!function_declaration.function_type.args.empty() &&
@@ -780,6 +792,16 @@ fn CodeBuilder::RestoreInstructionsState( FunctionContext &mut function_context,
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, state.current_block );
 		LLVMPositionBuilderAtEnd( function_context.alloca_ir_builder, function_context.alloca_basic_block );
 	}
+}
+
+fn CodeBuilder::CreateGlobalFunctionContext( this ) : FunctionContext
+{
+	return FunctionContext(
+		llvm_context_,
+		global_llvm_function_,
+		void_type_for_ret_,
+		false,
+		false );
 }
 
 } // namespace U

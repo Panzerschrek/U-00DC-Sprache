@@ -51,12 +51,12 @@ private:
 		FunctionsSet &mut functions_set,
 		bool is_out_of_line_function ) : bool;
 
-	fn PrepareType( this, NamesScopePtr& names_scope, Synt::TypeName& type_name ) : Type;
-	fn PrepareType( this, NamesScopePtr& names_scope, Synt::ComplexName& named_type ) : Type;
-	fn PrepareType( this, NamesScopePtr& names_scope, ust::box</Synt::ArrayType/>& array_type ) : Type;
-	fn PrepareType( this, NamesScopePtr& names_scope, ust::box</Synt::FunctionType/>& function_type_ptr ) : Type;
-	fn PrepareType( this, NamesScopePtr& names_scope, Synt::FunctionType& function_type ) : Type;
-	fn PrepareFunctionType( this, NamesScopePtr& names_scope, Synt::FunctionType& function_type, ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : Type;
+	fn PrepareType( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TypeName& type_name ) : Type;
+	fn PrepareType( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_type ) : Type;
+	fn PrepareType( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::ArrayType/>& array_type ) : Type;
+	fn PrepareType( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type_ptr ) : Type;
+	fn PrepareType( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type ) : Type;
+	fn PrepareFunctionType( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type, ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : Type;
 
 	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Initializer& initializer );
 	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::EmptyVariant& empty_initializer );
@@ -182,6 +182,9 @@ private:
 	fn SaveInstructionsState( FunctionContext& function_context ) : InstructionsState;
 	fn RestoreInstructionsState( FunctionContext &mut function_context, InstructionsState& state );
 
+	// Dummy function context for places outside actual function.
+	fn CreateGlobalFunctionContext( this ) : FunctionContext;
+
 private:
 	LLVMContextRef imut llvm_context_;
 	LLVMTargetDataRef imut data_layout_;
@@ -224,6 +227,7 @@ private:
 	LLVMModuleRef module_= LLVMModuleRef::Null;
 
 	ust::vector</ ClassTypePtr /> class_table_;
+	LLVMValueRef global_llvm_function_= LLVMValueRef::Null; // For global function context
 }
 
 } // namespace U

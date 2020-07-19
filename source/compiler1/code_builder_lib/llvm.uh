@@ -125,6 +125,7 @@ fn nomangle LLVMAddFunction(LLVMModuleRef M, NullTerminatedString& Name, LLVMTyp
 fn nomangle LLVMGetParam(LLVMValueRef Fn, u32 Index) unsafe : LLVMValueRef;
 fn nomangle LLVMCountBasicBlocks(LLVMValueRef Fn) unsafe : u32;
 fn nomangle LLVMGetLastBasicBlock(LLVMValueRef Fn) unsafe : LLVMBasicBlockRef;
+fn nomangle LLVMDeleteFunction(LLVMValueRef Fn) unsafe;
 
 // Basic block
 
