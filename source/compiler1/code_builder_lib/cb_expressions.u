@@ -14,6 +14,9 @@ fn CodeBuilder::BuildExpressionCodeEnsureVariable( this, NamesScopePtr& names_sc
 		return take(v);
 	}
 
+	// TODO - enable this
+//	REPORT_ERROR( ExpectedVariable, names_scope, Synt::GetFilePos(expression), ust::string8( /* TODO - print value kind */ ) )
+
 	var Variable mut dummy;
 	dummy.t= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
 	dummy.location= Variable::Location::LLVMRegister;

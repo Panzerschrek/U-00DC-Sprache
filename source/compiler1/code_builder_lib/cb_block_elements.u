@@ -314,6 +314,18 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 	return BlockElementBuildInfo();
 }
 
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IncrementOperator& increment_operator ) : BlockElementBuildInfo
+{
+	BuildDeltaOneOperator( names_scope, function_context, increment_operator.expression, increment_operator.file_pos, +1 );
+	return BlockElementBuildInfo();
+}
+
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::DecrementOperator& decrement_operator ) : BlockElementBuildInfo
+{
+	BuildDeltaOneOperator( names_scope, function_context, decrement_operator.expression, decrement_operator.file_pos, -1 );
+	return BlockElementBuildInfo();
+}
+
 fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : BlockElementBuildInfo
 {
 	BuildExpressionCode( names_scope, function_context, expression );
@@ -553,6 +565,29 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 	}
 
 	return BlockElementBuildInfo();
+}
+
+fn CodeBuilder::BuildDeltaOneOperator( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, FilePos& file_pos, i32 delta )
+{
+	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression );
+	if( variable.t.GetFundamentalType().empty() || !IsInteger( variable.t.GetFundamentalType().get_ref().fundamental_type ) )
+	{
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, file_pos, variable.t )
+		return;
+	}
+	if( variable.value_type != ValueType::ReferenceMut )
+	{
+		REPORT_ERROR( ExpectedReferenceValue, names_scope, file_pos )
+		return;
+	}
+
+	unsafe
+	{
+		auto operand_value= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+		auto delta_value= LLVMConstInt( variable.t.GetLLVMType(), u64(delta), LLVMBool::True );
+		auto result_value= LLVMBuildAdd( function_context.llvm_ir_builder, operand_value, delta_value, "\0"[0] );
+		LLVMBuildStore( function_context.llvm_ir_builder, result_value, variable.llvm_value );
+	}
 }
 
 } // namespace U
