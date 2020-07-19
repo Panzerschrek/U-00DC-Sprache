@@ -147,6 +147,8 @@ bool FilterTest( const std::string& test_name )
 		"StructNamedInitializersTest1",
 		"StructNamedInitializersTest2",
 		"StructNamedInitializersTest3",
+		"TempVariableConstructionTest0",
+		"TempVariableConstructionTest1",
 		"ThiscallMismatch_Test0",
 		"ThisUnavailable_InConstructors_Test0",
 		"ThisUnavailable_InConstructors_Test1",
