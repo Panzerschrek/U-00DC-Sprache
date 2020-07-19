@@ -246,7 +246,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 				}
 				else
 				{
-					res.llvm_value =LLVMBuildAdd( function_context.llvm_ir_builder, l_in_register, r_in_register, "+\0"[0] );
+					res.llvm_value= LLVMBuildAdd( function_context.llvm_ir_builder, l_in_register, r_in_register, "+\0"[0] );
 				}
 			}
 			else if( binary_operator.operator == BinaryOperatorType::Sub )
@@ -268,7 +268,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 				}
 				else
 				{
-					res.llvm_value=LLVMBuildMul( function_context.llvm_ir_builder, l_in_register, r_in_register, "*\0"[0] );
+					res.llvm_value= LLVMBuildMul( function_context.llvm_ir_builder, l_in_register, r_in_register, "*\0"[0] );
 				}
 			}
 			else if( binary_operator.operator == BinaryOperatorType::Div )
@@ -279,11 +279,11 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 				}
 				else if( is_signed )
 				{
-					res.llvm_value=LLVMBuildSDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
+					res.llvm_value= LLVMBuildSDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
 				}
 				else
 				{
-					res.llvm_value=LLVMBuildUDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
+					res.llvm_value= LLVMBuildUDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
 				}
 			}
 			else if( binary_operator.operator == BinaryOperatorType::Rem )
@@ -294,13 +294,15 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 				}
 				else if( is_signed )
 				{
-					res.llvm_value=LLVMBuildSRem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] );
+					res.llvm_value= LLVMBuildSRem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] );
 				}
 				else
 				{
-					res.llvm_value=LLVMBuildURem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] );
+					res.llvm_value= LLVMBuildURem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] );
 				}
 			}
+
+			if( LLVMIsConstant( res.llvm_value ) == LLVMBool::True ){ res.constexpr_value= res.llvm_value; }
 		}
 
 		return move(res);
@@ -347,6 +349,8 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 			{
 				res.llvm_value= LLVMBuildXor( function_context.llvm_ir_builder, l_in_register, r_in_register, "^\0"[0] );
 			}
+
+			if( LLVMIsConstant( res.llvm_value ) == LLVMBool::True ){ res.constexpr_value= res.llvm_value; }
 		}
 
 		return move(res);
@@ -400,6 +404,8 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 					res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::NE, l_in_register, r_in_register, "!=\0"[0] );
 				}
 			}
+
+			if( LLVMIsConstant( res.llvm_value ) == LLVMBool::True ){ res.constexpr_value= res.llvm_value; }
 		}
 
 		return move(res);
@@ -499,6 +505,8 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 					res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGE, l_in_register, r_in_register, ">=\0"[0] );
 				}
 			}
+
+			if( LLVMIsConstant( res.llvm_value ) == LLVMBool::True ){ res.constexpr_value= res.llvm_value; }
 		}
 
 		return move(res);
@@ -710,6 +718,8 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 		return ErrorValue();
 	}
 
+	unsafe{  if( LLVMIsConstant( result.llvm_value ) == LLVMBool::True ){ result.constexpr_value= result.llvm_value; }  }
+
 	return move(result);
 }
 
@@ -730,7 +740,11 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 		.location= Variable::Location::LLVMRegister,
 	};
 
-	unsafe{  result.llvm_value= LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "!\0"[0] );  }
+	unsafe
+	{
+		result.llvm_value= LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "!\0"[0] );
+		if( LLVMIsConstant( result.llvm_value ) == LLVMBool::True ){ result.constexpr_value= result.llvm_value; }
+	}
 
 	return move(result);
 }
@@ -753,7 +767,11 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 		.location= Variable::Location::LLVMRegister,
 	};
 
-	unsafe{  result.llvm_value= LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "~\0"[0] );  }
+	unsafe
+	{
+		result.llvm_value= LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "~\0"[0] );
+		if( LLVMIsConstant( result.llvm_value ) == LLVMBool::True ){ result.constexpr_value= result.llvm_value; }
+	}
 
 	return move(result);
 }

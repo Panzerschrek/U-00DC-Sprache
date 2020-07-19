@@ -131,11 +131,14 @@ fn CodeBuilder::NamesScopeValueToValue( this, NamesScopePtr& names_scope, NamesS
 			auto lock= var_ptr.lock_imut();
 			auto& v= lock.get_ref();
 
-			var Variable mut res;
-			res.t= v.t;
-			res.llvm_value= v.llvm_value;
-			res.location= Variable::Location::Pointer;
-			res.value_type= select( v.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+			var Variable mut res
+			{
+				.t= v.t,
+				.llvm_value= v.llvm_value,
+				.constexpr_value= v.constexpr_value,
+				.location= Variable::Location::Pointer,
+				.value_type= select( v.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+			};
 			return move(res);
 		}
 	}
@@ -744,6 +747,10 @@ fn CodeBuilder::GetZeroGEPIndex( this ) : LLVMValueRef
 
 fn CodeBuilder::CreateMoveToLLVMRegisterInstruction( Variable& variable, FunctionContext& function_context ) : LLVMValueRef
 {
+	if( variable.constexpr_value != LLVMValueRef::Null )
+	{
+		return variable.constexpr_value;
+	}
 	if( variable.location == Variable::Location::Pointer )
 	{
 		unsafe{  return LLVMBuildLoad( function_context.llvm_ir_builder, variable.llvm_value, "\0"[0] );  }

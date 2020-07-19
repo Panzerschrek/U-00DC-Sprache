@@ -195,6 +195,7 @@ bool FilterTest( const std::string& test_name )
 		"code_builder_errors_test.cpp:ExpectedReferenceValueTest4",
 		"code_builder_errors_test.cpp:ExpectedReferenceValueTest5",
 		"code_builder_errors_test.cpp:ExpectedReferenceValueTest6",
+		"constexpr_test.cpp:ConstexprTest0",
 		"methods_test.cpp:MethodTest0",
 		//"methods_test.cpp:MethodTest1",
 		"methods_test.cpp:MethodTest2",
