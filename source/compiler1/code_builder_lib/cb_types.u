@@ -34,10 +34,31 @@ fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, FunctionContext &
 		.element_type( PrepareType( names_scope, function_context, array_type.get_ref().element_type ) )
 	};
 
-	// TODO - process constexpr value. Now only extract number
-	if_var( size_num : array_type.get_ref().element_count.get</Synt::NumericConstant/>() )
+	var Variable mut index_variable;
 	{
-		out_array_type.element_count= size_num.num.value_int;
+		auto instructions_state= SaveInstructionsState( function_context );
+		index_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, array_type.get_ref().element_count );
+		RestoreInstructionsState( function_context, instructions_state );
+	}
+
+	if( index_variable.constexpr_value != LLVMValueRef::Null )
+	{
+		if( !index_variable.t.GetFundamentalType().empty() && IsInteger( index_variable.t.GetFundamentalType().get_ref().fundamental_type ) )
+		{
+			unsafe{  out_array_type.element_count= LLVMConstIntGetZExtValue( index_variable.constexpr_value );  }
+			if( IsSignedInteger( index_variable.t.GetFundamentalType().get_ref().fundamental_type ) && i64(out_array_type.element_count) < 0i64 )
+			{
+				out_array_type.element_count= 0u64;
+			}
+		}
+		else
+		{
+			REPORT_ERROR( ArraySizeIsNotInteger, names_scope, array_type.get_ref().file_pos )
+		}
+	}
+	else
+	{
+		REPORT_ERROR( ExpectedConstantExpression, names_scope, array_type.get_ref().file_pos )
 	}
 
 	unsafe{ out_array_type.llvm_type= LLVMArrayType( out_array_type.element_type.get_ref().GetLLVMType(), u32(out_array_type.element_count) ); }

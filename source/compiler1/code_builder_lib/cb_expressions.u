@@ -81,18 +81,19 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	{
 		if( IsFloatingPoint( t ) )
 		{
-			res.llvm_value= LLVMConstReal( res.t.GetLLVMType(), numeric_constant.num.value_double );
+			res.constexpr_value= LLVMConstReal( res.t.GetLLVMType(), numeric_constant.num.value_double );
 		}
 		else if( IsSignedInteger( t ) )
 		{
-			res.llvm_value= LLVMConstInt( res.t.GetLLVMType(), numeric_constant.num.value_int, LLVMBool::True  );
+			res.constexpr_value= LLVMConstInt( res.t.GetLLVMType(), numeric_constant.num.value_int, LLVMBool::True  );
 		}
 		else if( IsUnsignedInteger( t ) )
 		{
-			res.llvm_value= LLVMConstInt( res.t.GetLLVMType(), numeric_constant.num.value_int, LLVMBool::False );
+			res.constexpr_value= LLVMConstInt( res.t.GetLLVMType(), numeric_constant.num.value_int, LLVMBool::False );
 		}
 		else{ halt; }
 	}
+	res.llvm_value= res.constexpr_value;
 
 	return move(res);
 }

@@ -162,6 +162,7 @@ struct Variable
 	Location location= Location::Pointer;
 	ValueType value_type= ValueType::ReferenceImut;
 	LLVMValueRef llvm_value= LLVMValueRef::Null;
+	LLVMValueRef constexpr_value= LLVMValueRef::Null; // Exists only for constant expressions.
 }
 
 struct FunctionVariable
@@ -207,6 +208,7 @@ struct NamesScopeVariable
 	Type t;
 	bool is_mutable = false;
 	LLVMValueRef llvm_value= LLVMValueRef::Null;
+	LLVMValueRef constexpr_value= LLVMValueRef::Null; // Exists only for constant expressions.
 }
 
 struct NamesScopeFunctionsSet
