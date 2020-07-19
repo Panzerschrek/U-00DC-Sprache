@@ -109,8 +109,7 @@ struct Variable final
 	ValueType value_type= ValueType::ConstReference;
 	llvm::Value* llvm_value= nullptr;
 
-	// Exists only for constant expressions of fundamental types.
-	// Undef, if value is template-dependent.
+	// Exists only for constant expressions.
 	llvm::Constant* constexpr_value= nullptr;
 
 	ReferencesGraphNodePtr node; // May be null for global variables.
