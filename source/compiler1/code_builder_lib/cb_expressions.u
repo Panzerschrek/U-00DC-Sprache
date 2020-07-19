@@ -1016,7 +1016,7 @@ fn CodeBuilder::BuildTempVariableConstruction(
 			.is_mutable= true,
 			.llvm_value= result.llvm_value,
 		};
-		BuildConstructorInitializer( names_scope, function_context, names_scope_variable, args, file_pos );
+		result.constexpr_value= BuildConstructorInitializer( names_scope, function_context, names_scope_variable, args, file_pos );
 	}
 
 	return move(result);

@@ -48,6 +48,11 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 			REPORT_ERROR( UsingKeywordAsName, names_scope, variable_declaration.file_pos )
 		}
 
+		if( variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr && !t.CanBeConstexpr() )
+		{
+			REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope, variable_declaration.file_pos )
+		}
+
 		var NamesScopeVariable mut out_variable
 		{
 			.t= t,
@@ -125,6 +130,11 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 		}
 		else{ halt; }
 
+		if( variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr && out_variable.constexpr_value == LLVMValueRef::Null )
+		{
+			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope, variable_declaration.file_pos )
+		}
+
 		// Reset constant value for mutable variable
 		if( out_variable.is_mutable )
 		{
@@ -198,6 +208,11 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 		BuildCopyConstructorPart( function_context, out_variable.llvm_value, expr.llvm_value, out_variable.t );
 	}
 	else { halt; }
+
+	if( auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr && out_variable.constexpr_value == LLVMValueRef::Null )
+	{
+		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope, auto_variable_declaration.file_pos )
+	}
 
 	// Reset constant value for mutable variable
 	if( out_variable.is_mutable )
