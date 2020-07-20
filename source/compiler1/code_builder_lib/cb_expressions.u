@@ -188,6 +188,11 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 
 fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
 {
+	if( binary_operator.operator == BinaryOperatorType::LazyLogicalAnd || binary_operator.operator == BinaryOperatorType::LazyLogicalOr )
+	{
+		return BuildLazyBinaryOperator( names_scope, function_context, binary_operator );
+	}
+
 	var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.l.get_ref() );
 	auto l_in_register= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
 
@@ -852,6 +857,75 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 		result.llvm_value= LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "~\0"[0] );
 		if( LLVMIsConstant( result.llvm_value ) == LLVMBool::True ){ result.constexpr_value= result.llvm_value; }
 	}
+
+	return move(result);
+}
+
+fn CodeBuilder::BuildLazyBinaryOperator( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
+{
+	var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.l.get_ref() );
+	if( l_var.t != bool_type_ )
+	{
+		REPORT_ERROR( TypesMismatch, names_scope, binary_operator.file_pos, bool_type_, l_var.t )
+		return ErrorValue();
+	}
+
+	var LLVMBasicBlockRef mut l_part_block= zero_init, mut r_part_block= zero_init, mut block_after_operator= zero_init;
+	unsafe
+	{
+		l_part_block= LLVMGetLastBasicBlock( function_context.llvm_function );
+		r_part_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+		block_after_operator= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+	}
+
+	auto l_var_in_register= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
+	unsafe
+	{
+		if( binary_operator.operator == BinaryOperatorType::LazyLogicalAnd )
+		{
+			LLVMBuildCondBr( function_context.llvm_ir_builder, l_var_in_register, r_part_block, block_after_operator );
+		}
+		else if( binary_operator.operator == BinaryOperatorType::LazyLogicalOr )
+		{
+			LLVMBuildCondBr( function_context.llvm_ir_builder, l_var_in_register, block_after_operator, r_part_block );
+		}
+		else { halt; }
+
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, r_part_block );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, r_part_block );
+	}
+
+	var Variable r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.r.get_ref() );
+	if( r_var.t != bool_type_ )
+	{
+		REPORT_ERROR( TypesMismatch, names_scope, binary_operator.file_pos, bool_type_, r_var.t )
+		return ErrorValue();
+	}
+
+	auto r_var_in_register= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
+
+	auto mut phi_node= LLVMValueRef::Null;
+	unsafe
+	{
+		auto r_part_end_block= LLVMGetInsertBlock( function_context.llvm_ir_builder );
+		LLVMBuildBr( function_context.llvm_ir_builder, block_after_operator );
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_operator );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_operator );
+
+		phi_node= LLVMBuildPhi( function_context.llvm_ir_builder, fundamental_llvm_types_.bool_, "\0"[0] );
+
+		var [ LLVMValueRef, 2 ] incoming_values[ l_var_in_register, r_var_in_register ];
+		var [ LLVMBasicBlockRef, 2 ] incoming_blocks[ l_part_block, r_part_end_block ];
+		LLVMAddIncoming( phi_node, incoming_values[0], incoming_blocks[0], 2u );
+	}
+
+	var Variable mut result
+	{
+		.t= bool_type_,
+		.location= Variable::Location::LLVMRegister,
+		.value_type= ValueType::Value,
+		.llvm_value= phi_node
+	};
 
 	return move(result);
 }
