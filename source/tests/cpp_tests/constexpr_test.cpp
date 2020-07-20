@@ -297,6 +297,7 @@ U_TEST( StaticAssertTest2 )
 	R"(
 		fn Foo()
 		{
+			static_assert( 0.0f / 0.0f != 0.0f / 0.0f ); // NaN is not NaN
 			static_assert( true );
 			static_assert( !false );
 			static_assert( !!true );
