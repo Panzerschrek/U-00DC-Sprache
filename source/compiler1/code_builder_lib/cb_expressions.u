@@ -341,26 +341,52 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 			auto field_lock= field_ptr.lock_imut();
 			auto& field= field_lock.get_ref();
 
-			var Variable mut result
-			{
-				.t= field.t,
-				.location= Variable::Location::Pointer,
-				.value_type= variable.value_type,
-			};
-
 			auto op_name_nt= "." + member_access_operator.member_name + "\0";
-			unsafe
+			if( field.is_reference )
 			{
-				var [ LLVMValueRef, 2 ] indexes
-				[
-					GetZeroGEPIndex(),
-					LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
-				];
+				var Variable mut result
+				{
+					.t= field.t,
+					.location= Variable::Location::Pointer,
+					.value_type= select( field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+				};
 
-				result.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, op_name_nt.front() );
+				unsafe
+				{
+					var [ LLVMValueRef, 2 ] indexes
+					[
+						GetZeroGEPIndex(),
+						LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
+					];
+
+					auto ptr_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "\0"[0] );
+					result.llvm_value= LLVMBuildLoad( function_context.llvm_ir_builder, ptr_value, op_name_nt.front() );
+				}
+
+				return move(result);
 			}
+			else
+			{
+				var Variable mut result
+				{
+					.t= field.t,
+					.location= Variable::Location::Pointer,
+					.value_type= variable.value_type,
+				};
 
-			return move(result);
+				unsafe
+				{
+					var [ LLVMValueRef, 2 ] indexes
+					[
+						GetZeroGEPIndex(),
+						LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
+					];
+
+					result.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, op_name_nt.front() );
+				}
+
+				return move(result);
+			}
 		}
 		{
 			auto functions_set_ptr= class_member.get_ref().Get</NamesScopeFunctionsSet/>();

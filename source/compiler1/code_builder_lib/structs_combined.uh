@@ -225,6 +225,8 @@ struct NamesScopeFunctionsSet
 struct ClassField
 {
 	Type t;
+	bool is_reference;
+	bool is_mutable;
 	size_type index= ~0s;
 	ust::shared_ptr_final</ Synt::ClassField /> syntax_element;
 }

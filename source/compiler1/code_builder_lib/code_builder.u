@@ -339,7 +339,11 @@ fn CodeBuilder::BuildClass( this, NamesScopePtr& names_scope_ptr, ClassTypePtr& 
 				}
 
 				field.index= fields_llvm_types.size();
-				fields_llvm_types.push_back( field.t.GetLLVMType() );
+
+				auto mut llvm_type= field.t.GetLLVMType();
+				if( field.is_reference ) { unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  } }
+
+				fields_llvm_types.push_back( llvm_type );
 			}
 		}
 		{

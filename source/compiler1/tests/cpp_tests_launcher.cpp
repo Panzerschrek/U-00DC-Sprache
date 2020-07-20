@@ -176,6 +176,7 @@ bool FilterTest( const std::string& test_name )
 		"RedefinitionTest0",
 		"RedefinitionTest1",
 		"Redefenition_ForNamespaces_Test0",
+		"ReferenceClassFiledDeclaration",
 		"ReferencesHaveConstructorsWithExactlyOneParameterTest0",
 		"ReferencesHaveConstructorsWithExactlyOneParameterTest1",
 		"RemOperatorTest0",
