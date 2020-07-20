@@ -604,6 +604,12 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 {
 	var BlockElementBuildInfo block_element_build_info{ .have_terminal_instruction_inside= true };
 
+	unsafe
+	{
+		LLVMBuildCall( function_context.llvm_ir_builder, halt_function_, LLVMValueRef::Null, 0u, "\0"[0] );
+		LLVMBuildUnreachable( function_context.llvm_ir_builder );
+	}
+
 	return block_element_build_info;
 }
 

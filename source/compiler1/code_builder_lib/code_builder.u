@@ -68,6 +68,13 @@ fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : Buil
 		global_llvm_function_= LLVMAddFunction( module_, "\0"[0], global_function_llvm_type );
 	}
 
+	unsafe
+	{
+		auto halt_function_llvm_type= LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, LLVMTypeRef::Null, 0u, LLVMBool::False );
+		halt_function_= LLVMAddFunction( module_, "__U_halt\0"[0], halt_function_llvm_type );
+		// TODO - set attributes noreturn and nothrow
+	}
+
 	var ErrorsContainerPtr errors_container( ErrorsContainer() );
 
 	var NamesScopeMutPtr global_names_scope( NamesScope( "", ust::shared_ptr_nullable_imut</NamesScope/>() ) );
