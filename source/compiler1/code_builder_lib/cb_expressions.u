@@ -597,7 +597,16 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 				}
 			}
 
-			if( LLVMIsConstant( res.llvm_value ) == LLVMBool::True ){ res.constexpr_value= res.llvm_value; }
+			if( LLVMIsConstant( res.llvm_value ) == LLVMBool::True )
+			{
+				res.constexpr_value= res.llvm_value;
+
+				if( LLVMIsUndef( res.constexpr_value ) == LLVMBool::True )
+				{
+					res.constexpr_value= LLVMValueRef::Null;
+					REPORT_ERROR( ConstantExpressionResultIsUndefined, names_scope, file_pos )
+				}
+			}
 		}
 
 		return move(res);

@@ -117,6 +117,7 @@ fn nomangle LLVMTypeOf(LLVMValueRef Val) unsafe : LLVMTypeRef;
 fn nomangle LLVMSetValueName2(LLVMValueRef Val, char8& Name, size_type NameLen) unsafe;
 fn nomangle LLVMConstIntGetZExtValue(LLVMValueRef ConstantVal) unsafe : u64;
 fn nomangle LLVMIsConstant(LLVMValueRef Val) unsafe : LLVMBool;
+fn nomangle LLVMIsUndef(LLVMValueRef Val) unsafe : LLVMBool;
 
 // Global value
 
