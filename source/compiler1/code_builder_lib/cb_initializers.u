@@ -344,6 +344,7 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 	}
 	if_var( &class_type_ptr : variable.t.GetClassType() )
 	{
+		// TODO - disable zero_init for some classes.
 		auto class_type_lock= class_type_ptr.lock_imut();
 		var ClassType& class_type= class_type_lock.get_ref();
 		auto members_lock= class_type.members.lock_imut();
@@ -357,24 +358,31 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 				auto field_lock= field_ptr.lock_imut();
 				var ClassField& field= field_lock.get_ref();
 
-				var NamesScopeVariable mut member_variable
+				if( field.is_reference )
 				{
-					.t= field.t
-				};
-
-				auto op_name_nt= "." + field.syntax_element.get_ref().name + "\0";
-				unsafe
-				{
-					var [ LLVMValueRef, 2 ] indexes
-					[
-						GetZeroGEPIndex(),
-						LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
-					];
-
-					member_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, op_name_nt.front() );
+					REPORT_ERROR( UnsupportedInitializerForReference, names_scope, zero_initializer.file_pos )
 				}
+				else
+				{
+					var NamesScopeVariable mut member_variable
+					{
+						.t= field.t
+					};
 
-				BuildInitializer( names_scope, function_context, member_variable, zero_initializer );
+					auto op_name_nt= "." + field.syntax_element.get_ref().name + "\0";
+					unsafe
+					{
+						var [ LLVMValueRef, 2 ] indexes
+						[
+							GetZeroGEPIndex(),
+							LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
+						];
+
+						member_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, op_name_nt.front() );
+					}
+
+					BuildInitializer( names_scope, function_context, member_variable, zero_initializer );
+				}
 			}
 		}
 		return LLVMValueRef::Null;
@@ -632,7 +640,7 @@ fn CodeBuilder::BuildConstructorInitializer( this, NamesScopePtr& names_scope, F
 
 fn CodeBuilder::InitializeReferenceField( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ClassField& field, Synt::Initializer& initializer )
 {
-	auto initializer_file_pos= FilePos(); // Synt::GetFilePos( initializer ); // TODO
+	auto initializer_file_pos=  Synt::GetFilePos( initializer );
 
 	var ust::optional_ref</Synt::Expression, false/> mut initializer_expression;
 	if_var( &expression_initializer : initializer.get</Synt::Expression/>() )

@@ -11,6 +11,31 @@ fn GetFilePosImpl( EmptyVariant& empty_variant ) : FilePos
 	return FilePos();
 }
 
+fn GetFilePosImpl( SequenceInitializer& sequence_initializer ) : FilePos
+{
+	return sequence_initializer.file_pos;
+}
+
+fn GetFilePosImpl( StructNamedInitializer& struct_named_initializer ) : FilePos
+{
+	return struct_named_initializer.file_pos;
+}
+
+fn GetFilePosImpl( ConstructorInitializer& constructor_initializer ) : FilePos
+{
+	return constructor_initializer.file_pos;
+}
+
+fn GetFilePosImpl( ZeroInitializer& zero_initializer ) : FilePos
+{
+	return zero_initializer.file_pos;
+}
+
+fn GetFilePosImpl( UninitializedInitializer& uninitialized_initializer ) : FilePos
+{
+	return uninitialized_initializer.file_pos;
+}
+
 fn GetFilePosImpl( NumericConstant& numeric_constant ) : FilePos
 {
 	return numeric_constant.file_pos;
@@ -139,6 +164,15 @@ fn GetFilePosImpl( ContinueOperator& continue_operator ) : FilePos
 fn GetFilePosImpl( StaticAssert& static_assert_ ) : FilePos
 {
 	return static_assert_.file_pos;
+}
+
+fn GetFilePos( Initializer& initializer ) : FilePos
+{
+	variant_visit( &el : initializer )
+	{
+		return GetFilePosImpl(el);
+	}
+	halt;
 }
 
 fn GetFilePos( Expression& expression ) : FilePos
