@@ -615,6 +615,32 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 
 fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::HaltIf& halt_if ) : BlockElementBuildInfo
 {
+	auto condition= BuildExpressionCodeEnsureVariable( names_scope, function_context, halt_if.condition );
+	if( condition.t != bool_type_ )
+	{
+		REPORT_ERROR( TypesMismatch, names_scope, Synt::GetFilePos( halt_if.condition ), bool_type_, condition.t )
+		return BlockElementBuildInfo();
+	}
+
+	unsafe
+	{
+		auto true_block = LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+		auto false_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+
+		LLVMBuildCondBr( function_context.llvm_ir_builder, CreateMoveToLLVMRegisterInstruction( condition, function_context ), true_block, false_block );
+
+		// True branch
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, true_block );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, true_block );
+
+		LLVMBuildCall( function_context.llvm_ir_builder, halt_function_, LLVMValueRef::Null, 0u, "\0"[0] );
+		LLVMBuildUnreachable( function_context.llvm_ir_builder );
+
+		// False branch
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, false_block );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, false_block );
+	}
+
 	return BlockElementBuildInfo();
 }
 

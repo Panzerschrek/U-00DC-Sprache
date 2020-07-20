@@ -135,6 +135,7 @@ bool FilterTest( const std::string& test_name )
 		"FundamentalTypesHaveConstructorsWithExactlyOneParameterTest0",
 		"FundamentalTypesHaveConstructorsWithExactlyOneParameterTest1",
 		"GeneratedCopyConstructorForStructsWithReferencesTest",
+		"HaltIfTest0",
 		"HaltTest0",
 		"HaltTest1_ShouldHaltInsteadOfReturn",
 		"HaltTest2_ShouldHaltWithDeepCallStack",
