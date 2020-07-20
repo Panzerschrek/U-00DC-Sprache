@@ -261,6 +261,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 			var LLVMValueRef mut index_value= CreateMoveToLLVMRegisterInstruction( index, function_context );
 			if( index.constexpr_value != LLVMValueRef::Null )
 			{
+				// Statically check index.
 				auto mut index_value_num= 0u64;
 				unsafe{  index_value_num= LLVMConstIntGetZExtValue( index_value );  }
 				if( index_value_num >= variable_array_type.element_count )
@@ -271,7 +272,37 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 			}
 			else
 			{
-				// TODO - add runtime index check
+				// Dynamically check index.
+				unsafe
+				{
+					auto mut index_value_for_compare= index_value;
+					auto index_type_size= index_fundamental_type.GetSize();
+					auto size_type_size= size_type_.GetFundamentalType().get_ref().GetSize();
+					if( index_type_size > size_type_size )
+					{
+						index_value_for_compare= LLVMBuildTrunc( function_context.llvm_ir_builder, index_value_for_compare, fundamental_llvm_types_.int_ptr, "\0"[0] );
+					}
+					else if( index_type_size < size_type_size )
+					{
+						index_value_for_compare= LLVMBuildZExt( function_context.llvm_ir_builder, index_value_for_compare, fundamental_llvm_types_.int_ptr, "\0"[0] );
+					}
+
+					auto size_value= LLVMConstInt( fundamental_llvm_types_.int_ptr, variable_array_type.element_count, LLVMBool::False );
+					auto condition= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGE, index_value_for_compare, size_value, "\0"[0] );
+					auto halt_block = LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+					auto ok_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+
+					LLVMBuildCondBr( function_context.llvm_ir_builder, condition, halt_block, ok_block );
+
+					LLVMAppendExistingBasicBlock( function_context.llvm_function, halt_block );
+					LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, halt_block );
+
+					LLVMBuildCall( function_context.llvm_ir_builder, halt_function_, LLVMValueRef::Null, 0u, "\0"[0] );
+					LLVMBuildUnreachable( function_context.llvm_ir_builder );
+
+					LLVMAppendExistingBasicBlock( function_context.llvm_function, ok_block );
+					LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, ok_block );
+				}
 			}
 
 			var Variable mut result
@@ -284,7 +315,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 			unsafe
 			{
 				var [ LLVMValueRef, 2 ] indexes[ GetZeroGEPIndex(), index_value ];
-				result.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] );
+				result.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] ); // TODO - maybe add "inbounds" attribute?
 			}
 
 			if( variable.constexpr_value != LLVMValueRef::Null && index.constexpr_value != LLVMValueRef::Null )
