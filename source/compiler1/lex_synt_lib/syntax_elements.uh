@@ -373,6 +373,7 @@ type NamespaceElements= ust::vector</NamespaceElement/>;
 type ProgramElement= NamespaceElement;
 type ProgramElements= ust::vector</ProgramElement/>;
 
+fn GetFilePos( Initializer& initializer ) : FilePos;
 fn GetFilePos( Expression& expression ) : FilePos;
 fn GetFilePos( BlockElement& block_element ) : FilePos;
 

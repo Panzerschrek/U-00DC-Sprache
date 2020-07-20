@@ -48,7 +48,9 @@ fn CodeBuilder::TryGenerateDefaultConstructor( this, ClassTypePtr& class_type )
 		auto field_ptr= member.value().Get</ClassField/>();
 		if( !field_ptr.empty() )
 		{
-			if( !field_ptr.lock_imut().get_ref().t.IsDefaultConstructible() )
+			auto field_lock= field_ptr.lock_imut();
+			auto& field= field_lock.get_ref();
+			if( field.is_reference || !field.t.IsDefaultConstructible() )
 			{
 				return;
 			}
@@ -191,7 +193,9 @@ fn CodeBuilder::TryGenerateCopyConstructor( this, ClassTypePtr& class_type )
 		auto field_ptr= member.value().Get</ClassField/>();
 		if( !field_ptr.empty() )
 		{
-			if( !field_ptr.lock_imut().get_ref().t.IsCopyConstructible() )
+			auto field_lock= field_ptr.lock_imut();
+			auto& field= field_lock.get_ref();
+			if( !field.is_reference && !field.t.IsCopyConstructible() )
 			{
 				return;
 			}
@@ -302,7 +306,20 @@ fn CodeBuilder::TryGenerateCopyConstructor( this, ClassTypePtr& class_type )
 				dst_member_value= LLVMBuildGEP( function_context.llvm_ir_builder, dst_llvm_value, indexes[0], 2u, dst_op_name_nt.front() );
 				src_member_value= LLVMBuildGEP( function_context.llvm_ir_builder, src_llvm_value, indexes[0], 2u, src_op_name_nt.front() );
 			}
-			BuildCopyConstructorPart( function_context, dst_member_value, src_member_value, class_field.t );
+			if( class_field.is_reference )
+			{
+				unsafe
+				{
+					LLVMBuildStore(
+						function_context.llvm_ir_builder,
+						LLVMBuildLoad( function_context.llvm_ir_builder, src_member_value, "\0"[0] ),
+						dst_member_value );
+				}
+			}
+			else
+			{
+				BuildCopyConstructorPart( function_context, dst_member_value, src_member_value, class_field.t );
+			}
 		}
 	}
 

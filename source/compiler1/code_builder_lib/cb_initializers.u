@@ -180,23 +180,30 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 		auto field_lock= field_ptr.lock_imut();
 		var ClassField& class_field= field_lock.get_ref();
 
-		var NamesScopeVariable mut member_variable
+		if( class_field.is_reference )
 		{
-			.t= class_field.t
-		};
-
-		auto op_name_nt= "." + member_initializer.name + "\0";
-		unsafe
-		{
-			var [ LLVMValueRef, 2 ] indexes
-			[
-				GetZeroGEPIndex(),
-				LLVMConstInt( fundamental_llvm_types_.u32_, u64(class_field.index), LLVMBool::False )
-			];
-
-			member_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, op_name_nt.front() );
+			InitializeReferenceField( names_scope, function_context, variable, class_field, member_initializer.initializer.get_ref() );
 		}
-		BuildInitializer( names_scope, function_context, member_variable, member_initializer.initializer.get_ref() );
+		else
+		{
+			var NamesScopeVariable mut member_variable
+			{
+				.t= class_field.t
+			};
+
+			auto op_name_nt= "." + member_initializer.name + "\0";
+			unsafe
+			{
+				var [ LLVMValueRef, 2 ] indexes
+				[
+					GetZeroGEPIndex(),
+					LLVMConstInt( fundamental_llvm_types_.u32_, u64(class_field.index), LLVMBool::False )
+				];
+
+				member_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, op_name_nt.front() );
+			}
+			BuildInitializer( names_scope, function_context, member_variable, member_initializer.initializer.get_ref() );
+		}
 	}
 
 	// Apply empty initializer for fileds, missing in struct named initializer.
@@ -220,24 +227,31 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 				auto field_lock= field_ptr.lock_imut();
 				var ClassField & field= field_lock.get_ref();
 
-				var NamesScopeVariable mut member_variable
+				if( field.is_reference )
 				{
-					.t= field.t
-				};
-
-				auto op_name_nt= "." + field.syntax_element.get_ref().name + "\0";
-				unsafe
-				{
-					var [ LLVMValueRef, 2 ] indexes
-					[
-						GetZeroGEPIndex(),
-						LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
-					];
-
-					member_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, op_name_nt.front() );
+					REPORT_ERROR( ExpectedInitializer, names_scope, struct_named_initializer.file_pos, class_member.key() )
 				}
+				else
+				{
+					var NamesScopeVariable mut member_variable
+					{
+						.t= field.t
+					};
 
-				BuildEmptyInitializer( names_scope, function_context, member_variable, class_member.key(), struct_named_initializer.file_pos );
+					auto op_name_nt= "." + field.syntax_element.get_ref().name + "\0";
+					unsafe
+					{
+						var [ LLVMValueRef, 2 ] indexes
+						[
+							GetZeroGEPIndex(),
+							LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
+						];
+
+						member_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, op_name_nt.front() );
+					}
+
+					BuildEmptyInitializer( names_scope, function_context, member_variable, class_member.key(), struct_named_initializer.file_pos );
+				}
 			}
 		}
 	}
@@ -330,6 +344,7 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 	}
 	if_var( &class_type_ptr : variable.t.GetClassType() )
 	{
+		// TODO - disable zero_init for some classes.
 		auto class_type_lock= class_type_ptr.lock_imut();
 		var ClassType& class_type= class_type_lock.get_ref();
 		auto members_lock= class_type.members.lock_imut();
@@ -343,24 +358,31 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 				auto field_lock= field_ptr.lock_imut();
 				var ClassField& field= field_lock.get_ref();
 
-				var NamesScopeVariable mut member_variable
+				if( field.is_reference )
 				{
-					.t= field.t
-				};
-
-				auto op_name_nt= "." + field.syntax_element.get_ref().name + "\0";
-				unsafe
-				{
-					var [ LLVMValueRef, 2 ] indexes
-					[
-						GetZeroGEPIndex(),
-						LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
-					];
-
-					member_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, op_name_nt.front() );
+					REPORT_ERROR( UnsupportedInitializerForReference, names_scope, zero_initializer.file_pos )
 				}
+				else
+				{
+					var NamesScopeVariable mut member_variable
+					{
+						.t= field.t
+					};
 
-				BuildInitializer( names_scope, function_context, member_variable, zero_initializer );
+					auto op_name_nt= "." + field.syntax_element.get_ref().name + "\0";
+					unsafe
+					{
+						var [ LLVMValueRef, 2 ] indexes
+						[
+							GetZeroGEPIndex(),
+							LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
+						];
+
+						member_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, op_name_nt.front() );
+					}
+
+					BuildInitializer( names_scope, function_context, member_variable, zero_initializer );
+				}
 			}
 		}
 		return LLVMValueRef::Null;
@@ -616,6 +638,62 @@ fn CodeBuilder::BuildConstructorInitializer( this, NamesScopePtr& names_scope, F
 	return LLVMValueRef::Null;
 }
 
+fn CodeBuilder::InitializeReferenceField( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ClassField& field, Synt::Initializer& initializer )
+{
+	auto initializer_file_pos=  Synt::GetFilePos( initializer );
+
+	var ust::optional_ref</Synt::Expression, false/> mut initializer_expression;
+	if_var( &expression_initializer : initializer.get</Synt::Expression/>() )
+	{
+		initializer_expression.reset(expression_initializer);
+	}
+	if_var( &constructor_initializer : initializer.get</Synt::ConstructorInitializer/>() )
+	{
+		if( constructor_initializer.args.size() != 1s )
+		{
+			REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names_scope, initializer_file_pos )
+			return;
+		}
+
+		initializer_expression.reset( constructor_initializer.args.front().get_ref() );
+	}
+
+	if( initializer_expression.empty() )
+	{
+		REPORT_ERROR( UnsupportedInitializerForReference, names_scope, initializer_file_pos )
+		return;
+	}
+
+	var Variable initializer_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, initializer_expression.get_ref() );
+	auto initializer_expression_file_pos= Synt::GetFilePos( initializer_expression.get_ref() );
+	if( initializer_variable.t != field.t )
+	{
+		REPORT_ERROR( TypesMismatch, names_scope, initializer_expression_file_pos, field.t, initializer_variable.t )
+		return;
+	}
+	if( initializer_variable.value_type == ValueType::Value )
+	{
+		REPORT_ERROR( ExpectedReferenceValue, names_scope, initializer_expression_file_pos )
+		return;
+	}
+	if( field.is_mutable && initializer_variable.value_type == ValueType::ReferenceImut )
+	{
+		REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, initializer_expression_file_pos )
+		return;
+	}
+
+	unsafe
+	{
+		var [ LLVMValueRef, 2 ] indexes
+		[
+			GetZeroGEPIndex(),
+			LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
+		];
+		auto address_of_reference= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "\0"[0] );
+		LLVMBuildStore( function_context.llvm_ir_builder, initializer_variable.llvm_value, address_of_reference );
+	}
+}
+
 fn CodeBuilder::BuildConstructorInitialization(
 	this,
 	NamesScopePtr& names_scope,
@@ -703,25 +781,32 @@ fn CodeBuilder::BuildConstructorInitialization(
 		auto field_lock= field_ptr.lock_imut();
 		var ClassField & class_field= field_lock.get_ref();
 
-		var NamesScopeVariable mut field_variable
+		if( class_field.is_reference )
 		{
-			.t= class_field.t,
-			.is_mutable= true,
-		};
-
-		auto op_name_nt= "." + field_name + "\0";
-		unsafe
-		{
-			var [ LLVMValueRef, 2 ] indexes
-			[
-				GetZeroGEPIndex(),
-				LLVMConstInt( fundamental_llvm_types_.u32_, u64(class_field.index), LLVMBool::False )
-			];
-
-			field_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, function_context.this_.get_ref().llvm_value, indexes[0], 2u, op_name_nt.front() );
+			REPORT_ERROR( ExpectedInitializer, names_scope, constructor_initialization_list.file_pos, field_name )
 		}
+		else
+		{
+			var NamesScopeVariable mut field_variable
+			{
+				.t= class_field.t,
+				.is_mutable= true,
+			};
 
-		BuildEmptyInitializer( names_scope, function_context, field_variable, field_name, constructor_initialization_list.file_pos );
+			auto op_name_nt= "." + field_name + "\0";
+			unsafe
+			{
+				var [ LLVMValueRef, 2 ] indexes
+				[
+					GetZeroGEPIndex(),
+					LLVMConstInt( fundamental_llvm_types_.u32_, u64(class_field.index), LLVMBool::False )
+				];
+
+				field_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, function_context.this_.get_ref().llvm_value, indexes[0], 2u, op_name_nt.front() );
+			}
+
+			BuildEmptyInitializer( names_scope, function_context, field_variable, field_name, constructor_initialization_list.file_pos );
+		}
 	}
 
 	if( have_fields_errors )
@@ -736,25 +821,37 @@ fn CodeBuilder::BuildConstructorInitialization(
 		auto field_lock= field_ptr.lock_imut();
 		var ClassField & class_field= field_lock.get_ref();
 
-		var NamesScopeVariable mut field_variable
+		if( class_field.is_reference )
 		{
-			.t= class_field.t,
-			.is_mutable= true,
-		};
-
-		auto op_name_nt= "." + member_initializer.name + "\0";
-		unsafe
-		{
-			var [ LLVMValueRef, 2 ] indexes
-			[
-				GetZeroGEPIndex(),
-				LLVMConstInt( fundamental_llvm_types_.u32_, u64(class_field.index), LLVMBool::False )
-			];
-
-			field_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, function_context.this_.get_ref().llvm_value, indexes[0], 2u, op_name_nt.front() );
+			var NamesScopeVariable mut this_copy
+			{
+				.t= function_context.this_.get_ref().t,
+			};
+			this_copy.llvm_value= function_context.this_.get_ref().llvm_value;
+			InitializeReferenceField( names_scope, function_context, this_copy, class_field, member_initializer.initializer.get_ref() );
 		}
+		else
+		{
+			var NamesScopeVariable mut field_variable
+			{
+				.t= class_field.t,
+				.is_mutable= true,
+			};
 
-		BuildInitializer( names_scope, function_context, field_variable, member_initializer.initializer.get_ref() );
+			auto op_name_nt= "." + member_initializer.name + "\0";
+			unsafe
+			{
+				var [ LLVMValueRef, 2 ] indexes
+				[
+					GetZeroGEPIndex(),
+					LLVMConstInt( fundamental_llvm_types_.u32_, u64(class_field.index), LLVMBool::False )
+				];
+
+				field_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, function_context.this_.get_ref().llvm_value, indexes[0], 2u, op_name_nt.front() );
+			}
+
+			BuildInitializer( names_scope, function_context, field_variable, member_initializer.initializer.get_ref() );
+		}
 
 		// Erase field from list of uninitialized fields.
 		auto mut i= 0s;
