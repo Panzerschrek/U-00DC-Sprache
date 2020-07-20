@@ -247,6 +247,26 @@ struct AssignmentOperator
 	Expression r;
 }
 
+struct AdditiveAssignmentOperator
+{
+	FilePos file_pos;
+	BinaryOperatorType operator;
+	Expression l;
+	Expression r;
+}
+
+struct IncrementOperator
+{
+	FilePos file_pos;
+	Expression expression;
+}
+
+struct DecrementOperator
+{
+	FilePos file_pos;
+	Expression expression;
+}
+
 struct IfOperator
 {
 	struct Branch
@@ -291,6 +311,9 @@ type BlockElement = ust::variant</ tup[
 	AutoVariableDeclaration,
 	ReturnOperator,
 	AssignmentOperator,
+	AdditiveAssignmentOperator,
+	IncrementOperator,
+	DecrementOperator,
 	Expression,
 	IfOperator,
 	WhileOperator,

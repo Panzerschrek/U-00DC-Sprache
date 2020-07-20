@@ -117,6 +117,7 @@ fn nomangle LLVMTypeOf(LLVMValueRef Val) unsafe : LLVMTypeRef;
 fn nomangle LLVMSetValueName2(LLVMValueRef Val, char8& Name, size_type NameLen) unsafe;
 fn nomangle LLVMConstIntGetZExtValue(LLVMValueRef ConstantVal) unsafe : u64;
 fn nomangle LLVMIsConstant(LLVMValueRef Val) unsafe : LLVMBool;
+fn nomangle LLVMIsUndef(LLVMValueRef Val) unsafe : LLVMBool;
 
 // Global value
 
@@ -179,6 +180,11 @@ fn nomangle LLVMBuildGEP(LLVMBuilderRef BBuilder, LLVMValueRef Pointer, LLVMValu
 
 fn nomangle LLVMBuildCall(LLVMBuilderRef Builder, LLVMValueRef Fn, LLVMValueRef& Args, u32 NumArgs, NullTerminatedString& Name) unsafe: LLVMValueRef;
 
+// PHI
+
+fn nomangle LLVMBuildPhi(LLVMBuilderRef Builder, LLVMTypeRef Ty, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMAddIncoming(LLVMValueRef PhiNode, LLVMValueRef& IncomingValues, LLVMBasicBlockRef& IncomingBlocks, u32 Count) unsafe;
+
 // Arithmetic
 fn nomangle LLVMBuildAdd(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildSub(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
@@ -192,6 +198,11 @@ fn nomangle LLVMBuildSRem(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef
 fn nomangle LLVMBuildAnd(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildOr(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildXor(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+
+// Bit shift operators
+fn nomangle LLVMBuildShl(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildLShr(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildAShr(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
 
 // Floating point arithmetic
 fn nomangle LLVMBuildFAdd(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;

@@ -17,7 +17,7 @@ public:
 	{}
 	
 	// Construct with value.
-	fn constructor( mut this'a', T mut val'b' ) ' a <- b '
+	fn conversion_constructor( mut this'a', T mut val'b' ) ' a <- b '
 	( storage_= zero_init, has_value_= true  ) // TODO - initialize with unsafe 
 	{
 		unsafe
