@@ -305,6 +305,17 @@ struct StaticAssert
 	Expression expression;
 }
 
+struct Halt
+{
+	FilePos file_pos;
+}
+
+struct HaltIf
+{
+	FilePos file_pos;
+	Expression condition;
+}
+
 type BlockElement = ust::variant</ tup[
 	ust::box</Block/>,
 	VariablesDeclaration,
@@ -319,7 +330,9 @@ type BlockElement = ust::variant</ tup[
 	WhileOperator,
 	BreakOperator,
 	ContinueOperator,
-	StaticAssert
+	StaticAssert,
+	Halt,
+	HaltIf
 	] />;
 
 struct Function

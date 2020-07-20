@@ -210,6 +210,7 @@ private:
 	fn ParseBreakOperator( mut this ) : BreakOperator;
 	fn ParseContinueOperator( mut this ) : ContinueOperator;
 	fn ParseStaticAssert( mut this ) : StaticAssert;
+	fn ParseHalt( mut this ) : BlockElement;
 
 	fn ParseClass( mut this ) : Class;
 
@@ -1053,6 +1054,10 @@ fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 		{
 			block.elements.push_back( ParseStaticAssert() );
 		}
+		else if( IsKeyword( it_.front(), Keyword::halt_ ) )
+		{
+			block.elements.push_back( ParseHalt() );
+		}
 		else if( it_.front().lexem_type == Lexem::Type::Increment )
 		{
 			var IncrementOperator mut increment_operator{ .file_pos= it_.front().file_pos };
@@ -1455,6 +1460,56 @@ fn SyntaxAnalyzer::ParseStaticAssert( mut this ) : StaticAssert
 	NextLexem();
 
 	return move(static_assert_);
+}
+
+fn SyntaxAnalyzer::ParseHalt( mut this ) : BlockElement
+{
+	if( !IsKeyword( it_.front(), Keyword::halt_ ) )
+	{
+		PushErrorMessage();
+	}
+	auto file_pos= it_.front().file_pos;
+	NextLexem();
+
+	if( it_.front().lexem_type == Lexem::Type::Semicolon )
+	{
+		NextLexem();
+
+		var Halt mut halt_{ .file_pos= file_pos };
+		return move(halt_);
+	}
+	else
+	{
+		var HaltIf mut halt_if{ .file_pos= file_pos };
+
+		if( !IsKeyword( it_.front(), Keyword::if_ ) )
+		{
+			PushErrorMessage();
+		}
+		NextLexem();
+
+		if( it_.front().lexem_type != Lexem::Type::BracketLeft )
+		{
+			PushErrorMessage();
+		}
+		NextLexem();
+
+		halt_if.condition= ParseExpression();
+
+		if( it_.front().lexem_type != Lexem::Type::BracketRight )
+		{
+			PushErrorMessage();
+		}
+		NextLexem();
+
+		if( it_.front().lexem_type != Lexem::Type::Semicolon )
+		{
+			PushErrorMessage();
+		}
+		NextLexem();
+
+		return move(halt_if);
+	}
 }
 
 fn SyntaxAnalyzer::ParseClass( mut this ) : Class
