@@ -927,6 +927,22 @@ fn CodeBuilder::BuildLazyBinaryOperator( this, NamesScopePtr& names_scope, Funct
 		.llvm_value= phi_node
 	};
 
+	unsafe
+	{
+		if( LLVMIsConstant( l_var_in_register ) == LLVMBool::True && LLVMIsConstant( r_var_in_register ) == LLVMBool::True )
+		{
+			if( binary_operator.operator == BinaryOperatorType::LazyLogicalAnd )
+			{
+				result.constexpr_value= LLVMBuildAnd( function_context.llvm_ir_builder, l_var_in_register, r_var_in_register, "\0"[0] );
+			}
+			else if( binary_operator.operator == BinaryOperatorType::LazyLogicalOr )
+			{
+				result.constexpr_value= LLVMBuildOr ( function_context.llvm_ir_builder, l_var_in_register, r_var_in_register, "\0"[0] );
+			}
+			else{ halt; }
+		}
+	}
+
 	return move(result);
 }
 
