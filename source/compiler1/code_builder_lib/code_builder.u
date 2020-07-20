@@ -56,23 +56,35 @@ fn CodeBuilder::constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data
 
 fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : BuildResult
 {
-	unsafe
+	unsafe // Create module.
 	{
 		module_ = LLVMModuleCreateWithName( "some_module\0"[0] );
 		LLVMSetModuleDataLayout( module_, data_layout_ );
 	}
 
-	unsafe
+	unsafe // Prepare dummy function.
 	{
 		auto global_function_llvm_type= LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, LLVMTypeRef::Null, 0u, LLVMBool::False );
 		global_llvm_function_= LLVMAddFunction( module_, "\0"[0], global_function_llvm_type );
 	}
 
-	unsafe
+	unsafe // Prepare halt function.
 	{
 		auto halt_function_llvm_type= LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, LLVMTypeRef::Null, 0u, LLVMBool::False );
 		halt_function_= LLVMAddFunction( module_, "__U_halt\0"[0], halt_function_llvm_type );
-		// TODO - set attributes noreturn and nothrow
+
+		{
+			var ust::array_view_imut</ char8 /> attr_name= "noreturn";
+			auto attr_kind= LLVMGetEnumAttributeKindForName( attr_name.front(), attr_name.size() );
+			auto attr= LLVMCreateEnumAttribute( llvm_context_, attr_kind, 0u64 );
+			LLVMAddAttributeAtIndex( halt_function_, LLVMAttributeFunctionIndex, attr );
+		}
+		{
+			var ust::array_view_imut</ char8 /> attr_name= "nounwind";
+			auto attr_kind= LLVMGetEnumAttributeKindForName( attr_name.front(), attr_name.size() );
+			auto attr= LLVMCreateEnumAttribute( llvm_context_, attr_kind, 0u64 );
+			LLVMAddAttributeAtIndex( halt_function_, LLVMAttributeFunctionIndex, attr );
+		}
 	}
 
 	var ErrorsContainerPtr errors_container( ErrorsContainer() );
