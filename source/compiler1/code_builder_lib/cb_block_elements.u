@@ -600,6 +600,18 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 	return BlockElementBuildInfo();
 }
 
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Halt& halt_ ) : BlockElementBuildInfo
+{
+	var BlockElementBuildInfo block_element_build_info{ .have_terminal_instruction_inside= true };
+
+	return block_element_build_info;
+}
+
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::HaltIf& halt_if ) : BlockElementBuildInfo
+{
+	return BlockElementBuildInfo();
+}
+
 fn CodeBuilder::BuildDeltaOneOperator( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, FilePos& file_pos, i32 delta )
 {
 	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression );
