@@ -6,171 +6,22 @@ namespace U
 namespace Synt
 {
 
-fn GetFilePosImpl( EmptyVariant& empty_variant ) : FilePos
-{
-	return FilePos();
-}
-
-fn GetFilePosImpl( SequenceInitializer& sequence_initializer ) : FilePos
-{
-	return sequence_initializer.file_pos;
-}
-
-fn GetFilePosImpl( StructNamedInitializer& struct_named_initializer ) : FilePos
-{
-	return struct_named_initializer.file_pos;
-}
-
-fn GetFilePosImpl( ConstructorInitializer& constructor_initializer ) : FilePos
-{
-	return constructor_initializer.file_pos;
-}
-
-fn GetFilePosImpl( ZeroInitializer& zero_initializer ) : FilePos
-{
-	return zero_initializer.file_pos;
-}
-
-fn GetFilePosImpl( UninitializedInitializer& uninitialized_initializer ) : FilePos
-{
-	return uninitialized_initializer.file_pos;
-}
-
-fn GetFilePosImpl( NumericConstant& numeric_constant ) : FilePos
-{
-	return numeric_constant.file_pos;
-}
-
-fn GetFilePosImpl( BooleanConstant& boolean_constant ) : FilePos
-{
-	return boolean_constant.file_pos;
-}
-
-fn GetFilePosImpl( ComplexName& complex_name ) : FilePos
-{
-	return complex_name.file_pos;
-}
-
-fn GetFilePosImpl( BinaryOperator& binary_operator ) : FilePos
-{
-	return binary_operator.file_pos;
-}
-
-fn GetFilePosImpl( BracketExpression& bracket_expression ) : FilePos
-{
-	return bracket_expression.file_pos;
-}
-
-fn GetFilePosImpl( IndexationOperator& indexation_operator ) : FilePos
-{
-	return indexation_operator.file_pos;
-}
-
-fn GetFilePosImpl( CallOperator& call_operator ) : FilePos
-{
-	return call_operator.file_pos;
-}
-
-fn GetFilePosImpl( MemberAccessOperator& member_access_operator ) : FilePos
-{
-	return member_access_operator.file_pos;
-}
-
-fn GetFilePosImpl( UnaryPlus& unary_plus ) : FilePos
-{
-	return unary_plus.file_pos;
-}
-
-fn GetFilePosImpl( UnaryMinus& unary_minus ) : FilePos
-{
-	return unary_minus.file_pos;
-}
-
-fn GetFilePosImpl( LogicalNot& logical_not ) : FilePos
-{
-	return logical_not.file_pos;
-}
-
-fn GetFilePosImpl( BitwiseNot& bitwise_not ) : FilePos
-{
-	return bitwise_not.file_pos;
-}
-
-fn GetFilePosImpl( ust::box</Block/>& block ) : FilePos
-{
-	return block.get_ref().file_pos;
-}
-
-fn GetFilePosImpl( VariablesDeclaration& variables_declaration ) : FilePos
-{
-	return variables_declaration.file_pos;
-}
-
-fn GetFilePosImpl( AutoVariableDeclaration& auto_variable_declaration ) : FilePos
-{
-	return auto_variable_declaration.file_pos;
-}
-
-fn GetFilePosImpl( ReturnOperator& return_operator ) : FilePos
-{
-	return return_operator.file_pos;
-}
-
-fn GetFilePosImpl( AssignmentOperator& assignment_operator ) : FilePos
-{
-	return assignment_operator.file_pos;
-}
-
-fn GetFilePosImpl( AdditiveAssignmentOperator& additive_assignment_operator ) : FilePos
-{
-	return additive_assignment_operator.file_pos;
-}
-
-fn GetFilePosImpl( IncrementOperator& increment_operator ) : FilePos
-{
-	return increment_operator.file_pos;
-}
-
-fn GetFilePosImpl( Synt::DecrementOperator& decrement_operator ) : FilePos
-{
-	return decrement_operator.file_pos;
-}
-
-fn GetFilePosImpl( Expression& expression ) : FilePos
-{
-	return GetFilePos(expression);
-}
-
-fn GetFilePosImpl( IfOperator& if_operator ) : FilePos
-{
-	return if_operator.file_pos;
-}
-
-fn GetFilePosImpl( WhileOperator& while_operator ) : FilePos
-{
-	return while_operator.file_pos;
-}
-
-fn GetFilePosImpl( BreakOperator& break_operator ) : FilePos
-{
-	return break_operator.file_pos;
-}
-
-fn GetFilePosImpl( ContinueOperator& continue_operator ) : FilePos
-{
-	return continue_operator.file_pos;
-}
-
-fn GetFilePosImpl( StaticAssert& static_assert_ ) : FilePos
-{
-	return static_assert_.file_pos;
-}
-
 fn GetFilePos( Initializer& initializer ) : FilePos
 {
 	variant_visit( &el : initializer )
 	{
-		return GetFilePosImpl(el);
+		static_if( ust::is_same_type</ typeof(el), EmptyVariant />() )
+		{
+			return FilePos();
+		}
+		else if( ust::is_same_type</ typeof(el), Expression />() )
+		{
+			return GetFilePos(el);
+		}
+		else
+		{
+			return el.file_pos;
+		}
 	}
 	halt;
 }
@@ -179,7 +30,14 @@ fn GetFilePos( Expression& expression ) : FilePos
 {
 	variant_visit( &el : expression )
 	{
-		return GetFilePosImpl(el);
+		static_if( ust::is_same_type</ typeof(el), EmptyVariant />() )
+		{
+			return FilePos();
+		}
+		else
+		{
+			return el.file_pos;
+		}
 	}
 	halt;
 }
@@ -188,7 +46,18 @@ fn GetFilePos( BlockElement& block_element ) : FilePos
 {
 	variant_visit( &el : block_element )
 	{
-		return GetFilePosImpl(el);
+		static_if( ust::is_same_type</ typeof(el), Expression />() )
+		{
+			return GetFilePos(el);
+		}
+		else if( ust::is_same_type</ typeof(el), ust::box</Block/> />() )
+		{
+			return el.get_ref().file_pos;
+		}
+		else
+		{
+			return el.file_pos;
+		}
 	}
 	halt;
 }
