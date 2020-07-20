@@ -23,6 +23,7 @@ bool FilterTest( const std::string& test_name )
 {
 	static const std::string c_tests_to_enable_pattern[]
 	{
+		"AccessingReferenceInsideMethodUsingImplicitThis",
 		"AdditionalSymbolsForIdentifiersTest0",
 		"AdditiveOperationsTest0",
 		"AdditiveOperationsTest1",
@@ -37,6 +38,7 @@ bool FilterTest( const std::string& test_name )
 		"ArrayInitializersCountMismatchTest1",
 		"ArraysTest0",
 		"ArraysTest1",
+		"AssignMutableReferenceInsideClass",
 		"BasicBinaryOperationsFloatTest",
 		"BasicBinaryOperationsTest",
 		"BasicReferenceInsideClassUsage",
