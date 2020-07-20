@@ -96,6 +96,11 @@ fn GetFilePosImpl( AssignmentOperator& assignment_operator ) : FilePos
 	return assignment_operator.file_pos;
 }
 
+fn GetFilePosImpl( AdditiveAssignmentOperator& additive_assignment_operator ) : FilePos
+{
+	return additive_assignment_operator.file_pos;
+}
+
 fn GetFilePosImpl( IncrementOperator& increment_operator ) : FilePos
 {
 	return increment_operator.file_pos;

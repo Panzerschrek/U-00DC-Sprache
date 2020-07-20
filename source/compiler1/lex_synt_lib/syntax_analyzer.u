@@ -120,6 +120,24 @@ fn LexemToBinaryOperator( Lexem& lexem ) : BinaryOperatorType
 	halt;
 }
 
+fn GetAdditiveAssignmentOperator( Lexem& lexem ) : ust::optional</BinaryOperatorType/>
+{
+	auto t= lexem.lexem_type;
+
+	if( t == Lexem::Type::AssignAdd ){ return BinaryOperatorType::Add; }
+	if( t == Lexem::Type::AssignSub ){ return BinaryOperatorType::Sub; }
+	if( t == Lexem::Type::AssignMul ){ return BinaryOperatorType::Mul; }
+	if( t == Lexem::Type::AssignDiv ){ return BinaryOperatorType::Div; }
+	if( t == Lexem::Type::AssignAnd ){ return BinaryOperatorType::And; }
+	if( t == Lexem::Type::AssignRem ){ return BinaryOperatorType::Rem; }
+	if( t == Lexem::Type::AssignOr  ){ return BinaryOperatorType::Or ; }
+	if( t == Lexem::Type::AssignXor ){ return BinaryOperatorType::Xor; }
+	if( t == Lexem::Type::AssignShiftLeft  ){ return BinaryOperatorType::ShiftLeft ; }
+	if( t == Lexem::Type::AssignShiftRight ){ return BinaryOperatorType::ShiftRight; }
+
+	return ust::optional</BinaryOperatorType/>();
+}
+
 fn GetMostRightIncompleteBinaryOperatorInTree( BinaryOperator &mut o ) : BinaryOperator &mut
 {
 	if( !o.r.get_ref().get</EmptyVariant/>().empty() )
@@ -1066,7 +1084,23 @@ fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 		else
 		{
 			auto mut expr= ParseExpression();
-			if( it_.front().lexem_type == Lexem::Type::Assignment )
+
+			auto additive_assignment_operator_type= GetAdditiveAssignmentOperator( it_.front() );
+			if( !additive_assignment_operator_type.empty() )
+			{
+				var AdditiveAssignmentOperator mut additive_assignment_operator
+				{
+					.file_pos= it_.front().file_pos,
+					.operator= additive_assignment_operator_type.get_ref(),
+					.l= move(expr),
+				};
+				NextLexem();
+
+				additive_assignment_operator.r= ParseExpression();
+
+				block.elements.push_back( move(additive_assignment_operator) );
+			}
+			else if( it_.front().lexem_type == Lexem::Type::Assignment )
 			{
 				var AssignmentOperator mut assignment_operator{ .file_pos= it_.front().file_pos };
 				NextLexem();

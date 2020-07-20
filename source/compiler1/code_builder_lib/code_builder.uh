@@ -89,6 +89,7 @@ private:
 	fn BuildBlockElement( this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration ) : BlockElementBuildInfo;
 	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AssignmentOperator& assignment_operator ) : BlockElementBuildInfo;
+	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AdditiveAssignmentOperator& additive_assignment_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IncrementOperator& increment_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::DecrementOperator& decrement_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : BlockElementBuildInfo;
@@ -117,6 +118,7 @@ private:
 	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::LogicalNot& logical_not ) : Value;
 	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BitwiseNot& bitwise_not ) : Value;
 
+	fn BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& l_var, Variable& r_var, BinaryOperatorType operator, FilePos& file_pos ) : Value;
 	fn BuildLazyBinaryOperator( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value;
 
 	fn CallFunctionsSet(

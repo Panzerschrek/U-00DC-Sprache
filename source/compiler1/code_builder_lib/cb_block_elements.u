@@ -314,6 +314,39 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 	return BlockElementBuildInfo();
 }
 
+fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AdditiveAssignmentOperator& additive_assignment_operator ) : BlockElementBuildInfo
+{
+	auto mut r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, additive_assignment_operator.r );
+	// Save r_var in register, prevent its modification during l_var calculation.
+	r_var.llvm_value= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
+	r_var.location= Variable::Location::LLVMRegister;
+	r_var.value_type= ValueType::Value;
+
+	auto l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, additive_assignment_operator.l );
+	if( l_var.value_type != ValueType::ReferenceMut )
+	{
+		REPORT_ERROR( ExpectedReferenceValue, names_scope, additive_assignment_operator.file_pos )
+		return BlockElementBuildInfo();
+	}
+
+	auto op_result= BuildBinaryOperator( names_scope, function_context, l_var, r_var, additive_assignment_operator.operator, additive_assignment_operator.file_pos );
+	auto op_result_variable_ref= op_result.get</Variable/>();
+	if( op_result_variable_ref.empty() )
+	{
+		return BlockElementBuildInfo();
+	}
+
+	unsafe
+	{
+		LLVMBuildStore(
+			function_context.llvm_ir_builder,
+			CreateMoveToLLVMRegisterInstruction( op_result_variable_ref.get_ref(), function_context ),
+			l_var.llvm_value );
+	}
+
+	return BlockElementBuildInfo();
+}
+
 fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IncrementOperator& increment_operator ) : BlockElementBuildInfo
 {
 	BuildDeltaOneOperator( names_scope, function_context, increment_operator.expression, increment_operator.file_pos, +1 );

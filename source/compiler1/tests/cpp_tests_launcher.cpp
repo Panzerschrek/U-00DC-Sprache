@@ -24,6 +24,9 @@ bool FilterTest( const std::string& test_name )
 	static const std::string c_tests_to_enable_pattern[]
 	{
 		"AdditionalSymbolsForIdentifiersTest0",
+		"AdditiveOperationsTest0",
+		"AdditiveOperationsTest1",
+		"AdditiveOperationsTest2",
 		"ArgumentsAssignmentTest",
 		"ArrayIndexOutOfBoundsTest0",
 		"ArrayInitializerForFundamentalTypesTest0",
@@ -142,6 +145,7 @@ bool FilterTest( const std::string& test_name )
 		"LazyLogicalOrTest0",
 		"LazyLogicalOrTest1",
 		"LazyLogicalOrTest2",
+		"LeftShiftAndAssignTest0",
 		"LeftShiftTest0",
 		"LeftShiftTest1",
 		"LogicalBinaryOperationsTest",
@@ -172,7 +176,9 @@ bool FilterTest( const std::string& test_name )
 		"ReferencesHaveConstructorsWithExactlyOneParameterTest0",
 		"ReferencesHaveConstructorsWithExactlyOneParameterTest1",
 		"RemOperatorTest0",
+		"RemOperatorTest1",
 		"RemOperatorTest2",
+		"RightShiftAndAssignTest0",
 		"RightShiftTest0",
 		"RightShiftTest1",
 		"SimpliestProgramTest",
