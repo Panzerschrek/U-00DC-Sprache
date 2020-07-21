@@ -89,6 +89,8 @@ bool FilterTest( const std::string& test_name )
 		"FunctionPrototypeTest",
 		"FundamentalTypesHaveConstructorsWithExactlyOneParameterTest",
 		"GeneratedCopyConstructorForStructsWithReferencesTest",
+		"GlobalVariablesTest0",
+		"GlobalVariablesTest2_ShouldTakeAddressOfGlobalVariable",
 		"Halt",
 		"IfOperatorTest",
 		"ImplicitConstexprTest",

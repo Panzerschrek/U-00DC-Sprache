@@ -139,6 +139,36 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::VariablesDeclaration/>& variables_declaration )
 {
+	auto mut i= 0s;
+	while( i < variables_declaration.get_ref().variables.size() )
+	{
+		auto& variable_declaration= variables_declaration.get_ref().variables[i];
+
+		if( IsKeyword( variable_declaration.name ) )
+		{
+			REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, variable_declaration.file_pos )
+			return;
+		}
+
+		var GlobalVariable mut global_variable
+		{
+			.syntax_element= variables_declaration,
+			.variable_index= i,
+		};
+
+		var bool mut insert_not_ok= false;
+		{
+			auto mut lock= names_scope_ptr.lock_mut();
+			insert_not_ok= lock.get_ref().AddName( variable_declaration.name, move(global_variable) ).empty();
+		}
+
+		if( insert_not_ok )
+		{
+			REPORT_ERROR( Redefinition, names_scope_ptr, variable_declaration.file_pos, variable_declaration.name )
+		}
+
+		++i;
+	}
 }
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::VariablesDeclaration/>& variables_declaration, ust::shared_ptr_nullable_mut</ClassType/>& class_type )

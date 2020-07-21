@@ -231,6 +231,14 @@ struct ClassField
 	ust::shared_ptr_final</ Synt::ClassField /> syntax_element;
 }
 
+struct GlobalVariable
+{
+	ust::optional</NamesScopeVariable/> variable; // empty if incomplete
+
+	ust::shared_ptr_final</ Synt::VariablesDeclaration /> syntax_element;
+	size_type variable_index;
+}
+
 class NamesScopeValue
 {
 public:
@@ -262,7 +270,8 @@ private:
 		ust::shared_ptr_mut</NamesScopeVariable/>,
 		ust::shared_ptr_mut</NamesScopeFunctionsSet/>,
 		ClassTypePtr,
-		ust::shared_ptr_mut</ClassField/>
+		ust::shared_ptr_mut</ClassField/>,
+		ust::shared_ptr_mut</GlobalVariable/>
 	] /> something_;
 }
 
