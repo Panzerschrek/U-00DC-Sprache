@@ -356,7 +356,9 @@ struct ClassField
 type ClassElement= ust::variant</ tup[
 	ust::shared_ptr_final</Function/>,
 	ust::shared_ptr_final</Class/>,
-	ust::shared_ptr_final</ClassField/>
+	ust::shared_ptr_final</ClassField/>,
+	ust::shared_ptr_final</VariablesDeclaration/>,
+	ust::shared_ptr_final</AutoVariableDeclaration/>
 	] />;
 
 type ClassElements= ust::vector</ClassElement/>;
@@ -378,7 +380,9 @@ struct Namespace
 type NamespaceElement= ust::variant</ tup[
 	ust::shared_ptr_final</Function/>,
 	ust::shared_ptr_final</Class/>,
-	ust::shared_ptr_final</Namespace/> // TODO do we really need shared_ptr here?
+	ust::shared_ptr_final</Namespace/>, // TODO do we really need shared_ptr here?
+	ust::shared_ptr_final</VariablesDeclaration/>,
+	ust::shared_ptr_final</AutoVariableDeclaration/>
 	] />;
 
 type NamespaceElements= ust::vector</NamespaceElement/>;
