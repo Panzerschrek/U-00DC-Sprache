@@ -267,6 +267,10 @@ fn SyntaxAnalyzer::ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : Names
 		{
 			namespace_elements.push_back( ust::shared_ptr_final</AutoVariableDeclaration/>( ParseAutoVariableDeclaration() ) );
 		}
+		else if( IsKeyword( it_.front(), Keyword::static_assert_ ) )
+		{
+			namespace_elements.push_back( ust::shared_ptr_final</StaticAssert/>( ParseStaticAssert() ) );
+		}
 		else
 		{
 			PushErrorMessage();
@@ -1566,6 +1570,10 @@ fn SyntaxAnalyzer::ParseClass( mut this ) : Class
 		else if( IsKeyword( it_.front(), Keyword::auto_ ) )
 		{
 			class_.class_elements.push_back( ust::shared_ptr_final</AutoVariableDeclaration/>( ParseAutoVariableDeclaration() ) );
+		}
+		else if( IsKeyword( it_.front(), Keyword::static_assert_ ) )
+		{
+			class_.class_elements.push_back( ust::shared_ptr_final</StaticAssert/>( ParseStaticAssert() ) );
 		}
 		else
 		{

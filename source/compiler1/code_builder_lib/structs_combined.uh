@@ -246,6 +246,9 @@ struct GlobalAutoVariable
 	ust::shared_ptr_final</ Synt::AutoVariableDeclaration /> syntax_element;
 }
 
+// Empty vector if all static asserts are complete.
+type GlobalStaticAssertsSet= ust::vector</ ust::shared_ptr_final</ Synt::StaticAssert /> />;
+
 class NamesScopeValue
 {
 public:
@@ -279,7 +282,8 @@ private:
 		ClassTypePtr,
 		ust::shared_ptr_mut</ClassField/>,
 		ust::shared_ptr_mut</GlobalVariable/>,
-		ust::shared_ptr_mut</GlobalAutoVariable/>
+		ust::shared_ptr_mut</GlobalAutoVariable/>,
+		ust::shared_ptr_mut</GlobalStaticAssertsSet/>
 	] /> something_;
 }
 
