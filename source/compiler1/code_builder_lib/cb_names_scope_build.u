@@ -36,6 +36,14 @@ fn CodeBuilder::NamesScopeBuild( this, NamesScopePtr& names_scope_ptr )
 			auto &mut global_variable= lock.get_ref();
 			BuildGlobalVariable( names_scope_ptr, global_variable );
 		}
+
+		auto global_auto_variable_ptr= el.value().Get</GlobalAutoVariable/>();
+		if( !global_auto_variable_ptr.empty() )
+		{
+			auto mut lock= global_auto_variable_ptr.lock_mut();
+			auto &mut global_auto_variable= lock.get_ref();
+			BuildGlobalAutoVariable( names_scope_ptr, global_auto_variable );
+		}
 	}
 }
 

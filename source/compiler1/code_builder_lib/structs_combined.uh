@@ -239,6 +239,13 @@ struct GlobalVariable
 	size_type variable_index;
 }
 
+struct GlobalAutoVariable
+{
+	ust::optional</NamesScopeVariable/> variable; // empty if incomplete
+
+	ust::shared_ptr_final</ Synt::AutoVariableDeclaration /> syntax_element;
+}
+
 class NamesScopeValue
 {
 public:
@@ -271,7 +278,8 @@ private:
 		ust::shared_ptr_mut</NamesScopeFunctionsSet/>,
 		ClassTypePtr,
 		ust::shared_ptr_mut</ClassField/>,
-		ust::shared_ptr_mut</GlobalVariable/>
+		ust::shared_ptr_mut</GlobalVariable/>,
+		ust::shared_ptr_mut</GlobalAutoVariable/>
 	] /> something_;
 }
 
