@@ -6,7 +6,7 @@ import "/variant.u"
 import "/vector.u"
 import "../lex_synt_lib/syntax_elements.uh"
 import "lang_types.uh"
-import "llvm.uh"
+import "llvm_ext.uh"
 import "/code_builder_errors.uh"
 
 /*

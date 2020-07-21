@@ -1018,7 +1018,9 @@ fn CodeBuilder::RestoreInstructionsState( FunctionContext &mut function_context,
 	{
 		while( LLVMGetLastBasicBlock( function_context.llvm_function ) != state.current_block )
 		{
-			LLVMDeleteBasicBlock( LLVMGetLastBasicBlock( function_context.llvm_function ) );
+			auto bb= LLVMGetLastBasicBlock( function_context.llvm_function );
+			U1_DropAllBasicBlockUsersReferences( bb );
+			LLVMDeleteBasicBlock( bb );
 		}
 
 		while( LLVMGetLastInstruction( state.current_block ) != state.current_block_last_instruction )
