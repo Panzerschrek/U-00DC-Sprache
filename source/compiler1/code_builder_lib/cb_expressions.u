@@ -976,7 +976,7 @@ fn CodeBuilder::BuildLazyBinaryOperator( this, NamesScopePtr& names_scope, Funct
 	var LLVMBasicBlockRef mut l_part_block= zero_init, mut r_part_block= zero_init, mut block_after_operator= zero_init;
 	unsafe
 	{
-		l_part_block= LLVMGetLastBasicBlock( function_context.llvm_function );
+		l_part_block= LLVMGetInsertBlock( function_context.llvm_ir_builder );
 		r_part_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
 		block_after_operator= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
 	}
