@@ -28,6 +28,37 @@ fn CodeBuilder::NamesScopeBuild( this, NamesScopePtr& names_scope_ptr )
 		{
 			NamesScopeBuild( ust::to_non_nullable( namespace_ ) );
 		}
+
+		auto global_variable_ptr= el.value().Get</GlobalVariable/>();
+		if( !global_variable_ptr.empty() )
+		{
+			auto mut lock= global_variable_ptr.lock_mut();
+			auto &mut global_variable= lock.get_ref();
+			BuildGlobalVariable( names_scope_ptr, global_variable );
+		}
+
+		auto global_auto_variable_ptr= el.value().Get</GlobalAutoVariable/>();
+		if( !global_auto_variable_ptr.empty() )
+		{
+			auto mut lock= global_auto_variable_ptr.lock_mut();
+			auto &mut global_auto_variable= lock.get_ref();
+			BuildGlobalAutoVariable( names_scope_ptr, global_auto_variable );
+		}
+
+		auto global_static_asserts_set_ptr= el.value().Get</GlobalStaticAssertsSet/>();
+		if( !global_static_asserts_set_ptr.empty() )
+		{
+			auto mut lock= global_static_asserts_set_ptr.lock_mut();
+			auto &mut global_static_asserts_set= lock.get_ref();
+
+			auto mut function_context= CreateGlobalFunctionContext();
+			foreach( &static_assert_ : global_static_asserts_set )
+			{
+				BuildBlockElement( names_scope_ptr, function_context, static_assert_.get_ref() );
+			}
+
+			global_static_asserts_set.clear();
+		}
 	}
 }
 

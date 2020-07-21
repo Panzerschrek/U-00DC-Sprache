@@ -137,6 +137,104 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	NamesScopeFill( names_scope_ptr, class_ );
 }
 
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::VariablesDeclaration/>& variables_declaration )
+{
+	auto mut i= 0s;
+	while( i < variables_declaration.get_ref().variables.size() )
+	{
+		auto& variable_declaration= variables_declaration.get_ref().variables[i];
+
+		if( IsKeyword( variable_declaration.name ) )
+		{
+			REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, variable_declaration.file_pos )
+			return;
+		}
+
+		var GlobalVariable mut global_variable
+		{
+			.syntax_element= variables_declaration,
+			.variable_index= i,
+		};
+
+		var bool mut insert_not_ok= false;
+		{
+			auto mut lock= names_scope_ptr.lock_mut();
+			insert_not_ok= lock.get_ref().AddName( variable_declaration.name, move(global_variable) ).empty();
+		}
+
+		if( insert_not_ok )
+		{
+			REPORT_ERROR( Redefinition, names_scope_ptr, variable_declaration.file_pos, variable_declaration.name )
+		}
+
+		++i;
+	}
+}
+
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::VariablesDeclaration/>& variables_declaration, ust::shared_ptr_nullable_mut</ClassType/>& class_type )
+{
+	NamesScopeFill( names_scope_ptr, variables_declaration );
+}
+
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::AutoVariableDeclaration/>& auto_variable_declaration )
+{
+	if( IsKeyword( auto_variable_declaration.get_ref().name ) )
+	{
+		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, auto_variable_declaration.get_ref().file_pos )
+		return;
+	}
+
+	var GlobalAutoVariable mut global_auto_variable{ .syntax_element= auto_variable_declaration };
+
+	var bool mut insert_not_ok= false;
+	{
+		auto mut lock= names_scope_ptr.lock_mut();
+		insert_not_ok= lock.get_ref().AddName( auto_variable_declaration.get_ref().name, move(global_auto_variable) ).empty();
+	}
+
+	if( insert_not_ok )
+	{
+		REPORT_ERROR( Redefinition, names_scope_ptr, auto_variable_declaration.get_ref().file_pos, auto_variable_declaration.get_ref().name )
+	}
+}
+
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::AutoVariableDeclaration/>& auto_variable_declaration, ust::shared_ptr_nullable_mut</ClassType/>& class_type )
+{
+	NamesScopeFill( names_scope_ptr, auto_variable_declaration );
+}
+
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::StaticAssert/>& static_asert )
+{
+	// Store all static asserts in symobl table, using keyword "static_assert" as key.
+
+	var ust::string8 key= KeywordToString(Keyword::static_assert_);
+	if_var( prev_name : names_scope_ptr.lock_imut().get_ref().GetThisScopeValue(key) )
+	{
+		auto prev_static_asserts= prev_name.Get</GlobalStaticAssertsSet/>();
+		if( !prev_static_asserts.empty() )
+		{
+			auto mut lock= prev_static_asserts.lock_mut();
+			lock.get_ref().push_back(static_asert);
+		}
+		else
+		{
+			REPORT_ERROR( Redefinition, names_scope_ptr, static_asert.get_ref().file_pos, key )
+		}
+		return;
+	}
+
+	var GlobalStaticAssertsSet mut static_asserts_set;
+	static_asserts_set.push_back( static_asert );
+
+	auto mut lock= names_scope_ptr.lock_mut();
+	lock.get_ref().AddName( key, move(static_asserts_set) );
+}
+
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::StaticAssert/>& static_asert, ust::shared_ptr_nullable_mut</ClassType/>& class_type )
+{
+	NamesScopeFill( names_scope_ptr, static_asert );
+}
+
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Namespace/>& namespace_ )
 {
 	if_var( prev_name : names_scope_ptr.lock_imut().get_ref().GetThisScopeValue( namespace_.get_ref().name ) )

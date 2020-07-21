@@ -231,6 +231,24 @@ struct ClassField
 	ust::shared_ptr_final</ Synt::ClassField /> syntax_element;
 }
 
+struct GlobalVariable
+{
+	ust::optional</NamesScopeVariable/> variable; // empty if incomplete
+
+	ust::shared_ptr_final</ Synt::VariablesDeclaration /> syntax_element;
+	size_type variable_index;
+}
+
+struct GlobalAutoVariable
+{
+	ust::optional</NamesScopeVariable/> variable; // empty if incomplete
+
+	ust::shared_ptr_final</ Synt::AutoVariableDeclaration /> syntax_element;
+}
+
+// Empty vector if all static asserts are complete.
+type GlobalStaticAssertsSet= ust::vector</ ust::shared_ptr_final</ Synt::StaticAssert /> />;
+
 class NamesScopeValue
 {
 public:
@@ -262,7 +280,10 @@ private:
 		ust::shared_ptr_mut</NamesScopeVariable/>,
 		ust::shared_ptr_mut</NamesScopeFunctionsSet/>,
 		ClassTypePtr,
-		ust::shared_ptr_mut</ClassField/>
+		ust::shared_ptr_mut</ClassField/>,
+		ust::shared_ptr_mut</GlobalVariable/>,
+		ust::shared_ptr_mut</GlobalAutoVariable/>,
+		ust::shared_ptr_mut</GlobalStaticAssertsSet/>
 	] /> something_;
 }
 

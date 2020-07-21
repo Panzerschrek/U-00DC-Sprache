@@ -127,29 +127,53 @@ fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : Buil
 
 fn CodeBuilder::NamesScopeValueToValue( this, NamesScopePtr& names_scope, NamesScopeValue& names_scope_value ) : Value
 {
+	auto t= names_scope_value.Get</Type/>();
+	if( !t.empty() )
 	{
-		auto t= names_scope_value.Get</Type/>();
-		if( !t.empty() )
-		{
-			return t.lock_imut().get_ref();
-		}
+		return t.lock_imut().get_ref();
 	}
-	{
-		auto f_ptr= names_scope_value.Get</NamesScopeFunctionsSet/>();
-		if( !f_ptr.empty() )
-		{
-			// In case of access to functions set using function name, build only prototype, not full body.
-			BuildFunctionsSet( names_scope, ust::to_non_nullable( f_ptr ), false );
-			return f_ptr.lock_imut().get_ref().functions_set;
-		}
-	}
-	{
-		auto var_ptr= names_scope_value.Get</NamesScopeVariable/>();
-		if( !var_ptr.empty() )
-		{
-			auto lock= var_ptr.lock_imut();
-			auto& v= lock.get_ref();
 
+	auto f_ptr= names_scope_value.Get</NamesScopeFunctionsSet/>();
+	if( !f_ptr.empty() )
+	{
+		// In case of access to functions set using function name, build only prototype, not full body.
+		BuildFunctionsSet( names_scope, ust::to_non_nullable( f_ptr ), false );
+		return f_ptr.lock_imut().get_ref().functions_set;
+	}
+
+	auto var_ptr= names_scope_value.Get</NamesScopeVariable/>();
+	if( !var_ptr.empty() )
+	{
+		auto lock= var_ptr.lock_imut();
+		auto& v= lock.get_ref();
+
+		var Variable mut res
+		{
+			.t= v.t,
+			.llvm_value= v.llvm_value,
+			.constexpr_value= v.constexpr_value,
+			.location= Variable::Location::Pointer,
+			.value_type= select( v.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+		};
+		return move(res);
+	}
+
+	auto class_type_ptr= names_scope_value.Get</ClassType/>();
+	if( !class_type_ptr.empty() )
+	{
+		auto ptr_non_null= ust::to_non_nullable(class_type_ptr);
+		return Type( ptr_non_null );
+	}
+
+	auto global_variable_ptr= names_scope_value.Get</GlobalVariable/>();
+	if( !global_variable_ptr.empty() )
+	{
+		auto mut lock= global_variable_ptr.lock_mut();
+		auto &mut global_variable= lock.get_ref();
+		BuildGlobalVariable( names_scope, global_variable );
+
+		if_var( &v : global_variable.variable )
+		{
 			var Variable mut res
 			{
 				.t= v.t,
@@ -161,12 +185,25 @@ fn CodeBuilder::NamesScopeValueToValue( this, NamesScopePtr& names_scope, NamesS
 			return move(res);
 		}
 	}
+
+	auto global_auto_variable_ptr= names_scope_value.Get</GlobalAutoVariable/>();
+	if( !global_auto_variable_ptr.empty() )
 	{
-		auto class_type_ptr= names_scope_value.Get</ClassType/>();
-		if( !class_type_ptr.empty() )
+		auto mut lock= global_auto_variable_ptr.lock_mut();
+		auto &mut global_auto_variable= lock.get_ref();
+		BuildGlobalAutoVariable( names_scope, global_auto_variable );
+
+		if_var( &v : global_auto_variable.variable )
 		{
-			auto ptr_non_null= ust::to_non_nullable(class_type_ptr);
-			return Type( ptr_non_null );
+			var Variable mut res
+			{
+				.t= v.t,
+				.llvm_value= v.llvm_value,
+				.constexpr_value= v.constexpr_value,
+				.location= Variable::Location::Pointer,
+				.value_type= select( v.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+			};
+			return move(res);
 		}
 	}
 
@@ -429,6 +466,181 @@ fn CodeBuilder::BuildClass( this, NamesScopePtr& names_scope_ptr, ClassTypePtr& 
 	}
 
 	class_.is_complete= true;
+}
+
+fn CodeBuilder::BuildGlobalVariable( this, NamesScopePtr& names_scope, GlobalVariable& mut global_variable )
+{
+	if( !global_variable.variable.empty() )
+	{
+		return;
+	}
+
+	auto variables_declaration_ptr= global_variable.syntax_element;
+	auto& variables_declaration= variables_declaration_ptr.get_ref();
+	auto& variable_declaration= variables_declaration.variables[ global_variable.variable_index ];
+
+	var FunctionContext mut function_context= CreateGlobalFunctionContext();
+
+	global_variable.variable.reset( NamesScopeVariable() );
+	var NamesScopeVariable &mut variable= global_variable.variable.get_ref();
+
+	variable.t= PrepareType( names_scope, function_context, variables_declaration.t );
+	if( !EnsureTypeComplete( variable.t ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope, variables_declaration.file_pos, variable.t )
+		return;
+	}
+	if( !variable.t.CanBeConstexpr() )
+	{
+		REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope, variable_declaration.file_pos )
+		return;
+	}
+	if( variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable )
+	{
+		REPORT_ERROR( GlobalVariableMustBeConstexpr, names_scope, variable_declaration.file_pos, variable_declaration.name )
+		return;
+	}
+
+	if( variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
+	{
+		auto name_mangled= MangleGlobalVariable( names_scope.lock_imut().get_ref(), variable_declaration.name );
+		unsafe
+		{
+			variable.llvm_value= LLVMAddGlobal( module_, variable.t.GetLLVMType(), name_mangled.front() );
+			LLVMSetLinkage( variable.llvm_value, LLVMLinkage::Internal );
+			LLVMSetGlobalConstant( variable.llvm_value, LLVMBool::True );
+		}
+
+		if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
+		{
+			BuildEmptyInitializer( names_scope, function_context, variable, variable_declaration.name, variable_declaration.file_pos );
+		}
+		else
+		{
+			variable.constexpr_value= BuildInitializer( names_scope, function_context, variable, variable_declaration.initializer );
+		}
+
+		unsafe{  LLVMSetInitializer( variable.llvm_value, variable.constexpr_value );  }
+	}
+	else if( variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
+	{
+		if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
+		{
+			REPORT_ERROR( ExpectedInitializer, names_scope, variable_declaration.file_pos, variable_declaration.name )
+			return;
+		}
+
+		var ust::optional_ref</Synt::Expression, false/> mut initializer_expression;
+		if_var( &expression_initializer : variable_declaration.initializer.get</Synt::Expression/>() )
+		{
+			initializer_expression.reset(expression_initializer);
+		}
+		if_var( &constructor_initializer : variable_declaration.initializer.get</Synt::ConstructorInitializer/>() )
+		{
+			if( constructor_initializer.args.size() != 1s )
+			{
+				REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names_scope, constructor_initializer.file_pos )
+				return;
+			}
+
+			initializer_expression.reset( constructor_initializer.args.front().get_ref() );
+		}
+
+		if( initializer_expression.empty() )
+		{
+			REPORT_ERROR( UnsupportedInitializerForReference, names_scope, variable_declaration.file_pos )
+			return;
+		}
+
+		auto expression_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, initializer_expression.get_ref() );
+		// TODO - allow reference conversion
+		if( expression_result.t != variable.t )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, variable_declaration.file_pos, variable.t, expression_result.t )
+			return;
+		}
+
+		variable.llvm_value= expression_result.llvm_value;
+		variable.constexpr_value= expression_result.constexpr_value;
+	}
+	else{ halt; }
+
+	if( variable.constexpr_value == LLVMValueRef::Null )
+	{
+		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope, variable_declaration.file_pos )
+	}
+
+	// TODO - maybe clear here dummy global function?
+}
+
+fn CodeBuilder::BuildGlobalAutoVariable( this, NamesScopePtr& names_scope, GlobalAutoVariable& mut global_auto_variable )
+{
+	if( !global_auto_variable.variable.empty() )
+	{
+		return;
+	}
+
+	auto auto_variable_declaration_ptr= global_auto_variable.syntax_element;
+	auto& auto_variable_declaration= auto_variable_declaration_ptr.get_ref();
+
+	var FunctionContext mut function_context= CreateGlobalFunctionContext();
+
+	global_auto_variable.variable.reset( NamesScopeVariable() );
+	var NamesScopeVariable &mut variable= global_auto_variable.variable.get_ref();
+
+	var Variable expr= BuildExpressionCodeEnsureVariable( names_scope, function_context, auto_variable_declaration.initializer_expression );
+	variable.t= expr.t;
+	if( variable.t == invalid_type_ )
+	{
+		REPORT_ERROR( InvalidTypeForAutoVariable, names_scope, auto_variable_declaration.file_pos, auto_variable_declaration.name )
+		return;
+	}
+	if( !variable.t.CanBeConstexpr() )
+	{
+		REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope, auto_variable_declaration.file_pos )
+		return;
+	}
+	if( auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable )
+	{
+		REPORT_ERROR( GlobalVariableMustBeConstexpr, names_scope, auto_variable_declaration.file_pos, auto_variable_declaration.name )
+		return;
+	}
+
+	if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
+	{
+		if( expr.value_type == ValueType::Value )
+		{
+			REPORT_ERROR( ExpectedReferenceValue,  names_scope, auto_variable_declaration.file_pos )
+			return;
+		}
+
+		variable.llvm_value= expr.llvm_value;
+	}
+	else if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
+	{
+		auto name_mangled= MangleGlobalVariable( names_scope.lock_imut().get_ref(), auto_variable_declaration.name );
+		unsafe
+		{
+			variable.llvm_value= LLVMAddGlobal( module_, variable.t.GetLLVMType(), name_mangled.front() );
+			LLVMSetLinkage( variable.llvm_value, LLVMLinkage::Internal );
+			LLVMSetGlobalConstant( variable.llvm_value, LLVMBool::True );
+			LLVMSetInitializer( variable.llvm_value, expr.constexpr_value );
+		}
+
+		if( !expr.t.IsCopyConstructible() )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, auto_variable_declaration.file_pos, variable.t )
+		}
+
+		BuildCopyConstructorPart( function_context, variable.llvm_value, expr.llvm_value, variable.t );
+	}
+	else { halt; }
+
+	variable.constexpr_value= expr.constexpr_value;
+	if( variable.constexpr_value == LLVMValueRef::Null )
+	{
+		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope, auto_variable_declaration.file_pos )
+	}
 }
 
 fn CodeBuilder::PrepareFunction(

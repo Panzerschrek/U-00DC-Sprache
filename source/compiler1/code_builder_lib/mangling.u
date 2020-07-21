@@ -105,6 +105,24 @@ fn MangleFunction(
 	return move(res);
 }
 
+fn MangleGlobalVariable( NamesScope& parent_scope, ust::string8& variable_name ) : ust::string8
+{
+	// Variables inside global namespace have simple names.
+	if( parent_scope.GetParent().empty() )
+	{
+		return variable_name + "\0";
+	}
+
+	var ust::string8 mut res= "_ZN";
+	AppendNamespacePrefix( res, parent_scope );
+	res+= ust::to_string8( variable_name.size() );
+	res+= variable_name;
+	res+= "E";
+
+	res+= "\0";
+	return move(res);
+}
+
 fn MangleType( Type& t ) : ust::string8
 {
 	auto mut str= MangleTypeImpl(t);
