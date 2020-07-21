@@ -98,7 +98,7 @@ fn NumberFunc2( char8 c ) : u64
 	{
 		return u64(c) - u64("0"c8);
 	}
-	return u64(-1);
+	return -1u64;
 }
 
 fn NumberFunc8( char8 c ) : u64
@@ -107,7 +107,7 @@ fn NumberFunc8( char8 c ) : u64
 	{
 		return u64(c) - u64("0"c8);
 	}
-	return u64(-1);
+	return -1u64;
 }
 
 fn NumberFunc10( char8 c ) : u64
@@ -133,15 +133,41 @@ fn NumberFunc16( char8 c ) : u64
 	{
 		return u64(c) - u64("A"c8) + u64(10);
 	}
-	return u64(-1);
+	return -1u64;
 }
+
+type NumberParseFunc= (fn (char8 c) : u64);
 
 fn ParseNumber( Iterator &mut it, LexicalErrorMessages &mut out_errors ) : Lexem
 {
-	var u64 base_(10);
+	var u64 mut base_(10);
+	var NumberParseFunc mut number_func= NumberFunc10;
 
-	var (fn (char8 c ) : u64 ) number_func= NumberFunc10;
-
+	if( it.size() >= 3s && it.front() == "0"c8 )
+	{
+		auto d= it[1s];
+		if( d == "b"c8 )
+		{
+			base_= 2u64;
+			number_func= NumberParseFunc(NumberFunc2);
+			it.drop_front();
+			it.drop_front();
+		}
+		if( d == "o"c8 )
+		{
+			base_= 8u64;
+			number_func= NumberParseFunc(NumberFunc8);
+			it.drop_front();
+			it.drop_front();
+		}
+		if( d == "x"c8 )
+		{
+			base_= 16u64;
+			number_func= NumberParseFunc(NumberFunc16);
+			it.drop_front();
+			it.drop_front();
+		}
+	}
 	// TODO - handle bin, oct, hex constants.
 
 	var u64 mut integer_part(0), mut fractional_part(0);
@@ -193,7 +219,35 @@ fn ParseNumber( Iterator &mut it, LexicalErrorMessages &mut out_errors ) : Lexem
 		}
 	}
 
-	// TODO - parse exponent
+	if( base_ == 10u64 && !it.empty() && it.front() == "e"c8 )
+	{
+		it.drop_front();
+
+		auto mut sign= 1;
+		if( !it.empty() && it.front() == "-"c8 )
+		{
+			sign= -1;
+			it.drop_front();
+		}
+		else if( !it.empty() && it.front() == "+"c8 )
+		{
+			sign= +1;
+			it.drop_front();
+		}
+
+		while( !it.empty() )
+		{
+			auto num= NumberFunc10( it.front() );
+			if( num == -1u64 )
+			{
+				break;
+			}
+			exponent= exponent * i32(base_) + i32(num);
+			it.drop_front();
+		}
+
+		exponent*= sign;
+	}
 
 	var NumberLexemData mut result;
 
