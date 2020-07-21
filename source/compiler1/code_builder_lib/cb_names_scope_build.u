@@ -28,6 +28,14 @@ fn CodeBuilder::NamesScopeBuild( this, NamesScopePtr& names_scope_ptr )
 		{
 			NamesScopeBuild( ust::to_non_nullable( namespace_ ) );
 		}
+
+		auto global_variable_ptr= el.value().Get</GlobalVariable/>();
+		if( !global_variable_ptr.empty() )
+		{
+			auto mut lock= global_variable_ptr.lock_mut();
+			auto &mut global_variable= lock.get_ref();
+			BuildGlobalVariable( names_scope_ptr, global_variable );
+		}
 	}
 }
 

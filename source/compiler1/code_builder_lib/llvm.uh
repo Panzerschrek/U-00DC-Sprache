@@ -27,6 +27,27 @@ enum LLVMBool : i32
 	True,
 }
 
+enum LLVMLinkage : u32
+{
+	External,    /**< Externally visible function */
+	AvailableExternally,
+	LinkOnceAny, /**< Keep one copy of function when linking (inline)*/
+	LinkOnceODR, /**< Same, but only replaced by something equivalent. */
+	LinkOnceODRAutoHide, /**< Obsolete */
+	WeakAny,     /**< Keep one copy of function when linking (weak) */
+	WeakODR,     /**< Same, but only replaced by something equivalent. */
+	Appending,   /**< Special purpose, only applies to global arrays */
+	Internal,    /**< Rename collisions when linking (static functions) */
+	Private,     /**< Like Internal, but omit from symbol table */
+	DLLImport,   /**< Obsolete */
+	DLLExport,   /**< Obsolete */
+	ExternalWeak,/**< ExternalWeak linkage description */
+	Ghost,       /**< Obsolete */
+	Common,      /**< Tentative definitions */
+	LinkerPrivate, /**< Like Private, but linker removes. */
+	LinkerPrivateWeak /**< Like LinkerPrivate, but is weak. */
+}
+
 enum LLVMIntPredicate : u32
 {
 	Dummy00, Dymmy01, Dummy02, Dummy03, Dummy04, Dummy05, Dummy06, Dummy07,
@@ -122,11 +143,13 @@ fn nomangle LLVMIsUndef(LLVMValueRef Val) unsafe : LLVMBool;
 // Global value
 
 fn nomangle LLVMAddFunction(LLVMModuleRef M, NullTerminatedString& Name, LLVMTypeRef FunctionTy) unsafe : LLVMValueRef;
+fn nomangle LLVMSetLinkage(LLVMValueRef Global, LLVMLinkage Linkage) unsafe;
 
 // Global variable
 
 fn nomangle LLVMAddGlobal(LLVMModuleRef M, LLVMTypeRef Ty, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMSetInitializer(LLVMValueRef GlobalVar, LLVMValueRef ConstantVal) unsafe : LLVMValueRef;
+fn nomangle LLVMSetGlobalConstant(LLVMValueRef GlobalVar, LLVMBool IsConstant) unsafe;
 
 // Function
 

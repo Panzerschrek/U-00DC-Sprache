@@ -482,9 +482,12 @@ fn CodeBuilder::BuildGlobalVariable( this, NamesScopePtr& names_scope, GlobalVar
 
 	if( variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 	{
+		auto name_mangled= MangleGlobalVariable( names_scope.lock_imut().get_ref(), variable_declaration.name );
 		unsafe
 		{
-			variable.llvm_value= LLVMAddGlobal( module_, variable.t.GetLLVMType(), "TODO - mangle name\0"[0] );
+			variable.llvm_value= LLVMAddGlobal( module_, variable.t.GetLLVMType(), name_mangled.front() );
+			LLVMSetLinkage( variable.llvm_value, LLVMLinkage::Internal );
+			LLVMSetGlobalConstant( variable.llvm_value, LLVMBool::True );
 		}
 
 		if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
