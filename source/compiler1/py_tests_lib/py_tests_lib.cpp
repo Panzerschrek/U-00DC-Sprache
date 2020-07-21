@@ -347,6 +347,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 	{
 		"ErrorsTest0",
 		"ErrorsTest1",
+		"Int128_Test0",
+		"OkTest",
 		"SimpliestTest",
 		"SimplePassArgumentTest",
 	};
@@ -361,6 +363,10 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 	static const std::string c_tests_to_enable_pattern[]
 	{
 		"NonExistentTest",
+		"NumericConstants_BinaryConstants",
+		"NumericConstants_DecimalConstants",
+		"NumericConstants_HexadecimalConstants",
+		"NumericConstants_OctalConstants",
 	};
 
 	if( std::find_if(
