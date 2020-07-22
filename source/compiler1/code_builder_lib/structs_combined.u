@@ -311,7 +311,7 @@ fn Type::IsDefaultConstructible( this ) : bool
 
 fn Type::IsCopyConstructible( this ) : bool
 {
-	if( !GetFundamentalType().empty() )
+	if( !GetFundamentalType().empty() || !GetEnumType().empty() )
 	{
 		return true;
 	}

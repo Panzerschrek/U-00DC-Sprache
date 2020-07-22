@@ -107,6 +107,7 @@ bool FilterTest( const std::string& test_name )
 		"ImplicitConstexprTest",
 		"IncrementTest",
 		"InitializationListInNonconstructorTest",
+		"InitializationOfEnumVariables",
 		"InitializerDisabledBecauseClassHaveExplicitNoncopyConstructorsTest0",
 		"InitializerForNonfieldStructMember_InConstructors_Test0",
 		"InnerClassTest0",

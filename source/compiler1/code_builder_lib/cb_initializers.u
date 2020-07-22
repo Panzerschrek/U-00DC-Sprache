@@ -21,7 +21,7 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 
 fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Expression& expression_initializer ) : LLVMValueRef
 {
-	if( !variable.t.GetFundamentalType().empty() )
+	if( !variable.t.GetFundamentalType().empty() || !variable.t.GetEnumType().empty() )
 	{
 		auto expr_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression_initializer );
 		if( expr_result.t != variable.t )
@@ -282,6 +282,17 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 
 		unsafe{  LLVMBuildStore( function_context.llvm_ir_builder, zero_value, variable.llvm_value );  }
 		return zero_value;
+	}
+	if_var( &enum_type : variable.t.GetEnumType() )
+	{
+		// Currently, first element of enum have zero value.
+
+		unsafe
+		{
+			auto zero_value= LLVMConstInt( variable.t.GetLLVMType(), 0u64, LLVMBool::False );
+			LLVMBuildStore( function_context.llvm_ir_builder, zero_value, variable.llvm_value );
+			return zero_value;
+		}
 	}
 	if_var( &array_type : variable.t.GetArrayType() )
 	{
@@ -600,6 +611,27 @@ fn CodeBuilder::BuildConstructorInitializer( this, NamesScopePtr& names_scope, F
 		unsafe{  if( LLVMIsConstant( llvm_value ) == LLVMBool::True ){ return llvm_value; }  }
 
 		return LLVMValueRef::Null;
+	}
+	if_var( &enum_type : variable.t.GetEnumType() )
+	{
+		if( args.size() != 1s )
+		{
+			REPORT_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, names_scope, file_pos )
+			return LLVMValueRef::Null;
+		}
+
+		var Variable expr= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().get_ref() );
+		if( expr.t != variable.t )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, file_pos, variable.t, expr.t )
+			return LLVMValueRef::Null;
+		}
+
+		unsafe
+		{
+			LLVMBuildStore( function_context.llvm_ir_builder, CreateMoveToLLVMRegisterInstruction( expr, function_context ), variable.llvm_value );
+		}
+		return expr.constexpr_value;
 	}
 	if_var( &class_type : variable.t.GetClassType() )
 	{
