@@ -155,6 +155,7 @@ bool FilterTest( const std::string& test_name )
 		"ThisUnavailable_InConstructors_Test",
 		"TwodimensionalArrayInitializerTest0",
 		"TypeConversionTest",
+		"TypedefsTest0",
 		"TypesMismatchTest0",
 		"TypesMismatchTest2",
 		"TypesMismatchTest3",
