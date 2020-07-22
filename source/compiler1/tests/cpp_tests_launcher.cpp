@@ -69,6 +69,7 @@ bool FilterTest( const std::string& test_name )
 		"DuplicatedStructMemberInitializerTest0",
 		"DuplicatedStructMemberInitializer_InConstructors_Test0",
 		"EmptyInitializerTest0",
+		"EnumsAssignmentAndReturnTest",
 		"EnumsDeclarationTest",
 		"EqualityFloatOperatorsTest",
 		"EqualityOperatorsTest",
