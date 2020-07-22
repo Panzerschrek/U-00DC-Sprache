@@ -245,11 +245,10 @@ struct Enum
 
 	struct Element
 	{
-		ust::string8 name;
 		LLVMValueRef llvm_value= LLVMValueRef::Null; // Pointer to global variable
 		LLVMValueRef constexpr_value= LLVMValueRef::Null;
 	}
-	ust::vector</ Element /> elements;
+	ust::unordered_map</ ust::string8, Element /> elements;
 
 	ust::shared_ptr_final</ Synt::Enum /> syntax_element;
 }

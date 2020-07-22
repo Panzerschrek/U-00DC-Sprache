@@ -319,16 +319,7 @@ fn CodeBuilder::ResolveValue( this, NamesScopePtr& names_scope, Synt::ComplexNam
 
 			auto lock= enum_.lock_imut();
 
-			var ust::optional_ref</ Enum::Element, false /> mut element;
-			foreach( &el : lock.get_ref().elements )
-			{
-				if( el.name == name_component )
-				{
-					element.reset(el);
-					break;
-				}
-			}
-
+			auto element= lock.get_ref().elements.find( name_component );
 			if( element.empty() )
 			{
 				REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, name_component )
@@ -570,22 +561,12 @@ fn CodeBuilder::BuildEnum( this, NamesScopePtr& names_scope_ptr, EnumTypePtr& en
 			REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, element.file_pos )
 		}
 
-		auto mut prev_found= false;
-		foreach( &prev_element : enum_.elements )
-		{
-			if( element.name == prev_element.name )
-			{
-				prev_found= true;
-				break;
-			}
-		}
-
-		if( prev_found )
+		if( !enum_.elements.find( element.name ).empty() )
 		{
 			REPORT_ERROR( Redefinition,  names_scope_ptr, element.file_pos, element.name )
 		}
 
-		var Enum::Element mut out_element{ .name= element.name };
+		var Enum::Element mut out_element;
 
 		// TODO - mangle name using enum as namespace.
 		auto name_mangled= MangleGlobalVariable( enum_.names_scope.lock_imut().get_ref(), element.name );
@@ -598,7 +579,7 @@ fn CodeBuilder::BuildEnum( this, NamesScopePtr& names_scope_ptr, EnumTypePtr& en
 			LLVMSetInitializer( out_element.llvm_value, out_element.constexpr_value );
 		}
 
-		enum_.elements.push_back( move(out_element) );
+		enum_.elements.insert( element.name, move(out_element) );
 	}
 
 	var u64 bit_width(enum_.underlaying_type.GetSize() * 8s);
