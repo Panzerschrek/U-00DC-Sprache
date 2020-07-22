@@ -165,6 +165,19 @@ fn CodeBuilder::NamesScopeValueToValue( this, NamesScopePtr& names_scope, NamesS
 		return Type( ptr_non_null );
 	}
 
+	auto type_alias_ptr= names_scope_value.Get</TypeAlias/>();
+	if( !type_alias_ptr.empty() )
+	{
+		auto mut lock= type_alias_ptr.lock_mut();
+		auto &mut type_alias= lock.get_ref();
+		BuildTypeAlias( names_scope, type_alias );
+
+		if_var( &t : type_alias.t )
+		{
+			return t;
+		}
+	}
+
 	auto global_variable_ptr= names_scope_value.Get</GlobalVariable/>();
 	if( !global_variable_ptr.empty() )
 	{
@@ -379,35 +392,41 @@ fn CodeBuilder::BuildClass( this, NamesScopePtr& names_scope_ptr, ClassTypePtr& 
 	auto class_members= class_type.lock_imut().get_ref().members;
 	foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
 	{
+		auto field_ptr= member.value().Get</ ClassField />();
+		if( !field_ptr.empty() )
 		{
-			auto field_ptr= member.value().Get</ ClassField />();
-			if( !field_ptr.empty() )
+			auto mut field_lock= field_ptr.lock_mut();
+			var ClassField &mut field= field_lock.get_ref();
+
+			field.t= PrepareType( class_members, global_function_context, field.syntax_element.get_ref().t );
+
+			if( !EnsureTypeComplete( field.t ) )
 			{
-				auto mut field_lock= field_ptr.lock_mut();
-				var ClassField &mut field= field_lock.get_ref();
-
-				field.t= PrepareType( class_members, global_function_context, field.syntax_element.get_ref().t );
-
-				if( !EnsureTypeComplete( field.t ) )
-				{
-					REPORT_ERROR( UsingIncompleteType, class_members, field.syntax_element.get_ref().file_pos, field.t )
-					return; // TODO - continue instead
-				}
-
-				field.index= fields_llvm_types.size();
-
-				auto mut llvm_type= field.t.GetLLVMType();
-				if( field.is_reference ) { unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  } }
-
-				fields_llvm_types.push_back( llvm_type );
+				REPORT_ERROR( UsingIncompleteType, class_members, field.syntax_element.get_ref().file_pos, field.t )
+				return; // TODO - continue instead
 			}
+
+			field.index= fields_llvm_types.size();
+
+			auto mut llvm_type= field.t.GetLLVMType();
+			if( field.is_reference ) { unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  } }
+
+			fields_llvm_types.push_back( llvm_type );
 		}
+
+		auto functions_set_ptr= member.value().Get</ NamesScopeFunctionsSet />();
+		if( !functions_set_ptr.empty() )
 		{
-			auto functions_set_ptr= member.value().Get</ NamesScopeFunctionsSet />();
-			if( !functions_set_ptr.empty() )
-			{
-				BuildFunctionsSet( class_members, ust::to_non_nullable( functions_set_ptr ), false );
-			}
+			BuildFunctionsSet( class_members, ust::to_non_nullable( functions_set_ptr ), false );
+		}
+
+		// Type aliases required for class completeness.
+		auto type_alias_ptr= member.value().Get</ TypeAlias />();
+		if( !type_alias_ptr.empty() )
+		{
+			auto mut lock= type_alias_ptr.lock_mut();
+			auto &mut type_alias= lock.get_ref();
+			BuildTypeAlias( names_scope_ptr, type_alias );
 		}
 	}
 
@@ -466,6 +485,19 @@ fn CodeBuilder::BuildClass( this, NamesScopePtr& names_scope_ptr, ClassTypePtr& 
 	}
 
 	class_.is_complete= true;
+}
+
+fn CodeBuilder::BuildTypeAlias( this, NamesScopePtr& names_scope, TypeAlias& mut type_alias )
+{
+	if( !type_alias.t.empty() )
+	{
+		return;
+	}
+
+	auto syntax_element_ptr= type_alias.syntax_element;
+
+	var FunctionContext mut function_context= CreateGlobalFunctionContext();
+	type_alias.t.reset( PrepareType( names_scope, function_context, syntax_element_ptr.get_ref().type_name ) );
 }
 
 fn CodeBuilder::BuildGlobalVariable( this, NamesScopePtr& names_scope, GlobalVariable& mut global_variable )

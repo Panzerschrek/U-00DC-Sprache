@@ -137,6 +137,34 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	NamesScopeFill( names_scope_ptr, class_ );
 }
 
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::TypeAlias/>& type_alias )
+{
+	auto& name= type_alias.get_ref().name;
+	if( IsKeyword( name ) )
+	{
+		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, type_alias.get_ref().file_pos )
+		return;
+	}
+
+	var TypeAlias mut result_type_alias{ .syntax_element= type_alias };
+
+	var bool mut insert_not_ok= false;
+	{
+		auto mut lock= names_scope_ptr.lock_mut();
+		insert_not_ok= lock.get_ref().AddName( name, move(result_type_alias) ).empty();
+	}
+
+	if( insert_not_ok )
+	{
+		REPORT_ERROR( Redefinition, names_scope_ptr, type_alias.get_ref().file_pos, name )
+	}
+}
+
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::TypeAlias/>& type_alias, ust::shared_ptr_nullable_mut</ClassType/>& class_type )
+{
+	NamesScopeFill( names_scope_ptr, type_alias );
+}
+
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::VariablesDeclaration/>& variables_declaration )
 {
 	auto mut i= 0s;

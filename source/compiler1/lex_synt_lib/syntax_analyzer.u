@@ -213,6 +213,7 @@ private:
 	fn ParseHalt( mut this ) : BlockElement;
 
 	fn ParseClass( mut this ) : Class;
+	fn ParseTypeAlias( mut this ) : TypeAlias;
 
 	fn NotEndOfFile( this ) : bool;
 	fn NextLexem( mut this );
@@ -254,6 +255,10 @@ fn SyntaxAnalyzer::ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : Names
 		else if( IsKeyword( it_.front(), Keyword::struct_ ) || IsKeyword( it_.front(), Keyword::class_ ) )
 		{
 			namespace_elements.push_back( ust::shared_ptr_final</Class/>( ParseClass() ) );
+		}
+		else if( IsKeyword( it_.front(), Keyword::type_ ) )
+		{
+			namespace_elements.push_back( ust::shared_ptr_final</TypeAlias/>( ParseTypeAlias() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::namespace_ ) )
 		{
@@ -1563,6 +1568,10 @@ fn SyntaxAnalyzer::ParseClass( mut this ) : Class
 		{
 			class_.class_elements.push_back( ust::shared_ptr_final</Class/>( ParseClass() ) );
 		}
+		else if( IsKeyword( it_.front(), Keyword::type_ ) )
+		{
+			class_.class_elements.push_back( ust::shared_ptr_final</TypeAlias/>( ParseTypeAlias() ) );
+		}
 		else if( IsKeyword( it_.front(), Keyword::var_ ) )
 		{
 			class_.class_elements.push_back( ust::shared_ptr_final</VariablesDeclaration/>( ParseVariablesDeclaration() ) );
@@ -1616,6 +1625,43 @@ fn SyntaxAnalyzer::ParseClass( mut this ) : Class
 	}
 
 	return move(class_);
+}
+
+fn SyntaxAnalyzer::ParseTypeAlias( mut this ) : TypeAlias
+{
+	if( !IsKeyword( it_.front(), Keyword::type_ ) )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage();
+	}
+
+	var TypeAlias mut type_alias
+	{
+		.file_pos= it_.front().file_pos,
+		.name= it_.front().text,
+	};
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::Assignment )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	type_alias.type_name= ParseTypeName();
+
+	if( it_.front().lexem_type != Lexem::Type::Semicolon )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	return move(type_alias);
 }
 
 fn SyntaxAnalyzer::NotEndOfFile( this ) : bool

@@ -344,6 +344,13 @@ struct Function
 	ust::box_nullable</StructNamedInitializer/> constructor_initializer_list;
 }
 
+struct TypeAlias
+{
+	FilePos file_pos;
+	ust::string8 name;
+	TypeName type_name;
+}
+
 struct ClassField
 {
 	FilePos file_pos;
@@ -356,6 +363,7 @@ struct ClassField
 type ClassElement= ust::variant</ tup[
 	ust::shared_ptr_final</Function/>,
 	ust::shared_ptr_final</Class/>,
+	ust::shared_ptr_final</TypeAlias/>,
 	ust::shared_ptr_final</ClassField/>,
 	ust::shared_ptr_final</VariablesDeclaration/>,
 	ust::shared_ptr_final</AutoVariableDeclaration/>,
@@ -381,6 +389,7 @@ struct Namespace
 type NamespaceElement= ust::variant</ tup[
 	ust::shared_ptr_final</Function/>,
 	ust::shared_ptr_final</Class/>,
+	ust::shared_ptr_final</TypeAlias/>,
 	ust::shared_ptr_final</Namespace/>, // TODO do we really need shared_ptr here?
 	ust::shared_ptr_final</VariablesDeclaration/>,
 	ust::shared_ptr_final</AutoVariableDeclaration/>,

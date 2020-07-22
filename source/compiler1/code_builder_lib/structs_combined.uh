@@ -231,6 +231,13 @@ struct ClassField
 	ust::shared_ptr_final</ Synt::ClassField /> syntax_element;
 }
 
+struct TypeAlias
+{
+	ust::optional</ Type /> t; // empty if incomplete
+
+	ust::shared_ptr_final</ Synt::TypeAlias /> syntax_element;
+}
+
 struct GlobalVariable
 {
 	ust::optional</NamesScopeVariable/> variable; // empty if incomplete
@@ -281,6 +288,7 @@ private:
 		ust::shared_ptr_mut</NamesScopeFunctionsSet/>,
 		ClassTypePtr,
 		ust::shared_ptr_mut</ClassField/>,
+		ust::shared_ptr_mut</TypeAlias/>,
 		ust::shared_ptr_mut</GlobalVariable/>,
 		ust::shared_ptr_mut</GlobalAutoVariable/>,
 		ust::shared_ptr_mut</GlobalStaticAssertsSet/>
