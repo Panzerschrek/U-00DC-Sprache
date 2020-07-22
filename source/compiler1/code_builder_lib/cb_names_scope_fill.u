@@ -139,6 +139,25 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Enum/>& enum_ )
 {
+	auto& name= enum_.get_ref().name;
+	if( IsKeyword( name ) )
+	{
+		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, enum_.get_ref().file_pos )
+		return;
+	}
+
+	var Enum mut result_enum{ .syntax_element= enum_ };
+
+	var bool mut insert_not_ok= false;
+	{
+		auto mut lock= names_scope_ptr.lock_mut();
+		insert_not_ok= lock.get_ref().AddName( name, move(result_enum) ).empty();
+	}
+
+	if( insert_not_ok )
+	{
+		REPORT_ERROR( Redefinition, names_scope_ptr, enum_.get_ref().file_pos, name )
+	}
 }
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Enum/>& enum_, ust::shared_ptr_nullable_mut</ClassType/>& class_type )

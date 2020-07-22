@@ -57,6 +57,11 @@ fn ToString( ClassTypePtr& class_type ) : ust::string8
 	return class_type.lock_imut().get_ref().members.lock_imut().get_ref().ToString();
 }
 
+fn ToString( EnumTypePtr& enum_type ) : ust::string8
+{
+	return ust::string8( "TODO - stringify enum" );
+}
+
 } // namespace ToStringHelper
 
 fn FundamentalType::constructor( U_FundamentalType in_fundamental_type, LLVMTypeRef in_llvm_type )
@@ -216,6 +221,10 @@ fn Type::conversion_constructor( ClassTypePtr mut class_type )
 	( something_( move(class_type) ) )
 {}
 
+fn Type::conversion_constructor( EnumTypePtr mut enum_type )
+	( something_( move(enum_type) ) )
+{}
+
 fn Type::GetFundamentalType(  mut this ) : ust::optional_ref</FundamentalType, true  />'this'
 {
 	return something_.get</FundamentalType/>();
@@ -256,11 +265,25 @@ fn Type::GetClassType( imut this ) : ust::optional_ref</ClassTypePtr, false />'t
 	return something_.get</ClassTypePtr/>();
 }
 
+fn Type::GetEnumType(  mut this ) : ust::optional_ref</EnumTypePtr, true  />'this'
+{
+	return something_.get</EnumTypePtr/>();
+}
+
+fn Type::GetEnumType( imut this ) : ust::optional_ref</EnumTypePtr, false />'this'
+{
+	return something_.get</EnumTypePtr/>();
+}
+
 fn Type::GetLLVMType( this ) : LLVMTypeRef
 {
 	variant_visit( &t : something_ )
 	{
 		static_if( ust::is_same_type</ typeof(t), ClassTypePtr />() )
+		{
+			return t.lock_imut().get_ref().llvm_type;
+		}
+		else if( ust::is_same_type</ typeof(t), EnumTypePtr />() )
 		{
 			return t.lock_imut().get_ref().llvm_type;
 		}
