@@ -39,6 +39,16 @@ fn MangleTypeImpl( Type& t ) : ust::string8
 		res+= "E";
 		return move(res);
 	}
+	if_var( enum_type : t.GetEnumType() )
+	{
+		var ust::string8 mut res;
+		res+= "N";
+
+		AppendNamespacePrefix( res, enum_type.lock_imut().get_ref().names_scope.lock_imut().get_ref() );
+
+		res+= "E";
+		return move(res);
+	}
 
 	return ust::string8();
 }

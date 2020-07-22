@@ -588,7 +588,7 @@ fn CodeBuilder::BuildEnum( this, NamesScopePtr& names_scope_ptr, EnumTypePtr& en
 		var Enum::Element mut out_element{ .name= element.name };
 
 		// TODO - mangle name using enum as namespace.
-		auto name_mangled= MangleGlobalVariable( names_scope_ptr.lock_imut().get_ref(), enum_declaration.name + "$" + element.name );
+		auto name_mangled= MangleGlobalVariable( enum_.names_scope.lock_imut().get_ref(), element.name );
 		unsafe
 		{
 			out_element.constexpr_value= LLVMConstInt( enum_.llvm_type, u64(enum_.elements.size()), LLVMBool::False );

@@ -238,6 +238,8 @@ struct ClassField
 
 struct Enum
 {
+	NamesScopePtr names_scope; // Contains nothing, needed only for mangling.
+
 	FundamentalType underlaying_type;
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null; // null if incomplete. TODO - maybe use underlaying_type.llvm_type instead?
 
