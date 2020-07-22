@@ -490,14 +490,22 @@ fn CodeBuilder::BuildConstructorInitializer( this, NamesScopePtr& names_scope, F
 		}
 
 		var Variable src_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().get_ref() );
-		auto src_type_ref= src_var.t.GetFundamentalType();
 
-		if( src_type_ref.empty() )
+		var FundamentalType mut src_type;
+		if_var( &fundamental_type : src_var.t.GetFundamentalType() )
+		{
+			src_type= fundamental_type;
+		}
+		if_var( &enum_type : src_var.t.GetEnumType() )
+		{
+			src_type= enum_type.lock_imut().get_ref().underlaying_type;
+		}
+
+		if( src_type.llvm_type == LLVMTypeRef::Null )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope, file_pos, variable.t, src_var.t )
 			return LLVMValueRef::Null;
 		}
-		var FundamentalType& src_type= src_type_ref.get_ref();
 
 		auto mut llvm_value= CreateMoveToLLVMRegisterInstruction( src_var, function_context );
 		unsafe
