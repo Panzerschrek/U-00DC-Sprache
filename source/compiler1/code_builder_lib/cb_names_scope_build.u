@@ -23,6 +23,12 @@ fn CodeBuilder::NamesScopeBuild( this, NamesScopePtr& names_scope_ptr )
 			NamesScopeBuildElement( names_scope_ptr, ust::to_non_nullable( class_type ) );
 		}
 
+		auto enum_type= el.value().Get</ Enum />();
+		if( !enum_type.empty() )
+		{
+			BuildEnum( names_scope_ptr, ust::to_non_nullable( enum_type ) );
+		}
+
 		auto namespace_= el.value().Get</ NamesScope />();
 		if( !namespace_.empty() )
 		{

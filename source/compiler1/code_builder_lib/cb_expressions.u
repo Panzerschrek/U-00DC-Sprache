@@ -811,13 +811,13 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names_scope, file_pos, r_type, l_type, BinaryOperatorToString( operator ) )
 			return ErrorValue();
 		}
-		if( l_fundamental_type.empty() )
+		if( l_fundamental_type.empty() && l_type.GetEnumType().empty() )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, file_pos, l_type )
 			return ErrorValue();
 		}
 
-		var bool if_float= IsFloatingPoint( l_fundamental_type.get_ref().fundamental_type );
+		var bool if_float= !l_fundamental_type.empty() && IsFloatingPoint( l_fundamental_type.get_ref().fundamental_type );
 
 		var Variable mut res
 		{

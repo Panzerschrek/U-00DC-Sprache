@@ -50,7 +50,7 @@ U_TEST( EnumsRestrictionsTest )
 			E::a + E::b; // basic arithmetic operations for enums forbidden
 			-E::a; // unary minus for enums forbidden
 			var i32 x= E::a; // Implicit conversion to int forbidden
-			var E y= E::b;
+			var E mut y= E::b;
 			y+= E::a; // additive assignment operations forbidden
 			E::a | E::b; // Logical operations forbidden
 			E::a && E::b; // Lazy logical operations forbidden
@@ -91,6 +91,19 @@ U_TEST( NameNotFound_ForUnderlayingEnumType_Test )
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
 	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
+}
+
+U_TEST( NameNotFound_ForEnumElement )
+{
+	static const char c_program_text[]=
+	R"(
+		enum E{ A, B, C }
+		fn Foo(){ var E x= E::D; }
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 3u ) );
 }
 
 U_TEST( NameIsNotTypeName_ForUnderlayingEnumType_Test )

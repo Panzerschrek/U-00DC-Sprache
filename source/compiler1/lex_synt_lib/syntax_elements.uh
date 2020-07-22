@@ -363,6 +363,7 @@ struct ClassField
 type ClassElement= ust::variant</ tup[
 	ust::shared_ptr_final</Function/>,
 	ust::shared_ptr_final</Class/>,
+	ust::shared_ptr_final</Enum/>,
 	ust::shared_ptr_final</TypeAlias/>,
 	ust::shared_ptr_final</ClassField/>,
 	ust::shared_ptr_final</VariablesDeclaration/>,
@@ -379,6 +380,21 @@ struct Class
 	ClassElements class_elements;
 }
 
+struct Enum
+{
+	FilePos file_pos;
+	ust::string8 name;
+	ComplexName underlaying_type;
+
+	struct Element
+	{
+		FilePos file_pos;
+		ust::string8 name;
+	}
+
+	ust::vector</Element/> elements;
+}
+
 struct Namespace
 {
 	FilePos file_pos;
@@ -389,6 +405,7 @@ struct Namespace
 type NamespaceElement= ust::variant</ tup[
 	ust::shared_ptr_final</Function/>,
 	ust::shared_ptr_final</Class/>,
+	ust::shared_ptr_final</Enum/>,
 	ust::shared_ptr_final</TypeAlias/>,
 	ust::shared_ptr_final</Namespace/>, // TODO do we really need shared_ptr here?
 	ust::shared_ptr_final</VariablesDeclaration/>,

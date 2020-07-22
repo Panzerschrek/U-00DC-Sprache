@@ -337,7 +337,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( this, ClassTypePtr& class_type )
 
 fn CodeBuilder::BuildCopyConstructorPart( this, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t )
 {
-	if( !t.GetFundamentalType().empty() )
+	if( !t.GetFundamentalType().empty() || !t.GetEnumType().empty() )
 	{
 		unsafe
 		{

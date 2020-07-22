@@ -105,7 +105,8 @@ public:
 	fn conversion_constructor( FundamentalType mut fundamental_type );
 	fn conversion_constructor( ArrayType mut array_type );
 	fn conversion_constructor( FunctionType mut function_type );
-	fn conversion_constructor( ClassTypePtr mut function_type );
+	fn conversion_constructor( ClassTypePtr mut class_type );
+	fn conversion_constructor( EnumTypePtr mut enum_type );
 
 	fn GetFundamentalType(  mut this ) : ust::optional_ref</FundamentalType, true  />'this';
 	fn GetFundamentalType( imut this ) : ust::optional_ref</FundamentalType, false />'this';
@@ -118,6 +119,9 @@ public:
 
 	fn GetClassType(  mut this ) : ust::optional_ref</ClassTypePtr, true  />'this';
 	fn GetClassType( imut this ) : ust::optional_ref</ClassTypePtr, false />'this';
+
+	fn GetEnumType(  mut this ) : ust::optional_ref</EnumTypePtr, true  />'this';
+	fn GetEnumType( imut this ) : ust::optional_ref</EnumTypePtr, false />'this';
 
 	fn GetLLVMType( this ) : LLVMTypeRef;
 
@@ -136,7 +140,8 @@ private:
 		FundamentalType,
 		ArrayType,
 		FunctionType,
-		ClassTypePtr
+		ClassTypePtr,
+		EnumTypePtr
 	] /> something_;
 }
 
@@ -231,6 +236,24 @@ struct ClassField
 	ust::shared_ptr_final</ Synt::ClassField /> syntax_element;
 }
 
+struct Enum
+{
+	NamesScopePtr names_scope; // Contains nothing, needed only for mangling.
+
+	FundamentalType underlaying_type;
+
+	struct Element
+	{
+		LLVMValueRef llvm_value= LLVMValueRef::Null; // Pointer to global variable
+		LLVMValueRef constexpr_value= LLVMValueRef::Null;
+	}
+	ust::unordered_map</ ust::string8, Element /> elements;
+
+	ust::shared_ptr_final</ Synt::Enum /> syntax_element;
+}
+
+type EnumTypePtr= ust::shared_ptr_mut</Enum/>;
+
 struct TypeAlias
 {
 	ust::optional</ Type /> t; // empty if incomplete
@@ -288,6 +311,7 @@ private:
 		ust::shared_ptr_mut</NamesScopeFunctionsSet/>,
 		ClassTypePtr,
 		ust::shared_ptr_mut</ClassField/>,
+		EnumTypePtr,
 		ust::shared_ptr_mut</TypeAlias/>,
 		ust::shared_ptr_mut</GlobalVariable/>,
 		ust::shared_ptr_mut</GlobalAutoVariable/>,

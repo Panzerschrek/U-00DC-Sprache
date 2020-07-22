@@ -285,7 +285,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AssignmentOperator& assignment_operator ) : BlockElementBuildInfo
 {
 	auto r= BuildExpressionCodeEnsureVariable( names_scope, function_context, assignment_operator.r );
-	if( r.t.GetFundamentalType().empty() )
+	if( r.t.GetFundamentalType().empty() && r.t.GetEnumType().empty() )
 	{
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, assignment_operator.file_pos, r.t )
 		return BlockElementBuildInfo();
