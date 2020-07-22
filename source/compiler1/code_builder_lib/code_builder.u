@@ -522,7 +522,7 @@ fn CodeBuilder::BuildClass( this, NamesScopePtr& names_scope_ptr, ClassTypePtr& 
 
 fn CodeBuilder::BuildEnum( this, NamesScopePtr& names_scope_ptr, EnumTypePtr& enum_type )
 {
-	if( enum_type.lock_imut().get_ref().llvm_type != LLVMTypeRef::Null )
+	if( enum_type.lock_imut().get_ref().underlaying_type.llvm_type != LLVMTypeRef::Null )
 	{
 		return;
 	}
@@ -535,7 +535,6 @@ fn CodeBuilder::BuildEnum( this, NamesScopePtr& names_scope_ptr, EnumTypePtr& en
 
 	// Default underlaying type is 32bit. TODO - maybe do it platform-dependent?
 	enum_.underlaying_type= FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ );
-	enum_.llvm_type= enum_.underlaying_type.llvm_type;
 	if( !enum_declaration.underlaying_type.name.empty() )
 	{
 		var FunctionContext mut function_context= CreateGlobalFunctionContext();
@@ -550,7 +549,6 @@ fn CodeBuilder::BuildEnum( this, NamesScopePtr& names_scope_ptr, EnumTypePtr& en
 		else
 		{
 			enum_.underlaying_type= fundamental_type.get_ref();
-			enum_.llvm_type= enum_.underlaying_type.llvm_type;
 		}
 	}
 
@@ -572,8 +570,8 @@ fn CodeBuilder::BuildEnum( this, NamesScopePtr& names_scope_ptr, EnumTypePtr& en
 		auto name_mangled= MangleGlobalVariable( enum_.names_scope.lock_imut().get_ref(), element.name );
 		unsafe
 		{
-			out_element.constexpr_value= LLVMConstInt( enum_.llvm_type, u64(enum_.elements.size()), LLVMBool::False );
-			out_element.llvm_value= LLVMAddGlobal( module_, enum_.llvm_type, name_mangled.front() );
+			out_element.constexpr_value= LLVMConstInt( enum_.underlaying_type.llvm_type, u64(enum_.elements.size()), LLVMBool::False );
+			out_element.llvm_value= LLVMAddGlobal( module_, enum_.underlaying_type.llvm_type, name_mangled.front() );
 			LLVMSetLinkage( out_element.llvm_value, LLVMLinkage::Internal );
 			LLVMSetGlobalConstant( out_element.llvm_value, LLVMBool::True );
 			LLVMSetInitializer( out_element.llvm_value, out_element.constexpr_value );

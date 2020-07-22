@@ -285,7 +285,7 @@ fn Type::GetLLVMType( this ) : LLVMTypeRef
 		}
 		else if( ust::is_same_type</ typeof(t), EnumTypePtr />() )
 		{
-			return t.lock_imut().get_ref().llvm_type;
+			return t.lock_imut().get_ref().underlaying_type.llvm_type;
 		}
 		else
 		{
