@@ -139,6 +139,18 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::TypeAlias/>& type_alias )
 {
+	var TypeAlias mut result_type_alias{ .syntax_element= type_alias };
+
+	var bool mut insert_not_ok= false;
+	{
+		auto mut lock= names_scope_ptr.lock_mut();
+		insert_not_ok= lock.get_ref().AddName( type_alias.get_ref().name, move(result_type_alias) ).empty();
+	}
+
+	if( insert_not_ok )
+	{
+		REPORT_ERROR( Redefinition, names_scope_ptr, type_alias.get_ref().file_pos, type_alias.get_ref().name )
+	}
 }
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::TypeAlias/>& type_alias, ust::shared_ptr_nullable_mut</ClassType/>& class_type )

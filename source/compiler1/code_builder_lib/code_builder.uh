@@ -49,6 +49,7 @@ private:
 	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</ClassType/>& class_type );
 	fn BuildFunctionsSet( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/> functions_set, bool build_body );
 	fn BuildClass( this, NamesScopePtr& names_scope_ptr, ClassTypePtr& class_type );
+	fn BuildTypeAlias( this, NamesScopePtr& names_scope, TypeAlias& mut type_alias );
 	fn BuildGlobalVariable( this, NamesScopePtr& names_scope, GlobalVariable& mut global_variable );
 	fn BuildGlobalAutoVariable( this, NamesScopePtr& names_scope, GlobalAutoVariable& mut global_auto_variable );
 
