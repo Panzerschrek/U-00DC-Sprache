@@ -50,7 +50,7 @@ U_TEST( EnumsRestrictionsTest )
 			E::a + E::b; // basic arithmetic operations for enums forbidden
 			-E::a; // unary minus for enums forbidden
 			var i32 x= E::a; // Implicit conversion to int forbidden
-			var E y= E::b;
+			var E mut y= E::b;
 			y+= E::a; // additive assignment operations forbidden
 			E::a | E::b; // Logical operations forbidden
 			E::a && E::b; // Lazy logical operations forbidden

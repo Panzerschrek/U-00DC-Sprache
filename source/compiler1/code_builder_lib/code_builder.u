@@ -600,6 +600,19 @@ fn CodeBuilder::BuildEnum( this, NamesScopePtr& names_scope_ptr, EnumTypePtr& en
 
 		enum_.elements.push_back( move(out_element) );
 	}
+
+	var u64 bit_width(enum_.underlaying_type.GetSize() * 8s);
+	if( bit_width < 32u64 ) // Assume that 64 bits are enough for all enums.
+	{
+		auto max_value_plus_one=
+			1u64 << ( bit_width - select( IsSignedInteger( enum_.underlaying_type.fundamental_type ) ? 1u64 : 0u64 ) );
+		auto max_value= max_value_plus_one - 1u64;
+
+		if( u64(enum_.elements.size()) > max_value )
+		{
+			REPORT_ERROR( UnderlayingTypeForEnumIsTooSmall, names_scope_ptr, enum_declaration.file_pos, enum_.elements.size() - 1s, max_value )
+		}
+	}
 }
 
 fn CodeBuilder::BuildTypeAlias( this, NamesScopePtr& names_scope, TypeAlias& mut type_alias )
