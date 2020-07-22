@@ -93,6 +93,19 @@ U_TEST( NameNotFound_ForUnderlayingEnumType_Test )
 	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
 }
 
+U_TEST( NameNotFound_ForEnumElement )
+{
+	static const char c_program_text[]=
+	R"(
+		enum E{ A, B, C }
+		fn Foo(){ var E x= E::D; }
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 3u ) );
+}
+
 U_TEST( NameIsNotTypeName_ForUnderlayingEnumType_Test )
 {
 	static const char c_program_text[]=

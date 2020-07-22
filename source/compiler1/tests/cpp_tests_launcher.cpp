@@ -134,6 +134,7 @@ bool FilterTest( const std::string& test_name )
 		"NameIsNotTypeName_ForTypedef_Test",
 		"NameIsNotTypeName_ForUnderlayingEnumType_Test",
 		"NameNotFoundTest",
+		"NameNotFound_ForEnumElement",
 		"NameNotFound_ForTypedef_Test",
 		"NameNotFound_ForUnderlayingEnumType_Test",
 		"NamespacesTest",
