@@ -303,7 +303,7 @@ public:
 		return ust::shared_ptr_nullable_mut</T/>(x.get_ref());
 	}
 
-private:
+public:
 	ust::variant</ tup[
 		NamesScopeMutPtr,
 		ust::shared_ptr_mut</Type/>,

@@ -47,8 +47,18 @@ private:
 	fn NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scope_ptr, Synt::NamespaceElements& namespace_elements );
 
 	fn NamesScopeBuild( this, NamesScopePtr& names_scope_ptr );
+	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScope/>& namespace_ );
+	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</Type/>& t );
+	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeVariable/>& variable );
 	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/>& functions_set );
 	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</ClassType/>& class_type );
+	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</ClassField/>& class_field );
+	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</Enum/>& enum_type );
+	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</TypeAlias/>& type_alias_ptr );
+	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalVariable/>& global_variable_ptr );
+	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalAutoVariable/>& global_auto_variable_ptr );
+	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalStaticAssertsSet/>& global_static_asserts_set_ptr );
+
 	fn BuildFunctionsSet( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/> functions_set, bool build_body );
 	fn BuildClass( this, NamesScopePtr& names_scope_ptr, ClassTypePtr& class_type );
 	fn BuildEnum( this, NamesScopePtr& names_scope_ptr, EnumTypePtr& enum_type );
