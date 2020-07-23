@@ -173,9 +173,7 @@ fn CodeBuilder::PrepareFunctionType( this, NamesScopePtr& names_scope, FunctionC
 		}
 		else
 		{
-			// TODO - do not use temporary variable, fix reference protection error.
-			auto s= u32(llvm_arg_types.size());
-			res.llvm_type= LLVMFunctionType( ret_llvm_type, llvm_arg_types.front(), s, LLVMBool::False );
+			res.llvm_type= LLVMFunctionType( ret_llvm_type, cast_imut(llvm_arg_types).front(), u32(llvm_arg_types.size()), LLVMBool::False );
 		}
 	}
 

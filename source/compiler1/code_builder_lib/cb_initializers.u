@@ -121,8 +121,7 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 				}
 				else
 				{
-					auto s= u32(elements_constants.size() );
-					return LLVMConstArray( element_variable.t.GetLLVMType(), elements_constants.front(), s );
+					return LLVMConstArray( element_variable.t.GetLLVMType(), cast_imut(elements_constants).front(), u32(elements_constants.size()) );
 				}
 			}
 		}
@@ -346,8 +345,7 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 				}
 				else
 				{
-					auto s= u32(elements_constants.size() );
-					return LLVMConstArray( element_variable.t.GetLLVMType(), elements_constants.front(), s );
+					return LLVMConstArray( element_variable.t.GetLLVMType(), cast_imut(elements_constants).front(), u32(elements_constants.size()) );
 				}
 			}
 		}

@@ -1232,9 +1232,7 @@ fn CodeBuilder::DoCallFunction(
 		}
 		else
 		{
-			// TODO - do not use temporary variable, fix reference protection error.
-			auto s= u32(llvm_args.size());
-			result.llvm_value= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, llvm_args.front(), s, "\0"[0] );
+			result.llvm_value= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, cast_imut(llvm_args).front(), u32(llvm_args.size()), "\0"[0] );
 		}
 	}
 

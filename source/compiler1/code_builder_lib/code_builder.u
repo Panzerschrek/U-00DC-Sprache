@@ -478,8 +478,7 @@ fn CodeBuilder::BuildClass( this, NamesScopePtr& names_scope_ptr, ClassTypePtr& 
 			}
 			else
 			{
-				auto s= u32(fields_llvm_types.size()); // TODO - fix reference protection error
-				LLVMStructSetBody( class_.llvm_type, fields_llvm_types.front(), s, LLVMBool::False );
+				LLVMStructSetBody( class_.llvm_type, cast_imut(fields_llvm_types).front(), u32(fields_llvm_types.size()), LLVMBool::False );
 			}
 		}
 
