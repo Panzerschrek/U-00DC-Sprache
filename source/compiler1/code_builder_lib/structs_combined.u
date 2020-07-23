@@ -370,6 +370,51 @@ op Type::!=( Type& l, Type& r ) : bool
 }
 
 //
+// Value
+//
+
+namespace ValueKindHelper
+{
+
+fn GetValueKind( Variable& v ) : ust::array_view_imut</ char8 />
+{
+	return "variable";
+}
+
+fn GetValueKind( Type& v ) : ust::array_view_imut</ char8 />
+{
+	return "type";
+}
+
+fn GetValueKind( FunctionsSet& v ) : ust::array_view_imut</ char8 />
+{
+	return "functions set";
+}
+
+fn GetValueKind( ThisMethodsSet& v ) : ust::array_view_imut</ char8 />
+{
+	return "this + methods set";
+}
+
+fn GetValueKind( ErrorValue& v ) : ust::array_view_imut</ char8 />
+{
+	return "error value";
+}
+
+} // namespace ValueKindHelper
+
+fn GetValueKindName( Value& v ) : ust::array_view_imut</ char8 />
+{
+	variant_visit( &el : v )
+	{
+		return ValueKindHelper::GetValueKind( el );
+	}
+
+	halt;
+}
+
+
+//
 // NamesScope
 //
 

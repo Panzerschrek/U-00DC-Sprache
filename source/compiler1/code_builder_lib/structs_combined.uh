@@ -205,6 +205,8 @@ type Value= ust::variant</ tup[
 	ErrorValue
 	] />;
 
+fn GetValueKindName( Value& v ) : ust::array_view_imut</ char8 />;
+
 //
 // NamesScopeValue
 //

@@ -14,7 +14,7 @@ fn CodeBuilder::BuildExpressionCodeEnsureVariable( this, NamesScopePtr& names_sc
 		return take(v);
 	}
 
-	REPORT_ERROR( ExpectedVariable, names_scope, Synt::GetFilePos(expression), ust::string8( /* TODO - print value kind */ ) )
+	REPORT_ERROR( ExpectedVariable, names_scope, Synt::GetFilePos(expression), GetValueKindName(value) )
 
 	var Variable mut dummy;
 	dummy.t= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
