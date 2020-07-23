@@ -134,13 +134,9 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 			{
 				if( function_context.whole_this_is_unavailable )
 				{
-					foreach( &field_name : function_context.uninitialized_this_fields )
+					if( !function_context.uninitialized_this_fields.find( named_operand.name ).empty() )
 					{
-						if( field_name == named_operand.name )
-						{
-							REPORT_ERROR( FieldIsNotInitializedYet, names_scope, named_operand.file_pos, field_name )
-							break;
-						}
+						REPORT_ERROR( FieldIsNotInitializedYet, names_scope, named_operand.file_pos, named_operand.name )
 					}
 				}
 

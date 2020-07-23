@@ -743,7 +743,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 	auto class_members= class_type.lock_imut().get_ref().members;
 
 	// Check for errors, build list of initialized fields.
-	var ust::vector</ust::string8/> mut initialized_fields;
+	var ust::unordered_map</ust::string8, i32/> mut initialized_fields; // TODO - use unordered_set
 	auto mut have_fields_errors= false;
 	foreach( &member_initializer : constructor_initialization_list.members_initializers )
 	{
@@ -764,25 +764,15 @@ fn CodeBuilder::BuildConstructorInitialization(
 			}
 			else
 			{
-				auto mut found= false;
-				foreach( &prev_field : initialized_fields )
-				{
-					if( member_initializer.name == prev_field )
-					{
-						found= true;
-						break;
-					}
-				}
-
-				if( found )
+				if( !initialized_fields.find( member_initializer.name ).empty() )
 				{
 					have_fields_errors= true;
 					REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope, member_initializer.file_pos, member_initializer.name )
 				}
 				else
 				{
-					initialized_fields.push_back( member_initializer.name );
-					function_context.uninitialized_this_fields.push_back( member_initializer.name );
+					initialized_fields.insert( member_initializer.name, 0 );
+					function_context.uninitialized_this_fields.insert( member_initializer.name, 0 );
 				}
 			}
 		}
@@ -795,16 +785,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 		auto field_ptr= class_member.value().Get</ ClassField />();
 		if( !field_ptr.empty() )
 		{
-			auto mut found= false;
-			foreach( &prev_field : initialized_fields )
-			{
-				if( class_member.key() == prev_field )
-				{
-					found= true;
-					break;
-				}
-			}
-			if( !found )
+			if( initialized_fields.find( class_member.key() ).empty() )
 			{
 				uninitialized_fields.push_back( class_member.key() );
 			}
@@ -891,19 +872,8 @@ fn CodeBuilder::BuildConstructorInitialization(
 			BuildInitializer( names_scope, function_context, field_variable, member_initializer.initializer.get_ref() );
 		}
 
-		// Erase field from list of uninitialized fields.
-		auto mut i= 0s;
-		while( i < function_context.uninitialized_this_fields.size() )
-		{
-			if( member_initializer.name == function_context.uninitialized_this_fields[i] )
-			{
-				auto back_index= function_context.uninitialized_this_fields.size() - 1s;
-				function_context.uninitialized_this_fields.swap( i, back_index );
-				function_context.uninitialized_this_fields.drop_back();
-				break;
-			}
-			++i;
-		}
+		function_context.uninitialized_this_fields.erase( member_initializer.name );
+
 	}
 }
 

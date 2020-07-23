@@ -28,7 +28,7 @@ public:
 	LLVMValueRef s_ret= LLVMValueRef::Null;
 
 	ust::optional</Variable/> this_;
-	ust::vector</ust::string8/> uninitialized_this_fields; // TODO - use something like "unordered_set"
+	ust::unordered_map</ust::string8, i32/> uninitialized_this_fields; // TODO - use something like "unordered_set"
 	bool whole_this_is_unavailable= false;
 
 	LLVMBasicBlockRef alloca_basic_block= LLVMBasicBlockRef::Null;
