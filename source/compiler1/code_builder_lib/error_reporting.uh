@@ -43,4 +43,6 @@ fn PreprocessErrorArg( T& x ) : ust::string8
 	}
 }
 
+fn NormalizeErrors( ust::vector</CodeBuilderError/> &mut errors );
+
 } // namespace U

@@ -3,6 +3,31 @@ import "error_reporting.uh"
 namespace U
 {
 
+op CodeBuilderError::==(CodeBuilderError& l, CodeBuilderError& r) : bool
+{
+	return
+		l.code == r.code &&
+		l.file_pos == r.file_pos &&
+		l.text == r.text;
+}
+
+op CodeBuilderError::!=(CodeBuilderError& l, CodeBuilderError& r) : bool
+{
+	return !(l == r);
+}
+
+op CodeBuilderError::<(CodeBuilderError& l, CodeBuilderError& r) : bool
+{
+	// Sort by position in file, then, by code, then, by text.
+	if( l.file_pos != r.file_pos )
+	{
+		return l.file_pos < r.file_pos;
+	}
+	return u32(l.code) < u32(r.code);
+	// TODO - compare also texts.
+	//return l.text < r.text;
+}
+
 fn ReportError( CodeBuilderErrorCode code, FilePos file_pos, ust::vector</ust::string8/>& format_args ) : CodeBuilderError
 {
 	var ust::string8 mut result_error_text;
@@ -37,6 +62,44 @@ fn ReportError( CodeBuilderErrorCode code, FilePos file_pos, ust::vector</ust::s
 	};
 
 	return move(err);
+}
+
+fn NormalizeErrors( ust::vector</CodeBuilderError/> &mut errors )
+{
+	// Use simple bubble sorting. TODO - use REAL sorting.
+	{
+		auto mut i= 0s;
+		while( i < errors.size() )
+		{
+			auto mut j= i + 1s;
+			while( j < errors.size() )
+			{
+				if( cast_imut(errors)[j] < cast_imut(errors)[i] )
+				{
+					errors.swap( i, j );
+				}
+				++j;
+			}
+			++i;
+		}
+	}
+
+	// Leave only unique errors.
+	// TODO - do not use temporary container.
+	if( !errors.empty() )
+	{
+		var ust::vector</CodeBuilderError/> mut res;
+		res.push_back( errors.front() );
+		foreach( &err : errors )
+		{
+			if( err != res.back() )
+			{
+				res.push_back(err);
+			}
+		}
+
+		errors= move(res);
+	}
 }
 
 } // namespace U

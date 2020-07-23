@@ -122,6 +122,8 @@ fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : Buil
 		.errors= errors_container.lock_imut().get_ref(),
 	 };
 
+	NormalizeErrors( res.errors );
+
 	return move(res);
 }
 

@@ -23,6 +23,10 @@ struct CodeBuilderError
 	CodeBuilderErrorCode code;
 	FilePos file_pos;
 	ust::string8 text;
+
+	op==(CodeBuilderError& l, CodeBuilderError& r) : bool;
+	op!=(CodeBuilderError& l, CodeBuilderError& r) : bool;
+	op<(CodeBuilderError& l, CodeBuilderError& r) : bool;
 }
 
 } // namespace U
