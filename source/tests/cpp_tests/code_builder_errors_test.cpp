@@ -460,15 +460,10 @@ U_TEST(OperationNotSupportedForThisTypeTest3)
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( build_result.errors.size() >= 4u );
-	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( build_result.errors[0].file_pos.GetLine() == 8u );
-	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( build_result.errors[1].file_pos.GetLine() == 9u );
-	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( build_result.errors[2].file_pos.GetLine() == 10u );
-	U_TEST_ASSERT( build_result.errors[3].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( build_result.errors[3].file_pos.GetLine() == 11u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  8u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType,  9u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 10u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::OperationNotSupportedForThisType, 11u ) );
 }
 
 U_TEST(TypesMismatchTest0)
