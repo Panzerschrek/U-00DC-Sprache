@@ -1,7 +1,6 @@
 import "lexical_analyzer.uh"
 import "program_string.uh"
 
-
 namespace U
 {
 
@@ -341,7 +340,6 @@ op Lexem::!=( Lexem& l, Lexem& r ) : bool
 	return !(l == r );
 }
 
-
 fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnalysisResult
 {
 	var [ tup[ ust::string8, Lexem::Type ], 53 ]
@@ -403,7 +401,6 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 		[ "!", Lexem::Type::Not ],
 		[ "'", Lexem::Type::Apostrophe ],
 	];
-	auto c_max_fixed_lexem_size= 3s;
 
 	var LexicalAnalysisResult mut result;
 
@@ -411,8 +408,6 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 
 	var u32 mut line= 1u; // Count lines from "1", in human-readable format.
 	var u32 mut column= 0u;
-
-	var ust::string8 mut fixed_lexem_str;
 
 	while( !it.empty() )
 	{
@@ -423,7 +418,7 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 		// single line comment
 		if( c == "/"c32 && it.size() >= 2s && it[1s] == "/"c8 )
 		{
-			while( !it.empty()  && !IsNewline(sprache_char(it.front())) )
+			while( !it.empty() && !IsNewline(sprache_char(it.front())) )
 			{
 				it.drop_front();
 			}
@@ -458,6 +453,7 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 				if( l[0].size() <= it.size() && l[0] == it.subrange( 0s, l[0].size() ) )
 				{
 					lexem.lexem_type= l[1];
+					lexem.text= l[0];
 					it= it.subrange( l[0].size(), it.size() );
 					break;
 				}

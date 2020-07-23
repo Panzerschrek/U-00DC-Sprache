@@ -1764,7 +1764,7 @@ fn SyntaxAnalyzer::PushErrorMessage( mut this )
 		var SyntaxErrorMessage mut error_message
 		{
 			.file_pos= it_.front().file_pos,
-			.text= "Syntax error - unexpected lexem: " + it_.front().text
+			.text= "Syntax error - unexpected lexem: \"" + it_.front().text + "\""
 		};
 		error_messages_.push_back( move(error_message) );
 	}
