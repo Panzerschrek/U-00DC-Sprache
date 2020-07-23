@@ -849,11 +849,7 @@ U_TEST( ExpectedVariableInArraySizeTest0 )
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedVariable );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 4u ) );
 }
 
 U_TEST(BreakOutsideLoopTest)
@@ -1522,16 +1518,10 @@ U_TEST(ExpectedVariableInIncrementOrDecrementTest0)
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( build_result.errors.size() >= 4u );
-
-	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::ExpectedVariable );
-	U_TEST_ASSERT( build_result.errors[0].file_pos.GetLine() == 7u );
-	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::ExpectedVariable );
-	U_TEST_ASSERT( build_result.errors[1].file_pos.GetLine() == 8u );
-	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::ExpectedVariable );
-	U_TEST_ASSERT( build_result.errors[2].file_pos.GetLine() == 9u );
-	U_TEST_ASSERT( build_result.errors[3].code == CodeBuilderErrorCode::ExpectedVariable );
-	U_TEST_ASSERT( build_result.errors[3].file_pos.GetLine() == 10u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 7u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 8u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 9u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 10u ) );
 }
 
 U_TEST(ExpectedVariableInReferenceCastOperatorsTest0)
