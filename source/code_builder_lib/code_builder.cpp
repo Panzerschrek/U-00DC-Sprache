@@ -2834,6 +2834,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 
 	function_context.llvm_ir_builder.CreateBr( test_block );
 
+	const ReferencesGraph variables_state_before_loop= function_context.variables_state;
+
 	// Test block.
 	function_context.function->getBasicBlockList().push_back( test_block );
 	function_context.llvm_ir_builder.SetInsertPoint( test_block );
@@ -2896,6 +2898,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	function_context.function->getBasicBlockList().push_back( block_after_loop );
 	function_context.llvm_ir_builder.SetInsertPoint( block_after_loop );
 
+	const auto errors= ReferencesGraph::CheckWhileBlokVariablesState( variables_state_before_loop, function_context.variables_state, c_style_for_operator.block_.end_file_pos_ );
+	names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
+
 	CallDestructors( loop_variables_storage, loop_names_scope, function_context, c_style_for_operator.file_pos_ );
 
 	return BlockBuildInfo();
@@ -2915,10 +2920,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	function_context.function->getBasicBlockList().push_back( test_block );
 	function_context.llvm_ir_builder.SetInsertPoint( test_block );
 
+	const ReferencesGraph variables_state_before_while= function_context.variables_state;
+
 	const StackVariablesStorage temp_variables_storage( function_context );
 	const Variable condition_expression= BuildExpressionCodeEnsureVariable( while_operator.condition_, names, function_context );
-
-	ReferencesGraph variables_state_before_while= function_context.variables_state;
 
 	const FilePos condition_file_pos= Synt::GetExpressionFilePos( while_operator.condition_ );
 	if( condition_expression.type != bool_type_ )
