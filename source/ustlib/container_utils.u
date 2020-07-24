@@ -29,11 +29,9 @@ fn call_destructor( T&mut t ) unsafe
 	}
 	else if( typeinfo</T/>.is_array )
 	{
-		var size_type mut i(0);
-		while( i < typeinfo</T/>.element_count )
+		for( var size_type mut i(0); i < typeinfo</T/>.element_count; ++i )
 		{
 			unsafe{ ust::call_destructor( t[i] ); }
-			++i;
 		}
 	}
 }

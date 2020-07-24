@@ -33,11 +33,9 @@ public:
 			capacity_= max( get_first_allocation_size(), other.size_ );
 			ptr_= ptr_type( cast_ref_unsafe</T/>( memory_allocate( capacity_ * c_element_size_ ) ) );
 
-			var size_type mut i(0);
-			while( i < size_ )
+			for( var size_type mut i(0); i < size_; ++i )
 			{
 				move_unsafe( ptr_[i], other.ptr_[i] ); // Copy-constructor called here.
-				++i;
 			}
 		}
 	}
@@ -53,11 +51,9 @@ public:
 			capacity_= max( get_first_allocation_size(), size_ );
 			ptr_= ptr_type( cast_ref_unsafe</T/>( memory_allocate( capacity_ * c_element_size_ ) ) );
 
-			var size_type mut i(0);
-			while( i < size_ )
+			for( var size_type mut i(0); i < size_; ++i )
 			{
 				move_unsafe( ptr_[i], value ); // Copy-constructor called here.
-				++i;
 			}
 		}
 	}
@@ -73,11 +69,9 @@ public:
 			capacity_= max( get_first_allocation_size(), size_ );
 			ptr_= ptr_type( cast_ref_unsafe</T/>( memory_allocate( capacity_ * c_element_size_ ) ) );
 
-			var size_type mut i(0);
-			while( i < size_ )
+			for( var size_type mut i(0); i < size_; ++i )
 			{
-				ptr_[i].constructor(); // Call default constructor here.
-				++i;
+				ptr_[i].constructor(); // Call default constructor here. TODO - what if element is tuple?
 			}
 		}
 	}
@@ -132,11 +126,9 @@ public:
 	{
 		unsafe
 		{
-			var size_type mut i(0);
-			while( i < size_ )
+			for( var size_type mut i(0); i < size_; ++i )
 			{
 				call_destructor( ptr_[i] );
-				++i;
 			}
 			if( !ptr_.is_null() )
 			{
@@ -304,11 +296,9 @@ public:
 			auto new_size= add_overflow_check_halt( size_, count );
 			ensure_capacity( new_size );
 
-			var size_type mut i(0);
-			while( i < count )
+			for( var size_type mut i(0); i < count; ++i )
 			{
 				move_unsafe</T/>( ptr_[ size_ + i ], val );
-				++i;
 			}
 			size_= new_size;
 		}
@@ -330,11 +320,10 @@ public:
 		unsafe
 		{
 			size_-= count;
-			var size_type mut i(0);
-			while( i < count )
+
+			for( var size_type mut i(0); i < count; ++i )
 			{
 				call_destructor( ptr_[ size_ + i ] );
-				++i;
 			}
 		}
 	}
@@ -384,11 +373,9 @@ public:
 			{
 				ensure_capacity( new_size );
 
-				auto mut i= size_;
-				while( i < new_size )
+				for( auto mut i= size_;  i < new_size; ++i )
 				{
 					ptr_[ size_ + i ].constructor();
-					++i;
 				}
 				size_= new_size;
 			}
@@ -413,11 +400,9 @@ public:
 
 	fn clear( mut this )
 	{
-		var size_type mut i(0);
-		while( i < size_ )
+		for( var size_type mut i(0); i < size_; ++i )
 		{
 			unsafe{  call_destructor(ptr_[i]);  }
-			++i;
 		}
 		size_= size_type(0);
 	}
