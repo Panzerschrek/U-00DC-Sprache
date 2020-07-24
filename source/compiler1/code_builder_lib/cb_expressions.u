@@ -1148,9 +1148,7 @@ fn CodeBuilder::DoCallFunction(
 		llvm_args.push_back( s_ret_value );
 	}
 
-	auto mut arg_n= 0s;
-	auto first_expr_arg= select( this_.empty() ? 0s : 1s );
-	while( arg_n < total_args )
+	for( var size_type mut arg_n= 0s, first_expr_arg= select( this_.empty() ? 0s : 1s ); arg_n < total_args; ++arg_n )
 	{
 		var Type& expected_arg_type= function_type.args[arg_n].arg_type.get_ref();
 		auto arg=
@@ -1199,8 +1197,6 @@ fn CodeBuilder::DoCallFunction(
 				llvm_args.push_back( CreateMoveToLLVMRegisterInstruction( arg, function_context ) );
 			}
 		}
-
-		++arg_n;
 	}
 
 	var Variable mut result

@@ -99,8 +99,7 @@ fn CodeBuilder::ApplyOverloadedFunction(
 			}
 
 			auto mut arg_is_same_count= 0s;
-			auto mut i= 0s;
-			while( i < function_type.args.size() )
+			for( auto mut i= 0s; i < function_type.args.size(); ++i )
 			{
 				auto& arg= function_type.args[i];
 				auto& set_arg= set_function_type.args[i];
@@ -108,8 +107,6 @@ fn CodeBuilder::ApplyOverloadedFunction(
 				{
 					++arg_is_same_count;
 				}
-
-				++i;
 			}
 
 			if( arg_is_same_count == function_type.args.size() )
@@ -149,8 +146,8 @@ fn CodeBuilder::GetOverloadedFunction(
 		if( function_type.args.size() == actual_args_corrected.size() )
 		{
 			auto mut all_args_is_compatible= true;
-			auto mut arg_n= 0s;
-			while( arg_n < actual_args_corrected.size() )
+
+			for( auto mut arg_n= 0s; arg_n < actual_args_corrected.size(); ++arg_n )
 			{
 				auto arg_overloading_class= GetArgOverloadingClass( actual_args_corrected[arg_n] );
 				auto parameter_overloading_class= GetArgOverloadingClass( function_type.args[arg_n] );
@@ -177,8 +174,6 @@ fn CodeBuilder::GetOverloadedFunction(
 					arg_overloading_class == ArgOverloadingClass::MutalbeReference )
 				{} // Ok, mut to imut conversion.
 				else{ halt; }
-
-				++arg_n;
 			}
 
 			if( all_args_is_compatible )
@@ -200,8 +195,8 @@ fn CodeBuilder::GetOverloadedFunction(
 
 	// For each argument search functions, which is better, than another functions.
 	// For NOT better (four current arg) functions set flags to false.
-	auto mut arg_n= 0s;
-	while( arg_n < actual_args.size() )
+
+	for( auto mut arg_n= 0s; arg_n < actual_args.size(); ++arg_n )
 	{
 		foreach( f_l : match_functions )
 		{
@@ -252,8 +247,7 @@ fn CodeBuilder::GetOverloadedFunction(
 			// Set best functions bits.
 			if( is_best_function_for_current_arg )
 			{
-				auto mut func_n= 0s;
-				while( func_n < match_functions.size() )
+				for( auto mut func_n= 0s; func_n < match_functions.size(); ++func_n )
 				{
 					var FunctionVariable& r_function= functions_set.functions[cast_imut(match_functions)[func_n]];
 					var FunctionType& r_type= r_function.t.GetFunctionType().get_ref();
@@ -277,17 +271,13 @@ fn CodeBuilder::GetOverloadedFunction(
 					{
 						best_functions[func_n]= false;
 					}
-					++func_n;
 				}
 			}
 		} // for functions left
-
-		++arg_n;
 	}
 
 	var ust::optional_ref</FunctionVariable, false/> mut selected_function;
-	auto mut func_n= 0s;
-	while( func_n < match_functions.size() )
+	for( auto mut func_n= 0s; func_n < match_functions.size(); ++func_n )
 	{
 		if( best_functions[func_n] )
 		{
@@ -301,7 +291,6 @@ fn CodeBuilder::GetOverloadedFunction(
 				break;
 			}
 		}
-		++func_n;
 	}
 
 	if( selected_function.empty() )

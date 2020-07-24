@@ -304,8 +304,8 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 			.t= array_type.element_type.get_ref()
 		};
 
-		auto mut i= 0u64;
-		while( i < array_type.element_count )
+		// TODO - generate REAL loop
+		for( auto mut i= 0u64; i < array_type.element_count; ++i )
 		{
 			unsafe
 			{
@@ -331,8 +331,6 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 					elements_constants.push_back( element_constant );
 				}
 			}
-
-			++i;
 		}
 
 		if( is_constant )
@@ -422,8 +420,8 @@ fn CodeBuilder::BuildEmptyInitializer( this, NamesScopePtr& names_scope, Functio
 			.t= array_type.element_type.get_ref()
 		};
 
-		auto mut i= 0u64;
-		while( i < array_type.element_count )
+		// TODO - generate REAL loop
+		for( auto mut i= 0u64; i < array_type.element_count; ++i )
 		{
 			unsafe
 			{
@@ -437,7 +435,6 @@ fn CodeBuilder::BuildEmptyInitializer( this, NamesScopePtr& names_scope, Functio
 			}
 
 			BuildEmptyInitializer( names_scope, function_context, element_variable, variable_name, file_pos );
-			++i;
 		}
 		return;
 	}

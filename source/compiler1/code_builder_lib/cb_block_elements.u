@@ -390,8 +390,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 
 	var BlockElementBuildInfo mut block_element_build_info{ .have_terminal_instruction_inside= true };
 
-	auto mut i= 0s;
-	while( i < if_operator.branches.size() )
+	for( auto mut i= 0s; i < if_operator.branches.size(); ++i )
 	{
 		auto& branch= if_operator.branches[i];
 
@@ -453,8 +452,6 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 			block_element_build_info.have_terminal_instruction_inside= false;
 			unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, block_after_if );  }
 		}
-
-		++i;
 	}
 
 	if( if_operator.branches.back().condition.get</Synt::EmptyVariant/>().empty() )

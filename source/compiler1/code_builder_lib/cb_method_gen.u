@@ -366,8 +366,7 @@ fn CodeBuilder::BuildCopyConstructorPart( this, FunctionContext &mut function_co
 	if_var( &array_type : t.GetArrayType() )
 	{
 		// TODO - generate loop
-		auto mut i= 0u64;
-		while( i < array_type.element_count )
+		for( auto mut i= 0u64; i < array_type.element_count; ++i )
 		{
 			var LLVMValueRef mut dst_element_value= zero_init, mut src_element_value= zero_init;
 
@@ -385,7 +384,6 @@ fn CodeBuilder::BuildCopyConstructorPart( this, FunctionContext &mut function_co
 			}
 
 			BuildCopyConstructorPart( function_context, dst_element_value, src_element_value, array_type.element_type.get_ref() );
-			++i;
 		}
 		return;
 	}

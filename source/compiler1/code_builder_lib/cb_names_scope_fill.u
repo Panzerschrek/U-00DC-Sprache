@@ -199,15 +199,14 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::VariablesDeclaration/>& variables_declaration )
 {
-	auto mut i= 0s;
-	while( i < variables_declaration.get_ref().variables.size() )
+	for( auto mut i= 0s;  i < variables_declaration.get_ref().variables.size(); ++i )
 	{
 		auto& variable_declaration= variables_declaration.get_ref().variables[i];
 
 		if( IsKeyword( variable_declaration.name ) )
 		{
 			REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, variable_declaration.file_pos )
-			return;
+			continue;
 		}
 
 		var GlobalVariable mut global_variable
@@ -226,8 +225,6 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		{
 			REPORT_ERROR( Redefinition, names_scope_ptr, variable_declaration.file_pos, variable_declaration.name )
 		}
-
-		++i;
 	}
 }
 
@@ -381,8 +378,7 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 				REPORT_ERROR( NameNotFound, names_scope_ptr, function_declaration.file_pos, name_components.front() )
 				continue;
 			}
-			auto mut i= 1s;
-			while( i < name_components.size() )
+			for( auto mut i= 1s; i < name_components.size(); ++i )
 			{
 				auto& name_component= name_components[i];
 
@@ -423,8 +419,6 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 					current_value.reset();
 					break;
 				}
-
-				++i;
 			}
 
 			if( !current_value.empty() )

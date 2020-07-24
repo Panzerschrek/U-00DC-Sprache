@@ -276,8 +276,8 @@ fn CodeBuilder::ResolveValue( this, NamesScopePtr& names_scope, Synt::ComplexNam
 
 	// TOOD - simplify this. After first component lookup do not use optional for "current_value" and nullable pointer for "current_scope"
 
-	auto mut i= select( complex_name.name.empty() ? 1s : 0s );
-	while( i < complex_name.tail.size() )
+
+	for( auto mut i= select( complex_name.name.empty() ? 1s : 0s ); i < complex_name.tail.size(); ++i )
 	{
 		auto& name_component= complex_name.tail[i];
 
@@ -343,8 +343,6 @@ fn CodeBuilder::ResolveValue( this, NamesScopePtr& names_scope, Synt::ComplexNam
 			REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, name_component ) // TODO -print more relevant error
 			return ErrorValue();
 		}
-
-		++i;
 	}
 
 	return NamesScopeValueToValue( ust::to_non_nullable(current_scope), current_value.get_ref() );
