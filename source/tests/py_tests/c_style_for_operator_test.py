@@ -102,7 +102,7 @@ def CStyleForOperator_Test4():
 	call_result= tests_lib.run_function( "_Z3Foov" )
 
 
-def CStleForOperator_BreakTest0():
+def CStyleForOperator_BreakTest0():
 	c_program_text= """
 		fn Foo() : u32
 		{
@@ -119,7 +119,7 @@ def CStleForOperator_BreakTest0():
 	assert( call_result == 52 )
 
 
-def CStleForOperator_BreakTest1():
+def CStyleForOperator_BreakTest1():
 	c_program_text= """
 		fn Foo() : i32
 		{
@@ -137,7 +137,7 @@ def CStleForOperator_BreakTest1():
 	assert( call_result == 952 )
 
 
-def CStleForOperator_ContinueTest0():
+def CStyleForOperator_ContinueTest0():
 	c_program_text= """
 		fn Foo() : u32
 		{
@@ -155,7 +155,7 @@ def CStleForOperator_ContinueTest0():
 	assert( call_result == 127 )
 
 
-def CStleForOperator_ContinueTest1():
+def CStyleForOperator_ContinueTest1():
 	c_program_text= """
 		fn Foo() : u32
 		{
