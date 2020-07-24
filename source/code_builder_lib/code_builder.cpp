@@ -2853,14 +2853,15 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 					condition_file_pos,
 					bool_type_,
 					condition_expression.type );
-			return BlockBuildInfo();
+			function_context.llvm_ir_builder.CreateBr( loop_block );
 		}
-
-		llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
-		CallDestructors( temp_variables_storage, names, function_context, condition_file_pos );
-		function_context.llvm_ir_builder.CreateCondBr( condition_in_register, loop_block, block_after_loop );
+		else
+		{
+			llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+			CallDestructors( temp_variables_storage, names, function_context, condition_file_pos );
+			function_context.llvm_ir_builder.CreateCondBr( condition_in_register, loop_block, block_after_loop );
+		}
 	}
-
 
 	// Loop block code.
 	function_context.loops_stack.emplace_back();
