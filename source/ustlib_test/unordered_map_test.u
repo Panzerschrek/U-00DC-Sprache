@@ -143,6 +143,24 @@ fn nomangle main() : i32
 		halt if( m[OneBitHash(3)] != "DD" );
 		halt if( m[OneBitHash(4)] != "EE" );
 	}
+	{ // Iteration with continue
+
+		var ust::unordered_map</ i32, ust::string8 /> mut m;
+		m.insert( 7, "A" );
+		m.insert( 2, "B" );
+		m.insert( 5, "C" );
+
+		auto mut res= 0;
+		auto mut iterations= 0s;
+		foreach( e : m )
+		{
+			++iterations;
+			if( e.value() == "B" ){ continue; }
+			res+= e.key();
+		}
+		halt if( iterations != m.size() );
+		halt if( res != 7 + 5 );
+	}
 	{ // "insert" may replace value.
 		var ust::unordered_map</ ust::string8, i32 /> mut m;
 		m.insert( "a", 22 );

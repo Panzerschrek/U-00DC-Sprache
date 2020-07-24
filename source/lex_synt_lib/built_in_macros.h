@@ -20,12 +20,10 @@ R"(
 		auto lock_temps& ?m<? mut ?> ??e_result= ?e;
 		static_if( typeinfo</ typeof(??e_result) />.is_array )
 		{
-			var size_type mut ??i(0u);
-			while( ??i < typeinfo</ typeof(??e_result) />.element_count )
+			for( var size_type mut ??i(0u); ??i < typeinfo</ typeof(??e_result) />.element_count; ++ ??i )
 			{
 				auto ?r<? & ?> ?m<? mut ?> ?var_name= ??e_result[??i];
 				safe{ ?b }
-				++ ??i;
 			}
 		}
 		else if( typeinfo</ typeof(??e_result) />.is_tuple )
@@ -35,16 +33,12 @@ R"(
 		}
 		else
 		{
-			auto mut ??r= ??e_result.range();
-			while( !??r.empty() )
+			unsafe
 			{
-				unsafe
+				for( auto mut ??r= ??e_result.range(); !??r.empty(); ??r.drop_front_unsafe() )
 				{
-					{
-						auto lock_temps ?r<? & ?> ?m<? mut ?> ?var_name= ??r.front_unsafe();
-						safe{ ?b }
-					}
-					??r.drop_front_unsafe();
+					auto lock_temps ?r<? & ?> ?m<? mut ?> ?var_name= ??r.front_unsafe();
+					safe{ ?b }
 				}
 			}
 		}

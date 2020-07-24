@@ -71,5 +71,19 @@ fn nomangle main() : i32
 		halt if( arr[1u] != 45 );
 		halt if( arr[2u] != 66 );
 	}
+	{
+		// "continue" should work properly.
+		var [ i32, 7 ] mut arr[ 31, -7, -8, 22, 7, 6, -4 ];
+		var i32 mut res= 0, mut iterations= 0;
+		var IntRangeImut range(arr);
+		foreach( x : range )
+		{
+			if( x < 0 ) { continue; }
+			res+= x;
+			++iterations;
+		}
+		halt if( res != 31 + 22 + 7 + 6 );
+		halt if( iterations != 4 );
+	}
 	return 0;
 }
