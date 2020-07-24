@@ -61,7 +61,7 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 {
 	if_var( &array_type : variable.t.GetArrayType() )
 	{
-		if( sequence_initializer.elements_initializers.size() != array_type.element_count )
+		if( sequence_initializer.elements_initializers.size() != size_type(array_type.element_count) )
 		{
 			REPORT_ERROR( ArrayInitializersCountMismatch,
 				names_scope,
@@ -112,7 +112,7 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 
 		if( is_constant )
 		{
-			halt if( elements_constants.size() != array_type.element_count ); // TODO - replace with assert
+			halt if( elements_constants.size() != size_type(array_type.element_count) ); // TODO - replace with assert
 			unsafe
 			{
 				if( elements_constants.empty() )
@@ -335,7 +335,7 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 
 		if( is_constant )
 		{
-			halt if( elements_constants.size() != array_type.element_count ); // TODO - replace with assert
+			halt if( elements_constants.size() != size_type(array_type.element_count) ); // TODO - replace with assert
 			unsafe
 			{
 				if( elements_constants.empty() )
