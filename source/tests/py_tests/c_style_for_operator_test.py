@@ -102,6 +102,41 @@ def CStyleForOperator_Test4():
 	call_result= tests_lib.run_function( "_Z3Foov" )
 
 
+def CStyleForOperator_Test5():
+	# Float counter.
+	c_program_text= """
+		fn Foo() : f32
+		{
+			auto mut x= 1.0f;
+			for( ; x < 1024.0f; x*= 2.0f ){}
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 1024.0 )
+
+
+def CStyleForOperator_Tes6():
+	# Multiple elements in iterations part
+	c_program_text= """
+		fn Fib(u32 x) : u32
+		{
+			var[ u32, 3 ] mut seq[ 0u, 1u, 0u ];
+			for( auto mut n= 1u; n <= x; seq[2]= seq[0] + seq[1], seq[0]= seq[1], seq[1]= seq[2], ++n ){}
+			return seq[2];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Fibj", 0 ) == 0 )
+	assert( tests_lib.run_function( "_Z3Fibj", 1 ) == 1 )
+	assert( tests_lib.run_function( "_Z3Fibj", 2 ) == 2 )
+	assert( tests_lib.run_function( "_Z3Fibj", 3 ) == 3 )
+	assert( tests_lib.run_function( "_Z3Fibj", 4 ) == 5 )
+	assert( tests_lib.run_function( "_Z3Fibj", 5 ) == 8 )
+	assert( tests_lib.run_function( "_Z3Fibj", 6 ) == 13 )
+
+
 def CStyleForOperator_BreakTest0():
 	c_program_text= """
 		fn Foo() : u32
@@ -225,4 +260,56 @@ def CStyleForOperator_VariableVisibility_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "Redefinition" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def CStyleForOperator_ErrorsTest0():
+	c_program_text= """
+		fn Foo()
+		{
+			for( auto mut x= 10; x ; --x ){} // "i32" rather than "bool" for condition
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TypesMismatch" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def CStyleForOperator_ErrorsTest1():
+	c_program_text= """
+		fn Foo()
+		{
+			for( var i32 x= 0; x < 10; ++x ){} // Non-mutable loop counter
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def CStyleForOperator_ErrorsTest2():
+	c_program_text= """
+		fn Foo()
+		{
+			for( auto x= 10; x < 100 ; x= 100 ){} // Non-mutable loop counter
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def CStyleForOperator_ErrorsTest3():
+	c_program_text= """
+		fn Foo()
+		{
+			for( ; i > 100 ; --i ){} // Unknown counter name
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
 	assert( errors_list[0].file_pos.line == 4 )
