@@ -2812,9 +2812,91 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
-	(void)c_style_for_operator;
-	(void)names;
-	(void)function_context;
+	// TODO - process variables state.
+
+	const StackVariablesStorage loop_variables_storage( function_context );
+	NamesScope loop_names_scope("", &names);
+
+	// Variables declaration part.
+	if( c_style_for_operator.variable_declaration_part_ != nullptr )
+		std::visit(
+			[&]( const auto& t )
+			{
+				SetCurrentDebugLocation( t.file_pos_, function_context );
+				BuildBlockElement( t, loop_names_scope, function_context );
+			},
+			*c_style_for_operator.variable_declaration_part_ );
+
+	llvm::BasicBlock* const test_block= llvm::BasicBlock::Create( llvm_context_ );
+	llvm::BasicBlock* const loop_block= llvm::BasicBlock::Create( llvm_context_ );
+	llvm::BasicBlock* const loop_iteration_block= llvm::BasicBlock::Create( llvm_context_ );
+	llvm::BasicBlock* const block_after_loop= llvm::BasicBlock::Create( llvm_context_ );
+
+	function_context.llvm_ir_builder.CreateBr( test_block );
+
+	// Test block.
+	function_context.function->getBasicBlockList().push_back( test_block );
+	function_context.llvm_ir_builder.SetInsertPoint( test_block );
+
+	if( std::get_if<Synt::EmptyVariant>( &c_style_for_operator.loop_condition_ ) != nullptr )
+		function_context.llvm_ir_builder.CreateBr( loop_block );
+	else
+	{
+		const StackVariablesStorage temp_variables_storage( function_context );
+		const Variable condition_expression= BuildExpressionCodeEnsureVariable( c_style_for_operator.loop_condition_, loop_names_scope, function_context );
+
+		const FilePos condition_file_pos= Synt::GetExpressionFilePos( c_style_for_operator.loop_condition_ );
+		if( condition_expression.type != bool_type_ )
+		{
+			REPORT_ERROR( TypesMismatch,
+					names.GetErrors(),
+					condition_file_pos,
+					bool_type_,
+					condition_expression.type );
+			return BlockBuildInfo();
+		}
+
+		llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+		CallDestructors( temp_variables_storage, names, function_context, condition_file_pos );
+		function_context.llvm_ir_builder.CreateCondBr( condition_in_register, loop_block, block_after_loop );
+	}
+
+
+	// Loop block code.
+	function_context.loops_stack.emplace_back();
+	function_context.loops_stack.back().block_for_break= block_after_loop;
+	function_context.loops_stack.back().block_for_continue= loop_iteration_block;
+	function_context.loops_stack.back().stack_variables_stack_size= function_context.stack_variables_stack.size();
+
+	function_context.function->getBasicBlockList().push_back( loop_block );
+	function_context.llvm_ir_builder.SetInsertPoint( loop_block );
+
+	BuildBlockElement( c_style_for_operator.block_, loop_names_scope, function_context );
+	function_context.llvm_ir_builder.CreateBr( loop_iteration_block );
+
+	function_context.loops_stack.pop_back();
+
+	// Loop iteration block
+	function_context.function->getBasicBlockList().push_back( loop_iteration_block );
+	function_context.llvm_ir_builder.SetInsertPoint( loop_iteration_block );
+	for( const auto& element : c_style_for_operator.iteration_part_elements_ )
+	{
+		std::visit(
+			[&]( const auto& t )
+			{
+				SetCurrentDebugLocation( t.file_pos_, function_context );
+				BuildBlockElement( t, loop_names_scope, function_context );
+			},
+			element );
+	}
+	function_context.llvm_ir_builder.CreateBr( test_block );
+
+	// Block after loop.
+	function_context.function->getBasicBlockList().push_back( block_after_loop );
+	function_context.llvm_ir_builder.SetInsertPoint( block_after_loop );
+
+	CallDestructors( loop_variables_storage, loop_names_scope, function_context, c_style_for_operator.file_pos_ );
+
 	return BlockBuildInfo();
 }
 
