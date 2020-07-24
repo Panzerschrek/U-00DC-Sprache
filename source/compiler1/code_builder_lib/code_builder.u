@@ -438,7 +438,7 @@ fn CodeBuilder::BuildClass( this, NamesScopePtr& names_scope_ptr, ClassTypePtr& 
 			if( !EnsureTypeComplete( field.t ) )
 			{
 				REPORT_ERROR( UsingIncompleteType, class_members, field.syntax_element.get_ref().file_pos, field.t )
-				return; // TODO - continue instead
+				continue;
 			}
 
 			field.index= fields_llvm_types.size();
@@ -496,24 +496,26 @@ fn CodeBuilder::BuildClass( this, NamesScopePtr& names_scope_ptr, ClassTypePtr& 
 		// Should be functions set 100%
 		foreach( &function_variable : functions_set_ptr.lock_imut().get_ref().functions_set.functions )
 		{
-			if( !function_variable.is_generated )
+			if( function_variable.is_generated )
 			{
-				auto& function_type= function_variable.t.GetFunctionType().get_ref();
-				if( function_type.args.size() == 1s )
-				{
-					class_.is_default_constructible= true;
-					class_.have_explicit_noncopy_constructors= true;
-				}
-				else if(
-					function_type.args.size() == 2s &&
-					function_type.args.back().is_reference &&
-					!function_type.args.back().is_mutable &&
-					function_type.args.back().arg_type.get_ref() == class_type ) // Copy constructor
-				{}
-				else
-				{
-					class_.have_explicit_noncopy_constructors= true;
-				}
+				continue;
+			}
+
+			auto& function_type= function_variable.t.GetFunctionType().get_ref();
+			if( function_type.args.size() == 1s )
+			{
+				class_.is_default_constructible= true;
+				class_.have_explicit_noncopy_constructors= true;
+			}
+			else if(
+				function_type.args.size() == 2s &&
+				function_type.args.back().is_reference &&
+				!function_type.args.back().is_mutable &&
+				function_type.args.back().arg_type.get_ref() == class_type ) // Copy constructor
+			{}
+			else
+			{
+				class_.have_explicit_noncopy_constructors= true;
 			}
 		}
 	}

@@ -93,27 +93,29 @@ fn CodeBuilder::ApplyOverloadedFunction(
 
 			// If argument count differs - allow overloading.
 			// SPRACHE_TODO - handle default arguments.
-			if( function_type.args.size() == set_function_type.args.size() )
+			if( function_type.args.size() != set_function_type.args.size() )
 			{
-				auto mut arg_is_same_count= 0s;
-				auto mut i= 0s;
-				while( i < function_type.args.size() )
-				{
-					auto& arg= function_type.args[i];
-					auto& set_arg= set_function_type.args[i];
-					if( arg.arg_type.get_ref() == set_arg.arg_type.get_ref() && GetArgOverloadingClass( arg ) == GetArgOverloadingClass( set_arg ) )
-					{
-						++arg_is_same_count;
-					}
+				continue;
+			}
 
-					++i;
+			auto mut arg_is_same_count= 0s;
+			auto mut i= 0s;
+			while( i < function_type.args.size() )
+			{
+				auto& arg= function_type.args[i];
+				auto& set_arg= set_function_type.args[i];
+				if( arg.arg_type.get_ref() == set_arg.arg_type.get_ref() && GetArgOverloadingClass( arg ) == GetArgOverloadingClass( set_arg ) )
+				{
+					++arg_is_same_count;
 				}
 
-				if( arg_is_same_count == function_type.args.size() )
-				{
-					REPORT_ERROR( CouldNotOverloadFunction, names_scope, file_pos )
-					return false;
-				}
+				++i;
+			}
+
+			if( arg_is_same_count == function_type.args.size() )
+			{
+				REPORT_ERROR( CouldNotOverloadFunction, names_scope, file_pos )
+				return false;
 			}
 		} // For functions in set.
 	}
@@ -209,70 +211,73 @@ fn CodeBuilder::GetOverloadedFunction(
 			auto mut l_arg_n= arg_n;
 			if( first_actual_arg_is_this && !l_function.is_this_call )
 			{
-				// TODO - continue if arg_n is zero
+				if( l_arg_n == 0s )
+				{
+					continue;
+				}
 				--l_arg_n;
 			}
-			if( l_arg_n < actual_args.size() )
+
+			auto mut is_best_function_for_current_arg= true;
+			foreach( f_r : match_functions )
 			{
-				auto mut is_best_function_for_current_arg= true;
-				foreach( f_r : match_functions )
+				var FunctionVariable& r_function= functions_set.functions[f_r];
+				var FunctionType& r_type= r_function.t.GetFunctionType().get_ref();
+
+				auto mut r_arg_n= arg_n;
+				if( first_actual_arg_is_this && !r_function.is_this_call )
 				{
-					var FunctionVariable& r_function= functions_set.functions[f_r];
+					if( r_arg_n == 0s )
+					{
+						continue;
+					}
+					--r_arg_n;
+				}
+
+				auto comp=
+					CompareConversions(
+						actual_args[arg_n],
+						l_type.args[l_arg_n],
+						r_type.args[r_arg_n] );
+
+				if( comp == ConversionsCompareResult::Same || comp == ConversionsCompareResult::LeftIsBetter )
+				{}
+				else
+				{
+					is_best_function_for_current_arg= false;
+					break;
+				}
+			} // for functions right
+
+			// Set best functions bits.
+			if( is_best_function_for_current_arg )
+			{
+				auto mut func_n= 0s;
+				while( func_n < match_functions.size() )
+				{
+					var FunctionVariable& r_function= functions_set.functions[cast_imut(match_functions)[func_n]];
 					var FunctionType& r_type= r_function.t.GetFunctionType().get_ref();
 
 					auto mut r_arg_n= arg_n;
 					if( first_actual_arg_is_this && !r_function.is_this_call )
 					{
-						// TODO - continue if arg_n is zero
+						if( r_arg_n == 0s )
+						{
+							continue;
+						}
 						--r_arg_n;
 					}
-					if( r_arg_n < actual_args.size() )
+
+					auto comp=
+						CompareConversions(
+							actual_args[arg_n],
+							l_type.args[l_arg_n],
+							r_type.args[r_arg_n] );
+					if( comp != ConversionsCompareResult::Same )
 					{
-						auto comp=
-							CompareConversions(
-								actual_args[arg_n],
-								l_type.args[l_arg_n],
-								r_type.args[r_arg_n] );
-
-						if( comp == ConversionsCompareResult::Same || comp == ConversionsCompareResult::LeftIsBetter )
-						{}
-						else
-						{
-							is_best_function_for_current_arg= false;
-							break;
-						}
+						best_functions[func_n]= false;
 					}
-				} // for functions right
-
-				// Set best functions bits.
-				if( is_best_function_for_current_arg )
-				{
-					auto mut func_n= 0s;
-					while( func_n < match_functions.size() )
-					{
-						var FunctionVariable& r_function= functions_set.functions[cast_imut(match_functions)[func_n]];
-						var FunctionType& r_type= r_function.t.GetFunctionType().get_ref();
-
-						auto mut r_arg_n= arg_n;
-						if( first_actual_arg_is_this && !r_function.is_this_call )
-						{
-							// TODO - continue if arg_n is zero
-							--r_arg_n;
-						}
-						if( r_arg_n < actual_args.size() )
-						{
-							auto comp=
-								CompareConversions(
-									actual_args[arg_n],
-									l_type.args[l_arg_n],
-									r_type.args[r_arg_n] );
-							if( comp != ConversionsCompareResult::Same )
-							{
-								best_functions[func_n]= false;
-							}
-							++func_n;
-						}
-					}
+					++func_n;
 				}
 			}
 		} // for functions left
