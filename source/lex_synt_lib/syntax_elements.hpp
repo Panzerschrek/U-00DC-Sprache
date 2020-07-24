@@ -626,7 +626,6 @@ public:
 
 	std::unique_ptr<
 		std::variant<
-			EmptyVariant,
 			VariablesDeclaration,
 			AutoVariableDeclaration > >
 	variable_declaration_part_;
