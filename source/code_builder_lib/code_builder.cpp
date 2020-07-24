@@ -2871,8 +2871,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	function_context.function->getBasicBlockList().push_back( loop_block );
 	function_context.llvm_ir_builder.SetInsertPoint( loop_block );
 
-	BuildBlockElement( c_style_for_operator.block_, loop_names_scope, function_context );
-	function_context.llvm_ir_builder.CreateBr( loop_iteration_block );
+	if( !BuildBlockElement( c_style_for_operator.block_, loop_names_scope, function_context ).have_terminal_instruction_inside )
+		function_context.llvm_ir_builder.CreateBr( loop_iteration_block );
 
 	function_context.loops_stack.pop_back();
 
@@ -2947,8 +2947,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	function_context.function->getBasicBlockList().push_back( while_block );
 	function_context.llvm_ir_builder.SetInsertPoint( while_block );
 
-	BuildBlockElement( while_operator.block_, names, function_context );
-	function_context.llvm_ir_builder.CreateBr( test_block );
+	if( !BuildBlockElement( while_operator.block_, names, function_context ).have_terminal_instruction_inside )
+		function_context.llvm_ir_builder.CreateBr( test_block );
 
 	function_context.loops_stack.pop_back();
 

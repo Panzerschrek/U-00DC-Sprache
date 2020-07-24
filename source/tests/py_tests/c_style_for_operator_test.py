@@ -100,3 +100,74 @@ def CStyleForOperator_Test4():
 	"""
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def CStleForOperator_BreakTest0():
+	c_program_text= """
+		fn Foo() : u32
+		{
+			auto mut x= 0u;
+			for( ; x < 1000000u ; ++x )
+			{
+				if( x == 52u ){ break; } // After "break" "++x" should not be executed
+			}
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 52 )
+
+
+def CStleForOperator_BreakTest1():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			auto mut x= 0;
+			for( ; x < 100 ; ++x )
+			{
+				x= 952;
+				break;
+			}
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 952 )
+
+
+def CStleForOperator_ContinueTest0():
+	c_program_text= """
+		fn Foo() : u32
+		{
+			auto mut end= 0u;
+			for( auto mut x= 0u; x < 128u; ++x )
+			{
+				end= x;
+				continue; // Continue should pass control flow to "++x"
+			}
+			return end;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 127 )
+
+
+def CStleForOperator_ContinueTest1():
+	c_program_text= """
+		fn Foo() : u32
+		{
+			auto mut res= 0u;
+			for( auto mut x= 0u; x < 16u; ++x )
+			{
+				if( (x & 1u) != 0u ){ continue; }
+				res+= x;
+			}
+			return res;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 2 + 4 + 6 + 8  + 10 + 12 + 14 )
