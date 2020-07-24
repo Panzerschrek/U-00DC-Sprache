@@ -92,6 +92,25 @@ fn nomangle main() : i32
 		foreach( x : range.subrange( size_type(1), size_type(3) ) ) { res*= x; }
 		halt if( res != 55 * 11 );
 	}
+	{
+		var VecType mut vec;
+		vec.push_back( 31 );
+		vec.push_back( -7 );
+		vec.push_back( -8 );
+		vec.push_back( 22 );
+		vec.push_back(  7 );
+		vec.push_back(  6 );
+		vec.push_back( -4 );
+		var i32 mut res= 0, mut iterations= 0;
+		foreach( x : vec )
+		{
+			if( x < 0 ) { continue; }
+			res+= x;
+			++iterations;
+		}
+		halt if( res != 31 + 22 + 7 + 6 );
+		halt if( iterations != 4 );
+	}
 
 	return 0;
 }

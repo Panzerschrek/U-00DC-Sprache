@@ -274,34 +274,24 @@ fn ParseNumber( Iterator &mut it, LexicalErrorMessages &mut out_errors ) : Lexem
 
 	result.value_int= integer_part;
 
+	for( auto mut i= 0; i < +exponent; ++i )
 	{
-		auto mut i= 0;
-		while( i < exponent )
-		{
-			result.value_int*= base_;
-			++i;
-		}
-		while( i < -exponent )
-		{
-			result.value_int/= base_;
-			++i;
-		}
+		result.value_int*= base_;
+	}
+	for( auto mut i= 0; i < -exponent; ++i )
+	{
+		result.value_int/= base_;
 	}
 
 	auto mut fractional_part_corrected= fractional_part;
 
+	for( auto mut i= 0; i < exponent - fractional_part_digits; ++i )
 	{
-		auto mut i= 0;
-		while( i < exponent - fractional_part_digits )
-		{
-			fractional_part_corrected*= base_;
-			++i;
-		}
-		while( i < fractional_part_digits - exponent )
-		{
-			fractional_part_corrected/= base_;
-			++i;
-		}
+		fractional_part_corrected*= base_;
+	}
+	for( auto mut i= 0; i < fractional_part_digits - exponent; ++i )
+	{
+		fractional_part_corrected/= base_;
 	}
 
 	result.value_int+= fractional_part_corrected;

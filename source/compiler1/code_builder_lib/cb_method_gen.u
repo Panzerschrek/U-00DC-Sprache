@@ -46,14 +46,16 @@ fn CodeBuilder::TryGenerateDefaultConstructor( this, ClassTypePtr& class_type )
 	foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
 	{
 		auto field_ptr= member.value().Get</ClassField/>();
-		if( !field_ptr.empty() )
+		if( field_ptr.empty() )
 		{
-			auto field_lock= field_ptr.lock_imut();
-			auto& field= field_lock.get_ref();
-			if( field.is_reference || !field.t.IsDefaultConstructible() )
-			{
-				return;
-			}
+			continue;
+		}
+
+		auto field_lock= field_ptr.lock_imut();
+		auto& field= field_lock.get_ref();
+		if( field.is_reference || !field.t.IsDefaultConstructible() )
+		{
+			return;
 		}
 	}
 
@@ -125,31 +127,33 @@ fn CodeBuilder::TryGenerateDefaultConstructor( this, ClassTypePtr& class_type )
 	foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
 	{
 		auto field_ptr= member.value().Get</ClassField/>();
-		if( !field_ptr.empty() )
+		if( field_ptr.empty() )
 		{
-			auto field_lock= field_ptr.lock_imut();
-			var ClassField & class_field= field_lock.get_ref();
-
-			var NamesScopeVariable mut field_variable
-			{
-				.t= class_field.t,
-				.is_mutable= true,
-			};
-
-			auto op_name_nt= "." + member.key() + "\0";
-			unsafe
-			{
-				var [ LLVMValueRef, 2 ] indexes
-				[
-					GetZeroGEPIndex(),
-					LLVMConstInt( fundamental_llvm_types_.u32_, u64(class_field.index), LLVMBool::False )
-				];
-
-				field_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, this_llvm_value, indexes[0], 2u, op_name_nt.front() );
-			}
-
-			BuildEmptyInitializer( class_members, function_context, field_variable, member.key(), FilePos( /* TODO - set correct file_pos */ ) );
+			continue;
 		}
+
+		auto field_lock= field_ptr.lock_imut();
+		var ClassField & class_field= field_lock.get_ref();
+
+		var NamesScopeVariable mut field_variable
+		{
+			.t= class_field.t,
+			.is_mutable= true,
+		};
+
+		auto op_name_nt= "." + member.key() + "\0";
+		unsafe
+		{
+			var [ LLVMValueRef, 2 ] indexes
+			[
+				GetZeroGEPIndex(),
+				LLVMConstInt( fundamental_llvm_types_.u32_, u64(class_field.index), LLVMBool::False )
+			];
+
+			field_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, this_llvm_value, indexes[0], 2u, op_name_nt.front() );
+		}
+
+		BuildEmptyInitializer( class_members, function_context, field_variable, member.key(), FilePos( /* TODO - set correct file_pos */ ) );
 	}
 
 	// Finsih function - add remaining instructions
@@ -191,14 +195,16 @@ fn CodeBuilder::TryGenerateCopyConstructor( this, ClassTypePtr& class_type )
 	foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
 	{
 		auto field_ptr= member.value().Get</ClassField/>();
-		if( !field_ptr.empty() )
+		if( field_ptr.empty() )
 		{
-			auto field_lock= field_ptr.lock_imut();
-			auto& field= field_lock.get_ref();
-			if( !field.is_reference && !field.t.IsCopyConstructible() )
-			{
-				return;
-			}
+			continue;
+		}
+
+		auto field_lock= field_ptr.lock_imut();
+		auto& field= field_lock.get_ref();
+		if( !field.is_reference && !field.t.IsCopyConstructible() )
+		{
+			return;
 		}
 	}
 
@@ -287,39 +293,40 @@ fn CodeBuilder::TryGenerateCopyConstructor( this, ClassTypePtr& class_type )
 	foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
 	{
 		auto field_ptr= member.value().Get</ClassField/>();
-		if( !field_ptr.empty() )
+		if( field_ptr.empty() )
 		{
-			auto field_lock= field_ptr.lock_imut();
-			var ClassField & class_field= field_lock.get_ref();
+			continue;
+		}
+		auto field_lock= field_ptr.lock_imut();
+		var ClassField & class_field= field_lock.get_ref();
 
-			auto dst_op_name_nt= "dst." + member.key() + "\0";
-			auto src_op_name_nt= "src." + member.key() + "\0";
-			var LLVMValueRef mut dst_member_value= zero_init, mut src_member_value= zero_init;
+		auto dst_op_name_nt= "dst." + member.key() + "\0";
+		auto src_op_name_nt= "src." + member.key() + "\0";
+		var LLVMValueRef mut dst_member_value= zero_init, mut src_member_value= zero_init;
+		unsafe
+		{
+			var [ LLVMValueRef, 2 ] indexes
+			[
+				GetZeroGEPIndex(),
+				LLVMConstInt( fundamental_llvm_types_.u32_, u64(class_field.index), LLVMBool::False )
+			];
+
+			dst_member_value= LLVMBuildGEP( function_context.llvm_ir_builder, dst_llvm_value, indexes[0], 2u, dst_op_name_nt.front() );
+			src_member_value= LLVMBuildGEP( function_context.llvm_ir_builder, src_llvm_value, indexes[0], 2u, src_op_name_nt.front() );
+		}
+		if( class_field.is_reference )
+		{
 			unsafe
 			{
-				var [ LLVMValueRef, 2 ] indexes
-				[
-					GetZeroGEPIndex(),
-					LLVMConstInt( fundamental_llvm_types_.u32_, u64(class_field.index), LLVMBool::False )
-				];
-
-				dst_member_value= LLVMBuildGEP( function_context.llvm_ir_builder, dst_llvm_value, indexes[0], 2u, dst_op_name_nt.front() );
-				src_member_value= LLVMBuildGEP( function_context.llvm_ir_builder, src_llvm_value, indexes[0], 2u, src_op_name_nt.front() );
+				LLVMBuildStore(
+					function_context.llvm_ir_builder,
+					LLVMBuildLoad( function_context.llvm_ir_builder, src_member_value, "\0"[0] ),
+					dst_member_value );
 			}
-			if( class_field.is_reference )
-			{
-				unsafe
-				{
-					LLVMBuildStore(
-						function_context.llvm_ir_builder,
-						LLVMBuildLoad( function_context.llvm_ir_builder, src_member_value, "\0"[0] ),
-						dst_member_value );
-				}
-			}
-			else
-			{
-				BuildCopyConstructorPart( function_context, dst_member_value, src_member_value, class_field.t );
-			}
+		}
+		else
+		{
+			BuildCopyConstructorPart( function_context, dst_member_value, src_member_value, class_field.t );
 		}
 	}
 
@@ -359,8 +366,7 @@ fn CodeBuilder::BuildCopyConstructorPart( this, FunctionContext &mut function_co
 	if_var( &array_type : t.GetArrayType() )
 	{
 		// TODO - generate loop
-		auto mut i= 0u64;
-		while( i < array_type.element_count )
+		for( auto mut i= 0u64; i < array_type.element_count; ++i )
 		{
 			var LLVMValueRef mut dst_element_value= zero_init, mut src_element_value= zero_init;
 
@@ -378,7 +384,6 @@ fn CodeBuilder::BuildCopyConstructorPart( this, FunctionContext &mut function_co
 			}
 
 			BuildCopyConstructorPart( function_context, dst_element_value, src_element_value, array_type.element_type.get_ref() );
-			++i;
 		}
 		return;
 	}

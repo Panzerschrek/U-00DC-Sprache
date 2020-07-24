@@ -27,15 +27,13 @@ public:
 	{
 		unsafe
 		{
-			var size_type mut i(0);
-			while( i < other.capacity_ )
+			for( var size_type mut i(0); i < other.capacity_; ++i )
 			{
 				auto &mut table_value= other.table_[i];
 				if( table_value.cell_content == TableValue::CellContent::HaveValue )
 				{
 					this.insert( table_value.key_storage, table_value.value_storage );
 				}
-				++i;
 			}
 		}
 	}
@@ -158,8 +156,7 @@ public:
 		if( table_.is_null() ) { return; }
 		unsafe
 		{
-			var size_type mut i(0);
-			while( i < capacity_ )
+			for( var size_type mut i(0); i < capacity_; ++i )
 			{
 				auto &mut table_value= table_[i];
 				if( table_value.cell_content == TableValue::CellContent::HaveValue )
@@ -168,7 +165,6 @@ public:
 					call_destructor( table_value.key_storage );
 					call_destructor( table_value.value_storage );
 				}
-				++i;
 			}
 		}
 		size_= size_type(0);
@@ -202,19 +198,16 @@ private:
 			// Allocate and initialize new table.
 			var ptr_type new_table= ptr_type( cast_ref_unsafe</TableValue/>( memory_allocate( new_capacity * typeinfo</TableValue/>.size_of ) ) );
 			{
-				var size_type mut i(0);
-				while( i < new_capacity )
+				for( var size_type mut i(0); i < new_capacity; ++i )
 				{
 					new_table[i].cell_content= TableValue::CellContent::Empty;
-					++i;
 				}
 			}
 
 			// Move content of old table into new table.
 			if( !table_.is_null() )
 			{
-				var size_type mut i(0);
-				while( i < capacity_ )
+				for( var size_type mut i(0); i < capacity_; ++i )
 				{
 					auto &mut old_value= table_[i];
 					if( old_value.cell_content == TableValue::CellContent::Empty || old_value.cell_content == TableValue::CellContent::ValueRemoved )
@@ -238,7 +231,6 @@ private:
 						}
 					}
 					else{ halt; }
-					++i;
 				} // for all old table.
 
 				// All value moved, so, we can free old memory.

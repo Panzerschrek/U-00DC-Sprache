@@ -93,27 +93,26 @@ fn CodeBuilder::ApplyOverloadedFunction(
 
 			// If argument count differs - allow overloading.
 			// SPRACHE_TODO - handle default arguments.
-			if( function_type.args.size() == set_function_type.args.size() )
+			if( function_type.args.size() != set_function_type.args.size() )
 			{
-				auto mut arg_is_same_count= 0s;
-				auto mut i= 0s;
-				while( i < function_type.args.size() )
-				{
-					auto& arg= function_type.args[i];
-					auto& set_arg= set_function_type.args[i];
-					if( arg.arg_type.get_ref() == set_arg.arg_type.get_ref() && GetArgOverloadingClass( arg ) == GetArgOverloadingClass( set_arg ) )
-					{
-						++arg_is_same_count;
-					}
+				continue;
+			}
 
-					++i;
-				}
-
-				if( arg_is_same_count == function_type.args.size() )
+			auto mut arg_is_same_count= 0s;
+			for( auto mut i= 0s; i < function_type.args.size(); ++i )
+			{
+				auto& arg= function_type.args[i];
+				auto& set_arg= set_function_type.args[i];
+				if( arg.arg_type.get_ref() == set_arg.arg_type.get_ref() && GetArgOverloadingClass( arg ) == GetArgOverloadingClass( set_arg ) )
 				{
-					REPORT_ERROR( CouldNotOverloadFunction, names_scope, file_pos )
-					return false;
+					++arg_is_same_count;
 				}
+			}
+
+			if( arg_is_same_count == function_type.args.size() )
+			{
+				REPORT_ERROR( CouldNotOverloadFunction, names_scope, file_pos )
+				return false;
 			}
 		} // For functions in set.
 	}
@@ -147,8 +146,8 @@ fn CodeBuilder::GetOverloadedFunction(
 		if( function_type.args.size() == actual_args_corrected.size() )
 		{
 			auto mut all_args_is_compatible= true;
-			auto mut arg_n= 0s;
-			while( arg_n < actual_args_corrected.size() )
+
+			for( auto mut arg_n= 0s; arg_n < actual_args_corrected.size(); ++arg_n )
 			{
 				auto arg_overloading_class= GetArgOverloadingClass( actual_args_corrected[arg_n] );
 				auto parameter_overloading_class= GetArgOverloadingClass( function_type.args[arg_n] );
@@ -175,8 +174,6 @@ fn CodeBuilder::GetOverloadedFunction(
 					arg_overloading_class == ArgOverloadingClass::MutalbeReference )
 				{} // Ok, mut to imut conversion.
 				else{ halt; }
-
-				++arg_n;
 			}
 
 			if( all_args_is_compatible )
@@ -198,8 +195,8 @@ fn CodeBuilder::GetOverloadedFunction(
 
 	// For each argument search functions, which is better, than another functions.
 	// For NOT better (four current arg) functions set flags to false.
-	auto mut arg_n= 0s;
-	while( arg_n < actual_args.size() )
+
+	for( auto mut arg_n= 0s; arg_n < actual_args.size(); ++arg_n )
 	{
 		foreach( f_l : match_functions )
 		{
@@ -209,80 +206,78 @@ fn CodeBuilder::GetOverloadedFunction(
 			auto mut l_arg_n= arg_n;
 			if( first_actual_arg_is_this && !l_function.is_this_call )
 			{
-				// TODO - continue if arg_n is zero
+				if( l_arg_n == 0s )
+				{
+					continue;
+				}
 				--l_arg_n;
 			}
-			if( l_arg_n < actual_args.size() )
+
+			auto mut is_best_function_for_current_arg= true;
+			foreach( f_r : match_functions )
 			{
-				auto mut is_best_function_for_current_arg= true;
-				foreach( f_r : match_functions )
+				var FunctionVariable& r_function= functions_set.functions[f_r];
+				var FunctionType& r_type= r_function.t.GetFunctionType().get_ref();
+
+				auto mut r_arg_n= arg_n;
+				if( first_actual_arg_is_this && !r_function.is_this_call )
 				{
-					var FunctionVariable& r_function= functions_set.functions[f_r];
+					if( r_arg_n == 0s )
+					{
+						continue;
+					}
+					--r_arg_n;
+				}
+
+				auto comp=
+					CompareConversions(
+						actual_args[arg_n],
+						l_type.args[l_arg_n],
+						r_type.args[r_arg_n] );
+
+				if( comp == ConversionsCompareResult::Same || comp == ConversionsCompareResult::LeftIsBetter )
+				{}
+				else
+				{
+					is_best_function_for_current_arg= false;
+					break;
+				}
+			} // for functions right
+
+			// Set best functions bits.
+			if( is_best_function_for_current_arg )
+			{
+				for( auto mut func_n= 0s; func_n < match_functions.size(); ++func_n )
+				{
+					var FunctionVariable& r_function= functions_set.functions[cast_imut(match_functions)[func_n]];
 					var FunctionType& r_type= r_function.t.GetFunctionType().get_ref();
 
 					auto mut r_arg_n= arg_n;
 					if( first_actual_arg_is_this && !r_function.is_this_call )
 					{
-						// TODO - continue if arg_n is zero
+						if( r_arg_n == 0s )
+						{
+							continue;
+						}
 						--r_arg_n;
 					}
-					if( r_arg_n < actual_args.size() )
+
+					auto comp=
+						CompareConversions(
+							actual_args[arg_n],
+							l_type.args[l_arg_n],
+							r_type.args[r_arg_n] );
+					if( comp != ConversionsCompareResult::Same )
 					{
-						auto comp=
-							CompareConversions(
-								actual_args[arg_n],
-								l_type.args[l_arg_n],
-								r_type.args[r_arg_n] );
-
-						if( comp == ConversionsCompareResult::Same || comp == ConversionsCompareResult::LeftIsBetter )
-						{}
-						else
-						{
-							is_best_function_for_current_arg= false;
-							break;
-						}
-					}
-				} // for functions right
-
-				// Set best functions bits.
-				if( is_best_function_for_current_arg )
-				{
-					auto mut func_n= 0s;
-					while( func_n < match_functions.size() )
-					{
-						var FunctionVariable& r_function= functions_set.functions[cast_imut(match_functions)[func_n]];
-						var FunctionType& r_type= r_function.t.GetFunctionType().get_ref();
-
-						auto mut r_arg_n= arg_n;
-						if( first_actual_arg_is_this && !r_function.is_this_call )
-						{
-							// TODO - continue if arg_n is zero
-							--r_arg_n;
-						}
-						if( r_arg_n < actual_args.size() )
-						{
-							auto comp=
-								CompareConversions(
-									actual_args[arg_n],
-									l_type.args[l_arg_n],
-									r_type.args[r_arg_n] );
-							if( comp != ConversionsCompareResult::Same )
-							{
-								best_functions[func_n]= false;
-							}
-							++func_n;
-						}
+						best_functions[func_n]= false;
 					}
 				}
 			}
 		} // for functions left
-
-		++arg_n;
 	}
 
 	var ust::optional_ref</FunctionVariable, false/> mut selected_function;
-	auto mut func_n= 0s;
-	while( func_n < match_functions.size() )
+	for( auto mut func_n= 0s; func_n < match_functions.size(); ++func_n )
 	{
 		if( best_functions[func_n] )
 		{
@@ -296,7 +291,6 @@ fn CodeBuilder::GetOverloadedFunction(
 				break;
 			}
 		}
-		++func_n;
 	}
 
 	if( selected_function.empty() )

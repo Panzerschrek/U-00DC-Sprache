@@ -184,14 +184,12 @@ op FunctionType::==( FunctionType& l, FunctionType& r ) : bool
 		return false;
 	}
 
-	auto mut i= 0s;
-	while( i < l.args.size() )
+	for( auto mut i= 0s; i < l.args.size(); ++i )
 	{
 		if( l.args[i] != r.args[i] )
 		{
 			return false;
 		}
-		++i;
 	}
 
 	return

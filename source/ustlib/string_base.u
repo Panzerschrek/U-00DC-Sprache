@@ -78,11 +78,10 @@ public:
 			capacity_= max( get_first_allocation_size(), size_ );
 			ptr_= ptr_type( cast_ref_unsafe</char_type/>( memory_allocate( capacity_ * c_element_size_ ) ) );
 
-			var size_type mut i(0);
-			while( i < size_ )
+
+			for( var size_type mut i(0); i < size_; ++i )
 			{
 				ptr_[i]= value;
-				++i;
 			}
 		}
 	}
@@ -376,11 +375,9 @@ public:
 			auto new_size= add_overflow_check_halt( size_, count );
 			ensure_capacity( new_size );
 
-			var size_type mut i(0);
-			while( i < count )
+			for( var size_type mut i(0); i < count; ++i )
 			{
 				ptr_[ size_ + i ]= val;
-				++i;
 			}
 			size_= new_size;
 		}

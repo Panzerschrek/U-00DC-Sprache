@@ -1788,4 +1788,229 @@ U_TEST(EralyTempVariablesDestruction_Test14)
 		std::vector<int>( { -3, 3,  -666, 666 } ) );
 }
 
+U_TEST(DestructorTest_ForCStyleForOperator0)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor()
+			{
+				DestructorCalled(x);
+			}
+		}
+		fn Foo()
+		{
+			for( auto mut x= 0; x < 4; x+= S(x).x * 0 + 1 ){}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { 0, 1, 2, 3 } ) );
+}
+
+U_TEST(DestructorTest_ForCStyleForOperator1)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor()
+			{
+				DestructorCalled(x);
+			}
+		}
+		fn Foo()
+		{
+			// Should execute only condition but not loop body and iteration
+			for( auto mut x= 0; x == S(55).x; x+= S(33).x )
+			{
+				var S s(854);
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { 55 } ) );
+}
+
+U_TEST(DestructorTest_ForCStyleForOperator2)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor()
+			{
+				DestructorCalled(x);
+			}
+		}
+		fn Foo()
+		{
+			// Should execute condition, than loop body, iteration, repeat this sequence and end with last condition
+			for( auto mut x= 0; x != S(2).x; x+= S(2000 + x).x * 0 + 1 )
+			{
+				var S s(100 + x * 3);
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { 2, 100, 2000,  2, 103, 2001,  2 } ) );
+}
+
+U_TEST(DestructorTest_ForCStyleForOperator3)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor()
+			{
+				DestructorCalled(x);
+			}
+		}
+		fn Foo()
+		{
+			// Should execute initialization one time, should execute iteration part in order
+			for( auto mut x= S(45).x; x < 50; x+= S(100 + x).x * 0, x+= S(-x).x * 0, x+= 2 )
+			{
+				var S s(x * 7);
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { 45,  315, 145, -45,  329, 147, -47,  343, 149, -49  } ) );
+}
+
+U_TEST(DestructorTest_ForCStyleForOperator4)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor()
+			{
+				DestructorCalled(x);
+			}
+		}
+		fn Foo()
+		{
+			// Should destroy loop counter once.
+			for( var S mut s(70); s.x < 80; s.x+= 2 )
+			{
+				var S inner_s(-s.x);
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { -70, -72, -74, -76, -78, 80 } ) );
+}
+
+U_TEST(DestructorTest_ForCStyleForOperator5)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor()
+			{
+				DestructorCalled(x);
+			}
+		}
+		fn Foo()
+		{
+			for( var S mut s(0); true; s.x+= 3 )
+			{
+				if( s.x >= 10 ){ break; } // Should destroy loop counter after "break".
+				var S inner_s(-s.x);
+			}
+			var S end_s(666);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { -0, -3, -6, -9, 12, 666 } ) );
+}
+
 } // namespace U

@@ -26,6 +26,7 @@ def main():
 		"auto_for_return_type_test",
 		"auto_for_return_type_errors_test",
 		"auto_lock_temps_test",
+		"c_style_for_operator_test",
 		"char_literals_test",
 		"char_test",
 		"code_builder_test",

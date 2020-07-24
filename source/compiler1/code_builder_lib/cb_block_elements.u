@@ -82,7 +82,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 			if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
 			{
 				REPORT_ERROR( ExpectedInitializer, names_scope, variable_declaration.file_pos, variable_declaration.name )
-				return BlockElementBuildInfo(); // TODO - continue instead
+				continue;
 			}
 
 			var ust::optional_ref</Synt::Expression, false/> mut initializer_expression;
@@ -95,7 +95,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 				if( constructor_initializer.args.size() != 1s )
 				{
 					REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names_scope, constructor_initializer.file_pos )
-					return BlockElementBuildInfo(); // TODO - continue instead
+					continue;
 				}
 
 				initializer_expression.reset( constructor_initializer.args.front().get_ref() );
@@ -104,7 +104,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 			if( initializer_expression.empty() )
 			{
 				REPORT_ERROR( UnsupportedInitializerForReference, names_scope, variable_declaration.file_pos )
-				return BlockElementBuildInfo(); // TODO - continue instead
+				continue;
 			}
 
 			auto expression_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, initializer_expression.get_ref() );
@@ -112,17 +112,17 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 			if( expression_result.t != t )
 			{
 				REPORT_ERROR( TypesMismatch, names_scope, variable_declaration.file_pos, t, expression_result.t )
-				return BlockElementBuildInfo(); // TODO - continue instead
+				continue;
 			}
 			if( expression_result.value_type == ValueType::Value )
 			{
 				REPORT_ERROR( ExpectedReferenceValue, names_scope, variable_declaration.file_pos )
-				return BlockElementBuildInfo(); // TODO - continue instead
+				continue;
 			}
 			if( out_variable.is_mutable && expression_result.value_type == ValueType::ReferenceImut )
 			{
 				REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, variable_declaration.file_pos )
-				return BlockElementBuildInfo(); // TODO - continue instead
+				continue;
 			}
 
 			out_variable.llvm_value= expression_result.llvm_value;
@@ -390,8 +390,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 
 	var BlockElementBuildInfo mut block_element_build_info{ .have_terminal_instruction_inside= true };
 
-	auto mut i= 0s;
-	while( i < if_operator.branches.size() )
+	for( auto mut i= 0s; i < if_operator.branches.size(); ++i )
 	{
 		auto& branch= if_operator.branches[i];
 
@@ -453,8 +452,6 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 			block_element_build_info.have_terminal_instruction_inside= false;
 			unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, block_after_if );  }
 		}
-
-		++i;
 	}
 
 	if( if_operator.branches.back().condition.get</Synt::EmptyVariant/>().empty() )

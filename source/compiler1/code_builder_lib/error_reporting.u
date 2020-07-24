@@ -34,7 +34,6 @@ fn ReportError( CodeBuilderErrorCode code, FilePos file_pos, ust::vector</ust::s
 
 	auto mut pattern= GetErrorMessagePattern(code);
 	{
-		auto mut i= 0s;
 		while( !pattern.empty() )
 		{
 			if( pattern.size() >= 3s && pattern[0s] == "{"c8 && ( pattern[1s] >= "0"c8 && pattern[1s] <= "9"c8 ) && pattern[2s] == "}"c8 )
@@ -68,19 +67,16 @@ fn NormalizeErrors( ust::vector</CodeBuilderError/> &mut errors )
 {
 	// Use simple bubble sorting. TODO - use REAL sorting.
 	{
-		auto mut i= 0s;
-		while( i < errors.size() )
+
+		for( auto mut i= 0s; i < errors.size(); ++i )
 		{
-			auto mut j= i + 1s;
-			while( j < errors.size() )
+			for( auto mut j= i + 1s; j < errors.size(); ++j )
 			{
 				if( cast_imut(errors)[j] < cast_imut(errors)[i] )
 				{
 					errors.swap( i, j );
 				}
-				++j;
 			}
-			++i;
 		}
 	}
 

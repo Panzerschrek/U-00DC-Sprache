@@ -61,6 +61,7 @@ struct AutoVariableDeclaration;
 struct ReturnOperator;
 struct WhileOperator;
 struct ForOperator;
+struct CStyleForOperator;
 struct BreakOperator;
 struct ContinueOperator;
 struct IfOperator;
@@ -144,6 +145,7 @@ using BlockElement= std::variant<
 	ReturnOperator,
 	WhileOperator,
 	ForOperator,
+	CStyleForOperator,
 	BreakOperator,
 	ContinueOperator,
 	IfOperator,
@@ -614,6 +616,31 @@ public:
 	MutabilityModifier mutability_modifier_= MutabilityModifier::None;
 	std::string loop_variable_name_;
 	Expression sequence_;
+	Block block_;
+};
+
+struct CStyleForOperator final : public SyntaxElementBase
+{
+public:
+	CStyleForOperator( const FilePos& file_pos );
+
+	std::unique_ptr<
+		std::variant<
+			VariablesDeclaration,
+			AutoVariableDeclaration > >
+	variable_declaration_part_;
+
+	Expression loop_condition_;
+
+	std::vector<
+		std::variant<
+			SingleExpressionOperator,
+			AssignmentOperator,
+			AdditiveAssignmentOperator,
+			IncrementOperator,
+			DecrementOperator > >
+	iteration_part_elements_;
+
 	Block block_;
 };
 

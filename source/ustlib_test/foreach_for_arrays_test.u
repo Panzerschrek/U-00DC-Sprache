@@ -27,6 +27,19 @@ fn nomangle main() : i32
 		foreach( x : arr ) { ++iterations; }
 		halt if( iterations != size_type(0) );
 	}
+	{
+		// "continue" should work properly.
+		var [ i32, 7 ] mut arr[ 31, -7, -8, 22, 7, 6, -4 ];
+		var i32 mut res= 0, mut iterations= 0;
+		foreach( x : arr )
+		{
+			if( x < 0 ) { continue; }
+			res+= x;
+			++iterations;
+		}
+		halt if( res != 31 + 22 + 7 + 6 );
+		halt if( iterations != 4 );
+	}
 
 	return 0;
 }

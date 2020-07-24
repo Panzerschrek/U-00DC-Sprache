@@ -191,6 +191,11 @@ ForOperator::ForOperator( const FilePos& file_pos)
 	, block_(file_pos)
 {}
 
+CStyleForOperator::CStyleForOperator( const FilePos& file_pos)
+	: SyntaxElementBase(file_pos)
+	, block_(file_pos)
+{}
+
 BreakOperator::BreakOperator( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}

@@ -270,7 +270,9 @@ private:
 
 	ReturnOperator ParseReturnOperator();
 	WhileOperator ParseWhileOperator();
-	ForOperator ParseForOperator();
+	BlockElement ParseForOperator();
+	ForOperator ParseRangeForOperator();
+	CStyleForOperator ParseCStyleForOperator();
 	BreakOperator ParseBreakOperator();
 	ContinueOperator ParseContinueOperator();
 	IfOperator ParseIfOperator();
@@ -2329,7 +2331,24 @@ WhileOperator SyntaxAnalyzer::ParseWhileOperator()
 	return result;
 }
 
-ForOperator SyntaxAnalyzer::ParseForOperator()
+BlockElement SyntaxAnalyzer::ParseForOperator()
+{
+	if( it_end_ - it_ >= 3 )
+	{
+		const Lexem& next_lexem= *(it_ + 2);
+		if( next_lexem.type == Lexem::Type::Identifier )
+		{
+			if( next_lexem.text == Keywords::var_ || next_lexem.text == Keywords::auto_ )
+				return ParseCStyleForOperator();
+		}
+		if( next_lexem.type == Lexem::Type::Semicolon )
+			return ParseCStyleForOperator();
+	}
+
+	return ParseRangeForOperator();
+}
+
+ForOperator SyntaxAnalyzer::ParseRangeForOperator()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::for_ );
 	ForOperator result( it_->file_pos );
@@ -2391,6 +2410,130 @@ ForOperator SyntaxAnalyzer::ParseForOperator()
 	}
 
 	result.block_= ParseBlock();
+	return result;
+}
+
+CStyleForOperator SyntaxAnalyzer::ParseCStyleForOperator()
+{
+	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::for_ );
+	CStyleForOperator result( it_->file_pos );
+	NextLexem();
+
+	if( it_->type != Lexem::Type::BracketLeft )
+	{
+		PushErrorMessage();
+		return result;
+	}
+	NextLexem();
+
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
+	{
+		result.variable_declaration_part_=
+			std::make_unique< std::variant<VariablesDeclaration, AutoVariableDeclaration> >( ParseVariablesDeclaration() );
+	}
+	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
+	{
+		result.variable_declaration_part_=
+			std::make_unique< std::variant<VariablesDeclaration, AutoVariableDeclaration> >( ParseAutoVariableDeclaration() );
+	}
+	else if( it_->type == Lexem::Type::Semicolon )
+	{
+		NextLexem();
+	}
+	else
+	{
+		PushErrorMessage();
+		return result;
+	}
+
+	if( it_->type != Lexem::Type::Semicolon )
+	{
+		result.loop_condition_= ParseExpression();
+	}
+
+	if( it_->type != Lexem::Type::Semicolon )
+	{
+		PushErrorMessage();
+		return result;
+	}
+	NextLexem();
+
+	while( NotEndOfFile() && it_->type != Lexem::Type::BracketRight )
+	{
+		if( it_->type == Lexem::Type::Increment )
+		{
+			IncrementOperator increment_operator( it_->file_pos );
+			NextLexem();
+			increment_operator.expression= ParseExpression();
+
+			result.iteration_part_elements_.push_back( std::move(increment_operator) );
+		}
+		else if( it_->type == Lexem::Type::Decrement )
+		{
+			IncrementOperator decrement_operator( it_->file_pos );
+			NextLexem();
+			decrement_operator.expression= ParseExpression();
+
+			result.iteration_part_elements_.push_back( std::move(decrement_operator) );
+		}
+		else
+		{
+			Expression expression_l= ParseExpression();
+
+			if( it_->type == Lexem::Type::Assignment )
+			{
+				AssignmentOperator assignment_operator( it_->file_pos );
+				NextLexem();
+				assignment_operator.l_value_= std::move(expression_l);
+				assignment_operator.r_value_= ParseExpression();
+
+				result.iteration_part_elements_.push_back( std::move(assignment_operator) );
+			}
+			else if( IsAdditiveAssignmentOperator( *it_ ) )
+			{
+				AdditiveAssignmentOperator additive_assignment_operator( it_->file_pos );
+				additive_assignment_operator.additive_operation_= GetAdditiveAssignmentOperator( *it_ );
+				NextLexem();
+				additive_assignment_operator.l_value_= std::move(expression_l);
+				additive_assignment_operator.r_value_= ParseExpression();
+
+				result.iteration_part_elements_.push_back( std::move(additive_assignment_operator) );
+			}
+			else
+			{
+				SingleExpressionOperator single_expression_operator( GetExpressionFilePos( expression_l ) );
+				single_expression_operator.expression_= std::move(expression_l);
+
+				result.iteration_part_elements_.push_back( std::move(single_expression_operator) );
+			}
+		}
+
+		if( it_->type == Lexem::Type::Comma )
+		{
+			NextLexem();
+
+			if( it_->type == Lexem::Type::BracketRight ) // forbid ) after ,
+			{
+				PushErrorMessage();
+				return result;
+			}
+			continue;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	if( it_->type != Lexem::Type::BracketRight )
+	{
+		PushErrorMessage();
+		return result;
+	}
+	NextLexem();
+
+	result.block_= ParseBlock();
+
 	return result;
 }
 
