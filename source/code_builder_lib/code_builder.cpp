@@ -2808,6 +2808,17 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
+	const Synt::CStyleForOperator& c_style_for_operator,
+	NamesScope& names,
+	FunctionContext& function_context )
+{
+	(void)c_style_for_operator;
+	(void)names;
+	(void)function_context;
+	return BlockBuildInfo();
+}
+
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	const Synt::WhileOperator& while_operator,
 	NamesScope& names,
 	FunctionContext& function_context )

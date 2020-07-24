@@ -485,6 +485,7 @@ private:
 	BlockBuildInfo BuildBlockElement( const Synt::AutoVariableDeclaration& auto_variable_declaration, NamesScope& names, FunctionContext& function_context );
 	BlockBuildInfo BuildBlockElement( const Synt::ReturnOperator& return_operator, NamesScope& names, FunctionContext& function_context );
 	BlockBuildInfo BuildBlockElement( const Synt::ForOperator& for_operator, NamesScope& names, FunctionContext& function_context );
+	BlockBuildInfo BuildBlockElement( const Synt::CStyleForOperator& c_style_for_operator, NamesScope& names, FunctionContext& function_context );
 	BlockBuildInfo BuildBlockElement( const Synt::WhileOperator& while_operator, NamesScope& names, FunctionContext& function_context );
 	BlockBuildInfo BuildBlockElement( const Synt::BreakOperator& break_operator, NamesScope& names, FunctionContext& function_context );
 	BlockBuildInfo BuildBlockElement( const Synt::ContinueOperator& continue_operator, NamesScope& names, FunctionContext& function_context );
