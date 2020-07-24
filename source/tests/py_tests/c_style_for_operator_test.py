@@ -171,3 +171,58 @@ def CStyleForOperator_ContinueTest1():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 2 + 4 + 6 + 8  + 10 + 12 + 14 )
+
+
+def CStyleForOperator_VariableVisibility_Test0():
+	c_program_text= """
+		fn Foo() : u32
+		{
+			auto mut x= 0u;
+			for( auto mut x= 2u; x < 20u; ++x ) {} // Inner "x" visible here, oupter "x" is shadowed
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 0 )
+
+
+def CStyleForOperator_VariableVisibility_Test1():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			for( var i32 mut x= 2; x < 100; ++x ) {}
+			return x; // Loop variable is not visible here
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def CStyleForOperator_VariableVisibility_Test2():
+	c_program_text= """
+		fn Foo() : u32
+		{
+			for( auto mut x= 0u; x < 20u; ++x ) {}
+			return x; // Loop variable is not visible here
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NameNotFound" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def CStyleForOperator_VariableVisibility_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			for( var i32 x= 1, x= 2; false ; ) {} // Loop variables declared in same scope, so, we should got redefinition here
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "Redefinition" )
+	assert( errors_list[0].file_pos.line == 4 )
