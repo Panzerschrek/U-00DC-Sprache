@@ -472,15 +472,18 @@ fn DiffUTF8Chars( Iterator mut start, Iterator end ) : size_type
 	return r;
 }
 
-fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnalysisResult
-{
-	var [ tup[ ust::array_view_imut</ char8 />, Lexem::Type ], 53 ]
-	c_fixed_lexems_table
+var tup[
+	[ tup[ [ char8, 3 ], Lexem::Type ],  3 ],
+	[ tup[ [ char8, 2 ], Lexem::Type ], 25 ],
+	[ tup[ [ char8, 1 ], Lexem::Type ], 25 ] ]
+c_fixed_lexems_table
+[
 	[
 		[ "<<=", Lexem::Type::AssignShiftLeft  ],
 		[ ">>=", Lexem::Type::AssignShiftRight ],
 		[ "...", Lexem::Type::Ellipsis ],
-
+	],
+	[
 		[ "</", Lexem::Type::TemplateBracketLeft  ],
 		[ "/>", Lexem::Type::TemplateBracketRight ],
 		[ "<?", Lexem::Type::MacroBracketLeft  ],
@@ -506,7 +509,8 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 		[ ">>", Lexem::Type::ShiftRight ],
 		[ "<-", Lexem::Type::LeftArrow  ],
 		[ "->", Lexem::Type::RightArrow ],
-
+	],
+	[
 		[ "(", Lexem::Type::BracketLeft ],
 		[ ")", Lexem::Type::BracketRight ],
 		[ "[", Lexem::Type::SquareBracketLeft ],
@@ -532,8 +536,11 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 		[ "~", Lexem::Type::Tilda ],
 		[ "!", Lexem::Type::Not ],
 		[ "'", Lexem::Type::Apostrophe ],
-	];
+	]
+];
 
+fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnalysisResult
+{
 	var LexicalAnalysisResult mut result;
 
 	auto mut it= program_text;
@@ -640,27 +647,37 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 		}
 		else
 		{
-			foreach( &l : c_fixed_lexems_table )
+			foreach( &lexem_size_group : c_fixed_lexems_table )
 			{
-				if( l[0].size() > it.size() )
+				auto s= typeinfo</ typeof(lexem_size_group) />.element_type.elements_list[0s].type.element_count;
+				if( s > it.size() )
 				{
 					continue;
 				}
 
-				auto mut equals= true;
-				for( auto mut i= 0s; i < l[0].size(); ++i )
+				auto mut found= false;
+				foreach( &l : lexem_size_group )
 				{
-					if( it[i] != l[0][i] )
+					auto mut equals= true;
+					for( auto mut i= 0s; i < s; ++i )
 					{
-						equals= false;
+						if( it[i] != l[0][i] )
+						{
+							equals= false;
+							break;
+						}
+					}
+					if( equals )
+					{
+						lexem.text= l[0];
+						lexem.lexem_type= l[1];
+						it= it.subrange( s, it.size() );
+						found= true;
 						break;
 					}
 				}
-				if( equals )
+				if(found)
 				{
-					lexem.lexem_type= l[1];
-					lexem.text= l[0];
-					it= it.subrange( l[0].size(), it.size() );
 					break;
 				}
 			}
