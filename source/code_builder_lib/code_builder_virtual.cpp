@@ -359,10 +359,7 @@ void CodeBuilder::BuildClassVirtualTables( Class& the_class, const Type& class_t
 
 	std::vector<llvm::Constant*> initializer_values;
 	initializer_values.reserve( the_class.virtual_table_llvm_type->elements().size() );
-	initializer_values.push_back(
-		llvm::Constant::getIntegerValue(
-			fundamental_llvm_types_.int_ptr,
-			llvm::APInt( fundamental_llvm_types_.int_ptr->getIntegerBitWidth(), 0u ) ) ); // For this class virtual table we have zero offset to real this.
+	initializer_values.push_back( llvm::Constant::getNullValue( fundamental_llvm_types_.int_ptr ) ); // For this class virtual table we have zero offset to real this.
 
 	initializer_values.push_back( the_class.polymorph_type_id );
 

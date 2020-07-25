@@ -553,7 +553,7 @@ void CodeBuilder::GenerateLoop(
 
 	const auto size_type_llvm= size_type_.GetLLVMType();
 	llvm::Value* const zero_value=
-		llvm::Constant::getIntegerValue( size_type_llvm, llvm::APInt( size_type_llvm->getIntegerBitWidth(), uint64_t(0) ) );
+		llvm::Constant::getNullValue( size_type_llvm );
 	llvm::Value* const one_value=
 		llvm::Constant::getIntegerValue( size_type_llvm, llvm::APInt( size_type_llvm->getIntegerBitWidth(), uint64_t(1u) ) );
 	llvm::Value* const loop_count_value=
@@ -2036,7 +2036,7 @@ llvm::Value*CodeBuilder::CreateMoveToLLVMRegisterInstruction(
 
 llvm::Constant* CodeBuilder::GetZeroGEPIndex()
 {
-	return llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, uint64_t(0u) ) );
+	return llvm::Constant::getNullValue( fundamental_llvm_types_.i32 );
 }
 
 llvm::Constant* CodeBuilder::GetFieldGEPIndex( const uint64_t field_index )

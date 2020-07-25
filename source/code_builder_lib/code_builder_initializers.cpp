@@ -441,67 +441,14 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
-	if( const FundamentalType* const fundamental_type= variable.type.GetFundamentalType() )
+	if( variable.type.GetFundamentalType() != nullptr ||
+		variable.type.GetEnumType() != nullptr ||
+		variable.type.GetFunctionPointerType() != nullptr )
 	{
-		llvm::Constant* zero_value= nullptr;
-		switch( fundamental_type->fundamental_type )
-		{
-		case U_FundamentalType::Bool:
-		case U_FundamentalType::i8:
-		case U_FundamentalType::u8:
-		case U_FundamentalType::i16:
-		case U_FundamentalType::u16:
-		case U_FundamentalType::i32:
-		case U_FundamentalType::u32:
-		case U_FundamentalType::i64:
-		case U_FundamentalType::u64:
-		case U_FundamentalType::i128:
-		case U_FundamentalType::u128:
-		case U_FundamentalType::char8 :
-		case U_FundamentalType::char16:
-		case U_FundamentalType::char32:
-		case U_FundamentalType::InvalidType:
-			zero_value=
-				llvm::Constant::getIntegerValue(
-					fundamental_type->llvm_type,
-					llvm::APInt( fundamental_type->llvm_type->getIntegerBitWidth(), uint64_t(0) ) );
-			break;
-
-		case U_FundamentalType::f32:
-		case U_FundamentalType::f64:
-			zero_value= llvm::ConstantFP::get( fundamental_type->llvm_type, 0.0 );
-			break;
-
-		case U_FundamentalType::Void:
-		case U_FundamentalType::LastType:
-			U_ASSERT(false);
-			break;
-		};
-
+		// "0" for numbers, "false" for boolean type, first element for enums, "nullptr" for function pointers.
+		const auto zero_value= llvm::Constant::getNullValue( variable.type.GetLLVMType() );
 		function_context.llvm_ir_builder.CreateStore( zero_value, variable.llvm_value );
 		return zero_value;
-	}
-	else if( const Enum* const enum_type= variable.type.GetEnumType() )
-	{
-		// Currently, first member of enum have zero value.
-
-		llvm::Constant* const zero_value=
-			llvm::Constant::getIntegerValue(
-				enum_type->underlaying_type.llvm_type,
-				llvm::APInt( enum_type->underlaying_type.llvm_type->getIntegerBitWidth(), uint64_t(0) ) );
-
-		function_context.llvm_ir_builder.CreateStore( zero_value, variable.llvm_value );
-		return zero_value;
-	}
-	else if( const FunctionPointer* const function_pointer_type= variable.type.GetFunctionPointerType() )
-	{
-		// Really? Allow zero function pointers?
-
-		llvm::Constant* const null_value=
-			llvm::Constant::getNullValue( function_pointer_type->llvm_function_pointer_type );
-
-		function_context.llvm_ir_builder.CreateStore( null_value, variable.llvm_value );
-		return null_value;
 	}
 	else if( const Array* const array_type= variable.type.GetArrayType() )
 	{
@@ -509,30 +456,25 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 		array_member.type= array_type->type;
 		array_member.location= Variable::Location::Pointer;
 
-		llvm::Constant* const_value= nullptr;
-
 		GenerateLoop(
 			array_type->size,
 			[&](llvm::Value* const counter_value)
 			{
 				array_member.llvm_value=
 					function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), counter_value } );
-				const_value= ApplyInitializer( initializer, array_member, names, function_context );
+				ApplyInitializer( initializer, array_member, names, function_context );
 			},
 			function_context);
 
-		if( const_value != nullptr && array_type->type.CanBeConstexpr() )
-				return
-					llvm::ConstantArray::get(
-						array_type->llvm_type,
-						std::vector<llvm::Constant*>( size_t(array_type->size), const_value ) );
+		if( array_type->type.CanBeConstexpr() )
+			return llvm::Constant::getNullValue( array_type->llvm_type );
+		else
+			return nullptr;
 	}
 	else if( const Tuple* const tuple_type= variable.type.GetTupleType() )
 	{
 		Variable tuple_member= variable;
 		tuple_member.location= Variable::Location::Pointer;
-
-		std::vector<llvm::Constant*> elements_const_values;
 
 		for( const Type& element_type : tuple_type->elements )
 		{
@@ -540,14 +482,11 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 			tuple_member.type= element_type;
 			tuple_member.llvm_value= function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex(i) } );
 
-			llvm::Constant* const const_value=
-				ApplyInitializer( initializer, tuple_member, names, function_context );
-			if( const_value != nullptr )
-				elements_const_values.push_back( const_value );
+			ApplyInitializer( initializer, tuple_member, names, function_context );
 		}
 
-		if( elements_const_values.size() == tuple_type->elements.size() )
-			return llvm::ConstantStruct::get( tuple_type->llvm_type, elements_const_values );
+		if( variable.type.CanBeConstexpr() )
+			return llvm::Constant::getNullValue( tuple_type->llvm_type );
 		else
 			return nullptr;
 	}
@@ -558,17 +497,10 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 		if( class_type->kind != Class::Kind::Struct )
 			REPORT_ERROR( ZeroInitializerForClass, names.GetErrors(), initializer.file_pos_ );
 
-		ClassFieldsVector<llvm::Constant*> constant_initializers;
-		bool all_fields_are_constant= false;
-		if( class_type->can_be_constexpr )
-		{
-			constant_initializers.resize( class_type->llvm_type->getNumElements(), nullptr );
-			all_fields_are_constant= true;
-		}
-
 		Variable struct_member= variable;
 		struct_member.location= Variable::Location::Pointer;
 
+		bool all_fields_are_constant= variable.type.CanBeConstexpr();
 		for( const std::string& field_name : class_type->fields_order )
 		{
 			if( field_name.empty() )
@@ -586,17 +518,13 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 			struct_member.llvm_value=
 				function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field.index ) } );
 
-			llvm::Constant* const constant_initializer=
-				ApplyInitializer( initializer, struct_member, names, function_context );
-
-			if( constant_initializer == nullptr )
-				all_fields_are_constant= false;
-			if( all_fields_are_constant )
-				constant_initializers[field.index]= constant_initializer;
+			ApplyInitializer( initializer, struct_member, names, function_context );
 		}
 
 		if( all_fields_are_constant )
-			return llvm::ConstantStruct::get( class_type->llvm_type, constant_initializers );
+			return llvm::Constant::getNullValue( class_type->llvm_type );
+		else
+			return nullptr;
 	}
 	else U_ASSERT( false );
 
