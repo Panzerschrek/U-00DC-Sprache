@@ -333,9 +333,9 @@ public:
 		halt if(empty());
 		unsafe
 		{
-			var T mut result= uninitialized;
-			memory_copy( result, back(), c_element_size_ );
 			--size_;
+			var T mut result= uninitialized;
+			memory_copy( result, ptr_[size_], c_element_size_ );
 			return move(result);
 		}
 	}
@@ -344,9 +344,9 @@ public:
 	{
 		unsafe
 		{
-			var T mut result= uninitialized;
-			memory_copy( result, back(), c_element_size_ );
 			--size_;
+			var T mut result= uninitialized;
+			memory_copy( result, ptr_[size_], c_element_size_ );
 			return move(result);
 		}
 	}
