@@ -296,56 +296,31 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 	}
 	if_var( &array_type : variable.t.GetArrayType() )
 	{
-		auto mut is_constant= variable.t.CanBeConstexpr();
-		var ust::vector</ LLVMValueRef /> mut elements_constants;
-
 		var NamesScopeVariable mut element_variable
 		{
 			.t= array_type.element_type.get_ref()
 		};
 
-		// TODO - generate REAL loop
-		for( auto mut i= 0u64; i < array_type.element_count; ++i )
+		auto mut element_constant= LLVMValueRef::Null;
+		CB_GENERATE_LOOP(
+			function_context,
+			array_type.element_count,
+			{
+				unsafe
+				{
+					var [ LLVMValueRef, 2 ] indexes[ GetZeroGEPIndex(), counter_value ];
+					element_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] );
+				}
+
+				element_constant= BuildInitializer( names_scope, function_context, element_variable, zero_initializer );
+			}
+		)
+
+		if( variable.t.CanBeConstexpr() )
 		{
 			unsafe
 			{
-				var [ LLVMValueRef, 2 ] indexes
-				[
-					GetZeroGEPIndex(),
-					LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
-				];
-
-				element_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] );
-			}
-
-			auto element_constant= BuildInitializer( names_scope, function_context, element_variable, zero_initializer );
-
-			if( is_constant )
-			{
-				if( element_constant == LLVMValueRef::Null )
-				{
-					is_constant= false;
-				}
-				else
-				{
-					elements_constants.push_back( element_constant );
-				}
-			}
-		}
-
-		if( is_constant )
-		{
-			halt if( elements_constants.size() != size_type(array_type.element_count) ); // TODO - replace with assert
-			unsafe
-			{
-				if( elements_constants.empty() )
-				{
-					return LLVMConstArray( element_variable.t.GetLLVMType(), LLVMValueRef::Null, 0u );
-				}
-				else
-				{
-					return LLVMConstArray( element_variable.t.GetLLVMType(), cast_imut(elements_constants).front(), u32(elements_constants.size()) );
-				}
+				return LLVMConstNull( array_type.llvm_type );
 			}
 		}
 		return LLVMValueRef::Null;
@@ -420,22 +395,18 @@ fn CodeBuilder::BuildEmptyInitializer( this, NamesScopePtr& names_scope, Functio
 			.t= array_type.element_type.get_ref()
 		};
 
-		// TODO - generate REAL loop
-		for( auto mut i= 0u64; i < array_type.element_count; ++i )
-		{
-			unsafe
+		CB_GENERATE_LOOP(
+			function_context,
+			array_type.element_count,
 			{
-				var [ LLVMValueRef, 2 ] indexes
-				[
-					GetZeroGEPIndex(),
-					LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
-				];
+				unsafe
+				{
+					var [ LLVMValueRef, 2 ] indexes[ GetZeroGEPIndex(), counter_value ];
+					element_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] );
+				}
 
-				element_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] );
-			}
-
-			BuildEmptyInitializer( names_scope, function_context, element_variable, variable_name, file_pos );
-		}
+				BuildEmptyInitializer( names_scope, function_context, element_variable, variable_name, file_pos );
+			} )
 		return;
 	}
 	if_var( &class_type_ptr : variable.t.GetClassType() )

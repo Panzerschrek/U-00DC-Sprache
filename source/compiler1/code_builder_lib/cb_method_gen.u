@@ -365,26 +365,22 @@ fn CodeBuilder::BuildCopyConstructorPart( this, FunctionContext &mut function_co
 	}
 	if_var( &array_type : t.GetArrayType() )
 	{
-		// TODO - generate loop
-		for( auto mut i= 0u64; i < array_type.element_count; ++i )
-		{
-			var LLVMValueRef mut dst_element_value= zero_init, mut src_element_value= zero_init;
-
-			unsafe
+		CB_GENERATE_LOOP(
+			function_context,
+			array_type.element_count,
 			{
+				var LLVMValueRef mut dst_element_value= zero_init, mut src_element_value= zero_init;
 
-				var [ LLVMValueRef, 2 ] indexes
-				[
-					GetZeroGEPIndex(),
-					LLVMConstInt( fundamental_llvm_types_.u32_, i, LLVMBool::False )
-				];
+				unsafe
+				{
+					var [ LLVMValueRef, 2 ] indexes[ GetZeroGEPIndex(), counter_value ];
+					dst_element_value= LLVMBuildGEP( function_context.llvm_ir_builder, dst, indexes[0], 2u, "[]\0"[0] );
+					src_element_value= LLVMBuildGEP( function_context.llvm_ir_builder, src, indexes[0], 2u, "[]\0"[0] );
+				}
 
-				dst_element_value= LLVMBuildGEP( function_context.llvm_ir_builder, dst, indexes[0], 2u, "[]\0"[0] );
-				src_element_value= LLVMBuildGEP( function_context.llvm_ir_builder, src, indexes[0], 2u, "[]\0"[0] );
+				BuildCopyConstructorPart( function_context, dst_element_value, src_element_value, array_type.element_type.get_ref() );
 			}
-
-			BuildCopyConstructorPart( function_context, dst_element_value, src_element_value, array_type.element_type.get_ref() );
-		}
+		)
 		return;
 	}
 	if_var( &class_type : t.GetClassType() )

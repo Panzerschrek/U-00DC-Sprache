@@ -3,6 +3,47 @@ import "/code_builder_errors.uh"
 import "function_context.uh"
 import "structs_combined.uh"
 
+// Macro for loops generation.
+// TODO - use Function instead.
+// Use "counter_value" in loop block
+?macro <? CB_GENERATE_LOOP:block( ?function_context:expr, ?iteration_count:expr, ?b:block )?>
+->
+<?
+	if( ?iteration_count != 0u64 )
+	{
+		unsafe
+		{
+			auto zero_value= LLVMConstInt( fundamental_llvm_types_.int_ptr, 0u64, LLVMBool::False );
+			auto one_value= LLVMConstInt( fundamental_llvm_types_.int_ptr, 1u64, LLVMBool::False );
+			auto loop_count_value= LLVMConstInt( fundamental_llvm_types_.int_ptr, ?iteration_count, LLVMBool::False );
+
+			auto block_before_loop= LLVMGetInsertBlock( ?function_context.llvm_ir_builder ) ;
+			auto loop_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+			auto block_after_loop= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+
+			LLVMBuildBr( ?function_context.llvm_ir_builder, loop_block );
+
+			LLVMAppendExistingBasicBlock( ?function_context.llvm_function, loop_block );
+			LLVMPositionBuilderAtEnd( ?function_context.llvm_ir_builder, loop_block );
+
+			auto counter_value= LLVMBuildPhi( ?function_context.llvm_ir_builder, fundamental_llvm_types_.int_ptr, "\0"[0] );
+
+			safe{ ?b }
+
+			auto counter_value_plus_one= LLVMBuildAdd( ?function_context.llvm_ir_builder, counter_value, one_value, "\0"[0] );
+			auto counter_test= LLVMBuildICmp( ?function_context.llvm_ir_builder, LLVMIntPredicate::ULT, counter_value_plus_one, loop_count_value, "\0"[0] );
+			LLVMBuildCondBr( ?function_context.llvm_ir_builder, counter_test, loop_block, block_after_loop );
+
+			var [ LLVMValueRef, 2 ] incoming_values[ zero_value, counter_value_plus_one ];
+			var [ LLVMBasicBlockRef, 2 ] incoming_blocks[ block_before_loop, LLVMGetInsertBlock( ?function_context.llvm_ir_builder ) ];
+			LLVMAddIncoming( counter_value, incoming_values[0], incoming_blocks[0], 2u );
+
+			LLVMAppendExistingBasicBlock( ?function_context.llvm_function, block_after_loop );
+			LLVMPositionBuilderAtEnd( ?function_context.llvm_ir_builder, block_after_loop );
+		}
+	}
+?>
+
 namespace U
 {
 

@@ -187,6 +187,7 @@ fn nomangle LLVMInsertExistingBasicBlockAfterInsertBlock(LLVMBuilderRef Builder,
 fn nomangle LLVMConstInt(LLVMTypeRef IntTy, u64 N, LLVMBool SignExtend) unsafe : LLVMValueRef;
 fn nomangle LLVMConstReal(LLVMTypeRef RealTy, f64 N) unsafe : LLVMValueRef;
 fn nomangle LLVMGetUndef(LLVMTypeRef Ty) unsafe : LLVMValueRef;
+fn nomangle LLVMConstNull(LLVMTypeRef Ty) unsafe : LLVMValueRef; /* all zeroes */
 fn nomangle LLVMConstArray(LLVMTypeRef ElementTy, LLVMValueRef& ConstantVals, u32 Length)  unsafe : LLVMValueRef;
 
 fn nomangle LLVMConstExtractValue(LLVMValueRef AggConstant, u32& IdxList, u32 NumIdx) unsafe : LLVMValueRef;
