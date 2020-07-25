@@ -1117,7 +1117,7 @@ fn CodeBuilder::GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRe
 
 fn CodeBuilder::GetZeroGEPIndex( this ) : LLVMValueRef
 {
-	unsafe{  return LLVMConstInt( fundamental_llvm_types_.i32_, 0u64, LLVMBool::False );  }
+	unsafe{  return LLVMConstNull( fundamental_llvm_types_.i32_ );  }
 }
 
 fn CodeBuilder::CreateMoveToLLVMRegisterInstruction( Variable& variable, FunctionContext& function_context ) : LLVMValueRef

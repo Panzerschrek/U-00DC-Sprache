@@ -13,7 +13,7 @@ import "structs_combined.uh"
 	{
 		unsafe
 		{
-			auto zero_value= LLVMConstInt( fundamental_llvm_types_.int_ptr, 0u64, LLVMBool::False );
+			auto zero_value= LLVMConstNull( fundamental_llvm_types_.int_ptr );
 			auto one_value= LLVMConstInt( fundamental_llvm_types_.int_ptr, 1u64, LLVMBool::False );
 			auto loop_count_value= LLVMConstInt( fundamental_llvm_types_.int_ptr, ?iteration_count, LLVMBool::False );
 
