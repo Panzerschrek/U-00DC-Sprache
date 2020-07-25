@@ -729,6 +729,8 @@ int Main( int argc, const char* argv[] )
 			else
 				pass_manager_builder.Inliner= llvm::createFunctionInliningPass( optimization_level, size_optimization_level, false );
 
+			target_machine->adjustPassManager(pass_manager_builder);
+
 			pass_manager_builder.populateFunctionPassManager(function_pass_manager);
 			pass_manager_builder.populateModulePassManager(pass_manager);
 		}
