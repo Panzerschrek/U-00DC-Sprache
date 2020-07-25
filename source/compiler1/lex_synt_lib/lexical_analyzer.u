@@ -332,7 +332,7 @@ op Lexem::!=( Lexem& l, Lexem& r ) : bool
 
 fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnalysisResult
 {
-	var [ tup[ ust::string8, Lexem::Type ], 53 ]
+	var [ tup[ ust::array_view_imut</ char8 />, Lexem::Type ], 53 ]
 	c_fixed_lexems_table
 	[
 		[ "<<=", Lexem::Type::AssignShiftLeft  ],
@@ -440,7 +440,21 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 		{
 			foreach( &l : c_fixed_lexems_table )
 			{
-				if( l[0].size() <= it.size() && l[0] == it.subrange( 0s, l[0].size() ) )
+				if( l[0].size() > it.size() )
+				{
+					continue;
+				}
+
+				auto mut equals= true;
+				for( auto mut i= 0s; i < l[0].size(); ++i )
+				{
+					if( it[i] != l[0][i] )
+					{
+						equals= false;
+						break;
+					}
+				}
+				if( equals )
 				{
 					lexem.lexem_type= l[1];
 					lexem.text= l[0];
@@ -453,15 +467,17 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 		if( lexem.lexem_type != Lexem::Type::None )
 		{
 			lexem.file_pos= FilePos( 0u, line, column );
-			result.lexems.push_back(lexem);
+			result.lexems.push_back(move(lexem));
 		}
 		else
 		{
+			move(lexem);
+			// TODO - maybe produce error ?
 			it.drop_front();
 		}
 	}
 
-	return result;
+	return move(result);
 }
 
 } // namespace U
