@@ -530,15 +530,31 @@ int Main( int argc, const char* argv[] )
 		return 1;
 	}
 
+	// LLVM stuff initialization.
+	llvm::InitializeAllTargets();
+	llvm::InitializeAllTargetMCs();
+	llvm::InitializeAllAsmPrinters();
+	llvm::InitializeAllAsmParsers();
+
+	{
+		llvm::PassRegistry& registry= *llvm::PassRegistry::getPassRegistry();
+		llvm::initializeCore(registry);
+		llvm::initializeTransformUtils(registry);
+		llvm::initializeScalarOpts(registry);
+		llvm::initializeVectorization(registry);
+		llvm::initializeInstCombine(registry);
+		llvm::initializeAggressiveInstCombine(registry);
+		llvm::initializeIPO(registry);
+		llvm::initializeInstrumentation(registry);
+		llvm::initializeAnalysis(registry);
+		llvm::initializeCodeGen(registry);
+		llvm::initializeTarget(registry);
+	}
+
 	// Prepare target machine.
 	std::string target_triple_str;
 	std::unique_ptr<llvm::TargetMachine> target_machine;
 	{
-		llvm::InitializeAllTargets();
-		llvm::InitializeAllTargetMCs();
-		llvm::InitializeAllAsmPrinters();
-		llvm::InitializeAllAsmParsers();
-
 		const llvm::Target* target= nullptr;
 		std::string error_str, features_str, cpu_name;
 		if( Options::architecture == "native" )
@@ -760,18 +776,6 @@ int Main( int argc, const char* argv[] )
 		result_module->print( out_file_stream, nullptr );
 	else
 	{
-		llvm::PassRegistry& registry= *llvm::PassRegistry::getPassRegistry();
-		llvm::initializeCore(registry);
-		llvm::initializeCodeGen(registry);
-		llvm::initializeIPO(registry);
-		llvm::initializeLoopStrengthReducePass(registry);
-		llvm::initializeLowerIntrinsicsPass(registry);
-		llvm::initializeScalarOpts(registry);
-		llvm::initializeVectorization(registry);
-		llvm::initializeScalarizeMaskedMemIntrinPass(registry);
-		llvm::initializeExpandReductionsPass(registry);
-		llvm::initializeHardwareLoopsPass(registry);
-
 		llvm::TargetMachine::CodeGenFileType file_type= llvm::TargetMachine::CGFT_Null;
 		switch( Options::file_type )
 		{
