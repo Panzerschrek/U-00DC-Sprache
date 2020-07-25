@@ -263,7 +263,7 @@ private:
 
 	void CopyBytes_r(
 		llvm::Value* src, llvm::Value* dst,
-		const llvm::Type* const llvm_type,
+		llvm::Type* llvm_type,
 		FunctionContext& function_context );
 
 	void CopyBytes(

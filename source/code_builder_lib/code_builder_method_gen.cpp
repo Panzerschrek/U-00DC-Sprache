@@ -816,7 +816,7 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 
 void CodeBuilder::CopyBytes_r(
 	llvm::Value* const src, llvm::Value* const dst,
-	const llvm::Type* const llvm_type,
+	llvm::Type* const llvm_type,
 	FunctionContext& function_context )
 {
 	if( llvm_type->isIntegerTy() || llvm_type->isFloatingPointTy() || llvm_type->isPointerTy() )
@@ -828,35 +828,15 @@ void CodeBuilder::CopyBytes_r(
 			function_context.llvm_ir_builder.CreateStore( src, dst );
 		else U_ASSERT(false);
 	}
-	else if( llvm_type->isArrayTy() )
-	{
-		GenerateLoop(
-			llvm_type->getArrayNumElements(),
-			[&](llvm::Value* const counter_value)
-			{
-				llvm::Value* const index_list[2]{ GetZeroGEPIndex(), counter_value };
-				CopyBytes_r(
-					function_context.llvm_ir_builder.CreateGEP( src, index_list ),
-					function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
-					llvm_type->getArrayElementType(),
-					function_context );
-			},
-			function_context );
-	}
-	else if( llvm_type->isStructTy() )
-	{
-		for( unsigned int i= 0u; i < llvm_type->getStructNumElements(); ++i )
-		{
-			llvm::Value* const index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex(i) };
-			CopyBytes_r(
-				function_context.llvm_ir_builder.CreateGEP( src, index_list ),
-				function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
-				llvm_type->getStructElementType(i),
-				function_context );
-		}
-	}
 	else
-		U_ASSERT(false);
+	{
+		// Create memcpy for aggregate types.
+		const auto alignment= data_layout_.getABITypeAlignment( llvm_type ); // TODO - is this right alignment?
+		function_context.llvm_ir_builder.CreateMemCpy(
+			dst, alignment,
+			src, alignment,
+			llvm::Constant::getIntegerValue( fundamental_llvm_types_.u32, llvm::APInt(32, data_layout_.getTypeAllocSize( llvm_type ) ) ) );
+	}
 }
 
 void CodeBuilder::CopyBytes(
