@@ -5,6 +5,7 @@
 #include <llvm/AsmParser/Parser.h>
 #include <llvm/Bitcode/BitcodeReader.h>
 #include <llvm/Bitcode/BitcodeWriter.h>
+#include <llvm/CodeGen/TargetPassConfig.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/Linker/Linker.h>
@@ -745,7 +746,15 @@ int Main( int argc, const char* argv[] )
 			else
 				pass_manager_builder.Inliner= llvm::createFunctionInliningPass( optimization_level, size_optimization_level, false );
 
+			// vectorization/unroll is same as in "opt"
+			pass_manager_builder.DisableUnrollLoops= optimization_level == 0;
+			pass_manager_builder.LoopVectorize= optimization_level > 1 && size_optimization_level < 2;
+			pass_manager_builder.SLPVectorize= optimization_level > 1 && size_optimization_level < 2;
+
 			target_machine->adjustPassManager(pass_manager_builder);
+
+			if (llvm::TargetPassConfig* const target_pass_config= static_cast<llvm::LLVMTargetMachine &>(*target_machine).createPassConfig(pass_manager))
+				pass_manager.add(target_pass_config);
 
 			pass_manager_builder.populateFunctionPassManager(function_pass_manager);
 			pass_manager_builder.populateModulePassManager(pass_manager);
