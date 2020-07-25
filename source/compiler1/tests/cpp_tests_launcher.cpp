@@ -39,6 +39,7 @@ bool FilterTest( const std::string& test_name )
 		"BasicBinaryOperationsTest",
 		"BasicReferenceInsideClassUsage",
 		"BitwiseNotTest",
+		"BindingConstReferenceToNonconstReferenceTest",
 		"BindingConstReferenceToNonConstReference_InReferenceFieldInitialization_Test",
 		"BindValueToConstReferenceTest0",
 		"BlocksTest",
