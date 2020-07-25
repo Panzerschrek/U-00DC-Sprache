@@ -291,11 +291,7 @@ U_TEST(ImmutableClassField_Test4)
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotSelectOverloadedFunction );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 14u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::CouldNotSelectOverloadedFunction, 14u ) );
 }
 
 } // namespace U

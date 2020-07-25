@@ -177,6 +177,11 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 						.value_type= function_context.this_.get_ref().value_type,
 					};
 
+					if( !field.is_mutable )
+					{
+						result.value_type= ValueType::ReferenceImut;
+					}
+
 					unsafe
 					{
 						var [ LLVMValueRef, 2 ] indexes
@@ -426,6 +431,11 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 					.location= Variable::Location::Pointer,
 					.value_type= variable.value_type,
 				};
+
+				if( !field.is_mutable )
+				{
+					result.value_type= ValueType::ReferenceImut;
+				}
 
 				unsafe
 				{

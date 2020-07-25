@@ -336,7 +336,12 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	{
 		field.is_mutable= class_field.get_ref().mutability_modifier == Synt::MutabilityModifier::Mutable;
 	}
-	// TODO - support immutable value fields
+	else
+	{
+		field.is_mutable=
+			class_field.get_ref().mutability_modifier == Synt::MutabilityModifier::None ||
+			class_field.get_ref().mutability_modifier == Synt::MutabilityModifier::Mutable;
+	}
 
 	var bool mut insert_not_ok= false;
 	{

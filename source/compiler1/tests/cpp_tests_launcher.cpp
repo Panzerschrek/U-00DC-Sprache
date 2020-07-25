@@ -119,6 +119,7 @@ bool FilterTest( const std::string& test_name )
 		"GlobalVariablesTest9_GlobalVariablesInsideClasses",
 		"Halt",
 		"IfOperatorTest",
+		"ImmutableClassField_Test",
 		"ImplicitConstexprTest",
 		"IncrementTest",
 		"InitializationListInNonconstructorTest",
