@@ -296,7 +296,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 	}
 	else if( variable.type.GetFunctionPointerType() != nullptr )
 		return InitializeFunctionPointer( variable, initializer.expression, names, function_context );
-	else if( variable.type.GetTupleType() != nullptr )
+	else if( variable.type.GetTupleType() != nullptr || variable.type.GetArrayType() != nullptr )
 	{
 		Variable expression_result= BuildExpressionCodeEnsureVariable( initializer.expression, names, function_context );
 		if( expression_result.type != variable.type )
