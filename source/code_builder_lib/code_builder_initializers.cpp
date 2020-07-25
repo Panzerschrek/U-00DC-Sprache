@@ -721,9 +721,6 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 		llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( src_var, function_context );
 
-		llvm::Constant* constant_value= nullptr;
-		const bool src_is_constant= src_var.constexpr_value != nullptr;
-
 		if( dst_type->fundamental_type != src_type->fundamental_type )
 		{
 			// Perform fundamental types conversion.
@@ -735,147 +732,61 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				// int to int
 				if( src_size < dst_size )
 				{
+					// We lost here some values in conversions, such i16 => u32, if src_type is signed.
 					if( IsUnsignedInteger( dst_type->fundamental_type ) )
-					{
-						// We lost here some values in conversions, such i16 => u32, if src_type is signed.
-						if( src_is_constant )
-							constant_value= llvm::ConstantExpr::getZExt( src_var.constexpr_value, dst_type->llvm_type );
-						else
-							value_for_assignment= function_context.llvm_ir_builder.CreateZExt( value_for_assignment, dst_type->llvm_type );
-					}
+						value_for_assignment= function_context.llvm_ir_builder.CreateZExt( value_for_assignment, dst_type->llvm_type );
 					else
-					{
-						if( src_is_constant )
-							constant_value= llvm::ConstantExpr::getSExt( src_var.constexpr_value, dst_type->llvm_type );
-						else
-							value_for_assignment= function_context.llvm_ir_builder.CreateSExt( value_for_assignment, dst_type->llvm_type );
-					}
+						value_for_assignment= function_context.llvm_ir_builder.CreateSExt( value_for_assignment, dst_type->llvm_type );
 				}
 				else if( src_size > dst_size )
-				{
-					if( src_is_constant )
-						constant_value= llvm::ConstantExpr::getTrunc( src_var.constexpr_value, dst_type->llvm_type );
-					else
-						value_for_assignment= function_context.llvm_ir_builder.CreateTrunc( value_for_assignment, dst_type->llvm_type );
-				}
-				else
-				{
-					if( src_is_constant )
-						constant_value= src_var.constexpr_value;
-					// Same size integers - do nothing.
-				}
+					value_for_assignment= function_context.llvm_ir_builder.CreateTrunc( value_for_assignment, dst_type->llvm_type );
 			}
 			else if( IsFloatingPoint( dst_type->fundamental_type ) && IsFloatingPoint( src_type->fundamental_type ) )
 			{
 				// float to float
 				if( src_size < dst_size )
-				{
-					if( src_is_constant )
-						constant_value= llvm::ConstantExpr::getFPExtend( src_var.constexpr_value, dst_type->llvm_type );
-					else
-						value_for_assignment= function_context.llvm_ir_builder.CreateFPExt( value_for_assignment, dst_type->llvm_type );
-				}
+					value_for_assignment= function_context.llvm_ir_builder.CreateFPExt( value_for_assignment, dst_type->llvm_type );
 				else if( src_size > dst_size )
-				{
-					if( src_is_constant )
-						constant_value= llvm::ConstantExpr::getFPTrunc( src_var.constexpr_value, dst_type->llvm_type );
-					else
-						value_for_assignment= function_context.llvm_ir_builder.CreateFPTrunc( value_for_assignment, dst_type->llvm_type );
-				}
+					value_for_assignment= function_context.llvm_ir_builder.CreateFPTrunc( value_for_assignment, dst_type->llvm_type );
 				else U_ASSERT(false);
 			}
 			else if( IsFloatingPoint( dst_type->fundamental_type ) && IsInteger( src_type->fundamental_type ) )
 			{
 				// int to float
 				if( IsSignedInteger( src_type->fundamental_type ) )
-				{
-					if( src_is_constant )
-						constant_value= llvm::ConstantExpr::getSIToFP( src_var.constexpr_value, dst_type->llvm_type );
-					else
-						value_for_assignment= function_context.llvm_ir_builder.CreateSIToFP( value_for_assignment, dst_type->llvm_type );
-				}
+					value_for_assignment= function_context.llvm_ir_builder.CreateSIToFP( value_for_assignment, dst_type->llvm_type );
 				else
-				{
-					if( src_is_constant )
-						constant_value= llvm::ConstantExpr::getUIToFP( src_var.constexpr_value, dst_type->llvm_type );
-					else
-						value_for_assignment= function_context.llvm_ir_builder.CreateUIToFP( value_for_assignment, dst_type->llvm_type );
-				}
+					value_for_assignment= function_context.llvm_ir_builder.CreateUIToFP( value_for_assignment, dst_type->llvm_type );
 			}
 			else if( IsInteger( dst_type->fundamental_type ) && IsFloatingPoint( src_type->fundamental_type ) )
 			{
 				// float to int
 				if( IsSignedInteger( dst_type->fundamental_type ) )
-				{
-					if( src_is_constant )
-						constant_value= llvm::ConstantExpr::getFPToSI( src_var.constexpr_value, dst_type->llvm_type );
-					else
-						value_for_assignment= function_context.llvm_ir_builder.CreateFPToSI( value_for_assignment, dst_type->llvm_type );
-				}
+					value_for_assignment= function_context.llvm_ir_builder.CreateFPToSI( value_for_assignment, dst_type->llvm_type );
 				else
-				{
-					if( src_is_constant )
-						constant_value= llvm::ConstantExpr::getFPToUI( src_var.constexpr_value, dst_type->llvm_type );
-					else
-						value_for_assignment= function_context.llvm_ir_builder.CreateFPToUI( value_for_assignment, dst_type->llvm_type );
-				}
+					value_for_assignment= function_context.llvm_ir_builder.CreateFPToUI( value_for_assignment, dst_type->llvm_type );
 			}
 			else if( IsChar( dst_type->fundamental_type ) && ( IsInteger( src_type->fundamental_type ) || IsChar( src_type->fundamental_type ) ) )
 			{
 				// int to char or char to char
 				if( src_size < dst_size )
-				{
-					if( src_is_constant )
-						constant_value= llvm::ConstantExpr::getZExt( src_var.constexpr_value, dst_type->llvm_type );
-					else
-						value_for_assignment= function_context.llvm_ir_builder.CreateZExt( value_for_assignment, dst_type->llvm_type );
-				}
+					value_for_assignment= function_context.llvm_ir_builder.CreateZExt( value_for_assignment, dst_type->llvm_type );
 				else if( src_size > dst_size )
-				{
-					if( src_is_constant )
-						constant_value= llvm::ConstantExpr::getTrunc( src_var.constexpr_value, dst_type->llvm_type );
-					else
-						value_for_assignment= function_context.llvm_ir_builder.CreateTrunc( value_for_assignment, dst_type->llvm_type );
-				}
-				else
-				{
-					if( src_is_constant )
-						constant_value= src_var.constexpr_value;
-				}
+					value_for_assignment= function_context.llvm_ir_builder.CreateTrunc( value_for_assignment, dst_type->llvm_type );
 			}
 			else if( IsInteger( dst_type->fundamental_type ) && IsChar( src_type->fundamental_type ) )
 			{
 				// char to int
 				if( src_size < dst_size )
 				{
+					// We lost here some values in conversions, such i16 => u32, if src_type is signed.
 					if( IsUnsignedInteger( dst_type->fundamental_type ) )
-					{
-						// We lost here some values in conversions, such i16 => u32, if src_type is signed.
-						if( src_is_constant )
-							constant_value= llvm::ConstantExpr::getZExt( src_var.constexpr_value, dst_type->llvm_type );
-						else
-							value_for_assignment= function_context.llvm_ir_builder.CreateZExt( value_for_assignment, dst_type->llvm_type );
-					}
+						value_for_assignment= function_context.llvm_ir_builder.CreateZExt( value_for_assignment, dst_type->llvm_type );
 					else
-					{
-						if( src_is_constant )
-							constant_value= llvm::ConstantExpr::getSExt( src_var.constexpr_value, dst_type->llvm_type );
-						else
-							value_for_assignment= function_context.llvm_ir_builder.CreateSExt( value_for_assignment, dst_type->llvm_type );
-					}
+						value_for_assignment= function_context.llvm_ir_builder.CreateSExt( value_for_assignment, dst_type->llvm_type );
 				}
 				else if( src_size > dst_size )
-				{
-					if( src_is_constant )
-						constant_value= llvm::ConstantExpr::getTrunc( src_var.constexpr_value, dst_type->llvm_type );
-					else
-						value_for_assignment= function_context.llvm_ir_builder.CreateTrunc( value_for_assignment, dst_type->llvm_type );
-				}
-				else
-				{
-					if( src_is_constant )
-						constant_value= src_var.constexpr_value;
-				}
+					value_for_assignment= function_context.llvm_ir_builder.CreateTrunc( value_for_assignment, dst_type->llvm_type );
 			}
 			else
 			{
@@ -887,23 +798,12 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				return nullptr;
 			}
 		} // If needs conversion
-		else
-		{
-			if( src_is_constant )
-				constant_value= src_var.constexpr_value;
-		}
-
-		if( src_is_constant )
-		{
-			U_ASSERT( constant_value != nullptr );
-			value_for_assignment= constant_value;
-		}
 
 		function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
 
 		DestroyUnusedTemporaryVariables( function_context, block_names.GetErrors(), call_operator.file_pos_ );
 
-		return constant_value;
+		return llvm::dyn_cast<llvm::Constant>(value_for_assignment);
 	}
 	else if( variable.type.GetEnumType() != nullptr )
 	{

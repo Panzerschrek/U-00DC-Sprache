@@ -1194,8 +1194,6 @@ Value CodeBuilder::BuildBinaryOperator(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
-	const bool arguments_are_constexpr= l_var.constexpr_value != nullptr && r_var.constexpr_value != nullptr;
-
 	Variable result;
 
 	const Type& l_type= l_var.type;
@@ -1240,130 +1238,61 @@ Value CodeBuilder::BuildBinaryOperator(
 
 			const bool is_signed= IsSignedInteger( l_fundamental_type->fundamental_type );
 
-			llvm::Value* l_value_for_op= nullptr;
-			llvm::Value* r_value_for_op= nullptr;
+			llvm::Value* const l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
+			llvm::Value* const r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 			llvm::Value* result_value= nullptr;
-			if( !arguments_are_constexpr )
-			{
-				l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
-				r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
-			}
 
 			switch( binary_operator )
 			{
 			case BinaryOperatorType::Add:
 				if( is_float )
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getFAdd( l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateFAdd( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateFAdd( l_value_for_op, r_value_for_op );
 				else
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getAdd( l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateAdd( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateAdd( l_value_for_op, r_value_for_op );
 				break;
 
 			case BinaryOperatorType::Sub:
 				if( is_float )
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getFSub( l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateFSub( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateFSub( l_value_for_op, r_value_for_op );
 				else
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getSub( l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateSub( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateSub( l_value_for_op, r_value_for_op );
 				break;
 
 			case BinaryOperatorType::Div:
 				if( is_float )
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getFDiv( l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateFDiv( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateFDiv( l_value_for_op, r_value_for_op );
 				else if( is_signed )
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getSDiv( l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateSDiv( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateSDiv( l_value_for_op, r_value_for_op );
 				else
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getUDiv( l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateUDiv( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateUDiv( l_value_for_op, r_value_for_op );
 				break;
 
 			case BinaryOperatorType::Mul:
 				if( is_float )
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getFMul( l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateFMul( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateFMul( l_value_for_op, r_value_for_op );
 				else
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getMul( l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateMul( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateMul( l_value_for_op, r_value_for_op );
 				break;
 
 			case BinaryOperatorType::Rem:
 				if( is_float )
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getFRem( l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateFRem( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateFRem( l_value_for_op, r_value_for_op );
 				else if( is_signed )
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getSRem( l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateSRem( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateSRem( l_value_for_op, r_value_for_op );
 				else
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getURem( l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateURem( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateURem( l_value_for_op, r_value_for_op );
 				break;
 
 			default: U_ASSERT( false ); break;
 			};
 
-			if( arguments_are_constexpr )
-				result_value= result.constexpr_value;
-			else U_ASSERT( result_value != nullptr );
-
 			result.location= Variable::Location::LLVMRegister;
 			result.value_type= ValueType::Value;
 			result.type= r_var.type;
 			result.llvm_value= result_value;
+			result.constexpr_value= llvm::dyn_cast<llvm::Constant>(result_value);
 		}
 		break;
-
 
 	case BinaryOperatorType::Equal:
 	case BinaryOperatorType::NotEqual:
@@ -1375,41 +1304,28 @@ Value CodeBuilder::BuildBinaryOperator(
 		}
 		else if( l_var.type.GetFunctionPointerType() != nullptr )
 		{
-			llvm::Value* l_value_for_op= nullptr;
-			llvm::Value* r_value_for_op= nullptr;
+			llvm::Value* const l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
+			llvm::Value* const r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 			llvm::Value* result_value= nullptr;
-			if( !arguments_are_constexpr )
-			{
-				l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
-				r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
-			}
+
 			switch( binary_operator )
 			{
 			case BinaryOperatorType::Equal:
-				if( arguments_are_constexpr )
-					result.constexpr_value= llvm::ConstantExpr::getICmp( llvm::CmpInst::ICMP_EQ, l_var.constexpr_value, r_var.constexpr_value );
-				else
-					result_value= function_context.llvm_ir_builder.CreateICmpEQ( l_value_for_op, r_value_for_op );
+				result_value= function_context.llvm_ir_builder.CreateICmpEQ( l_value_for_op, r_value_for_op );
 				break;
 
 			case BinaryOperatorType::NotEqual:
-				if( arguments_are_constexpr )
-					result.constexpr_value= llvm::ConstantExpr::getICmp( llvm::CmpInst::ICMP_NE, l_var.constexpr_value, r_var.constexpr_value );
-				else
-					result_value= function_context.llvm_ir_builder.CreateICmpNE( l_value_for_op, r_value_for_op );
+				result_value= function_context.llvm_ir_builder.CreateICmpNE( l_value_for_op, r_value_for_op );
 				break;
 
 			default: U_ASSERT(false); break;
 			}
 
-			if( arguments_are_constexpr )
-				result_value= result.constexpr_value;
-			else U_ASSERT( result_value != nullptr );
-
 			result.location= Variable::Location::LLVMRegister;
 			result.value_type= ValueType::Value;
 			result.type= bool_type_;
 			result.llvm_value= result_value;
+			result.constexpr_value= llvm::dyn_cast<llvm::Constant>(result_value);
 		}
 		else if( !( l_var.type.GetFundamentalType() != nullptr || l_var.type.GetEnumType() != nullptr ) )
 		{
@@ -1427,63 +1343,35 @@ Value CodeBuilder::BuildBinaryOperator(
 				return ErrorValue();
 			}
 
-			llvm::Value* l_value_for_op= nullptr;
-			llvm::Value* r_value_for_op= nullptr;
+			llvm::Value* const l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
+			llvm::Value* const r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 			llvm::Value* result_value= nullptr;
-			if( !arguments_are_constexpr )
-			{
-				l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
-				r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
-			}
 
 			switch( binary_operator )
 			{
 			// Use ordered floating point compare operations, which result is false for NaN, except !=. nan != nan must be true.
 			case BinaryOperatorType::Equal:
 				if( if_float )
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getFCmp( llvm::CmpInst::FCMP_OEQ, l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateFCmpOEQ( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateFCmpOEQ( l_value_for_op, r_value_for_op );
 				else
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getICmp( llvm::CmpInst::ICMP_EQ, l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateICmpEQ( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateICmpEQ( l_value_for_op, r_value_for_op );
 				break;
 
 			case BinaryOperatorType::NotEqual:
 				if( if_float )
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getFCmp( llvm::CmpInst::FCMP_UNE, l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateFCmpUNE( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateFCmpUNE( l_value_for_op, r_value_for_op );
 				else
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getICmp( llvm::CmpInst::ICMP_NE, l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateICmpNE( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateICmpNE( l_value_for_op, r_value_for_op );
 				break;
 
 			default: U_ASSERT( false ); break;
 			};
 
-			if( arguments_are_constexpr )
-				result_value= result.constexpr_value;
-			else U_ASSERT( result_value != nullptr );
-
 			result.location= Variable::Location::LLVMRegister;
 			result.value_type= ValueType::Value;
 			result.type= bool_type_;
 			result.llvm_value= result_value;
+			result.constexpr_value= llvm::dyn_cast<llvm::Constant>(result_value);
 		}
 		break;
 
@@ -1513,125 +1401,57 @@ Value CodeBuilder::BuildBinaryOperator(
 				return ErrorValue();
 			}
 
-			llvm::Value* l_value_for_op= nullptr;
-			llvm::Value* r_value_for_op= nullptr;
+			llvm::Value* const l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
+			llvm::Value* const r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 			llvm::Value* result_value= nullptr;
-			if( !arguments_are_constexpr )
-			{
-				l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
-				r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
-			}
 
 			switch( binary_operator )
 			{
 			// Use ordered floating point compare operations, which result is false for NaN.
 			case BinaryOperatorType::Less:
 				if( if_float )
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getFCmp( llvm::CmpInst::FCMP_OLT, l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateFCmpOLT( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateFCmpOLT( l_value_for_op, r_value_for_op );
 				else if( is_signed )
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getICmp( llvm::CmpInst::ICMP_SLT, l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateICmpSLT( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateICmpSLT( l_value_for_op, r_value_for_op );
 				else
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getICmp( llvm::CmpInst::ICMP_ULT, l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateICmpULT( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateICmpULT( l_value_for_op, r_value_for_op );
 				break;
 
 			case BinaryOperatorType::LessEqual:
 				if( if_float )
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getFCmp( llvm::CmpInst::FCMP_OLE, l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateFCmpOLE( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateFCmpOLE( l_value_for_op, r_value_for_op );
 				else if( is_signed )
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getICmp( llvm::CmpInst::ICMP_SLE, l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateICmpSLE( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateICmpSLE( l_value_for_op, r_value_for_op );
 				else
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getICmp( llvm::CmpInst::ICMP_ULE, l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateICmpULE( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateICmpULE( l_value_for_op, r_value_for_op );
 				break;
 
 			case BinaryOperatorType::Greater:
 				if( if_float )
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getFCmp( llvm::CmpInst::FCMP_OGT, l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateFCmpOGT( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateFCmpOGT( l_value_for_op, r_value_for_op );
 				else if( is_signed )
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getICmp( llvm::CmpInst::ICMP_SGT, l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateICmpSGT( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateICmpSGT( l_value_for_op, r_value_for_op );
 				else
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getICmp( llvm::CmpInst::ICMP_UGT, l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateICmpUGT( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateICmpUGT( l_value_for_op, r_value_for_op );
 				break;
 
 			case BinaryOperatorType::GreaterEqual:
 				if( if_float )
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getFCmp( llvm::CmpInst::FCMP_OGE, l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateFCmpOGE( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateFCmpOGE( l_value_for_op, r_value_for_op );
 				else if( is_signed )
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getICmp( llvm::CmpInst::ICMP_SGE, l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateICmpSGE( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateICmpSGE( l_value_for_op, r_value_for_op );
 				else
-				{
-					if( arguments_are_constexpr )
-						result.constexpr_value= llvm::ConstantExpr::getICmp( llvm::CmpInst::ICMP_UGE, l_var.constexpr_value, r_var.constexpr_value );
-					else
-						result_value= function_context.llvm_ir_builder.CreateICmpUGE( l_value_for_op, r_value_for_op );
-				}
+					result_value= function_context.llvm_ir_builder.CreateICmpUGE( l_value_for_op, r_value_for_op );
 				break;
 
 			default: U_ASSERT( false ); break;
 			};
 
-			if( arguments_are_constexpr )
-				result_value= result.constexpr_value;
-			else U_ASSERT( result_value != nullptr );
-
 			result.location= Variable::Location::LLVMRegister;
 			result.value_type= ValueType::Value;
 			result.type= bool_type_;
 			result.llvm_value= result_value;
+			result.constexpr_value= llvm::dyn_cast<llvm::Constant>(result_value);
 		}
 		break;
 
@@ -1657,49 +1477,32 @@ Value CodeBuilder::BuildBinaryOperator(
 				return ErrorValue();
 			}
 
-			llvm::Value* l_value_for_op= nullptr;
-			llvm::Value* r_value_for_op= nullptr;
+			llvm::Value* const l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
+			llvm::Value* const r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 			llvm::Value* result_value= nullptr;
-			if( !arguments_are_constexpr )
-			{
-				l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
-				r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
-			}
 
 			switch( binary_operator )
 			{
 			case BinaryOperatorType::And:
-				if( arguments_are_constexpr )
-					result.constexpr_value= llvm::ConstantExpr::getAnd( l_var.constexpr_value, r_var.constexpr_value );
-				else
-					result_value= function_context.llvm_ir_builder.CreateAnd( l_value_for_op, r_value_for_op );
+				result_value= function_context.llvm_ir_builder.CreateAnd( l_value_for_op, r_value_for_op );
 				break;
 
 			case BinaryOperatorType::Or:
-				if( arguments_are_constexpr )
-					result.constexpr_value= llvm::ConstantExpr::getOr( l_var.constexpr_value, r_var.constexpr_value );
-				else
-					result_value= function_context.llvm_ir_builder.CreateOr( l_value_for_op, r_value_for_op );
+				result_value= function_context.llvm_ir_builder.CreateOr( l_value_for_op, r_value_for_op );
 				break;
 
 			case BinaryOperatorType::Xor:
-				if( arguments_are_constexpr )
-					result.constexpr_value= llvm::ConstantExpr::getXor( l_var.constexpr_value, r_var.constexpr_value );
-				else
-					result_value= function_context.llvm_ir_builder.CreateXor( l_value_for_op, r_value_for_op );
+				result_value= function_context.llvm_ir_builder.CreateXor( l_value_for_op, r_value_for_op );
 				break;
 
 			default: U_ASSERT( false ); break;
 			};
 
-			if( arguments_are_constexpr )
-				result_value= result.constexpr_value;
-			else U_ASSERT( result_value != nullptr );
-
 			result.location= Variable::Location::LLVMRegister;
 			result.value_type= ValueType::Value;
 			result.type= l_type;
 			result.llvm_value= result_value;
+			result.constexpr_value= llvm::dyn_cast<llvm::Constant>(result_value);
 		}
 		break;
 
@@ -1719,54 +1522,31 @@ Value CodeBuilder::BuildBinaryOperator(
 			const uint64_t l_type_size= l_fundamental_type->GetSize();
 			const uint64_t r_type_size= r_fundamental_type->GetSize();
 
-			if( l_var.constexpr_value != nullptr && r_var.constexpr_value != nullptr )
+
+			llvm::Value* const l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
+			llvm::Value* r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
+
+			// Convert value of shift to type of shifted value. LLVM Reuqired this.
+			if( r_type_size > l_type_size )
+				r_value_for_op= function_context.llvm_ir_builder.CreateTrunc( r_value_for_op, l_var.type.GetLLVMType() );
+			else if( r_type_size < l_type_size )
+				r_value_for_op= function_context.llvm_ir_builder.CreateZExt( r_value_for_op, l_var.type.GetLLVMType() );
+
+			if( binary_operator == BinaryOperatorType::ShiftLeft )
+				result.llvm_value= function_context.llvm_ir_builder.CreateShl( l_value_for_op, r_value_for_op );
+			else if( binary_operator == BinaryOperatorType::ShiftRight )
 			{
-				// Convert value of shift to type of shifted value. LLVM Reuqired this.
-				llvm::Constant* r_value_for_op= r_var.constexpr_value;
-				if( r_type_size > l_type_size )
-					r_value_for_op= llvm::ConstantExpr::getTrunc( r_value_for_op, l_var.type.GetLLVMType() );
-				else if( r_type_size < l_type_size )
-					r_value_for_op= llvm::ConstantExpr::getZExt( r_value_for_op, l_var.type.GetLLVMType() );
-
-				if( binary_operator == BinaryOperatorType::ShiftLeft )
-					result.constexpr_value= llvm::ConstantExpr::getShl( l_var.constexpr_value, r_value_for_op );
-				else if( binary_operator == BinaryOperatorType::ShiftRight )
-				{
-					if( IsSignedInteger( l_fundamental_type->fundamental_type ) )
-						result.constexpr_value= llvm::ConstantExpr::getAShr( l_var.constexpr_value, r_value_for_op );
-					else
-						result.constexpr_value= llvm::ConstantExpr::getLShr( l_var.constexpr_value, r_value_for_op );
-				}
-				else U_ASSERT(false);
-
-				result.llvm_value= result.constexpr_value;
+				if( IsSignedInteger( l_fundamental_type->fundamental_type ) )
+					result.llvm_value= function_context.llvm_ir_builder.CreateAShr( l_value_for_op, r_value_for_op );
+				else
+					result.llvm_value= function_context.llvm_ir_builder.CreateLShr( l_value_for_op, r_value_for_op );
 			}
-			else
-			{
-				llvm::Value* const l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
-				llvm::Value* r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
-
-				// Convert value of shift to type of shifted value. LLVM Reuqired this.
-				if( r_type_size > l_type_size )
-					r_value_for_op= function_context.llvm_ir_builder.CreateTrunc( r_value_for_op, l_var.type.GetLLVMType() );
-				else if( r_type_size < l_type_size )
-					r_value_for_op= function_context.llvm_ir_builder.CreateZExt( r_value_for_op, l_var.type.GetLLVMType() );
-
-				if( binary_operator == BinaryOperatorType::ShiftLeft )
-					result.llvm_value= function_context.llvm_ir_builder.CreateShl( l_value_for_op, r_value_for_op );
-				else if( binary_operator == BinaryOperatorType::ShiftRight )
-				{
-					if( IsSignedInteger( l_fundamental_type->fundamental_type ) )
-						result.llvm_value= function_context.llvm_ir_builder.CreateAShr( l_value_for_op, r_value_for_op );
-					else
-						result.llvm_value= function_context.llvm_ir_builder.CreateLShr( l_value_for_op, r_value_for_op );
-				}
-				else U_ASSERT(false);
-			}
+			else U_ASSERT(false);
 
 			result.location= Variable::Location::LLVMRegister;
 			result.value_type= ValueType::Value;
 			result.type= l_type;
+			result.constexpr_value= llvm::dyn_cast<llvm::Constant>(result.llvm_value);
 		}
 		break;
 
@@ -3077,21 +2857,13 @@ Value CodeBuilder::BuildPrefixOperator(
 	result.location= Variable::Location::LLVMRegister;
 	result.value_type= ValueType::Value;
 
-	if( variable.constexpr_value != nullptr )
-	{
-		if( is_float )
-			result.llvm_value= result.constexpr_value= llvm::ConstantExpr::getFNeg( variable.constexpr_value );
-		else
-			result.llvm_value= result.constexpr_value= llvm::ConstantExpr::getNeg( variable.constexpr_value );
-	}
+	llvm::Value* const value_for_neg= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+	if( is_float )
+		result.llvm_value= function_context.llvm_ir_builder.CreateFNeg( value_for_neg );
 	else
-	{
-		llvm::Value* const value_for_neg= CreateMoveToLLVMRegisterInstruction( variable, function_context );
-		if( is_float )
-			result.llvm_value= function_context.llvm_ir_builder.CreateFNeg( value_for_neg );
-		else
-			result.llvm_value= function_context.llvm_ir_builder.CreateNeg( value_for_neg );
-	}
+		result.llvm_value= function_context.llvm_ir_builder.CreateNeg( value_for_neg );
+
+	result.constexpr_value= llvm::dyn_cast<llvm::Constant>(result.llvm_value);
 
 	const auto node= std::make_shared<ReferencesGraphNode>( OverloadedOperatorToString(OverloadedOperator::Sub), ReferencesGraphNode::Kind::Variable );
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
@@ -3133,14 +2905,8 @@ Value CodeBuilder::BuildPrefixOperator(
 	result.type= variable.type;
 	result.location= Variable::Location::LLVMRegister;
 	result.value_type= ValueType::Value;
-
-	if( variable.constexpr_value != nullptr )
-		result.llvm_value= result.constexpr_value= llvm::ConstantExpr::getNot( variable.constexpr_value );
-	else
-	{
-		llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
-		result.llvm_value= function_context.llvm_ir_builder.CreateNot( value_in_register );
-	}
+	result.llvm_value= function_context.llvm_ir_builder.CreateNot( CreateMoveToLLVMRegisterInstruction( variable, function_context ) );
+	result.constexpr_value= llvm::dyn_cast<llvm::Constant>(result.llvm_value);
 
 	const auto node= std::make_shared<ReferencesGraphNode>( OverloadedOperatorToString(OverloadedOperator::LogicalNot), ReferencesGraphNode::Kind::Variable );
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
@@ -3178,14 +2944,8 @@ Value CodeBuilder::BuildPrefixOperator(
 	result.type= variable.type;
 	result.location= Variable::Location::LLVMRegister;
 	result.value_type= ValueType::Value;
-
-	if( variable.constexpr_value != nullptr )
-		result.llvm_value= result.constexpr_value= llvm::ConstantExpr::getNot( variable.constexpr_value );
-	else
-	{
-		llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
-		result.llvm_value= function_context.llvm_ir_builder.CreateNot( value_in_register );
-	}
+	result.llvm_value= function_context.llvm_ir_builder.CreateNot( CreateMoveToLLVMRegisterInstruction( variable, function_context ) );
+	result.constexpr_value= llvm::dyn_cast<llvm::Constant>(result.llvm_value);
 
 	const auto node= std::make_shared<ReferencesGraphNode>( OverloadedOperatorToString(OverloadedOperator::BitwiseNot), ReferencesGraphNode::Kind::Variable );
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
