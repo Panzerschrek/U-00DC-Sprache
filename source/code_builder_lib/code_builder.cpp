@@ -1216,7 +1216,10 @@ Type CodeBuilder::BuildFuncCode(
 		}
 
 		if( first_arg_is_sret )
+		{
 			llvm_function->addAttribute( 1u, llvm::Attribute::StructRet );
+			llvm_function->addAttribute( 1u, llvm::Attribute::NoAlias );
+		}
 
 		func_variable.llvm_function= llvm_function;
 
