@@ -21,6 +21,24 @@ llvm::ManagedStatic<llvm::LLVMContext> g_llvm_context;
 // Returns "true" if should enable test.
 bool FilterTest( const std::string& test_name )
 {
+	static const std::unordered_set<std::string> c_test_to_enable
+	{
+		"DestructorsTest0",
+		"DestructorsTest1",
+		"DestructorsTest2",
+		"DestructorsTest3",
+		"DestructorsTest4",
+		"DestructorsTest5",
+		"DestructorsTest8",
+		"DestructorsTest9",
+		"DestructorsTest10",
+		"DestructorsTest12",
+	};
+
+	const std::string test_name_without_file_name= test_name.substr(test_name.find(':') + 1);
+	if( c_test_to_enable.count( test_name_without_file_name ) != 0 )
+		return true;
+
 	static const std::string c_tests_to_enable_pattern[]
 	{
 		"AccessingReferenceInsideMethodUsingImplicitThis",
@@ -67,9 +85,6 @@ bool FilterTest( const std::string& test_name )
 		"DefaultConstructorNotFoundTest",
 		"DefaultInitializationForStructMembersTest",
 		"DestructorOutsideClassTest0",
-		"DestructorsTest0",
-		"DestructorsTest8",
-		"DestructorsTest9",
 		"DuplicatedStructMemberInitializerTest0",
 		"DuplicatedStructMemberInitializer_InConstructors_Test0",
 		"EmptyInitializerTest0",
