@@ -68,6 +68,8 @@ bool FilterTest( const std::string& test_name )
 		"DefaultInitializationForStructMembersTest",
 		"DestructorOutsideClassTest0",
 		"DestructorsTest0",
+		"DestructorsTest8",
+		"DestructorsTest9",
 		"DuplicatedStructMemberInitializerTest0",
 		"DuplicatedStructMemberInitializer_InConstructors_Test0",
 		"EmptyInitializerTest0",

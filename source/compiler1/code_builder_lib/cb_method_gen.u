@@ -412,32 +412,7 @@ fn CodeBuilder::TryGenerateDestructor( this, ClassTypePtr& class_type )
 	auto mut this_llvm_value= LLVMValueRef::Null;
 	unsafe{  this_llvm_value= LLVMGetParam( function_variable.llvm_function, 0u );  }
 
-	foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
-	{
-		auto field_ptr= member.value().Get</ClassField/>();
-		if( field_ptr.empty() )
-		{
-			continue;
-		}
-
-		auto field_lock= field_ptr.lock_imut();
-		var ClassField& class_field= field_lock.get_ref();
-
-		auto mut field_llvm_value= LLVMValueRef::Null;
-		auto op_name_nt= "." + member.key() + "\0";
-		unsafe
-		{
-			var [ LLVMValueRef, 2 ] indexes
-			[
-				GetZeroGEPIndex(),
-				LLVMConstInt( fundamental_llvm_types_.u32_, u64(class_field.index), LLVMBool::False )
-			];
-
-			field_llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, this_llvm_value, indexes[0], 2u, op_name_nt.front() );
-		}
-
-		BuildDestructorPart( function_context, field_llvm_value, class_field.t );
-	}
+	BuildMembersDestructors( function_context, this_llvm_value, class_type );
 
 	// Finsih function - add remaining instructions
 	unsafe
@@ -561,6 +536,38 @@ fn CodeBuilder::BuildDestructorPart( this, FunctionContext &mut function_context
 		{
 			LLVMBuildCall( function_context.llvm_ir_builder, destructor_.llvm_function, value, 1u, "\0"[0] );
 		}
+	}
+}
+
+fn CodeBuilder::BuildMembersDestructors( this, FunctionContext &mut function_context, LLVMValueRef value, ClassTypePtr& class_type )
+{
+	auto class_members= class_type.lock_imut().get_ref().members;
+
+	foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
+	{
+		auto field_ptr= member.value().Get</ClassField/>();
+		if( field_ptr.empty() )
+		{
+			continue;
+		}
+
+		auto field_lock= field_ptr.lock_imut();
+		var ClassField& class_field= field_lock.get_ref();
+
+		auto mut field_llvm_value= LLVMValueRef::Null;
+		auto op_name_nt= "." + member.key() + "\0";
+		unsafe
+		{
+			var [ LLVMValueRef, 2 ] indexes
+			[
+				GetZeroGEPIndex(),
+				LLVMConstInt( fundamental_llvm_types_.u32_, u64(class_field.index), LLVMBool::False )
+			];
+
+			field_llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, value, indexes[0], 2u, op_name_nt.front() );
+		}
+
+		BuildDestructorPart( function_context, field_llvm_value, class_field.t );
 	}
 }
 

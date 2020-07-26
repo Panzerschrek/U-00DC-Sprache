@@ -265,7 +265,17 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 			return block_element_build_info;
 		}
 		CallDestructorsForAllVariablesFrames( function_context );
-		unsafe{  LLVMBuildRetVoid( function_context.llvm_ir_builder );  }
+		unsafe
+		{
+			if( function_context.destructor_end_block != LLVMBasicBlockRef::Null )
+			{
+				LLVMBuildBr( function_context.llvm_ir_builder, function_context.destructor_end_block );
+			}
+			else
+			{
+				LLVMBuildRetVoid( function_context.llvm_ir_builder );
+			}
+		}
 		return block_element_build_info;
 	}
 

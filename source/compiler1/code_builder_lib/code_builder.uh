@@ -234,8 +234,8 @@ private:
 	fn TryGenerateDestructor( this, ClassTypePtr& class_type );
 
 	fn BuildCopyConstructorPart( this, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t );
-
 	fn BuildDestructorPart( this, FunctionContext &mut function_context, LLVMValueRef value, Type& t );
+	fn BuildMembersDestructors( this, FunctionContext &mut function_context, LLVMValueRef value, ClassTypePtr& class_type );
 
 	fn TryCallCopyConstructor(
 		this,
