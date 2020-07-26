@@ -245,6 +245,10 @@ private:
 		ClassTypePtr& class_type,
 		FilePos& file_pos );
 
+	fn CallDestructorsForVariablesFrame( this, FunctionContext &mut function_context, size_type variables_frame_index );
+	fn CallDestructorsForTopVariablesFrame( this, FunctionContext &mut function_context );
+	fn CallDestructorsForAllVariablesFrames( this, FunctionContext &mut function_context );
+
 	// Returns "false" if not complete.
 	fn EnsureTypeComplete( this, Type& t ) : bool;
 

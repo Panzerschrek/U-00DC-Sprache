@@ -989,6 +989,8 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariabl
 						LLVMBuildStore( function_context.llvm_ir_builder, arg_value, out_arg.llvm_value );
 					}
 				}
+
+				function_context.variables_frames.back().push_back( out_arg ); // Register arg for destruction
 			}
 
 			++arg_n;
@@ -1033,6 +1035,7 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariabl
 		if( function_type.return_type.get_ref() == void_type_ )
 		{
 			// Manually generate "return" for void-return functions.
+			CallDestructorsForAllVariablesFrames( function_context );
 			unsafe{  LLVMBuildRetVoid( function_context.llvm_ir_builder );  }
 		}
 		else
@@ -1062,6 +1065,30 @@ fn CodeBuilder::TryCallCopyConstructor(
 	}
 
 	BuildCopyConstructorPart( function_context, dst, src, class_type );
+}
+
+fn CodeBuilder::CallDestructorsForVariablesFrame( this, FunctionContext &mut function_context, size_type variables_frame_index )
+{
+	// Call destructors in reverse order.
+	for( auto mut i= function_context.variables_frames[variables_frame_index].size(); i > 0s; --i )
+	{
+		auto variable= function_context.variables_frames[variables_frame_index][i - 1s];
+		BuildDestructorPart( function_context, variable.llvm_value, variable.t );
+	}
+}
+
+fn CodeBuilder::CallDestructorsForTopVariablesFrame( this, FunctionContext &mut function_context )
+{
+	auto variables_frame_index= function_context.variables_frames.size() - 1s;
+	CallDestructorsForVariablesFrame( function_context, variables_frame_index );
+}
+
+fn CodeBuilder::CallDestructorsForAllVariablesFrames( this, FunctionContext &mut function_context )
+{
+	for( auto mut i= function_context.variables_frames.size(); i > 0s; --i )
+	{
+		CallDestructorsForVariablesFrame( function_context, i - 1s );
+	}
 }
 
 fn CodeBuilder::EnsureTypeComplete( this, Type& t ) : bool

@@ -54,7 +54,7 @@ public:
 
 	fn destructor()
 	{
-		function_context_.variables_frames.pop_back();
+		function_context_.variables_frames.drop_back();
 	}
 
 	fn GetFunctionContext( this'x' ) : FunctionContext &'x mut

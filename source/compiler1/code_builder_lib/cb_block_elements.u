@@ -32,6 +32,8 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 		}
 	}
 
+	CallDestructorsForTopVariablesFrame( function_context );
+
 	return block_element_build_info;
 }
 
@@ -76,12 +78,14 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 			if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
 			{
 				BuildEmptyInitializer( names_scope, function_context, out_variable, variable_declaration.name, variable_declaration.file_pos );
-
 			}
 			else
 			{
 				out_variable.constexpr_value= BuildInitializer( names_scope, function_context, out_variable, variable_declaration.initializer );
 			}
+
+			auto frame_index= function_context.variables_frames.size() - 2s;
+			function_context.variables_frames[ frame_index ].push_back( out_variable ); // Register variable for destruction.
 		}
 		else if( variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
 		{
@@ -156,6 +160,8 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 		{
 			REPORT_ERROR( Redefinition, names_scope, variable_declaration.file_pos, variable_declaration.name )
 		}
+
+		CallDestructorsForTopVariablesFrame( function_context );
 	}
 
 	return BlockElementBuildInfo();
@@ -215,6 +221,9 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 		}
 
 		BuildCopyConstructorPart( function_context, out_variable.llvm_value, expr.llvm_value, out_variable.t );
+
+		auto frame_index= function_context.variables_frames.size() - 2s;
+		function_context.variables_frames[ frame_index ].push_back( out_variable ); // Register variable for destruction.
 	}
 	else { halt; }
 
@@ -239,6 +248,8 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 		REPORT_ERROR( Redefinition, names_scope, auto_variable_declaration.file_pos, auto_variable_declaration.name )
 	}
 
+	CallDestructorsForTopVariablesFrame( function_context );
+
 	return BlockElementBuildInfo();
 }
 
@@ -253,6 +264,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 			REPORT_ERROR( TypesMismatch, names_scope, return_operator.file_pos, function_context.return_type, void_type_ )
 			return block_element_build_info;
 		}
+		CallDestructorsForAllVariablesFrames( function_context );
 		unsafe{  LLVMBuildRetVoid( function_context.llvm_ir_builder );  }
 		return block_element_build_info;
 	}
@@ -281,6 +293,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 			return block_element_build_info;
 		}
 
+		CallDestructorsForAllVariablesFrames( function_context );
 		unsafe{  LLVMBuildRet( function_context.llvm_ir_builder, expr.llvm_value );  }
 	}
 	else
@@ -290,6 +303,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 		{
 			auto s_ret= function_context.s_ret;
 			TryCallCopyConstructor( names_scope, function_context, s_ret, expr.llvm_value, class_type, return_operator.file_pos );
+			CallDestructorsForAllVariablesFrames( function_context );
 			unsafe{  LLVMBuildRetVoid( function_context.llvm_ir_builder );  }
 			return block_element_build_info;
 		}
@@ -297,6 +311,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 		unsafe
 		{
 			auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr, function_context );
+			CallDestructorsForAllVariablesFrames( function_context );
 			LLVMBuildRet( function_context.llvm_ir_builder, value_in_register );
 		}
 	}
@@ -336,6 +351,8 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 		LLVMBuildStore( function_context.llvm_ir_builder, r_in_register, l.llvm_value );
 	}
 
+	CallDestructorsForTopVariablesFrame( function_context );
+
 	return BlockElementBuildInfo();
 }
 
@@ -371,6 +388,8 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 			CreateMoveToLLVMRegisterInstruction( op_result_variable_ref.get_ref(), function_context ),
 			l_var.llvm_value );
 	}
+
+	CallDestructorsForTopVariablesFrame( function_context );
 
 	return BlockElementBuildInfo();
 }
@@ -672,6 +691,8 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, false_block );
 	}
 
+	CallDestructorsForTopVariablesFrame( function_context );
+
 	return BlockElementBuildInfo();
 }
 
@@ -699,6 +720,8 @@ fn CodeBuilder::BuildDeltaOneOperator( this, NamesScopePtr& names_scope, Functio
 		auto result_value= LLVMBuildAdd( function_context.llvm_ir_builder, operand_value, delta_value, "\0"[0] );
 		LLVMBuildStore( function_context.llvm_ir_builder, result_value, variable.llvm_value );
 	}
+
+	CallDestructorsForTopVariablesFrame( function_context );
 }
 
 } // namespace U
