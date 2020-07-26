@@ -7,6 +7,8 @@ struct LoopFrame
 {
 	LLVMBasicBlockRef block_for_break;
 	LLVMBasicBlockRef block_for_continue;
+	// Number of variables frames at stack before loop block creation.
+	size_type variable_frames_stack_size;
 }
 
 class FunctionContext
@@ -37,7 +39,35 @@ public:
 	LLVMBasicBlockRef function_basic_block= LLVMBasicBlockRef::Null;
 	LLVMBuilderRef llvm_ir_builder= LLVMBuilderRef::Null;
 
+	LLVMBasicBlockRef destructor_end_block= LLVMBasicBlockRef::Null; // For destructors only - used for "Br" instead of "ret"
+
 	ust::vector</LoopFrame/> loops_stack;
+
+	type VariablesFrame= ust::vector</ NamesScopeVariable />;
+	ust::vector</VariablesFrame/> variables_frames;
+}
+
+class VariablesFrameHolder
+{
+public:
+	fn constructor( mut this'x', FunctionContext &'y mut function_context ) ' x <- y '
+	( function_context_= function_context )
+	{
+		function_context_.variables_frames.push_back( FunctionContext::VariablesFrame() );
+	}
+
+	fn destructor()
+	{
+		function_context_.variables_frames.drop_back();
+	}
+
+	fn GetFunctionContext( this'x' ) : FunctionContext &'x mut
+	{
+		return function_context_;
+	}
+
+private:
+	FunctionContext &mut function_context_;
 }
 
 } // namespace U

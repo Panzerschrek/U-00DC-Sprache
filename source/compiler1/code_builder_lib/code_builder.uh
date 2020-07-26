@@ -231,8 +231,11 @@ private:
 
 	fn TryGenerateDefaultConstructor( this, ClassTypePtr& class_type );
 	fn TryGenerateCopyConstructor( this, ClassTypePtr& class_type );
+	fn TryGenerateDestructor( this, ClassTypePtr& class_type );
 
 	fn BuildCopyConstructorPart( this, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t );
+	fn BuildDestructorPart( this, FunctionContext &mut function_context, LLVMValueRef value, Type& t );
+	fn BuildMembersDestructors( this, FunctionContext &mut function_context, LLVMValueRef value, ClassTypePtr& class_type );
 
 	fn TryCallCopyConstructor(
 		this,
@@ -241,6 +244,11 @@ private:
 		LLVMValueRef dst, LLVMValueRef src,
 		ClassTypePtr& class_type,
 		FilePos& file_pos );
+
+	fn CallDestructorsForVariablesFrame( this, FunctionContext &mut function_context, size_type variables_frame_index );
+	fn CallDestructorsForTopVariablesFrame( this, FunctionContext &mut function_context );
+	fn CallDestructorsForAllVariablesFrames( this, FunctionContext &mut function_context );
+	fn CallDestructorsForLoopInnerVariables( this, FunctionContext &mut function_context );
 
 	// Returns "false" if not complete.
 	fn EnsureTypeComplete( this, Type& t ) : bool;

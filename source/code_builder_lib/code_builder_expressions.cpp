@@ -1583,6 +1583,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
+	// TODO - maybe create separate variables stack frame for right expression evaluation and call destructors?
 	const Variable l_var= BuildExpressionCodeEnsureVariable( l_expression, names, function_context );
 
 	if( l_var.type != bool_type_ )

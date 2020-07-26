@@ -21,6 +21,36 @@ llvm::ManagedStatic<llvm::LLVMContext> g_llvm_context;
 // Returns "true" if should enable test.
 bool FilterTest( const std::string& test_name )
 {
+	static const std::unordered_set<std::string> c_test_to_enable
+	{
+		"DestructorMustReturnVoidTest0",
+		"DestructorOutsideClassTest0",
+		"DestructorsTest0",
+		"DestructorsTest1",
+		"DestructorsTest2",
+		"DestructorsTest3",
+		"DestructorsTest4",
+		"DestructorsTest5",
+		"DestructorsTest6",
+		"DestructorsTest7",
+		"DestructorsTest8",
+		"DestructorsTest9",
+		"DestructorsTest10",
+		"DestructorsTest12_ShouldCorrectlyReturnValueFromDestructibleStruct",
+		"DestructorsTest13_ShouldBeDesdtroyedAfterUsage0",
+		"DestructorsTest14_ShouldBeDesdtroyedAfterUsage1",
+		"DestructorsTest15_ShouldBeDesdtroyedAfterUsage2",
+		"DestructorsTest16_ShouldBeDesdtroyedAfterUsage3",
+		"DestructorsTest17_ShouldBeDesdtroyedAfterUsage4",
+		"DestructorsTest18_ShouldBeDesdtroyedAfterUsage5",
+		"ExplicitArgumentsInDestructorTest1",
+		"FunctionBodyDuplication_ForDestructors_Test0",
+	};
+
+	const std::string test_name_without_file_name= test_name.substr(test_name.find(':') + 1);
+	if( c_test_to_enable.count( test_name_without_file_name ) != 0 )
+		return true;
+
 	static const std::string c_tests_to_enable_pattern[]
 	{
 		"AccessingReferenceInsideMethodUsingImplicitThis",

@@ -14,6 +14,9 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 {
 	var NamesScopeMutPtr block_names_scope( NamesScope( "", names_scope ) );
 
+	var VariablesFrameHolder variables_frame_hodler(function_context);
+	auto& mut function_context= variables_frame_hodler.GetFunctionContext();
+
 	var BlockElementBuildInfo mut block_element_build_info;
 	foreach( &block_element : block.elements )
 	{
@@ -27,6 +30,11 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 			auto info = BuildBlockElement( block_names_scope, function_context, el );
 			block_element_build_info.have_terminal_instruction_inside |= info.have_terminal_instruction_inside;
 		}
+	}
+
+	if( !block_element_build_info.have_terminal_instruction_inside )
+	{
+		CallDestructorsForTopVariablesFrame( function_context );
 	}
 
 	return block_element_build_info;
@@ -59,6 +67,9 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 			.is_mutable= variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable,
 		};
 
+		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+
 		if( variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 		{
 			unsafe
@@ -70,12 +81,14 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 			if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
 			{
 				BuildEmptyInitializer( names_scope, function_context, out_variable, variable_declaration.name, variable_declaration.file_pos );
-
 			}
 			else
 			{
 				out_variable.constexpr_value= BuildInitializer( names_scope, function_context, out_variable, variable_declaration.initializer );
 			}
+
+			auto frame_index= function_context.variables_frames.size() - 2s;
+			function_context.variables_frames[ frame_index ].push_back( out_variable ); // Register variable for destruction.
 		}
 		else if( variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
 		{
@@ -150,6 +163,8 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 		{
 			REPORT_ERROR( Redefinition, names_scope, variable_declaration.file_pos, variable_declaration.name )
 		}
+
+		CallDestructorsForTopVariablesFrame( function_context );
 	}
 
 	return BlockElementBuildInfo();
@@ -161,6 +176,9 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 	{
 		REPORT_ERROR( UsingKeywordAsName, names_scope, auto_variable_declaration.file_pos )
 	}
+
+	var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
 	var Variable expr= BuildExpressionCodeEnsureVariable( names_scope, function_context, auto_variable_declaration.initializer_expression );
 	if( expr.t == invalid_type_ )
@@ -206,6 +224,9 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 		}
 
 		BuildCopyConstructorPart( function_context, out_variable.llvm_value, expr.llvm_value, out_variable.t );
+
+		auto frame_index= function_context.variables_frames.size() - 2s;
+		function_context.variables_frames[ frame_index ].push_back( out_variable ); // Register variable for destruction.
 	}
 	else { halt; }
 
@@ -230,6 +251,8 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopeMutPtr& names_scope, Function
 		REPORT_ERROR( Redefinition, names_scope, auto_variable_declaration.file_pos, auto_variable_declaration.name )
 	}
 
+	CallDestructorsForTopVariablesFrame( function_context );
+
 	return BlockElementBuildInfo();
 }
 
@@ -244,9 +267,23 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 			REPORT_ERROR( TypesMismatch, names_scope, return_operator.file_pos, function_context.return_type, void_type_ )
 			return block_element_build_info;
 		}
-		unsafe{  LLVMBuildRetVoid( function_context.llvm_ir_builder );  }
+		CallDestructorsForAllVariablesFrames( function_context );
+		unsafe
+		{
+			if( function_context.destructor_end_block != LLVMBasicBlockRef::Null )
+			{
+				LLVMBuildBr( function_context.llvm_ir_builder, function_context.destructor_end_block );
+			}
+			else
+			{
+				LLVMBuildRetVoid( function_context.llvm_ir_builder );
+			}
+		}
 		return block_element_build_info;
 	}
+
+	var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
 	var Variable expr= BuildExpressionCodeEnsureVariable( names_scope, function_context, return_operator.expr );
 
@@ -269,6 +306,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 			return block_element_build_info;
 		}
 
+		CallDestructorsForAllVariablesFrames( function_context );
 		unsafe{  LLVMBuildRet( function_context.llvm_ir_builder, expr.llvm_value );  }
 	}
 	else
@@ -278,6 +316,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 		{
 			auto s_ret= function_context.s_ret;
 			TryCallCopyConstructor( names_scope, function_context, s_ret, expr.llvm_value, class_type, return_operator.file_pos );
+			CallDestructorsForAllVariablesFrames( function_context );
 			unsafe{  LLVMBuildRetVoid( function_context.llvm_ir_builder );  }
 			return block_element_build_info;
 		}
@@ -285,6 +324,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 		unsafe
 		{
 			auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr, function_context );
+			CallDestructorsForAllVariablesFrames( function_context );
 			LLVMBuildRet( function_context.llvm_ir_builder, value_in_register );
 		}
 	}
@@ -294,6 +334,9 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 
 fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AssignmentOperator& assignment_operator ) : BlockElementBuildInfo
 {
+	var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+
 	auto r= BuildExpressionCodeEnsureVariable( names_scope, function_context, assignment_operator.r );
 	if( r.t.GetFundamentalType().empty() && r.t.GetEnumType().empty() )
 	{
@@ -321,11 +364,16 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 		LLVMBuildStore( function_context.llvm_ir_builder, r_in_register, l.llvm_value );
 	}
 
+	CallDestructorsForTopVariablesFrame( function_context );
+
 	return BlockElementBuildInfo();
 }
 
 fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AdditiveAssignmentOperator& additive_assignment_operator ) : BlockElementBuildInfo
 {
+	var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+
 	auto mut r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, additive_assignment_operator.r );
 	// Save r_var in register, prevent its modification during l_var calculation.
 	r_var.llvm_value= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
@@ -354,6 +402,8 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 			l_var.llvm_value );
 	}
 
+	CallDestructorsForTopVariablesFrame( function_context );
+
 	return BlockElementBuildInfo();
 }
 
@@ -371,6 +421,9 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 
 fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : BlockElementBuildInfo
 {
+	var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+
 	BuildExpressionCode( names_scope, function_context, expression );
 	return BlockElementBuildInfo();
 }
@@ -420,6 +473,9 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 		}
 		else
 		{
+			var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+			auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+
 			var Variable condition_expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, branch.condition );
 			if( condition_expression.t != bool_type_ )
 			{
@@ -434,6 +490,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 			else
 			{
 				auto condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+				CallDestructorsForTopVariablesFrame( function_context );
 
 				unsafe{  LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, body_block, next_condition_block );  }
 			}
@@ -495,26 +552,31 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 	}
 
 	// Test block code.
-
-	var Variable condition_expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, while_operator.condition );
-	var FilePos condition_file_pos= Synt::GetFilePos( while_operator.condition );
-	if( condition_expression.t != bool_type_ )
 	{
-		REPORT_ERROR( TypesMismatch,
-				names_scope,
-				condition_file_pos,
-				bool_type_,
-				condition_expression.t )
-		return BlockElementBuildInfo();
-	}
+		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
-	auto condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+		var Variable condition_expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, while_operator.condition );
+		var FilePos condition_file_pos= Synt::GetFilePos( while_operator.condition );
+		if( condition_expression.t != bool_type_ )
+		{
+			REPORT_ERROR( TypesMismatch,
+					names_scope,
+					condition_file_pos,
+					bool_type_,
+					condition_expression.t )
+			return BlockElementBuildInfo();
+		}
 
-	unsafe
-	{
-		while_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
-		block_after_while= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
-		LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, while_block, block_after_while );
+		auto condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+		CallDestructorsForTopVariablesFrame( function_context );
+
+		unsafe
+		{
+			while_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+			block_after_while= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+			LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, while_block, block_after_while );
+		}
 	}
 
 	// While block code.
@@ -523,6 +585,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 	{
 		.block_for_break= block_after_while,
 		.block_for_continue= test_block,
+		.variable_frames_stack_size= function_context.variables_frames.size(),
 	};
 	function_context.loops_stack.push_back(loop_frame);
 
@@ -532,8 +595,11 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, while_block );
 	}
 
-	BuildBlockElement( names_scope, function_context, while_operator.block );
-	unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, test_block );  }
+	auto info= BuildBlockElement( names_scope, function_context, while_operator.block );
+	if( !info.have_terminal_instruction_inside )
+	{
+		unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, test_block );  }
+	}
 
 	function_context.loops_stack.pop_back();
 
@@ -557,6 +623,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 		return block_element_build_info;
 	}
 
+	CallDestructorsForLoopInnerVariables( function_context );
 	unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, function_context.loops_stack.back().block_for_break );  }
 
 	return block_element_build_info;
@@ -572,6 +639,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 		return block_element_build_info;
 	}
 
+	CallDestructorsForLoopInnerVariables( function_context );
 	unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, function_context.loops_stack.back().block_for_continue );  }
 
 	return block_element_build_info;
@@ -581,6 +649,9 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 {
 	var Variable mut condition_variable;
 	{
+		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+
 		auto instructions_state= SaveInstructionsState( function_context );
 		condition_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, static_assert_.expression );
 		RestoreInstructionsState( function_context, instructions_state );
@@ -622,6 +693,9 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 
 fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::HaltIf& halt_if ) : BlockElementBuildInfo
 {
+	var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+
 	auto condition= BuildExpressionCodeEnsureVariable( names_scope, function_context, halt_if.condition );
 	if( condition.t != bool_type_ )
 	{
@@ -629,12 +703,15 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 		return BlockElementBuildInfo();
 	}
 
+	auto condition_in_register= CreateMoveToLLVMRegisterInstruction( condition, function_context );
+	CallDestructorsForTopVariablesFrame( function_context );
+
 	unsafe
 	{
 		auto true_block = LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
 		auto false_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
 
-		LLVMBuildCondBr( function_context.llvm_ir_builder, CreateMoveToLLVMRegisterInstruction( condition, function_context ), true_block, false_block );
+		LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, true_block, false_block );
 
 		// True branch
 		LLVMAppendExistingBasicBlock( function_context.llvm_function, true_block );
@@ -653,6 +730,9 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 
 fn CodeBuilder::BuildDeltaOneOperator( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, FilePos& file_pos, i32 delta )
 {
+	var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+
 	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression );
 	if( variable.t.GetFundamentalType().empty() || !IsInteger( variable.t.GetFundamentalType().get_ref().fundamental_type ) )
 	{
@@ -672,6 +752,8 @@ fn CodeBuilder::BuildDeltaOneOperator( this, NamesScopePtr& names_scope, Functio
 		auto result_value= LLVMBuildAdd( function_context.llvm_ir_builder, operand_value, delta_value, "\0"[0] );
 		LLVMBuildStore( function_context.llvm_ir_builder, result_value, variable.llvm_value );
 	}
+
+	CallDestructorsForTopVariablesFrame( function_context );
 }
 
 } // namespace U

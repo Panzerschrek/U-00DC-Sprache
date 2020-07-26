@@ -137,6 +137,24 @@ def CStyleForOperator_Tes6():
 	assert( tests_lib.run_function( "_Z3Fibj", 6 ) == 13 )
 
 
+def CStyleForOperator_Test7():
+	# -- iteration
+	c_program_text= """
+		fn Foo() : i32
+		{
+			auto mut res= 0;
+			for( auto mut i= 4; i >= -1; --i )
+			{
+				res+= i;
+			}
+			return res;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 4 + 3 + 2 + 1 + 0 - 1 )
+
+
 def CStyleForOperator_BreakTest0():
 	c_program_text= """
 		fn Foo() : u32
