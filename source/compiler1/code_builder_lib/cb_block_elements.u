@@ -473,6 +473,9 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 		}
 		else
 		{
+			var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+			auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+
 			var Variable condition_expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, branch.condition );
 			if( condition_expression.t != bool_type_ )
 			{
@@ -487,6 +490,7 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 			else
 			{
 				auto condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+				CallDestructorsForTopVariablesFrame( function_context );
 
 				unsafe{  LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, body_block, next_condition_block );  }
 			}
@@ -696,12 +700,15 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 		return BlockElementBuildInfo();
 	}
 
+	auto condition_in_register= CreateMoveToLLVMRegisterInstruction( condition, function_context );
+	CallDestructorsForTopVariablesFrame( function_context );
+
 	unsafe
 	{
 		auto true_block = LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
 		auto false_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
 
-		LLVMBuildCondBr( function_context.llvm_ir_builder, CreateMoveToLLVMRegisterInstruction( condition, function_context ), true_block, false_block );
+		LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, true_block, false_block );
 
 		// True branch
 		LLVMAppendExistingBasicBlock( function_context.llvm_function, true_block );
@@ -714,8 +721,6 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 		LLVMAppendExistingBasicBlock( function_context.llvm_function, false_block );
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, false_block );
 	}
-
-	CallDestructorsForTopVariablesFrame( function_context );
 
 	return BlockElementBuildInfo();
 }

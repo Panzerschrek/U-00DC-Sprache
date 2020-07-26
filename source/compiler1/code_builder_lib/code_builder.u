@@ -1249,12 +1249,15 @@ fn CodeBuilder::RestoreInstructionsState( FunctionContext &mut function_context,
 
 fn CodeBuilder::CreateGlobalFunctionContext( this ) : FunctionContext
 {
-	return FunctionContext(
+	var FunctionContext mut function_context(
 		llvm_context_,
 		global_llvm_function_,
 		void_type_for_ret_,
 		false,
 		false );
+
+	function_context.variables_frames.push_back( FunctionContext::VariablesFrame() );
+	return move(function_context);
 }
 
 } // namespace U

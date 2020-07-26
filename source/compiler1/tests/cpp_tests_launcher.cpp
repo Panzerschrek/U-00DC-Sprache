@@ -34,7 +34,13 @@ bool FilterTest( const std::string& test_name )
 		"DestructorsTest8",
 		"DestructorsTest9",
 		"DestructorsTest10",
-		"DestructorsTest12",
+		"DestructorsTest12_ShouldCorrectlyReturnValueFromDestructibleStruct",
+		"DestructorsTest13_ShouldBeDesdtroyedAfterUsage0",
+		"DestructorsTest14_ShouldBeDesdtroyedAfterUsage1",
+		"DestructorsTest15_ShouldBeDesdtroyedAfterUsage2",
+		"DestructorsTest16_ShouldBeDesdtroyedAfterUsage3",
+		"DestructorsTest17_ShouldBeDesdtroyedAfterUsage4",
+		"DestructorsTest18_ShouldBeDesdtroyedAfterUsage5",
 	};
 
 	const std::string test_name_without_file_name= test_name.substr(test_name.find(':') + 1);
