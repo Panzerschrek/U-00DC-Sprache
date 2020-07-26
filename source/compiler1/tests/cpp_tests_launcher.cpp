@@ -23,6 +23,8 @@ bool FilterTest( const std::string& test_name )
 {
 	static const std::unordered_set<std::string> c_test_to_enable
 	{
+		"DestructorMustReturnVoidTest0",
+		"DestructorOutsideClassTest0",
 		"DestructorsTest0",
 		"DestructorsTest1",
 		"DestructorsTest2",
@@ -41,6 +43,8 @@ bool FilterTest( const std::string& test_name )
 		"DestructorsTest16_ShouldBeDesdtroyedAfterUsage3",
 		"DestructorsTest17_ShouldBeDesdtroyedAfterUsage4",
 		"DestructorsTest18_ShouldBeDesdtroyedAfterUsage5",
+		"ExplicitArgumentsInDestructorTest1",
+		"FunctionBodyDuplication_ForDestructors_Test0",
 	};
 
 	const std::string test_name_without_file_name= test_name.substr(test_name.find(':') + 1);

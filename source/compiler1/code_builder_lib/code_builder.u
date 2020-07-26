@@ -824,6 +824,10 @@ fn CodeBuilder::PrepareFunction(
 		{
 			REPORT_ERROR( ConstructorAndDestructorMustReturnVoid, names_scope_ptr, function_declaration.file_pos )
 		}
+		if( func_name == KeywordToString( Keyword::destructor_ ) && function_type.args.size() > 1s )
+		{
+			REPORT_ERROR( ExplicitArgumentsInDestructor, names_scope_ptr, function_declaration.file_pos )
+		}
 	}
 
 	if_var( &mut prev_function : GetFunctionWithSameType( functions_set, function_variable.t ) )
