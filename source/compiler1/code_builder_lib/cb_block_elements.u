@@ -649,6 +649,9 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 {
 	var Variable mut condition_variable;
 	{
+		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+
 		auto instructions_state= SaveInstructionsState( function_context );
 		condition_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, static_assert_.expression );
 		RestoreInstructionsState( function_context, instructions_state );

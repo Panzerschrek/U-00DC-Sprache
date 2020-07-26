@@ -1071,34 +1071,38 @@ fn CodeBuilder::CallFunctionsSet(
 	FilePos& file_pos ) : Value
 {
 	// Pre-evaluate arguments to know exact types and select exact function.
-	auto instructions_state= SaveInstructionsState( function_context );
-
 	var ust::vector</FunctionType::Arg/> mut args_evaluated;
-
-	if( !this_.empty() )
 	{
-		var FunctionType::Arg mut out_arg
-		{
-			.arg_type( this_.get_ref().t ),
-			.is_mutable= this_.get_ref().value_type == ValueType::ReferenceMut,
-			.is_reference= true,
-		};
-		args_evaluated.push_back( move(out_arg) );
-	}
+		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
-	foreach( &arg : args )
-	{
-		auto arg_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg.get_ref() );
-		var FunctionType::Arg mut out_arg
-		{
-			.arg_type( arg_variable.t ),
-			.is_mutable= arg_variable.value_type == ValueType::ReferenceMut,
-			.is_reference= arg_variable.value_type != ValueType::Value,
-		};
-		args_evaluated.push_back( move(out_arg) );
-	}
+		auto instructions_state= SaveInstructionsState( function_context );
 
-	RestoreInstructionsState( function_context, instructions_state );
+		if( !this_.empty() )
+		{
+			var FunctionType::Arg mut out_arg
+			{
+				.arg_type( this_.get_ref().t ),
+				.is_mutable= this_.get_ref().value_type == ValueType::ReferenceMut,
+				.is_reference= true,
+			};
+			args_evaluated.push_back( move(out_arg) );
+		}
+
+		foreach( &arg : args )
+		{
+			auto arg_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg.get_ref() );
+			var FunctionType::Arg mut out_arg
+			{
+				.arg_type( arg_variable.t ),
+				.is_mutable= arg_variable.value_type == ValueType::ReferenceMut,
+				.is_reference= arg_variable.value_type != ValueType::Value,
+			};
+			args_evaluated.push_back( move(out_arg) );
+		}
+
+		RestoreInstructionsState( function_context, instructions_state );
+	}
 
 	auto function_selected=
 		GetOverloadedFunction(
