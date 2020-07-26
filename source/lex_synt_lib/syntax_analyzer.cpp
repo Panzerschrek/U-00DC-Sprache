@@ -2470,7 +2470,7 @@ CStyleForOperator SyntaxAnalyzer::ParseCStyleForOperator()
 		}
 		else if( it_->type == Lexem::Type::Decrement )
 		{
-			IncrementOperator decrement_operator( it_->file_pos );
+			DecrementOperator decrement_operator( it_->file_pos );
 			NextLexem();
 			decrement_operator.expression= ParseExpression();
 
