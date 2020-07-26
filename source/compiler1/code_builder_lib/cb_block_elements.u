@@ -591,8 +591,11 @@ fn CodeBuilder::BuildBlockElement( this, NamesScopePtr& names_scope, FunctionCon
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, while_block );
 	}
 
-	BuildBlockElement( names_scope, function_context, while_operator.block );
-	unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, test_block );  }
+	auto info= BuildBlockElement( names_scope, function_context, while_operator.block );
+	if( !info.have_terminal_instruction_inside )
+	{
+		unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, test_block );  }
+	}
 
 	function_context.loops_stack.pop_back();
 
