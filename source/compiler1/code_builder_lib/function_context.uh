@@ -38,6 +38,32 @@ public:
 	LLVMBuilderRef llvm_ir_builder= LLVMBuilderRef::Null;
 
 	ust::vector</LoopFrame/> loops_stack;
+
+	type VariablesFrame= ust::vector</ NamesScopeVariable />;
+	ust::vector</VariablesFrame/> variables_frames;
+}
+
+class VariablesFrameHolder
+{
+public:
+	fn constructor( mut this'x', FunctionContext &'y mut function_context ) ' x <- y '
+	( function_context_= function_context )
+	{
+		function_context_.variables_frames.push_back( FunctionContext::VariablesFrame() );
+	}
+
+	fn destructor()
+	{
+		function_context_.variables_frames.pop_back();
+	}
+
+	fn GetFunctionContext( this'x' ) : FunctionContext &'x mut
+	{
+		return function_context_;
+	}
+
+private:
+	FunctionContext &mut function_context_;
 }
 
 } // namespace U

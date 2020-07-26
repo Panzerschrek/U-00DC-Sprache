@@ -905,7 +905,7 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariabl
 
 	auto& function_type= func_variable.t.GetFunctionType().get_ref();
 
-	var FunctionContext mut function_context(
+	var FunctionContext mut function_context_value(
 		llvm_context_,
 		func_variable.llvm_function,
 		function_type.return_type.get_ref(),
@@ -913,6 +913,9 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariabl
 		function_type.return_value_is_mutable );
 
 	var NamesScopeMutPtr args_names_scope_ptr( NamesScope( "", names_scope ) );
+
+	var VariablesFrameHolder args_variables_frame_hodler(function_context_value);
+	auto& mut function_context= args_variables_frame_hodler.GetFunctionContext();
 
 	{
 		auto mut args_names_scope_lock= args_names_scope_ptr.lock_mut();
