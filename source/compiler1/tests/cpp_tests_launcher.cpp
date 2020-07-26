@@ -29,6 +29,8 @@ bool FilterTest( const std::string& test_name )
 		"DestructorsTest3",
 		"DestructorsTest4",
 		"DestructorsTest5",
+		"DestructorsTest6",
+		"DestructorsTest7",
 		"DestructorsTest8",
 		"DestructorsTest9",
 		"DestructorsTest10",

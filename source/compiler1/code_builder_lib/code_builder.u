@@ -1121,6 +1121,14 @@ fn CodeBuilder::CallDestructorsForAllVariablesFrames( this, FunctionContext &mut
 	}
 }
 
+fn CodeBuilder::CallDestructorsForLoopInnerVariables( this, FunctionContext &mut function_context )
+{
+	for( var size_type mut i= function_context.variables_frames.size(), i_end= function_context.loops_stack.back().variable_frames_stack_size; i > i_end; --i )
+	{
+		CallDestructorsForVariablesFrame( function_context, i - 1s );
+	}
+}
+
 fn CodeBuilder::EnsureTypeComplete( this, Type& t ) : bool
 {
 	if_var( &class_type_ptr : t.GetClassType() )
