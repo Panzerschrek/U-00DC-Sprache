@@ -231,8 +231,11 @@ private:
 
 	fn TryGenerateDefaultConstructor( this, ClassTypePtr& class_type );
 	fn TryGenerateCopyConstructor( this, ClassTypePtr& class_type );
+	fn TryGenerateDestructor( this, ClassTypePtr& class_type );
 
 	fn BuildCopyConstructorPart( this, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t );
+
+	fn BuildDestructorPart( this, FunctionContext &mut function_context, LLVMValueRef value, Type& t );
 
 	fn TryCallCopyConstructor(
 		this,
