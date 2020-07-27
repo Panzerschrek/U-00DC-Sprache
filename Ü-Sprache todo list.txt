@@ -4,14 +4,15 @@ Delete the features from the list as soon as they are implemented.
 
 General:
 *) Dereference operator - for pointer-like classes.
-*) "for" loop with counter.
 *) Raw pointers (for C interaction).
 *) Continious initializer for arrays
 *) Less requirements of complete types (helps for recursive types)
 *) Different calling conventions (for API calls, for example)
 *) Forbid inner reference kind changing in inheritance.
 *) Forbid "shared" tag changin in inheritance.
+*) Enable arrays as aparameters/return values, enable expression initialization and copy assignment for arrays.
 *) build-in "for" for array types.
+*) type for raw data representation (like "char" in C++, which may alias with every type).
 *) switch-case
 *) "Disassembly operator" - declare variables with initializer as members of
 	value of structure type.
@@ -41,6 +42,7 @@ Templates:
 Standart library:
 *) Associative containers - map, set, unordered_set, string_map
 *) Forbid non-thread-safe shared pointers in thread-safe shared pointers
+*) Algorithms (sorting, etc.).
 *) Time library - get time functions, timers
 *) File library
 *) More type traits
@@ -50,10 +52,12 @@ Compiler:
 *) Fix "while" block references, reference merging
 *) Fix break/continue in range-for
 *) move-assignment without hacks.
+*) Use TBAA from LLVM.
 *) Virtual call for final function optimization
 *) Do not crash in some cases of code with errors
 *) Return value optimization
 *) Precompiled modules
+*) Faster compilation model - without emitting thousands of template functions in each object file
 *) Rework of "Value" class
 
 QtCreator plugin:
