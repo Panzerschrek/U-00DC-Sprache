@@ -4,69 +4,229 @@ import "mangling.uh"
 namespace U
 {
 
-fn MangleTypeImpl( Type& t ) : ust::string8
+struct MangleGraphNode
 {
-	if_var( fundamental_type : t.GetFundamentalType() )
+	ust::string8 prefix;
+	ust::vector</ ust::box</MangleGraphNode/> /> childs;
+	ust::string8 postfix;
+	bool cachable= true;
+}
+
+fn Base36Digit( size_type mut value ) : char8
+{
+	value %= 36s;
+	if( value < 10s )
 	{
-		auto f= fundamental_type.fundamental_type;
-		if( f == U_FundamentalType::InvalidType ){ return ust::string8(); }
-		if( f == U_FundamentalType::LastType	){ return ust::string8(		); }
-		if( f == U_FundamentalType::void_		){ return ust::string8( "v"	); }
-		if( f == U_FundamentalType::bool_		){ return ust::string8( "b"	); }
-		if( f == U_FundamentalType::i8_			){ return ust::string8( "a"	); } // C++ signed char
-		if( f == U_FundamentalType::u8_			){ return ust::string8( "h"	); } // C++ unsigned char
-		if( f == U_FundamentalType::i16_		){ return ust::string8( "s"	); }
-		if( f == U_FundamentalType::u16_		){ return ust::string8( "t"	); }
-		if( f == U_FundamentalType::i32_		){ return ust::string8( "i"	); }
-		if( f == U_FundamentalType::u32_		){ return ust::string8( "j"	); }
-		if( f == U_FundamentalType::i64_		){ return ust::string8( "x"	); }
-		if( f == U_FundamentalType::u64_		){ return ust::string8( "y"	); }
-		if( f == U_FundamentalType::i128_		){ return ust::string8( "n"	); }
-		if( f == U_FundamentalType::u128_		){ return ust::string8( "o"	); }
-		if( f == U_FundamentalType::f32_		){ return ust::string8( "f"	); }
-		if( f == U_FundamentalType::f64_		){ return ust::string8( "d"	); }
-		if( f == U_FundamentalType::char8_		){ return ust::string8( "c"	); }
-		if( f == U_FundamentalType::char16_		){ return ust::string8( "Ds"); }
-		if( f == U_FundamentalType::char32_		){ return ust::string8( "Di"); }
+		return char8(size_type("0"c8) + value);
 	}
-	if_var( class_type : t.GetClassType() )
+	else
 	{
-		var ust::string8 mut res;
-		res+= "N";
-
-		AppendNamespacePrefix( res, class_type.lock_imut().get_ref().members.lock_imut().get_ref() );
-
-		res+= "E";
-		return move(res);
+		return char8(size_type("A"c8) + ( value - 10s ) );
 	}
-	if_var( enum_type : t.GetEnumType() )
+}
+
+class NamesCache
+{
+public:
+	fn AddName( mut this, ust::string8 mut name )
 	{
-		var ust::string8 mut res;
-		res+= "N";
-
-		AppendNamespacePrefix( res, enum_type.lock_imut().get_ref().names_scope.lock_imut().get_ref() );
-
-		res+= "E";
-		return move(res);
+		foreach( & candidate : names_container_ )
+		{
+			if( candidate == name )
+			{
+				return;
+			}
+		}
+		names_container_.push_back( name );
 	}
 
+	fn GetReplacement( this, ust::string8& name ) : ust::optional</ust::string8/>
+	{
+		for( auto mut index= 0s; index < names_container_.size(); ++index )
+		{
+			auto& candidate= names_container_[index];
+			if( name == candidate )
+			{
+				if( index == 0s )
+				{
+					return ust::string8("S_");
+				}
+				if( index == 1s )
+				{
+					return ust::string8("S0_");
+				}
+
+				var ust::string8 mut result, mut digit;
+				for( auto mut n= index - 1s; n > 0s; n/= 36s ) // Converto to 36-base number representation.
+				{
+					digit.push_back( Base36Digit( n ) );
+					result= digit + result;
+					digit.clear();
+				}
+
+				return "S" + result + "_";
+			}
+		}
+
+		return ust::optional</ust::string8/>();
+	}
+
+private:
+	ust::vector</ust::string8/> names_container_;
+}
+
+struct NamePair
+{
+	ust::string8 full;
+	ust::string8 compressed;
+}
+
+fn MangleGraphFinalize_r( NamesCache &mut names_cache, MangleGraphNode& node ) : NamePair
+{
+	var NamePair mut result;
+
+	result.full+= node.prefix;
+	result.compressed+= node.prefix;
+	foreach( &child_node : node.childs )
+	{
+		var NamePair child_node_result= MangleGraphFinalize_r( names_cache, child_node.get_ref() );
+		result.full+= child_node_result.full;
+		result.compressed+= child_node_result.compressed;
+	}
+	result.full+= node.postfix;
+	result.compressed+= node.postfix;
+
+	if( node.cachable )
+	{
+		auto replacement = names_cache.GetReplacement( result.full );
+		if( !replacement.empty() )
+		{
+			result.compressed= replacement.get_ref();
+		}
+		else
+		{
+			names_cache.AddName( result.full );
+		}
+	}
+
+	return move(result);
+}
+
+fn MangleGraphFinalize( MangleGraphNode& node ) : ust::string8
+{
+	var NamesCache mut names_cache;
+	return MangleGraphFinalize_r( names_cache, node ).compressed;
+}
+
+fn GetNestedName( ust::string8& name, NamesScope& parent_scope, bool no_name_num_prefix ) : MangleGraphNode
+{
+	var MangleGraphNode mut res;
+
+	auto num_prefix= select( no_name_num_prefix ? ust::string8() : ust::to_string8(name.size()) );
+	if( !parent_scope.GetParent().empty() )
+	{
+		res.prefix+= "N";
+		res.childs.push_back( ust::box</MangleGraphNode/>( GetNamespacePrefix_r( parent_scope ) ) );
+		res.postfix+= num_prefix;
+		res.postfix+= name;
+		res.postfix+= "E";
+	}
+	else
+	{
+		res.prefix+= num_prefix;
+		res.prefix+= name;
+	}
+	return move(res);
+}
+
+fn GetNestedName( ust::string8& name, NamesScope& names_scope ) : MangleGraphNode
+{
+	return GetNestedName( name, names_scope, false );
+}
+
+fn MangleFundamentalTypeName( U_FundamentalType t ) : ust::string8
+{
+	if( t == U_FundamentalType::InvalidType ){ return ust::string8(); }
+	if( t == U_FundamentalType::LastType	){ return ust::string8(		); }
+	if( t == U_FundamentalType::void_		){ return ust::string8( "v"	); }
+	if( t == U_FundamentalType::bool_		){ return ust::string8( "b"	); }
+	if( t == U_FundamentalType::i8_			){ return ust::string8( "a"	); } // C++ signed char
+	if( t == U_FundamentalType::u8_			){ return ust::string8( "h"	); } // C++ unsigned char
+	if( t == U_FundamentalType::i16_		){ return ust::string8( "s"	); }
+	if( t == U_FundamentalType::u16_		){ return ust::string8( "t"	); }
+	if( t == U_FundamentalType::i32_		){ return ust::string8( "i"	); }
+	if( t == U_FundamentalType::u32_		){ return ust::string8( "j"	); }
+	if( t == U_FundamentalType::i64_		){ return ust::string8( "x"	); }
+	if( t == U_FundamentalType::u64_		){ return ust::string8( "y"	); }
+	if( t == U_FundamentalType::i128_		){ return ust::string8( "n"	); }
+	if( t == U_FundamentalType::u128_		){ return ust::string8( "o"	); }
+	if( t == U_FundamentalType::f32_		){ return ust::string8( "f"	); }
+	if( t == U_FundamentalType::f64_		){ return ust::string8( "d"	); }
+	if( t == U_FundamentalType::char8_		){ return ust::string8( "c"	); }
+	if( t == U_FundamentalType::char16_		){ return ust::string8( "Ds"); }
+	if( t == U_FundamentalType::char32_		){ return ust::string8( "Di"); }
 	return ust::string8();
 }
 
-fn AppendNamespacePrefix( ust::string8& mut res, NamesScope& names_scope )
+fn MangleTypeImpl( Type& t ) : MangleGraphNode
 {
+	if_var( fundamental_type : t.GetFundamentalType() )
+	{
+		var MangleGraphNode mut res;
+		res.prefix= MangleFundamentalTypeName( fundamental_type.fundamental_type );
+		res.cachable= false;
+		return move(res);
+	}
+	if_var( array_type : t.GetArrayType() )
+	{
+		var MangleGraphNode mut res;
+		res.prefix= "A";
+		res.prefix+= ust::to_string8(array_type.element_count);
+		res.prefix+= "_";
+		res.childs.push_back( ust::box</MangleGraphNode/>( MangleTypeImpl( array_type.element_type.get_ref() ) ) );
+		return move(res);
+	}
+	if_var( class_type : t.GetClassType() )
+	{
+		auto class_members= class_type.lock_imut().get_ref().members;
+		auto class_members_lock= class_members.lock_imut();
+		auto& class_members_ref= class_members_lock.get_ref();
+
+		return GetNestedName( class_members_ref.GetThisNamespaceName(), class_members_ref.GetParent().lock_imut().get_ref() );
+	}
+	if_var( enum_type : t.GetEnumType() )
+	{
+		auto enum_members= enum_type.lock_imut().get_ref().names_scope;
+		auto enum_members_lock= enum_members.lock_imut();
+		auto& enum_members_ref= enum_members_lock.get_ref();
+
+		return GetNestedName( enum_members_ref.GetThisNamespaceName(), enum_members_ref.GetParent().lock_imut().get_ref() );
+	}
+
+	return MangleGraphNode();
+}
+
+fn GetNamespacePrefix_r( NamesScope& names_scope ) : MangleGraphNode
+{
+	auto& name= names_scope.GetThisNamespaceName();
+
+	var MangleGraphNode mut res;
+
 	auto parent= names_scope.GetParent();
 	if( !parent.empty() )
 	{
-		AppendNamespacePrefix( res, parent.lock_imut().get_ref() );
+		auto parent_lock= parent.lock_imut();
+		auto& parent_ref= parent_lock.get_ref();
+		if( !parent_ref.GetThisNamespaceName().empty() )
+		{
+			res.childs.push_back( ust::box</MangleGraphNode/>( GetNamespacePrefix_r( parent_ref ) ) );
+		}
 	}
 
-	auto& name= names_scope.GetThisNamespaceName();
-	if( !name.empty() )
-	{
-		res+= ust::to_string8( name.size() );
-		res+= name;
-	}
+	res.postfix+= ust::to_string8( name.size() );
+	res.postfix+= name;
+
+	return move(res);
 }
 
 fn MangleFunction(
@@ -74,45 +234,42 @@ fn MangleFunction(
 	ust::string8& name,
 	FunctionType& function_type ) : ust::string8
 {
-	var ust::string8 mut res;
+	var MangleGraphNode mut res;
 
-	if( !parent_scope.GetParent().empty() )
-	{
-		res+= "_ZN";
-		AppendNamespacePrefix( res, parent_scope );
-		res+= ust::to_string8( name.size() );
-		res+= name;
-		res+= "E";
-	}
-	else
-	{
-		res+= "_Z";
-		res+= ust::to_string8( name.size() );
-		res+= name;
-	}
+	res.childs.push_back( ust::box</MangleGraphNode/>( GetNestedName( name, parent_scope, false ) ) );
+	res.childs.back().get_ref().cachable= false;
 
+	foreach( &arg : function_type.args )
+	{
+		var MangleGraphNode mut arg_node= MangleTypeImpl( arg.arg_type.get_ref() );
+		if( !arg.is_mutable && arg.is_reference ) // push "Konst" for reference immutable arguments
+		{
+			var MangleGraphNode mut konst_node;
+			konst_node.prefix= "K";
+			konst_node.childs.push_back( ust::box</MangleGraphNode/>( take( arg_node ) ) );
+			arg_node= move( konst_node );
+		}
+		if( arg.is_reference )
+		{
+			var MangleGraphNode mut ref_node;
+			ref_node.prefix= "R";
+			ref_node.childs.push_back( ust::box</MangleGraphNode/>( take( arg_node ) ) );
+			arg_node= move( ref_node );
+		}
+
+		res.childs.push_back( ust::box</MangleGraphNode/>( move(arg_node) ) );
+	}
 	if( function_type.args.empty() )
 	{
-		res+= "v";
-	}
-	else
-	{
-		foreach( &arg : function_type.args )
-		{
-			if( !arg.is_mutable && arg.is_reference )
-			{
-				res+= "K"; // Konst
-			}
-			if( arg.is_reference )
-			{
-				res+= "R";
-			}
-			res+= MangleTypeImpl( arg.arg_type.get_ref() );
-		}
+		var MangleGraphNode mut empty_args_node;
+		empty_args_node.postfix= "v";
+		res.childs.push_back( ust::box</MangleGraphNode/>( move( empty_args_node ) ) );
 	}
 
-	res.push_back(0c8);
-	return move(res);
+	var ust::string8 mut str= "_Z";
+	str+= MangleGraphFinalize(res);
+	str+= "\0";
+	return move(str);
 }
 
 fn MangleGlobalVariable( NamesScope& parent_scope, ust::string8& variable_name ) : ust::string8
@@ -123,20 +280,16 @@ fn MangleGlobalVariable( NamesScope& parent_scope, ust::string8& variable_name )
 		return variable_name + "\0";
 	}
 
-	var ust::string8 mut res= "_ZN";
-	AppendNamespacePrefix( res, parent_scope );
-	res+= ust::to_string8( variable_name.size() );
-	res+= variable_name;
-	res+= "E";
-
+	var ust::string8 mut res= "_Z";
+	res+= MangleGraphFinalize( GetNestedName( variable_name, parent_scope ) );
 	res+= "\0";
 	return move(res);
 }
 
 fn MangleType( Type& t ) : ust::string8
 {
-	auto mut str= MangleTypeImpl(t);
-	str.push_back(0c8);
+	auto mut str= MangleGraphFinalize(MangleTypeImpl(t));
+	str+= "\0";
 	return move(str);
 }
 

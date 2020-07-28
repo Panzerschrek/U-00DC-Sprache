@@ -23,6 +23,7 @@ bool FilterTest( const std::string& test_name )
 {
 	static const std::unordered_set<std::string> c_test_to_enable
 	{
+		"ClassmethodsManglingTest",
 		"DestructorMustReturnVoidTest0",
 		"DestructorOutsideClassTest0",
 		"DestructorsTest0",
@@ -45,9 +46,14 @@ bool FilterTest( const std::string& test_name )
 		"DestructorsTest18_ShouldBeDesdtroyedAfterUsage5",
 		"ExplicitArgumentsInDestructorTest1",
 		"FunctionBodyDuplication_ForDestructors_Test0",
+		"FunctionsParametersManglingTest",
+		"FundamentalTypesManglingTest",
+		"GlobalVariablesManglingTest0",
+		"NamesCompressionTest",
+		"NamespacesManglingTest",
 	};
 
-	const std::string test_name_without_file_name= test_name.substr(test_name.find(':') + 1);
+	const std::string test_name_without_file_name= test_name.substr(test_name.find_last_of(':') + 1);
 	if( c_test_to_enable.count( test_name_without_file_name ) != 0 )
 		return true;
 
