@@ -127,7 +127,7 @@ fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : Buil
 	return move(res);
 }
 
-fn CodeBuilder::NamesScopeValueToValue( this, NamesScopePtr& names_scope, NamesScopeValue& names_scope_value ) : Value
+fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, NamesScopeValue& names_scope_value ) : Value
 {
 	auto t= names_scope_value.Get</Type/>();
 	if( !t.empty() )
@@ -233,7 +233,7 @@ fn CodeBuilder::NamesScopeValueToValue( this, NamesScopePtr& names_scope, NamesS
 	return ErrorValue();
 }
 
-fn CodeBuilder::ResolveValue( this, NamesScopePtr& names_scope, Synt::ComplexName& complex_name ) : Value
+fn CodeBuilder::ResolveValue( mut this, NamesScopePtr& names_scope, Synt::ComplexName& complex_name ) : Value
 {
 	var ust::shared_ptr_nullable_imut</NamesScope/> mut current_scope(names_scope);
 
@@ -375,7 +375,7 @@ fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
 	names_scope.AddName( KeywordToString(Keyword::char32_), Type( FundamentalType( U_FundamentalType::char32_, fundamental_llvm_types_.char32_ ) ) );
 }
 
-fn CodeBuilder::BuildFunctionsSet( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/> functions_set_ptr, bool build_body )
+fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/> functions_set_ptr, bool build_body )
 {
 	if( !build_body )
 	{
@@ -418,7 +418,7 @@ fn CodeBuilder::BuildFunctionsSet( this, NamesScopePtr& names_scope_ptr, ust::sh
 	}
 }
 
-fn CodeBuilder::BuildClass( this, NamesScopePtr& names_scope_ptr, ClassTypePtr& class_type )
+fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypePtr& class_type )
 {
 	if( class_type.lock_imut().get_ref().is_complete )
 	{
@@ -528,7 +528,7 @@ fn CodeBuilder::BuildClass( this, NamesScopePtr& names_scope_ptr, ClassTypePtr& 
 	class_.is_complete= true;
 }
 
-fn CodeBuilder::BuildEnum( this, NamesScopePtr& names_scope_ptr, EnumTypePtr& enum_type )
+fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr& enum_type )
 {
 	if( enum_type.lock_imut().get_ref().underlaying_type.llvm_type != LLVMTypeRef::Null )
 	{
@@ -602,7 +602,7 @@ fn CodeBuilder::BuildEnum( this, NamesScopePtr& names_scope_ptr, EnumTypePtr& en
 	}
 }
 
-fn CodeBuilder::BuildTypeAlias( this, NamesScopePtr& names_scope, TypeAlias& mut type_alias )
+fn CodeBuilder::BuildTypeAlias( mut this, NamesScopePtr& names_scope, TypeAlias& mut type_alias )
 {
 	if( !type_alias.t.empty() )
 	{
@@ -615,7 +615,7 @@ fn CodeBuilder::BuildTypeAlias( this, NamesScopePtr& names_scope, TypeAlias& mut
 	type_alias.t.reset( PrepareType( names_scope, function_context, syntax_element_ptr.get_ref().type_name ) );
 }
 
-fn CodeBuilder::BuildGlobalVariable( this, NamesScopePtr& names_scope, GlobalVariable& mut global_variable )
+fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope, GlobalVariable& mut global_variable )
 {
 	if( !global_variable.variable.empty() )
 	{
@@ -720,7 +720,7 @@ fn CodeBuilder::BuildGlobalVariable( this, NamesScopePtr& names_scope, GlobalVar
 	// TODO - maybe clear here dummy global function?
 }
 
-fn CodeBuilder::BuildGlobalAutoVariable( this, NamesScopePtr& names_scope, GlobalAutoVariable& mut global_auto_variable )
+fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope, GlobalAutoVariable& mut global_auto_variable )
 {
 	if( !global_auto_variable.variable.empty() )
 	{
@@ -791,7 +791,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( this, NamesScopePtr& names_scope, Globa
 }
 
 fn CodeBuilder::PrepareFunction(
-	this,
+	mut this,
 	ust::shared_ptr_final</Synt::Function/>& function_declaration_ptr,
 	NamesScopePtr& names_scope_ptr,
 	ust::shared_ptr_nullable_mut</ClassType/>& class_type,
@@ -899,7 +899,7 @@ fn CodeBuilder::PrepareFunction(
 	return ApplyOverloadedFunction( functions_set, move(function_variable), names_scope_ptr, function_declaration.file_pos );
 }
 
-fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariable& func_variable )
+fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVariable& func_variable )
 {
 	if( func_variable.body_syntax_element.empty() )
 	{
@@ -1090,7 +1090,7 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariabl
 }
 
 fn CodeBuilder::TryCallCopyConstructor(
-	this,
+	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
 	LLVMValueRef dst, LLVMValueRef src,
@@ -1139,7 +1139,7 @@ fn CodeBuilder::CallDestructorsForLoopInnerVariables( this, FunctionContext &mut
 	}
 }
 
-fn CodeBuilder::EnsureTypeComplete( this, Type& t ) : bool
+fn CodeBuilder::EnsureTypeComplete( mut this, Type& t ) : bool
 {
 	if_var( &class_type_ptr : t.GetClassType() )
 	{
