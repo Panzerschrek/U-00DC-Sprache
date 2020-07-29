@@ -365,6 +365,7 @@ type ClassElement= ust::variant</ tup[
 	ust::shared_ptr_final</Class/>,
 	ust::shared_ptr_final</Enum/>,
 	ust::shared_ptr_final</TypeAlias/>,
+	ust::shared_ptr_final</ClassTemplate/>, // TODO do we really need shared_ptr here?
 	ust::shared_ptr_final</ClassField/>,
 	ust::shared_ptr_final</VariablesDeclaration/>,
 	ust::shared_ptr_final</AutoVariableDeclaration/>,
@@ -395,6 +396,27 @@ struct Enum
 	ust::vector</Element/> elements;
 }
 
+struct ClassTemplate
+{
+	FilePos file_pos;
+	ust::shared_ptr_final</Class/> class_;
+
+	struct Arg
+	{
+		Expression t; // Actually, only ComplexName. Empty if type parameter.
+		Expression name; // Actually, only name with one component
+	}
+	ust::vector</Arg/> args;
+
+	struct SignatureArg
+	{
+		FilePos file_pos;
+		Expression name;
+		Expression default_value;
+	}
+	ust::vector</SignatureArg/> signature_args;
+}
+
 struct Namespace
 {
 	FilePos file_pos;
@@ -407,6 +429,7 @@ type NamespaceElement= ust::variant</ tup[
 	ust::shared_ptr_final</Class/>,
 	ust::shared_ptr_final</Enum/>,
 	ust::shared_ptr_final</TypeAlias/>,
+	ust::shared_ptr_final</ClassTemplate/>, // TODO do we really need shared_ptr here?
 	ust::shared_ptr_final</Namespace/>, // TODO do we really need shared_ptr here?
 	ust::shared_ptr_final</VariablesDeclaration/>,
 	ust::shared_ptr_final</AutoVariableDeclaration/>,

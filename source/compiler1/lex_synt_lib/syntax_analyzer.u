@@ -213,8 +213,10 @@ private:
 	fn ParseHalt( mut this ) : BlockElement;
 
 	fn ParseClass( mut this ) : Class;
+	fn ParseClassBody( mut this ) : ClassElements;
 	fn ParseEnum( mut this ) : Enum;
 	fn ParseTypeAlias( mut this ) : TypeAlias;
+	fn ParseClassTemplate( mut this ) : ClassTemplate;
 
 	fn NotEndOfFile( this ) : bool;
 	fn NextLexem( mut this );
@@ -264,6 +266,10 @@ fn SyntaxAnalyzer::ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : Names
 		else if( IsKeyword( it_.front(), Keyword::type_ ) )
 		{
 			namespace_elements.push_back( ust::shared_ptr_final</TypeAlias/>( ParseTypeAlias() ) );
+		}
+		else if( IsKeyword( it_.front(), Keyword::template_ ) )
+		{
+			namespace_elements.push_back( ust::shared_ptr_final</ClassTemplate/>( ParseClassTemplate() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::namespace_ ) )
 		{
@@ -1552,6 +1558,14 @@ fn SyntaxAnalyzer::ParseClass( mut this ) : Class
 	class_.name= it_.front().text;
 	NextLexem();
 
+	class_.class_elements= ParseClassBody();
+	return move(class_);
+}
+
+fn SyntaxAnalyzer::ParseClassBody( mut this ) : ClassElements
+{
+	var ClassElements mut class_elements;
+
 	if( it_.front().lexem_type != Lexem::Type::BraceLeft )
 	{
 		PushErrorMessage();
@@ -1567,31 +1581,35 @@ fn SyntaxAnalyzer::ParseClass( mut this ) : Class
 		}
 		else if( IsKeyword( it_.front(), Keyword::fn_ ) )
 		{
-			class_.class_elements.push_back( ust::shared_ptr_final</Function/>( ParseFunction() ) );
+			class_elements.push_back( ust::shared_ptr_final</Function/>( ParseFunction() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::struct_ ) || IsKeyword( it_.front(), Keyword::class_ ) )
 		{
-			class_.class_elements.push_back( ust::shared_ptr_final</Class/>( ParseClass() ) );
+			class_elements.push_back( ust::shared_ptr_final</Class/>( ParseClass() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::enum_ ) )
 		{
-			class_.class_elements.push_back( ust::shared_ptr_final</Enum/>( ParseEnum() ) );
+			class_elements.push_back( ust::shared_ptr_final</Enum/>( ParseEnum() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::type_ ) )
 		{
-			class_.class_elements.push_back( ust::shared_ptr_final</TypeAlias/>( ParseTypeAlias() ) );
+			class_elements.push_back( ust::shared_ptr_final</TypeAlias/>( ParseTypeAlias() ) );
+		}
+		else if( IsKeyword( it_.front(), Keyword::template_ ) )
+		{
+			class_elements.push_back( ust::shared_ptr_final</ClassTemplate/>( ParseClassTemplate() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::var_ ) )
 		{
-			class_.class_elements.push_back( ust::shared_ptr_final</VariablesDeclaration/>( ParseVariablesDeclaration() ) );
+			class_elements.push_back( ust::shared_ptr_final</VariablesDeclaration/>( ParseVariablesDeclaration() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::auto_ ) )
 		{
-			class_.class_elements.push_back( ust::shared_ptr_final</AutoVariableDeclaration/>( ParseAutoVariableDeclaration() ) );
+			class_elements.push_back( ust::shared_ptr_final</AutoVariableDeclaration/>( ParseAutoVariableDeclaration() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::static_assert_ ) )
 		{
-			class_.class_elements.push_back( ust::shared_ptr_final</StaticAssert/>( ParseStaticAssert() ) );
+			class_elements.push_back( ust::shared_ptr_final</StaticAssert/>( ParseStaticAssert() ) );
 		}
 		else
 		{
@@ -1629,11 +1647,11 @@ fn SyntaxAnalyzer::ParseClass( mut this ) : Class
 			}
 			NextLexem();
 
-			class_.class_elements.push_back( ust::shared_ptr_final</ ClassField />( move(class_field) ) );
+			class_elements.push_back( ust::shared_ptr_final</ ClassField />( move(class_field) ) );
 		}
 	}
 
-	return move(class_);
+	return move(class_elements);
 }
 
 fn SyntaxAnalyzer::ParseEnum( mut this ) : Enum
@@ -1742,6 +1760,152 @@ fn SyntaxAnalyzer::ParseTypeAlias( mut this ) : TypeAlias
 	NextLexem();
 
 	return move(type_alias);
+}
+
+fn SyntaxAnalyzer::ParseClassTemplate( mut this ) : ClassTemplate
+{
+	auto template_file_pos= it_.front().file_pos;
+
+	if( !IsKeyword( it_.front(), Keyword::template_ ) )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	// Template args.
+	if( it_.front().lexem_type != Lexem::Type::TemplateBracketLeft )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	var ust::vector</ClassTemplate::Arg/> mut args;
+	while( NotEndOfFile() )
+	{
+		if( it_.front().lexem_type == Lexem::Type::TemplateBracketRight )
+		{
+			NextLexem();
+			break;
+		}
+
+		var ClassTemplate::Arg mut arg;
+		if( IsKeyword( it_.front(), Keyword::type_ ) )
+		{
+			NextLexem();
+		}
+		else
+		{
+			arg.t= ParseComplexName();
+		}
+
+		if( it_.front().lexem_type != Lexem::Type::Identifier )
+		{
+			PushErrorMessage();
+		}
+
+		var ComplexName mut arg_name{ .file_pos= it_.front().file_pos, .name= it_.front().text };
+		NextLexem();
+
+		arg.name= move(arg_name);
+
+		args.push_back( move(arg) );
+
+		if( it_.front().lexem_type == Lexem::Type::TemplateBracketRight )
+		{}
+		else if( it_.front().lexem_type == Lexem::Type::Comma )
+		{
+			NextLexem();
+			if( it_.front().lexem_type == Lexem::Type::TemplateBracketRight )
+			{
+				PushErrorMessage();
+				break;
+			}
+		}
+		else
+		{
+			PushErrorMessage();
+			break;
+		}
+	}
+
+	// Class declaration.
+
+	if( !( IsKeyword( it_.front(), Keyword::struct_ ) || IsKeyword( it_.front(), Keyword::class_ ) ) )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage();
+	}
+	auto mut class_name= it_.front().text;
+	auto class_file_pos= it_.front().file_pos;
+	NextLexem();
+
+	// Signature args.
+	if( it_.front().lexem_type != Lexem::Type::TemplateBracketLeft )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	var ust::vector</ClassTemplate::SignatureArg/> mut signature_args;
+	while( NotEndOfFile() )
+	{
+		if( it_.front().lexem_type == Lexem::Type::TemplateBracketRight )
+		{
+			NextLexem();
+			break;
+		}
+
+		var ClassTemplate::SignatureArg mut arg;
+		arg.name= ParseExpression();
+
+		if( it_.front().lexem_type == Lexem::Type::Assignment )
+		{
+			NextLexem();
+			arg.default_value= ParseExpression();
+		}
+
+		signature_args.push_back(move(arg));
+
+		if( it_.front().lexem_type == Lexem::Type::TemplateBracketRight )
+		{}
+		else if( it_.front().lexem_type == Lexem::Type::Comma )
+		{
+			NextLexem();
+			if( it_.front().lexem_type == Lexem::Type::TemplateBracketRight )
+			{
+				PushErrorMessage();
+				break;
+			}
+		}
+		else
+		{
+			PushErrorMessage();
+			break;
+		}
+	}
+
+	// Class elements;
+
+	var Class mut class_
+	{
+		.file_pos= class_file_pos,
+		.name= move(class_name),
+		.class_elements= ParseClassBody(),
+	};
+	var ClassTemplate mut class_template
+	{
+		.file_pos= template_file_pos,
+		.class_(move(class_)),
+		.args= move(args),
+		.signature_args= move(signature_args),
+	};
+
+	return move(class_template);
 }
 
 fn SyntaxAnalyzer::NotEndOfFile( this ) : bool

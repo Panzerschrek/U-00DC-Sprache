@@ -24,6 +24,7 @@ bool FilterTest( const std::string& test_name )
 	static const std::unordered_set<std::string> c_test_to_enable
 	{
 		"ClassmethodsManglingTest",
+		"ClassTemplateTest0",
 		"DestructorMustReturnVoidTest0",
 		"DestructorOutsideClassTest0",
 		"DestructorsTest0",

@@ -197,6 +197,15 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	NamesScopeFill( names_scope_ptr, type_alias );
 }
 
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassTemplate/>& class_template )
+{
+}
+
+fn CodeBuilder:: NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassTemplate/>& class_template, ust::shared_ptr_nullable_mut</ClassType/>& class_type )
+{
+	NamesScopeFill( names_scope_ptr, class_template );
+}
+
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::VariablesDeclaration/>& variables_declaration )
 {
 	for( auto mut i= 0s;  i < variables_declaration.get_ref().variables.size(); ++i )
