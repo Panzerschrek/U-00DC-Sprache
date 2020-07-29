@@ -250,7 +250,7 @@ fn CodeBuilder::ResolveValue( this, NamesScopePtr& names_scope, Synt::ComplexNam
 			current_scope= parent;
 		}
 
-		if_var( mut names_scope_value : current_scope.lock_imut().get_ref().GetThisScopeValue( complex_name.tail.front() ) )
+		if_var( mut names_scope_value : current_scope.lock_imut().get_ref().GetThisScopeValue( complex_name.tail.front().get</ust::string8/>().get_ref() ) )
 		{
 			current_value= move(names_scope_value);
 		}
@@ -280,68 +280,74 @@ fn CodeBuilder::ResolveValue( this, NamesScopePtr& names_scope, Synt::ComplexNam
 	for( auto mut i= select( complex_name.name.empty() ? 1s : 0s ); i < complex_name.tail.size(); ++i )
 	{
 		auto& name_component= complex_name.tail[i];
-
-		auto namespace_= current_value.get_ref().Get</NamesScope/>();
-		auto class_= current_value.get_ref().Get</ClassType/>();
-		auto enum_= current_value.get_ref().Get</Enum/>();
-
-		if( !namespace_.empty() )
+		if_var( &name_component_name : name_component.get</ ust::string8 />() )
 		{
-			auto namespace_lock= namespace_.lock_imut();
-			auto new_value= namespace_lock.get_ref().GetThisScopeValue( name_component );
-			if( new_value.empty() )
+			auto namespace_= current_value.get_ref().Get</NamesScope/>();
+			auto class_= current_value.get_ref().Get</ClassType/>();
+			auto enum_= current_value.get_ref().Get</Enum/>();
+
+			if( !namespace_.empty() )
 			{
-				REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, name_component )
+				auto namespace_lock= namespace_.lock_imut();
+				auto new_value= namespace_lock.get_ref().GetThisScopeValue( name_component_name );
+				if( new_value.empty() )
+				{
+					REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, name_component_name )
+					return ErrorValue();
+				}
+
+				current_value.get_ref()= new_value.get_ref();
+				current_scope= namespace_;
+			}
+			else if( !class_.empty() )
+			{
+				// We do not need to build class here, because class namespace is already filled. Names itself will be built separately later.
+
+				auto class_lock= class_.lock_imut();
+				auto namespace_lock= class_lock.get_ref().members.lock_imut();
+				auto new_value= namespace_lock.get_ref().GetThisScopeValue( name_component_name );
+				if( new_value.empty() )
+				{
+					REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, name_component_name )
+					return ErrorValue();
+				}
+
+				current_value.get_ref()= new_value.get_ref();
+				current_scope= class_lock.get_ref().members;
+			}
+			else if( !enum_.empty() )
+			{
+				auto enum_non_null= ust::to_non_nullable(enum_);
+				BuildEnum( ust::to_non_nullable(current_scope), enum_non_null );
+
+				auto lock= enum_.lock_imut();
+
+				auto element= lock.get_ref().elements.find( name_component_name );
+				if( element.empty() )
+				{
+					REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, name_component_name )
+					return ErrorValue();
+				}
+
+				var NamesScopeVariable mut v
+				{
+					.t= enum_non_null,
+					.is_mutable= false,
+					.llvm_value= element.get_ref().llvm_value,
+					.constexpr_value= element.get_ref().constexpr_value,
+				};
+
+				current_value= move(v);
+			}
+			else
+			{
+				REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, name_component_name ) // TODO -print more relevant error
 				return ErrorValue();
 			}
-
-			current_value.get_ref()= new_value.get_ref();
-			current_scope= namespace_;
 		}
-		else if( !class_.empty() )
+		if_var( &template_parameters : name_component.get</ ust::box</Synt::TemplateParameters/> />() )
 		{
-			// We do not need to build class here, because class namespace is already filled. Names itself will be built separately later.
-
-			auto class_lock= class_.lock_imut();
-			auto namespace_lock= class_lock.get_ref().members.lock_imut();
-			auto new_value= namespace_lock.get_ref().GetThisScopeValue( name_component );
-			if( new_value.empty() )
-			{
-				REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, name_component )
-				return ErrorValue();
-			}
-
-			current_value.get_ref()= new_value.get_ref();
-			current_scope= class_lock.get_ref().members;
-		}
-		else if( !enum_.empty() )
-		{
-			auto enum_non_null= ust::to_non_nullable(enum_);
-			BuildEnum( ust::to_non_nullable(current_scope), enum_non_null );
-
-			auto lock= enum_.lock_imut();
-
-			auto element= lock.get_ref().elements.find( name_component );
-			if( element.empty() )
-			{
-				REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, name_component )
-				return ErrorValue();
-			}
-
-			var NamesScopeVariable mut v
-			{
-				.t= enum_non_null,
-				.is_mutable= false,
-				.llvm_value= element.get_ref().llvm_value,
-				.constexpr_value= element.get_ref().constexpr_value,
-			};
-
-			current_value= move(v);
-		}
-		else
-		{
-			REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, name_component ) // TODO -print more relevant error
-			return ErrorValue();
+			// TODO
 		}
 	}
 

@@ -31,12 +31,15 @@ enum ReferenceModifier : u8
 
 struct EmptyVariant{} // used as stub
 
+type TemplateParameters= ust::vector</Expression/>;
+
 struct ComplexName
 {
 	FilePos file_pos;
 	ust::string8 name; // Empty for "::" start.
 
-	ust::vector</ ust::string8 /> tail;
+	type TailComponent= ust::variant</ tup[ ust::string8, ust::box</TemplateParameters/> ] />;
+	ust::vector</ TailComponent /> tail;
 }
 
 struct NumericConstant

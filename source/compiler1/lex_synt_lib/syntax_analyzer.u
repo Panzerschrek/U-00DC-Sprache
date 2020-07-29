@@ -193,6 +193,7 @@ private:
 	fn ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : NamespaceElements;
 	fn ParseNamespace( mut this ) : Namespace;
 
+	fn ParseTemplateParameters( mut this ) : TemplateParameters;
 	fn ParseComplexName( mut this ) : ComplexName;
 	fn ParseExpression( mut this ) : Expression;
 	fn ParseTypeName( mut this ) : TypeName;
@@ -333,6 +334,41 @@ fn SyntaxAnalyzer::ParseNamespace( mut this ) : Namespace
 	return namespace_;
 }
 
+fn SyntaxAnalyzer::ParseTemplateParameters( mut this ) : TemplateParameters
+{
+	var TemplateParameters mut template_parameters;
+
+	if( it_.front().lexem_type != Lexem::Type::TemplateBracketLeft )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	while( NotEndOfFile() )
+	{
+		if( it_.front().lexem_type == Lexem::Type::TemplateBracketRight )
+		{
+			NextLexem();
+			break;
+		}
+
+		template_parameters.push_back( ParseExpression() );
+
+		if( it_.front().lexem_type == Lexem::Type::TemplateBracketRight )
+		{}
+		else if( it_.front().lexem_type == Lexem::Type::Comma )
+		{
+			NextLexem();
+			if( it_.front().lexem_type == Lexem::Type::TemplateBracketRight )
+			{
+				PushErrorMessage();
+			}
+		}
+	}
+
+	return move(template_parameters);
+}
+
 fn SyntaxAnalyzer::ParseComplexName( mut this ) : ComplexName
 {
 	var ComplexName mut complex_name{ .file_pos= it_.front().file_pos };
@@ -340,6 +376,11 @@ fn SyntaxAnalyzer::ParseComplexName( mut this ) : ComplexName
 	{
 		complex_name.name= it_.front().text;
 		NextLexem();
+
+		if( it_.front().lexem_type == Lexem::Type::TemplateBracketLeft )
+		{
+			complex_name.tail.push_back( ust::box</ TemplateParameters />( ParseTemplateParameters() ) );
+		}
 	}
 	else if( it_.front().lexem_type == Lexem::Type::Scope )
 	{}
@@ -358,6 +399,11 @@ fn SyntaxAnalyzer::ParseComplexName( mut this ) : ComplexName
 		}
 		complex_name.tail.push_back( it_.front().text );
 		NextLexem();
+
+		if( it_.front().lexem_type == Lexem::Type::TemplateBracketLeft )
+		{
+			complex_name.tail.push_back( ust::box</ TemplateParameters />( ParseTemplateParameters() ) );
+		}
 	}
 
 	return move(complex_name);
