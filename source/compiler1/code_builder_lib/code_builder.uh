@@ -98,6 +98,7 @@ private:
 	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</ClassField/>& class_field );
 	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</Enum/>& enum_type );
 	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</TypeAlias/>& type_alias_ptr );
+	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set );
 	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalVariable/>& global_variable_ptr );
 	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalAutoVariable/>& global_auto_variable_ptr );
 	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalStaticAssertsSet/>& global_static_asserts_set_ptr );
@@ -217,6 +218,19 @@ private:
 		Type& t,
 		ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args,
 		FilePos& file_pos ) : Value;
+
+	// Templates
+	fn BuiltTypeTemplatesSet(
+		this,
+		NamesScopePtr& names_scope,
+		ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set_ptr );
+
+	fn PrepareTypeTemplate(
+		this,
+		NamesScopePtr& names_scope,
+		ust::shared_ptr_final</Synt::ClassTemplate/>& class_template_syntax_element ) : ust::optional</TypeTemplate/>;
+
+	// Overloading
 
 	fn ApplyOverloadedFunction(
 		FunctionsSet &mut functions_set,

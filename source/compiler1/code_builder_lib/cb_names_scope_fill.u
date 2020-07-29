@@ -199,6 +199,28 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassTemplate/>& class_template )
 {
+	auto mut names_scope_lock= names_scope_ptr.lock_mut();
+	auto &mut names_scope= names_scope_lock.get_ref();
+
+	auto& template_name= class_template.get_ref().class_.get_ref().name;
+	if_var( &prev_name : names_scope.GetThisScopeValue(template_name) )
+	{
+		auto prev_type_templates_set_ptr= prev_name.Get</ TypeTemplatesSet />();
+		if( prev_type_templates_set_ptr.empty() )
+		{
+			REPORT_ERROR( Redefinition, names_scope_ptr, class_template.get_ref().file_pos )
+			return;
+		}
+
+		auto mut lock= prev_type_templates_set_ptr.lock_mut();
+		lock.get_ref().syntax_elements.push_back( class_template );
+		return;
+	}
+
+	var TypeTemplatesSet mut type_templates_set;
+	type_templates_set.syntax_elements.push_back( class_template );
+
+	names_scope.AddName( template_name, move(type_templates_set) );
 }
 
 fn CodeBuilder:: NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassTemplate/>& class_template, ust::shared_ptr_nullable_mut</ClassType/>& class_type )

@@ -263,6 +263,23 @@ struct TypeAlias
 	ust::shared_ptr_final</ Synt::TypeAlias /> syntax_element;
 }
 
+struct TypeTemplate
+{
+	ust::shared_ptr_final</Synt::ClassTemplate/> syntax_element;
+
+	ust::weak_ptr_imut</NamesScope/> parent_names_scope; // Needed because type template should see names scope of original file.
+}
+
+type TypeTemplatePtr = ust::shared_ptr_final</TypeTemplate/>;
+
+struct TypeTemplatesSet
+{
+	ust::vector</TypeTemplatePtr/> type_templates;
+
+	// Is incomplete, if there are some syntax elements in containers.
+	ust::vector</ ust::shared_ptr_final</Synt::ClassTemplate/> /> syntax_elements;
+}
+
 struct GlobalVariable
 {
 	ust::optional</NamesScopeVariable/> variable; // empty if incomplete
@@ -315,6 +332,7 @@ public:
 		ust::shared_ptr_mut</ClassField/>,
 		EnumTypePtr,
 		ust::shared_ptr_mut</TypeAlias/>,
+		ust::shared_ptr_mut</TypeTemplatesSet/>,
 		ust::shared_ptr_mut</GlobalVariable/>,
 		ust::shared_ptr_mut</GlobalAutoVariable/>,
 		ust::shared_ptr_mut</GlobalStaticAssertsSet/>

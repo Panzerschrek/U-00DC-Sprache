@@ -1,0 +1,47 @@
+import "../lex_synt_lib/keywords.uh"
+import "error_reporting.uh"
+import "mangling.uh"
+import "code_builder.uh"
+
+namespace U
+{
+
+fn CodeBuilder::BuiltTypeTemplatesSet( this, NamesScopePtr& names_scope, ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set_ptr )
+{
+	if( type_templates_set_ptr.lock_imut().get_ref().syntax_elements.empty() )
+	{
+		return;
+	}
+
+	auto mut type_templates_set_lock= type_templates_set_ptr.lock_mut();
+	auto &mut type_templates_set= type_templates_set_lock.get_ref();
+
+	while( !type_templates_set.syntax_elements.empty() )
+	{
+		auto mut template_prepared= PrepareTypeTemplate( names_scope, type_templates_set.syntax_elements.back() );
+		if( !template_prepared.empty() )
+		{
+			type_templates_set.type_templates.push_back( TypeTemplatePtr( template_prepared.get_ref() ) );
+		}
+
+		type_templates_set.syntax_elements.pop_back();
+	}
+	type_templates_set.syntax_elements.clear();
+}
+
+fn CodeBuilder::PrepareTypeTemplate(
+	this,
+	NamesScopePtr& names_scope,
+	ust::shared_ptr_final</Synt::ClassTemplate/>& class_template_syntax_element ) : ust::optional</TypeTemplate/>
+{
+	var TypeTemplate mut type_template
+	{
+		.syntax_element= class_template_syntax_element,
+	};
+
+	// TODO - add some checks here
+
+	return move(type_template);
+}
+
+} // namespace U
