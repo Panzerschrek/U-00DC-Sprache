@@ -229,6 +229,67 @@ fn GetNamespacePrefix_r( NamesScope& names_scope ) : MangleGraphNode
 	return move(res);
 }
 
+fn MangleTemplateArgsImpl( TemplateArgsFinished& template_args ) : MangleGraphNode
+{
+	var MangleGraphNode mut result;
+	result.prefix= "I";
+
+	foreach( &arg : template_args )
+	{
+		if_var( &t : arg.get</Type/>() )
+		{
+			result.childs.push_back( ust::box</MangleGraphNode/>( MangleTypeImpl( t ) ) );
+		}
+		if_var( &v : arg.get</Variable/>() )
+		{
+			var MangleGraphNode mut variable_param_node;
+			variable_param_node.prefix= "L";
+
+			auto mut is_signed= false;
+			if_var( fundamental_type : v.t.GetFundamentalType() )
+			{
+				is_signed= IsSignedInteger( fundamental_type.fundamental_type );
+			}
+			if_var( enum_type : v.t.GetEnumType() )
+			{
+				is_signed= IsSignedInteger( enum_type.lock_imut().get_ref().underlaying_type.fundamental_type );
+			}
+
+			if( v.constexpr_value != LLVMValueRef::Null )
+			{
+				unsafe
+				{
+					if( is_signed )
+					{
+						auto num= LLVMConstIntGetSExtValue( v.constexpr_value );
+						if( num >= 0i64 )
+						{
+							variable_param_node.postfix+= ust::to_string8( num );
+						}
+						else
+						{
+							variable_param_node.postfix+= "n";
+							variable_param_node.postfix+= ust::to_string8( -num );
+						}
+					}
+					else
+					{
+						variable_param_node.postfix+= ust::to_string8( LLVMConstIntGetZExtValue( v.constexpr_value ) );
+					}
+				}
+			}
+
+			variable_param_node.cachable= false;
+			result.childs.push_back( ust::box</MangleGraphNode/>( move( variable_param_node ) ) );
+		}
+	}
+
+	result.postfix= "E";
+
+	result.cachable= false;
+	return move(result);
+}
+
 fn MangleFunction(
 	NamesScope& parent_scope,
 	ust::string8& name,
@@ -289,6 +350,13 @@ fn MangleGlobalVariable( NamesScope& parent_scope, ust::string8& variable_name )
 fn MangleType( Type& t ) : ust::string8
 {
 	auto mut str= MangleGraphFinalize(MangleTypeImpl(t));
+	str+= "\0";
+	return move(str);
+}
+
+fn MangleTemplateArgs( TemplateArgsFinished& template_args ) : ust::string8
+{
+	auto mut str= MangleGraphFinalize(MangleTemplateArgsImpl(template_args));
 	str+= "\0";
 	return move(str);
 }

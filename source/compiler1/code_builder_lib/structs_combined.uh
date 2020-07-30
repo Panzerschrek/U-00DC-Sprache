@@ -288,6 +288,9 @@ struct TemplateArg
 	ust::variant</ tup[ NotKnownYet, Type, NamesScopeVariable ] /> something;
 }
 
+type TemplateArgFinished= ust::variant</ tup[ Type, Variable ] />;
+type TemplateArgsFinished= ust::vector</ TemplateArgFinished />;
+
 struct GlobalVariable
 {
 	ust::optional</NamesScopeVariable/> variable; // empty if incomplete

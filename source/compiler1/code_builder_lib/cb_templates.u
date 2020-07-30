@@ -83,15 +83,41 @@ fn CodeBuilder::GenTemplateType(
 	}
 
 	auto mut all_ok= true;
+	var TemplateArgsFinished mut result_signature_template_args;
 	for( auto mut i= 0s; i < template_parameters.size(); ++i )
 	{
 		auto arg= BuildExpressionCode( args_names_scope, function_context, template_parameters[i] );
 		all_ok|= MatchTemplateArgument( syntax_element.signature_args[i].name, arg, result_names_scope );
+
+		if_var( &t : arg.get</Type/>() )
+		{
+			result_signature_template_args.push_back( t );
+		}
+		if_var( &v : arg.get</Variable/>() )
+		{
+			result_signature_template_args.push_back( v );
+		}
 	}
 
 	if( !all_ok )
 	{
 		return ust::optional</Type/>();
+	}
+
+	auto template_key=
+		ust::to_string8( ust::ref_to_int( type_template ) ) +
+		MangleTemplateArgs( result_signature_template_args );
+
+	if_var( prev_names_scope : generated_template_things_.find( template_key ) )
+	{
+		if_var( result_class_name : prev_names_scope.lock_imut().get_ref().GetThisScopeValue( syntax_element.class_.get_ref().name ) )
+		{
+			auto class_type= result_class_name.Get</ClassType/>();
+			if( !class_type.empty() )
+			{
+				return Type( ust::to_non_nullable( class_type ) );
+			}
+		}
 	}
 
 	NamesScopeFill( result_names_scope, syntax_element.class_ );
@@ -100,7 +126,7 @@ fn CodeBuilder::GenTemplateType(
 		auto class_type= result_class_name.Get</ClassType/>();
 		if( !class_type.empty() )
 		{
-			generated_template_things_.push_back( result_names_scope );
+			generated_template_things_.insert( template_key, result_names_scope );
 			return Type( ust::to_non_nullable( class_type ) );
 		}
 	}
