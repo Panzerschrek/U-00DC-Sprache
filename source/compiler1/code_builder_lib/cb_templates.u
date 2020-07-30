@@ -138,8 +138,10 @@ fn CodeBuilder::GenTemplateType(
 
 		auto mut lock= class_type.lock_mut();
 		lock.get_ref().base_template= move(base_template);
-		// TODO - change here also name of LLVM type
 	}
+
+	auto mangled_llvm_type_name= MangleType( ust::to_non_nullable( class_type ) );
+	unsafe{  U1_SetStructName( class_type.lock_imut().get_ref().llvm_type, mangled_llvm_type_name.front() );  }
 
 	generated_template_things_.insert( template_key, result_names_scope );
 	return Type( ust::to_non_nullable( class_type ) );
