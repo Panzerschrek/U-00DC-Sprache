@@ -72,10 +72,10 @@ fn CodeBuilder::GenTemplateType(
 
 	{
 		auto mut result_names_scope_lock= result_names_scope.lock_mut();
-		for( auto mut i= 0s; i < syntax_element.signature_args.size(); ++i )
+		for( auto mut i= 0s; i < syntax_element.args.size(); ++i )
 		{
 			// Should be simple name
-			auto& name= syntax_element.signature_args[i].name.get</Synt::ComplexName/>().get_ref().name;
+			auto& name= syntax_element.args[i].name.get</Synt::ComplexName/>().get_ref().name;
 
 			var TemplateArg mut template_arg{ .index= i };
 			result_names_scope_lock.get_ref().AddName( name, move(template_arg ) );
