@@ -168,9 +168,16 @@ fn CodeBuilder::MatchTemplateArgument(
 								var NamesScopeVariable mut out_var
 								{
 									.t= given_variable.t,
-									.llvm_value= given_variable.llvm_value,
 									.constexpr_value= given_variable.constexpr_value,
 								};
+								unsafe
+								{
+									out_var.llvm_value= LLVMAddGlobal( module_, out_var.t.GetLLVMType(), "\0"[0] );
+									LLVMSetLinkage( out_var.llvm_value, LLVMLinkage::Internal );
+									LLVMSetGlobalConstant( out_var.llvm_value, LLVMBool::True );
+									LLVMSetInitializer( out_var.llvm_value, out_var.constexpr_value );
+								}
+
 								template_arg.something= move(out_var);
 								return true;
 							}
@@ -190,6 +197,18 @@ fn CodeBuilder::MatchTemplateArgument(
 					}
 				}
 			}
+		}
+	}
+
+	// If this is nothing special - process template parameter as regular expression.
+	auto mut global_function_context= CreateGlobalFunctionContext();
+	auto param_res= BuildExpressionCode( names_scope, global_function_context, param );
+
+	if_var( &given_type : given_arg.get</Type/>() )
+	{
+		if_var( &param_type : param_res.get</Type/>() )
+		{
+			return given_type == param_type;
 		}
 	}
 

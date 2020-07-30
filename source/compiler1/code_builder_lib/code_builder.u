@@ -103,6 +103,36 @@ fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : Buil
 	NamesScopeFillOutOfLineElements( global_names_scope, ast.program_elements );
 	NamesScopeBuild( global_names_scope );
 
+	// Finalize building template classes.
+	// Save and update keys separately, because "generated_template_things_storage_" may change during iterations.
+	{
+		var ust::unordered_map</ ust::string8, i32 /> mut generated_template_things_keys;
+		foreach( &el : generated_template_things_ )
+		{
+			generated_template_things_keys.insert( el.key(), 0 );
+		}
+		auto mut new_generated_template_things_keys= generated_template_things_keys;
+
+		while( !new_generated_template_things_keys.empty() )
+		{
+			foreach( &el : new_generated_template_things_keys )
+			{
+				auto names_scope= generated_template_things_.find(el.key()).get_ref();
+				NamesScopeBuild( names_scope );
+			}
+
+			new_generated_template_things_keys.clear();
+			foreach( &el : generated_template_things_ )
+			{
+				if( generated_template_things_keys.find( el.key() ).empty() )
+				{
+					generated_template_things_keys.insert( el.key(), 0 );
+					new_generated_template_things_keys.insert( el.key(), 0 );
+				}
+			}
+		}
+	}
+
 	unsafe{  LLVMDeleteFunction( global_llvm_function_ );  }
 	global_llvm_function_= LLVMValueRef::Null;
 
@@ -239,6 +269,19 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Na
 		{
 			return t;
 		}
+		if_var( &v : template_arg.something.get</NamesScopeVariable/>() )
+		{
+			var Variable mut res
+			{
+				.t= v.t,
+				.llvm_value= v.llvm_value,
+				.constexpr_value= v.constexpr_value,
+				.location= Variable::Location::Pointer,
+				.value_type= select( v.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+			};
+			return move(res);
+		}
+		REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, FilePos(), ust::string8("TODO - name" ) )
 	}
 
 	return ErrorValue();

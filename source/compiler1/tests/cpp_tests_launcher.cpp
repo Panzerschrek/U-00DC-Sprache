@@ -27,6 +27,7 @@ bool FilterTest( const std::string& test_name )
 		"ClassTemplateTest0",
 		"ClassTemplateTest1",
 		"ClassTemplateTest2",
+		"ClassTemplateTest3",
 		"DestructorMustReturnVoidTest0",
 		"DestructorOutsideClassTest0",
 		"DestructorsTest0",
