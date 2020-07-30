@@ -241,9 +241,10 @@ private:
 	// Returns true if ok
 	fn MatchTemplateArgument(
 		mut this,
+		NamesScopePtr& names_scope,
+		TypeTemplate& type_template,
 		Synt::Expression& param,
-		Value& given_arg,
-		NamesScopePtr& names_scope ) : bool;
+		Value& given_arg ) : bool;
 
 	// Overloading
 

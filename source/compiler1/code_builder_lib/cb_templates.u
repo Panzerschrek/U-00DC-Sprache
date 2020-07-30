@@ -87,7 +87,7 @@ fn CodeBuilder::GenTemplateType(
 	for( auto mut i= 0s; i < template_parameters.size(); ++i )
 	{
 		auto arg= BuildExpressionCode( args_names_scope, function_context, template_parameters[i] );
-		all_ok|= MatchTemplateArgument( syntax_element.signature_args[i].name, arg, result_names_scope );
+		all_ok|= MatchTemplateArgument( result_names_scope, type_template, syntax_element.signature_args[i].name, arg );
 
 		if_var( &t : arg.get</Type/>() )
 		{
@@ -136,9 +136,10 @@ fn CodeBuilder::GenTemplateType(
 
 fn CodeBuilder::MatchTemplateArgument(
 	mut this,
+	NamesScopePtr& names_scope,
+	TypeTemplate& type_template,
 	Synt::Expression& param,
-	Value& given_arg,
-	NamesScopePtr& names_scope ) : bool
+	Value& given_arg ) : bool
 {
 	if_var( &complex_name : param.get</Synt::ComplexName/>() )
 	{
@@ -151,12 +152,40 @@ fn CodeBuilder::MatchTemplateArgument(
 				{
 					auto mut template_arg_lock= template_arg_ptr.lock_mut();
 					auto &mut template_arg= template_arg_lock.get_ref();
-					if_var( &given_type : given_arg.get</Type/>() )
+
+					auto& value_param_type_name= type_template.syntax_element.get_ref().args[ template_arg.index ].t;
+					if( value_param_type_name.get</Synt::EmptyVariant/>().empty() )
 					{
-						if( !template_arg.something.get</TemplateArg::NotKnownYet/>().empty() )
+						// Value param
+						if_var( &given_variable : given_arg.get</Variable/>() )
 						{
-							template_arg.something= given_type;
-							return true;
+							if( !MatchTemplateArgument( names_scope, type_template, value_param_type_name, given_variable.t ) )
+							{
+								return false;
+							}
+							if( !template_arg.something.get</TemplateArg::NotKnownYet/>().empty() )
+							{
+								var NamesScopeVariable mut out_var
+								{
+									.t= given_variable.t,
+									.llvm_value= given_variable.llvm_value,
+									.constexpr_value= given_variable.constexpr_value,
+								};
+								template_arg.something= move(out_var);
+								return true;
+							}
+						}
+					}
+					else
+					{
+						// Type param
+						if_var( &given_type : given_arg.get</Type/>() )
+						{
+							if( !template_arg.something.get</TemplateArg::NotKnownYet/>().empty() )
+							{
+								template_arg.something= given_type;
+								return true;
+							}
 						}
 					}
 				}
