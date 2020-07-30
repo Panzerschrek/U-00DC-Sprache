@@ -280,6 +280,14 @@ struct TypeTemplatesSet
 	ust::vector</ ust::shared_ptr_final</Synt::ClassTemplate/> /> syntax_elements;
 }
 
+struct TemplateArg
+{
+	size_type index;
+
+	struct NotKnownYet{}
+	ust::variant</ tup[ NotKnownYet, Type, NamesScopeVariable ] /> something;
+}
+
 struct GlobalVariable
 {
 	ust::optional</NamesScopeVariable/> variable; // empty if incomplete
@@ -333,6 +341,7 @@ public:
 		EnumTypePtr,
 		ust::shared_ptr_mut</TypeAlias/>,
 		ust::shared_ptr_mut</TypeTemplatesSet/>,
+		ust::shared_ptr_mut</TemplateArg/>,
 		ust::shared_ptr_mut</GlobalVariable/>,
 		ust::shared_ptr_mut</GlobalAutoVariable/>,
 		ust::shared_ptr_mut</GlobalStaticAssertsSet/>

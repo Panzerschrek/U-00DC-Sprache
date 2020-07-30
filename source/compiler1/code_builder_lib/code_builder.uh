@@ -99,6 +99,7 @@ private:
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</Enum/>& enum_type );
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</TypeAlias/>& type_alias_ptr );
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set );
+	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</TemplateArg/>& template_arg );
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalVariable/>& global_variable_ptr );
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalAutoVariable/>& global_auto_variable_ptr );
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalStaticAssertsSet/>& global_static_asserts_set_ptr );
@@ -237,6 +238,13 @@ private:
 		ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set_ptr,
 		Synt::TemplateParameters& template_parameters ) : ust::optional</Type/>;
 
+	// Returns true if ok
+	fn MatchTemplateArgument(
+		mut this,
+		Synt::Expression& param,
+		Value& given_arg,
+		NamesScopePtr& names_scope ) : bool;
+
 	// Overloading
 
 	fn ApplyOverloadedFunction(
@@ -338,6 +346,8 @@ private:
 
 	ust::vector</ ClassTypePtr /> class_table_;
 	LLVMValueRef global_llvm_function_= LLVMValueRef::Null; // For global function context
+
+	ust::vector</NamesScopePtr/> generated_template_things_; // TODO - use unordered_map
 
 	LLVMValueRef halt_function_= LLVMValueRef::Null;
 }

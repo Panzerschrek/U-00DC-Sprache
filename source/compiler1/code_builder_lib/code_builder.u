@@ -230,6 +230,17 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Na
 		}
 	}
 
+	auto template_arg_ptr= names_scope_value.Get</TemplateArg/>();
+	if( !template_arg_ptr.empty() )
+	{
+		auto template_arg_lock= template_arg_ptr.lock_imut();
+		auto& template_arg= template_arg_lock.get_ref();
+		if_var( &t : template_arg.something.get</Type/>() )
+		{
+			return t;
+		}
+	}
+
 	return ErrorValue();
 }
 
@@ -350,6 +361,8 @@ fn CodeBuilder::ResolveValue( mut this, NamesScopePtr& names_scope, FunctionCont
 			auto type_templates_set= current_value.get_ref().Get</TypeTemplatesSet/>();
 			if( !type_templates_set.empty() )
 			{
+				BuiltTypeTemplatesSet( ust::to_non_nullable(current_scope), ust::to_non_nullable(type_templates_set) );
+
 				auto generated_type= GenTemplateType( names_scope, function_context, ust::to_non_nullable(type_templates_set), template_parameters.get_ref() );
 				if( !generated_type.empty() )
 				{

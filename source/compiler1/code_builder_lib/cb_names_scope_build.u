@@ -63,6 +63,11 @@ fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr
 	BuiltTypeTemplatesSet( names_scope_ptr, type_templates_set );
 }
 
+fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</TemplateArg/>& template_arg )
+{
+	// Nothing to do here
+}
+
 fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalVariable/>& global_variable_ptr )
 {
 	auto mut lock= global_variable_ptr.lock_mut();

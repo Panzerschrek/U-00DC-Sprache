@@ -37,6 +37,7 @@ fn CodeBuilder::PrepareTypeTemplate(
 	var TypeTemplate mut type_template
 	{
 		.syntax_element= class_template_syntax_element,
+		.parent_names_scope= names_scope,
 	};
 
 	// TODO - add some checks here
@@ -46,13 +47,98 @@ fn CodeBuilder::PrepareTypeTemplate(
 
 fn CodeBuilder::GenTemplateType(
 	mut this,
-	NamesScopePtr& names_scope,
+	NamesScopePtr& args_names_scope,
 	FunctionContext &mut function_context,
 	ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set_ptr,
 	Synt::TemplateParameters& template_parameters ) : ust::optional</Type/>
 {
-	// TODO
-	return bool_type_;
+	auto type_templates_set_lock= type_templates_set_ptr.lock_imut();
+	var TypeTemplatesSet& type_templates_set= type_templates_set_lock.get_ref();
+	if( type_templates_set.type_templates.size() != 1s )
+	{
+		return ust::optional</Type/>();
+	}
+
+	var TypeTemplate& type_template= type_templates_set.type_templates.front().get_ref();
+
+	var Synt::ClassTemplate& syntax_element= type_template.syntax_element.get_ref();
+	if( template_parameters.size() != syntax_element.signature_args.size() )
+	{
+		return ust::optional</Type/>();
+	}
+
+	var NamesScopePtr names_scope= ust::to_non_nullable( type_template.parent_names_scope.lock() ); // Parent namespace of type template
+	var NamesScopeMutPtr result_names_scope( NamesScope( "_", names_scope ) ); // Where we place template arguments
+
+	{
+		auto mut result_names_scope_lock= result_names_scope.lock_mut();
+		for( auto mut i= 0s; i < syntax_element.signature_args.size(); ++i )
+		{
+			// Should be simple name
+			auto& name= syntax_element.signature_args[i].name.get</Synt::ComplexName/>().get_ref().name;
+
+			var TemplateArg mut template_arg{ .index= i };
+			result_names_scope_lock.get_ref().AddName( name, move(template_arg ) );
+		}
+	}
+
+	auto mut all_ok= true;
+	for( auto mut i= 0s; i < template_parameters.size(); ++i )
+	{
+		auto arg= BuildExpressionCode( args_names_scope, function_context, template_parameters[i] );
+		all_ok|= MatchTemplateArgument( syntax_element.signature_args[i].name, arg, result_names_scope );
+	}
+
+	if( !all_ok )
+	{
+		return ust::optional</Type/>();
+	}
+
+	NamesScopeFill( result_names_scope, syntax_element.class_ );
+	if_var( result_class_name : result_names_scope.lock_imut().get_ref().GetThisScopeValue( syntax_element.class_.get_ref().name ) )
+	{
+		auto class_type= result_class_name.Get</ClassType/>();
+		if( !class_type.empty() )
+		{
+			generated_template_things_.push_back( result_names_scope );
+			return Type( ust::to_non_nullable( class_type ) );
+		}
+	}
+
+	return ust::optional</Type/>();
+}
+
+fn CodeBuilder::MatchTemplateArgument(
+	mut this,
+	Synt::Expression& param,
+	Value& given_arg,
+	NamesScopePtr& names_scope ) : bool
+{
+	if_var( &complex_name : param.get</Synt::ComplexName/>() )
+	{
+		if( !complex_name.name.empty() && complex_name.tail.empty() )
+		{
+			if_var( result_name : names_scope.lock_imut().get_ref().GetThisScopeValue( complex_name.name ) )
+			{
+				auto template_arg_ptr= result_name.Get</TemplateArg/>();
+				if( !template_arg_ptr.empty() )
+				{
+					auto mut template_arg_lock= template_arg_ptr.lock_mut();
+					auto &mut template_arg= template_arg_lock.get_ref();
+					if_var( &given_type : given_arg.get</Type/>() )
+					{
+						if( !template_arg.something.get</TemplateArg::NotKnownYet/>().empty() )
+						{
+							template_arg.something= given_type;
+							return true;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return false;
 }
 
 } // namespace U

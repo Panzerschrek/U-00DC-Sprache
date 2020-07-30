@@ -31,7 +31,7 @@ enum ReferenceModifier : u8
 
 struct EmptyVariant{} // used as stub
 
-type TemplateParameters= ust::vector</Expression/>;
+type TemplateParameters= ust::vector</Expression/>; // TODO - rename to args
 
 struct ComplexName
 {
@@ -404,6 +404,7 @@ struct ClassTemplate
 	FilePos file_pos;
 	ust::shared_ptr_final</Class/> class_;
 
+	// TODO - rename to params
 	struct Arg
 	{
 		Expression t; // Actually, only ComplexName. Empty if type parameter.
