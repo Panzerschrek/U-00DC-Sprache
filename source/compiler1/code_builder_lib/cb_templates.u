@@ -108,9 +108,11 @@ fn CodeBuilder::GenTemplateType(
 		ust::to_string8( ust::ref_to_int( type_template ) ) +
 		MangleTemplateArgs( result_signature_template_args );
 
+	var ust::string8 template_class_name= "_";
+
 	if_var( prev_names_scope : generated_template_things_.find( template_key ) )
 	{
-		if_var( result_class_name : prev_names_scope.lock_imut().get_ref().GetThisScopeValue( syntax_element.class_.get_ref().name ) )
+		if_var( result_class_name : prev_names_scope.lock_imut().get_ref().GetThisScopeValue( template_class_name ) )
 		{
 			auto class_type= result_class_name.Get</ClassType/>();
 			if( !class_type.empty() )
@@ -120,15 +122,11 @@ fn CodeBuilder::GenTemplateType(
 		}
 	}
 
-	NamesScopeFill( result_names_scope, syntax_element.class_ );
-	if_var( result_class_name : result_names_scope.lock_imut().get_ref().GetThisScopeValue( syntax_element.class_.get_ref().name ) )
+	auto class_type= NamesScopeAddClass( result_names_scope, syntax_element.class_, template_class_name );
+	if( !class_type.empty() )
 	{
-		auto class_type= result_class_name.Get</ClassType/>();
-		if( !class_type.empty() )
-		{
-			generated_template_things_.insert( template_key, result_names_scope );
-			return Type( ust::to_non_nullable( class_type ) );
-		}
+		generated_template_things_.insert( template_key, result_names_scope );
+		return Type( ust::to_non_nullable( class_type ) );
 	}
 
 	return ust::optional</Type/>();

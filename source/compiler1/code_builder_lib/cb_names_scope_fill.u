@@ -83,52 +83,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_ )
 {
-	auto& class_name= class_.get_ref().name;
-	if( IsKeyword( class_name ) )
-	{
-		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, class_.get_ref().file_pos )
-		return;
-	}
-
-	var NamesScopeMutPtr class_members( NamesScope( class_name, names_scope_ptr ) );
-	var ClassType mut class_type
-	{
-		.members= class_members,
-		.syntax_element= class_,
-	};
-
-	var NamesScopeValue mut names_scope_value( move(class_type) );
-	auto class_type_ptr= ust::to_non_nullable( names_scope_value.Get</ClassType/>() );
-	unsafe
-	{
-		auto name_mangled= MangleType( class_type_ptr );
-		auto mut lock= class_type_ptr.lock_mut();
-		lock.get_ref().llvm_type= LLVMStructCreateNamed( llvm_context_, name_mangled.front() );
-	}
-
-	class_table_.push_back( class_type_ptr );
-
-	// Create functions set for constructors/destructors. It's needed for later constructors/destructor generation.
-	{
-		auto mut lock= class_members.lock_mut();
-
-		var NamesScopeFunctionsSet functions_set{ .class_= class_type_ptr };
-		lock.get_ref().AddName( KeywordToString( Keyword::constructor_ ), functions_set );
-		lock.get_ref().AddName( KeywordToString( Keyword::destructor_  ), functions_set );
-	}
-
-	NamesScopeFill( class_members, class_.get_ref().class_elements, class_type_ptr );
-
-	var bool mut insert_not_ok= false;
-	{
-		auto mut lock= names_scope_ptr.lock_mut();
-		insert_not_ok= lock.get_ref().AddName( class_name, move(names_scope_value) ).empty();
-	}
-
-	if( insert_not_ok )
-	{
-		REPORT_ERROR( Redefinition, names_scope_ptr, class_.get_ref().file_pos, class_name )
-	}
+	NamesScopeAddClass( names_scope_ptr, class_, class_.get_ref().name );
 }
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_, ust::shared_ptr_nullable_mut</ClassType/>& class_type )
@@ -484,6 +439,58 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 			}
 		}
 	}
+}
+
+fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_, ust::string8& class_name ) : ust::shared_ptr_nullable_mut</ClassType/>
+{
+	if( IsKeyword( class_name ) )
+	{
+		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, class_.get_ref().file_pos )
+		return ust::shared_ptr_nullable_mut</ClassType/>();
+	}
+
+	var NamesScopeMutPtr class_members( NamesScope( class_name, names_scope_ptr ) );
+	var ClassType mut class_type
+	{
+		.members= class_members,
+		.syntax_element= class_,
+	};
+
+	var NamesScopeValue mut names_scope_value( move(class_type) );
+	auto class_type_ptr= ust::to_non_nullable( names_scope_value.Get</ClassType/>() );
+	unsafe
+	{
+		auto name_mangled= MangleType( class_type_ptr );
+		auto mut lock= class_type_ptr.lock_mut();
+		lock.get_ref().llvm_type= LLVMStructCreateNamed( llvm_context_, name_mangled.front() );
+	}
+
+	class_table_.push_back( class_type_ptr );
+
+	// Create functions set for constructors/destructors. It's needed for later constructors/destructor generation.
+	{
+		auto mut lock= class_members.lock_mut();
+
+		var NamesScopeFunctionsSet functions_set{ .class_= class_type_ptr };
+		lock.get_ref().AddName( KeywordToString( Keyword::constructor_ ), functions_set );
+		lock.get_ref().AddName( KeywordToString( Keyword::destructor_  ), functions_set );
+	}
+
+	NamesScopeFill( class_members, class_.get_ref().class_elements, class_type_ptr );
+
+	var bool mut insert_not_ok= false;
+	{
+		auto mut lock= names_scope_ptr.lock_mut();
+		insert_not_ok= lock.get_ref().AddName( class_name, move(names_scope_value) ).empty();
+	}
+
+	if( insert_not_ok )
+	{
+		REPORT_ERROR( Redefinition, names_scope_ptr, class_.get_ref().file_pos, class_name )
+		return ust::shared_ptr_nullable_mut</ClassType/>();
+	}
+
+	return class_type_ptr;
 }
 
 } // namespace U
