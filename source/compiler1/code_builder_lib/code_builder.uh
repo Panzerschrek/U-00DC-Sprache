@@ -63,7 +63,7 @@ public:
 
 private:
 	fn NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, NamesScopeValue& names_scope_value ) : Value;
-	fn ResolveValue( mut this, NamesScopePtr& names_scope, Synt::ComplexName& complex_name ) : Value;
+	fn ResolveValue( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& complex_name ) : Value;
 
 	fn FillGlobalNamesScope( this, NamesScope &mut names_scope );
 
@@ -229,6 +229,13 @@ private:
 		this,
 		NamesScopePtr& names_scope,
 		ust::shared_ptr_final</Synt::ClassTemplate/>& class_template_syntax_element ) : ust::optional</TypeTemplate/>;
+
+	fn GenTemplateType(
+		mut this,
+		NamesScopePtr& names_scope, // Namespace for arguments evaluation
+		FunctionContext &mut function_context,
+		ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set_ptr,
+		Synt::TemplateParameters& template_parameters ) : ust::optional</Type/>;
 
 	// Overloading
 

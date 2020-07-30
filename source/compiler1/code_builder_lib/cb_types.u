@@ -17,7 +17,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 
 fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_type ) : Type
 {
-	var Value resolved_value= ResolveValue( names_scope, named_type );
+	var Value resolved_value= ResolveValue( names_scope, function_context, named_type );
 	if_var( & t : resolved_value.get</Type/>() )
 	{
 		return t;

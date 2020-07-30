@@ -210,7 +210,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		}
 	}
 
-	return ResolveValue( names_scope, named_operand );
+	return ResolveValue( names_scope, function_context, named_operand );
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
