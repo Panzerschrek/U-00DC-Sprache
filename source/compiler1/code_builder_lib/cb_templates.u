@@ -59,7 +59,8 @@ fn CodeBuilder::GenTemplateType(
 		return ust::optional</Type/>();
 	}
 
-	var TypeTemplate& type_template= type_templates_set.type_templates.front().get_ref();
+	auto& type_template_ptr= type_templates_set.type_templates.front();
+	var TypeTemplate& type_template= type_template_ptr.get_ref();
 
 	var Synt::ClassTemplate& syntax_element= type_template.syntax_element.get_ref();
 	if( template_parameters.size() != syntax_element.signature_args.size() )
@@ -68,7 +69,7 @@ fn CodeBuilder::GenTemplateType(
 	}
 
 	var NamesScopePtr names_scope= ust::to_non_nullable( type_template.parent_names_scope.lock() ); // Parent namespace of type template
-	var NamesScopeMutPtr result_names_scope( NamesScope( "_", names_scope ) ); // Where we place template arguments
+	var NamesScopeMutPtr result_names_scope( NamesScope( "", names_scope ) ); // Where we place template arguments
 
 	{
 		auto mut result_names_scope_lock= result_names_scope.lock_mut();
@@ -123,13 +124,25 @@ fn CodeBuilder::GenTemplateType(
 	}
 
 	auto class_type= NamesScopeAddClass( result_names_scope, syntax_element.class_, template_class_name );
-	if( !class_type.empty() )
+	if( class_type.empty() )
 	{
-		generated_template_things_.insert( template_key, result_names_scope );
-		return Type( ust::to_non_nullable( class_type ) );
+		return ust::optional</Type/>();
 	}
 
-	return ust::optional</Type/>();
+	{
+		var ClassType::BaseTemplate mut base_template
+		{
+			.class_template= type_template_ptr,
+			.signature_args= result_signature_template_args,
+		};
+
+		auto mut lock= class_type.lock_mut();
+		lock.get_ref().base_template= move(base_template);
+		// TODO - change here also name of LLVM type
+	}
+
+	generated_template_things_.insert( template_key, result_names_scope );
+	return Type( ust::to_non_nullable( class_type ) );
 }
 
 fn CodeBuilder::MatchTemplateArgument(

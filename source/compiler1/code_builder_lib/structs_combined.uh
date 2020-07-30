@@ -84,6 +84,13 @@ struct ClassType
 
 	ust::vector</ust::string8/> fields_order;
 
+	struct BaseTemplate
+	{
+		TypeTemplatePtr class_template;
+		TemplateArgsFinished signature_args;
+	}
+	ust::optional</BaseTemplate/> base_template;
+
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
 
 	bool is_complete= false;
@@ -389,11 +396,24 @@ public:
 	// Get full name (with enclosing namespaces) un human-readable format.
 	fn ToString( this ) : ust::string8;
 
+	// Sometimes it's needed to identify class namespace. So, store pointer to class directly inside it's names_scope.
+	fn SetClass( mut this, ust::shared_ptr_nullable_mut</ClassType/> in_class_ )
+	{
+		class_= in_class_;
+	}
+
+	fn GetClass( this ) : ust::shared_ptr_nullable_mut</ClassType/>
+	{
+		return class_;
+	}
+
 private:
 	ust::string8 name_;
 	ust::weak_ptr_imut</NamesScope/> parent_;
 
 	ust::unordered_map</ ust::string8, NamesScopeValue /> names_map_;
+
+	ust::shared_ptr_nullable_mut</ClassType/> class_;
 
 	ErrorsContainerPtr errors_container_;
 }

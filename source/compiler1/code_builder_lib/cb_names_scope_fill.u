@@ -458,22 +458,26 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 
 	var NamesScopeValue mut names_scope_value( move(class_type) );
 	auto class_type_ptr= ust::to_non_nullable( names_scope_value.Get</ClassType/>() );
+
+	class_table_.push_back( class_type_ptr );
+
+	{
+		auto mut lock= class_members.lock_mut();
+
+		// Create functions set for constructors/destructors. It's needed for later constructors/destructor generation.
+		var NamesScopeFunctionsSet functions_set{ .class_= class_type_ptr };
+		lock.get_ref().AddName( KeywordToString( Keyword::constructor_ ), functions_set );
+		lock.get_ref().AddName( KeywordToString( Keyword::destructor_  ), functions_set );
+
+		// Add special member to names scope to identify it as class names scope
+		lock.get_ref().SetClass( class_type_ptr );
+	}
+
 	unsafe
 	{
 		auto name_mangled= MangleType( class_type_ptr );
 		auto mut lock= class_type_ptr.lock_mut();
 		lock.get_ref().llvm_type= LLVMStructCreateNamed( llvm_context_, name_mangled.front() );
-	}
-
-	class_table_.push_back( class_type_ptr );
-
-	// Create functions set for constructors/destructors. It's needed for later constructors/destructor generation.
-	{
-		auto mut lock= class_members.lock_mut();
-
-		var NamesScopeFunctionsSet functions_set{ .class_= class_type_ptr };
-		lock.get_ref().AddName( KeywordToString( Keyword::constructor_ ), functions_set );
-		lock.get_ref().AddName( KeywordToString( Keyword::destructor_  ), functions_set );
 	}
 
 	NamesScopeFill( class_members, class_.get_ref().class_elements, class_type_ptr );

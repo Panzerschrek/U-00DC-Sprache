@@ -1,4 +1,5 @@
 import "/string_conversions.u"
+import "../lex_synt_lib/keywords.uh"
 import "mangling.uh"
 
 namespace U
@@ -168,6 +169,28 @@ fn MangleFundamentalTypeName( U_FundamentalType t ) : ust::string8
 	return ust::string8();
 }
 
+fn GetTemplateClassName( ClassType& class_type ) : MangleGraphNode
+{
+	var MangleGraphNode mut name_node;
+	auto& class_name= class_type.base_template.get_ref().class_template.get_ref().syntax_element.get_ref().class_.get_ref().name;
+	name_node.postfix+= ust::to_string8( class_name.size() );
+	name_node.postfix+= class_name;
+
+	// Skip template parameters namespace.
+	auto parent= class_type.members.lock_imut().get_ref().GetParent().lock_imut().get_ref().GetParent();
+	if( !parent.lock_imut().get_ref().GetThisNamespaceName().empty() )
+	{
+		name_node.childs.push_back( ust::box</MangleGraphNode/>( GetNamespacePrefix_r( parent.lock_imut().get_ref() ) ) );
+	}
+
+	auto mut params_node= MangleTemplateArgsImpl( class_type.base_template.get_ref().signature_args );
+
+	var MangleGraphNode mut result;
+	result.childs.push_back( ust::box</MangleGraphNode/>( move( name_node ) ) );
+	result.childs.push_back( ust::box</MangleGraphNode/>( move( params_node ) ) );
+	return move(result);
+}
+
 fn MangleTypeImpl( Type& t ) : MangleGraphNode
 {
 	if_var( fundamental_type : t.GetFundamentalType() )
@@ -186,13 +209,22 @@ fn MangleTypeImpl( Type& t ) : MangleGraphNode
 		res.childs.push_back( ust::box</MangleGraphNode/>( MangleTypeImpl( array_type.element_type.get_ref() ) ) );
 		return move(res);
 	}
-	if_var( class_type : t.GetClassType() )
+	if_var( class_type_ptr : t.GetClassType() )
 	{
-		auto class_members= class_type.lock_imut().get_ref().members;
+		auto class_lock= class_type_ptr.lock_imut();
+		auto& class_type= class_lock.get_ref();
+		auto class_members= class_type.members;
 		auto class_members_lock= class_members.lock_imut();
 		auto& class_members_ref= class_members_lock.get_ref();
 
-		return GetNestedName( class_members_ref.GetThisNamespaceName(), class_members_ref.GetParent().lock_imut().get_ref() );
+		if( !class_lock.get_ref().base_template.empty() )
+		{
+			return GetTemplateClassName( class_type );
+		}
+		else
+		{
+			return GetNestedName( class_members_ref.GetThisNamespaceName(), class_members_ref.GetParent().lock_imut().get_ref() );
+		}
 	}
 	if_var( enum_type : t.GetEnumType() )
 	{
@@ -209,6 +241,18 @@ fn MangleTypeImpl( Type& t ) : MangleGraphNode
 fn GetNamespacePrefix_r( NamesScope& names_scope ) : MangleGraphNode
 {
 	auto& name= names_scope.GetThisNamespaceName();
+
+	// Process separately class templates.
+	auto class_ptr= names_scope.GetClass();
+	if( !class_ptr.empty() )
+	{
+		auto class_lock= class_ptr.lock_imut();
+		auto& class_= class_lock.get_ref();
+		if( !class_.base_template.empty() )
+		{
+			return GetTemplateClassName( class_ );
+		}
+	}
 
 	var MangleGraphNode mut res;
 
@@ -244,6 +288,7 @@ fn MangleTemplateArgsImpl( TemplateArgsFinished& template_args ) : MangleGraphNo
 		{
 			var MangleGraphNode mut variable_param_node;
 			variable_param_node.prefix= "L";
+			variable_param_node.childs.push_back( ust::box</MangleGraphNode/>( MangleTypeImpl( v.t ) ) );
 
 			auto mut is_signed= false;
 			if_var( fundamental_type : v.t.GetFundamentalType() )
@@ -279,6 +324,7 @@ fn MangleTemplateArgsImpl( TemplateArgsFinished& template_args ) : MangleGraphNo
 				}
 			}
 
+			variable_param_node.postfix+= "E";
 			variable_param_node.cachable= false;
 			result.childs.push_back( ust::box</MangleGraphNode/>( move( variable_param_node ) ) );
 		}
