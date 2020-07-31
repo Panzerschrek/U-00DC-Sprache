@@ -118,6 +118,12 @@ fn CodeBuilder::GenTemplateType(
 		for( auto mut i= 0s; i < template_parameters.size(); ++i )
 		{
 			auto arg= BuildExpressionCode( args_names_scope, function_context, template_parameters[i] );
+			if( arg.get</Type/>().empty() && arg.get</Variable/>().empty() )
+			{
+				REPORT_ERROR( InvalidValueAsTemplateArgument, args_names_scope, Synt::GetFilePos(template_parameters[i]), GetValueKindName(arg) )
+				all_ok= false;
+			}
+
 			all_ok&= MatchTemplateArgument( result_names_scope, type_template, syntax_element.args[i].name, arg );
 
 			if_var( &t : arg.get</Type/>() )
@@ -135,14 +141,24 @@ fn CodeBuilder::GenTemplateType(
 		for( auto mut i= 0s; i < syntax_element.signature_args.size(); ++i )
 		{
 			var Value mut arg;
+			var FilePos mut file_pos;
 			if( i < template_parameters.size() )
 			{
+				file_pos= Synt::GetFilePos( template_parameters[i] );
 				arg= BuildExpressionCode( args_names_scope, function_context, template_parameters[i] );
 			}
 			else
 			{
+				file_pos= Synt::GetFilePos( syntax_element.signature_args[i].default_value );
 				arg= BuildExpressionCode( result_names_scope, function_context, syntax_element.signature_args[i].default_value );
 			}
+
+			if( arg.get</Type/>().empty() && arg.get</Variable/>().empty() )
+			{
+				REPORT_ERROR( InvalidValueAsTemplateArgument, args_names_scope, Synt::GetFilePos(template_parameters[i]), GetValueKindName(arg) )
+				all_ok= false;
+			}
+
 			all_ok&= MatchTemplateArgument( result_names_scope, type_template, syntax_element.signature_args[i].name, arg );
 
 			if_var( &t : arg.get</Type/>() )
@@ -253,6 +269,12 @@ fn CodeBuilder::MatchTemplateArgument(
 					// Value param
 					if_var( &given_variable : given_arg.get</Variable/>() )
 					{
+						if( !TypeIsValidForTemplateVariableArgument( given_variable.t ) )
+						{
+							REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, param.file_pos, given_variable.t )
+							return false;
+						}
+
 						if( !MatchTemplateArgument( names_scope, type_template, value_param_type_name, given_variable.t ) )
 						{
 							return false;
@@ -380,19 +402,9 @@ fn CodeBuilder::MatchTemplateArgumentExpressions(
 				return false;
 			}
 
-			if( given_variable.t.GetFundamentalType().empty() && given_variable.t.GetEnumType().empty() )
+			if( !TypeIsValidForTemplateVariableArgument( given_variable.t ) )
 			{
 				return false;
-			}
-			if_var( &fundamental_type : given_variable.t.GetFundamentalType() )
-			{
-				if( !(
-					IsInteger( fundamental_type.fundamental_type ) ||
-					IsChar( fundamental_type.fundamental_type ) ||
-					fundamental_type.fundamental_type == U_FundamentalType::bool_ ) )
-				{
-					return false;
-				}
 			}
 
 			if( given_variable.constexpr_value == LLVMValueRef::Null || param_variable.constexpr_value == LLVMValueRef::Null )
@@ -405,6 +417,25 @@ fn CodeBuilder::MatchTemplateArgumentExpressions(
 				return LLVMConstIntGetZExtValue( given_variable.constexpr_value ) == LLVMConstIntGetZExtValue( param_variable.constexpr_value );
 			}
 		}
+	}
+
+	return false;
+}
+
+fn CodeBuilder::TypeIsValidForTemplateVariableArgument( Type& t ) : bool
+{
+	if( !t.GetEnumType().empty() )
+	{
+		// All enums are valid.
+		return true;
+	}
+
+	if_var( &fundamental_type : t.GetFundamentalType() )
+	{
+		return
+			IsInteger( fundamental_type.fundamental_type ) ||
+			IsChar( fundamental_type.fundamental_type ) ||
+			fundamental_type.fundamental_type == U_FundamentalType::bool_;
 	}
 
 	return false;

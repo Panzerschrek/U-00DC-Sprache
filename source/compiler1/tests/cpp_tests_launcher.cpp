@@ -67,6 +67,9 @@ bool FilterTest( const std::string& test_name )
 		"FunctionsParametersManglingTest",
 		"FundamentalTypesManglingTest",
 		"GlobalVariablesManglingTest0",
+		//"InvalidTypeOfTemplateVariableArgumentTest0",
+		"InvalidValueAsTemplateArgumentTest0",
+		"MandatoryTemplateSignatureArgumentAfterOptionalArgument_Test0",
 		"NamesCompressionTest",
 		"NamespacesManglingTest",
 		"NumericConstantAsTemplateSignatureParameter_Test0",
@@ -77,6 +80,7 @@ bool FilterTest( const std::string& test_name )
 		"ShortClassTemplateForm_Test2",
 		"ShortClassTemplateForm_Test3",
 		"ShortClassTemplateForm_Test4",
+		"ValueIsNotTemplateTest0",
 		"VariableExpressionAsTemplateSignatureParameter_Test0",
 		"VariableExpressionAsTemplateSignatureParameter_Test1",
 	};

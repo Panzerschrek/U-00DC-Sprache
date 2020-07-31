@@ -274,6 +274,8 @@ private:
 		Value& param,
 		Value& arg ) : bool;
 
+	fn TypeIsValidForTemplateVariableArgument( Type& t ) : bool;
+
 	// Overloading
 
 	fn ApplyOverloadedFunction(
