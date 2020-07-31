@@ -255,7 +255,7 @@ fn CodeBuilder::GenTemplateType(
 		var Type mut t;
 		{
 			auto mut global_function_context= CreateGlobalFunctionContext();
-			t= PrepareType( names_scope, global_function_context, type_alias_syntax_element.get_ref().type_name );
+			t= PrepareType( result_names_scope, global_function_context, type_alias_syntax_element.get_ref().type_name );
 		}
 
 		// Cache result.
@@ -263,6 +263,8 @@ fn CodeBuilder::GenTemplateType(
 			auto mut names_scope_lock= result_names_scope.lock_mut();
 			names_scope_lock.get_ref().AddName( template_class_name, t );
 		}
+
+		generated_template_things_.insert( template_key, result_names_scope );
 
 		return t;
 	}
