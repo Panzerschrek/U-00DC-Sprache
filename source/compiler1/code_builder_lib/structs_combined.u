@@ -394,6 +394,11 @@ fn GetValueKind( ThisMethodsSet& v ) : ust::array_view_imut</ char8 />
 	return "this + methods set";
 }
 
+fn GetValueKind( ust::shared_ptr_imut</TypeTemplatesSet/>& v ) : ust::array_view_imut</ char8 />
+{
+	return "type templates set";
+}
+
 fn GetValueKind( ErrorValue& v ) : ust::array_view_imut</ char8 />
 {
 	return "error value";

@@ -64,6 +64,12 @@ public:
 private:
 	fn NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, NamesScopeValue& names_scope_value ) : Value;
 	fn ResolveValue( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& complex_name ) : Value;
+	fn ResolveValue(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		Synt::ComplexName& complex_name,
+		bool skip_last_template_args ) : Value;
 
 	fn FillGlobalNamesScope( this, NamesScope &mut names_scope );
 

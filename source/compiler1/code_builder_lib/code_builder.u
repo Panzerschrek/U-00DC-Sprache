@@ -284,10 +284,26 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Na
 		REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, FilePos(), ust::string8("TODO - name" ) )
 	}
 
+	auto type_templates_set_ptr= names_scope_value.Get</TypeTemplatesSet/>();
+	if( !type_templates_set_ptr.empty() )
+	{
+		return ust::shared_ptr_imut</TypeTemplatesSet/>( ust::to_non_nullable( type_templates_set_ptr ) );
+	}
+
 	return ErrorValue();
 }
 
 fn CodeBuilder::ResolveValue( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& complex_name ) : Value
+{
+	return ResolveValue( names_scope, function_context, complex_name, false );
+}
+
+fn CodeBuilder::ResolveValue(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	Synt::ComplexName& complex_name,
+	bool skip_last_template_args ) : Value
 {
 	var ust::shared_ptr_nullable_imut</NamesScope/> mut current_scope(names_scope);
 
@@ -404,6 +420,11 @@ fn CodeBuilder::ResolveValue( mut this, NamesScopePtr& names_scope, FunctionCont
 			if( !type_templates_set.empty() )
 			{
 				BuiltTypeTemplatesSet( ust::to_non_nullable(current_scope), ust::to_non_nullable(type_templates_set) );
+
+				if( skip_last_template_args && i + 1s == complex_name.tail.size()  )
+				{
+					break;
+				}
 
 				auto generated_type= GenTemplateType(
 					names_scope,

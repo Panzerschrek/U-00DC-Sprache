@@ -209,6 +209,7 @@ type Value= ust::variant</ tup[
 	Type,
 	FunctionsSet,
 	ThisMethodsSet,
+	ust::shared_ptr_imut</TypeTemplatesSet/>,
 	ErrorValue
 	] />;
 

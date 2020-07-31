@@ -344,8 +344,64 @@ fn CodeBuilder::MatchTemplateArgument(
 		}
 	}
 
-	// If this is nothing special - process template parameter as regular expression.
 	auto mut global_function_context= CreateGlobalFunctionContext();
+
+	if_var( &given_type : given_arg.get</Type/>() )
+	{
+		if_var( &class_type : given_type.GetClassType() )
+		{
+			auto class_type_lock= class_type.lock_imut();
+			if_var( &base_template : class_type_lock.get_ref().base_template )
+			{
+				if( !param.tail.empty() )
+				{
+					if_var( &template_args_ptr : param.tail.back().get</ ust::box</ Synt::TemplateParameters /> />() )
+					{
+						auto& template_args= template_args_ptr.get_ref();
+
+						auto value= ResolveValue( names_scope, global_function_context, param, true );
+						if_var( &type_templates_set_ptr : value.get</ ust::shared_ptr_imut</ TypeTemplatesSet /> />() )
+						{
+							auto type_templates_set_lock= type_templates_set_ptr.lock_imut();
+							foreach( &type_template_ptr : type_templates_set_lock.get_ref().type_templates )
+							{
+								if( type_template_ptr != base_template.class_template )
+								{
+									continue; // Ok - different template
+								}
+								if( template_args.size() != base_template.signature_args.size() )
+								{
+									return false; // Something strange - same templates and different arg count.
+								}
+
+								for( auto mut i= 0s; i < template_args.size(); ++i )
+								{
+									var Value mut val;
+									if_var( &v : base_template.signature_args[i].get</Variable/>() )
+									{
+										val= v;
+									}
+									if_var( &t : base_template.signature_args[i].get</Type/>() )
+									{
+										val= t;
+									}
+
+									if( !MatchTemplateArgument( names_scope, type_template, template_args[i], val ) )
+									{
+										return false;
+									}
+								}
+
+								return true; // Ok - perfect match
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// If this is nothing special - process template parameter as regular expression.
 	auto param_res= BuildExpressionCode( names_scope, global_function_context, param );
 
 	return MatchTemplateArgumentExpressions( names_scope, param.file_pos, param_res, given_arg );
