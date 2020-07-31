@@ -218,7 +218,7 @@ private:
 	fn ParseClassBody( mut this ) : ClassElements;
 	fn ParseEnum( mut this ) : Enum;
 	fn ParseTypeAlias( mut this ) : TypeAlias;
-	fn ParseClassTemplate( mut this ) : ClassTemplate;
+	fn ParseTypeTemplate( mut this ) : TypeTemplate;
 
 	fn NotEndOfFile( this ) : bool;
 	fn NextLexem( mut this );
@@ -271,7 +271,7 @@ fn SyntaxAnalyzer::ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : Names
 		}
 		else if( IsKeyword( it_.front(), Keyword::template_ ) )
 		{
-			namespace_elements.push_back( ust::shared_ptr_final</ClassTemplate/>( ParseClassTemplate() ) );
+			namespace_elements.push_back( ust::shared_ptr_final</TypeTemplate/>( ParseTypeTemplate() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::namespace_ ) )
 		{
@@ -1657,7 +1657,7 @@ fn SyntaxAnalyzer::ParseClassBody( mut this ) : ClassElements
 		}
 		else if( IsKeyword( it_.front(), Keyword::template_ ) )
 		{
-			class_elements.push_back( ust::shared_ptr_final</ClassTemplate/>( ParseClassTemplate() ) );
+			class_elements.push_back( ust::shared_ptr_final</TypeTemplate/>( ParseTypeTemplate() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::var_ ) )
 		{
@@ -1822,7 +1822,7 @@ fn SyntaxAnalyzer::ParseTypeAlias( mut this ) : TypeAlias
 	return move(type_alias);
 }
 
-fn SyntaxAnalyzer::ParseClassTemplate( mut this ) : ClassTemplate
+fn SyntaxAnalyzer::ParseTypeTemplate( mut this ) : TypeTemplate
 {
 	auto template_file_pos= it_.front().file_pos;
 
@@ -1839,7 +1839,7 @@ fn SyntaxAnalyzer::ParseClassTemplate( mut this ) : ClassTemplate
 	}
 	NextLexem();
 
-	var ust::vector</ClassTemplate::Arg/> mut args;
+	var ust::vector</TypeTemplate::Arg/> mut args;
 	while( NotEndOfFile() )
 	{
 		if( it_.front().lexem_type == Lexem::Type::TemplateBracketRight )
@@ -1848,7 +1848,7 @@ fn SyntaxAnalyzer::ParseClassTemplate( mut this ) : ClassTemplate
 			break;
 		}
 
-		var ClassTemplate::Arg mut arg;
+		var TypeTemplate::Arg mut arg;
 		if( IsKeyword( it_.front(), Keyword::type_ ) )
 		{
 			NextLexem();
@@ -1906,7 +1906,7 @@ fn SyntaxAnalyzer::ParseClassTemplate( mut this ) : ClassTemplate
 
 	// Signature args.
 	auto mut is_short_form= false;
-	var ust::vector</ClassTemplate::SignatureArg/> mut signature_args;
+	var ust::vector</TypeTemplate::SignatureArg/> mut signature_args;
 	if( it_.front().lexem_type == Lexem::Type::TemplateBracketLeft )
 	{
 		NextLexem();
@@ -1920,7 +1920,7 @@ fn SyntaxAnalyzer::ParseClassTemplate( mut this ) : ClassTemplate
 				break;
 			}
 
-			var ClassTemplate::SignatureArg mut arg;
+			var TypeTemplate::SignatureArg mut arg;
 			arg.name= ParseExpression();
 
 			if( it_.front().lexem_type == Lexem::Type::Assignment )
@@ -1962,7 +1962,7 @@ fn SyntaxAnalyzer::ParseClassTemplate( mut this ) : ClassTemplate
 		.name= "_", // Give special name for all template classes.
 		.class_elements= ParseClassBody(),
 	};
-	var ClassTemplate mut class_template
+	var TypeTemplate mut type_template
 	{
 		.file_pos= template_file_pos,
 		.name= class_name,
@@ -1972,7 +1972,7 @@ fn SyntaxAnalyzer::ParseClassTemplate( mut this ) : ClassTemplate
 		.is_short_form= is_short_form,
 	};
 
-	return move(class_template);
+	return move(type_template);
 }
 
 fn SyntaxAnalyzer::NotEndOfFile( this ) : bool

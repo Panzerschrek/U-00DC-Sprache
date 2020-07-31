@@ -83,8 +83,8 @@ private:
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Enum/>& enum_, ust::shared_ptr_nullable_mut</ClassType/>& class_type );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::TypeAlias/>& type_alias );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::TypeAlias/>& type_alias, ust::shared_ptr_nullable_mut</ClassType/>& class_type );
-	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassTemplate/>& class_template );
-	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassTemplate/>& class_template, ust::shared_ptr_nullable_mut</ClassType/>& class_type );
+	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::TypeTemplate/>& type_template );
+	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::TypeTemplate/>& type_template, ust::shared_ptr_nullable_mut</ClassType/>& class_type );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::VariablesDeclaration/>& variables_declaration );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::VariablesDeclaration/>& variables_declaration, ust::shared_ptr_nullable_mut</ClassType/>& class_type );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::AutoVariableDeclaration/>& auto_variable_declaration );
@@ -237,7 +237,7 @@ private:
 	fn PrepareTypeTemplate(
 		this,
 		NamesScopePtr& names_scope,
-		ust::shared_ptr_final</Synt::ClassTemplate/>& class_template_syntax_element ) : ust::optional</TypeTemplate/>;
+		ust::shared_ptr_final</Synt::TypeTemplate/>& type_template_syntax_element ) : ust::optional</TypeTemplate/>;
 
 	fn GenTemplateType(
 		mut this,

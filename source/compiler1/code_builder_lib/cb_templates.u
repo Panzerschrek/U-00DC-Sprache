@@ -32,9 +32,9 @@ fn CodeBuilder::BuiltTypeTemplatesSet( this, NamesScopePtr& names_scope, ust::sh
 fn CodeBuilder::PrepareTypeTemplate(
 	this,
 	NamesScopePtr& names_scope,
-	ust::shared_ptr_final</Synt::ClassTemplate/>& class_template_syntax_element ) : ust::optional</TypeTemplate/>
+	ust::shared_ptr_final</Synt::TypeTemplate/>& type_template_syntax_element ) : ust::optional</TypeTemplate/>
 {
-	auto& syntax_element= class_template_syntax_element.get_ref();
+	auto& syntax_element= type_template_syntax_element.get_ref();
 
 	auto mut first_default_param= syntax_element.signature_args.size();
 	for( auto mut i= 0s; i < syntax_element.signature_args.size(); ++i )
@@ -52,7 +52,7 @@ fn CodeBuilder::PrepareTypeTemplate(
 
 	var TypeTemplate mut type_template
 	{
-		.syntax_element= class_template_syntax_element,
+		.syntax_element= type_template_syntax_element,
 		.parent_names_scope= names_scope,
 		.first_default_param= first_default_param,
 	};
@@ -103,7 +103,7 @@ fn CodeBuilder::GenTemplateType(
 {
 	var TypeTemplate& type_template= type_template_ptr.get_ref();
 
-	var Synt::ClassTemplate& syntax_element= type_template.syntax_element.get_ref();
+	var Synt::TypeTemplate& syntax_element= type_template.syntax_element.get_ref();
 	if( syntax_element.is_short_form )
 	{
 		if( template_parameters.size() != syntax_element.args.size() )

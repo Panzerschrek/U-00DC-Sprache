@@ -273,7 +273,7 @@ struct TypeAlias
 
 struct TypeTemplate
 {
-	ust::shared_ptr_final</Synt::ClassTemplate/> syntax_element;
+	ust::shared_ptr_final</Synt::TypeTemplate/> syntax_element;
 	size_type first_default_param;
 
 	ust::weak_ptr_imut</NamesScope/> parent_names_scope; // Needed because type template should see names scope of original file.
@@ -286,7 +286,7 @@ struct TypeTemplatesSet
 	ust::vector</TypeTemplatePtr/> type_templates;
 
 	// Is incomplete, if there are some syntax elements in containers.
-	ust::vector</ ust::shared_ptr_final</Synt::ClassTemplate/> /> syntax_elements;
+	ust::vector</ ust::shared_ptr_final</Synt::TypeTemplate/> /> syntax_elements;
 }
 
 struct TemplateArg
