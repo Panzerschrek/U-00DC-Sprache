@@ -34,10 +34,27 @@ fn CodeBuilder::PrepareTypeTemplate(
 	NamesScopePtr& names_scope,
 	ust::shared_ptr_final</Synt::ClassTemplate/>& class_template_syntax_element ) : ust::optional</TypeTemplate/>
 {
+	auto& syntax_element= class_template_syntax_element.get_ref();
+
+	auto mut first_default_param= syntax_element.signature_args.size();
+	for( auto mut i= 0s; i < syntax_element.signature_args.size(); ++i )
+	{
+		if( syntax_element.signature_args[i].default_value.get</ Synt::EmptyVariant />().empty() )
+		{
+			first_default_param= ust::min( first_default_param, i );
+		}
+		else if( first_default_param < i )
+		{
+			REPORT_ERROR( MandatoryTemplateSignatureArgumentAfterOptionalArgument, names_scope, syntax_element.file_pos )
+			return ust::optional</TypeTemplate/>();
+		}
+	}
+
 	var TypeTemplate mut type_template
 	{
 		.syntax_element= class_template_syntax_element,
 		.parent_names_scope= names_scope,
+		.first_default_param= first_default_param,
 	};
 
 	// TODO - add some checks here
@@ -72,7 +89,7 @@ fn CodeBuilder::GenTemplateType(
 	}
 	else
 	{
-		if( template_parameters.size() != syntax_element.signature_args.size() )
+		if( template_parameters.size() < type_template.first_default_param )
 		{
 			return ust::optional</Type/>();
 		}
@@ -115,9 +132,17 @@ fn CodeBuilder::GenTemplateType(
 	}
 	else
 	{
-		for( auto mut i= 0s; i < template_parameters.size(); ++i )
+		for( auto mut i= 0s; i < syntax_element.signature_args.size(); ++i )
 		{
-			auto arg= BuildExpressionCode( args_names_scope, function_context, template_parameters[i] );
+			var Value mut arg;
+			if( i < template_parameters.size() )
+			{
+				arg= BuildExpressionCode( args_names_scope, function_context, template_parameters[i] );
+			}
+			else
+			{
+				arg= BuildExpressionCode( result_names_scope, function_context, syntax_element.signature_args[i].default_value );
+			}
 			all_ok&= MatchTemplateArgument( result_names_scope, type_template, syntax_element.signature_args[i].name, arg );
 
 			if_var( &t : arg.get</Type/>() )

@@ -273,6 +273,7 @@ struct TypeAlias
 struct TypeTemplate
 {
 	ust::shared_ptr_final</Synt::ClassTemplate/> syntax_element;
+	size_type first_default_param;
 
 	ust::weak_ptr_imut</NamesScope/> parent_names_scope; // Needed because type template should see names scope of original file.
 }
