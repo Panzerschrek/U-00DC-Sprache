@@ -67,7 +67,8 @@ fn CodeBuilder::GenTemplateType(
 	NamesScopePtr& args_names_scope,
 	FunctionContext &mut function_context,
 	ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set_ptr,
-	Synt::TemplateParameters& template_parameters ) : ust::optional</Type/>
+	Synt::TemplateParameters& template_parameters,
+	FilePos& template_instantiation_file_pos ) : ust::optional</Type/>
 {
 	auto type_templates_set_lock= type_templates_set_ptr.lock_imut();
 	var TypeTemplatesSet& type_templates_set= type_templates_set_lock.get_ref();
@@ -77,6 +78,29 @@ fn CodeBuilder::GenTemplateType(
 	}
 
 	auto& type_template_ptr= type_templates_set.type_templates.front();
+	auto mut res= GenTemplateType(
+		args_names_scope,
+		function_context,
+		type_template_ptr,
+		template_parameters,
+		template_instantiation_file_pos );
+
+	if( res.empty() )
+	{
+		REPORT_ERROR( TemplateParametersDeductionFailed, args_names_scope, template_instantiation_file_pos )
+	}
+
+	return move(res);
+}
+
+fn CodeBuilder::GenTemplateType(
+	mut this,
+	NamesScopePtr& args_names_scope,
+	FunctionContext &mut function_context,
+	TypeTemplatePtr& type_template_ptr,
+	Synt::TemplateParameters& template_parameters,
+	FilePos& template_instantiation_file_pos ) : ust::optional</Type/>
+{
 	var TypeTemplate& type_template= type_template_ptr.get_ref();
 
 	var Synt::ClassTemplate& syntax_element= type_template.syntax_element.get_ref();
@@ -155,7 +179,7 @@ fn CodeBuilder::GenTemplateType(
 
 			if( arg.get</Type/>().empty() && arg.get</Variable/>().empty() )
 			{
-				REPORT_ERROR( InvalidValueAsTemplateArgument, args_names_scope, Synt::GetFilePos(template_parameters[i]), GetValueKindName(arg) )
+				REPORT_ERROR( InvalidValueAsTemplateArgument, args_names_scope, file_pos, GetValueKindName(arg) )
 				all_ok= false;
 			}
 
@@ -243,7 +267,7 @@ fn CodeBuilder::MatchTemplateArgument(
 	auto mut global_function_context= CreateGlobalFunctionContext();
 	auto param_res= BuildExpressionCode( names_scope, global_function_context, param );
 
-	return MatchTemplateArgumentExpressions( param_res, given_arg );
+	return MatchTemplateArgumentExpressions( names_scope, Synt::GetFilePos(param), param_res, given_arg );
 }
 
 fn CodeBuilder::MatchTemplateArgument(
@@ -272,6 +296,11 @@ fn CodeBuilder::MatchTemplateArgument(
 						if( !TypeIsValidForTemplateVariableArgument( given_variable.t ) )
 						{
 							REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, param.file_pos, given_variable.t )
+							return false;
+						}
+						if( given_variable.constexpr_value == LLVMValueRef::Null )
+						{
+							REPORT_ERROR( ExpectedConstantExpression, names_scope, param.file_pos )
 							return false;
 						}
 
@@ -319,7 +348,7 @@ fn CodeBuilder::MatchTemplateArgument(
 	auto mut global_function_context= CreateGlobalFunctionContext();
 	auto param_res= BuildExpressionCode( names_scope, global_function_context, param );
 
-	return MatchTemplateArgumentExpressions( param_res, given_arg );
+	return MatchTemplateArgumentExpressions( names_scope, param.file_pos, param_res, given_arg );
 }
 
 fn CodeBuilder::MatchTemplateArgument(
@@ -382,6 +411,8 @@ fn CodeBuilder::MatchTemplateArgument(
 
 fn CodeBuilder::MatchTemplateArgumentExpressions(
 	mut this,
+	NamesScopePtr& names_scope,
+	FilePos& file_pos,
 	Value& param,
 	Value& arg ) : bool
 {
@@ -409,6 +440,7 @@ fn CodeBuilder::MatchTemplateArgumentExpressions(
 
 			if( given_variable.constexpr_value == LLVMValueRef::Null || param_variable.constexpr_value == LLVMValueRef::Null )
 			{
+				REPORT_ERROR( ExpectedConstantExpression, names_scope, file_pos )
 				return false;
 			}
 

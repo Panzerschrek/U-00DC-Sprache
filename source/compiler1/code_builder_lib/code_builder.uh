@@ -235,10 +235,19 @@ private:
 
 	fn GenTemplateType(
 		mut this,
-		NamesScopePtr& names_scope, // Namespace for arguments evaluation
+		NamesScopePtr& args_names_scope,
 		FunctionContext &mut function_context,
 		ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set_ptr,
-		Synt::TemplateParameters& template_parameters ) : ust::optional</Type/>;
+		Synt::TemplateParameters& template_parameters,
+		FilePos& template_instantiation_file_pos ) : ust::optional</Type/>;
+
+	fn GenTemplateType(
+		mut this,
+		NamesScopePtr& args_names_scope,
+		FunctionContext &mut function_context,
+		TypeTemplatePtr& type_template_ptr,
+		Synt::TemplateParameters& template_parameters,
+		FilePos& template_instantiation_file_pos ) : ust::optional</Type/>;
 
 	// Returns true if ok
 	fn MatchTemplateArgument(
@@ -271,6 +280,8 @@ private:
 
 	fn MatchTemplateArgumentExpressions(
 		mut this,
+		NamesScopePtr& names_scope,
+		FilePos& file_pos,
 		Value& param,
 		Value& arg ) : bool;
 

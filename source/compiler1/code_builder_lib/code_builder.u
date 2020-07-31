@@ -330,7 +330,6 @@ fn CodeBuilder::ResolveValue( mut this, NamesScopePtr& names_scope, FunctionCont
 
 	// TOOD - simplify this. After first component lookup do not use optional for "current_value" and nullable pointer for "current_scope"
 
-
 	for( auto mut i= select( complex_name.name.empty() ? 1s : 0s ); i < complex_name.tail.size(); ++i )
 	{
 		auto& name_component= complex_name.tail[i];
@@ -406,7 +405,12 @@ fn CodeBuilder::ResolveValue( mut this, NamesScopePtr& names_scope, FunctionCont
 			{
 				BuiltTypeTemplatesSet( ust::to_non_nullable(current_scope), ust::to_non_nullable(type_templates_set) );
 
-				auto generated_type= GenTemplateType( names_scope, function_context, ust::to_non_nullable(type_templates_set), template_parameters.get_ref() );
+				auto generated_type= GenTemplateType(
+					names_scope,
+					function_context,
+					ust::to_non_nullable(type_templates_set),
+					template_parameters.get_ref(),
+					complex_name.file_pos );
 				if( !generated_type.empty() )
 				{
 					current_value= generated_type.get_ref();
@@ -423,6 +427,20 @@ fn CodeBuilder::ResolveValue( mut this, NamesScopePtr& names_scope, FunctionCont
 			else
 			{
 				REPORT_ERROR( ValueIsNotTemplate, names_scope, complex_name.file_pos)
+				return ErrorValue();
+			}
+		}
+	}
+
+	{
+		auto template_arg_ptr= current_value.get_ref().Get</TemplateArg/>();
+		if( !template_arg_ptr.empty() )
+		{
+			auto template_arg_lock= template_arg_ptr.lock_imut();
+			auto& template_arg= template_arg_lock.get_ref();
+			if( !template_arg.something.get</TemplateArg::NotKnownYet/>().empty() )
+			{
+				REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, complex_name.file_pos, complex_name.name )
 				return ErrorValue();
 			}
 		}
