@@ -65,11 +65,16 @@ bool FilterTest( const std::string& test_name )
 		"GlobalVariablesManglingTest0",
 		"NamesCompressionTest",
 		"NamespacesManglingTest",
+		"NumericConstantAsTemplateSignatureParameter_Test0",
+		"NumericConstantAsTemplateSignatureParameter_Test1",
+		"NumericConstantAsTemplateSignatureParameter_Test2",
 		"ShortClassTemplateForm_Test0",
 		"ShortClassTemplateForm_Test1",
 		"ShortClassTemplateForm_Test2",
 		"ShortClassTemplateForm_Test3",
 		"ShortClassTemplateForm_Test4",
+		"VariableExpressionAsTemplateSignatureParameter_Test0",
+		"VariableExpressionAsTemplateSignatureParameter_Test1",
 	};
 
 	const std::string test_name_without_file_name= test_name.substr(test_name.find_last_of(':') + 1);

@@ -101,7 +101,7 @@ fn CodeBuilder::GenTemplateType(
 		for( auto mut i= 0s; i < template_parameters.size(); ++i )
 		{
 			auto arg= BuildExpressionCode( args_names_scope, function_context, template_parameters[i] );
-			all_ok|= MatchTemplateArgument( result_names_scope, type_template, syntax_element.args[i].name, arg );
+			all_ok&= MatchTemplateArgument( result_names_scope, type_template, syntax_element.args[i].name, arg );
 
 			if_var( &t : arg.get</Type/>() )
 			{
@@ -118,7 +118,7 @@ fn CodeBuilder::GenTemplateType(
 		for( auto mut i= 0s; i < template_parameters.size(); ++i )
 		{
 			auto arg= BuildExpressionCode( args_names_scope, function_context, template_parameters[i] );
-			all_ok|= MatchTemplateArgument( result_names_scope, type_template, syntax_element.signature_args[i].name, arg );
+			all_ok&= MatchTemplateArgument( result_names_scope, type_template, syntax_element.signature_args[i].name, arg );
 
 			if_var( &t : arg.get</Type/>() )
 			{
@@ -202,15 +202,7 @@ fn CodeBuilder::MatchTemplateArgument(
 	auto mut global_function_context= CreateGlobalFunctionContext();
 	auto param_res= BuildExpressionCode( names_scope, global_function_context, param );
 
-	if_var( &given_type : given_arg.get</Type/>() )
-	{
-		if_var( &param_type : param_res.get</Type/>() )
-		{
-			return given_type == param_type;
-		}
-	}
-
-	return false;
+	return MatchTemplateArgumentExpressions( param_res, given_arg );
 }
 
 fn CodeBuilder::MatchTemplateArgument(
@@ -280,15 +272,7 @@ fn CodeBuilder::MatchTemplateArgument(
 	auto mut global_function_context= CreateGlobalFunctionContext();
 	auto param_res= BuildExpressionCode( names_scope, global_function_context, param );
 
-	if_var( &given_type : given_arg.get</Type/>() )
-	{
-		if_var( &param_type : param_res.get</Type/>() )
-		{
-			return given_type == param_type;
-		}
-	}
-
-	return false;
+	return MatchTemplateArgumentExpressions( param_res, given_arg );
 }
 
 fn CodeBuilder::MatchTemplateArgument(
@@ -346,6 +330,58 @@ fn CodeBuilder::MatchTemplateArgument(
 	{
 		return MatchTemplateArgument( names_scope, type_template, array_type.get_ref(), given_arg );
 	}
+	return false;
+}
+
+fn CodeBuilder::MatchTemplateArgumentExpressions(
+	mut this,
+	Value& param,
+	Value& arg ) : bool
+{
+	if_var( &given_type : arg.get</Type/>() )
+	{
+		if_var( &param_type : param.get</Type/>() )
+		{
+			return given_type == param_type;
+		}
+	}
+
+	if_var( &given_variable : arg.get</Variable/>() )
+	{
+		if_var( &param_variable : param.get</Variable/>() )
+		{
+			if( given_variable.t != param_variable.t )
+			{
+				return false;
+			}
+
+			if( given_variable.t.GetFundamentalType().empty() && given_variable.t.GetEnumType().empty() )
+			{
+				return false;
+			}
+			if_var( &fundamental_type : given_variable.t.GetFundamentalType() )
+			{
+				if( !(
+					IsInteger( fundamental_type.fundamental_type ) ||
+					IsChar( fundamental_type.fundamental_type ) ||
+					fundamental_type.fundamental_type == U_FundamentalType::bool_ ) )
+				{
+					return false;
+				}
+			}
+
+			if( given_variable.constexpr_value == LLVMValueRef::Null || param_variable.constexpr_value == LLVMValueRef::Null )
+			{
+				return false;
+			}
+
+			unsafe
+			{
+				return LLVMConstIntGetZExtValue( given_variable.constexpr_value ) == LLVMConstIntGetZExtValue( param_variable.constexpr_value );
+			}
+		}
+	}
+
 	return false;
 }
 

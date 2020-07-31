@@ -269,6 +269,11 @@ private:
 		Synt::TypeName& param,
 		Value& given_arg ) : bool;
 
+	fn MatchTemplateArgumentExpressions(
+		mut this,
+		Value& param,
+		Value& arg ) : bool;
+
 	// Overloading
 
 	fn ApplyOverloadedFunction(
