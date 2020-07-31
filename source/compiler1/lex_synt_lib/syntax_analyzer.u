@@ -1959,12 +1959,13 @@ fn SyntaxAnalyzer::ParseClassTemplate( mut this ) : ClassTemplate
 	var Class mut class_
 	{
 		.file_pos= class_file_pos,
-		.name= move(class_name),
+		.name= "_", // Give special name for all template classes.
 		.class_elements= ParseClassBody(),
 	};
 	var ClassTemplate mut class_template
 	{
 		.file_pos= template_file_pos,
+		.name= class_name,
 		.class_(move(class_)),
 		.args= move(args),
 		.signature_args= move(signature_args),

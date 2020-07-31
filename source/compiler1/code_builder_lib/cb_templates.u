@@ -219,7 +219,7 @@ fn CodeBuilder::GenTemplateType(
 		}
 	}
 
-	auto class_type= NamesScopeAddClass( result_names_scope, syntax_element.class_, template_class_name );
+	auto class_type= NamesScopeAddClass( result_names_scope, syntax_element.class_ );
 	if( class_type.empty() )
 	{
 		return ust::optional</Type/>();

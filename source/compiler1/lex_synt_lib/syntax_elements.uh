@@ -369,7 +369,7 @@ type ClassElement= ust::variant</ tup[
 	ust::shared_ptr_final</Class/>,
 	ust::shared_ptr_final</Enum/>,
 	ust::shared_ptr_final</TypeAlias/>,
-	ust::shared_ptr_final</ClassTemplate/>, // TODO do we really need shared_ptr here?
+	ust::shared_ptr_final</ClassTemplate/>,
 	ust::shared_ptr_final</ClassField/>,
 	ust::shared_ptr_final</VariablesDeclaration/>,
 	ust::shared_ptr_final</AutoVariableDeclaration/>,
@@ -403,6 +403,7 @@ struct Enum
 struct ClassTemplate
 {
 	FilePos file_pos;
+	ust::string8 name;
 	ust::shared_ptr_final</Class/> class_;
 
 	// TODO - rename to params

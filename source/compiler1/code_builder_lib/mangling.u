@@ -172,7 +172,7 @@ fn MangleFundamentalTypeName( U_FundamentalType t ) : ust::string8
 fn GetTemplateClassName( ClassType& class_type ) : MangleGraphNode
 {
 	var MangleGraphNode mut name_node;
-	auto& class_name= class_type.base_template.get_ref().class_template.get_ref().syntax_element.get_ref().class_.get_ref().name;
+	auto& class_name= class_type.base_template.get_ref().class_template.get_ref().syntax_element.get_ref().name;
 	name_node.postfix+= ust::to_string8( class_name.size() );
 	name_node.postfix+= class_name;
 
