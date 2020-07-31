@@ -158,6 +158,10 @@ fn CodeBuilder::MatchTemplateArgument(
 	{
 		return MatchTemplateArgument( names_scope, type_template, complex_name, given_arg );
 	}
+	if_var( &bracket_expression : param.get</ Synt::BracketExpression />() )
+	{
+		return MatchTemplateArgument( names_scope, type_template, bracket_expression.expr.get_ref(), given_arg );
+	}
 	if_var( &array_type_expression : param.get</ ust::box</ Synt::ArrayType/> />() )
 	{
 		return MatchTemplateArgument( names_scope, type_template, array_type_expression.get_ref(), given_arg );

@@ -26,6 +26,7 @@ bool FilterTest( const std::string& test_name )
 		"ArrayAsTemplateSignatureParameter_Test0",
 		"ArrayAsTemplateSignatureParameter_Test1",
 		"ArrayAsTemplateSignatureParameter_Test2",
+		"BracketExpressionAsTemplateSignatureParameter_Test0",
 		"ClassmethodsManglingTest",
 		"ClassTemplateTest0",
 		"ClassTemplateTest1",
