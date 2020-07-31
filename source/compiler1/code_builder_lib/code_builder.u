@@ -450,6 +450,8 @@ fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
 	names_scope.AddName( KeywordToString(Keyword::char8_ ), Type( FundamentalType( U_FundamentalType::char8_ , fundamental_llvm_types_.char8_  ) ) );
 	names_scope.AddName( KeywordToString(Keyword::char16_), Type( FundamentalType( U_FundamentalType::char16_, fundamental_llvm_types_.char16_ ) ) );
 	names_scope.AddName( KeywordToString(Keyword::char32_), Type( FundamentalType( U_FundamentalType::char32_, fundamental_llvm_types_.char32_ ) ) );
+
+	names_scope.AddName( KeywordToString(Keyword::size_type_), size_type_ );
 }
 
 fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/> functions_set_ptr, bool build_body )

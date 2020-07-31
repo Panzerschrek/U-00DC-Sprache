@@ -34,6 +34,10 @@ fn GetFilePos( Expression& expression ) : FilePos
 		{
 			return FilePos();
 		}
+		else if( ust::is_same_type</ typeof(el), ust::box</ArrayType/> />() )
+		{
+			return el.get_ref().file_pos;
+		}
 		else
 		{
 			return el.file_pos;

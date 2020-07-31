@@ -126,7 +126,8 @@ type Expression= ust::variant</ tup[
 	UnaryPlus,
 	UnaryMinus,
 	LogicalNot,
-	BitwiseNot
+	BitwiseNot,
+	ust::box</ArrayType/>
 	] />;
 
 struct ArrayType
