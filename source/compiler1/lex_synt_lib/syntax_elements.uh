@@ -420,6 +420,9 @@ struct ClassTemplate
 		Expression default_value;
 	}
 	ust::vector</SignatureArg/> signature_args;
+
+	// Short form means that template argumenst are also signature arguments.
+	bool is_short_form;
 }
 
 struct Namespace
