@@ -404,7 +404,6 @@ struct TypeTemplate
 {
 	FilePos file_pos;
 	ust::string8 name;
-	ust::shared_ptr_final</Class/> class_;
 
 	// TODO - rename to params
 	struct Arg
@@ -424,6 +423,11 @@ struct TypeTemplate
 
 	// Short form means that template argumenst are also signature arguments.
 	bool is_short_form;
+
+	ust::variant</ tup[
+		ust::shared_ptr_final</Class/>,
+		ust::shared_ptr_final</TypeAlias/>
+	] /> something;
 }
 
 struct Namespace

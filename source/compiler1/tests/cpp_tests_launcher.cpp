@@ -116,6 +116,7 @@ bool FilterTest( const std::string& test_name )
 		"TemplateParametersDeductionFailed_Test12",
 		"TemplateParametersDeductionFailed_Test13",
 		"TemplateParametersDeductionFailed_Test14",
+		"TypedefsTemplates_Test0",
 		"ValueIsNotTemplateTest0",
 		"VariableExpressionAsTemplateSignatureParameter_Test0",
 		"VariableExpressionAsTemplateSignatureParameter_Test1",
