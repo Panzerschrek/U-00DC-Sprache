@@ -326,9 +326,16 @@ public:
 
 	// TODO - add method for deep copy
 
+	// TODO - rework this class. It is ugly.
+
 	template</ type T />
-	fn conversion_constructor( T mut t )
+	fn enable_if( !IsSharedPtr</T/>::value ) conversion_constructor( T mut t )
 		( something_( ust::shared_ptr_mut</T/>(move(t))) )
+	{}
+
+	template</ type T />
+	fn enable_if( IsSharedPtr</T/>::value ) conversion_constructor( T mut t )
+		( something_(move(t)) )
 	{}
 
 	template</type T/>
@@ -341,6 +348,10 @@ public:
 		}
 		return ust::shared_ptr_nullable_mut</T/>(x.get_ref());
 	}
+
+private:
+	template</type T/> struct IsSharedPtr{ auto value= false; }
+	template</type T/> struct IsSharedPtr</ ust::shared_ptr_mut</T/> /> { auto value= true; }
 
 public:
 	ust::variant</ tup[

@@ -434,9 +434,10 @@ fn CodeBuilder::ResolveValue(
 					complex_name.file_pos );
 				if( !generated_type.empty() )
 				{
-					current_value= generated_type.get_ref();
+					current_value.get_ref()= generated_type.get_ref();
 					if_var( generated_class : generated_type.get_ref().GetClassType() )
 					{
+						current_value= NamesScopeValue( generated_class );
 						current_scope= generated_class.lock_imut().get_ref().members;
 					}
 				}
