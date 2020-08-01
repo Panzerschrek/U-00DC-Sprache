@@ -6,7 +6,7 @@ import "code_builder.uh"
 namespace U
 {
 
-fn CodeBuilder::BuiltTypeTemplatesSet( this, NamesScopePtr& names_scope, ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set_ptr )
+fn CodeBuilder::BuiltTypeTemplatesSet( mut this, NamesScopePtr& names_scope, ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set_ptr )
 {
 	if( type_templates_set_ptr.lock_imut().get_ref().syntax_elements.empty() )
 	{
@@ -30,12 +30,63 @@ fn CodeBuilder::BuiltTypeTemplatesSet( this, NamesScopePtr& names_scope, ust::sh
 }
 
 fn CodeBuilder::PrepareTypeTemplate(
-	this,
+	mut this,
 	NamesScopePtr& names_scope,
 	ust::shared_ptr_final</Synt::TypeTemplate/>& type_template_syntax_element ) : ust::optional</TypeTemplate/>
 {
 	auto& syntax_element= type_template_syntax_element.get_ref();
 
+	// Check for template params redefinition, fill params vector.
+	var ust::vector</ust::string8/> mut template_params;
+	foreach( &param : syntax_element.args )
+	{
+		auto& name= param.name.get</Synt::ComplexName/>().get_ref().name;
+
+		foreach( &prev_param_name : template_params )
+		{
+			if( prev_param_name == name )
+			{
+				REPORT_ERROR( Redefinition, names_scope, Synt::GetFilePos( param.name ), name )
+			}
+		}
+
+		template_params.push_back(name);
+	}
+
+	// Check signature params for correctness.
+	var ust::vector</bool/> mut template_param_usage_flags;
+	template_param_usage_flags.resize( template_params.size(), false );
+	{
+		auto mut global_function_context= CreateGlobalFunctionContext();
+		foreach( &signature_param : syntax_element.signature_args )
+		{
+			CheckTemplateSignatureParam( names_scope, global_function_context, template_params, signature_param.name, template_param_usage_flags );
+
+			if( signature_param.default_value.get</Synt::EmptyVariant/>().empty() )
+			{
+				CheckTemplateSignatureParam( names_scope, global_function_context, template_params, signature_param.default_value, template_param_usage_flags );
+			}
+		}
+		foreach( &template_param : syntax_element.args )
+		{
+			if( template_param.t.get</Synt::EmptyVariant/>().empty() )
+			{
+				CheckTemplateSignatureParam( names_scope, global_function_context, template_params, template_param.t, template_param_usage_flags );
+			}
+		}
+	}
+	if( !syntax_element.is_short_form )
+	{
+		for( auto mut i= 0s; i < template_param_usage_flags.size(); ++i )
+		{
+			if( !template_param_usage_flags[i] )
+			{
+				REPORT_ERROR( TemplateArgumentNotUsedInSignature, names_scope, Synt::GetFilePos(syntax_element.args[i].name), template_params[i] )
+			}
+		}
+	}
+
+	// Check default signature params correctness.
 	auto mut first_default_param= syntax_element.signature_args.size();
 	for( auto mut i= 0s; i < syntax_element.signature_args.size(); ++i )
 	{
@@ -60,6 +111,111 @@ fn CodeBuilder::PrepareTypeTemplate(
 	// TODO - add some checks here
 
 	return move(type_template);
+}
+
+fn CodeBuilder::CheckTemplateSignatureParam(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	ust::vector</ust::string8/>& template_params,
+	Synt::Expression& param,
+	ust::vector</bool/> &mut template_params_usage_flags )
+{
+	if_var( &complex_name : param.get</Synt::ComplexName/>() )
+	{
+		CheckTemplateSignatureParam( names_scope, function_context, template_params, complex_name, template_params_usage_flags );
+		return;
+	}
+	if_var( &bracket_exptession : param.get</Synt::BracketExpression/>() )
+	{
+		CheckTemplateSignatureParam( names_scope, function_context, template_params, bracket_exptession.expr.get_ref(), template_params_usage_flags );
+		return;
+	}
+	if_var( &array_type : param.get</ ust::box</ Synt::ArrayType /> />() )
+	{
+		CheckTemplateSignatureParam( names_scope, function_context, template_params, array_type.get_ref(), template_params_usage_flags );
+		return;
+	}
+
+	// Nothing special - process as regular expression
+	// TODO - check type for template variable param
+	BuildExpressionCode( names_scope, function_context, param );
+}
+
+fn CodeBuilder::CheckTemplateSignatureParam(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	ust::vector</ust::string8/>& template_params,
+	Synt::ComplexName& param,
+	ust::vector</bool/> &mut template_params_usage_flags )
+{
+	if( !param.name.empty() && param.tail.empty() )
+	{
+		for( auto mut i= 0s; i < template_params.size(); ++i )
+		{
+			if( param.name == template_params[i] )
+			{
+				template_params_usage_flags[i]= true;
+				return;
+			}
+		}
+	}
+
+	auto value= ResolveValue( names_scope, function_context, param, true );
+	if( !value.get</ ust::shared_ptr_imut</ TypeTemplatesSet /> />().empty() )
+	{
+		if( !param.tail.empty() )
+		{
+			if_var( &template_args : param.tail.back().get</ ust::box</ Synt::TemplateParameters /> />() )
+			{
+				foreach( &arg : template_args.get_ref() )
+				{
+					CheckTemplateSignatureParam( names_scope, function_context, template_params, arg, template_params_usage_flags );
+				}
+			}
+		}
+		return;
+	}
+
+	// Nothing special - process as regular expression
+	// TODO - check type for template variable param
+	BuildExpressionCode( names_scope, function_context, param );
+}
+
+fn CodeBuilder::CheckTemplateSignatureParam(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	ust::vector</ust::string8/>& template_params,
+	Synt::TypeName& param,
+	ust::vector</bool/> &mut template_params_usage_flags )
+{
+	if_var( &complex_name : param.get</Synt::ComplexName/>() )
+	{
+		CheckTemplateSignatureParam( names_scope, function_context, template_params, complex_name, template_params_usage_flags );
+		return;
+	}
+	if_var( &array_type : param.get</ ust::box</Synt::ArrayType/> />() )
+	{
+		CheckTemplateSignatureParam( names_scope, function_context, template_params, array_type.get_ref(), template_params_usage_flags );
+		return;
+	}
+
+	// Nothing special - process as regular type name.
+	PrepareType( names_scope, function_context, param );
+}
+
+fn CodeBuilder::CheckTemplateSignatureParam(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	ust::vector</ust::string8/>& template_params,
+	Synt::ArrayType& param,
+	ust::vector</bool/> &mut template_params_usage_flags )
+{
+	CheckTemplateSignatureParam( names_scope, function_context, template_params, param.element_type, template_params_usage_flags );
+	CheckTemplateSignatureParam( names_scope, function_context, template_params, param.element_count, template_params_usage_flags );
 }
 
 fn CodeBuilder::GenTemplateType(

@@ -192,7 +192,7 @@ private:
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BracketExpression& bracket_expression ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IndexationOperator& indexation_operator ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CallOperator& call_operator ) : Value;
-	fn BuildExpressionCode(mut  this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MemberAccessOperator& member_access_operator ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MemberAccessOperator& member_access_operator ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnaryPlus& unary_plus ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnaryMinus& unary_minus ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::LogicalNot& logical_not ) : Value;
@@ -230,14 +230,46 @@ private:
 
 	// Templates
 	fn BuiltTypeTemplatesSet(
-		this,
+		mut this,
 		NamesScopePtr& names_scope,
 		ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set_ptr );
 
 	fn PrepareTypeTemplate(
-		this,
+		mut this,
 		NamesScopePtr& names_scope,
 		ust::shared_ptr_final</Synt::TypeTemplate/>& type_template_syntax_element ) : ust::optional</TypeTemplate/>;
+
+	fn CheckTemplateSignatureParam(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		ust::vector</ust::string8/>& template_params,
+		Synt::Expression& signature_param,
+		ust::vector</bool/> &mut template_params_usage_flags );
+
+	fn CheckTemplateSignatureParam(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		ust::vector</ust::string8/>& template_params,
+		Synt::ComplexName& signature_param,
+		ust::vector</bool/> &mut template_params_usage_flags );
+
+	fn CheckTemplateSignatureParam(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		ust::vector</ust::string8/>& template_params,
+		Synt::TypeName& signature_param,
+		ust::vector</bool/> &mut template_params_usage_flags );
+
+	fn CheckTemplateSignatureParam(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		ust::vector</ust::string8/>& template_params,
+		Synt::ArrayType& signature_param,
+		ust::vector</bool/> &mut template_params_usage_flags );
 
 	fn GenTemplateType(
 		mut this,
