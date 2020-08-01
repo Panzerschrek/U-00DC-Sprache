@@ -351,12 +351,42 @@ fn CodeBuilder::ResolveValue(
 		auto& name_component= complex_name.tail[i];
 		if_var( &name_component_name : name_component.get</ ust::string8 />() )
 		{
-			auto namespace_= current_value.get_ref().Get</NamesScope/>();
-			auto class_= current_value.get_ref().Get</ClassType/>();
+			var ust::shared_ptr_nullable_imut</NamesScope/> mut namespace_= current_value.get_ref().Get</NamesScope/>();
+			auto mut class_= current_value.get_ref().Get</ClassType/>();
 			auto enum_= current_value.get_ref().Get</Enum/>();
 			auto type_templates_set= current_value.get_ref().Get</TypeTemplatesSet/>();
+			auto t= current_value.get_ref().Get</Type/>();
+			auto type_alias= current_value.get_ref().Get</TypeAlias/>();
 
-			// TODO - extract also type and type alias
+			if( !t.empty() )
+			{
+				auto lock= t.lock_imut();
+				if_var( &class_type : lock.get_ref().GetClassType() )
+				{
+					class_= class_type;
+				}
+			}
+			if( !type_alias.empty() )
+			{
+				{
+					auto mut lock= type_alias.lock_mut();
+					BuildTypeAlias( names_scope, lock.get_ref() );
+				}
+				auto lock= type_alias.lock_imut();
+				if_var( &t : lock.get_ref().t )
+				{
+					if_var( &class_type : t.GetClassType() )
+					{
+						class_= class_type;
+					}
+				}
+			}
+			if( !class_.empty() )
+			{
+				// We do not need to build class here, because class namespace is already filled. Names itself will be built separately later.
+				namespace_= class_.lock_imut().get_ref().members;
+			}
+
 			if( !namespace_.empty() )
 			{
 				auto namespace_lock= namespace_.lock_imut();
@@ -369,22 +399,6 @@ fn CodeBuilder::ResolveValue(
 
 				current_value.get_ref()= new_value.get_ref();
 				current_scope= namespace_;
-			}
-			else if( !class_.empty() )
-			{
-				// We do not need to build class here, because class namespace is already filled. Names itself will be built separately later.
-
-				auto class_lock= class_.lock_imut();
-				auto namespace_lock= class_lock.get_ref().members.lock_imut();
-				auto new_value= namespace_lock.get_ref().GetThisScopeValue( name_component_name );
-				if( new_value.empty() )
-				{
-					REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, name_component_name )
-					return ErrorValue();
-				}
-
-				current_value.get_ref()= new_value.get_ref();
-				current_scope= class_lock.get_ref().members;
 			}
 			else if( !enum_.empty() )
 			{
