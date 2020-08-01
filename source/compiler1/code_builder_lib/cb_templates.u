@@ -554,9 +554,10 @@ fn CodeBuilder::MatchTemplateArgument(
 								{
 									continue; // Ok - different template
 								}
-								if( template_args.size() != base_template.signature_args.size() )
+								if( template_args.size() < base_template.class_template.get_ref().first_default_param ||
+									template_args.size() > base_template.signature_args.size() )
 								{
-									return false; // Something strange - same templates and different arg count.
+									return false;
 								}
 
 								for( auto mut i= 0s; i < template_args.size(); ++i )

@@ -59,6 +59,7 @@ bool FilterTest( const std::string& test_name )
 		"DefaultSignatureArguments_Test1",
 		"DefaultSignatureArguments_Test3",
 		"DefaultSignatureArguments_Test4",
+		"DefaultSignatureArguments_Test5",
 		"DestructorMustReturnVoidTest0",
 		"DestructorOutsideClassTest0",
 		"DestructorsTest0",
