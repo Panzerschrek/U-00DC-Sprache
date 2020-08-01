@@ -136,8 +136,8 @@ else()
 		add_compile_options( -fno-rtti )
 	endif()
 
-	list( APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE -s )
-	list( APPEND CMAKE_SHARED_LINKER_FLAGS_RELEASE -s )
+	list( APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE "-s -Wl,--gc-sections" )
+	list( APPEND CMAKE_SHARED_LINKER_FLAGS_RELEASE "-s -Wl,--gc-sections" )
 
 endif()
 
