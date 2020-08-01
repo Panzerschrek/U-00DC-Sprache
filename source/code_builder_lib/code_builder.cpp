@@ -1242,6 +1242,7 @@ Type CodeBuilder::BuildFuncCode(
 		comdat->setSelectionKind( llvm::Comdat::Any );
 		llvm_function->setComdat( comdat );
 	}
+	llvm_function->setDoesNotThrow(); // We do not support exceptions.
 
 	func_variable.have_body= true;
 
@@ -2103,7 +2104,7 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalConstantVariable(
 	return val;
 }
 
-void CodeBuilder::SetupGeneratedFunctionLinkageAttributes( llvm::Function& function )
+void CodeBuilder::SetupGeneratedFunctionAttributes( llvm::Function& function )
 {
 	// Merge functions with identical code.
 	// We doesn`t need different addresses for different functions.
@@ -2113,6 +2114,8 @@ void CodeBuilder::SetupGeneratedFunctionLinkageAttributes( llvm::Function& funct
 	llvm::Comdat* const comdat= module_->getOrInsertComdat( function.getName() );
 	comdat->setSelectionKind( llvm::Comdat::Any ); // Actually, we needs something, like ExactMatch, but it works not in all cases.
 	function.setComdat( comdat );
+
+	function.setDoesNotThrow(); // We do not support exceptions.
 }
 
 CodeBuilder::InstructionsState CodeBuilder::SaveInstructionsState( FunctionContext& function_context )

@@ -100,7 +100,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 			MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
 			module_.get() );
 
-	SetupGeneratedFunctionLinkageAttributes( *llvm_constructor_function );
+	SetupGeneratedFunctionAttributes( *llvm_constructor_function );
 	llvm_constructor_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
 
 	FunctionContext function_context(
@@ -290,7 +290,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 			MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
 			module_.get() );
 
-	SetupGeneratedFunctionLinkageAttributes( *llvm_constructor_function );
+	SetupGeneratedFunctionAttributes( *llvm_constructor_function );
 	llvm_constructor_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
 	llvm_constructor_function->addAttribute( 2u, llvm::Attribute::NonNull ); // and src is nonnull
 
@@ -438,7 +438,7 @@ void CodeBuilder::GenerateDestructorBody( Class& the_class, const Type& class_ty
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 	function_context.llvm_ir_builder.CreateRetVoid();
 
-	SetupGeneratedFunctionLinkageAttributes( *destructor_function.llvm_function );
+	SetupGeneratedFunctionAttributes( *destructor_function.llvm_function );
 
 	destructor_function.have_body= true;
 }
@@ -578,7 +578,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 			MangleFunction( the_class.members, op_name, op_type ),
 			module_.get() );
 
-	SetupGeneratedFunctionLinkageAttributes( *llvm_op_function );
+	SetupGeneratedFunctionAttributes( *llvm_op_function );
 	llvm_op_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
 	llvm_op_function->addAttribute( 2u, llvm::Attribute::NonNull ); // and src is nonnull
 

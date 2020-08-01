@@ -731,7 +731,7 @@ private:
 
 	llvm::GlobalVariable* CreateGlobalConstantVariable( const Type& type, const std::string& mangled_name, llvm::Constant* initializer= nullptr );
 
-	void SetupGeneratedFunctionLinkageAttributes( llvm::Function& function );
+	void SetupGeneratedFunctionAttributes( llvm::Function& function );
 
 	struct InstructionsState
 	{
