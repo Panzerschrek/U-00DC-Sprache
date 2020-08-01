@@ -58,31 +58,32 @@ string(
 configure_file( code_builder_lib/code_builder_errors.uh.in ${CMAKE_CURRENT_BINARY_DIR}/code_builder_errors.uh )
 
 #
-# LexSyntLib
+# CodeBuilderLib
 #
+
+# Combine together lexical/syntaxis analyzer lib and code builder to speed up build.
 
 file( GLOB LEX_SYNT_LIB_HEADERS "lex_synt_lib/*.uh" )
 file( GLOB LEX_SYNT_LIB_SOURCES "lex_synt_lib/*.u" )
 CompileUSources( LEX_SYNT_LIB_SOURCES LEX_SYNT_LIB_OBJECTS )
-add_library( LexSyntLib${CURRENT_COMPLIER_GENERATION} lib_stub.cpp ${LEX_SYNT_LIB_HEADERS} ${LEX_SYNT_LIB_SOURCES} ${LEX_SYNT_LIB_OBJECTS} )
-
-#
-# CodeBuilderLib
-#
 
 file( GLOB CODE_BUILDER_LIB_HEADERS "code_builder_lib/*.uh" )
 file( GLOB CODE_BUILDER_LIB_SOURCES "code_builder_lib/*.u" )
 file( GLOB CODE_BUILDER_LIB_CPP_SOURCES "code_builder_lib/*.cpp" )
 set( CODE_BUILDER_LIB_HEADERS ${CODE_BUILDER_LIB_HEADERS} ${CMAKE_CURRENT_BINARY_DIR}/code_builder_errors.uh )
 CompileUSources( CODE_BUILDER_LIB_SOURCES CODE_BUILDER_LIB_OBJECTS )
+
 add_library(
 	CodeBuilderLib${CURRENT_COMPLIER_GENERATION}
+		${LEX_SYNT_LIB_HEADERS}
+		${LEX_SYNT_LIB_SOURCES}
+		${LEX_SYNT_LIB_OBJECTS}
 		${CODE_BUILDER_LIB_CPP_SOURCES}
 		${CODE_BUILDER_LIB_HEADERS}
 		${CODE_BUILDER_LIB_SOURCES}
 		${CODE_BUILDER_LIB_OBJECTS}
 	)
-target_link_libraries( CodeBuilderLib${CURRENT_COMPLIER_GENERATION} LexSyntLib${CURRENT_COMPLIER_GENERATION} ${LLVM_LIBS_FOR_CODE_BUILDER_LIB} )
+target_link_libraries( CodeBuilderLib${CURRENT_COMPLIER_GENERATION} ${LLVM_LIBS_FOR_CODE_BUILDER_LIB} )
 
 #
 # TestsCommon
