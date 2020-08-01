@@ -1,6 +1,6 @@
 ; ModuleID = 'Ü-std'
 
-attributes #0 = { noreturn nounwind }
+attributes #0 = { cold noreturn nounwind }
 
 ;
 ; llvm intrinsics

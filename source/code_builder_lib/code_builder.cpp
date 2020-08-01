@@ -113,6 +113,7 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 			module_.get() );
 	halt_func_->setDoesNotReturn();
 	halt_func_->setDoesNotThrow();
+	halt_func_->addFnAttr(llvm::Attribute::Cold );
 	halt_func_->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
 
 	// In some places outside functions we need to execute expression evaluation.
