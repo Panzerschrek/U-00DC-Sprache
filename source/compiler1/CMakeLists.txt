@@ -58,55 +58,44 @@ string(
 configure_file( code_builder_lib/code_builder_errors.uh.in ${CMAKE_CURRENT_BINARY_DIR}/code_builder_errors.uh )
 
 #
-# LexSyntLib
+# CodeBuilderLib
 #
+
+# Combine together lexical/syntaxis analyzer lib and code builder to speed up build.
+# Add also some files, needed by tests
 
 file( GLOB LEX_SYNT_LIB_HEADERS "lex_synt_lib/*.uh" )
 file( GLOB LEX_SYNT_LIB_SOURCES "lex_synt_lib/*.u" )
 CompileUSources( LEX_SYNT_LIB_SOURCES LEX_SYNT_LIB_OBJECTS )
-add_library( LexSyntLib${CURRENT_COMPLIER_GENERATION} lib_stub.cpp ${LEX_SYNT_LIB_HEADERS} ${LEX_SYNT_LIB_SOURCES} ${LEX_SYNT_LIB_OBJECTS} )
-
-#
-# CodeBuilderLib
-#
 
 file( GLOB CODE_BUILDER_LIB_HEADERS "code_builder_lib/*.uh" )
 file( GLOB CODE_BUILDER_LIB_SOURCES "code_builder_lib/*.u" )
 file( GLOB CODE_BUILDER_LIB_CPP_SOURCES "code_builder_lib/*.cpp" )
 set( CODE_BUILDER_LIB_HEADERS ${CODE_BUILDER_LIB_HEADERS} ${CMAKE_CURRENT_BINARY_DIR}/code_builder_errors.uh )
 CompileUSources( CODE_BUILDER_LIB_SOURCES CODE_BUILDER_LIB_OBJECTS )
+
+file( GLOB TESTS_COMMON_HEADERS "tests_common/*.uh" )
+file( GLOB TESTS_COMMON_SOURCES "tests_common/*.u" )
+file( GLOB TESTS_COMMON_CPP_SOURCES "tests_common/*.cpp" )
+file( GLOB TESTS_COMMON_CPP_HEADERS "tests_common/*.hpp" )
+CompileUSources( TESTS_COMMON_SOURCES TESTS_COMMON_OBJECTS )
+
 add_library(
 	CodeBuilderLib${CURRENT_COMPLIER_GENERATION}
+		${LEX_SYNT_LIB_HEADERS}
+		${LEX_SYNT_LIB_SOURCES}
+		${LEX_SYNT_LIB_OBJECTS}
 		${CODE_BUILDER_LIB_CPP_SOURCES}
 		${CODE_BUILDER_LIB_HEADERS}
 		${CODE_BUILDER_LIB_SOURCES}
 		${CODE_BUILDER_LIB_OBJECTS}
+		${TESTS_COMMON_CPP_SOURCES}
+		${TESTS_COMMON_CPP_HEADERS}
+		${TESTS_COMMON_SOURCES}
+		${TESTS_COMMON_HEADERS}
+		${TESTS_COMMON_OBJECTS}
 	)
-target_link_libraries( CodeBuilderLib${CURRENT_COMPLIER_GENERATION} LexSyntLib${CURRENT_COMPLIER_GENERATION} ${LLVM_LIBS_FOR_CODE_BUILDER_LIB} )
-
-#
-# TestsCommon
-#
-if( U_BUILD_TESTS OR U_BUILD_PY_TESTS )
-	file( GLOB TESTS_COMMON_HEADERS "tests_common/*.uh" )
-	file( GLOB TESTS_COMMON_SOURCES "tests_common/*.u" )
-	file( GLOB TESTS_COMMON_CPP_SOURCES "tests_common/*.cpp" )
-	file( GLOB TESTS_COMMON_CPP_HEADERS "tests_common/*.hpp" )
-	CompileUSources( TESTS_COMMON_SOURCES TESTS_COMMON_OBJECTS )
-
-	add_library(
-		TestsCommon${CURRENT_COMPLIER_GENERATION}
-			${TESTS_COMMON_CPP_SOURCES}
-			${TESTS_COMMON_CPP_HEADERS}
-			${TESTS_COMMON_SOURCES}
-			${TESTS_COMMON_HEADERS}
-			${TESTS_COMMON_OBJECTS} )
-
-	target_link_libraries(
-		TestsCommon${CURRENT_COMPLIER_GENERATION}
-		CodeBuilderLib${CURRENT_COMPLIER_GENERATION}
-		)
-endif()
+target_link_libraries( CodeBuilderLib${CURRENT_COMPLIER_GENERATION} ${LLVM_LIBS_FOR_CODE_BUILDER_LIB} )
 
 #
 # Tests
@@ -126,7 +115,7 @@ if( U_BUILD_TESTS )
 	target_link_libraries(
 		Tests${CURRENT_COMPLIER_GENERATION}
 		PRIVATE
-			TestsCommon${CURRENT_COMPLIER_GENERATION}
+			CodeBuilderLib${CURRENT_COMPLIER_GENERATION}
 			${TESTS_LIB_WRAPPED}
 		)
 
@@ -147,7 +136,7 @@ if( U_BUILD_PY_TESTS )
 	target_link_libraries(
 		PyTestsLib${CURRENT_COMPLIER_GENERATION}
 			PRIVATE
-				TestsCommon${CURRENT_COMPLIER_GENERATION}
+				CodeBuilderLib${CURRENT_COMPLIER_GENERATION}
 				${LLVM_LIBS_FOR_TESTS}
 				${PYTHON_LIBRARIES}
 			)
