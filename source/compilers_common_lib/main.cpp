@@ -475,7 +475,6 @@ int Main( int argc, const char* argv[] )
 	llvm::LLVMContext llvm_context;
 	std::unique_ptr<llvm::Module> result_module;
 	std::vector<IVfs::Path> deps_list;
-
 	{
 		const auto vfs= CreateVfsOverSystemFS( Options::include_dir );
 		if( vfs == nullptr )
@@ -484,6 +483,37 @@ int Main( int argc, const char* argv[] )
 		bool have_some_errors= false;
 		for( const std::string& input_file : Options::input_files )
 		{
+			// Try to load bitcode file first.
+			{
+				const llvm::ErrorOr< std::unique_ptr<llvm::MemoryBuffer> > file_mapped= llvm::MemoryBuffer::getFile( input_file );
+				if( file_mapped && *file_mapped != nullptr )
+				{
+					llvm::Expected<std::unique_ptr<llvm::Module>> bitcode_module= llvm::parseBitcodeFile( **file_mapped, llvm_context );
+					if( bitcode_module && *bitcode_module != nullptr )
+					{
+						if( (*bitcode_module)->getDataLayout() != data_layout ||
+							(*bitcode_module)->getTargetTriple() != target_triple_str )
+						{
+							std::cout << "Error, linking file \"" << input_file << "\" - mismatching target triple or data layout" << std::endl;
+							have_some_errors= true;
+						}
+						if( result_module == nullptr )
+							result_module= std::move(*bitcode_module);
+						else
+						{
+							const bool not_ok=
+								llvm::Linker::linkModules( *result_module, std::move(*bitcode_module) );
+							if( not_ok )
+							{
+								std::cout << "Error, linking file \"" << input_file << "\"" << std::endl;
+								have_some_errors= true;
+							}
+						}
+						continue;
+					}
+				}
+			}
+
 			CodeBuilderLaunchResult code_builder_launch_result=
 				LaunchCodeBuilder( input_file, vfs, llvm_context, data_layout, Options::generate_debug_info );
 
