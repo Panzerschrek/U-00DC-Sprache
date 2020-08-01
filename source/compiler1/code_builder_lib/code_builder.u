@@ -354,7 +354,9 @@ fn CodeBuilder::ResolveValue(
 			auto namespace_= current_value.get_ref().Get</NamesScope/>();
 			auto class_= current_value.get_ref().Get</ClassType/>();
 			auto enum_= current_value.get_ref().Get</Enum/>();
+			auto type_templates_set= current_value.get_ref().Get</TypeTemplatesSet/>();
 
+			// TODO - extract also type and type alias
 			if( !namespace_.empty() )
 			{
 				auto namespace_lock= namespace_.lock_imut();
@@ -407,6 +409,11 @@ fn CodeBuilder::ResolveValue(
 				};
 
 				current_value= move(v);
+			}
+			else if( !type_templates_set.empty() )
+			{
+				REPORT_ERROR( TemplateInstantiationRequired, names_scope, complex_name.file_pos, name_component_name )
+				return ErrorValue();
 			}
 			else
 			{

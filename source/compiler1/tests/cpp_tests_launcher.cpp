@@ -105,6 +105,7 @@ bool FilterTest( const std::string& test_name )
 		"TemplateArgumentIsNotDeducedYet_Test1",
 		"TemplateArgumentNotUsedInSignature_Test0",
 		"TemplateArgumentNotUsedInSignature_ForTypedefTemplate_Test0",
+		"TemplateInstantiationRequiredTest0",
 		"TemplateParametersDeductionFailed_Test0",
 		"TemplateParametersDeductionFailed_Test1",
 		"TemplateParametersDeductionFailed_Test2",
