@@ -5,7 +5,7 @@ import "code_builder.uh"
 namespace U
 {
 
-fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TypeName& type_name ) : Type
+fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TypeName& type_name ) : Type
 {
 	variant_visit( &t : type_name )
 	{
@@ -15,9 +15,9 @@ fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, FunctionContext &
 	halt;
 }
 
-fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_type ) : Type
+fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_type ) : Type
 {
-	var Value resolved_value= ResolveValue( names_scope, named_type );
+	var Value resolved_value= ResolveValue( names_scope, function_context, named_type );
 	if_var( & t : resolved_value.get</Type/>() )
 	{
 		return t;
@@ -27,7 +27,7 @@ fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, FunctionContext &
 	return Type( FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ ) );
 }
 
-fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::ArrayType/>& array_type ) : Type
+fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::ArrayType/>& array_type ) : Type
 {
 	var ArrayType mut out_array_type
 	{
@@ -69,17 +69,17 @@ fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, FunctionContext &
 	return Type( move(out_array_type) );
 }
 
-fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type_ptr ) : Type
+fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type_ptr ) : Type
 {
 	return PrepareType( names_scope, function_context, function_type_ptr.get_ref() );
 }
 
-fn CodeBuilder::PrepareType( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type ) : Type
+fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type ) : Type
 {
 	return PrepareFunctionType( names_scope, function_context, function_type, ust::shared_ptr_nullable_mut</ClassType/>() );
 }
 
-fn CodeBuilder::PrepareFunctionType( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type, ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : Type
+fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type, ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : Type
 {
 	var FunctionType mut res
 	{

@@ -5,7 +5,7 @@ import "code_builder.uh"
 namespace U
 {
 
-fn CodeBuilder::BuildExpressionCodeEnsureVariable( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Variable
+fn CodeBuilder::BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Variable
 {
 	var Value mut value= BuildExpressionCode( names_scope, function_context, expression );
 
@@ -23,7 +23,7 @@ fn CodeBuilder::BuildExpressionCodeEnsureVariable( this, NamesScopePtr& names_sc
 	return move(dummy);
 }
 
-fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Value
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Value
 {
 	variant_visit( &el : expression )
 	{
@@ -33,13 +33,13 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	halt;
 }
 
-fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : Value
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : Value
 {
 	// "EmptyVariant" used only as stub during expression building in syntax analyzer. It should never be in final result.
 	halt;
 }
 
-fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NumericConstant& numeric_constant ) : Value
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NumericConstant& numeric_constant ) : Value
 {
 	var ust::array_view_imut</char8/> mut type_suffix( numeric_constant.num.type_suffix );
 	while( !type_suffix.empty() && type_suffix.back() == "\0"c8 )
@@ -100,7 +100,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	return move(res);
 }
 
-fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BooleanConstant& boolean_constant ) : Value
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BooleanConstant& boolean_constant ) : Value
 {
 	var Variable mut res;
 	res.t= Type( FundamentalType( U_FundamentalType::bool_ , fundamental_llvm_types_.bool_ ) );
@@ -112,7 +112,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	return move(res);
 }
 
-fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value
 {
 	if( named_operand.name == KeywordToString( Keyword::this_ ) )
 	{
@@ -210,10 +210,10 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 		}
 	}
 
-	return ResolveValue( names_scope, named_operand );
+	return ResolveValue( names_scope, function_context, named_operand );
 }
 
-fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
 {
 	if( binary_operator.operator == BinaryOperatorType::LazyLogicalAnd || binary_operator.operator == BinaryOperatorType::LazyLogicalOr )
 	{
@@ -231,12 +231,12 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	return BuildBinaryOperator( names_scope, function_context, l_var, r_var, binary_operator.operator, binary_operator.file_pos );
 }
 
-fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BracketExpression& bracket_expression ) : Value
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BracketExpression& bracket_expression ) : Value
 {
 	return BuildExpressionCode( names_scope, function_context, bracket_expression.expr.get_ref() );
 }
 
-fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IndexationOperator& indexation_operator ) : Value
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IndexationOperator& indexation_operator ) : Value
 {
 	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.value.get_ref() );
 	auto index= BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.index.get_ref() );
@@ -336,7 +336,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	return ErrorValue();
 }
 
-fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CallOperator& call_operator ) : Value
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CallOperator& call_operator ) : Value
 {
 	auto function= BuildExpressionCode( names_scope, function_context, call_operator.value.get_ref() );
 
@@ -366,7 +366,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	return CallFunctionsSet( names_scope, function_context, this_, functions_set.get_ref(), call_operator.args, call_operator.file_pos );
 }
 
-fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MemberAccessOperator& member_access_operator ) : Value
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MemberAccessOperator& member_access_operator ) : Value
 {
 	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, member_access_operator.value.get_ref() );
 	auto class_type_ref= variable.t.GetClassType() ;
@@ -472,14 +472,14 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	return ErrorValue();
 }
 
-fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnaryPlus& unary_plus ) : Value
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnaryPlus& unary_plus ) : Value
 {
 	// Do nothing with unary plus.
 	// TODO - maybe check type or do something else?
 	return BuildExpressionCode( names_scope, function_context, unary_plus.expr.get_ref() );
 }
 
-fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnaryMinus& unary_minus ) : Value
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnaryMinus& unary_minus ) : Value
 {
 	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, unary_minus.expr.get_ref() );
 	auto fundamental_type= variable.t.GetFundamentalType();
@@ -516,7 +516,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	return move(result);
 }
 
-fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::LogicalNot& logical_not ) : Value
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::LogicalNot& logical_not ) : Value
 {
 	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, logical_not.expr.get_ref() );
 	if( variable.t != bool_type_ )
@@ -542,7 +542,7 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	return move(result);
 }
 
-fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BitwiseNot& bitwise_not ) : Value
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BitwiseNot& bitwise_not ) : Value
 {
 	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, bitwise_not.expr.get_ref() );
 	auto fundamental_type= variable.t.GetFundamentalType();
@@ -567,6 +567,11 @@ fn CodeBuilder::BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionC
 	}
 
 	return move(result);
+}
+
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::ArrayType/>& array_type ) : Value
+{
+	return PrepareType( names_scope, function_context, array_type );
 }
 
 fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& l_var, Variable& r_var, BinaryOperatorType operator, FilePos& file_pos ) : Value
@@ -969,7 +974,7 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 	}
 }
 
-fn CodeBuilder::BuildLazyBinaryOperator( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
+fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
 {
 	var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.l.get_ref() );
 	if( l_var.t != bool_type_ )
@@ -1062,7 +1067,7 @@ fn CodeBuilder::BuildLazyBinaryOperator( this, NamesScopePtr& names_scope, Funct
 }
 
 fn CodeBuilder::CallFunctionsSet(
-	this,
+	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
 	ust::optional_ref</ Variable, false /> mut this_,
@@ -1131,7 +1136,7 @@ fn CodeBuilder::CallFunctionsSet(
 }
 
 fn CodeBuilder::DoCallFunction(
-	this,
+	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
 	ust::optional_ref</ Variable, false />& this_,
@@ -1268,7 +1273,7 @@ fn CodeBuilder::DoCallFunction(
 }
 
 fn CodeBuilder::BuildTempVariableConstruction(
-	this,
+	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
 	Type& t,

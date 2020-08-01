@@ -756,6 +756,56 @@ U_TEST( ClassTemplateTest24_SameTemplateArgumentAppearsInMultipleFormsInSignatur
 	U_TEST_ASSERT( static_cast<uint64_t>( 354154 / 65 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( ClassTemplateTest25_SameTypeTemplateArgumentAppearsMultipleTimes )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T />
+		struct S</ T, T />{ T x; T y; }
+
+		fn Foo() : i32
+		{
+			var S</ i32, i32 /> s{ .x= 56, .y= 3 };
+			return s.x / s.y;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 56 / 3 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( ClassTemplateTest26_SameValueTemplateArgumentAppearsMultipleTimes )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ i32 init />
+		struct S</ init, init />
+		{
+			i32 x; i32 y;
+			fn constructor() ( x= init, y= init ) {}
+		}
+
+		fn Foo() : i32
+		{
+			var S</ 59, 59 /> s;
+			return s.x * s.y;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 59 * 59 ) == result_value.IntVal.getLimitedValue() );
+}
+
 U_TEST( ClassPrepass_Test0 )
 {
 	static const char c_program_text[]=

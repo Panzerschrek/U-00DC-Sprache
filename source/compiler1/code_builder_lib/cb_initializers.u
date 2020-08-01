@@ -5,7 +5,7 @@ import "code_builder.uh"
 namespace U
 {
 
-fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Initializer& initializer ) : LLVMValueRef
+fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Initializer& initializer ) : LLVMValueRef
 {
 	variant_visit( &i : initializer )
 	{
@@ -14,12 +14,12 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 	halt;
 }
 
-fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::EmptyVariant& empty_initializer ) : LLVMValueRef
+fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::EmptyVariant& empty_initializer ) : LLVMValueRef
 {
 	halt;
 }
 
-fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Expression& expression_initializer ) : LLVMValueRef
+fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Expression& expression_initializer ) : LLVMValueRef
 {
 	if( !variable.t.GetFundamentalType().empty() || !variable.t.GetEnumType().empty() )
 	{
@@ -57,7 +57,7 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 	halt; // Unhandled type kind
 }
 
-fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::SequenceInitializer& sequence_initializer ) : LLVMValueRef
+fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::SequenceInitializer& sequence_initializer ) : LLVMValueRef
 {
 	if_var( &array_type : variable.t.GetArrayType() )
 	{
@@ -132,7 +132,7 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 	return LLVMValueRef::Null;
 }
 
-fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::StructNamedInitializer& struct_named_initializer ) : LLVMValueRef
+fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::StructNamedInitializer& struct_named_initializer ) : LLVMValueRef
 {
 	auto class_type_ref= variable.t.GetClassType();
 	if( class_type_ref.empty() )
@@ -259,12 +259,12 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 	return LLVMValueRef::Null;
 }
 
-fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ConstructorInitializer& constructor_initializer ) : LLVMValueRef
+fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ConstructorInitializer& constructor_initializer ) : LLVMValueRef
 {
 	return BuildConstructorInitializer( names_scope, function_context, variable, constructor_initializer.args, constructor_initializer.file_pos );
 }
 
-fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ZeroInitializer& zero_initializer ) : LLVMValueRef
+fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ZeroInitializer& zero_initializer ) : LLVMValueRef
 {
 	if( !variable.t.GetFundamentalType().empty() || !variable.t.GetEnumType().empty() )
 	{
@@ -352,13 +352,13 @@ fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionCont
 	halt;
 }
 
-fn CodeBuilder::BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::UninitializedInitializer& uninitialized_initializer ) : LLVMValueRef
+fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::UninitializedInitializer& uninitialized_initializer ) : LLVMValueRef
 {
 	// TODO - emit error if not in unsafe block
 	return LLVMValueRef::Null;
 }
 
-fn CodeBuilder::BuildEmptyInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::string8& variable_name, FilePos& file_pos )
+fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::string8& variable_name, FilePos& file_pos )
 {
 	if( !variable.t.IsDefaultConstructible() )
 	{
@@ -424,7 +424,7 @@ fn CodeBuilder::BuildEmptyInitializer( this, NamesScopePtr& names_scope, Functio
 	}
 }
 
-fn CodeBuilder::BuildConstructorInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args, FilePos& file_pos )  : LLVMValueRef
+fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args, FilePos& file_pos )  : LLVMValueRef
 {
 	if_var( &dst_type : variable.t.GetFundamentalType() )
 	{
@@ -623,7 +623,7 @@ fn CodeBuilder::BuildConstructorInitializer( this, NamesScopePtr& names_scope, F
 	return LLVMValueRef::Null;
 }
 
-fn CodeBuilder::InitializeReferenceField( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ClassField& field, Synt::Initializer& initializer )
+fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ClassField& field, Synt::Initializer& initializer )
 {
 	auto initializer_file_pos=  Synt::GetFilePos( initializer );
 
@@ -680,7 +680,7 @@ fn CodeBuilder::InitializeReferenceField( this, NamesScopePtr& names_scope, Func
 }
 
 fn CodeBuilder::BuildConstructorInitialization(
-	this,
+	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
 	Synt::StructNamedInitializer& constructor_initialization_list )

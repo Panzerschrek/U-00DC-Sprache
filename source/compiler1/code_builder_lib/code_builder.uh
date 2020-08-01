@@ -62,8 +62,14 @@ public:
 	fn BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : BuildResult;
 
 private:
-	fn NamesScopeValueToValue( this, NamesScopePtr& names_scope, NamesScopeValue& names_scope_value ) : Value;
-	fn ResolveValue( this, NamesScopePtr& names_scope, Synt::ComplexName& complex_name ) : Value;
+	fn NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, NamesScopeValue& names_scope_value ) : Value;
+	fn ResolveValue( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& complex_name ) : Value;
+	fn ResolveValue(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		Synt::ComplexName& complex_name,
+		bool skip_last_template_args ) : Value;
 
 	fn FillGlobalNamesScope( this, NamesScope &mut names_scope );
 
@@ -77,6 +83,8 @@ private:
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Enum/>& enum_, ust::shared_ptr_nullable_mut</ClassType/>& class_type );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::TypeAlias/>& type_alias );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::TypeAlias/>& type_alias, ust::shared_ptr_nullable_mut</ClassType/>& class_type );
+	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::TypeTemplate/>& type_template );
+	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::TypeTemplate/>& type_template, ust::shared_ptr_nullable_mut</ClassType/>& class_type );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::VariablesDeclaration/>& variables_declaration );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::VariablesDeclaration/>& variables_declaration, ust::shared_ptr_nullable_mut</ClassType/>& class_type );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::AutoVariableDeclaration/>& auto_variable_declaration );
@@ -86,112 +94,116 @@ private:
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Namespace/>& namespace_ );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field, ust::shared_ptr_nullable_mut</ClassType/>& class_type );
 	fn NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scope_ptr, Synt::NamespaceElements& namespace_elements );
+	fn NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_ ) : ust::shared_ptr_nullable_mut</ClassType/>;
 
-	fn NamesScopeBuild( this, NamesScopePtr& names_scope_ptr );
-	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScope/>& namespace_ );
-	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</Type/>& t );
-	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeVariable/>& variable );
-	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/>& functions_set );
-	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</ClassType/>& class_type );
-	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</ClassField/>& class_field );
-	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</Enum/>& enum_type );
-	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</TypeAlias/>& type_alias_ptr );
-	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalVariable/>& global_variable_ptr );
-	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalAutoVariable/>& global_auto_variable_ptr );
-	fn NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalStaticAssertsSet/>& global_static_asserts_set_ptr );
+	fn NamesScopeBuild( mut this, NamesScopePtr& names_scope_ptr );
+	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScope/>& namespace_ );
+	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</Type/>& t );
+	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeVariable/>& variable );
+	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/>& functions_set );
+	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</ClassType/>& class_type );
+	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</ClassField/>& class_field );
+	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</Enum/>& enum_type );
+	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</TypeAlias/>& type_alias_ptr );
+	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set );
+	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</TemplateArg/>& template_arg );
+	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalVariable/>& global_variable_ptr );
+	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalAutoVariable/>& global_auto_variable_ptr );
+	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalStaticAssertsSet/>& global_static_asserts_set_ptr );
 
-	fn BuildFunctionsSet( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/> functions_set, bool build_body );
-	fn BuildClass( this, NamesScopePtr& names_scope_ptr, ClassTypePtr& class_type );
-	fn BuildEnum( this, NamesScopePtr& names_scope_ptr, EnumTypePtr& enum_type );
-	fn BuildTypeAlias( this, NamesScopePtr& names_scope, TypeAlias& mut type_alias );
-	fn BuildGlobalVariable( this, NamesScopePtr& names_scope, GlobalVariable& mut global_variable );
-	fn BuildGlobalAutoVariable( this, NamesScopePtr& names_scope, GlobalAutoVariable& mut global_auto_variable );
+	fn BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/> functions_set, bool build_body );
+	fn BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypePtr& class_type );
+	fn BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr& enum_type );
+	fn BuildTypeAlias( mut this, NamesScopePtr& names_scope, TypeAlias& mut type_alias );
+	fn BuildGlobalVariable( mut this, NamesScopePtr& names_scope, GlobalVariable& mut global_variable );
+	fn BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope, GlobalAutoVariable& mut global_auto_variable );
 
 	// Returns "true" if ok.
 	fn PrepareFunction(
-		this,
+		mut this,
 		ust::shared_ptr_final</Synt::Function/>& function_declaration_ptr,
 		NamesScopePtr& names_scope_ptr,
 		ust::shared_ptr_nullable_mut</ClassType/>& class_type,
 		FunctionsSet &mut functions_set,
 		bool is_out_of_line_function ) : bool;
 
-	fn PrepareType( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TypeName& type_name ) : Type;
-	fn PrepareType( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_type ) : Type;
-	fn PrepareType( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::ArrayType/>& array_type ) : Type;
-	fn PrepareType( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type_ptr ) : Type;
-	fn PrepareType( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type ) : Type;
-	fn PrepareFunctionType( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type, ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : Type;
+	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TypeName& type_name ) : Type;
+	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_type ) : Type;
+	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::ArrayType/>& array_type ) : Type;
+	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type_ptr ) : Type;
+	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type ) : Type;
+	fn PrepareFunctionType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type, ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : Type;
 
 	// Returns constant value if initializer is contant
-	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Initializer& initializer ) : LLVMValueRef;
-	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::EmptyVariant& empty_initializer ) : LLVMValueRef;
-	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Expression& expression_initializer ) : LLVMValueRef;
-	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::SequenceInitializer& sequence_initializer ) : LLVMValueRef;
-	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::StructNamedInitializer& struct_named_initializer ) : LLVMValueRef;
-	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ConstructorInitializer& constructor_initializer ) : LLVMValueRef;
-	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ZeroInitializer& zero_initializer ) : LLVMValueRef;
-	fn BuildInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::UninitializedInitializer& uninitialized_initializer ) : LLVMValueRef;
-	fn BuildEmptyInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::string8& variable_name, FilePos& file_pos );
-	fn BuildConstructorInitializer( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args, FilePos& file_pos )  : LLVMValueRef;
+	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Initializer& initializer ) : LLVMValueRef;
+	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::EmptyVariant& empty_initializer ) : LLVMValueRef;
+	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Expression& expression_initializer ) : LLVMValueRef;
+	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::SequenceInitializer& sequence_initializer ) : LLVMValueRef;
+	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::StructNamedInitializer& struct_named_initializer ) : LLVMValueRef;
+	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ConstructorInitializer& constructor_initializer ) : LLVMValueRef;
+	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ZeroInitializer& zero_initializer ) : LLVMValueRef;
+	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::UninitializedInitializer& uninitialized_initializer ) : LLVMValueRef;
+	fn BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::string8& variable_name, FilePos& file_pos );
+	fn BuildConstructorInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args, FilePos& file_pos )  : LLVMValueRef;
 
-	fn InitializeReferenceField( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ClassField& field, Synt::Initializer& initializer );
+	fn InitializeReferenceField( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ClassField& field, Synt::Initializer& initializer );
 
 	fn BuildConstructorInitialization(
-		this,
+		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		Synt::StructNamedInitializer& constructor_initialization_list );
 
-	fn BuildFuncCode( this, NamesScopePtr& names_scope_ptr, FunctionVariable& func_variable );
+	fn BuildFuncCode( mut this, NamesScopePtr& names_scope_ptr, FunctionVariable& func_variable );
 
 	struct BlockElementBuildInfo
 	{
 		bool have_terminal_instruction_inside= false;
 	}
 
-	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::Block/>& block_ptr ) : BlockElementBuildInfo;
-	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block ) : BlockElementBuildInfo;
-	fn BuildBlockElement( this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration& variables_declaration ) : BlockElementBuildInfo;
-	fn BuildBlockElement( this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration ) : BlockElementBuildInfo;
-	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator ) : BlockElementBuildInfo;
-	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AssignmentOperator& assignment_operator ) : BlockElementBuildInfo;
-	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AdditiveAssignmentOperator& additive_assignment_operator ) : BlockElementBuildInfo;
-	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IncrementOperator& increment_operator ) : BlockElementBuildInfo;
-	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::DecrementOperator& decrement_operator ) : BlockElementBuildInfo;
-	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : BlockElementBuildInfo;
-	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfOperator& if_operator ) : BlockElementBuildInfo;
-	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WhileOperator& while_operator ) : BlockElementBuildInfo;
-	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BreakOperator& break_operator ) : BlockElementBuildInfo;
-	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ContinueOperator& continue_operator ) : BlockElementBuildInfo;
-	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StaticAssert& static_assert_ ) : BlockElementBuildInfo;
-	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Halt& halt_ ) : BlockElementBuildInfo;
-	fn BuildBlockElement( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::HaltIf& halt_if ) : BlockElementBuildInfo;
+	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::Block/>& block_ptr ) : BlockElementBuildInfo;
+	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block ) : BlockElementBuildInfo;
+	fn BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration& variables_declaration ) : BlockElementBuildInfo;
+	fn BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration ) : BlockElementBuildInfo;
+	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator ) : BlockElementBuildInfo;
+	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AssignmentOperator& assignment_operator ) : BlockElementBuildInfo;
+	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AdditiveAssignmentOperator& additive_assignment_operator ) : BlockElementBuildInfo;
+	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IncrementOperator& increment_operator ) : BlockElementBuildInfo;
+	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::DecrementOperator& decrement_operator ) : BlockElementBuildInfo;
+	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : BlockElementBuildInfo;
+	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfOperator& if_operator ) : BlockElementBuildInfo;
+	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WhileOperator& while_operator ) : BlockElementBuildInfo;
+	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BreakOperator& break_operator ) : BlockElementBuildInfo;
+	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ContinueOperator& continue_operator ) : BlockElementBuildInfo;
+	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StaticAssert& static_assert_ ) : BlockElementBuildInfo;
+	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Halt& halt_ ) : BlockElementBuildInfo;
+	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::HaltIf& halt_if ) : BlockElementBuildInfo;
 
-	fn BuildDeltaOneOperator( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, FilePos& file_pos, i32 delta );
+	fn BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, FilePos& file_pos, i32 delta );
 
-	fn BuildExpressionCodeEnsureVariable( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Variable;
+	fn BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Variable;
 
-	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Value;
-	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : Value;
-	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NumericConstant& numeric_constant ) : Value;
-	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BooleanConstant& boolean_constant ) : Value;
-	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value;
-	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value;
-	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BracketExpression& bracket_expression ) : Value;
-	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IndexationOperator& indexation_operator ) : Value;
-	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CallOperator& call_operator ) : Value;
-	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MemberAccessOperator& member_access_operator ) : Value;
-	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnaryPlus& unary_plus ) : Value;
-	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnaryMinus& unary_minus ) : Value;
-	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::LogicalNot& logical_not ) : Value;
-	fn BuildExpressionCode( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BitwiseNot& bitwise_not ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NumericConstant& numeric_constant ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BooleanConstant& boolean_constant ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BracketExpression& bracket_expression ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IndexationOperator& indexation_operator ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CallOperator& call_operator ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MemberAccessOperator& member_access_operator ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnaryPlus& unary_plus ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnaryMinus& unary_minus ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::LogicalNot& logical_not ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BitwiseNot& bitwise_not ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::ArrayType/>& array_type ) : Value;
 
 	fn BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& l_var, Variable& r_var, BinaryOperatorType operator, FilePos& file_pos ) : Value;
-	fn BuildLazyBinaryOperator( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value;
+	fn BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value;
 
 	fn CallFunctionsSet(
-		this,
+		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		ust::optional_ref</ Variable, false /> mut this_,
@@ -200,7 +212,7 @@ private:
 		FilePos& file_pos ) : Value;
 
 	fn DoCallFunction(
-		this,
+		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		ust::optional_ref</ Variable, false />& this_,
@@ -209,12 +221,111 @@ private:
 		FilePos& file_pos ) : Value;
 
 	fn BuildTempVariableConstruction(
-		this,
+		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		Type& t,
 		ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args,
 		FilePos& file_pos ) : Value;
+
+	// Templates
+	fn BuiltTypeTemplatesSet(
+		mut this,
+		NamesScopePtr& names_scope,
+		ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set_ptr );
+
+	fn PrepareTypeTemplate(
+		mut this,
+		NamesScopePtr& names_scope,
+		ust::shared_ptr_final</Synt::TypeTemplate/>& type_template_syntax_element ) : ust::optional</TypeTemplate/>;
+
+	fn CheckTemplateSignatureParam(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		ust::vector</ust::string8/>& template_params,
+		Synt::Expression& signature_param,
+		ust::vector</bool/> &mut template_params_usage_flags );
+
+	fn CheckTemplateSignatureParam(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		ust::vector</ust::string8/>& template_params,
+		Synt::ComplexName& signature_param,
+		ust::vector</bool/> &mut template_params_usage_flags );
+
+	fn CheckTemplateSignatureParam(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		ust::vector</ust::string8/>& template_params,
+		Synt::TypeName& signature_param,
+		ust::vector</bool/> &mut template_params_usage_flags );
+
+	fn CheckTemplateSignatureParam(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		ust::vector</ust::string8/>& template_params,
+		Synt::ArrayType& signature_param,
+		ust::vector</bool/> &mut template_params_usage_flags );
+
+	fn GenTemplateType(
+		mut this,
+		NamesScopePtr& args_names_scope,
+		FunctionContext &mut function_context,
+		ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set_ptr,
+		Synt::TemplateArgs& template_args,
+		FilePos& template_instantiation_file_pos ) : ust::optional</Type/>;
+
+	fn GenTemplateType(
+		mut this,
+		NamesScopePtr& args_names_scope,
+		FunctionContext &mut function_context,
+		TypeTemplatePtr& type_template_ptr,
+		Synt::TemplateArgs& template_args,
+		FilePos& template_instantiation_file_pos ) : ust::optional</Type/>;
+
+	// Returns true if ok
+	fn MatchTemplateArgument(
+		mut this,
+		NamesScopePtr& names_scope,
+		TypeTemplate& type_template,
+		Synt::Expression& param,
+		Value& given_arg ) : bool;
+
+	fn MatchTemplateArgument(
+		mut this,
+		NamesScopePtr& names_scope,
+		TypeTemplate& type_template,
+		Synt::ComplexName& param,
+		Value& given_arg ) : bool;
+
+	fn MatchTemplateArgument(
+		mut this,
+		NamesScopePtr& names_scope,
+		TypeTemplate& type_template,
+		Synt::ArrayType& param,
+		Value& given_arg ) : bool;
+
+	fn MatchTemplateArgument(
+		mut this,
+		NamesScopePtr& names_scope,
+		TypeTemplate& type_template,
+		Synt::TypeName& param,
+		Value& given_arg ) : bool;
+
+	fn MatchTemplateArgumentExpressions(
+		mut this,
+		NamesScopePtr& names_scope,
+		FilePos& file_pos,
+		Value& param,
+		Value& arg ) : bool;
+
+	fn TypeIsValidForTemplateVariableArgument( Type& t ) : bool;
+
+	// Overloading
 
 	fn ApplyOverloadedFunction(
 		FunctionsSet &mut functions_set,
@@ -229,16 +340,16 @@ private:
 		NamesScopePtr& names_scope, // Needed only for errors reporting
 		FilePos& file_pos ) : ust::optional_ref</FunctionVariable, false/>'x';
 
-	fn TryGenerateDefaultConstructor( this, ClassTypePtr& class_type );
-	fn TryGenerateCopyConstructor( this, ClassTypePtr& class_type );
+	fn TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_type );
+	fn TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type );
 	fn TryGenerateDestructor( this, ClassTypePtr& class_type );
 
-	fn BuildCopyConstructorPart( this, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t );
+	fn BuildCopyConstructorPart( mut this, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t );
 	fn BuildDestructorPart( this, FunctionContext &mut function_context, LLVMValueRef value, Type& t );
 	fn BuildMembersDestructors( this, FunctionContext &mut function_context, LLVMValueRef value, ClassTypePtr& class_type );
 
 	fn TryCallCopyConstructor(
-		this,
+		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		LLVMValueRef dst, LLVMValueRef src,
@@ -251,7 +362,7 @@ private:
 	fn CallDestructorsForLoopInnerVariables( this, FunctionContext &mut function_context );
 
 	// Returns "false" if not complete.
-	fn EnsureTypeComplete( this, Type& t ) : bool;
+	fn EnsureTypeComplete( mut this, Type& t ) : bool;
 
 	fn GetFunctionWithSameType( FunctionsSet &'x mut functions_set, Type& function_type ) : ust::optional_ref</ FunctionVariable, true />'x';
 
@@ -315,6 +426,8 @@ private:
 
 	ust::vector</ ClassTypePtr /> class_table_;
 	LLVMValueRef global_llvm_function_= LLVMValueRef::Null; // For global function context
+
+	ust::unordered_map</ ust::string8, NamesScopePtr /> generated_template_things_;
 
 	LLVMValueRef halt_function_= LLVMValueRef::Null;
 }

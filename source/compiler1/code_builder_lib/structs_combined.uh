@@ -84,6 +84,13 @@ struct ClassType
 
 	ust::vector</ust::string8/> fields_order;
 
+	struct BaseTemplate
+	{
+		TypeTemplatePtr class_template;
+		TemplateArgsFinished signature_args;
+	}
+	ust::optional</BaseTemplate/> base_template;
+
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
 
 	bool is_complete= false;
@@ -202,6 +209,7 @@ type Value= ust::variant</ tup[
 	Type,
 	FunctionsSet,
 	ThisMethodsSet,
+	ust::shared_ptr_imut</TypeTemplatesSet/>,
 	ErrorValue
 	] />;
 
@@ -263,6 +271,35 @@ struct TypeAlias
 	ust::shared_ptr_final</ Synt::TypeAlias /> syntax_element;
 }
 
+struct TypeTemplate
+{
+	ust::shared_ptr_final</Synt::TypeTemplate/> syntax_element;
+	size_type first_default_param;
+
+	ust::weak_ptr_imut</NamesScope/> parent_names_scope; // Needed because type template should see names scope of original file.
+}
+
+type TypeTemplatePtr = ust::shared_ptr_final</TypeTemplate/>;
+
+struct TypeTemplatesSet
+{
+	ust::vector</TypeTemplatePtr/> type_templates;
+
+	// Is incomplete, if there are some syntax elements in containers.
+	ust::vector</ ust::shared_ptr_final</Synt::TypeTemplate/> /> syntax_elements;
+}
+
+struct TemplateArg
+{
+	size_type index;
+
+	struct NotKnownYet{}
+	ust::variant</ tup[ NotKnownYet, Type, NamesScopeVariable ] /> something;
+}
+
+type TemplateArgFinished= ust::variant</ tup[ Type, Variable ] />;
+type TemplateArgsFinished= ust::vector</ TemplateArgFinished />;
+
 struct GlobalVariable
 {
 	ust::optional</NamesScopeVariable/> variable; // empty if incomplete
@@ -289,9 +326,16 @@ public:
 
 	// TODO - add method for deep copy
 
+	// TODO - rework this class. It is ugly.
+
 	template</ type T />
-	fn conversion_constructor( T mut t )
+	fn enable_if( !IsSharedPtr</T/>::value ) conversion_constructor( T mut t )
 		( something_( ust::shared_ptr_mut</T/>(move(t))) )
+	{}
+
+	template</ type T />
+	fn enable_if( IsSharedPtr</T/>::value ) conversion_constructor( T mut t )
+		( something_(move(t)) )
 	{}
 
 	template</type T/>
@@ -305,6 +349,10 @@ public:
 		return ust::shared_ptr_nullable_mut</T/>(x.get_ref());
 	}
 
+private:
+	template</type T/> struct IsSharedPtr{ auto value= false; }
+	template</type T/> struct IsSharedPtr</ ust::shared_ptr_mut</T/> /> { auto value= true; }
+
 public:
 	ust::variant</ tup[
 		NamesScopeMutPtr,
@@ -315,6 +363,8 @@ public:
 		ust::shared_ptr_mut</ClassField/>,
 		EnumTypePtr,
 		ust::shared_ptr_mut</TypeAlias/>,
+		ust::shared_ptr_mut</TypeTemplatesSet/>,
+		ust::shared_ptr_mut</TemplateArg/>,
 		ust::shared_ptr_mut</GlobalVariable/>,
 		ust::shared_ptr_mut</GlobalAutoVariable/>,
 		ust::shared_ptr_mut</GlobalStaticAssertsSet/>
@@ -359,11 +409,24 @@ public:
 	// Get full name (with enclosing namespaces) un human-readable format.
 	fn ToString( this ) : ust::string8;
 
+	// Sometimes it's needed to identify class namespace. So, store pointer to class directly inside it's names_scope.
+	fn SetClass( mut this, ust::shared_ptr_nullable_mut</ClassType/> in_class_ )
+	{
+		class_= in_class_;
+	}
+
+	fn GetClass( this ) : ust::shared_ptr_nullable_mut</ClassType/>
+	{
+		return class_;
+	}
+
 private:
 	ust::string8 name_;
 	ust::weak_ptr_imut</NamesScope/> parent_;
 
 	ust::unordered_map</ ust::string8, NamesScopeValue /> names_map_;
+
+	ust::shared_ptr_nullable_mut</ClassType/> class_;
 
 	ErrorsContainerPtr errors_container_;
 }

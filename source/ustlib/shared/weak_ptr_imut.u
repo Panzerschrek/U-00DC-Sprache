@@ -10,12 +10,12 @@ class weak_ptr_imut
 public:
 	fn constructor()= default;
 
-	fn constructor( mut this, shared_ptr_imut</T/> & ptr )
+	fn conversion_constructor( mut this, shared_ptr_imut</T/> & ptr )
 	{
 		unsafe{  impl_= weak_ptr_base</ T />( ptr.get_impl() );  }
 	}
 
-	fn constructor( mut this, shared_ptr_nullable_imut</T/> & ptr )
+	fn conversion_constructor( mut this, shared_ptr_nullable_imut</T/> & ptr )
 	{
 		unsafe{  impl_= weak_ptr_base</ T />( ptr.get_impl() );  }
 	}

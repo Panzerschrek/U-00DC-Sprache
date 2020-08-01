@@ -103,6 +103,36 @@ fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : Buil
 	NamesScopeFillOutOfLineElements( global_names_scope, ast.program_elements );
 	NamesScopeBuild( global_names_scope );
 
+	// Finalize building template classes.
+	// Save and update keys separately, because "generated_template_things_storage_" may change during iterations.
+	{
+		var ust::unordered_map</ ust::string8, i32 /> mut generated_template_things_keys;
+		foreach( &el : generated_template_things_ )
+		{
+			generated_template_things_keys.insert( el.key(), 0 );
+		}
+		auto mut new_generated_template_things_keys= generated_template_things_keys;
+
+		while( !new_generated_template_things_keys.empty() )
+		{
+			foreach( &el : new_generated_template_things_keys )
+			{
+				auto names_scope= generated_template_things_.find(el.key()).get_ref();
+				NamesScopeBuild( names_scope );
+			}
+
+			new_generated_template_things_keys.clear();
+			foreach( &el : generated_template_things_ )
+			{
+				if( generated_template_things_keys.find( el.key() ).empty() )
+				{
+					generated_template_things_keys.insert( el.key(), 0 );
+					new_generated_template_things_keys.insert( el.key(), 0 );
+				}
+			}
+		}
+	}
+
 	unsafe{  LLVMDeleteFunction( global_llvm_function_ );  }
 	global_llvm_function_= LLVMValueRef::Null;
 
@@ -127,7 +157,7 @@ fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : Buil
 	return move(res);
 }
 
-fn CodeBuilder::NamesScopeValueToValue( this, NamesScopePtr& names_scope, NamesScopeValue& names_scope_value ) : Value
+fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, NamesScopeValue& names_scope_value ) : Value
 {
 	auto t= names_scope_value.Get</Type/>();
 	if( !t.empty() )
@@ -230,10 +260,50 @@ fn CodeBuilder::NamesScopeValueToValue( this, NamesScopePtr& names_scope, NamesS
 		}
 	}
 
+	auto template_arg_ptr= names_scope_value.Get</TemplateArg/>();
+	if( !template_arg_ptr.empty() )
+	{
+		auto template_arg_lock= template_arg_ptr.lock_imut();
+		auto& template_arg= template_arg_lock.get_ref();
+		if_var( &t : template_arg.something.get</Type/>() )
+		{
+			return t;
+		}
+		if_var( &v : template_arg.something.get</NamesScopeVariable/>() )
+		{
+			var Variable mut res
+			{
+				.t= v.t,
+				.llvm_value= v.llvm_value,
+				.constexpr_value= v.constexpr_value,
+				.location= Variable::Location::Pointer,
+				.value_type= select( v.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+			};
+			return move(res);
+		}
+		REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, FilePos(), ust::string8("TODO - name" ) )
+	}
+
+	auto type_templates_set_ptr= names_scope_value.Get</TypeTemplatesSet/>();
+	if( !type_templates_set_ptr.empty() )
+	{
+		return ust::shared_ptr_imut</TypeTemplatesSet/>( ust::to_non_nullable( type_templates_set_ptr ) );
+	}
+
 	return ErrorValue();
 }
 
-fn CodeBuilder::ResolveValue( this, NamesScopePtr& names_scope, Synt::ComplexName& complex_name ) : Value
+fn CodeBuilder::ResolveValue( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& complex_name ) : Value
+{
+	return ResolveValue( names_scope, function_context, complex_name, false );
+}
+
+fn CodeBuilder::ResolveValue(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	Synt::ComplexName& complex_name,
+	bool skip_last_template_args ) : Value
 {
 	var ust::shared_ptr_nullable_imut</NamesScope/> mut current_scope(names_scope);
 
@@ -250,7 +320,7 @@ fn CodeBuilder::ResolveValue( this, NamesScopePtr& names_scope, Synt::ComplexNam
 			current_scope= parent;
 		}
 
-		if_var( mut names_scope_value : current_scope.lock_imut().get_ref().GetThisScopeValue( complex_name.tail.front() ) )
+		if_var( mut names_scope_value : current_scope.lock_imut().get_ref().GetThisScopeValue( complex_name.tail.front().get</ust::string8/>().get_ref() ) )
 		{
 			current_value= move(names_scope_value);
 		}
@@ -276,72 +346,146 @@ fn CodeBuilder::ResolveValue( this, NamesScopePtr& names_scope, Synt::ComplexNam
 
 	// TOOD - simplify this. After first component lookup do not use optional for "current_value" and nullable pointer for "current_scope"
 
-
 	for( auto mut i= select( complex_name.name.empty() ? 1s : 0s ); i < complex_name.tail.size(); ++i )
 	{
 		auto& name_component= complex_name.tail[i];
-
-		auto namespace_= current_value.get_ref().Get</NamesScope/>();
-		auto class_= current_value.get_ref().Get</ClassType/>();
-		auto enum_= current_value.get_ref().Get</Enum/>();
-
-		if( !namespace_.empty() )
+		if_var( &name_component_name : name_component.get</ ust::string8 />() )
 		{
-			auto namespace_lock= namespace_.lock_imut();
-			auto new_value= namespace_lock.get_ref().GetThisScopeValue( name_component );
-			if( new_value.empty() )
+			var ust::shared_ptr_nullable_imut</NamesScope/> mut namespace_= current_value.get_ref().Get</NamesScope/>();
+			auto mut class_= current_value.get_ref().Get</ClassType/>();
+			auto enum_= current_value.get_ref().Get</Enum/>();
+			auto type_templates_set= current_value.get_ref().Get</TypeTemplatesSet/>();
+			auto t= current_value.get_ref().Get</Type/>();
+			auto type_alias= current_value.get_ref().Get</TypeAlias/>();
+
+			if( !t.empty() )
 			{
-				REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, name_component )
-				return ErrorValue();
+				auto lock= t.lock_imut();
+				if_var( &class_type : lock.get_ref().GetClassType() )
+				{
+					class_= class_type;
+				}
+			}
+			if( !type_alias.empty() )
+			{
+				{
+					auto mut lock= type_alias.lock_mut();
+					BuildTypeAlias( names_scope, lock.get_ref() );
+				}
+				auto lock= type_alias.lock_imut();
+				if_var( &t : lock.get_ref().t )
+				{
+					if_var( &class_type : t.GetClassType() )
+					{
+						class_= class_type;
+					}
+				}
+			}
+			if( !class_.empty() )
+			{
+				// We do not need to build class here, because class namespace is already filled. Names itself will be built separately later.
+				namespace_= class_.lock_imut().get_ref().members;
 			}
 
-			current_value.get_ref()= new_value.get_ref();
-			current_scope= namespace_;
-		}
-		else if( !class_.empty() )
-		{
-			// We do not need to build class here, because class namespace is already filled. Names itself will be built separately later.
-
-			auto class_lock= class_.lock_imut();
-			auto namespace_lock= class_lock.get_ref().members.lock_imut();
-			auto new_value= namespace_lock.get_ref().GetThisScopeValue( name_component );
-			if( new_value.empty() )
+			if( !namespace_.empty() )
 			{
-				REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, name_component )
+				auto namespace_lock= namespace_.lock_imut();
+				auto new_value= namespace_lock.get_ref().GetThisScopeValue( name_component_name );
+				if( new_value.empty() )
+				{
+					REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, name_component_name )
+					return ErrorValue();
+				}
+
+				current_value.get_ref()= new_value.get_ref();
+				current_scope= namespace_;
+			}
+			else if( !enum_.empty() )
+			{
+				auto enum_non_null= ust::to_non_nullable(enum_);
+				BuildEnum( ust::to_non_nullable(current_scope), enum_non_null );
+
+				auto lock= enum_.lock_imut();
+
+				auto element= lock.get_ref().elements.find( name_component_name );
+				if( element.empty() )
+				{
+					REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, name_component_name )
+					return ErrorValue();
+				}
+
+				var NamesScopeVariable mut v
+				{
+					.t= enum_non_null,
+					.is_mutable= false,
+					.llvm_value= element.get_ref().llvm_value,
+					.constexpr_value= element.get_ref().constexpr_value,
+				};
+
+				current_value= move(v);
+			}
+			else if( !type_templates_set.empty() )
+			{
+				REPORT_ERROR( TemplateInstantiationRequired, names_scope, complex_name.file_pos, name_component_name )
 				return ErrorValue();
 			}
-
-			current_value.get_ref()= new_value.get_ref();
-			current_scope= class_lock.get_ref().members;
-		}
-		else if( !enum_.empty() )
-		{
-			auto enum_non_null= ust::to_non_nullable(enum_);
-			BuildEnum( ust::to_non_nullable(current_scope), enum_non_null );
-
-			auto lock= enum_.lock_imut();
-
-			auto element= lock.get_ref().elements.find( name_component );
-			if( element.empty() )
+			else
 			{
-				REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, name_component )
+				REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, name_component_name ) // TODO -print more relevant error
 				return ErrorValue();
 			}
-
-			var NamesScopeVariable mut v
-			{
-				.t= enum_non_null,
-				.is_mutable= false,
-				.llvm_value= element.get_ref().llvm_value,
-				.constexpr_value= element.get_ref().constexpr_value,
-			};
-
-			current_value= move(v);
 		}
-		else
+		if_var( &template_args : name_component.get</ ust::box</Synt::TemplateArgs/> />() )
 		{
-			REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, name_component ) // TODO -print more relevant error
-			return ErrorValue();
+			auto type_templates_set= current_value.get_ref().Get</TypeTemplatesSet/>();
+			if( !type_templates_set.empty() )
+			{
+				BuiltTypeTemplatesSet( ust::to_non_nullable(current_scope), ust::to_non_nullable(type_templates_set) );
+
+				if( skip_last_template_args && i + 1s == complex_name.tail.size()  )
+				{
+					break;
+				}
+
+				auto generated_type= GenTemplateType(
+					names_scope,
+					function_context,
+					ust::to_non_nullable(type_templates_set),
+					template_args.get_ref(),
+					complex_name.file_pos );
+				if( !generated_type.empty() )
+				{
+					current_value.get_ref()= generated_type.get_ref();
+					if_var( generated_class : generated_type.get_ref().GetClassType() )
+					{
+						current_value= NamesScopeValue( generated_class );
+						current_scope= generated_class.lock_imut().get_ref().members;
+					}
+				}
+				else
+				{
+					return ErrorValue();
+				}
+			}
+			else
+			{
+				REPORT_ERROR( ValueIsNotTemplate, names_scope, complex_name.file_pos)
+				return ErrorValue();
+			}
+		}
+	}
+
+	{
+		auto template_arg_ptr= current_value.get_ref().Get</TemplateArg/>();
+		if( !template_arg_ptr.empty() )
+		{
+			auto template_arg_lock= template_arg_ptr.lock_imut();
+			auto& template_arg= template_arg_lock.get_ref();
+			if( !template_arg.something.get</TemplateArg::NotKnownYet/>().empty() )
+			{
+				REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, complex_name.file_pos, complex_name.name )
+				return ErrorValue();
+			}
 		}
 	}
 
@@ -367,9 +511,11 @@ fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
 	names_scope.AddName( KeywordToString(Keyword::char8_ ), Type( FundamentalType( U_FundamentalType::char8_ , fundamental_llvm_types_.char8_  ) ) );
 	names_scope.AddName( KeywordToString(Keyword::char16_), Type( FundamentalType( U_FundamentalType::char16_, fundamental_llvm_types_.char16_ ) ) );
 	names_scope.AddName( KeywordToString(Keyword::char32_), Type( FundamentalType( U_FundamentalType::char32_, fundamental_llvm_types_.char32_ ) ) );
+
+	names_scope.AddName( KeywordToString(Keyword::size_type_), size_type_ );
 }
 
-fn CodeBuilder::BuildFunctionsSet( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/> functions_set_ptr, bool build_body )
+fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/> functions_set_ptr, bool build_body )
 {
 	if( !build_body )
 	{
@@ -412,7 +558,7 @@ fn CodeBuilder::BuildFunctionsSet( this, NamesScopePtr& names_scope_ptr, ust::sh
 	}
 }
 
-fn CodeBuilder::BuildClass( this, NamesScopePtr& names_scope_ptr, ClassTypePtr& class_type )
+fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypePtr& class_type )
 {
 	if( class_type.lock_imut().get_ref().is_complete )
 	{
@@ -522,7 +668,7 @@ fn CodeBuilder::BuildClass( this, NamesScopePtr& names_scope_ptr, ClassTypePtr& 
 	class_.is_complete= true;
 }
 
-fn CodeBuilder::BuildEnum( this, NamesScopePtr& names_scope_ptr, EnumTypePtr& enum_type )
+fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr& enum_type )
 {
 	if( enum_type.lock_imut().get_ref().underlaying_type.llvm_type != LLVMTypeRef::Null )
 	{
@@ -596,7 +742,7 @@ fn CodeBuilder::BuildEnum( this, NamesScopePtr& names_scope_ptr, EnumTypePtr& en
 	}
 }
 
-fn CodeBuilder::BuildTypeAlias( this, NamesScopePtr& names_scope, TypeAlias& mut type_alias )
+fn CodeBuilder::BuildTypeAlias( mut this, NamesScopePtr& names_scope, TypeAlias& mut type_alias )
 {
 	if( !type_alias.t.empty() )
 	{
@@ -609,7 +755,7 @@ fn CodeBuilder::BuildTypeAlias( this, NamesScopePtr& names_scope, TypeAlias& mut
 	type_alias.t.reset( PrepareType( names_scope, function_context, syntax_element_ptr.get_ref().type_name ) );
 }
 
-fn CodeBuilder::BuildGlobalVariable( this, NamesScopePtr& names_scope, GlobalVariable& mut global_variable )
+fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope, GlobalVariable& mut global_variable )
 {
 	if( !global_variable.variable.empty() )
 	{
@@ -714,7 +860,7 @@ fn CodeBuilder::BuildGlobalVariable( this, NamesScopePtr& names_scope, GlobalVar
 	// TODO - maybe clear here dummy global function?
 }
 
-fn CodeBuilder::BuildGlobalAutoVariable( this, NamesScopePtr& names_scope, GlobalAutoVariable& mut global_auto_variable )
+fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope, GlobalAutoVariable& mut global_auto_variable )
 {
 	if( !global_auto_variable.variable.empty() )
 	{
@@ -785,7 +931,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( this, NamesScopePtr& names_scope, Globa
 }
 
 fn CodeBuilder::PrepareFunction(
-	this,
+	mut this,
 	ust::shared_ptr_final</Synt::Function/>& function_declaration_ptr,
 	NamesScopePtr& names_scope_ptr,
 	ust::shared_ptr_nullable_mut</ClassType/>& class_type,
@@ -893,7 +1039,7 @@ fn CodeBuilder::PrepareFunction(
 	return ApplyOverloadedFunction( functions_set, move(function_variable), names_scope_ptr, function_declaration.file_pos );
 }
 
-fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariable& func_variable )
+fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVariable& func_variable )
 {
 	if( func_variable.body_syntax_element.empty() )
 	{
@@ -1084,7 +1230,7 @@ fn CodeBuilder::BuildFuncCode( this, NamesScopePtr& names_scope, FunctionVariabl
 }
 
 fn CodeBuilder::TryCallCopyConstructor(
-	this,
+	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
 	LLVMValueRef dst, LLVMValueRef src,
@@ -1133,7 +1279,7 @@ fn CodeBuilder::CallDestructorsForLoopInnerVariables( this, FunctionContext &mut
 	}
 }
 
-fn CodeBuilder::EnsureTypeComplete( this, Type& t ) : bool
+fn CodeBuilder::EnsureTypeComplete( mut this, Type& t ) : bool
 {
 	if_var( &class_type_ptr : t.GetClassType() )
 	{

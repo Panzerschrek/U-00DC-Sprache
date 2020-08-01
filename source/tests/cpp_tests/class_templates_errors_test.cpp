@@ -16,12 +16,7 @@ U_TEST( InvalidValueAsTemplateArgumentTest0 )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( build_result.errors.size() >= 2u );
-	const CodeBuilderError& error= build_result.errors[1u];
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InvalidValueAsTemplateArgument );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 6u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidValueAsTemplateArgument, 6u ) );
 }
 
 U_TEST( InvalidTypeOfTemplateVariableArgumentTest0 )
@@ -36,12 +31,7 @@ U_TEST( InvalidTypeOfTemplateVariableArgumentTest0 )
 	)";
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( build_result.errors.size() >= 2u );
-	const CodeBuilderError& error= build_result.errors[1u];
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument, 5u ) );
 }
 
 // TODO - InvalidTypeOfTemplateVariableArgument for arrays, structs.
@@ -246,7 +236,6 @@ U_TEST( TemplateArgumentIsNotDeducedYet_Test1 )
 			var Box</ /> box;
 		}
 	)";
-
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateArgumentIsNotDeducedYet, 5u ) );
 }
@@ -532,6 +521,25 @@ U_TEST( ExpectedConstantExpression_InTemplateSignatureArgument_Test0 )
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedConstantExpression );
 	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+}
+
+U_TEST( ExpectedConstantExpression_InTemplateSignatureArgument_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn GetNum() : i32 { return 42; }
+
+		template</ i32 x />
+		struct FFF{}
+
+		type K= FFF</ GetNum() />;
+	)";
+
+	// TODO - fix file_pos - leavy only error on line 7
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT(
+		HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedConstantExpression, 7u ) ||
+		HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedConstantExpression, 4u ) );
 }
 
 } // namespace U

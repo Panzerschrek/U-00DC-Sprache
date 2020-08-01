@@ -4,7 +4,7 @@ import "code_builder.uh"
 namespace U
 {
 
-fn CodeBuilder::NamesScopeBuild( this, NamesScopePtr& names_scope_ptr )
+fn CodeBuilder::NamesScopeBuild( mut this, NamesScopePtr& names_scope_ptr )
 {
 	foreach( &el : names_scope_ptr.lock_imut().get_ref().GetInternalContainer() )
 	{
@@ -15,64 +15,74 @@ fn CodeBuilder::NamesScopeBuild( this, NamesScopePtr& names_scope_ptr )
 	}
 }
 
-fn CodeBuilder::NamesScopeBuildElement( this, NamesScopePtr& parent_names_scope_ptr, ust::shared_ptr_mut</NamesScope/>& namespace_ )
+fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& parent_names_scope_ptr, ust::shared_ptr_mut</NamesScope/>& namespace_ )
 {
 	NamesScopeBuild( namespace_ );
 }
 
-fn CodeBuilder::NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</Type/>& t )
+fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</Type/>& t )
 {
 	// Nothing to do here - all types in global namespaces placed as "Type" are complete.
 }
 
-fn CodeBuilder::NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeVariable/>& variable )
+fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeVariable/>& variable )
 {
 	// Nothing to do here - global namespaces does not contains "NamesScopeVariable", separate types used for global variables.
 }
 
-fn CodeBuilder::NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/>& functions_set )
+fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/>& functions_set )
 {
 	BuildFunctionsSet( names_scope_ptr, functions_set, true );
 }
 
-fn CodeBuilder::NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</ClassType/>& class_type )
+fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</ClassType/>& class_type )
 {
 	BuildClass( names_scope_ptr, class_type );
 	NamesScopeBuild( class_type.lock_imut().get_ref().members );
 }
 
-fn CodeBuilder::NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</ClassField/>& class_field )
+fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</ClassField/>& class_field )
 {
 	// Nothing to do here - class fields processed during class build.
 }
 
-fn CodeBuilder::NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</Enum/>& enum_type )
+fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</Enum/>& enum_type )
 {
 	BuildEnum( names_scope_ptr, enum_type );
 }
 
-fn CodeBuilder::NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</TypeAlias/>& type_alias_ptr )
+fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</TypeAlias/>& type_alias_ptr )
 {
 	auto mut lock= type_alias_ptr.lock_mut();
 	auto &mut type_alias= lock.get_ref();
 	BuildTypeAlias( names_scope_ptr, type_alias );
 }
 
-fn CodeBuilder::NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalVariable/>& global_variable_ptr )
+fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set )
+{
+	BuiltTypeTemplatesSet( names_scope_ptr, type_templates_set );
+}
+
+fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</TemplateArg/>& template_arg )
+{
+	// Nothing to do here
+}
+
+fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalVariable/>& global_variable_ptr )
 {
 	auto mut lock= global_variable_ptr.lock_mut();
 	auto &mut global_variable= lock.get_ref();
 	BuildGlobalVariable( names_scope_ptr, global_variable );
 }
 
-fn CodeBuilder::NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalAutoVariable/>& global_auto_variable_ptr )
+fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalAutoVariable/>& global_auto_variable_ptr )
 {
 	auto mut lock= global_auto_variable_ptr.lock_mut();
 	auto &mut global_auto_variable= lock.get_ref();
 	BuildGlobalAutoVariable( names_scope_ptr, global_auto_variable );
 }
 
-fn CodeBuilder::NamesScopeBuildElement( this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalStaticAssertsSet/>& global_static_asserts_set_ptr )
+fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalStaticAssertsSet/>& global_static_asserts_set_ptr )
 {
 	auto mut lock= global_static_asserts_set_ptr.lock_mut();
 	auto &mut global_static_asserts_set= lock.get_ref();

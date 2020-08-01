@@ -31,12 +31,15 @@ enum ReferenceModifier : u8
 
 struct EmptyVariant{} // used as stub
 
+type TemplateArgs= ust::vector</Expression/>;
+
 struct ComplexName
 {
 	FilePos file_pos;
 	ust::string8 name; // Empty for "::" start.
 
-	ust::vector</ ust::string8 /> tail;
+	type TailComponent= ust::variant</ tup[ ust::string8, ust::box</TemplateArgs/> ] />;
+	ust::vector</ TailComponent /> tail;
 }
 
 struct NumericConstant
@@ -123,7 +126,8 @@ type Expression= ust::variant</ tup[
 	UnaryPlus,
 	UnaryMinus,
 	LogicalNot,
-	BitwiseNot
+	BitwiseNot,
+	ust::box</ArrayType/>
 	] />;
 
 struct ArrayType
@@ -365,6 +369,7 @@ type ClassElement= ust::variant</ tup[
 	ust::shared_ptr_final</Class/>,
 	ust::shared_ptr_final</Enum/>,
 	ust::shared_ptr_final</TypeAlias/>,
+	ust::shared_ptr_final</TypeTemplate/>,
 	ust::shared_ptr_final</ClassField/>,
 	ust::shared_ptr_final</VariablesDeclaration/>,
 	ust::shared_ptr_final</AutoVariableDeclaration/>,
@@ -395,6 +400,35 @@ struct Enum
 	ust::vector</Element/> elements;
 }
 
+struct TypeTemplate
+{
+	FilePos file_pos;
+	ust::string8 name;
+
+	struct Param
+	{
+		Expression t; // Actually, only ComplexName. Empty if type parameter.
+		Expression name; // Actually, only name with one component
+	}
+	ust::vector</Param/> params;
+
+	struct SignatureParam
+	{
+		FilePos file_pos;
+		Expression name;
+		Expression default_value;
+	}
+	ust::vector</SignatureParam/> signature_params;
+
+	// Short form means that template argumenst are also signature arguments.
+	bool is_short_form;
+
+	ust::variant</ tup[
+		ust::shared_ptr_final</Class/>,
+		ust::shared_ptr_final</TypeAlias/>
+	] /> something;
+}
+
 struct Namespace
 {
 	FilePos file_pos;
@@ -407,6 +441,7 @@ type NamespaceElement= ust::variant</ tup[
 	ust::shared_ptr_final</Class/>,
 	ust::shared_ptr_final</Enum/>,
 	ust::shared_ptr_final</TypeAlias/>,
+	ust::shared_ptr_final</TypeTemplate/>,
 	ust::shared_ptr_final</Namespace/>, // TODO do we really need shared_ptr here?
 	ust::shared_ptr_final</VariablesDeclaration/>,
 	ust::shared_ptr_final</AutoVariableDeclaration/>,

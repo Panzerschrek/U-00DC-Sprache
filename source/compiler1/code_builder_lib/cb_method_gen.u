@@ -6,7 +6,7 @@ import "code_builder.uh"
 namespace U
 {
 
-fn CodeBuilder::TryGenerateDefaultConstructor( this, ClassTypePtr& class_type )
+fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_type )
 {
 	auto class_members= class_type.lock_imut().get_ref().members;
 
@@ -168,7 +168,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( this, ClassTypePtr& class_type )
 	constructors_lock.get_ref().functions_set.functions.push_back( take(function_variable) );
 }
 
-fn CodeBuilder::TryGenerateCopyConstructor( this, ClassTypePtr& class_type )
+fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 {
 	auto class_members= class_type.lock_imut().get_ref().members;
 
@@ -426,7 +426,7 @@ fn CodeBuilder::TryGenerateDestructor( this, ClassTypePtr& class_type )
 	destructors_lock.get_ref().functions_set.functions.push_back( take(function_variable) );
 }
 
-fn CodeBuilder::BuildCopyConstructorPart( this, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t )
+fn CodeBuilder::BuildCopyConstructorPart( mut this, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t )
 {
 	if( !t.GetFundamentalType().empty() || !t.GetEnumType().empty() )
 	{
