@@ -31,14 +31,14 @@ enum ReferenceModifier : u8
 
 struct EmptyVariant{} // used as stub
 
-type TemplateParameters= ust::vector</Expression/>; // TODO - rename to args
+type TemplateArgs= ust::vector</Expression/>;
 
 struct ComplexName
 {
 	FilePos file_pos;
 	ust::string8 name; // Empty for "::" start.
 
-	type TailComponent= ust::variant</ tup[ ust::string8, ust::box</TemplateParameters/> ] />;
+	type TailComponent= ust::variant</ tup[ ust::string8, ust::box</TemplateArgs/> ] />;
 	ust::vector</ TailComponent /> tail;
 }
 
@@ -405,21 +405,20 @@ struct TypeTemplate
 	FilePos file_pos;
 	ust::string8 name;
 
-	// TODO - rename to params
-	struct Arg
+	struct Param
 	{
 		Expression t; // Actually, only ComplexName. Empty if type parameter.
 		Expression name; // Actually, only name with one component
 	}
-	ust::vector</Arg/> args;
+	ust::vector</Param/> params;
 
-	struct SignatureArg
+	struct SignatureParam
 	{
 		FilePos file_pos;
 		Expression name;
 		Expression default_value;
 	}
-	ust::vector</SignatureArg/> signature_args;
+	ust::vector</SignatureParam/> signature_params;
 
 	// Short form means that template argumenst are also signature arguments.
 	bool is_short_form;

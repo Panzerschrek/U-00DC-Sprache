@@ -435,7 +435,7 @@ fn CodeBuilder::ResolveValue(
 				return ErrorValue();
 			}
 		}
-		if_var( &template_parameters : name_component.get</ ust::box</Synt::TemplateParameters/> />() )
+		if_var( &template_args : name_component.get</ ust::box</Synt::TemplateArgs/> />() )
 		{
 			auto type_templates_set= current_value.get_ref().Get</TypeTemplatesSet/>();
 			if( !type_templates_set.empty() )
@@ -451,7 +451,7 @@ fn CodeBuilder::ResolveValue(
 					names_scope,
 					function_context,
 					ust::to_non_nullable(type_templates_set),
-					template_parameters.get_ref(),
+					template_args.get_ref(),
 					complex_name.file_pos );
 				if( !generated_type.empty() )
 				{

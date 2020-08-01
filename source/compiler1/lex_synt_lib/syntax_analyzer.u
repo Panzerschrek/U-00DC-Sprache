@@ -193,7 +193,7 @@ private:
 	fn ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : NamespaceElements;
 	fn ParseNamespace( mut this ) : Namespace;
 
-	fn ParseTemplateParameters( mut this ) : TemplateParameters;
+	fn ParseTemplateArgs( mut this ) : TemplateArgs;
 	fn ParseComplexName( mut this ) : ComplexName;
 	fn ParseExpression( mut this ) : Expression;
 	fn ParseTypeName( mut this ) : TypeName;
@@ -219,7 +219,7 @@ private:
 	fn ParseEnum( mut this ) : Enum;
 	fn ParseTypeAlias( mut this ) : TypeAlias;
 	fn ParseTypeTemplate( mut this ) : TypeTemplate;
-	fn ParseTemplateSignatureArgs( mut this ) : ust::vector</TypeTemplate::SignatureArg/>;
+	fn ParseTemplateSignatureParams( mut this ) : ust::vector</TypeTemplate::SignatureParam/>;
 
 	fn NotEndOfFile( this ) : bool;
 	fn NextLexem( mut this );
@@ -336,9 +336,9 @@ fn SyntaxAnalyzer::ParseNamespace( mut this ) : Namespace
 	return namespace_;
 }
 
-fn SyntaxAnalyzer::ParseTemplateParameters( mut this ) : TemplateParameters
+fn SyntaxAnalyzer::ParseTemplateArgs( mut this ) : TemplateArgs
 {
-	var TemplateParameters mut template_parameters;
+	var TemplateArgs mut template_args;
 
 	if( it_.front().lexem_type != Lexem::Type::TemplateBracketLeft )
 	{
@@ -354,7 +354,7 @@ fn SyntaxAnalyzer::ParseTemplateParameters( mut this ) : TemplateParameters
 			break;
 		}
 
-		template_parameters.push_back( ParseExpression() );
+		template_args.push_back( ParseExpression() );
 
 		if( it_.front().lexem_type == Lexem::Type::TemplateBracketRight )
 		{}
@@ -368,7 +368,7 @@ fn SyntaxAnalyzer::ParseTemplateParameters( mut this ) : TemplateParameters
 		}
 	}
 
-	return move(template_parameters);
+	return move(template_args);
 }
 
 fn SyntaxAnalyzer::ParseComplexName( mut this ) : ComplexName
@@ -381,7 +381,7 @@ fn SyntaxAnalyzer::ParseComplexName( mut this ) : ComplexName
 
 		if( it_.front().lexem_type == Lexem::Type::TemplateBracketLeft )
 		{
-			complex_name.tail.push_back( ust::box</ TemplateParameters />( ParseTemplateParameters() ) );
+			complex_name.tail.push_back( ust::box</ TemplateArgs />( ParseTemplateArgs() ) );
 		}
 	}
 	else if( it_.front().lexem_type == Lexem::Type::Scope )
@@ -404,7 +404,7 @@ fn SyntaxAnalyzer::ParseComplexName( mut this ) : ComplexName
 
 		if( it_.front().lexem_type == Lexem::Type::TemplateBracketLeft )
 		{
-			complex_name.tail.push_back( ust::box</ TemplateParameters />( ParseTemplateParameters() ) );
+			complex_name.tail.push_back( ust::box</ TemplateArgs />( ParseTemplateArgs() ) );
 		}
 	}
 
@@ -1840,7 +1840,7 @@ fn SyntaxAnalyzer::ParseTypeTemplate( mut this ) : TypeTemplate
 	}
 	NextLexem();
 
-	var ust::vector</TypeTemplate::Arg/> mut args;
+	var ust::vector</TypeTemplate::Param/> mut params;
 	while( NotEndOfFile() )
 	{
 		if( it_.front().lexem_type == Lexem::Type::TemplateBracketRight )
@@ -1849,14 +1849,14 @@ fn SyntaxAnalyzer::ParseTypeTemplate( mut this ) : TypeTemplate
 			break;
 		}
 
-		var TypeTemplate::Arg mut arg;
+		var TypeTemplate::Param mut param;
 		if( IsKeyword( it_.front(), Keyword::type_ ) )
 		{
 			NextLexem();
 		}
 		else
 		{
-			arg.t= ParseComplexName();
+			param.t= ParseComplexName();
 		}
 
 		if( it_.front().lexem_type != Lexem::Type::Identifier )
@@ -1864,12 +1864,12 @@ fn SyntaxAnalyzer::ParseTypeTemplate( mut this ) : TypeTemplate
 			PushErrorMessage();
 		}
 
-		var ComplexName mut arg_name{ .file_pos= it_.front().file_pos, .name= it_.front().text };
+		var ComplexName mut param_name{ .file_pos= it_.front().file_pos, .name= it_.front().text };
 		NextLexem();
 
-		arg.name= move(arg_name);
+		param.name= move(param_name);
 
-		args.push_back( move(arg) );
+		params.push_back( move(param) );
 
 		if( it_.front().lexem_type == Lexem::Type::TemplateBracketRight )
 		{}
@@ -1890,7 +1890,7 @@ fn SyntaxAnalyzer::ParseTypeTemplate( mut this ) : TypeTemplate
 	}
 
 	auto mut is_short_form= false;
-	var ust::vector</TypeTemplate::SignatureArg/> mut signature_args;
+	var ust::vector</TypeTemplate::SignatureParam/> mut signature_params;
 
 	if( IsKeyword( it_.front(), Keyword::type_ ) )
 	{
@@ -1907,7 +1907,7 @@ fn SyntaxAnalyzer::ParseTypeTemplate( mut this ) : TypeTemplate
 		if( it_.front().lexem_type == Lexem::Type::TemplateBracketLeft )
 		{
 			is_short_form= false;
-			signature_args= ParseTemplateSignatureArgs();
+			signature_params= ParseTemplateSignatureParams();
 		}
 		else
 		{
@@ -1939,8 +1939,8 @@ fn SyntaxAnalyzer::ParseTypeTemplate( mut this ) : TypeTemplate
 			.file_pos= template_file_pos,
 			.name= template_name,
 			.something( ust::shared_ptr_final</TypeAlias/>( move(type_alias) ) ),
-			.args= move(args),
-			.signature_args= move(signature_args),
+			.params= move(params),
+			.signature_params= move(signature_params),
 			.is_short_form= is_short_form,
 		};
 
@@ -1961,7 +1961,7 @@ fn SyntaxAnalyzer::ParseTypeTemplate( mut this ) : TypeTemplate
 		if( it_.front().lexem_type == Lexem::Type::TemplateBracketLeft )
 		{
 			is_short_form= false;
-			signature_args= ParseTemplateSignatureArgs();
+			signature_params= ParseTemplateSignatureParams();
 		}
 		else
 		{
@@ -1979,8 +1979,8 @@ fn SyntaxAnalyzer::ParseTypeTemplate( mut this ) : TypeTemplate
 			.file_pos= template_file_pos,
 			.name= template_name,
 			.something( ust::shared_ptr_final</Class/>( move(class_) ) ),
-			.args= move(args),
-			.signature_args= move(signature_args),
+			.params= move(params),
+			.signature_params= move(signature_params),
 			.is_short_form= is_short_form,
 		};
 
@@ -1997,15 +1997,15 @@ fn SyntaxAnalyzer::ParseTypeTemplate( mut this ) : TypeTemplate
 			.is_short_form= false,
 		};
 
-		move(args);
-		move(signature_args);
+		move(params);
+		move(signature_params);
 		return move(type_template);
 	}
 }
 
-fn SyntaxAnalyzer::ParseTemplateSignatureArgs( mut this ) : ust::vector</TypeTemplate::SignatureArg/>
+fn SyntaxAnalyzer::ParseTemplateSignatureParams( mut this ) : ust::vector</TypeTemplate::SignatureParam/>
 {
-	var ust::vector</TypeTemplate::SignatureArg/> mut signature_args;
+	var ust::vector</TypeTemplate::SignatureParam/> mut signature_params;
 
 	if( it_.front().lexem_type != Lexem::Type::TemplateBracketLeft )
 	{
@@ -2021,16 +2021,16 @@ fn SyntaxAnalyzer::ParseTemplateSignatureArgs( mut this ) : ust::vector</TypeTem
 			break;
 		}
 
-		var TypeTemplate::SignatureArg mut arg;
-		arg.name= ParseExpression();
+		var TypeTemplate::SignatureParam mut param;
+		param.name= ParseExpression();
 
 		if( it_.front().lexem_type == Lexem::Type::Assignment )
 		{
 			NextLexem();
-			arg.default_value= ParseExpression();
+			param.default_value= ParseExpression();
 		}
 
-		signature_args.push_back(move(arg));
+		signature_params.push_back(move(param));
 
 		if( it_.front().lexem_type == Lexem::Type::TemplateBracketRight )
 		{}
@@ -2050,7 +2050,7 @@ fn SyntaxAnalyzer::ParseTemplateSignatureArgs( mut this ) : ust::vector</TypeTem
 		}
 	}
 
-	return move(signature_args);
+	return move(signature_params);
 }
 
 fn SyntaxAnalyzer::NotEndOfFile( this ) : bool

@@ -38,7 +38,7 @@ fn CodeBuilder::PrepareTypeTemplate(
 
 	// Check for template params redefinition, fill params vector.
 	var ust::vector</ust::string8/> mut template_params;
-	foreach( &param : syntax_element.args )
+	foreach( &param : syntax_element.params )
 	{
 		auto& name= param.name.get</Synt::ComplexName/>().get_ref().name;
 
@@ -58,7 +58,7 @@ fn CodeBuilder::PrepareTypeTemplate(
 	template_param_usage_flags.resize( template_params.size(), false );
 	{
 		auto mut global_function_context= CreateGlobalFunctionContext();
-		foreach( &signature_param : syntax_element.signature_args )
+		foreach( &signature_param : syntax_element.signature_params )
 		{
 			CheckTemplateSignatureParam( names_scope, global_function_context, template_params, signature_param.name, template_param_usage_flags );
 
@@ -67,7 +67,7 @@ fn CodeBuilder::PrepareTypeTemplate(
 				CheckTemplateSignatureParam( names_scope, global_function_context, template_params, signature_param.default_value, template_param_usage_flags );
 			}
 		}
-		foreach( &template_param : syntax_element.args )
+		foreach( &template_param : syntax_element.params )
 		{
 			if( template_param.t.get</Synt::EmptyVariant/>().empty() )
 			{
@@ -81,16 +81,16 @@ fn CodeBuilder::PrepareTypeTemplate(
 		{
 			if( !template_param_usage_flags[i] )
 			{
-				REPORT_ERROR( TemplateArgumentNotUsedInSignature, names_scope, Synt::GetFilePos(syntax_element.args[i].name), template_params[i] )
+				REPORT_ERROR( TemplateArgumentNotUsedInSignature, names_scope, Synt::GetFilePos(syntax_element.params[i].name), template_params[i] )
 			}
 		}
 	}
 
 	// Check default signature params correctness.
-	auto mut first_default_param= syntax_element.signature_args.size();
-	for( auto mut i= 0s; i < syntax_element.signature_args.size(); ++i )
+	auto mut first_default_param= syntax_element.signature_params.size();
+	for( auto mut i= 0s; i < syntax_element.signature_params.size(); ++i )
 	{
-		if( syntax_element.signature_args[i].default_value.get</ Synt::EmptyVariant />().empty() )
+		if( syntax_element.signature_params[i].default_value.get</ Synt::EmptyVariant />().empty() )
 		{
 			first_default_param= ust::min( first_default_param, i );
 		}
@@ -167,7 +167,7 @@ fn CodeBuilder::CheckTemplateSignatureParam(
 	{
 		if( !param.tail.empty() )
 		{
-			if_var( &template_args : param.tail.back().get</ ust::box</ Synt::TemplateParameters /> />() )
+			if_var( &template_args : param.tail.back().get</ ust::box</ Synt::TemplateArgs /> />() )
 			{
 				foreach( &arg : template_args.get_ref() )
 				{
@@ -223,7 +223,7 @@ fn CodeBuilder::GenTemplateType(
 	NamesScopePtr& args_names_scope,
 	FunctionContext &mut function_context,
 	ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set_ptr,
-	Synt::TemplateParameters& template_parameters,
+	Synt::TemplateArgs& template_args,
 	FilePos& template_instantiation_file_pos ) : ust::optional</Type/>
 {
 	auto type_templates_set_lock= type_templates_set_ptr.lock_imut();
@@ -238,7 +238,7 @@ fn CodeBuilder::GenTemplateType(
 		args_names_scope,
 		function_context,
 		type_template_ptr,
-		template_parameters,
+		template_args,
 		template_instantiation_file_pos );
 
 	if( res.empty() )
@@ -254,7 +254,7 @@ fn CodeBuilder::GenTemplateType(
 	NamesScopePtr& args_names_scope,
 	FunctionContext &mut function_context,
 	TypeTemplatePtr& type_template_ptr,
-	Synt::TemplateParameters& template_parameters,
+	Synt::TemplateArgs& template_args,
 	FilePos& template_instantiation_file_pos ) : ust::optional</Type/>
 {
 	var TypeTemplate& type_template= type_template_ptr.get_ref();
@@ -262,14 +262,14 @@ fn CodeBuilder::GenTemplateType(
 	var Synt::TypeTemplate& syntax_element= type_template.syntax_element.get_ref();
 	if( syntax_element.is_short_form )
 	{
-		if( template_parameters.size() != syntax_element.args.size() )
+		if( template_args.size() != syntax_element.params.size() )
 		{
 			return ust::optional</Type/>();
 		}
 	}
 	else
 	{
-		if( template_parameters.size() < type_template.first_default_param )
+		if( template_args.size() < type_template.first_default_param )
 		{
 			return ust::optional</Type/>();
 		}
@@ -280,10 +280,10 @@ fn CodeBuilder::GenTemplateType(
 
 	{
 		auto mut result_names_scope_lock= result_names_scope.lock_mut();
-		for( auto mut i= 0s; i < syntax_element.args.size(); ++i )
+		for( auto mut i= 0s; i < syntax_element.params.size(); ++i )
 		{
 			// Should be simple name
-			auto& name= syntax_element.args[i].name.get</Synt::ComplexName/>().get_ref().name;
+			auto& name= syntax_element.params[i].name.get</Synt::ComplexName/>().get_ref().name;
 
 			var TemplateArg mut template_arg{ .index= i };
 			result_names_scope_lock.get_ref().AddName( name, move(template_arg ) );
@@ -295,16 +295,16 @@ fn CodeBuilder::GenTemplateType(
 
 	if( syntax_element.is_short_form )
 	{
-		for( auto mut i= 0s; i < template_parameters.size(); ++i )
+		for( auto mut i= 0s; i < template_args.size(); ++i )
 		{
-			auto arg= BuildExpressionCode( args_names_scope, function_context, template_parameters[i] );
+			auto arg= BuildExpressionCode( args_names_scope, function_context, template_args[i] );
 			if( arg.get</Type/>().empty() && arg.get</Variable/>().empty() )
 			{
-				REPORT_ERROR( InvalidValueAsTemplateArgument, args_names_scope, Synt::GetFilePos(template_parameters[i]), GetValueKindName(arg) )
+				REPORT_ERROR( InvalidValueAsTemplateArgument, args_names_scope, Synt::GetFilePos(template_args[i]), GetValueKindName(arg) )
 				all_ok= false;
 			}
 
-			all_ok&= MatchTemplateArgument( result_names_scope, type_template, syntax_element.args[i].name, arg );
+			all_ok&= MatchTemplateArgument( result_names_scope, type_template, syntax_element.params[i].name, arg );
 
 			if_var( &t : arg.get</Type/>() )
 			{
@@ -318,19 +318,19 @@ fn CodeBuilder::GenTemplateType(
 	}
 	else
 	{
-		for( auto mut i= 0s; i < syntax_element.signature_args.size(); ++i )
+		for( auto mut i= 0s; i < syntax_element.signature_params.size(); ++i )
 		{
 			var Value mut arg;
 			var FilePos mut file_pos;
-			if( i < template_parameters.size() )
+			if( i < template_args.size() )
 			{
-				file_pos= Synt::GetFilePos( template_parameters[i] );
-				arg= BuildExpressionCode( args_names_scope, function_context, template_parameters[i] );
+				file_pos= Synt::GetFilePos( template_args[i] );
+				arg= BuildExpressionCode( args_names_scope, function_context, template_args[i] );
 			}
 			else
 			{
-				file_pos= Synt::GetFilePos( syntax_element.signature_args[i].default_value );
-				arg= BuildExpressionCode( result_names_scope, function_context, syntax_element.signature_args[i].default_value );
+				file_pos= Synt::GetFilePos( syntax_element.signature_params[i].default_value );
+				arg= BuildExpressionCode( result_names_scope, function_context, syntax_element.signature_params[i].default_value );
 			}
 
 			if( arg.get</Type/>().empty() && arg.get</Variable/>().empty() )
@@ -339,7 +339,7 @@ fn CodeBuilder::GenTemplateType(
 				all_ok= false;
 			}
 
-			all_ok&= MatchTemplateArgument( result_names_scope, type_template, syntax_element.signature_args[i].name, arg );
+			all_ok&= MatchTemplateArgument( result_names_scope, type_template, syntax_element.signature_params[i].name, arg );
 
 			if_var( &t : arg.get</Type/>() )
 			{
@@ -472,7 +472,7 @@ fn CodeBuilder::MatchTemplateArgument(
 				auto mut template_arg_lock= template_arg_ptr.lock_mut();
 				auto &mut template_arg= template_arg_lock.get_ref();
 
-				auto& value_param_type_name= type_template.syntax_element.get_ref().args[ template_arg.index ].t;
+				auto& value_param_type_name= type_template.syntax_element.get_ref().params[ template_arg.index ].t;
 				if( value_param_type_name.get</Synt::EmptyVariant/>().empty() )
 				{
 					// Value param
@@ -540,7 +540,7 @@ fn CodeBuilder::MatchTemplateArgument(
 			{
 				if( !param.tail.empty() )
 				{
-					if_var( &template_args_ptr : param.tail.back().get</ ust::box</ Synt::TemplateParameters /> />() )
+					if_var( &template_args_ptr : param.tail.back().get</ ust::box</ Synt::TemplateArgs /> />() )
 					{
 						auto& template_args= template_args_ptr.get_ref();
 
