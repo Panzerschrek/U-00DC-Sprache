@@ -221,14 +221,14 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const Tuple& type )
 
 	return debug_info_.builder->createStructType(
 		debug_info_.compile_unit,
-		"", // TODO - name
+		Type(type).ToString(),
 		di_file,
 		0u, // TODO - file_pos
 		data_layout_.getTypeAllocSizeInBits( type.llvm_type ),
 		8u * data_layout_.getABITypeAlignment( type.llvm_type ),
 		llvm::DINode::DIFlags(),
 		nullptr,
-		llvm::MDTuple::get( llvm_context_, elements ) );
+		debug_info_.builder->getOrCreateArray(elements).get() );
 }
 
 llvm::DISubroutineType* CodeBuilder::CreateDIType( const Function& type )
