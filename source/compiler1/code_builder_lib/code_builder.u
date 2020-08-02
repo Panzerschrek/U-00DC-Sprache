@@ -494,23 +494,31 @@ fn CodeBuilder::ResolveValue(
 
 fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
 {
-	names_scope.AddName( KeywordToString(Keyword::void_), Type( FundamentalType( U_FundamentalType::void_, fundamental_llvm_types_.void_ ) ) );
-	names_scope.AddName( KeywordToString(Keyword::bool_), Type( FundamentalType( U_FundamentalType::bool_, fundamental_llvm_types_.bool_ ) ) );
-	names_scope.AddName( KeywordToString(Keyword::i8_  ), Type( FundamentalType( U_FundamentalType::i8_  , fundamental_llvm_types_.i8_   ) ) );
-	names_scope.AddName( KeywordToString(Keyword::u8_  ), Type( FundamentalType( U_FundamentalType::u8_  , fundamental_llvm_types_.u8_   ) ) );
-	names_scope.AddName( KeywordToString(Keyword::i16_ ), Type( FundamentalType( U_FundamentalType::i16_ , fundamental_llvm_types_.i16_  ) ) );
-	names_scope.AddName( KeywordToString(Keyword::u16_ ), Type( FundamentalType( U_FundamentalType::u16_ , fundamental_llvm_types_.u16_  ) ) );
-	names_scope.AddName( KeywordToString(Keyword::i32_ ), Type( FundamentalType( U_FundamentalType::i32_ , fundamental_llvm_types_.i32_  ) ) );
-	names_scope.AddName( KeywordToString(Keyword::u32_ ), Type( FundamentalType( U_FundamentalType::u32_ , fundamental_llvm_types_.u32_  ) ) );
-	names_scope.AddName( KeywordToString(Keyword::i64_ ), Type( FundamentalType( U_FundamentalType::i64_ , fundamental_llvm_types_.i64_  ) ) );
-	names_scope.AddName( KeywordToString(Keyword::u64_ ), Type( FundamentalType( U_FundamentalType::u64_ , fundamental_llvm_types_.u64_  ) ) );
-	names_scope.AddName( KeywordToString(Keyword::i128_), Type( FundamentalType( U_FundamentalType::i128_, fundamental_llvm_types_.i128_ ) ) );
-	names_scope.AddName( KeywordToString(Keyword::u128_), Type( FundamentalType( U_FundamentalType::u128_, fundamental_llvm_types_.u128_ ) ) );
-	names_scope.AddName( KeywordToString(Keyword::f32_ ), Type( FundamentalType( U_FundamentalType::f32_ , fundamental_llvm_types_.f32_  ) ) );
-	names_scope.AddName( KeywordToString(Keyword::f64_ ), Type( FundamentalType( U_FundamentalType::f64_ , fundamental_llvm_types_.f64_  ) ) );
-	names_scope.AddName( KeywordToString(Keyword::char8_ ), Type( FundamentalType( U_FundamentalType::char8_ , fundamental_llvm_types_.char8_  ) ) );
-	names_scope.AddName( KeywordToString(Keyword::char16_), Type( FundamentalType( U_FundamentalType::char16_, fundamental_llvm_types_.char16_ ) ) );
-	names_scope.AddName( KeywordToString(Keyword::char32_), Type( FundamentalType( U_FundamentalType::char32_, fundamental_llvm_types_.char32_ ) ) );
+	var [ tup[ Keyword, U_FundamentalType ], 17 ] constexpr types_table
+	[
+		[ Keyword::void_, U_FundamentalType::void_ ],
+		[ Keyword::bool_, U_FundamentalType::bool_ ],
+		[ Keyword::i8_  , U_FundamentalType::i8_   ],
+		[ Keyword::u8_  , U_FundamentalType::u8_   ],
+		[ Keyword::i16_ , U_FundamentalType::i16_  ],
+		[ Keyword::u16_ , U_FundamentalType::u16_  ],
+		[ Keyword::i32_ , U_FundamentalType::i32_  ],
+		[ Keyword::u32_ , U_FundamentalType::u32_  ],
+		[ Keyword::i64_ , U_FundamentalType::i64_  ],
+		[ Keyword::u64_ , U_FundamentalType::u64_  ],
+		[ Keyword::i128_, U_FundamentalType::i128_ ],
+		[ Keyword::u128_, U_FundamentalType::u128_ ],
+		[ Keyword::f32_ , U_FundamentalType::f32_  ],
+		[ Keyword::f64_ , U_FundamentalType::f64_  ],
+		[ Keyword::char8_ , U_FundamentalType::char8_  ],
+		[ Keyword::char16_, U_FundamentalType::char16_ ],
+		[ Keyword::char32_, U_FundamentalType::char32_ ],
+	];
+
+	foreach( &el : types_table )
+	{
+		names_scope.AddName( KeywordToString( el[0] ), Type( FundamentalType( el[1], GetFundamentalLLVMType(el[1]) ) ) );
+	}
 
 	names_scope.AddName( KeywordToString(Keyword::size_type_), size_type_ );
 }
