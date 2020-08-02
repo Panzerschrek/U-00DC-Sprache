@@ -262,8 +262,6 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 		debug_info_.builder->finalize(); // We must finalize it.
 
 		// Clear caches.
-		debug_info_.classes_di_cache.clear();
-		debug_info_.enums_di_cache.clear();
 		debug_info_.builder= nullptr;
 	}
 

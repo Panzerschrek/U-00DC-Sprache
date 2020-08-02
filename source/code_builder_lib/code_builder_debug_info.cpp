@@ -279,6 +279,9 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 	if( const auto it= debug_info_.classes_di_cache.find(type); it != debug_info_.classes_di_cache.end() )
 		return it->second;
 
+	// Insert nullptr first, to prevent loops.
+	debug_info_.classes_di_cache.insert( std::make_pair( type, nullptr ) );
+
 	const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( the_class.llvm_type );
 
 	// TODO - get FilePos for enum
@@ -309,7 +312,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 			// It will be fine - use here data layout queries, because for complete struct type non-reference fields are complete too.
 			const auto member =
 				debug_info_.builder->createMemberType(
-					debug_info_.compile_unit,
+					di_file,
 					name,
 					di_file,
 					0u, // TODO - file_pos
@@ -329,7 +332,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 			// If this type is complete, parent types are complete too.
 			const auto member =
 				debug_info_.builder->createMemberType(
-					debug_info_.compile_unit,
+					di_file,
 					parent.class_->class_->members.GetThisNamespaceName(),
 					di_file,
 					0u, // TODO - file_pos
@@ -343,18 +346,21 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 	}
 
 	const auto result=
-		debug_info_.builder->createStructType(
-			debug_info_.compile_unit,
-			the_class.members.GetThisNamespaceName(),
+		debug_info_.builder->createClassType(
+			di_file,
+			Type(type).ToString(),
 			di_file,
 			the_class.body_file_pos.GetLine(),
 			data_layout_.getTypeAllocSizeInBits( the_class.llvm_type ),
 			8u * data_layout_.getABITypeAlignment( the_class.llvm_type ),
+			0u,
 			llvm::DINode::DIFlags(),
 			nullptr,
-			llvm::MDTuple::get(llvm_context_, fields) );
+			debug_info_.builder->getOrCreateArray(fields).get(),
+			nullptr,
+			nullptr);
 
-	debug_info_.classes_di_cache.insert( std::make_pair( type, result ) );
+	debug_info_.classes_di_cache[ type ]= result;
 	return result;
 }
 
@@ -390,7 +396,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const EnumPtr& type )
 
 	const auto result=
 		debug_info_.builder->createEnumerationType(
-			debug_info_.compile_unit,
+			di_file,
 			type->members.GetThisNamespaceName(),
 			di_file,
 			0u, // TODO - file_pos
