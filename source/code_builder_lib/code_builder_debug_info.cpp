@@ -172,13 +172,15 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const Array& type )
 
 	const uint32_t alignment=
 		IsTypeComplete( type.type ) ? data_layout_.getABITypeAlignment( type.llvm_type ) : 0u;
+	const uint64_t size=
+		IsTypeComplete( type.type ) ? data_layout_.getTypeAllocSizeInBits( type.llvm_type ) : 0u;
 
 	llvm::SmallVector<llvm::Metadata*, 1> subscripts;
 	subscripts.push_back( debug_info_.builder->getOrCreateSubrange( 0, int64_t(type.size) ) );
 
 	return
 		debug_info_.builder->createArrayType(
-			type.size,
+			size,
 			8u * alignment,
 			CreateDIType( type.type ),
 			debug_info_.builder->getOrCreateArray(subscripts) );
