@@ -383,6 +383,7 @@ struct Class
 	FilePos file_pos;
 	ust::string8 name;
 	ClassElements class_elements;
+	bool is_forward_declaration= false;
 }
 
 struct Enum

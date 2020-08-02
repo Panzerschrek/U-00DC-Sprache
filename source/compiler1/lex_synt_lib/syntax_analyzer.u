@@ -1619,7 +1619,16 @@ fn SyntaxAnalyzer::ParseClass( mut this ) : Class
 	class_.name= it_.front().text;
 	NextLexem();
 
-	class_.class_elements= ParseClassBody();
+	if( it_.front().lexem_type == Lexem::Type::Semicolon )
+	{
+		NextLexem();
+		class_.is_forward_declaration= true;
+	}
+	else
+	{
+		class_.class_elements= ParseClassBody();
+		class_.is_forward_declaration= false;
+	}
 	return move(class_);
 }
 

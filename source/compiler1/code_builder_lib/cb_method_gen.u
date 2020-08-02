@@ -135,6 +135,8 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		auto field_lock= field_ptr.lock_imut();
 		var ClassField & class_field= field_lock.get_ref();
 
+		if( class_field.index == ~0s ){ continue; } // May be in case of error
+
 		var NamesScopeVariable mut field_variable
 		{
 			.t= class_field.t,
@@ -299,6 +301,8 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		}
 		auto field_lock= field_ptr.lock_imut();
 		var ClassField & class_field= field_lock.get_ref();
+
+		if( class_field.index == ~0s ){ continue; } // May be in case of error
 
 		auto dst_op_name_nt= "dst." + member.key() + "\0";
 		auto src_op_name_nt= "src." + member.key() + "\0";
@@ -553,6 +557,8 @@ fn CodeBuilder::BuildMembersDestructors( this, FunctionContext &mut function_con
 
 		auto field_lock= field_ptr.lock_imut();
 		var ClassField& class_field= field_lock.get_ref();
+
+		if( class_field.index == ~0s ){ continue; } // May be in case of error
 
 		auto mut field_llvm_value= LLVMValueRef::Null;
 		auto op_name_nt= "." + member.key() + "\0";

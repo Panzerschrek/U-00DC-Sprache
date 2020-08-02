@@ -24,6 +24,7 @@ bool FilterTest( const std::string& test_name )
 	static const std::unordered_set<std::string> c_test_to_enable
 	{
 		"BracketExpressionAsTemplateSignatureParameter_Test0",
+		"ClassBodyDuplicationTest0",
 		"ClassmethodsManglingTest",
 		"ClassPrepass_Test0",
 		"ClassPrepass_Test1",
@@ -62,6 +63,7 @@ bool FilterTest( const std::string& test_name )
 		"NameNotFound_ForClassTemplateDefaultSignatureArguments_Test0",
 		"NamesCompressionTest",
 		"NamespacesManglingTest",
+		"Redefinition_ForClassDeclarations_Test0",
 		"TemplateInstantiationRequiredTest0",
 		"ValueIsNotTemplateTest0",
 	};
@@ -97,6 +99,7 @@ bool FilterTest( const std::string& test_name )
 		"BreakOperatorTest",
 		"BreakOutsideLoopTest",
 		"CallTest",
+		"ClassesDeclarationTest",
 		"ClassTemplateTest",
 		"ComparisonFloatOperatorsTest",
 		"ComparisonSignedOperatorsTest",
@@ -263,6 +266,7 @@ bool FilterTest( const std::string& test_name )
 		"UnderlayingTypeIsTooSmall_Test",
 		"UnreachableCodeTest",
 		"UnsupportedInitializerForReferenceTest0",
+		"UsingIncompleteTypeTest",
 		"UsingKeywordAsName0",
 		"UsingKeywordAsName1",
 		"UsingKeywordAsName2",

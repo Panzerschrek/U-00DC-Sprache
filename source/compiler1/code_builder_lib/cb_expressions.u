@@ -143,6 +143,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				auto field_lock= field_ptr.lock_imut();
 				auto& field= field_lock.get_ref();
 
+				if( field.index == ~0s ){ return ErrorValue(); } // May be in case of error
+
 				auto op_name_nt= "." + named_operand.name + "\0";
 
 				if( field.is_reference )
@@ -398,6 +400,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		{
 			auto field_lock= field_ptr.lock_imut();
 			auto& field= field_lock.get_ref();
+
+			if( field.index == ~0s ){ return ErrorValue(); } // May be in case of error
 
 			auto op_name_nt= "." + member_access_operator.member_name + "\0";
 			if( field.is_reference )
@@ -1161,6 +1165,13 @@ fn CodeBuilder::DoCallFunction(
 	if( total_args != function_type.args.size() )
 	{
 		REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, file_pos )
+		return ErrorValue();
+	}
+
+	// TODO - maybe forbid calling functions with incomplete type for returned reference?
+	if( !function_type.return_value_is_reference && !EnsureTypeComplete( function_type.return_type.get_ref() ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope, file_pos, function_type.return_type.get_ref() )
 		return ErrorValue();
 	}
 

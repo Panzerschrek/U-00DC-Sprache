@@ -93,7 +93,9 @@ U_TEST( UsingIncompleteTypeTest2 )
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UsingIncompleteType, 5u ) );
+	U_TEST_ASSERT(
+		HaveError( build_result.errors, CodeBuilderErrorCode::UsingIncompleteType, 3u ) ||
+		HaveError( build_result.errors, CodeBuilderErrorCode::UsingIncompleteType, 5u ) );
 }
 
 U_TEST( UsingIncompleteTypeTest3 )
@@ -146,7 +148,9 @@ U_TEST( UsingIncompleteTypeTest6 )
 
 	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UsingIncompleteType, 3u ) );
+	U_TEST_ASSERT(
+		HaveError( build_result.errors, CodeBuilderErrorCode::UsingIncompleteType, 3u ) ||
+		HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 3u ) );
 }
 
 U_TEST( UsingIncompleteTypeTest7 )

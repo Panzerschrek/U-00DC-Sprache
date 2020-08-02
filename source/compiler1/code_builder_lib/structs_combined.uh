@@ -78,9 +78,10 @@ struct FunctionType
 
 struct ClassType
 {
-	NamesScopePtr members; // TODO - maybe inherit "ClassType" from "NamesScope" ?
+	NamesScopeMutPtr members; // Do not change class members unless in "NamesScopeFill" methods!
 
-	ust::shared_ptr_final</ Synt::Class /> syntax_element;
+	ust::shared_ptr_final_nullable</ Synt::Class /> forward_declaration_syntax_element;
+	ust::shared_ptr_final_nullable</ Synt::Class /> syntax_element;
 
 	ust::vector</ust::string8/> fields_order;
 

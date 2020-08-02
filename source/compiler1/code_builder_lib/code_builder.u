@@ -560,9 +560,13 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 
 fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypePtr& class_type )
 {
-	if( class_type.lock_imut().get_ref().is_complete )
 	{
-		return;
+		auto lock= class_type.lock_imut();
+		auto& ref= lock.get_ref();
+		if( ref.is_complete || ref.syntax_element.empty() )
+		{
+			return;
+		}
 	}
 
 	auto mut global_function_context= CreateGlobalFunctionContext();
@@ -1067,6 +1071,12 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 	var VariablesFrameHolder args_variables_frame_hodler(function_context_value);
 	auto& mut function_context= args_variables_frame_hodler.GetFunctionContext();
 
+	// TODO - maybe forbid incomplete types even for references?
+	if( !function_type.return_value_is_reference && !EnsureTypeComplete( function_type.return_type.get_ref() ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope, func_variable.body_syntax_element.get_ref().file_pos, function_type.return_type.get_ref() )
+	}
+
 	{
 		auto mut args_names_scope_lock= args_names_scope_ptr.lock_mut();
 		auto &mut args_names_scope= args_names_scope_lock.get_ref();
@@ -1287,7 +1297,7 @@ fn CodeBuilder::EnsureTypeComplete( mut this, Type& t ) : bool
 		auto class_parent_scope= ust::to_non_nullable( class_type_ptr.lock_imut().get_ref().members.lock_imut().get_ref().GetParent() );
 
 		BuildClass( class_parent_scope, class_type_ptr );
-		return true;
+		return class_type_ptr.lock_imut().get_ref().is_complete;
 	}
 	if_var( &array_type : t.GetArrayType() )
 	{

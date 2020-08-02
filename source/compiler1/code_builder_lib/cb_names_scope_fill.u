@@ -450,12 +450,54 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 		return ust::shared_ptr_nullable_mut</ClassType/>();
 	}
 
-	var NamesScopeMutPtr class_members( NamesScope( class_name, names_scope_ptr ) );
-	var ClassType mut class_type
+	if_var( prev_value : names_scope_ptr.lock_imut().get_ref().GetThisScopeValue( class_name ) )
 	{
-		.members= class_members,
-		.syntax_element= class_,
-	};
+		auto class_type_ptr= prev_value.Get</ClassType/>();
+		if( !class_type_ptr.empty() )
+		{
+			{
+				auto mut lock= class_type_ptr.lock_mut();
+				var ClassType &mut class_type= lock.get_ref();
+
+				if( class_.get_ref().is_forward_declaration )
+				{
+					if( !class_type.forward_declaration_syntax_element.empty() )
+					{
+						REPORT_ERROR( Redefinition, names_scope_ptr, class_.get_ref().file_pos, class_name )
+					}
+					else
+					{
+						class_type.forward_declaration_syntax_element= class_;
+					}
+				}
+				else
+				{
+					if( !class_type.syntax_element.empty() )
+					{
+						REPORT_ERROR( ClassBodyDuplication, names_scope_ptr, class_.get_ref().file_pos )
+					}
+					else
+					{
+						class_type.syntax_element= class_;
+					}
+				}
+			}
+
+			auto class_members= class_type_ptr.lock_imut().get_ref().members;
+			NamesScopeFill( class_members, class_.get_ref().class_elements, ust::to_non_nullable(class_type_ptr) );
+			return ust::to_non_nullable(class_type_ptr);
+		}
+		else
+		{
+			REPORT_ERROR( Redefinition, names_scope_ptr, class_.get_ref().file_pos, class_name )
+			return ust::shared_ptr_nullable_mut</ClassType/>();
+		}
+	}
+
+	var NamesScopeMutPtr class_members( NamesScope( class_name, names_scope_ptr ) );
+	var ClassType mut class_type{ .members= class_members };
+
+	select( class_.get_ref().is_forward_declaration ? class_type.forward_declaration_syntax_element : class_type.syntax_element )= class_;
 
 	var NamesScopeValue mut names_scope_value( move(class_type) );
 	auto class_type_ptr= ust::to_non_nullable( names_scope_value.Get</ClassType/>() );
