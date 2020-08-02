@@ -326,7 +326,7 @@ fn Type::IsCopyConstructible( this ) : bool
 
 fn Type::CanBeConstexpr( this ) : bool
 {
-	if( !GetFundamentalType().empty() )
+	if( !GetFundamentalType().empty() || !GetEnumType().empty() )
 	{
 		return true;
 	}
