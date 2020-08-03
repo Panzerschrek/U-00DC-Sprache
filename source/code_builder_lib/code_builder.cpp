@@ -1237,6 +1237,9 @@ Type CodeBuilder::BuildFuncCode(
 	}
 	llvm_function->setDoesNotThrow(); // We do not support exceptions.
 
+	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
+		llvm_function->addFnAttr( llvm::Attribute::UWTable );
+
 	func_variable.have_body= true;
 
 	// Ensure completeness only for functions body.
@@ -2109,6 +2112,9 @@ void CodeBuilder::SetupGeneratedFunctionAttributes( llvm::Function& function )
 	function.setComdat( comdat );
 
 	function.setDoesNotThrow(); // We do not support exceptions.
+
+	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
+		function.addFnAttr( llvm::Attribute::UWTable );
 }
 
 CodeBuilder::InstructionsState CodeBuilder::SaveInstructionsState( FunctionContext& function_context )
