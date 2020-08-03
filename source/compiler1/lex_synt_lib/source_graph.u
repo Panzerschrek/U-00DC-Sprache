@@ -33,6 +33,13 @@ fn LoadSourceGraph_r(
 	auto file_content_opt= vfs.LoadFile( file_path_normalized );
 	if( file_content_opt.empty() )
 	{
+		var ust::string8 mut str;
+		str+= "Error, can not read file: \"";
+		str+= file_path_normalized;
+		str+= "\"\n\0";
+		unsafe{  U1_PrintStr( str.front() );  }
+
+		source_graph.have_errors= true;
 		return ~0s;
 	}
 
@@ -69,15 +76,20 @@ fn LoadSourceGraph_r(
 	}
 	source_graph.have_errors|= !synt_result.error_messages.empty();
 
+	auto imports= synt_result.imports_list;
+
 	var SourceGraph::Node mut node
 	{
 		.file_path_normalized= file_path_normalized,
 		.lexical_error_messages= take(lex_result.error_messages),
+		.synt_result= move(synt_result),
 	};
+
+	source_graph.nodes.push_back( SourceGraph::Node() ); // Reserve place for empty node
 
 	// Recursively load imports.
 	// TODO - check for dependency loops.
-	foreach( &import_ : synt_result.imports_list )
+	foreach( &import_ : imports )
 	{
 		auto child= LoadSourceGraph_r( vfs, import_, file_path_normalized, source_graph );
 		if( child != ~0s )
@@ -86,9 +98,7 @@ fn LoadSourceGraph_r(
 		}
 	}
 
-	node.synt_result= move(synt_result);
-
-	source_graph.nodes.push_back( move(node) );
+	source_graph.nodes[node_index]= move(node);
 	return node_index;
 }
 

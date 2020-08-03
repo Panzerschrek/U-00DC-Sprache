@@ -223,14 +223,15 @@ bool FilterTest( const std::string& test_name )
 
 std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 {
+	const U1_StringView text_view{ text, std::strlen(text) };
+
 	llvm::LLVMContext& llvm_context= *g_llvm_context;
 
 	llvm::DataLayout data_layout( GetTestsDataLayout() );
 
 	auto ptr=
 		U1_BuildProgram(
-			text,
-			std::strlen(text),
+			text_view,
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout) );
 	U_TEST_ASSERT( ptr != nullptr );
@@ -240,6 +241,8 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 
 ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
 {
+	const U1_StringView text_view{ text, std::strlen(text) };
+
 	llvm::LLVMContext& llvm_context= *g_llvm_context;
 
 	llvm::DataLayout data_layout( GetTestsDataLayout() );
@@ -263,8 +266,7 @@ ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
 
 	const bool ok=
 		U1_BuildProgramWithErrors(
-			text,
-			std::strlen(text),
+			text_view,
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout),
 			error_handler,
@@ -276,9 +278,33 @@ ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
 
 std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const std::string& root_file_path )
 {
-	(void)sources;
-	(void)root_file_path;
-	DISABLE_TEST;
+	std::vector<U1_SourceFile> source_files;
+	source_files.reserve(sources.size());
+	for (const SourceEntry& entry : sources)
+	{
+		U1_SourceFile f{};
+		f.file_path.data= entry.file_path.data();
+		f.file_path.size= entry.file_path.size();
+		f.file_content.data= entry.text;
+		f.file_content.size= std::strlen(entry.text);
+		source_files.push_back(f);
+	}
+
+	const U1_StringView root_file_path_view{ root_file_path.data(), root_file_path.size() };
+
+	llvm::LLVMContext& llvm_context= *g_llvm_context;
+
+	llvm::DataLayout data_layout( GetTestsDataLayout() );
+
+	const auto ptr=
+		U1_BuildMultisourceProgram(
+			source_files.data(), source_files.size(),
+			root_file_path_view,
+			llvm::wrap(&llvm_context),
+			llvm::wrap(&data_layout) );
+	U_TEST_ASSERT( ptr != nullptr );
+
+	return std::unique_ptr<llvm::Module>( reinterpret_cast<llvm::Module*>(ptr) );
 }
 
 ICodeBuilder::BuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry> sources, const std::string& root_file_path )

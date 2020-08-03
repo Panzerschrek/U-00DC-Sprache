@@ -2,22 +2,39 @@ import "../code_builder_lib/llvm.uh"
 
 // If contents of this file changed, funcs_c.hpp must be changed too!
 
-fn nomangle U1_BuildProgram(
-	char8& program_text_start,
-	size_type program_text_size,
-	LLVMContextRef llvm_context,
-	LLVMTargetDataRef data_layout ) unsafe : LLVMModuleRef;
+struct U1_StringView ordered
+{
+	char8& data;
+	size_type size;
+}
+
+struct U1_SourceFile ordered
+{
+	U1_StringView file_path;
+	U1_StringView file_content;
+}
 
 type ErrorHanglerFunc= fn( void &mut data, u32 line, u32 column, u32 error_code, char8& error_text, size_type error_text_length ) unsafe;
 
+fn nomangle U1_BuildProgram(
+	U1_StringView& program_text,
+	LLVMContextRef llvm_context,
+	LLVMTargetDataRef data_layout ) unsafe : LLVMModuleRef;
+
 // Returns false in case of lexical/syntax errors.
 fn nomangle U1_BuildProgramWithErrors(
-	char8& program_text_start,
-	size_type program_text_size,
+	U1_StringView& program_text,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
 	ErrorHanglerFunc error_handler_func,
 	void &mut data ) unsafe : bool;
+
+fn nomangle U1_BuildMultisourceProgram(
+	U1_SourceFile& source_files,
+	size_type source_file_count,
+	U1_StringView& root_file_path,
+	LLVMContextRef llvm_context,
+	LLVMTargetDataRef data_layout ) unsafe : LLVMModuleRef;
 
 enum CharPtr : size_type { Null }
 

@@ -25,14 +25,15 @@ llvm::ManagedStatic<llvm::LLVMContext> g_llvm_context;
 
 std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 {
+	const U1_StringView text_view{ text, std::strlen(text) };
+
 	llvm::LLVMContext& llvm_context= *g_llvm_context;
 
 	llvm::DataLayout data_layout( GetTestsDataLayout() );
 
 	auto ptr=
 		U1_BuildProgram(
-			text,
-			std::strlen(text),
+			text_view,
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout) );
 
@@ -273,6 +274,7 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 	if( !PyArg_ParseTuple( args, "s", &program_text ) )
 		return nullptr;
 
+	const U1_StringView text_view{ program_text, std::strlen(program_text) };
 	llvm::LLVMContext& llvm_context= *g_llvm_context;
 	llvm::DataLayout data_layout( GetTestsDataLayout() );
 
@@ -310,8 +312,7 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 
 	const bool ok=
 		U1_BuildProgramWithErrors(
-			program_text,
-			std::strlen(program_text),
+			text_view,
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout),
 			error_handler,
