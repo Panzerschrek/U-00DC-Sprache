@@ -1,5 +1,4 @@
-import "../lex_synt_lib/lexical_analyzer.uh"
-import "../lex_synt_lib/syntax_analyzer.uh"
+import "../lex_synt_lib/source_graph.uh"
 import "../code_builder_lib/code_builder.uh"
 import "print.uh"
 import "funcs_u.uh"
@@ -17,39 +16,16 @@ fn nomangle U1_BuildProgram(
 
 		safe
 		{
-			auto lex_res= U::LexicalAnalysis( program_text );
-			if( !lex_res.error_messages.empty() )
-			{
-				foreach( &err : lex_res.error_messages )
-				{
-					unsafe
-					{
-						U1_PrintStr( (err + "\n\0").front() );
-						U1_PrintEndl();
-					}
-				}
-				return LLVMModuleRef::Null;
-			}
+			var U::TestVfs mut test_vfs( program_text );
+			auto source_graph= U::LoadSourceGraph( test_vfs, "_" );
 
-			auto synt_res= U::Synt::SyntaxAnalysis( lex_res.lexems );
-			if( !synt_res.error_messages.empty() )
+			if( source_graph.have_errors || source_graph.nodes.empty() )
 			{
-				foreach( &err : synt_res.error_messages )
-				{
-					unsafe
-					{
-						U1_PrintInt( i64(err.file_pos.GetLine()) );
-						U1_PrintStr( ":\0"[0] );
-						U1_PrintInt( i64(err.file_pos.GetColumn()) );
-						U1_PrintStr( (": " + err.text + "\n\0").front() );
-						U1_PrintEndl();
-					}
-				}
 				return LLVMModuleRef::Null;
 			}
 
 			var U::CodeBuilder mut code_builder( llvm_context, data_layout );
-			auto code_builder_res= code_builder.BuildProgram( synt_res );
+			auto code_builder_res= code_builder.BuildProgram( source_graph.nodes.front().synt_result );
 
 			foreach( & err : code_builder_res.errors )
 			{
@@ -87,39 +63,16 @@ fn nomangle U1_BuildProgramWithErrors(
 
 		safe
 		{
-			auto lex_res= U::LexicalAnalysis( program_text );
-			if( !lex_res.error_messages.empty() )
-			{
-				foreach( &err : lex_res.error_messages )
-				{
-					unsafe
-					{
-						U1_PrintStr( (err + "\n\0").front() );
-						U1_PrintEndl();
-					}
-				}
-				return false;
-			}
+			var U::TestVfs mut test_vfs( program_text );
+			auto source_graph= U::LoadSourceGraph( test_vfs, "_" );
 
-			auto synt_res= U::Synt::SyntaxAnalysis( lex_res.lexems );
-			if( !synt_res.error_messages.empty() )
+			if( source_graph.have_errors || source_graph.nodes.empty() )
 			{
-				foreach( &err : synt_res.error_messages )
-				{
-					unsafe
-					{
-						U1_PrintInt( i64(err.file_pos.GetLine()) );
-						U1_PrintStr( ":\0"[0] );
-						U1_PrintInt( i64(err.file_pos.GetColumn()) );
-						U1_PrintStr( (": " + err.text + "\n\0").front() );
-						U1_PrintEndl();
-					}
-				}
 				return false;
 			}
 
 			var U::CodeBuilder mut code_builder( llvm_context, data_layout );
-			auto code_builder_res= code_builder.BuildProgram( synt_res );
+			auto code_builder_res= code_builder.BuildProgram( source_graph.nodes.front().synt_result );
 
 			unsafe{  LLVMDisposeModule( code_builder_res.llvm_module );  }
 
@@ -165,6 +118,31 @@ fn StringToArrayView( char8 &'x string_start, size_type string_size ) unsafe : u
 			ptr,
 			ptr + string_size );
 	}
+}
+
+class TestVfs final : IVfs
+{
+public:
+	fn constructor( ust::string8 mut file_content )
+		( file_content_=move(file_content) )
+	{}
+
+public:
+	fn virtual override NormalizeFilePath(
+		mut this,
+		ust::string8& file_path,
+		ust::string8& parent_file_path_normalized ) : ust::string8
+	{
+		return file_path;
+	}
+
+	fn virtual override LoadFile( mut this, ust::string8& path ) : ust::optional</ust::string8/>
+	{
+		return file_content_;
+	}
+
+private:
+	ust::string8 file_content_;
 }
 
 } // namespace U
