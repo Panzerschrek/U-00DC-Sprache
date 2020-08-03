@@ -54,7 +54,7 @@ fn CodeBuilder::constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data
 	}
 }
 
-fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : BuildResult
+fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResult
 {
 	unsafe // Create module.
 	{
@@ -89,7 +89,35 @@ fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : Buil
 
 	var ErrorsContainerPtr errors_container( ErrorsContainer() );
 
-	var NamesScopeMutPtr global_names_scope( NamesScope( "", ust::shared_ptr_nullable_imut</NamesScope/>() ) );
+	BuildSourceGraphNode( errors_container, source_graph, 0s );
+
+	unsafe{  LLVMDeleteFunction( global_llvm_function_ );  }
+	global_llvm_function_= LLVMValueRef::Null;
+
+	{ // Clear classes internals to break strong shared pointers loop and avoid memory leaks.
+		var NamesScopeMutPtr dummy_class_names_scope( NamesScope( "", ust::shared_ptr_nullable_imut</NamesScope/>() ) );
+		foreach( &class_type : class_table_ )
+		{
+			auto mut lock= class_type.lock_mut();
+			lock.get_ref().members= dummy_class_names_scope;
+		}
+	}
+	class_table_.clear();
+
+	var BuildResult mut res
+	{
+		.llvm_module= module_,
+		.errors= errors_container.lock_imut().get_ref(),
+	 };
+
+	NormalizeErrors( res.errors );
+
+	return move(res);
+}
+
+fn CodeBuilder::BuildSourceGraphNode( mut this, ErrorsContainerPtr& errors_container, SourceGraph& source_graph, size_type node_index ) : NamesScopePtr
+{
+	var NamesScopeMutPtr mut global_names_scope( NamesScope( "", ust::shared_ptr_nullable_imut</NamesScope/>() ) );
 
 	{
 		auto mut l= global_names_scope.lock_mut();
@@ -99,8 +127,28 @@ fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : Buil
 		FillGlobalNamesScope( n );
 	}
 
-	NamesScopeFill( global_names_scope, ast.program_elements );
-	NamesScopeFillOutOfLineElements( global_names_scope, ast.program_elements );
+	var SourceGraph::Node& source_graph_node= source_graph.nodes[node_index];
+
+	foreach( &child_node_index : source_graph_node.children )
+	{
+		auto child_namespace_ptr= BuildSourceGraphNode( errors_container, source_graph, child_node_index );
+
+		auto src_namespace_lock= child_namespace_ptr.lock_imut();
+		auto& src_namespace= src_namespace_lock.get_ref();
+
+		auto mut dst_namespace_lock= global_names_scope.lock_mut();
+		auto &mut dst_namespace= dst_namespace_lock.get_ref();
+
+		// TODO - merge namespaces properly.
+		foreach( &el : src_namespace.GetInternalContainer() )
+		{
+			dst_namespace.AddName( el.key(), el.value() );
+		}
+	}
+
+	auto& program_elements= source_graph_node.synt_result.program_elements;
+	NamesScopeFill( global_names_scope, program_elements );
+	NamesScopeFillOutOfLineElements( global_names_scope, program_elements );
 	NamesScopeBuild( global_names_scope );
 
 	// Finalize building template classes.
@@ -132,29 +180,7 @@ fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : Buil
 			}
 		}
 	}
-
-	unsafe{  LLVMDeleteFunction( global_llvm_function_ );  }
-	global_llvm_function_= LLVMValueRef::Null;
-
-	{ // Clear classes internals to break strong shared pointers loop and avoid memory leaks.
-		var NamesScopeMutPtr dummy_class_names_scope( NamesScope( "", ust::shared_ptr_nullable_imut</NamesScope/>() ) );
-		foreach( &class_type : class_table_ )
-		{
-			auto mut lock= class_type.lock_mut();
-			lock.get_ref().members= dummy_class_names_scope;
-		}
-	}
-	class_table_.clear();
-
-	var BuildResult mut res
-	{
-		.llvm_module= module_,
-		.errors= errors_container.lock_imut().get_ref(),
-	 };
-
-	NormalizeErrors( res.errors );
-
-	return move(res);
+	return move(global_names_scope);
 }
 
 fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, NamesScopeValue& names_scope_value ) : Value

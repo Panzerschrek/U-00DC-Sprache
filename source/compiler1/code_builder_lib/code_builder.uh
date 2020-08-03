@@ -1,4 +1,4 @@
-import "../lex_synt_lib/syntax_analyzer.uh"
+import "../lex_synt_lib/source_graph.uh"
 import "/code_builder_errors.uh"
 import "function_context.uh"
 import "structs_combined.uh"
@@ -59,9 +59,11 @@ public:
 		LLVMModuleRef llvm_module;
 	}
 
-	fn BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : BuildResult;
+	fn BuildProgram( mut this, SourceGraph& source_graph ) : BuildResult;
 
 private:
+	fn BuildSourceGraphNode( mut this, ErrorsContainerPtr& errors_container, SourceGraph& source_graph, size_type node_index ) : NamesScopePtr;
+
 	fn NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, NamesScopeValue& names_scope_value ) : Value;
 	fn ResolveValue( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& complex_name ) : Value;
 	fn ResolveValue(

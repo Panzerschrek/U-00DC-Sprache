@@ -24,7 +24,7 @@ fn nomangle U1_BuildProgram(
 			}
 
 			var U::CodeBuilder mut code_builder( llvm_context, data_layout );
-			auto code_builder_res= code_builder.BuildProgram( source_graph.nodes.front().synt_result );
+			auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 			foreach( & err : code_builder_res.errors )
 			{
@@ -70,7 +70,7 @@ fn nomangle U1_BuildProgramWithErrors(
 			}
 
 			var U::CodeBuilder mut code_builder( llvm_context, data_layout );
-			auto code_builder_res= code_builder.BuildProgram( source_graph.nodes.front().synt_result );
+			auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 			unsafe{  LLVMDisposeModule( code_builder_res.llvm_module );  }
 
@@ -138,7 +138,7 @@ fn nomangle U1_BuildMultisourceProgram(
 	}
 
 	var U::CodeBuilder mut code_builder( llvm_context, data_layout );
-	auto code_builder_res= code_builder.BuildProgram( source_graph.nodes.front().synt_result );
+	auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 	foreach( & err : code_builder_res.errors )
 	{

@@ -57,6 +57,7 @@ bool FilterTest( const std::string& test_name )
 		"FundamentalTypesManglingTest",
 		"GlobalVariablesManglingTest0",
 		//"InvalidTypeOfTemplateVariableArgumentTest0",
+		"ImportsTest0",
 		"InvalidValueAsTemplateArgumentTest0",
 		"MandatoryTemplateSignatureArgumentAfterOptionalArgument_Test0",
 		"NameNotFound_ForClassTemplateArguments_Test0",
