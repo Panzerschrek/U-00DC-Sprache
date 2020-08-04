@@ -137,6 +137,19 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	{
 		for( const auto& node : source_graph.nodes_storage )
 			debug_info_.source_file_entries.push_back( llvm::DIFile::get( llvm_context_, node.file_path, "" ) );
+
+		const uint32_t c_dwarf_language_id= 0x8000 /* first user-defined language code */ + 0xDC /* code of "Ü" letter */;
+
+		debug_info_.builder= std::make_unique<llvm::DIBuilder>( *module_ );
+
+		debug_info_.compile_unit=
+			debug_info_.builder->createCompileUnit(
+				c_dwarf_language_id,
+				debug_info_.source_file_entries[0],
+				"U+00DC-Sprache compiler " + getFullVersion(),
+				false, // optimized
+				"",
+				0 /* runtime version */ );
 	}
 
 	// Build graph.
@@ -149,6 +162,12 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 	{
 		if( !typeinfo_entry.second.type.GetLLVMType()->isSized() )
 			typeinfo_entry.second.type.GetClassType()->llvm_type->setBody( llvm::ArrayRef<llvm::Type*>() );
+	}
+
+	// Finish with debug info.
+	if( build_debug_info_ )
+	{
+		debug_info_.builder->finalize(); // We must finalize it.
 	}
 
 	// Clear internal structures.
@@ -204,22 +223,6 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 		compiled_sources_cache_.emplace( child_node_inex, std::move( child_result ) );
 	}
 
-	if( build_debug_info_ )
-	{
-		const uint32_t c_dwarf_language_id= 0x8000 /* first user-defined language code */ + 0xDC /* code of "Ü" letter */;
-
-		debug_info_.builder= std::make_unique<llvm::DIBuilder>( *module_ );
-
-		debug_info_.compile_unit=
-			debug_info_.builder->createCompileUnit(
-				c_dwarf_language_id,
-				debug_info_.source_file_entries[node_index],
-				"U+00DC-Sprache compiler " + getFullVersion(),
-				false, // optimized
-				"",
-				0 /* runtime version */ );
-	}
-
 	SetCurrentClassTable( *result.class_table );
 
 	// Do work for this node.
@@ -254,17 +257,6 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 				}
 			}
 		};
-	}
-
-	// Finish with debug info.
-	if( build_debug_info_ )
-	{
-		debug_info_.builder->finalize(); // We must finalize it.
-
-		// Clear caches.
-		debug_info_.classes_di_cache.clear();
-		debug_info_.enums_di_cache.clear();
-		debug_info_.builder= nullptr;
 	}
 
 	return result;
@@ -1245,6 +1237,9 @@ Type CodeBuilder::BuildFuncCode(
 	}
 	llvm_function->setDoesNotThrow(); // We do not support exceptions.
 
+	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
+		llvm_function->addFnAttr( llvm::Attribute::UWTable );
+
 	func_variable.have_body= true;
 
 	// Ensure completeness only for functions body.
@@ -2117,6 +2112,9 @@ void CodeBuilder::SetupGeneratedFunctionAttributes( llvm::Function& function )
 	function.setComdat( comdat );
 
 	function.setDoesNotThrow(); // We do not support exceptions.
+
+	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
+		function.addFnAttr( llvm::Attribute::UWTable );
 }
 
 CodeBuilder::InstructionsState CodeBuilder::SaveInstructionsState( FunctionContext& function_context )
