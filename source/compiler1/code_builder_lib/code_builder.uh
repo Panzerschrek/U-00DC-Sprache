@@ -75,6 +75,26 @@ private:
 
 	fn FillGlobalNamesScope( this, NamesScope &mut names_scope );
 
+	fn NamesScopeMerge( NamesScopeMutPtr& dst_ptr, NamesScope& src );
+
+	fn DeepCopyNamesScopeValue( NamesScopeValue& value, NamesScopePtr& target_names_scope ) : NamesScopeValue;
+
+	fn DeepCopyNamesScopeValue( NamesScopeMutPtr& namespace_, NamesScopePtr& target_names_scope  ) : NamesScopeValue;
+	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</Type/>& t ) : NamesScopeValue;
+	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</NamesScopeVariable/>& variable ) : NamesScopeValue;
+	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</NamesScopeFunctionsSet/>& functions_set ) : NamesScopeValue;
+	fn DeepCopyNamesScopeValue( ClassTypePtr& class_type ) : NamesScopeValue;
+	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</ClassField/>& class_field ) : NamesScopeValue;
+	fn DeepCopyNamesScopeValue( EnumTypePtr& enum_type ) : NamesScopeValue;
+	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</TypeAlias/>& type_alias ) : NamesScopeValue;
+	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set ) : NamesScopeValue;
+	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</TemplateArg/>& template_arg ) : NamesScopeValue;
+	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</GlobalVariable/>& global_variable ) : NamesScopeValue;
+	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</GlobalAutoVariable/>& global_auto_variable ) : NamesScopeValue;
+	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</GlobalStaticAssertsSet/>& global_static_asserts ) : NamesScopeValue;
+
+	fn NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& src, ust::string8& name, NamesScopePtr& target_names_scope );
+
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, Synt::NamespaceElements& namespace_elements );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, Synt::ClassElements& class_elements, ClassTypePtr& class_type );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function );

@@ -133,17 +133,7 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, ErrorsContainerPtr& errors_conta
 	{
 		auto child_namespace_ptr= BuildSourceGraphNode( errors_container, source_graph, child_node_index );
 
-		auto src_namespace_lock= child_namespace_ptr.lock_imut();
-		auto& src_namespace= src_namespace_lock.get_ref();
-
-		auto mut dst_namespace_lock= global_names_scope.lock_mut();
-		auto &mut dst_namespace= dst_namespace_lock.get_ref();
-
-		// TODO - merge namespaces properly.
-		foreach( &el : src_namespace.GetInternalContainer() )
-		{
-			dst_namespace.AddName( el.key(), el.value() );
-		}
+		NamesScopeMerge( global_names_scope, child_namespace_ptr.lock_imut().get_ref() );
 	}
 
 	auto& program_elements= source_graph_node.synt_result.program_elements;

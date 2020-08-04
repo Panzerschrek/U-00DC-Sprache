@@ -1,0 +1,199 @@
+import "../lex_synt_lib/keywords.uh"
+import "error_reporting.uh"
+import "code_builder.uh"
+
+
+namespace U
+{
+
+fn CodeBuilder::NamesScopeMerge( NamesScopeMutPtr& dst_ptr, NamesScope& src )
+{
+	foreach( &el : src.GetInternalContainer() )
+	{
+		{
+			auto dst_lock= dst_ptr.lock_imut();
+			auto& dst= dst_lock.get_ref();
+			if_var ( &dst_value : dst.GetThisScopeValue( el.key() ) )
+			{
+				NamesScopeMergeValues( dst_value, el.value(), el.key(), dst_ptr );
+				continue;
+			}
+		}
+		{
+			auto mut dst_lock= dst_ptr.lock_mut();
+			auto &mut dst= dst_lock.get_ref();
+			dst.AddName( el.key(), DeepCopyNamesScopeValue( el.value(), dst_ptr ) );
+		}
+	}
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( NamesScopeValue& value, NamesScopePtr& target_names_scope ) : NamesScopeValue
+{
+	variant_visit( &el : value.something_ )
+	{
+		static_if( ust::is_same_type</ typeof(el), NamesScopeMutPtr/>() )
+		{
+			return DeepCopyNamesScopeValue( el, target_names_scope );
+		}
+		else
+		{
+			return DeepCopyNamesScopeValue( el );
+		}
+	}
+	halt;
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( NamesScopeMutPtr& namespace_, NamesScopePtr& target_names_scope ) : NamesScopeValue
+{
+	auto src_lock= namespace_.lock_imut();
+	auto& src= src_lock.get_ref();
+
+	var NamesScopeMutPtr mut copy_ptr( NamesScope( src.GetThisNamespaceName(), target_names_scope ) );
+
+	NamesScopeMerge( copy_ptr, src );
+
+	return move(copy_ptr);
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</Type/>& t ) : NamesScopeValue
+{
+	// We have only global types as "type" in global names scope. It is unchanged, so, we can just take copy of shared pointer.
+	return t;
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</NamesScopeVariable/>& variable ) : NamesScopeValue
+{
+	// Global namespaces should not contain "NamesScopeVariable", only "GlobalVariable" or "GlobalAutoVariable"
+	halt;
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</NamesScopeFunctionsSet/>& functions_set ) : NamesScopeValue
+{
+	// Functions set may be extended, so, copy it.
+	return NamesScopeValue( functions_set.lock_imut().get_ref() );
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( ClassTypePtr& class_type ) : NamesScopeValue
+{
+	// Take shared pointer to same class object. For class modification prevention different mechanism will be used.
+	return class_type;
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</ClassField/>& class_field ) : NamesScopeValue
+{
+	// If cass namespace cotains class field, class must be complete in it's compilation unit and will not be modified later.
+	// So, take copy of shared pointer.
+	return class_field;
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( EnumTypePtr& enum_type ) : NamesScopeValue
+{
+	// Enum type is uncahged once it prepared, so, we can just take copy of shared pointer.
+	// TODO - what about enum internal namespace?
+	return enum_type;
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</TypeAlias/>& type_alias ) : NamesScopeValue
+{
+	// Type alias is uncahged once it prepared, so, we can just take copy of shared pointer.
+	return type_alias;
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set ) : NamesScopeValue
+{
+	// Type templates set may be extended, so, take copy of value.
+	return NamesScopeValue( type_templates_set.lock_imut().get_ref() );
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</TemplateArg/>& template_arg ) : NamesScopeValue
+{
+	// Only template args namespaces may contain template args. We should not process them here.
+	halt;
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</GlobalVariable/>& global_variable ) : NamesScopeValue
+{
+	// Global variable is uncahged once it prepared, so, we can just take copy of shared pointer.
+	return global_variable;
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</GlobalAutoVariable/>& global_auto_variable ) : NamesScopeValue
+{
+	// Global auto variable is uncahged once it prepared, so, we can just take copy of shared pointer.
+	return global_auto_variable;
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</GlobalStaticAssertsSet/>& global_static_asserts ) : NamesScopeValue
+{
+	// Just ignore imported static asserts and create value for new static asserts.
+	return GlobalStaticAssertsSet();
+}
+
+fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& src, ust::string8& name, NamesScopePtr& target_names_scope )
+{
+	if( dst.something_.index() != src.something_.index() )
+	{
+		REPORT_ERROR( Redefinition, target_names_scope, FilePos() /* TODO - file_pos */, name )
+		return;
+	}
+
+	{ // Merge namespaces.
+		auto dst_namespace= dst.Get</NamesScope/>();
+		auto src_namespace= src.Get</NamesScope/>();
+		if( !dst_namespace.empty() )
+		{
+			NamesScopeMerge( ust::to_non_nullable(dst_namespace), src_namespace.lock_imut().get_ref() );
+			return;
+		}
+	}
+	{ // Check types.
+		auto dst_type_ptr= dst.Get</Type/>();
+		auto src_type_ptr= src.Get</Type/>();
+		if( !dst_type_ptr.empty() )
+		{
+			if( dst_type_ptr.lock_imut().get_ref() != src_type_ptr.lock_imut().get_ref() )
+			{
+				REPORT_ERROR( Redefinition, target_names_scope, FilePos() /* TODO - file_pos */, name )
+				return;
+			}
+			return;
+		}
+	}
+	{ // Merge type template sets.
+		auto dst_type_templates_set_ptr= dst.Get</TypeTemplatesSet/>();
+		auto src_type_templates_set_ptr= src.Get</TypeTemplatesSet/>();
+		if( !dst_type_templates_set_ptr.empty() )
+		{
+			auto src_lock= src_type_templates_set_ptr.lock_imut();
+			auto& src= src_lock.get_ref();
+
+			auto mut dst_lock= dst_type_templates_set_ptr.lock_mut();
+			auto &mut dst= dst_lock.get_ref();
+
+			foreach( &type_template : src.type_templates )
+			{
+				auto mut same_found= false;
+				foreach( &dst_type_template : dst.type_templates )
+				{
+					if( type_template == dst_type_template )
+					{
+						same_found= true;
+						break;
+					}
+				}
+				if( !same_found )
+				{
+					dst.type_templates.push_back( type_template );
+				}
+			}
+
+			return;
+		}
+	}
+	// TODO - merge function sets.
+
+	// Can not merge things ot this kind.
+	REPORT_ERROR( Redefinition, target_names_scope, FilePos() /* TODO - file_pos */, name )
+}
+
+} // namespace U
