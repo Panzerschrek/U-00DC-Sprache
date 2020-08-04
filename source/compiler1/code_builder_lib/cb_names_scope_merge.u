@@ -172,6 +172,11 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 
 			foreach( &function : src.functions_set.functions )
 			{
+				auto func_file_pos=
+					select( function.body_syntax_element.empty()
+						? function.prototype_syntax_element.get_ref().file_pos
+						: function.body_syntax_element.get_ref().file_pos );
+
 				if_var( &mut prev_function : GetFunctionWithSameType( dst.functions_set, function.t ) )
 				{
 					if( function.prototype_syntax_element == prev_function.prototype_syntax_element )
@@ -192,18 +197,18 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 						else
 						{
 							// Non-empty different bodies.
-							REPORT_ERROR( FunctionBodyDuplication, target_names_scope, FilePos() /* TODO - file_pos */, name )
+							REPORT_ERROR( FunctionBodyDuplication, target_names_scope, func_file_pos, name )
 						}
 					}
 					else
 					{
-						REPORT_ERROR( FunctionPrototypeDuplication,target_names_scope, FilePos() /* TODO - file_pos */, name )
+						REPORT_ERROR( FunctionPrototypeDuplication, target_names_scope, func_file_pos, name )
 					}
 
 					continue;
 				}
 
-				ApplyOverloadedFunction( dst.functions_set, function, target_names_scope, FilePos() /* TODO - file_pos */ );
+				ApplyOverloadedFunction( dst.functions_set, function, target_names_scope, func_file_pos );
 			}
 
 			return;

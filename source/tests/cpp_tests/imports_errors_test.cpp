@@ -331,6 +331,39 @@ U_TEST( FunctionBodyDuplication_ForImports_Test0 )
 	U_TEST_ASSERT( result.errors[0u].file_pos.GetLine() == 3u );
 }
 
+U_TEST( CouldNotOverloadFunction_ForImports_Test0 )
+{
+	// Function overloading fails during imports merge.
+	static const char c_program_text_a[]=
+	R"(
+		fn Foo( i32  mut x );
+	)";
+
+	static const char c_program_text_b[]=
+	R"(
+		fn Foo( i32 imut x );
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+		import "b"
+	)";
+
+	ICodeBuilder::BuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "a", c_program_text_a },
+				{ "b", c_program_text_b },
+				{ "root", c_program_text_root }
+			},
+			"root" );
+
+	U_TEST_ASSERT( !result.errors.empty() );
+	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::CouldNotOverloadFunction );
+	U_TEST_ASSERT( result.errors[0u].file_pos.GetLine() == 2u );
+}
+
 U_TEST( ClassPrototypeDuplication_ForImports_Test0 )
 {
 	// Class prototype defined in different files.

@@ -29,6 +29,7 @@ bool FilterTest( const std::string& test_name )
 		"ClassPrepass_Test0",
 		"ClassPrepass_Test1",
 		"ClassPrepass_Test2",
+		"CouldNotOverloadFunction_ForImports_Test0",
 		"DestructorMustReturnVoidTest0",
 		"DestructorOutsideClassTest0",
 		"DestructorsTest0",
