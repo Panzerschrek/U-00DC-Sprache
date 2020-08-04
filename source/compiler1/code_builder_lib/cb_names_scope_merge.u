@@ -172,6 +172,37 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 
 			foreach( &function : src.functions_set.functions )
 			{
+				if_var( &mut prev_function : GetFunctionWithSameType( dst.functions_set, function.t ) )
+				{
+					if( function.prototype_syntax_element == prev_function.prototype_syntax_element )
+					{
+						if( function.body_syntax_element == prev_function.body_syntax_element )
+						{
+							// Ok - body is same or empty.
+						}
+						else if( function.body_syntax_element.empty() && !prev_function.body_syntax_element.empty() )
+						{
+							// Ok - prev function have body and new function have no body.
+						}
+						else if( !function.body_syntax_element.empty() && prev_function.body_syntax_element.empty() )
+						{
+							// Ok - set body.
+							prev_function.body_syntax_element= function.body_syntax_element;
+						}
+						else
+						{
+							// Non-empty different bodies.
+							REPORT_ERROR( FunctionBodyDuplication, target_names_scope, FilePos() /* TODO - file_pos */, name )
+						}
+					}
+					else
+					{
+						REPORT_ERROR( FunctionPrototypeDuplication,target_names_scope, FilePos() /* TODO - file_pos */, name )
+					}
+
+					continue;
+				}
+
 				ApplyOverloadedFunction( dst.functions_set, function, target_names_scope, FilePos() /* TODO - file_pos */ );
 			}
 
