@@ -42,6 +42,15 @@ LLVMModuleRef U1_BuildMultisourceProgram(
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout );
 
+bool U1_BuildMultisourceProgramWithErrors(
+	const U1_SourceFile* source_files,
+	size_t source_file_count,
+	const U1_StringView& root_file_path,
+	LLVMContextRef llvm_context,
+	LLVMTargetDataRef data_layout,
+	ErrorHanglerFunc error_handler_func,
+	void* data );
+
 // Returns static string for error code.
 void U1_CodeBuilderCodeToString(
 	uint32_t error_code,

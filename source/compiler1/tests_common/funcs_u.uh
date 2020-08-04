@@ -36,6 +36,15 @@ fn nomangle U1_BuildMultisourceProgram(
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout ) unsafe : LLVMModuleRef;
 
+fn nomangle U1_BuildMultisourceProgramWithErrors(
+	U1_SourceFile& source_files,
+	size_type source_file_count,
+	U1_StringView& root_file_path,
+	LLVMContextRef llvm_context,
+	LLVMTargetDataRef data_layout,
+	ErrorHanglerFunc error_handler_func,
+	void &mut data ) unsafe : bool;
+
 enum CharPtr : size_type { Null }
 
 fn nomangle U1_CodeBuilderCodeToString(
