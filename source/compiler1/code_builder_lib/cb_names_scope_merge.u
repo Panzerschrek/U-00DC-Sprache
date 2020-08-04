@@ -159,6 +159,61 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 			return;
 		}
 	}
+	{ // Functions sets.
+		auto dst_functions_set_ptr= dst.Get</NamesScopeFunctionsSet/>();
+		auto src_functions_set_ptr= src.Get</NamesScopeFunctionsSet/>();
+		if( !dst_functions_set_ptr.empty() )
+		{
+			auto mut dst_lock= dst_functions_set_ptr.lock_mut();
+			auto &mut dst= dst_lock.get_ref();
+
+			auto mut src_lock= src_functions_set_ptr.lock_mut();
+			auto& src= src_lock.get_ref();
+
+			foreach( &function : src.functions_set.functions )
+			{
+				ApplyOverloadedFunction( dst.functions_set, function, target_names_scope, FilePos() /* TODO - file_pos */ );
+			}
+
+			return;
+		}
+	}
+	{ // Class type.
+		auto dst_class_type_ptr= dst.Get</ClassType/>();
+		auto src_class_type_ptr= src.Get</ClassType/>();
+		if( !dst_class_type_ptr.empty() )
+		{
+			if( dst_class_type_ptr != src_class_type_ptr )
+			{
+				REPORT_ERROR( Redefinition, target_names_scope, FilePos() /* TODO - file_pos */, name )
+			}
+			return;
+		}
+	}
+	{ // Enum type.
+		auto dst_enum_type_ptr= dst.Get</Enum/>();
+		auto src_enum_type_ptr= src.Get</Enum/>();
+		if( !dst_enum_type_ptr.empty() )
+		{
+			if( dst_enum_type_ptr != src_enum_type_ptr )
+			{
+				REPORT_ERROR( Redefinition, target_names_scope, FilePos() /* TODO - file_pos */, name )
+			}
+			return;
+		}
+	}
+	{ // Type alias.
+		auto dst_type_alias_ptr= dst.Get</TypeAlias/>();
+		auto src_type_alias_ptr= src.Get</TypeAlias/>();
+		if( !dst_type_alias_ptr.empty() )
+		{
+			if( dst_type_alias_ptr.lock_imut().get_ref().syntax_element != src_type_alias_ptr.lock_imut().get_ref().syntax_element )
+			{
+				REPORT_ERROR( Redefinition, target_names_scope, FilePos() /* TODO - file_pos */, name )
+			}
+			return;
+		}
+	}
 	{ // Merge type template sets.
 		auto dst_type_templates_set_ptr= dst.Get</TypeTemplatesSet/>();
 		auto src_type_templates_set_ptr= src.Get</TypeTemplatesSet/>();
@@ -190,7 +245,36 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 			return;
 		}
 	}
-	// TODO - merge function sets.
+	{ // Global variable.
+		auto dst_global_variable_ptr= dst.Get</GlobalVariable/>();
+		auto src_global_variable_ptr= src.Get</GlobalVariable/>();
+		if( !dst_global_variable_ptr.empty() )
+		{
+			if( dst_global_variable_ptr.lock_imut().get_ref().syntax_element != src_global_variable_ptr.lock_imut().get_ref().syntax_element )
+			{
+				REPORT_ERROR( Redefinition, target_names_scope, FilePos() /* TODO - file_pos */, name )
+			}
+			return;
+		}
+	}
+	{ // Global auto variable.
+		auto dst_global_auto_variable_ptr= dst.Get</GlobalAutoVariable/>();
+		auto src_global_auto_variable_ptr= src.Get</GlobalAutoVariable/>();
+		if( !dst_global_auto_variable_ptr.empty() )
+		{
+			if( dst_global_auto_variable_ptr.lock_imut().get_ref().syntax_element != src_global_auto_variable_ptr.lock_imut().get_ref().syntax_element )
+			{
+				REPORT_ERROR( Redefinition, target_names_scope, FilePos() /* TODO - file_pos */, name )
+			}
+			return;
+		}
+	}
+	{ // Static asserts. Do not merge them, just skip content.
+		if( !dst.Get</GlobalStaticAssertsSet/>().empty() )
+		{
+			return;
+		}
+	}
 
 	// Can not merge things ot this kind.
 	REPORT_ERROR( Redefinition, target_names_scope, FilePos() /* TODO - file_pos */, name )

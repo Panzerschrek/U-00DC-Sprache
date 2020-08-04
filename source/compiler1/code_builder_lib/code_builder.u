@@ -89,6 +89,7 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 
 	var ErrorsContainerPtr errors_container( ErrorsContainer() );
 
+	compiled_sources_cache_.resize( source_graph.nodes.size() );
 	BuildSourceGraphNode( errors_container, source_graph, 0s );
 
 	unsafe{  LLVMDeleteFunction( global_llvm_function_ );  }
@@ -131,9 +132,13 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, ErrorsContainerPtr& errors_conta
 
 	foreach( &child_node_index : source_graph_node.children )
 	{
-		auto child_namespace_ptr= BuildSourceGraphNode( errors_container, source_graph, child_node_index );
+		if( compiled_sources_cache_[child_node_index].empty() )
+		{
+			BuildSourceGraphNode( errors_container, source_graph, child_node_index );
+		}
 
-		NamesScopeMerge( global_names_scope, child_namespace_ptr.lock_imut().get_ref() );
+		auto ptr= ust::to_non_nullable( compiled_sources_cache_[child_node_index] );
+		NamesScopeMerge( global_names_scope, ptr.lock_imut().get_ref() );
 	}
 
 	auto& program_elements= source_graph_node.synt_result.program_elements;
@@ -170,6 +175,9 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, ErrorsContainerPtr& errors_conta
 			}
 		}
 	}
+
+	compiled_sources_cache_[node_index]= global_names_scope;
+
 	return move(global_names_scope);
 }
 

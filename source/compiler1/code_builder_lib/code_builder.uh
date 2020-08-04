@@ -449,6 +449,8 @@ private:
 	ust::vector</ ClassTypePtr /> class_table_;
 	LLVMValueRef global_llvm_function_= LLVMValueRef::Null; // For global function context
 
+	ust::vector</ ust::shared_ptr_nullable_imut</NamesScope/> /> compiled_sources_cache_;
+
 	ust::unordered_map</ ust::string8, NamesScopePtr /> generated_template_things_;
 
 	LLVMValueRef halt_function_= LLVMValueRef::Null;
