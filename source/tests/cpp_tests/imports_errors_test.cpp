@@ -187,6 +187,49 @@ U_TEST( ImportedClassShouldNotBeModified_Test1 )
 	U_TEST_ASSERT( result.errors[0u].file_pos.GetLine() == 5u );
 }
 
+U_TEST( ImportedClassShouldNotBeModified_Test2 )
+{
+	static const char c_program_text_a[]=
+	R"(
+		struct A;
+	)";
+
+	static const char c_program_text_b[]=
+	R"(
+		import "a"
+		struct A // Extend imported class. Imported class must not be affected.
+		{
+			auto XYZ= 0;
+		}
+	)";
+
+	static const char c_program_text_c[]=
+	R"(
+		import "a"
+		auto s= A::XYZ; // Internal members of "A" should not be visible here.
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "b"
+		import "c"
+	)";
+
+	ICodeBuilder::BuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "a", c_program_text_a },
+				{ "b", c_program_text_b },
+				{ "c", c_program_text_c },
+				{ "root", c_program_text_root }
+			},
+			"root" );
+
+	U_TEST_ASSERT(
+		HaveError( result.errors, CodeBuilderErrorCode::NameNotFound, 3u ) ||
+		HaveError( result.errors, CodeBuilderErrorCode::UsingIncompleteType, 3u ) );
+}
+
 U_TEST( FunctionPrototypeDuplication_ForImports_Test0 )
 {
 	// Function prototype defined in different files.
