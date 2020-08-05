@@ -62,7 +62,7 @@ public:
 	fn BuildProgram( mut this, SourceGraph& source_graph ) : BuildResult;
 
 private:
-	fn BuildSourceGraphNode( mut this, ErrorsContainerPtr& errors_container, SourceGraph& source_graph, size_type node_index ) : NamesScopePtr;
+	fn BuildSourceGraphNode( mut this, ErrorsContainerPtr& errors_container, SourceGraph& source_graph, size_type node_index );
 
 	fn NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, NamesScopeValue& names_scope_value ) : Value;
 	fn ResolveValue( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& complex_name ) : Value;
@@ -446,10 +446,22 @@ private:
 
 	LLVMModuleRef module_= LLVMModuleRef::Null;
 
-	ust::vector</ ClassTypePtr /> class_table_;
 	LLVMValueRef global_llvm_function_= LLVMValueRef::Null; // For global function context
 
-	ust::vector</ ust::shared_ptr_nullable_imut</NamesScope/> /> compiled_sources_cache_;
+	struct ClassTableEntry
+	{
+		ClassTypePtr ptr;
+		ClassType value;
+	}
+	struct SourceGraphNodeBuildResult
+	{
+		ust::shared_ptr_nullable_imut</NamesScope/> names_scope;
+		ust::vector</ ClassTableEntry /> class_table;
+	}
+	ust::vector</ SourceGraphNodeBuildResult /> compiled_sources_cache_;
+
+	// Class table of current source graph node.
+	ust::vector</ ClassTypePtr /> current_class_table_;
 
 	ust::unordered_map</ ust::string8, NamesScopePtr /> generated_template_things_;
 
