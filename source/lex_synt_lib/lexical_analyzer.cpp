@@ -649,7 +649,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 			if( comments_depth == 0 )
 				result.error_messages.emplace_back(
 					std::to_string(line) + ":" + std::to_string(column) +
-					" Lexical error: unrecognized character: " + std::to_string(*it) );
+					" Lexical error: unrecognized character: " + std::to_string(c) );
 			++it;
 			continue;
 		}
