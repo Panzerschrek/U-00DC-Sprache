@@ -31,7 +31,9 @@ fn CodeBuilder::DeepCopyNamesScopeValue( NamesScopeValue& value, NamesScopePtr& 
 {
 	variant_visit( &el : value.something_ )
 	{
-		static_if( ust::is_same_type</ typeof(el), NamesScopeMutPtr/>() )
+		static_if(
+			ust::is_same_type</ typeof(el), NamesScopeMutPtr/>() ||
+			ust::is_same_type</ typeof(el), ClassTypePtr/>() )
 		{
 			return DeepCopyNamesScopeValue( el, target_names_scope );
 		}
@@ -55,6 +57,27 @@ fn CodeBuilder::DeepCopyNamesScopeValue( NamesScopeMutPtr& namespace_, NamesScop
 	return move(copy_ptr);
 }
 
+fn CodeBuilder::DeepCopyNamesScopeValue( ClassTypePtr& class_type, NamesScopePtr& target_names_scope  ) : NamesScopeValue
+{
+	// Take shared pointer to same class object. For class modification prevention used different mechanism.
+	// Now class must contains actual data (complete state, if it is complete in one of imported modules).
+	// To prevent modification of base classes, take copy of internal namespace.
+
+	// TODO - maybe optimize this - not copy namespace of complete class?
+	auto src_namespace= class_type.lock_imut().get_ref().members;
+	auto src_lock= src_namespace.lock_imut();
+	auto& src= src_lock.get_ref();
+
+	var NamesScopeMutPtr mut dst_namespace( NamesScope( src.GetThisNamespaceName(), target_names_scope ) );
+
+	NamesScopeMerge( dst_namespace, src );
+
+	auto mut class_lock= class_type.lock_mut();
+	class_lock.get_ref().members= dst_namespace;
+
+	return class_type;
+}
+
 fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</Type/>& t ) : NamesScopeValue
 {
 	// We have only global types as "type" in global names scope. It is unchanged, so, we can just take copy of shared pointer.
@@ -71,12 +94,6 @@ fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</NamesScopeFunction
 {
 	// Functions set may be extended, so, copy it.
 	return NamesScopeValue( functions_set.lock_imut().get_ref() );
-}
-
-fn CodeBuilder::DeepCopyNamesScopeValue( ClassTypePtr& class_type ) : NamesScopeValue
-{
-	// Take shared pointer to same class object. For class modification prevention different mechanism will be used.
-	return class_type;
 }
 
 fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</ClassField/>& class_field ) : NamesScopeValue

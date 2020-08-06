@@ -79,11 +79,12 @@ private:
 
 	fn DeepCopyNamesScopeValue( NamesScopeValue& value, NamesScopePtr& target_names_scope ) : NamesScopeValue;
 
-	fn DeepCopyNamesScopeValue( NamesScopeMutPtr& namespace_, NamesScopePtr& target_names_scope  ) : NamesScopeValue;
+	fn DeepCopyNamesScopeValue( ClassTypePtr& class_type, NamesScopePtr& target_names_scope ) : NamesScopeValue;
+	fn DeepCopyNamesScopeValue( NamesScopeMutPtr& namespace_, NamesScopePtr& target_names_scope ) : NamesScopeValue;
+
 	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</Type/>& t ) : NamesScopeValue;
 	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</NamesScopeVariable/>& variable ) : NamesScopeValue;
 	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</NamesScopeFunctionsSet/>& functions_set ) : NamesScopeValue;
-	fn DeepCopyNamesScopeValue( ClassTypePtr& class_type ) : NamesScopeValue;
 	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</ClassField/>& class_field ) : NamesScopeValue;
 	fn DeepCopyNamesScopeValue( EnumTypePtr& enum_type ) : NamesScopeValue;
 	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</TypeAlias/>& type_alias ) : NamesScopeValue;

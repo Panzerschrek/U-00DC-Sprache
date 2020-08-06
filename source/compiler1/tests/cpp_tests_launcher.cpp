@@ -64,6 +64,7 @@ bool FilterTest( const std::string& test_name )
 		//"InvalidTypeOfTemplateVariableArgumentTest0",
 		"ImportedClassShouldNotBeModified_Test0",
 		"ImportedClassShouldNotBeModified_Test1",
+		"ImportedClassShouldNotBeModified_Test2",
 		"ImportedNamespaceShouldNotBeModified_Test0",
 		"ImportedNamespaceShouldNotBeModified_Test1",
 		"ImportsTest0",
