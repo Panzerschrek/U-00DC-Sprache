@@ -1,0 +1,398 @@
+import "../lex_synt_lib/keywords.uh"
+import "error_reporting.uh"
+import "code_builder.uh"
+
+
+namespace U
+{
+
+fn GetValueFilePos( NamesScopeValue& value ) : FilePos
+{
+	{
+		auto functions_set= value.Get</NamesScopeFunctionsSet/>();
+		if( !functions_set.empty() )
+		{
+		}
+	}
+	{
+		auto type_alias_ptr= value.Get</TypeAlias/>();
+		if( !type_alias_ptr.empty() )
+		{
+			return type_alias_ptr.lock_imut().get_ref().syntax_element.get_ref().file_pos;
+		}
+	}
+	{
+		auto class_type_ptr= value.Get</ClassType/>();
+		if( !class_type_ptr.empty() )
+		{
+			auto class_lock= class_type_ptr.lock_imut();
+			auto& class_= class_lock.get_ref();
+			return
+				select( class_.syntax_element.empty()
+					? class_.forward_declaration_syntax_element.get_ref().file_pos
+					: class_.syntax_element.get_ref().file_pos );
+		}
+	}
+	{
+		auto enum_type_ptr= value.Get</Enum/>();
+		if( !enum_type_ptr.empty() )
+		{
+			return enum_type_ptr.lock_imut().get_ref().syntax_element.get_ref().file_pos;
+		}
+	}
+	{
+		auto global_variable_ptr= value.Get</GlobalVariable/>();
+		if( !global_variable_ptr.empty() )
+		{
+			return global_variable_ptr.lock_imut().get_ref().syntax_element.get_ref().file_pos;
+		}
+	}
+	{
+		auto global_auto_variable_ptr= value.Get</GlobalAutoVariable/>();
+		if( !global_auto_variable_ptr.empty() )
+		{
+			return global_auto_variable_ptr.lock_imut().get_ref().syntax_element.get_ref().file_pos;
+		}
+	}
+
+	return FilePos();
+}
+
+fn CodeBuilder::NamesScopeMerge( NamesScopeMutPtr& dst_ptr, NamesScope& src )
+{
+	foreach( &el : src.GetInternalContainer() )
+	{
+		{
+			auto dst_lock= dst_ptr.lock_imut();
+			auto& dst= dst_lock.get_ref();
+			if_var ( &dst_value : dst.GetThisScopeValue( el.key() ) )
+			{
+				NamesScopeMergeValues( dst_value, el.value(), el.key(), dst_ptr );
+				continue;
+			}
+		}
+		{
+			auto mut dst_lock= dst_ptr.lock_mut();
+			auto &mut dst= dst_lock.get_ref();
+			dst.AddName( el.key(), DeepCopyNamesScopeValue( el.value(), dst_ptr ) );
+		}
+	}
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( NamesScopeValue& value, NamesScopePtr& target_names_scope ) : NamesScopeValue
+{
+	variant_visit( &el : value.something_ )
+	{
+		static_if(
+			ust::is_same_type</ typeof(el), NamesScopeMutPtr/>() ||
+			ust::is_same_type</ typeof(el), ClassTypePtr/>() )
+		{
+			return DeepCopyNamesScopeValue( el, target_names_scope );
+		}
+		else
+		{
+			return DeepCopyNamesScopeValue( el );
+		}
+	}
+	halt;
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( NamesScopeMutPtr& namespace_, NamesScopePtr& target_names_scope ) : NamesScopeValue
+{
+	auto src_lock= namespace_.lock_imut();
+	auto& src= src_lock.get_ref();
+
+	var NamesScopeMutPtr mut copy_ptr( NamesScope( src.GetThisNamespaceName(), target_names_scope ) );
+
+	NamesScopeMerge( copy_ptr, src );
+
+	return move(copy_ptr);
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( ClassTypePtr& class_type, NamesScopePtr& target_names_scope  ) : NamesScopeValue
+{
+	// Take shared pointer to same class object. For class modification prevention used different mechanism.
+	// Now class must contains actual data (complete state, if it is complete in one of imported modules).
+	// To prevent modification of base classes, take copy of internal namespace.
+
+	// TODO - maybe optimize this - not copy namespace of complete class?
+	auto src_namespace= class_type.lock_imut().get_ref().members;
+	auto src_lock= src_namespace.lock_imut();
+	auto& src= src_lock.get_ref();
+
+	var NamesScopeMutPtr mut dst_namespace( NamesScope( src.GetThisNamespaceName(), target_names_scope ) );
+
+	NamesScopeMerge( dst_namespace, src );
+
+	auto mut class_lock= class_type.lock_mut();
+	class_lock.get_ref().members= dst_namespace;
+
+	return class_type;
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</Type/>& t ) : NamesScopeValue
+{
+	// We have only global types as "type" in global names scope. It is unchanged, so, we can just take copy of shared pointer.
+	return t;
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</NamesScopeVariable/>& variable ) : NamesScopeValue
+{
+	// Global namespaces should not contain "NamesScopeVariable", only "GlobalVariable" or "GlobalAutoVariable"
+	halt;
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</NamesScopeFunctionsSet/>& functions_set ) : NamesScopeValue
+{
+	// Functions set may be extended, so, copy it.
+	return NamesScopeValue( functions_set.lock_imut().get_ref() );
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</ClassField/>& class_field ) : NamesScopeValue
+{
+	// If cass namespace cotains class field, class must be complete in it's compilation unit and will not be modified later.
+	// So, take copy of shared pointer.
+	return class_field;
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( EnumTypePtr& enum_type ) : NamesScopeValue
+{
+	// Enum type is uncahged once it prepared, so, we can just take copy of shared pointer.
+	// TODO - what about enum internal namespace?
+	return enum_type;
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</TypeAlias/>& type_alias ) : NamesScopeValue
+{
+	// Type alias is uncahged once it prepared, so, we can just take copy of shared pointer.
+	return type_alias;
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set ) : NamesScopeValue
+{
+	// Type templates set may be extended, so, take copy of value.
+	return NamesScopeValue( type_templates_set.lock_imut().get_ref() );
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</TemplateArg/>& template_arg ) : NamesScopeValue
+{
+	// Only template args namespaces may contain template args. We should not process them here.
+	halt;
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</GlobalVariable/>& global_variable ) : NamesScopeValue
+{
+	// Global variable is uncahged once it prepared, so, we can just take copy of shared pointer.
+	return global_variable;
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</GlobalAutoVariable/>& global_auto_variable ) : NamesScopeValue
+{
+	// Global auto variable is uncahged once it prepared, so, we can just take copy of shared pointer.
+	return global_auto_variable;
+}
+
+fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</GlobalStaticAssertsSet/>& global_static_asserts ) : NamesScopeValue
+{
+	// Just ignore imported static asserts and create value for new static asserts.
+	return GlobalStaticAssertsSet();
+}
+
+fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& src, ust::string8& name, NamesScopePtr& target_names_scope )
+{
+	if( dst.something_.index() != src.something_.index() )
+	{
+		auto src_file_pos= GetValueFilePos( src );
+		auto dst_file_pos= GetValueFilePos( dst );
+		auto file_pos= select( src_file_pos.GetLine() == 0u32 ? dst_file_pos : src_file_pos );
+
+		REPORT_ERROR( Redefinition, target_names_scope, file_pos, name )
+		return;
+	}
+
+	{ // Merge namespaces.
+		auto dst_namespace= dst.Get</NamesScope/>();
+		auto src_namespace= src.Get</NamesScope/>();
+		if( !dst_namespace.empty() )
+		{
+			NamesScopeMerge( ust::to_non_nullable(dst_namespace), src_namespace.lock_imut().get_ref() );
+			return;
+		}
+	}
+	{ // Check types.
+		auto dst_type_ptr= dst.Get</Type/>();
+		auto src_type_ptr= src.Get</Type/>();
+		if( !dst_type_ptr.empty() )
+		{
+			if( dst_type_ptr.lock_imut().get_ref() != src_type_ptr.lock_imut().get_ref() )
+			{
+				REPORT_ERROR( Redefinition, target_names_scope, FilePos() /* TODO - file_pos */, name )
+				return;
+			}
+			return;
+		}
+	}
+	{ // Functions sets.
+		auto dst_functions_set_ptr= dst.Get</NamesScopeFunctionsSet/>();
+		auto src_functions_set_ptr= src.Get</NamesScopeFunctionsSet/>();
+		if( !dst_functions_set_ptr.empty() )
+		{
+			auto mut dst_lock= dst_functions_set_ptr.lock_mut();
+			auto &mut dst= dst_lock.get_ref();
+
+			auto mut src_lock= src_functions_set_ptr.lock_mut();
+			auto& src= src_lock.get_ref();
+
+			foreach( &function : src.functions_set.functions )
+			{
+				auto func_file_pos=
+					select( function.body_syntax_element.empty()
+						? function.prototype_syntax_element.get_ref().file_pos
+						: function.body_syntax_element.get_ref().file_pos );
+
+				if_var( &mut prev_function : GetFunctionWithSameType( dst.functions_set, function.t ) )
+				{
+					if( function.prototype_syntax_element == prev_function.prototype_syntax_element )
+					{
+						if( function.body_syntax_element == prev_function.body_syntax_element )
+						{
+							// Ok - body is same or empty.
+						}
+						else if( function.body_syntax_element.empty() && !prev_function.body_syntax_element.empty() )
+						{
+							// Ok - prev function have body and new function have no body.
+						}
+						else if( !function.body_syntax_element.empty() && prev_function.body_syntax_element.empty() )
+						{
+							// Ok - set body.
+							prev_function.body_syntax_element= function.body_syntax_element;
+						}
+						else
+						{
+							// Non-empty different bodies.
+							REPORT_ERROR( FunctionBodyDuplication, target_names_scope, func_file_pos, name )
+						}
+					}
+					else
+					{
+						REPORT_ERROR( FunctionPrototypeDuplication, target_names_scope, func_file_pos, name )
+					}
+
+					continue;
+				}
+
+				ApplyOverloadedFunction( dst.functions_set, function, target_names_scope, func_file_pos );
+			}
+
+			return;
+		}
+	}
+	{ // Class type.
+		auto dst_class_type_ptr= dst.Get</ClassType/>();
+		auto src_class_type_ptr= src.Get</ClassType/>();
+		if( !dst_class_type_ptr.empty() )
+		{
+			if( dst_class_type_ptr != src_class_type_ptr )
+			{
+				auto class_lock= src_class_type_ptr.lock_imut();
+				auto& class_= class_lock.get_ref();
+				auto file_pos=
+					select( class_.syntax_element.empty()
+						? class_.forward_declaration_syntax_element.get_ref().file_pos
+						: class_.syntax_element.get_ref().file_pos );
+				REPORT_ERROR( Redefinition, target_names_scope, file_pos, name )
+			}
+			return;
+		}
+	}
+	{ // Enum type.
+		auto dst_enum_type_ptr= dst.Get</Enum/>();
+		auto src_enum_type_ptr= src.Get</Enum/>();
+		if( !dst_enum_type_ptr.empty() )
+		{
+			if( dst_enum_type_ptr != src_enum_type_ptr )
+			{
+				REPORT_ERROR( Redefinition, target_names_scope, src_enum_type_ptr.lock_imut().get_ref().syntax_element.get_ref().file_pos, name )
+			}
+			return;
+		}
+	}
+	{ // Type alias.
+		auto dst_type_alias_ptr= dst.Get</TypeAlias/>();
+		auto src_type_alias_ptr= src.Get</TypeAlias/>();
+		if( !dst_type_alias_ptr.empty() )
+		{
+			if( dst_type_alias_ptr.lock_imut().get_ref().syntax_element != src_type_alias_ptr.lock_imut().get_ref().syntax_element )
+			{
+				REPORT_ERROR( Redefinition, target_names_scope, src_type_alias_ptr.lock_imut().get_ref().syntax_element.get_ref().file_pos, name )
+			}
+			return;
+		}
+	}
+	{ // Merge type template sets.
+		auto dst_type_templates_set_ptr= dst.Get</TypeTemplatesSet/>();
+		auto src_type_templates_set_ptr= src.Get</TypeTemplatesSet/>();
+		if( !dst_type_templates_set_ptr.empty() )
+		{
+			auto src_lock= src_type_templates_set_ptr.lock_imut();
+			auto& src= src_lock.get_ref();
+
+			auto mut dst_lock= dst_type_templates_set_ptr.lock_mut();
+			auto &mut dst= dst_lock.get_ref();
+
+			foreach( &type_template : src.type_templates )
+			{
+				auto mut same_found= false;
+				foreach( &dst_type_template : dst.type_templates )
+				{
+					if( type_template == dst_type_template )
+					{
+						same_found= true;
+						break;
+					}
+				}
+				if( !same_found )
+				{
+					dst.type_templates.push_back( type_template );
+				}
+			}
+
+			return;
+		}
+	}
+	{ // Global variable.
+		auto dst_global_variable_ptr= dst.Get</GlobalVariable/>();
+		auto src_global_variable_ptr= src.Get</GlobalVariable/>();
+		if( !dst_global_variable_ptr.empty() )
+		{
+			if( dst_global_variable_ptr.lock_imut().get_ref().syntax_element != src_global_variable_ptr.lock_imut().get_ref().syntax_element )
+			{
+				REPORT_ERROR( Redefinition, target_names_scope, src_global_variable_ptr.lock_imut().get_ref().syntax_element.get_ref().file_pos, name )
+			}
+			return;
+		}
+	}
+	{ // Global auto variable.
+		auto dst_global_auto_variable_ptr= dst.Get</GlobalAutoVariable/>();
+		auto src_global_auto_variable_ptr= src.Get</GlobalAutoVariable/>();
+		if( !dst_global_auto_variable_ptr.empty() )
+		{
+			if( dst_global_auto_variable_ptr.lock_imut().get_ref().syntax_element != src_global_auto_variable_ptr.lock_imut().get_ref().syntax_element )
+			{
+				REPORT_ERROR( Redefinition, target_names_scope, src_global_auto_variable_ptr.lock_imut().get_ref().syntax_element.get_ref().file_pos, name )
+			}
+			return;
+		}
+	}
+	{ // Static asserts. Do not merge them, just skip content.
+		if( !dst.Get</GlobalStaticAssertsSet/>().empty() )
+		{
+			return;
+		}
+	}
+
+	// Can not merge things ot this kind.
+	REPORT_ERROR( Redefinition, target_names_scope, FilePos() /* TODO - file_pos */, name )
+}
+
+} // namespace U

@@ -187,6 +187,49 @@ U_TEST( ImportedClassShouldNotBeModified_Test1 )
 	U_TEST_ASSERT( result.errors[0u].file_pos.GetLine() == 5u );
 }
 
+U_TEST( ImportedClassShouldNotBeModified_Test2 )
+{
+	static const char c_program_text_a[]=
+	R"(
+		struct A;
+	)";
+
+	static const char c_program_text_b[]=
+	R"(
+		import "a"
+		struct A // Extend imported class. Imported class must not be affected.
+		{
+			auto XYZ= 0;
+		}
+	)";
+
+	static const char c_program_text_c[]=
+	R"(
+		import "a"
+		auto s= A::XYZ; // Internal members of "A" should not be visible here.
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "b"
+		import "c"
+	)";
+
+	ICodeBuilder::BuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "a", c_program_text_a },
+				{ "b", c_program_text_b },
+				{ "c", c_program_text_c },
+				{ "root", c_program_text_root }
+			},
+			"root" );
+
+	U_TEST_ASSERT(
+		HaveError( result.errors, CodeBuilderErrorCode::NameNotFound, 3u ) ||
+		HaveError( result.errors, CodeBuilderErrorCode::UsingIncompleteType, 3u ) );
+}
+
 U_TEST( FunctionPrototypeDuplication_ForImports_Test0 )
 {
 	// Function prototype defined in different files.
@@ -329,6 +372,39 @@ U_TEST( FunctionBodyDuplication_ForImports_Test0 )
 	U_TEST_ASSERT( !result.errors.empty() );
 	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::FunctionBodyDuplication );
 	U_TEST_ASSERT( result.errors[0u].file_pos.GetLine() == 3u );
+}
+
+U_TEST( CouldNotOverloadFunction_ForImports_Test0 )
+{
+	// Function overloading fails during imports merge.
+	static const char c_program_text_a[]=
+	R"(
+		fn Foo( i32  mut x );
+	)";
+
+	static const char c_program_text_b[]=
+	R"(
+		fn Foo( i32 imut x );
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+		import "b"
+	)";
+
+	ICodeBuilder::BuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "a", c_program_text_a },
+				{ "b", c_program_text_b },
+				{ "root", c_program_text_root }
+			},
+			"root" );
+
+	U_TEST_ASSERT( !result.errors.empty() );
+	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::CouldNotOverloadFunction );
+	U_TEST_ASSERT( result.errors[0u].file_pos.GetLine() == 2u );
 }
 
 U_TEST( ClassPrototypeDuplication_ForImports_Test0 )

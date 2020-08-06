@@ -9,7 +9,7 @@ U_TEST( ImportsTest0 )
 	R"(
 		fn Bar() : i32
 		{
-			return  586;
+			return 586;
 		}
 	)";
 
@@ -770,7 +770,6 @@ U_TEST( ImportsTest16_NewSymbolsNotVisibleInImportedClassTemplate )
 	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 	U_TEST_ASSERT( 65474.0f == result_value.FloatVal );
 }
-
 
 U_TEST( ImportsTest17_NewSymbolsNotVisibleInImportedClassTemplate )
 {

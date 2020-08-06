@@ -1,0 +1,105 @@
+import "/string_conversions.u"
+import "../tests_common/print.uh"
+import "source_graph.uh"
+
+namespace U
+{
+
+fn LoadSourceGraph( IVfs &mut vfs, ust::string8& root_file_path ) : SourceGraph
+{
+	var SourceGraph mut source_graph;
+	LoadSourceGraph_r( vfs, root_file_path, "", source_graph );
+	return move(source_graph);
+}
+
+// Returns node index or ~0 in case of error.
+fn LoadSourceGraph_r(
+	IVfs &mut vfs,
+	ust::string8& file_path,
+	ust::string8& parent_file_path,
+	SourceGraph& mut source_graph ) : size_type
+{
+	auto file_path_normalized= vfs.NormalizeFilePath( file_path, parent_file_path );
+
+	// Check, if already loaded.
+	for( auto mut i= 0s; i < source_graph.nodes.size(); ++i )
+	{
+		if( source_graph.nodes[i].file_path_normalized == file_path_normalized )
+		{
+			return i;
+		}
+	}
+
+	auto file_content_opt= vfs.LoadFile( file_path_normalized );
+	if( file_content_opt.empty() )
+	{
+		var ust::string8 mut str;
+		str+= "Error, can not read file: \"";
+		str+= file_path_normalized;
+		str+= "\"\n\0";
+		unsafe{  U1_PrintStr( str.front() );  }
+
+		source_graph.have_errors= true;
+		return ~0s;
+	}
+
+	auto node_index= source_graph.nodes.size();
+
+	auto mut lex_result= LexicalAnalysis( file_content_opt.get_ref().range() );
+	foreach( &error_message : lex_result.error_messages )
+	{
+		var ust::string8 mut str= file_path_normalized;
+		str+= ": error: ";
+		str+= error_message;
+		str+= "\n\0";
+		unsafe{  U1_PrintStr( str.front() );  }
+	}
+	source_graph.have_errors|= !lex_result.error_messages.empty();
+
+	foreach( &mut lexem : lex_result.lexems )
+	{
+		lexem.file_pos.SetFileIndex( u32(node_index) );
+	}
+
+	auto mut synt_result= U::Synt::SyntaxAnalysis( lex_result.lexems );
+	foreach( &error_message : synt_result.error_messages )
+	{
+		var ust::string8 mut str= file_path_normalized;
+		str+= ":";
+		str+= ust::to_string8( error_message.file_pos.GetLine() );
+		str+= ":";
+		str+= ust::to_string8( error_message.file_pos.GetColumn() );
+		str+= ": error: ";
+		str+= error_message.text;
+		str+= "\n\0";
+		unsafe{  U1_PrintStr( str.front() );  }
+	}
+	source_graph.have_errors|= !synt_result.error_messages.empty();
+
+	auto imports= synt_result.imports_list;
+
+	var SourceGraph::Node mut node
+	{
+		.file_path_normalized= file_path_normalized,
+		.lexical_error_messages= take(lex_result.error_messages),
+		.synt_result= move(synt_result),
+	};
+
+	source_graph.nodes.push_back( SourceGraph::Node() ); // Reserve place for empty node
+
+	// Recursively load imports.
+	// TODO - check for dependency loops.
+	foreach( &import_ : imports )
+	{
+		auto child= LoadSourceGraph_r( vfs, import_, file_path_normalized, source_graph );
+		if( child != ~0s )
+		{
+			node.children.push_back(child);
+		}
+	}
+
+	source_graph.nodes[node_index]= move(node);
+	return node_index;
+}
+
+} // namespace U

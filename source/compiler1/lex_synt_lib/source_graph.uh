@@ -1,0 +1,34 @@
+import "syntax_analyzer.uh"
+
+namespace U
+{
+
+class IVfs interface
+{
+	fn virtual pure NormalizeFilePath(
+		mut this,
+		ust::string8& file_path,
+		ust::string8& parent_file_path_normalized ) : ust::string8;
+
+	fn virtual pure LoadFile( mut this, ust::string8& path ) : ust::optional</ust::string8/>;
+}
+
+struct SourceGraph
+{
+	struct Node
+	{
+		ust::string8 file_path_normalized;
+
+		LexicalErrorMessages lexical_error_messages;
+		Synt::SyntaxAnalysisResult synt_result;
+
+		ust::vector</size_type/> children;
+	}
+
+	ust::vector</Node/> nodes; // Node #0 is root
+	bool have_errors= false;
+}
+
+fn LoadSourceGraph( IVfs &mut vfs, ust::string8& root_file_path ) : SourceGraph;
+
+} // namespace U

@@ -405,6 +405,8 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 			if( dst_member->GetFilePos() == src_member.GetFilePos() )
 				return; // All ok - things from one source.
 
+			// TODO - what about merging type templates sets?
+
 			// Can not merge other kinds of values.
 			REPORT_ERROR( Redefinition, dst.GetErrors(), src_member.GetFilePos(), src_name );
 		} );
@@ -1862,7 +1864,7 @@ Value CodeBuilder::ResolveValue(
 				{
 					if( class_->syntax_element != nullptr && class_->syntax_element->is_forward_declaration_ )
 					{
-						REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), file_pos, type );
+						REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), file_pos, *type );
 						return ErrorValue();
 					}
 

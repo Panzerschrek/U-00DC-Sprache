@@ -54,7 +54,7 @@ fn CodeBuilder::constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data
 	}
 }
 
-fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : BuildResult
+fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResult
 {
 	unsafe // Create module.
 	{
@@ -89,7 +89,40 @@ fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : Buil
 
 	var ErrorsContainerPtr errors_container( ErrorsContainer() );
 
-	var NamesScopeMutPtr global_names_scope( NamesScope( "", ust::shared_ptr_nullable_imut</NamesScope/>() ) );
+	compiled_sources_cache_.resize( source_graph.nodes.size() );
+	BuildSourceGraphNode( errors_container, source_graph, 0s );
+
+	unsafe{  LLVMDeleteFunction( global_llvm_function_ );  }
+	global_llvm_function_= LLVMValueRef::Null;
+
+	{ // Clear classes internals to break strong shared pointers loop and avoid memory leaks.
+		var NamesScopeMutPtr dummy_class_names_scope( NamesScope( "", ust::shared_ptr_nullable_imut</NamesScope/>() ) );
+		foreach( &mut node : compiled_sources_cache_ )
+		{
+			foreach( &mut class_table_entry : node.class_table )
+			{
+				auto mut lock= class_table_entry.ptr.lock_mut();
+				lock.get_ref().members= dummy_class_names_scope;
+			}
+		}
+	}
+
+	compiled_sources_cache_.clear();
+
+	var BuildResult mut res
+	{
+		.llvm_module= module_,
+		.errors= errors_container.lock_imut().get_ref(),
+	 };
+
+	NormalizeErrors( res.errors );
+
+	return move(res);
+}
+
+fn CodeBuilder::BuildSourceGraphNode( mut this, ErrorsContainerPtr& errors_container, SourceGraph& source_graph, size_type node_index )
+{
+	var NamesScopeMutPtr mut global_names_scope( NamesScope( "", ust::shared_ptr_nullable_imut</NamesScope/>() ) );
 
 	{
 		auto mut l= global_names_scope.lock_mut();
@@ -99,8 +132,80 @@ fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : Buil
 		FillGlobalNamesScope( n );
 	}
 
-	NamesScopeFill( global_names_scope, ast.program_elements );
-	NamesScopeFillOutOfLineElements( global_names_scope, ast.program_elements );
+	var SourceGraph::Node& source_graph_node= source_graph.nodes[node_index];
+
+	// Build dependent nodes.
+	foreach( child_node_index : source_graph_node.children )
+	{
+		if( compiled_sources_cache_[child_node_index].names_scope.empty() )
+		{
+			BuildSourceGraphNode( errors_container, source_graph, child_node_index );
+		}
+	}
+	// Prepare class table.
+	{
+		var ust::vector</ ClassTableEntry /> mut tmp_class_table;
+		foreach( child_node_index : source_graph_node.children )
+		{
+			foreach( &class_table_entry : compiled_sources_cache_[child_node_index].class_table )
+			{
+				auto mut prev_entry_index= ~0s;
+				for( auto mut i= 0s; i < tmp_class_table.size(); ++i )
+				{
+					if( tmp_class_table[i].ptr == class_table_entry.ptr )
+					{
+						prev_entry_index= i;
+						break;
+					}
+				}
+
+				if( prev_entry_index == ~0s )
+				{
+					tmp_class_table.push_back(class_table_entry);
+					continue;
+				}
+
+				var ClassType &mut prev_class_value= tmp_class_table[prev_entry_index].value;
+				var ClassType& new_class_value= class_table_entry.value;
+
+				if( !prev_class_value.syntax_element.empty() && !new_class_value.syntax_element.empty() &&
+					prev_class_value.syntax_element != new_class_value.syntax_element )
+				{
+					REPORT_ERROR( ClassBodyDuplication, global_names_scope, new_class_value.syntax_element.get_ref().file_pos, new_class_value.syntax_element.get_ref().name )
+				}
+				if( !prev_class_value.forward_declaration_syntax_element.empty() && !new_class_value.forward_declaration_syntax_element.empty() &&
+					prev_class_value.forward_declaration_syntax_element != new_class_value.forward_declaration_syntax_element )
+				{
+					// TODO - generate another error
+					REPORT_ERROR( ClassBodyDuplication, global_names_scope, new_class_value.syntax_element.get_ref().file_pos, new_class_value.forward_declaration_syntax_element.get_ref().name )
+				}
+
+				// Select complete class.
+				if( !prev_class_value.is_complete && new_class_value.is_complete )
+				{
+					prev_class_value= new_class_value;
+				}
+			}
+		}
+
+		foreach( &mut class_table_entry : tmp_class_table )
+		{
+			current_class_table_.push_back(class_table_entry.ptr);
+
+			auto mut lock= class_table_entry.ptr.lock_mut();
+			lock.get_ref()= class_table_entry.value;
+		}
+	}
+	// Merge namespaces. This must be done AFTER class table praparation.
+	foreach( child_node_index : source_graph_node.children )
+	{
+		auto ptr= ust::to_non_nullable( compiled_sources_cache_[child_node_index].names_scope );
+		NamesScopeMerge( global_names_scope, ptr.lock_imut().get_ref() );
+	}
+
+	auto& program_elements= source_graph_node.synt_result.program_elements;
+	NamesScopeFill( global_names_scope, program_elements );
+	NamesScopeFillOutOfLineElements( global_names_scope, program_elements );
 	NamesScopeBuild( global_names_scope );
 
 	// Finalize building template classes.
@@ -133,28 +238,21 @@ fn CodeBuilder::BuildProgram( mut this, Synt::SyntaxAnalysisResult& ast ) : Buil
 		}
 	}
 
-	unsafe{  LLVMDeleteFunction( global_llvm_function_ );  }
-	global_llvm_function_= LLVMValueRef::Null;
+	auto class_table= take(current_class_table_);
 
-	{ // Clear classes internals to break strong shared pointers loop and avoid memory leaks.
-		var NamesScopeMutPtr dummy_class_names_scope( NamesScope( "", ust::shared_ptr_nullable_imut</NamesScope/>() ) );
-		foreach( &class_type : class_table_ )
-		{
-			auto mut lock= class_type.lock_mut();
-			lock.get_ref().members= dummy_class_names_scope;
-		}
-	}
-	class_table_.clear();
+	var SourceGraphNodeBuildResult &mut out_node_build_result= compiled_sources_cache_[node_index];
+	out_node_build_result.names_scope= move(global_names_scope);
 
-	var BuildResult mut res
+	// Fill class table of current node.
+	foreach( &class_type : class_table )
 	{
-		.llvm_module= module_,
-		.errors= errors_container.lock_imut().get_ref(),
-	 };
-
-	NormalizeErrors( res.errors );
-
-	return move(res);
+		var ClassTableEntry mut entry
+		{
+			.ptr= class_type,
+			.value= class_type.lock_imut().get_ref(),
+		};
+		out_node_build_result.class_table.push_back( move(entry) );
+	}
 }
 
 fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, NamesScopeValue& names_scope_value ) : Value
@@ -627,14 +725,18 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 		unsafe
 		{
-			if( fields_llvm_types.empty() )
+			// Check opaque before set body for cases of errors (class body duplication).
+			if( LLVMIsOpaqueStruct( class_.llvm_type ) == LLVMBool::True )
 			{
-				var LLVMTypeRef dummy= zero_init;
-				LLVMStructSetBody( class_.llvm_type, dummy, 0u, LLVMBool::False );
-			}
-			else
-			{
-				LLVMStructSetBody( class_.llvm_type, cast_imut(fields_llvm_types).front(), u32(fields_llvm_types.size()), LLVMBool::False );
+				if( fields_llvm_types.empty() )
+				{
+					var LLVMTypeRef dummy= zero_init;
+					LLVMStructSetBody( class_.llvm_type, dummy, 0u, LLVMBool::False );
+				}
+				else
+				{
+					LLVMStructSetBody( class_.llvm_type, cast_imut(fields_llvm_types).front(), u32(fields_llvm_types.size()), LLVMBool::False );
+				}
 			}
 		}
 

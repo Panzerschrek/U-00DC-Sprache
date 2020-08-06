@@ -7,19 +7,45 @@
 extern "C"
 {
 
-// Return pointer to llvm module. Use "delete" to delete result.
-// Returns null if program build failed and prints errors to stderr.
-LLVMModuleRef U1_BuildProgram(
-	const char* program_text_start,
-	size_t program_text_size,
-	LLVMContextRef llvm_context,
-	LLVMTargetDataRef data_layout );
+struct U1_StringView
+{
+	const char* data;
+	size_t size;
+};
+
+struct U1_SourceFile
+{
+	U1_StringView file_path;
+	U1_StringView file_content;
+};
 
 using ErrorHanglerFunc= void(*)( void* data, uint32_t line, uint32_t column, uint32_t error_code, const char* error_text, size_t error_text_length );
 
+// Return pointer to llvm module. Use "delete" to delete result.
+// Returns null if program build failed and prints errors to stderr.
+LLVMModuleRef U1_BuildProgram(
+	const U1_StringView& program_text_start,
+	LLVMContextRef llvm_context,
+	LLVMTargetDataRef data_layout );
+
 bool U1_BuildProgramWithErrors(
-	const char* program_text_start,
-	size_t program_text_size,
+	const U1_StringView& program_text_start,
+	LLVMContextRef llvm_context,
+	LLVMTargetDataRef data_layout,
+	ErrorHanglerFunc error_handler_func,
+	void* data );
+
+LLVMModuleRef U1_BuildMultisourceProgram(
+	const U1_SourceFile* source_files,
+	size_t source_file_count,
+	const U1_StringView& root_file_path,
+	LLVMContextRef llvm_context,
+	LLVMTargetDataRef data_layout );
+
+bool U1_BuildMultisourceProgramWithErrors(
+	const U1_SourceFile* source_files,
+	size_t source_file_count,
+	const U1_StringView& root_file_path,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
 	ErrorHanglerFunc error_handler_func,

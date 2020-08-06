@@ -317,7 +317,94 @@ fn ParseNumber( Iterator &mut it, LexicalErrorMessages &mut out_errors ) : Lexem
 	result_lexem.lexem_type= Lexem::Type::Number;
 	result_lexem.text.resize( typeinfo</NumberLexemData/>.size_of, "\0"c8 );
 	unsafe{ ust::memory_copy( result_lexem.text.front(), result, typeinfo</NumberLexemData/>.size_of ); }
-	return result_lexem;
+	return move(result_lexem);
+}
+
+fn ParseString( Iterator &mut it, LexicalErrorMessages &mut out_errors ) : Lexem
+{
+	var Lexem mut result_lexem{ .lexem_type= Lexem::Type::String };
+
+	it.drop_front(); // "
+
+	while(!it.empty())
+	{
+		auto c= it.front();
+		it.drop_front();
+		if( c == "\""c8 )
+		{
+			break;
+		}
+		else if( c == "\\"c8 )
+		{
+			it.drop_front();
+			if( it.empty() )
+			{
+				break;
+			}
+			auto escaped_c= it.front();
+			it.drop_front();
+			if( escaped_c == "\""c8 || escaped_c == "\\"c8  )
+			{
+				result_lexem.text.push_back( escaped_c );
+			}
+			else if( escaped_c == "b"c8 ){ result_lexem.text.push_back( "\b"c8 ); }
+			else if( escaped_c == "f"c8 ){ result_lexem.text.push_back( "\f"c8 ); }
+			else if( escaped_c == "n"c8 ){ result_lexem.text.push_back( "\n"c8 ); }
+			else if( escaped_c == "r"c8 ){ result_lexem.text.push_back( "\r"c8 ); }
+			else if( escaped_c == "t"c8 ){ result_lexem.text.push_back( "\t"c8 ); }
+			else if( escaped_c == "0"c8 ){ result_lexem.text.push_back( "\0"c8 ); }
+			else if( escaped_c == "u"c8 )
+			{
+				if( it.size() < 4s )
+				{
+					out_errors.push_back( "expected 4 hex digits" );
+					return result_lexem;
+				}
+				auto mut char_code= 0u;
+				for( auto mut i= 0u; i < 4u; ++i )
+				{
+					auto digit_char= it[size_type(i)];
+					auto mut digit= 0u;
+					if( digit_char >= "0"c8 && digit_char <= "9"c8 )
+					{
+						digit= u32(digit_char) - u32("0"c8);
+					}
+					else if( digit_char >= "a"c8 && digit_char <= "f"c8 )
+					{
+						digit= u32(digit_char) - u32("a"c8);
+					}
+					else if( digit_char >= "A"c8 && digit_char <= "F"c8 )
+					{
+						digit= u32(digit_char) - u32("A"c8);
+					}
+					else
+					{
+						out_errors.push_back( "expected hex number" );
+						return result_lexem;
+					}
+					char_code|= digit << ( ( 3u - i ) * 4u );
+				}
+				it.drop_front();
+				it.drop_front();
+				it.drop_front();
+				it.drop_front();
+				PushCharToUTF8String( sprache_char(char_code), result_lexem.text );
+			}
+			else
+			{
+				var ust::string8 mut err= "invalid escape sequence: \\";
+				err.push_back( escaped_c );
+				out_errors.push_back( move(err) );
+				return result_lexem;
+			}
+		}
+		else
+		{
+			result_lexem.text.push_back(c);
+		}
+	}
+
+	return move(result_lexem);
 }
 
 op Lexem::==( Lexem& l, Lexem& r ) : bool
@@ -435,6 +522,10 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 		else if( IsNumberStartChar(c) )
 		{
 			lexem= ParseNumber( it, result.error_messages );
+		}
+		else if( c == "\""c32 )
+		{
+			lexem= ParseString( it, result.error_messages );
 		}
 		else
 		{

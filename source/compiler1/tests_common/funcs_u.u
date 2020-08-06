@@ -1,55 +1,30 @@
-import "../lex_synt_lib/lexical_analyzer.uh"
-import "../lex_synt_lib/syntax_analyzer.uh"
+import "../lex_synt_lib/source_graph.uh"
 import "../code_builder_lib/code_builder.uh"
 import "print.uh"
 import "funcs_u.uh"
 
 
 fn nomangle U1_BuildProgram(
-	char8& program_text_start,
-	size_type program_text_size,
+	U1_StringView& program_text,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout ) unsafe : LLVMModuleRef
 {
 	unsafe
 	{
-		auto program_text= U::StringToArrayView( program_text_start, program_text_size );
+		auto program_text= U::StringToArrayView( program_text.data, program_text.size );
 
 		safe
 		{
-			auto lex_res= U::LexicalAnalysis( program_text );
-			if( !lex_res.error_messages.empty() )
-			{
-				foreach( &err : lex_res.error_messages )
-				{
-					unsafe
-					{
-						U1_PrintStr( (err + "\n\0").front() );
-						U1_PrintEndl();
-					}
-				}
-				return LLVMModuleRef::Null;
-			}
+			var U::TestVfs mut test_vfs( program_text );
+			auto source_graph= U::LoadSourceGraph( test_vfs, "_" );
 
-			auto synt_res= U::Synt::SyntaxAnalysis( lex_res.lexems );
-			if( !synt_res.error_messages.empty() )
+			if( source_graph.have_errors || source_graph.nodes.empty() )
 			{
-				foreach( &err : synt_res.error_messages )
-				{
-					unsafe
-					{
-						U1_PrintInt( i64(err.file_pos.GetLine()) );
-						U1_PrintStr( ":\0"[0] );
-						U1_PrintInt( i64(err.file_pos.GetColumn()) );
-						U1_PrintStr( (": " + err.text + "\n\0").front() );
-						U1_PrintEndl();
-					}
-				}
 				return LLVMModuleRef::Null;
 			}
 
 			var U::CodeBuilder mut code_builder( llvm_context, data_layout );
-			auto code_builder_res= code_builder.BuildProgram( synt_res );
+			auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 			foreach( & err : code_builder_res.errors )
 			{
@@ -74,8 +49,7 @@ fn nomangle U1_BuildProgram(
 }
 
 fn nomangle U1_BuildProgramWithErrors(
-	char8& program_text_start,
-	size_type program_text_size,
+	U1_StringView& program_text,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
 	ErrorHanglerFunc error_handler_func,
@@ -83,43 +57,20 @@ fn nomangle U1_BuildProgramWithErrors(
 {
 	unsafe
 	{
-		auto program_text= U::StringToArrayView( program_text_start, program_text_size );
+		auto program_text= U::StringToArrayView( program_text.data, program_text.size );
 
 		safe
 		{
-			auto lex_res= U::LexicalAnalysis( program_text );
-			if( !lex_res.error_messages.empty() )
-			{
-				foreach( &err : lex_res.error_messages )
-				{
-					unsafe
-					{
-						U1_PrintStr( (err + "\n\0").front() );
-						U1_PrintEndl();
-					}
-				}
-				return false;
-			}
+			var U::TestVfs mut test_vfs( program_text );
+			auto source_graph= U::LoadSourceGraph( test_vfs, "_" );
 
-			auto synt_res= U::Synt::SyntaxAnalysis( lex_res.lexems );
-			if( !synt_res.error_messages.empty() )
+			if( source_graph.have_errors || source_graph.nodes.empty() )
 			{
-				foreach( &err : synt_res.error_messages )
-				{
-					unsafe
-					{
-						U1_PrintInt( i64(err.file_pos.GetLine()) );
-						U1_PrintStr( ":\0"[0] );
-						U1_PrintInt( i64(err.file_pos.GetColumn()) );
-						U1_PrintStr( (": " + err.text + "\n\0").front() );
-						U1_PrintEndl();
-					}
-				}
 				return false;
 			}
 
 			var U::CodeBuilder mut code_builder( llvm_context, data_layout );
-			auto code_builder_res= code_builder.BuildProgram( synt_res );
+			auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 			unsafe{  LLVMDisposeModule( code_builder_res.llvm_module );  }
 
@@ -152,6 +103,115 @@ fn nomangle U1_CodeBuilderCodeToString(
 	}
 }
 
+fn nomangle U1_BuildMultisourceProgram(
+	U1_SourceFile& source_files,
+	size_type source_file_count,
+	U1_StringView& root_file_path,
+	LLVMContextRef llvm_context,
+	LLVMTargetDataRef data_layout ) unsafe : LLVMModuleRef
+{
+	var U::TestVfs::SourceEntries mut source_entries;
+	unsafe
+	{
+		auto& files_array= cast_ref_unsafe</ [ U1_SourceFile, 1000000 ] />( source_files );
+		for( auto mut i= 0s; i < source_file_count; ++i )
+		{
+			auto &source_file= files_array[i];
+			var U::TestVfs::SourceEntry mut entry
+			{
+				.file_path= U::StringToArrayView( source_file.file_path.data, source_file.file_path.size ),
+				.file_content= U::StringToArrayView( source_file.file_content.data, source_file.file_content.size ),
+			};
+			source_entries.push_back( move(entry) );
+		}
+	}
+
+	var ust::string8 mut root_file_path_str;
+	unsafe{ root_file_path_str= U::StringToArrayView( root_file_path.data, root_file_path.size ); }
+
+	var U::TestVfs mut test_vfs( move(source_entries) );
+	auto source_graph= U::LoadSourceGraph( test_vfs, root_file_path_str );
+
+	if( source_graph.have_errors || source_graph.nodes.empty() )
+	{
+		return LLVMModuleRef::Null;
+	}
+
+	var U::CodeBuilder mut code_builder( llvm_context, data_layout );
+	auto code_builder_res= code_builder.BuildProgram( source_graph );
+
+	foreach( & err : code_builder_res.errors )
+	{
+		unsafe
+		{
+			U1_PrintInt( i64(err.file_pos.GetLine()) );
+			U1_PrintStr( ":\0"[0] );
+			U1_PrintInt( i64(err.file_pos.GetColumn()) );
+			U1_PrintStr( (": " + err.text + "\n\0").front() );
+			U1_PrintEndl();
+		}
+	}
+	if( !code_builder_res.errors.empty() )
+	{
+		unsafe{  LLVMDisposeModule( code_builder_res.llvm_module );  }
+		return LLVMModuleRef::Null;
+	}
+
+	return code_builder_res.llvm_module;
+}
+
+fn nomangle U1_BuildMultisourceProgramWithErrors(
+	U1_SourceFile& source_files,
+	size_type source_file_count,
+	U1_StringView& root_file_path,
+	LLVMContextRef llvm_context,
+	LLVMTargetDataRef data_layout,
+	ErrorHanglerFunc error_handler_func,
+	void &mut data ) unsafe : bool
+{
+	var U::TestVfs::SourceEntries mut source_entries;
+	unsafe
+	{
+		auto& files_array= cast_ref_unsafe</ [ U1_SourceFile, 1000000 ] />( source_files );
+		for( auto mut i= 0s; i < source_file_count; ++i )
+		{
+			auto &source_file= files_array[i];
+			var U::TestVfs::SourceEntry mut entry
+			{
+				.file_path= U::StringToArrayView( source_file.file_path.data, source_file.file_path.size ),
+				.file_content= U::StringToArrayView( source_file.file_content.data, source_file.file_content.size ),
+			};
+			source_entries.push_back( move(entry) );
+		}
+	}
+
+	var ust::string8 mut root_file_path_str;
+	unsafe{ root_file_path_str= U::StringToArrayView( root_file_path.data, root_file_path.size ); }
+
+	var U::TestVfs mut test_vfs( move(source_entries) );
+	auto source_graph= U::LoadSourceGraph( test_vfs, root_file_path_str );
+
+	if( source_graph.have_errors || source_graph.nodes.empty() )
+	{
+		return false;
+	}
+
+	var U::CodeBuilder mut code_builder( llvm_context, data_layout );
+	auto code_builder_res= code_builder.BuildProgram( source_graph );
+
+	unsafe{  LLVMDisposeModule( code_builder_res.llvm_module );  }
+
+	foreach( & err : code_builder_res.errors )
+	{
+		unsafe
+		{
+			error_handler_func( data, err.file_pos.GetLine(), err.file_pos.GetColumn(), u32(err.code), err.text.front(), err.text.size() );
+		}
+	}
+
+	return true;
+}
+
 namespace U
 {
 
@@ -165,6 +225,55 @@ fn StringToArrayView( char8 &'x string_start, size_type string_size ) unsafe : u
 			ptr,
 			ptr + string_size );
 	}
+}
+
+class TestVfs final : IVfs
+{
+public:
+	struct SourceEntry
+	{
+		ust::string8 file_path;
+		ust::string8 file_content;
+	}
+	type SourceEntries= ust::vector</SourceEntry/>;
+
+	fn constructor( ust::string8 mut file_content )
+	{
+		var SourceEntry mut entry
+		{
+			.file_path= "_",
+			.file_content= move(file_content),
+		};
+		source_entries_.push_back(move(entry));
+	}
+
+	fn constructor( SourceEntries mut source_entries )
+		( source_entries_(move(source_entries)) )
+	{}
+
+public:
+	fn virtual override NormalizeFilePath(
+		mut this,
+		ust::string8& file_path,
+		ust::string8& parent_file_path_normalized ) : ust::string8
+	{
+		return file_path;
+	}
+
+	fn virtual override LoadFile( mut this, ust::string8& path ) : ust::optional</ust::string8/>
+	{
+		foreach( &entry : source_entries_ )
+		{
+			if( path == entry.file_path )
+			{
+				return entry.file_content;
+			}
+		}
+		return ust::optional</ust::string8/>();
+	}
+
+private:
+	SourceEntries source_entries_;
 }
 
 } // namespace U

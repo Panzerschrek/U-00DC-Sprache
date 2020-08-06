@@ -188,6 +188,7 @@ public:
 	fn constructor( this'a', Lexems&'b lexems ) ' a <- b ';
 
 	fn DoAnalyzis( mut this ) : SyntaxAnalysisResult;
+	fn ParseImports( mut this ) : ImportsList;
 
 private:
 	fn ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : NamespaceElements;
@@ -239,10 +240,33 @@ fn SyntaxAnalyzer::DoAnalyzis( mut this ) : SyntaxAnalysisResult
 {
 	var SyntaxAnalysisResult mut res;
 
+	res.imports_list= ParseImports();
 	res.program_elements= ParseNamespaceBody( Lexem::Type::EndOfFile );
 
 	res.error_messages= take(error_messages_);
 	return move(res);
+}
+
+fn SyntaxAnalyzer::ParseImports( mut this ) : ImportsList
+{
+	var ImportsList mut imports_list;
+	while( NotEndOfFile() )
+	{
+		if( !IsKeyword( it_.front(), Keyword::import_ ) )
+		{
+			break;
+		}
+		NextLexem();
+
+		if( it_.front().lexem_type != Lexem::Type::String )
+		{
+			PushErrorMessage();
+		}
+		imports_list.push_back( it_.front().text );
+		NextLexem();
+	}
+
+	return move(imports_list);
 }
 
 fn SyntaxAnalyzer::ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : NamespaceElements
@@ -2092,6 +2116,12 @@ fn SyntaxAnalysis( Lexems& lexems ) : SyntaxAnalysisResult
 {
 	var SyntaxAnalyzer mut analyzer(lexems);
 	return analyzer.DoAnalyzis();
+}
+
+fn ParseImports( Lexems& lexems ) : ImportsList
+{
+	var SyntaxAnalyzer mut analyzer(lexems);
+	return analyzer.ParseImports();
 }
 
 } // namespace Synt
