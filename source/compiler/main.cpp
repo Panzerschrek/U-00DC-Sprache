@@ -418,7 +418,21 @@ cl::opt<bool> generate_debug_info(
 cl::opt<std::string> architecture(
 	"march",
 	cl::desc("Architecture to generate code for (see --version)"),
-	cl::init("native"),
+	cl::cat(options_category) );
+
+cl::opt<std::string> target_vendor(
+	"target-vendor",
+	cl::desc("Target vendor"),
+	cl::cat(options_category) );
+
+cl::opt<std::string> target_os(
+	"target-os",
+	cl::desc("Target OS"),
+	cl::cat(options_category) );
+
+cl::opt<std::string> target_environment(
+	"target-environment",
+	cl::desc("Target environment"),
 	cl::cat(options_category) );
 
 cl::opt<std::string> target_cpu(
@@ -557,29 +571,36 @@ int Main( int argc, const char* argv[] )
 	std::unique_ptr<llvm::TargetMachine> target_machine;
 	{
 		const llvm::Target* target= nullptr;
-		std::string error_str, features_str, cpu_name;
-		if( Options::architecture == "native" )
-		{
-			target_triple_str= llvm::sys::getDefaultTargetTriple();
-			target= llvm::TargetRegistry::lookupTarget( target_triple_str, error_str );
-			features_str= GetNativeTargetFeaturesStr();
-			cpu_name= llvm::sys::getHostCPUName();
-		}
-		else
-		{
-			llvm::Triple target_triple;
-			target= llvm::TargetRegistry::lookupTarget( Options::architecture, target_triple, error_str );
-			target_triple_str= target_triple.getTriple();
-			features_str= GetFeaturesStr( Options::target_attributes );
-			cpu_name= Options::target_cpu;
-		}
 
+		llvm::Triple target_triple( llvm::sys::getDefaultTargetTriple() );
+
+		if( !Options::architecture.empty() && Options::architecture != "native" )
+			target_triple.setArchName( Options::architecture );
+		if( !Options::target_vendor.empty() )
+			target_triple.setVendorName( Options::target_vendor );
+		if( !Options::target_os.empty() )
+			target_triple.setOSName( Options::target_os );
+		if( !Options::target_environment.empty() )
+			target_triple.setEnvironmentName( Options::target_environment );
+
+		target_triple_str= target_triple.normalize();
+
+		std::string error_str;
+		target= llvm::TargetRegistry::lookupTarget( target_triple_str, error_str );
 		if( target == nullptr )
 		{
 			std::cerr << "Error, selecting target: " << error_str << std::endl;
 			PrintAvailableTargets();
 			return 1;
 		}
+
+		const std::string cpu_name= ( Options::architecture == "native" && Options::target_cpu.empty() )
+			? llvm::sys::getHostCPUName()
+			: Options::target_cpu;
+
+		const std::string features_str= ( Options::architecture == "native" && Options::target_attributes.empty() )
+			? GetNativeTargetFeaturesStr()
+			: GetFeaturesStr( Options::target_attributes );
 
 		llvm::TargetOptions target_options;
 
