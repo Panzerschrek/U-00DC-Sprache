@@ -33,7 +33,51 @@ fn BinaryOperatorToString( BinaryOperatorType o ) : ust::array_view_imut</ char8
 
 fn OverloadedOperatorToString( OverloadedOperator o ) : ust::array_view_imut</ char8 />
 {
-	// TODO
+	if( o == OverloadedOperator::None ) { return ""; }
+
+	if( o == OverloadedOperator::Add ) { return "+"; }
+	if( o == OverloadedOperator::Sub ) { return "-"; }
+	if( o == OverloadedOperator::Mul ) { return "*"; }
+	if( o == OverloadedOperator::Div ) { return "/"; }
+	if( o == OverloadedOperator::Rem ) { return "%"; }
+
+	if( o == OverloadedOperator::Equal        ) { return "=="; }
+	if( o == OverloadedOperator::NotEqual     ) { return "!="; }
+	if( o == OverloadedOperator::Less         ) { return "<"; }
+	if( o == OverloadedOperator::LessEqual    ) { return "<="; }
+	if( o == OverloadedOperator::Greater      ) { return ">"; }
+	if( o == OverloadedOperator::GreaterEqual ) { return ">="; }
+
+	if( o == OverloadedOperator::And ) { return "&"; }
+	if( o == OverloadedOperator::Or  ) { return "|"; }
+	if( o == OverloadedOperator::Xor ) { return "^"; }
+
+	if( o == OverloadedOperator::ShiftLeft  ) { return "<<"; }
+	if( o == OverloadedOperator::ShiftRight ) { return ">>"; }
+
+	if( o == OverloadedOperator::AssignAdd ) { return "+="; }
+	if( o == OverloadedOperator::AssignSub ) { return "-="; }
+	if( o == OverloadedOperator::AssignMul ) { return "*="; }
+	if( o == OverloadedOperator::AssignDiv ) { return "/="; }
+	if( o == OverloadedOperator::AssignRem ) { return "%="; }
+
+	if( o == OverloadedOperator::AssignAnd ) { return "&="; }
+	if( o == OverloadedOperator::AssignOr  ) { return "|="; }
+	if( o == OverloadedOperator::AssignXor ) { return "^="; }
+
+	if( o == OverloadedOperator::AssignShiftLeft  ) { return "<<="; }
+	if( o == OverloadedOperator::AssignShiftRight ) { return ">>="; }
+
+	if( o == OverloadedOperator::LogicalNot ) { return "!"; }
+	if( o == OverloadedOperator::BitwiseNot ) { return "~"; }
+
+	if( o == OverloadedOperator::Assign ) { return "="; }
+	if( o == OverloadedOperator::Increment ) { return "++"; }
+	if( o == OverloadedOperator::Decrement ) { return "--"; }
+
+	if( o == OverloadedOperator::Indexing ) { return "[]"; }
+	if( o == OverloadedOperator::Call     ) { return "()"; }
+
 	halt;
 }
 

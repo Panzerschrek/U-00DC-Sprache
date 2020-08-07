@@ -78,6 +78,7 @@ bool FilterTest( const std::string& test_name )
 		"NameNotFound_ForClassTemplateDefaultSignatureArguments_Test0",
 		"NamesCompressionTest",
 		"NamespacesManglingTest",
+		"OperatorsOverloadingTest0",
 		"Redefinition_ForClassDeclarations_Test0",
 		"TemplateInstantiationRequiredTest0",
 		"ValueIsNotTemplateTest0",
