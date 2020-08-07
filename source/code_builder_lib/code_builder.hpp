@@ -29,7 +29,6 @@ class CodeBuilder final : public ICodeBuilder
 public:
 	CodeBuilder(
 		llvm::LLVMContext& llvm_context,
-		std::string target_triple_str,
 		const llvm::DataLayout& data_layout,
 		bool build_debug_info );
 
@@ -748,7 +747,6 @@ private:
 
 private:
 	llvm::LLVMContext& llvm_context_;
-	const std::string target_triple_str_;
 	const llvm::DataLayout data_layout_;
 	const bool build_debug_info_;
 

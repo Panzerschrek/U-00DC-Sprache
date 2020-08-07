@@ -659,7 +659,6 @@ int Main( int argc, const char* argv[] )
 		CodeBuilder::BuildResult build_result=
 			CodeBuilder(
 				llvm_context,
-				target_triple_str,
 				data_layout,
 				Options::generate_debug_info ).BuildProgram( *source_graph );
 
@@ -736,7 +735,6 @@ int Main( int argc, const char* argv[] )
 		}
 
 		std_lib_module.get()->setDataLayout( data_layout );
-		std_lib_module.get()->setTargetTriple( target_triple_str );
 
 		std::string err_stream_str;
 		llvm::raw_string_ostream err_stream( err_stream_str );
@@ -748,6 +746,8 @@ int Main( int argc, const char* argv[] )
 
 		llvm::Linker::linkModules( *result_module, std::move(std_lib_module.get()) );
 	}
+
+	result_module->setTargetTriple( target_triple_str );
 
 	if( optimization_level > 0u || size_optimization_level > 0u )
 	{

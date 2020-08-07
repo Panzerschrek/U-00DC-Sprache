@@ -81,7 +81,6 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	ICodeBuilder::BuildResult build_result=
 		CodeBuilder(
 			*g_llvm_context,
-			llvm::sys::getProcessTriple(),
 			llvm::DataLayout( GetTestsDataLayout() ),
 			g_build_debug_info ).BuildProgram( *source_graph );
 
@@ -104,7 +103,6 @@ ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
 	return
 		CodeBuilder(
 			*g_llvm_context,
-			llvm::sys::getProcessTriple(),
 			llvm::DataLayout( GetTestsDataLayout() ),
 			g_build_debug_info ).BuildProgram( *source_graph );
 }
@@ -121,7 +119,6 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 	ICodeBuilder::BuildResult build_result=
 		CodeBuilder(
 			*g_llvm_context,
-			llvm::sys::getProcessTriple(),
 			llvm::DataLayout( GetTestsDataLayout() ),
 			g_build_debug_info ).BuildProgram( *source_graph );
 
@@ -143,7 +140,6 @@ ICodeBuilder::BuildResult BuildMultisourceProgramWithErrors( std::vector<SourceE
 	return
 		CodeBuilder(
 			*g_llvm_context,
-			llvm::sys::getProcessTriple(),
 			llvm::DataLayout( GetTestsDataLayout() ),
 			g_build_debug_info ).BuildProgram( *source_graph );
 }

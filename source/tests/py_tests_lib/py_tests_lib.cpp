@@ -59,7 +59,6 @@ std::unique_ptr<CodeBuilder> CreateCodeBuilder()
 	return
 		std::make_unique<CodeBuilder>(
 			*g_llvm_context,
-			llvm::sys::getProcessTriple(),
 			llvm::DataLayout( GetTestsDataLayout() ),
 			build_debug_info );
 }

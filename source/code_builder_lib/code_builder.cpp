@@ -47,11 +47,9 @@ CodeBuilder::ReferencesGraphNodeHolder::~ReferencesGraphNodeHolder()
 
 CodeBuilder::CodeBuilder(
 	llvm::LLVMContext& llvm_context,
-	std::string target_triple_str,
 	const llvm::DataLayout& data_layout,
 	bool build_debug_info )
 	: llvm_context_( llvm_context )
-	, target_triple_str_(std::move(target_triple_str))
 	, data_layout_(data_layout)
 	, build_debug_info_( build_debug_info )
 	, constexpr_function_evaluator_( data_layout_ )
@@ -102,7 +100,6 @@ ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_g
 
 	// Setup data layout
 	module_->setDataLayout(data_layout_);
-	module_->setTargetTriple(target_triple_str_);
 
 	// Prepare halt func.
 	halt_func_=
