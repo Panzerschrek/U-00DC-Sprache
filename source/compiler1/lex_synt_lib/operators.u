@@ -5,28 +5,28 @@ namespace U
 
 fn BinaryOperatorToString( BinaryOperatorType o ) : ust::array_view_imut</ char8 />
 {
-	if( o == BinaryOperatorType::Add ){ return ust::array_view_imut</ char8 />( "+" ); }
-	if( o == BinaryOperatorType::Sub ){ return ust::array_view_imut</ char8 />( "-" ); }
-	if( o == BinaryOperatorType::Mul ){ return ust::array_view_imut</ char8 />( "*" ); }
-	if( o == BinaryOperatorType::Div ){ return ust::array_view_imut</ char8 />( "/" ); }
-	if( o == BinaryOperatorType::Rem ){ return ust::array_view_imut</ char8 />( "%" ); }
+	if( o == BinaryOperatorType::Add ){ return "+"; }
+	if( o == BinaryOperatorType::Sub ){ return "-"; }
+	if( o == BinaryOperatorType::Mul ){ return "*"; }
+	if( o == BinaryOperatorType::Div ){ return "/"; }
+	if( o == BinaryOperatorType::Rem ){ return "%"; }
 
-	if( o == BinaryOperatorType::NotEqual		){ return ust::array_view_imut</ char8 />( "==" ); }
-	if( o == BinaryOperatorType::NotEqual		){ return ust::array_view_imut</ char8 />( "!=" ); }
-	if( o == BinaryOperatorType::Less			){ return ust::array_view_imut</ char8 />( "<"  ); }
-	if( o == BinaryOperatorType::LessEqual		){ return ust::array_view_imut</ char8 />( "<=" ); }
-	if( o == BinaryOperatorType::Greater		){ return ust::array_view_imut</ char8 />( "<"  ); }
-	if( o == BinaryOperatorType::GreaterEqual	){ return ust::array_view_imut</ char8 />( ">=" ); }
+	if( o == BinaryOperatorType::NotEqual		){ return "=="; }
+	if( o == BinaryOperatorType::NotEqual		){ return "!="; }
+	if( o == BinaryOperatorType::Less			){ return "<" ; }
+	if( o == BinaryOperatorType::LessEqual		){ return "<="; }
+	if( o == BinaryOperatorType::Greater		){ return "<" ; }
+	if( o == BinaryOperatorType::GreaterEqual	){ return ">="; }
 
-	if( o == BinaryOperatorType::And ){ return ust::array_view_imut</ char8 />( "&" ); }
-	if( o == BinaryOperatorType::Or  ){ return ust::array_view_imut</ char8 />( "|" ); }
-	if( o == BinaryOperatorType::Xor ){ return ust::array_view_imut</ char8 />( "^" ); }
+	if( o == BinaryOperatorType::And ){ return "&"; }
+	if( o == BinaryOperatorType::Or  ){ return "|"; }
+	if( o == BinaryOperatorType::Xor ){ return "^"; }
 
-	if( o == BinaryOperatorType::ShiftLeft  ){ return ust::array_view_imut</ char8 />( "<<" ); }
-	if( o == BinaryOperatorType::ShiftRight ){ return ust::array_view_imut</ char8 />( ">>" ); }
+	if( o == BinaryOperatorType::ShiftLeft  ){ return "<<"; }
+	if( o == BinaryOperatorType::ShiftRight ){ return ">>"; }
 
-	if( o == BinaryOperatorType::LazyLogicalAnd ){ return ust::array_view_imut</ char8 />( "&&" ); }
-	if( o == BinaryOperatorType::LazyLogicalOr  ){ return ust::array_view_imut</ char8 />( "||" ); }
+	if( o == BinaryOperatorType::LazyLogicalAnd ){ return "&&"; }
+	if( o == BinaryOperatorType::LazyLogicalOr  ){ return "||"; }
 
 	halt;
 }
