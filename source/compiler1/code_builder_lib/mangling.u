@@ -336,6 +336,54 @@ fn MangleTemplateArgsImpl( TemplateArgsFinished& template_args ) : MangleGraphNo
 	return move(result);
 }
 
+fn DecodeOperator( ust::string8& o ) : ust::array_view_imut</ char8 />
+{
+	if( o == "+" ){ return "pl"; }
+	if( o == "-" ){ return "mi"; }
+	if( o == "*" ){ return "ml"; }
+	if( o == "/" ){ return "dv"; }
+	if( o == "%" ){ return "rm"; }
+
+	if( o == "==" ){ return "eq"; }
+	if( o == "!=" ){ return "ne"; }
+	if( o == ">"  ){ return "gt"; }
+	if( o == ">=" ){ return "ge"; }
+	if( o == "<"  ){ return "lt"; }
+	if( o == "<=" ){ return "le"; }
+
+	if( o == "&" ){ return "an"; }
+	if( o == "|" ){ return "or"; }
+	if( o == "^" ){ return "eo"; }
+
+	if( o == "<<" ){ return "ls"; }
+	if( o == ">>" ){ return "rs"; }
+
+	if( o == "+=" ){ return "pL"; }
+	if( o == "-=" ){ return "mI"; }
+	if( o == "*=" ){ return "mL"; }
+	if( o == "/=" ){ return "dV"; }
+	if( o == "%=" ){ return "rM"; }
+
+	if( o == "&=" ){ return "aN"; }
+	if( o == "|=" ){ return "oR"; }
+	if( o == "^=" ){ return "eO"; }
+
+	if( o == "<<=" ){ return "lS"; }
+	if( o == ">>=" ){ return "rS"; }
+
+	if( o == "!" ){ return "nt"; }
+	if( o == "~" ){ return "co"; }
+
+	if( o == "=" ){ return "aS"; }
+	if( o == "++" ){ return "pp"; }
+	if( o == "--" ){ return "mm"; }
+
+	if( o == "()" ){ return "cl"; }
+	if( o == "[]" ){ return "ix"; }
+
+	return "";
+}
+
 fn MangleFunction(
 	NamesScope& parent_scope,
 	ust::string8& name,
@@ -343,7 +391,16 @@ fn MangleFunction(
 {
 	var MangleGraphNode mut res;
 
-	res.childs.push_back( ust::box</MangleGraphNode/>( GetNestedName( name, parent_scope, false ) ) );
+	auto op_decoded= DecodeOperator( name );
+	if( !op_decoded.empty() )
+	{
+		res.childs.push_back( ust::box</MangleGraphNode/>( GetNestedName( op_decoded, parent_scope, true ) ) );
+	}
+	else
+	{
+		res.childs.push_back( ust::box</MangleGraphNode/>( GetNestedName( name, parent_scope, false ) ) );
+	}
+
 	res.childs.back().get_ref().cachable= false;
 
 	foreach( &arg : function_type.args )
