@@ -363,6 +363,13 @@ private:
 		NamesScopePtr& names_scope, // Needed only for errors reporting
 		FilePos& file_pos ) : ust::optional_ref</FunctionVariable, false/>'x';
 
+	fn GetOverloadedOperator(
+		mut this,
+		ust::array_view_imut</FunctionType::Arg/> args,
+		OverloadedOperator operator,
+		NamesScopePtr& names_scope, // Needed only for errors reporting
+		FilePos& file_pos ) : ust::optional</FunctionVariable/>;
+
 	fn TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_type );
 	fn TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type );
 	fn TryGenerateDestructor( this, ClassTypePtr& class_type );

@@ -80,6 +80,7 @@ bool FilterTest( const std::string& test_name )
 		"NamespacesManglingTest",
 		"OperatorsManglingTest",
 		"OperatorsOverloadingTest0",
+		"OperatorsOverloadingTest3",
 		"Redefinition_ForClassDeclarations_Test0",
 		"TemplateInstantiationRequiredTest0",
 		"ValueIsNotTemplateTest0",

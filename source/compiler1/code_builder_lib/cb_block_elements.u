@@ -734,14 +734,43 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
 	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression );
-	if( variable.t.GetFundamentalType().empty() || !IsInteger( variable.t.GetFundamentalType().get_ref().fundamental_type ) )
-	{
-		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, file_pos, variable.t )
-		return;
-	}
+
 	if( variable.value_type != ValueType::ReferenceMut )
 	{
 		REPORT_ERROR( ExpectedReferenceValue, names_scope, file_pos )
+		return;
+	}
+
+	// Try process overloaded operator.
+	if( ! variable.t.GetClassType().empty() )
+	{
+		var [ FunctionType::Arg, 1 ] args
+		[ {
+			.arg_type(variable.t),
+			.is_mutable= variable.value_type == ValueType::ReferenceMut,
+			.is_reference= variable.value_type != ValueType::Value,
+		} ];
+
+		auto operator= select( delta == 1 ? OverloadedOperator::Increment : OverloadedOperator::Decrement );
+		if_var( &overloaded_operator : GetOverloadedOperator( args, operator, names_scope, file_pos ) )
+		{
+			DoCallFunction(
+				names_scope,
+				function_context,
+				ust::optional_ref</ Variable, false />(variable),
+				overloaded_operator,
+				ust::vector</ ust::shared_ptr_final</Synt::Expression/> />(),
+				file_pos );
+			CallDestructorsForTopVariablesFrame( function_context );
+			return;
+		}
+	}
+
+	// Process operator for fundamental type.
+
+	if( variable.t.GetFundamentalType().empty() || !IsInteger( variable.t.GetFundamentalType().get_ref().fundamental_type ) )
+	{
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, file_pos, variable.t )
 		return;
 	}
 

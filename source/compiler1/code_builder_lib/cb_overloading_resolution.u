@@ -301,4 +301,44 @@ fn CodeBuilder::GetOverloadedFunction(
 	return selected_function;
 }
 
+fn CodeBuilder::GetOverloadedOperator(
+	mut this,
+	ust::array_view_imut</FunctionType::Arg/> args,
+	OverloadedOperator operator,
+	NamesScopePtr& names_scope, // Needed only for errors reporting
+	FilePos& file_pos ) : ust::optional</FunctionVariable/>
+{
+	foreach( &arg : args )
+	{
+		if_var( &class_type : arg.arg_type.get_ref().GetClassType() )
+		{
+
+			auto class_members= class_type.lock_imut().get_ref().members;
+			auto members_lock= class_members.lock_imut();
+			auto& members= members_lock.get_ref();
+			if_var( &operators_value : members.GetThisScopeValue( OverloadedOperatorToString( operator ) ) )
+			{
+				auto functions_set_ptr= operators_value.Get</NamesScopeFunctionsSet/>();
+				if( !functions_set_ptr.empty() )
+				{
+					BuildFunctionsSet( class_members, ust::to_non_nullable( functions_set_ptr ), false );
+
+					auto functions_set_lock= functions_set_ptr.lock_imut();
+					if_var( &function_selected : GetOverloadedFunction( functions_set_lock.get_ref().functions_set, args, false, names_scope, file_pos ) )
+					{
+						return function_selected;
+					}
+				}
+			}
+		}
+
+		if( operator == OverloadedOperator::Indexing )
+		{
+			break; // For indexing operator only check first argument.
+		}
+	}
+
+	return ust::optional</FunctionVariable/>();
+}
+
 } // namespace U
