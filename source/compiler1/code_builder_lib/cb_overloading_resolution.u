@@ -128,7 +128,8 @@ fn CodeBuilder::GetOverloadedFunction(
 	ust::array_view_imut</FunctionType::Arg/> actual_args,
 	bool first_actual_arg_is_this,
 	NamesScopePtr& names_scope,
-	FilePos& file_pos ) : ust::optional_ref</FunctionVariable, false/>'x'
+	FilePos& file_pos,
+	bool produce_errors ) : ust::optional_ref</FunctionVariable, false/>'x'
 {
 	var ust::vector</size_type/> mut match_functions;
 	auto mut i= 0s;
@@ -186,7 +187,10 @@ fn CodeBuilder::GetOverloadedFunction(
 
 	if( match_functions.empty() )
 	{
-		REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, file_pos )
+		if( produce_errors )
+		{
+			REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, file_pos )
+		}
 		return ust::optional_ref</FunctionVariable, false/>();
 	}
 
@@ -293,7 +297,7 @@ fn CodeBuilder::GetOverloadedFunction(
 		}
 	}
 
-	if( selected_function.empty() )
+	if( selected_function.empty() && produce_errors )
 	{
 		REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope, file_pos )
 	}
@@ -323,7 +327,7 @@ fn CodeBuilder::GetOverloadedOperator(
 					BuildFunctionsSet( class_members, ust::to_non_nullable( functions_set_ptr ), false );
 
 					auto functions_set_lock= functions_set_ptr.lock_imut();
-					if_var( &function_selected : GetOverloadedFunction( functions_set_lock.get_ref().functions_set, args, false, names_scope, file_pos ) )
+					if_var( &function_selected : GetOverloadedFunction( functions_set_lock.get_ref().functions_set, args, false, names_scope, file_pos, false ) )
 					{
 						return function_selected;
 					}

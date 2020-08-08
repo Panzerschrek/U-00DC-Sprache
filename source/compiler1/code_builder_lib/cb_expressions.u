@@ -1324,7 +1324,8 @@ fn CodeBuilder::CallFunctionsSet(
 			args_evaluated.range(),
 			!this_.empty(),
 			names_scope,
-			file_pos );
+			file_pos,
+			true );
 	if( function_selected.empty() )
 	{
 		return ErrorValue();
