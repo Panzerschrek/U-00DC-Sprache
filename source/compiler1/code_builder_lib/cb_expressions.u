@@ -332,6 +332,37 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		}
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, indexation_operator.file_pos, index.t )
 	}
+	if( !variable.t.GetClassType().empty() )
+	{
+		var [ FunctionType::Arg, 2 ] args
+		[
+			{
+				.arg_type(variable.t),
+				.is_mutable= variable.value_type == ValueType::ReferenceMut,
+				.is_reference= variable.value_type != ValueType::Value,
+			},
+			{
+				.arg_type(index.t),
+				.is_mutable= index.value_type == ValueType::ReferenceMut,
+				.is_reference= index.value_type != ValueType::Value,
+			},
+		];
+
+		if_var( &overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::Indexing, names_scope, indexation_operator.file_pos ) )
+		{
+			if( overloaded_operator.t.GetFunctionType().get_ref().args.size() == 2s )
+			{
+				var [ Variable, 2 ] args[ variable, index ];
+				return DoCallFunction(
+					names_scope,
+					function_context,
+					overloaded_operator,
+					args,
+					ust::vector</ ust::shared_ptr_final</Synt::Expression/> />(),
+					indexation_operator.file_pos );
+			}
+		}
+	}
 
 	REPORT_ERROR( OperationNotSupportedForThisType, names_scope, indexation_operator.file_pos, variable.t )
 
@@ -1214,17 +1245,42 @@ fn CodeBuilder::DoCallFunction(
 	ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args,
 	FilePos& file_pos ) : Value
 {
-	auto total_args= args.size() + select( this_.empty() ? 0s : 1s);
-
-	if( function.is_this_call && this_.empty() )
-	{
-		REPORT_ERROR( CallOfThiscallFunctionUsingNonthisArgument, names_scope, file_pos )
-	}
 	/* TODO - what if we call non-this-call function using "this", like
 		struct S{ fn Foo( S& s ); }
 		fn Bar( S& s ) { s.Foo(); }
 	???
 	*/
+	if( function.is_this_call && this_.empty() )
+	{
+		REPORT_ERROR( CallOfThiscallFunctionUsingNonthisArgument, names_scope, file_pos )
+		return ErrorValue();
+	}
+
+	var ust::vector</ Variable /> mut preevaluated_args;
+	if( !this_.empty() )
+	{
+		preevaluated_args.push_back( this_.get_ref() );
+	}
+
+	return DoCallFunction(
+		names_scope,
+		function_context,
+		function,
+		preevaluated_args.range(),
+		args,
+		file_pos );
+}
+
+fn CodeBuilder::DoCallFunction(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	FunctionVariable& function,
+	ust::array_view_imut</ Variable /> preevaluated_args,
+	ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args,
+	FilePos& file_pos ) : Value
+{
+	auto total_args= preevaluated_args.size() + args.size();
 
 	var FunctionType& function_type= function.t.GetFunctionType().get_ref();
 
@@ -1251,13 +1307,13 @@ fn CodeBuilder::DoCallFunction(
 		llvm_args.push_back( s_ret_value );
 	}
 
-	for( var size_type mut arg_n= 0s, first_expr_arg= select( this_.empty() ? 0s : 1s ); arg_n < total_args; ++arg_n )
+	for( var size_type mut arg_n= 0s; arg_n < total_args; ++arg_n )
 	{
 		var Type& expected_arg_type= function_type.args[arg_n].arg_type.get_ref();
 		auto arg=
-			select( arg_n == 0s && !this_.empty()
-				? this_.get_ref()
-				: BuildExpressionCodeEnsureVariable( names_scope, function_context, args[ arg_n - first_expr_arg ].get_ref() ) );
+			select( arg_n < preevaluated_args.size()
+				? preevaluated_args[arg_n]
+				: BuildExpressionCodeEnsureVariable( names_scope, function_context, args[ arg_n - preevaluated_args.size() ].get_ref() ) );
 
 		if( arg.t != expected_arg_type )
 		{

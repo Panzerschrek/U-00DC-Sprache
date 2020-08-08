@@ -243,6 +243,15 @@ private:
 		ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args,
 		FilePos& file_pos ) : Value;
 
+	fn DoCallFunction(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		FunctionVariable& function,
+		ust::array_view_imut</ Variable /> preevaluated_args,
+		ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args,
+		FilePos& file_pos ) : Value;
+
 	fn BuildTempVariableConstruction(
 		mut this,
 		NamesScopePtr& names_scope,
