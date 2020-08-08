@@ -222,6 +222,18 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return BuildLazyBinaryOperator( names_scope, function_context, binary_operator );
 	}
 
+	if_var( & res :
+		TryCallOverloadedBinaryOperator(
+			names_scope,
+			function_context,
+			GetOverloadedOperatorForBinaryOperator( binary_operator.operator ),
+			binary_operator.l,
+			binary_operator.r,
+			binary_operator.file_pos ) )
+	{
+		return res;
+	}
+
 	auto mut l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.l.get_ref() );
 	// Save l_var in register, prevent its modification during r_var calculation.
 	l_var.llvm_value= CreateMoveToLLVMRegisterInstruction( l_var, function_context );

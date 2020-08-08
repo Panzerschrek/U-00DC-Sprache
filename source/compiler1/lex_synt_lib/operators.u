@@ -19,6 +19,28 @@ fn GetOverloadedOperatorForAdditiveAssignmentOperator( BinaryOperatorType o ) : 
 	halt;
 }
 
+fn GetOverloadedOperatorForBinaryOperator( BinaryOperatorType o ) : OverloadedOperator
+{
+	if( o == BinaryOperatorType::Add ) { return OverloadedOperator::Add; }
+	if( o == BinaryOperatorType::Sub ) { return OverloadedOperator::Sub; }
+	if( o == BinaryOperatorType::Mul ) { return OverloadedOperator::Mul; }
+	if( o == BinaryOperatorType::Div ) { return OverloadedOperator::Div; }
+	if( o == BinaryOperatorType::Rem ) { return OverloadedOperator::Rem; }
+	if( o == BinaryOperatorType::And ) { return OverloadedOperator::And; }
+	if( o == BinaryOperatorType::Or  ) { return OverloadedOperator::Or ; }
+	if( o == BinaryOperatorType::Xor ) { return OverloadedOperator::Xor; }
+	if( o == BinaryOperatorType::Equal        ) { return OverloadedOperator::Equal       ; }
+	if( o == BinaryOperatorType::NotEqual     ) { return OverloadedOperator::NotEqual    ; }
+	if( o == BinaryOperatorType::Less         ) { return OverloadedOperator::Less        ; }
+	if( o == BinaryOperatorType::LessEqual    ) { return OverloadedOperator::LessEqual   ; }
+	if( o == BinaryOperatorType::Greater      ) { return OverloadedOperator::Greater     ; }
+	if( o == BinaryOperatorType::GreaterEqual ) { return OverloadedOperator::GreaterEqual; }
+	if( o == BinaryOperatorType::ShiftLeft  ) { return OverloadedOperator::ShiftLeft ; }
+	if( o == BinaryOperatorType::ShiftRight ) { return OverloadedOperator::ShiftRight; }
+
+	halt;
+}
+
 fn BinaryOperatorToString( BinaryOperatorType o ) : ust::array_view_imut</ char8 />
 {
 	if( o == BinaryOperatorType::Add ){ return "+"; }

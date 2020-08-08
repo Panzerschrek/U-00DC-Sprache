@@ -88,6 +88,7 @@ bool FilterTest( const std::string& test_name )
 		"OperatorDoesNotHaveParentClassArguments_Test3",
 		"OperatorsManglingTest",
 		"OperatorsOverloadingTest0",
+		"OperatorsOverloadingTest1",
 		"OperatorsOverloadingTest2",
 		"OperatorsOverloadingTest3",
 		"OperatorsOverloadingTest5",
