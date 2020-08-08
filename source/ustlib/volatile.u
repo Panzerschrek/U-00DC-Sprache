@@ -1,0 +1,26 @@
+namespace ust
+{
+
+fn volatile_read(  i8& addr) :   i8;
+fn volatile_read(  u8& addr) :   u8;
+fn volatile_read( i16& addr) :  i16;
+fn volatile_read( u16& addr) :  u16;
+fn volatile_read( i32& addr) :  i32;
+fn volatile_read( u32& addr) :  u32;
+fn volatile_read( i64& addr) :  i64;
+fn volatile_read( u64& addr) :  u64;
+fn volatile_read(i128& addr) : i128;
+fn volatile_read(u128& addr) : u128;
+
+fn volatile_write(  i8 &mut addr,   i8 x);
+fn volatile_write(  u8 &mut addr,   u8 x);
+fn volatile_write( i16 &mut addr,  i16 x);
+fn volatile_write( u16 &mut addr,  u16 x);
+fn volatile_write( i32 &mut addr,  i32 x);
+fn volatile_write( u32 &mut addr,  u32 x);
+fn volatile_write( i64 &mut addr,  i64 x);
+fn volatile_write( u64 &mut addr,  u64 x);
+fn volatile_write(i128 &mut addr, i128 x);
+fn volatile_write(u128 &mut addr, u128 x);
+
+}

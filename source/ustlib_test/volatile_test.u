@@ -1,0 +1,29 @@
+//##success_test
+import "../ustlib/volatile.u"
+
+template</type T/>
+fn DoTest()
+{
+	var T mut x= zero_init;
+	ust::volatile_write( x, T(33) );
+	ust::volatile_write( x, T(33) );
+	ust::volatile_read( x );
+	ust::volatile_read( x );
+	halt if( ust::volatile_read( x ) != T(33) );
+}
+
+fn nomangle main() : i32
+{
+	DoTest</  i8/>();
+	DoTest</  u8/>();
+	DoTest</ i16/>();
+	DoTest</ u16/>();
+	DoTest</ i32/>();
+	DoTest</ u32/>();
+	DoTest</ i64/>();
+	DoTest</ u64/>();
+	DoTest</i128/>();
+	DoTest</u128/>();
+
+	return 0;
+}
