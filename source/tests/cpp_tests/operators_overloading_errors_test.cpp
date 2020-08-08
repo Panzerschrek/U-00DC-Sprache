@@ -58,7 +58,6 @@ U_TEST( OperatorDoesNotHaveParentClassArguments_Test1 )
 	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
 }
 
-
 U_TEST( OperatorDoesNotHaveParentClassArguments_Test2 )
 {
 	static const char c_program_text[]=
@@ -72,6 +71,26 @@ U_TEST( OperatorDoesNotHaveParentClassArguments_Test2 )
 	)";
 
 	BuildProgram( c_program_text );
+}
+
+U_TEST( OperatorDoesNotHaveParentClassArguments_Test3 )
+{
+	// First argument of () operator should have class type.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			op()( i32 x, S& s ){}
+		}
+	)";
+
+	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::OperatorDoesNotHaveParentClassArguments );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
 }
 
 U_TEST( InvalidArgumentCountForOperator_Test )

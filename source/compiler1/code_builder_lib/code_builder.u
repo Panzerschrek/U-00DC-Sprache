@@ -1088,6 +1088,8 @@ fn CodeBuilder::PrepareFunction(
 		{
 			REPORT_ERROR( ExplicitArgumentsInDestructor, names_scope_ptr, function_declaration.file_pos )
 		}
+
+		CheckOverloadedOperator( class_type, function_type, function_declaration.operator, names_scope_ptr, function_declaration.file_pos );
 	}
 
 	if_var( &mut prev_function : GetFunctionWithSameType( functions_set, function_variable.t ) )
@@ -1151,6 +1153,155 @@ fn CodeBuilder::PrepareFunction(
 	}
 
 	return ApplyOverloadedFunction( functions_set, move(function_variable), names_scope_ptr, function_declaration.file_pos );
+}
+
+fn CodeBuilder::CheckOverloadedOperator(
+	this,
+	ust::shared_ptr_nullable_mut</ClassType/>& class_type,
+	FunctionType& func_type,
+	OverloadedOperator operator,
+	NamesScopePtr& names_scope,
+	FilePos& file_pos )
+{
+	if( operator == OverloadedOperator::None ) { return; } // Non-operator
+
+	if( class_type.empty() )
+	{
+		REPORT_ERROR( OperatorDeclarationOutsideClass, names_scope, file_pos )
+		return;
+	}
+
+	auto class_type_non_null= ust::to_non_nullable( class_type );
+
+	auto mut is_this_class= false;
+	foreach( & arg : func_type.args )
+	{
+		if( arg.arg_type.get_ref() == class_type_non_null )
+		{
+			is_this_class= true;
+			break;
+		}
+	}
+
+	if( !is_this_class )
+	{
+		REPORT_ERROR( OperatorDoesNotHaveParentClassArguments, names_scope, file_pos )
+	}
+
+	auto ret_is_void=
+		( func_type.return_type.get_ref() == void_type_ || func_type.return_type.get_ref() == void_type_for_ret_ ) &&
+		!func_type.return_value_is_reference;
+
+	if( operator == OverloadedOperator::Add ||
+		operator == OverloadedOperator::Sub )
+	{
+		if( !( func_type.args.size() == 1s || func_type.args.size() == 2s ) )
+		{
+			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
+		}
+	}
+	else
+	if( operator == OverloadedOperator::Mul ||
+		operator == OverloadedOperator::Div ||
+		operator == OverloadedOperator::Rem ||
+		operator == OverloadedOperator::And ||
+		operator == OverloadedOperator::Or  ||
+		operator == OverloadedOperator::Xor ||
+		operator == OverloadedOperator::ShiftLeft  ||
+		operator == OverloadedOperator::ShiftRight )
+	{
+		if( func_type.args.size() != 2s )
+		{
+			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
+		}
+	}
+	else
+	if( operator == OverloadedOperator::AssignAdd ||
+		operator == OverloadedOperator::AssignSub ||
+		operator == OverloadedOperator::AssignMul ||
+		operator == OverloadedOperator::AssignDiv ||
+		operator == OverloadedOperator::AssignRem ||
+		operator == OverloadedOperator::AssignAnd ||
+		operator == OverloadedOperator::AssignOr  ||
+		operator == OverloadedOperator::AssignXor ||
+		operator == OverloadedOperator::AssignShiftLeft  ||
+		operator == OverloadedOperator::AssignShiftRight ||
+		operator == OverloadedOperator::Assign )
+	{
+		if( func_type.args.size() != 2s )
+		{
+			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
+		}
+		if( !ret_is_void )
+		{
+			REPORT_ERROR( InvalidReturnTypeForOperator, names_scope, file_pos, void_type_ )
+		}
+	}
+	else
+	if( operator == OverloadedOperator::Equal     ||
+		operator == OverloadedOperator::NotEqual  ||
+		operator == OverloadedOperator::Less      ||
+		operator == OverloadedOperator::LessEqual ||
+		operator == OverloadedOperator::Greater   ||
+		operator == OverloadedOperator::GreaterEqual )
+	{
+		if( func_type.args.size() != 2s )
+		{
+			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
+		}
+		if( !( func_type.return_type.get_ref() == bool_type_ && !func_type.return_value_is_reference ) )
+		{
+			REPORT_ERROR( InvalidReturnTypeForOperator, names_scope, file_pos, void_type_ )
+		}
+	}
+	else
+	if( operator == OverloadedOperator::LogicalNot ||
+		operator == OverloadedOperator::BitwiseNot )
+	{
+		if( func_type.args.size() != 1s )
+		{
+			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
+		}
+	}
+	else
+	if( operator == OverloadedOperator::Increment ||
+		operator == OverloadedOperator::Decrement )
+	{
+		if( func_type.args.size() != 1s )
+		{
+			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
+		}
+		if( !ret_is_void )
+		{
+			REPORT_ERROR( InvalidReturnTypeForOperator, names_scope, file_pos, void_type_ )
+		}
+	}
+	else if( operator == OverloadedOperator::Indexing )
+	{
+		if( func_type.args.size() != 2s )
+		{
+			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
+		}
+		// Indexing operator must have first argument of parent class.
+		if( !func_type.args.empty() && func_type.args.front().arg_type.get_ref() != class_type_non_null )
+		{
+			REPORT_ERROR( OperatorDoesNotHaveParentClassArguments, names_scope, file_pos )
+		}
+		// TODO - maybe also disable non-this-call indexing operator?
+	}
+	else if( operator == OverloadedOperator::Call )
+	{
+		if( func_type.args.empty() )
+		{
+			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
+		}
+		// Call operator must have first argument of parent class.
+		if( !func_type.args.empty() && func_type.args.front().arg_type.get_ref() != class_type_non_null )
+		{
+			REPORT_ERROR( OperatorDoesNotHaveParentClassArguments, names_scope, file_pos )
+		}
+		// TODO - maybe also disable non-this-call call operator?
+	}
 }
 
 fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVariable& func_variable )
