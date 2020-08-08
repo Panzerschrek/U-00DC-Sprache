@@ -229,6 +229,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			GetOverloadedOperatorForBinaryOperator( binary_operator.operator ),
 			binary_operator.l,
 			binary_operator.r,
+			ArgsEvaluationOrder::Direct,
 			binary_operator.file_pos ) )
 	{
 		return res;
@@ -370,6 +371,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				overloaded_operator,
 				args,
 				ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
+				ArgsEvaluationOrder::Direct,
 				indexation_operator.file_pos );
 		}
 	}
@@ -1231,6 +1233,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 	OverloadedOperator operator,
 	ust::shared_ptr_final</Synt::Expression/>& arg_l,
 	ust::shared_ptr_final</Synt::Expression/>& arg_r,
+	ArgsEvaluationOrder args_evaluation_order,
 	FilePos& file_pos ) : ust::optional</Value/>
 {
 	var [ ust::shared_ptr_final</Synt::Expression/>, 2 ] in_args[ arg_l, arg_r ];
@@ -1262,9 +1265,10 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 		return DoCallFunction(
 			names_scope,
 			function_context,
-			ust::optional_ref</ Variable, false />(),
 			overloaded_operator,
+			ust::array_view_imut</ Variable />(),
 			in_args,
+			args_evaluation_order,
 			file_pos );
 	}
 
@@ -1372,6 +1376,7 @@ fn CodeBuilder::DoCallFunction(
 		function,
 		preevaluated_args.range(),
 		args,
+		ArgsEvaluationOrder::Direct,
 		file_pos );
 }
 
@@ -1382,6 +1387,7 @@ fn CodeBuilder::DoCallFunction(
 	FunctionVariable& function,
 	ust::array_view_imut</ Variable />& preevaluated_args,
 	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
+	ArgsEvaluationOrder args_evaluation_order,
 	FilePos& file_pos ) : Value
 {
 	auto total_args= preevaluated_args.size() + args.size();
@@ -1411,8 +1417,14 @@ fn CodeBuilder::DoCallFunction(
 		llvm_args.push_back( s_ret_value );
 	}
 
-	for( var size_type mut arg_n= 0s; arg_n < total_args; ++arg_n )
+	auto first_llvm_arg_number= select( is_s_ret ? 1s : 0s );
+	llvm_args.resize( first_llvm_arg_number + total_args, LLVMValueRef::Null );
+
+	for( var size_type mut i= 0s; i < total_args; ++i )
 	{
+		auto arg_n= select( args_evaluation_order == ArgsEvaluationOrder::Direct ? i : total_args - i - 1s );
+		auto &mut llv_arg= llvm_args[ first_llvm_arg_number + arg_n ];
+
 		var Type& expected_arg_type= function_type.args[arg_n].arg_type.get_ref();
 		auto arg=
 			select( arg_n < preevaluated_args.size()
@@ -1434,12 +1446,12 @@ fn CodeBuilder::DoCallFunction(
 				{
 					auto temp_storage= LLVMBuildAlloca( function_context.alloca_ir_builder, arg.t.GetLLVMType(), "\0"[0] );
 					LLVMBuildStore( function_context.llvm_ir_builder, arg.llvm_value, temp_storage );
-					llvm_args.push_back( temp_storage );
+					llv_arg= temp_storage;
 				}
 			}
 			else
 			{
-				llvm_args.push_back( arg.llvm_value );
+				llv_arg= arg.llvm_value;
 			}
 		}
 		else
@@ -1453,11 +1465,11 @@ fn CodeBuilder::DoCallFunction(
 				}
 				TryCallCopyConstructor( names_scope, function_context, var_copy, arg.llvm_value, arg.t.GetClassType().get_ref(), file_pos );
 
-				llvm_args.push_back( var_copy );
+				llv_arg= var_copy;
 			}
 			else
 			{
-				llvm_args.push_back( CreateMoveToLLVMRegisterInstruction( arg, function_context ) );
+				llv_arg= CreateMoveToLLVMRegisterInstruction( arg, function_context );
 			}
 		}
 	}

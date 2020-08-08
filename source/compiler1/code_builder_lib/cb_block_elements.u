@@ -343,6 +343,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			OverloadedOperator::Assign,
 			assignment_operator.l,
 			assignment_operator.r,
+			ArgsEvaluationOrder::Reversed,
 			assignment_operator.file_pos ).empty() )
 	{}
 	else
@@ -390,6 +391,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			GetOverloadedOperatorForAdditiveAssignmentOperator( additive_assignment_operator.operator ),
 			additive_assignment_operator.l,
 			additive_assignment_operator.r,
+			ArgsEvaluationOrder::Reversed,
 			additive_assignment_operator.file_pos ).empty() )
 	{}
 	else

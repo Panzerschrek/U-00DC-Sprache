@@ -23,6 +23,9 @@ bool FilterTest( const std::string& test_name )
 {
 	static const std::unordered_set<std::string> c_test_to_enable
 	{
+		"AssignmentOperatorArgumentsShouldBeEvaluatedInReverseOrder",
+		"AdditiveAssignmentOperatorArgumentsShouldBeEvaluatedInReverseOrder",
+		"BinaryOperatorArgumentsShouldBeEvaluatedInDirectOrder",
 		"BracketExpressionAsTemplateSignatureParameter_Test0",
 		"ClassBodyDuplicationTest0",
 		"ClassmethodsManglingTest",
@@ -93,9 +96,12 @@ bool FilterTest( const std::string& test_name )
 		"OperatorsOverloadingTest3",
 		"OperatorsOverloadingTest4",
 		"OperatorsOverloadingTest5",
+		"OperatorsOverloadingTest6",
 		"OperatorsOverloadingTest_CallOperator0",
 		"OperatorsOverloadingTest_CallOperator1",
+		"OperatorsOverloadingTest_EqualityOperators",
 		"OperatorsOverloadingTest_IndexationOperator",
+		"OperatorsOverloadingTest_InTemplates",
 		"Redefinition_ForClassDeclarations_Test0",
 		"TemplateInstantiationRequiredTest0",
 		"ValueIsNotTemplateTest0",

@@ -240,6 +240,7 @@ private:
 		OverloadedOperator operator,
 		ust::shared_ptr_final</Synt::Expression/>& arg_l,
 		ust::shared_ptr_final</Synt::Expression/>& arg_r,
+		ArgsEvaluationOrder args_evaluation_order,
 		FilePos& file_pos ) : ust::optional</Value/>;
 
 	fn CallFunctionsSet(
@@ -260,6 +261,8 @@ private:
 		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 		FilePos& file_pos ) : Value;
 
+	enum ArgsEvaluationOrder{ Direct, Reversed }
+
 	fn DoCallFunction(
 		mut this,
 		NamesScopePtr& names_scope,
@@ -267,6 +270,7 @@ private:
 		FunctionVariable& function,
 		ust::array_view_imut</ Variable />& preevaluated_args,
 		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
+		ArgsEvaluationOrder args_evaluation_order,
 		FilePos& file_pos ) : Value;
 
 	fn BuildTempVariableConstruction(
