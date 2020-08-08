@@ -128,7 +128,8 @@ fn CodeBuilder::GetOverloadedFunction(
 	ust::array_view_imut</FunctionType::Arg/> actual_args,
 	bool first_actual_arg_is_this,
 	NamesScopePtr& names_scope,
-	FilePos& file_pos ) : ust::optional_ref</FunctionVariable, false/>'x'
+	FilePos& file_pos,
+	bool produce_errors ) : ust::optional_ref</FunctionVariable, false/>'x'
 {
 	var ust::vector</size_type/> mut match_functions;
 	auto mut i= 0s;
@@ -186,7 +187,10 @@ fn CodeBuilder::GetOverloadedFunction(
 
 	if( match_functions.empty() )
 	{
-		REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, file_pos )
+		if( produce_errors )
+		{
+			REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, file_pos )
+		}
 		return ust::optional_ref</FunctionVariable, false/>();
 	}
 
@@ -293,12 +297,51 @@ fn CodeBuilder::GetOverloadedFunction(
 		}
 	}
 
-	if( selected_function.empty() )
+	if( selected_function.empty() && produce_errors )
 	{
 		REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope, file_pos )
 	}
 
 	return selected_function;
+}
+
+fn CodeBuilder::GetOverloadedOperator(
+	mut this,
+	ust::array_view_imut</FunctionType::Arg/> args,
+	OverloadedOperator operator,
+	NamesScopePtr& names_scope, // Needed only for errors reporting
+	FilePos& file_pos ) : ust::optional</FunctionVariable/>
+{
+	foreach( &arg : args )
+	{
+		if_var( &class_type : arg.arg_type.get_ref().GetClassType() )
+		{
+			auto class_members= class_type.lock_imut().get_ref().members;
+			auto members_lock= class_members.lock_imut();
+			auto& members= members_lock.get_ref();
+			if_var( &operators_value : members.GetThisScopeValue( OverloadedOperatorToString( operator ) ) )
+			{
+				auto functions_set_ptr= operators_value.Get</NamesScopeFunctionsSet/>();
+				if( !functions_set_ptr.empty() )
+				{
+					BuildFunctionsSet( class_members, ust::to_non_nullable( functions_set_ptr ), false );
+
+					auto functions_set_lock= functions_set_ptr.lock_imut();
+					if_var( &function_selected : GetOverloadedFunction( functions_set_lock.get_ref().functions_set, args, false, names_scope, file_pos, false ) )
+					{
+						return function_selected;
+					}
+				}
+			}
+		}
+
+		if( operator == OverloadedOperator::Indexing || operator == OverloadedOperator::Call )
+		{
+			break; // For indexing and call operators only check first argument.
+		}
+	}
+
+	return ust::optional</FunctionVariable/>();
 }
 
 } // namespace U

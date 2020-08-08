@@ -150,6 +150,14 @@ private:
 		FunctionsSet &mut functions_set,
 		bool is_out_of_line_function ) : bool;
 
+	fn CheckOverloadedOperator(
+		this,
+		ust::shared_ptr_nullable_mut</ClassType/>& class_type,
+		FunctionType& func_type,
+		OverloadedOperator operator,
+		NamesScopePtr& names_scope,
+		FilePos& file_pos );
+
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TypeName& type_name ) : Type;
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_type ) : Type;
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::ArrayType/>& array_type ) : Type;
@@ -225,13 +233,23 @@ private:
 	fn BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& l_var, Variable& r_var, BinaryOperatorType operator, FilePos& file_pos ) : Value;
 	fn BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value;
 
+	fn TryCallOverloadedBinaryOperator(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		OverloadedOperator operator,
+		ust::shared_ptr_final</Synt::Expression/>& arg_l,
+		ust::shared_ptr_final</Synt::Expression/>& arg_r,
+		ArgsEvaluationOrder args_evaluation_order,
+		FilePos& file_pos ) : ust::optional</Value/>;
+
 	fn CallFunctionsSet(
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		ust::optional_ref</ Variable, false /> mut this_,
 		FunctionsSet& functions_set,
-		ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args,
+		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 		FilePos& file_pos ) : Value;
 
 	fn DoCallFunction(
@@ -240,7 +258,19 @@ private:
 		FunctionContext &mut function_context,
 		ust::optional_ref</ Variable, false />& this_,
 		FunctionVariable& function,
-		ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args,
+		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
+		FilePos& file_pos ) : Value;
+
+	enum ArgsEvaluationOrder{ Direct, Reversed }
+
+	fn DoCallFunction(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		FunctionVariable& function,
+		ust::array_view_imut</ Variable />& preevaluated_args,
+		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
+		ArgsEvaluationOrder args_evaluation_order,
 		FilePos& file_pos ) : Value;
 
 	fn BuildTempVariableConstruction(
@@ -361,13 +391,23 @@ private:
 		ust::array_view_imut</FunctionType::Arg/> actual_args,
 		bool first_actual_arg_is_this,
 		NamesScopePtr& names_scope, // Needed only for errors reporting
-		FilePos& file_pos ) : ust::optional_ref</FunctionVariable, false/>'x';
+		FilePos& file_pos,
+		bool produce_errors ) : ust::optional_ref</FunctionVariable, false/>'x';
+
+	fn GetOverloadedOperator(
+		mut this,
+		ust::array_view_imut</FunctionType::Arg/> args,
+		OverloadedOperator operator,
+		NamesScopePtr& names_scope, // Needed only for errors reporting
+		FilePos& file_pos ) : ust::optional</FunctionVariable/>;
 
 	fn TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_type );
 	fn TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type );
+	fn TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class_type );
 	fn TryGenerateDestructor( this, ClassTypePtr& class_type );
 
 	fn BuildCopyConstructorPart( mut this, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t );
+	fn BuildCopyAssignmentOperatorPart( mut this, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t );
 	fn BuildDestructorPart( this, FunctionContext &mut function_context, LLVMValueRef value, Type& t );
 	fn BuildMembersDestructors( this, FunctionContext &mut function_context, LLVMValueRef value, ClassTypePtr& class_type );
 

@@ -98,6 +98,7 @@ struct ClassType
 
 	bool is_default_constructible= false;
 	bool is_copy_constructible= false;
+	bool is_copy_assignable= false;
 	bool have_explicit_noncopy_constructors= false;
 }
 
@@ -135,6 +136,7 @@ public:
 
 	fn IsDefaultConstructible( this ) : bool;
 	fn IsCopyConstructible( this ) : bool;
+	fn IsCopyAssignable( this ) : bool;
 	fn CanBeConstexpr( this ) : bool;
 
 	// Convert type name to human-readable format.

@@ -57,8 +57,8 @@ struct BooleanConstant
 struct BinaryOperator
 {
 	FilePos file_pos;
-	ust::box</Expression/> l;
-	ust::box</Expression/> r;
+	ust::shared_ptr_final</Expression/> l;
+	ust::shared_ptr_final</Expression/> r;
 	BinaryOperatorType operator;
 }
 
@@ -247,16 +247,16 @@ struct ReturnOperator
 struct AssignmentOperator
 {
 	FilePos file_pos;
-	Expression l;
-	Expression r;
+	ust::shared_ptr_final</Expression/> l;
+	ust::shared_ptr_final</Expression/> r;
 }
 
 struct AdditiveAssignmentOperator
 {
 	FilePos file_pos;
 	BinaryOperatorType operator;
-	Expression l;
-	Expression r;
+	ust::shared_ptr_final</Expression/> l;
+	ust::shared_ptr_final</Expression/> r;
 }
 
 struct IncrementOperator
@@ -343,6 +343,7 @@ struct Function
 {
 	FilePos file_pos;
 	ust::vector</ ust::string8 /> name; // A, A::B, A::B::C::D, ::A, ::A::B
+	OverloadedOperator operator= OverloadedOperator::None;
 	FunctionType function_type;
 	ust::box_nullable</Block/> block; // null for prototype
 	ust::box_nullable</StructNamedInitializer/> constructor_initializer_list;

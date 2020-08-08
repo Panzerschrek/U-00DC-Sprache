@@ -16,6 +16,10 @@ fn GetCharRangeSize( ust::random_access_range_imut</char8/> char_range ) : size_
 
 fn nomangle main() : i32
 {
+	{ // Random access range is empty by-default.
+		var IntRangeImut range;
+		halt if( !range.empty() );
+	}
 	{ // Can construct imut range from imut array.
 		var [ i32, 5 ] arr= zero_init;
 		var IntRangeImut range(arr);

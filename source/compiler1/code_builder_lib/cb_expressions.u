@@ -222,6 +222,19 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return BuildLazyBinaryOperator( names_scope, function_context, binary_operator );
 	}
 
+	if_var( & res :
+		TryCallOverloadedBinaryOperator(
+			names_scope,
+			function_context,
+			GetOverloadedOperatorForBinaryOperator( binary_operator.operator ),
+			binary_operator.l,
+			binary_operator.r,
+			ArgsEvaluationOrder::Direct,
+			binary_operator.file_pos ) )
+	{
+		return res;
+	}
+
 	auto mut l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.l.get_ref() );
 	// Save l_var in register, prevent its modification during r_var calculation.
 	l_var.llvm_value= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
@@ -332,6 +345,36 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		}
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, indexation_operator.file_pos, index.t )
 	}
+	if( !variable.t.GetClassType().empty() )
+	{
+		var [ FunctionType::Arg, 2 ] args
+		[
+			{
+				.arg_type(variable.t),
+				.is_mutable= variable.value_type == ValueType::ReferenceMut,
+				.is_reference= variable.value_type != ValueType::Value,
+			},
+			{
+				.arg_type(index.t),
+				.is_mutable= index.value_type == ValueType::ReferenceMut,
+				.is_reference= index.value_type != ValueType::Value,
+			},
+		];
+
+		// TODO - is this correct to pass preevaluated args? Maybe evaluate args in "DoCallFunction" instead?
+		if_var( &overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::Indexing, names_scope, indexation_operator.file_pos ) )
+		{
+			var [ Variable, 2 ] args[ variable, index ];
+			return DoCallFunction(
+				names_scope,
+				function_context,
+				overloaded_operator,
+				args,
+				ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
+				ArgsEvaluationOrder::Direct,
+				indexation_operator.file_pos );
+		}
+	}
 
 	REPORT_ERROR( OperationNotSupportedForThisType, names_scope, indexation_operator.file_pos, variable.t )
 
@@ -358,6 +401,53 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		functions_set.reset(this_methods_set.functions_set);
 		this_.reset(this_methods_set.this_);
 	}
+	if_var( & variable : function.get</Variable/>() )
+	{
+		// Try to call overloaded () operator.
+
+		var ust::vector</FunctionType::Arg/> mut args;
+
+		{
+			var FunctionType::Arg mut this_arg
+			{
+				.arg_type(variable.t),
+				.is_mutable= variable.value_type == ValueType::ReferenceMut,
+				.is_reference= variable.value_type != ValueType::Value,
+			};
+			args.push_back(move(this_arg));
+		}
+
+		{
+			var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+			auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+			auto instructions_state= SaveInstructionsState( function_context );
+
+			foreach( &in_arg : call_operator.args )
+			{
+				auto arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.get_ref() );
+				var FunctionType::Arg mut f_arg
+				{
+					.arg_type(arg.t),
+					.is_mutable= arg.value_type == ValueType::ReferenceMut,
+					.is_reference= arg.value_type != ValueType::Value,
+				};
+				args.push_back( move(f_arg) );
+			}
+
+			RestoreInstructionsState( function_context, instructions_state );
+		}
+
+		if_var( &overloaded_operator : GetOverloadedOperator( args.range(), OverloadedOperator::Call, names_scope, call_operator.file_pos ) )
+		{
+			return DoCallFunction(
+				names_scope,
+				function_context,
+				ust::optional_ref</ Variable, false />(variable),
+				overloaded_operator,
+				call_operator.args.range(),
+				call_operator.file_pos );
+		}
+	}
 
 	if( functions_set.empty() )
 	{
@@ -365,7 +455,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return ErrorValue();
 	}
 
-	return CallFunctionsSet( names_scope, function_context, this_, functions_set.get_ref(), call_operator.args, call_operator.file_pos );
+	return CallFunctionsSet( names_scope, function_context, this_, functions_set.get_ref(), call_operator.args.range(), call_operator.file_pos );
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MemberAccessOperator& member_access_operator ) : Value
@@ -486,6 +576,28 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnaryMinus& unary_minus ) : Value
 {
 	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, unary_minus.expr.get_ref() );
+
+	if( !variable.t.GetClassType().empty() )
+	{
+		var [ FunctionType::Arg, 1 ] args
+		[ {
+			.arg_type(variable.t),
+			.is_mutable= variable.value_type == ValueType::ReferenceMut,
+			.is_reference= variable.value_type != ValueType::Value,
+		} ];
+
+		if_var( &overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::Sub, names_scope, unary_minus.file_pos ) )
+		{
+			return DoCallFunction(
+				names_scope,
+				function_context,
+				ust::optional_ref</ Variable, false />(variable),
+				overloaded_operator,
+				ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
+				unary_minus.file_pos );
+		}
+	}
+
 	auto fundamental_type= variable.t.GetFundamentalType();
 	if( fundamental_type.empty() )
 	{
@@ -523,6 +635,28 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::LogicalNot& logical_not ) : Value
 {
 	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, logical_not.expr.get_ref() );
+
+	if( !variable.t.GetClassType().empty() )
+	{
+		var [ FunctionType::Arg, 1 ] args
+		[ {
+			.arg_type(variable.t),
+			.is_mutable= variable.value_type == ValueType::ReferenceMut,
+			.is_reference= variable.value_type != ValueType::Value,
+		} ];
+
+		if_var( &overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::LogicalNot, names_scope, logical_not.file_pos ) )
+		{
+			return DoCallFunction(
+				names_scope,
+				function_context,
+				ust::optional_ref</ Variable, false />(variable),
+				overloaded_operator,
+				ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
+				logical_not.file_pos );
+		}
+	}
+
 	if( variable.t != bool_type_ )
 	{
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, logical_not.file_pos, variable.t )
@@ -549,6 +683,28 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BitwiseNot& bitwise_not ) : Value
 {
 	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, bitwise_not.expr.get_ref() );
+
+	if( !variable.t.GetClassType().empty() )
+	{
+		var [ FunctionType::Arg, 1 ] args
+		[ {
+			.arg_type(variable.t),
+			.is_mutable= variable.value_type == ValueType::ReferenceMut,
+			.is_reference= variable.value_type != ValueType::Value,
+		} ];
+
+		if_var( &overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::BitwiseNot, names_scope, bitwise_not.file_pos ) )
+		{
+			return DoCallFunction(
+				names_scope,
+				function_context,
+				ust::optional_ref</ Variable, false />(variable),
+				overloaded_operator,
+				ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
+				bitwise_not.file_pos );
+		}
+	}
+
 	auto fundamental_type= variable.t.GetFundamentalType();
 	if( fundamental_type.empty() || !IsInteger( fundamental_type.get_ref().fundamental_type ) )
 	{
@@ -1070,13 +1226,62 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 	return move(result);
 }
 
+fn CodeBuilder::TryCallOverloadedBinaryOperator(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	OverloadedOperator operator,
+	ust::shared_ptr_final</Synt::Expression/>& arg_l,
+	ust::shared_ptr_final</Synt::Expression/>& arg_r,
+	ArgsEvaluationOrder args_evaluation_order,
+	FilePos& file_pos ) : ust::optional</Value/>
+{
+	var [ ust::shared_ptr_final</Synt::Expression/>, 2 ] in_args[ arg_l, arg_r ];
+
+	var ust::vector</FunctionType::Arg/> mut args;
+
+	{
+		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+		auto instructions_state= SaveInstructionsState( function_context );
+
+		foreach( &in_arg : in_args )
+		{
+			auto arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.get_ref() );
+			var FunctionType::Arg mut f_arg
+			{
+				.arg_type(arg.t),
+				.is_mutable= arg.value_type == ValueType::ReferenceMut,
+				.is_reference= arg.value_type != ValueType::Value,
+			};
+			args.push_back( move(f_arg) );
+		}
+
+		RestoreInstructionsState( function_context, instructions_state );
+	}
+
+	if_var( &overloaded_operator : GetOverloadedOperator( args.range(), operator, names_scope, file_pos ) )
+	{
+		return DoCallFunction(
+			names_scope,
+			function_context,
+			overloaded_operator,
+			ust::array_view_imut</ Variable />(),
+			in_args,
+			args_evaluation_order,
+			file_pos );
+	}
+
+	return ust::optional</Value/>();
+}
+
 fn CodeBuilder::CallFunctionsSet(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
 	ust::optional_ref</ Variable, false /> mut this_,
 	FunctionsSet& functions_set,
-	ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args,
+	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 	FilePos& file_pos ) : Value
 {
 	// Pre-evaluate arguments to know exact types and select exact function.
@@ -1119,7 +1324,8 @@ fn CodeBuilder::CallFunctionsSet(
 			args_evaluated.range(),
 			!this_.empty(),
 			names_scope,
-			file_pos );
+			file_pos,
+			true );
 	if( function_selected.empty() )
 	{
 		return ErrorValue();
@@ -1145,20 +1351,47 @@ fn CodeBuilder::DoCallFunction(
 	FunctionContext &mut function_context,
 	ust::optional_ref</ Variable, false />& this_,
 	FunctionVariable& function,
-	ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args,
+	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 	FilePos& file_pos ) : Value
 {
-	auto total_args= args.size() + select( this_.empty() ? 0s : 1s);
-
 	if( function.is_this_call && this_.empty() )
 	{
 		REPORT_ERROR( CallOfThiscallFunctionUsingNonthisArgument, names_scope, file_pos )
+		return ErrorValue();
 	}
 	/* TODO - what if we call non-this-call function using "this", like
 		struct S{ fn Foo( S& s ); }
 		fn Bar( S& s ) { s.Foo(); }
 	???
 	*/
+
+	var ust::vector</ Variable /> mut preevaluated_args;
+	if( !this_.empty() )
+	{
+		preevaluated_args.push_back( this_.get_ref() );
+	}
+
+	return DoCallFunction(
+		names_scope,
+		function_context,
+		function,
+		preevaluated_args.range(),
+		args,
+		ArgsEvaluationOrder::Direct,
+		file_pos );
+}
+
+fn CodeBuilder::DoCallFunction(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	FunctionVariable& function,
+	ust::array_view_imut</ Variable />& preevaluated_args,
+	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
+	ArgsEvaluationOrder args_evaluation_order,
+	FilePos& file_pos ) : Value
+{
+	auto total_args= preevaluated_args.size() + args.size();
 
 	var FunctionType& function_type= function.t.GetFunctionType().get_ref();
 
@@ -1185,13 +1418,19 @@ fn CodeBuilder::DoCallFunction(
 		llvm_args.push_back( s_ret_value );
 	}
 
-	for( var size_type mut arg_n= 0s, first_expr_arg= select( this_.empty() ? 0s : 1s ); arg_n < total_args; ++arg_n )
+	auto first_llvm_arg_number= select( is_s_ret ? 1s : 0s );
+	llvm_args.resize( first_llvm_arg_number + total_args, LLVMValueRef::Null );
+
+	for( var size_type mut i= 0s; i < total_args; ++i )
 	{
+		auto arg_n= select( args_evaluation_order == ArgsEvaluationOrder::Direct ? i : total_args - i - 1s );
+		auto &mut llv_arg= llvm_args[ first_llvm_arg_number + arg_n ];
+
 		var Type& expected_arg_type= function_type.args[arg_n].arg_type.get_ref();
 		auto arg=
-			select( arg_n == 0s && !this_.empty()
-				? this_.get_ref()
-				: BuildExpressionCodeEnsureVariable( names_scope, function_context, args[ arg_n - first_expr_arg ].get_ref() ) );
+			select( arg_n < preevaluated_args.size()
+				? preevaluated_args[arg_n]
+				: BuildExpressionCodeEnsureVariable( names_scope, function_context, args[ arg_n - preevaluated_args.size() ].get_ref() ) );
 
 		if( arg.t != expected_arg_type )
 		{
@@ -1208,12 +1447,12 @@ fn CodeBuilder::DoCallFunction(
 				{
 					auto temp_storage= LLVMBuildAlloca( function_context.alloca_ir_builder, arg.t.GetLLVMType(), "\0"[0] );
 					LLVMBuildStore( function_context.llvm_ir_builder, arg.llvm_value, temp_storage );
-					llvm_args.push_back( temp_storage );
+					llv_arg= temp_storage;
 				}
 			}
 			else
 			{
-				llvm_args.push_back( arg.llvm_value );
+				llv_arg= arg.llvm_value;
 			}
 		}
 		else
@@ -1227,11 +1466,11 @@ fn CodeBuilder::DoCallFunction(
 				}
 				TryCallCopyConstructor( names_scope, function_context, var_copy, arg.llvm_value, arg.t.GetClassType().get_ref(), file_pos );
 
-				llvm_args.push_back( var_copy );
+				llv_arg= var_copy;
 			}
 			else
 			{
-				llvm_args.push_back( CreateMoveToLLVMRegisterInstruction( arg, function_context ) );
+				llv_arg= CreateMoveToLLVMRegisterInstruction( arg, function_context );
 			}
 		}
 	}

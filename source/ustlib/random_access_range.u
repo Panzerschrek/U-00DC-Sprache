@@ -9,7 +9,7 @@ template</ type T, bool is_mutable />
 class random_access_range
 {
 public:
-	fn constructor( mut this )= delete;
+	fn constructor( mut this )= default;
 	fn constructor( mut this, this_type &imut other )= default;
 
 	op=( mut this, this_type &imut other )= default;
