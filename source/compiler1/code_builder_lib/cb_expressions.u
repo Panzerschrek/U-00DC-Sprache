@@ -486,6 +486,28 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnaryMinus& unary_minus ) : Value
 {
 	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, unary_minus.expr.get_ref() );
+
+	if( !variable.t.GetClassType().empty() )
+	{
+		var [ FunctionType::Arg, 1 ] args
+		[ {
+			.arg_type(variable.t),
+			.is_mutable= variable.value_type == ValueType::ReferenceMut,
+			.is_reference= variable.value_type != ValueType::Value,
+		} ];
+
+		if_var( &overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::Sub, names_scope, unary_minus.file_pos ) )
+		{
+			return DoCallFunction(
+				names_scope,
+				function_context,
+				ust::optional_ref</ Variable, false />(variable),
+				overloaded_operator,
+				ust::vector</ ust::shared_ptr_final</Synt::Expression/> />(),
+				unary_minus.file_pos );
+		}
+	}
+
 	auto fundamental_type= variable.t.GetFundamentalType();
 	if( fundamental_type.empty() )
 	{
@@ -523,6 +545,28 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::LogicalNot& logical_not ) : Value
 {
 	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, logical_not.expr.get_ref() );
+
+	if( !variable.t.GetClassType().empty() )
+	{
+		var [ FunctionType::Arg, 1 ] args
+		[ {
+			.arg_type(variable.t),
+			.is_mutable= variable.value_type == ValueType::ReferenceMut,
+			.is_reference= variable.value_type != ValueType::Value,
+		} ];
+
+		if_var( &overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::LogicalNot, names_scope, logical_not.file_pos ) )
+		{
+			return DoCallFunction(
+				names_scope,
+				function_context,
+				ust::optional_ref</ Variable, false />(variable),
+				overloaded_operator,
+				ust::vector</ ust::shared_ptr_final</Synt::Expression/> />(),
+				logical_not.file_pos );
+		}
+	}
+
 	if( variable.t != bool_type_ )
 	{
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, logical_not.file_pos, variable.t )
@@ -549,6 +593,28 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BitwiseNot& bitwise_not ) : Value
 {
 	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, bitwise_not.expr.get_ref() );
+
+	if( !variable.t.GetClassType().empty() )
+	{
+		var [ FunctionType::Arg, 1 ] args
+		[ {
+			.arg_type(variable.t),
+			.is_mutable= variable.value_type == ValueType::ReferenceMut,
+			.is_reference= variable.value_type != ValueType::Value,
+		} ];
+
+		if_var( &overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::BitwiseNot, names_scope, bitwise_not.file_pos ) )
+		{
+			return DoCallFunction(
+				names_scope,
+				function_context,
+				ust::optional_ref</ Variable, false />(variable),
+				overloaded_operator,
+				ust::vector</ ust::shared_ptr_final</Synt::Expression/> />(),
+				bitwise_not.file_pos );
+		}
+	}
+
 	auto fundamental_type= variable.t.GetFundamentalType();
 	if( fundamental_type.empty() || !IsInteger( fundamental_type.get_ref().fundamental_type ) )
 	{
