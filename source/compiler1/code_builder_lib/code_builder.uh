@@ -402,9 +402,11 @@ private:
 
 	fn TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_type );
 	fn TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type );
+	fn TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class_type );
 	fn TryGenerateDestructor( this, ClassTypePtr& class_type );
 
 	fn BuildCopyConstructorPart( mut this, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t );
+	fn BuildCopyAssignmentOperatorPart( mut this, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t );
 	fn BuildDestructorPart( this, FunctionContext &mut function_context, LLVMValueRef value, Type& t );
 	fn BuildMembersDestructors( this, FunctionContext &mut function_context, LLVMValueRef value, ClassTypePtr& class_type );
 

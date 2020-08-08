@@ -324,6 +324,23 @@ fn Type::IsCopyConstructible( this ) : bool
 	return false;
 }
 
+fn Type::IsCopyAssignable( this ) : bool
+{
+	if( !GetFundamentalType().empty() || !GetEnumType().empty() )
+	{
+		return true;
+	}
+	if_var( &array_type : GetArrayType() )
+	{
+		return array_type.element_count == 0u64 || array_type.element_type.get_ref().IsCopyAssignable();
+	}
+	if_var( &class_type : GetClassType() )
+	{
+		return class_type.lock_imut().get_ref().is_copy_assignable;
+	}
+	return false;
+}
+
 fn Type::CanBeConstexpr( this ) : bool
 {
 	if( !GetFundamentalType().empty() || !GetEnumType().empty() )

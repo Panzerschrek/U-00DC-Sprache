@@ -534,10 +534,11 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 	{
 		auto mut lock= class_members.lock_mut();
 
-		// Create functions set for constructors/destructors. It's needed for later constructors/destructor generation.
+		// Create functions set for constructors/destructors/assignment operators. It's needed for later methods generation.
 		var NamesScopeFunctionsSet functions_set{ .class_= class_type_ptr };
 		lock.get_ref().AddName( KeywordToString( Keyword::constructor_ ), functions_set );
 		lock.get_ref().AddName( KeywordToString( Keyword::destructor_  ), functions_set );
+		lock.get_ref().AddName( OverloadedOperatorToString( OverloadedOperator::Assign ), functions_set );
 
 		// Add special member to names scope to identify it as class names scope
 		lock.get_ref().SetClass( class_type_ptr );

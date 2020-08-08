@@ -743,6 +743,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	}
 	TryGenerateDefaultConstructor( class_type );
 	TryGenerateCopyConstructor( class_type );
+	TryGenerateCopyAssignmentOperator( class_type );
 	TryGenerateDestructor( class_type );
 
 	auto mut class_lock= class_type.lock_mut();
