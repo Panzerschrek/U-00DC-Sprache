@@ -12,7 +12,6 @@ fn IsKeyword( Lexem& l, Keyword k ) : bool
 	return l.lexem_type == Lexem::Type::Identifier && l.text == KeywordToString(k);
 }
 
-
 fn GetBinaryOperatorPriority( BinaryOperatorType binary_operator ) : i32
 {
 	// If this changed, same code in "syntax_analyzer.cpp" must be changed too!
@@ -138,27 +137,48 @@ fn GetAdditiveAssignmentOperator( Lexem& lexem ) : ust::optional</BinaryOperator
 	return ust::optional</BinaryOperatorType/>();
 }
 
-fn GetMostRightIncompleteBinaryOperatorInTree( BinaryOperator &mut o ) : BinaryOperator &mut
+struct BinaryOperatorsChainComponent
 {
-	if( !o.r.get_ref().get</EmptyVariant/>().empty() )
-	{
-		return o;
-	}
-
-	// Should be binary operator.
-	return GetMostRightIncompleteBinaryOperatorInTree( o.r.get_ref().get</BinaryOperator/>().get_ref() );
+	Expression expression;
+	BinaryOperatorType operator= zero_init; // Value of last component is ignored
+	FilePos file_pos;
 }
 
-fn GetDeepestRightBinaryOperatorComponentWithNonLessPriority( BinaryOperator &'x mut o, BinaryOperatorType cur_op_type ) : BinaryOperator &mut
+type BinaryOperatorsChain= ust::vector</BinaryOperatorsChainComponent/>;
+
+fn FoldBinaryOperatorsChain( ust::array_view_mut</BinaryOperatorsChainComponent/> chain ) : Expression
 {
-	if_var( &mut right_as_binary_operator : o.r.get_ref().get</BinaryOperator/>() )
+	// Should be non-empty.
+
+	auto s= chain.size();
+	if( s == 1s )
 	{
-		if( GetBinaryOperatorPriority( cur_op_type ) > GetBinaryOperatorPriority( right_as_binary_operator.operator ) )
+		return take(chain.front().expression);
+	}
+
+	// Split binary operators chain using most-right operator with minimal priority. Than recursively process parts.
+
+	auto mut split_op_pos= ~0s;
+	auto mut min_priority= 9999;
+	for( auto mut i= 0s; i < chain.size() - 1s; ++i )
+	{
+		auto cur_priority= GetBinaryOperatorPriority( chain[i].operator );
+		if( cur_priority <= min_priority )
 		{
-			return GetDeepestRightBinaryOperatorComponentWithNonLessPriority( right_as_binary_operator, cur_op_type );
+			min_priority= cur_priority;
+			split_op_pos= i;
 		}
 	}
-	return o;
+
+	var BinaryOperator mut binary_operator
+	{
+		.l( FoldBinaryOperatorsChain( chain.subrange( 0s, split_op_pos + 1s ) ) ),
+		.r( FoldBinaryOperatorsChain( chain.subrange( split_op_pos + 1s,  s ) ) ),
+		.operator= chain[ split_op_pos ].operator,
+		.file_pos= chain[ split_op_pos ].file_pos,
+	};
+
+	return move(binary_operator);
 }
 
 fn GetMostRightExpressionInPrefixOperatorsChain( Expression &mut e ) : Expression &mut
@@ -437,7 +457,7 @@ fn SyntaxAnalyzer::ParseComplexName( mut this ) : ComplexName
 
 fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 {
-	var Expression mut root;
+	var BinaryOperatorsChain mut binary_operators_chain;
 
 	while( NotEndOfFile() )
 	{
@@ -621,51 +641,14 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 			current_node= take(prefix_operator);
 		}
 
-		var bool is_binary_operator= IsBinaryOperator( it_.front() );
+		var BinaryOperatorsChainComponent mut comp{ .expression= move(current_node) };
+		binary_operators_chain.push_back( move(comp) );
 
-		if( !root.get</EmptyVariant/>().empty() )
+		if( IsBinaryOperator( it_.front() ) )
 		{
-			root= move(current_node);
-		}
-		else
-		{
-			// Place to existent tree last component.
-
-			// TODO - replace this call with loop.
-			auto &mut most_right_with_null= GetMostRightIncompleteBinaryOperatorInTree( root.get</BinaryOperator/>().get_ref() );
-			most_right_with_null.r.get_ref()= move(current_node);
-		}
-
-		if( is_binary_operator )
-		{
-			var BinaryOperator mut binary_operator
-			{
-				.file_pos= it_.front().file_pos,
-				.operator=LexemToBinaryOperator( it_.front() ),
-				.l( Expression() ),
-				.r( Expression() )
-			};
+			binary_operators_chain.back().operator= LexemToBinaryOperator( it_.front() );
+			binary_operators_chain.back().file_pos= it_.front().file_pos;
 			NextLexem();
-
-			if( !root.get</BinaryOperator/>().empty() )
-			{
-				if( GetBinaryOperatorPriority( binary_operator.operator ) <= GetBinaryOperatorPriority( root.get</BinaryOperator/>().get_ref().operator ) )
-				{
-					binary_operator.l.get_ref()= take(root);
-					root= move(binary_operator);
-				}
-				else
-				{
-					auto &mut dst= GetDeepestRightBinaryOperatorComponentWithNonLessPriority( root.get</BinaryOperator/>().get_ref(), binary_operator.operator );
-					binary_operator.l.get_ref()= take(dst.r.get_ref());
-					dst.r.get_ref()= move(binary_operator);
-				}
-			}
-			else
-			{
-				binary_operator.l.get_ref()= take(root);
-				root= move(binary_operator);
-			}
 		}
 		else
 		{
@@ -673,7 +656,11 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 		}
 	}
 
-	return move(root);
+	if( binary_operators_chain.size() == 0s )
+	{
+		return Expression();
+	}
+	return FoldBinaryOperatorsChain( binary_operators_chain.range() );
 }
 
 fn SyntaxAnalyzer::ParseTypeName( mut this ) : TypeName
