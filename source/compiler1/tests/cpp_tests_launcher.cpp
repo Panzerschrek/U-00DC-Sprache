@@ -84,6 +84,7 @@ bool FilterTest( const std::string& test_name )
 		"NameNotFound_ForClassTemplateDefaultSignatureArguments_Test0",
 		"NamesCompressionTest",
 		"NamespacesManglingTest",
+		"OperatorBodyOutsideClass",
 		"OperatorDeclarationOutsideClass_Test",
 		"OperatorDoesNotHaveParentClassArguments_Test0",
 		"OperatorDoesNotHaveParentClassArguments_Test1",

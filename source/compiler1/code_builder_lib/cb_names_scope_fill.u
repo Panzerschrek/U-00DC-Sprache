@@ -353,23 +353,50 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 			{
 				continue;
 			}
+
 			var ust::shared_ptr_nullable_imut</NamesScope/> mut current_scope(names_scope_ptr);
 			var ust::optional</NamesScopeValue/> mut current_value;
-			while( !current_scope.empty() )
+
+			auto mut start_component_index= 0s;
+			if( name_components.front().empty() )
 			{
-				if_var( mut names_scope_value : current_scope.lock_imut().get_ref().GetThisScopeValue( name_components.front() ) )
+				// Global name - search in root namespace.
+				while( true )
+				{
+					auto parent= current_scope.lock_imut().get_ref().GetParent();
+					if( parent.empty() )
+					{
+						break;
+					}
+					current_scope= parent;
+				}
+
+				if_var( mut names_scope_value : current_scope.lock_imut().get_ref().GetThisScopeValue( name_components[1s] ) )
 				{
 					current_value= move(names_scope_value);
-					break;
 				}
-				current_scope= current_scope.lock_imut().get_ref().GetParent();
+
+				start_component_index= 2s;
+			}
+			else
+			{
+				while( !current_scope.empty() )
+				{
+					if_var( mut names_scope_value : current_scope.lock_imut().get_ref().GetThisScopeValue( name_components.front() ) )
+					{
+						current_value= move(names_scope_value);
+						break;
+					}
+					current_scope= current_scope.lock_imut().get_ref().GetParent();
+				}
+				start_component_index= 1s;
 			}
 			if( current_scope.empty() )
 			{
 				REPORT_ERROR( NameNotFound, names_scope_ptr, function_declaration.file_pos, name_components.front() )
 				continue;
 			}
-			for( auto mut i= 1s; i < name_components.size(); ++i )
+			for( auto mut i= start_component_index; i < name_components.size(); ++i )
 			{
 				auto& name_component= name_components[i];
 
