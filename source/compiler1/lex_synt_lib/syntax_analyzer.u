@@ -656,7 +656,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 		}
 	}
 
-	if( binary_operators_chain.size() == 0s )
+	if( binary_operators_chain.empty() )
 	{
 		return Expression();
 	}

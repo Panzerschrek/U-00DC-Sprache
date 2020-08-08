@@ -158,7 +158,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		BuildEmptyInitializer( class_members, function_context, field_variable, member.key(), FilePos( /* TODO - set correct file_pos */ ) );
 	}
 
-	// Finsih function - add remaining instructions
+	// Finish function - add remaining instructions.
 	unsafe
 	{
 		LLVMBuildBr( function_context.alloca_ir_builder, function_context.function_basic_block );
@@ -334,7 +334,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		}
 	}
 
-	// Finsih function - add remaining instructions
+	// Finish function - add remaining instructions
 	unsafe
 	{
 		LLVMBuildBr( function_context.alloca_ir_builder, function_context.function_basic_block );
@@ -499,7 +499,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		BuildCopyAssignmentOperatorPart( function_context, dst_member_value, src_member_value, class_field.t );
 	}
 
-	// Finsih function - add remaining instructions
+	// Finish function - add remaining instructions.
 	unsafe
 	{
 		LLVMBuildBr( function_context.alloca_ir_builder, function_context.function_basic_block );
@@ -583,7 +583,7 @@ fn CodeBuilder::TryGenerateDestructor( this, ClassTypePtr& class_type )
 
 	BuildMembersDestructors( function_context, this_llvm_value, class_type );
 
-	// Finsih function - add remaining instructions
+	// Finish function - add remaining instructions.
 	unsafe
 	{
 		LLVMBuildBr( function_context.alloca_ir_builder, function_context.function_basic_block );

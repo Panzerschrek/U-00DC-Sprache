@@ -312,7 +312,6 @@ fn CodeBuilder::GetOverloadedOperator(
 	{
 		if_var( &class_type : arg.arg_type.get_ref().GetClassType() )
 		{
-
 			auto class_members= class_type.lock_imut().get_ref().members;
 			auto members_lock= class_members.lock_imut();
 			auto& members= members_lock.get_ref();

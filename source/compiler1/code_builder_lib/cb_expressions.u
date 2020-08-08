@@ -1353,16 +1353,16 @@ fn CodeBuilder::DoCallFunction(
 	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 	FilePos& file_pos ) : Value
 {
-	/* TODO - what if we call non-this-call function using "this", like
-		struct S{ fn Foo( S& s ); }
-		fn Bar( S& s ) { s.Foo(); }
-	???
-	*/
 	if( function.is_this_call && this_.empty() )
 	{
 		REPORT_ERROR( CallOfThiscallFunctionUsingNonthisArgument, names_scope, file_pos )
 		return ErrorValue();
 	}
+	/* TODO - what if we call non-this-call function using "this", like
+		struct S{ fn Foo( S& s ); }
+		fn Bar( S& s ) { s.Foo(); }
+	???
+	*/
 
 	var ust::vector</ Variable /> mut preevaluated_args;
 	if( !this_.empty() )
