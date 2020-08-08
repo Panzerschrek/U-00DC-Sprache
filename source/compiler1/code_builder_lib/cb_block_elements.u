@@ -337,35 +337,45 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
-	auto r= BuildExpressionCodeEnsureVariable( names_scope, function_context, assignment_operator.r );
-	if( r.t.GetFundamentalType().empty() && r.t.GetEnumType().empty() )
+	if( !TryCallOverloadedBinaryOperator(
+			names_scope,
+			function_context,
+			OverloadedOperator::Assign,
+			assignment_operator.l,
+			assignment_operator.r,
+			assignment_operator.file_pos ).empty() )
+	{}
+	else
 	{
-		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, assignment_operator.file_pos, r.t )
-		return BlockElementBuildInfo();
-	}
+		auto r= BuildExpressionCodeEnsureVariable( names_scope, function_context, assignment_operator.r.get_ref() );
+		if( r.t.GetFundamentalType().empty() && r.t.GetEnumType().empty() )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, assignment_operator.file_pos, r.t )
+			return BlockElementBuildInfo();
+		}
 
-	auto r_in_register= CreateMoveToLLVMRegisterInstruction( r, function_context );
+		auto r_in_register= CreateMoveToLLVMRegisterInstruction( r, function_context );
 
-	auto l= BuildExpressionCodeEnsureVariable( names_scope, function_context, assignment_operator.l );
+		auto l= BuildExpressionCodeEnsureVariable( names_scope, function_context, assignment_operator.l.get_ref() );
 
-	if( r.t != l.t )
-	{
-		REPORT_ERROR( TypesMismatch, names_scope, assignment_operator.file_pos, l.t, r.t )
-		return BlockElementBuildInfo();
-	}
-	if( l.value_type != ValueType::ReferenceMut )
-	{
-		REPORT_ERROR( ExpectedReferenceValue, names_scope, assignment_operator.file_pos )
-		return BlockElementBuildInfo();
-	}
+		if( r.t != l.t )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, assignment_operator.file_pos, l.t, r.t )
+			return BlockElementBuildInfo();
+		}
+		if( l.value_type != ValueType::ReferenceMut )
+		{
+			REPORT_ERROR( ExpectedReferenceValue, names_scope, assignment_operator.file_pos )
+			return BlockElementBuildInfo();
+		}
 
-	unsafe
-	{
-		LLVMBuildStore( function_context.llvm_ir_builder, r_in_register, l.llvm_value );
+		unsafe
+		{
+			LLVMBuildStore( function_context.llvm_ir_builder, r_in_register, l.llvm_value );
+		}
 	}
 
 	CallDestructorsForTopVariablesFrame( function_context );
-
 	return BlockElementBuildInfo();
 }
 

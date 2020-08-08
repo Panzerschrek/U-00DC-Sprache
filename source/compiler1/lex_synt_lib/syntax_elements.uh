@@ -247,8 +247,8 @@ struct ReturnOperator
 struct AssignmentOperator
 {
 	FilePos file_pos;
-	Expression l;
-	Expression r;
+	ust::shared_ptr_final</Expression/> l;
+	ust::shared_ptr_final</Expression/> r;
 }
 
 struct AdditiveAssignmentOperator

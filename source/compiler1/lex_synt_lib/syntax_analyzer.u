@@ -1280,11 +1280,14 @@ fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 			}
 			else if( it_.front().lexem_type == Lexem::Type::Assignment )
 			{
-				var AssignmentOperator mut assignment_operator{ .file_pos= it_.front().file_pos };
+				auto file_pos= it_.front().file_pos;
 				NextLexem();
-
-				assignment_operator.l= move(expr);
-				assignment_operator.r= ParseExpression();
+				var AssignmentOperator mut assignment_operator
+				{
+					.file_pos= file_pos,
+					.l( move(expr) ),
+					.r( ParseExpression() ),
+				};
 
 				block.elements.push_back( move(assignment_operator) );
 			}
