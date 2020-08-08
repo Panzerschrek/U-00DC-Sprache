@@ -1279,15 +1279,15 @@ fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 			auto additive_assignment_operator_type= GetAdditiveAssignmentOperator( it_.front() );
 			if( !additive_assignment_operator_type.empty() )
 			{
+				auto file_pos= it_.front().file_pos;
+				NextLexem();
 				var AdditiveAssignmentOperator mut additive_assignment_operator
 				{
-					.file_pos= it_.front().file_pos,
+					.file_pos= file_pos,
 					.operator= additive_assignment_operator_type.get_ref(),
-					.l= move(expr),
+					.l(move(expr)),
+					.r(ParseExpression()),
 				};
-				NextLexem();
-
-				additive_assignment_operator.r= ParseExpression();
 
 				block.elements.push_back( move(additive_assignment_operator) );
 			}

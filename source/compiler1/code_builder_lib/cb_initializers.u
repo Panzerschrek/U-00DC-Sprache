@@ -416,14 +416,12 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 			.llvm_value= variable.llvm_value,
 		};
 
-		var ust::vector</ ust::shared_ptr_final</Synt::Expression/> /> empty_args_list;
-
 		CallFunctionsSet(
 			names_scope,
 			function_context,
 			ust::optional_ref</ Variable, false />( this_ ),
 			constructors_ptr.lock_imut().get_ref().functions_set,
-			empty_args_list,
+			ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
 			file_pos );
 
 		return;
@@ -619,7 +617,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			function_context,
 			ust::optional_ref</ Variable, false />( this_ ),
 			constructors_ptr.lock_imut().get_ref().functions_set,
-			args,
+			args.range(),
 			file_pos );
 
 		return LLVMValueRef::Null;

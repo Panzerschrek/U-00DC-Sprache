@@ -3,6 +3,22 @@ import "operators.uh"
 namespace U
 {
 
+fn GetOverloadedOperatorForAdditiveAssignmentOperator( BinaryOperatorType o ) : OverloadedOperator
+{
+	if( o == BinaryOperatorType::Add ) { return OverloadedOperator::AssignAdd; }
+	if( o == BinaryOperatorType::Sub ) { return OverloadedOperator::AssignSub; }
+	if( o == BinaryOperatorType::Mul ) { return OverloadedOperator::AssignMul; }
+	if( o == BinaryOperatorType::Div ) { return OverloadedOperator::AssignDiv; }
+	if( o == BinaryOperatorType::Rem ) { return OverloadedOperator::AssignRem; }
+	if( o == BinaryOperatorType::And ) { return OverloadedOperator::AssignAnd; }
+	if( o == BinaryOperatorType::Or  ) { return OverloadedOperator::AssignOr ; }
+	if( o == BinaryOperatorType::Xor ) { return OverloadedOperator::AssignXor; }
+	if( o == BinaryOperatorType::ShiftLeft  ) { return OverloadedOperator::AssignShiftLeft ; }
+	if( o == BinaryOperatorType::ShiftRight ) { return OverloadedOperator::AssignShiftRight; }
+
+	halt;
+}
+
 fn BinaryOperatorToString( BinaryOperatorType o ) : ust::array_view_imut</ char8 />
 {
 	if( o == BinaryOperatorType::Add ){ return "+"; }

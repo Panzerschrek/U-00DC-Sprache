@@ -233,13 +233,22 @@ private:
 	fn BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& l_var, Variable& r_var, BinaryOperatorType operator, FilePos& file_pos ) : Value;
 	fn BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value;
 
+	fn TryCallOverloadedBinaryOperator(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		OverloadedOperator operator,
+		ust::shared_ptr_final</Synt::Expression/>& arg_l,
+		ust::shared_ptr_final</Synt::Expression/>& arg_r,
+		FilePos& file_pos ) : ust::optional</Value/>;
+
 	fn CallFunctionsSet(
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		ust::optional_ref</ Variable, false /> mut this_,
 		FunctionsSet& functions_set,
-		ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args,
+		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 		FilePos& file_pos ) : Value;
 
 	fn DoCallFunction(
@@ -248,7 +257,7 @@ private:
 		FunctionContext &mut function_context,
 		ust::optional_ref</ Variable, false />& this_,
 		FunctionVariable& function,
-		ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args,
+		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 		FilePos& file_pos ) : Value;
 
 	fn DoCallFunction(
@@ -256,8 +265,8 @@ private:
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		FunctionVariable& function,
-		ust::array_view_imut</ Variable /> preevaluated_args,
-		ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args,
+		ust::array_view_imut</ Variable />& preevaluated_args,
+		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 		FilePos& file_pos ) : Value;
 
 	fn BuildTempVariableConstruction(

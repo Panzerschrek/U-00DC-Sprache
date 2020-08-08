@@ -90,6 +90,7 @@ bool FilterTest( const std::string& test_name )
 		"OperatorsOverloadingTest0",
 		"OperatorsOverloadingTest2",
 		"OperatorsOverloadingTest3",
+		"OperatorsOverloadingTest5",
 		"OperatorsOverloadingTest_CallOperator0",
 		"OperatorsOverloadingTest_CallOperator1",
 		"OperatorsOverloadingTest_IndexationOperator",

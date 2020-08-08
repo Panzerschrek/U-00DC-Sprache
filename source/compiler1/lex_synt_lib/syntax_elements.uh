@@ -255,8 +255,8 @@ struct AdditiveAssignmentOperator
 {
 	FilePos file_pos;
 	BinaryOperatorType operator;
-	Expression l;
-	Expression r;
+	ust::shared_ptr_final</Expression/> l;
+	ust::shared_ptr_final</Expression/> r;
 }
 
 struct IncrementOperator
