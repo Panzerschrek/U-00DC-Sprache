@@ -332,9 +332,9 @@ fn CodeBuilder::GetOverloadedOperator(
 			}
 		}
 
-		if( operator == OverloadedOperator::Indexing )
+		if( operator == OverloadedOperator::Indexing || operator == OverloadedOperator::Call )
 		{
-			break; // For indexing operator only check first argument.
+			break; // For indexing and call operators only check first argument.
 		}
 	}
 

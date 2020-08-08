@@ -389,6 +389,53 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		functions_set.reset(this_methods_set.functions_set);
 		this_.reset(this_methods_set.this_);
 	}
+	if_var( & variable : function.get</Variable/>() )
+	{
+		// Try to call overloaded () operator.
+
+		var ust::vector</FunctionType::Arg/> mut args;
+
+		{
+			var FunctionType::Arg mut this_arg
+			{
+				.arg_type(variable.t),
+				.is_mutable= variable.value_type == ValueType::ReferenceMut,
+				.is_reference= variable.value_type != ValueType::Value,
+			};
+			args.push_back(move(this_arg));
+		}
+
+		{
+			var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+			auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+			auto instructions_state= SaveInstructionsState( function_context );
+
+			foreach( &in_arg : call_operator.args )
+			{
+				auto arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.get_ref() );
+				var FunctionType::Arg mut f_arg
+				{
+					.arg_type(arg.t),
+					.is_mutable= arg.value_type == ValueType::ReferenceMut,
+					.is_reference= arg.value_type != ValueType::Value,
+				};
+				args.push_back( move(f_arg) );
+			}
+
+			RestoreInstructionsState( function_context, instructions_state );
+		}
+
+		if_var( &overloaded_operator : GetOverloadedOperator( args.range(), OverloadedOperator::Call, names_scope, call_operator.file_pos ) )
+		{
+			return DoCallFunction(
+				names_scope,
+				function_context,
+				ust::optional_ref</ Variable, false />(variable),
+				overloaded_operator,
+				call_operator.args,
+				call_operator.file_pos );
+		}
+	}
 
 	if( functions_set.empty() )
 	{
