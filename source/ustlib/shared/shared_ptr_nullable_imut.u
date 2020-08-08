@@ -9,6 +9,9 @@ template</ type T />
 class shared_ptr_nullable_imut
 {
 public:
+	type hasher= shared_ptr_hasher;
+
+public:
 	fn constructor()= default;
 
 	fn constructor( T mut value )
