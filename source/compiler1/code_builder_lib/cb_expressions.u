@@ -348,19 +348,17 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			},
 		];
 
+		// TODO - is this correct to pass preevaluated args? Maybe evaluate args in "DoCallFunction" instead?
 		if_var( &overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::Indexing, names_scope, indexation_operator.file_pos ) )
 		{
-			if( overloaded_operator.t.GetFunctionType().get_ref().args.size() == 2s )
-			{
-				var [ Variable, 2 ] args[ variable, index ];
-				return DoCallFunction(
-					names_scope,
-					function_context,
-					overloaded_operator,
-					args,
-					ust::vector</ ust::shared_ptr_final</Synt::Expression/> />(),
-					indexation_operator.file_pos );
-			}
+			var [ Variable, 2 ] args[ variable, index ];
+			return DoCallFunction(
+				names_scope,
+				function_context,
+				overloaded_operator,
+				args,
+				ust::vector</ ust::shared_ptr_final</Synt::Expression/> />(),
+				indexation_operator.file_pos );
 		}
 	}
 
