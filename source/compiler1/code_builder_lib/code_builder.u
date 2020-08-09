@@ -58,7 +58,7 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 {
 	unsafe // Create module.
 	{
-		module_ = LLVMModuleCreateWithName( "some_module\0"[0] );
+		module_ = LLVMModuleCreateWithNameInContext( "some_module\0"[0], llvm_context_ );
 		LLVMSetModuleDataLayout( module_, data_layout_ );
 	}
 
