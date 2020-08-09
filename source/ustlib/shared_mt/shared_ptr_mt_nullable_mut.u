@@ -8,6 +8,9 @@ template</ type T />
 class shared_ptr_mt_nullable_mut
 {
 public:
+	type hasher= shared_ptr_mt_hasher;
+
+public:
 	fn constructor()= default;
 
 	fn constructor( T mut value )

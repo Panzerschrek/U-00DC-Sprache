@@ -101,7 +101,7 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 		{
 			foreach( &mut class_table_entry : node.class_table )
 			{
-				auto mut lock= class_table_entry.ptr.lock_mut();
+				auto mut lock= class_table_entry.key().lock_mut();
 				lock.get_ref().members= dummy_class_names_scope;
 			}
 		}
@@ -144,29 +144,19 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, ErrorsContainerPtr& errors_conta
 	}
 	// Prepare class table.
 	{
-		var ust::vector</ ClassTableEntry /> mut tmp_class_table;
+		var ust::unordered_map</ ClassTypePtr, ClassType /> mut tmp_class_table;
 		foreach( child_node_index : source_graph_node.children )
 		{
 			foreach( &class_table_entry : compiled_sources_cache_[child_node_index].class_table )
 			{
-				auto mut prev_entry_index= ~0s;
-				for( auto mut i= 0s; i < tmp_class_table.size(); ++i )
+				if( tmp_class_table.find( class_table_entry.key() ).empty() )
 				{
-					if( tmp_class_table[i].ptr == class_table_entry.ptr )
-					{
-						prev_entry_index= i;
-						break;
-					}
-				}
-
-				if( prev_entry_index == ~0s )
-				{
-					tmp_class_table.push_back(class_table_entry);
+					tmp_class_table.insert( class_table_entry.key(), class_table_entry.value() );
 					continue;
 				}
 
-				var ClassType &mut prev_class_value= tmp_class_table[prev_entry_index].value;
-				var ClassType& new_class_value= class_table_entry.value;
+				var ClassType &mut prev_class_value= tmp_class_table.find( class_table_entry.key() ).get_ref();
+				var ClassType& new_class_value= class_table_entry.value();
 
 				if( !prev_class_value.syntax_element.empty() && !new_class_value.syntax_element.empty() &&
 					prev_class_value.syntax_element != new_class_value.syntax_element )
@@ -190,10 +180,10 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, ErrorsContainerPtr& errors_conta
 
 		foreach( &mut class_table_entry : tmp_class_table )
 		{
-			current_class_table_.push_back(class_table_entry.ptr);
+			current_class_table_.push_back( class_table_entry.key() );
 
-			auto mut lock= class_table_entry.ptr.lock_mut();
-			lock.get_ref()= class_table_entry.value;
+			auto mut lock= class_table_entry.key().lock_mut();
+			lock.get_ref()= class_table_entry.value();
 		}
 	}
 	// Merge namespaces. This must be done AFTER class table praparation.
@@ -246,12 +236,7 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, ErrorsContainerPtr& errors_conta
 	// Fill class table of current node.
 	foreach( &class_type : class_table )
 	{
-		var ClassTableEntry mut entry
-		{
-			.ptr= class_type,
-			.value= class_type.lock_imut().get_ref(),
-		};
-		out_node_build_result.class_table.push_back( move(entry) );
+		out_node_build_result.class_table.insert( class_type, class_type.lock_imut().get_ref() );
 	}
 }
 

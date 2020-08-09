@@ -8,6 +8,9 @@ template</ type T />
 class shared_ptr_imut
 {
 public:
+	type hasher= shared_ptr_hasher;
+
+public:
 	fn constructor( T mut value )
 	( impl_( move(value) ) )
 	{}

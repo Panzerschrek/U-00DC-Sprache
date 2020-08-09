@@ -2,6 +2,7 @@
 import "../ustlib/shared/shared_ptr_final.u"
 import "../ustlib/shared/shared_ptr_final_nullable.u"
 import "../ustlib/type_traits.u"
+import "../ustlib/unordered_map.u"
 
 type IntPtr= ust::shared_ptr_final</i32/>;
 type IntPtrNullable= ust::shared_ptr_final_nullable</i32/>;
@@ -93,6 +94,45 @@ fn nomangle main() : i32
 		halt if(ptr3 != ptr1);
 		halt if(ptr3 != ptr2);
 		halt if(ptr3 != ptr3);
+	}
+	{ // Shared pointer can be used as key in hash map.
+		var ust::unordered_map</ IntPtrNullable, i32 /> mut m;
+
+		var IntPtrNullable ptr0(33);
+		var IntPtrNullable ptr1(ptr0);
+		var IntPtrNullable ptr2(44);
+		var IntPtrNullable ptr3(ptr2);
+
+		m.insert( ptr0, -33 );
+		m.insert( ptr2, -44 );
+
+		halt if( m.size() != 2s );
+
+		halt if( m.find( ptr0 ).empty() );
+		halt if( m.find( ptr0 ).get_ref() != -33 );
+		halt if( m.find( ptr2 ).empty() );
+		halt if( m.find( ptr2 ).get_ref() != -44 );
+
+		halt if( m.find( ptr1 ).empty() );
+		halt if( m.find( ptr1 ).get_ref() != -33 );
+
+		m.insert( ptr3, 666 ); // Copy of pointer already exists. value will be replaced.
+		halt if( m.size() != 2s );
+		halt if( m.find( ptr3 ).empty() );
+		halt if( m.find( ptr3 ).get_ref() != 666 );
+
+		halt if( m.find( ptr2 ).empty() );
+		halt if( m.find( ptr2 ).get_ref() != 666 );
+
+		m.insert( IntPtrNullable(), 99 ); // null pointer as key.
+		halt if( m.size() != 3s );
+		halt if( m.find( IntPtrNullable() ).empty() );
+		halt if( m.find( IntPtrNullable() ).get_ref() != 99 );
+
+		m.insert( IntPtrNullable(), 999 ); // change existing value, use null pointer key.
+		halt if( m.size() != 3s );
+		halt if( m.find( IntPtrNullable() ).empty() );
+		halt if( m.find( IntPtrNullable() ).get_ref() != 999 );
 	}
 
 	return 0;

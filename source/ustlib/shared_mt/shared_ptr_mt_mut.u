@@ -7,6 +7,9 @@ template</ type T />
 class shared_ptr_mt_mut
 {
 public:
+	type hasher= shared_ptr_mt_hasher;
+
+public:
 	fn constructor( T mut value )
 	( impl_( move(value) ) )
 	{}

@@ -13,6 +13,8 @@ class shared_ptr_base shared
 	// Forbid shared pointers for structs with references inside.
 	static_assert( typeinfo</T/>.references_tags_count == size_type(0) );
 
+	type hasher= shared_ptr_base_hasher;
+
 public:
 	fn constructor()= default;
 
@@ -153,6 +155,27 @@ private:
 private:
 	value_ptr value_();
 	counter_ptr counter_();
+}
+
+struct shared_ptr_base_hasher
+{
+	template</type T/>
+	fn hash( shared_ptr_base</T/>& ptr ) : size_type
+	{
+		unsafe
+		{
+			return ust::ref_to_int( ptr.get_value_ptr().get_ref() );
+		}
+	}
+}
+
+struct shared_ptr_hasher
+{
+	template</type PtrT/>
+	fn hash( PtrT& ptr ) : size_type
+	{
+		unsafe{ return shared_ptr_base_hasher::hash( ptr.get_impl() ); }
+	}
 }
 
 template</ type T />

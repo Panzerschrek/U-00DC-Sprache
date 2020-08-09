@@ -489,15 +489,10 @@ private:
 
 	LLVMValueRef global_llvm_function_= LLVMValueRef::Null; // For global function context
 
-	struct ClassTableEntry
-	{
-		ClassTypePtr ptr;
-		ClassType value;
-	}
 	struct SourceGraphNodeBuildResult
 	{
 		ust::shared_ptr_nullable_imut</NamesScope/> names_scope;
-		ust::vector</ ClassTableEntry /> class_table;
+		ust::unordered_map</ ClassTypePtr, ClassType /> class_table;
 	}
 	ust::vector</ SourceGraphNodeBuildResult /> compiled_sources_cache_;
 
