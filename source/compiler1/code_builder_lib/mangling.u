@@ -217,9 +217,18 @@ fn MangleTypeImpl( Type& t ) : MangleGraphNode
 		auto class_members_lock= class_members.lock_imut();
 		auto& class_members_ref= class_members_lock.get_ref();
 
-		if( !class_lock.get_ref().base_template.empty() )
+		if( !class_type.base_template.empty() )
 		{
-			return GetTemplateClassName( class_type );
+			auto mut res= GetTemplateClassName( class_type );
+
+			auto t= class_type.base_template.get_ref().class_template;
+			auto t_namespace= t.get_ref().parent_names_scope.lock();
+			if( !t_namespace.empty() && !t_namespace.lock_imut().get_ref().GetParent().empty() )
+			{
+				res.prefix= "N";
+				res.postfix= "E";
+			}
+			return move(res);
 		}
 		else
 		{

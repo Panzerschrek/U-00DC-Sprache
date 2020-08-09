@@ -46,6 +46,7 @@ bool FilterTest( const std::string& test_name )
 		"ClassTemplatesMangling_Test0",
 		"ClassTemplatesMangling_Test1",
 		"ClassTemplatesMangling_Test2",
+		"ClassTemplatesMangling_Test4",
 		"DestructorMustReturnVoidTest0",
 		"DestructorOutsideClassTest0",
 		"DestructorsTest0",
