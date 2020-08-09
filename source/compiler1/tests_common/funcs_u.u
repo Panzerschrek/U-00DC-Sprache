@@ -76,9 +76,10 @@ fn nomangle U1_BuildProgramWithErrors(
 
 			foreach( & err : code_builder_res.errors )
 			{
+				var U1_StringView text_view{ .data= err.text.front(), .size= err.text.size() };
 				unsafe
 				{
-					error_handler_func( data, err.file_pos.GetLine(), err.file_pos.GetColumn(), u32(err.code), err.text.front(), err.text.size() );
+					error_handler_func( data, err.file_pos.GetLine(), err.file_pos.GetColumn(), u32(err.code), text_view );
 				}
 			}
 		}
@@ -203,9 +204,10 @@ fn nomangle U1_BuildMultisourceProgramWithErrors(
 
 	foreach( & err : code_builder_res.errors )
 	{
+		var U1_StringView text_view{ .data= err.text.front(), .size= err.text.size() };
 		unsafe
 		{
-			error_handler_func( data, err.file_pos.GetLine(), err.file_pos.GetColumn(), u32(err.code), err.text.front(), err.text.size() );
+			error_handler_func( data, err.file_pos.GetLine(), err.file_pos.GetColumn(), u32(err.code), text_view );
 		}
 	}
 

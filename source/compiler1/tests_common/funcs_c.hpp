@@ -19,7 +19,7 @@ struct U1_SourceFile
 	U1_StringView file_content;
 };
 
-using ErrorHanglerFunc= void(*)( void* data, uint32_t line, uint32_t column, uint32_t error_code, const char* error_text, size_t error_text_length );
+using ErrorHanglerFunc= void(*)( void* data, uint32_t line, uint32_t column, uint32_t error_code, const U1_StringView& error_text );
 
 // Return pointer to llvm module. Use "delete" to delete result.
 // Returns null if program build failed and prints errors to stderr.

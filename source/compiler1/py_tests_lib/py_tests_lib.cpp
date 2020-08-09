@@ -286,8 +286,7 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 		const uint32_t line,
 		const uint32_t column,
 		const uint32_t error_code,
-		const char* const error_text,
-		const size_t error_text_length )
+		const U1_StringView& error_text )
 	{
 		PyObject* const dict= PyDict_New();
 
@@ -305,7 +304,7 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 		U1_CodeBuilderCodeToString( error_code, error_code_str, error_code_len );
 		PyDict_SetItemString( dict, "code", PyUnicode_DecodeUTF8( error_code_str, Py_ssize_t(error_code_len), nullptr ) );
 
-		PyDict_SetItemString( dict, "text", PyUnicode_DecodeUTF8( error_text, Py_ssize_t(error_text_length), nullptr ) );
+		PyDict_SetItemString( dict, "text", PyUnicode_DecodeUTF8( error_text.data, Py_ssize_t(error_text.size), nullptr ) );
 
 		PyList_Append( reinterpret_cast<PyObject*>(data), dict );
 	};

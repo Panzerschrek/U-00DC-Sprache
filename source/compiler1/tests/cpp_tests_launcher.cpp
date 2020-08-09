@@ -18,6 +18,20 @@ namespace
 
 llvm::ManagedStatic<llvm::LLVMContext> g_llvm_context;
 
+void ErrorHanlder(
+	void* const data, // should be ICodeBuilder::BuildResult
+	const uint32_t line,
+	const uint32_t column,
+	const uint32_t error_code,
+	const U1_StringView& error_text )
+{
+	CodeBuilderError error;
+	error.file_pos= FilePos( 0u, line, column );
+	error.code= CodeBuilderErrorCode(error_code);
+	error.text= std::string( error_text.data, error_text.data + error_text.size );
+	reinterpret_cast<ICodeBuilder::BuildResult*>(data)->errors.push_back( std::move(error) );
+}
+
 // Returns "true" if should enable test.
 bool FilterTest( const std::string& test_name )
 {
@@ -267,28 +281,13 @@ ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
 	llvm::DataLayout data_layout( GetTestsDataLayout() );
 
 	ICodeBuilder::BuildResult build_result;
-	const auto error_handler=
-	[](
-		void* const data,
-		const uint32_t line,
-		const uint32_t column,
-		const uint32_t error_code,
-		const char* const error_text,
-		const size_t error_text_length )
-	{
-		CodeBuilderError error;
-		error.file_pos= FilePos( 0u, line, column );
-		error.code= CodeBuilderErrorCode(error_code);
-		error.text= std::string( error_text, error_text + error_text_length );
-		reinterpret_cast<ICodeBuilder::BuildResult*>(data)->errors.push_back( std::move(error) );
-	};
 
 	const bool ok=
 		U1_BuildProgramWithErrors(
 			text_view,
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout),
-			error_handler,
+			ErrorHanlder,
 			&build_result );
 	U_TEST_ASSERT(ok);
 
@@ -347,21 +346,6 @@ ICodeBuilder::BuildResult BuildMultisourceProgramWithErrors( std::vector<SourceE
 	llvm::DataLayout data_layout( GetTestsDataLayout() );
 
 	ICodeBuilder::BuildResult build_result;
-	const auto error_handler=
-	[](
-		void* const data,
-		const uint32_t line,
-		const uint32_t column,
-		const uint32_t error_code,
-		const char* const error_text,
-		const size_t error_text_length )
-	{
-		CodeBuilderError error;
-		error.file_pos= FilePos( 0u, line, column );
-		error.code= CodeBuilderErrorCode(error_code);
-		error.text= std::string( error_text, error_text + error_text_length );
-		reinterpret_cast<ICodeBuilder::BuildResult*>(data)->errors.push_back( std::move(error) );
-	};
 
 	const bool ok=
 		U1_BuildMultisourceProgramWithErrors(
@@ -369,7 +353,7 @@ ICodeBuilder::BuildResult BuildMultisourceProgramWithErrors( std::vector<SourceE
 			root_file_path_view,
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout),
-			error_handler,
+			ErrorHanlder,
 			&build_result );
 	U_TEST_ASSERT( ok );
 
