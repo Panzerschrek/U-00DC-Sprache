@@ -11,7 +11,7 @@ U_TEST( Redefinition_ForEnums )
 		enum S{ A }
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -31,7 +31,7 @@ U_TEST( Redefinition_ForEnumMembers )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -57,7 +57,7 @@ U_TEST( EnumsRestrictionsTest )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( build_result.errors.size() >= 6u );
 
 	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
@@ -84,7 +84,7 @@ U_TEST( NameNotFound_ForUnderlayingEnumType_Test )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 2u ) );
 }
@@ -97,7 +97,7 @@ U_TEST( NameNotFound_ForEnumElement )
 		fn Foo(){ var E x= E::D; }
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 3u ) );
 }
@@ -113,7 +113,7 @@ U_TEST( NameIsNotTypeName_ForUnderlayingEnumType_Test )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameIsNotTypeName, 3u ) );
 }
@@ -129,7 +129,7 @@ U_TEST( TypesMismatch_ForUnderlayingEnumType_Test0 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -149,7 +149,7 @@ U_TEST( TypesMismatch_ForUnderlayingEnumType_Test1 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -170,7 +170,7 @@ U_TEST( TypesMismatch_ForUnderlayingEnumType_Test2 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -197,7 +197,7 @@ U_TEST( UnderlayingTypeIsTooSmall_Test )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();

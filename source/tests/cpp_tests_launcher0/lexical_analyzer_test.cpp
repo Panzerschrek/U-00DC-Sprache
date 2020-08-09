@@ -1,4 +1,5 @@
 #include "../cpp_tests/tests.hpp"
+#include "../../lex_synt_lib/lexical_analyzer.hpp"
 
 namespace U
 {

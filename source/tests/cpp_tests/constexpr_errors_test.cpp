@@ -15,7 +15,7 @@ U_TEST(ExpectedConstantExpressionTest0)
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -36,7 +36,7 @@ U_TEST(ExpectedConstantExpressionTest1)
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -57,7 +57,7 @@ U_TEST( ViariableInitializerIsNotConstantExpressionTest0 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -78,7 +78,7 @@ U_TEST( ViariableInitializerIsNotConstantExpressionTest1 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -99,7 +99,7 @@ U_TEST( ViariableInitializerIsNotConstantExpressionTest2 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -120,7 +120,7 @@ U_TEST( ViariableInitializerIsNotConstantExpressionTest3 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -141,7 +141,7 @@ U_TEST( InvalidTypeForConstantExpressionVariableTest0 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidTypeForConstantExpressionVariable, 5u ) );
 }
@@ -162,7 +162,7 @@ U_TEST( ConstantExpressionResultIsUndefinedTest0 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( build_result.errors.size() == 5u );
 
 	U_TEST_ASSERT( build_result.errors[0u].code == CodeBuilderErrorCode::ConstantExpressionResultIsUndefined );
@@ -187,7 +187,7 @@ U_TEST( StaticAssertExpressionMustHaveBoolTypeTest0 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -207,7 +207,7 @@ U_TEST( StaticAssertExpressionMustHaveBoolTypeTest1 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -226,7 +226,7 @@ U_TEST( StaticAssertExpressionMustHaveBoolTypeTest2 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -246,7 +246,7 @@ U_TEST( StaticAssertExpressionIsNotConstantTest0 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -266,7 +266,7 @@ U_TEST( StaticAssertExpressionIsNotConstantTest1 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -290,7 +290,7 @@ U_TEST( ExpectedReferenceValue_ForConstexpr_Test0 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( build_result.errors.size() >= 3u );
 
 	U_TEST_ASSERT( build_result.errors[0u].code == CodeBuilderErrorCode::ExpectedReferenceValue );
@@ -316,7 +316,7 @@ U_TEST( ExpectedReferenceValue_ForConstexpr_Test1 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( build_result.errors.size() >= 3u );
 
 	U_TEST_ASSERT( build_result.errors[0u].code == CodeBuilderErrorCode::ExpectedReferenceValue );
@@ -343,7 +343,7 @@ U_TEST( ArrayIndexOutOfBoundsTest0 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( build_result.errors.size() >= 5u );
 
 	U_TEST_ASSERT( build_result.errors[0u].code == CodeBuilderErrorCode::ArrayIndexOutOfBounds );

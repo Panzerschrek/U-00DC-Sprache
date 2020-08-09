@@ -90,7 +90,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	return std::move( build_result.module );
 }
 
-ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
+ErrorTestBuildResult BuildProgramWithErrors( const char* const text )
 {
 	const std::string file_path= "_";
 	const SourceGraphPtr source_graph=
@@ -101,10 +101,10 @@ ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
 	U_TEST_ASSERT( source_graph->syntax_errors.empty() );
 
 	return
-		CodeBuilder(
+		{ CodeBuilder(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
-			g_build_debug_info ).BuildProgram( *source_graph );
+			g_build_debug_info ).BuildProgram( *source_graph ).errors };
 }
 
 std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const std::string& root_file_path )
@@ -128,7 +128,7 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 	return std::move( build_result.module );
 }
 
-ICodeBuilder::BuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry> sources, const std::string& root_file_path )
+ErrorTestBuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry> sources, const std::string& root_file_path )
 {
 	const SourceGraphPtr source_graph=
 		SourceGraphLoader( std::make_shared<MultiFileVfs>( std::move(sources) ) ).LoadSource( root_file_path );
@@ -138,10 +138,10 @@ ICodeBuilder::BuildResult BuildMultisourceProgramWithErrors( std::vector<SourceE
 	U_TEST_ASSERT( source_graph->syntax_errors.empty() );
 
 	return
-		CodeBuilder(
+		{ CodeBuilder(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
-			g_build_debug_info ).BuildProgram( *source_graph );
+			g_build_debug_info ).BuildProgram( *source_graph ).errors };
 }
 
 EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, const bool needs_dump )

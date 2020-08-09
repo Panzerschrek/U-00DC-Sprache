@@ -283,7 +283,7 @@ U_TEST( StaticAssertTest1 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( !build_result.errors.empty() );
 
 	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::StaticAssertionFailed );

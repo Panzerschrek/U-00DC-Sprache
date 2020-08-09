@@ -16,7 +16,7 @@ U_TEST( BasicReferenceInVariableCheck )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 7u ) );
 }
 
@@ -55,7 +55,7 @@ U_TEST( LockVariableMultipleTimesInSameStruct_Test0 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -81,7 +81,7 @@ U_TEST( LockVariableMultipleTimesInSameStruct_Test1 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -107,7 +107,7 @@ U_TEST( LockVariableMultipleTimesInSameStruct_Test2 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -161,7 +161,7 @@ U_TEST( ReturnReferenceFromArg_Test1 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -184,7 +184,7 @@ U_TEST( ReturnReferenceFromArg_Test2 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -242,7 +242,7 @@ U_TEST( ReturnReferenceFromArg_Test5 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -265,7 +265,7 @@ U_TEST( ReturnReferenceToLocalVariableInsideStruct )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -293,7 +293,7 @@ U_TEST( GetReturnedReferencePassedThroughArgument_Test0 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -355,7 +355,7 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test0 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 15u ) );
 }
@@ -380,7 +380,7 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test1 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -421,7 +421,7 @@ U_TEST( TwoLevelsOfIndirection_Test0 )
 		struct B{ A   &imut x; }
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -438,7 +438,7 @@ U_TEST( TwoLevelsOfIndirection_Test1 )
 		struct B{ A   &imut x; }
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -502,7 +502,7 @@ U_TEST( ReferencePollutionTest2_LinkAsImmutableIfAllLinkedVariablesAreMutable )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -528,7 +528,7 @@ U_TEST( ReferencePollutionTest3_LinkAsImmutableIfAllLinkedVariablesAreMutable )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -578,7 +578,7 @@ U_TEST( ConstructorLinksPassedReference_Test0 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -607,7 +607,7 @@ U_TEST( ConstructorLinksPassedReference_Test1 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -697,7 +697,7 @@ U_TEST( AutoVariableContainsCopyOfReference_Test0 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -726,7 +726,7 @@ U_TEST( ExpressionInitializedVariableContainsCopyOfReference_Test0 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -758,7 +758,7 @@ U_TEST( CopyAssignmentOperator_PollutionTest )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -776,7 +776,7 @@ U_TEST( ReferencePollutionErrorsTest_SelfReferencePollution )
 		{}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -794,7 +794,7 @@ U_TEST( ReferencePollutionErrorsTest_ArgReferencePollution )
 		{}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -817,7 +817,7 @@ U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test0 )
 		} // Error, pollution of "s" with "r", which is not allowed.
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -841,7 +841,7 @@ U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test1 )
 		} // Error, pollution of "s" with inner variable, which is not allowed.
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -868,7 +868,7 @@ U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test2 )
 		} // Error, pollution of "s" with "r", which is not allowed.
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -890,7 +890,7 @@ U_TEST( ReferencePollutionErrorsTest_ExplicitReferencePollutionForCopyConstructo
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -912,7 +912,7 @@ U_TEST( ReferencePollutionErrorsTest_ExplicitReferencePollutionForCopyAssignment
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -941,7 +941,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test0 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -970,7 +970,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test1 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -1001,7 +1001,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test2 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -1026,7 +1026,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test3 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -1052,7 +1052,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test4 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -1077,7 +1077,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test5 )
 		}
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -1094,7 +1094,7 @@ U_TEST( NameNotFound_ForReferenceTags_Test0 )
 		fn Foo( i32& x ) : i32&'a;  // Error, tag 'a' not found
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -1111,7 +1111,7 @@ U_TEST( NameNotFound_ForReferenceTags_Test1 )
 		fn Foo( i32& x ) : S'a';  // Error, tag 'a' not found
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
@@ -1128,7 +1128,7 @@ U_TEST( NameNotFound_ForReferenceTags_Test2 )
 		fn Foo( S &mut s'fff', i32& x ) ' fff <- ttt ';  // Error, tag 'ttt' not found
 	)";
 
-	const ICodeBuilder::BuildResult build_result= BuildProgramWithErrors( c_program_text );
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();

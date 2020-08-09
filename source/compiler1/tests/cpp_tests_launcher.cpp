@@ -1,4 +1,5 @@
 #include <iostream>
+#include <unordered_set>
 
 #include "../../code_builder_lib/push_disable_llvm_warnings.hpp"
 #include <llvm/Support/InitLLVM.h>
@@ -19,7 +20,7 @@ namespace
 llvm::ManagedStatic<llvm::LLVMContext> g_llvm_context;
 
 void ErrorHanlder(
-	void* const data, // should be ICodeBuilder::BuildResult
+	void* const data, // should be ErrorTestBuildResult
 	const uint32_t line,
 	const uint32_t column,
 	const uint32_t error_code,
@@ -29,7 +30,7 @@ void ErrorHanlder(
 	error.file_pos= FilePos( 0u, line, column );
 	error.code= CodeBuilderErrorCode(error_code);
 	error.text= std::string( error_text.data, error_text.data + error_text.size );
-	reinterpret_cast<ICodeBuilder::BuildResult*>(data)->errors.push_back( std::move(error) );
+	reinterpret_cast<ErrorTestBuildResult*>(data)->errors.push_back( std::move(error) );
 }
 
 // Returns "true" if should enable test.
@@ -276,7 +277,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	return std::unique_ptr<llvm::Module>( reinterpret_cast<llvm::Module*>(ptr) );
 }
 
-ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
+ErrorTestBuildResult BuildProgramWithErrors( const char* const text )
 {
 	const U1_StringView text_view{ text, std::strlen(text) };
 
@@ -284,7 +285,7 @@ ICodeBuilder::BuildResult BuildProgramWithErrors( const char* const text )
 
 	llvm::DataLayout data_layout( GetTestsDataLayout() );
 
-	ICodeBuilder::BuildResult build_result;
+	ErrorTestBuildResult build_result;
 
 	const bool ok=
 		U1_BuildProgramWithErrors(
@@ -329,7 +330,7 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 	return std::unique_ptr<llvm::Module>( reinterpret_cast<llvm::Module*>(ptr) );
 }
 
-ICodeBuilder::BuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry> sources, const std::string& root_file_path )
+ErrorTestBuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry> sources, const std::string& root_file_path )
 {
 	std::vector<U1_SourceFile> source_files;
 	source_files.reserve(sources.size());
@@ -349,7 +350,7 @@ ICodeBuilder::BuildResult BuildMultisourceProgramWithErrors( std::vector<SourceE
 
 	llvm::DataLayout data_layout( GetTestsDataLayout() );
 
-	ICodeBuilder::BuildResult build_result;
+	ErrorTestBuildResult build_result;
 
 	const bool ok=
 		U1_BuildMultisourceProgramWithErrors(

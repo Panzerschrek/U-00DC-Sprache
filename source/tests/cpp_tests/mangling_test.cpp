@@ -543,7 +543,6 @@ U_TEST( ClassTemplatesMangling_Test1 )
 		type B_minus_5_plus_666= B</ -5, 666u64 />;
 		type C_C= C</ E::C />;
 	)";
-
 	auto module= BuildProgram( c_program_text );
 	U_TEST_ASSERT( module->getTypeByName( "1AILi66EE" ) != nullptr ); // A</ 66 />
 	U_TEST_ASSERT( module->getTypeByName( "1BILin5ELy666EE" ) != nullptr ); // B</ -5, 666u64 />

@@ -34,7 +34,7 @@ U_TEST( ImportedNamespaceShouldNotBeModified_Test0 )
 		import "c"
 	)";
 
-	ICodeBuilder::BuildResult result=
+	ErrorTestBuildResult result=
 		BuildMultisourceProgramWithErrors(
 			{
 				{ "a", c_program_text_a },
@@ -86,7 +86,7 @@ U_TEST( ImportedNamespaceShouldNotBeModified_Test1 )
 		import "c"
 	)";
 
-	ICodeBuilder::BuildResult result=
+	ErrorTestBuildResult result=
 		BuildMultisourceProgramWithErrors(
 			{
 				{ "a", c_program_text_a },
@@ -129,7 +129,7 @@ U_TEST( ImportedClassShouldNotBeModified_Test0 )
 		import "c"
 	)";
 
-	ICodeBuilder::BuildResult result=
+	ErrorTestBuildResult result=
 		BuildMultisourceProgramWithErrors(
 			{
 				{ "a", c_program_text_a },
@@ -172,7 +172,7 @@ U_TEST( ImportedClassShouldNotBeModified_Test1 )
 		import "c"
 	)";
 
-	ICodeBuilder::BuildResult result=
+	ErrorTestBuildResult result=
 		BuildMultisourceProgramWithErrors(
 			{
 				{ "a", c_program_text_a },
@@ -215,7 +215,7 @@ U_TEST( ImportedClassShouldNotBeModified_Test2 )
 		import "c"
 	)";
 
-	ICodeBuilder::BuildResult result=
+	ErrorTestBuildResult result=
 		BuildMultisourceProgramWithErrors(
 			{
 				{ "a", c_program_text_a },
@@ -250,7 +250,7 @@ U_TEST( FunctionPrototypeDuplication_ForImports_Test0 )
 		import "b"
 	)";
 
-	ICodeBuilder::BuildResult result=
+	ErrorTestBuildResult result=
 		BuildMultisourceProgramWithErrors(
 			{
 				{ "a", c_program_text_a },
@@ -284,7 +284,7 @@ U_TEST( FunctionPrototypeDuplication_ForImports_Test1 )
 		import "b" // than function with body
 	)";
 
-	ICodeBuilder::BuildResult result=
+	ErrorTestBuildResult result=
 		BuildMultisourceProgramWithErrors(
 			{
 				{ "a", c_program_text_a },
@@ -318,7 +318,7 @@ U_TEST( FunctionPrototypeDuplication_ForImports_Test2 )
 		import "a" // than prototype
 	)";
 
-	ICodeBuilder::BuildResult result=
+	ErrorTestBuildResult result=
 		BuildMultisourceProgramWithErrors(
 			{
 				{ "a", c_program_text_a },
@@ -359,7 +359,7 @@ U_TEST( FunctionBodyDuplication_ForImports_Test0 )
 		import "c"
 	)";
 
-	ICodeBuilder::BuildResult result=
+	ErrorTestBuildResult result=
 		BuildMultisourceProgramWithErrors(
 			{
 				{ "a", c_program_text_a },
@@ -393,7 +393,7 @@ U_TEST( CouldNotOverloadFunction_ForImports_Test0 )
 		import "b"
 	)";
 
-	ICodeBuilder::BuildResult result=
+	ErrorTestBuildResult result=
 		BuildMultisourceProgramWithErrors(
 			{
 				{ "a", c_program_text_a },
@@ -427,7 +427,7 @@ U_TEST( ClassPrototypeDuplication_ForImports_Test0 )
 		import "b"
 	)";
 
-	ICodeBuilder::BuildResult result=
+	ErrorTestBuildResult result=
 		BuildMultisourceProgramWithErrors(
 			{
 				{ "a", c_program_text_a },
@@ -461,7 +461,7 @@ U_TEST( ClassPrototypeDuplication_ForImports_Test1 )
 		import "b"
 	)";
 
-	ICodeBuilder::BuildResult result=
+	ErrorTestBuildResult result=
 		BuildMultisourceProgramWithErrors(
 			{
 				{ "a", c_program_text_a },
@@ -502,7 +502,7 @@ U_TEST( ClassBodyDuplication_ForImports_Test0 )
 		import "c"
 	)";
 
-	ICodeBuilder::BuildResult result=
+	ErrorTestBuildResult result=
 		BuildMultisourceProgramWithErrors(
 			{
 				{ "a", c_program_text_a },
@@ -537,7 +537,7 @@ U_TEST( Redefineition_ForImports_Test0 )
 		import "b"
 	)";
 
-	ICodeBuilder::BuildResult result=
+	ErrorTestBuildResult result=
 		BuildMultisourceProgramWithErrors(
 			{
 				{ "a", c_program_text_a },
@@ -571,7 +571,7 @@ U_TEST( Redefineition_ForImports_Test1 )
 		import "b"
 	)";
 
-	ICodeBuilder::BuildResult result=
+	ErrorTestBuildResult result=
 		BuildMultisourceProgramWithErrors(
 			{
 				{ "a", c_program_text_a },
@@ -605,7 +605,7 @@ U_TEST( Redefineition_ForImports_Test2 )
 		import "b"
 	)";
 
-	ICodeBuilder::BuildResult result=
+	ErrorTestBuildResult result=
 		BuildMultisourceProgramWithErrors(
 			{
 				{ "a", c_program_text_a },
@@ -639,7 +639,7 @@ U_TEST( Redefineition_ForImports_Test3 )
 		import "b"
 	)";
 
-	ICodeBuilder::BuildResult result=
+	ErrorTestBuildResult result=
 		BuildMultisourceProgramWithErrors(
 			{
 				{ "a", c_program_text_a },
@@ -673,7 +673,7 @@ U_TEST( Redefineition_ForImports_Test4 )
 		import "b"
 	)";
 
-	ICodeBuilder::BuildResult result=
+	ErrorTestBuildResult result=
 		BuildMultisourceProgramWithErrors(
 			{
 				{ "a", c_program_text_a },
@@ -707,7 +707,7 @@ U_TEST( Redefineition_ForImports_Test5 )
 		import "b"
 	)";
 
-	ICodeBuilder::BuildResult result=
+	ErrorTestBuildResult result=
 		BuildMultisourceProgramWithErrors(
 			{
 				{ "a", c_program_text_a },
@@ -741,7 +741,7 @@ U_TEST( Redefineition_ForImports_Test6 )
 		import "b"
 	)";
 
-	ICodeBuilder::BuildResult result=
+	ErrorTestBuildResult result=
 		BuildMultisourceProgramWithErrors(
 			{
 				{ "a", c_program_text_a },

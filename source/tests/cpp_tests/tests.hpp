@@ -7,7 +7,6 @@
 #include "../../code_builder_lib/pop_llvm_warnings.hpp"
 
 #include "../../code_builder_lib/code_builder_errors.hpp"
-#include "../../code_builder_lib/i_code_builder.hpp"
 
 #include "funcs_registrator.hpp"
 
@@ -27,10 +26,15 @@ namespace U
 
 #define ASSERT_NEAR( x, y, eps ) U_TEST_ASSERT( std::abs( (x) - (y) ) <= (eps) )
 
-typedef std::unique_ptr<llvm::ExecutionEngine> EnginePtr;
+using EnginePtr= std::unique_ptr<llvm::ExecutionEngine>;
+
+struct ErrorTestBuildResult
+{
+	std::vector<CodeBuilderError> errors;
+};
 
 std::unique_ptr<llvm::Module> BuildProgram( const char* text );
-ICodeBuilder::BuildResult BuildProgramWithErrors( const char* text );
+ErrorTestBuildResult BuildProgramWithErrors( const char* text );
 
 struct SourceEntry
 {
@@ -39,7 +43,7 @@ struct SourceEntry
 };
 
 std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const std::string& root_file_path );
-ICodeBuilder::BuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry> sources, const std::string& root_file_path );
+ErrorTestBuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry> sources, const std::string& root_file_path );
 
 EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, bool needs_dump= false );
 
