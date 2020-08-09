@@ -351,6 +351,20 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"OkTest",
 		"SimpliestTest",
 		"SimplePassArgumentTest",
+		"TypeNameInErrorMessage_ClassTemplate_Test0",
+		"TypeNameInErrorMessage_ClassTemplate_Test1",
+		"TypeNameInErrorMessage_ClassTemplate_Test2",
+		"TypeNameInErrorMessage_ClassTemplate_Test3",
+		"TypeNameInErrorMessage_ClassTemplate_Test4",
+		"TypeNameInErrorMessage_ClassTemplate_Test5",
+		"TypeNameInErrorMessage_ClassTemplate_Test6",
+		"TypeNameInErrorMessage_ClassTemplate_Test7",
+		//"TypeNameInErrorMessage_ClassTemplate_Test8",
+		"TypeNameInErrorMessage_ClassTypeInGlobalNamespace",
+		"TypeNameInErrorMessage_ClassTypeInNamespace_Test0",
+		"TypeNameInErrorMessage_ClassTypeInNamespace_Test1",
+		"TypeNameInErrorMessage_ClassTypeInNamespace_Test2",
+		"TypeNameInErrorMessage_FundamentalTypes",
 	};
 
 	if( std::find( std::begin(c_test_to_enable), std::end(c_test_to_enable), func_name_str )

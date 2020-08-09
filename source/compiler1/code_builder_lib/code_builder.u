@@ -814,7 +814,6 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 
 		var Enum::Element mut out_element;
 
-		// TODO - mangle name using enum as namespace.
 		auto name_mangled= MangleGlobalVariable( enum_.names_scope.lock_imut().get_ref(), element.name );
 		unsafe
 		{
