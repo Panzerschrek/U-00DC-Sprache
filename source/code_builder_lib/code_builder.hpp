@@ -10,12 +10,11 @@
 #include <llvm/IR/Module.h>
 #include "pop_llvm_warnings.hpp"
 
-#include "../lex_synt_lib/syntax_elements.hpp"
+#include "../lex_synt_lib/source_graph_loader.hpp"
 #include "class.hpp"
 #include "constexpr_function_evaluator.hpp"
 #include "enum.hpp"
 #include "function_context.hpp"
-#include "i_code_builder.hpp"
 #include "template_types.hpp"
 
 namespace U
@@ -24,7 +23,7 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-class CodeBuilder final : public ICodeBuilder
+class CodeBuilder
 {
 public:
 	CodeBuilder(
@@ -32,7 +31,12 @@ public:
 		const llvm::DataLayout& data_layout,
 		bool build_debug_info );
 
-	virtual BuildResult BuildProgram( const SourceGraph& source_graph ) override;
+	struct BuildResult
+	{
+		std::vector<CodeBuilderError> errors;
+		std::unique_ptr<llvm::Module> module;
+	};
+	BuildResult BuildProgram( const SourceGraph& source_graph );
 
 private:
 	using ClassTable= std::unordered_map< ClassProxyPtr, std::unique_ptr<Class> >;

@@ -78,7 +78,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	U_TEST_ASSERT( source_graph->lexical_errors.empty() );
 	U_TEST_ASSERT( source_graph->syntax_errors.empty() );
 
-	ICodeBuilder::BuildResult build_result=
+	CodeBuilder::BuildResult build_result=
 		CodeBuilder(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
@@ -116,7 +116,7 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 	U_TEST_ASSERT( source_graph->lexical_errors.empty() );
 	U_TEST_ASSERT( source_graph->syntax_errors.empty() );
 
-	ICodeBuilder::BuildResult build_result=
+	CodeBuilder::BuildResult build_result=
 		CodeBuilder(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),

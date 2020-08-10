@@ -89,7 +89,7 @@ CodeBuilder::CodeBuilder(
 		: FundamentalType( U_FundamentalType::u64, fundamental_llvm_types_.u64 );
 }
 
-ICodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_graph )
+CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_graph )
 {
 	global_errors_.clear();
 
