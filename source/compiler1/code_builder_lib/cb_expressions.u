@@ -56,7 +56,10 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	{
 		t= U_FundamentalType::u32_;
 	}
-	// TODO -size_type
+	else if( type_suffix == ust::string8("s") )
+	{
+		t= size_type_.GetFundamentalType().get_ref().fundamental_type;
+	}
 	else if( type_suffix == ust::string8("f") )
 	{
 		t= U_FundamentalType::f32_;
