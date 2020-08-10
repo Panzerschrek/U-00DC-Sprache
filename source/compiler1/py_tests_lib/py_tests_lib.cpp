@@ -345,6 +345,22 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 
 	static const std::string c_test_to_enable[]
 	{
+		"CharAsTemplateParameter_Test0",
+		"CharIsConstructibleFromChar_Test0",
+		"CharIsConstructibleFromChar_Test1",
+		"CharIsConstructibleFromChar_Test2",
+		"CharIsConstructibleFromInt_Test0",
+		"CharIsConstructibleFromInt_Test1",
+		"CharIsConstructibleFromInt_Test2",
+		"CharIsEqualityComparable_Test0",
+		"CharIsNotIntegerType_Test0",
+		"CharIsNotIntegerType_Test1",
+		"CharIsNotIntegerType_Test2",
+		"CharIsNotIntegerType_Test3",
+		"CharIsNotIntegerType_Test4",
+		"CharIsOrderComparable_Test0",
+		"CharIsUnsigned_Test0",
+		"CharIsUnsigned_Test1",
 		"ErrorsTest0",
 		"ErrorsTest1",
 		"Int128_Test0",
@@ -365,6 +381,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TypeNameInErrorMessage_ClassTypeInNamespace_Test1",
 		"TypeNameInErrorMessage_ClassTypeInNamespace_Test2",
 		"TypeNameInErrorMessage_FundamentalTypes",
+		"ZeroInitializerForChar_Test0",
 	};
 
 	if( std::find( std::begin(c_test_to_enable), std::end(c_test_to_enable), func_name_str )

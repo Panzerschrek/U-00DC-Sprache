@@ -61,6 +61,18 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	{
 		t= U_FundamentalType::f32_;
 	}
+	else if( type_suffix == ust::string8("c8") )
+	{
+		t= U_FundamentalType::char8_;
+	}
+	else if( type_suffix == ust::string8("c16") )
+	{
+		t= U_FundamentalType::char16_;
+	}
+	else if( type_suffix == ust::string8("c32") )
+	{
+		t= U_FundamentalType::char32_;
+	}
 	else
 	{
 		t= GetFundamentalTypeByName( type_suffix );
@@ -89,7 +101,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		{
 			res.constexpr_value= LLVMConstInt( res.t.GetLLVMType(), numeric_constant.num.value_int, LLVMBool::True  );
 		}
-		else if( IsUnsignedInteger( t ) )
+		else if( IsUnsignedInteger( t ) || IsChar( t ) )
 		{
 			res.constexpr_value= LLVMConstInt( res.t.GetLLVMType(), numeric_constant.num.value_int, LLVMBool::False );
 		}
