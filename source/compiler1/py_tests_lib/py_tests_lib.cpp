@@ -368,6 +368,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"FunctionPointerCall_Test1",
 		"FunctionPointerCall_Test2",
 		"FunctionPointerCall_Test3",
+		"FunctionPointerEqualityComparision_Test0",
+		"FunctionPointerEqualityComparision_Test1",
 		"FunctionPoinerInitialization_Test0",
 		"FunctionPoinerInitialization_Test1",
 		"FunctionPoinerInitialization_Test2",

@@ -1018,7 +1018,7 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names_scope, file_pos, r_type, l_type, BinaryOperatorToString( operator ) )
 			return ErrorValue();
 		}
-		if( l_fundamental_type.empty() && l_type.GetEnumType().empty() )
+		if( l_fundamental_type.empty() && l_type.GetEnumType().empty() && l_type.GetFunctionPointerType().empty() )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, file_pos, l_type )
 			return ErrorValue();
