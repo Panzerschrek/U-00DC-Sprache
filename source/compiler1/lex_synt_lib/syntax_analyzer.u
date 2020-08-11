@@ -532,6 +532,10 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 			NextLexem();
 			current_node= move(boolean_constant);
 		}
+		else if( IsKeyword( it_.front(), Keyword::fn_ ) )
+		{
+			current_node= ust::box</FunctionType/>( ParseFunctionType() );
+		}
 		else if( it_.front().lexem_type == Lexem::Type::Identifier || it_.front().lexem_type == Lexem::Type::Scope )
 		{
 			current_node= ParseComplexName();
@@ -734,7 +738,7 @@ fn SyntaxAnalyzer::ParseArrayType( mut this ) : ArrayType
 
 fn SyntaxAnalyzer::ParseFunctionType( mut this ) : FunctionType
 {
-	var FunctionType mut function_type;
+	var FunctionType mut function_type{ .file_pos= it_.front().file_pos };
 
 	if( !IsKeyword( it_.front(), Keyword::fn_ ) )
 	{

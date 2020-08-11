@@ -597,7 +597,7 @@ fn CodeBuilder::TryGenerateDestructor( this, ClassTypePtr& class_type )
 
 fn CodeBuilder::BuildCopyConstructorPart( mut this, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t )
 {
-	if( !t.GetFundamentalType().empty() || !t.GetEnumType().empty() )
+	if( !t.GetFundamentalType().empty() || !t.GetEnumType().empty() || !t.GetFunctionPointerType().empty() )
 	{
 		unsafe
 		{
@@ -673,7 +673,7 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, FunctionContext &mut functio
 
 fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t )
 {
-	if( !t.GetFundamentalType().empty() || !t.GetEnumType().empty() )
+	if( !t.GetFundamentalType().empty() || !t.GetEnumType().empty() || !t.GetFunctionPointerType().empty() )
 	{
 		unsafe
 		{

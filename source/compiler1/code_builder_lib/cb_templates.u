@@ -136,6 +136,7 @@ fn CodeBuilder::CheckTemplateSignatureParam(
 		CheckTemplateSignatureParam( names_scope, function_context, template_params, array_type.get_ref(), template_params_usage_flags );
 		return;
 	}
+	// TODO - check also function pointer type.
 
 	// Nothing special - process as regular expression
 	// TODO - check type for template variable param
@@ -447,6 +448,7 @@ fn CodeBuilder::MatchTemplateArgument(
 	{
 		return MatchTemplateArgument( names_scope, type_template, array_type_expression.get_ref(), given_arg );
 	}
+	// TODO - Match also function pointer type.
 
 	// If this is nothing special - process template parameter as regular expression.
 	auto mut global_function_context= CreateGlobalFunctionContext();
@@ -648,6 +650,7 @@ fn CodeBuilder::MatchTemplateArgument(
 	{
 		return MatchTemplateArgument( names_scope, type_template, array_type.get_ref(), given_arg );
 	}
+	// TODO - match also function pointer type.
 	return false;
 }
 

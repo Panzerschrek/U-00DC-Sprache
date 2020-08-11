@@ -345,6 +345,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 
 	static const std::string c_test_to_enable[]
 	{
+		"AutoVariableInitialization_UsingFunctionPointer_Test0",
 		"CharAsTemplateParameter_Test0",
 		"CharIsConstructibleFromChar_Test0",
 		"CharIsConstructibleFromChar_Test1",
