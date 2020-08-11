@@ -270,7 +270,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ZeroInitializer& zero_initializer ) : LLVMValueRef
 {
-	if( !variable.t.GetFundamentalType().empty() || !variable.t.GetEnumType().empty() )
+	if( !variable.t.GetFundamentalType().empty() || !variable.t.GetEnumType().empty() || !variable.t.GetFunctionPointerType().empty() )
 	{
 		// Currently, first element of enum have zero value.
 		unsafe
