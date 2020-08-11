@@ -364,6 +364,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"ErrorsTest0",
 		"ErrorsTest1",
 		"FunctionPoinerInitialization_Test0",
+		"FunctionPoinerInitialization_Test1",
+		"FunctionPoinerInitialization_Test2",
 		"FunctionTypeDeclaration_Test0",
 		"FunctionTypeDeclaration_Test1",
 		"FunctionTypeDeclaration_Test2",
