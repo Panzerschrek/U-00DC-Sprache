@@ -139,7 +139,7 @@ struct ArrayType
 
 struct FunctionType
 {
-	struct Arg
+	struct Arg // TODO - rename to param
 	{
 		FilePos file_pos;
 		TypeName arg_type;
