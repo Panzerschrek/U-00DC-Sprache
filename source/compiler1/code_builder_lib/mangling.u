@@ -243,6 +243,73 @@ fn MangleTypeImpl( Type& t ) : MangleGraphNode
 
 		return GetNestedName( enum_members_ref.GetThisNamespaceName(), enum_members_ref.GetParent().lock_imut().get_ref() );
 	}
+	if_var( &function_pointer_type : t.GetFunctionPointerType() )
+	{
+		var MangleGraphNode mut res{ .prefix= "P" };
+		res.childs.push_back( ust::box</MangleGraphNode/>( MangleTypeImpl( function_pointer_type.function_type ) ) );
+		return move(res);
+	}
+	if_var( &function_type : t.GetFunctionType() )
+	{
+		var ust::vector</FunctionType::Arg/> mut signature;
+		{
+			var FunctionType::Arg mut ret_arg
+			{
+				.arg_type( function_type.return_type.get_ref() ),
+				.is_mutable= function_type.return_value_is_mutable,
+				.is_reference= function_type.return_value_is_reference,
+			};
+			signature.push_back( move(ret_arg) );
+		}
+		if( function_type.args.empty() )
+		{
+			var FunctionType::Arg mut void_arg
+			{
+				.arg_type( Type( FundamentalType( U_FundamentalType::void_, LLVMTypeRef::Null ) ) ),
+				.is_mutable= false,
+				.is_reference= false,
+			};
+			signature.push_back( move(void_arg) );
+		}
+
+		foreach( &arg : function_type.args )
+		{
+			var FunctionType::Arg mut arg_copy // TODO - create copy constructor for "Arg"
+			{
+				.arg_type(arg.arg_type.get_ref()),
+				.is_mutable= arg.is_mutable,
+				.is_reference= arg.is_reference,
+			};
+			signature.push_back(move(arg_copy));
+		}
+
+		var MangleGraphNode mut res
+		{
+			.prefix= "F",
+			.postfix= "E",
+		};
+
+		foreach( &arg : signature )
+		{
+			var MangleGraphNode mut arg_node= MangleTypeImpl( arg.arg_type.get_ref() );
+			if( !arg.is_mutable && arg.is_reference ) // push "Konst" for reference immutable arguments
+			{
+				var MangleGraphNode mut konst_node{ .prefix= "K" };
+				konst_node.childs.push_back( ust::box</MangleGraphNode/>( take( arg_node ) ) );
+				arg_node= move( konst_node );
+			}
+			if( arg.is_reference )
+			{
+				var MangleGraphNode mut ref_node{ .prefix= "R" };
+				ref_node.childs.push_back( ust::box</MangleGraphNode/>( take( arg_node ) ) );
+				arg_node= move( ref_node );
+			}
+
+			res.childs.push_back( ust::box</MangleGraphNode/>( move(arg_node) ) );
+		}
+
+		return move(res);
+	}
 
 	return MangleGraphNode();
 }

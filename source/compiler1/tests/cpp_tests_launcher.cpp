@@ -73,6 +73,7 @@ bool FilterTest( const std::string& test_name )
 		"ExplicitArgumentsInDestructorTest1",
 		"FunctionBodyDuplication_ForDestructors_Test0",
 		"FunctionsParametersManglingTest",
+		"FunctionTypesMangling_Test0",
 		"FundamentalTypesManglingTest",
 		"GlobalVariablesManglingTest0",
 		//"InvalidTypeOfTemplateVariableArgumentTest0",
