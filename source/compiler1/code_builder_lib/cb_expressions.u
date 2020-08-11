@@ -418,6 +418,23 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 	if_var( & variable : function.get</Variable/>() )
 	{
+		if_var( &function_pointer_type : variable.t.GetFunctionPointerType() )
+		{
+			var FunctionVariable function_variable
+			{
+				.t= function_pointer_type.function_type,
+				.llvm_function= CreateMoveToLLVMRegisterInstruction( variable , function_context )
+			};
+
+			return DoCallFunction(
+				names_scope,
+				function_context,
+				ust::optional_ref</ Variable, false />(),
+				function_variable,
+				call_operator.args.range(),
+				call_operator.file_pos );
+		}
+
 		// Try to call overloaded () operator.
 
 		var ust::vector</FunctionType::Arg/> mut args;
