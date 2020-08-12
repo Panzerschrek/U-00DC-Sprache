@@ -1,4 +1,5 @@
 #include <iostream>
+#include <unordered_set>
 
 #include <Python.h>
 
@@ -343,30 +344,45 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 
 	const std::string func_name_str= func_name;
 
-	static const std::string c_test_to_enable[]
+	static const std::unordered_set<std::string> c_test_to_enable
 	{
+		"AutoVariableInitialization_UsingFunctionPointer_Test0",
+		"BindingConstReferenceToNonconstReference_InFunctionPointerCall_Test0",
 		"CharAsTemplateParameter_Test0",
-		"CharIsConstructibleFromChar_Test0",
-		"CharIsConstructibleFromChar_Test1",
-		"CharIsConstructibleFromChar_Test2",
-		"CharIsConstructibleFromInt_Test0",
-		"CharIsConstructibleFromInt_Test1",
-		"CharIsConstructibleFromInt_Test2",
 		"CharIsEqualityComparable_Test0",
-		"CharIsNotIntegerType_Test0",
-		"CharIsNotIntegerType_Test1",
-		"CharIsNotIntegerType_Test2",
-		"CharIsNotIntegerType_Test3",
-		"CharIsNotIntegerType_Test4",
 		"CharIsOrderComparable_Test0",
-		"CharIsUnsigned_Test0",
-		"CharIsUnsigned_Test1",
+		"CouldNotConvertFunctionPointer_Test0",
+		"CouldNotConvertFunctionPointer_Test1",
+		"CouldNotConvertFunctionPointer_Test2",
+		"CouldNotConvertFunctionPointer_Test3",
+		"CouldNotConvertFunctionPointer_Test4",
+		"CouldNotConvertFunctionPointer_Test5",
+		"CouldNotConvertFunctionPointer_Test6",
+		"CouldNotConvertFunctionPointer_Test7",
+		"CouldNotConvertFunctionPointer_Test8",
+		"CouldNotConvertFunctionPointer_Test9",
+		"ExpectedReferenceValue_InFunctionPointerCall_Test0",
 		"ErrorsTest0",
 		"ErrorsTest1",
+		"FunctionPointersConversions_Test0",
+		"FunctionPointersConversions_Test1",
+		"FunctionTypeDeclaration_Test0",
+		"FunctionTypeDeclaration_Test1",
+		"FunctionTypeDeclaration_Test2",
+		"FunctionTypeDeclaration_Test3",
 		"Int128_Test0",
 		"OkTest",
 		"SimpliestTest",
 		"SimplePassArgumentTest",
+		"TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test0",
+		"TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test1",
+		"TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test2",
+		"TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test5",
+		"TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test6",
+		"TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test7",
+		"TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test8",
+		"TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test9",
+		"TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test10",
 		"TypeNameInErrorMessage_ClassTemplate_Test0",
 		"TypeNameInErrorMessage_ClassTemplate_Test1",
 		"TypeNameInErrorMessage_ClassTemplate_Test2",
@@ -377,15 +393,11 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TypeNameInErrorMessage_ClassTemplate_Test7",
 		//"TypeNameInErrorMessage_ClassTemplate_Test8",
 		"TypeNameInErrorMessage_ClassTypeInGlobalNamespace",
-		"TypeNameInErrorMessage_ClassTypeInNamespace_Test0",
-		"TypeNameInErrorMessage_ClassTypeInNamespace_Test1",
-		"TypeNameInErrorMessage_ClassTypeInNamespace_Test2",
 		"TypeNameInErrorMessage_FundamentalTypes",
 		"ZeroInitializerForChar_Test0",
 	};
 
-	if( std::find( std::begin(c_test_to_enable), std::end(c_test_to_enable), func_name_str )
-		!= std::end(c_test_to_enable) )
+	if( c_test_to_enable.count( func_name_str ) > 0 )
 	{
 		Py_INCREF(Py_True);
 		return Py_True;
@@ -393,11 +405,25 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 
 	static const std::string c_tests_to_enable_pattern[]
 	{
+		"CharIsConstructibleFromChar_Test",
+		"CharIsConstructibleFromInt_Test",
+		"CharIsNotIntegerType_Test",
+		"CharIsUnsigned_Test",
+		"FunctionPointerAsFunctionArgument_Test",
+		"FunctionPointerAsSpecializedTemplateParameter_Test",
+		"FunctionPointerCall_Test",
+		"FunctionPointerEqualityComparision_Test",
+		"FunctionPoinerInitialization_Test",
+		"FunctionPointerReferencesIsNotCompatible_Test",
+		"FunctionsPoitersAssignment_Test",
+		"InvalidFunctionArgumentCount_Test",
 		"NonExistentTest",
 		"NumericConstants_BinaryConstants",
 		"NumericConstants_DecimalConstants",
 		"NumericConstants_HexadecimalConstants",
 		"NumericConstants_OctalConstants",
+		"TypeNameInErrorMessage_ClassTypeInNamespace_Test",
+		"TypesMismatch_InFunctionPointerCall_Test",
 	};
 
 	if( std::find_if(

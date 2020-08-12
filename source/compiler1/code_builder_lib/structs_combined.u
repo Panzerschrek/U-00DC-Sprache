@@ -52,6 +52,11 @@ fn ToString( FunctionType& function_type ) : ust::string8
 	return move(result);
 }
 
+fn ToString( FunctionPointerType& function_pointer_type ) : ust::string8
+{
+	return ToString( function_pointer_type.function_type );
+}
+
 fn ToString( ClassTypePtr& class_type ) : ust::string8
 {
 	return class_type.lock_imut().get_ref().members.lock_imut().get_ref().ToString();
@@ -136,6 +141,42 @@ op FunctionType::Arg::!=(Arg& l, Arg& r) : bool
 	return !(l == r);
 }
 
+fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
+{
+	if(
+		this.return_type.get_ref() != dst.return_type.get_ref() ||
+		this.return_value_is_reference != dst.return_value_is_reference ||
+		( !this.return_value_is_mutable && dst.return_value_is_mutable ) || // Allow mutability conversions, except mut->imut
+		this.args.size() != dst.args.size() )
+	{
+		return false;
+	}
+
+	for( auto mut i= 0s; i < args.size(); ++i )
+	{
+		auto& this_arg= this.args[i];
+		auto& dst_arg= dst.args[i];
+		if( this_arg.arg_type.get_ref() != dst_arg.arg_type.get_ref() ||
+			this_arg.is_reference != dst_arg.is_reference ||
+			(this_arg.is_mutable && !dst_arg.is_mutable ) ) // Allow mutability conversions, except mut->imut
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+op FunctionPointerType::==( FunctionPointerType& l, FunctionPointerType& r ) : bool
+{
+	return l.function_type == r.function_type;
+}
+
+op FunctionPointerType::!=( FunctionPointerType& l, FunctionPointerType& r ) : bool
+{
+	return !(l == r);
+}
+
 fn FunctionType::constructor( mut this, FunctionType &imut other )
 	(
 		return_type(other.return_type.get_ref()),
@@ -215,6 +256,10 @@ fn Type::conversion_constructor( FunctionType mut function_type )
 	( something_( move(function_type) ) )
 {}
 
+fn Type::conversion_constructor( FunctionPointerType mut function_pointer_type )
+	( something_( move(function_pointer_type) ) )
+{}
+
 fn Type::conversion_constructor( ClassTypePtr mut class_type )
 	( something_( move(class_type) ) )
 {}
@@ -251,6 +296,16 @@ fn Type::GetFunctionType(  mut this ) : ust::optional_ref</FunctionType, true  /
 fn Type::GetFunctionType( imut this ) : ust::optional_ref</FunctionType, false />'this'
 {
 	return something_.get</FunctionType/>();
+}
+
+fn Type::GetFunctionPointerType(  mut this ) : ust::optional_ref</FunctionPointerType, true  />'this'
+{
+	return something_.get</FunctionPointerType/>();
+}
+
+fn Type::GetFunctionPointerType( imut this ) : ust::optional_ref</FunctionPointerType, false />'this'
+{
+	return something_.get</FunctionPointerType/>();
 }
 
 fn Type::GetClassType(  mut this ) : ust::optional_ref</ClassTypePtr, true  />'this'
@@ -309,7 +364,7 @@ fn Type::IsDefaultConstructible( this ) : bool
 
 fn Type::IsCopyConstructible( this ) : bool
 {
-	if( !GetFundamentalType().empty() || !GetEnumType().empty() )
+	if( !GetFundamentalType().empty() || !GetEnumType().empty() || !GetFunctionPointerType().empty() )
 	{
 		return true;
 	}
@@ -326,7 +381,7 @@ fn Type::IsCopyConstructible( this ) : bool
 
 fn Type::IsCopyAssignable( this ) : bool
 {
-	if( !GetFundamentalType().empty() || !GetEnumType().empty() )
+	if( !GetFundamentalType().empty() || !GetEnumType().empty() || !GetFunctionPointerType().empty() )
 	{
 		return true;
 	}
@@ -343,7 +398,7 @@ fn Type::IsCopyAssignable( this ) : bool
 
 fn Type::CanBeConstexpr( this ) : bool
 {
-	if( !GetFundamentalType().empty() || !GetEnumType().empty() )
+	if( !GetFundamentalType().empty() || !GetEnumType().empty() || !GetFunctionPointerType().empty() )
 	{
 		return true;
 	}

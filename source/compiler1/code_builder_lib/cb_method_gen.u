@@ -17,7 +17,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	auto constructors_ptr= class_members.lock_imut().get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).get_ref().Get</NamesScopeFunctionsSet/>();
 	foreach( &constructor_ : constructors_ptr.lock_imut().get_ref().functions_set.functions )
 	{
-		auto& function_type= constructor_.t.GetFunctionType().get_ref();
+		auto& function_type= constructor_.t;
 		if( function_type.args.size() == 1s )
 		{
 			auto mut class_lock= class_type.lock_mut();
@@ -108,8 +108,8 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 				MangleFunction(
 					class_members.lock_imut().get_ref(),
 					KeywordToString( Keyword::constructor_ ),
-					function_variable.t.GetFunctionType().get_ref() ).front(),
-				function_variable.t.GetLLVMType() );
+					function_variable.t ).front(),
+				function_variable.t.llvm_type );
 	}
 
 	// Build code itself.
@@ -180,7 +180,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 	// Search for copy constructor.
 	foreach( &constructor_ : constructors_ptr.lock_imut().get_ref().functions_set.functions )
 	{
-		auto& function_type= constructor_.t.GetFunctionType().get_ref();
+		auto& function_type= constructor_.t;
 		if(
 			function_type.args.size() == 2s &&
 			function_type.args.back().is_reference &&
@@ -272,8 +272,8 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 				MangleFunction(
 					class_members.lock_imut().get_ref(),
 					KeywordToString( Keyword::constructor_ ),
-					function_variable.t.GetFunctionType().get_ref() ).front(),
-				function_variable.t.GetLLVMType() );
+					function_variable.t ).front(),
+				function_variable.t.llvm_type );
 	}
 
 	// Build code itself.
@@ -358,7 +358,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 	// Search for copy assignment operator.
 	foreach( &operator : operators_ptr.lock_imut().get_ref().functions_set.functions )
 	{
-		auto& function_type= operator.t.GetFunctionType().get_ref();
+		auto& function_type= operator.t;
 		if(
 			function_type.args.size() == 2s &&
 			function_type.args.front().is_reference &&  function_type.args.front().is_mutable && function_type.args.front().arg_type.get_ref() == class_type &&
@@ -449,8 +449,8 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 				MangleFunction(
 					class_members,
 					OverloadedOperatorToString( OverloadedOperator::Assign ),
-					function_variable.t.GetFunctionType().get_ref() ).front(),
-				function_variable.t.GetLLVMType() );
+					function_variable.t ).front(),
+				function_variable.t.llvm_type);
 	}
 
 	// Build code itself.
@@ -565,8 +565,8 @@ fn CodeBuilder::TryGenerateDestructor( this, ClassTypePtr& class_type )
 				MangleFunction(
 					class_members.lock_imut().get_ref(),
 					KeywordToString( Keyword::destructor_ ),
-					function_variable.t.GetFunctionType().get_ref() ).front(),
-				function_variable.t.GetLLVMType() );
+					function_variable.t ).front(),
+				function_variable.t.llvm_type );
 	}
 
 	// Build code itself.
@@ -597,7 +597,7 @@ fn CodeBuilder::TryGenerateDestructor( this, ClassTypePtr& class_type )
 
 fn CodeBuilder::BuildCopyConstructorPart( mut this, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t )
 {
-	if( !t.GetFundamentalType().empty() || !t.GetEnumType().empty() )
+	if( !t.GetFundamentalType().empty() || !t.GetEnumType().empty() || !t.GetFunctionPointerType().empty() )
 	{
 		unsafe
 		{
@@ -650,7 +650,7 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, FunctionContext &mut functio
 		// Search for copy constructor.
 		foreach( &constructor_ : constructors_ptr.lock_imut().get_ref().functions_set.functions )
 		{
-			auto& function_type= constructor_.t.GetFunctionType().get_ref();
+			auto& function_type= constructor_.t;
 			if( function_type.args.size() == 2s &&
 				function_type.args.back().is_reference &&
 				!function_type.args.back().is_mutable &&
@@ -673,7 +673,7 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, FunctionContext &mut functio
 
 fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t )
 {
-	if( !t.GetFundamentalType().empty() || !t.GetEnumType().empty() )
+	if( !t.GetFundamentalType().empty() || !t.GetEnumType().empty() || !t.GetFunctionPointerType().empty() )
 	{
 		unsafe
 		{
@@ -726,7 +726,7 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, FunctionContext &mut 
 		// Search for copy assignment operator.
 		foreach( &operator_ : operators_ptr.lock_imut().get_ref().functions_set.functions )
 		{
-			auto& function_type= operator_.t.GetFunctionType().get_ref();
+			auto& function_type= operator_.t;
 			if(
 				function_type.args.size() == 2s &&
 				function_type.args.front().is_reference &&  function_type.args.front().is_mutable && function_type.args.front().arg_type.get_ref() == class_type &&

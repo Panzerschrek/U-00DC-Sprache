@@ -74,6 +74,17 @@ struct FunctionType
 
 	op==( FunctionType& l, FunctionType& r ) : bool;
 	op!=( FunctionType& l, FunctionType& r ) : bool;
+
+	fn PointerCanBeConvertedTo( this, FunctionType& dst ) : bool;
+}
+
+struct FunctionPointerType
+{
+	FunctionType function_type;
+	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
+
+	op==( FunctionPointerType& l, FunctionPointerType& r ) : bool;
+	op!=( FunctionPointerType& l, FunctionPointerType& r ) : bool;
 }
 
 struct ClassType
@@ -114,6 +125,7 @@ public:
 	fn conversion_constructor( FundamentalType mut fundamental_type );
 	fn conversion_constructor( ArrayType mut array_type );
 	fn conversion_constructor( FunctionType mut function_type );
+	fn conversion_constructor( FunctionPointerType mut function_pointer_type );
 	fn conversion_constructor( ClassTypePtr mut class_type );
 	fn conversion_constructor( EnumTypePtr mut enum_type );
 
@@ -125,6 +137,9 @@ public:
 
 	fn GetFunctionType(  mut this ) : ust::optional_ref</FunctionType, true  />'this';
 	fn GetFunctionType( imut this ) : ust::optional_ref</FunctionType, false />'this';
+
+	fn GetFunctionPointerType(  mut this ) : ust::optional_ref</FunctionPointerType, true  />'this';
+	fn GetFunctionPointerType( imut this ) : ust::optional_ref</FunctionPointerType, false />'this';
 
 	fn GetClassType(  mut this ) : ust::optional_ref</ClassTypePtr, true  />'this';
 	fn GetClassType( imut this ) : ust::optional_ref</ClassTypePtr, false />'this';
@@ -150,6 +165,7 @@ private:
 		FundamentalType,
 		ArrayType,
 		FunctionType,
+		FunctionPointerType,
 		ClassTypePtr,
 		EnumTypePtr
 	] /> something_;
@@ -183,7 +199,7 @@ struct Variable
 
 struct FunctionVariable
 {
-	Type t; // FunctionType 100%
+	FunctionType t;
 	LLVMValueRef llvm_function= LLVMValueRef::Null;
 
 	bool is_this_call= false;

@@ -37,6 +37,10 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		}
 		return expr_result.constexpr_value;
 	}
+	if( !variable.t.GetFunctionPointerType().empty() )
+	{
+		return InitializeFunctionPointer( names_scope, function_context, variable, expression_initializer );
+	}
 	if( !variable.t.GetArrayType().empty() )
 	{
 		REPORT_ERROR( NotImplemented, names_scope, Synt::GetFilePos(expression_initializer), ust::string8("expression initialization for arrays") )
@@ -270,7 +274,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ZeroInitializer& zero_initializer ) : LLVMValueRef
 {
-	if( !variable.t.GetFundamentalType().empty() || !variable.t.GetEnumType().empty() )
+	if( !variable.t.GetFundamentalType().empty() || !variable.t.GetEnumType().empty() || !variable.t.GetFunctionPointerType().empty() )
 	{
 		// Currently, first element of enum have zero value.
 		unsafe
@@ -590,6 +594,16 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 		}
 		return expr.constexpr_value;
 	}
+	if( !variable.t.GetFunctionPointerType().empty() )
+	{
+		if( args.size() != 1s )
+		{
+			REPORT_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, names_scope, file_pos )
+			return LLVMValueRef::Null;
+		}
+
+		return InitializeFunctionPointer( names_scope, function_context, variable, args.front().get_ref() );
+	}
 	if_var( &class_type : variable.t.GetClassType() )
 	{
 		auto class_members= class_type.lock_imut().get_ref().members;
@@ -624,6 +638,76 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 	}
 
 	REPORT_ERROR( ConstructorInitializerForUnsupportedType, names_scope, file_pos )
+	return LLVMValueRef::Null;
+}
+
+fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Expression& initializer_expression ) : LLVMValueRef
+{
+	auto initializer_file_pos= Synt::GetFilePos( initializer_expression );
+	auto initializer_value= BuildExpressionCode( names_scope, function_context, initializer_expression );
+
+	if_var( &initializer_variable : initializer_value.get</Variable/>() )
+	{
+		// TODO - support function pointer conversion here.
+		if( initializer_variable.t != variable.t )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, initializer_file_pos, variable.t, initializer_variable.t )
+			return LLVMValueRef::Null;
+		}
+
+		auto value_for_store= CreateMoveToLLVMRegisterInstruction( initializer_variable, function_context );
+		unsafe
+		{
+			LLVMBuildStore( function_context.llvm_ir_builder, value_for_store, variable.llvm_value );
+		}
+		return initializer_variable.constexpr_value;
+	}
+	if_var( &functions_set : initializer_value.get</FunctionsSet/>() )
+	{
+		var FunctionType& function_type= variable.t.GetFunctionPointerType().get_ref().function_type;
+
+		// TODO - support function pointer conversion here.
+		var ust::vector</ FunctionVariable /> mut functions_with_conversion;
+		foreach( &function_variable : functions_set.functions )
+		{
+			if( function_variable.t == function_type )
+			{
+				unsafe
+				{
+					LLVMBuildStore( function_context.llvm_ir_builder, function_variable.llvm_function, variable.llvm_value );
+				}
+				return function_variable.llvm_function;
+			}
+			else if( function_variable.t.PointerCanBeConvertedTo( function_type ) )
+			{
+				functions_with_conversion.push_back( function_variable );
+			}
+		}
+
+		if( functions_with_conversion.size() == 1s )
+		{
+			// TODO - maybe disable conversion for expression initializer?
+			unsafe
+			{
+				auto ptr_casted= LLVMBuildPointerCast( function_context.llvm_ir_builder, functions_with_conversion.front().llvm_function, variable.t.GetLLVMType(), "\0"[0] );
+				LLVMBuildStore( function_context.llvm_ir_builder, ptr_casted, variable.llvm_value );
+				return ptr_casted;
+			}
+		}
+		else if( functions_with_conversion.empty() )
+		{
+			REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, initializer_file_pos )
+		}
+		else
+		{
+			REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope, initializer_file_pos )
+		}
+		return LLVMValueRef::Null;
+	}
+
+	// TODO - generate separate error
+	REPORT_ERROR( ExpectedVariable, names_scope, initializer_file_pos, GetValueKindName(initializer_value) )
+
 	return LLVMValueRef::Null;
 }
 

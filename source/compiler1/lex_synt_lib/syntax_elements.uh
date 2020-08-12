@@ -127,7 +127,8 @@ type Expression= ust::variant</ tup[
 	UnaryMinus,
 	LogicalNot,
 	BitwiseNot,
-	ust::box</ArrayType/>
+	ust::box</ArrayType/>,
+	ust::box</FunctionType/>
 	] />;
 
 struct ArrayType
@@ -139,7 +140,9 @@ struct ArrayType
 
 struct FunctionType
 {
-	struct Arg
+	FilePos file_pos;
+
+	struct Arg // TODO - rename to param
 	{
 		FilePos file_pos;
 		TypeName arg_type;

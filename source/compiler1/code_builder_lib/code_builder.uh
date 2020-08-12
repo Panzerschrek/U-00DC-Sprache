@@ -163,7 +163,7 @@ private:
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::ArrayType/>& array_type ) : Type;
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type_ptr ) : Type;
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type ) : Type;
-	fn PrepareFunctionType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type, ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : Type;
+	fn PrepareFunctionType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type, ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : FunctionType;
 
 	// Returns constant value if initializer is contant
 	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Initializer& initializer ) : LLVMValueRef;
@@ -176,6 +176,8 @@ private:
 	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::UninitializedInitializer& uninitialized_initializer ) : LLVMValueRef;
 	fn BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::string8& variable_name, FilePos& file_pos );
 	fn BuildConstructorInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args, FilePos& file_pos )  : LLVMValueRef;
+
+	fn InitializeFunctionPointer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Expression& initializer_expression )  : LLVMValueRef;
 
 	fn InitializeReferenceField( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ClassField& field, Synt::Initializer& initializer );
 
@@ -229,6 +231,7 @@ private:
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::LogicalNot& logical_not ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BitwiseNot& bitwise_not ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::ArrayType/>& array_type ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type ) : Value;
 
 	fn BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& l_var, Variable& r_var, BinaryOperatorType operator, FilePos& file_pos ) : Value;
 	fn BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value;
@@ -324,6 +327,14 @@ private:
 		Synt::ArrayType& signature_param,
 		ust::vector</bool/> &mut template_params_usage_flags );
 
+	fn CheckTemplateSignatureParam(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		ust::vector</ust::string8/>& template_params,
+		Synt::FunctionType& signature_param,
+		ust::vector</bool/> &mut template_params_usage_flags );
+
 	fn GenTemplateType(
 		mut this,
 		NamesScopePtr& args_names_scope,
@@ -360,6 +371,13 @@ private:
 		NamesScopePtr& names_scope,
 		TypeTemplate& type_template,
 		Synt::ArrayType& param,
+		Value& given_arg ) : bool;
+
+	fn MatchTemplateArgument(
+		mut this,
+		NamesScopePtr& names_scope,
+		TypeTemplate& type_template,
+		Synt::FunctionType& param,
 		Value& given_arg ) : bool;
 
 	fn MatchTemplateArgument(

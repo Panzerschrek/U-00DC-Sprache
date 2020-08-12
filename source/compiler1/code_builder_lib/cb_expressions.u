@@ -418,6 +418,23 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 	if_var( & variable : function.get</Variable/>() )
 	{
+		if_var( &function_pointer_type : variable.t.GetFunctionPointerType() )
+		{
+			var FunctionVariable function_variable
+			{
+				.t= function_pointer_type.function_type,
+				.llvm_function= CreateMoveToLLVMRegisterInstruction( variable , function_context )
+			};
+
+			return DoCallFunction(
+				names_scope,
+				function_context,
+				ust::optional_ref</ Variable, false />(),
+				function_variable,
+				call_operator.args.range(),
+				call_operator.file_pos );
+		}
+
 		// Try to call overloaded () operator.
 
 		var ust::vector</FunctionType::Arg/> mut args;
@@ -749,6 +766,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	return PrepareType( names_scope, function_context, array_type );
 }
 
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type ) : Value
+{
+	return PrepareType( names_scope, function_context, function_type );
+}
+
 fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& l_var, Variable& r_var, BinaryOperatorType operator, FilePos& file_pos ) : Value
 {
 	auto l_in_register= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
@@ -996,7 +1018,7 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names_scope, file_pos, r_type, l_type, BinaryOperatorToString( operator ) )
 			return ErrorValue();
 		}
-		if( l_fundamental_type.empty() && l_type.GetEnumType().empty() )
+		if( l_fundamental_type.empty() && l_type.GetEnumType().empty() && l_type.GetFunctionPointerType().empty() )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, file_pos, l_type )
 			return ErrorValue();
@@ -1408,11 +1430,11 @@ fn CodeBuilder::DoCallFunction(
 {
 	auto total_args= preevaluated_args.size() + args.size();
 
-	var FunctionType& function_type= function.t.GetFunctionType().get_ref();
+	var FunctionType& function_type= function.t;
 
 	if( total_args != function_type.args.size() )
 	{
-		REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, file_pos )
+		REPORT_ERROR( InvalidFunctionArgumentCount, names_scope, file_pos, total_args, function_type.args.size() )
 		return ErrorValue();
 	}
 
@@ -1455,6 +1477,18 @@ fn CodeBuilder::DoCallFunction(
 
 		if( function_type.args[arg_n].is_reference )
 		{
+			if( function_type.args[arg_n].is_mutable )
+			{
+				if( arg.value_type == ValueType::Value )
+				{
+					REPORT_ERROR( ExpectedReferenceValue, names_scope, file_pos )
+				}
+				else if( arg.value_type != ValueType::ReferenceMut )
+				{
+					REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, file_pos )
+				}
+			}
+
 			if( arg.location == Variable::Location::LLVMRegister )
 			{
 				// Bind value to const reference.

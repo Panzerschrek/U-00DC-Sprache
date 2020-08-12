@@ -746,7 +746,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				continue;
 			}
 
-			auto& function_type= function_variable.t.GetFunctionType().get_ref();
+			auto& function_type= function_variable.t;
 			if( function_type.args.size() == 1s )
 			{
 				class_.is_default_constructible= true;
@@ -1045,7 +1045,12 @@ fn CodeBuilder::PrepareFunction(
 		REPORT_ERROR( InitializationListInNonconstructor, names_scope_ptr, function_declaration.constructor_initializer_list.get_ref().file_pos )
 	}
 
-	var FunctionVariable mut function_variable;
+	auto mut global_function_context= CreateGlobalFunctionContext();
+
+	var FunctionVariable mut function_variable
+	{
+		.t= PrepareFunctionType( names_scope_ptr, global_function_context, function_declaration.function_type, class_type )
+	};
 	if( function_declaration.block.empty() )
 	{
 		function_variable.prototype_syntax_element= function_declaration_ptr;
@@ -1055,15 +1060,12 @@ fn CodeBuilder::PrepareFunction(
 		function_variable.body_syntax_element= function_declaration_ptr;
 	}
 
-	auto mut global_function_context= CreateGlobalFunctionContext();
-	function_variable.t= PrepareFunctionType( names_scope_ptr, global_function_context, function_declaration.function_type, class_type );
-
 	function_variable.is_this_call=
 		!function_declaration.function_type.args.empty() &&
 		function_declaration.function_type.args.front().name == KeywordToString( Keyword::this_ );
 
 	{
-		auto& function_type= function_variable.t.GetFunctionType().get_ref();
+		auto& function_type= function_variable.t;
 		if( ( func_name == KeywordToString( Keyword::constructor_ ) || func_name == KeywordToString( Keyword::destructor_ ) ) &&
 			!(function_type.return_type.get_ref() == void_type_ && !function_type.return_value_is_reference ) )
 		{
@@ -1133,8 +1135,8 @@ fn CodeBuilder::PrepareFunction(
 				MangleFunction(
 					names_scope_ptr.lock_imut().get_ref(),
 					func_name,
-					function_variable.t.GetFunctionType().get_ref() ).front(),
-				function_variable.t.GetLLVMType() );
+					function_variable.t ).front(),
+				function_variable.t.llvm_type );
 	}
 
 	return ApplyOverloadedFunction( functions_set, move(function_variable), names_scope_ptr, function_declaration.file_pos );
@@ -1303,7 +1305,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		}
 	}
 
-	auto& function_type= func_variable.t.GetFunctionType().get_ref();
+	auto& function_type= func_variable.t;
 
 	var FunctionContext mut function_context_value(
 		llvm_context_,
