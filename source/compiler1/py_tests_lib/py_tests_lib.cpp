@@ -380,6 +380,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"FunctionPoinerInitialization_Test4",
 		"FunctionsPoitersAssignment_Test0",
 		"FunctionsPoitersAssignment_Test1",
+		"FunctionPointersConversions_Test0",
+		"FunctionPointersConversions_Test1",
 		"FunctionTypeDeclaration_Test0",
 		"FunctionTypeDeclaration_Test1",
 		"FunctionTypeDeclaration_Test2",

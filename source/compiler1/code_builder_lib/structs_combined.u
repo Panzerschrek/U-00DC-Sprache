@@ -141,6 +141,32 @@ op FunctionType::Arg::!=(Arg& l, Arg& r) : bool
 	return !(l == r);
 }
 
+fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
+{
+	if(
+		this.return_type.get_ref() != dst.return_type.get_ref() ||
+		this.return_value_is_reference != dst.return_value_is_reference ||
+		( !this.return_value_is_mutable && dst.return_value_is_mutable ) || // Allow mutability conversions, except mut->imut
+		this.args.size() != dst.args.size() )
+	{
+		return false;
+	}
+
+	for( auto mut i= 0s; i < args.size(); ++i )
+	{
+		auto& this_arg= this.args[i];
+		auto& dst_arg= dst.args[i];
+		if( this_arg.arg_type.get_ref() != dst_arg.arg_type.get_ref() ||
+			this_arg.is_reference != dst_arg.is_reference ||
+			(this_arg.is_mutable && !dst_arg.is_mutable ) ) // Allow mutability conversions, except mut->imut
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
 op FunctionPointerType::==( FunctionPointerType& l, FunctionPointerType& r ) : bool
 {
 	return l.function_type == r.function_type;

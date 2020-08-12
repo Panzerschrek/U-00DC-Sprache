@@ -667,6 +667,7 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 		var FunctionType& function_type= variable.t.GetFunctionPointerType().get_ref().function_type;
 
 		// TODO - support function pointer conversion here.
+		var ust::vector</ FunctionVariable /> mut functions_with_conversion;
 		foreach( &function_variable : functions_set.functions )
 		{
 			if( function_variable.t == function_type )
@@ -677,9 +678,30 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 				}
 				return function_variable.llvm_function;
 			}
+			else if( function_variable.t.GetFunctionType().get_ref().PointerCanBeConvertedTo( function_type ) )
+			{
+				functions_with_conversion.push_back( function_variable );
+			}
 		}
 
-		REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, initializer_file_pos )
+		if( functions_with_conversion.size() == 1s )
+		{
+			// TODO - maybe disable conversion for expression initializer?
+			unsafe
+			{
+				auto ptr_casted= LLVMBuildPointerCast( function_context.llvm_ir_builder, functions_with_conversion.front().llvm_function, variable.t.GetLLVMType(), "\0"[0] );
+				LLVMBuildStore( function_context.llvm_ir_builder, ptr_casted, variable.llvm_value );
+				return ptr_casted;
+			}
+		}
+		else if( functions_with_conversion.empty() )
+		{
+			REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, initializer_file_pos )
+		}
+		else
+		{
+			REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope, initializer_file_pos )
+		}
 		return LLVMValueRef::Null;
 	}
 

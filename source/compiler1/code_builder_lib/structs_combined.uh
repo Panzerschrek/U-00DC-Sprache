@@ -74,6 +74,8 @@ struct FunctionType
 
 	op==( FunctionType& l, FunctionType& r ) : bool;
 	op!=( FunctionType& l, FunctionType& r ) : bool;
+
+	fn PointerCanBeConvertedTo( this, FunctionType& dst ) : bool;
 }
 
 struct FunctionPointerType
