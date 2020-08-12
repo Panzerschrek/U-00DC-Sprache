@@ -1434,7 +1434,7 @@ fn CodeBuilder::DoCallFunction(
 
 	if( total_args != function_type.args.size() )
 	{
-		REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, file_pos )
+		REPORT_ERROR( InvalidFunctionArgumentCount, names_scope, file_pos, total_args, function_type.args.size() )
 		return ErrorValue();
 	}
 
@@ -1477,6 +1477,19 @@ fn CodeBuilder::DoCallFunction(
 
 		if( function_type.args[arg_n].is_reference )
 		{
+			if( function_type.args[arg_n].is_mutable )
+			{
+				if( arg.value_type == ValueType::Value )
+				{
+				REPORT_ERROR( ExpectedReferenceValue, names_scope, file_pos )
+
+				}
+				else if( arg.value_type != ValueType::ReferenceMut )
+				{
+					REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, file_pos )
+				}
+			}
+
 			if( arg.location == Variable::Location::LLVMRegister )
 			{
 				// Bind value to const reference.
