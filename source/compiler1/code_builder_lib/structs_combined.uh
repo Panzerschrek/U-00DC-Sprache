@@ -199,7 +199,7 @@ struct Variable
 
 struct FunctionVariable
 {
-	Type t; // FunctionType 100%
+	FunctionType t;
 	LLVMValueRef llvm_function= LLVMValueRef::Null;
 
 	bool is_this_call= false;

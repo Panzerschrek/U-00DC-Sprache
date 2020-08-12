@@ -1430,7 +1430,7 @@ fn CodeBuilder::DoCallFunction(
 {
 	auto total_args= preevaluated_args.size() + args.size();
 
-	var FunctionType& function_type= function.t.GetFunctionType().get_ref();
+	var FunctionType& function_type= function.t;
 
 	if( total_args != function_type.args.size() )
 	{
@@ -1481,8 +1481,7 @@ fn CodeBuilder::DoCallFunction(
 			{
 				if( arg.value_type == ValueType::Value )
 				{
-				REPORT_ERROR( ExpectedReferenceValue, names_scope, file_pos )
-
+					REPORT_ERROR( ExpectedReferenceValue, names_scope, file_pos )
 				}
 				else if( arg.value_type != ValueType::ReferenceMut )
 				{

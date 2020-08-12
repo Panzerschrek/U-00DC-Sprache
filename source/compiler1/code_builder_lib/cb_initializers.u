@@ -678,7 +678,7 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 				}
 				return function_variable.llvm_function;
 			}
-			else if( function_variable.t.GetFunctionType().get_ref().PointerCanBeConvertedTo( function_type ) )
+			else if( function_variable.t.PointerCanBeConvertedTo( function_type ) )
 			{
 				functions_with_conversion.push_back( function_variable );
 			}
