@@ -136,7 +136,11 @@ fn CodeBuilder::CheckTemplateSignatureParam(
 		CheckTemplateSignatureParam( names_scope, function_context, template_params, array_type.get_ref(), template_params_usage_flags );
 		return;
 	}
-	// TODO - check also function pointer type.
+	if_var( &function_type : param.get</ ust::box</Synt::FunctionType/> />() )
+	{
+		CheckTemplateSignatureParam( names_scope, function_context, template_params, function_type.get_ref(), template_params_usage_flags );
+		return;
+	}
 
 	// Nothing special - process as regular expression
 	// TODO - check type for template variable param
@@ -202,6 +206,11 @@ fn CodeBuilder::CheckTemplateSignatureParam(
 		CheckTemplateSignatureParam( names_scope, function_context, template_params, array_type.get_ref(), template_params_usage_flags );
 		return;
 	}
+	if_var( &function_type : param.get</ ust::box</Synt::FunctionType/> />() )
+	{
+		CheckTemplateSignatureParam( names_scope, function_context, template_params, function_type.get_ref(), template_params_usage_flags );
+		return;
+	}
 
 	// Nothing special - process as regular type name.
 	PrepareType( names_scope, function_context, param );
@@ -217,6 +226,24 @@ fn CodeBuilder::CheckTemplateSignatureParam(
 {
 	CheckTemplateSignatureParam( names_scope, function_context, template_params, param.element_type, template_params_usage_flags );
 	CheckTemplateSignatureParam( names_scope, function_context, template_params, param.element_count, template_params_usage_flags );
+}
+
+fn CodeBuilder::CheckTemplateSignatureParam(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	ust::vector</ust::string8/>& template_params,
+	Synt::FunctionType& signature_param,
+	ust::vector</bool/> &mut template_params_usage_flags )
+{
+	if( !signature_param.return_type.empty() )
+	{
+		CheckTemplateSignatureParam( names_scope, function_context, template_params, signature_param.return_type.get_ref(), template_params_usage_flags );
+	}
+	foreach( &param : signature_param.args )
+	{
+		CheckTemplateSignatureParam( names_scope, function_context, template_params, param.arg_type, template_params_usage_flags );
+	}
 }
 
 fn CodeBuilder::GenTemplateType(
@@ -448,7 +475,10 @@ fn CodeBuilder::MatchTemplateArgument(
 	{
 		return MatchTemplateArgument( names_scope, type_template, array_type_expression.get_ref(), given_arg );
 	}
-	// TODO - Match also function pointer type.
+	if_var( &function_type : param.get</ ust::box</ Synt::FunctionType /> />() )
+	{
+		return MatchTemplateArgument( names_scope, type_template, function_type.get_ref(), given_arg );
+	}
 
 	// If this is nothing special - process template parameter as regular expression.
 	auto mut global_function_context= CreateGlobalFunctionContext();
@@ -639,6 +669,73 @@ fn CodeBuilder::MatchTemplateArgument(
 	mut this,
 	NamesScopePtr& names_scope,
 	TypeTemplate& type_template,
+	Synt::FunctionType& param,
+	Value& given_arg ) : bool
+{
+	if_var( &given_type : given_arg.get</Type/>() )
+	{
+		if_var( &given_function_pointer_type : given_type.GetFunctionPointerType() )
+		{
+			var FunctionType given_function_type= given_function_pointer_type.function_type;
+
+			// Return value
+			if( param.return_type.empty() )
+			{
+				// No return value/reference
+				if( !( given_function_type.return_type.get_ref() == void_type_for_ret_ && !given_function_type.return_value_is_reference ) )
+				{
+					return false;
+				}
+			}
+			else
+			{
+				auto ret_is_reference= param.return_value_reference_modifier == Synt::ReferenceModifier::Reference;
+				auto ret_is_mutable= param.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable;
+				if( ret_is_reference != given_function_type.return_value_is_reference ||
+					ret_is_mutable != given_function_type.return_value_is_mutable )
+				{
+					return false;
+				}
+				if( !MatchTemplateArgument( names_scope, type_template, param.return_type.get_ref(), given_function_type.return_type.get_ref() ) )
+				{
+					return false;
+				}
+			}
+
+			// Params
+			if( param.args.size() != given_function_type.args.size() )
+			{
+				return false;
+			}
+
+			for( auto mut i= 0s; i < param.args.size(); ++i )
+			{
+				auto& param_arg= param.args[i];
+				auto& given_arg= given_function_type.args[i];
+
+				auto is_reference= param_arg.reference_modifier == Synt::ReferenceModifier::Reference;
+				auto is_mutable= param_arg.mutability_modifier == Synt::MutabilityModifier::Mutable;
+
+				if( is_reference != given_arg.is_reference || is_mutable != given_arg.is_mutable )
+				{
+					return false;
+				}
+				if( !MatchTemplateArgument( names_scope, type_template, param_arg.arg_type, given_arg.arg_type.get_ref() ) )
+				{
+					return false;
+				}
+			}
+
+			return true; // Finally, we did it.
+		}
+	}
+	return false;
+}
+
+fn CodeBuilder::MatchTemplateArgument(
+	mut this,
+	NamesScopePtr& names_scope,
+	TypeTemplate& type_template,
 	Synt::TypeName& param,
 	Value& given_arg ) : bool
 {
@@ -650,7 +747,10 @@ fn CodeBuilder::MatchTemplateArgument(
 	{
 		return MatchTemplateArgument( names_scope, type_template, array_type.get_ref(), given_arg );
 	}
-	// TODO - match also function pointer type.
+	if_var( &function_type : param.get</ ust::box</ Synt::FunctionType /> />() )
+	{
+		return MatchTemplateArgument( names_scope, type_template, function_type.get_ref(), given_arg );
+	}
 	return false;
 }
 
