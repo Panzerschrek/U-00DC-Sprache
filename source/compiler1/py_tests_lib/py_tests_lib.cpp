@@ -1,4 +1,5 @@
 #include <iostream>
+#include <unordered_set>
 
 #include <Python.h>
 
@@ -343,7 +344,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 
 	const std::string func_name_str= func_name;
 
-	static const std::string c_test_to_enable[]
+	static const std::unordered_set<std::string> c_test_to_enable
 	{
 		"AutoVariableInitialization_UsingFunctionPointer_Test0",
 		"BindingConstReferenceToNonconstReference_InFunctionPointerCall_Test0",
@@ -396,8 +397,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"ZeroInitializerForChar_Test0",
 	};
 
-	if( std::find( std::begin(c_test_to_enable), std::end(c_test_to_enable), func_name_str )
-		!= std::end(c_test_to_enable) )
+	if( c_test_to_enable.count( func_name_str ) > 0 )
 	{
 		Py_INCREF(Py_True);
 		return Py_True;
