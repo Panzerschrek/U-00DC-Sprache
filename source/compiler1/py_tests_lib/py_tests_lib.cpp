@@ -394,6 +394,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		//"TypeNameInErrorMessage_ClassTemplate_Test8",
 		"TypeNameInErrorMessage_ClassTypeInGlobalNamespace",
 		"TypeNameInErrorMessage_FundamentalTypes",
+		"UnsafeBlockDeclaration_Test0",
 		"ZeroInitializerForChar_Test0",
 	};
 

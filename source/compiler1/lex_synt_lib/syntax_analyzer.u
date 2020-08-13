@@ -1307,6 +1307,20 @@ fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 		{
 			block.elements.push_back( ust::box</Block/>(ParseBlock()) );
 		}
+		else if( IsKeyword( it_.front(), Keyword::safe_ ) )
+		{
+			NextLexem();
+			auto mut inner_block= ParseBlock();
+			inner_block.safety= Block::Safety::Safe;
+			block.elements.push_back( ust::box</Block/>(move(inner_block)) );
+		}
+		else if( IsKeyword( it_.front(), Keyword::unsafe_ ) )
+		{
+			NextLexem();
+			auto mut inner_block= ParseBlock();
+			inner_block.safety= Block::Safety::Unsafe;
+			block.elements.push_back( ust::box</Block/>(move(inner_block)) );
+		}
 		else if( IsKeyword( it_.front(), Keyword::var_ ) )
 		{
 			block.elements.push_back( ParseVariablesDeclaration() );

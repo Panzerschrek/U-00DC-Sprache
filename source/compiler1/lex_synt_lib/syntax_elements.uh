@@ -211,6 +211,10 @@ type Initializer= ust::variant</ tup [
 
 struct Block
 {
+	enum Safety : u8 { None, Safe, Unsafe }
+
+	Safety safety= Safety::None;
+
 	FilePos file_pos;
 	FilePos end_file_pos;
 	ust::vector</BlockElement/> elements;

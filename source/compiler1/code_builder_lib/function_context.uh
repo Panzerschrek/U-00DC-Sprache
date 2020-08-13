@@ -42,6 +42,7 @@ public:
 	LLVMBasicBlockRef destructor_end_block= LLVMBasicBlockRef::Null; // For destructors only - used for "Br" instead of "ret"
 
 	ust::vector</LoopFrame/> loops_stack;
+	bool is_in_unsafe_block= false;
 
 	type VariablesFrame= ust::vector</ NamesScopeVariable />;
 	ust::vector</VariablesFrame/> variables_frames;

@@ -17,6 +17,18 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	var VariablesFrameHolder variables_frame_hodler(function_context);
 	auto& mut function_context= variables_frame_hodler.GetFunctionContext();
 
+	auto prev_safety= function_context.is_in_unsafe_block;
+
+	if( block.safety == Synt::Block::Safety::None ) {}// Keep old safety
+	else if( block.safety == Synt::Block::Safety::Safe )
+	{
+		function_context.is_in_unsafe_block= false;
+	}
+	else if( block.safety == Synt::Block::Safety::Unsafe )
+	{
+		function_context.is_in_unsafe_block=  true;
+	}
+
 	var BlockElementBuildInfo mut block_element_build_info;
 	foreach( &block_element : block.elements )
 	{
@@ -36,6 +48,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	{
 		CallDestructorsForTopVariablesFrame( function_context );
 	}
+
+	function_context.is_in_unsafe_block= prev_safety;
 
 	return block_element_build_info;
 }
