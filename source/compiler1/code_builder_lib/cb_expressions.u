@@ -1444,6 +1444,10 @@ fn CodeBuilder::DoCallFunction(
 		REPORT_ERROR( UsingIncompleteType, names_scope, file_pos, function_type.return_type.get_ref() )
 		return ErrorValue();
 	}
+	if( function_type.is_unsafe && !function_context.is_in_unsafe_block )
+	{
+		REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope, file_pos )
+	}
 
 	var ust::vector</LLVMValueRef/> mut llvm_args;
 

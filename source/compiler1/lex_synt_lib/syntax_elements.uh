@@ -155,6 +155,7 @@ struct FunctionType
 	ust::optional</TypeName/> return_type; // Empty means "void"
 	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
+	bool is_unsafe= false;
 }
 
 type TypeName= ust::variant</ tup[

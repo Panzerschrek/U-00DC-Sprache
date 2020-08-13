@@ -817,6 +817,12 @@ fn SyntaxAnalyzer::ParseFunctionArg( mut this ) : FunctionType::Arg
 
 fn SyntaxAnalyzer::ParseFunctionTypeEnding( mut this, FunctionType &mut function_type )
 {
+	if( IsKeyword( it_.front(), Keyword::unsafe_ ) )
+	{
+		NextLexem();
+		function_type.is_unsafe= true;
+	}
+
 	if( it_.front().lexem_type == Lexem::Type::Colon )
 	{
 		NextLexem();

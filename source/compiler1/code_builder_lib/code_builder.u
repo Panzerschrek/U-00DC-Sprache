@@ -1502,6 +1502,8 @@ fn CodeBuilder::TryCallCopyConstructor(
 		return;
 	}
 
+	// TODO - what if copy constructor is unsafe?
+
 	BuildCopyConstructorPart( function_context, dst, src, class_type );
 }
 
