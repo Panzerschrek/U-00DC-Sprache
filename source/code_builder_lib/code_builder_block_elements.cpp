@@ -646,11 +646,19 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 				CopyBytes( expression_result.llvm_value, function_context.s_ret_, *function_context.return_type, function_context );
 			}
 			else
+			{
+				if( !expression_result.type.IsCopyConstructible() )
+				{
+					REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), return_operator.file_pos_, expression_result.type );
+					return block_info;
+				}
+
 				BuildCopyConstructorPart(
 					function_context.s_ret_,
 					CreateReferenceCast( expression_result.llvm_value, expression_result.type, *function_context.return_type, function_context ),
 					*function_context.return_type,
 					function_context );
+			}
 
 			CallDestructorsBeforeReturn( names, function_context, return_operator.file_pos_ );
 			function_context.llvm_ir_builder.CreateRetVoid();

@@ -16,6 +16,36 @@ def ClassHaveNoCopyConstructorByDefault_Test0():
 	assert( errors_list[0].file_pos.line == 6 )
 
 
+def ClassHaveNoCopyConstructorByDefault_Test1():
+	c_program_text= """
+		class A{}
+		fn CreateA() : A
+		{
+			var A a;
+			return a; // Create copy of class in return
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def ClassHaveNoCopyConstructorByDefault_Test2():
+	c_program_text= """
+		class A{}
+		fn Foo()
+		{
+			var A a;
+			auto a_copy= a; // Create copy of class in auto variable declaration
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
 def ClassHaveNoCopyAssignementOperatorByDefault_Test0():
 	c_program_text= """
 		class A{}
