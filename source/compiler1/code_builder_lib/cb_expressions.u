@@ -1218,7 +1218,7 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 		}
 
 		r_var_in_register= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
-		CallDestructorsForTopVariablesFrame( function_context );
+		CallDestructorsForTopVariablesFrame( names_scope, function_context, binary_operator.file_pos );
 	}
 
 	auto mut phi_node= LLVMValueRef::Null;
