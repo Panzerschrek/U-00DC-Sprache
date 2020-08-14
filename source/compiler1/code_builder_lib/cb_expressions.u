@@ -516,6 +516,15 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return ErrorValue();
 	}
 
+	if( member_access_operator.member_name == KeywordToString( Keyword::constructor_ ) ||
+		member_access_operator.member_name == KeywordToString( Keyword::destructor_ ) )
+	{
+		if( !function_context.is_in_unsafe_block )
+		{
+			REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope, member_access_operator.file_pos, member_access_operator.member_name )
+		}
+	}
+
 	{
 		auto field_ptr= class_member.get_ref().Get</ClassField/>();
 		if( !field_ptr.empty() )

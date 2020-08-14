@@ -419,6 +419,15 @@ fn CodeBuilder::ResolveValue(
 			}
 			current_scope= current_scope.lock_imut().get_ref().GetParent();
 		}
+
+		if( complex_name.name == KeywordToString( Keyword::constructor_ ) ||
+			complex_name.name == KeywordToString( Keyword::destructor_ ) )
+		{
+			if( !function_context.is_in_unsafe_block )
+			{
+				REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope, complex_name.file_pos, complex_name.name )
+			}
+		}
 	}
 
 	if( current_value.empty() )
@@ -516,6 +525,15 @@ fn CodeBuilder::ResolveValue(
 			{
 				REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, name_component_name ) // TODO -print more relevant error
 				return ErrorValue();
+			}
+
+			if( name_component_name == KeywordToString( Keyword::constructor_ ) ||
+				name_component_name == KeywordToString( Keyword::destructor_ ) )
+			{
+				if( !function_context.is_in_unsafe_block )
+				{
+					REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope, complex_name.file_pos, name_component_name )
+				}
 			}
 		}
 		if_var( &template_args : name_component.get</ ust::box</Synt::TemplateArgs/> />() )
