@@ -45,7 +45,15 @@ fn ToString( FunctionType& function_type ) : ust::string8
 			result+= ", ";
 		}
 	}
-	result+= ") : ";
+	result+= ") ";
+
+	if( function_type.is_unsafe )
+	{
+		result+= KeywordToString( Keyword::unsafe_ );
+		result+= " ";
+	}
+
+	result+= ": ";
 
 	result+= function_type.return_type.get_ref().ToString();
 
@@ -147,6 +155,7 @@ fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 		this.return_type.get_ref() != dst.return_type.get_ref() ||
 		this.return_value_is_reference != dst.return_value_is_reference ||
 		( !this.return_value_is_mutable && dst.return_value_is_mutable ) || // Allow mutability conversions, except mut->imut
+		( this.is_unsafe && !dst.is_unsafe ) || // Disable unsafe function to safe function conversion
 		this.args.size() != dst.args.size() )
 	{
 		return false;
@@ -182,7 +191,8 @@ fn FunctionType::constructor( mut this, FunctionType &imut other )
 		return_type(other.return_type.get_ref()),
 		llvm_type(other.llvm_type),
 		return_value_is_reference(other.return_value_is_reference),
-		return_value_is_mutable(other.return_value_is_mutable)
+		return_value_is_mutable(other.return_value_is_mutable),
+		is_unsafe(other.is_unsafe),
 	)
 {
 	foreach( & in_arg : other.args )
@@ -202,6 +212,7 @@ op FunctionType::=( mut this, FunctionType &imut other )
 	return_type.get_ref()= other.return_type.get_ref();
 	return_value_is_reference= other.return_value_is_reference;
 	return_value_is_mutable= other.return_value_is_mutable;
+	is_unsafe= other.is_unsafe;
 
 	args.clear();
 	foreach( & in_arg : other.args )
@@ -236,7 +247,8 @@ op FunctionType::==( FunctionType& l, FunctionType& r ) : bool
 	return
 		l.return_type.get_ref() == r.return_type.get_ref() &&
 		l.return_value_is_reference == r.return_value_is_reference &&
-		l.return_value_is_mutable == r.return_value_is_mutable;
+		l.return_value_is_mutable == r.return_value_is_mutable &&
+		l.is_unsafe == r.is_unsafe;
 }
 
 op FunctionType::!=( FunctionType& l, FunctionType& r ) : bool

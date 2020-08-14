@@ -67,6 +67,8 @@ struct FunctionType
 	bool return_value_is_reference;
 	bool return_value_is_mutable;
 
+	bool is_unsafe= false;
+
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
 
 	fn constructor( mut this, FunctionType &imut other );

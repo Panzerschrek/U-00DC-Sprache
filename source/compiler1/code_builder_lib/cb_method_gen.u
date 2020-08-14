@@ -292,6 +292,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		src_llvm_value= LLVMGetParam( function_variable.llvm_function, 1u );
 	}
 
+	auto file_pos= class_type.lock_imut().get_ref().syntax_element.get_ref().file_pos;
 	foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
 	{
 		auto field_ptr= member.value().Get</ClassField/>();
@@ -330,7 +331,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		}
 		else
 		{
-			BuildCopyConstructorPart( function_context, dst_member_value, src_member_value, class_field.t );
+			BuildCopyConstructorPart( class_members, function_context, dst_member_value, src_member_value, class_field.t, file_pos );
 		}
 	}
 
@@ -469,6 +470,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		src_llvm_value= LLVMGetParam( function_variable.llvm_function, 1u );
 	}
 
+	auto file_pos= class_type.lock_imut().get_ref().syntax_element.get_ref().file_pos;
 	foreach( &member : class_members.GetInternalContainer() )
 	{
 		auto field_ptr= member.value().Get</ClassField/>();
@@ -496,7 +498,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 			src_member_value= LLVMBuildGEP( function_context.llvm_ir_builder, src_llvm_value, indexes[0], 2u, src_op_name_nt.front() );
 		}
 
-		BuildCopyAssignmentOperatorPart( function_context, dst_member_value, src_member_value, class_field.t );
+		BuildCopyAssignmentOperatorPart( class_members_ptr, function_context, dst_member_value, src_member_value, class_field.t, file_pos );
 	}
 
 	// Finish function - add remaining instructions.
@@ -595,7 +597,7 @@ fn CodeBuilder::TryGenerateDestructor( this, ClassTypePtr& class_type )
 	destructors_lock.get_ref().functions_set.functions.push_back( move(function_variable) );
 }
 
-fn CodeBuilder::BuildCopyConstructorPart( mut this, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t )
+fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, FilePos& file_pos )
 {
 	if( !t.GetFundamentalType().empty() || !t.GetEnumType().empty() || !t.GetFunctionPointerType().empty() )
 	{
@@ -631,7 +633,7 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, FunctionContext &mut functio
 					src_element_value= LLVMBuildGEP( function_context.llvm_ir_builder, src, indexes[0], 2u, "[]\0"[0] );
 				}
 
-				BuildCopyConstructorPart( function_context, dst_element_value, src_element_value, array_type.element_type.get_ref() );
+				BuildCopyConstructorPart( names_scope, function_context, dst_element_value, src_element_value, array_type.element_type.get_ref(), file_pos );
 			}
 		)
 		return;
@@ -656,6 +658,12 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, FunctionContext &mut functio
 				!function_type.args.back().is_mutable &&
 				function_type.args.back().arg_type.get_ref() == class_type ) // Copy constructor
 			{
+				// SPRACHE_TODO - maybe disallow unsafe copy constructors?
+				if( function_type.is_unsafe && !function_context.is_in_unsafe_block )
+				{
+					REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope, file_pos )
+				}
+
 				// Call it.
 				unsafe
 				{
@@ -671,7 +679,7 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, FunctionContext &mut functio
 	halt; // Unhandled type kind
 }
 
-fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t )
+fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, FilePos& file_pos )
 {
 	if( !t.GetFundamentalType().empty() || !t.GetEnumType().empty() || !t.GetFunctionPointerType().empty() )
 	{
@@ -707,7 +715,7 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, FunctionContext &mut 
 					src_element_value= LLVMBuildGEP( function_context.llvm_ir_builder, src, indexes[0], 2u, "[]\0"[0] );
 				}
 
-				BuildCopyAssignmentOperatorPart( function_context, dst_element_value, src_element_value, array_type.element_type.get_ref() );
+				BuildCopyAssignmentOperatorPart( names_scope, function_context, dst_element_value, src_element_value, array_type.element_type.get_ref(), file_pos );
 			}
 		)
 		return;
@@ -732,6 +740,12 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, FunctionContext &mut 
 				function_type.args.front().is_reference &&  function_type.args.front().is_mutable && function_type.args.front().arg_type.get_ref() == class_type &&
 				function_type.args.back ().is_reference && !function_type.args.back ().is_mutable && function_type.args.back ().arg_type.get_ref() == class_type )
 			{
+				// SPRACHE_TODO - maybe disallow unsafe copy assignment operators?
+				if( function_type.is_unsafe && !function_context.is_in_unsafe_block )
+				{
+					REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope, file_pos )
+				}
+
 				// Call it.
 				unsafe
 				{
@@ -747,7 +761,7 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, FunctionContext &mut 
 	halt; // Unhandled type kind
 }
 
-fn CodeBuilder::BuildDestructorPart( this, FunctionContext &mut function_context, LLVMValueRef value, Type& t )
+fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef value, Type& t, FilePos& file_pos )
 {
 	if_var( &array_type : t.GetArrayType() )
 	{
@@ -763,7 +777,7 @@ fn CodeBuilder::BuildDestructorPart( this, FunctionContext &mut function_context
 					element_value= LLVMBuildGEP( function_context.llvm_ir_builder, value, indexes[0], 2u, "[]\0"[0] );
 				}
 
-				BuildDestructorPart( function_context, element_value, array_type.element_type.get_ref() );
+				BuildDestructorPart( names_scope, function_context, element_value, array_type.element_type.get_ref(), file_pos );
 			}
 		)
 	}
@@ -775,6 +789,12 @@ fn CodeBuilder::BuildDestructorPart( this, FunctionContext &mut function_context
 		// Destructors set should contain exactly one function.
 		auto destructors_lock= destructors_ptr.lock_imut();
 		auto& destructor_= destructors_lock.get_ref().functions_set.functions.front();
+
+		// SPRACHE_TODO - maybe disallow unsafe destructors?
+		if( destructor_.t.is_unsafe && !function_context.is_in_unsafe_block )
+		{
+			REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope, file_pos )
+		}
 
 		// Call it.
 		unsafe
@@ -788,6 +808,7 @@ fn CodeBuilder::BuildMembersDestructors( this, FunctionContext &mut function_con
 {
 	auto class_members= class_type.lock_imut().get_ref().members;
 
+	auto file_pos= class_type.lock_imut().get_ref().syntax_element.get_ref().file_pos;
 	foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
 	{
 		auto field_ptr= member.value().Get</ClassField/>();
@@ -814,7 +835,7 @@ fn CodeBuilder::BuildMembersDestructors( this, FunctionContext &mut function_con
 			field_llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, value, indexes[0], 2u, op_name_nt.front() );
 		}
 
-		BuildDestructorPart( function_context, field_llvm_value, class_field.t );
+		BuildDestructorPart( class_members, function_context, field_llvm_value, class_field.t, file_pos ); // TODO - maybe use field file_pos instead?
 	}
 }
 

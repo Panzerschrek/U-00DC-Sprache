@@ -98,6 +98,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 					: PrepareType( names_scope, function_context, function_type.return_type.get_ref() ) ) )
 		.return_value_is_reference= function_type.return_value_reference_modifier == Synt::ReferenceModifier::Reference,
 		.return_value_is_mutable= function_type.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable,
+		.is_unsafe= function_type.is_unsafe,
 	};
 
 	foreach( &arg : function_type.args )

@@ -424,9 +424,9 @@ private:
 	fn TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class_type );
 	fn TryGenerateDestructor( this, ClassTypePtr& class_type );
 
-	fn BuildCopyConstructorPart( mut this, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t );
-	fn BuildCopyAssignmentOperatorPart( mut this, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t );
-	fn BuildDestructorPart( this, FunctionContext &mut function_context, LLVMValueRef value, Type& t );
+	fn BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, FilePos& file_pos );
+	fn BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, FilePos& file_pos );
+	fn BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef value, Type& t, FilePos& file_pos );
 	fn BuildMembersDestructors( this, FunctionContext &mut function_context, LLVMValueRef value, ClassTypePtr& class_type );
 
 	fn TryCallCopyConstructor(
@@ -437,10 +437,10 @@ private:
 		ClassTypePtr& class_type,
 		FilePos& file_pos );
 
-	fn CallDestructorsForVariablesFrame( this, FunctionContext &mut function_context, size_type variables_frame_index );
-	fn CallDestructorsForTopVariablesFrame( this, FunctionContext &mut function_context );
-	fn CallDestructorsForAllVariablesFrames( this, FunctionContext &mut function_context );
-	fn CallDestructorsForLoopInnerVariables( this, FunctionContext &mut function_context );
+	fn CallDestructorsForVariablesFrame( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, size_type variables_frame_index, FilePos& file_pos );
+	fn CallDestructorsForTopVariablesFrame( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, FilePos& file_pos );
+	fn CallDestructorsForAllVariablesFrames( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, FilePos& file_pos );
+	fn CallDestructorsForLoopInnerVariables( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, FilePos& file_pos );
 
 	// Returns "false" if not complete.
 	fn EnsureTypeComplete( mut this, Type& t ) : bool;
