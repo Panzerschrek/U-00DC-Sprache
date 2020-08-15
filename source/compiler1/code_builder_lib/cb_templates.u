@@ -1001,6 +1001,26 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 				template_arg.something= move(out_var);
 				return true;
 			}
+			if_var( &v : template_arg.something.get</NamesScopeVariable/>() )
+			{
+				if( given_variable.t != v.t )
+				{
+					return false;
+				}
+
+				if( given_variable.constexpr_value == LLVMValueRef::Null || v.constexpr_value == LLVMValueRef::Null )
+				{
+					REPORT_ERROR( ExpectedConstantExpression, names_scope, /*file_pos*/ FilePos() )
+					return false;
+				}
+
+				unsafe
+				{
+					return
+						LLVMConstIntGetZExtValue( given_variable.constexpr_value ) ==
+						LLVMConstIntGetZExtValue( v.constexpr_value );
+				}
+			}
 		}
 	}
 	else
@@ -1012,6 +1032,10 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 			{
 				template_arg.something= given_type;
 				return true;
+			}
+			if_var( &t : template_arg.something.get</Type/>() )
+			{
+				return given_type == t;
 			}
 		}
 	}
