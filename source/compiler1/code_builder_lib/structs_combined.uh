@@ -330,7 +330,7 @@ type TemplateArgsFinished= ust::vector</ TemplateArgFinished />;
 class TemplateSignatureParam
 {
 public:
-	struct TemplateParam{ size_type index; }
+	struct TemplateParam{ size_type index; ust::string8 name; }
 	struct TypeParam{ Type t; }
 	struct VariableParam{ Variable v; }
 

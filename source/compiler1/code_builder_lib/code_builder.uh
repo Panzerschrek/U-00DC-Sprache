@@ -398,6 +398,55 @@ private:
 		Value& param,
 		Value& arg ) : bool;
 
+	fn MatchTemplateArgument2(
+		mut this,
+		NamesScopePtr& names_scope,
+		TypeTemplate& type_template,
+		TemplateSignatureParam& param,
+		Value& given_arg ) : bool;
+
+	fn MatchTemplateArgument2Impl(
+		mut this,
+		NamesScopePtr& names_scope,
+		TypeTemplate& type_template,
+		TemplateSignatureParam::TemplateParam& template_param,
+		Value& given_arg ) : bool;
+
+	fn MatchTemplateArgument2Impl(
+		mut this,
+		NamesScopePtr& names_scope,
+		TypeTemplate& type_template,
+		TemplateSignatureParam::TypeParam& type_param,
+		Value& given_arg ) : bool;
+
+	fn MatchTemplateArgument2Impl(
+		mut this,
+		NamesScopePtr& names_scope,
+		TypeTemplate& type_template,
+		TemplateSignatureParam::VariableParam& variable_param,
+		Value& given_arg ) : bool;
+
+	fn MatchTemplateArgument2Impl(
+		mut this,
+		NamesScopePtr& names_scope,
+		TypeTemplate& type_template,
+		TemplateSignatureParam::ArrayTypeParam& array_type_param,
+		Value& given_arg ) : bool;
+
+	fn MatchTemplateArgument2Impl(
+		mut this,
+		NamesScopePtr& names_scope,
+		TypeTemplate& type_template,
+		TemplateSignatureParam::FunctionTypeParam& function_type_param,
+		Value& given_arg ) : bool;
+
+	fn MatchTemplateArgument2Impl(
+		mut this,
+		NamesScopePtr& names_scope,
+		TypeTemplate& type_template,
+		TemplateSignatureParam::SpecializedTemplateParam& specialized_template_param,
+		Value& given_arg ) : bool;
+
 	fn TypeIsValidForTemplateVariableArgument( Type& t ) : bool;
 
 	// Overloading
