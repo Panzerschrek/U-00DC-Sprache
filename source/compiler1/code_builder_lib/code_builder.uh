@@ -294,7 +294,8 @@ private:
 	fn PrepareTypeTemplate(
 		mut this,
 		NamesScopePtr& names_scope,
-		ust::shared_ptr_final</Synt::TypeTemplate/>& type_template_syntax_element ) : ust::optional</TypeTemplate/>;
+		ust::shared_ptr_final</Synt::TypeTemplate/>& type_template_syntax_element,
+		TypeTemplatesSet &mut out_templates_set );
 
 	fn CreateTemplateSignatureParam(
 		mut this,

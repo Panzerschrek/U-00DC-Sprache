@@ -299,6 +299,8 @@ struct TypeAlias
 struct TypeTemplate
 {
 	ust::shared_ptr_final</Synt::TypeTemplate/> syntax_element;
+
+	ust::vector</ TemplateSignatureParam /> signature_params;
 	size_type first_default_param;
 
 	ust::weak_ptr_imut</NamesScope/> parent_names_scope; // Needed because type template should see names scope of original file.
