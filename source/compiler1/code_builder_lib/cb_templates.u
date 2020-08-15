@@ -53,7 +53,10 @@ fn CodeBuilder::PrepareTypeTemplate(
 
 	// Fill signature params and check correctness.
 	var ust::vector</bool/> mut template_param_usage_flags;
+
 	var ust::vector</ TemplateSignatureParam /> mut signature_params;
+	var ust::vector</ ust::box_nullable</ TemplateSignatureParam /> /> mut params_types;
+
 	template_param_usage_flags.resize( template_params.size(), false );
 	{
 		auto mut global_function_context= CreateGlobalFunctionContext();
@@ -79,7 +82,13 @@ fn CodeBuilder::PrepareTypeTemplate(
 			}
 			if( template_param.t.get</Synt::EmptyVariant/>().empty() )
 			{
-				CreateTemplateSignatureParam( names_scope, global_function_context, template_params, template_param.t, template_param_usage_flags );
+				params_types.push_back(
+					ust::box_nullable</ TemplateSignatureParam /> (
+						CreateTemplateSignatureParam( names_scope, global_function_context, template_params, template_param.t, template_param_usage_flags ) ) );
+			}
+			else
+			{
+				params_types.push_back( ust::box_nullable</ TemplateSignatureParam />() );
 			}
 		}
 	}
@@ -115,6 +124,7 @@ fn CodeBuilder::PrepareTypeTemplate(
 		.parent_names_scope= names_scope,
 		.first_default_param= first_default_param,
 		.signature_params= move(signature_params),
+		.params_types= move(params_types),
 	};
 
 	// TODO - add some checks here
@@ -952,7 +962,6 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 
 	auto& syntax_param= type_template.syntax_element.get_ref().params[ template_param.index ];
 
-
 	if( syntax_param.t.get</Synt::EmptyVariant/>().empty() )
 	{
 		// Value param
@@ -969,11 +978,11 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 				return false;
 			}
 
-			// TODO
-			//if( !MatchTemplateArgument( names_scope, type_template, value_param_type_name, given_variable.t ) )
-			//{
-			//	return false;
-			//}
+			if( !MatchTemplateArgument2( names_scope, type_template, type_template.params_types[template_param.index].get_ref(), given_variable.t ) )
+			{
+				return false;
+			}
+
 			if( !template_arg.something.get</TemplateArg::NotKnownYet/>().empty() )
 			{
 				var NamesScopeVariable mut out_var
