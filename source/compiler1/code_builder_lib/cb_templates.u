@@ -440,7 +440,7 @@ fn CodeBuilder::GenTemplateType(
 				all_ok= false;
 			}
 
-			all_ok&= MatchTemplateArgument2( result_names_scope, type_template, type_template.signature_params[i], arg, Synt::GetFilePos(template_args[i]) );
+			all_ok&= MatchTemplateArgument( result_names_scope, type_template, type_template.signature_params[i], arg, Synt::GetFilePos(template_args[i]) );
 
 			if_var( &t : arg.get</Type/>() )
 			{
@@ -475,7 +475,7 @@ fn CodeBuilder::GenTemplateType(
 				all_ok= false;
 			}
 
-			all_ok&= MatchTemplateArgument2( result_names_scope, type_template, type_template.signature_params[i], arg, file_pos );
+			all_ok&= MatchTemplateArgument( result_names_scope, type_template, type_template.signature_params[i], arg, file_pos );
 
 			if_var( &t : arg.get</Type/>() )
 			{
@@ -568,387 +568,39 @@ fn CodeBuilder::MatchTemplateArgument(
 	mut this,
 	NamesScopePtr& names_scope,
 	TypeTemplate& type_template,
-	Synt::Expression& param,
-	Value& given_arg ) : bool
-{
-	if_var( &complex_name : param.get</Synt::ComplexName/>() )
-	{
-		return MatchTemplateArgument( names_scope, type_template, complex_name, given_arg );
-	}
-	if_var( &bracket_expression : param.get</ Synt::BracketExpression />() )
-	{
-		return MatchTemplateArgument( names_scope, type_template, bracket_expression.expr.get_ref(), given_arg );
-	}
-	if_var( &array_type_expression : param.get</ ust::box</ Synt::ArrayType/> />() )
-	{
-		return MatchTemplateArgument( names_scope, type_template, array_type_expression.get_ref(), given_arg );
-	}
-	if_var( &function_type : param.get</ ust::box</ Synt::FunctionType /> />() )
-	{
-		return MatchTemplateArgument( names_scope, type_template, function_type.get_ref(), given_arg );
-	}
-
-	// If this is nothing special - process template parameter as regular expression.
-	auto mut global_function_context= CreateGlobalFunctionContext();
-	auto param_res= BuildExpressionCode( names_scope, global_function_context, param );
-
-	return MatchTemplateArgumentExpressions( names_scope, Synt::GetFilePos(param), param_res, given_arg );
-}
-
-fn CodeBuilder::MatchTemplateArgument(
-	mut this,
-	NamesScopePtr& names_scope,
-	TypeTemplate& type_template,
-	Synt::ComplexName& param,
-	Value& given_arg ) : bool
-{
-	if( !param.name.empty() && param.tail.empty() )
-	{
-		if_var( result_name : names_scope.lock_imut().get_ref().GetThisScopeValue( param.name ) )
-		{
-			auto template_arg_ptr= result_name.Get</TemplateArg/>();
-			if( !template_arg_ptr.empty() )
-			{
-				auto mut template_arg_lock= template_arg_ptr.lock_mut();
-				auto &mut template_arg= template_arg_lock.get_ref();
-
-				auto& value_param_type_name= type_template.syntax_element.get_ref().params[ template_arg.index ].t;
-				if( value_param_type_name.get</Synt::EmptyVariant/>().empty() )
-				{
-					// Value param
-					if_var( &given_variable : given_arg.get</Variable/>() )
-					{
-						if( !TypeIsValidForTemplateVariableArgument( given_variable.t ) )
-						{
-							REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, param.file_pos, given_variable.t )
-							return false;
-						}
-						if( given_variable.constexpr_value == LLVMValueRef::Null )
-						{
-							REPORT_ERROR( ExpectedConstantExpression, names_scope, param.file_pos )
-							return false;
-						}
-
-						if( !MatchTemplateArgument( names_scope, type_template, value_param_type_name, given_variable.t ) )
-						{
-							return false;
-						}
-						if( !template_arg.something.get</TemplateArg::NotKnownYet/>().empty() )
-						{
-							var NamesScopeVariable mut out_var
-							{
-								.t= given_variable.t,
-								.constexpr_value= given_variable.constexpr_value,
-							};
-							unsafe
-							{
-								out_var.llvm_value= LLVMAddGlobal( module_, out_var.t.GetLLVMType(), (param.name + "\0").front() );
-								LLVMSetLinkage( out_var.llvm_value, LLVMLinkage::Internal );
-								LLVMSetGlobalConstant( out_var.llvm_value, LLVMBool::True );
-								LLVMSetInitializer( out_var.llvm_value, out_var.constexpr_value );
-							}
-
-							template_arg.something= move(out_var);
-							return true;
-						}
-					}
-				}
-				else
-				{
-					// Type param
-					if_var( &given_type : given_arg.get</Type/>() )
-					{
-						if( !template_arg.something.get</TemplateArg::NotKnownYet/>().empty() )
-						{
-							template_arg.something= given_type;
-							return true;
-						}
-					}
-				}
-			}
-		}
-	}
-
-	auto mut global_function_context= CreateGlobalFunctionContext();
-
-	if_var( &given_type : given_arg.get</Type/>() )
-	{
-		if_var( &class_type : given_type.GetClassType() )
-		{
-			auto class_type_lock= class_type.lock_imut();
-			if_var( &base_template : class_type_lock.get_ref().base_template )
-			{
-				if( !param.tail.empty() )
-				{
-					if_var( &template_args_ptr : param.tail.back().get</ ust::box</ Synt::TemplateArgs /> />() )
-					{
-						auto& template_args= template_args_ptr.get_ref();
-
-						auto value= ResolveValue( names_scope, global_function_context, param, true );
-						if_var( &type_templates_set_ptr : value.get</ ust::shared_ptr_imut</ TypeTemplatesSet /> />() )
-						{
-							auto type_templates_set_lock= type_templates_set_ptr.lock_imut();
-							foreach( &type_template_ptr : type_templates_set_lock.get_ref().type_templates )
-							{
-								if( type_template_ptr != base_template.class_template )
-								{
-									continue; // Ok - different template
-								}
-								if( template_args.size() < base_template.class_template.get_ref().first_default_param ||
-									template_args.size() > base_template.signature_args.size() )
-								{
-									return false;
-								}
-
-								for( auto mut i= 0s; i < template_args.size(); ++i )
-								{
-									var Value mut val;
-									if_var( &v : base_template.signature_args[i].get</Variable/>() )
-									{
-										val= v;
-									}
-									if_var( &t : base_template.signature_args[i].get</Type/>() )
-									{
-										val= t;
-									}
-
-									if( !MatchTemplateArgument( names_scope, type_template, template_args[i], val ) )
-									{
-										return false;
-									}
-								}
-
-								return true; // Ok - perfect match
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	// If this is nothing special - process template parameter as regular expression.
-	auto param_res= BuildExpressionCode( names_scope, global_function_context, param );
-
-	return MatchTemplateArgumentExpressions( names_scope, param.file_pos, param_res, given_arg );
-}
-
-fn CodeBuilder::MatchTemplateArgument(
-	mut this,
-	NamesScopePtr& names_scope,
-	TypeTemplate& type_template,
-	Synt::ArrayType& param,
-	Value& given_arg ) : bool
-{
-	if_var( &given_type : given_arg.get</Type/>() )
-	{
-		if_var( &given_array_type : given_type.GetArrayType() )
-		{
-			if( !MatchTemplateArgument( names_scope, type_template, param.element_type, given_array_type.element_type.get_ref() ) )
-			{
-				return false;
-			}
-
-			var Variable mut size_var
-			{
-				.t= size_type_,
-				.value_type= ValueType::Value,
-				.location= Variable::Location::LLVMRegister,
-			};
-			unsafe
-			{
-				size_var.constexpr_value= LLVMConstInt( size_type_.GetLLVMType(), given_array_type.element_count, LLVMBool::False );
-				size_var.llvm_value= size_var.constexpr_value;
-			}
-
-			if( !MatchTemplateArgument( names_scope, type_template, param.element_count, move(size_var) ) )
-			{
-				return false;
-			}
-			return true;
-		}
-		return false;
-	}
-
-	return false;
-}
-
-fn CodeBuilder::MatchTemplateArgument(
-	mut this,
-	NamesScopePtr& names_scope,
-	TypeTemplate& type_template,
-	Synt::FunctionType& param,
-	Value& given_arg ) : bool
-{
-	if_var( &given_type : given_arg.get</Type/>() )
-	{
-		if_var( &given_function_pointer_type : given_type.GetFunctionPointerType() )
-		{
-			var FunctionType given_function_type= given_function_pointer_type.function_type;
-
-			if( given_function_type.is_unsafe != param.is_unsafe )
-			{
-				return false;
-			}
-
-			// Return value
-			if( param.return_type.empty() )
-			{
-				// No return value/reference
-				if( !( given_function_type.return_type.get_ref() == void_type_for_ret_ && !given_function_type.return_value_is_reference ) )
-				{
-					return false;
-				}
-			}
-			else
-			{
-				auto ret_is_reference= param.return_value_reference_modifier == Synt::ReferenceModifier::Reference;
-				auto ret_is_mutable= param.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable;
-				if( ret_is_reference != given_function_type.return_value_is_reference ||
-					ret_is_mutable != given_function_type.return_value_is_mutable )
-				{
-					return false;
-				}
-				if( !MatchTemplateArgument( names_scope, type_template, param.return_type.get_ref(), given_function_type.return_type.get_ref() ) )
-				{
-					return false;
-				}
-			}
-
-			// Params
-			if( param.args.size() != given_function_type.args.size() )
-			{
-				return false;
-			}
-
-			for( auto mut i= 0s; i < param.args.size(); ++i )
-			{
-				auto& param_arg= param.args[i];
-				auto& given_arg= given_function_type.args[i];
-
-				auto is_reference= param_arg.reference_modifier == Synt::ReferenceModifier::Reference;
-				auto is_mutable= param_arg.mutability_modifier == Synt::MutabilityModifier::Mutable;
-
-				if( is_reference != given_arg.is_reference || is_mutable != given_arg.is_mutable )
-				{
-					return false;
-				}
-				if( !MatchTemplateArgument( names_scope, type_template, param_arg.arg_type, given_arg.arg_type.get_ref() ) )
-				{
-					return false;
-				}
-			}
-
-			return true; // Finally, we did it.
-		}
-	}
-	return false;
-}
-
-fn CodeBuilder::MatchTemplateArgument(
-	mut this,
-	NamesScopePtr& names_scope,
-	TypeTemplate& type_template,
-	Synt::TypeName& param,
-	Value& given_arg ) : bool
-{
-	if_var( &complex_name : param.get</ Synt::ComplexName />() )
-	{
-		return MatchTemplateArgument( names_scope, type_template, complex_name, given_arg );
-	}
-	if_var( &array_type : param.get</ ust::box</ Synt::ArrayType /> />() )
-	{
-		return MatchTemplateArgument( names_scope, type_template, array_type.get_ref(), given_arg );
-	}
-	if_var( &function_type : param.get</ ust::box</ Synt::FunctionType /> />() )
-	{
-		return MatchTemplateArgument( names_scope, type_template, function_type.get_ref(), given_arg );
-	}
-	return false;
-}
-
-fn CodeBuilder::MatchTemplateArgumentExpressions(
-	mut this,
-	NamesScopePtr& names_scope,
-	FilePos& file_pos,
-	Value& param,
-	Value& arg ) : bool
-{
-	if_var( &given_type : arg.get</Type/>() )
-	{
-		if_var( &param_type : param.get</Type/>() )
-		{
-			return given_type == param_type;
-		}
-	}
-
-	if_var( &given_variable : arg.get</Variable/>() )
-	{
-		if_var( &param_variable : param.get</Variable/>() )
-		{
-			if( given_variable.t != param_variable.t )
-			{
-				return false;
-			}
-
-			if( !TypeIsValidForTemplateVariableArgument( given_variable.t ) )
-			{
-				return false;
-			}
-
-			if( given_variable.constexpr_value == LLVMValueRef::Null || param_variable.constexpr_value == LLVMValueRef::Null )
-			{
-				REPORT_ERROR( ExpectedConstantExpression, names_scope, file_pos )
-				return false;
-			}
-
-			unsafe
-			{
-				return LLVMConstIntGetZExtValue( given_variable.constexpr_value ) == LLVMConstIntGetZExtValue( param_variable.constexpr_value );
-			}
-		}
-	}
-
-	return false;
-}
-
-fn CodeBuilder::MatchTemplateArgument2(
-	mut this,
-	NamesScopePtr& names_scope,
-	TypeTemplate& type_template,
 	TemplateSignatureParam& param,
 	Value& given_arg,
 	FilePos& file_pos ) : bool
 {
 	if_var( &template_param : param.GetTemplateParam() )
 	{
-		return MatchTemplateArgument2Impl( names_scope, type_template, template_param, given_arg, file_pos );
+		return MatchTemplateArgumentImpl( names_scope, type_template, template_param, given_arg, file_pos );
 	}
 	if_var( &type_param : param.GetTypeParam() )
 	{
-		return MatchTemplateArgument2Impl( names_scope, type_template, type_param, given_arg, file_pos );
+		return MatchTemplateArgumentImpl( names_scope, type_template, type_param, given_arg, file_pos );
 	}
 	if_var( &variable_param : param.GetVariableParam() )
 	{
-		return MatchTemplateArgument2Impl( names_scope, type_template, variable_param, given_arg, file_pos );
+		return MatchTemplateArgumentImpl( names_scope, type_template, variable_param, given_arg, file_pos );
 	}
 	if_var( &array_type_param : param.GetArrayTypeParam() )
 	{
-		return MatchTemplateArgument2Impl( names_scope, type_template, array_type_param, given_arg, file_pos );
+		return MatchTemplateArgumentImpl( names_scope, type_template, array_type_param, given_arg, file_pos );
 	}
 	if_var( &function_type_param : param.GetFunctionTypeParam() )
 	{
-		return MatchTemplateArgument2Impl( names_scope, type_template, function_type_param, given_arg, file_pos );
+		return MatchTemplateArgumentImpl( names_scope, type_template, function_type_param, given_arg, file_pos );
 	}
 	if_var( &specialized_template_param : param.GetSpecializedTemplateParam() )
 	{
-		return MatchTemplateArgument2Impl( names_scope, type_template, specialized_template_param, given_arg, file_pos );
+		return MatchTemplateArgumentImpl( names_scope, type_template, specialized_template_param, given_arg, file_pos );
 	}
 
 	halt;
 }
 
-fn CodeBuilder::MatchTemplateArgument2Impl(
+fn CodeBuilder::MatchTemplateArgumentImpl(
 	mut this,
 	NamesScopePtr& names_scope,
 	TypeTemplate& type_template,
@@ -980,7 +632,7 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 				return false;
 			}
 
-			if( !MatchTemplateArgument2( names_scope, type_template, param_type.get_ref(), given_variable.t, file_pos ) )
+			if( !MatchTemplateArgument( names_scope, type_template, param_type.get_ref(), given_variable.t, file_pos ) )
 			{
 				return false;
 			}
@@ -1045,7 +697,7 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 	return false;
 }
 
-fn CodeBuilder::MatchTemplateArgument2Impl(
+fn CodeBuilder::MatchTemplateArgumentImpl(
 	mut this,
 	NamesScopePtr& names_scope,
 	TypeTemplate& type_template,
@@ -1060,7 +712,7 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 	return false;
 }
 
-fn CodeBuilder::MatchTemplateArgument2Impl(
+fn CodeBuilder::MatchTemplateArgumentImpl(
 	mut this,
 	NamesScopePtr& names_scope,
 	TypeTemplate& type_template,
@@ -1092,7 +744,7 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 	return false;
 }
 
-fn CodeBuilder::MatchTemplateArgument2Impl(
+fn CodeBuilder::MatchTemplateArgumentImpl(
 	mut this,
 	NamesScopePtr& names_scope,
 	TypeTemplate& type_template,
@@ -1104,7 +756,7 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 	{
 		if_var( &given_array_type : given_type.GetArrayType() )
 		{
-			if( !MatchTemplateArgument2( names_scope, type_template, array_type_param.element_type, given_array_type.element_type.get_ref(), file_pos ) )
+			if( !MatchTemplateArgument( names_scope, type_template, array_type_param.element_type, given_array_type.element_type.get_ref(), file_pos ) )
 			{
 				return false;
 			}
@@ -1121,7 +773,7 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 				size_var.llvm_value= size_var.constexpr_value;
 			}
 
-			if( !MatchTemplateArgument2( names_scope, type_template, array_type_param.element_count, move(size_var), file_pos ) )
+			if( !MatchTemplateArgument( names_scope, type_template, array_type_param.element_count, move(size_var), file_pos ) )
 			{
 				return false;
 			}
@@ -1131,7 +783,7 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 	return false;
 }
 
-fn CodeBuilder::MatchTemplateArgument2Impl(
+fn CodeBuilder::MatchTemplateArgumentImpl(
 	mut this,
 	NamesScopePtr& names_scope,
 	TypeTemplate& type_template,
@@ -1152,7 +804,7 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 				return false;
 			}
 
-			if( !MatchTemplateArgument2( names_scope, type_template, function_type_param.return_type, given_function_type.return_type.get_ref(), file_pos ) )
+			if( !MatchTemplateArgument( names_scope, type_template, function_type_param.return_type, given_function_type.return_type.get_ref(), file_pos ) )
 			{
 				return false;
 			}
@@ -1172,7 +824,7 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 				{
 					return false;
 				}
-				if( !MatchTemplateArgument2( names_scope, type_template, expected_param.t, given_arg.arg_type.get_ref(), file_pos ) )
+				if( !MatchTemplateArgument( names_scope, type_template, expected_param.t, given_arg.arg_type.get_ref(), file_pos ) )
 				{
 					return false;
 				}
@@ -1185,7 +837,7 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 	return false;
 }
 
-fn CodeBuilder::MatchTemplateArgument2Impl(
+fn CodeBuilder::MatchTemplateArgumentImpl(
 	mut this,
 	NamesScopePtr& names_scope,
 	TypeTemplate& type_template,
@@ -1231,7 +883,7 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 						val= t;
 					}
 
-					if( !MatchTemplateArgument2( names_scope, type_template, specialized_template_param.params[i], val, file_pos ) )
+					if( !MatchTemplateArgument( names_scope, type_template, specialized_template_param.params[i], val, file_pos ) )
 					{
 						return false;
 					}

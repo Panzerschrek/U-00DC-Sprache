@@ -360,53 +360,11 @@ private:
 		mut this,
 		NamesScopePtr& names_scope,
 		TypeTemplate& type_template,
-		Synt::Expression& param,
-		Value& given_arg ) : bool;
-
-	fn MatchTemplateArgument(
-		mut this,
-		NamesScopePtr& names_scope,
-		TypeTemplate& type_template,
-		Synt::ComplexName& param,
-		Value& given_arg ) : bool;
-
-	fn MatchTemplateArgument(
-		mut this,
-		NamesScopePtr& names_scope,
-		TypeTemplate& type_template,
-		Synt::ArrayType& param,
-		Value& given_arg ) : bool;
-
-	fn MatchTemplateArgument(
-		mut this,
-		NamesScopePtr& names_scope,
-		TypeTemplate& type_template,
-		Synt::FunctionType& param,
-		Value& given_arg ) : bool;
-
-	fn MatchTemplateArgument(
-		mut this,
-		NamesScopePtr& names_scope,
-		TypeTemplate& type_template,
-		Synt::TypeName& param,
-		Value& given_arg ) : bool;
-
-	fn MatchTemplateArgumentExpressions(
-		mut this,
-		NamesScopePtr& names_scope,
-		FilePos& file_pos,
-		Value& param,
-		Value& arg ) : bool;
-
-	fn MatchTemplateArgument2(
-		mut this,
-		NamesScopePtr& names_scope,
-		TypeTemplate& type_template,
 		TemplateSignatureParam& param,
 		Value& given_arg,
 		FilePos& file_pos ) : bool;
 
-	fn MatchTemplateArgument2Impl(
+	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
 		TypeTemplate& type_template,
@@ -414,7 +372,7 @@ private:
 		Value& given_arg,
 		FilePos& file_pos ) : bool;
 
-	fn MatchTemplateArgument2Impl(
+	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
 		TypeTemplate& type_template,
@@ -422,7 +380,7 @@ private:
 		Value& given_arg,
 		FilePos& file_pos ) : bool;
 
-	fn MatchTemplateArgument2Impl(
+	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
 		TypeTemplate& type_template,
@@ -430,7 +388,7 @@ private:
 		Value& given_arg,
 		FilePos& file_pos ) : bool;
 
-	fn MatchTemplateArgument2Impl(
+	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
 		TypeTemplate& type_template,
@@ -438,7 +396,7 @@ private:
 		Value& given_arg,
 		FilePos& file_pos ) : bool;
 
-	fn MatchTemplateArgument2Impl(
+	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
 		TypeTemplate& type_template,
@@ -446,7 +404,7 @@ private:
 		Value& given_arg,
 		FilePos& file_pos ) : bool;
 
-	fn MatchTemplateArgument2Impl(
+	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
 		TypeTemplate& type_template,
