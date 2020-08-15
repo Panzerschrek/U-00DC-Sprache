@@ -500,6 +500,79 @@ fn GetValueKindName( Value& v ) : ust::array_view_imut</ char8 />
 	halt;
 }
 
+//
+// Templates
+//
+
+fn TemplateSignatureParam::conversion_constructor( TemplateParam mut template_param )
+	( something_( move(template_param) ) )
+{}
+
+fn TemplateSignatureParam::conversion_constructor( TypeParam mut type_param )
+	( something_( move(type_param) ) )
+{}
+
+fn TemplateSignatureParam::conversion_constructor( VariableParam mut variable_param )
+	( something_( move(variable_param) ) )
+{}
+
+fn TemplateSignatureParam::conversion_constructor( ArrayTypeParam mut array_type_param )
+	( something_( ust::box</ ArrayTypeParam />( move(array_type_param) ) ) )
+{}
+
+fn TemplateSignatureParam::conversion_constructor( FunctionTypeParam mut function_type_param )
+	( something_( ust::box</ FunctionTypeParam />( move(function_type_param) ) ) )
+{}
+
+fn TemplateSignatureParam::conversion_constructor( SpecializedTemplateParam mut specialized_template_param )
+	( something_( ust::box</ SpecializedTemplateParam />( move(specialized_template_param) ) ) )
+{}
+
+fn TemplateSignatureParam::GetTemplateParam(this) : ust::optional_ref</ TemplateParam, false />'this'
+{
+	return something_.get</TemplateParam/>();
+}
+
+fn TemplateSignatureParam::GetTypeParam(this) : ust::optional_ref</ TypeParam, false />'this'
+{
+	return something_.get</TypeParam/>();
+}
+
+fn TemplateSignatureParam::GetVariableParam(this) : ust::optional_ref</ VariableParam, false />'this'
+{
+	return something_.get</VariableParam/>();
+}
+
+fn TemplateSignatureParam::GetArrayTypeParam(this) : ust::optional_ref</ ArrayTypeParam, false />'this'
+{
+	if_var( &array_type_param : something_.get</ ust::box</ArrayTypeParam/> />() )
+	{
+		return ust::optional_ref</ ArrayTypeParam, false />(array_type_param.get_ref());
+	}
+
+	return ust::optional_ref</ ArrayTypeParam, false />();
+}
+
+fn TemplateSignatureParam::GetFunctionTypeParam(this) : ust::optional_ref</ FunctionTypeParam, false />'this'
+{
+	if_var( &function_type_param : something_.get</ ust::box</FunctionTypeParam/> />() )
+	{
+		return ust::optional_ref</ FunctionTypeParam, false />(function_type_param.get_ref());
+	}
+
+	return ust::optional_ref</ FunctionTypeParam, false />();
+}
+
+
+fn TemplateSignatureParam::GetSpecializedTemplateParam(this) : ust::optional_ref</ SpecializedTemplateParam, false />'this'
+{
+	if_var( &specialized_template_param : something_.get</ ust::box</SpecializedTemplateParam/> />() )
+	{
+		return ust::optional_ref</ SpecializedTemplateParam, false />(specialized_template_param.get_ref());
+	}
+
+	return ust::optional_ref</ SpecializedTemplateParam, false />();
+}
 
 //
 // NamesScope

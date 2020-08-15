@@ -292,6 +292,10 @@ struct TypeAlias
 	ust::shared_ptr_final</ Synt::TypeAlias /> syntax_element;
 }
 
+//
+// Templates
+//
+
 struct TypeTemplate
 {
 	ust::shared_ptr_final</Synt::TypeTemplate/> syntax_element;
@@ -320,6 +324,73 @@ struct TemplateArg
 
 type TemplateArgFinished= ust::variant</ tup[ Type, Variable ] />;
 type TemplateArgsFinished= ust::vector</ TemplateArgFinished />;
+
+class TemplateSignatureParam
+{
+public:
+	struct TemplateParam{ size_type index; }
+	struct TypeParam{ Type t; }
+	struct VariableParam{ Variable v; }
+
+	struct ArrayTypeParam
+	{
+		TemplateSignatureParam element_type;
+		TemplateSignatureParam element_count;
+	}
+
+	struct FunctionTypeParam
+	{
+		TemplateSignatureParam return_type;
+		bool return_value_is_mutable;
+		bool return_value_is_reference;
+
+		bool is_unsafe;
+
+		struct Param
+		{
+			TemplateSignatureParam t;
+			bool is_mutable;
+			bool is_reference;
+		}
+		ust::vector</Param/> params;
+	}
+
+	struct SpecializedTemplateParam
+	{
+		TypeTemplatePtr type_template;
+		ust::vector</ TemplateSignatureParam /> params;
+	}
+
+	fn conversion_constructor( TemplateParam mut template_param );
+	fn conversion_constructor( TypeParam mut type_param );
+	fn conversion_constructor( VariableParam mut variable_param );
+	fn conversion_constructor( ArrayTypeParam mut array_type_param );
+	fn conversion_constructor( FunctionTypeParam mut function_type_param );
+	fn conversion_constructor( SpecializedTemplateParam mut specialized_template_param );
+
+	fn GetTemplateParam(this) : ust::optional_ref</ TemplateParam, false />'this';
+	fn GetTypeParam(this) : ust::optional_ref</ TypeParam, false />'this';
+	fn GetVariableParam(this) : ust::optional_ref</ VariableParam, false />'this';
+	fn GetArrayTypeParam(this) : ust::optional_ref</ ArrayTypeParam, false />'this';
+	fn GetFunctionTypeParam(this) : ust::optional_ref</ FunctionTypeParam, false />'this';
+	fn GetSpecializedTemplateParam(this) : ust::optional_ref</ SpecializedTemplateParam, false />'this';
+
+private:
+	type Container= ust::variant</ tup[
+		TemplateParam,
+		TypeParam,
+		VariableParam,
+		ust::box</ ArrayTypeParam />,
+		ust::box</ FunctionTypeParam />,
+		ust::box</ SpecializedTemplateParam />
+		] />;
+
+	Container something_;
+}
+
+//
+// Other global stuff
+//
 
 struct GlobalVariable
 {
