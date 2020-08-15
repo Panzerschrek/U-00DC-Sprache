@@ -1205,7 +1205,7 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 
 				if( !is_one_of_templates )
 				{
-					return true;
+					return false;
 				}
 
 				if( base_template.signature_args.size() != specialized_template_param.params.size() )
