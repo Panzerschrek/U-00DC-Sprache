@@ -440,7 +440,7 @@ fn CodeBuilder::GenTemplateType(
 				all_ok= false;
 			}
 
-			all_ok&= MatchTemplateArgument2( result_names_scope, type_template, type_template.signature_params[i], arg );
+			all_ok&= MatchTemplateArgument2( result_names_scope, type_template, type_template.signature_params[i], arg, Synt::GetFilePos(template_args[i]) );
 
 			if_var( &t : arg.get</Type/>() )
 			{
@@ -475,7 +475,7 @@ fn CodeBuilder::GenTemplateType(
 				all_ok= false;
 			}
 
-			all_ok&= MatchTemplateArgument2( result_names_scope, type_template, type_template.signature_params[i], arg );
+			all_ok&= MatchTemplateArgument2( result_names_scope, type_template, type_template.signature_params[i], arg, file_pos );
 
 			if_var( &t : arg.get</Type/>() )
 			{
@@ -917,31 +917,32 @@ fn CodeBuilder::MatchTemplateArgument2(
 	NamesScopePtr& names_scope,
 	TypeTemplate& type_template,
 	TemplateSignatureParam& param,
-	Value& given_arg ) : bool
+	Value& given_arg,
+	FilePos& file_pos ) : bool
 {
 	if_var( &template_param : param.GetTemplateParam() )
 	{
-		return MatchTemplateArgument2Impl( names_scope, type_template, template_param, given_arg );
+		return MatchTemplateArgument2Impl( names_scope, type_template, template_param, given_arg, file_pos );
 	}
 	if_var( &type_param : param.GetTypeParam() )
 	{
-		return MatchTemplateArgument2Impl( names_scope, type_template, type_param, given_arg );
+		return MatchTemplateArgument2Impl( names_scope, type_template, type_param, given_arg, file_pos );
 	}
 	if_var( &variable_param : param.GetVariableParam() )
 	{
-		return MatchTemplateArgument2Impl( names_scope, type_template, variable_param, given_arg );
+		return MatchTemplateArgument2Impl( names_scope, type_template, variable_param, given_arg, file_pos );
 	}
 	if_var( &array_type_param : param.GetArrayTypeParam() )
 	{
-		return MatchTemplateArgument2Impl( names_scope, type_template, array_type_param, given_arg );
+		return MatchTemplateArgument2Impl( names_scope, type_template, array_type_param, given_arg, file_pos );
 	}
 	if_var( &function_type_param : param.GetFunctionTypeParam() )
 	{
-		return MatchTemplateArgument2Impl( names_scope, type_template, function_type_param, given_arg );
+		return MatchTemplateArgument2Impl( names_scope, type_template, function_type_param, given_arg, file_pos );
 	}
 	if_var( &specialized_template_param : param.GetSpecializedTemplateParam() )
 	{
-		return MatchTemplateArgument2Impl( names_scope, type_template, specialized_template_param, given_arg );
+		return MatchTemplateArgument2Impl( names_scope, type_template, specialized_template_param, given_arg, file_pos );
 	}
 
 	halt;
@@ -952,7 +953,8 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 	NamesScopePtr& names_scope,
 	TypeTemplate& type_template,
 	TemplateSignatureParam::TemplateParam& template_param,
-	Value& given_arg ) : bool
+	Value& given_arg,
+	FilePos& file_pos ) : bool
 {
 	auto template_arg_name= names_scope.lock_imut().get_ref().GetThisScopeValue( template_param.name ).get_ref();
 	auto template_arg_ptr= template_arg_name.Get</TemplateArg/>();
@@ -960,25 +962,25 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 	auto mut template_arg_lock= template_arg_ptr.lock_mut();
 	auto &mut template_arg= template_arg_lock.get_ref();
 
-	auto& syntax_param= type_template.syntax_element.get_ref().params[ template_param.index ];
+	auto& param_type= type_template.params_types[template_param.index];
 
-	if( syntax_param.t.get</Synt::EmptyVariant/>().empty() )
+	if( !param_type.empty() )
 	{
 		// Value param
 		if_var( &given_variable : given_arg.get</Variable/>() )
 		{
 			if( !TypeIsValidForTemplateVariableArgument( given_variable.t ) )
 			{
-				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, /*param.file_pos*/ FilePos(), given_variable.t )
+				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, file_pos, given_variable.t )
 				return false;
 			}
 			if( given_variable.constexpr_value == LLVMValueRef::Null )
 			{
-				REPORT_ERROR( ExpectedConstantExpression, names_scope, /*param.file_pos*/ FilePos() )
+				REPORT_ERROR( ExpectedConstantExpression, names_scope, file_pos )
 				return false;
 			}
 
-			if( !MatchTemplateArgument2( names_scope, type_template, type_template.params_types[template_param.index].get_ref(), given_variable.t ) )
+			if( !MatchTemplateArgument2( names_scope, type_template, param_type.get_ref(), given_variable.t, file_pos ) )
 			{
 				return false;
 			}
@@ -1010,7 +1012,7 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 
 				if( given_variable.constexpr_value == LLVMValueRef::Null || v.constexpr_value == LLVMValueRef::Null )
 				{
-					REPORT_ERROR( ExpectedConstantExpression, names_scope, /*file_pos*/ FilePos() )
+					REPORT_ERROR( ExpectedConstantExpression, names_scope, file_pos )
 					return false;
 				}
 
@@ -1048,7 +1050,8 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 	NamesScopePtr& names_scope,
 	TypeTemplate& type_template,
 	TemplateSignatureParam::TypeParam& type_param,
-	Value& given_arg ) : bool
+	Value& given_arg,
+	FilePos& file_pos ) : bool
 {
 	if_var( &given_type : given_arg.get</Type/>() )
 	{
@@ -1062,7 +1065,8 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 	NamesScopePtr& names_scope,
 	TypeTemplate& type_template,
 	TemplateSignatureParam::VariableParam& variable_param,
-	Value& given_arg ) : bool
+	Value& given_arg,
+	FilePos& file_pos ) : bool
 {
 	if_var( &given_variable : given_arg.get</Variable/>() )
 	{
@@ -1073,7 +1077,7 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 
 		if( given_variable.constexpr_value == LLVMValueRef::Null || variable_param.v.constexpr_value == LLVMValueRef::Null )
 		{
-			REPORT_ERROR( ExpectedConstantExpression, names_scope, /*file_pos*/ FilePos() )
+			REPORT_ERROR( ExpectedConstantExpression, names_scope, file_pos )
 			return false;
 		}
 
@@ -1093,13 +1097,14 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 	NamesScopePtr& names_scope,
 	TypeTemplate& type_template,
 	TemplateSignatureParam::ArrayTypeParam& array_type_param,
-	Value& given_arg ) : bool
+	Value& given_arg,
+	FilePos& file_pos ) : bool
 {
 	if_var( &given_type : given_arg.get</Type/>() )
 	{
 		if_var( &given_array_type : given_type.GetArrayType() )
 		{
-			if( !MatchTemplateArgument2( names_scope, type_template, array_type_param.element_type, given_array_type.element_type.get_ref() ) )
+			if( !MatchTemplateArgument2( names_scope, type_template, array_type_param.element_type, given_array_type.element_type.get_ref(), file_pos ) )
 			{
 				return false;
 			}
@@ -1116,7 +1121,7 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 				size_var.llvm_value= size_var.constexpr_value;
 			}
 
-			if( !MatchTemplateArgument2( names_scope, type_template, array_type_param.element_count, move(size_var) ) )
+			if( !MatchTemplateArgument2( names_scope, type_template, array_type_param.element_count, move(size_var), file_pos ) )
 			{
 				return false;
 			}
@@ -1131,7 +1136,8 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 	NamesScopePtr& names_scope,
 	TypeTemplate& type_template,
 	TemplateSignatureParam::FunctionTypeParam& function_type_param,
-	Value& given_arg ) : bool
+	Value& given_arg,
+	FilePos& file_pos ) : bool
 {
 	if_var( &given_type : given_arg.get</Type/>() )
 	{
@@ -1146,7 +1152,7 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 				return false;
 			}
 
-			if( !MatchTemplateArgument2( names_scope, type_template, function_type_param.return_type, given_function_type.return_type.get_ref() ) )
+			if( !MatchTemplateArgument2( names_scope, type_template, function_type_param.return_type, given_function_type.return_type.get_ref(), file_pos ) )
 			{
 				return false;
 			}
@@ -1166,7 +1172,7 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 				{
 					return false;
 				}
-				if( !MatchTemplateArgument2( names_scope, type_template, expected_param.t, given_arg.arg_type.get_ref() ) )
+				if( !MatchTemplateArgument2( names_scope, type_template, expected_param.t, given_arg.arg_type.get_ref(), file_pos ) )
 				{
 					return false;
 				}
@@ -1184,7 +1190,8 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 	NamesScopePtr& names_scope,
 	TypeTemplate& type_template,
 	TemplateSignatureParam::SpecializedTemplateParam& specialized_template_param,
-	Value& given_arg ) : bool
+	Value& given_arg,
+	FilePos& file_pos ) : bool
 {
 	if_var( &given_type : given_arg.get</Type/>() )
 	{
@@ -1224,7 +1231,7 @@ fn CodeBuilder::MatchTemplateArgument2Impl(
 						val= t;
 					}
 
-					if( !MatchTemplateArgument2( names_scope, type_template, specialized_template_param.params[i], val ) )
+					if( !MatchTemplateArgument2( names_scope, type_template, specialized_template_param.params[i], val, file_pos ) )
 					{
 						return false;
 					}
