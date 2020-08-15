@@ -357,7 +357,7 @@ public:
 
 	struct SpecializedTemplateParam
 	{
-		TypeTemplatePtr type_template;
+		ust::shared_ptr_imut</ TypeTemplatesSet /> type_templates_set;
 		ust::vector</ TemplateSignatureParam /> params;
 	}
 

@@ -161,6 +161,7 @@ private:
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TypeName& type_name ) : Type;
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_type ) : Type;
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::ArrayType/>& array_type ) : Type;
+	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ArrayType& array_type ) : Type;
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type_ptr ) : Type;
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type ) : Type;
 	fn PrepareFunctionType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type, ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : FunctionType;
@@ -295,45 +296,47 @@ private:
 		NamesScopePtr& names_scope,
 		ust::shared_ptr_final</Synt::TypeTemplate/>& type_template_syntax_element ) : ust::optional</TypeTemplate/>;
 
-	fn CheckTemplateSignatureParam(
+	fn CreateTemplateSignatureParam(
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		ust::vector</ust::string8/>& template_params,
 		Synt::Expression& signature_param,
-		ust::vector</bool/> &mut template_params_usage_flags );
+		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
 
-	fn CheckTemplateSignatureParam(
+	fn CreateTemplateSignatureParam(
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		ust::vector</ust::string8/>& template_params,
 		Synt::ComplexName& signature_param,
-		ust::vector</bool/> &mut template_params_usage_flags );
+		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
 
-	fn CheckTemplateSignatureParam(
+	fn CreateTemplateSignatureParam(
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		ust::vector</ust::string8/>& template_params,
 		Synt::TypeName& signature_param,
-		ust::vector</bool/> &mut template_params_usage_flags );
+		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
 
-	fn CheckTemplateSignatureParam(
+	fn CreateTemplateSignatureParam(
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		ust::vector</ust::string8/>& template_params,
 		Synt::ArrayType& signature_param,
-		ust::vector</bool/> &mut template_params_usage_flags );
+		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
 
-	fn CheckTemplateSignatureParam(
+	fn CreateTemplateSignatureParam(
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		ust::vector</ust::string8/>& template_params,
 		Synt::FunctionType& signature_param,
-		ust::vector</bool/> &mut template_params_usage_flags );
+		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
+
+	fn CreateTemplateSignatureParam( mut this, Value& value ) : TemplateSignatureParam;
 
 	fn GenTemplateType(
 		mut this,
