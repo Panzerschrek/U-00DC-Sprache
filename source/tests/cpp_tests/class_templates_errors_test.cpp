@@ -214,12 +214,7 @@ U_TEST( TemplateArgumentIsNotDeducedYet_Test0 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TemplateArgumentIsNotDeducedYet );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateArgumentIsNotDeducedYet , 3u ) );
 }
 
 U_TEST( TemplateArgumentIsNotDeducedYet_Test1 )
@@ -535,11 +530,8 @@ U_TEST( ExpectedConstantExpression_InTemplateSignatureArgument_Test1 )
 		type K= FFF</ GetNum() />;
 	)";
 
-	// TODO - fix file_pos - leavy only error on line 7
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT(
-		HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedConstantExpression, 7u ) ||
-		HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedConstantExpression, 4u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedConstantExpression, 7u ) );
 }
 
 } // namespace U
