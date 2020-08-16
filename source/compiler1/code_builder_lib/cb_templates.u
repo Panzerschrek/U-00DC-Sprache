@@ -655,8 +655,9 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 	Value& given_arg,
 	FilePos& file_pos ) : bool
 {
-	auto template_arg_name= names_scope.lock_imut().get_ref().GetThisScopeValue( type_template.params[template_param.index].name ).get_ref();
-	auto template_arg_ptr= template_arg_name.Get</TemplateArg/>();
+	auto& param_name= type_template.params[template_param.index].name;
+	auto template_arg_value= names_scope.lock_imut().get_ref().GetThisScopeValue( param_name ).get_ref();
+	auto template_arg_ptr= template_arg_value.Get</TemplateArg/>();
 
 	auto mut template_arg_lock= template_arg_ptr.lock_mut();
 	auto &mut template_arg= template_arg_lock.get_ref();
@@ -692,7 +693,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				};
 				unsafe
 				{
-					out_var.llvm_value= LLVMAddGlobal( module_, out_var.t.GetLLVMType(), "\0"[0] );
+					out_var.llvm_value= LLVMAddGlobal( module_, out_var.t.GetLLVMType(), ( param_name + "\0" ).front() );
 					LLVMSetLinkage( out_var.llvm_value, LLVMLinkage::Internal );
 					LLVMSetGlobalConstant( out_var.llvm_value, LLVMBool::True );
 					LLVMSetInitializer( out_var.llvm_value, out_var.constexpr_value );
