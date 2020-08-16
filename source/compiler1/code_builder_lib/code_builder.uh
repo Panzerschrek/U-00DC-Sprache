@@ -347,13 +347,24 @@ private:
 		Synt::TemplateArgs& template_args,
 		FilePos& template_instantiation_file_pos ) : ust::optional</Type/>;
 
-	fn GenTemplateType(
+	struct TemplateTypeArgsEvaluationResult
+	{
+		TypeTemplatePtr type_template;
+		NamesScopeMutPtr args_names_scope; // Where we place template arguments
+		TemplateArgsFinished signature_args;
+	}
+
+	fn EvaluateTemplateTypeArgs(
 		mut this,
 		NamesScopePtr& args_names_scope,
 		FunctionContext &mut function_context,
 		TypeTemplatePtr& type_template_ptr,
 		Synt::TemplateArgs& template_args,
-		FilePos& template_instantiation_file_pos ) : ust::optional</Type/>;
+		FilePos& template_instantiation_file_pos ) : ust::optional</TemplateTypeArgsEvaluationResult/>;
+
+	fn FinishTypeTemplateGeneration(
+		mut this,
+		TemplateTypeArgsEvaluationResult& template_args_evaluation_result ) : ust::optional</Type/>;
 
 	// Returns true if ok
 	fn MatchTemplateArgument(

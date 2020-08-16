@@ -364,34 +364,39 @@ fn CodeBuilder::GenTemplateType(
 {
 	auto type_templates_set_lock= type_templates_set_ptr.lock_imut();
 	var TypeTemplatesSet& type_templates_set= type_templates_set_lock.get_ref();
-	if( type_templates_set.type_templates.size() != 1s )
+
+	var ust::vector</ TemplateTypeArgsEvaluationResult /> mut candidate_type_templates;
+	foreach( &type_template_ptr : type_templates_set.type_templates )
 	{
+		auto mut res= EvaluateTemplateTypeArgs(
+			args_names_scope,
+			function_context,
+			type_template_ptr,
+			template_args,
+			template_instantiation_file_pos );
+		if( !res.empty() )
+		{
+			candidate_type_templates.push_back( res.get_ref() );
+		}
+	}
+
+	// TODO - select more specialized type template here.
+	if( candidate_type_templates.size() != 1s )
+	{
+		REPORT_ERROR( TemplateParametersDeductionFailed, args_names_scope, template_instantiation_file_pos )
 		return ust::optional</Type/>();
 	}
 
-	auto& type_template_ptr= type_templates_set.type_templates.front();
-	auto mut res= GenTemplateType(
-		args_names_scope,
-		function_context,
-		type_template_ptr,
-		template_args,
-		template_instantiation_file_pos );
-
-	if( res.empty() )
-	{
-		REPORT_ERROR( TemplateParametersDeductionFailed, args_names_scope, template_instantiation_file_pos )
-	}
-
-	return move(res);
+	return FinishTypeTemplateGeneration( candidate_type_templates.front() );
 }
 
-fn CodeBuilder::GenTemplateType(
+fn CodeBuilder::EvaluateTemplateTypeArgs(
 	mut this,
 	NamesScopePtr& args_names_scope,
 	FunctionContext &mut function_context,
 	TypeTemplatePtr& type_template_ptr,
 	Synt::TemplateArgs& template_args,
-	FilePos& template_instantiation_file_pos ) : ust::optional</Type/>
+	FilePos& template_instantiation_file_pos ) : ust::optional</TemplateTypeArgsEvaluationResult/>
 {
 	var TypeTemplate& type_template= type_template_ptr.get_ref();
 
@@ -400,14 +405,14 @@ fn CodeBuilder::GenTemplateType(
 	{
 		if( template_args.size() != syntax_element.params.size() )
 		{
-			return ust::optional</Type/>();
+			return ust::optional</TemplateTypeArgsEvaluationResult/>();
 		}
 	}
 	else
 	{
 		if( template_args.size() < type_template.first_default_param )
 		{
-			return ust::optional</Type/>();
+			return ust::optional</TemplateTypeArgsEvaluationResult/>();
 		}
 	}
 
@@ -490,12 +495,28 @@ fn CodeBuilder::GenTemplateType(
 
 	if( !all_ok )
 	{
-		return ust::optional</Type/>();
+		return ust::optional</TemplateTypeArgsEvaluationResult/>();
 	}
 
+	var TemplateTypeArgsEvaluationResult mut result
+	{
+		.type_template= type_template_ptr,
+		.args_names_scope= result_names_scope,
+		.signature_args= move(result_signature_template_args),
+	};
+
+	return move(result);
+}
+
+fn CodeBuilder::FinishTypeTemplateGeneration(
+	mut this,
+	TemplateTypeArgsEvaluationResult& template_args_evaluation_result ) : ust::optional</Type/>
+{
+	var TypeTemplatePtr& type_template_ptr= template_args_evaluation_result.type_template;
+
 	auto template_key=
-		ust::to_string8( ust::ref_to_int( type_template ) ) +
-		MangleTemplateArgs( result_signature_template_args );
+		ust::to_string8( ust::ref_to_int( type_template_ptr.get_ref() ) ) +
+		MangleTemplateArgs( template_args_evaluation_result.signature_args );
 
 	var ust::string8 template_class_name= "_";
 
@@ -516,9 +537,12 @@ fn CodeBuilder::GenTemplateType(
 		}
 	}
 
+	var Synt::TypeTemplate& syntax_element= type_template_ptr.get_ref().syntax_element.get_ref();
+	var NamesScopeMutPtr& args_names_scope= template_args_evaluation_result.args_names_scope;
+
 	if_var( &class_syntax_element : syntax_element.something.get</ ust::shared_ptr_final</ Synt::Class /> />() )
 	{
-		auto class_type= NamesScopeAddClass( result_names_scope, class_syntax_element );
+		auto class_type= NamesScopeAddClass( args_names_scope, class_syntax_element );
 		if( class_type.empty() )
 		{
 			return ust::optional</Type/>();
@@ -528,7 +552,7 @@ fn CodeBuilder::GenTemplateType(
 			var ClassType::BaseTemplate mut base_template
 			{
 				.class_template= type_template_ptr,
-				.signature_args= result_signature_template_args,
+				.signature_args= template_args_evaluation_result.signature_args,
 			};
 
 			auto mut lock= class_type.lock_mut();
@@ -538,7 +562,7 @@ fn CodeBuilder::GenTemplateType(
 		auto mangled_llvm_type_name= MangleType( ust::to_non_nullable( class_type ) );
 		unsafe{  U1_SetStructName( class_type.lock_imut().get_ref().llvm_type, mangled_llvm_type_name.front() );  }
 
-		generated_template_things_.insert( template_key, result_names_scope );
+		generated_template_things_.insert( template_key, args_names_scope );
 		return Type( ust::to_non_nullable( class_type ) );
 	}
 	if_var( &type_alias_syntax_element : syntax_element.something.get</ ust::shared_ptr_final</ Synt::TypeAlias /> />() )
@@ -547,18 +571,18 @@ fn CodeBuilder::GenTemplateType(
 		var Type mut t;
 		{
 			auto mut global_function_context= CreateGlobalFunctionContext();
-			t= PrepareType( result_names_scope, global_function_context, type_alias_syntax_element.get_ref().type_name );
+			t= PrepareType( args_names_scope global_function_context, type_alias_syntax_element.get_ref().type_name );
 		}
 
 		// Cache result.
 		{
-			auto mut names_scope_lock= result_names_scope.lock_mut();
+			auto mut names_scope_lock= args_names_scope.lock_mut();
 			names_scope_lock.get_ref().AddName( template_class_name, t );
 		}
 
-		generated_template_things_.insert( template_key, result_names_scope );
+		generated_template_things_.insert( template_key, args_names_scope );
 
-		return t;
+		return move(t);
 	}
 
 	halt; // Unhandled type template kind.
