@@ -55,7 +55,7 @@ fn CodeBuilder::PrepareTypeTemplate(
 	var ust::vector</bool/> mut template_param_usage_flags;
 
 	var ust::vector</ TemplateSignatureParam /> mut signature_params;
-	var ust::vector</ ust::box_nullable</ TemplateSignatureParam /> /> mut params_types;
+	var ust::vector</ ust::optional</ TemplateSignatureParam /> /> mut params_types;
 
 	template_param_usage_flags.resize( template_params.size(), false );
 	{
@@ -83,12 +83,11 @@ fn CodeBuilder::PrepareTypeTemplate(
 			if( template_param.t.get</Synt::EmptyVariant/>().empty() )
 			{
 				params_types.push_back(
-					ust::box_nullable</ TemplateSignatureParam /> (
-						CreateTemplateSignatureParam( names_scope, global_function_context, template_params, template_param.t, template_param_usage_flags ) ) );
+					CreateTemplateSignatureParam( names_scope, global_function_context, template_params, template_param.t, template_param_usage_flags ) );
 			}
 			else
 			{
-				params_types.push_back( ust::box_nullable</ TemplateSignatureParam />() );
+				params_types.push_back( ust::optional</ TemplateSignatureParam />() );
 			}
 		}
 	}
