@@ -300,10 +300,14 @@ struct TypeTemplate
 {
 	ust::shared_ptr_final</Synt::TypeTemplate/> syntax_element;
 
-	ust::vector</ TemplateSignatureParam /> signature_params;
+	struct Param
+	{
+		ust::string8 name;
+		ust::optional</ TemplateSignatureParam /> t;
+	}
+	ust::vector</Param/> params;
 
-	// Non-null for variable-params with types
-	ust::vector</ ust::optional</ TemplateSignatureParam /> /> params_types;
+	ust::vector</ TemplateSignatureParam /> signature_params;
 
 	size_type first_default_param;
 
@@ -334,7 +338,7 @@ type TemplateArgsFinished= ust::vector</ TemplateArgFinished />;
 class TemplateSignatureParam
 {
 public:
-	struct TemplateParam{ size_type index; ust::string8 name; }
+	struct TemplateParam{ size_type index; }
 	struct TypeParam{ Type t; }
 	struct VariableParam{ Variable v; }
 

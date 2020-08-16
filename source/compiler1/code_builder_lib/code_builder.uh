@@ -301,7 +301,7 @@ private:
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::vector</ust::string8/>& template_params,
+		ust::vector</TypeTemplate::Param/>& template_params,
 		Synt::Expression& signature_param,
 		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
 
@@ -309,7 +309,7 @@ private:
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::vector</ust::string8/>& template_params,
+		ust::vector</TypeTemplate::Param/>& template_params,
 		Synt::ComplexName& signature_param,
 		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
 
@@ -317,7 +317,7 @@ private:
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::vector</ust::string8/>& template_params,
+		ust::vector</TypeTemplate::Param/>& template_params,
 		Synt::TypeName& signature_param,
 		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
 
@@ -325,7 +325,7 @@ private:
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::vector</ust::string8/>& template_params,
+		ust::vector</TypeTemplate::Param/>& template_params,
 		Synt::ArrayType& signature_param,
 		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
 
@@ -333,7 +333,7 @@ private:
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::vector</ust::string8/>& template_params,
+		ust::vector</TypeTemplate::Param/>& template_params,
 		Synt::FunctionType& signature_param,
 		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
 
