@@ -56,6 +56,19 @@ private:
 	const std::vector<SourceEntry> sources_;
 };
 
+// Returns "true" if should enable test.
+bool FilterTest( const std::string& test_name )
+{
+	static const std::unordered_set<std::string> c_tests_to_ignore
+	{
+		"InvalidValueAsTemplateArgumentTest1",
+	};
+
+	const std::string test_name_without_file_name= test_name.substr(test_name.find_last_of(':') + 1);
+
+	return c_tests_to_ignore.count(test_name_without_file_name) == 0;
+}
+
 } // namespace
 
 static void PrinteErrors_r( const CodeBuilderErrorsContainer& errors )
@@ -189,8 +202,16 @@ int main()
 	unsigned int passed= 0u;
 	unsigned int disabled= 0u;
 	unsigned int failed= 0u;
+	unsigned int filtered= 0u;
+
 	for(const TestFuncData& func_data : funcs_container )
 	{
+		if( !FilterTest( func_data.name ) )
+		{
+			++filtered;
+			continue;
+		}
+
 		try
 		{
 			func_data.func();
@@ -214,6 +235,7 @@ int main()
 	std::cout << std::endl <<
 		passed << " tests passed\n" <<
 		disabled << " tests disabled\n" <<
+		filtered << " tests filtered\n" <<
 		failed << " tests failed" << std::endl;
 
 	return -int(failed);
