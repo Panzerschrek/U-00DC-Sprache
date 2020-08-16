@@ -337,7 +337,7 @@ private:
 		Synt::FunctionType& signature_param,
 		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
 
-	fn CreateTemplateSignatureParam( mut this, Value& value ) : TemplateSignatureParam;
+	fn CreateTemplateSignatureParam( mut this, NamesScopePtr& names_scope, Value& value, FilePos& file_pos ) : TemplateSignatureParam;
 
 	fn GenTemplateType(
 		mut this,

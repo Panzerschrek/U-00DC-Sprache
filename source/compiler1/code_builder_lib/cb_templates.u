@@ -92,6 +92,13 @@ fn CodeBuilder::PrepareTypeTemplate(
 			{
 				template_params[i].t=
 					CreateTemplateSignatureParam( names_scope, global_function_context, template_params, template_param.t, template_params_usage_flags );
+				if_var( &type_param : template_params[i].t.get_ref().GetTypeParam() )
+				{
+					if( !TypeIsValidForTemplateVariableArgument(type_param.t) )
+					{
+						REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope,  Synt::GetFilePos(template_param.t), type_param.t )
+					}
+				}
 			}
 		}
 	}
@@ -161,7 +168,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 
 	// Nothing special - process as regular expression
 	auto expression_value= BuildExpressionCode( names_scope, function_context, param );
-	return CreateTemplateSignatureParam( expression_value );
+	return CreateTemplateSignatureParam( names_scope, expression_value, Synt::GetFilePos(param) );
 }
 
 fn CodeBuilder::CreateTemplateSignatureParam(
@@ -221,30 +228,12 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 				return move(specialized_template_param);
 			}
 		}
-		// TODO - report error - expected template args
+		REPORT_ERROR( TemplateInstantiationRequired, names_scope, param.file_pos, param.name )
 	}
 
 	// Nothing special - process as regular expression
 	auto expression_value= BuildExpressionCode( names_scope, function_context, param );
-	return CreateTemplateSignatureParam( expression_value );
-}
-
-fn CodeBuilder::CreateTemplateSignatureParam( mut this, Value& value ) : TemplateSignatureParam
-{
-	if_var( &t : value.get</Type/>() )
-	{
-		var TemplateSignatureParam::TypeParam mut type_param{ .t= t };
-		return move(type_param);
-	}
-	if_var( &v : value.get</Variable/>() )
-	{
-		// TODO - check type
-		var TemplateSignatureParam::VariableParam mut variable_param{ .v= v };
-		return move(variable_param);
-	}
-
-	// TODO - produce some error here.
-	return TemplateSignatureParam::TypeParam();
+	return CreateTemplateSignatureParam( names_scope, expression_value, param.file_pos );
 }
 
 fn CodeBuilder::CreateTemplateSignatureParam(
@@ -354,6 +343,23 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	}
 
 	return move(function_type_param);
+}
+
+fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_scope, Value& value, FilePos& file_pos ) : TemplateSignatureParam
+{
+	if_var( &t : value.get</Type/>() )
+	{
+		var TemplateSignatureParam::TypeParam mut type_param{ .t= t };
+		return move(type_param);
+	}
+	if_var( &v : value.get</Variable/>() )
+	{
+		var TemplateSignatureParam::VariableParam mut variable_param{ .v= v };
+		return move(variable_param);
+	}
+
+	REPORT_ERROR( InvalidValueAsTemplateArgument, names_scope, file_pos, GetValueKindName( value ) )
+	return TemplateSignatureParam::TypeParam();
 }
 
 fn CodeBuilder::GenTemplateType(
