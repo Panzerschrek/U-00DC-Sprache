@@ -377,6 +377,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"FunctionTypeDeclaration_Test3",
 		"FunctionTypeDeclaration_Test4",
 		"Int128_Test0",
+		"LessSpecializedTemplateTypesNotGenerated_Test0",
 		"OkTest",
 		"SafeBlockResetsUnsafe_Test",
 		"SimpliestTest",
@@ -438,6 +439,9 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"NumericConstants_OctalConstants",
 		"TypeNameInErrorMessage_ClassTypeInNamespace_Test",
 		"TypesMismatch_InFunctionPointerCall_Test",
+		"TypeTemplatesOvelroading_MustSelectSpecializedTemplate_Test",
+		"TypeTemplatesOvelroading_SpecializationErrors_Test",
+		"TypeTemplatesOvelroading_Specialization_Test",
 		"UnsafeFunctionCallInsideUnsafeBlock_Test",
 		"UnsafeFunctionCallOutsideUnsafeBlock_Test",
 	};

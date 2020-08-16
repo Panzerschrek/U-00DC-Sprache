@@ -19,6 +19,18 @@ U_TEST( InvalidValueAsTemplateArgumentTest0 )
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidValueAsTemplateArgument, 6u ) );
 }
 
+U_TEST( InvalidValueAsTemplateArgumentTest1 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Bar(){}
+		template</  /> struct S</ Bar />{}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidValueAsTemplateArgument, 3u ) );
+}
+
 U_TEST( InvalidTypeOfTemplateVariableArgumentTest0 )
 {
 	static const char c_program_text[]=
@@ -34,7 +46,16 @@ U_TEST( InvalidTypeOfTemplateVariableArgumentTest0 )
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument, 5u ) );
 }
 
-// TODO - InvalidTypeOfTemplateVariableArgument for arrays, structs.
+U_TEST( InvalidTypeOfTemplateVariableArgumentTest1 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ f32 x /> struct S{}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument, 2u ) );
+}
 
 U_TEST( NameNotFound_ForClassTemplateSingatureArguments_Test0 )
 {
@@ -118,6 +139,19 @@ U_TEST( TemplateInstantiationRequiredTest0 )
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateInstantiationRequired, 6u ) );
+}
+
+U_TEST( TemplateInstantiationRequiredTest1 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type X /> struct A{}
+		template</ type T /> struct Box</ A /> {}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateInstantiationRequired, 3u ) );
 }
 
 U_TEST( CouldNotOverloadFunction_ForClassTemplates_Test0 )
@@ -214,12 +248,7 @@ U_TEST( TemplateArgumentIsNotDeducedYet_Test0 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TemplateArgumentIsNotDeducedYet );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateArgumentIsNotDeducedYet , 3u ) );
 }
 
 U_TEST( TemplateArgumentIsNotDeducedYet_Test1 )
@@ -535,11 +564,8 @@ U_TEST( ExpectedConstantExpression_InTemplateSignatureArgument_Test1 )
 		type K= FFF</ GetNum() />;
 	)";
 
-	// TODO - fix file_pos - leavy only error on line 7
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT(
-		HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedConstantExpression, 7u ) ||
-		HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedConstantExpression, 4u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedConstantExpression, 7u ) );
 }
 
 } // namespace U

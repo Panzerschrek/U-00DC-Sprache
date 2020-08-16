@@ -1794,7 +1794,6 @@ U_TEST( ArrayAsTemplateSignatureParameter_Test2 )
 
 U_TEST( LazyClassFunctionsBuild_Test0 )
 {
-
 	static const char c_program_text[]=
 	R"(
 		template</type T/>

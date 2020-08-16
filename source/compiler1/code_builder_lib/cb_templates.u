@@ -18,11 +18,8 @@ fn CodeBuilder::BuiltTypeTemplatesSet( mut this, NamesScopePtr& names_scope, ust
 
 	while( !type_templates_set.syntax_elements.empty() )
 	{
-		auto mut template_prepared= PrepareTypeTemplate( names_scope, type_templates_set.syntax_elements.back() );
-		if( !template_prepared.empty() )
-		{
-			type_templates_set.type_templates.push_back( TypeTemplatePtr( template_prepared.get_ref() ) );
-		}
+		auto syntax_element= type_templates_set.syntax_elements.back();
+		PrepareTypeTemplate( names_scope, syntax_element, type_templates_set );
 
 		type_templates_set.syntax_elements.pop_back();
 	}
@@ -32,57 +29,86 @@ fn CodeBuilder::BuiltTypeTemplatesSet( mut this, NamesScopePtr& names_scope, ust
 fn CodeBuilder::PrepareTypeTemplate(
 	mut this,
 	NamesScopePtr& names_scope,
-	ust::shared_ptr_final</Synt::TypeTemplate/>& type_template_syntax_element ) : ust::optional</TypeTemplate/>
+	ust::shared_ptr_final</Synt::TypeTemplate/>& type_template_syntax_element,
+	TypeTemplatesSet &mut out_templates_set )
 {
 	auto& syntax_element= type_template_syntax_element.get_ref();
 
 	// Check for template params redefinition, fill params vector.
-	var ust::vector</ust::string8/> mut template_params;
+	var ust::vector</ TypeTemplate::Param /> mut template_params;
 	foreach( &param : syntax_element.params )
 	{
 		auto& name= param.name.get</Synt::ComplexName/>().get_ref().name;
 
-		foreach( &prev_param_name : template_params )
+		foreach( &prev_param : template_params )
 		{
-			if( prev_param_name == name )
+			if( name == prev_param.name )
 			{
 				REPORT_ERROR( Redefinition, names_scope, Synt::GetFilePos( param.name ), name )
 			}
 		}
 
-		template_params.push_back(name);
+		var TypeTemplate::Param mut out_param{ .name= name };
+		template_params.push_back( move(out_param) );
 	}
 
-	// Check signature params for correctness.
-	var ust::vector</bool/> mut template_param_usage_flags;
-	template_param_usage_flags.resize( template_params.size(), false );
+	// Fill signature params and check correctness.
+	var ust::vector</bool/> mut template_params_usage_flags;
+	template_params_usage_flags.resize( template_params.size(), false );
+
+	var ust::vector</ TemplateSignatureParam /> mut signature_params;
+
 	{
 		auto mut global_function_context= CreateGlobalFunctionContext();
-		foreach( &signature_param : syntax_element.signature_params )
-		{
-			CheckTemplateSignatureParam( names_scope, global_function_context, template_params, signature_param.name, template_param_usage_flags );
 
-			if( signature_param.default_value.get</Synt::EmptyVariant/>().empty() )
+		if( syntax_element.is_short_form )
+		{
+			foreach( &template_param : syntax_element.params )
 			{
-				CheckTemplateSignatureParam( names_scope, global_function_context, template_params, signature_param.default_value, template_param_usage_flags );
+				signature_params.push_back(
+					CreateTemplateSignatureParam( names_scope, global_function_context, template_params, template_param.name, template_params_usage_flags ) );
 			}
 		}
-		foreach( &template_param : syntax_element.params )
+		else
 		{
+			foreach( &signature_param : syntax_element.signature_params )
+			{
+				signature_params.push_back(
+					CreateTemplateSignatureParam( names_scope, global_function_context, template_params, signature_param.name, template_params_usage_flags ) );
+
+				// TODO - is this correct usage of "CreateTemplateSignatureParam" function?
+				if( signature_param.default_value.get</Synt::EmptyVariant/>().empty() )
+				{
+					CreateTemplateSignatureParam( names_scope, global_function_context, template_params, signature_param.default_value, template_params_usage_flags );
+				}
+			}
+		}
+
+		// Fill variable params types.
+		for( auto mut i= 0s; i < syntax_element.params.size(); ++i )
+		{
+			auto& template_param= syntax_element.params[i];
 			if( template_param.t.get</Synt::EmptyVariant/>().empty() )
 			{
-				CheckTemplateSignatureParam( names_scope, global_function_context, template_params, template_param.t, template_param_usage_flags );
+				template_params[i].t=
+					CreateTemplateSignatureParam( names_scope, global_function_context, template_params, template_param.t, template_params_usage_flags );
+				if_var( &type_param : template_params[i].t.get_ref().GetTypeParam() )
+				{
+					if( !TypeIsValidForTemplateVariableArgument(type_param.t) )
+					{
+						REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope,  Synt::GetFilePos(template_param.t), type_param.t )
+					}
+				}
 			}
 		}
 	}
-	if( !syntax_element.is_short_form )
+
+	// Check for usage of all template params in signature.
+	for( auto mut i= 0s; i < template_params_usage_flags.size(); ++i )
 	{
-		for( auto mut i= 0s; i < template_param_usage_flags.size(); ++i )
+		if( !template_params_usage_flags[i] )
 		{
-			if( !template_param_usage_flags[i] )
-			{
-				REPORT_ERROR( TemplateArgumentNotUsedInSignature, names_scope, Synt::GetFilePos(syntax_element.params[i].name), template_params[i] )
-			}
+			REPORT_ERROR( TemplateArgumentNotUsedInSignature, names_scope, Synt::GetFilePos(syntax_element.params[i].name), template_params[i].name )
 		}
 	}
 
@@ -97,7 +123,7 @@ fn CodeBuilder::PrepareTypeTemplate(
 		else if( first_default_param < i )
 		{
 			REPORT_ERROR( MandatoryTemplateSignatureArgumentAfterOptionalArgument, names_scope, syntax_element.file_pos )
-			return ust::optional</TypeTemplate/>();
+			return;
 		}
 	}
 
@@ -105,145 +131,235 @@ fn CodeBuilder::PrepareTypeTemplate(
 	{
 		.syntax_element= type_template_syntax_element,
 		.parent_names_scope= names_scope,
+		.params= move(template_params),
+		.signature_params= move(signature_params),
 		.first_default_param= first_default_param,
 	};
 
-	// TODO - add some checks here
+	// TODO - compare here signature parameters for duplicated type templates detection.
 
-	return move(type_template);
+	out_templates_set.type_templates.push_back( TypeTemplatePtr( move(type_template) ) );
 }
 
-fn CodeBuilder::CheckTemplateSignatureParam(
+fn CodeBuilder::CreateTemplateSignatureParam(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
-	ust::vector</ust::string8/>& template_params,
+	ust::vector</TypeTemplate::Param/>& template_params,
 	Synt::Expression& param,
-	ust::vector</bool/> &mut template_params_usage_flags )
+	ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam
 {
 	if_var( &complex_name : param.get</Synt::ComplexName/>() )
 	{
-		CheckTemplateSignatureParam( names_scope, function_context, template_params, complex_name, template_params_usage_flags );
-		return;
+		return CreateTemplateSignatureParam( names_scope, function_context, template_params, complex_name, template_params_usage_flags );
 	}
 	if_var( &bracket_exptession : param.get</Synt::BracketExpression/>() )
 	{
-		CheckTemplateSignatureParam( names_scope, function_context, template_params, bracket_exptession.expr.get_ref(), template_params_usage_flags );
-		return;
+		return CreateTemplateSignatureParam( names_scope, function_context, template_params, bracket_exptession.expr.get_ref(), template_params_usage_flags );
 	}
 	if_var( &array_type : param.get</ ust::box</ Synt::ArrayType /> />() )
 	{
-		CheckTemplateSignatureParam( names_scope, function_context, template_params, array_type.get_ref(), template_params_usage_flags );
-		return;
+		return CreateTemplateSignatureParam( names_scope, function_context, template_params, array_type.get_ref(), template_params_usage_flags );
 	}
 	if_var( &function_type : param.get</ ust::box</Synt::FunctionType/> />() )
 	{
-		CheckTemplateSignatureParam( names_scope, function_context, template_params, function_type.get_ref(), template_params_usage_flags );
-		return;
+		return CreateTemplateSignatureParam( names_scope, function_context, template_params, function_type.get_ref(), template_params_usage_flags );
 	}
 
 	// Nothing special - process as regular expression
-	// TODO - check type for template variable param
-	BuildExpressionCode( names_scope, function_context, param );
+	auto expression_value= BuildExpressionCode( names_scope, function_context, param );
+	return CreateTemplateSignatureParam( names_scope, expression_value, Synt::GetFilePos(param) );
 }
 
-fn CodeBuilder::CheckTemplateSignatureParam(
+fn CodeBuilder::CreateTemplateSignatureParam(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
-	ust::vector</ust::string8/>& template_params,
+	ust::vector</TypeTemplate::Param/>& template_params,
 	Synt::ComplexName& param,
-	ust::vector</bool/> &mut template_params_usage_flags )
+	ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam
 {
 	if( !param.name.empty() && param.tail.empty() )
 	{
 		for( auto mut i= 0s; i < template_params.size(); ++i )
 		{
-			if( param.name == template_params[i] )
+			if( param.name == template_params[i].name )
 			{
 				template_params_usage_flags[i]= true;
-				return;
+
+				var TemplateSignatureParam::TemplateParam mut res{ .index= i };
+				return move(res);
 			}
 		}
 	}
 
 	auto value= ResolveValue( names_scope, function_context, param, true );
-	if( !value.get</ ust::shared_ptr_imut</ TypeTemplatesSet /> />().empty() )
+	if_var( &type_templates_set_ptr : value.get</ ust::shared_ptr_imut</ TypeTemplatesSet /> />() )
 	{
 		if( !param.tail.empty() )
 		{
 			if_var( &template_args : param.tail.back().get</ ust::box</ Synt::TemplateArgs /> />() )
 			{
+				var TemplateSignatureParam::SpecializedTemplateParam mut specialized_template_param
+				{
+					.type_templates_set= type_templates_set_ptr,
+				};
+
+				auto mut all_params_are_known= true;
 				foreach( &arg : template_args.get_ref() )
 				{
-					CheckTemplateSignatureParam( names_scope, function_context, template_params, arg, template_params_usage_flags );
+					auto mut out_param= CreateTemplateSignatureParam( names_scope, function_context, template_params, arg, template_params_usage_flags );
+
+					all_params_are_known&= !out_param.GetTypeParam().empty() || !out_param.GetVariableParam().empty();
+
+					specialized_template_param.params.push_back(move(out_param));
 				}
+
+				if( all_params_are_known )
+				{
+					auto value= ResolveValue( names_scope, function_context, param );
+					if_var( &t : value.get</Type/>() )
+					{
+						var TemplateSignatureParam::TypeParam mut type_param{ .t= t };
+						return move(type_param);
+					}
+				}
+
+				return move(specialized_template_param);
 			}
 		}
-		return;
+		REPORT_ERROR( TemplateInstantiationRequired, names_scope, param.file_pos, param.name )
 	}
 
 	// Nothing special - process as regular expression
-	// TODO - check type for template variable param
-	BuildExpressionCode( names_scope, function_context, param );
+	auto expression_value= BuildExpressionCode( names_scope, function_context, param );
+	return CreateTemplateSignatureParam( names_scope, expression_value, param.file_pos );
 }
 
-fn CodeBuilder::CheckTemplateSignatureParam(
+fn CodeBuilder::CreateTemplateSignatureParam(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
-	ust::vector</ust::string8/>& template_params,
+	ust::vector</TypeTemplate::Param/>& template_params,
 	Synt::TypeName& param,
-	ust::vector</bool/> &mut template_params_usage_flags )
+	ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam
 {
 	if_var( &complex_name : param.get</Synt::ComplexName/>() )
 	{
-		CheckTemplateSignatureParam( names_scope, function_context, template_params, complex_name, template_params_usage_flags );
-		return;
+		return CreateTemplateSignatureParam( names_scope, function_context, template_params, complex_name, template_params_usage_flags );
 	}
 	if_var( &array_type : param.get</ ust::box</Synt::ArrayType/> />() )
 	{
-		CheckTemplateSignatureParam( names_scope, function_context, template_params, array_type.get_ref(), template_params_usage_flags );
-		return;
+		return CreateTemplateSignatureParam( names_scope, function_context, template_params, array_type.get_ref(), template_params_usage_flags );
 	}
 	if_var( &function_type : param.get</ ust::box</Synt::FunctionType/> />() )
 	{
-		CheckTemplateSignatureParam( names_scope, function_context, template_params, function_type.get_ref(), template_params_usage_flags );
-		return;
+		return CreateTemplateSignatureParam( names_scope, function_context, template_params, function_type.get_ref(), template_params_usage_flags );
 	}
 
 	// Nothing special - process as regular type name.
-	PrepareType( names_scope, function_context, param );
+	var TemplateSignatureParam::TypeParam mut t
+	{
+		.t= PrepareType( names_scope, function_context, param )
+	};
+	return move(t);
 }
 
-fn CodeBuilder::CheckTemplateSignatureParam(
+fn CodeBuilder::CreateTemplateSignatureParam(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
-	ust::vector</ust::string8/>& template_params,
+	ust::vector</TypeTemplate::Param/>& template_params,
 	Synt::ArrayType& param,
-	ust::vector</bool/> &mut template_params_usage_flags )
+	ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam
 {
-	CheckTemplateSignatureParam( names_scope, function_context, template_params, param.element_type, template_params_usage_flags );
-	CheckTemplateSignatureParam( names_scope, function_context, template_params, param.element_count, template_params_usage_flags );
+	var TemplateSignatureParam::ArrayTypeParam mut array_type_param
+	{
+		.element_type= CreateTemplateSignatureParam( names_scope, function_context, template_params, param.element_type, template_params_usage_flags ),
+		.element_count= CreateTemplateSignatureParam( names_scope, function_context, template_params, param.element_count, template_params_usage_flags ),
+	};
+
+	if( !array_type_param.element_type.GetTypeParam().empty() && !array_type_param.element_count.GetVariableParam().empty() )
+	{
+		// All params are known types/variables, so, this is just a type.
+		var TemplateSignatureParam::TypeParam mut t
+		{
+			.t= PrepareType( names_scope, function_context, param )
+		};
+		return move(t);
+	}
+	return move(array_type_param);
 }
 
-fn CodeBuilder::CheckTemplateSignatureParam(
+fn CodeBuilder::CreateTemplateSignatureParam(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
-	ust::vector</ust::string8/>& template_params,
+	ust::vector</TypeTemplate::Param/>& template_params,
 	Synt::FunctionType& signature_param,
-	ust::vector</bool/> &mut template_params_usage_flags )
+	ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam
 {
+	var TemplateSignatureParam::FunctionTypeParam mut function_type_param
+	{
+		.return_type( TemplateSignatureParam::TypeParam() )
+		.return_value_is_mutable= signature_param.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable,
+		.return_value_is_reference= signature_param.return_value_reference_modifier == Synt::ReferenceModifier::Reference,
+		.is_unsafe= signature_param.is_unsafe,
+	};
+
+	auto mut all_types_are_known= true;
 	if( !signature_param.return_type.empty() )
 	{
-		CheckTemplateSignatureParam( names_scope, function_context, template_params, signature_param.return_type.get_ref(), template_params_usage_flags );
+		function_type_param.return_type=
+			CreateTemplateSignatureParam( names_scope, function_context, template_params, signature_param.return_type.get_ref(), template_params_usage_flags );
+		all_types_are_known &= !function_type_param.return_type.GetTypeParam().empty();
+	}
+	else
+	{
+		var TemplateSignatureParam::TypeParam mut t{ .t= void_type_for_ret_ };
+		function_type_param.return_type= TemplateSignatureParam(move(t));
 	}
 	foreach( &param : signature_param.args )
 	{
-		CheckTemplateSignatureParam( names_scope, function_context, template_params, param.arg_type, template_params_usage_flags );
+		var TemplateSignatureParam::FunctionTypeParam::Param mut out_param
+		{
+			.t= CreateTemplateSignatureParam( names_scope, function_context, template_params, param.arg_type, template_params_usage_flags ),
+			.is_mutable= param.mutability_modifier == Synt::MutabilityModifier::Mutable,
+			.is_reference= param.reference_modifier == Synt::ReferenceModifier::Reference,
+		};
+
+		all_types_are_known &= !out_param.t.GetTypeParam().empty();
+
+		function_type_param.params.push_back( move(out_param) );
 	}
+
+	if( all_types_are_known )
+	{
+		var TemplateSignatureParam::TypeParam mut t
+		{
+			.t= PrepareType( names_scope, function_context, signature_param )
+		};
+		return move(t);
+	}
+
+	return move(function_type_param);
+}
+
+fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_scope, Value& value, FilePos& file_pos ) : TemplateSignatureParam
+{
+	if_var( &t : value.get</Type/>() )
+	{
+		var TemplateSignatureParam::TypeParam mut type_param{ .t= t };
+		return move(type_param);
+	}
+	if_var( &v : value.get</Variable/>() )
+	{
+		var TemplateSignatureParam::VariableParam mut variable_param{ .v= v };
+		return move(variable_param);
+	}
+
+	REPORT_ERROR( InvalidValueAsTemplateArgument, names_scope, file_pos, GetValueKindName( value ) )
+	return TemplateSignatureParam::TypeParam();
 }
 
 fn CodeBuilder::GenTemplateType(
@@ -256,34 +372,57 @@ fn CodeBuilder::GenTemplateType(
 {
 	auto type_templates_set_lock= type_templates_set_ptr.lock_imut();
 	var TypeTemplatesSet& type_templates_set= type_templates_set_lock.get_ref();
-	if( type_templates_set.type_templates.size() != 1s )
+
+	var ust::vector</ TemplateTypeArgsEvaluationResult /> mut candidate_type_templates;
+	foreach( &type_template_ptr : type_templates_set.type_templates )
 	{
+		auto mut res= EvaluateTemplateTypeArgs(
+			args_names_scope,
+			function_context,
+			type_template_ptr,
+			template_args,
+			template_instantiation_file_pos );
+		if( !res.empty() )
+		{
+			candidate_type_templates.push_back( res.get_ref() );
+		}
+	}
+
+	// TODO - select more specialized type template here.
+
+	if( candidate_type_templates.empty() )
+	{
+		REPORT_ERROR( TemplateParametersDeductionFailed, args_names_scope, template_instantiation_file_pos )
+		return ust::optional</Type/>();
+	}
+	if( candidate_type_templates.size() == 1s )
+	{
+		return FinishTypeTemplateGeneration( candidate_type_templates.front() );
+	}
+
+	var ust::vector</TypeTemplatePtr/> mut templates_for_check;
+	foreach( &candidate : candidate_type_templates )
+	{
+		templates_for_check.push_back( candidate.type_template );
+	}
+
+	auto index= SelectMoreSpecializedTemplate( templates_for_check.range(), template_args.size() );
+	if( index == ~0s )
+	{
+		REPORT_ERROR( CouldNotSelectMoreSpicializedTypeTemplate, args_names_scope, template_instantiation_file_pos )
 		return ust::optional</Type/>();
 	}
 
-	auto& type_template_ptr= type_templates_set.type_templates.front();
-	auto mut res= GenTemplateType(
-		args_names_scope,
-		function_context,
-		type_template_ptr,
-		template_args,
-		template_instantiation_file_pos );
-
-	if( res.empty() )
-	{
-		REPORT_ERROR( TemplateParametersDeductionFailed, args_names_scope, template_instantiation_file_pos )
-	}
-
-	return move(res);
+	return FinishTypeTemplateGeneration( candidate_type_templates[index] );
 }
 
-fn CodeBuilder::GenTemplateType(
+fn CodeBuilder::EvaluateTemplateTypeArgs(
 	mut this,
 	NamesScopePtr& args_names_scope,
 	FunctionContext &mut function_context,
 	TypeTemplatePtr& type_template_ptr,
 	Synt::TemplateArgs& template_args,
-	FilePos& template_instantiation_file_pos ) : ust::optional</Type/>
+	FilePos& template_instantiation_file_pos ) : ust::optional</TemplateTypeArgsEvaluationResult/>
 {
 	var TypeTemplate& type_template= type_template_ptr.get_ref();
 
@@ -292,14 +431,14 @@ fn CodeBuilder::GenTemplateType(
 	{
 		if( template_args.size() != syntax_element.params.size() )
 		{
-			return ust::optional</Type/>();
+			return ust::optional</TemplateTypeArgsEvaluationResult/>();
 		}
 	}
 	else
 	{
 		if( template_args.size() < type_template.first_default_param )
 		{
-			return ust::optional</Type/>();
+			return ust::optional</TemplateTypeArgsEvaluationResult/>();
 		}
 	}
 
@@ -308,13 +447,10 @@ fn CodeBuilder::GenTemplateType(
 
 	{
 		auto mut result_names_scope_lock= result_names_scope.lock_mut();
-		for( auto mut i= 0s; i < syntax_element.params.size(); ++i )
+		for( auto mut i= 0s; i < type_template.params.size(); ++i )
 		{
-			// Should be simple name
-			auto& name= syntax_element.params[i].name.get</Synt::ComplexName/>().get_ref().name;
-
 			var TemplateArg mut template_arg{ .index= i };
-			result_names_scope_lock.get_ref().AddName( name, move(template_arg ) );
+			result_names_scope_lock.get_ref().AddName( type_template.params[i].name, move(template_arg) );
 		}
 	}
 
@@ -332,7 +468,7 @@ fn CodeBuilder::GenTemplateType(
 				all_ok= false;
 			}
 
-			all_ok&= MatchTemplateArgument( result_names_scope, type_template, syntax_element.params[i].name, arg );
+			all_ok&= MatchTemplateArgument( result_names_scope, type_template, type_template.signature_params[i], arg, Synt::GetFilePos(template_args[i]) );
 
 			if_var( &t : arg.get</Type/>() )
 			{
@@ -367,7 +503,7 @@ fn CodeBuilder::GenTemplateType(
 				all_ok= false;
 			}
 
-			all_ok&= MatchTemplateArgument( result_names_scope, type_template, syntax_element.signature_params[i].name, arg );
+			all_ok&= MatchTemplateArgument( result_names_scope, type_template, type_template.signature_params[i], arg, file_pos );
 
 			if_var( &t : arg.get</Type/>() )
 			{
@@ -382,12 +518,28 @@ fn CodeBuilder::GenTemplateType(
 
 	if( !all_ok )
 	{
-		return ust::optional</Type/>();
+		return ust::optional</TemplateTypeArgsEvaluationResult/>();
 	}
 
+	var TemplateTypeArgsEvaluationResult mut result
+	{
+		.type_template= type_template_ptr,
+		.args_names_scope= result_names_scope,
+		.signature_args= move(result_signature_template_args),
+	};
+
+	return move(result);
+}
+
+fn CodeBuilder::FinishTypeTemplateGeneration(
+	mut this,
+	TemplateTypeArgsEvaluationResult& template_args_evaluation_result ) : ust::optional</Type/>
+{
+	var TypeTemplatePtr& type_template_ptr= template_args_evaluation_result.type_template;
+
 	auto template_key=
-		ust::to_string8( ust::ref_to_int( type_template ) ) +
-		MangleTemplateArgs( result_signature_template_args );
+		ust::to_string8( ust::ref_to_int( type_template_ptr.get_ref() ) ) +
+		MangleTemplateArgs( template_args_evaluation_result.signature_args );
 
 	var ust::string8 template_class_name= "_";
 
@@ -408,9 +560,12 @@ fn CodeBuilder::GenTemplateType(
 		}
 	}
 
+	var Synt::TypeTemplate& syntax_element= type_template_ptr.get_ref().syntax_element.get_ref();
+	var NamesScopeMutPtr& args_names_scope= template_args_evaluation_result.args_names_scope;
+
 	if_var( &class_syntax_element : syntax_element.something.get</ ust::shared_ptr_final</ Synt::Class /> />() )
 	{
-		auto class_type= NamesScopeAddClass( result_names_scope, class_syntax_element );
+		auto class_type= NamesScopeAddClass( args_names_scope, class_syntax_element );
 		if( class_type.empty() )
 		{
 			return ust::optional</Type/>();
@@ -420,7 +575,7 @@ fn CodeBuilder::GenTemplateType(
 			var ClassType::BaseTemplate mut base_template
 			{
 				.class_template= type_template_ptr,
-				.signature_args= result_signature_template_args,
+				.signature_args= template_args_evaluation_result.signature_args,
 			};
 
 			auto mut lock= class_type.lock_mut();
@@ -430,7 +585,7 @@ fn CodeBuilder::GenTemplateType(
 		auto mangled_llvm_type_name= MangleType( ust::to_non_nullable( class_type ) );
 		unsafe{  U1_SetStructName( class_type.lock_imut().get_ref().llvm_type, mangled_llvm_type_name.front() );  }
 
-		generated_template_things_.insert( template_key, result_names_scope );
+		generated_template_things_.insert( template_key, args_names_scope );
 		return Type( ust::to_non_nullable( class_type ) );
 	}
 	if_var( &type_alias_syntax_element : syntax_element.something.get</ ust::shared_ptr_final</ Synt::TypeAlias /> />() )
@@ -439,18 +594,18 @@ fn CodeBuilder::GenTemplateType(
 		var Type mut t;
 		{
 			auto mut global_function_context= CreateGlobalFunctionContext();
-			t= PrepareType( result_names_scope, global_function_context, type_alias_syntax_element.get_ref().type_name );
+			t= PrepareType( args_names_scope global_function_context, type_alias_syntax_element.get_ref().type_name );
 		}
 
 		// Cache result.
 		{
-			auto mut names_scope_lock= result_names_scope.lock_mut();
+			auto mut names_scope_lock= args_names_scope.lock_mut();
 			names_scope_lock.get_ref().AddName( template_class_name, t );
 		}
 
-		generated_template_things_.insert( template_key, result_names_scope );
+		generated_template_things_.insert( template_key, args_names_scope );
 
-		return t;
+		return move(t);
 	}
 
 	halt; // Unhandled type template kind.
@@ -460,183 +615,195 @@ fn CodeBuilder::MatchTemplateArgument(
 	mut this,
 	NamesScopePtr& names_scope,
 	TypeTemplate& type_template,
-	Synt::Expression& param,
-	Value& given_arg ) : bool
+	TemplateSignatureParam& param,
+	Value& given_arg,
+	FilePos& file_pos ) : bool
 {
-	if_var( &complex_name : param.get</Synt::ComplexName/>() )
+	if_var( &template_param : param.GetTemplateParam() )
 	{
-		return MatchTemplateArgument( names_scope, type_template, complex_name, given_arg );
+		return MatchTemplateArgumentImpl( names_scope, type_template, template_param, given_arg, file_pos );
 	}
-	if_var( &bracket_expression : param.get</ Synt::BracketExpression />() )
+	if_var( &type_param : param.GetTypeParam() )
 	{
-		return MatchTemplateArgument( names_scope, type_template, bracket_expression.expr.get_ref(), given_arg );
+		return MatchTemplateArgumentImpl( names_scope, type_template, type_param, given_arg, file_pos );
 	}
-	if_var( &array_type_expression : param.get</ ust::box</ Synt::ArrayType/> />() )
+	if_var( &variable_param : param.GetVariableParam() )
 	{
-		return MatchTemplateArgument( names_scope, type_template, array_type_expression.get_ref(), given_arg );
+		return MatchTemplateArgumentImpl( names_scope, type_template, variable_param, given_arg, file_pos );
 	}
-	if_var( &function_type : param.get</ ust::box</ Synt::FunctionType /> />() )
+	if_var( &array_type_param : param.GetArrayTypeParam() )
 	{
-		return MatchTemplateArgument( names_scope, type_template, function_type.get_ref(), given_arg );
+		return MatchTemplateArgumentImpl( names_scope, type_template, array_type_param, given_arg, file_pos );
+	}
+	if_var( &function_type_param : param.GetFunctionTypeParam() )
+	{
+		return MatchTemplateArgumentImpl( names_scope, type_template, function_type_param, given_arg, file_pos );
+	}
+	if_var( &specialized_template_param : param.GetSpecializedTemplateParam() )
+	{
+		return MatchTemplateArgumentImpl( names_scope, type_template, specialized_template_param, given_arg, file_pos );
 	}
 
-	// If this is nothing special - process template parameter as regular expression.
-	auto mut global_function_context= CreateGlobalFunctionContext();
-	auto param_res= BuildExpressionCode( names_scope, global_function_context, param );
-
-	return MatchTemplateArgumentExpressions( names_scope, Synt::GetFilePos(param), param_res, given_arg );
+	halt;
 }
 
-fn CodeBuilder::MatchTemplateArgument(
+fn CodeBuilder::MatchTemplateArgumentImpl(
 	mut this,
 	NamesScopePtr& names_scope,
 	TypeTemplate& type_template,
-	Synt::ComplexName& param,
-	Value& given_arg ) : bool
+	TemplateSignatureParam::TemplateParam& template_param,
+	Value& given_arg,
+	FilePos& file_pos ) : bool
 {
-	if( !param.name.empty() && param.tail.empty() )
+	auto& param_name= type_template.params[template_param.index].name;
+	auto template_arg_value= names_scope.lock_imut().get_ref().GetThisScopeValue( param_name ).get_ref();
+	auto template_arg_ptr= template_arg_value.Get</TemplateArg/>();
+
+	auto mut template_arg_lock= template_arg_ptr.lock_mut();
+	auto &mut template_arg= template_arg_lock.get_ref();
+
+	auto& param_type= type_template.params[template_param.index].t;
+	if( !param_type.empty() )
 	{
-		if_var( result_name : names_scope.lock_imut().get_ref().GetThisScopeValue( param.name ) )
+		// Value param
+		if_var( &given_variable : given_arg.get</Variable/>() )
 		{
-			auto template_arg_ptr= result_name.Get</TemplateArg/>();
-			if( !template_arg_ptr.empty() )
+			if( !TypeIsValidForTemplateVariableArgument( given_variable.t ) )
 			{
-				auto mut template_arg_lock= template_arg_ptr.lock_mut();
-				auto &mut template_arg= template_arg_lock.get_ref();
+				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, file_pos, given_variable.t )
+				return false;
+			}
+			if( given_variable.constexpr_value == LLVMValueRef::Null )
+			{
+				REPORT_ERROR( ExpectedConstantExpression, names_scope, file_pos )
+				return false;
+			}
 
-				auto& value_param_type_name= type_template.syntax_element.get_ref().params[ template_arg.index ].t;
-				if( value_param_type_name.get</Synt::EmptyVariant/>().empty() )
+			if( !MatchTemplateArgument( names_scope, type_template, param_type.get_ref(), given_variable.t, file_pos ) )
+			{
+				return false;
+			}
+
+			if( !template_arg.something.get</TemplateArg::NotKnownYet/>().empty() )
+			{
+				var NamesScopeVariable mut out_var
 				{
-					// Value param
-					if_var( &given_variable : given_arg.get</Variable/>() )
-					{
-						if( !TypeIsValidForTemplateVariableArgument( given_variable.t ) )
-						{
-							REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, param.file_pos, given_variable.t )
-							return false;
-						}
-						if( given_variable.constexpr_value == LLVMValueRef::Null )
-						{
-							REPORT_ERROR( ExpectedConstantExpression, names_scope, param.file_pos )
-							return false;
-						}
-
-						if( !MatchTemplateArgument( names_scope, type_template, value_param_type_name, given_variable.t ) )
-						{
-							return false;
-						}
-						if( !template_arg.something.get</TemplateArg::NotKnownYet/>().empty() )
-						{
-							var NamesScopeVariable mut out_var
-							{
-								.t= given_variable.t,
-								.constexpr_value= given_variable.constexpr_value,
-							};
-							unsafe
-							{
-								out_var.llvm_value= LLVMAddGlobal( module_, out_var.t.GetLLVMType(), (param.name + "\0").front() );
-								LLVMSetLinkage( out_var.llvm_value, LLVMLinkage::Internal );
-								LLVMSetGlobalConstant( out_var.llvm_value, LLVMBool::True );
-								LLVMSetInitializer( out_var.llvm_value, out_var.constexpr_value );
-							}
-
-							template_arg.something= move(out_var);
-							return true;
-						}
-					}
+					.t= given_variable.t,
+					.constexpr_value= given_variable.constexpr_value,
+				};
+				unsafe
+				{
+					out_var.llvm_value= LLVMAddGlobal( module_, out_var.t.GetLLVMType(), ( param_name + "\0" ).front() );
+					LLVMSetLinkage( out_var.llvm_value, LLVMLinkage::Internal );
+					LLVMSetGlobalConstant( out_var.llvm_value, LLVMBool::True );
+					LLVMSetInitializer( out_var.llvm_value, out_var.constexpr_value );
 				}
-				else
+
+				template_arg.something= move(out_var);
+				return true;
+			}
+			if_var( &v : template_arg.something.get</NamesScopeVariable/>() )
+			{
+				if( given_variable.t != v.t )
 				{
-					// Type param
-					if_var( &given_type : given_arg.get</Type/>() )
-					{
-						if( !template_arg.something.get</TemplateArg::NotKnownYet/>().empty() )
-						{
-							template_arg.something= given_type;
-							return true;
-						}
-					}
+					return false;
+				}
+
+				if( given_variable.constexpr_value == LLVMValueRef::Null || v.constexpr_value == LLVMValueRef::Null )
+				{
+					REPORT_ERROR( ExpectedConstantExpression, names_scope, file_pos )
+					return false;
+				}
+
+				unsafe
+				{
+					return
+						LLVMConstIntGetZExtValue( given_variable.constexpr_value ) ==
+						LLVMConstIntGetZExtValue( v.constexpr_value );
 				}
 			}
 		}
 	}
+	else
+	{
+		// Type param
+		if_var( &given_type : given_arg.get</Type/>() )
+		{
+			if( !template_arg.something.get</TemplateArg::NotKnownYet/>().empty() )
+			{
+				template_arg.something= given_type;
+				return true;
+			}
+			if_var( &t : template_arg.something.get</Type/>() )
+			{
+				return given_type == t;
+			}
+		}
+	}
 
-	auto mut global_function_context= CreateGlobalFunctionContext();
+	return false;
+}
 
+fn CodeBuilder::MatchTemplateArgumentImpl(
+	mut this,
+	NamesScopePtr& names_scope,
+	TypeTemplate& type_template,
+	TemplateSignatureParam::TypeParam& type_param,
+	Value& given_arg,
+	FilePos& file_pos ) : bool
+{
 	if_var( &given_type : given_arg.get</Type/>() )
 	{
-		if_var( &class_type : given_type.GetClassType() )
-		{
-			auto class_type_lock= class_type.lock_imut();
-			if_var( &base_template : class_type_lock.get_ref().base_template )
-			{
-				if( !param.tail.empty() )
-				{
-					if_var( &template_args_ptr : param.tail.back().get</ ust::box</ Synt::TemplateArgs /> />() )
-					{
-						auto& template_args= template_args_ptr.get_ref();
-
-						auto value= ResolveValue( names_scope, global_function_context, param, true );
-						if_var( &type_templates_set_ptr : value.get</ ust::shared_ptr_imut</ TypeTemplatesSet /> />() )
-						{
-							auto type_templates_set_lock= type_templates_set_ptr.lock_imut();
-							foreach( &type_template_ptr : type_templates_set_lock.get_ref().type_templates )
-							{
-								if( type_template_ptr != base_template.class_template )
-								{
-									continue; // Ok - different template
-								}
-								if( template_args.size() < base_template.class_template.get_ref().first_default_param ||
-									template_args.size() > base_template.signature_args.size() )
-								{
-									return false;
-								}
-
-								for( auto mut i= 0s; i < template_args.size(); ++i )
-								{
-									var Value mut val;
-									if_var( &v : base_template.signature_args[i].get</Variable/>() )
-									{
-										val= v;
-									}
-									if_var( &t : base_template.signature_args[i].get</Type/>() )
-									{
-										val= t;
-									}
-
-									if( !MatchTemplateArgument( names_scope, type_template, template_args[i], val ) )
-									{
-										return false;
-									}
-								}
-
-								return true; // Ok - perfect match
-							}
-						}
-					}
-				}
-			}
-		}
+		return type_param.t == given_type;
 	}
-
-	// If this is nothing special - process template parameter as regular expression.
-	auto param_res= BuildExpressionCode( names_scope, global_function_context, param );
-
-	return MatchTemplateArgumentExpressions( names_scope, param.file_pos, param_res, given_arg );
+	return false;
 }
 
-fn CodeBuilder::MatchTemplateArgument(
+fn CodeBuilder::MatchTemplateArgumentImpl(
 	mut this,
 	NamesScopePtr& names_scope,
 	TypeTemplate& type_template,
-	Synt::ArrayType& param,
-	Value& given_arg ) : bool
+	TemplateSignatureParam::VariableParam& variable_param,
+	Value& given_arg,
+	FilePos& file_pos ) : bool
+{
+	if_var( &given_variable : given_arg.get</Variable/>() )
+	{
+		if( given_variable.t != variable_param.v.t )
+		{
+			return false;
+		}
+
+		if( given_variable.constexpr_value == LLVMValueRef::Null || variable_param.v.constexpr_value == LLVMValueRef::Null )
+		{
+			REPORT_ERROR( ExpectedConstantExpression, names_scope, file_pos )
+			return false;
+		}
+
+		unsafe
+		{
+			return
+				LLVMConstIntGetZExtValue( given_variable.constexpr_value ) ==
+				LLVMConstIntGetZExtValue( variable_param.v.constexpr_value );
+		}
+	}
+
+	return false;
+}
+
+fn CodeBuilder::MatchTemplateArgumentImpl(
+	mut this,
+	NamesScopePtr& names_scope,
+	TypeTemplate& type_template,
+	TemplateSignatureParam::ArrayTypeParam& array_type_param,
+	Value& given_arg,
+	FilePos& file_pos ) : bool
 {
 	if_var( &given_type : given_arg.get</Type/>() )
 	{
 		if_var( &given_array_type : given_type.GetArrayType() )
 		{
-			if( !MatchTemplateArgument( names_scope, type_template, param.element_type, given_array_type.element_type.get_ref() ) )
+			if( !MatchTemplateArgument( names_scope, type_template, array_type_param.element_type, given_array_type.element_type.get_ref(), file_pos ) )
 			{
 				return false;
 			}
@@ -653,24 +820,23 @@ fn CodeBuilder::MatchTemplateArgument(
 				size_var.llvm_value= size_var.constexpr_value;
 			}
 
-			if( !MatchTemplateArgument( names_scope, type_template, param.element_count, move(size_var) ) )
+			if( !MatchTemplateArgument( names_scope, type_template, array_type_param.element_count, move(size_var), file_pos ) )
 			{
 				return false;
 			}
 			return true;
 		}
-		return false;
 	}
-
 	return false;
 }
 
-fn CodeBuilder::MatchTemplateArgument(
+fn CodeBuilder::MatchTemplateArgumentImpl(
 	mut this,
 	NamesScopePtr& names_scope,
 	TypeTemplate& type_template,
-	Synt::FunctionType& param,
-	Value& given_arg ) : bool
+	TemplateSignatureParam::FunctionTypeParam& function_type_param,
+	Value& given_arg,
+	FilePos& file_pos ) : bool
 {
 	if_var( &given_type : given_arg.get</Type/>() )
 	{
@@ -678,125 +844,99 @@ fn CodeBuilder::MatchTemplateArgument(
 		{
 			var FunctionType given_function_type= given_function_pointer_type.function_type;
 
-			if( given_function_type.is_unsafe != param.is_unsafe )
+			if( given_function_type.return_value_is_mutable != function_type_param.return_value_is_mutable ||
+				given_function_type.return_value_is_reference != function_type_param.return_value_is_reference ||
+				given_function_type.is_unsafe != function_type_param.is_unsafe )
 			{
 				return false;
 			}
 
-			// Return value
-			if( param.return_type.empty() )
-			{
-				// No return value/reference
-				if( !( given_function_type.return_type.get_ref() == void_type_for_ret_ && !given_function_type.return_value_is_reference ) )
-				{
-					return false;
-				}
-			}
-			else
-			{
-				auto ret_is_reference= param.return_value_reference_modifier == Synt::ReferenceModifier::Reference;
-				auto ret_is_mutable= param.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable;
-				if( ret_is_reference != given_function_type.return_value_is_reference ||
-					ret_is_mutable != given_function_type.return_value_is_mutable )
-				{
-					return false;
-				}
-				if( !MatchTemplateArgument( names_scope, type_template, param.return_type.get_ref(), given_function_type.return_type.get_ref() ) )
-				{
-					return false;
-				}
-			}
-
-			// Params
-			if( param.args.size() != given_function_type.args.size() )
+			if( !MatchTemplateArgument( names_scope, type_template, function_type_param.return_type, given_function_type.return_type.get_ref(), file_pos ) )
 			{
 				return false;
 			}
 
-			for( auto mut i= 0s; i < param.args.size(); ++i )
+			if( given_function_type.args.size() != function_type_param.params.size() )
 			{
-				auto& param_arg= param.args[i];
+				return false;
+			}
+
+			for( auto mut i= 0s; i < function_type_param.params.size(); ++i )
+			{
+				auto& expected_param= function_type_param.params[i];
 				auto& given_arg= given_function_type.args[i];
 
-				auto is_reference= param_arg.reference_modifier == Synt::ReferenceModifier::Reference;
-				auto is_mutable= param_arg.mutability_modifier == Synt::MutabilityModifier::Mutable;
-
-				if( is_reference != given_arg.is_reference || is_mutable != given_arg.is_mutable )
+				if( expected_param.is_mutable != given_arg.is_mutable ||
+					expected_param.is_reference != given_arg.is_reference )
 				{
 					return false;
 				}
-				if( !MatchTemplateArgument( names_scope, type_template, param_arg.arg_type, given_arg.arg_type.get_ref() ) )
+				if( !MatchTemplateArgument( names_scope, type_template, expected_param.t, given_arg.arg_type.get_ref(), file_pos ) )
 				{
 					return false;
 				}
 			}
 
-			return true; // Finally, we did it.
+			return true;
 		}
 	}
+
 	return false;
 }
 
-fn CodeBuilder::MatchTemplateArgument(
+fn CodeBuilder::MatchTemplateArgumentImpl(
 	mut this,
 	NamesScopePtr& names_scope,
 	TypeTemplate& type_template,
-	Synt::TypeName& param,
-	Value& given_arg ) : bool
+	TemplateSignatureParam::SpecializedTemplateParam& specialized_template_param,
+	Value& given_arg,
+	FilePos& file_pos ) : bool
 {
-	if_var( &complex_name : param.get</ Synt::ComplexName />() )
+	if_var( &given_type : given_arg.get</Type/>() )
 	{
-		return MatchTemplateArgument( names_scope, type_template, complex_name, given_arg );
-	}
-	if_var( &array_type : param.get</ ust::box</ Synt::ArrayType /> />() )
-	{
-		return MatchTemplateArgument( names_scope, type_template, array_type.get_ref(), given_arg );
-	}
-	if_var( &function_type : param.get</ ust::box</ Synt::FunctionType /> />() )
-	{
-		return MatchTemplateArgument( names_scope, type_template, function_type.get_ref(), given_arg );
-	}
-	return false;
-}
-
-fn CodeBuilder::MatchTemplateArgumentExpressions(
-	mut this,
-	NamesScopePtr& names_scope,
-	FilePos& file_pos,
-	Value& param,
-	Value& arg ) : bool
-{
-	if_var( &given_type : arg.get</Type/>() )
-	{
-		if_var( &param_type : param.get</Type/>() )
+		if_var( &class_type : given_type.GetClassType() )
 		{
-			return given_type == param_type;
-		}
-	}
-
-	if_var( &given_variable : arg.get</Variable/>() )
-	{
-		if_var( &param_variable : param.get</Variable/>() )
-		{
-			if( given_variable.t != param_variable.t )
+			auto class_type_lock= class_type.lock_imut();
+			if_var( &base_template : class_type_lock.get_ref().base_template )
 			{
-				return false;
-			}
+				auto mut is_one_of_templates= false;
+				foreach( &type_template_ptr : specialized_template_param.type_templates_set.lock_imut().get_ref().type_templates )
+				{
+					if( base_template.class_template == type_template_ptr )
+					{
+						is_one_of_templates= true;
+						break;
+					}
+				}
 
-			if( !TypeIsValidForTemplateVariableArgument( given_variable.t ) )
-			{
-				return false;
-			}
+				if( !is_one_of_templates )
+				{
+					return false;
+				}
 
-			if( given_variable.constexpr_value == LLVMValueRef::Null || param_variable.constexpr_value == LLVMValueRef::Null )
-			{
-				REPORT_ERROR( ExpectedConstantExpression, names_scope, file_pos )
-				return false;
-			}
+				if( base_template.signature_args.size() != specialized_template_param.params.size() )
+				{
+					return false;
+				}
+				for( auto mut i= 0s; i < specialized_template_param.params.size(); ++i )
+				{
+					var Value mut val;
+					if_var( &v : base_template.signature_args[i].get</Variable/>() )
+					{
+						val= v;
+					}
+					if_var( &t : base_template.signature_args[i].get</Type/>() )
+					{
+						val= t;
+					}
 
-			unsafe
-			{
-				return LLVMConstIntGetZExtValue( given_variable.constexpr_value ) == LLVMConstIntGetZExtValue( param_variable.constexpr_value );
+					if( !MatchTemplateArgument( names_scope, type_template, specialized_template_param.params[i], val, file_pos ) )
+					{
+						return false;
+					}
+				}
+
+				return true;
 			}
 		}
 	}

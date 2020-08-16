@@ -29,9 +29,14 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 
 fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::ArrayType/>& array_type ) : Type
 {
+	return PrepareType( names_scope, function_context, array_type.get_ref() );
+}
+
+fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ArrayType& array_type ) : Type
+{
 	var ArrayType mut out_array_type
 	{
-		.element_type( PrepareType( names_scope, function_context, array_type.get_ref().element_type ) )
+		.element_type( PrepareType( names_scope, function_context, array_type.element_type ) )
 	};
 
 	var Variable mut index_variable;
@@ -40,7 +45,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
 		auto instructions_state= SaveInstructionsState( function_context );
-		index_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, array_type.get_ref().element_count );
+		index_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, array_type.element_count );
 		RestoreInstructionsState( function_context, instructions_state );
 	}
 
@@ -56,12 +61,12 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 		}
 		else
 		{
-			REPORT_ERROR( ArraySizeIsNotInteger, names_scope, array_type.get_ref().file_pos )
+			REPORT_ERROR( ArraySizeIsNotInteger, names_scope, array_type.file_pos )
 		}
 	}
 	else
 	{
-		REPORT_ERROR( ExpectedConstantExpression, names_scope, array_type.get_ref().file_pos )
+		REPORT_ERROR( ExpectedConstantExpression, names_scope, array_type.file_pos )
 	}
 
 	unsafe{ out_array_type.llvm_type= LLVMArrayType( out_array_type.element_type.get_ref().GetLLVMType(), u32(out_array_type.element_count) ); }

@@ -38,6 +38,7 @@ bool FilterTest( const std::string& test_name )
 {
 	static const std::unordered_set<std::string> c_test_to_enable
 	{
+		"ArrayAsClassTemplateParameter_Test0",
 		"BracketExpressionAsTemplateSignatureParameter_Test0",
 		"ClassBodyDuplicationTest0",
 		"ClassmethodsManglingTest",
@@ -76,7 +77,6 @@ bool FilterTest( const std::string& test_name )
 		"FunctionTypesMangling_Test0",
 		"FundamentalTypesManglingTest",
 		"GlobalVariablesManglingTest0",
-		//"InvalidTypeOfTemplateVariableArgumentTest0",
 		"ImportsTest0",
 		"ImportsTest1_FunctionPrototypeInOneFileAndBodyInAnother",
 		"ImportsTest2_FunctionsWithDifferentSignaturesInDifferentFiles",
@@ -92,7 +92,7 @@ bool FilterTest( const std::string& test_name )
 		"ImportsTest12_MultipleImportOfSameGeneratedTemplateClass",
 		"ImportsTest13_MultipleImportOfSameGeneratedTemplateClassInsideTemplateClass",
 		"ImportsTest16_NewSymbolsNotVisibleInImportedClassTemplate",
-		"InvalidValueAsTemplateArgumentTest0",
+		"LazyClassFunctionsBuild_Test0",
 		"MandatoryTemplateSignatureArgumentAfterOptionalArgument_Test0",
 		"NameNotFound_ForClassTemplateArguments_Test0",
 		"NameNotFound_ForClassTemplateDefaultSignatureArguments_Test0",
@@ -100,7 +100,6 @@ bool FilterTest( const std::string& test_name )
 		"NamespacesManglingTest",
 		"OperatorsManglingTest",
 		"Redefinition_ForClassDeclarations_Test0",
-		"TemplateInstantiationRequiredTest0",
 		"ValueIsNotTemplateTest0",
 	};
 
@@ -119,6 +118,7 @@ bool FilterTest( const std::string& test_name )
 		"BasicReferenceInsideClassUsage",
 		"BreakOutsideLoopTest",
 		"ClassesDeclarationTest",
+		"ClassTemplateInsideClass",
 		"ClassTemplateTest",
 		"ConstructorInitializerForFundamentalTypesTest",
 		"ConstructorInitializerForReferencesTest0",
@@ -169,6 +169,8 @@ bool FilterTest( const std::string& test_name )
 		"InnerClassTest0",
 		"InnerClassTest1",
 		"InnerClassTest2",
+		"InvalidTypeOfTemplateVariableArgumentTest",
+		"InvalidValueAsTemplateArgumentTest",
 		"MethodsCallInConstructorInitializerListIsForbiddenTest0",
 		"MultipleMutableReferencesInside",
 		"MultipleReferencesInside",
@@ -194,6 +196,7 @@ bool FilterTest( const std::string& test_name )
 		"StructNamedInitializersTest",
 		"TemplateArgumentIsNotDeducedYet",
 		"TemplateArgumentNotUsedInSignature",
+		"TemplateInstantiationRequiredTest",
 		"TemplateParametersDeductionFailed",
 		"ThiscallMismatch_Test0",
 		"ThisUnavailable_InConstructors_Test",
