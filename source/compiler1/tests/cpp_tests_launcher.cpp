@@ -38,6 +38,7 @@ bool FilterTest( const std::string& test_name )
 {
 	static const std::unordered_set<std::string> c_test_to_enable
 	{
+		"ArrayAsClassTemplateParameter_Test0",
 		"BracketExpressionAsTemplateSignatureParameter_Test0",
 		"ClassBodyDuplicationTest0",
 		"ClassmethodsManglingTest",
@@ -93,6 +94,7 @@ bool FilterTest( const std::string& test_name )
 		"ImportsTest13_MultipleImportOfSameGeneratedTemplateClassInsideTemplateClass",
 		"ImportsTest16_NewSymbolsNotVisibleInImportedClassTemplate",
 		"InvalidValueAsTemplateArgumentTest0",
+		"LazyClassFunctionsBuild_Test0",
 		"MandatoryTemplateSignatureArgumentAfterOptionalArgument_Test0",
 		"NameNotFound_ForClassTemplateArguments_Test0",
 		"NameNotFound_ForClassTemplateDefaultSignatureArguments_Test0",
@@ -119,6 +121,7 @@ bool FilterTest( const std::string& test_name )
 		"BasicReferenceInsideClassUsage",
 		"BreakOutsideLoopTest",
 		"ClassesDeclarationTest",
+		"ClassTemplateInsideClass",
 		"ClassTemplateTest",
 		"ConstructorInitializerForFundamentalTypesTest",
 		"ConstructorInitializerForReferencesTest0",
