@@ -381,13 +381,31 @@ fn CodeBuilder::GenTemplateType(
 	}
 
 	// TODO - select more specialized type template here.
-	if( candidate_type_templates.size() != 1s )
+
+	if( candidate_type_templates.empty() )
 	{
 		REPORT_ERROR( TemplateParametersDeductionFailed, args_names_scope, template_instantiation_file_pos )
 		return ust::optional</Type/>();
 	}
+	if( candidate_type_templates.size() == 1s )
+	{
+		return FinishTypeTemplateGeneration( candidate_type_templates.front() );
+	}
 
-	return FinishTypeTemplateGeneration( candidate_type_templates.front() );
+	var ust::vector</TypeTemplatePtr/> mut templates_for_check;
+	foreach( &candidate : candidate_type_templates )
+	{
+		templates_for_check.push_back( candidate.type_template );
+	}
+
+	auto index= SelectMoreSpecializedTemplate( templates_for_check.range(), template_args.size() );
+	if( index == ~0s )
+	{
+		REPORT_ERROR( CouldNotSelectMoreSpicializedTypeTemplate, args_names_scope, template_instantiation_file_pos )
+		return ust::optional</Type/>();
+	}
+
+	return FinishTypeTemplateGeneration( candidate_type_templates[index] );
 }
 
 fn CodeBuilder::EvaluateTemplateTypeArgs(

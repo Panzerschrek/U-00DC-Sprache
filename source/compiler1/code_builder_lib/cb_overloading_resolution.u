@@ -67,6 +67,166 @@ fn CompareConversions(
 	return CompareConversionsMutability( src, dst_left, dst_right );
 }
 
+
+fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignatureParam& r ) : ConversionsCompareResult
+{
+	if( !l.GetTemplateParam().empty() )
+	{
+		if( !r.GetTemplateParam().empty() )
+		{
+			return ConversionsCompareResult::Same;
+		}
+		if( !r.GetTypeParam().empty() ||
+			!r.GetVariableParam().empty() ||
+			!r.GetArrayTypeParam().empty() ||
+			!r.GetFunctionTypeParam().empty() ||
+			!r.GetSpecializedTemplateParam().empty() )
+		{
+			return ConversionsCompareResult::RightIsBetter;
+		}
+	}
+	if( !l.GetTypeParam().empty() )
+	{
+		if( !r.GetTemplateParam().empty() )
+		{
+			return ConversionsCompareResult::LeftIsBetter; // Concrete type is better, then template parameter.
+		}
+		if( !r.GetTypeParam().empty() )
+		{
+			return ConversionsCompareResult::Same;
+		}
+		if( !r.GetArrayTypeParam().empty() ||
+			!r.GetFunctionTypeParam().empty() ||
+			!r.GetSpecializedTemplateParam().empty() )
+		{
+			return ConversionsCompareResult::LeftIsBetter;
+		}
+	}
+	if( !l.GetVariableParam().empty() )
+	{
+		if( !r.GetTemplateParam().empty() )
+		{
+			return ConversionsCompareResult::LeftIsBetter; // Concrete variable is better, then template parameter.
+		}
+		if( !r.GetVariableParam().empty() )
+		{
+			return ConversionsCompareResult::Same;
+		}
+	}
+	if_var( &l_array_type : l.GetArrayTypeParam() )
+	{
+		if( !r.GetTemplateParam().empty() )
+		{
+			return ConversionsCompareResult::LeftIsBetter; // Array type is more specialized, then template parameter.
+		}
+		if( !r.GetTypeParam().empty() )
+		{
+			return ConversionsCompareResult::RightIsBetter; // Concrete type is better, then array type.
+		}
+		if_var( &r_array_type : r.GetArrayTypeParam() )
+		{
+			auto type_compare_result= CompareTemplateSpecialization( l_array_type.element_type, r_array_type.element_type );
+			auto count_compare_result= CompareTemplateSpecialization( l_array_type.element_count, r_array_type.element_count );
+			if( type_compare_result == ConversionsCompareResult::Incomparable || count_compare_result == ConversionsCompareResult::Incomparable )
+			{
+				return ConversionsCompareResult::Incomparable;
+			}
+			if( type_compare_result == ConversionsCompareResult::Same )
+			{
+				return count_compare_result;
+			}
+			if( count_compare_result == ConversionsCompareResult::Same )
+			{
+				return type_compare_result;
+			}
+			if( type_compare_result == count_compare_result )
+			{
+				return type_compare_result;
+			}
+			return ConversionsCompareResult::Incomparable;
+		}
+	}
+	if_var( &l_function_type : l.GetFunctionTypeParam() )
+	{
+		if( !r.GetTemplateParam().empty() )
+		{
+			return ConversionsCompareResult::LeftIsBetter; // Function type is more specialized, then template parameter.
+		}
+		if( !r.GetTypeParam().empty() )
+		{
+			return ConversionsCompareResult::RightIsBetter; // Concrete type is better, then function type.
+		}
+		if_var( &r_function_type : r.GetFunctionTypeParam() )
+		{
+			halt if( l_function_type.params.size() != r_function_type.params.size() );
+
+			auto mut result= CompareTemplateSpecialization( l_function_type.return_type, r_function_type.return_type );
+			for( auto mut i= 0s; i < l_function_type.params.size(); ++i )
+			{
+				auto param_result= CompareTemplateSpecialization( l_function_type.params[i].t, r_function_type.params[i].t );
+				if( param_result == ConversionsCompareResult::Incomparable )
+				{
+					return ConversionsCompareResult::Incomparable;
+				}
+
+				if( param_result == ConversionsCompareResult::Same )
+				{}
+				else if( result == ConversionsCompareResult::Same )
+				{
+					result= param_result;
+				}
+				else if( result != param_result )
+				{
+					return ConversionsCompareResult::Incomparable;
+				}
+			}
+			return result;
+		}
+	}
+	if_var( &l_specialized_template : l.GetSpecializedTemplateParam() )
+	{
+		if( !r.GetTemplateParam().empty() )
+		{
+			return ConversionsCompareResult::LeftIsBetter; // Specialized template is more specialized, then template parameter.
+		}
+		if( !r.GetTypeParam().empty() )
+		{
+			return ConversionsCompareResult::RightIsBetter; // Concrete type is better, then Specialized template.
+		}
+		if_var( &r_specialized_template : r.GetSpecializedTemplateParam() )
+		{
+			if( l_specialized_template.params.size() != r_specialized_template.params.size() )
+			{
+				return ConversionsCompareResult::Incomparable;
+			}
+
+			auto mut result= ConversionsCompareResult::Same;
+			for( auto mut i= 0s; i < l_specialized_template.params.size(); ++i )
+			{
+				auto param_result= CompareTemplateSpecialization( l_specialized_template.params[i], r_specialized_template.params[i] );
+				if( param_result == ConversionsCompareResult::Incomparable )
+				{
+					return ConversionsCompareResult::Incomparable;
+				}
+
+				if( param_result == ConversionsCompareResult::Same )
+				{}
+				else if( result == ConversionsCompareResult::Same )
+				{
+					result= param_result;
+				}
+				else if( result != param_result )
+				{
+					return ConversionsCompareResult::Incomparable;
+				}
+			}
+			return result;
+		}
+	}
+
+	halt; // Unhandled combination of template signature parameter kinds.
+}
+
 fn CodeBuilder::ApplyOverloadedFunction(
 	FunctionsSet &mut functions_set,
 	FunctionVariable mut function,
@@ -342,6 +502,80 @@ fn CodeBuilder::GetOverloadedOperator(
 	}
 
 	return ust::optional</FunctionVariable/>();
+}
+
+fn CodeBuilder::SelectMoreSpecializedTemplate(
+	mut this,
+	ust::array_view_imut</TypeTemplatePtr/> type_templates,
+	size_type signature_args_to_check ) : size_type
+{
+	if( type_templates.empty() )
+	{
+		return ~0s;
+	}
+
+	if( type_templates.size() == 1s )
+	{
+		return 0s;
+	}
+
+	var ust::vector</bool/> mut best_templates;
+	best_templates.resize( type_templates.size(), true );
+
+	for( auto mut arg_n= 0s; arg_n < signature_args_to_check; ++arg_n )
+	{
+		foreach( &candidate_l : type_templates )
+		{
+			auto mut is_best_template_for_current_arg= true;
+			foreach( &candidate_r : type_templates )
+			{
+				auto comp= CompareTemplateSpecialization(
+					candidate_l.get_ref().signature_params[arg_n],
+					candidate_r.get_ref().signature_params[arg_n] );
+				if( comp == ConversionsCompareResult::Incomparable || comp == ConversionsCompareResult::RightIsBetter )
+				{
+					is_best_template_for_current_arg= false;
+					break;
+				}
+			}
+
+			if( !is_best_template_for_current_arg )
+			{
+				continue;
+			}
+
+			for( auto mut index_r= 0s; index_r < type_templates.size(); ++index_r )
+			{
+				auto& candidate_r= type_templates[index_r];
+				auto comp= CompareTemplateSpecialization(
+					candidate_l.get_ref().signature_params[arg_n],
+					candidate_r.get_ref().signature_params[arg_n] );
+
+				if( comp != ConversionsCompareResult::Same )
+				{
+					best_templates[index_r]= false;
+				}
+			}
+		}
+	}
+
+	auto mut selected_template= ~0s;
+	for( auto mut i= 0s; i < type_templates.size(); ++i )
+	{
+		if( best_templates[i] )
+		{
+			if( selected_template == ~0s )
+			{
+				selected_template= i;
+			}
+			else
+			{
+				return ~0s;
+			}
+		}
+	}
+
+	return selected_template;
 }
 
 } // namespace U

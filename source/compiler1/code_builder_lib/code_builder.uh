@@ -448,6 +448,14 @@ private:
 		NamesScopePtr& names_scope, // Needed only for errors reporting
 		FilePos& file_pos ) : ust::optional</FunctionVariable/>;
 
+	// Returns index of more specialized or ~0s
+	fn SelectMoreSpecializedTemplate(
+		mut this,
+		ust::array_view_imut</TypeTemplatePtr/> type_templates,
+		size_type signature_args_to_check ) : size_type;
+
+	// Methods generation
+
 	fn TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_type );
 	fn TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type );
 	fn TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class_type );
