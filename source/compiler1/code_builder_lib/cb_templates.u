@@ -681,6 +681,102 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 	halt; // Unhandled type template kind.
 }
 
+fn CodeBuilder::GenTemplateFunction(
+	mut this,
+	FunctionTemplatePtr& function_template_ptr,
+	ust::array_view_imut</FunctionType::Arg/> args,
+	FilePos& file_pos ) : ust::optional</FunctionVariable/>
+{
+	var FunctionTemplate& function_template= function_template_ptr.get_ref();
+
+	var Synt::FunctionTemplate& template_syntax_element= function_template.syntax_element.get_ref();
+	var Synt::Function& function_syntax_element= template_syntax_element.function.get_ref();
+	if( args.size() != function_syntax_element.function_type.args.size() )
+	{
+		return ust::optional</FunctionVariable/>();
+	}
+
+	var NamesScopePtr names_scope= ust::to_non_nullable( function_template.parent_names_scope.lock() ); // Parent namespace of type template
+	var NamesScopeMutPtr result_names_scope( NamesScope( "", names_scope ) ); // Where we place template arguments
+
+	{
+		auto mut result_names_scope_lock= result_names_scope.lock_mut();
+		for( auto mut i= 0s; i < function_template.params.size(); ++i )
+		{
+			var TemplateArg mut template_arg{ .index= i };
+			result_names_scope_lock.get_ref().AddName( function_template.params[i].name, move(template_arg) );
+		}
+	}
+
+	auto mut all_ok= true;
+	var TemplateArgsFinished mut result_signature_template_args;
+
+	for( auto mut i= 0s; i < args.size(); ++i )
+	{
+		var Synt::FunctionType::Arg& param= function_syntax_element.function_type.args[i];
+		var FunctionType::Arg& arg= args[i];
+
+		auto param_is_mutable_reference=
+			param.mutability_modifier == Synt::MutabilityModifier::Mutable &&
+			param.reference_modifier == Synt::ReferenceModifier::Reference;
+		if( param_is_mutable_reference && !arg.is_mutable )
+		{
+			return ust::optional</FunctionVariable/>();
+		}
+
+		// TODO - process here reference conversion and type conversion before "MatchTemplateArgument" call.
+
+		all_ok&= MatchTemplateArgument( result_names_scope, function_template, function_template.signature_params[i], arg.arg_type.get_ref(), file_pos );
+
+		result_signature_template_args.push_back( arg.arg_type.get_ref() );
+	}
+
+	if( !all_ok )
+	{
+		return ust::optional</FunctionVariable/>();
+	}
+
+	// TODO - check correctness of template key.
+	auto template_key=
+		ust::to_string8( ust::ref_to_int( function_template_ptr.get_ref() ) ) +
+		MangleTemplateArgs( result_signature_template_args );
+
+	auto& function_name= function_syntax_element.name.back();
+	if_var( prev_names_scope : generated_template_things_.find( template_key ) )
+	{
+		auto namespace_value= prev_names_scope.lock_imut().get_ref().GetThisScopeValue( function_name ).get_ref();
+
+		auto functions_set_ptr= namespace_value.Get</NamesScopeFunctionsSet/>();
+		auto functions_set_lock= functions_set_ptr.lock_imut();
+		auto & functions_set= functions_set_lock.get_ref();
+
+		if( functions_set.functions_set.functions.size() == 1s )
+		{
+			return functions_set.functions_set.functions.front();
+		}
+
+		return ust::optional</FunctionVariable/>();
+	}
+	generated_template_things_.insert( template_key, result_names_scope );
+
+	// TODO - pass also base class.
+	NamesScopeFill( result_names_scope, template_syntax_element.function );
+	auto result_namespace_value= result_names_scope.lock_imut().get_ref().GetThisScopeValue( function_name ).get_ref();
+
+	auto result_functions_set_ptr= result_namespace_value.Get</NamesScopeFunctionsSet/>();
+	BuildFunctionsSet( result_names_scope, ust::to_non_nullable(result_functions_set_ptr), false );
+
+	auto mut functions_set_lock= result_functions_set_ptr.lock_mut();
+	auto &mut functions_set= functions_set_lock.get_ref();
+
+	if( functions_set.functions_set.functions.size() == 1s )
+	{
+		return functions_set.functions_set.functions.front();
+	}
+
+	return ust::optional</FunctionVariable/>();
+}
+
 fn CodeBuilder::MatchTemplateArgument(
 	mut this,
 	NamesScopePtr& names_scope,

@@ -373,6 +373,12 @@ private:
 		mut this,
 		TemplateTypeArgsEvaluationResult& template_args_evaluation_result ) : ust::optional</Type/>;
 
+	fn GenTemplateFunction(
+		mut this,
+		FunctionTemplatePtr& function_template_ptr,
+		ust::array_view_imut</FunctionType::Arg/> args,
+		FilePos& file_pos ) : ust::optional</FunctionVariable/>;
+
 	// Returns true if ok
 	fn MatchTemplateArgument(
 		mut this,
@@ -441,12 +447,13 @@ private:
 		FilePos& file_pos ) : bool;
 
 	fn GetOverloadedFunction(
+		mut this,
 		FunctionsSet &'x functions_set,
 		ust::array_view_imut</FunctionType::Arg/> actual_args,
 		bool first_actual_arg_is_this,
 		NamesScopePtr& names_scope, // Needed only for errors reporting
 		FilePos& file_pos,
-		bool produce_errors ) : ust::optional_ref</FunctionVariable, false/>'x';
+		bool produce_errors ) : ust::optional</FunctionVariable, false/>;
 
 	fn GetOverloadedOperator(
 		mut this,
