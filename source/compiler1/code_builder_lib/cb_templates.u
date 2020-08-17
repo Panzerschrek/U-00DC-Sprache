@@ -129,9 +129,9 @@ fn CodeBuilder::PrepareTypeTemplate(
 
 	var TypeTemplate mut type_template(
 		move(template_params),
+		move(signature_params),
 		names_scope,
 		type_template_syntax_element,
-		move(signature_params),
 		first_default_param );
 
 	// TODO - compare here signature parameters for duplicated type templates detection.
@@ -166,13 +166,24 @@ fn CodeBuilder::PrepareFunctionTemplate(
 		template_params.push_back( move(out_param) );
 	}
 
-	// Fill variable params types.
+	var ust::vector</ TemplateSignatureParam /> mut signature_params;
 	{
 		var ust::vector</bool/> mut template_params_usage_flags;
 		template_params_usage_flags.resize( template_params.size(), false );
 
 		auto mut global_function_context= CreateGlobalFunctionContext();
 
+		// Create signature params.
+		foreach( &param : syntax_element.function.get_ref().function_type.args )
+		{
+			if( param.name == KeywordToString( Keyword::this_ ) )
+			{ continue; } // TODO
+
+			signature_params.push_back(
+				CreateTemplateSignatureParam( names_scope, global_function_context, template_params, param.arg_type, template_params_usage_flags ) );
+		}
+
+		// Fill variable params types.
 		for( auto mut i= 0s; i < syntax_element.params.size(); ++i )
 		{
 			auto& template_param= syntax_element.params[i];
@@ -193,6 +204,7 @@ fn CodeBuilder::PrepareFunctionTemplate(
 
 	var FunctionTemplate mut function_template(
 		move(template_params),
+		move(signature_params),
 		names_scope,
 		function_template_syntax_element );
 
