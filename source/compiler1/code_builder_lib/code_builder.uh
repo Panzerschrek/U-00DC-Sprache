@@ -299,6 +299,11 @@ private:
 		ust::shared_ptr_final</Synt::TypeTemplate/>& type_template_syntax_element,
 		TypeTemplatesSet &mut out_templates_set );
 
+	fn PrepareFunctionTemplate(
+		mut this,
+		NamesScopePtr& names_scope,
+		ust::shared_ptr_final</Synt::FunctionTemplate/>& function_template_syntax_element ) : FunctionTemplatePtr;
+
 	fn CreateTemplateSignatureParam(
 		mut this,
 		NamesScopePtr& names_scope,

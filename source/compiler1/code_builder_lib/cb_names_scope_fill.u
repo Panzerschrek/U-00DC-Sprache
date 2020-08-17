@@ -88,7 +88,52 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::FunctionTemplate/>& function_template, ust::shared_ptr_nullable_mut</ClassType/>& class_type )
 {
-	//TODO
+	auto& func_name= function_template.get_ref().name;
+
+	if( func_name == KeywordToString( Keyword::constructor_ ) || func_name == KeywordToString( Keyword::destructor_ ) )
+	{
+		if( class_type.empty() )
+		{
+			REPORT_ERROR( ConstructorOrDestructorOutsideClass, names_scope_ptr, function_template.get_ref().file_pos )
+			return;
+		}
+	}
+	else if( IsKeyword( func_name ) )
+	{
+		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, function_template.get_ref().file_pos )
+		return;
+	}
+
+	if( function_template.get_ref().function.get_ref().name.size() > 1s )
+	{
+		// Only simple names allowed for function templates.
+		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope_ptr, function_template.get_ref().file_pos )
+		return;
+	}
+
+	auto mut names_scope_lock= names_scope_ptr.lock_mut();
+	auto& mut names_scope= names_scope_lock.get_ref();
+
+	if_var( &prev_name : names_scope.GetThisScopeValue( func_name ) )
+	{
+		auto prev_functions_set_ptr= prev_name.Get</ NamesScopeFunctionsSet />();
+		if( prev_functions_set_ptr.empty() )
+		{
+			REPORT_ERROR( Redefinition, names_scope_ptr, function_template.get_ref().file_pos )
+			return;
+		}
+
+		auto mut lock= prev_functions_set_ptr.lock_mut();
+		lock.get_ref().function_templates_syntax_elements.push_back( function_template );
+		return;
+	}
+
+	var NamesScopeFunctionsSet mut functions_set;
+
+	functions_set.class_= class_type;
+	functions_set.function_templates_syntax_elements.push_back( function_template );
+
+	names_scope.AddName( func_name, NamesScopeValue( move(functions_set) ) );
 }
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_ )

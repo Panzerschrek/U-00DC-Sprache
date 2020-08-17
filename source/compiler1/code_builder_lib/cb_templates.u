@@ -139,6 +139,66 @@ fn CodeBuilder::PrepareTypeTemplate(
 	out_templates_set.type_templates.push_back( TypeTemplatePtr( move(type_template) ) );
 }
 
+fn CodeBuilder::PrepareFunctionTemplate(
+	mut this,
+	NamesScopePtr& names_scope,
+	ust::shared_ptr_final</Synt::FunctionTemplate/>& function_template_syntax_element ) : FunctionTemplatePtr
+{
+	// TODO - remove copy-paste
+
+	auto& syntax_element= function_template_syntax_element.get_ref();
+
+	// Check for template params redefinition, fill params vector.
+	var ust::vector</ TemplateBase::Param /> mut template_params;
+	foreach( &param : syntax_element.params )
+	{
+		auto& name= param.name.get</Synt::ComplexName/>().get_ref().name;
+
+		foreach( &prev_param : template_params )
+		{
+			if( name == prev_param.name )
+			{
+				REPORT_ERROR( Redefinition, names_scope, Synt::GetFilePos( param.name ), name )
+			}
+		}
+
+		var TemplateBase::Param mut out_param{ .name= name };
+		template_params.push_back( move(out_param) );
+	}
+
+	// Fill variable params types.
+	{
+		var ust::vector</bool/> mut template_params_usage_flags;
+		template_params_usage_flags.resize( template_params.size(), false );
+
+		auto mut global_function_context= CreateGlobalFunctionContext();
+
+		for( auto mut i= 0s; i < syntax_element.params.size(); ++i )
+		{
+			auto& template_param= syntax_element.params[i];
+			if( template_param.t.get</Synt::EmptyVariant/>().empty() )
+			{
+				template_params[i].t=
+					CreateTemplateSignatureParam( names_scope, global_function_context, template_params, template_param.t, template_params_usage_flags );
+				if_var( &type_param : template_params[i].t.get_ref().GetTypeParam() )
+				{
+					if( !TypeIsValidForTemplateVariableArgument(type_param.t) )
+					{
+						REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope,  Synt::GetFilePos(template_param.t), type_param.t )
+					}
+				}
+			}
+		}
+	}
+
+	var FunctionTemplate mut function_template(
+		move(template_params),
+		names_scope,
+		function_template_syntax_element );
+
+	return FunctionTemplatePtr( move(function_template) );
+}
+
 fn CodeBuilder::CreateTemplateSignatureParam(
 	mut this,
 	NamesScopePtr& names_scope,

@@ -215,6 +215,7 @@ struct FunctionVariable
 struct FunctionsSet
 {
 	ust::vector</FunctionVariable/> functions;
+	ust::vector</FunctionTemplatePtr/> function_templates;
 }
 
 struct ThisMethodsSet
@@ -256,6 +257,7 @@ struct NamesScopeFunctionsSet
 	// Is incomplete, if there are some syntax elements in containers.
 	ust::vector</ ust::shared_ptr_final</ Synt::Function /> /> syntax_elements;
 	ust::vector</ ust::shared_ptr_final</ Synt::Function /> /> out_of_line_syntax_elements;
+	ust::vector</ ust::shared_ptr_final</ Synt::FunctionTemplate /> /> function_templates_syntax_elements;
 }
 
 struct ClassField
@@ -335,6 +337,23 @@ class TypeTemplate final : TemplateBase
 }
 
 type TypeTemplatePtr = ust::shared_ptr_final</TypeTemplate/>;
+
+class FunctionTemplate final : TemplateBase
+{
+	ust::shared_ptr_final</Synt::FunctionTemplate/> syntax_element;
+
+	fn constructor(
+		ust::vector</TemplateBase::Param/> mut in_params,
+		ust::weak_ptr_imut</NamesScope/> mut in_parent_names_scope,
+		ust::shared_ptr_final</Synt::FunctionTemplate/> mut in_syntax_element )
+		(
+			base( move(in_params), move(in_parent_names_scope) ),
+			syntax_element( move(in_syntax_element) ),
+		)
+	{}
+}
+
+type FunctionTemplatePtr= ust::shared_ptr_final</FunctionTemplate/>;
 
 struct TypeTemplatesSet
 {
