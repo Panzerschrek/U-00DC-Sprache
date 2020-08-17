@@ -348,15 +348,18 @@ type TypeTemplatePtr = ust::shared_ptr_final</TypeTemplate/>;
 class FunctionTemplate final : TemplateBase
 {
 	ust::shared_ptr_final</Synt::FunctionTemplate/> syntax_element;
+	ust::shared_ptr_nullable_mut</ClassType/> class_; // Non-empty for function set in struct/class.
 
 	fn constructor(
 		ust::vector</TemplateBase::Param/> mut in_params,
 		ust::vector</ TemplateSignatureParam /> mut in_signature_params,
 		ust::weak_ptr_imut</NamesScope/> mut in_parent_names_scope,
-		ust::shared_ptr_final</Synt::FunctionTemplate/> mut in_syntax_element )
+		ust::shared_ptr_final</Synt::FunctionTemplate/> mut in_syntax_element,
+		ust::shared_ptr_nullable_mut</ClassType/> mut in_class )
 		(
 			base( move(in_params), move(in_signature_params), move(in_parent_names_scope) ),
 			syntax_element( move(in_syntax_element) ),
+			class_( move(in_class) )
 		)
 	{}
 }

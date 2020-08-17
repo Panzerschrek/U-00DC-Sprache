@@ -142,7 +142,8 @@ fn CodeBuilder::PrepareTypeTemplate(
 fn CodeBuilder::PrepareFunctionTemplate(
 	mut this,
 	NamesScopePtr& names_scope,
-	ust::shared_ptr_final</Synt::FunctionTemplate/>& function_template_syntax_element ) : FunctionTemplatePtr
+	ust::shared_ptr_final</Synt::FunctionTemplate/>& function_template_syntax_element,
+	ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : FunctionTemplatePtr
 {
 	// TODO - remove copy-paste
 
@@ -176,11 +177,16 @@ fn CodeBuilder::PrepareFunctionTemplate(
 		// Create signature params.
 		foreach( &param : syntax_element.function.get_ref().function_type.args )
 		{
-			if( param.name == KeywordToString( Keyword::this_ ) )
-			{ continue; } // TODO
-
-			signature_params.push_back(
-				CreateTemplateSignatureParam( names_scope, global_function_context, template_params, param.arg_type, template_params_usage_flags ) );
+			if( !class_type.empty() && param.name == KeywordToString( Keyword::this_ ) )
+			{
+				var TemplateSignatureParam::TypeParam mut t{ .t= ust::to_non_nullable(class_type) };
+				signature_params.push_back( move(t) );
+			}
+			else
+			{
+				signature_params.push_back(
+					CreateTemplateSignatureParam( names_scope, global_function_context, template_params, param.arg_type, template_params_usage_flags ) );
+			}
 		}
 
 		// Fill variable params types.
@@ -206,7 +212,8 @@ fn CodeBuilder::PrepareFunctionTemplate(
 		move(template_params),
 		move(signature_params),
 		names_scope,
-		function_template_syntax_element );
+		function_template_syntax_element,
+		class_type );
 
 	return FunctionTemplatePtr( move(function_template) );
 }
@@ -716,9 +723,10 @@ fn CodeBuilder::GenTemplateFunction(
 		var Synt::FunctionType::Arg& param= function_syntax_element.function_type.args[i];
 		var FunctionType::Arg& arg= args[i];
 
+		auto is_this= param.name == KeywordToString( Keyword::this_ );
 		auto param_is_mutable_reference=
 			param.mutability_modifier == Synt::MutabilityModifier::Mutable &&
-			param.reference_modifier == Synt::ReferenceModifier::Reference;
+			( param.reference_modifier == Synt::ReferenceModifier::Reference || is_this );
 		if( param_is_mutable_reference && !arg.is_mutable )
 		{
 			return ust::optional</FunctionVariable/>();
@@ -726,7 +734,16 @@ fn CodeBuilder::GenTemplateFunction(
 
 		// TODO - process here reference conversion and type conversion before "MatchTemplateArgument" call.
 
-		all_ok&= MatchTemplateArgument( result_names_scope, function_template, function_template.signature_params[i], arg.arg_type.get_ref(), file_pos );
+		if( is_this )
+		{
+			all_ok&=
+				!function_template.class_.empty() &&
+				ust::to_non_nullable(function_template.class_) == arg.arg_type.get_ref();
+		}
+		else
+		{
+			all_ok&= MatchTemplateArgument( result_names_scope, function_template, function_template.signature_params[i], arg.arg_type.get_ref(), file_pos );
+		}
 
 		result_signature_template_args.push_back( arg.arg_type.get_ref() );
 	}
@@ -759,8 +776,7 @@ fn CodeBuilder::GenTemplateFunction(
 	}
 	generated_template_things_.insert( template_key, result_names_scope );
 
-	// TODO - pass also base class.
-	NamesScopeFill( result_names_scope, template_syntax_element.function );
+	NamesScopeFill( result_names_scope, template_syntax_element.function, function_template.class_ );
 	auto result_namespace_value= result_names_scope.lock_imut().get_ref().GetThisScopeValue( function_name ).get_ref();
 
 	auto result_functions_set_ptr= result_namespace_value.Get</NamesScopeFunctionsSet/>();

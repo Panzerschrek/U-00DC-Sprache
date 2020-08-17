@@ -400,6 +400,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test8",
 		"TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test9",
 		"TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test10",
+		"TemplateMethod_Test0",
+		"TemplateMethod_Test1",
 		"TypeNameInErrorMessage_ClassTemplate_Test0",
 		"TypeNameInErrorMessage_ClassTemplate_Test1",
 		"TypeNameInErrorMessage_ClassTemplate_Test2",

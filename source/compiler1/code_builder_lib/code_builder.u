@@ -661,7 +661,8 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 		while( !functions_set.function_templates_syntax_elements.empty() )
 		{
 			auto syntax_element_ptr= functions_set.function_templates_syntax_elements.back();
-			functions_set.functions_set.function_templates.push_back( PrepareFunctionTemplate( names_scope_ptr, syntax_element_ptr ) );
+			auto function_template= PrepareFunctionTemplate( names_scope_ptr, syntax_element_ptr, functions_set.class_ );
+			functions_set.functions_set.function_templates.push_back( function_template );
 			functions_set.function_templates_syntax_elements.drop_back();
 		}
 	}

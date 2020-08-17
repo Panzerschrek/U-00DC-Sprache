@@ -302,7 +302,8 @@ private:
 	fn PrepareFunctionTemplate(
 		mut this,
 		NamesScopePtr& names_scope,
-		ust::shared_ptr_final</Synt::FunctionTemplate/>& function_template_syntax_element ) : FunctionTemplatePtr;
+		ust::shared_ptr_final</Synt::FunctionTemplate/>& function_template_syntax_element,
+		ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : FunctionTemplatePtr;
 
 	fn CreateTemplateSignatureParam(
 		mut this,
