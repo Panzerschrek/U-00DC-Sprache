@@ -631,7 +631,9 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 		{ // First, lock as imut and check if complete.
 			auto l= functions_set_ptr.lock_imut();
 			var NamesScopeFunctionsSet& functions_set= l.get_ref();
-			if( functions_set.syntax_elements.empty() && functions_set.out_of_line_syntax_elements.empty() ) // Already complete
+			if( functions_set.syntax_elements.empty() &&
+				functions_set.out_of_line_syntax_elements.empty() &&
+				functions_set.function_templates_syntax_elements.empty() ) // Already complete
 			{
 				return;
 			}
