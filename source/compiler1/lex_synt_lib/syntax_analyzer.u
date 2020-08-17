@@ -243,7 +243,10 @@ private:
 	fn ParseClassBody( mut this ) : ClassElements;
 	fn ParseEnum( mut this ) : Enum;
 	fn ParseTypeAlias( mut this ) : TypeAlias;
-	fn ParseTypeTemplate( mut this ) : TypeTemplate;
+
+	type SomeTemplate= ust::variant</ tup[ ust::shared_ptr_final</ TypeTemplate />, ust::shared_ptr_final</ FunctionTemplate /> ] />;
+
+	fn ParseTemplate( mut this ) : SomeTemplate;
 	fn ParseTemplateSignatureParams( mut this ) : ust::vector</TypeTemplate::SignatureParam/>;
 
 	fn NotEndOfFile( this ) : bool;
@@ -320,7 +323,11 @@ fn SyntaxAnalyzer::ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : Names
 		}
 		else if( IsKeyword( it_.front(), Keyword::template_ ) )
 		{
-			namespace_elements.push_back( ust::shared_ptr_final</TypeTemplate/>( ParseTypeTemplate() ) );
+			auto t= ParseTemplate();
+			variant_visit( &v : t )
+			{
+				namespace_elements.push_back( v );
+			}
 		}
 		else if( IsKeyword( it_.front(), Keyword::namespace_ ) )
 		{
@@ -1886,7 +1893,11 @@ fn SyntaxAnalyzer::ParseClassBody( mut this ) : ClassElements
 		}
 		else if( IsKeyword( it_.front(), Keyword::template_ ) )
 		{
-			class_elements.push_back( ust::shared_ptr_final</TypeTemplate/>( ParseTypeTemplate() ) );
+			auto t= ParseTemplate();
+			variant_visit( &v : t )
+			{
+				class_elements.push_back( v );
+			}
 		}
 		else if( IsKeyword( it_.front(), Keyword::var_ ) )
 		{
@@ -2051,7 +2062,7 @@ fn SyntaxAnalyzer::ParseTypeAlias( mut this ) : TypeAlias
 	return move(type_alias);
 }
 
-fn SyntaxAnalyzer::ParseTypeTemplate( mut this ) : TypeTemplate
+fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 {
 	auto template_file_pos= it_.front().file_pos;
 
@@ -2068,7 +2079,7 @@ fn SyntaxAnalyzer::ParseTypeTemplate( mut this ) : TypeTemplate
 	}
 	NextLexem();
 
-	var ust::vector</TypeTemplate::Param/> mut params;
+	var ust::vector</TemplateParam/> mut params;
 	while( NotEndOfFile() )
 	{
 		if( it_.front().lexem_type == Lexem::Type::TemplateBracketRight )
@@ -2077,7 +2088,7 @@ fn SyntaxAnalyzer::ParseTypeTemplate( mut this ) : TypeTemplate
 			break;
 		}
 
-		var TypeTemplate::Param mut param;
+		var TemplateParam mut param;
 		if( IsKeyword( it_.front(), Keyword::type_ ) )
 		{
 			NextLexem();
@@ -2117,9 +2128,6 @@ fn SyntaxAnalyzer::ParseTypeTemplate( mut this ) : TypeTemplate
 		}
 	}
 
-	auto mut is_short_form= false;
-	var ust::vector</TypeTemplate::SignatureParam/> mut signature_params;
-
 	if( IsKeyword( it_.front(), Keyword::type_ ) )
 	{
 		NextLexem();
@@ -2132,6 +2140,8 @@ fn SyntaxAnalyzer::ParseTypeTemplate( mut this ) : TypeTemplate
 		auto type_alias_file_pos= it_.front().file_pos;
 		NextLexem();
 
+		auto mut is_short_form= false;
+		var ust::vector</TypeTemplate::SignatureParam/> mut signature_params;
 		if( it_.front().lexem_type == Lexem::Type::TemplateBracketLeft )
 		{
 			is_short_form= false;
@@ -2172,7 +2182,7 @@ fn SyntaxAnalyzer::ParseTypeTemplate( mut this ) : TypeTemplate
 			.is_short_form= is_short_form,
 		};
 
-		return move(type_template);
+		return ust::shared_ptr_final</TypeTemplate/>(move(type_template));
 	}
 	else if( IsKeyword( it_.front(), Keyword::struct_ ) || IsKeyword( it_.front(), Keyword::class_ ) )
 	{
@@ -2186,6 +2196,8 @@ fn SyntaxAnalyzer::ParseTypeTemplate( mut this ) : TypeTemplate
 		auto class_file_pos= it_.front().file_pos;
 		NextLexem();
 
+		auto mut is_short_form= false;
+		var ust::vector</TypeTemplate::SignatureParam/> mut signature_params;
 		if( it_.front().lexem_type == Lexem::Type::TemplateBracketLeft )
 		{
 			is_short_form= false;
@@ -2212,7 +2224,21 @@ fn SyntaxAnalyzer::ParseTypeTemplate( mut this ) : TypeTemplate
 			.is_short_form= is_short_form,
 		};
 
-		return move(type_template);
+		return ust::shared_ptr_final</TypeTemplate/>(move(type_template));
+	}
+	else if( IsKeyword( it_.front(), Keyword::fn_ ) )
+	{
+		var FunctionTemplate mut function_template
+		{
+			.file_pos= template_file_pos,
+			.params= move(params),
+			.function( ParseFunction() ),
+		};
+
+		auto mut name= function_template.function.get_ref().name.back();
+		function_template.name= move(name);
+
+		return ust::shared_ptr_final</FunctionTemplate/>( move(function_template) );
 	}
 	else
 	{
@@ -2222,12 +2248,11 @@ fn SyntaxAnalyzer::ParseTypeTemplate( mut this ) : TypeTemplate
 		var TypeTemplate mut type_template
 		{
 			.something( ust::shared_ptr_final</TypeAlias/>( TypeAlias() ) ),
+			.params= move(params),
 			.is_short_form= false,
 		};
 
-		move(params);
-		move(signature_params);
-		return move(type_template);
+		return ust::shared_ptr_final</TypeTemplate/>(move(type_template));
 	}
 }
 

@@ -81,6 +81,16 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	names_scope.AddName( func_name, NamesScopeValue( move(functions_set) ) );
 }
 
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::FunctionTemplate/>& function_template )
+{
+	NamesScopeFill( names_scope_ptr, function_template, ust::shared_ptr_nullable_mut</ClassType/>() );
+}
+
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::FunctionTemplate/>& function_template, ust::shared_ptr_nullable_mut</ClassType/>& class_type )
+{
+	//TODO
+}
+
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_ )
 {
 	NamesScopeAddClass( names_scope_ptr, class_ );

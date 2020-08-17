@@ -375,6 +375,7 @@ struct ClassField
 
 type ClassElement= ust::variant</ tup[
 	ust::shared_ptr_final</Function/>,
+	ust::shared_ptr_final</FunctionTemplate/>,
 	ust::shared_ptr_final</Class/>,
 	ust::shared_ptr_final</Enum/>,
 	ust::shared_ptr_final</TypeAlias/>,
@@ -410,17 +411,18 @@ struct Enum
 	ust::vector</Element/> elements;
 }
 
+struct TemplateParam
+{
+	Expression t; // Actually, only ComplexName. Empty if type parameter.
+	Expression name; // Actually, only name with one component
+}
+
 struct TypeTemplate
 {
 	FilePos file_pos;
 	ust::string8 name;
 
-	struct Param
-	{
-		Expression t; // Actually, only ComplexName. Empty if type parameter.
-		Expression name; // Actually, only name with one component
-	}
-	ust::vector</Param/> params;
+	ust::vector</TemplateParam/> params;
 
 	struct SignatureParam
 	{
@@ -439,6 +441,16 @@ struct TypeTemplate
 	] /> something;
 }
 
+struct FunctionTemplate
+{
+	FilePos file_pos;
+	ust::string8 name;
+
+	ust::vector</TemplateParam/> params;
+
+	ust::shared_ptr_final</Function/> function;
+}
+
 struct Namespace
 {
 	FilePos file_pos;
@@ -448,6 +460,7 @@ struct Namespace
 
 type NamespaceElement= ust::variant</ tup[
 	ust::shared_ptr_final</Function/>,
+	ust::shared_ptr_final</FunctionTemplate/>,
 	ust::shared_ptr_final</Class/>,
 	ust::shared_ptr_final</Enum/>,
 	ust::shared_ptr_final</TypeAlias/>,
