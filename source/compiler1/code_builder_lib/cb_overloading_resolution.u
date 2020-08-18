@@ -61,12 +61,35 @@ fn CompareConversionsMutability(
 fn CompareConversions(
 	FunctionType::Arg& src,
 	FunctionType::Arg& dst_left,
-	FunctionType::Arg& dst_right ) : ConversionsCompareResult
+	FunctionType::Arg& dst_right,
+	TemplateSignatureParam& template_param_l,
+	TemplateSignatureParam& template_param_r ) : ConversionsCompareResult
 {
 	// TODO - compare type conversions too
-	return CompareConversionsMutability( src, dst_left, dst_right );
-}
+	auto mutability_compare= CompareConversionsMutability( src, dst_left, dst_right );
+	auto template_specialization_compare= CompareTemplateSpecialization( template_param_l, template_param_r );
 
+	if( mutability_compare == ConversionsCompareResult::Incomparable ||
+		template_specialization_compare == ConversionsCompareResult::Incomparable )
+	{
+		return ConversionsCompareResult::Incomparable;
+	}
+
+	if( mutability_compare == ConversionsCompareResult::Same )
+	{
+		return template_specialization_compare;
+	}
+	if( template_specialization_compare == ConversionsCompareResult::Same )
+	{
+		return mutability_compare;
+	}
+	if( mutability_compare == template_specialization_compare )
+	{
+		return mutability_compare;
+	}
+
+	return ConversionsCompareResult::Incomparable;
+}
 
 fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignatureParam& r ) : ConversionsCompareResult
 {
@@ -367,6 +390,8 @@ fn CodeBuilder::GetOverloadedFunction(
 	// For each argument search functions, which is better, than another functions.
 	// For NOT better (four current arg) functions set flags to false.
 
+	var TemplateSignatureParam dummy_template_param= TemplateSignatureParam::TypeParam();
+
 	for( auto mut arg_n= 0s; arg_n < actual_args.size(); ++arg_n )
 	{
 		foreach( &l_function : match_functions )
@@ -402,7 +427,9 @@ fn CodeBuilder::GetOverloadedFunction(
 					CompareConversions(
 						actual_args[arg_n],
 						l_type.args[l_arg_n],
-						r_type.args[r_arg_n] );
+						r_type.args[r_arg_n],
+						select( l_function.base_template.empty() ? dummy_template_param : l_function.base_template.get_ref().signature_params[l_arg_n] ),
+						select( r_function.base_template.empty() ? dummy_template_param : r_function.base_template.get_ref().signature_params[r_arg_n] ) );
 
 				if( comp == ConversionsCompareResult::Same || comp == ConversionsCompareResult::LeftIsBetter )
 				{}
@@ -435,7 +462,9 @@ fn CodeBuilder::GetOverloadedFunction(
 						CompareConversions(
 							actual_args[arg_n],
 							l_type.args[l_arg_n],
-							r_type.args[r_arg_n] );
+							r_type.args[r_arg_n],
+							select( l_function.base_template.empty() ? dummy_template_param : l_function.base_template.get_ref().signature_params[l_arg_n] ),
+							select( r_function.base_template.empty() ? dummy_template_param : r_function.base_template.get_ref().signature_params[r_arg_n] ) );
 					if( comp != ConversionsCompareResult::Same )
 					{
 						best_functions[func_n]= false;

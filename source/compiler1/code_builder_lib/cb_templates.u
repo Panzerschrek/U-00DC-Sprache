@@ -785,12 +785,15 @@ fn CodeBuilder::GenTemplateFunction(
 	auto mut functions_set_lock= result_functions_set_ptr.lock_mut();
 	auto &mut functions_set= functions_set_lock.get_ref();
 
-	if( functions_set.functions_set.functions.size() == 1s )
+	if( functions_set.functions_set.functions.size() != 1s )
 	{
-		return functions_set.functions_set.functions.front();
+		return ust::optional</FunctionVariable/>();
 	}
 
-	return ust::optional</FunctionVariable/>();
+	auto &mut function_variable= functions_set.functions_set.functions.front();
+	function_variable.base_template= function_template_ptr;
+
+	return function_variable;
 }
 
 fn CodeBuilder::MatchTemplateArgument(
