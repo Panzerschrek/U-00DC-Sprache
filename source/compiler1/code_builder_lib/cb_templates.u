@@ -691,13 +691,21 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 fn CodeBuilder::GenTemplateFunction(
 	mut this,
 	FunctionTemplatePtr& function_template_ptr,
-	ust::array_view_imut</FunctionType::Arg/> args,
+	ust::array_view_imut</FunctionType::Arg/> mut args,
+	bool first_arg_is_this,
 	FilePos& file_pos ) : ust::optional</FunctionVariable/>
 {
 	var FunctionTemplate& function_template= function_template_ptr.get_ref();
 
 	var Synt::FunctionTemplate& template_syntax_element= function_template.syntax_element.get_ref();
 	var Synt::Function& function_syntax_element= template_syntax_element.function.get_ref();
+
+	if( first_arg_is_this &&
+		( function_syntax_element.function_type.args.empty() ||
+		function_syntax_element.function_type.args.front().name != KeywordToString( Keyword::this_ ) ) )
+	{
+		args.drop_front();
+	}
 	if( args.size() != function_syntax_element.function_type.args.size() )
 	{
 		return ust::optional</FunctionVariable/>();

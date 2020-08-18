@@ -419,6 +419,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TemplateMethod_Test0",
 		"TemplateMethod_Test1",
 		"TemplateMethod_Test2",
+		"TemplateMethod_Test3",
+		"TemplateMethod_Test4",
 		"TemplateOperator_Test0",
 		"TemplateOperator_Test1",
 		"TypeNameInErrorMessage_ClassTemplate_Test0",

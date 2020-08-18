@@ -377,7 +377,8 @@ private:
 	fn GenTemplateFunction(
 		mut this,
 		FunctionTemplatePtr& function_template_ptr,
-		ust::array_view_imut</FunctionType::Arg/> args,
+		ust::array_view_imut</FunctionType::Arg/> mut args,
+		bool first_arg_is_this,
 		FilePos& file_pos ) : ust::optional</FunctionVariable/>;
 
 	// Returns true if ok

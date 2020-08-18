@@ -369,7 +369,7 @@ fn CodeBuilder::GetOverloadedFunction(
 
 	foreach( &function_template : functions_set.function_templates )
 	{
-		if_var( mut generated_function : GenTemplateFunction( function_template, actual_args, file_pos ) )
+		if_var( mut generated_function : GenTemplateFunction( function_template, actual_args, first_actual_arg_is_this, file_pos ) )
 		{
 			match_functions.push_back( move(generated_function) );
 		}
