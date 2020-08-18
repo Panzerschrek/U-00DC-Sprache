@@ -2226,7 +2226,7 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 
 		return ust::shared_ptr_final</TypeTemplate/>(move(type_template));
 	}
-	else if( IsKeyword( it_.front(), Keyword::fn_ ) )
+	else if( IsKeyword( it_.front(), Keyword::fn_ ) || IsKeyword( it_.front(), Keyword::op_ ) )
 	{
 		var FunctionTemplate mut function_template
 		{
