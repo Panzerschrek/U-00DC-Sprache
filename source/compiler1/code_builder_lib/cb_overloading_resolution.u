@@ -313,7 +313,7 @@ fn CodeBuilder::GetOverloadedFunction(
 	bool first_actual_arg_is_this,
 	NamesScopePtr& names_scope,
 	FilePos& file_pos,
-	bool produce_errors ) : ust::optional</FunctionVariable, false/>
+	bool produce_errors ) : ust::optional</FunctionVariable/>
 {
 	var ust::vector</FunctionVariable/> mut match_functions;
 	foreach( & function : functions_set.functions )
