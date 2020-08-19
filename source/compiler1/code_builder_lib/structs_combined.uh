@@ -218,6 +218,7 @@ struct FunctionsSet
 {
 	ust::vector</FunctionVariable/> functions;
 	ust::vector</FunctionTemplatePtr/> function_templates;
+	ust::vector</ParametrizedFunctionTemplate/> parametrized_function_templates;
 }
 
 struct ThisMethodsSet
@@ -347,6 +348,14 @@ class TypeTemplate final : TemplateBase
 
 type TypeTemplatePtr = ust::shared_ptr_final</TypeTemplate/>;
 
+struct TypeTemplatesSet
+{
+	ust::vector</TypeTemplatePtr/> type_templates;
+
+	// Is incomplete, if there are some syntax elements in containers.
+	ust::vector</ ust::shared_ptr_final</Synt::TypeTemplate/> /> syntax_elements;
+}
+
 class FunctionTemplate final : TemplateBase
 {
 	ust::shared_ptr_final</Synt::FunctionTemplate/> syntax_element;
@@ -368,12 +377,10 @@ class FunctionTemplate final : TemplateBase
 
 type FunctionTemplatePtr= ust::shared_ptr_final</FunctionTemplate/>;
 
-struct TypeTemplatesSet
+struct ParametrizedFunctionTemplate
 {
-	ust::vector</TypeTemplatePtr/> type_templates;
-
-	// Is incomplete, if there are some syntax elements in containers.
-	ust::vector</ ust::shared_ptr_final</Synt::TypeTemplate/> /> syntax_elements;
+	TemplateArgsFinished known_args;
+	FunctionTemplatePtr base_template;
 }
 
 struct TemplateArg

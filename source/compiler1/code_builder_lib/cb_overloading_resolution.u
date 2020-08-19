@@ -375,6 +375,21 @@ fn CodeBuilder::GetOverloadedFunction(
 		}
 	}
 
+	foreach( &parametrized_function_template : functions_set.parametrized_function_templates )
+	{
+		auto generated_function=
+			GenTemplateFunction(
+				parametrized_function_template.base_template,
+				parametrized_function_template.known_args,
+				actual_args,
+				first_actual_arg_is_this,
+				file_pos );
+		if( !generated_function.empty() )
+		{
+			match_functions.push_back( generated_function.get_ref() );
+		}
+	}
+
 	if( match_functions.empty() )
 	{
 		if( produce_errors )

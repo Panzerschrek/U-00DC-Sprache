@@ -381,6 +381,22 @@ private:
 		bool first_arg_is_this,
 		FilePos& file_pos ) : ust::optional</FunctionVariable/>;
 
+	fn GenTemplateFunction(
+		mut this,
+		FunctionTemplatePtr& function_template_ptr,
+		TemplateArgsFinished& known_template_args,
+		ust::array_view_imut</FunctionType::Arg/> mut args,
+		bool first_arg_is_this,
+		FilePos& file_pos ) : ust::optional</FunctionVariable/>;
+
+	fn ParametrizeTemplateFunctions(
+		mut this,
+		NamesScopePtr& args_names_scope,
+		FunctionContext &mut function_context,
+		FunctionsSet& functions_set,
+		Synt::TemplateArgs& template_args,
+		FilePos& file_pos ) : ust::optional</NamesScopeValue/>;
+
 	// Returns true if ok
 	fn MatchTemplateArgument(
 		mut this,

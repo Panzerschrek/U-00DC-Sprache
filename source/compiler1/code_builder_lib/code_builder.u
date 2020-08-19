@@ -539,6 +539,7 @@ fn CodeBuilder::ResolveValue(
 		if_var( &template_args : name_component.get</ ust::box</Synt::TemplateArgs/> />() )
 		{
 			auto type_templates_set= current_value.get_ref().Get</TypeTemplatesSet/>();
+			auto functions_set= current_value.get_ref().Get</NamesScopeFunctionsSet/>();
 			if( !type_templates_set.empty() )
 			{
 				BuiltTypeTemplatesSet( ust::to_non_nullable(current_scope), ust::to_non_nullable(type_templates_set) );
@@ -568,9 +569,33 @@ fn CodeBuilder::ResolveValue(
 					return ErrorValue();
 				}
 			}
+			else if( !functions_set.empty() )
+			{
+				BuildFunctionsSet( ust::to_non_nullable(current_scope), ust::to_non_nullable( functions_set ), false );
+				auto lock= functions_set.lock_imut();
+				auto& f= lock.get_ref();
+
+				if( f.functions_set.function_templates.empty() )
+				{
+					REPORT_ERROR( ValueIsNotTemplate, names_scope, complex_name.file_pos )
+					return ErrorValue();
+				}
+
+				current_value=
+					ParametrizeTemplateFunctions(
+						names_scope,
+						function_context,
+						f.functions_set,
+						template_args.get_ref(),
+						complex_name.file_pos );
+				if( current_value.empty() )
+				{
+					return ErrorValue();
+				}
+			}
 			else
 			{
-				REPORT_ERROR( ValueIsNotTemplate, names_scope, complex_name.file_pos)
+				REPORT_ERROR( ValueIsNotTemplate, names_scope, complex_name.file_pos )
 				return ErrorValue();
 			}
 		}
