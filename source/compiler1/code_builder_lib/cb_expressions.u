@@ -529,6 +529,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		auto field_ptr= class_member.get_ref().Get</ClassField/>();
 		if( !field_ptr.empty() )
 		{
+			if( !member_access_operator.template_args.empty() )
+			{
+				REPORT_ERROR( ValueIsNotTemplate, names_scope, member_access_operator.file_pos )
+			}
+
 			auto field_lock= field_ptr.lock_imut();
 			auto& field= field_lock.get_ref();
 
@@ -592,11 +597,36 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			{
 				BuildFunctionsSet( class_type_lock.get_ref().members, ust::to_non_nullable( functions_set_ptr ), false );
 
-				var ThisMethodsSet mut this_methods_set
+				var ThisMethodsSet mut this_methods_set{ .this_= variable };
+
+				if( !member_access_operator.template_args.empty() )
 				{
-					.this_= variable,
-					.functions_set= functions_set_ptr.lock_imut().get_ref().functions_set,
-				};
+					auto functions_set_lock= functions_set_ptr.lock_imut();
+					auto& functions_set= functions_set_lock.get_ref().functions_set;
+
+					if( functions_set.function_templates.empty() )
+					{
+						REPORT_ERROR( ValueIsNotTemplate, names_scope, member_access_operator.file_pos )
+						return ErrorValue();
+					}
+
+					auto val= ParametrizeTemplateFunctions(
+						names_scope,
+						function_context,
+						functions_set,
+						member_access_operator.template_args.get_ref(),
+						member_access_operator.file_pos );
+					if( val.empty() )
+					{
+						return ErrorValue();
+					}
+
+					this_methods_set.functions_set= val.get_ref().Get</NamesScopeFunctionsSet/>().lock_imut().get_ref().functions_set;
+				}
+				else
+				{
+					this_methods_set.functions_set= functions_set_ptr.lock_imut().get_ref().functions_set;
+				}
 
 				return move(this_methods_set);
 			}

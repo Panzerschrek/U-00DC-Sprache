@@ -642,6 +642,11 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 				member_access_operator.member_name= it_.front().text;
 				NextLexem();
 
+				if( it_.front().lexem_type == Lexem::Type::TemplateBracketLeft )
+				{
+					member_access_operator.template_args.reset( ParseTemplateArgs() );
+				}
+
 				current_node= move(member_access_operator);
 			}
 			else

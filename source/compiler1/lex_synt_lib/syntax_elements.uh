@@ -87,6 +87,7 @@ struct MemberAccessOperator
 	FilePos file_pos;
 	ust::box</Expression/> value;
 	ust::string8 member_name;
+	ust::box_nullable</TemplateArgs/> template_args;
 }
 
 struct UnaryPlus
