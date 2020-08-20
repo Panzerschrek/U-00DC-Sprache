@@ -875,7 +875,8 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	const TypeTemplate& type_template= *type_template_ptr;
 	NamesScope& template_names_scope= *type_template.parent_namespace;
 
-	if( template_arguments.size() < type_template.first_optional_signature_argument )
+	if( template_arguments.size() < type_template.first_optional_signature_argument ||
+		template_arguments.size() > type_template.signature_arguments.size() )
 		return result;
 
 	DeducibleTemplateParameters deduced_template_args( type_template.template_parameters.size() );

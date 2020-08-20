@@ -533,6 +533,32 @@ U_TEST( TemplateParametersDeductionFailed_Test14 )
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 4u ) );
 }
 
+U_TEST( TemplateParametersDeductionFailed_Test15 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type A, type B /> struct Box {}
+
+		type IntBox= Box</ i32 />; // Expected 2 params, given 1 arg
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 4u ) );
+}
+
+U_TEST( TemplateParametersDeductionFailed_Test16 )
+{
+	static const char c_program_text[]=
+	R"(
+		template</ type T /> struct Box {}
+
+		type IntDoubleBox= Box</ i32, f64 />; // Expected 1 param, given 2 args
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 4u ) );
+}
+
 U_TEST( ExpectedConstantExpression_InTemplateSignatureArgument_Test0 )
 {
 	static const char c_program_text[]=

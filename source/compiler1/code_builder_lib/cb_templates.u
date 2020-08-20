@@ -513,7 +513,8 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 	}
 	else
 	{
-		if( template_args.size() < type_template.first_default_param )
+		if( template_args.size() < type_template.first_default_param ||
+			template_args.size() > type_template.signature_params.size() )
 		{
 			return ust::optional</TemplateTypeArgsEvaluationResult/>();
 		}
