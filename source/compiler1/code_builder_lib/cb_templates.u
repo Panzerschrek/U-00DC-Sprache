@@ -148,6 +148,12 @@ fn CodeBuilder::PrepareFunctionTemplate(
 	// TODO - remove copy-paste
 
 	auto& syntax_element= function_template_syntax_element.get_ref();
+	auto& function_template_name= function_template_syntax_element.get_ref().name;
+
+	if( syntax_element.function.get_ref().block.empty() )
+	{
+		REPORT_ERROR( IncompleteMemberOfClassTemplate, names_scope, function_template_syntax_element.get_ref().file_pos, function_template_name )
+	}
 
 	// Check for template params redefinition, fill params vector.
 	var ust::vector</ TemplateBase::Param /> mut template_params;
@@ -792,12 +798,13 @@ fn CodeBuilder::GenTemplateFunction(
 		return ust::optional</FunctionVariable/>();
 	}
 
-	return FinishTemplateFunctionGeneration( function_template_ptr, result_names_scope );
+	return FinishTemplateFunctionGeneration( function_template_ptr, result_names_scope, file_pos );
 }
 
 fn CodeBuilder::FinishFunctionTemplateParametrization(
 	mut this,
-	ParametrizedFunctionTemplate& parametrized_function_template ) : ust::optional</FunctionVariable/>
+	ParametrizedFunctionTemplate& parametrized_function_template,
+	FilePos& file_pos ) : ust::optional</FunctionVariable/>
 {
 	auto& function_template= parametrized_function_template.base_template.get_ref();
 	auto& known_template_args= parametrized_function_template.known_args;
@@ -834,13 +841,14 @@ fn CodeBuilder::FinishFunctionTemplateParametrization(
 		}
 	}
 
-	return FinishTemplateFunctionGeneration( parametrized_function_template.base_template, result_names_scope );
+	return FinishTemplateFunctionGeneration( parametrized_function_template.base_template, result_names_scope, file_pos );
 }
 
 fn CodeBuilder::FinishTemplateFunctionGeneration(
 	mut this,
 	FunctionTemplatePtr& function_template_ptr,
-	NamesScopeMutPtr& result_names_scope ) : ust::optional</FunctionVariable/>
+	NamesScopeMutPtr& result_names_scope,
+	FilePos& file_pos ) : ust::optional</FunctionVariable/>
 {
 	var FunctionTemplate& function_template= function_template_ptr.get_ref();
 	var Synt::FunctionTemplate& template_syntax_element= function_template.syntax_element.get_ref();
@@ -859,12 +867,17 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 			if_var( &t : something.get</Type/>() )
 			{
 				result_template_args.push_back(t);
+				continue;
 			}
 			if_var( &v : something.get</NamesScopeVariable/>() )
 			{
 				var Variable mut out_v{ .t= v.t, .llvm_value= v.llvm_value, .constexpr_value= v.constexpr_value };
 				result_template_args.push_back( move(out_v) );
+				continue;
 			}
+
+			REPORT_ERROR( TemplateParametersDeductionFailed, result_names_scope, file_pos )
+			return ust::optional</FunctionVariable/>();
 		}
 	}
 

@@ -391,12 +391,14 @@ private:
 
 	fn FinishFunctionTemplateParametrization(
 		mut this,
-		ParametrizedFunctionTemplate& parametrized_function_template ) : ust::optional</FunctionVariable/>;
+		ParametrizedFunctionTemplate& parametrized_function_template,
+		FilePos& file_pos ) : ust::optional</FunctionVariable/>;
 
 	fn FinishTemplateFunctionGeneration(
 		mut this,
 		FunctionTemplatePtr& function_template_ptr,
-		NamesScopeMutPtr& result_names_scope ) : ust::optional</FunctionVariable/>;
+		NamesScopeMutPtr& result_names_scope,
+		FilePos& file_pos ) : ust::optional</FunctionVariable/>;
 
 	fn ParametrizeTemplateFunctions(
 		mut this,
