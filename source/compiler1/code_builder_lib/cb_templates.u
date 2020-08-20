@@ -792,6 +792,60 @@ fn CodeBuilder::GenTemplateFunction(
 		return ust::optional</FunctionVariable/>();
 	}
 
+	return FinishTemplateFunctionGeneration( function_template_ptr, result_names_scope );
+}
+
+fn CodeBuilder::FinishFunctionTemplateParametrization(
+	mut this,
+	ParametrizedFunctionTemplate& parametrized_function_template ) : ust::optional</FunctionVariable/>
+{
+	auto& function_template= parametrized_function_template.base_template.get_ref();
+	auto& known_template_args= parametrized_function_template.known_args;
+
+	halt if( function_template.params.size() != known_template_args.size() );
+
+	var NamesScopeMutPtr result_names_scope(
+		NamesScope(
+			"",
+			ust::to_non_nullable( function_template.parent_names_scope.lock() ) ) ); // Where we place template arguments
+
+	{
+		auto mut result_names_scope_lock= result_names_scope.lock_mut();
+		for( auto mut i= 0s; i < function_template.params.size(); ++i )
+		{
+			var TemplateArg mut template_arg{ .index= i };
+
+			if_var( &t : known_template_args[i].get</Type/>() )
+			{
+				template_arg.something= t;
+			}
+			if_var( &v : known_template_args[i].get</Variable/>() )
+			{
+				var NamesScopeVariable mut out_var
+				{
+					.t= v.t,
+					.llvm_value= v.llvm_value,
+					.constexpr_value= v.constexpr_value,
+				};
+				template_arg.something= move(out_var);
+			}
+
+			result_names_scope_lock.get_ref().AddName( function_template.params[i].name, move(template_arg) );
+		}
+	}
+
+	return FinishTemplateFunctionGeneration( parametrized_function_template.base_template, result_names_scope );
+}
+
+fn CodeBuilder::FinishTemplateFunctionGeneration(
+	mut this,
+	FunctionTemplatePtr& function_template_ptr,
+	NamesScopeMutPtr& result_names_scope ) : ust::optional</FunctionVariable/>
+{
+	var FunctionTemplate& function_template= function_template_ptr.get_ref();
+	var Synt::FunctionTemplate& template_syntax_element= function_template.syntax_element.get_ref();
+	var Synt::Function& function_syntax_element= template_syntax_element.function.get_ref();
+
 	var TemplateArgsFinished mut result_template_args;
 	{
 		auto mut result_names_scope_lock= result_names_scope.lock_imut();

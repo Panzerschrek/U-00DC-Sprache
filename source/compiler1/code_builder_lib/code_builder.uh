@@ -389,6 +389,15 @@ private:
 		bool first_arg_is_this,
 		FilePos& file_pos ) : ust::optional</FunctionVariable/>;
 
+	fn FinishFunctionTemplateParametrization(
+		mut this,
+		ParametrizedFunctionTemplate& parametrized_function_template ) : ust::optional</FunctionVariable/>;
+
+	fn FinishTemplateFunctionGeneration(
+		mut this,
+		FunctionTemplatePtr& function_template_ptr,
+		NamesScopeMutPtr& result_names_scope ) : ust::optional</FunctionVariable/>;
+
 	fn ParametrizeTemplateFunctions(
 		mut this,
 		NamesScopePtr& args_names_scope,

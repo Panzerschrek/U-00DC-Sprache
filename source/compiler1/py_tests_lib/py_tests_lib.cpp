@@ -375,6 +375,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"FunctionPointersConversions_Test0",
 		"FunctionPointersConversions_Test1",
 		"FunctionPointersConversions_Test4",
+		"FunctionPointerToTemplateFunction_Test0",
+		"FunctionPointerToTemplateFunction_Test1",
 		//"FunctionPointersConversions_Test5",
 		"FunctionTemplateBase_Test0",
 		"FunctionTemplateBase_Test1",
