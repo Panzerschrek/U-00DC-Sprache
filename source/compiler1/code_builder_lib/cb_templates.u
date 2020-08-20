@@ -860,7 +860,7 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 		{
 			if( !TypeIsValidForTemplateVariableArgument( v.t ) )
 			{
-				// TODO - report error
+				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, args_names_scope, file_pos, v.t )
 				have_some_errors= true;
 			}
 
@@ -911,8 +911,14 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 			{
 				if_var( &v : arg.get</Variable/>() )
 				{
-					// TODO - check.
-					//all_ok&= MatchTemplateArgument( some_names_scope, function_template, param.t.get_ref(), v, Synt::GetFilePos(template_args[i]) );
+					if_var( &type_param : param.t.get_ref().GetTypeParam() )
+					{
+						if( v.t != type_param.t )
+						{
+							all_ok= false;
+							break;
+						}
+					}
 					continue;
 				}
 
