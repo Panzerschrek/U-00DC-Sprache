@@ -921,6 +921,10 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 	auto &mut function_variable= functions_set.functions_set.functions.front();
 	function_variable.base_template= function_template_ptr;
 
+	auto name_mangled=
+		MangleFunction( function_template.parent_names_scope.lock().lock_imut().get_ref(), function_name, function_variable.t, result_template_args );
+	unsafe{  LLVMSetValueName2( function_variable.llvm_function, name_mangled.front(), name_mangled.size() - 1s );  }
+
 	return function_variable;
 }
 

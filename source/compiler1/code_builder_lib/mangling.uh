@@ -11,6 +11,13 @@ fn MangleFunction(
 	FunctionType& function_type ) : ust::string8;
 
 // Returns null terminated string.
+fn MangleFunction(
+	NamesScope& parent_scope,
+	ust::string8& name,
+	FunctionType& function_type,
+	TemplateArgsFinished& template_args ) : ust::string8;
+
+// Returns null terminated string.
 fn MangleGlobalVariable( NamesScope& parent_scope, ust::string8& variable_name ) : ust::string8;
 
 // Returns null terminated string.

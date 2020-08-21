@@ -159,6 +159,7 @@ bool FilterTest( const std::string& test_name )
 		"FieldIsNotInitializedYetTest1",
 		"FunctionBodyDuplicationTest",
 		"FunctionPrototypeDuplicationTest",
+		"FunctionTemplatesMangling_Test",
 		"FundamentalTypesHaveConstructorsWithExactlyOneParameterTest",
 		"GeneratedCopyConstructorForStructsWithReferencesTest",
 		"ImplicitConstexprTest",
