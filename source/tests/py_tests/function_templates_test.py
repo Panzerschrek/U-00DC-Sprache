@@ -587,9 +587,7 @@ def Specialization_Test7():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
-	assert( errors_list[0].file_pos.line == 13 )
+	assert( HaveError( errors_list, "TooManySuitableOverloadedFunctions", 13 ) )
 
 
 def Specialization_Test8():
