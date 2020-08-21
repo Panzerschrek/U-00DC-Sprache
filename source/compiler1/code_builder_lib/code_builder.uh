@@ -305,6 +305,18 @@ private:
 		ust::shared_ptr_final</Synt::FunctionTemplate/>& function_template_syntax_element,
 		ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : FunctionTemplatePtr;
 
+	fn PrepareTemplateParams(
+		mut this,
+		NamesScopePtr& names_scope,
+		ust::vector</Synt::TemplateParam/>& in_params ) : ust::vector</ TemplateBase::Param />;
+
+	fn FillVariableTemplateParamsTypes(
+		mut this,
+		NamesScopePtr& names_scope,
+		ust::vector</Synt::TemplateParam/>& in_params,
+		ust::vector</TemplateBase::Param/> &mut template_params,
+		ust::vector</bool/> &mut template_params_usage_flags );
+
 	fn CreateTemplateSignatureParam(
 		mut this,
 		NamesScopePtr& names_scope,

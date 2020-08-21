@@ -34,30 +34,13 @@ fn CodeBuilder::PrepareTypeTemplate(
 {
 	auto& syntax_element= type_template_syntax_element.get_ref();
 
-	// Check for template params redefinition, fill params vector.
-	var ust::vector</ TemplateBase::Param /> mut template_params;
-	foreach( &param : syntax_element.params )
-	{
-		auto& name= param.name.get</Synt::ComplexName/>().get_ref().name;
-
-		foreach( &prev_param : template_params )
-		{
-			if( name == prev_param.name )
-			{
-				REPORT_ERROR( Redefinition, names_scope, Synt::GetFilePos( param.name ), name )
-			}
-		}
-
-		var TemplateBase::Param mut out_param{ .name= name };
-		template_params.push_back( move(out_param) );
-	}
+	auto mut template_params= PrepareTemplateParams( names_scope, syntax_element.params );
 
 	// Fill signature params and check correctness.
 	var ust::vector</bool/> mut template_params_usage_flags;
 	template_params_usage_flags.resize( template_params.size(), false );
 
 	var ust::vector</ TemplateSignatureParam /> mut signature_params;
-
 	{
 		auto mut global_function_context= CreateGlobalFunctionContext();
 
@@ -83,25 +66,9 @@ fn CodeBuilder::PrepareTypeTemplate(
 				}
 			}
 		}
-
-		// Fill variable params types.
-		for( auto mut i= 0s; i < syntax_element.params.size(); ++i )
-		{
-			auto& template_param= syntax_element.params[i];
-			if( template_param.t.get</Synt::EmptyVariant/>().empty() )
-			{
-				template_params[i].t=
-					CreateTemplateSignatureParam( names_scope, global_function_context, template_params, template_param.t, template_params_usage_flags );
-				if_var( &type_param : template_params[i].t.get_ref().GetTypeParam() )
-				{
-					if( !TypeIsValidForTemplateVariableArgument(type_param.t) )
-					{
-						REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope,  Synt::GetFilePos(template_param.t), type_param.t )
-					}
-				}
-			}
-		}
 	}
+
+	FillVariableTemplateParamsTypes( names_scope, syntax_element.params, template_params, template_params_usage_flags );
 
 	// Check for usage of all template params in signature.
 	for( auto mut i= 0s; i < template_params_usage_flags.size(); ++i )
@@ -145,8 +112,6 @@ fn CodeBuilder::PrepareFunctionTemplate(
 	ust::shared_ptr_final</Synt::FunctionTemplate/>& function_template_syntax_element,
 	ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : FunctionTemplatePtr
 {
-	// TODO - remove copy-paste
-
 	auto& syntax_element= function_template_syntax_element.get_ref();
 	auto& function_template_name= function_template_syntax_element.get_ref().name;
 
@@ -155,9 +120,51 @@ fn CodeBuilder::PrepareFunctionTemplate(
 		REPORT_ERROR( IncompleteMemberOfClassTemplate, names_scope, function_template_syntax_element.get_ref().file_pos, function_template_name )
 	}
 
+	auto mut template_params= PrepareTemplateParams( names_scope, syntax_element.params );
+
+	var ust::vector</bool/> mut template_params_usage_flags;
+	template_params_usage_flags.resize( template_params.size(), false );
+
+	// Create signature params.
+	var ust::vector</ TemplateSignatureParam /> mut signature_params;
+	{
+		auto mut global_function_context= CreateGlobalFunctionContext();
+
+		foreach( &param : syntax_element.function.get_ref().function_type.args )
+		{
+			if( !class_type.empty() && param.name == KeywordToString( Keyword::this_ ) )
+			{
+				var TemplateSignatureParam::TypeParam mut t{ .t= ust::to_non_nullable(class_type) };
+				signature_params.push_back( move(t) );
+			}
+			else
+			{
+				signature_params.push_back(
+					CreateTemplateSignatureParam( names_scope, global_function_context, template_params, param.arg_type, template_params_usage_flags ) );
+			}
+		}
+	}
+
+	FillVariableTemplateParamsTypes( names_scope, syntax_element.params, template_params, template_params_usage_flags );
+
+	var FunctionTemplate mut function_template(
+		move(template_params),
+		move(signature_params),
+		names_scope,
+		function_template_syntax_element,
+		class_type );
+
+	return FunctionTemplatePtr( move(function_template) );
+}
+
+fn CodeBuilder::PrepareTemplateParams(
+	mut this,
+	NamesScopePtr& names_scope,
+	ust::vector</Synt::TemplateParam/>& in_params ) : ust::vector</ TemplateBase::Param />
+{
 	// Check for template params redefinition, fill params vector.
 	var ust::vector</ TemplateBase::Param /> mut template_params;
-	foreach( &param : syntax_element.params )
+	foreach( &param : in_params )
 	{
 		auto& name= param.name.get</Synt::ComplexName/>().get_ref().name;
 
@@ -173,55 +180,37 @@ fn CodeBuilder::PrepareFunctionTemplate(
 		template_params.push_back( move(out_param) );
 	}
 
-	var ust::vector</ TemplateSignatureParam /> mut signature_params;
+	return move(template_params);
+}
+
+fn CodeBuilder::FillVariableTemplateParamsTypes(
+	mut this,
+	NamesScopePtr& names_scope,
+	ust::vector</Synt::TemplateParam/>& in_params,
+	ust::vector</TemplateBase::Param/> &mut template_params,
+	ust::vector</bool/> &mut template_params_usage_flags )
+{
+	halt if( in_params.size() != template_params.size() );
+	halt if( template_params_usage_flags.size() != template_params.size() );
+
+	auto mut global_function_context= CreateGlobalFunctionContext();
+
+	for( auto mut i= 0s; i < in_params.size(); ++i )
 	{
-		var ust::vector</bool/> mut template_params_usage_flags;
-		template_params_usage_flags.resize( template_params.size(), false );
-
-		auto mut global_function_context= CreateGlobalFunctionContext();
-
-		// Create signature params.
-		foreach( &param : syntax_element.function.get_ref().function_type.args )
+		auto& template_param= in_params[i];
+		if( template_param.t.get</Synt::EmptyVariant/>().empty() )
 		{
-			if( !class_type.empty() && param.name == KeywordToString( Keyword::this_ ) )
+			template_params[i].t=
+				CreateTemplateSignatureParam( names_scope, global_function_context, template_params, template_param.t, template_params_usage_flags );
+			if_var( &type_param : template_params[i].t.get_ref().GetTypeParam() )
 			{
-				var TemplateSignatureParam::TypeParam mut t{ .t= ust::to_non_nullable(class_type) };
-				signature_params.push_back( move(t) );
-			}
-			else
-			{
-				signature_params.push_back(
-					CreateTemplateSignatureParam( names_scope, global_function_context, template_params, param.arg_type, template_params_usage_flags ) );
-			}
-		}
-
-		// Fill variable params types.
-		for( auto mut i= 0s; i < syntax_element.params.size(); ++i )
-		{
-			auto& template_param= syntax_element.params[i];
-			if( template_param.t.get</Synt::EmptyVariant/>().empty() )
-			{
-				template_params[i].t=
-					CreateTemplateSignatureParam( names_scope, global_function_context, template_params, template_param.t, template_params_usage_flags );
-				if_var( &type_param : template_params[i].t.get_ref().GetTypeParam() )
+				if( !TypeIsValidForTemplateVariableArgument(type_param.t) )
 				{
-					if( !TypeIsValidForTemplateVariableArgument(type_param.t) )
-					{
-						REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope,  Synt::GetFilePos(template_param.t), type_param.t )
-					}
+					REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, Synt::GetFilePos(template_param.t), type_param.t )
 				}
 			}
 		}
 	}
-
-	var FunctionTemplate mut function_template(
-		move(template_params),
-		move(signature_params),
-		names_scope,
-		function_template_syntax_element,
-		class_type );
-
-	return FunctionTemplatePtr( move(function_template) );
 }
 
 fn CodeBuilder::CreateTemplateSignatureParam(
