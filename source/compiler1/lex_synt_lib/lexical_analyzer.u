@@ -417,6 +417,17 @@ op Lexem::!=( Lexem& l, Lexem& r ) : bool
 	return !(l == r );
 }
 
+fn DiffUTF8Chars( Iterator mut start, Iterator end ) : size_type
+{
+	auto mut r= 0s;
+	while(start.size() > end.size())
+	{
+		++r;
+		ReadNextUTF8Char(start);
+	}
+	return r;
+}
+
 fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnalysisResult
 {
 	var [ tup[ ust::array_view_imut</ char8 />, Lexem::Type ], 53 ]
@@ -482,12 +493,17 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 	var LexicalAnalysisResult mut result;
 
 	auto mut it= program_text;
+	auto mut prev_it= it;
 
 	var u32 mut line= 1u; // Count lines from "1", in human-readable format.
 	var u32 mut column= 0u;
 
 	while( !it.empty() )
 	{
+		column+= u32( DiffUTF8Chars( prev_it, it ) );
+		prev_it= it;
+		var FilePos file_pos( 0u, line, column );
+
 		auto c= GetUTF8FirstChar(it);
 
 		var Lexem mut lexem;
@@ -506,13 +522,13 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 		{
 			it.drop_front();
 			++line;
+			prev_it= it;
 			column= 0u;
 			continue;
 		}
 		else if( IsWhitespace(c) )
 		{
 			it.drop_front();
-			++column;
 			continue;
 		}
 		else if( IsIdentifierStartChar(c) )
@@ -557,7 +573,7 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 
 		if( lexem.lexem_type != Lexem::Type::None )
 		{
-			lexem.file_pos= FilePos( 0u, line, column );
+			lexem.file_pos= file_pos;
 			result.lexems.push_back(move(lexem));
 		}
 		else
