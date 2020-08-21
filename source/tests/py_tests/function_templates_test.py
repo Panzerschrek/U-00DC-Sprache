@@ -587,9 +587,7 @@ def Specialization_Test7():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
-	assert( errors_list[0].file_pos.line == 13 )
+	assert( HaveError( errors_list, "TooManySuitableOverloadedFunctions", 13 ) )
 
 
 def Specialization_Test8():
@@ -650,9 +648,7 @@ def Specialization_Test10():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
-	assert( errors_list[0].file_pos.line == 13 )
+	assert( HaveError( errors_list, "TooManySuitableOverloadedFunctions", 13 ) )
 
 
 def Specialization_Test11():
@@ -673,9 +669,7 @@ def Specialization_Test11():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
-	assert( errors_list[0].file_pos.line == 14 )
+	assert( HaveError( errors_list, "TooManySuitableOverloadedFunctions", 14 ) )
 
 
 def Specialization_Test12():
@@ -696,9 +690,7 @@ def Specialization_Test12():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
-	assert( errors_list[0].file_pos.line == 14 )
+	assert( HaveError( errors_list, "TooManySuitableOverloadedFunctions", 14 ) )
 
 
 def Specialization_Test13():
@@ -715,9 +707,7 @@ def Specialization_Test13():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 10 )
+	assert( HaveError( errors_list, "CouldNotSelectOverloadedFunction", 10 ) )
 
 
 def Specialization_Test14():

@@ -209,12 +209,16 @@ struct FunctionVariable
 
 	ust::shared_ptr_final_nullable</ Synt::Function /> prototype_syntax_element;
 	ust::shared_ptr_final_nullable</ Synt::Function /> body_syntax_element;
+
+	ust::shared_ptr_final_nullable</ FunctionTemplate /> base_template;
 }
 
 // Set of functions and function templates with same name in one scope.
 struct FunctionsSet
 {
 	ust::vector</FunctionVariable/> functions;
+	ust::vector</FunctionTemplatePtr/> function_templates;
+	ust::vector</ParametrizedFunctionTemplate/> parametrized_function_templates;
 }
 
 struct ThisMethodsSet
@@ -256,6 +260,7 @@ struct NamesScopeFunctionsSet
 	// Is incomplete, if there are some syntax elements in containers.
 	ust::vector</ ust::shared_ptr_final</ Synt::Function /> /> syntax_elements;
 	ust::vector</ ust::shared_ptr_final</ Synt::Function /> /> out_of_line_syntax_elements;
+	ust::vector</ ust::shared_ptr_final</ Synt::FunctionTemplate /> /> function_templates_syntax_elements;
 }
 
 struct ClassField
@@ -296,10 +301,8 @@ struct TypeAlias
 // Templates
 //
 
-struct TypeTemplate
+class TemplateBase polymorph
 {
-	ust::shared_ptr_final</Synt::TypeTemplate/> syntax_element;
-
 	struct Param
 	{
 		ust::string8 name;
@@ -309,9 +312,38 @@ struct TypeTemplate
 
 	ust::vector</ TemplateSignatureParam /> signature_params;
 
+	ust::weak_ptr_imut</NamesScope/> parent_names_scope; // Needed because template should see names scope of original file.
+
+	fn constructor(
+		ust::vector</Param/> mut in_params,
+		ust::vector</ TemplateSignatureParam /> mut in_signature_params,
+		ust::weak_ptr_imut</NamesScope/> mut in_parent_names_scope )
+		(
+			params(move(in_params)),
+			parent_names_scope(move(in_parent_names_scope)),
+			signature_params(move(in_signature_params))
+		)
+	{}
+}
+
+class TypeTemplate final : TemplateBase
+{
+	ust::shared_ptr_final</Synt::TypeTemplate/> syntax_element;
+
 	size_type first_default_param;
 
-	ust::weak_ptr_imut</NamesScope/> parent_names_scope; // Needed because type template should see names scope of original file.
+	fn constructor(
+		ust::vector</TemplateBase::Param/> mut in_params,
+		ust::vector</ TemplateSignatureParam /> mut in_signature_params,
+		ust::weak_ptr_imut</NamesScope/> mut in_parent_names_scope,
+		ust::shared_ptr_final</Synt::TypeTemplate/> mut in_syntax_element,
+		size_type in_first_default_param )
+		(
+			base( move(in_params), move(in_signature_params), move(in_parent_names_scope) ),
+			syntax_element( move(in_syntax_element) ),
+			first_default_param( in_first_default_param )
+		)
+	{}
 }
 
 type TypeTemplatePtr = ust::shared_ptr_final</TypeTemplate/>;
@@ -322,6 +354,33 @@ struct TypeTemplatesSet
 
 	// Is incomplete, if there are some syntax elements in containers.
 	ust::vector</ ust::shared_ptr_final</Synt::TypeTemplate/> /> syntax_elements;
+}
+
+class FunctionTemplate final : TemplateBase
+{
+	ust::shared_ptr_final</Synt::FunctionTemplate/> syntax_element;
+	ust::shared_ptr_nullable_mut</ClassType/> class_; // Non-empty for function set in struct/class.
+
+	fn constructor(
+		ust::vector</TemplateBase::Param/> mut in_params,
+		ust::vector</ TemplateSignatureParam /> mut in_signature_params,
+		ust::weak_ptr_imut</NamesScope/> mut in_parent_names_scope,
+		ust::shared_ptr_final</Synt::FunctionTemplate/> mut in_syntax_element,
+		ust::shared_ptr_nullable_mut</ClassType/> mut in_class )
+		(
+			base( move(in_params), move(in_signature_params), move(in_parent_names_scope) ),
+			syntax_element( move(in_syntax_element) ),
+			class_( move(in_class) )
+		)
+	{}
+}
+
+type FunctionTemplatePtr= ust::shared_ptr_final</FunctionTemplate/>;
+
+struct ParametrizedFunctionTemplate
+{
+	TemplateArgsFinished known_args;
+	FunctionTemplatePtr base_template;
 }
 
 struct TemplateArg

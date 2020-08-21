@@ -61,12 +61,35 @@ fn CompareConversionsMutability(
 fn CompareConversions(
 	FunctionType::Arg& src,
 	FunctionType::Arg& dst_left,
-	FunctionType::Arg& dst_right ) : ConversionsCompareResult
+	FunctionType::Arg& dst_right,
+	TemplateSignatureParam& template_param_l,
+	TemplateSignatureParam& template_param_r ) : ConversionsCompareResult
 {
 	// TODO - compare type conversions too
-	return CompareConversionsMutability( src, dst_left, dst_right );
-}
+	auto mutability_compare= CompareConversionsMutability( src, dst_left, dst_right );
+	auto template_specialization_compare= CompareTemplateSpecialization( template_param_l, template_param_r );
 
+	if( mutability_compare == ConversionsCompareResult::Incomparable ||
+		template_specialization_compare == ConversionsCompareResult::Incomparable )
+	{
+		return ConversionsCompareResult::Incomparable;
+	}
+
+	if( mutability_compare == ConversionsCompareResult::Same )
+	{
+		return template_specialization_compare;
+	}
+	if( template_specialization_compare == ConversionsCompareResult::Same )
+	{
+		return mutability_compare;
+	}
+	if( mutability_compare == template_specialization_compare )
+	{
+		return mutability_compare;
+	}
+
+	return ConversionsCompareResult::Incomparable;
+}
 
 fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignatureParam& r ) : ConversionsCompareResult
 {
@@ -284,15 +307,15 @@ fn CodeBuilder::ApplyOverloadedFunction(
 
 // TODO - pass array of "Variable" instead of "FunctionType::Arg"
 fn CodeBuilder::GetOverloadedFunction(
+	mut this,
 	FunctionsSet &'x functions_set,
 	ust::array_view_imut</FunctionType::Arg/> actual_args,
 	bool first_actual_arg_is_this,
 	NamesScopePtr& names_scope,
 	FilePos& file_pos,
-	bool produce_errors ) : ust::optional_ref</FunctionVariable, false/>'x'
+	bool produce_errors ) : ust::optional</FunctionVariable/>
 {
-	var ust::vector</size_type/> mut match_functions;
-	auto mut i= 0s;
+	var ust::vector</FunctionVariable/> mut match_functions;
 	foreach( & function : functions_set.functions )
 	{
 		var FunctionType& function_type= function.t;
@@ -339,10 +362,32 @@ fn CodeBuilder::GetOverloadedFunction(
 
 			if( all_args_is_compatible )
 			{
-				match_functions.push_back(i);
+				match_functions.push_back(function);
 			}
 		}
-		++i;
+	}
+
+	foreach( &function_template : functions_set.function_templates )
+	{
+		if_var( mut generated_function : GenTemplateFunction( function_template, actual_args, first_actual_arg_is_this, file_pos ) )
+		{
+			match_functions.push_back( move(generated_function) );
+		}
+	}
+
+	foreach( &parametrized_function_template : functions_set.parametrized_function_templates )
+	{
+		auto generated_function=
+			GenTemplateFunction(
+				parametrized_function_template.base_template,
+				parametrized_function_template.known_args,
+				actual_args,
+				first_actual_arg_is_this,
+				file_pos );
+		if( !generated_function.empty() )
+		{
+			match_functions.push_back( generated_function.get_ref() );
+		}
 	}
 
 	if( match_functions.empty() )
@@ -351,7 +396,7 @@ fn CodeBuilder::GetOverloadedFunction(
 		{
 			REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, file_pos )
 		}
-		return ust::optional_ref</FunctionVariable, false/>();
+		return ust::optional</FunctionVariable/>();
 	}
 
 	var ust::vector</bool/> mut best_functions;
@@ -360,11 +405,12 @@ fn CodeBuilder::GetOverloadedFunction(
 	// For each argument search functions, which is better, than another functions.
 	// For NOT better (four current arg) functions set flags to false.
 
+	var TemplateSignatureParam dummy_template_param= TemplateSignatureParam::TypeParam();
+
 	for( auto mut arg_n= 0s; arg_n < actual_args.size(); ++arg_n )
 	{
-		foreach( f_l : match_functions )
+		foreach( &l_function : match_functions )
 		{
-			var FunctionVariable& l_function= functions_set.functions[f_l];
 			var FunctionType& l_type= l_function.t;
 
 			auto mut l_arg_n= arg_n;
@@ -378,9 +424,8 @@ fn CodeBuilder::GetOverloadedFunction(
 			}
 
 			auto mut is_best_function_for_current_arg= true;
-			foreach( f_r : match_functions )
+			foreach( &r_function : match_functions )
 			{
-				var FunctionVariable& r_function= functions_set.functions[f_r];
 				var FunctionType& r_type= r_function.t;
 
 				auto mut r_arg_n= arg_n;
@@ -397,7 +442,9 @@ fn CodeBuilder::GetOverloadedFunction(
 					CompareConversions(
 						actual_args[arg_n],
 						l_type.args[l_arg_n],
-						r_type.args[r_arg_n] );
+						r_type.args[r_arg_n],
+						select( l_function.base_template.empty() ? dummy_template_param : l_function.base_template.get_ref().signature_params[l_arg_n] ),
+						select( r_function.base_template.empty() ? dummy_template_param : r_function.base_template.get_ref().signature_params[r_arg_n] ) );
 
 				if( comp == ConversionsCompareResult::Same || comp == ConversionsCompareResult::LeftIsBetter )
 				{}
@@ -413,7 +460,7 @@ fn CodeBuilder::GetOverloadedFunction(
 			{
 				for( auto mut func_n= 0s; func_n < match_functions.size(); ++func_n )
 				{
-					var FunctionVariable& r_function= functions_set.functions[cast_imut(match_functions)[func_n]];
+					var FunctionVariable& r_function= cast_imut(match_functions)[func_n];
 					var FunctionType& r_type= r_function.t;
 
 					auto mut r_arg_n= arg_n;
@@ -430,7 +477,9 @@ fn CodeBuilder::GetOverloadedFunction(
 						CompareConversions(
 							actual_args[arg_n],
 							l_type.args[l_arg_n],
-							r_type.args[r_arg_n] );
+							r_type.args[r_arg_n],
+							select( l_function.base_template.empty() ? dummy_template_param : l_function.base_template.get_ref().signature_params[l_arg_n] ),
+							select( r_function.base_template.empty() ? dummy_template_param : r_function.base_template.get_ref().signature_params[r_arg_n] ) );
 					if( comp != ConversionsCompareResult::Same )
 					{
 						best_functions[func_n]= false;
@@ -440,14 +489,14 @@ fn CodeBuilder::GetOverloadedFunction(
 		} // for functions left
 	}
 
-	var ust::optional_ref</FunctionVariable, false/> mut selected_function;
+	var ust::optional</FunctionVariable/> mut selected_function;
 	for( auto mut func_n= 0s; func_n < match_functions.size(); ++func_n )
 	{
 		if( best_functions[func_n] )
 		{
 			if( selected_function.empty() )
 			{
-				selected_function.reset( functions_set.functions[ match_functions[func_n] ] );
+				selected_function.reset( match_functions[func_n] );
 			}
 			else
 			{

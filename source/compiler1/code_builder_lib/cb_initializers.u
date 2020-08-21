@@ -667,16 +667,13 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 		var FunctionType& function_type= variable.t.GetFunctionPointerType().get_ref().function_type;
 
 		// TODO - support function pointer conversion here.
+		var ust::vector</ FunctionVariable /> mut exact_type_functions;
 		var ust::vector</ FunctionVariable /> mut functions_with_conversion;
 		foreach( &function_variable : functions_set.functions )
 		{
 			if( function_variable.t == function_type )
 			{
-				unsafe
-				{
-					LLVMBuildStore( function_context.llvm_ir_builder, function_variable.llvm_function, variable.llvm_value );
-				}
-				return function_variable.llvm_function;
+				exact_type_functions.push_back( function_variable );
 			}
 			else if( function_variable.t.PointerCanBeConvertedTo( function_type ) )
 			{
@@ -684,7 +681,61 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 			}
 		}
 
-		if( functions_with_conversion.size() == 1s )
+		foreach( &parametrized_function_template : functions_set.parametrized_function_templates )
+		{
+			if( parametrized_function_template.known_args.size() != parametrized_function_template.base_template.get_ref().params.size() )
+			{
+				continue;
+			}
+
+			if_var( &function_variable : FinishFunctionTemplateParametrization( parametrized_function_template, initializer_file_pos ) )
+			{
+				if( function_variable.t == function_type )
+				{
+					exact_type_functions.push_back( function_variable );
+				}
+				else if( function_variable.t.PointerCanBeConvertedTo( function_type ) )
+				{
+					functions_with_conversion.push_back( function_variable );
+				}
+			}
+		}
+
+		foreach( &function_template : functions_set.function_templates )
+		{
+			if( !function_template.get_ref().params.empty() )
+			{
+				continue;
+			}
+
+			var ParametrizedFunctionTemplate parametrized_function_template{ .base_template= function_template };
+			if_var( &function_variable : FinishFunctionTemplateParametrization( parametrized_function_template, initializer_file_pos ) )
+			{
+				if( function_variable.t == function_type )
+				{
+					exact_type_functions.push_back( function_variable );
+				}
+				else if( function_variable.t.PointerCanBeConvertedTo( function_type ) )
+				{
+					functions_with_conversion.push_back( function_variable );
+				}
+			}
+		}
+
+		if( exact_type_functions.size() == 1s )
+		{
+			auto& function_variable= exact_type_functions.front();
+			unsafe
+			{
+				LLVMBuildStore( function_context.llvm_ir_builder, function_variable.llvm_function, variable.llvm_value );
+			}
+			return function_variable.llvm_function;
+		}
+		else if( exact_type_functions.size() > 1s )
+		{
+			REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope, initializer_file_pos )
+		}
+		else if( functions_with_conversion.size() == 1s )
 		{
 			// TODO - maybe disable conversion for expression initializer?
 			unsafe

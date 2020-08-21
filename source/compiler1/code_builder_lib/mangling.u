@@ -119,30 +119,77 @@ fn MangleGraphFinalize( MangleGraphNode& node ) : ust::string8
 	return MangleGraphFinalize_r( names_cache, node ).compressed;
 }
 
-fn GetNestedName( ust::string8& name, NamesScope& parent_scope, bool no_name_num_prefix ) : MangleGraphNode
+fn GetNestedName(
+	ust::string8& name,
+	NamesScope& parent_scope,
+	bool no_name_num_prefix,
+	ust::optional_ref</TemplateArgsFinished, false/> template_args ) : MangleGraphNode
 {
 	var MangleGraphNode mut res;
 
 	auto num_prefix= select( no_name_num_prefix ? ust::string8() : ust::to_string8(name.size()) );
 	if( !parent_scope.GetParent().empty() )
 	{
-		res.prefix+= "N";
-		res.childs.push_back( ust::box</MangleGraphNode/>( GetNamespacePrefix_r( parent_scope ) ) );
-		res.postfix+= num_prefix;
-		res.postfix+= name;
-		res.postfix+= "E";
+		if( !template_args.empty() )
+		{
+			var MangleGraphNode mut name_node;
+			name_node.postfix+= num_prefix;
+			name_node.postfix+= name;
+			name_node.childs.push_back( ust::box</MangleGraphNode/>( GetNamespacePrefix_r( parent_scope ) ) );
+
+			var MangleGraphNode mut args_node= MangleTemplateArgsImpl( template_args.get_ref() );
+
+			res.prefix+= "N";
+			res.childs.push_back( ust::box</MangleGraphNode/>( move(name_node) ) );
+			res.childs.push_back( ust::box</MangleGraphNode/>( move(args_node) ) );
+			res.postfix+= "Ev";
+		}
+		else
+		{
+			res.prefix+= "N";
+			res.childs.push_back( ust::box</MangleGraphNode/>( GetNamespacePrefix_r( parent_scope ) ) );
+			res.postfix+= num_prefix;
+			res.postfix+= name;
+			res.postfix+= "E";
+		}
 	}
 	else
 	{
-		res.prefix+= num_prefix;
-		res.prefix+= name;
+		if( !template_args.empty() )
+		{
+			var MangleGraphNode mut name_node;
+			name_node.postfix+= num_prefix;
+			name_node.postfix+= name;
+
+			var MangleGraphNode mut args_node= MangleTemplateArgsImpl( template_args.get_ref() );
+
+			res.childs.push_back( ust::box</MangleGraphNode/>( move(name_node) ) );
+			res.childs.push_back( ust::box</MangleGraphNode/>( move(args_node) ) );
+			res.postfix+= "v";
+		}
+		else
+		{
+			res.prefix+= num_prefix;
+			res.prefix+= name;
+		}
+
 	}
 	return move(res);
 }
 
-fn GetNestedName( ust::string8& name, NamesScope& names_scope ) : MangleGraphNode
+fn GetNestedName(
+	ust::string8& name,
+	NamesScope& parent_scope,
+	bool no_name_num_prefix ) : MangleGraphNode
 {
-	return GetNestedName( name, names_scope, false );
+	return GetNestedName( name, parent_scope, no_name_num_prefix, ust::optional_ref</TemplateArgsFinished, false/>() );
+}
+
+fn GetNestedName(
+	ust::string8& name,
+	NamesScope& parent_scope ) : MangleGraphNode
+{
+	return GetNestedName( name, parent_scope, false );
 }
 
 fn MangleFundamentalTypeName( U_FundamentalType t ) : ust::string8
@@ -460,21 +507,22 @@ fn DecodeOperator( ust::string8& o ) : ust::array_view_imut</ char8 />
 	return "";
 }
 
-fn MangleFunction(
+fn MangleFunctionImpl(
 	NamesScope& parent_scope,
 	ust::string8& name,
-	FunctionType& function_type ) : ust::string8
+	FunctionType& function_type,
+	ust::optional_ref</TemplateArgsFinished, false/> template_args ) : ust::string8
 {
 	var MangleGraphNode mut res;
 
 	auto op_decoded= DecodeOperator( name );
 	if( !op_decoded.empty() )
 	{
-		res.childs.push_back( ust::box</MangleGraphNode/>( GetNestedName( op_decoded, parent_scope, true ) ) );
+		res.childs.push_back( ust::box</MangleGraphNode/>( GetNestedName( op_decoded, parent_scope, true, template_args ) ) );
 	}
 	else
 	{
-		res.childs.push_back( ust::box</MangleGraphNode/>( GetNestedName( name, parent_scope, false ) ) );
+		res.childs.push_back( ust::box</MangleGraphNode/>( GetNestedName( name, parent_scope, false, template_args ) ) );
 	}
 
 	res.childs.back().get_ref().cachable= false;
@@ -510,6 +558,23 @@ fn MangleFunction(
 	str+= MangleGraphFinalize(res);
 	str+= "\0";
 	return move(str);
+}
+
+fn MangleFunction(
+	NamesScope& parent_scope,
+	ust::string8& name,
+	FunctionType& function_type ) : ust::string8
+{
+	return MangleFunctionImpl( parent_scope, name, function_type, ust::optional_ref</TemplateArgsFinished, false/>() );
+}
+
+fn MangleFunction(
+	NamesScope& parent_scope,
+	ust::string8& name,
+	FunctionType& function_type,
+	TemplateArgsFinished& template_args ) : ust::string8
+{
+	return MangleFunctionImpl( parent_scope, name, function_type, ust::optional_ref</TemplateArgsFinished, false/>(template_args) );
 }
 
 fn MangleGlobalVariable( NamesScope& parent_scope, ust::string8& variable_name ) : ust::string8

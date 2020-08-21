@@ -539,6 +539,7 @@ fn CodeBuilder::ResolveValue(
 		if_var( &template_args : name_component.get</ ust::box</Synt::TemplateArgs/> />() )
 		{
 			auto type_templates_set= current_value.get_ref().Get</TypeTemplatesSet/>();
+			auto functions_set= current_value.get_ref().Get</NamesScopeFunctionsSet/>();
 			if( !type_templates_set.empty() )
 			{
 				BuiltTypeTemplatesSet( ust::to_non_nullable(current_scope), ust::to_non_nullable(type_templates_set) );
@@ -568,9 +569,33 @@ fn CodeBuilder::ResolveValue(
 					return ErrorValue();
 				}
 			}
+			else if( !functions_set.empty() )
+			{
+				BuildFunctionsSet( ust::to_non_nullable(current_scope), ust::to_non_nullable( functions_set ), false );
+				auto lock= functions_set.lock_imut();
+				auto& f= lock.get_ref();
+
+				if( f.functions_set.function_templates.empty() )
+				{
+					REPORT_ERROR( ValueIsNotTemplate, names_scope, complex_name.file_pos )
+					return ErrorValue();
+				}
+
+				current_value=
+					ParametrizeTemplateFunctions(
+						names_scope,
+						function_context,
+						f.functions_set,
+						template_args.get_ref(),
+						complex_name.file_pos );
+				if( current_value.empty() )
+				{
+					return ErrorValue();
+				}
+			}
 			else
 			{
-				REPORT_ERROR( ValueIsNotTemplate, names_scope, complex_name.file_pos)
+				REPORT_ERROR( ValueIsNotTemplate, names_scope, complex_name.file_pos )
 				return ErrorValue();
 			}
 		}
@@ -631,7 +656,9 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 		{ // First, lock as imut and check if complete.
 			auto l= functions_set_ptr.lock_imut();
 			var NamesScopeFunctionsSet& functions_set= l.get_ref();
-			if( functions_set.syntax_elements.empty() && functions_set.out_of_line_syntax_elements.empty() ) // Already complete
+			if( functions_set.syntax_elements.empty() &&
+				functions_set.out_of_line_syntax_elements.empty() &&
+				functions_set.function_templates_syntax_elements.empty() ) // Already complete
 			{
 				return;
 			}
@@ -655,6 +682,13 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 			auto class_type_ptr= functions_set.class_;
 			PrepareFunction( syntax_element_ptr, names_scope_ptr, class_type_ptr, functions_set.functions_set, true );
 			functions_set.out_of_line_syntax_elements.drop_back();
+		}
+		while( !functions_set.function_templates_syntax_elements.empty() )
+		{
+			auto syntax_element_ptr= functions_set.function_templates_syntax_elements.back();
+			auto function_template= PrepareFunctionTemplate( names_scope_ptr, syntax_element_ptr, functions_set.class_ );
+			functions_set.functions_set.function_templates.push_back( function_template );
+			functions_set.function_templates_syntax_elements.drop_back();
 		}
 	}
 

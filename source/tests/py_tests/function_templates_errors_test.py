@@ -8,9 +8,7 @@ def FunctionDeclarationOutsideItsScope_ForFunctionTemplates_Test0():
 		fn NS::Foo(){}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 1 )
-	assert( errors_list[1].error_code == "FunctionDeclarationOutsideItsScope" )
-	assert( errors_list[1].file_pos.line == 3 )
+	assert( HaveError( errors_list, "FunctionDeclarationOutsideItsScope", 3 ) )
 
 
 def ValueIsNotTemplate_ForFunctionTemplates_Test1():
@@ -91,9 +89,7 @@ def NameIsNotTypeName_ForFunctionTemplateParameter():
 		fn Foo(){}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "NameIsNotTypeName" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( HaveError( errors_list, "NameIsNotTypeName", 3 ) or HaveError( errors_list, "InvalidValueAsTemplateArgument", 3 ) )
 
 
 def InvalidTypeOfTemplateVariableArgument_ForFunctionTemplateParameter():
@@ -134,9 +130,7 @@ def TemplateParametersDeductionFailed_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 1 )
-	assert( errors_list[1].error_code == "TemplateParametersDeductionFailed" )
-	assert( errors_list[1].file_pos.line == 11 )
+	assert( HaveError( errors_list, "TemplateParametersDeductionFailed", 11 ) )
 
 
 def TemplateParametersDeductionFailed_Test1():
@@ -150,9 +144,7 @@ def TemplateParametersDeductionFailed_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 1 )
-	assert( errors_list[1].error_code == "TemplateParametersDeductionFailed" )
-	assert( errors_list[1].file_pos.line == 7 )
+	assert( HaveError( errors_list, "TemplateParametersDeductionFailed", 7 ) )
 
 
 def TemplateParametersDeductionFailed_Test2():
@@ -365,9 +357,7 @@ def TemplateFunctionGenerationFailed_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 1 )
-	assert( errors_list[1].error_code == "TemplateFunctionGenerationFailed" )
-	assert( errors_list[1].file_pos.line == 7 )
+	assert( HaveError( errors_list, "TemplateFunctionGenerationFailed", 7 ) )
 
 
 def TemplateFunctionGenerationFailed_Test1():
@@ -381,9 +371,7 @@ def TemplateFunctionGenerationFailed_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 1 )
-	assert( errors_list[1].error_code == "TemplateFunctionGenerationFailed" )
-	assert( errors_list[1].file_pos.line == 7 )
+	assert( HaveError( errors_list, "TemplateFunctionGenerationFailed", 7 ) )
 
 
 def TemplateFunctionGenerationFailed_Test2():
@@ -398,9 +386,7 @@ def TemplateFunctionGenerationFailed_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 1 )
-	assert( errors_list[1].error_code == "TemplateFunctionGenerationFailed" )
-	assert( errors_list[1].file_pos.line == 8 )
+	assert( HaveError( errors_list, "TemplateFunctionGenerationFailed", 8 ) )
 
 
 def TemplateFunctionGenerationFailed_Test3():
@@ -415,9 +401,7 @@ def TemplateFunctionGenerationFailed_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 1 )
-	assert( errors_list[1].error_code == "TemplateFunctionGenerationFailed" )
-	assert( errors_list[1].file_pos.line == 8 )
+	assert( HaveError( errors_list, "TemplateFunctionGenerationFailed", 8 ) )
 
 
 def TemplateFunctionGenerationFailed_Test5():
@@ -431,6 +415,4 @@ def TemplateFunctionGenerationFailed_Test5():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 1 )
-	assert( errors_list[1].error_code == "TemplateFunctionGenerationFailed" )
-	assert( errors_list[1].file_pos.line == 7 )
+	assert( HaveError( errors_list, "TemplateFunctionGenerationFailed", 7 ) )
