@@ -432,7 +432,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TemplateFunctionGenerationFailed_Test0",
 		"TemplateFunctionGenerationFailed_Test1",
 		"TemplateFunctionGenerationFailed_Test2",
-		//"TemplateFunctionGenerationFailed_Test3",
+		"TemplateFunctionGenerationFailed_Test3",
 		"TemplateFunctionGenerationFailed_Test5",
 		"TemplateMethod_Test0",
 		"TemplateMethod_Test1",

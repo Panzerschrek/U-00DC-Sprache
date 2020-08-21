@@ -992,22 +992,36 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 			continue;
 		}
 
+		var NamesScopeMutPtr result_names_scope(
+			NamesScope(
+				"",
+				ust::to_non_nullable( function_template.parent_names_scope.lock() ) ) );
+		{
+			auto mut result_names_scope_lock= result_names_scope.lock_mut();
+			for( auto mut i= 0s; i < function_template.params.size(); ++i )
+			{
+				var TemplateArg mut template_arg{ .index= i };
+				result_names_scope_lock.get_ref().AddName( function_template.params[i].name, move(template_arg) );
+			}
+		}
+
 		auto mut all_ok= true;
 		for( auto mut i= 0s; i < template_args_finished.size(); ++i )
 		{
 			auto& param= function_template.params[i];
 			auto& arg= template_args_finished[i];
+
+			var TemplateSignatureParam::TemplateParam mut signature_param{ .index= i };
+			var TemplateSignatureParam signature_param_abstract( move(signature_param) );
+
 			if( !param.t.empty() )
 			{
 				if_var( &v : arg.get</Variable/>() )
 				{
-					if_var( &type_param : param.t.get_ref().GetTypeParam() )
+					if( !MatchTemplateArgument( result_names_scope, function_template, signature_param_abstract, v, file_pos ) )
 					{
-						if( v.t != type_param.t )
-						{
-							all_ok= false;
-							break;
-						}
+						all_ok= false;
+						break;
 					}
 					continue;
 				}
@@ -1020,6 +1034,11 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 			{
 				if_var( &t : arg.get</Type/>() )
 				{
+					if( !MatchTemplateArgument( result_names_scope, function_template, signature_param_abstract, t, file_pos ) )
+					{
+						all_ok= false;
+						break;
+					}
 					continue;
 				}
 
@@ -1029,16 +1048,18 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 			}
 		}
 
-		if( all_ok )
+		if( !all_ok )
 		{
-			var ParametrizedFunctionTemplate mut parametrized_function_template
-			{
-				.known_args= template_args_finished,
-				.base_template= function_template_ptr,
-			};
-
-			result_functions_set.functions_set.parametrized_function_templates.push_back( move(parametrized_function_template) );
+			continue;
 		}
+
+		var ParametrizedFunctionTemplate mut parametrized_function_template
+		{
+			.known_args= template_args_finished,
+			.base_template= function_template_ptr,
+		};
+
+		result_functions_set.functions_set.parametrized_function_templates.push_back( move(parametrized_function_template) );
 	}
 
 	if( result_functions_set.functions_set.parametrized_function_templates.empty() )
@@ -1291,7 +1312,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 	{
 		if_var( &given_function_pointer_type : given_type.GetFunctionPointerType() )
 		{
-			var FunctionType given_function_type= given_function_pointer_type.function_type;
+			var FunctionType& given_function_type= given_function_pointer_type.function_type;
 
 			if( given_function_type.return_value_is_mutable != function_type_param.return_value_is_mutable ||
 				given_function_type.return_value_is_reference != function_type_param.return_value_is_reference ||
