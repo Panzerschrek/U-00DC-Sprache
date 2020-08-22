@@ -34,6 +34,58 @@ enum ConversionsCompareResult
 	Incomparable
 }
 
+fn ComplareConversionsType(
+	Type& src,
+	Type& dst_left,
+	Type& dst_right ) : ConversionsCompareResult
+{
+	if( dst_left == dst_right )
+	{
+		return ConversionsCompareResult::Same;
+	}
+	if( src == dst_left )
+	{
+		return ConversionsCompareResult::LeftIsBetter;
+	}
+	if( src == dst_right )
+	{
+		return ConversionsCompareResult::RightIsBetter;
+	}
+
+	if( src.ReferenceIsConvertibleTo( dst_left ) && src.ReferenceIsConvertibleTo( dst_right ) )
+	{
+		var Type void_type( FundamentalType( U_FundamentalType::void_, LLVMTypeRef::Null ) );
+
+		// If one of types are void - other is better (because it is not void ).
+		if( dst_left  == void_type )
+		{
+			return ConversionsCompareResult::RightIsBetter;
+		}
+		if( dst_right == void_type )
+		{
+			return ConversionsCompareResult::LeftIsBetter;
+		}
+
+		// SPRACHE_TODO - select more relevant compare function.
+
+		//const Class&   src_class= *src.GetClassType();
+		//const Class&  left_class= *src.GetClassType();
+		//const Class& right_class= *src.GetClassType();
+
+		if( dst_right.ReferenceIsConvertibleTo( dst_left  ) )
+		{
+			return ConversionsCompareResult::RightIsBetter;
+		}
+		if( dst_left .ReferenceIsConvertibleTo( dst_right ) )
+		{
+			return ConversionsCompareResult::LeftIsBetter;
+		}
+	}
+
+
+	return ConversionsCompareResult::Incomparable;
+}
+
 fn CompareConversionsMutability(
 	FunctionType::Arg& src,
 	FunctionType::Arg& dst_left,
@@ -61,34 +113,56 @@ fn CompareConversionsMutability(
 fn CompareConversions(
 	FunctionType::Arg& src,
 	FunctionType::Arg& dst_left,
+	FunctionType::Arg& dst_right ) : ConversionsCompareResult
+{
+	auto types_compare= ComplareConversionsType( src.arg_type.get_ref(), dst_left.arg_type.get_ref(), dst_right.arg_type.get_ref() );
+	auto mutability_compare= CompareConversionsMutability( src, dst_left, dst_right );
+
+	if( types_compare == mutability_compare )
+	{
+		return types_compare;
+	}
+
+	if( types_compare == ConversionsCompareResult::Incomparable || mutability_compare == ConversionsCompareResult::Incomparable )
+	{
+		return ConversionsCompareResult::Incomparable;
+	}
+	if( types_compare == ConversionsCompareResult::Same )
+	{
+		return mutability_compare;
+	}
+	if( mutability_compare == ConversionsCompareResult::Same )
+	{
+		return types_compare;
+	}
+
+	return ConversionsCompareResult::Incomparable;
+}
+
+fn CompareConversions(
+	FunctionType::Arg& src,
+	FunctionType::Arg& dst_left,
 	FunctionType::Arg& dst_right,
 	TemplateSignatureParam& template_param_l,
 	TemplateSignatureParam& template_param_r ) : ConversionsCompareResult
 {
-	// TODO - compare type conversions too
-	auto mutability_compare= CompareConversionsMutability( src, dst_left, dst_right );
+	// conversions result have more preority. Compare template specialization only if conversions comare results are same.
+
+	auto conversions_compare= CompareConversions( src, dst_left, dst_right );
 	auto template_specialization_compare= CompareTemplateSpecialization( template_param_l, template_param_r );
 
-	if( mutability_compare == ConversionsCompareResult::Incomparable ||
-		template_specialization_compare == ConversionsCompareResult::Incomparable )
+	if( conversions_compare == ConversionsCompareResult::Incomparable )
 	{
 		return ConversionsCompareResult::Incomparable;
 	}
 
-	if( mutability_compare == ConversionsCompareResult::Same )
+	if( conversions_compare == ConversionsCompareResult::LeftIsBetter ||
+		conversions_compare == ConversionsCompareResult::RightIsBetter )
 	{
-		return template_specialization_compare;
-	}
-	if( template_specialization_compare == ConversionsCompareResult::Same )
-	{
-		return mutability_compare;
-	}
-	if( mutability_compare == template_specialization_compare )
-	{
-		return mutability_compare;
+		return conversions_compare;
 	}
 
-	return ConversionsCompareResult::Incomparable;
+	return template_specialization_compare;
 }
 
 fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignatureParam& r ) : ConversionsCompareResult
@@ -336,13 +410,31 @@ fn CodeBuilder::GetOverloadedFunction(
 				auto arg_overloading_class= GetArgOverloadingClass( actual_args_corrected[arg_n] );
 				auto parameter_overloading_class= GetArgOverloadingClass( function_type.args[arg_n] );
 
-				if( actual_args_corrected[arg_n].arg_type.get_ref() == function_type.args[arg_n].arg_type.get_ref() )
+				auto& src_type= actual_args_corrected[arg_n].arg_type.get_ref();
+				auto& dst_type= function_type.args[arg_n].arg_type.get_ref();
+				if( src_type == dst_type )
 				{} // ok
 				else
 				{
-					// TODO - apply here type/reference conversions
-					all_args_is_compatible= false;
-					break;
+					if( src_type != void_type_ && dst_type != void_type_ &&
+						!( EnsureTypeComplete( src_type ) && EnsureTypeComplete( dst_type ) ) )
+					{
+						if( produce_errors )
+						{
+							REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, file_pos )
+						}
+						all_args_is_compatible= false;
+						break;
+					}
+
+					if( src_type.ReferenceIsConvertibleTo( dst_type ) )
+					{} // Ok - convert references.
+					else
+					{
+						// TODO - apply here type/reference conversions
+						all_args_is_compatible= false;
+						break;
+					}
 				}
 
 				if( arg_overloading_class == parameter_overloading_class )

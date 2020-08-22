@@ -348,6 +348,10 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 	{
 		"AutoVariableInitialization_UsingFunctionPointer_Test0",
 		"BindingConstReferenceToNonconstReference_InFunctionPointerCall_Test0",
+		"CastToVoidReference_Test0",
+		"CastToVoidReference_Test1",
+		"CastToVoidReference_Test2",
+		"CastToVoidReference_Test3",
 		"CharAsTemplateParameter_Test0",
 		"CharIsEqualityComparable_Test0",
 		"CharIsOrderComparable_Test0",
