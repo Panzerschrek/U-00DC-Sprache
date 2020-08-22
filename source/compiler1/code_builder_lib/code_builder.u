@@ -714,7 +714,32 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		}
 	}
 
+	auto syntax_element_ptr= class_type.lock_imut().get_ref().syntax_element;
+
 	auto mut global_function_context= CreateGlobalFunctionContext();
+
+	// Fill parents
+	// TODO - produce some errors.
+	foreach( &parent_name : syntax_element_ptr.get_ref().parents )
+	{
+		auto parent_type= PrepareType( names_scope_ptr, global_function_context, parent_name );
+		if( parent_type.GetClassType().empty() )
+		{
+			continue;
+		}
+
+		if( !EnsureTypeComplete( parent_type ) )
+		{
+			continue;
+		}
+
+		var ClassType::Parent mut parent{ .class_= parent_type.GetClassType().get_ref() };
+		{
+			auto mut lock= class_type.lock_mut();
+			lock.get_ref().parents.push_back( move(parent) );
+		}
+	}
+
 	var ust::vector</ LLVMTypeRef /> mut fields_llvm_types;
 
 	auto class_members= class_type.lock_imut().get_ref().members;
@@ -756,6 +781,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			auto &mut type_alias= lock.get_ref();
 			BuildTypeAlias( names_scope_ptr, type_alias );
 		}
+		// TODO - maybe build here also inner classes, enums, global variables?
 	}
 
 	{
@@ -780,46 +806,81 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		}
 
 	}
+
 	TryGenerateDefaultConstructor( class_type );
 	TryGenerateCopyConstructor( class_type );
 	TryGenerateCopyAssignmentOperator( class_type );
 	TryGenerateDestructor( class_type );
 
-	auto mut class_lock= class_type.lock_mut();
-	var ClassType &mut class_= class_lock.get_ref();
-
-	// Search for explicit noncopy constructors.
-	if_var( constructors : class_members.lock_imut().get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ) )
 	{
-		auto functions_set_ptr= constructors.Get</NamesScopeFunctionsSet/>();
-		// Should be functions set 100%
-		foreach( &function_variable : functions_set_ptr.lock_imut().get_ref().functions_set.functions )
-		{
-			if( function_variable.is_generated )
-			{
-				continue;
-			}
+		auto mut class_lock= class_type.lock_mut();
+		var ClassType &mut class_= class_lock.get_ref();
 
-			auto& function_type= function_variable.t;
-			if( function_type.args.size() == 1s )
+		// Search for explicit noncopy constructors.
+		if_var( constructors : class_members.lock_imut().get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ) )
+		{
+			auto functions_set_ptr= constructors.Get</NamesScopeFunctionsSet/>();
+			// Should be functions set 100%
+			foreach( &function_variable : functions_set_ptr.lock_imut().get_ref().functions_set.functions )
 			{
-				class_.is_default_constructible= true;
-				class_.have_explicit_noncopy_constructors= true;
-			}
-			else if(
-				function_type.args.size() == 2s &&
-				function_type.args.back().is_reference &&
-				!function_type.args.back().is_mutable &&
-				function_type.args.back().arg_type.get_ref() == class_type ) // Copy constructor
-			{}
-			else
-			{
-				class_.have_explicit_noncopy_constructors= true;
+				if( function_variable.is_generated )
+				{
+					continue;
+				}
+
+				auto& function_type= function_variable.t;
+				if( function_type.args.size() == 1s )
+				{
+					class_.is_default_constructible= true;
+					class_.have_explicit_noncopy_constructors= true;
+				}
+				else if(
+					function_type.args.size() == 2s &&
+					function_type.args.back().is_reference &&
+					!function_type.args.back().is_mutable &&
+					function_type.args.back().arg_type.get_ref() == class_type ) // Copy constructor
+				{}
+				else
+				{
+					class_.have_explicit_noncopy_constructors= true;
+				}
 			}
 		}
 	}
 
-	class_.is_complete= true;
+	// Merge namespaces of parents.
+	{
+		auto lock= class_type.lock_imut();
+		auto& class_type_ref= lock.get_ref();
+		auto dst_members_ptr= class_type_ref.members;
+
+		foreach( &parent : class_type_ref.parents )
+		{
+			auto parent_members= parent.class_.lock_imut().get_ref().members;
+			foreach( &member_value : parent_members.lock_imut().get_ref().GetInternalContainer() )
+			{
+				auto mut dst_members_lock= dst_members_ptr.lock_mut();
+				auto &mut dst_members_= dst_members_lock.get_ref();
+
+				if( !member_value.value().Get</ClassType/>().empty() ||
+					!member_value.value().Get</Enum/>().empty() ||
+					!member_value.value().Get</TypeAlias/>().empty() ||
+					!member_value.value().Get</GlobalVariable/>().empty() ||
+					!member_value.value().Get</GlobalAutoVariable/>().empty() )
+				{
+					dst_members_.AddName( member_value.key(), member_value.value() );
+				}
+
+				// TODO - inherit functions.
+			}
+		}
+	}
+
+	// Finally, make class complete.
+	{
+		auto mut class_lock= class_type.lock_mut();
+		class_lock.get_ref().is_complete= true;
+	}
 }
 
 fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr& enum_type )

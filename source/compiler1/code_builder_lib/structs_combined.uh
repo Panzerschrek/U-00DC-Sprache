@@ -113,6 +113,13 @@ struct ClassType
 	bool is_copy_constructible= false;
 	bool is_copy_assignable= false;
 	bool have_explicit_noncopy_constructors= false;
+
+	struct Parent
+	{
+		ClassTypePtr class_;
+		u32 field_number= ~0u; // Allways 0 for base class.
+	}
+	ust::vector</Parent/> parents; // Parents, include base class.
 }
 
 type ClassTypePtr= ust::shared_ptr_mut</ClassType/>;
