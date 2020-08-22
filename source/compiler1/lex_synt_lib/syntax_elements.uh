@@ -403,8 +403,9 @@ struct Class
 
 	FilePos file_pos;
 	ust::string8 name;
-	ClassElements class_elements;
 	KindAttribute kind_attribute= KindAttribute::Struct;
+	ust::vector</ComplexName/> parents;
+	ClassElements class_elements;
 	bool is_forward_declaration= false;
 }
 

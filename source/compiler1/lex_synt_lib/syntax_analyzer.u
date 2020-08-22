@@ -241,6 +241,7 @@ private:
 
 	fn ParseClass( mut this ) : Class;
 	fn ParseClassKindAttribute( mut this ) : Class::KindAttribute;
+	fn ParseClassParentsList( mut this ) : ust::vector</ComplexName/>;
 	fn ParseClassBody( mut this ) : ClassElements;
 	fn ParseEnum( mut this ) : Enum;
 	fn ParseTypeAlias( mut this ) : TypeAlias;
@@ -1853,7 +1854,15 @@ fn SyntaxAnalyzer::ParseClass( mut this ) : Class
 	class_.name= it_.front().text;
 	NextLexem();
 
-	class_.kind_attribute= select( is_struct ? Class::KindAttribute::Struct : ParseClassKindAttribute() );
+	if( is_struct )
+	{
+		class_.kind_attribute= Class::KindAttribute::Struct;
+	}
+	else
+	{
+		class_.kind_attribute= ParseClassKindAttribute();
+		class_.parents= ParseClassParentsList();
+	}
 
 	if( it_.front().lexem_type == Lexem::Type::Semicolon )
 	{
@@ -1988,6 +1997,33 @@ fn SyntaxAnalyzer::ParseClassKindAttribute( mut this ) : Class::KindAttribute
 	}
 
 	return Class::KindAttribute::Class;
+}
+
+fn SyntaxAnalyzer::ParseClassParentsList( mut this ) : ust::vector</ComplexName/>
+{
+	if( it_.front().lexem_type != Lexem::Type::Colon )
+	{
+		return ust::vector</ComplexName/>();
+	}
+	NextLexem();
+
+	var ust::vector</ComplexName/> mut parents_list;
+
+	while( NotEndOfFile() )
+	{
+		parents_list.push_back( ParseComplexName() );
+
+		if( it_.front().lexem_type == Lexem::Type::Comma )
+		{
+			NextLexem();
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	return move(parents_list);
 }
 
 fn SyntaxAnalyzer::ParseEnum( mut this ) : Enum
@@ -2222,7 +2258,7 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 	}
 	else if( IsKeyword( it_.front(), Keyword::struct_ ) || IsKeyword( it_.front(), Keyword::class_ ) )
 	{
-		auto is_class= IsKeyword( it_.front(), Keyword::class_ );
+		auto is_struct= IsKeyword( it_.front(), Keyword::struct_ );
 		NextLexem();
 
 		if( it_.front().lexem_type != Lexem::Type::Identifier )
@@ -2249,9 +2285,20 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 		{
 			.file_pos= class_file_pos,
 			.name= "_", // Give special name for all template classes
-			.kind_attribute= select( is_class ? ParseClassKindAttribute() : Class::KindAttribute::Struct ),
-			.class_elements= ParseClassBody(),
 		};
+
+		if( is_struct )
+		{
+			class_.kind_attribute= Class::KindAttribute::Struct;
+		}
+		else
+		{
+			class_.kind_attribute= ParseClassKindAttribute();
+			class_.parents= ParseClassParentsList();
+		}
+
+		class_.class_elements= ParseClassBody();
+
 		var TypeTemplate mut type_template
 		{
 			.file_pos= template_file_pos,

@@ -468,6 +468,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"FunctionTemplateBase_Test",
 		"FunctionTemplateDeclaration_Test",
 		"InheritanceTest_ClassKindAttribute_Test",
+		"InheritanceTest_ClassParentsList_Test",
 		"InvalidFunctionArgumentCount_Test",
 		"NonExistentTest",
 		"NumericConstants_BinaryConstants",
