@@ -475,7 +475,9 @@ fn CodeBuilder::ResolveValue(
 			}
 			if( !class_.empty() )
 			{
-				// We do not need to build class here, because class namespace is already filled. Names itself will be built separately later.
+				// We need to build class here, because class internal namespace may be filled in build process in case of inheritance.
+				// TODO - maybe not build it here if class have no parents?
+				BuildClass( ust::to_non_nullable(current_scope), ust::to_non_nullable( class_ ) );
 				namespace_= class_.lock_imut().get_ref().members;
 			}
 

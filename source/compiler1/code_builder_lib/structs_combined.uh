@@ -91,7 +91,7 @@ struct FunctionPointerType
 
 struct ClassType
 {
-	NamesScopeMutPtr members; // Do not change class members unless in "NamesScopeFill" methods!
+	NamesScopeMutPtr members; // Mutable, because it may be filled in class build process in case of inheritance.
 
 	ust::shared_ptr_final_nullable</ Synt::Class /> forward_declaration_syntax_element;
 	ust::shared_ptr_final_nullable</ Synt::Class /> syntax_element;
