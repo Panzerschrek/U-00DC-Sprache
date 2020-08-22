@@ -1669,6 +1669,19 @@ fn CodeBuilder::CreateMoveToLLVMRegisterInstruction( Variable& variable, Functio
 	halt;
 }
 
+fn CodeBuilder::CreateReferenceCast( LLVMValueRef ref, Type& src_type, Type& dst_type, FunctionContext& function_context) : LLVMValueRef
+{
+	if( src_type == dst_type )
+	{
+		return ref;
+	}
+	unsafe
+	{
+		auto dst_pointer_type= LLVMPointerType( dst_type.GetLLVMType(), 0u );
+		return LLVMBuildPointerCast( function_context.llvm_ir_builder, ref, dst_pointer_type, "\0"[0] );
+	}
+}
+
 fn CodeBuilder::SaveInstructionsState( FunctionContext& function_context ) : InstructionsState
 {
 	unsafe

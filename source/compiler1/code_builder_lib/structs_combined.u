@@ -422,6 +422,20 @@ fn Type::CanBeConstexpr( this ) : bool
 	return false;
 }
 
+fn Type::ReferenceIsConvertibleTo( this, Type& dst ) : bool
+{
+	if( this == dst )
+	{
+		return true;
+	}
+
+	if_var( &dst_fundamental_type : dst.GetFundamentalType() )
+	{
+		return dst_fundamental_type.fundamental_type == U_FundamentalType::void_;
+	}
+	return false;
+}
+
 fn Type::ToString( this ) : ust::string8
 {
 	variant_visit( &t : something_ )

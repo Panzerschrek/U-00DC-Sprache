@@ -451,6 +451,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 
 	static const std::string c_tests_to_enable_pattern[]
 	{
+		"CastToVoidReference_Test",
 		"CharIsConstructibleFromChar_Test",
 		"CharIsConstructibleFromInt_Test",
 		"CharIsNotIntegerType_Test",

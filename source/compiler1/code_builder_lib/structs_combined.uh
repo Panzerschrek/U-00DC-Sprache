@@ -156,6 +156,8 @@ public:
 	fn IsCopyAssignable( this ) : bool;
 	fn CanBeConstexpr( this ) : bool;
 
+	fn ReferenceIsConvertibleTo( this, Type& dst ) : bool;
+
 	// Convert type name to human-readable format.
 	fn ToString( this ) : ust::string8;
 

@@ -790,7 +790,7 @@ fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, 
 
 	var Variable initializer_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, initializer_expression.get_ref() );
 	auto initializer_expression_file_pos= Synt::GetFilePos( initializer_expression.get_ref() );
-	if( initializer_variable.t != field.t )
+	if( initializer_variable.t != field.t && !initializer_variable.t.ReferenceIsConvertibleTo( field.t ) )
 	{
 		REPORT_ERROR( TypesMismatch, names_scope, initializer_expression_file_pos, field.t, initializer_variable.t )
 		return;
@@ -806,6 +806,7 @@ fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, 
 		return;
 	}
 
+	auto reference_converted= CreateReferenceCast( initializer_variable.llvm_value, initializer_variable.t, field.t, function_context );
 	unsafe
 	{
 		var [ LLVMValueRef, 2 ] indexes
@@ -814,7 +815,7 @@ fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, 
 			LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
 		];
 		auto address_of_reference= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "\0"[0] );
-		LLVMBuildStore( function_context.llvm_ir_builder, initializer_variable.llvm_value, address_of_reference );
+		LLVMBuildStore( function_context.llvm_ir_builder, reference_converted, address_of_reference );
 	}
 }
 
