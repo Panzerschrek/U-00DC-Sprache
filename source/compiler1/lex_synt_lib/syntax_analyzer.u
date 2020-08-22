@@ -240,6 +240,7 @@ private:
 	fn ParseHalt( mut this ) : BlockElement;
 
 	fn ParseClass( mut this ) : Class;
+	fn ParseClassKindAttribute( mut this ) : Class::KindAttribute;
 	fn ParseClassBody( mut this ) : ClassElements;
 	fn ParseEnum( mut this ) : Enum;
 	fn ParseTypeAlias( mut this ) : TypeAlias;
@@ -1836,7 +1837,9 @@ fn SyntaxAnalyzer::ParseClass( mut this ) : Class
 {
 	var Class mut class_;
 
-	if( !( IsKeyword( it_.front(), Keyword::struct_ ) || IsKeyword( it_.front(), Keyword::class_ ) ) )
+	auto is_struct= IsKeyword( it_.front(), Keyword::struct_ );
+	auto is_class= IsKeyword( it_.front(), Keyword::class_ );
+	if( !( is_struct || is_class ) )
 	{
 		PushErrorMessage();
 	}
@@ -1849,6 +1852,8 @@ fn SyntaxAnalyzer::ParseClass( mut this ) : Class
 	class_.file_pos= it_.front().file_pos;
 	class_.name= it_.front().text;
 	NextLexem();
+
+	class_.kind_attribute= select( is_struct ? Class::KindAttribute::Struct : ParseClassKindAttribute() );
 
 	if( it_.front().lexem_type == Lexem::Type::Semicolon )
 	{
@@ -1957,6 +1962,32 @@ fn SyntaxAnalyzer::ParseClassBody( mut this ) : ClassElements
 	}
 
 	return move(class_elements);
+}
+
+fn SyntaxAnalyzer::ParseClassKindAttribute( mut this ) : Class::KindAttribute
+{
+	if( IsKeyword( it_.front(), Keyword::final_ ) )
+	{
+		NextLexem();
+		return Class::KindAttribute::Final;
+	}
+	if( IsKeyword( it_.front(), Keyword::polymorph_ ) )
+	{
+		NextLexem();
+		return Class::KindAttribute::Polymorph;
+	}
+	if( IsKeyword( it_.front(), Keyword::interface_ ) )
+	{
+		NextLexem();
+		return Class::KindAttribute::Interface;
+	}
+	if( IsKeyword( it_.front(), Keyword::abstract_ ) )
+	{
+		NextLexem();
+		return Class::KindAttribute::Abstract;
+	}
+
+	return Class::KindAttribute::Class;
 }
 
 fn SyntaxAnalyzer::ParseEnum( mut this ) : Enum
@@ -2191,6 +2222,7 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 	}
 	else if( IsKeyword( it_.front(), Keyword::struct_ ) || IsKeyword( it_.front(), Keyword::class_ ) )
 	{
+		auto is_class= IsKeyword( it_.front(), Keyword::class_ );
 		NextLexem();
 
 		if( it_.front().lexem_type != Lexem::Type::Identifier )
@@ -2216,7 +2248,8 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 		var Class mut class_
 		{
 			.file_pos= class_file_pos,
-			.name= "_", // Give special name for all template classes.
+			.name= "_", // Give special name for all template classes
+			.kind_attribute= select( is_class ? ParseClassKindAttribute() : Class::KindAttribute::Struct ),
 			.class_elements= ParseClassBody(),
 		};
 		var TypeTemplate mut type_template
