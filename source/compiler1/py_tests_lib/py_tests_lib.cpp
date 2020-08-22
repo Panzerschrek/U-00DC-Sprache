@@ -348,14 +348,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 	{
 		"AutoVariableInitialization_UsingFunctionPointer_Test0",
 		"BindingConstReferenceToNonconstReference_InFunctionPointerCall_Test0",
-		"CastToVoidReference_Test0",
-		"CastToVoidReference_Test1",
-		"CastToVoidReference_Test2",
-		"CastToVoidReference_Test3",
-		"CastToVoidReference_Test4",
-		"CastToVoidReference_Test5",
-		"CastToVoidReference_Test6",
-		"CastToVoidReference_Test7",
 		"CharAsTemplateParameter_Test0",
 		"CharIsEqualityComparable_Test0",
 		"CharIsOrderComparable_Test0",
@@ -459,6 +451,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 
 	static const std::string c_tests_to_enable_pattern[]
 	{
+		"CastToVoidReference_Test",
 		"CharIsConstructibleFromChar_Test",
 		"CharIsConstructibleFromInt_Test",
 		"CharIsNotIntegerType_Test",
