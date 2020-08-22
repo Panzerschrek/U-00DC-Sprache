@@ -355,6 +355,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"CastToVoidReference_Test4",
 		"CastToVoidReference_Test5",
 		"CastToVoidReference_Test6",
+		"CastToVoidReference_Test7",
 		"CharAsTemplateParameter_Test0",
 		"CharIsEqualityComparable_Test0",
 		"CharIsOrderComparable_Test0",

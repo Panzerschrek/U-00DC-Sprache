@@ -135,8 +135,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			}
 
 			auto expression_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, initializer_expression.get_ref() );
-			// TODO - allow reference conversion
-			if( expression_result.t != t )
+			if( expression_result.t != t && !expression_result.t.ReferenceIsConvertibleTo( t ) )
 			{
 				REPORT_ERROR( TypesMismatch, names_scope, variable_declaration.file_pos, t, expression_result.t )
 				continue;
@@ -152,7 +151,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 				continue;
 			}
 
-			out_variable.llvm_value= expression_result.llvm_value;
+			out_variable.llvm_value= CreateReferenceCast( expression_result.llvm_value, expression_result.t, t, function_context );
 			out_variable.constexpr_value= expression_result.constexpr_value;
 		}
 		else{ halt; }
