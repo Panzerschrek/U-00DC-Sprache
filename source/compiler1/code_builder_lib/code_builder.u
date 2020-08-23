@@ -240,7 +240,7 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, ErrorsContainerPtr& errors_conta
 	}
 }
 
-fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, NamesScopeValue& names_scope_value ) : Value
+fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeValue& names_scope_value, FilePos& file_pos ) : Value
 {
 	auto t= names_scope_value.Get</Type/>();
 	if( !t.empty() )
@@ -253,6 +253,22 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Na
 	{
 		// In case of access to functions set using function name, build only prototype, not full body.
 		BuildFunctionsSet( names_scope, ust::to_non_nullable( f_ptr ), false );
+
+		// Append "this" to functions set of this class.
+		auto class_type= names_scope.lock_imut().get_ref().GetClass();
+		if( !class_type.empty() &&
+			!function_context.this_.empty() &&
+			ust::to_non_nullable( class_type ) == function_context.this_.get_ref().t &&
+			!function_context.whole_this_is_unavailable )
+		{
+			var ThisMethodsSet mut this_methods_set
+			{
+				.this_= function_context.this_.get_ref(),
+				.functions_set= f_ptr.lock_imut().get_ref().functions_set,
+			};
+			return move(this_methods_set);
+		}
+
 		return f_ptr.lock_imut().get_ref().functions_set;
 	}
 
@@ -271,6 +287,89 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Na
 			.value_type= select( v.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 		};
 		return move(res);
+	}
+
+	auto class_field_ptr= names_scope_value.Get</ClassField/>();
+	if( !class_field_ptr.empty() )
+	{
+		auto field_lock= class_field_ptr.lock_imut();
+		auto& field= field_lock.get_ref();
+		auto& field_name= field.syntax_element.get_ref().name;
+
+		if( function_context.this_.empty() )
+		{
+			REPORT_ERROR( ClassFiledAccessInStaticMethod, names_scope, file_pos, field_name )
+			return ErrorValue();
+		}
+
+		// TODO - check also base class fields.
+		auto class_type= ust::to_non_nullable( names_scope.lock_imut().get_ref().GetClass() ); // We can find class field only inside class.
+		if( class_type != function_context.this_.get_ref().t )
+		{
+			REPORT_ERROR( AccessOfNonThisClassField, names_scope, file_pos, field_name )
+		}
+
+		if( function_context.whole_this_is_unavailable )
+		{
+			if( !function_context.uninitialized_this_fields.find( field_name ).empty() )
+			{
+				REPORT_ERROR( FieldIsNotInitializedYet, names_scope, file_pos, field_name )
+			}
+		}
+
+		if( field.index == ~0s ){ return ErrorValue(); } // May be in case of error
+
+		auto op_name_nt= "." + field_name + "\0";
+		if( field.is_reference )
+		{
+			var Variable mut result
+			{
+				.t= field.t,
+				.location= Variable::Location::Pointer,
+				.value_type= select( field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+			};
+
+			unsafe
+			{
+				var [ LLVMValueRef, 2 ] indexes
+				[
+					GetZeroGEPIndex(),
+					LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
+				];
+
+				auto ptr_value= LLVMBuildGEP( function_context.llvm_ir_builder, function_context.this_.get_ref().llvm_value, indexes[0], 2u, "\0"[0] );
+				result.llvm_value= LLVMBuildLoad( function_context.llvm_ir_builder, ptr_value, op_name_nt.front() );
+			}
+
+			return move(result);
+		}
+		else
+		{
+			var Variable mut result
+			{
+				.t= field.t,
+				.location= Variable::Location::Pointer,
+				.value_type= function_context.this_.get_ref().value_type,
+			};
+
+			if( !field.is_mutable )
+			{
+				result.value_type= ValueType::ReferenceImut;
+			}
+
+			unsafe
+			{
+				var [ LLVMValueRef, 2 ] indexes
+				[
+					GetZeroGEPIndex(),
+					LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
+				];
+
+				result.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, function_context.this_.get_ref().llvm_value, indexes[0], 2u, op_name_nt.front() );
+			}
+
+			return move(result);
+		}
 	}
 
 	auto class_type_ptr= names_scope_value.Get</ClassType/>();
@@ -617,7 +716,7 @@ fn CodeBuilder::ResolveValue(
 		}
 	}
 
-	return NamesScopeValueToValue( ust::to_non_nullable(current_scope), current_value.get_ref() );
+	return NamesScopeValueToValue( ust::to_non_nullable(current_scope), function_context, current_value.get_ref(), complex_name.file_pos );
 }
 
 fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
