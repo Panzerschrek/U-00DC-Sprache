@@ -130,6 +130,7 @@ struct ClassType
 		ClassTypePtr class_;
 		u32 field_number= ~0u; // Allways 0 for base class.
 	}
+	ust::shared_ptr_nullable_mut</ClassType/> base_class;
 	ust::vector</Parent/> parents; // Parents, include base class.
 }
 
