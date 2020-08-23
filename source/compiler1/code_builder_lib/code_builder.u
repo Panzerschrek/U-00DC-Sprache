@@ -331,12 +331,9 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 			return ErrorValue();
 		}
 
-		if( function_context.whole_this_is_unavailable )
+		if( function_context.whole_this_is_unavailable && !function_context.uninitialized_this_fields.find( field_name ).empty() )
 		{
-			if( !function_context.uninitialized_this_fields.find( field_name ).empty() )
-			{
-				REPORT_ERROR( FieldIsNotInitializedYet, names_scope, file_pos, field_name )
-			}
+			REPORT_ERROR( FieldIsNotInitializedYet, names_scope, file_pos, field_name )
 		}
 
 		if( field.index == ~0s ){ return ErrorValue(); } // May be in case of error

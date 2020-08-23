@@ -392,6 +392,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"InheritanceTest_InitializeBaseClass_Test0",
 		"InheritanceTest_InitializeBaseClass_Test2",
 		"InheritanceTest_ParentClassFieldAccess_Test0",
+		"InheritanceTest_ParentClassFieldAccess_Test1",
 		"InheritanceTest_ParentClassFieldAccess_Test2",
 		"InheritanceTest_ParentClassFieldAccess_Test3",
 		"InheritanceTest_ParentClassNameVisibleInChild_Test0",
