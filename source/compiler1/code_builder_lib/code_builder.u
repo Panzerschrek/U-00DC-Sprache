@@ -302,11 +302,33 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 			return ErrorValue();
 		}
 
-		// TODO - check also base class fields.
-		auto class_type= ust::to_non_nullable( names_scope.lock_imut().get_ref().GetClass() ); // We can find class field only inside class.
-		if( class_type != function_context.this_.get_ref().t )
+		auto field_class= names_scope.lock_imut().get_ref().GetClass();
+		var ust::shared_ptr_nullable_mut</ClassType/> mut current_class= function_context.this_.get_ref().t.GetClassType().get_ref();
+		auto mut this_value_corrected= function_context.this_.get_ref().llvm_value;
+		while( !current_class.empty() && current_class != field_class )
+		{
+			var ust::shared_ptr_nullable_mut</ClassType/> next= cast_imut(current_class).lock_imut().get_ref().base_class;
+
+			if( !next.empty() )
+			{
+				unsafe
+				{
+					var [ LLVMValueRef, 2 ] indexes
+					[
+						GetZeroGEPIndex(),
+						LLVMConstInt( fundamental_llvm_types_.u32_, u64(0u /* base is zero */), LLVMBool::False )
+					];
+
+					this_value_corrected= LLVMBuildGEP( function_context.llvm_ir_builder, this_value_corrected, indexes[0], 2u, ".base\0"[0] );
+				}
+			}
+			current_class= next;
+		}
+
+		if( current_class.empty() )
 		{
 			REPORT_ERROR( AccessOfNonThisClassField, names_scope, file_pos, field_name )
+			return ErrorValue();
 		}
 
 		if( function_context.whole_this_is_unavailable )
@@ -337,7 +359,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 					LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
 				];
 
-				auto ptr_value= LLVMBuildGEP( function_context.llvm_ir_builder, function_context.this_.get_ref().llvm_value, indexes[0], 2u, "\0"[0] );
+				auto ptr_value= LLVMBuildGEP( function_context.llvm_ir_builder, this_value_corrected, indexes[0], 2u, "\0"[0] );
 				result.llvm_value= LLVMBuildLoad( function_context.llvm_ir_builder, ptr_value, op_name_nt.front() );
 			}
 
@@ -365,7 +387,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 					LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
 				];
 
-				result.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, function_context.this_.get_ref().llvm_value, indexes[0], 2u, op_name_nt.front() );
+				result.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, this_value_corrected, indexes[0], 2u, op_name_nt.front() );
 			}
 
 			return move(result);
