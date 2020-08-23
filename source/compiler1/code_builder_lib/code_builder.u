@@ -1740,21 +1740,34 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		}
 	}
 
-	if( !func_variable.body_syntax_element.get_ref().constructor_initializer_list.empty() && !function_context.this_.empty() )
+	auto& block= func_variable.body_syntax_element.get_ref().block.get_ref();
+
+	if( func_variable.body_syntax_element.get_ref().name.back() == KeywordToString( Keyword::constructor_ ) )
 	{
-		function_context.whole_this_is_unavailable= true;
-		BuildConstructorInitialization(
-			args_names_scope_ptr,
-			function_context,
-			func_variable.body_syntax_element.get_ref().constructor_initializer_list.get_ref() );
+			function_context.whole_this_is_unavailable= true;
+
+		if( !func_variable.body_syntax_element.get_ref().constructor_initializer_list.empty() )
+		{
+			BuildConstructorInitialization(
+				args_names_scope_ptr,
+				function_context,
+				func_variable.body_syntax_element.get_ref().constructor_initializer_list.get_ref() );
+		}
+		else
+		{
+			var Synt::StructNamedInitializer dummy_initializer{ .file_pos= block.file_pos };
+			BuildConstructorInitialization(
+				args_names_scope_ptr,
+				function_context,
+				dummy_initializer);
+		}
 		function_context.whole_this_is_unavailable= false;
+
 	}
 	if( func_variable.body_syntax_element.get_ref().name.back() == KeywordToString( Keyword::destructor_ ) )
 	{
 		unsafe{  function_context.destructor_end_block= LLVMCreateBasicBlockInContext( llvm_context_, "destructor_end\0"[0] );  }
 	}
-
-	auto& block= func_variable.body_syntax_element.get_ref().block.get_ref();
 
 	auto block_build_info= BuildBlockElement( args_names_scope_ptr, function_context, block );
 	if( !block_build_info.have_terminal_instruction_inside )
