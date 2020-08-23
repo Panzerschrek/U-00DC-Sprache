@@ -1049,78 +1049,72 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	}
 
 	// Merge namespaces of parents.
+	foreach( &parent : class_type.lock_imut().get_ref().parents )
 	{
-		auto lock= class_type.lock_imut();
-		auto& class_type_ref= lock.get_ref();
-		auto dst_members_ptr= class_type_ref.members;
-
-		foreach( &parent : class_type_ref.parents )
+		auto parent_members= parent.class_.lock_imut().get_ref().members;
+		foreach( &member_value : parent_members.lock_imut().get_ref().GetInternalContainer() )
 		{
-			auto parent_members= parent.class_.lock_imut().get_ref().members;
-			foreach( &member_value : parent_members.lock_imut().get_ref().GetInternalContainer() )
-			{
-				auto mut dst_members_lock= dst_members_ptr.lock_mut();
-				auto &mut dst_members_= dst_members_lock.get_ref();
+			auto mut dst_members_lock= class_members.lock_mut();
+			auto &mut dst_members_= dst_members_lock.get_ref();
 
-				if( !member_value.value().Get</ClassType/>().empty() ||
-					!member_value.value().Get</Enum/>().empty() ||
-					!member_value.value().Get</TypeAlias/>().empty() ||
-					!member_value.value().Get</GlobalVariable/>().empty() ||
-					!member_value.value().Get</GlobalAutoVariable/>().empty() )
+			if( !member_value.value().Get</ClassType/>().empty() ||
+				!member_value.value().Get</Enum/>().empty() ||
+				!member_value.value().Get</TypeAlias/>().empty() ||
+				!member_value.value().Get</GlobalVariable/>().empty() ||
+				!member_value.value().Get</GlobalAutoVariable/>().empty() )
+			{
+				dst_members_.AddName( member_value.key(), member_value.value() );
+			}
+
+			auto src_functions_set_ptr= member_value.value().Get</NamesScopeFunctionsSet/>();
+			if( !src_functions_set_ptr.empty() )
+			{
+				// SPARCHE_TODO - maybe also skip additive-assignment operators?
+				if( member_value.key() == KeywordToString( Keyword::constructor_ ) ||
+					member_value.key() == KeywordToString( Keyword::destructor_ ) ||
+					member_value.key() == OverloadedOperatorToString( OverloadedOperator::Assign ) )
 				{
-					dst_members_.AddName( member_value.key(), member_value.value() );
+					continue; // Did not inherit constructors, destructors, assignment operators.
 				}
 
-				auto src_functions_set_ptr= member_value.value().Get</NamesScopeFunctionsSet/>();
-				if( !src_functions_set_ptr.empty() )
+				if( dst_members_.GetThisScopeValue( member_value.key() ).empty() )
 				{
-					// SPARCHE_TODO - maybe also skip additive-assignment operators?
-					if( member_value.key() == KeywordToString( Keyword::constructor_ ) ||
-						member_value.key() == KeywordToString( Keyword::destructor_ ) ||
-						member_value.key() == OverloadedOperatorToString( OverloadedOperator::Assign ) )
+					// Just add new functions set.
+					dst_members_.AddName( cast_imut(member_value).key(), cast_imut(member_value).value() );
+					continue;
+				}
+
+				auto result_class_value= dst_members_.GetThisScopeValue( member_value.key() );
+				auto result_functions_set_ptr= result_class_value.get_ref().Get</NamesScopeFunctionsSet/>();
+				if( result_functions_set_ptr.empty() )
+				{
+					continue; // Name in new class shadows name with different kind in parent class.
+				}
+				// Merge functions sets.
+
+				auto src_functions_set_lock= src_functions_set_ptr.lock_imut();
+				auto& src_functions_set= src_functions_set_lock.get_ref();
+
+				auto mut result_functions_set_lock= result_functions_set_ptr.lock_mut();
+				auto &mut result_functions_set= result_functions_set_lock.get_ref();
+
+				foreach( &src_function : src_functions_set.functions_set.functions )
+				{
+					if( !GetFunctionWithSameType( result_functions_set.functions_set, src_function.t ).empty() )
 					{
-						continue; // Did not inherit constructors, destructors, assignment operators.
+						continue; // New class function shadows function with same type in source class, so, skip it.
 					}
+					ApplyOverloadedFunction( result_functions_set.functions_set, src_function, class_members, syntax_element.file_pos );
+				}
 
-					if( dst_members_.GetThisScopeValue( member_value.key() ).empty() )
-					{
-						// Just add new functions set.
-						dst_members_.AddName( cast_imut(member_value).key(), cast_imut(member_value).value() );
-						continue;
-					}
-
-					auto result_class_value= dst_members_.GetThisScopeValue( member_value.key() );
-					auto result_functions_set_ptr= result_class_value.get_ref().Get</NamesScopeFunctionsSet/>();
-					if( result_functions_set_ptr.empty() )
-					{
-						continue; // Name in new class shadows name with different kind in parent class.
-					}
-					// Merge functions sets.
-
-					auto src_functions_set_lock= src_functions_set_ptr.lock_imut();
-					auto& src_functions_set= src_functions_set_lock.get_ref();
-
-					auto mut result_functions_set_lock= result_functions_set_ptr.lock_mut();
-					auto &mut result_functions_set= result_functions_set_lock.get_ref();
-
-					foreach( &src_function : src_functions_set.functions_set.functions )
-					{
-						if( !GetFunctionWithSameType( result_functions_set.functions_set, src_function.t ).empty() )
-						{
-							continue; // New class function shadows function with same type in source class, so, skip it.
-						}
-						ApplyOverloadedFunction( result_functions_set.functions_set, src_function, class_members, syntax_element.file_pos );
-					}
-
-					// TODO - merge function templates smarter.
-					foreach( &function_template : src_functions_set.functions_set.function_templates )
-					{
-						result_functions_set.functions_set.function_templates.push_back( function_template );
-					}
-				} // if function set
-			} // for parent members
-		} // for parents
-	}
+				// TODO - merge function templates smarter.
+				foreach( &function_template : src_functions_set.functions_set.function_templates )
+				{
+					result_functions_set.functions_set.function_templates.push_back( function_template );
+				}
+			} // if function set
+		} // for parent members
+	} // for parents
 
 	// Finally, make class complete.
 	{
