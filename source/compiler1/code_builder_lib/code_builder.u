@@ -1071,9 +1071,55 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 					dst_members_.AddName( member_value.key(), member_value.value() );
 				}
 
-				// TODO - inherit functions.
-			}
-		}
+				auto src_functions_set_ptr= member_value.value().Get</NamesScopeFunctionsSet/>();
+				if( !src_functions_set_ptr.empty() )
+				{
+					// SPARCHE_TODO - maybe also skip additive-assignment operators?
+					if( member_value.key() == KeywordToString( Keyword::constructor_ ) ||
+						member_value.key() == KeywordToString( Keyword::destructor_ ) ||
+						member_value.key() == OverloadedOperatorToString( OverloadedOperator::Assign ) )
+					{
+						continue; // Did not inherit constructors, destructors, assignment operators.
+					}
+
+					if( dst_members_.GetThisScopeValue( member_value.key() ).empty() )
+					{
+						// Just add new functions set.
+						dst_members_.AddName( cast_imut(member_value).key(), cast_imut(member_value).value() );
+						continue;
+					}
+
+					auto result_class_value= dst_members_.GetThisScopeValue( member_value.key() );
+					auto result_functions_set_ptr= result_class_value.get_ref().Get</NamesScopeFunctionsSet/>();
+					if( result_functions_set_ptr.empty() )
+					{
+						continue; // Name in new class shadows name with different kind in parent class.
+					}
+					// Merge functions sets.
+
+					auto src_functions_set_lock= src_functions_set_ptr.lock_imut();
+					auto& src_functions_set= src_functions_set_lock.get_ref();
+
+					auto mut result_functions_set_lock= result_functions_set_ptr.lock_mut();
+					auto &mut result_functions_set= result_functions_set_lock.get_ref();
+
+					foreach( &src_function : src_functions_set.functions_set.functions )
+					{
+						if( !GetFunctionWithSameType( result_functions_set.functions_set, src_function.t ).empty() )
+						{
+							continue; // New class function shadows function with same type in source class, so, skip it.
+						}
+						ApplyOverloadedFunction( result_functions_set.functions_set, src_function, class_members, syntax_element.file_pos );
+					}
+
+					// TODO - merge function templates smarter.
+					foreach( &function_template : src_functions_set.functions_set.function_templates )
+					{
+						result_functions_set.functions_set.function_templates.push_back( function_template );
+					}
+				} // if function set
+			} // for parent members
+		} // for parents
 	}
 
 	// Finally, make class complete.
