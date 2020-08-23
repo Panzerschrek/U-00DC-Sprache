@@ -465,6 +465,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"CharIsConstructibleFromInt_Test",
 		"CharIsNotIntegerType_Test",
 		"CharIsUnsigned_Test",
+		"ChildToParentReferenceCast_Test",
 		"ExplicitAccessToSpecialMethodsIsUnsafe_Test",
 		"FunctionPointerAsFunctionArgument_Test",
 		"FunctionPointerAsSpecializedTemplateParameter_Test",

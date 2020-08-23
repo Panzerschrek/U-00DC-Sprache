@@ -1945,17 +1945,47 @@ fn CodeBuilder::CreateMoveToLLVMRegisterInstruction( Variable& variable, Functio
 	halt;
 }
 
-fn CodeBuilder::CreateReferenceCast( LLVMValueRef ref, Type& src_type, Type& dst_type, FunctionContext& function_context) : LLVMValueRef
+fn CodeBuilder::CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Type& dst_type, FunctionContext& function_context ) : LLVMValueRef
 {
 	if( src_type == dst_type )
 	{
 		return ref;
 	}
-	unsafe
+	if( dst_type == void_type_ )
 	{
-		auto dst_pointer_type= LLVMPointerType( dst_type.GetLLVMType(), 0u );
-		return LLVMBuildPointerCast( function_context.llvm_ir_builder, ref, dst_pointer_type, "\0"[0] );
+		unsafe
+		{
+			auto dst_pointer_type= LLVMPointerType( dst_type.GetLLVMType(), 0u );
+			return LLVMBuildPointerCast( function_context.llvm_ir_builder, ref, dst_pointer_type, "\0"[0] );
+		}
 	}
+
+	auto src_class_type= src_type.GetClassType().get_ref();
+	foreach( &parent : src_class_type.lock_imut().get_ref().parents )
+	{
+		auto mut sub_ref= LLVMValueRef::Null;
+		unsafe
+		{
+			var [ LLVMValueRef, 2 ] indexes
+			[
+				GetZeroGEPIndex(),
+				LLVMConstInt( fundamental_llvm_types_.u32_, u64(parent.field_number), LLVMBool::False )
+			];
+
+			sub_ref= LLVMBuildGEP( function_context.llvm_ir_builder, ref, indexes[0], 2u, "\0"[0] );
+		}
+
+		if( parent.class_ == dst_type )
+		{
+			return sub_ref;
+		}
+		else if( Type(parent.class_).ReferenceIsConvertibleTo( dst_type ) )
+		{
+			return CreateReferenceCast( sub_ref, parent.class_, dst_type, function_context );
+		}
+	}
+
+	halt;
 }
 
 fn CodeBuilder::SaveInstructionsState( FunctionContext& function_context ) : InstructionsState

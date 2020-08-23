@@ -433,6 +433,20 @@ fn Type::ReferenceIsConvertibleTo( this, Type& dst ) : bool
 	{
 		return dst_fundamental_type.fundamental_type == U_FundamentalType::void_;
 	}
+
+	if_var( &src_class_type : this.GetClassType() )
+	{
+		if_var( &dst_class_type : dst.GetClassType() )
+		{
+			foreach( &parent : src_class_type.lock_imut().get_ref().parents )
+			{
+				if( dst_class_type == parent.class_ || Type(parent.class_).ReferenceIsConvertibleTo(dst) )
+				{
+					return true;
+				}
+			}
+		}
+	}
 	return false;
 }
 
