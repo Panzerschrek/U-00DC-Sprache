@@ -862,6 +862,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 	}
 
 	var ust::vector</ust::string8/> mut uninitialized_fields;
+	auto base_initialized= false;
 
 	foreach( &class_member : class_members.lock_imut().get_ref().GetInternalContainer() )
 	{
@@ -876,6 +877,28 @@ fn CodeBuilder::BuildConstructorInitialization(
 	}
 
 	// Initialize fields, missing in initializer list.
+	auto base_class= class_type.lock_imut().get_ref().base_class;
+	if( !base_class.empty() && !base_initialized )
+	{
+		var NamesScopeVariable mut base_variable
+		{
+			.t= ust::to_non_nullable(base_class),
+			.is_mutable= true,
+		};
+
+		unsafe
+		{
+			var [ LLVMValueRef, 2 ] indexes
+			[
+				GetZeroGEPIndex(),
+				LLVMConstInt( fundamental_llvm_types_.u32_, u64(0u /* base class is first field */), LLVMBool::False )
+			];
+
+			base_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, function_context.this_.get_ref().llvm_value, indexes[0], 2u, ".base\0"[0] );
+		}
+
+		BuildEmptyInitializer( names_scope, function_context, base_variable, KeywordToString( Keyword::base_ ), constructor_initialization_list.file_pos );
+	}
 	// TODO - use fiedls order.
 	foreach( &field_name : uninitialized_fields )
 	{
