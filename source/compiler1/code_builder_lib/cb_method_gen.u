@@ -885,8 +885,25 @@ fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionC
 fn CodeBuilder::BuildMembersDestructors( this, FunctionContext &mut function_context, LLVMValueRef value, ClassTypePtr& class_type )
 {
 	auto class_members= class_type.lock_imut().get_ref().members;
-
 	auto file_pos= class_type.lock_imut().get_ref().syntax_element.get_ref().file_pos;
+
+	foreach( &parent : class_type.lock_imut().get_ref().parents )
+	{
+		auto mut parent_llvm_value= LLVMValueRef::Null;
+		unsafe
+		{
+			var [ LLVMValueRef, 2 ] indexes
+			[
+				GetZeroGEPIndex(),
+				LLVMConstInt( fundamental_llvm_types_.u32_, u64(parent.field_number), LLVMBool::False )
+			];
+
+			parent_llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, value, indexes[0], 2u, "\0"[0] );
+		}
+
+		BuildDestructorPart( class_members, function_context, parent_llvm_value, parent.class_, file_pos );
+	}
+
 	foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
 	{
 		auto field_ptr= member.value().Get</ClassField/>();

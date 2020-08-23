@@ -69,6 +69,7 @@ bool FilterTest( const std::string& test_name )
 		"DestructorsTest16_ShouldBeDesdtroyedAfterUsage3",
 		"DestructorsTest17_ShouldBeDesdtroyedAfterUsage4",
 		"DestructorsTest18_ShouldBeDesdtroyedAfterUsage5",
+		"DestructorsTest19_DestuctorForInterface",
 		//"ExpectedConstantExpression_InTemplateSignatureArgument_Test0",
 		"ExpectedConstantExpression_InTemplateSignatureArgument_Test1",
 		"ExplicitArgumentsInDestructorTest1",
