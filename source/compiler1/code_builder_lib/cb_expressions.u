@@ -404,30 +404,6 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MemberAccessOperator& member_access_operator ) : Value
 {
-	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, member_access_operator.value.get_ref() );
-	auto class_type_ref= variable.t.GetClassType() ;
-	if( class_type_ref.empty() )
-	{
-		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, member_access_operator.file_pos, variable.t )
-		return ErrorValue();
-	}
-	auto& class_type= class_type_ref.get_ref();
-
-	if( !EnsureTypeComplete( variable.t ) )
-	{
-		REPORT_ERROR( UsingIncompleteType, names_scope, member_access_operator.file_pos, variable.t )
-		return ErrorValue();
-	}
-
-	auto class_type_lock= class_type.lock_imut();
-	auto class_members_lock= class_type_lock.get_ref().members.lock_imut();
-	auto class_member= class_members_lock.get_ref().GetThisScopeValue( member_access_operator.member_name );
-	if( class_member.empty() )
-	{
-		REPORT_ERROR( NameNotFound, names_scope, member_access_operator.file_pos, member_access_operator.member_name )
-		return ErrorValue();
-	}
-
 	if( member_access_operator.member_name == KeywordToString( Keyword::constructor_ ) ||
 		member_access_operator.member_name == KeywordToString( Keyword::destructor_ ) )
 	{
@@ -435,6 +411,61 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		{
 			REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope, member_access_operator.file_pos, member_access_operator.member_name )
 		}
+	}
+
+	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, member_access_operator.value.get_ref() );
+	if( !EnsureTypeComplete( variable.t ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope, member_access_operator.file_pos, variable.t )
+		return ErrorValue();
+	}
+
+	auto class_type_ref= variable.t.GetClassType();
+	if( class_type_ref.empty() )
+	{
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, member_access_operator.file_pos, variable.t )
+		return ErrorValue();
+	}
+
+	var ust::shared_ptr_nullable_mut</ClassType/> mut class_type= class_type_ref.get_ref();
+	var ust::optional</NamesScopeValue/> mut class_member;
+
+	auto mut this_value_corrected= variable.llvm_value;
+	while( !class_type.empty() && class_member.empty() )
+	{
+		var ust::shared_ptr_nullable_mut</ClassType/> mut next;
+		{
+			auto class_type_lock= class_type.lock_imut();
+			auto class_members_lock= class_type_lock.get_ref().members.lock_imut();
+			if_var( &member : class_members_lock.get_ref().GetThisScopeValue( member_access_operator.member_name ) )
+			{
+				class_member= member;
+				break;
+			}
+
+			next= class_type_lock.get_ref().base_class;
+			if( !next.empty() )
+			{
+				unsafe
+				{
+					var [ LLVMValueRef, 2 ] indexes
+					[
+						GetZeroGEPIndex(),
+						LLVMConstInt( fundamental_llvm_types_.u32_, u64(0u /* base is zero */), LLVMBool::False )
+					];
+
+					this_value_corrected= LLVMBuildGEP( function_context.llvm_ir_builder, this_value_corrected, indexes[0], 2u, ".base\0"[0] );
+				}
+			}
+		}
+
+		class_type= next;
+	}
+
+	if( class_member.empty() )
+	{
+		REPORT_ERROR( NameNotFound, names_scope, member_access_operator.file_pos, member_access_operator.member_name )
+		return ErrorValue();
 	}
 
 	{
@@ -469,7 +500,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 						LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
 					];
 
-					auto ptr_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "\0"[0] );
+					auto ptr_value= LLVMBuildGEP( function_context.llvm_ir_builder, this_value_corrected, indexes[0], 2u, "\0"[0] );
 					result.llvm_value= LLVMBuildLoad( function_context.llvm_ir_builder, ptr_value, op_name_nt.front() );
 				}
 
@@ -497,7 +528,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 						LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
 					];
 
-					result.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, op_name_nt.front() );
+					result.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, this_value_corrected, indexes[0], 2u, op_name_nt.front() );
 				}
 
 				return move(result);
@@ -507,7 +538,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			auto functions_set_ptr= class_member.get_ref().Get</NamesScopeFunctionsSet/>();
 			if( !functions_set_ptr.empty() )
 			{
-				BuildFunctionsSet( class_type_lock.get_ref().members, ust::to_non_nullable( functions_set_ptr ), false );
+				BuildFunctionsSet( class_type.lock_imut().get_ref().members, ust::to_non_nullable( functions_set_ptr ), false );
 
 				var ThisMethodsSet mut this_methods_set{ .this_= variable };
 

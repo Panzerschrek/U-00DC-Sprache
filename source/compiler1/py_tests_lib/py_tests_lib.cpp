@@ -383,6 +383,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"FunctionTypeDeclaration_Test3",
 		"FunctionTypeDeclaration_Test4",
 		"IncompleteMemberOfClassTemplate_ForFunctionTemplates_Test0",
+		"InheritanceTest_ParentClassFieldAccess_Test0",
 		"InheritanceTest_ParentClassNameVisibleInChild_Test0",
 		"InheritanceTest_ChildClassNameOverridesParentClassName_Test0",
 		"InheritanceTest_ChildClassNameOverridesParentClassName_Test1",
