@@ -814,12 +814,13 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	}
 
 	auto syntax_element_ptr= class_type.lock_imut().get_ref().syntax_element;
+	auto& syntax_element= syntax_element_ptr.get_ref();
 
 	auto mut global_function_context= CreateGlobalFunctionContext();
 
 	// Fill parents
 	// TODO - produce some errors.
-	foreach( &parent_name : syntax_element_ptr.get_ref().parents )
+	foreach( &parent_name : syntax_element.parents )
 	{
 		auto parent_type= PrepareType( names_scope_ptr, global_function_context, parent_name );
 		if( parent_type.GetClassType().empty() )
@@ -903,7 +904,39 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				}
 			}
 		}
+	}
 
+	// Setup class kind. TODO - check for errors.
+	{
+		auto mut lock= class_type.lock_mut();
+		auto &mut class_= lock.get_ref();
+
+		auto have_parents= class_.parents.empty();
+		if( syntax_element.kind_attribute == Synt::Class::KindAttribute::Struct )
+		{
+			class_.kind= ClassType::Kind::Struct;
+		}
+		else if( syntax_element.kind_attribute == Synt::Class::KindAttribute::Class )
+		{
+			class_.kind= select( have_parents ? ClassType::Kind::NonPolymorph : ClassType::Kind::PolymorphNonFinal );
+		}
+		else if( syntax_element.kind_attribute == Synt::Class::KindAttribute::Final )
+		{
+			class_.kind= select( have_parents ? ClassType::Kind::NonPolymorph : ClassType::Kind::PolymorphFinal );
+		}
+		else if( syntax_element.kind_attribute == Synt::Class::KindAttribute::Polymorph )
+		{
+			class_.kind= ClassType::Kind::PolymorphNonFinal;
+		}
+		else if( syntax_element.kind_attribute == Synt::Class::KindAttribute::Interface )
+		{
+			class_.kind= ClassType::Kind::Interface;
+		}
+		else if( syntax_element.kind_attribute == Synt::Class::KindAttribute::Abstract )
+		{
+			class_.kind= ClassType::Kind::Abstract;
+		}
+		else{ halt; }
 	}
 
 	TryGenerateDefaultConstructor( class_type );

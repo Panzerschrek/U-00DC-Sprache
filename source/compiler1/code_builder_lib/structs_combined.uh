@@ -114,6 +114,17 @@ struct ClassType
 	bool is_copy_assignable= false;
 	bool have_explicit_noncopy_constructors= false;
 
+	enum Kind : u8
+	{
+		Struct,
+		NonPolymorph,
+		Interface,
+		Abstract,
+		PolymorphNonFinal,
+		PolymorphFinal,
+	}
+	Kind kind= Kind::Struct;
+
 	struct Parent
 	{
 		ClassTypePtr class_;
