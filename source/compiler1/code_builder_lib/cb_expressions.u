@@ -1699,6 +1699,11 @@ fn CodeBuilder::BuildTempVariableConstruction(
 		REPORT_ERROR( UsingIncompleteType, names_scope, file_pos, t )
 		return ErrorValue();
 	}
+	if( t.IsAbstract() )
+	{
+		REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, file_pos, t )
+		return ErrorValue();
+	}
 
 	var Variable mut result
 	{

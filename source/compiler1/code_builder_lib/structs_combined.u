@@ -422,6 +422,21 @@ fn Type::CanBeConstexpr( this ) : bool
 	return false;
 }
 
+fn Type::IsAbstract( this ) : bool
+{
+	if_var( &array_type : GetArrayType() )
+	{
+		return array_type.element_count > 0u64 && array_type.element_type.get_ref().IsAbstract();
+	}
+	if_var( &class_type : GetClassType() )
+	{
+		auto kind= class_type.lock_imut().get_ref().kind;
+		return kind == ClassType::Kind::Abstract || kind == ClassType::Kind::Interface;
+	}
+
+	return false;
+}
+
 fn Type::ReferenceIsConvertibleTo( this, Type& dst ) : bool
 {
 	if( this == dst )
