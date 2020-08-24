@@ -373,8 +373,8 @@ def OverloadingResolutionTest_MutabilityAndReferenceConversions_Test3():
 
 def OverloadingResolutionTest_MutabilityAndReferenceConversions_Test4():
 	c_program_text= """
-		class A polymorph {}
-		class B : A {}
+		class A polymorph { fn constructor( mut this, A &imut other )= default; }
+		class B : A { fn constructor( mut this, B &imut other )= default; }
 		fn Bar( A &imut a ) : i32 { return 111; }
 		fn Bar( B       b ) : i32 { return 222; }
 		fn Foo() : i32
@@ -383,9 +383,6 @@ def OverloadingResolutionTest_MutabilityAndReferenceConversions_Test4():
 			return Bar(b);   // Ok, conversion ( B &imut -> B(value) ) better, than ( B &imut ->  A &imut ).
 		}
 	"""
-	# TODO - fix this
-	return
-
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 222 )

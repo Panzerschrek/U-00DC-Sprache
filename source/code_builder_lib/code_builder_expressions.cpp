@@ -2503,7 +2503,7 @@ Value CodeBuilder::DoCallFunction(
 						// Can not call function with value parameter, because for value parameter needs copy, but parameter type is not copyable.
 						// TODO - print more reliable message.
 						REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), file_pos, arg.type );
-						continue;
+						return ErrorValue();
 					}
 
 					// Create copy of class or tuple value. Call copy constructor.
