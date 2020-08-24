@@ -1795,9 +1795,12 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 
 	auto& block= func_variable.body_syntax_element.get_ref().block.get_ref();
 
-	if( func_variable.body_syntax_element.get_ref().name.back() == KeywordToString( Keyword::constructor_ ) )
+	auto& func_name= func_variable.body_syntax_element.get_ref().name.back();
+	auto is_constructor= func_name == KeywordToString( Keyword::constructor_ );
+	auto is_destructor = func_name == KeywordToString( Keyword::destructor_  );
+	if( is_constructor )
 	{
-			function_context.whole_this_is_unavailable= true;
+		function_context.whole_this_is_unavailable= true;
 
 		if( !func_variable.body_syntax_element.get_ref().constructor_initializer_list.empty() )
 		{
@@ -1814,12 +1817,22 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				function_context,
 				dummy_initializer);
 		}
-		function_context.whole_this_is_unavailable= false;
 
+		function_context.whole_this_is_unavailable= false;
 	}
-	if( func_variable.body_syntax_element.get_ref().name.back() == KeywordToString( Keyword::destructor_ ) )
+	if( is_destructor )
 	{
 		unsafe{  function_context.destructor_end_block= LLVMCreateBasicBlockInContext( llvm_context_, "destructor_end\0"[0] );  }
+	}
+
+	if( ( is_constructor || is_destructor ) && !function_context.this_.get_ref().t.GetClassType().empty() )
+	{
+		auto class_type= function_context.this_.get_ref().t.GetClassType().get_ref();
+		auto class_kind= class_type.lock_imut().get_ref().kind;
+		if( class_kind == ClassType::Kind::Interface || class_kind == ClassType::Kind::Abstract )
+		{
+			function_context.whole_this_is_unavailable= true;
+		}
 	}
 
 	auto block_build_info= BuildBlockElement( args_names_scope_ptr, function_context, block );
