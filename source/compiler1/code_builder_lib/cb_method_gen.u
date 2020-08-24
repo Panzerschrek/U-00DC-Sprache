@@ -132,22 +132,12 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 
 	if( !base_class.empty() )
 	{
-		var NamesScopeVariable mut base_variable
+		var NamesScopeVariable base_variable
 		{
 			.t= ust::to_non_nullable(base_class),
 			.is_mutable= true,
+			.llvm_value= CreateBaseClassFieldGEP( this_llvm_value, function_context ),
 		};
-
-		unsafe
-		{
-			var [ LLVMValueRef, 2 ] indexes
-			[
-				GetZeroGEPIndex(),
-				LLVMConstInt( fundamental_llvm_types_.u32_, u64(0u /* base class is first field*/), LLVMBool::False )
-			];
-
-			base_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, this_llvm_value, indexes[0], 2u, ".base\0"[0] );
-		}
 
 		BuildEmptyInitializer( class_members, function_context, base_variable, KeywordToString( Keyword::base_ ), FilePos( /* TODO - set correct file_pos */ ) );
 	}
@@ -165,23 +155,12 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 
 		if( class_field.index == ~0s ){ continue; } // May be in case of error
 
-		var NamesScopeVariable mut field_variable
+		var NamesScopeVariable field_variable
 		{
 			.t= class_field.t,
 			.is_mutable= true,
+			.llvm_value= CreateFieldGEP( this_llvm_value, class_field, function_context )
 		};
-
-		auto op_name_nt= "." + member.key() + "\0";
-		unsafe
-		{
-			var [ LLVMValueRef, 2 ] indexes
-			[
-				GetZeroGEPIndex(),
-				LLVMConstInt( fundamental_llvm_types_.u32_, u64(class_field.index), LLVMBool::False )
-			];
-
-			field_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, this_llvm_value, indexes[0], 2u, op_name_nt.front() );
-		}
 
 		BuildEmptyInitializer( class_members, function_context, field_variable, member.key(), FilePos( /* TODO - set correct file_pos */ ) );
 	}
@@ -330,18 +309,8 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 
 	if( !base_class.empty() )
 	{
-		var LLVMValueRef mut dst_member_value= zero_init, mut src_member_value= zero_init;
-		unsafe
-		{
-			var [ LLVMValueRef, 2 ] indexes
-			[
-				GetZeroGEPIndex(),
-				LLVMConstInt( fundamental_llvm_types_.u32_, u64(0u /* base class is first field*/), LLVMBool::False )
-			];
-
-			dst_member_value= LLVMBuildGEP( function_context.llvm_ir_builder, dst_llvm_value, indexes[0], 2u, "dst.base\0"[0] );
-			src_member_value= LLVMBuildGEP( function_context.llvm_ir_builder, src_llvm_value, indexes[0], 2u, "src.base\0"[0] );
-		}
+		auto dst_member_value= CreateBaseClassFieldGEP( dst_llvm_value, function_context );
+		auto src_member_value= CreateBaseClassFieldGEP( src_llvm_value, function_context );
 
 		BuildCopyConstructorPart( class_members, function_context, dst_member_value, src_member_value, ust::to_non_nullable(base_class), file_pos );
 	}
@@ -358,20 +327,9 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 
 		if( class_field.index == ~0s ){ continue; } // May be in case of error
 
-		auto dst_op_name_nt= "dst." + member.key() + "\0";
-		auto src_op_name_nt= "src." + member.key() + "\0";
-		var LLVMValueRef mut dst_member_value= zero_init, mut src_member_value= zero_init;
-		unsafe
-		{
-			var [ LLVMValueRef, 2 ] indexes
-			[
-				GetZeroGEPIndex(),
-				LLVMConstInt( fundamental_llvm_types_.u32_, u64(class_field.index), LLVMBool::False )
-			];
+		auto dst_member_value= CreateFieldGEP( dst_llvm_value, class_field, function_context );
+		auto src_member_value= CreateFieldGEP( src_llvm_value, class_field, function_context );
 
-			dst_member_value= LLVMBuildGEP( function_context.llvm_ir_builder, dst_llvm_value, indexes[0], 2u, dst_op_name_nt.front() );
-			src_member_value= LLVMBuildGEP( function_context.llvm_ir_builder, src_llvm_value, indexes[0], 2u, src_op_name_nt.front() );
-		}
 		if( class_field.is_reference )
 		{
 			unsafe
@@ -532,19 +490,9 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 	auto file_pos= class_type.lock_imut().get_ref().syntax_element.get_ref().file_pos;
 
 	if( !base_class.empty() )
-	{
-		var LLVMValueRef mut dst_member_value= zero_init, mut src_member_value= zero_init;
-		unsafe
-		{
-			var [ LLVMValueRef, 2 ] indexes
-			[
-				GetZeroGEPIndex(),
-				LLVMConstInt( fundamental_llvm_types_.u32_, u64(0u /* base class is first field*/), LLVMBool::False )
-			];
-
-			dst_member_value= LLVMBuildGEP( function_context.llvm_ir_builder, dst_llvm_value, indexes[0], 2u, "dst.base\0"[0] );
-			src_member_value= LLVMBuildGEP( function_context.llvm_ir_builder, src_llvm_value, indexes[0], 2u, "src.base\0"[0] );
-		}
+	{		
+		auto dst_member_value= CreateBaseClassFieldGEP( dst_llvm_value, function_context );
+		auto src_member_value= CreateBaseClassFieldGEP( src_llvm_value, function_context );
 
 		BuildCopyAssignmentOperatorPart( class_members_ptr, function_context, dst_member_value, src_member_value, ust::to_non_nullable(base_class), file_pos );
 	}
@@ -561,20 +509,8 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 
 		if( class_field.index == ~0s ){ continue; } // May be in case of error
 
-		auto dst_op_name_nt= "dst." + member.key() + "\0";
-		auto src_op_name_nt= "src." + member.key() + "\0";
-		var LLVMValueRef mut dst_member_value= zero_init, mut src_member_value= zero_init;
-		unsafe
-		{
-			var [ LLVMValueRef, 2 ] indexes
-			[
-				GetZeroGEPIndex(),
-				LLVMConstInt( fundamental_llvm_types_.u32_, u64(class_field.index), LLVMBool::False )
-			];
-
-			dst_member_value= LLVMBuildGEP( function_context.llvm_ir_builder, dst_llvm_value, indexes[0], 2u, dst_op_name_nt.front() );
-			src_member_value= LLVMBuildGEP( function_context.llvm_ir_builder, src_llvm_value, indexes[0], 2u, src_op_name_nt.front() );
-		}
+		auto dst_member_value= CreateFieldGEP( dst_llvm_value, class_field, function_context );
+		auto src_member_value= CreateFieldGEP( src_llvm_value, class_field, function_context );
 
 		BuildCopyAssignmentOperatorPart( class_members_ptr, function_context, dst_member_value, src_member_value, class_field.t, file_pos );
 	}
@@ -918,18 +854,7 @@ fn CodeBuilder::BuildMembersDestructors( this, FunctionContext &mut function_con
 		if( class_field.index == ~0s ){ continue; } // May be in case of error
 		if( class_field.is_reference ) { continue; }
 
-		auto mut field_llvm_value= LLVMValueRef::Null;
-		auto op_name_nt= "." + member.key() + "\0";
-		unsafe
-		{
-			var [ LLVMValueRef, 2 ] indexes
-			[
-				GetZeroGEPIndex(),
-				LLVMConstInt( fundamental_llvm_types_.u32_, u64(class_field.index), LLVMBool::False )
-			];
-
-			field_llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, value, indexes[0], 2u, op_name_nt.front() );
-		}
+		auto field_llvm_value= CreateFieldGEP( value, class_field, function_context );
 
 		BuildDestructorPart( class_members, function_context, field_llvm_value, class_field.t, file_pos ); // TODO - maybe use field file_pos instead?
 	}

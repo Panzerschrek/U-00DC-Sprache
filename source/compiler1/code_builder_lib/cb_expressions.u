@@ -197,16 +197,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				next= class_type_lock.get_ref().base_class;
 				if( !next.empty() )
 				{
-					unsafe
-					{
-						var [ LLVMValueRef, 2 ] indexes
-						[
-							GetZeroGEPIndex(),
-							LLVMConstInt( fundamental_llvm_types_.u32_, u64(0u /* base is zero */), LLVMBool::False )
-						];
-
-						this_value_corrected= LLVMBuildGEP( function_context.llvm_ir_builder, this_value_corrected, indexes[0], 2u, ".base\0"[0] );
-					}
+					this_value_corrected= CreateBaseClassFieldGEP( this_value_corrected, function_context );
 				}
 			}
 
@@ -231,18 +222,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				auto& field= field_lock.get_ref();
 				if( field.index == ~0s ){ return ErrorValue(); } // May be in case of error
 
-				auto mut gep_value= LLVMValueRef::Null;
-				auto op_name_nt= "." + named_operand.name + "\0";
-				unsafe
-				{
-					var [ LLVMValueRef, 2 ] indexes
-					[
-						GetZeroGEPIndex(),
-						LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
-					];
-
-					gep_value= LLVMBuildGEP( function_context.llvm_ir_builder, this_value_corrected, indexes[0], 2u, op_name_nt.front() );
-				}
+				auto gep_value= CreateFieldGEP( this_value_corrected, field, function_context );
 
 				var Variable mut result{ .t= field.t, .location= Variable::Location::Pointer };
 
@@ -568,16 +548,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			next= class_type_lock.get_ref().base_class;
 			if( !next.empty() )
 			{
-				unsafe
-				{
-					var [ LLVMValueRef, 2 ] indexes
-					[
-						GetZeroGEPIndex(),
-						LLVMConstInt( fundamental_llvm_types_.u32_, u64(0u /* base is zero */), LLVMBool::False )
-					];
-
-					this_value_corrected= LLVMBuildGEP( function_context.llvm_ir_builder, this_value_corrected, indexes[0], 2u, ".base\0"[0] );
-				}
+				this_value_corrected= CreateBaseClassFieldGEP( this_value_corrected, function_context );
 			}
 		}
 
@@ -614,17 +585,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					.value_type= select( field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 				};
 
-				unsafe
-				{
-					var [ LLVMValueRef, 2 ] indexes
-					[
-						GetZeroGEPIndex(),
-						LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
-					];
-
-					auto ptr_value= LLVMBuildGEP( function_context.llvm_ir_builder, this_value_corrected, indexes[0], 2u, "\0"[0] );
-					result.llvm_value= LLVMBuildLoad( function_context.llvm_ir_builder, ptr_value, op_name_nt.front() );
-				}
+				auto ptr_value= CreateFieldGEP( this_value_corrected, field, function_context );
+				unsafe{  result.llvm_value= LLVMBuildLoad( function_context.llvm_ir_builder, ptr_value, op_name_nt.front() );  }
 
 				return move(result);
 			}
@@ -635,22 +597,12 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					.t= field.t,
 					.location= Variable::Location::Pointer,
 					.value_type= variable.value_type,
+					.llvm_value= CreateFieldGEP( this_value_corrected, field, function_context ),
 				};
 
 				if( !field.is_mutable )
 				{
 					result.value_type= ValueType::ReferenceImut;
-				}
-
-				unsafe
-				{
-					var [ LLVMValueRef, 2 ] indexes
-					[
-						GetZeroGEPIndex(),
-						LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
-					];
-
-					result.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, this_value_corrected, indexes[0], 2u, op_name_nt.front() );
 				}
 
 				return move(result);

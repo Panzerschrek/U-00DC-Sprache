@@ -544,6 +544,9 @@ private:
 	fn CreateMoveToLLVMRegisterInstruction( Variable& variable, FunctionContext& function_context ) : LLVMValueRef;
 	fn CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Type& dst_type, FunctionContext& function_context ) : LLVMValueRef;
 
+	fn CreateFieldGEP( this, LLVMValueRef value, ClassField& field, FunctionContext& function_context ) : LLVMValueRef;
+	fn CreateBaseClassFieldGEP( this, LLVMValueRef value, FunctionContext& function_context ) : LLVMValueRef;
+
 	struct InstructionsState
 	{
 		LLVMValueRef current_block_last_instruction;
