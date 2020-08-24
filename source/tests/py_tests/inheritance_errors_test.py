@@ -17,7 +17,7 @@ def BaseUnavailable_Test0():
 		class A
 		{
 			fn constructor()
-			( base() )   // error, tryying intitialize "base", but current class have no base class.
+			( base() )   // error, trying intitialize "base", but current class have no base class.
 			{}
 		}
 	"""
@@ -28,6 +28,7 @@ def BaseUnavailable_Test0():
 
 
 def BaseUnavailable_Test1():
+	# TODO - fix this
 	c_program_text= """
 		class A abstract
 		{
@@ -37,7 +38,7 @@ def BaseUnavailable_Test1():
 		class B
 		{
 			i32 y;
-			fn constructor()( y= base.y ) {}  // Error, "base" in constructor initializer lis is unavailable, because "base" is abstract.
+			fn constructor()( y= base.y ) {}  // Error, "base" in constructor initializer list is unavailable, because "base" is abstract.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -78,6 +79,57 @@ def BaseUnavailable_Test3():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "BaseUnavailable" )
 	assert( errors_list[0].file_pos.line == 6 )
+
+
+def FieldIsNotInitializedYet_ForBase_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 x;
+			fn constructor( i32 in_x );
+		}
+		class B : A
+		{
+			i32 y;
+			fn constructor() ( y= base.x, base(666) ) {} // Accessing 'base' before its initialization
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "FieldIsNotInitializedYet", 10 ) )
+
+
+def FieldIsNotInitializedYet_ForBase_Test1():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 x;
+			fn constructor( i32 in_x );
+		}
+		class B : A
+		{
+			i32 y;
+			fn constructor() ( y= x, base(666) ) {} // Accessing 'base.x' before 'base" initialization
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "FieldIsNotInitializedYet", 10 ) )
+
+
+def FieldIsNotInitializedYet_ForBase_Test2():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 x;
+			fn constructor( i32 in_x );
+		}
+		class B : A
+		{
+			i32 y;
+			fn constructor() ( y= A::x, base(666) ) {} // Accessing 'A::x' before 'base" initialization
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "FieldIsNotInitializedYet", 10 ) )
 
 
 def CanNotDeriveFromThisType_Test0():

@@ -303,7 +303,8 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 		}
 
 		auto field_class= names_scope.lock_imut().get_ref().GetClass();
-		var ust::shared_ptr_nullable_mut</ClassType/> mut current_class= function_context.this_.get_ref().t.GetClassType().get_ref();
+		auto this_class= function_context.this_.get_ref().t.GetClassType().get_ref();
+		var ust::shared_ptr_nullable_mut</ClassType/> mut current_class= this_class;
 		auto mut this_value_corrected= function_context.this_.get_ref().llvm_value;
 		while( !current_class.empty() && current_class != field_class )
 		{
@@ -331,9 +332,13 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 			return ErrorValue();
 		}
 
-		if( function_context.whole_this_is_unavailable && !function_context.uninitialized_this_fields.find( field_name ).empty() )
+		if( function_context.whole_this_is_unavailable )
 		{
-			REPORT_ERROR( FieldIsNotInitializedYet, names_scope, file_pos, field_name )
+			if( !function_context.uninitialized_this_fields.find( field_name ).empty() ||
+				( current_class != this_class && !function_context.uninitialized_this_fields.find( KeywordToString( Keyword::base_ ) ).empty() ) )
+			{
+				REPORT_ERROR( FieldIsNotInitializedYet, names_scope, file_pos, field_name )
+			}
 		}
 
 		if( field.index == ~0s ){ return ErrorValue(); } // May be in case of error

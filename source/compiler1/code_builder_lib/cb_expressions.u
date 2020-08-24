@@ -155,6 +155,12 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			REPORT_ERROR( BaseUnavailable, names_scope, named_operand.file_pos )
 			return ErrorValue();
 		}
+		if( cast_imut(function_context).whole_this_is_unavailable &&
+			!cast_imut(function_context).uninitialized_this_fields.find( KeywordToString( Keyword::base_ ) ).empty() )
+		{
+			REPORT_ERROR( FieldIsNotInitializedYet, names_scope, named_operand.file_pos, KeywordToString( Keyword::base_ ) )
+			return ErrorValue();
+		}
 
 		var Type base_type= ust::to_non_nullable(base_class);
 		var Variable mut base_
@@ -171,7 +177,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		// Process access to "this" and parent class fields separately.
 		// This needed, because parent class fields does not added into class namespace.
 
-		var ust::shared_ptr_nullable_mut</ClassType/> mut class_type= function_context.this_.get_ref().t.GetClassType().get_ref();
+		auto this_class_type= function_context.this_.get_ref().t.GetClassType().get_ref();
+		var ust::shared_ptr_nullable_mut</ClassType/> mut class_type= this_class_type;
 		var ust::optional</NamesScopeValue/> mut class_member;
 
 		auto mut this_value_corrected= function_context.this_.get_ref().llvm_value;
@@ -211,9 +218,13 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			auto field_ptr= class_member.get_ref().Get</ClassField/>();
 			if( !field_ptr.empty() )
 			{
-				if( function_context.whole_this_is_unavailable && !function_context.uninitialized_this_fields.find( named_operand.name ).empty() )
+				if( function_context.whole_this_is_unavailable )
 				{
-					REPORT_ERROR( FieldIsNotInitializedYet, names_scope, named_operand.file_pos, named_operand.name  )
+					if( !function_context.uninitialized_this_fields.find( named_operand.name ).empty() ||
+						( class_type != this_class_type && !function_context.uninitialized_this_fields.find( KeywordToString( Keyword::base_ ) ).empty() ) )
+					{
+						REPORT_ERROR( FieldIsNotInitializedYet, names_scope, named_operand.file_pos, named_operand.name )
+					}
 				}
 
 				auto field_lock= field_ptr.lock_imut();

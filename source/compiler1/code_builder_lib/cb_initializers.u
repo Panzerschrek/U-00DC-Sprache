@@ -851,7 +851,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 				continue;
 			}
 			base_initialized= true;
-			//function_context.base_initialized= false;
+			function_context.uninitialized_this_fields.insert( KeywordToString( Keyword::base_ ), 0 );
 			continue;
 		}
 
@@ -983,6 +983,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 
 			BuildInitializer( names_scope, function_context, base_variable, member_initializer.initializer.get_ref() );
 
+			function_context.uninitialized_this_fields.erase( KeywordToString( Keyword::base_ ) );
 			continue;
 		}
 
