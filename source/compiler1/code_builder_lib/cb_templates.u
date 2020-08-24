@@ -768,17 +768,37 @@ fn CodeBuilder::GenTemplateFunction(
 			return ust::optional</FunctionVariable/>();
 		}
 
-		// TODO - process here reference conversion and type conversion before "MatchTemplateArgument" call.
-
 		if( is_this )
 		{
 			all_ok&=
 				!function_template.class_.empty() &&
-				ust::to_non_nullable(function_template.class_) == arg.arg_type.get_ref();
+				arg.arg_type.get_ref().ReferenceIsConvertibleTo( ust::to_non_nullable(function_template.class_) );
 		}
 		else
 		{
-			all_ok&= MatchTemplateArgument( result_names_scope, function_template, function_template.signature_params[i], arg.arg_type.get_ref(), file_pos );
+			auto& param= function_template.signature_params[i];
+			if_var( &template_param : param.GetTemplateParam() )
+			{
+				auto& param_name= function_template.params[template_param.index].name;
+				auto template_arg_value= result_names_scope.lock_imut().get_ref().GetThisScopeValue( param_name ).get_ref();
+				auto template_arg_ptr= template_arg_value.Get</TemplateArg/>();
+
+				auto template_arg_lock= template_arg_ptr.lock_imut();
+				auto& template_arg= template_arg_lock.get_ref();
+
+				if_var( &t : template_arg.something.get</Type/>() )
+				{
+					all_ok&= arg.arg_type.get_ref().ReferenceIsConvertibleTo( t );
+					continue;
+				}
+			}
+			if_var( &type_param : param.GetTypeParam() )
+			{
+				all_ok&= arg.arg_type.get_ref().ReferenceIsConvertibleTo( type_param.t );
+				continue;
+			}
+
+			all_ok&= MatchTemplateArgument( result_names_scope, function_template, param, arg.arg_type.get_ref(), file_pos );
 		}
 	}
 
