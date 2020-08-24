@@ -844,40 +844,51 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		auto parent_type= PrepareType( names_scope_ptr, global_function_context, parent_name );
 		if( parent_type.GetClassType().empty() )
 		{
+			REPORT_ERROR( CanNotDeriveFromThisType, names_scope_ptr, syntax_element.file_pos, parent_type )
 			continue;
 		}
 
 		if( !EnsureTypeComplete( parent_type ) )
 		{
+			REPORT_ERROR( UsingIncompleteType, names_scope_ptr, syntax_element.file_pos, parent_type )
 			continue;
 		}
 
 		auto parent_class= parent_type.GetClassType().get_ref();
 
-		{
-			auto mut lock= class_type.lock_mut();
-			auto &mut class_= lock.get_ref();
+		auto mut class_lock= class_type.lock_mut();
+		auto &mut class_= class_lock.get_ref();
 
-			auto parent_kind= parent_class.lock_imut().get_ref().kind;
-			if( !( parent_kind == ClassType::Kind::Abstract || parent_kind == ClassType::Kind::Interface || parent_kind == ClassType::Kind::PolymorphNonFinal ) )
+		auto mut duplicated= false;
+		foreach( &prev_parent : class_.parents )
+		{
+			duplicated|= prev_parent.class_ == parent_class;
+		}
+		if( duplicated )
+		{
+			REPORT_ERROR( DuplicatedParentClass, names_scope_ptr, syntax_element.file_pos, parent_type )
+			continue;
+		}
+
+		auto parent_kind= parent_class.lock_imut().get_ref().kind;
+		if( !( parent_kind == ClassType::Kind::Abstract || parent_kind == ClassType::Kind::Interface || parent_kind == ClassType::Kind::PolymorphNonFinal ) )
+		{
+			REPORT_ERROR( CanNotDeriveFromThisType, names_scope_ptr, syntax_element.file_pos, parent_type )
+			continue;
+		}
+
+		if( parent_kind != ClassType::Kind::Interface ) // not interface=base
+		{
+			if( !class_.base_class.empty() )
 			{
-				REPORT_ERROR( CanNotDeriveFromThisType, names_scope_ptr, syntax_element.file_pos, parent_type )
+				REPORT_ERROR( DuplicatedBaseClass, names_scope_ptr, syntax_element.file_pos, parent_type )
 				continue;
 			}
-
-			if( parent_kind != ClassType::Kind::Interface ) // not interface=base
-			{
-				if( !class_.base_class.empty() )
-				{
-					REPORT_ERROR( DuplicatedBaseClass, names_scope_ptr, syntax_element.file_pos, parent_type )
-					continue;
-				}
-				class_.base_class= parent_class;
-			}
-
-			var ClassType::Parent mut parent{ .class_= parent_class };
-			class_.parents.push_back( move(parent) );
+			class_.base_class= parent_class;
 		}
+
+		var ClassType::Parent mut parent{ .class_= parent_class };
+		class_.parents.push_back( move(parent) );
 	}
 
 	var ust::vector</ LLVMTypeRef /> mut fields_llvm_types;

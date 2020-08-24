@@ -347,7 +347,14 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 	static const std::unordered_set<std::string> c_test_to_enable
 	{
 		"AutoVariableInitialization_UsingFunctionPointer_Test0",
+		"BaseUnavailable_Test0",
+		//"BaseUnavailable_Test1",
+		"BaseUnavailable_Test2",
+		"BaseUnavailable_Test3",
 		"BindingConstReferenceToNonconstReference_InFunctionPointerCall_Test0",
+		"CanNotDeriveFromThisType_Test0",
+		"CanNotDeriveFromThisType_Test1",
+		"CanNotDeriveFromThisType_Test2",
 		"CharAsTemplateParameter_Test0",
 		"CharIsEqualityComparable_Test0",
 		"CharIsOrderComparable_Test0",
@@ -369,6 +376,9 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		//"DirectFunctionTemplateParametersSet_Test2",
 		"DirectFunctionTemplateParametersSet_Test3",
 		"DirectFunctionTemplateParametersSet_Test4",
+		"DuplicatedBaseClass_Test0",
+		"DuplicatedParentClass_Test0",
+		"DuplicatedParentClass_Test1",
 		"ExpectedReferenceValue_InFunctionPointerCall_Test0",
 		"ErrorsTest0",
 		"ErrorsTest1",
@@ -459,6 +469,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"UnsafeFunctionDeclaration_Test0",
 		"UnsafeFunctionDeclaration_Test1",
 		"UnsafeInsideUnsafe_Test",
+		"UsingIncompleteType_ForInheritance_Test0",
 		"ZeroInitializerForChar_Test0",
 	};
 
