@@ -916,6 +916,7 @@ fn CodeBuilder::BuildMembersDestructors( this, FunctionContext &mut function_con
 		var ClassField& class_field= field_lock.get_ref();
 
 		if( class_field.index == ~0s ){ continue; } // May be in case of error
+		if( class_field.is_reference ) { continue; }
 
 		auto mut field_llvm_value= LLVMValueRef::Null;
 		auto op_name_nt= "." + member.key() + "\0";
