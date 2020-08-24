@@ -129,7 +129,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value
 {
-	if( named_operand.name == KeywordToString( Keyword::this_ ) )
+	if( named_operand.tail.empty() && named_operand.name == KeywordToString( Keyword::this_ ) )
 	{
 		if( function_context.this_.empty() || function_context.whole_this_is_unavailable )
 		{
@@ -137,6 +137,34 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			return ErrorValue();
 		}
 		return function_context.this_.get_ref();
+	}
+	if( named_operand.tail.empty() && named_operand.name == KeywordToString( Keyword::base_ ) )
+	{
+		if( function_context.this_.empty() )
+		{
+			REPORT_ERROR( BaseUnavailable, names_scope, named_operand.file_pos )
+			return ErrorValue();
+		}
+
+		auto &this_= function_context.this_.get_ref();
+
+		auto class_type= this_.t.GetClassType().get_ref();
+		auto base_class= class_type.lock_imut().get_ref().base_class;
+		if( base_class.empty() )
+		{
+			REPORT_ERROR( BaseUnavailable, names_scope, named_operand.file_pos )
+			return ErrorValue();
+		}
+
+		var Type base_type= ust::to_non_nullable(base_class);
+		var Variable mut base_
+		{
+			.t= base_type,
+			.value_type= this_.value_type,
+			.llvm_value= CreateReferenceCast( this_.llvm_value, this_.t, base_type, function_context ),
+		};
+
+		return move(base_);
 	}
 	if( named_operand.tail.empty() && !function_context.this_.empty() )
 	{
