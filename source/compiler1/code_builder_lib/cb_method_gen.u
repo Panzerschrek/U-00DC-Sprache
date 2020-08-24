@@ -59,6 +59,12 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		}
 	}
 
+	auto base_class= class_type.lock_imut().get_ref().base_class;
+	if( !base_class.empty() && !base_class.lock_imut().get_ref().is_default_constructible )
+	{
+		return;
+	}
+
 	// All ok - set default constructible flag.
 	{
 		auto mut class_lock= class_type.lock_mut();
@@ -123,6 +129,28 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 
 	auto mut this_llvm_value= LLVMValueRef::Null;
 	unsafe{  this_llvm_value= LLVMGetParam( function_variable.llvm_function, 0u );  }
+
+	if( !base_class.empty() )
+	{
+		var NamesScopeVariable mut base_variable
+		{
+			.t= ust::to_non_nullable(base_class),
+			.is_mutable= true,
+		};
+
+		unsafe
+		{
+			var [ LLVMValueRef, 2 ] indexes
+			[
+				GetZeroGEPIndex(),
+				LLVMConstInt( fundamental_llvm_types_.u32_, u64(0u /* base class is first field*/), LLVMBool::False )
+			];
+
+			base_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, this_llvm_value, indexes[0], 2u, ".base\0"[0] );
+		}
+
+		BuildEmptyInitializer( class_members, function_context, base_variable, KeywordToString( Keyword::base_ ), FilePos( /* TODO - set correct file_pos */ ) );
+	}
 
 	foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
 	{
@@ -210,6 +238,12 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		}
 	}
 
+	auto base_class= class_type.lock_imut().get_ref().base_class;
+	if( !base_class.empty() && !base_class.lock_imut().get_ref().is_copy_constructible )
+	{
+		return;
+	}
+
 	// All ok - set copy constructible flag.
 	{
 		auto mut class_lock= class_type.lock_mut();
@@ -293,6 +327,25 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 	}
 
 	auto file_pos= class_type.lock_imut().get_ref().syntax_element.get_ref().file_pos;
+
+	if( !base_class.empty() )
+	{
+		var LLVMValueRef mut dst_member_value= zero_init, mut src_member_value= zero_init;
+		unsafe
+		{
+			var [ LLVMValueRef, 2 ] indexes
+			[
+				GetZeroGEPIndex(),
+				LLVMConstInt( fundamental_llvm_types_.u32_, u64(0u /* base class is first field*/), LLVMBool::False )
+			];
+
+			dst_member_value= LLVMBuildGEP( function_context.llvm_ir_builder, dst_llvm_value, indexes[0], 2u, "dst.base\0"[0] );
+			src_member_value= LLVMBuildGEP( function_context.llvm_ir_builder, src_llvm_value, indexes[0], 2u, "src.base\0"[0] );
+		}
+
+		BuildCopyConstructorPart( class_members, function_context, dst_member_value, src_member_value, ust::to_non_nullable(base_class), file_pos );
+	}
+
 	foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
 	{
 		auto field_ptr= member.value().Get</ClassField/>();
@@ -388,6 +441,12 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		}
 	}
 
+	auto base_class= class_type.lock_imut().get_ref().base_class;
+	if( !base_class.empty() && !base_class.lock_imut().get_ref().is_copy_assignable )
+	{
+		return;
+	}
+
 	// All ok - set copy assignable flag.
 	{
 		auto mut class_lock= class_type.lock_mut();
@@ -471,6 +530,25 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 	}
 
 	auto file_pos= class_type.lock_imut().get_ref().syntax_element.get_ref().file_pos;
+
+	if( !base_class.empty() )
+	{
+		var LLVMValueRef mut dst_member_value= zero_init, mut src_member_value= zero_init;
+		unsafe
+		{
+			var [ LLVMValueRef, 2 ] indexes
+			[
+				GetZeroGEPIndex(),
+				LLVMConstInt( fundamental_llvm_types_.u32_, u64(0u /* base class is first field*/), LLVMBool::False )
+			];
+
+			dst_member_value= LLVMBuildGEP( function_context.llvm_ir_builder, dst_llvm_value, indexes[0], 2u, "dst.base\0"[0] );
+			src_member_value= LLVMBuildGEP( function_context.llvm_ir_builder, src_llvm_value, indexes[0], 2u, "src.base\0"[0] );
+		}
+
+		BuildCopyAssignmentOperatorPart( class_members_ptr, function_context, dst_member_value, src_member_value, ust::to_non_nullable(base_class), file_pos );
+	}
+
 	foreach( &member : class_members.GetInternalContainer() )
 	{
 		auto field_ptr= member.value().Get</ClassField/>();
@@ -807,8 +885,25 @@ fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionC
 fn CodeBuilder::BuildMembersDestructors( this, FunctionContext &mut function_context, LLVMValueRef value, ClassTypePtr& class_type )
 {
 	auto class_members= class_type.lock_imut().get_ref().members;
-
 	auto file_pos= class_type.lock_imut().get_ref().syntax_element.get_ref().file_pos;
+
+	foreach( &parent : class_type.lock_imut().get_ref().parents )
+	{
+		auto mut parent_llvm_value= LLVMValueRef::Null;
+		unsafe
+		{
+			var [ LLVMValueRef, 2 ] indexes
+			[
+				GetZeroGEPIndex(),
+				LLVMConstInt( fundamental_llvm_types_.u32_, u64(parent.field_number), LLVMBool::False )
+			];
+
+			parent_llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, value, indexes[0], 2u, "\0"[0] );
+		}
+
+		BuildDestructorPart( class_members, function_context, parent_llvm_value, parent.class_, file_pos );
+	}
+
 	foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
 	{
 		auto field_ptr= member.value().Get</ClassField/>();
@@ -821,6 +916,7 @@ fn CodeBuilder::BuildMembersDestructors( this, FunctionContext &mut function_con
 		var ClassField& class_field= field_lock.get_ref();
 
 		if( class_field.index == ~0s ){ continue; } // May be in case of error
+		if( class_field.is_reference ) { continue; }
 
 		auto mut field_llvm_value= LLVMValueRef::Null;
 		auto op_name_nt= "." + member.key() + "\0";

@@ -391,8 +391,20 @@ type ClassElements= ust::vector</ClassElement/>;
 
 struct Class
 {
+	enum KindAttribute : u8
+	{
+		Struct,
+		Class,
+		Final,
+		Polymorph,
+		Interface,
+		Abstract,
+	}
+
 	FilePos file_pos;
 	ust::string8 name;
+	KindAttribute kind_attribute= KindAttribute::Struct;
+	ust::vector</ComplexName/> parents;
 	ClassElements class_elements;
 	bool is_forward_declaration= false;
 }

@@ -9,7 +9,7 @@ def CouldNotOverloadFunction_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotOverloadFunction" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].file_pos.line == 2 or errors_list[0].file_pos.line == 3 )
 
 
 def CouldNotOverloadFunction_Test1():
@@ -20,7 +20,7 @@ def CouldNotOverloadFunction_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotOverloadFunction" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].file_pos.line == 2 or errors_list[0].file_pos.line == 3 )
 
 
 def CouldNotOverloadFunction_Test2():
@@ -31,7 +31,7 @@ def CouldNotOverloadFunction_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotOverloadFunction" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].file_pos.line == 2 or errors_list[0].file_pos.line == 3 )
 
 
 def CouldNotOverloadFunction_Test3():
@@ -123,9 +123,7 @@ def OverloadingResolutionTest_OnlyMutabilityCheck_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
-	assert( errors_list[0].file_pos.line == 7 )
+	assert( HaveError( errors_list, "TooManySuitableOverloadedFunctions", 7 ) )
 
 
 def OverloadingResolutionTest_OnlyMutabilityCheck_Test3():
@@ -284,9 +282,7 @@ def OverloadingResolutionTest_ReferenceConversions_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
-	assert( errors_list[0].file_pos.line == 10 )
+	assert( HaveError( errors_list, "TooManySuitableOverloadedFunctions", 10 ) )
 
 
 def OverloadingResolutionTest_ReferenceConversions_Test4():
@@ -322,9 +318,7 @@ def OverloadingResolutionTest_MutabilityAndReferenceConversions_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
-	assert( errors_list[0].file_pos.line == 9 )
+	assert( HaveError( errors_list, "TooManySuitableOverloadedFunctions", 9 ) )
 
 
 def OverloadingResolutionTest_MutabilityAndReferenceConversions_Test1():
@@ -361,7 +355,7 @@ def OverloadingResolutionTest_MutabilityAndReferenceConversions_Test2():
 	assert( call_result == 222 )
 
 
-def OverloadingResolutionTest_MutabilityAndReferenceConversions_Tes3():
+def OverloadingResolutionTest_MutabilityAndReferenceConversions_Test3():
 	c_program_text= """
 		class A polymorph {}
 		class B : A {}
@@ -374,15 +368,13 @@ def OverloadingResolutionTest_MutabilityAndReferenceConversions_Tes3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
-	assert( errors_list[0].file_pos.line == 9 )
+	assert( HaveError( errors_list, "TooManySuitableOverloadedFunctions", 9 ) )
 
 
-def OverloadingResolutionTest_MutabilityAndReferenceConversions_Tes4():
+def OverloadingResolutionTest_MutabilityAndReferenceConversions_Test4():
 	c_program_text= """
-		class A polymorph {}
-		class B : A {}
+		class A polymorph { fn constructor( mut this, A &imut other )= default; }
+		class B : A { fn constructor( mut this, B &imut other )= default; }
 		fn Bar( A &imut a ) : i32 { return 111; }
 		fn Bar( B       b ) : i32 { return 222; }
 		fn Foo() : i32
@@ -396,7 +388,7 @@ def OverloadingResolutionTest_MutabilityAndReferenceConversions_Tes4():
 	assert( call_result == 222 )
 
 
-def OverloadingResolutionTest_MutabilityAndReferenceConversions_Tes4():
+def OverloadingResolutionTest_MutabilityAndReferenceConversions_Test5():
 	c_program_text= """
 		class A polymorph {}
 		class B : A {}
@@ -410,12 +402,10 @@ def OverloadingResolutionTest_MutabilityAndReferenceConversions_Tes4():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
-	assert( errors_list[0].file_pos.line == 10 )
+	assert( HaveError( errors_list, "TooManySuitableOverloadedFunctions", 10 ) )
 
 
-def OverloadingResolutionTest_MutabilityAndReferenceConversions_Tes5():
+def OverloadingResolutionTest_MutabilityAndReferenceConversions_Test6():
 	c_program_text= """
 		class A polymorph {}
 		class B : A {}
@@ -429,9 +419,7 @@ def OverloadingResolutionTest_MutabilityAndReferenceConversions_Tes5():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
-	assert( errors_list[0].file_pos.line == 10 )
+	assert( HaveError( errors_list, "TooManySuitableOverloadedFunctions", 10 ) )
 
 
 def OverloadingResolutionTest_ForFunctionTemplates_Test0():
@@ -518,8 +506,7 @@ def OverloadingResolutionTest_StaticClassFunctions_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
-	assert( errors_list[0].file_pos.line == 11 )
+	assert( HaveError( errors_list, "TooManySuitableOverloadedFunctions", 11 ) )
 
 
 def OverloadingResolutionTest_StaticClassFunctions_Test2():
@@ -537,9 +524,7 @@ def OverloadingResolutionTest_StaticClassFunctions_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
-	assert( errors_list[0].file_pos.line == 11 )
+	assert( HaveError( errors_list, "TooManySuitableOverloadedFunctions", 11 ) )
 
 
 def OverloadingResolutionTest_StaticClassFunctions_Test3():

@@ -315,6 +315,66 @@ def InheritanceTest_ParentClassFieldAccess_Test1():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def InheritanceTest_ParentClassFieldAccess_Test2():
+	c_program_text= """
+		class A polymorph
+		{
+			i32 a;
+			fn constructor()( a= 541 ){}
+		}
+		class B : A
+		{
+			f32 b;
+			fn constructor()( b= 124.3f ){}
+		}
+		class C : B
+		{
+			f64 c;
+			fn constructor()( c= -54.2 ){}
+			fn Foo( this ) :i32
+			{
+				return i32( f64(A::a) - f64(B::b) / f64(C::c) );  // Access parent fileds via complex NamedOperand.
+			}
+		}
+
+		fn Foo() : i32
+		{
+			var C c;
+			return c.Foo();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def InheritanceTest_ParentClassFieldAccess_Test3():
+	c_program_text= """
+		class One polymorph
+		{
+			i32 a;
+			fn constructor()( a= 654 ){}
+		}
+		class Two : One
+		{
+			i32 a;
+			fn constructor()( a= 321 ){}
+		}
+		class S : Two
+		{
+			fn GetA( this ) : i32 { return One::a - Two::a; } // Should access fields of defferent classes
+		}
+
+		fn Foo() : i32
+		{
+			var S c;
+			return c.GetA();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 654 - 321 )
+
+
 def InheritanceTest_InitializeBaseClass_Test0():
 	c_program_text= """
 		class A polymorph
@@ -607,7 +667,7 @@ def ChildToParentReferenceCast_Test1():
 			Baz(b); // Must convert B& to AA&.
 		}
 	"""
-	tests_lib.build_program( c_program_text, )
+	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
 
 

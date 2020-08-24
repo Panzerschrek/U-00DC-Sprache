@@ -828,12 +828,33 @@ fn CodeBuilder::BuildConstructorInitialization(
 	// Function context should contain "this" with class type
 	auto class_type= function_context.this_.get_ref().t.GetClassType().get_ref();
 	auto class_members= class_type.lock_imut().get_ref().members;
+	auto base_class= class_type.lock_imut().get_ref().base_class;
 
 	// Check for errors, build list of initialized fields.
 	var ust::unordered_map</ust::string8, i32/> mut initialized_fields; // TODO - use unordered_set
 	auto mut have_fields_errors= false;
+	auto mut base_initialized= false;
 	foreach( &member_initializer : constructor_initialization_list.members_initializers )
 	{
+		if( member_initializer.name == KeywordToString( Keyword::base_ ) )
+		{
+			if( base_class.empty() )
+			{
+				have_fields_errors= true;
+				REPORT_ERROR( BaseUnavailable, names_scope, constructor_initialization_list.file_pos )
+				continue;
+			}
+			if( base_initialized )
+			{
+				have_fields_errors= true;
+				REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope, constructor_initialization_list.file_pos, member_initializer.name )
+				continue;
+			}
+			base_initialized= true;
+			function_context.uninitialized_this_fields.insert( KeywordToString( Keyword::base_ ), 0 );
+			continue;
+		}
+
 		auto class_members_lock= class_members.lock_imut();
 		auto member= class_members_lock.get_ref().GetThisScopeValue( member_initializer.name );
 		if( member.empty() )
@@ -876,6 +897,27 @@ fn CodeBuilder::BuildConstructorInitialization(
 	}
 
 	// Initialize fields, missing in initializer list.
+	if( !base_class.empty() && !base_initialized )
+	{
+		var NamesScopeVariable mut base_variable
+		{
+			.t= ust::to_non_nullable(base_class),
+			.is_mutable= true,
+		};
+
+		unsafe
+		{
+			var [ LLVMValueRef, 2 ] indexes
+			[
+				GetZeroGEPIndex(),
+				LLVMConstInt( fundamental_llvm_types_.u32_, u64(0u /* base class is first field */), LLVMBool::False )
+			];
+
+			base_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, function_context.this_.get_ref().llvm_value, indexes[0], 2u, ".base\0"[0] );
+		}
+
+		BuildEmptyInitializer( names_scope, function_context, base_variable, KeywordToString( Keyword::base_ ), constructor_initialization_list.file_pos );
+	}
 	// TODO - use fiedls order.
 	foreach( &field_name : uninitialized_fields )
 	{
@@ -920,6 +962,31 @@ fn CodeBuilder::BuildConstructorInitialization(
 	// Apply explicit initializers.
 	foreach( &member_initializer : constructor_initialization_list.members_initializers )
 	{
+		if( member_initializer.name == KeywordToString( Keyword::base_ ) )
+		{
+			var NamesScopeVariable mut base_variable
+			{
+				.t= ust::to_non_nullable( base_class ),
+				.is_mutable= true,
+			};
+
+			unsafe
+			{
+				var [ LLVMValueRef, 2 ] indexes
+				[
+					GetZeroGEPIndex(),
+					LLVMConstInt( fundamental_llvm_types_.u32_, u64(0u /* base is always first field*/), LLVMBool::False )
+				];
+
+				base_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, function_context.this_.get_ref().llvm_value, indexes[0], 2u, ".base\0"[0] );
+			}
+
+			BuildInitializer( names_scope, function_context, base_variable, member_initializer.initializer.get_ref() );
+
+			function_context.uninitialized_this_fields.erase( KeywordToString( Keyword::base_ ) );
+			continue;
+		}
+
 		auto field_ptr= class_members.lock_imut().get_ref().GetThisScopeValue( member_initializer.name ).get_ref().Get</ClassField/>();
 		auto field_lock= field_ptr.lock_imut();
 		var ClassField & class_field= field_lock.get_ref();

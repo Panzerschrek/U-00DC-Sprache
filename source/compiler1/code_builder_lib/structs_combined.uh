@@ -91,7 +91,7 @@ struct FunctionPointerType
 
 struct ClassType
 {
-	NamesScopeMutPtr members; // Do not change class members unless in "NamesScopeFill" methods!
+	NamesScopeMutPtr members; // Mutable, because it may be filled in class build process in case of inheritance.
 
 	ust::shared_ptr_final_nullable</ Synt::Class /> forward_declaration_syntax_element;
 	ust::shared_ptr_final_nullable</ Synt::Class /> syntax_element;
@@ -113,6 +113,25 @@ struct ClassType
 	bool is_copy_constructible= false;
 	bool is_copy_assignable= false;
 	bool have_explicit_noncopy_constructors= false;
+
+	enum Kind : u8
+	{
+		Struct,
+		NonPolymorph,
+		Interface,
+		Abstract,
+		PolymorphNonFinal,
+		PolymorphFinal,
+	}
+	Kind kind= Kind::Struct;
+
+	struct Parent
+	{
+		ClassTypePtr class_;
+		u32 field_number= ~0u; // Allways 0 for base class.
+	}
+	ust::shared_ptr_nullable_mut</ClassType/> base_class;
+	ust::vector</Parent/> parents; // Parents, include base class.
 }
 
 type ClassTypePtr= ust::shared_ptr_mut</ClassType/>;
@@ -155,6 +174,7 @@ public:
 	fn IsCopyConstructible( this ) : bool;
 	fn IsCopyAssignable( this ) : bool;
 	fn CanBeConstexpr( this ) : bool;
+	fn IsAbstract( this ) : bool;
 
 	fn ReferenceIsConvertibleTo( this, Type& dst ) : bool;
 

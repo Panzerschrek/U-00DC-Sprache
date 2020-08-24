@@ -240,6 +240,8 @@ private:
 	fn ParseHalt( mut this ) : BlockElement;
 
 	fn ParseClass( mut this ) : Class;
+	fn ParseClassKindAttribute( mut this ) : Class::KindAttribute;
+	fn ParseClassParentsList( mut this ) : ust::vector</ComplexName/>;
 	fn ParseClassBody( mut this ) : ClassElements;
 	fn ParseEnum( mut this ) : Enum;
 	fn ParseTypeAlias( mut this ) : TypeAlias;
@@ -1836,7 +1838,9 @@ fn SyntaxAnalyzer::ParseClass( mut this ) : Class
 {
 	var Class mut class_;
 
-	if( !( IsKeyword( it_.front(), Keyword::struct_ ) || IsKeyword( it_.front(), Keyword::class_ ) ) )
+	auto is_struct= IsKeyword( it_.front(), Keyword::struct_ );
+	auto is_class= IsKeyword( it_.front(), Keyword::class_ );
+	if( !( is_struct || is_class ) )
 	{
 		PushErrorMessage();
 	}
@@ -1849,6 +1853,16 @@ fn SyntaxAnalyzer::ParseClass( mut this ) : Class
 	class_.file_pos= it_.front().file_pos;
 	class_.name= it_.front().text;
 	NextLexem();
+
+	if( is_struct )
+	{
+		class_.kind_attribute= Class::KindAttribute::Struct;
+	}
+	else
+	{
+		class_.kind_attribute= ParseClassKindAttribute();
+		class_.parents= ParseClassParentsList();
+	}
 
 	if( it_.front().lexem_type == Lexem::Type::Semicolon )
 	{
@@ -1957,6 +1971,59 @@ fn SyntaxAnalyzer::ParseClassBody( mut this ) : ClassElements
 	}
 
 	return move(class_elements);
+}
+
+fn SyntaxAnalyzer::ParseClassKindAttribute( mut this ) : Class::KindAttribute
+{
+	if( IsKeyword( it_.front(), Keyword::final_ ) )
+	{
+		NextLexem();
+		return Class::KindAttribute::Final;
+	}
+	if( IsKeyword( it_.front(), Keyword::polymorph_ ) )
+	{
+		NextLexem();
+		return Class::KindAttribute::Polymorph;
+	}
+	if( IsKeyword( it_.front(), Keyword::interface_ ) )
+	{
+		NextLexem();
+		return Class::KindAttribute::Interface;
+	}
+	if( IsKeyword( it_.front(), Keyword::abstract_ ) )
+	{
+		NextLexem();
+		return Class::KindAttribute::Abstract;
+	}
+
+	return Class::KindAttribute::Class;
+}
+
+fn SyntaxAnalyzer::ParseClassParentsList( mut this ) : ust::vector</ComplexName/>
+{
+	if( it_.front().lexem_type != Lexem::Type::Colon )
+	{
+		return ust::vector</ComplexName/>();
+	}
+	NextLexem();
+
+	var ust::vector</ComplexName/> mut parents_list;
+
+	while( NotEndOfFile() )
+	{
+		parents_list.push_back( ParseComplexName() );
+
+		if( it_.front().lexem_type == Lexem::Type::Comma )
+		{
+			NextLexem();
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	return move(parents_list);
 }
 
 fn SyntaxAnalyzer::ParseEnum( mut this ) : Enum
@@ -2191,6 +2258,7 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 	}
 	else if( IsKeyword( it_.front(), Keyword::struct_ ) || IsKeyword( it_.front(), Keyword::class_ ) )
 	{
+		auto is_struct= IsKeyword( it_.front(), Keyword::struct_ );
 		NextLexem();
 
 		if( it_.front().lexem_type != Lexem::Type::Identifier )
@@ -2216,9 +2284,21 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 		var Class mut class_
 		{
 			.file_pos= class_file_pos,
-			.name= "_", // Give special name for all template classes.
-			.class_elements= ParseClassBody(),
+			.name= "_", // Give special name for all template classes
 		};
+
+		if( is_struct )
+		{
+			class_.kind_attribute= Class::KindAttribute::Struct;
+		}
+		else
+		{
+			class_.kind_attribute= ParseClassKindAttribute();
+			class_.parents= ParseClassParentsList();
+		}
+
+		class_.class_elements= ParseClassBody();
+
 		var TypeTemplate mut type_template
 		{
 			.file_pos= template_file_pos,

@@ -674,4 +674,37 @@ U_TEST(ConstructorTest19)
 	U_TEST_ASSERT( static_cast<uint64_t>(111112) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(ConstructorTest20)
+{
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			i32 x;
+			fn constructor() (x= 5566) {}
+		}
+		struct B
+		{
+			A a;
+			fn constructor(){} // Must call here constructor for 'a' even if there is no initializer list.
+		}
+		fn Foo() : i32
+		{
+			var B b;
+			return b.a.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue result_value=
+		engine->runFunction(
+			function,
+			llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(5566) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace U

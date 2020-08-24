@@ -86,6 +86,12 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 
 		if( variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 		{
+			if( t.IsAbstract() )
+			{
+				REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, variable_declaration.file_pos, t )
+				continue;
+			}
+
 			unsafe
 			{
 				out_variable.llvm_value=
@@ -224,6 +230,12 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 	}
 	else if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 	{
+		if( expr.t.IsAbstract() )
+		{
+			REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, auto_variable_declaration.file_pos, expr.t )
+			return BlockElementBuildInfo();
+		}
+
 		unsafe
 		{
 			out_variable.llvm_value=
