@@ -843,7 +843,6 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	auto mut global_function_context= CreateGlobalFunctionContext();
 
 	// Fill parents
-	// TODO - produce some errors.
 	foreach( &parent_name : syntax_element.parents )
 	{
 		auto parent_type= PrepareType( names_scope_ptr, global_function_context, parent_name );
@@ -992,7 +991,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		}
 	}
 
-	// Setup class kind. TODO - check for errors.
+	// Setup class kind.
 	{
 		auto mut lock= class_type.lock_mut();
 		auto &mut class_= lock.get_ref();

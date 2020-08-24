@@ -667,7 +667,7 @@ def ChildToParentReferenceCast_Test1():
 			Baz(b); // Must convert B& to AA&.
 		}
 	"""
-	tests_lib.build_program( c_program_text, )
+	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
 
 
