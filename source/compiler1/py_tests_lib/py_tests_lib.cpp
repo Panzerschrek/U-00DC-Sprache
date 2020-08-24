@@ -347,6 +347,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 	static const std::unordered_set<std::string> c_test_to_enable
 	{
 		"AutoVariableInitialization_UsingFunctionPointer_Test0",
+		"BaseClassForInterface_Test0",
 		"BaseUnavailable_Test0",
 		//"BaseUnavailable_Test1",
 		"BaseUnavailable_Test2",
@@ -358,6 +359,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"CharAsTemplateParameter_Test0",
 		"CharIsEqualityComparable_Test0",
 		"CharIsOrderComparable_Test0",
+		"ConstructorForInterface_Test0",
 		"CouldNotConvertFunctionPointer_Test0",
 		"CouldNotConvertFunctionPointer_Test1",
 		"CouldNotConvertFunctionPointer_Test2",
@@ -385,6 +387,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"FieldIsNotInitializedYet_ForBase_Test0",
 		"FieldIsNotInitializedYet_ForBase_Test1",
 		"FieldIsNotInitializedYet_ForBase_Test2",
+		"FieldsForInterfacesNotAllowed_Test0",
 		"FunctionDeclarationOutsideItsScope_ForFunctionTemplates_Test0",
 		"FunctionPointersConversions_Test0",
 		"FunctionPointersConversions_Test1",

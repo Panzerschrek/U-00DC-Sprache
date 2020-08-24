@@ -1011,6 +1011,26 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		}
 		else if( syntax_element.kind_attribute == Synt::Class::KindAttribute::Interface )
 		{
+			if( !class_.base_class.empty() )
+			{
+				REPORT_ERROR( BaseClassForInterface, names_scope_ptr, syntax_element.file_pos )
+			}
+			if( fields_llvm_types.size() > class_.parents.size() )
+			{
+				REPORT_ERROR( FieldsForInterfacesNotAllowed, names_scope_ptr, syntax_element.file_pos )
+			}
+
+			{
+				// Constructors value should always exists and should always be NamesScopeFunctionsSet.
+				auto constructors_ptr= class_members.lock_imut().get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).get_ref().Get</NamesScopeFunctionsSet/>();
+				auto constructors_lock= constructors_ptr.lock_imut();
+				auto& constructors= constructors_lock.get_ref();
+				if( !constructors.functions_set.functions.empty() || !constructors.functions_set.function_templates.empty() )
+				{
+					REPORT_ERROR( ConstructorForInterface, names_scope_ptr, syntax_element.file_pos )
+				}
+			}
+
 			class_.kind= ClassType::Kind::Interface;
 		}
 		else if( syntax_element.kind_attribute == Synt::Class::KindAttribute::Abstract )
