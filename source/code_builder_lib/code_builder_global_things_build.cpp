@@ -443,8 +443,6 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 			AddAncestorsAccessRights_r( the_class, parent_class_proxy );
 		} // for parents
 
-		ProcessClassParentsVirtualTables( the_class );
-
 		// Pre-mark class as polymorph. Later we know class kind exactly, now, we only needs to know, that is polymorph - for virtual functions preparation.
 		if( class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Polymorph ||
 			class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Interface ||
@@ -628,6 +626,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				else if( value.GetNamespace() != nullptr ) {} // Can be in case of type template parameters namespace.
 				else U_ASSERT(false);
 			});
+
+		ProcessClassParentsVirtualTables( the_class );
 
 		// Wee needs strong order of functions in virtual table. So, sort them, using mangled name.
 		std::sort(
