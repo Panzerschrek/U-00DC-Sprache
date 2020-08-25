@@ -570,6 +570,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"UnsafeFunctionCallInsideUnsafeBlock_Test",
 		"UnsafeFunctionCallOutsideUnsafeBlock_Test",
 		"ValueIsNotTemplate_ForFunctionTemplates_Test",
+		"VirtualFunctionDeclaration_Test",
 	};
 
 	if( std::find_if(

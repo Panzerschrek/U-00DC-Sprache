@@ -873,6 +873,27 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 	var Function mut res{ .file_pos= it_.front().file_pos };
 	NextLexem();
 
+	if( IsKeyword( it_.front(), Keyword::virtual_ ) )
+	{
+		NextLexem();
+		res.virtual_kind= Function::VirtualKind::DeclareVirtual;
+		if( IsKeyword( it_.front(), Keyword::override_ ) )
+		{
+			res.virtual_kind= Function::VirtualKind::VirtualOverride;
+			NextLexem();
+		}
+		else if( IsKeyword( it_.front(), Keyword::final_ ) )
+		{
+			res.virtual_kind= Function::VirtualKind::VirtualFinal;
+			NextLexem();
+		}
+		else if( IsKeyword( it_.front(), Keyword::pure_ ) )
+		{
+			res.virtual_kind= Function::VirtualKind::VirtualPure;
+			NextLexem();
+		}
+	}
+
 	if( is_operator )
 	{
 		if( it_.front().lexem_type == Lexem::Type::Scope )
