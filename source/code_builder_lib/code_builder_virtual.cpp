@@ -25,11 +25,16 @@ void CodeBuilder::ProcessClassParentsVirtualTables( Class& the_class )
 		if( parent.field_number == 0u )
 		{
 			the_class.virtual_table= parent.class_->class_->virtual_table;
+
+			for( Class::VirtualTableEntry& entry : the_class.virtual_table )
+				entry.parent_virtual_table_index= uint32_t( &parent - the_class.parents.data() );
+
 			break;
 		}
 
 	// Then, add virtual functions from other parents.
 	// Later, add new virtual functions.
+
 	for( const Class::Parent& parent : the_class.parents )
 	{
 		if( parent.field_number == 0u )
@@ -49,7 +54,11 @@ void CodeBuilder::ProcessClassParentsVirtualTables( Class& the_class )
 			}
 
 			if( !already_exists_in_vtable )
-				the_class.virtual_table.push_back( parent_vtable_entry );
+			{
+				Class::VirtualTableEntry vtable_entry_copy= parent_vtable_entry;
+				vtable_entry_copy.parent_virtual_table_index= uint32_t( &parent - the_class.parents.data() );
+				the_class.virtual_table.push_back( std::move(vtable_entry_copy) );
+			}
 		} // for parent virtual table
 	}
 }
@@ -235,141 +244,132 @@ void CodeBuilder::PrepareClassVirtualTableType( const ClassProxyPtr& class_type 
 	if( the_class.virtual_table.empty() )
 		return; // Non-polymorph class.
 
-	// Virtual table layout:
-	// offset to allocated object (int_ptr)
-	// type id
-	// virtual function 0 ptr
-	// virtual function 1 ptr
-	// ...
-	// virtual function n ptr
-
-	the_class.virtual_table_llvm_type= llvm::StructType::create( llvm_context_ );
 	std::vector<llvm::Type*> virtual_table_struct_fields;
 
-	virtual_table_struct_fields.push_back( fundamental_llvm_types_.int_ptr ); // Offset field.
-	virtual_table_struct_fields.push_back( fundamental_llvm_types_.int_ptr->getPointerTo() ); // type_id field
+	// First, add base class virtual table, then, virtual tables of other parent classes.
+	if( the_class.base_class != nullptr )
+		virtual_table_struct_fields.push_back( the_class.base_class->class_->virtual_table_llvm_type );
 
-	for( const Class::VirtualTableEntry& virtual_table_entry : the_class.virtual_table )
+	for( const Class::Parent& parent : the_class.parents )
 	{
-		const Function& function_type= *virtual_table_entry.function_variable.type.GetFunctionType();
-		virtual_table_struct_fields.push_back( function_type.llvm_function_type->getPointerTo() ); // Function pointer field.
+		if( parent.class_ != the_class.base_class )
+			virtual_table_struct_fields.push_back( parent.class_->class_->virtual_table_llvm_type );
 	}
 
-	the_class.virtual_table_llvm_type->setBody( virtual_table_struct_fields );
-	the_class.virtual_table_llvm_type->setName( "_vtable_type_" + MangleType(class_type) );
+	if( virtual_table_struct_fields.empty() )
+	{
+		// No parents - create special fields - base offset, type id, etc.
+		virtual_table_struct_fields.push_back( fundamental_llvm_types_.int_ptr ); // Offset field.
+		virtual_table_struct_fields.push_back( fundamental_llvm_types_.int_ptr->getPointerTo() ); // type_id field
+	}
+
+	const auto fn_type= llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret, true );
+	const auto fn_ptr_type= llvm::PointerType::get( fn_type, 0u );
+
+	uint32_t own_functions_count= 0u;
+	for( const Class::VirtualTableEntry& entry : the_class.virtual_table )
+		if( entry.parent_virtual_table_index == ~0u )
+			++own_functions_count;
+
+	const auto own_virtual_functions_table_type= llvm::ArrayType::get( fn_ptr_type, own_functions_count );
+
+	virtual_table_struct_fields.push_back( own_virtual_functions_table_type );
+
+	// TODO - maybe create unnamed struct (like a tuple)?
+	the_class.virtual_table_llvm_type= llvm::StructType::create( virtual_table_struct_fields, "_vtable_type_" + MangleType(class_type) );
 }
 
-void CodeBuilder::BuildClassVirtualTables_r( Class& the_class, const Type& class_type, const std::vector< ClassProxyPtr >& dst_class_path, llvm::Value* dst_class_ptr_null_based )
+llvm::Constant* CodeBuilder::BuildClassVirtualTable_r(
+	const Class& ancestor_class,
+	const Class& dst_class,
+	llvm::Value* const dst_class_ptr_null_based )
 {
-	const Class& dst_class= *dst_class_path.back()->class_;
 	std::vector<llvm::Constant*> initializer_values;
-	initializer_values.reserve( dst_class.virtual_table_llvm_type->elements().size() );
-
-	// Calculate offset from this class pointer to ancestor class pointer.
-	// Such offset will be used for all virtual calls.
-	// It's not necessary to keep different offsets for different virtual functions,
-	// because all virtual functions implemented in non-interface classes and
-	// classes may have only one non-interface parent class, whose offset in class is 0.
-	initializer_values.push_back(
-		llvm::dyn_cast<llvm::Constant>(
-			global_function_context_->llvm_ir_builder.CreatePtrToInt( dst_class_ptr_null_based, fundamental_llvm_types_.int_ptr ) ) );
-
-	initializer_values.push_back( the_class.polymorph_type_id );
-
-	for( const Class::VirtualTableEntry& ancestor_virtual_table_entry : dst_class.virtual_table )
+	if( ancestor_class.base_class != nullptr )
 	{
-		const Class::VirtualTableEntry* overriden_in_this_class= nullptr;
-		for( const Class::VirtualTableEntry& this_class_virtual_table_entry : the_class.virtual_table )
+		llvm::Value* index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex( 0 ) };
+		llvm::Value* const offset_ptr= global_function_context_->llvm_ir_builder.CreateGEP( dst_class_ptr_null_based, index_list );
+		initializer_values.push_back( BuildClassVirtualTable_r( *ancestor_class.base_class->class_, dst_class, offset_ptr ) );
+	}
+
+	for( const Class::Parent& parent : ancestor_class.parents )
+	{
+		if( parent.class_ != ancestor_class.base_class )
 		{
-			if( this_class_virtual_table_entry.name == ancestor_virtual_table_entry.name &&
-				this_class_virtual_table_entry.function_variable.VirtuallyEquals( ancestor_virtual_table_entry.function_variable ) )
+			llvm::Value* index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex( parent.field_number ) };
+			llvm::Value* const offset_ptr= global_function_context_->llvm_ir_builder.CreateGEP( dst_class_ptr_null_based, index_list );
+			initializer_values.push_back( BuildClassVirtualTable_r( *parent.class_->class_, dst_class, offset_ptr ) );
+		}
+	}
+
+	if( initializer_values.empty() )
+	{
+		// offset
+		initializer_values.push_back(
+				llvm::dyn_cast<llvm::Constant>(
+					global_function_context_->llvm_ir_builder.CreatePtrToInt( dst_class_ptr_null_based, fundamental_llvm_types_.int_ptr ) ) );
+
+		// Type id
+		initializer_values.push_back( dst_class.polymorph_type_id );
+	}
+
+	const auto array_type= llvm::dyn_cast<llvm::ArrayType>( ancestor_class.virtual_table_llvm_type->getElementType( uint32_t(initializer_values.size() ) ) );
+	const auto fn_type_ptr= array_type->getElementType();
+
+	std::vector<llvm::Constant*> function_pointers_initializer_values;
+	for( const Class::VirtualTableEntry& ancestor_virtual_table_entry : ancestor_class.virtual_table )
+	{
+		if( ancestor_virtual_table_entry.parent_virtual_table_index != ~0u )
+			continue;
+
+		llvm::Function* func= ancestor_virtual_table_entry.function_variable.llvm_function;
+		for( const Class::VirtualTableEntry& dst_virtual_table_entry : dst_class.virtual_table )
+		{
+			if( dst_virtual_table_entry.name == ancestor_virtual_table_entry.name &&
+				dst_virtual_table_entry.function_variable.VirtuallyEquals( ancestor_virtual_table_entry.function_variable ) )
 			{
-				overriden_in_this_class= &this_class_virtual_table_entry;
+				func= dst_virtual_table_entry.function_variable.llvm_function;
 				break;
 			}
 		}
-		U_ASSERT( overriden_in_this_class != nullptr ); // We must override, or inherit function.
 
 		llvm::Value* const function_pointer_casted=
-			global_function_context_->llvm_ir_builder.CreateBitOrPointerCast(
-				overriden_in_this_class->function_variable.llvm_function,
-				ancestor_virtual_table_entry.function_variable.type.GetFunctionType()->llvm_function_type->getPointerTo() );
+			global_function_context_->llvm_ir_builder.CreateBitOrPointerCast( func, fn_type_ptr );
 
-		initializer_values.push_back( llvm::dyn_cast<llvm::Constant>(function_pointer_casted) );
-	} // for ancestor virtual table
-
-	std::string vtable_name= "_vtable_of_" + MangleType( class_type ) + "_for";
-	for( const ClassProxyPtr& path_component : dst_class_path )
-		vtable_name+= "_" + MangleType( path_component );
-
-	llvm::GlobalVariable* const ancestor_vtable=
-		new llvm::GlobalVariable(
-			*module_,
-			dst_class.virtual_table_llvm_type,
-			true, // is constant
-			llvm::GlobalValue::InternalLinkage,
-			 llvm::ConstantStruct::get( dst_class.virtual_table_llvm_type, initializer_values ),
-			vtable_name);
-	ancestor_vtable->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
-
-	U_ASSERT( the_class.ancestors_virtual_tables.find( dst_class_path ) == the_class.ancestors_virtual_tables.end() );
-	the_class.ancestors_virtual_tables[dst_class_path]= ancestor_vtable;
-
-	if( !dst_class.parents.empty() )
-	{
-		auto parent_path= dst_class_path;
-		parent_path.emplace_back();
-		for( size_t i= 0u; i < dst_class.parents.size(); ++i )
-		{
-			parent_path.back()= dst_class.parents[i].class_;
-
-			llvm::Value* index_list[2];
-			index_list[0]= GetZeroGEPIndex();
-			index_list[1]= GetFieldGEPIndex( dst_class.parents[i].field_number );
-			llvm::Value* const offset_ptr= global_function_context_->llvm_ir_builder.CreateGEP( dst_class_ptr_null_based, index_list );
-
-			BuildClassVirtualTables_r( the_class, class_type, parent_path, offset_ptr );
-		}
+		function_pointers_initializer_values.push_back( llvm::dyn_cast<llvm::Constant>(function_pointer_casted) );
 	}
+
+	initializer_values.push_back( llvm::ConstantArray::get( array_type, function_pointers_initializer_values ) );
+
+	return llvm::ConstantStruct::get( ancestor_class.virtual_table_llvm_type, initializer_values );
 }
 
-void CodeBuilder::BuildClassVirtualTables( Class& the_class, const Type& class_type )
+void CodeBuilder::BuildClassVirtualTable( Class& the_class, const Type& class_type )
 {
 	U_ASSERT( the_class.completeness != TypeCompleteness::Complete );
 	U_ASSERT( the_class.this_class_virtual_table == nullptr );
-	U_ASSERT( the_class.ancestors_virtual_tables.empty() );
 
 	if( the_class.virtual_table.empty() )
 		return; // Non-polymorph class.
 
 	U_ASSERT( the_class.virtual_table_llvm_type != nullptr );
 
-	llvm::Type* const type_id_type= the_class.virtual_table_llvm_type->getStructElementType(1u)->getPointerElementType();
+	// Type id
+	llvm::Type* const type_id_type= fundamental_llvm_types_.int_ptr;
 	the_class.polymorph_type_id=
 		new llvm::GlobalVariable(
 			*module_,
 			type_id_type,
 			true, // is_constant
 			llvm::GlobalValue::ExternalLinkage,
-			llvm::ConstantInt::get( type_id_type, llvm::APInt( type_id_type->getIntegerBitWidth(), 0u ) ),
+			llvm::Constant::getNullValue( type_id_type ),
 			"_type_id_for_" + MangleType( class_type ) );
 	llvm::Comdat* const type_id_comdat= module_->getOrInsertComdat( the_class.polymorph_type_id->getName() );
 	type_id_comdat->setSelectionKind( llvm::Comdat::Any );
 	the_class.polymorph_type_id->setComdat( type_id_comdat );
 
-	std::vector<llvm::Constant*> initializer_values;
-	initializer_values.reserve( the_class.virtual_table_llvm_type->elements().size() );
-	initializer_values.push_back( llvm::Constant::getNullValue( fundamental_llvm_types_.int_ptr ) ); // For this class virtual table we have zero offset to real this.
-
-	initializer_values.push_back( the_class.polymorph_type_id );
-
-	for( const Class::VirtualTableEntry& virtual_table_entry : the_class.virtual_table )
-	{
-		if( virtual_table_entry.is_pure )
-			return;  // Class is interface or abstract.
-
-		initializer_values.push_back( virtual_table_entry.function_variable.llvm_function );
-	}
+	llvm::Value* const this_nullptr= llvm::Constant::getNullValue( the_class.llvm_type->getPointerTo() );
+	auto virtual_table_initializer= BuildClassVirtualTable_r( the_class, the_class, this_nullptr );
 
 	the_class.this_class_virtual_table=
 		new llvm::GlobalVariable(
@@ -377,20 +377,9 @@ void CodeBuilder::BuildClassVirtualTables( Class& the_class, const Type& class_t
 			the_class.virtual_table_llvm_type,
 			true, // is constant
 			llvm::GlobalValue::InternalLinkage,
-			 llvm::ConstantStruct::get( the_class.virtual_table_llvm_type, initializer_values ),
+			virtual_table_initializer,
 			"_vtable_main_" + MangleType(class_type) );
 	the_class.this_class_virtual_table->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
-
-	// Recursive build virtual tables for all instances of all ancestors.
-	llvm::Value* const this_nullptr= llvm::Constant::getNullValue( the_class.llvm_type->getPointerTo() );
-	for( size_t i= 0u; i < the_class.parents.size(); ++i )
-	{
-		llvm::Value* index_list[2];
-		index_list[0]= GetZeroGEPIndex();
-		index_list[1]= GetFieldGEPIndex( the_class.parents[i].field_number );
-		llvm::Value* const offset_ptr= global_function_context_->llvm_ir_builder.CreateGEP( this_nullptr, index_list );
-		BuildClassVirtualTables_r( the_class, class_type, {the_class.parents[i].class_}, offset_ptr );
-	}
 }
 
 std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
@@ -447,35 +436,37 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	return std::make_pair( std::move(this_casted), llvm_function_ptr );
 }
 
-
 void CodeBuilder::SetupVirtualTablePointers_r(
 	llvm::Value* this_,
-	const std::vector< ClassProxyPtr >& class_path,
-	const std::map< std::vector< ClassProxyPtr >, llvm::GlobalVariable* > virtual_tables,
+	llvm::Value* ptr_to_vtable_ptr,
+	const Class& the_class,
 	FunctionContext& function_context )
 {
-	const Class& the_class= *class_path.back()->class_;
-	U_ASSERT( virtual_tables.find( class_path ) != virtual_tables.end() );
+	// Store virtual table pointer for current class (including base).
+	function_context.llvm_ir_builder.CreateStore(
+		ptr_to_vtable_ptr,
+		function_context.llvm_ir_builder.CreatePointerCast( this_, the_class.virtual_table_llvm_type->getPointerTo()->getPointerTo() ) );
 
-	if( !the_class.parents.empty() )
+	if( the_class.base_class == nullptr )
+		return;
+
+	// Setup virtual table pointers for non-base parent classes.
+	unsigned int vtable_field_number= 1;
+	for( const Class::Parent& parent : the_class.parents )
 	{
-		auto parent_path= class_path;
-		parent_path.emplace_back();
-		for( const Class::Parent& parent : the_class.parents )
-		{
-			parent_path.back()= parent.class_;
+		if( parent.class_ == the_class.base_class )
+			continue;
 
-			llvm::Value* index_list[2];
-			index_list[0]= GetZeroGEPIndex();
-			index_list[1]= GetFieldGEPIndex( parent.field_number );
-			llvm::Value* const parent_ptr= function_context.llvm_ir_builder.CreateGEP( this_, index_list );
-			SetupVirtualTablePointers_r( parent_ptr, parent_path, virtual_tables, function_context );
-		}
+		llvm::Value* const this_index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex( parent.field_number ) };
+		llvm::Value* const parent_ptr= function_context.llvm_ir_builder.CreateGEP( this_, this_index_list );
+
+		llvm::Value* const virtual_table_index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex( vtable_field_number ) };
+		llvm::Value* const vtable_ptr= function_context.llvm_ir_builder.CreateGEP( ptr_to_vtable_ptr, virtual_table_index_list );
+
+		SetupVirtualTablePointers_r( parent_ptr, vtable_ptr, *parent.class_->class_, function_context );
+
+		++vtable_field_number;
 	}
-
-	// Overwrite, if needed, first parent virtual table.
-	llvm::Value* const ptr_to_vtable_ptr= function_context.llvm_ir_builder.CreatePointerCast( this_, the_class.virtual_table_llvm_type->getPointerTo()->getPointerTo() );
-	function_context.llvm_ir_builder.CreateStore( virtual_tables.find(class_path)->second, ptr_to_vtable_ptr );
 }
 
 void CodeBuilder::SetupVirtualTablePointers(
@@ -496,18 +487,7 @@ void CodeBuilder::SetupVirtualTablePointers(
 	if( the_class.this_class_virtual_table == nullptr )
 		return; // May be in case of errors.
 
-	for( const Class::Parent& parent : the_class.parents )
-	{
-		llvm::Value* index_list[2];
-		index_list[0]= GetZeroGEPIndex();
-		index_list[1]= GetFieldGEPIndex( parent.field_number );
-		llvm::Value* const parent_ptr= function_context.llvm_ir_builder.CreateGEP( this_, index_list );
-		SetupVirtualTablePointers_r( parent_ptr, { parent.class_ }, the_class.ancestors_virtual_tables, function_context );
-	}
-
-	// Overwrite, if needed, first parent virtual table.
-	llvm::Value* const ptr_to_vtable_ptr= function_context.llvm_ir_builder.CreatePointerCast( this_,  the_class.virtual_table_llvm_type->getPointerTo()->getPointerTo() );
-	function_context.llvm_ir_builder.CreateStore( the_class.this_class_virtual_table, ptr_to_vtable_ptr );
+	SetupVirtualTablePointers_r( this_, the_class.this_class_virtual_table, the_class, function_context );
 }
 
 } // namespace CodeBuilderPrivate

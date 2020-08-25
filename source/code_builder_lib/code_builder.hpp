@@ -118,8 +118,10 @@ private:
 	void TryGenerateDestructorPrototypeForPolymorphClass( Class& the_class, const Type& class_type );
 	void ProcessClassVirtualFunction( Class& the_class, FunctionVariable& function );
 	void PrepareClassVirtualTableType( const ClassProxyPtr& class_type );
-	void BuildClassVirtualTables_r( Class& the_class, const Type& class_type, const std::vector< ClassProxyPtr >& dst_class_path, llvm::Value* dst_class_ptr_null_based );
-	void BuildClassVirtualTables( Class& the_class, const Type& class_type ); // Returns type of vtable pointer or nullptr.
+
+	llvm::Constant* BuildClassVirtualTable_r( const Class& ancestor_class, const Class& dst_class, llvm::Value* dst_class_ptr_null_based );
+
+	void BuildClassVirtualTable( Class& the_class, const Type& class_type ); // Returns type of vtable pointer or nullptr.
 
 	std::pair<Variable, llvm::Value*> TryFetchVirtualFunction(
 		const Variable& this_,
@@ -130,8 +132,8 @@ private:
 
 	void SetupVirtualTablePointers_r(
 		llvm::Value* this_,
-		const std::vector< ClassProxyPtr >& class_path,
-		const std::map< std::vector< ClassProxyPtr >, llvm::GlobalVariable* > virtual_tables,
+		llvm::Value* ptr_to_vtable_ptr,
+		const Class& the_class,
 		FunctionContext& function_context );
 
 	void SetupVirtualTablePointers(
