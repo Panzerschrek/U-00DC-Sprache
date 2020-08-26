@@ -452,28 +452,9 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	llvm::Value* const ptr_to_virtual_table_ptr= function_context.llvm_ir_builder.CreatePointerCast( this_casted.llvm_value, class_type.virtual_table_llvm_type->getPointerTo()->getPointerTo() );
 	llvm::Value* const virtual_table_ptr= function_context.llvm_ir_builder.CreateLoad( ptr_to_virtual_table_ptr );
 
-	// Fetch "this" pointer offset. It is located in deepest first virtual table (actual offset should always be zero).
-	llvm::Value* first_root_virtual_table= virtual_table_ptr;
-	for( const Class* current_class= &class_type; !current_class->parents.empty(); )
-	{
-		first_root_virtual_table=
-			function_context.llvm_ir_builder.CreateGEP( first_root_virtual_table, { GetZeroGEPIndex(), GetFieldGEPIndex( 0 ) } );
-
-		for( const Class::Parent& parent : current_class->parents )
-			if( parent.field_number == 0 )
-			{
-				current_class= parent.class_->class_;
-				break;
-			}
-	}
-
 	const unsigned int c_offset_field_number= 0u;
 	const unsigned int c_type_id_field_number= 1u;
 	const unsigned int c_funcs_table_field_number= 2u; // Only for class with no parents.
-
-	llvm::Value* const offset_ptr=
-		function_context.llvm_ir_builder.CreateGEP( first_root_virtual_table, { GetZeroGEPIndex(), GetFieldGEPIndex( c_offset_field_number ) } );
-	llvm::Value* const offset= function_context.llvm_ir_builder.CreateLoad( offset_ptr );
 
 	// Select virtual subtable of class, where function declared first time.
 	llvm::Value* function_virtual_table= virtual_table_ptr;
@@ -515,9 +496,32 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	llvm::Value* const function_ptr= function_context.llvm_ir_builder.CreateBitOrPointerCast( abstract_function_ptr, function_type.llvm_function_type->getPointerTo() );
 
 	// Correct "this" pointer.
-	llvm::Value* const this_ptr_as_int= function_context.llvm_ir_builder.CreatePtrToInt( this_casted.llvm_value, fundamental_llvm_types_.int_ptr );
-	llvm::Value* this_sub_offset= function_context.llvm_ir_builder.CreateSub( this_ptr_as_int, offset, "this_sub_offset" );
-	this_casted.llvm_value= function_context.llvm_ir_builder.CreateIntToPtr( this_sub_offset, this_casted.type.GetLLVMType()->getPointerTo() );
+	// Only interfaces may have non-zero offsets. So, make pointer adjustment only for call via interface.
+	if( class_type.kind == Class::Kind::Interface )
+	{
+		// Fetch "this" pointer offset. It is located in deepest first virtual table (actual offset should always be zero).
+		llvm::Value* first_root_virtual_table= virtual_table_ptr;
+		for( const Class* current_class= &class_type; !current_class->parents.empty(); )
+		{
+			first_root_virtual_table=
+				function_context.llvm_ir_builder.CreateGEP( first_root_virtual_table, { GetZeroGEPIndex(), GetFieldGEPIndex( 0 ) } );
+
+			for( const Class::Parent& parent : current_class->parents )
+				if( parent.field_number == 0 )
+				{
+					current_class= parent.class_->class_;
+					break;
+				}
+		}
+
+		llvm::Value* const offset_ptr=
+			function_context.llvm_ir_builder.CreateGEP( first_root_virtual_table, { GetZeroGEPIndex(), GetFieldGEPIndex( c_offset_field_number ) } );
+		llvm::Value* const offset= function_context.llvm_ir_builder.CreateLoad( offset_ptr );
+
+		llvm::Value* const this_ptr_as_int= function_context.llvm_ir_builder.CreatePtrToInt( this_casted.llvm_value, fundamental_llvm_types_.int_ptr );
+		llvm::Value* this_sub_offset= function_context.llvm_ir_builder.CreateSub( this_ptr_as_int, offset );
+		this_casted.llvm_value= function_context.llvm_ir_builder.CreateIntToPtr( this_sub_offset, this_casted.type.GetLLVMType()->getPointerTo() );
+	}
 
 	return std::make_pair( std::move(this_casted), function_ptr );
 }
