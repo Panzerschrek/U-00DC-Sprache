@@ -595,6 +595,11 @@ std::string MangleTemplateParameters( const std::vector<TemplateParameter>& temp
 	return MangleGraphFinalize( EncodeTemplateParameters( template_parameters ) );
 }
 
+std::string MangleVirtualTable( const Type& type )
+{
+	return "_ZTV" + MangleGraphFinalize( GetTypeName( type ) );
+}
+
 } // namespace CodeBuilderPrivate
 
 } // namespace U

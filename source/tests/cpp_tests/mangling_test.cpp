@@ -746,4 +746,31 @@ U_TEST( FunctionTemplatesMangling_Test3 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc14default_hasher4hashI9OuterTypeEEvRKS2_" ) != nullptr );
 }
 
+U_TEST( VirtualTableMangling_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		class SukaBlat polymorph{}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "_ZTV8SukaBlat", true ) != nullptr );
+}
+
+U_TEST( VirtualTableMangling_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		namespace Lol
+		{
+			class WTF polymorph{}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "_ZTVN3Lol3WTFE", true ) != nullptr );
+}
+
 } // namespace U

@@ -50,6 +50,10 @@ public:
 		FunctionVariable function_variable;
 		bool is_pure= false;
 		bool is_final= false;
+
+		// Virtual table may consist of many nested structs, because virtual table of child contains wirtual tables of parents.
+		uint32_t index_in_table = ~0u;
+		uint32_t parent_virtual_table_index= ~0u;
 	};
 
 public:
@@ -99,12 +103,8 @@ public:
 
 	std::vector<VirtualTableEntry> virtual_table;
 	llvm::StructType* virtual_table_llvm_type= nullptr;
-	llvm::GlobalVariable* this_class_virtual_table= nullptr; // May be null for interfaces and abstract classes.
+	llvm::GlobalVariable* virtual_table_llvm_variable= nullptr; // May be null for interfaces and abstract classes.
 	llvm::GlobalVariable* polymorph_type_id= nullptr; // Exists in polymorph classes.
-
-	// Key - sequence of classes from child to parent. This class not included.
-	// Virtual table destination is lats key element.
-	std::map< std::vector<ClassProxyPtr>, llvm::GlobalVariable* > ancestors_virtual_tables;
 };
 
 } //namespace CodeBuilderPrivate

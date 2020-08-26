@@ -443,8 +443,6 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 			AddAncestorsAccessRights_r( the_class, parent_class_proxy );
 		} // for parents
 
-		ProcessClassParentsVirtualTables( the_class );
-
 		// Pre-mark class as polymorph. Later we know class kind exactly, now, we only needs to know, that is polymorph - for virtual functions preparation.
 		if( class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Polymorph ||
 			class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Interface ||
@@ -629,15 +627,21 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				else U_ASSERT(false);
 			});
 
-		// Wee needs strong order of functions in virtual table. So, sort them, using mangled name.
-		std::sort(
-			class_functions.begin(), class_functions.end(),
-			[]( const FunctionVariable* const l, const FunctionVariable* const r )
-			{
-				return l->llvm_function->getName() < r->llvm_function->getName();
-			} );
-		for( FunctionVariable* func : class_functions )
-			ProcessClassVirtualFunction( the_class, *func );
+		if( the_class.kind == Class::Kind::Interface ||
+			the_class.kind == Class::Kind::Abstract ||
+			the_class.kind == Class::Kind::PolymorphNonFinal ||
+			the_class.kind == Class::Kind::PolymorphFinal )
+		{
+			// We needs strong order of functions in virtual table. So, sort them, using mangled name.
+			std::sort(
+				class_functions.begin(), class_functions.end(),
+				[]( const FunctionVariable* const l, const FunctionVariable* const r )
+				{
+					return l->llvm_function->getName() < r->llvm_function->getName();
+				} );
+
+			PrepareClassVirtualTable( the_class, class_type, class_functions );
+		}
 
 		// Search for explicit noncopy constructors.
 		if( const Value* const constructors_value=
@@ -768,12 +772,6 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 			break;
 		};
 
-		if( the_class.kind == Class::Kind::Interface ||
-			the_class.kind == Class::Kind::Abstract ||
-			the_class.kind == Class::Kind::PolymorphNonFinal ||
-			the_class.kind == Class::Kind::PolymorphFinal )
-			TryGenerateDestructorPrototypeForPolymorphClass( the_class, class_type );
-
 		// Merge namespaces of parents into result class.
 		for( const Class::Parent& parent : the_class.parents )
 		{
@@ -848,7 +846,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 		if( the_class.llvm_type->isOpaque() )
 			the_class.llvm_type->setBody( fields_llvm_types );
 
-		BuildClassVirtualTables( the_class, class_type );
+		BuildPolymorphClassTypeId( the_class, class_type );
+		BuildClassVirtualTable( the_class, class_type );
 
 		the_class.completeness= TypeCompleteness::Complete;
 
