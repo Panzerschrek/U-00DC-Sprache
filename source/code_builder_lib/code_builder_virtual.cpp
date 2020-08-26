@@ -453,7 +453,7 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	llvm::Value* const virtual_table_ptr= function_context.llvm_ir_builder.CreateLoad( ptr_to_virtual_table_ptr );
 
 	const unsigned int c_offset_field_number= 0u;
-	const unsigned int c_type_id_field_number= 1u;
+	[[maybe_unused]] const unsigned int c_type_id_field_number= 1u;
 	const unsigned int c_funcs_table_field_number= 2u; // Only for class with no parents.
 
 	// Select virtual subtable of class, where function declared first time.
