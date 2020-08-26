@@ -456,7 +456,7 @@ void CodeBuilder::CopyClass(
 
 	copy->virtual_table= src.virtual_table;
 	copy->virtual_table_llvm_type= src.virtual_table_llvm_type;
-	copy->this_class_virtual_table= src.this_class_virtual_table;
+	copy->virtual_table_llvm_variable= src.virtual_table_llvm_variable;
 	copy->polymorph_type_id= src.polymorph_type_id;
 
 	// Register copy in destination namespace and current class table.

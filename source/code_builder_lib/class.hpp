@@ -103,7 +103,7 @@ public:
 
 	std::vector<VirtualTableEntry> virtual_table;
 	llvm::StructType* virtual_table_llvm_type= nullptr;
-	llvm::GlobalVariable* this_class_virtual_table= nullptr; // May be null for interfaces and abstract classes.
+	llvm::GlobalVariable* virtual_table_llvm_variable= nullptr; // May be null for interfaces and abstract classes.
 	llvm::GlobalVariable* polymorph_type_id= nullptr; // Exists in polymorph classes.
 };
 
