@@ -402,7 +402,7 @@ void CodeBuilder::BuildClassVirtualTable( Class& the_class, const Type& class_ty
 			true, // is constant
 			llvm::GlobalValue::InternalLinkage,
 			virtual_table_initializer,
-			"_vtable_main_" + MangleType(class_type) );
+			MangleVirtualTable(class_type) );
 	the_class.this_class_virtual_table->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
 }
 
