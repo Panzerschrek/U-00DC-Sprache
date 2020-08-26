@@ -360,6 +360,8 @@ void CodeBuilder::BuildClassVirtualTable( Class& the_class, const Type& class_ty
 
 	if( the_class.virtual_table.empty() )
 		return; // Non-polymorph class.
+	if( the_class.kind == Class::Kind::Interface || the_class.kind == Class::Kind::Abstract )
+		return;
 
 	U_ASSERT( the_class.virtual_table_llvm_type != nullptr );
 
@@ -508,7 +510,7 @@ void CodeBuilder::SetupVirtualTablePointers_r(
 	if( the_class.parents.size() <= 1u )
 		return;
 
-	// Setup virtual table pointers for non-base parent classes.
+	// Setup secondary virtual table pointers.
 	unsigned int vtable_field_number= 1;
 	for( const Class::Parent& parent : the_class.parents )
 	{
