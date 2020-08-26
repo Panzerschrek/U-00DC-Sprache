@@ -67,9 +67,6 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class, const Type& class_
 	{
 		FunctionVariable& function= *function_ptr;
 
-		if( function.virtual_function_kind == Synt::VirtualFunctionKind::None )
-			continue;
-
 		const std::string& function_name= function.syntax_element->name_.back();
 		const FilePos& file_pos= function.syntax_element->file_pos_;
 		CodeBuilderErrorsContainer& errors_container= the_class.members.GetErrors();
@@ -413,7 +410,6 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	llvm::Value* llvm_function_ptr= function.llvm_function;
 	if( function.virtual_table_index == ~0u )
 		return std::make_pair( std::move(this_casted), llvm_function_ptr );
-
 
 	const Class& class_type= *this_casted.type.GetClassType();
 	U_ASSERT( function.virtual_table_index < class_type.virtual_table.size() );
