@@ -353,19 +353,18 @@ llvm::Constant* CodeBuilder::BuildClassVirtualTable_r(
 	return llvm::ConstantStruct::get( ancestor_class.virtual_table_llvm_type, initializer_values );
 }
 
-void CodeBuilder::BuildClassVirtualTable( Class& the_class, const Type& class_type )
+void CodeBuilder::BuildPolymorphClassTypeId( Class& the_class, const Type& class_type )
 {
-	U_ASSERT( the_class.completeness != TypeCompleteness::Complete );
-	U_ASSERT( the_class.this_class_virtual_table == nullptr );
+	U_ASSERT( the_class.polymorph_type_id == nullptr );
 
-	if( the_class.virtual_table.empty() )
-		return; // Non-polymorph class.
-	if( the_class.kind == Class::Kind::Interface || the_class.kind == Class::Kind::Abstract )
+	// Build polymorph type id only for polymorph classes. TODO - maybe not build it for abstract classes or interfaces?
+	if( !(
+		the_class.kind == Class::Kind::Interface ||
+		the_class.kind == Class::Kind::Abstract ||
+		the_class.kind == Class::Kind::PolymorphNonFinal ||
+		the_class.kind == Class::Kind::PolymorphFinal ) )
 		return;
 
-	U_ASSERT( the_class.virtual_table_llvm_type != nullptr );
-
-	// Type id
 	llvm::Type* const type_id_type= fundamental_llvm_types_.int_ptr;
 	the_class.polymorph_type_id=
 		new llvm::GlobalVariable(
@@ -378,6 +377,20 @@ void CodeBuilder::BuildClassVirtualTable( Class& the_class, const Type& class_ty
 	llvm::Comdat* const type_id_comdat= module_->getOrInsertComdat( the_class.polymorph_type_id->getName() );
 	type_id_comdat->setSelectionKind( llvm::Comdat::Any );
 	the_class.polymorph_type_id->setComdat( type_id_comdat );
+}
+
+void CodeBuilder::BuildClassVirtualTable( Class& the_class, const Type& class_type )
+{
+	U_ASSERT( the_class.completeness != TypeCompleteness::Complete );
+	U_ASSERT( the_class.this_class_virtual_table == nullptr );
+
+	// Build virtual table only for polymorph non-abstract classes.
+	if( !(
+		the_class.kind == Class::Kind::PolymorphNonFinal ||
+		the_class.kind == Class::Kind::PolymorphFinal ) )
+		return;
+
+	U_ASSERT( the_class.virtual_table_llvm_type != nullptr );
 
 	llvm::Value* const this_nullptr= llvm::Constant::getNullValue( the_class.llvm_type->getPointerTo() );
 	auto virtual_table_initializer= BuildClassVirtualTable_r( the_class, the_class, this_nullptr );

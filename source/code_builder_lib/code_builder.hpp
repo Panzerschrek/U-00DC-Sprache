@@ -117,6 +117,8 @@ private:
 	void PrepareClassVirtualTable( Class& the_class, const Type& class_type, const std::vector<FunctionVariable*>& functions );
 	void PrepareClassVirtualTableType( const ClassProxyPtr& class_type );
 
+	void BuildPolymorphClassTypeId( Class& the_class, const Type& class_type );
+
 	llvm::Constant* BuildClassVirtualTable_r( const Class& ancestor_class, const Class& dst_class, llvm::Value* dst_class_ptr_null_based );
 	void BuildClassVirtualTable( Class& the_class, const Type& class_type ); // Returns type of vtable pointer or nullptr.
 

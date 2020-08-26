@@ -846,6 +846,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 		if( the_class.llvm_type->isOpaque() )
 			the_class.llvm_type->setBody( fields_llvm_types );
 
+		BuildPolymorphClassTypeId( the_class, class_type );
 		BuildClassVirtualTable( the_class, class_type );
 
 		the_class.completeness= TypeCompleteness::Complete;
