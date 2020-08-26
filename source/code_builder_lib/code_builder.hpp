@@ -114,13 +114,10 @@ private:
 	llvm::FunctionType* GetLLVMFunctionType( const Function& function_type );
 
 	// Virtual stuff
-	void ProcessClassParentsVirtualTables( Class& the_class );
-	void TryGenerateDestructorPrototypeForPolymorphClass( Class& the_class, const Type& class_type );
-	void ProcessClassVirtualFunction( Class& the_class, FunctionVariable& function );
+	void PrepareClassVirtualTable( Class& the_class, const Type& class_type, const std::vector<FunctionVariable*>& functions );
 	void PrepareClassVirtualTableType( const ClassProxyPtr& class_type );
 
 	llvm::Constant* BuildClassVirtualTable_r( const Class& ancestor_class, const Class& dst_class, llvm::Value* dst_class_ptr_null_based );
-
 	void BuildClassVirtualTable( Class& the_class, const Type& class_type ); // Returns type of vtable pointer or nullptr.
 
 	std::pair<Variable, llvm::Value*> TryFetchVirtualFunction(

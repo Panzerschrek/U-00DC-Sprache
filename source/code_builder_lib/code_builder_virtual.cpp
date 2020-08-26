@@ -10,14 +10,10 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-void CodeBuilder::ProcessClassParentsVirtualTables( Class& the_class )
+void CodeBuilder::PrepareClassVirtualTable( Class& the_class, const Type& class_type, const std::vector<FunctionVariable*>& functions )
 {
 	U_ASSERT( the_class.completeness != TypeCompleteness::Complete );
 	U_ASSERT( the_class.virtual_table.empty() );
-
-	// Copy virtual table of base class.
-	if( the_class.base_class != nullptr )
-		the_class.virtual_table= the_class.base_class->class_->virtual_table;
 
 	// First, borrow virtual table of parent with 0 offset.
 	// Class reuses virtual table pointer of first parent, so, virtual table layout must be equal.
@@ -34,7 +30,6 @@ void CodeBuilder::ProcessClassParentsVirtualTables( Class& the_class )
 
 	// Then, add virtual functions from other parents.
 	// Later, add new virtual functions.
-
 	for( const Class::Parent& parent : the_class.parents )
 	{
 		if( parent.field_number == 0u )
@@ -61,95 +56,79 @@ void CodeBuilder::ProcessClassParentsVirtualTables( Class& the_class )
 			}
 		} // for parent virtual table
 	}
-}
 
-void CodeBuilder::TryGenerateDestructorPrototypeForPolymorphClass( Class& the_class, const Type& class_type )
-{
-	U_ASSERT( the_class.completeness != TypeCompleteness::Complete );
-	U_ASSERT( the_class.virtual_table_llvm_type == nullptr );
-	U_ASSERT( the_class.this_class_virtual_table == nullptr );
+	uint32_t own_virtual_table_index= 0;
 
-	if( the_class.members.GetThisScopeValue( Keyword( Keywords::destructor_ ) ) != nullptr )
-		return;
-
-	// Generate destructor prototype.
-	FunctionVariable destructor_function_variable= GenerateDestructorPrototype( the_class, class_type );
-	destructor_function_variable.prototype_file_pos= destructor_function_variable.body_file_pos= FilePos(); // TODO - set correct file_pos
-
-	// Add destructor to virtual table.
-	Class::VirtualTableEntry* virtual_table_entry= nullptr;
-	for( Class::VirtualTableEntry& e : the_class.virtual_table )
+	// Process functions
+	for( FunctionVariable* const function_ptr : functions )
 	{
-		if( e.name == Keywords::destructor_ )
+		FunctionVariable& function= *function_ptr;
+
+		if( function.virtual_function_kind == Synt::VirtualFunctionKind::None )
+			continue;
+
+		const std::string& function_name= function.syntax_element->name_.back();
+		const FilePos& file_pos= function.syntax_element->file_pos_;
+		CodeBuilderErrorsContainer& errors_container= the_class.members.GetErrors();
+
+		if( function.virtual_function_kind != Synt::VirtualFunctionKind::None &&
+			the_class.GetMemberVisibility( function_name ) == ClassMemberVisibility::Private )
 		{
-			virtual_table_entry= &e;
-			break;
+			// Private members not visible in child classes. So, virtual private function is 100% error.
+			REPORT_ERROR( VirtualForPrivateFunction, errors_container, file_pos, function_name );
 		}
-	}
-	if( virtual_table_entry == nullptr )
-	{
-		destructor_function_variable.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
-		Class::VirtualTableEntry new_virtual_table_entry;
-		new_virtual_table_entry.function_variable= destructor_function_variable;
-		new_virtual_table_entry.name= Keyword( Keywords::destructor_ );
-		new_virtual_table_entry.is_pure= false;
-		new_virtual_table_entry.is_final= false;
-		the_class.virtual_table.push_back( std::move( new_virtual_table_entry ) );
-	}
-	else
-		virtual_table_entry->function_variable= destructor_function_variable;
 
-	// Add destructor to names scope.
-	OverloadedFunctionsSet destructors_set;
-	destructors_set.functions.push_back(destructor_function_variable);
-	the_class.members.AddName( Keyword( Keywords::destructor_ ), destructors_set );
-}
+		if( !function.is_this_call )
+			continue; // May be in case of error
 
-void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, FunctionVariable& function )
-{
-	U_ASSERT( the_class.completeness != TypeCompleteness::Complete );
-
-	const std::string& function_name= function.syntax_element->name_.back();
-	const FilePos& file_pos= function.syntax_element->file_pos_;
-	CodeBuilderErrorsContainer& errors_container= the_class.members.GetErrors();
-
-	if( function.virtual_function_kind != Synt::VirtualFunctionKind::None &&
-		the_class.GetMemberVisibility( function_name ) == ClassMemberVisibility::Private )
-	{
-		// Private members not visible in child classes. So, virtual private function is 100% error.
-		REPORT_ERROR( VirtualForPrivateFunction, errors_container, file_pos, function_name );
-	}
-
-	if( !function.is_this_call )
-		return; // May be in case of error
-
-	Class::VirtualTableEntry* virtual_table_entry= nullptr;
-	for( Class::VirtualTableEntry& e : the_class.virtual_table )
-	{
-		if( e.name == function_name && e.function_variable.VirtuallyEquals( function ) )
+		Class::VirtualTableEntry* virtual_table_entry= nullptr;
+		for( Class::VirtualTableEntry& e : the_class.virtual_table )
 		{
-			virtual_table_entry= &e;
-			break;
-		}
-	}
-	unsigned int virtual_table_index= ~0u;
-	if( virtual_table_entry != nullptr )
-		virtual_table_index= static_cast<unsigned int>(virtual_table_entry - the_class.virtual_table.data());
-
-	switch( function.virtual_function_kind )
-	{
-	case Synt::VirtualFunctionKind::None:
-		if( function_name == Keywords::destructor_ )
-		{
-			// For destructors virtual specifiers are optional.
-			// If destructor not marked as virtual, but it placed in polymorph class, make it virtual.
-			if( virtual_table_entry != nullptr )
+			if( e.name == function_name && e.function_variable.VirtuallyEquals( function ) )
 			{
-				function.virtual_table_index= virtual_table_index;
-				virtual_table_entry->function_variable= function;
+				virtual_table_entry= &e;
+				break;
 			}
-			else if( the_class.kind == Class::Kind::PolymorphFinal || the_class.kind == Class::Kind::PolymorphNonFinal ||
-					 the_class.kind == Class::Kind::Interface || the_class.kind == Class::Kind::Abstract )
+		}
+		unsigned int virtual_table_index= ~0u;
+		if( virtual_table_entry != nullptr )
+			virtual_table_index= static_cast<unsigned int>(virtual_table_entry - the_class.virtual_table.data());
+
+		switch( function.virtual_function_kind )
+		{
+		case Synt::VirtualFunctionKind::None:
+			if( function_name == Keywords::destructor_ )
+			{
+				// For destructors virtual specifiers are optional.
+				// If destructor not marked as virtual, but it placed in polymorph class, make it virtual.
+				if( virtual_table_entry != nullptr )
+				{
+					function.virtual_table_index= virtual_table_index;
+					virtual_table_entry->function_variable= function;
+				}
+				else if( the_class.kind == Class::Kind::PolymorphFinal || the_class.kind == Class::Kind::PolymorphNonFinal ||
+						 the_class.kind == Class::Kind::Interface || the_class.kind == Class::Kind::Abstract )
+				{
+					function.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
+
+					Class::VirtualTableEntry new_virtual_table_entry;
+					new_virtual_table_entry.name= function_name;
+					new_virtual_table_entry.function_variable= function;
+					new_virtual_table_entry.is_pure= false;
+					new_virtual_table_entry.is_final= false;
+					new_virtual_table_entry.index_in_table= own_virtual_table_index;
+					++own_virtual_table_index;
+					the_class.virtual_table.push_back( std::move( new_virtual_table_entry ) );
+				}
+			}
+			else if( virtual_table_entry != nullptr )
+				REPORT_ERROR( VirtualRequired, errors_container, file_pos, function_name );
+			break;
+
+		case Synt::VirtualFunctionKind::DeclareVirtual:
+			if( virtual_table_entry != nullptr )
+				REPORT_ERROR( OverrideRequired, errors_container, file_pos, function_name );
+			else
 			{
 				function.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
 
@@ -158,81 +137,107 @@ void CodeBuilder::ProcessClassVirtualFunction( Class& the_class, FunctionVariabl
 				new_virtual_table_entry.function_variable= function;
 				new_virtual_table_entry.is_pure= false;
 				new_virtual_table_entry.is_final= false;
+				new_virtual_table_entry.index_in_table= own_virtual_table_index;
+				++own_virtual_table_index;
 				the_class.virtual_table.push_back( std::move( new_virtual_table_entry ) );
 			}
-		}
-		else if( virtual_table_entry != nullptr )
-			REPORT_ERROR( VirtualRequired, errors_container, file_pos, function_name );
-		break;
+			break;
 
-	case Synt::VirtualFunctionKind::DeclareVirtual:
-		if( virtual_table_entry != nullptr )
-			REPORT_ERROR( OverrideRequired, errors_container, file_pos, function_name );
-		else
-		{
-			function.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
-
-			Class::VirtualTableEntry new_virtual_table_entry;
-			new_virtual_table_entry.name= function_name;
-			new_virtual_table_entry.function_variable= function;
-			new_virtual_table_entry.is_pure= false;
-			new_virtual_table_entry.is_final= false;
-			the_class.virtual_table.push_back( std::move( new_virtual_table_entry ) );
-		}
-		break;
-
-	case Synt::VirtualFunctionKind::VirtualOverride:
-		if( virtual_table_entry == nullptr )
-			REPORT_ERROR( FunctionDoesNotOverride, errors_container, file_pos, function_name );
-		else if( virtual_table_entry->is_final )
-			REPORT_ERROR( OverrideFinalFunction, errors_container, file_pos, function_name );
-		else
-		{
-			function.virtual_table_index= virtual_table_index;
-			virtual_table_entry->function_variable= function;
-			virtual_table_entry->is_pure= false;
-		}
-		break;
-
-	case Synt::VirtualFunctionKind::VirtualFinal:
-		if( virtual_table_entry == nullptr )
-			REPORT_ERROR( FinalForFirstVirtualFunction, errors_container, file_pos, function_name );
-		else
-		{
-			if( virtual_table_entry->is_final )
+		case Synt::VirtualFunctionKind::VirtualOverride:
+			if( virtual_table_entry == nullptr )
+				REPORT_ERROR( FunctionDoesNotOverride, errors_container, file_pos, function_name );
+			else if( virtual_table_entry->is_final )
 				REPORT_ERROR( OverrideFinalFunction, errors_container, file_pos, function_name );
 			else
 			{
 				function.virtual_table_index= virtual_table_index;
 				virtual_table_entry->function_variable= function;
 				virtual_table_entry->is_pure= false;
-				virtual_table_entry->is_final= true;
+			}
+			break;
+
+		case Synt::VirtualFunctionKind::VirtualFinal:
+			if( virtual_table_entry == nullptr )
+				REPORT_ERROR( FinalForFirstVirtualFunction, errors_container, file_pos, function_name );
+			else
+			{
+				if( virtual_table_entry->is_final )
+					REPORT_ERROR( OverrideFinalFunction, errors_container, file_pos, function_name );
+				else
+				{
+					function.virtual_table_index= virtual_table_index;
+					virtual_table_entry->function_variable= function;
+					virtual_table_entry->is_pure= false;
+					virtual_table_entry->is_final= true;
+				}
+			}
+			break;
+
+		case Synt::VirtualFunctionKind::VirtualPure:
+			if( virtual_table_entry != nullptr )
+				REPORT_ERROR( OverrideRequired, errors_container, file_pos, function_name );
+			else
+			{
+				if( function.syntax_element->block_ != nullptr )
+					REPORT_ERROR( BodyForPureVirtualFunction, errors_container, file_pos, function_name );
+				if( function_name == Keyword( Keywords::destructor_ ) )
+					REPORT_ERROR( PureDestructor, errors_container, file_pos, the_class.members.GetThisNamespaceName() );
+				function.have_body= true; // Mark pure function as "with body", because we needs to disable real body creation for pure function.
+
+				function.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
+
+				Class::VirtualTableEntry new_virtual_table_entry;
+				new_virtual_table_entry.name= function_name;
+				new_virtual_table_entry.function_variable= function;
+				new_virtual_table_entry.is_pure= true;
+				new_virtual_table_entry.is_final= false;
+				new_virtual_table_entry.index_in_table= own_virtual_table_index;
+				++own_virtual_table_index;
+				the_class.virtual_table.push_back( std::move( new_virtual_table_entry ) );
+			}
+			break;
+		};
+	}
+
+	// Generate destructor prototype.
+	{
+		if( the_class.members.GetThisScopeValue( Keyword( Keywords::destructor_ ) ) != nullptr )
+			return;
+
+		// Generate destructor prototype.
+		FunctionVariable destructor_function_variable= GenerateDestructorPrototype( the_class, class_type );
+		destructor_function_variable.prototype_file_pos= destructor_function_variable.body_file_pos= FilePos(); // TODO - set correct file_pos
+
+		// Add destructor to virtual table.
+		Class::VirtualTableEntry* virtual_table_entry= nullptr;
+		for( Class::VirtualTableEntry& e : the_class.virtual_table )
+		{
+			if( e.name == Keywords::destructor_ )
+			{
+				virtual_table_entry= &e;
+				break;
 			}
 		}
-		break;
-
-	case Synt::VirtualFunctionKind::VirtualPure:
-		if( virtual_table_entry != nullptr )
-			REPORT_ERROR( OverrideRequired, errors_container, file_pos, function_name );
-		else
+		if( virtual_table_entry == nullptr )
 		{
-			if( function.syntax_element->block_ != nullptr )
-				REPORT_ERROR( BodyForPureVirtualFunction, errors_container, file_pos, function_name );
-			if( function_name == Keyword( Keywords::destructor_ ) )
-				REPORT_ERROR( PureDestructor, errors_container, file_pos, the_class.members.GetThisNamespaceName() );
-			function.have_body= true; // Mark pure function as "with body", because we needs to disable real body creation for pure function.
-
-			function.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
-
+			destructor_function_variable.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
 			Class::VirtualTableEntry new_virtual_table_entry;
-			new_virtual_table_entry.name= function_name;
-			new_virtual_table_entry.function_variable= function;
-			new_virtual_table_entry.is_pure= true;
+			new_virtual_table_entry.function_variable= destructor_function_variable;
+			new_virtual_table_entry.name= Keyword( Keywords::destructor_ );
+			new_virtual_table_entry.is_pure= false;
 			new_virtual_table_entry.is_final= false;
+			new_virtual_table_entry.index_in_table= own_virtual_table_index;
+			++own_virtual_table_index;
 			the_class.virtual_table.push_back( std::move( new_virtual_table_entry ) );
 		}
-		break;
-	};
+		else
+			virtual_table_entry->function_variable= destructor_function_variable;
+
+		// Add destructor to names scope.
+		OverloadedFunctionsSet destructors_set;
+		destructors_set.functions.push_back(destructor_function_variable);
+		the_class.members.AddName( Keyword( Keywords::destructor_ ), destructors_set );
+	}
 }
 
 void CodeBuilder::PrepareClassVirtualTableType( const ClassProxyPtr& class_type )

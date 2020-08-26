@@ -627,17 +627,21 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				else U_ASSERT(false);
 			});
 
-		ProcessClassParentsVirtualTables( the_class );
+		if( the_class.kind == Class::Kind::Interface ||
+			the_class.kind == Class::Kind::Abstract ||
+			the_class.kind == Class::Kind::PolymorphNonFinal ||
+			the_class.kind == Class::Kind::PolymorphFinal )
+		{
+			// We needs strong order of functions in virtual table. So, sort them, using mangled name.
+			std::sort(
+				class_functions.begin(), class_functions.end(),
+				[]( const FunctionVariable* const l, const FunctionVariable* const r )
+				{
+					return l->llvm_function->getName() < r->llvm_function->getName();
+				} );
 
-		// Wee needs strong order of functions in virtual table. So, sort them, using mangled name.
-		std::sort(
-			class_functions.begin(), class_functions.end(),
-			[]( const FunctionVariable* const l, const FunctionVariable* const r )
-			{
-				return l->llvm_function->getName() < r->llvm_function->getName();
-			} );
-		for( FunctionVariable* func : class_functions )
-			ProcessClassVirtualFunction( the_class, *func );
+			PrepareClassVirtualTable( the_class, class_type, class_functions );
+		}
 
 		// Search for explicit noncopy constructors.
 		if( const Value* const constructors_value=
@@ -767,12 +771,6 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 			the_class.kind= Class::Kind::Abstract;
 			break;
 		};
-
-		if( the_class.kind == Class::Kind::Interface ||
-			the_class.kind == Class::Kind::Abstract ||
-			the_class.kind == Class::Kind::PolymorphNonFinal ||
-			the_class.kind == Class::Kind::PolymorphFinal )
-			TryGenerateDestructorPrototypeForPolymorphClass( the_class, class_type );
 
 		// Merge namespaces of parents into result class.
 		for( const Class::Parent& parent : the_class.parents )
