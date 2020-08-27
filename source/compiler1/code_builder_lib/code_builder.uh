@@ -499,6 +499,12 @@ private:
 		ClassTypePtr& class_type_ptr,
 		FunctionContext &mut function_context );
 
+	fn TryFetchVirtualFunction(
+		this,
+		Variable& this_,
+		FunctionVariable& function,
+		FunctionContext &mut function_context ) : tup[ Variable, LLVMValueRef ];
+
 	// Overloading
 
 	fn ApplyOverloadedFunction(

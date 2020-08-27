@@ -1411,7 +1411,7 @@ fn CodeBuilder::CallFunctionsSet(
 		RestoreInstructionsState( function_context, instructions_state );
 	}
 
-	auto function_selected=
+	auto mut function_selected=
 		GetOverloadedFunction(
 			functions_set,
 			args_evaluated.range(),
@@ -1427,6 +1427,19 @@ fn CodeBuilder::CallFunctionsSet(
 	if( !this_.empty() && !function_selected.get_ref().is_this_call )
 	{
 		this_.reset();
+	}
+
+	if( !this_.empty() )
+	{
+		auto fetch_res= TryFetchVirtualFunction( this_.get_ref(), function_selected.get_ref(), function_context );
+		function_selected.get_ref().llvm_function= fetch_res[1];
+		return DoCallFunction(
+			names_scope,
+			function_context,
+			ust::optional_ref</Variable, false/>( fetch_res[0] ),
+			function_selected.get_ref(),
+			args,
+			file_pos );
 	}
 
 	return DoCallFunction(
