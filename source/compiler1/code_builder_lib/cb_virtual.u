@@ -522,50 +522,46 @@ fn CodeBuilder::TryFetchVirtualFunction(
 		var LLVMValueRef mut function_virtual_table= virtual_table_ptr;
 		while( parent_virtual_table_index != ~0u )
 		{
-			var ust::shared_ptr_nullable_mut</ClassType/> mut next_class_ptr;
-			{
-				auto current_class_lock= current_class_ptr.lock_imut();
-				auto& current_class= current_class_lock.get_ref();
+			auto current_class_ptr_copy= current_class_ptr;
+			auto current_class_lock= current_class_ptr_copy.lock_imut();
+			auto& current_class= current_class_lock.get_ref();
 
-				auto mut field_index= ~0u;
-				if( current_class.parents[ parent_virtual_table_index ].field_number == 0u )
+			auto mut field_index= ~0u;
+			if( current_class.parents[ parent_virtual_table_index ].field_number == 0u )
+			{
+				field_index= 0u;
+			}
+			else
+			{
+				field_index= 1u;
+				for( auto mut i= 0s; i < size_type(parent_virtual_table_index); ++i )
 				{
-					field_index= 0u;
-				}
-				else
-				{
-					field_index= 1u;
-					for( auto mut i= 0s; i < size_type(parent_virtual_table_index); ++i )
+					if( current_class.parents[i].field_number != 0u )
 					{
-						if( current_class.parents[i].field_number != 0u )
-						{
-							++field_index;
-						}
+						++field_index;
 					}
 				}
-
-				unsafe
-				{
-					var [ LLVMValueRef, 2 ] index_list
-					[
-						GetZeroGEPIndex(),
-						LLVMConstInt( fundamental_llvm_types_.u32_, u64(field_index), LLVMBool::False )
-					];
-					auto function_virtual_table= LLVMBuildGEP( function_context.llvm_ir_builder, function_virtual_table, index_list[0], 2u, "\0"[0] );
-				}
-
-				next_class_ptr= current_class.parents[ parent_virtual_table_index ].class_;
 			}
 
+			unsafe
 			{
-				auto next_class_lock= next_class_ptr.lock_imut();
-				auto& next_class= next_class_lock.get_ref();
-				var ClassType::VirtualTableEntry& next_virtual_table_entry= next_class.virtual_table[ index_in_table ];
-				parent_virtual_table_index= next_virtual_table_entry.parent_virtual_table_index;
-				index_in_table= next_virtual_table_entry.index_in_table;
+				var [ LLVMValueRef, 2 ] index_list
+				[
+					GetZeroGEPIndex(),
+					LLVMConstInt( fundamental_llvm_types_.u32_, u64(field_index), LLVMBool::False )
+				];
+				function_virtual_table= LLVMBuildGEP( function_context.llvm_ir_builder, function_virtual_table, index_list[0], 2u, "\0"[0] );
 			}
 
-			current_class_ptr= ust::to_non_nullable( next_class_ptr );
+			auto next_class_ptr= current_class.parents[ parent_virtual_table_index ].class_;
+
+			auto next_class_lock= next_class_ptr.lock_imut();
+			auto& next_class= next_class_lock.get_ref();
+			var ClassType::VirtualTableEntry& next_virtual_table_entry= next_class.virtual_table[ index_in_table ];
+			parent_virtual_table_index= next_virtual_table_entry.parent_virtual_table_index;
+			index_in_table= next_virtual_table_entry.index_in_table;
+
+			current_class_ptr= next_class_ptr;
 		}
 
 		var u32 mut functions_table_field_number= ~0u;
@@ -610,20 +606,19 @@ fn CodeBuilder::TryFetchVirtualFunction(
 
 			for( auto mut current_class_ptr= class_type_ptr; !current_class_ptr.lock_imut().get_ref().parents.empty(); )
 			{
-				var [ LLVMValueRef, 2 ] index_list [ GetZeroGEPIndex(), GetZeroGEPIndex() ];
+				var [ LLVMValueRef, 2 ] index_list[ GetZeroGEPIndex(), GetZeroGEPIndex() ];
 				first_root_virtual_table=
 					LLVMBuildGEP( function_context.llvm_ir_builder, first_root_virtual_table, index_list[0], 2u, "\0"[0] );
 
-				var ust::shared_ptr_nullable_mut</ClassType/> mut next_class_ptr;
-				foreach( &parent : current_class_ptr.lock_imut().get_ref().parents )
+				auto current_class_ptr_copy= current_class_ptr;
+				foreach( &parent : current_class_ptr_copy.lock_imut().get_ref().parents )
 				{
 					if( parent.field_number == 0u )
 					{
-						next_class_ptr= parent.class_;
+						current_class_ptr= parent.class_;
 						break;
 					}
 				}
-				current_class_ptr= ust::to_non_nullable( next_class_ptr );
 			}
 
 			var [ LLVMValueRef, 2 ] offset_indeces

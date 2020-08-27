@@ -572,6 +572,11 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"ValueIsNotTemplate_ForFunctionTemplates_Test",
 		"VirtualFunctionCallTest0",
 		"VirtualFunctionCallTest1",
+		"VirtualFunctionCallTest2",
+		"VirtualFunctionCallTest3",
+		"VirtualFunctionCallTest4",
+		"VirtualFunctionCallTest5",
+		"VirtualFunctionCallTest6",
 		"VirtualFunctionDeclaration_Test",
 	};
 
