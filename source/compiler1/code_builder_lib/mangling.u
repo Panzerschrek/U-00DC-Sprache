@@ -605,4 +605,12 @@ fn MangleTemplateArgs( TemplateArgsFinished& template_args ) : ust::string8
 	return move(str);
 }
 
+fn MangleVirtualTable( Type& t ) : ust::string8
+{
+	var ust::string8 mut str= "_ZTV";
+	str+= MangleGraphFinalize(MangleTypeImpl(t));
+	str+= "\0";
+	return move(str);
+}
+
 } // namespace U

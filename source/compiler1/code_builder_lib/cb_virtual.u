@@ -283,4 +283,117 @@ fn CodeBuilder::PrepareClassVirtualTableType( this, ClassTypePtr& class_type_ptr
 	}
 }
 
+fn CodeBuilder::BuildClassVirtualTable_r( this, ClassType& ancestor_class, ClassType& dst_class, LLVMValueRef dst_class_ptr_null_based ) : LLVMValueRef
+{
+	var ust::vector</LLVMValueRef/> mut initializer_values;
+
+	auto mut function_context= CreateGlobalFunctionContext();
+
+	foreach( &parent : ancestor_class.parents )
+	{
+		if( parent.field_number == 0u )
+		{
+			auto offset_ptr= CreateBaseClassFieldGEP( dst_class_ptr_null_based, function_context );
+			initializer_values.push_back( BuildClassVirtualTable_r( parent.class_.lock_imut().get_ref(), dst_class, offset_ptr ) );
+		}
+	}
+	foreach( &parent : ancestor_class.parents )
+	{
+		if( parent.field_number != 0u )
+		{
+			auto offset_ptr= CreateParentFiledGEP( dst_class_ptr_null_based, parent, function_context );
+			initializer_values.push_back( BuildClassVirtualTable_r( parent.class_.lock_imut().get_ref(), dst_class, offset_ptr ) );
+		}
+	}
+
+	unsafe // Unsafe because a lot of C functions calls.
+	{
+		if( initializer_values.empty() )
+		{
+			// offset
+			initializer_values.push_back(
+				LLVMBuildPtrToInt( function_context.llvm_ir_builder, dst_class_ptr_null_based, fundamental_llvm_types_.int_ptr, "\0"[0] ) );
+
+			// TODO - Type id
+			initializer_values.push_back( LLVMConstNull( LLVMPointerType( fundamental_llvm_types_.int_ptr, 0u ) ) );
+		}
+
+		auto array_type= LLVMStructGetTypeAtIndex( ancestor_class.virtual_table_llvm_type, u32(initializer_values.size() ) );
+		auto fn_type_ptr= LLVMGetElementType( array_type );
+
+		var ust::vector</LLVMValueRef/> mut function_pointers_initializer_values;
+
+		foreach( &ancestor_virtual_table_entry : ancestor_class.virtual_table )
+		{
+			if( ancestor_virtual_table_entry.parent_virtual_table_index != ~0u )
+			{
+				continue;
+			}
+
+			auto mut func= ancestor_virtual_table_entry.function_variable.llvm_function;
+			foreach( &dst_virtual_table_entry : dst_class.virtual_table )
+			{
+				if( dst_virtual_table_entry.name == ancestor_virtual_table_entry.name &&
+					dst_virtual_table_entry.function_variable.VirtuallyEquals( ancestor_virtual_table_entry.function_variable ) )
+				{
+					func= dst_virtual_table_entry.function_variable.llvm_function;
+					break;
+				}
+			}
+
+			unsafe
+			{
+				auto function_pointer_casted= LLVMBuildPointerCast( function_context.llvm_ir_builder, func, fn_type_ptr, "\0"[0] );
+				function_pointers_initializer_values.push_back( function_pointer_casted );
+			}
+		}
+
+		if( function_pointers_initializer_values.empty() )
+		{
+			initializer_values.push_back( LLVMConstNull( array_type ) );
+		}
+		else
+		{
+			initializer_values.push_back( LLVMConstArray( array_type, cast_imut(function_pointers_initializer_values).front(), u32(function_pointers_initializer_values.size()) ) );
+		}
+
+		return LLVMConstNamedStruct( ancestor_class.virtual_table_llvm_type, cast_imut(initializer_values).front(), u32(initializer_values.size()) );
+	}
+}
+
+fn CodeBuilder::BuildClassVirtualTable( this, ClassTypePtr& class_type_ptr )
+{
+	auto mut virtual_table_initializer= LLVMValueRef::Null;
+	{
+		auto class_lock= class_type_ptr.lock_imut();
+		auto& class_= class_lock.get_ref();
+
+		// Build virtual table only for polymorph non-abstract classes.
+		if( !(
+			class_.kind == ClassType::Kind::PolymorphNonFinal ||
+			class_.kind == ClassType::Kind::PolymorphFinal ) )
+		{
+			return;
+		}
+
+		auto mut this_nullptr= LLVMValueRef::Null;
+		unsafe{  this_nullptr= LLVMConstNull( LLVMPointerType( class_type_ptr.lock_imut().get_ref().llvm_type, 0u ) );  }
+
+		virtual_table_initializer= BuildClassVirtualTable_r( class_, class_, this_nullptr );
+	}
+
+	auto name_mangled= MangleVirtualTable( class_type_ptr );
+
+	auto mut class_lock= class_type_ptr.lock_mut();
+	auto &mut class_= class_lock.get_ref();
+
+	unsafe
+	{
+		auto global_variable= LLVMAddGlobal( module_, class_.virtual_table_llvm_type, name_mangled.front() );
+		LLVMSetLinkage( global_variable, LLVMLinkage::Internal );
+		LLVMSetGlobalConstant( global_variable, LLVMBool::True );
+		LLVMSetInitializer( global_variable, virtual_table_initializer );
+	}
+}
+
 } // namespace U

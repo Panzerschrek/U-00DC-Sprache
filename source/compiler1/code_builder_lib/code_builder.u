@@ -1048,6 +1048,8 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		else{ halt; }
 	}
 
+	BuildClassVirtualTable( class_type );
+
 	TryGenerateDefaultConstructor( class_type );
 	TryGenerateCopyConstructor( class_type );
 	TryGenerateCopyAssignmentOperator( class_type );
@@ -2094,6 +2096,20 @@ fn CodeBuilder::CreateFieldGEP( this, LLVMValueRef value, ClassField& field, Fun
 		];
 
 		return LLVMBuildGEP( function_context.llvm_ir_builder, value, indexes[0], 2u, op_name_nt.front() );
+	}
+}
+
+fn CodeBuilder::CreateParentFiledGEP( this, LLVMValueRef value, ClassType::Parent& parent, FunctionContext& function_context ) : LLVMValueRef
+{
+	unsafe
+	{
+		var [ LLVMValueRef, 2 ] indexes
+		[
+			GetZeroGEPIndex(),
+			LLVMConstInt( fundamental_llvm_types_.u32_, u64(parent.field_number), LLVMBool::False )
+		];
+
+		return LLVMBuildGEP( function_context.llvm_ir_builder, value, indexes[0], 2u, "\0"[0] );
 	}
 }
 
