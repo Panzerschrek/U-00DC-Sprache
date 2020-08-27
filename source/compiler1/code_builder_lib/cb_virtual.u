@@ -393,6 +393,8 @@ fn CodeBuilder::BuildClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 		LLVMSetLinkage( global_variable, LLVMLinkage::Internal );
 		LLVMSetGlobalConstant( global_variable, LLVMBool::True );
 		LLVMSetInitializer( global_variable, virtual_table_initializer );
+
+		class_.virtual_table_llvm_variable= global_variable;
 	}
 }
 
@@ -412,7 +414,7 @@ fn CodeBuilder::SetupVirtualTablePointers_r(
 			var [ LLVMValueRef, 2 ] this_indexes
 			[
 				GetZeroGEPIndex(),
-				LLVMConstInt( fundamental_llvm_types_.u32_, u64(vtable_field_number), LLVMBool::False )
+				LLVMConstInt( fundamental_llvm_types_.u32_, u64(parent.field_number), LLVMBool::False )
 			];
 			auto parent_ptr= LLVMBuildGEP( function_context.llvm_ir_builder, this_, this_indexes[0], 2u, "\0"[0] );
 
@@ -441,7 +443,7 @@ fn CodeBuilder::SetupVirtualTablePointers_r(
 			ptr_to_vtable_ptr,
 			LLVMBuildPointerCast(
 				function_context.llvm_ir_builder,
-				ptr_to_vtable_ptr,
+				this_,
 				LLVMPointerType( LLVMPointerType( class_type.virtual_table_llvm_type, 0u ) 0u ),
 				"\0"[0] ) );
 	}
