@@ -1845,7 +1845,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			BuildConstructorInitialization(
 				args_names_scope_ptr,
 				function_context,
-				dummy_initializer);
+				dummy_initializer );
 		}
 
 		function_context.whole_this_is_unavailable= false;
@@ -1853,6 +1853,14 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 	if( is_destructor )
 	{
 		unsafe{  function_context.destructor_end_block= LLVMCreateBasicBlockInContext( llvm_context_, "destructor_end\0"[0] );  }
+	}
+
+	if( is_constructor || is_destructor )
+	{
+		// Setup virtual table pointers before main body of constructor/destructor and after constructor initialization list.
+		auto this_llvm_value= function_context.this_.get_ref().llvm_value;
+		auto class_type_ptr= function_context.this_.get_ref().t.GetClassType().get_ref();
+		SetupVirtualTablePointers( this_llvm_value, class_type_ptr, function_context );
 	}
 
 	if( ( is_constructor || is_destructor ) && !function_context.this_.get_ref().t.GetClassType().empty() )

@@ -396,4 +396,79 @@ fn CodeBuilder::BuildClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 	}
 }
 
+fn CodeBuilder::SetupVirtualTablePointers_r(
+	this,
+	LLVMValueRef this_,
+	LLVMValueRef ptr_to_vtable_ptr,
+	ClassType& class_type,
+	FunctionContext &mut function_context )
+{
+	// Setup virtual table pointers for parents.
+	auto mut vtable_field_number= 1u;
+	foreach( &parent : class_type.parents )
+	{
+		unsafe
+		{
+			var [ LLVMValueRef, 2 ] this_indexes
+			[
+				GetZeroGEPIndex(),
+				LLVMConstInt( fundamental_llvm_types_.u32_, u64(vtable_field_number), LLVMBool::False )
+			];
+			auto parent_ptr= LLVMBuildGEP( function_context.llvm_ir_builder, this_, this_indexes[0], 2u, "\0"[0] );
+
+			var [ LLVMValueRef, 2 ] vtable_indexes
+			[
+				GetZeroGEPIndex(),
+				LLVMConstInt( fundamental_llvm_types_.u32_, u64( select( parent.field_number == 0u ? 0u : vtable_field_number ) ), LLVMBool::False )
+			];
+			auto vtable_ptr= LLVMBuildGEP( function_context.llvm_ir_builder, ptr_to_vtable_ptr, vtable_indexes[0], 2u, "\0"[0] );
+
+			SetupVirtualTablePointers_r( parent_ptr, vtable_ptr, parent.class_.lock_imut().get_ref(), function_context );
+
+		}
+		if( parent.field_number != 0u )
+		{
+			++vtable_field_number;
+		}
+	}
+
+	// Store virtual table pointer for current class.
+	// Overwrite, if needed, first parent virtual table.
+	unsafe
+	{
+		LLVMBuildStore(
+			function_context.llvm_ir_builder,
+			ptr_to_vtable_ptr,
+			LLVMBuildPointerCast(
+				function_context.llvm_ir_builder,
+				ptr_to_vtable_ptr,
+				LLVMPointerType( LLVMPointerType( class_type.virtual_table_llvm_type, 0u ) 0u ),
+				"\0"[0] ) );
+	}
+}
+
+fn CodeBuilder::SetupVirtualTablePointers(
+	this,
+	LLVMValueRef this_,
+	ClassTypePtr& class_type_ptr,
+	FunctionContext &mut function_context )
+{
+	auto class_type_lock= class_type_ptr.lock_imut();
+	auto& class_type= class_type_lock.get_ref();
+
+	if( !(
+		class_type.kind == ClassType::Kind::PolymorphNonFinal ||
+		class_type.kind == ClassType::Kind::PolymorphFinal ) )
+	{
+		return;
+	}
+
+	if( class_type.virtual_table_llvm_variable == LLVMValueRef::Null )
+	{
+		return; // May be in case of errors.
+	}
+
+	SetupVirtualTablePointers_r( this_, class_type.virtual_table_llvm_variable, class_type, function_context );
+}
+
 } // namespace U

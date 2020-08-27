@@ -486,6 +486,19 @@ private:
 	fn BuildClassVirtualTable_r( this, ClassType& ancestor_class, ClassType& dst_class, LLVMValueRef dst_class_ptr_null_based ) : LLVMValueRef;
 	fn BuildClassVirtualTable( this, ClassTypePtr& class_type_ptr );
 
+	fn SetupVirtualTablePointers_r(
+		this,
+		LLVMValueRef this_,
+		LLVMValueRef ptr_to_vtable_ptr,
+		ClassType& class_type,
+		FunctionContext &mut function_context );
+
+	fn SetupVirtualTablePointers(
+		this,
+		LLVMValueRef this_,
+		ClassTypePtr& class_type_ptr,
+		FunctionContext &mut function_context );
+
 	// Overloading
 
 	fn ApplyOverloadedFunction(

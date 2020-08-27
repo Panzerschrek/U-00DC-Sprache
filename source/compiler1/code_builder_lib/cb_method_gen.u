@@ -165,6 +165,8 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		BuildEmptyInitializer( class_members, function_context, field_variable, member.key(), FilePos( /* TODO - set correct file_pos */ ) );
 	}
 
+	SetupVirtualTablePointers( this_llvm_value, class_type, function_context );
+
 	// Finish function - add remaining instructions.
 	unsafe
 	{
@@ -345,6 +347,8 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 			BuildCopyConstructorPart( class_members, function_context, dst_member_value, src_member_value, class_field.t, file_pos );
 		}
 	}
+
+	SetupVirtualTablePointers( dst_llvm_value, class_type, function_context );
 
 	// Finish function - add remaining instructions
 	unsafe
