@@ -1,0 +1,228 @@
+import "../lex_synt_lib/keywords.uh"
+import "error_reporting.uh"
+import "code_builder.uh"
+
+namespace U
+{
+
+fn CodeBuilder::PrepareClassVirtualTable( ClassTypePtr& class_type_ptr )
+{
+	// Class now should not be complete, but parents and functions should be known.
+	// Also, parent namespaces should not be merged into class namespace before call of this function.
+
+	auto mut class_lock= class_type_ptr.lock_mut();
+	var ClassType &mut class_type= class_lock.get_ref();
+
+	// First, borrow virtual table of parent with 0 offset.
+	// Class reuses virtual table pointer of first parent, so, virtual table layout must be equal.
+	for( auto mut i= 0s; i < class_type.parents.size(); ++i )
+	{
+		if( class_type.parents[i].field_number != 0u )
+		{
+			continue;
+		}
+
+		auto parent_ptr= class_type.parents[i].class_;
+		auto parent_lock= parent_ptr.lock_imut();
+		var ClassType& parent= parent_lock.get_ref();
+
+		for( auto mut j= 0s; j < parent.virtual_table.size(); ++j )
+		{
+			var ClassType::VirtualTableEntry mut entry_copy= parent.virtual_table[j];
+			entry_copy.index_in_table= u32(j);
+			entry_copy.parent_virtual_table_index= u32(i);
+
+			class_type.virtual_table.push_back( move(entry_copy) );
+		} // for parent virtual table entries
+	} // for parents
+
+	// Then, add virtual functions from other parents.
+	for( auto mut i= 0s; i < class_type.parents.size(); ++i )
+	{
+		if( class_type.parents[i].field_number == 0u )
+		{
+			continue;
+		}
+
+		auto parent_ptr= class_type.parents[i].class_;
+		auto parent_lock= parent_ptr.lock_imut();
+		var ClassType& parent= parent_lock.get_ref();
+
+		for( auto mut j= 0s; j < parent.virtual_table.size(); ++j )
+		{
+			var ClassType::VirtualTableEntry& parent_virtual_table_entry= parent.virtual_table[j];
+
+			var bool mut already_exists_in_vtable= false;
+			foreach( &virtual_table_entry : class_type.virtual_table )
+			{
+				if( virtual_table_entry.name == parent_virtual_table_entry.name &&
+					virtual_table_entry.function_variable.VirtuallyEquals( parent_virtual_table_entry.function_variable ) )
+				{
+					already_exists_in_vtable= true;
+					break;
+				}
+			}
+
+			if( already_exists_in_vtable )
+			{
+				continue;
+			}
+
+			var ClassType::VirtualTableEntry mut entry_copy= parent_virtual_table_entry;
+			entry_copy.index_in_table= u32(j);
+			entry_copy.parent_virtual_table_index= u32(i);
+
+			class_type.virtual_table.push_back( move(entry_copy) );
+		} // for parent virtual table entries
+	} // for parents
+
+	// Process functions.
+	var u32 mut own_virtual_table_index= 0u;
+	// TODO - process functions in some strong order, not in order of hash table. This is needed because we needs stable order of functions in virtual table.
+	auto class_members_ptr= class_type.members;
+	foreach( &class_member : class_members_ptr.lock_imut().get_ref().GetInternalContainer() )
+	{
+		auto functions_set_ptr= class_member.value().Get</NamesScopeFunctionsSet/>();
+		if( functions_set_ptr.empty() )
+		{
+			continue;
+		}
+
+		var ust::string8& function_name= class_member.key();
+
+		auto mut functions_set_lock= functions_set_ptr.lock_mut();
+		foreach( &mut function : functions_set_lock.get_ref().functions_set.functions )
+		{
+			if( !function.is_this_call )
+			{
+				continue; // May be in case of error
+			}
+
+			auto mut virtual_table_index= ~0u;
+			for( auto mut i= 0s; i < class_type.virtual_table.size(); ++i )
+			{
+				var ClassType::VirtualTableEntry& entry= class_type.virtual_table[i];
+				if( function_name == entry.name && function.VirtuallyEquals( entry.function_variable ) )
+				{
+					virtual_table_index= u32(i);
+					break;
+				}
+			}
+
+			auto file_pos= FilePos(); // TODO
+
+			auto virtual_kind= select(
+				function.prototype_syntax_element.empty()
+				? function.body_syntax_element.get_ref().virtual_kind
+				: function.prototype_syntax_element.get_ref().virtual_kind );
+
+			if( virtual_kind == Synt::Function::VirtualKind::None )
+			{
+				if( function_name == KeywordToString( Keyword::destructor_ ) )
+				{
+					// TODO
+				}
+				if( virtual_table_index != ~0u )
+				{
+					REPORT_ERROR( VirtualRequired, class_members_ptr, file_pos, function_name )
+				}
+			}
+			else if( virtual_kind == Synt::Function::VirtualKind::DeclareVirtual )
+			{
+				if( virtual_table_index != ~0u )
+				{
+					REPORT_ERROR( OverrideRequired, class_members_ptr, file_pos, function_name )
+				}
+				else
+				{
+					function.virtual_table_index= u32(class_type.virtual_table.size());
+
+					var ClassType::VirtualTableEntry mut new_virtual_table_entry
+					{
+						.name= function_name,
+						.function_variable= function,
+						.is_pure= false,
+						.is_final= false,
+						.index_in_table= own_virtual_table_index,
+						.parent_virtual_table_index= ~0u,
+					};
+					class_type.virtual_table.push_back( move( new_virtual_table_entry ) );
+					++own_virtual_table_index;
+				}
+			}
+			else if( virtual_kind == Synt::Function::VirtualKind::VirtualOverride )
+			{
+				if( virtual_table_index == ~0u )
+				{
+					REPORT_ERROR( FunctionDoesNotOverride, class_members_ptr, file_pos, function_name )
+				}
+				else if( class_type.virtual_table[virtual_table_index].is_final )
+				{
+					REPORT_ERROR( OverrideFinalFunction, class_members_ptr, file_pos, function_name )
+				}
+				else
+				{
+					function.virtual_table_index= virtual_table_index;
+					var ClassType::VirtualTableEntry &mut entry= class_type.virtual_table[virtual_table_index];
+					entry.function_variable= function;
+					entry.is_pure= false;
+				}
+			}
+			else if( virtual_kind == Synt::Function::VirtualKind::VirtualFinal )
+			{
+				if( virtual_table_index == ~0u )
+				{
+					REPORT_ERROR( FinalForFirstVirtualFunction, class_members_ptr, file_pos, function_name )
+				}
+				else if( class_type.virtual_table[virtual_table_index].is_final )
+				{
+					REPORT_ERROR( OverrideFinalFunction, class_members_ptr, file_pos, function_name )
+				}
+				else
+				{
+					function.virtual_table_index= virtual_table_index;
+					var ClassType::VirtualTableEntry &mut entry= class_type.virtual_table[virtual_table_index];
+					entry.function_variable= function;
+					entry.is_pure= false;
+					entry.is_final= true;
+				}
+			}
+			else if( virtual_kind == Synt::Function::VirtualKind::VirtualPure )
+			{
+				if( virtual_table_index != ~0u )
+				{
+					REPORT_ERROR( OverrideRequired, class_members_ptr, file_pos, function_name )
+				}
+				else
+				{
+					// TODO - produce error
+					// REPORT_ERROR( BodyForPureVirtualFunction, class_members_ptr, file_pos, function_name )
+					if( function_name == KeywordToString( Keyword::destructor_ ) )
+					{
+						REPORT_ERROR( PureDestructor, class_members_ptr, file_pos, ust::string8("/TODO - name") )
+					}
+
+					// TODO - prevent body generation for pure functions.
+
+					function.virtual_table_index= u32(class_type.virtual_table.size());
+
+					var ClassType::VirtualTableEntry mut new_virtual_table_entry
+					{
+						.name= function_name,
+						.function_variable= function,
+						.is_pure= true,
+						.is_final= false,
+						.index_in_table= own_virtual_table_index,
+						.parent_virtual_table_index= ~0u,
+					};
+					class_type.virtual_table.push_back( move( new_virtual_table_entry ) );
+					++own_virtual_table_index;
+				}
+			}
+			else{ halt; }
+
+		} // for functions
+	} // for class members
+}
+
+} // namespace U

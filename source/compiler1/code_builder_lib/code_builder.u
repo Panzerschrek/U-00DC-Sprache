@@ -963,6 +963,14 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		}
 	}
 
+	if( !syntax_element.parents.empty() ||
+		syntax_element.kind_attribute == Synt::Class::KindAttribute::Polymorph ||
+		syntax_element.kind_attribute == Synt::Class::KindAttribute::Interface ||
+		syntax_element.kind_attribute == Synt::Class::KindAttribute::Abstract )
+	{
+		PrepareClassVirtualTable( class_type );
+	}
+
 	// Setup class kind.
 	{
 		auto mut lock= class_type.lock_mut();

@@ -479,6 +479,9 @@ private:
 
 	fn TypeIsValidForTemplateVariableArgument( Type& t ) : bool;
 
+	// Virtual stuff
+	fn PrepareClassVirtualTable( ClassTypePtr& class_type_ptr );
+
 	// Overloading
 
 	fn ApplyOverloadedFunction(
