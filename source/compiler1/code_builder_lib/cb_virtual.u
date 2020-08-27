@@ -1,6 +1,7 @@
 import "../lex_synt_lib/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
+import "mangling.uh"
 
 namespace U
 {
@@ -223,6 +224,63 @@ fn CodeBuilder::PrepareClassVirtualTable( ClassTypePtr& class_type_ptr )
 
 		} // for functions
 	} // for class members
+}
+
+fn CodeBuilder::PrepareClassVirtualTableType( this, ClassTypePtr& class_type_ptr )
+{
+	var ust::string8 mut virtual_table_type_name= "_vtable_type_";
+	virtual_table_type_name+= MangleType( class_type_ptr );
+
+	auto mut class_lock= class_type_ptr.lock_mut();
+	var ClassType &mut class_type= class_lock.get_ref();
+
+	var ust::vector</LLVMTypeRef/> mut virtual_table_struct_fields;
+
+	// First, add first class virtual table, then, virtual tables of other parent classes.
+	foreach( &parent : class_type.parents )
+	{
+		if( parent.field_number == 0u )
+		{
+			virtual_table_struct_fields.push_back( parent.class_.lock_imut().get_ref().virtual_table_llvm_type );
+		}
+	}
+	foreach( &parent : class_type.parents )
+	{
+		if( parent.field_number != 0u )
+		{
+			virtual_table_struct_fields.push_back( parent.class_.lock_imut().get_ref().virtual_table_llvm_type );
+		}
+	}
+
+	if( virtual_table_struct_fields.empty() )
+	{
+		// No parents - create special fields - base offset, type id, etc.
+		virtual_table_struct_fields.push_back( fundamental_llvm_types_.int_ptr ); // Offset field.
+		unsafe {  virtual_table_struct_fields.push_back( LLVMPointerType( fundamental_llvm_types_.int_ptr, 0u ) );   } // type_id field
+	}
+
+	auto mut own_functions_count= 0u;
+	foreach( &entry : class_type.virtual_table )
+	{
+		if( entry.parent_virtual_table_index == ~0u )
+		{
+			++own_functions_count;
+		}
+	}
+
+	unsafe
+	{
+		auto dummy= LLVMTypeRef::Null;
+		auto fn_type= LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, dummy, 0u, LLVMBool::True );
+		auto fn_ptr_type= LLVMPointerType( fn_type, 0u );
+		auto own_virtual_functions_table_type= LLVMArrayType( fn_ptr_type, own_functions_count );
+
+		virtual_table_struct_fields.push_back( own_virtual_functions_table_type );
+
+		// TODO - maybe create unnamed struct (like a tuple)?
+		class_type.virtual_table_llvm_type= LLVMStructCreateNamed( llvm_context_, virtual_table_type_name.front() );
+		LLVMStructSetBody( class_type.virtual_table_llvm_type, cast_imut(virtual_table_struct_fields).front(), u32(virtual_table_struct_fields.size()), LLVMBool::False );
+	}
 }
 
 } // namespace U

@@ -481,6 +481,7 @@ private:
 
 	// Virtual stuff
 	fn PrepareClassVirtualTable( ClassTypePtr& class_type_ptr );
+	fn PrepareClassVirtualTableType( this, ClassTypePtr& class_type_ptr );
 
 	// Overloading
 

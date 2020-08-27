@@ -867,7 +867,19 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		class_.parents.push_back( move(parent) );
 	}
 
+	// Allocate virtual table pointer, if class have no parents.
+	// If class have at least one parent, reuse it's virtual table pointer.
+	auto allocate_virtual_table_pointer= syntax_element.parents.empty() && (
+		syntax_element.kind_attribute == Synt::Class::KindAttribute::Abstract ||
+		syntax_element.kind_attribute == Synt::Class::KindAttribute::Polymorph ||
+		syntax_element.kind_attribute == Synt::Class::KindAttribute::Interface );
+
 	var ust::vector</ LLVMTypeRef /> mut fields_llvm_types;
+
+	if( allocate_virtual_table_pointer )
+	{
+		unsafe{  fields_llvm_types.push_back( LLVMPointerType( fundamental_llvm_types_.int_ptr, 0u ) );  } // set exact type later.
+	}
 
 	{
 		// Make base class first field. Add parent classes fields.
@@ -895,11 +907,14 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	}
 
 	auto class_members= class_type.lock_imut().get_ref().members;
+	auto mut field_count= 0u;
 	foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
 	{
 		auto field_ptr= member.value().Get</ ClassField />();
 		if( !field_ptr.empty() )
 		{
+			++field_count;
+
 			auto mut field_lock= field_ptr.lock_mut();
 			var ClassField &mut field= field_lock.get_ref();
 
@@ -941,6 +956,23 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		// TODO - maybe build here also inner classes, enums, global variables?
 	}
 
+
+	if( !syntax_element.parents.empty() ||
+		syntax_element.kind_attribute == Synt::Class::KindAttribute::Polymorph ||
+		syntax_element.kind_attribute == Synt::Class::KindAttribute::Interface ||
+		syntax_element.kind_attribute == Synt::Class::KindAttribute::Abstract )
+	{
+		PrepareClassVirtualTable( class_type );
+		PrepareClassVirtualTableType( class_type );
+		if( allocate_virtual_table_pointer )
+		{
+			unsafe
+			{
+				fields_llvm_types.front()= LLVMPointerType( class_type.lock_imut().get_ref().virtual_table_llvm_type, 0u );
+			}
+		}
+	}
+
 	{
 		auto mut class_lock= class_type.lock_mut();
 		var ClassType &mut class_= class_lock.get_ref();
@@ -961,14 +993,6 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				}
 			}
 		}
-	}
-
-	if( !syntax_element.parents.empty() ||
-		syntax_element.kind_attribute == Synt::Class::KindAttribute::Polymorph ||
-		syntax_element.kind_attribute == Synt::Class::KindAttribute::Interface ||
-		syntax_element.kind_attribute == Synt::Class::KindAttribute::Abstract )
-	{
-		PrepareClassVirtualTable( class_type );
 	}
 
 	// Setup class kind.
@@ -999,7 +1023,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			{
 				REPORT_ERROR( BaseClassForInterface, names_scope_ptr, syntax_element.file_pos )
 			}
-			if( fields_llvm_types.size() > class_.parents.size() )
+			if( field_count != 0u )
 			{
 				REPORT_ERROR( FieldsForInterfacesNotAllowed, names_scope_ptr, syntax_element.file_pos )
 			}
