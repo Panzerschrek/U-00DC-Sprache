@@ -479,6 +479,9 @@ fn CodeBuilder::TryFetchVirtualFunction(
 	FunctionVariable& function,
 	FunctionContext &mut function_context ) : tup[ Variable, LLVMValueRef ]
 {
+	auto constexpr c_offset_field_number= 0u;
+	auto constexpr c_funcs_table_field_number= 2u;
+
 	var FunctionType& function_type= function.t;
 
 	// TODO - check reference conversion possibility.
@@ -565,8 +568,6 @@ fn CodeBuilder::TryFetchVirtualFunction(
 			current_class_ptr= ust::to_non_nullable( next_class_ptr );
 		}
 
-		auto constexpr c_funcs_table_field_number= 2u;
-
 		var u32 mut functions_table_field_number= ~0u;
 		{
 			auto current_class_lock= current_class_ptr.lock_imut();
@@ -600,7 +601,45 @@ fn CodeBuilder::TryFetchVirtualFunction(
 				LLVMPointerType( function_type.llvm_type, 0u ),
 				"\0"[0] );
 
-		// TODO - correct also "this" here.
+		// Correct "this" pointer.
+		// Only interfaces may have non-zero offsets. So, make pointer adjustment only for call via interface.
+		if( class_type.kind == ClassType::Kind::Interface )
+		{
+			// Fetch "this" pointer offset. It is located in deepest first virtual table (actual offset should always be zero).
+			var LLVMValueRef mut first_root_virtual_table= virtual_table_ptr;
+
+			for( auto mut current_class_ptr= class_type_ptr; !current_class_ptr.lock_imut().get_ref().parents.empty(); )
+			{
+				var [ LLVMValueRef, 2 ] index_list [ GetZeroGEPIndex(), GetZeroGEPIndex() ];
+				first_root_virtual_table=
+					LLVMBuildGEP( function_context.llvm_ir_builder, first_root_virtual_table, index_list[0], 2u, "\0"[0] );
+
+				var ust::shared_ptr_nullable_mut</ClassType/> mut next_class_ptr;
+				foreach( &parent : current_class_ptr.lock_imut().get_ref().parents )
+				{
+					if( parent.field_number == 0u )
+					{
+						next_class_ptr= parent.class_;
+						break;
+					}
+				}
+				current_class_ptr= ust::to_non_nullable( next_class_ptr );
+			}
+
+			var [ LLVMValueRef, 2 ] offset_indeces
+			[
+				GetZeroGEPIndex(),
+				LLVMConstInt( fundamental_llvm_types_.u32_, u64(c_offset_field_number), LLVMBool::False )
+			];
+			auto offset_ptr=
+				LLVMBuildGEP( function_context.llvm_ir_builder, first_root_virtual_table, offset_indeces[0], 2u, "\0"[0] );
+
+			auto offset= LLVMBuildLoad( function_context.llvm_ir_builder, offset_ptr, "\0"[0] );
+
+			auto this_ptr_as_int= LLVMBuildPtrToInt( function_context.llvm_ir_builder, this_casted.llvm_value, fundamental_llvm_types_.int_ptr, "\0"[0] );
+			auto this_sub_offset= LLVMBuildSub( function_context.llvm_ir_builder, this_ptr_as_int, offset, "\0"[0] );
+			this_casted.llvm_value= LLVMBuildIntToPtr( function_context.llvm_ir_builder, this_sub_offset, LLVMPointerType( this_casted.t.GetLLVMType(), 0u ), "\0"[0] );
+		}
 
 		var tup[ Variable, LLVMValueRef ] mut res[ this_casted, function_ptr ];
 		return move(res);

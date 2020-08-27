@@ -270,6 +270,8 @@ fn nomangle LLVMBuildFPTrunc(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeR
 fn nomangle LLVMBuildFPExt(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildPointerCast(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildPtrToInt(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildIntToPtr(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
+
 
 // Attributes
 fn nomangle LLVMCreateEnumAttribute(LLVMContextRef C, u32 KindID, u64 Val) unsafe : LLVMAttributeRef;
