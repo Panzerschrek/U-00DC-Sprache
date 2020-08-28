@@ -439,18 +439,16 @@ fn CodeBuilder::SetupVirtualTablePointers_r(
 		}
 	}
 
-	// Store virtual table pointer for current class.
-	// Overwrite, if needed, first parent virtual table.
-	unsafe
+	// Store virtual table pointer only if it allocated in current class.
+	if( class_type.parents.empty() )
 	{
-		LLVMBuildStore(
-			function_context.llvm_ir_builder,
-			ptr_to_vtable_ptr,
-			LLVMBuildPointerCast(
-				function_context.llvm_ir_builder,
-				this_,
-				LLVMPointerType( LLVMPointerType( class_type.virtual_table_llvm_type, 0u ) 0u ),
-				"\0"[0] ) );
+		unsafe
+		{
+			var [ LLVMValueRef, 2 ] indexes[ GetZeroGEPIndex(), GetZeroGEPIndex() ];
+			auto vtable_ptr= LLVMBuildGEP( function_context.llvm_ir_builder, this_, indexes[0], 2u, "\0"[0] );
+
+			LLVMBuildStore( function_context.llvm_ir_builder, ptr_to_vtable_ptr, vtable_ptr );
+		}
 	}
 }
 
