@@ -2199,7 +2199,7 @@ fn CodeBuilder::CreateFieldGEP( this, LLVMValueRef value, ClassField& field, Fun
 	}
 }
 
-fn CodeBuilder::CreateParentFiledGEP( this, LLVMValueRef value, ClassType::Parent& parent, FunctionContext& function_context ) : LLVMValueRef
+fn CodeBuilder::CreateParentFieldGEP( this, LLVMValueRef value, ClassType::Parent& parent, FunctionContext& function_context ) : LLVMValueRef
 {
 	unsafe
 	{

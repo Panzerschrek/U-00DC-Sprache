@@ -306,7 +306,7 @@ fn CodeBuilder::BuildClassVirtualTable_r( this, ClassType& ancestor_class, Class
 	{
 		if( parent.field_number != 0u )
 		{
-			auto offset_ptr= CreateParentFiledGEP( dst_class_ptr_null_based, parent, function_context );
+			auto offset_ptr= CreateParentFieldGEP( dst_class_ptr_null_based, parent, function_context );
 			initializer_values.push_back( BuildClassVirtualTable_r( parent.class_.lock_imut().get_ref(), dst_class, offset_ptr ) );
 		}
 	}
@@ -416,12 +416,7 @@ fn CodeBuilder::SetupVirtualTablePointers_r(
 	{
 		unsafe
 		{
-			var [ LLVMValueRef, 2 ] this_indexes
-			[
-				GetZeroGEPIndex(),
-				LLVMConstInt( fundamental_llvm_types_.u32_, u64(parent.field_number), LLVMBool::False )
-			];
-			auto parent_ptr= LLVMBuildGEP( function_context.llvm_ir_builder, this_, this_indexes[0], 2u, "\0"[0] );
+			auto parent_ptr= CreateParentFieldGEP( this_, parent, function_context );
 
 			var [ LLVMValueRef, 2 ] vtable_indexes
 			[
