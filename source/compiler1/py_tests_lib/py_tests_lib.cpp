@@ -578,6 +578,10 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"VirtualFunctionCallTest5",
 		"VirtualFunctionCallTest6",
 		"VirtualFunctionDeclaration_Test",
+		"VirtualOperatorCall_Test0",
+		"VirtualOperatorCall_Test1",
+		"VirtualOperatorCall_Test2",
+		"VirtualOperatorCall_Test3",
 	};
 
 	if( std::find_if(

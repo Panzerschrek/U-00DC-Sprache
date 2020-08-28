@@ -805,12 +805,15 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 		} ];
 
 		auto operator= select( delta == 1 ? OverloadedOperator::Increment : OverloadedOperator::Decrement );
-		if_var( &overloaded_operator : GetOverloadedOperator( args, operator, names_scope, file_pos ) )
+		if_var( mut overloaded_operator : GetOverloadedOperator( args, operator, names_scope, file_pos ) )
 		{
+			auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
+			overloaded_operator.llvm_function= fetch_result[1];
+
 			DoCallFunction(
 				names_scope,
 				function_context,
-				ust::optional_ref</ Variable, false />(variable),
+				ust::optional_ref</ Variable, false />(fetch_result[0]),
 				overloaded_operator,
 				ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
 				file_pos );
