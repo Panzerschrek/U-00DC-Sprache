@@ -353,6 +353,17 @@ struct Function
 	FilePos file_pos;
 	ust::vector</ ust::string8 /> name; // A, A::B, A::B::C::D, ::A, ::A::B
 	OverloadedOperator operator= OverloadedOperator::None;
+
+	enum VirtualKind : u8
+	{
+		None, // Regular, non-virtual
+		DeclareVirtual,
+		VirtualOverride,
+		VirtualFinal,
+		VirtualPure,
+	}
+	VirtualKind virtual_kind= VirtualKind::None;
+
 	FunctionType function_type;
 	ust::box_nullable</Block/> block; // null for prototype
 	ust::box_nullable</StructNamedInitializer/> constructor_initializer_list;

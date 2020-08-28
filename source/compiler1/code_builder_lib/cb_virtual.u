@@ -1,0 +1,642 @@
+import "../lex_synt_lib/keywords.uh"
+import "error_reporting.uh"
+import "code_builder.uh"
+import "mangling.uh"
+
+namespace U
+{
+
+fn CodeBuilder::PrepareClassVirtualTable( ClassTypePtr& class_type_ptr )
+{
+	// Class now should not be complete, but parents and functions should be known.
+	// Also, parent namespaces should not be merged into class namespace before call of this function.
+
+	auto mut class_lock= class_type_ptr.lock_mut();
+	var ClassType &mut class_type= class_lock.get_ref();
+
+	// First, borrow virtual table of parent with 0 offset.
+	// Class reuses virtual table pointer of first parent, so, virtual table layout must be equal.
+	for( auto mut i= 0s; i < class_type.parents.size(); ++i )
+	{
+		if( class_type.parents[i].field_number != 0u )
+		{
+			continue;
+		}
+
+		auto parent_ptr= class_type.parents[i].class_;
+		auto parent_lock= parent_ptr.lock_imut();
+		var ClassType& parent= parent_lock.get_ref();
+
+		for( auto mut j= 0s; j < parent.virtual_table.size(); ++j )
+		{
+			var ClassType::VirtualTableEntry mut entry_copy= parent.virtual_table[j];
+			entry_copy.index_in_table= u32(j);
+			entry_copy.parent_virtual_table_index= u32(i);
+
+			class_type.virtual_table.push_back( move(entry_copy) );
+		} // for parent virtual table entries
+	} // for parents
+
+	// Then, add virtual functions from other parents.
+	for( auto mut i= 0s; i < class_type.parents.size(); ++i )
+	{
+		if( class_type.parents[i].field_number == 0u )
+		{
+			continue;
+		}
+
+		auto parent_ptr= class_type.parents[i].class_;
+		auto parent_lock= parent_ptr.lock_imut();
+		var ClassType& parent= parent_lock.get_ref();
+
+		for( auto mut j= 0s; j < parent.virtual_table.size(); ++j )
+		{
+			var ClassType::VirtualTableEntry& parent_virtual_table_entry= parent.virtual_table[j];
+
+			var bool mut already_exists_in_vtable= false;
+			foreach( &virtual_table_entry : class_type.virtual_table )
+			{
+				if( virtual_table_entry.name == parent_virtual_table_entry.name &&
+					virtual_table_entry.function_variable.VirtuallyEquals( parent_virtual_table_entry.function_variable ) )
+				{
+					already_exists_in_vtable= true;
+					break;
+				}
+			}
+
+			if( already_exists_in_vtable )
+			{
+				continue;
+			}
+
+			var ClassType::VirtualTableEntry mut entry_copy= parent_virtual_table_entry;
+			entry_copy.index_in_table= u32(j);
+			entry_copy.parent_virtual_table_index= u32(i);
+
+			class_type.virtual_table.push_back( move(entry_copy) );
+		} // for parent virtual table entries
+	} // for parents
+
+	// Process functions.
+	var u32 mut own_virtual_table_index= 0u;
+	// TODO - process functions in some strong order, not in order of hash table. This is needed because we needs stable order of functions in virtual table.
+	auto class_members_ptr= class_type.members;
+	foreach( &class_member : class_members_ptr.lock_imut().get_ref().GetInternalContainer() )
+	{
+		auto functions_set_ptr= class_member.value().Get</NamesScopeFunctionsSet/>();
+		if( functions_set_ptr.empty() )
+		{
+			continue;
+		}
+
+		var ust::string8& function_name= class_member.key();
+
+		auto mut functions_set_lock= functions_set_ptr.lock_mut();
+		foreach( &mut function : functions_set_lock.get_ref().functions_set.functions )
+		{
+			if( !function.is_this_call )
+			{
+				continue; // May be in case of error
+			}
+
+			auto mut virtual_table_index= ~0u;
+			for( auto mut i= 0s; i < class_type.virtual_table.size(); ++i )
+			{
+				var ClassType::VirtualTableEntry& entry= class_type.virtual_table[i];
+				if( function_name == entry.name && function.VirtuallyEquals( entry.function_variable ) )
+				{
+					virtual_table_index= u32(i);
+					break;
+				}
+			}
+
+			auto file_pos= select(
+				function.body_syntax_element.empty()
+				? function.prototype_syntax_element.get_ref().file_pos
+				: function.body_syntax_element.get_ref().file_pos );
+
+			auto virtual_kind= select(
+				function.body_syntax_element.empty()
+				? function.prototype_syntax_element.get_ref().virtual_kind
+				: function.body_syntax_element.get_ref().virtual_kind );
+
+			if( virtual_kind == Synt::Function::VirtualKind::None )
+			{
+				if( function_name == KeywordToString( Keyword::destructor_ ) )
+				{
+					// TODO
+				}
+				if( virtual_table_index != ~0u )
+				{
+					REPORT_ERROR( VirtualRequired, class_members_ptr, file_pos, function_name )
+				}
+			}
+			else if( virtual_kind == Synt::Function::VirtualKind::DeclareVirtual )
+			{
+				if( virtual_table_index != ~0u )
+				{
+					REPORT_ERROR( OverrideRequired, class_members_ptr, file_pos, function_name )
+				}
+				else
+				{
+					function.virtual_table_index= u32(class_type.virtual_table.size());
+
+					var ClassType::VirtualTableEntry mut new_virtual_table_entry
+					{
+						.name= function_name,
+						.function_variable= function,
+						.is_pure= false,
+						.is_final= false,
+						.index_in_table= own_virtual_table_index,
+						.parent_virtual_table_index= ~0u,
+					};
+					class_type.virtual_table.push_back( move( new_virtual_table_entry ) );
+					++own_virtual_table_index;
+				}
+			}
+			else if( virtual_kind == Synt::Function::VirtualKind::VirtualOverride )
+			{
+				if( virtual_table_index == ~0u )
+				{
+					REPORT_ERROR( FunctionDoesNotOverride, class_members_ptr, file_pos, function_name )
+				}
+				else if( class_type.virtual_table[virtual_table_index].is_final )
+				{
+					REPORT_ERROR( OverrideFinalFunction, class_members_ptr, file_pos, function_name )
+				}
+				else
+				{
+					function.virtual_table_index= virtual_table_index;
+					var ClassType::VirtualTableEntry &mut entry= class_type.virtual_table[virtual_table_index];
+					entry.function_variable= function;
+					entry.is_pure= false;
+				}
+			}
+			else if( virtual_kind == Synt::Function::VirtualKind::VirtualFinal )
+			{
+				if( virtual_table_index == ~0u )
+				{
+					REPORT_ERROR( FinalForFirstVirtualFunction, class_members_ptr, file_pos, function_name )
+				}
+				else if( class_type.virtual_table[virtual_table_index].is_final )
+				{
+					REPORT_ERROR( OverrideFinalFunction, class_members_ptr, file_pos, function_name )
+				}
+				else
+				{
+					function.virtual_table_index= virtual_table_index;
+					var ClassType::VirtualTableEntry &mut entry= class_type.virtual_table[virtual_table_index];
+					entry.function_variable= function;
+					entry.is_pure= false;
+					entry.is_final= true;
+				}
+			}
+			else if( virtual_kind == Synt::Function::VirtualKind::VirtualPure )
+			{
+				if( virtual_table_index != ~0u )
+				{
+					REPORT_ERROR( OverrideRequired, class_members_ptr, file_pos, function_name )
+				}
+				else
+				{
+					if( !function.body_syntax_element.empty() )
+					{
+						REPORT_ERROR( BodyForPureVirtualFunction, class_members_ptr, file_pos, function_name )
+					}
+					if( function_name == KeywordToString( Keyword::destructor_ ) )
+					{
+						REPORT_ERROR( PureDestructor, class_members_ptr, file_pos, ust::string8("/TODO - name") )
+					}
+
+					// TODO - prevent body generation for pure functions.
+
+					function.virtual_table_index= u32(class_type.virtual_table.size());
+
+					var ClassType::VirtualTableEntry mut new_virtual_table_entry
+					{
+						.name= function_name,
+						.function_variable= function,
+						.is_pure= true,
+						.is_final= false,
+						.index_in_table= own_virtual_table_index,
+						.parent_virtual_table_index= ~0u,
+					};
+					class_type.virtual_table.push_back( move( new_virtual_table_entry ) );
+					++own_virtual_table_index;
+				}
+			}
+			else{ halt; }
+
+		} // for functions
+	} // for class members
+}
+
+fn CodeBuilder::PrepareClassVirtualTableType( this, ClassTypePtr& class_type_ptr )
+{
+	var ust::string8 mut virtual_table_type_name= "_vtable_type_";
+	virtual_table_type_name+= MangleType( class_type_ptr );
+
+	auto mut class_lock= class_type_ptr.lock_mut();
+	var ClassType &mut class_type= class_lock.get_ref();
+
+	var ust::vector</LLVMTypeRef/> mut virtual_table_struct_fields;
+
+	// First, add first class virtual table, then, virtual tables of other parent classes.
+	foreach( &parent : class_type.parents )
+	{
+		if( parent.field_number == 0u )
+		{
+			virtual_table_struct_fields.push_back( parent.class_.lock_imut().get_ref().virtual_table_llvm_type );
+		}
+	}
+	foreach( &parent : class_type.parents )
+	{
+		if( parent.field_number != 0u )
+		{
+			virtual_table_struct_fields.push_back( parent.class_.lock_imut().get_ref().virtual_table_llvm_type );
+		}
+	}
+
+	if( virtual_table_struct_fields.empty() )
+	{
+		// No parents - create special fields - base offset, type id, etc.
+		virtual_table_struct_fields.push_back( fundamental_llvm_types_.int_ptr ); // Offset field.
+		unsafe {  virtual_table_struct_fields.push_back( LLVMPointerType( fundamental_llvm_types_.int_ptr, 0u ) );   } // type_id field
+	}
+
+	auto mut own_functions_count= 0u;
+	foreach( &entry : class_type.virtual_table )
+	{
+		if( entry.parent_virtual_table_index == ~0u )
+		{
+			++own_functions_count;
+		}
+	}
+
+	unsafe
+	{
+		auto dummy= LLVMTypeRef::Null;
+		auto fn_type= LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, dummy, 0u, LLVMBool::True );
+		auto fn_ptr_type= LLVMPointerType( fn_type, 0u );
+		auto own_virtual_functions_table_type= LLVMArrayType( fn_ptr_type, own_functions_count );
+
+		virtual_table_struct_fields.push_back( own_virtual_functions_table_type );
+
+		// TODO - maybe create unnamed struct (like a tuple)?
+		class_type.virtual_table_llvm_type= LLVMStructCreateNamed( llvm_context_, virtual_table_type_name.front() );
+		LLVMStructSetBody( class_type.virtual_table_llvm_type, cast_imut(virtual_table_struct_fields).front(), u32(virtual_table_struct_fields.size()), LLVMBool::False );
+	}
+}
+
+fn CodeBuilder::BuildClassVirtualTable_r( this, ClassType& ancestor_class, ClassType& dst_class, LLVMValueRef dst_class_ptr_null_based ) : LLVMValueRef
+{
+	var ust::vector</LLVMValueRef/> mut initializer_values;
+
+	auto mut function_context= CreateGlobalFunctionContext();
+
+	foreach( &parent : ancestor_class.parents )
+	{
+		if( parent.field_number == 0u )
+		{
+			auto offset_ptr= CreateBaseClassFieldGEP( dst_class_ptr_null_based, function_context );
+			initializer_values.push_back( BuildClassVirtualTable_r( parent.class_.lock_imut().get_ref(), dst_class, offset_ptr ) );
+		}
+	}
+	foreach( &parent : ancestor_class.parents )
+	{
+		if( parent.field_number != 0u )
+		{
+			auto offset_ptr= CreateParentFieldGEP( dst_class_ptr_null_based, parent, function_context );
+			initializer_values.push_back( BuildClassVirtualTable_r( parent.class_.lock_imut().get_ref(), dst_class, offset_ptr ) );
+		}
+	}
+
+	unsafe // Unsafe because a lot of C functions calls.
+	{
+		if( initializer_values.empty() )
+		{
+			// offset
+			initializer_values.push_back(
+				LLVMBuildPtrToInt( function_context.llvm_ir_builder, dst_class_ptr_null_based, fundamental_llvm_types_.int_ptr, "\0"[0] ) );
+
+			// TODO - Type id
+			initializer_values.push_back( LLVMConstNull( LLVMPointerType( fundamental_llvm_types_.int_ptr, 0u ) ) );
+		}
+
+		auto array_type= LLVMStructGetTypeAtIndex( ancestor_class.virtual_table_llvm_type, u32(initializer_values.size() ) );
+		auto fn_type_ptr= LLVMGetElementType( array_type );
+
+		var ust::vector</LLVMValueRef/> mut function_pointers_initializer_values;
+
+		foreach( &ancestor_virtual_table_entry : ancestor_class.virtual_table )
+		{
+			if( ancestor_virtual_table_entry.parent_virtual_table_index != ~0u )
+			{
+				continue;
+			}
+
+			auto mut func= ancestor_virtual_table_entry.function_variable.llvm_function;
+			foreach( &dst_virtual_table_entry : dst_class.virtual_table )
+			{
+				if( dst_virtual_table_entry.name == ancestor_virtual_table_entry.name &&
+					dst_virtual_table_entry.function_variable.VirtuallyEquals( ancestor_virtual_table_entry.function_variable ) )
+				{
+					func= dst_virtual_table_entry.function_variable.llvm_function;
+					break;
+				}
+			}
+
+			unsafe
+			{
+				auto function_pointer_casted= LLVMBuildPointerCast( function_context.llvm_ir_builder, func, fn_type_ptr, "\0"[0] );
+				function_pointers_initializer_values.push_back( function_pointer_casted );
+			}
+		}
+
+		if( function_pointers_initializer_values.empty() )
+		{
+			initializer_values.push_back( LLVMConstNull( array_type ) );
+		}
+		else
+		{
+			initializer_values.push_back( LLVMConstArray( fn_type_ptr, cast_imut(function_pointers_initializer_values).front(), u32(function_pointers_initializer_values.size()) ) );
+		}
+
+		return LLVMConstNamedStruct( ancestor_class.virtual_table_llvm_type, cast_imut(initializer_values).front(), u32(initializer_values.size()) );
+	}
+}
+
+fn CodeBuilder::BuildClassVirtualTable( this, ClassTypePtr& class_type_ptr )
+{
+	auto mut virtual_table_initializer= LLVMValueRef::Null;
+	{
+		auto class_lock= class_type_ptr.lock_imut();
+		auto& class_= class_lock.get_ref();
+
+		// Build virtual table only for polymorph non-abstract classes.
+		if( !(
+			class_.kind == ClassType::Kind::PolymorphNonFinal ||
+			class_.kind == ClassType::Kind::PolymorphFinal ) )
+		{
+			return;
+		}
+
+		auto mut this_nullptr= LLVMValueRef::Null;
+		unsafe{  this_nullptr= LLVMConstNull( LLVMPointerType( class_type_ptr.lock_imut().get_ref().llvm_type, 0u ) );  }
+
+		virtual_table_initializer= BuildClassVirtualTable_r( class_, class_, this_nullptr );
+	}
+
+	auto name_mangled= MangleVirtualTable( class_type_ptr );
+
+	auto mut class_lock= class_type_ptr.lock_mut();
+	auto &mut class_= class_lock.get_ref();
+
+	unsafe
+	{
+		auto global_variable= LLVMAddGlobal( module_, class_.virtual_table_llvm_type, name_mangled.front() );
+		LLVMSetLinkage( global_variable, LLVMLinkage::Internal );
+		LLVMSetGlobalConstant( global_variable, LLVMBool::True );
+		LLVMSetInitializer( global_variable, virtual_table_initializer );
+
+		class_.virtual_table_llvm_variable= global_variable;
+	}
+}
+
+fn CodeBuilder::SetupVirtualTablePointers_r(
+	this,
+	LLVMValueRef this_,
+	LLVMValueRef ptr_to_vtable_ptr,
+	ClassType& class_type,
+	FunctionContext &mut function_context )
+{
+	// Setup virtual table pointers for parents.
+	auto mut vtable_field_number= 1u;
+	foreach( &parent : class_type.parents )
+	{
+		unsafe
+		{
+			auto parent_ptr= CreateParentFieldGEP( this_, parent, function_context );
+
+			var [ LLVMValueRef, 2 ] vtable_indexes
+			[
+				GetZeroGEPIndex(),
+				LLVMConstInt( fundamental_llvm_types_.u32_, u64( select( parent.field_number == 0u ? 0u : vtable_field_number ) ), LLVMBool::False )
+			];
+			auto vtable_ptr= LLVMBuildGEP( function_context.llvm_ir_builder, ptr_to_vtable_ptr, vtable_indexes[0], 2u, "\0"[0] );
+
+			SetupVirtualTablePointers_r( parent_ptr, vtable_ptr, parent.class_.lock_imut().get_ref(), function_context );
+
+		}
+		if( parent.field_number != 0u )
+		{
+			++vtable_field_number;
+		}
+	}
+
+	// Store virtual table pointer only if it allocated in current class.
+	if( class_type.parents.empty() )
+	{
+		unsafe
+		{
+			var [ LLVMValueRef, 2 ] indexes[ GetZeroGEPIndex(), GetZeroGEPIndex() ];
+			auto vtable_ptr= LLVMBuildGEP( function_context.llvm_ir_builder, this_, indexes[0], 2u, "\0"[0] );
+
+			LLVMBuildStore( function_context.llvm_ir_builder, ptr_to_vtable_ptr, vtable_ptr );
+		}
+	}
+}
+
+fn CodeBuilder::SetupVirtualTablePointers(
+	this,
+	LLVMValueRef this_,
+	ClassTypePtr& class_type_ptr,
+	FunctionContext &mut function_context )
+{
+	auto class_type_lock= class_type_ptr.lock_imut();
+	auto& class_type= class_type_lock.get_ref();
+
+	if( !(
+		class_type.kind == ClassType::Kind::PolymorphNonFinal ||
+		class_type.kind == ClassType::Kind::PolymorphFinal ) )
+	{
+		return;
+	}
+
+	if( class_type.virtual_table_llvm_variable == LLVMValueRef::Null )
+	{
+		return; // May be in case of errors.
+	}
+
+	SetupVirtualTablePointers_r( this_, class_type.virtual_table_llvm_variable, class_type, function_context );
+}
+
+fn CodeBuilder::TryFetchVirtualFunction(
+	this,
+	Variable& this_,
+	FunctionVariable& function,
+	FunctionContext &mut function_context ) : tup[ Variable, LLVMValueRef ]
+{
+	auto constexpr c_offset_field_number= 0u;
+	auto constexpr c_funcs_table_field_number= 2u;
+
+	var FunctionType& function_type= function.t;
+
+	// TODO - check reference conversion possibility.
+
+	var Variable mut this_casted= this_;
+	if( this_.t != function_type.args.front().arg_type.get_ref() )
+	{
+		this_casted.t= function_type.args.front().arg_type.get_ref();
+		this_casted.llvm_value= CreateReferenceCast( this_.llvm_value, this_.t, this_casted.t, function_context );
+	}
+	if( function.virtual_table_index == ~0u )
+	{
+		var tup[ Variable, LLVMValueRef ] mut res[ this_casted, function.llvm_function ];
+		return move(res);
+	}
+
+	auto class_type_ptr= this_casted.t.GetClassType().get_ref();
+	auto class_type_lock= class_type_ptr.lock_imut();
+	auto& class_type= class_type_lock.get_ref();
+
+	unsafe // Unsafe because a lot of C calls.
+	{
+		// Fetch vtable pointer.
+		// Virtual table pointer is always first field.
+		auto ptr_to_virtual_table_ptr=
+			LLVMBuildPointerCast(
+				function_context.llvm_ir_builder,
+				this_casted.llvm_value,
+				LLVMPointerType( LLVMPointerType( class_type.virtual_table_llvm_type, 0u ) 0u ),
+				"\0"[0] );
+
+		auto virtual_table_ptr= LLVMBuildLoad( function_context.llvm_ir_builder, ptr_to_virtual_table_ptr, "\0"[0] );
+
+		var ClassType::VirtualTableEntry& first_virtual_table_entry= class_type.virtual_table[ function.virtual_table_index ];
+		auto mut parent_virtual_table_index= first_virtual_table_entry.parent_virtual_table_index;
+		auto mut index_in_table= first_virtual_table_entry.index_in_table;
+		var ClassTypePtr mut current_class_ptr= class_type_ptr;
+		var LLVMValueRef mut function_virtual_table= virtual_table_ptr;
+		while( parent_virtual_table_index != ~0u )
+		{
+			auto current_class_ptr_copy= current_class_ptr;
+			auto current_class_lock= current_class_ptr_copy.lock_imut();
+			auto& current_class= current_class_lock.get_ref();
+
+			auto mut field_index= ~0u;
+			if( current_class.parents[ parent_virtual_table_index ].field_number == 0u )
+			{
+				field_index= 0u;
+			}
+			else
+			{
+				field_index= 1u;
+				for( auto mut i= 0s; i < size_type(parent_virtual_table_index); ++i )
+				{
+					if( current_class.parents[i].field_number != 0u )
+					{
+						++field_index;
+					}
+				}
+			}
+
+			unsafe
+			{
+				var [ LLVMValueRef, 2 ] index_list
+				[
+					GetZeroGEPIndex(),
+					LLVMConstInt( fundamental_llvm_types_.u32_, u64(field_index), LLVMBool::False )
+				];
+				function_virtual_table= LLVMBuildGEP( function_context.llvm_ir_builder, function_virtual_table, index_list[0], 2u, "\0"[0] );
+			}
+
+			auto next_class_ptr= current_class.parents[ parent_virtual_table_index ].class_;
+
+			auto next_class_lock= next_class_ptr.lock_imut();
+			auto& next_class= next_class_lock.get_ref();
+			var ClassType::VirtualTableEntry& next_virtual_table_entry= next_class.virtual_table[ index_in_table ];
+			parent_virtual_table_index= next_virtual_table_entry.parent_virtual_table_index;
+			index_in_table= next_virtual_table_entry.index_in_table;
+
+			current_class_ptr= next_class_ptr;
+		}
+
+		var u32 mut functions_table_field_number= ~0u;
+		{
+			auto current_class_lock= current_class_ptr.lock_imut();
+			auto& current_class= current_class_lock.get_ref();
+			functions_table_field_number= select( current_class.parents.empty() ? c_funcs_table_field_number : u32( current_class.parents.size() ) );
+		}
+
+		var [ LLVMValueRef, 2 ] functions_table_indeces
+		[
+			GetZeroGEPIndex(),
+			LLVMConstInt( fundamental_llvm_types_.u32_, u64(functions_table_field_number), LLVMBool::False )
+		];
+		auto functions_table_ptr=
+			LLVMBuildGEP( function_context.llvm_ir_builder,  function_virtual_table, functions_table_indeces[0], 2u, "\0"[0] );
+
+		// Fetch function.
+		var [ LLVMValueRef, 2 ] function_ptr_indexes
+		[
+			GetZeroGEPIndex(),
+			LLVMConstInt( fundamental_llvm_types_.u32_, u64(index_in_table), LLVMBool::False )
+		];
+		auto ptr_to_function_ptr=
+			LLVMBuildGEP( function_context.llvm_ir_builder, functions_table_ptr, function_ptr_indexes[0], 2u, "\0"[0] );
+
+		auto abstract_function_ptr= LLVMBuildLoad( function_context.llvm_ir_builder, ptr_to_function_ptr, "\0"[0] );
+
+		auto function_ptr=
+			LLVMBuildPointerCast(
+				function_context.llvm_ir_builder,
+				abstract_function_ptr,
+				LLVMPointerType( function_type.llvm_type, 0u ),
+				"\0"[0] );
+
+		// Correct "this" pointer.
+		// Only interfaces may have non-zero offsets. So, make pointer adjustment only for call via interface.
+		if( class_type.kind == ClassType::Kind::Interface )
+		{
+			// Fetch "this" pointer offset. It is located in deepest first virtual table (actual offset should always be zero).
+			var LLVMValueRef mut first_root_virtual_table= virtual_table_ptr;
+
+			for( auto mut current_class_ptr= class_type_ptr; !current_class_ptr.lock_imut().get_ref().parents.empty(); )
+			{
+				var [ LLVMValueRef, 2 ] index_list[ GetZeroGEPIndex(), GetZeroGEPIndex() ];
+				first_root_virtual_table=
+					LLVMBuildGEP( function_context.llvm_ir_builder, first_root_virtual_table, index_list[0], 2u, "\0"[0] );
+
+				auto current_class_ptr_copy= current_class_ptr;
+				foreach( &parent : current_class_ptr_copy.lock_imut().get_ref().parents )
+				{
+					if( parent.field_number == 0u )
+					{
+						current_class_ptr= parent.class_;
+						break;
+					}
+				}
+			}
+
+			var [ LLVMValueRef, 2 ] offset_indeces
+			[
+				GetZeroGEPIndex(),
+				LLVMConstInt( fundamental_llvm_types_.u32_, u64(c_offset_field_number), LLVMBool::False )
+			];
+			auto offset_ptr=
+				LLVMBuildGEP( function_context.llvm_ir_builder, first_root_virtual_table, offset_indeces[0], 2u, "\0"[0] );
+
+			auto offset= LLVMBuildLoad( function_context.llvm_ir_builder, offset_ptr, "\0"[0] );
+
+			auto this_ptr_as_int= LLVMBuildPtrToInt( function_context.llvm_ir_builder, this_casted.llvm_value, fundamental_llvm_types_.int_ptr, "\0"[0] );
+			auto this_sub_offset= LLVMBuildSub( function_context.llvm_ir_builder, this_ptr_as_int, offset, "\0"[0] );
+			this_casted.llvm_value= LLVMBuildIntToPtr( function_context.llvm_ir_builder, this_sub_offset, LLVMPointerType( this_casted.t.GetLLVMType(), 0u ), "\0"[0] );
+		}
+
+		var tup[ Variable, LLVMValueRef ] mut res[ this_casted, function_ptr ];
+		return move(res);
+	}
+}
+
+} // namespace U

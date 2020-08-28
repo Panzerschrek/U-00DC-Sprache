@@ -133,6 +133,10 @@ fn nomangle LLVMStructCreateNamed(LLVMContextRef C, NullTerminatedString& Name) 
 fn nomangle LLVMStructSetBody(LLVMTypeRef StructTy, LLVMTypeRef& ElementTypes, u32 ElementCount, LLVMBool Packed) unsafe;
 fn nomangle LLVMIsOpaqueStruct(LLVMTypeRef StructTy) unsafe : LLVMBool;
 
+fn nomangle LLVMStructGetTypeAtIndex(LLVMTypeRef StructTy, u32 i) unsafe : LLVMTypeRef;
+fn nomangle LLVMGetElementType(LLVMTypeRef Ty) unsafe : LLVMTypeRef;
+
+
 // Value
 
 fn nomangle LLVMTypeOf(LLVMValueRef Val) unsafe : LLVMTypeRef;
@@ -191,6 +195,7 @@ fn nomangle LLVMConstReal(LLVMTypeRef RealTy, f64 N) unsafe : LLVMValueRef;
 fn nomangle LLVMGetUndef(LLVMTypeRef Ty) unsafe : LLVMValueRef;
 fn nomangle LLVMConstNull(LLVMTypeRef Ty) unsafe : LLVMValueRef; /* all zeroes */
 fn nomangle LLVMConstArray(LLVMTypeRef ElementTy, LLVMValueRef& ConstantVals, u32 Length)  unsafe : LLVMValueRef;
+fn nomangle LLVMConstNamedStruct(LLVMTypeRef StructTy, LLVMValueRef& ConstantVals, u32 Count) unsafe : LLVMValueRef;
 
 fn nomangle LLVMConstExtractValue(LLVMValueRef AggConstant, u32& IdxList, u32 NumIdx) unsafe : LLVMValueRef;
 
@@ -264,6 +269,9 @@ fn nomangle LLVMBuildSIToFP(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRe
 fn nomangle LLVMBuildFPTrunc(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildFPExt(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildPointerCast(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildPtrToInt(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildIntToPtr(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
+
 
 // Attributes
 fn nomangle LLVMCreateEnumAttribute(LLVMContextRef C, u32 KindID, u64 Val) unsafe : LLVMAttributeRef;

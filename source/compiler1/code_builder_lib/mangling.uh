@@ -26,4 +26,7 @@ fn MangleType( Type& t ) : ust::string8;
 // Returns null terminated string.
 fn MangleTemplateArgs( TemplateArgsFinished& template_args ) : ust::string8;
 
+// Returns null terminated string.
+fn MangleVirtualTable( Type& t ) : ust::string8;
+
 } // namespace U

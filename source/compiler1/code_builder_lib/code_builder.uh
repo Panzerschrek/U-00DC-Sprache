@@ -479,6 +479,32 @@ private:
 
 	fn TypeIsValidForTemplateVariableArgument( Type& t ) : bool;
 
+	// Virtual stuff
+	fn PrepareClassVirtualTable( ClassTypePtr& class_type_ptr );
+	fn PrepareClassVirtualTableType( this, ClassTypePtr& class_type_ptr );
+
+	fn BuildClassVirtualTable_r( this, ClassType& ancestor_class, ClassType& dst_class, LLVMValueRef dst_class_ptr_null_based ) : LLVMValueRef;
+	fn BuildClassVirtualTable( this, ClassTypePtr& class_type_ptr );
+
+	fn SetupVirtualTablePointers_r(
+		this,
+		LLVMValueRef this_,
+		LLVMValueRef ptr_to_vtable_ptr,
+		ClassType& class_type,
+		FunctionContext &mut function_context );
+
+	fn SetupVirtualTablePointers(
+		this,
+		LLVMValueRef this_,
+		ClassTypePtr& class_type_ptr,
+		FunctionContext &mut function_context );
+
+	fn TryFetchVirtualFunction(
+		this,
+		Variable& this_,
+		FunctionVariable& function,
+		FunctionContext &mut function_context ) : tup[ Variable, LLVMValueRef ];
+
 	// Overloading
 
 	fn ApplyOverloadedFunction(
@@ -545,6 +571,7 @@ private:
 	fn CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Type& dst_type, FunctionContext& function_context ) : LLVMValueRef;
 
 	fn CreateFieldGEP( this, LLVMValueRef value, ClassField& field, FunctionContext& function_context ) : LLVMValueRef;
+	fn CreateParentFieldGEP( this, LLVMValueRef value, ClassType::Parent& parent, FunctionContext& function_context ) : LLVMValueRef;
 	fn CreateBaseClassFieldGEP( this, LLVMValueRef value, FunctionContext& function_context ) : LLVMValueRef;
 
 	struct InstructionsState

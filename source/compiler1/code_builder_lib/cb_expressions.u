@@ -391,9 +391,12 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		];
 
 		// TODO - is this correct to pass preevaluated args? Maybe evaluate args in "DoCallFunction" instead?
-		if_var( &overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::Indexing, names_scope, indexation_operator.file_pos ) )
+		if_var( mut overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::Indexing, names_scope, indexation_operator.file_pos ) )
 		{
-			var [ Variable, 2 ] args[ variable, index ];
+			auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
+			overloaded_operator.llvm_function= fetch_result[1];
+
+			var [ Variable, 2 ] args[ fetch_result[0], index ];
 			return DoCallFunction(
 				names_scope,
 				function_context,
@@ -483,12 +486,15 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			RestoreInstructionsState( function_context, instructions_state );
 		}
 
-		if_var( &overloaded_operator : GetOverloadedOperator( args.range(), OverloadedOperator::Call, names_scope, call_operator.file_pos ) )
+		if_var( mut overloaded_operator : GetOverloadedOperator( args.range(), OverloadedOperator::Call, names_scope, call_operator.file_pos ) )
 		{
+			auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
+			overloaded_operator.llvm_function= fetch_result[1];
+
 			return DoCallFunction(
 				names_scope,
 				function_context,
-				ust::optional_ref</ Variable, false />(variable),
+				ust::optional_ref</ Variable, false />(fetch_result[0]),
 				overloaded_operator,
 				call_operator.args.range(),
 				call_operator.file_pos );
@@ -674,12 +680,15 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			.is_reference= variable.value_type != ValueType::Value,
 		} ];
 
-		if_var( &overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::Sub, names_scope, unary_minus.file_pos ) )
+		if_var( mut overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::Sub, names_scope, unary_minus.file_pos ) )
 		{
+			auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
+			overloaded_operator.llvm_function= fetch_result[1];
+
 			return DoCallFunction(
 				names_scope,
 				function_context,
-				ust::optional_ref</ Variable, false />(variable),
+				ust::optional_ref</ Variable, false />(fetch_result[0]),
 				overloaded_operator,
 				ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
 				unary_minus.file_pos );
@@ -733,12 +742,15 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			.is_reference= variable.value_type != ValueType::Value,
 		} ];
 
-		if_var( &overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::LogicalNot, names_scope, logical_not.file_pos ) )
+		if_var( mut overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::LogicalNot, names_scope, logical_not.file_pos ) )
 		{
+			auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
+			overloaded_operator.llvm_function= fetch_result[1];
+
 			return DoCallFunction(
 				names_scope,
 				function_context,
-				ust::optional_ref</ Variable, false />(variable),
+				ust::optional_ref</ Variable, false />(fetch_result[0]),
 				overloaded_operator,
 				ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
 				logical_not.file_pos );
@@ -781,12 +793,15 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			.is_reference= variable.value_type != ValueType::Value,
 		} ];
 
-		if_var( &overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::BitwiseNot, names_scope, bitwise_not.file_pos ) )
+		if_var( mut overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::BitwiseNot, names_scope, bitwise_not.file_pos ) )
 		{
+			auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
+			overloaded_operator.llvm_function= fetch_result[1];
+
 			return DoCallFunction(
 				names_scope,
 				function_context,
-				ust::optional_ref</ Variable, false />(variable),
+				ust::optional_ref</ Variable, false />(fetch_result[0]),
 				overloaded_operator,
 				ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
 				bitwise_not.file_pos );
@@ -1411,7 +1426,7 @@ fn CodeBuilder::CallFunctionsSet(
 		RestoreInstructionsState( function_context, instructions_state );
 	}
 
-	auto function_selected=
+	auto mut function_selected=
 		GetOverloadedFunction(
 			functions_set,
 			args_evaluated.range(),
@@ -1427,6 +1442,19 @@ fn CodeBuilder::CallFunctionsSet(
 	if( !this_.empty() && !function_selected.get_ref().is_this_call )
 	{
 		this_.reset();
+	}
+
+	if( !this_.empty() )
+	{
+		auto fetch_res= TryFetchVirtualFunction( this_.get_ref(), function_selected.get_ref(), function_context );
+		function_selected.get_ref().llvm_function= fetch_res[1];
+		return DoCallFunction(
+			names_scope,
+			function_context,
+			ust::optional_ref</Variable, false/>( fetch_res[0] ),
+			function_selected.get_ref(),
+			args,
+			file_pos );
 	}
 
 	return DoCallFunction(

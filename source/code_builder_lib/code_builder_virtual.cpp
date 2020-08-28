@@ -548,11 +548,12 @@ void CodeBuilder::SetupVirtualTablePointers_r(
 			++vtable_field_number;
 	}
 
-	// Store virtual table pointer for current class.
-	// Overwrite, if needed, first parent virtual table.
-	function_context.llvm_ir_builder.CreateStore(
-		ptr_to_vtable_ptr,
-		function_context.llvm_ir_builder.CreatePointerCast( this_, the_class.virtual_table_llvm_type->getPointerTo()->getPointerTo() ) );
+	// Store virtual table pointer only if it allocated in current class.
+	if( the_class.parents.empty() )
+	{
+		llvm::Value* const vtable_ptr= function_context.llvm_ir_builder.CreateGEP( this_, { GetZeroGEPIndex(), GetZeroGEPIndex() } );
+		function_context.llvm_ir_builder.CreateStore( ptr_to_vtable_ptr, vtable_ptr );
+	}
 }
 
 void CodeBuilder::SetupVirtualTablePointers(

@@ -132,6 +132,23 @@ struct ClassType
 	}
 	ust::shared_ptr_nullable_mut</ClassType/> base_class;
 	ust::vector</Parent/> parents; // Parents, include base class.
+
+	struct VirtualTableEntry
+	{
+		ust::string8 name;
+		FunctionVariable function_variable;
+		bool is_pure;
+		bool is_final;
+
+		// Virtual table may consist of many nested structs, because virtual table of child contains wirtual tables of parents.
+		u32 index_in_table;
+		u32 parent_virtual_table_index;
+	}
+
+	ust::vector</VirtualTableEntry/> virtual_table;
+	LLVMTypeRef virtual_table_llvm_type= LLVMTypeRef::Null;
+	LLVMValueRef virtual_table_llvm_variable= LLVMValueRef::Null; // May be null for interfaces and abstract classes.
+	LLVMValueRef polymorph_type_id= LLVMValueRef::Null; // Exists in polymorph classes.
 }
 
 type ClassTypePtr= ust::shared_ptr_mut</ClassType/>;
@@ -228,11 +245,14 @@ struct FunctionVariable
 
 	bool is_this_call= false;
 	bool is_generated= false;
+	u32 virtual_table_index= ~0u; // For virtual functions number in virtual functions table in class of first arg(this).
 
 	ust::shared_ptr_final_nullable</ Synt::Function /> prototype_syntax_element;
 	ust::shared_ptr_final_nullable</ Synt::Function /> body_syntax_element;
 
 	ust::shared_ptr_final_nullable</ FunctionTemplate /> base_template;
+
+	fn VirtuallyEquals( this, FunctionVariable& other ) : bool;
 }
 
 // Set of functions and function templates with same name in one scope.

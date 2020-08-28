@@ -498,6 +498,43 @@ op Type::!=( Type& l, Type& r ) : bool
 // Value
 //
 
+fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
+{
+	halt if( !( this.is_this_call && other.is_this_call ) );
+
+	auto& tl= this.t;
+	auto& tr= other.t;
+
+	if( !(
+		tl.return_type.get_ref() == tr.return_type.get_ref() &&
+		tl.return_value_is_reference == tr.return_value_is_reference &&
+		tl.return_value_is_mutable == tr.return_value_is_mutable &&
+		tl.is_unsafe == tr.is_unsafe &&
+		tl.args.size() == tr.args.size() &&
+		tl.args.size() > 0s &&
+		tl.args.front().is_mutable == tr.args.front().is_mutable
+		) )
+	{
+		return false;
+	}
+
+	for( auto mut i= 1s; i < tl.args.size(); ++i )
+	{
+		auto& arg_l= tl.args[i];
+		auto& arg_r= tr.args[i];
+		if( !(
+			arg_l.arg_type.get_ref() == arg_r.arg_type.get_ref() &&
+			arg_l.is_mutable == arg_r.is_mutable &&
+			arg_l.is_reference == arg_r.is_reference
+			) )
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
 namespace ValueKindHelper
 {
 
