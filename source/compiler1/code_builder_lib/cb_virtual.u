@@ -110,12 +110,15 @@ fn CodeBuilder::PrepareClassVirtualTable( ClassTypePtr& class_type_ptr )
 				}
 			}
 
-			auto file_pos= FilePos(); // TODO
+			auto file_pos= select(
+				function.body_syntax_element.empty()
+				? function.prototype_syntax_element.get_ref().file_pos
+				: function.body_syntax_element.get_ref().file_pos );
 
 			auto virtual_kind= select(
-				function.prototype_syntax_element.empty()
-				? function.body_syntax_element.get_ref().virtual_kind
-				: function.prototype_syntax_element.get_ref().virtual_kind );
+				function.body_syntax_element.empty()
+				? function.prototype_syntax_element.get_ref().virtual_kind
+				: function.body_syntax_element.get_ref().virtual_kind );
 
 			if( virtual_kind == Synt::Function::VirtualKind::None )
 			{
@@ -196,8 +199,10 @@ fn CodeBuilder::PrepareClassVirtualTable( ClassTypePtr& class_type_ptr )
 				}
 				else
 				{
-					// TODO - produce error
-					// REPORT_ERROR( BodyForPureVirtualFunction, class_members_ptr, file_pos, function_name )
+					if( !function.body_syntax_element.empty() )
+					{
+						REPORT_ERROR( BodyForPureVirtualFunction, class_members_ptr, file_pos, function_name )
+					}
 					if( function_name == KeywordToString( Keyword::destructor_ ) )
 					{
 						REPORT_ERROR( PureDestructor, class_members_ptr, file_pos, ust::string8("/TODO - name") )

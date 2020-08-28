@@ -867,6 +867,27 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		class_.parents.push_back( move(parent) );
 	}
 
+	{ // Pre-mark class as polymorph, because it's needed for functions checks. Exact kind of class we will known later.
+		auto mut lock= class_type.lock_mut();
+		auto &mut class_= lock.get_ref();
+
+		if( syntax_element.kind_attribute == Synt::Class::KindAttribute::Polymorph ||
+			syntax_element.kind_attribute == Synt::Class::KindAttribute::Interface ||
+			syntax_element.kind_attribute == Synt::Class::KindAttribute::Abstract ||
+			!syntax_element.parents.empty() )
+		{
+			class_.kind= ClassType::Kind::PolymorphNonFinal;
+		}
+		else if( syntax_element.kind_attribute == Synt::Class::KindAttribute::Struct )
+		{
+			class_.kind= ClassType::Kind::Struct;
+		}
+		else
+		{
+			class_.kind= ClassType::Kind::NonPolymorph;
+		}
+	}
+
 	// Allocate virtual table pointer, if class have no parents.
 	// If class have at least one parent, reuse it's virtual table pointer.
 	auto allocate_virtual_table_pointer= syntax_element.parents.empty() && (
@@ -1000,6 +1021,12 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		auto mut lock= class_type.lock_mut();
 		auto &mut class_= lock.get_ref();
 
+		auto mut class_contains_pure_virtual_functions= false;
+		foreach( &virtual_table_entry : class_.virtual_table )
+		{
+			class_contains_pure_virtual_functions|= virtual_table_entry.is_pure;
+		}
+
 		auto have_parents= class_.parents.empty();
 		if( syntax_element.kind_attribute == Synt::Class::KindAttribute::Struct )
 		{
@@ -1008,14 +1035,29 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		else if( syntax_element.kind_attribute == Synt::Class::KindAttribute::Class )
 		{
 			class_.kind= select( have_parents ? ClassType::Kind::NonPolymorph : ClassType::Kind::PolymorphNonFinal );
+			if( class_contains_pure_virtual_functions )
+			{
+				REPORT_ERROR( ClassContainsPureVirtualFunctions, names_scope_ptr, syntax_element.file_pos, syntax_element.name )
+				class_.kind= ClassType::Kind::Abstract;
+			}
 		}
 		else if( syntax_element.kind_attribute == Synt::Class::KindAttribute::Final )
 		{
 			class_.kind= select( have_parents ? ClassType::Kind::NonPolymorph : ClassType::Kind::PolymorphFinal );
+			if( class_contains_pure_virtual_functions )
+			{
+				REPORT_ERROR( ClassContainsPureVirtualFunctions, names_scope_ptr, syntax_element.file_pos, syntax_element.name )
+				class_.kind= ClassType::Kind::Abstract;
+			}
 		}
 		else if( syntax_element.kind_attribute == Synt::Class::KindAttribute::Polymorph )
 		{
 			class_.kind= ClassType::Kind::PolymorphNonFinal;
+			if( class_contains_pure_virtual_functions )
+			{
+				REPORT_ERROR( ClassContainsPureVirtualFunctions, names_scope_ptr, syntax_element.file_pos, syntax_element.name )
+				class_.kind= ClassType::Kind::Abstract;
+			}
 		}
 		else if( syntax_element.kind_attribute == Synt::Class::KindAttribute::Interface )
 		{
@@ -1036,6 +1078,15 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				if( !constructors.functions_set.functions.empty() || !constructors.functions_set.function_templates.empty() )
 				{
 					REPORT_ERROR( ConstructorForInterface, names_scope_ptr, syntax_element.file_pos )
+				}
+			}
+			foreach( &virtual_table_entry : class_.virtual_table )
+			{
+				if( !virtual_table_entry.is_pure && virtual_table_entry.name != KeywordToString( Keyword::destructor_ ) )
+				{
+					// TODO - report using function file_pos for each function.
+					REPORT_ERROR( NonPureVirtualFunctionInInterface, names_scope_ptr, syntax_element.file_pos, syntax_element.name )
+					break;
 				}
 			}
 
@@ -1462,9 +1513,11 @@ fn CodeBuilder::PrepareFunction(
 		!function_declaration.function_type.args.empty() &&
 		function_declaration.function_type.args.front().name == KeywordToString( Keyword::this_ );
 
+	auto is_constructor= func_name == KeywordToString( Keyword::constructor_ );
+	auto is_destructor = func_name == KeywordToString( Keyword::destructor_  );
 	{
 		auto& function_type= function_variable.t;
-		if( ( func_name == KeywordToString( Keyword::constructor_ ) || func_name == KeywordToString( Keyword::destructor_ ) ) &&
+		if( ( is_constructor || is_destructor ) &&
 			!(function_type.return_type.get_ref() == void_type_ && !function_type.return_value_is_reference ) )
 		{
 			REPORT_ERROR( ConstructorAndDestructorMustReturnVoid, names_scope_ptr, function_declaration.file_pos )
@@ -1475,6 +1528,35 @@ fn CodeBuilder::PrepareFunction(
 		}
 
 		CheckOverloadedOperator( class_type, function_type, function_declaration.operator, names_scope_ptr, function_declaration.file_pos );
+	}
+
+	if( function_declaration.virtual_kind != Synt::Function::VirtualKind::None )
+	{
+		if( class_type.empty() )
+		{
+			REPORT_ERROR( VirtualForNonclassFunction, names_scope_ptr, function_declaration.file_pos, func_name )
+		}
+		if( !function_variable.is_this_call )
+		{
+			REPORT_ERROR( VirtualForNonThisCallFunction, names_scope_ptr, function_declaration.file_pos, func_name )
+		}
+		if( is_constructor )
+		{
+			REPORT_ERROR( FunctionCanNotBeVirtual, names_scope_ptr, function_declaration.file_pos, func_name )
+		}
+		if( !class_type.empty() )
+		{
+			auto class_lock= class_type.lock_imut();
+			auto& class_ref= class_lock.get_ref();
+			if( class_ref.kind == ClassType::Kind::Struct || class_ref.kind == ClassType::Kind::NonPolymorph )
+			{
+				REPORT_ERROR( VirtualForNonpolymorphClass, names_scope_ptr, function_declaration.file_pos, func_name )
+			}
+		}
+		if( is_out_of_line_function )
+		{
+			REPORT_ERROR( VirtualForFunctionImplementation, names_scope_ptr, function_declaration.file_pos, func_name )
+		}
 	}
 
 	if_var( &mut prev_function : GetFunctionWithSameType( functions_set, function_variable.t ) )
@@ -1514,7 +1596,17 @@ fn CodeBuilder::PrepareFunction(
 			return false;
 		}
 
-		// TODO - detect here also attrubutes mismatch - virtual, thiscall, etc.
+		if( !is_out_of_line_function &&
+			!prev_function.body_syntax_element.empty() && !prev_function.prototype_syntax_element.empty() &&
+			prev_function.body_syntax_element.get_ref().virtual_kind != prev_function.prototype_syntax_element.get_ref().virtual_kind )
+		{
+			REPORT_ERROR( VirtualMismatch, names_scope_ptr, prev_function.body_syntax_element.get_ref().file_pos, func_name )
+		}
+		if( !prev_function.body_syntax_element.empty() && !prev_function.prototype_syntax_element.empty() &&
+			prev_function.prototype_syntax_element.get_ref().virtual_kind == Synt::Function::VirtualKind::VirtualPure )
+		{
+			REPORT_ERROR( BodyForPureVirtualFunction, names_scope_ptr, prev_function.body_syntax_element.get_ref().file_pos, func_name )
+		}
 
 		return true;
 	}
