@@ -359,7 +359,7 @@ fn CodeBuilder::BuildClassVirtualTable_r( this, ClassType& ancestor_class, Class
 		}
 		else
 		{
-			initializer_values.push_back( LLVMConstArray( array_type, cast_imut(function_pointers_initializer_values).front(), u32(function_pointers_initializer_values.size()) ) );
+			initializer_values.push_back( LLVMConstArray( fn_type_ptr, cast_imut(function_pointers_initializer_values).front(), u32(function_pointers_initializer_values.size()) ) );
 		}
 
 		return LLVMConstNamedStruct( ancestor_class.virtual_table_llvm_type, cast_imut(initializer_values).front(), u32(initializer_values.size()) );
