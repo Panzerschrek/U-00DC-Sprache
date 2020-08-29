@@ -1370,6 +1370,12 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 
 	if_var( &overloaded_operator : GetOverloadedOperator( args.range(), operator, names_scope, file_pos ) )
 	{
+		if( overloaded_operator.is_deleted )
+		{
+			REPORT_ERROR( AccessingDeletedMethod, names_scope, file_pos )
+			return ust::optional</Value/>();
+		}
+
 		return DoCallFunction(
 			names_scope,
 			function_context,
@@ -1436,6 +1442,12 @@ fn CodeBuilder::CallFunctionsSet(
 			true );
 	if( function_selected.empty() )
 	{
+		return ErrorValue();
+	}
+
+	if( function_selected.get_ref().is_deleted )
+	{
+		REPORT_ERROR( AccessingDeletedMethod, names_scope, file_pos )
 		return ErrorValue();
 	}
 

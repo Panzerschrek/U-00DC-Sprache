@@ -364,6 +364,14 @@ struct Function
 	}
 	VirtualKind virtual_kind= VirtualKind::None;
 
+	enum BodyKind : u8
+	{
+		Regular,
+		BodyGenerationRequired,
+		BodyGenerationDisabled,
+	}
+	BodyKind body_kind= BodyKind::Regular;
+
 	FunctionType function_type;
 	ust::box_nullable</Block/> block; // null for prototype
 	ust::box_nullable</StructNamedInitializer/> constructor_initializer_list;

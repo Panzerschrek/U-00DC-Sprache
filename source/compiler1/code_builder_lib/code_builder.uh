@@ -480,7 +480,7 @@ private:
 	fn TypeIsValidForTemplateVariableArgument( Type& t ) : bool;
 
 	// Virtual stuff
-	fn PrepareClassVirtualTable( ClassTypePtr& class_type_ptr );
+	fn PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr );
 	fn PrepareClassVirtualTableType( this, ClassTypePtr& class_type_ptr );
 
 	fn BuildClassVirtualTable_r( this, ClassType& ancestor_class, ClassType& dst_class, LLVMValueRef dst_class_ptr_null_based ) : LLVMValueRef;
@@ -540,6 +540,7 @@ private:
 	fn TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_type );
 	fn TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type );
 	fn TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class_type );
+	fn TryGenerateDestructorPrototype( this, ClassTypePtr& class_type );
 	fn TryGenerateDestructor( this, ClassTypePtr& class_type );
 
 	fn BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, FilePos& file_pos );
@@ -564,6 +565,10 @@ private:
 	fn EnsureTypeComplete( mut this, Type& t ) : bool;
 
 	fn GetFunctionWithSameType( FunctionsSet &'x mut functions_set, Type& function_type ) : ust::optional_ref</ FunctionVariable, true />'x';
+
+	fn IsDefaultConstructor( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool;
+	fn IsCopyConstructor( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool;
+	fn IsCopyAssignmentOperator( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool;
 
 	fn GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef;
 	fn GetZeroGEPIndex( this ) : LLVMValueRef;
