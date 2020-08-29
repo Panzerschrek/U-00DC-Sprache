@@ -228,7 +228,16 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 	// All ok - set copy constructible flag.
 	{
 		auto mut class_lock= class_type.lock_mut();
-		class_lock.get_ref().is_copy_constructible= true;
+		auto &mut class_= class_lock.get_ref();
+
+		if( class_.kind != ClassType::Kind::Struct )
+		{
+			// By-default do not generate copy constructors for classes, generate them only for structs.
+			class_.is_copy_constructible= false;
+			return;
+		}
+
+		class_.is_copy_constructible= true;
 	}
 
 	// Prepare function type.
@@ -409,10 +418,19 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		return;
 	}
 
-	// All ok - set copy assignable flag.
+	// All ok - set copy constructible flag.
 	{
 		auto mut class_lock= class_type.lock_mut();
-		class_lock.get_ref().is_copy_assignable= true;
+		auto &mut class_= class_lock.get_ref();
+
+		if( class_.kind != ClassType::Kind::Struct )
+		{
+			// By-default do not generate copy assignment operators for classes, generate them only for structs.
+			class_.is_copy_assignable= false;
+			return;
+		}
+
+		class_.is_copy_assignable= true;
 	}
 
 	// Prepare function type.
