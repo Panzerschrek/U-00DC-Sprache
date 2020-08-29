@@ -1125,8 +1125,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				auto& function_type= function_variable.t;
 				if( function_type.args.size() == 1s )
 				{
-					class_.is_default_constructible= true;
-					class_.have_explicit_noncopy_constructors= true;
+					class_.have_explicit_noncopy_constructors= !function_variable.is_generated;
 				}
 				else if(
 					function_type.args.size() == 2s &&
@@ -1556,6 +1555,22 @@ fn CodeBuilder::PrepareFunction(
 		if( is_out_of_line_function )
 		{
 			REPORT_ERROR( VirtualForFunctionImplementation, names_scope_ptr, function_declaration.file_pos, func_name )
+		}
+	}
+
+	// Check "=default" / "=delete".
+	if( function_declaration.body_kind != Synt::Function::BodyKind::Regular )
+	{
+		// TODO - check for errors
+		var bool mut invalid_func= false;
+
+		if( invalid_func )
+		{
+			REPORT_ERROR( InvalidMethodForBodyGeneration, names_scope_ptr, function_declaration.file_pos )
+		}
+		else
+		{
+			select( function_declaration.body_kind == Synt::Function::BodyKind::BodyGenerationRequired ? function_variable.is_generated : function_variable.is_deleted )= true;
 		}
 	}
 

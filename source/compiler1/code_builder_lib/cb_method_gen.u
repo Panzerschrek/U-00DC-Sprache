@@ -21,7 +21,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		if( function_type.args.size() == 1s )
 		{
 			auto mut class_lock= class_type.lock_mut();
-			class_lock.get_ref().is_default_constructible= true;
+			class_lock.get_ref().is_default_constructible= !constructor_.is_deleted;
 			return;
 		}
 		else if(
@@ -197,7 +197,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 			function_type.args.back().arg_type.get_ref() == class_type ) // Copy constructor
 		{
 			auto mut class_lock= class_type.lock_mut();
-			class_lock.get_ref().is_copy_constructible= true;
+			class_lock.get_ref().is_copy_constructible= !constructor_.is_deleted;
 			return;
 		}
 	}
@@ -381,7 +381,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 			function_type.args.back ().is_reference && !function_type.args.back ().is_mutable && function_type.args.back ().arg_type.get_ref() == class_type )
 		{
 			auto mut class_lock= class_type.lock_mut();
-			class_lock.get_ref().is_copy_assignable= true;
+			class_lock.get_ref().is_copy_assignable= !operator.is_deleted;
 			return;
 		}
 	}

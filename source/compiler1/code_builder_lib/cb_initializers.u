@@ -693,6 +693,12 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 		if( exact_type_functions.size() == 1s )
 		{
 			auto& function_variable= exact_type_functions.front();
+			if( function_variable.is_deleted )
+			{
+				REPORT_ERROR( AccessingDeletedMethod, names_scope, initializer_file_pos )
+				return LLVMValueRef::Null;
+			}
+
 			unsafe
 			{
 				LLVMBuildStore( function_context.llvm_ir_builder, function_variable.llvm_function, variable.llvm_value );
@@ -705,10 +711,17 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 		}
 		else if( functions_with_conversion.size() == 1s )
 		{
+			auto& function_variable= functions_with_conversion.front();
+			if( function_variable.is_deleted )
+			{
+				REPORT_ERROR( AccessingDeletedMethod, names_scope, initializer_file_pos )
+				return LLVMValueRef::Null;
+			}
+
 			// TODO - maybe disable conversion for expression initializer?
 			unsafe
 			{
-				auto ptr_casted= LLVMBuildPointerCast( function_context.llvm_ir_builder, functions_with_conversion.front().llvm_function, variable.t.GetLLVMType(), "\0"[0] );
+				auto ptr_casted= LLVMBuildPointerCast( function_context.llvm_ir_builder, function_variable.llvm_function, variable.t.GetLLVMType(), "\0"[0] );
 				LLVMBuildStore( function_context.llvm_ir_builder, ptr_casted, variable.llvm_value );
 				return ptr_casted;
 			}
