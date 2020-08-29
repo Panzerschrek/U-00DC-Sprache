@@ -565,6 +565,10 @@ private:
 
 	fn GetFunctionWithSameType( FunctionsSet &'x mut functions_set, Type& function_type ) : ust::optional_ref</ FunctionVariable, true />'x';
 
+	fn IsDefaultConstructor( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool;
+	fn IsCopyConstructor( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool;
+	fn IsCopyAssignmentOperator( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool;
+
 	fn GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef;
 	fn GetZeroGEPIndex( this ) : LLVMValueRef;
 	fn CreateMoveToLLVMRegisterInstruction( Variable& variable, FunctionContext& function_context ) : LLVMValueRef;

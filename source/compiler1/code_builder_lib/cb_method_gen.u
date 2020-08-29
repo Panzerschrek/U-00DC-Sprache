@@ -23,8 +23,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	for( auto mut i= 0s; i < constructors.functions.size(); ++i )
 	{
 		auto& constructor_= constructors.functions[i];
-		auto& function_type= constructor_.t;
-		if( function_type.args.size() == 1s )
+		if( IsDefaultConstructor( constructor_, class_type ) )
 		{
 			if( constructor_.is_generated )
 			{
@@ -38,12 +37,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 				return;
 			}
 		}
-		else if(
-			function_type.args.size() == 2s &&
-			function_type.args.back().is_reference &&
-			!function_type.args.back().is_mutable &&
-			function_type.args.back().arg_type.get_ref() == class_type ) // Copy constructor
-		{}
+		else if( IsCopyConstructor( constructor_, class_type ) ) {}
 		else
 		{
 			// Generation of default constructor disabled because class have explicit noncopy constructors.
@@ -210,12 +204,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 	for( auto mut i= 0s; i < constructors.functions.size(); ++i )
 	{
 		auto& constructor_= constructors.functions[i];
-		auto& function_type= constructor_.t;
-		if(
-			function_type.args.size() == 2s &&
-			function_type.args.back().is_reference &&
-			!function_type.args.back().is_mutable &&
-			function_type.args.back().arg_type.get_ref() == class_type ) // Copy constructor
+		if( IsCopyConstructor( constructor_, class_type ) )
 		{
 			if( constructor_.is_generated )
 			{
@@ -419,11 +408,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 	for( auto mut i= 0s; i < operators.functions.size(); ++i )
 	{
 		auto& operator= operators.functions[i];
-		auto& function_type= operator.t;
-		if(
-			function_type.args.size() == 2s &&
-			function_type.args.front().is_reference &&  function_type.args.front().is_mutable && function_type.args.front().arg_type.get_ref() == class_type &&
-			function_type.args.back ().is_reference && !function_type.args.back ().is_mutable && function_type.args.back ().arg_type.get_ref() == class_type )
+		if( IsCopyAssignmentOperator( operator, class_type ) )
 		{
 			if( operator.is_generated )
 			{

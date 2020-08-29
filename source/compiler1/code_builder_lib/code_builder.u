@@ -1122,17 +1122,11 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 					continue;
 				}
 
-				auto& function_type= function_variable.t;
-				if( function_type.args.size() == 1s )
+				if( IsDefaultConstructor( function_variable, class_type ) )
 				{
-					class_.have_explicit_noncopy_constructors= !function_variable.is_generated;
+					class_.have_explicit_noncopy_constructors= true;
 				}
-				else if(
-					function_type.args.size() == 2s &&
-					function_type.args.back().is_reference &&
-					!function_type.args.back().is_mutable &&
-					function_type.args.back().arg_type.get_ref() == class_type ) // Copy constructor
-				{}
+				else if( IsCopyConstructor( function_variable, class_type ) ) {}
 				else
 				{
 					class_.have_explicit_noncopy_constructors= true;
@@ -1561,8 +1555,18 @@ fn CodeBuilder::PrepareFunction(
 	// Check "=default" / "=delete".
 	if( function_declaration.body_kind != Synt::Function::BodyKind::Regular )
 	{
-		// TODO - check for errors
 		var bool mut invalid_func= false;
+
+		if( class_type.empty() ){ invalid_func= true; }
+		else
+		{
+			auto class_type_non_null= ust::to_non_nullable( class_type );
+			if( is_constructor && ( IsDefaultConstructor( function_variable, class_type_non_null ) || IsCopyConstructor( function_variable, class_type_non_null ) ) )
+			{}
+			else if( function_declaration.operator == OverloadedOperator::Assign && IsCopyAssignmentOperator( function_variable, class_type_non_null ) )
+			{}
+			else{ invalid_func= true; }
+		}
 
 		if( invalid_func )
 		{
@@ -2119,6 +2123,38 @@ fn CodeBuilder::GetFunctionWithSameType( FunctionsSet &'x mut functions_set, Typ
 	}
 
 	return ust::optional_ref</ FunctionVariable, true />();
+}
+
+fn CodeBuilder::IsDefaultConstructor( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool
+{
+	if( !function_variable.is_this_call ){ return false; }
+	if( function_variable.t.args.size() != 1s ){ return false; }
+
+	auto& arg= function_variable.t.args.front();
+	return arg.arg_type.get_ref() == class_type && arg.is_mutable && arg.is_reference;
+}
+
+fn CodeBuilder::IsCopyConstructor( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool
+{
+	if( !function_variable.is_this_call ){ return false; }
+	if( function_variable.t.args.size() != 2s ){ return false; }
+
+	auto& arg_dst= function_variable.t.args.front();
+	auto& arg_src= function_variable.t.args.back();
+	return
+		arg_dst.arg_type.get_ref() == class_type &&  arg_dst.is_mutable && arg_dst.is_reference &&
+		arg_src.arg_type.get_ref() == class_type && !arg_src.is_mutable && arg_src.is_reference;
+}
+
+fn CodeBuilder::IsCopyAssignmentOperator( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool
+{
+	if( function_variable.t.args.size() != 2s ){ return false; }
+
+	auto& arg_dst= function_variable.t.args.front();
+	auto& arg_src= function_variable.t.args.back();
+	return
+		arg_dst.arg_type.get_ref() == class_type &&  arg_dst.is_mutable && arg_dst.is_reference &&
+		arg_src.arg_type.get_ref() == class_type && !arg_src.is_mutable && arg_src.is_reference;
 }
 
 fn CodeBuilder::GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef
