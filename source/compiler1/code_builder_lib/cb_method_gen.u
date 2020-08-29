@@ -614,13 +614,18 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 	}
 }
 
-fn CodeBuilder::TryGenerateDestructor( this, ClassTypePtr& class_type )
+fn CodeBuilder::TryGenerateDestructorPrototype( this, ClassTypePtr& class_type )
 {
-	auto class_members= class_type.lock_imut().get_ref().members;
+	auto class_members_ptr= class_type.lock_imut().get_ref().members;
+	auto class_members_lock= class_members_ptr.lock_imut();
+	auto& class_members= class_members_lock.get_ref();
 
 	// Destructors value should always exists and should always be NamesScopeFunctionsSet.
-	auto destructors_ptr= class_members.lock_imut().get_ref().GetThisScopeValue( KeywordToString( Keyword::destructor_ ) ).get_ref().Get</NamesScopeFunctionsSet/>();
-	if( !destructors_ptr.lock_imut().get_ref().functions_set.functions.empty() )
+	auto destructors_ptr= class_members.GetThisScopeValue( KeywordToString( Keyword::destructor_ ) ).get_ref().Get</NamesScopeFunctionsSet/>();
+	auto mut destructors_lock= destructors_ptr.lock_mut();
+	auto &mut destructors= destructors_lock.get_ref().functions_set;
+
+	if( !destructors.functions.empty() )
 	{
 		return; // user already specified destructor.
 	}
@@ -666,20 +671,43 @@ fn CodeBuilder::TryGenerateDestructor( this, ClassTypePtr& class_type )
 			LLVMAddFunction(
 				module_,
 				MangleFunction(
-					class_members.lock_imut().get_ref(),
+					class_members,
 					KeywordToString( Keyword::destructor_ ),
 					function_variable.t ).front(),
 				function_variable.t.llvm_type );
 	}
+
+	destructors.functions.push_back( move(function_variable) );
+}
+
+fn CodeBuilder::TryGenerateDestructor( this, ClassTypePtr& class_type )
+{
+	auto class_members_ptr= class_type.lock_imut().get_ref().members;
+	auto class_members_lock= class_members_ptr.lock_imut();
+	auto& class_members= class_members_lock.get_ref();
+
+	// Destructors value should always exists and should always be NamesScopeFunctionsSet.
+	auto destructors_ptr= class_members.GetThisScopeValue( KeywordToString( Keyword::destructor_ ) ).get_ref().Get</NamesScopeFunctionsSet/>();
+	auto mut destructors_lock= destructors_ptr.lock_mut();
+	auto &mut destructors= destructors_lock.get_ref().functions_set;
+
+	auto mut use_existing_destructor_variable= false;
+	if( !destructors.functions.back().is_generated ) // Should be nonempty - contain user-specified destructor of prepared prototype.
+	{
+		return; // user already specified destructor.
+	}
+
+	// Generate body for previously generated prototype.
+	var FunctionVariable &mut function_variable= destructors.functions.back();
 
 	// Build code itself.
 
 	var FunctionContext mut function_context(
 		llvm_context_,
 		function_variable.llvm_function,
-		function_type.return_type.get_ref(),
-		function_type.return_value_is_reference,
-		function_type.return_value_is_mutable );
+		function_variable.t.return_type.get_ref(),
+		function_variable.t.return_value_is_reference,
+		function_variable.t.return_value_is_mutable );
 
 	auto mut this_llvm_value= LLVMValueRef::Null;
 	unsafe{  this_llvm_value= LLVMGetParam( function_variable.llvm_function, 0u );  }
@@ -692,10 +720,6 @@ fn CodeBuilder::TryGenerateDestructor( this, ClassTypePtr& class_type )
 		LLVMBuildBr( function_context.alloca_ir_builder, function_context.function_basic_block );
 		LLVMBuildRetVoid( function_context.llvm_ir_builder );
 	}
-
-	// Insert result variable
-	auto mut destructors_lock= destructors_ptr.lock_mut();
-	destructors_lock.get_ref().functions_set.functions.push_back( move(function_variable) );
 }
 
 fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, FilePos& file_pos )

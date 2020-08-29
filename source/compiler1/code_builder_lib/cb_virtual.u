@@ -110,15 +110,21 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 				}
 			}
 
-			auto file_pos= select(
-				function.body_syntax_element.empty()
-				? function.prototype_syntax_element.get_ref().file_pos
-				: function.body_syntax_element.get_ref().file_pos );
+			var FilePos mut file_pos;
+			var Synt::Function::VirtualKind mut virtual_kind= Synt::Function::VirtualKind::None;
 
-			auto virtual_kind= select(
-				function.body_syntax_element.empty()
-				? function.prototype_syntax_element.get_ref().virtual_kind
-				: function.body_syntax_element.get_ref().virtual_kind );
+			if( !function.body_syntax_element.empty() )
+			{
+				auto& el= function.body_syntax_element.get_ref();
+				file_pos= el.file_pos;
+				virtual_kind= el.virtual_kind;
+			}
+			else if( !function.prototype_syntax_element.empty() )
+			{
+				auto& el= function.prototype_syntax_element.get_ref();
+				file_pos= el.file_pos;
+				virtual_kind= el.virtual_kind;
+			}
 
 			if( virtual_kind == Synt::Function::VirtualKind::None )
 			{
