@@ -379,6 +379,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"ConstructingAbstractClassOrInterface_Test8",
 		"ConstructingAbstractClassOrInterface_Test11",
 		"ConstructorForInterface_Test0",
+		"CopyAssignentOperatorGeneration_Test0",
+		"CopyConstructorGeneration_Test0",
 		"CouldNotConvertFunctionPointer_Test0",
 		"CouldNotConvertFunctionPointer_Test1",
 		"CouldNotConvertFunctionPointer_Test2",

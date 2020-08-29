@@ -185,10 +185,14 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 
 	// Constructors value should always exists and should always be NamesScopeFunctionsSet.
 	auto constructors_ptr= class_members.lock_imut().get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).get_ref().Get</NamesScopeFunctionsSet/>();
+	auto mut constructors_lock= constructors_ptr.lock_mut();
+	auto &mut constructors= constructors_lock.get_ref().functions_set;
 
 	// Search for copy constructor.
-	foreach( &constructor_ : constructors_ptr.lock_imut().get_ref().functions_set.functions )
+	auto mut constructor_index= ~0s;
+	for( auto mut i= 0s; i < constructors.functions.size(); ++i )
 	{
+		auto& constructor_= constructors.functions[i];
 		auto& function_type= constructor_.t;
 		if(
 			function_type.args.size() == 2s &&
@@ -196,9 +200,17 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 			!function_type.args.back().is_mutable &&
 			function_type.args.back().arg_type.get_ref() == class_type ) // Copy constructor
 		{
-			auto mut class_lock= class_type.lock_mut();
-			class_lock.get_ref().is_copy_constructible= !constructor_.is_deleted;
-			return;
+			if( constructor_.is_generated )
+			{
+				constructor_index= i;
+				break;
+			}
+			else
+			{
+				auto mut class_lock= class_type.lock_mut();
+				class_lock.get_ref().is_copy_constructible= !constructor_.is_deleted;
+				return;
+			}
 		}
 	}
 
@@ -230,7 +242,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		auto mut class_lock= class_type.lock_mut();
 		auto &mut class_= class_lock.get_ref();
 
-		if( class_.kind != ClassType::Kind::Struct )
+		if( class_.kind != ClassType::Kind::Struct && constructor_index == ~0s )
 		{
 			// By-default do not generate copy constructors for classes, generate them only for structs.
 			class_.is_copy_constructible= false;
@@ -240,74 +252,81 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		class_.is_copy_constructible= true;
 	}
 
-	// Prepare function type.
-	var FunctionType mut function_type
+	if( constructor_index == ~0s )
 	{
-		.return_type( void_type_for_ret_ ),
-		.return_value_is_mutable= false,
-		.return_value_is_reference= false,
-	};
-	{
-		var FunctionType::Arg mut dst_arg
+		// Prepare function type.
+		var FunctionType mut function_type
 		{
-			.arg_type( Type( class_type ) ),
-			.is_reference= true,
-			.is_mutable= true,
+			.return_type( void_type_for_ret_ ),
+			.return_value_is_mutable= false,
+			.return_value_is_reference= false,
 		};
-		var FunctionType::Arg mut src_arg
 		{
-			.arg_type( Type( class_type ) ),
-			.is_reference= true,
-			.is_mutable= false,
+			var FunctionType::Arg mut dst_arg
+			{
+				.arg_type( Type( class_type ) ),
+				.is_reference= true,
+				.is_mutable= true,
+			};
+			var FunctionType::Arg mut src_arg
+			{
+				.arg_type( Type( class_type ) ),
+				.is_reference= true,
+				.is_mutable= false,
+			};
+			function_type.args.push_back( move(dst_arg) );
+			function_type.args.push_back( move(src_arg) );
+		}
+
+		unsafe
+		{
+			var[ LLVMTypeRef, 2 ] args_llvm_types
+			[
+				LLVMPointerType( class_type.lock_imut().get_ref().llvm_type, 0u ),
+				LLVMPointerType( class_type.lock_imut().get_ref().llvm_type, 0u ),
+			];
+
+			function_type.llvm_type=
+				LLVMFunctionType(
+					fundamental_llvm_types_.void_for_ret_,
+					args_llvm_types[0],
+					2u,
+					LLVMBool::False );
+		}
+
+		// Prepare function variable.
+		var FunctionVariable mut function_variable
+		{
+			.is_this_call= true,
+			.is_generated= true,
+			.t= function_type,
 		};
-		function_type.args.push_back( move(dst_arg) );
-		function_type.args.push_back( move(src_arg) );
+
+		unsafe
+		{
+			function_variable.llvm_function=
+				LLVMAddFunction(
+					module_,
+					MangleFunction(
+						class_members.lock_imut().get_ref(),
+						KeywordToString( Keyword::constructor_ ),
+						function_variable.t ).front(),
+					function_variable.t.llvm_type );
+		}
+
+		constructor_index= constructors.functions.size();
+		constructors.functions.push_back( move(function_variable) );
 	}
-
-	unsafe
-	{
-		var[ LLVMTypeRef, 2 ] args_llvm_types
-		[
-			LLVMPointerType( class_type.lock_imut().get_ref().llvm_type, 0u ),
-			LLVMPointerType( class_type.lock_imut().get_ref().llvm_type, 0u ),
-		];
-
-		function_type.llvm_type=
-			LLVMFunctionType(
-				fundamental_llvm_types_.void_for_ret_,
-				args_llvm_types[0],
-				2u,
-				LLVMBool::False );
-	}
-
-	// Prepare function variable.
-	var FunctionVariable mut function_variable
-	{
-		.is_this_call= true,
-		.is_generated= true,
-		.t= function_type,
-	};
-
-	unsafe
-	{
-		function_variable.llvm_function=
-			LLVMAddFunction(
-				module_,
-				MangleFunction(
-					class_members.lock_imut().get_ref(),
-					KeywordToString( Keyword::constructor_ ),
-					function_variable.t ).front(),
-				function_variable.t.llvm_type );
-	}
+	var FunctionVariable &mut function_variable= constructors.functions[ constructor_index ];
 
 	// Build code itself.
 
 	var FunctionContext mut function_context(
 		llvm_context_,
 		function_variable.llvm_function,
-		function_type.return_type.get_ref(),
-		function_type.return_value_is_reference,
-		function_type.return_value_is_mutable );
+		function_variable.t.return_type.get_ref(),
+		function_variable.t.return_value_is_reference,
+		function_variable.t.return_value_is_mutable );
 
 	var LLVMValueRef mut dst_llvm_value= zero_init, mut src_llvm_value= zero_init;
 	unsafe
@@ -365,10 +384,6 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		LLVMBuildBr( function_context.alloca_ir_builder, function_context.function_basic_block );
 		LLVMBuildRetVoid( function_context.llvm_ir_builder );
 	}
-
-	// Insert result variable
-	auto mut constructors_lock= constructors_ptr.lock_mut();
-	constructors_lock.get_ref().functions_set.functions.push_back( move(function_variable) );
 }
 
 fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class_type )
@@ -379,19 +394,31 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 
 	// Assignment operators value should always exists and should always be NamesScopeFunctionsSet.
 	auto operators_ptr= class_members.GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Assign ) ).get_ref().Get</NamesScopeFunctionsSet/>();
+	auto mut operators_lock= operators_ptr.lock_mut();
+	auto &mut operators= operators_lock.get_ref().functions_set;
 
 	// Search for copy assignment operator.
-	foreach( &operator : operators_ptr.lock_imut().get_ref().functions_set.functions )
+	auto mut operator_index= ~0s;
+	for( auto mut i= 0s; i < operators.functions.size(); ++i )
 	{
+		auto& operator= operators.functions[i];
 		auto& function_type= operator.t;
 		if(
 			function_type.args.size() == 2s &&
 			function_type.args.front().is_reference &&  function_type.args.front().is_mutable && function_type.args.front().arg_type.get_ref() == class_type &&
 			function_type.args.back ().is_reference && !function_type.args.back ().is_mutable && function_type.args.back ().arg_type.get_ref() == class_type )
 		{
-			auto mut class_lock= class_type.lock_mut();
-			class_lock.get_ref().is_copy_assignable= !operator.is_deleted;
-			return;
+			if( operator.is_generated )
+			{
+				operator_index= i;
+				break;
+			}
+			else
+			{
+				auto mut class_lock= class_type.lock_mut();
+				class_lock.get_ref().is_copy_assignable= !operator.is_deleted;
+				return;
+			}
 		}
 	}
 
@@ -423,7 +450,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		auto mut class_lock= class_type.lock_mut();
 		auto &mut class_= class_lock.get_ref();
 
-		if( class_.kind != ClassType::Kind::Struct )
+		if( class_.kind != ClassType::Kind::Struct && operator_index == ~0s )
 		{
 			// By-default do not generate copy assignment operators for classes, generate them only for structs.
 			class_.is_copy_assignable= false;
@@ -433,74 +460,81 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		class_.is_copy_assignable= true;
 	}
 
-	// Prepare function type.
-	var FunctionType mut function_type
+	if( operator_index == ~0s )
 	{
-		.return_type( void_type_for_ret_ ),
-		.return_value_is_mutable= false,
-		.return_value_is_reference= false,
-	};
-	{
-		var FunctionType::Arg mut dst_arg
+		// Prepare function type.
+		var FunctionType mut function_type
 		{
-			.arg_type( Type( class_type ) ),
-			.is_reference= true,
-			.is_mutable= true,
+			.return_type( void_type_for_ret_ ),
+			.return_value_is_mutable= false,
+			.return_value_is_reference= false,
 		};
-		var FunctionType::Arg mut src_arg
 		{
-			.arg_type( Type( class_type ) ),
-			.is_reference= true,
-			.is_mutable= false,
+			var FunctionType::Arg mut dst_arg
+			{
+				.arg_type( Type( class_type ) ),
+				.is_reference= true,
+				.is_mutable= true,
+			};
+			var FunctionType::Arg mut src_arg
+			{
+				.arg_type( Type( class_type ) ),
+				.is_reference= true,
+				.is_mutable= false,
+			};
+			function_type.args.push_back( move(dst_arg) );
+			function_type.args.push_back( move(src_arg) );
+		}
+
+		unsafe
+		{
+			var[ LLVMTypeRef, 2 ] args_llvm_types
+			[
+				LLVMPointerType( class_type.lock_imut().get_ref().llvm_type, 0u ),
+				LLVMPointerType( class_type.lock_imut().get_ref().llvm_type, 0u ),
+			];
+
+			function_type.llvm_type=
+				LLVMFunctionType(
+					fundamental_llvm_types_.void_for_ret_,
+					args_llvm_types[0],
+					2u,
+					LLVMBool::False );
+		}
+
+		// Prepare function variable.
+		var FunctionVariable mut function_variable
+		{
+			.is_this_call= true,
+			.is_generated= true,
+			.t= function_type,
 		};
-		function_type.args.push_back( move(dst_arg) );
-		function_type.args.push_back( move(src_arg) );
+
+		unsafe
+		{
+			function_variable.llvm_function=
+				LLVMAddFunction(
+					module_,
+					MangleFunction(
+						class_members,
+						OverloadedOperatorToString( OverloadedOperator::Assign ),
+						function_variable.t ).front(),
+					function_variable.t.llvm_type);
+		}
+
+		operator_index= operators.functions.size();
+		operators.functions.push_back( move(function_variable) );
 	}
-
-	unsafe
-	{
-		var[ LLVMTypeRef, 2 ] args_llvm_types
-		[
-			LLVMPointerType( class_type.lock_imut().get_ref().llvm_type, 0u ),
-			LLVMPointerType( class_type.lock_imut().get_ref().llvm_type, 0u ),
-		];
-
-		function_type.llvm_type=
-			LLVMFunctionType(
-				fundamental_llvm_types_.void_for_ret_,
-				args_llvm_types[0],
-				2u,
-				LLVMBool::False );
-	}
-
-	// Prepare function variable.
-	var FunctionVariable mut function_variable
-	{
-		.is_this_call= true,
-		.is_generated= true,
-		.t= function_type,
-	};
-
-	unsafe
-	{
-		function_variable.llvm_function=
-			LLVMAddFunction(
-				module_,
-				MangleFunction(
-					class_members,
-					OverloadedOperatorToString( OverloadedOperator::Assign ),
-					function_variable.t ).front(),
-				function_variable.t.llvm_type);
-	}
+	var FunctionVariable &mut function_variable= operators.functions.back();
 
 	// Build code itself.
 
 	var FunctionContext mut function_context(
 		llvm_context_,
 		function_variable.llvm_function,
-		function_type.return_type.get_ref(),
-		function_type.return_value_is_reference,
-		function_type.return_value_is_mutable );
+		function_variable.t.return_type.get_ref(),
+		function_variable.t.return_value_is_reference,
+		function_variable.t.return_value_is_mutable );
 
 	var LLVMValueRef mut dst_llvm_value= zero_init, mut src_llvm_value= zero_init;
 	unsafe
@@ -543,10 +577,6 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		LLVMBuildBr( function_context.alloca_ir_builder, function_context.function_basic_block );
 		LLVMBuildRetVoid( function_context.llvm_ir_builder );
 	}
-
-	// Insert result variable
-	auto mut operators_lock= operators_ptr.lock_mut();
-	operators_lock.get_ref().functions_set.functions.push_back( move(function_variable) );
 }
 
 fn CodeBuilder::TryGenerateDestructor( this, ClassTypePtr& class_type )
