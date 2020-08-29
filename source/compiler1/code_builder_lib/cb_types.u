@@ -69,7 +69,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 		REPORT_ERROR( ExpectedConstantExpression, names_scope, array_type.file_pos )
 	}
 
-	unsafe{ out_array_type.llvm_type= LLVMArrayType( out_array_type.element_type.get_ref().GetLLVMType(), u32(out_array_type.element_count) ); }
+	unsafe{ out_array_type.llvm_type= LLVMArrayType( out_array_type.element_type.GetLLVMType(), u32(out_array_type.element_count) ); }
 
 	return Type( move(out_array_type) );
 }
@@ -128,7 +128,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 			else
 			{
 				out_arg.is_reference= true;
-				out_arg.arg_type.get_ref()= ust::to_non_nullable( class_type );
+				out_arg.arg_type= ust::to_non_nullable( class_type );
 			}
 		}
 		else
@@ -138,7 +138,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 				REPORT_ERROR( UsingKeywordAsName, names_scope, arg.file_pos )
 			}
 
-			out_arg.arg_type.get_ref()= PrepareType( names_scope, function_context, arg.arg_type );
+			out_arg.arg_type= PrepareType( names_scope, function_context, arg.arg_type );
 		}
 
 		res.args.push_back( move(out_arg) );
@@ -147,15 +147,15 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 	var ust::vector</LLVMTypeRef/> mut llvm_arg_types;
 
 	// s_ret
-	auto is_s_ret= !res.return_value_is_reference && !res.return_type.get_ref().GetClassType().empty();
+	auto is_s_ret= !res.return_value_is_reference && !res.return_type.GetClassType().empty();
 	if( is_s_ret )
 	{
-		unsafe{  llvm_arg_types.push_back( LLVMPointerType( res.return_type.get_ref().GetLLVMType(), 0u ) );  }
+		unsafe{  llvm_arg_types.push_back( LLVMPointerType( res.return_type.GetLLVMType(), 0u ) );  }
 	}
 
 	foreach( &arg : res.args )
 	{
-		auto mut llvm_type= arg.arg_type.get_ref().GetLLVMType();
+		auto mut llvm_type= arg.arg_type.GetLLVMType();
 		if( arg.is_reference )
 		{
 			unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  }
@@ -163,7 +163,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 		else
 		{
 			// Pass non-fundamental types by-reference
-			if( !arg.arg_type.get_ref().GetClassType().empty() )
+			if( !arg.arg_type.GetClassType().empty() )
 			{
 				unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  }
 			}
@@ -173,7 +173,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 
 	unsafe
 	{
-		auto mut ret_llvm_type= res.return_type.get_ref().GetLLVMType();
+		auto mut ret_llvm_type= res.return_type.GetLLVMType();
 		if( res.return_value_is_reference )
 		{
 			ret_llvm_type= LLVMPointerType( ret_llvm_type, 0u );

@@ -82,7 +82,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 		var NamesScopeVariable mut element_variable
 		{
-			.t= array_type.element_type.get_ref(),
+			.t= array_type.element_type,
 		};
 
 		auto mut i= 0s;
@@ -277,7 +277,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			{
 				var NamesScopeVariable mut element_variable
 				{
-					.t= array_type.element_type.get_ref()
+					.t= array_type.element_type
 				};
 
 				unsafe
@@ -354,7 +354,7 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 	{
 		var NamesScopeVariable mut element_variable
 		{
-			.t= array_type.element_type.get_ref()
+			.t= array_type.element_type
 		};
 
 		CB_GENERATE_LOOP(

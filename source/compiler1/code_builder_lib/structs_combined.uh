@@ -39,12 +39,9 @@ struct FundamentalType
 
 struct ArrayType
 {
-	ust::box</Type/> element_type;
+	Type element_type;
 	u64 element_count= 0u64;
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
-
-	fn constructor( mut this, ArrayType &imut other );
-	op=( mut this, ArrayType &imut other );
 
 	op==( ArrayType& l, ArrayType& r ) : bool;
 	op!=( ArrayType& l, ArrayType& r ) : bool;
@@ -54,7 +51,7 @@ struct FunctionType
 {
 	struct Arg
 	{
-		ust::box</Type/> arg_type; // HACK! prevent dependency because ust::vector requires complete type.
+		Type arg_type;
 		bool is_reference;
 		bool is_mutable;
 
@@ -63,16 +60,13 @@ struct FunctionType
 	}
 
 	ust::vector</Arg/> args;
-	ust::box</Type/> return_type; // HACK! prevent dependency loop
+	Type return_type; // HACK! prevent dependency loop
 	bool return_value_is_reference;
 	bool return_value_is_mutable;
 
 	bool is_unsafe= false;
 
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
-
-	fn constructor( mut this, FunctionType &imut other );
-	op=( mut this, FunctionType &imut other );
 
 	op==( FunctionType& l, FunctionType& r ) : bool;
 	op!=( FunctionType& l, FunctionType& r ) : bool;
@@ -157,8 +151,8 @@ class Type
 {
 public:
 	fn constructor() = default;
-	fn constructor( mut this, Type &imut other ) = default;
-	op=( mut this, Type &imut other )= default;
+	fn constructor( mut this, Type &imut other );
+	op=( mut this, Type &imut other );
 
 	fn conversion_constructor( FundamentalType mut fundamental_type );
 	fn conversion_constructor( ArrayType mut array_type );
@@ -204,9 +198,9 @@ public:
 private:
 	ust::variant</ tup[
 		FundamentalType,
-		ArrayType,
-		FunctionType,
-		FunctionPointerType,
+		ust::box</ArrayType/>,
+		ust::box</FunctionType/>,
+		ust::box</FunctionPointerType/>,
 		ClassTypePtr,
 		EnumTypePtr
 	] /> something_;

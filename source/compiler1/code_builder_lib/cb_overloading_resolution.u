@@ -114,7 +114,7 @@ fn CompareConversions(
 	FunctionType::Arg& dst_left,
 	FunctionType::Arg& dst_right ) : ConversionsCompareResult
 {
-	auto types_compare= ComplareConversionsType( src.arg_type.get_ref(), dst_left.arg_type.get_ref(), dst_right.arg_type.get_ref() );
+	auto types_compare= ComplareConversionsType( src.arg_type, dst_left.arg_type, dst_right.arg_type );
 	auto mutability_compare= CompareConversionsMutability( src, dst_left, dst_right );
 
 	if( types_compare == mutability_compare )
@@ -359,7 +359,7 @@ fn CodeBuilder::ApplyOverloadedFunction(
 			{
 				auto& arg= function_type.args[i];
 				auto& set_arg= set_function_type.args[i];
-				if( arg.arg_type.get_ref() == set_arg.arg_type.get_ref() && GetArgOverloadingClass( arg ) == GetArgOverloadingClass( set_arg ) )
+				if( arg.arg_type == set_arg.arg_type && GetArgOverloadingClass( arg ) == GetArgOverloadingClass( set_arg ) )
 				{
 					++arg_is_same_count;
 				}
@@ -409,8 +409,8 @@ fn CodeBuilder::GetOverloadedFunction(
 				auto arg_overloading_class= GetArgOverloadingClass( actual_args_corrected[arg_n] );
 				auto parameter_overloading_class= GetArgOverloadingClass( function_type.args[arg_n] );
 
-				auto& src_type= actual_args_corrected[arg_n].arg_type.get_ref();
-				auto& dst_type= function_type.args[arg_n].arg_type.get_ref();
+				auto& src_type= actual_args_corrected[arg_n].arg_type;
+				auto& dst_type= function_type.args[arg_n].arg_type;
 				if( src_type == dst_type )
 				{} // ok
 				else
@@ -614,7 +614,7 @@ fn CodeBuilder::GetOverloadedOperator(
 {
 	foreach( &arg : args )
 	{
-		if_var( &class_type : arg.arg_type.get_ref().GetClassType() )
+		if_var( &class_type : arg.arg_type.GetClassType() )
 		{
 			auto class_members= class_type.lock_imut().get_ref().members;
 			auto members_lock= class_members.lock_imut();

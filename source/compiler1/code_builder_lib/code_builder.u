@@ -1516,7 +1516,7 @@ fn CodeBuilder::PrepareFunction(
 	{
 		auto& function_type= function_variable.t;
 		if( ( is_constructor || is_destructor ) &&
-			!(function_type.return_type.get_ref() == void_type_ && !function_type.return_value_is_reference ) )
+			!(function_type.return_type == void_type_ && !function_type.return_value_is_reference ) )
 		{
 			REPORT_ERROR( ConstructorAndDestructorMustReturnVoid, names_scope_ptr, function_declaration.file_pos )
 		}
@@ -1689,7 +1689,7 @@ fn CodeBuilder::CheckOverloadedOperator(
 	auto mut is_this_class= false;
 	foreach( & arg : func_type.args )
 	{
-		if( arg.arg_type.get_ref() == class_type_non_null )
+		if( arg.arg_type == class_type_non_null )
 		{
 			is_this_class= true;
 			break;
@@ -1702,7 +1702,7 @@ fn CodeBuilder::CheckOverloadedOperator(
 	}
 
 	auto ret_is_void=
-		( func_type.return_type.get_ref() == void_type_ || func_type.return_type.get_ref() == void_type_for_ret_ ) &&
+		( func_type.return_type == void_type_ || func_type.return_type == void_type_for_ret_ ) &&
 		!func_type.return_value_is_reference;
 
 	if( operator == OverloadedOperator::Add ||
@@ -1762,7 +1762,7 @@ fn CodeBuilder::CheckOverloadedOperator(
 		{
 			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
 		}
-		if( !( func_type.return_type.get_ref() == bool_type_ && !func_type.return_value_is_reference ) )
+		if( !( func_type.return_type == bool_type_ && !func_type.return_value_is_reference ) )
 		{
 			REPORT_ERROR( InvalidReturnTypeForOperator, names_scope, file_pos, void_type_ )
 		}
@@ -1796,7 +1796,7 @@ fn CodeBuilder::CheckOverloadedOperator(
 			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
 		}
 		// Indexing operator must have first argument of parent class.
-		if( !func_type.args.empty() && func_type.args.front().arg_type.get_ref() != class_type_non_null )
+		if( !func_type.args.empty() && func_type.args.front().arg_type != class_type_non_null )
 		{
 			REPORT_ERROR( OperatorDoesNotHaveParentClassArguments, names_scope, file_pos )
 		}
@@ -1809,7 +1809,7 @@ fn CodeBuilder::CheckOverloadedOperator(
 			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
 		}
 		// Call operator must have first argument of parent class.
-		if( !func_type.args.empty() && func_type.args.front().arg_type.get_ref() != class_type_non_null )
+		if( !func_type.args.empty() && func_type.args.front().arg_type != class_type_non_null )
 		{
 			REPORT_ERROR( OperatorDoesNotHaveParentClassArguments, names_scope, file_pos )
 		}
@@ -1836,7 +1836,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 	var FunctionContext mut function_context_value(
 		llvm_context_,
 		func_variable.llvm_function,
-		function_type.return_type.get_ref(),
+		function_type.return_type,
 		function_type.return_value_is_reference,
 		function_type.return_value_is_mutable );
 
@@ -1846,16 +1846,16 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 	auto& mut function_context= args_variables_frame_hodler.GetFunctionContext();
 
 	// TODO - maybe forbid incomplete types even for references?
-	if( !function_type.return_value_is_reference && !EnsureTypeComplete( function_type.return_type.get_ref() ) )
+	if( !function_type.return_value_is_reference && !EnsureTypeComplete( function_type.return_type ) )
 	{
-		REPORT_ERROR( UsingIncompleteType, names_scope, func_variable.body_syntax_element.get_ref().file_pos, function_type.return_type.get_ref() )
+		REPORT_ERROR( UsingIncompleteType, names_scope, func_variable.body_syntax_element.get_ref().file_pos, function_type.return_type )
 	}
 
 	{
 		auto mut args_names_scope_lock= args_names_scope_ptr.lock_mut();
 		auto &mut args_names_scope= args_names_scope_lock.get_ref();
 
-		auto is_s_ret= !function_type.return_value_is_reference && !function_type.return_type.get_ref().GetClassType().empty();
+		auto is_s_ret= !function_type.return_value_is_reference && !function_type.return_type.GetClassType().empty();
 		if( is_s_ret )
 		{
 			unsafe
@@ -1878,7 +1878,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		{
 			var NamesScopeVariable mut out_arg
 			{
-				.t= function_type.args[arg_n].arg_type.get_ref(),
+				.t= function_type.args[arg_n].arg_type,
 				.is_mutable= function_type.args[arg_n].is_mutable,
 			};
 
@@ -2004,7 +2004,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 	auto block_build_info= BuildBlockElement( args_names_scope_ptr, function_context, block );
 	if( !block_build_info.have_terminal_instruction_inside )
 	{
-		if( function_type.return_type.get_ref() == void_type_ )
+		if( function_type.return_type == void_type_ )
 		{
 			// Manually generate "return" for void-return functions.
 			CallDestructorsForAllVariablesFrames( args_names_scope_ptr, function_context, block.end_file_pos );
@@ -2111,7 +2111,7 @@ fn CodeBuilder::EnsureTypeComplete( mut this, Type& t ) : bool
 	}
 	if_var( &array_type : t.GetArrayType() )
 	{
-		return EnsureTypeComplete( array_type.element_type.get_ref() );
+		return EnsureTypeComplete( array_type.element_type );
 	}
 
 	return true;
@@ -2136,7 +2136,7 @@ fn CodeBuilder::IsDefaultConstructor( FunctionVariable& function_variable, Class
 	if( function_variable.t.args.size() != 1s ){ return false; }
 
 	auto& arg= function_variable.t.args.front();
-	return arg.arg_type.get_ref() == class_type && arg.is_mutable && arg.is_reference;
+	return arg.arg_type == class_type && arg.is_mutable && arg.is_reference;
 }
 
 fn CodeBuilder::IsCopyConstructor( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool
@@ -2147,8 +2147,8 @@ fn CodeBuilder::IsCopyConstructor( FunctionVariable& function_variable, ClassTyp
 	auto& arg_dst= function_variable.t.args.front();
 	auto& arg_src= function_variable.t.args.back();
 	return
-		arg_dst.arg_type.get_ref() == class_type &&  arg_dst.is_mutable && arg_dst.is_reference &&
-		arg_src.arg_type.get_ref() == class_type && !arg_src.is_mutable && arg_src.is_reference;
+		arg_dst.arg_type == class_type &&  arg_dst.is_mutable && arg_dst.is_reference &&
+		arg_src.arg_type == class_type && !arg_src.is_mutable && arg_src.is_reference;
 }
 
 fn CodeBuilder::IsCopyAssignmentOperator( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool
@@ -2158,8 +2158,8 @@ fn CodeBuilder::IsCopyAssignmentOperator( FunctionVariable& function_variable, C
 	auto& arg_dst= function_variable.t.args.front();
 	auto& arg_src= function_variable.t.args.back();
 	return
-		arg_dst.arg_type.get_ref() == class_type &&  arg_dst.is_mutable && arg_dst.is_reference &&
-		arg_src.arg_type.get_ref() == class_type && !arg_src.is_mutable && arg_src.is_reference;
+		arg_dst.arg_type == class_type &&  arg_dst.is_mutable && arg_dst.is_reference &&
+		arg_src.arg_type == class_type && !arg_src.is_mutable && arg_src.is_reference;
 }
 
 fn CodeBuilder::GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef

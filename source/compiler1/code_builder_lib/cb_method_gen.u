@@ -149,7 +149,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	var FunctionContext mut function_context(
 		llvm_context_,
 		function_variable.llvm_function,
-		function_variable.t.return_type.get_ref(),
+		function_variable.t.return_type,
 		function_variable.t.return_value_is_reference,
 		function_variable.t.return_value_is_mutable );
 
@@ -352,7 +352,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 	var FunctionContext mut function_context(
 		llvm_context_,
 		function_variable.llvm_function,
-		function_variable.t.return_type.get_ref(),
+		function_variable.t.return_type,
 		function_variable.t.return_value_is_reference,
 		function_variable.t.return_value_is_mutable );
 
@@ -567,7 +567,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 	var FunctionContext mut function_context(
 		llvm_context_,
 		function_variable.llvm_function,
-		function_variable.t.return_type.get_ref(),
+		function_variable.t.return_type,
 		function_variable.t.return_value_is_reference,
 		function_variable.t.return_value_is_mutable );
 
@@ -705,7 +705,7 @@ fn CodeBuilder::TryGenerateDestructor( this, ClassTypePtr& class_type )
 	var FunctionContext mut function_context(
 		llvm_context_,
 		function_variable.llvm_function,
-		function_variable.t.return_type.get_ref(),
+		function_variable.t.return_type,
 		function_variable.t.return_value_is_reference,
 		function_variable.t.return_value_is_mutable );
 
@@ -758,7 +758,7 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 					src_element_value= LLVMBuildGEP( function_context.llvm_ir_builder, src, indexes[0], 2u, "[]\0"[0] );
 				}
 
-				BuildCopyConstructorPart( names_scope, function_context, dst_element_value, src_element_value, array_type.element_type.get_ref(), file_pos );
+				BuildCopyConstructorPart( names_scope, function_context, dst_element_value, src_element_value, array_type.element_type, file_pos );
 			}
 		)
 		return;
@@ -781,7 +781,7 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 			if( function_type.args.size() == 2s &&
 				function_type.args.back().is_reference &&
 				!function_type.args.back().is_mutable &&
-				function_type.args.back().arg_type.get_ref() == class_type ) // Copy constructor
+				function_type.args.back().arg_type == class_type ) // Copy constructor
 			{
 				// SPRACHE_TODO - maybe disallow unsafe copy constructors?
 				if( function_type.is_unsafe && !function_context.is_in_unsafe_block )
@@ -840,7 +840,7 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 					src_element_value= LLVMBuildGEP( function_context.llvm_ir_builder, src, indexes[0], 2u, "[]\0"[0] );
 				}
 
-				BuildCopyAssignmentOperatorPart( names_scope, function_context, dst_element_value, src_element_value, array_type.element_type.get_ref(), file_pos );
+				BuildCopyAssignmentOperatorPart( names_scope, function_context, dst_element_value, src_element_value, array_type.element_type, file_pos );
 			}
 		)
 		return;
@@ -862,8 +862,8 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 			auto& function_type= operator_.t;
 			if(
 				function_type.args.size() == 2s &&
-				function_type.args.front().is_reference &&  function_type.args.front().is_mutable && function_type.args.front().arg_type.get_ref() == class_type &&
-				function_type.args.back ().is_reference && !function_type.args.back ().is_mutable && function_type.args.back ().arg_type.get_ref() == class_type )
+				function_type.args.front().is_reference &&  function_type.args.front().is_mutable && function_type.args.front().arg_type == class_type &&
+				function_type.args.back ().is_reference && !function_type.args.back ().is_mutable && function_type.args.back ().arg_type == class_type )
 			{
 				// SPRACHE_TODO - maybe disallow unsafe copy assignment operators?
 				if( function_type.is_unsafe && !function_context.is_in_unsafe_block )
@@ -902,7 +902,7 @@ fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionC
 					element_value= LLVMBuildGEP( function_context.llvm_ir_builder, value, indexes[0], 2u, "[]\0"[0] );
 				}
 
-				BuildDestructorPart( names_scope, function_context, element_value, array_type.element_type.get_ref(), file_pos );
+				BuildDestructorPart( names_scope, function_context, element_value, array_type.element_type, file_pos );
 			}
 		)
 	}

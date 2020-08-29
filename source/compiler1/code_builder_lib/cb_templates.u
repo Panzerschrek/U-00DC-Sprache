@@ -772,7 +772,7 @@ fn CodeBuilder::GenTemplateFunction(
 		{
 			all_ok&=
 				!function_template.class_.empty() &&
-				arg.arg_type.get_ref().ReferenceIsConvertibleTo( ust::to_non_nullable(function_template.class_) );
+				arg.arg_type.ReferenceIsConvertibleTo( ust::to_non_nullable(function_template.class_) );
 		}
 		else
 		{
@@ -788,17 +788,17 @@ fn CodeBuilder::GenTemplateFunction(
 
 				if_var( &t : template_arg.something.get</Type/>() )
 				{
-					all_ok&= arg.arg_type.get_ref().ReferenceIsConvertibleTo( t );
+					all_ok&= arg.arg_type.ReferenceIsConvertibleTo( t );
 					continue;
 				}
 			}
 			if_var( &type_param : param.GetTypeParam() )
 			{
-				all_ok&= arg.arg_type.get_ref().ReferenceIsConvertibleTo( type_param.t );
+				all_ok&= arg.arg_type.ReferenceIsConvertibleTo( type_param.t );
 				continue;
 			}
 
-			all_ok&= MatchTemplateArgument( result_names_scope, function_template, param, arg.arg_type.get_ref(), file_pos );
+			all_ok&= MatchTemplateArgument( result_names_scope, function_template, param, arg.arg_type, file_pos );
 		}
 	}
 
@@ -1282,7 +1282,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 	{
 		if_var( &given_array_type : given_type.GetArrayType() )
 		{
-			if( !MatchTemplateArgument( names_scope, template_, array_type_param.element_type, given_array_type.element_type.get_ref(), file_pos ) )
+			if( !MatchTemplateArgument( names_scope, template_, array_type_param.element_type, given_array_type.element_type, file_pos ) )
 			{
 				return false;
 			}
@@ -1330,7 +1330,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				return false;
 			}
 
-			if( !MatchTemplateArgument( names_scope, template_, function_type_param.return_type, given_function_type.return_type.get_ref(), file_pos ) )
+			if( !MatchTemplateArgument( names_scope, template_, function_type_param.return_type, given_function_type.return_type, file_pos ) )
 			{
 				return false;
 			}
@@ -1350,7 +1350,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				{
 					return false;
 				}
-				if( !MatchTemplateArgument( names_scope, template_, expected_param.t, given_arg.arg_type.get_ref(), file_pos ) )
+				if( !MatchTemplateArgument( names_scope, template_, expected_param.t, given_arg.arg_type, file_pos ) )
 				{
 					return false;
 				}

@@ -253,7 +253,7 @@ fn MangleTypeImpl( Type& t ) : MangleGraphNode
 		res.prefix= "A";
 		res.prefix+= ust::to_string8(array_type.element_count);
 		res.prefix+= "_";
-		res.childs.push_back( ust::box</MangleGraphNode/>( MangleTypeImpl( array_type.element_type.get_ref() ) ) );
+		res.childs.push_back( ust::box</MangleGraphNode/>( MangleTypeImpl( array_type.element_type ) ) );
 		return move(res);
 	}
 	if_var( class_type_ptr : t.GetClassType() )
@@ -302,7 +302,7 @@ fn MangleTypeImpl( Type& t ) : MangleGraphNode
 		{
 			var FunctionType::Arg mut ret_arg
 			{
-				.arg_type( function_type.return_type.get_ref() ),
+				.arg_type( function_type.return_type ),
 				.is_mutable= function_type.return_value_is_mutable,
 				.is_reference= function_type.return_value_is_reference,
 			};
@@ -323,7 +323,7 @@ fn MangleTypeImpl( Type& t ) : MangleGraphNode
 		{
 			var FunctionType::Arg mut arg_copy // TODO - create copy constructor for "Arg"
 			{
-				.arg_type(arg.arg_type.get_ref()),
+				.arg_type(arg.arg_type),
 				.is_mutable= arg.is_mutable,
 				.is_reference= arg.is_reference,
 			};
@@ -338,7 +338,7 @@ fn MangleTypeImpl( Type& t ) : MangleGraphNode
 
 		foreach( &arg : signature )
 		{
-			var MangleGraphNode mut arg_node= MangleTypeImpl( arg.arg_type.get_ref() );
+			var MangleGraphNode mut arg_node= MangleTypeImpl( arg.arg_type );
 			if( !arg.is_mutable && arg.is_reference ) // push "Konst" for reference immutable arguments
 			{
 				var MangleGraphNode mut konst_node{ .prefix= "K" };
@@ -529,7 +529,7 @@ fn MangleFunctionImpl(
 
 	foreach( &arg : function_type.args )
 	{
-		var MangleGraphNode mut arg_node= MangleTypeImpl( arg.arg_type.get_ref() );
+		var MangleGraphNode mut arg_node= MangleTypeImpl( arg.arg_type );
 		if( !arg.is_mutable && arg.is_reference ) // push "Konst" for reference immutable arguments
 		{
 			var MangleGraphNode mut konst_node;

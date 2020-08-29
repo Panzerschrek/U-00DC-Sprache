@@ -12,6 +12,12 @@ namespace U
 namespace ToStringHelper
 {
 
+template</type T/>
+fn ToString( ust::box</T/>& b ) : ust::string8
+{
+	return ToStringHelper::ToString( b.get_ref() );
+}
+
 fn ToString( FundamentalType& fundamental_type ) : ust::string8
 {
 	return ust::string8( GetFundamentalTypeName( fundamental_type.fundamental_type ) );
@@ -21,7 +27,7 @@ fn ToString( ArrayType& array_type ) : ust::string8
 {
 	var ust::string8 mut result;
 	result+= "[ ";
-	result+= array_type.element_type.get_ref().ToString();
+	result+= array_type.element_type.ToString();
 	result+= ", ";
 	result+= ust::to_string8(array_type.element_count);
 	result+= " ]";
@@ -37,7 +43,7 @@ fn ToString( FunctionType& function_type ) : ust::string8
 	result+= "(";
 	foreach( &arg : function_type.args )
 	{
-		result+= arg.arg_type.get_ref().ToString();
+		result+= arg.arg_type.ToString();
 		result+= " arg";
 
 		if( ust::ref_to_int(arg) != ust::ref_to_int(function_type.args.back()))
@@ -55,7 +61,7 @@ fn ToString( FunctionType& function_type ) : ust::string8
 
 	result+= ": ";
 
-	result+= function_type.return_type.get_ref().ToString();
+	result+= function_type.return_type.ToString();
 
 	return move(result);
 }
@@ -115,20 +121,9 @@ op FundamentalType::!=( FundamentalType& l, FundamentalType& r ) : bool
 	return !(l == r);
 }
 
-fn ArrayType::constructor( mut this, ArrayType &imut other )
-	( element_type(other.element_type.get_ref()), element_count(other.element_count), llvm_type(other.llvm_type) )
-{}
-
-op ArrayType::=( mut this, ArrayType &imut other )
-{
-	this.element_type.get_ref()= other.element_type.get_ref();
-	this.element_count= other.element_count;
-	this.llvm_type= other.llvm_type;
-}
-
 op ArrayType::==( ArrayType& l, ArrayType& r ) : bool
 {
-	return l.element_type.get_ref() == r.element_type.get_ref() && l.element_count == r.element_count;
+	return l.element_type == r.element_type && l.element_count == r.element_count;
 }
 
 op ArrayType::!=( ArrayType& l, ArrayType& r ) : bool
@@ -139,7 +134,7 @@ op ArrayType::!=( ArrayType& l, ArrayType& r ) : bool
 op FunctionType::Arg::==(Arg& l, Arg& r) : bool
 {
 	return
-		l.arg_type.get_ref() == r.arg_type.get_ref() &&
+		l.arg_type == r.arg_type &&
 		l.is_reference == r.is_reference &&
 		l.is_mutable == r.is_mutable;
 }
@@ -152,7 +147,7 @@ op FunctionType::Arg::!=(Arg& l, Arg& r) : bool
 fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 {
 	if(
-		this.return_type.get_ref() != dst.return_type.get_ref() ||
+		this.return_type != dst.return_type ||
 		this.return_value_is_reference != dst.return_value_is_reference ||
 		( !this.return_value_is_mutable && dst.return_value_is_mutable ) || // Allow mutability conversions, except mut->imut
 		( this.is_unsafe && !dst.is_unsafe ) || // Disable unsafe function to safe function conversion
@@ -165,7 +160,7 @@ fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 	{
 		auto& this_arg= this.args[i];
 		auto& dst_arg= dst.args[i];
-		if( this_arg.arg_type.get_ref() != dst_arg.arg_type.get_ref() ||
+		if( this_arg.arg_type != dst_arg.arg_type ||
 			this_arg.is_reference != dst_arg.is_reference ||
 			(this_arg.is_mutable && !dst_arg.is_mutable ) ) // Allow mutability conversions, except mut->imut
 		{
@@ -174,59 +169,6 @@ fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 	}
 
 	return true;
-}
-
-op FunctionPointerType::==( FunctionPointerType& l, FunctionPointerType& r ) : bool
-{
-	return l.function_type == r.function_type;
-}
-
-op FunctionPointerType::!=( FunctionPointerType& l, FunctionPointerType& r ) : bool
-{
-	return !(l == r);
-}
-
-fn FunctionType::constructor( mut this, FunctionType &imut other )
-	(
-		return_type(other.return_type.get_ref()),
-		llvm_type(other.llvm_type),
-		return_value_is_reference(other.return_value_is_reference),
-		return_value_is_mutable(other.return_value_is_mutable),
-		is_unsafe(other.is_unsafe),
-	)
-{
-	foreach( & in_arg : other.args )
-	{
-		var Arg mut arg
-		{
-			.arg_type( in_arg.arg_type.get_ref() ),
-			.is_reference= in_arg.is_reference,
-			.is_mutable= in_arg.is_mutable,
-		};
-		args.push_back( move(arg) );
-	}
-}
-
-op FunctionType::=( mut this, FunctionType &imut other )
-{
-	return_type.get_ref()= other.return_type.get_ref();
-	return_value_is_reference= other.return_value_is_reference;
-	return_value_is_mutable= other.return_value_is_mutable;
-	is_unsafe= other.is_unsafe;
-
-	args.clear();
-	foreach( & in_arg : other.args )
-	{
-		var Arg mut arg
-		{
-			.arg_type( in_arg.arg_type.get_ref() ),
-			.is_reference= in_arg.is_reference,
-			.is_mutable= in_arg.is_mutable,
-		};
-		args.push_back( move(arg) );
-	}
-
-	this.llvm_type= other.llvm_type;
 }
 
 op FunctionType::==( FunctionType& l, FunctionType& r ) : bool
@@ -245,7 +187,7 @@ op FunctionType::==( FunctionType& l, FunctionType& r ) : bool
 	}
 
 	return
-		l.return_type.get_ref() == r.return_type.get_ref() &&
+		l.return_type == r.return_type &&
 		l.return_value_is_reference == r.return_value_is_reference &&
 		l.return_value_is_mutable == r.return_value_is_mutable &&
 		l.is_unsafe == r.is_unsafe;
@@ -256,20 +198,71 @@ op FunctionType::!=( FunctionType& l, FunctionType& r ) : bool
 	return !(l == r);
 }
 
+op FunctionPointerType::==( FunctionPointerType& l, FunctionPointerType& r ) : bool
+{
+	return l.function_type == r.function_type;
+}
+
+op FunctionPointerType::!=( FunctionPointerType& l, FunctionPointerType& r ) : bool
+{
+	return !(l == r);
+}
+
+fn Type::constructor( mut this, Type &imut other )
+{
+	this= other;
+}
+
+op Type::=( mut this, Type &imut other )
+{
+	if_var( &fundamental_type : other.GetFundamentalType() )
+	{
+		this= Type( fundamental_type );
+		return;
+	}
+	if_var( &array_type : other.GetArrayType() )
+	{
+		this= Type( array_type );
+		return;
+	}
+	if_var( &function_type : other.GetFunctionType() )
+	{
+		this= Type( function_type );
+		return;
+	}
+	if_var( &function_pointer_type : other.GetFunctionPointerType() )
+	{
+		this= Type( function_pointer_type );
+		return;
+	}
+	if_var( &class_type_ptr : other.GetClassType() )
+	{
+		this= Type( class_type_ptr );
+		return;
+	}
+	if_var( &enum_type_ptr : other.GetEnumType() )
+	{
+		this= Type( enum_type_ptr );
+		return;
+	}
+
+	halt;
+}
+
 fn Type::conversion_constructor( FundamentalType mut fundamental_type )
 	( something_( move(fundamental_type) ) )
 {}
 
 fn Type::conversion_constructor( ArrayType mut array_type )
-	( something_( move(array_type) ) )
+	( something_( ust::box</ArrayType/>(move(array_type)) ) )
 {}
 
 fn Type::conversion_constructor( FunctionType mut function_type )
-	( something_( move(function_type) ) )
+	( something_( ust::box</FunctionType/>(move(function_type)) ) )
 {}
 
 fn Type::conversion_constructor( FunctionPointerType mut function_pointer_type )
-	( something_( move(function_pointer_type) ) )
+	( something_( ust::box</FunctionPointerType/>(move(function_pointer_type)) ) )
 {}
 
 fn Type::conversion_constructor( ClassTypePtr mut class_type )
@@ -292,32 +285,62 @@ fn Type::GetFundamentalType( imut this ) : ust::optional_ref</FundamentalType, f
 
 fn Type::GetArrayType(  mut this ) : ust::optional_ref</ArrayType, true  />'this'
 {
-	return something_.get</ArrayType/>();
+	if_var( &mut b : something_.get</ust::box</ArrayType/>/>() )
+	{
+		return ust::optional_ref</ArrayType, true  />( b.get_ref() );
+	}
+
+	return ust::optional_ref</ArrayType, true  />();
 }
 
 fn Type::GetArrayType( imut this ) : ust::optional_ref</ArrayType, false />'this'
 {
-	return something_.get</ArrayType/>();
+	if_var( &b : something_.get</ust::box</ArrayType/>/>() )
+	{
+		return ust::optional_ref</ArrayType, false />( b.get_ref() );
+	}
+
+	return ust::optional_ref</ArrayType, false />();
 }
 
 fn Type::GetFunctionType(  mut this ) : ust::optional_ref</FunctionType, true  />'this'
 {
-	return something_.get</FunctionType/>();
+	if_var( &mut b : something_.get</ust::box</FunctionType/>/>() )
+	{
+		return ust::optional_ref</FunctionType, true  />( b.get_ref() );
+	}
+
+	return ust::optional_ref</FunctionType, true  />();
 }
 
 fn Type::GetFunctionType( imut this ) : ust::optional_ref</FunctionType, false />'this'
 {
-	return something_.get</FunctionType/>();
+	if_var( &b : something_.get</ust::box</FunctionType/>/>() )
+	{
+		return ust::optional_ref</FunctionType, false />( b.get_ref() );
+	}
+
+	return ust::optional_ref</FunctionType, false  />();
 }
 
 fn Type::GetFunctionPointerType(  mut this ) : ust::optional_ref</FunctionPointerType, true  />'this'
 {
-	return something_.get</FunctionPointerType/>();
+	if_var( &mut b : something_.get</ust::box</FunctionPointerType/>/>() )
+	{
+		return ust::optional_ref</FunctionPointerType, true  />( b.get_ref() );
+	}
+
+	return ust::optional_ref</FunctionPointerType, true  />();
 }
 
 fn Type::GetFunctionPointerType( imut this ) : ust::optional_ref</FunctionPointerType, false />'this'
 {
-	return something_.get</FunctionPointerType/>();
+	if_var( &b : something_.get</ust::box</FunctionPointerType/>/>() )
+	{
+		return ust::optional_ref</FunctionPointerType, false />( b.get_ref() );
+	}
+
+	return ust::optional_ref</FunctionPointerType, false />();
 }
 
 fn Type::GetClassType(  mut this ) : ust::optional_ref</ClassTypePtr, true  />'this'
@@ -342,20 +365,29 @@ fn Type::GetEnumType( imut this ) : ust::optional_ref</EnumTypePtr, false />'thi
 
 fn Type::GetLLVMType( this ) : LLVMTypeRef
 {
-	variant_visit( &t : something_ )
+	if_var( &fundamental_type : GetFundamentalType() )
 	{
-		static_if( ust::is_same_type</ typeof(t), ClassTypePtr />() )
-		{
-			return t.lock_imut().get_ref().llvm_type;
-		}
-		else if( ust::is_same_type</ typeof(t), EnumTypePtr />() )
-		{
-			return t.lock_imut().get_ref().underlaying_type.llvm_type;
-		}
-		else
-		{
-			return t.llvm_type;
-		}
+		return fundamental_type.llvm_type;
+	}
+	if_var( &array_type : GetArrayType() )
+	{
+		return array_type.llvm_type;
+	}
+	if_var( &function_type : GetFunctionType() )
+	{
+		return function_type.llvm_type;
+	}
+	if_var( &function_pointer_type : GetFunctionPointerType() )
+	{
+		return function_pointer_type.llvm_type;
+	}
+	if_var( &class_type_ptr : GetClassType() )
+	{
+		return class_type_ptr.lock_imut().get_ref().llvm_type;
+	}
+	if_var( &enum_type_ptr : GetEnumType() )
+	{
+		return enum_type_ptr.lock_imut().get_ref().underlaying_type.llvm_type;
 	}
 
 	halt;
@@ -365,7 +397,7 @@ fn Type::IsDefaultConstructible( this ) : bool
 {
 	if_var( &array_type : GetArrayType() )
 	{
-		return array_type.element_count == 0u64 || array_type.element_type.get_ref().IsDefaultConstructible();
+		return array_type.element_count == 0u64 || array_type.element_type.IsDefaultConstructible();
 	}
 	if_var( &class_type : GetClassType() )
 	{
@@ -382,7 +414,7 @@ fn Type::IsCopyConstructible( this ) : bool
 	}
 	if_var( &array_type : GetArrayType() )
 	{
-		return array_type.element_count == 0u64 || array_type.element_type.get_ref().IsCopyConstructible();
+		return array_type.element_count == 0u64 || array_type.element_type.IsCopyConstructible();
 	}
 	if_var( &class_type : GetClassType() )
 	{
@@ -399,7 +431,7 @@ fn Type::IsCopyAssignable( this ) : bool
 	}
 	if_var( &array_type : GetArrayType() )
 	{
-		return array_type.element_count == 0u64 || array_type.element_type.get_ref().IsCopyAssignable();
+		return array_type.element_count == 0u64 || array_type.element_type.IsCopyAssignable();
 	}
 	if_var( &class_type : GetClassType() )
 	{
@@ -416,7 +448,7 @@ fn Type::CanBeConstexpr( this ) : bool
 	}
 	if_var( &array_type : GetArrayType() )
 	{
-		return array_type.element_type.get_ref().CanBeConstexpr();
+		return array_type.element_type.CanBeConstexpr();
 	}
 
 	return false;
@@ -426,7 +458,7 @@ fn Type::IsAbstract( this ) : bool
 {
 	if_var( &array_type : GetArrayType() )
 	{
-		return array_type.element_count > 0u64 && array_type.element_type.get_ref().IsAbstract();
+		return array_type.element_count > 0u64 && array_type.element_type.IsAbstract();
 	}
 	if_var( &class_type : GetClassType() )
 	{
@@ -483,7 +515,17 @@ op Type::==( Type& l, Type& r ) : bool
 
 	variant_visit( &l_t : l.something_ )
 	{
-		return l_t == r.something_.get</ typeof(l_t) />().get_ref();
+		static_if(
+			ust::is_same_type</ typeof(l_t), ust::box</ArrayType/> />() ||
+			ust::is_same_type</ typeof(l_t), ust::box</FunctionType/> />() ||
+			ust::is_same_type</ typeof(l_t), ust::box</FunctionPointerType/> />() )
+		{
+			return l_t.get_ref() == r.something_.get</ typeof(l_t) />().get_ref().get_ref();
+		}
+		else
+		{
+			return l_t == r.something_.get</ typeof(l_t) />().get_ref();
+		}
 	}
 
 	halt;
@@ -506,7 +548,7 @@ fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
 	auto& tr= other.t;
 
 	if( !(
-		tl.return_type.get_ref() == tr.return_type.get_ref() &&
+		tl.return_type == tr.return_type &&
 		tl.return_value_is_reference == tr.return_value_is_reference &&
 		tl.return_value_is_mutable == tr.return_value_is_mutable &&
 		tl.is_unsafe == tr.is_unsafe &&
@@ -523,7 +565,7 @@ fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
 		auto& arg_l= tl.args[i];
 		auto& arg_r= tr.args[i];
 		if( !(
-			arg_l.arg_type.get_ref() == arg_r.arg_type.get_ref() &&
+			arg_l.arg_type == arg_r.arg_type &&
 			arg_l.is_mutable == arg_r.is_mutable &&
 			arg_l.is_reference == arg_r.is_reference
 			) )
