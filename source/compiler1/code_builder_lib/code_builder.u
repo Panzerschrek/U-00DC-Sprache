@@ -1576,7 +1576,6 @@ fn CodeBuilder::PrepareFunction(
 
 	if_var( &mut prev_function : GetFunctionWithSameType( functions_set, function_variable.t ) )
 	{
-		// TODO - report about duplicated body/prototype
 		if( prev_function.prototype_syntax_element.empty() )
 		{
 			prev_function.prototype_syntax_element= function_variable.prototype_syntax_element;
@@ -1616,11 +1615,24 @@ fn CodeBuilder::PrepareFunction(
 			prev_function.body_syntax_element.get_ref().virtual_kind != prev_function.prototype_syntax_element.get_ref().virtual_kind )
 		{
 			REPORT_ERROR( VirtualMismatch, names_scope_ptr, prev_function.body_syntax_element.get_ref().file_pos, func_name )
+			return false;
 		}
 		if( !prev_function.body_syntax_element.empty() && !prev_function.prototype_syntax_element.empty() &&
 			prev_function.prototype_syntax_element.get_ref().virtual_kind == Synt::Function::VirtualKind::VirtualPure )
 		{
 			REPORT_ERROR( BodyForPureVirtualFunction, names_scope_ptr, prev_function.body_syntax_element.get_ref().file_pos, func_name )
+			return false;
+		}
+
+		if( prev_function.is_deleted != function_variable.is_deleted )
+		{
+			REPORT_ERROR( BodyForDeletedFunction, names_scope_ptr, prev_function.prototype_syntax_element.get_ref().file_pos, func_name )
+			return false;
+		}
+		if( prev_function.is_generated != function_variable.is_generated )
+		{
+			REPORT_ERROR( BodyForGeneratedFunction, names_scope_ptr, prev_function.prototype_syntax_element.get_ref().file_pos, func_name )
+			return false;
 		}
 
 		return true;
