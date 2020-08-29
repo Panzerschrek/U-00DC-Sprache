@@ -191,6 +191,7 @@ bool FilterTest( const std::string& test_name )
 		"ReferencesHaveConstructorsWithExactlyOneParameterTest",
 		"ShortClassTemplateForm",
 		"StructInitializerForNonStructTest0",
+		"StructInitializerForNonStructTest1",
 		"StructNamedInitializersTest",
 		"TemplateArgumentIsNotDeducedYet",
 		"TemplateArgumentNotUsedInSignature",

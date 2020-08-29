@@ -155,6 +155,10 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	{
 		REPORT_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, names_scope, struct_named_initializer.file_pos )
 	}
+	if( class_type.kind != ClassType::Kind::Struct )
+	{
+		REPORT_ERROR( StructInitializerForNonStruct, names_scope, struct_named_initializer.file_pos )
+	}
 
 	foreach( &member_initializer : struct_named_initializer.members_initializers )
 	{
