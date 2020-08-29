@@ -18,6 +18,7 @@ namespace CodeBuilderPrivate
 namespace
 {
 
+// TODO - add possibility to setup these values, using compiler options.
 constexpr size_t g_max_data_stack_size= 1024u * 1024u * 64u - 1u; // 64 Megabytes will be enough for stack.
 constexpr size_t g_constants_segment_offset= g_max_data_stack_size + 1u;
 constexpr size_t g_max_constants_stack_size =1024u * 1024u * 64u; // 64 Megabytes will be enough for constants.
@@ -118,6 +119,8 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	}
 	else if( const Class* const struct_type= function_type.return_type.GetClassType() )
 		result.result_constant= CreateInitializerForStructElement( struct_type->llvm_type, s_ret_ptr );
+	else if( const Tuple* const tuple_type= function_type.return_type.GetTupleType() )
+		result.result_constant= CreateInitializerForStructElement( tuple_type->llvm_type, s_ret_ptr );
 	else if( function_type.return_type.GetFunctionPointerType() != nullptr )
 		REPORT_ERROR( ConstexprFunctionEvaluationError, errors_, *file_pos_, "returning function pointer in constexpr function" );
 	else U_ASSERT(false);

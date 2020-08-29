@@ -621,6 +621,20 @@ def TuplesConstexpr_Test2():
 	tests_lib.build_program( c_program_text )
 
 
+def TuplesConstexpr_Test3():
+	c_program_text= """
+		fn constexpr MakeTuple( i32 x, f64 y ) : tup[ i32, f64 ]
+		{
+			var tup[ i32, f64 ] t[ x, y ];
+			return t;
+		}
+		auto constexpr t= MakeTuple( -65643, 3.25 );
+		static_assert( t[0] == -65643 );
+		static_assert( t[1] == 3.25 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def TupleTemplateArgument_Test0():
 	c_program_text= """
 		template</ type T />
