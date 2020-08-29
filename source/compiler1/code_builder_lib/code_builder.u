@@ -102,7 +102,10 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 			foreach( &mut class_table_entry : node.class_table )
 			{
 				auto mut lock= class_table_entry.key().lock_mut();
-				lock.get_ref().members= dummy_class_names_scope;
+				auto &mut class_= lock.get_ref();
+				class_.members= dummy_class_names_scope;
+				class_.parents.clear();
+				class_.virtual_table.clear();
 			}
 		}
 	}
