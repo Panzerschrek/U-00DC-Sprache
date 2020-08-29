@@ -393,6 +393,20 @@ struct ClassField
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 }
 
+enum ClassVisibility : u8
+{
+	// Must be ordered from less access to more access.
+	Public,
+	Protected,
+	Private,
+}
+
+struct ClassVisibilityLabel
+{
+	FilePos file_pos;
+	ClassVisibility visibility;
+}
+
 type ClassElement= ust::variant</ tup[
 	ust::shared_ptr_final</Function/>,
 	ust::shared_ptr_final</FunctionTemplate/>,
@@ -401,6 +415,7 @@ type ClassElement= ust::variant</ tup[
 	ust::shared_ptr_final</TypeAlias/>,
 	ust::shared_ptr_final</TypeTemplate/>,
 	ust::shared_ptr_final</ClassField/>,
+	ClassVisibilityLabel,
 	ust::shared_ptr_final</VariablesDeclaration/>,
 	ust::shared_ptr_final</AutoVariableDeclaration/>,
 	ust::shared_ptr_final</StaticAssert/>

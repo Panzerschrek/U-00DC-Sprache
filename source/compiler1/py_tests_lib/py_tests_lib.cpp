@@ -593,6 +593,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"VirtualOperatorCall_Test2",
 		"VirtualOperatorCall_Test3",
 		"VirtualRequired_Test0",
+		"VisibilityLabelDeclaration_Test0",
+		"VisibilityLabelDeclaration_Test1",
 		"ZeroInitializerForChar_Test0",
 	};
 

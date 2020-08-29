@@ -6,6 +6,25 @@ import "code_builder.uh"
 namespace U
 {
 
+fn CodeBuilder::NamesScopeFillClass( mut this, NamesScopeMutPtr& names_scope_ptr, Synt::ClassElements& class_elements, ClassTypePtr& class_type )
+{
+	auto mut current_visibility= Synt::ClassVisibility::Public;
+	foreach( & class_element : class_elements )
+	{
+		variant_visit( & el : class_element )
+		{
+			static_if( ust::is_same_type</ typeof(el), Synt::ClassVisibilityLabel />() )
+			{
+				current_visibility= el.visibility;
+			}
+			else
+			{
+				NamesScopeFill( names_scope_ptr, el, class_type );
+			}
+		}
+	}
+}
+
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, Synt::NamespaceElements& namespace_elements )
 {
 	foreach( & namespace_element : namespace_elements )
@@ -13,17 +32,6 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, Syn
 		variant_visit( & el : namespace_element )
 		{
 			NamesScopeFill( names_scope_ptr, el );
-		}
-	}
-}
-
-fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, Synt::ClassElements& class_elements, ClassTypePtr& class_type )
-{
-	foreach( & class_element : class_elements )
-	{
-		variant_visit( & el : class_element )
-		{
-			NamesScopeFill( names_scope_ptr, el, class_type );
 		}
 	}
 }
@@ -566,7 +574,7 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 			}
 
 			auto class_members= class_type_ptr.lock_imut().get_ref().members;
-			NamesScopeFill( class_members, class_.get_ref().class_elements, ust::to_non_nullable(class_type_ptr) );
+			NamesScopeFillClass( class_members, class_.get_ref().class_elements, ust::to_non_nullable(class_type_ptr) );
 			return ust::to_non_nullable(class_type_ptr);
 		}
 		else
@@ -606,7 +614,7 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 		lock.get_ref().llvm_type= LLVMStructCreateNamed( llvm_context_, name_mangled.front() );
 	}
 
-	NamesScopeFill( class_members, class_.get_ref().class_elements, class_type_ptr );
+	NamesScopeFillClass( class_members, class_.get_ref().class_elements, class_type_ptr );
 
 	var bool mut insert_not_ok= false;
 	{
