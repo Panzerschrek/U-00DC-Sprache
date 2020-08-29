@@ -398,6 +398,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"CouldNotOverloadFunction_ForUnsafe_Test0",
 		"CouldNotOverloadFunction_ForUnsafe_Test1",
 		"CouldNotSelectOverloadedFunction_Test0",
+		"DefaultConstructorGeneration_Test0",
 		"DirectFunctionTemplateParametersSet_Test0",
 		"DirectFunctionTemplateParametersSet_Test1",
 		"DirectFunctionTemplateParametersSet_Test2",

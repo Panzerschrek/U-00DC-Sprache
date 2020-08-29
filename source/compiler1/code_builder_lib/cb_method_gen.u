@@ -15,14 +15,28 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 
 	// Constructors value should always exists and should always be NamesScopeFunctionsSet.
 	auto constructors_ptr= class_members.lock_imut().get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).get_ref().Get</NamesScopeFunctionsSet/>();
-	foreach( &constructor_ : constructors_ptr.lock_imut().get_ref().functions_set.functions )
+	auto mut constructors_lock= constructors_ptr.lock_mut();
+	auto &mut constructors= constructors_lock.get_ref().functions_set;
+
+	// Search for copy constructor.
+	auto mut constructor_index= ~0s;
+	for( auto mut i= 0s; i < constructors.functions.size(); ++i )
 	{
+		auto& constructor_= constructors.functions[i];
 		auto& function_type= constructor_.t;
 		if( function_type.args.size() == 1s )
 		{
-			auto mut class_lock= class_type.lock_mut();
-			class_lock.get_ref().is_default_constructible= !constructor_.is_deleted;
-			return;
+			if( constructor_.is_generated )
+			{
+				constructor_index= i;
+				break;
+			}
+			else
+			{
+				auto mut class_lock= class_type.lock_mut();
+				class_lock.get_ref().is_default_constructible= !constructor_.is_deleted;
+				return;
+			}
 		}
 		else if(
 			function_type.args.size() == 2s &&
@@ -37,7 +51,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		}
 	}
 
-	if( have_explicit_noncopy_constructors )
+	if( have_explicit_noncopy_constructors && constructor_index == ~0s )
 	{
 		return;
 	}
@@ -71,61 +85,68 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		class_lock.get_ref().is_default_constructible= true;
 	}
 
-	// Prepare function type.
-	var FunctionType mut function_type
+	if( constructor_index == ~0s )
 	{
-		.return_type( void_type_for_ret_ ),
-		.return_value_is_mutable= false,
-		.return_value_is_reference= false,
-	};
-	{
-		var FunctionType::Arg mut this_arg
+		// Prepare function type.
+		var FunctionType mut function_type
 		{
-			.arg_type( Type( class_type ) ),
-			.is_reference= true,
-			.is_mutable= true,
+			.return_type( void_type_for_ret_ ),
+			.return_value_is_mutable= false,
+			.return_value_is_reference= false,
 		};
-		function_type.args.push_back( move(this_arg) );
-	}
+		{
+			var FunctionType::Arg mut this_arg
+			{
+				.arg_type( Type( class_type ) ),
+				.is_reference= true,
+				.is_mutable= true,
+			};
+			function_type.args.push_back( move(this_arg) );
+		}
 
-	unsafe
-	{
-		function_type.llvm_type=
-			LLVMFunctionType(
-				fundamental_llvm_types_.void_for_ret_,
-				LLVMPointerType( class_type.lock_imut().get_ref().llvm_type, 0u ),
-				1u,
-				LLVMBool::False );
-	}
+		unsafe
+		{
+			function_type.llvm_type=
+				LLVMFunctionType(
+					fundamental_llvm_types_.void_for_ret_,
+					LLVMPointerType( class_type.lock_imut().get_ref().llvm_type, 0u ),
+					1u,
+					LLVMBool::False );
+		}
 
-	// Prepare function variable.
-	var FunctionVariable mut function_variable
-	{
-		.is_this_call= true,
-		.is_generated= true,
-		.t= function_type,
-	};
+		// Prepare function variable.
+		var FunctionVariable mut function_variable
+		{
+			.is_this_call= true,
+			.is_generated= true,
+			.t= function_type,
+		};
 
-	unsafe
-	{
-		function_variable.llvm_function=
-			LLVMAddFunction(
-				module_,
-				MangleFunction(
-					class_members.lock_imut().get_ref(),
-					KeywordToString( Keyword::constructor_ ),
-					function_variable.t ).front(),
-				function_variable.t.llvm_type );
+		unsafe
+		{
+			function_variable.llvm_function=
+				LLVMAddFunction(
+					module_,
+					MangleFunction(
+						class_members.lock_imut().get_ref(),
+						KeywordToString( Keyword::constructor_ ),
+						function_variable.t ).front(),
+					function_variable.t.llvm_type );
+		}
+
+		constructor_index= constructors.functions.size();
+		constructors.functions.push_back( move(function_variable) );
 	}
+	var FunctionVariable &mut function_variable= constructors.functions[constructor_index];
 
 	// Build code itself.
 
 	var FunctionContext mut function_context(
 		llvm_context_,
 		function_variable.llvm_function,
-		function_type.return_type.get_ref(),
-		function_type.return_value_is_reference,
-		function_type.return_value_is_mutable );
+		function_variable.t.return_type.get_ref(),
+		function_variable.t.return_value_is_reference,
+		function_variable.t.return_value_is_mutable );
 
 	auto mut this_llvm_value= LLVMValueRef::Null;
 	unsafe{  this_llvm_value= LLVMGetParam( function_variable.llvm_function, 0u );  }
@@ -173,10 +194,6 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		LLVMBuildBr( function_context.alloca_ir_builder, function_context.function_basic_block );
 		LLVMBuildRetVoid( function_context.llvm_ir_builder );
 	}
-
-	// Insert result variable
-	auto mut constructors_lock= constructors_ptr.lock_mut();
-	constructors_lock.get_ref().functions_set.functions.push_back( move(function_variable) );
 }
 
 fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
@@ -525,7 +542,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		operator_index= operators.functions.size();
 		operators.functions.push_back( move(function_variable) );
 	}
-	var FunctionVariable &mut function_variable= operators.functions.back();
+	var FunctionVariable &mut function_variable= operators.functions[operator_index];
 
 	// Build code itself.
 
