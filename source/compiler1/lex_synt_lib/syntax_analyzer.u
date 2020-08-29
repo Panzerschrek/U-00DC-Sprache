@@ -1109,6 +1109,31 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 	{
 		NextLexem();
 	}
+	else if( it_.front().lexem_type == Lexem::Type::Assignment )
+	{
+		NextLexem();
+
+		if( IsKeyword( it_.front(), Keyword::default_ ) )
+		{
+			res.body_kind= Function::BodyKind::BodyGenerationRequired;
+		}
+		else if( IsKeyword( it_.front(), Keyword::delete_ ) )
+		{
+			res.body_kind= Function::BodyKind::BodyGenerationDisabled;
+		}
+		else
+		{
+			PushErrorMessage();
+		}
+
+		NextLexem();
+
+		if( it_.front().lexem_type != Lexem::Type::Semicolon )
+		{
+			PushErrorMessage();
+		}
+		NextLexem();
+	}
 	else
 	{
 		if( it_.front().lexem_type == Lexem::Type::BracketLeft )
