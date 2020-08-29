@@ -49,12 +49,14 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	if_var( &class_type : variable.t.GetClassType() )
 	{
 		auto expr_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression_initializer );
-		if( expr_result.t != variable.t )
+		if( !expr_result.t.ReferenceIsConvertibleTo( variable.t ) )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope, FilePos(), variable.t, expr_result.t )
 			return LLVMValueRef::Null;
 		}
-		TryCallCopyConstructor( names_scope, function_context, variable.llvm_value, expr_result.llvm_value, class_type, Synt::GetFilePos(expression_initializer) );
+
+		auto mut value_for_copy= CreateReferenceCast( expr_result.llvm_value, expr_result.t, variable.t, function_context );
+		TryCallCopyConstructor( names_scope, function_context, variable.llvm_value, value_for_copy, class_type, Synt::GetFilePos(expression_initializer) );
 		return LLVMValueRef::Null;
 	}
 
