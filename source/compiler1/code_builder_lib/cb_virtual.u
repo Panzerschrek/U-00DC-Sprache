@@ -6,7 +6,7 @@ import "mangling.uh"
 namespace U
 {
 
-fn CodeBuilder::PrepareClassVirtualTable( ClassTypePtr& class_type_ptr )
+fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 {
 	// Class now should not be complete, but parents and functions should be known.
 	// Also, parent namespaces should not be merged into class namespace before call of this function.
@@ -124,9 +124,35 @@ fn CodeBuilder::PrepareClassVirtualTable( ClassTypePtr& class_type_ptr )
 			{
 				if( function_name == KeywordToString( Keyword::destructor_ ) )
 				{
-					// TODO
+					// For destructors virtual specifiers are optional.
+					// If destructor not marked as virtual, but it placed in polymorph class, make it virtual.
+					if( virtual_table_index != ~0u )
+					{
+						function.virtual_table_index= virtual_table_index;
+						class_type.virtual_table[virtual_table_index].function_variable= function;
+					}
+					else if(
+						class_type.kind == ClassType::Kind::PolymorphFinal ||
+						class_type.kind == ClassType::Kind::PolymorphNonFinal ||
+						class_type.kind == ClassType::Kind::Interface ||
+						class_type.kind == ClassType::Kind::Abstract )
+					{
+						function.virtual_table_index= u32(class_type.virtual_table.size());
+
+						var ClassType::VirtualTableEntry mut new_virtual_table_entry
+						{
+							.name= function_name,
+							.function_variable= function,
+							.is_pure= false,
+							.is_final= false,
+							.index_in_table= own_virtual_table_index,
+							.parent_virtual_table_index= ~0u,
+						};
+						class_type.virtual_table.push_back( move( new_virtual_table_entry ) );
+						++own_virtual_table_index;
+					}
 				}
-				if( virtual_table_index != ~0u )
+				else if( virtual_table_index != ~0u )
 				{
 					REPORT_ERROR( VirtualRequired, class_members_ptr, file_pos, function_name )
 				}
