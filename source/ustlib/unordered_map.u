@@ -47,6 +47,13 @@ public:
 		}
 	}
 
+	// Copy assignment operator.
+	// TODO - enable it only for copyable types.
+	op=( mut this, this_type &imut other )
+	{
+		this= this_type(other);
+	}
+
 	fn size( this ) : size_type
 	{
 		return size_;
