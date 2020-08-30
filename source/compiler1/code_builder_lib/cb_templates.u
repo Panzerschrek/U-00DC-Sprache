@@ -913,7 +913,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 	}
 	generated_template_things_.insert( template_key, result_names_scope );
 
-	NamesScopeFill( result_names_scope, template_syntax_element.function, function_template.class_ );
+	NamesScopeFill( result_names_scope, template_syntax_element.function, function_template.class_, Synt::ClassVisibility::Public /* TODO - set correct visibility */ );
 	auto result_namespace_value= result_names_scope.lock_imut().get_ref().GetThisScopeValue( function_name ).get_ref();
 
 	auto result_functions_set_ptr= result_namespace_value.Get</NamesScopeFunctionsSet/>();

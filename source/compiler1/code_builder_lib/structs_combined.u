@@ -537,6 +537,35 @@ op Type::!=( Type& l, Type& r ) : bool
 }
 
 //
+// ClassType
+//
+
+fn ClassType::GetMemberVisibility( this, ust::string8& member_name ) : Synt::ClassVisibility
+{
+	if_var( v : members_visibility.find(member_name) )
+	{
+		return v;
+	}
+
+	return Synt::ClassVisibility::Public;
+}
+
+fn ClassType::SetMemberVisibility( mut this, ust::string8& member_name, Synt::ClassVisibility visibility )
+{
+	if( visibility == Synt::ClassVisibility::Public )
+	{
+		if( !members_visibility.find( member_name ).empty() )
+		{
+			members_visibility.drop( member_name );
+		}
+	}
+	else
+	{
+		members_visibility.insert( member_name, visibility );
+	}
+}
+
+//
 // Value
 //
 

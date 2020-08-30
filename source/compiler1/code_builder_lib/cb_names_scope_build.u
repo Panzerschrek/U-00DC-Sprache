@@ -38,7 +38,8 @@ fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr
 fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</ClassType/>& class_type )
 {
 	BuildClass( names_scope_ptr, class_type );
-	NamesScopeBuild( class_type.lock_imut().get_ref().members );
+	auto class_members= class_type.lock_imut().get_ref().members;
+	NamesScopeBuild( class_members );
 }
 
 fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</ClassField/>& class_field )

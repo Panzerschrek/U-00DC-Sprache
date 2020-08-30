@@ -143,6 +143,12 @@ struct ClassType
 	LLVMTypeRef virtual_table_llvm_type= LLVMTypeRef::Null;
 	LLVMValueRef virtual_table_llvm_variable= LLVMValueRef::Null; // May be null for interfaces and abstract classes.
 	LLVMValueRef polymorph_type_id= LLVMValueRef::Null; // Exists in polymorph classes.
+
+	// Contains only "protected" and "private" members. If ther is no entry for member - it has "public" visibility
+	ust::unordered_map</ust::string8, Synt::ClassVisibility/> members_visibility;
+
+	fn GetMemberVisibility( this, ust::string8& member_name ) : Synt::ClassVisibility;
+	fn SetMemberVisibility( mut this, ust::string8& member_name, Synt::ClassVisibility visibility );
 }
 
 type ClassTypePtr= ust::shared_ptr_mut</ClassType/>;

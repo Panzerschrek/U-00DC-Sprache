@@ -19,7 +19,7 @@ fn CodeBuilder::NamesScopeFillClass( mut this, NamesScopeMutPtr& names_scope_ptr
 			}
 			else
 			{
-				NamesScopeFill( names_scope_ptr, el, class_type );
+				NamesScopeFill( names_scope_ptr, el, class_type, current_visibility );
 			}
 		}
 	}
@@ -38,10 +38,10 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, Syn
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function )
 {
-	NamesScopeFill( names_scope_ptr, function, ust::shared_ptr_nullable_mut</ClassType/>() );
+	NamesScopeFill( names_scope_ptr, function, ust::shared_ptr_nullable_mut</ClassType/>(), Synt::ClassVisibility::Public );
 }
 
-fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function, ust::shared_ptr_nullable_mut</ClassType/>& class_type )
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Function/>& function, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility )
 {
 	auto& func_name= function.get_ref().name.back();
 
@@ -87,14 +87,20 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	functions_set.syntax_elements.push_back( function );
 
 	names_scope.AddName( func_name, NamesScopeValue( move(functions_set) ) );
+
+	if( !class_type.empty() )
+	{
+		auto mut class_lock= class_type.lock_mut();
+		class_lock.get_ref().SetMemberVisibility( func_name, visibility );
+	}
 }
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::FunctionTemplate/>& function_template )
 {
-	NamesScopeFill( names_scope_ptr, function_template, ust::shared_ptr_nullable_mut</ClassType/>() );
+	NamesScopeFill( names_scope_ptr, function_template, ust::shared_ptr_nullable_mut</ClassType/>(), Synt::ClassVisibility::Public );
 }
 
-fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::FunctionTemplate/>& function_template, ust::shared_ptr_nullable_mut</ClassType/>& class_type )
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::FunctionTemplate/>& function_template, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility )
 {
 	auto& func_name= function_template.get_ref().name;
 
@@ -142,6 +148,12 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	functions_set.function_templates_syntax_elements.push_back( function_template );
 
 	names_scope.AddName( func_name, NamesScopeValue( move(functions_set) ) );
+
+	if( !class_type.empty() )
+	{
+		auto mut class_lock= class_type.lock_mut();
+		class_lock.get_ref().SetMemberVisibility( func_name, visibility );
+	}
 }
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_ )
@@ -149,9 +161,13 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	NamesScopeAddClass( names_scope_ptr, class_ );
 }
 
-fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_, ust::shared_ptr_nullable_mut</ClassType/>& class_type )
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Class/>& class_, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility )
 {
-	// Ignore parent class
+	if( !class_type.empty() )
+	{
+		auto mut class_lock= class_type.lock_mut();
+		class_lock.get_ref().SetMemberVisibility( class_.get_ref().name, visibility );
+	}
 	NamesScopeFill( names_scope_ptr, class_ );
 }
 
@@ -182,8 +198,13 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	}
 }
 
-fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Enum/>& enum_, ust::shared_ptr_nullable_mut</ClassType/>& class_type )
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Enum/>& enum_, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility )
 {
+	if( !class_type.empty() )
+	{
+		auto mut class_lock= class_type.lock_mut();
+		class_lock.get_ref().SetMemberVisibility( enum_.get_ref().name, visibility );
+	}
 	NamesScopeFill( names_scope_ptr, enum_ );
 }
 
@@ -210,8 +231,13 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	}
 }
 
-fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::TypeAlias/>& type_alias, ust::shared_ptr_nullable_mut</ClassType/>& class_type )
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::TypeAlias/>& type_alias, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility )
 {
+	if( !class_type.empty() )
+	{
+		auto mut class_lock= class_type.lock_mut();
+		class_lock.get_ref().SetMemberVisibility( type_alias.get_ref().name, visibility );
+	}
 	NamesScopeFill( names_scope_ptr, type_alias );
 }
 
@@ -241,7 +267,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	names_scope.AddName( template_name, move(type_templates_set) );
 }
 
-fn CodeBuilder:: NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::TypeTemplate/>& type_template, ust::shared_ptr_nullable_mut</ClassType/>& class_type )
+fn CodeBuilder:: NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::TypeTemplate/>& type_template, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility )
 {
 	NamesScopeFill( names_scope_ptr, type_template );
 }
@@ -277,8 +303,16 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	}
 }
 
-fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::VariablesDeclaration/>& variables_declaration, ust::shared_ptr_nullable_mut</ClassType/>& class_type )
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::VariablesDeclaration/>& variables_declaration, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility )
 {
+	if( !class_type.empty() )
+	{
+		auto mut class_lock= class_type.lock_mut();
+		foreach( &variable_declaration : variables_declaration.get_ref().variables )
+		{
+			class_lock.get_ref().SetMemberVisibility( variable_declaration.name, visibility );
+		}
+	}
 	NamesScopeFill( names_scope_ptr, variables_declaration );
 }
 
@@ -304,8 +338,13 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	}
 }
 
-fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::AutoVariableDeclaration/>& auto_variable_declaration, ust::shared_ptr_nullable_mut</ClassType/>& class_type )
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::AutoVariableDeclaration/>& auto_variable_declaration, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility )
 {
+	if( !class_type.empty() )
+	{
+		auto mut class_lock= class_type.lock_mut();
+		class_lock.get_ref().SetMemberVisibility( auto_variable_declaration.get_ref().name, visibility );
+	}
 	NamesScopeFill( names_scope_ptr, auto_variable_declaration );
 }
 
@@ -336,7 +375,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	lock.get_ref().AddName( key, move(static_asserts_set) );
 }
 
-fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::StaticAssert/>& static_asert, ust::shared_ptr_nullable_mut</ClassType/>& class_type )
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::StaticAssert/>& static_asert, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility )
 {
 	NamesScopeFill( names_scope_ptr, static_asert );
 }
@@ -365,7 +404,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	lock.get_ref().AddName( namespace_.get_ref().name, move(names_scope_value) );
 }
 
-fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field, ust::shared_ptr_nullable_mut</ClassType/>& class_type )
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility )
 {
 	auto& field_name= class_field.get_ref().name;
 	if( IsKeyword( field_name ) )
@@ -402,6 +441,9 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	{
 		REPORT_ERROR( Redefinition, names_scope_ptr, class_field.get_ref().file_pos, field_name )
 	}
+
+	auto mut class_lock= class_type.lock_mut();
+	class_lock.get_ref().SetMemberVisibility( field_name, visibility );
 }
 
 fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scope_ptr, Synt::NamespaceElements& namespace_elements )
@@ -598,6 +640,7 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 		auto mut lock= class_members.lock_mut();
 
 		// Create functions set for constructors/destructors/assignment operators. It's needed for later methods generation.
+		// TODO - what about user-specified non-public constructors and assignment operators?
 		var NamesScopeFunctionsSet functions_set{ .class_= class_type_ptr };
 		lock.get_ref().AddName( KeywordToString( Keyword::constructor_ ), functions_set );
 		lock.get_ref().AddName( KeywordToString( Keyword::destructor_  ), functions_set );
