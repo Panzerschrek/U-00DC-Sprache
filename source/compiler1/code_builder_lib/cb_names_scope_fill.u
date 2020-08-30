@@ -72,7 +72,17 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		auto prev_functions_set_ptr= prev_name.Get</ NamesScopeFunctionsSet />();
 		if( prev_functions_set_ptr.empty() )
 		{
-			REPORT_ERROR( Redefinition, names_scope_ptr, function.get_ref().file_pos )
+			auto errors_container= names_scope.GetErrors();
+			auto mut errors_container_lock= errors_container.lock_mut();
+			errors_container_lock.get_ref().push_back( ReportError( CodeBuilderErrorCode::Redefinition, function.get_ref().file_pos ) );
+			return;
+		}
+
+		if( !class_type.empty() && class_type.lock_imut().get_ref().GetMemberVisibility( func_name ) != visibility )
+		{
+			auto errors_container= names_scope.GetErrors();
+			auto mut errors_container_lock= errors_container.lock_mut();
+			errors_container_lock.get_ref().push_back( ReportError( CodeBuilderErrorCode::FunctionsVisibilityMismatch, function.get_ref().file_pos, func_name ) );
 			return;
 		}
 
@@ -133,7 +143,17 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		auto prev_functions_set_ptr= prev_name.Get</ NamesScopeFunctionsSet />();
 		if( prev_functions_set_ptr.empty() )
 		{
-			REPORT_ERROR( Redefinition, names_scope_ptr, function_template.get_ref().file_pos )
+			auto errors_container= names_scope.GetErrors();
+			auto mut errors_container_lock= errors_container.lock_mut();
+			errors_container_lock.get_ref().push_back( ReportError( CodeBuilderErrorCode::Redefinition, function_template.get_ref().file_pos ) );
+			return;
+		}
+
+		if( !class_type.empty() && class_type.lock_imut().get_ref().GetMemberVisibility( func_name ) != visibility )
+		{
+			auto errors_container= names_scope.GetErrors();
+			auto mut errors_container_lock= errors_container.lock_mut();
+			errors_container_lock.get_ref().push_back( ReportError( CodeBuilderErrorCode::FunctionsVisibilityMismatch, function_template.get_ref().file_pos, func_name ) );
 			return;
 		}
 
