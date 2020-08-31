@@ -571,12 +571,22 @@ fn CodeBuilder::ResolveValue(
 					}
 				}
 			}
+
 			if( !class_.empty() )
 			{
 				// We need to build class here, because class internal namespace may be filled in build process in case of inheritance.
 				// TODO - maybe not build it here if class have no parents?
 				BuildClass( ust::to_non_nullable(current_scope), ust::to_non_nullable( class_ ) );
-				namespace_= class_.lock_imut().get_ref().members;
+
+				auto class_lock= class_.lock_imut();
+				auto& class_ref= class_lock.get_ref();
+				namespace_= class_ref.members;
+
+				if( u32( names_scope.lock_imut().get_ref().GetAccessFor( ust::to_non_nullable(class_) ) ) <
+					u32( class_ref.GetMemberVisibility( name_component_name ) ) )
+				{
+					REPORT_ERROR( AccessingNonpublicClassMember, names_scope, complex_name.file_pos, name_component_name, Type(ust::to_non_nullable(class_)).ToString() )
+				}
 			}
 
 			if( !namespace_.empty() )

@@ -890,4 +890,28 @@ fn NamesScope::GetClass( this ) : ust::shared_ptr_nullable_mut</ClassType/>
 	return class_;
 }
 
+fn NamesScope::AddAccessRightsFor( mut this, ClassTypePtr& class_type, Synt::ClassVisibility visibility )
+{
+	access_rights_.insert( class_type, visibility );
+}
+
+fn NamesScope::GetAccessFor( this, ClassTypePtr& class_type ) : Synt::ClassVisibility
+{
+	auto mut this_namespace_visibility= Synt::ClassVisibility::Public;
+	if_var( visibility : access_rights_.find( class_type ) )
+	{
+		this_namespace_visibility= visibility;
+	}
+
+	auto mut parent_namespace_visibility= Synt::ClassVisibility::Public;
+	auto parent= GetParent();
+	if( !parent.empty() )
+	{
+		parent_namespace_visibility= parent.lock_imut().get_ref().GetAccessFor( class_type );
+	}
+
+	// TODO - maybe add to language possibility to order compare enum values?
+	return select( u32(this_namespace_visibility) > u32(parent_namespace_visibility) ? this_namespace_visibility : parent_namespace_visibility );
+}
+
 } // namespace U

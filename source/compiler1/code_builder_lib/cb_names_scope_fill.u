@@ -668,6 +668,9 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 
 		// Add special member to names scope to identify it as class names scope
 		lock.get_ref().SetClass( class_type_ptr );
+
+		// Allow accessing private members of class for all it's inner namespaces.
+		lock.get_ref().AddAccessRightsFor( class_type_ptr, Synt::ClassVisibility::Private );
 	}
 
 	unsafe
