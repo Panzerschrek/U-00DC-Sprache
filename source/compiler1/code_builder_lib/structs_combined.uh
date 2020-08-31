@@ -600,29 +600,16 @@ public:
 	fn GetErrors( this ) : ErrorsContainerPtr;
 
 	// HACK! for iteration. Remove this.
-	fn GetInternalContainer( imut this ) : ust::unordered_map</ ust::string8, NamesScopeValue /> &
-	{
-		return names_map_;
-	}
+	fn GetInternalContainer( imut this ) : ust::unordered_map</ ust::string8, NamesScopeValue /> &;
 
-	fn GetThisNamespaceName( this ) : ust::string8&
-	{
-		return name_;
-	}
+	fn GetThisNamespaceName( this ) : ust::string8&;
 
 	// Get full name (with enclosing namespaces) un human-readable format.
 	fn ToString( this ) : ust::string8;
 
 	// Sometimes it's needed to identify class namespace. So, store pointer to class directly inside it's names_scope.
-	fn SetClass( mut this, ust::shared_ptr_nullable_mut</ClassType/> in_class_ )
-	{
-		class_= in_class_;
-	}
-
-	fn GetClass( this ) : ust::shared_ptr_nullable_mut</ClassType/>
-	{
-		return class_;
-	}
+	fn SetClass( mut this, ust::shared_ptr_nullable_mut</ClassType/> in_class_ );
+	fn GetClass( this ) : ust::shared_ptr_nullable_mut</ClassType/>;
 
 private:
 	ust::string8 name_;

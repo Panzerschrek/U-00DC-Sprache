@@ -774,6 +774,16 @@ fn NamesScope::GetErrors( this ) : ErrorsContainerPtr
 	return errors_container_;
 }
 
+fn NamesScope::GetInternalContainer( imut this ) : ust::unordered_map</ ust::string8, NamesScopeValue /> &
+{
+	return names_map_;
+}
+
+fn NamesScope::GetThisNamespaceName( this ) : ust::string8&
+{
+	return name_;
+}
+
 fn NamesScope::ToString( this ) : ust::string8
 {
 	if( !class_.empty() )
@@ -868,6 +878,16 @@ fn NamesScope::ToString( this ) : ust::string8
 
 	res+= name_;
 	return move(res);
+}
+
+fn NamesScope::SetClass( mut this, ust::shared_ptr_nullable_mut</ClassType/> in_class_ )
+{
+	class_= in_class_;
+}
+
+fn NamesScope::GetClass( this ) : ust::shared_ptr_nullable_mut</ClassType/>
+{
+	return class_;
 }
 
 } // namespace U
