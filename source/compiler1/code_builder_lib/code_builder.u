@@ -6,6 +6,15 @@ import "code_builder.uh"
 namespace U
 {
 
+fn AddAncestorsAccessRights_r( NamesScope &mut dst_class_members, ClassTypePtr& ancestor_class )
+{
+	dst_class_members.AddAccessRightsFor( ancestor_class, Synt::ClassVisibility::Protected );
+	foreach( &parent : ancestor_class.lock_imut().get_ref().parents )
+	{
+		AddAncestorsAccessRights_r( dst_class_members, parent.class_ );
+	}
+}
+
 fn CodeBuilder::constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data_layout )
 	(
 		llvm_context_(llvm_context),
@@ -874,6 +883,11 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				continue;
 			}
 			class_.base_class= parent_class;
+		}
+
+		{ // Give access from this class to protected members of all ancestor classes.
+			auto mut members_lock= class_.members.lock_mut();
+			AddAncestorsAccessRights_r( members_lock.get_ref(), parent_class );
 		}
 
 		var ClassType::Parent mut parent{ .class_= parent_class };
