@@ -187,11 +187,15 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			var ust::shared_ptr_nullable_mut</ClassType/> mut next;
 			{
 				auto class_type_lock= class_type.lock_imut();
-				auto class_members_lock= class_type_lock.get_ref().members.lock_imut();
-				if_var( &member : class_members_lock.get_ref().GetThisScopeValue( named_operand.name ) )
+				if( !(class_type != this_class_type &&
+					 class_type_lock.get_ref().GetMemberVisibility( named_operand.name ) == Synt::ClassVisibility::Private ) ) // Ignore private parent fields.
 				{
-					class_member= member;
-					break;
+					auto class_members_lock= class_type_lock.get_ref().members.lock_imut();
+					if_var( &member : class_members_lock.get_ref().GetThisScopeValue( named_operand.name ) )
+					{
+						class_member= member;
+						break;
+					}
 				}
 
 				next= class_type_lock.get_ref().base_class;
@@ -544,11 +548,15 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		var ust::shared_ptr_nullable_mut</ClassType/> mut next;
 		{
 			auto class_type_lock= class_type.lock_imut();
-			auto class_members_lock= class_type_lock.get_ref().members.lock_imut();
-			if_var( &member : class_members_lock.get_ref().GetThisScopeValue( member_access_operator.member_name ) )
+			if( !(class_type != class_type_ref.get_ref() &&
+				 class_type_lock.get_ref().GetMemberVisibility( member_access_operator.member_name ) == Synt::ClassVisibility::Private ) )  // Ignore private parent fields.
 			{
-				class_member= member;
-				break;
+				auto class_members_lock= class_type_lock.get_ref().members.lock_imut();
+				if_var( &member : class_members_lock.get_ref().GetThisScopeValue( member_access_operator.member_name ) )
+				{
+					class_member= member;
+					break;
+				}
 			}
 
 			next= class_type_lock.get_ref().base_class;
