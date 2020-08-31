@@ -22,6 +22,18 @@ namespace U
 
 fn ReportError( CodeBuilderErrorCode code, FilePos file_pos, ust::vector</ust::string8/>& format_args ) : CodeBuilderError;
 
+fn ReportError( CodeBuilderErrorCode code, FilePos file_pos ) : CodeBuilderError
+{
+	return ReportError( code, file_pos, ust::vector</ust::string8/>() );
+}
+
+fn ReportError( CodeBuilderErrorCode code, FilePos file_pos, ust::string8 mut arg ) : CodeBuilderError
+{
+	var ust::vector</ust::string8/> mut args;
+	args.push_back( move(arg) );
+	return ReportError( code, file_pos, args );
+}
+
 template</type T/>
 fn PreprocessErrorArg( T& x ) : ust::string8
 {

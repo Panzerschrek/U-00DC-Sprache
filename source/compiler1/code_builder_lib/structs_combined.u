@@ -537,6 +537,35 @@ op Type::!=( Type& l, Type& r ) : bool
 }
 
 //
+// ClassType
+//
+
+fn ClassType::GetMemberVisibility( this, ust::string8& member_name ) : Synt::ClassVisibility
+{
+	if_var( v : members_visibility.find(member_name) )
+	{
+		return v;
+	}
+
+	return Synt::ClassVisibility::Public;
+}
+
+fn ClassType::SetMemberVisibility( mut this, ust::string8& member_name, Synt::ClassVisibility visibility )
+{
+	if( visibility == Synt::ClassVisibility::Public )
+	{
+		if( !members_visibility.find( member_name ).empty() )
+		{
+			members_visibility.drop( member_name );
+		}
+	}
+	else
+	{
+		members_visibility.insert( member_name, visibility );
+	}
+}
+
+//
 // Value
 //
 
@@ -745,6 +774,16 @@ fn NamesScope::GetErrors( this ) : ErrorsContainerPtr
 	return errors_container_;
 }
 
+fn NamesScope::GetInternalContainer( imut this ) : ust::unordered_map</ ust::string8, NamesScopeValue /> &
+{
+	return names_map_;
+}
+
+fn NamesScope::GetThisNamespaceName( this ) : ust::string8&
+{
+	return name_;
+}
+
 fn NamesScope::ToString( this ) : ust::string8
 {
 	if( !class_.empty() )
@@ -839,6 +878,40 @@ fn NamesScope::ToString( this ) : ust::string8
 
 	res+= name_;
 	return move(res);
+}
+
+fn NamesScope::SetClass( mut this, ust::shared_ptr_nullable_mut</ClassType/> in_class_ )
+{
+	class_= in_class_;
+}
+
+fn NamesScope::GetClass( this ) : ust::shared_ptr_nullable_mut</ClassType/>
+{
+	return class_;
+}
+
+fn NamesScope::AddAccessRightsFor( mut this, ClassTypePtr& class_type, Synt::ClassVisibility visibility )
+{
+	access_rights_.insert( class_type, visibility );
+}
+
+fn NamesScope::GetAccessFor( this, ClassTypePtr& class_type ) : Synt::ClassVisibility
+{
+	auto mut this_namespace_visibility= Synt::ClassVisibility::Public;
+	if_var( visibility : access_rights_.find( class_type ) )
+	{
+		this_namespace_visibility= visibility;
+	}
+
+	auto mut parent_namespace_visibility= Synt::ClassVisibility::Public;
+	auto parent= GetParent();
+	if( !parent.empty() )
+	{
+		parent_namespace_visibility= parent.lock_imut().get_ref().GetAccessFor( class_type );
+	}
+
+	// TODO - maybe add to language possibility to order compare enum values?
+	return select( u32(this_namespace_visibility) > u32(parent_namespace_visibility) ? this_namespace_visibility : parent_namespace_visibility );
 }
 
 } // namespace U

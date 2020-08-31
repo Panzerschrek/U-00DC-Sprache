@@ -550,6 +550,45 @@ def PrivateMembersNotInherited_Test1():
 	assert( errors_list[0].file_pos.line == 11 )
 
 
+def PrivateMembersNotInherited_Test2():
+	c_program_text= """
+		class A polymorph
+		{
+		private:
+			i32 x;
+		}
+		class B : A
+		{
+			fn Foo( this )
+			{
+				var i32 x_copy= this.x; // Error, 'x' not visible here
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "NameNotFound", 11 ) )
+
+
+def PrivateMembersNotInherited_Test3():
+	c_program_text= """
+		class A polymorph
+		{
+		private:
+			i32 x;
+		}
+		class B : A {} // 'x' not inherited
+		class C : B
+		{
+			fn Foo( this )
+			{
+				var i32 x_copy= B::x; // Error, 'x' not visible here
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "NameNotFound", 12 ) )
+
+
 def ChildClassNameOverridesParentClassNameAndVisibility_Test0():
 	c_program_text= """
 		class A polymorph
