@@ -1170,7 +1170,8 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		auto parent_members= parent.class_.lock_imut().get_ref().members;
 		foreach( &member_value : parent_members.lock_imut().get_ref().GetInternalContainer() )
 		{
-			if( parent.class_.lock_imut().get_ref().GetMemberVisibility( member_value.key() ) == Synt::ClassVisibility::Private )
+			auto parent_member_visibility= parent.class_.lock_imut().get_ref().GetMemberVisibility( member_value.key() );
+			if( parent_member_visibility == Synt::ClassVisibility::Private )
 			{
 				continue; // Do not inherit private members.
 			}
@@ -1218,6 +1219,28 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 				auto mut result_functions_set_lock= result_functions_set_ptr.lock_mut();
 				auto &mut result_functions_set= result_functions_set_lock.get_ref();
+
+				if( parent_member_visibility != class_type.lock_imut().get_ref().GetMemberVisibility( member_value.key() ) )
+				{
+					var FilePos mut file_pos= syntax_element.file_pos;
+					if( !result_functions_set.functions_set.functions.empty() )
+					{
+						auto& f= result_functions_set.functions_set.functions.front();
+						if( !f.prototype_syntax_element.empty() )
+						{
+							file_pos= f.prototype_syntax_element.get_ref().file_pos;
+						}
+						else if( !f.body_syntax_element.empty() )
+						{
+							file_pos= f.body_syntax_element.get_ref().file_pos;
+						}
+					}
+					else if( !result_functions_set.functions_set.function_templates.empty() )
+					{
+						file_pos= result_functions_set.functions_set.function_templates.front().get_ref().syntax_element.get_ref().file_pos;
+					}
+					REPORT_ERROR( FunctionsVisibilityMismatch, names_scope_ptr, file_pos, member_value.key() )
+				}
 
 				foreach( &src_function : src_functions_set.functions_set.functions )
 				{
