@@ -54,6 +54,13 @@ struct BooleanConstant
 	bool value;
 }
 
+struct StringLiteral
+{
+	FilePos file_pos;
+	ust::string8 value;
+	[ char8, 7 ] type_suffix;
+}
+
 struct BinaryOperator
 {
 	FilePos file_pos;
@@ -118,6 +125,7 @@ type Expression= ust::variant</ tup[
 	EmptyVariant,
 	NumericConstant,
 	BooleanConstant,
+	StringLiteral,
 	ComplexName,
 	BinaryOperator,
 	BracketExpression,
