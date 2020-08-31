@@ -623,6 +623,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"VirtualOperatorCall_Test3",
 		"VirtualRequired_Test0",
 		"VisibilityForEnumMember_Test0",
+		"VisibilityForStruct_Test0",
 		"VisibilityForTypeTempateMember_Test0",
 		"VisibilityLabelDeclaration_Test0",
 		"VisibilityLabelDeclaration_Test1",
