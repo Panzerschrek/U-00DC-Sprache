@@ -854,12 +854,12 @@ fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, 
 		{
 			// Only global variables can have constant address, so, create it.
 			// TODO - create only if needed.
-			auto global_variable= LLVMAddGlobal( module_, field.t.GetLLVMType(), "_temp_const\0"[0] );
+			auto global_variable= LLVMAddGlobal( module_, initializer_variable.t.GetLLVMType(), "_temp_const\0"[0] );
 			LLVMSetLinkage( global_variable, LLVMLinkage::Internal );
 			LLVMSetGlobalConstant( global_variable, LLVMBool::True );
 			LLVMSetInitializer( global_variable, initializer_variable.constexpr_value );
 
-			return global_variable;
+			return CreateReferenceCast( global_variable, initializer_variable.t, field.t, function_context );
 		}
 	}
 
