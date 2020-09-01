@@ -369,6 +369,11 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 			BuildInitializer( names_scope, function_context, member_variable, zero_initializer );
 		}
+
+		if( class_type.can_be_constexpr )
+		{
+			unsafe{  return LLVMConstNull( class_type.llvm_type );  }
+		}
 		return LLVMValueRef::Null;
 	}
 
