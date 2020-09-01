@@ -347,6 +347,16 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		// TODO - disable zero_init for some classes.
 		auto class_type_lock= class_type_ptr.lock_imut();
 		var ClassType& class_type= class_type_lock.get_ref();
+
+		if( class_type.have_explicit_noncopy_constructors )
+		{
+			REPORT_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, names_scope, zero_initializer.file_pos )
+		}
+		if( class_type.kind != ClassType::Kind::Struct )
+		{
+			REPORT_ERROR( ZeroInitializerForClass, names_scope, zero_initializer.file_pos )
+		}
+
 		auto members_lock= class_type.members.lock_imut();
 		var NamesScope& class_members= members_lock.get_ref();
 

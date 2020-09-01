@@ -99,6 +99,7 @@ bool FilterTest( const std::string& test_name )
 		"OperatorsManglingTest",
 		"Redefinition_ForClassDeclarations_Test0",
 		"ValueIsNotTemplateTest0",
+		"ZeroInitializerForClass_Test0",
 	};
 
 	const std::string test_name_without_file_name= test_name.substr(test_name.find_last_of(':') + 1);
@@ -162,7 +163,7 @@ bool FilterTest( const std::string& test_name )
 		"ImplicitConstexprTest",
 		"InitializationListInNonconstructorTest",
 		"InitializationOfEnumVariables",
-		"InitializerDisabledBecauseClassHaveExplicitNoncopyConstructorsTest0",
+		"InitializerDisabledBecauseClassHaveExplicitNoncopyConstructorsTest",
 		"InitializerForNonfieldStructMember_InConstructors_Test0",
 		"InnerClassTest0",
 		"InnerClassTest1",
