@@ -357,6 +357,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"CharLiteral_Test2",
 		"CharLiteralIsConstantValue_Test0",
 		"ClassHaveNoCopyAssignementOperatorByDefault_Test0",
+		"ConstexprStructDeclaration_Test0",
+		"ConstexprStructDeclaration_Test1",
 		"ConstructingAbstractClassOrInterface_Test0",
 		"ConstructingAbstractClassOrInterface_Test1",
 		"ConstructingAbstractClassOrInterface_Test2",

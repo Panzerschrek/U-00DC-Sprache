@@ -162,6 +162,18 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		REPORT_ERROR( StructInitializerForNonStruct, names_scope, struct_named_initializer.file_pos )
 	}
 
+	var ust::vector</LLVMValueRef/> mut constant_initializers;
+	auto mut is_constexpr= class_type.can_be_constexpr;
+	if( is_constexpr )
+	{
+		unsafe
+		{
+			constant_initializers.resize(
+				size_type( LLVMCountStructElementTypes( class_type.llvm_type ) ),
+				LLVMValueRef::Null );
+		}
+	}
+
 	foreach( &member_initializer : struct_named_initializer.members_initializers )
 	{
 		// TODO - use unordered_set
@@ -189,10 +201,11 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		auto field_lock= field_ptr.lock_imut();
 		var ClassField& class_field= field_lock.get_ref();
 
-		if( class_field.index == ~0s ){ continue; } // May be in case of error
+		if( class_field.index == ~0s ){ is_constexpr= false; continue; } // May be in case of error
 
 		if( class_field.is_reference )
 		{
+			is_constexpr= false; // TODO - support constexpr references.
 			InitializeReferenceField( names_scope, function_context, variable, class_field, member_initializer.initializer.get_ref() );
 		}
 		else
@@ -203,7 +216,15 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				.llvm_value= CreateFieldGEP( variable.llvm_value, class_field, function_context )
 			};
 
-			BuildInitializer( names_scope, function_context, member_variable, member_initializer.initializer.get_ref() );
+			auto initializer= BuildInitializer( names_scope, function_context, member_variable, member_initializer.initializer.get_ref() );
+			if( initializer == LLVMValueRef::Null )
+			{
+				is_constexpr= false;
+			}
+			if( is_constexpr )
+			{
+				constant_initializers[class_field.index]= initializer;
+			}
 		}
 	}
 
@@ -247,6 +268,24 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		};
 
 		BuildEmptyInitializer( names_scope, function_context, member_variable, class_member.key(), struct_named_initializer.file_pos );
+
+		// TODO - support constexpr for empty initializers.
+		is_constexpr= false;
+	}
+
+	if( is_constexpr )
+	{
+		unsafe
+		{
+			if( constant_initializers.empty() )
+			{
+				return LLVMConstNull( class_type.llvm_type );
+			}
+			else
+			{
+				return LLVMConstNamedStruct( class_type.llvm_type, cast_imut(constant_initializers).front(), u32(constant_initializers.size()) );
+			}
+		}
 	}
 
 	return LLVMValueRef::Null;

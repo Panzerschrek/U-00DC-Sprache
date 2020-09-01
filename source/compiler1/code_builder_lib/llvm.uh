@@ -134,6 +134,8 @@ fn nomangle LLVMStructSetBody(LLVMTypeRef StructTy, LLVMTypeRef& ElementTypes, u
 fn nomangle LLVMIsOpaqueStruct(LLVMTypeRef StructTy) unsafe : LLVMBool;
 
 fn nomangle LLVMStructGetTypeAtIndex(LLVMTypeRef StructTy, u32 i) unsafe : LLVMTypeRef;
+fn nomangle LLVMCountStructElementTypes(LLVMTypeRef StructTy) unsafe: u32;
+
 fn nomangle LLVMGetElementType(LLVMTypeRef Ty) unsafe : LLVMTypeRef;
 
 

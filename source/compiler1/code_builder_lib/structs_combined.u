@@ -450,6 +450,10 @@ fn Type::CanBeConstexpr( this ) : bool
 	{
 		return array_type.element_type.CanBeConstexpr();
 	}
+	if_var( &class_type : GetClassType() )
+	{
+		return class_type.lock_imut().get_ref().can_be_constexpr;
+	}
 
 	return false;
 }
