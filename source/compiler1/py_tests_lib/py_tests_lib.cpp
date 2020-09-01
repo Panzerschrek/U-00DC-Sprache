@@ -14,6 +14,7 @@
 #include <llvm/Support/DynamicLibrary.h>
 #include <llvm/Support/ManagedStatic.h>
 #include <llvm/Support/raw_os_ostream.h>
+#include <llvm/Support/Signals.h>
 #include "../../code_builder_lib/pop_llvm_warnings.hpp"
 
 namespace U
@@ -619,5 +620,6 @@ struct PyModuleDef g_module=
 
 extern "C" U_EXTERN_VISIBILITY PyObject* PyInit_sprache_compiler_tests_py_lib()
 {
+	llvm::sys::PrintStackTraceOnErrorSignal("");
 	return PyModule_Create( &U::g_module );
 }
