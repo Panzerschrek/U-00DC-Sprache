@@ -6,3 +6,15 @@ import "llvm.uh"
 fn nomangle U1_SetStructName(LLVMTypeRef t, NullTerminatedString& name) unsafe;
 
 fn nomangle U1_DropAllBasicBlockUsersReferences(LLVMBasicBlockRef basic_block) unsafe;
+
+// Returns number of elements.
+fn nomangle U1_ConvertUTF8ToUTF16(
+	char8& src_buff, size_type src_buff_size,
+	char16 &mut dst_buff, size_type dst_buff_size ) unsafe : size_type;
+
+// Returns number of elements.
+fn nomangle U1_ConvertUTF8ToUTF32(
+	char8& src_buff, size_type src_buff_size,
+	char32 &mut dst_buff, size_type dst_buff_size ) unsafe : size_type;
+
+fn nomangle U1_ConstDataArray(LLVMTypeRef t, void& data, size_type data_size, size_type element_count) unsafe : LLVMValueRef;

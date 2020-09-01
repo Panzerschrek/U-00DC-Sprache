@@ -58,7 +58,7 @@ struct StringLiteral
 {
 	FilePos file_pos;
 	ust::string8 value;
-	[ char8, 7 ] type_suffix;
+	ust::string8 type_suffix;
 }
 
 struct BinaryOperator
