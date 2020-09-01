@@ -806,6 +806,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					.llvm_value= CreateFieldGEP( this_value_corrected, field, function_context ),
 				};
 
+				if( variable.constexpr_value != LLVMValueRef::Null )
+				{
+					unsafe{ result.constexpr_value= LLVMConstExtractValue( variable.constexpr_value, u32(field.index), 1u ); }
+				}
+
 				if( !field.is_mutable )
 				{
 					result.value_type= ValueType::ReferenceImut;
