@@ -525,6 +525,23 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 
 			current_node= move(numeric_constant);
 		}
+		else if( it_.front().lexem_type == Lexem::Type::String )
+		{
+			var StringLiteral mut string_literal
+			{
+				.file_pos= it_.front().file_pos,
+				.value= it_.front().text,
+			};
+			NextLexem();
+
+			if( it_.front().lexem_type == Lexem::Type::LiteralSuffix )
+			{
+				string_literal.type_suffix= it_.front().text;
+				NextLexem();
+			}
+
+			current_node= move(string_literal);
+		}
 		else if( it_.front().lexem_type == Lexem::Type::SquareBracketLeft )
 		{
 			current_node= ust::box</ ArrayType />( ParseArrayType() );

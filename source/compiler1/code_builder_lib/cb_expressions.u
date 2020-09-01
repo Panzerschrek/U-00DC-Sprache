@@ -127,6 +127,192 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	return move(res);
 }
 
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StringLiteral& string_literal ) : Value
+{
+	auto mut char_type= U_FundamentalType::InvalidType;
+	auto mut is_array= true;
+
+	auto& type_suffix= string_literal.type_suffix;
+	if( type_suffix == "" || type_suffix == "u8" )
+	{
+		char_type= U_FundamentalType::char8_;
+		is_array= true;
+	}
+	else if( type_suffix == "u16" )
+	{
+		char_type= U_FundamentalType::char16_;
+		is_array= true;
+	}
+	else if( type_suffix == "u32" )
+	{
+		char_type= U_FundamentalType::char32_;
+		is_array= true;
+	}
+	else if( type_suffix == "c8"  || type_suffix == GetFundamentalTypeName( U_FundamentalType::char8_  ) )
+	{
+		char_type= U_FundamentalType::char8_ ;
+		is_array= false;
+	}
+	else if( type_suffix == "c16" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char16_ ) )
+	{
+		char_type= U_FundamentalType::char16_;
+		is_array= false;
+	}
+	else if( type_suffix == "c32" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char32_ ) )
+	{
+		char_type= U_FundamentalType::char32_;
+		is_array= false;
+	}
+	else
+	{
+		REPORT_ERROR( UnknownStringLiteralSuffix, names_scope, string_literal.file_pos, string_literal.type_suffix )
+		return ErrorValue();
+	}
+
+	auto element_llvm_type= GetFundamentalLLVMType(char_type);
+
+	if( is_array )
+	{
+		auto mut array_size= 0s;
+		auto mut llvm_type= LLVMTypeRef::Null;
+		auto mut constexpr_value= LLVMValueRef::Null;
+		auto mut global_value= LLVMValueRef::Null;
+		unsafe
+		{
+			if( char_type == U_FundamentalType::char8_ )
+			{
+				if( string_literal.value.empty() )
+				{
+					var char8 c= zero_init;
+					constexpr_value= LLVMConstStringInContext( llvm_context_, c, 0u, LLVMBool::True );
+				}
+				else
+				{
+					constexpr_value= LLVMConstStringInContext( llvm_context_, string_literal.value.front(), u32(string_literal.value.size()), LLVMBool::True );
+				}
+				array_size= string_literal.value.size();
+			}
+			else if( char_type == U_FundamentalType::char16_ )
+			{
+				if( string_literal.value.empty() )
+				{
+					array_size= 0s;
+					var char16 c= zero_init;
+					constexpr_value= U1_ConstDataArray( element_llvm_type, c, 0s, 0s );
+				}
+				else
+				{
+					var ust::string16 mut buff;
+					auto buff_size= string_literal.value.size() * 4s;
+					buff.resize( buff_size, "\0"c16 ); // Reserve enough space.
+
+					array_size= U1_ConvertUTF8ToUTF16( string_literal.value.front(), string_literal.value.size(), buff.front(), buff_size );
+					halt if(array_size > buff.size());
+
+					constexpr_value= U1_ConstDataArray( element_llvm_type, cast_imut(buff).front(), array_size * typeinfo</char16/>.size_of, array_size );
+				}
+			}
+			else if( char_type == U_FundamentalType::char32_ )
+			{
+				if( string_literal.value.empty() )
+				{
+					array_size= 0s;
+					var char32 c= zero_init;
+					constexpr_value= U1_ConstDataArray( element_llvm_type, c, 0s, 0s );
+				}
+				else
+				{
+					var ust::string32 mut buff;
+					auto buff_size= string_literal.value.size() * 4s;
+					buff.resize( buff_size, "\0"c32 ); // Reserve enough space.
+
+					array_size= U1_ConvertUTF8ToUTF32( string_literal.value.front(), string_literal.value.size(), buff.front(), buff_size );
+					halt if(array_size > buff.size());
+
+					constexpr_value= U1_ConstDataArray( element_llvm_type, cast_imut(buff).front(), array_size * typeinfo</char32/>.size_of, array_size );
+				}
+			}
+			else{ halt; }
+
+			llvm_type= LLVMArrayType( element_llvm_type, u32(array_size) );
+
+			// TODO - reuse global variable for equal string literals.
+			global_value= LLVMAddGlobal( module_, llvm_type, "TODO - name\0"[0] );
+			LLVMSetLinkage( global_value, LLVMLinkage::Internal );
+			LLVMSetGlobalConstant( global_value, LLVMBool::True );
+			LLVMSetInitializer( global_value, constexpr_value );
+		}
+
+		var ArrayType mut array_type
+		{
+			.element_type= FundamentalType( char_type, element_llvm_type ),
+			.element_count= u64(array_size),
+			.llvm_type= llvm_type,
+		};
+		var Variable mut res
+		{
+			.t= move(array_type),
+			.location= Variable::Location::Pointer,
+			.llvm_value= global_value,
+			.constexpr_value= constexpr_value,
+		};
+
+		return move(res);
+	}
+	else
+	{
+		auto mut constexpr_value= LLVMValueRef::Null;
+		unsafe
+		{
+			if( char_type == U_FundamentalType::char8_ )
+			{
+				if( string_literal.value.size() != 1s )
+				{
+					REPORT_ERROR( InvalidSizeForCharLiteral, names_scope, string_literal.file_pos, string_literal.value )
+					return ErrorValue();
+				}
+
+				constexpr_value= LLVMConstInt( element_llvm_type, u64(string_literal.value.front()), LLVMBool::False );
+			}
+			else if( char_type == U_FundamentalType::char16_ )
+			{
+				var char16 mut c= zero_init;
+				if( string_literal.value.empty() ||
+					U1_ConvertUTF8ToUTF16( string_literal.value.front(), string_literal.value.size(), c, 1s ) != 1s )
+				{
+					REPORT_ERROR( InvalidSizeForCharLiteral, names_scope, string_literal.file_pos, string_literal.value )
+					return ErrorValue();
+				}
+
+				constexpr_value= LLVMConstInt( element_llvm_type, u64(c), LLVMBool::False );
+			}
+			else if( char_type == U_FundamentalType::char32_ )
+			{
+				var char32 mut c= zero_init;
+				if( string_literal.value.empty() ||
+					U1_ConvertUTF8ToUTF32( string_literal.value.front(), string_literal.value.size(), c, 1s ) != 1s )
+				{
+					REPORT_ERROR( InvalidSizeForCharLiteral, names_scope, string_literal.file_pos, string_literal.value )
+					return ErrorValue();
+				}
+
+				constexpr_value= LLVMConstInt( element_llvm_type, u64(c), LLVMBool::False );
+			}
+			else{ halt; }
+		}
+
+		var Variable mut res
+		{
+			.t= FundamentalType( char_type, element_llvm_type ),
+			.location= Variable::Location::LLVMRegister,
+			.llvm_value= constexpr_value,
+			.constexpr_value= constexpr_value,
+		};
+
+		return move(res);
+	}
+}
+
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value
 {
 	if( named_operand.tail.empty() && named_operand.name == KeywordToString( Keyword::this_ ) )

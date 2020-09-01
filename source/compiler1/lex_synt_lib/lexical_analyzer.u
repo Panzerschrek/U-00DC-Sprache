@@ -336,7 +336,6 @@ fn ParseString( Iterator &mut it, LexicalErrorMessages &mut out_errors ) : Lexem
 		}
 		else if( c == "\\"c8 )
 		{
-			it.drop_front();
 			if( it.empty() )
 			{
 				break;
@@ -371,11 +370,11 @@ fn ParseString( Iterator &mut it, LexicalErrorMessages &mut out_errors ) : Lexem
 					}
 					else if( digit_char >= "a"c8 && digit_char <= "f"c8 )
 					{
-						digit= u32(digit_char) - u32("a"c8);
+						digit= u32(digit_char) + ( 10u - u32("a"c8) );
 					}
 					else if( digit_char >= "A"c8 && digit_char <= "F"c8 )
 					{
-						digit= u32(digit_char) - u32("A"c8);
+						digit= u32(digit_char) + ( 10u - u32("A"c8) );
 					}
 					else
 					{
@@ -542,6 +541,14 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 		else if( c == "\""c32 )
 		{
 			lexem= ParseString( it, result.error_messages );
+			if( IsIdentifierStartChar( GetUTF8FirstChar( it ) ) )
+			{
+				lexem.file_pos= file_pos;
+				result.lexems.push_back( take(lexem) );
+
+				lexem= ParseIdentifier(it);
+				lexem.lexem_type= Lexem::Type::LiteralSuffix;
+			}
 		}
 		else
 		{
