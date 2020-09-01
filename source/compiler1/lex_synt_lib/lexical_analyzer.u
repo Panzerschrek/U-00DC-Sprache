@@ -336,7 +336,6 @@ fn ParseString( Iterator &mut it, LexicalErrorMessages &mut out_errors ) : Lexem
 		}
 		else if( c == "\\"c8 )
 		{
-			it.drop_front();
 			if( it.empty() )
 			{
 				break;
