@@ -794,6 +794,14 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				auto ptr_value= CreateFieldGEP( this_value_corrected, field, function_context );
 				unsafe{  result.llvm_value= LLVMBuildLoad( function_context.llvm_ir_builder, ptr_value, op_name_nt.front() );  }
 
+				if( variable.constexpr_value != LLVMValueRef::Null )
+				{
+					unsafe
+					{
+						result.constexpr_value= LLVMGetInitializer( LLVMConstExtractValue( variable.constexpr_value, u32(field.index), 1u ) );
+					}
+				}
+
 				return move(result);
 			}
 			else
@@ -805,6 +813,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					.value_type= variable.value_type,
 					.llvm_value= CreateFieldGEP( this_value_corrected, field, function_context ),
 				};
+
+				if( variable.constexpr_value != LLVMValueRef::Null )
+				{
+					unsafe{ result.constexpr_value= LLVMConstExtractValue( variable.constexpr_value, u32(field.index), 1u ); }
+				}
 
 				if( !field.is_mutable )
 				{

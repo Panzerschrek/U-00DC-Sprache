@@ -1260,6 +1260,49 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		} // for parent members
 	} // for parents
 
+	{ // Setup "constexpr" property.
+		auto mut class_lock= class_type.lock_mut();
+		auto &mut class_= class_lock.get_ref();
+
+		class_.can_be_constexpr= class_.kind == ClassType::Kind::Struct;
+
+		foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
+		{
+			auto field_ptr= member.value().Get</ ClassField />();
+			if( !field_ptr.empty() )
+			{
+				auto filed_lock= field_ptr.lock_imut();
+				auto& field= filed_lock.get_ref();
+				// Disable constexpr, if field type can not be constexpr, or if field is mutable reference.
+				class_.can_be_constexpr&= field.t.CanBeConstexpr() && !( field.is_mutable && field.is_reference );
+			}
+
+			auto functions_set_ptr= member.value().Get</ NamesScopeFunctionsSet />();
+			if( !functions_set_ptr.empty() )
+			{
+				foreach( &function : functions_set_ptr.lock_imut().get_ref().functions_set.functions )
+				{
+					// Disable constexpr possibility for structs with explicit destructors, non-default copy-assignment operators and non-default copy constructors.
+					if( member.key() == KeywordToString( Keyword::destructor_ ) &&
+						!function.is_generated )
+					{
+						class_.can_be_constexpr= false;
+					}
+					if( member.key() == KeywordToString( Keyword::constructor_ ) &&
+						IsCopyConstructor( function, class_type ) && !function.is_generated )
+					{
+						class_.can_be_constexpr= false;
+					}
+					if( member.key() == OverloadedOperatorToString( OverloadedOperator::Assign ) &&
+						IsCopyAssignmentOperator( function, class_type ) && !function.is_generated )
+					{
+						class_.can_be_constexpr= false;
+					}
+				}
+			}
+		}
+	}
+
 	// Finally, make class complete.
 	{
 		auto mut class_lock= class_type.lock_mut();
@@ -1405,6 +1448,12 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope, Globa
 			variable.constexpr_value= BuildInitializer( names_scope, function_context, variable, variable_declaration.initializer );
 		}
 
+		if( variable.constexpr_value == LLVMValueRef::Null )
+		{
+			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope, variable_declaration.file_pos )
+			return;
+		}
+
 		unsafe{  LLVMSetInitializer( variable.llvm_value, variable.constexpr_value );  }
 	}
 	else if( variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
@@ -1447,13 +1496,13 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope, Globa
 
 		variable.llvm_value= expression_result.llvm_value;
 		variable.constexpr_value= expression_result.constexpr_value;
+
+		if( variable.constexpr_value == LLVMValueRef::Null )
+		{
+			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope, variable_declaration.file_pos )
+		}
 	}
 	else{ halt; }
-
-	if( variable.constexpr_value == LLVMValueRef::Null )
-	{
-		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope, variable_declaration.file_pos )
-	}
 
 	// TODO - maybe clear here dummy global function?
 }
@@ -1491,6 +1540,13 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope, G
 		return;
 	}
 
+	variable.constexpr_value= expr.constexpr_value;
+	if( variable.constexpr_value == LLVMValueRef::Null )
+	{
+		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope, auto_variable_declaration.file_pos )
+		return;
+	}
+
 	if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
 	{
 		if( expr.value_type == ValueType::Value )
@@ -1521,11 +1577,6 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope, G
 	}
 	else { halt; }
 
-	variable.constexpr_value= expr.constexpr_value;
-	if( variable.constexpr_value == LLVMValueRef::Null )
-	{
-		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope, auto_variable_declaration.file_pos )
-	}
 }
 
 fn CodeBuilder::PrepareFunction(

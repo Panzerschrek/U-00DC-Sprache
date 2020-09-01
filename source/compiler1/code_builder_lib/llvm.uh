@@ -134,6 +134,8 @@ fn nomangle LLVMStructSetBody(LLVMTypeRef StructTy, LLVMTypeRef& ElementTypes, u
 fn nomangle LLVMIsOpaqueStruct(LLVMTypeRef StructTy) unsafe : LLVMBool;
 
 fn nomangle LLVMStructGetTypeAtIndex(LLVMTypeRef StructTy, u32 i) unsafe : LLVMTypeRef;
+fn nomangle LLVMCountStructElementTypes(LLVMTypeRef StructTy) unsafe: u32;
+
 fn nomangle LLVMGetElementType(LLVMTypeRef Ty) unsafe : LLVMTypeRef;
 
 
@@ -143,6 +145,7 @@ fn nomangle LLVMTypeOf(LLVMValueRef Val) unsafe : LLVMTypeRef;
 fn nomangle LLVMSetValueName2(LLVMValueRef Val, char8& Name, size_type NameLen) unsafe;
 fn nomangle LLVMConstIntGetZExtValue(LLVMValueRef ConstantVal) unsafe : u64;
 fn nomangle LLVMConstIntGetSExtValue(LLVMValueRef ConstantVal) unsafe : i64;
+fn nomangle LLVMGetInitializer(LLVMValueRef GlobalVar) unsafe : LLVMValueRef;
 fn nomangle LLVMIsConstant(LLVMValueRef Val) unsafe : LLVMBool;
 fn nomangle LLVMIsUndef(LLVMValueRef Val) unsafe : LLVMBool;
 

@@ -48,7 +48,7 @@ def ConstexprStructMemberIsConstexpr_Test2():
 
 def ConstexprReferenceInsideStruct_Test0():
 	c_program_text= """
-		struct S{ u64 &constexpr r; }
+		struct S{ u64 & r; }
 
 		auto constexpr x= 999854u64;
 		var S constexpr s{ .r= x };
@@ -61,13 +61,25 @@ def ConstexprReferenceInsideStruct_Test0():
 
 def ConstexprReferenceInsideStruct_Test1():
 	c_program_text= """
-		struct S{ [ i32, 2 ] &constexpr r; }
+		struct S{ [ i32, 2 ] & r; }
 
 		var [ i32, 2 ] constexpr arr[ 999, 77785 ];
 		var S constexpr s{ .r= arr };
 
 		static_assert( s.r[0u] == 999 );
 		static_assert( s.r[1u] == 77785 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ConstexprReferenceInsideStruct_Test2():
+	c_program_text= """
+		struct S{ i32 x; f32 y; }
+		struct T{ f32& r; }
+		var S constexpr s= zero_init;
+		var T constexpr t{ .r= s.y };
+
+		static_assert( t.r == 0.0f );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -211,7 +223,7 @@ def InvalidTypeForConstantExpressionVariable_ForStructs_Test5():
 		struct T
 		{
 			fn destructor(){}
-		} // 'T' con not be constexpr, because it have explicit destructor constructor.
+		} // 'T' con not be constexpr, because it have explicit destructor.
 		struct S
 		{
 			[ T, 2 ] t;
