@@ -42,11 +42,9 @@ extern "C" size_t U1_ConvertUTF8ToUTF32(
 		llvm::ConversionFlags() );
 
 	if( res == llvm::conversionOK && src_buff == src_buff_end )
-		return dst_buff - dst_buff_start;
+		return size_t(dst_buff - dst_buff_start);
 	else
-	{
 		return dst_buff_size + 1; // Size is unknown, but greater then expected.
-	}
 }
 
 extern "C" LLVMValueRef U1_ConstDataArray(LLVMTypeRef t, const void* const data, const size_t size, const size_t element_count)
