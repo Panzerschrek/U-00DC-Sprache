@@ -370,11 +370,11 @@ fn ParseString( Iterator &mut it, LexicalErrorMessages &mut out_errors ) : Lexem
 					}
 					else if( digit_char >= "a"c8 && digit_char <= "f"c8 )
 					{
-						digit= u32(digit_char) - u32("a"c8);
+						digit= u32(digit_char) + ( 10u - u32("a"c8) );
 					}
 					else if( digit_char >= "A"c8 && digit_char <= "F"c8 )
 					{
-						digit= u32(digit_char) - u32("A"c8);
+						digit= u32(digit_char) + ( 10u - u32("A"c8) );
 					}
 					else
 					{
