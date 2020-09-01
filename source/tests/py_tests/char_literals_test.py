@@ -94,3 +94,29 @@ def InvalidSizeForCharLiteral_Test2():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidSizeForCharLiteral" )
 	assert( errors_list[0].file_pos.line == 4 )
+
+
+def InvalidSizeForCharLiteral_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			"😀"c16; // Symbol does not fit into single utf-16 char.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "InvalidSizeForCharLiteral" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def InvalidSizeForCharLiteral_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			"wtf"c32; // Too much symbols
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "InvalidSizeForCharLiteral" )
+	assert( errors_list[0].file_pos.line == 4 )

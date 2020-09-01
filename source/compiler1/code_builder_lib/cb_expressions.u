@@ -244,7 +244,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 		var ArrayType mut array_type
 		{
-			.element_type= FundamentalType( char_type, GetFundamentalLLVMType(char_type) ),
+			.element_type= FundamentalType( char_type, element_llvm_type ),
 			.element_count= u64(array_size),
 			.llvm_type= llvm_type,
 		};
@@ -302,7 +302,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 		var Variable mut res
 		{
-			.t= Type( FundamentalType( char_type, element_llvm_type ) ),
+			.t= FundamentalType( char_type, element_llvm_type ),
 			.location= Variable::Location::LLVMRegister,
 			.llvm_value= constexpr_value,
 			.constexpr_value= constexpr_value,
