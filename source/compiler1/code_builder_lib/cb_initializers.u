@@ -205,8 +205,15 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 		if( class_field.is_reference )
 		{
-			is_constexpr= false; // TODO - support constexpr references.
-			InitializeReferenceField( names_scope, function_context, variable, class_field, member_initializer.initializer.get_ref() );
+			auto initializer= InitializeReferenceField( names_scope, function_context, variable, class_field, member_initializer.initializer.get_ref() );
+			if( initializer == LLVMValueRef::Null )
+			{
+				is_constexpr= false;
+			}
+			if( is_constexpr )
+			{
+				constant_initializers[class_field.index]= initializer;
+			}
 		}
 		else
 		{
@@ -793,7 +800,7 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 	return LLVMValueRef::Null;
 }
 
-fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ClassField& field, Synt::Initializer& initializer )
+fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ClassField& field, Synt::Initializer& initializer ) : LLVMValueRef
 {
 	auto initializer_file_pos=  Synt::GetFilePos( initializer );
 
@@ -807,7 +814,7 @@ fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, 
 		if( constructor_initializer.args.size() != 1s )
 		{
 			REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names_scope, initializer_file_pos )
-			return;
+			return LLVMValueRef::Null;
 		}
 
 		initializer_expression.reset( constructor_initializer.args.front().get_ref() );
@@ -816,7 +823,7 @@ fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, 
 	if( initializer_expression.empty() )
 	{
 		REPORT_ERROR( UnsupportedInitializerForReference, names_scope, initializer_file_pos )
-		return;
+		return LLVMValueRef::Null;
 	}
 
 	var Variable initializer_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, initializer_expression.get_ref() );
@@ -824,22 +831,39 @@ fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, 
 	if( initializer_variable.t != field.t && !initializer_variable.t.ReferenceIsConvertibleTo( field.t ) )
 	{
 		REPORT_ERROR( TypesMismatch, names_scope, initializer_expression_file_pos, field.t, initializer_variable.t )
-		return;
+		return LLVMValueRef::Null;
 	}
 	if( initializer_variable.value_type == ValueType::Value )
 	{
 		REPORT_ERROR( ExpectedReferenceValue, names_scope, initializer_expression_file_pos )
-		return;
+		return LLVMValueRef::Null;
 	}
 	if( field.is_mutable && initializer_variable.value_type == ValueType::ReferenceImut )
 	{
 		REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, initializer_expression_file_pos )
-		return;
+		return LLVMValueRef::Null;
 	}
 
 	auto reference_converted= CreateReferenceCast( initializer_variable.llvm_value, initializer_variable.t, field.t, function_context );
 	auto address_of_reference= CreateFieldGEP( variable.llvm_value, field, function_context );
 	unsafe{  LLVMBuildStore( function_context.llvm_ir_builder, reference_converted, address_of_reference );  }
+
+	if( initializer_variable.constexpr_value != LLVMValueRef::Null )
+	{
+		unsafe
+		{
+			// Only global variables can have constant address, so, create it.
+			// TODO - create only if needed.
+			auto global_variable= LLVMAddGlobal( module_, field.t.GetLLVMType(), "_temp_const\0"[0] );
+			LLVMSetLinkage( global_variable, LLVMLinkage::Internal );
+			LLVMSetGlobalConstant( global_variable, LLVMBool::True );
+			LLVMSetInitializer( global_variable, initializer_variable.constexpr_value );
+
+			return global_variable;
+		}
+	}
+
+	return LLVMValueRef::Null;
 }
 
 fn CodeBuilder::BuildConstructorInitialization(
