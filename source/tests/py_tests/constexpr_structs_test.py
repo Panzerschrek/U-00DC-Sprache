@@ -79,7 +79,7 @@ def ConstexprReferenceInsideStruct_Test2():
 		var S constexpr s= zero_init;
 		var T constexpr t{ .r= s.y };
 
-		//static_assert( t.r == 0.0f );
+		static_assert( t.r == 0.0f );
 	"""
 	tests_lib.build_program( c_program_text )
 

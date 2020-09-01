@@ -402,6 +402,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"FunctionBodyVisibilityIsUnsignificant_Test1",
 		"FunctionCanNotBeVirtual_Test0",
 		"FunctionDeclarationOutsideItsScope_ForFunctionTemplates_Test0",
+		"FunctionPointerInConstexprStruct_Test0",
 		"FunctionPointersConversions_Test0",
 		"FunctionPointersConversions_Test1",
 		"FunctionPointersConversions_Test4",
