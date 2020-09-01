@@ -1448,6 +1448,12 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope, Globa
 			variable.constexpr_value= BuildInitializer( names_scope, function_context, variable, variable_declaration.initializer );
 		}
 
+		if( variable.constexpr_value == LLVMValueRef::Null )
+		{
+			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope, variable_declaration.file_pos )
+			return;
+		}
+
 		unsafe{  LLVMSetInitializer( variable.llvm_value, variable.constexpr_value );  }
 	}
 	else if( variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
@@ -1490,13 +1496,13 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope, Globa
 
 		variable.llvm_value= expression_result.llvm_value;
 		variable.constexpr_value= expression_result.constexpr_value;
+
+		if( variable.constexpr_value == LLVMValueRef::Null )
+		{
+			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope, variable_declaration.file_pos )
+		}
 	}
 	else{ halt; }
-
-	if( variable.constexpr_value == LLVMValueRef::Null )
-	{
-		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope, variable_declaration.file_pos )
-	}
 
 	// TODO - maybe clear here dummy global function?
 }
@@ -1534,6 +1540,13 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope, G
 		return;
 	}
 
+	variable.constexpr_value= expr.constexpr_value;
+	if( variable.constexpr_value == LLVMValueRef::Null )
+	{
+		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope, auto_variable_declaration.file_pos )
+		return;
+	}
+
 	if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
 	{
 		if( expr.value_type == ValueType::Value )
@@ -1564,11 +1577,6 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope, G
 	}
 	else { halt; }
 
-	variable.constexpr_value= expr.constexpr_value;
-	if( variable.constexpr_value == LLVMValueRef::Null )
-	{
-		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope, auto_variable_declaration.file_pos )
-	}
 }
 
 fn CodeBuilder::PrepareFunction(
