@@ -236,7 +236,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 			llvm_type= LLVMArrayType( element_llvm_type, u32(array_size) );
 
-			global_value= LLVMAddGlobal( module_, llvm_type, "\0"[0] );
+			// TODO - reuse global variable for equal string literals.
+			global_value= LLVMAddGlobal( module_, llvm_type, "TODO - name\0"[0] );
 			LLVMSetLinkage( global_value, LLVMLinkage::Internal );
 			LLVMSetGlobalConstant( global_value, LLVMBool::True );
 			LLVMSetInitializer( global_value, constexpr_value );
