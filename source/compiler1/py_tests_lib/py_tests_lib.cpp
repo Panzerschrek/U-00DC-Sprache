@@ -521,6 +521,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"ConstexprStructMemberIsConstexpr_Test",
 		"CopyChildToParent_Test",
 		"CouldNotOverloadFunction_ForUnsafe_Test",
+		"CouldNotOverloadFunctionIfNomangle_Test",
 		"DirectFunctionTemplateParametersSet_Test",
 		"DisableDefaultConstructor_Test",
 		"DuplicatedParentClass_Test",
