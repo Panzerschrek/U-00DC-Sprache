@@ -31,7 +31,6 @@ ConstexprFunctionEvaluator::ConstexprFunctionEvaluator( const llvm::DataLayout& 
 {}
 
 ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
-	const Function& function_type,
 	llvm::Function* const llvm_function,
 	const ArgsVector<llvm::Constant*>& args,
 	const FilePos& file_pos )
@@ -42,6 +41,7 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 
 	U_ASSERT( args.size() == llvm_function->getFunctionType()->getNumParams() );
 
+	llvm::Type* return_type= llvm_function->getReturnType();
 	size_t s_ret_ptr= 0u;
 
 	// Fill arguments
@@ -54,9 +54,10 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 		{
 			U_ASSERT(arg.getType()->isPointerTy());
 			U_ASSERT(i == 0u);
+			return_type= arg.getType()->getPointerElementType();
 
 			s_ret_ptr= stack_.size();
-			const size_t new_stack_size= stack_.size() + size_t( data_layout_.getTypeAllocSize( llvm::dyn_cast<llvm::PointerType>(arg.getType())->getElementType() ) );
+			const size_t new_stack_size= stack_.size() + size_t( data_layout_.getTypeAllocSize(return_type) );
 			if( new_stack_size >= g_max_data_stack_size )
 			{
 				ReportDataStackOverflow();
@@ -87,20 +88,17 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	result.errors= std::move(errors_);
 	errors_= {};
 
-	U_ASSERT( !function_type.return_value_is_reference ); // Currently can not return references.
-
-	const auto ret_llvm_type= function_type.return_type.GetLLVMType();
-	if( ret_llvm_type->isIntegerTy() )
-		result.result_constant= llvm::Constant::getIntegerValue( ret_llvm_type, res.IntVal );
-	else if( ret_llvm_type->isFloatTy() )
-		result.result_constant= llvm::ConstantFP::get( ret_llvm_type, double(res.FloatVal) );
-	else if( ret_llvm_type->isDoubleTy() )
-		result.result_constant= llvm::ConstantFP::get( ret_llvm_type, res.DoubleVal );
-	else if( ret_llvm_type->isVoidTy() )
-		result.result_constant= llvm::UndefValue::get( ret_llvm_type ); // TODO - set correct value
-	else if( ret_llvm_type->isArrayTy() || ret_llvm_type->isStructTy() )
-		result.result_constant= CreateInitializerForStructElement( ret_llvm_type, s_ret_ptr );
-	else if( ret_llvm_type->isPointerTy() )
+	if( return_type->isIntegerTy() )
+		result.result_constant= llvm::Constant::getIntegerValue( return_type, res.IntVal );
+	else if( return_type->isFloatTy() )
+		result.result_constant= llvm::ConstantFP::get( return_type, double(res.FloatVal) );
+	else if( return_type->isDoubleTy() )
+		result.result_constant= llvm::ConstantFP::get( return_type, res.DoubleVal );
+	else if( return_type->isVoidTy() )
+		result.result_constant= llvm::UndefValue::get( return_type ); // TODO - set correct value
+	else if( return_type->isArrayTy() || return_type->isStructTy() )
+		result.result_constant= CreateInitializerForStructElement( return_type, s_ret_ptr );
+	else if( return_type->isPointerTy() )
 		REPORT_ERROR( ConstexprFunctionEvaluationError, errors_, *file_pos_, "returning  pointer in constexpr function" );
 	else U_ASSERT(false);
 

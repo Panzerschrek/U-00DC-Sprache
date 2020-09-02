@@ -2547,7 +2547,7 @@ Value CodeBuilder::DoCallFunction(
 			!function_type.return_value_is_reference && function_type.return_type.ReferencesTagsCount() == 0u )
 		{
 			const ConstexprFunctionEvaluator::Result evaluation_result=
-				constexpr_function_evaluator_.Evaluate( function_type, llvm::dyn_cast<llvm::Function>(function), constant_llvm_args, call_file_pos );
+				constexpr_function_evaluator_.Evaluate( llvm::dyn_cast<llvm::Function>(function), constant_llvm_args, call_file_pos );
 
 			names.GetErrors().insert( names.GetErrors().end(), evaluation_result.errors.begin(), evaluation_result.errors.end() );
 			if( evaluation_result.errors.empty() && evaluation_result.result_constant != nullptr )

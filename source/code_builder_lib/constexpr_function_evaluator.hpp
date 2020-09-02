@@ -6,7 +6,6 @@
 #include "pop_llvm_warnings.hpp"
 
 #include "code_builder_errors.hpp"
-#include "type.hpp"
 
 namespace U
 {
@@ -26,7 +25,6 @@ public:
 	ConstexprFunctionEvaluator( const llvm::DataLayout& data_layout );
 
 	Result Evaluate(
-		const Function& function_type,
 		llvm::Function* const llvm_function,
 		const ArgsVector<llvm::Constant*>& args,
 		const FilePos& file_pos );
