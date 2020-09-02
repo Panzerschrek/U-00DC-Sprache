@@ -197,3 +197,30 @@ def ExpectedConstantExpression_ForEnableIf_Test0():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedConstantExpression" )
 	assert( errors_list[0].file_pos.line == 3 )
+
+
+def DifferentFunctionImplementations_UsingEnableIf_Test0():
+	c_program_text= """
+		fn enable_if( false ) Foo() : i32{ return 65757; }
+		fn enable_if( true  ) Foo() : i32{ return 546198; }
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 546198 )
+
+
+def DifferentFunctionImplementations_UsingEnableIf_Test1():
+	c_program_text= """
+		template</ u32 impl_index />
+		struct S
+		{
+			fn enable_if( impl_index == 3u ) Get() : i32{ return 333; }
+			fn enable_if( impl_index == 7u ) Get() : i32{ return 777; }
+		}
+
+		fn Three() : i32{ return S</3u/>::Get(); }
+		fn Seven() : i32{ return S</7u/>::Get(); }
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z5Threev" ) == 333 )
+	assert( tests_lib.run_function( "_Z5Sevenv" ) == 777 )
