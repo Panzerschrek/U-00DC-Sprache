@@ -1688,8 +1688,14 @@ fn CodeBuilder::PrepareFunction(
 
 	if( function_declaration.no_mangle )
 	{
-		// TODO - ensure function is  global.
-		function_variable.no_mangle= true;
+		if( names_scope_ptr.lock_imut().get_ref().GetParent().empty() )
+		{
+			function_variable.no_mangle= true;
+		}
+		else
+		{
+			REPORT_ERROR( NoMangleForNonglobalFunction, names_scope_ptr, function_declaration.file_pos, func_name )
+		}
 	}
 
 	if_var( &mut prev_function : GetFunctionWithSameType( functions_set, function_variable.t ) )
