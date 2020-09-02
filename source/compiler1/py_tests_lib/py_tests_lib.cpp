@@ -543,6 +543,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"InvalidTypeForConstantExpressionVariable",
 		"MethodBodyGenerationFailed_Test",
 		"NonExistentTest",
+		"NoMangleMismatch_Test",
 		"NumericConstants",
 		"OverloadingResolutionTest_ForFunctionTemplates_Test",
 		"OverloadingResolutionTest_MutabilityAndReferenceConversions",

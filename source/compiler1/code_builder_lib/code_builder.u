@@ -1759,7 +1759,11 @@ fn CodeBuilder::PrepareFunction(
 			return false;
 		}
 
-		// TODO - handle nomangle mismatch
+		if( prev_function.no_mangle != function_variable.no_mangle )
+		{
+			REPORT_ERROR( NoMangleMismatch, names_scope_ptr, function_declaration.file_pos, func_name )
+			return false;
+		}
 
 		return true;
 	}
