@@ -525,6 +525,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"DirectFunctionTemplateParametersSet_Test",
 		"DisableDefaultConstructor_Test",
 		"DuplicatedParentClass_Test",
+		"EnableIfDeclaration_Test",
 		"ExplicitAccessToSpecialMethodsIsUnsafe_Test",
 		"FunctionPointerAsFunctionArgument_Test",
 		"FunctionPointerAsSpecializedTemplateParameter_Test",
