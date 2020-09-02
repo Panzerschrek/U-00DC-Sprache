@@ -293,3 +293,63 @@ def DifferentFunctionImplementations_UsingEnableIf_Test1():
 	tests_lib.build_program( c_program_text )
 	assert( tests_lib.run_function( "_Z5Threev" ) == 333 )
 	assert( tests_lib.run_function( "_Z5Sevenv" ) == 777 )
+
+
+def EnableIf_ForPrototypeAndBody_Test0():
+	c_program_text= """
+		// Prototype have no "enable_if", but there is multiple bodies for this prototype with "enable_if".
+		fn Foo() : i32;
+		fn enable_if( false ) Foo() : i32 { return 11111; }
+		fn enable_if( true  ) Foo() : i32 { return 22222; }
+		fn enable_if( false ) Foo() : i32 { return 33333; }
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 22222 )
+
+
+def EnableIf_ForPrototypeAndBody_Test1():
+	c_program_text= """
+		// More then one body enabled.
+		fn Foo() : i32;
+		fn enable_if( true  ) Foo() : i32 { return 11111; }
+		fn enable_if( false ) Foo() : i32 { return 22222; }
+		fn enable_if( true  ) Foo() : i32 { return 33333; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "FunctionBodyDuplication" )
+	assert( errors_list[0].file_pos.line == 4 or errors_list[0].file_pos.line == 6 )
+
+
+def EnableIf_ForPrototypeAndBody_Test2():
+	c_program_text= """
+		// Have muliple prorotypes, but only one enabled. Body have no "enable_if".
+		fn enable_if( false ) Foo() : i32;
+		fn enable_if( true  ) Foo() : i32;
+		fn enable_if( false ) Foo() : i32;
+		fn Foo() : i32 { return 4321; }
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 4321 )
+
+
+def EnableIf_ForPrototypeAndBody_Test3():
+	c_program_text= """
+		// Have prototype and single disabled body.
+		fn Foo() : i32;
+		fn enable_if( false ) Foo() : i32 { lol + kek; } // Body contains errors, but it not compiled.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def EnableIf_ForPrototypeAndBody_Test4():
+	c_program_text= """
+		// "enable_if" both for body and prototype.
+		fn enable_if( true ) Foo() : i32;
+		fn enable_if( true )Foo() : i32 { return 12481632; }
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 12481632 )

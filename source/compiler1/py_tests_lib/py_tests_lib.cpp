@@ -536,6 +536,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"DisabledTemplateFunction_Test",
 		"DuplicatedParentClass_Test",
 		"EnableIfDeclaration_Test",
+		"EnableIf_ForPrototypeAndBody_Test",
 		"ExplicitAccessToSpecialMethodsIsUnsafe_Test",
 		"FunctionPointerAsFunctionArgument_Test",
 		"FunctionPointerAsSpecializedTemplateParameter_Test",
