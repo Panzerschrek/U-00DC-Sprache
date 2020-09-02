@@ -127,6 +127,75 @@ def DisabledFunction_Test4():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def DisabledTemplateFunction_Test0():
+	c_program_text= """
+		template</type T/>
+		fn enable_if( false ) Foo(T x){}
+
+		fn Bar()
+		{
+			Foo(0.5f); // Error, function is disabled
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( HaveError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
+
+
+def DisabledTemplateFunction_Test1():
+	c_program_text= """
+		template</type T/>
+		fn enable_if( false ) Foo(T x){}
+
+		fn Bar()
+		{
+			Foo</i32/>(345); // Error, function is disabled
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( HaveError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
+
+
+def DisabledTemplateFunction_Test2():
+	c_program_text= """
+		template</type T/>
+		fn enable_if( false ) Foo(T x){}
+
+		fn Bar()
+		{
+			var (fn(f64 x)) ptr( Foo</f64/> ); // Error, function is disabled
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( HaveError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
+
+
+def DisabledTemplateFunction_Test3():
+	c_program_text= """
+		template</bool enable/>
+		fn enable_if( enable ) Foo(){}
+
+		fn Bar()
+		{
+			Foo</false/>(); // Error, function is disabled.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( HaveError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
+
+
+def DisabledTemplateFunction_Test4():
+	c_program_text= """
+		template</bool enable/>
+		fn enable_if( enable ) Foo(){}
+
+		fn Bar()
+		{
+			Foo</true/>(); // Ok - function is enabled
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def EnabledFunction_Test0():
 	c_program_text= """
 		fn enable_if(true) Foo() : i32 {}   // If condition is true, body compiled.
