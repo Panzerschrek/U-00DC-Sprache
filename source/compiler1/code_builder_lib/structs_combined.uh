@@ -247,6 +247,7 @@ struct FunctionVariable
 	bool is_this_call= false;
 	bool is_generated= false;
 	bool is_deleted= false;
+	bool no_mangle= false;
 	u32 virtual_table_index= ~0u; // For virtual functions number in virtual functions table in class of first arg(this).
 
 	ust::shared_ptr_final_nullable</ Synt::Function /> prototype_syntax_element;

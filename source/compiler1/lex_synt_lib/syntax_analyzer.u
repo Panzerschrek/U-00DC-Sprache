@@ -910,6 +910,11 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 			NextLexem();
 		}
 	}
+	if( IsKeyword( it_.front(), Keyword::nomangle_ ) )
+	{
+		res.no_mangle= true;
+		NextLexem();
+	}
 
 	if( is_operator )
 	{

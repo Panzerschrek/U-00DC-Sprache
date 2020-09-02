@@ -345,6 +345,12 @@ fn CodeBuilder::ApplyOverloadedFunction(
 		*/
 		foreach( & set_function : functions_set.functions )
 		{
+			if( function.no_mangle || set_function.no_mangle )
+			{
+				REPORT_ERROR( CouldNotOverloadFunction, names_scope, file_pos )
+				return false;
+			}
+
 			auto& set_function_type= set_function.t;
 
 			// If argument count differs - allow overloading.
