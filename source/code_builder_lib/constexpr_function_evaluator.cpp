@@ -158,33 +158,28 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 	const llvm::BasicBlock* current_basic_block= &llvm_function.getBasicBlockList().front();
 
 	const llvm::Instruction* instruction= &*current_basic_block->begin();
-	while(true)
+	while( errors_.empty() )
 	{
 		switch( instruction->getOpcode() )
 		{
 		case llvm::Instruction::Alloca:
 			ProcessAlloca(instruction);
-			instruction= instruction->getNextNode();
 			break;
 
 		case llvm::Instruction::Load:
 			ProcessLoad(instruction);
-			instruction= instruction->getNextNode();
 			break;
 
 		case llvm::Instruction::Store:
 			ProcessStore(instruction);
-			instruction= instruction->getNextNode();
 			break;
 
 		case llvm::Instruction::GetElementPtr:
 			ProcessGEP(instruction);
-			instruction= instruction->getNextNode();
 			break;
 
 		case llvm::Instruction::Call:
 			ProcessCall( instruction, stack_depth );
-			instruction= instruction->getNextNode();
 			break;
 
 		case llvm::Instruction::Br:
@@ -203,7 +198,7 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 				}
 				instruction= &*current_basic_block->begin();
 			}
-			break;
+			continue; // Continue loop without advancing instruction.
 
 		case llvm::Instruction::PHI:
 			{
@@ -219,7 +214,6 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 					U_ASSERT( i + 1u != phi_node->getNumIncomingValues() );
 				}
 			}
-			instruction= instruction->getNextNode();
 			break;
 
 		case llvm::Instruction::Ret:
@@ -232,44 +226,6 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 				return res;
 			}
 
-		case llvm::Instruction::Add:
-		case llvm::Instruction::Sub:
-		case llvm::Instruction::Mul:
-		case llvm::Instruction::SDiv:
-		case llvm::Instruction::UDiv:
-		case llvm::Instruction::SRem:
-		case llvm::Instruction::URem:
-		case llvm::Instruction::And:
-		case llvm::Instruction::Or:
-		case llvm::Instruction::Xor:
-		case llvm::Instruction::Shl:
-		case llvm::Instruction::AShr:
-		case llvm::Instruction::LShr:
-		case llvm::Instruction::FAdd:
-		case llvm::Instruction::FSub:
-		case llvm::Instruction::FMul:
-		case llvm::Instruction::FDiv:
-		case llvm::Instruction::FRem:
-		case llvm::Instruction::ICmp:
-		case llvm::Instruction::FCmp:
-			ProcessBinaryArithmeticInstruction(instruction);
-			instruction= instruction->getNextNode();
-			break;
-
-		case llvm::Instruction::SExt:
-		case llvm::Instruction::ZExt:
-		case llvm::Instruction::Trunc:
-		case llvm::Instruction::FPExt:
-		case llvm::Instruction::FPTrunc:
-		case llvm::Instruction::SIToFP:
-		case llvm::Instruction::UIToFP:
-		case llvm::Instruction::FPToSI:
-		case llvm::Instruction::FPToUI:
-		case llvm::Instruction::BitCast:
-			ProcessUnaryArithmeticInstruction(instruction);
-			instruction= instruction->getNextNode();
-			break;
-
 		case llvm::Instruction::Unreachable:
 			REPORT_ERROR( ConstexprFunctionEvaluationError,
 				errors_,
@@ -278,16 +234,23 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 			return llvm::GenericValue();
 
 		default:
-			REPORT_ERROR( ConstexprFunctionEvaluationError,
-				errors_,
-				*file_pos_,
-				std::string("executing unknown instruction \"") + instruction->getOpcodeName() + "\"" );
-			return llvm::GenericValue();
+			if( instruction->getNumOperands() == 1u )
+				ProcessUnaryArithmeticInstruction(instruction);
+			else if( instruction->getNumOperands() == 2u )
+				ProcessBinaryArithmeticInstruction(instruction);
+			else
+			{
+				REPORT_ERROR( ConstexprFunctionEvaluationError,
+					errors_,
+					*file_pos_,
+					std::string("executing unknown instruction \"") + instruction->getOpcodeName() + "\"" );
+				return llvm::GenericValue();
+			}
 		};
 
-		if( !errors_.empty() )
-			return llvm::GenericValue();
+		instruction= instruction->getNextNode();
 	}
+	return llvm::GenericValue();
 }
 
 size_t ConstexprFunctionEvaluator::MoveConstantToStack( const llvm::Constant& constant )
@@ -728,7 +691,6 @@ void ConstexprFunctionEvaluator::ProcessUnaryArithmeticInstruction( const llvm::
 		else U_ASSERT(false);
 		break;
 
-
 	case llvm::Instruction::SIToFP:
 		U_ASSERT(src_type->isIntegerTy());
 		if( dst_type->isFloatTy() )
@@ -771,7 +733,10 @@ void ConstexprFunctionEvaluator::ProcessUnaryArithmeticInstruction( const llvm::
 		break;
 
 	default:
-		U_ASSERT(false);
+		REPORT_ERROR( ConstexprFunctionEvaluationError,
+			errors_,
+			*file_pos_,
+			std::string("executing unknown unary instruction \"") + instruction->getOpcodeName() + "\"" );
 		break;
 	}
 
@@ -965,7 +930,10 @@ void ConstexprFunctionEvaluator::ProcessBinaryArithmeticInstruction( const llvm:
 		break;
 
 	default:
-		U_ASSERT(false);
+		REPORT_ERROR( ConstexprFunctionEvaluationError,
+			errors_,
+			*file_pos_,
+			std::string("executing unknown binary instruction \"") + instruction->getOpcodeName() + "\"" );
 		break;
 	};
 
