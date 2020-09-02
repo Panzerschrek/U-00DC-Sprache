@@ -19,20 +19,6 @@ def NomangleTest1():
 	assert( call_result == 123698745 )
 
 
-def NomangleTest2():
-	c_program_text= """
-		fn nomangle Bar() : i32;
-
-		fn Bar() : i32 // Ok, body may have no "nomangle" specifier
-		{
-			return 15951;
-		}
-	"""
-	tests_lib.build_program( c_program_text )
-	call_result= tests_lib.run_function( "Bar" )
-	assert( call_result == 15951 )
-
-
 def NomangleFunctionMustBeGlobal_Test0():
 	c_program_text= """
 		namespace N
@@ -115,3 +101,18 @@ def NoMangleMismatch_Test0():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NoMangleMismatch" )
 	assert( errors_list[0].file_pos.line == 3 )
+
+
+def NoMangleMismatch_Test1():
+	c_program_text= """
+		fn nomangle Bar() : i32;
+
+		fn Bar() : i32 // Body have no "nomangle" specifier
+		{
+			return 15951;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "NoMangleMismatch" )
+	assert( errors_list[0].file_pos.line == 4 )

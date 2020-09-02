@@ -997,7 +997,7 @@ size_t CodeBuilder::PrepareFunction(
 		if( prev_function->is_generated != func_variable.is_generated )
 			REPORT_ERROR( BodyForGeneratedFunction, names_scope.GetErrors(), prev_function->prototype_file_pos, func_name );
 
-		if( !prev_function->no_mangle && func_variable.no_mangle )
+		if( prev_function->no_mangle != func_variable.no_mangle )
 			REPORT_ERROR( NoMangleMismatch, names_scope.GetErrors(), func.file_pos_, func_name );
 
 		if( prev_function->is_conversion_constructor != func_variable.is_conversion_constructor )
