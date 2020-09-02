@@ -596,35 +596,7 @@ void ConstexprFunctionEvaluator::ProcessCall( const llvm::Instruction* const ins
 	unsigned int i= 0u;
 	for( const llvm::Argument& arg : function->args() )
 	{
-		if( arg.hasByValAttr() )
-		{
-			// Push to stack copy of byval arguments.
-			U_ASSERT( arg.getType()->isPointerTy() );
-			llvm::Type* const element_type= llvm::dyn_cast<llvm::PointerType>(arg.getType())->getElementType();
-			const size_t element_size= size_t(data_layout_.getTypeAllocSize( element_type ));
-
-			const size_t dst_ptr= stack_.size();
-			const size_t new_stack_size= stack_.size() + element_size;
-			if( new_stack_size >= g_max_data_stack_size )
-			{
-				ReportDataStackOverflow();
-				return;
-			}
-			stack_.resize( new_stack_size );
-
-			llvm::GenericValue val= GetVal( instruction->getOperand(i) );
-
-			const size_t src_ptr= size_t(val.IntVal.getLimitedValue());
-			U_ASSERT( src_ptr + element_size <= stack_.size() );
-
-			std::memcpy( stack_.data() + dst_ptr, stack_.data() + src_ptr, element_size );
-
-			llvm::GenericValue val_copy;
-			val_copy.IntVal= llvm::APInt( data_layout_.getPointerSizeInBits(), dst_ptr );
-			new_instructions_map[ &arg ]= val_copy;
-		}
-		else
-			new_instructions_map[ &arg ]= GetVal( instruction->getOperand(i) );
+		new_instructions_map[ &arg ]= GetVal( instruction->getOperand(i) );
 		++i;
 	}
 
