@@ -48,6 +48,8 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	size_t i= 0u;
 	for( const llvm::Argument& arg : llvm_function->args() )
 	{
+		llvm::GenericValue val;
+
 		if( arg.hasStructRetAttr() )
 		{
 			U_ASSERT(arg.getType()->isPointerTy());
@@ -62,37 +64,19 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 			}
 			stack_.resize( new_stack_size );
 
-			llvm::GenericValue val;
 			val.IntVal= llvm::APInt( 64u, uint64_t(s_ret_ptr) );
-			instructions_map_[ &arg ]= val;
 		}
 		else if( arg.getType()->isPointerTy() )
-		{
-			const size_t ptr= MoveConstantToStack( *args[i] );
-			llvm::GenericValue val;
-			val.IntVal= llvm::APInt( 64u, uint64_t(ptr) );
-
-			instructions_map_[ &arg ]= val;
-		}
+			val.IntVal= llvm::APInt( 64u, uint64_t( MoveConstantToStack( *args[i] ) ) );
 		else if( arg.getType()->isIntegerTy() )
-		{
-			llvm::GenericValue val;
 			val.IntVal= args[i]->getUniqueInteger();
-			instructions_map_[ &arg ]= val;
-		}
 		else if( arg.getType()->isFloatTy() )
-		{
-			llvm::GenericValue val;
 			val.FloatVal= llvm::dyn_cast<llvm::ConstantFP>(args[i])->getValueAPF().convertToFloat();
-			instructions_map_[ &arg ]= val;
-		}
 		else if( arg.getType()->isDoubleTy() )
-		{
-			llvm::GenericValue val;
 			val.DoubleVal= llvm::dyn_cast<llvm::ConstantFP>(args[i])->getValueAPF().convertToDouble();
-			instructions_map_[ &arg ]= val;
-		}
 		else U_ASSERT(false);
+
+		instructions_map_[ &arg ]= val;
 
 		++i;
 	}
@@ -104,25 +88,20 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	errors_= {};
 
 	U_ASSERT( !function_type.return_value_is_reference ); // Currently can not return references.
-	if( const FundamentalType* const fundamental= function_type.return_type.GetFundamentalType() )
-	{
-		if( IsInteger( fundamental->fundamental_type ) || IsChar( fundamental->fundamental_type ) || fundamental->fundamental_type == U_FundamentalType::Bool )
-			result.result_constant= llvm::Constant::getIntegerValue( function_type.return_type.GetLLVMType(), res.IntVal );
-		else if( IsFloatingPoint( fundamental->fundamental_type ) )
-			result.result_constant=
-				llvm::ConstantFP::get(
-					function_type.return_type.GetLLVMType(),
-					fundamental->fundamental_type == U_FundamentalType::f32 ? double(res.FloatVal) : res.DoubleVal );
-		else if( fundamental->fundamental_type == U_FundamentalType::Void )
-			result.result_constant= llvm::UndefValue::get( function_type.return_type.GetLLVMType() ); // TODO - set correct value
-		else U_ASSERT(false);
-	}
-	else if( const Class* const struct_type= function_type.return_type.GetClassType() )
-		result.result_constant= CreateInitializerForStructElement( struct_type->llvm_type, s_ret_ptr );
-	else if( const Tuple* const tuple_type= function_type.return_type.GetTupleType() )
-		result.result_constant= CreateInitializerForStructElement( tuple_type->llvm_type, s_ret_ptr );
-	else if( function_type.return_type.GetFunctionPointerType() != nullptr )
-		REPORT_ERROR( ConstexprFunctionEvaluationError, errors_, *file_pos_, "returning function pointer in constexpr function" );
+
+	const auto ret_llvm_type= function_type.return_type.GetLLVMType();
+	if( ret_llvm_type->isIntegerTy() )
+		result.result_constant= llvm::Constant::getIntegerValue( ret_llvm_type, res.IntVal );
+	else if( ret_llvm_type->isFloatTy() )
+		result.result_constant= llvm::ConstantFP::get( ret_llvm_type, double(res.FloatVal) );
+	else if( ret_llvm_type->isDoubleTy() )
+		result.result_constant= llvm::ConstantFP::get( ret_llvm_type, res.DoubleVal );
+	else if( ret_llvm_type->isVoidTy() )
+		result.result_constant= llvm::UndefValue::get( ret_llvm_type ); // TODO - set correct value
+	else if( ret_llvm_type->isArrayTy() || ret_llvm_type->isStructTy() )
+		result.result_constant= CreateInitializerForStructElement( ret_llvm_type, s_ret_ptr );
+	else if( ret_llvm_type->isPointerTy() )
+		REPORT_ERROR( ConstexprFunctionEvaluationError, errors_, *file_pos_, "returning  pointer in constexpr function" );
 	else U_ASSERT(false);
 
 	instructions_map_.clear();
@@ -190,11 +169,7 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 				else
 				{
 					const llvm::GenericValue val= GetVal(instruction->getOperand(0u));
-
-					if( !val.IntVal.getBoolValue() )
-						current_basic_block= llvm::dyn_cast<llvm::BasicBlock>(instruction->getOperand(1u));
-					else
-						current_basic_block= llvm::dyn_cast<llvm::BasicBlock>(instruction->getOperand(2u));
+					current_basic_block= llvm::dyn_cast<llvm::BasicBlock>(instruction->getOperand( val.IntVal.getBoolValue() ? 2u : 1u ));
 				}
 				instruction= &*current_basic_block->begin();
 			}
@@ -485,36 +460,27 @@ void ConstexprFunctionEvaluator::ProcessLoad( const llvm::Instruction* const ins
 		data_ptr= stack_.data() + offset;
 
 	llvm::Type* const element_type= instruction->getType();
+	llvm::GenericValue val;
 	if( element_type->isIntegerTy() )
 	{
 		uint64_t buff[4];
 		std::memcpy( buff, data_ptr, size_t(data_layout_.getTypeStoreSize( element_type )) );
 
-		llvm::GenericValue val;
 		val.IntVal= llvm::APInt( element_type->getIntegerBitWidth() , buff );
-		instructions_map_[ instruction ]= val;
 	}
 	else if( element_type->isFloatTy() )
-	{
-		llvm::GenericValue val;
 		std::memcpy( &val.FloatVal, data_ptr, sizeof(float) );
-		instructions_map_[ instruction ]= val;
-	}
 	else if( element_type->isDoubleTy() )
-	{
-		llvm::GenericValue val;
 		std::memcpy( &val.DoubleVal, data_ptr, sizeof(double) );
-		instructions_map_[ instruction ]= val;
-	}
 	else if( element_type->isPointerTy() )
 	{
 		uint64_t ptr;
 		std::memcpy( &ptr, data_ptr, size_t(data_layout_.getTypeAllocSize( element_type )) );
-		llvm::GenericValue val;
 		val.IntVal= llvm::APInt( 64u , ptr );
-		instructions_map_[ instruction ]= val;
 	}
 	else U_ASSERT(false);
+
+	instructions_map_[ instruction ]= val;
 }
 
 void ConstexprFunctionEvaluator::ProcessStore( const llvm::Instruction* const instruction )
@@ -535,7 +501,7 @@ void ConstexprFunctionEvaluator::ProcessStore( const llvm::Instruction* const in
 	llvm::Type* const element_type= llvm::dyn_cast<llvm::PointerType>(address->getType())->getElementType();
 	if( element_type->isIntegerTy() )
 	{
-		uint64_t limited_value= val.IntVal.getLimitedValue();
+		const uint64_t limited_value= val.IntVal.getLimitedValue();
 		std::memcpy( data_ptr, &limited_value, size_t(data_layout_.getTypeStoreSize( element_type )) );
 	}
 	else if( element_type->isFloatTy() )
@@ -544,7 +510,7 @@ void ConstexprFunctionEvaluator::ProcessStore( const llvm::Instruction* const in
 		std::memcpy( data_ptr, &val.DoubleVal, size_t(data_layout_.getTypeAllocSize( element_type )) );
 	else if( element_type->isPointerTy() )
 	{
-		uint64_t ptr= val.IntVal.getLimitedValue();
+		const uint64_t ptr= val.IntVal.getLimitedValue();
 		std::memcpy( data_ptr, &ptr, size_t(data_layout_.getTypeAllocSize( element_type )) );
 	}
 	else U_ASSERT(false);
