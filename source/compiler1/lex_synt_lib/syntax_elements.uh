@@ -382,6 +382,8 @@ struct Function
 
 	bool no_mangle= false;
 
+	ust::box_nullable</Expression/> condition; // enable_if
+
 	FunctionType function_type;
 	ust::box_nullable</Block/> block; // null for prototype
 	ust::box_nullable</StructNamedInitializer/> constructor_initializer_list;

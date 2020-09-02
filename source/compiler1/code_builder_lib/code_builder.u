@@ -1595,7 +1595,33 @@ fn CodeBuilder::PrepareFunction(
 		REPORT_ERROR( InitializationListInNonconstructor, names_scope_ptr, function_declaration.constructor_initializer_list.get_ref().file_pos )
 	}
 
+	// TODO - maybe clear global constext after it's usage?
 	auto mut global_function_context= CreateGlobalFunctionContext();
+
+	// enable_if
+	if( !function_declaration.condition.empty() )
+	{
+		auto& expr= function_declaration.condition.get_ref();
+		auto condition_variable= BuildExpressionCodeEnsureVariable( names_scope_ptr, global_function_context, expr );
+		if( condition_variable.t == bool_type_ )
+		{
+			if( condition_variable.constexpr_value != LLVMValueRef::Null )
+			{
+				unsafe
+				{
+					if( LLVMConstIntGetZExtValue( condition_variable.constexpr_value ) == 0u64 ) { return true; /* Function disabled */ }
+				}
+			}
+			else
+			{
+				REPORT_ERROR( ExpectedConstantExpression, names_scope_ptr, Synt::GetFilePos( expr ) )
+			}
+		}
+		else
+		{
+			REPORT_ERROR( TypesMismatch, names_scope_ptr, Synt::GetFilePos( expr ), bool_type_, condition_variable.t )
+		}
+	}
 
 	var FunctionVariable mut function_variable
 	{

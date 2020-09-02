@@ -127,6 +127,75 @@ def DisabledFunction_Test4():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def DisabledTemplateFunction_Test0():
+	c_program_text= """
+		template</type T/>
+		fn enable_if( false ) Foo(T x){}
+
+		fn Bar()
+		{
+			Foo(0.5f); // Error, function is disabled
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( HaveError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
+
+
+def DisabledTemplateFunction_Test1():
+	c_program_text= """
+		template</type T/>
+		fn enable_if( false ) Foo(T x){}
+
+		fn Bar()
+		{
+			Foo</i32/>(345); // Error, function is disabled
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( HaveError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
+
+
+def DisabledTemplateFunction_Test2():
+	c_program_text= """
+		template</type T/>
+		fn enable_if( false ) Foo(T x){}
+
+		fn Bar()
+		{
+			var (fn(f64 x)) ptr( Foo</f64/> ); // Error, function is disabled
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( HaveError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
+
+
+def DisabledTemplateFunction_Test3():
+	c_program_text= """
+		template</bool enable/>
+		fn enable_if( enable ) Foo(){}
+
+		fn Bar()
+		{
+			Foo</false/>(); // Error, function is disabled.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( HaveError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
+
+
+def DisabledTemplateFunction_Test4():
+	c_program_text= """
+		template</bool enable/>
+		fn enable_if( enable ) Foo(){}
+
+		fn Bar()
+		{
+			Foo</true/>(); // Ok - function is enabled
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def EnabledFunction_Test0():
 	c_program_text= """
 		fn enable_if(true) Foo() : i32 {}   // If condition is true, body compiled.
@@ -177,3 +246,110 @@ def DiabledFunctionContentNotCompiled_Test2():
 	"""
 	tests_lib.build_program( c_program_text )
 
+
+def TypesMismatch_ForEnableIf_Test0():
+	c_program_text= """
+	fn enable_if(42) Foo(); // Expected "bool", got "i32"
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TypesMismatch" )
+	assert( errors_list[0].file_pos.line == 2 )
+
+
+def ExpectedConstantExpression_ForEnableIf_Test0():
+	c_program_text= """
+	fn Bar() : bool;
+	fn enable_if(Bar()) Foo(); // Result of "Bar" call is not constexpr
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ExpectedConstantExpression" )
+	assert( errors_list[0].file_pos.line == 3 )
+
+
+def DifferentFunctionImplementations_UsingEnableIf_Test0():
+	c_program_text= """
+		fn enable_if( false ) Foo() : i32{ return 65757; }
+		fn enable_if( true  ) Foo() : i32{ return 546198; }
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 546198 )
+
+
+def DifferentFunctionImplementations_UsingEnableIf_Test1():
+	c_program_text= """
+		template</ u32 impl_index />
+		struct S
+		{
+			fn enable_if( impl_index == 3u ) Get() : i32{ return 333; }
+			fn enable_if( impl_index == 7u ) Get() : i32{ return 777; }
+		}
+
+		fn Three() : i32{ return S</3u/>::Get(); }
+		fn Seven() : i32{ return S</7u/>::Get(); }
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z5Threev" ) == 333 )
+	assert( tests_lib.run_function( "_Z5Sevenv" ) == 777 )
+
+
+def EnableIf_ForPrototypeAndBody_Test0():
+	c_program_text= """
+		// Prototype have no "enable_if", but there is multiple bodies for this prototype with "enable_if".
+		fn Foo() : i32;
+		fn enable_if( false ) Foo() : i32 { return 11111; }
+		fn enable_if( true  ) Foo() : i32 { return 22222; }
+		fn enable_if( false ) Foo() : i32 { return 33333; }
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 22222 )
+
+
+def EnableIf_ForPrototypeAndBody_Test1():
+	c_program_text= """
+		// More then one body enabled.
+		fn Foo() : i32;
+		fn enable_if( true  ) Foo() : i32 { return 11111; }
+		fn enable_if( false ) Foo() : i32 { return 22222; }
+		fn enable_if( true  ) Foo() : i32 { return 33333; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "FunctionBodyDuplication" )
+	assert( errors_list[0].file_pos.line == 4 or errors_list[0].file_pos.line == 6 )
+
+
+def EnableIf_ForPrototypeAndBody_Test2():
+	c_program_text= """
+		// Have muliple prorotypes, but only one enabled. Body have no "enable_if".
+		fn enable_if( false ) Foo() : i32;
+		fn enable_if( true  ) Foo() : i32;
+		fn enable_if( false ) Foo() : i32;
+		fn Foo() : i32 { return 4321; }
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 4321 )
+
+
+def EnableIf_ForPrototypeAndBody_Test3():
+	c_program_text= """
+		// Have prototype and single disabled body.
+		fn Foo() : i32;
+		fn enable_if( false ) Foo() : i32 { lol + kek; } // Body contains errors, but it not compiled.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def EnableIf_ForPrototypeAndBody_Test4():
+	c_program_text= """
+		// "enable_if" both for body and prototype.
+		fn enable_if( true ) Foo() : i32;
+		fn enable_if( true )Foo() : i32 { return 12481632; }
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 12481632 )
