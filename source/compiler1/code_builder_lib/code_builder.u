@@ -1686,6 +1686,12 @@ fn CodeBuilder::PrepareFunction(
 		}
 	}
 
+	if( function_declaration.no_mangle )
+	{
+		// TODO - ensure function is  global.
+		function_variable.no_mangle= true;
+	}
+
 	if_var( &mut prev_function : GetFunctionWithSameType( functions_set, function_variable.t ) )
 	{
 		if( prev_function.prototype_syntax_element.empty() )
@@ -1747,6 +1753,8 @@ fn CodeBuilder::PrepareFunction(
 			return false;
 		}
 
+		// TODO - handle nomangle mismatch
+
 		return true;
 	}
 
@@ -1756,15 +1764,27 @@ fn CodeBuilder::PrepareFunction(
 		return false;
 	}
 
+
+	var ust::string8 mut llvm_function_name;
+	if( function_variable.no_mangle )
+	{
+		llvm_function_name= func_name + "\0";
+	}
+	else
+	{
+		llvm_function_name=
+			MangleFunction(
+				names_scope_ptr.lock_imut().get_ref(),
+				func_name,
+				function_variable.t );
+	}
+
 	unsafe
 	{
 		function_variable.llvm_function=
 			LLVMAddFunction(
 				module_,
-				MangleFunction(
-					names_scope_ptr.lock_imut().get_ref(),
-					func_name,
-					function_variable.t ).front(),
+				llvm_function_name.front(),
 				function_variable.t.llvm_type );
 	}
 

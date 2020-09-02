@@ -428,6 +428,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"NameIsNotTypeName_ForFunctionTemplateParameter",
 		"NameNotFound_ForFunctionTemplateParameter",
 		"NonPureVirtualFunctionInInterface_Test0",
+		"NomangleTest0",
+		"NomangleTest1",
 		"OkTest",
 		"PureDestructor_Test0",
 		"RecursiveTemplateFunctionCall_Test0",

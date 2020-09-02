@@ -380,6 +380,8 @@ struct Function
 	}
 	BodyKind body_kind= BodyKind::Regular;
 
+	bool no_mangle= false;
+
 	FunctionType function_type;
 	ust::box_nullable</Block/> block; // null for prototype
 	ust::box_nullable</StructNamedInitializer/> constructor_initializer_list;
