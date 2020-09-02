@@ -177,3 +177,23 @@ def DiabledFunctionContentNotCompiled_Test2():
 	"""
 	tests_lib.build_program( c_program_text )
 
+
+def TypesMismatch_ForEnableIf_Test0():
+	c_program_text= """
+	fn enable_if(42) Foo(); // Expected "bool", got "i32"
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TypesMismatch" )
+	assert( errors_list[0].file_pos.line == 2 )
+
+
+def ExpectedConstantExpression_ForEnableIf_Test0():
+	c_program_text= """
+	fn Bar() : bool;
+	fn enable_if(Bar()) Foo(); // Result of "Bar" call is not constexpr
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ExpectedConstantExpression" )
+	assert( errors_list[0].file_pos.line == 3 )
