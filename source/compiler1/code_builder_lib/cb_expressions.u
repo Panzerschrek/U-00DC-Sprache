@@ -1773,7 +1773,8 @@ fn CodeBuilder::DoCallFunction(
 
 	var ust::vector</ LLVMValueRef /> mut constexpr_args;
 	auto mut is_constexpr= false;
-	if( function.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete )
+	if( function.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete &&
+		!function_type.return_value_is_reference )
 	{
 		is_constexpr= true;
 		constexpr_args.resize( total_args, LLVMValueRef::Null );
@@ -1784,13 +1785,14 @@ fn CodeBuilder::DoCallFunction(
 		auto arg_n= select( args_evaluation_order == ArgsEvaluationOrder::Direct ? i : total_args - i - 1s );
 		auto &mut llvm_arg= llvm_args[ first_llvm_arg_number + arg_n ];
 
-		var Type& expected_arg_type= function_type.args[arg_n].arg_type;
+		auto& param= function_type.args[arg_n];
+		var Type& expected_arg_type= param.arg_type;
 		auto arg=
 			select( arg_n < preevaluated_args.size()
 				? preevaluated_args[arg_n]
 				: BuildExpressionCodeEnsureVariable( names_scope, function_context, args[ arg_n - preevaluated_args.size() ].get_ref() ) );
 
-		if( is_constexpr && arg.constexpr_value != LLVMValueRef::Null )
+		if( is_constexpr && arg.constexpr_value != LLVMValueRef::Null && !( param.is_mutable && param.is_reference ) )
 		{
 			constexpr_args[ arg_n ]= arg.constexpr_value;
 		}

@@ -39,14 +39,29 @@ fn ConstexprFunctionEvaluator1::Evaluate( mut this, LLVMValueRef function, ust::
 
 	unsafe
 	{
-		result.constant=
-			U1_ConstexprFunctionEvaluatorEvaluate(
-				impl_,
-				function,
-				args.front(),
-				args.size(),
-				ConstexprFunctionEvaluatorErrorHandlerFunc( ErrorHandlerFunc ),
-				result.errors );
+		if( args.empty() )
+		{
+			auto dummy= LLVMValueRef::Null;
+			result.constant=
+				U1_ConstexprFunctionEvaluatorEvaluate(
+					impl_,
+					function,
+					dummy,
+					0s,
+					ConstexprFunctionEvaluatorErrorHandlerFunc( ErrorHandlerFunc ),
+					result.errors );
+		}
+		else
+		{
+			result.constant=
+				U1_ConstexprFunctionEvaluatorEvaluate(
+					impl_,
+					function,
+					args.front(),
+					args.size(),
+					ConstexprFunctionEvaluatorErrorHandlerFunc( ErrorHandlerFunc ),
+					result.errors );
+		}
 	}
 
 	return move(result);
