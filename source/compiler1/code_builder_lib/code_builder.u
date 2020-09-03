@@ -819,6 +819,26 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 			BuildFuncCode( names_scope_ptr, func_variable );
 		}
 	}
+	else
+	{
+		// Immediately build body of "constexpr" functions.
+		foreach( &func_variable : functions_set_ptr.lock_imut().get_ref().functions_set.functions )
+		{
+			if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
+			{
+				BuildFuncCode( names_scope_ptr, func_variable );
+			}
+		}
+
+		auto mut lock= functions_set_ptr.lock_mut();
+		foreach( &mut func_variable : lock.get_ref().functions_set.functions )
+		{
+			if( func_variable.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete )
+			{
+				func_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprComplete;
+			}
+		}
+	}
 }
 
 fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypePtr& class_type )
@@ -1656,6 +1676,22 @@ fn CodeBuilder::PrepareFunction(
 		}
 
 		CheckOverloadedOperator( class_type, function_type, function_declaration.operator, names_scope_ptr, function_declaration.file_pos );
+	}
+
+	if( function_declaration.constexpr_ )
+	{
+		if( function_declaration.block.empty() )
+		{
+			REPORT_ERROR( ConstexprFunctionsMustHaveBody, names_scope_ptr, function_declaration.file_pos )
+		}
+		else if( function_declaration.virtual_kind != Synt::Function::VirtualKind::None )
+		{
+			REPORT_ERROR( ConstexprFunctionCanNotBeVirtual, names_scope_ptr, function_declaration.file_pos )
+		}
+		else
+		{
+			function_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprIncomplete;
+		}
 	}
 
 	if( function_declaration.virtual_kind != Synt::Function::VirtualKind::None )

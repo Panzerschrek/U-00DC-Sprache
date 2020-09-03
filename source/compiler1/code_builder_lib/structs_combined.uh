@@ -250,6 +250,15 @@ struct FunctionVariable
 	bool no_mangle= false;
 	u32 virtual_table_index= ~0u; // For virtual functions number in virtual functions table in class of first arg(this).
 
+	enum ConstexprKind : u8
+	{
+		NonConstexpr,
+		ConstexprIncomplete,  // Can be used in body of constexpr functions, but result of call can not be constexpr.
+		ConstexprComplete,
+	}
+
+	ConstexprKind constexpr_kind= ConstexprKind::NonConstexpr;
+
 	ust::shared_ptr_final_nullable</ Synt::Function /> prototype_syntax_element;
 	ust::shared_ptr_final_nullable</ Synt::Function /> body_syntax_element;
 

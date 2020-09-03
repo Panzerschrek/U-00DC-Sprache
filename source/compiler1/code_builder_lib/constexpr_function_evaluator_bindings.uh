@@ -10,7 +10,7 @@ fn nomangle U1_ConstexprFunctionEvaluatorDestroy( ConstexprFunctionEvaluatorRef 
 type ConstexprFunctionEvaluatorErrorHandlerFunc= fn( void &mut user_data, char8& error_text_start, size_type error_text_size );
 
 fn nomangle U1_ConstexprFunctionEvaluatorEvaluate(
-	ConstexprFunctionEvaluatorRef &mut constexpr_function_evaluator,
+	ConstexprFunctionEvaluatorRef constexpr_function_evaluator,
 	LLVMValueRef function,
 	LLVMValueRef& args_start,
 	size_type arg_count,

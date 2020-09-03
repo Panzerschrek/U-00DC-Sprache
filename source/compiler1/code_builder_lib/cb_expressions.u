@@ -1771,6 +1771,14 @@ fn CodeBuilder::DoCallFunction(
 	auto first_llvm_arg_number= select( is_s_ret ? 1s : 0s );
 	llvm_args.resize( first_llvm_arg_number + total_args, LLVMValueRef::Null );
 
+	var ust::vector</ LLVMValueRef /> mut constexpr_args;
+	auto mut is_constexpr= false;
+	if( function.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete )
+	{
+		is_constexpr= true;
+		constexpr_args.resize( total_args, LLVMValueRef::Null );
+	}
+
 	for( var size_type mut i= 0s; i < total_args; ++i )
 	{
 		auto arg_n= select( args_evaluation_order == ArgsEvaluationOrder::Direct ? i : total_args - i - 1s );
@@ -1781,6 +1789,15 @@ fn CodeBuilder::DoCallFunction(
 			select( arg_n < preevaluated_args.size()
 				? preevaluated_args[arg_n]
 				: BuildExpressionCodeEnsureVariable( names_scope, function_context, args[ arg_n - preevaluated_args.size() ].get_ref() ) );
+
+		if( is_constexpr && arg.constexpr_value != LLVMValueRef::Null )
+		{
+			constexpr_args[ arg_n ]= arg.constexpr_value;
+		}
+		else
+		{
+			is_constexpr= false;
+		}
 
 		if( function_type.args[arg_n].is_reference )
 		{
@@ -1862,16 +1879,25 @@ fn CodeBuilder::DoCallFunction(
 		result.value_type= ValueType::Value;
 	}
 
-	unsafe
+	if( is_constexpr )
 	{
-		if( llvm_args.empty() )
+		// TODO - handle errors.
+		result.constexpr_value= constexpr_function_evaluator_.Evaluate( function.llvm_function, constexpr_args.range() ).constant;
+		result.llvm_value= result.constexpr_value;
+	}
+	else
+	{
+		unsafe
 		{
-			auto dummy= LLVMValueRef::Null;
-			result.llvm_value= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, dummy, 0u, "\0"[0] );
-		}
-		else
-		{
-			result.llvm_value= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, cast_imut(llvm_args).front(), u32(llvm_args.size()), "\0"[0] );
+			if( llvm_args.empty() )
+			{
+				auto dummy= LLVMValueRef::Null;
+				result.llvm_value= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, dummy, 0u, "\0"[0] );
+			}
+			else
+			{
+				result.llvm_value= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, cast_imut(llvm_args).front(), u32(llvm_args.size()), "\0"[0] );
+			}
 		}
 	}
 
