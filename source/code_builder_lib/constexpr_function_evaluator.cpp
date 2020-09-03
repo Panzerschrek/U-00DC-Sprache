@@ -5,8 +5,6 @@
 #include "pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/assert.hpp"
-#include "class.hpp"
-#include "error_reporting.hpp"
 #include "constexpr_function_evaluator.hpp"
 
 namespace U
@@ -32,11 +30,8 @@ ConstexprFunctionEvaluator::ConstexprFunctionEvaluator( const llvm::DataLayout& 
 
 ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	llvm::Function* const llvm_function,
-	const ArgsVector<llvm::Constant*>& args,
-	const FilePos& file_pos )
+	const ArgsVector<llvm::Constant*>& args )
 {
-	file_pos_ = &file_pos;
-
 	stack_.resize(16u); // reserve null pointer
 
 	U_ASSERT( args.size() == llvm_function->getFunctionType()->getNumParams() );
@@ -99,7 +94,7 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	else if( return_type->isArrayTy() || return_type->isStructTy() )
 		result.result_constant= CreateInitializerForStructElement( return_type, s_ret_ptr );
 	else if( return_type->isPointerTy() )
-		REPORT_ERROR( ConstexprFunctionEvaluationError, errors_, *file_pos_, "returning  pointer in constexpr function" );
+		errors_.push_back( "returning pointer in constexpr function" );
 	else U_ASSERT(false);
 
 	instructions_map_.clear();
@@ -114,18 +109,12 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 {
 	if( llvm_function.getBasicBlockList().empty() )
 	{
-		REPORT_ERROR( ConstexprFunctionEvaluationError,
-			errors_,
-			*file_pos_,
-			"executing function \"" + std::string(llvm_function.getName()) + "\" with no body" );
+		errors_.push_back( "executing function \"" + std::string(llvm_function.getName()) + "\" with no body" );
 		return llvm::GenericValue();
 	}
 	if( stack_depth > g_max_call_stack_depth )
 	{
-		REPORT_ERROR( ConstexprFunctionEvaluationError,
-			errors_,
-			*file_pos_,
-			"Max call stack depth (" + std::to_string( g_max_call_stack_depth ) + ") reached" );
+		errors_.push_back( "Max call stack depth (" + std::to_string( g_max_call_stack_depth ) + ") reached" );
 		return llvm::GenericValue();
 	}
 
@@ -200,10 +189,7 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 			}
 
 		case llvm::Instruction::Unreachable:
-			REPORT_ERROR( ConstexprFunctionEvaluationError,
-				errors_,
-				*file_pos_,
-				"executing unreachable instruction" );
+			errors_.push_back( "executing Unreachable instruction" );
 			return llvm::GenericValue();
 
 		default:
@@ -213,10 +199,7 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 				ProcessBinaryArithmeticInstruction(instruction);
 			else
 			{
-				REPORT_ERROR( ConstexprFunctionEvaluationError,
-					errors_,
-					*file_pos_,
-					std::string("executing unknown instruction \"") + instruction->getOpcodeName() + "\"" );
+				errors_.push_back( std::string( "executing unknown instruction \"" ) + instruction->getOpcodeName() + "\"" );
 				return llvm::GenericValue();
 			}
 		};
@@ -271,7 +254,7 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 			if( element_type->isPointerTy() )
 			{
 				if( llvm::dyn_cast<llvm::PointerType>(element_type)->getElementType()->isFunctionTy() )
-					REPORT_ERROR( ConstexprFunctionEvaluationError, errors_, *file_pos_, "passing function pointer to constexpr function" );
+					errors_.push_back( "passing function pointer to constexpr function" );
 				else
 				{
 					const size_t element_ptr= MoveConstantToStack( *llvm::dyn_cast<llvm::GlobalVariable>(element)->getInitializer() );
@@ -309,7 +292,7 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 	{
 		const llvm::PointerType* const pointer_type= llvm::dyn_cast<llvm::PointerType>(constant_type);
 		if( pointer_type->getElementType()->isFunctionTy() )
-			REPORT_ERROR( ConstexprFunctionEvaluationError, errors_, *file_pos_, "passing function pointer to constexpr function" );
+			errors_.push_back( "passing function pointer to constexpr function" );
 		else U_ASSERT(false);
 		std::memset( constants_stack_.data() + stack_offset, 0, size_t(data_layout_.getTypeAllocSize( constant_type )) );
 	}
@@ -361,7 +344,7 @@ llvm::Constant* ConstexprFunctionEvaluator::CreateInitializerForStructElement( l
 	}
 	else if( type->isPointerTy() )
 	{
-		REPORT_ERROR( ConstexprFunctionEvaluationError, errors_, *file_pos_, "building constant pointer" );
+		errors_.push_back( "building constant pointer" );
 		return llvm::UndefValue::get( type );
 	}
 	else U_ASSERT(false);
@@ -385,7 +368,7 @@ llvm::GenericValue ConstexprFunctionEvaluator::GetVal( const llvm::Value* const 
 	else if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>( val ) )
 		res.IntVal= llvm::APInt( 64u, MoveConstantToStack( *global_variable->getInitializer() ) );
 	else if( llvm::dyn_cast<llvm::Function>(val) != nullptr )
-		REPORT_ERROR( ConstexprFunctionEvaluationError, errors_, *file_pos_, "accessing function pointer" );
+		errors_.push_back( "accessing function pointer" );
 	else if( auto constant_expression= llvm::dyn_cast<llvm::ConstantExpr>( val ) )
 	{
 		// Process here constant GEP.
@@ -669,10 +652,7 @@ void ConstexprFunctionEvaluator::ProcessUnaryArithmeticInstruction( const llvm::
 		break;
 
 	default:
-		REPORT_ERROR( ConstexprFunctionEvaluationError,
-			errors_,
-			*file_pos_,
-			std::string("executing unknown unary instruction \"") + instruction->getOpcodeName() + "\"" );
+		errors_.push_back( std::string( "executing unknown unary instruction \"" ) + instruction->getOpcodeName() + "\"" );
 		break;
 	}
 
@@ -708,7 +688,7 @@ void ConstexprFunctionEvaluator::ProcessBinaryArithmeticInstruction( const llvm:
 		if( op1.IntVal.getBoolValue() )
 			val.IntVal= op0.IntVal.sdiv(op1.IntVal);
 		else
-			REPORT_ERROR( ConstantExpressionResultIsUndefined, errors_, *file_pos_ );
+			errors_.push_back( "constexpr division by zero" );
 		break;
 
 	case llvm::Instruction::UDiv:
@@ -716,7 +696,7 @@ void ConstexprFunctionEvaluator::ProcessBinaryArithmeticInstruction( const llvm:
 		if( op1.IntVal.getBoolValue() )
 			val.IntVal= op0.IntVal.udiv(op1.IntVal);
 		else
-			REPORT_ERROR( ConstantExpressionResultIsUndefined, errors_, *file_pos_ );
+			errors_.push_back( "constexpr division by zero" );
 		break;
 
 	case llvm::Instruction::SRem:
@@ -724,7 +704,7 @@ void ConstexprFunctionEvaluator::ProcessBinaryArithmeticInstruction( const llvm:
 		if( op1.IntVal.getBoolValue() )
 			val.IntVal= op0.IntVal.srem(op1.IntVal);
 		else
-			REPORT_ERROR( ConstantExpressionResultIsUndefined, errors_, *file_pos_ );
+			errors_.push_back( "constexpr division by zero" );
 		break;
 
 	case llvm::Instruction::URem:
@@ -732,7 +712,7 @@ void ConstexprFunctionEvaluator::ProcessBinaryArithmeticInstruction( const llvm:
 		if( op1.IntVal.getBoolValue() )
 			val.IntVal= op0.IntVal.urem(op1.IntVal);
 		else
-			REPORT_ERROR( ConstantExpressionResultIsUndefined, errors_, *file_pos_ );
+			errors_.push_back( "constexpr division by zero" );
 		break;
 
 	case llvm::Instruction::And:
@@ -866,10 +846,7 @@ void ConstexprFunctionEvaluator::ProcessBinaryArithmeticInstruction( const llvm:
 		break;
 
 	default:
-		REPORT_ERROR( ConstexprFunctionEvaluationError,
-			errors_,
-			*file_pos_,
-			std::string("executing unknown binary instruction \"") + instruction->getOpcodeName() + "\"" );
+		errors_.push_back( std::string("executing unknown binary instruction \"") + instruction->getOpcodeName() + "\"" );
 		break;
 	};
 
@@ -878,18 +855,12 @@ void ConstexprFunctionEvaluator::ProcessBinaryArithmeticInstruction( const llvm:
 
 void ConstexprFunctionEvaluator::ReportDataStackOverflow()
 {
-	REPORT_ERROR( ConstexprFunctionEvaluationError,
-		errors_,
-		*file_pos_,
-		"Max data stack size (" + std::to_string( g_max_data_stack_size ) + ") reached");
+	errors_.push_back( "Max data stack size (" + std::to_string( g_max_data_stack_size ) + ") reached");
 }
 
 void ConstexprFunctionEvaluator::ReportConstantsStackOverflow()
 {
-	REPORT_ERROR( ConstexprFunctionEvaluationError,
-		errors_,
-		*file_pos_,
-		"Max constants stack size (" + std::to_string( g_max_constants_stack_size ) + ") reached" );
+	errors_.push_back( "Max constants stack size (" + std::to_string( g_max_constants_stack_size ) + ") reached" );
 }
 
 } // namespace CodeBuilderPrivate

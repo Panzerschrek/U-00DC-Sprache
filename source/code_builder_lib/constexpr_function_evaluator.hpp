@@ -4,8 +4,7 @@
 #include <llvm/IR/DataLayout.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
 #include "pop_llvm_warnings.hpp"
-
-#include "code_builder_errors.hpp"
+#include "small_types.hpp"
 
 namespace U
 {
@@ -19,15 +18,14 @@ public:
 	struct Result
 	{
 		llvm::Constant* result_constant= nullptr;
-		std::vector<CodeBuilderError> errors;
+		std::vector<std::string> errors;
 	};
 
 	ConstexprFunctionEvaluator( const llvm::DataLayout& data_layout );
 
 	Result Evaluate(
 		llvm::Function* const llvm_function,
-		const ArgsVector<llvm::Constant*>& args,
-		const FilePos& file_pos );
+		const ArgsVector<llvm::Constant*>& args );
 
 private:
 	llvm::GenericValue CallFunction( const llvm::Function& llvm_function, size_t stack_depth );
@@ -62,8 +60,7 @@ private:
 
 	std::unordered_map<const llvm::Constant*, size_t> external_constant_mapping_;
 
-	std::vector<CodeBuilderError> errors_;
-	const FilePos* file_pos_= nullptr;
+	std::vector<std::string> errors_;
 };
 
 } // namespace CodeBuilderPrivate

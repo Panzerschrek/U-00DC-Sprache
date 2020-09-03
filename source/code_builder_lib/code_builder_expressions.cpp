@@ -2547,9 +2547,16 @@ Value CodeBuilder::DoCallFunction(
 			!function_type.return_value_is_reference && function_type.return_type.ReferencesTagsCount() == 0u )
 		{
 			const ConstexprFunctionEvaluator::Result evaluation_result=
-				constexpr_function_evaluator_.Evaluate( llvm::dyn_cast<llvm::Function>(function), constant_llvm_args, call_file_pos );
+				constexpr_function_evaluator_.Evaluate( llvm::dyn_cast<llvm::Function>(function), constant_llvm_args );
 
-			names.GetErrors().insert( names.GetErrors().end(), evaluation_result.errors.begin(), evaluation_result.errors.end() );
+			for( const std::string& error_text : evaluation_result.errors )
+			{
+				CodeBuilderError error;
+				error.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError;
+				error.file_pos= call_file_pos;
+				error.text= error_text;
+				names.GetErrors().push_back( std::move(error) );
+			}
 			if( evaluation_result.errors.empty() && evaluation_result.result_constant != nullptr )
 			{
 				if( return_value_is_sret ) // We needs here block of memory with result constant struct.
