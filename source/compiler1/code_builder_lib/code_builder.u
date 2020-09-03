@@ -812,33 +812,19 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 		}
 	}
 
-	if( build_body )
+	// Build body for copy, then update it. This needed to prevent function body build under lock.
+	auto mut functions_set_copy= functions_set_ptr.lock_imut().get_ref().functions_set.functions;
+	foreach( &mut func_variable : functions_set_copy )
 	{
-		foreach( &func_variable : functions_set_ptr.lock_imut().get_ref().functions_set.functions )
+		// Immediately build body of "constexpr" functions.
+		if( build_body || func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
 		{
 			BuildFuncCode( names_scope_ptr, func_variable );
 		}
 	}
-	else
-	{
-		// Immediately build body of "constexpr" functions.
-		foreach( &func_variable : functions_set_ptr.lock_imut().get_ref().functions_set.functions )
-		{
-			if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
-			{
-				BuildFuncCode( names_scope_ptr, func_variable );
-			}
-		}
 
-		auto mut lock= functions_set_ptr.lock_mut();
-		foreach( &mut func_variable : lock.get_ref().functions_set.functions )
-		{
-			if( func_variable.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete )
-			{
-				func_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprComplete;
-			}
-		}
-	}
+	auto mut lock= functions_set_ptr.lock_mut();
+	lock.get_ref().functions_set.functions= move(functions_set_copy);
 }
 
 fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypePtr& class_type )
@@ -2013,7 +1999,7 @@ fn CodeBuilder::CheckOverloadedOperator(
 	}
 }
 
-fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVariable& func_variable )
+fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVariable &mut func_variable )
 {
 	if( func_variable.body_syntax_element.empty() )
 	{
@@ -2027,14 +2013,12 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		}
 	}
 
-	auto& function_type= func_variable.t;
-
 	var FunctionContext mut function_context_value(
 		llvm_context_,
 		func_variable.llvm_function,
-		function_type.return_type,
-		function_type.return_value_is_reference,
-		function_type.return_value_is_mutable );
+		func_variable.t.return_type,
+		func_variable.t.return_value_is_reference,
+		func_variable.t.return_value_is_mutable );
 
 	var NamesScopeMutPtr args_names_scope_ptr( NamesScope( "", names_scope ) );
 
@@ -2042,16 +2026,16 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 	auto& mut function_context= args_variables_frame_hodler.GetFunctionContext();
 
 	// TODO - maybe forbid incomplete types even for references?
-	if( !function_type.return_value_is_reference && !EnsureTypeComplete( function_type.return_type ) )
+	if( !func_variable.t.return_value_is_reference && !EnsureTypeComplete( func_variable.t.return_type ) )
 	{
-		REPORT_ERROR( UsingIncompleteType, names_scope, func_variable.body_syntax_element.get_ref().file_pos, function_type.return_type )
+		REPORT_ERROR( UsingIncompleteType, names_scope, func_variable.body_syntax_element.get_ref().file_pos, func_variable.t.return_type )
 	}
 
 	{
 		auto mut args_names_scope_lock= args_names_scope_ptr.lock_mut();
 		auto &mut args_names_scope= args_names_scope_lock.get_ref();
 
-		auto is_s_ret= !function_type.return_value_is_reference && !function_type.return_type.GetClassType().empty();
+		auto is_s_ret= !func_variable.t.return_value_is_reference && !func_variable.t.return_type.GetClassType().empty();
 		if( is_s_ret )
 		{
 			unsafe
@@ -2072,10 +2056,12 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		auto first_llvm_arg= select( is_s_ret ? 1u : 0u );
 		foreach( &in_arg : func_variable.body_syntax_element.get_ref().function_type.args )
 		{
+			auto& type_arg= cast_imut(func_variable).t.args[arg_n];
+
 			var NamesScopeVariable mut out_arg
 			{
-				.t= function_type.args[arg_n].arg_type,
-				.is_mutable= function_type.args[arg_n].is_mutable,
+				.t= type_arg.arg_type,
+				.is_mutable= type_arg.is_mutable,
 			};
 
 			// Ensure type completness even for reference args because of reference checking.
@@ -2085,7 +2071,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				return;
 			}
 
-			if( function_type.args[arg_n].is_reference )
+			if( type_arg.is_reference )
 			{
 				unsafe
 				{
@@ -2147,99 +2133,107 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		}
 	}
 
-	auto& block= func_variable.body_syntax_element.get_ref().block.get_ref();
-
-	auto& func_name= func_variable.body_syntax_element.get_ref().name.back();
-	auto is_constructor= func_name == KeywordToString( Keyword::constructor_ );
-	auto is_destructor = func_name == KeywordToString( Keyword::destructor_  );
-	if( is_constructor )
 	{
-		function_context.whole_this_is_unavailable= true;
+		auto& block= func_variable.body_syntax_element.get_ref().block.get_ref();
 
-		if( !func_variable.body_syntax_element.get_ref().constructor_initializer_list.empty() )
-		{
-			BuildConstructorInitialization(
-				args_names_scope_ptr,
-				function_context,
-				func_variable.body_syntax_element.get_ref().constructor_initializer_list.get_ref() );
-		}
-		else
-		{
-			var Synt::StructNamedInitializer dummy_initializer{ .file_pos= block.file_pos };
-			BuildConstructorInitialization(
-				args_names_scope_ptr,
-				function_context,
-				dummy_initializer );
-		}
-
-		function_context.whole_this_is_unavailable= false;
-	}
-	if( is_destructor )
-	{
-		unsafe{  function_context.destructor_end_block= LLVMCreateBasicBlockInContext( llvm_context_, "destructor_end\0"[0] );  }
-	}
-
-	if( is_constructor || is_destructor )
-	{
-		// Setup virtual table pointers before main body of constructor/destructor and after constructor initialization list.
-		auto this_llvm_value= function_context.this_.get_ref().llvm_value;
-		auto class_type_ptr= function_context.this_.get_ref().t.GetClassType().get_ref();
-		SetupVirtualTablePointers( this_llvm_value, class_type_ptr, function_context );
-	}
-
-	if( ( is_constructor || is_destructor ) && !function_context.this_.get_ref().t.GetClassType().empty() )
-	{
-		auto class_type= function_context.this_.get_ref().t.GetClassType().get_ref();
-		auto class_kind= class_type.lock_imut().get_ref().kind;
-		if( class_kind == ClassType::Kind::Interface || class_kind == ClassType::Kind::Abstract )
+		auto& func_name= func_variable.body_syntax_element.get_ref().name.back();
+		auto is_constructor= func_name == KeywordToString( Keyword::constructor_ );
+		auto is_destructor = func_name == KeywordToString( Keyword::destructor_  );
+		if( is_constructor )
 		{
 			function_context.whole_this_is_unavailable= true;
+
+			if( !func_variable.body_syntax_element.get_ref().constructor_initializer_list.empty() )
+			{
+				BuildConstructorInitialization(
+					args_names_scope_ptr,
+					function_context,
+					func_variable.body_syntax_element.get_ref().constructor_initializer_list.get_ref() );
+			}
+			else
+			{
+				var Synt::StructNamedInitializer dummy_initializer{ .file_pos= block.file_pos };
+				BuildConstructorInitialization(
+					args_names_scope_ptr,
+					function_context,
+					dummy_initializer );
+			}
+
+			function_context.whole_this_is_unavailable= false;
+		}
+		if( is_destructor )
+		{
+			unsafe{  function_context.destructor_end_block= LLVMCreateBasicBlockInContext( llvm_context_, "destructor_end\0"[0] );  }
+		}
+
+		if( is_constructor || is_destructor )
+		{
+			// Setup virtual table pointers before main body of constructor/destructor and after constructor initialization list.
+			auto this_llvm_value= function_context.this_.get_ref().llvm_value;
+			auto class_type_ptr= function_context.this_.get_ref().t.GetClassType().get_ref();
+			SetupVirtualTablePointers( this_llvm_value, class_type_ptr, function_context );
+		}
+
+		if( ( is_constructor || is_destructor ) && !function_context.this_.get_ref().t.GetClassType().empty() )
+		{
+			auto class_type= function_context.this_.get_ref().t.GetClassType().get_ref();
+			auto class_kind= class_type.lock_imut().get_ref().kind;
+			if( class_kind == ClassType::Kind::Interface || class_kind == ClassType::Kind::Abstract )
+			{
+				function_context.whole_this_is_unavailable= true;
+			}
+		}
+
+		auto block_build_info= BuildBlockElement( args_names_scope_ptr, function_context, block );
+		if( !block_build_info.have_terminal_instruction_inside )
+		{
+			if( func_variable.t.return_type == void_type_ )
+			{
+				// Manually generate "return" for void-return functions.
+				CallDestructorsForAllVariablesFrames( args_names_scope_ptr, function_context, block.end_file_pos );
+				unsafe
+				{
+					if( function_context.destructor_end_block != LLVMBasicBlockRef::Null )
+					{
+						LLVMBuildBr( function_context.llvm_ir_builder, function_context.destructor_end_block );
+					}
+					else
+					{
+						LLVMBuildRetVoid( function_context.llvm_ir_builder );
+					}
+				}
+			}
+			else
+			{
+				REPORT_ERROR( NoReturnInFunctionReturningNonVoid, args_names_scope_ptr, block.end_file_pos )
+				return;
+			}
+		}
+
+		// Finsih function - add remaining instructions
+		unsafe
+		{
+			LLVMBuildBr( function_context.alloca_ir_builder, function_context.function_basic_block );
+
+			if( function_context.destructor_end_block != LLVMBasicBlockRef::Null && ! function_context.this_.empty() )
+			{
+				LLVMAppendExistingBasicBlock( function_context.llvm_function, function_context.destructor_end_block );
+				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, function_context.destructor_end_block );
+
+				auto this_copy= function_context.this_.get_ref();
+				if_var( &class_type : this_copy.t.GetClassType() )
+				{
+					BuildMembersDestructors( function_context, this_copy.llvm_value, class_type );
+				}
+				LLVMBuildRetVoid( function_context.llvm_ir_builder );
+			}
 		}
 	}
 
-	auto block_build_info= BuildBlockElement( args_names_scope_ptr, function_context, block );
-	if( !block_build_info.have_terminal_instruction_inside )
+	if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
 	{
-		if( function_type.return_type == void_type_ )
-		{
-			// Manually generate "return" for void-return functions.
-			CallDestructorsForAllVariablesFrames( args_names_scope_ptr, function_context, block.end_file_pos );
-			unsafe
-			{
-				if( function_context.destructor_end_block != LLVMBasicBlockRef::Null )
-				{
-					LLVMBuildBr( function_context.llvm_ir_builder, function_context.destructor_end_block );
-				}
-				else
-				{
-					LLVMBuildRetVoid( function_context.llvm_ir_builder );
-				}
-			}
-		}
-		else
-		{
-			REPORT_ERROR( NoReturnInFunctionReturningNonVoid, args_names_scope_ptr, block.end_file_pos )
-			return;
-		}
-	}
-
-	// Finsih function - add remaining instructions
-	unsafe
-	{
-		LLVMBuildBr( function_context.alloca_ir_builder, function_context.function_basic_block );
-
-		if( function_context.destructor_end_block != LLVMBasicBlockRef::Null && ! function_context.this_.empty() )
-		{
-			LLVMAppendExistingBasicBlock( function_context.llvm_function, function_context.destructor_end_block );
-			LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, function_context.destructor_end_block );
-
-			auto this_copy= function_context.this_.get_ref();
-			if_var( &class_type : this_copy.t.GetClassType() )
-			{
-				BuildMembersDestructors( function_context, this_copy.llvm_value, class_type );
-			}
-			LLVMBuildRetVoid( function_context.llvm_ir_builder );
-		}
+		// TODO - check constexpr function body requirements.
+		func_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprComplete;
 	}
 }
 

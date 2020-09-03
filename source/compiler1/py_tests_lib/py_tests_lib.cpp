@@ -524,6 +524,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"ClassContainsPureVirtualFunctions_Test",
 		"ClassHaveNoCopyConstructorByDefault_Test",
 		"ConstexprCall_ResultTypeIs_",
+		"ConstexprFunctionAccessGlobalVariable",
 		"ConstexprFunctionArithmeticOperatorsTest",
 		"ConstexprFunctionControlFlow",
 		"ConstexprReferenceInsideStruct_Test",
