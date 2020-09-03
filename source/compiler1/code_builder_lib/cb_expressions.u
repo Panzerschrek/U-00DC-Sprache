@@ -1881,12 +1881,34 @@ fn CodeBuilder::DoCallFunction(
 
 	if( is_constexpr )
 	{
-		// TODO - handle errors.
-		result.constexpr_value= constexpr_function_evaluator_.Evaluate( function.llvm_function, constexpr_args.range() ).constant;
-		result.llvm_value= result.constexpr_value;
+		auto res= constexpr_function_evaluator_.Evaluate( function.llvm_function, constexpr_args.range() );
+
+		if( res.errors.empty() )
+		{
+			result.constexpr_value= res.constant;
+			result.llvm_value= result.constexpr_value;
+		}
+		else
+		{
+			auto errors_container_ptr= names_scope.lock_imut().get_ref().GetErrors();
+			auto mut lock= errors_container_ptr.lock_mut();
+			auto &mut errors_container= lock.get_ref();
+			foreach( &err : res.errors )
+			{
+				var CodeBuilderError mut out_error
+				{
+					.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError,
+					.file_pos= file_pos,
+					.text= err,
+				};
+				errors_container.push_back( move(out_error) );
+			}
+		}
 	}
-	else
+
+	if( result.constexpr_value == LLVMValueRef::Null )
 	{
+		// Perform regular call for non-constexpr function or in case of error in constexpr function evaluation.
 		unsafe
 		{
 			if( llvm_args.empty() )
