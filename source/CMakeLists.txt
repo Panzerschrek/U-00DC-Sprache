@@ -151,12 +151,20 @@ file( GLOB LEX_SYNT_LIB_SOURCES "lex_synt_lib/*" )
 add_library( LexSyntLib ${LEX_SYNT_LIB_SOURCES} )
 
 #
+# CompilersCommonLib
+#
+
+file( GLOB COMPILERS_COMMON_SOURCES "compilers_common/*" )
+add_library( CompilersCommonLib ${COMPILERS_COMMON_SOURCES} )
+target_link_libraries( CompilersCommonLib )
+
+#
 # CodeBuilderLib
 #
 
 file( GLOB COMPILER_LIB_SOURCES "code_builder_lib/*" )
 add_library( CodeBuilderLib ${COMPILER_LIB_SOURCES} )
-target_link_libraries( CodeBuilderLib LexSyntLib SpracheVersion ${LLVM_LIBS_FOR_CODE_BUILDER_LIB} )
+target_link_libraries( CodeBuilderLib LexSyntLib SpracheVersion CompilersCommonLib ${LLVM_LIBS_FOR_CODE_BUILDER_LIB} )
 
 #
 # Compiler

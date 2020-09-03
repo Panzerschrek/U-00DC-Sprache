@@ -7,7 +7,7 @@
 #include "../../tests/tests_common.hpp"
 #include "../tests_common/funcs_c.hpp"
 
-#include "../../code_builder_lib/push_disable_llvm_warnings.hpp"
+#include "../../compilers_common/push_disable_llvm_warnings.hpp"
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
 #include <llvm/ExecutionEngine/Interpreter.h>
@@ -15,7 +15,7 @@
 #include <llvm/Support/ManagedStatic.h>
 #include <llvm/Support/raw_os_ostream.h>
 #include <llvm/Support/Signals.h>
-#include "../../code_builder_lib/pop_llvm_warnings.hpp"
+#include "../../compilers_common/pop_llvm_warnings.hpp"
 
 namespace U
 {

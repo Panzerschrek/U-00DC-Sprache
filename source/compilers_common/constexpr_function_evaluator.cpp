@@ -10,9 +10,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 namespace
 {
 
@@ -862,7 +859,5 @@ void ConstexprFunctionEvaluator::ReportConstantsStackOverflow()
 {
 	errors_.push_back( "Max constants stack size (" + std::to_string( g_max_constants_stack_size ) + ") reached" );
 }
-
-} // namespace CodeBuilderPrivate
 
 } // namespace U

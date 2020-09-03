@@ -4,15 +4,15 @@
 #include <vector>
 #include <unordered_map>
 
-#include "push_disable_llvm_warnings.hpp"
+#include "../compilers_common/push_disable_llvm_warnings.hpp"
 #include <llvm/IR/DIBuilder.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
-#include "pop_llvm_warnings.hpp"
+#include "../compilers_common/pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/source_graph_loader.hpp"
+#include "../compilers_common/constexpr_function_evaluator.hpp"
 #include "class.hpp"
-#include "constexpr_function_evaluator.hpp"
 #include "enum.hpp"
 #include "function_context.hpp"
 #include "template_types.hpp"

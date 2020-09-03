@@ -1,8 +1,8 @@
 #pragma once
-#include "../code_builder_lib/push_disable_llvm_warnings.hpp"
+#include "../compilers_common/push_disable_llvm_warnings.hpp"
 #include <clang/Frontend/FrontendActions.h>
 #include <clang/Tooling/Tooling.h>
-#include "../code_builder_lib/pop_llvm_warnings.hpp"
+#include "../compilers_common/pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/syntax_elements.hpp"
 

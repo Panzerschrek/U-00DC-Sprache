@@ -9,8 +9,14 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
+/*
+	This class is simple virtual machine for llvm functions executing.
+	It have some limitations and supports subset ob instructions, using in Ü compiler.
+
+	Supported calls of functions with no side effects.
+	Supported returning of scalar types and composite types via "sret".
+	Returning of pointers not supported.
+*/
 
 class ConstexprFunctionEvaluator final
 {
@@ -62,7 +68,5 @@ private:
 
 	std::vector<std::string> errors_;
 };
-
-} // namespace CodeBuilderPrivate
 
 } // namespace U
