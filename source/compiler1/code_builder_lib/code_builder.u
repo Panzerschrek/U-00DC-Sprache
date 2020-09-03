@@ -1135,6 +1135,49 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		else{ halt; }
 	}
 
+	{ // Setup "constexpr" property. Do this before methods generation.
+		auto mut class_lock= class_type.lock_mut();
+		auto &mut class_= class_lock.get_ref();
+
+		class_.can_be_constexpr= class_.kind == ClassType::Kind::Struct;
+
+		foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
+		{
+			auto field_ptr= member.value().Get</ ClassField />();
+			if( !field_ptr.empty() )
+			{
+				auto filed_lock= field_ptr.lock_imut();
+				auto& field= filed_lock.get_ref();
+				// Disable constexpr, if field type can not be constexpr, or if field is mutable reference.
+				class_.can_be_constexpr&= field.t.CanBeConstexpr() && !( field.is_mutable && field.is_reference );
+			}
+
+			auto functions_set_ptr= member.value().Get</ NamesScopeFunctionsSet />();
+			if( !functions_set_ptr.empty() )
+			{
+				foreach( &function : functions_set_ptr.lock_imut().get_ref().functions_set.functions )
+				{
+					// Disable constexpr possibility for structs with explicit destructors, non-default copy-assignment operators and non-default copy constructors.
+					if( member.key() == KeywordToString( Keyword::destructor_ ) &&
+						!function.is_generated )
+					{
+						class_.can_be_constexpr= false;
+					}
+					if( member.key() == KeywordToString( Keyword::constructor_ ) &&
+						IsCopyConstructor( function, class_type ) && !function.is_generated )
+					{
+						class_.can_be_constexpr= false;
+					}
+					if( member.key() == OverloadedOperatorToString( OverloadedOperator::Assign ) &&
+						IsCopyAssignmentOperator( function, class_type ) && !function.is_generated )
+					{
+						class_.can_be_constexpr= false;
+					}
+				}
+			}
+		}
+	}
+
 	BuildClassVirtualTable( class_type );
 
 	TryGenerateDefaultConstructor( class_type );
@@ -1267,48 +1310,6 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		} // for parent members
 	} // for parents
 
-	{ // Setup "constexpr" property.
-		auto mut class_lock= class_type.lock_mut();
-		auto &mut class_= class_lock.get_ref();
-
-		class_.can_be_constexpr= class_.kind == ClassType::Kind::Struct;
-
-		foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
-		{
-			auto field_ptr= member.value().Get</ ClassField />();
-			if( !field_ptr.empty() )
-			{
-				auto filed_lock= field_ptr.lock_imut();
-				auto& field= filed_lock.get_ref();
-				// Disable constexpr, if field type can not be constexpr, or if field is mutable reference.
-				class_.can_be_constexpr&= field.t.CanBeConstexpr() && !( field.is_mutable && field.is_reference );
-			}
-
-			auto functions_set_ptr= member.value().Get</ NamesScopeFunctionsSet />();
-			if( !functions_set_ptr.empty() )
-			{
-				foreach( &function : functions_set_ptr.lock_imut().get_ref().functions_set.functions )
-				{
-					// Disable constexpr possibility for structs with explicit destructors, non-default copy-assignment operators and non-default copy constructors.
-					if( member.key() == KeywordToString( Keyword::destructor_ ) &&
-						!function.is_generated )
-					{
-						class_.can_be_constexpr= false;
-					}
-					if( member.key() == KeywordToString( Keyword::constructor_ ) &&
-						IsCopyConstructor( function, class_type ) && !function.is_generated )
-					{
-						class_.can_be_constexpr= false;
-					}
-					if( member.key() == OverloadedOperatorToString( OverloadedOperator::Assign ) &&
-						IsCopyAssignmentOperator( function, class_type ) && !function.is_generated )
-					{
-						class_.can_be_constexpr= false;
-					}
-				}
-			}
-		}
-	}
 
 	// Finally, make class complete.
 	{

@@ -125,6 +125,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 			.is_this_call= true,
 			.is_generated= true,
 			.t= function_type,
+			.constexpr_kind= select( class_type.lock_imut().get_ref().can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr ),
 		};
 
 		unsafe
@@ -328,6 +329,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 			.is_this_call= true,
 			.is_generated= true,
 			.t= function_type,
+			.constexpr_kind= select( class_type.lock_imut().get_ref().can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr ),
 		};
 
 		unsafe
@@ -543,6 +545,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 			.is_this_call= true,
 			.is_generated= true,
 			.t= function_type,
+			.constexpr_kind= select( class_type.lock_imut().get_ref().can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr ),
 		};
 
 		unsafe

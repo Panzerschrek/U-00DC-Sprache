@@ -529,6 +529,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"ConstexprFunctionControlFlow",
 		"ConstexprReferenceInsideStruct_Test",
 		"ConstexprStructDeclaration",
+		"ConstexprStructGeneratedMethodsAreConstexpr",
 		"ConstexprStructMemberIsConstexpr_Test",
 		"CopyChildToParent_Test",
 		"CouldNotOverloadFunction_ForUnsafe_Test",
