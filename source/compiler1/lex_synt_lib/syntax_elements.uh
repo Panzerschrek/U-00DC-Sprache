@@ -381,6 +381,7 @@ struct Function
 	BodyKind body_kind= BodyKind::Regular;
 
 	bool no_mangle= false;
+	bool constexpr_= false;
 
 	ust::box_nullable</Expression/> condition; // enable_if
 
