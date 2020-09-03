@@ -1,5 +1,6 @@
 import "../lex_synt_lib/source_graph.uh"
 import "/code_builder_errors.uh"
+import "constexpr_function_evaluator.uh"
 import "function_context.uh"
 import "structs_combined.uh"
 
@@ -596,6 +597,7 @@ private:
 private:
 	LLVMContextRef imut llvm_context_;
 	LLVMTargetDataRef imut data_layout_;
+	ConstexprFunctionEvaluator1 constexpr_function_evaluator_;
 
 	struct FundamentalLLVMTypes
 	{

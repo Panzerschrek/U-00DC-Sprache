@@ -19,6 +19,7 @@ fn CodeBuilder::constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data
 	(
 		llvm_context_(llvm_context),
 		data_layout_(data_layout),
+		constexpr_function_evaluator_(data_layout),
 	)
 {
 	unsafe

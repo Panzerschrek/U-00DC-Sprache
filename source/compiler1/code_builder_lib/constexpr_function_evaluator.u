@@ -1,0 +1,55 @@
+import "constexpr_function_evaluator.uh"
+
+
+namespace U
+{
+
+fn ErrorHandlerFunc( void &mut user_data, char8& error_text_start, size_type error_text_size )
+{
+	unsafe
+	{
+		var ust::string8 mut error;
+		auto& error_text_as_array= cast_ref_unsafe</ [ char8, 1000000 ] />( error_text_start );
+		for( auto mut i= 0s; i < error_text_size; ++i )
+		{
+			error.push_back( error_text_as_array[i] );
+		}
+
+		auto &mut errors_container= cast_ref_unsafe</ ust::vector</ ust::string8 /> />(user_data);
+		errors_container.push_back( move(error) );
+	}
+}
+
+fn ConstexprFunctionEvaluator1::constructor( LLVMTargetDataRef data_layout )
+{
+	unsafe{  impl_= U1_ConstexprFunctionEvaluatorCreate( data_layout );  }
+}
+
+fn ConstexprFunctionEvaluator1::destructor()
+{
+	unsafe{  U1_ConstexprFunctionEvaluatorDestroy( impl_ );  }
+}
+
+fn ConstexprFunctionEvaluator1::Evaluate( mut this, LLVMValueRef function, ust::array_view_imut</LLVMValueRef/> args ) : Result
+{
+	var Result mut result
+	{
+		.constant= zero_init
+	};
+
+	unsafe
+	{
+		result.constant=
+			U1_ConstexprFunctionEvaluatorEvaluate(
+				impl_,
+				function,
+				args.front(),
+				args.size(),
+				ConstexprFunctionEvaluatorErrorHandlerFunc( ErrorHandlerFunc ),
+				result.errors );
+	}
+
+	return move(result);
+}
+
+} // namespace U
