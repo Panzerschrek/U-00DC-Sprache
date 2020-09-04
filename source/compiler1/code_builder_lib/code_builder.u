@@ -2483,6 +2483,53 @@ fn CodeBuilder::CreateBaseClassFieldGEP( this, LLVMValueRef value, FunctionConte
 	unsafe{  return LLVMBuildGEP( function_context.llvm_ir_builder, value, indexes[0], 2u, ".base\0"[0] );  }
 }
 
+fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef constant, FunctionContext& function_context )
+{
+	unsafe
+	{
+		auto constant_type= LLVMTypeOf( constant );
+		auto constant_type_kind= LLVMGetTypeKind( constant_type );
+		if( constant_type_kind == LLVMTypeKind::Array )
+		{
+			auto length= LLVMGetArrayLength( constant_type );
+			for( auto mut i= 0u; i < length; ++i )
+			{
+				var [ LLVMValueRef, 2 ] indexes
+				[
+					GetZeroGEPIndex(),
+					LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
+				];
+				auto element_ptr= LLVMBuildGEP( function_context.llvm_ir_builder, ptr, indexes[0], 2u, ".\0"[0] );
+
+				auto constant_element= LLVMConstExtractValue( constant, i, 1u );
+
+				MoveConstantToMemory( element_ptr, constant_element, function_context );
+			}
+		}
+		else if( constant_type_kind == LLVMTypeKind::Struct )
+		{
+			auto length= LLVMCountStructElementTypes( constant_type );
+			for( auto mut i= 0u; i < length; ++i )
+			{
+				var [ LLVMValueRef, 2 ] indexes
+				[
+					GetZeroGEPIndex(),
+					LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
+				];
+				auto element_ptr= LLVMBuildGEP( function_context.llvm_ir_builder, ptr, indexes[0], 2u, ".\0"[0] );
+
+				auto constant_element= LLVMConstExtractValue( constant, i, 1u );
+
+				MoveConstantToMemory( element_ptr, constant_element, function_context );
+			}
+		}
+		else
+		{
+			LLVMBuildStore( function_context.llvm_ir_builder, constant, ptr );
+		}
+	}
+}
+
 fn CodeBuilder::SaveInstructionsState( FunctionContext& function_context ) : InstructionsState
 {
 	unsafe

@@ -1777,7 +1777,7 @@ fn CodeBuilder::DoCallFunction(
 		!function_type.return_value_is_reference )
 	{
 		is_constexpr= true;
-		constexpr_args.resize( total_args, LLVMValueRef::Null );
+		constexpr_args.resize( llvm_args.size(), LLVMValueRef::Null );
 	}
 
 	for( var size_type mut i= 0s; i < total_args; ++i )
@@ -1794,7 +1794,8 @@ fn CodeBuilder::DoCallFunction(
 
 		if( is_constexpr && arg.constexpr_value != LLVMValueRef::Null && !( param.is_mutable && param.is_reference ) )
 		{
-			constexpr_args[ arg_n ]= arg.constexpr_value;
+			// TODO - what about types conversion in constexpr call?
+			constexpr_args[ first_llvm_arg_number + arg_n ]= arg.constexpr_value;
 		}
 		else
 		{
@@ -1888,7 +1889,15 @@ fn CodeBuilder::DoCallFunction(
 		if( res.errors.empty() )
 		{
 			result.constexpr_value= res.constant;
-			result.llvm_value= result.constexpr_value;
+
+			if( is_s_ret )
+			{
+				MoveConstantToMemory( s_ret_value, res.constant, function_context );
+			}
+			else
+			{
+				result.llvm_value= result.constexpr_value;
+			}
 		}
 		else
 		{
@@ -1936,6 +1945,7 @@ fn CodeBuilder::DoCallFunction(
 			.t= result.t,
 			.is_mutable= true,
 			.llvm_value= result.llvm_value,
+			.constexpr_value= result.constexpr_value,
 		};
 		function_context.variables_frames.back().push_back( names_scope_variable );
 	}

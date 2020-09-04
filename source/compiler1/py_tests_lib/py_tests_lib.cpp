@@ -533,6 +533,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"ConstexprFunctionWithMutableArguments",
 		"ConstexprFunction_CompositeArgument",
 		"ConstexprFunction_RecursiveCall",
+		"ConstexprFunction_ReturnStruct",
 		"ConstexprFunction_ReturningReference",
 		"ConstexprReferenceInsideStruct_Test",
 		"ConstexprStructDeclaration",
