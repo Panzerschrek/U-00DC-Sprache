@@ -583,6 +583,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		// TODO - is this correct to pass preevaluated args? Maybe evaluate args in "DoCallFunction" instead?
 		if_var( mut overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::Indexing, names_scope, indexation_operator.file_pos ) )
 		{
+			if( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+			{
+				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+			}
+
 			auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
 			overloaded_operator.llvm_function= fetch_result[1];
 
@@ -678,6 +683,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 		if_var( mut overloaded_operator : GetOverloadedOperator( args.range(), OverloadedOperator::Call, names_scope, call_operator.file_pos ) )
 		{
+			if( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+			{
+				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+			}
+
 			auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
 			overloaded_operator.llvm_function= fetch_result[1];
 
@@ -895,6 +905,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 		if_var( mut overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::Sub, names_scope, unary_minus.file_pos ) )
 		{
+			if( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+			{
+				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+			}
+
 			auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
 			overloaded_operator.llvm_function= fetch_result[1];
 
@@ -957,6 +972,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 		if_var( mut overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::LogicalNot, names_scope, logical_not.file_pos ) )
 		{
+			if( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+			{
+				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+			}
+
 			auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
 			overloaded_operator.llvm_function= fetch_result[1];
 
@@ -1008,6 +1028,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 		if_var( mut overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::BitwiseNot, names_scope, bitwise_not.file_pos ) )
 		{
+			if( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+			{
+				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+			}
+
 			auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
 			overloaded_operator.llvm_function= fetch_result[1];
 
@@ -1588,6 +1613,10 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 			REPORT_ERROR( AccessingDeletedMethod, names_scope, file_pos )
 			return ust::optional</Value/>();
 		}
+		if( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+		{
+			function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+		}
 
 		return DoCallFunction(
 			names_scope,
@@ -1700,6 +1729,11 @@ fn CodeBuilder::DoCallFunction(
 	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 	FilePos& file_pos ) : Value
 {
+	if( function.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+	{
+		function_context.have_non_constexpr_operations_inside= true;
+	}
+
 	if( function.is_this_call && this_.empty() )
 	{
 		REPORT_ERROR( CallOfThiscallFunctionUsingNonthisArgument, names_scope, file_pos )
@@ -1771,16 +1805,36 @@ fn CodeBuilder::DoCallFunction(
 	auto first_llvm_arg_number= select( is_s_ret ? 1s : 0s );
 	llvm_args.resize( first_llvm_arg_number + total_args, LLVMValueRef::Null );
 
+	var ust::vector</ LLVMValueRef /> mut constexpr_args;
+	auto mut is_constexpr= false;
+	if( function.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete &&
+		!function_type.return_value_is_reference )
+	{
+		is_constexpr= true;
+		constexpr_args.resize( llvm_args.size(), LLVMValueRef::Null );
+	}
+
 	for( var size_type mut i= 0s; i < total_args; ++i )
 	{
 		auto arg_n= select( args_evaluation_order == ArgsEvaluationOrder::Direct ? i : total_args - i - 1s );
 		auto &mut llvm_arg= llvm_args[ first_llvm_arg_number + arg_n ];
 
-		var Type& expected_arg_type= function_type.args[arg_n].arg_type;
+		auto& param= function_type.args[arg_n];
+		var Type& expected_arg_type= param.arg_type;
 		auto arg=
 			select( arg_n < preevaluated_args.size()
 				? preevaluated_args[arg_n]
 				: BuildExpressionCodeEnsureVariable( names_scope, function_context, args[ arg_n - preevaluated_args.size() ].get_ref() ) );
+
+		if( is_constexpr && arg.constexpr_value != LLVMValueRef::Null && !( param.is_mutable && param.is_reference ) )
+		{
+			// TODO - what about types conversion in constexpr call?
+			constexpr_args[ first_llvm_arg_number + arg_n ]= arg.constexpr_value;
+		}
+		else
+		{
+			is_constexpr= false;
+		}
 
 		if( function_type.args[arg_n].is_reference )
 		{
@@ -1862,16 +1916,55 @@ fn CodeBuilder::DoCallFunction(
 		result.value_type= ValueType::Value;
 	}
 
-	unsafe
+	if( is_constexpr )
 	{
-		if( llvm_args.empty() )
+		auto res= constexpr_function_evaluator_.Evaluate( function.llvm_function, constexpr_args.range() );
+
+		if( res.errors.empty() )
 		{
-			auto dummy= LLVMValueRef::Null;
-			result.llvm_value= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, dummy, 0u, "\0"[0] );
+			result.constexpr_value= res.constant;
+
+			if( is_s_ret )
+			{
+				MoveConstantToMemory( s_ret_value, res.constant, function_context );
+			}
+			else
+			{
+				result.llvm_value= result.constexpr_value;
+			}
 		}
 		else
 		{
-			result.llvm_value= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, cast_imut(llvm_args).front(), u32(llvm_args.size()), "\0"[0] );
+			auto errors_container_ptr= names_scope.lock_imut().get_ref().GetErrors();
+			auto mut lock= errors_container_ptr.lock_mut();
+			auto &mut errors_container= lock.get_ref();
+			foreach( &err : res.errors )
+			{
+				var CodeBuilderError mut out_error
+				{
+					.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError,
+					.file_pos= file_pos,
+					.text= err,
+				};
+				errors_container.push_back( move(out_error) );
+			}
+		}
+	}
+
+	if( result.constexpr_value == LLVMValueRef::Null )
+	{
+		// Perform regular call for non-constexpr function or in case of error in constexpr function evaluation.
+		unsafe
+		{
+			if( llvm_args.empty() )
+			{
+				auto dummy= LLVMValueRef::Null;
+				result.llvm_value= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, dummy, 0u, "\0"[0] );
+			}
+			else
+			{
+				result.llvm_value= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, cast_imut(llvm_args).front(), u32(llvm_args.size()), "\0"[0] );
+			}
 		}
 	}
 
@@ -1886,6 +1979,7 @@ fn CodeBuilder::DoCallFunction(
 			.t= result.t,
 			.is_mutable= true,
 			.llvm_value= result.llvm_value,
+			.constexpr_value= result.constexpr_value,
 		};
 		function_context.variables_frames.back().push_back( names_scope_variable );
 	}

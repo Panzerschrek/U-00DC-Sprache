@@ -1,9 +1,9 @@
 #include <iostream>
 
-#include "../../code_builder_lib/push_disable_llvm_warnings.hpp"
+#include "../../compilers_common/push_disable_llvm_warnings.hpp"
 #include <llvm/Support/ManagedStatic.h>
 #include <llvm/Support/raw_os_ostream.h>
-#include "../../code_builder_lib/pop_llvm_warnings.hpp"
+#include "../../compilers_common/pop_llvm_warnings.hpp"
 
 #include "../../code_builder_lib/code_builder.hpp"
 #include "../../lex_synt_lib/assert.hpp"

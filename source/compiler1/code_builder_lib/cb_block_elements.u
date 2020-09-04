@@ -27,6 +27,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	else if( block.safety == Synt::Block::Safety::Unsafe )
 	{
 		function_context.is_in_unsafe_block=  true;
+		function_context.have_non_constexpr_operations_inside= true; // Unsafe operations can not be used in constexpr functions.
 	}
 
 	var BlockElementBuildInfo mut block_element_build_info;
@@ -73,6 +74,11 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		if( variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr && !t.CanBeConstexpr() )
 		{
 			REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope, variable_declaration.file_pos )
+		}
+
+		if( variable_declaration.reference_modifier != Synt::ReferenceModifier::Reference && !t.CanBeConstexpr() )
+		{
+			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 		}
 
 		var NamesScopeVariable mut out_variable
@@ -234,6 +240,11 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		{
 			REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, auto_variable_declaration.file_pos, expr.t )
 			return BlockElementBuildInfo();
+		}
+
+		if( !expr.t.CanBeConstexpr() )
+		{
+			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 		}
 
 		unsafe
@@ -807,6 +818,11 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 		auto operator= select( delta == 1 ? OverloadedOperator::Increment : OverloadedOperator::Decrement );
 		if_var( mut overloaded_operator : GetOverloadedOperator( args, operator, names_scope, file_pos ) )
 		{
+			if( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+			{
+				function_context.have_non_constexpr_operations_inside= true;
+			}
+
 			auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
 			overloaded_operator.llvm_function= fetch_result[1];
 

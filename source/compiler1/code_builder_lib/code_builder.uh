@@ -1,5 +1,6 @@
 import "../lex_synt_lib/source_graph.uh"
 import "/code_builder_errors.uh"
+import "constexpr_function_evaluator.uh"
 import "function_context.uh"
 import "structs_combined.uh"
 
@@ -190,7 +191,7 @@ private:
 		FunctionContext &mut function_context,
 		Synt::StructNamedInitializer& constructor_initialization_list );
 
-	fn BuildFuncCode( mut this, NamesScopePtr& names_scope_ptr, FunctionVariable& func_variable );
+	fn BuildFuncCode( mut this, NamesScopePtr& names_scope_ptr, FunctionVariable &mut func_variable );
 
 	struct BlockElementBuildInfo
 	{
@@ -580,6 +581,8 @@ private:
 	fn CreateParentFieldGEP( this, LLVMValueRef value, ClassType::Parent& parent, FunctionContext& function_context ) : LLVMValueRef;
 	fn CreateBaseClassFieldGEP( this, LLVMValueRef value, FunctionContext& function_context ) : LLVMValueRef;
 
+	fn MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef constant, FunctionContext& function_context );
+
 	struct InstructionsState
 	{
 		LLVMValueRef current_block_last_instruction;
@@ -596,6 +599,7 @@ private:
 private:
 	LLVMContextRef imut llvm_context_;
 	LLVMTargetDataRef imut data_layout_;
+	ConstexprFunctionEvaluator1 constexpr_function_evaluator_;
 
 	struct FundamentalLLVMTypes
 	{

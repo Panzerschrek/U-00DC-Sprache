@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "../code_builder_lib/push_disable_llvm_warnings.hpp"
+#include "../compilers_common/push_disable_llvm_warnings.hpp"
 #include <llvm/Analysis/TargetTransformInfo.h>
 #include <llvm/AsmParser/Parser.h>
 #include <llvm/Bitcode/BitcodeReader.h>
@@ -21,7 +21,7 @@
 #include <llvm/Transforms/IPO.h>
 #include <llvm/Transforms/IPO/PassManagerBuilder.h>
 #include <llvm/MC/SubtargetFeature.h>
-#include "../code_builder_lib/pop_llvm_warnings.hpp"
+#include "../compilers_common/pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/assert.hpp"
 #include "../lex_synt_lib/source_graph_loader.hpp"

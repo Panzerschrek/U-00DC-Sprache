@@ -2,12 +2,12 @@
 #include <set>
 #include <variant>
 
-#include "push_disable_llvm_warnings.hpp"
+#include "../compilers_common/push_disable_llvm_warnings.hpp"
 #include <llvm/IR/DerivedTypes.h>
-#include "pop_llvm_warnings.hpp"
+#include "../compilers_common/pop_llvm_warnings.hpp"
 
+#include "../compilers_common/small_types.hpp"
 #include "lang_types.hpp"
-#include "small_types.hpp"
 
 
 namespace U

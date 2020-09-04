@@ -7,7 +7,7 @@
 #include "../../tests/tests_common.hpp"
 #include "../tests_common/funcs_c.hpp"
 
-#include "../../code_builder_lib/push_disable_llvm_warnings.hpp"
+#include "../../compilers_common/push_disable_llvm_warnings.hpp"
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
 #include <llvm/ExecutionEngine/Interpreter.h>
@@ -15,7 +15,7 @@
 #include <llvm/Support/ManagedStatic.h>
 #include <llvm/Support/raw_os_ostream.h>
 #include <llvm/Support/Signals.h>
-#include "../../code_builder_lib/pop_llvm_warnings.hpp"
+#include "../../compilers_common/pop_llvm_warnings.hpp"
 
 namespace U
 {
@@ -356,8 +356,10 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"CharLiteral_Test0",
 		"CharLiteral_Test1",
 		"CharLiteral_Test2",
+		"CharLiteral_Test3",
 		"CharLiteralIsConstantValue_Test0",
 		"ClassHaveNoCopyAssignementOperatorByDefault_Test0",
+		"ConstexprHalt_Test0",
 		"ConstructingAbstractClassOrInterface_Test0",
 		"ConstructingAbstractClassOrInterface_Test1",
 		"ConstructingAbstractClassOrInterface_Test2",
@@ -452,7 +454,12 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"StringLiteral_EscapeSequences_Test1",
 		"StringLiteral_EscapeSequences_Test2",
 		"StringLiteralIsConstantExpression_Test0",
+		"StringLiteralIsConstantExpression_Test1",
 		"StringLiteralIsConstantReference_Test0",
+		"StringLiteralIsNotNullTerminated_Test0",
+		"StringLiteral_UTF8_Test0",
+		"StringLiteral_UTF16_Test0",
+		"StringLiteral_UTF32_Test0",
 		"TemplateParametersDeductionFailed_Test0",
 		"TemplateParametersDeductionFailed_Test1",
 		"TemplateParametersDeductionFailed_Test2",
@@ -523,8 +530,24 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"ChildToParentReferenceCast_Test",
 		"ClassContainsPureVirtualFunctions_Test",
 		"ClassHaveNoCopyConstructorByDefault_Test",
+		"ConstexprCall_ResultTypeIs_",
+		"ConstexprFunctionAccessGlobalVariable",
+		"ConstexprFunctionArithmeticOperatorsTest",
+		"ConstexprFunctionCallOtherFunction",
+		"ConstexprFunctionContainsUnallowedOperations",
+		"ConstexprFunctionControlFlow",
+		"ConstexprFunctionEvaluationError",
+		"ConstexprFunctionInternalArray",
+		"ConstexprFunctionInternalStruct",
+		"ConstexprFunctionsMustHaveBody",
+		"ConstexprFunctionWithMutableArguments",
+		"ConstexprFunction_CompositeArgument",
+		"ConstexprFunction_RecursiveCall",
+		"ConstexprFunction_ReturnStruct",
+		"ConstexprFunction_ReturningReference",
 		"ConstexprReferenceInsideStruct_Test",
 		"ConstexprStructDeclaration",
+		"ConstexprStructGeneratedMethodsAreConstexpr",
 		"ConstexprStructMemberIsConstexpr_Test",
 		"CopyChildToParent_Test",
 		"CouldNotOverloadFunction_ForUnsafe_Test",
@@ -553,6 +576,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"InvalidMethodForBodyGeneration_Test",
 		"InvalidSizeForCharLiteral_Test",
 		"InvalidTypeForConstantExpressionVariable",
+		"InvalidTypeForConstexprFunction_Test",
 		"MethodBodyGenerationFailed_Test",
 		"NonExistentTest",
 		"NoMangleMismatch_Test",
