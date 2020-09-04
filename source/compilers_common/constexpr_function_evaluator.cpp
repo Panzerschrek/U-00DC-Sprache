@@ -40,36 +40,33 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	size_t i= 0u;
 	for( const llvm::Argument& arg : llvm_function->args() )
 	{
-		llvm::GenericValue val;
-
-		if( arg.hasStructRetAttr() )
+		if( arg.getType()->isPointerTy() )
 		{
-			U_ASSERT(arg.getType()->isPointerTy());
-			U_ASSERT(i == 0u);
-			return_type= arg.getType()->getPointerElementType();
+			llvm::GenericValue val;
 
-			s_ret_ptr= stack_.size();
-			const size_t new_stack_size= stack_.size() + size_t( data_layout_.getTypeAllocSize(return_type) );
-			if( new_stack_size >= g_max_data_stack_size )
+			if( arg.hasStructRetAttr() )
 			{
-				ReportDataStackOverflow();
-				continue;
+				U_ASSERT(i == 0u);
+				return_type= arg.getType()->getPointerElementType();
+
+				s_ret_ptr= stack_.size();
+				const size_t new_stack_size= stack_.size() + size_t( data_layout_.getTypeAllocSize(return_type) );
+				if( new_stack_size >= g_max_data_stack_size )
+				{
+					ReportDataStackOverflow();
+					continue;
+				}
+				stack_.resize( new_stack_size );
+
+				val.IntVal= llvm::APInt( 64u, uint64_t(s_ret_ptr) );
 			}
-			stack_.resize( new_stack_size );
+			else
+				val.IntVal= llvm::APInt( 64u, uint64_t( MoveConstantToStack( *args[i] ) ) );
 
-			val.IntVal= llvm::APInt( 64u, uint64_t(s_ret_ptr) );
+			instructions_map_[ &arg ]= val;
 		}
-		else if( arg.getType()->isPointerTy() )
-			val.IntVal= llvm::APInt( 64u, uint64_t( MoveConstantToStack( *args[i] ) ) );
-		else if( arg.getType()->isIntegerTy() )
-			val.IntVal= args[i]->getUniqueInteger();
-		else if( arg.getType()->isFloatTy() )
-			val.FloatVal= llvm::dyn_cast<llvm::ConstantFP>(args[i])->getValueAPF().convertToFloat();
-		else if( arg.getType()->isDoubleTy() )
-			val.DoubleVal= llvm::dyn_cast<llvm::ConstantFP>(args[i])->getValueAPF().convertToDouble();
-		else U_ASSERT(false);
-
-		instructions_map_[ &arg ]= val;
+		else
+			instructions_map_[ &arg ]= GetVal( args[i] );
 
 		++i;
 	}
@@ -364,6 +361,10 @@ llvm::GenericValue ConstexprFunctionEvaluator::GetVal( const llvm::Value* const 
 		res.IntVal= constant_int->getValue();
 	else if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>( val ) )
 		res.IntVal= llvm::APInt( 64u, MoveConstantToStack( *global_variable->getInitializer() ) );
+	else if( const auto constant_aggregate= llvm::dyn_cast<llvm::ConstantAggregate>(val) )
+		res.IntVal= llvm::APInt( 64u, uint64_t( MoveConstantToStack( *constant_aggregate ) ) );
+	else if( const auto constant_data_sequential= llvm::dyn_cast<llvm::ConstantDataSequential>(val) )
+		res.IntVal= llvm::APInt( 64u, uint64_t( MoveConstantToStack( *constant_data_sequential ) ) );
 	else if( llvm::dyn_cast<llvm::Function>(val) != nullptr )
 		errors_.push_back( "accessing function pointer" );
 	else if( auto constant_expression= llvm::dyn_cast<llvm::ConstantExpr>( val ) )
