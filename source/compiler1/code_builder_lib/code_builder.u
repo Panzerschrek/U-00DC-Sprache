@@ -814,10 +814,12 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 
 	// Build body for copy, then update it. This needed to prevent function body build under lock.
 	auto mut functions_set_copy= functions_set_ptr.lock_imut().get_ref().functions_set.functions;
+	var bool is_class_method= !functions_set_ptr.lock_imut().get_ref().class_.empty();
 	foreach( &mut func_variable : functions_set_copy )
 	{
 		// Immediately build body of "constexpr" functions.
-		if( build_body || func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
+		if( build_body ||
+			( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr && !is_class_method ) )
 		{
 			BuildFuncCode( names_scope_ptr, func_variable );
 		}
@@ -1315,6 +1317,29 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	{
 		auto mut class_lock= class_type.lock_mut();
 		class_lock.get_ref().is_complete= true;
+	}
+
+	// Build constexpr methods after class completion.
+	foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
+	{
+		auto functions_set_ptr= member.value().Get</ NamesScopeFunctionsSet />();
+		if( functions_set_ptr.empty() )
+		{
+			continue;
+		}
+
+		// Build body for copy, then update it. This needed to prevent function body build under lock.
+		auto mut functions_set_copy= functions_set_ptr.lock_imut().get_ref().functions_set.functions;
+		foreach( &mut func_variable : functions_set_copy )
+		{
+			if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
+			{
+				BuildFuncCode( class_members, func_variable );
+			}
+		}
+
+		auto mut lock= functions_set_ptr.lock_mut();
+		lock.get_ref().functions_set.functions= move(functions_set_copy);
 	}
 }
 
