@@ -2233,8 +2233,40 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 
 	if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
 	{
-		// TODO - check constexpr function body requirements.
-		func_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprComplete;
+
+		auto mut can_be_constexpr= true;
+
+		{
+			auto& function_type= func_variable.t;
+
+			can_be_constexpr&=
+				!function_type.is_unsafe &&
+				function_type.return_type.CanBeConstexpr();
+
+			foreach( &param : function_type.args )
+			{
+				can_be_constexpr&=
+					param.arg_type.CanBeConstexpr() &&
+					param.arg_type != void_type_ && // Disallow "void" arguments, because we currently can not constantly convert any reference to "void" in constexpr function call.
+					param.arg_type.GetFunctionPointerType().empty();  // Currently function pointers not supported.
+			}
+		}
+
+		if( !can_be_constexpr )
+		{
+			REPORT_ERROR( InvalidTypeForConstexprFunction, names_scope, func_variable.body_syntax_element.get_ref().file_pos )
+			func_variable.constexpr_kind= FunctionVariable::ConstexprKind::NonConstexpr;
+		}
+		else if( function_context.have_non_constexpr_operations_inside )
+		{
+			REPORT_ERROR( ConstexprFunctionContainsUnallowedOperations, names_scope, func_variable.body_syntax_element.get_ref().file_pos )
+			func_variable.constexpr_kind= FunctionVariable::ConstexprKind::NonConstexpr;
+		}
+		else
+		{
+			func_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprComplete;
+
+		}
 	}
 }
 

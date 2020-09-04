@@ -583,6 +583,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		// TODO - is this correct to pass preevaluated args? Maybe evaluate args in "DoCallFunction" instead?
 		if_var( mut overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::Indexing, names_scope, indexation_operator.file_pos ) )
 		{
+			if( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+			{
+				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+			}
+
 			auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
 			overloaded_operator.llvm_function= fetch_result[1];
 
@@ -678,6 +683,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 		if_var( mut overloaded_operator : GetOverloadedOperator( args.range(), OverloadedOperator::Call, names_scope, call_operator.file_pos ) )
 		{
+			if( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+			{
+				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+			}
+
 			auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
 			overloaded_operator.llvm_function= fetch_result[1];
 
@@ -895,6 +905,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 		if_var( mut overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::Sub, names_scope, unary_minus.file_pos ) )
 		{
+			if( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+			{
+				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+			}
+
 			auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
 			overloaded_operator.llvm_function= fetch_result[1];
 
@@ -957,6 +972,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 		if_var( mut overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::LogicalNot, names_scope, logical_not.file_pos ) )
 		{
+			if( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+			{
+				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+			}
+
 			auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
 			overloaded_operator.llvm_function= fetch_result[1];
 
@@ -1008,6 +1028,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 		if_var( mut overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::BitwiseNot, names_scope, bitwise_not.file_pos ) )
 		{
+			if( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+			{
+				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+			}
+
 			auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
 			overloaded_operator.llvm_function= fetch_result[1];
 
@@ -1588,6 +1613,10 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 			REPORT_ERROR( AccessingDeletedMethod, names_scope, file_pos )
 			return ust::optional</Value/>();
 		}
+		if( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+		{
+			function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+		}
 
 		return DoCallFunction(
 			names_scope,
@@ -1700,6 +1729,11 @@ fn CodeBuilder::DoCallFunction(
 	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 	FilePos& file_pos ) : Value
 {
+	if( function.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+	{
+		function_context.have_non_constexpr_operations_inside= true;
+	}
+
 	if( function.is_this_call && this_.empty() )
 	{
 		REPORT_ERROR( CallOfThiscallFunctionUsingNonthisArgument, names_scope, file_pos )

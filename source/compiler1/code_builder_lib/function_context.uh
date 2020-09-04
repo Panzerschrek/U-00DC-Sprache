@@ -33,6 +33,8 @@ public:
 	ust::unordered_map</ust::string8, i32/> uninitialized_this_fields; // TODO - use something like "unordered_set"
 	bool whole_this_is_unavailable= false;
 
+	bool have_non_constexpr_operations_inside= false; // While building code, may set to "true".
+
 	LLVMBasicBlockRef alloca_basic_block= LLVMBasicBlockRef::Null;
 	LLVMBuilderRef alloca_ir_builder= LLVMBuilderRef::Null;
 
