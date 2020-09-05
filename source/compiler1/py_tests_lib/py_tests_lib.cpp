@@ -449,6 +449,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"SafeBlockResetsUnsafe_Test",
 		"SimpliestTest",
 		"SimplePassArgumentTest",
+		"SizeAndAlignmentFileds_Test0",
 		"StringLiteral_Test0",
 		"StringLiteralElementIsCharByDefault_Test0",
 		"StringLiteral_EscapeSequences_Test0",

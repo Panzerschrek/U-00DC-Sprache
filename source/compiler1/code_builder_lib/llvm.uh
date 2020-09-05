@@ -127,6 +127,11 @@ fn nomangle LLVMModuleCreateWithNameInContext(NullTerminatedString& ModuleID, LL
 fn nomangle LLVMDisposeModule(LLVMModuleRef M) unsafe;
 fn nomangle LLVMSetModuleDataLayout(LLVMModuleRef M, LLVMTargetDataRef DL) unsafe;
 
+// Data layout
+
+fn nomangle LLVMABISizeOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty) unsafe : u64;
+fn nomangle LLVMABIAlignmentOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty) unsafe : u32;
+
 // Type
 fn nomangle LLVMInt1TypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
 fn nomangle LLVMInt8TypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;

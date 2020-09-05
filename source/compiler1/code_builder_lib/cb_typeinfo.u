@@ -39,7 +39,7 @@ import "mangling.uh"
 
 		fields_llvm_types.push_back( class_field.t.GetLLVMType() );
 
-		unsafe{  fields_initializers.push_back( LLVMConstInt( class_field.t.GetLLVMType(), u64(?value), LLVMBool::True ) );  }
+		unsafe{  fields_initializers.push_back( LLVMConstInt( class_field.t.GetLLVMType(), u64(?value), LLVMBool::False ) );  }
 
 		auto mut members_lock= class_members.lock_mut();
 		members_lock.get_ref().AddName( ?name, move(class_field) );
@@ -145,6 +145,19 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 
 	var ust::vector</LLVMTypeRef/> mut fields_llvm_types;
 	var ust::vector</LLVMValueRef/> mut fields_initializers;
+
+	if( t.GetFunctionType().empty() )
+	{
+		auto mut llvm_type= t.GetLLVMType();
+		if( llvm_type == fundamental_llvm_types_.void_for_ret_ )
+		{
+			llvm_type= fundamental_llvm_types_.void_;
+		}
+
+		// see llvm/lib/IR/DataLayout.cpp:40
+		ADD_SIZE_FIELD( "size_of", LLVMABISizeOfType( data_layout_, llvm_type ) )
+		ADD_SIZE_FIELD( "align_of", LLVMABIAlignmentOfType( data_layout_, llvm_type ) )
+	}
 
 	ADD_BOOL_FIELD( "is_fundamental"     , !t.GetFundamentalType    ().empty() )
 	ADD_BOOL_FIELD( "is_array"           , !t.GetArrayType          ().empty() )
