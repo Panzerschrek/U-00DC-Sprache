@@ -482,6 +482,10 @@ private:
 
 	fn TypeIsValidForTemplateVariableArgument( Type& t ) : bool;
 
+	// Typeinfo
+	fn BuildTypeinfo( mut this, Type& t, NamesScopePtr& root_namespace ) : Variable;
+	fn CreateTypeinfoClass( this, NamesScopePtr& root_namespace, Type& src_type, ust::string8& name ) : ClassTypePtr;
+
 	// Virtual stuff
 	fn PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr );
 	fn PrepareClassVirtualTableType( this, ClassTypePtr& class_type_ptr );

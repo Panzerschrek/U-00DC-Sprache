@@ -472,6 +472,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TemplateParametersDeductionFailed_Test9",
 		"TemplateParametersDeductionFailed_Test10",
 		"TypeInfoOperator_Test0",
+		"TypeKindFields_Test0",
 		"TypeNameInErrorMessage_ClassTemplate_Test0",
 		"TypeNameInErrorMessage_ClassTemplate_Test1",
 		"TypeNameInErrorMessage_ClassTemplate_Test2",

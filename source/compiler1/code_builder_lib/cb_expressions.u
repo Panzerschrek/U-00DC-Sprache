@@ -436,8 +436,20 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Typeinfo& typeinfo_ ) : Value
 {
-	// TODO
-	return ErrorValue();
+	var NamesScopePtr mut root_names_scope= names_scope;
+	while(true)
+	{
+		auto parent= root_names_scope.lock_imut().get_ref().GetParent();
+		if( parent.empty() )
+		{
+			break;
+		}
+		root_names_scope= ust::to_non_nullable( parent );
+	}
+
+	var Type t= PrepareType( names_scope, function_context, typeinfo_.type_name );
+
+	return BuildTypeinfo( t, root_names_scope );
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
