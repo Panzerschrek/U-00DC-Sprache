@@ -51,7 +51,6 @@ import "mangling.uh"
 <?
 	{
 		auto dependent_type_typeinfo= GetTypeinfoPrototype( ?dependent_type, ust::to_non_nullable(class_members.lock_imut().get_ref().GetParent()) );
-		BuildFullTypeinfo( ?dependent_type ); // TODO - remove this, build full typeinfo lazily.
 		var ClassField mut class_field
 		{
 			.t= dependent_type_typeinfo.t,
@@ -89,7 +88,7 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 		}
 	}
 
-	var ClassTypePtr typeinfo_class= CreateTypeinfoClass( root_namespace, t, "TODO - name" );
+	var ClassTypePtr typeinfo_class= CreateTypeinfoClass( root_namespace, t, "typeinfo type for " + MangleType(t) );
 
 	var Variable mut v
 	{
@@ -101,7 +100,7 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 	unsafe
 	{
 		auto llvm_type= v.t.GetLLVMType();
-		auto global_variable= LLVMAddGlobal( module_, llvm_type, "TODO - name\0"[0] );
+		auto global_variable= LLVMAddGlobal( module_, llvm_type, ( "typeinfo value for " + MangleType(t) ).front() );
 		LLVMSetLinkage( global_variable, LLVMLinkage::Internal );
 		LLVMSetGlobalConstant( global_variable, LLVMBool::True );
 
@@ -128,6 +127,11 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 	}
 
 	var ClassTypePtr typeinfo_class= typeinfo_cache_[entry_index].v.t.GetClassType().get_ref();
+	if( typeinfo_class.lock_imut().get_ref().is_complete )
+	{
+		return typeinfo_cache_[entry_index].v;
+	}
+
 	var NamesScopeMutPtr class_members= typeinfo_class.lock_imut().get_ref().members;
 
 	var ust::shared_ptr_final</ Synt::ClassField /> dummy_syntax_element( Synt::ClassField() );
@@ -172,9 +176,13 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 fn CodeBuilder::CreateTypeinfoClass( this, NamesScopePtr& root_namespace, Type& src_type, ust::string8& name ) : ClassTypePtr
 {
 	var NamesScopeMutPtr class_members( NamesScope( name, root_namespace ) );
-	var ClassType mut class_type{ .members= class_members };
+	var ClassType mut class_type
+	{
+		.members= class_members,
+		.typeinfo_src_type_(src_type),
+	};
 
-	unsafe{  class_type.llvm_type= LLVMStructCreateNamed( llvm_context_, "TODO - name\0"[0] );  }
+	unsafe{  class_type.llvm_type= LLVMStructCreateNamed( llvm_context_, name.front() );  }
 
 	return ClassTypePtr( class_type );
 }

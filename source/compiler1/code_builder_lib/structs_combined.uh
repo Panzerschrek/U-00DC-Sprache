@@ -145,6 +145,9 @@ struct ClassType
 	LLVMValueRef virtual_table_llvm_variable= LLVMValueRef::Null; // May be null for interfaces and abstract classes.
 	LLVMValueRef polymorph_type_id= LLVMValueRef::Null; // Exists in polymorph classes.
 
+	// non-empty, if this is typeinfo class (root or some of list nodes)
+	ust::optional</Type/> typeinfo_src_type_;
+
 	// Contains only "protected" and "private" members. If ther is no entry for member - it has "public" visibility
 	ust::unordered_map</ust::string8, Synt::ClassVisibility/> members_visibility;
 
