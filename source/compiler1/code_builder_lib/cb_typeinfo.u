@@ -126,9 +126,16 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 		}
 	}
 
+
 	var ClassTypePtr typeinfo_class= typeinfo_cache_[entry_index].v.t.GetClassType().get_ref();
 	if( typeinfo_class.lock_imut().get_ref().is_complete )
 	{
+		return typeinfo_cache_[entry_index].v;
+	}
+
+	if( !EnsureTypeComplete( t ) )
+	{
+		// TODO - report error
 		return typeinfo_cache_[entry_index].v;
 	}
 
@@ -145,6 +152,10 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 	ADD_BOOL_FIELD( "is_function_pointer", !t.GetFunctionPointerType().empty() )
 	ADD_BOOL_FIELD( "is_class"           , !t.GetClassType          ().empty() )
 	ADD_BOOL_FIELD( "is_enum"            , !t.GetEnumType           ().empty() )
+
+	ADD_BOOL_FIELD( "is_default_constructible", t.IsDefaultConstructible() )
+	ADD_BOOL_FIELD( "is_copy_constructible"   , t.IsCopyConstructible()    )
+	ADD_BOOL_FIELD( "is_copy_assignable"      , t.IsCopyAssignable()       )
 
 	if_var( &array_type : t.GetArrayType() )
 	{
