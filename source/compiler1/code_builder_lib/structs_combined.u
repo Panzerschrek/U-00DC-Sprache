@@ -41,12 +41,12 @@ fn ToString( FunctionType& function_type ) : ust::string8
 	result+= KeywordToString( Keyword::fn_ );
 
 	result+= "(";
-	foreach( &arg : function_type.args )
+	foreach( &param : function_type.params )
 	{
-		result+= arg.arg_type.ToString();
-		result+= " arg";
+		result+= param.t.ToString();
+		result+= " param";
 
-		if( ust::ref_to_int(arg) != ust::ref_to_int(function_type.args.back()))
+		if( ust::ref_to_int(param) != ust::ref_to_int(function_type.params.back()))
 		{
 			result+= ", ";
 		}
@@ -131,15 +131,15 @@ op ArrayType::!=( ArrayType& l, ArrayType& r ) : bool
 	return !(l == r);
 }
 
-op FunctionType::Arg::==(Arg& l, Arg& r) : bool
+op FunctionType::Param::==(Param& l, Param& r) : bool
 {
 	return
-		l.arg_type == r.arg_type &&
+		l.t == r.t &&
 		l.is_reference == r.is_reference &&
 		l.is_mutable == r.is_mutable;
 }
 
-op FunctionType::Arg::!=(Arg& l, Arg& r) : bool
+op FunctionType::Param::!=(Param& l, Param& r) : bool
 {
 	return !(l == r);
 }
@@ -151,18 +151,18 @@ fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 		this.return_value_is_reference != dst.return_value_is_reference ||
 		( !this.return_value_is_mutable && dst.return_value_is_mutable ) || // Allow mutability conversions, except mut->imut
 		( this.is_unsafe && !dst.is_unsafe ) || // Disable unsafe function to safe function conversion
-		this.args.size() != dst.args.size() )
+		this.params.size() != dst.params.size() )
 	{
 		return false;
 	}
 
-	for( auto mut i= 0s; i < args.size(); ++i )
+	for( auto mut i= 0s; i < params.size(); ++i )
 	{
-		auto& this_arg= this.args[i];
-		auto& dst_arg= dst.args[i];
-		if( this_arg.arg_type != dst_arg.arg_type ||
-			this_arg.is_reference != dst_arg.is_reference ||
-			(this_arg.is_mutable && !dst_arg.is_mutable ) ) // Allow mutability conversions, except mut->imut
+		auto& this_param= this.params[i];
+		auto& dst_param= dst.params[i];
+		if( this_param.t != dst_param.t ||
+			this_param.is_reference != dst_param.is_reference ||
+			(this_param.is_mutable && !dst_param.is_mutable ) ) // Allow mutability conversions, except mut->imut
 		{
 			return false;
 		}
@@ -173,14 +173,14 @@ fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 
 op FunctionType::==( FunctionType& l, FunctionType& r ) : bool
 {
-	if( l.args.size() != r.args.size() )
+	if( l.params.size() != r.params.size() )
 	{
 		return false;
 	}
 
-	for( auto mut i= 0s; i < l.args.size(); ++i )
+	for( auto mut i= 0s; i < l.params.size(); ++i )
 	{
-		if( l.args[i] != r.args[i] )
+		if( l.params[i] != r.params[i] )
 		{
 			return false;
 		}
@@ -585,22 +585,22 @@ fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
 		tl.return_value_is_reference == tr.return_value_is_reference &&
 		tl.return_value_is_mutable == tr.return_value_is_mutable &&
 		tl.is_unsafe == tr.is_unsafe &&
-		tl.args.size() == tr.args.size() &&
-		tl.args.size() > 0s &&
-		tl.args.front().is_mutable == tr.args.front().is_mutable
+		tl.params.size() == tr.params.size() &&
+		tl.params.size() > 0s &&
+		tl.params.front().is_mutable == tr.params.front().is_mutable
 		) )
 	{
 		return false;
 	}
 
-	for( auto mut i= 1s; i < tl.args.size(); ++i )
+	for( auto mut i= 1s; i < tl.params.size(); ++i )
 	{
-		auto& arg_l= tl.args[i];
-		auto& arg_r= tr.args[i];
+		auto& param_l= tl.params[i];
+		auto& param_r= tr.params[i];
 		if( !(
-			arg_l.arg_type == arg_r.arg_type &&
-			arg_l.is_mutable == arg_r.is_mutable &&
-			arg_l.is_reference == arg_r.is_reference
+			param_l.t == param_r.t &&
+			param_l.is_mutable == param_r.is_mutable &&
+			param_l.is_reference == param_r.is_reference
 			) )
 		{
 			return false;

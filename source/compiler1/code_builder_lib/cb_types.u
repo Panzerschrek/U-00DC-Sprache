@@ -106,69 +106,69 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 		.is_unsafe= function_type.is_unsafe,
 	};
 
-	foreach( &arg : function_type.args )
+	foreach( &param : function_type.params )
 	{
-		var FunctionType::Arg mut out_arg
+		var FunctionType::Param mut out_param
 		{
-			.arg_type( invalid_type_ ),
-			.is_reference= arg.reference_modifier == Synt::ReferenceModifier::Reference,
-			.is_mutable= arg.mutability_modifier == Synt::MutabilityModifier::Mutable,
+			.t( invalid_type_ ),
+			.is_reference= param.reference_modifier == Synt::ReferenceModifier::Reference,
+			.is_mutable= param.mutability_modifier == Synt::MutabilityModifier::Mutable,
 		};
 
-		if( arg.name == KeywordToString( Keyword::this_ ) )
+		if( param.name == KeywordToString( Keyword::this_ ) )
 		{
 			if( class_type.empty() )
 			{
-				REPORT_ERROR( ThisInNonclassFunction, names_scope, arg.file_pos, ust::string8("TODO - func name") )
+				REPORT_ERROR( ThisInNonclassFunction, names_scope, param.file_pos, ust::string8("TODO - func name") )
 			}
-			else if( ust::ref_to_int(arg) != ust::ref_to_int(function_type.args.front() ) )
+			else if( ust::ref_to_int(param) != ust::ref_to_int(function_type.params.front() ) )
 			{
-				REPORT_ERROR( UsingKeywordAsName, names_scope, arg.file_pos )
+				REPORT_ERROR( UsingKeywordAsName, names_scope, param.file_pos )
 			}
 			else
 			{
-				out_arg.is_reference= true;
-				out_arg.arg_type= ust::to_non_nullable( class_type );
+				out_param.is_reference= true;
+				out_param.t= ust::to_non_nullable( class_type );
 			}
 		}
 		else
 		{
-			if( IsKeyword( arg.name ) )
+			if( IsKeyword( param.name ) )
 			{
-				REPORT_ERROR( UsingKeywordAsName, names_scope, arg.file_pos )
+				REPORT_ERROR( UsingKeywordAsName, names_scope, param.file_pos )
 			}
 
-			out_arg.arg_type= PrepareType( names_scope, function_context, arg.arg_type );
+			out_param.t= PrepareType( names_scope, function_context, param.t );
 		}
 
-		res.args.push_back( move(out_arg) );
+		res.params.push_back( move(out_param) );
 	}
 
-	var ust::vector</LLVMTypeRef/> mut llvm_arg_types;
+	var ust::vector</LLVMTypeRef/> mut llvm_param_types;
 
 	// s_ret
 	auto is_s_ret= !res.return_value_is_reference && !res.return_type.GetClassType().empty();
 	if( is_s_ret )
 	{
-		unsafe{  llvm_arg_types.push_back( LLVMPointerType( res.return_type.GetLLVMType(), 0u ) );  }
+		unsafe{  llvm_param_types.push_back( LLVMPointerType( res.return_type.GetLLVMType(), 0u ) );  }
 	}
 
-	foreach( &arg : res.args )
+	foreach( &param : res.params )
 	{
-		auto mut llvm_type= arg.arg_type.GetLLVMType();
-		if( arg.is_reference )
+		auto mut llvm_type= param.t.GetLLVMType();
+		if( param.is_reference )
 		{
 			unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  }
 		}
 		else
 		{
 			// Pass non-fundamental types by-reference
-			if( !arg.arg_type.GetClassType().empty() )
+			if( !param.t.GetClassType().empty() )
 			{
 				unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  }
 			}
 		}
-		llvm_arg_types.push_back( llvm_type );
+		llvm_param_types.push_back( llvm_type );
 	}
 
 	unsafe
@@ -183,14 +183,14 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 			ret_llvm_type= fundamental_llvm_types_.void_for_ret_;
 		}
 
-		if( llvm_arg_types.empty() )
+		if( llvm_param_types.empty() )
 		{
 			auto dummy= LLVMTypeRef::Null;
 			res.llvm_type= LLVMFunctionType( ret_llvm_type, dummy, 0u, LLVMBool::False );
 		}
 		else
 		{
-			res.llvm_type= LLVMFunctionType( ret_llvm_type, cast_imut(llvm_arg_types).front(), u32(llvm_arg_types.size()), LLVMBool::False );
+			res.llvm_type= LLVMFunctionType( ret_llvm_type, cast_imut(llvm_param_types).front(), u32(llvm_param_types.size()), LLVMBool::False );
 		}
 	}
 

@@ -100,13 +100,13 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 			.return_value_is_reference= false,
 		};
 		{
-			var FunctionType::Arg mut this_arg
+			var FunctionType::Param mut this_param
 			{
-				.arg_type( Type( class_type ) ),
+				.t( Type( class_type ) ),
 				.is_reference= true,
 				.is_mutable= true,
 			};
-			function_type.args.push_back( move(this_arg) );
+			function_type.params.push_back( move(this_param) );
 		}
 
 		unsafe
@@ -291,20 +291,20 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 			.return_value_is_reference= false,
 		};
 		{
-			var FunctionType::Arg mut dst_arg
+			var FunctionType::Param mut dst_param
 			{
-				.arg_type( Type( class_type ) ),
+				.t( Type( class_type ) ),
 				.is_reference= true,
 				.is_mutable= true,
 			};
-			var FunctionType::Arg mut src_arg
+			var FunctionType::Param mut src_param
 			{
-				.arg_type( Type( class_type ) ),
+				.t( Type( class_type ) ),
 				.is_reference= true,
 				.is_mutable= false,
 			};
-			function_type.args.push_back( move(dst_arg) );
-			function_type.args.push_back( move(src_arg) );
+			function_type.params.push_back( move(dst_param) );
+			function_type.params.push_back( move(src_param) );
 		}
 
 		unsafe
@@ -507,20 +507,20 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 			.return_value_is_reference= false,
 		};
 		{
-			var FunctionType::Arg mut dst_arg
+			var FunctionType::Param mut dst_param
 			{
-				.arg_type( Type( class_type ) ),
+				.t( Type( class_type ) ),
 				.is_reference= true,
 				.is_mutable= true,
 			};
-			var FunctionType::Arg mut src_arg
+			var FunctionType::Param mut src_param
 			{
-				.arg_type( Type( class_type ) ),
+				.t( Type( class_type ) ),
 				.is_reference= true,
 				.is_mutable= false,
 			};
-			function_type.args.push_back( move(dst_arg) );
-			function_type.args.push_back( move(src_arg) );
+			function_type.params.push_back( move(dst_param) );
+			function_type.params.push_back( move(src_param) );
 		}
 
 		unsafe
@@ -641,13 +641,13 @@ fn CodeBuilder::TryGenerateDestructorPrototype( this, ClassTypePtr& class_type )
 		.return_value_is_reference= false,
 	};
 	{
-		var FunctionType::Arg mut this_arg
+		var FunctionType::Param mut this_param
 		{
-			.arg_type( Type( class_type ) ),
+			.t( Type( class_type ) ),
 			.is_reference= true,
 			.is_mutable= true,
 		};
-		function_type.args.push_back( move(this_arg) );
+		function_type.params.push_back( move(this_param) );
 	}
 
 	unsafe
@@ -780,14 +780,10 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 		// Search for copy constructor.
 		foreach( &constructor_ : constructors_ptr.lock_imut().get_ref().functions_set.functions )
 		{
-			auto& function_type= constructor_.t;
-			if( function_type.args.size() == 2s &&
-				function_type.args.back().is_reference &&
-				!function_type.args.back().is_mutable &&
-				function_type.args.back().arg_type == class_type ) // Copy constructor
+			if( IsCopyConstructor( constructor_, class_type ) )
 			{
 				// SPRACHE_TODO - maybe disallow unsafe copy constructors?
-				if( function_type.is_unsafe && !function_context.is_in_unsafe_block )
+				if( constructor_.t.is_unsafe && !function_context.is_in_unsafe_block )
 				{
 					REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope, file_pos )
 				}
@@ -862,14 +858,10 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 		// Search for copy assignment operator.
 		foreach( &operator_ : operators_ptr.lock_imut().get_ref().functions_set.functions )
 		{
-			auto& function_type= operator_.t;
-			if(
-				function_type.args.size() == 2s &&
-				function_type.args.front().is_reference &&  function_type.args.front().is_mutable && function_type.args.front().arg_type == class_type &&
-				function_type.args.back ().is_reference && !function_type.args.back ().is_mutable && function_type.args.back ().arg_type == class_type )
+			if( IsCopyAssignmentOperator( operator_, class_type ) )
 			{
 				// SPRACHE_TODO - maybe disallow unsafe copy assignment operators?
-				if( function_type.is_unsafe && !function_context.is_in_unsafe_block )
+				if( operator_.t.is_unsafe && !function_context.is_in_unsafe_block )
 				{
 					REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope, file_pos )
 				}

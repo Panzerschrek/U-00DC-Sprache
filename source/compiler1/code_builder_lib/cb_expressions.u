@@ -566,15 +566,15 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 	if( !variable.t.GetClassType().empty() )
 	{
-		var [ FunctionType::Arg, 2 ] args
+		var [ FunctionType::Param, 2 ] args
 		[
 			{
-				.arg_type(variable.t),
+				.t(variable.t),
 				.is_mutable= variable.value_type == ValueType::ReferenceMut,
 				.is_reference= variable.value_type != ValueType::Value,
 			},
 			{
-				.arg_type(index.t),
+				.t(index.t),
 				.is_mutable= index.value_type == ValueType::ReferenceMut,
 				.is_reference= index.value_type != ValueType::Value,
 			},
@@ -649,12 +649,12 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 		// Try to call overloaded () operator.
 
-		var ust::vector</FunctionType::Arg/> mut args;
+		var ust::vector</FunctionType::Param/> mut args;
 
 		{
-			var FunctionType::Arg mut this_arg
+			var FunctionType::Param mut this_arg
 			{
-				.arg_type(variable.t),
+				.t(variable.t),
 				.is_mutable= variable.value_type == ValueType::ReferenceMut,
 				.is_reference= variable.value_type != ValueType::Value,
 			};
@@ -669,9 +669,9 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			foreach( &in_arg : call_operator.args )
 			{
 				auto arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.get_ref() );
-				var FunctionType::Arg mut f_arg
+				var FunctionType::Param mut f_arg
 				{
-					.arg_type(arg.t),
+					.t(arg.t),
 					.is_mutable= arg.value_type == ValueType::ReferenceMut,
 					.is_reference= arg.value_type != ValueType::Value,
 				};
@@ -896,9 +896,9 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	if( !variable.t.GetClassType().empty() )
 	{
-		var [ FunctionType::Arg, 1 ] args
+		var [ FunctionType::Param, 1 ] args
 		[ {
-			.arg_type(variable.t),
+			.t(variable.t),
 			.is_mutable= variable.value_type == ValueType::ReferenceMut,
 			.is_reference= variable.value_type != ValueType::Value,
 		} ];
@@ -963,9 +963,9 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	if( !variable.t.GetClassType().empty() )
 	{
-		var [ FunctionType::Arg, 1 ] args
+		var [ FunctionType::Param, 1 ] args
 		[ {
-			.arg_type(variable.t),
+			.t(variable.t),
 			.is_mutable= variable.value_type == ValueType::ReferenceMut,
 			.is_reference= variable.value_type != ValueType::Value,
 		} ];
@@ -1019,9 +1019,9 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	if( !variable.t.GetClassType().empty() )
 	{
-		var [ FunctionType::Arg, 1 ] args
+		var [ FunctionType::Param, 1 ] args
 		[ {
-			.arg_type(variable.t),
+			.t(variable.t),
 			.is_mutable= variable.value_type == ValueType::ReferenceMut,
 			.is_reference= variable.value_type != ValueType::Value,
 		} ];
@@ -1584,7 +1584,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 {
 	var [ ust::shared_ptr_final</Synt::Expression/>, 2 ] in_args[ arg_l, arg_r ];
 
-	var ust::vector</FunctionType::Arg/> mut args;
+	var ust::vector</FunctionType::Param/> mut args;
 
 	{
 		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
@@ -1594,9 +1594,9 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 		foreach( &in_arg : in_args )
 		{
 			auto arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.get_ref() );
-			var FunctionType::Arg mut f_arg
+			var FunctionType::Param mut f_arg
 			{
-				.arg_type(arg.t),
+				.t(arg.t),
 				.is_mutable= arg.value_type == ValueType::ReferenceMut,
 				.is_reference= arg.value_type != ValueType::Value,
 			};
@@ -1641,7 +1641,7 @@ fn CodeBuilder::CallFunctionsSet(
 	FilePos& file_pos ) : Value
 {
 	// Pre-evaluate arguments to know exact types and select exact function.
-	var ust::vector</FunctionType::Arg/> mut args_evaluated;
+	var ust::vector</FunctionType::Param/> mut args_evaluated;
 	{
 		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
@@ -1650,9 +1650,9 @@ fn CodeBuilder::CallFunctionsSet(
 
 		if( !this_.empty() )
 		{
-			var FunctionType::Arg mut out_arg
+			var FunctionType::Param mut out_arg
 			{
-				.arg_type( this_.get_ref().t ),
+				.t( this_.get_ref().t ),
 				.is_mutable= this_.get_ref().value_type == ValueType::ReferenceMut,
 				.is_reference= true,
 			};
@@ -1662,9 +1662,9 @@ fn CodeBuilder::CallFunctionsSet(
 		foreach( &arg : args )
 		{
 			auto arg_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg.get_ref() );
-			var FunctionType::Arg mut out_arg
+			var FunctionType::Param mut out_arg
 			{
-				.arg_type( arg_variable.t ),
+				.t( arg_variable.t ),
 				.is_mutable= arg_variable.value_type == ValueType::ReferenceMut,
 				.is_reference= arg_variable.value_type != ValueType::Value,
 			};
@@ -1775,9 +1775,9 @@ fn CodeBuilder::DoCallFunction(
 
 	var FunctionType& function_type= function.t;
 
-	if( total_args != function_type.args.size() )
+	if( total_args != function_type.params.size() )
 	{
-		REPORT_ERROR( InvalidFunctionArgumentCount, names_scope, file_pos, total_args, function_type.args.size() )
+		REPORT_ERROR( InvalidFunctionArgumentCount, names_scope, file_pos, total_args, function_type.params.size() )
 		return ErrorValue();
 	}
 
@@ -1819,8 +1819,8 @@ fn CodeBuilder::DoCallFunction(
 		auto arg_n= select( args_evaluation_order == ArgsEvaluationOrder::Direct ? i : total_args - i - 1s );
 		auto &mut llvm_arg= llvm_args[ first_llvm_arg_number + arg_n ];
 
-		auto& param= function_type.args[arg_n];
-		var Type& expected_arg_type= param.arg_type;
+		auto& param= function_type.params[arg_n];
+		var Type& expected_arg_type= param.t;
 		auto arg=
 			select( arg_n < preevaluated_args.size()
 				? preevaluated_args[arg_n]
@@ -1836,9 +1836,9 @@ fn CodeBuilder::DoCallFunction(
 			is_constexpr= false;
 		}
 
-		if( function_type.args[arg_n].is_reference )
+		if( param.is_reference )
 		{
-			if( function_type.args[arg_n].is_mutable )
+			if( param.is_mutable )
 			{
 				if( arg.value_type == ValueType::Value )
 				{

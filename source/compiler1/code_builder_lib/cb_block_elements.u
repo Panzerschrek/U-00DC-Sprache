@@ -808,9 +808,9 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 	// Try process overloaded operator.
 	if( ! variable.t.GetClassType().empty() )
 	{
-		var [ FunctionType::Arg, 1 ] args
+		var [ FunctionType::Param, 1 ] args
 		[ {
-			.arg_type(variable.t),
+			.t(variable.t),
 			.is_mutable= variable.value_type == ValueType::ReferenceMut,
 			.is_reference= variable.value_type != ValueType::Value,
 		} ];

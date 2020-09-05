@@ -130,7 +130,7 @@ fn CodeBuilder::PrepareFunctionTemplate(
 	{
 		auto mut global_function_context= CreateGlobalFunctionContext();
 
-		foreach( &param : syntax_element.function.get_ref().function_type.args )
+		foreach( &param : syntax_element.function.get_ref().function_type.params )
 		{
 			if( !class_type.empty() && param.name == KeywordToString( Keyword::this_ ) )
 			{
@@ -140,7 +140,7 @@ fn CodeBuilder::PrepareFunctionTemplate(
 			else
 			{
 				signature_params.push_back(
-					CreateTemplateSignatureParam( names_scope, global_function_context, template_params, param.arg_type, template_params_usage_flags ) );
+					CreateTemplateSignatureParam( names_scope, global_function_context, template_params, param.t, template_params_usage_flags ) );
 			}
 		}
 	}
@@ -391,11 +391,11 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 		var TemplateSignatureParam::TypeParam mut t{ .t= void_type_for_ret_ };
 		function_type_param.return_type= TemplateSignatureParam(move(t));
 	}
-	foreach( &param : signature_param.args )
+	foreach( &param : signature_param.params )
 	{
 		var TemplateSignatureParam::FunctionTypeParam::Param mut out_param
 		{
-			.t= CreateTemplateSignatureParam( names_scope, function_context, template_params, param.arg_type, template_params_usage_flags ),
+			.t= CreateTemplateSignatureParam( names_scope, function_context, template_params, param.t, template_params_usage_flags ),
 			.is_mutable= param.mutability_modifier == Synt::MutabilityModifier::Mutable,
 			.is_reference= param.reference_modifier == Synt::ReferenceModifier::Reference,
 		};
@@ -687,7 +687,7 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 fn CodeBuilder::GenTemplateFunction(
 	mut this,
 	FunctionTemplatePtr& function_template_ptr,
-	ust::array_view_imut</FunctionType::Arg/> mut args,
+	ust::array_view_imut</FunctionType::Param/> mut args,
 	bool first_arg_is_this,
 	FilePos& file_pos ) : ust::optional</FunctionVariable/>
 {
@@ -703,7 +703,7 @@ fn CodeBuilder::GenTemplateFunction(
 	mut this,
 	FunctionTemplatePtr& function_template_ptr,
 	TemplateArgsFinished& known_template_args,
-	ust::array_view_imut</FunctionType::Arg/> mut args,
+	ust::array_view_imut</FunctionType::Param/> mut args,
 	bool first_arg_is_this,
 	FilePos& file_pos ) : ust::optional</FunctionVariable/>
 {
@@ -713,12 +713,12 @@ fn CodeBuilder::GenTemplateFunction(
 	var Synt::Function& function_syntax_element= template_syntax_element.function.get_ref();
 
 	if( first_arg_is_this &&
-		( function_syntax_element.function_type.args.empty() ||
-		function_syntax_element.function_type.args.front().name != KeywordToString( Keyword::this_ ) ) )
+		( function_syntax_element.function_type.params.empty() ||
+		function_syntax_element.function_type.params.front().name != KeywordToString( Keyword::this_ ) ) )
 	{
 		args.drop_front();
 	}
-	if( args.size() != function_syntax_element.function_type.args.size() )
+	if( args.size() != function_syntax_element.function_type.params.size() )
 	{
 		return ust::optional</FunctionVariable/>();
 	}
@@ -756,8 +756,8 @@ fn CodeBuilder::GenTemplateFunction(
 	auto mut all_ok= true;
 	for( auto mut i= 0s; i < args.size(); ++i )
 	{
-		var Synt::FunctionType::Arg& param= function_syntax_element.function_type.args[i];
-		var FunctionType::Arg& arg= args[i];
+		var Synt::FunctionType::Param& param= function_syntax_element.function_type.params[i];
+		var FunctionType::Param& arg= args[i];
 
 		auto is_this= param.name == KeywordToString( Keyword::this_ );
 		auto param_is_mutable_reference=
@@ -772,7 +772,7 @@ fn CodeBuilder::GenTemplateFunction(
 		{
 			all_ok&=
 				!function_template.class_.empty() &&
-				arg.arg_type.ReferenceIsConvertibleTo( ust::to_non_nullable(function_template.class_) );
+				arg.t.ReferenceIsConvertibleTo( ust::to_non_nullable(function_template.class_) );
 		}
 		else
 		{
@@ -788,17 +788,17 @@ fn CodeBuilder::GenTemplateFunction(
 
 				if_var( &t : template_arg.something.get</Type/>() )
 				{
-					all_ok&= arg.arg_type.ReferenceIsConvertibleTo( t );
+					all_ok&= arg.t.ReferenceIsConvertibleTo( t );
 					continue;
 				}
 			}
 			if_var( &type_param : param.GetTypeParam() )
 			{
-				all_ok&= arg.arg_type.ReferenceIsConvertibleTo( type_param.t );
+				all_ok&= arg.t.ReferenceIsConvertibleTo( type_param.t );
 				continue;
 			}
 
-			all_ok&= MatchTemplateArgument( result_names_scope, function_template, param, arg.arg_type, file_pos );
+			all_ok&= MatchTemplateArgument( result_names_scope, function_template, param, arg.t, file_pos );
 		}
 	}
 
@@ -1335,7 +1335,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				return false;
 			}
 
-			if( given_function_type.args.size() != function_type_param.params.size() )
+			if( given_function_type.params.size() != function_type_param.params.size() )
 			{
 				return false;
 			}
@@ -1343,14 +1343,14 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 			for( auto mut i= 0s; i < function_type_param.params.size(); ++i )
 			{
 				auto& expected_param= function_type_param.params[i];
-				auto& given_arg= given_function_type.args[i];
+				auto& given_arg= given_function_type.params[i];
 
 				if( expected_param.is_mutable != given_arg.is_mutable ||
 					expected_param.is_reference != given_arg.is_reference )
 				{
 					return false;
 				}
-				if( !MatchTemplateArgument( names_scope, template_, expected_param.t, given_arg.arg_type, file_pos ) )
+				if( !MatchTemplateArgument( names_scope, template_, expected_param.t, given_arg.t, file_pos ) )
 				{
 					return false;
 				}

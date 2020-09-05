@@ -49,18 +49,18 @@ struct ArrayType
 
 struct FunctionType
 {
-	struct Arg
+	struct Param
 	{
-		Type arg_type;
+		Type t;
 		bool is_reference;
 		bool is_mutable;
 
-		op==(Arg& l, Arg& r) : bool;
-		op!=(Arg& l, Arg& r) : bool;
+		op==(Param& l, Param& r) : bool;
+		op!=(Param& l, Param& r) : bool;
 	}
 
-	ust::vector</Arg/> args;
-	Type return_type; // HACK! prevent dependency loop
+	ust::vector</Param/> params;
+	Type return_type;
 	bool return_value_is_reference;
 	bool return_value_is_mutable;
 

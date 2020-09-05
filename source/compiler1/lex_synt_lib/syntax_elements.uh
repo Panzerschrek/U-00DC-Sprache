@@ -151,15 +151,15 @@ struct FunctionType
 {
 	FilePos file_pos;
 
-	struct Arg // TODO - rename to param
+	struct Param
 	{
 		FilePos file_pos;
-		TypeName arg_type;
+		TypeName t;
 		ReferenceModifier reference_modifier= ReferenceModifier::None;
 		MutabilityModifier mutability_modifier= MutabilityModifier::None;
 		ust::string8 name;
 	}
-	ust::vector</Arg/> args;
+	ust::vector</Param/> params;
 
 	ust::optional</TypeName/> return_type; // Empty means "void"
 	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;

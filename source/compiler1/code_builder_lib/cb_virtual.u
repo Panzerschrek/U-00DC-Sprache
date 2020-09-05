@@ -517,9 +517,9 @@ fn CodeBuilder::TryFetchVirtualFunction(
 	// TODO - check reference conversion possibility.
 
 	var Variable mut this_casted= this_;
-	if( this_.t != function_type.args.front().arg_type )
+	if( this_.t != function_type.params.front().t )
 	{
-		this_casted.t= function_type.args.front().arg_type;
+		this_casted.t= function_type.params.front().t;
 		this_casted.llvm_value= CreateReferenceCast( this_.llvm_value, this_.t, this_casted.t, function_context );
 	}
 	if( function.virtual_table_index == ~0u )

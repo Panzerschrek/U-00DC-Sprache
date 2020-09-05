@@ -1670,8 +1670,8 @@ fn CodeBuilder::PrepareFunction(
 	}
 
 	function_variable.is_this_call=
-		!function_declaration.function_type.args.empty() &&
-		function_declaration.function_type.args.front().name == KeywordToString( Keyword::this_ );
+		!function_declaration.function_type.params.empty() &&
+		function_declaration.function_type.params.front().name == KeywordToString( Keyword::this_ );
 
 	auto is_constructor= func_name == KeywordToString( Keyword::constructor_ );
 	auto is_destructor = func_name == KeywordToString( Keyword::destructor_  );
@@ -1682,7 +1682,7 @@ fn CodeBuilder::PrepareFunction(
 		{
 			REPORT_ERROR( ConstructorAndDestructorMustReturnVoid, names_scope_ptr, function_declaration.file_pos )
 		}
-		if( func_name == KeywordToString( Keyword::destructor_ ) && function_type.args.size() > 1s )
+		if( func_name == KeywordToString( Keyword::destructor_ ) && function_type.params.size() > 1s )
 		{
 			REPORT_ERROR( ExplicitArgumentsInDestructor, names_scope_ptr, function_declaration.file_pos )
 		}
@@ -1895,9 +1895,9 @@ fn CodeBuilder::CheckOverloadedOperator(
 	auto class_type_non_null= ust::to_non_nullable( class_type );
 
 	auto mut is_this_class= false;
-	foreach( & arg : func_type.args )
+	foreach( & param : func_type.params )
 	{
-		if( arg.arg_type == class_type_non_null )
+		if( param.t == class_type_non_null )
 		{
 			is_this_class= true;
 			break;
@@ -1916,7 +1916,7 @@ fn CodeBuilder::CheckOverloadedOperator(
 	if( operator == OverloadedOperator::Add ||
 		operator == OverloadedOperator::Sub )
 	{
-		if( !( func_type.args.size() == 1s || func_type.args.size() == 2s ) )
+		if( !( func_type.params.size() == 1s || func_type.params.size() == 2s ) )
 		{
 			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
 		}
@@ -1931,7 +1931,7 @@ fn CodeBuilder::CheckOverloadedOperator(
 		operator == OverloadedOperator::ShiftLeft  ||
 		operator == OverloadedOperator::ShiftRight )
 	{
-		if( func_type.args.size() != 2s )
+		if( func_type.params.size() != 2s )
 		{
 			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
 		}
@@ -1949,7 +1949,7 @@ fn CodeBuilder::CheckOverloadedOperator(
 		operator == OverloadedOperator::AssignShiftRight ||
 		operator == OverloadedOperator::Assign )
 	{
-		if( func_type.args.size() != 2s )
+		if( func_type.params.size() != 2s )
 		{
 			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
 		}
@@ -1966,7 +1966,7 @@ fn CodeBuilder::CheckOverloadedOperator(
 		operator == OverloadedOperator::Greater   ||
 		operator == OverloadedOperator::GreaterEqual )
 	{
-		if( func_type.args.size() != 2s )
+		if( func_type.params.size() != 2s )
 		{
 			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
 		}
@@ -1979,7 +1979,7 @@ fn CodeBuilder::CheckOverloadedOperator(
 	if( operator == OverloadedOperator::LogicalNot ||
 		operator == OverloadedOperator::BitwiseNot )
 	{
-		if( func_type.args.size() != 1s )
+		if( func_type.params.size() != 1s )
 		{
 			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
 		}
@@ -1988,7 +1988,7 @@ fn CodeBuilder::CheckOverloadedOperator(
 	if( operator == OverloadedOperator::Increment ||
 		operator == OverloadedOperator::Decrement )
 	{
-		if( func_type.args.size() != 1s )
+		if( func_type.params.size() != 1s )
 		{
 			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
 		}
@@ -1999,12 +1999,12 @@ fn CodeBuilder::CheckOverloadedOperator(
 	}
 	else if( operator == OverloadedOperator::Indexing )
 	{
-		if( func_type.args.size() != 2s )
+		if( func_type.params.size() != 2s )
 		{
 			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
 		}
 		// Indexing operator must have first argument of parent class.
-		if( !func_type.args.empty() && func_type.args.front().arg_type != class_type_non_null )
+		if( !func_type.params.empty() && func_type.params.front().t != class_type_non_null )
 		{
 			REPORT_ERROR( OperatorDoesNotHaveParentClassArguments, names_scope, file_pos )
 		}
@@ -2012,12 +2012,12 @@ fn CodeBuilder::CheckOverloadedOperator(
 	}
 	else if( operator == OverloadedOperator::Call )
 	{
-		if( func_type.args.empty() )
+		if( func_type.params.empty() )
 		{
 			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
 		}
 		// Call operator must have first argument of parent class.
-		if( !func_type.args.empty() && func_type.args.front().arg_type != class_type_non_null )
+		if( !func_type.params.empty() && func_type.params.front().t != class_type_non_null )
 		{
 			REPORT_ERROR( OperatorDoesNotHaveParentClassArguments, names_scope, file_pos )
 		}
@@ -2080,20 +2080,20 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 
 		auto mut arg_n= 0u;
 		auto first_llvm_arg= select( is_s_ret ? 1u : 0u );
-		foreach( &in_arg : func_variable.body_syntax_element.get_ref().function_type.args )
+		foreach( &in_param : func_variable.body_syntax_element.get_ref().function_type.params )
 		{
-			auto& type_arg= cast_imut(func_variable).t.args[arg_n];
+			auto& type_arg= cast_imut(func_variable).t.params[arg_n];
 
 			var NamesScopeVariable mut out_arg
 			{
-				.t= type_arg.arg_type,
+				.t= type_arg.t,
 				.is_mutable= type_arg.is_mutable,
 			};
 
 			// Ensure type completness even for reference args because of reference checking.
 			if( !EnsureTypeComplete( out_arg.t ) )
 			{
-				REPORT_ERROR( UsingIncompleteType, names_scope, in_arg.file_pos, out_arg.t )
+				REPORT_ERROR( UsingIncompleteType, names_scope, in_param.file_pos, out_arg.t )
 				return;
 			}
 
@@ -2102,7 +2102,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				unsafe
 				{
 					auto arg_value= LLVMGetParam( func_variable.llvm_function, first_llvm_arg + arg_n );
-					LLVMSetValueName2( arg_value, in_arg.name.front(), in_arg.name.size() );
+					LLVMSetValueName2( arg_value, in_param.name.front(), in_param.name.size() );
 					out_arg.llvm_value= arg_value;
 				}
 			}
@@ -2114,19 +2114,19 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 					unsafe
 					{
 						auto arg_value= LLVMGetParam( func_variable.llvm_function, first_llvm_arg + arg_n );
-						LLVMSetValueName2( arg_value, in_arg.name.front(), in_arg.name.size() );
+						LLVMSetValueName2( arg_value, in_param.name.front(), in_param.name.size() );
 						out_arg.llvm_value= arg_value;
 					}
 				}
 				else
 				{
-					auto arg_name= "_arg_" + in_arg.name;
+					auto arg_name= "_arg_" + in_param.name;
 					unsafe
 					{
 						auto arg_value= LLVMGetParam( func_variable.llvm_function, first_llvm_arg + arg_n );
 						LLVMSetValueName2( arg_value, arg_name.front(), arg_name.size() );
 
-						out_arg.llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, out_arg.t.GetLLVMType(), (in_arg.name + "\0").front() );
+						out_arg.llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, out_arg.t.GetLLVMType(), (in_param.name + "\0").front() );
 
 						LLVMBuildStore( function_context.llvm_ir_builder, arg_value, out_arg.llvm_value );
 					}
@@ -2137,7 +2137,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 
 			++arg_n;
 
-			if( in_arg.name == KeywordToString( Keyword::this_ ) && func_variable.is_this_call && !out_arg.t.GetClassType().empty() )
+			if( in_param.name == KeywordToString( Keyword::this_ ) && func_variable.is_this_call && !out_arg.t.GetClassType().empty() )
 			{
 				var Variable mut this_variable
 				{
@@ -2150,10 +2150,10 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			}
 			else
 			{
-				var bool insert_ok= !args_names_scope.AddName( in_arg.name, NamesScopeValue( move(out_arg) ) ).empty();
+				var bool insert_ok= !args_names_scope.AddName( in_param.name, NamesScopeValue( move(out_arg) ) ).empty();
 				if( !insert_ok )
 				{
-					REPORT_ERROR( Redefinition, names_scope, in_arg.file_pos, in_arg.name )
+					REPORT_ERROR( Redefinition, names_scope, in_param.file_pos, in_param.name )
 				}
 			}
 		}
@@ -2268,12 +2268,12 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				!function_type.is_unsafe &&
 				function_type.return_type.CanBeConstexpr();
 
-			foreach( &param : function_type.args )
+			foreach( &param : function_type.params )
 			{
 				can_be_constexpr&=
-					param.arg_type.CanBeConstexpr() &&
-					param.arg_type != void_type_ && // Disallow "void" arguments, because we currently can not constantly convert any reference to "void" in constexpr function call.
-					param.arg_type.GetFunctionPointerType().empty();  // Currently function pointers not supported.
+					param.t.CanBeConstexpr() &&
+					param.t != void_type_ && // Disallow "void" arguments, because we currently can not constantly convert any reference to "void" in constexpr function call.
+					param.t.GetFunctionPointerType().empty();  // Currently function pointers not supported.
 			}
 		}
 
@@ -2381,33 +2381,33 @@ fn CodeBuilder::GetFunctionWithSameType( FunctionsSet &'x mut functions_set, Typ
 fn CodeBuilder::IsDefaultConstructor( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool
 {
 	if( !function_variable.is_this_call ){ return false; }
-	if( function_variable.t.args.size() != 1s ){ return false; }
+	if( function_variable.t.params.size() != 1s ){ return false; }
 
-	auto& arg= function_variable.t.args.front();
-	return arg.arg_type == class_type && arg.is_mutable && arg.is_reference;
+	auto& param= function_variable.t.params.front();
+	return param.t == class_type && param.is_mutable && param.is_reference;
 }
 
 fn CodeBuilder::IsCopyConstructor( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool
 {
 	if( !function_variable.is_this_call ){ return false; }
-	if( function_variable.t.args.size() != 2s ){ return false; }
+	if( function_variable.t.params.size() != 2s ){ return false; }
 
-	auto& arg_dst= function_variable.t.args.front();
-	auto& arg_src= function_variable.t.args.back();
+	auto& param_dst= function_variable.t.params.front();
+	auto& param_src= function_variable.t.params.back();
 	return
-		arg_dst.arg_type == class_type &&  arg_dst.is_mutable && arg_dst.is_reference &&
-		arg_src.arg_type == class_type && !arg_src.is_mutable && arg_src.is_reference;
+		param_dst.t == class_type &&  param_dst.is_mutable && param_dst.is_reference &&
+		param_src.t == class_type && !param_src.is_mutable && param_src.is_reference;
 }
 
 fn CodeBuilder::IsCopyAssignmentOperator( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool
 {
-	if( function_variable.t.args.size() != 2s ){ return false; }
+	if( function_variable.t.params.size() != 2s ){ return false; }
 
-	auto& arg_dst= function_variable.t.args.front();
-	auto& arg_src= function_variable.t.args.back();
+	auto& param_dst= function_variable.t.params.front();
+	auto& param_src= function_variable.t.params.back();
 	return
-		arg_dst.arg_type == class_type &&  arg_dst.is_mutable && arg_dst.is_reference &&
-		arg_src.arg_type == class_type && !arg_src.is_mutable && arg_src.is_reference;
+		param_dst.t == class_type &&  param_dst.is_mutable && param_dst.is_reference &&
+		param_src.t == class_type && !param_src.is_mutable && param_src.is_reference;
 }
 
 fn CodeBuilder::GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef

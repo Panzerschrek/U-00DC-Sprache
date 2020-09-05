@@ -220,7 +220,7 @@ private:
 	fn ParseTypeName( mut this ) : TypeName;
 	fn ParseArrayType( mut this ) : ArrayType;
 	fn ParseFunctionType( mut this ) : FunctionType;
-	fn ParseFunctionArg( mut this ) : FunctionType::Arg;
+	fn ParseFunctionParam( mut this ) : FunctionType::Param;
 	fn ParseFunctionTypeEnding( mut this, FunctionType &mut function_type );
 
 	fn ParseFunction( mut this ) : Function;
@@ -791,7 +791,7 @@ fn SyntaxAnalyzer::ParseFunctionType( mut this ) : FunctionType
 			break;
 		}
 
-		function_type.args.push_back( ParseFunctionArg() );
+		function_type.params.push_back( ParseFunctionParam() );
 
 		if( it_.front().lexem_type == Lexem::Type::BracketRight )
 		{
@@ -815,24 +815,24 @@ fn SyntaxAnalyzer::ParseFunctionType( mut this ) : FunctionType
 	return move(function_type);
 }
 
-fn SyntaxAnalyzer::ParseFunctionArg( mut this ) : FunctionType::Arg
+fn SyntaxAnalyzer::ParseFunctionParam( mut this ) : FunctionType::Param
 {
-	var FunctionType::Arg mut arg{ .file_pos= it_.front().file_pos, .arg_type= ParseTypeName() };
+	var FunctionType::Param mut param{ .file_pos= it_.front().file_pos, .t= ParseTypeName() };
 
 	if( it_.front().lexem_type == Lexem::Type::And )
 	{
-		arg.reference_modifier= ReferenceModifier::Reference;
+		param.reference_modifier= ReferenceModifier::Reference;
 		NextLexem();
 	}
 
 	if( IsKeyword( it_.front(), Keyword::mut_ ) )
 	{
-		arg.mutability_modifier= MutabilityModifier::Mutable;
+		param.mutability_modifier= MutabilityModifier::Mutable;
 		NextLexem();
 	}
 	else if( IsKeyword( it_.front(), Keyword::imut_ ) )
 	{
-		arg.mutability_modifier= MutabilityModifier::Immutable;
+		param.mutability_modifier= MutabilityModifier::Immutable;
 		NextLexem();
 	}
 
@@ -840,10 +840,10 @@ fn SyntaxAnalyzer::ParseFunctionArg( mut this ) : FunctionType::Arg
 	{
 		PushErrorMessage();
 	}
-	arg.name= it_.front().text;
+	param.name= it_.front().text;
 	NextLexem();
 
-	return move(arg);
+	return move(param);
 }
 
 fn SyntaxAnalyzer::ParseFunctionTypeEnding( mut this, FunctionType &mut function_type )
@@ -1059,13 +1059,13 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 
 	if( IsKeyword( it_.front(), Keyword::this_ ) )
 	{
-		var FunctionType::Arg mut this_arg
+		var FunctionType::Param mut this_param
 		{
 			.file_pos= it_.front().file_pos,
 			.name= it_.front().text
 		};
 		NextLexem();
-		res.function_type.args.push_back( move(this_arg) );
+		res.function_type.params.push_back( move(this_param) );
 
 		if( it_.front().lexem_type == Lexem::Type::Comma )
 		{
@@ -1087,14 +1087,14 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 			PushErrorMessage();
 		}
 
-		var FunctionType::Arg mut this_arg
+		var FunctionType::Param mut this_param
 		{
 			.file_pos= it_.front().file_pos,
 			.name= it_.front().text,
 			.mutability_modifier= mutability_modifier,
 		};
 		NextLexem();
-		res.function_type.args.push_back( move(this_arg) );
+		res.function_type.params.push_back( move(this_param) );
 
 		if( it_.front().lexem_type == Lexem::Type::Comma )
 		{
@@ -1110,15 +1110,15 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 	// If method is constructor or destructor and "this" not explicitly specified, add it.
 	// It's easier add "this" here, than dealing with implicit "this" in CodeBuilder.
 	if( ( res.name.back() == KeywordToString( Keyword::constructor_ ) || res.name.back() == KeywordToString( Keyword::destructor_ ) ) &&
-		res.function_type.args.empty() )
+		res.function_type.params.empty() )
 	{
-		var FunctionType::Arg mut this_arg
+		var FunctionType::Param mut this_param
 		{
 			.file_pos= it_.front().file_pos,
 			.name= KeywordToString( Keyword::this_ ),
 			.mutability_modifier= MutabilityModifier::Mutable,
 		};
-		res.function_type.args.push_back( move(this_arg) );
+		res.function_type.params.push_back( move(this_param) );
 	}
 
 	while( NotEndOfFile() )
@@ -1129,7 +1129,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 			break;
 		}
 
-		res.function_type.args.push_back( ParseFunctionArg() );
+		res.function_type.params.push_back( ParseFunctionParam() );
 
 		if( it_.front().lexem_type == Lexem::Type::BracketRight )
 		{

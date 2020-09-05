@@ -21,7 +21,7 @@ fn GetArgOverloadingClass( bool is_reference, bool is_mutable ) : ArgOverloading
 			: ArgOverloadingClass::ImmutableReference );
 }
 
-fn GetArgOverloadingClass( FunctionType::Arg& arg ) : ArgOverloadingClass
+fn GetArgOverloadingClass( FunctionType::Param& arg ) : ArgOverloadingClass
 {
 	return GetArgOverloadingClass( arg.is_reference, arg.is_mutable );
 }
@@ -86,9 +86,9 @@ fn ComplareConversionsType(
 }
 
 fn CompareConversionsMutability(
-	FunctionType::Arg& src,
-	FunctionType::Arg& dst_left,
-	FunctionType::Arg& dst_right ) : ConversionsCompareResult
+	FunctionType::Param& src,
+	FunctionType::Param& dst_left,
+	FunctionType::Param& dst_right ) : ConversionsCompareResult
 {
 	auto  left_overloding_class= GetArgOverloadingClass(dst_left );
 	auto right_overloding_class= GetArgOverloadingClass(dst_right);
@@ -110,11 +110,11 @@ fn CompareConversionsMutability(
 }
 
 fn CompareConversions(
-	FunctionType::Arg& src,
-	FunctionType::Arg& dst_left,
-	FunctionType::Arg& dst_right ) : ConversionsCompareResult
+	FunctionType::Param& src,
+	FunctionType::Param& dst_left,
+	FunctionType::Param& dst_right ) : ConversionsCompareResult
 {
-	auto types_compare= ComplareConversionsType( src.arg_type, dst_left.arg_type, dst_right.arg_type );
+	auto types_compare= ComplareConversionsType( src.t, dst_left.t, dst_right.t );
 	auto mutability_compare= CompareConversionsMutability( src, dst_left, dst_right );
 
 	if( types_compare == mutability_compare )
@@ -139,9 +139,9 @@ fn CompareConversions(
 }
 
 fn CompareConversions(
-	FunctionType::Arg& src,
-	FunctionType::Arg& dst_left,
-	FunctionType::Arg& dst_right,
+	FunctionType::Param& src,
+	FunctionType::Param& dst_left,
+	FunctionType::Param& dst_right,
 	TemplateSignatureParam& template_param_l,
 	TemplateSignatureParam& template_param_r ) : ConversionsCompareResult
 {
@@ -355,23 +355,23 @@ fn CodeBuilder::ApplyOverloadedFunction(
 
 			// If argument count differs - allow overloading.
 			// SPRACHE_TODO - handle default arguments.
-			if( function_type.args.size() != set_function_type.args.size() )
+			if( function_type.params.size() != set_function_type.params.size() )
 			{
 				continue;
 			}
 
 			auto mut arg_is_same_count= 0s;
-			for( auto mut i= 0s; i < function_type.args.size(); ++i )
+			for( auto mut i= 0s; i < function_type.params.size(); ++i )
 			{
-				auto& arg= function_type.args[i];
-				auto& set_arg= set_function_type.args[i];
-				if( arg.arg_type == set_arg.arg_type && GetArgOverloadingClass( arg ) == GetArgOverloadingClass( set_arg ) )
+				auto& param= function_type.params[i];
+				auto& set_param= set_function_type.params[i];
+				if( param.t == set_param.t && GetArgOverloadingClass( param ) == GetArgOverloadingClass( set_param ) )
 				{
 					++arg_is_same_count;
 				}
 			}
 
-			if( arg_is_same_count == function_type.args.size() )
+			if( arg_is_same_count == function_type.params.size() )
 			{
 				REPORT_ERROR( CouldNotOverloadFunction, names_scope, file_pos )
 				return false;
@@ -384,11 +384,11 @@ fn CodeBuilder::ApplyOverloadedFunction(
 	return true;
 }
 
-// TODO - pass array of "Variable" instead of "FunctionType::Arg"
+// TODO - pass array of "Variable" instead of "FunctionType::Param"
 fn CodeBuilder::GetOverloadedFunction(
 	mut this,
 	FunctionsSet &'x functions_set,
-	ust::array_view_imut</FunctionType::Arg/> actual_args,
+	ust::array_view_imut</FunctionType::Param/> actual_args,
 	bool first_actual_arg_is_this,
 	NamesScopePtr& names_scope,
 	FilePos& file_pos,
@@ -406,17 +406,17 @@ fn CodeBuilder::GetOverloadedFunction(
 		}
 
 		// TODO - fix foreach and use continue here.
-		if( function_type.args.size() == actual_args_corrected.size() )
+		if( function_type.params.size() == actual_args_corrected.size() )
 		{
 			auto mut all_args_is_compatible= true;
 
 			for( auto mut arg_n= 0s; arg_n < actual_args_corrected.size(); ++arg_n )
 			{
 				auto arg_overloading_class= GetArgOverloadingClass( actual_args_corrected[arg_n] );
-				auto parameter_overloading_class= GetArgOverloadingClass( function_type.args[arg_n] );
+				auto parameter_overloading_class= GetArgOverloadingClass( function_type.params[arg_n] );
 
-				auto& src_type= actual_args_corrected[arg_n].arg_type;
-				auto& dst_type= function_type.args[arg_n].arg_type;
+				auto& src_type= actual_args_corrected[arg_n].t;
+				auto& dst_type= function_type.params[arg_n].t;
 				if( src_type == dst_type )
 				{} // ok
 				else
@@ -538,8 +538,8 @@ fn CodeBuilder::GetOverloadedFunction(
 				auto comp=
 					CompareConversions(
 						actual_args[arg_n],
-						l_type.args[l_arg_n],
-						r_type.args[r_arg_n],
+						l_type.params[l_arg_n],
+						r_type.params[r_arg_n],
 						select( l_function.base_template.empty() ? dummy_template_param : l_function.base_template.get_ref().signature_params[l_arg_n] ),
 						select( r_function.base_template.empty() ? dummy_template_param : r_function.base_template.get_ref().signature_params[r_arg_n] ) );
 
@@ -573,8 +573,8 @@ fn CodeBuilder::GetOverloadedFunction(
 					auto comp=
 						CompareConversions(
 							actual_args[arg_n],
-							l_type.args[l_arg_n],
-							r_type.args[r_arg_n],
+							l_type.params[l_arg_n],
+							r_type.params[r_arg_n],
 							select( l_function.base_template.empty() ? dummy_template_param : l_function.base_template.get_ref().signature_params[l_arg_n] ),
 							select( r_function.base_template.empty() ? dummy_template_param : r_function.base_template.get_ref().signature_params[r_arg_n] ) );
 					if( comp != ConversionsCompareResult::Same )
@@ -613,14 +613,14 @@ fn CodeBuilder::GetOverloadedFunction(
 
 fn CodeBuilder::GetOverloadedOperator(
 	mut this,
-	ust::array_view_imut</FunctionType::Arg/> args,
+	ust::array_view_imut</FunctionType::Param/> args,
 	OverloadedOperator operator,
 	NamesScopePtr& names_scope, // Needed only for errors reporting
 	FilePos& file_pos ) : ust::optional</FunctionVariable/>
 {
 	foreach( &arg : args )
 	{
-		if_var( &class_type : arg.arg_type.GetClassType() )
+		if_var( &class_type : arg.t.GetClassType() )
 		{
 			auto class_members= class_type.lock_imut().get_ref().members;
 			auto members_lock= class_members.lock_imut();

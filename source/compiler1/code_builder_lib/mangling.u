@@ -298,36 +298,36 @@ fn MangleTypeImpl( Type& t ) : MangleGraphNode
 	}
 	if_var( &function_type : t.GetFunctionType() )
 	{
-		var ust::vector</FunctionType::Arg/> mut signature;
+		var ust::vector</FunctionType::Param/> mut signature;
 		{
-			var FunctionType::Arg mut ret_arg
+			var FunctionType::Param mut ret_arg
 			{
-				.arg_type( function_type.return_type ),
+				.t( function_type.return_type ),
 				.is_mutable= function_type.return_value_is_mutable,
 				.is_reference= function_type.return_value_is_reference,
 			};
 			signature.push_back( move(ret_arg) );
 		}
-		if( function_type.args.empty() )
+		if( function_type.params.empty() )
 		{
-			var FunctionType::Arg mut void_arg
+			var FunctionType::Param mut void_param
 			{
-				.arg_type( Type( FundamentalType( U_FundamentalType::void_, LLVMTypeRef::Null ) ) ),
+				.t( Type( FundamentalType( U_FundamentalType::void_, LLVMTypeRef::Null ) ) ),
 				.is_mutable= false,
 				.is_reference= false,
 			};
-			signature.push_back( move(void_arg) );
+			signature.push_back( move(void_param) );
 		}
 
-		foreach( &arg : function_type.args )
+		foreach( &arg : function_type.params )
 		{
-			var FunctionType::Arg mut arg_copy // TODO - create copy constructor for "Arg"
+			var FunctionType::Param mut param_copy // TODO - create copy constructor for "Arg"
 			{
-				.arg_type(arg.arg_type),
+				.t(arg.t),
 				.is_mutable= arg.is_mutable,
 				.is_reference= arg.is_reference,
 			};
-			signature.push_back(move(arg_copy));
+			signature.push_back(move(param_copy));
 		}
 
 		var MangleGraphNode mut res
@@ -338,7 +338,7 @@ fn MangleTypeImpl( Type& t ) : MangleGraphNode
 
 		foreach( &arg : signature )
 		{
-			var MangleGraphNode mut arg_node= MangleTypeImpl( arg.arg_type );
+			var MangleGraphNode mut arg_node= MangleTypeImpl( arg.t );
 			if( !arg.is_mutable && arg.is_reference ) // push "Konst" for reference immutable arguments
 			{
 				var MangleGraphNode mut konst_node{ .prefix= "K" };
@@ -527,31 +527,31 @@ fn MangleFunctionImpl(
 
 	res.childs.back().get_ref().cachable= false;
 
-	foreach( &arg : function_type.args )
+	foreach( &param : function_type.params )
 	{
-		var MangleGraphNode mut arg_node= MangleTypeImpl( arg.arg_type );
-		if( !arg.is_mutable && arg.is_reference ) // push "Konst" for reference immutable arguments
+		var MangleGraphNode mut param_node= MangleTypeImpl( param.t );
+		if( !param.is_mutable && param.is_reference ) // push "Konst" for reference immutable arguments
 		{
 			var MangleGraphNode mut konst_node;
 			konst_node.prefix= "K";
-			konst_node.childs.push_back( ust::box</MangleGraphNode/>( take( arg_node ) ) );
-			arg_node= move( konst_node );
+			konst_node.childs.push_back( ust::box</MangleGraphNode/>( take( param_node ) ) );
+			param_node= move( konst_node );
 		}
-		if( arg.is_reference )
+		if( param.is_reference )
 		{
 			var MangleGraphNode mut ref_node;
 			ref_node.prefix= "R";
-			ref_node.childs.push_back( ust::box</MangleGraphNode/>( take( arg_node ) ) );
-			arg_node= move( ref_node );
+			ref_node.childs.push_back( ust::box</MangleGraphNode/>( take( param_node ) ) );
+			param_node= move( ref_node );
 		}
 
-		res.childs.push_back( ust::box</MangleGraphNode/>( move(arg_node) ) );
+		res.childs.push_back( ust::box</MangleGraphNode/>( move(param_node) ) );
 	}
-	if( function_type.args.empty() )
+	if( function_type.params.empty() )
 	{
-		var MangleGraphNode mut empty_args_node;
-		empty_args_node.postfix= "v";
-		res.childs.push_back( ust::box</MangleGraphNode/>( move( empty_args_node ) ) );
+		var MangleGraphNode mut empty_params_node;
+		empty_params_node.postfix= "v";
+		res.childs.push_back( ust::box</MangleGraphNode/>( move( empty_params_node ) ) );
 	}
 
 	var ust::string8 mut str= "_Z";
