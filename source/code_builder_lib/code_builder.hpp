@@ -810,8 +810,7 @@ private:
 	ProgramStringMap< ClassProxyPtr > template_classes_cache_;
 
 	// We needs to generate same typeinfo classes for same types. Use cache for it.
-	// TODO - create hasher for type and use unordered_map.
-	std::list< std::pair< Type, Variable > > typeinfo_cache_;
+	std::unordered_map< Type, Variable, TypeHasher > typeinfo_cache_;
 	ClassTable typeinfo_class_table_;
 
 	// Names map for generated template types/functions. We can not insert it in regular namespaces, because we needs insert it, while iterating regular namespaces.

@@ -78,13 +78,12 @@ Variable FinalizeTypeinfoList( llvm::LLVMContext& llvm_context, std::vector<Type
 
 Variable CodeBuilder::BuildTypeInfo( const Type& type, NamesScope& root_namespace )
 {
-	// Search in cache.
-	for( const auto& cache_value : typeinfo_cache_ )
-		if( cache_value.first == type )
-			return cache_value.second;
+	if( const auto it= typeinfo_cache_.find( type ); it != typeinfo_cache_.end() )
+		return it->second;
 
-	typeinfo_cache_.push_back( std::make_pair( type, BuildTypeinfoPrototype( type, root_namespace ) ) );
-	return typeinfo_cache_.back().second;
+	Variable var= BuildTypeinfoPrototype( type, root_namespace );
+	typeinfo_cache_.emplace( type, var );
+	return var;
 }
 
 ClassProxyPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Type& src_type, std::string name )
@@ -108,8 +107,6 @@ ClassProxyPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, cons
 
 Variable CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope& root_namespace )
 {
-	U_UNUSED(type);
-
 	const ClassProxyPtr typeinfo_class_proxy= CreateTypeinfoClass( root_namespace, type, g_typeinfo_root_class_name );
 	Variable result( typeinfo_class_proxy, Variable::Location::Pointer, ValueType::ConstReference );
 

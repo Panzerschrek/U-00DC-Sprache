@@ -1,3 +1,7 @@
+#include "../compilers_common/push_disable_llvm_warnings.hpp"
+#include <llvm/ADT/Hashing.h>
+#include "../compilers_common/pop_llvm_warnings.hpp"
+
 #include "../lex_synt_lib/assert.hpp"
 #include "../lex_synt_lib/keywords.hpp"
 #include "class.hpp"
@@ -696,6 +700,76 @@ std::string Type::ToString() const
 	};
 
 	return std::visit( Visitor(), something_ );
+}
+
+size_t Type::Hash() const
+{
+	struct Visitor final
+	{
+		size_t operator()( const FundamentalType& fundamental ) const
+		{
+			return size_t(fundamental.fundamental_type);
+		}
+
+		size_t operator()( const FunctionPtr& function ) const
+		{
+			return ProcessFunctionType( *function );
+		}
+
+		size_t operator()( const ArrayPtr& array ) const
+		{
+			return llvm::hash_combine( array->type.Hash(), array->size );
+		}
+
+		size_t operator()( const Tuple& tuple ) const
+		{
+			size_t hash= 0;
+			for( const Type& element : tuple.elements )
+				hash= llvm::hash_combine( hash, element.Hash() );
+			return hash;
+		}
+
+		size_t operator()( const ClassProxyPtr& class_ ) const
+		{
+			return size_t(reinterpret_cast<uintptr_t>(class_.get()));
+		}
+
+		size_t operator()( const EnumPtr& enum_ ) const
+		{
+			return size_t(reinterpret_cast<uintptr_t>(enum_));
+		}
+
+		size_t operator()( const FunctionPointerPtr& function_pointer ) const
+		{
+			return ProcessFunctionType( function_pointer->function );
+		}
+
+	private:
+		size_t ProcessFunctionType( const Function& function ) const
+		{
+			size_t hash= 0;
+			for( const Function::Arg& arg : function.args )
+				hash= llvm::hash_combine( hash, arg.type.Hash(), arg.is_reference, arg.is_mutable );
+
+			hash=
+				llvm::hash_combine(
+					hash,
+					function.return_type.Hash(),
+					function.return_value_is_reference,
+					function.return_value_is_mutable,
+					function.unsafe );
+
+			for( const Function::ArgReference& arg_reference : function.return_references )
+				hash= llvm::hash_combine( hash, arg_reference );
+
+			for( const Function::ReferencePollution& reference_pollution : function.references_pollution )
+				hash= llvm::hash_combine( hash, reference_pollution.dst, reference_pollution.src );
+
+			return hash;
+		}
+	};
+
+	return llvm::hash_combine( something_.index(), std::visit( Visitor(), something_ ) );
 }
 
 bool operator==( const Type& l, const Type& r )

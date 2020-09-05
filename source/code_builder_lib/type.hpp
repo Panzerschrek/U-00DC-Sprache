@@ -127,6 +127,8 @@ public:
 	// Convert type name to human-readable format.
 	std::string ToString() const;
 
+	size_t Hash() const;
+
 private:
 	friend bool operator==( const Type&, const Type&);
 
@@ -213,6 +215,11 @@ struct FunctionPointer
 
 bool operator==( const FunctionPointer& l, const FunctionPointer& r );
 bool operator!=( const FunctionPointer& l, const FunctionPointer& r );
+
+struct TypeHasher
+{
+	size_t operator()(const Type& t) const { return t.Hash(); }
+};
 
 } //namespace CodeBuilderLLVMPrivate
 
