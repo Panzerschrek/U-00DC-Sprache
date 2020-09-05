@@ -24,12 +24,110 @@ import "mangling.uh"
 	}
 ?>
 
+?macro <? ADD_SIZE_FIELD:block( ?name:expr, ?value:expr ) ?>
+->
+<?
+	{
+		var ClassField mut class_field
+		{
+			.t= size_type_,
+			.is_mutable= true,
+			.is_reference= false,
+			.index= fields_llvm_types.size(),
+			.syntax_element= dummy_syntax_element,
+		};
+
+		fields_llvm_types.push_back( class_field.t.GetLLVMType() );
+
+		unsafe{  fields_initializers.push_back( LLVMConstInt( class_field.t.GetLLVMType(), u64(?value), LLVMBool::True ) );  }
+
+		auto mut members_lock= class_members.lock_mut();
+		members_lock.get_ref().AddName( ?name, move(class_field) );
+	}
+?>
+
+?macro <? ADD_TYPEINFO_FIELD:block( ?name:expr, ?dependent_type:expr ) ?>
+->
+<?
+	{
+		auto dependent_type_typeinfo= GetTypeinfoPrototype( ?dependent_type, ust::to_non_nullable(class_members.lock_imut().get_ref().GetParent()) );
+		BuildFullTypeinfo( ?dependent_type ); // TODO - remove this, build full typeinfo lazily.
+		var ClassField mut class_field
+		{
+			.t= dependent_type_typeinfo.t,
+			.is_mutable= false,
+			.is_reference= true,
+			.index= fields_llvm_types.size(),
+			.syntax_element= dummy_syntax_element,
+		};
+
+		unsafe{  fields_llvm_types.push_back( LLVMPointerType( class_field.t.GetLLVMType(), 0u ) );  }
+
+		fields_initializers.push_back( dependent_type_typeinfo.llvm_value );
+
+		auto mut members_lock= class_members.lock_mut();
+		members_lock.get_ref().AddName( ?name, move(class_field) );
+	}
+?>
+
 namespace U
 {
 
 fn CodeBuilder::BuildTypeinfo( mut this, Type& t, NamesScopePtr& root_namespace ) : Variable
 {
+	GetTypeinfoPrototype( t, root_namespace );
+	return BuildFullTypeinfo( t );
+}
+
+fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_namespace ) : Variable
+{
+	foreach( &entry : typeinfo_cache_ )
+	{
+		if( entry.t == t )
+		{
+			return entry.v;
+		}
+	}
+
 	var ClassTypePtr typeinfo_class= CreateTypeinfoClass( root_namespace, t, "TODO - name" );
+
+	var Variable mut v
+	{
+		.t= typeinfo_class,
+		.value_type= ValueType::ReferenceImut,
+		.location= Variable::Location::Pointer,
+	};
+
+	unsafe
+	{
+		auto llvm_type= v.t.GetLLVMType();
+		auto global_variable= LLVMAddGlobal( module_, llvm_type, "TODO - name\0"[0] );
+		LLVMSetLinkage( global_variable, LLVMLinkage::Internal );
+		LLVMSetGlobalConstant( global_variable, LLVMBool::True );
+
+		v.llvm_value= global_variable;
+		v.constexpr_value= LLVMGetUndef( llvm_type ); // llvm::Constant is immutable, so, we can create real constant only if we build comple typeinfo.
+	}
+
+	var TypeinfoStruct mut typeinfo_struct{ .t= t, .v= v };
+	typeinfo_cache_.push_back( typeinfo_struct );
+
+	return v;
+}
+
+fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
+{
+	auto mut entry_index= ~0s;
+	for( auto mut i= 0s; i < typeinfo_cache_.size(); ++i )
+	{
+		if( typeinfo_cache_[i].t == t )
+		{
+			entry_index= i;
+			break;
+		}
+	}
+
+	var ClassTypePtr typeinfo_class= typeinfo_cache_[entry_index].v.t.GetClassType().get_ref();
 	var NamesScopeMutPtr class_members= typeinfo_class.lock_imut().get_ref().members;
 
 	var ust::shared_ptr_final</ Synt::ClassField /> dummy_syntax_element( Synt::ClassField() );
@@ -44,6 +142,12 @@ fn CodeBuilder::BuildTypeinfo( mut this, Type& t, NamesScopePtr& root_namespace 
 	ADD_BOOL_FIELD( "is_class"           , !t.GetClassType          ().empty() )
 	ADD_BOOL_FIELD( "is_enum"            , !t.GetEnumType           ().empty() )
 
+	if_var( &array_type : t.GetArrayType() )
+	{
+		ADD_TYPEINFO_FIELD( "element_type", array_type.element_type )
+		ADD_SIZE_FIELD( "element_count", array_type.element_count )
+	}
+
 	{
 		auto mut class_lock= typeinfo_class.lock_mut();
 		var ClassType &mut class_= class_lock.get_ref();
@@ -53,21 +157,12 @@ fn CodeBuilder::BuildTypeinfo( mut this, Type& t, NamesScopePtr& root_namespace 
 		class_.is_complete= true;
 	}
 
-	var Variable mut v
-	{
-		.t= typeinfo_class,
-		.value_type= ValueType::ReferenceImut,
-		.location= Variable::Location::Pointer,
-	};
+	var Variable &mut v= typeinfo_cache_[entry_index].v;
 	unsafe
 	{
 		auto initializer= LLVMConstNamedStruct( v.t.GetLLVMType(), cast_imut(fields_initializers).front(), u32(fields_initializers.size()) );
-		auto global_variable= LLVMAddGlobal( module_, v.t.GetLLVMType(), "TODO - name\0"[0] );
-		LLVMSetLinkage( global_variable, LLVMLinkage::Internal );
-		LLVMSetGlobalConstant( global_variable, LLVMBool::True );
-		LLVMSetInitializer( global_variable, initializer );
+		LLVMSetInitializer( v.llvm_value, initializer );
 
-		v.llvm_value= global_variable;
 		v.constexpr_value= initializer;
 	}
 

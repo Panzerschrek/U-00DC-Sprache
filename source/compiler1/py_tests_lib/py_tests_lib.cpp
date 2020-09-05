@@ -347,6 +347,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 
 	static const std::unordered_set<std::string> c_test_to_enable
 	{
+		"ArrayTypesInfo_Test0",
 		"AutoVariableInitialization_UsingFunctionPointer_Test0",
 		"BaseClassForInterface_Test0",
 		"BindingConstReferenceToNonconstReference_InFunctionPointerCall_Test0",

@@ -484,6 +484,8 @@ private:
 
 	// Typeinfo
 	fn BuildTypeinfo( mut this, Type& t, NamesScopePtr& root_namespace ) : Variable;
+	fn GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_namespace ) : Variable;
+	fn BuildFullTypeinfo( mut this, Type& t ) : Variable;
 	fn CreateTypeinfoClass( this, NamesScopePtr& root_namespace, Type& src_type, ust::string8& name ) : ClassTypePtr;
 
 	// Virtual stuff
@@ -656,6 +658,10 @@ private:
 	ust::vector</ ClassTypePtr /> current_class_table_;
 
 	ust::unordered_map</ ust::string8, NamesScopePtr /> generated_template_things_;
+
+	// TODO - use unorederd_map
+	struct TypeinfoStruct{ Type t; Variable v; }
+	ust::vector</TypeinfoStruct/> typeinfo_cache_;
 
 	LLVMValueRef halt_function_= LLVMValueRef::Null;
 }
