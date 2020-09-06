@@ -264,7 +264,22 @@ fn MangleTypeImpl( Type& t ) : MangleGraphNode
 		auto class_members_lock= class_members.lock_imut();
 		auto& class_members_ref= class_members_lock.get_ref();
 
-		if( !class_type.base_template.empty() )
+		if( !class_type.typeinfo_src_type_.empty() )
+		{
+			var MangleGraphNode mut name_node;
+			var ust::string8 class_name= class_type.members.lock_imut().get_ref().GetThisNamespaceName();
+			name_node.postfix= ust::to_string8( class_name.size() ) + class_name;
+
+			var TemplateArgsFinished mut typeinfo_args;
+			typeinfo_args.push_back( class_type.typeinfo_src_type_.get_ref() );
+			var MangleGraphNode mut args_node= MangleTemplateArgsImpl( typeinfo_args );
+
+			var MangleGraphNode mut res;
+			res.childs.push_back( ust::box</MangleGraphNode/>( move( name_node ) ) );
+			res.childs.push_back( ust::box</MangleGraphNode/>( move( args_node ) ) );
+			return move(res);
+		}
+		else if( !class_type.base_template.empty() )
 		{
 			auto mut res= GetTemplateClassName( class_type );
 

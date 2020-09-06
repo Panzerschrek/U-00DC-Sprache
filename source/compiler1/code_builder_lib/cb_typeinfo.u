@@ -72,6 +72,15 @@ import "mangling.uh"
 namespace U
 {
 
+// Use reserved by language names, started with "_".
+auto& g_typeinfo_root_class_name= "_TI";
+
+// Returns null-terminated string.
+fn GetTypeinfoVariableName( ClassTypePtr& typeinfo_class ) : ust::string8
+{
+	return "_val_of_" + MangleType(typeinfo_class);
+}
+
 fn CodeBuilder::BuildTypeinfo( mut this, Type& t, NamesScopePtr& root_namespace ) : Variable
 {
 	GetTypeinfoPrototype( t, root_namespace );
@@ -88,7 +97,7 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 		}
 	}
 
-	var ClassTypePtr typeinfo_class= CreateTypeinfoClass( root_namespace, t, "typeinfo type for " + MangleType(t) );
+	var ClassTypePtr typeinfo_class= CreateTypeinfoClass( root_namespace, t, g_typeinfo_root_class_name );
 
 	var Variable mut v
 	{
@@ -100,7 +109,7 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 	unsafe
 	{
 		auto llvm_type= v.t.GetLLVMType();
-		auto global_variable= LLVMAddGlobal( module_, llvm_type, ( "typeinfo value for " + MangleType(t) ).front() );
+		auto global_variable= LLVMAddGlobal( module_, llvm_type, GetTypeinfoVariableName( typeinfo_class ).front() );
 		LLVMSetLinkage( global_variable, LLVMLinkage::Internal );
 		LLVMSetGlobalConstant( global_variable, LLVMBool::True );
 
@@ -281,10 +290,17 @@ fn CodeBuilder::CreateTypeinfoClass( this, NamesScopePtr& root_namespace, Type& 
 		.typeinfo_src_type_(src_type),
 	};
 
-	unsafe{  class_type.llvm_type= LLVMStructCreateNamed( llvm_context_, name.front() );  }
+	var ClassTypePtr mut class_type_ptr( move(class_type) );
 
-	return ClassTypePtr( class_type );
+	auto name_mangled= MangleType( class_type_ptr );
+
+	unsafe
+	{
+		auto mut lock= class_type_ptr.lock_mut();
+		lock.get_ref().llvm_type= LLVMStructCreateNamed( llvm_context_, name_mangled.front() );
+	}
+
+	return move(class_type_ptr);
 }
-
 
 } // namespace U
