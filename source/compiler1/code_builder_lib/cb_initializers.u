@@ -133,6 +133,67 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		}
 		return LLVMValueRef::Null;
 	}
+	if_var( tuple_type : variable.t.GetTupleType() )
+	{
+		if( sequence_initializer.elements_initializers.size() != tuple_type.element_types.size() )
+		{
+			REPORT_ERROR( TupleInitializersCountMismatch,
+				names_scope,
+				sequence_initializer.file_pos,
+				tuple_type.element_types.size(),
+				sequence_initializer.elements_initializers.size() )
+			return LLVMValueRef::Null;
+		}
+
+		auto mut is_constant= variable.t.CanBeConstexpr();
+		var ust::vector</ LLVMValueRef /> mut elements_constants;
+
+		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
+		{
+			var NamesScopeVariable mut element_variable{ .t= tuple_type.element_types[i] };
+			unsafe
+			{
+				var [ LLVMValueRef, 2 ] indexes
+				[
+					GetZeroGEPIndex(),
+					LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
+				];
+
+				element_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] );
+			}
+
+			auto element_constant= BuildInitializer( names_scope, function_context, element_variable, sequence_initializer.elements_initializers[i].get_ref() );
+
+			if( is_constant )
+			{
+				if( element_constant == LLVMValueRef::Null )
+				{
+					is_constant= false;
+				}
+				else
+				{
+					elements_constants.push_back( element_constant );
+				}
+			}
+		}
+
+		if( is_constant )
+		{
+			halt if( elements_constants.size() != tuple_type.element_types.size() ); // TODO - replace with assert
+			unsafe
+			{
+				if( elements_constants.empty() )
+				{
+					return LLVMConstStruct( LLVMValueRef::Null, 0u, LLVMBool::False );
+				}
+				else
+				{
+					return LLVMConstStruct( cast_imut(elements_constants).front(), u32(elements_constants.size()), LLVMBool::False );
+				}
+			}
+		}
+		return LLVMValueRef::Null;
+	}
 
 	REPORT_ERROR( ArrayInitializerForNonArray, names_scope, sequence_initializer.file_pos )
 	return LLVMValueRef::Null;

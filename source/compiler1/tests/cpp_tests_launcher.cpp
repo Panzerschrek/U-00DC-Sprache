@@ -39,6 +39,8 @@ bool FilterTest( const std::string& test_name )
 	static const std::unordered_set<std::string> c_test_to_enable
 	{
 		"ArrayAsClassTemplateParameter_Test0",
+		"ArrayInitializer_ForTuples_Test0",
+		"ArrayInitializer_ForTuples_Test2",
 		"BracketExpressionAsTemplateSignatureParameter_Test0",
 		"ClassBodyDuplicationTest0",
 		"ClassmethodsManglingTest",
