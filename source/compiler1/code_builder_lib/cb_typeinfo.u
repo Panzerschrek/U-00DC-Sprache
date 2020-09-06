@@ -186,6 +186,18 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 		ADD_TYPEINFO_FIELD( "element_type", array_type.element_type )
 		ADD_SIZE_FIELD( "element_count", array_type.element_count )
 	}
+	if_var( &function_type : t.GetFunctionType() )
+	{
+		ADD_TYPEINFO_FIELD( "return_type", function_type.return_type )
+		ADD_BOOL_FIELD( "return_value_is_reference", function_type.return_value_is_reference )
+		ADD_BOOL_FIELD( "return_value_is_mutable"  , function_type.return_value_is_mutable )
+		ADD_BOOL_FIELD( "unsafe"                   , function_type.is_unsafe )
+		// SPRACHE_TODO - add also reference pollution.
+	}
+	if_var( &function_pointer_type : t.GetFunctionPointerType() )
+	{
+		ADD_TYPEINFO_FIELD( "element_type", function_pointer_type.function_type )
+	}
 
 	{
 		auto mut class_lock= typeinfo_class.lock_mut();

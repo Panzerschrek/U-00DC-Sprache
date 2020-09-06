@@ -163,6 +163,19 @@ def ArrayTypesInfo_Test0():
 	tests_lib.build_program( c_program_text )
 
 
+def FunctionPointerTypesInfo_Test0():
+	c_program_text= """
+		type FnPtr = (fn() : f32);
+		fn Foo()
+		{
+			static_assert( typeinfo</FnPtr/>.is_function_pointer );
+			static_assert( typeinfo</FnPtr/>.element_type.is_function );
+			static_assert( typeinfo</FnPtr/>.element_type.return_type.is_float );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def ClassTypesInfo_Test0():
 	c_program_text= """
 		struct S{}
