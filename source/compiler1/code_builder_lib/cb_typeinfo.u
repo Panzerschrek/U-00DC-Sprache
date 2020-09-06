@@ -170,6 +170,17 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 	ADD_BOOL_FIELD( "is_copy_constructible"   , t.IsCopyConstructible()    )
 	ADD_BOOL_FIELD( "is_copy_assignable"      , t.IsCopyAssignable()       )
 
+	if_var( &fundamental_type : t.GetFundamentalType() )
+	{
+		ADD_BOOL_FIELD( "is_integer"         , IsInteger        ( fundamental_type.fundamental_type ) )
+		ADD_BOOL_FIELD( "is_numeric"         , IsNumericType    ( fundamental_type.fundamental_type ) )
+		ADD_BOOL_FIELD( "is_signed_integer"  , IsSignedInteger  ( fundamental_type.fundamental_type ) )
+		ADD_BOOL_FIELD( "is_unsigned_integer", IsUnsignedInteger( fundamental_type.fundamental_type ) )
+		ADD_BOOL_FIELD( "is_float"           , IsFloatingPoint  ( fundamental_type.fundamental_type ) )
+		ADD_BOOL_FIELD( "is_char"            , IsChar           ( fundamental_type.fundamental_type ) )
+		ADD_BOOL_FIELD( "is_bool"            , fundamental_type.fundamental_type == U_FundamentalType::bool_ )
+		ADD_BOOL_FIELD( "is_void"            , fundamental_type.fundamental_type == U_FundamentalType::void_ )
+	}
 	if_var( &array_type : t.GetArrayType() )
 	{
 		ADD_TYPEINFO_FIELD( "element_type", array_type.element_type )

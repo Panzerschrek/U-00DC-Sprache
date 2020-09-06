@@ -429,6 +429,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"FunctionTypeDeclaration_Test2",
 		"FunctionTypeDeclaration_Test3",
 		"FunctionTypeDeclaration_Test4",
+		"FundamentalTypesInfo_Test0",
 		"GeneratedCopyConstructor_Test0",
 		"IncompleteMemberOfClassTemplate_ForFunctionTemplates_Test0",
 		"Int128_Test0",
