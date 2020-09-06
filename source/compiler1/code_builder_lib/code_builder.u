@@ -2391,6 +2391,15 @@ fn CodeBuilder::EnsureTypeComplete( mut this, Type& t ) : bool
 	{
 		return EnsureTypeComplete( array_type.element_type );
 	}
+	if_var( &tuple_type : t.GetTupleType() )
+	{
+		var bool mut ok= true;
+		foreach( &element_type : tuple_type.element_types )
+		{
+			ok&= EnsureTypeComplete( element_type );
+		}
+		return ok;
+	}
 
 	return true;
 }
