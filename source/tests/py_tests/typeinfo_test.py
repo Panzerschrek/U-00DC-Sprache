@@ -415,7 +415,10 @@ def TypeinfoForIncompleteType_Test1():
 		struct S;
 		fn Foo() { typeinfo</S/>; } // Here typeinfo is incomplete.
 	"""
-	tests_lib.build_program( c_program_text )
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "UsingIncompleteType" )
+	assert( errors_list[0].file_pos.line == 3 )
 
 
 def TypeinfoForIncompleteTypeIsIncomplete_Test0():
@@ -428,8 +431,7 @@ def TypeinfoForIncompleteTypeIsIncomplete_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "UsingIncompleteType" )
-	#assert( errors_list[0].file_pos.line == 5 )
+	assert( HaveError( errors_list, "UsingIncompleteType", 5 ) or errors_list[0].error_code == "UsingIncompleteType" )
 
 
 def TypeinfoForIncompleteTypeIsIncomplete_Test1():
@@ -442,8 +444,7 @@ def TypeinfoForIncompleteTypeIsIncomplete_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "UsingIncompleteType" )
-	#assert( errors_list[0].file_pos.line == 5 )
+	assert( HaveError( errors_list, "UsingIncompleteType", 5 ) or errors_list[0].error_code == "UsingIncompleteType" )
 
 
 def TypeinfoFieldsDependsOnTypeKind_Test0():

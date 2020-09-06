@@ -482,6 +482,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TypeinfoCalssIsSameForSameTypes_Test0",
 		"TypeinfoForIncompleteType_Test0",
 		"TypeinfoForIncompleteType_Test1",
+		"TypeinfoForIncompleteTypeIsIncomplete_Test0",
+		"TypeinfoForIncompleteTypeIsIncomplete_Test1",
 		"TypeInfoOperator_Test0",
 		"TypeKindFields_Test0",
 		"TypeNameInErrorMessage_ClassTemplate_Test0",
