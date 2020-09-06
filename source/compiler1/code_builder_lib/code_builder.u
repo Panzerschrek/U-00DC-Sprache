@@ -107,6 +107,21 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 	{
 		auto t= typeinfo_cache_[i].t;
 		BuildFullTypeinfo(t);
+
+		// TODO - maybe mark incomplete typeinfo structs as "external" instead?
+		unsafe
+		{
+			auto llvm_type= typeinfo_cache_[i].v.t.GetLLVMType();
+			if( LLVMIsOpaqueStruct( llvm_type ) == LLVMBool::True )
+			{
+				auto dummy_type= LLVMTypeRef::Null;
+				LLVMStructSetBody( llvm_type, dummy_type, 0u, LLVMBool::False );
+
+				auto dummy_constant= LLVMValueRef::Null;
+				auto initializer= LLVMConstNamedStruct( llvm_type, dummy_constant, 0u );
+				LLVMSetInitializer( typeinfo_cache_[i].v.llvm_value, initializer );
+			}
+		}
 	}
 
 	unsafe{  LLVMDeleteFunction( global_llvm_function_ );  }
