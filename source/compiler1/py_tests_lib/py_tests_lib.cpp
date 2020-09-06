@@ -400,6 +400,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"EnabledFunction_Test0",
 		"EnabledFunction_Test1",
 		"EnumAsConstexprStructMember_Test0",
+		"EnumTypesInfo_Test0",
 		"ErrorsTest0",
 		"ErrorsTest1",
 		"ExpectedConstantExpression_ForEnableIf_Test0",
