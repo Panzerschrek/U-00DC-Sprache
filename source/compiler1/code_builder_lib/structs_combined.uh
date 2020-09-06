@@ -47,6 +47,15 @@ struct ArrayType
 	op!=( ArrayType& l, ArrayType& r ) : bool;
 }
 
+struct TupleType
+{
+	ust::vector</ Type /> element_types;
+	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
+
+	op==( TupleType& l, TupleType& r ) : bool;
+	op!=( TupleType& l, TupleType& r ) : bool;
+}
+
 struct FunctionType
 {
 	struct Param
@@ -166,6 +175,7 @@ public:
 
 	fn conversion_constructor( FundamentalType mut fundamental_type );
 	fn conversion_constructor( ArrayType mut array_type );
+	fn conversion_constructor( TupleType mut tuple_type );
 	fn conversion_constructor( FunctionType mut function_type );
 	fn conversion_constructor( FunctionPointerType mut function_pointer_type );
 	fn conversion_constructor( ClassTypePtr mut class_type );
@@ -176,6 +186,9 @@ public:
 
 	fn GetArrayType(  mut this ) : ust::optional_ref</ArrayType, true  />'this';
 	fn GetArrayType( imut this ) : ust::optional_ref</ArrayType, false />'this';
+
+	fn GetTupleType(  mut this ) : ust::optional_ref</TupleType, true  />'this';
+	fn GetTupleType( imut this ) : ust::optional_ref</TupleType, false />'this';
 
 	fn GetFunctionType(  mut this ) : ust::optional_ref</FunctionType, true  />'this';
 	fn GetFunctionType( imut this ) : ust::optional_ref</FunctionType, false />'this';
@@ -209,6 +222,7 @@ private:
 	ust::variant</ tup[
 		FundamentalType,
 		ust::box</ArrayType/>,
+		ust::box</TupleType/>,
 		ust::box</FunctionType/>,
 		ust::box</FunctionPointerType/>,
 		ClassTypePtr,

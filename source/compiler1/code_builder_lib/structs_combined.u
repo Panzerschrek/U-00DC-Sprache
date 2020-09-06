@@ -34,6 +34,26 @@ fn ToString( ArrayType& array_type ) : ust::string8
 	return move(result);
 }
 
+fn ToString( TupleType& tuple_type ) : ust::string8
+{
+	var ust::string8 mut result;
+	result+= KeywordToString( Keyword::tup_ );
+	result+= "[ ";
+
+	foreach( &element_type : tuple_type.element_types )
+	{
+		result+= element_type.ToString();
+		if( ust::ref_to_int(element_type) != ust::ref_to_int(tuple_type.element_types.back()) )
+		{
+			result+= ", ";
+		}
+	}
+
+	result+= " ]";
+	return move(result);
+}
+
+
 fn ToString( FunctionType& function_type ) : ust::string8
 {
 	var ust::string8 mut result;
@@ -127,6 +147,29 @@ op ArrayType::==( ArrayType& l, ArrayType& r ) : bool
 }
 
 op ArrayType::!=( ArrayType& l, ArrayType& r ) : bool
+{
+	return !(l == r);
+}
+
+op TupleType::==( TupleType& l, TupleType& r ) : bool
+{
+	if( l.element_types.size() != r.element_types.size() )
+	{
+		return false;
+	}
+
+	for( auto mut i= 0s; i < l.element_types.size(); ++i )
+	{
+		if( l.element_types[i] != r.element_types[i] )
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+op TupleType::!=( TupleType& l, TupleType& r ) : bool
 {
 	return !(l == r);
 }
@@ -225,6 +268,11 @@ op Type::=( mut this, Type &imut other )
 		this= Type( array_type );
 		return;
 	}
+	if_var( &tuple_type : other.GetTupleType() )
+	{
+		this= Type( tuple_type );
+		return;
+	}
 	if_var( &function_type : other.GetFunctionType() )
 	{
 		this= Type( function_type );
@@ -255,6 +303,10 @@ fn Type::conversion_constructor( FundamentalType mut fundamental_type )
 
 fn Type::conversion_constructor( ArrayType mut array_type )
 	( something_( ust::box</ArrayType/>(move(array_type)) ) )
+{}
+
+fn Type::conversion_constructor( TupleType mut tuple_type )
+	( something_( ust::box</TupleType/>(move(tuple_type)) ) )
 {}
 
 fn Type::conversion_constructor( FunctionType mut function_type )
@@ -301,6 +353,26 @@ fn Type::GetArrayType( imut this ) : ust::optional_ref</ArrayType, false />'this
 	}
 
 	return ust::optional_ref</ArrayType, false />();
+}
+
+fn Type::GetTupleType(  mut this ) : ust::optional_ref</TupleType, true  />'this'
+{
+	if_var( &mut b : something_.get</ust::box</TupleType/>/>() )
+	{
+		return ust::optional_ref</TupleType, true  />( b.get_ref() );
+	}
+
+	return ust::optional_ref</TupleType, true  />();
+}
+
+fn Type::GetTupleType( imut this ) : ust::optional_ref</TupleType, false />'this'
+{
+	if_var( &b : something_.get</ust::box</TupleType/>/>() )
+	{
+		return ust::optional_ref</TupleType, false />( b.get_ref() );
+	}
+
+	return ust::optional_ref</TupleType, false />();
 }
 
 fn Type::GetFunctionType(  mut this ) : ust::optional_ref</FunctionType, true  />'this'
@@ -373,6 +445,10 @@ fn Type::GetLLVMType( this ) : LLVMTypeRef
 	{
 		return array_type.llvm_type;
 	}
+	if_var( &tuple_type : GetTupleType() )
+	{
+		return tuple_type.llvm_type;
+	}
 	if_var( &function_type : GetFunctionType() )
 	{
 		return function_type.llvm_type;
@@ -399,6 +475,17 @@ fn Type::IsDefaultConstructible( this ) : bool
 	{
 		return array_type.element_count == 0u64 || array_type.element_type.IsDefaultConstructible();
 	}
+	if_var( &tuple_type : GetTupleType() )
+	{
+		foreach( &element_type : tuple_type.element_types )
+		{
+			if( !element_type.IsDefaultConstructible() )
+			{
+				return false;
+			}
+		}
+		return true;
+	}
 	if_var( &class_type : GetClassType() )
 	{
 		return class_type.lock_imut().get_ref().is_default_constructible;
@@ -415,6 +502,17 @@ fn Type::IsCopyConstructible( this ) : bool
 	if_var( &array_type : GetArrayType() )
 	{
 		return array_type.element_count == 0u64 || array_type.element_type.IsCopyConstructible();
+	}
+	if_var( &tuple_type : GetTupleType() )
+	{
+		foreach( &element_type : tuple_type.element_types )
+		{
+			if( !element_type.IsCopyConstructible() )
+			{
+				return false;
+			}
+		}
+		return true;
 	}
 	if_var( &class_type : GetClassType() )
 	{
@@ -433,6 +531,17 @@ fn Type::IsCopyAssignable( this ) : bool
 	{
 		return array_type.element_count == 0u64 || array_type.element_type.IsCopyAssignable();
 	}
+	if_var( &tuple_type : GetTupleType() )
+	{
+		foreach( &element_type : tuple_type.element_types )
+		{
+			if( !element_type.IsCopyAssignable() )
+			{
+				return false;
+			}
+		}
+		return true;
+	}
 	if_var( &class_type : GetClassType() )
 	{
 		return class_type.lock_imut().get_ref().is_copy_assignable;
@@ -450,6 +559,17 @@ fn Type::CanBeConstexpr( this ) : bool
 	{
 		return array_type.element_type.CanBeConstexpr();
 	}
+	if_var( &tuple_type : GetTupleType() )
+	{
+		foreach( &element_type : tuple_type.element_types )
+		{
+			if( !element_type.CanBeConstexpr() )
+			{
+				return false;
+			}
+		}
+		return true;
+	}
 	if_var( &class_type : GetClassType() )
 	{
 		return class_type.lock_imut().get_ref().can_be_constexpr;
@@ -463,6 +583,17 @@ fn Type::IsAbstract( this ) : bool
 	if_var( &array_type : GetArrayType() )
 	{
 		return array_type.element_count > 0u64 && array_type.element_type.IsAbstract();
+	}
+	if_var( &tuple_type : GetTupleType() )
+	{
+		foreach( &element_type : tuple_type.element_types )
+		{
+			if( element_type.IsAbstract() )
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 	if_var( &class_type : GetClassType() )
 	{
@@ -521,6 +652,7 @@ op Type::==( Type& l, Type& r ) : bool
 	{
 		static_if(
 			ust::is_same_type</ typeof(l_t), ust::box</ArrayType/> />() ||
+			ust::is_same_type</ typeof(l_t), ust::box</TupleType/> />() ||
 			ust::is_same_type</ typeof(l_t), ust::box</FunctionType/> />() ||
 			ust::is_same_type</ typeof(l_t), ust::box</FunctionPointerType/> />() )
 		{
