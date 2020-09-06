@@ -360,6 +360,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"CharLiteral_Test3",
 		"CharLiteralIsConstantValue_Test0",
 		"ClassHaveNoCopyAssignementOperatorByDefault_Test0",
+		"ClassTypesInfo_Test0",
+		"ClassTypesInfo_Test1",
 		"ConstexprHalt_Test0",
 		"ConstructingAbstractClassOrInterface_Test0",
 		"ConstructingAbstractClassOrInterface_Test1",

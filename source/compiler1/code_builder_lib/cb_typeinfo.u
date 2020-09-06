@@ -198,6 +198,50 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 	{
 		ADD_TYPEINFO_FIELD( "element_type", function_pointer_type.function_type )
 	}
+	if_var( &class_ptr : t.GetClassType() )
+	{
+		auto lock= class_ptr.lock_imut();
+		var ClassType& class_= lock.get_ref();
+
+		var bool is_polymorph=
+			class_.kind == ClassType::Kind::Interface ||
+			class_.kind == ClassType::Kind::Abstract ||
+			class_.kind == ClassType::Kind::PolymorphNonFinal ||
+			class_.kind == ClassType::Kind::PolymorphFinal;
+
+		// TODO - maybe count also inheretid fields?
+		auto mut field_count= 0s;
+		foreach( &member : class_.members.lock_imut().get_ref().GetInternalContainer() )
+		{
+			if( !member.value().Get</ClassField/>().empty() )
+			{
+				++field_count;
+			}
+		}
+
+		ADD_SIZE_FIELD( "field_count", field_count )
+		ADD_SIZE_FIELD( "parent_count", class_.parents.size() )
+
+		if( is_polymorph )
+		{
+			// TODO - add polymorph type id
+		}
+
+		ADD_BOOL_FIELD( "is_struct", class_.kind == ClassType::Kind::Struct )
+		ADD_BOOL_FIELD( "is_polymorph", is_polymorph )
+		ADD_BOOL_FIELD( "is_final",
+			class_.kind == ClassType::Kind::Struct ||
+			class_.kind == ClassType::Kind::NonPolymorph ||
+			class_.kind == ClassType::Kind::PolymorphFinal )
+		ADD_BOOL_FIELD( "is_abstract",
+			class_.kind == ClassType::Kind::Abstract ||
+			class_.kind == ClassType::Kind::Interface )
+
+		ADD_BOOL_FIELD( "is_interface", class_.kind == ClassType::Kind::Interface )
+
+		ADD_BOOL_FIELD( "is_typeinfo", !class_.typeinfo_src_type_.empty() )
+		ADD_BOOL_FIELD( "shared", false ) // TODO
+	}
 	if_var( &enum_ptr : t.GetEnumType() )
 	{
 		auto lock= enum_ptr.lock_imut();
