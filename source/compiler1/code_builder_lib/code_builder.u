@@ -2138,9 +2138,9 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			}
 			else
 			{
-				if( !out_arg.t.GetClassType().empty() )
+				if( !out_arg.t.GetClassType().empty() || !out_arg.t.GetTupleType().empty() )
 				{
-					// Non-fundamentals are passed by reference.
+					// Aggregate types are passed by reference.
 					unsafe
 					{
 						auto arg_value= LLVMGetParam( func_variable.llvm_function, first_llvm_arg + arg_n );

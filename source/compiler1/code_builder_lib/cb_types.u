@@ -195,8 +195,8 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 		}
 		else
 		{
-			// Pass non-fundamental types by-reference
-			if( !param.t.GetClassType().empty() )
+			// Pass aggregate types by-reference.
+			if( !param.t.GetClassType().empty() || !param.t.GetTupleType().empty() )
 			{
 				unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  }
 			}

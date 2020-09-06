@@ -1962,7 +1962,7 @@ fn CodeBuilder::DoCallFunction(
 				return ErrorValue();
 			}
 
-			if( !arg.t.GetClassType().empty() )
+			if( !arg.t.GetClassType().empty() || !arg.t.GetTupleType().empty() )
 			{
 				auto mut var_copy= LLVMValueRef::Null;
 				unsafe
@@ -1971,7 +1971,7 @@ fn CodeBuilder::DoCallFunction(
 				}
 
 				auto mut value_for_copy= CreateReferenceCast( arg.llvm_value, arg.t, expected_arg_type, function_context );
-				TryCallCopyConstructor( names_scope, function_context, var_copy, value_for_copy, expected_arg_type.GetClassType().get_ref(), file_pos );
+				BuildCopyConstructorPart( names_scope, function_context, var_copy, value_for_copy, expected_arg_type, file_pos );
 
 				llvm_arg= var_copy;
 			}
