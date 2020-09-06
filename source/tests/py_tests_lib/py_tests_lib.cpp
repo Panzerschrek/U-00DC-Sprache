@@ -397,7 +397,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 
 	static const std::unordered_set<std::string> c_tests_to_ignore
 	{
-		"TypeinfoForIncompleteType_Test1",
 	};
 
 	if( c_tests_to_ignore.count(func_name) > 0 )

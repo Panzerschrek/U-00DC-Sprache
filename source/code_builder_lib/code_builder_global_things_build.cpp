@@ -368,15 +368,9 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 		if( completeness <= TypeCompleteness::ReferenceTagsComplete )
 			return;
 
-		for( auto& typeinfo_cache_entry : typeinfo_cache_ )
-		{
-			if( typeinfo_cache_entry.second.type == class_type )
-			{
-				BuildFullTypeinfo( typeinfo_cache_entry.first, typeinfo_cache_entry.second, *class_type->class_->members.GetRoot() );
-				return;
-			}
-		}
-		U_ASSERT(false);
+		const Type& type= *the_class.typeinfo_type;
+		BuildFullTypeinfo( type, typeinfo_cache_[type], *class_type->class_->members.GetRoot() );
+		return;
 	}
 
 	const Synt::Class& class_declaration= *the_class.syntax_element;
