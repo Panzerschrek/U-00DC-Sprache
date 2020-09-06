@@ -226,6 +226,7 @@ private:
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BooleanConstant& boolean_constant ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StringLiteral& string_literal ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Typeinfo& typeinfo_ ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BracketExpression& bracket_expression ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IndexationOperator& indexation_operator ) : Value;
@@ -481,6 +482,12 @@ private:
 
 	fn TypeIsValidForTemplateVariableArgument( Type& t ) : bool;
 
+	// Typeinfo
+	fn BuildTypeinfo( mut this, Type& t, NamesScopePtr& root_namespace ) : Variable;
+	fn GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_namespace ) : Variable;
+	fn BuildFullTypeinfo( mut this, Type& t ) : Variable;
+	fn CreateTypeinfoClass( this, NamesScopePtr& root_namespace, Type& src_type, ust::string8& name ) : ClassTypePtr;
+
 	// Virtual stuff
 	fn PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr );
 	fn PrepareClassVirtualTableType( this, ClassTypePtr& class_type_ptr );
@@ -651,6 +658,10 @@ private:
 	ust::vector</ ClassTypePtr /> current_class_table_;
 
 	ust::unordered_map</ ust::string8, NamesScopePtr /> generated_template_things_;
+
+	// TODO - use unorederd_map
+	struct TypeinfoStruct{ Type t; Variable v; }
+	ust::vector</TypeinfoStruct/> typeinfo_cache_;
 
 	LLVMValueRef halt_function_= LLVMValueRef::Null;
 }

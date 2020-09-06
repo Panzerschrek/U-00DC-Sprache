@@ -61,6 +61,12 @@ struct StringLiteral
 	ust::string8 type_suffix;
 }
 
+struct Typeinfo
+{
+	FilePos file_pos;
+	TypeName type_name;
+}
+
 struct BinaryOperator
 {
 	FilePos file_pos;
@@ -127,6 +133,7 @@ type Expression= ust::variant</ tup[
 	BooleanConstant,
 	StringLiteral,
 	ComplexName,
+	Typeinfo,
 	BinaryOperator,
 	BracketExpression,
 	IndexationOperator,

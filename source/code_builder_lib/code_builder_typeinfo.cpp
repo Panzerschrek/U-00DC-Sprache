@@ -81,8 +81,8 @@ Variable CodeBuilder::BuildTypeInfo( const Type& type, NamesScope& root_namespac
 	if( const auto it= typeinfo_cache_.find( type ); it != typeinfo_cache_.end() )
 		return it->second;
 
-	Variable var= BuildTypeinfoPrototype( type, root_namespace );
-	typeinfo_cache_.emplace( type, var );
+	typeinfo_cache_.emplace( type, BuildTypeinfoPrototype( type, root_namespace ) );
+	Variable& var= typeinfo_cache_[type];
 	return var;
 }
 
@@ -127,7 +127,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 {
 	if( type != void_type_ && !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) )
 	{
-		REPORT_ERROR( UsingIncompleteType, root_namespace.GetErrors(), g_dummy_file_pos, type ); // TODO - use correct file_pos
+		// Just ignore here incomplete types, report about error while building "typeinfo" operator.
 		return;
 	}
 
@@ -135,6 +135,8 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 
 	const ClassProxyPtr typeinfo_class_proxy= typeinfo_variable.type.GetClassTypeProxy();
 	Class& typeinfo_class= *typeinfo_variable.type.GetClassType();
+	if( typeinfo_class.completeness == TypeCompleteness::Complete )
+		return;
 
 	ClassFieldsVector<llvm::Type*> fields_llvm_types;
 	ClassFieldsVector<llvm::Constant*> fields_initializers;

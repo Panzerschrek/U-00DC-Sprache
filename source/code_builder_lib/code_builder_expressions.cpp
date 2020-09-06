@@ -1183,7 +1183,19 @@ Value CodeBuilder::BuildExpressionCode(
 	if( type == invalid_type_ )
 		return ErrorValue();
 
-	return Value( BuildTypeInfo( type, *names.GetRoot() ), typeinfo.file_pos_ );
+	if( type != void_type_ && !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), typeinfo.file_pos_, type );
+		return ErrorValue();
+	}
+
+	NamesScope& root_namespace= *names.GetRoot();
+	BuildTypeInfo( type, *names.GetRoot() );
+
+	Variable& var= typeinfo_cache_[type];
+	BuildFullTypeinfo( type, var, root_namespace );
+
+	return Value( var, typeinfo.file_pos_ );
 }
 
 Value CodeBuilder::BuildBinaryOperator(
@@ -2237,26 +2249,18 @@ Value CodeBuilder::BuildPostfixOperator(
 
 	if( variable.constexpr_value != nullptr )
 	{
-		llvm::Constant* var_constexpr_value= variable.constexpr_value;
-		if( class_type->typeinfo_type != std::nullopt ) // HACK!!! Replace old constexpr value with new for typeinfo, because constexpr value for incomplete type may be undef.
-		{
-			for( const auto& typeinfo_cache_entry : typeinfo_cache_ )
-			{
-				if( typeinfo_cache_entry.second.type == variable.type )
-				{
-					var_constexpr_value= typeinfo_cache_entry.second.constexpr_value;
-					break;
-				}
-			}
-		}
-
-		result.constexpr_value= var_constexpr_value->getAggregateElement( static_cast<unsigned int>( field->index ) );
 		if( field->is_reference )
 		{
-			// TODO - what if storage for constexpr reference valus is not "GlobalVariable"?
-			llvm::GlobalVariable* const var= llvm::dyn_cast<llvm::GlobalVariable>( result.constexpr_value );
-			result.constexpr_value= var->getInitializer();
+			// Small hack for typeinfo - it's initializer initialized only if typeinfo is complete, so, make it complete before getting constexpr value for it.
+			if( EnsureTypeCompleteness( field->type, TypeCompleteness::Complete ) )
+			{
+				// TODO - what if storage for constexpr reference valus is not "GlobalVariable"?
+				const auto var= llvm::dyn_cast<llvm::GlobalVariable>( variable.constexpr_value->getAggregateElement( static_cast<unsigned int>( field->index ) ));
+				result.constexpr_value= var->getInitializer();
+			}
 		}
+		else
+			result.constexpr_value= variable.constexpr_value->getAggregateElement( static_cast<unsigned int>( field->index ) );
 	}
 
 	if( field->is_reference )

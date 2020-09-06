@@ -102,6 +102,28 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 	compiled_sources_cache_.resize( source_graph.nodes.size() );
 	BuildSourceGraphNode( errors_container, source_graph, 0s );
 
+	// Finalize incomplete typeinfo.
+	for( auto mut i= 0s; i < typeinfo_cache_.size(); ++i )
+	{
+		auto t= typeinfo_cache_[i].t;
+		BuildFullTypeinfo(t);
+
+		// TODO - maybe mark incomplete typeinfo structs as "external" instead?
+		unsafe
+		{
+			auto llvm_type= typeinfo_cache_[i].v.t.GetLLVMType();
+			if( LLVMIsOpaqueStruct( llvm_type ) == LLVMBool::True )
+			{
+				auto dummy_type= LLVMTypeRef::Null;
+				LLVMStructSetBody( llvm_type, dummy_type, 0u, LLVMBool::False );
+
+				auto dummy_constant= LLVMValueRef::Null;
+				auto initializer= LLVMConstNamedStruct( llvm_type, dummy_constant, 0u );
+				LLVMSetInitializer( typeinfo_cache_[i].v.llvm_value, initializer );
+			}
+		}
+	}
+
 	unsafe{  LLVMDeleteFunction( global_llvm_function_ );  }
 	global_llvm_function_= LLVMValueRef::Null;
 
@@ -831,13 +853,21 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 
 fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypePtr& class_type )
 {
+	if( class_type.lock_imut().get_ref().is_complete )
 	{
-		auto lock= class_type.lock_imut();
-		auto& ref= lock.get_ref();
-		if( ref.is_complete || ref.syntax_element.empty() )
+		return;
+	}
+	{
+		auto typeinfo_src_type= class_type.lock_imut().get_ref().typeinfo_src_type_;
+		if( !typeinfo_src_type.empty() )
 		{
+			BuildFullTypeinfo( typeinfo_src_type.get_ref() );
 			return;
 		}
+	}
+	if( class_type.lock_imut().get_ref().syntax_element.empty() )
+	{
+		return;
 	}
 
 	auto syntax_element_ptr= class_type.lock_imut().get_ref().syntax_element;

@@ -395,6 +395,16 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 	if( !PyArg_Parse( func_name_arg, "s", &func_name ) )
 		return nullptr; // Parse will raise
 
+	static const std::unordered_set<std::string> c_tests_to_ignore
+	{
+	};
+
+	if( c_tests_to_ignore.count(func_name) > 0 )
+	{
+		Py_INCREF(Py_False);
+		return Py_False;
+	}
+
 	Py_INCREF(Py_True);
 	return Py_True;
 }

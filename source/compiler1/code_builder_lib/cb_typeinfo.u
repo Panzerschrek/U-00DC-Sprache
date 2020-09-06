@@ -1,0 +1,306 @@
+import "../lex_synt_lib/keywords.uh"
+import "error_reporting.uh"
+import "code_builder.uh"
+import "mangling.uh"
+?macro <? ADD_BOOL_FIELD:block( ?name:expr, ?value:expr ) ?>
+->
+<?
+	{
+		var ClassField mut class_field
+		{
+			.t= bool_type_,
+			.is_mutable= true,
+			.is_reference= false,
+			.index= fields_llvm_types.size(),
+			.syntax_element= dummy_syntax_element,
+		};
+
+		fields_llvm_types.push_back( class_field.t.GetLLVMType() );
+
+		unsafe{  fields_initializers.push_back( LLVMConstInt( class_field.t.GetLLVMType(), select( ?value ? 1u64 : 0u64 ), LLVMBool::True ) );  }
+
+		auto mut members_lock= class_members.lock_mut();
+		members_lock.get_ref().AddName( ?name, move(class_field) );
+	}
+?>
+
+?macro <? ADD_SIZE_FIELD:block( ?name:expr, ?value:expr ) ?>
+->
+<?
+	{
+		var ClassField mut class_field
+		{
+			.t= size_type_,
+			.is_mutable= true,
+			.is_reference= false,
+			.index= fields_llvm_types.size(),
+			.syntax_element= dummy_syntax_element,
+		};
+
+		fields_llvm_types.push_back( class_field.t.GetLLVMType() );
+
+		unsafe{  fields_initializers.push_back( LLVMConstInt( class_field.t.GetLLVMType(), u64(?value), LLVMBool::False ) );  }
+
+		auto mut members_lock= class_members.lock_mut();
+		members_lock.get_ref().AddName( ?name, move(class_field) );
+	}
+?>
+
+?macro <? ADD_TYPEINFO_FIELD:block( ?name:expr, ?dependent_type:expr ) ?>
+->
+<?
+	{
+		auto dependent_type_typeinfo= GetTypeinfoPrototype( ?dependent_type, ust::to_non_nullable(class_members.lock_imut().get_ref().GetParent()) );
+		var ClassField mut class_field
+		{
+			.t= dependent_type_typeinfo.t,
+			.is_mutable= false,
+			.is_reference= true,
+			.index= fields_llvm_types.size(),
+			.syntax_element= dummy_syntax_element,
+		};
+
+		unsafe{  fields_llvm_types.push_back( LLVMPointerType( class_field.t.GetLLVMType(), 0u ) );  }
+
+		fields_initializers.push_back( dependent_type_typeinfo.llvm_value );
+
+		auto mut members_lock= class_members.lock_mut();
+		members_lock.get_ref().AddName( ?name, move(class_field) );
+	}
+?>
+
+namespace U
+{
+
+// Use reserved by language names, started with "_".
+auto& g_typeinfo_root_class_name= "_TI";
+
+// Returns null-terminated string.
+fn GetTypeinfoVariableName( ClassTypePtr& typeinfo_class ) : ust::string8
+{
+	return "_val_of_" + MangleType(typeinfo_class);
+}
+
+fn CodeBuilder::BuildTypeinfo( mut this, Type& t, NamesScopePtr& root_namespace ) : Variable
+{
+	GetTypeinfoPrototype( t, root_namespace );
+	return BuildFullTypeinfo( t );
+}
+
+fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_namespace ) : Variable
+{
+	foreach( &entry : typeinfo_cache_ )
+	{
+		if( entry.t == t )
+		{
+			return entry.v;
+		}
+	}
+
+	var ClassTypePtr typeinfo_class= CreateTypeinfoClass( root_namespace, t, g_typeinfo_root_class_name );
+
+	var Variable mut v
+	{
+		.t= typeinfo_class,
+		.value_type= ValueType::ReferenceImut,
+		.location= Variable::Location::Pointer,
+	};
+
+	unsafe
+	{
+		auto llvm_type= v.t.GetLLVMType();
+		auto global_variable= LLVMAddGlobal( module_, llvm_type, GetTypeinfoVariableName( typeinfo_class ).front() );
+		LLVMSetLinkage( global_variable, LLVMLinkage::Internal );
+		LLVMSetGlobalConstant( global_variable, LLVMBool::True );
+
+		v.llvm_value= global_variable;
+		v.constexpr_value= LLVMGetUndef( llvm_type ); // llvm::Constant is immutable, so, we can create real constant only if we build comple typeinfo.
+	}
+
+	var TypeinfoStruct mut typeinfo_struct{ .t= t, .v= v };
+	typeinfo_cache_.push_back( typeinfo_struct );
+
+	return v;
+}
+
+fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
+{
+	auto mut entry_index= ~0s;
+	for( auto mut i= 0s; i < typeinfo_cache_.size(); ++i )
+	{
+		if( typeinfo_cache_[i].t == t )
+		{
+			entry_index= i;
+			break;
+		}
+	}
+
+
+	var ClassTypePtr typeinfo_class= typeinfo_cache_[entry_index].v.t.GetClassType().get_ref();
+	if( typeinfo_class.lock_imut().get_ref().is_complete )
+	{
+		return typeinfo_cache_[entry_index].v;
+	}
+
+	if( !EnsureTypeComplete( t ) )
+	{
+		// Ignore incomplete types here, generate error in "typeinfo" operator evaluation instead.
+		return typeinfo_cache_[entry_index].v;
+	}
+
+	var NamesScopeMutPtr class_members= typeinfo_class.lock_imut().get_ref().members;
+
+	var ust::shared_ptr_final</ Synt::ClassField /> dummy_syntax_element( Synt::ClassField() );
+
+	var ust::vector</LLVMTypeRef/> mut fields_llvm_types;
+	var ust::vector</LLVMValueRef/> mut fields_initializers;
+
+	if( t.GetFunctionType().empty() )
+	{
+		auto mut llvm_type= t.GetLLVMType();
+		if( llvm_type == fundamental_llvm_types_.void_for_ret_ )
+		{
+			llvm_type= fundamental_llvm_types_.void_;
+		}
+
+		// see llvm/lib/IR/DataLayout.cpp:40
+		ADD_SIZE_FIELD( "size_of", LLVMABISizeOfType( data_layout_, llvm_type ) )
+		ADD_SIZE_FIELD( "align_of", LLVMABIAlignmentOfType( data_layout_, llvm_type ) )
+	}
+
+	ADD_BOOL_FIELD( "is_fundamental"     , !t.GetFundamentalType    ().empty() )
+	ADD_BOOL_FIELD( "is_array"           , !t.GetArrayType          ().empty() )
+	ADD_BOOL_FIELD( "is_function"        , !t.GetFunctionType       ().empty() )
+	ADD_BOOL_FIELD( "is_function_pointer", !t.GetFunctionPointerType().empty() )
+	ADD_BOOL_FIELD( "is_class"           , !t.GetClassType          ().empty() )
+	ADD_BOOL_FIELD( "is_enum"            , !t.GetEnumType           ().empty() )
+
+	ADD_BOOL_FIELD( "is_default_constructible", t.IsDefaultConstructible() )
+	ADD_BOOL_FIELD( "is_copy_constructible"   , t.IsCopyConstructible()    )
+	ADD_BOOL_FIELD( "is_copy_assignable"      , t.IsCopyAssignable()       )
+
+	if_var( &fundamental_type : t.GetFundamentalType() )
+	{
+		ADD_BOOL_FIELD( "is_integer"         , IsInteger        ( fundamental_type.fundamental_type ) )
+		ADD_BOOL_FIELD( "is_numeric"         , IsNumericType    ( fundamental_type.fundamental_type ) )
+		ADD_BOOL_FIELD( "is_signed_integer"  , IsSignedInteger  ( fundamental_type.fundamental_type ) )
+		ADD_BOOL_FIELD( "is_unsigned_integer", IsUnsignedInteger( fundamental_type.fundamental_type ) )
+		ADD_BOOL_FIELD( "is_float"           , IsFloatingPoint  ( fundamental_type.fundamental_type ) )
+		ADD_BOOL_FIELD( "is_char"            , IsChar           ( fundamental_type.fundamental_type ) )
+		ADD_BOOL_FIELD( "is_bool"            , fundamental_type.fundamental_type == U_FundamentalType::bool_ )
+		ADD_BOOL_FIELD( "is_void"            , fundamental_type.fundamental_type == U_FundamentalType::void_ )
+	}
+	if_var( &array_type : t.GetArrayType() )
+	{
+		ADD_TYPEINFO_FIELD( "element_type", array_type.element_type )
+		ADD_SIZE_FIELD( "element_count", array_type.element_count )
+	}
+	if_var( &function_type : t.GetFunctionType() )
+	{
+		ADD_TYPEINFO_FIELD( "return_type", function_type.return_type )
+		ADD_BOOL_FIELD( "return_value_is_reference", function_type.return_value_is_reference )
+		ADD_BOOL_FIELD( "return_value_is_mutable"  , function_type.return_value_is_mutable )
+		ADD_BOOL_FIELD( "unsafe"                   , function_type.is_unsafe )
+		// SPRACHE_TODO - add also reference pollution.
+	}
+	if_var( &function_pointer_type : t.GetFunctionPointerType() )
+	{
+		ADD_TYPEINFO_FIELD( "element_type", function_pointer_type.function_type )
+	}
+	if_var( &class_ptr : t.GetClassType() )
+	{
+		auto lock= class_ptr.lock_imut();
+		var ClassType& class_= lock.get_ref();
+
+		var bool is_polymorph=
+			class_.kind == ClassType::Kind::Interface ||
+			class_.kind == ClassType::Kind::Abstract ||
+			class_.kind == ClassType::Kind::PolymorphNonFinal ||
+			class_.kind == ClassType::Kind::PolymorphFinal;
+
+		// TODO - maybe count also inheretid fields?
+		auto mut field_count= 0s;
+		foreach( &member : class_.members.lock_imut().get_ref().GetInternalContainer() )
+		{
+			if( !member.value().Get</ClassField/>().empty() )
+			{
+				++field_count;
+			}
+		}
+
+		ADD_SIZE_FIELD( "field_count", field_count )
+		ADD_SIZE_FIELD( "parent_count", class_.parents.size() )
+
+		if( is_polymorph )
+		{
+			// TODO - add polymorph type id
+		}
+
+		ADD_BOOL_FIELD( "is_struct", class_.kind == ClassType::Kind::Struct )
+		ADD_BOOL_FIELD( "is_polymorph", is_polymorph )
+		ADD_BOOL_FIELD( "is_final",
+			class_.kind == ClassType::Kind::Struct ||
+			class_.kind == ClassType::Kind::NonPolymorph ||
+			class_.kind == ClassType::Kind::PolymorphFinal )
+		ADD_BOOL_FIELD( "is_abstract",
+			class_.kind == ClassType::Kind::Abstract ||
+			class_.kind == ClassType::Kind::Interface )
+
+		ADD_BOOL_FIELD( "is_interface", class_.kind == ClassType::Kind::Interface )
+
+		ADD_BOOL_FIELD( "is_typeinfo", !class_.typeinfo_src_type_.empty() )
+		ADD_BOOL_FIELD( "shared", false ) // TODO
+	}
+	if_var( &enum_ptr : t.GetEnumType() )
+	{
+		auto lock= enum_ptr.lock_imut();
+		var Enum& enum_= lock.get_ref();
+
+		ADD_SIZE_FIELD( "element_count", enum_.elements.size() )
+		ADD_TYPEINFO_FIELD( "underlaying_type", enum_.underlaying_type )
+	}
+
+	{
+		auto mut class_lock= typeinfo_class.lock_mut();
+		var ClassType &mut class_= class_lock.get_ref();
+
+		unsafe{  LLVMStructSetBody( class_.llvm_type, cast_imut(fields_llvm_types).front(), u32(fields_llvm_types.size()), LLVMBool::False );  }
+
+		class_.is_complete= true;
+	}
+
+	var Variable &mut v= typeinfo_cache_[entry_index].v;
+	unsafe
+	{
+		auto initializer= LLVMConstNamedStruct( v.t.GetLLVMType(), cast_imut(fields_initializers).front(), u32(fields_initializers.size()) );
+		LLVMSetInitializer( v.llvm_value, initializer );
+
+		v.constexpr_value= initializer;
+	}
+
+	return v;
+}
+
+fn CodeBuilder::CreateTypeinfoClass( this, NamesScopePtr& root_namespace, Type& src_type, ust::string8& name ) : ClassTypePtr
+{
+	var NamesScopeMutPtr class_members( NamesScope( name, root_namespace ) );
+	var ClassType mut class_type
+	{
+		.members= class_members,
+		.typeinfo_src_type_(src_type),
+	};
+
+	var ClassTypePtr mut class_type_ptr( move(class_type) );
+
+	auto name_mangled= MangleType( class_type_ptr );
+
+	unsafe
+	{
+		auto mut lock= class_type_ptr.lock_mut();
+		lock.get_ref().llvm_type= LLVMStructCreateNamed( llvm_context_, name_mangled.front() );
+	}
+
+	return move(class_type_ptr);
+}
+
+} // namespace U

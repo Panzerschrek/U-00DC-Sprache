@@ -434,6 +434,29 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	return ResolveValue( names_scope, function_context, named_operand );
 }
 
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Typeinfo& typeinfo_ ) : Value
+{
+	var NamesScopePtr mut root_names_scope= names_scope;
+	while(true)
+	{
+		auto parent= root_names_scope.lock_imut().get_ref().GetParent();
+		if( parent.empty() )
+		{
+			break;
+		}
+		root_names_scope= ust::to_non_nullable( parent );
+	}
+
+	var Type t= PrepareType( names_scope, function_context, typeinfo_.type_name );
+	if( !EnsureTypeComplete( t ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope, typeinfo_.file_pos, t.ToString() )
+		return ErrorValue();
+	}
+
+	return BuildTypeinfo( t, root_names_scope );
+}
+
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
 {
 	if( binary_operator.operator == BinaryOperatorType::LazyLogicalAnd || binary_operator.operator == BinaryOperatorType::LazyLogicalOr )
@@ -806,9 +829,13 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 				if( variable.constexpr_value != LLVMValueRef::Null )
 				{
-					unsafe
+					// Small hack for typeinfo - it's initializer initialized only if typeinfo is complete, so, make it complete before getting constexpr value for it.
+					if( EnsureTypeComplete( field.t ) )
 					{
-						result.constexpr_value= LLVMGetInitializer( LLVMConstExtractValue( variable.constexpr_value, u32(field.index), 1u ) );
+						unsafe
+						{
+							result.constexpr_value= LLVMGetInitializer( LLVMConstExtractValue( variable.constexpr_value, u32(field.index), 1u ) );
+						}
 					}
 				}
 
