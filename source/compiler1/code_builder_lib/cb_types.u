@@ -74,6 +74,17 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 	return Type( move(out_array_type) );
 }
 
+fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::TupleType/>& tuple_type ) : Type
+{
+	return PrepareType( names_scope, function_context, tuple_type.get_ref() );
+}
+
+fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TupleType& tuple_type ) : Type
+{
+	// TODO
+	return invalid_type_;
+}
+
 fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type_ptr ) : Type
 {
 	return PrepareType( names_scope, function_context, function_type_ptr.get_ref() );

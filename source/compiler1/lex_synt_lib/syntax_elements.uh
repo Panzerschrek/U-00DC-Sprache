@@ -144,6 +144,7 @@ type Expression= ust::variant</ tup[
 	LogicalNot,
 	BitwiseNot,
 	ust::box</ArrayType/>,
+	ust::box</TupleType/>,
 	ust::box</FunctionType/>
 	] />;
 
@@ -152,6 +153,12 @@ struct ArrayType
 	FilePos file_pos;
 	TypeName element_type;
 	Expression element_count;
+}
+
+struct TupleType
+{
+	FilePos file_pos;
+	ust::vector</ TypeName /> elements;
 }
 
 struct FunctionType
@@ -177,6 +184,7 @@ struct FunctionType
 type TypeName= ust::variant</ tup[
 	ComplexName,
 	ust::box</ArrayType/>,
+	ust::box</TupleType/>,
 	ust::box</FunctionType/>
 	] />;
 
