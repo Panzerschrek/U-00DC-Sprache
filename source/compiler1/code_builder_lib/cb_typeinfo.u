@@ -135,7 +135,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 
 	if( !EnsureTypeComplete( t ) )
 	{
-		// TODO - report error
+		// Ignore incomplete types here, generate error in "typeinfo" operator evaluation instead.
 		return typeinfo_cache_[entry_index].v;
 	}
 
