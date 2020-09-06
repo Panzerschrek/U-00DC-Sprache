@@ -81,8 +81,30 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 
 fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TupleType& tuple_type ) : Type
 {
-	// TODO
-	return invalid_type_;
+	var TupleType mut out_tuple_type;
+
+	var ust::vector</ LLVMTypeRef /> mut element_llvm_types;
+	foreach( & element : tuple_type.elements )
+	{
+		var Type mut t= PrepareType( names_scope, function_context, element );
+		element_llvm_types.push_back( t.GetLLVMType() );
+		out_tuple_type.element_types.push_back( move(t) );
+	}
+
+	unsafe
+	{
+		if( element_llvm_types.empty() )
+		{
+			auto dummy= LLVMTypeRef::Null;
+			out_tuple_type.llvm_type= LLVMStructTypeInContext( llvm_context_, dummy, 0u, LLVMBool::False );
+		}
+		else
+		{
+			out_tuple_type.llvm_type= LLVMStructTypeInContext( llvm_context_, cast_imut(element_llvm_types).front(), u32(element_llvm_types.size()), LLVMBool::False );
+		}
+	}
+
+	return move(out_tuple_type);
 }
 
 fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type_ptr ) : Type
