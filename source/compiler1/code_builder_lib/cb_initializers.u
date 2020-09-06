@@ -342,6 +342,31 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		}
 		return LLVMValueRef::Null;
 	}
+	if_var( &tuple_type : variable.t.GetTupleType() )
+	{
+		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
+		{
+			var NamesScopeVariable mut element_variable{ .t= tuple_type.element_types[i] };
+
+			unsafe
+			{
+				var [ LLVMValueRef, 2 ] indexes
+				[
+					GetZeroGEPIndex(),
+					LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
+				];
+				element_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] );
+			}
+
+			BuildInitializer( names_scope, function_context, element_variable, zero_initializer );
+		}
+
+		if( variable.t.CanBeConstexpr() )
+		{
+			unsafe{  return LLVMConstNull( tuple_type.llvm_type );  }
+		}
+		return LLVMValueRef::Null;
+	}
 	if_var( &class_type_ptr : variable.t.GetClassType() )
 	{
 		// TODO - disable zero_init for some classes.
