@@ -235,6 +235,7 @@ private:
 	fn ParseReturnOperator( mut this ) : ReturnOperator;
 	fn ParseIfOperator( mut this ) : IfOperator;
 	fn ParseWhileOperator( mut this ) : WhileOperator;
+	fn ParseForOperator( mut this ) : RangeForOperator;
 	fn ParseBreakOperator( mut this ) : BreakOperator;
 	fn ParseContinueOperator( mut this ) : ContinueOperator;
 	fn ParseStaticAssert( mut this ) : StaticAssert;
@@ -1517,6 +1518,10 @@ fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 		{
 			block.elements.push_back( ParseWhileOperator() );
 		}
+		else if( IsKeyword( it_.front(), Keyword::for_ ) )
+		{
+			block.elements.push_back( ParseForOperator() );
+		}
 		else if( IsKeyword( it_.front(), Keyword::break_ ) )
 		{
 			block.elements.push_back( ParseBreakOperator() );
@@ -1877,6 +1882,59 @@ fn SyntaxAnalyzer::ParseWhileOperator( mut this ) : WhileOperator
 		.block( ParseBlock() )
 	};
 	return move(while_operator);
+}
+
+fn SyntaxAnalyzer::ParseForOperator( mut this ) : RangeForOperator
+{
+	var RangeForOperator mut for_operator{ .file_pos= it_.front().file_pos, .block(Block()) };
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	if( it_.front().lexem_type == Lexem::Type::And )
+	{
+		for_operator.reference_modifier= ReferenceModifier::Reference;
+		NextLexem();
+	}
+	if( IsKeyword( it_.front(), Keyword::mut_ ) )
+	{
+		for_operator.mutability_modifier= MutabilityModifier::Mutable;
+		NextLexem();
+	}
+	else if( IsKeyword( it_.front(), Keyword::imut_ ) )
+	{
+		for_operator.mutability_modifier= MutabilityModifier::Immutable;
+		NextLexem();
+	}
+
+	if( it_.front().lexem_type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage();
+	}
+	for_operator.loop_variable_name= it_.front().text;
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::Colon )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	for_operator.sequence= ParseExpression();
+
+	if( it_.front().lexem_type != Lexem::Type::BracketRight )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	for_operator.block.get_ref()= ParseBlock();
+
+	return move(for_operator);
 }
 
 fn SyntaxAnalyzer::ParseBreakOperator( mut this ) : BreakOperator
