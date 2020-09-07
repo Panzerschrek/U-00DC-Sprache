@@ -537,6 +537,26 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 			} )
 		return;
 	}
+	if_var( &tuple_type : variable.t.GetTupleType() )
+	{
+		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
+		{
+			var NamesScopeVariable mut element_variable{ .t= tuple_type.element_types[i] };
+
+			unsafe
+			{
+				var [ LLVMValueRef, 2 ] indexes
+				[
+					GetZeroGEPIndex(),
+					LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
+				];
+				element_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] );
+			}
+
+			BuildEmptyInitializer( names_scope, function_context, element_variable, variable_name, file_pos );
+		}
+		return;
+	}
 	if_var( &class_type_ptr : variable.t.GetClassType() )
 	{
 		auto class_members= class_type_ptr.lock_imut().get_ref().members;
