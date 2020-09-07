@@ -484,6 +484,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TemplateParametersDeductionFailed_Test8",
 		"TemplateParametersDeductionFailed_Test9",
 		"TemplateParametersDeductionFailed_Test10",
+		"TupleFor_Test0",
 		"TuplesConstexpr_Test0",
 		"TuplesConstexpr_Test1",
 		"TuplesConstexpr_Test3",
