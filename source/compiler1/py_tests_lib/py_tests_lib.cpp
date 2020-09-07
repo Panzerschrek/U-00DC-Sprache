@@ -482,6 +482,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TemplateParametersDeductionFailed_Test8",
 		"TemplateParametersDeductionFailed_Test9",
 		"TemplateParametersDeductionFailed_Test10",
+		"TupleReturnValue_Test0",
+		"TupleReturnValue_Test2",
 		"TypeAdditionalCommonFields_Test0",
 		"TypeinfoCalssIsSameForSameTypes_Test0",
 		"TypeinfoForIncompleteType_Test0",

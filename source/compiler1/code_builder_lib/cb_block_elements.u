@@ -354,10 +354,10 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		}
 
 		auto ret_type= function_context.return_type;
-		if_var( &class_type : ret_type.GetClassType() )
+		if( !ret_type.GetClassType().empty() || !ret_type.GetTupleType().empty() )
 		{
 			auto s_ret= function_context.s_ret;
-			TryCallCopyConstructor( names_scope, function_context, s_ret, expr.llvm_value, class_type, return_operator.file_pos );
+			BuildCopyConstructorPart( names_scope, function_context, s_ret, expr.llvm_value, expr.t, return_operator.file_pos );
 			CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.file_pos );
 			unsafe{  LLVMBuildRetVoid( function_context.llvm_ir_builder );  }
 			return block_element_build_info;
