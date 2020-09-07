@@ -373,6 +373,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"ConstructingAbstractClassOrInterface_Test6",
 		"ConstructingAbstractClassOrInterface_Test7",
 		"ConstructingAbstractClassOrInterface_Test8",
+		"ConstructingAbstractClassOrInterface_Test9",
+		"ConstructingAbstractClassOrInterface_Test10",
 		"ConstructingAbstractClassOrInterface_Test11",
 		"ConstructorForInterface_Test0",
 		"CopyAssignentOperatorGeneration_Test0",

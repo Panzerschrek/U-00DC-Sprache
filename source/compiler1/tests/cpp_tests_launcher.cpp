@@ -205,6 +205,7 @@ bool FilterTest( const std::string& test_name )
 		"TemplateParametersDeductionFailed",
 		"ThiscallMismatch_Test0",
 		"ThisUnavailable_InConstructors_Test",
+		"TuplesInitializersErrors_Test",
 		"TwodimensionalArrayInitializerTest0",
 		"TypeConversionTest",
 		"TypesMismatchTest0",

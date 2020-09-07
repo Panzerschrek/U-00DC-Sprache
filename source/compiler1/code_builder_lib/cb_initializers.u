@@ -717,7 +717,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 	{
 		if( args.size() != 1s )
 		{
-			REPORT_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, names_scope, file_pos )
+			REPORT_ERROR( ConstructorInitializerForUnsupportedType, names_scope, file_pos )
 			return LLVMValueRef::Null;
 		}
 
