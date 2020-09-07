@@ -492,7 +492,10 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::UninitializedInitializer& uninitialized_initializer ) : LLVMValueRef
 {
-	// TODO - emit error if not in unsafe block
+	if( !function_context.is_in_unsafe_block )
+	{
+		REPORT_ERROR( UninitializedInitializerOutsideUnsafeBlock, names_scope, uninitialized_initializer.file_pos )
+	}
 	return LLVMValueRef::Null;
 }
 

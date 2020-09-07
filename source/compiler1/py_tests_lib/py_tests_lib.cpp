@@ -640,6 +640,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TypeTemplatesOvelroading_MustSelectSpecializedTemplate_Test",
 		"TypeTemplatesOvelroading_SpecializationErrors_Test",
 		"TypeTemplatesOvelroading_Specialization_Test",
+		"UninitializedInitializer",
 		"UnknownStringLiteralSuffix_Test",
 		"UnsafeFunctionCallInsideUnsafeBlock_Test",
 		"UnsafeFunctionCallOutsideUnsafeBlock_Test",
