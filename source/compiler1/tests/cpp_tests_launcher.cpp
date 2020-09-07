@@ -101,6 +101,7 @@ bool FilterTest( const std::string& test_name )
 		"NamespacesManglingTest",
 		"OperatorsManglingTest",
 		"Redefinition_ForClassDeclarations_Test0",
+		"TupleTypesManglengTest",
 		"ValueIsNotTemplateTest0",
 		"ZeroInitializerForClass_Test0",
 	};
