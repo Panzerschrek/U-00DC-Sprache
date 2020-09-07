@@ -945,6 +945,25 @@ fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionC
 			}
 		)
 	}
+	if_var( &tuple_type : t.GetTupleType() )
+	{
+		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
+		{
+			var LLVMValueRef mut element_value= zero_init;
+
+			unsafe
+			{
+				var [ LLVMValueRef, 2 ] indexes
+				[
+					GetZeroGEPIndex(),
+					LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
+				];
+				element_value= LLVMBuildGEP( function_context.llvm_ir_builder, value, indexes[0], 2u, "[]\0"[0] );
+			}
+
+			BuildDestructorPart( names_scope, function_context, element_value, tuple_type.element_types[i], file_pos );
+		}
+	}
 	if_var( &class_type : t.GetClassType() )
 	{
 		// Destructors value should always exists and should always be NamesScopeFunctionsSet.
