@@ -197,11 +197,11 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			{
 				if( elements_constants.empty() )
 				{
-					return LLVMConstStruct( LLVMValueRef::Null, 0u, LLVMBool::False );
+					return LLVMConstStructInContext( llvm_context_, LLVMValueRef::Null, 0u, LLVMBool::False );
 				}
 				else
 				{
-					return LLVMConstStruct( cast_imut(elements_constants).front(), u32(elements_constants.size()), LLVMBool::False );
+					return LLVMConstStructInContext( llvm_context_, cast_imut(elements_constants).front(), u32(elements_constants.size()), LLVMBool::False );
 				}
 			}
 		}
