@@ -155,6 +155,7 @@ fn nomangle LLVMFunctionType(
 
 fn nomangle LLVMPointerType(LLVMTypeRef ElementType, u32 AddressSpace) unsafe : LLVMTypeRef;
 
+fn nomangle LLVMStructTypeInContext(LLVMContextRef C, LLVMTypeRef& ElementTypes, u32 ElementCount, LLVMBool Packed) unsafe : LLVMTypeRef;
 fn nomangle LLVMStructCreateNamed(LLVMContextRef C, NullTerminatedString& Name) unsafe : LLVMTypeRef;
 fn nomangle LLVMStructSetBody(LLVMTypeRef StructTy, LLVMTypeRef& ElementTypes, u32 ElementCount, LLVMBool Packed) unsafe;
 fn nomangle LLVMIsOpaqueStruct(LLVMTypeRef StructTy) unsafe : LLVMBool;
@@ -227,6 +228,7 @@ fn nomangle LLVMConstReal(LLVMTypeRef RealTy, f64 N) unsafe : LLVMValueRef;
 fn nomangle LLVMGetUndef(LLVMTypeRef Ty) unsafe : LLVMValueRef;
 fn nomangle LLVMConstNull(LLVMTypeRef Ty) unsafe : LLVMValueRef; /* all zeroes */
 fn nomangle LLVMConstArray(LLVMTypeRef ElementTy, LLVMValueRef& ConstantVals, u32 Length)  unsafe : LLVMValueRef;
+fn nomangle LLVMConstStructInContext(LLVMContextRef C, LLVMValueRef& ConstantVals, u32 Count, LLVMBool Packed) unsafe : LLVMValueRef;
 fn nomangle LLVMConstNamedStruct(LLVMTypeRef StructTy, LLVMValueRef& ConstantVals, u32 Count) unsafe : LLVMValueRef;
 fn nomangle LLVMConstStringInContext(LLVMContextRef C, char8& Str, u32 Length, LLVMBool DontNullTerminate) unsafe : LLVMValueRef;
 

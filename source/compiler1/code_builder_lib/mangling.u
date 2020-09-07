@@ -256,6 +256,27 @@ fn MangleTypeImpl( Type& t ) : MangleGraphNode
 		res.childs.push_back( ust::box</MangleGraphNode/>( MangleTypeImpl( array_type.element_type ) ) );
 		return move(res);
 	}
+	if_var( tuple_type : t.GetTupleType() )
+	{
+		// Encode tuples, like type templates.
+		var MangleGraphNode mut name_node;
+		var ust::string8 keyword= KeywordToString( Keyword::tup_ );
+		name_node.postfix= ust::to_string8(keyword.size()) + keyword;
+
+		var MangleGraphNode mut params_node;
+		params_node.prefix= "I";
+		foreach( &element_type : tuple_type.element_types )
+		{
+			params_node.childs.push_back( ust::box</MangleGraphNode/>( MangleTypeImpl( element_type ) ) );
+		}
+		params_node.postfix= "E";
+		params_node.cachable= false;
+
+		var MangleGraphNode mut res;
+		res.childs.push_back( ust::box</MangleGraphNode/>( move(name_node) ) );
+		res.childs.push_back( ust::box</MangleGraphNode/>( move(params_node) ) );
+		return move(res);
+	}
 	if_var( class_type_ptr : t.GetClassType() )
 	{
 		auto class_lock= class_type_ptr.lock_imut();

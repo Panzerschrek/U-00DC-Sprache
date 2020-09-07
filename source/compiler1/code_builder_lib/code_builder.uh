@@ -165,6 +165,8 @@ private:
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_type ) : Type;
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::ArrayType/>& array_type ) : Type;
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ArrayType& array_type ) : Type;
+	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::TupleType/>& tuple_type ) : Type;
+	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TupleType& tuple_type ) : Type;
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type_ptr ) : Type;
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type ) : Type;
 	fn PrepareFunctionType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type, ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : FunctionType;
@@ -210,6 +212,7 @@ private:
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfOperator& if_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WhileOperator& while_operator ) : BlockElementBuildInfo;
+	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RangeForOperator& range_for_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BreakOperator& break_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ContinueOperator& continue_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StaticAssert& static_assert_ ) : BlockElementBuildInfo;
@@ -237,6 +240,7 @@ private:
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::LogicalNot& logical_not ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BitwiseNot& bitwise_not ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::ArrayType/>& array_type ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::TupleType/>& tuple_type ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type ) : Value;
 
 	fn BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& l_var, Variable& r_var, BinaryOperatorType operator, FilePos& file_pos ) : Value;
@@ -251,6 +255,15 @@ private:
 		ust::shared_ptr_final</Synt::Expression/>& arg_r,
 		ArgsEvaluationOrder args_evaluation_order,
 		FilePos& file_pos ) : ust::optional</Value/>;
+
+	fn CallBinaryOperatorForTuple(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		OverloadedOperator operator,
+		ust::shared_ptr_final</Synt::Expression/>& arg_l,
+		ust::shared_ptr_final</Synt::Expression/>& arg_r,
+		FilePos& file_pos ) : Value;
 
 	fn CallFunctionsSet(
 		mut this,
@@ -350,6 +363,14 @@ private:
 		FunctionContext &mut function_context,
 		ust::vector</TemplateBase::Param/>& template_params,
 		Synt::ArrayType& signature_param,
+		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
+
+	fn CreateTemplateSignatureParam(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		ust::vector</TemplateBase::Param/>& template_params,
+		Synt::TupleType& signature_param,
 		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
 
 	fn CreateTemplateSignatureParam(
@@ -461,6 +482,14 @@ private:
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
 		TemplateSignatureParam::ArrayTypeParam& array_type_param,
+		Value& given_arg,
+		FilePos& file_pos ) : bool;
+
+	fn MatchTemplateArgumentImpl(
+		mut this,
+		NamesScopePtr& names_scope,
+		TemplateBase& template_,
+		TemplateSignatureParam::TupleTypeParam& tuple_type_param,
 		Value& given_arg,
 		FilePos& file_pos ) : bool;
 
@@ -587,6 +616,7 @@ private:
 	fn CreateFieldGEP( this, LLVMValueRef value, ClassField& field, FunctionContext& function_context ) : LLVMValueRef;
 	fn CreateParentFieldGEP( this, LLVMValueRef value, ClassType::Parent& parent, FunctionContext& function_context ) : LLVMValueRef;
 	fn CreateBaseClassFieldGEP( this, LLVMValueRef value, FunctionContext& function_context ) : LLVMValueRef;
+	fn CreateTupleElementGEP( this, LLVMValueRef value, size_type element_index, FunctionContext& function_context ) : LLVMValueRef;
 
 	fn MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef constant, FunctionContext& function_context );
 

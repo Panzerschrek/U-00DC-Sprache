@@ -39,6 +39,8 @@ bool FilterTest( const std::string& test_name )
 	static const std::unordered_set<std::string> c_test_to_enable
 	{
 		"ArrayAsClassTemplateParameter_Test0",
+		"ArrayInitializer_ForTuples_Test0",
+		"ArrayInitializer_ForTuples_Test2",
 		"BracketExpressionAsTemplateSignatureParameter_Test0",
 		"ClassBodyDuplicationTest0",
 		"ClassmethodsManglingTest",
@@ -46,6 +48,7 @@ bool FilterTest( const std::string& test_name )
 		"ClassTemplatesMangling_Test1",
 		"ClassTemplatesMangling_Test2",
 		"ClassTemplatesMangling_Test4",
+		"ConstructorInitializer_ForTuples_Test0",
 		"DestructorMustReturnVoidTest0",
 		"DestructorOutsideClassTest0",
 		"DestructorsTest0",
@@ -98,6 +101,7 @@ bool FilterTest( const std::string& test_name )
 		"NamespacesManglingTest",
 		"OperatorsManglingTest",
 		"Redefinition_ForClassDeclarations_Test0",
+		"TupleTypesManglengTest",
 		"ValueIsNotTemplateTest0",
 		"ZeroInitializerForClass_Test0",
 	};
@@ -153,6 +157,7 @@ bool FilterTest( const std::string& test_name )
 		"ExpressionInitializerTest1",
 		"ExpressionInitializerTest2",
 		"ExpressionInitializerTest3",
+		"ExpressionInitializerTest4",
 		"ExpectedInitializer_InConstructors_Test",
 		"FieldIsNotInitializedYetTest",
 		"FunctionBodyDuplicationTest",
@@ -200,6 +205,7 @@ bool FilterTest( const std::string& test_name )
 		"TemplateParametersDeductionFailed",
 		"ThiscallMismatch_Test0",
 		"ThisUnavailable_InConstructors_Test",
+		"TuplesInitializersErrors_Test",
 		"TwodimensionalArrayInitializerTest0",
 		"TypeConversionTest",
 		"TypesMismatchTest0",

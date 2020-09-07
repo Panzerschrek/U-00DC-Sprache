@@ -2091,7 +2091,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		auto mut args_names_scope_lock= args_names_scope_ptr.lock_mut();
 		auto &mut args_names_scope= args_names_scope_lock.get_ref();
 
-		auto is_s_ret= !func_variable.t.return_value_is_reference && !func_variable.t.return_type.GetClassType().empty();
+		auto is_s_ret= !func_variable.t.return_value_is_reference && ( !func_variable.t.return_type.GetClassType().empty() || !func_variable.t.return_type.GetTupleType().empty() );
 		if( is_s_ret )
 		{
 			unsafe
@@ -2138,9 +2138,9 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			}
 			else
 			{
-				if( !out_arg.t.GetClassType().empty() )
+				if( !out_arg.t.GetClassType().empty() || !out_arg.t.GetTupleType().empty() )
 				{
-					// Non-fundamentals are passed by reference.
+					// Aggregate types are passed by reference.
 					unsafe
 					{
 						auto arg_value= LLVMGetParam( func_variable.llvm_function, first_llvm_arg + arg_n );
@@ -2391,6 +2391,15 @@ fn CodeBuilder::EnsureTypeComplete( mut this, Type& t ) : bool
 	{
 		return EnsureTypeComplete( array_type.element_type );
 	}
+	if_var( &tuple_type : t.GetTupleType() )
+	{
+		var bool mut ok= true;
+		foreach( &element_type : tuple_type.element_types )
+		{
+			ok&= EnsureTypeComplete( element_type );
+		}
+		return ok;
+	}
 
 	return true;
 }
@@ -2568,6 +2577,21 @@ fn CodeBuilder::CreateBaseClassFieldGEP( this, LLVMValueRef value, FunctionConte
 	];
 
 	unsafe{  return LLVMBuildGEP( function_context.llvm_ir_builder, value, indexes[0], 2u, ".base\0"[0] );  }
+}
+
+fn CodeBuilder::CreateTupleElementGEP( this, LLVMValueRef value, size_type element_index, FunctionContext& function_context ) : LLVMValueRef
+{
+	auto op_name_nt= "[" + ust::to_string8(element_index) + "]\0";
+	unsafe
+	{
+		var [ LLVMValueRef, 2 ] indexes
+		[
+			GetZeroGEPIndex(),
+			LLVMConstInt( fundamental_llvm_types_.u32_, u64(element_index), LLVMBool::False )
+		];
+
+		return LLVMBuildGEP( function_context.llvm_ir_builder, value, indexes[0], 2u, op_name_nt.front() );
+	}
 }
 
 fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef constant, FunctionContext& function_context )

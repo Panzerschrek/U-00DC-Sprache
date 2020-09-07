@@ -766,11 +766,22 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 		)
 		return;
 	}
+	if_var( &tuple_type : t.GetTupleType() )
+	{
+		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
+		{
+			auto dst_element_value= CreateTupleElementGEP( dst, i, function_context );
+			auto src_element_value= CreateTupleElementGEP( src, i, function_context );
+			BuildCopyConstructorPart( names_scope, function_context, dst_element_value, src_element_value, tuple_type.element_types[i], file_pos );
+		}
+
+		return;
+	}
 	if_var( &class_type : t.GetClassType() )
 	{
 		if( !class_type.lock_imut().get_ref().is_copy_constructible )
 		{
-			// TODO - maybe generate error here?
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, file_pos, Type(class_type) )
 			return;
 		}
 
@@ -844,6 +855,17 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 		)
 		return;
 	}
+	if_var( &tuple_type : t.GetTupleType() )
+	{
+		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
+		{
+			auto dst_element_value= CreateTupleElementGEP( dst, i, function_context );
+			auto src_element_value= CreateTupleElementGEP( src, i, function_context );
+			BuildCopyAssignmentOperatorPart( names_scope, function_context, dst_element_value, src_element_value, tuple_type.element_types[i], file_pos );
+		}
+
+		return;
+	}
 	if_var( &class_type : t.GetClassType() )
 	{
 		if( !class_type.lock_imut().get_ref().is_copy_assignable )
@@ -901,6 +923,14 @@ fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionC
 			}
 		)
 	}
+	if_var( &tuple_type : t.GetTupleType() )
+	{
+		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
+		{
+			var LLVMValueRef element_value= CreateTupleElementGEP( value, i, function_context );
+			BuildDestructorPart( names_scope, function_context, element_value, tuple_type.element_types[i], file_pos );
+		}
+	}
 	if_var( &class_type : t.GetClassType() )
 	{
 		// Destructors value should always exists and should always be NamesScopeFunctionsSet.
@@ -931,18 +961,7 @@ fn CodeBuilder::BuildMembersDestructors( this, FunctionContext &mut function_con
 
 	foreach( &parent : class_type.lock_imut().get_ref().parents )
 	{
-		auto mut parent_llvm_value= LLVMValueRef::Null;
-		unsafe
-		{
-			var [ LLVMValueRef, 2 ] indexes
-			[
-				GetZeroGEPIndex(),
-				LLVMConstInt( fundamental_llvm_types_.u32_, u64(parent.field_number), LLVMBool::False )
-			];
-
-			parent_llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, value, indexes[0], 2u, "\0"[0] );
-		}
-
+		auto parent_llvm_value= CreateParentFieldGEP( value, parent, function_context );
 		BuildDestructorPart( class_members, function_context, parent_llvm_value, parent.class_, file_pos );
 	}
 

@@ -170,6 +170,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 
 	ADD_BOOL_FIELD( "is_fundamental"     , !t.GetFundamentalType    ().empty() )
 	ADD_BOOL_FIELD( "is_array"           , !t.GetArrayType          ().empty() )
+	ADD_BOOL_FIELD( "is_tuple"           , !t.GetTupleType          ().empty() )
 	ADD_BOOL_FIELD( "is_function"        , !t.GetFunctionType       ().empty() )
 	ADD_BOOL_FIELD( "is_function_pointer", !t.GetFunctionPointerType().empty() )
 	ADD_BOOL_FIELD( "is_class"           , !t.GetClassType          ().empty() )
@@ -194,6 +195,10 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 	{
 		ADD_TYPEINFO_FIELD( "element_type", array_type.element_type )
 		ADD_SIZE_FIELD( "element_count", array_type.element_count )
+	}
+	if_var( &tuple_type : t.GetTupleType() )
+	{
+		ADD_SIZE_FIELD( "element_count", tuple_type.element_types.size() )
 	}
 	if_var( &function_type : t.GetFunctionType() )
 	{

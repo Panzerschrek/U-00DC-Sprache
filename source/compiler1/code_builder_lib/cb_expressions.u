@@ -587,6 +587,47 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		}
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, indexation_operator.file_pos, index.t )
 	}
+	if_var( &variable_tuple_type : variable.t.GetTupleType() )
+	{
+		if_var( &index_fundamental_type : index.t.GetFundamentalType() )
+		{
+			if( !IsInteger( index_fundamental_type.fundamental_type ) )
+			{
+				REPORT_ERROR( TypesMismatch, names_scope, indexation_operator.file_pos, ust::string8("any integer"), index.t )
+				return ErrorValue();
+			}
+			if( index.constexpr_value == LLVMValueRef::Null )
+			{
+				REPORT_ERROR( ExpectedConstantExpression, names_scope, indexation_operator.file_pos )
+				return ErrorValue();
+			}
+
+			// TODO - check also signed types
+			var u64 mut type_index= ~0s;
+			unsafe{  type_index= LLVMConstIntGetZExtValue( index.constexpr_value );  }
+			if( type_index >= u64(variable_tuple_type.element_types.size()) )
+			{
+				REPORT_ERROR( TupleIndexOutOfBounds, names_scope, indexation_operator.file_pos, type_index, variable_tuple_type.element_types.size() )
+				return ErrorValue();
+			}
+
+			var Variable mut result
+			{
+				.t= variable_tuple_type.element_types[type_index],
+				.location= Variable::Location::Pointer,
+				.value_type= variable.value_type,
+				.llvm_value= CreateTupleElementGEP( variable.llvm_value, type_index, function_context )
+			};
+
+			if( variable.constexpr_value != LLVMValueRef::Null )
+			{
+				unsafe{  result.constexpr_value= LLVMConstExtractValue( variable.constexpr_value, u32(type_index), 1u );  }
+			}
+
+			return move(result);
+		}
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, indexation_operator.file_pos, index.t )
+	}
 	if( !variable.t.GetClassType().empty() )
 	{
 		var [ FunctionType::Param, 2 ] args
@@ -1100,6 +1141,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::ArrayType/>& array_type ) : Value
 {
 	return PrepareType( names_scope, function_context, array_type );
+}
+
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::TupleType/>& tuple_type ) : Value
+{
+	return PrepareType( names_scope, function_context, tuple_type );
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type ) : Value
@@ -1633,6 +1679,11 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 		RestoreInstructionsState( function_context, instructions_state );
 	}
 
+	if( cast_imut(args).front().t == cast_imut(args).back().t && !args.front().t.GetTupleType().empty() )
+	{
+		return CallBinaryOperatorForTuple( names_scope, function_context, operator, arg_l, arg_r, file_pos );
+	}
+
 	if_var( &overloaded_operator : GetOverloadedOperator( args.range(), operator, names_scope, file_pos ) )
 	{
 		if( overloaded_operator.is_deleted )
@@ -1656,6 +1707,44 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 	}
 
 	return ust::optional</Value/>();
+}
+
+fn CodeBuilder::CallBinaryOperatorForTuple(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	OverloadedOperator operator,
+	ust::shared_ptr_final</Synt::Expression/>& arg_l,
+	ust::shared_ptr_final</Synt::Expression/>& arg_r,
+	FilePos& file_pos ) : Value
+{
+	// Currently only copy assignment supported for tuples.
+	if( operator != OverloadedOperator::Assign )
+	{
+		var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.get_ref() );
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, file_pos, l_var.t )
+		return ErrorValue();
+	}
+
+	var Variable r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.get_ref() );
+	var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.get_ref() );
+	halt if( r_var.t != l_var.t ); // Checked before
+
+	if( !l_var.t.IsCopyAssignable() )
+	{
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, file_pos, l_var.t )
+		return ErrorValue();
+	}
+	if( l_var.value_type != ValueType::ReferenceMut )
+	{
+		REPORT_ERROR( ExpectedReferenceValue, names_scope, file_pos )
+		return ErrorValue();
+	}
+
+	BuildCopyAssignmentOperatorPart( names_scope, function_context, l_var.llvm_value, r_var.llvm_value, l_var.t, file_pos );
+
+	var Variable mut result{ .t= void_type_for_ret_ };
+	return move(result);
 }
 
 fn CodeBuilder::CallFunctionsSet(
@@ -1822,7 +1911,7 @@ fn CodeBuilder::DoCallFunction(
 	var ust::vector</LLVMValueRef/> mut llvm_args;
 
 	auto mut s_ret_value= LLVMValueRef::Null;
-	auto is_s_ret= !function_type.return_value_is_reference && !function_type.return_type.GetClassType().empty();
+	auto is_s_ret= !function_type.return_value_is_reference && ( !function_type.return_type.GetClassType().empty() || !function_type.return_type.GetTupleType().empty() );
 	if( is_s_ret )
 	{
 		unsafe{  s_ret_value= LLVMBuildAlloca( function_context.alloca_ir_builder, function_type.return_type.GetLLVMType(), "\0"[0] );  }
@@ -1907,7 +1996,7 @@ fn CodeBuilder::DoCallFunction(
 				return ErrorValue();
 			}
 
-			if( !arg.t.GetClassType().empty() )
+			if( !arg.t.GetClassType().empty() || !arg.t.GetTupleType().empty() )
 			{
 				auto mut var_copy= LLVMValueRef::Null;
 				unsafe
@@ -1916,7 +2005,7 @@ fn CodeBuilder::DoCallFunction(
 				}
 
 				auto mut value_for_copy= CreateReferenceCast( arg.llvm_value, arg.t, expected_arg_type, function_context );
-				TryCallCopyConstructor( names_scope, function_context, var_copy, value_for_copy, expected_arg_type.GetClassType().get_ref(), file_pos );
+				BuildCopyConstructorPart( names_scope, function_context, var_copy, value_for_copy, expected_arg_type, file_pos );
 
 				llvm_arg= var_copy;
 			}

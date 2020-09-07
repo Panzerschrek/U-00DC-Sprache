@@ -144,6 +144,7 @@ type Expression= ust::variant</ tup[
 	LogicalNot,
 	BitwiseNot,
 	ust::box</ArrayType/>,
+	ust::box</TupleType/>,
 	ust::box</FunctionType/>
 	] />;
 
@@ -152,6 +153,12 @@ struct ArrayType
 	FilePos file_pos;
 	TypeName element_type;
 	Expression element_count;
+}
+
+struct TupleType
+{
+	FilePos file_pos;
+	ust::vector</ TypeName /> elements;
 }
 
 struct FunctionType
@@ -177,6 +184,7 @@ struct FunctionType
 type TypeName= ust::variant</ tup[
 	ComplexName,
 	ust::box</ArrayType/>,
+	ust::box</TupleType/>,
 	ust::box</FunctionType/>
 	] />;
 
@@ -317,6 +325,16 @@ struct WhileOperator
 	ust::box</Block/> block;
 }
 
+struct RangeForOperator
+{
+	FilePos file_pos;
+	ReferenceModifier reference_modifier= ReferenceModifier::None;
+	MutabilityModifier mutability_modifier= MutabilityModifier::None;
+	ust::string8 loop_variable_name;
+	Expression sequence;
+	ust::box</Block/> block;
+}
+
 struct BreakOperator
 {
 	FilePos file_pos;
@@ -356,6 +374,7 @@ type BlockElement = ust::variant</ tup[
 	Expression,
 	IfOperator,
 	WhileOperator,
+	RangeForOperator,
 	BreakOperator,
 	ContinueOperator,
 	StaticAssert,

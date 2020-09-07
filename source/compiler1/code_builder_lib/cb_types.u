@@ -74,6 +74,39 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 	return Type( move(out_array_type) );
 }
 
+fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::TupleType/>& tuple_type ) : Type
+{
+	return PrepareType( names_scope, function_context, tuple_type.get_ref() );
+}
+
+fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TupleType& tuple_type ) : Type
+{
+	var TupleType mut out_tuple_type;
+
+	var ust::vector</ LLVMTypeRef /> mut element_llvm_types;
+	foreach( & element : tuple_type.elements )
+	{
+		var Type mut t= PrepareType( names_scope, function_context, element );
+		element_llvm_types.push_back( t.GetLLVMType() );
+		out_tuple_type.element_types.push_back( move(t) );
+	}
+
+	unsafe
+	{
+		if( element_llvm_types.empty() )
+		{
+			auto dummy= LLVMTypeRef::Null;
+			out_tuple_type.llvm_type= LLVMStructTypeInContext( llvm_context_, dummy, 0u, LLVMBool::False );
+		}
+		else
+		{
+			out_tuple_type.llvm_type= LLVMStructTypeInContext( llvm_context_, cast_imut(element_llvm_types).front(), u32(element_llvm_types.size()), LLVMBool::False );
+		}
+	}
+
+	return move(out_tuple_type);
+}
+
 fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type_ptr ) : Type
 {
 	return PrepareType( names_scope, function_context, function_type_ptr.get_ref() );
@@ -147,7 +180,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 	var ust::vector</LLVMTypeRef/> mut llvm_param_types;
 
 	// s_ret
-	auto is_s_ret= !res.return_value_is_reference && !res.return_type.GetClassType().empty();
+	auto is_s_ret= !res.return_value_is_reference && ( !res.return_type.GetClassType().empty() || !res.return_type.GetTupleType().empty() );
 	if( is_s_ret )
 	{
 		unsafe{  llvm_param_types.push_back( LLVMPointerType( res.return_type.GetLLVMType(), 0u ) );  }
@@ -162,8 +195,8 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 		}
 		else
 		{
-			// Pass non-fundamental types by-reference
-			if( !param.t.GetClassType().empty() )
+			// Pass aggregate types by-reference.
+			if( !param.t.GetClassType().empty() || !param.t.GetTupleType().empty() )
 			{
 				unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  }
 			}

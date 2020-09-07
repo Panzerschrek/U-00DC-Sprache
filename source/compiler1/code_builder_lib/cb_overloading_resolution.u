@@ -175,6 +175,7 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 		if( !r.GetTypeParam().empty() ||
 			!r.GetVariableParam().empty() ||
 			!r.GetArrayTypeParam().empty() ||
+			!r.GetTupleTypeParam().empty() ||
 			!r.GetFunctionTypeParam().empty() ||
 			!r.GetSpecializedTemplateParam().empty() )
 		{
@@ -192,6 +193,7 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 			return ConversionsCompareResult::Same;
 		}
 		if( !r.GetArrayTypeParam().empty() ||
+			!r.GetTupleTypeParam().empty() ||
 			!r.GetFunctionTypeParam().empty() ||
 			!r.GetSpecializedTemplateParam().empty() )
 		{
@@ -240,6 +242,46 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 				return type_compare_result;
 			}
 			return ConversionsCompareResult::Incomparable;
+		}
+	}
+	if_var( &l_tuple_type : l.GetTupleTypeParam() )
+	{
+		if( !r.GetTemplateParam().empty() )
+		{
+			return ConversionsCompareResult::LeftIsBetter; // Tuple type is more specialized, then template parameter.
+		}
+		if( !r.GetTypeParam().empty() )
+		{
+			return ConversionsCompareResult::RightIsBetter; // Concrete type is better, then tupe type.
+		}
+		if_var( &r_tuple_type : r.GetTupleTypeParam() )
+		{
+			if( l_tuple_type.element_types.size() != r_tuple_type.element_types.size() )
+			{
+				return ConversionsCompareResult::Incomparable;
+			}
+
+			auto mut result= ConversionsCompareResult::Same;
+			for( auto mut i= 0s; i < l_tuple_type.element_types.size(); ++i )
+			{
+				auto param_result= CompareTemplateSpecialization( l_tuple_type.element_types[i], r_tuple_type.element_types[i] );
+				if( param_result == ConversionsCompareResult::Incomparable )
+				{
+					return ConversionsCompareResult::Incomparable;
+				}
+
+				if( param_result == ConversionsCompareResult::Same )
+				{}
+				else if( result == ConversionsCompareResult::Same )
+				{
+					result= param_result;
+				}
+				else if( result != param_result )
+				{
+					return ConversionsCompareResult::Incomparable;
+				}
+			}
+			return result;
 		}
 	}
 	if_var( &l_function_type : l.GetFunctionTypeParam() )
