@@ -1688,6 +1688,11 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 		RestoreInstructionsState( function_context, instructions_state );
 	}
 
+	if( cast_imut(args).front().t == cast_imut(args).back().t && !args.front().t.GetTupleType().empty() )
+	{
+		return CallBinaryOperatorForTuple( names_scope, function_context, operator, arg_l, arg_r, file_pos );
+	}
+
 	if_var( &overloaded_operator : GetOverloadedOperator( args.range(), operator, names_scope, file_pos ) )
 	{
 		if( overloaded_operator.is_deleted )
@@ -1711,6 +1716,44 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 	}
 
 	return ust::optional</Value/>();
+}
+
+fn CodeBuilder::CallBinaryOperatorForTuple(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	OverloadedOperator operator,
+	ust::shared_ptr_final</Synt::Expression/>& arg_l,
+	ust::shared_ptr_final</Synt::Expression/>& arg_r,
+	FilePos& file_pos ) : Value
+{
+	// Currently only copy assignment supported for tuples.
+	if( operator != OverloadedOperator::Assign )
+	{
+		var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.get_ref() );
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, file_pos, l_var.t )
+		return ErrorValue();
+	}
+
+	var Variable r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.get_ref() );
+	var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.get_ref() );
+	halt if( r_var.t != l_var.t ); // Checked before
+
+	if( !l_var.t.IsCopyAssignable() )
+	{
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, file_pos, l_var.t )
+		return ErrorValue();
+	}
+	if( l_var.value_type != ValueType::ReferenceMut )
+	{
+		REPORT_ERROR( ExpectedReferenceValue, names_scope, file_pos )
+		return ErrorValue();
+	}
+
+	BuildCopyAssignmentOperatorPart( names_scope, function_context, l_var.llvm_value, r_var.llvm_value, l_var.t, file_pos );
+
+	var Variable mut result{ .t= void_type_for_ret_ };
+	return move(result);
 }
 
 fn CodeBuilder::CallFunctionsSet(

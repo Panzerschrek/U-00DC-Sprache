@@ -255,6 +255,15 @@ private:
 		ArgsEvaluationOrder args_evaluation_order,
 		FilePos& file_pos ) : ust::optional</Value/>;
 
+	fn CallBinaryOperatorForTuple(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		OverloadedOperator operator,
+		ust::shared_ptr_final</Synt::Expression/>& arg_l,
+		ust::shared_ptr_final</Synt::Expression/>& arg_r,
+		FilePos& file_pos ) : Value;
+
 	fn CallFunctionsSet(
 		mut this,
 		NamesScopePtr& names_scope,
