@@ -169,17 +169,11 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
-			var NamesScopeVariable mut element_variable{ .t= tuple_type.element_types[i] };
-			unsafe
+			var NamesScopeVariable element_variable
 			{
-				var [ LLVMValueRef, 2 ] indexes
-				[
-					GetZeroGEPIndex(),
-					LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
-				];
-
-				element_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] );
-			}
+				.t= tuple_type.element_types[i],
+				.llvm_value= CreateTupleElementGEP( variable.llvm_value, i, function_context ),
+			};
 
 			auto element_constant= BuildInitializer( names_scope, function_context, element_variable, sequence_initializer.elements_initializers[i].get_ref() );
 
@@ -426,17 +420,11 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	{
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
-			var NamesScopeVariable mut element_variable{ .t= tuple_type.element_types[i] };
-
-			unsafe
+			var NamesScopeVariable element_variable
 			{
-				var [ LLVMValueRef, 2 ] indexes
-				[
-					GetZeroGEPIndex(),
-					LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
-				];
-				element_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] );
-			}
+				.t= tuple_type.element_types[i],
+				.llvm_value= CreateTupleElementGEP( variable.llvm_value, i, function_context ),
+			};
 
 			BuildInitializer( names_scope, function_context, element_variable, zero_initializer );
 		}
@@ -541,17 +529,11 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 	{
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
-			var NamesScopeVariable mut element_variable{ .t= tuple_type.element_types[i] };
-
-			unsafe
+			var NamesScopeVariable element_variable
 			{
-				var [ LLVMValueRef, 2 ] indexes
-				[
-					GetZeroGEPIndex(),
-					LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
-				];
-				element_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] );
-			}
+				.t= tuple_type.element_types[i],
+				.llvm_value= CreateTupleElementGEP( variable.llvm_value, i, function_context ),
+			};
 
 			BuildEmptyInitializer( names_scope, function_context, element_variable, variable_name, file_pos );
 		}

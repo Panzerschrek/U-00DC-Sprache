@@ -2579,6 +2579,21 @@ fn CodeBuilder::CreateBaseClassFieldGEP( this, LLVMValueRef value, FunctionConte
 	unsafe{  return LLVMBuildGEP( function_context.llvm_ir_builder, value, indexes[0], 2u, ".base\0"[0] );  }
 }
 
+fn CodeBuilder::CreateTupleElementGEP( this, LLVMValueRef value, size_type element_index, FunctionContext& function_context ) : LLVMValueRef
+{
+	auto op_name_nt= "[" + ust::to_string8(element_index) + "]\0";
+	unsafe
+	{
+		var [ LLVMValueRef, 2 ] indexes
+		[
+			GetZeroGEPIndex(),
+			LLVMConstInt( fundamental_llvm_types_.u32_, u64(element_index), LLVMBool::False )
+		];
+
+		return LLVMBuildGEP( function_context.llvm_ir_builder, value, indexes[0], 2u, op_name_nt.front() );
+	}
+}
+
 fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef constant, FunctionContext& function_context )
 {
 	unsafe

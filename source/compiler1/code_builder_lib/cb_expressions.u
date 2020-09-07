@@ -616,21 +616,12 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				.t= variable_tuple_type.element_types[type_index],
 				.location= Variable::Location::Pointer,
 				.value_type= variable.value_type,
+				.llvm_value= CreateTupleElementGEP( variable.llvm_value, type_index, function_context )
 			};
 
-			unsafe
+			if( variable.constexpr_value != LLVMValueRef::Null )
 			{
-				var [ LLVMValueRef, 2 ] indexes
-				[
-					GetZeroGEPIndex(),
-					LLVMConstInt( fundamental_llvm_types_.u32_, type_index, LLVMBool::False )
-				];
-				result.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] );
-
-				if( variable.constexpr_value != LLVMValueRef::Null )
-				{
-					result.constexpr_value= LLVMConstExtractValue( variable.constexpr_value, u32(type_index), 1u );
-				}
+				unsafe{  result.constexpr_value= LLVMConstExtractValue( variable.constexpr_value, u32(type_index), 1u );  }
 			}
 
 			return move(result);

@@ -770,19 +770,8 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 	{
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
-			var LLVMValueRef mut dst_element_value= zero_init, mut src_element_value= zero_init;
-
-			unsafe
-			{
-				var [ LLVMValueRef, 2 ] indexes
-				[
-					GetZeroGEPIndex(),
-					LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
-				];
-				dst_element_value= LLVMBuildGEP( function_context.llvm_ir_builder, dst, indexes[0], 2u, "[]\0"[0] );
-				src_element_value= LLVMBuildGEP( function_context.llvm_ir_builder, src, indexes[0], 2u, "[]\0"[0] );
-			}
-
+			auto dst_element_value= CreateTupleElementGEP( dst, i, function_context );
+			auto src_element_value= CreateTupleElementGEP( src, i, function_context );
 			BuildCopyConstructorPart( names_scope, function_context, dst_element_value, src_element_value, tuple_type.element_types[i], file_pos );
 		}
 
@@ -870,19 +859,8 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 	{
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
-			var LLVMValueRef mut dst_element_value= zero_init, mut src_element_value= zero_init;
-
-			unsafe
-			{
-				var [ LLVMValueRef, 2 ] indexes
-				[
-					GetZeroGEPIndex(),
-					LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
-				];
-				dst_element_value= LLVMBuildGEP( function_context.llvm_ir_builder, dst, indexes[0], 2u, "[]\0"[0] );
-				src_element_value= LLVMBuildGEP( function_context.llvm_ir_builder, src, indexes[0], 2u, "[]\0"[0] );
-			}
-
+			auto dst_element_value= CreateTupleElementGEP( dst, i, function_context );
+			auto src_element_value= CreateTupleElementGEP( src, i, function_context );
 			BuildCopyAssignmentOperatorPart( names_scope, function_context, dst_element_value, src_element_value, tuple_type.element_types[i], file_pos );
 		}
 
@@ -949,18 +927,7 @@ fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionC
 	{
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
-			var LLVMValueRef mut element_value= zero_init;
-
-			unsafe
-			{
-				var [ LLVMValueRef, 2 ] indexes
-				[
-					GetZeroGEPIndex(),
-					LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
-				];
-				element_value= LLVMBuildGEP( function_context.llvm_ir_builder, value, indexes[0], 2u, "[]\0"[0] );
-			}
-
+			var LLVMValueRef element_value= CreateTupleElementGEP( value, i, function_context );
 			BuildDestructorPart( names_scope, function_context, element_value, tuple_type.element_types[i], file_pos );
 		}
 	}
@@ -994,18 +961,7 @@ fn CodeBuilder::BuildMembersDestructors( this, FunctionContext &mut function_con
 
 	foreach( &parent : class_type.lock_imut().get_ref().parents )
 	{
-		auto mut parent_llvm_value= LLVMValueRef::Null;
-		unsafe
-		{
-			var [ LLVMValueRef, 2 ] indexes
-			[
-				GetZeroGEPIndex(),
-				LLVMConstInt( fundamental_llvm_types_.u32_, u64(parent.field_number), LLVMBool::False )
-			];
-
-			parent_llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, value, indexes[0], 2u, "\0"[0] );
-		}
-
+		auto parent_llvm_value= CreateParentFieldGEP( value, parent, function_context );
 		BuildDestructorPart( class_members, function_context, parent_llvm_value, parent.class_, file_pos );
 	}
 

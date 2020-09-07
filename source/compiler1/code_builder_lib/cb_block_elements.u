@@ -707,16 +707,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				//.constexpr_value= expr.constexpr_value
 			};
 
-			auto mut src_element_llvm_value= LLVMValueRef::Null;
-			unsafe
-			{
-				var [ LLVMValueRef, 2 ] indexes
-				[
-					GetZeroGEPIndex(),
-					LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
-				];
-				src_element_llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, sequence_expression.llvm_value, indexes[0], 2u, "[]\0"[0] );
-			}
+			auto src_element_llvm_value= CreateTupleElementGEP( sequence_expression.llvm_value, i, function_context );
 
 			if( range_for_operator.reference_modifier == Synt::ReferenceModifier::Reference )
 			{
