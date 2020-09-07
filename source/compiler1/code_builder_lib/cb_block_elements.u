@@ -686,6 +686,12 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 	if_var( &tuple_type : sequence_expression.t.GetTupleType() )
 	{
+		auto mut finish_basic_block= LLVMBasicBlockRef::Null;
+		if( !tuple_type.element_types.empty() )
+		{
+			unsafe{  finish_basic_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );  }
+		}
+
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
 			// Create separate names_scope for loop variable.
@@ -750,9 +756,39 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				lock.get_ref().AddName( range_for_operator.loop_variable_name, NamesScopeValue( move(variable) ) ).empty();
 			}
 
-			BuildBlockElement( names_scope, function_context, range_for_operator.block.get_ref() );
+			auto mut next_basic_block= LLVMBasicBlockRef::Null;
+			if( i + 1s < tuple_type.element_types.size() )
+			{
+				unsafe{  next_basic_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );  }
+			}
+			else
+			{
+				next_basic_block= finish_basic_block;
+			}
 
-			CallDestructorsForTopVariablesFrame( names_scope, function_context, range_for_operator.file_pos );
+			var LoopFrame loop_frame
+			{
+				.block_for_break= finish_basic_block,
+				.block_for_continue= next_basic_block,
+				.variable_frames_stack_size= function_context.variables_frames.size(),
+			};
+			function_context.loops_stack.push_back(loop_frame);
+
+			auto block_build_info= BuildBlockElement( names_scope, function_context, range_for_operator.block.get_ref() );
+
+			function_context.loops_stack.pop_back();
+
+			CallDestructorsForTopVariablesFrame( names_scope, function_context, range_for_operator.file_pos ); // destroy loop variable
+
+			if( !block_build_info.have_terminal_instruction_inside )
+			{
+				unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, next_basic_block );  }
+			}
+			unsafe
+			{
+				LLVMAppendExistingBasicBlock( function_context.llvm_function, next_basic_block );
+				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, next_basic_block );
+			}
 		}
 
 		CallDestructorsForTopVariablesFrame( names_scope, function_context, range_for_operator.file_pos );
