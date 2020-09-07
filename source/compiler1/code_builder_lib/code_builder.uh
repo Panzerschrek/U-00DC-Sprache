@@ -369,6 +369,14 @@ private:
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		ust::vector</TemplateBase::Param/>& template_params,
+		Synt::TupleType& signature_param,
+		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
+
+	fn CreateTemplateSignatureParam(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		ust::vector</TemplateBase::Param/>& template_params,
 		Synt::FunctionType& signature_param,
 		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
 
@@ -473,6 +481,14 @@ private:
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
 		TemplateSignatureParam::ArrayTypeParam& array_type_param,
+		Value& given_arg,
+		FilePos& file_pos ) : bool;
+
+	fn MatchTemplateArgumentImpl(
+		mut this,
+		NamesScopePtr& names_scope,
+		TemplateBase& template_,
+		TemplateSignatureParam::TupleTypeParam& tuple_type_param,
 		Value& given_arg,
 		FilePos& file_pos ) : bool;
 

@@ -233,6 +233,10 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	{
 		return CreateTemplateSignatureParam( names_scope, function_context, template_params, array_type.get_ref(), template_params_usage_flags );
 	}
+	if_var( &tuple_type : param.get</ ust::box</ Synt::TupleType /> />() )
+	{
+		return CreateTemplateSignatureParam( names_scope, function_context, template_params, tuple_type.get_ref(), template_params_usage_flags );
+	}
 	if_var( &function_type : param.get</ ust::box</Synt::FunctionType/> />() )
 	{
 		return CreateTemplateSignatureParam( names_scope, function_context, template_params, function_type.get_ref(), template_params_usage_flags );
@@ -324,6 +328,10 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	{
 		return CreateTemplateSignatureParam( names_scope, function_context, template_params, array_type.get_ref(), template_params_usage_flags );
 	}
+	if_var( &tuple_type : param.get</ ust::box</Synt::TupleType/> />() )
+	{
+		return CreateTemplateSignatureParam( names_scope, function_context, template_params, tuple_type.get_ref(), template_params_usage_flags );
+	}
 	if_var( &function_type : param.get</ ust::box</Synt::FunctionType/> />() )
 	{
 		return CreateTemplateSignatureParam( names_scope, function_context, template_params, function_type.get_ref(), template_params_usage_flags );
@@ -361,6 +369,37 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 		return move(t);
 	}
 	return move(array_type_param);
+}
+
+fn CodeBuilder::CreateTemplateSignatureParam(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	ust::vector</TemplateBase::Param/>& template_params,
+	Synt::TupleType& signature_param,
+	ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam
+{
+	var TemplateSignatureParam::TupleTypeParam mut tuple_type_param;
+
+	var bool mut all_types_are_known= true;
+	foreach( &element_type : signature_param.elements )
+	{
+		auto mut param= CreateTemplateSignatureParam( names_scope, function_context, template_params, element_type, template_params_usage_flags );
+		all_types_are_known&= !param.GetTypeParam().empty();
+		tuple_type_param.element_types.push_back( move(param) );
+	}
+
+	if( all_types_are_known )
+	{
+		// All params are known types, so, this is just a type.
+		var TemplateSignatureParam::TypeParam mut t
+		{
+			.t= PrepareType( names_scope, function_context, signature_param )
+		};
+		return move(t);
+	}
+
+	return move(tuple_type_param);
 }
 
 fn CodeBuilder::CreateTemplateSignatureParam(
@@ -1114,6 +1153,10 @@ fn CodeBuilder::MatchTemplateArgument(
 	{
 		return MatchTemplateArgumentImpl( names_scope, template_, array_type_param, given_arg, file_pos );
 	}
+	if_var( &tuple_type_param : param.GetTupleTypeParam() )
+	{
+		return MatchTemplateArgumentImpl( names_scope, template_, tuple_type_param, given_arg, file_pos );
+	}
 	if_var( &function_type_param : param.GetFunctionTypeParam() )
 	{
 		return MatchTemplateArgumentImpl( names_scope, template_, function_type_param, given_arg, file_pos );
@@ -1306,6 +1349,38 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 			return true;
 		}
 	}
+	return false;
+}
+
+fn CodeBuilder::MatchTemplateArgumentImpl(
+	mut this,
+	NamesScopePtr& names_scope,
+	TemplateBase& template_,
+	TemplateSignatureParam::TupleTypeParam& tuple_type_param,
+	Value& given_arg,
+	FilePos& file_pos ) : bool
+{
+	if_var( &given_type : given_arg.get</Type/>() )
+	{
+		if_var( &given_tuple_type : given_type.GetTupleType() )
+		{
+			if( given_tuple_type.element_types.size() != tuple_type_param.element_types.size() )
+			{
+				return false;
+			}
+
+			for( auto mut i= 0s; i < given_tuple_type.element_types.size(); ++i )
+			{
+				if( !MatchTemplateArgument( names_scope, template_, tuple_type_param.element_types[i], given_tuple_type.element_types[i], file_pos ) )
+				{
+					return false;
+				}
+			}
+
+			return true;
+		}
+	}
+
 	return false;
 }
 

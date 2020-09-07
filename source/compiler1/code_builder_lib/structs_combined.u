@@ -806,6 +806,10 @@ fn TemplateSignatureParam::conversion_constructor( ArrayTypeParam mut array_type
 	( something_( ust::box</ ArrayTypeParam />( move(array_type_param) ) ) )
 {}
 
+fn TemplateSignatureParam::conversion_constructor( TupleTypeParam mut tuple_type_param )
+	( something_( ust::box</ TupleTypeParam />( move(tuple_type_param) ) ) )
+{}
+
 fn TemplateSignatureParam::conversion_constructor( FunctionTypeParam mut function_type_param )
 	( something_( ust::box</ FunctionTypeParam />( move(function_type_param) ) ) )
 {}
@@ -837,6 +841,16 @@ fn TemplateSignatureParam::GetArrayTypeParam(this) : ust::optional_ref</ ArrayTy
 	}
 
 	return ust::optional_ref</ ArrayTypeParam, false />();
+}
+
+fn TemplateSignatureParam::GetTupleTypeParam(this) : ust::optional_ref</ TupleTypeParam, false />'this'
+{
+	if_var( &tuple_type_param : something_.get</ ust::box</TupleTypeParam/> />() )
+	{
+		return ust::optional_ref</ TupleTypeParam, false />(tuple_type_param.get_ref());
+	}
+
+	return ust::optional_ref</ TupleTypeParam, false />();
 }
 
 fn TemplateSignatureParam::GetFunctionTypeParam(this) : ust::optional_ref</ FunctionTypeParam, false />'this'

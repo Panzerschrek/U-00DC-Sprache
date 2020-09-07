@@ -478,6 +478,11 @@ public:
 		TemplateSignatureParam element_count;
 	}
 
+	struct TupleTypeParam
+	{
+		ust::vector</TemplateSignatureParam/> element_types;
+	}
+
 	struct FunctionTypeParam
 	{
 		TemplateSignatureParam return_type;
@@ -505,6 +510,7 @@ public:
 	fn conversion_constructor( TypeParam mut type_param );
 	fn conversion_constructor( VariableParam mut variable_param );
 	fn conversion_constructor( ArrayTypeParam mut array_type_param );
+	fn conversion_constructor( TupleTypeParam mut tuple_type_param );
 	fn conversion_constructor( FunctionTypeParam mut function_type_param );
 	fn conversion_constructor( SpecializedTemplateParam mut specialized_template_param );
 
@@ -512,6 +518,7 @@ public:
 	fn GetTypeParam(this) : ust::optional_ref</ TypeParam, false />'this';
 	fn GetVariableParam(this) : ust::optional_ref</ VariableParam, false />'this';
 	fn GetArrayTypeParam(this) : ust::optional_ref</ ArrayTypeParam, false />'this';
+	fn GetTupleTypeParam(this) : ust::optional_ref</ TupleTypeParam, false />'this';
 	fn GetFunctionTypeParam(this) : ust::optional_ref</ FunctionTypeParam, false />'this';
 	fn GetSpecializedTemplateParam(this) : ust::optional_ref</ SpecializedTemplateParam, false />'this';
 
@@ -521,6 +528,7 @@ private:
 		TypeParam,
 		VariableParam,
 		ust::box</ ArrayTypeParam />,
+		ust::box</ TupleTypeParam />,
 		ust::box</ FunctionTypeParam />,
 		ust::box</ SpecializedTemplateParam />
 		] />;
