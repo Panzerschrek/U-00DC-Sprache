@@ -69,11 +69,33 @@ import "mangling.uh"
 	}
 ?>
 
+?macro <? ADD_LIST_FIELD:block( ?name:expr, ?list:expr ) ?>
+->
+<?
+	{
+		var ClassField mut class_field
+		{
+			.t= ?list.t,
+			.is_mutable= true,
+			.is_reference= false,
+			.index= fields_llvm_types.size(),
+			.syntax_element= dummy_syntax_element,
+		};
+
+		fields_llvm_types.push_back( class_field.t.GetLLVMType() );
+		fields_initializers.push_back( ?list.constexpr_value );
+
+		auto mut members_lock= class_members.lock_mut();
+		members_lock.get_ref().AddName( ?name, move(class_field) );
+	}
+?>
+
 namespace U
 {
 
 // Use reserved by language names, started with "_".
 auto& g_typeinfo_root_class_name= "_TI";
+auto& g_typeinfo_tuple_elements_list_node_class_name= "_TITL_";
 
 // Returns null-terminated string.
 fn GetTypeinfoVariableName( ClassTypePtr& typeinfo_class ) : ust::string8
@@ -113,8 +135,11 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 		LLVMSetLinkage( global_variable, LLVMLinkage::Internal );
 		LLVMSetGlobalConstant( global_variable, LLVMBool::True );
 
+		auto initializer= LLVMGetUndef( llvm_type ); // llvm::Constant is immutable, so, we can create real constant only if we build comple typeinfo.
+		LLVMSetInitializer( global_variable, initializer );
+
 		v.llvm_value= global_variable;
-		v.constexpr_value= LLVMGetUndef( llvm_type ); // llvm::Constant is immutable, so, we can create real constant only if we build comple typeinfo.
+		v.constexpr_value= initializer;
 	}
 
 	var TypeinfoStruct mut typeinfo_struct{ .t= t, .v= v };
@@ -149,6 +174,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 	}
 
 	var NamesScopeMutPtr class_members= typeinfo_class.lock_imut().get_ref().members;
+	var NamesScopePtr root_namespace= ust::to_non_nullable( class_members.lock_imut().get_ref().GetParent() );
 
 	var ust::shared_ptr_final</ Synt::ClassField /> dummy_syntax_element( Synt::ClassField() );
 
@@ -199,6 +225,8 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 	if_var( &tuple_type : t.GetTupleType() )
 	{
 		ADD_SIZE_FIELD( "element_count", tuple_type.element_types.size() )
+		auto elements_list= BuildTypeinfoTupleELementsList( root_namespace, tuple_type );
+		ADD_LIST_FIELD( "elements_list", elements_list )
 	}
 	if_var( &function_type : t.GetFunctionType() )
 	{
@@ -293,6 +321,7 @@ fn CodeBuilder::CreateTypeinfoClass( this, NamesScopePtr& root_namespace, Type& 
 	{
 		.members= class_members,
 		.typeinfo_src_type_(src_type),
+		.can_be_constexpr= true,
 	};
 
 	var ClassTypePtr mut class_type_ptr( move(class_type) );
@@ -306,6 +335,85 @@ fn CodeBuilder::CreateTypeinfoClass( this, NamesScopePtr& root_namespace, Type& 
 	}
 
 	return move(class_type_ptr);
+}
+
+fn CodeBuilder::BuildTypeinfoTupleELementsList( mut this, NamesScopePtr& root_namespace, TupleType& tuple_type ) : Variable
+{
+	var TupleType mut list_type;
+	var ust::vector</LLVMTypeRef/> mut list_llvm_types;
+	var ust::vector</LLVMValueRef/> mut list_initializers;
+
+	var ust::shared_ptr_final</ Synt::ClassField /> dummy_syntax_element( Synt::ClassField() );
+
+	for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
+	{
+		var ClassTypePtr typeinfo_class= CreateTypeinfoClass( root_namespace, tuple_type, g_typeinfo_tuple_elements_list_node_class_name + ust::to_string8(i) );
+		var NamesScopeMutPtr class_members= typeinfo_class.lock_imut().get_ref().members;
+
+		var ust::vector</LLVMTypeRef/> mut fields_llvm_types;
+		var ust::vector</LLVMValueRef/> mut fields_initializers;
+
+		ADD_TYPEINFO_FIELD( "type", tuple_type.element_types[i] )
+
+		ADD_SIZE_FIELD( "index", i )
+
+		auto mut offset= 0u64;
+		unsafe{  offset= LLVMOffsetOfElement( data_layout_, tuple_type.llvm_type, u32(i) );  }
+		ADD_SIZE_FIELD( "offset", offset )
+
+		{
+			auto mut class_lock= typeinfo_class.lock_mut();
+			var ClassType &mut class_= class_lock.get_ref();
+
+			unsafe{  LLVMStructSetBody( class_.llvm_type, cast_imut(fields_llvm_types).front(), u32(fields_llvm_types.size()), LLVMBool::False );  }
+
+			class_.is_complete= true;
+		}
+
+		auto element_llvm_type= typeinfo_class.lock_imut().get_ref().llvm_type;
+		list_type.element_types.push_back( typeinfo_class );
+		list_llvm_types.push_back( element_llvm_type );
+
+		unsafe
+		{
+			list_initializers.push_back( LLVMConstNamedStruct( element_llvm_type, cast_imut(fields_initializers).front(), u32(fields_initializers.size()) ) );
+		}
+	}
+
+	unsafe
+	{
+		if( list_llvm_types.empty() )
+		{
+			auto dummy= LLVMTypeRef::Null;
+			list_type.llvm_type= LLVMStructTypeInContext( llvm_context_, dummy, 0u, LLVMBool::False );
+		}
+		else
+		{
+			list_type.llvm_type= LLVMStructTypeInContext( llvm_context_, cast_imut(list_llvm_types).front(), u32(list_llvm_types.size()), LLVMBool::False );
+		}
+	}
+
+	var Variable mut variable
+	{
+		.t= move(list_type),
+		.value_type= ValueType::Value,
+		.location= Variable::Location::LLVMRegister,
+	};
+
+	unsafe
+	{
+		if( list_initializers.empty() )
+		{
+			variable.constexpr_value= LLVMConstStructInContext( llvm_context_, LLVMValueRef::Null, 0u, LLVMBool::False );
+		}
+		else
+		{
+			variable.constexpr_value= LLVMConstStructInContext( llvm_context_, cast_imut(list_initializers).front(), u32(list_initializers.size()), LLVMBool::False );
+		}
+	}
+	variable.llvm_value= variable.constexpr_value;
+
+	return move(variable);
 }
 
 } // namespace U

@@ -517,6 +517,8 @@ private:
 	fn BuildFullTypeinfo( mut this, Type& t ) : Variable;
 	fn CreateTypeinfoClass( this, NamesScopePtr& root_namespace, Type& src_type, ust::string8& name ) : ClassTypePtr;
 
+	fn BuildTypeinfoTupleELementsList( mut this, NamesScopePtr& root_namespace, TupleType& tuple_type ) : Variable;
+
 	// Virtual stuff
 	fn PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr );
 	fn PrepareClassVirtualTableType( this, ClassTypePtr& class_type_ptr );

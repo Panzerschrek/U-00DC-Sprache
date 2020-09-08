@@ -500,6 +500,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TypeinfoForIncompleteTypeIsIncomplete_Test1",
 		"Typeinfo_ForTuples_Test0",
 		"Typeinfo_ForTuples_Test1",
+		"Typeinfo_ForTuples_Test2",
 		"TypeInfoOperator_Test0",
 		"TypeKindFields_Test0",
 		"TypeNameInErrorMessage_ClassTemplate_Test0",
