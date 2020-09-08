@@ -637,6 +637,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TupleTemplateArgument",
 		"TupleTypeParsing",
 		"TypeinfoFieldsDependsOnTypeKind",
+		"TypeinfoList_EnumList_Test",
 		"TypeNameInErrorMessage_ClassTypeInNamespace_Test",
 		"TypesMismatch_InFunctionPointerCall_Test",
 		"TypeTemplatesOvelroading_MustSelectSpecializedTemplate_Test",
