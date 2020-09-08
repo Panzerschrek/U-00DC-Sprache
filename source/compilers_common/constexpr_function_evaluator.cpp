@@ -27,7 +27,7 @@ ConstexprFunctionEvaluator::ConstexprFunctionEvaluator( const llvm::DataLayout& 
 
 ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	llvm::Function* const llvm_function,
-	const ArgsVector<llvm::Constant*>& args )
+	const llvm::ArrayRef<const llvm::Constant*> args )
 {
 	stack_.resize(16u); // reserve null pointer
 

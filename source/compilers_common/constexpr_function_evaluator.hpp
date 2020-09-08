@@ -31,7 +31,7 @@ public:
 
 	Result Evaluate(
 		llvm::Function* const llvm_function,
-		const ArgsVector<llvm::Constant*>& args );
+		llvm::ArrayRef<const llvm::Constant*> args );
 
 private:
 	llvm::GenericValue CallFunction( const llvm::Function& llvm_function, size_t stack_depth );

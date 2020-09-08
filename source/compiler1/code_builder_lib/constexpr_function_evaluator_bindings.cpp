@@ -22,17 +22,11 @@ extern "C" LLVMValueRef U1_ConstexprFunctionEvaluatorEvaluate(
 	const ConstexprFunctionEvaluatorErrorHandlerFunc error_handler_func,
 	void* const user_data )
 {
-	U::ArgsVector<llvm::Constant*> args;
-	args.reserve( arg_count );
-	for( size_t i= 0u; i < arg_count; ++i )
-	{
-		if( args_start[i] == nullptr )
-			args.push_back( nullptr );
-		else
-			args.push_back( llvm::dyn_cast<llvm::Constant>( llvm::unwrap( args_start[i] ) ) );
-	}
+	const auto res=
+		constexpr_function_evaluator.Evaluate(
+			llvm::dyn_cast<llvm::Function>(llvm::unwrap(function)),
+			llvm::ArrayRef<const llvm::Constant*>( reinterpret_cast<const llvm::Constant* const*>(args_start), arg_count ) );
 
-	const auto res= constexpr_function_evaluator.Evaluate( llvm::dyn_cast<llvm::Function>(llvm::unwrap(function)), args );
 	for( const std::string& err : res.errors )
 		error_handler_func( user_data, err.data(), err.size() );
 
