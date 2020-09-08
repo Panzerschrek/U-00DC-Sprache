@@ -73,9 +73,10 @@ import "mangling.uh"
 ->
 <?
 	{
+		auto list_variable= ?list;
 		var ClassField mut class_field
 		{
-			.t= ?list.t,
+			.t= list_variable.t,
 			.is_mutable= true,
 			.is_reference= false,
 			.index= fields_llvm_types.size(),
@@ -83,7 +84,7 @@ import "mangling.uh"
 		};
 
 		fields_llvm_types.push_back( class_field.t.GetLLVMType() );
-		fields_initializers.push_back( ?list.constexpr_value );
+		fields_initializers.push_back( list_variable.constexpr_value );
 
 		auto mut members_lock= class_members.lock_mut();
 		members_lock.get_ref().AddName( ?name, move(class_field) );
@@ -95,6 +96,7 @@ namespace U
 
 // Use reserved by language names, started with "_".
 auto& g_typeinfo_root_class_name= "_TI";
+auto& g_typeinfo_function_params_list_node_class_name= "_TIAL_";
 auto& g_typeinfo_tuple_elements_list_node_class_name= "_TITL_";
 
 // Returns null-terminated string.
@@ -225,12 +227,12 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 	if_var( &tuple_type : t.GetTupleType() )
 	{
 		ADD_SIZE_FIELD( "element_count", tuple_type.element_types.size() )
-		auto elements_list= BuildTypeinfoTupleELementsList( root_namespace, tuple_type );
-		ADD_LIST_FIELD( "elements_list", elements_list )
+		ADD_LIST_FIELD( "elements_list", BuildTypeinfoTupleELementsList( root_namespace, tuple_type ) )
 	}
 	if_var( &function_type : t.GetFunctionType() )
 	{
 		ADD_TYPEINFO_FIELD( "return_type", function_type.return_type )
+		ADD_LIST_FIELD( "arguments_list", BuildTypeinfoFunctionParamsList( root_namespace, function_type ) )
 		ADD_BOOL_FIELD( "return_value_is_reference", function_type.return_value_is_reference )
 		ADD_BOOL_FIELD( "return_value_is_mutable"  , function_type.return_value_is_mutable )
 		ADD_BOOL_FIELD( "unsafe"                   , function_type.is_unsafe )
@@ -410,6 +412,69 @@ fn CodeBuilder::BuildTypeinfoTupleELementsList( mut this, NamesScopePtr& root_na
 		{
 			variable.constexpr_value= LLVMConstStructInContext( llvm_context_, cast_imut(list_initializers).front(), u32(list_initializers.size()), LLVMBool::False );
 		}
+	}
+	variable.llvm_value= variable.constexpr_value;
+
+	return move(variable);
+}
+
+fn CodeBuilder::BuildTypeinfoFunctionParamsList( mut this, NamesScopePtr& root_namespace, FunctionType& function_type ) : Variable
+{
+	var TupleType mut list_type;
+	var ust::vector</LLVMTypeRef/> mut list_llvm_types;
+	var ust::vector</LLVMValueRef/> mut list_initializers;
+
+	var ust::shared_ptr_final</ Synt::ClassField /> dummy_syntax_element( Synt::ClassField() );
+
+	for( auto mut i= 0s; i < function_type.params.size(); ++i )
+	{
+		var ClassTypePtr typeinfo_class= CreateTypeinfoClass( root_namespace, function_type, g_typeinfo_function_params_list_node_class_name + ust::to_string8(i) );
+		var NamesScopeMutPtr class_members= typeinfo_class.lock_imut().get_ref().members;
+
+		var ust::vector</LLVMTypeRef/> mut fields_llvm_types;
+		var ust::vector</LLVMValueRef/> mut fields_initializers;
+
+		auto& param= function_type.params[i];
+		ADD_TYPEINFO_FIELD( "type", param.t )
+		ADD_BOOL_FIELD( "is_reference", param.is_reference )
+		ADD_BOOL_FIELD( "is_mutable"  , param.is_mutable   )
+
+		// SPRACHE_TODO - add reference pollution
+
+		{
+			auto mut class_lock= typeinfo_class.lock_mut();
+			var ClassType &mut class_= class_lock.get_ref();
+
+			unsafe{  LLVMStructSetBody( class_.llvm_type, cast_imut(fields_llvm_types).front(), u32(fields_llvm_types.size()), LLVMBool::False );  }
+
+			class_.is_complete= true;
+		}
+
+		auto element_llvm_type= typeinfo_class.lock_imut().get_ref().llvm_type;
+		list_type.element_types.push_back( typeinfo_class );
+		list_llvm_types.push_back( element_llvm_type );
+
+		unsafe
+		{
+			list_initializers.push_back( LLVMConstNamedStruct( element_llvm_type, cast_imut(fields_initializers).front(), u32(fields_initializers.size()) ) );
+		}
+	}
+
+	unsafe
+	{
+		list_type.llvm_type= LLVMStructTypeInContext( llvm_context_, cast_imut(list_llvm_types).front_unsafe(), u32(list_llvm_types.size()), LLVMBool::False );
+	}
+
+	var Variable mut variable
+	{
+		.t= move(list_type),
+		.value_type= ValueType::Value,
+		.location= Variable::Location::LLVMRegister,
+	};
+
+	unsafe
+	{
+		variable.constexpr_value= LLVMConstStructInContext( llvm_context_, cast_imut(list_initializers).front_unsafe(), u32(list_initializers.size()), LLVMBool::False );
 	}
 	variable.llvm_value= variable.constexpr_value;
 

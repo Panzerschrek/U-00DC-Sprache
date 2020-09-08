@@ -568,6 +568,29 @@ def TypeinfoFieldsDependsOnTypeKind_Test8():
 	assert( errors_list[0].file_pos.line == 4 )
 
 
+def TypeinfoList_FunctionTypeParams_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto& ti= typeinfo</ ( fn( i32 x, f32 & y, bool &mut z ) : size_type ) />.element_type;
+			static_assert( ti.is_function );
+
+			static_assert( ti.arguments_list[0].type.is_signed_integer );
+			static_assert( !ti.arguments_list[0].is_mutable );
+			static_assert( !ti.arguments_list[0].is_reference );
+
+			static_assert( ti.arguments_list[1].type.is_float );
+			static_assert( !ti.arguments_list[1].is_mutable );
+			static_assert( ti.arguments_list[1].is_reference );
+
+			static_assert( ti.arguments_list[2].type.is_bool );
+			static_assert( ti.arguments_list[2].is_mutable );
+			static_assert( ti.arguments_list[2].is_reference );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def TypeinfoList_EnumList_Test0():
 	c_program_text= """
 		template</ size_type size0, size_type size1 />
