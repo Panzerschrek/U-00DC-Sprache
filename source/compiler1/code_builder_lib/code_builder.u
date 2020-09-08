@@ -1071,15 +1071,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			// Check opaque before set body for cases of errors (class body duplication).
 			if( LLVMIsOpaqueStruct( class_.llvm_type ) == LLVMBool::True )
 			{
-				if( fields_llvm_types.empty() )
-				{
-					var LLVMTypeRef dummy= zero_init;
-					LLVMStructSetBody( class_.llvm_type, dummy, 0u, LLVMBool::False );
-				}
-				else
-				{
-					LLVMStructSetBody( class_.llvm_type, cast_imut(fields_llvm_types).front(), u32(fields_llvm_types.size()), LLVMBool::False );
-				}
+				LLVMStructSetBody( class_.llvm_type, cast_imut(fields_llvm_types).front_unsafe(), u32(fields_llvm_types.size()), LLVMBool::False );
 			}
 		}
 	}

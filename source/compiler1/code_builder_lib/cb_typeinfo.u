@@ -423,15 +423,7 @@ fn CodeBuilder::BuildTypeinfoTupleELementsList( mut this, NamesScopePtr& root_na
 
 	unsafe
 	{
-		if( list_llvm_types.empty() )
-		{
-			auto dummy= LLVMTypeRef::Null;
-			list_type.llvm_type= LLVMStructTypeInContext( llvm_context_, dummy, 0u, LLVMBool::False );
-		}
-		else
-		{
-			list_type.llvm_type= LLVMStructTypeInContext( llvm_context_, cast_imut(list_llvm_types).front(), u32(list_llvm_types.size()), LLVMBool::False );
-		}
+		list_type.llvm_type= LLVMStructTypeInContext( llvm_context_, cast_imut(list_llvm_types).front_unsafe(), u32(list_llvm_types.size()), LLVMBool::False );
 	}
 
 	var Variable mut variable
@@ -443,14 +435,7 @@ fn CodeBuilder::BuildTypeinfoTupleELementsList( mut this, NamesScopePtr& root_na
 
 	unsafe
 	{
-		if( list_initializers.empty() )
-		{
-			variable.constexpr_value= LLVMConstStructInContext( llvm_context_, LLVMValueRef::Null, 0u, LLVMBool::False );
-		}
-		else
-		{
-			variable.constexpr_value= LLVMConstStructInContext( llvm_context_, cast_imut(list_initializers).front(), u32(list_initializers.size()), LLVMBool::False );
-		}
+		variable.constexpr_value= LLVMConstStructInContext( llvm_context_, cast_imut(list_initializers).front_unsafe(), u32(list_initializers.size()), LLVMBool::False );
 	}
 	variable.llvm_value= variable.constexpr_value;
 

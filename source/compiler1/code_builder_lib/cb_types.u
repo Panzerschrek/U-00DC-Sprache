@@ -93,15 +93,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 
 	unsafe
 	{
-		if( element_llvm_types.empty() )
-		{
-			auto dummy= LLVMTypeRef::Null;
-			out_tuple_type.llvm_type= LLVMStructTypeInContext( llvm_context_, dummy, 0u, LLVMBool::False );
-		}
-		else
-		{
-			out_tuple_type.llvm_type= LLVMStructTypeInContext( llvm_context_, cast_imut(element_llvm_types).front(), u32(element_llvm_types.size()), LLVMBool::False );
-		}
+		out_tuple_type.llvm_type= LLVMStructTypeInContext( llvm_context_, cast_imut(element_llvm_types).front_unsafe(), u32(element_llvm_types.size()), LLVMBool::False );
 	}
 
 	return move(out_tuple_type);
@@ -217,15 +209,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 			ret_llvm_type= fundamental_llvm_types_.void_for_ret_;
 		}
 
-		if( llvm_param_types.empty() )
-		{
-			auto dummy= LLVMTypeRef::Null;
-			res.llvm_type= LLVMFunctionType( ret_llvm_type, dummy, 0u, LLVMBool::False );
-		}
-		else
-		{
-			res.llvm_type= LLVMFunctionType( ret_llvm_type, cast_imut(llvm_param_types).front(), u32(llvm_param_types.size()), LLVMBool::False );
-		}
+		res.llvm_type= LLVMFunctionType( ret_llvm_type, cast_imut(llvm_param_types).front_unsafe(), u32(llvm_param_types.size()), LLVMBool::False );
 	}
 
 	return move(res);
