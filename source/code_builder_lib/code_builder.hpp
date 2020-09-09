@@ -479,9 +479,9 @@ private:
 	Variable BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_type, NamesScope& root_namespace );
 	Variable BuildTypeinfoClassTypesList( const ClassProxyPtr& class_type, NamesScope& root_namespace );
 	Variable BuildTypeinfoClassFunctionsList( const ClassProxyPtr& class_type, NamesScope& root_namespace );
-	Variable BuildeTypeinfoClassParentsList( const ClassProxyPtr& class_type, NamesScope& root_namespace );
+	Variable BuildTypeinfoClassParentsList( const ClassProxyPtr& class_type, NamesScope& root_namespace );
 	Variable BuildTypeinfoFunctionArguments( const Function& function_type, NamesScope& root_namespace );
-	Variable BuildypeinfoTupleElements( const Tuple& tuple_type, NamesScope& root_namespace );
+	Variable BuildTypeinfoTupleElements( const Tuple& tuple_type, NamesScope& root_namespace );
 
 	// Block elements
 	BlockBuildInfo BuildBlockElement( const Synt::Block& block, NamesScope& names, FunctionContext& function_context );

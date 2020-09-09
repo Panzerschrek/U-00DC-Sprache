@@ -140,14 +140,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			halt if( elements_constants.size() != size_type(array_type.element_count) ); // TODO - replace with assert
 			unsafe
 			{
-				if( elements_constants.empty() )
-				{
-					return LLVMConstArray( element_variable.t.GetLLVMType(), LLVMValueRef::Null, 0u );
-				}
-				else
-				{
-					return LLVMConstArray( element_variable.t.GetLLVMType(), cast_imut(elements_constants).front(), u32(elements_constants.size()) );
-				}
+				return LLVMConstArray( element_variable.t.GetLLVMType(), cast_imut(elements_constants).front_unsafe(), u32(elements_constants.size()) );
 			}
 		}
 		return LLVMValueRef::Null;
@@ -195,14 +188,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			halt if( elements_constants.size() != tuple_type.element_types.size() ); // TODO - replace with assert
 			unsafe
 			{
-				if( elements_constants.empty() )
-				{
-					return LLVMConstStructInContext( llvm_context_, LLVMValueRef::Null, 0u, LLVMBool::False );
-				}
-				else
-				{
-					return LLVMConstStructInContext( llvm_context_, cast_imut(elements_constants).front(), u32(elements_constants.size()), LLVMBool::False );
-				}
+				return LLVMConstStructInContext( llvm_context_, cast_imut(elements_constants).front_unsafe(), u32(elements_constants.size()), LLVMBool::False );
 			}
 		}
 		return LLVMValueRef::Null;
@@ -358,14 +344,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	{
 		unsafe
 		{
-			if( constant_initializers.empty() )
-			{
-				return LLVMConstNull( class_type.llvm_type );
-			}
-			else
-			{
-				return LLVMConstNamedStruct( class_type.llvm_type, cast_imut(constant_initializers).front(), u32(constant_initializers.size()) );
-			}
+			return LLVMConstNamedStruct( class_type.llvm_type, cast_imut(constant_initializers).front_unsafe(), u32(constant_initializers.size()) );
 		}
 	}
 

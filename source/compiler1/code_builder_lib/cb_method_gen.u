@@ -957,7 +957,15 @@ fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionC
 fn CodeBuilder::BuildMembersDestructors( this, FunctionContext &mut function_context, LLVMValueRef value, ClassTypePtr& class_type )
 {
 	auto class_members= class_type.lock_imut().get_ref().members;
-	auto file_pos= class_type.lock_imut().get_ref().syntax_element.get_ref().file_pos;
+
+	var FilePos mut file_pos;
+	{
+		auto syntax_element= class_type.lock_imut().get_ref().syntax_element;
+		if( !syntax_element.empty() )
+		{
+			file_pos= syntax_element.get_ref().file_pos;
+		}
+	}
 
 	foreach( &parent : class_type.lock_imut().get_ref().parents )
 	{

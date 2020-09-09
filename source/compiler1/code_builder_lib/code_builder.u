@@ -1071,15 +1071,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			// Check opaque before set body for cases of errors (class body duplication).
 			if( LLVMIsOpaqueStruct( class_.llvm_type ) == LLVMBool::True )
 			{
-				if( fields_llvm_types.empty() )
-				{
-					var LLVMTypeRef dummy= zero_init;
-					LLVMStructSetBody( class_.llvm_type, dummy, 0u, LLVMBool::False );
-				}
-				else
-				{
-					LLVMStructSetBody( class_.llvm_type, cast_imut(fields_llvm_types).front(), u32(fields_llvm_types.size()), LLVMBool::False );
-				}
+				LLVMStructSetBody( class_.llvm_type, cast_imut(fields_llvm_types).front_unsafe(), u32(fields_llvm_types.size()), LLVMBool::False );
 			}
 		}
 	}
@@ -1712,7 +1704,7 @@ fn CodeBuilder::PrepareFunction(
 		{
 			REPORT_ERROR( ConstructorAndDestructorMustReturnVoid, names_scope_ptr, function_declaration.file_pos )
 		}
-		if( func_name == KeywordToString( Keyword::destructor_ ) && function_type.params.size() > 1s )
+		if( is_destructor && function_type.params.size() > 1s )
 		{
 			REPORT_ERROR( ExplicitArgumentsInDestructor, names_scope_ptr, function_declaration.file_pos )
 		}

@@ -181,56 +181,30 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		{
 			if( char_type == U_FundamentalType::char8_ )
 			{
-				if( string_literal.value.empty() )
-				{
-					var char8 c= zero_init;
-					constexpr_value= LLVMConstStringInContext( llvm_context_, c, 0u, LLVMBool::True );
-				}
-				else
-				{
-					constexpr_value= LLVMConstStringInContext( llvm_context_, string_literal.value.front(), u32(string_literal.value.size()), LLVMBool::True );
-				}
+				constexpr_value= LLVMConstStringInContext( llvm_context_, string_literal.value.front_unsafe(), u32(string_literal.value.size()), LLVMBool::True );
 				array_size= string_literal.value.size();
 			}
 			else if( char_type == U_FundamentalType::char16_ )
 			{
-				if( string_literal.value.empty() )
-				{
-					array_size= 0s;
-					var char16 c= zero_init;
-					constexpr_value= U1_ConstDataArray( element_llvm_type, c, 0s, 0s );
-				}
-				else
-				{
-					var ust::string16 mut buff;
-					auto buff_size= string_literal.value.size() * 4s;
-					buff.resize( buff_size, "\0"c16 ); // Reserve enough space.
+				var ust::string16 mut buff;
+				auto buff_size= string_literal.value.size() * 4s;
+				buff.resize( buff_size, "\0"c16 ); // Reserve enough space.
 
-					array_size= U1_ConvertUTF8ToUTF16( string_literal.value.front(), string_literal.value.size(), buff.front(), buff_size );
-					halt if(array_size > buff.size());
+				array_size= U1_ConvertUTF8ToUTF16( string_literal.value.front_unsafe(), string_literal.value.size(), buff.front_unsafe(), buff_size );
+				halt if(array_size > buff.size());
 
-					constexpr_value= U1_ConstDataArray( element_llvm_type, cast_imut(buff).front(), array_size * typeinfo</char16/>.size_of, array_size );
-				}
+				constexpr_value= U1_ConstDataArray( element_llvm_type, cast_imut(buff).front_unsafe(), array_size * typeinfo</char16/>.size_of, array_size );
 			}
 			else if( char_type == U_FundamentalType::char32_ )
 			{
-				if( string_literal.value.empty() )
-				{
-					array_size= 0s;
-					var char32 c= zero_init;
-					constexpr_value= U1_ConstDataArray( element_llvm_type, c, 0s, 0s );
-				}
-				else
-				{
-					var ust::string32 mut buff;
-					auto buff_size= string_literal.value.size() * 4s;
-					buff.resize( buff_size, "\0"c32 ); // Reserve enough space.
+				var ust::string32 mut buff;
+				auto buff_size= string_literal.value.size() * 4s;
+				buff.resize( buff_size, "\0"c32 ); // Reserve enough space.
 
-					array_size= U1_ConvertUTF8ToUTF32( string_literal.value.front(), string_literal.value.size(), buff.front(), buff_size );
-					halt if(array_size > buff.size());
+				array_size= U1_ConvertUTF8ToUTF32( string_literal.value.front_unsafe(), string_literal.value.size(), buff.front_unsafe(), buff_size );
+				halt if(array_size > buff.size());
 
-					constexpr_value= U1_ConstDataArray( element_llvm_type, cast_imut(buff).front(), array_size * typeinfo</char32/>.size_of, array_size );
-				}
+				constexpr_value= U1_ConstDataArray( element_llvm_type, cast_imut(buff).front_unsafe(), array_size * typeinfo</char32/>.size_of, array_size );
 			}
 			else{ halt; }
 
@@ -278,7 +252,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			{
 				var char16 mut c= zero_init;
 				if( string_literal.value.empty() ||
-					U1_ConvertUTF8ToUTF16( string_literal.value.front(), string_literal.value.size(), c, 1s ) != 1s )
+					U1_ConvertUTF8ToUTF16( string_literal.value.front_unsafe(), string_literal.value.size(), c, 1s ) != 1s )
 				{
 					REPORT_ERROR( InvalidSizeForCharLiteral, names_scope, string_literal.file_pos, string_literal.value )
 					return ErrorValue();
@@ -290,7 +264,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			{
 				var char32 mut c= zero_init;
 				if( string_literal.value.empty() ||
-					U1_ConvertUTF8ToUTF32( string_literal.value.front(), string_literal.value.size(), c, 1s ) != 1s )
+					U1_ConvertUTF8ToUTF32( string_literal.value.front_unsafe(), string_literal.value.size(), c, 1s ) != 1s )
 				{
 					REPORT_ERROR( InvalidSizeForCharLiteral, names_scope, string_literal.file_pos, string_literal.value )
 					return ErrorValue();
@@ -2072,15 +2046,7 @@ fn CodeBuilder::DoCallFunction(
 		// Perform regular call for non-constexpr function or in case of error in constexpr function evaluation.
 		unsafe
 		{
-			if( llvm_args.empty() )
-			{
-				auto dummy= LLVMValueRef::Null;
-				result.llvm_value= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, dummy, 0u, "\0"[0] );
-			}
-			else
-			{
-				result.llvm_value= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, cast_imut(llvm_args).front(), u32(llvm_args.size()), "\0"[0] );
-			}
+			result.llvm_value= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, cast_imut(llvm_args).front_unsafe(), u32(llvm_args.size()), "\0"[0] );
 		}
 	}
 
