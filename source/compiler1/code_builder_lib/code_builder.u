@@ -1712,7 +1712,7 @@ fn CodeBuilder::PrepareFunction(
 		{
 			REPORT_ERROR( ConstructorAndDestructorMustReturnVoid, names_scope_ptr, function_declaration.file_pos )
 		}
-		if( func_name == KeywordToString( Keyword::destructor_ ) && function_type.params.size() > 1s )
+		if( is_destructor && function_type.params.size() > 1s )
 		{
 			REPORT_ERROR( ExplicitArgumentsInDestructor, names_scope_ptr, function_declaration.file_pos )
 		}

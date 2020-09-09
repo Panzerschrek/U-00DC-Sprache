@@ -150,6 +150,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 
 		if( param.name == KeywordToString( Keyword::this_ ) )
 		{
+			// TODO - make "this" mutable in constructors and destructors.
 			if( class_type.empty() )
 			{
 				REPORT_ERROR( ThisInNonclassFunction, names_scope, param.file_pos, ust::string8("TODO - func name") )

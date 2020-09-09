@@ -1123,12 +1123,16 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 	}
 	NextLexem();
 
+	auto is_constructor_or_destructor=
+		res.name.back() == KeywordToString( Keyword::constructor_ ) || res.name.back() == KeywordToString( Keyword::destructor_ );
+
 	if( IsKeyword( it_.front(), Keyword::this_ ) )
 	{
 		var FunctionType::Param mut this_param
 		{
 			.file_pos= it_.front().file_pos,
-			.name= it_.front().text
+			.name= it_.front().text,
+			.mutability_modifier= select( is_constructor_or_destructor ? MutabilityModifier::Mutable : MutabilityModifier::Immutable ),
 		};
 		NextLexem();
 		res.function_type.params.push_back( move(this_param) );
@@ -1175,8 +1179,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 
 	// If method is constructor or destructor and "this" not explicitly specified, add it.
 	// It's easier add "this" here, than dealing with implicit "this" in CodeBuilder.
-	if( ( res.name.back() == KeywordToString( Keyword::constructor_ ) || res.name.back() == KeywordToString( Keyword::destructor_ ) ) &&
-		res.function_type.params.empty() )
+	if( is_constructor_or_destructor && res.function_type.params.empty() )
 	{
 		var FunctionType::Param mut this_param
 		{
