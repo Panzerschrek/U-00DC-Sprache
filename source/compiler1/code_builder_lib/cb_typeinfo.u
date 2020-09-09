@@ -145,6 +145,7 @@ auto& g_typeinfo_function_params_list_node_class_name= "_TIAL_";
 auto& g_typeinfo_class_fields_list_node_class_name= "_TICFiL_";
 auto& g_typeinfo_class_functions_list_node_class_name= "_TICFuL_";
 auto& g_typeinfo_class_types_list_node_class_name= "_TICTL_";
+auto& g_typeinfo_class_parents_list_node_class_name= "_TICPL_";
 auto& g_typeinfo_enum_elements_list_node_class_name= "_TIEL_";
 
 // Returns null-terminated string.
@@ -358,6 +359,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 		ADD_LIST_FIELD( "fields_list", BuildTypeinfoClassFieldsList( root_namespace, class_ptr ) )
 		ADD_LIST_FIELD( "functions_list", BuildTypeinfoClassFunctionsList( root_namespace, class_ptr ) )
 		ADD_LIST_FIELD( "types_list", BuildTypeinfoClassTypesList( root_namespace, class_ptr ) )
+		ADD_LIST_FIELD( "parents_list", BuildTypeinfoClassParentsList( root_namespace, class_ptr ) )
 
 		if( is_polymorph )
 		{
@@ -645,6 +647,41 @@ fn CodeBuilder::BuildTypeinfoClassTypesList( mut this, NamesScopePtr& root_names
 		ADD_TYPEINFO_FIELD( "type", t )
 
 		ADD_CLASS_MEMBER_COMMON_FIELDS( class_member.key() )
+
+		FinsihTypeinfoClass( typeinfo_class, fields_llvm_types );
+
+		list_types.push_back( typeinfo_class );
+		unsafe
+		{
+			list_initializers.push_back( LLVMConstNamedStruct( typeinfo_class.lock_imut().get_ref().llvm_type, cast_imut(fields_initializers).front(), u32(fields_initializers.size()) ) );
+		}
+	}
+
+	return FinishTypeinfoList( llvm_context_, move(list_types), list_initializers );
+}
+
+fn CodeBuilder::BuildTypeinfoClassParentsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : Variable
+{
+	var ust::vector</Type/> mut list_types;
+	var ust::vector</LLVMValueRef/> mut list_initializers;
+
+	var ust::shared_ptr_final</ Synt::ClassField /> dummy_syntax_element( Synt::ClassField() );
+
+	auto class_lock= class_type.lock_imut();
+	var ClassType& class_= class_lock.get_ref();
+	foreach( &parent : class_.parents )
+	{
+		var ClassTypePtr typeinfo_class= CreateTypeinfoClass( root_namespace, class_type, g_typeinfo_class_parents_list_node_class_name + ust::to_string8(list_types.size()) );
+		var NamesScopeMutPtr class_members= typeinfo_class.lock_imut().get_ref().members;
+
+		var ust::vector</LLVMTypeRef/> mut fields_llvm_types;
+		var ust::vector</LLVMValueRef/> mut fields_initializers;
+
+		ADD_TYPEINFO_FIELD( "type", parent.class_ )
+
+		auto mut offset= 0u64;
+		unsafe{  offset= LLVMOffsetOfElement( data_layout_, class_.llvm_type, parent.field_number );  }
+		ADD_SIZE_FIELD( "offset", offset )
 
 		FinsihTypeinfoClass( typeinfo_class, fields_llvm_types );
 
