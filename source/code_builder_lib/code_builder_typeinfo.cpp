@@ -238,7 +238,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	else if( const Tuple* const tuple_type= type.GetTupleType() )
 	{
 		add_size_field( "element_count", tuple_type->elements.size() );
-		add_list_field( "elements_list", BuildypeinfoTupleElements( *tuple_type, root_namespace ) );
+		add_list_field( "elements_list", BuildTypeinfoTupleElements( *tuple_type, root_namespace ) );
 	}
 	else if( const Class* const class_type= type.GetClassType() )
 	{
@@ -257,7 +257,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 		add_list_field( "fields_list"   , BuildTypeinfoClassFieldsList(    class_proxy, root_namespace ) );
 		add_list_field( "types_list"    , BuildTypeinfoClassTypesList(     class_proxy, root_namespace ) );
 		add_list_field( "functions_list", BuildTypeinfoClassFunctionsList( class_proxy, root_namespace ) );
-		add_list_field( "parents_list"  , BuildeTypeinfoClassParentsList(  class_proxy, root_namespace ) );
+		add_list_field( "parents_list"  , BuildTypeinfoClassParentsList(  class_proxy, root_namespace ) );
 
 		if( is_polymorph )
 		{
@@ -613,7 +613,7 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 	return FinalizeTypeinfoList( llvm_context_, list_elements );
 }
 
-Variable CodeBuilder::BuildeTypeinfoClassParentsList( const ClassProxyPtr& class_type, NamesScope& root_namespace )
+Variable CodeBuilder::BuildTypeinfoClassParentsList( const ClassProxyPtr& class_type, NamesScope& root_namespace )
 {
 	const Class& class_= *class_type->class_;
 	const llvm::StructLayout* const struct_layout= data_layout_.getStructLayout( class_.llvm_type );
@@ -728,7 +728,7 @@ Variable CodeBuilder::BuildTypeinfoFunctionArguments( const Function& function_t
 			initializer );
 }
 
-Variable CodeBuilder::BuildypeinfoTupleElements( const Tuple& tuple_type, NamesScope& root_namespace )
+Variable CodeBuilder::BuildTypeinfoTupleElements( const Tuple& tuple_type, NamesScope& root_namespace )
 {
 	Tuple list_type;
 	std::vector< llvm::Type* > list_elements_llvm_types;
