@@ -154,15 +154,6 @@ fn GetTypeinfoVariableName( ClassTypePtr& typeinfo_class ) : ust::string8
 	return "_val_of_" + MangleType(typeinfo_class);
 }
 
-fn FinsihTypeinfoClass( ClassTypePtr& typeinfo_class, ust::vector</LLVMTypeRef/>& fields_llvm_types )
-{
-	auto mut class_lock= typeinfo_class.lock_mut();
-	var ClassType &mut class_= class_lock.get_ref();
-
-	unsafe{  LLVMStructSetBody( class_.llvm_type, cast_imut(fields_llvm_types).front_unsafe(), u32(fields_llvm_types.size()), LLVMBool::False );  }
-
-	class_.is_complete= true;
-}
 
 fn FinishTypeinfoList( LLVMContextRef llvm_context, ust::vector</Type/> mut element_types, ust::vector</LLVMValueRef/>& initializers ) : Variable
 {
@@ -391,7 +382,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 		ADD_LIST_FIELD( "elements_list", BuildTypeinfoEnumElementsList( root_namespace, enum_ptr ) )
 	}
 
-	FinsihTypeinfoClass( typeinfo_class, fields_llvm_types );
+	FinishTypeinfoClass( typeinfo_class, fields_llvm_types );
 
 	var Variable &mut v= typeinfo_cache_[entry_index].v;
 	unsafe
@@ -417,8 +408,20 @@ fn CodeBuilder::CreateTypeinfoClass( this, NamesScopePtr& root_namespace, Type& 
 
 	var ClassTypePtr mut class_type_ptr( move(class_type) );
 
-	auto name_mangled= MangleType( class_type_ptr );
+	{
+		auto mut lock= class_members.lock_mut();
 
+		// Create functions set for constructors/destructors/assignment operators.
+		var NamesScopeFunctionsSet functions_set{ .class_= class_type_ptr };
+		lock.get_ref().AddName( KeywordToString( Keyword::constructor_ ), functions_set );
+		lock.get_ref().AddName( KeywordToString( Keyword::destructor_  ), functions_set );
+		lock.get_ref().AddName( OverloadedOperatorToString( OverloadedOperator::Assign ), functions_set );
+
+		// Add special member to names scope to identify it as class names scope.
+		lock.get_ref().SetClass( class_type_ptr );
+	}
+
+	auto name_mangled= MangleType( class_type_ptr );
 	unsafe
 	{
 		auto mut lock= class_type_ptr.lock_mut();
@@ -426,6 +429,22 @@ fn CodeBuilder::CreateTypeinfoClass( this, NamesScopePtr& root_namespace, Type& 
 	}
 
 	return move(class_type_ptr);
+}
+
+fn CodeBuilder::FinishTypeinfoClass( this, ClassTypePtr& typeinfo_class, ust::vector</LLVMTypeRef/>& fields_llvm_types )
+{
+	{
+		auto mut class_lock= typeinfo_class.lock_mut();
+		var ClassType &mut class_= class_lock.get_ref();
+
+		unsafe{  LLVMStructSetBody( class_.llvm_type, cast_imut(fields_llvm_types).front_unsafe(), u32(fields_llvm_types.size()), LLVMBool::False );  }
+
+		class_.is_complete= true;
+	}
+
+	// Each class should have destructor, so, generate it even for typeinfo class.
+	TryGenerateDestructorPrototype( typeinfo_class );
+	TryGenerateDestructor( typeinfo_class );
 }
 
 fn CodeBuilder::BuildTypeinfoTupleElementsList( mut this, NamesScopePtr& root_namespace, TupleType& tuple_type ) : Variable
@@ -451,7 +470,7 @@ fn CodeBuilder::BuildTypeinfoTupleElementsList( mut this, NamesScopePtr& root_na
 		unsafe{  offset= LLVMOffsetOfElement( data_layout_, tuple_type.llvm_type, u32(i) );  }
 		ADD_SIZE_FIELD( "offset", offset )
 
-		FinsihTypeinfoClass( typeinfo_class, fields_llvm_types );
+		FinishTypeinfoClass( typeinfo_class, fields_llvm_types );
 
 		list_types.push_back( typeinfo_class );
 		unsafe
@@ -485,7 +504,7 @@ fn CodeBuilder::BuildTypeinfoFunctionParamsList( mut this, NamesScopePtr& root_n
 
 		// SPRACHE_TODO - add reference pollution
 
-		FinsihTypeinfoClass( typeinfo_class, fields_llvm_types );
+		FinishTypeinfoClass( typeinfo_class, fields_llvm_types );
 
 		list_types.push_back( typeinfo_class );
 		unsafe
@@ -537,7 +556,7 @@ fn CodeBuilder::BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_name
 
 		ADD_CLASS_MEMBER_COMMON_FIELDS( class_member.key() )
 
-		FinsihTypeinfoClass( typeinfo_class, fields_llvm_types );
+		FinishTypeinfoClass( typeinfo_class, fields_llvm_types );
 
 		list_types.push_back( typeinfo_class );
 		unsafe
@@ -584,7 +603,7 @@ fn CodeBuilder::BuildTypeinfoClassFunctionsList( mut this, NamesScopePtr& root_n
 
 			ADD_CLASS_MEMBER_COMMON_FIELDS( class_member.key() )
 
-			FinsihTypeinfoClass( typeinfo_class, fields_llvm_types );
+			FinishTypeinfoClass( typeinfo_class, fields_llvm_types );
 
 			list_types.push_back( typeinfo_class );
 			unsafe
@@ -648,7 +667,7 @@ fn CodeBuilder::BuildTypeinfoClassTypesList( mut this, NamesScopePtr& root_names
 
 		ADD_CLASS_MEMBER_COMMON_FIELDS( class_member.key() )
 
-		FinsihTypeinfoClass( typeinfo_class, fields_llvm_types );
+		FinishTypeinfoClass( typeinfo_class, fields_llvm_types );
 
 		list_types.push_back( typeinfo_class );
 		unsafe
@@ -683,7 +702,7 @@ fn CodeBuilder::BuildTypeinfoClassParentsList( mut this, NamesScopePtr& root_nam
 		unsafe{  offset= LLVMOffsetOfElement( data_layout_, class_.llvm_type, parent.field_number );  }
 		ADD_SIZE_FIELD( "offset", offset )
 
-		FinsihTypeinfoClass( typeinfo_class, fields_llvm_types );
+		FinishTypeinfoClass( typeinfo_class, fields_llvm_types );
 
 		list_types.push_back( typeinfo_class );
 		unsafe
@@ -733,7 +752,7 @@ fn CodeBuilder::BuildTypeinfoEnumElementsList( mut this, NamesScopePtr& root_nam
 			members_lock.get_ref().AddName( "value", move(class_field) );
 		}
 
-		FinsihTypeinfoClass( typeinfo_class, fields_llvm_types );
+		FinishTypeinfoClass( typeinfo_class, fields_llvm_types );
 
 		list_types.push_back( typeinfo_class );
 		unsafe
