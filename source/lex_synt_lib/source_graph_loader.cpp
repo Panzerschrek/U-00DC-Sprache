@@ -112,7 +112,8 @@ size_t SourceGraphLoader::LoadNode_r(
 		const size_t child_node_index= LoadNode_r( imports[i].import_name, full_file_path, result );
 		if( child_node_index != ~0u )
 		{
-			imported_macroses.push_back( result.nodes_storage[child_node_index].ast.macros );
+			if( const Synt::MacrosPtr macro= result.nodes_storage[child_node_index].ast.macros; macro != nullptr )
+				imported_macroses.push_back( macro );
 			result.nodes_storage[node_index].child_nodes_indeces[i]= child_node_index;
 		}
 	}
@@ -155,11 +156,7 @@ size_t SourceGraphLoader::LoadNode_r(
 			<< syntax_error_message.file_pos.GetLine() << ":" << syntax_error_message.file_pos.GetColumn() << ": error: " << syntax_error_message.text << "\n";
 
 	result.syntax_errors.insert( result.syntax_errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
-	if( !synt_result.error_messages.empty() )
-	{
-		result.have_errors= true;
-		return ~0u;
-	}
+	result.have_errors &= !synt_result.error_messages.empty();
 
 	result.nodes_storage[node_index].ast= std::move( synt_result );
 	return node_index;
