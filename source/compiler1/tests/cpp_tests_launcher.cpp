@@ -136,6 +136,7 @@ bool FilterTest( const std::string& test_name )
 		"DefaultConstructorNotFoundTest",
 		"DefaultInitializationForStructMembersTest",
 		"DefaultSignatureArguments",
+		"DestructorTest_ForCStyleForOperator",
 		"DestructorOutsideClassTest0",
 		"DuplicatedStructMemberInitializer",
 		"EmptyInitializerTest0",
