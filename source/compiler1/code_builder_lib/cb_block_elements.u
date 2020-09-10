@@ -603,7 +603,45 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StaticIfOperator& static_if_operator ) : BlockElementBuildInfo
 {
-	// TODO
+	foreach( &branch : static_if_operator.if_operator.branches )
+	{
+		if( !branch.condition.get</Synt::EmptyVariant/>().empty() )
+		{
+			// Last unconditional "else"
+			return BuildBlockElement( names_scope, function_context, branch.block );
+		}
+		else
+		{
+			var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+			auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+
+			var Variable condition_expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, branch.condition );
+			if( condition_expression.t != bool_type_ )
+			{
+				REPORT_ERROR( TypesMismatch,
+					names_scope,
+					Synt::GetFilePos( branch.condition ),
+					bool_type_,
+					condition_expression.t )
+				return BlockElementBuildInfo();
+			}
+			if( condition_expression.constexpr_value == LLVMValueRef::Null )
+			{
+				REPORT_ERROR( ExpectedConstantExpression, names_scope, Synt::GetFilePos( branch.condition ) )
+				return BlockElementBuildInfo();
+			}
+
+			CallDestructorsForTopVariablesFrame( names_scope, function_context, branch.file_pos );
+
+			var u64 mut constexpr_value= 0u64;
+			unsafe{  constexpr_value= LLVMConstIntGetZExtValue( condition_expression.constexpr_value );  }
+			if( constexpr_value != 0u64 )
+			{
+				return BuildBlockElement( names_scope, function_context, branch.block );
+			}
+		}
+	}
+
 	return BlockElementBuildInfo();
 }
 
