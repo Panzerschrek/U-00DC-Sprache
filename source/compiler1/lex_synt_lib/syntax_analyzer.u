@@ -234,6 +234,7 @@ private:
 	fn ParseAutoVariableDeclaration( mut this ) : AutoVariableDeclaration;
 	fn ParseReturnOperator( mut this ) : ReturnOperator;
 	fn ParseIfOperator( mut this ) : IfOperator;
+	fn ParseStaticIfOperator( mut this ) : StaticIfOperator;
 	fn ParseWhileOperator( mut this ) : WhileOperator;
 	fn ParseForOperator( mut this ) : RangeForOperator;
 	fn ParseBreakOperator( mut this ) : BreakOperator;
@@ -1517,6 +1518,10 @@ fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 		{
 			block.elements.push_back( ParseIfOperator() );
 		}
+		else if( IsKeyword( it_.front(), Keyword::static_if_ ) )
+		{
+			block.elements.push_back( ParseStaticIfOperator() );
+		}
 		else if( IsKeyword( it_.front(), Keyword::while_ ) )
 		{
 			block.elements.push_back( ParseWhileOperator() );
@@ -1768,7 +1773,7 @@ fn SyntaxAnalyzer::ParseReturnOperator( mut this ) : ReturnOperator
 fn SyntaxAnalyzer::ParseIfOperator( mut this ) : IfOperator
 {
 	auto start_file_pos= it_.front().file_pos;
-	NextLexem(); // if
+	NextLexem(); // "if" or "static_if"
 
 	var IfOperator mut if_operator{ .file_pos= start_file_pos };
 
@@ -1852,6 +1857,21 @@ fn SyntaxAnalyzer::ParseIfOperator( mut this ) : IfOperator
 	}
 
 	return move(if_operator);
+}
+
+fn SyntaxAnalyzer::ParseStaticIfOperator( mut this ) : StaticIfOperator
+{
+	if( !IsKeyword( it_.front(), Keyword::static_if_ ) )
+	{
+		PushErrorMessage();
+	}
+
+	var StaticIfOperator mut static_if_operator
+	{
+		.file_pos= it_.front().file_pos,
+		.if_operator= ParseIfOperator()
+	};
+	return move(static_if_operator);
 }
 
 fn SyntaxAnalyzer::ParseWhileOperator( mut this ) : WhileOperator

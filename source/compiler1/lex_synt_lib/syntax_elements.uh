@@ -318,6 +318,12 @@ struct IfOperator
 	ust::vector</Branch/> branches;
 }
 
+struct StaticIfOperator
+{
+	FilePos file_pos;
+	IfOperator if_operator;
+}
+
 struct WhileOperator
 {
 	FilePos file_pos;
@@ -373,6 +379,7 @@ type BlockElement = ust::variant</ tup[
 	DecrementOperator,
 	Expression,
 	IfOperator,
+	StaticIfOperator,
 	WhileOperator,
 	RangeForOperator,
 	BreakOperator,

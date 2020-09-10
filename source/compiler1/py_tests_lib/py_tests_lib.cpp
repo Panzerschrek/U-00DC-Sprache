@@ -628,6 +628,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"Override",
 		"PrivateMembersNotInherited_Test",
 		"Specialization_Test",
+		"StaticIfDeclaration_Test",
 		"StringLiteral_CharNumber_Test",
 		"StringLiteralSuffix_Test",
 		"TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test",
