@@ -591,6 +591,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"CopyChildToParent_Test",
 		"CouldNotOverloadFunction_ForUnsafe_Test",
 		"CouldNotOverloadFunctionIfNomangle_Test",
+		"CStyleForOperator",
 		"DifferentFunctionImplementations_UsingEnableIf",
 		"DirectFunctionTemplateParametersSet_Test",
 		"DisableDefaultConstructor_Test",

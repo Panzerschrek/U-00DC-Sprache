@@ -341,6 +341,32 @@ struct RangeForOperator
 	ust::box</Block/> block;
 }
 
+struct CStyleForOperator
+{
+	FilePos file_pos;
+
+	ust::variant</ tup[
+		EmptyVariant,
+		VariablesDeclaration,
+		AutoVariableDeclaration
+		] />
+	variable_declaration_part;
+
+	Expression loop_condition; // May be "EmptyVariant"
+
+	ust::vector</
+		ust::variant</ tup[
+			Expression,
+			AssignmentOperator,
+			AdditiveAssignmentOperator,
+			IncrementOperator,
+			DecrementOperator
+		] /> />
+	iteration_part_elements;
+
+	ust::box</Block/> block;
+}
+
 struct BreakOperator
 {
 	FilePos file_pos;
@@ -382,6 +408,7 @@ type BlockElement = ust::variant</ tup[
 	StaticIfOperator,
 	WhileOperator,
 	RangeForOperator,
+	CStyleForOperator,
 	BreakOperator,
 	ContinueOperator,
 	StaticAssert,

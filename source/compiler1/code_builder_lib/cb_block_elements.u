@@ -5,6 +5,12 @@ import "code_builder.uh"
 namespace U
 {
 
+fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : BlockElementBuildInfo
+{
+	// Empty variant - legal element kind for C style "for" operator variables declaration part.
+	return BlockElementBuildInfo();
+}
+
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::Block/>& block_ptr ) : BlockElementBuildInfo
 {
 	return BuildBlockElement( names_scope, function_context, block_ptr.get_ref() );
@@ -832,6 +838,111 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 	// TODO - support array types.
 	REPORT_ERROR( OperationNotSupportedForThisType, names_scope, range_for_operator.file_pos, sequence_expression.t )
+	return BlockElementBuildInfo();
+}
+
+fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CStyleForOperator& c_style_for_operator ) : BlockElementBuildInfo
+{
+	var VariablesFrameHolder loop_variables_frame_hodler(function_context);
+	auto& mut function_context= loop_variables_frame_hodler.GetFunctionContext();
+
+	// Create separate names_scope for loop variables.
+	var NamesScopeMutPtr names_scope( NamesScope( "", names_scope ) );
+
+	// Variables declaration part.
+	variant_visit( &element : c_style_for_operator.variable_declaration_part )
+	{
+		BuildBlockElement( names_scope, function_context, element );
+	}
+
+	var LLVMBasicBlockRef mut test_block= zero_init, mut loop_block= zero_init, mut loop_iteration_block= zero_init, mut block_after_loop= zero_init;
+	unsafe
+	{
+		test_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+		loop_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+		loop_iteration_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+		block_after_loop= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+	}
+
+	// Test block.
+	unsafe
+	{
+		LLVMBuildBr( function_context.llvm_ir_builder, test_block );
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, test_block );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, test_block );
+	}
+
+	if( !c_style_for_operator.loop_condition.get</Synt::EmptyVariant/>().empty() )
+	{
+		// No condition.
+		unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, loop_block );  }
+	}
+	else
+	{
+		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+
+		var Variable condition_expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, c_style_for_operator.loop_condition );
+		var FilePos condition_file_pos= Synt::GetFilePos( c_style_for_operator.loop_condition );
+		if( condition_expression.t != bool_type_ )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, condition_file_pos, bool_type_, condition_expression.t )
+			return BlockElementBuildInfo();
+		}
+
+		auto condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+		CallDestructorsForTopVariablesFrame( names_scope, function_context, condition_file_pos );
+
+		unsafe{  LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, loop_block, block_after_loop );  }
+	}
+
+	// Loop block code.
+	var LoopFrame loop_frame
+	{
+		.block_for_break= block_after_loop,
+		.block_for_continue= loop_iteration_block,
+		.variable_frames_stack_size= function_context.variables_frames.size(),
+	};
+	function_context.loops_stack.push_back(loop_frame);
+
+	unsafe
+	{
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, loop_block );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, loop_block );
+	}
+
+	auto info= BuildBlockElement( names_scope, function_context, c_style_for_operator.block );
+	if( !info.have_terminal_instruction_inside )
+	{
+		unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, loop_iteration_block );  }
+	}
+
+	function_context.loops_stack.pop_back();
+
+	// Loop iteration block.
+	unsafe
+	{
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, loop_iteration_block );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, loop_iteration_block );
+	}
+	foreach( &element : c_style_for_operator.iteration_part_elements )
+	{
+		variant_visit( &el : element )
+		{
+			BuildBlockElement( names_scope, function_context, el );
+		}
+	}
+
+	unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, test_block );  }
+
+	// Block after loop.
+	unsafe
+	{
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_loop );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_loop );
+	}
+
+	CallDestructorsForTopVariablesFrame( names_scope, function_context, c_style_for_operator.file_pos );
 	return BlockElementBuildInfo();
 }
 

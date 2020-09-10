@@ -249,9 +249,7 @@ def CStyleForOperator_VariableVisibility_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "NameNotFound" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( HaveError( errors_list, "NameNotFound", 5 ) )
 
 
 def CStyleForOperator_VariableVisibility_Test2():
@@ -263,9 +261,7 @@ def CStyleForOperator_VariableVisibility_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "NameNotFound" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( HaveError( errors_list, "NameNotFound", 5 ) )
 
 
 def CStyleForOperator_VariableVisibility_Test3():
