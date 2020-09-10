@@ -396,6 +396,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"CouldNotOverloadFunction_Test1",
 		"CouldNotOverloadFunction_Test2",
 		"CouldNotSelectOverloadedFunction_Test0",
+		"CStyleForOperatorParsing_Test0",
 		"DefaultClassVisibilityIsPublic_Test0",
 		"DefaultConstructorGeneration_Test0",
 		"DisableCopyAssignmentOperator_Test0",
