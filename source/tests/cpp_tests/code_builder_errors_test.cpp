@@ -330,12 +330,7 @@ U_TEST(UnknownNumericConstantTypeTest0)
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnknownNumericConstantType );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UnknownNumericConstantType, 4u ) );
 }
 
 U_TEST(UnknownNumericConstantTypeTest1)
@@ -350,12 +345,7 @@ U_TEST(UnknownNumericConstantTypeTest1)
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnknownNumericConstantType );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UnknownNumericConstantType, 4u ) );
 }
 
 U_TEST(OperationNotSupportedForThisTypeTest0)
@@ -738,18 +728,11 @@ U_TEST(TypesMismatchTest12)
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( build_result.errors.size() >= 5u );
-
-	U_TEST_ASSERT( build_result.errors[0u].code == CodeBuilderErrorCode::TypesMismatch );
-	U_TEST_ASSERT( build_result.errors[0u].file_pos.GetLine() == 7u );
-	U_TEST_ASSERT( build_result.errors[1u].code == CodeBuilderErrorCode::TypesMismatch );
-	U_TEST_ASSERT( build_result.errors[1u].file_pos.GetLine() == 8u );
-	U_TEST_ASSERT( build_result.errors[2u].code == CodeBuilderErrorCode::TypesMismatch );
-	U_TEST_ASSERT( build_result.errors[2u].file_pos.GetLine() == 9u );
-	U_TEST_ASSERT( build_result.errors[3u].code == CodeBuilderErrorCode::TypesMismatch );
-	U_TEST_ASSERT( build_result.errors[3u].file_pos.GetLine() == 10u );
-	U_TEST_ASSERT( build_result.errors[4u].code == CodeBuilderErrorCode::TypesMismatch );
-	U_TEST_ASSERT( build_result.errors[4u].file_pos.GetLine() == 11u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TypesMismatch,  7u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TypesMismatch,  8u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TypesMismatch,  9u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TypesMismatch, 10u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TypesMismatch, 11u ) );
 }
 
 U_TEST(NoMatchBinaryOperatorForGivenTypesTest0)
@@ -1733,7 +1716,7 @@ U_TEST(ReturnValueDiffersFromPrototypeTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 2u || error.file_pos.GetLine() == 3u );
 }
 
 U_TEST(ReturnValueDiffersFromPrototypeTest1)
@@ -1754,7 +1737,7 @@ U_TEST(ReturnValueDiffersFromPrototypeTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 2u || error.file_pos.GetLine() == 3u );
 }
 
 U_TEST(ReturnValueDiffersFromPrototypeTest2)
@@ -1775,7 +1758,7 @@ U_TEST(ReturnValueDiffersFromPrototypeTest2)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 2u || error.file_pos.GetLine() == 3u );
 }
 
 U_TEST(ReturnValueDiffersFromPrototypeTest3)
@@ -1796,7 +1779,7 @@ U_TEST(ReturnValueDiffersFromPrototypeTest3)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 2u || error.file_pos.GetLine() == 3u );
 }
 
 } // namespace U

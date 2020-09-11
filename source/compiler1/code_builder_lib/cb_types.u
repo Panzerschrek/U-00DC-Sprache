@@ -53,10 +53,23 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 	{
 		if( !index_variable.t.GetFundamentalType().empty() && IsInteger( index_variable.t.GetFundamentalType().get_ref().fundamental_type ) )
 		{
-			unsafe{  out_array_type.element_count= LLVMConstIntGetZExtValue( index_variable.constexpr_value );  }
-			if( IsSignedInteger( index_variable.t.GetFundamentalType().get_ref().fundamental_type ) && i64(out_array_type.element_count) < 0i64 )
+			if( IsSignedInteger( index_variable.t.GetFundamentalType().get_ref().fundamental_type ) )
 			{
-				out_array_type.element_count= 0u64;
+				auto mut s= 0i64;
+				unsafe{  s= LLVMConstIntGetSExtValue( index_variable.constexpr_value );  }
+				if( s >= 0i64 )
+				{
+					out_array_type.element_count= u64(s);
+				}
+				else
+				{
+					out_array_type.element_count= 0u64;
+					REPORT_ERROR( ArraySizeIsNegative, names_scope,  array_type.file_pos  )
+				}
+			}
+			else
+			{
+				unsafe{  out_array_type.element_count= LLVMConstIntGetZExtValue( index_variable.constexpr_value );  }
 			}
 		}
 		else
@@ -153,6 +166,16 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 			}
 			else
 			{
+				auto mut param_ok= false;
+				if_var( &param_type_complex_name : param.t.get</Synt::ComplexName/>() )
+				{
+					param_ok= param_type_complex_name.name.empty() && param_type_complex_name.tail.empty();
+				}
+				if( !param_ok )
+				{
+					REPORT_ERROR( UsingKeywordAsName, names_scope, param.file_pos )
+				}
+
 				out_param.is_reference= true;
 				out_param.t= ust::to_non_nullable( class_type );
 			}

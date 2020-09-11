@@ -238,6 +238,7 @@ bool FilterTest( const std::string& test_name )
 
 		"auto_variables_errors_test.cpp",
 		"auto_variables_test.cpp",
+		"code_builder_errors_test.cpp",
 		"code_builder_test.cpp",
 		"code_builder_errors_test.cpp:ExpectedReferenceValueTest",
 		"constexpr_errors_test.cpp",
