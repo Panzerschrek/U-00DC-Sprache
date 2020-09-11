@@ -67,6 +67,32 @@ struct Typeinfo
 	TypeName type_name;
 }
 
+struct CastRef
+{
+	FilePos file_pos;
+	TypeName t;
+	ust::shared_ptr_final</Expression/> expression;
+}
+
+struct CastRefUnsafe
+{
+	FilePos file_pos;
+	TypeName t;
+	ust::shared_ptr_final</Expression/> expression;
+}
+
+struct CastImut
+{
+	FilePos file_pos;
+	ust::shared_ptr_final</Expression/> expression;
+}
+
+struct CastMut
+{
+	FilePos file_pos;
+	ust::shared_ptr_final</Expression/> expression;
+}
+
 struct BinaryOperator
 {
 	FilePos file_pos;
@@ -134,6 +160,10 @@ type Expression= ust::variant</ tup[
 	StringLiteral,
 	ComplexName,
 	Typeinfo,
+	CastRef,
+	CastRefUnsafe,
+	CastImut,
+	CastMut,
 	BinaryOperator,
 	BracketExpression,
 	IndexationOperator,
