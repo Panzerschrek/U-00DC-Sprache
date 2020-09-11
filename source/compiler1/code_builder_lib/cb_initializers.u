@@ -811,11 +811,21 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 		}
 		return initializer_variable.constexpr_value;
 	}
+
+	var ust::optional_ref</FunctionsSet, false/> mut functions_set_opt;
 	if_var( &functions_set : initializer_value.get</FunctionsSet/>() )
+	{
+		functions_set_opt.reset( functions_set );
+	}
+	if_var( &this_methods_set : initializer_value.get</ThisMethodsSet/>() )
+	{
+		functions_set_opt.reset( this_methods_set.functions_set );
+	}
+
+	if_var( &functions_set : functions_set_opt )
 	{
 		var FunctionType& function_type= variable.t.GetFunctionPointerType().get_ref().function_type;
 
-		// TODO - support function pointer conversion here.
 		var ust::vector</ FunctionVariable /> mut exact_type_functions;
 		var ust::vector</ FunctionVariable /> mut functions_with_conversion;
 		foreach( &function_variable : functions_set.functions )

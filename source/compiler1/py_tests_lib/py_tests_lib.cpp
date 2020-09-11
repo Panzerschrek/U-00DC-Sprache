@@ -456,6 +456,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"FunctionPointersConversions_Test0",
 		"FunctionPointersConversions_Test1",
 		"FunctionPointersConversions_Test4",
+		"FunctionPointerPointedToNonvirtualFunction_Test0",
 		"FunctionPointerTypesInfo_Test0",
 		//"FunctionPointersConversions_Test5",
 		"FunctionsVisibilityMismatch_Test0",
