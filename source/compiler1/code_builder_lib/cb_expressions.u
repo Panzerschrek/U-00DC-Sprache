@@ -433,64 +433,16 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CastRef& cast_ref_ ) : Value
 {
-	var Type t= PrepareType( names_scope, function_context, cast_ref_.t );
-	var Variable v= BuildExpressionCodeEnsureVariable( names_scope, function_context, cast_ref_.expression.get_ref() );
-
-	var Variable mut r
-	{
-		.t= t,
-		.value_type= select( v.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-		.location= Variable::Location::Pointer,
-	};
-
-	// TODO - maybe forbid reference casting for ValueType::Value?
-	auto mut src_llvm_value= v.llvm_value;
-	if( v.location == Variable::Location::LLVMRegister )
-	{
-		unsafe
-		{
-			src_llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, v.t.GetLLVMType(), "\0"[0] );
-			LLVMBuildStore( function_context.llvm_ir_builder, v.llvm_value, src_llvm_value );
-		}
-	}
-
-	if( v.t == t )
-	{
-		r.llvm_value= src_llvm_value;
-	}
-	else if( t == void_type_ )
-	{
-		r.llvm_value= CreateReferenceCast( src_llvm_value, v.t, t, function_context );
-	}
-	else
-	{
-		// We needs complete types to check reference conversion possibility.
-		if( !EnsureTypeComplete( t ) )
-		{
-			REPORT_ERROR( UsingIncompleteType, names_scope, cast_ref_.file_pos, t )
-			return ErrorValue();
-		}
-		if( v.t != void_type_ && !EnsureTypeComplete( v.t ) )
-		{
-			REPORT_ERROR( UsingIncompleteType, names_scope, cast_ref_.file_pos, v.t )
-			return ErrorValue();
-		}
-		if( !v.t.ReferenceIsConvertibleTo( t ) )
-		{
-			REPORT_ERROR( TypesMismatch, names_scope, cast_ref_.file_pos, t, v.t )
-			return ErrorValue();
-		}
-
-		r.llvm_value= CreateReferenceCast( src_llvm_value, v.t, t, function_context );
-	}
-
-	return move(r);
+	return DoReferenceCast( names_scope, function_context, cast_ref_.t, cast_ref_.expression.get_ref(), cast_ref_.file_pos, false );
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CastRefUnsafe& cast_ref_unsafe_ ) : Value
 {
-	// TODO
-	return ErrorValue();
+	if( !function_context.is_in_unsafe_block )
+	{
+		REPORT_ERROR( UnsafeReferenceCastOutsideUnsafeBlock, names_scope, cast_ref_unsafe_.file_pos )
+	}
+	return DoReferenceCast( names_scope, function_context, cast_ref_unsafe_.t, cast_ref_unsafe_.expression.get_ref(), cast_ref_unsafe_.file_pos, true );
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CastImut& cast_imut_ ) : Value
@@ -1199,6 +1151,76 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type ) : Value
 {
 	return PrepareType( names_scope, function_context, function_type );
+}
+
+fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TypeName& type_name, Synt::Expression& expression, FilePos& file_pos, bool allow_unsafe ) : Value
+{
+	var Type t= PrepareType( names_scope, function_context, type_name );
+	var Variable v= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression );
+
+	var Variable mut r
+	{
+		.t= t,
+		.value_type= select( v.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+		.location= Variable::Location::Pointer,
+	};
+
+	// TODO - maybe forbid reference casting for ValueType::Value?
+	auto mut src_llvm_value= v.llvm_value;
+	if( v.location == Variable::Location::LLVMRegister )
+	{
+		unsafe
+		{
+			src_llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, v.t.GetLLVMType(), "\0"[0] );
+			LLVMBuildStore( function_context.llvm_ir_builder, v.llvm_value, src_llvm_value );
+		}
+	}
+
+	if( v.t == t )
+	{
+		r.llvm_value= src_llvm_value;
+	}
+	else if( t == void_type_ )
+	{
+		r.llvm_value= CreateReferenceCast( src_llvm_value, v.t, t, function_context );
+	}
+	else
+	{
+		// We needs complete types to check reference conversion possibility.
+		if( !EnsureTypeComplete( t ) )
+		{
+			REPORT_ERROR( UsingIncompleteType, names_scope, file_pos, t )
+			return ErrorValue();
+		}
+		if( v.t != void_type_ && !EnsureTypeComplete( v.t ) )
+		{
+			REPORT_ERROR( UsingIncompleteType, names_scope, file_pos, v.t )
+			return ErrorValue();
+		}
+
+		if( v.t.ReferenceIsConvertibleTo( t ) )
+		{
+			r.llvm_value= CreateReferenceCast( src_llvm_value, v.t, t, function_context );
+		}
+		else
+		{
+			if( allow_unsafe )
+			{
+				unsafe
+				{
+					auto dst_pointer_type= LLVMPointerType( t.GetLLVMType(), 0u );
+					r.llvm_value= LLVMBuildPointerCast( function_context.llvm_ir_builder, src_llvm_value, dst_pointer_type, "\0"[0] );
+				}
+			}
+			else
+			{
+				REPORT_ERROR( TypesMismatch, names_scope, file_pos, t, v.t )
+				return ErrorValue();
+			}
+		}
+	}
+
+	return move(r);
 }
 
 fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& l_var, Variable& r_var, BinaryOperatorType operator, FilePos& file_pos ) : Value
