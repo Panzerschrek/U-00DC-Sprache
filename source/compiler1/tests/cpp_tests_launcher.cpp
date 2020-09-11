@@ -161,6 +161,7 @@ bool FilterTest( const std::string& test_name )
 		"classes_declaration_test.cpp",
 		"class_templates_test.cpp",
 		"enums_errors_test.cpp",
+		"enums_test.cpp",
 		"global_variables_errors_test.cpp",
 		"global_variables_test.cpp",
 		"halt_test.cpp",

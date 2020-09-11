@@ -575,7 +575,7 @@ fn CodeBuilder::ResolveValue(
 		{
 			var ust::shared_ptr_nullable_imut</NamesScope/> mut namespace_= current_value.get_ref().Get</NamesScope/>();
 			auto mut class_= current_value.get_ref().Get</ClassType/>();
-			auto enum_= current_value.get_ref().Get</Enum/>();
+			auto mut enum_= current_value.get_ref().Get</Enum/>();
 			auto type_templates_set= current_value.get_ref().Get</TypeTemplatesSet/>();
 			auto t= current_value.get_ref().Get</Type/>();
 			auto type_alias= current_value.get_ref().Get</TypeAlias/>();
@@ -586,6 +586,10 @@ fn CodeBuilder::ResolveValue(
 				if_var( &class_type : lock.get_ref().GetClassType() )
 				{
 					class_= class_type;
+				}
+				if_var( &enum_type : lock.get_ref().GetEnumType() )
+				{
+					enum_= enum_type;
 				}
 			}
 			if( !type_alias.empty() )
@@ -600,6 +604,10 @@ fn CodeBuilder::ResolveValue(
 					if_var( &class_type : t.GetClassType() )
 					{
 						class_= class_type;
+					}
+					if_var( &enum_type : t.GetEnumType() )
+					{
+						enum_= enum_type;
 					}
 				}
 			}
