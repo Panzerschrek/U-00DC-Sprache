@@ -322,12 +322,6 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 		if( field.index == ~0s ){ continue; } // May be in case of error
 
-		if( field.is_reference )
-		{
-			REPORT_ERROR( ExpectedInitializer, names_scope, struct_named_initializer.file_pos, class_member.key() )
-			continue;
-		}
-
 		var NamesScopeVariable member_variable
 		{
 			.t= field.t,
@@ -337,11 +331,24 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		auto& initializer= field.syntax_element.get_ref().initializer;
 		if( !initializer.get</Synt::EmptyVariant/>().empty() )
 		{
+			if( field.is_reference )
+			{
+				REPORT_ERROR( ExpectedInitializer, names_scope, struct_named_initializer.file_pos, class_member.key() )
+				continue;
+			}
+
 			BuildEmptyInitializer( names_scope, function_context, member_variable, class_member.key(), struct_named_initializer.file_pos );
 		}
 		else
 		{
-			BuildInitializer( class_type.members, function_context, member_variable, initializer );
+			if( field.is_reference )
+			{
+				InitializeReferenceField( class_type.members, function_context, variable, field, initializer );
+			}
+			else
+			{
+				BuildInitializer( class_type.members, function_context, member_variable, initializer );
+			}
 		}
 
 		// TODO - support constexpr for empty initializers.
@@ -1106,12 +1113,6 @@ fn CodeBuilder::BuildConstructorInitialization(
 
 		if( class_field.index == ~0s ){ continue; } // May be in case of error
 
-		if( class_field.is_reference )
-		{
-			REPORT_ERROR( ExpectedInitializer, names_scope, constructor_initialization_list.file_pos, field_name )
-			continue;
-		}
-
 		var NamesScopeVariable field_variable
 		{
 			.t= class_field.t,
@@ -1122,11 +1123,25 @@ fn CodeBuilder::BuildConstructorInitialization(
 		auto& initializer= class_field.syntax_element.get_ref().initializer;
 		if( !initializer.get</Synt::EmptyVariant/>().empty() )
 		{
+			if( class_field.is_reference )
+			{
+				REPORT_ERROR( ExpectedInitializer, names_scope, constructor_initialization_list.file_pos, field_name )
+				continue;
+			}
+
 			BuildEmptyInitializer( names_scope, function_context, field_variable, field_name, constructor_initialization_list.file_pos );
 		}
 		else
 		{
-			BuildInitializer( class_members, function_context, field_variable, initializer );
+			if( class_field.is_reference )
+			{
+				var NamesScopeVariable this_variable{ .t= class_type, .llvm_value= function_context.this_.get_ref().llvm_value };
+				InitializeReferenceField( class_members, function_context, this_variable, class_field, initializer );
+			}
+			else
+			{
+				BuildInitializer( class_members, function_context, field_variable, initializer );
+			}
 		}
 	}
 

@@ -62,6 +62,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 
 		auto field_lock= field_ptr.lock_imut();
 		auto& field= field_lock.get_ref();
+
 		if( !field.syntax_element.get_ref().initializer.get</Synt::EmptyVariant/>().empty() &&
 			( field.is_reference || !field.t.IsDefaultConstructible() ) )
 		{
@@ -197,7 +198,15 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		}
 		else
 		{
-			BuildInitializer( class_members, function_context, field_variable, initializer );
+			if( class_field.is_reference )
+			{
+				var NamesScopeVariable this_variable{ .t= class_type, .llvm_value= this_llvm_value };
+				InitializeReferenceField( class_members, function_context, this_variable, class_field, initializer );
+			}
+			else
+			{
+				BuildInitializer( class_members, function_context, field_variable, initializer );
+			}
 		}
 	}
 
