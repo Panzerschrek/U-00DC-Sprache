@@ -62,7 +62,8 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 
 		auto field_lock= field_ptr.lock_imut();
 		auto& field= field_lock.get_ref();
-		if( field.is_reference || !field.t.IsDefaultConstructible() )
+		if( !field.syntax_element.get_ref().initializer.get</Synt::EmptyVariant/>().empty() &&
+			( field.is_reference || !field.t.IsDefaultConstructible() ) )
 		{
 			all_fields_is_default_constructible= false;
 			break;
@@ -189,7 +190,15 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 			.llvm_value= CreateFieldGEP( this_llvm_value, class_field, function_context )
 		};
 
-		BuildEmptyInitializer( class_members, function_context, field_variable, member.key(), FilePos( /* TODO - set correct file_pos */ ) );
+		auto& initializer= class_field.syntax_element.get_ref().initializer;
+		if( !initializer.get</Synt::EmptyVariant/>().empty() )
+		{
+			BuildEmptyInitializer( class_members, function_context, field_variable, member.key(), FilePos( /* TODO - set correct file_pos */ ) );
+		}
+		else
+		{
+			BuildInitializer( class_members, function_context, field_variable, initializer );
+		}
 	}
 
 	SetupVirtualTablePointers( this_llvm_value, class_type, function_context );
