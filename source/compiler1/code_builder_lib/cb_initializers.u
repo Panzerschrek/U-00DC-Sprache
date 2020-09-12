@@ -328,6 +328,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			.llvm_value= CreateFieldGEP( variable.llvm_value, field, function_context )
 		};
 
+		auto mut constexpr_initializer= LLVMValueRef::Null;
 		auto& initializer= field.syntax_element.get_ref().initializer;
 		if( !initializer.get</Synt::EmptyVariant/>().empty() )
 		{
@@ -343,16 +344,22 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		{
 			if( field.is_reference )
 			{
-				InitializeReferenceField( class_type.members, function_context, variable, field, initializer );
+				constexpr_initializer= InitializeReferenceField( class_type.members, function_context, variable, field, initializer );
 			}
 			else
 			{
-				BuildInitializer( class_type.members, function_context, member_variable, initializer );
+				constexpr_initializer= BuildInitializer( class_type.members, function_context, member_variable, initializer );
 			}
 		}
 
-		// TODO - support constexpr for empty initializers.
-		is_constexpr= false;
+		if( constexpr_initializer == LLVMValueRef::Null )
+		{
+			is_constexpr= false;
+		}
+		if( is_constexpr )
+		{
+			constant_initializers[field.index]= constexpr_initializer;
+		}
 	}
 
 	if( is_constexpr )
