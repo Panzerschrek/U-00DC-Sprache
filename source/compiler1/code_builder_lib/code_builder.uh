@@ -193,6 +193,8 @@ private:
 		FunctionContext &mut function_context,
 		Synt::StructNamedInitializer& constructor_initialization_list );
 
+	fn CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type );
+
 	fn BuildFuncCode( mut this, NamesScopePtr& names_scope_ptr, FunctionVariable &mut func_variable );
 
 	struct BlockElementBuildInfo

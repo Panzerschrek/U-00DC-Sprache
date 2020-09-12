@@ -1207,4 +1207,51 @@ fn CodeBuilder::BuildConstructorInitialization(
 	}
 }
 
+fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type )
+{
+	var NamesScopePtr class_members= class_type.lock_imut().get_ref().members;
+
+	auto mut global_function_context= CreateGlobalFunctionContext();
+	var VariablesFrameHolder temp_variables_frame_hodler(global_function_context);
+	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+
+	var NamesScopeVariable mut this_variable{ .t= class_type };
+	unsafe{  this_variable.llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, class_type.lock_imut().get_ref().llvm_type, "\0"[0] );  }
+
+	foreach( &class_member : class_members.lock_imut().get_ref().GetInternalContainer() )
+	{
+		auto field_ptr= class_member.value().Get</ ClassField />();
+		if( field_ptr.empty() )
+		{
+			continue;
+		}
+
+		auto field_lock= field_ptr.lock_imut();
+		var ClassField & class_field= field_lock.get_ref();
+
+		if( class_field.index == ~0s ){ continue; } // May be in case of error
+
+		auto& initializer= class_field.syntax_element.get_ref().initializer;
+		if( !initializer.get</Synt::EmptyVariant/>().empty() )
+		{
+			continue; // Skip empty initializers.
+		}
+
+		if( class_field.is_reference )
+		{
+			InitializeReferenceField( class_members, function_context, this_variable, class_field, initializer );
+		}
+		else
+		{
+			var NamesScopeVariable field_variable
+			{
+				.t= class_field.t,
+				.is_mutable= true,
+				.llvm_value= CreateFieldGEP( this_variable.llvm_value, class_field, function_context ),
+			};
+			BuildInitializer( class_members, function_context, field_variable, initializer );
+		}
+	}
+}
+
 } // namespace U
