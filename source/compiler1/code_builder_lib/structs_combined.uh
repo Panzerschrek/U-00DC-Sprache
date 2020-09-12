@@ -339,7 +339,8 @@ struct ClassField
 	Type t;
 	bool is_reference;
 	bool is_mutable;
-	size_type index= ~0s;
+	size_type index= ~0s; // for "getelementptr" instruction
+	size_type original_index= ~0s; // Index of class field in class declaration
 	ust::shared_ptr_final</ Synt::ClassField /> syntax_element;
 }
 
