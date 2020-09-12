@@ -1068,6 +1068,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			}
 		}
 
+		var ust::vector</ust::string8/> mut fields_order;
 		if( syntax_element.keep_fields_order )
 		{
 			// Sort fields by original index.
@@ -1104,6 +1105,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 				field.index= fields_llvm_types.size();
 				fields_llvm_types.push_back( llvm_type );
+				fields_order.push_back( field.syntax_element.get_ref().name );
 			}
 		}
 		else
@@ -1157,6 +1159,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 				field.index= fields_llvm_types.size();
 				fields_llvm_types.push_back( llvm_type );
+				fields_order.push_back( field.syntax_element.get_ref().name );
 
 				unsafe
 				{
@@ -1165,6 +1168,9 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				}
 			}
 		}
+
+		auto mut lock= class_type.lock_mut();
+		lock.get_ref().fields_order= move(fields_order);
 	}
 
 	// Generate destructor prototype before perparing virtual table to mark it as virtual and setup virtual table index.

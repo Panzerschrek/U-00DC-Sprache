@@ -8,13 +8,15 @@ namespace U
 
 fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_type )
 {
-	auto class_members= class_type.lock_imut().get_ref().members;
+	auto class_members_ptr= class_type.lock_imut().get_ref().members;
+	auto class_members_lock= class_members_ptr.lock_imut();
+	auto& class_members= class_members_lock.get_ref();
 
 	// Search for explicit default constructor.
 	auto mut have_explicit_noncopy_constructors= false;
 
 	// Constructors value should always exists and should always be NamesScopeFunctionsSet.
-	auto constructors_ptr= class_members.lock_imut().get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).get_ref().Get</NamesScopeFunctionsSet/>();
+	auto constructors_ptr= class_members.GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).get_ref().Get</NamesScopeFunctionsSet/>();
 	auto mut constructors_lock= constructors_ptr.lock_mut();
 	auto &mut constructors= constructors_lock.get_ref().functions_set;
 
@@ -52,13 +54,9 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 
 	// Check if all fields is default-constructible.
 	auto mut all_fields_is_default_constructible= true;
-	foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
+	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
 	{
-		auto field_ptr= member.value().Get</ClassField/>();
-		if( field_ptr.empty() )
-		{
-			continue;
-		}
+		auto field_ptr= class_members.GetThisScopeValue(field_name).get_ref().Get</ClassField/>();
 
 		auto field_lock= field_ptr.lock_imut();
 		auto& field= field_lock.get_ref();
@@ -81,7 +79,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	{
 		if( constructor_index != ~0s )
 		{
-			REPORT_ERROR( MethodBodyGenerationFailed, class_members, constructors.functions[constructor_index].prototype_syntax_element.get_ref().file_pos )
+			REPORT_ERROR( MethodBodyGenerationFailed, class_members_ptr, constructors.functions[constructor_index].prototype_syntax_element.get_ref().file_pos )
 		}
 		return;
 	}
@@ -136,7 +134,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 				LLVMAddFunction(
 					module_,
 					MangleFunction(
-						class_members.lock_imut().get_ref(),
+						class_members,
 						KeywordToString( Keyword::constructor_ ),
 						function_variable.t ).front(),
 					function_variable.t.llvm_type );
@@ -168,17 +166,12 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 			.llvm_value= CreateBaseClassFieldGEP( this_llvm_value, function_context ),
 		};
 
-		BuildEmptyInitializer( class_members, function_context, base_variable, KeywordToString( Keyword::base_ ), FilePos( /* TODO - set correct file_pos */ ) );
+		BuildEmptyInitializer( class_members_ptr, function_context, base_variable, KeywordToString( Keyword::base_ ), FilePos( /* TODO - set correct file_pos */ ) );
 	}
 
-	foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
+	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
 	{
-		auto field_ptr= member.value().Get</ClassField/>();
-		if( field_ptr.empty() )
-		{
-			continue;
-		}
-
+		auto field_ptr= class_members.GetThisScopeValue(field_name).get_ref().Get</ClassField/>();
 		auto field_lock= field_ptr.lock_imut();
 		var ClassField & class_field= field_lock.get_ref();
 
@@ -194,18 +187,18 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		auto& initializer= class_field.syntax_element.get_ref().initializer;
 		if( !initializer.get</Synt::EmptyVariant/>().empty() )
 		{
-			BuildEmptyInitializer( class_members, function_context, field_variable, member.key(), FilePos( /* TODO - set correct file_pos */ ) );
+			BuildEmptyInitializer( class_members_ptr, function_context, field_variable, field_name, FilePos( /* TODO - set correct file_pos */ ) );
 		}
 		else
 		{
 			if( class_field.is_reference )
 			{
 				var NamesScopeVariable this_variable{ .t= class_type, .llvm_value= this_llvm_value };
-				InitializeReferenceField( class_members, function_context, this_variable, class_field, initializer );
+				InitializeReferenceField( class_members_ptr, function_context, this_variable, class_field, initializer );
 			}
 			else
 			{
-				BuildInitializer( class_members, function_context, field_variable, initializer );
+				BuildInitializer( class_members_ptr, function_context, field_variable, initializer );
 			}
 		}
 	}
@@ -222,10 +215,12 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 
 fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 {
-	auto class_members= class_type.lock_imut().get_ref().members;
+	auto class_members_ptr= class_type.lock_imut().get_ref().members;
+	auto class_members_lock= class_members_ptr.lock_imut();
+	auto& class_members= class_members_lock.get_ref();
 
 	// Constructors value should always exists and should always be NamesScopeFunctionsSet.
-	auto constructors_ptr= class_members.lock_imut().get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).get_ref().Get</NamesScopeFunctionsSet/>();
+	auto constructors_ptr= class_members.GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).get_ref().Get</NamesScopeFunctionsSet/>();
 	auto mut constructors_lock= constructors_ptr.lock_mut();
 	auto &mut constructors= constructors_lock.get_ref().functions_set;
 
@@ -252,13 +247,9 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 
 	// Check if all fields is copy-constructible.
 	auto mut all_fields_is_copy_constructible= true;
-	foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
+	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
 	{
-		auto field_ptr= member.value().Get</ClassField/>();
-		if( field_ptr.empty() )
-		{
-			continue;
-		}
+		auto field_ptr= class_members.GetThisScopeValue(field_name).get_ref().Get</ClassField/>();
 
 		auto field_lock= field_ptr.lock_imut();
 		auto& field= field_lock.get_ref();
@@ -279,7 +270,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 	{
 		if( constructor_index != ~0s )
 		{
-			REPORT_ERROR( MethodBodyGenerationFailed, class_members, constructors.functions[constructor_index].prototype_syntax_element.get_ref().file_pos )
+			REPORT_ERROR( MethodBodyGenerationFailed, class_members_ptr, constructors.functions[constructor_index].prototype_syntax_element.get_ref().file_pos )
 		}
 		return;
 	}
@@ -356,7 +347,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 				LLVMAddFunction(
 					module_,
 					MangleFunction(
-						class_members.lock_imut().get_ref(),
+						class_members,
 						KeywordToString( Keyword::constructor_ ),
 						function_variable.t ).front(),
 					function_variable.t.llvm_type );
@@ -390,16 +381,12 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		auto dst_member_value= CreateBaseClassFieldGEP( dst_llvm_value, function_context );
 		auto src_member_value= CreateBaseClassFieldGEP( src_llvm_value, function_context );
 
-		BuildCopyConstructorPart( class_members, function_context, dst_member_value, src_member_value, ust::to_non_nullable(base_class), file_pos );
+		BuildCopyConstructorPart( class_members_ptr, function_context, dst_member_value, src_member_value, ust::to_non_nullable(base_class), file_pos );
 	}
 
-	foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
+	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
 	{
-		auto field_ptr= member.value().Get</ClassField/>();
-		if( field_ptr.empty() )
-		{
-			continue;
-		}
+		auto field_ptr= class_members.GetThisScopeValue(field_name).get_ref().Get</ClassField/>();
 		auto field_lock= field_ptr.lock_imut();
 		var ClassField & class_field= field_lock.get_ref();
 
@@ -420,7 +407,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		}
 		else
 		{
-			BuildCopyConstructorPart( class_members, function_context, dst_member_value, src_member_value, class_field.t, file_pos );
+			BuildCopyConstructorPart( class_members_ptr, function_context, dst_member_value, src_member_value, class_field.t, file_pos );
 		}
 	}
 
@@ -468,13 +455,9 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 
 	// Check if all fields is copy-assignable.
 	auto mut all_fields_is_copy_assignable= true;
-	foreach( &member : class_members.GetInternalContainer() )
+	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
 	{
-		auto field_ptr= member.value().Get</ClassField/>();
-		if( field_ptr.empty() )
-		{
-			continue;
-		}
+		auto field_ptr= class_members.GetThisScopeValue(field_name).get_ref().Get</ClassField/>();
 
 		auto field_lock= field_ptr.lock_imut();
 		auto& field= field_lock.get_ref();
@@ -609,13 +592,9 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		BuildCopyAssignmentOperatorPart( class_members_ptr, function_context, dst_member_value, src_member_value, ust::to_non_nullable(base_class), file_pos );
 	}
 
-	foreach( &member : class_members.GetInternalContainer() )
+	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
 	{
-		auto field_ptr= member.value().Get</ClassField/>();
-		if( field_ptr.empty() )
-		{
-			continue;
-		}
+		auto field_ptr= class_members.GetThisScopeValue(field_name).get_ref().Get</ClassField/>();
 		auto field_lock= field_ptr.lock_imut();
 		var ClassField & class_field= field_lock.get_ref();
 
@@ -974,7 +953,9 @@ fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionC
 
 fn CodeBuilder::BuildMembersDestructors( this, FunctionContext &mut function_context, LLVMValueRef value, ClassTypePtr& class_type )
 {
-	auto class_members= class_type.lock_imut().get_ref().members;
+	auto class_members_ptr= class_type.lock_imut().get_ref().members;
+	auto class_members_lock= class_members_ptr.lock_imut();
+	auto& class_members= class_members_lock.get_ref();
 
 	var FilePos mut file_pos;
 	{
@@ -988,17 +969,12 @@ fn CodeBuilder::BuildMembersDestructors( this, FunctionContext &mut function_con
 	foreach( &parent : class_type.lock_imut().get_ref().parents )
 	{
 		auto parent_llvm_value= CreateParentFieldGEP( value, parent, function_context );
-		BuildDestructorPart( class_members, function_context, parent_llvm_value, parent.class_, file_pos );
+		BuildDestructorPart( class_members_ptr, function_context, parent_llvm_value, parent.class_, file_pos );
 	}
 
-	foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
+	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
 	{
-		auto field_ptr= member.value().Get</ClassField/>();
-		if( field_ptr.empty() )
-		{
-			continue;
-		}
-
+		auto field_ptr= class_members.GetThisScopeValue(field_name).get_ref().Get</ClassField/>();
 		auto field_lock= field_ptr.lock_imut();
 		var ClassField& class_field= field_lock.get_ref();
 
@@ -1007,7 +983,7 @@ fn CodeBuilder::BuildMembersDestructors( this, FunctionContext &mut function_con
 
 		auto field_llvm_value= CreateFieldGEP( value, class_field, function_context );
 
-		BuildDestructorPart( class_members, function_context, field_llvm_value, class_field.t, file_pos ); // TODO - maybe use field file_pos instead?
+		BuildDestructorPart( class_members_ptr, function_context, field_llvm_value, class_field.t, file_pos ); // TODO - maybe use field file_pos instead?
 	}
 }
 
