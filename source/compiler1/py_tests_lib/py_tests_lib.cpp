@@ -485,6 +485,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"IncompleteMemberOfClassTemplate_ForFunctionTemplates_Test0",
 		"Int128_Test0",
 		"InvalidTypeOfTemplateVariableArgument_ForFunctionTemplateParameter",
+		"KeepFieldsOrder_Test0",
 		"LessSpecializedTemplateTypesNotGenerated_Test0",
 		"NameIsNotTypeName_ForFunctionTemplateParameter",
 		"NameNotFound_ForFunctionTemplateParameter",

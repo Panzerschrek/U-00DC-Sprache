@@ -1068,60 +1068,101 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			}
 		}
 
-		while( !fields_left.empty() )
+		if( syntax_element.keep_fields_order )
 		{
-			// Find best fit field with minimal original index (try to keep original fields order).
-			var u32 mut best_field_padding= ~0u;
-			auto mut best_padding_field_index= 0s;
-			for( auto mut i= 0s; i < fields_left.size(); ++i )
+			// Sort fields by original index.
+			// TODO - use libary sorting function.
+			while( !fields_left.empty() )
 			{
-				auto field_lock= fields_left[i].lock_imut();
-				var ClassField& field= field_lock.get_ref();
+				var size_type mut min_index= ~0s;
+				var size_type mut min_index_index= ~0s;
+				for( auto mut i= 0s; i < fields_left.size(); ++i )
+				{
+					auto field_lock= fields_left[i].lock_imut();
+					var ClassField& field= field_lock.get_ref();
+					if( field.original_index < min_index )
+					{
+						min_index= field.original_index;
+						min_index_index= i;
+					}
+				}
+
+				auto field_ptr= fields_left[min_index_index];
+
+				if( min_index_index + 1s < fields_left.size() )
+				{
+					auto f= fields_left.back();
+					fields_left[min_index_index]= f;
+				}
+				fields_left.pop_back();
+
+				auto mut field_lock= field_ptr.lock_mut();
+				var ClassField &mut field= field_lock.get_ref();
+
 				auto mut llvm_type= field.t.GetLLVMType();
 				if( field.is_reference ) { unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  } }
 
-				unsafe
+				field.index= fields_llvm_types.size();
+				fields_llvm_types.push_back( llvm_type );
+			}
+		}
+		else
+		{
+			while( !fields_left.empty() )
+			{
+				// Find best fit field with minimal original index (try to keep original fields order).
+				var u32 mut best_field_padding= ~0u;
+				auto mut best_padding_field_index= 0s;
+				for( auto mut i= 0s; i < fields_left.size(); ++i )
 				{
-					var u32 alignment= LLVMABIAlignmentOfType( data_layout_, llvm_type );
-					var u32 padding= ( alignment - current_offset % alignment ) % alignment;
-					if( padding < best_field_padding )
+					auto field_lock= fields_left[i].lock_imut();
+					var ClassField& field= field_lock.get_ref();
+					auto mut llvm_type= field.t.GetLLVMType();
+					if( field.is_reference ) { unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  } }
+
+					unsafe
 					{
-						best_field_padding= padding;
-						best_padding_field_index= i;
-					}
-					else if( padding == best_field_padding )
-					{
-						// Prefer first field with same padding.
-						if( field.original_index < cast_imut(fields_left)[best_padding_field_index].lock_imut().get_ref().original_index )
+						var u32 alignment= LLVMABIAlignmentOfType( data_layout_, llvm_type );
+						var u32 padding= ( alignment - current_offset % alignment ) % alignment;
+						if( padding < best_field_padding )
 						{
+							best_field_padding= padding;
 							best_padding_field_index= i;
+						}
+						else if( padding == best_field_padding )
+						{
+							// Prefer first field with same padding.
+							if( field.original_index < cast_imut(fields_left)[best_padding_field_index].lock_imut().get_ref().original_index )
+							{
+								best_padding_field_index= i;
+							}
 						}
 					}
 				}
-			}
 
-			auto field_ptr= fields_left[best_padding_field_index];
+				auto field_ptr= fields_left[best_padding_field_index];
 
-			if( best_padding_field_index + 1s < fields_left.size() )
-			{
-				auto f= fields_left.back();
-				fields_left[best_padding_field_index]= f;
-			}
-			fields_left.pop_back();
+				if( best_padding_field_index + 1s < fields_left.size() )
+				{
+					auto f= fields_left.back();
+					fields_left[best_padding_field_index]= f;
+				}
+				fields_left.pop_back();
 
-			auto mut field_lock= field_ptr.lock_mut();
-			var ClassField &mut field= field_lock.get_ref();
+				auto mut field_lock= field_ptr.lock_mut();
+				var ClassField &mut field= field_lock.get_ref();
 
-			auto mut llvm_type= field.t.GetLLVMType();
-			if( field.is_reference ) { unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  } }
+				auto mut llvm_type= field.t.GetLLVMType();
+				if( field.is_reference ) { unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  } }
 
-			field.index= fields_llvm_types.size();
-			fields_llvm_types.push_back( llvm_type );
+				field.index= fields_llvm_types.size();
+				fields_llvm_types.push_back( llvm_type );
 
-			unsafe
-			{
-				current_offset+= best_field_padding;
-				current_offset+= u32( LLVMABISizeOfType( data_layout_, llvm_type ) );
+				unsafe
+				{
+					current_offset+= best_field_padding;
+					current_offset+= u32( LLVMABISizeOfType( data_layout_, llvm_type ) );
+				}
 			}
 		}
 	}
