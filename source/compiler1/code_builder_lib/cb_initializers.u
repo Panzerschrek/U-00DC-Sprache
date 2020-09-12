@@ -1119,7 +1119,15 @@ fn CodeBuilder::BuildConstructorInitialization(
 			.llvm_value= CreateFieldGEP( function_context.this_.get_ref().llvm_value, class_field, function_context ),
 		};
 
-		BuildEmptyInitializer( names_scope, function_context, field_variable, field_name, constructor_initialization_list.file_pos );
+		auto& initializer= class_field.syntax_element.get_ref().initializer;
+		if( !initializer.get</Synt::EmptyVariant/>().empty() )
+		{
+			BuildEmptyInitializer( names_scope, function_context, field_variable, field_name, constructor_initialization_list.file_pos );
+		}
+		else
+		{
+			BuildInitializer( class_members, function_context, field_variable, initializer );
+		}
 	}
 
 	if( have_fields_errors )
