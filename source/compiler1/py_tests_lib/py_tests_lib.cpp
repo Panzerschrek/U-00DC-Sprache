@@ -643,6 +643,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"ExplicitAccessToSpecialMethodsIsUnsafe_Test",
 		"FalseBranchesSkipped_Test",
 		"FieldInitializerDeclaration_Test",
+		"FieldsSort_Test",
 		"FunctionPointerAsFunctionArgument_Test",
 		"FunctionPointerAsSpecializedTemplateParameter_Test",
 		"FunctionPointerCall_Test",
