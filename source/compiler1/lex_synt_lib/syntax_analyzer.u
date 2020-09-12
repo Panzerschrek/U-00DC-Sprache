@@ -2490,6 +2490,8 @@ fn SyntaxAnalyzer::ParseClassBody( mut this ) : ClassElements
 			class_field.name= it_.front().text;
 			NextLexem();
 
+			class_field.initializer= ParseVariableInitializer();
+
 			if( it_.front().lexem_type != Lexem::Type::Semicolon )
 			{
 				PushErrorMessage();

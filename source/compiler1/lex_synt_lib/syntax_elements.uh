@@ -494,6 +494,7 @@ struct ClassField
 	TypeName t;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
+	Initializer initializer;
 }
 
 enum ClassVisibility : u8

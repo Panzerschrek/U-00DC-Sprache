@@ -1349,6 +1349,8 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		class_lock.get_ref().is_complete= true;
 	}
 
+	CheckClassFieldsInitializers( class_type );
+
 	// Build constexpr methods after class completion.
 	foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
 	{
