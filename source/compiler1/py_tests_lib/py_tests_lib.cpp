@@ -659,6 +659,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"InClassFieldInitializer_InDefaultConstructor",
 		"InClassFieldInitializer_InStructNamedInitializer_Test",
 		"InClassFieldInitializer_MayBeConstexpr_Test",
+		"InClassFieldInitializer_OtherFieldCanNotBeUsed_Test",
 		"InheritanceTest",
 		"InvalidFunctionArgumentCount_Test",
 		"InvalidMethodForBodyGeneration_Test",
