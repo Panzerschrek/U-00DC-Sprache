@@ -295,7 +295,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		}
 	}
 
-	// Apply empty initializer for fileds, missing in struct named initializer.
+	// Apply default initializer for fileds, missing in struct named initializer.
 	foreach( &class_member : class_members.GetInternalContainer() )
 	{
 		auto field_ptr= class_member.value().Get</ ClassField />();
@@ -334,7 +334,15 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			.llvm_value= CreateFieldGEP( variable.llvm_value, field, function_context )
 		};
 
-		BuildEmptyInitializer( names_scope, function_context, member_variable, class_member.key(), struct_named_initializer.file_pos );
+		auto& initializer= field.syntax_element.get_ref().initializer;
+		if( !initializer.get</Synt::EmptyVariant/>().empty() )
+		{
+			BuildEmptyInitializer( names_scope, function_context, member_variable, class_member.key(), struct_named_initializer.file_pos );
+		}
+		else
+		{
+			BuildInitializer( class_type.members, function_context, member_variable, initializer );
+		}
 
 		// TODO - support constexpr for empty initializers.
 		is_constexpr= false;

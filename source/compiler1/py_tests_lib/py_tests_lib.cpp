@@ -644,6 +644,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"FunctionPointerToTemplateFunction_Test",
 		"FunctionTemplateBase_Test",
 		"FunctionTemplateDeclaration_Test",
+		"InClassFieldInitializer_InStructNamedInitializer_Test",
 		"InheritanceTest",
 		"InvalidFunctionArgumentCount_Test",
 		"InvalidMethodForBodyGeneration_Test",
