@@ -633,6 +633,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"EnableIf_ForPrototypeAndBody_Test",
 		"ExplicitAccessToSpecialMethodsIsUnsafe_Test",
 		"FalseBranchesSkipped_Test",
+		"FieldInitializerDeclaration_Test",
 		"FunctionPointerAsFunctionArgument_Test",
 		"FunctionPointerAsSpecializedTemplateParameter_Test",
 		"FunctionPointerCall_Test",
