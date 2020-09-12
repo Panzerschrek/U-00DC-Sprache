@@ -962,6 +962,51 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		}
 	}
 
+	// Prepare fields types.
+	auto class_members= class_type.lock_imut().get_ref().members;
+	auto mut field_count= 0u;
+	foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
+	{
+		auto field_ptr= member.value().Get</ ClassField />();
+		if( !field_ptr.empty() )
+		{
+			++field_count;
+
+			auto mut field_lock= field_ptr.lock_mut();
+			var ClassField &mut field= field_lock.get_ref();
+
+			field.t= PrepareType( class_members, global_function_context, field.syntax_element.get_ref().t );
+
+			if( !EnsureTypeComplete( field.t ) )
+			{
+				REPORT_ERROR( UsingIncompleteType, class_members, field.syntax_element.get_ref().file_pos, field.t )
+				field.t= invalid_type_;
+				continue;
+			}
+			if( !field.is_reference && field.t.IsAbstract() )
+			{
+				REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope_ptr, field.syntax_element.get_ref().file_pos, field.t )
+				continue;
+			}
+		}
+
+		auto functions_set_ptr= member.value().Get</ NamesScopeFunctionsSet />();
+		if( !functions_set_ptr.empty() )
+		{
+			BuildFunctionsSet( class_members, ust::to_non_nullable( functions_set_ptr ), false );
+		}
+
+		// Type aliases required for class completeness.
+		auto type_alias_ptr= member.value().Get</ TypeAlias />();
+		if( !type_alias_ptr.empty() )
+		{
+			auto mut lock= type_alias_ptr.lock_mut();
+			auto &mut type_alias= lock.get_ref();
+			BuildTypeAlias( names_scope_ptr, type_alias );
+		}
+		// TODO - maybe build here also inner classes, enums, global variables?
+	}
+
 	// Allocate virtual table pointer, if class have no parents.
 	// If class have at least one parent, reuse it's virtual table pointer.
 	auto allocate_virtual_table_pointer= syntax_element.parents.empty() && (
@@ -969,16 +1014,15 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		syntax_element.kind_attribute == Synt::Class::KindAttribute::Polymorph ||
 		syntax_element.kind_attribute == Synt::Class::KindAttribute::Interface );
 
+	// Determine class data layout.
 	var ust::vector</ LLVMTypeRef /> mut fields_llvm_types;
 
 	if( allocate_virtual_table_pointer )
 	{
 		unsafe{  fields_llvm_types.push_back( LLVMPointerType( fundamental_llvm_types_.int_ptr, 0u ) );  } // set exact type later.
 	}
-
 	{
 		// Make base class first field. Add parent classes fields.
-
 		auto mut lock= class_type.lock_mut();
 		auto &mut class_= lock.get_ref();
 
@@ -1000,55 +1044,32 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			}
 		}
 	}
-
-	auto class_members= class_type.lock_imut().get_ref().members;
-	auto mut field_count= 0u;
-	foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
 	{
-		auto field_ptr= member.value().Get</ ClassField />();
-		if( !field_ptr.empty() )
+		var ust::vector</ ust::shared_ptr_mut</ClassField/> /> mut fields_left;
+		foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
 		{
-			++field_count;
+			auto field_ptr= member.value().Get</ ClassField />();
+			if( !field_ptr.empty() )
+			{
+				fields_left.push_back( ust::to_non_nullable( field_ptr ) );
+			}
+		}
+
+		// TODO - sort class fields.
+		while( !fields_left.empty() )
+		{
+			auto field_ptr= fields_left.back();
+			fields_left.pop_back();
 
 			auto mut field_lock= field_ptr.lock_mut();
 			var ClassField &mut field= field_lock.get_ref();
 
-			field.t= PrepareType( class_members, global_function_context, field.syntax_element.get_ref().t );
-
-			if( !EnsureTypeComplete( field.t ) )
-			{
-				REPORT_ERROR( UsingIncompleteType, class_members, field.syntax_element.get_ref().file_pos, field.t )
-				continue;
-			}
-			if( !field.is_reference && field.t.IsAbstract() )
-			{
-				REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope_ptr, field.syntax_element.get_ref().file_pos, field.t )
-				continue;
-			}
-
-			field.index= fields_llvm_types.size();
-
 			auto mut llvm_type= field.t.GetLLVMType();
 			if( field.is_reference ) { unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  } }
 
+			field.index= fields_llvm_types.size();
 			fields_llvm_types.push_back( llvm_type );
 		}
-
-		auto functions_set_ptr= member.value().Get</ NamesScopeFunctionsSet />();
-		if( !functions_set_ptr.empty() )
-		{
-			BuildFunctionsSet( class_members, ust::to_non_nullable( functions_set_ptr ), false );
-		}
-
-		// Type aliases required for class completeness.
-		auto type_alias_ptr= member.value().Get</ TypeAlias />();
-		if( !type_alias_ptr.empty() )
-		{
-			auto mut lock= type_alias_ptr.lock_mut();
-			auto &mut type_alias= lock.get_ref();
-			BuildTypeAlias( names_scope_ptr, type_alias );
-		}
-		// TODO - maybe build here also inner classes, enums, global variables?
 	}
 
 	// Generate destructor prototype before perparing virtual table to mark it as virtual and setup virtual table index.
