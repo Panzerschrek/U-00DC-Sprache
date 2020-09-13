@@ -486,6 +486,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"Int128_Test0",
 		"InvalidTypeOfTemplateVariableArgument_ForFunctionTemplateParameter",
 		"LessSpecializedTemplateTypesNotGenerated_Test0",
+		"MacroExpansion_Test0",
+		"MacroExpansion_Test1",
 		"NameIsNotTypeName_ForFunctionTemplateParameter",
 		"NameNotFound_ForFunctionTemplateParameter",
 		"NonPureVirtualFunctionInInterface_Test0",

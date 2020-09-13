@@ -1,7 +1,12 @@
 import "/box_nullable.u"
+import "/shared/shared_ptr_final.u"
+import "/unordered_map.u"
 import "lexical_analyzer.uh"
 
 namespace U1
+{
+
+namespace Synt
 {
 
 struct Macro
@@ -44,7 +49,7 @@ struct Macro
 		BlockCheckLexemKind block_check_lexem_kind= BlockCheckLexemKind::LexemAfterBlockEnd; // For optionals and loops.
 		Lexem lexem; // lexem for lexem elements, separator or EOF for loops
 		ust::string8 name; // for non-lexems
-		ust::box_nullable</ ust::vector</MatchElement/> /> sub_elements; // For optionals, loops
+	//	ust::box_nullable</ ust::vector</MatchElement/> /> sub_elements; // For optionals, loops
 	}
 
 	struct ResultElement
@@ -52,7 +57,7 @@ struct Macro
 		ResultElementKind kind= ResultElementKind::Lexem;
 		Lexem lexem; // lexem for SimpleElement, separator or EOF for loops
 		ust::string8 name; // for non-lexems
-		ust::box_nullable</ ust::vector</ResultElement/> /> sub_elements; // For optionals, loops
+	//	ust::box_nullable</ ust::vector</ResultElement/> /> sub_elements; // For optionals, loops
 	}
 
 	FilePos file_pos;
@@ -60,5 +65,10 @@ struct Macro
 	ust::vector</MatchElement/> match_template_elements;
 	ust::vector</ResultElement/> result_template_elements;
 }
+
+type MacroMap= ust::unordered_map</ ust::string8, ust::shared_ptr_final</Macro/> />;
+type MacrosByContextMap= ust::unordered_map</ Macro::Context, MacroMap />;
+
+} // namespace Synt
 
 } // namespace U1

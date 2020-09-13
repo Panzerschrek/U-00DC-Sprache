@@ -1,3 +1,4 @@
+import "/shared/shared_ptr_final_nullable.u"
 import "keywords.uh"
 import "syntax_analyzer.uh"
 
@@ -211,7 +212,7 @@ public:
 	fn ParseImports( mut this ) : ImportsList;
 
 private:
-	fn ParseMacro( mut this ) : Macro;
+	fn ParseMacro( mut this );
 
 	fn ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : NamespaceElements;
 	fn ParseNamespace( mut this ) : Namespace;
@@ -259,6 +260,17 @@ private:
 	fn ParseTemplate( mut this ) : SomeTemplate;
 	fn ParseTemplateSignatureParams( mut this ) : ust::vector</TypeTemplate::SignatureParam/>;
 
+	// Macro related stuff.
+	struct ParsedMacroElement
+	{
+		Lexems lexems;
+		Macro::MatchElementKind kind= Macro::MatchElementKind::Lexem;
+	}
+
+	fn FetchMacro( this, ust::string8& name, Macro::Context context ) : ust::shared_ptr_final_nullable</Macro/>;
+	fn ExpandMacro( mut this, Macro& macro ) : Expression;
+
+	// Utilities.
 	fn NotEndOfFile( this ) : bool;
 	fn NextLexem( mut this );
 	fn PushErrorMessage( mut this );
@@ -266,6 +278,8 @@ private:
 private:
 	ust::array_view_imut</Lexem/> it_;
 	SyntaxErrorMessages error_messages_;
+
+	MacrosByContextMap macros_by_context_;
 }
 
 fn SyntaxAnalyzer::constructor( this'a', Lexems&'b lexems ) ' a <- b '
@@ -312,7 +326,7 @@ fn SyntaxAnalyzer::ParseImports( mut this ) : ImportsList
 	return move(imports_list);
 }
 
-fn SyntaxAnalyzer::ParseMacro( mut this ) : Macro
+fn SyntaxAnalyzer::ParseMacro( mut this )
 {
 	NextLexem(); // Skip "?macro"
 	var Macro mut macro;
@@ -345,9 +359,9 @@ fn SyntaxAnalyzer::ParseMacro( mut this ) : Macro
 	NextLexem();
 
 	var Macro::Context mut macro_context= Macro::Context::Expression;
-		 if( macro_context_str == "expr" ) { macro_context= Macro::Context::Expression; }
-	else if( macro_context_str == "block" ) { macro_context= Macro::Context::Block; }
-	else if( macro_context_str == "class" ) { macro_context= Macro::Context::Class; }
+		 if( macro_context_str == "expr"      ) { macro_context= Macro::Context::Expression; }
+	else if( macro_context_str == "block"     ) { macro_context= Macro::Context::Block; }
+	else if( macro_context_str == "class"     ) { macro_context= Macro::Context::Class; }
 	else if( macro_context_str == "namespace" ) { macro_context= Macro::Context::Namespace; }
 	else
 	{
@@ -387,8 +401,8 @@ fn SyntaxAnalyzer::ParseMacro( mut this ) : Macro
 			NextLexem();
 
 				 if( element_type == "ident" ) { match_element.kind= Macro::MatchElementKind::Identifier; }
-			else if( element_type == "ty" ) { match_element.kind= Macro::MatchElementKind::Typename; }
-			else if( element_type == "expr" ) { match_element.kind= Macro::MatchElementKind::Expression; }
+			else if( element_type == "ty"    ) { match_element.kind= Macro::MatchElementKind::Typename; }
+			else if( element_type == "expr"  ) { match_element.kind= Macro::MatchElementKind::Expression; }
 			else if( element_type == "block" ) { match_element.kind= Macro::MatchElementKind::Block; }
 			// TODO - process other types
 			else
@@ -451,7 +465,13 @@ fn SyntaxAnalyzer::ParseMacro( mut this ) : Macro
 		}
 	}
 
-	return move(macro);
+	if( macros_by_context_.find( macro_context ).empty() )
+	{
+		macros_by_context_.insert( macro_context, MacroMap() );
+	}
+
+	// TODO - check for redefinition.
+	macros_by_context_[ macro_context ].insert( ust::string8(macro.name), ust::shared_ptr_final</Macro/>( move(macro) ) );
 }
 
 fn SyntaxAnalyzer::ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : NamespaceElements
@@ -859,7 +879,19 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 			var CastMut mut cast{ .file_pos= file_pos, .expression(move(e)) };
 			current_node= move(cast);
 		}
-		else if( it_.front().lexem_type == Lexem::Type::Identifier || it_.front().lexem_type == Lexem::Type::Scope )
+		else if( it_.front().lexem_type == Lexem::Type::Identifier )
+		{
+			auto macro= FetchMacro( it_.front().text, Macro::Context::Expression );
+			if( !macro.empty() )
+			{
+				current_node= ExpandMacro( macro.get_ref() );
+			}
+			else
+			{
+				current_node= ParseComplexName();
+			}
+		}
+		else if( it_.front().lexem_type == Lexem::Type::Scope )
 		{
 			current_node= ParseComplexName();
 		}
@@ -3090,6 +3122,107 @@ fn SyntaxAnalyzer::ParseTemplateSignatureParams( mut this ) : ust::vector</TypeT
 fn SyntaxAnalyzer::NotEndOfFile( this ) : bool
 {
 	return it_.size() >= 2s;
+}
+
+fn SyntaxAnalyzer::FetchMacro( this, ust::string8& name, Macro::Context context ) : ust::shared_ptr_final_nullable</Macro/>
+{
+	if_var( &macro_map : macros_by_context_.find( context ) )
+	{
+		if_var( &macro : macro_map.find( name ) )
+		{
+			return macro;
+		}
+	}
+
+	return ust::shared_ptr_final_nullable</Macro/>();
+}
+
+fn SyntaxAnalyzer::ExpandMacro( mut this, Macro& macro ) : Expression
+{
+	NextLexem(); // Skip macro name itself.
+
+	var ust::unordered_map</ ust::string8, ParsedMacroElement /> mut macro_variables_map;
+
+	// Do match.
+	foreach( &match_element : macro.match_template_elements )
+	{
+		if( match_element.kind == Macro::MatchElementKind::Lexem )
+		{
+			if( !( it_.front().lexem_type == match_element.lexem.lexem_type && it_.front().text == match_element.lexem.text ) )
+			{
+				PushErrorMessage();
+				return EmptyVariant();
+			}
+			NextLexem();
+			continue;
+		}
+
+		var ParsedMacroElement mut element{ .kind= match_element.kind };
+		auto range_before= it_;
+
+			 if( match_element.kind == Macro::MatchElementKind::Identifier )
+		{
+			if( it_.front().lexem_type != Lexem::Type::Identifier )
+			{
+				PushErrorMessage();
+			}
+			NextLexem();
+		}
+		else if( match_element.kind == Macro::MatchElementKind::Typename )
+		{
+			ParseTypeName();
+		}
+		else if( match_element.kind == Macro::MatchElementKind::Expression )
+		{
+			ParseExpression();
+		}
+		else if( match_element.kind == Macro::MatchElementKind::Block )
+		{
+			ParseBlock();
+		}
+		// TODO - handle optionals and sequences.
+		else{ halt; }
+
+		auto range_after= it_;
+		auto range_size= range_before.size() - range_after.size();
+		foreach( &lexem : range_before.subrange( 0s, range_size ) )
+		{
+			element.lexems.push_back( lexem );
+		}
+
+		// TODO - report redefinition.
+		macro_variables_map.insert( match_element.name, move(element) );
+	}
+
+	// Do expansion.
+	var Lexems mut lexems_expanded;
+	foreach( &result_element : macro.result_template_elements )
+	{
+			 if( result_element.kind == Macro::ResultElementKind::Lexem )
+		{
+			lexems_expanded.push_back( result_element.lexem );
+		}
+		else if( result_element.kind == Macro::ResultElementKind::VariableElement )
+		{
+			// TODO - check if exists
+			if_var( &parsed_element : macro_variables_map.find( result_element.name ) )
+			{
+				foreach( &lexem : parsed_element.lexems )
+				{
+					lexems_expanded.push_back( lexem );
+				}
+			}
+		}
+		else { halt; }
+	}
+
+	var Lexem end_of_file_lexem{ .lexem_type= Lexem::Type::EndOfFile };
+	lexems_expanded.push_back( end_of_file_lexem );
+	lexems_expanded.push_back( end_of_file_lexem );
+
+	// Parse result.
+	var SyntaxAnalyzer mut syntax_analyzer( lexems_expanded );
+	return syntax_analyzer.ParseExpression();
 }
 
 fn SyntaxAnalyzer::NextLexem( mut this )
