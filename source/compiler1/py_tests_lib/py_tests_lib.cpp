@@ -488,6 +488,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"LessSpecializedTemplateTypesNotGenerated_Test0",
 		"MacroExpansion_Test0",
 		"MacroExpansion_Test1",
+		"MacroExpansion_Test2",
+		"MacroExpansion_Test3",
 		"NameIsNotTypeName_ForFunctionTemplateParameter",
 		"NameNotFound_ForFunctionTemplateParameter",
 		"NonPureVirtualFunctionInInterface_Test0",

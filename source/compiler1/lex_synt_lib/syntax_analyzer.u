@@ -233,6 +233,7 @@ private:
 	fn ParseVariableInitializer( mut this ) : Initializer;
 
 	fn ParseBlock( mut this ) : Block;
+	fn ParseBlockElements( mut this ) : BlockElements;
 	fn ParseVariablesDeclaration( mut this ) : VariablesDeclaration;
 	fn ParseAutoVariableDeclaration( mut this ) : AutoVariableDeclaration;
 	fn ParseReturnOperator( mut this ) : ReturnOperator;
@@ -268,7 +269,27 @@ private:
 	}
 
 	fn FetchMacro( this, ust::string8& name, Macro::Context context ) : ust::shared_ptr_final_nullable</Macro/>;
-	fn ExpandMacro( mut this, Macro& macro ) : Expression;
+
+	template</type T/>
+	fn ExpandMacro( mut this, Macro& macro ) : T
+	{
+		var Lexems lexems_expanded= ExpandMacroImpl( macro );
+		var SyntaxAnalyzer mut syntax_analyzer( lexems_expanded );
+		static_if( ust::is_same_type</T, Expression/>() )
+		{
+			return syntax_analyzer.ParseExpression();
+		}
+		else if( ust::is_same_type</T, BlockElements/>() )
+		{
+			return syntax_analyzer.ParseBlockElements();
+		}
+		else if( ust::is_same_type</T, ClassElements/>() )
+		{
+			return syntax_analyzer.ParseClassBody();
+		}
+	}
+
+	fn ExpandMacroImpl( mut this, Macro& macro ) : Lexems;
 
 	// Utilities.
 	fn NotEndOfFile( this ) : bool;
@@ -884,7 +905,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 			auto macro= FetchMacro( it_.front().text, Macro::Context::Expression );
 			if( !macro.empty() )
 			{
-				current_node= ExpandMacro( macro.get_ref() );
+				current_node= this.ExpandMacro</Expression/>( macro.get_ref() ); // TODO - fix this, remove explicit "this"
 			}
 			else
 			{
@@ -1783,69 +1804,89 @@ fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 
 	NextLexem(); // {
 
-	while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::BraceRight )
+	block.elements= ParseBlockElements();
+
+	block.end_file_pos= it_.front().file_pos;
+
+	if( it_.front().lexem_type == Lexem::Type::BraceRight )
+	{
+		NextLexem();
+	}
+	else
+	{
+		PushErrorMessage();
+	}
+
+	return move(block);
+}
+
+fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
+{
+	var BlockElements mut block_elements;
+
+	while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::BraceRight && it_.front().lexem_type != Lexem::Type::EndOfFile )
 	{
 		if( it_.front().lexem_type == Lexem::Type::BraceLeft )
 		{
-			block.elements.push_back( ust::box</Block/>(ParseBlock()) );
+			block_elements.push_back( ust::box</Block/>(ParseBlock()) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::safe_ ) )
 		{
 			NextLexem();
 			auto mut inner_block= ParseBlock();
 			inner_block.safety= Block::Safety::Safe;
-			block.elements.push_back( ust::box</Block/>(move(inner_block)) );
+			block_elements.push_back( ust::box</Block/>(move(inner_block)) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::unsafe_ ) )
 		{
 			NextLexem();
 			auto mut inner_block= ParseBlock();
 			inner_block.safety= Block::Safety::Unsafe;
-			block.elements.push_back( ust::box</Block/>(move(inner_block)) );
+			block_elements.push_back( ust::box</Block/>(move(inner_block)) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::var_ ) )
 		{
-			block.elements.push_back( ParseVariablesDeclaration() );
+			block_elements.push_back( ParseVariablesDeclaration() );
 		}
 		else if( IsKeyword( it_.front(), Keyword::auto_ ) )
 		{
-			block.elements.push_back( ParseAutoVariableDeclaration() );
+			block_elements.push_back( ParseAutoVariableDeclaration() );
 		}
 		else if( IsKeyword( it_.front(), Keyword::return_ ) )
 		{
-			block.elements.push_back( ParseReturnOperator() );
+			block_elements.push_back( ParseReturnOperator() );
 		}
 		else if( IsKeyword( it_.front(), Keyword::if_ ) )
 		{
-			block.elements.push_back( ParseIfOperator() );
+			block_elements.push_back( ParseIfOperator() );
 		}
 		else if( IsKeyword( it_.front(), Keyword::static_if_ ) )
 		{
-			block.elements.push_back( ParseStaticIfOperator() );
+			block_elements.push_back( ParseStaticIfOperator() );
 		}
 		else if( IsKeyword( it_.front(), Keyword::while_ ) )
 		{
-			block.elements.push_back( ParseWhileOperator() );
+			block_elements.push_back( ParseWhileOperator() );
 		}
 		else if( IsKeyword( it_.front(), Keyword::for_ ) )
 		{
-			block.elements.push_back( ParseForOperator() );
+			block_elements.push_back( ParseForOperator() );
 		}
 		else if( IsKeyword( it_.front(), Keyword::break_ ) )
 		{
-			block.elements.push_back( ParseBreakOperator() );
+			block_elements.push_back( ParseBreakOperator() );
 		}
 		else if( IsKeyword( it_.front(), Keyword::continue_ ) )
 		{
-			block.elements.push_back( ParseContinueOperator() );
+			block_elements.push_back( ParseContinueOperator() );
 		}
 		else if( IsKeyword( it_.front(), Keyword::static_assert_ ) )
 		{
-			block.elements.push_back( ParseStaticAssert() );
+			block_elements.push_back( ParseStaticAssert() );
 		}
 		else if( IsKeyword( it_.front(), Keyword::halt_ ) )
 		{
-			block.elements.push_back( ParseHalt() );
+			block_elements.push_back( ParseHalt() );
 		}
 		else if( it_.front().lexem_type == Lexem::Type::Increment )
 		{
@@ -1859,7 +1900,7 @@ fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 			}
 			NextLexem();
 
-			block.elements.push_back( move(increment_operator) );
+			block_elements.push_back( move(increment_operator) );
 		}
 		else if( it_.front().lexem_type == Lexem::Type::Decrement )
 		{
@@ -1873,10 +1914,32 @@ fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 			}
 			NextLexem();
 
-			block.elements.push_back( move(decrement_operator) );
+			block_elements.push_back( move(decrement_operator) );
 		}
 		else
 		{
+			if( it_.front().lexem_type == Lexem::Type::Identifier )
+			{
+				auto macro= FetchMacro( it_.front().text, Macro::Context::Block );
+				if( !macro.empty() )
+				{
+					var BlockElements mut expanded_block_elements= this.ExpandMacro</BlockElements/>( macro.get_ref() ); // TODO - fix this, remove explicit "this"
+
+					// HACK! We can not move from beginning of the vector. So, inverse vector and move elements from back.
+					for( auto mut i= 0s; i < expanded_block_elements.size() / 2s; ++i )
+					{
+						auto j= expanded_block_elements.size() - i - 1s;
+						expanded_block_elements.swap( i, j );
+					}
+					while( !expanded_block_elements.empty() )
+					{
+						block_elements.push_back( expanded_block_elements.pop_back() );
+					}
+
+					continue;
+				}
+			}
+
 			auto mut expr= ParseExpression();
 
 			auto additive_assignment_operator_type= GetAdditiveAssignmentOperator( it_.front() );
@@ -1892,7 +1955,7 @@ fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 					.r(ParseExpression()),
 				};
 
-				block.elements.push_back( move(additive_assignment_operator) );
+				block_elements.push_back( move(additive_assignment_operator) );
 			}
 			else if( it_.front().lexem_type == Lexem::Type::Assignment )
 			{
@@ -1905,11 +1968,11 @@ fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 					.r( ParseExpression() ),
 				};
 
-				block.elements.push_back( move(assignment_operator) );
+				block_elements.push_back( move(assignment_operator) );
 			}
 			else
 			{
-				block.elements.push_back( move(expr) );
+				block_elements.push_back( move(expr) );
 			}
 
 			if( it_.front().lexem_type == Lexem::Type::Semicolon )
@@ -1923,18 +1986,7 @@ fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 		}
 	}
 
-	block.end_file_pos= it_.front().file_pos;
-
-	if( it_.front().lexem_type == Lexem::Type::BraceRight )
-	{
-		NextLexem();
-	}
-	else
-	{
-		PushErrorMessage();
-	}
-
-	return move(block);
+	return move(block_elements);
 }
 
 fn SyntaxAnalyzer::ParseVariablesDeclaration( mut this ) : VariablesDeclaration
@@ -3137,7 +3189,7 @@ fn SyntaxAnalyzer::FetchMacro( this, ust::string8& name, Macro::Context context 
 	return ust::shared_ptr_final_nullable</Macro/>();
 }
 
-fn SyntaxAnalyzer::ExpandMacro( mut this, Macro& macro ) : Expression
+fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro ) : Lexems
 {
 	NextLexem(); // Skip macro name itself.
 
@@ -3151,7 +3203,7 @@ fn SyntaxAnalyzer::ExpandMacro( mut this, Macro& macro ) : Expression
 			if( !( it_.front().lexem_type == match_element.lexem.lexem_type && it_.front().text == match_element.lexem.text ) )
 			{
 				PushErrorMessage();
-				return EmptyVariant();
+				return Lexems();
 			}
 			NextLexem();
 			continue;
@@ -3220,9 +3272,7 @@ fn SyntaxAnalyzer::ExpandMacro( mut this, Macro& macro ) : Expression
 	lexems_expanded.push_back( end_of_file_lexem );
 	lexems_expanded.push_back( end_of_file_lexem );
 
-	// Parse result.
-	var SyntaxAnalyzer mut syntax_analyzer( lexems_expanded );
-	return syntax_analyzer.ParseExpression();
+	return move(lexems_expanded);
 }
 
 fn SyntaxAnalyzer::NextLexem( mut this )
