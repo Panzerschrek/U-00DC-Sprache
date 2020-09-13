@@ -2,7 +2,7 @@ import "/string_conversions.u"
 import "../lex_synt_lib/keywords.uh"
 import "structs_combined.uh"
 
-namespace U
+namespace U1
 {
 
 //
@@ -1063,4 +1063,4 @@ fn NamesScope::GetAccessFor( this, ClassTypePtr& class_type ) : Synt::ClassVisib
 	return select( u32(this_namespace_visibility) > u32(parent_namespace_visibility) ? this_namespace_visibility : parent_namespace_visibility );
 }
 
-} // namespace U
+} // namespace U1

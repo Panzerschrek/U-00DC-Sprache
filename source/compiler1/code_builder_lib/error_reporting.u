@@ -1,6 +1,6 @@
 import "error_reporting.uh"
 
-namespace U
+namespace U1
 {
 
 op CodeBuilderError::==(CodeBuilderError& l, CodeBuilderError& r) : bool
@@ -98,4 +98,4 @@ fn NormalizeErrors( ust::vector</CodeBuilderError/> &mut errors )
 	}
 }
 
-} // namespace U
+} // namespace U1

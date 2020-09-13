@@ -17,7 +17,7 @@ import "structs_combined.uh"
 	}
 ?>
 
-namespace U
+namespace U1
 {
 
 fn ReportError( CodeBuilderErrorCode code, FilePos file_pos, ust::vector</ust::string8/>& format_args ) : CodeBuilderError;
@@ -57,4 +57,4 @@ fn PreprocessErrorArg( T& x ) : ust::string8
 
 fn NormalizeErrors( ust::vector</CodeBuilderError/> &mut errors );
 
-} // namespace U
+} // namespace U1

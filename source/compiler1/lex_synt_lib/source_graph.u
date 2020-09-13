@@ -2,7 +2,7 @@ import "/string_conversions.u"
 import "../tests_common/print.uh"
 import "source_graph.uh"
 
-namespace U
+namespace U1
 {
 
 fn LoadSourceGraph( IVfs &mut vfs, ust::string8& root_file_path ) : SourceGraph
@@ -61,7 +61,7 @@ fn LoadSourceGraph_r(
 		lexem.file_pos.SetFileIndex( u32(node_index) );
 	}
 
-	auto mut synt_result= U::Synt::SyntaxAnalysis( lex_result.lexems );
+	auto mut synt_result= Synt::SyntaxAnalysis( lex_result.lexems );
 	foreach( &error_message : synt_result.error_messages )
 	{
 		var ust::string8 mut str= file_path_normalized;
@@ -102,4 +102,4 @@ fn LoadSourceGraph_r(
 	return node_index;
 }
 
-} // namespace U
+} // namespace U1

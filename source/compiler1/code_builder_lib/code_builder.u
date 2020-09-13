@@ -3,7 +3,7 @@ import "error_reporting.uh"
 import "mangling.uh"
 import "code_builder.uh"
 
-namespace U
+namespace U1
 {
 
 fn AddAncestorsAccessRights_r( NamesScope &mut dst_class_members, ClassTypePtr& ancestor_class )
@@ -2818,4 +2818,4 @@ fn CodeBuilder::CreateGlobalFunctionContext( this ) : FunctionContext
 	return move(function_context);
 }
 
-} // namespace U
+} // namespace U1

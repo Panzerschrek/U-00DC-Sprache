@@ -1,6 +1,6 @@
 import "structs_combined.uh"
 
-namespace U
+namespace U1
 {
 
 struct LoopFrame
@@ -73,4 +73,4 @@ private:
 	FunctionContext &mut function_context_;
 }
 
-} // namespace U
+} // namespace U1

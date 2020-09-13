@@ -1,6 +1,6 @@
 import "syntax_analyzer.uh"
 
-namespace U
+namespace U1
 {
 
 class IVfs interface
@@ -31,4 +31,4 @@ struct SourceGraph
 
 fn LoadSourceGraph( IVfs &mut vfs, ust::string8& root_file_path ) : SourceGraph;
 
-} // namespace U
+} // namespace U1

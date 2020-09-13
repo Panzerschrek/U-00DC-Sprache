@@ -3,7 +3,7 @@ import "error_reporting.uh"
 import "code_builder.uh"
 import "mangling.uh"
 
-namespace U
+namespace U1
 {
 
 fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
@@ -664,4 +664,4 @@ fn CodeBuilder::TryFetchVirtualFunction(
 	}
 }
 
-} // namespace U
+} // namespace U1

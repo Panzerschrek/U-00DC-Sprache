@@ -1,7 +1,7 @@
 import "../lex_synt_lib/keywords.uh"
 import "lang_types.uh"
 
-namespace U
+namespace U1
 {
 
 fn IsUnsignedInteger( U_FundamentalType t ) : bool
@@ -97,4 +97,4 @@ fn GetFundamentalTypeByName( ust::array_view_imut</ char8 /> name ) : U_Fundamen
 	return U_FundamentalType::InvalidType;
 }
 
-} // namespace U
+} // namespace U1

@@ -1,7 +1,7 @@
 import "keywords.uh"
 import "syntax_analyzer.uh"
 
-namespace U
+namespace U1
 {
 
 namespace Synt
@@ -2977,4 +2977,4 @@ fn ParseImports( Lexems& lexems ) : ImportsList
 
 } // namespace Synt
 
-} // namespace U
+} // namespace U1

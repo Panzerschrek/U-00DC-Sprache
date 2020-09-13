@@ -1,6 +1,6 @@
 import "operators.uh"
 
-namespace U
+namespace U1
 {
 
 fn GetOverloadedOperatorForAdditiveAssignmentOperator( BinaryOperatorType o ) : OverloadedOperator
@@ -119,4 +119,4 @@ fn OverloadedOperatorToString( OverloadedOperator o ) : ust::array_view_imut</ c
 	halt;
 }
 
-} // namespace U
+} // namespace U1

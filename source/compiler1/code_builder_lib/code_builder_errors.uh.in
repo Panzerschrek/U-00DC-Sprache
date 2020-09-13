@@ -1,7 +1,7 @@
 import "/string.u"
 import "/lex_synt_lib/file_pos.uh"
 
-namespace U
+namespace U1
 {
 
 enum CodeBuilderErrorCode
@@ -29,4 +29,4 @@ struct CodeBuilderError
 	op<(CodeBuilderError& l, CodeBuilderError& r) : bool;
 }
 
-} // namespace U
+} // namespace U1

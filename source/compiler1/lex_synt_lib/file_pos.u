@@ -1,6 +1,6 @@
 import "file_pos.uh"
 
-namespace U
+namespace U1
 {
 
 fn FilePos::constructor( u32 file_index, u32 line, u32 column )
@@ -82,4 +82,4 @@ op FilePos::<=( FilePos& l, FilePos& r ) : bool
 	return l < r || l == r;
 }
 
-} // namespace U
+} // namespace U1

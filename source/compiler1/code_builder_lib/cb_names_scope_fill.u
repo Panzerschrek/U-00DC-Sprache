@@ -3,7 +3,7 @@ import "error_reporting.uh"
 import "mangling.uh"
 import "code_builder.uh"
 
-namespace U
+namespace U1
 {
 
 fn CodeBuilder::NamesScopeFillClass( mut this, NamesScopeMutPtr& names_scope_ptr, Synt::ClassElements& class_elements, ClassTypePtr& class_type )
@@ -734,4 +734,4 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 	return class_type_ptr;
 }
 
-} // namespace U
+} // namespace U1

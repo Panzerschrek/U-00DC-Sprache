@@ -16,7 +16,7 @@ This needed, because of dependency loop Type->Class->NamesScope->Value->Type.
 
 */
 
-namespace U
+namespace U1
 {
 
 //
@@ -661,4 +661,4 @@ private:
 	ErrorsContainerPtr errors_container_;
 }
 
-} // namespace U
+} // namespace U1

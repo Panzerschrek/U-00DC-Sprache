@@ -1,6 +1,6 @@
 import "/string.u"
 
-namespace U
+namespace U1
 {
 
 // WARNING! If this changed, "keywords_list.hpp" must be changed too!
@@ -133,4 +133,4 @@ enum Keyword : u8
 fn IsKeyword( ust::string8& str ) : bool;
 fn KeywordToString( Keyword k ) : ust::array_view_imut</ char8 />;
 
-} // namespace U
+} // namespace U1

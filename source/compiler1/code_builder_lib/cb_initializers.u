@@ -2,7 +2,7 @@ import "../lex_synt_lib/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
 
-namespace U
+namespace U1
 {
 
 fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Initializer& initializer ) : LLVMValueRef
@@ -1233,4 +1233,4 @@ fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type
 	}
 }
 
-} // namespace U
+} // namespace U1

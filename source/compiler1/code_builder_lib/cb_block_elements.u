@@ -2,7 +2,7 @@ import "../lex_synt_lib/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
 
-namespace U
+namespace U1
 {
 
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : BlockElementBuildInfo
@@ -1126,4 +1126,4 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 	CallDestructorsForTopVariablesFrame( names_scope, function_context, file_pos );
 }
 
-} // namespace U
+} // namespace U1

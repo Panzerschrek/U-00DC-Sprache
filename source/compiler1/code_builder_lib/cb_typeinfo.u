@@ -135,7 +135,7 @@ import "mangling.uh"
 	}
 ?>
 
-namespace U
+namespace U1
 {
 
 // Use reserved by language names, started with "_".
@@ -752,4 +752,4 @@ fn CodeBuilder::BuildTypeinfoEnumElementsList( mut this, NamesScopePtr& root_nam
 	return FinishTypeinfoList( llvm_context_, move(list_types), list_initializers );
 }
 
-} // namespace U
+} // namespace U1

@@ -1,6 +1,6 @@
 import "/string.u"
 
-namespace U
+namespace U1
 {
 
 // Fundamental language types.
@@ -41,4 +41,4 @@ fn IsChar( U_FundamentalType t ) : bool;
 fn GetFundamentalTypeName( U_FundamentalType t ) : ust::array_view_imut</ char8 />;
 fn GetFundamentalTypeByName( ust::array_view_imut</ char8 /> name ) : U_FundamentalType;
 
-} // namespace U
+} // namespace U1

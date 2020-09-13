@@ -1,4 +1,4 @@
-namespace U
+namespace U1
 {
 
 class FilePos
@@ -37,4 +37,4 @@ private:
 	u16 column_(0);
 }
 
-} // namespace U
+} // namespace U1

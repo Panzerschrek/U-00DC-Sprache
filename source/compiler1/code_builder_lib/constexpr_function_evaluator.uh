@@ -2,7 +2,7 @@ import "/string.u"
 import "/vector.u"
 import "constexpr_function_evaluator_bindings.uh"
 
-namespace U
+namespace U1
 {
 
 class ConstexprFunctionEvaluator1
@@ -23,4 +23,4 @@ private:
 	ConstexprFunctionEvaluatorRef impl_= zero_init;
 }
 
-} // namespace U
+} // namespace U1

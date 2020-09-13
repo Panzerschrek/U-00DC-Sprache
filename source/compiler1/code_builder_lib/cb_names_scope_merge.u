@@ -3,7 +3,7 @@ import "error_reporting.uh"
 import "code_builder.uh"
 
 
-namespace U
+namespace U1
 {
 
 fn GetValueFilePos( NamesScopeValue& value ) : FilePos
@@ -395,4 +395,4 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 	REPORT_ERROR( Redefinition, target_names_scope, FilePos() /* TODO - file_pos */, name )
 }
 
-} // namespace U
+} // namespace U1

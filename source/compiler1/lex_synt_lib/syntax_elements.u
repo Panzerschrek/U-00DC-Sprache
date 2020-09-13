@@ -1,6 +1,6 @@
 import "syntax_elements.uh"
 
-namespace U
+namespace U1
 {
 
 namespace Synt
@@ -76,4 +76,4 @@ fn GetFilePos( BlockElement& block_element ) : FilePos
 
 } // namespace Synt
 
-} // namespace U
+} // namespace U1

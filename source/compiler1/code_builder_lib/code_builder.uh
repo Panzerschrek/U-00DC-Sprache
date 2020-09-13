@@ -45,7 +45,7 @@ import "structs_combined.uh"
 	}
 ?>
 
-namespace U
+namespace U1
 {
 
 class CodeBuilder
@@ -717,4 +717,4 @@ private:
 	LLVMValueRef halt_function_= LLVMValueRef::Null;
 }
 
-} // namespace U
+} // namespace U1

@@ -1,7 +1,7 @@
 import "constexpr_function_evaluator.uh"
 
 
-namespace U
+namespace U1
 {
 
 fn ErrorHandlerFunc( void &mut user_data, char8& error_text_start, size_type error_text_size )
@@ -52,4 +52,4 @@ fn ConstexprFunctionEvaluator1::Evaluate( mut this, LLVMValueRef function, ust::
 	return move(result);
 }
 
-} // namespace U
+} // namespace U1

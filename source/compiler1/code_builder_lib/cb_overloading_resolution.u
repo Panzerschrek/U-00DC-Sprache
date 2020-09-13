@@ -1,7 +1,7 @@
 import "error_reporting.uh"
 import "code_builder.uh"
 
-namespace U
+namespace U1
 {
 
 // "Class" of function argument in terms of overloading.
@@ -766,4 +766,4 @@ fn CodeBuilder::SelectMoreSpecializedTemplate(
 	return selected_template;
 }
 
-} // namespace U
+} // namespace U1

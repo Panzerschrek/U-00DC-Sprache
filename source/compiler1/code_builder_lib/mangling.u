@@ -2,7 +2,7 @@ import "/string_conversions.u"
 import "../lex_synt_lib/keywords.uh"
 import "mangling.uh"
 
-namespace U
+namespace U1
 {
 
 struct MangleGraphNode
@@ -649,4 +649,4 @@ fn MangleVirtualTable( Type& t ) : ust::string8
 	return move(str);
 }
 
-} // namespace U
+} // namespace U1

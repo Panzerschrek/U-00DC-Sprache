@@ -3,7 +3,7 @@ import "error_reporting.uh"
 import "mangling.uh"
 import "code_builder.uh"
 
-namespace U
+namespace U1
 {
 
 fn CodeBuilder::BuiltTypeTemplatesSet( mut this, NamesScopePtr& names_scope, ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set_ptr )
@@ -1517,4 +1517,4 @@ fn CodeBuilder::TypeIsValidForTemplateVariableArgument( Type& t ) : bool
 	return false;
 }
 
-} // namespace U
+} // namespace U1

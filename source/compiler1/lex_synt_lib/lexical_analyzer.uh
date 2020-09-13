@@ -2,7 +2,7 @@ import "/string.u"
 import "/vector.u"
 import "file_pos.uh"
 
-namespace U
+namespace U1
 {
 
 struct NumberLexemData
@@ -126,4 +126,4 @@ struct LexicalAnalysisResult
 
 fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnalysisResult;
 
-} // namespace U
+} // namespace U1

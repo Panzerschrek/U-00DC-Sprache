@@ -1,6 +1,6 @@
 import "keywords.uh"
 
-namespace U
+namespace U1
 {
 
 fn IsKeyword( ust::string8& str ) : bool
@@ -33,4 +33,4 @@ fn KeywordToString( Keyword k ) : ust::array_view_imut</ char8 />
 	return ust::array_view_imut</ char8 />( "" );
 }
 
-} // namespace U
+} // namespace U1

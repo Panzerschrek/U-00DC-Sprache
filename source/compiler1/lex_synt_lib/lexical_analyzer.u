@@ -1,7 +1,7 @@
 import "lexical_analyzer.uh"
 import "program_string.uh"
 
-namespace U
+namespace U1
 {
 
 type Iterator= ust::array_view_imut</ char8 />;
@@ -594,4 +594,4 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 	return move(result);
 }
 
-} // namespace U
+} // namespace U1
