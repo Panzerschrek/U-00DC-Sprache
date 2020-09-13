@@ -99,6 +99,7 @@ struct ClassType
 	ust::shared_ptr_final_nullable</ Synt::Class /> forward_declaration_syntax_element;
 	ust::shared_ptr_final_nullable</ Synt::Class /> syntax_element;
 
+	// This class fields names ordered by offset.
 	ust::vector</ust::string8/> fields_order;
 
 	struct BaseTemplate
@@ -339,7 +340,8 @@ struct ClassField
 	Type t;
 	bool is_reference;
 	bool is_mutable;
-	size_type index= ~0s;
+	size_type index= ~0s; // for "getelementptr" instruction
+	size_type original_index= ~0s; // Index of class field in class declaration
 	ust::shared_ptr_final</ Synt::ClassField /> syntax_element;
 }
 

@@ -247,6 +247,7 @@ private:
 	fn ParseClass( mut this ) : Class;
 	fn ParseClassKindAttribute( mut this ) : Class::KindAttribute;
 	fn ParseClassParentsList( mut this ) : ust::vector</ComplexName/>;
+	fn ParseClassOrderedFlag( mut this ) : bool;
 	fn ParseClassBody( mut this ) : ClassElements;
 	fn ParseEnum( mut this ) : Enum;
 	fn ParseTypeAlias( mut this ) : TypeAlias;
@@ -2354,6 +2355,7 @@ fn SyntaxAnalyzer::ParseClass( mut this ) : Class
 		class_.kind_attribute= ParseClassKindAttribute();
 		class_.parents= ParseClassParentsList();
 	}
+	class_.keep_fields_order= ParseClassOrderedFlag();
 
 	if( it_.front().lexem_type == Lexem::Type::Semicolon )
 	{
@@ -2556,6 +2558,17 @@ fn SyntaxAnalyzer::ParseClassParentsList( mut this ) : ust::vector</ComplexName/
 	}
 
 	return move(parents_list);
+}
+
+fn SyntaxAnalyzer::ParseClassOrderedFlag( mut this ) : bool
+{
+	if( IsKeyword( it_.front(), Keyword::ordered_ ) )
+	{
+		NextLexem();
+		return true;
+	}
+
+	return false;
 }
 
 fn SyntaxAnalyzer::ParseEnum( mut this ) : Enum
@@ -2828,6 +2841,7 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 			class_.kind_attribute= ParseClassKindAttribute();
 			class_.parents= ParseClassParentsList();
 		}
+		class_.keep_fields_order= ParseClassOrderedFlag();
 
 		class_.class_elements= ParseClassBody();
 

@@ -296,17 +296,13 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	}
 
 	// Apply default initializer for fileds, missing in struct named initializer.
-	foreach( &class_member : class_members.GetInternalContainer() )
+	foreach( &field_name : class_type.fields_order )
 	{
-		auto field_ptr= class_member.value().Get</ ClassField />();
-		if( field_ptr.empty() )
-		{
-			continue;
-		}
+		auto field_ptr= class_members.GetThisScopeValue(field_name).get_ref().Get</ClassField/>();
 		auto mut found= false;
 		foreach( &member_initializer : struct_named_initializer.members_initializers )
 		{
-			if( member_initializer.name == class_member.key() )
+			if( member_initializer.name == field_name )
 			{
 				found= true;
 				break;
@@ -334,11 +330,11 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		{
 			if( field.is_reference )
 			{
-				REPORT_ERROR( ExpectedInitializer, names_scope, struct_named_initializer.file_pos, class_member.key() )
+				REPORT_ERROR( ExpectedInitializer, names_scope, struct_named_initializer.file_pos, field_name )
 				continue;
 			}
 
-			BuildEmptyInitializer( names_scope, function_context, member_variable, class_member.key(), struct_named_initializer.file_pos );
+			BuildEmptyInitializer( names_scope, function_context, member_variable, field_name, struct_named_initializer.file_pos );
 		}
 		else
 		{
@@ -454,13 +450,9 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		auto members_lock= class_type.members.lock_imut();
 		var NamesScope& class_members= members_lock.get_ref();
 
-		foreach( &class_member : class_members.GetInternalContainer() )
+		foreach( &field_name : class_type.fields_order )
 		{
-			auto field_ptr= class_member.value().Get</ ClassField />();
-			if( field_ptr.empty() )
-			{
-				continue;
-			}
+			auto field_ptr= class_members.GetThisScopeValue(field_name).get_ref().Get</ClassField/>();
 			auto field_lock= field_ptr.lock_imut();
 			var ClassField& field= field_lock.get_ref();
 
@@ -1030,7 +1022,9 @@ fn CodeBuilder::BuildConstructorInitialization(
 {
 	// Function context should contain "this" with class type
 	auto class_type= function_context.this_.get_ref().t.GetClassType().get_ref();
-	auto class_members= class_type.lock_imut().get_ref().members;
+	auto class_members_ptr= class_type.lock_imut().get_ref().members;
+	auto class_members_lock= class_members_ptr.lock_imut();
+	var NamesScope& class_members= class_members_lock.get_ref();
 	auto base_class= class_type.lock_imut().get_ref().base_class;
 
 	// Check for errors, build list of initialized fields.
@@ -1058,8 +1052,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 			continue;
 		}
 
-		auto class_members_lock= class_members.lock_imut();
-		auto member= class_members_lock.get_ref().GetThisScopeValue( member_initializer.name );
+		auto member= class_members.GetThisScopeValue( member_initializer.name );
 		if( member.empty() )
 		{
 			have_fields_errors= true;
@@ -1085,20 +1078,6 @@ fn CodeBuilder::BuildConstructorInitialization(
 		function_context.uninitialized_this_fields.insert( member_initializer.name, 0 );
 	}
 
-	var ust::vector</ust::string8/> mut uninitialized_fields;
-
-	foreach( &class_member : class_members.lock_imut().get_ref().GetInternalContainer() )
-	{
-		auto field_ptr= class_member.value().Get</ ClassField />();
-		if( !field_ptr.empty() )
-		{
-			if( initialized_fields.find( class_member.key() ).empty() )
-			{
-				uninitialized_fields.push_back( class_member.key() );
-			}
-		}
-	}
-
 	// Initialize fields, missing in initializer list.
 	if( !base_class.empty() && !base_initialized )
 	{
@@ -1111,10 +1090,13 @@ fn CodeBuilder::BuildConstructorInitialization(
 
 		BuildEmptyInitializer( names_scope, function_context, base_variable, KeywordToString( Keyword::base_ ), constructor_initialization_list.file_pos );
 	}
-	// TODO - use fiedls order.
-	foreach( &field_name : uninitialized_fields )
+	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
 	{
-		auto field_ptr= class_members.lock_imut().get_ref().GetThisScopeValue( field_name ).get_ref().Get</ClassField/>();
+		if( !initialized_fields.find( field_name ).empty() )
+		{
+			continue;
+		}
+		auto field_ptr= class_members.GetThisScopeValue(field_name).get_ref().Get</ClassField/>();
 		auto field_lock= field_ptr.lock_imut();
 		var ClassField & class_field= field_lock.get_ref();
 
@@ -1143,11 +1125,11 @@ fn CodeBuilder::BuildConstructorInitialization(
 			if( class_field.is_reference )
 			{
 				var NamesScopeVariable this_variable{ .t= class_type, .llvm_value= function_context.this_.get_ref().llvm_value };
-				InitializeReferenceField( class_members, function_context, this_variable, class_field, initializer );
+				InitializeReferenceField( class_members_ptr, function_context, this_variable, class_field, initializer );
 			}
 			else
 			{
-				BuildInitializer( class_members, function_context, field_variable, initializer );
+				BuildInitializer( class_members_ptr, function_context, field_variable, initializer );
 			}
 		}
 	}
@@ -1175,7 +1157,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 			continue;
 		}
 
-		auto field_ptr= class_members.lock_imut().get_ref().GetThisScopeValue( member_initializer.name ).get_ref().Get</ClassField/>();
+		auto field_ptr= class_members.GetThisScopeValue( member_initializer.name ).get_ref().Get</ClassField/>();
 		auto field_lock= field_ptr.lock_imut();
 		var ClassField & class_field= field_lock.get_ref();
 
@@ -1209,7 +1191,9 @@ fn CodeBuilder::BuildConstructorInitialization(
 
 fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type )
 {
-	var NamesScopePtr class_members= class_type.lock_imut().get_ref().members;
+	auto class_members_ptr= class_type.lock_imut().get_ref().members;
+	auto class_members_lock= class_members_ptr.lock_imut();
+	var NamesScope& class_members= class_members_lock.get_ref();
 
 	auto mut global_function_context= CreateGlobalFunctionContext();
 	var VariablesFrameHolder temp_variables_frame_hodler(global_function_context);
@@ -1218,14 +1202,9 @@ fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type
 	var NamesScopeVariable mut this_variable{ .t= class_type };
 	unsafe{  this_variable.llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, class_type.lock_imut().get_ref().llvm_type, "\0"[0] );  }
 
-	foreach( &class_member : class_members.lock_imut().get_ref().GetInternalContainer() )
+	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
 	{
-		auto field_ptr= class_member.value().Get</ ClassField />();
-		if( field_ptr.empty() )
-		{
-			continue;
-		}
-
+		auto field_ptr= class_members.GetThisScopeValue(field_name).get_ref().Get</ClassField/>();
 		auto field_lock= field_ptr.lock_imut();
 		var ClassField & class_field= field_lock.get_ref();
 
@@ -1239,7 +1218,7 @@ fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type
 
 		if( class_field.is_reference )
 		{
-			InitializeReferenceField( class_members, function_context, this_variable, class_field, initializer );
+			InitializeReferenceField( class_members_ptr, function_context, this_variable, class_field, initializer );
 		}
 		else
 		{
@@ -1249,7 +1228,7 @@ fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type
 				.is_mutable= true,
 				.llvm_value= CreateFieldGEP( this_variable.llvm_value, class_field, function_context ),
 			};
-			BuildInitializer( class_members, function_context, field_variable, initializer );
+			BuildInitializer( class_members_ptr, function_context, field_variable, initializer );
 		}
 	}
 }

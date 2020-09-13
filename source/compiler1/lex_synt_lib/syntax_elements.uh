@@ -545,6 +545,7 @@ struct Class
 	ust::vector</ComplexName/> parents;
 	ClassElements class_elements;
 	bool is_forward_declaration= false;
+	bool keep_fields_order= false;
 }
 
 struct Enum

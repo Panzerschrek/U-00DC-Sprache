@@ -334,17 +334,8 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 			class_.kind == ClassType::Kind::PolymorphNonFinal ||
 			class_.kind == ClassType::Kind::PolymorphFinal;
 
-		// TODO - maybe count also inheretid fields?
-		auto mut field_count= 0s;
-		foreach( &member : class_.members.lock_imut().get_ref().GetInternalContainer() )
-		{
-			if( !member.value().Get</ClassField/>().empty() )
-			{
-				++field_count;
-			}
-		}
+		ADD_SIZE_FIELD( "field_count", class_.fields_order.size() ) // TODO - maybe count also inheretid fields?
 
-		ADD_SIZE_FIELD( "field_count", field_count )
 		ADD_SIZE_FIELD( "parent_count", class_.parents.size() )
 
 		ADD_LIST_FIELD( "fields_list", BuildTypeinfoClassFieldsList( root_namespace, class_ptr ) )
@@ -524,17 +515,14 @@ fn CodeBuilder::BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_name
 	var ust::shared_ptr_final</ Synt::ClassField /> dummy_syntax_element( Synt::ClassField() );
 
 	auto class_members_ptr= class_type.lock_imut().get_ref().members;
+	auto class_members_lock= class_members_ptr.lock_imut();
+	var NamesScope& class_members= class_members_lock.get_ref();
 	auto class_llvm_type= class_type.lock_imut().get_ref().llvm_type;
 
-	// TODO - use some predictable order of fields.
 	// TODO - add also fields of parents.
-	foreach( &class_member : class_members_ptr.lock_imut().get_ref().GetInternalContainer() )
+	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
 	{
-		auto field_ptr= class_member.value().Get</ClassField/>();
-		if( field_ptr.empty() )
-		{
-			continue;
-		}
+		auto field_ptr= class_members.GetThisScopeValue(field_name).get_ref().Get</ClassField/>();
 		auto field_lock= field_ptr.lock_imut();
 		var ClassField& field= field_lock.get_ref();
 
@@ -554,7 +542,7 @@ fn CodeBuilder::BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_name
 		ADD_BOOL_FIELD( "is_mutable", field.is_mutable )
 		ADD_BOOL_FIELD( "is_reference", field.is_reference )
 
-		ADD_CLASS_MEMBER_COMMON_FIELDS( class_member.key() )
+		ADD_CLASS_MEMBER_COMMON_FIELDS( field_name )
 
 		FinishTypeinfoClass( typeinfo_class, fields_llvm_types );
 

@@ -10,6 +10,7 @@ fn CodeBuilder::NamesScopeFillClass( mut this, NamesScopeMutPtr& names_scope_ptr
 {
 	auto mut current_visibility= Synt::ClassVisibility::Public;
 	var bool is_struct= class_type.lock_imut().get_ref().syntax_element.get_ref().kind_attribute == Synt::Class::KindAttribute::Struct;
+	var size_type mut field_index= 0s;
 	foreach( & class_element : class_elements )
 	{
 		variant_visit( & el : class_element )
@@ -24,6 +25,11 @@ fn CodeBuilder::NamesScopeFillClass( mut this, NamesScopeMutPtr& names_scope_ptr
 				{
 					current_visibility= el.visibility;
 				}
+			}
+			else if( ust::is_same_type</ typeof(el), ust::shared_ptr_final</Synt::ClassField/> />() )
+			{
+				NamesScopeFill( names_scope_ptr, el, class_type, current_visibility, field_index );
+				++field_index;
 			}
 			else
 			{
@@ -448,7 +454,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	lock.get_ref().AddName( namespace_.get_ref().name, move(names_scope_value) );
 }
 
-fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility )
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility, size_type field_index )
 {
 	auto& field_name= class_field.get_ref().name;
 	if( IsKeyword( field_name ) )
@@ -462,6 +468,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		.syntax_element= class_field,
 		.is_reference= class_field.get_ref().reference_modifier == Synt::ReferenceModifier::Reference,
 		.is_mutable= true,
+		.original_index= field_index,
 	};
 
 	if( field.is_reference )
