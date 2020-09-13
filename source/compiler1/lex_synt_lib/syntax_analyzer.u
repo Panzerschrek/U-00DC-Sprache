@@ -211,6 +211,8 @@ public:
 	fn ParseImports( mut this ) : ImportsList;
 
 private:
+	fn ParseMacro( mut this ) : Macro;
+
 	fn ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : NamespaceElements;
 	fn ParseNamespace( mut this ) : Namespace;
 
@@ -276,6 +278,12 @@ fn SyntaxAnalyzer::DoAnalyzis( mut this ) : SyntaxAnalysisResult
 	var SyntaxAnalysisResult mut res;
 
 	res.imports_list= ParseImports();
+
+	while( NotEndOfFile() && it_.front().lexem_type == Lexem::Type::MacroIdentifier && it_.front().text == "macro" )
+	{
+		ParseMacro();
+	}
+
 	res.program_elements= ParseNamespaceBody( Lexem::Type::EndOfFile );
 
 	res.error_messages= take(error_messages_);
@@ -302,6 +310,148 @@ fn SyntaxAnalyzer::ParseImports( mut this ) : ImportsList
 	}
 
 	return move(imports_list);
+}
+
+fn SyntaxAnalyzer::ParseMacro( mut this ) : Macro
+{
+	NextLexem(); // Skip "?macro"
+	var Macro mut macro;
+
+	// Macro name and context
+	if( it_.front().lexem_type != Lexem::Type::MacroBracketLeft )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage();
+	}
+	macro.name= it_.front().text;
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::Colon )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage();
+	}
+	var ust::string8& macro_context_str= it_.front().text;
+	NextLexem();
+
+	var Macro::Context mut macro_context= Macro::Context::Expression;
+		 if( macro_context_str == "expr" ) { macro_context= Macro::Context::Expression; }
+	else if( macro_context_str == "block" ) { macro_context= Macro::Context::Block; }
+	else if( macro_context_str == "class" ) { macro_context= Macro::Context::Class; }
+	else if( macro_context_str == "namespace" ) { macro_context= Macro::Context::Namespace; }
+	else
+	{
+		// TODO - generate specific error
+		PushErrorMessage();
+	}
+
+	// Match block
+	while( NotEndOfFile() )
+	{
+		if( it_.front().lexem_type == Lexem::Type::MacroBracketRight )
+		{
+			NextLexem();
+			break;
+		}
+		else if( it_.front().lexem_type == Lexem::Type::MacroBracketLeft )
+		{
+			PushErrorMessage();
+			break;
+		}
+		if( it_.front().lexem_type == Lexem::Type::MacroIdentifier )
+		{
+			var Macro::MatchElement mut match_element{ .name= it_.front().text };
+			NextLexem();
+
+			if( it_.front().lexem_type != Lexem::Type::Colon )
+			{
+				PushErrorMessage();
+			}
+			NextLexem();
+
+			if( it_.front().lexem_type != Lexem::Type::Identifier )
+			{
+				PushErrorMessage();
+			}
+			var ust::string8& element_type= it_.front().text;
+			NextLexem();
+
+				 if( element_type == "ident" ) { match_element.kind= Macro::MatchElementKind::Identifier; }
+			else if( element_type == "ty" ) { match_element.kind= Macro::MatchElementKind::Typename; }
+			else if( element_type == "expr" ) { match_element.kind= Macro::MatchElementKind::Expression; }
+			else if( element_type == "block" ) { match_element.kind= Macro::MatchElementKind::Block; }
+			// TODO - process other types
+			else
+			{
+				// TODO - generate specific error
+				PushErrorMessage();
+			}
+
+			macro.match_template_elements.push_back( move(match_element) );
+		}
+		else
+		{
+			var Macro::MatchElement mut match_element{ .lexem= it_.front() };
+			macro.match_template_elements.push_back( move(match_element) );
+			NextLexem();
+		}
+	}
+
+	if( it_.front().lexem_type != Lexem::Type::RightArrow )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	// Result block
+
+	if( it_.front().lexem_type != Lexem::Type::MacroBracketLeft )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	while( NotEndOfFile() )
+	{
+		if( it_.front().lexem_type == Lexem::Type::MacroBracketRight )
+		{
+			NextLexem();
+			break;
+		}
+		else if( it_.front().lexem_type == Lexem::Type::MacroBracketLeft )
+		{
+			PushErrorMessage();
+			break;
+		}
+		else if( it_.front().lexem_type == Lexem::Type::MacroIdentifier )
+		{
+			var Macro::ResultElement mut result_element{ .name= it_.front().text };
+			NextLexem();
+
+			// TODO - parse other kinds.
+			result_element.kind= Macro::ResultElementKind::VariableElement;
+
+			macro.result_template_elements.push_back( move(result_element) );
+		}
+		else
+		{
+			var Macro::ResultElement mut result_element{ .lexem= it_.front() };
+			macro.result_template_elements.push_back( move(result_element) );
+			NextLexem();
+		}
+	}
+
+	return move(macro);
 }
 
 fn SyntaxAnalyzer::ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : NamespaceElements

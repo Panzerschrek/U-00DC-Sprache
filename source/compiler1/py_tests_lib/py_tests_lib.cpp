@@ -668,6 +668,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"InvalidTypeForConstantExpressionVariable",
 		"InvalidTypeForConstexprFunction_Test",
 		"KeepFieldsOrder_Test",
+		"MacroDefenition_Test",
 		"MethodBodyGenerationFailed_Test",
 		"NonExistentTest",
 		"NoMangleMismatch_Test",

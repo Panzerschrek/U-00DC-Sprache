@@ -1,4 +1,4 @@
-import "lexical_analyzer.uh"
+import "macro.uh"
 import "syntax_elements.uh"
 
 namespace U1
