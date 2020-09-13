@@ -1218,36 +1218,36 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassProxyPtr& class_type 
 	llvm::Value* const variable_llvm_value=
 		function_context.alloca_ir_builder.CreateAlloca( class_.llvm_type );
 
-	class_.members.ForEachValueInThisScope(
-		[&]( const Value& value )
+	for( const std::string& field_name : class_.fields_order )
+	{
+		if( field_name.empty() )
+			continue;
+
+		const ClassField& class_field= *class_.members.GetThisScopeValue( field_name )->GetClassField();
+
+		if( class_field.syntax_element->initializer == nullptr )
+			continue;
+
+		if( class_field.is_reference )
 		{
-			const ClassField* const class_field= value.GetClassField();
-			if( class_field == nullptr || class_field->class_.lock() != class_type )
-				return;
-
-			if( class_field->syntax_element->initializer == nullptr )
-				return;
-
-			if( class_field->is_reference )
-			{
-				Variable variable;
-				variable.type= class_type;
-				variable.value_type= ValueType::Reference;
-				variable.llvm_value= variable_llvm_value;
-				InitializeReferenceClassFieldWithInClassIninitalizer( variable, *class_field, function_context );
-			}
-			else
-			{
-				Variable field_variable;
-				field_variable.type= class_field->type;
-				field_variable.value_type= ValueType::Reference;
-				field_variable.llvm_value=
-					function_context.llvm_ir_builder.CreateGEP(
-						variable_llvm_value,
-						{ GetZeroGEPIndex(), GetFieldGEPIndex( class_field->index ) } );
-				InitializeClassFieldWithInClassIninitalizer( field_variable, *class_field, function_context );
-			}
-		});
+			Variable variable;
+			variable.type= class_type;
+			variable.value_type= ValueType::Reference;
+			variable.llvm_value= variable_llvm_value;
+			InitializeReferenceClassFieldWithInClassIninitalizer( variable, class_field, function_context );
+		}
+		else
+		{
+			Variable field_variable;
+			field_variable.type= class_field.type;
+			field_variable.value_type= ValueType::Reference;
+			field_variable.llvm_value=
+				function_context.llvm_ir_builder.CreateGEP(
+					variable_llvm_value,
+					{ GetZeroGEPIndex(), GetFieldGEPIndex( class_field.index ) } );
+			InitializeClassFieldWithInClassIninitalizer( field_variable, class_field, function_context );
+		}
+	}
 }
 
 } // namespace CodeBuilderPrivate

@@ -51,19 +51,17 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 	// Generate default constructor, if all fields is default constructible.
 	bool all_fields_is_default_constructible= true;
 
-	the_class.members.ForEachValueInThisScope(
-		[&]( const Value& value )
-		{
-			const ClassField* const field= value.GetClassField();
-			if( field == nullptr )
-				return;
-			if( field->class_.lock()->class_ != &the_class )
-				return; // Skip fields of parent classes.
+	for( const std::string& field_name : the_class.fields_order )
+	{
+		if( field_name.empty() )
+			continue;
 
-			if( field->syntax_element->initializer == nullptr &&
-				( field->is_reference || !field->type.IsDefaultConstructible() ) )
-				all_fields_is_default_constructible= false;
-		} );
+		const ClassField& field= *the_class.members.GetThisScopeValue( field_name )->GetClassField();
+
+		if( field.syntax_element->initializer == nullptr &&
+			( field.is_reference || !field.type.IsDefaultConstructible() ) )
+			all_fields_is_default_constructible= false;
+	}
 
 	if( the_class.base_class != nullptr && !the_class.base_class->class_->is_default_constructible )
 		all_fields_is_default_constructible= false;
@@ -230,16 +228,16 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 
 	bool all_fields_is_copy_constructible= true;
 
-	the_class.members.ForEachValueInThisScope(
-		[&]( const Value& value )
-		{
-			const ClassField* const field= value.GetClassField();
-			if( field == nullptr )
-				return;
+	for( const std::string& field_name : the_class.fields_order )
+	{
+		if( field_name.empty() )
+			continue;
 
-			if( !field->is_reference && !field->type.IsCopyConstructible() )
-				all_fields_is_copy_constructible= false;
-		} );
+		const ClassField& field= *the_class.members.GetThisScopeValue( field_name )->GetClassField();
+
+		if( !field.is_reference && !field.type.IsCopyConstructible() )
+			all_fields_is_copy_constructible= false;
+	}
 
 	if( the_class.base_class != nullptr && !the_class.base_class->class_->is_copy_constructible )
 		all_fields_is_copy_constructible= false;
@@ -517,17 +515,17 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 
 	bool all_fields_is_copy_assignable= true;
 
-	the_class.members.ForEachValueInThisScope(
-		[&]( const Value& member )
-		{
-			const ClassField* const field= member.GetClassField();
-			if( field == nullptr )
-				return;
+	for( const std::string& field_name : the_class.fields_order )
+	{
+		if( field_name.empty() )
+			continue;
 
-			// We can not generate assignment operator for classes with references, for classes with immutable fields, for classes with noncopyable fields.
-			if( field->is_reference || !field->type.IsCopyAssignable() || !field->is_mutable )
-				all_fields_is_copy_assignable= false;
-		} );
+		const ClassField& field= *the_class.members.GetThisScopeValue( field_name )->GetClassField();
+
+		// We can not generate assignment operator for classes with references, for classes with immutable fields, for classes with noncopyable fields.
+		if( field.is_reference || !field.type.IsCopyAssignable() || !field.is_mutable )
+			all_fields_is_copy_assignable= false;
+	}
 
 	if( the_class.base_class != nullptr && !the_class.base_class->class_->is_copy_assignable )
 		all_fields_is_copy_assignable= false;

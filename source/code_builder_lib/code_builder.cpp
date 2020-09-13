@@ -1656,23 +1656,10 @@ void CodeBuilder::BuildConstructorInitialization(
 
 	ProgramStringSet uninitialized_fields;
 
-	base_class.members.ForEachValueInThisScope(
-		[&]( const Value& member )
-		{
-			const ClassField* const field= member.GetClassField();
-			if( field == nullptr )
-				return;
-			if( field->class_.lock()->class_ != &base_class ) // Parent class field.
-				return;
-
-			if( initialized_fields.find( field->syntax_element->name ) == initialized_fields.end() )
-				uninitialized_fields.insert( field->syntax_element->name );
-		} );
-
 	// Initialize fields, missing in initializer list.
 	for( const std::string& field_name : base_class.fields_order )
 	{
-		if( field_name.empty() || uninitialized_fields.count(field_name) == 0 )
+		if( field_name.empty() || initialized_fields.count(field_name) != 0 )
 			continue;
 
 		const ClassField& field= *base_class.members.GetThisScopeValue( field_name )->GetClassField();
