@@ -289,7 +289,7 @@ U_TEST(ConstructorTest7)
 
 U_TEST(ConstructorTest8)
 {
-	// Using default-initialized filed for other filed initialization.
+	// Using default-initialized field for other field initialization.
 	static const char c_program_text[]=
 	R"(
 		struct A
@@ -330,7 +330,7 @@ U_TEST(ConstructorTest8)
 
 U_TEST(ConstructorTest9)
 {
-	// Call method of default-initialized filed for other filed initialization.
+	// Call method of default-initialized field for other field initialization.
 	static const char c_program_text[]=
 	R"(
 		struct A

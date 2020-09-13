@@ -333,7 +333,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 
 		if( function_context.this_.empty() )
 		{
-			REPORT_ERROR( ClassFiledAccessInStaticMethod, names_scope, file_pos, field_name )
+			REPORT_ERROR( ClassFieldAccessInStaticMethod, names_scope, file_pos, field_name )
 			return ErrorValue();
 		}
 
@@ -1300,8 +1300,8 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			auto field_ptr= member.value().Get</ ClassField />();
 			if( !field_ptr.empty() )
 			{
-				auto filed_lock= field_ptr.lock_imut();
-				auto& field= filed_lock.get_ref();
+				auto field_lock= field_ptr.lock_imut();
+				auto& field= field_lock.get_ref();
 				// Disable constexpr, if field type can not be constexpr, or if field is mutable reference.
 				class_.can_be_constexpr&= field.t.CanBeConstexpr() && !( field.is_mutable && field.is_reference );
 			}

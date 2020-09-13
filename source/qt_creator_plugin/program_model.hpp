@@ -26,7 +26,7 @@ public:
 		Enum,
 		EnumElement,
 		Function,
-		ClassFiled,
+		ClassField,
 		Variable,
 		ClassTemplate,
 		Typedef,

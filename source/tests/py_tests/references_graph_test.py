@@ -334,7 +334,7 @@ def ReferenceFieldAccess_Test0():
 			var i32 mut x= 0;
 			var S s{ .x= x };
 			auto& s_ref= s;
-			auto& x_ref= s_ref.x; // Accessing reference filed of struct 's', using reference to struct 's'
+			auto& x_ref= s_ref.x; // Accessing reference field of struct 's', using reference to struct 's'
 			++s.x; // Error, reference to 'x' inside 's' is not unique.
 		}
 	"""

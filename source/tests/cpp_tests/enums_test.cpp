@@ -203,7 +203,7 @@ U_TEST( EnumToIntConversionTest )
 	U_TEST_ASSERT( static_cast<uint64_t>( 9 - 2 ) == result_value.IntVal.getLimitedValue() );
 }
 
-U_TEST( EnumAsClassFiled )
+U_TEST( EnumAsClassField )
 {
 	static const char c_program_text[]=
 	R"(

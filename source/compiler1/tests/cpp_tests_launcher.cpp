@@ -114,7 +114,7 @@ bool FilterTest( const std::string& test_name )
 		"NameNotFound_ForTypedef_Test",
 		"RecursiveCallTest",
 		"Redefinition_ForTypedef_Test",
-		"ReferenceClassFiledDeclaration",
+		"ReferenceClassFieldDeclaration",
 		"TemplateArgumentIsNotDeducedYet",
 		"TemplateArgumentNotUsedInSignature",
 		"TemplateInstantiationRequiredTest",

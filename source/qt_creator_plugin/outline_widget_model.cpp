@@ -45,7 +45,7 @@ static CPlusPlus::Icons::IconType GetIconType( const ProgramModel::ProgramTreeNo
 			case ProgramModel::Visibility::Private  : return CPlusPlus::Icons::FuncPrivateIconType  ;
 			};
 
-		case ProgramModel::ElementKind::ClassFiled:
+		case ProgramModel::ElementKind::ClassField:
 		case ProgramModel::ElementKind::Variable:
 			switch( node.visibility )
 			{

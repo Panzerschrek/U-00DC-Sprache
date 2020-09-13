@@ -69,7 +69,7 @@ U_TEST(ExpectedInitializerTest2)
 
 U_TEST(ExpectedInitializerTest3)
 {
-	// Expected initializer for one of struct fileds.
+	// Expected initializer for one of struct fields.
 	static const char c_program_text[]=
 	R"(
 		struct S{ i32 x; i32 y; }

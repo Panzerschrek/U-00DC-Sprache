@@ -301,7 +301,7 @@ def InheritanceTest_ParentClassFieldAccess_Test1():
 			fn constructor()( c= -54.2 ){}
 			fn Foo( this ) :i32
 			{
-				return i32( f64(a) - f64(b) / f64(c) );  // Access parent fileds via NamedOperand.
+				return i32( f64(a) - f64(b) / f64(c) );  // Access parent fields via NamedOperand.
 			}
 		}
 
@@ -333,7 +333,7 @@ def InheritanceTest_ParentClassFieldAccess_Test2():
 			fn constructor()( c= -54.2 ){}
 			fn Foo( this ) :i32
 			{
-				return i32( f64(A::a) - f64(B::b) / f64(C::c) );  // Access parent fileds via complex NamedOperand.
+				return i32( f64(A::a) - f64(B::b) / f64(C::c) );  // Access parent fields via complex NamedOperand.
 			}
 		}
 

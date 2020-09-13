@@ -55,7 +55,7 @@ struct RegularStruct
 	float y;
 	int* ptr_field;
 	const int* const_ptr_field;
-	void (*function_ptr_filed)(float);
+	void (*function_ptr_field)(float);
 };
 
 typedef struct

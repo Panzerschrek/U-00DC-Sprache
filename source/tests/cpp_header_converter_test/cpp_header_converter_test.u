@@ -95,8 +95,8 @@ fn nomangle main() : i32
 	}
 	{
 		var i32 mut a= 0, imut b= 0;
-		var RegularStruct s{ .x= 0, .y= 0.0f, .ptr_field= a, .const_ptr_field= b, .function_ptr_filed= SomeLocalFunc };
-		unsafe{ s.function_ptr_filed( 3.14f ); }
+		var RegularStruct s{ .x= 0, .y= 0.0f, .ptr_field= a, .const_ptr_field= b, .function_ptr_field= SomeLocalFunc };
+		unsafe{ s.function_ptr_field( 3.14f ); }
 	}
 	{
 		var TypedefedStruct mut s{ .data= zero_init };

@@ -578,7 +578,7 @@ std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Clas
 		{
 			ProgramModel::ProgramTreeNode element;
 			element.name= QString::fromStdString( Stringify( class_field_ ) );
-			element.kind= ProgramModel::ElementKind::ClassFiled;
+			element.kind= ProgramModel::ElementKind::ClassField;
 			element.visibility= current_visibility;
 			element.number_in_parent= result.size();
 			element.file_pos= class_field_.file_pos_;
@@ -711,7 +711,7 @@ std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Prog
 		{
 			ProgramModel::ProgramTreeNode element;
 			element.name= QString::fromStdString( Stringify( class_field_ ) );
-			element.kind= ProgramModel::ElementKind::ClassFiled;
+			element.kind= ProgramModel::ElementKind::ClassField;
 			element.number_in_parent= result.size();
 			element.file_pos= class_field_.file_pos_;
 			result.push_back(element);

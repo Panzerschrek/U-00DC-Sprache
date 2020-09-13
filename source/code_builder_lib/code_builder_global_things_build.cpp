@@ -481,7 +481,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 						return;
 					}
 					if( class_field->type.ReferencesTagsCount() > 0u )
-						REPORT_ERROR( ReferenceFiledOfTypeWithReferencesInside, class_parent_namespace.GetErrors(), in_field.file_pos_, in_field.name );
+						REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, class_parent_namespace.GetErrors(), in_field.file_pos_, in_field.name );
 				}
 				else if( class_field->type.IsAbstract() )
 					REPORT_ERROR( ConstructingAbstractClassOrInterface, class_parent_namespace.GetErrors(), in_field.file_pos_, class_field->type );
@@ -588,7 +588,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				SortClassFields( the_class, fields_llvm_types, data_layout_ );
 		}
 
-		// Fill container with fileds names.
+		// Fill container with fields names.
 		the_class.fields_order.resize( fields_llvm_types.size() );
 		the_class.members.ForEachInThisScope(
 			[&]( const std::string& name, const Value& value )

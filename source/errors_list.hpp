@@ -100,10 +100,10 @@ PROCESS_ERROR( ExplicitArgumentsInDestructor, "Explicit arguments in destructor.
 
 // Methods errors.
 PROCESS_ERROR( CallOfThiscallFunctionUsingNonthisArgument, "Call of \"thiscall\" function using nonthis argument." )
-PROCESS_ERROR( ClassFiledAccessInStaticMethod, "Accessing field \"{0}\" in static method." )
+PROCESS_ERROR( ClassFieldAccessInStaticMethod, "Accessing field \"{0}\" in static method." )
 PROCESS_ERROR( ThisInNonclassFunction, "This in nonclass function \"{0}\"." )
 PROCESS_ERROR( ThiscallMismatch, "Thiscall for function \"{0}\" does not match to thiscall in prototype." )
-PROCESS_ERROR( AccessOfNonThisClassField, "Access filed \"{0}\" of non-this class." )
+PROCESS_ERROR( AccessOfNonThisClassField, "Access field \"{0}\" of non-this class." )
 PROCESS_ERROR( ThisUnavailable, "\"this\" unavailable." )
 PROCESS_ERROR( BaseUnavailable, "\"base\" unavailable." )
 PROCESS_ERROR( InvalidMethodForBodyGeneration, "Invalid method for body generation." )
@@ -139,7 +139,7 @@ PROCESS_ERROR( UnallowedReferencePollution, "Unallowed reference pollution." )
 PROCESS_ERROR( ReferencePollutionForArgReference, "Pollution of inner reference of argument." )
 PROCESS_ERROR( ExplicitReferencePollutionForCopyConstructor, "Explicit reference pollution for copy constructor. Reference pollution for copy constructors generated automatically." )
 PROCESS_ERROR( ExplicitReferencePollutionForCopyAssignmentOperator, "Explicit reference pollution for copy assignment operator. Reference pollution for copy assignment operators generated automatically." )
-PROCESS_ERROR( ReferenceFiledOfTypeWithReferencesInside, "Reference filed \"{0}\" have type, with other references inside." )
+PROCESS_ERROR( ReferenceFieldOfTypeWithReferencesInside, "Reference field \"{0}\" have type, with other references inside." )
 
 // Operators overloading
 PROCESS_ERROR( OperatorDeclarationOutsideClass, "Operator declaration outside class. Operators can be declared only inside classes." )

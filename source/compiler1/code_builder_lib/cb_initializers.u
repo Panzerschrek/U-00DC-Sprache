@@ -295,7 +295,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		}
 	}
 
-	// Apply default initializer for fileds, missing in struct named initializer.
+	// Apply default initializer for fields, missing in struct named initializer.
 	foreach( &field_name : class_type.fields_order )
 	{
 		auto field_ptr= class_members.GetThisScopeValue(field_name).get_ref().Get</ClassField/>();

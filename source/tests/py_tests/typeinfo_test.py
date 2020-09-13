@@ -55,7 +55,7 @@ def TypeAdditionalCommonFields_Test0():
 	tests_lib.build_program( c_program_text )
 
 
-def SizeAndAlignmentFileds_Test0():
+def SizeAndAlignmentFields_Test0():
 	c_program_text= """
 		struct TwoInt{ i32 x; i32 y; }
 		struct TwoIntBox{ TwoInt ti; }
@@ -893,7 +893,7 @@ def TypeinfoList_ClassParentsList_Test0():
 	tests_lib.build_program( c_program_text )
 
 
-def ReferencesTagsFiled_Test0():
+def ReferencesTagsField_Test0():
 	c_program_text= """
 		struct S{}
 		enum E{ A }

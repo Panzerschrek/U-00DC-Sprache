@@ -704,7 +704,7 @@ void CodeBuilder::BuildCopyConstructorPart(
 	}
 	else if( const ClassProxyPtr class_type_proxy= type.GetClassTypeProxy() )
 	{
-		const Type filed_class_type= class_type_proxy;
+		const Type field_class_type= class_type_proxy;
 		const Class& class_type= *class_type_proxy->class_;
 
 		// Search copy constructor.
@@ -720,7 +720,7 @@ void CodeBuilder::BuildCopyConstructorPart(
 			const Function& constructor_type= *candidate_constructor.type.GetFunctionType();
 
 			if( constructor_type.args.size() == 2u &&
-				constructor_type.args.back().type == filed_class_type && !constructor_type.args.back().is_mutable )
+				constructor_type.args.back().type == field_class_type && !constructor_type.args.back().is_mutable )
 			{
 				constructor= &candidate_constructor;
 				break;
@@ -783,7 +783,7 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 	}
 	else if( const ClassProxyPtr class_type_proxy= type.GetClassTypeProxy() )
 	{
-		const Type filed_class_type= class_type_proxy;
+		const Type field_class_type= class_type_proxy;
 		const Class& class_type= *class_type_proxy->class_;
 
 		// Search copy-assignment aoperator.

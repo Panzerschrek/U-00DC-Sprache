@@ -3,7 +3,7 @@
 namespace U
 {
 
-U_TEST( ReferenceClassFiledDeclaration )
+U_TEST( ReferenceClassFieldDeclaration )
 {
 	static const char c_program_text[]=
 	R"(

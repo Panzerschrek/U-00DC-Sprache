@@ -12,7 +12,7 @@ fn polymorph_restore_original_ref( T &imut ref ) : void &imut
 	{
 		unsafe
 		{
-			// Virtual table pointer is always first filed in class.
+			// Virtual table pointer is always first field in class.
 			auto offset= cast_ref_unsafe</ polymorph_impl::virtual_class />(ref).vptr.offset_of_allocated_object;
 
 			auto original_ptr= raw_ptr_mut</u8/>( cast_ref_unsafe</u8/>(cast_mut(ref)) ) - offset;
@@ -32,7 +32,7 @@ fn polymorph_is_same_type( A& a, B& b ) : bool
 	{
 		unsafe
 		{
-			// Virtual table pointer is always first filed in class.
+			// Virtual table pointer is always first field in class.
 			return
 				cast_ref_unsafe</ polymorph_impl::virtual_class />(a).vptr.type_id ==
 				cast_ref_unsafe</ polymorph_impl::virtual_class />(b).vptr.type_id;

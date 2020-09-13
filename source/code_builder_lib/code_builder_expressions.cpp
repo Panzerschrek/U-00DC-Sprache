@@ -471,7 +471,7 @@ Value CodeBuilder::BuildExpressionCode(
 	{
 		if( function_context.this_ == nullptr )
 		{
-			REPORT_ERROR( ClassFiledAccessInStaticMethod, names.GetErrors(), named_operand.file_pos_, field->syntax_element->name );
+			REPORT_ERROR( ClassFieldAccessInStaticMethod, names.GetErrors(), named_operand.file_pos_, field->syntax_element->name );
 			return ErrorValue();
 		}
 
@@ -490,7 +490,7 @@ Value CodeBuilder::BuildExpressionCode(
 			actual_field_class_ptr= function_context.this_->llvm_value;
 		else
 		{
-			// For parent filed we needs make several GEP isntructions.
+			// For parent field we needs make several GEP isntructions.
 			ClassProxyPtr actual_field_class= function_context.this_->type.GetClassTypeProxy();
 			actual_field_class_ptr= function_context.this_->llvm_value;
 			while( actual_field_class != field_class_proxy )
@@ -2224,7 +2224,7 @@ Value CodeBuilder::BuildPostfixOperator(
 		actual_field_class_ptr= variable.llvm_value;
 	else
 	{
-		// For parent filed we needs make several GEP isntructions.
+		// For parent field we needs make several GEP isntructions.
 		ClassProxyPtr actual_field_class= variable.type.GetClassTypeProxy();
 		actual_field_class_ptr= variable.llvm_value;
 		while( actual_field_class != field_class_proxy )
