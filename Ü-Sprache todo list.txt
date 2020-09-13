@@ -8,9 +8,10 @@ General:
 *) Continious initializer for arrays
 *) Less requirements of complete types (helps for recursive types)
 *) Different calling conventions (for API calls, for example)
+*) Anonymous (module-local) things - functions, classes, variables.
 *) Forbid inner reference kind changing in inheritance.
-*) Forbid "shared" tag changin in inheritance.
-*) Enable arrays as aparameters/return values, enable expression initialization and copy assignment for arrays.
+*) Forbid "shared" tag changing in inheritance.
+*) Enable arrays as parameters/return values, enable expression initialization and copy assignment for arrays.
 *) build-in "for" for array types.
 *) type for raw data representation (like "char" in C++, which may alias with every type).
 *) switch-case
@@ -21,8 +22,10 @@ General:
 *) Functions references info in "typeinfo".
 *) More float types ( 16 bit, 128 bit )
 *) Constructor initializer for constexpr structs
+*) Lambdas.
 *) Function pointers inside constexpr functions
 *) Reference result of constexpr function evaluation
+*) Some code customization mechanism (like preprocessor directives and ifdef/endif in C++).
 
 References:
 *) Fix problem with calling of function with passing of imut reference to container with size of this container.
@@ -50,9 +53,9 @@ Standart library:
 
 Compiler:
 *) Fix "while" block references, reference merging
-*) Fix break/continue in range-for
 *) move-assignment without hacks.
 *) Use TBAA from LLVM.
+*) MSVC mangling.
 *) Virtual call for final function optimization
 *) Do not crash in some cases of code with errors
 *) Return value optimization
