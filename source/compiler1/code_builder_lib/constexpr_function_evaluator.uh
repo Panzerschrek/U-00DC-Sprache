@@ -5,7 +5,7 @@ import "constexpr_function_evaluator_bindings.uh"
 namespace U1
 {
 
-class ConstexprFunctionEvaluator1
+class ConstexprFunctionEvaluator
 {
 public:
 	fn constructor( LLVMTargetDataRef data_layout );

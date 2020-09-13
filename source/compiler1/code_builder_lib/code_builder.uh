@@ -657,7 +657,7 @@ private:
 private:
 	LLVMContextRef imut llvm_context_;
 	LLVMTargetDataRef imut data_layout_;
-	ConstexprFunctionEvaluator1 constexpr_function_evaluator_;
+	ConstexprFunctionEvaluator constexpr_function_evaluator_;
 
 	struct FundamentalLLVMTypes
 	{
