@@ -203,6 +203,21 @@ fn GetMostRightExpressionInPrefixOperatorsChain( Expression &mut e ) : Expressio
 	return e;
 }
 
+template</type T/>
+fn VectorAppend( ust::vector</T/> &mut dst, ust::vector</T/> mut src )
+{
+	// HACK! We can not move from beginning of the vector. So, inverse vector and move elements from back.
+	for( auto mut i= 0s; i < src.size() / 2s; ++i )
+	{
+		auto j= src.size() - i - 1s;
+		src.swap( i, j );
+	}
+	while( !src.empty() )
+	{
+		dst.push_back( src.pop_back() );
+	}
+}
+
 class SyntaxAnalyzer
 {
 public:
@@ -253,6 +268,7 @@ private:
 	fn ParseClassParentsList( mut this ) : ust::vector</ComplexName/>;
 	fn ParseClassOrderedFlag( mut this ) : bool;
 	fn ParseClassBody( mut this ) : ClassElements;
+	fn ParseClassBodyElements( mut this ) : ClassElements;
 	fn ParseEnum( mut this ) : Enum;
 	fn ParseTypeAlias( mut this ) : TypeAlias;
 
@@ -285,7 +301,7 @@ private:
 		}
 		else if( ust::is_same_type</T, ClassElements/>() )
 		{
-			return syntax_analyzer.ParseClassBody();
+			return syntax_analyzer.ParseClassBodyElements();
 		}
 	}
 
@@ -1924,18 +1940,7 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 				if( !macro.empty() )
 				{
 					var BlockElements mut expanded_block_elements= this.ExpandMacro</BlockElements/>( macro.get_ref() ); // TODO - fix this, remove explicit "this"
-
-					// HACK! We can not move from beginning of the vector. So, inverse vector and move elements from back.
-					for( auto mut i= 0s; i < expanded_block_elements.size() / 2s; ++i )
-					{
-						auto j= expanded_block_elements.size() - i - 1s;
-						expanded_block_elements.swap( i, j );
-					}
-					while( !expanded_block_elements.empty() )
-					{
-						block_elements.push_back( expanded_block_elements.pop_back() );
-					}
-
+					VectorAppend( block_elements, move(expanded_block_elements) );
 					continue;
 				}
 			}
@@ -2606,19 +2611,31 @@ fn SyntaxAnalyzer::ParseClass( mut this ) : Class
 
 fn SyntaxAnalyzer::ParseClassBody( mut this ) : ClassElements
 {
-	var ClassElements mut class_elements;
-
 	if( it_.front().lexem_type != Lexem::Type::BraceLeft )
 	{
 		PushErrorMessage();
 	}
 	NextLexem();
 
+	auto mut class_elements= ParseClassBodyElements();
+
+	if( it_.front().lexem_type != Lexem::Type::BraceRight )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	return move(class_elements);
+}
+
+fn SyntaxAnalyzer::ParseClassBodyElements( mut this ) : ClassElements
+{
+	var ClassElements mut class_elements;
+
 	while( NotEndOfFile() )
 	{
-		if( it_.front().lexem_type == Lexem::Type::BraceRight )
+		if( it_.front().lexem_type == Lexem::Type::BraceRight || it_.front().lexem_type == Lexem::Type::EndOfFile )
 		{
-			NextLexem();
 			break;
 		}
 		else if( IsKeyword( it_.front(), Keyword::public_ ) )
@@ -2698,6 +2715,17 @@ fn SyntaxAnalyzer::ParseClassBody( mut this ) : ClassElements
 		}
 		else
 		{
+			if( it_.front().lexem_type == Lexem::Type::Identifier )
+			{
+				auto macro= FetchMacro( it_.front().text, Macro::Context::Class );
+				if( !macro.empty() )
+				{
+					var ClassElements mut expanded_class_elements= this.ExpandMacro</ClassElements/>( macro.get_ref() ); // TODO - fix this, remove explicit "this"
+					VectorAppend( class_elements, move(expanded_class_elements) );
+					continue;
+				}
+			}
+
 			var ClassField mut class_field;
 			class_field.t= ParseTypeName();
 
