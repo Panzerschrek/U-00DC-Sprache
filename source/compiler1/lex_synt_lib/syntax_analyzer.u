@@ -287,6 +287,8 @@ private:
 		Macro::MatchElementKind kind= Macro::MatchElementKind::Lexem;
 	}
 
+	type MacroVariablesMap= ust::unordered_map</ ust::string8, ParsedMacroElement />;
+
 	fn FetchMacro( this, ust::string8& name, Macro::Context context ) : ust::shared_ptr_final_nullable</Macro/>;
 
 	template</type T/>
@@ -314,6 +316,8 @@ private:
 	}
 
 	fn ExpandMacroImpl( mut this, Macro& macro ) : Lexems;
+	fn MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>& match_elements ) : ust::optional</MacroVariablesMap/>;
+	fn ExpandMacroBlock( mut this, ust::vector</Macro::ResultElement/>& result_elements, MacroVariablesMap& macro_variables_map, FilePos& expansion_file_pos ) : Lexems;
 
 	// Utilities.
 	fn NotEndOfFile( this ) : bool;
@@ -3286,17 +3290,26 @@ fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro ) : Lexems
 	var FilePos expansion_file_pos= it_.front().file_pos;
 	NextLexem(); // Skip macro name itself.
 
-	var ust::unordered_map</ ust::string8, ParsedMacroElement /> mut macro_variables_map;
+	var ust::optional</MacroVariablesMap/> macro_variables_map_opt= MatchMacroBlock( macro.match_template_elements );
+	if( macro_variables_map_opt.empty() )
+	{
+		return Lexems();
+	}
 
-	// Do match.
-	foreach( &match_element : macro.match_template_elements )
+	return ExpandMacroBlock( macro.result_template_elements, macro_variables_map_opt.get_ref(), expansion_file_pos );
+}
+
+fn SyntaxAnalyzer::MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>& match_elements ) : ust::optional</MacroVariablesMap/>
+{
+	var MacroVariablesMap mut macro_variables_map;
+	foreach( &match_element :match_elements )
 	{
 		if( match_element.kind == Macro::MatchElementKind::Lexem )
 		{
 			if( !( it_.front().lexem_type == match_element.lexem.lexem_type && it_.front().text == match_element.lexem.text ) )
 			{
 				PushErrorMessage();
-				return Lexems();
+				return ust::optional</MacroVariablesMap/>();
 			}
 			NextLexem();
 			continue;
@@ -3339,9 +3352,13 @@ fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro ) : Lexems
 		macro_variables_map.insert( match_element.name, move(element) );
 	}
 
-	// Do expansion.
+	return move(macro_variables_map);
+}
+
+fn SyntaxAnalyzer::ExpandMacroBlock( mut this, ust::vector</Macro::ResultElement/>& result_elements, MacroVariablesMap& macro_variables_map, FilePos& expansion_file_pos ) : Lexems
+{
 	var Lexems mut lexems_expanded;
-	foreach( &result_element : macro.result_template_elements )
+	foreach( &result_element : result_elements )
 	{
 			 if( result_element.kind == Macro::ResultElementKind::Lexem )
 		{
