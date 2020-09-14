@@ -208,7 +208,7 @@ def MacroParamIdentifier_Test0():
 
 def MacroParamTypeName_Test0():
 	c_program_text= """
-	?macro <? DECLARE_ZERO_VAR:block ( ?type:ty, ?name:ident ) ?>  ->  <? var ?type ?name=zero_init; ?>
+	?macro <? DECLARE_ZERO_VAR:block ( ?t:ty, ?name:ident ) ?>  ->  <? var ?t ?name=zero_init; ?>
 
 	struct Vec{ f32 x; f32 y; }
 	fn Foo()
