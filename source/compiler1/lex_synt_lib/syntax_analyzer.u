@@ -276,7 +276,10 @@ private:
 	fn ParseTemplateSignatureParams( mut this ) : ust::vector</TypeTemplate::SignatureParam/>;
 
 	// Macro related stuff.
+
 	fn ParseMacro( mut this );
+	fn ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchElement/>;
+	fn ParseMacroResultBlock( mut this ) : ust::vector</Macro::ResultElement/>;
 
 	struct ParsedMacroElement
 	{
@@ -3113,15 +3116,65 @@ fn SyntaxAnalyzer::ParseMacro( mut this )
 	}
 
 	// Match block
-	var ust::unordered_map</ ust::string8, i32 /> mut elements_set; // TODO - use unordered_set
-	while( NotEndOfFile() )
+	macro.match_template_elements= ParseMacroMatchBlock();
+
+	if( it_.front().lexem_type != Lexem::Type::MacroBracketRight )
 	{
-		if( it_.front().lexem_type == Lexem::Type::MacroBracketRight )
-		{
-			NextLexem();
-			break;
-		}
-		else if( it_.front().lexem_type == Lexem::Type::MacroBracketLeft )
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::RightArrow )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	// Result block
+	if( it_.front().lexem_type != Lexem::Type::MacroBracketLeft )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	macro.result_template_elements= ParseMacroResultBlock();
+
+	if( it_.front().lexem_type != Lexem::Type::MacroBracketRight )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	// Inset result macro.
+	auto macros_copy= macros_;
+	auto mut macros_lock= macros_copy.lock_mut();
+	var MacrosByContextMap &mut macros_by_context= macros_lock.get_ref();
+
+	if( macros_by_context.find( macro_context ).empty() )
+	{
+		macros_by_context.insert( macro_context, MacroMap() );
+	}
+	var MacroMap &mut macro_map= macros_by_context[ macro_context ];
+
+	if( macro_map.find( macro.name ).empty() )
+	{
+		macro_map.insert( ust::string8(macro.name), ust::shared_ptr_final</Macro/>( move(macro) ) );
+	}
+	else
+	{
+		PushMacroErrorMessage( cast_imut(macro).file_pos, "\"" + macro.name + "\" macro redefinition." );
+		move(macro);
+	}
+}
+
+fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchElement/>
+{
+	var ust::vector</Macro::MatchElement/> mut match_elements;
+
+	var ust::unordered_map</ ust::string8, i32 /> mut elements_set; // TODO - use unordered_set
+	while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::MacroBracketRight )
+	{
+		if( it_.front().lexem_type == Lexem::Type::MacroBracketLeft )
 		{
 			PushErrorMessage();
 			break;
@@ -3168,38 +3221,26 @@ fn SyntaxAnalyzer::ParseMacro( mut this )
 			elements_set.insert( match_element.name, 0 );
 
 
-			macro.match_template_elements.push_back( move(match_element) );
+			match_elements.push_back( move(match_element) );
 		}
 		else
 		{
 			var Macro::MatchElement mut match_element{ .lexem= it_.front() };
-			macro.match_template_elements.push_back( move(match_element) );
+			match_elements.push_back( move(match_element) );
 			NextLexem();
 		}
 	}
 
-	if( it_.front().lexem_type != Lexem::Type::RightArrow )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	return move(match_elements);
+}
 
-	// Result block
+fn SyntaxAnalyzer::ParseMacroResultBlock( mut this ) : ust::vector</Macro::ResultElement/>
+{
+	var ust::vector</Macro::ResultElement/> mut result_elements;
 
-	if( it_.front().lexem_type != Lexem::Type::MacroBracketLeft )
+	while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::MacroBracketRight )
 	{
-		PushErrorMessage();
-	}
-	NextLexem();
-
-	while( NotEndOfFile() )
-	{
-		if( it_.front().lexem_type == Lexem::Type::MacroBracketRight )
-		{
-			NextLexem();
-			break;
-		}
-		else if( it_.front().lexem_type == Lexem::Type::MacroBracketLeft )
+		if( it_.front().lexem_type == Lexem::Type::MacroBracketLeft )
 		{
 			PushErrorMessage();
 			break;
@@ -3212,35 +3253,17 @@ fn SyntaxAnalyzer::ParseMacro( mut this )
 			// TODO - parse other kinds.
 			result_element.kind= Macro::ResultElementKind::VariableElement;
 
-			macro.result_template_elements.push_back( move(result_element) );
+			result_elements.push_back( move(result_element) );
 		}
 		else
 		{
 			var Macro::ResultElement mut result_element{ .lexem= it_.front() };
-			macro.result_template_elements.push_back( move(result_element) );
+			result_elements.push_back( move(result_element) );
 			NextLexem();
 		}
 	}
 
-	auto macros_copy= macros_;
-	auto mut macros_lock= macros_copy.lock_mut();
-	var MacrosByContextMap &mut macros_by_context= macros_lock.get_ref();
-
-	if( macros_by_context.find( macro_context ).empty() )
-	{
-		macros_by_context.insert( macro_context, MacroMap() );
-	}
-	var MacroMap &mut macro_map= macros_by_context[ macro_context ];
-
-	if( macro_map.find( macro.name ).empty() )
-	{
-		macro_map.insert( ust::string8(macro.name), ust::shared_ptr_final</Macro/>( move(macro) ) );
-	}
-	else
-	{
-		PushMacroErrorMessage( cast_imut(macro).file_pos, "\"" + macro.name + "\" macro redefinition." );
-		move(macro);
-	}
+	return move(result_elements);
 }
 
 fn SyntaxAnalyzer::FetchMacro( this, ust::string8& name, Macro::Context context ) : ust::shared_ptr_final_nullable</Macro/>
