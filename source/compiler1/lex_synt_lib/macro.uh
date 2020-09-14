@@ -1,5 +1,6 @@
 import "/box_nullable.u"
 import "/shared/shared_ptr_final.u"
+import "/shared/shared_ptr_mut.u"
 import "/unordered_map.u"
 import "lexical_analyzer.uh"
 
@@ -68,6 +69,8 @@ struct Macro
 
 type MacroMap= ust::unordered_map</ ust::string8, ust::shared_ptr_final</Macro/> />;
 type MacrosByContextMap= ust::unordered_map</ Macro::Context, MacroMap />;
+
+type MacrosPtr= ust::shared_ptr_mut</MacrosByContextMap/>;
 
 } // namespace Synt
 

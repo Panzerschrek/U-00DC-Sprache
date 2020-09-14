@@ -221,7 +221,7 @@ fn VectorAppend( ust::vector</T/> &mut dst, ust::vector</T/> mut src )
 class SyntaxAnalyzer
 {
 public:
-	fn constructor( this'a', Lexems&'b lexems ) ' a <- b ';
+	fn constructor( this'a', Lexems&'b lexems, MacrosPtr mut macros ) ' a <- b ';
 
 	fn DoAnalyzis( mut this ) : SyntaxAnalysisResult;
 	fn ParseImports( mut this ) : ImportsList;
@@ -290,7 +290,7 @@ private:
 	fn ExpandMacro( mut this, Macro& macro ) : T
 	{
 		var Lexems lexems_expanded= ExpandMacroImpl( macro );
-		var SyntaxAnalyzer mut syntax_analyzer( lexems_expanded );
+		var SyntaxAnalyzer mut syntax_analyzer( lexems_expanded, macros_ );
 		static_if( ust::is_same_type</T, Expression/>() )
 		{
 			return syntax_analyzer.ParseExpression();
@@ -321,11 +321,11 @@ private:
 	ust::array_view_imut</Lexem/> it_;
 	SyntaxErrorMessages error_messages_;
 
-	MacrosByContextMap macros_by_context_;
+	MacrosPtr macros_;
 }
 
-fn SyntaxAnalyzer::constructor( this'a', Lexems&'b lexems ) ' a <- b '
-	( it_= lexems.range() )
+fn SyntaxAnalyzer::constructor( this'a', Lexems&'b lexems, MacrosPtr mut macros ) ' a <- b '
+	( it_= lexems.range(), macros_(move(macros)) )
 {
 }
 
@@ -507,13 +507,16 @@ fn SyntaxAnalyzer::ParseMacro( mut this )
 		}
 	}
 
-	if( macros_by_context_.find( macro_context ).empty() )
+	auto mut macros_lock= macros_.lock_mut();
+	var MacrosByContextMap &mut macros_by_context= macros_lock.get_ref();
+
+	if( macros_by_context.find( macro_context ).empty() )
 	{
-		macros_by_context_.insert( macro_context, MacroMap() );
+		macros_by_context.insert( macro_context, MacroMap() );
 	}
 
 	// TODO - check for redefinition.
-	macros_by_context_[ macro_context ].insert( ust::string8(macro.name), ust::shared_ptr_final</Macro/>( move(macro) ) );
+	macros_by_context[ macro_context ].insert( ust::string8(macro.name), ust::shared_ptr_final</Macro/>( move(macro) ) );
 }
 
 fn SyntaxAnalyzer::ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : NamespaceElements
@@ -3222,7 +3225,9 @@ fn SyntaxAnalyzer::NotEndOfFile( this ) : bool
 
 fn SyntaxAnalyzer::FetchMacro( this, ust::string8& name, Macro::Context context ) : ust::shared_ptr_final_nullable</Macro/>
 {
-	if_var( &macro_map : macros_by_context_.find( context ) )
+	auto macros_lock= macros_.lock_imut();
+	var MacrosByContextMap& macros_by_context= macros_lock.get_ref();
+	if_var( &macro_map : macros_by_context.find( context ) )
 	{
 		if_var( &macro : macro_map.find( name ) )
 		{
@@ -3342,13 +3347,13 @@ fn SyntaxAnalyzer::PushErrorMessage( mut this )
 
 fn SyntaxAnalysis( Lexems& lexems ) : SyntaxAnalysisResult
 {
-	var SyntaxAnalyzer mut analyzer(lexems);
+	var SyntaxAnalyzer mut analyzer( lexems, MacrosPtr( MacrosByContextMap() ) );
 	return analyzer.DoAnalyzis();
 }
 
 fn ParseImports( Lexems& lexems ) : ImportsList
 {
-	var SyntaxAnalyzer mut analyzer(lexems);
+	var SyntaxAnalyzer mut analyzer(lexems, MacrosPtr( MacrosByContextMap() ) );
 	return analyzer.ParseImports();
 }
 
