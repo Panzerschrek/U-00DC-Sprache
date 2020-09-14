@@ -303,6 +303,11 @@ private:
 		{
 			return syntax_analyzer.ParseClassBodyElements();
 		}
+		else if( ust::is_same_type</T, NamespaceElements/>() )
+		{
+			return syntax_analyzer.ParseNamespaceBody( Lexem::Type::EndOfFile );
+		}
+		else{ static_assert(false); }
 	}
 
 	fn ExpandMacroImpl( mut this, Macro& macro ) : Lexems;
@@ -562,6 +567,17 @@ fn SyntaxAnalyzer::ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : Names
 		}
 		else
 		{
+			if( it_.front().lexem_type == Lexem::Type::Identifier )
+			{
+				auto macro= FetchMacro( it_.front().text, Macro::Context::Namespace );
+				if( !macro.empty() )
+				{
+					var NamespaceElements mut expanded_namespace_elements= this.ExpandMacro</NamespaceElements/>( macro.get_ref() ); // TODO - fix this, remove explicit "this"
+					VectorAppend( namespace_elements, move(expanded_namespace_elements) );
+					continue;
+				}
+			}
+
 			PushErrorMessage();
 			break;
 		}

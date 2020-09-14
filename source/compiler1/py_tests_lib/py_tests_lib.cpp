@@ -491,6 +491,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"MacroExpansion_Test2",
 		"MacroExpansion_Test3",
 		"MacroExpansion_Test4",
+		"MacroExpansion_Test5",
 		"NameIsNotTypeName_ForFunctionTemplateParameter",
 		"NameNotFound_ForFunctionTemplateParameter",
 		"NonPureVirtualFunctionInInterface_Test0",
