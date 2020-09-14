@@ -227,8 +227,6 @@ public:
 	fn ParseImports( mut this ) : ImportsList;
 
 private:
-	fn ParseMacro( mut this );
-
 	fn ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : NamespaceElements;
 	fn ParseNamespace( mut this ) : Namespace;
 
@@ -278,6 +276,8 @@ private:
 	fn ParseTemplateSignatureParams( mut this ) : ust::vector</TypeTemplate::SignatureParam/>;
 
 	// Macro related stuff.
+	fn ParseMacro( mut this );
+
 	struct ParsedMacroElement
 	{
 		Lexems lexems;
@@ -316,6 +316,7 @@ private:
 	fn NotEndOfFile( this ) : bool;
 	fn NextLexem( mut this );
 	fn PushErrorMessage( mut this );
+	fn PushMacroErrorMessage( mut this, FilePos& file_pos, ust::string8 mut text );
 
 private:
 	ust::array_view_imut</Lexem/> it_;
@@ -366,157 +367,6 @@ fn SyntaxAnalyzer::ParseImports( mut this ) : ImportsList
 	}
 
 	return move(imports_list);
-}
-
-fn SyntaxAnalyzer::ParseMacro( mut this )
-{
-	NextLexem(); // Skip "?macro"
-	var Macro mut macro;
-
-	// Macro name and context
-	if( it_.front().lexem_type != Lexem::Type::MacroBracketLeft )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
-
-	if( it_.front().lexem_type != Lexem::Type::Identifier )
-	{
-		PushErrorMessage();
-	}
-	macro.name= it_.front().text;
-	NextLexem();
-
-	if( it_.front().lexem_type != Lexem::Type::Colon )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
-
-	if( it_.front().lexem_type != Lexem::Type::Identifier )
-	{
-		PushErrorMessage();
-	}
-	var ust::string8& macro_context_str= it_.front().text;
-	NextLexem();
-
-	var Macro::Context mut macro_context= Macro::Context::Expression;
-		 if( macro_context_str == "expr"      ) { macro_context= Macro::Context::Expression; }
-	else if( macro_context_str == "block"     ) { macro_context= Macro::Context::Block; }
-	else if( macro_context_str == "class"     ) { macro_context= Macro::Context::Class; }
-	else if( macro_context_str == "namespace" ) { macro_context= Macro::Context::Namespace; }
-	else
-	{
-		// TODO - generate specific error
-		PushErrorMessage();
-	}
-
-	// Match block
-	while( NotEndOfFile() )
-	{
-		if( it_.front().lexem_type == Lexem::Type::MacroBracketRight )
-		{
-			NextLexem();
-			break;
-		}
-		else if( it_.front().lexem_type == Lexem::Type::MacroBracketLeft )
-		{
-			PushErrorMessage();
-			break;
-		}
-		if( it_.front().lexem_type == Lexem::Type::MacroIdentifier )
-		{
-			var Macro::MatchElement mut match_element{ .name= it_.front().text };
-			NextLexem();
-
-			if( it_.front().lexem_type != Lexem::Type::Colon )
-			{
-				PushErrorMessage();
-			}
-			NextLexem();
-
-			if( it_.front().lexem_type != Lexem::Type::Identifier )
-			{
-				PushErrorMessage();
-			}
-			var ust::string8& element_type= it_.front().text;
-			NextLexem();
-
-				 if( element_type == "ident" ) { match_element.kind= Macro::MatchElementKind::Identifier; }
-			else if( element_type == "ty"    ) { match_element.kind= Macro::MatchElementKind::Typename; }
-			else if( element_type == "expr"  ) { match_element.kind= Macro::MatchElementKind::Expression; }
-			else if( element_type == "block" ) { match_element.kind= Macro::MatchElementKind::Block; }
-			// TODO - process other types
-			else
-			{
-				// TODO - generate specific error
-				PushErrorMessage();
-			}
-
-			macro.match_template_elements.push_back( move(match_element) );
-		}
-		else
-		{
-			var Macro::MatchElement mut match_element{ .lexem= it_.front() };
-			macro.match_template_elements.push_back( move(match_element) );
-			NextLexem();
-		}
-	}
-
-	if( it_.front().lexem_type != Lexem::Type::RightArrow )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
-
-	// Result block
-
-	if( it_.front().lexem_type != Lexem::Type::MacroBracketLeft )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
-
-	while( NotEndOfFile() )
-	{
-		if( it_.front().lexem_type == Lexem::Type::MacroBracketRight )
-		{
-			NextLexem();
-			break;
-		}
-		else if( it_.front().lexem_type == Lexem::Type::MacroBracketLeft )
-		{
-			PushErrorMessage();
-			break;
-		}
-		else if( it_.front().lexem_type == Lexem::Type::MacroIdentifier )
-		{
-			var Macro::ResultElement mut result_element{ .name= it_.front().text };
-			NextLexem();
-
-			// TODO - parse other kinds.
-			result_element.kind= Macro::ResultElementKind::VariableElement;
-
-			macro.result_template_elements.push_back( move(result_element) );
-		}
-		else
-		{
-			var Macro::ResultElement mut result_element{ .lexem= it_.front() };
-			macro.result_template_elements.push_back( move(result_element) );
-			NextLexem();
-		}
-	}
-
-	auto mut macros_lock= macros_.lock_mut();
-	var MacrosByContextMap &mut macros_by_context= macros_lock.get_ref();
-
-	if( macros_by_context.find( macro_context ).empty() )
-	{
-		macros_by_context.insert( macro_context, MacroMap() );
-	}
-
-	// TODO - check for redefinition.
-	macros_by_context[ macro_context ].insert( ust::string8(macro.name), ust::shared_ptr_final</Macro/>( move(macro) ) );
 }
 
 fn SyntaxAnalyzer::ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : NamespaceElements
@@ -3218,9 +3068,179 @@ fn SyntaxAnalyzer::ParseTemplateSignatureParams( mut this ) : ust::vector</TypeT
 	return move(signature_params);
 }
 
-fn SyntaxAnalyzer::NotEndOfFile( this ) : bool
+fn SyntaxAnalyzer::ParseMacro( mut this )
 {
-	return it_.size() >= 2s;
+	NextLexem(); // Skip "?macro"
+	var Macro mut macro;
+
+	// Macro name and context
+	if( it_.front().lexem_type != Lexem::Type::MacroBracketLeft )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage();
+	}
+	macro.file_pos= it_.front().file_pos;
+	macro.name= it_.front().text;
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::Colon )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage();
+	}
+	var FilePos macro_context_file_pos= it_.front().file_pos;
+	var ust::string8& macro_context_str= it_.front().text;
+	NextLexem();
+
+	var Macro::Context mut macro_context= Macro::Context::Expression;
+		 if( macro_context_str == "expr"      ) { macro_context= Macro::Context::Expression; }
+	else if( macro_context_str == "block"     ) { macro_context= Macro::Context::Block; }
+	else if( macro_context_str == "class"     ) { macro_context= Macro::Context::Class; }
+	else if( macro_context_str == "namespace" ) { macro_context= Macro::Context::Namespace; }
+	else
+	{
+		PushMacroErrorMessage( macro_context_file_pos, "\"" + macro_context_str + "\" unknown macro context" );
+	}
+
+	// Match block
+	var ust::unordered_map</ ust::string8, i32 /> mut elements_set; // TODO - use unordered_set
+	while( NotEndOfFile() )
+	{
+		if( it_.front().lexem_type == Lexem::Type::MacroBracketRight )
+		{
+			NextLexem();
+			break;
+		}
+		else if( it_.front().lexem_type == Lexem::Type::MacroBracketLeft )
+		{
+			PushErrorMessage();
+			break;
+		}
+		if( it_.front().lexem_type == Lexem::Type::MacroIdentifier )
+		{
+			var FilePos match_element_file_pos= it_.front().file_pos;
+			var Macro::MatchElement mut match_element{ .name= it_.front().text };
+			NextLexem();
+
+			if( it_.front().lexem_type != Lexem::Type::Colon )
+			{
+				PushErrorMessage();
+			}
+			NextLexem();
+
+			if( it_.front().lexem_type != Lexem::Type::Identifier )
+			{
+				PushErrorMessage();
+			}
+			var FilePos element_type_file_pos= it_.front().file_pos;
+			var ust::string8& element_type= it_.front().text;
+			NextLexem();
+
+				 if( element_type == "ident" ) { match_element.kind= Macro::MatchElementKind::Identifier; }
+			else if( element_type == "ty"    ) { match_element.kind= Macro::MatchElementKind::Typename; }
+			else if( element_type == "expr"  ) { match_element.kind= Macro::MatchElementKind::Expression; }
+			else if( element_type == "block" ) { match_element.kind= Macro::MatchElementKind::Block; }
+			// TODO - process other types
+			else
+			{
+				PushMacroErrorMessage( element_type_file_pos, "\"" + element_type + "\" unknown macro variable type" );
+			}
+
+			// Check if name is ok.
+			if( U1::IsKeyword( match_element.name ) )
+			{
+				PushMacroErrorMessage( match_element_file_pos, "Using keyword as macro element name." );
+			}
+			if( !elements_set.find( match_element.name ).empty() )
+			{
+				PushMacroErrorMessage( match_element_file_pos, "\"" + match_element.name + "\" macro parameter redefinition." );
+			}
+			elements_set.insert( match_element.name, 0 );
+
+
+			macro.match_template_elements.push_back( move(match_element) );
+		}
+		else
+		{
+			var Macro::MatchElement mut match_element{ .lexem= it_.front() };
+			macro.match_template_elements.push_back( move(match_element) );
+			NextLexem();
+		}
+	}
+
+	if( it_.front().lexem_type != Lexem::Type::RightArrow )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	// Result block
+
+	if( it_.front().lexem_type != Lexem::Type::MacroBracketLeft )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	while( NotEndOfFile() )
+	{
+		if( it_.front().lexem_type == Lexem::Type::MacroBracketRight )
+		{
+			NextLexem();
+			break;
+		}
+		else if( it_.front().lexem_type == Lexem::Type::MacroBracketLeft )
+		{
+			PushErrorMessage();
+			break;
+		}
+		else if( it_.front().lexem_type == Lexem::Type::MacroIdentifier )
+		{
+			var Macro::ResultElement mut result_element{ .name= it_.front().text };
+			NextLexem();
+
+			// TODO - parse other kinds.
+			result_element.kind= Macro::ResultElementKind::VariableElement;
+
+			macro.result_template_elements.push_back( move(result_element) );
+		}
+		else
+		{
+			var Macro::ResultElement mut result_element{ .lexem= it_.front() };
+			macro.result_template_elements.push_back( move(result_element) );
+			NextLexem();
+		}
+	}
+
+	auto macros_copy= macros_;
+	auto mut macros_lock= macros_copy.lock_mut();
+	var MacrosByContextMap &mut macros_by_context= macros_lock.get_ref();
+
+	if( macros_by_context.find( macro_context ).empty() )
+	{
+		macros_by_context.insert( macro_context, MacroMap() );
+	}
+	var MacroMap &mut macro_map= macros_by_context[ macro_context ];
+
+	if( macro_map.find( macro.name ).empty() )
+	{
+		macro_map.insert( ust::string8(macro.name), ust::shared_ptr_final</Macro/>( move(macro) ) );
+	}
+	else
+	{
+		PushMacroErrorMessage( cast_imut(macro).file_pos, "\"" + macro.name + "\" macro redefinition." );
+		move(macro);
+	}
 }
 
 fn SyntaxAnalyzer::FetchMacro( this, ust::string8& name, Macro::Context context ) : ust::shared_ptr_final_nullable</Macro/>
@@ -3240,6 +3260,7 @@ fn SyntaxAnalyzer::FetchMacro( this, ust::string8& name, Macro::Context context 
 
 fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro ) : Lexems
 {
+	var FilePos expansion_file_pos= it_.front().file_pos;
 	NextLexem(); // Skip macro name itself.
 
 	var ust::unordered_map</ ust::string8, ParsedMacroElement /> mut macro_variables_map;
@@ -3305,10 +3326,14 @@ fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro ) : Lexems
 		}
 		else if( result_element.kind == Macro::ResultElementKind::VariableElement )
 		{
-			// TODO - check if exists
-			if_var( &parsed_element : macro_variables_map.find( result_element.name ) )
+			auto variable_opt= macro_variables_map.find( result_element.name );
+			if( variable_opt.empty() )
 			{
-				foreach( &lexem : parsed_element.lexems )
+				PushMacroErrorMessage( expansion_file_pos, "\"" + result_element.name + "\" - not found" );
+			}
+			else
+			{
+				foreach( &lexem : variable_opt.get_ref().lexems )
 				{
 					lexems_expanded.push_back( lexem );
 				}
@@ -3322,6 +3347,11 @@ fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro ) : Lexems
 	lexems_expanded.push_back( end_of_file_lexem );
 
 	return move(lexems_expanded);
+}
+
+fn SyntaxAnalyzer::NotEndOfFile( this ) : bool
+{
+	return it_.size() >= 2s;
 }
 
 fn SyntaxAnalyzer::NextLexem( mut this )
@@ -3343,6 +3373,12 @@ fn SyntaxAnalyzer::PushErrorMessage( mut this )
 		};
 		error_messages_.push_back( move(error_message) );
 	}
+}
+
+fn SyntaxAnalyzer::PushMacroErrorMessage( mut this, FilePos& file_pos, ust::string8 mut text )
+{
+	var SyntaxErrorMessage mut error_message{ .file_pos= file_pos, .text= move(text) };
+	error_messages_.push_back( move(error_message) );
 }
 
 fn SyntaxAnalysis( Lexems& lexems ) : SyntaxAnalysisResult
