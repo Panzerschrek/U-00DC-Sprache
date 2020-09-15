@@ -3251,14 +3251,6 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 		}
 		else
 		{
-			if( !match_elements.empty() )
-			{
-				var Macro::MatchElement& mut prev_match_element= match_elements.back();
-				if( prev_match_element.kind == Macro::MatchElementKind::Optional )
-				{
-					prev_match_element.block_check_lexem_kind= Macro::BlockCheckLexemKind::LexemAfterBlockEnd;
-				}
-			}
 
 			var Macro::MatchElement mut match_element{ .lexem= it_.front() };
 			match_elements.push_back( move(match_element) );
@@ -3266,9 +3258,44 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 		}
 	}
 
-	// TODO - check here optionals and repeated sequences
+	// Determine block check lexem kind, check for errors.
 	for( auto mut i= 0s; i < match_elements.size(); ++i )
 	{
+		var FilePos match_element_file_pos= it_.front().file_pos; // TODO - get REAL value.
+		if( match_elements[i].kind == Macro::MatchElementKind::Optional )
+		{
+			var ust::optional</Lexem/> mut start_lexem, mut end_lexem;
+
+			if( !cast_imut(match_elements)[i].sub_elements.get_ref().empty() &&
+				 cast_imut(match_elements)[i].sub_elements.get_ref().front().kind == Macro::MatchElementKind::Lexem )
+			{
+				start_lexem= match_elements[i].sub_elements.get_ref().front().lexem;
+			}
+			if( i + 1s < match_elements.size() && match_elements[i+1s].kind == Macro::MatchElementKind::Lexem )
+			{
+				end_lexem= match_elements[i+1s].lexem;
+			}
+
+			if( !start_lexem.empty() )
+			{
+				match_elements[i].block_check_lexem_kind= Macro::BlockCheckLexemKind::LexemAtBlockStart;
+			}
+			else if( !end_lexem.empty() )
+			{
+				match_elements[i].block_check_lexem_kind= Macro::BlockCheckLexemKind::LexemAfterBlockEnd;
+			}
+			else
+			{
+				PushMacroErrorMessage( match_element_file_pos, "Expected lexem at start or after \"" + match_elements[i].name + "\" element." );
+			}
+
+			if( !start_lexem.empty() && !end_lexem.empty() &&
+				start_lexem.get_ref().lexem_type == end_lexem.get_ref().lexem_type &&
+				start_lexem.get_ref().text == end_lexem.get_ref().text )
+			{
+				PushMacroErrorMessage( match_element_file_pos, "Start lexem of optional macro block must be different from first lexem after optional block." );
+			}
+		}
 	}
 
 	return move(match_elements);
