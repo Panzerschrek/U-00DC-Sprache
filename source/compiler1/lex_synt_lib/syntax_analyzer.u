@@ -285,7 +285,7 @@ private:
 	{
 		Lexems lexems;
 		Macro::MatchElementKind kind= Macro::MatchElementKind::Lexem;
-		ust::shared_ptr_final_nullable</ MacroVariablesMap /> sub_elements;
+		ust::vector</ ust::shared_ptr_final</ MacroVariablesMap /> /> sub_elements; // 0 for simple macro variables, 0 or 1 for optionals, 0-many for sequences
 	}
 
 	type MacroVariablesMap= ust::unordered_map</ ust::string8, ParsedMacroElement />;
@@ -3227,10 +3227,52 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 				NextLexem();
 
 				match_element.sub_elements= ust::shared_ptr_final_nullable</ ust::vector</Macro::MatchElement/> />( move(sub_elements) );
-				match_element.block_check_lexem_kind= Macro::BlockCheckLexemKind::LexemAtBlockStart;
 				match_element.kind= Macro::MatchElementKind::Optional;
 			}
-			// TODO - process other types
+			else if( element_type == "rep" )
+			{
+				if( it_.front().lexem_type != Lexem::Type::MacroBracketLeft )
+				{
+					PushErrorMessage();
+				}
+				NextLexem();
+
+				auto mut sub_elements= ParseMacroMatchBlock();
+
+				if( it_.front().lexem_type != Lexem::Type::MacroBracketRight )
+				{
+					PushErrorMessage();
+				}
+				NextLexem();
+
+				// Separator.
+				if( it_.front().lexem_type == Lexem::Type::MacroBracketLeft )
+				{
+					NextLexem();
+
+					if( it_.front().lexem_type == Lexem::Type::MacroBracketLeft ||
+						it_.front().lexem_type == Lexem::Type::MacroBracketRight ||
+						it_.front().lexem_type == Lexem::Type::MacroIdentifier )
+					{
+						PushErrorMessage();
+					}
+					match_element.lexem= it_.front();
+					NextLexem();
+
+					if( it_.front().lexem_type != Lexem::Type::MacroBracketRight )
+					{
+						PushErrorMessage();
+					}
+					NextLexem();
+				}
+				else
+				{
+					match_element.lexem.lexem_type= Lexem::Type::EndOfFile;
+				}
+
+				match_element.sub_elements= ust::shared_ptr_final_nullable</ ust::vector</Macro::MatchElement/> />( move(sub_elements) );
+				match_element.kind= Macro::MatchElementKind::Repeated;
+			}
 			else
 			{
 				PushMacroErrorMessage( element_type_file_pos, "\"" + element_type + "\" unknown macro variable type" );
@@ -3261,39 +3303,67 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 	// Determine block check lexem kind, check for errors.
 	for( auto mut i= 0s; i < match_elements.size(); ++i )
 	{
-		var FilePos match_element_file_pos= it_.front().file_pos; // TODO - get REAL value.
-		if( match_elements[i].kind == Macro::MatchElementKind::Optional )
+		var Macro::MatchElementKind element_kind= match_elements[i].kind;
+		if( !( element_kind == Macro::MatchElementKind::Optional || element_kind == Macro::MatchElementKind::Repeated ) )
 		{
-			var ust::optional</Lexem/> mut start_lexem, mut end_lexem;
+			continue;
+		}
 
-			if( !cast_imut(match_elements)[i].sub_elements.get_ref().empty() &&
-				 cast_imut(match_elements)[i].sub_elements.get_ref().front().kind == Macro::MatchElementKind::Lexem )
-			{
-				start_lexem= match_elements[i].sub_elements.get_ref().front().lexem;
-			}
-			if( i + 1s < match_elements.size() && match_elements[i+1s].kind == Macro::MatchElementKind::Lexem )
-			{
-				end_lexem= match_elements[i+1s].lexem;
-			}
+		var FilePos match_element_file_pos= it_.front().file_pos; // TODO - get REAL value.
 
-			if( !start_lexem.empty() )
-			{
-				match_elements[i].block_check_lexem_kind= Macro::BlockCheckLexemKind::LexemAtBlockStart;
-			}
-			else if( !end_lexem.empty() )
-			{
-				match_elements[i].block_check_lexem_kind= Macro::BlockCheckLexemKind::LexemAfterBlockEnd;
-			}
-			else
-			{
-				PushMacroErrorMessage( match_element_file_pos, "Expected lexem at start or after \"" + match_elements[i].name + "\" element." );
-			}
+		var ust::optional</Lexem/> mut start_lexem, mut end_lexem;
 
+		if( !cast_imut(match_elements)[i].sub_elements.get_ref().empty() &&
+			 cast_imut(match_elements)[i].sub_elements.get_ref().front().kind == Macro::MatchElementKind::Lexem )
+		{
+			start_lexem= match_elements[i].sub_elements.get_ref().front().lexem;
+		}
+		if( i + 1s < match_elements.size() && match_elements[i+1s].kind == Macro::MatchElementKind::Lexem )
+		{
+			end_lexem= match_elements[i+1s].lexem;
+		}
+
+		if( !start_lexem.empty() )
+		{
+			match_elements[i].block_check_lexem_kind= Macro::BlockCheckLexemKind::LexemAtBlockStart;
+		}
+		else if( !end_lexem.empty() )
+		{
+			match_elements[i].block_check_lexem_kind= Macro::BlockCheckLexemKind::LexemAfterBlockEnd;
+		}
+		else
+		{
+			PushMacroErrorMessage( match_element_file_pos, "Expected lexem at start or after \"" + match_elements[i].name + "\" element." );
+		}
+
+		if( element_kind == Macro::MatchElementKind::Optional )
+		{
 			if( !start_lexem.empty() && !end_lexem.empty() &&
 				start_lexem.get_ref().lexem_type == end_lexem.get_ref().lexem_type &&
 				start_lexem.get_ref().text == end_lexem.get_ref().text )
 			{
 				PushMacroErrorMessage( match_element_file_pos, "Start lexem of optional macro block must be different from first lexem after optional block." );
+			}
+		}
+		if( element_kind == Macro::MatchElementKind::Repeated )
+		{
+			if( match_elements[i].lexem.lexem_type != Lexem::Type::EndOfFile ) // Non-empty separator
+			{
+				if( !end_lexem.empty() &&
+					match_elements[i].lexem.lexem_type == end_lexem.get_ref().lexem_type &&
+					match_elements[i].lexem.text == end_lexem.get_ref().text )
+				{
+					PushMacroErrorMessage( match_element_file_pos, "Separator lexem of repeated macro block must be different from first lexem after repeated block." );
+				}
+			}
+			else // Empty separator
+			{
+				if( !start_lexem.empty() && !end_lexem.empty() &&
+					start_lexem.get_ref().lexem_type == end_lexem.get_ref().lexem_type &&
+					start_lexem.get_ref().text == end_lexem.get_ref().text )
+				{
+					PushMacroErrorMessage( match_element_file_pos, "Start lexem of repeated macro block without separator must be different from first lexem after repeated block." );
+				}
 			}
 		}
 	}
@@ -3328,6 +3398,31 @@ fn SyntaxAnalyzer::ParseMacroResultBlock( mut this ) : ust::vector</Macro::Resul
 					PushErrorMessage();
 				}
 				NextLexem();
+
+				// Separator.
+				if( it_.front().lexem_type == Lexem::Type::MacroBracketLeft )
+				{
+					NextLexem();
+
+					if( it_.front().lexem_type == Lexem::Type::MacroBracketLeft ||
+						it_.front().lexem_type == Lexem::Type::MacroBracketRight ||
+						it_.front().lexem_type == Lexem::Type::MacroIdentifier )
+					{
+						PushErrorMessage();
+					}
+					result_element.lexem= it_.front();
+					NextLexem();
+
+					if( it_.front().lexem_type != Lexem::Type::MacroBracketRight )
+					{
+						PushErrorMessage();
+					}
+					NextLexem();
+				}
+				else
+				{
+					result_element.lexem.lexem_type= Lexem::Type::EndOfFile;
+				}
 
 				result_element.sub_elements= ust::shared_ptr_final_nullable</ ust::vector</Macro::ResultElement/> />( move(sub_elements) );
 				result_element.kind= Macro::ResultElementKind::VariableElementWithMacroBlock;
@@ -3458,10 +3553,82 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>
 				{
 					return ust::optional</MacroVariablesMap/>();
 				}
-				element.sub_elements= ust::shared_ptr_final_nullable</ MacroVariablesMap />( take(sub_variables_map_opt.get_ref()) );
+				element.sub_elements.push_back( ust::shared_ptr_final</ MacroVariablesMap />( take(sub_variables_map_opt.get_ref()) ) );
 			}
 		}
-		// TODO - handle sequences.
+		else if( match_element.kind == Macro::MatchElementKind::Repeated )
+		{
+			var ust::vector</Macro::MatchElement/>& sub_elements= match_element.sub_elements.get_ref();
+			if( match_element.block_check_lexem_kind == Macro::BlockCheckLexemKind::LexemAfterBlockEnd &&
+				i + 1s < match_elements.size() )
+			{
+				var Lexem& terminator_lexem= match_elements[i+1s].lexem;
+				while( NotEndOfFile() &&
+					!( it_.front().lexem_type == terminator_lexem.lexem_type && it_.front().text == terminator_lexem.text ) )
+				{
+					auto mut sub_variables_map_opt= MatchMacroBlock( sub_elements );
+					if( sub_variables_map_opt.empty() )
+					{
+						return ust::optional</MacroVariablesMap/>();
+					}
+					element.sub_elements.push_back( ust::shared_ptr_final</ MacroVariablesMap />( take(sub_variables_map_opt.get_ref()) ) );
+
+					// Process separator
+					if( match_element.lexem.lexem_type != Lexem::Type::EndOfFile )
+					{
+						if( it_.front().lexem_type == match_element.lexem.lexem_type && it_.front().text == match_element.lexem.text )
+						{
+							NextLexem(); // Separator detected
+							if( it_.front().lexem_type == terminator_lexem.lexem_type && it_.front().text == terminator_lexem.text )
+							{
+								// Disable end lexem after separator.
+								PushErrorMessage();
+								return ust::optional</MacroVariablesMap/>();
+							}
+						}
+						else
+						{
+							break; // no separator - finish sequence
+						}
+					}
+				}
+			}
+			else if( match_element.block_check_lexem_kind == Macro::BlockCheckLexemKind::LexemAtBlockStart &&
+				!sub_elements.empty() )
+			{
+				var Lexem& check_lexem= sub_elements.front().lexem;
+				while( NotEndOfFile() &&
+					it_.front().lexem_type == check_lexem.lexem_type && it_.front().text == check_lexem.text )
+				{
+					auto mut sub_variables_map_opt= MatchMacroBlock( sub_elements );
+					if( sub_variables_map_opt.empty() )
+					{
+						return ust::optional</MacroVariablesMap/>();
+					}
+					element.sub_elements.push_back( ust::shared_ptr_final</ MacroVariablesMap />( take(sub_variables_map_opt.get_ref()) ) );
+
+					// Process separator
+					if( match_element.lexem.lexem_type != Lexem::Type::EndOfFile )
+					{
+						if( it_.front().lexem_type == match_element.lexem.lexem_type && it_.front().text == match_element.lexem.text )
+						{
+							NextLexem(); // Separator detected
+							// After separator must be start lexem of block.
+							if( !( it_.front().lexem_type == check_lexem.lexem_type && it_.front().text == check_lexem.text ) )
+							{
+								PushErrorMessage();
+								return ust::optional</MacroVariablesMap/>();
+							}
+						}
+						else
+						{
+							break; // no separator - finish sequence
+						}
+					}
+				}
+			}
+			else{ /* case of some previous error */ }
+		}
 		else{ halt; }
 
 		auto range_after= it_;
@@ -3511,16 +3678,23 @@ fn SyntaxAnalyzer::ExpandMacroBlock( mut this, ust::vector</Macro::ResultElement
 			}
 
 			var ParsedMacroElement& variable= variable_opt.get_ref();
-			if( variable.kind == Macro::MatchElementKind::Optional )
+			if( variable.kind == Macro::MatchElementKind::Optional || variable.kind == Macro::MatchElementKind::Repeated )
 			{
-				if( !variable.sub_elements.empty() )
+				foreach( &variable_element : variable.sub_elements )
 				{
-					macro_variables_maps_stack.push_back(ust::to_non_nullable( variable.sub_elements ) );
+					macro_variables_maps_stack.push_back( variable_element );
 
 					auto mut internal_lexems_expanded= ExpandMacroBlock( result_element.sub_elements.get_ref(), macro_variables_maps_stack, expansion_file_pos );
 					VectorAppend( lexems_expanded, move(internal_lexems_expanded) );
 
 					macro_variables_maps_stack.drop_back();
+
+					// Separator.
+					if( result_element.lexem.lexem_type != Lexem::Type::EndOfFile &&
+						ust::ref_to_int(variable_element) != ust::ref_to_int(variable.sub_elements.back()) )
+					{
+						lexems_expanded.push_back( result_element.lexem );
+					}
 				}
 			}
 		}
