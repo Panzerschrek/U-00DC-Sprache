@@ -289,6 +289,7 @@ private:
 	}
 
 	type MacroVariablesMap= ust::unordered_map</ ust::string8, ParsedMacroElement />;
+	type MacroVariablesMapsStack= ust::vector</ ust::shared_ptr_final</MacroVariablesMap/> />;
 
 	fn FetchMacro( this, ust::string8& name, Macro::Context context ) : ust::shared_ptr_final_nullable</Macro/>;
 
@@ -318,7 +319,8 @@ private:
 
 	fn ExpandMacroImpl( mut this, Macro& macro ) : Lexems;
 	fn MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>& match_elements ) : ust::optional</MacroVariablesMap/>;
-	fn ExpandMacroBlock( mut this, ust::vector</Macro::ResultElement/>& result_elements, MacroVariablesMap& macro_variables_map, FilePos& expansion_file_pos ) : Lexems;
+	fn ExpandMacroBlock( mut this, ust::vector</Macro::ResultElement/>& result_elements, MacroVariablesMapsStack &mut macro_variables_maps_stack, FilePos& expansion_file_pos ) : Lexems;
+	fn FetchMacroVariable( MacroVariablesMapsStack& macro_variables_maps_stack, ust::string8& variable_name ) : ust::optional</ParsedMacroElement/>;
 
 	// Utilities.
 	fn NotEndOfFile( this ) : bool;
@@ -3341,13 +3343,16 @@ fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro ) : Lexems
 	var FilePos expansion_file_pos= it_.front().file_pos;
 	NextLexem(); // Skip macro name itself.
 
-	var ust::optional</MacroVariablesMap/> macro_variables_map_opt= MatchMacroBlock( macro.match_template_elements );
+	var ust::optional</MacroVariablesMap/> mut macro_variables_map_opt= MatchMacroBlock( macro.match_template_elements );
 	if( macro_variables_map_opt.empty() )
 	{
 		return Lexems();
 	}
 
-	auto mut lexems= ExpandMacroBlock( macro.result_template_elements, macro_variables_map_opt.get_ref(), expansion_file_pos );
+	var MacroVariablesMapsStack mut macro_variables_maps_stack;
+	macro_variables_maps_stack.push_back( ust::shared_ptr_final</MacroVariablesMap/>( take(macro_variables_map_opt.get_ref()) ) );
+
+	auto mut lexems= ExpandMacroBlock( macro.result_template_elements, macro_variables_maps_stack, expansion_file_pos );
 	var Lexem end_of_file_lexem{ .lexem_type= Lexem::Type::EndOfFile };
 	lexems.push_back( end_of_file_lexem );
 	lexems.push_back( end_of_file_lexem );
@@ -3446,7 +3451,7 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>
 	return move(macro_variables_map);
 }
 
-fn SyntaxAnalyzer::ExpandMacroBlock( mut this, ust::vector</Macro::ResultElement/>& result_elements, MacroVariablesMap& macro_variables_map, FilePos& expansion_file_pos ) : Lexems
+fn SyntaxAnalyzer::ExpandMacroBlock( mut this, ust::vector</Macro::ResultElement/>& result_elements, MacroVariablesMapsStack &mut macro_variables_maps_stack, FilePos& expansion_file_pos ) : Lexems
 {
 	var Lexems mut lexems_expanded;
 	foreach( &result_element : result_elements )
@@ -3457,36 +3462,38 @@ fn SyntaxAnalyzer::ExpandMacroBlock( mut this, ust::vector</Macro::ResultElement
 		}
 		else if( result_element.kind == Macro::ResultElementKind::VariableElement )
 		{
-			auto variable_opt= macro_variables_map.find( result_element.name );
+			auto variable_opt= FetchMacroVariable( macro_variables_maps_stack, result_element.name );
 			if( variable_opt.empty() )
 			{
 				PushMacroErrorMessage( expansion_file_pos, "\"" + result_element.name + "\" - not found" );
+				continue;
 			}
-			else
+
+			foreach( &lexem : variable_opt.get_ref().lexems )
 			{
-				foreach( &lexem : variable_opt.get_ref().lexems )
-				{
-					lexems_expanded.push_back( lexem );
-				}
+				lexems_expanded.push_back( lexem );
 			}
 		}
 		else if( result_element.kind == Macro::ResultElementKind::VariableElementWithMacroBlock )
 		{
-			auto variable_opt= macro_variables_map.find( result_element.name );
+			auto variable_opt= FetchMacroVariable( macro_variables_maps_stack, result_element.name );
 			if( variable_opt.empty() )
 			{
 				PushMacroErrorMessage( expansion_file_pos, "\"" + result_element.name + "\" - not found" );
+				continue;
 			}
-			else
+
+			var ParsedMacroElement& variable= variable_opt.get_ref();
+			if( variable.kind == Macro::MatchElementKind::Optional )
 			{
-				var ParsedMacroElement& variable= variable_opt.get_ref();
-				if( variable.kind == Macro::MatchElementKind::Optional )
+				if( !variable.sub_elements.empty() )
 				{
-					if( !variable.sub_elements.empty() )
-					{
-						auto mut internal_lexems_expanded= ExpandMacroBlock( result_element.sub_elements.get_ref(), variable.sub_elements.get_ref(), expansion_file_pos );
-						VectorAppend( lexems_expanded, move(internal_lexems_expanded) );
-					}
+					macro_variables_maps_stack.push_back(ust::to_non_nullable( variable.sub_elements ) );
+
+					auto mut internal_lexems_expanded= ExpandMacroBlock( result_element.sub_elements.get_ref(), macro_variables_maps_stack, expansion_file_pos );
+					VectorAppend( lexems_expanded, move(internal_lexems_expanded) );
+
+					macro_variables_maps_stack.drop_back();
 				}
 			}
 		}
@@ -3494,6 +3501,23 @@ fn SyntaxAnalyzer::ExpandMacroBlock( mut this, ust::vector</Macro::ResultElement
 	}
 
 	return move(lexems_expanded);
+}
+
+fn SyntaxAnalyzer::FetchMacroVariable( MacroVariablesMapsStack& macro_variables_maps_stack, ust::string8& variable_name ) : ust::optional</ParsedMacroElement/>
+{
+	// Search variable from top to bottom.
+	for( auto mut i= 0s; i < macro_variables_maps_stack.size(); ++i )
+	{
+		auto j= macro_variables_maps_stack.size() - i - 1s;
+		var MacroVariablesMap& macro_variables_map= macro_variables_maps_stack[j].get_ref();
+		auto ref= macro_variables_map.find( variable_name );
+		if( !ref.empty() )
+		{
+			return ref.get_ref();
+		}
+	}
+
+	return ust::optional</ParsedMacroElement/>();
 }
 
 fn SyntaxAnalyzer::NotEndOfFile( this ) : bool

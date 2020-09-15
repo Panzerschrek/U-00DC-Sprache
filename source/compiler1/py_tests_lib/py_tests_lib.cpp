@@ -494,6 +494,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"MacroExpansion_Test5",
 		"MacroOptional_Test0",
 		"MacroOptional_Test1",
+		"MacroOptional_Test2",
 		"MacroParamExpression_Test0",
 		"MacroParamIdentifier_Test0",
 		"MacroParamTypeName_Test0",
