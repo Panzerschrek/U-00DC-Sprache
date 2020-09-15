@@ -330,6 +330,19 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 	return errors_list;
 }
 
+PyObject* BuildProgramWithSyntaxErrors( PyObject* const self, PyObject* const args )
+{
+	U_UNUSED(self);
+
+	const char* program_text= nullptr;
+
+	if( !PyArg_ParseTuple( args, "s", &program_text ) )
+		return nullptr;
+
+	// TODO
+	return PyList_New(0);
+}
+
 PyObject* FilterTest( PyObject* const self, PyObject* const args )
 {
 	U_UNUSED(self);
@@ -759,6 +772,7 @@ PyMethodDef g_methods[]=
 	{ "free_program"              , FreeProgram           , METH_VARARGS, "Free program."              },
 	{ "run_function"              , RunFunction           , METH_VARARGS, "Run function."              },
 	{ "build_program_with_errors" , BuildProgramWithErrors, METH_VARARGS, "Build program with errors." },
+	{ "build_program_with_syntax_errors" , BuildProgramWithSyntaxErrors, METH_VARARGS, "Build program with syntax errors." },
 	{ "filter_test"               , FilterTest            , METH_VARARGS, "Filter test returns False ih should skip test" },
 	{ nullptr, nullptr, 0, nullptr } // Sentinel
 };

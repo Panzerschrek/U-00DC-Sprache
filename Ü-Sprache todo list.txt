@@ -8,7 +8,7 @@ General:
 *) Continious initializer for arrays
 *) Less requirements of complete types (helps for recursive types)
 *) Different calling conventions (for API calls, for example)
-*) Anonymous (module-local) things - functions, classes, variables.
+*) Anonymous (module-local) symbols - functions, classes, variables.
 *) Forbid inner reference kind changing in inheritance.
 *) Forbid "shared" tag changing in inheritance.
 *) Enable arrays as parameters/return values, enable expression initialization and copy assignment for arrays.
