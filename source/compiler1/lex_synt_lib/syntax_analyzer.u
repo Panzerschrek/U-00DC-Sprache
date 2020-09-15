@@ -285,6 +285,7 @@ private:
 	{
 		Lexems lexems;
 		Macro::MatchElementKind kind= Macro::MatchElementKind::Lexem;
+		ust::shared_ptr_final_nullable</ MacroVariablesMap /> sub_elements;
 	}
 
 	type MacroVariablesMap= ust::unordered_map</ ust::string8, ParsedMacroElement />;
@@ -3207,6 +3208,26 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 			else if( element_type == "ty"    ) { match_element.kind= Macro::MatchElementKind::Typename; }
 			else if( element_type == "expr"  ) { match_element.kind= Macro::MatchElementKind::Expression; }
 			else if( element_type == "block" ) { match_element.kind= Macro::MatchElementKind::Block; }
+			else if( element_type == "opt" )
+			{
+				if( it_.front().lexem_type != Lexem::Type::MacroBracketLeft )
+				{
+					PushErrorMessage();
+				}
+				NextLexem();
+
+				auto mut sub_elements= ParseMacroMatchBlock();
+
+				if( it_.front().lexem_type != Lexem::Type::MacroBracketRight )
+				{
+					PushErrorMessage();
+				}
+				NextLexem();
+
+				match_element.sub_elements= ust::shared_ptr_final_nullable</ ust::vector</Macro::MatchElement/> />( move(sub_elements) );
+				match_element.block_check_lexem_kind= Macro::BlockCheckLexemKind::LexemAtBlockStart;
+				match_element.kind= Macro::MatchElementKind::Optional;
+			}
 			// TODO - process other types
 			else
 			{
@@ -3224,15 +3245,28 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 			}
 			elements_set.insert( match_element.name, 0 );
 
-
 			match_elements.push_back( move(match_element) );
 		}
 		else
 		{
+			if( !match_elements.empty() )
+			{
+				var Macro::MatchElement& mut prev_match_element= match_elements.back();
+				if( prev_match_element.kind == Macro::MatchElementKind::Optional )
+				{
+					prev_match_element.block_check_lexem_kind= Macro::BlockCheckLexemKind::LexemAfterBlockEnd;
+				}
+			}
+
 			var Macro::MatchElement mut match_element{ .lexem= it_.front() };
 			match_elements.push_back( move(match_element) );
 			NextLexem();
 		}
+	}
+
+	// TODO - check here optionals and repeated sequences
+	for( auto mut i= 0s; i < match_elements.size(); ++i )
+	{
 	}
 
 	return move(match_elements);
@@ -3254,8 +3288,25 @@ fn SyntaxAnalyzer::ParseMacroResultBlock( mut this ) : ust::vector</Macro::Resul
 			var Macro::ResultElement mut result_element{ .name= it_.front().text };
 			NextLexem();
 
-			// TODO - parse other kinds.
-			result_element.kind= Macro::ResultElementKind::VariableElement;
+			if( it_.front().lexem_type == Lexem::Type::MacroBracketLeft )
+			{
+				NextLexem();
+
+				auto mut sub_elements= ParseMacroResultBlock();
+
+				if( it_.front().lexem_type != Lexem::Type::MacroBracketRight )
+				{
+					PushErrorMessage();
+				}
+				NextLexem();
+
+				result_element.sub_elements= ust::shared_ptr_final_nullable</ ust::vector</Macro::ResultElement/> />( move(sub_elements) );
+				result_element.kind= Macro::ResultElementKind::VariableElementWithMacroBlock;
+			}
+			else
+			{
+				result_element.kind= Macro::ResultElementKind::VariableElement;
+			}
 
 			result_elements.push_back( move(result_element) );
 		}
@@ -3302,8 +3353,10 @@ fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro ) : Lexems
 fn SyntaxAnalyzer::MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>& match_elements ) : ust::optional</MacroVariablesMap/>
 {
 	var MacroVariablesMap mut macro_variables_map;
-	foreach( &match_element :match_elements )
+	for( auto mut i= 0s; i < match_elements.size(); ++i )
 	{
+		auto& match_element= match_elements[i];
+
 		if( match_element.kind == Macro::MatchElementKind::Lexem )
 		{
 			if( !( it_.front().lexem_type == match_element.lexem.lexem_type && it_.front().text == match_element.lexem.text ) )
@@ -3338,7 +3391,40 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>
 		{
 			ParseBlock();
 		}
-		// TODO - handle optionals and sequences.
+		else if( match_element.kind == Macro::MatchElementKind::Optional )
+		{
+			var bool mut is_empty_optional= false;
+
+			var ust::vector</Macro::MatchElement/>& sub_elements= match_element.sub_elements.get_ref();
+			if( match_element.block_check_lexem_kind == Macro::BlockCheckLexemKind::LexemAfterBlockEnd )
+			{
+				if( i + 1s < match_elements.size() )
+				{
+					auto& next_match_element= match_elements[i+1s];
+					if( it_.front().lexem_type == next_match_element.lexem.lexem_type && it_.front().text == next_match_element.lexem.text )
+					{
+						is_empty_optional= true;
+					}
+				}
+			}
+			else if( match_element.block_check_lexem_kind == Macro::BlockCheckLexemKind::LexemAtBlockStart )
+			{
+				auto& first_match_element= sub_elements.front();
+				is_empty_optional= !( it_.front().lexem_type == first_match_element.lexem.lexem_type && it_.front().text == first_match_element.lexem.text );
+			}
+			else { halt; }
+
+			if( !is_empty_optional )
+			{
+				auto mut sub_variables_map_opt= MatchMacroBlock( sub_elements );
+				if( sub_variables_map_opt.empty() )
+				{
+					return ust::optional</MacroVariablesMap/>();
+				}
+				element.sub_elements= ust::shared_ptr_final_nullable</ MacroVariablesMap />( take(sub_variables_map_opt.get_ref()) );
+			}
+		}
+		// TODO - handle sequences.
 		else{ halt; }
 
 		auto range_after= it_;
@@ -3376,6 +3462,26 @@ fn SyntaxAnalyzer::ExpandMacroBlock( mut this, ust::vector</Macro::ResultElement
 				foreach( &lexem : variable_opt.get_ref().lexems )
 				{
 					lexems_expanded.push_back( lexem );
+				}
+			}
+		}
+		else if( result_element.kind == Macro::ResultElementKind::VariableElementWithMacroBlock )
+		{
+			auto variable_opt= macro_variables_map.find( result_element.name );
+			if( variable_opt.empty() )
+			{
+				PushMacroErrorMessage( expansion_file_pos, "\"" + result_element.name + "\" - not found" );
+			}
+			else
+			{
+				var ParsedMacroElement& variable= variable_opt.get_ref();
+				if( variable.kind == Macro::MatchElementKind::Optional )
+				{
+					if( !variable.sub_elements.empty() )
+					{
+						auto mut internal_lexems_expanded= ExpandMacroBlock( result_element.sub_elements.get_ref(), variable.sub_elements.get_ref(), expansion_file_pos );
+						VectorAppend( lexems_expanded, internal_lexems_expanded );
+					}
 				}
 			}
 		}
