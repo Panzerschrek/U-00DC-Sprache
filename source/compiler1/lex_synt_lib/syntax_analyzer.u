@@ -3347,7 +3347,12 @@ fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro ) : Lexems
 		return Lexems();
 	}
 
-	return ExpandMacroBlock( macro.result_template_elements, macro_variables_map_opt.get_ref(), expansion_file_pos );
+	auto mut lexems= ExpandMacroBlock( macro.result_template_elements, macro_variables_map_opt.get_ref(), expansion_file_pos );
+	var Lexem end_of_file_lexem{ .lexem_type= Lexem::Type::EndOfFile };
+	lexems.push_back( end_of_file_lexem );
+	lexems.push_back( end_of_file_lexem );
+
+	return lexems;
 }
 
 fn SyntaxAnalyzer::MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>& match_elements ) : ust::optional</MacroVariablesMap/>
@@ -3480,17 +3485,13 @@ fn SyntaxAnalyzer::ExpandMacroBlock( mut this, ust::vector</Macro::ResultElement
 					if( !variable.sub_elements.empty() )
 					{
 						auto mut internal_lexems_expanded= ExpandMacroBlock( result_element.sub_elements.get_ref(), variable.sub_elements.get_ref(), expansion_file_pos );
-						VectorAppend( lexems_expanded, internal_lexems_expanded );
+						VectorAppend( lexems_expanded, move(internal_lexems_expanded) );
 					}
 				}
 			}
 		}
 		else { halt; }
 	}
-
-	var Lexem end_of_file_lexem{ .lexem_type= Lexem::Type::EndOfFile };
-	lexems_expanded.push_back( end_of_file_lexem );
-	lexems_expanded.push_back( end_of_file_lexem );
 
 	return move(lexems_expanded);
 }
