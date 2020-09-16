@@ -83,9 +83,6 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		constructor_type.args.back().is_mutable= true;
 		constructor_type.args.back().is_reference= true;
 
-		//ArgsVector<llvm::Type*> args_llvm_types;
-		//args_llvm_types.push_back( class_type.GetLLVMType()->getPointerTo() );
-
 		constructor_type.llvm_function_type=
 			llvm::FunctionType::get(
 				fundamental_llvm_types_.void_for_ret,
@@ -99,11 +96,11 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 				MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
 				module_.get() );
 
-		// Add generated constructor
 		FunctionVariable new_constructor_variable;
 		new_constructor_variable.type= std::move( constructor_type );
 		new_constructor_variable.llvm_function= llvm_constructor_function;
 
+		// Add generated constructor
 		if( Value* const constructors_value= the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 		{
 			OverloadedFunctionsSet* const constructors= constructors_value->GetFunctionsSet();
@@ -289,24 +286,19 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		new_constructor_variable.type= std::move( constructor_type );
 		new_constructor_variable.llvm_function= llvm_constructor_function;
 
-		if( constructor_variable != nullptr )
-			*constructor_variable= std::move(new_constructor_variable);
+		if( Value* const constructors_value= the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
+		{
+			OverloadedFunctionsSet* const constructors= constructors_value->GetFunctionsSet();
+			U_ASSERT( constructors != nullptr );
+			constructors->functions.push_back( std::move( new_constructor_variable ) );
+			constructor_variable= &constructors->functions.back();
+		}
 		else
 		{
-			if( Value* const constructors_value= the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
-			{
-				OverloadedFunctionsSet* const constructors= constructors_value->GetFunctionsSet();
-				U_ASSERT( constructors != nullptr );
-				constructors->functions.push_back( std::move( new_constructor_variable ) );
-				constructor_variable= &constructors->functions.back();
-			}
-			else
-			{
-				OverloadedFunctionsSet constructors;
-				constructors.functions.push_back( std::move( new_constructor_variable ) );
-				Value* const inserted_value= the_class.members.AddName( Keyword( Keywords::constructor_ ), std::move( constructors ) );
-				constructor_variable= &inserted_value->GetFunctionsSet()->functions.back();
-			}
+			OverloadedFunctionsSet constructors;
+			constructors.functions.push_back( std::move( new_constructor_variable ) );
+			Value* const inserted_value= the_class.members.AddName( Keyword( Keywords::constructor_ ), std::move( constructors ) );
+			constructor_variable= &inserted_value->GetFunctionsSet()->functions.back();
 		}
 	}
 	SetupGeneratedFunctionAttributes( *constructor_variable->llvm_function );
@@ -349,8 +341,8 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		const ClassField& field= *the_class.members.GetThisScopeValue( field_name )->GetClassField();
 
 		llvm::Value* const index_list[2] { GetZeroGEPIndex(), GetFieldGEPIndex( field.index ) };
-		llvm::Value* const src= function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list );
 		llvm::Value* const dst= function_context.llvm_ir_builder.CreateGEP( this_llvm_value, index_list );
+		llvm::Value* const src= function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list );
 
 		if( field.is_reference )
 		{
@@ -363,7 +355,6 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 			U_ASSERT( field.type.IsCopyConstructible() );
 			BuildCopyConstructorPart( dst, src, field.type, function_context );
 		}
-
 	}
 
 	SetupVirtualTablePointers( this_llvm_value, the_class, function_context );
@@ -378,7 +369,6 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 FunctionVariable CodeBuilder::GenerateDestructorPrototype( Class& the_class, const Type& class_type )
 {
 	Function destructor_type;
-
 	destructor_type.return_type= void_type_for_ret_;
 	destructor_type.args.resize(1u);
 	destructor_type.args[0].type= class_type;
@@ -393,7 +383,6 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( Class& the_class, con
 			false );
 
 	FunctionVariable destructor_function;
-	destructor_function.type= destructor_type;
 	destructor_function.type= destructor_type;
 	destructor_function.is_generated= true;
 	destructor_function.is_this_call= true;
@@ -427,7 +416,7 @@ void CodeBuilder::GenerateDestructorBody( Class& the_class, const Type& class_ty
 		destructor_type.return_value_is_mutable,
 		destructor_type.return_value_is_reference,
 		llvm_context_,
-		destructor_function .llvm_function );
+		destructor_function.llvm_function );
 	function_context.this_= &this_;
 
 	CallMembersDestructors( function_context, the_class.members.GetErrors(), the_class.body_file_pos );
@@ -469,9 +458,7 @@ void CodeBuilder::TryGenerateDestructor( Class& the_class, const Type& class_typ
 	OverloadedFunctionsSet destructors;
 	destructors.functions.push_back( std::move( destructor_variable ) );
 
-	the_class.members.AddName(
-		Keyword( Keywords::destructor_ ),
-		Value( std::move( destructors ) ) );
+	the_class.members.AddName( Keyword( Keywords::destructor_ ), Value( std::move( destructors ) ) );
 
 	// Say "we have destructor".
 	the_class.have_destructor= true;
@@ -575,24 +562,19 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 		new_op_variable.type= std::move( op_type );
 		new_op_variable.llvm_function= llvm_op_function;
 
-		if( operator_variable != nullptr )
-			*operator_variable= std::move( new_op_variable );
+		if( Value* const operators_value= the_class.members.GetThisScopeValue( op_name ) )
+		{
+			OverloadedFunctionsSet* const operators= operators_value->GetFunctionsSet();
+			U_ASSERT( operators != nullptr );
+			operators->functions.push_back( std::move( new_op_variable ) );
+			operator_variable= &operators->functions.back();
+		}
 		else
 		{
-			if( Value* const operators_value= the_class.members.GetThisScopeValue( op_name ) )
-			{
-				OverloadedFunctionsSet* const operators= operators_value->GetFunctionsSet();
-				U_ASSERT( operators != nullptr );
-				operators->functions.push_back( std::move( new_op_variable ) );
-				operator_variable= &operators->functions.back();
-			}
-			else
-			{
-				OverloadedFunctionsSet operators;
-				operators.functions.push_back( std::move( new_op_variable ) );
-				Value* const inserted_value= the_class.members.AddName( op_name, std::move( operators ) );
-				operator_variable= &inserted_value->GetFunctionsSet()->functions.back();
-			}
+			OverloadedFunctionsSet operators;
+			operators.functions.push_back( std::move( new_op_variable ) );
+			Value* const inserted_value= the_class.members.AddName( op_name, std::move( operators ) );
+			operator_variable= &inserted_value->GetFunctionsSet()->functions.back();
 		}
 	}
 	SetupGeneratedFunctionAttributes( *operator_variable->llvm_function );
@@ -618,9 +600,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 
 	if( the_class.base_class != nullptr )
 	{
-		llvm::Value* index_list[2];
-		index_list[0]= GetZeroGEPIndex();
-		index_list[1]= GetFieldGEPIndex(  0u /*base class is allways first field */ );
+		llvm::Value* const index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex(  0u /*base class is allways first field */ ) };
 		BuildCopyAssignmentOperatorPart(
 			function_context.llvm_ir_builder.CreateGEP( this_llvm_value, index_list ),
 			function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list ),
@@ -673,10 +653,7 @@ void CodeBuilder::BuildCopyConstructorPart(
 			array_type.size,
 			[&](llvm::Value* const counter_value)
 			{
-				llvm::Value* index_list[2];
-				index_list[0]= GetZeroGEPIndex();
-				index_list[1]= counter_value;
-
+				llvm::Value* const index_list[2]{ GetZeroGEPIndex(), counter_value };
 				BuildCopyConstructorPart(
 					function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
 					function_context.llvm_ir_builder.CreateGEP( src, index_list ),
@@ -752,10 +729,7 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 			array_type.size,
 			[&](llvm::Value* const counter_value)
 			{
-				llvm::Value* index_list[2];
-				index_list[0]= GetZeroGEPIndex();
-				index_list[1]= counter_value;
-
+				llvm::Value* const index_list[2]{ GetZeroGEPIndex(), counter_value };
 				BuildCopyAssignmentOperatorPart(
 					function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
 					function_context.llvm_ir_builder.CreateGEP( src, index_list ),
