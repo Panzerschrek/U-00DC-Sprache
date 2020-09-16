@@ -272,7 +272,7 @@ struct Block
 
 	FilePos file_pos;
 	FilePos end_file_pos;
-	ust::vector</BlockElement/> elements;
+	BlockElements elements;
 }
 
 struct VariablesDeclaration
@@ -445,6 +445,8 @@ type BlockElement = ust::variant</ tup[
 	Halt,
 	HaltIf
 	] />;
+
+type BlockElements= ust::vector</BlockElement/>;
 
 struct Function
 {

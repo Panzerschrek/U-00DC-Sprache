@@ -267,6 +267,34 @@ PyObject* RunFunction( PyObject* const self, PyObject* const args )
 	return Py_None;
 }
 
+static void ErrorHandler(
+	void* const data,
+	const uint32_t line,
+	const uint32_t column,
+	const uint32_t error_code,
+	const U1_StringView& error_text )
+{
+	PyObject* const dict= PyDict_New();
+
+	{
+		PyObject* const file_pos_dict= PyDict_New();
+		PyDict_SetItemString( file_pos_dict, "file_index", PyLong_FromLongLong(0) );
+		PyDict_SetItemString( file_pos_dict, "line", PyLong_FromLongLong(line) );
+		PyDict_SetItemString( file_pos_dict, "column", PyLong_FromLongLong(column) );
+
+		PyDict_SetItemString( dict, "file_pos", file_pos_dict );
+	}
+
+	const char* error_code_str= nullptr;
+	size_t error_code_len= 0u;
+	U1_CodeBuilderCodeToString( error_code, error_code_str, error_code_len );
+	PyDict_SetItemString( dict, "code", PyUnicode_DecodeUTF8( error_code_str, Py_ssize_t(error_code_len), nullptr ) );
+
+	PyDict_SetItemString( dict, "text", PyUnicode_DecodeUTF8( error_text.data, Py_ssize_t(error_text.size), nullptr ) );
+
+	PyList_Append( reinterpret_cast<PyObject*>(data), dict );
+}
+
 PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 {
 	U_UNUSED(self);
@@ -282,41 +310,12 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 
 	PyObject* const errors_list= PyList_New(0);
 
-	const auto error_handler=
-	[](
-		void* const data,
-		const uint32_t line,
-		const uint32_t column,
-		const uint32_t error_code,
-		const U1_StringView& error_text )
-	{
-		PyObject* const dict= PyDict_New();
-
-		{
-			PyObject* const file_pos_dict= PyDict_New();
-			PyDict_SetItemString( file_pos_dict, "file_index", PyLong_FromLongLong(0) );
-			PyDict_SetItemString( file_pos_dict, "line", PyLong_FromLongLong(line) );
-			PyDict_SetItemString( file_pos_dict, "column", PyLong_FromLongLong(column) );
-
-			PyDict_SetItemString( dict, "file_pos", file_pos_dict );
-		}
-
-		const char* error_code_str= nullptr;
-		size_t error_code_len= 0u;
-		U1_CodeBuilderCodeToString( error_code, error_code_str, error_code_len );
-		PyDict_SetItemString( dict, "code", PyUnicode_DecodeUTF8( error_code_str, Py_ssize_t(error_code_len), nullptr ) );
-
-		PyDict_SetItemString( dict, "text", PyUnicode_DecodeUTF8( error_text.data, Py_ssize_t(error_text.size), nullptr ) );
-
-		PyList_Append( reinterpret_cast<PyObject*>(data), dict );
-	};
-
 	const bool ok=
 		U1_BuildProgramWithErrors(
 			text_view,
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout),
-			error_handler,
+			ErrorHandler,
 			errors_list );
 
 	llvm::llvm_shutdown();
@@ -326,6 +325,22 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 		PyErr_SetString( PyExc_RuntimeError, "source tree build failed" );
 		return nullptr;
 	}
+
+	return errors_list;
+}
+
+PyObject* BuildProgramWithSyntaxErrors( PyObject* const self, PyObject* const args )
+{
+	U_UNUSED(self);
+
+	const char* program_text= nullptr;
+
+	if( !PyArg_ParseTuple( args, "s", &program_text ) )
+		return nullptr;
+
+	const U1_StringView text_view{ program_text, std::strlen(program_text) };
+	PyObject* const errors_list= PyList_New(0);
+	U1_BuildProgramWithSyntaxErrors( text_view, ErrorHandler, errors_list );
 
 	return errors_list;
 }
@@ -486,6 +501,24 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"Int128_Test0",
 		"InvalidTypeOfTemplateVariableArgument_ForFunctionTemplateParameter",
 		"LessSpecializedTemplateTypesNotGenerated_Test0",
+		"MacroExpansion_Test0",
+		"MacroExpansion_Test1",
+		"MacroExpansion_Test2",
+		"MacroExpansion_Test3",
+		"MacroExpansion_Test4",
+		"MacroExpansion_Test5",
+		"MacroOptional_Test0",
+		"MacroOptional_Test1",
+		"MacroOptional_Test2",
+		"MacroOptional_Test3",
+		"MacroParamExpression_Test0",
+		"MacroParamIdentifier_Test0",
+		"MacroParamTypeName_Test0",
+		"MacroRepeated_Test0",
+		"MacroRepeated_Test1",
+		"MacroRepeated_Test2",
+		"MacroRepeated_Test3",
+		"MacroRepeated_Test4",
 		"NameIsNotTypeName_ForFunctionTemplateParameter",
 		"NameNotFound_ForFunctionTemplateParameter",
 		"NonPureVirtualFunctionInInterface_Test0",
@@ -640,6 +673,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"DuplicatedParentClass_Test",
 		"EnableIfDeclaration_Test",
 		"EnableIf_ForPrototypeAndBody_Test",
+		"ExpandMacroInArgumentOfOtherMacro_Test",
+		"ExpandMacroWhileExpandingMacro_Test",
 		"ExplicitAccessToSpecialMethodsIsUnsafe_Test",
 		"FalseBranchesSkipped_Test",
 		"FieldInitializerDeclaration_Test",
@@ -668,6 +703,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"InvalidTypeForConstantExpressionVariable",
 		"InvalidTypeForConstexprFunction_Test",
 		"KeepFieldsOrder_Test",
+		"MacroDefenition_Test",
+		"MacroErrorsTest",
 		"MethodBodyGenerationFailed_Test",
 		"NonExistentTest",
 		"NoMangleMismatch_Test",
@@ -681,9 +718,12 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"Override",
 		"PrivateMembersNotInherited_Test",
 		"Specialization_Test",
+		"StartBlockLexemAsOptionalIndicator_Test",
+		"StartBlockLexemAsRepeatedIndicator_Test",
 		"StaticIf",
 		"StringLiteral_CharNumber_Test",
 		"StringLiteralSuffix_Test",
+		"SyntaxError_Test",
 		"TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test",
 		"TemplateFunctionGenerationFailed_Test",
 		"TemplateMethod_Test",
@@ -704,6 +744,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TypeTemplatesOvelroading_SpecializationErrors_Test",
 		"TypeTemplatesOvelroading_Specialization_Test",
 		"UninitializedInitializer",
+		"UniqueMacroLexem_Test",
 		"UnknownStringLiteralSuffix_Test",
 		"UnsafeFunctionCallInsideUnsafeBlock_Test",
 		"UnsafeFunctionCallOutsideUnsafeBlock_Test",
@@ -738,6 +779,7 @@ PyMethodDef g_methods[]=
 	{ "free_program"              , FreeProgram           , METH_VARARGS, "Free program."              },
 	{ "run_function"              , RunFunction           , METH_VARARGS, "Run function."              },
 	{ "build_program_with_errors" , BuildProgramWithErrors, METH_VARARGS, "Build program with errors." },
+	{ "build_program_with_syntax_errors" , BuildProgramWithSyntaxErrors, METH_VARARGS, "Build program with syntax errors." },
 	{ "filter_test"               , FilterTest            , METH_VARARGS, "Filter test returns False ih should skip test" },
 	{ nullptr, nullptr, 0, nullptr } // Sentinel
 };

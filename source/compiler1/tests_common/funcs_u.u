@@ -30,11 +30,12 @@ fn nomangle U1_BuildProgram(
 			{
 				unsafe
 				{
-					U1_PrintInt( i64(err.file_pos.GetLine()) );
-					U1_PrintStr( ":\0"[0] );
-					U1_PrintInt( i64(err.file_pos.GetColumn()) );
-					U1_PrintStr( (": " + err.text + "\n\0").front() );
-					U1_PrintEndl();
+					auto stream= U1_GetCerr();
+					U1_PrintInt( stream, i64(err.file_pos.GetLine()) );
+					U1_PrintStr( stream, ":\0"[0] );
+					U1_PrintInt( stream, i64(err.file_pos.GetColumn()) );
+					U1_PrintStr( stream, (": " + err.text + "\n\0").front() );
+					U1_PrintEndl( stream );
 				}
 			}
 			if( !code_builder_res.errors.empty() )
@@ -86,6 +87,33 @@ fn nomangle U1_BuildProgramWithErrors(
 	}
 
 	return true;
+}
+
+fn nomangle U1_BuildProgramWithSyntaxErrors(
+	U1_StringView& program_text,
+	ErrorHanglerFunc error_handler_func,
+	void &mut data ) unsafe
+{
+	unsafe
+	{
+		auto program_text= U1::StringToArrayView( program_text.data, program_text.size );
+
+		var U1::TestVfs mut test_vfs( program_text );
+		auto source_graph= U1::LoadSourceGraph( test_vfs, "_", U1_GetNullStream() );
+
+		foreach( &node : source_graph.nodes )
+		{
+			foreach( &err : node.synt_result.error_messages )
+			{
+				var U1_StringView text_view{ .data= err.text.front(), .size= err.text.size() };
+				unsafe
+				{
+					error_handler_func( data, err.file_pos.GetLine(), err.file_pos.GetColumn(), u32(U1::CodeBuilderErrorCode::BuildFailed), text_view );
+				}
+			}
+		}
+	}
+
 }
 
 fn nomangle U1_CodeBuilderCodeToString(
@@ -145,11 +173,12 @@ fn nomangle U1_BuildMultisourceProgram(
 	{
 		unsafe
 		{
-			U1_PrintInt( i64(err.file_pos.GetLine()) );
-			U1_PrintStr( ":\0"[0] );
-			U1_PrintInt( i64(err.file_pos.GetColumn()) );
-			U1_PrintStr( (": " + err.text + "\n\0").front() );
-			U1_PrintEndl();
+			auto stream= U1_GetCerr();
+			U1_PrintInt( stream, i64(err.file_pos.GetLine()) );
+			U1_PrintStr( stream, ":\0"[0] );
+			U1_PrintInt( stream, i64(err.file_pos.GetColumn()) );
+			U1_PrintStr( stream, (": " + err.text + "\n\0").front() );
+			U1_PrintEndl( stream );
 		}
 	}
 	if( !code_builder_res.errors.empty() )

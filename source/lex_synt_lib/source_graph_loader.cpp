@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <iostream>
 
 #include "assert.hpp"
 
@@ -27,9 +26,10 @@ static Synt::MacrosPtr PrepareBuiltInMacros()
 	return synt_result.macros;
 }
 
-SourceGraphLoader::SourceGraphLoader( IVfsPtr vfs )
+SourceGraphLoader::SourceGraphLoader( IVfsPtr vfs, std::ostream& errors_stream )
 	: built_in_macros_(PrepareBuiltInMacros())
 	, vfs_(std::move(vfs))
+	, errors_stream_(errors_stream)
 {
 	U_ASSERT( built_in_macros_ != nullptr );
 	U_ASSERT( vfs_ != nullptr );
@@ -59,7 +59,7 @@ size_t SourceGraphLoader::LoadNode_r(
 		for( auto it= prev_file_it; it != processed_files_stack_.end(); ++it )
 			imports_loop_str+= *it + " -> ";
 		imports_loop_str+= full_file_path;
-		std::cerr << parent_file_path << ": 1:1: Import loop detected: " <<  imports_loop_str << std::endl;
+		errors_stream_ << parent_file_path << ": 1:1: Import loop detected: " <<  imports_loop_str << std::endl;
 		result.have_errors= true;
 		return ~0u;
 	}
@@ -78,7 +78,7 @@ size_t SourceGraphLoader::LoadNode_r(
 		error_message.text= "Can not read file \"" + file_path + "\"";
 		error_message.file_pos= FilePos( uint32_t(node_index), 0u, 0u );
 
-		std::cerr << error_message.text << std::endl;
+		errors_stream_ << error_message.text << std::endl;
 		result.syntax_errors.push_back( std::move(error_message) );
 		result.have_errors= true;
 		return ~0u;
@@ -86,7 +86,7 @@ size_t SourceGraphLoader::LoadNode_r(
 
 	LexicalAnalysisResult lex_result= LexicalAnalysis( loaded_file->file_content );
 	for( const std::string& lexical_error_message : lex_result.error_messages )
-		std::cerr << full_file_path << ": error: " << lexical_error_message << "\n";
+		errors_stream_ << full_file_path << ": error: " << lexical_error_message << "\n";
 	result.lexical_errors.insert( result.lexical_errors.end(), lex_result.error_messages.begin(), lex_result.error_messages.end() );
 	if( !lex_result.error_messages.empty() )
 	{
@@ -135,7 +135,7 @@ size_t SourceGraphLoader::LoadNode_r(
 					error_message.text= "Macro \"" + macro_map_pair.first + "\" redefinition.";
 					error_message.file_pos= FilePos( 0u, 0u, uint32_t(node_index) );
 
-					std::cout << error_message.text << std::endl;
+					errors_stream_ << error_message.text << std::endl;
 					result.syntax_errors.push_back( std::move(error_message) );
 				}
 				else
@@ -152,7 +152,7 @@ size_t SourceGraphLoader::LoadNode_r(
 		result.macro_expansion_contexts );
 
 	for( const Synt::SyntaxErrorMessage& syntax_error_message : synt_result.error_messages )
-		std::cerr << full_file_path << ":"
+		errors_stream_ << full_file_path << ":"
 			<< syntax_error_message.file_pos.GetLine() << ":" << syntax_error_message.file_pos.GetColumn() << ": error: " << syntax_error_message.text << "\n";
 
 	result.syntax_errors.insert( result.syntax_errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
