@@ -35,6 +35,11 @@ bool U1_BuildProgramWithErrors(
 	ErrorHanglerFunc error_handler_func,
 	void* data );
 
+void U1_BuildProgramWithSyntaxErrors(
+	const U1_StringView& program_text_start,
+	ErrorHanglerFunc error_handler_func,
+	void* data );
+
 LLVMModuleRef U1_BuildMultisourceProgram(
 	const U1_SourceFile* source_files,
 	size_t source_file_count,

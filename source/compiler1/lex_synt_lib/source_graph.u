@@ -5,16 +5,17 @@ import "source_graph.uh"
 namespace U1
 {
 
-fn LoadSourceGraph( IVfs &mut vfs, ust::string8& root_file_path ) : SourceGraph
+fn LoadSourceGraph( IVfs &mut vfs, ust::string8& root_file_path, CppIoStreamRef errors_stream ) : SourceGraph
 {
 	var SourceGraph mut source_graph;
-	LoadSourceGraph_r( vfs, root_file_path, "", source_graph );
+	LoadSourceGraph_r( vfs, errors_stream, root_file_path, "", source_graph );
 	return move(source_graph);
 }
 
 // Returns node index or ~0 in case of error.
 fn LoadSourceGraph_r(
 	IVfs &mut vfs,
+	CppIoStreamRef errors_stream,
 	ust::string8& file_path,
 	ust::string8& parent_file_path,
 	SourceGraph& mut source_graph ) : size_type
@@ -37,7 +38,7 @@ fn LoadSourceGraph_r(
 		str+= "Error, can not read file: \"";
 		str+= file_path_normalized;
 		str+= "\"\n\0";
-		unsafe{  U1_PrintStr( str.front() );  }
+		unsafe{  U1_PrintStr( errors_stream, str.front() );  }
 
 		source_graph.have_errors= true;
 		return ~0s;
@@ -52,7 +53,7 @@ fn LoadSourceGraph_r(
 		str+= ": error: ";
 		str+= error_message;
 		str+= "\n\0";
-		unsafe{  U1_PrintStr( str.front() );  }
+		unsafe{  U1_PrintStr( errors_stream, str.front() );  }
 	}
 	source_graph.have_errors|= !lex_result.error_messages.empty();
 
@@ -72,7 +73,7 @@ fn LoadSourceGraph_r(
 		str+= ": error: ";
 		str+= error_message.text;
 		str+= "\n\0";
-		unsafe{  U1_PrintStr( str.front() );  }
+		unsafe{  U1_PrintStr( errors_stream, str.front() );  }
 	}
 	source_graph.have_errors|= !synt_result.error_messages.empty();
 
@@ -91,7 +92,7 @@ fn LoadSourceGraph_r(
 	// TODO - check for dependency loops.
 	foreach( &import_ : imports )
 	{
-		auto child= LoadSourceGraph_r( vfs, import_, file_path_normalized, source_graph );
+		auto child= LoadSourceGraph_r( vfs, errors_stream, import_, file_path_normalized, source_graph );
 		if( child != ~0s )
 		{
 			node.children.push_back(child);
