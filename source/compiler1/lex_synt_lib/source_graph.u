@@ -70,10 +70,9 @@ fn LoadSourceGraph_r(
 		.lexical_error_messages= take(lex_result.error_messages),
 	};
 
-	var Synt::ImportsList mut imports= Synt::ParseImports( lex_result.lexems );
-
 	// Recursively load imports.
 	// TODO - check for dependency loops.
+	var Synt::ImportsList imports= Synt::ParseImports( lex_result.lexems );
 	foreach( &import_ : imports )
 	{
 		auto child= LoadSourceGraph_r( vfs, errors_stream, import_, file_path_normalized, source_graph );

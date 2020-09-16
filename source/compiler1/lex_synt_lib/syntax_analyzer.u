@@ -3230,7 +3230,7 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 			else if( element_type == "ty"    ) { match_element.kind= Macro::MatchElementKind::Typename; }
 			else if( element_type == "expr"  ) { match_element.kind= Macro::MatchElementKind::Expression; }
 			else if( element_type == "block" ) { match_element.kind= Macro::MatchElementKind::Block; }
-			else if( element_type == "opt" )
+			else if( element_type == "opt"   )
 			{
 				if( it_.front().lexem_type != Lexem::Type::MacroBracketLeft )
 				{
@@ -3313,7 +3313,6 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 		}
 		else
 		{
-
 			var Macro::MatchElement mut match_element{ .lexem= it_.front() };
 			match_elements.push_back( move(match_element) );
 			NextLexem();
@@ -3502,7 +3501,7 @@ fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro ) : Lexems
 	lexems.push_back( end_of_file_lexem );
 	lexems.push_back( end_of_file_lexem );
 
-	return lexems;
+	return move(lexems);
 }
 
 fn SyntaxAnalyzer::MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>& match_elements ) : ust::shared_ptr_final_nullable</MacroVariablesMap/>
@@ -3657,7 +3656,7 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>
 			element.lexems.push_back( lexem );
 		}
 
-		// TODO - report redefinition.
+		// Redefinition checked before, while parsing macro itself.
 		macro_variables_map.insert( match_element.name, move(element) );
 	}
 
@@ -3665,11 +3664,11 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>
 }
 
 fn SyntaxAnalyzer::ExpandMacroBlock(
-		mut this,
-		ust::vector</Macro::ResultElement/>& result_elements,
-		MacroVariablesMapsStack &mut macro_variables_maps_stack,
-		UniqueMacroIdentifiersMap &mut unique_macro_indentifiers_map,
-		FilePos& expansion_file_pos ) : Lexems
+	mut this,
+	ust::vector</Macro::ResultElement/>& result_elements,
+	MacroVariablesMapsStack &mut macro_variables_maps_stack,
+	UniqueMacroIdentifiersMap &mut unique_macro_indentifiers_map,
+	FilePos& expansion_file_pos ) : Lexems
 {
 	var Lexems mut lexems_expanded;
 	foreach( &result_element : result_elements )
@@ -3724,28 +3723,27 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 			}
 
 			var ParsedMacroElement& variable= variable_opt.get_ref();
-			if( variable.kind == Macro::MatchElementKind::Optional || variable.kind == Macro::MatchElementKind::Repeated )
-			{
-				foreach( &variable_element : variable.sub_elements )
-				{
-					macro_variables_maps_stack.push_back( variable_element );
-
-					auto mut internal_lexems_expanded= ExpandMacroBlock( result_element.sub_elements.get_ref(), macro_variables_maps_stack, unique_macro_indentifiers_map, expansion_file_pos );
-					VectorAppend( lexems_expanded, move(internal_lexems_expanded) );
-
-					macro_variables_maps_stack.drop_back();
-
-					// Separator.
-					if( result_element.lexem.lexem_type != Lexem::Type::EndOfFile &&
-						ust::ref_to_int(variable_element) != ust::ref_to_int(variable.sub_elements.back()) )
-					{
-						lexems_expanded.push_back( result_element.lexem );
-					}
-				}
-			}
-			else
+			if( !( variable.kind == Macro::MatchElementKind::Optional || variable.kind == Macro::MatchElementKind::Repeated ) )
 			{
 				PushMacroErrorMessage( expansion_file_pos, "Expected optional or repated" );
+				continue;
+			}
+
+			foreach( &variable_element : variable.sub_elements )
+			{
+				macro_variables_maps_stack.push_back( variable_element );
+
+				auto mut internal_lexems_expanded= ExpandMacroBlock( result_element.sub_elements.get_ref(), macro_variables_maps_stack, unique_macro_indentifiers_map, expansion_file_pos );
+				VectorAppend( lexems_expanded, move(internal_lexems_expanded) );
+
+				macro_variables_maps_stack.drop_back();
+
+				// Separator.
+				if( result_element.lexem.lexem_type != Lexem::Type::EndOfFile &&
+					ust::ref_to_int(variable_element) != ust::ref_to_int(variable.sub_elements.back()) )
+				{
+					lexems_expanded.push_back( result_element.lexem );
+				}
 			}
 		}
 		else { halt; }

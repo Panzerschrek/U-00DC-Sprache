@@ -38,7 +38,7 @@ struct Macro
 		VariableElementWithMacroBlock, // Optional, loop
 	}
 
-	enum BlockCheckLexemKind
+	enum BlockCheckLexemKind : u8
 	{
 		LexemAfterBlockEnd, // Detect optional/loop end, using lexem after optional/loop as terminator.
 		LexemAtBlockStart, // Detect optional/loop, using lexem in beginning of optional/loop.
