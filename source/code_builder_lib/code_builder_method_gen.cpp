@@ -99,9 +99,6 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 				MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
 				module_.get() );
 
-		SetupGeneratedFunctionAttributes( *llvm_constructor_function );
-		llvm_constructor_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
-
 		// Add generated constructor
 		FunctionVariable new_constructor_variable;
 		new_constructor_variable.type= std::move( constructor_type );
@@ -123,6 +120,9 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 
 		}
 	}
+	SetupGeneratedFunctionAttributes( *constructor_variable->llvm_function );
+	constructor_variable->llvm_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
+
 	constructor_variable->have_body= true;
 	constructor_variable->is_this_call= true;
 	constructor_variable->is_generated= true;
@@ -284,10 +284,6 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 				MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
 				module_.get() );
 
-		SetupGeneratedFunctionAttributes( *llvm_constructor_function );
-		llvm_constructor_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
-		llvm_constructor_function->addAttribute( 2u, llvm::Attribute::NonNull ); // and src is nonnull
-
 		// Add generated constructor
 		FunctionVariable new_constructor_variable;
 		new_constructor_variable.type= std::move( constructor_type );
@@ -313,6 +309,10 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 			}
 		}
 	}
+	SetupGeneratedFunctionAttributes( *constructor_variable->llvm_function );
+	constructor_variable->llvm_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
+	constructor_variable->llvm_function->addAttribute( 2u, llvm::Attribute::NonNull ); // and src is nonnull
+
 	constructor_variable->have_body= true;
 	constructor_variable->is_this_call= true;
 	constructor_variable->is_generated= true;
@@ -570,10 +570,6 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 				MangleFunction( the_class.members, op_name, op_type ),
 				module_.get() );
 
-		SetupGeneratedFunctionAttributes( *llvm_op_function );
-		llvm_op_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
-		llvm_op_function->addAttribute( 2u, llvm::Attribute::NonNull ); // and src is nonnull
-
 		// Add generated assignment operator
 		FunctionVariable new_op_variable;
 		new_op_variable.type= std::move( op_type );
@@ -599,6 +595,10 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 			}
 		}
 	}
+	SetupGeneratedFunctionAttributes( *operator_variable->llvm_function );
+	operator_variable->llvm_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
+	operator_variable->llvm_function->addAttribute( 2u, llvm::Attribute::NonNull ); // and src is nonnull
+
 	operator_variable->have_body= true;
 	operator_variable->is_this_call= true;
 	operator_variable->is_generated= true;
