@@ -1,4 +1,5 @@
 import "syntax_analyzer.uh"
+import "../tests_common/print.uh"
 
 namespace U1
 {
@@ -29,6 +30,11 @@ struct SourceGraph
 	bool have_errors= false;
 }
 
-fn LoadSourceGraph( IVfs &mut vfs, ust::string8& root_file_path ) : SourceGraph;
+fn LoadSourceGraph( IVfs &mut vfs, ust::string8& root_file_path, CppIoStreamRef errors_stream ) : SourceGraph;
+
+fn LoadSourceGraph( IVfs &mut vfs, ust::string8& root_file_path ) : SourceGraph
+{
+	unsafe{  return LoadSourceGraph( vfs, root_file_path, U1_GetCerr() );  }
+}
 
 } // namespace U1

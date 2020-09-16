@@ -1,5 +1,11 @@
 // If contents of this file changed, print.hpp must be changed too!
 
-fn nomangle U1_PrintStr( char8& string_null_termainated ) unsafe;
-fn nomangle U1_PrintInt( i64 i ) unsafe;
-fn nomangle U1_PrintEndl() unsafe;
+enum CppIoStreamRef : size_type { Null }
+
+fn nomangle U1_GetCout() unsafe : CppIoStreamRef;
+fn nomangle U1_GetCerr() unsafe : CppIoStreamRef;
+fn nomangle U1_GetNullStream() unsafe : CppIoStreamRef;
+
+fn nomangle U1_PrintStr( CppIoStreamRef stream, char8& string_null_termainated ) unsafe;
+fn nomangle U1_PrintInt( CppIoStreamRef stream, i64 i ) unsafe;
+fn nomangle U1_PrintEndl( CppIoStreamRef stream ) unsafe;
