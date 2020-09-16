@@ -2958,7 +2958,10 @@ std::vector<BlockElement> SyntaxAnalyzer::ParseBlockElements()
 
 Block SyntaxAnalyzer::ParseBlock()
 {
-	U_ASSERT( it_->type == Lexem::Type::BraceLeft );
+	if( it_->type != Lexem::Type::BraceLeft )
+	{
+		PushErrorMessage();
+	}
 
 	Block block( it_->file_pos );
 
@@ -4222,7 +4225,7 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 				}
 				else
 				{
-					if( result_element.kind == Macro::ResultElementKind::VariableElementWithMacroBlock )
+					if( element->kind == Macro::MatchElementKind::Optional || element->kind == Macro::MatchElementKind::Repeated )
 					{
 						for( const auto& sub_elements : element->sub_elements )
 						{
@@ -4242,7 +4245,7 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 					{
 						SyntaxErrorMessage msg;
 						msg.file_pos= result_element.lexem.file_pos;
-						msg.text= "Expected optional or loop.";
+						msg.text= "Expected optional or repated.";
 						error_messages_.push_back( std::move(msg) );
 						return result_lexems;
 					}
