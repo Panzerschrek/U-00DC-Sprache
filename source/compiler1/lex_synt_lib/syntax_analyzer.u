@@ -356,8 +356,13 @@ fn SyntaxAnalyzer::DoAnalyzis( mut this ) : SyntaxAnalysisResult
 	}
 
 	res.program_elements= ParseNamespaceBody( Lexem::Type::EndOfFile );
-
 	res.error_messages= take(error_messages_);
+
+	{
+		auto mut lock= macros_.lock_mut();
+		res.macros= take(lock.get_ref());
+	}
+
 	return move(res);
 }
 
@@ -3758,9 +3763,9 @@ fn SyntaxAnalyzer::PushMacroErrorMessage( mut this, FilePos& file_pos, ust::stri
 	error_messages_.push_back( move(error_message) );
 }
 
-fn SyntaxAnalysis( Lexems& lexems ) : SyntaxAnalysisResult
+fn SyntaxAnalysis( Lexems& lexems, MacrosByContextMap mut macros ) : SyntaxAnalysisResult
 {
-	var SyntaxAnalyzer mut analyzer( lexems, MacrosPtr( MacrosByContextMap() ) );
+	var SyntaxAnalyzer mut analyzer( lexems, MacrosPtr( move(macros) ) );
 	return analyzer.DoAnalyzis();
 }
 

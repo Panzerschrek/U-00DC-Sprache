@@ -44,7 +44,9 @@ fn LoadSourceGraph_r(
 		return ~0s;
 	}
 
+	// Reserve place for empty node
 	auto node_index= source_graph.nodes.size();
+	source_graph.nodes.push_back( SourceGraph::Node() );
 
 	auto mut lex_result= LexicalAnalysis( file_content_opt.get_ref().range() );
 	foreach( &error_message : lex_result.error_messages )
@@ -62,7 +64,66 @@ fn LoadSourceGraph_r(
 		lexem.file_pos.SetFileIndex( u32(node_index) );
 	}
 
-	auto mut synt_result= Synt::SyntaxAnalysis( lex_result.lexems );
+	var SourceGraph::Node mut node
+	{
+		.file_path_normalized= file_path_normalized,
+		.lexical_error_messages= take(lex_result.error_messages),
+	};
+
+	var Synt::ImportsList mut imports= Synt::ParseImports( lex_result.lexems );
+
+	// Recursively load imports.
+	// TODO - check for dependency loops.
+	foreach( &import_ : imports )
+	{
+		auto child= LoadSourceGraph_r( vfs, errors_stream, import_, file_path_normalized, source_graph );
+		if( child != ~0s )
+		{
+			node.children.push_back(child);
+		}
+	}
+
+	// Merge macroses
+	var Synt::MacrosByContextMap mut macros;
+	var bool mut macros_ok= true;
+	foreach( &child_index : node.children )
+	{
+		var SourceGraph::Node& src_node= source_graph.nodes[child_index];
+		foreach( &context_and_macro : src_node.synt_result.macros )
+		{
+			if( macros.find( context_and_macro.key() ).empty() )
+			{
+				macros.insert( context_and_macro.key(), context_and_macro.value() );
+				continue;
+			}
+
+			var Synt::MacroMap &mut dst_map= macros[context_and_macro.key()];
+			foreach( &macro : context_and_macro.value() )
+			{
+				if( dst_map.find( macro.key() ).empty() )
+				{
+					dst_map.insert( macro.key(), macro.value() );
+				}
+				else if( dst_map[ macro.key() ].get_ref().file_pos != macro.value().get_ref().file_pos )
+				{
+					var Synt::Macro& redefined_macro= macro.value().get_ref();
+					var ust::string8 mut str= src_node.file_path_normalized;
+					str+= ":";
+					str+= ust::to_string8( redefined_macro.file_pos.GetLine() );
+					str+= ":";
+					str+= ust::to_string8( redefined_macro.file_pos.GetColumn() );
+					str+= ": error: macro \"";
+					str+= redefined_macro.name;
+					str+= "\" redefinition\n\0";
+					unsafe{  U1_PrintStr( errors_stream, str.front() );  }
+					macros_ok= false;
+				}
+			}
+		}
+	}
+	source_graph.have_errors|= !macros_ok;
+
+	auto mut synt_result= Synt::SyntaxAnalysis( lex_result.lexems, move(macros) );
 	foreach( &error_message : synt_result.error_messages )
 	{
 		var ust::string8 mut str= file_path_normalized;
@@ -76,28 +137,7 @@ fn LoadSourceGraph_r(
 		unsafe{  U1_PrintStr( errors_stream, str.front() );  }
 	}
 	source_graph.have_errors|= !synt_result.error_messages.empty();
-
-	auto imports= synt_result.imports_list;
-
-	var SourceGraph::Node mut node
-	{
-		.file_path_normalized= file_path_normalized,
-		.lexical_error_messages= take(lex_result.error_messages),
-		.synt_result= move(synt_result),
-	};
-
-	source_graph.nodes.push_back( SourceGraph::Node() ); // Reserve place for empty node
-
-	// Recursively load imports.
-	// TODO - check for dependency loops.
-	foreach( &import_ : imports )
-	{
-		auto child= LoadSourceGraph_r( vfs, errors_stream, import_, file_path_normalized, source_graph );
-		if( child != ~0s )
-		{
-			node.children.push_back(child);
-		}
-	}
+	node.synt_result= move(synt_result);
 
 	source_graph.nodes[node_index]= move(node);
 	return node_index;

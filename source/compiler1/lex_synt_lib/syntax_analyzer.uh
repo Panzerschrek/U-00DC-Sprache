@@ -22,9 +22,10 @@ struct SyntaxAnalysisResult
 	ImportsList imports_list;
 	ProgramElements program_elements;
 	SyntaxErrorMessages error_messages;
+	MacrosByContextMap macros;
 }
 
-fn SyntaxAnalysis( Lexems& lexems ) : SyntaxAnalysisResult;
+fn SyntaxAnalysis( Lexems& lexems, MacrosByContextMap mut macros ) : SyntaxAnalysisResult;
 fn ParseImports( Lexems& lexems ) : ImportsList;
 
 } // namespace Synt
