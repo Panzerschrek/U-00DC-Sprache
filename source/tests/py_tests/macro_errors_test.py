@@ -198,3 +198,29 @@ def MacroErrorsTest_MacroVariableExpansionMismatch_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_syntax_errors(c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].text.find( "Expected optional or repated" ) != -1 )
+
+
+def MacroErrorsTest_SyntaxErrorInExpandedResult_Test0():
+	c_program_text= """
+		?macro <? SomeMacro:block  ?> -> <? {WTF} ?>
+		fn Foo()
+		{
+			SomeMacro
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_syntax_errors(c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].text.find( "unexpected lexem" ) != -1 )
+	assert( errors_list[0].text.find( "}" ) != -1 )
+
+
+def MacroErrorsTest_SyntaxErrorInExpandedResult_Test1():
+	c_program_text= """
+		?macro <? SomeMacro:namespace  ?> -> <? << ?>
+		SomeMacro
+		fn Foo();
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_syntax_errors(c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].text.find( "unexpected lexem" ) != -1 )
+	assert( errors_list[0].text.find( "<<" ) != -1 )

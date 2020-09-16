@@ -298,23 +298,27 @@ private:
 	{
 		var Lexems lexems_expanded= ExpandMacroImpl( macro );
 		var SyntaxAnalyzer mut syntax_analyzer( lexems_expanded, macros_ );
+		var T mut result;
 		static_if( ust::is_same_type</T, Expression/>() )
 		{
-			return syntax_analyzer.ParseExpression();
+			result = syntax_analyzer.ParseExpression();
 		}
 		else if( ust::is_same_type</T, BlockElements/>() )
 		{
-			return syntax_analyzer.ParseBlockElements();
+			result = syntax_analyzer.ParseBlockElements();
 		}
 		else if( ust::is_same_type</T, ClassElements/>() )
 		{
-			return syntax_analyzer.ParseClassBodyElements();
+			result = syntax_analyzer.ParseClassBodyElements();
 		}
 		else if( ust::is_same_type</T, NamespaceElements/>() )
 		{
-			return syntax_analyzer.ParseNamespaceBody( Lexem::Type::EndOfFile );
+			result = syntax_analyzer.ParseNamespaceBody( Lexem::Type::EndOfFile );
 		}
 		else{ static_assert(false); }
+
+		VectorAppend( error_messages_, syntax_analyzer.error_messages_ );
+		return move(result);
 	}
 
 	fn ExpandMacroImpl( mut this, Macro& macro ) : Lexems;
@@ -382,13 +386,9 @@ fn SyntaxAnalyzer::ParseImports( mut this ) : ImportsList
 fn SyntaxAnalyzer::ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : NamespaceElements
 {
 	var NamespaceElements mut namespace_elements;
-	while( NotEndOfFile() )
+	while( NotEndOfFile() && it_.front().lexem_type != end_lexem  )
 	{
-		if( it_.front().lexem_type == end_lexem )
-		{
-			break;
-		}
-		else if( IsKeyword( it_.front(), Keyword::fn_ ) || IsKeyword( it_.front(), Keyword::op_ ) )
+		if( IsKeyword( it_.front(), Keyword::fn_ ) || IsKeyword( it_.front(), Keyword::op_ ) )
 		{
 			namespace_elements.push_back( ust::shared_ptr_final</Function/>( ParseFunction() ) );
 		}
