@@ -66,6 +66,30 @@ fn ParseIdentifier( Iterator &mut it ) : Lexem
 	return result;
 }
 
+fn ParseMacroUniqueIdentifier( Iterator &mut it ) : Lexem
+{
+	var Lexem mut result;
+	result.lexem_type= Lexem::Type::MacroUniqueIdentifier;
+
+	it.drop_front(); // Skip '?'
+	it.drop_front(); // Skip '?'
+
+	while( !it.empty() )
+	{
+		auto mut it_next= it;
+		auto c = ReadNextUTF8Char( it_next );
+		if( !IsIdentifierChar( c ) )
+		{
+			break;
+		}
+
+		PushCharToUTF8String( c, result.text );
+		it= it_next;
+	}
+
+	return result;
+}
+
 fn ParseMacroIdentifier( Iterator &mut it ) : Lexem
 {
 	var Lexem mut result;
@@ -528,6 +552,9 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 
 		auto c= GetUTF8FirstChar(it);
 
+		var char8 mut next_c= zero_init;
+		if( it.size() > 1s ) { next_c= it[1s]; }
+
 		var Lexem mut lexem;
 
 		// single line comment
@@ -557,7 +584,11 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 		{
 			lexem= ParseIdentifier(it);
 		}
-		else if( c == "?"c32 && !( it.size() > 1s && it[1s] == ">"c8 ) )
+		else if( c == "?"c32 && next_c == "?"c8 )
+		{
+			lexem= ParseMacroUniqueIdentifier(it);
+		}
+		else if( c == "?"c32 && next_c != ">"c8 )
 		{
 			lexem= ParseMacroIdentifier(it);
 		}

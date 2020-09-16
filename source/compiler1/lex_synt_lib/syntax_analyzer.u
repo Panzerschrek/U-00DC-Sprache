@@ -1,4 +1,5 @@
 import "/shared/shared_ptr_final_nullable.u"
+import "/string_conversions.u"
 import "keywords.uh"
 import "syntax_analyzer.uh"
 
@@ -323,7 +324,16 @@ private:
 
 	fn ExpandMacroImpl( mut this, Macro& macro ) : Lexems;
 	fn MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>& match_elements ) : ust::shared_ptr_final_nullable</MacroVariablesMap/>;
-	fn ExpandMacroBlock( mut this, ust::vector</Macro::ResultElement/>& result_elements, MacroVariablesMapsStack &mut macro_variables_maps_stack, FilePos& expansion_file_pos ) : Lexems;
+
+	type UniqueMacroIdentifiersMap= ust::unordered_map</ ust::string8, ust::string8 />;
+
+	fn ExpandMacroBlock(
+		mut this,
+		ust::vector</Macro::ResultElement/>& result_elements,
+		MacroVariablesMapsStack &mut macro_variables_maps_stack,
+		UniqueMacroIdentifiersMap &mut unique_macro_indentifiers_map,
+		FilePos& expansion_file_pos ) : Lexems;
+
 	fn FetchMacroVariable( MacroVariablesMapsStack& macro_variables_maps_stack, ust::string8& variable_name ) : ust::optional</ParsedMacroElement/>;
 
 	// Utilities.
@@ -3484,7 +3494,10 @@ fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro ) : Lexems
 	var MacroVariablesMapsStack mut macro_variables_maps_stack;
 	macro_variables_maps_stack.push_back( ust::to_non_nullable(macro_variables_map_opt) );
 
-	auto mut lexems= ExpandMacroBlock( macro.result_template_elements, macro_variables_maps_stack, expansion_file_pos );
+	var UniqueMacroIdentifiersMap mut unique_macro_indentifiers_map;
+
+	auto mut lexems= ExpandMacroBlock( macro.result_template_elements, macro_variables_maps_stack, unique_macro_indentifiers_map, expansion_file_pos );
+
 	var Lexem end_of_file_lexem{ .lexem_type= Lexem::Type::EndOfFile };
 	lexems.push_back( end_of_file_lexem );
 	lexems.push_back( end_of_file_lexem );
@@ -3651,14 +3664,41 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>
 	return ust::shared_ptr_final_nullable</MacroVariablesMap/>( move(macro_variables_map) );
 }
 
-fn SyntaxAnalyzer::ExpandMacroBlock( mut this, ust::vector</Macro::ResultElement/>& result_elements, MacroVariablesMapsStack &mut macro_variables_maps_stack, FilePos& expansion_file_pos ) : Lexems
+fn SyntaxAnalyzer::ExpandMacroBlock(
+		mut this,
+		ust::vector</Macro::ResultElement/>& result_elements,
+		MacroVariablesMapsStack &mut macro_variables_maps_stack,
+		UniqueMacroIdentifiersMap &mut unique_macro_indentifiers_map,
+		FilePos& expansion_file_pos ) : Lexems
 {
 	var Lexems mut lexems_expanded;
 	foreach( &result_element : result_elements )
 	{
-			 if( result_element.kind == Macro::ResultElementKind::Lexem )
+		if( result_element.kind == Macro::ResultElementKind::Lexem )
 		{
-			lexems_expanded.push_back( result_element.lexem );
+			if( result_element.lexem.lexem_type == Lexem::Type::MacroUniqueIdentifier )
+			{
+				if( unique_macro_indentifiers_map.find( result_element.lexem.text ).empty() )
+				{
+					// TODO - maybe also add something to distinct macro identifiers from different macro expansions?
+					var ust::string8 mut name= "_macro_ident_";
+					name+= result_element.lexem.text;
+					name+= "_";
+					name+= ust::to_string8(unique_macro_indentifiers_map.size());
+					unique_macro_indentifiers_map.insert( result_element.lexem.text, move(name) );
+				}
+
+				var Lexem mut result_lexem
+				{
+					.lexem_type= Lexem::Type::Identifier,
+					.text= unique_macro_indentifiers_map[ result_element.lexem.text ],
+				};
+				lexems_expanded.push_back( move(result_lexem) );
+			}
+			else
+			{
+				lexems_expanded.push_back( result_element.lexem );
+			}
 		}
 		else if( result_element.kind == Macro::ResultElementKind::VariableElement )
 		{
@@ -3690,7 +3730,7 @@ fn SyntaxAnalyzer::ExpandMacroBlock( mut this, ust::vector</Macro::ResultElement
 				{
 					macro_variables_maps_stack.push_back( variable_element );
 
-					auto mut internal_lexems_expanded= ExpandMacroBlock( result_element.sub_elements.get_ref(), macro_variables_maps_stack, expansion_file_pos );
+					auto mut internal_lexems_expanded= ExpandMacroBlock( result_element.sub_elements.get_ref(), macro_variables_maps_stack, unique_macro_indentifiers_map, expansion_file_pos );
 					VectorAppend( lexems_expanded, move(internal_lexems_expanded) );
 
 					macro_variables_maps_stack.drop_back();
