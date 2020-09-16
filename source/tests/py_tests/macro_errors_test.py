@@ -11,6 +11,24 @@ def MacroErrorsTest_MacroShouldStartWithName():
 	assert( errors_list[0].text.find( "&" ) != -1 )
 
 
+def MacroErrorsTest_MacroRedefinition_Test0():
+	c_program_text= """
+		?macro <? ABC:expr ?> -> <? ?>
+		?macro <? ABC:expr ?> -> <? ?>
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_syntax_errors(c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].text.find( "redefinition" ) != -1 )
+
+
+def MacroErrorsTest_MacroRedefinition_Test1():
+	c_program_text= """
+		?macro <? ABC:expr ?> -> <? ?>
+		?macro <? ABC:namespace ?> -> <? ?>   // Ok, no redefinition - different contexts
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def MacroErrorsTest_MacroBracketLeftIsForbidden_Test0():
 	c_program_text= """
 		?macro <? SomeMacro:expr <? ?> -> <? ?>  // <? inside macro match block
