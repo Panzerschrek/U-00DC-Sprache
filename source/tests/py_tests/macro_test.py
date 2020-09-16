@@ -269,6 +269,17 @@ def MacroOptional_Test2():
 	tests_lib.build_program( c_program_text )
 
 
+def MacroOptional_Test3():
+	c_program_text= """
+	// Expand optional as is.
+	?macro <? DO:expr ( ?a:expr ?o:opt<? * ?b:expr ?> ) ?>  ->  <? (?a) ?o ?>   // All given lexems will be expanded in ?o
+
+	static_assert( DO( 512 ) == 512 );
+	static_assert( DO( 47 * ( 99 / 5 ) ) == 47 * ( 99 / 5 ) );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def MacroRepeated_Test0():
 	c_program_text= """
 	?macro <? SUM:expr ( ?sequence:rep<? ?e:expr ?> ) ?>  ->  <?  ?sequence<? (?e) + ?> 0  ?>
@@ -318,6 +329,23 @@ def MacroRepeated_Test3():
 	static_assert( SUM( -999854 ) == -999854 );
 	static_assert( SUM( 595 AND 1123 ) == 595 + 1123 );
 	static_assert( SUM( 11 AND -4 AND 854 AND 77 ) == 11 -4 + 854 + 77 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MacroRepeated_Test4():
+	c_program_text= """
+	// Expand sequence as is.
+	?macro <? CALL:expr ( ?first_arg:expr ?seq:rep<?, ?b:expr ?> ) ?>  ->  <? Mul( ?first_arg ?seq ) ?>   // All given lexems will be expanded in ?seq
+
+	fn constexpr Mul( i32 x ) : i32 { return x; }
+	fn constexpr Mul( i32 x, i32 y ) : i32 { return x * y; }
+	fn constexpr Mul( i32 x, i32 y, i32 z ) : i32 { return x * y * z; }
+	fn constexpr Mul( i32 x, i32 y, i32 z, i32 w ) : i32 { return x * y * z * w; }
+
+	static_assert( CALL( 675 ) == 675 );
+	static_assert( CALL( 2, 5 ) == 2 * 5 );
+	static_assert( CALL( 2, (5/3), 3, (7-0) ) == 2 * (5/3) * 3 * (7-0) );
 	"""
 	tests_lib.build_program( c_program_text )
 

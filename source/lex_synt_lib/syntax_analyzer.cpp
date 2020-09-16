@@ -3966,11 +3966,14 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 	{
 		const Macro::MatchElement& match_element= match_elements[i];
 
+		ParsedMacroElement element;
+		element.kind= match_element.kind;
+		element.begin= it_;
+
 		switch( match_element.kind )
 		{
 		case Macro::MatchElementKind::Lexem:
-			if( it_->type == match_element.lexem.type &&
-				it_->text == match_element.lexem.text )
+			if( it_->type == match_element.lexem.type && it_->text == match_element.lexem.text )
 				NextLexem();
 			else
 			{
@@ -3981,14 +3984,7 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 
 		case Macro::MatchElementKind::Identifier:
 			if( it_->type == Lexem::Type::Identifier )
-			{
-				ParsedMacroElement element;
-				element.begin= it_;
 				NextLexem();
-				element.end= it_;
-				element.kind= match_element.kind;
-				out_elements[match_element.name]= std::move(element);
-			}
 			else
 			{
 				push_macro_error();
@@ -3997,48 +3993,27 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 			break;
 
 		case Macro::MatchElementKind::Typename:
-			{
-				ParsedMacroElement element;
-				element.begin= it_;
-				ParseTypeName();
-				element.end= it_;
-				element.kind= match_element.kind;
-				out_elements[match_element.name]= std::move(element);
-			}
+			ParseTypeName();
 			break;
 
 		case Macro::MatchElementKind::Expression:
 			{
-				ParsedMacroElement element;
-				element.begin= it_;
 				const Expression expression= ParseExpression();
 				if( std::get_if<EmptyVariant>( &expression ) != nullptr )
 				{
 					push_macro_error();
 					return false;
 				}
-				element.end= it_;
-				element.kind= match_element.kind;
-				out_elements[match_element.name]= std::move(element);
 			}
 			break;
 
 		case Macro::MatchElementKind::Block:
-			{
-				ParsedMacroElement element;
-				element.begin= it_;
-				ParseBlock();
-				element.end= it_;
-				element.kind= match_element.kind;
-				out_elements[match_element.name]= std::move(element);
-			}
+			element.kind= match_element.kind;
+			ParseBlock();
 			break;
 
 		case Macro::MatchElementKind::Optional:
 			{
-				ParsedMacroElement element;
-				element.kind= match_element.kind;
-
 				if( i + 1u < match_elements.size() && match_element.block_check_lexem_kind == Macro::BlockCheckLexemKind::LexemAfterBlockEnd )
 				{
 					const Lexem& terminator_lexem= match_elements[i+1u].lexem;
@@ -4068,16 +4043,11 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 					else {} // Optional is empty.
 				}
 				else U_ASSERT(false);
-
-				out_elements[match_element.name]= std::move(element);
 			}
 			break;
 
 		case Macro::MatchElementKind::Repeated:
 			{
-				ParsedMacroElement element;
-				element.kind= match_element.kind;
-
 				if( i + 1u < match_elements.size() && match_element.block_check_lexem_kind == Macro::BlockCheckLexemKind::LexemAfterBlockEnd )
 				{
 					const Lexem& terminator_lexem= match_elements[i+1u].lexem;
@@ -4144,11 +4114,12 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 					}
 				}
 				else U_ASSERT(false);
-
-				out_elements[match_element.name]= std::move(element);
 			}
 			break;
-		};
+		}
+
+		element.end= it_;
+		out_elements[match_element.name]= std::move(element);
 	}
 
 	return true;
