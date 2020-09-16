@@ -1695,6 +1695,11 @@ fn SyntaxAnalyzer::ParseVariableInitializer( mut this ) : Initializer
 
 fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 {
+	if( it_.front().lexem_type != Lexem::Type::BraceLeft )
+	{
+		PushErrorMessage();
+	}
+
 	var Block mut block{ .file_pos= it_.front().file_pos };
 
 	NextLexem(); // {
@@ -3692,6 +3697,10 @@ fn SyntaxAnalyzer::ExpandMacroBlock( mut this, ust::vector</Macro::ResultElement
 						lexems_expanded.push_back( result_element.lexem );
 					}
 				}
+			}
+			else
+			{
+				PushMacroErrorMessage( expansion_file_pos, "Expected optional or repated" );
 			}
 		}
 		else { halt; }
