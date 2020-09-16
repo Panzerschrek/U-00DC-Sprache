@@ -100,7 +100,7 @@ import "mangling.uh"
 		var ArrayType mut array_type
 		{
 			.element_type= FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ ),
-			.element_count= element_name.size(),
+			.element_count= u64(element_name.size()),
 		};
 		unsafe{  array_type.llvm_type= LLVMArrayType( array_type.element_type.GetLLVMType(), u32(array_type.element_count) );  }
 

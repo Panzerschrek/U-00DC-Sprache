@@ -652,7 +652,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			}
 
 			// TODO - check also signed types
-			var u64 mut type_index= ~0s;
+			var u64 mut type_index= ~0u64;
 			unsafe{  type_index= LLVMConstIntGetZExtValue( index.constexpr_value );  }
 			if( type_index >= u64(variable_tuple_type.element_types.size()) )
 			{
@@ -665,7 +665,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				.t= variable_tuple_type.element_types[type_index],
 				.location= Variable::Location::Pointer,
 				.value_type= variable.value_type,
-				.llvm_value= CreateTupleElementGEP( variable.llvm_value, type_index, function_context )
+				.llvm_value= CreateTupleElementGEP( variable.llvm_value, size_type(type_index), function_context )
 			};
 
 			if( variable.constexpr_value != LLVMValueRef::Null )
