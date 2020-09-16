@@ -3201,7 +3201,8 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 	var ust::unordered_map</ ust::string8, i32 /> mut elements_set; // TODO - use unordered_set
 	while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::MacroBracketRight )
 	{
-		if( it_.front().lexem_type == Lexem::Type::MacroBracketLeft )
+		if( it_.front().lexem_type == Lexem::Type::MacroBracketLeft ||
+			it_.front().lexem_type == Lexem::Type::MacroUniqueIdentifier )
 		{
 			PushErrorMessage();
 			break;
@@ -3272,7 +3273,8 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 
 					if( it_.front().lexem_type == Lexem::Type::MacroBracketLeft ||
 						it_.front().lexem_type == Lexem::Type::MacroBracketRight ||
-						it_.front().lexem_type == Lexem::Type::MacroIdentifier )
+						it_.front().lexem_type == Lexem::Type::MacroIdentifier ||
+						it_.front().lexem_type == Lexem::Type::MacroUniqueIdentifier )
 					{
 						PushErrorMessage();
 					}
@@ -3425,7 +3427,8 @@ fn SyntaxAnalyzer::ParseMacroResultBlock( mut this ) : ust::vector</Macro::Resul
 
 					if( it_.front().lexem_type == Lexem::Type::MacroBracketLeft ||
 						it_.front().lexem_type == Lexem::Type::MacroBracketRight ||
-						it_.front().lexem_type == Lexem::Type::MacroIdentifier )
+						it_.front().lexem_type == Lexem::Type::MacroIdentifier ||
+						it_.front().lexem_type == Lexem::Type::MacroUniqueIdentifier )
 					{
 						PushErrorMessage();
 					}

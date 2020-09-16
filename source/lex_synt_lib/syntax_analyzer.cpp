@@ -526,7 +526,7 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 	{
 		if( it_->type == Lexem::Type::MacroBracketRight )
 			break;
-		else if( it_->type == Lexem::Type::MacroBracketLeft )
+		else if( it_->type == Lexem::Type::MacroBracketLeft || it_->type == Lexem::Type::MacroUniqueIdentifier )
 		{
 			PushErrorMessage();
 			return result;
@@ -609,7 +609,10 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 			if( element.kind == Macro::MatchElementKind::Repeated && it_->type == Lexem::Type::MacroBracketLeft )
 			{
 				NextLexem();
-				if( it_->type == Lexem::Type::MacroIdentifier || it_->type == Lexem::Type::MacroBracketLeft || it_->type == Lexem::Type::MacroBracketRight )
+				if( it_->type == Lexem::Type::MacroIdentifier ||
+					it_->type == Lexem::Type::MacroUniqueIdentifier ||
+					it_->type == Lexem::Type::MacroBracketLeft ||
+					it_->type == Lexem::Type::MacroBracketRight )
 				{
 					PushErrorMessage();
 					return result;
@@ -738,7 +741,10 @@ std::vector<Macro::ResultElement> SyntaxAnalyzer::ParseMacroResultBlock()
 				if( it_->type == Lexem::Type::MacroBracketLeft )
 				{
 					NextLexem();
-					if( it_->type == Lexem::Type::MacroIdentifier || it_->type == Lexem::Type::MacroBracketLeft || it_->type == Lexem::Type::MacroBracketRight )
+					if( it_->type == Lexem::Type::MacroIdentifier ||
+						it_->type == Lexem::Type::MacroUniqueIdentifier ||
+						it_->type == Lexem::Type::MacroBracketLeft ||
+						it_->type == Lexem::Type::MacroBracketRight )
 					{
 						PushErrorMessage();
 						return result;

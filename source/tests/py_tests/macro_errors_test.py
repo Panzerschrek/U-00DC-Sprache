@@ -242,3 +242,33 @@ def MacroErrorsTest_SyntaxErrorInExpandedResult_Test1():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].text.find( "unexpected lexem" ) != -1 )
 	assert( errors_list[0].text.find( "<<" ) != -1 )
+
+
+def MacroErrorsTest_MacroUniqueIdentifierForbiddentInMatchBlock_Test0():
+	c_program_text= """
+		?macro <? SomeMacro:expr ??wtf ?> -> <?  ?>   // Macro unique identifiers as regular match lexem are forbidden
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_syntax_errors(c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].text.find( "unexpected lexem" ) != -1 )
+	assert( errors_list[0].text.find( "wtf" ) != -1 )
+
+
+def MacroErrorsTest_MacroUniqueIdentifierForbiddentInMatchBlock_Test1():
+	c_program_text= """
+		?macro <? SomeMacro:expr ?x:rep<? A ?><? ??lol ?> ?> -> <?  ?>   // Macro unique identifiers as separators in loops are forbidden
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_syntax_errors(c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].text.find( "unexpected lexem" ) != -1 )
+	assert( errors_list[0].text.find( "lol" ) != -1 )
+
+
+def MacroErrorsTest_MacroUniqueIdentifierForbiddentInResultBlockSequenceSeparator_Test0():
+	c_program_text= """
+		?macro <? SomeMacro:expr ?x:rep<? A ?> ?> -> <? ?x<??><? ??nooo ?> ?>   // Macro unique identifiers as separators in loops are forbidden
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_syntax_errors(c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].text.find( "unexpected lexem" ) != -1 )
+	assert( errors_list[0].text.find( "nooo" ) != -1 )
