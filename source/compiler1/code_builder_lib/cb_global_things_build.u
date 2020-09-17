@@ -218,9 +218,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		auto type_alias_ptr= member.value().Get</ TypeAlias />();
 		if( !type_alias_ptr.empty() )
 		{
-			auto mut lock= type_alias_ptr.lock_mut();
-			auto &mut type_alias= lock.get_ref();
-			BuildTypeAlias( names_scope_ptr, type_alias );
+			BuildTypeAlias( names_scope_ptr, ust::to_non_nullable(type_alias_ptr) );
 		}
 		// TODO - maybe build here also inner classes, enums, global variables?
 	}
@@ -788,12 +786,15 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 	}
 }
 
-fn CodeBuilder::BuildTypeAlias( mut this, NamesScopePtr& names_scope, TypeAlias& mut type_alias )
+fn CodeBuilder::BuildTypeAlias( mut this, NamesScopePtr& names_scope, ust::shared_ptr_mut</TypeAlias/>& type_alias_ptr )
 {
-	if( !type_alias.t.empty() )
+	if( !type_alias_ptr.lock_imut().get_ref().t.empty() )
 	{
 		return;
 	}
+
+	auto mut lock= type_alias_ptr.lock_mut();
+	var TypeAlias &mut type_alias= lock.get_ref();
 
 	auto syntax_element_ptr= type_alias.syntax_element;
 
@@ -801,12 +802,14 @@ fn CodeBuilder::BuildTypeAlias( mut this, NamesScopePtr& names_scope, TypeAlias&
 	type_alias.t.reset( PrepareType( names_scope, function_context, syntax_element_ptr.get_ref().type_name ) );
 }
 
-fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope, GlobalVariable& mut global_variable )
+fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope, ust::shared_ptr_mut</GlobalVariable/>& global_variable_ptr )
 {
-	if( !global_variable.variable.empty() )
+	if( !global_variable_ptr.lock_imut().get_ref().variable.empty() )
 	{
 		return;
 	}
+	auto mut lock= global_variable_ptr.lock_mut();
+	var GlobalVariable &mut global_variable= lock.get_ref();
 
 	auto variables_declaration_ptr= global_variable.syntax_element;
 	auto& variables_declaration= variables_declaration_ptr.get_ref();
@@ -912,12 +915,14 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope, Globa
 	// TODO - maybe clear here dummy global function?
 }
 
-fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope, GlobalAutoVariable& mut global_auto_variable )
+fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope, ust::shared_ptr_mut</GlobalAutoVariable/>& global_auto_variable_ptr )
 {
-	if( !global_auto_variable.variable.empty() )
+	if( !global_auto_variable_ptr.lock_imut().get_ref().variable.empty() )
 	{
 		return;
 	}
+	auto mut lock= global_auto_variable_ptr.lock_mut();
+	var GlobalAutoVariable &mut global_auto_variable= lock.get_ref();
 
 	auto auto_variable_declaration_ptr= global_auto_variable.syntax_element;
 	auto& auto_variable_declaration= auto_variable_declaration_ptr.get_ref();

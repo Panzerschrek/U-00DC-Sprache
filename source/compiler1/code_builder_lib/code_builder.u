@@ -412,11 +412,9 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	auto type_alias_ptr= names_scope_value.Get</TypeAlias/>();
 	if( !type_alias_ptr.empty() )
 	{
-		auto mut lock= type_alias_ptr.lock_mut();
-		auto &mut type_alias= lock.get_ref();
-		BuildTypeAlias( names_scope, type_alias );
+		BuildTypeAlias( names_scope, ust::to_non_nullable(type_alias_ptr) );
 
-		if_var( &t : type_alias.t )
+		if_var( &t : type_alias_ptr.lock_imut().get_ref().t )
 		{
 			return t;
 		}
@@ -425,11 +423,9 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	auto global_variable_ptr= names_scope_value.Get</GlobalVariable/>();
 	if( !global_variable_ptr.empty() )
 	{
-		auto mut lock= global_variable_ptr.lock_mut();
-		auto &mut global_variable= lock.get_ref();
-		BuildGlobalVariable( names_scope, global_variable );
+		BuildGlobalVariable( names_scope, ust::to_non_nullable(global_variable_ptr) );
 
-		if_var( &v : global_variable.variable )
+		if_var( &v : global_variable_ptr.lock_imut().get_ref().variable )
 		{
 			var Variable mut res
 			{
@@ -446,11 +442,9 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	auto global_auto_variable_ptr= names_scope_value.Get</GlobalAutoVariable/>();
 	if( !global_auto_variable_ptr.empty() )
 	{
-		auto mut lock= global_auto_variable_ptr.lock_mut();
-		auto &mut global_auto_variable= lock.get_ref();
-		BuildGlobalAutoVariable( names_scope, global_auto_variable );
+		BuildGlobalAutoVariable( names_scope, ust::to_non_nullable(global_auto_variable_ptr) );
 
-		if_var( &v : global_auto_variable.variable )
+		if_var( &v : global_auto_variable_ptr.lock_imut().get_ref().variable )
 		{
 			var Variable mut res
 			{
@@ -585,12 +579,9 @@ fn CodeBuilder::ResolveValue(
 			}
 			if( !type_alias.empty() )
 			{
-				{
-					auto mut lock= type_alias.lock_mut();
-					BuildTypeAlias( names_scope, lock.get_ref() );
-				}
-				auto lock= type_alias.lock_imut();
-				if_var( &t : lock.get_ref().t )
+				BuildTypeAlias( names_scope, ust::to_non_nullable(type_alias) );
+
+				if_var( &t : type_alias.lock_imut().get_ref().t )
 				{
 					if_var( &class_type : t.GetClassType() )
 					{
