@@ -769,14 +769,13 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 
 	GLOBALS_LOOP_DETECT( enum_type )
 
-	auto mut lock= enum_type.lock_mut();
-	var Enum &mut enum_= lock.get_ref();
+	var NamesScopePtr enum_inernal_names_scope= enum_type.lock_imut().get_ref().names_scope;
 
-	auto enum_declaration_ptr= enum_.syntax_element;
+	auto enum_declaration_ptr= enum_type.lock_imut().get_ref().syntax_element;
 	auto& enum_declaration= enum_declaration_ptr.get_ref();
 
 	// Default underlaying type is 32bit. TODO - maybe do it platform-dependent?
-	enum_.underlaying_type= FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ );
+	var FundamentalType mut underlaying_type( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ );
 	if( !enum_declaration.underlaying_type.name.empty() )
 	{
 		var FunctionContext mut function_context= CreateGlobalFunctionContext();
@@ -790,10 +789,11 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 		}
 		else
 		{
-			enum_.underlaying_type= fundamental_type.get_ref();
+			underlaying_type= fundamental_type.get_ref();
 		}
 	}
 
+	var ust::unordered_map</ ust::string8, Enum::Element /> mut enum_elements;
 	foreach( &element : enum_declaration.elements )
 	{
 		if( IsKeyword( element.name ) )
@@ -801,38 +801,44 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 			REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, element.file_pos )
 		}
 
-		if( !enum_.elements.find( element.name ).empty() )
+		if( !enum_elements.find( element.name ).empty() )
 		{
 			REPORT_ERROR( Redefinition,  names_scope_ptr, element.file_pos, element.name )
 		}
 
 		var Enum::Element mut out_element;
 
-		auto name_mangled= MangleGlobalVariable( enum_.names_scope.lock_imut().get_ref(), element.name );
+		auto name_mangled= MangleGlobalVariable( enum_inernal_names_scope.lock_imut().get_ref(), element.name );
 		unsafe
 		{
-			out_element.constexpr_value= LLVMConstInt( enum_.underlaying_type.llvm_type, u64(enum_.elements.size()), LLVMBool::False );
-			out_element.llvm_value= LLVMAddGlobal( module_, enum_.underlaying_type.llvm_type, name_mangled.front() );
+			out_element.constexpr_value= LLVMConstInt( underlaying_type.llvm_type, u64(enum_elements.size()), LLVMBool::False );
+			out_element.llvm_value= LLVMAddGlobal( module_, underlaying_type.llvm_type, name_mangled.front() );
 			LLVMSetLinkage( out_element.llvm_value, LLVMLinkage::Internal );
 			LLVMSetGlobalConstant( out_element.llvm_value, LLVMBool::True );
 			LLVMSetInitializer( out_element.llvm_value, out_element.constexpr_value );
 		}
 
-		enum_.elements.insert( element.name, move(out_element) );
+		enum_elements.insert( element.name, move(out_element) );
 	}
 
-	var u64 bit_width(enum_.underlaying_type.GetSize() * 8s);
+	var u64 bit_width(underlaying_type.GetSize() * 8s);
 	if( bit_width < 32u64 ) // Assume that 64 bits are enough for all enums.
 	{
 		auto max_value_plus_one=
-			1u64 << ( bit_width - select( IsSignedInteger( enum_.underlaying_type.fundamental_type ) ? 1u64 : 0u64 ) );
+			1u64 << ( bit_width - select( IsSignedInteger( underlaying_type.fundamental_type ) ? 1u64 : 0u64 ) );
 		auto max_value= max_value_plus_one - 1u64;
 
-		if( u64(enum_.elements.size()) > max_value )
+		if( u64(enum_elements.size()) > max_value )
 		{
-			REPORT_ERROR( UnderlayingTypeForEnumIsTooSmall, names_scope_ptr, enum_declaration.file_pos, enum_.elements.size() - 1s, max_value )
+			REPORT_ERROR( UnderlayingTypeForEnumIsTooSmall, names_scope_ptr, enum_declaration.file_pos, enum_elements.size() - 1s, max_value )
 		}
 	}
+
+	// Finally, update enum itself.
+	auto mut lock= enum_type.lock_mut();
+	var Enum &mut enum_= lock.get_ref();
+	enum_.underlaying_type= move(underlaying_type);
+	enum_.elements= move(enum_elements);
 }
 
 fn CodeBuilder::BuildTypeAlias( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</TypeAlias/>& type_alias_ptr )
