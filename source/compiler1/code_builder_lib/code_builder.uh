@@ -66,7 +66,7 @@ public:
 	fn BuildProgram( mut this, SourceGraph& source_graph ) : BuildResult;
 
 private:
-	fn BuildSourceGraphNode( mut this, ErrorsContainerPtr& errors_container, SourceGraph& source_graph, size_type node_index );
+	fn BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_type node_index );
 
 	fn NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeValue& names_scope_value, FilePos& file_pos ) : Value;
 	fn ResolveValue( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& complex_name ) : Value;
@@ -143,6 +143,8 @@ private:
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalStaticAssertsSet/>& global_static_asserts_set_ptr );
 
 	// Global things build.
+
+	fn DetectGlobalsLoop( this, NamesScopeValue& global_thing ) : bool;
 
 	fn BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/> functions_set, bool build_body );
 	fn BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypePtr& class_type );
@@ -704,6 +706,8 @@ private:
 	LLVMModuleRef module_= LLVMModuleRef::Null;
 
 	LLVMValueRef global_llvm_function_= LLVMValueRef::Null; // For global function context
+
+	ErrorsContainerPtr root_errors_container_;
 
 	struct SourceGraphNodeBuildResult
 	{

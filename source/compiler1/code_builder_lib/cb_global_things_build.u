@@ -6,19 +6,7 @@ import "code_builder.uh"
 ?macro <? GLOBALS_LOOP_DETECT:block ?value : expr ?>
 ->
 <?
-	{
-		auto lock= global_things_stack_ptr_.lock_imut();
-		var GlobalThingsStack& stack= lock.get_ref();
-		for( auto mut i= 0s; i < stack.size(); ++i )
-		{
-			if( stack[i] == ?value )
-			{
-				// TODO - add description
-				REPORT_ERROR( GlobalsLoopDetected, names_scope_ptr, GetValueFilePos(?value), ust::string8("TODO") )
-				return;
-			}
-		}
-	}
+	if( DetectGlobalsLoop( ?value ) ){ return; }
 	var GlobalThingHolder ??holder( global_things_stack_ptr_, ?value );
 ?>
 
@@ -45,6 +33,87 @@ private:
 	GlobalThingsStackPtr imut stack_;
 }
 
+fn GlobalValueToString( NamesScopeValue& global_thing ) : ust::string8
+{
+	{
+		auto functions_set_ptr= global_thing.Get</NamesScopeFunctionsSet/>();
+		if( !functions_set_ptr.empty() )
+		{
+			auto lock= functions_set_ptr.lock_imut();
+			var NamesScopeFunctionsSet& functions_set= lock.get_ref();
+
+			if( !functions_set.syntax_elements.empty() )
+			{
+				return functions_set.syntax_elements.front().get_ref().name.back();
+			}
+			if( !functions_set.out_of_line_syntax_elements.empty() )
+			{
+				return functions_set.out_of_line_syntax_elements.front().get_ref().name.back();
+			}
+			if( !functions_set.function_templates_syntax_elements.empty() )
+			{
+				return functions_set.function_templates_syntax_elements.front().get_ref().name;
+			}
+
+			foreach( &function : functions_set.functions_set.functions )
+			{
+				if( !function.prototype_syntax_element.empty() )
+				{
+					return function.prototype_syntax_element.get_ref().name.back();
+				}
+				if( !function.body_syntax_element.empty() )
+				{
+					return function.body_syntax_element.get_ref().name.back();
+				}
+			}
+
+			if( !functions_set.functions_set.function_templates.empty() )
+			{
+				return functions_set.functions_set.function_templates.front().get_ref().syntax_element.get_ref().name;
+			}
+		}
+	}
+	{
+		auto class_type_ptr= global_thing.Get</ClassType/>();
+		if( !class_type_ptr.empty() )
+		{
+			return Type( ust::to_non_nullable( class_type_ptr ) ).ToString();
+		}
+	}
+	{
+		auto enum_type_ptr= global_thing.Get</Enum/>();
+		if( !enum_type_ptr.empty() )
+		{
+			return Type( ust::to_non_nullable( enum_type_ptr ) ).ToString();
+		}
+	}
+	{
+		auto type_alias_ptr= global_thing.Get</Enum/>();
+		if( !type_alias_ptr.empty() )
+		{
+			return type_alias_ptr.lock_imut().get_ref().syntax_element.get_ref().name;
+		}
+	}
+	{
+		auto global_variable_ptr= global_thing.Get</GlobalVariable/>();
+		if( !global_variable_ptr.empty() )
+		{
+			auto lock= global_variable_ptr.lock_imut();
+			var GlobalVariable& global_variable= lock.get_ref();
+			return global_variable.syntax_element.get_ref().variables[ global_variable.variable_index ].name;
+		}
+	}
+	{
+		auto global_auto_variable_ptr= global_thing.Get</GlobalAutoVariable/>();
+		if( !global_auto_variable_ptr.empty() )
+		{
+			return global_auto_variable_ptr.lock_imut().get_ref().syntax_element.get_ref().name;
+		}
+	}
+
+	return "";
+}
+
 fn AddAncestorsAccessRights_r( NamesScope &mut dst_class_members, ClassTypePtr& ancestor_class )
 {
 	dst_class_members.AddAccessRightsFor( ancestor_class, Synt::ClassVisibility::Protected );
@@ -52,6 +121,38 @@ fn AddAncestorsAccessRights_r( NamesScope &mut dst_class_members, ClassTypePtr& 
 	{
 		AddAncestorsAccessRights_r( dst_class_members, parent.class_ );
 	}
+}
+
+fn CodeBuilder::DetectGlobalsLoop( this, NamesScopeValue& global_thing ) : bool
+{
+	auto lock= global_things_stack_ptr_.lock_imut();
+	var GlobalThingsStack& stack= lock.get_ref();
+
+	auto mut i= 0s;
+	while( i < stack.size() && stack[i] != global_thing ){ ++i; }
+
+	if( i == stack.size() )
+	{
+		return false; // No loop detected
+	}
+
+	var ust::string8 mut description;
+	for( ; i < stack.size(); ++i )
+	{
+		description+= GlobalValueToString(stack[i]);
+		description+= " -> ";
+	}
+	description+= GlobalValueToString(global_thing);
+
+	auto mut errors_container_lock= root_errors_container_.lock_mut();
+
+	var ust::vector</ust::string8/> mut args;
+	args.push_back( description );
+
+	errors_container_lock.get_ref().push_back(
+		ReportError( CodeBuilderErrorCode::GlobalsLoopDetected, GetValueFilePos(global_thing), args ) );
+
+	return true;
 }
 
 fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/> functions_set_ptr, bool build_body )

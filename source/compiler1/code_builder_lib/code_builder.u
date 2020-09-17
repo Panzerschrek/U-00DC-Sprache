@@ -89,10 +89,10 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 		}
 	}
 
-	var ErrorsContainerPtr errors_container( ErrorsContainer() );
+	root_errors_container_= ErrorsContainerPtr( ErrorsContainer() );
 
 	compiled_sources_cache_.resize( source_graph.nodes.size() );
-	BuildSourceGraphNode( errors_container, source_graph, 0s );
+	BuildSourceGraphNode( source_graph, 0s );
 
 	// Finalize incomplete typeinfo.
 	for( auto mut i= 0s; i < typeinfo_cache_.size(); ++i )
@@ -139,15 +139,17 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 	var BuildResult mut res
 	{
 		.llvm_module= module_,
-		.errors= errors_container.lock_imut().get_ref(),
+		.errors= root_errors_container_.lock_imut().get_ref(),
 	 };
 
 	NormalizeErrors( res.errors );
 
+	root_errors_container_= ErrorsContainerPtr();
+
 	return move(res);
 }
 
-fn CodeBuilder::BuildSourceGraphNode( mut this, ErrorsContainerPtr& errors_container, SourceGraph& source_graph, size_type node_index )
+fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_type node_index )
 {
 	var NamesScopeMutPtr mut global_names_scope( NamesScope( "", ust::shared_ptr_nullable_imut</NamesScope/>() ) );
 
@@ -155,7 +157,7 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, ErrorsContainerPtr& errors_conta
 		auto mut l= global_names_scope.lock_mut();
 		auto &mut n= l.get_ref();
 
-		n.SetErrors( errors_container );
+		n.SetErrors( root_errors_container_ );
 		FillGlobalNamesScope( n );
 	}
 
@@ -166,7 +168,7 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, ErrorsContainerPtr& errors_conta
 	{
 		if( compiled_sources_cache_[child_node_index].names_scope.empty() )
 		{
-			BuildSourceGraphNode( errors_container, source_graph, child_node_index );
+			BuildSourceGraphNode( source_graph, child_node_index );
 		}
 	}
 	// Prepare class table.
