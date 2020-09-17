@@ -716,6 +716,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"NonExistentTest",
 		"NoMangleMismatch_Test",
 		"NumericConstants",
+		"OrderIndependent",
 		"OverloadingResolutionTest_ForFunctionTemplates_Test",
 		"OverloadingResolutionTest_MutabilityAndReferenceConversions",
 		"OverloadingResolutionTest_OnlyMutabilityCheck",
