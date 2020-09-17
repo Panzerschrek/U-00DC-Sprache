@@ -3,8 +3,39 @@ import "error_reporting.uh"
 import "mangling.uh"
 import "code_builder.uh"
 
+?macro <? GLOBALS_LOOP_DETECT:block ?value : expr ?>
+->
+<?
+	// TODO - do check for global loops
+	if( false )
+	{
+		return;
+	}
+	var GlobalThingHolder ??holder( global_things_stack_ptr_, ?value );
+?>
+
 namespace U1
 {
+
+class GlobalThingHolder
+{
+public:
+	fn constructor( GlobalThingsStackPtr mut stack, NamesScopeValue mut value )
+		( stack_(move(stack)) )
+	{
+		auto mut lock= stack_.lock_mut();
+		lock.get_ref().push_back( move(value) );
+	}
+
+	fn destructor()
+	{
+		auto mut lock= stack_.lock_mut();
+		lock.get_ref().drop_back();
+	}
+
+private:
+	GlobalThingsStackPtr imut stack_;
+}
 
 fn AddAncestorsAccessRights_r( NamesScope &mut dst_class_members, ClassTypePtr& ancestor_class )
 {
@@ -30,6 +61,8 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 			}
 		}
 	}
+
+	GLOBALS_LOOP_DETECT( functions_set_ptr )
 
 	{ 	// Preapare functions set itself.
 		auto mut l= functions_set_ptr.lock_mut();
@@ -75,8 +108,6 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 	lock.get_ref().functions_set.functions= move(functions_set_copy);
 }
 
-
-
 fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypePtr& class_type )
 {
 	if( class_type.lock_imut().get_ref().is_complete )
@@ -95,6 +126,8 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	{
 		return;
 	}
+
+	GLOBALS_LOOP_DETECT( class_type )
 
 	auto syntax_element_ptr= class_type.lock_imut().get_ref().syntax_element;
 	auto& syntax_element= syntax_element_ptr.get_ref();
@@ -720,6 +753,8 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 		return;
 	}
 
+	GLOBALS_LOOP_DETECT( enum_type )
+
 	auto mut lock= enum_type.lock_mut();
 	var Enum &mut enum_= lock.get_ref();
 
@@ -793,6 +828,8 @@ fn CodeBuilder::BuildTypeAlias( mut this, NamesScopePtr& names_scope, ust::share
 		return;
 	}
 
+	GLOBALS_LOOP_DETECT( type_alias_ptr )
+
 	auto mut lock= type_alias_ptr.lock_mut();
 	var TypeAlias &mut type_alias= lock.get_ref();
 
@@ -808,6 +845,9 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope, ust::
 	{
 		return;
 	}
+
+	GLOBALS_LOOP_DETECT( global_variable_ptr )
+
 	auto mut lock= global_variable_ptr.lock_mut();
 	var GlobalVariable &mut global_variable= lock.get_ref();
 
@@ -921,6 +961,9 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope, u
 	{
 		return;
 	}
+
+	GLOBALS_LOOP_DETECT( global_auto_variable_ptr )
+
 	auto mut lock= global_auto_variable_ptr.lock_mut();
 	var GlobalAutoVariable &mut global_auto_variable= lock.get_ref();
 

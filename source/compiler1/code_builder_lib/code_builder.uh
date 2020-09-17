@@ -48,6 +48,9 @@ import "structs_combined.uh"
 namespace U1
 {
 
+type GlobalThingsStack= ust::vector</NamesScopeValue/>;
+type GlobalThingsStackPtr= ust::shared_ptr_mut</GlobalThingsStack/>;
+
 class CodeBuilder
 {
 public:
@@ -717,6 +720,9 @@ private:
 	ust::vector</TypeinfoStruct/> typeinfo_cache_;
 
 	LLVMValueRef halt_function_= LLVMValueRef::Null;
+
+	// For globals loops detection.
+	GlobalThingsStackPtr global_things_stack_ptr_;
 }
 
 } // namespace U1
