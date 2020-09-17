@@ -346,10 +346,44 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 fn CodeBuilder::GetValueFilePos( NamesScopeValue& value ) : FilePos
 {
 	{
-		auto functions_set= value.Get</NamesScopeFunctionsSet/>();
-		if( !functions_set.empty() )
+		auto functions_set_ptr= value.Get</NamesScopeFunctionsSet/>();
+		if( !functions_set_ptr.empty() )
 		{
-			// TODO
+			var FilePos mut min_file_pos( FilePos::c_max_file_index, FilePos::c_max_line, FilePos::c_max_column );
+
+			auto lock= functions_set_ptr.lock_imut();
+			var NamesScopeFunctionsSet& functions_set= lock.get_ref();
+
+			foreach( &syntax_element : functions_set.syntax_elements )
+			{
+				min_file_pos= ust::min( FilePos(min_file_pos), syntax_element.get_ref().file_pos );
+			}
+			foreach( &syntax_element : functions_set.out_of_line_syntax_elements )
+			{
+				min_file_pos= ust::min( FilePos(min_file_pos), syntax_element.get_ref().file_pos );
+			}
+			foreach( &syntax_element : functions_set.function_templates_syntax_elements )
+			{
+				min_file_pos= ust::min( FilePos(min_file_pos), syntax_element.get_ref().file_pos );
+			}
+
+			foreach( &function : functions_set.functions_set.functions )
+			{
+				if( !function.prototype_syntax_element.empty() )
+				{
+					min_file_pos= ust::min( FilePos(min_file_pos), function.prototype_syntax_element.get_ref().file_pos );
+				}
+				if( !function.body_syntax_element.empty() )
+				{
+					min_file_pos= ust::min( FilePos(min_file_pos), function.body_syntax_element.get_ref().file_pos );
+				}
+			}
+			foreach( &function_template_ptr : functions_set.functions_set.function_templates )
+			{
+				min_file_pos= ust::min( FilePos(min_file_pos), function_template_ptr.get_ref().syntax_element.get_ref().file_pos );
+			}
+
+			return min_file_pos;
 		}
 	}
 	{

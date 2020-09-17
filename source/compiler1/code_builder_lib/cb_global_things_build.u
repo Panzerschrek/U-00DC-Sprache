@@ -72,37 +72,40 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 
 	GLOBALS_LOOP_DETECT( functions_set_ptr )
 
-	{ 	// Preapare functions set itself.
-		auto mut l= functions_set_ptr.lock_mut();
-		var NamesScopeFunctionsSet &mut functions_set= l.get_ref();
+	// Take copy, and make manipulations only with it. Update value inside shareed pointer in one operation.
+	var NamesScopeFunctionsSet mut functions_set= functions_set_ptr.lock_imut().get_ref();
 
-		while( !functions_set.syntax_elements.empty() )
-		{
-			auto syntax_element_ptr= functions_set.syntax_elements.back();
-			auto class_type_ptr= functions_set.class_;
-			PrepareFunction( syntax_element_ptr, names_scope_ptr, class_type_ptr, functions_set.functions_set, false );
-			functions_set.syntax_elements.drop_back();
-		}
-		while( !functions_set.out_of_line_syntax_elements.empty() )
-		{
-			auto syntax_element_ptr= functions_set.out_of_line_syntax_elements.back();
-			auto class_type_ptr= functions_set.class_;
-			PrepareFunction( syntax_element_ptr, names_scope_ptr, class_type_ptr, functions_set.functions_set, true );
-			functions_set.out_of_line_syntax_elements.drop_back();
-		}
-		while( !functions_set.function_templates_syntax_elements.empty() )
-		{
-			auto syntax_element_ptr= functions_set.function_templates_syntax_elements.back();
-			auto function_template= PrepareFunctionTemplate( names_scope_ptr, syntax_element_ptr, functions_set.class_ );
-			functions_set.functions_set.function_templates.push_back( function_template );
-			functions_set.function_templates_syntax_elements.drop_back();
-		}
+	// Preapare functions set itself.
+	while( !functions_set.syntax_elements.empty() )
+	{
+		auto syntax_element_ptr= functions_set.syntax_elements.back();
+		auto class_type_ptr= functions_set.class_;
+		PrepareFunction( syntax_element_ptr, names_scope_ptr, class_type_ptr, functions_set.functions_set, false );
+		functions_set.syntax_elements.drop_back();
+	}
+	while( !functions_set.out_of_line_syntax_elements.empty() )
+	{
+		auto syntax_element_ptr= functions_set.out_of_line_syntax_elements.back();
+		auto class_type_ptr= functions_set.class_;
+		PrepareFunction( syntax_element_ptr, names_scope_ptr, class_type_ptr, functions_set.functions_set, true );
+		functions_set.out_of_line_syntax_elements.drop_back();
+	}
+	while( !functions_set.function_templates_syntax_elements.empty() )
+	{
+		auto syntax_element_ptr= functions_set.function_templates_syntax_elements.back();
+		auto function_template= PrepareFunctionTemplate( names_scope_ptr, syntax_element_ptr, functions_set.class_ );
+		functions_set.functions_set.function_templates.push_back( function_template );
+		functions_set.function_templates_syntax_elements.drop_back();
 	}
 
-	// Build body for copy, then update it. This needed to prevent function body build under lock.
-	auto mut functions_set_copy= functions_set_ptr.lock_imut().get_ref().functions_set.functions;
-	var bool is_class_method= !functions_set_ptr.lock_imut().get_ref().class_.empty();
-	foreach( &mut func_variable : functions_set_copy )
+	// Update functions set after prepareation process.
+	{
+		auto mut lock= functions_set_ptr.lock_mut();
+		lock.get_ref()= functions_set;
+	}
+
+	var bool is_class_method= !functions_set.class_.empty();
+	foreach( &mut func_variable : functions_set.functions_set.functions )
 	{
 		// Immediately build body of "constexpr" functions.
 		if( build_body ||
@@ -112,8 +115,11 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 		}
 	}
 
-	auto mut lock= functions_set_ptr.lock_mut();
-	lock.get_ref().functions_set.functions= move(functions_set_copy);
+	// Update functions set again after body build process.
+	{
+		auto mut lock= functions_set_ptr.lock_mut();
+		lock.get_ref()= move(functions_set);
+	}
 }
 
 fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypePtr& class_type )
