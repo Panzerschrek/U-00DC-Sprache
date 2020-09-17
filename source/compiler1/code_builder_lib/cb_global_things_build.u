@@ -838,13 +838,14 @@ fn CodeBuilder::BuildTypeAlias( mut this, NamesScopePtr& names_scope_ptr, ust::s
 
 	GLOBALS_LOOP_DETECT( type_alias_ptr )
 
-	auto mut lock= type_alias_ptr.lock_mut();
-	var TypeAlias &mut type_alias= lock.get_ref();
-
-	auto syntax_element_ptr= type_alias.syntax_element;
+	auto syntax_element_ptr= type_alias_ptr.lock_imut().get_ref().syntax_element;
 
 	var FunctionContext mut function_context= CreateGlobalFunctionContext();
-	type_alias.t.reset( PrepareType( names_scope_ptr, function_context, syntax_element_ptr.get_ref().type_name ) );
+	var Type mut t= PrepareType( names_scope_ptr, function_context, syntax_element_ptr.get_ref().type_name );
+
+	// Finally, update type alias.
+	auto mut lock= type_alias_ptr.lock_mut();
+	lock.get_ref().t.reset( move(t) );
 }
 
 fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalVariable/>& global_variable_ptr )
@@ -856,17 +857,13 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 
 	GLOBALS_LOOP_DETECT( global_variable_ptr )
 
-	auto mut lock= global_variable_ptr.lock_mut();
-	var GlobalVariable &mut global_variable= lock.get_ref();
-
-	auto variables_declaration_ptr= global_variable.syntax_element;
+	auto variables_declaration_ptr= global_variable_ptr.lock_imut().get_ref().syntax_element;
 	auto& variables_declaration= variables_declaration_ptr.get_ref();
-	auto& variable_declaration= variables_declaration.variables[ global_variable.variable_index ];
+	auto& variable_declaration= variables_declaration.variables[ global_variable_ptr.lock_imut().get_ref().variable_index ];
 
 	var FunctionContext mut function_context= CreateGlobalFunctionContext();
 
-	global_variable.variable.reset( NamesScopeVariable() );
-	var NamesScopeVariable &mut variable= global_variable.variable.get_ref();
+	var NamesScopeVariable mut variable;
 
 	variable.t= PrepareType( names_scope_ptr, function_context, variables_declaration.t );
 	if( !EnsureTypeComplete( variable.t ) )
@@ -961,6 +958,10 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 	else{ halt; }
 
 	// TODO - maybe clear here dummy global function?
+
+	// Finally, set result variable.
+	auto mut lock= global_variable_ptr.lock_mut();
+	lock.get_ref().variable.reset( move(variable) );
 }
 
 fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalAutoVariable/>& global_auto_variable_ptr )
@@ -972,16 +973,12 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 
 	GLOBALS_LOOP_DETECT( global_auto_variable_ptr )
 
-	auto mut lock= global_auto_variable_ptr.lock_mut();
-	var GlobalAutoVariable &mut global_auto_variable= lock.get_ref();
-
-	auto auto_variable_declaration_ptr= global_auto_variable.syntax_element;
+	auto auto_variable_declaration_ptr= global_auto_variable_ptr.lock_imut().get_ref().syntax_element;
 	auto& auto_variable_declaration= auto_variable_declaration_ptr.get_ref();
 
 	var FunctionContext mut function_context= CreateGlobalFunctionContext();
 
-	global_auto_variable.variable.reset( NamesScopeVariable() );
-	var NamesScopeVariable &mut variable= global_auto_variable.variable.get_ref();
+	var NamesScopeVariable mut variable;
 
 	var Variable expr= BuildExpressionCodeEnsureVariable( names_scope_ptr, function_context, auto_variable_declaration.initializer_expression );
 	variable.t= expr.t;
@@ -1038,6 +1035,9 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 	}
 	else { halt; }
 
+	// Finally, set result variable.
+	auto mut lock= global_auto_variable_ptr.lock_mut();
+	lock.get_ref().variable.reset( move(variable) );
 }
 
 } // namespace U1
