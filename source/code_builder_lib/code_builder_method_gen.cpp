@@ -19,7 +19,7 @@ namespace CodeBuilderPrivate
 void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& class_type )
 {
 	// Search for explicit default constructor.
-	FunctionVariable* prev_constructor_variable= nullptr;
+	FunctionVariable* constructor_variable= nullptr;
 	if( Value* const constructors_value=
 		the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 	{
@@ -32,7 +32,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 				if( constructor.is_generated )
 				{
 					U_ASSERT(!constructor.have_body);
-					prev_constructor_variable= &constructor;
+					constructor_variable= &constructor;
 				}
 				else
 				{
@@ -45,7 +45,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 	}
 
 	// Generating of default constructor disabled, if class have other explicit constructors, except copy constructors.
-	if( the_class.have_explicit_noncopy_constructors && prev_constructor_variable == nullptr )
+	if( the_class.have_explicit_noncopy_constructors && constructor_variable == nullptr )
 		return;
 
 	// Generate default constructor, if all fields is default constructible.
@@ -68,47 +68,72 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 
 	if( !all_fields_is_default_constructible )
 	{
-		if( prev_constructor_variable != nullptr )
-			REPORT_ERROR( MethodBodyGenerationFailed, the_class.members.GetErrors(), prev_constructor_variable->prototype_file_pos );
+		if( constructor_variable != nullptr )
+			REPORT_ERROR( MethodBodyGenerationFailed, the_class.members.GetErrors(), constructor_variable->prototype_file_pos );
 		return;
 	}
 
-	// Generate function
+	if( constructor_variable == nullptr )
+	{
+		// Generate function
+		Function constructor_type;
+		constructor_type.return_type= void_type_for_ret_;
+		constructor_type.args.emplace_back();
+		constructor_type.args.back().type= class_type;
+		constructor_type.args.back().is_mutable= true;
+		constructor_type.args.back().is_reference= true;
 
-	Function constructor_type;
-	constructor_type.return_type= void_type_for_ret_;
-	constructor_type.args.emplace_back();
-	constructor_type.args.back().type= class_type;
-	constructor_type.args.back().is_mutable= true;
-	constructor_type.args.back().is_reference= true;
+		constructor_type.llvm_function_type=
+			llvm::FunctionType::get(
+				fundamental_llvm_types_.void_for_ret,
+				{ class_type.GetLLVMType()->getPointerTo() },
+				false );
 
-	ArgsVector<llvm::Type*> args_llvm_types;
-	args_llvm_types.push_back( class_type.GetLLVMType()->getPointerTo() );
+		llvm::Function* const llvm_constructor_function=
+			llvm::Function::Create(
+				constructor_type.llvm_function_type,
+				llvm::Function::LinkageTypes::ExternalLinkage,
+				MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
+				module_.get() );
 
-	constructor_type.llvm_function_type=
-		llvm::FunctionType::get(
-			fundamental_llvm_types_.void_for_ret,
-			llvm::ArrayRef<llvm::Type*>( args_llvm_types.data(), args_llvm_types.size() ),
-			false );
+		FunctionVariable new_constructor_variable;
+		new_constructor_variable.type= std::move( constructor_type );
+		new_constructor_variable.llvm_function= llvm_constructor_function;
 
-	llvm::Function* const llvm_constructor_function=
-		llvm::Function::Create(
-			constructor_type.llvm_function_type,
-			llvm::Function::LinkageTypes::ExternalLinkage,
-			MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
-			module_.get() );
+		// Add generated constructor
+		if( Value* const constructors_value= the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
+		{
+			OverloadedFunctionsSet* const constructors= constructors_value->GetFunctionsSet();
+			U_ASSERT( constructors != nullptr );
+			constructors->functions.push_back( std::move( new_constructor_variable ) );
+			constructor_variable= &constructors->functions.back();
+		}
+		else
+		{
+			OverloadedFunctionsSet constructors;
+			constructors.functions.push_back( std::move( new_constructor_variable ) );
+			Value* const inserted_value= the_class.members.AddName( Keyword( Keywords::constructor_ ), std::move( constructors ) );
+			constructor_variable= &inserted_value->GetFunctionsSet()->functions.back();
 
-	SetupGeneratedFunctionAttributes( *llvm_constructor_function );
-	llvm_constructor_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
+		}
+	}
+	SetupGeneratedFunctionAttributes( *constructor_variable->llvm_function );
+	constructor_variable->llvm_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
+
+	constructor_variable->have_body= true;
+	constructor_variable->is_this_call= true;
+	constructor_variable->is_generated= true;
+	constructor_variable->is_constructor= true;
+	constructor_variable->constexpr_kind= the_class.can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;
 
 	FunctionContext function_context(
-		constructor_type.return_type,
-		constructor_type.return_value_is_mutable,
-		constructor_type.return_value_is_reference,
+		void_type_for_ret_,
+		false,
+		false,
 		llvm_context_,
-		llvm_constructor_function );
+		constructor_variable->llvm_function );
 	StackVariablesStorage function_variables_storage( function_context );
-	llvm::Value* const this_llvm_value= llvm_constructor_function->args().begin();
+	llvm::Value* const this_llvm_value= constructor_variable->llvm_function->args().begin();
 	this_llvm_value->setName( Keyword( Keywords::this_ ) );
 
 	if( the_class.base_class != nullptr )
@@ -162,35 +187,6 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 	function_context.llvm_ir_builder.CreateRetVoid();
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 
-	// Add generated constructor
-	FunctionVariable constructor_variable;
-	constructor_variable.type= std::move( constructor_type );
-	constructor_variable.have_body= true;
-	constructor_variable.is_this_call= true;
-	constructor_variable.is_generated= true;
-	constructor_variable.is_constructor= true;
-	constructor_variable.constexpr_kind= the_class.can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;
-	constructor_variable.llvm_function= llvm_constructor_function;
-
-	if( prev_constructor_variable != nullptr )
-		*prev_constructor_variable= std::move(constructor_variable);
-	else
-	{
-		if( Value* const constructors_value=
-			the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
-		{
-			OverloadedFunctionsSet* const constructors= constructors_value->GetFunctionsSet();
-			U_ASSERT( constructors != nullptr );
-			constructors->functions.push_back( std::move( constructor_variable ) );
-		}
-		else
-		{
-			OverloadedFunctionsSet constructors;
-			constructors.functions.push_back( std::move( constructor_variable ) );
-			the_class.members.AddName( Keyword( Keywords::constructor_ ), std::move( constructors ) );
-		}
-	}
-
 	// After default constructor generation, class is default-constructible.
 	the_class.is_default_constructible= true;
 }
@@ -198,9 +194,8 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& class_type )
 {
 	// Search for explicit copy constructor.
-	FunctionVariable* prev_constructor_variable= nullptr;
-	if( Value* const constructors_value=
-		the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
+	FunctionVariable* constructor_variable= nullptr;
+	if( Value* const constructors_value= the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 	{
 		OverloadedFunctionsSet* const constructors= constructors_value->GetFunctionsSet();
 		U_ASSERT( constructors != nullptr );
@@ -211,7 +206,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 				if( constructor.is_generated )
 				{
 					U_ASSERT(!constructor.have_body);
-					prev_constructor_variable= &constructor;
+					constructor_variable= &constructor;
 				}
 				else
 				{
@@ -223,7 +218,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		}
 	}
 
-	if( prev_constructor_variable == nullptr && the_class.kind != Class::Kind::Struct )
+	if( constructor_variable == nullptr && the_class.kind != Class::Kind::Struct )
 		return; // Do not generate copy-constructor for classes. Generate it only if "=default" explicitly specified for this method.
 
 	bool all_fields_is_copy_constructible= true;
@@ -244,64 +239,88 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 
 	if( !all_fields_is_copy_constructible )
 	{
-		if( prev_constructor_variable != nullptr )
-			REPORT_ERROR( MethodBodyGenerationFailed, the_class.members.GetErrors(), prev_constructor_variable->prototype_file_pos );
+		if( constructor_variable != nullptr )
+			REPORT_ERROR( MethodBodyGenerationFailed, the_class.members.GetErrors(), constructor_variable->prototype_file_pos );
 		return;
 	}
 
-	// Generate copy-constructor
-	Function constructor_type;
-	constructor_type.return_type= void_type_for_ret_;
-	constructor_type.args.resize(2u);
-	constructor_type.args[0].type= class_type;
-	constructor_type.args[0].is_mutable= true;
-	constructor_type.args[0].is_reference= true;
-	constructor_type.args[1].type= class_type;
-	constructor_type.args[1].is_mutable= false;
-	constructor_type.args[1].is_reference= true;
-
-	// Generate default reference pollution for copying.
-	for( size_t i= 0u; i < class_type.ReferencesTagsCount(); ++i )
+	if( constructor_variable == nullptr )
 	{
-		Function::ReferencePollution pollution;
-		pollution.dst.first= 0u;
-		pollution.dst.second= i;
-		pollution.src.first= 1u;
-		pollution.src.second= i;
-		constructor_type.references_pollution.emplace(pollution);
+		// Generate copy-constructor
+		Function constructor_type;
+		constructor_type.return_type= void_type_for_ret_;
+		constructor_type.args.resize(2u);
+		constructor_type.args[0].type= class_type;
+		constructor_type.args[0].is_mutable= true;
+		constructor_type.args[0].is_reference= true;
+		constructor_type.args[1].type= class_type;
+		constructor_type.args[1].is_mutable= false;
+		constructor_type.args[1].is_reference= true;
+
+		// Generate default reference pollution for copying.
+		for( size_t i= 0u; i < class_type.ReferencesTagsCount(); ++i )
+		{
+			Function::ReferencePollution pollution;
+			pollution.dst.first= 0u;
+			pollution.dst.second= i;
+			pollution.src.first= 1u;
+			pollution.src.second= i;
+			constructor_type.references_pollution.emplace(pollution);
+		}
+
+		constructor_type.llvm_function_type=
+			llvm::FunctionType::get(
+				fundamental_llvm_types_.void_for_ret,
+				{ class_type.GetLLVMType()->getPointerTo(), class_type.GetLLVMType()->getPointerTo() },
+				false );
+
+		llvm::Function* const llvm_constructor_function=
+			llvm::Function::Create(
+				constructor_type.llvm_function_type,
+				llvm::Function::LinkageTypes::ExternalLinkage,
+				MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
+				module_.get() );
+
+		// Add generated constructor
+		FunctionVariable new_constructor_variable;
+		new_constructor_variable.type= std::move( constructor_type );
+		new_constructor_variable.llvm_function= llvm_constructor_function;
+
+		if( Value* const constructors_value= the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
+		{
+			OverloadedFunctionsSet* const constructors= constructors_value->GetFunctionsSet();
+			U_ASSERT( constructors != nullptr );
+			constructors->functions.push_back( std::move( new_constructor_variable ) );
+			constructor_variable= &constructors->functions.back();
+		}
+		else
+		{
+			OverloadedFunctionsSet constructors;
+			constructors.functions.push_back( std::move( new_constructor_variable ) );
+			Value* const inserted_value= the_class.members.AddName( Keyword( Keywords::constructor_ ), std::move( constructors ) );
+			constructor_variable= &inserted_value->GetFunctionsSet()->functions.back();
+		}
 	}
+	SetupGeneratedFunctionAttributes( *constructor_variable->llvm_function );
+	constructor_variable->llvm_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
+	constructor_variable->llvm_function->addAttribute( 2u, llvm::Attribute::NonNull ); // and src is nonnull
 
-	ArgsVector<llvm::Type*> args_llvm_types;
-	args_llvm_types.push_back( class_type.GetLLVMType()->getPointerTo() );
-	args_llvm_types.push_back( class_type.GetLLVMType()->getPointerTo() );
-
-	constructor_type.llvm_function_type=
-		llvm::FunctionType::get(
-			fundamental_llvm_types_.void_for_ret,
-			llvm::ArrayRef<llvm::Type*>( args_llvm_types.data(), args_llvm_types.size() ),
-			false );
-
-	llvm::Function* const llvm_constructor_function=
-		llvm::Function::Create(
-			constructor_type.llvm_function_type,
-			llvm::Function::LinkageTypes::ExternalLinkage,
-			MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
-			module_.get() );
-
-	SetupGeneratedFunctionAttributes( *llvm_constructor_function );
-	llvm_constructor_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
-	llvm_constructor_function->addAttribute( 2u, llvm::Attribute::NonNull ); // and src is nonnull
+	constructor_variable->have_body= true;
+	constructor_variable->is_this_call= true;
+	constructor_variable->is_generated= true;
+	constructor_variable->is_constructor= true;
+	constructor_variable->constexpr_kind= the_class.can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;
 
 	FunctionContext function_context(
-		constructor_type.return_type,
-		constructor_type.return_value_is_mutable,
-		constructor_type.return_value_is_reference,
+		void_type_for_ret_,
+		false,
+		false,
 		llvm_context_,
-		llvm_constructor_function );
+		constructor_variable->llvm_function );
 
-	llvm::Value* const this_llvm_value= &*llvm_constructor_function->args().begin();
+	llvm::Value* const this_llvm_value= &*constructor_variable->llvm_function->args().begin();
 	this_llvm_value->setName( Keyword( Keywords::this_ ) );
-	llvm::Value* const src_llvm_value= &*std::next(llvm_constructor_function->args().begin());
+	llvm::Value* const src_llvm_value= &*std::next(constructor_variable->llvm_function->args().begin());
 	src_llvm_value->setName( "src" );
 
 	if( the_class.base_class != nullptr )
@@ -322,8 +341,8 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		const ClassField& field= *the_class.members.GetThisScopeValue( field_name )->GetClassField();
 
 		llvm::Value* const index_list[2] { GetZeroGEPIndex(), GetFieldGEPIndex( field.index ) };
-		llvm::Value* const src= function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list );
 		llvm::Value* const dst= function_context.llvm_ir_builder.CreateGEP( this_llvm_value, index_list );
+		llvm::Value* const src= function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list );
 
 		if( field.is_reference )
 		{
@@ -336,42 +355,12 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 			U_ASSERT( field.type.IsCopyConstructible() );
 			BuildCopyConstructorPart( dst, src, field.type, function_context );
 		}
-
 	}
 
 	SetupVirtualTablePointers( this_llvm_value, the_class, function_context );
 
 	function_context.llvm_ir_builder.CreateRetVoid();
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
-
-	// Add generated constructor
-	FunctionVariable constructor_variable;
-	constructor_variable.type= std::move( constructor_type );
-	constructor_variable.have_body= true;
-	constructor_variable.is_this_call= true;
-	constructor_variable.is_generated= true;
-	constructor_variable.is_constructor= true;
-	constructor_variable.constexpr_kind= the_class.can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;
-	constructor_variable.llvm_function= llvm_constructor_function;
-
-	if( prev_constructor_variable != nullptr )
-		*prev_constructor_variable= std::move(constructor_variable);
-	else
-	{
-		if( Value* const constructors_value=
-			the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
-		{
-			OverloadedFunctionsSet* const constructors= constructors_value->GetFunctionsSet();
-			U_ASSERT( constructors != nullptr );
-			constructors->functions.push_back( std::move( constructor_variable ) );
-		}
-		else
-		{
-			OverloadedFunctionsSet constructors;
-			constructors.functions.push_back( std::move( constructor_variable ) );
-			the_class.members.AddName( Keyword( Keywords::constructor_ ), std::move( constructors ) );
-		}
-	}
 
 	// After default constructor generation, class is copy-constructible.
 	the_class.is_copy_constructible= true;
@@ -380,7 +369,6 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 FunctionVariable CodeBuilder::GenerateDestructorPrototype( Class& the_class, const Type& class_type )
 {
 	Function destructor_type;
-
 	destructor_type.return_type= void_type_for_ret_;
 	destructor_type.args.resize(1u);
 	destructor_type.args[0].type= class_type;
@@ -395,7 +383,6 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( Class& the_class, con
 			false );
 
 	FunctionVariable destructor_function;
-	destructor_function.type= destructor_type;
 	destructor_function.type= destructor_type;
 	destructor_function.is_generated= true;
 	destructor_function.is_this_call= true;
@@ -429,7 +416,7 @@ void CodeBuilder::GenerateDestructorBody( Class& the_class, const Type& class_ty
 		destructor_type.return_value_is_mutable,
 		destructor_type.return_value_is_reference,
 		llvm_context_,
-		destructor_function .llvm_function );
+		destructor_function.llvm_function );
 	function_context.this_= &this_;
 
 	CallMembersDestructors( function_context, the_class.members.GetErrors(), the_class.body_file_pos );
@@ -471,9 +458,7 @@ void CodeBuilder::TryGenerateDestructor( Class& the_class, const Type& class_typ
 	OverloadedFunctionsSet destructors;
 	destructors.functions.push_back( std::move( destructor_variable ) );
 
-	the_class.members.AddName(
-		Keyword( Keywords::destructor_ ),
-		Value( std::move( destructors ) ) );
+	the_class.members.AddName( Keyword( Keywords::destructor_ ), Value( std::move( destructors ) ) );
 
 	// Say "we have destructor".
 	the_class.have_destructor= true;
@@ -484,21 +469,19 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 	const std::string op_name= OverloadedOperatorToString( OverloadedOperator::Assign );
 
 	// Search for explicit assignment operator.
-	FunctionVariable* prev_operator_variable= nullptr;
-	if( Value* const assignment_operator_value=
-		the_class.members.GetThisScopeValue( op_name ) )
+	FunctionVariable* operator_variable= nullptr;
+	if( Value* const assignment_operator_value= the_class.members.GetThisScopeValue( op_name ) )
 	{
 		OverloadedFunctionsSet* const operators= assignment_operator_value->GetFunctionsSet();
 		for( FunctionVariable& op : operators->functions )
 		{
-
 			// SPRACHE_TODO - support assignment operator with value src argument.
 			if( IsCopyAssignmentOperator( *op.type.GetFunctionType(), class_type ) )
 			{
 				if( op.is_generated )
 				{
 					U_ASSERT( !op.have_body );
-					prev_operator_variable= &op;
+					operator_variable= &op;
 				}
 				else
 				{
@@ -510,7 +493,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 		}
 	}
 
-	if( prev_operator_variable == nullptr && the_class.kind != Class::Kind::Struct )
+	if( operator_variable == nullptr && the_class.kind != Class::Kind::Struct )
 		return; // Do not generate copy-assignement operator for classes. Generate it only if "=default" explicitly specified for this method.
 
 	bool all_fields_is_copy_assignable= true;
@@ -532,71 +515,92 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 
 	if( !all_fields_is_copy_assignable )
 	{
-		if( prev_operator_variable != nullptr )
-			REPORT_ERROR( MethodBodyGenerationFailed, the_class.members.GetErrors(), prev_operator_variable->prototype_file_pos );
+		if( operator_variable != nullptr )
+			REPORT_ERROR( MethodBodyGenerationFailed, the_class.members.GetErrors(), operator_variable->prototype_file_pos );
 		return;
 	}
 
-	// Generate assignment operator
-	Function op_type;
-	op_type.return_type= void_type_for_ret_;
-	op_type.args.resize(2u);
-	op_type.args[0].type= class_type;
-	op_type.args[0].is_mutable= true;
-	op_type.args[0].is_reference= true;
-	op_type.args[1].type= class_type;
-	op_type.args[1].is_mutable= false;
-	op_type.args[1].is_reference= true;
-
-	// Generate default reference pollution for copying.
-	for( size_t i= 0u; i < class_type.ReferencesTagsCount(); ++i )
+	if( operator_variable == nullptr )
 	{
-		Function::ReferencePollution pollution;
-		pollution.dst.first= 0u;
-		pollution.dst.second= i;
-		pollution.src.first= 1u;
-		pollution.src.second= i;
-		op_type.references_pollution.emplace(pollution);
+		// Generate assignment operator
+		Function op_type;
+		op_type.return_type= void_type_for_ret_;
+		op_type.args.resize(2u);
+		op_type.args[0].type= class_type;
+		op_type.args[0].is_mutable= true;
+		op_type.args[0].is_reference= true;
+		op_type.args[1].type= class_type;
+		op_type.args[1].is_mutable= false;
+		op_type.args[1].is_reference= true;
+
+		// Generate default reference pollution for copying.
+		for( size_t i= 0u; i < class_type.ReferencesTagsCount(); ++i )
+		{
+			Function::ReferencePollution pollution;
+			pollution.dst.first= 0u;
+			pollution.dst.second= i;
+			pollution.src.first= 1u;
+			pollution.src.second= i;
+			op_type.references_pollution.emplace(pollution);
+		}
+
+		op_type.llvm_function_type=
+			llvm::FunctionType::get(
+				fundamental_llvm_types_.void_for_ret,
+				{ class_type.GetLLVMType()->getPointerTo(), class_type.GetLLVMType()->getPointerTo() },
+				false );
+
+		llvm::Function* const llvm_op_function=
+			llvm::Function::Create(
+				op_type.llvm_function_type,
+				llvm::Function::LinkageTypes::ExternalLinkage,
+				MangleFunction( the_class.members, op_name, op_type ),
+				module_.get() );
+
+		// Add generated assignment operator
+		FunctionVariable new_op_variable;
+		new_op_variable.type= std::move( op_type );
+		new_op_variable.llvm_function= llvm_op_function;
+
+		if( Value* const operators_value= the_class.members.GetThisScopeValue( op_name ) )
+		{
+			OverloadedFunctionsSet* const operators= operators_value->GetFunctionsSet();
+			U_ASSERT( operators != nullptr );
+			operators->functions.push_back( std::move( new_op_variable ) );
+			operator_variable= &operators->functions.back();
+		}
+		else
+		{
+			OverloadedFunctionsSet operators;
+			operators.functions.push_back( std::move( new_op_variable ) );
+			Value* const inserted_value= the_class.members.AddName( op_name, std::move( operators ) );
+			operator_variable= &inserted_value->GetFunctionsSet()->functions.back();
+		}
 	}
+	SetupGeneratedFunctionAttributes( *operator_variable->llvm_function );
+	operator_variable->llvm_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
+	operator_variable->llvm_function->addAttribute( 2u, llvm::Attribute::NonNull ); // and src is nonnull
 
-	ArgsVector<llvm::Type*> args_llvm_types;
-	args_llvm_types.push_back( class_type.GetLLVMType()->getPointerTo() );
-	args_llvm_types.push_back( class_type.GetLLVMType()->getPointerTo() );
-
-	op_type.llvm_function_type=
-		llvm::FunctionType::get(
-			fundamental_llvm_types_.void_for_ret,
-			llvm::ArrayRef<llvm::Type*>( args_llvm_types.data(), args_llvm_types.size() ),
-			false );
-
-	llvm::Function* const llvm_op_function=
-		llvm::Function::Create(
-			op_type.llvm_function_type,
-			llvm::Function::LinkageTypes::ExternalLinkage,
-			MangleFunction( the_class.members, op_name, op_type ),
-			module_.get() );
-
-	SetupGeneratedFunctionAttributes( *llvm_op_function );
-	llvm_op_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
-	llvm_op_function->addAttribute( 2u, llvm::Attribute::NonNull ); // and src is nonnull
+	operator_variable->have_body= true;
+	operator_variable->is_this_call= true;
+	operator_variable->is_generated= true;
+	operator_variable->constexpr_kind= the_class.can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;
 
 	FunctionContext function_context(
-		op_type.return_type,
-		op_type.return_value_is_mutable,
-		op_type.return_value_is_reference,
+		void_type_for_ret_,
+		false,
+		false,
 		llvm_context_,
-		llvm_op_function );
+		operator_variable->llvm_function );
 
-	llvm::Value* const this_llvm_value= &*llvm_op_function->args().begin();
+	llvm::Value* const this_llvm_value= &*operator_variable->llvm_function->args().begin();
 	this_llvm_value->setName( Keyword( Keywords::this_ ) );
-	llvm::Value* const src_llvm_value= &*std::next(llvm_op_function->args().begin());
+	llvm::Value* const src_llvm_value= &*std::next(operator_variable->llvm_function->args().begin());
 	src_llvm_value->setName( "src" );
 
 	if( the_class.base_class != nullptr )
 	{
-		llvm::Value* index_list[2];
-		index_list[0]= GetZeroGEPIndex();
-		index_list[1]= GetFieldGEPIndex(  0u /*base class is allways first field */ );
+		llvm::Value* const index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex(  0u /*base class is allways first field */ ) };
 		BuildCopyAssignmentOperatorPart(
 			function_context.llvm_ir_builder.CreateGEP( this_llvm_value, index_list ),
 			function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list ),
@@ -622,33 +626,6 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 	function_context.llvm_ir_builder.CreateRetVoid();
-
-	// Add generated assignment operator
-	FunctionVariable op_variable;
-	op_variable.type= std::move( op_type );
-	op_variable.have_body= true;
-	op_variable.is_this_call= true;
-	op_variable.is_generated= true;
-	op_variable.constexpr_kind= the_class.can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;
-	op_variable.llvm_function= llvm_op_function;
-
-	if( prev_operator_variable != nullptr )
-		*prev_operator_variable= std::move( op_variable );
-	else
-	{
-		if( Value* const operators_value= the_class.members.GetThisScopeValue( op_name ) )
-		{
-			OverloadedFunctionsSet* const operators= operators_value->GetFunctionsSet();
-			U_ASSERT( operators != nullptr );
-			operators->functions.push_back( std::move( op_variable ) );
-		}
-		else
-		{
-			OverloadedFunctionsSet operators;
-			operators.functions.push_back( std::move( op_variable ) );
-			the_class.members.AddName( op_name , std::move( operators ) );
-		}
-	}
 
 	// After operator generation, class is copy-assignable.
 	the_class.is_copy_assignable= true;
@@ -676,10 +653,7 @@ void CodeBuilder::BuildCopyConstructorPart(
 			array_type.size,
 			[&](llvm::Value* const counter_value)
 			{
-				llvm::Value* index_list[2];
-				index_list[0]= GetZeroGEPIndex();
-				index_list[1]= counter_value;
-
+				llvm::Value* const index_list[2]{ GetZeroGEPIndex(), counter_value };
 				BuildCopyConstructorPart(
 					function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
 					function_context.llvm_ir_builder.CreateGEP( src, index_list ),
@@ -755,10 +729,7 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 			array_type.size,
 			[&](llvm::Value* const counter_value)
 			{
-				llvm::Value* index_list[2];
-				index_list[0]= GetZeroGEPIndex();
-				index_list[1]= counter_value;
-
+				llvm::Value* const index_list[2]{ GetZeroGEPIndex(), counter_value };
 				BuildCopyAssignmentOperatorPart(
 					function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
 					function_context.llvm_ir_builder.CreateGEP( src, index_list ),
