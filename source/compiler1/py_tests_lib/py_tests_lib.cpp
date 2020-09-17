@@ -495,6 +495,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"GlobalsLoopDetected_Test4",
 		"GlobalsLoopDetected_Test5",
 		"GlobalsLoopDetected_Test6",
+		"GlobalsLoopDetected_Test7",
 		"ImplicitInitializerUsedInsteadOf_InClassFieldInitializer_Test0",
 		"ImplicitInitializerUsedInsteadOf_InClassFieldInitializer_Test1",
 		"ImplicitInitializerUsedInsteadOf_InClassFieldInitializer_Test2",

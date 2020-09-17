@@ -95,6 +95,23 @@ fn GlobalValueToString( NamesScopeValue& global_thing ) : ust::string8
 		}
 	}
 	{
+		auto type_templates_set_ptr= global_thing.Get</TypeTemplatesSet/>();
+		if( !type_templates_set_ptr.empty() )
+		{
+			auto lock= type_templates_set_ptr.lock_imut();
+			var TypeTemplatesSet& type_templates_set= lock.get_ref();
+
+			if( !type_templates_set.syntax_elements.empty() )
+			{
+				return type_templates_set.syntax_elements.front().get_ref().name;
+			}
+			if( !type_templates_set.type_templates.empty() )
+			{
+				return type_templates_set.type_templates.front().get_ref().syntax_element.get_ref().name;
+			}
+		}
+	}
+	{
 		auto global_variable_ptr= global_thing.Get</GlobalVariable/>();
 		if( !global_variable_ptr.empty() )
 		{
@@ -959,6 +976,32 @@ fn CodeBuilder::BuildTypeAlias( mut this, NamesScopePtr& names_scope_ptr, ust::s
 	// Finally, update type alias.
 	auto mut lock= type_alias_ptr.lock_mut();
 	lock.get_ref().t.reset( move(t) );
+}
+
+fn CodeBuilder::BuiltTypeTemplatesSet( mut this, NamesScopePtr& names_scope, ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set_ptr )
+{
+	if( type_templates_set_ptr.lock_imut().get_ref().syntax_elements.empty() )
+	{
+		return;
+	}
+
+	GLOBALS_LOOP_DETECT( type_templates_set_ptr )
+
+	// Process copy of shared pointer value.
+	var TypeTemplatesSet mut type_templates_set= type_templates_set_ptr.lock_imut().get_ref();
+
+	while( !type_templates_set.syntax_elements.empty() )
+	{
+		auto syntax_element= type_templates_set.syntax_elements.back();
+		PrepareTypeTemplate( names_scope, syntax_element, type_templates_set );
+
+		type_templates_set.syntax_elements.pop_back();
+	}
+	type_templates_set.syntax_elements.clear();
+
+	// Finally, update value in shared pointer.
+	auto mut lock= type_templates_set_ptr.lock_mut();
+	lock.get_ref()= move(type_templates_set);
 }
 
 fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalVariable/>& global_variable_ptr )

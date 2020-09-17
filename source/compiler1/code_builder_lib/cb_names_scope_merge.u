@@ -394,6 +394,27 @@ fn CodeBuilder::GetValueFilePos( NamesScopeValue& value ) : FilePos
 		}
 	}
 	{
+		auto type_templates_set_ptr= value.Get</TypeTemplatesSet/>();
+		if( !type_templates_set_ptr.empty() )
+		{
+			var FilePos mut min_file_pos( FilePos::c_max_file_index, FilePos::c_max_line, FilePos::c_max_column );
+
+			auto lock= type_templates_set_ptr.lock_imut();
+			var TypeTemplatesSet& type_templates_set= lock.get_ref();
+
+			foreach( &syntax_element : type_templates_set.syntax_elements )
+			{
+				min_file_pos= ust::min( FilePos(min_file_pos), syntax_element.get_ref().file_pos );
+			}
+			foreach( &type_template_ptr : type_templates_set.type_templates )
+			{
+				min_file_pos= ust::min( FilePos(min_file_pos), type_template_ptr.get_ref().syntax_element.get_ref().file_pos );
+			}
+
+			return min_file_pos;
+		}
+	}
+	{
 		auto class_type_ptr= value.Get</ClassType/>();
 		if( !class_type_ptr.empty() )
 		{

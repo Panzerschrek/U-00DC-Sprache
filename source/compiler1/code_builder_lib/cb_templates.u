@@ -6,26 +6,6 @@ import "code_builder.uh"
 namespace U1
 {
 
-fn CodeBuilder::BuiltTypeTemplatesSet( mut this, NamesScopePtr& names_scope, ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set_ptr )
-{
-	if( type_templates_set_ptr.lock_imut().get_ref().syntax_elements.empty() )
-	{
-		return;
-	}
-
-	auto mut type_templates_set_lock= type_templates_set_ptr.lock_mut();
-	auto &mut type_templates_set= type_templates_set_lock.get_ref();
-
-	while( !type_templates_set.syntax_elements.empty() )
-	{
-		auto syntax_element= type_templates_set.syntax_elements.back();
-		PrepareTypeTemplate( names_scope, syntax_element, type_templates_set );
-
-		type_templates_set.syntax_elements.pop_back();
-	}
-	type_templates_set.syntax_elements.clear();
-}
-
 fn CodeBuilder::PrepareTypeTemplate(
 	mut this,
 	NamesScopePtr& names_scope,

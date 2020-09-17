@@ -150,6 +150,7 @@ private:
 	fn BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypePtr& class_type );
 	fn BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr& enum_type );
 	fn BuildTypeAlias( mut this, NamesScopePtr& names_scope, ust::shared_ptr_mut</TypeAlias/>& type_alias_ptr );
+	fn BuiltTypeTemplatesSet( mut this, NamesScopePtr& names_scope, ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set_ptr );
 	fn BuildGlobalVariable( mut this, NamesScopePtr& names_scope, ust::shared_ptr_mut</GlobalVariable/>& global_variable_ptr );
 	fn BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope, ust::shared_ptr_mut</GlobalAutoVariable/>& global_auto_variable_ptr );
 
@@ -324,11 +325,6 @@ private:
 		FilePos& file_pos ) : Value;
 
 	// Templates
-	fn BuiltTypeTemplatesSet(
-		mut this,
-		NamesScopePtr& names_scope,
-		ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set_ptr );
-
 	fn PrepareTypeTemplate(
 		mut this,
 		NamesScopePtr& names_scope,

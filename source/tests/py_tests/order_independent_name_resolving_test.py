@@ -224,3 +224,13 @@ def GlobalsLoopDetected_Test6():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "GlobalsLoopDetected" )
 	assert( errors_list[0].file_pos.line == 2 )
+
+
+def GlobalsLoopDetected_Test7():
+	c_program_text= """
+		template</type T/> struct Rec</ Rec</T/> /> {}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "GlobalsLoopDetected" )
+	assert( errors_list[0].file_pos.line == 2 )
