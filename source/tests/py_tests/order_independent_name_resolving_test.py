@@ -1,7 +1,7 @@
 from py_tests_common import *
 
 
-def OrederIndependentFunctions_Test0():
+def OrderIndependentFunctions_Test0():
 	c_program_text= """
 		fn Baz() : i32 { return 81; }
 		fn Foo() : i32
@@ -15,7 +15,7 @@ def OrederIndependentFunctions_Test0():
 	assert( call_result == 52414 * 81 )
 
 
-def OrederIndependentClasses_Test0():
+def OrderIndependentClasses_Test0():
 	c_program_text= """
 		fn Foo()
 		{
@@ -30,7 +30,7 @@ def OrederIndependentClasses_Test0():
 	call_result= tests_lib.run_function( "_Z3Foov" )
 
 
-def OrederIndependent_OutOfLineFunction_Test0():
+def OrderIndependent_OutOfLineFunction_Test0():
 	c_program_text= """
 		fn Bar() : i32;
 		fn Foo() : i32  { return Bar(); }
@@ -41,7 +41,7 @@ def OrederIndependent_OutOfLineFunction_Test0():
 	assert( call_result == 88524 )
 
 
-def OrederIndependent_OutOfLineFunction_Test1():
+def OrderIndependent_OutOfLineFunction_Test1():
 	c_program_text= """
 		fn Bar() : i32  { return 665235; }
 		fn Foo() : i32  { return Bar(); }
@@ -53,7 +53,7 @@ def OrederIndependent_OutOfLineFunction_Test1():
 	assert( call_result == 665235 )
 
 
-def OrederIndependent_OutOfLineFunction_Test2():
+def OrderIndependent_OutOfLineFunction_Test2():
 	c_program_text= """
 		fn Foo() : i32  { return N::Bar(); }
 		namespace N
@@ -67,7 +67,7 @@ def OrederIndependent_OutOfLineFunction_Test2():
 	assert( call_result == 5632478 )
 
 
-def OrederIndependent_OutOfLineFunction_Test3():
+def OrderIndependent_OutOfLineFunction_Test3():
 	c_program_text= """
 		fn Foo() : i32  { return N::Bar(); }
 		namespace N
@@ -81,7 +81,7 @@ def OrederIndependent_OutOfLineFunction_Test3():
 	assert( call_result == 5623222 )
 
 
-def OrederIndependent_Enums_Test0():
+def OrderIndependent_Enums_Test0():
 	c_program_text= """
 		fn Foo() : i32
 		{
@@ -94,7 +94,7 @@ def OrederIndependent_Enums_Test0():
 	assert( call_result == 2 )
 
 
-def OrederIndependent_Enums_Test1():
+def OrderIndependent_Enums_Test1():
 	c_program_text= """
 		fn Foo() : i32
 		{
@@ -138,7 +138,7 @@ def OrderIndependent_Typedef_Test1():
 	assert( call_result == 653524 )
 
 
-def OrederIndependent_RecursiveTypedef_Test0():
+def OrderIndependent_RecursiveTypedef_Test0():
 	c_program_text= """
 		struct S
 		{
