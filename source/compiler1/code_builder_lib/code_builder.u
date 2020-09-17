@@ -1578,6 +1578,29 @@ fn CodeBuilder::IsCopyAssignmentOperator( FunctionVariable& function_variable, C
 		param_src.t == class_type && !param_src.is_mutable && param_src.is_reference;
 }
 
+fn CodeBuilder::AddGlobalConstantVariable( this, ust::string8& name_null_terminated, LLVMTypeRef llvm_type, LLVMValueRef initializer ) : LLVMValueRef
+{
+	unsafe
+	{
+		// Reuse existing global variable with same name and initializer.
+		var LLVMValueRef prev_global_variable= LLVMGetNamedGlobal( module_, name_null_terminated.front() );
+		if( prev_global_variable != LLVMValueRef::Null && LLVMGetInitializer( prev_global_variable ) == initializer )
+		{
+			return prev_global_variable;
+		}
+
+		var LLVMValueRef global_value= LLVMAddGlobal( module_, llvm_type, name_null_terminated.front() );
+		LLVMSetLinkage( global_value, LLVMLinkage::Internal );
+		LLVMSetUnnamedAddress( global_value, LLVMUnnamedAddr::GlobalUnnamedAddr );
+		LLVMSetGlobalConstant( global_value, LLVMBool::True );
+		if( initializer != LLVMValueRef::Null )
+		{
+			LLVMSetInitializer( global_value, initializer );
+		}
+		return global_value;
+	}
+}
+
 fn CodeBuilder::GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef
 {
 	if( t == U_FundamentalType::InvalidType	) { return fundamental_llvm_types_.invalid_type_; }

@@ -1192,14 +1192,8 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				{
 					.t= given_variable.t,
 					.constexpr_value= given_variable.constexpr_value,
+					.llvm_value= AddGlobalConstantVariable( param_name + "\0", given_variable.t.GetLLVMType(), given_variable.constexpr_value ),
 				};
-				unsafe
-				{
-					out_var.llvm_value= LLVMAddGlobal( module_, out_var.t.GetLLVMType(), ( param_name + "\0" ).front() );
-					LLVMSetLinkage( out_var.llvm_value, LLVMLinkage::Internal );
-					LLVMSetGlobalConstant( out_var.llvm_value, LLVMBool::True );
-					LLVMSetInitializer( out_var.llvm_value, out_var.constexpr_value );
-				}
 
 				template_arg.something= move(out_var);
 				return true;

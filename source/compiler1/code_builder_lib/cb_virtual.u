@@ -417,15 +417,8 @@ fn CodeBuilder::BuildClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 	auto mut class_lock= class_type_ptr.lock_mut();
 	auto &mut class_= class_lock.get_ref();
 
-	unsafe
-	{
-		auto global_variable= LLVMAddGlobal( module_, class_.virtual_table_llvm_type, name_mangled.front() );
-		LLVMSetLinkage( global_variable, LLVMLinkage::Internal );
-		LLVMSetGlobalConstant( global_variable, LLVMBool::True );
-		LLVMSetInitializer( global_variable, virtual_table_initializer );
-
-		class_.virtual_table_llvm_variable= global_variable;
-	}
+	class_.virtual_table_llvm_variable=
+		AddGlobalConstantVariable( name_mangled, class_.virtual_table_llvm_type, virtual_table_initializer );
 }
 
 fn CodeBuilder::SetupVirtualTablePointers_r(

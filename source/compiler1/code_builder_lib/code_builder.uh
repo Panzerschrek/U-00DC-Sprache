@@ -634,6 +634,8 @@ private:
 	fn IsCopyConstructor( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool;
 	fn IsCopyAssignmentOperator( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool;
 
+	fn AddGlobalConstantVariable( this, ust::string8& name_null_terminated, LLVMTypeRef llvm_type, LLVMValueRef initializer ) : LLVMValueRef;
+
 	fn GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef;
 	fn GetZeroGEPIndex( this ) : LLVMValueRef;
 	fn CreateMoveToLLVMRegisterInstruction( Variable& variable, FunctionContext& function_context ) : LLVMValueRef;

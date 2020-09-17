@@ -214,15 +214,8 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 	unsafe
 	{
 		auto llvm_type= v.t.GetLLVMType();
-		auto global_variable= LLVMAddGlobal( module_, llvm_type, GetTypeinfoVariableName( typeinfo_class ).front() );
-		LLVMSetLinkage( global_variable, LLVMLinkage::Internal );
-		LLVMSetGlobalConstant( global_variable, LLVMBool::True );
-
-		auto initializer= LLVMGetUndef( llvm_type ); // llvm::Constant is immutable, so, we can create real constant only if we build comple typeinfo.
-		LLVMSetInitializer( global_variable, initializer );
-
-		v.llvm_value= global_variable;
-		v.constexpr_value= initializer;
+		v.constexpr_value= LLVMGetUndef( llvm_type ); // llvm::Constant is immutable, so, we can create real constant only if we build comple typeinfo.
+		v.llvm_value= AddGlobalConstantVariable( GetTypeinfoVariableName( typeinfo_class ), llvm_type, v.constexpr_value );
 	}
 
 	var TypeinfoStruct mut typeinfo_struct{ .t= t, .v= v };

@@ -111,6 +111,13 @@ enum LLVMTypeKind : u32
 	Token,        /**< Tokens */
 }
 
+enum LLVMUnnamedAddr : u32
+{
+	NoUnnamedAddr,    /**< Address of the GV is significant. */
+	LocalUnnamedAddr, /**< Address of the GV is locally insignificant. */
+	GlobalUnnamedAddr /**< Address of the GV is globally insignificant. */
+}
+
 type LLVMAttributeIndex= u32;
 auto LLVMAttributeReturnIndex= 0u;
 auto LLVMAttributeFunctionIndex= ~0u;
@@ -184,9 +191,12 @@ fn nomangle LLVMIsUndef(LLVMValueRef Val) unsafe : LLVMBool;
 
 fn nomangle LLVMAddFunction(LLVMModuleRef M, NullTerminatedString& Name, LLVMTypeRef FunctionTy) unsafe : LLVMValueRef;
 fn nomangle LLVMSetLinkage(LLVMValueRef Global, LLVMLinkage Linkage) unsafe;
+fn nomangle LLVMSetUnnamedAddress(LLVMValueRef Global, LLVMUnnamedAddr UnnamedAddr) unsafe;
+
 
 // Global variable
 
+fn nomangle LLVMGetNamedGlobal(LLVMModuleRef M, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMAddGlobal(LLVMModuleRef M, LLVMTypeRef Ty, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMSetInitializer(LLVMValueRef GlobalVar, LLVMValueRef ConstantVal) unsafe : LLVMValueRef;
 fn nomangle LLVMSetGlobalConstant(LLVMValueRef GlobalVar, LLVMBool IsConstant) unsafe;

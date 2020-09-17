@@ -927,14 +927,8 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 		var Enum::Element mut out_element;
 
 		auto name_mangled= MangleGlobalVariable( enum_inernal_names_scope.lock_imut().get_ref(), element.name );
-		unsafe
-		{
-			out_element.constexpr_value= LLVMConstInt( underlaying_type.llvm_type, u64(enum_elements.size()), LLVMBool::False );
-			out_element.llvm_value= LLVMAddGlobal( module_, underlaying_type.llvm_type, name_mangled.front() );
-			LLVMSetLinkage( out_element.llvm_value, LLVMLinkage::Internal );
-			LLVMSetGlobalConstant( out_element.llvm_value, LLVMBool::True );
-			LLVMSetInitializer( out_element.llvm_value, out_element.constexpr_value );
-		}
+		unsafe{  out_element.constexpr_value= LLVMConstInt( underlaying_type.llvm_type, u64(enum_elements.size()), LLVMBool::False );  }
+		out_element.llvm_value= AddGlobalConstantVariable( name_mangled, underlaying_type.llvm_type, out_element.constexpr_value );
 
 		enum_elements.insert( element.name, move(out_element) );
 	}
@@ -1041,12 +1035,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 	if( variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 	{
 		auto name_mangled= MangleGlobalVariable( names_scope_ptr.lock_imut().get_ref(), variable_declaration.name );
-		unsafe
-		{
-			variable.llvm_value= LLVMAddGlobal( module_, variable.t.GetLLVMType(), name_mangled.front() );
-			LLVMSetLinkage( variable.llvm_value, LLVMLinkage::Internal );
-			LLVMSetGlobalConstant( variable.llvm_value, LLVMBool::True );
-		}
+		variable.llvm_value= AddGlobalConstantVariable( name_mangled, variable.t.GetLLVMType(), LLVMValueRef::Null );
 
 		if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
 		{
@@ -1174,13 +1163,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 	else if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 	{
 		auto name_mangled= MangleGlobalVariable( names_scope_ptr.lock_imut().get_ref(), auto_variable_declaration.name );
-		unsafe
-		{
-			variable.llvm_value= LLVMAddGlobal( module_, variable.t.GetLLVMType(), name_mangled.front() );
-			LLVMSetLinkage( variable.llvm_value, LLVMLinkage::Internal );
-			LLVMSetGlobalConstant( variable.llvm_value, LLVMBool::True );
-			LLVMSetInitializer( variable.llvm_value, expr.constexpr_value );
-		}
+		variable.llvm_value= AddGlobalConstantVariable( name_mangled, variable.t.GetLLVMType(), expr.constexpr_value );
 
 		if( !expr.t.IsCopyConstructible() )
 		{
