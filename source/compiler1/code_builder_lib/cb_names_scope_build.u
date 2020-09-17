@@ -54,9 +54,7 @@ fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr
 
 fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</TypeAlias/>& type_alias_ptr )
 {
-	auto mut lock= type_alias_ptr.lock_mut();
-	auto &mut type_alias= lock.get_ref();
-	BuildTypeAlias( names_scope_ptr, type_alias );
+	BuildTypeAlias( names_scope_ptr, type_alias_ptr );
 }
 
 fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set )
@@ -71,16 +69,12 @@ fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr
 
 fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalVariable/>& global_variable_ptr )
 {
-	auto mut lock= global_variable_ptr.lock_mut();
-	auto &mut global_variable= lock.get_ref();
-	BuildGlobalVariable( names_scope_ptr, global_variable );
+	BuildGlobalVariable( names_scope_ptr, global_variable_ptr );
 }
 
 fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalAutoVariable/>& global_auto_variable_ptr )
 {
-	auto mut lock= global_auto_variable_ptr.lock_mut();
-	auto &mut global_auto_variable= lock.get_ref();
-	BuildGlobalAutoVariable( names_scope_ptr, global_auto_variable );
+	BuildGlobalAutoVariable( names_scope_ptr, global_auto_variable_ptr );
 }
 
 fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalStaticAssertsSet/>& global_static_asserts_set_ptr )

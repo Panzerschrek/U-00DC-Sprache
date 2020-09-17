@@ -365,6 +365,19 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 	halt; // Unhandled combination of template signature parameter kinds.
 }
 
+fn CodeBuilder::GetFunctionWithSameType( FunctionsSet &'x mut functions_set, Type& function_type ) : ust::optional_ref</ FunctionVariable, true />'x'
+{
+	foreach( &mut function : functions_set.functions )
+	{
+		if( function.t == function_type )
+		{
+			return ust::optional_ref</ FunctionVariable, true />( function );
+		}
+	}
+
+	return ust::optional_ref</ FunctionVariable, true />();
+}
+
 fn CodeBuilder::ApplyOverloadedFunction(
 	FunctionsSet &mut functions_set,
 	FunctionVariable mut function,

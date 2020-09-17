@@ -6,58 +6,6 @@ import "code_builder.uh"
 namespace U1
 {
 
-fn GetValueFilePos( NamesScopeValue& value ) : FilePos
-{
-	{
-		auto functions_set= value.Get</NamesScopeFunctionsSet/>();
-		if( !functions_set.empty() )
-		{
-		}
-	}
-	{
-		auto type_alias_ptr= value.Get</TypeAlias/>();
-		if( !type_alias_ptr.empty() )
-		{
-			return type_alias_ptr.lock_imut().get_ref().syntax_element.get_ref().file_pos;
-		}
-	}
-	{
-		auto class_type_ptr= value.Get</ClassType/>();
-		if( !class_type_ptr.empty() )
-		{
-			auto class_lock= class_type_ptr.lock_imut();
-			auto& class_= class_lock.get_ref();
-			return
-				select( class_.syntax_element.empty()
-					? class_.forward_declaration_syntax_element.get_ref().file_pos
-					: class_.syntax_element.get_ref().file_pos );
-		}
-	}
-	{
-		auto enum_type_ptr= value.Get</Enum/>();
-		if( !enum_type_ptr.empty() )
-		{
-			return enum_type_ptr.lock_imut().get_ref().syntax_element.get_ref().file_pos;
-		}
-	}
-	{
-		auto global_variable_ptr= value.Get</GlobalVariable/>();
-		if( !global_variable_ptr.empty() )
-		{
-			return global_variable_ptr.lock_imut().get_ref().syntax_element.get_ref().file_pos;
-		}
-	}
-	{
-		auto global_auto_variable_ptr= value.Get</GlobalAutoVariable/>();
-		if( !global_auto_variable_ptr.empty() )
-		{
-			return global_auto_variable_ptr.lock_imut().get_ref().syntax_element.get_ref().file_pos;
-		}
-	}
-
-	return FilePos();
-}
-
 fn CodeBuilder::NamesScopeMerge( NamesScopeMutPtr& dst_ptr, NamesScope& src )
 {
 	foreach( &el : src.GetInternalContainer() )
@@ -394,5 +342,114 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 	// Can not merge things ot this kind.
 	REPORT_ERROR( Redefinition, target_names_scope, FilePos() /* TODO - file_pos */, name )
 }
+
+fn CodeBuilder::GetValueFilePos( NamesScopeValue& value ) : FilePos
+{
+	{
+		auto functions_set_ptr= value.Get</NamesScopeFunctionsSet/>();
+		if( !functions_set_ptr.empty() )
+		{
+			var FilePos mut min_file_pos( FilePos::c_max_file_index, FilePos::c_max_line, FilePos::c_max_column );
+
+			auto lock= functions_set_ptr.lock_imut();
+			var NamesScopeFunctionsSet& functions_set= lock.get_ref();
+
+			foreach( &syntax_element : functions_set.syntax_elements )
+			{
+				min_file_pos= ust::min( FilePos(min_file_pos), syntax_element.get_ref().file_pos );
+			}
+			foreach( &syntax_element : functions_set.out_of_line_syntax_elements )
+			{
+				min_file_pos= ust::min( FilePos(min_file_pos), syntax_element.get_ref().file_pos );
+			}
+			foreach( &syntax_element : functions_set.function_templates_syntax_elements )
+			{
+				min_file_pos= ust::min( FilePos(min_file_pos), syntax_element.get_ref().file_pos );
+			}
+
+			foreach( &function : functions_set.functions_set.functions )
+			{
+				if( !function.prototype_syntax_element.empty() )
+				{
+					min_file_pos= ust::min( FilePos(min_file_pos), function.prototype_syntax_element.get_ref().file_pos );
+				}
+				if( !function.body_syntax_element.empty() )
+				{
+					min_file_pos= ust::min( FilePos(min_file_pos), function.body_syntax_element.get_ref().file_pos );
+				}
+			}
+			foreach( &function_template_ptr : functions_set.functions_set.function_templates )
+			{
+				min_file_pos= ust::min( FilePos(min_file_pos), function_template_ptr.get_ref().syntax_element.get_ref().file_pos );
+			}
+
+			return min_file_pos;
+		}
+	}
+	{
+		auto type_alias_ptr= value.Get</TypeAlias/>();
+		if( !type_alias_ptr.empty() )
+		{
+			return type_alias_ptr.lock_imut().get_ref().syntax_element.get_ref().file_pos;
+		}
+	}
+	{
+		auto type_templates_set_ptr= value.Get</TypeTemplatesSet/>();
+		if( !type_templates_set_ptr.empty() )
+		{
+			var FilePos mut min_file_pos( FilePos::c_max_file_index, FilePos::c_max_line, FilePos::c_max_column );
+
+			auto lock= type_templates_set_ptr.lock_imut();
+			var TypeTemplatesSet& type_templates_set= lock.get_ref();
+
+			foreach( &syntax_element : type_templates_set.syntax_elements )
+			{
+				min_file_pos= ust::min( FilePos(min_file_pos), syntax_element.get_ref().file_pos );
+			}
+			foreach( &type_template_ptr : type_templates_set.type_templates )
+			{
+				min_file_pos= ust::min( FilePos(min_file_pos), type_template_ptr.get_ref().syntax_element.get_ref().file_pos );
+			}
+
+			return min_file_pos;
+		}
+	}
+	{
+		auto class_type_ptr= value.Get</ClassType/>();
+		if( !class_type_ptr.empty() )
+		{
+			auto class_lock= class_type_ptr.lock_imut();
+			auto& class_= class_lock.get_ref();
+			return
+				select( class_.syntax_element.empty()
+					? class_.forward_declaration_syntax_element.get_ref().file_pos
+					: class_.syntax_element.get_ref().file_pos );
+		}
+	}
+	{
+		auto enum_type_ptr= value.Get</Enum/>();
+		if( !enum_type_ptr.empty() )
+		{
+			return enum_type_ptr.lock_imut().get_ref().syntax_element.get_ref().file_pos;
+		}
+	}
+	{
+		auto global_variable_ptr= value.Get</GlobalVariable/>();
+		if( !global_variable_ptr.empty() )
+		{
+			return global_variable_ptr.lock_imut().get_ref().syntax_element.get_ref().file_pos;
+		}
+	}
+	{
+		auto global_auto_variable_ptr= value.Get</GlobalAutoVariable/>();
+		if( !global_auto_variable_ptr.empty() )
+		{
+			return global_auto_variable_ptr.lock_imut().get_ref().syntax_element.get_ref().file_pos;
+		}
+	}
+
+	return FilePos();
+}
+
 
 } // namespace U1

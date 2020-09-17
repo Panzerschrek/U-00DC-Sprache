@@ -591,6 +591,10 @@ public:
 		return ust::shared_ptr_nullable_mut</T/>(x.get_ref());
 	}
 
+	// Compare shared pointers
+	op==( NamesScopeValue&l, NamesScopeValue& r ) : bool;
+	op!=( NamesScopeValue&l, NamesScopeValue& r ) : bool;
+
 private:
 	template</type T/> struct IsSharedPtr{ auto value= false; }
 	template</type T/> struct IsSharedPtr</ ust::shared_ptr_mut</T/> /> { auto value= true; }
