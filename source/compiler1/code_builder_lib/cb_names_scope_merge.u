@@ -6,58 +6,6 @@ import "code_builder.uh"
 namespace U1
 {
 
-fn GetValueFilePos( NamesScopeValue& value ) : FilePos
-{
-	{
-		auto functions_set= value.Get</NamesScopeFunctionsSet/>();
-		if( !functions_set.empty() )
-		{
-		}
-	}
-	{
-		auto type_alias_ptr= value.Get</TypeAlias/>();
-		if( !type_alias_ptr.empty() )
-		{
-			return type_alias_ptr.lock_imut().get_ref().syntax_element.get_ref().file_pos;
-		}
-	}
-	{
-		auto class_type_ptr= value.Get</ClassType/>();
-		if( !class_type_ptr.empty() )
-		{
-			auto class_lock= class_type_ptr.lock_imut();
-			auto& class_= class_lock.get_ref();
-			return
-				select( class_.syntax_element.empty()
-					? class_.forward_declaration_syntax_element.get_ref().file_pos
-					: class_.syntax_element.get_ref().file_pos );
-		}
-	}
-	{
-		auto enum_type_ptr= value.Get</Enum/>();
-		if( !enum_type_ptr.empty() )
-		{
-			return enum_type_ptr.lock_imut().get_ref().syntax_element.get_ref().file_pos;
-		}
-	}
-	{
-		auto global_variable_ptr= value.Get</GlobalVariable/>();
-		if( !global_variable_ptr.empty() )
-		{
-			return global_variable_ptr.lock_imut().get_ref().syntax_element.get_ref().file_pos;
-		}
-	}
-	{
-		auto global_auto_variable_ptr= value.Get</GlobalAutoVariable/>();
-		if( !global_auto_variable_ptr.empty() )
-		{
-			return global_auto_variable_ptr.lock_imut().get_ref().syntax_element.get_ref().file_pos;
-		}
-	}
-
-	return FilePos();
-}
-
 fn CodeBuilder::NamesScopeMerge( NamesScopeMutPtr& dst_ptr, NamesScope& src )
 {
 	foreach( &el : src.GetInternalContainer() )
@@ -394,5 +342,59 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 	// Can not merge things ot this kind.
 	REPORT_ERROR( Redefinition, target_names_scope, FilePos() /* TODO - file_pos */, name )
 }
+
+fn CodeBuilder::GetValueFilePos( NamesScopeValue& value ) : FilePos
+{
+	{
+		auto functions_set= value.Get</NamesScopeFunctionsSet/>();
+		if( !functions_set.empty() )
+		{
+			// TODO
+		}
+	}
+	{
+		auto type_alias_ptr= value.Get</TypeAlias/>();
+		if( !type_alias_ptr.empty() )
+		{
+			return type_alias_ptr.lock_imut().get_ref().syntax_element.get_ref().file_pos;
+		}
+	}
+	{
+		auto class_type_ptr= value.Get</ClassType/>();
+		if( !class_type_ptr.empty() )
+		{
+			auto class_lock= class_type_ptr.lock_imut();
+			auto& class_= class_lock.get_ref();
+			return
+				select( class_.syntax_element.empty()
+					? class_.forward_declaration_syntax_element.get_ref().file_pos
+					: class_.syntax_element.get_ref().file_pos );
+		}
+	}
+	{
+		auto enum_type_ptr= value.Get</Enum/>();
+		if( !enum_type_ptr.empty() )
+		{
+			return enum_type_ptr.lock_imut().get_ref().syntax_element.get_ref().file_pos;
+		}
+	}
+	{
+		auto global_variable_ptr= value.Get</GlobalVariable/>();
+		if( !global_variable_ptr.empty() )
+		{
+			return global_variable_ptr.lock_imut().get_ref().syntax_element.get_ref().file_pos;
+		}
+	}
+	{
+		auto global_auto_variable_ptr= value.Get</GlobalAutoVariable/>();
+		if( !global_auto_variable_ptr.empty() )
+		{
+			return global_auto_variable_ptr.lock_imut().get_ref().syntax_element.get_ref().file_pos;
+		}
+	}
+
+	return FilePos();
+}
+
 
 } // namespace U1

@@ -488,6 +488,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"FunctionTypeDeclaration_Test4",
 		"FundamentalTypesInfo_Test0",
 		"GeneratedCopyConstructor_Test0",
+		"GlobalsLoopDetected_Test0",
+		"GlobalsLoopDetected_Test1",
 		"ImplicitInitializerUsedInsteadOf_InClassFieldInitializer_Test0",
 		"ImplicitInitializerUsedInsteadOf_InClassFieldInitializer_Test1",
 		"ImplicitInitializerUsedInsteadOf_InClassFieldInitializer_Test2",
