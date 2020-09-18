@@ -526,6 +526,17 @@ fn CodeBuilder::ResolveValue(
 			current_value= move(names_scope_value);
 		}
 	}
+	else if( !complex_name.start.get</Synt::Typeof/>().empty() )
+	{
+		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+
+		auto instructions_state= SaveInstructionsState( function_context );
+		var Variable variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, complex_name.start.get</Synt::Typeof/>().get_ref().expr.get_ref() );
+		RestoreInstructionsState( function_context, instructions_state );
+
+		current_value= NamesScopeValue( variable.t );
+	}
 	else
 	{
 		var ust::string8& start_name= complex_name.start.get</ust::string8/>().get_ref();

@@ -33,13 +33,19 @@ struct EmptyVariant{} // used as stub
 
 type TemplateArgs= ust::vector</Expression/>;
 
+struct Typeof
+{
+	ust::box</Expression/> expr;
+}
+
 struct ComplexName
 {
 	FilePos file_pos;
 
 	ust::variant</ tup[
 		EmptyVariant, // for name, started with ::
-		ust::string8 // for regular name
+		ust::string8, // for regular name
+		Typeof
 		] /> start;
 
 	type TailComponent= ust::variant</ tup[ ust::string8, ust::box</TemplateArgs/> ] />;
