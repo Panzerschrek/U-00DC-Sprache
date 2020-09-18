@@ -1397,7 +1397,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		auto block_build_info= BuildBlockElement( args_names_scope_ptr, function_context, block );
 		if( !block_build_info.have_terminal_instruction_inside )
 		{
-			if( func_variable.t.return_type == void_type_ )
+			if( func_variable.t.return_type == void_type_ && !func_variable.t.return_value_is_reference )
 			{
 				// Manually generate "return" for void-return functions.
 				CallDestructorsForAllVariablesFrames( args_names_scope_ptr, function_context, block.end_file_pos );
