@@ -23,7 +23,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 		return t;
 	}
 
-	REPORT_ERROR( NameIsNotTypeName, names_scope, named_type.file_pos, ust::string8( "TODO - print complex name" ) )
+	REPORT_ERROR( NameIsNotTypeName, names_scope, named_type.file_pos, named_type )
 	return Type( FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ ) );
 }
 

@@ -287,7 +287,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 				return move(specialized_template_param);
 			}
 		}
-		REPORT_ERROR( TemplateInstantiationRequired, names_scope, param.file_pos, ust::string8( "TODO - print full complex name" ) )
+		REPORT_ERROR( TemplateInstantiationRequired, names_scope, param.file_pos, param )
 	}
 
 	// Nothing special - process as regular expression
