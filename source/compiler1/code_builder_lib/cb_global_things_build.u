@@ -894,7 +894,7 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 
 	// Default underlaying type is 32bit. TODO - maybe do it platform-dependent?
 	var FundamentalType mut underlaying_type( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ );
-	if( !enum_declaration.underlaying_type.name.empty() )
+	if( !( !enum_declaration.underlaying_type.start.get</Synt::EmptyVariant/>().empty() && enum_declaration.underlaying_type.tail.empty() ) )
 	{
 		var FunctionContext mut function_context= CreateGlobalFunctionContext();
 		auto t= PrepareType( names_scope_ptr, function_context, enum_declaration.underlaying_type );

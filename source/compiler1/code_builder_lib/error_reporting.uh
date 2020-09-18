@@ -49,11 +49,17 @@ fn PreprocessErrorArg( T& x ) : ust::string8
 	{
 		return ust::string8(x);
 	}
+	else if( ust::is_same_type</ T, Synt::ComplexName />() )
+	{
+		return ComplexNameToString(x);
+	}
 	else
 	{
 		return ust::to_string8(x);
 	}
 }
+
+fn ComplexNameToString( Synt::ComplexName& complex_name ) : ust::string8;
 
 fn NormalizeErrors( ust::vector</CodeBuilderError/> &mut errors );
 

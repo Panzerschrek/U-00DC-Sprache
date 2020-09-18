@@ -1030,6 +1030,18 @@ fn NamesScope::ToString( this ) : ust::string8
 				return move(res);
 			}
 		}
+		if( !class_type.typeinfo_src_type_.empty() )
+		{
+			var ust::string8 mut res;
+			res= KeywordToString(Keyword::typeof_);
+			res+= "(";
+			res+= KeywordToString(Keyword::typeinfo_);
+			res+= "</";
+			res+= class_type.typeinfo_src_type_.get_ref().ToString();
+			res+= "/>";
+			res+=")";
+			return move(res);
+		}
 	}
 
 	var ust::string8 mut res;

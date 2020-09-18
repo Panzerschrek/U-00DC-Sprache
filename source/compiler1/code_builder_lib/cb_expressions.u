@@ -286,7 +286,14 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value
 {
-	if( named_operand.tail.empty() && named_operand.name == KeywordToString( Keyword::this_ ) )
+	if( named_operand.start.get</ust::string8/>().empty() || !named_operand.tail.empty() )
+	{
+		return ResolveValue( names_scope, function_context, named_operand );
+	}
+
+	// Process special simple names here.
+	var ust::string8& name= named_operand.start.get</ust::string8/>().get_ref();
+	if( name == KeywordToString( Keyword::this_ ) )
 	{
 		if( function_context.this_.empty() || function_context.whole_this_is_unavailable )
 		{
@@ -295,7 +302,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		}
 		return function_context.this_.get_ref();
 	}
-	if( named_operand.tail.empty() && named_operand.name == KeywordToString( Keyword::base_ ) )
+	if( name == KeywordToString( Keyword::base_ ) )
 	{
 		if( function_context.this_.empty() )
 		{
@@ -329,7 +336,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 		return move(base_);
 	}
-	if( named_operand.tail.empty() && !function_context.this_.empty() )
+	if( !function_context.this_.empty() )
 	{
 		// Process access to "this" and parent class fields separately.
 		// This needed, because parent class fields does not added into class namespace.
@@ -345,10 +352,10 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			{
 				auto class_type_lock= class_type.lock_imut();
 				if( !(class_type != this_class_type &&
-					 class_type_lock.get_ref().GetMemberVisibility( named_operand.name ) == Synt::ClassVisibility::Private ) ) // Ignore private parent fields.
+					 class_type_lock.get_ref().GetMemberVisibility( name ) == Synt::ClassVisibility::Private ) ) // Ignore private parent fields.
 				{
 					auto class_members_lock= class_type_lock.get_ref().members.lock_imut();
-					if_var( &member : class_members_lock.get_ref().GetThisScopeValue( named_operand.name ) )
+					if_var( &member : class_members_lock.get_ref().GetThisScopeValue( name ) )
 					{
 						class_member= member;
 						break;
@@ -372,10 +379,10 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			{
 				if( function_context.whole_this_is_unavailable )
 				{
-					if( !function_context.uninitialized_this_fields.find( named_operand.name ).empty() ||
+					if( !function_context.uninitialized_this_fields.find( name ).empty() ||
 						( class_type != this_class_type && !function_context.uninitialized_this_fields.find( KeywordToString( Keyword::base_ ) ).empty() ) )
 					{
-						REPORT_ERROR( FieldIsNotInitializedYet, names_scope, named_operand.file_pos, named_operand.name )
+						REPORT_ERROR( FieldIsNotInitializedYet, names_scope, named_operand.file_pos, name )
 					}
 				}
 

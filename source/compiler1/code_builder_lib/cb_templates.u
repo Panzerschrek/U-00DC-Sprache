@@ -146,7 +146,7 @@ fn CodeBuilder::PrepareTemplateParams(
 	var ust::vector</ TemplateBase::Param /> mut template_params;
 	foreach( &param : in_params )
 	{
-		auto& name= param.name.get</Synt::ComplexName/>().get_ref().name;
+		var ust::string8& name= param.name.get</Synt::ComplexName/>().get_ref().start.get</ust::string8/>().get_ref();
 
 		foreach( &prev_param : template_params )
 		{
@@ -235,16 +235,19 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	Synt::ComplexName& param,
 	ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam
 {
-	if( !param.name.empty() && param.tail.empty() )
+	if( param.tail.empty() )
 	{
-		for( auto mut i= 0s; i < template_params.size(); ++i )
+		if_var( &simple_name : param.start.get</ust::string8/>() )
 		{
-			if( param.name == template_params[i].name )
+			for( auto mut i= 0s; i < template_params.size(); ++i )
 			{
-				template_params_usage_flags[i]= true;
+				if( simple_name == template_params[i].name )
+				{
+					template_params_usage_flags[i]= true;
 
-				var TemplateSignatureParam::TemplateParam mut res{ .index= i };
-				return move(res);
+					var TemplateSignatureParam::TemplateParam mut res{ .index= i };
+					return move(res);
+				}
 			}
 		}
 	}
@@ -284,7 +287,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 				return move(specialized_template_param);
 			}
 		}
-		REPORT_ERROR( TemplateInstantiationRequired, names_scope, param.file_pos, param.name )
+		REPORT_ERROR( TemplateInstantiationRequired, names_scope, param.file_pos, param )
 	}
 
 	// Nothing special - process as regular expression
