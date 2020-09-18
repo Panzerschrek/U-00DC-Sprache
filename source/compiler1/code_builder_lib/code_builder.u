@@ -509,7 +509,7 @@ fn CodeBuilder::ResolveValue(
 	var ust::shared_ptr_nullable_imut</NamesScope/> mut current_scope(names_scope);
 
 	var ust::optional</NamesScopeValue/> mut current_value;
-	if( complex_name.name.empty() ) // ::
+	if( !complex_name.start.get</Synt::EmptyVariant/>().empty() ) // ::
 	{
 		while( true )
 		{
@@ -528,9 +528,10 @@ fn CodeBuilder::ResolveValue(
 	}
 	else
 	{
+		var ust::string8& start_name= complex_name.start.get</ust::string8/>().get_ref();
 		while( !current_scope.empty() )
 		{
-			if_var( mut names_scope_value : current_scope.lock_imut().get_ref().GetThisScopeValue( complex_name.name ) )
+			if_var( mut names_scope_value : current_scope.lock_imut().get_ref().GetThisScopeValue( start_name ) )
 			{
 				current_value= move(names_scope_value);
 				break;
@@ -538,25 +539,25 @@ fn CodeBuilder::ResolveValue(
 			current_scope= current_scope.lock_imut().get_ref().GetParent();
 		}
 
-		if( complex_name.name == KeywordToString( Keyword::constructor_ ) ||
-			complex_name.name == KeywordToString( Keyword::destructor_ ) )
+		if( start_name == KeywordToString( Keyword::constructor_ ) ||
+			start_name == KeywordToString( Keyword::destructor_ ) )
 		{
 			if( !function_context.is_in_unsafe_block )
 			{
-				REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope, complex_name.file_pos, complex_name.name )
+				REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope, complex_name.file_pos, start_name )
 			}
 		}
 	}
 
 	if( current_value.empty() )
 	{
-		REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, complex_name.name )
+		REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, ust::string8( "TODO - print complex name" ) )
 		return ErrorValue();
 	}
 
 	// TOOD - simplify this. After first component lookup do not use optional for "current_value" and nullable pointer for "current_scope"
 
-	for( auto mut i= select( complex_name.name.empty() ? 1s : 0s ); i < complex_name.tail.size(); ++i )
+	for( auto mut i= select( complex_name.start.get</Synt::EmptyVariant/>().empty() ? 0s : 1s ); i < complex_name.tail.size(); ++i )
 	{
 		auto& name_component= complex_name.tail[i];
 		if_var( &name_component_name : name_component.get</ ust::string8 />() )
@@ -744,7 +745,7 @@ fn CodeBuilder::ResolveValue(
 			auto& template_arg= template_arg_lock.get_ref();
 			if( !template_arg.something.get</TemplateArg::NotKnownYet/>().empty() )
 			{
-				REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, complex_name.file_pos, complex_name.name )
+				REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, complex_name.file_pos, ust::string8( "TODO - print complex name" ) )
 				return ErrorValue();
 			}
 		}

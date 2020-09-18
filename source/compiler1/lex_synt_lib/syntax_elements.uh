@@ -36,7 +36,11 @@ type TemplateArgs= ust::vector</Expression/>;
 struct ComplexName
 {
 	FilePos file_pos;
-	ust::string8 name; // Empty for "::" start.
+
+	ust::variant</ tup[
+		EmptyVariant, // for name, started with ::
+		ust::string8 // for regular name
+		] /> start;
 
 	type TailComponent= ust::variant</ tup[ ust::string8, ust::box</TemplateArgs/> ] />;
 	ust::vector</ TailComponent /> tail;

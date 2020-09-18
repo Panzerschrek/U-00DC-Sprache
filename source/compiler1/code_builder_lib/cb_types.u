@@ -23,7 +23,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 		return t;
 	}
 
-	REPORT_ERROR( NameIsNotTypeName, names_scope, named_type.file_pos, named_type.name )
+	REPORT_ERROR( NameIsNotTypeName, names_scope, named_type.file_pos, ust::string8( "TODO - print complex name" ) )
 	return Type( FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ ) );
 }
 
@@ -169,7 +169,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 				auto mut param_ok= false;
 				if_var( &param_type_complex_name : param.t.get</Synt::ComplexName/>() )
 				{
-					param_ok= param_type_complex_name.name.empty() && param_type_complex_name.tail.empty();
+					param_ok=! param_type_complex_name.start.get</Synt::EmptyVariant/>().empty() && param_type_complex_name.tail.empty();
 				}
 				if( !param_ok )
 				{
