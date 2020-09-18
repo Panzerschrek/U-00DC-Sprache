@@ -604,7 +604,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TypeNameInErrorMessage_ClassTemplate_Test5",
 		"TypeNameInErrorMessage_ClassTemplate_Test6",
 		"TypeNameInErrorMessage_ClassTemplate_Test7",
-		//"TypeNameInErrorMessage_ClassTemplate_Test8",
+		"TypeNameInErrorMessage_ClassTemplate_Test8",
 		"TypeNameInErrorMessage_ClassTypeInGlobalNamespace",
 		"TypeNameInErrorMessage_FundamentalTypes",
 		"TypeofHasNoEffects_Test0",
