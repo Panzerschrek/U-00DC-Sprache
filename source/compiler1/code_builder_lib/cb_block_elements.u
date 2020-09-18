@@ -830,6 +830,9 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				LLVMAppendExistingBasicBlock( function_context.llvm_function, next_basic_block );
 				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, next_basic_block );
 			}
+
+			// Clear args preevaluation cache because we evaluationg same expressions multiple times in different context.
+			function_context.args_preevaluation_cache.clear();
 		}
 
 		CallDestructorsForTopVariablesFrame( names_scope, function_context, range_for_operator.file_pos );

@@ -673,6 +673,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"CouldNotOverloadFunction_ForUnsafe_Test",
 		"CouldNotOverloadFunctionIfNomangle_Test",
 		"CStyleForOperator",
+		"DeepExpressionsCompilationTest",
 		"DifferentFunctionImplementations_UsingEnableIf",
 		"DirectFunctionTemplateParametersSet_Test",
 		"DisableDefaultConstructor_Test",

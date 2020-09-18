@@ -778,14 +778,18 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 			foreach( &in_arg : call_operator.args )
 			{
-				auto arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.get_ref() );
-				var FunctionType::Param mut f_arg
+				if( function_context.args_preevaluation_cache.find( in_arg ).empty() )
 				{
-					.t(arg.t),
-					.is_mutable= arg.value_type == ValueType::ReferenceMut,
-					.is_reference= arg.value_type != ValueType::Value,
-				};
-				args.push_back( move(f_arg) );
+					auto arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.get_ref() );
+					var FunctionType::Param mut f_arg
+					{
+						.t(arg.t),
+						.is_mutable= arg.value_type == ValueType::ReferenceMut,
+						.is_reference= arg.value_type != ValueType::Value,
+					};
+					function_context.args_preevaluation_cache.insert( in_arg, move(f_arg) );
+				}
+				args.push_back( function_context.args_preevaluation_cache[in_arg] );
 			}
 
 			RestoreInstructionsState( function_context, instructions_state );
@@ -1782,14 +1786,18 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 
 		foreach( &in_arg : in_args )
 		{
-			auto arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.get_ref() );
-			var FunctionType::Param mut f_arg
+			if( function_context.args_preevaluation_cache.find( in_arg ).empty() )
 			{
-				.t(arg.t),
-				.is_mutable= arg.value_type == ValueType::ReferenceMut,
-				.is_reference= arg.value_type != ValueType::Value,
-			};
-			args.push_back( move(f_arg) );
+				auto arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.get_ref() );
+				var FunctionType::Param mut f_arg
+				{
+					.t(arg.t),
+					.is_mutable= arg.value_type == ValueType::ReferenceMut,
+					.is_reference= arg.value_type != ValueType::Value,
+				};
+				function_context.args_preevaluation_cache.insert( in_arg, move(f_arg) );
+			}
+			args.push_back( function_context.args_preevaluation_cache[in_arg] );
 		}
 
 		RestoreInstructionsState( function_context, instructions_state );
@@ -1893,14 +1901,18 @@ fn CodeBuilder::CallFunctionsSet(
 
 		foreach( &arg : args )
 		{
-			auto arg_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg.get_ref() );
-			var FunctionType::Param mut out_arg
+			if( function_context.args_preevaluation_cache.find( arg ).empty() )
 			{
-				.t( arg_variable.t ),
-				.is_mutable= arg_variable.value_type == ValueType::ReferenceMut,
-				.is_reference= arg_variable.value_type != ValueType::Value,
-			};
-			args_evaluated.push_back( move(out_arg) );
+				auto arg_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg.get_ref() );
+				var FunctionType::Param mut out_arg
+				{
+					.t( arg_variable.t ),
+					.is_mutable= arg_variable.value_type == ValueType::ReferenceMut,
+					.is_reference= arg_variable.value_type != ValueType::Value,
+				};
+				function_context.args_preevaluation_cache.insert( arg, move(out_arg) );
+			}
+			args_evaluated.push_back( function_context.args_preevaluation_cache[arg] );
 		}
 
 		RestoreInstructionsState( function_context, instructions_state );
