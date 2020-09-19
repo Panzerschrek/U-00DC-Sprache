@@ -881,4 +881,42 @@ U_TEST( ImportAccessRight_Test0 )
 		"root" );
 }
 
+U_TEST( ImportInClassFieldInitializer_Test0 )
+{
+	static const char c_program_text_a[]=
+	R"(
+		auto c= 55;
+		namespace A
+		{
+			struct S
+			{
+				i32 x= c;
+			}
+		}
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+
+		namespace A
+		{
+			auto c= 777;
+
+			fn Foo()
+			{
+				var S s{}; // Here must be visible "::c", not "::A::c"
+				static_assert( s.x == 55 );
+			}
+		}
+	)";
+
+	BuildMultisourceProgram(
+		{
+			{ "a", c_program_text_a },
+			{ "root", c_program_text_root }
+		},
+		"root" );
+}
+
 } // namespace U
