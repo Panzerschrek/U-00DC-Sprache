@@ -36,6 +36,16 @@ void ErrorHanlder(
 // Returns "true" if should enable test.
 bool FilterTest( const std::string& test_name )
 {
+	const std::string test_name_without_file_name= test_name.substr(test_name.find_last_of(':') + 1);
+
+	static const std::unordered_set<std::string> c_test_to_disable
+	{
+		"MethodTest6",
+	};
+
+	if( c_test_to_disable.count( test_name_without_file_name ) != 0 )
+		return false;
+
 	static const std::unordered_set<std::string> c_test_to_enable
 	{
 		"DestructorMustReturnVoidTest0",
@@ -86,6 +96,8 @@ bool FilterTest( const std::string& test_name )
 		"MandatoryTemplateSignatureArgumentAfterOptionalArgument_Test0",
 		"NameNotFound_ForClassTemplateArguments_Test0",
 		"NameNotFound_ForClassTemplateDefaultSignatureArguments_Test0",
+		"ReferenceCheckTest_FunctionWithSingleArgumentReturnsReferenceToInputVariable_0",
+		"ReferenceCheckTest_FunctionWithSingleArgumentReturnsReferenceToInputVariable_1",
 		"ReferenceCheckTest_ImmutableReferenceAfterMutableReferenceOnStack",
 		"ReferenceCheckTest_MultipleImmutableReferencesPassedToFunctionShouldBeOk",
 		"ReferenceCheckTest_MultipleImmutableReferencesShouldBeOk",
@@ -95,7 +107,6 @@ bool FilterTest( const std::string& test_name )
 		"ValueIsNotTemplateTest0",
 	};
 
-	const std::string test_name_without_file_name= test_name.substr(test_name.find_last_of(':') + 1);
 	if( c_test_to_enable.count( test_name_without_file_name ) != 0 )
 		return true;
 

@@ -2186,7 +2186,6 @@ fn CodeBuilder::DoCallFunction(
 		result.node_id= function_context.references_graph.AddNode(
 			select( function_type.return_value_is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
 			move(node_name) );
-		// TODO - add links
 	}
 	else
 	{
@@ -2231,15 +2230,6 @@ fn CodeBuilder::DoCallFunction(
 		}
 	}
 
-	// Remove temp nodes. TODO - destroy also unneeded temporary variables.
-	foreach( node_id : args_nodes )
-	{
-		if( node_id != ReferencesGraph::c_empty_node_id )
-		{
-			function_context.references_graph.RemoveNode( node_id );
-		}
-	}
-
 	if( result.constexpr_value == LLVMValueRef::Null )
 	{
 		// Perform regular call for non-constexpr function or in case of error in constexpr function evaluation.
@@ -2253,6 +2243,29 @@ fn CodeBuilder::DoCallFunction(
 	{
 		result.llvm_value= s_ret_value;
 		result.location= Variable::Location::Pointer;
+	}
+
+	// Setup references after call.
+	// TODO - use returning references from function type.
+	if( function_type.return_value_is_reference )
+	{
+		for( auto mut i= 0s; i < total_args; ++i )
+		{
+			if( function_type.params[i].is_reference && args_nodes[i] != ReferencesGraph::c_empty_node_id )
+			{
+				// TODO - maybe not add links from immutable args to mutable returning reference?
+				function_context.references_graph.AddLink( args_nodes[i], result.node_id );
+			}
+		}
+	}
+
+	// Remove temp nodes. TODO - destroy also unneeded temporary variables.
+	foreach( node_id : args_nodes )
+	{
+		if( node_id != ReferencesGraph::c_empty_node_id )
+		{
+			function_context.references_graph.RemoveNode( node_id );
+		}
 	}
 
 	{ 	// Register result variable for destruction and references graph checks.
