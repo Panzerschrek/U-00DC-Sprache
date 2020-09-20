@@ -99,4 +99,9 @@ fn ReferencesGraph::HaveOutgoingMutableNodes( this, NodeId from ) : bool
 	return false;
 }
 
+fn ReferencesGraph::GetNodeKind( this, NodeId node_id ) : NodeKind
+{
+	return nodes_[node_id].kind;
+}
+
 } // namespace U1

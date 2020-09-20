@@ -27,6 +27,8 @@ public:
 	fn HaveOutgoingLinks( this, NodeId from ) : bool;
 	fn HaveOutgoingMutableNodes( this, NodeId from ) : bool;
 
+	fn GetNodeKind( this, NodeId node_id ) : NodeKind;
+
 private:
 	struct Node
 	{

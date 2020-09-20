@@ -125,9 +125,6 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			{
 				out_variable.constexpr_value= BuildInitializer( names_scope, function_context, out_variable, variable_declaration.initializer );
 			}
-
-			auto frame_index= function_context.variables_frames.size() - 2s;
-			function_context.variables_frames[ frame_index ].push_back( out_variable ); // Register variable for destruction.
 		}
 		else if( variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
 		{
@@ -191,6 +188,10 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		{
 			out_variable.constexpr_value= LLVMValueRef::Null;
 		}
+
+		// Register variable for destruction and reference checking.
+		auto frame_index= function_context.variables_frames.size() - 2s;
+		function_context.variables_frames[ frame_index ].push_back( out_variable );
 
 		var bool mut insert_not_ok= false;
 		{
@@ -280,9 +281,6 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		}
 
 		BuildCopyConstructorPart( names_scope, function_context, out_variable.llvm_value, expr.llvm_value, out_variable.t, auto_variable_declaration.file_pos );
-
-		auto frame_index= function_context.variables_frames.size() - 2s;
-		function_context.variables_frames[ frame_index ].push_back( out_variable ); // Register variable for destruction.
 	}
 	else { halt; }
 
@@ -296,6 +294,10 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 	{
 		out_variable.constexpr_value= LLVMValueRef::Null;
 	}
+
+	// Register variable for destruction and reference checking.
+	auto frame_index= function_context.variables_frames.size() - 2s;
+	function_context.variables_frames[ frame_index ].push_back( out_variable );
 
 	var bool mut insert_not_ok= false;
 	{
