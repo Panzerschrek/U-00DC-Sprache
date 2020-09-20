@@ -96,6 +96,13 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
+		var ReferencesGraph::NodeKind mut node_kind= zero_init;
+		if( variable_declaration.reference_modifier == Synt::ReferenceModifier::None ) { node_kind= ReferencesGraph::NodeKind::Variable; }
+		else if( variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable ){ node_kind= ReferencesGraph::NodeKind::ReferenceMut; }
+		else{ node_kind= ReferencesGraph::NodeKind::ReferenceImut; }
+
+		out_variable.node_id= function_context.references_graph.AddNode( node_kind, variable_declaration.name );
+
 		if( variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 		{
 			if( t.IsAbstract() )
@@ -224,6 +231,13 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		.is_mutable= auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable,
 		.constexpr_value= expr.constexpr_value
 	};
+
+	var ReferencesGraph::NodeKind mut node_kind= zero_init;
+	if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None ) { node_kind= ReferencesGraph::NodeKind::Variable; }
+	else if( auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable ){ node_kind= ReferencesGraph::NodeKind::ReferenceMut; }
+	else{ node_kind= ReferencesGraph::NodeKind::ReferenceImut; }
+
+	out_variable.node_id= function_context.references_graph.AddNode( node_kind, auto_variable_declaration.name );
 
 	if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
 	{

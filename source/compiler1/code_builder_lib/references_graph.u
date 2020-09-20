@@ -1,6 +1,102 @@
 import "references_graph.uh"
 
+fn nomangle U1_ReferencesGraphGetNextUniqueId() : u32;
+
 namespace U1
 {
+
+fn ReferencesGraph::AddNode( mut this, NodeKind kind, ust::string8 mut name ) : NodeId
+{
+	// Use unique identifiers for bugs prevention.
+	// Use function implemented on C++ because we needs global mutable variable for it.
+	var NodeId node_id= U1_ReferencesGraphGetNextUniqueId();
+
+	var Node mut node{ .kind= kind, .name= move(name) };
+	nodes_.insert( node_id, move(node) );
+
+	return node_id;
+}
+
+fn ReferencesGraph::RemoveNode( mut this, NodeId node_id )
+{
+	// TODO - remove associated links.
+	if( nodes_.find( node_id ).empty() )
+	{
+		return;
+	}
+
+	// Collect in/out nodes.
+	var ust::vector</NodeId/> mut in_nodes, mut out_nodes;
+	foreach( &link : links_ )
+	{
+		if( link.src == link.dst ){ continue; } // Self-loop link.
+
+		if( link.src == node_id ) { out_nodes.push_back( link.dst ); }
+		if( link.dst == node_id ) {  in_nodes.push_back( link.src ); }
+	}
+
+	// Remove links.
+	for( auto mut i= 0s; i < links_.size(); )
+	{
+		if( links_[i].src == node_id || links_[i].dst == node_id )
+		{
+			auto back= links_.size() - 1s;
+			links_.swap( i, back );
+			links_.pop_back();
+		}
+		else
+		{
+			++i;
+		}
+	}
+
+	// Erase node.
+	nodes_.erase( node_id );
+
+	// Create new links.
+	foreach( from : in_nodes )
+	{
+		foreach( to : out_nodes )
+		{
+			AddLink( from, to );
+		}
+	}
+}
+
+fn ReferencesGraph::AddLink( mut this, NodeId from, NodeId to )
+{
+	var Link link{ .src= from, .dst= to };
+	links_.push_back( link );
+}
+
+fn ReferencesGraph::HaveOutgoingLinks( this, NodeId from ) : bool
+{
+	foreach( &link : links_ )
+	{
+		if( link.src == from )
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+fn ReferencesGraph::HaveOutgoingMutableNodes( this, NodeId from ) : bool
+{
+	foreach( &link : links_ )
+	{
+		if( link.src == from )
+		{
+			if_var( &node : nodes_.find( link.dst ) )
+			{
+				if( node.kind == NodeKind::ReferenceMut )
+				{
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
 
 } // namespace U1

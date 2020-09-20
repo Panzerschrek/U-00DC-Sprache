@@ -21,8 +21,8 @@ public:
 
 public:
 	fn AddNode( mut this, NodeKind kind, ust::string8 mut name ) : NodeId;
-	fn RemoveNode( mut this, NodeId node );
-	fn AddLink( mut this, NodeKind from, NodeKind to );
+	fn RemoveNode( mut this, NodeId node_id );
+	fn AddLink( mut this, NodeId from, NodeId to );
 
 	fn HaveOutgoingLinks( this, NodeId from ) : bool;
 	fn HaveOutgoingMutableNodes( this, NodeId from ) : bool;

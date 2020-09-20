@@ -52,6 +52,8 @@ public:
 
 	type VariablesFrame= ust::vector</ NamesScopeVariable />;
 	ust::vector</VariablesFrame/> variables_frames;
+
+	ReferencesGraph references_graph;
 }
 
 class VariablesFrameHolder
