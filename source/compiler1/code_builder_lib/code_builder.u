@@ -1506,10 +1506,13 @@ fn CodeBuilder::CallDestructorsForVariablesFrame( this, NamesScopePtr& names_sco
 	{
 		auto variable= function_context.variables_frames[variables_frame_index][i - 1s];
 		// Call destructors for variables, but not for references.
-		if( variable.node_id != ReferencesGraph::c_empty_node_id &&
-			function_context.references_graph.GetNodeKind( variable.node_id ) == ReferencesGraph::NodeKind::Variable )
+		if( variable.node_id != ReferencesGraph::c_empty_node_id )
 		{
-			BuildDestructorPart( names_scope, function_context, variable.llvm_value, variable.t, file_pos );
+			if( function_context.references_graph.GetNodeKind( variable.node_id ) == ReferencesGraph::NodeKind::Variable  )
+			{
+				BuildDestructorPart( names_scope, function_context, variable.llvm_value, variable.t, file_pos );
+			}
+			function_context.references_graph.RemoveNode( variable.node_id );
 		}
 	}
 }

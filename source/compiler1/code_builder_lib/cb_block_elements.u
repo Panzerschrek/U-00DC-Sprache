@@ -516,6 +516,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfOperator& if_operator ) : BlockElementBuildInfo
 {
+	auto mut references_graph_before= function_context.references_graph;
 	var LLVMBasicBlockRef mut block_after_if= zero_init, mut next_condition_block= zero_init;
 
 	unsafe
@@ -589,12 +590,16 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, body_block );
 		}
 
+		auto mut references_graph_before_this_branch= function_context.references_graph;
+
 		auto info= BuildBlockElement( names_scope, function_context, branch.block );
 		if( !info.have_terminal_instruction_inside )
 		{
 			block_element_build_info.have_terminal_instruction_inside= false;
 			unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, block_after_if );  }
 		}
+
+		function_context.references_graph= move(references_graph_before_this_branch);
 	}
 
 	if( if_operator.branches.back().condition.get</Synt::EmptyVariant/>().empty() )
@@ -619,6 +624,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_if );
 		}
 	}
+
+	// TODO - merge references graph of all branches.
 
 	return block_element_build_info;
 }
@@ -669,6 +676,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WhileOperator& while_operator ) : BlockElementBuildInfo
 {
+	auto mut references_graph_before= function_context.references_graph;
+
 	var LLVMBasicBlockRef mut test_block= zero_init, mut while_block= zero_init, mut block_after_while= zero_init;
 	unsafe
 	{
@@ -739,6 +748,9 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_while );
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_while );
 	}
+
+	// TODO - process references graph changes in loop.
+	function_context.references_graph= move(references_graph_before);
 
 	return BlockElementBuildInfo();
 }

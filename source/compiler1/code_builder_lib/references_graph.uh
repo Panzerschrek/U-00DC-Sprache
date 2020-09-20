@@ -20,6 +20,10 @@ public:
 	var NodeId c_empty_node_id= 0u;
 
 public:
+	fn constructor( mut this, ReferencesGraph& other )= default;
+	op=( mut this, ReferencesGraph& other )= default;
+
+public:
 	fn AddNode( mut this, NodeKind kind, ust::string8 mut name ) : NodeId;
 	fn RemoveNode( mut this, NodeId node_id );
 	fn AddLink( mut this, NodeId from, NodeId to );
