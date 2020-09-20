@@ -314,6 +314,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 			.constexpr_value= v.constexpr_value,
 			.location= Variable::Location::Pointer,
 			.value_type= select( v.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+			.node_id= v.node_id,
 		};
 		return move(res);
 	}

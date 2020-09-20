@@ -86,6 +86,10 @@ bool FilterTest( const std::string& test_name )
 		"MandatoryTemplateSignatureArgumentAfterOptionalArgument_Test0",
 		"NameNotFound_ForClassTemplateArguments_Test0",
 		"NameNotFound_ForClassTemplateDefaultSignatureArguments_Test0",
+		"ReferenceCheckTest_ImmutableReferenceAfterMutableReferenceOnStack",
+		"ReferenceCheckTest_MultipleImmutableReferencesShouldBeOk",
+		"ReferenceCheckTest_MultipleMutableReferencesOnStack",
+		"ReferenceCheckTest_MutableReferenceAfterImmutableReferenceOnStack",
 		"ValueIsNotTemplateTest0",
 	};
 

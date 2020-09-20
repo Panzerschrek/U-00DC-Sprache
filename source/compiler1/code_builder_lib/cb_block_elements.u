@@ -173,6 +173,19 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 				continue;
 			}
 
+			if( expression_result.node_id != ReferencesGraph::c_empty_node_id )
+			{
+				if( (  out_variable.is_mutable && function_context.references_graph.HaveOutgoingLinks( expression_result.node_id ) ) ||
+					( !out_variable.is_mutable && function_context.references_graph.HaveOutgoingMutableNodes( expression_result.node_id ) ) )
+				{
+					REPORT_ERROR( ReferenceProtectionError, names_scope, variable_declaration.file_pos, function_context.references_graph.GetNodeName( expression_result.node_id ) )
+				}
+				else
+				{
+					function_context.references_graph.AddLink( expression_result.node_id, out_variable.node_id );
+				}
+			}
+
 			out_variable.llvm_value= CreateReferenceCast( expression_result.llvm_value, expression_result.t, t, function_context );
 			out_variable.constexpr_value= expression_result.constexpr_value;
 		}
@@ -251,6 +264,19 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		{
 			REPORT_ERROR( BindingConstReferenceToNonconstReference,  names_scope, auto_variable_declaration.file_pos )
 			return BlockElementBuildInfo();
+		}
+
+		if( expr.node_id != ReferencesGraph::c_empty_node_id )
+		{
+			if( (  out_variable.is_mutable && function_context.references_graph.HaveOutgoingLinks( expr.node_id ) ) ||
+				( !out_variable.is_mutable && function_context.references_graph.HaveOutgoingMutableNodes( expr.node_id ) ) )
+			{
+				REPORT_ERROR( ReferenceProtectionError, names_scope, auto_variable_declaration.file_pos, function_context.references_graph.GetNodeName( expr.node_id ) )
+			}
+			else
+			{
+				function_context.references_graph.AddLink( expr.node_id, out_variable.node_id );
+			}
 		}
 
 		out_variable.llvm_value= expr.llvm_value;

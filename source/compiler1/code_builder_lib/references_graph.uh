@@ -32,6 +32,7 @@ public:
 	fn HaveOutgoingMutableNodes( this, NodeId from ) : bool;
 
 	fn GetNodeKind( this, NodeId node_id ) : NodeKind;
+	fn GetNodeName( this, NodeId node_id ) : ust::string8&;
 
 private:
 	struct Node
