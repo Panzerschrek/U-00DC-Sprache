@@ -2065,6 +2065,9 @@ fn CodeBuilder::DoCallFunction(
 		constexpr_args.resize( llvm_args.size(), LLVMValueRef::Null );
 	}
 
+	var ust::vector</ReferencesGraph::NodeId/> mut args_nodes;
+	args_nodes.resize( total_args, ReferencesGraph::c_empty_node_id );
+
 	for( var size_type mut i= 0s; i < total_args; ++i )
 	{
 		auto arg_n= select( args_evaluation_order == ArgsEvaluationOrder::Direct ? i : total_args - i - 1s );
@@ -2104,6 +2107,23 @@ fn CodeBuilder::DoCallFunction(
 			{
 				REPORT_ERROR( TypesMismatch, names_scope, file_pos, arg.t, expected_arg_type )
 				return ErrorValue();
+			}
+
+			if( arg.node_id != ReferencesGraph::c_empty_node_id )
+			{
+				if( (  param.is_mutable && function_context.references_graph.HaveOutgoingLinks( arg.node_id ) ) ||
+					( !param.is_mutable && function_context.references_graph.HaveOutgoingMutableNodes( arg.node_id ) ) )
+				{
+					REPORT_ERROR( ReferenceProtectionError, names_scope, file_pos, function_context.references_graph.GetNodeName( arg.node_id ) )
+				}
+				else
+				{
+					auto arg_node_id= function_context.references_graph.AddNode(
+						select( param.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
+						"_arg_" + ust::to_string8(arg_n) );
+					args_nodes[arg_n]= arg_node_id;
+					function_context.references_graph.AddLink( arg.node_id, arg_node_id );
+				}
 			}
 
 			if( arg.location == Variable::Location::LLVMRegister )
@@ -2208,6 +2228,15 @@ fn CodeBuilder::DoCallFunction(
 				};
 				errors_container.push_back( move(out_error) );
 			}
+		}
+	}
+
+	// Remove temp nodes. TODO - destroy also unneeded temporary variables.
+	foreach( node_id : args_nodes )
+	{
+		if( node_id != ReferencesGraph::c_empty_node_id )
+		{
+			function_context.references_graph.RemoveNode( node_id );
 		}
 	}
 
