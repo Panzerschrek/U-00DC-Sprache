@@ -403,6 +403,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				{
 					result.value_type= select( field.is_mutable ? function_context.this_.get_ref().value_type : ValueType::ReferenceImut );
 					result.llvm_value= gep_value;
+					result.node_id= function_context.this_.get_ref().node_id;
 				}
 				return move(result);
 			}
@@ -620,6 +621,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				.t= variable_array_type.element_type,
 				.location= Variable::Location::Pointer,
 				.value_type= variable.value_type,
+				.node_id= variable.node_id,
 			};
 
 			unsafe
@@ -669,7 +671,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				.t= variable_tuple_type.element_types[type_index],
 				.location= Variable::Location::Pointer,
 				.value_type= variable.value_type,
-				.llvm_value= CreateTupleElementGEP( variable.llvm_value, size_type(type_index), function_context )
+				.llvm_value= CreateTupleElementGEP( variable.llvm_value, size_type(type_index), function_context ),
+				.node_id= variable.node_id,
 			};
 
 			if( variable.constexpr_value != LLVMValueRef::Null )
@@ -947,6 +950,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					.location= Variable::Location::Pointer,
 					.value_type= variable.value_type,
 					.llvm_value= CreateFieldGEP( this_value_corrected, field, function_context ),
+					.node_id= variable.node_id,
 				};
 
 				if( variable.constexpr_value != LLVMValueRef::Null )

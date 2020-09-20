@@ -96,6 +96,9 @@ bool FilterTest( const std::string& test_name )
 		"MandatoryTemplateSignatureArgumentAfterOptionalArgument_Test0",
 		"NameNotFound_ForClassTemplateArguments_Test0",
 		"NameNotFound_ForClassTemplateDefaultSignatureArguments_Test0",
+		"ReferenceCheckTest_ArrayMemberRefersToArray_0",
+		"ReferenceCheckTest_ArrayMemberRefersToArray_1",
+		"ReferenceCheckTest_DestroyedReferenceDoesNotRefersToVariable",
 		"ReferenceCheckTest_FunctionWithSingleArgumentReturnsReferenceToInputVariable_0",
 		"ReferenceCheckTest_FunctionWithSingleArgumentReturnsReferenceToInputVariable_1",
 		"ReferenceCheckTest_ImmutableReferenceAfterMutableReferenceOnStack",
@@ -104,6 +107,13 @@ bool FilterTest( const std::string& test_name )
 		"ReferenceCheckTest_MultipleMutableReferencesOnStack",
 		"ReferenceCheckTest_MutableAndImmutableReferencesPassedToFunction",
 		"ReferenceCheckTest_MutableReferenceAfterImmutableReferenceOnStack",
+		"ReferenceCheckTest_PassImmutableReferenceToFunctionWhenMutableReferenceOnStackExists",
+		"ReferenceCheckTest_PassMutableReferenceToFunctionWhenImmutableReferenceOnStackExists",
+		"ReferenceCheckTest_PassMutableReferenceToFunctionWhenMutableReferenceOnStackExists",
+		"ReferenceCheckTest_ReferenceCanReferToMultipleVariables",
+		"ReferenceCheckTest_ReferenceInInnerScopeInteractsWithReferenceInOuterScope",
+		"ReferenceCheckTest_StructMemberRefersToStruct_0",
+		"ReferenceCheckTest_StructMemberRefersToStruct_1",
 		"ValueIsNotTemplateTest0",
 	};
 

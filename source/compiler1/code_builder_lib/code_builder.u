@@ -387,6 +387,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 				.location= Variable::Location::Pointer,
 				.value_type= function_context.this_.get_ref().value_type,
 				.llvm_value= CreateFieldGEP( this_value_corrected, field, function_context ),
+				.node_id= function_context.this_.get_ref().node_id,
 			};
 
 			if( !field.is_mutable )
