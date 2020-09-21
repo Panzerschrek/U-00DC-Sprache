@@ -672,6 +672,23 @@ U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_4 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_5 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var i32 &mut r0= x;
+			var i32 &mut r1= r0;
+			r0= 24; // Error, "r0" have child reference - "r1".
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 7u ) );
+}
+
 U_TEST( ReferenceCheckTest_Increment_0 )
 {
 	static const char c_program_text[]=

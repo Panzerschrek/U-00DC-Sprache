@@ -106,6 +106,7 @@ bool FilterTest( const std::string& test_name )
 		"ReferenceCheckTest_AssignmentForReferencedVariable_2",
 		"ReferenceCheckTest_AssignmentForReferencedVariable_3",
 		"ReferenceCheckTest_AssignmentForReferencedVariable_4",
+		"ReferenceCheckTest_AssignmentForReferencedVariable_5",
 		"ReferenceCheckTest_AssignToReferenceTemporaryVariable_0",
 		"ReferenceCheckTest_AssignToReferenceTemporaryVariable_1",
 		"ReferenceCheckTest_AssignToReferenceTemporaryVariable_2",
