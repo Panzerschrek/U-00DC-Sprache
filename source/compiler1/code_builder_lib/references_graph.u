@@ -19,7 +19,6 @@ fn ReferencesGraph::AddNode( mut this, NodeKind kind, ust::string8 mut name ) : 
 
 fn ReferencesGraph::RemoveNode( mut this, NodeId node_id )
 {
-	// TODO - remove associated links.
 	if( nodes_.find( node_id ).empty() )
 	{
 		return;

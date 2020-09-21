@@ -1836,6 +1836,7 @@ fn CodeBuilder::SaveInstructionsState( FunctionContext& function_context ) : Ins
 			.current_block_last_instruction= LLVMGetLastInstruction( LLVMGetInsertBlock( function_context.llvm_ir_builder ) ),
 			.alloca_block_last_instruction= LLVMGetLastInstruction( LLVMGetInsertBlock( function_context.alloca_ir_builder ) ),
 			.current_block= LLVMGetInsertBlock( function_context.llvm_ir_builder ),
+			.references_graph= function_context.references_graph,
 		};
 		return move(instructions_state);
 	}
@@ -1865,6 +1866,8 @@ fn CodeBuilder::RestoreInstructionsState( FunctionContext &mut function_context,
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, state.current_block );
 		LLVMPositionBuilderAtEnd( function_context.alloca_ir_builder, function_context.alloca_basic_block );
 	}
+
+	function_context.references_graph= state.references_graph;
 }
 
 fn CodeBuilder::CreateGlobalFunctionContext( this ) : FunctionContext

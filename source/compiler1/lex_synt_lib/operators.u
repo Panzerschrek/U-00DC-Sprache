@@ -49,7 +49,7 @@ fn BinaryOperatorToString( BinaryOperatorType o ) : ust::array_view_imut</ char8
 	if( o == BinaryOperatorType::Div ){ return "/"; }
 	if( o == BinaryOperatorType::Rem ){ return "%"; }
 
-	if( o == BinaryOperatorType::NotEqual		){ return "=="; }
+	if( o == BinaryOperatorType::Equal			){ return "=="; }
 	if( o == BinaryOperatorType::NotEqual		){ return "!="; }
 	if( o == BinaryOperatorType::Less			){ return "<" ; }
 	if( o == BinaryOperatorType::LessEqual		){ return "<="; }

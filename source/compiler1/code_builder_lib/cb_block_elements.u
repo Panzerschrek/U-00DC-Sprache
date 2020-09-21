@@ -703,14 +703,14 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				return BlockElementBuildInfo();
 			}
 
-			CallDestructorsForTopVariablesFrame( names_scope, function_context, branch.file_pos );
-
 			var u64 mut constexpr_value= 0u64;
 			unsafe{  constexpr_value= LLVMConstIntGetZExtValue( condition_expression.constexpr_value );  }
 			if( constexpr_value != 0u64 )
 			{
 				return BuildBlockElement( names_scope, function_context, branch.block );
 			}
+
+			CallDestructorsForTopVariablesFrame( names_scope, function_context, branch.file_pos );
 		}
 	}
 

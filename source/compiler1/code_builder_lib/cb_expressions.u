@@ -92,6 +92,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.t= Type( FundamentalType( t, GetFundamentalLLVMType(t) ) ),
 		.location= Variable::Location::LLVMRegister,
 		.value_type= ValueType::Value,
+		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "numeric constant" ),
 	};
 
 	unsafe
@@ -112,17 +113,42 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 	res.llvm_value= res.constexpr_value;
 
+	// Register variable for references checking.
+	var NamesScopeVariable mut names_scope_variable
+	{
+		.t= res.t,
+		.is_mutable= false,
+		.llvm_value= res.llvm_value,
+		.constexpr_value= res.constexpr_value,
+		.node_id= res.node_id,
+	};
+	function_context.variables_frames.back().push_back( move(names_scope_variable) );
+
 	return move(res);
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BooleanConstant& boolean_constant ) : Value
 {
-	var Variable mut res;
-	res.t= Type( FundamentalType( U_FundamentalType::bool_ , fundamental_llvm_types_.bool_ ) );
-	res.location= Variable::Location::LLVMRegister;
+	var Variable mut res
+	{
+		.t= bool_type_,
+		.location= Variable::Location::LLVMRegister,
+		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "boolean constant" ),
+	};
 
 	unsafe{ res.constexpr_value= LLVMConstInt( res.t.GetLLVMType(), select( boolean_constant.value ? 1u64 : 0u64 ), LLVMBool::True ); }
 	res.llvm_value= res.constexpr_value;
+
+	// Register variable for references checking.
+	var NamesScopeVariable mut names_scope_variable
+	{
+		.t= res.t,
+		.is_mutable= false,
+		.llvm_value= res.llvm_value,
+		.constexpr_value= res.constexpr_value,
+		.node_id= res.node_id,
+	};
+	function_context.variables_frames.back().push_back( move(names_scope_variable) );
 
 	return move(res);
 }
@@ -1065,6 +1091,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	{
 		.t= variable.t,
 		.location= Variable::Location::LLVMRegister,
+		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "-" ),
 	};
 
 	if( IsInteger( fundamental_type.get_ref().fundamental_type ) )
@@ -1082,6 +1109,17 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	unsafe{  if( LLVMIsConstant( result.llvm_value ) == LLVMBool::True ){ result.constexpr_value= result.llvm_value; }  }
+
+	// Register variable for references checking.
+	var NamesScopeVariable mut names_scope_variable
+	{
+		.t= result.t,
+		.is_mutable= false,
+		.llvm_value= result.llvm_value,
+		.constexpr_value= result.constexpr_value,
+		.node_id= result.node_id,
+	};
+	function_context.variables_frames.back().push_back( move(names_scope_variable) );
 
 	return move(result);
 }
@@ -1131,6 +1169,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	{
 		.t= bool_type_,
 		.location= Variable::Location::LLVMRegister,
+		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "!" ),
 	};
 
 	unsafe
@@ -1138,6 +1177,17 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		result.llvm_value= LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "!\0"[0] );
 		if( LLVMIsConstant( result.llvm_value ) == LLVMBool::True ){ result.constexpr_value= result.llvm_value; }
 	}
+
+	// Register variable for references checking.
+	var NamesScopeVariable mut names_scope_variable
+	{
+		.t= result.t,
+		.is_mutable= false,
+		.llvm_value= result.llvm_value,
+		.constexpr_value= result.constexpr_value,
+		.node_id= result.node_id,
+	};
+	function_context.variables_frames.back().push_back( move(names_scope_variable) );
 
 	return move(result);
 }
@@ -1188,6 +1238,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	{
 		.t= variable.t,
 		.location= Variable::Location::LLVMRegister,
+		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "~" ),
 	};
 
 	unsafe
@@ -1195,6 +1246,17 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		result.llvm_value= LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "~\0"[0] );
 		if( LLVMIsConstant( result.llvm_value ) == LLVMBool::True ){ result.constexpr_value= result.llvm_value; }
 	}
+
+	// Register variable for references checking.
+	var NamesScopeVariable mut names_scope_variable
+	{
+		.t= result.t,
+		.is_mutable= false,
+		.llvm_value= result.llvm_value,
+		.constexpr_value= result.constexpr_value,
+		.node_id= result.node_id,
+	};
+	function_context.variables_frames.back().push_back( move(names_scope_variable) );
 
 	return move(result);
 }
@@ -1294,6 +1356,12 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 	auto l_fundamental_type= l_type.GetFundamentalType();
 	auto r_fundamental_type= r_type.GetFundamentalType();
 
+	var Variable mut res
+	{
+		.location= Variable::Location::LLVMRegister,
+		.value_type= ValueType::Value,
+	};
+
 	if(
 		operator == BinaryOperatorType::Add ||
 		operator == BinaryOperatorType::Sub ||
@@ -1328,12 +1396,7 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 
 		var bool is_signed= IsSignedInteger( l_fundamental_type.get_ref().fundamental_type );
 
-		var Variable mut res
-		{
-			.t= l_type,
-			.location= Variable::Location::LLVMRegister,
-			.value_type= ValueType::Value,
-		};
+		res.t= l_type;
 
 		unsafe
 		{
@@ -1412,8 +1475,6 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 				}
 			}
 		}
-
-		return move(res);
 	}
 	else if(
 		operator == BinaryOperatorType::And ||
@@ -1436,12 +1497,7 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 			return ErrorValue();
 		}
 
-		var Variable mut res
-		{
-			.t= l_type,
-			.location= Variable::Location::LLVMRegister,
-			.value_type= ValueType::Value,
-		};
+		res.t= l_type;
 
 		unsafe
 		{
@@ -1457,11 +1513,7 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 			{
 				res.llvm_value= LLVMBuildXor( function_context.llvm_ir_builder, l_in_register, r_in_register, "^\0"[0] );
 			}
-
-			if( LLVMIsConstant( res.llvm_value ) == LLVMBool::True ){ res.constexpr_value= res.llvm_value; }
 		}
-
-		return move(res);
 	}
 	else if(
 		operator == BinaryOperatorType::ShiftLeft ||
@@ -1481,12 +1533,7 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 		auto mut l_value_for_op= l_in_register;
 		auto mut r_value_for_op= r_in_register;
 
-		var Variable mut res
-		{
-			.t= l_type,
-			.location= Variable::Location::LLVMRegister,
-			.value_type= ValueType::Value,
-		};
+		res.t= l_type;
 
 		unsafe
 		{
@@ -1516,11 +1563,7 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 				}
 			}
 			else{ halt; }
-
-			if( LLVMIsConstant( res.llvm_value ) == LLVMBool::True ){ res.constexpr_value= res.llvm_value; }
 		}
-
-		return move(res);
 	}
 	else if(
 		operator == BinaryOperatorType::Equal ||
@@ -1539,12 +1582,7 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 
 		var bool if_float= !l_fundamental_type.empty() && IsFloatingPoint( l_fundamental_type.get_ref().fundamental_type );
 
-		var Variable mut res
-		{
-			.t= bool_type_,
-			.location= Variable::Location::LLVMRegister,
-			.value_type= ValueType::Value,
-		};
+		res.t= bool_type_;
 
 		// Use ordered floating point compare operations, which result is false for NaN, except !=. nan != nan must be true.
 		unsafe
@@ -1571,11 +1609,7 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 					res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::NE, l_in_register, r_in_register, "!=\0"[0] );
 				}
 			}
-
-			if( LLVMIsConstant( res.llvm_value ) == LLVMBool::True ){ res.constexpr_value= res.llvm_value; }
 		}
-
-		return move(res);
 	}
 	else if(
 		operator == BinaryOperatorType::Less ||
@@ -1603,12 +1637,7 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 			return ErrorValue();
 		}
 
-		var Variable mut res
-		{
-			.t= bool_type_,
-			.location= Variable::Location::LLVMRegister,
-			.value_type= ValueType::Value,
-		};
+		res.t= bool_type_;
 
 		unsafe
 		{
@@ -1672,16 +1701,26 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 					res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGE, l_in_register, r_in_register, ">=\0"[0] );
 				}
 			}
-
-			if( LLVMIsConstant( res.llvm_value ) == LLVMBool::True ){ res.constexpr_value= res.llvm_value; }
 		}
+	}
+	else{ halt; }
 
-		return move(res);
-	}
-	else
+	unsafe{ if( LLVMIsConstant( res.llvm_value ) == LLVMBool::True ){ res.constexpr_value= res.llvm_value; }  }
+
+	res.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, BinaryOperatorToString( operator ) );
+
+	// Register variable for references checking.
+	var NamesScopeVariable names_scope_variable
 	{
-		halt;
-	}
+		.t= res.t,
+		.is_mutable= true,
+		.llvm_value= res.llvm_value,
+		.constexpr_value= res.constexpr_value,
+		.node_id= res.node_id,
+	};
+	function_context.variables_frames.back().push_back( names_scope_variable );
+
+	return move(res);
 }
 
 fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
