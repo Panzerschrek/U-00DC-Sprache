@@ -1930,6 +1930,10 @@ fn CodeBuilder::CallBinaryOperatorForTuple(
 		REPORT_ERROR( ExpectedReferenceValue, names_scope, file_pos )
 		return ErrorValue();
 	}
+	if( l_var.node_id != ReferencesGraph::c_empty_node_id && function_context.references_graph.HaveOutgoingLinks( l_var.node_id ) )
+	{
+		REPORT_ERROR( ReferenceProtectionError, names_scope, file_pos, function_context.references_graph.GetNodeName( l_var.node_id ) )
+	}
 
 	BuildCopyAssignmentOperatorPart( names_scope, function_context, l_var.llvm_value, r_var.llvm_value, l_var.t, file_pos );
 

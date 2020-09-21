@@ -689,6 +689,22 @@ U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_5 )
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 7u ) );
 }
 
+U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_6 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var tup[i32] mut x[0], y[1];
+			auto& r= x;
+			x= y; // Assign value to tuple, that have references.
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 6u ) );
+}
+
 U_TEST( ReferenceCheckTest_Increment_0 )
 {
 	static const char c_program_text[]=
