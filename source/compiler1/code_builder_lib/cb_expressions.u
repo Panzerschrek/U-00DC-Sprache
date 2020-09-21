@@ -576,7 +576,23 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IndexationOperator& indexation_operator ) : Value
 {
 	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.value.get_ref() );
+
+	// Prevent modification of variable during index calculation.
+	var ReferencesGraph::NodeId mut variable_lock_node= ReferencesGraph::c_empty_node_id;
+	if( variable.node_id != ReferencesGraph::c_empty_node_id )
+	{
+		variable_lock_node= function_context.references_graph.AddNode(
+			select( variable.value_type == ValueType::ReferenceMut ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
+			"[]" );
+		function_context.references_graph.AddLink( variable.node_id, variable_lock_node );
+	}
+
 	auto index= BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.index.get_ref() );
+
+	if( variable_lock_node != ReferencesGraph::c_empty_node_id )
+	{
+		function_context.references_graph.RemoveNode( variable_lock_node );
+	}
 
 	if_var( &variable_array_type : variable.t.GetArrayType() )
 	{
