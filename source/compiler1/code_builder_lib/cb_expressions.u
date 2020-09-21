@@ -1741,6 +1741,8 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 
 fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
 {
+	// TODO - merge references graph state for lazy operator branches.
+
 	var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.l.get_ref() );
 	if( l_var.t != bool_type_ )
 	{
@@ -1827,6 +1829,19 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 			else{ halt; }
 		}
 	}
+
+	result.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, BinaryOperatorToString( binary_operator.operator ) );
+
+	// Register variable for references checking.
+	var NamesScopeVariable names_scope_variable
+	{
+		.t= result.t,
+		.is_mutable= true,
+		.llvm_value= result.llvm_value,
+		.constexpr_value= result.constexpr_value,
+		.node_id= result.node_id,
+	};
+	function_context.variables_frames.back().push_back( names_scope_variable );
 
 	return move(result);
 }

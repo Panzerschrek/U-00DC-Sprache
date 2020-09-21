@@ -556,6 +556,21 @@ U_TEST( ReferenceCheckTest_AssignToReferenceTemporaryVariable_2 )
 	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
+U_TEST( ReferenceCheckTest_AssignToReferenceTemporaryVariable_3 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn PassRef( bool &imut x ) : bool &imut { return x; }
+		fn Foo()
+		{
+			var bool &imut r= PassRef( true && false ); // r referes here to temporary variable of bool type.
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::DestroyedVariableStillHaveReferences, 5u ) );
+}
+
 U_TEST( ReferenceCheckTest_ReferenceShouldLockVariableAfterConditionalReturn )
 {
 	static const char c_program_text[]=
