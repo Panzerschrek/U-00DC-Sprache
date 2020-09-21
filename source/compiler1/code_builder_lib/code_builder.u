@@ -1325,7 +1325,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				out_arg.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, in_param.name );
 			}
 
-			function_context.variables_frames.back().push_back( out_arg ); // Register arg for destruction and regerence checking.
+			function_context.variables_frames.back().push_back( out_arg ); // Register arg for destruction and reference checking.
 
 			++arg_n;
 

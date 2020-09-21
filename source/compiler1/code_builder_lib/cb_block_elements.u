@@ -388,7 +388,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			return block_element_build_info;
 		}
 
-		// Create return reference node link it with expression node.
+		// Create return reference node and link it with expression node.
 		var ReferencesGraph::NodeId mut return_node= ReferencesGraph::c_empty_node_id;
 		if( expr.node_id != ReferencesGraph::c_empty_node_id )
 		{
