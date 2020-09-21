@@ -476,6 +476,10 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			REPORT_ERROR( ExpectedReferenceValue, names_scope, assignment_operator.file_pos )
 			return BlockElementBuildInfo();
 		}
+		if( l.node_id != ReferencesGraph::c_empty_node_id && function_context.references_graph.HaveOutgoingLinks( l.node_id ) )
+		{
+			REPORT_ERROR( ReferenceProtectionError, names_scope, assignment_operator.file_pos, function_context.references_graph.GetNodeName( l.node_id ) )
+		}
 
 		unsafe
 		{
@@ -514,6 +518,10 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		{
 			REPORT_ERROR( ExpectedReferenceValue, names_scope, additive_assignment_operator.file_pos )
 			return BlockElementBuildInfo();
+		}
+		if( l_var.node_id != ReferencesGraph::c_empty_node_id && function_context.references_graph.HaveOutgoingLinks( l_var.node_id ) )
+		{
+			REPORT_ERROR( ReferenceProtectionError, names_scope, additive_assignment_operator.file_pos, function_context.references_graph.GetNodeName( l_var.node_id ) )
 		}
 
 		auto op_result= BuildBinaryOperator( names_scope, function_context, l_var, r_var, additive_assignment_operator.operator, additive_assignment_operator.file_pos );
@@ -1146,6 +1154,10 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 	{
 		REPORT_ERROR( ExpectedReferenceValue, names_scope, file_pos )
 		return;
+	}
+	if( variable.node_id != ReferencesGraph::c_empty_node_id && function_context.references_graph.HaveOutgoingLinks( variable.node_id ) )
+	{
+		REPORT_ERROR( ReferenceProtectionError, names_scope, file_pos, function_context.references_graph.GetNodeName( variable.node_id ) )
 	}
 
 	// Try process overloaded operator.

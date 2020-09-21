@@ -741,7 +741,7 @@ U_TEST( ReferenceCheckTest_AdditiveAssignment_1 )
 	R"(
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			auto &imut r= x;
 			x-= 1; // Error, x have immutable reference.
 		}
