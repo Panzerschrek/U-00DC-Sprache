@@ -133,8 +133,16 @@ bool FilterTest( const std::string& test_name )
 		"ReferenceCheckTest_ReturnReferenceToLocalVariable_3",
 		"ReferenceCheckTest_ReturnReferenceToValueArgument_0",
 		"ReferenceCheckTest_ReturnReferenceToValueArgument_1",
+		"ReferenceCheckTest_ShouldConvertReferenceInFunctionCall_0",
+		"ReferenceCheckTest_ShouldConvertReferenceInFunctionCall_1",
+		"ReferenceCheckTest_ShouldConvertReferenceInFunctionCall_2",
 		"ReferenceCheckTest_StructMemberRefersToStruct_0",
 		"ReferenceCheckTest_StructMemberRefersToStruct_1",
+		"ReferenceCheckTest_TryPassTwoMutableReferencesIntoFunction_0",
+		"ReferenceCheckTest_TryPassTwoMutableReferencesIntoFunction_1",
+		"ReferenceCheckTest_TryPassTwoMutableReferencesIntoFunction_2",
+		"ReferenceCheckTest_TryUseVariableWhenReferenceInFunctionCallExists_0",
+		"ReferenceCheckTest_TryUseVariableWhenReferenceInFunctionCallExists_1",
 		"ValueIsNotTemplateTest0",
 	};
 

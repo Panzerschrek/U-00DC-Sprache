@@ -803,7 +803,7 @@ U_TEST( ReferenceCheckTest_ShouldConvertReferenceInFunctionCall_0 )
 		fn Add( i32 x, i32 y ) : i32 { return x + y; }
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			Add( x, x ); // We take here mutable references to x, but convert it to value in function call, so, this is not error.
 		}
 	)";
@@ -818,7 +818,7 @@ U_TEST( ReferenceCheckTest_ShouldConvertReferenceInFunctionCall_1 )
 		fn Add( i32 &imut x, i32 &imut y ) : i32 { return x + y; }
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			Add( x, x ); // We take here mutable references to x, but convert it to immatable references in function call, so, this is not error.
 		}
 	)";
