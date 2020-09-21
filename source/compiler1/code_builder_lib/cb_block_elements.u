@@ -388,7 +388,24 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			return block_element_build_info;
 		}
 
+		// Create return reference node link it with expression node.
+		var ReferencesGraph::NodeId mut return_node= ReferencesGraph::c_empty_node_id;
+		if( expr.node_id != ReferencesGraph::c_empty_node_id )
+		{
+			return_node= function_context.references_graph.AddNode(
+				select( function_context.return_value_is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
+				"return value" );
+			function_context.references_graph.AddLink( expr.node_id, return_node );
+		}
+
+		// Call destructors. In this process we check if destroyed variables still have references.
+		// This allow us to prevent returning of reference to local variable.
 		CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.file_pos );
+
+		if( return_node != ReferencesGraph::c_empty_node_id )
+		{
+			function_context.references_graph.RemoveNode( return_node );
+		}
 
 		auto reference_converted= CreateReferenceCast( expr.llvm_value, expr.t, function_context.return_type, function_context );
 		unsafe{  LLVMBuildRet( function_context.llvm_ir_builder, reference_converted );  }
