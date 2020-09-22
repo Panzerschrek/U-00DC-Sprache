@@ -1522,8 +1522,10 @@ fn CodeBuilder::CallDestructorsForVariablesFrame( this, NamesScopePtr& names_sco
 				{
 					REPORT_ERROR( DestroyedVariableStillHaveReferences, names_scope, file_pos, function_context.references_graph.GetNodeName( variable.node_id ) )
 				}
-
-				BuildDestructorPart( names_scope, function_context, variable.llvm_value, variable.t, file_pos );
+				if( !function_context.references_graph.NodeIsMoved( variable.node_id ) )
+				{
+					BuildDestructorPart( names_scope, function_context, variable.llvm_value, variable.t, file_pos );
+				}
 			}
 
 			function_context.references_graph.RemoveNode( variable.node_id );

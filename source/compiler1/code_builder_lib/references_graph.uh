@@ -28,6 +28,9 @@ public:
 	fn RemoveNode( mut this, NodeId node_id );
 	fn AddLink( mut this, NodeId from, NodeId to );
 
+	fn MoveNode( mut this, NodeId node_id );
+	fn NodeIsMoved( this, NodeId node_id ) : bool;
+
 	fn HaveOutgoingLinks( this, NodeId from ) : bool;
 	fn HaveOutgoingMutableNodes( this, NodeId from ) : bool;
 
@@ -39,6 +42,7 @@ private:
 	{
 		NodeKind kind;
 		ust::string8 name;
+		bool moved;
 	}
 
 	struct Link
