@@ -7,6 +7,7 @@ import "/vector.u"
 import "../lex_synt_lib/syntax_elements.uh"
 import "lang_types.uh"
 import "llvm_ext.uh"
+import "references_graph.uh"
 import "/code_builder_errors.uh"
 
 /*
@@ -255,6 +256,8 @@ struct Variable
 	ValueType value_type= ValueType::ReferenceImut;
 	LLVMValueRef llvm_value= LLVMValueRef::Null;
 	LLVMValueRef constexpr_value= LLVMValueRef::Null; // Exists only for constant expressions.
+
+	ReferencesGraph::NodeId node_id= ReferencesGraph::c_empty_node_id;
 }
 
 struct FunctionVariable
@@ -322,6 +325,8 @@ struct NamesScopeVariable
 	bool is_mutable = false;
 	LLVMValueRef llvm_value= LLVMValueRef::Null;
 	LLVMValueRef constexpr_value= LLVMValueRef::Null; // Exists only for constant expressions.
+
+	ReferencesGraph::NodeId node_id= ReferencesGraph::c_empty_node_id;
 }
 
 struct NamesScopeFunctionsSet

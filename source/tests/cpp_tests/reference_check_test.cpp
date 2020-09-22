@@ -556,6 +556,21 @@ U_TEST( ReferenceCheckTest_AssignToReferenceTemporaryVariable_2 )
 	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
 }
 
+U_TEST( ReferenceCheckTest_AssignToReferenceTemporaryVariable_3 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn PassRef( bool &imut x ) : bool &imut { return x; }
+		fn Foo()
+		{
+			var bool &imut r= PassRef( true && false ); // r referes here to temporary variable of bool type.
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::DestroyedVariableStillHaveReferences, 5u ) );
+}
+
 U_TEST( ReferenceCheckTest_ReferenceShouldLockVariableAfterConditionalReturn )
 {
 	static const char c_program_text[]=
@@ -672,6 +687,39 @@ U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_4 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_5 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var i32 &mut r0= x;
+			var i32 &mut r1= r0;
+			r0= 24; // Error, "r0" have child reference - "r1".
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 7u ) );
+}
+
+U_TEST( ReferenceCheckTest_AssignmentForReferencedVariable_6 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var tup[i32] mut x[0], y[1];
+			auto& r= x;
+			x= y; // Assign value to tuple, that have references.
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 6u ) );
+}
+
 U_TEST( ReferenceCheckTest_Increment_0 )
 {
 	static const char c_program_text[]=
@@ -741,7 +789,7 @@ U_TEST( ReferenceCheckTest_AdditiveAssignment_1 )
 	R"(
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			auto &imut r= x;
 			x-= 1; // Error, x have immutable reference.
 		}
@@ -786,7 +834,7 @@ U_TEST( ReferenceCheckTest_ShouldConvertReferenceInFunctionCall_0 )
 		fn Add( i32 x, i32 y ) : i32 { return x + y; }
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			Add( x, x ); // We take here mutable references to x, but convert it to value in function call, so, this is not error.
 		}
 	)";
@@ -801,7 +849,7 @@ U_TEST( ReferenceCheckTest_ShouldConvertReferenceInFunctionCall_1 )
 		fn Add( i32 &imut x, i32 &imut y ) : i32 { return x + y; }
 		fn Foo()
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			Add( x, x ); // We take here mutable references to x, but convert it to immatable references in function call, so, this is not error.
 		}
 	)";

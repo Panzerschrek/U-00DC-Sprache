@@ -1,0 +1,55 @@
+import "/string.u"
+import "/unordered_map.u"
+import "/vector.u"
+
+namespace U1
+{
+
+class ReferencesGraph
+{
+public:
+	type NodeId= u32;
+
+	enum NodeKind
+	{
+		Variable,
+		ReferenceMut,
+		ReferenceImut,
+	}
+
+	var NodeId c_empty_node_id= 0u;
+
+public:
+	fn constructor( mut this, ReferencesGraph& other )= default;
+	op=( mut this, ReferencesGraph& other )= default;
+
+public:
+	fn AddNode( mut this, NodeKind kind, ust::string8 mut name ) : NodeId;
+	fn RemoveNode( mut this, NodeId node_id );
+	fn AddLink( mut this, NodeId from, NodeId to );
+
+	fn HaveOutgoingLinks( this, NodeId from ) : bool;
+	fn HaveOutgoingMutableNodes( this, NodeId from ) : bool;
+
+	fn GetNodeKind( this, NodeId node_id ) : NodeKind;
+	fn GetNodeName( this, NodeId node_id ) : ust::string8&;
+
+private:
+	struct Node
+	{
+		NodeKind kind;
+		ust::string8 name;
+	}
+
+	struct Link
+	{
+		NodeId src;
+		NodeId dst;
+	}
+
+private:
+	ust::unordered_map</NodeId, Node/> nodes_;
+	ust::vector</Link/> links_;
+}
+
+} // namespace U1

@@ -36,6 +36,16 @@ void ErrorHanlder(
 // Returns "true" if should enable test.
 bool FilterTest( const std::string& test_name )
 {
+	const std::string test_name_without_file_name= test_name.substr(test_name.find_last_of(':') + 1);
+
+	static const std::unordered_set<std::string> c_test_to_disable
+	{
+		"MethodTest6",
+	};
+
+	if( c_test_to_disable.count( test_name_without_file_name ) != 0 )
+		return false;
+
 	static const std::unordered_set<std::string> c_test_to_enable
 	{
 		"DestructorMustReturnVoidTest0",
@@ -89,7 +99,6 @@ bool FilterTest( const std::string& test_name )
 		"ValueIsNotTemplateTest0",
 	};
 
-	const std::string test_name_without_file_name= test_name.substr(test_name.find_last_of(':') + 1);
 	if( c_test_to_enable.count( test_name_without_file_name ) != 0 )
 		return true;
 
@@ -155,6 +164,7 @@ bool FilterTest( const std::string& test_name )
 		"operators_overloading_test.cpp",
 		"operators_priority_test.cpp",
 		"operators_test.cpp",
+		"reference_check_test.cpp",
 		"references_inside_structs_errors_test.cpp",
 		"type_conversions_test.cpp",
 		"typedefs_test.cpp",
