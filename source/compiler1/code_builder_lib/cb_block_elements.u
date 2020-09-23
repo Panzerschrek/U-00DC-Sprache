@@ -257,7 +257,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 	{
 		if( expr.value_type == ValueType::Value )
 		{
-			REPORT_ERROR( ExpectedReferenceValue,  names_scope, auto_variable_declaration.file_pos )
+			REPORT_ERROR( ExpectedReferenceValue, names_scope, auto_variable_declaration.file_pos )
 			return BlockElementBuildInfo();
 		}
 		if( out_variable.is_mutable && expr.value_type != ValueType::ReferenceMut )
@@ -300,13 +300,27 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 				LLVMBuildAlloca( function_context.alloca_ir_builder, out_variable.t.GetLLVMType(), (auto_variable_declaration.name + "\0").front() );
 		}
 
-		if( !expr.t.IsCopyConstructible() )
+		if( expr.value_type == ValueType::Value )
 		{
-			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, auto_variable_declaration.file_pos, out_variable.t )
-			return BlockElementBuildInfo();
+			// Move.
+			if( expr.node_id != ReferencesGraph::c_empty_node_id )
+			{
+				function_context.references_graph.MoveNode( expr.node_id );
+			}
+			CopyBytes( out_variable.llvm_value, expr.llvm_value, expr.t, function_context );
+			// TODO - maybe reuse here "alloca" instruction of temporary variable?
 		}
+		else
+		{
+			// Copy.
+			if( !expr.t.IsCopyConstructible() )
+			{
+				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, auto_variable_declaration.file_pos, out_variable.t )
+				return BlockElementBuildInfo();
+			}
 
-		BuildCopyConstructorPart( names_scope, function_context, out_variable.llvm_value, expr.llvm_value, out_variable.t, auto_variable_declaration.file_pos );
+			BuildCopyConstructorPart( names_scope, function_context, out_variable.llvm_value, expr.llvm_value, out_variable.t, auto_variable_declaration.file_pos );
+		}
 	}
 	else { halt; }
 

@@ -99,6 +99,7 @@ bool FilterTest( const std::string& test_name )
 		"TempVariablesMovingTest0_MoveTempVariableToArgument",
 		"TempVariablesMovingTest1_MoveTempVariableToReturnValue",
 		"TempVariablesMovingTest2_MoveTempVariableInExpressionInitialization",
+		"TempVariablesMovingTest3_MoveTempVariableInAutoVariableInitialization",
 		"ValueIsNotTemplateTest0",
 	};
 
