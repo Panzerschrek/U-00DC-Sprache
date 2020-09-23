@@ -2274,6 +2274,7 @@ fn CodeBuilder::DoCallFunction(
 	}
 	else
 	{
+		result.value_type= ValueType::Value;
 		if( is_s_ret )
 		{
 			result.location= Variable::Location::Pointer;
@@ -2282,7 +2283,6 @@ fn CodeBuilder::DoCallFunction(
 		else
 		{
 			result.location= Variable::Location::LLVMRegister;
-			result.value_type= ValueType::Value;
 		}
 
 		result.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, move(node_name) );
