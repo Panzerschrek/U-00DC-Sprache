@@ -2231,16 +2231,28 @@ fn CodeBuilder::DoCallFunction(
 
 			if( !arg.t.GetClassType().empty() || !arg.t.GetTupleType().empty() )
 			{
-				auto mut var_copy= LLVMValueRef::Null;
-				unsafe
+				if( arg.value_type == ValueType::Value && arg.t == expected_arg_type )
 				{
-					var_copy= LLVMBuildAlloca( function_context.alloca_ir_builder, expected_arg_type.GetLLVMType(), "\0"[0] );
+					// Move value to argument.
+					if( arg.node_id != ReferencesGraph::c_empty_node_id )
+					{
+						function_context.references_graph.MoveNode( arg.node_id );
+					}
+					llvm_arg= arg.llvm_value;
 				}
+				else
+				{
+					auto mut var_copy= LLVMValueRef::Null;
+					unsafe
+					{
+						var_copy= LLVMBuildAlloca( function_context.alloca_ir_builder, expected_arg_type.GetLLVMType(), "\0"[0] );
+					}
 
-				auto mut value_for_copy= CreateReferenceCast( arg.llvm_value, arg.t, expected_arg_type, function_context );
-				BuildCopyConstructorPart( names_scope, function_context, var_copy, value_for_copy, expected_arg_type, file_pos );
+					auto mut value_for_copy= CreateReferenceCast( arg.llvm_value, arg.t, expected_arg_type, function_context );
+					BuildCopyConstructorPart( names_scope, function_context, var_copy, value_for_copy, expected_arg_type, file_pos );
 
-				llvm_arg= var_copy;
+					llvm_arg= var_copy;
+				}
 			}
 			else
 			{
