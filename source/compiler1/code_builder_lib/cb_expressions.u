@@ -1841,7 +1841,30 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 		RestoreInstructionsState( function_context, instructions_state );
 	}
 
-	if( cast_imut(args).front().t == cast_imut(args).back().t && !args.front().t.GetTupleType().empty() )
+	if( operator == OverloadedOperator::Assign &&
+		cast_imut(args).front().t == cast_imut(args).back().t &&
+		( !cast_imut(args).front().t.GetClassType().empty() || !cast_imut(args).front().t.GetTupleType().empty() ) &&
+		cast_imut(args).front().value_type == ValueType::ReferenceMut &&
+		cast_imut(args).back().value_type == ValueType::Value )
+	{
+		// Do move assign.
+
+		// TODO - what exact evaluation order should be here?
+		var Variable r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.get_ref() );
+		var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.get_ref() );
+
+		BuildDestructorPart( names_scope, function_context, l_var.llvm_value, l_var.t, file_pos );
+
+		if( r_var.node_id != ReferencesGraph::c_empty_node_id )
+		{
+			function_context.references_graph.MoveNode( r_var.node_id );
+		}
+		CopyBytes( l_var.llvm_value, r_var.llvm_value, r_var.t, function_context );
+
+		var Variable mut move_result{ .t= void_type_for_ret_ };
+		return Value( move(move_result) );
+	}
+	else if( cast_imut(args).front().t == cast_imut(args).back().t && !args.front().t.GetTupleType().empty() )
 	{
 		return CallBinaryOperatorForTuple( names_scope, function_context, operator, arg_l, arg_r, file_pos );
 	}
