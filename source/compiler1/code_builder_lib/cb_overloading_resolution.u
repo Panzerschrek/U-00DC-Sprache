@@ -13,17 +13,17 @@ enum ArgOverloadingClass
 	MutalbeReference,
 }
 
-fn GetArgOverloadingClass( bool is_reference, bool is_mutable ) : ArgOverloadingClass
+fn GetArgOverloadingClass( FunctionType::Param& param ) : ArgOverloadingClass
 {
 	return select(
-		is_reference && is_mutable
+		param.is_reference && param.is_mutable
 			? ArgOverloadingClass::MutalbeReference
 			: ArgOverloadingClass::ImmutableReference );
 }
 
-fn GetArgOverloadingClass( FunctionType::Param& arg ) : ArgOverloadingClass
+fn GetArgOverloadingClass( VariableTypeExtened& arg ) : ArgOverloadingClass
 {
-	return GetArgOverloadingClass( arg.is_reference, arg.is_mutable );
+	return select( arg.value_type == ValueType::ReferenceMut ? ArgOverloadingClass::MutalbeReference : ArgOverloadingClass::ImmutableReference );
 }
 
 enum ConversionsCompareResult
@@ -86,7 +86,7 @@ fn ComplareConversionsType(
 }
 
 fn CompareConversionsMutability(
-	FunctionType::Param& src,
+	VariableTypeExtened& src,
 	FunctionType::Param& dst_left,
 	FunctionType::Param& dst_right ) : ConversionsCompareResult
 {
@@ -110,7 +110,7 @@ fn CompareConversionsMutability(
 }
 
 fn CompareConversions(
-	FunctionType::Param& src,
+	VariableTypeExtened& src,
 	FunctionType::Param& dst_left,
 	FunctionType::Param& dst_right ) : ConversionsCompareResult
 {
@@ -139,7 +139,7 @@ fn CompareConversions(
 }
 
 fn CompareConversions(
-	FunctionType::Param& src,
+	VariableTypeExtened& src,
 	FunctionType::Param& dst_left,
 	FunctionType::Param& dst_right,
 	TemplateSignatureParam& template_param_l,
@@ -439,11 +439,10 @@ fn CodeBuilder::ApplyOverloadedFunction(
 	return true;
 }
 
-// TODO - pass array of "Variable" instead of "FunctionType::Param"
 fn CodeBuilder::GetOverloadedFunction(
 	mut this,
 	FunctionsSet &'x functions_set,
-	ust::array_view_imut</FunctionType::Param/> actual_args,
+	ust::array_view_imut</VariableTypeExtened/> actual_args,
 	bool first_actual_arg_is_this,
 	NamesScopePtr& names_scope,
 	FilePos& file_pos,
@@ -668,7 +667,7 @@ fn CodeBuilder::GetOverloadedFunction(
 
 fn CodeBuilder::GetOverloadedOperator(
 	mut this,
-	ust::array_view_imut</FunctionType::Param/> args,
+	ust::array_view_imut</VariableTypeExtened/> args,
 	OverloadedOperator operator,
 	NamesScopePtr& names_scope, // Needed only for errors reporting
 	FilePos& file_pos ) : ust::optional</FunctionVariable/>

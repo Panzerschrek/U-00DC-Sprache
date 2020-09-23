@@ -260,6 +260,12 @@ struct Variable
 	ReferencesGraph::NodeId node_id= ReferencesGraph::c_empty_node_id;
 }
 
+struct VariableTypeExtened
+{
+	Type t;
+	ValueType value_type;
+}
+
 struct FunctionVariable
 {
 	FunctionType t;

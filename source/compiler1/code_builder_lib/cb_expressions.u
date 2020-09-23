@@ -728,18 +728,10 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 	if( !variable.t.GetClassType().empty() )
 	{
-		var [ FunctionType::Param, 2 ] args
+		var [ VariableTypeExtened, 2 ] args
 		[
-			{
-				.t(variable.t),
-				.is_mutable= variable.value_type == ValueType::ReferenceMut,
-				.is_reference= variable.value_type != ValueType::Value,
-			},
-			{
-				.t(index.t),
-				.is_mutable= index.value_type == ValueType::ReferenceMut,
-				.is_reference= index.value_type != ValueType::Value,
-			},
+			{ .t(variable.t), .value_type= variable.value_type },
+			{ .t(index.t), .value_type= index.value_type },
 		];
 
 		// TODO - is this correct to pass preevaluated args? Maybe evaluate args in "DoCallFunction" instead?
@@ -811,15 +803,10 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 		// Try to call overloaded () operator.
 
-		var ust::vector</FunctionType::Param/> mut args;
+		var ust::vector</VariableTypeExtened/> mut args;
 
 		{
-			var FunctionType::Param mut this_arg
-			{
-				.t(variable.t),
-				.is_mutable= variable.value_type == ValueType::ReferenceMut,
-				.is_reference= variable.value_type != ValueType::Value,
-			};
+			var VariableTypeExtened mut this_arg{ .t(variable.t), .value_type= variable.value_type };
 			args.push_back(move(this_arg));
 		}
 
@@ -833,12 +820,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				if( function_context.args_preevaluation_cache.find( in_arg ).empty() )
 				{
 					auto arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.get_ref() );
-					var FunctionType::Param mut f_arg
-					{
-						.t(arg.t),
-						.is_mutable= arg.value_type == ValueType::ReferenceMut,
-						.is_reference= arg.value_type != ValueType::Value,
-					};
+					var VariableTypeExtened mut f_arg{ .t(arg.t), .value_type= arg.value_type };
 					function_context.args_preevaluation_cache.insert( in_arg, move(f_arg) );
 				}
 				args.push_back( function_context.args_preevaluation_cache[in_arg] );
@@ -1062,12 +1044,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	if( !variable.t.GetClassType().empty() )
 	{
-		var [ FunctionType::Param, 1 ] args
-		[ {
-			.t(variable.t),
-			.is_mutable= variable.value_type == ValueType::ReferenceMut,
-			.is_reference= variable.value_type != ValueType::Value,
-		} ];
+		var [ VariableTypeExtened, 1 ] args[ { .t(variable.t), .value_type= variable.value_type } ];
 
 		if_var( mut overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::Sub, names_scope, unary_minus.file_pos ) )
 		{
@@ -1141,12 +1118,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	if( !variable.t.GetClassType().empty() )
 	{
-		var [ FunctionType::Param, 1 ] args
-		[ {
-			.t(variable.t),
-			.is_mutable= variable.value_type == ValueType::ReferenceMut,
-			.is_reference= variable.value_type != ValueType::Value,
-		} ];
+		var [ VariableTypeExtened, 1 ] args[ { .t(variable.t), .value_type= variable.value_type} ];
 
 		if_var( mut overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::LogicalNot, names_scope, logical_not.file_pos ) )
 		{
@@ -1209,12 +1181,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	if( !variable.t.GetClassType().empty() )
 	{
-		var [ FunctionType::Param, 1 ] args
-		[ {
-			.t(variable.t),
-			.is_mutable= variable.value_type == ValueType::ReferenceMut,
-			.is_reference= variable.value_type != ValueType::Value,
-		} ];
+		var [ VariableTypeExtened, 1 ] args[ { .t(variable.t), .value_type= variable.value_type} ];
 
 		if_var( mut overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::BitwiseNot, names_scope, bitwise_not.file_pos ) )
 		{
@@ -1853,7 +1820,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 {
 	var [ ust::shared_ptr_final</Synt::Expression/>, 2 ] in_args[ arg_l, arg_r ];
 
-	var ust::vector</FunctionType::Param/> mut args;
+	var ust::vector</VariableTypeExtened/> mut args;
 
 	{
 		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
@@ -1865,12 +1832,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 			if( function_context.args_preevaluation_cache.find( in_arg ).empty() )
 			{
 				auto arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.get_ref() );
-				var FunctionType::Param mut f_arg
-				{
-					.t(arg.t),
-					.is_mutable= arg.value_type == ValueType::ReferenceMut,
-					.is_reference= arg.value_type != ValueType::Value,
-				};
+				var VariableTypeExtened mut f_arg{ .t(arg.t), .value_type= arg.value_type };
 				function_context.args_preevaluation_cache.insert( in_arg, move(f_arg) );
 			}
 			args.push_back( function_context.args_preevaluation_cache[in_arg] );
@@ -1961,7 +1923,7 @@ fn CodeBuilder::CallFunctionsSet(
 	FilePos& file_pos ) : Value
 {
 	// Pre-evaluate arguments to know exact types and select exact function.
-	var ust::vector</FunctionType::Param/> mut args_evaluated;
+	var ust::vector</VariableTypeExtened/> mut args_evaluated;
 	{
 		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
@@ -1970,12 +1932,7 @@ fn CodeBuilder::CallFunctionsSet(
 
 		if( !this_.empty() )
 		{
-			var FunctionType::Param mut out_arg
-			{
-				.t( this_.get_ref().t ),
-				.is_mutable= this_.get_ref().value_type == ValueType::ReferenceMut,
-				.is_reference= true,
-			};
+			var VariableTypeExtened mut out_arg{ .t( this_.get_ref().t ), .value_type= this_.get_ref().value_type };
 			args_evaluated.push_back( move(out_arg) );
 		}
 
@@ -1984,12 +1941,7 @@ fn CodeBuilder::CallFunctionsSet(
 			if( function_context.args_preevaluation_cache.find( arg ).empty() )
 			{
 				auto arg_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg.get_ref() );
-				var FunctionType::Param mut out_arg
-				{
-					.t( arg_variable.t ),
-					.is_mutable= arg_variable.value_type == ValueType::ReferenceMut,
-					.is_reference= arg_variable.value_type != ValueType::Value,
-				};
+				var VariableTypeExtened mut out_arg{ .t( arg_variable.t ), .value_type= arg_variable.value_type };
 				function_context.args_preevaluation_cache.insert( arg, move(out_arg) );
 			}
 			args_evaluated.push_back( function_context.args_preevaluation_cache[arg] );

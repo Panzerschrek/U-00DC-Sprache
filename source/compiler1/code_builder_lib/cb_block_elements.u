@@ -1233,11 +1233,10 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 	// Try process overloaded operator.
 	if( ! variable.t.GetClassType().empty() )
 	{
-		var [ FunctionType::Param, 1 ] args
+		var [ VariableTypeExtened, 1 ] args
 		[ {
 			.t(variable.t),
-			.is_mutable= variable.value_type == ValueType::ReferenceMut,
-			.is_reference= variable.value_type != ValueType::Value,
+			.value_type= variable.value_type,
 		} ];
 
 		auto operator= select( delta == 1 ? OverloadedOperator::Increment : OverloadedOperator::Decrement );
