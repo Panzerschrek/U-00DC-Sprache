@@ -412,6 +412,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	}
 	else
 	{
+		// TODO - allow reference conversion?
 		if( expr.t != function_context.return_type )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope, return_operator.file_pos, function_context.return_type, expr.t )
@@ -422,7 +423,22 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		if( !ret_type.GetClassType().empty() || !ret_type.GetTupleType().empty() )
 		{
 			auto s_ret= function_context.s_ret;
-			BuildCopyConstructorPart( names_scope, function_context, s_ret, expr.llvm_value, expr.t, return_operator.file_pos );
+
+			if( expr.value_type == ValueType::Value && expr.t == function_context.return_type )
+			{
+				// Move
+				if( expr.node_id != ReferencesGraph::c_empty_node_id )
+				{
+					function_context.references_graph.MoveNode( expr.node_id );
+				}
+				CopyBytes( s_ret, expr.llvm_value, expr.t, function_context );
+			}
+			else
+			{
+				// Copy
+				BuildCopyConstructorPart( names_scope, function_context, s_ret, expr.llvm_value, expr.t, return_operator.file_pos );
+			}
+
 			CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.file_pos );
 			unsafe{  LLVMBuildRetVoid( function_context.llvm_ir_builder );  }
 			return block_element_build_info;
@@ -562,6 +578,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
 	BuildExpressionCode( names_scope, function_context, expression );
+
+	CallDestructorsForTopVariablesFrame( names_scope, function_context, Synt::GetFilePos(expression) );
 	return BlockElementBuildInfo();
 }
 

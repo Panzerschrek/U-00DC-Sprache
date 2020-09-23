@@ -1829,6 +1829,44 @@ fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef const
 	}
 }
 
+fn CodeBuilder::CopyBytes( this, LLVMValueRef dst, LLVMValueRef src, Type& t, FunctionContext &mut function_context )
+{
+	unsafe
+	{
+		var LLVMTypeRef llvm_type= t.GetLLVMType();
+		var LLVMTypeKind type_kind= LLVMGetTypeKind( llvm_type );
+		if( type_kind == LLVMTypeKind::Integer ||
+			type_kind == LLVMTypeKind::Float ||
+			type_kind == LLVMTypeKind::Double ||
+			type_kind == LLVMTypeKind::Pointer )
+		{
+			// Simple scalar - create load/store.
+			if( LLVMTypeOf( dst ) == LLVMTypeOf( src ) )
+			{
+				auto value = LLVMBuildLoad( function_context.llvm_ir_builder, src, "\0"[0] );
+				LLVMBuildStore( function_context.llvm_ir_builder, value, dst );
+			}
+			else if( LLVMGetElementType( LLVMTypeOf( dst ) ) == LLVMTypeOf( src ) )
+			{
+				LLVMBuildStore( function_context.llvm_ir_builder, src, dst );
+			}
+			else{ halt; }
+		}
+		else
+		{
+			// Create memcpy for aggregate types.
+			var u64 size= LLVMABISizeOfType( data_layout_, llvm_type );
+			var u32 alignment= LLVMABIAlignmentOfType( data_layout_, llvm_type );
+
+			LLVMBuildMemCpy(
+				function_context.llvm_ir_builder,
+				dst, alignment,
+				src, alignment,
+				LLVMConstInt( fundamental_llvm_types_.u64_, size, LLVMBool::False ) );
+		}
+	}
+}
+
 fn CodeBuilder::SaveInstructionsState( FunctionContext& function_context ) : InstructionsState
 {
 	unsafe

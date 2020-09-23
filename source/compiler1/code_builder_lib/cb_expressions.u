@@ -2279,8 +2279,16 @@ fn CodeBuilder::DoCallFunction(
 	}
 	else
 	{
-		result.location= Variable::Location::LLVMRegister;
-		result.value_type= ValueType::Value;
+		if( is_s_ret )
+		{
+			result.location= Variable::Location::Pointer;
+			result.llvm_value= s_ret_value;
+		}
+		else
+		{
+			result.location= Variable::Location::LLVMRegister;
+			result.value_type= ValueType::Value;
+		}
 
 		result.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, move(node_name) );
 	}
@@ -2325,14 +2333,9 @@ fn CodeBuilder::DoCallFunction(
 		// Perform regular call for non-constexpr function or in case of error in constexpr function evaluation.
 		unsafe
 		{
-			result.llvm_value= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, cast_imut(llvm_args).front_unsafe(), u32(llvm_args.size()), "\0"[0] );
+			auto call_result= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, cast_imut(llvm_args).front_unsafe(), u32(llvm_args.size()), "\0"[0] );
+			if( !is_s_ret ){  result.llvm_value= call_result;  }
 		}
-	}
-
-	if( is_s_ret )
-	{
-		result.llvm_value= s_ret_value;
-		result.location= Variable::Location::Pointer;
 	}
 
 	// Setup references after call.
@@ -2359,7 +2362,7 @@ fn CodeBuilder::DoCallFunction(
 	}
 
 	{ 	// Register result variable for destruction and references graph checks.
-		var NamesScopeVariable names_scope_variable
+		var NamesScopeVariable mut names_scope_variable
 		{
 			.t= result.t,
 			.is_mutable= true,
@@ -2367,7 +2370,7 @@ fn CodeBuilder::DoCallFunction(
 			.constexpr_value= result.constexpr_value,
 			.node_id= result.node_id,
 		};
-		function_context.variables_frames.back().push_back( names_scope_variable );
+		function_context.variables_frames.back().push_back( move(names_scope_variable) );
 	}
 
 	return move(result);

@@ -648,6 +648,8 @@ private:
 
 	fn MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef constant, FunctionContext& function_context );
 
+	fn CopyBytes( this, LLVMValueRef dst, LLVMValueRef src, Type& t, FunctionContext &mut function_context );
+
 	struct InstructionsState
 	{
 		LLVMValueRef current_block_last_instruction;
