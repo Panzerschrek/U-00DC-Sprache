@@ -783,11 +783,12 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 		U_ASSERT(false);
 }
 
-void CodeBuilder::CopyBytes_r(
+void CodeBuilder::CopyBytes(
 	llvm::Value* const src, llvm::Value* const dst,
-	llvm::Type* const llvm_type,
+	const Type& type,
 	FunctionContext& function_context )
 {
+	llvm::Type* const llvm_type= type.GetLLVMType();
 	if( llvm_type->isIntegerTy() || llvm_type->isFloatingPointTy() || llvm_type->isPointerTy() )
 	{
 		// Create simple load-store.
@@ -806,14 +807,6 @@ void CodeBuilder::CopyBytes_r(
 			src, alignment,
 			llvm::Constant::getIntegerValue( fundamental_llvm_types_.u32, llvm::APInt(32, data_layout_.getTypeAllocSize( llvm_type ) ) ) );
 	}
-}
-
-void CodeBuilder::CopyBytes(
-	llvm::Value* const src, llvm::Value* const dst,
-	const Type& type,
-	FunctionContext& function_context )
-{
-	return CopyBytes_r( src, dst, type.GetLLVMType(), function_context );
 }
 
 void CodeBuilder::MoveConstantToMemory(

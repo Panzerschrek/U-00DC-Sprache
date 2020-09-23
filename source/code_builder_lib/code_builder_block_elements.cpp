@@ -801,7 +801,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 
 			loop_names.AddName( for_operator.loop_variable_name_, Value( std::move(variable), for_operator.file_pos_ ) );
 
-
 			llvm::BasicBlock* const next_basic_block=
 				( element_index + 1u == tuple_type->elements.size() )
 					? finish_basic_block
