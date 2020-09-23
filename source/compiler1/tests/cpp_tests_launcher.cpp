@@ -98,6 +98,7 @@ bool FilterTest( const std::string& test_name )
 		"NameNotFound_ForClassTemplateDefaultSignatureArguments_Test0",
 		"TempVariablesMovingTest0_MoveTempVariableToArgument",
 		"TempVariablesMovingTest1_MoveTempVariableToReturnValue",
+		"TempVariablesMovingTest2_MoveTempVariableInExpressionInitialization",
 		"ValueIsNotTemplateTest0",
 	};
 
