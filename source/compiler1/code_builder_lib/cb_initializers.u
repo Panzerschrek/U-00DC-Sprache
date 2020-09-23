@@ -753,13 +753,27 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			REPORT_ERROR( TypesMismatch, names_scope, file_pos, variable.t, expr_result.t )
 			return LLVMValueRef::Null;
 		}
-		if( !variable.t.IsCopyConstructible() )
-		{
-			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, file_pos, variable.t )
-			return LLVMValueRef::Null;
-		}
 
-		BuildCopyConstructorPart( names_scope, function_context, variable.llvm_value, expr_result.llvm_value, variable.t, file_pos );
+		if( expr_result.value_type == ValueType::Value )
+		{
+			// Move.
+			if( expr_result.node_id != ReferencesGraph::c_empty_node_id )
+			{
+				function_context.references_graph.MoveNode( expr_result.node_id );
+			}
+			CopyBytes( variable.llvm_value, expr_result.llvm_value, variable.t, function_context );
+		}
+		else
+		{
+			// Copy.
+			if( !variable.t.IsCopyConstructible() )
+			{
+				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, file_pos, variable.t )
+				return LLVMValueRef::Null;
+			}
+
+			BuildCopyConstructorPart( names_scope, function_context, variable.llvm_value, expr_result.llvm_value, variable.t, file_pos );
+		}
 
 		// Copy constructor for constexpr type is trivial, so, we can just take constexpr value of source.
 		return expr_result.constexpr_value;
