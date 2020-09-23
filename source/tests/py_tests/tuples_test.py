@@ -346,7 +346,7 @@ def TupleCopyAssignment_Test3():
 	assert( errors_list[0].file_pos.line == 11 )
 
 
-def TupleCopyAssignment_Test3():
+def TupleCopyAssignment_Test4():
 	c_program_text= """
 		fn Foo()
 		{
@@ -359,6 +359,26 @@ def TupleCopyAssignment_Test3():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
 	assert( errors_list[0].file_pos.line == 6 )
+
+
+def TupleMoveAsignment_Test0():
+	c_program_text= """
+		class C // Class is noncopyable.
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+		}
+		fn Foo()
+		{
+			var tup[ f32, C, bool ] mut t0[ 0.25f, C(654), true ], mut t1[ 0.0f, C(0), false ];
+			t1= move(t0); // Should move assign here.
+			halt if( t1[0] != 0.25f );
+			halt if( t1[1].x != 654 );
+			halt if( t1[2] != true );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
 
 
 def TupleFor_Test0():
