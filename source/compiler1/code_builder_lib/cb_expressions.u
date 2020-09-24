@@ -2373,7 +2373,7 @@ fn CodeBuilder::DoCallFunction(
 		}
 	}
 
-	// Remove temp nodes. TODO - destroy also unneeded temporary variables.
+	// Remove temp nodes.
 	foreach( node_id : args_nodes )
 	{
 		if( node_id != ReferencesGraph::c_empty_node_id )
@@ -2381,6 +2381,8 @@ fn CodeBuilder::DoCallFunction(
 			function_context.references_graph.RemoveNode( node_id );
 		}
 	}
+
+	DestroyUnusedTemporaryVariables( names_scope, function_context, file_pos ); // Destroy temporary args.
 
 	{ 	// Register result variable for destruction and references graph checks.
 		var NamesScopeVariable mut names_scope_variable
