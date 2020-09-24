@@ -811,6 +811,32 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 	}
 	if_var( &class_type : variable.t.GetClassType() )
 	{
+		var bool mut needs_move_construct = false;
+		if( args.size() == 1s )
+		{
+			var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+			auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+			auto instructions_state= SaveInstructionsState( function_context );
+
+			var Variable arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().get_ref() );
+			needs_move_construct= arg.t == variable.t && arg.value_type == ValueType::Value;
+
+			RestoreInstructionsState( function_context, instructions_state );
+		}
+
+		if( needs_move_construct )
+		{
+			var Variable expr_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().get_ref() );
+
+			if( expr_result.node_id != ReferencesGraph::c_empty_node_id )
+			{
+				function_context.references_graph.MoveNode( expr_result.node_id );
+			}
+			CopyBytes( variable.llvm_value, expr_result.llvm_value, variable.t, function_context );
+
+			return expr_result.constexpr_value; // Move can preserve constexpr.
+		}
+
 		auto class_members= class_type.lock_imut().get_ref().members;
 		auto members_lock= class_members.lock_imut();
 
