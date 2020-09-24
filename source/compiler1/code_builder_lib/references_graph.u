@@ -70,9 +70,25 @@ fn ReferencesGraph::AddLink( mut this, NodeId from, NodeId to )
 
 fn ReferencesGraph::MoveNode( mut this, NodeId node_id )
 {
-	var Node &mut node= nodes_[node_id];
-	halt if(node.moved);
-	node.moved= true;
+	{
+		var Node &mut node= nodes_[node_id];
+		halt if(node.moved);
+		node.moved= true;
+	}
+
+	for( auto mut i= 0s; i < links_.size(); )
+	{
+		if( links_[i].src == node_id || links_[i].dst == node_id )
+		{
+			auto back= links_.size() - 1s;
+			links_.swap( i, back );
+			links_.pop_back();
+		}
+		else
+		{
+			++i;
+		}
+	}
 }
 
 fn ReferencesGraph::NodeIsMoved( this, NodeId node_id ) : bool

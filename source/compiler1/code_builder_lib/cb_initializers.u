@@ -35,6 +35,9 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr_result, function_context );
 			LLVMBuildStore( function_context.llvm_ir_builder, value_in_register, variable.llvm_value );
 		}
+
+		DestroyUnusedTemporaryVariables( names_scope, function_context, Synt::GetFilePos(expression_initializer) );
+
 		return expr_result.constexpr_value;
 	}
 	if( !variable.t.GetFunctionPointerType().empty() )
@@ -76,6 +79,8 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			BuildCopyConstructorPart( names_scope, function_context, variable.llvm_value, expr_result.llvm_value, variable.t, Synt::GetFilePos(expression_initializer) );
 		}
 
+		DestroyUnusedTemporaryVariables( names_scope, function_context, Synt::GetFilePos(expression_initializer) );
+
 		// Copy constructor for constexpr type is trivial, so, we can just take constexpr value of source.
 		return expr_result.constexpr_value;
 	}
@@ -103,6 +108,8 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			auto mut value_for_copy= CreateReferenceCast( expr_result.llvm_value, expr_result.t, variable.t, function_context );
 			TryCallCopyConstructor( names_scope, function_context, variable.llvm_value, value_for_copy, class_type, Synt::GetFilePos(expression_initializer) );
 		}
+
+		DestroyUnusedTemporaryVariables( names_scope, function_context, Synt::GetFilePos(expression_initializer) );
 
 		return LLVMValueRef::Null;
 	}
@@ -735,6 +742,8 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			LLVMBuildStore( function_context.llvm_ir_builder, llvm_value, variable.llvm_value );
 		}
 
+		DestroyUnusedTemporaryVariables( names_scope, function_context, file_pos );
+
 		unsafe{  if( LLVMIsConstant( llvm_value ) == LLVMBool::True ){ return llvm_value; }  }
 
 		return LLVMValueRef::Null;
@@ -775,6 +784,8 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			BuildCopyConstructorPart( names_scope, function_context, variable.llvm_value, expr_result.llvm_value, variable.t, file_pos );
 		}
 
+		DestroyUnusedTemporaryVariables( names_scope, function_context, file_pos );
+
 		// Copy constructor for constexpr type is trivial, so, we can just take constexpr value of source.
 		return expr_result.constexpr_value;
 	}
@@ -797,6 +808,9 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 		{
 			LLVMBuildStore( function_context.llvm_ir_builder, CreateMoveToLLVMRegisterInstruction( expr, function_context ), variable.llvm_value );
 		}
+
+		DestroyUnusedTemporaryVariables( names_scope, function_context, file_pos );
+
 		return expr.constexpr_value;
 	}
 	if( !variable.t.GetFunctionPointerType().empty() )
@@ -865,6 +879,8 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			args.range(),
 			file_pos );
 
+		DestroyUnusedTemporaryVariables( names_scope, function_context, file_pos );
+
 		return LLVMValueRef::Null;
 	}
 
@@ -891,6 +907,9 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 		{
 			LLVMBuildStore( function_context.llvm_ir_builder, value_for_store, variable.llvm_value );
 		}
+
+		DestroyUnusedTemporaryVariables( names_scope, function_context, initializer_file_pos );
+
 		return initializer_variable.constexpr_value;
 	}
 
@@ -1063,6 +1082,8 @@ fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, 
 	auto reference_converted= CreateReferenceCast( initializer_variable.llvm_value, initializer_variable.t, field.t, function_context );
 	auto address_of_reference= CreateFieldGEP( variable.llvm_value, field, function_context );
 	unsafe{  LLVMBuildStore( function_context.llvm_ir_builder, reference_converted, address_of_reference );  }
+
+	DestroyUnusedTemporaryVariables( names_scope, function_context, initializer_expression_file_pos );
 
 	if( initializer_variable.constexpr_value != LLVMValueRef::Null )
 	{
@@ -1246,7 +1267,6 @@ fn CodeBuilder::BuildConstructorInitialization(
 		}
 
 		function_context.uninitialized_this_fields.erase( member_initializer.name );
-
 	}
 }
 

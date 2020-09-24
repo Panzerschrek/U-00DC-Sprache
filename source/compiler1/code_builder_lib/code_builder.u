@@ -1555,6 +1555,26 @@ fn CodeBuilder::CallDestructorsForLoopInnerVariables( this, NamesScopePtr& names
 	}
 }
 
+fn CodeBuilder::DestroyUnusedTemporaryVariables( this, NamesScopePtr& names_scope, FunctionContext& mut function_context, FilePos& file_pos )
+{
+	// TODO - maybe iterate in reverse order?
+	for( auto mut i= 0s; i < function_context.variables_frames.back().size(); ++i )
+	{
+		auto node_id= function_context.variables_frames.back()[i].node_id;
+		if( node_id != ReferencesGraph::c_empty_node_id &&
+			!function_context.references_graph.NodeIsMoved( node_id ) &&
+			function_context.references_graph.GetNodeKind( node_id ) == ReferencesGraph::NodeKind::Variable &&
+			!function_context.references_graph.HaveOutgoingLinks( node_id ) )
+		{
+			function_context.references_graph.MoveNode( node_id );
+
+			var LLVMValueRef llvm_value= function_context.variables_frames.back()[i].llvm_value;
+			var Type t= function_context.variables_frames.back()[i].t;
+			BuildDestructorPart( names_scope, function_context, llvm_value, t, file_pos );
+		}
+	}
+}
+
 fn CodeBuilder::EnsureTypeComplete( mut this, Type& t ) : bool
 {
 	if_var( &class_type_ptr : t.GetClassType() )
