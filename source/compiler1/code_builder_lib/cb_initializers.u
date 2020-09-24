@@ -35,6 +35,9 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr_result, function_context );
 			LLVMBuildStore( function_context.llvm_ir_builder, value_in_register, variable.llvm_value );
 		}
+
+		DestroyUnusedTemporaryVariables( names_scope, function_context, Synt::GetFilePos(expression_initializer) );
+
 		return expr_result.constexpr_value;
 	}
 	if( !variable.t.GetFunctionPointerType().empty() )
@@ -735,6 +738,8 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			LLVMBuildStore( function_context.llvm_ir_builder, llvm_value, variable.llvm_value );
 		}
 
+		DestroyUnusedTemporaryVariables( names_scope, function_context, file_pos );
+
 		unsafe{  if( LLVMIsConstant( llvm_value ) == LLVMBool::True ){ return llvm_value; }  }
 
 		return LLVMValueRef::Null;
@@ -797,6 +802,9 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 		{
 			LLVMBuildStore( function_context.llvm_ir_builder, CreateMoveToLLVMRegisterInstruction( expr, function_context ), variable.llvm_value );
 		}
+
+		DestroyUnusedTemporaryVariables( names_scope, function_context, file_pos );
+
 		return expr.constexpr_value;
 	}
 	if( !variable.t.GetFunctionPointerType().empty() )
@@ -891,6 +899,9 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 		{
 			LLVMBuildStore( function_context.llvm_ir_builder, value_for_store, variable.llvm_value );
 		}
+
+		DestroyUnusedTemporaryVariables( names_scope, function_context, initializer_file_pos );
+
 		return initializer_variable.constexpr_value;
 	}
 

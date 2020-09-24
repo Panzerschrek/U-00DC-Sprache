@@ -80,6 +80,8 @@ bool FilterTest( const std::string& test_name )
 		"EralyTempVariablesDestruction_Test8",
 		"EralyTempVariablesDestruction_Test9",
 		"EralyTempVariablesDestruction_Test10",
+		"EralyTempVariablesDestruction_Test11",
+		"EralyTempVariablesDestruction_Test12",
 		//"ExpectedConstantExpression_InTemplateSignatureArgument_Test0",
 		"ExpectedConstantExpression_InTemplateSignatureArgument_Test1",
 		"ExplicitArgumentsInDestructorTest1",
