@@ -257,7 +257,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 	{
 		if( expr.value_type == ValueType::Value )
 		{
-			REPORT_ERROR( ExpectedReferenceValue,  names_scope, auto_variable_declaration.file_pos )
+			REPORT_ERROR( ExpectedReferenceValue, names_scope, auto_variable_declaration.file_pos )
 			return BlockElementBuildInfo();
 		}
 		if( out_variable.is_mutable && expr.value_type != ValueType::ReferenceMut )
@@ -300,13 +300,27 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 				LLVMBuildAlloca( function_context.alloca_ir_builder, out_variable.t.GetLLVMType(), (auto_variable_declaration.name + "\0").front() );
 		}
 
-		if( !expr.t.IsCopyConstructible() )
+		if( expr.value_type == ValueType::Value )
 		{
-			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, auto_variable_declaration.file_pos, out_variable.t )
-			return BlockElementBuildInfo();
+			// Move.
+			if( expr.node_id != ReferencesGraph::c_empty_node_id )
+			{
+				function_context.references_graph.MoveNode( expr.node_id );
+			}
+			CopyBytes( out_variable.llvm_value, expr.llvm_value, expr.t, function_context );
+			// TODO - maybe reuse here "alloca" instruction of temporary variable?
 		}
+		else
+		{
+			// Copy.
+			if( !expr.t.IsCopyConstructible() )
+			{
+				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, auto_variable_declaration.file_pos, out_variable.t )
+				return BlockElementBuildInfo();
+			}
 
-		BuildCopyConstructorPart( names_scope, function_context, out_variable.llvm_value, expr.llvm_value, out_variable.t, auto_variable_declaration.file_pos );
+			BuildCopyConstructorPart( names_scope, function_context, out_variable.llvm_value, expr.llvm_value, out_variable.t, auto_variable_declaration.file_pos );
+		}
 	}
 	else { halt; }
 
@@ -412,6 +426,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	}
 	else
 	{
+		// TODO - allow reference conversion?
 		if( expr.t != function_context.return_type )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope, return_operator.file_pos, function_context.return_type, expr.t )
@@ -422,7 +437,22 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		if( !ret_type.GetClassType().empty() || !ret_type.GetTupleType().empty() )
 		{
 			auto s_ret= function_context.s_ret;
-			BuildCopyConstructorPart( names_scope, function_context, s_ret, expr.llvm_value, expr.t, return_operator.file_pos );
+
+			if( expr.value_type == ValueType::Value && expr.t == function_context.return_type )
+			{
+				// Move
+				if( expr.node_id != ReferencesGraph::c_empty_node_id )
+				{
+					function_context.references_graph.MoveNode( expr.node_id );
+				}
+				CopyBytes( s_ret, expr.llvm_value, expr.t, function_context );
+			}
+			else
+			{
+				// Copy
+				BuildCopyConstructorPart( names_scope, function_context, s_ret, expr.llvm_value, expr.t, return_operator.file_pos );
+			}
+
 			CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.file_pos );
 			unsafe{  LLVMBuildRetVoid( function_context.llvm_ir_builder );  }
 			return block_element_build_info;
@@ -562,6 +592,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
 	BuildExpressionCode( names_scope, function_context, expression );
+
+	CallDestructorsForTopVariablesFrame( names_scope, function_context, Synt::GetFilePos(expression) );
 	return BlockElementBuildInfo();
 }
 
@@ -1201,11 +1233,10 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 	// Try process overloaded operator.
 	if( ! variable.t.GetClassType().empty() )
 	{
-		var [ FunctionType::Param, 1 ] args
+		var [ VariableTypeExtened, 1 ] args
 		[ {
 			.t(variable.t),
-			.is_mutable= variable.value_type == ValueType::ReferenceMut,
-			.is_reference= variable.value_type != ValueType::Value,
+			.value_type= variable.value_type,
 		} ];
 
 		auto operator= select( delta == 1 ? OverloadedOperator::Increment : OverloadedOperator::Decrement );

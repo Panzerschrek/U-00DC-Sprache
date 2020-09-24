@@ -429,7 +429,7 @@ private:
 	fn GenTemplateFunction(
 		mut this,
 		FunctionTemplatePtr& function_template_ptr,
-		ust::array_view_imut</FunctionType::Param/> mut args,
+		ust::array_view_imut</VariableTypeExtened/> mut args,
 		bool first_arg_is_this,
 		FilePos& file_pos ) : ust::optional</FunctionVariable/>;
 
@@ -437,7 +437,7 @@ private:
 		mut this,
 		FunctionTemplatePtr& function_template_ptr,
 		TemplateArgsFinished& known_template_args,
-		ust::array_view_imut</FunctionType::Param/> mut args,
+		ust::array_view_imut</VariableTypeExtened/> mut args,
 		bool first_arg_is_this,
 		FilePos& file_pos ) : ust::optional</FunctionVariable/>;
 
@@ -582,7 +582,7 @@ private:
 	fn GetOverloadedFunction(
 		mut this,
 		FunctionsSet &'x functions_set,
-		ust::array_view_imut</FunctionType::Param/> actual_args,
+		ust::array_view_imut</VariableTypeExtened/> actual_args,
 		bool first_actual_arg_is_this,
 		NamesScopePtr& names_scope, // Needed only for errors reporting
 		FilePos& file_pos,
@@ -590,7 +590,7 @@ private:
 
 	fn GetOverloadedOperator(
 		mut this,
-		ust::array_view_imut</FunctionType::Param/> args,
+		ust::array_view_imut</VariableTypeExtened/> args,
 		OverloadedOperator operator,
 		NamesScopePtr& names_scope, // Needed only for errors reporting
 		FilePos& file_pos ) : ust::optional</FunctionVariable/>;
@@ -647,6 +647,8 @@ private:
 	fn CreateTupleElementGEP( this, LLVMValueRef value, size_type element_index, FunctionContext& function_context ) : LLVMValueRef;
 
 	fn MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef constant, FunctionContext& function_context );
+
+	fn CopyBytes( this, LLVMValueRef dst, LLVMValueRef src, Type& t, FunctionContext &mut function_context );
 
 	struct InstructionsState
 	{

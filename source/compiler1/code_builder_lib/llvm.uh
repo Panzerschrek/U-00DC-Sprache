@@ -318,6 +318,13 @@ fn nomangle LLVMBuildPointerCast(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMT
 fn nomangle LLVMBuildPtrToInt(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildIntToPtr(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
 
+// Intrinsics
+
+fn nomangle LLVMBuildMemCpy(
+	LLVMBuilderRef B,
+	LLVMValueRef Dst, u32 DstAlign,
+	LLVMValueRef Src, u32 SrcAlign,
+	LLVMValueRef Size) unsafe : LLVMValueRef;
 
 // Attributes
 fn nomangle LLVMCreateEnumAttribute(LLVMContextRef C, u32 KindID, u64 Val) unsafe : LLVMAttributeRef;

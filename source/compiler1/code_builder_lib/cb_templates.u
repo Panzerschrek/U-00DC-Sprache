@@ -709,7 +709,7 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 fn CodeBuilder::GenTemplateFunction(
 	mut this,
 	FunctionTemplatePtr& function_template_ptr,
-	ust::array_view_imut</FunctionType::Param/> mut args,
+	ust::array_view_imut</VariableTypeExtened/> mut args,
 	bool first_arg_is_this,
 	FilePos& file_pos ) : ust::optional</FunctionVariable/>
 {
@@ -725,7 +725,7 @@ fn CodeBuilder::GenTemplateFunction(
 	mut this,
 	FunctionTemplatePtr& function_template_ptr,
 	TemplateArgsFinished& known_template_args,
-	ust::array_view_imut</FunctionType::Param/> mut args,
+	ust::array_view_imut</VariableTypeExtened/> mut args,
 	bool first_arg_is_this,
 	FilePos& file_pos ) : ust::optional</FunctionVariable/>
 {
@@ -779,13 +779,13 @@ fn CodeBuilder::GenTemplateFunction(
 	for( auto mut i= 0s; i < args.size(); ++i )
 	{
 		var Synt::FunctionType::Param& param= function_syntax_element.function_type.params[i];
-		var FunctionType::Param& arg= args[i];
+		var VariableTypeExtened& arg= args[i];
 
 		auto is_this= param.name == KeywordToString( Keyword::this_ );
 		auto param_is_mutable_reference=
 			param.mutability_modifier == Synt::MutabilityModifier::Mutable &&
 			( param.reference_modifier == Synt::ReferenceModifier::Reference || is_this );
-		if( param_is_mutable_reference && !arg.is_mutable )
+		if( param_is_mutable_reference && arg.value_type != ValueType::ReferenceMut )
 		{
 			return ust::optional</FunctionVariable/>();
 		}

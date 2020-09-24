@@ -11,7 +11,7 @@ fn ReferencesGraph::AddNode( mut this, NodeKind kind, ust::string8 mut name ) : 
 	// Use function implemented on C++ because we needs global mutable variable for it.
 	var NodeId node_id= U1_ReferencesGraphGetNextUniqueId();
 
-	var Node mut node{ .kind= kind, .name= move(name) };
+	var Node mut node{ .kind= kind, .name= move(name), .moved= false };
 	nodes_.insert( node_id, move(node) );
 
 	return node_id;
@@ -66,6 +66,18 @@ fn ReferencesGraph::AddLink( mut this, NodeId from, NodeId to )
 {
 	var Link link{ .src= from, .dst= to };
 	links_.push_back( link );
+}
+
+fn ReferencesGraph::MoveNode( mut this, NodeId node_id )
+{
+	var Node &mut node= nodes_[node_id];
+	halt if(node.moved);
+	node.moved= true;
+}
+
+fn ReferencesGraph::NodeIsMoved( this, NodeId node_id ) : bool
+{
+	return nodes_[node_id].moved;
 }
 
 fn ReferencesGraph::HaveOutgoingLinks( this, NodeId from ) : bool
