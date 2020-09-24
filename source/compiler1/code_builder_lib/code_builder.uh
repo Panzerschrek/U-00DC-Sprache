@@ -627,6 +627,8 @@ private:
 	fn CallDestructorsForAllVariablesFrames( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, FilePos& file_pos );
 	fn CallDestructorsForLoopInnerVariables( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, FilePos& file_pos );
 
+	fn DestroyUnusedTemporaryVariables( this, NamesScopePtr& names_scope, FunctionContext& mut function_context, FilePos& file_pos );
+
 	// Returns "false" if not complete.
 	fn EnsureTypeComplete( mut this, Type& t ) : bool;
 

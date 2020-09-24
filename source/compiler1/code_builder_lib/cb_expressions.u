@@ -2229,6 +2229,9 @@ fn CodeBuilder::DoCallFunction(
 				llvm_arg= CreateMoveToLLVMRegisterInstruction( arg, function_context );
 			}
 		}
+
+		// Destroy unused temporary variables after each arg evaluation.
+		DestroyUnusedTemporaryVariables( names_scope, function_context, file_pos );
 	}
 
 	var Variable mut result
