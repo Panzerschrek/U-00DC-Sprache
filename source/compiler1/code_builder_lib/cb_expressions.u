@@ -580,6 +580,50 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 {
 	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.value.get_ref() );
 
+	if( !variable.t.GetClassType().empty() )
+	{
+		// Try to call overloaded [] operator.
+		var [ VariableTypeExtened, 2 ] mut args
+		[
+			{ .t(variable.t), .value_type= variable.value_type },
+			{ .t(invalid_type_), .value_type= ValueType::Value },
+		];
+
+		{
+			var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+			auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+			auto instructions_state= SaveInstructionsState( function_context );
+
+			var Variable arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.index.get_ref() );
+			args[1].t= arg.t;
+			args[1].value_type= arg.value_type;
+
+			RestoreInstructionsState( function_context, instructions_state );
+		}
+
+		if_var( mut overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::Indexing, names_scope, indexation_operator.file_pos ) )
+		{
+			if( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+			{
+				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+			}
+
+			auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
+			overloaded_operator.llvm_function= fetch_result[1];
+
+			var [ ust::shared_ptr_final</Synt::Expression/>, 1 ] args[ indexation_operator.index ];
+			return DoCallFunction(
+				names_scope,
+				function_context,
+				ust::optional_ref</ Variable, false />( fetch_result[0] ),
+				overloaded_operator,
+				ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />( args ),
+				indexation_operator.file_pos );
+		}
+	}
+
+	// This is not a class - process indexation operator for array or tuple.
+
 	// Prevent modification of variable during index calculation.
 	var ReferencesGraph::NodeId mut variable_lock_node= ReferencesGraph::c_empty_node_id;
 	if( variable.node_id != ReferencesGraph::c_empty_node_id )
@@ -728,36 +772,6 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			return move(result);
 		}
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, indexation_operator.file_pos, index.t )
-	}
-	if( !variable.t.GetClassType().empty() )
-	{
-		var [ VariableTypeExtened, 2 ] args
-		[
-			{ .t(variable.t), .value_type= variable.value_type },
-			{ .t(index.t), .value_type= index.value_type },
-		];
-
-		// TODO - is this correct to pass preevaluated args? Maybe evaluate args in "DoCallFunction" instead?
-		if_var( mut overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::Indexing, names_scope, indexation_operator.file_pos ) )
-		{
-			if( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
-			{
-				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
-			}
-
-			auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
-			overloaded_operator.llvm_function= fetch_result[1];
-
-			var [ Variable, 2 ] args[ fetch_result[0], index ];
-			return DoCallFunction(
-				names_scope,
-				function_context,
-				overloaded_operator,
-				args,
-				ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
-				ArgsEvaluationOrder::Direct,
-				indexation_operator.file_pos );
-		}
 	}
 
 	REPORT_ERROR( OperationNotSupportedForThisType, names_scope, indexation_operator.file_pos, variable.t )

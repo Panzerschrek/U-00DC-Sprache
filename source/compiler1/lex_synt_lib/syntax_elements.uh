@@ -120,8 +120,8 @@ struct BracketExpression
 struct IndexationOperator
 {
 	FilePos file_pos;
-	ust::box</Expression/> value;
-	ust::box</Expression/> index;
+	ust::shared_ptr_final</Expression/> value;
+	ust::shared_ptr_final</Expression/> index;
 }
 
 struct CallOperator
