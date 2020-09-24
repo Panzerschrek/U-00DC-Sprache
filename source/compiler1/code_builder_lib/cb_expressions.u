@@ -636,11 +636,6 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	auto index= BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.index.get_ref() );
 
-	if( variable_lock_node != ReferencesGraph::c_empty_node_id )
-	{
-		function_context.references_graph.RemoveNode( variable_lock_node );
-	}
-
 	if_var( &variable_array_type : variable.t.GetArrayType() )
 	{
 		if_var( &index_fundamental_type : index.t.GetFundamentalType() )
@@ -728,6 +723,10 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			}
 
 			DestroyUnusedTemporaryVariables( names_scope, function_context, indexation_operator.file_pos ); // Destroy index.
+			if( variable_lock_node != ReferencesGraph::c_empty_node_id )
+			{
+				function_context.references_graph.RemoveNode( variable_lock_node );
+			}
 
 			return move(result);
 		}
@@ -772,6 +771,10 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			}
 
 			DestroyUnusedTemporaryVariables( names_scope, function_context, indexation_operator.file_pos ); // Destroy index.
+			if( variable_lock_node != ReferencesGraph::c_empty_node_id )
+			{
+				function_context.references_graph.RemoveNode( variable_lock_node );
+			}
 
 			return move(result);
 		}
@@ -1025,12 +1028,29 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 						return ErrorValue();
 					}
 
+					// Prevent destruction of variable during evaluation of member function template args.
+					var ReferencesGraph::NodeId mut variable_lock_node= ReferencesGraph::c_empty_node_id;
+					if( variable.node_id != ReferencesGraph::c_empty_node_id )
+					{
+						var ust::string8 mut node_name= function_context.references_graph.GetNodeName( variable.node_id ) + " lock";
+						variable_lock_node= function_context.references_graph.AddNode(
+							select( variable.value_type == ValueType::ReferenceMut ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
+							move(node_name) );
+						function_context.references_graph.AddLink( variable.node_id, variable_lock_node );
+					}
+
 					auto val= ParametrizeTemplateFunctions(
 						names_scope,
 						function_context,
 						functions_set,
 						member_access_operator.template_args.get_ref(),
 						member_access_operator.file_pos );
+
+					if( variable_lock_node != ReferencesGraph::c_empty_node_id )
+					{
+						function_context.references_graph.RemoveNode( variable_lock_node );
+					}
+
 					if( val.empty() )
 					{
 						return ErrorValue();
