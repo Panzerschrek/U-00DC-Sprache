@@ -104,8 +104,20 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		if( needs_move_assign )
 		{
 			// Move here, instead of calling copy-assignment operator. Before moving we must also call destructor for destination.
-			const Variable l_var_real= *BuildExpressionCode(  left_expr, names, function_context ).GetVariable();
 			const Variable r_var_real= *BuildExpressionCode( right_expr, names, function_context ).GetVariable();
+
+			std::optional<ReferencesGraphNodeHolder> r_var_lock;
+			if( r_var_real.node != nullptr )
+			{
+				if( function_context.variables_state.HaveOutgoingMutableNodes( r_var_real.node ) )
+					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), file_pos, r_var_real.node->name );
+				r_var_lock.emplace(
+					std::make_shared<ReferencesGraphNode>( "lock " + r_var_real.node->name, ReferencesGraphNode::Kind::ReferenceImut ),
+					function_context );
+				function_context.variables_state.AddLink( r_var_real.node, r_var_lock->Node() );
+			}
+
+			const Variable l_var_real= *BuildExpressionCode(  left_expr, names, function_context ).GetVariable();
 			if( l_var_real.type.HaveDestructor() )
 				CallDestructor( l_var_real.llvm_value, l_var_real.type, function_context, names.GetErrors(), file_pos );
 			CopyBytes( r_var_real.llvm_value, l_var_real.llvm_value, l_var_real.type, function_context );
