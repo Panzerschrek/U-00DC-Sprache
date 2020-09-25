@@ -210,7 +210,23 @@ fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 		return false;
 	}
 
-	// TODO - process return references.
+	// Can convert pointer to function returning less references to pointer to function, returning more references.
+	foreach( &src_param_reference : this.return_references )
+	{
+		var bool mut found= false;
+		foreach( &dst_param_reference : dst.return_references )
+		{
+			if( src_param_reference == dst_param_reference )
+			{
+				found= true;
+				break;
+			}
+		}
+		if( !found )
+		{
+			return false;
+		}
+	}
 
 	for( auto mut i= 0s; i < params.size(); ++i )
 	{
