@@ -91,6 +91,7 @@ bool FilterTest( const std::string& test_name )
 		"ExpectedConstantExpression_InTemplateSignatureArgument_Test1",
 		"ExplicitArgumentsInDestructorTest1",
 		"FunctionBodyDuplication_ForDestructors_Test0",
+		"ImplicitThisTag",
 		"ImportMacro_Test0",
 		"ImportsTest0",
 		"ImportsTest1_FunctionPrototypeInOneFileAndBodyInAnother",

@@ -1414,6 +1414,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 			.file_pos= it_.front().file_pos,
 			.name= it_.front().text,
 			.mutability_modifier= select( is_constructor_or_destructor ? MutabilityModifier::Mutable : MutabilityModifier::Immutable ),
+			.reference_tag= KeywordToString( Keyword::this_ ), // Implicit set name for tag of "this" to "this".
 		};
 		NextLexem();
 		res.function_type.params.push_back( move(this_param) );
@@ -1443,6 +1444,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 			.file_pos= it_.front().file_pos,
 			.name= it_.front().text,
 			.mutability_modifier= mutability_modifier,
+			.reference_tag= KeywordToString( Keyword::this_ ), // Implicit set name for tag of "this" to "this".
 		};
 		NextLexem();
 		res.function_type.params.push_back( move(this_param) );
