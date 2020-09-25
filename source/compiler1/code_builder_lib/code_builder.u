@@ -1264,6 +1264,8 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			}
 		}
 
+		var ust::vector</ ReferencesGraph::NodeId /> mut args_nodes; // Contains only variable nodes (not reference nodes).
+
 		auto mut arg_n= 0u;
 		auto first_llvm_arg= select( is_s_ret ? 1u : 0u );
 		foreach( &in_param : func_variable.body_syntax_element.get_ref().function_type.params )
@@ -1292,9 +1294,15 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 					out_arg.llvm_value= arg_value;
 				}
 
+				// Create variable node and reference node for it.
+				var ReferencesGraph::NodeId variable_node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, in_param.name + " variable" );
+
 				out_arg.node_id= function_context.references_graph.AddNode(
 					select( type_arg.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
 					in_param.name );
+				function_context.references_graph.AddLink( variable_node_id, out_arg.node_id );
+
+				args_nodes.push_back( variable_node_id );
 			}
 			else
 			{
@@ -1323,6 +1331,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				}
 
 				out_arg.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, in_param.name );
+				args_nodes.push_back( out_arg.node_id );
 			}
 
 			function_context.variables_frames.back().push_back( out_arg ); // Register arg for destruction and reference checking.
@@ -1347,6 +1356,14 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				{
 					REPORT_ERROR( Redefinition, names_scope, in_param.file_pos, in_param.name )
 				}
+			}
+		}
+
+		foreach( &return_reference : func_variable.t.return_references )
+		{
+			if( return_reference.reference_index == FunctionType::c_param_reference_number )
+			{
+				function_context.allowed_for_returning_references.insert( args_nodes[size_type(return_reference.param_index)], 0 );
 			}
 		}
 	}

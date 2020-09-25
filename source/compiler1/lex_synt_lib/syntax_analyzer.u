@@ -1145,6 +1145,18 @@ fn SyntaxAnalyzer::ParseFunctionParam( mut this ) : FunctionType::Param
 	{
 		param.reference_modifier= ReferenceModifier::Reference;
 		NextLexem();
+
+		if( it_.front().lexem_type == Lexem::Type::Apostrophe )
+		{
+			NextLexem();
+
+			if( it_.front().lexem_type != Lexem::Type::Identifier )
+			{
+				PushErrorMessage();
+			}
+			param.reference_tag= it_.front().text;
+			NextLexem();
+		}
 	}
 
 	if( IsKeyword( it_.front(), Keyword::mut_ ) )
@@ -1185,6 +1197,18 @@ fn SyntaxAnalyzer::ParseFunctionTypeEnding( mut this, FunctionType &mut function
 		{
 			NextLexem();
 			function_type.return_value_reference_modifier= ReferenceModifier::Reference;
+
+			if( it_.front().lexem_type == Lexem::Type::Apostrophe )
+			{
+				NextLexem();
+
+				if( it_.front().lexem_type != Lexem::Type::Identifier )
+				{
+					PushErrorMessage();
+				}
+				function_type.return_value_reference_tag= it_.front().text;
+				NextLexem();
+			}
 
 			if( IsKeyword( it_.front(), Keyword::mut_ ) )
 			{
@@ -1372,6 +1396,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 		}
 	}
 
+	res.function_type.file_pos= it_.front().file_pos;
 	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
 	{
 		PushErrorMessage();
@@ -1389,6 +1414,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 			.file_pos= it_.front().file_pos,
 			.name= it_.front().text,
 			.mutability_modifier= select( is_constructor_or_destructor ? MutabilityModifier::Mutable : MutabilityModifier::Immutable ),
+			.reference_tag= KeywordToString( Keyword::this_ ), // Implicit set name for tag of "this" to "this".
 		};
 		NextLexem();
 		res.function_type.params.push_back( move(this_param) );
@@ -1418,6 +1444,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 			.file_pos= it_.front().file_pos,
 			.name= it_.front().text,
 			.mutability_modifier= mutability_modifier,
+			.reference_tag= KeywordToString( Keyword::this_ ), // Implicit set name for tag of "this" to "this".
 		};
 		NextLexem();
 		res.function_type.params.push_back( move(this_param) );

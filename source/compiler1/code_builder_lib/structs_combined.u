@@ -186,6 +186,18 @@ op FunctionType::Param::!=(Param& l, Param& r) : bool
 	return !(l == r);
 }
 
+op FunctionType::ParamReference::==(ParamReference& l, ParamReference& r) : bool
+{
+	return
+		l.param_index == r.param_index &&
+		l.reference_index == r.reference_index;
+}
+
+op FunctionType::ParamReference::!=(ParamReference& l, ParamReference& r) : bool
+{
+	return !(l == r);
+}
+
 fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 {
 	if(
@@ -196,6 +208,24 @@ fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 		this.params.size() != dst.params.size() )
 	{
 		return false;
+	}
+
+	// Can convert pointer to function returning less references to pointer to function, returning more references.
+	foreach( &src_param_reference : this.return_references )
+	{
+		var bool mut found= false;
+		foreach( &dst_param_reference : dst.return_references )
+		{
+			if( src_param_reference == dst_param_reference )
+			{
+				found= true;
+				break;
+			}
+		}
+		if( !found )
+		{
+			return false;
+		}
 	}
 
 	for( auto mut i= 0s; i < params.size(); ++i )
@@ -219,10 +249,21 @@ op FunctionType::==( FunctionType& l, FunctionType& r ) : bool
 	{
 		return false;
 	}
-
 	for( auto mut i= 0s; i < l.params.size(); ++i )
 	{
 		if( l.params[i] != r.params[i] )
+		{
+			return false;
+		}
+	}
+
+	if( l.return_references.size() != r.return_references.size() )
+	{
+		return false;
+	}
+	for( auto mut i= 0s; i < l.return_references.size(); ++i )
+	{
+		if( l.return_references[i] != r.return_references[i] )
 		{
 			return false;
 		}
