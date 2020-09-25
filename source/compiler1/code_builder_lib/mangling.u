@@ -413,6 +413,12 @@ fn MangleTypeImpl( Type& t ) : MangleGraphNode
 
 			res.childs.push_back( ust::box</MangleGraphNode/>( move(rr_node) ) );
 		}
+		if( function_type.is_unsafe )
+		{
+			var MangleGraphNode mut unsafe_node;
+			unsafe_node.prefix= "unsafe";
+			res.childs.push_back( ust::box</MangleGraphNode/>( move(unsafe_node) ) );
+		}
 
 		return move(res);
 	}
