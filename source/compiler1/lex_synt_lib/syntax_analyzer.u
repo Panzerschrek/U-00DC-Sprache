@@ -1396,6 +1396,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 		}
 	}
 
+	res.function_type.file_pos= it_.front().file_pos;
 	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
 	{
 		PushErrorMessage();
