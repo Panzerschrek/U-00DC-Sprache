@@ -27,6 +27,10 @@ public:
 	bool imut return_value_is_reference;
 	bool imut return_value_is_mutable;
 
+	// For reference-returned functions - references of returning reference.
+	// For value-returned functions - references inside value.
+	ust::unordered_map</ReferencesGraph::NodeId, i32/> allowed_for_returning_references; // TODO - use unordered_set
+
 	LLVMValueRef s_ret= LLVMValueRef::Null;
 
 	ust::optional</Variable/> this_;
