@@ -114,6 +114,8 @@ bool FilterTest( const std::string& test_name )
 		"MandatoryTemplateSignatureArgumentAfterOptionalArgument_Test0",
 		"NameNotFound_ForClassTemplateArguments_Test0",
 		"NameNotFound_ForClassTemplateDefaultSignatureArguments_Test0",
+		"ReferncesTagsTest_BaseReferencesDefinition0",
+		"ReferncesTagsTest_BaseReferencesDefinition1",
 		"TempVariablesMovingTest0_MoveTempVariableToArgument",
 		"TempVariablesMovingTest1_MoveTempVariableToReturnValue",
 		"TempVariablesMovingTest2_MoveTempVariableInExpressionInitialization",
