@@ -50,6 +50,7 @@ bool FilterTest( const std::string& test_name )
 	{
 		"BasicReferenceInVariableCheck",
 		"DestructorMustReturnVoidTest0",
+		"DestructionOfVariableWithReferenceDestroysReference",
 		"DestructorOutsideClassTest0",
 		"DestructorsTest0",
 		"DestructorsTest1",
@@ -157,6 +158,7 @@ bool FilterTest( const std::string& test_name )
 		"InitializerForNonfieldStructMember_InConstructors_Test0",
 		"InvalidTypeOfTemplateVariableArgumentTest",
 		"InvalidValueAsTemplateArgumentTest",
+		"LockVariableMultipleTimesInSameStruct_Test",
 		"MethodsCallInConstructorInitializerListIsForbiddenTest0",
 		"MultipleMutableReferencesInside",
 		"MultipleReferencesInside",
