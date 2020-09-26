@@ -208,6 +208,45 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 	} // for pollution
 }
 
+void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context, const Variable& dst_variable, const Variable& src_variable, CodeBuilderErrorsContainer& errors_container, const FilePos& file_pos )
+{
+	const ReferencesGraphNodePtr& src_node= src_variable.node;
+	const ReferencesGraphNodePtr& dst_node= dst_variable.node;
+	if( src_node == nullptr || dst_node == nullptr || dst_variable.type.ReferencesTagsCount() == 0u )
+		return;
+
+	const ReferencesGraph::NodesSet src_node_inner_references= function_context.variables_state.GetAllAccessibleInnerNodes( src_node );
+	const ReferencesGraph::NodesSet dst_variable_nodes= function_context.variables_state.GetAllAccessibleVariableNodes( dst_node );
+
+	if( src_node_inner_references.empty() || dst_variable_nodes.empty() )
+		return;
+
+	bool node_is_mutable= false;
+	for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
+		node_is_mutable= node_is_mutable || src_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut;
+
+	for( const ReferencesGraphNodePtr& dst_variable_node : dst_variable_nodes )
+	{
+		ReferencesGraphNodePtr dst_node_inner_reference= function_context.variables_state.GetNodeInnerReference( dst_variable_node );
+		if( dst_node_inner_reference == nullptr )
+		{
+			dst_node_inner_reference= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable", node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+			function_context.variables_state.SetNodeInnerReference( dst_node, dst_node_inner_reference );
+		}
+
+		for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
+		{
+			if( ( dst_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut && function_context.variables_state.HaveOutgoingLinks( src_node_inner_reference ) ) ||
+				function_context.variables_state.HaveOutgoingMutableNodes( src_node_inner_reference ) )
+			{
+				REPORT_ERROR( ReferenceProtectionError, errors_container, file_pos, src_node_inner_reference->name );
+			}
+			else
+				function_context.variables_state.AddLink( src_node_inner_reference, dst_node_inner_reference );
+		}
+	}
+}
+
 void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const FilePos& file_pos )
 {
 	StackVariablesStorage& temporary_variables_storage= *function_context.stack_variables_stack.back();

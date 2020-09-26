@@ -118,27 +118,16 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			}
 
 			const Variable l_var_real= *BuildExpressionCode(  left_expr, names, function_context ).GetVariable();
+
+			SetupReferencesInCopyOrMove( function_context, l_var_real, r_var_real, names.GetErrors(), file_pos );
+
 			if( l_var_real.type.HaveDestructor() )
 				CallDestructor( l_var_real.llvm_value, l_var_real.type, function_context, names.GetErrors(), file_pos );
-			CopyBytes( r_var_real.llvm_value, l_var_real.llvm_value, l_var_real.type, function_context );
 
-			const ReferencesGraphNodePtr& src_node= r_var_real.node;
-			const ReferencesGraphNodePtr& dst_node= l_var_real.node;
-			if( src_node != nullptr && dst_node != nullptr )
-			{
-				U_ASSERT( src_node->kind == ReferencesGraphNode::Kind::Variable );
-				if( const auto src_node_inner_reference= function_context.variables_state.GetNodeInnerReference( src_node ) )
-				{
-					ReferencesGraphNodePtr dst_node_inner_reference= function_context.variables_state.GetNodeInnerReference( dst_node );
-					if( dst_node_inner_reference == nullptr )
-					{
-						dst_node_inner_reference= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable", src_node_inner_reference->kind );
-						function_context.variables_state.SetNodeInnerReference( dst_node, dst_node_inner_reference );
-					}
-					function_context.variables_state.AddLink( src_node_inner_reference, dst_node_inner_reference );
-				}
-				function_context.variables_state.MoveNode( src_node );
-			}
+			if( r_var_real.node != nullptr )
+				function_context.variables_state.MoveNode( r_var_real.node );
+
+			CopyBytes( r_var_real.llvm_value, l_var_real.llvm_value, l_var_real.type, function_context );
 
 			Variable move_result;
 			move_result.type= void_type_;
@@ -225,27 +214,7 @@ Value CodeBuilder::CallBinaryOperatorForTuple(
 			return ErrorValue();
 		}
 
-		const ReferencesGraphNodePtr& src_node= r_var.node;
-		const ReferencesGraphNodePtr& dst_node= l_var.node;
-		if( src_node != nullptr && dst_node != nullptr && l_var.type.ReferencesTagsCount() > 0u )
-		{
-			const auto src_node_inner_references= function_context.variables_state.GetAllAccessibleInnerNodes( src_node );
-			if( !src_node_inner_references.empty() )
-			{
-				bool node_is_mutable= false;
-				for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
-					node_is_mutable= node_is_mutable || src_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut;
-
-				ReferencesGraphNodePtr dst_node_inner_reference= function_context.variables_state.GetNodeInnerReference( dst_node );
-				if( dst_node_inner_reference == nullptr )
-				{
-					dst_node_inner_reference= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable", node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
-					function_context.variables_state.SetNodeInnerReference( dst_node, dst_node_inner_reference );
-				}
-				for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
-					function_context.variables_state.AddLink( src_node_inner_reference, dst_node_inner_reference );
-			}
-		}
+		SetupReferencesInCopyOrMove( function_context, l_var, r_var, names.GetErrors(), file_pos );
 
 		BuildCopyAssignmentOperatorPart(
 			l_var.llvm_value, r_var.llvm_value,
@@ -687,34 +656,9 @@ Value CodeBuilder::BuildExpressionCode(
 				{}
 				else if( result.type.GetFundamentalType() != nullptr || result.type.GetEnumType() != nullptr || result.type.GetFunctionPointerType() != nullptr )
 					function_context.llvm_ir_builder.CreateStore( CreateMoveToLLVMRegisterInstruction( branch_result, function_context ), result.llvm_value );
-				else if( const ClassProxyPtr class_type= result.type.GetClassTypeProxy() )
+				else if( result.type.GetClassTypeProxy() != nullptr || result.type.GetTupleType() != nullptr )
 				{
-					if( branch_result.node != nullptr && result.type.ReferencesTagsCount() > 0u )
-					{
-						const auto src_node_inner_references= function_context.variables_state.GetAllAccessibleInnerNodes( branch_result.node );
-						if( !src_node_inner_references.empty() )
-						{
-							ReferencesGraphNodePtr result_inner_reference= function_context.variables_state.GetNodeInnerReference( result_node );
-							if( result_inner_reference == nullptr )
-							{
-								bool node_is_mutable= false;
-								for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
-									node_is_mutable= node_is_mutable || src_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut;
-
-								result_inner_reference= std::make_shared<ReferencesGraphNode>( result_node->name + " inner variable", node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
-								function_context.variables_state.SetNodeInnerReference( result_node, result_inner_reference );
-							}
-
-							for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
-							{
-								if( ( result_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceImut && function_context.variables_state.HaveOutgoingMutableNodes( src_node_inner_reference ) ) ||
-									( result_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut  && function_context.variables_state.HaveOutgoingLinks( src_node_inner_reference ) ) )
-									REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), ternary_operator.file_pos_, branch_result.node->name );
-								else
-									function_context.variables_state.AddLink( src_node_inner_reference, result_inner_reference );
-							}
-						}
-					}
+					SetupReferencesInCopyOrMove( function_context, result, branch_result, names.GetErrors(), ternary_operator.file_pos_ );
 
 					if( branch_result.value_type == ValueType::Value )
 					{
@@ -731,7 +675,8 @@ Value CodeBuilder::BuildExpressionCode(
 							REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), ternary_operator.file_pos_, result.type );
 							return ErrorValue();
 						}
-						TryCallCopyConstructor( names.GetErrors(), ternary_operator.file_pos_, result.llvm_value, branch_result.llvm_value, class_type, function_context );
+
+						BuildCopyConstructorPart( result.llvm_value, branch_result.llvm_value, result.type, function_context );
 					}
 				}
 				else
