@@ -1037,7 +1037,7 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 
 fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ClassField& field, Synt::Initializer& initializer ) : LLVMValueRef
 {
-	auto initializer_file_pos=  Synt::GetFilePos( initializer );
+	auto initializer_file_pos= Synt::GetFilePos( initializer );
 
 	var ust::optional_ref</Synt::Expression, false/> mut initializer_expression;
 	if_var( &expression_initializer : initializer.get</Synt::Expression/>() )
@@ -1084,6 +1084,31 @@ fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, 
 	unsafe{  LLVMBuildStore( function_context.llvm_ir_builder, reference_converted, address_of_reference );  }
 
 	DestroyUnusedTemporaryVariables( names_scope, function_context, initializer_expression_file_pos );
+
+	if( variable.node_id != ReferencesGraph::c_empty_node_id && initializer_variable.node_id != ReferencesGraph::c_empty_node_id )
+	{
+		var ReferencesGraph &mut references_graph= function_context.references_graph;
+		var ReferencesGraph::NodeId mut inner_reference_node_id= references_graph.GetNodeInnerReference( variable.node_id );
+		if( inner_reference_node_id == ReferencesGraph::c_empty_node_id )
+		{
+			inner_reference_node_id= references_graph.CreateNodeInnerReference(
+				variable.node_id,
+				select( field.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ) );
+		}
+		if( field.is_mutable && references_graph.GetNodeKind( inner_reference_node_id ) != ReferencesGraph::NodeKind::ReferenceMut )
+		{
+			REPORT_ERROR( NotImplemented, names_scope, initializer_file_pos, ust::string8("inner reference mutability changing") )
+		}
+		else if( ( field.is_mutable && references_graph.HaveOutgoingLinks( initializer_variable.node_id ) ) ||
+				( !field.is_mutable && references_graph.HaveOutgoingMutableNodes( initializer_variable.node_id ) ) )
+		{
+			REPORT_ERROR( ReferenceProtectionError, names_scope, initializer_file_pos, references_graph.GetNodeName( initializer_variable.node_id ) )
+		}
+		else
+		{
+			references_graph.AddLink( initializer_variable.node_id, inner_reference_node_id );
+		}
+	}
 
 	if( initializer_variable.constexpr_value != LLVMValueRef::Null )
 	{
