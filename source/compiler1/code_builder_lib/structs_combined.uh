@@ -24,6 +24,13 @@ namespace U1
 // Type
 //
 
+enum InnerReferenceKind : u8
+{
+	None, // Type have no inner references
+	Imut, // Type have immutable inner ereference
+	Mut, // Type have mutable inner reference
+}
+
 struct FundamentalType
 {
 	U_FundamentalType fundamental_type= U_FundamentalType::InvalidType;
@@ -134,6 +141,8 @@ struct ClassType
 	bool have_explicit_noncopy_constructors= false;
 	bool can_be_constexpr= false;
 
+	InnerReferenceKind inner_reference_kind= InnerReferenceKind::None;
+
 	enum Kind : u8
 	{
 		Struct,
@@ -225,6 +234,8 @@ public:
 	fn IsCopyAssignable( this ) : bool;
 	fn CanBeConstexpr( this ) : bool;
 	fn IsAbstract( this ) : bool;
+
+	fn GetInnerReferenceKind( this ) : InnerReferenceKind;
 
 	fn ReferenceIsConvertibleTo( this, Type& dst ) : bool;
 
