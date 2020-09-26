@@ -424,6 +424,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				{
 					result.value_type= select( field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 					unsafe{  result.llvm_value= LLVMBuildLoad( function_context.llvm_ir_builder, gep_value, "\0"[0] );  }
+
+					// TODO - link references graph nodes
 				}
 				else
 				{
@@ -986,6 +988,42 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 							result.constexpr_value= LLVMGetInitializer( LLVMConstExtractValue( variable.constexpr_value, u32(field.index), 1u ) );
 						}
 					}
+				}
+
+				if( variable.node_id != ReferencesGraph::c_empty_node_id )
+				{
+					var ust::string8 mut node_name= function_context.references_graph.GetNodeName( variable.node_id );
+					node_name+= ".";
+					node_name+= field.syntax_element.get_ref().name;
+					auto reference_field_node= function_context.references_graph.AddNode(
+						select( field.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
+						move(node_name) );
+					result.node_id= reference_field_node;
+
+					foreach( &inner_node_value : function_context.references_graph.GetAllAccessibleVariableInnerNodes( variable.node_id ) )
+					{
+						var ReferencesGraph::NodeId inner_node= inner_node_value.key();
+						if( (  field.is_mutable && function_context.references_graph.HaveOutgoingLinks( inner_node ) ) ||
+							( !field.is_mutable && function_context.references_graph.HaveOutgoingMutableNodes( inner_node ) ) )
+						{
+							REPORT_ERROR( ReferenceProtectionError, names_scope, member_access_operator.file_pos, function_context.references_graph.GetNodeName( inner_node ) )
+						}
+						else
+						{
+							function_context.references_graph.AddLink( inner_node, reference_field_node );
+						}
+					}
+
+					// Register variable for references checking.
+					var NamesScopeVariable mut names_scope_variable
+					{
+						.t= result.t,
+						.is_mutable= field.is_mutable,
+						.llvm_value= result.llvm_value,
+						.constexpr_value= result.constexpr_value,
+						.node_id= reference_field_node,
+					};
+					function_context.variables_frames.back().push_back( move(names_scope_variable) );
 				}
 
 				return move(result);
@@ -2255,6 +2293,8 @@ fn CodeBuilder::DoCallFunction(
 					args_nodes[arg_n]= arg_node_id;
 					function_context.references_graph.AddLink( arg.node_id, arg_node_id );
 				}
+
+				// TODO - maybe lock inner reference  of reference arg here?
 			}
 
 			if( arg.location == Variable::Location::LLVMRegister )
@@ -2280,6 +2320,40 @@ fn CodeBuilder::DoCallFunction(
 			{
 				REPORT_ERROR( TypesMismatch, names_scope, file_pos, arg.t, expected_arg_type )
 				return ErrorValue();
+			}
+
+			if( arg.node_id != ReferencesGraph::c_empty_node_id )
+			{
+				auto arg_node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "_arg_" + ust::to_string8(arg_n) );
+				args_nodes[arg_n]= arg_node_id;
+
+				if( expected_arg_type.GetInnerReferenceKind() != InnerReferenceKind::None )
+				{
+					var ReferencesGraph::NodesSet inner_references= function_context.references_graph.GetAllAccessibleVariableInnerNodes( arg.node_id );
+					var bool mut is_mutable= false;
+					foreach( inner_reference : inner_references )
+					{
+						is_mutable |= function_context.references_graph.GetNodeKind( inner_reference.key() ) == ReferencesGraph::NodeKind::ReferenceMut;
+					}
+
+					auto own_inner_reference= function_context.references_graph.CreateNodeInnerReference(
+						arg_node_id,
+						select( is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ) );
+
+					foreach( &inner_reference_value : inner_references )
+					{
+						var ReferencesGraph::NodeId inner_reference= inner_reference_value.key();
+						if( (  is_mutable && function_context.references_graph.HaveOutgoingLinks( inner_reference ) ) ||
+							( !is_mutable && function_context.references_graph.HaveOutgoingMutableNodes( inner_reference ) ) )
+						{
+							REPORT_ERROR( ReferenceProtectionError, names_scope, file_pos, function_context.references_graph.GetNodeName( inner_reference ) )
+						}
+						else
+						{
+							function_context.references_graph.AddLink( inner_reference, own_inner_reference );
+						}
+					}
+				}
 			}
 
 			if( !arg.t.GetClassType().empty() || !arg.t.GetTupleType().empty() )
@@ -2399,12 +2473,22 @@ fn CodeBuilder::DoCallFunction(
 	{
 		foreach( &param_reference : function_type.return_references )
 		{
+			var size_type i(param_reference.param_index);
+			if( args_nodes[i] == ReferencesGraph::c_empty_node_id )
+			{
+				continue;
+			}
+
+			// TODO - maybe check for errors before creating links?
 			if( param_reference.reference_index == FunctionType::c_param_reference_number )
 			{
-				var size_type i(param_reference.param_index);
-				if( args_nodes[i] != ReferencesGraph::c_empty_node_id )
+				function_context.references_graph.AddLink( args_nodes[i], result.node_id );
+			}
+			if( param_reference.reference_index == 0u8 )
+			{
+				foreach( inner_node_value : function_context.references_graph.GetAllAccessibleVariableInnerNodes( args_nodes[i] ) )
 				{
-					function_context.references_graph.AddLink( args_nodes[i], result.node_id );
+					function_context.references_graph.AddLink( inner_node_value.key(), result.node_id );
 				}
 			}
 		}

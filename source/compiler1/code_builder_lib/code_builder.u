@@ -377,6 +377,8 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 			auto ptr_value= CreateFieldGEP( this_value_corrected, field, function_context );
 			unsafe{  result.llvm_value= LLVMBuildLoad( function_context.llvm_ir_builder, ptr_value, op_name_nt.front() );  }
 
+			// TODO - link references graph nodes
+
 			return move(result);
 		}
 		else
@@ -1285,6 +1287,12 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				return;
 			}
 
+			var ReferencesGraph::NodeId mut inner_reference_variable_node_id= ReferencesGraph::c_empty_node_id;
+			if( type_arg.t.GetInnerReferenceKind() != InnerReferenceKind::None )
+			{
+				inner_reference_variable_node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, in_param.name + " inner variable" );
+			}
+
 			if( type_arg.is_reference )
 			{
 				unsafe
@@ -1296,6 +1304,14 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 
 				// Create variable node and reference node for it.
 				var ReferencesGraph::NodeId variable_node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, in_param.name + " variable" );
+
+				if( inner_reference_variable_node_id != ReferencesGraph::c_empty_node_id )
+				{
+					auto inner_reference_node= function_context.references_graph.CreateNodeInnerReference(
+						variable_node_id,
+						select( type_arg.t.GetInnerReferenceKind() == InnerReferenceKind::Mut ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ) );
+					function_context.references_graph.AddLink( inner_reference_variable_node_id, inner_reference_node );
+				}
 
 				out_arg.node_id= function_context.references_graph.AddNode(
 					select( type_arg.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
@@ -1331,6 +1347,14 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				}
 
 				out_arg.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, in_param.name );
+				if( type_arg.t.GetInnerReferenceKind() != InnerReferenceKind::None )
+				{
+					auto inner_reference_node= function_context.references_graph.CreateNodeInnerReference(
+						out_arg.node_id,
+						select( type_arg.t.GetInnerReferenceKind() == InnerReferenceKind::Mut ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ) );
+					function_context.references_graph.AddLink( inner_reference_variable_node_id, inner_reference_node );
+				}
+
 				args_nodes.push_back( out_arg.node_id );
 			}
 
@@ -1361,9 +1385,21 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 
 		foreach( &return_reference : func_variable.t.return_references )
 		{
+			var ReferencesGraph::NodeId node_id= args_nodes[size_type(return_reference.param_index)];
 			if( return_reference.reference_index == FunctionType::c_param_reference_number )
 			{
-				function_context.allowed_for_returning_references.insert( args_nodes[size_type(return_reference.param_index)], 0 );
+				function_context.allowed_for_returning_references.insert( node_id, 0 );
+			}
+			if( return_reference.reference_index == 0u8 )
+			{
+				auto inner_node_id= function_context.references_graph.GetNodeInnerReference( node_id );
+				if( inner_node_id != ReferencesGraph::c_empty_node_id )
+				{
+					foreach( &node_value : function_context.references_graph.GetAllAccessibleVariableNodes( inner_node_id ) )
+					{
+						function_context.allowed_for_returning_references.insert( node_value.key(), 0 );
+					}
+				}
 			}
 		}
 	}

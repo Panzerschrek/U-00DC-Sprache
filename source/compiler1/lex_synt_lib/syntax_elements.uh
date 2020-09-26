@@ -212,6 +212,7 @@ struct FunctionType
 		ReferenceModifier reference_modifier= ReferenceModifier::None;
 		MutabilityModifier mutability_modifier= MutabilityModifier::None;
 		ust::string8 reference_tag;
+		ust::string8 inner_reference_tag;
 		ust::string8 name;
 	}
 	ust::vector</Param/> params;

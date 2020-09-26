@@ -165,6 +165,13 @@ fn ReferencesGraph::GetAllAccessibleVariableNodes( this, NodeId node_id ) : Node
 	return move(nodes_set);
 }
 
+fn ReferencesGraph::GetAllAccessibleVariableInnerNodes( this, NodeId node_id ) : NodesSet
+{
+	var NodesSet mut nodes_set;
+	GetAllAccessibleVariableInnerNodes_r( node_id, nodes_set );
+	return move(nodes_set);
+}
+
 fn ReferencesGraph::GetAllAccessibleVariableNodes_r( this, NodeId node_id, NodesSet &mut out_nodes )
 {
 	if( nodes_[node_id].kind == NodeKind::Variable )
@@ -177,6 +184,23 @@ fn ReferencesGraph::GetAllAccessibleVariableNodes_r( this, NodeId node_id, Nodes
 		if( link.dst == node_id )
 		{
 			GetAllAccessibleVariableNodes_r( link.src, out_nodes );
+		}
+	}
+}
+
+fn ReferencesGraph::GetAllAccessibleVariableInnerNodes_r( this, NodeId node_id, NodesSet &mut out_nodes )
+{
+	auto inner_node= nodes_[node_id].inner_reference_node;
+	if( inner_node != c_empty_node_id )
+	{
+		out_nodes.insert( inner_node, 0 );
+	}
+
+	foreach( &link : links_ )
+	{
+		if( link.dst == node_id )
+		{
+			GetAllAccessibleVariableInnerNodes_r( link.src, out_nodes );
 		}
 	}
 }

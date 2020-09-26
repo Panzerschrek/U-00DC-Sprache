@@ -42,9 +42,11 @@ public:
 
 	type NodesSet= ust::unordered_map</NodeId, i32/>; // TODO - use unordered_set
 	fn GetAllAccessibleVariableNodes( this, NodeId node_id ) : NodesSet;
+	fn GetAllAccessibleVariableInnerNodes( this, NodeId node_id ) : NodesSet;
 
 private:
 	fn GetAllAccessibleVariableNodes_r( this, NodeId node_id, NodesSet &mut out_nodes );
+	fn GetAllAccessibleVariableInnerNodes_r( this, NodeId node_id, NodesSet &mut out_nodes );
 
 private:
 	struct Node
