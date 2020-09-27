@@ -2435,7 +2435,7 @@ fn CodeBuilder::DoCallFunction(
 		}
 	}
 
-	// Setup references after call.
+	// Prepare result references.
 	if( function_type.return_value_is_reference )
 	{
 		foreach( &param_reference : function_type.return_references )
@@ -2456,6 +2456,59 @@ fn CodeBuilder::DoCallFunction(
 				foreach( inner_node_value : function_context.references_graph.GetAllAccessibleVariableInnerNodes( args_nodes[i] ) )
 				{
 					function_context.references_graph.AddLink( inner_node_value.key(), result.node_id );
+				}
+			}
+		}
+	}
+	else if( function_type.return_type.GetInnerReferenceKind() != InnerReferenceKind::None )
+	{
+		// First, know, what kind of reference we needs - mutable or immutable.
+		var bool mut inner_reference_is_mutable= false;
+		foreach( &param_reference : function_type.return_references )
+		{
+			var size_type i(param_reference.param_index);
+			if( args_nodes[i] == ReferencesGraph::c_empty_node_id )
+			{
+				continue;
+			}
+
+			if( param_reference.reference_index == FunctionType::c_param_reference_number )
+			{
+				inner_reference_is_mutable |= function_context.references_graph.GetNodeKind( args_nodes[i] ) == ReferencesGraph::NodeKind::ReferenceMut;
+			}
+			if( param_reference.reference_index == 0u8 )
+			{
+				foreach( inner_node_value : function_context.references_graph.GetAllAccessibleVariableInnerNodes( args_nodes[i] ) )
+				{
+					inner_reference_is_mutable |= function_context.references_graph.GetNodeKind( inner_node_value.key() ) == ReferencesGraph::NodeKind::ReferenceMut;
+				}
+			}
+		}
+
+		// Then, create inner node and link input nodes with it.
+		var ReferencesGraph::NodeId inner_node_id=
+			function_context.references_graph.CreateNodeInnerReference(
+				result.node_id,
+				select( inner_reference_is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ) );
+
+		foreach( &param_reference : function_type.return_references )
+		{
+			var size_type i(param_reference.param_index);
+			if( args_nodes[i] == ReferencesGraph::c_empty_node_id )
+			{
+				continue;
+			}
+
+			// TODO - maybe check for errors before creating links?
+			if( param_reference.reference_index == FunctionType::c_param_reference_number )
+			{
+				function_context.references_graph.AddLink( args_nodes[i], inner_node_id );
+			}
+			if( param_reference.reference_index == 0u8 )
+			{
+				foreach( inner_node_value : function_context.references_graph.GetAllAccessibleVariableInnerNodes( args_nodes[i] ) )
+				{
+					function_context.references_graph.AddLink( inner_node_value.key(), inner_node_id );
 				}
 			}
 		}

@@ -135,7 +135,7 @@ bool FilterTest( const std::string& test_name )
 		"ReturnReferenceFromArg_Test4",
 		"ReturnReferenceFromArg_Test5",
 		"ReturnReferenceToLocalVariableInsideStruct",
-		//"ReturnStructWithReferenceFromFunction_Test0",
+		"ReturnStructWithReferenceFromFunction_Test0",
 		"ReturnStructWithReferenceFromFunction_Test1",
 		"ReturnStructWithReferenceFromFunction_Test2",
 		"TempVariablesMovingTest0_MoveTempVariableToArgument",
