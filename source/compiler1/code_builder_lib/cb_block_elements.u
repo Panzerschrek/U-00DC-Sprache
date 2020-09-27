@@ -444,6 +444,21 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		}
 
 		auto ret_type= function_context.return_type;
+
+		if( ret_type.GetInnerReferenceKind() != InnerReferenceKind::None && expr.node_id != ReferencesGraph::c_empty_node_id )
+		{
+			foreach( &inner_reference_node_value : function_context.references_graph.GetAllAccessibleVariableInnerNodes( expr.node_id ) )
+			{
+				foreach( &variable_node_value : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_node_value.key() ) )
+				{
+					if( function_context.allowed_for_returning_references.find( variable_node_value.key() ).empty() )
+					{
+						REPORT_ERROR( ReturningUnallowedReference, names_scope, return_operator.file_pos )
+					}
+				}
+			}
+		}
+
 		if( !ret_type.GetClassType().empty() || !ret_type.GetTupleType().empty() )
 		{
 			auto s_ret= function_context.s_ret;
