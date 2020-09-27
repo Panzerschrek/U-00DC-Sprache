@@ -398,43 +398,10 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			class_type= next;
 		}
 
-		if( !class_member.empty() )
+		if( !class_member.empty() && !class_type.empty() )
 		{
-			auto field_ptr= class_member.get_ref().Get</ClassField/>();
-			if( !field_ptr.empty() )
-			{
-				if( function_context.whole_this_is_unavailable )
-				{
-					if( !function_context.uninitialized_this_fields.find( name ).empty() ||
-						( class_type != this_class_type && !function_context.uninitialized_this_fields.find( KeywordToString( Keyword::base_ ) ).empty() ) )
-					{
-						REPORT_ERROR( FieldIsNotInitializedYet, names_scope, named_operand.file_pos, name )
-					}
-				}
-
-				auto field_lock= field_ptr.lock_imut();
-				auto& field= field_lock.get_ref();
-				if( field.index == ~0s ){ return ErrorValue(); } // May be in case of error
-
-				auto gep_value= CreateFieldGEP( this_value_corrected, field, function_context );
-
-				var Variable mut result{ .t= field.t, .location= Variable::Location::Pointer };
-
-				if( field.is_reference )
-				{
-					result.value_type= select( field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
-					unsafe{  result.llvm_value= LLVMBuildLoad( function_context.llvm_ir_builder, gep_value, "\0"[0] );  }
-
-					// TODO - link references graph nodes
-				}
-				else
-				{
-					result.value_type= select( field.is_mutable ? function_context.this_.get_ref().value_type : ValueType::ReferenceImut );
-					result.llvm_value= gep_value;
-					result.node_id= function_context.this_.get_ref().node_id;
-				}
-				return move(result);
-			}
+			auto class_members= class_type.lock_imut().get_ref().members;
+			return NamesScopeValueToValue( class_members, function_context, class_member.get_ref(), named_operand.file_pos );
 		}
 	}
 
