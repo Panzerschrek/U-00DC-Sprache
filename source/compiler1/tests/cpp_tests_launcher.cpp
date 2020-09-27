@@ -128,6 +128,7 @@ bool FilterTest( const std::string& test_name )
 		"ReferncesTagsTest_UntaggedReturValueMustBeOk",
 		"ReturnReferenceFromArg_Test0",
 		"ReturnReferenceFromArg_Test1",
+		"ReturnReferenceFromArg_Test2",
 		"TempVariablesMovingTest0_MoveTempVariableToArgument",
 		"TempVariablesMovingTest1_MoveTempVariableToReturnValue",
 		"TempVariablesMovingTest2_MoveTempVariableInExpressionInitialization",

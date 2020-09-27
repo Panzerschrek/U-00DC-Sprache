@@ -1369,6 +1369,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 					.t= take(out_arg.t),
 					.value_type= select( out_arg.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 					.llvm_value= out_arg.llvm_value,
+					.node_id= out_arg.node_id,
 				};
 				function_context.this_= move(this_variable);
 				move(out_arg);
