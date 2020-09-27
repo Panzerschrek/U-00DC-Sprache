@@ -83,8 +83,19 @@ struct FunctionType
 
 		op==(ParamReference& l, ParamReference& r) : bool;
 		op!=(ParamReference& l, ParamReference& r) : bool;
+		op<(ParamReference& l, ParamReference& r) : bool;
 	}
 	var u8 c_param_reference_number= ~0u8;
+
+	struct ReferencePollution
+	{
+		ParamReference dst;
+		ParamReference src;
+
+		op==(ReferencePollution& l, ReferencePollution& r) : bool;
+		op!=(ReferencePollution& l, ReferencePollution& r) : bool;
+		op<(ReferencePollution& l, ReferencePollution& r) : bool;
+	}
 
 	ust::vector</Param/> params;
 	Type return_type;
@@ -96,6 +107,9 @@ struct FunctionType
 	// for functions, returning references this is references of reference itslef.
 	// For function, returning values, this is inner references.
 	ust::vector</ParamReference/> return_references; // Sorted by param index.
+
+	// Sorted.
+	ust::vector</ReferencePollution/> references_pollution;
 
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
 

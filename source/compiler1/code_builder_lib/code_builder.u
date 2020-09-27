@@ -892,6 +892,8 @@ fn CodeBuilder::PrepareFunction(
 		function_variable.body_syntax_element= function_declaration_ptr;
 	}
 
+	// TODO - setup references pollution for copy constructors and copy assignment operators.
+
 	function_variable.is_this_call=
 		!function_declaration.function_type.params.empty() &&
 		function_declaration.function_type.params.front().name == KeywordToString( Keyword::this_ );

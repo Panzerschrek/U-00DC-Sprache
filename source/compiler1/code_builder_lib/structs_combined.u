@@ -198,6 +198,34 @@ op FunctionType::ParamReference::!=(ParamReference& l, ParamReference& r) : bool
 	return !(l == r);
 }
 
+op FunctionType::ParamReference::<(ParamReference& l, ParamReference& r) : bool
+{
+	if( l.param_index != r.param_index )
+	{
+		return l.param_index < r.param_index;
+	}
+	return l.reference_index < r.reference_index;
+}
+
+op FunctionType::ReferencePollution::==(ReferencePollution& l, ReferencePollution& r) : bool
+{
+	return l.dst == r.dst && l.src == r.src;
+}
+
+op FunctionType::ReferencePollution::!=(ReferencePollution& l, ReferencePollution& r) : bool
+{
+	return !(l == r);
+}
+
+op FunctionType::ReferencePollution::<(ReferencePollution& l, ReferencePollution& r) : bool
+{
+	if( l.dst != r.dst )
+	{
+		return l.dst < r.dst;
+	}
+	return l.src < r.src;
+}
+
 fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 {
 	if(
