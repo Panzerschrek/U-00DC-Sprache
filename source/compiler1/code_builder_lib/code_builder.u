@@ -377,7 +377,42 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 			auto ptr_value= CreateFieldGEP( this_value_corrected, field, function_context );
 			unsafe{  result.llvm_value= LLVMBuildLoad( function_context.llvm_ir_builder, ptr_value, op_name_nt.front() );  }
 
-			// TODO - link references graph nodes
+			auto node_id= function_context.this_.get_ref().node_id;
+			if( node_id != ReferencesGraph::c_empty_node_id )
+			{
+				var ust::string8 mut node_name= function_context.references_graph.GetNodeName( node_id );
+				node_name+= ".";
+				node_name+= field.syntax_element.get_ref().name;
+				auto reference_field_node= function_context.references_graph.AddNode(
+					select( field.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
+					move(node_name) );
+				result.node_id= reference_field_node;
+
+				foreach( &inner_node_value : function_context.references_graph.GetAllAccessibleVariableInnerNodes( node_id ) )
+				{
+					var ReferencesGraph::NodeId inner_node= inner_node_value.key();
+					if( (  field.is_mutable && function_context.references_graph.HaveOutgoingLinks( inner_node ) ) ||
+						( !field.is_mutable && function_context.references_graph.HaveOutgoingMutableNodes( inner_node ) ) )
+					{
+						REPORT_ERROR( ReferenceProtectionError, names_scope, file_pos, function_context.references_graph.GetNodeName( inner_node ) )
+					}
+					else
+					{
+						function_context.references_graph.AddLink( inner_node, reference_field_node );
+					}
+				}
+
+				// Register variable for references checking.
+				var NamesScopeVariable mut names_scope_variable
+				{
+					.t= result.t,
+					.is_mutable= field.is_mutable,
+					.llvm_value= result.llvm_value,
+					.constexpr_value= result.constexpr_value,
+					.node_id= reference_field_node,
+				};
+				function_context.variables_frames.back().push_back( move(names_scope_variable) );
+			}
 
 			return move(result);
 		}
