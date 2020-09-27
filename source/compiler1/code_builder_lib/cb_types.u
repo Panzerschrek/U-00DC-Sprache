@@ -284,48 +284,51 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 
 		var FunctionType::ReferencePollution mut out_pollution= zero_init;
 
-		var bool mut any_dst_found= false;
-		for( auto mut i= 0s; i < res.params.size(); ++i )
 		{
-			if( in_pollution.dst == function_type.params[i].inner_reference_tag )
+			var bool mut any_dst_found= false;
+			for( auto mut i= 0s; i < res.params.size(); ++i )
 			{
-				any_dst_found= true;
-				out_pollution.dst.param_index= u8(i);
-				out_pollution.dst.reference_index= 0u8;
+				if( in_pollution.dst == function_type.params[i].inner_reference_tag )
+				{
+					any_dst_found= true;
+					out_pollution.dst.param_index= u8(i);
+					out_pollution.dst.reference_index= 0u8;
+				}
+				else if( in_pollution.dst == function_type.params[i].reference_tag )
+				{
+					REPORT_ERROR( ArgReferencePollution, names_scope, function_type.file_pos )
+				}
 			}
-			else if( in_pollution.dst == function_type.params[i].reference_tag )
+
+			if( !any_dst_found )
 			{
-				REPORT_ERROR( ArgReferencePollution, names_scope, function_type.file_pos )
+				REPORT_ERROR( NameNotFound, names_scope, function_type.file_pos, in_pollution.dst )
+				continue;
 			}
 		}
-
-		if( !any_dst_found )
 		{
-			REPORT_ERROR( NameNotFound, names_scope, function_type.file_pos, in_pollution.dst )
-			continue;
-		}
-
-		var bool mut any_src_found= false;
-		for( auto mut i= 0s; i < res.params.size(); ++i )
-		{
-			if( in_pollution.src == function_type.params[i].inner_reference_tag )
+			var bool mut any_src_found= false;
+			for( auto mut i= 0s; i < res.params.size(); ++i )
 			{
-				any_dst_found= true;
-				out_pollution.src.param_index= u8(i);
-				out_pollution.src.reference_index= 0u8;
+				if( in_pollution.src == function_type.params[i].inner_reference_tag )
+				{
+					any_src_found= true;
+					out_pollution.src.param_index= u8(i);
+					out_pollution.src.reference_index= 0u8;
+				}
+				else if( in_pollution.src == function_type.params[i].reference_tag )
+				{
+					any_src_found= true;
+					out_pollution.src.param_index= u8(i);
+					out_pollution.src.reference_index= FunctionType::c_param_reference_number;
+				}
 			}
-			else if( in_pollution.src == function_type.params[i].reference_tag )
-			{
-				any_src_found= true;
-				out_pollution.src.param_index= u8(i);
-				out_pollution.src.reference_index= FunctionType::c_param_reference_number;
-			}
-		}
 
-		if( !any_src_found )
-		{
-			REPORT_ERROR( NameNotFound, names_scope, function_type.file_pos, in_pollution.src )
-			continue;
+			if( !any_src_found )
+			{
+				REPORT_ERROR( NameNotFound, names_scope, function_type.file_pos, in_pollution.src )
+				continue;
+			}
 		}
 
 		res.references_pollution.push_back( move(out_pollution) );

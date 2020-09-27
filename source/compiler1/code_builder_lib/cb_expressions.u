@@ -2514,6 +2514,71 @@ fn CodeBuilder::DoCallFunction(
 		}
 	}
 
+	// Setup references after call.
+	foreach( &reference_pollution : function_type.references_pollution )
+	{
+		var size_type dst_arg(reference_pollution.dst.param_index);
+		var size_type src_arg(reference_pollution.src.param_index);
+		if( function_type.params[ dst_arg ].t.GetInnerReferenceKind() == InnerReferenceKind::None )
+		{
+			continue;
+		}
+		if( !function_type.params[ dst_arg ].is_reference )
+		{
+			continue; // Skip reference pollution for value params. TODO - is this correct?
+		}
+
+		var ReferencesGraph::NodesSet mut src_nodes;
+		var bool mut src_variables_is_mut= false;
+		if( reference_pollution.src.reference_index == FunctionType::c_param_reference_number )
+		{
+			// Reference-arg itself.
+			if( args_nodes[src_arg] != ReferencesGraph::c_empty_node_id )
+			{
+				src_nodes.insert( args_nodes[src_arg], 0 );
+			}
+
+			src_variables_is_mut= function_type.params[src_arg].is_mutable;
+		}
+		else
+		{
+			// Variables, referenced by inner references_graph references.
+			src_nodes= function_context.references_graph.GetAllAccessibleVariableInnerNodes( args_nodes[src_arg] );
+
+			foreach( &node_id_value : src_nodes )
+			{
+				src_variables_is_mut|= function_context.references_graph.GetNodeKind( node_id_value.key() ) == ReferencesGraph::NodeKind::ReferenceMut;
+			}
+		}
+
+		var bool dst_inner_reference_is_mut= function_type.params[ dst_arg ].t.GetInnerReferenceKind() == InnerReferenceKind::Mut;
+		// Even if reference-pollution is mutable, but if src vars is immutable, link as immutable.
+		var bool result_node_is_mut= src_variables_is_mut && dst_inner_reference_is_mut;
+
+		foreach( &dst_node_value : function_context.references_graph.GetAllAccessibleVariableNodes( args_nodes[dst_arg] ) )
+		{
+			var ReferencesGraph::NodeId dst_node= dst_node_value.key();
+			var ReferencesGraph::NodeId mut inner_reference_node_id= function_context.references_graph.GetNodeInnerReference( dst_node );
+			if( inner_reference_node_id == ReferencesGraph::c_empty_node_id )
+			{
+				inner_reference_node_id= function_context.references_graph.CreateNodeInnerReference(
+					dst_node,
+					select( result_node_is_mut ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ) );
+			}
+
+			if( function_context.references_graph.GetNodeKind( inner_reference_node_id ) != ReferencesGraph::NodeKind::ReferenceMut && result_node_is_mut )
+			{
+				REPORT_ERROR( NotImplemented, names_scope, file_pos, ust::string8( "changing inner node reference kind immutable to mutable" ) )
+			}
+
+			// TODO - check here for errors.
+			foreach( & src_node_id_value : src_nodes )
+			{
+				function_context.references_graph.AddLink( src_node_id_value.key(), inner_reference_node_id );
+			}
+		}
+	}
+
 	// Remove temp nodes.
 	foreach( node_id : args_nodes )
 	{
