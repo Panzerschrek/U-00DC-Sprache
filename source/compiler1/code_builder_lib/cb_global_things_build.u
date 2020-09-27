@@ -371,6 +371,12 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope_ptr, field.syntax_element.get_ref().file_pos, field.t )
 				continue;
 			}
+			if( field.is_reference && field.t.GetInnerReferenceKind() != InnerReferenceKind::None )
+			{
+				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names_scope_ptr, field.syntax_element.get_ref().file_pos, field.syntax_element.get_ref().name )
+				field.t= invalid_type_;
+				continue;
+			}
 		}
 
 		auto functions_set_ptr= member.value().Get</ NamesScopeFunctionsSet />();

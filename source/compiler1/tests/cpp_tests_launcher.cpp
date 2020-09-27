@@ -184,6 +184,7 @@ bool FilterTest( const std::string& test_name )
 		"TemplateArgumentNotUsedInSignature",
 		"TemplateInstantiationRequiredTest",
 		"TemplateParametersDeductionFailed",
+		"TwoLevelsOfIndirection_Test",
 		"ThisUnavailable_InConstructors_Test",
 		"UsingKeywordAsName_ForTypedef_Test",
 
