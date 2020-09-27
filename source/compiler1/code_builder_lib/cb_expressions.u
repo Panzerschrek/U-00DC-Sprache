@@ -2519,13 +2519,12 @@ fn CodeBuilder::DoCallFunction(
 	{
 		var size_type dst_arg(reference_pollution.dst.param_index);
 		var size_type src_arg(reference_pollution.src.param_index);
-		if( function_type.params[ dst_arg ].t.GetInnerReferenceKind() == InnerReferenceKind::None )
+		if( function_type.params[ dst_arg ].t.GetInnerReferenceKind() == InnerReferenceKind::None ||
+			args_nodes[src_arg] == ReferencesGraph::c_empty_node_id ||
+			args_nodes[dst_arg] == ReferencesGraph::c_empty_node_id ||
+			!function_type.params[ dst_arg ].is_reference ) // Skip reference pollution for value params. TODO - is this correct?
 		{
 			continue;
-		}
-		if( !function_type.params[ dst_arg ].is_reference )
-		{
-			continue; // Skip reference pollution for value params. TODO - is this correct?
 		}
 
 		var ReferencesGraph::NodesSet mut src_nodes;
@@ -2533,10 +2532,7 @@ fn CodeBuilder::DoCallFunction(
 		if( reference_pollution.src.reference_index == FunctionType::c_param_reference_number )
 		{
 			// Reference-arg itself.
-			if( args_nodes[src_arg] != ReferencesGraph::c_empty_node_id )
-			{
-				src_nodes.insert( args_nodes[src_arg], 0 );
-			}
+			src_nodes.insert( args_nodes[src_arg], 0 );
 
 			src_variables_is_mut= function_type.params[src_arg].is_mutable;
 		}

@@ -137,6 +137,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		var NamesScopeVariable mut element_variable
 		{
 			.t= array_type.element_type,
+			.node_id= variable.node_id,
 		};
 
 		auto mut i= 0s;
@@ -201,6 +202,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			{
 				.t= tuple_type.element_types[i],
 				.llvm_value= CreateTupleElementGEP( variable.llvm_value, i, function_context ),
+				.node_id= variable.node_id,
 			};
 
 			auto element_constant= BuildInitializer( names_scope, function_context, element_variable, sequence_initializer.elements_initializers[i].get_ref() );
@@ -315,7 +317,8 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			var NamesScopeVariable member_variable
 			{
 				.t= class_field.t,
-				.llvm_value= CreateFieldGEP( variable.llvm_value, class_field, function_context )
+				.llvm_value= CreateFieldGEP( variable.llvm_value, class_field, function_context ),
+				.node_id= variable.node_id,
 			};
 
 			auto initializer= BuildInitializer( names_scope, function_context, member_variable, member_initializer.initializer.get_ref() );
@@ -356,7 +359,8 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		var NamesScopeVariable member_variable
 		{
 			.t= field.t,
-			.llvm_value= CreateFieldGEP( variable.llvm_value, field, function_context )
+			.llvm_value= CreateFieldGEP( variable.llvm_value, field, function_context ),
+			.node_id= variable.node_id,
 		};
 
 		auto mut constexpr_initializer= LLVMValueRef::Null;
@@ -870,6 +874,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			.t= variable.t,
 			.value_type= ValueType::ReferenceMut,
 			.llvm_value= variable.llvm_value,
+			.node_id= variable.node_id,
 		};
 		CallFunctionsSet(
 			names_scope,
@@ -1185,6 +1190,8 @@ fn CodeBuilder::BuildConstructorInitialization(
 		function_context.uninitialized_this_fields.insert( member_initializer.name, 0 );
 	}
 
+	var Variable this_= function_context.this_.get_ref();
+
 	// Initialize fields, missing in initializer list.
 	if( !base_class.empty() && !base_initialized )
 	{
@@ -1192,7 +1199,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 		{
 			.t= ust::to_non_nullable(base_class),
 			.is_mutable= true,
-			.llvm_value= CreateBaseClassFieldGEP( function_context.this_.get_ref().llvm_value, function_context ),
+			.llvm_value= CreateBaseClassFieldGEP( this_.llvm_value, function_context ),
 		};
 
 		BuildEmptyInitializer( names_scope, function_context, base_variable, KeywordToString( Keyword::base_ ), constructor_initialization_list.file_pos );
@@ -1213,7 +1220,8 @@ fn CodeBuilder::BuildConstructorInitialization(
 		{
 			.t= class_field.t,
 			.is_mutable= true,
-			.llvm_value= CreateFieldGEP( function_context.this_.get_ref().llvm_value, class_field, function_context ),
+			.llvm_value= CreateFieldGEP( this_.llvm_value, class_field, function_context ),
+			.node_id= this_.node_id,
 		};
 
 		auto& initializer= class_field.syntax_element.get_ref().initializer;
@@ -1231,7 +1239,12 @@ fn CodeBuilder::BuildConstructorInitialization(
 		{
 			if( class_field.is_reference )
 			{
-				var NamesScopeVariable this_variable{ .t= class_type, .llvm_value= function_context.this_.get_ref().llvm_value };
+				var NamesScopeVariable this_variable
+				{
+					.t= class_type,
+					.llvm_value= this_.llvm_value,
+					.node_id= this_.node_id,
+				};
 				InitializeReferenceField( class_members_ptr, function_context, this_variable, class_field, initializer );
 			}
 			else
@@ -1255,7 +1268,8 @@ fn CodeBuilder::BuildConstructorInitialization(
 			{
 				.t= ust::to_non_nullable( base_class ),
 				.is_mutable= true,
-				.llvm_value= CreateBaseClassFieldGEP( function_context.this_.get_ref().llvm_value, function_context ),
+				.llvm_value= CreateBaseClassFieldGEP( this_.llvm_value, function_context ),
+				.node_id= this_.node_id,
 			};
 
 			BuildInitializer( names_scope, function_context, base_variable, member_initializer.initializer.get_ref() );
@@ -1272,11 +1286,12 @@ fn CodeBuilder::BuildConstructorInitialization(
 
 		if( class_field.is_reference )
 		{
-			var NamesScopeVariable mut this_copy
+			var NamesScopeVariable this_copy
 			{
-				.t= function_context.this_.get_ref().t,
+				.t= this_.t,
+				.llvm_value= this_.llvm_value,
+				.node_id= this_.node_id,
 			};
-			this_copy.llvm_value= function_context.this_.get_ref().llvm_value;
 			InitializeReferenceField( names_scope, function_context, this_copy, class_field, member_initializer.initializer.get_ref() );
 		}
 		else
@@ -1285,7 +1300,8 @@ fn CodeBuilder::BuildConstructorInitialization(
 			{
 				.t= class_field.t,
 				.is_mutable= true,
-				.llvm_value= CreateFieldGEP( function_context.this_.get_ref().llvm_value, class_field, function_context ),
+				.llvm_value= CreateFieldGEP( this_.llvm_value, class_field, function_context ),
+				.node_id= this_.node_id,
 			};
 
 			BuildInitializer( names_scope, function_context, field_variable, member_initializer.initializer.get_ref() );

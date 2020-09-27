@@ -49,6 +49,10 @@ bool FilterTest( const std::string& test_name )
 	static const std::unordered_set<std::string> c_test_to_enable
 	{
 		"BasicReferenceInVariableCheck",
+		"ConstructorLinksPassedReference_Test0",
+		"ConstructorLinksPassedReference_Test1",
+		"ConvertedVariableCanLostInnerReference_Test0",
+		"ConvertedVariableCanLostInnerReference_Test1",
 		"DestructorMustReturnVoidTest0",
 		"DestructionOfVariableWithReferenceDestroysReference",
 		"DestructorOutsideClassTest0",
