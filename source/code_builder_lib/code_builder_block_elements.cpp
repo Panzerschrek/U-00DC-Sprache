@@ -596,18 +596,15 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			}
 		}
 
-		if( expression_result.type.ReferencesTagsCount() > 0u )
+		// Check correctness of returning references.
+		if( expression_result.type.ReferencesTagsCount() > 0u && expression_result.node != nullptr )
 		{
-			// Check correctness of returning references.
-			if( expression_result.node != nullptr )
+			for( const ReferencesGraphNodePtr& inner_reference : function_context.variables_state.GetAllAccessibleInnerNodes( expression_result.node ) )
 			{
-				if( const ReferencesGraphNodePtr& inner_reference = function_context.variables_state.GetNodeInnerReference( expression_result.node ) )
+				for( const ReferencesGraphNodePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
 				{
-					for( const ReferencesGraphNodePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
-					{
-						if( function_context.allowed_for_returning_references.count( var_node ) == 0 )
-							REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), return_operator.file_pos_ );
-					}
+					if( function_context.allowed_for_returning_references.count( var_node ) == 0 )
+						REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), return_operator.file_pos_ );
 				}
 			}
 		}
