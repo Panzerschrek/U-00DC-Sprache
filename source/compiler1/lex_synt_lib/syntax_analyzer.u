@@ -240,6 +240,7 @@ private:
 	fn ParseFunctionType( mut this ) : FunctionType;
 	fn ParseFunctionParam( mut this ) : FunctionType::Param;
 	fn ParseFunctionTypeEnding( mut this, FunctionType &mut function_type );
+	fn ParseInnerReferenceTag( mut this ) : ust::string8;
 
 	fn ParseFunction( mut this ) : Function;
 
@@ -1179,20 +1180,7 @@ fn SyntaxAnalyzer::ParseFunctionParam( mut this ) : FunctionType::Param
 
 	if( it_.front().lexem_type == Lexem::Type::Apostrophe )
 	{
-		NextLexem();
-
-		if( it_.front().lexem_type != Lexem::Type::Identifier )
-		{
-			PushErrorMessage();
-		}
-		param.inner_reference_tag= it_.front().text;
-		NextLexem();
-
-		if( it_.front().lexem_type != Lexem::Type::Apostrophe )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		param.inner_reference_tag= ParseInnerReferenceTag();
 	}
 
 	return move(param);
@@ -1206,40 +1194,70 @@ fn SyntaxAnalyzer::ParseFunctionTypeEnding( mut this, FunctionType &mut function
 		function_type.is_unsafe= true;
 	}
 
-	if( it_.front().lexem_type == Lexem::Type::Colon )
+	if( it_.front().lexem_type != Lexem::Type::Colon )
+	{
+		return;
+	}
+	NextLexem();
+
+	function_type.return_type= ParseTypeName();
+
+	if( it_.front().lexem_type == Lexem::Type::And )
 	{
 		NextLexem();
-		function_type.return_type= ParseTypeName();
+		function_type.return_value_reference_modifier= ReferenceModifier::Reference;
 
-		if( it_.front().lexem_type == Lexem::Type::And )
+		if( it_.front().lexem_type == Lexem::Type::Apostrophe )
 		{
 			NextLexem();
-			function_type.return_value_reference_modifier= ReferenceModifier::Reference;
 
-			if( it_.front().lexem_type == Lexem::Type::Apostrophe )
+			if( it_.front().lexem_type != Lexem::Type::Identifier )
 			{
-				NextLexem();
+				PushErrorMessage();
+			}
+			function_type.return_value_reference_tag= it_.front().text;
+			NextLexem();
+		}
 
-				if( it_.front().lexem_type != Lexem::Type::Identifier )
-				{
-					PushErrorMessage();
-				}
-				function_type.return_value_reference_tag= it_.front().text;
-				NextLexem();
-			}
-
-			if( IsKeyword( it_.front(), Keyword::mut_ ) )
-			{
-				function_type.return_value_mutability_modifier= MutabilityModifier::Mutable;
-				NextLexem();
-			}
-			else if( IsKeyword( it_.front(), Keyword::imut_ ) )
-			{
-				function_type.return_value_mutability_modifier= MutabilityModifier::Immutable;
-				NextLexem();
-			}
+		if( IsKeyword( it_.front(), Keyword::mut_ ) )
+		{
+			function_type.return_value_mutability_modifier= MutabilityModifier::Mutable;
+			NextLexem();
+		}
+		else if( IsKeyword( it_.front(), Keyword::imut_ ) )
+		{
+			function_type.return_value_mutability_modifier= MutabilityModifier::Immutable;
+			NextLexem();
 		}
 	}
+	else if( it_.front().lexem_type == Lexem::Type::Apostrophe )
+	{
+		function_type.return_value_reference_tag= ParseInnerReferenceTag();
+	}
+}
+
+fn SyntaxAnalyzer::ParseInnerReferenceTag( mut this ) : ust::string8
+{
+	if( it_.front().lexem_type != Lexem::Type::Apostrophe )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage();
+	}
+	var ust::string8 mut tag= it_.front().text;
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::Apostrophe )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	return move(tag);
 }
 
 fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
@@ -1455,20 +1473,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 
 		if( it_.front().lexem_type == Lexem::Type::Apostrophe )
 		{
-			NextLexem();
-
-			if( it_.front().lexem_type != Lexem::Type::Identifier )
-			{
-				PushErrorMessage();
-			}
-			this_param.inner_reference_tag= it_.front().text;
-			NextLexem();
-
-			if( it_.front().lexem_type != Lexem::Type::Apostrophe )
-			{
-				PushErrorMessage();
-			}
-			NextLexem();
+			this_param.inner_reference_tag= ParseInnerReferenceTag();
 		}
 
 		res.function_type.params.push_back( move(this_param) );

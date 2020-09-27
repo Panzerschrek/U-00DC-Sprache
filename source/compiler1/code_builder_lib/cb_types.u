@@ -236,42 +236,39 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	// Setup return references mapping.
-	if( res.return_value_is_reference )
+	if( !function_type.return_value_reference_tag.empty() )
 	{
-		if( !function_type.return_value_reference_tag.empty() )
+		var bool mut any_found= false;
+		for( auto mut i= 0s; i < res.params.size(); ++i )
 		{
-			var bool mut any_found= false;
-			for( auto mut i= 0s; i < res.params.size(); ++i )
+			if( function_type.return_value_reference_tag == function_type.params[i].reference_tag )
 			{
-				if( function_type.return_value_reference_tag == function_type.params[i].reference_tag )
-				{
-					any_found= true;
-					var FunctionType::ParamReference mut param_reference{ .param_index= u8(i), .reference_index= FunctionType::c_param_reference_number };
-					res.return_references.push_back( move(param_reference) );
-				}
-				if( function_type.return_value_reference_tag == function_type.params[i].inner_reference_tag )
-				{
-					any_found= true;
-					var FunctionType::ParamReference mut param_reference{ .param_index= u8(i), .reference_index= 0u8 };
-					res.return_references.push_back( move(param_reference) );
-				}
+				any_found= true;
+				var FunctionType::ParamReference mut param_reference{ .param_index= u8(i), .reference_index= FunctionType::c_param_reference_number };
+				res.return_references.push_back( move(param_reference) );
 			}
-
-			if( !any_found )
+			if( function_type.return_value_reference_tag == function_type.params[i].inner_reference_tag )
 			{
-				REPORT_ERROR( NameNotFound, names_scope, function_type.file_pos, function_type.return_value_reference_tag )
+				any_found= true;
+				var FunctionType::ParamReference mut param_reference{ .param_index= u8(i), .reference_index= 0u8 };
+				res.return_references.push_back( move(param_reference) );
 			}
 		}
-		else
+
+		if( !any_found )
 		{
-			// If there is no tag for return reference, assume, that it may refer to any reference param, but not inner reference of any param.
-			for( auto mut i= 0s; i < res.params.size(); ++i )
+			REPORT_ERROR( NameNotFound, names_scope, function_type.file_pos, function_type.return_value_reference_tag )
+		}
+	}
+	else if( res.return_value_is_reference ) // Auto-generate return reference mapping if return tag is empty, but only for returning references and not for returning values.
+	{
+		// If there is no tag for return reference, assume, that it may refer to any reference param, but not inner reference of any param.
+		for( auto mut i= 0s; i < res.params.size(); ++i )
+		{
+			if( res.params[i].is_reference )
 			{
-				if( res.params[i].is_reference )
-				{
-					var FunctionType::ParamReference mut param_reference{ .param_index= u8(i), .reference_index= FunctionType::c_param_reference_number };
-					res.return_references.push_back( move(param_reference) );
-				}
+				var FunctionType::ParamReference mut param_reference{ .param_index= u8(i), .reference_index= FunctionType::c_param_reference_number };
+				res.return_references.push_back( move(param_reference) );
 			}
 		}
 	}
