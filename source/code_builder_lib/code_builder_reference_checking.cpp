@@ -114,32 +114,26 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 		if( !func.type_.referecnces_pollution_list_.empty() )
 			REPORT_ERROR( ExplicitReferencePollutionForCopyConstructor, errors_container, func.file_pos_ );
 
-		if( base_class->class_->inner_reference_type > InnerReferenceType::None )
-		{
-			// This is copy constructor. Generate reference pollution for it automatically.
-			Function::ReferencePollution ref_pollution;
-			ref_pollution.dst.first= 0u;
-			ref_pollution.dst.second= 0u;
-			ref_pollution.src.first= 1u;
-			ref_pollution.src.second= 0u;
-			function_type.references_pollution.insert(ref_pollution);
-		}
+		// This is copy constructor. Generate reference pollution for it automatically.
+		Function::ReferencePollution ref_pollution;
+		ref_pollution.dst.first= 0u;
+		ref_pollution.dst.second= 0u;
+		ref_pollution.src.first= 1u;
+		ref_pollution.src.second= 0u;
+		function_type.references_pollution.insert(ref_pollution);
 	}
 	else if( func.name_.back() == OverloadedOperatorToString( OverloadedOperator::Assign ) && IsCopyAssignmentOperator( function_type, base_class ) )
 	{
 		if( !func.type_.referecnces_pollution_list_.empty() )
 			REPORT_ERROR( ExplicitReferencePollutionForCopyAssignmentOperator, errors_container, func.file_pos_ );
 
-		if( base_class->class_->inner_reference_type > InnerReferenceType::None )
-		{
-			// This is copy assignment operator. Generate reference pollution for it automatically.
-			Function::ReferencePollution ref_pollution;
-			ref_pollution.dst.first= 0u;
-			ref_pollution.dst.second= 0u;
-			ref_pollution.src.first= 1u;
-			ref_pollution.src.second= 0u;
-			function_type.references_pollution.insert(ref_pollution);
-		}
+		// This is copy assignment operator. Generate reference pollution for it automatically.
+		Function::ReferencePollution ref_pollution;
+		ref_pollution.dst.first= 0u;
+		ref_pollution.dst.second= 0u;
+		ref_pollution.src.first= 1u;
+		ref_pollution.src.second= 0u;
+		function_type.references_pollution.insert(ref_pollution);
 	}
 	else
 		ProcessFunctionTypeReferencesPollution( errors_container, func.type_, function_type );
