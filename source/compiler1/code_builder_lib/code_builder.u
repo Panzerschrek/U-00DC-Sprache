@@ -892,7 +892,6 @@ fn CodeBuilder::PrepareFunction(
 		function_variable.body_syntax_element= function_declaration_ptr;
 	}
 
-	// TODO - setup references pollution for copy constructors and copy assignment operators.
 
 	function_variable.is_this_call=
 		!function_declaration.function_type.params.empty() &&
@@ -913,6 +912,35 @@ fn CodeBuilder::PrepareFunction(
 		}
 
 		CheckOverloadedOperator( class_type, function_type, function_declaration.operator, names_scope_ptr, function_declaration.file_pos );
+	}
+
+	// Setup references pollution for copy methods.
+	if( !class_type.empty() )
+	{
+		auto class_type_non_null= ust::to_non_nullable( class_type );
+		if( ( is_constructor && IsCopyConstructor( function_variable, class_type_non_null ) ) ||
+			( function_declaration.operator == OverloadedOperator::Assign && IsCopyAssignmentOperator( function_variable, class_type_non_null ) ) )
+		{
+			if( !function_declaration.function_type.references_pollution.empty() )
+			{
+				if( is_constructor )
+				{
+					REPORT_ERROR( ExplicitReferencePollutionForCopyConstructor, names_scope_ptr, function_declaration.file_pos )
+				}
+				else
+				{
+					REPORT_ERROR( ExplicitReferencePollutionForCopyAssignmentOperator, names_scope_ptr, function_declaration.file_pos )
+				}
+				function_variable.t.references_pollution.clear();
+			}
+
+			var FunctionType::ReferencePollution mut pollution
+			{
+				.dst{ .param_index= 0u8, .reference_index= 0u8 },
+				.src{ .param_index= 1u8, .reference_index= 0u8 },
+			};
+			function_variable.t.references_pollution.push_back( move(pollution) );
+		}
 	}
 
 	if( function_declaration.constexpr_ )
