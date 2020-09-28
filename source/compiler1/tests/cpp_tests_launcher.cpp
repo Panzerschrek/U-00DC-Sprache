@@ -48,6 +48,7 @@ bool FilterTest( const std::string& test_name )
 
 	static const std::unordered_set<std::string> c_test_to_enable
 	{
+		"AutoVariableContainsCopyOfReference_Test0",
 		"BasicReferenceInVariableCheck",
 		"ConstructorLinksPassedReference_Test0",
 		"ConstructorLinksPassedReference_Test1",
@@ -96,6 +97,7 @@ bool FilterTest( const std::string& test_name )
 		//"ExpectedConstantExpression_InTemplateSignatureArgument_Test0",
 		"ExpectedConstantExpression_InTemplateSignatureArgument_Test1",
 		"ExplicitArgumentsInDestructorTest1",
+		"ExpressionInitializedVariableContainsCopyOfReference_Test0",
 		"FunctionBodyDuplication_ForDestructors_Test0",
 		"GetReturnedReferencePassedThroughArgument_Test0",
 		"GetReturnedReferencePassedThroughArgument_Test1",

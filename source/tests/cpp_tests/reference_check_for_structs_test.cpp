@@ -684,8 +684,8 @@ U_TEST( AutoVariableContainsCopyOfReference_Test0 )
 		struct S
 		{
 			i32 &imut x;
-			fn constructor( this'st', i32 &'r x ) ' st <- r '
-			( x= x )
+			fn constructor( this'st', i32 &'r in_x ) ' st <- r '
+			( x= in_x )
 			{}
 		}
 
@@ -713,8 +713,8 @@ U_TEST( ExpressionInitializedVariableContainsCopyOfReference_Test0 )
 		struct S
 		{
 			i32 &imut x;
-			fn constructor( this'st', i32 &'r x ) ' st <- r '
-			( x= x )
+			fn constructor( this'st', i32 &'r in_x ) ' st <- r '
+			( x= in_x )
 			{}
 		}
 

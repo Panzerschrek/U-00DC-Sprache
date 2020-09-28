@@ -1666,6 +1666,68 @@ fn CodeBuilder::DestroyUnusedTemporaryVariables( this, NamesScopePtr& names_scop
 	}
 }
 
+fn CodeBuilder::SetupReferencesInCopyOrMove(
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	Type& dst_type,
+	ReferencesGraph::NodeId dst_node,
+	ReferencesGraph::NodeId src_node,
+	FilePos& file_pos )
+{
+	if( dst_node == ReferencesGraph::c_empty_node_id ||
+		src_node == ReferencesGraph::c_empty_node_id ||
+		dst_type.GetInnerReferenceKind() == InnerReferenceKind::None )
+	{
+		return;
+	}
+
+	var ReferencesGraph& mut references_graph= function_context.references_graph;
+
+	var ReferencesGraph::NodesSet dst_variable_nodes= references_graph.GetAllAccessibleVariableNodes( dst_node );
+	var ReferencesGraph::NodesSet src_inner_reference_nodes= references_graph.GetAllAccessibleVariableInnerNodes( src_node );
+
+	if( dst_variable_nodes.empty() || src_inner_reference_nodes.empty() )
+	{
+		return;
+	}
+
+	var bool mut node_is_mutable= false;
+	foreach( &src_inner_reference_node_value : src_inner_reference_nodes )
+	{
+		node_is_mutable |= references_graph.GetNodeKind( src_inner_reference_node_value.key() ) == ReferencesGraph::NodeKind::ReferenceMut;
+	}
+
+	node_is_mutable&= dst_type.GetInnerReferenceKind() == InnerReferenceKind::Mut;
+
+	foreach( &dst_variable_node_value : dst_variable_nodes )
+	{
+		var ReferencesGraph::NodeId dst_variable_node= dst_variable_node_value.key();
+		var ReferencesGraph::NodeId mut dst_inner_reference_node= references_graph.GetNodeInnerReference( dst_variable_node );
+		if( dst_inner_reference_node == ReferencesGraph::c_empty_node_id )
+		{
+			dst_inner_reference_node= references_graph.CreateNodeInnerReference(
+				dst_variable_node,
+				select( node_is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ) );
+		}
+
+		var bool dst_inner_reference_node_is_mutable= references_graph.GetNodeKind( dst_inner_reference_node ) == ReferencesGraph::NodeKind::ReferenceMut;
+
+		foreach( &src_inner_reference_node_value : src_inner_reference_nodes )
+		{
+			var ReferencesGraph::NodeId src_inner_reference_node= src_inner_reference_node_value.key();
+			var bool src_inner_reference_node_is_mutable= references_graph.GetNodeKind( src_inner_reference_node ) == ReferencesGraph::NodeKind::ReferenceMut;
+			if( dst_inner_reference_node_is_mutable != src_inner_reference_node_is_mutable )
+			{
+				REPORT_ERROR( ReferenceProtectionError, names_scope, file_pos, references_graph.GetNodeName( src_inner_reference_node ) )
+			}
+			else
+			{
+				references_graph.AddLink( src_inner_reference_node, dst_inner_reference_node );
+			}
+		}
+	}
+}
+
 fn CodeBuilder::EnsureTypeComplete( mut this, Type& t ) : bool
 {
 	if_var( &class_type_ptr : t.GetClassType() )
