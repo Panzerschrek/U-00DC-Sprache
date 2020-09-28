@@ -742,7 +742,7 @@ U_TEST( CopyAssignmentOperator_PollutionTest )
 		struct S
 		{
 			i32 &mut x;
-			op=( this'x', S &imut other'y' ) ' x <- y '
+			op=( mut this, S &imut other ) // Have implicit reference pollution
 			{} // Actually does nothing.
 		}
 
