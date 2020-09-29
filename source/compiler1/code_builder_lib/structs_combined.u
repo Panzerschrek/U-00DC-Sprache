@@ -256,6 +256,24 @@ fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 		}
 	}
 
+	// Can convert function, linkink less references to function, linking more references.
+	foreach( &src_pollution : this.references_pollution )
+	{
+		var bool mut found= false;
+		foreach( &dst_pollution : dst.references_pollution )
+		{
+			if( src_pollution == dst_pollution )
+			{
+				found= true;
+				break;
+			}
+		}
+		if( !found )
+		{
+			return false;
+		}
+	}
+
 	for( auto mut i= 0s; i < params.size(); ++i )
 	{
 		auto& this_param= this.params[i];
@@ -292,6 +310,18 @@ op FunctionType::==( FunctionType& l, FunctionType& r ) : bool
 	for( auto mut i= 0s; i < l.return_references.size(); ++i )
 	{
 		if( l.return_references[i] != r.return_references[i] )
+		{
+			return false;
+		}
+	}
+
+	if( l.references_pollution.size() != r.references_pollution.size() )
+	{
+		return false;
+	}
+	for( auto mut i= 0s; i < l.references_pollution.size(); ++i )
+	{
+		if( l.references_pollution[i] != r.references_pollution[i] )
 		{
 			return false;
 		}

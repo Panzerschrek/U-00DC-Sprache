@@ -47,7 +47,7 @@ def CouldNotOverloadFunction_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotOverloadFunction" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].file_pos.line == 7 or errors_list[0].file_pos.line == 8 )
 
 
 def CouldNotOverloadFunction_Test4():
@@ -62,7 +62,7 @@ def CouldNotOverloadFunction_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotOverloadFunction" )
-	assert( errors_list[0].file_pos.line == 7 )
+	assert( errors_list[0].file_pos.line == 6 or errors_list[0].file_pos.line == 7 )
 
 
 def CouldNotSelectOverloadedFunction_Test0():
