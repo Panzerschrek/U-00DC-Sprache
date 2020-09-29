@@ -212,14 +212,22 @@ struct FunctionType
 		ReferenceModifier reference_modifier= ReferenceModifier::None;
 		MutabilityModifier mutability_modifier= MutabilityModifier::None;
 		ust::string8 reference_tag;
+		ust::string8 inner_reference_tag;
 		ust::string8 name;
 	}
 	ust::vector</Param/> params;
 
+	struct ReferencePollution
+	{
+		ust::string8 dst;
+		ust::string8 src;
+	}
+	ust::vector</ReferencePollution/> references_pollution;
+
 	ust::optional</TypeName/> return_type; // Empty means "void"
 	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
-	ust::string8 return_value_reference_tag;
+	ust::string8 return_value_reference_tag; // Tag of returning reference or inner tag of returning value
 	bool is_unsafe= false;
 }
 

@@ -371,6 +371,12 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope_ptr, field.syntax_element.get_ref().file_pos, field.t )
 				continue;
 			}
+			if( field.is_reference && field.t.GetInnerReferenceKind() != InnerReferenceKind::None )
+			{
+				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names_scope_ptr, field.syntax_element.get_ref().file_pos, field.syntax_element.get_ref().name )
+				field.t= invalid_type_;
+				continue;
+			}
 		}
 
 		auto functions_set_ptr= member.value().Get</ NamesScopeFunctionsSet />();
@@ -711,6 +717,43 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				}
 			}
 		}
+	}
+
+	{ // Setup inner reference kind. Do this before methods generation.
+		auto mut class_lock= class_type.lock_mut();
+		auto &mut class_= class_lock.get_ref();
+
+		var InnerReferenceKind mut class_inner_reference_kind= InnerReferenceKind::None;
+
+		foreach( &parent : class_.parents )
+		{
+			auto parent_inner_reference_kind= parent.class_.lock_imut().get_ref().inner_reference_kind;
+			if( u32(parent_inner_reference_kind) > u32(class_inner_reference_kind) )
+			{
+				class_inner_reference_kind= parent_inner_reference_kind;
+			}
+		}
+
+		auto class_members_lock= class_members.lock_imut();
+
+		foreach( &field_name : class_.fields_order )
+		{
+			auto field_ptr= class_members_lock.get_ref().GetThisScopeValue(field_name).get_ref().Get</ClassField/>();
+			auto field_lock= field_ptr.lock_imut();
+			var ClassField& field= field_lock.get_ref();
+
+			auto field_inner_reference_kind=
+				select( field.is_reference
+					? select( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut )
+					: field.t.GetInnerReferenceKind() );
+
+			if( u32(field_inner_reference_kind) > u32(class_inner_reference_kind) )
+			{
+				class_inner_reference_kind= field_inner_reference_kind;
+			}
+		}
+
+		class_.inner_reference_kind= class_inner_reference_kind;
 	}
 
 	BuildClassVirtualTable( class_type );

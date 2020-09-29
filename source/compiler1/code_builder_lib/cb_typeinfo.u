@@ -270,6 +270,8 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 		ADD_SIZE_FIELD( "align_of", LLVMABIAlignmentOfType( data_layout_, llvm_type ) )
 	}
 
+	ADD_SIZE_FIELD( "references_tags_count", select( t.GetInnerReferenceKind() == InnerReferenceKind::None ? 0s : 1s ) )
+
 	ADD_BOOL_FIELD( "is_fundamental"     , !t.GetFundamentalType    ().empty() )
 	ADD_BOOL_FIELD( "is_array"           , !t.GetArrayType          ().empty() )
 	ADD_BOOL_FIELD( "is_tuple"           , !t.GetTupleType          ().empty() )

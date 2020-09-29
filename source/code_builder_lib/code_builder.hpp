@@ -641,6 +641,8 @@ private:
 		const Synt::FunctionType& func,
 		Function& function_type );
 
+	void SetupReferencesInCopyOrMove( FunctionContext& function_context, const Variable& dst_variable, const Variable& src_variable, CodeBuilderErrorsContainer& errors_container, const FilePos& file_pos );
+
 	void DestroyUnusedTemporaryVariables( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const FilePos& file_pos );
 
 	ReferencesGraph MergeVariablesStateAfterIf(

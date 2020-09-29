@@ -198,6 +198,34 @@ op FunctionType::ParamReference::!=(ParamReference& l, ParamReference& r) : bool
 	return !(l == r);
 }
 
+op FunctionType::ParamReference::<(ParamReference& l, ParamReference& r) : bool
+{
+	if( l.param_index != r.param_index )
+	{
+		return l.param_index < r.param_index;
+	}
+	return l.reference_index < r.reference_index;
+}
+
+op FunctionType::ReferencePollution::==(ReferencePollution& l, ReferencePollution& r) : bool
+{
+	return l.dst == r.dst && l.src == r.src;
+}
+
+op FunctionType::ReferencePollution::!=(ReferencePollution& l, ReferencePollution& r) : bool
+{
+	return !(l == r);
+}
+
+op FunctionType::ReferencePollution::<(ReferencePollution& l, ReferencePollution& r) : bool
+{
+	if( l.dst != r.dst )
+	{
+		return l.dst < r.dst;
+	}
+	return l.src < r.src;
+}
+
 fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 {
 	if(
@@ -217,6 +245,24 @@ fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 		foreach( &dst_param_reference : dst.return_references )
 		{
 			if( src_param_reference == dst_param_reference )
+			{
+				found= true;
+				break;
+			}
+		}
+		if( !found )
+		{
+			return false;
+		}
+	}
+
+	// Can convert function, linkink less references to function, linking more references.
+	foreach( &src_pollution : this.references_pollution )
+	{
+		var bool mut found= false;
+		foreach( &dst_pollution : dst.references_pollution )
+		{
+			if( src_pollution == dst_pollution )
 			{
 				found= true;
 				break;
@@ -264,6 +310,18 @@ op FunctionType::==( FunctionType& l, FunctionType& r ) : bool
 	for( auto mut i= 0s; i < l.return_references.size(); ++i )
 	{
 		if( l.return_references[i] != r.return_references[i] )
+		{
+			return false;
+		}
+	}
+
+	if( l.references_pollution.size() != r.references_pollution.size() )
+	{
+		return false;
+	}
+	for( auto mut i= 0s; i < l.references_pollution.size(); ++i )
+	{
+		if( l.references_pollution[i] != r.references_pollution[i] )
 		{
 			return false;
 		}
@@ -642,6 +700,32 @@ fn Type::IsAbstract( this ) : bool
 	}
 
 	return false;
+}
+
+fn Type::GetInnerReferenceKind( this ) : InnerReferenceKind
+{
+	if_var( &array_type : GetArrayType() )
+	{
+		return array_type.element_type.GetInnerReferenceKind();
+	}
+	if_var( &tuple_type : GetTupleType() )
+	{
+		var InnerReferenceKind mut inner_reference_type= InnerReferenceKind::None;
+		foreach( &element_type : tuple_type.element_types )
+		{
+			var InnerReferenceKind element_inner_reference_type= element_type.GetInnerReferenceKind();
+			if( u32(element_inner_reference_type) > u32(inner_reference_type) )
+			{
+				inner_reference_type= element_inner_reference_type;
+			}
+		}
+	}
+	if_var( &class_type : GetClassType() )
+	{
+		return class_type.lock_imut().get_ref().inner_reference_kind;
+	}
+
+	return InnerReferenceKind::None;
 }
 
 fn Type::ReferenceIsConvertibleTo( this, Type& dst ) : bool

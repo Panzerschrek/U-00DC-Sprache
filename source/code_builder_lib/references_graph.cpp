@@ -189,8 +189,6 @@ void ReferencesGraph::GetAllAccessibleInnerNodes_r(
 	if( !visited_nodes_set.insert(node).second )
 		return; // Already visited
 
-	std::unordered_set<ReferencesGraphNodePtr> result;
-
 	if( const ReferencesGraphNodePtr inner_reference= GetNodeInnerReference( node ) )
 	{
 		result_set.emplace( inner_reference );

@@ -49,6 +49,7 @@ bool FilterTest( const std::string& test_name )
 	static const std::unordered_set<std::string> c_test_to_enable
 	{
 		"DestructorMustReturnVoidTest0",
+		"DestructionOfVariableWithReferenceDestroysReference",
 		"DestructorOutsideClassTest0",
 		"DestructorsTest0",
 		"DestructorsTest1",
@@ -200,6 +201,7 @@ bool FilterTest( const std::string& test_name )
 		"operators_overloading_test.cpp",
 		"operators_priority_test.cpp",
 		"operators_test.cpp",
+		"reference_check_for_structs_test.cpp",
 		"reference_check_test.cpp",
 		"references_inside_structs_errors_test.cpp",
 		"type_conversions_test.cpp",

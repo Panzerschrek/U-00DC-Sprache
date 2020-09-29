@@ -28,6 +28,8 @@ public:
 	fn RemoveNode( mut this, NodeId node_id );
 	fn AddLink( mut this, NodeId from, NodeId to );
 
+	fn CreateNodeInnerReference( mut this, NodeId node_id, NodeKind kind ) : NodeId;
+
 	fn MoveNode( mut this, NodeId node_id );
 	fn NodeIsMoved( this, NodeId node_id ) : bool;
 
@@ -36,18 +38,22 @@ public:
 
 	fn GetNodeKind( this, NodeId node_id ) : NodeKind;
 	fn GetNodeName( this, NodeId node_id ) : ust::string8&;
+	fn GetNodeInnerReference( this, NodeId node_id ) : NodeId;
 
 	type NodesSet= ust::unordered_map</NodeId, i32/>; // TODO - use unordered_set
 	fn GetAllAccessibleVariableNodes( this, NodeId node_id ) : NodesSet;
+	fn GetAllAccessibleVariableInnerNodes( this, NodeId node_id ) : NodesSet;
 
 private:
 	fn GetAllAccessibleVariableNodes_r( this, NodeId node_id, NodesSet &mut out_nodes );
+	fn GetAllAccessibleVariableInnerNodes_r( this, NodeId node_id, NodesSet &mut out_nodes );
 
 private:
 	struct Node
 	{
 		NodeKind kind;
 		ust::string8 name;
+		NodeId inner_reference_node; // May exists only in variable nodes.
 		bool moved;
 	}
 

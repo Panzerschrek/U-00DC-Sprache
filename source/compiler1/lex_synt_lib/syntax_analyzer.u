@@ -240,6 +240,7 @@ private:
 	fn ParseFunctionType( mut this ) : FunctionType;
 	fn ParseFunctionParam( mut this ) : FunctionType::Param;
 	fn ParseFunctionTypeEnding( mut this, FunctionType &mut function_type );
+	fn ParseInnerReferenceTag( mut this ) : ust::string8;
 
 	fn ParseFunction( mut this ) : Function;
 
@@ -1177,51 +1178,142 @@ fn SyntaxAnalyzer::ParseFunctionParam( mut this ) : FunctionType::Param
 	param.name= it_.front().text;
 	NextLexem();
 
+	if( it_.front().lexem_type == Lexem::Type::Apostrophe )
+	{
+		param.inner_reference_tag= ParseInnerReferenceTag();
+	}
+
 	return move(param);
 }
 
 fn SyntaxAnalyzer::ParseFunctionTypeEnding( mut this, FunctionType &mut function_type )
 {
-	if( IsKeyword( it_.front(), Keyword::unsafe_ ) )
+	if( it_.front().lexem_type == Lexem::Type::Apostrophe )
 	{
 		NextLexem();
-		function_type.is_unsafe= true;
-	}
 
-	if( it_.front().lexem_type == Lexem::Type::Colon )
-	{
-		NextLexem();
-		function_type.return_type= ParseTypeName();
-
-		if( it_.front().lexem_type == Lexem::Type::And )
+		if( it_.front().lexem_type == Lexem::Type::Apostrophe )
 		{
+			// Empty list.
 			NextLexem();
-			function_type.return_value_reference_modifier= ReferenceModifier::Reference;
-
-			if( it_.front().lexem_type == Lexem::Type::Apostrophe )
+		}
+		else
+		{
+			while( NotEndOfFile() )
 			{
+				var FunctionType::ReferencePollution mut reference_pollution;
+
+				if( it_.front().lexem_type != Lexem::Type::Identifier )
+				{
+					PushErrorMessage();
+				}
+				reference_pollution.dst= it_.front().text;
+				NextLexem();
+
+				if( it_.front().lexem_type != Lexem::Type::LeftArrow )
+				{
+					PushErrorMessage();
+				}
 				NextLexem();
 
 				if( it_.front().lexem_type != Lexem::Type::Identifier )
 				{
 					PushErrorMessage();
 				}
-				function_type.return_value_reference_tag= it_.front().text;
+				reference_pollution.src= it_.front().text;
 				NextLexem();
-			}
 
-			if( IsKeyword( it_.front(), Keyword::mut_ ) )
-			{
-				function_type.return_value_mutability_modifier= MutabilityModifier::Mutable;
-				NextLexem();
-			}
-			else if( IsKeyword( it_.front(), Keyword::imut_ ) )
-			{
-				function_type.return_value_mutability_modifier= MutabilityModifier::Immutable;
-				NextLexem();
+				function_type.references_pollution.push_back( move(reference_pollution) );
+
+				if( it_.front().lexem_type == Lexem::Type::Apostrophe )
+				{
+					NextLexem();
+					break;
+				}
+				else if( it_.front().lexem_type == Lexem::Type::Comma )
+				{
+					NextLexem();
+					continue;
+				}
+				else
+				{
+					PushErrorMessage();
+					break;
+				}
 			}
 		}
 	}
+
+	if( IsKeyword( it_.front(), Keyword::unsafe_ ) )
+	{
+		NextLexem();
+		function_type.is_unsafe= true;
+	}
+
+	if( it_.front().lexem_type != Lexem::Type::Colon )
+	{
+		return;
+	}
+	NextLexem();
+
+	function_type.return_type= ParseTypeName();
+
+	if( it_.front().lexem_type == Lexem::Type::And )
+	{
+		NextLexem();
+		function_type.return_value_reference_modifier= ReferenceModifier::Reference;
+
+		if( it_.front().lexem_type == Lexem::Type::Apostrophe )
+		{
+			NextLexem();
+
+			if( it_.front().lexem_type != Lexem::Type::Identifier )
+			{
+				PushErrorMessage();
+			}
+			function_type.return_value_reference_tag= it_.front().text;
+			NextLexem();
+		}
+
+		if( IsKeyword( it_.front(), Keyword::mut_ ) )
+		{
+			function_type.return_value_mutability_modifier= MutabilityModifier::Mutable;
+			NextLexem();
+		}
+		else if( IsKeyword( it_.front(), Keyword::imut_ ) )
+		{
+			function_type.return_value_mutability_modifier= MutabilityModifier::Immutable;
+			NextLexem();
+		}
+	}
+	else if( it_.front().lexem_type == Lexem::Type::Apostrophe )
+	{
+		function_type.return_value_reference_tag= ParseInnerReferenceTag();
+	}
+}
+
+fn SyntaxAnalyzer::ParseInnerReferenceTag( mut this ) : ust::string8
+{
+	if( it_.front().lexem_type != Lexem::Type::Apostrophe )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage();
+	}
+	var ust::string8 mut tag= it_.front().text;
+	NextLexem();
+
+	if( it_.front().lexem_type != Lexem::Type::Apostrophe )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	return move(tag);
 }
 
 fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
@@ -1407,46 +1499,39 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 	auto is_constructor_or_destructor=
 		res.name.back() == KeywordToString( Keyword::constructor_ ) || res.name.back() == KeywordToString( Keyword::destructor_ );
 
-	if( IsKeyword( it_.front(), Keyword::this_ ) )
+	if( IsKeyword( it_.front(), Keyword::this_ ) || IsKeyword( it_.front(), Keyword::mut_ ) || IsKeyword( it_.front(), Keyword::imut_ ) )
 	{
 		var FunctionType::Param mut this_param
 		{
-			.file_pos= it_.front().file_pos,
-			.name= it_.front().text,
-			.mutability_modifier= select( is_constructor_or_destructor ? MutabilityModifier::Mutable : MutabilityModifier::Immutable ),
+			.name= KeywordToString( Keyword::this_ ),
 			.reference_tag= KeywordToString( Keyword::this_ ), // Implicit set name for tag of "this" to "this".
 		};
-		NextLexem();
-		res.function_type.params.push_back( move(this_param) );
 
-		if( it_.front().lexem_type == Lexem::Type::Comma )
+		if( IsKeyword( it_.front(), Keyword::mut_ ) )
 		{
+			this_param.mutability_modifier= MutabilityModifier::Mutable;
 			NextLexem();
-			// Disallov constructions, like "fn f( mut this, ){}"
-			if( it_.front().lexem_type == Lexem::Type::BracketRight )
-			{
-				PushErrorMessage();
-			}
 		}
-	}
-	else if( IsKeyword( it_.front(), Keyword::mut_ ) || IsKeyword( it_.front(), Keyword::imut_ ) )
-	{
-		auto mutability_modifier= select( IsKeyword( it_.front(), Keyword::mut_ ) ? MutabilityModifier::Mutable : MutabilityModifier::Immutable );
-		NextLexem();
+		else if( IsKeyword( it_.front(), Keyword::imut_ ) )
+		{
+			this_param.mutability_modifier= MutabilityModifier::Immutable;
+			NextLexem();
+		}
 
 		if( !IsKeyword( it_.front(), Keyword::this_ ) )
 		{
 			PushErrorMessage();
 		}
-
-		var FunctionType::Param mut this_param
-		{
-			.file_pos= it_.front().file_pos,
-			.name= it_.front().text,
-			.mutability_modifier= mutability_modifier,
-			.reference_tag= KeywordToString( Keyword::this_ ), // Implicit set name for tag of "this" to "this".
-		};
+		this_param.file_pos= it_.front().file_pos;
 		NextLexem();
+
+		if( is_constructor_or_destructor ){ this_param.mutability_modifier= MutabilityModifier::Mutable; }
+
+		if( it_.front().lexem_type == Lexem::Type::Apostrophe )
+		{
+			this_param.inner_reference_tag= ParseInnerReferenceTag();
+		}
+
 		res.function_type.params.push_back( move(this_param) );
 
 		if( it_.front().lexem_type == Lexem::Type::Comma )
