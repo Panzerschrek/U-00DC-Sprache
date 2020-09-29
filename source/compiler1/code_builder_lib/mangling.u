@@ -413,6 +413,35 @@ fn MangleTypeImpl( Type& t ) : MangleGraphNode
 
 			res.childs.push_back( ust::box</MangleGraphNode/>( move(rr_node) ) );
 		}
+		if( !function_type.references_pollution.empty() )
+		{
+			var MangleGraphNode mut rp_node;
+			rp_node.prefix= "_RP";
+
+			halt if( function_type.references_pollution.size() >= 36s );
+			rp_node.prefix.push_back( Base36Digit(function_type.references_pollution.size()) );
+
+			foreach( &pollution : function_type.references_pollution )
+			{
+				halt if( pollution.dst.param_index >= 36u8 );
+				halt if( pollution.dst.reference_index >= 36u8 && pollution.dst.reference_index != FunctionType::c_param_reference_number );
+				halt if( pollution.src.param_index >= 36u8 );
+				halt if( pollution.src.reference_index >= 36u8 && pollution.src.reference_index != FunctionType::c_param_reference_number );
+
+				rp_node.prefix.push_back( Base36Digit( size_type(pollution.dst.param_index) ) );
+				rp_node.prefix.push_back( select(
+					pollution.dst.reference_index == FunctionType::c_param_reference_number
+					? "_"c8
+					: Base36Digit( size_type(pollution.dst.reference_index) ) ) );
+				rp_node.prefix.push_back( Base36Digit( size_type(pollution.src.param_index) ) );
+				rp_node.prefix.push_back( select(
+					pollution.src.reference_index == FunctionType::c_param_reference_number
+					? "_"c8
+					: Base36Digit( size_type(pollution.src.reference_index) ) ) );
+			}
+
+			res.childs.push_back( ust::box</MangleGraphNode/>( move(rp_node) ) );
+		}
 		if( function_type.is_unsafe )
 		{
 			var MangleGraphNode mut unsafe_node;
