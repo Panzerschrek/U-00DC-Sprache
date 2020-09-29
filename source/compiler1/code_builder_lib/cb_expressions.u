@@ -2205,8 +2205,9 @@ fn CodeBuilder::DoCallFunction(
 		constexpr_args.resize( llvm_args.size(), LLVMValueRef::Null );
 	}
 
-	var ust::vector</ReferencesGraph::NodeId/> mut args_nodes;
+	var ust::vector</ReferencesGraph::NodeId/> mut args_nodes, mut reference_args_inner_nodes;
 	args_nodes.resize( total_args, ReferencesGraph::c_empty_node_id );
+	reference_args_inner_nodes.resize( total_args, ReferencesGraph::c_empty_node_id );
 
 	for( var size_type mut i= 0s; i < total_args; ++i )
 	{
@@ -2265,7 +2266,34 @@ fn CodeBuilder::DoCallFunction(
 					function_context.references_graph.AddLink( arg.node_id, arg_node_id );
 				}
 
-				// TODO - maybe lock inner reference  of reference arg here?
+				if( expected_arg_type.GetInnerReferenceKind() != InnerReferenceKind::None )
+				{
+					var ReferencesGraph::NodesSet inner_references= function_context.references_graph.GetAllAccessibleVariableInnerNodes( arg.node_id );
+					var bool mut is_mutable= false;
+					foreach( inner_reference : inner_references )
+					{
+						is_mutable |= function_context.references_graph.GetNodeKind( inner_reference.key() ) == ReferencesGraph::NodeKind::ReferenceMut;
+					}
+
+					auto own_reference_node= function_context.references_graph.AddNode(
+						select( is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
+						"arg" + ust::to_string8(arg_n) + "lock" );
+					reference_args_inner_nodes[arg_n]= own_reference_node;
+
+					foreach( &inner_reference_value : inner_references )
+					{
+						var ReferencesGraph::NodeId inner_reference= inner_reference_value.key();
+						if( (  is_mutable && function_context.references_graph.HaveOutgoingLinks( inner_reference ) ) ||
+							( !is_mutable && function_context.references_graph.HaveOutgoingMutableNodes( inner_reference ) ) )
+						{
+							REPORT_ERROR( ReferenceProtectionError, names_scope, file_pos, function_context.references_graph.GetNodeName( inner_reference ) )
+						}
+						else
+						{
+							function_context.references_graph.AddLink( inner_reference, own_reference_node );
+						}
+					}
+				}
 			}
 
 			if( arg.location == Variable::Location::LLVMRegister )
@@ -2436,6 +2464,15 @@ fn CodeBuilder::DoCallFunction(
 		{
 			auto call_result= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, cast_imut(llvm_args).front_unsafe(), u32(llvm_args.size()), "\0"[0] );
 			if( !is_s_ret ){  result.llvm_value= call_result;  }
+		}
+	}
+
+	// Remove temp inner nodes.
+	foreach( node_id : reference_args_inner_nodes )
+	{
+		if( node_id != ReferencesGraph::c_empty_node_id )
+		{
+			function_context.references_graph.RemoveNode( node_id );
 		}
 	}
 
