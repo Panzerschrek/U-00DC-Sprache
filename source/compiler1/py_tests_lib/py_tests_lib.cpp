@@ -557,6 +557,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"Redefinition_ForFunctionTemplateParameter",
 		"ReferenceFieldAccess_Test0",
 		"ReferencePollution_ForFunctionPointer_Test0",
+		"ReferencesTagsField_Test0",
 		"ReturnReferenceFromStruct_Test0",
 		"ReturnReferenceTags_ForFunctionPointers_Test0",
 		"SafeBlockResetsUnsafe_Test",
