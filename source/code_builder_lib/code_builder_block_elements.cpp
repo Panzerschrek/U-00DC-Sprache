@@ -556,6 +556,16 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			return block_info;
 		}
 
+		// Check correctness of returning reference.
+		if( expression_result.node != nullptr )
+		{
+			for( const ReferencesGraphNodePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( expression_result.node ) )
+			{
+				if( function_context.allowed_for_returning_references.count( var_node ) == 0 )
+					REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), return_operator.file_pos_ );
+			}
+		}
+
 		{ // Lock references to return value variables.
 			ReferencesGraphNodeHolder return_value_lock(
 				std::make_shared<ReferencesGraphNode>(
@@ -567,16 +577,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 
 			CallDestructorsBeforeReturn( names, function_context, return_operator.file_pos_ );
 		} // Reset locks AFTER destructors call. We must get error in case of returning of reference to stack variable or value-argument.
-
-		// Check correctness of returning reference.
-		if( expression_result.node != nullptr )
-		{
-			for( const ReferencesGraphNodePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( expression_result.node ) )
-			{
-				if( function_context.allowed_for_returning_references.count( var_node ) == 0 )
-					REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), return_operator.file_pos_ );
-			}
-		}
 
 		llvm::Value* ret_value= expression_result.llvm_value;
 		if( expression_result.type != function_context.return_type )
