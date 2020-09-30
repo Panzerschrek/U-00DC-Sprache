@@ -30,7 +30,8 @@ void ReferencesGraph::AddNode( ReferencesGraphNodePtr node )
 
 void ReferencesGraph::RemoveNode( const ReferencesGraphNodePtr& node )
 {
-	U_ASSERT( nodes_.count(node) != 0 );
+	if( nodes_.count(node) == 0 )
+		return;
 
 	if( const auto inner_reference= GetNodeInnerReference( node ) )
 		RemoveNode( inner_reference );

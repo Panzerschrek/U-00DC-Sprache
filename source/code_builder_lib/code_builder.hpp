@@ -295,7 +295,6 @@ private:
 	void CallDestructorsImpl(
 		const StackVariablesStorage& stack_variables_storage,
 		FunctionContext& function_context,
-		ReferencesGraph& variables_state_copy,
 		CodeBuilderErrorsContainer& errors_container,
 		const FilePos& file_pos );
 

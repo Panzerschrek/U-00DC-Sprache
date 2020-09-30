@@ -575,7 +575,6 @@ void CodeBuilder::GenerateLoop(
 void CodeBuilder::CallDestructorsImpl(
 	const StackVariablesStorage& stack_variables_storage,
 	FunctionContext& function_context,
-	ReferencesGraph& variables_state_copy,
 	CodeBuilderErrorsContainer& errors_container,
 	const FilePos& file_pos )
 {
@@ -584,17 +583,17 @@ void CodeBuilder::CallDestructorsImpl(
 	{
 		const StackVariablesStorage::NodeAndVariable& stored_variable= *it;
 
-		if( ! variables_state_copy.NodeMoved( stored_variable.first ) )
+		if( ! function_context.variables_state.NodeMoved( stored_variable.first ) )
 		{
 			if( stored_variable.first->kind == ReferencesGraphNode::Kind::Variable )
 			{
-				if( variables_state_copy.HaveOutgoingLinks( stored_variable.first ) )
+				if( function_context.variables_state.HaveOutgoingLinks( stored_variable.first ) )
 					REPORT_ERROR( DestroyedVariableStillHaveReferences, errors_container, file_pos, stored_variable.first->name );
 				const Variable& var= stored_variable.second;
 				if( var.type.HaveDestructor() )
 					CallDestructor( var.llvm_value, var.type, function_context, errors_container, file_pos );
 			}
-			variables_state_copy.RemoveNode( stored_variable.first );
+			function_context.variables_state.RemoveNode( stored_variable.first );
 		}
 	}
 }
@@ -605,8 +604,7 @@ void CodeBuilder::CallDestructors(
 	FunctionContext& function_context,
 	const FilePos& file_pos )
 {
-	ReferencesGraph variables_state_copy= function_context.variables_state;
-	CallDestructorsImpl( stack_variables_storage, function_context, variables_state_copy, names_scope.GetErrors(), file_pos );
+	CallDestructorsImpl( stack_variables_storage, function_context, names_scope.GetErrors(), file_pos );
 }
 
 void CodeBuilder::CallDestructor(
@@ -665,8 +663,6 @@ void CodeBuilder::CallDestructor(
 
 void CodeBuilder::CallDestructorsForLoopInnerVariables( NamesScope& names_scope, FunctionContext& function_context, const FilePos& file_pos )
 {
-	ReferencesGraph variables_state_copy= function_context.variables_state;
-
 	U_ASSERT( !function_context.loops_stack.empty() );
 
 	// Destroy all local variables before "break"/"continue" in all blocks inside loop.
@@ -677,16 +673,15 @@ void CodeBuilder::CallDestructorsForLoopInnerVariables( NamesScope& names_scope,
 		undestructed_stack_size > function_context.loops_stack.back().stack_variables_stack_size;
 		++it, --undestructed_stack_size )
 	{
-		CallDestructorsImpl( **it, function_context, variables_state_copy, names_scope.GetErrors(), file_pos );
+		CallDestructorsImpl( **it, function_context, names_scope.GetErrors(), file_pos );
 	}
 }
 
 void CodeBuilder::CallDestructorsBeforeReturn( NamesScope& names_scope, FunctionContext& function_context, const FilePos& file_pos )
 {
-	ReferencesGraph variables_state_copy= function_context.variables_state;
 	// We must call ALL destructors of local variables, arguments, etc before each return.
 	for( auto it= function_context.stack_variables_stack.rbegin(); it != function_context.stack_variables_stack.rend(); ++it )
-		CallDestructorsImpl( **it, function_context, variables_state_copy, names_scope.GetErrors(), file_pos );
+		CallDestructorsImpl( **it, function_context, names_scope.GetErrors(), file_pos );
 }
 
 void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const FilePos& file_pos )
