@@ -39,6 +39,10 @@ struct LoopFrame final
 	llvm::BasicBlock* block_for_continue= nullptr;
 	// Number of stack variable storages at stack before loop block creation.
 	size_t stack_variables_stack_size= 0u;
+
+	// Populated during loop body building.
+	std::vector<ReferencesGraph> break_variables_states;
+	std::vector<ReferencesGraph> continue_variables_states;
 };
 
 struct FunctionContext

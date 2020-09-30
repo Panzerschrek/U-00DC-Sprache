@@ -821,8 +821,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 
 	function_context.llvm_ir_builder.CreateBr( test_block );
 
-	const ReferencesGraph variables_state_before_loop= function_context.variables_state;
-
 	// Test block.
 	function_context.function->getBasicBlockList().push_back( test_block );
 	function_context.llvm_ir_builder.SetInsertPoint( test_block );
@@ -852,6 +850,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		}
 	}
 
+	const ReferencesGraph variables_state_before_loop= function_context.variables_state;
+
 	// Loop block code.
 	function_context.loops_stack.emplace_back();
 	function_context.loops_stack.back().block_for_break= block_after_loop;
@@ -861,8 +861,19 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	function_context.function->getBasicBlockList().push_back( loop_block );
 	function_context.llvm_ir_builder.SetInsertPoint( loop_block );
 
-	if( !BuildBlockElement( c_style_for_operator.block_, loop_names_scope, function_context ).have_terminal_instruction_inside )
+	const BlockBuildInfo loop_body_block_info= BuildBlockElement( c_style_for_operator.block_, loop_names_scope, function_context );
+	if( !loop_body_block_info.have_terminal_instruction_inside )
+	{
 		function_context.llvm_ir_builder.CreateBr( loop_iteration_block );
+		function_context.loops_stack.back().continue_variables_states.push_back( function_context.variables_state );
+	}
+
+	// Variables state before loop iteration block is combination of variables states of each branch terminated with "continue".
+	if( !function_context.loops_stack.back().continue_variables_states.empty() )
+		function_context.variables_state= MergeVariablesStateAfterIf( function_context.loops_stack.back().continue_variables_states, names.GetErrors(), c_style_for_operator.block_.end_file_pos_ );
+
+	std::vector<ReferencesGraph> variables_state_for_merge= std::move( function_context.loops_stack.back().break_variables_states );
+	variables_state_for_merge.push_back( std::move(variables_state_before_loop) );
 
 	function_context.loops_stack.pop_back();
 
@@ -881,12 +892,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	}
 	function_context.llvm_ir_builder.CreateBr( test_block );
 
+	// Disallow outer variables state change in loop iteration part and its predecessors.
+	const auto errors= ReferencesGraph::CheckWhileBlokVariablesState( variables_state_before_loop, function_context.variables_state, c_style_for_operator.block_.end_file_pos_ );
+	names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
+
 	// Block after loop.
 	function_context.function->getBasicBlockList().push_back( block_after_loop );
 	function_context.llvm_ir_builder.SetInsertPoint( block_after_loop );
 
-	const auto errors= ReferencesGraph::CheckWhileBlokVariablesState( variables_state_before_loop, function_context.variables_state, c_style_for_operator.block_.end_file_pos_ );
-	names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
 
 	CallDestructors( loop_variables_storage, loop_names_scope, function_context, c_style_for_operator.file_pos_ );
 
@@ -899,6 +912,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	FunctionContext& function_context )
 {
 	llvm::BasicBlock* const test_block= llvm::BasicBlock::Create( llvm_context_ );
+	llvm::BasicBlock* const while_block= llvm::BasicBlock::Create( llvm_context_ );
+	llvm::BasicBlock* const block_after_while= llvm::BasicBlock::Create( llvm_context_ );
 
 	// Break to test block. We must push terminal instruction at and of current block.
 	function_context.llvm_ir_builder.CreateBr( test_block );
@@ -907,28 +922,24 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	function_context.function->getBasicBlockList().push_back( test_block );
 	function_context.llvm_ir_builder.SetInsertPoint( test_block );
 
-	const ReferencesGraph variables_state_before_while= function_context.variables_state;
-
-	const StackVariablesStorage temp_variables_storage( function_context );
-	const Variable condition_expression= BuildExpressionCodeEnsureVariable( while_operator.condition_, names, function_context );
-
-	const FilePos condition_file_pos= Synt::GetExpressionFilePos( while_operator.condition_ );
-	if( condition_expression.type != bool_type_ )
 	{
-		REPORT_ERROR( TypesMismatch,
-				names.GetErrors(),
-				condition_file_pos,
-				bool_type_,
-				condition_expression.type );
-		return BlockBuildInfo();
+		const StackVariablesStorage temp_variables_storage( function_context );
+		const Variable condition_expression= BuildExpressionCodeEnsureVariable( while_operator.condition_, names, function_context );
+
+		const FilePos condition_file_pos= Synt::GetExpressionFilePos( while_operator.condition_ );
+		if( condition_expression.type != bool_type_ )
+		{
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), condition_file_pos, bool_type_, condition_expression.type );
+			return BlockBuildInfo();
+		}
+
+		llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+		CallDestructors( temp_variables_storage, names, function_context, condition_file_pos );
+
+		function_context.llvm_ir_builder.CreateCondBr( condition_in_register, while_block, block_after_while );
 	}
 
-	llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
-	CallDestructors( temp_variables_storage, names, function_context, condition_file_pos );
-
-	llvm::BasicBlock* const while_block= llvm::BasicBlock::Create( llvm_context_ );
-	llvm::BasicBlock* const block_after_while= llvm::BasicBlock::Create( llvm_context_ );
-	function_context.llvm_ir_builder.CreateCondBr( condition_in_register, while_block, block_after_while );
+	ReferencesGraph variables_state_before_loop= function_context.variables_state;
 
 	// While block code.
 
@@ -940,17 +951,31 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	function_context.function->getBasicBlockList().push_back( while_block );
 	function_context.llvm_ir_builder.SetInsertPoint( while_block );
 
-	if( !BuildBlockElement( while_operator.block_, names, function_context ).have_terminal_instruction_inside )
+	const BlockBuildInfo loop_body_block_info= BuildBlockElement( while_operator.block_, names, function_context );
+	if( !loop_body_block_info.have_terminal_instruction_inside )
+	{
 		function_context.llvm_ir_builder.CreateBr( test_block );
-
-	function_context.loops_stack.pop_back();
+		function_context.loops_stack.back().continue_variables_states.push_back( function_context.variables_state );
+	}
 
 	// Block after while code.
 	function_context.function->getBasicBlockList().push_back( block_after_while );
 	function_context.llvm_ir_builder.SetInsertPoint( block_after_while );
 
-	const auto errors= ReferencesGraph::CheckWhileBlokVariablesState( variables_state_before_while, function_context.variables_state, while_operator.block_.end_file_pos_ );
-	names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
+	// Disallow outer variables state change in "continue" branches.
+	for( const ReferencesGraph& variables_state : function_context.loops_stack.back().continue_variables_states )
+	{
+		const auto errors= ReferencesGraph::CheckWhileBlokVariablesState( variables_state_before_loop, variables_state, while_operator.block_.end_file_pos_ );
+		names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
+	}
+
+	std::vector<ReferencesGraph> variables_state_for_merge= std::move( function_context.loops_stack.back().break_variables_states );
+	variables_state_for_merge.push_back( std::move(variables_state_before_loop) );
+
+	function_context.loops_stack.pop_back();
+
+	// Result variables state is combination of variables state before loop and variables state of all branches terminated with "break".
+	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), while_operator.block_.end_file_pos_ );
 
 	return BlockBuildInfo();
 }
@@ -971,8 +996,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	U_ASSERT( function_context.loops_stack.back().block_for_break != nullptr );
 
 	CallDestructorsForLoopInnerVariables( names, function_context, break_operator.file_pos_ );
+	function_context.loops_stack.back().break_variables_states.push_back( function_context.variables_state );
 	function_context.llvm_ir_builder.CreateBr( function_context.loops_stack.back().block_for_break );
-
 
 	return block_info;
 }
@@ -993,6 +1018,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	U_ASSERT( function_context.loops_stack.back().block_for_continue != nullptr );
 
 	CallDestructorsForLoopInnerVariables( names, function_context, continue_operator.file_pos_ );
+	function_context.loops_stack.back().continue_variables_states.push_back( function_context.variables_state );
 	function_context.llvm_ir_builder.CreateBr( function_context.loops_stack.back().block_for_continue );
 
 	return block_info;
