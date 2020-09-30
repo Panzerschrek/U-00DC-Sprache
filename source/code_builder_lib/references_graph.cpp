@@ -1,3 +1,7 @@
+#include "../compilers_common/push_disable_llvm_warnings.hpp"
+#include <llvm/ADT/Hashing.h>
+#include "../compilers_common/pop_llvm_warnings.hpp"
+
 #include "../lex_synt_lib/assert.hpp"
 #include "error_reporting.hpp"
 #include "references_graph.hpp"
@@ -7,6 +11,16 @@ namespace U
 
 namespace CodeBuilderPrivate
 {
+
+bool ReferencesGraph::Link::operator==( const ReferencesGraph::Link& r ) const
+{
+	return this->src == r.src && this->dst == r.dst;
+}
+
+size_t ReferencesGraph::LinkHasher::operator()( const Link& link ) const
+{
+	return llvm::hash_combine( reinterpret_cast<uintptr_t>(link.src.get()), reinterpret_cast<uintptr_t>(link.dst.get()) );
+}
 
 void ReferencesGraph::AddNode( ReferencesGraphNodePtr node )
 {
@@ -26,26 +40,24 @@ void ReferencesGraph::RemoveNode( const ReferencesGraphNodePtr& node )
 	std::vector<ReferencesGraphNodePtr> out_nodes;
 	for( const auto& link : links_ )
 	{
-		if( link.first == link.second ) // Self loop link.
+		if( link.src == link.dst ) // Self loop link.
 			continue;
 
-		if( link.first == node )
-			out_nodes.push_back( link.second );
-		if( link.second == node )
-			in_nodes.push_back( link.first );
+		if( link.src == node )
+			out_nodes.push_back( link.dst );
+		if( link.dst == node )
+			in_nodes.push_back( link.src );
 	}
 
 	// Remove links.
-	for( size_t i= 0u; i < links_.size(); )
+	for( auto it= links_.begin(); it != links_.end(); )
 	{
-		if( links_[i].first == node || links_[i].second == node )
+		if( it->src == node || it->dst == node )
 		{
-			if( i != links_.size() - 1u )
-				links_[i]= links_.back();
-			links_.pop_back();
+			it= links_.erase(it);
 		}
 		else
-			++i;
+			++it;
 	}
 
 	// Erase node.
@@ -62,13 +74,7 @@ void ReferencesGraph::AddLink( const ReferencesGraphNodePtr& from, const Referen
 	U_ASSERT( nodes_.count(from) != 0 );
 	U_ASSERT( nodes_.count(to  ) != 0 );
 
-	for( const auto& link : links_ )
-	{
-		if( link.first == from && link.second == to )
-			return; // Link already exists.
-	}
-
-	links_.emplace_back( from, to );
+	links_.insert( Link{from, to} );
 }
 
 void ReferencesGraph::RemoveLink( const ReferencesGraphNodePtr& from, const ReferencesGraphNodePtr& to )
@@ -76,18 +82,10 @@ void ReferencesGraph::RemoveLink( const ReferencesGraphNodePtr& from, const Refe
 	U_ASSERT( nodes_.count(from) != 0 );
 	U_ASSERT( nodes_.count(to  ) != 0 );
 
-	for( size_t i= 0u; i < links_.size(); ++i )
-	{
-		auto& link= links_[i];
-		if( link.first == from && link.second == to )
-		{
-			if( &link != & links_.back() )
-				link= links_.back();
-			return;
-		}
-	}
+	const bool erased= links_.erase( Link{ from, to } ) != 0;
+	(void)erased;
 
-	U_ASSERT(false); // Removing unexistent link.
+	U_ASSERT(erased); // Removing unexistent link.
 }
 
 ReferencesGraphNodePtr ReferencesGraph::GetNodeInnerReference( const ReferencesGraphNodePtr& node ) const
@@ -111,7 +109,7 @@ bool ReferencesGraph::HaveOutgoingLinks( const ReferencesGraphNodePtr& from ) co
 {
 	for( const auto& link : links_ )
 	{
-		if( link.first == from )
+		if( link.src == from )
 			return true;
 	}
 
@@ -122,7 +120,7 @@ bool ReferencesGraph::HaveOutgoingMutableNodes( const ReferencesGraphNodePtr& fr
 {
 	for( const auto& link : links_ )
 	{
-		if( link.first == from && link.second->kind == ReferencesGraphNode::Kind::ReferenceMut  )
+		if( link.src == from && link.dst->kind == ReferencesGraphNode::Kind::ReferenceMut  )
 			return true;
 	}
 
@@ -143,16 +141,15 @@ void ReferencesGraph::MoveNode( const ReferencesGraphNodePtr& node )
 		node_state.inner_reference= nullptr;
 	}
 
-	for( size_t i= 0u; i < links_.size(); )
+	// Remove links.
+	for( auto it= links_.begin(); it != links_.end(); )
 	{
-		if( links_[i].first == node || links_[i].second == node )
+		if( it->src == node || it->dst == node )
 		{
-			if( &links_[i] != &links_.back() )
-				links_[i]= links_.back();
-			links_.pop_back();
+			it= links_.erase(it);
 		}
 		else
-			++i;
+			++it;
 	}
 }
 
@@ -196,8 +193,8 @@ void ReferencesGraph::GetAllAccessibleInnerNodes_r(
 	}
 
 	for( const auto& link : links_ )
-		if( link.second == node )
-			GetAllAccessibleInnerNodes_r( link.first, visited_nodes_set, result_set );
+		if( link.dst == node )
+			GetAllAccessibleInnerNodes_r( link.src, visited_nodes_set, result_set );
 
 }
 
@@ -215,8 +212,8 @@ void ReferencesGraph::GetAllAccessibleVariableNodes_r(
 		result_set.emplace( node );
 
 	for( const auto& link : links_ )
-		if( link.second == node )
-			GetAllAccessibleVariableNodes_r( link.first, visited_nodes_set, result_set );
+		if( link.dst == node )
+			GetAllAccessibleVariableNodes_r( link.src, visited_nodes_set, result_set );
 }
 
 ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const std::vector<ReferencesGraph>& branches_variables_state, const FilePos& file_pos )
@@ -261,20 +258,27 @@ ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const 
 		for( const auto& src_link : branch_state.links_ )
 		{
 			if( std::find( result.links_.begin(), result.links_.end(), src_link ) == result.links_.end() )
-				result.links_.push_back( src_link );
+				result.links_.insert( src_link );
 		}
 	}
 
-	for( auto& link : result.links_ )
+	if( !replaced_nodes.empty() )
 	{
-		for( const auto& replaced_node : replaced_nodes )
+		LinksSet links_corrected;
+		for( auto link : result.links_ )
 		{
-			if( link.first  == replaced_node.first )
-				link.first = replaced_node.second;
-			if( link.second == replaced_node.first )
-				link.second= replaced_node.second;
+			for( const auto& replaced_node : replaced_nodes )
+			{
+				if( link.src == replaced_node.first )
+					link.src = replaced_node.second;
+				if( link.dst == replaced_node.first )
+					link.dst= replaced_node.second;
+			}
+			links_corrected.insert(link);
 		}
+		result.links_= std::move(links_corrected);
 	}
+
 	for( const auto& replaced_node_pair : replaced_nodes )
 		result.nodes_.erase( replaced_node_pair.first );
 
@@ -285,9 +289,9 @@ ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const 
 		size_t immutable_links_count= 0u;
 		for( const auto& link : result.links_ )
 		{
-			if( link.first == node.first )
+			if( link.src == node.first )
 			{
-				if( link.second->kind == ReferencesGraphNode::Kind::ReferenceMut )
+				if( link.dst->kind == ReferencesGraphNode::Kind::ReferenceMut )
 					++mutable_links_count;
 				else
 					++immutable_links_count;
