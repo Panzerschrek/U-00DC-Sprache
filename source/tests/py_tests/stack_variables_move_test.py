@@ -178,6 +178,43 @@ def MoveInsideIf_Test3():
 	tests_lib.build_program( c_program_text )
 
 
+def MoveInsideIf_Test4():
+	c_program_text= """
+		fn Foo( i32 x )
+		{
+			auto mut b= false;
+			if( x == 0 )
+			{
+				move(b); // Move allowed for branches of if-else with terminal instruction inside.
+				return;
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MoveInsideIf_Test5():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut x= 0;
+			while( x < 100 )
+			{
+				auto mut b= false;
+				if( x == 0 )
+				{}
+				else if( x == 20 )
+				{
+					move(b); // Move allowed for branches of if-else with terminal instruction inside.
+					break;
+				}
+				++x;
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def MoveBeforeIf_Test0():
 	c_program_text= """
 		fn Foo()

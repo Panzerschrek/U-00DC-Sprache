@@ -1017,8 +1017,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	// Break to first condition. We must push terminal instruction at end of current block.
 	function_context.llvm_ir_builder.CreateBr( next_condition_block );
 
+	ReferencesGraph variables_state_before_if= function_context.variables_state;
 	ReferencesGraph conditions_variable_state= function_context.variables_state;
-	std::vector<ReferencesGraph> bracnhes_variables_state( if_operator.branches_.size() );
+	std::vector<ReferencesGraph> bracnhes_variables_state;
 
 	for( unsigned int i= 0u; i < if_operator.branches_.size(); i++ )
 	{
@@ -1082,9 +1083,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			// Create break instruction, only if block does not contains terminal instructions.
 			if_operator_blocks_build_info.have_terminal_instruction_inside= false;
 			function_context.llvm_ir_builder.CreateBr( block_after_if );
+			bracnhes_variables_state.push_back( function_context.variables_state );
 		}
 
-		bracnhes_variables_state[i]= function_context.variables_state;
 		function_context.variables_state= conditions_variable_state;
 	}
 
@@ -1096,7 +1097,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		if_operator_blocks_build_info.have_terminal_instruction_inside= false;
 	}
 
-	function_context.variables_state= MergeVariablesStateAfterIf( bracnhes_variables_state, names.GetErrors(), if_operator.end_file_pos_ );
+	if( !bracnhes_variables_state.empty() )
+		function_context.variables_state= MergeVariablesStateAfterIf( bracnhes_variables_state, names.GetErrors(), if_operator.end_file_pos_ );
+	else
+		function_context.variables_state= std::move(variables_state_before_if);
 
 	// Block after if code.
 	if( if_operator_blocks_build_info.have_terminal_instruction_inside )
