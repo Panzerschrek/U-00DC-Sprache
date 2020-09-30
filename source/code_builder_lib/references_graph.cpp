@@ -74,6 +74,9 @@ void ReferencesGraph::AddLink( const ReferencesGraphNodePtr& from, const Referen
 	U_ASSERT( nodes_.count(from) != 0 );
 	U_ASSERT( nodes_.count(to  ) != 0 );
 
+	if( from == to )
+		return;
+
 	links_.insert( Link{from, to} );
 }
 
@@ -274,7 +277,8 @@ ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const 
 				if( link.dst == replaced_node.first )
 					link.dst= replaced_node.second;
 			}
-			links_corrected.insert(link);
+			if( link.src != link.dst )
+				links_corrected.insert(link);
 		}
 		result.links_= std::move(links_corrected);
 	}
