@@ -321,11 +321,12 @@ std::vector<CodeBuilderError> ReferencesGraph::CheckWhileBlokVariablesState( con
 
 		if( !var_before.second.moved && var_after.second.moved )
 			REPORT_ERROR( OuterVariableMoveInsideLoop, errors, file_pos, var_before.first->name );
-
-		// Add mutalbe reference in while loop.
-		if( !state_before.HaveOutgoingLinks( var_before.first ) && state_after.HaveOutgoingMutableNodes( var_after.first ) )
-			REPORT_ERROR( MutableReferencePollutionOfOuterLoopVariable, errors, file_pos, var_before.first->name, var_after.first->name );
 	}
+
+	// Forbid changing of outer variables state inside loop, because loop body should have same state on each iteration.
+	// TODO - create separate error code.
+	if( state_before.links_ != state_after.links_ )
+		REPORT_ERROR( NotImplemented, errors, file_pos, "Outer variables references changing inside loop" );
 
 	return errors;
 }
