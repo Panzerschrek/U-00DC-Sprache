@@ -346,17 +346,16 @@ fn ParseNumber( Iterator &mut it, LexicalErrorMessages &mut out_errors ) : Lexem
 
 	if( IsIdentifierStartChar( GetUTF8FirstChar( it ) ) )
 	{
+		auto max_size= typeinfo</ typeof(result.type_suffix) />.element_count;
 		var Lexem type_suffix= ParseIdentifier( it );
-		if( type_suffix.text.size() >= typeinfo</ typeof(result.type_suffix) />.element_count )
+		if( type_suffix.text.size() >= max_size )
 		{
 			out_errors.push_back( "Type suffix of numeric literal is too long" );
 		}
 
-		auto mut i= 0s;
-		while( i < ust::min( type_suffix.text.size(), typeinfo</ typeof(result.type_suffix) />.element_count ) )
+		for( auto mut i= 0s; i < ust::min( type_suffix.text.size(), max_size ); ++i )
 		{
 			result.type_suffix[i]= type_suffix.text[i];
-			++i;
 		}
 	}
 
