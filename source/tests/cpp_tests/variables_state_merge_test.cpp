@@ -368,6 +368,63 @@ U_TEST( WhileMergeTest3_MutablePollutionInsideLoop3 )
 	U_TEST_ASSERT( error.file_pos.GetLine() == 12u );
 }
 
+U_TEST( WhileMergeTest_ReturningUnallowedReference )
+{
+	// Reference pollution inside loop should affect loop body itself.
+	static const char c_program_text[]=
+	R"(
+		struct S { i32 &imut x; }
+		fn Link( S &mut s'a', i32&'b imut x ) ' a <- b ';
+
+		fn Foo( i32&'aa a, i32&'bb b ) : i32&'aa
+		{
+			var S mut s{ .x=a };
+
+			auto mut i= 0u;
+			while( i < 10u )
+			{
+				if( i == 5u ){ return s.x; } // returning 'b', which is not allowed.
+				Link( s, b ); // 's' now contains reference to 'b'
+				++i;
+			}
+			return a;
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReturningUnallowedReference, 12u ) );
+}
+
+U_TEST( WhileMergeTest_TryMutateVariable )
+{
+	// Reference pollution inside loop should affect loop body itself.
+	static const char c_program_text[]=
+	R"(
+		struct S { i32 &imut x; }
+		fn Link( S &mut s'a', i32&'b imut x ) ' a <- b ';
+
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S mut s{ .x= x };
+			auto mut i= 0u;
+			while( i < 100u )
+			{
+				++y; // Mutate variable. In second iteration of loop we should get error.
+				Link( s, y ); // Create imut link to 'y' inside 's'.
+				++i;
+			}
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 12u ) );
+}
+
 U_TEST( CStyleForMergeTest_MutablePollutionInsideLoop0 )
 {
 	static const char c_program_text[]=
