@@ -1257,7 +1257,7 @@ Type CodeBuilder::BuildFuncCode(
 
 	SetCurrentDebugLocation( func_variable.body_file_pos, function_context );
 
-	// arg node + optional inner reference variable node.
+	// arg variable node + optional inner reference variable node.
 	ArgsVector< std::pair< ReferencesGraphNodePtr, ReferencesGraphNodePtr > > args_nodes( function_type.args.size() );
 
 	// push args
@@ -1326,12 +1326,23 @@ Type CodeBuilder::BuildFuncCode(
 		// Create variable node, because only variable node can have inner reference node.
 		// Register arg on stack, only if it is value-argument.
 		const auto var_node= std::make_shared<ReferencesGraphNode>( arg_name, ReferencesGraphNode::Kind::Variable );
-		if( arg.is_reference )
-			function_context.variables_state.AddNode( var_node );
-		else
-			function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( var_node, var ) );
 		args_nodes[ arg_number ].first= var_node;
-		var.node= var_node;
+		if( arg.is_reference )
+		{
+			function_context.variables_state.AddNode( var_node );
+
+			const auto reference_node= std::make_shared<ReferencesGraphNode>(
+				arg_name + " reference",
+				arg.is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+			function_context.variables_state.AddNode( reference_node );
+			function_context.variables_state.AddLink( var_node, reference_node );
+			var.node= reference_node;
+		}
+		else
+		{
+			function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( var_node, var ) );
+			var.node= var_node;
+		}
 
 		if( arg.type != void_type_ && !EnsureTypeCompleteness( arg.type, TypeCompleteness::ReferenceTagsComplete ) )
 			REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), declaration_arg.file_pos_, arg.type );
@@ -1529,6 +1540,7 @@ Type CodeBuilder::BuildFuncCode(
 		}
 	}
 
+	/*
 	// Now, we can check references pollution. After this point only code is destructors calls, which can not link references.
 	for( size_t i= 0u; i < function_type.args.size(); ++i )
 	{
@@ -1566,6 +1578,7 @@ Type CodeBuilder::BuildFuncCode(
 			REPORT_ERROR( UnallowedReferencePollution, function_names.GetErrors(), block->end_file_pos_);
 		}
 	}
+	*/
 
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 
