@@ -484,7 +484,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	{
 		if( function_context.return_type == std::nullopt )
 		{
-			if( function_context.return_value_is_reference )
+			if( function_context.function_type.return_value_is_reference )
 			{
 				REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), return_operator.file_pos_ );
 				return block_info;
@@ -497,13 +497,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			return block_info;
 		}
 
-		if( !( function_context.return_type == void_type_ && !function_context.return_value_is_reference ) )
+		if( !( function_context.return_type == void_type_ && !function_context.function_type.return_value_is_reference ) )
 		{
 			REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.file_pos_, void_type_, *function_context.return_type );
 			return block_info;
 		}
 
 		CallDestructorsBeforeReturn( names, function_context, return_operator.file_pos_ );
+		CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.file_pos_ );
 
 		if( function_context.destructor_end_block == nullptr )
 			function_context.llvm_ir_builder.CreateRetVoid();
@@ -537,7 +538,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		return block_info;
 	}
 
-	if( function_context.return_value_is_reference )
+	if( function_context.function_type.return_value_is_reference )
 	{
 		if( !ReferenceIsConvertible( expression_result.type, *function_context.return_type, names.GetErrors(), return_operator.file_pos_ ) )
 		{
@@ -550,7 +551,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), return_operator.file_pos_ );
 			return block_info;
 		}
-		if( expression_result.value_type == ValueType::ConstReference && function_context.return_value_is_mutable )
+		if( expression_result.value_type == ValueType::ConstReference && function_context.function_type.return_value_is_mutable )
 		{
 			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), return_operator.file_pos_ );
 			return block_info;
@@ -570,13 +571,15 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			ReferencesGraphNodeHolder return_value_lock(
 				std::make_shared<ReferencesGraphNode>(
 					"ret result",
-					function_context.return_value_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut ),
+					function_context.function_type.return_value_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut ),
 				function_context );
 			if( expression_result.node != nullptr )
 				function_context.variables_state.AddLink( expression_result.node, return_value_lock.Node() );
 
 			CallDestructorsBeforeReturn( names, function_context, return_operator.file_pos_ );
 		} // Reset locks AFTER destructors call. We must get error in case of returning of reference to stack variable or value-argument.
+
+		CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.file_pos_ );
 
 		llvm::Value* ret_value= expression_result.llvm_value;
 		if( expression_result.type != function_context.return_type )
@@ -633,6 +636,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			}
 
 			CallDestructorsBeforeReturn( names, function_context, return_operator.file_pos_ );
+			CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.file_pos_ );
 			function_context.llvm_ir_builder.CreateRetVoid();
 		}
 		else
@@ -656,6 +660,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 				llvm::Value* const value_for_return= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
 
 				CallDestructorsBeforeReturn( names, function_context, return_operator.file_pos_ );
+				CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.file_pos_ );
 				function_context.llvm_ir_builder.CreateRet( value_for_return );
 			}
 		}

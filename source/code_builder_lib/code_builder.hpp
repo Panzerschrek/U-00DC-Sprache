@@ -649,6 +649,11 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const FilePos& file_pos );
 
+	void CheckReferencesPollutionBeforeReturn(
+		FunctionContext& function_context,
+		CodeBuilderErrorsContainer& errors_container,
+		const FilePos& file_pos );
+
 	// NamesScope fill
 
 	void NamesScopeFill( const Synt::ProgramElements& namespace_elements, NamesScope& names_scope );

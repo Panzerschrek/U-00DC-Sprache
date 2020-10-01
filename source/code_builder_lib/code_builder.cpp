@@ -122,9 +122,12 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 			"",
 			module_.get() );
 
+	Function global_function_type;
+	global_function_type.return_type= void_type_for_ret_;
+
 	FunctionContext global_function_context(
+		std::move(global_function_type),
 		void_type_for_ret_,
-		false, false,
 		llvm_context_,
 		global_function );
 	const StackVariablesStorage global_function_variables_storage( global_function_context );
@@ -1248,17 +1251,15 @@ Type CodeBuilder::BuildFuncCode(
 
 	NamesScope function_names( "", &parent_names_scope );
 	FunctionContext function_context(
+		function_type,
 		func_variable.return_type_is_auto ? std::optional<Type>(): function_type.return_type,
-		function_type.return_value_is_mutable,
-		function_type.return_value_is_reference,
 		llvm_context_,
 		llvm_function );
 	const StackVariablesStorage args_storage( function_context );
 
-	SetCurrentDebugLocation( func_variable.body_file_pos, function_context );
+	function_context.args_nodes.resize( function_type.args.size() );
 
-	// arg variable node + optional inner reference variable node.
-	ArgsVector< std::pair< ReferencesGraphNodePtr, ReferencesGraphNodePtr > > args_nodes( function_type.args.size() );
+	SetCurrentDebugLocation( func_variable.body_file_pos, function_context );
 
 	// push args
 	Variable this_;
@@ -1326,7 +1327,7 @@ Type CodeBuilder::BuildFuncCode(
 		// Create variable node, because only variable node can have inner reference node.
 		// Register arg on stack, only if it is value-argument.
 		const auto var_node= std::make_shared<ReferencesGraphNode>( arg_name, ReferencesGraphNode::Kind::Variable );
-		args_nodes[ arg_number ].first= var_node;
+		function_context.args_nodes[ arg_number ].first= var_node;
 		if( arg.is_reference )
 		{
 			function_context.variables_state.AddNode( var_node );
@@ -1359,7 +1360,7 @@ Type CodeBuilder::BuildFuncCode(
 			function_context.variables_state.SetNodeInnerReference( var_node, inner_reference );
 			function_context.variables_state.AddLink( accesible_variable, inner_reference );
 
-			args_nodes[ arg_number ].second= accesible_variable;
+			function_context.args_nodes[ arg_number ].second= accesible_variable;
 		}
 
 		if( is_this )
@@ -1389,11 +1390,11 @@ Type CodeBuilder::BuildFuncCode(
 		for( const Function::ArgReference& arg_and_tag : function_type.return_references )
 		{
 			const size_t arg_n= arg_and_tag.first;
-			U_ASSERT( arg_n < args_nodes.size() );
+			U_ASSERT( arg_n < function_context.args_nodes.size() );
 			if( arg_and_tag.second == Function::c_arg_reference_tag_number )
-				function_context.allowed_for_returning_references.emplace( args_nodes[arg_n].first );
-			else if( arg_and_tag.second == 0u && args_nodes[arg_n].second != nullptr )
-				function_context.allowed_for_returning_references.emplace( args_nodes[arg_n].second );
+				function_context.allowed_for_returning_references.emplace( function_context.args_nodes[arg_n].first );
+			else if( arg_and_tag.second == 0u && function_context.args_nodes[arg_n].second != nullptr )
+				function_context.allowed_for_returning_references.emplace( function_context.args_nodes[arg_n].second );
 		}
 	}
 
@@ -1524,6 +1525,7 @@ Type CodeBuilder::BuildFuncCode(
 		{
 			// Manually generate "return" for void-return functions.
 			CallDestructors( args_storage, function_names, function_context, block->end_file_pos_ );
+			CheckReferencesPollutionBeforeReturn( function_context, function_names.GetErrors(), block->end_file_pos_ );
 
 			if( function_context.destructor_end_block == nullptr )
 				function_context.llvm_ir_builder.CreateRetVoid();
@@ -1540,45 +1542,6 @@ Type CodeBuilder::BuildFuncCode(
 		}
 	}
 
-	/*
-	// Now, we can check references pollution. After this point only code is destructors calls, which can not link references.
-	for( size_t i= 0u; i < function_type.args.size(); ++i )
-	{
-		const auto& node_pair= args_nodes[i];
-		if( node_pair.second != nullptr && function_context.variables_state.GetNodeInnerReference( node_pair.second ) != nullptr )
-			REPORT_ERROR( ReferencePollutionForArgReference, function_names.GetErrors(), block->end_file_pos_ );
-
-		const ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( node_pair.first );
-		if( inner_reference == nullptr )
-			continue;
-
-		for( const ReferencesGraphNodePtr& accesible_variable : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
-		{
-			if( accesible_variable == node_pair.second )
-				continue;
-
-			std::optional<Function::ArgReference> reference;
-			for( size_t j= 0u; j < function_type.args.size(); ++j )
-			{
-				if( accesible_variable == args_nodes[j].first )
-					reference= Function::ArgReference( j, Function::c_arg_reference_tag_number );
-				if( accesible_variable == args_nodes[j].second )
-					reference= Function::ArgReference( j, 0u );
-			}
-
-			if( reference != std::nullopt )
-			{
-				Function::ReferencePollution pollution;
-				pollution.src= *reference;
-				pollution.dst.first= i;
-				pollution.dst.second= 0u;
-				if( function_type.references_pollution.count( pollution ) != 0u )
-					continue;
-			}
-			REPORT_ERROR( UnallowedReferencePollution, function_names.GetErrors(), block->end_file_pos_);
-		}
-	}
-	*/
 
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 
@@ -1589,7 +1552,7 @@ Type CodeBuilder::BuildFuncCode(
 		function_context.llvm_ir_builder.SetInsertPoint( function_context.destructor_end_block );
 		llvm_function->getBasicBlockList().push_back( function_context.destructor_end_block );
 
-		CallMembersDestructors( function_context, function_names.GetErrors(), block->end_file_pos_ );
+		CallMembersDestructors( function_context, function_names.GetErrors(), block->end_file_pos_ );		
 		function_context.llvm_ir_builder.CreateRetVoid();
 	}
 

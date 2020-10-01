@@ -127,9 +127,8 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 	constructor_variable->constexpr_kind= the_class.can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;
 
 	FunctionContext function_context(
+		*constructor_variable->type.GetFunctionType(),
 		void_type_for_ret_,
-		false,
-		false,
 		llvm_context_,
 		constructor_variable->llvm_function );
 	StackVariablesStorage function_variables_storage( function_context );
@@ -312,9 +311,8 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 	constructor_variable->constexpr_kind= the_class.can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;
 
 	FunctionContext function_context(
+		*constructor_variable->type.GetFunctionType(),
 		void_type_for_ret_,
-		false,
-		false,
 		llvm_context_,
 		constructor_variable->llvm_function );
 
@@ -412,9 +410,8 @@ void CodeBuilder::GenerateDestructorBody( Class& the_class, const Type& class_ty
 	this_.llvm_value= this_llvm_value;
 
 	FunctionContext function_context(
+		destructor_type,
 		destructor_type.return_type,
-		destructor_type.return_value_is_mutable,
-		destructor_type.return_value_is_reference,
 		llvm_context_,
 		destructor_function.llvm_function );
 	function_context.this_= &this_;
@@ -587,9 +584,8 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 	operator_variable->constexpr_kind= the_class.can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;
 
 	FunctionContext function_context(
+		*operator_variable->type.GetFunctionType(),
 		void_type_for_ret_,
-		false,
-		false,
 		llvm_context_,
 		operator_variable->llvm_function );
 
