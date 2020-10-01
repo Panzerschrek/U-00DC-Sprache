@@ -1136,7 +1136,86 @@ U_TEST(DestructorsTest27_DestructorForTuples)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 112,   2005, 212,   312,   4005, 412,   512,   6005, 612 } ) );
 }
 
-U_TEST(DestructorsTest28_MembersDestructorCallOrder)
+U_TEST(DestructorsTest28_DestructorForTuples)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn constructor( mut this, S &imut other )( x= other.x * 3 ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+
+		fn Foo()
+		{
+			var tup[ S, S ] t[ (17), (29) ];
+			auto mut iterations= 0u;
+			for( e : t ) // Make copy of tuple element.
+			{
+			}
+			DestructorCalled( 11111 );
+			// Should destroy tuple here.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 17 * 3, 29 * 3, 11111, 17, 29 } ) );
+}
+
+U_TEST(DestructorsTest29_DestructorForTuples)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn constructor( mut this, S &imut other )( x= other.x * 3 ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+
+		fn Foo()
+		{
+			var tup[ f32, S, i32 ] t[ 0.0f, S(34), 0 ];
+			auto mut iterations= 0u;
+			for( e : t ) // Make copy of tuple element.
+			{
+				if( iterations == 1u )
+				{
+					break; // Should call here destructor for copy of tuple element.
+				}
+				++iterations;
+			}
+			DestructorCalled( 55555 );
+			// Should destroy tuple here.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 34 * 3, 55555, 34 } ) );
+}
+
+U_TEST(DestructorsTest30_MembersDestructorCallOrder)
 {
 	DestructorTestPrepare();
 
@@ -1185,7 +1264,7 @@ U_TEST(DestructorsTest28_MembersDestructorCallOrder)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 0, 1, 2, 3, 4, 5, 6} ) );
 }
 
-U_TEST(DestructorsTest29_DestructorNotCalledForReferenceField)
+U_TEST(DestructorsTest31_DestructorNotCalledForReferenceField)
 {
 	DestructorTestPrepare();
 

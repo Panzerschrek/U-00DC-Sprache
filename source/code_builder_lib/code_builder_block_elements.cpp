@@ -771,14 +771,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			function_context.loops_stack.emplace_back();
 			function_context.loops_stack.back().block_for_continue= next_basic_block;
 			function_context.loops_stack.back().block_for_break= finish_basic_block;
-			function_context.loops_stack.back().stack_variables_stack_size= function_context.stack_variables_stack.size();
+			function_context.loops_stack.back().stack_variables_stack_size= function_context.stack_variables_stack.size() - 1u; // Extra 1 for loop variable destruction in 'break' or 'continue'.
 
 			// TODO - create template errors context.
 			const BlockBuildInfo block_build_info= BuildBlockElement( for_operator.block_, loop_names, function_context );
-			CallDestructors( element_pass_variables_storage, names, function_context, for_operator.file_pos_ );
-
 			if( !block_build_info.have_terminal_instruction_inside )
 			{
+				CallDestructors( element_pass_variables_storage, names, function_context, for_operator.file_pos_ );
 				function_context.llvm_ir_builder.CreateBr( next_basic_block );
 				function_context.loops_stack.back().continue_variables_states.push_back( function_context.variables_state );
 			}
