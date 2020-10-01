@@ -274,6 +274,87 @@ U_TEST( IfMergeTest9_ConditionAffectsLowerBranches3 )
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 10u ) );
 }
 
+U_TEST( IfMergeTest10_TerminalBranchesAreIgnored0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Cond() : bool;
+		struct S { i32 &mut x; }
+		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b '
+		{}
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S mut s{ .x= x };
+
+			if( Cond() )
+			{
+				Link( s, y );
+				return;
+			}
+			++y; // Ok, pollution happens only in 'return' branch, so, 'y' have no references
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( IfMergeTest11_TerminalBranchesAreIgnored1 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Cond() : bool;
+		struct S { i32 &mut x; }
+		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b '
+		{}
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S mut s{ .x= x };
+
+			if( Cond() )
+			{
+			}
+			else
+			{
+				Link( s, y );
+				return;
+			}
+			++y; // Ok, pollution happens only in 'return' branch, so, 'y' have no references
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( IfMergeTest12_TerminalBranchesAreIgnored2 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Cond() : bool;
+		struct S { i32 &mut x; }
+		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b '
+		{}
+		fn Foo()
+		{
+			while( Cond() )
+			{
+				var i32 mut x= 0, mut y= 0;
+				var S mut s{ .x= x };
+
+				if( Cond() )
+				{
+					Link( s, y );
+					break;
+				}
+				++y; // Ok, pollution happens only in 'break' branch, so, 'y' have no references
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 U_TEST( WhileMergeTest_PollutionInsideLoop0 )
 {
 	static const char c_program_text[]=
@@ -572,9 +653,9 @@ U_TEST( WhileMergeTest_ReturningUnallowedReference )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReturningUnallowedReference, 12u ) );
+	U_TEST_ASSERT(
+		HaveError( build_result.errors, CodeBuilderErrorCode::ReturningUnallowedReference, 12u ) ||
+		HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 15u ) );
 }
 
 U_TEST( WhileMergeTest_TryMutateVariable )
@@ -600,9 +681,9 @@ U_TEST( WhileMergeTest_TryMutateVariable )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 12u ) );
+	U_TEST_ASSERT(
+		HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 12u ) ||
+		HaveError( build_result.errors, CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, 15u ));
 }
 
 U_TEST( CStyleForMergeTest_PollutionInsideLoop0 )
