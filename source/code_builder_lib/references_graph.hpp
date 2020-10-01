@@ -64,14 +64,28 @@ private:
 		ReferencesGraphNodePtr inner_reference; // SPRACHE_TODO - make vector, when type can hold more, then one internal references storage.
 	};
 
+	struct Link
+	{
+		ReferencesGraphNodePtr src;
+		ReferencesGraphNodePtr dst;
+
+		bool operator==( const Link& r ) const;
+	};
+
+	struct LinkHasher
+	{
+		size_t operator()( const Link& link ) const;
+	};
+
+	using LinksSet= std::unordered_set< Link, LinkHasher >;
+
 private:
 	void GetAllAccessibleInnerNodes_r( const ReferencesGraphNodePtr& node, NodesSet& visited_nodes_set, NodesSet& result_set ) const;
 	void GetAllAccessibleVariableNodes_r( const ReferencesGraphNodePtr& node, NodesSet& visited_nodes_set, NodesSet& result_set ) const;
 
 private:
 	std::unordered_map<ReferencesGraphNodePtr, NodeState> nodes_;
-	// first - from, second - to
-	std::vector< std::pair<ReferencesGraphNodePtr, ReferencesGraphNodePtr> > links_;
+	LinksSet links_;
 };
 
 } // namespace CodeBuilderPrivate

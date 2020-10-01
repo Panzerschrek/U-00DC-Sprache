@@ -295,7 +295,6 @@ private:
 	void CallDestructorsImpl(
 		const StackVariablesStorage& stack_variables_storage,
 		FunctionContext& function_context,
-		ReferencesGraph& variables_state_copy,
 		CodeBuilderErrorsContainer& errors_container,
 		const FilePos& file_pos );
 
@@ -647,6 +646,13 @@ private:
 
 	ReferencesGraph MergeVariablesStateAfterIf(
 		const std::vector<ReferencesGraph>& bracnhes_variables_state,
+		CodeBuilderErrorsContainer& errors_container,
+		const FilePos& file_pos );
+
+	bool IsReferenceAllowedForReturn( FunctionContext& function_context, const ReferencesGraphNodePtr& variable_node );
+
+	void CheckReferencesPollutionBeforeReturn(
+		FunctionContext& function_context,
 		CodeBuilderErrorsContainer& errors_container,
 		const FilePos& file_pos );
 

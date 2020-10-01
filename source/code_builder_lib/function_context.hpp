@@ -39,27 +39,29 @@ struct LoopFrame final
 	llvm::BasicBlock* block_for_continue= nullptr;
 	// Number of stack variable storages at stack before loop block creation.
 	size_t stack_variables_stack_size= 0u;
+
+	// Populated during loop body building.
+	std::vector<ReferencesGraph> break_variables_states;
+	std::vector<ReferencesGraph> continue_variables_states;
 };
 
 struct FunctionContext
 {
 	FunctionContext(
+		Function function_type,
 		const std::optional<Type>& return_type,
-		bool return_value_is_mutable,
-		bool return_value_is_reference,
 		llvm::LLVMContext& llvm_context,
 		llvm::Function* function );
 
 	FunctionContext(const FunctionContext&)= delete;
 
+	Function function_type;
 	const std::optional<Type> return_type; // std::nullopt if type not known yet and must be deduced.
 	std::optional<Type> deduced_return_type; // for functions with "auto" return type.
-	const bool return_value_is_mutable;
-	const bool return_value_is_reference;
 
-	// For reference-returned functions - references of returning reference.
-	// For value-returned functions - references inside value.
-	std::unordered_set<ReferencesGraphNodePtr> allowed_for_returning_references;
+	// For reference checks.
+	// arg variable node + optional inner reference variable node.
+	ArgsVector< std::pair< ReferencesGraphNodePtr, ReferencesGraphNodePtr > > args_nodes;
 
 	const Variable* this_= nullptr; // null for nonclass functions or static member functions.
 	llvm::Value* s_ret_= nullptr; // Value for assignment for "sret" functions.

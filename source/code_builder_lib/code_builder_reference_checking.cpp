@@ -266,6 +266,64 @@ ReferencesGraph CodeBuilder::MergeVariablesStateAfterIf(
 	return std::move(res.first);
 }
 
+bool CodeBuilder::IsReferenceAllowedForReturn( FunctionContext& function_context, const ReferencesGraphNodePtr& variable_node )
+{
+	for( const Function::ArgReference& arg_and_tag : function_context.function_type.return_references )
+	{
+		const size_t arg_n= arg_and_tag.first;
+		U_ASSERT( arg_n < function_context.args_nodes.size() );
+		if( arg_and_tag.second == Function::c_arg_reference_tag_number && variable_node == function_context.args_nodes[arg_n].first )
+			return true;
+		if( arg_and_tag.second == 0u && variable_node == function_context.args_nodes[arg_n].second )
+			return true;
+	}
+	return false;
+}
+
+void CodeBuilder::CheckReferencesPollutionBeforeReturn(
+	FunctionContext& function_context,
+	CodeBuilderErrorsContainer& errors_container,
+	const FilePos& file_pos )
+{
+	for( size_t i= 0u; i < function_context.function_type.args.size(); ++i )
+	{
+		if( !function_context.function_type.args[i].is_reference )
+			continue;
+
+		const auto& node_pair= function_context.args_nodes[i];
+
+		const ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( node_pair.first );
+		if( inner_reference == nullptr )
+			continue;
+
+		for( const ReferencesGraphNodePtr& accesible_variable : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
+		{
+			if( accesible_variable == node_pair.second )
+				continue;
+
+			std::optional<Function::ArgReference> reference;
+			for( size_t j= 0u; j < function_context.function_type.args.size(); ++j )
+			{
+				if( accesible_variable == function_context.args_nodes[j].first )
+					reference= Function::ArgReference( j, Function::c_arg_reference_tag_number );
+				if( accesible_variable == function_context.args_nodes[j].second )
+					reference= Function::ArgReference( j, 0u );
+			}
+
+			if( reference != std::nullopt )
+			{
+				Function::ReferencePollution pollution;
+				pollution.src= *reference;
+				pollution.dst.first= i;
+				pollution.dst.second= 0u;
+				if( function_context.function_type.references_pollution.count( pollution ) != 0u )
+					continue;
+			}
+			REPORT_ERROR( UnallowedReferencePollution, errors_container, file_pos );
+		}
+	}
+}
+
 } // namespace CodeBuilderPrivate
 
 } // namespace U

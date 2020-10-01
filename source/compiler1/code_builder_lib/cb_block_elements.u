@@ -989,7 +989,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			{
 				.block_for_break= finish_basic_block,
 				.block_for_continue= next_basic_block,
-				.variable_frames_stack_size= function_context.variables_frames.size(),
+				.variable_frames_stack_size= function_context.variables_frames.size() - 1s, // Extra 1 for loop variable destruction in 'break' or 'continue'.
 			};
 			function_context.loops_stack.push_back(loop_frame);
 
@@ -997,10 +997,9 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 			function_context.loops_stack.pop_back();
 
-			CallDestructorsForTopVariablesFrame( names_scope, function_context, range_for_operator.file_pos ); // destroy loop variable
-
 			if( !block_build_info.have_terminal_instruction_inside )
 			{
+				CallDestructorsForTopVariablesFrame( names_scope, function_context, range_for_operator.file_pos ); // destroy loop variable
 				unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, next_basic_block );  }
 			}
 			unsafe

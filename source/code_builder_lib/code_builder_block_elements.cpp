@@ -484,7 +484,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	{
 		if( function_context.return_type == std::nullopt )
 		{
-			if( function_context.return_value_is_reference )
+			if( function_context.function_type.return_value_is_reference )
 			{
 				REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), return_operator.file_pos_ );
 				return block_info;
@@ -497,13 +497,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			return block_info;
 		}
 
-		if( !( function_context.return_type == void_type_ && !function_context.return_value_is_reference ) )
+		if( !( function_context.return_type == void_type_ && !function_context.function_type.return_value_is_reference ) )
 		{
 			REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.file_pos_, void_type_, *function_context.return_type );
 			return block_info;
 		}
 
 		CallDestructorsBeforeReturn( names, function_context, return_operator.file_pos_ );
+		CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.file_pos_ );
 
 		if( function_context.destructor_end_block == nullptr )
 			function_context.llvm_ir_builder.CreateRetVoid();
@@ -537,7 +538,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		return block_info;
 	}
 
-	if( function_context.return_value_is_reference )
+	if( function_context.function_type.return_value_is_reference )
 	{
 		if( !ReferenceIsConvertible( expression_result.type, *function_context.return_type, names.GetErrors(), return_operator.file_pos_ ) )
 		{
@@ -550,17 +551,27 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), return_operator.file_pos_ );
 			return block_info;
 		}
-		if( expression_result.value_type == ValueType::ConstReference && function_context.return_value_is_mutable )
+		if( expression_result.value_type == ValueType::ConstReference && function_context.function_type.return_value_is_mutable )
 		{
 			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), return_operator.file_pos_ );
 			return block_info;
+		}
+
+		// Check correctness of returning reference.
+		if( expression_result.node != nullptr )
+		{
+			for( const ReferencesGraphNodePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( expression_result.node ) )
+			{
+				if( !IsReferenceAllowedForReturn( function_context, var_node ) )
+					REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), return_operator.file_pos_ );
+			}
 		}
 
 		{ // Lock references to return value variables.
 			ReferencesGraphNodeHolder return_value_lock(
 				std::make_shared<ReferencesGraphNode>(
 					"ret result",
-					function_context.return_value_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut ),
+					function_context.function_type.return_value_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut ),
 				function_context );
 			if( expression_result.node != nullptr )
 				function_context.variables_state.AddLink( expression_result.node, return_value_lock.Node() );
@@ -568,15 +579,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			CallDestructorsBeforeReturn( names, function_context, return_operator.file_pos_ );
 		} // Reset locks AFTER destructors call. We must get error in case of returning of reference to stack variable or value-argument.
 
-		// Check correctness of returning reference.
-		if( expression_result.node != nullptr )
-		{
-			for( const ReferencesGraphNodePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( expression_result.node ) )
-			{
-				if( function_context.allowed_for_returning_references.count( var_node ) == 0 )
-					REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), return_operator.file_pos_ );
-			}
-		}
+		CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.file_pos_ );
 
 		llvm::Value* ret_value= expression_result.llvm_value;
 		if( expression_result.type != function_context.return_type )
@@ -603,7 +606,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			{
 				for( const ReferencesGraphNodePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
 				{
-					if( function_context.allowed_for_returning_references.count( var_node ) == 0 )
+					if( !IsReferenceAllowedForReturn( function_context, var_node ) )
 						REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), return_operator.file_pos_ );
 				}
 			}
@@ -633,6 +636,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			}
 
 			CallDestructorsBeforeReturn( names, function_context, return_operator.file_pos_ );
+			CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.file_pos_ );
 			function_context.llvm_ir_builder.CreateRetVoid();
 		}
 		else
@@ -656,6 +660,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 				llvm::Value* const value_for_return= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
 
 				CallDestructorsBeforeReturn( names, function_context, return_operator.file_pos_ );
+				CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.file_pos_ );
 				function_context.llvm_ir_builder.CreateRet( value_for_return );
 			}
 		}
@@ -683,6 +688,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	if( const Tuple* const tuple_type= sequence_expression.type.GetTupleType() )
 	{
 		llvm::BasicBlock* const finish_basic_block= tuple_type->elements.empty() ? nullptr : llvm::BasicBlock::Create( llvm_context_ );
+
+		std::vector<ReferencesGraph> break_variables_states;
 
 		U_ASSERT( sequence_expression.location == Variable::Location::Pointer );
 		for( const Type& element_type : tuple_type->elements )
@@ -764,23 +771,36 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			function_context.loops_stack.emplace_back();
 			function_context.loops_stack.back().block_for_continue= next_basic_block;
 			function_context.loops_stack.back().block_for_break= finish_basic_block;
-			function_context.loops_stack.back().stack_variables_stack_size= function_context.stack_variables_stack.size();
+			function_context.loops_stack.back().stack_variables_stack_size= function_context.stack_variables_stack.size() - 1u; // Extra 1 for loop variable destruction in 'break' or 'continue'.
 
 			// TODO - create template errors context.
 			const BlockBuildInfo block_build_info= BuildBlockElement( for_operator.block_, loop_names, function_context );
-			CallDestructors( element_pass_variables_storage, names, function_context, for_operator.file_pos_ );
+			if( !block_build_info.have_terminal_instruction_inside )
+			{
+				CallDestructors( element_pass_variables_storage, names, function_context, for_operator.file_pos_ );
+				function_context.llvm_ir_builder.CreateBr( next_basic_block );
+				function_context.loops_stack.back().continue_variables_states.push_back( function_context.variables_state );
+			}
+
+			// Variables state for next iteration is combination of variables states in "continue" branches in previous iteration.
+			if( !function_context.loops_stack.back().continue_variables_states.empty() )
+				function_context.variables_state= MergeVariablesStateAfterIf( function_context.loops_stack.back().continue_variables_states, names.GetErrors(), for_operator.block_.end_file_pos_ );
+
+			for( ReferencesGraph& variables_state : function_context.loops_stack.back().break_variables_states )
+				break_variables_states.push_back( std::move(variables_state) );
 
 			// Overloading resolution uses addresses of syntax elements as keys. Reset it, because we use same syntax elements multiple times.
 			function_context.overloading_resolution_cache.clear();
 
 			function_context.loops_stack.pop_back();
 
-			if( !block_build_info.have_terminal_instruction_inside )
-				function_context.llvm_ir_builder.CreateBr( next_basic_block );
-
 			function_context.function->getBasicBlockList().push_back( next_basic_block );
 			function_context.llvm_ir_builder.SetInsertPoint( next_basic_block );
 		}
+
+		// Variables state after tuple-for is combination of variables state of all branches with "break" of all iterations.
+		break_variables_states.push_back( function_context.variables_state );
+		function_context.variables_state= MergeVariablesStateAfterIf( break_variables_states, names.GetErrors(), for_operator.block_.end_file_pos_ );
 	}
 	else
 	{
@@ -814,14 +834,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			},
 			*c_style_for_operator.variable_declaration_part_ );
 
+	const ReferencesGraph variables_state_before_loop= function_context.variables_state;
+
 	llvm::BasicBlock* const test_block= llvm::BasicBlock::Create( llvm_context_ );
 	llvm::BasicBlock* const loop_block= llvm::BasicBlock::Create( llvm_context_ );
 	llvm::BasicBlock* const loop_iteration_block= llvm::BasicBlock::Create( llvm_context_ );
 	llvm::BasicBlock* const block_after_loop= llvm::BasicBlock::Create( llvm_context_ );
 
 	function_context.llvm_ir_builder.CreateBr( test_block );
-
-	const ReferencesGraph variables_state_before_loop= function_context.variables_state;
 
 	// Test block.
 	function_context.function->getBasicBlockList().push_back( test_block );
@@ -861,8 +881,19 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	function_context.function->getBasicBlockList().push_back( loop_block );
 	function_context.llvm_ir_builder.SetInsertPoint( loop_block );
 
-	if( !BuildBlockElement( c_style_for_operator.block_, loop_names_scope, function_context ).have_terminal_instruction_inside )
+	const BlockBuildInfo loop_body_block_info= BuildBlockElement( c_style_for_operator.block_, loop_names_scope, function_context );
+	if( !loop_body_block_info.have_terminal_instruction_inside )
+	{
 		function_context.llvm_ir_builder.CreateBr( loop_iteration_block );
+		function_context.loops_stack.back().continue_variables_states.push_back( function_context.variables_state );
+	}
+
+	// Variables state before loop iteration block is combination of variables states of each branch terminated with "continue".
+	if( !function_context.loops_stack.back().continue_variables_states.empty() )
+		function_context.variables_state= MergeVariablesStateAfterIf( function_context.loops_stack.back().continue_variables_states, names.GetErrors(), c_style_for_operator.block_.end_file_pos_ );
+
+	std::vector<ReferencesGraph> variables_state_for_merge= std::move( function_context.loops_stack.back().break_variables_states );
+	variables_state_for_merge.push_back( std::move(variables_state_before_loop) );
 
 	function_context.loops_stack.pop_back();
 
@@ -881,12 +912,15 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	}
 	function_context.llvm_ir_builder.CreateBr( test_block );
 
+	// Disallow outer variables state change in loop iteration part and its predecessors.
+	const auto errors= ReferencesGraph::CheckWhileBlokVariablesState( variables_state_before_loop, function_context.variables_state, c_style_for_operator.block_.end_file_pos_ );
+	names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
+
+	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), c_style_for_operator.file_pos_ );
+
 	// Block after loop.
 	function_context.function->getBasicBlockList().push_back( block_after_loop );
 	function_context.llvm_ir_builder.SetInsertPoint( block_after_loop );
-
-	const auto errors= ReferencesGraph::CheckWhileBlokVariablesState( variables_state_before_loop, function_context.variables_state, c_style_for_operator.block_.end_file_pos_ );
-	names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
 
 	CallDestructors( loop_variables_storage, loop_names_scope, function_context, c_style_for_operator.file_pos_ );
 
@@ -898,7 +932,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
+	ReferencesGraph variables_state_before_loop= function_context.variables_state;
+
 	llvm::BasicBlock* const test_block= llvm::BasicBlock::Create( llvm_context_ );
+	llvm::BasicBlock* const while_block= llvm::BasicBlock::Create( llvm_context_ );
+	llvm::BasicBlock* const block_after_while= llvm::BasicBlock::Create( llvm_context_ );
 
 	// Break to test block. We must push terminal instruction at and of current block.
 	function_context.llvm_ir_builder.CreateBr( test_block );
@@ -907,28 +945,22 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	function_context.function->getBasicBlockList().push_back( test_block );
 	function_context.llvm_ir_builder.SetInsertPoint( test_block );
 
-	const ReferencesGraph variables_state_before_while= function_context.variables_state;
-
-	const StackVariablesStorage temp_variables_storage( function_context );
-	const Variable condition_expression= BuildExpressionCodeEnsureVariable( while_operator.condition_, names, function_context );
-
-	const FilePos condition_file_pos= Synt::GetExpressionFilePos( while_operator.condition_ );
-	if( condition_expression.type != bool_type_ )
 	{
-		REPORT_ERROR( TypesMismatch,
-				names.GetErrors(),
-				condition_file_pos,
-				bool_type_,
-				condition_expression.type );
-		return BlockBuildInfo();
+		const StackVariablesStorage temp_variables_storage( function_context );
+		const Variable condition_expression= BuildExpressionCodeEnsureVariable( while_operator.condition_, names, function_context );
+
+		const FilePos condition_file_pos= Synt::GetExpressionFilePos( while_operator.condition_ );
+		if( condition_expression.type != bool_type_ )
+		{
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), condition_file_pos, bool_type_, condition_expression.type );
+			return BlockBuildInfo();
+		}
+
+		llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+		CallDestructors( temp_variables_storage, names, function_context, condition_file_pos );
+
+		function_context.llvm_ir_builder.CreateCondBr( condition_in_register, while_block, block_after_while );
 	}
-
-	llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
-	CallDestructors( temp_variables_storage, names, function_context, condition_file_pos );
-
-	llvm::BasicBlock* const while_block= llvm::BasicBlock::Create( llvm_context_ );
-	llvm::BasicBlock* const block_after_while= llvm::BasicBlock::Create( llvm_context_ );
-	function_context.llvm_ir_builder.CreateCondBr( condition_in_register, while_block, block_after_while );
 
 	// While block code.
 
@@ -940,17 +972,31 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	function_context.function->getBasicBlockList().push_back( while_block );
 	function_context.llvm_ir_builder.SetInsertPoint( while_block );
 
-	if( !BuildBlockElement( while_operator.block_, names, function_context ).have_terminal_instruction_inside )
+	const BlockBuildInfo loop_body_block_info= BuildBlockElement( while_operator.block_, names, function_context );
+	if( !loop_body_block_info.have_terminal_instruction_inside )
+	{
 		function_context.llvm_ir_builder.CreateBr( test_block );
-
-	function_context.loops_stack.pop_back();
+		function_context.loops_stack.back().continue_variables_states.push_back( function_context.variables_state );
+	}
 
 	// Block after while code.
 	function_context.function->getBasicBlockList().push_back( block_after_while );
 	function_context.llvm_ir_builder.SetInsertPoint( block_after_while );
 
-	const auto errors= ReferencesGraph::CheckWhileBlokVariablesState( variables_state_before_while, function_context.variables_state, while_operator.block_.end_file_pos_ );
-	names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
+	// Disallow outer variables state change in "continue" branches.
+	for( const ReferencesGraph& variables_state : function_context.loops_stack.back().continue_variables_states )
+	{
+		const auto errors= ReferencesGraph::CheckWhileBlokVariablesState( variables_state_before_loop, variables_state, while_operator.block_.end_file_pos_ );
+		names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
+	}
+
+	std::vector<ReferencesGraph> variables_state_for_merge= std::move( function_context.loops_stack.back().break_variables_states );
+	variables_state_for_merge.push_back( std::move(variables_state_before_loop) );
+
+	function_context.loops_stack.pop_back();
+
+	// Result variables state is combination of variables state before loop and variables state of all branches terminated with "break".
+	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), while_operator.block_.end_file_pos_ );
 
 	return BlockBuildInfo();
 }
@@ -971,8 +1017,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	U_ASSERT( function_context.loops_stack.back().block_for_break != nullptr );
 
 	CallDestructorsForLoopInnerVariables( names, function_context, break_operator.file_pos_ );
+	function_context.loops_stack.back().break_variables_states.push_back( function_context.variables_state );
 	function_context.llvm_ir_builder.CreateBr( function_context.loops_stack.back().block_for_break );
-
 
 	return block_info;
 }
@@ -993,6 +1039,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	U_ASSERT( function_context.loops_stack.back().block_for_continue != nullptr );
 
 	CallDestructorsForLoopInnerVariables( names, function_context, continue_operator.file_pos_ );
+	function_context.loops_stack.back().continue_variables_states.push_back( function_context.variables_state );
 	function_context.llvm_ir_builder.CreateBr( function_context.loops_stack.back().block_for_continue );
 
 	return block_info;
@@ -1017,8 +1064,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	// Break to first condition. We must push terminal instruction at end of current block.
 	function_context.llvm_ir_builder.CreateBr( next_condition_block );
 
+	ReferencesGraph variables_state_before_if= function_context.variables_state;
 	ReferencesGraph conditions_variable_state= function_context.variables_state;
-	std::vector<ReferencesGraph> bracnhes_variables_state( if_operator.branches_.size() );
+	std::vector<ReferencesGraph> bracnhes_variables_state;
 
 	for( unsigned int i= 0u; i < if_operator.branches_.size(); i++ )
 	{
@@ -1082,9 +1130,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			// Create break instruction, only if block does not contains terminal instructions.
 			if_operator_blocks_build_info.have_terminal_instruction_inside= false;
 			function_context.llvm_ir_builder.CreateBr( block_after_if );
+			bracnhes_variables_state.push_back( function_context.variables_state );
 		}
 
-		bracnhes_variables_state[i]= function_context.variables_state;
 		function_context.variables_state= conditions_variable_state;
 	}
 
@@ -1096,7 +1144,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		if_operator_blocks_build_info.have_terminal_instruction_inside= false;
 	}
 
-	function_context.variables_state= MergeVariablesStateAfterIf( bracnhes_variables_state, names.GetErrors(), if_operator.end_file_pos_ );
+	if( !bracnhes_variables_state.empty() )
+		function_context.variables_state= MergeVariablesStateAfterIf( bracnhes_variables_state, names.GetErrors(), if_operator.end_file_pos_ );
+	else
+		function_context.variables_state= std::move(variables_state_before_if);
 
 	// Block after if code.
 	if( if_operator_blocks_build_info.have_terminal_instruction_inside )
