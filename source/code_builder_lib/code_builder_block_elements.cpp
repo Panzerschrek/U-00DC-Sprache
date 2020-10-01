@@ -684,6 +684,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	{
 		llvm::BasicBlock* const finish_basic_block= tuple_type->elements.empty() ? nullptr : llvm::BasicBlock::Create( llvm_context_ );
 
+		std::vector<ReferencesGraph> break_variables_states;
+
 		U_ASSERT( sequence_expression.location == Variable::Location::Pointer );
 		for( const Type& element_type : tuple_type->elements )
 		{
@@ -770,17 +772,30 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			const BlockBuildInfo block_build_info= BuildBlockElement( for_operator.block_, loop_names, function_context );
 			CallDestructors( element_pass_variables_storage, names, function_context, for_operator.file_pos_ );
 
+			if( !block_build_info.have_terminal_instruction_inside )
+			{
+				function_context.llvm_ir_builder.CreateBr( next_basic_block );
+				function_context.loops_stack.back().continue_variables_states.push_back( function_context.variables_state );
+			}
+
+			// Variables state for next iteration is combination of variables states in "continue" branches in previous iteration.
+			function_context.variables_state= MergeVariablesStateAfterIf( function_context.loops_stack.back().continue_variables_states, names.GetErrors(), for_operator.block_.end_file_pos_ );
+
+			for( ReferencesGraph& variables_state : function_context.loops_stack.back().break_variables_states )
+				break_variables_states.push_back( std::move(variables_state) );
+
 			// Overloading resolution uses addresses of syntax elements as keys. Reset it, because we use same syntax elements multiple times.
 			function_context.overloading_resolution_cache.clear();
 
 			function_context.loops_stack.pop_back();
 
-			if( !block_build_info.have_terminal_instruction_inside )
-				function_context.llvm_ir_builder.CreateBr( next_basic_block );
-
 			function_context.function->getBasicBlockList().push_back( next_basic_block );
 			function_context.llvm_ir_builder.SetInsertPoint( next_basic_block );
 		}
+
+		// Variables state after tuple-for is combination of variables state of all branches with "break" of all iterations.
+		break_variables_states.push_back( function_context.variables_state );
+		function_context.variables_state= MergeVariablesStateAfterIf( break_variables_states, names.GetErrors(), for_operator.block_.end_file_pos_ );
 	}
 	else
 	{
