@@ -954,4 +954,140 @@ U_TEST( CStyleForMergeTest_PollutionInsideLoop10 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( TupleForMegeTest0 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S { i32 &mut x; }
+		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ';
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S mut s {.x= x };
+			var tup[ i32, f32 ] t= zero_init;
+			for( el : t )
+			{
+				++y; // Error, 'y' linked to 's' in previous iteration of loop.
+				Link( s, y );
+			}
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 11u ) );
+}
+
+U_TEST( TupleForMegeTest1 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S { i32 &mut x; }
+		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ';
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S mut s {.x= x };
+			var tup[ f64 ] t= zero_init;
+			for( el : t )
+			{
+				++y; // Ok, loop have only one iteration, so, 'y' have no references.
+				Link( s, y );
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( TupleForMegeTest2 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S { i32 &mut x; }
+		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ';
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S mut s {.x= x };
+			var tup[ i32, f32 ] t= zero_init;
+			for( el : t )
+			{
+				++y; // Ok, 'y' have no references, because pollution hapens only in 'break' branch.
+				if( u64(el) == 0u64 )
+				{
+					Link( s, y );
+					break;
+				}
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( TupleForMegeTest3 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S { i32 &mut x; }
+		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ';
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S mut s {.x= x };
+			var tup[ i32, f32 ] t= zero_init;
+			for( el : t )
+			{
+				Link( s, y ); // Accessing variable 'y' which have references since first iteration in second iteration.
+			}
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 11u ) );
+}
+
+U_TEST( TupleForMegeTest4 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S { i32 &mut x; }
+		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ';
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S mut s {.x= x };
+			var tup[ i32 ] t= zero_init;
+			for( el : t )
+			{
+				Link( s, y ); // Ok, pollution happens only in single loop iteration.
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( TupleForMegeTest5 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S { i32 &mut x; }
+		fn Link( S &mut s'a', i32&'b mut x ) ' a <- b ';
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S mut s {.x= x };
+			var tup[ ] t= zero_init;
+			for( el : t ) // Loop body evaluated 0 times.
+			{
+				Link( s, y );
+			}
+			++y; // Ok, loop have no iterations and no pollution happens.
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 } // namespace U

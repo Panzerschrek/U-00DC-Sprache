@@ -253,6 +253,42 @@ def MoveInsideLoop_Test1():
 	tests_lib.build_program( c_program_text )
 
 
+def MoveInsideLoop_Test2():
+	c_program_text= """
+		fn Cond() : bool;
+		fn Foo()
+		{
+			auto mut b= false;
+			var tup[ f32, i32, bool ] t= zero_init;
+			for( el : t )
+			{
+				if( Cond() )
+				{
+					move(b); // Ok, move in 'return' branch.
+					return;
+				}
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MoveInsideLoop_Test3():
+	c_program_text= """
+		fn Cond() : bool;
+		fn Foo()
+		{
+			auto mut b= false;
+			var tup[  ] t= zero_init;
+			for( el : t )
+			{
+				move(b); // Ok, move not happens, because loop have 0 iterations.
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def MoveBeforeIf_Test0():
 	c_program_text= """
 		fn Foo()

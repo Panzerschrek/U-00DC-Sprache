@@ -188,6 +188,55 @@ def AccessingMovedVariable_Test6():
 	assert( errors_list[0].file_pos.line == 5 )
 
 
+def AccessingMovedVariable_InTupleFor_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var bool mut b= false;
+			var tup[ i32, f32 ] t= zero_init;
+			for( el : t )
+			{
+				move(b); // On second iteration thi variable is already moved.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "AccessingMovedVariable" )
+	assert( errors_list[0].file_pos.line == 8 )
+
+
+def AccessingMovedVariable_InTupleFor_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var bool mut b= false;
+			var tup[ i32 ] t= zero_init;
+			for( el : t )
+			{
+				move(b); // Ok, move 1 time, because loop have 1 iteration.
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def AccessingMovedVariable_InTupleFor_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var bool mut b= false;
+			var tup[ ] t= zero_init;
+			for( el : t ) // Loop have zero iterations.
+			{
+				move(b);
+			}
+			b= true; // ok, 'b' is not moved.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def OuterVariableMoveInsideLoop_Test0():
 	c_program_text= """
 		fn Foo()
@@ -290,6 +339,29 @@ def ConditionalMove_Test3():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConditionalMove" )
 	assert( errors_list[0].file_pos.line == 6 )
+
+
+def ConditionalMove_InTupleFor_Test0():
+	c_program_text= """
+		fn Cond() : bool;
+		fn Foo()
+		{
+			var bool mut b= false;
+			var tup[ i32, f32 ] t= zero_init;
+			for( el : t )
+			{
+				if( Cond() )
+				{
+					move(b);
+					break;
+				}
+			} // Error, 'b' moved not in all branches.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConditionalMove" )
+	assert( errors_list[0].file_pos.line == 14 )
 
 
 def ConditionalMove_ForLazyLogicalOperators_Test0():
