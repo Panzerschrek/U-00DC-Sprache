@@ -322,13 +322,22 @@ std::vector<CodeBuilderError> ReferencesGraph::CheckWhileBlokVariablesState( con
 
 		if( !var_before.second.moved && var_after.second.moved )
 			REPORT_ERROR( OuterVariableMoveInsideLoop, errors, file_pos, var_before.first->name );
+
+		if( var_before.second.inner_reference != var_after.second.inner_reference || // Reference pollution added first time
+			// Or accessible variables changed.
+			( var_before.second.inner_reference != nullptr &&
+			  state_before.GetAllAccessibleVariableNodes( var_before.second.inner_reference ) != state_after.GetAllAccessibleVariableNodes( var_after.second.inner_reference ) ) )
+		{
+			NodesSet added_nodes= state_after.GetAllAccessibleVariableNodes( var_after.second.inner_reference );
+			if( var_before.second.inner_reference != nullptr )
+			{
+				for( const auto& node : state_before.GetAllAccessibleVariableNodes( var_before.second.inner_reference ) )
+					added_nodes.erase(node);
+			}
+			for( const auto& node : added_nodes )
+				REPORT_ERROR( ReferencePollutionOfOuterLoopVariable, errors, file_pos, var_before.first->name, node->name );
+		}
 	}
-
-	// Forbid changing of outer variables state inside loop, because loop body should have same state on each iteration.
-	// TODO - create separate error code.
-	if( state_before.links_ != state_after.links_ )
-		REPORT_ERROR( NotImplemented, errors, file_pos, "Outer variables references changing inside loop" );
-
 	return errors;
 }
 

@@ -835,6 +835,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			},
 			*c_style_for_operator.variable_declaration_part_ );
 
+	const ReferencesGraph variables_state_before_loop= function_context.variables_state;
+
 	llvm::BasicBlock* const test_block= llvm::BasicBlock::Create( llvm_context_ );
 	llvm::BasicBlock* const loop_block= llvm::BasicBlock::Create( llvm_context_ );
 	llvm::BasicBlock* const loop_iteration_block= llvm::BasicBlock::Create( llvm_context_ );
@@ -870,8 +872,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			function_context.llvm_ir_builder.CreateCondBr( condition_in_register, loop_block, block_after_loop );
 		}
 	}
-
-	const ReferencesGraph variables_state_before_loop= function_context.variables_state;
 
 	// Loop block code.
 	function_context.loops_stack.emplace_back();
@@ -917,10 +917,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	const auto errors= ReferencesGraph::CheckWhileBlokVariablesState( variables_state_before_loop, function_context.variables_state, c_style_for_operator.block_.end_file_pos_ );
 	names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
 
+	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), c_style_for_operator.file_pos_ );
+
 	// Block after loop.
 	function_context.function->getBasicBlockList().push_back( block_after_loop );
 	function_context.llvm_ir_builder.SetInsertPoint( block_after_loop );
-
 
 	CallDestructors( loop_variables_storage, loop_names_scope, function_context, c_style_for_operator.file_pos_ );
 
@@ -932,6 +933,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
+	ReferencesGraph variables_state_before_loop= function_context.variables_state;
+
 	llvm::BasicBlock* const test_block= llvm::BasicBlock::Create( llvm_context_ );
 	llvm::BasicBlock* const while_block= llvm::BasicBlock::Create( llvm_context_ );
 	llvm::BasicBlock* const block_after_while= llvm::BasicBlock::Create( llvm_context_ );
@@ -959,8 +962,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 
 		function_context.llvm_ir_builder.CreateCondBr( condition_in_register, while_block, block_after_while );
 	}
-
-	ReferencesGraph variables_state_before_loop= function_context.variables_state;
 
 	// While block code.
 

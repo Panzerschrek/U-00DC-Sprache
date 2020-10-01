@@ -215,6 +215,44 @@ def MoveInsideIf_Test5():
 	tests_lib.build_program( c_program_text )
 
 
+def MoveInsideLoop_Test0():
+	c_program_text= """
+		fn Cond() : bool;
+		fn Foo()
+		{
+			auto mut b= false;
+			while(Cond())
+			{
+				if( Cond() )
+				{
+					move(b); // Ok, move outer loop variable in 'return' branch.
+					return;
+				}
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MoveInsideLoop_Test1():
+	c_program_text= """
+		fn Cond() : bool;
+		fn Foo()
+		{
+			auto mut b= false;
+			for(;;)
+			{
+				if( Cond() )
+				{
+					move(b); // Ok, move outer loop variable in 'return' branch.
+					return;
+				}
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def MoveBeforeIf_Test0():
 	c_program_text= """
 		fn Foo()
