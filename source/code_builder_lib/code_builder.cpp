@@ -1384,20 +1384,6 @@ Type CodeBuilder::BuildFuncCode(
 		++arg_number;
 	}
 
-	// Fill list of allowed for returning references.
-	if( function_type.return_value_is_reference || function_type.return_type.ReferencesTagsCount() > 0u )
-	{
-		for( const Function::ArgReference& arg_and_tag : function_type.return_references )
-		{
-			const size_t arg_n= arg_and_tag.first;
-			U_ASSERT( arg_n < function_context.args_nodes.size() );
-			if( arg_and_tag.second == Function::c_arg_reference_tag_number )
-				function_context.allowed_for_returning_references.emplace( function_context.args_nodes[arg_n].first );
-			else if( arg_and_tag.second == 0u && function_context.args_nodes[arg_n].second != nullptr )
-				function_context.allowed_for_returning_references.emplace( function_context.args_nodes[arg_n].second );
-		}
-	}
-
 	if( is_constructor )
 	{
 		U_ASSERT( base_class != nullptr );

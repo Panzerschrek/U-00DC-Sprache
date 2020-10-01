@@ -59,11 +59,7 @@ struct FunctionContext
 	const std::optional<Type> return_type; // std::nullopt if type not known yet and must be deduced.
 	std::optional<Type> deduced_return_type; // for functions with "auto" return type.
 
-	// For reference-returned functions - references of returning reference.
-	// For value-returned functions - references inside value.
-	std::unordered_set<ReferencesGraphNodePtr> allowed_for_returning_references;
-
-	// For references pollution checks.
+	// For reference checks.
 	// arg variable node + optional inner reference variable node.
 	ArgsVector< std::pair< ReferencesGraphNodePtr, ReferencesGraphNodePtr > > args_nodes;
 

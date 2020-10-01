@@ -266,6 +266,20 @@ ReferencesGraph CodeBuilder::MergeVariablesStateAfterIf(
 	return std::move(res.first);
 }
 
+bool CodeBuilder::IsReferenceAllowedForReturn( FunctionContext& function_context, const ReferencesGraphNodePtr& variable_node )
+{
+	for( const Function::ArgReference& arg_and_tag : function_context.function_type.return_references )
+	{
+		const size_t arg_n= arg_and_tag.first;
+		U_ASSERT( arg_n < function_context.args_nodes.size() );
+		if( arg_and_tag.second == Function::c_arg_reference_tag_number && variable_node == function_context.args_nodes[arg_n].first )
+			return true;
+		if( arg_and_tag.second == 0u && variable_node == function_context.args_nodes[arg_n].second )
+			return true;
+	}
+	return false;
+}
+
 void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 	FunctionContext& function_context,
 	CodeBuilderErrorsContainer& errors_container,

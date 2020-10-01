@@ -562,7 +562,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		{
 			for( const ReferencesGraphNodePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( expression_result.node ) )
 			{
-				if( function_context.allowed_for_returning_references.count( var_node ) == 0 )
+				if( !IsReferenceAllowedForReturn( function_context, var_node ) )
 					REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), return_operator.file_pos_ );
 			}
 		}
@@ -606,7 +606,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			{
 				for( const ReferencesGraphNodePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
 				{
-					if( function_context.allowed_for_returning_references.count( var_node ) == 0 )
+					if( !IsReferenceAllowedForReturn( function_context, var_node ) )
 						REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), return_operator.file_pos_ );
 				}
 			}
