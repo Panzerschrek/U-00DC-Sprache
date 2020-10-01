@@ -64,7 +64,7 @@ public:
 		return size_ == size_type(0);
 	}
 
-	fn insert( mut this, key_type& key, value_type value ) : value_type &'this mut
+	fn insert( mut this, key_type& key, value_type mut value ) : value_type &'this mut
 	{
 		unsafe
 		{
@@ -78,7 +78,7 @@ public:
 				if( table_value.cell_content == TableValue::CellContent::Empty || table_value.cell_content == TableValue::CellContent::ValueRemoved )
 				{
 					move_unsafe( table_value.key_storage, key );
-					move_unsafe( table_value.value_storage, value ); // TODO - move value.
+					move_unsafe( table_value.value_storage, move(value) );
 					table_value.cell_content= TableValue::CellContent::HaveValue;
 					++size_;
 					return table_value.value_storage;
@@ -87,7 +87,7 @@ public:
 				{
 					if( key == table_value.key_storage )
 					{
-						table_value.value_storage= value; // Replace old value with new. // TODO - move value.
+						table_value.value_storage= move(value);
 						return table_value.value_storage;
 					}
 				}
