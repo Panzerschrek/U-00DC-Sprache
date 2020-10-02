@@ -1295,9 +1295,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 	var FunctionContext mut function_context_value(
 		llvm_context_,
 		func_variable.llvm_function,
-		func_variable.t.return_type,
-		func_variable.t.return_value_is_reference,
-		func_variable.t.return_value_is_mutable );
+		func_variable.t );
 
 	var NamesScopeMutPtr args_names_scope_ptr( NamesScope( "", names_scope ) );
 
@@ -1310,8 +1308,6 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		REPORT_ERROR( UsingIncompleteType, names_scope, func_variable.body_syntax_element.get_ref().file_pos, func_variable.t.return_type )
 	}
 
-	var ust::vector</ ReferencesGraph::NodeId /> mut args_nodes; // Contains only variable nodes (not reference nodes).
-	var ust::vector</ ReferencesGraph::NodeId /> mut args_inner_variable_nodes; // Contains inner variable nodes (if arg can have one).
 	{
 		auto mut args_names_scope_lock= args_names_scope_ptr.lock_mut();
 		auto &mut args_names_scope= args_names_scope_lock.get_ref();
@@ -1334,8 +1330,8 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		}
 
 		auto first_llvm_arg= select( is_s_ret ? 1u : 0u );
-		args_nodes.resize( func_variable.t.params.size(), ReferencesGraph::c_empty_node_id );
-		args_inner_variable_nodes.resize( func_variable.t.params.size(), ReferencesGraph::c_empty_node_id );
+		function_context.args_nodes.resize( func_variable.t.params.size(), ReferencesGraph::c_empty_node_id );
+		function_context.args_inner_variable_nodes.resize( func_variable.t.params.size(), ReferencesGraph::c_empty_node_id );
 		for( auto mut arg_n= 0s; arg_n < func_variable.t.params.size(); ++arg_n )
 		{
 			auto& in_param= func_variable.body_syntax_element.get_ref().function_type.params[arg_n];
@@ -1359,7 +1355,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			if( type_arg.t.GetInnerReferenceKind() != InnerReferenceKind::None )
 			{
 				inner_reference_variable_node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, in_param.name + " inner variable" );
-				args_inner_variable_nodes[arg_n]= inner_reference_variable_node_id;
+				function_context.args_inner_variable_nodes[arg_n]= inner_reference_variable_node_id;
 			}
 
 			if( type_arg.is_reference )
@@ -1387,7 +1383,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 					in_param.name );
 				function_context.references_graph.AddLink( variable_node_id, out_arg.node_id );
 
-				args_nodes[arg_n]= variable_node_id;
+				function_context.args_nodes[arg_n]= variable_node_id;
 			}
 			else
 			{
@@ -1424,7 +1420,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 					function_context.references_graph.AddLink( inner_reference_variable_node_id, inner_reference_node );
 				}
 
-				args_nodes[arg_n]= out_arg.node_id;
+				function_context.args_nodes[arg_n]= out_arg.node_id;
 			}
 
 			function_context.variables_frames.back().push_back( out_arg ); // Register arg for destruction and reference checking.
@@ -1447,27 +1443,6 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				if( !insert_ok )
 				{
 					REPORT_ERROR( Redefinition, names_scope, in_param.file_pos, in_param.name )
-				}
-			}
-		}
-	}
-
-	// Prepare list of allowed for return references.
-	foreach( &return_reference : func_variable.t.return_references )
-	{
-		var ReferencesGraph::NodeId node_id= args_nodes[size_type(return_reference.param_index)];
-		if( return_reference.reference_index == FunctionType::c_param_reference_number )
-		{
-			function_context.allowed_for_returning_references.insert( node_id, 0 );
-		}
-		if( return_reference.reference_index == 0u8 )
-		{
-			auto inner_node_id= function_context.references_graph.GetNodeInnerReference( node_id );
-			if( inner_node_id != ReferencesGraph::c_empty_node_id )
-			{
-				foreach( &node_value : function_context.references_graph.GetAllAccessibleVariableNodes( inner_node_id ) )
-				{
-					function_context.allowed_for_returning_references.insert( node_value.key(), 0 );
 				}
 			}
 		}
@@ -1531,6 +1506,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			{
 				// Manually generate "return" for void-return functions.
 				CallDestructorsForAllVariablesFrames( args_names_scope_ptr, function_context, block.end_file_pos );
+				CheckReferencesPollutionBeforeReturn( names_scope, function_context, block.end_file_pos );
 				unsafe
 				{
 					if( function_context.destructor_end_block != LLVMBasicBlockRef::Null )
@@ -1566,73 +1542,6 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 					BuildMembersDestructors( function_context, this_copy.llvm_value, class_type );
 				}
 				LLVMBuildRetVoid( function_context.llvm_ir_builder );
-			}
-		}
-	}
-
-	// Check references pollution.
-	{
-		for( auto mut i= 0s; i < func_variable.t.params.size(); ++i )
-		{
-			if( !func_variable.t.params[i].is_reference )
-			{
-				continue;
-			}
-			var ReferencesGraph::NodeId inner_reference_node= function_context.references_graph.GetNodeInnerReference( args_nodes[i] );
-			if( inner_reference_node == ReferencesGraph::c_empty_node_id )
-			{
-				continue;
-			}
-
-			foreach( &accessible_variable_node_value : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_node ) )
-			{
-				var ReferencesGraph::NodeId accessible_variable_node= accessible_variable_node_value.key();
-
-				if( accessible_variable_node == args_inner_variable_nodes[i] )
-				{
-					continue;
-				}
-
-				var ust::optional</FunctionType::ParamReference/> mut param_reference;
-				for( auto mut j= 0s; j < func_variable.t.params.size(); ++j )
-				{
-					if( accessible_variable_node == args_nodes[j] )
-					{
-						var FunctionType::ParamReference mut r{ .param_index= u8(j), .reference_index= FunctionType::c_param_reference_number };
-						param_reference= move(r);
-					}
-					if( accessible_variable_node == args_inner_variable_nodes[j] )
-					{
-						var FunctionType::ParamReference mut r{ .param_index= u8(j), .reference_index= 0u8 };
-						param_reference= move(r);
-					}
-				}
-
-				if( param_reference.empty() )
-				{
-					continue;
-				}
-
-				var FunctionType::ReferencePollution actual_reference_pollution
-				{
-					.dst{ .param_index= u8(i), .reference_index= 0u8 },
-					.src= param_reference.get_ref(),
-				};
-
-				var bool mut found= false;
-				foreach( &reference_pollution : func_variable.t.references_pollution )
-				{
-					if( actual_reference_pollution == reference_pollution )
-					{
-						found= true;
-						break;
-					}
-				}
-
-				if( !found )
-				{
-					REPORT_ERROR( UnallowedReferencePollution, names_scope, func_variable.body_syntax_element.get_ref().block.get_ref().end_file_pos )
-				}
 			}
 		}
 	}
@@ -1758,6 +1667,95 @@ fn CodeBuilder::DestroyUnusedTemporaryVariables( this, NamesScopePtr& names_scop
 			var LLVMValueRef llvm_value= function_context.variables_frames.back()[i].llvm_value;
 			var Type t= function_context.variables_frames.back()[i].t;
 			BuildDestructorPart( names_scope, function_context, llvm_value, t, file_pos );
+		}
+	}
+}
+
+fn CodeBuilder::IsReferenceAllowedForReturn( this, FunctionContext& function_context, ReferencesGraph::NodeId variable_node ) : bool
+{
+	foreach( &return_reference : function_context.function_type.return_references )
+	{
+		auto i= size_type(return_reference.param_index);
+		if( return_reference.reference_index == FunctionType::c_param_reference_number &&
+			variable_node == function_context.args_nodes[i] )
+		{
+			return true;
+		}
+		if( return_reference.reference_index == 0u8 &&
+			variable_node == function_context.args_inner_variable_nodes[i] )
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names_scope, FunctionContext& function_context, FilePos& file_pos )
+{
+	auto& function_type= function_context.function_type;
+	auto& params= function_type.params;
+	for( auto mut i= 0s; i < params.size(); ++i )
+	{
+		if( !params[i].is_reference )
+		{
+			continue;
+		}
+		var ReferencesGraph::NodeId inner_reference_node= function_context.references_graph.GetNodeInnerReference( function_context.args_nodes[i] );
+		if( inner_reference_node == ReferencesGraph::c_empty_node_id )
+		{
+			continue;
+		}
+
+		foreach( &accessible_variable_node_value : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_node ) )
+		{
+			var ReferencesGraph::NodeId accessible_variable_node= accessible_variable_node_value.key();
+
+			if( accessible_variable_node == function_context.args_inner_variable_nodes[i] )
+			{
+				continue;
+			}
+
+			var ust::optional</FunctionType::ParamReference/> mut param_reference;
+			for( auto mut j= 0s; j < params.size(); ++j )
+			{
+				if( accessible_variable_node == function_context.args_nodes[j] )
+				{
+					var FunctionType::ParamReference mut r{ .param_index= u8(j), .reference_index= FunctionType::c_param_reference_number };
+					param_reference= move(r);
+				}
+				if( accessible_variable_node == function_context.args_inner_variable_nodes[j] )
+				{
+					var FunctionType::ParamReference mut r{ .param_index= u8(j), .reference_index= 0u8 };
+					param_reference= move(r);
+				}
+			}
+
+			if( param_reference.empty() )
+			{
+				continue;
+			}
+
+			var FunctionType::ReferencePollution actual_reference_pollution
+			{
+				.dst{ .param_index= u8(i), .reference_index= 0u8 },
+				.src= param_reference.get_ref(),
+			};
+
+			var bool mut found= false;
+			foreach( &reference_pollution : function_type.references_pollution )
+			{
+				if( actual_reference_pollution == reference_pollution )
+				{
+					found= true;
+					break;
+				}
+			}
+
+			if( !found )
+			{
+				REPORT_ERROR( UnallowedReferencePollution, names_scope, file_pos )
+			}
 		}
 	}
 }
@@ -2181,12 +2179,17 @@ fn CodeBuilder::RestoreInstructionsState( FunctionContext &mut function_context,
 
 fn CodeBuilder::CreateGlobalFunctionContext( this ) : FunctionContext
 {
+	var FunctionType mut function_type
+	{
+		.return_type= void_type_for_ret_,
+		.return_value_is_reference= false,
+		.return_value_is_mutable= false,
+	};
+
 	var FunctionContext mut function_context(
 		llvm_context_,
 		global_llvm_function_,
-		void_type_for_ret_,
-		false,
-		false );
+		move(function_type) );
 
 	function_context.variables_frames.push_back( FunctionContext::VariablesFrame() );
 	return move(function_context);

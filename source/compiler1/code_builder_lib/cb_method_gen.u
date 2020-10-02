@@ -150,9 +150,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	var FunctionContext mut function_context(
 		llvm_context_,
 		function_variable.llvm_function,
-		function_variable.t.return_type,
-		function_variable.t.return_value_is_reference,
-		function_variable.t.return_value_is_mutable );
+		function_variable.t );
 	function_context.variables_frames.push_back( FunctionContext::VariablesFrame() );
 
 	auto mut this_llvm_value= LLVMValueRef::Null;
@@ -372,9 +370,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 	var FunctionContext mut function_context(
 		llvm_context_,
 		function_variable.llvm_function,
-		function_variable.t.return_type,
-		function_variable.t.return_value_is_reference,
-		function_variable.t.return_value_is_mutable );
+		function_variable.t );
 	function_context.variables_frames.push_back( FunctionContext::VariablesFrame() );
 
 	var LLVMValueRef mut dst_llvm_value= zero_init, mut src_llvm_value= zero_init;
@@ -589,9 +585,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 	var FunctionContext mut function_context(
 		llvm_context_,
 		function_variable.llvm_function,
-		function_variable.t.return_type,
-		function_variable.t.return_value_is_reference,
-		function_variable.t.return_value_is_mutable );
+		function_variable.t );
 	function_context.variables_frames.push_back( FunctionContext::VariablesFrame() );
 
 	var LLVMValueRef mut dst_llvm_value= zero_init, mut src_llvm_value= zero_init;
@@ -724,9 +718,7 @@ fn CodeBuilder::TryGenerateDestructor( this, ClassTypePtr& class_type )
 	var FunctionContext mut function_context(
 		llvm_context_,
 		function_variable.llvm_function,
-		function_variable.t.return_type,
-		function_variable.t.return_value_is_reference,
-		function_variable.t.return_value_is_mutable );
+		function_variable.t );
 
 	auto mut this_llvm_value= LLVMValueRef::Null;
 	unsafe{  this_llvm_value= LLVMGetParam( function_variable.llvm_function, 0u );  }

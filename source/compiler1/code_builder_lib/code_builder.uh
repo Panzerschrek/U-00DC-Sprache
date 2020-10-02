@@ -629,6 +629,9 @@ private:
 
 	fn DestroyUnusedTemporaryVariables( this, NamesScopePtr& names_scope, FunctionContext& mut function_context, FilePos& file_pos );
 
+	fn IsReferenceAllowedForReturn( this, FunctionContext& function_context, ReferencesGraph::NodeId variable_node ) : bool;
+	fn CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names_scope, FunctionContext& function_context, FilePos& file_pos );
+
 	fn SetupReferencesInCopyOrMove(
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
