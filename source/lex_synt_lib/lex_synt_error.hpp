@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>
 #include <string>
 #include <vector>
 #include "file_pos.hpp"
@@ -18,5 +19,11 @@ struct LexSyntError
 };
 
 using LexSyntErrors= std::vector<LexSyntError>;
+
+enum class ErrorsFormat{ GCC, MSVC };
+
+struct SourceGraph;
+
+void PrintLexSyntErrors( const SourceGraph& source_graph, ErrorsFormat format= ErrorsFormat::GCC, std::ostream& errors_stream= std::cerr );
 
 } // namespace U

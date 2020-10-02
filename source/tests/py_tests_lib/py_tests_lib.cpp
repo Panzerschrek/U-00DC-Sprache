@@ -70,6 +70,9 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	const SourceGraphPtr source_graph=
 		SourceGraphLoader( std::make_shared<SingeFileVfs>( file_path, text ) ).LoadSource( file_path );
 
+	if( source_graph != nullptr )
+		PrintLexSyntErrors( *source_graph );
+
 	if( source_graph == nullptr || !source_graph->errors.empty() )
 		return nullptr;
 
@@ -367,6 +370,9 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 	const SourceGraphPtr source_graph=
 		SourceGraphLoader( std::make_shared<SingeFileVfs>( file_path, program_text ) ).LoadSource( file_path );
 
+	if( source_graph != nullptr )
+		PrintLexSyntErrors( *source_graph );
+
 	if( source_graph == nullptr || !source_graph->errors.empty() )
 	{
 		PyErr_SetString( PyExc_RuntimeError, "source tree build failed" );
@@ -389,9 +395,8 @@ PyObject* BuildProgramWithSyntaxErrors( PyObject* const self, PyObject* const ar
 		return nullptr;
 
 	const std::string file_path= "_";
-	std::stringstream dummy_errors_stream;
 
-	SourceGraphLoader source_graph_loader( std::make_shared<SingeFileVfs>( file_path, program_text ), dummy_errors_stream );
+	SourceGraphLoader source_graph_loader( std::make_shared<SingeFileVfs>( file_path, program_text ) );
 	const SourceGraphPtr source_graph= source_graph_loader.LoadSource( file_path );
 
 	std::vector<CodeBuilderError> errors_converted;

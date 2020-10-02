@@ -26,11 +26,9 @@ static Synt::MacrosPtr PrepareBuiltInMacros()
 	return synt_result.macros;
 }
 
-SourceGraphLoader::SourceGraphLoader( IVfsPtr vfs, std::ostream& errors_stream, const ErrorsFormat errors_format )
+SourceGraphLoader::SourceGraphLoader( IVfsPtr vfs )
 	: built_in_macros_(PrepareBuiltInMacros())
 	, vfs_(std::move(vfs))
-	, errors_stream_(errors_stream)
-	, errors_format_(errors_format)
 {
 	U_ASSERT( built_in_macros_ != nullptr );
 	U_ASSERT( vfs_ != nullptr );
@@ -56,15 +54,12 @@ size_t SourceGraphLoader::LoadNode_r(
 	const auto prev_file_it= std::find( processed_files_stack_.begin(), processed_files_stack_.end(), full_file_path );
 	if( prev_file_it != processed_files_stack_.end() )
 	{
-		std::string imports_loop_str;
+		std::string imports_loop_str= "Import loop detected: ";
 		for( auto it= prev_file_it; it != processed_files_stack_.end(); ++it )
 			imports_loop_str+= *it + " -> ";
 		imports_loop_str+= full_file_path;
 
-		if( errors_format_ == ErrorsFormat::MSVC )
-			errors_stream_ << parent_file_path << "(1): error: Import loop detected: " << imports_loop_str << std::endl;
-		else
-			errors_stream_ << parent_file_path << ": 1:1: Import loop detected: " << imports_loop_str << std::endl;
+		result.errors.emplace_back( imports_loop_str, FilePos( 0u, 0u, 0u ) );
 
 		result.have_errors= true;
 		return ~0u;
@@ -81,21 +76,12 @@ size_t SourceGraphLoader::LoadNode_r(
 	if( loaded_file == std::nullopt )
 	{
 		LexSyntError error_message( "Can not read file \"" + file_path + "\"", FilePos( uint32_t(node_index), 0u, 0u ) );
-		errors_stream_ << error_message.text << std::endl;
 		result.errors.push_back( std::move(error_message) );
 		result.have_errors= true;
 		return ~0u;
 	}
 
 	LexicalAnalysisResult lex_result= LexicalAnalysis( loaded_file->file_content );
-	for( const LexSyntError& error : lex_result.errors )
-	{
-		// TODO - put file_pos into lexical error
-		if( errors_format_ == ErrorsFormat::MSVC )
-			errors_stream_ << full_file_path << "(" << error.file_pos.GetLine() << "): error: " << error.text << "\n";
-		else
-			errors_stream_ << full_file_path << ":" << error.file_pos.GetLine() << ":" << error.file_pos.GetColumn() << ": error: " << error.text << "\n";
-	}
 	result.errors.insert( result.errors.end(), lex_result.errors.begin(), lex_result.errors.end() );
 	if( !lex_result.errors.empty() )
 	{
@@ -140,20 +126,9 @@ size_t SourceGraphLoader::LoadNode_r(
 				if( dst_map.find(macro_map_pair.first) != dst_map.end() &&
 					macro_map_pair.second.file_pos != dst_map.find(macro_map_pair.first)->second.file_pos )
 				{
-					LexSyntError error_message(
+					result.errors.emplace_back(
 						"Macro \"" + macro_map_pair.first + "\" redefinition.",
 						FilePos( uint32_t(node_index), 0u, 0u ) );
-
-					if( errors_format_ == ErrorsFormat::MSVC )
-						errors_stream_ << full_file_path << "(" << error_message.file_pos.GetLine() << "): error: " << error_message.text << "\n";
-					else
-						errors_stream_ <<
-							full_file_path << ":"
-							<< error_message.file_pos.GetLine() << ":"
-							<< error_message.file_pos.GetColumn() << ": error: "
-							<< error_message.text << "\n";
-
-					result.errors.push_back( std::move(error_message) );
 				}
 				else
 					dst_map[macro_map_pair.first]= macro_map_pair.second;
@@ -167,18 +142,6 @@ size_t SourceGraphLoader::LoadNode_r(
 		lex_result.lexems,
 		std::move(merged_macroses),
 		result.macro_expansion_contexts );
-
-	for( const LexSyntError& syntax_error_message : synt_result.error_messages )
-	{
-		if( errors_format_ == ErrorsFormat::MSVC )
-			errors_stream_ << full_file_path << "(" << syntax_error_message.file_pos.GetLine() << "): error: " << syntax_error_message.text << "\n";
-		else
-			errors_stream_ <<
-				full_file_path << ":"
-				<< syntax_error_message.file_pos.GetLine() << ":"
-				<< syntax_error_message.file_pos.GetColumn() << ": error: "
-				<< syntax_error_message.text << "\n";
-	}
 
 	result.errors.insert( result.errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
 	result.have_errors &= !synt_result.error_messages.empty();

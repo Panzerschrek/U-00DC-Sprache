@@ -89,6 +89,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 		SourceGraphLoader( std::make_shared<MultiFileVfs>( file_path, text ) ).LoadSource( file_path );
 
 	U_TEST_ASSERT( source_graph != nullptr );
+	PrintLexSyntErrors( *source_graph );
 	U_TEST_ASSERT( source_graph->errors.empty() );
 
 	CodeBuilder::BuildResult build_result=
@@ -110,6 +111,7 @@ ErrorTestBuildResult BuildProgramWithErrors( const char* const text )
 		SourceGraphLoader( std::make_shared<MultiFileVfs>( file_path, text ) ).LoadSource( file_path );
 
 	U_TEST_ASSERT( source_graph != nullptr );
+	PrintLexSyntErrors( *source_graph );
 	U_TEST_ASSERT( source_graph->errors.empty() );
 
 	return
@@ -125,6 +127,7 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 		SourceGraphLoader( std::make_shared<MultiFileVfs>( std::move(sources) ) ).LoadSource( root_file_path );
 
 	U_TEST_ASSERT( source_graph != nullptr );
+	PrintLexSyntErrors( *source_graph );
 	U_TEST_ASSERT( source_graph->errors.empty() );
 
 	CodeBuilder::BuildResult build_result=
@@ -145,6 +148,7 @@ ErrorTestBuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry>
 		SourceGraphLoader( std::make_shared<MultiFileVfs>( std::move(sources) ) ).LoadSource( root_file_path );
 
 	U_TEST_ASSERT( source_graph != nullptr );
+	PrintLexSyntErrors( *source_graph );
 	U_TEST_ASSERT( source_graph->errors.empty() );
 
 	return

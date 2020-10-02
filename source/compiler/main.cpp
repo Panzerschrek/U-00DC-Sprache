@@ -678,7 +678,7 @@ int Main( int argc, const char* argv[] )
 		return 1u;
 
 	// Compile multiple input files and link them together.
-	SourceGraphLoader source_graph_loader( vfs, std::cerr, errors_format );
+	SourceGraphLoader source_graph_loader( vfs );
 	llvm::LLVMContext llvm_context;
 	std::unique_ptr<llvm::Module> result_module;
 	std::vector<IVfs::Path> deps_list;
@@ -687,6 +687,8 @@ int Main( int argc, const char* argv[] )
 	{
 		const SourceGraphPtr source_graph= source_graph_loader.LoadSource( input_file );
 		U_ASSERT( source_graph != nullptr );
+
+		PrintLexSyntErrors( *source_graph, errors_format );
 
 		for( const SourceGraph::Node& node : source_graph->nodes_storage )
 			deps_list.push_back( node.file_path );
