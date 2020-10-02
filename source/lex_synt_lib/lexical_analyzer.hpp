@@ -1,9 +1,7 @@
 #pragma once
 #include <array>
 #include <cstdint>
-#include <string>
-#include <vector>
-#include "file_pos.hpp"
+#include "lex_synt_error.hpp"
 
 
 namespace U
@@ -119,13 +117,10 @@ bool operator!=(const Lexem& l, const Lexem& r );
 
 using Lexems= std::vector<Lexem>;
 
-using LexicalErrorMessage= std::string;
-using LexicalErrorMessages= std::vector<LexicalErrorMessage>;
-
 struct LexicalAnalysisResult
 {
 	Lexems lexems;
-	LexicalErrorMessages error_messages;
+	LexSyntErrors errors;
 };
 
 LexicalAnalysisResult LexicalAnalysis( const std::string& program_text, bool collect_comments= false );

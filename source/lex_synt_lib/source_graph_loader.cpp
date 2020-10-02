@@ -14,7 +14,7 @@ extern const char c_build_in_macros_text[]=
 static Synt::MacrosPtr PrepareBuiltInMacros()
 {
 	const LexicalAnalysisResult lex_result= LexicalAnalysis( c_build_in_macros_text, sizeof(c_build_in_macros_text) );
-	U_ASSERT( lex_result.error_messages.empty() );
+	U_ASSERT( lex_result.errors.empty() );
 
 	const Synt::SyntaxAnalysisResult synt_result=
 		Synt::SyntaxAnalysis(
@@ -80,27 +80,24 @@ size_t SourceGraphLoader::LoadNode_r(
 	std::optional<IVfs::LoadFileResult> loaded_file= vfs_->LoadFileContent( file_path, parent_file_path );
 	if( loaded_file == std::nullopt )
 	{
-		Synt::SyntaxErrorMessage error_message;
-		error_message.text= "Can not read file \"" + file_path + "\"";
-		error_message.file_pos= FilePos( uint32_t(node_index), 0u, 0u );
-
+		LexSyntError error_message( "Can not read file \"" + file_path + "\"", FilePos( uint32_t(node_index), 0u, 0u ) );
 		errors_stream_ << error_message.text << std::endl;
-		result.syntax_errors.push_back( std::move(error_message) );
+		result.errors.push_back( std::move(error_message) );
 		result.have_errors= true;
 		return ~0u;
 	}
 
 	LexicalAnalysisResult lex_result= LexicalAnalysis( loaded_file->file_content );
-	for( const std::string& lexical_error_message : lex_result.error_messages )
+	for( const LexSyntError& error : lex_result.errors )
 	{
 		// TODO - put file_pos into lexical error
 		if( errors_format_ == ErrorsFormat::MSVC )
-			errors_stream_ << full_file_path << "(1): error: " << lexical_error_message << "\n";
+			errors_stream_ << full_file_path << "(" << error.file_pos.GetLine() << "): error: " << error.text << "\n";
 		else
-			errors_stream_ << full_file_path << ": error: " << lexical_error_message << "\n";
+			errors_stream_ << full_file_path << ":" << error.file_pos.GetLine() << ":" << error.file_pos.GetColumn() << ": error: " << error.text << "\n";
 	}
-	result.lexical_errors.insert( result.lexical_errors.end(), lex_result.error_messages.begin(), lex_result.error_messages.end() );
-	if( !lex_result.error_messages.empty() )
+	result.errors.insert( result.errors.end(), lex_result.errors.begin(), lex_result.errors.end() );
+	if( !lex_result.errors.empty() )
 	{
 		result.have_errors= true;
 		return ~0u;
@@ -143,12 +140,12 @@ size_t SourceGraphLoader::LoadNode_r(
 				if( dst_map.find(macro_map_pair.first) != dst_map.end() &&
 					macro_map_pair.second.file_pos != dst_map.find(macro_map_pair.first)->second.file_pos )
 				{
-					Synt::SyntaxErrorMessage error_message;
-					error_message.text= "Macro \"" + macro_map_pair.first + "\" redefinition.";
-					error_message.file_pos= FilePos( 0u, 0u, uint32_t(node_index) );
+					LexSyntError error_message(
+						"Macro \"" + macro_map_pair.first + "\" redefinition.",
+						FilePos( uint32_t(node_index), 0u, 0u ) );
 
 					if( errors_format_ == ErrorsFormat::MSVC )
-						errors_stream_ << full_file_path << "(1): error: " << error_message.text << "\n";
+						errors_stream_ << full_file_path << "(" << error_message.file_pos.GetLine() << "): error: " << error_message.text << "\n";
 					else
 						errors_stream_ <<
 							full_file_path << ":"
@@ -156,7 +153,7 @@ size_t SourceGraphLoader::LoadNode_r(
 							<< error_message.file_pos.GetColumn() << ": error: "
 							<< error_message.text << "\n";
 
-					result.syntax_errors.push_back( std::move(error_message) );
+					result.errors.push_back( std::move(error_message) );
 				}
 				else
 					dst_map[macro_map_pair.first]= macro_map_pair.second;
@@ -171,7 +168,7 @@ size_t SourceGraphLoader::LoadNode_r(
 		std::move(merged_macroses),
 		result.macro_expansion_contexts );
 
-	for( const Synt::SyntaxErrorMessage& syntax_error_message : synt_result.error_messages )
+	for( const LexSyntError& syntax_error_message : synt_result.error_messages )
 	{
 		if( errors_format_ == ErrorsFormat::MSVC )
 			errors_stream_ << full_file_path << "(" << syntax_error_message.file_pos.GetLine() << "): error: " << syntax_error_message.text << "\n";
@@ -183,7 +180,7 @@ size_t SourceGraphLoader::LoadNode_r(
 				<< syntax_error_message.text << "\n";
 	}
 
-	result.syntax_errors.insert( result.syntax_errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
+	result.errors.insert( result.errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
 	result.have_errors &= !synt_result.error_messages.empty();
 
 	result.nodes_storage[node_index].ast= std::move( synt_result );

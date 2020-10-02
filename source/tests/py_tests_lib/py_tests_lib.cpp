@@ -70,9 +70,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	const SourceGraphPtr source_graph=
 		SourceGraphLoader( std::make_shared<SingeFileVfs>( file_path, text ) ).LoadSource( file_path );
 
-	if( source_graph == nullptr ||
-		!source_graph->lexical_errors.empty() ||
-		!source_graph->syntax_errors.empty() )
+	if( source_graph == nullptr || !source_graph->errors.empty() )
 		return nullptr;
 
 	CodeBuilder::BuildResult build_result= CreateCodeBuilder()->BuildProgram( *source_graph );
@@ -369,9 +367,7 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 	const SourceGraphPtr source_graph=
 		SourceGraphLoader( std::make_shared<SingeFileVfs>( file_path, program_text ) ).LoadSource( file_path );
 
-	if( source_graph == nullptr ||
-		!source_graph->lexical_errors.empty() ||
-		!source_graph->syntax_errors.empty() )
+	if( source_graph == nullptr || !source_graph->errors.empty() )
 	{
 		PyErr_SetString( PyExc_RuntimeError, "source tree build failed" );
 		return nullptr;
@@ -399,8 +395,8 @@ PyObject* BuildProgramWithSyntaxErrors( PyObject* const self, PyObject* const ar
 	const SourceGraphPtr source_graph= source_graph_loader.LoadSource( file_path );
 
 	std::vector<CodeBuilderError> errors_converted;
-	errors_converted.reserve( source_graph->syntax_errors.size() );
-	for( const Synt::SyntaxErrorMessage& error_message : source_graph->syntax_errors )
+	errors_converted.reserve( source_graph->errors.size() );
+	for( const LexSyntError& error_message : source_graph->errors )
 	{
 		CodeBuilderError error_converted;
 		error_converted.code= CodeBuilderErrorCode::BuildFailed;

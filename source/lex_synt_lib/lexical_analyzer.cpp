@@ -136,7 +136,7 @@ bool IsIdentifierChar( const sprache_char c )
 	return IsIdentifierStartChar(c) || IsNumberStartChar(c) || c == '_';
 }
 
-Lexem ParseString( Iterator& it, const Iterator it_end, LexicalErrorMessages& out_errors )
+Lexem ParseString( Iterator& it, const Iterator it_end, const FilePos& file_pos, LexSyntErrors& out_errors )
 {
 	U_ASSERT( *it == '"' );
 	++it;
@@ -155,7 +155,7 @@ Lexem ParseString( Iterator& it, const Iterator it_end, LexicalErrorMessages& ou
 		}
 		else if( ( /* *it >= 0x00u && */ sprache_char(*it) < 0x20u ) || *it == 0x7F ) // TODO - is this correct control character?
 		{
-			out_errors.push_back( "control character inside string" );
+			out_errors.emplace_back( "control character inside string", file_pos );
 			return result;
 		}
 		else if( *it == '\\' )
@@ -185,7 +185,7 @@ Lexem ParseString( Iterator& it, const Iterator it_end, LexicalErrorMessages& ou
 					++it;
 					if( it_end - it < 4 )
 					{
-						out_errors.push_back( "expected 4 hex digits" );
+						out_errors.emplace_back( "expected 4 hex digits", file_pos );
 						return result;
 					}
 
@@ -198,7 +198,7 @@ Lexem ParseString( Iterator& it, const Iterator it_end, LexicalErrorMessages& ou
 						else if( *it >= 'A' && *it <= 'F' ) digit= uint32_t( *it - 'A' + 10 );
 						else
 						{
-							out_errors.push_back( "expected hex number" );
+							out_errors.emplace_back( "expected hex number", file_pos );
 							return result;
 						}
 						char_code|= digit << ( ( 3u - i ) * 4u );
@@ -209,7 +209,7 @@ Lexem ParseString( Iterator& it, const Iterator it_end, LexicalErrorMessages& ou
 				break;
 
 			default:
-				out_errors.push_back( std::string("invalid escape sequence: \\") + char(*it) );
+				out_errors.emplace_back( std::string("invalid escape sequence: \\") + char(*it), file_pos );
 				return result;
 			};
 		}
@@ -293,7 +293,7 @@ double PowI( const uint64_t base, const uint64_t pow )
 	return res;
 }
 
-Lexem ParseNumber( Iterator& it, const Iterator it_end, LexicalErrorMessages& out_errors )
+Lexem ParseNumber( Iterator& it, const Iterator it_end, FilePos file_pos, LexSyntErrors& out_errors )
 {
 	uint64_t base= 10u;
 	// Returns -1 for non-numbers
@@ -372,7 +372,7 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, LexicalErrorMessages& ou
 
 		if( integer_part < integer_part_before ) // Check overflow
 		{
-			out_errors.push_back( "Integer part of numeric literal is too long" );
+			out_errors.emplace_back( "Integer part of numeric literal is too long", file_pos );
 			break;
 		}
 	}
@@ -395,7 +395,7 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, LexicalErrorMessages& ou
 
 			if( fractional_part < fractional_part_before ) // Check overflow
 			{
-				out_errors.push_back( "Fractional part of numeric literal is too long" );
+				out_errors.emplace_back( "Fractional part of numeric literal is too long", file_pos );
 				break;
 			}
 		}
@@ -465,7 +465,7 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, LexicalErrorMessages& ou
 	{
 		const Lexem type_suffix= ParseIdentifier( it, it_end );
 		if( type_suffix.text.size() >= sizeof(result.type_suffix) )
-			out_errors.push_back( "Type suffix of numeric literal is too long" );
+			out_errors.emplace_back( "Type suffix of numeric literal is too long", file_pos );
 
 		std::memcpy( result.type_suffix.data(), type_suffix.text.data(), std::min( type_suffix.text.size(), sizeof(result.type_suffix) ) );
 	}
@@ -581,9 +581,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 				result.lexems.push_back( std::move(comment_lexem) );
 			}
 			else if( comments_depth < 0 )
-				result.error_messages.emplace_back(
-					std::to_string(line) + ":" + std::to_string(column) +
-					" Lexical error: unexpected */" );
+				result.errors.emplace_back( " Lexical error: unexpected */", FilePos( 0u, line, column ) );
 			it+= 2;
 			column+= 2u;
 			continue;
@@ -603,7 +601,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 		}
 		else if( c == '"' )
 		{
-			lexem= ParseString( it, it_end, result.error_messages );
+			lexem= ParseString( it, it_end, FilePos( 0u, line, column ), result.errors );
 			if( IsIdentifierStartChar( GetUTF8FirstChar( it, it_end ) ) )
 			{
 				// Parse string suffix.
@@ -618,7 +616,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 			}
 		}
 		else if( IsNumberStartChar(c) )
-			lexem= ParseNumber( it, it_end, result.error_messages );
+			lexem= ParseNumber( it, it_end, FilePos( 0u, line, column ), result.errors );
 		else if( IsIdentifierStartChar(c) )
 			lexem= ParseIdentifier( it, it_end );
 		else if( IsMacroIdentifierStartChar(c) &&
@@ -647,9 +645,9 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 			}
 
 			if( comments_depth == 0 )
-				result.error_messages.emplace_back(
-					std::to_string(line) + ":" + std::to_string(column) +
-					" Lexical error: unrecognized character: " + std::to_string(c) );
+				result.errors.emplace_back(
+					" Lexical error: unrecognized character: " + std::to_string(c),
+					FilePos( 0u, line, column ) );
 			++it;
 			continue;
 		}
@@ -665,9 +663,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 
 	if( !collect_comments )
 		for( int i= 0; i < comments_depth; ++i )
-			result.error_messages.emplace_back(
-				std::to_string(line) + ":" + std::to_string(column) +
-				" Lexical error: expected */" );
+			result.errors.emplace_back( " Lexical error: expected */", FilePos( 0u, line, column ) );
 
 	Lexem eof_lexem;
 	eof_lexem.type= Lexem::Type::EndOfFile;
@@ -678,15 +674,15 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 
 	if( line > FilePos::c_max_line )
 	{
-		result.error_messages.emplace_back(
-			std::to_string(1u) + ":" + std::to_string(0u) +
-			" Lexical error: line limit reached, max is " + std::to_string( FilePos::c_max_line ) );
+		result.errors.emplace_back(
+			" Lexical error: line limit reached, max is " + std::to_string( FilePos::c_max_line ),
+			FilePos( 0u, line, column ) );
 	}
 	if( max_column > FilePos::c_max_column )
 	{
-		result.error_messages.emplace_back(
-			std::to_string(1u) + ":" + std::to_string(0u) +
-			" Lexical error: column limit reached, max is " + std::to_string( FilePos::c_max_column ) );
+		result.errors.emplace_back(
+			" Lexical error: column limit reached, max is " + std::to_string( FilePos::c_max_column ),
+			FilePos( 0u, line, column ) );
 	}
 
 	return result;

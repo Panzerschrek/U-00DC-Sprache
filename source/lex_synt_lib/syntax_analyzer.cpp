@@ -329,7 +329,7 @@ private:
 	void PushErrorMessage();
 
 private:
-	SyntaxErrorMessages error_messages_;
+	LexSyntErrors error_messages_;
 	Lexems::const_iterator it_;
 	Lexems::const_iterator it_end_;
 
@@ -437,7 +437,7 @@ void SyntaxAnalyzer::ParseMacro()
 
 	if( IsKeyword( macro.name ) )
 	{
-		SyntaxErrorMessage msg;
+		LexSyntError msg;
 		msg.file_pos= macro.file_pos;
 		msg.text= "Using keyword as macro name";
 		error_messages_.push_back(std::move(msg));
@@ -468,7 +468,7 @@ void SyntaxAnalyzer::ParseMacro()
 		macro_context= Macro::Context::Namespace;
 	else
 	{
-		SyntaxErrorMessage msg;
+		LexSyntError msg;
 		msg.file_pos= macro.file_pos;
 		msg.text= "\"" + context_str + "\" unknown macro context";
 		error_messages_.push_back(std::move(msg));
@@ -508,7 +508,7 @@ void SyntaxAnalyzer::ParseMacro()
 	MacroMap& macro_map= (*macros_)[macro_context];
 	if( macro_map.find( macro.name ) != macro_map.end() )
 	{
-		SyntaxErrorMessage msg;
+		LexSyntError msg;
 		msg.file_pos= macro.file_pos;
 		msg.text= "\"" + macro.name + "\" macro redefinition.";
 		error_messages_.push_back(std::move(msg));
@@ -538,14 +538,14 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 
 			if( elements_set.find( element.name ) != elements_set.end() )
 			{
-				SyntaxErrorMessage msg;
+				LexSyntError msg;
 				msg.file_pos= it_->file_pos;
 				msg.text= "\"" + element.name + "\" macro parameter redefinition.";
 				error_messages_.push_back(std::move(msg));
 			}
 			if( IsKeyword( element.name ) )
 			{
-				SyntaxErrorMessage msg;
+				LexSyntError msg;
 				msg.file_pos= it_->file_pos;
 				msg.text= "Using keyword as macro element name";
 				error_messages_.push_back(std::move(msg));
@@ -581,7 +581,7 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 				element.kind= Macro::MatchElementKind::Repeated;
 			else
 			{
-				SyntaxErrorMessage msg;
+				LexSyntError msg;
 				msg.file_pos= it_->file_pos;
 				msg.text= "\"" + element_type_str + "\" unknown macro variable type";
 				error_messages_.push_back(std::move(msg));
@@ -657,7 +657,7 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 				result[i].block_check_lexem_kind= Macro::BlockCheckLexemKind::LexemAfterBlockEnd;
 			else
 			{
-				SyntaxErrorMessage msg;
+				LexSyntError msg;
 				msg.file_pos= it_->file_pos;
 				msg.text= "Expected lexem at start or after \"" + result[i].name + "\" element.";
 				error_messages_.push_back(std::move(msg));
@@ -669,7 +669,7 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 					!result[i].sub_elements.empty() && result[i].sub_elements.front().kind == Macro::MatchElementKind::Lexem &&
 					result[i].sub_elements.front().lexem.type == result[i+1u].lexem.type && result[i].sub_elements.front().lexem.text == result[i+1u].lexem.text )
 				{
-					SyntaxErrorMessage msg;
+					LexSyntError msg;
 					msg.file_pos= it_->file_pos;
 					msg.text= "Start lexem of optional macro block must be different from first lexem after optional block.";
 					error_messages_.push_back(std::move(msg));
@@ -679,7 +679,7 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 					result[i].lexem.type != Lexem::Type::EndOfFile &&
 					result[i].lexem.type == result[i+1].lexem.type && result[i].lexem.text == result[i+1].lexem.text )
 				{
-					SyntaxErrorMessage msg;
+					LexSyntError msg;
 					msg.file_pos= it_->file_pos;
 					msg.text= "Separator lexem of repeated macro block must be different from first lexem after repeated block.";
 					error_messages_.push_back(std::move(msg));
@@ -690,7 +690,7 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 					!result[i].sub_elements.empty() && result[i].sub_elements.front().kind == Macro::MatchElementKind::Lexem &&
 					result[i].sub_elements.front().lexem.type == result[i+1u].lexem.type && result[i].sub_elements.front().lexem.text == result[i+1u].lexem.text )
 				{
-					SyntaxErrorMessage msg;
+					LexSyntError msg;
 					msg.file_pos= it_->file_pos;
 					msg.text= "Start lexem of repeated macro block without separator must be different from first lexem after repeated block.";
 					error_messages_.push_back(std::move(msg));
@@ -1271,7 +1271,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 			{
 				if( it_->text.size() > sizeof(TypeSuffix) / sizeof(TypeSuffix::value_type) - 1 )
 				{
-					SyntaxErrorMessage msg;
+					LexSyntError msg;
 					msg.file_pos= it_->file_pos;
 					msg.text= "String literal is too long";
 					error_messages_.push_back( msg );
@@ -3962,7 +3962,7 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 	const auto push_macro_error=
 	[&]
 	{
-		SyntaxErrorMessage msg;
+		LexSyntError msg;
 		msg.file_pos= it_->file_pos;
 		msg.text= "Unexpected lexem - \"" + it_->text + "\". (In expansion of macro \"" + macro_name + "\")";
 		error_messages_.push_back(std::move(msg));
@@ -4178,7 +4178,7 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 				const auto element= parsed_elements.GetElement( result_element.name );
 				if( element == nullptr )
 				{
-					SyntaxErrorMessage msg;
+					LexSyntError msg;
 					msg.file_pos= result_element.lexem.file_pos;
 					msg.text= result_element.name + " not found";
 					error_messages_.push_back( std::move(msg) );
@@ -4194,7 +4194,7 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 				const auto element= parsed_elements.GetElement( result_element.name );
 				if( element == nullptr )
 				{
-					SyntaxErrorMessage msg;
+					LexSyntError msg;
 					msg.file_pos= result_element.lexem.file_pos;
 					msg.text= result_element.name + " not found";
 					error_messages_.push_back( std::move(msg) );
@@ -4220,7 +4220,7 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 					}
 					else
 					{
-						SyntaxErrorMessage msg;
+						LexSyntError msg;
 						msg.file_pos= result_element.lexem.file_pos;
 						msg.text= "Expected optional or repated.";
 						error_messages_.push_back( std::move(msg) );
@@ -4317,7 +4317,7 @@ void SyntaxAnalyzer::PushErrorMessage()
 {
 	if( error_messages_.empty() || error_messages_.back().file_pos != it_->file_pos )
 	{
-		SyntaxErrorMessage error_message;
+		LexSyntError error_message;
 		error_message.file_pos= it_->file_pos;
 		error_message.text= "Syntax error - unexpected lexem \"" + it_->text + "\"";
 		error_messages_.push_back( std::move(error_message) );
