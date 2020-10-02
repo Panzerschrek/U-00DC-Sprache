@@ -693,7 +693,7 @@ int Main( int argc, const char* argv[] )
 		for( const SourceGraph::Node& node : source_graph->nodes_storage )
 			deps_list.push_back( node.file_path );
 
-		if( source_graph->have_errors || !source_graph->errors.empty() )
+		if( !source_graph->errors.empty() )
 		{
 			have_some_errors= true;
 			continue;

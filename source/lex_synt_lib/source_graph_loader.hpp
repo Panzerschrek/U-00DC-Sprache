@@ -42,7 +42,6 @@ struct SourceGraph final
 	Synt::MacroExpansionContextsPtr macro_expansion_contexts;
 
 	LexSyntErrors errors;
-	bool have_errors= false;
 };
 
 using SourceGraphPtr= std::unique_ptr<SourceGraph>;

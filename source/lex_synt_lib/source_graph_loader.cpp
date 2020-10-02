@@ -61,7 +61,6 @@ size_t SourceGraphLoader::LoadNode_r(
 
 		result.errors.emplace_back( imports_loop_str, FilePos( 0u, 0u, 0u ) );
 
-		result.have_errors= true;
 		return ~0u;
 	}
 
@@ -72,22 +71,18 @@ size_t SourceGraphLoader::LoadNode_r(
 
 	const size_t node_index= result.nodes_storage.size();
 
-	std::optional<IVfs::LoadFileResult> loaded_file= vfs_->LoadFileContent( file_path, parent_file_path );
+	const std::optional<IVfs::LoadFileResult> loaded_file= vfs_->LoadFileContent( file_path, parent_file_path );
 	if( loaded_file == std::nullopt )
 	{
 		LexSyntError error_message( "Can not read file \"" + file_path + "\"", FilePos( uint32_t(node_index), 0u, 0u ) );
 		result.errors.push_back( std::move(error_message) );
-		result.have_errors= true;
 		return ~0u;
 	}
 
 	LexicalAnalysisResult lex_result= LexicalAnalysis( loaded_file->file_content );
 	result.errors.insert( result.errors.end(), lex_result.errors.begin(), lex_result.errors.end() );
 	if( !lex_result.errors.empty() )
-	{
-		result.have_errors= true;
 		return ~0u;
-	}
 
 	for( Lexem& lexem :lex_result.lexems )
 		lexem.file_pos.SetFileIndex(uint32_t(node_index));
@@ -144,7 +139,6 @@ size_t SourceGraphLoader::LoadNode_r(
 		result.macro_expansion_contexts );
 
 	result.errors.insert( result.errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
-	result.have_errors &= !synt_result.error_messages.empty();
 
 	result.nodes_storage[node_index].ast= std::move( synt_result );
 	return node_index;
