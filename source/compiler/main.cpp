@@ -177,8 +177,6 @@ std::string GetNativeTargetFeaturesStr()
 	return features.getString();
 }
 
-enum class ErrorsFormat{ GCC, MSVC };
-
 void PrintErrors( const SourceGraph& source_graph, const CodeBuilderErrorsContainer& errors, const ErrorsFormat format )
 {
 	for( const CodeBuilderError& error : errors )
@@ -213,11 +211,8 @@ void PrintErrors( const SourceGraph& source_graph, const CodeBuilderErrorsContai
 			}
 			else
 			{
-				std::string code_str= std::to_string( int(error.code) );
-				while( code_str.size() < 4u ) code_str.insert(code_str.begin(), '0');
-
 				std::cerr << source_graph.nodes_storage[ error.file_pos.GetFileIndex() ].file_path
-					<< "(" << error.file_pos.GetLine() << "): error C" << code_str << ": " << error.text << "\n";
+					<< "(" << error.file_pos.GetLine() << "): error: " << error.text << "\n";
 			}
 		}
 		else
@@ -676,13 +671,14 @@ int Main( int argc, const char* argv[] )
 	const llvm::DataLayout data_layout= target_machine->createDataLayout();
 
 	const bool is_msvc= target_machine->getTargetTriple().getEnvironment() == llvm::Triple::MSVC;
+	const auto errors_format= is_msvc ? ErrorsFormat::MSVC : ErrorsFormat::GCC;
 
 	const auto vfs= VfsOverSystemFS::Create( Options::include_dir );
 	if( vfs == nullptr )
 		return 1u;
 
 	// Compile multiple input files and link them together.
-	SourceGraphLoader source_graph_loader( vfs );
+	SourceGraphLoader source_graph_loader( vfs, std::cerr, errors_format );
 	llvm::LLVMContext llvm_context;
 	std::unique_ptr<llvm::Module> result_module;
 	std::vector<IVfs::Path> deps_list;
@@ -716,7 +712,7 @@ int Main( int argc, const char* argv[] )
 		}
 		else
 		{
-			PrintErrors( *source_graph, build_result.errors, is_msvc ? ErrorsFormat::MSVC : ErrorsFormat::GCC );
+			PrintErrors( *source_graph, build_result.errors, errors_format );
 		}
 
 		if( !build_result.errors.empty() )

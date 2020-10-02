@@ -26,10 +26,11 @@ static Synt::MacrosPtr PrepareBuiltInMacros()
 	return synt_result.macros;
 }
 
-SourceGraphLoader::SourceGraphLoader( IVfsPtr vfs, std::ostream& errors_stream )
+SourceGraphLoader::SourceGraphLoader( IVfsPtr vfs, std::ostream& errors_stream, const ErrorsFormat errors_format )
 	: built_in_macros_(PrepareBuiltInMacros())
 	, vfs_(std::move(vfs))
 	, errors_stream_(errors_stream)
+	, errors_format_(errors_format)
 {
 	U_ASSERT( built_in_macros_ != nullptr );
 	U_ASSERT( vfs_ != nullptr );
@@ -59,7 +60,12 @@ size_t SourceGraphLoader::LoadNode_r(
 		for( auto it= prev_file_it; it != processed_files_stack_.end(); ++it )
 			imports_loop_str+= *it + " -> ";
 		imports_loop_str+= full_file_path;
-		errors_stream_ << parent_file_path << ": 1:1: Import loop detected: " <<  imports_loop_str << std::endl;
+
+		if( errors_format_ == ErrorsFormat::MSVC )
+			errors_stream_ << parent_file_path << "(1): error: Import loop detected: " << imports_loop_str << std::endl;
+		else
+			errors_stream_ << parent_file_path << ": 1:1: Import loop detected: " << imports_loop_str << std::endl;
+
 		result.have_errors= true;
 		return ~0u;
 	}
@@ -86,7 +92,13 @@ size_t SourceGraphLoader::LoadNode_r(
 
 	LexicalAnalysisResult lex_result= LexicalAnalysis( loaded_file->file_content );
 	for( const std::string& lexical_error_message : lex_result.error_messages )
-		errors_stream_ << full_file_path << ": error: " << lexical_error_message << "\n";
+	{
+		// TODO - put file_pos into lexical error
+		if( errors_format_ == ErrorsFormat::MSVC )
+			errors_stream_ << full_file_path << "(1): error: " << lexical_error_message << "\n";
+		else
+			errors_stream_ << full_file_path << ": error: " << lexical_error_message << "\n";
+	}
 	result.lexical_errors.insert( result.lexical_errors.end(), lex_result.error_messages.begin(), lex_result.error_messages.end() );
 	if( !lex_result.error_messages.empty() )
 	{
@@ -135,7 +147,15 @@ size_t SourceGraphLoader::LoadNode_r(
 					error_message.text= "Macro \"" + macro_map_pair.first + "\" redefinition.";
 					error_message.file_pos= FilePos( 0u, 0u, uint32_t(node_index) );
 
-					errors_stream_ << error_message.text << std::endl;
+					if( errors_format_ == ErrorsFormat::MSVC )
+						errors_stream_ << full_file_path << "(1): error: " << error_message.text << "\n";
+					else
+						errors_stream_ <<
+							full_file_path << ":"
+							<< error_message.file_pos.GetLine() << ":"
+							<< error_message.file_pos.GetColumn() << ": error: "
+							<< error_message.text << "\n";
+
 					result.syntax_errors.push_back( std::move(error_message) );
 				}
 				else
@@ -152,8 +172,16 @@ size_t SourceGraphLoader::LoadNode_r(
 		result.macro_expansion_contexts );
 
 	for( const Synt::SyntaxErrorMessage& syntax_error_message : synt_result.error_messages )
-		errors_stream_ << full_file_path << ":"
-			<< syntax_error_message.file_pos.GetLine() << ":" << syntax_error_message.file_pos.GetColumn() << ": error: " << syntax_error_message.text << "\n";
+	{
+		if( errors_format_ == ErrorsFormat::MSVC )
+			errors_stream_ << full_file_path << "(" << syntax_error_message.file_pos.GetLine() << "): error: " << syntax_error_message.text << "\n";
+		else
+			errors_stream_ <<
+				full_file_path << ":"
+				<< syntax_error_message.file_pos.GetLine() << ":"
+				<< syntax_error_message.file_pos.GetColumn() << ": error: "
+				<< syntax_error_message.text << "\n";
+	}
 
 	result.syntax_errors.insert( result.syntax_errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
 	result.have_errors &= !synt_result.error_messages.empty();

@@ -6,6 +6,8 @@
 namespace U
 {
 
+enum class ErrorsFormat{ GCC, MSVC };
+
 class IVfs
 {
 public:
@@ -52,7 +54,7 @@ using SourceGraphPtr= std::unique_ptr<SourceGraph>;
 class SourceGraphLoader final
 {
 public:
-	explicit SourceGraphLoader( IVfsPtr vfs, std::ostream& errors_stream= std::cerr );
+	explicit SourceGraphLoader( IVfsPtr vfs, std::ostream& errors_stream= std::cerr, ErrorsFormat errors_format= ErrorsFormat::GCC );
 
 	// Never returns nullptr.
 	SourceGraphPtr LoadSource( const IVfs::Path& root_file_path );
@@ -64,6 +66,7 @@ private:
 	const Synt::MacrosPtr built_in_macros_;
 	const IVfsPtr vfs_;
 	std::ostream& errors_stream_;
+	const ErrorsFormat errors_format_;
 
 	std::vector<IVfs::Path> processed_files_stack_;
 };
