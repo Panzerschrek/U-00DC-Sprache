@@ -1755,8 +1755,6 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 
 fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
 {
-	// TODO - merge references graph state for lazy operator branches.
-
 	var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.l.get_ref() );
 	if( l_var.t != bool_type_ )
 	{
@@ -1773,6 +1771,12 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 	}
 
 	auto l_var_in_register= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
+
+	DestroyUnusedTemporaryVariables( names_scope, function_context, binary_operator.file_pos ); // Destroy right part temporaries.
+
+	var [ ReferencesGraph, 2 ] mut branches_references_graphs;
+	branches_references_graphs[0]= function_context.references_graph;
+
 	unsafe
 	{
 		if( binary_operator.operator == BinaryOperatorType::LazyLogicalAnd )
@@ -1804,6 +1808,9 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 		r_var_in_register= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 		CallDestructorsForTopVariablesFrame( names_scope, function_context, binary_operator.file_pos );
 	}
+
+	branches_references_graphs[1]= function_context.references_graph;
+	function_context.references_graph= MergeIfBranches( branches_references_graphs, names_scope, binary_operator.file_pos );
 
 	auto mut phi_node= LLVMValueRef::Null;
 	unsafe
@@ -1843,8 +1850,6 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 			else{ halt; }
 		}
 	}
-
-	DestroyUnusedTemporaryVariables( names_scope, function_context, binary_operator.file_pos ); // Destroy right and left part temporaries.
 
 	result.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, BinaryOperatorToString( binary_operator.operator ) );
 
