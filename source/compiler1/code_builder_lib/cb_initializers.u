@@ -1143,6 +1143,9 @@ fn CodeBuilder::BuildConstructorInitialization(
 	FunctionContext &mut function_context,
 	Synt::StructNamedInitializer& constructor_initialization_list )
 {
+	var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+
 	// Function context should contain "this" with class type
 	auto class_type= function_context.this_.get_ref().t.GetClassType().get_ref();
 	auto class_members_ptr= class_type.lock_imut().get_ref().members;
