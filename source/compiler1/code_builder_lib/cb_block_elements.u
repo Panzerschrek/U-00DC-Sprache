@@ -1044,7 +1044,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 }
 
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CStyleForOperator& c_style_for_operator ) : BlockElementBuildInfo
-{
+{	
 	var VariablesFrameHolder loop_variables_frame_hodler(function_context);
 	auto& mut function_context= loop_variables_frame_hodler.GetFunctionContext();
 
@@ -1056,6 +1056,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	{
 		BuildBlockElement( names_scope, function_context, element );
 	}
+
+	auto mut references_graph_before_loop= function_context.references_graph;
 
 	var LLVMBasicBlockRef mut test_block= zero_init, mut loop_block= zero_init, mut loop_iteration_block= zero_init, mut block_after_loop= zero_init;
 	unsafe
@@ -1117,7 +1119,17 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	if( !info.have_terminal_instruction_inside )
 	{
 		unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, loop_iteration_block );  }
+		function_context.loops_stack.back().continue_references_graphs.push_back( function_context.references_graph );
 	}
+
+	// References graph state before loop iteration block is combination of references graph states of each branch terminated with "continue".
+	if( !function_context.loops_stack.back().continue_references_graphs.empty() )
+	{
+		function_context.references_graph= MergeIfBranches( function_context.loops_stack.back().continue_references_graphs.range(), names_scope, c_style_for_operator.block.get_ref().end_file_pos );
+	}
+
+	var ust::vector</ReferencesGraph/> mut references_graphs_for_merge= take( function_context.loops_stack.back().break_references_graphs );
+	references_graphs_for_merge.push_back( references_graph_before_loop );
 
 	function_context.loops_stack.pop_back();
 
@@ -1136,6 +1148,9 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	}
 
 	unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, test_block );  }
+
+	CheckReferencesGraphAfterLoop( references_graph_before_loop, function_context.references_graph, names_scope, c_style_for_operator.block.get_ref().end_file_pos );
+	function_context.references_graph= MergeIfBranches( references_graphs_for_merge.range(), names_scope, c_style_for_operator.block.get_ref().end_file_pos );
 
 	// Block after loop.
 	unsafe

@@ -148,6 +148,7 @@ bool FilterTest( const std::string& test_name )
 		"BasicReferenceInsideClassUsage",
 		"ConstructorOutsideClassTest",
 		"ConstructorMustReturnVoidTest",
+		"CStyleForMergeTest",
 		"DefaultConstructorNotFoundTest",
 		"DestructorTest_ForCStyleForOperator",
 		"DestructorOutsideClassTest0",
