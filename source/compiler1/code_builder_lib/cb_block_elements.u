@@ -725,6 +725,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	if( if_operator.branches.back().condition.get</Synt::EmptyVariant/>().empty() )
 	{
 		block_element_build_info.have_terminal_instruction_inside= false;
+		branches_references_graphs.push_back( function_context.references_graph );
 	}
 
 	if( block_element_build_info.have_terminal_instruction_inside )

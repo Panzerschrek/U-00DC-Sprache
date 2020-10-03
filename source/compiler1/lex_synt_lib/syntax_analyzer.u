@@ -2221,7 +2221,7 @@ fn SyntaxAnalyzer::ParseIfOperator( mut this ) : IfOperator
 		.condition= move(if_expression),
 		.block( ParseBlock() )
 	};
-
+	if_operator.end_file_pos= first_branch.block.get_ref().end_file_pos;
 	if_operator.branches.push_back( move(first_branch) );
 
 	while( NotEndOfFile() )
