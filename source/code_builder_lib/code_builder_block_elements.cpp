@@ -895,7 +895,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		function_context.variables_state= MergeVariablesStateAfterIf( function_context.loops_stack.back().continue_variables_states, names.GetErrors(), c_style_for_operator.block_.end_file_pos_ );
 
 	std::vector<ReferencesGraph> variables_state_for_merge= std::move( function_context.loops_stack.back().break_variables_states );
-	variables_state_for_merge.push_back( std::move(variables_state_before_loop) );
+	variables_state_for_merge.push_back( variables_state_before_loop );
 
 	function_context.loops_stack.pop_back();
 
