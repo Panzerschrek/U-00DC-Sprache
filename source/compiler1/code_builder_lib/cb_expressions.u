@@ -556,7 +556,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	function_context.references_graph.MoveNode( variable.node_id );
 
 	{// Register variable for references checking.
-		var NamesScopeVariable names_scope_variable
+		var NamesScopeVariable mut names_scope_variable
 		{
 			.t= result.t,
 			.is_mutable= true,
@@ -564,7 +564,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			.constexpr_value= result.constexpr_value,
 			.node_id= result.node_id,
 		};
-		function_context.variables_frames.back().push_back( names_scope_variable );
+		function_context.variables_frames.back().push_back( move(names_scope_variable) );
 	}
 
 	return move(result);
@@ -1804,7 +1804,7 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 	res.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, BinaryOperatorToString( operator ) );
 
 	// Register variable for references checking.
-	var NamesScopeVariable names_scope_variable
+	var NamesScopeVariable mut names_scope_variable
 	{
 		.t= res.t,
 		.is_mutable= true,
@@ -1812,7 +1812,7 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 		.constexpr_value= res.constexpr_value,
 		.node_id= res.node_id,
 	};
-	function_context.variables_frames.back().push_back( names_scope_variable );
+	function_context.variables_frames.back().push_back( move(names_scope_variable) );
 
 	return move(res);
 }
@@ -1918,7 +1918,7 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 	result.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, BinaryOperatorToString( binary_operator.operator ) );
 
 	// Register variable for references checking.
-	var NamesScopeVariable names_scope_variable
+	var NamesScopeVariable mut names_scope_variable
 	{
 		.t= result.t,
 		.is_mutable= true,
@@ -1926,7 +1926,7 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 		.constexpr_value= result.constexpr_value,
 		.node_id= result.node_id,
 	};
-	function_context.variables_frames.back().push_back( names_scope_variable );
+	function_context.variables_frames.back().push_back( move(names_scope_variable) );
 
 	return move(result);
 }
@@ -2743,7 +2743,7 @@ fn CodeBuilder::BuildTempVariableConstruction(
 	result.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, name );
 
 	{
-		var NamesScopeVariable names_scope_variable
+		var NamesScopeVariable mut names_scope_variable
 		{
 			.t= t,
 			.is_mutable= true,
@@ -2752,7 +2752,7 @@ fn CodeBuilder::BuildTempVariableConstruction(
 		};
 		result.constexpr_value= BuildConstructorInitializer( names_scope, function_context, names_scope_variable, args, file_pos );
 
-		function_context.variables_frames.back().push_back( names_scope_variable );
+		function_context.variables_frames.back().push_back( move(names_scope_variable) );
 	}
 
 	return move(result);
