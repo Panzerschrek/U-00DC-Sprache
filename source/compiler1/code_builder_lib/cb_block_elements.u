@@ -910,6 +910,18 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				select( is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
 				move(node_name) );
 			function_context.references_graph.AddLink( sequence_expression.node_id, sequence_lock_node );
+
+			{// Register lock node for later destruction.
+				var NamesScopeVariable mut names_scope_variable
+				{
+					.t= sequence_expression.t,
+					.is_mutable= true,
+					.llvm_value= sequence_expression.llvm_value,
+					.constexpr_value= sequence_expression.constexpr_value,
+					.node_id= sequence_lock_node,
+				};
+				function_context.variables_frames.back().push_back( move(names_scope_variable) );
+			}
 		}
 	}
 
@@ -1049,11 +1061,6 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	{
 		// TODO - support array types.
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, range_for_operator.file_pos, sequence_expression.t )
-	}
-
-	if( sequence_lock_node != ReferencesGraph::c_empty_node_id )
-	{
-		function_context.references_graph.RemoveNode( sequence_lock_node );
 	}
 
 	CallDestructorsForTopVariablesFrame( names_scope, function_context, range_for_operator.file_pos );
