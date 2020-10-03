@@ -1810,7 +1810,7 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 	}
 
 	branches_references_graphs[1]= function_context.references_graph;
-	function_context.references_graph= MergeIfBranches( branches_references_graphs, names_scope, binary_operator.file_pos );
+	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( branches_references_graphs, names_scope, binary_operator.file_pos );
 
 	auto mut phi_node= LLVMValueRef::Null;
 	unsafe

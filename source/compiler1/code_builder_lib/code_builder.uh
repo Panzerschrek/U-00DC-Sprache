@@ -632,7 +632,7 @@ private:
 	fn IsReferenceAllowedForReturn( this, FunctionContext& function_context, ReferencesGraph::NodeId variable_node ) : bool;
 	fn CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names_scope, FunctionContext& function_context, FilePos& file_pos );
 
-	fn MergeIfBranches( ust::array_view_imut</ReferencesGraph/> branches, NamesScopePtr names_scope, FilePos& file_pos ) : ReferencesGraph; // TODO - rename
+	fn MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches, NamesScopePtr names_scope, FilePos& file_pos ) : ReferencesGraph; // TODO - rename
 	fn CheckReferencesGraphAfterLoop( ReferencesGraph& state_before, ReferencesGraph& state_after, NamesScopePtr names_scope, FilePos& file_pos );
 
 	fn SetupReferencesInCopyOrMove(

@@ -197,7 +197,7 @@ fn ReferencesGraph::GetAllAccessibleVariableInnerNodes( this, NodeId node_id ) :
 	return move(nodes_set);
 }
 
-fn ReferencesGraph::MergeIfBranches( ust::array_view_imut</ReferencesGraph/> branches,  ErrorsContainer &mut errors, FilePos& file_pos ) : ReferencesGraph
+fn ReferencesGraph::MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches,  ErrorsContainer &mut errors, FilePos& file_pos ) : ReferencesGraph
 {
 	var ReferencesGraph mut result;
 

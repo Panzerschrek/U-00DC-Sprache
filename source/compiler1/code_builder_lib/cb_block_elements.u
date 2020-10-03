@@ -747,7 +747,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 	if( !branches_references_graphs.empty() )
 	{
-		function_context.references_graph= MergeIfBranches( branches_references_graphs.range(), names_scope, if_operator.end_file_pos );
+		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( branches_references_graphs.range(), names_scope, if_operator.end_file_pos );
 	}
 
 	return block_element_build_info;
@@ -873,7 +873,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	// Result graph state is combination of graph state before loop and graph state of all branches terminated with "break".
 	var ust::vector</ReferencesGraph/> mut references_graphs_for_merge= take( function_context.loops_stack.back().break_references_graphs );
 	references_graphs_for_merge.push_back( move( references_graph_before_loop ) );
-	function_context.references_graph= MergeIfBranches( references_graphs_for_merge.range(), names_scope, while_operator.block.get_ref().end_file_pos );
+	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge.range(), names_scope, while_operator.block.get_ref().end_file_pos );
 
 	function_context.loops_stack.pop_back();
 
@@ -1027,7 +1027,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			// Graph state in next iteration is combination of graph state of all branches with "continue" on previous iteration.
 			if( !function_context.loops_stack.back().continue_references_graphs.empty() )
 			{
-				function_context.references_graph= MergeIfBranches( function_context.loops_stack.back().continue_references_graphs.range(), names_scope, range_for_operator.block.get_ref().end_file_pos );
+				function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( function_context.loops_stack.back().continue_references_graphs.range(), names_scope, range_for_operator.block.get_ref().end_file_pos );
 			}
 
 			foreach( &mut break_refences_graph : function_context.loops_stack.back().break_references_graphs )
@@ -1043,7 +1043,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 		// References graph state after tuple-for is combination of graph state of all branches with "break" of all iterations.
 		references_graphs_for_merge.push_back( function_context.references_graph );
-		function_context.references_graph= MergeIfBranches( references_graphs_for_merge.range(), names_scope, range_for_operator.block.get_ref().end_file_pos );
+		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge.range(), names_scope, range_for_operator.block.get_ref().end_file_pos );
 	}
 	else
 	{
@@ -1142,7 +1142,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	// References graph state before loop iteration block is combination of references graph states of each branch terminated with "continue".
 	if( !function_context.loops_stack.back().continue_references_graphs.empty() )
 	{
-		function_context.references_graph= MergeIfBranches( function_context.loops_stack.back().continue_references_graphs.range(), names_scope, c_style_for_operator.block.get_ref().end_file_pos );
+		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( function_context.loops_stack.back().continue_references_graphs.range(), names_scope, c_style_for_operator.block.get_ref().end_file_pos );
 	}
 
 	var ust::vector</ReferencesGraph/> mut references_graphs_for_merge= take( function_context.loops_stack.back().break_references_graphs );
@@ -1167,7 +1167,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, test_block );  }
 
 	CheckReferencesGraphAfterLoop( references_graph_before_loop, function_context.references_graph, names_scope, c_style_for_operator.block.get_ref().end_file_pos );
-	function_context.references_graph= MergeIfBranches( references_graphs_for_merge.range(), names_scope, c_style_for_operator.block.get_ref().end_file_pos );
+	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge.range(), names_scope, c_style_for_operator.block.get_ref().end_file_pos );
 
 	// Block after loop.
 	unsafe
