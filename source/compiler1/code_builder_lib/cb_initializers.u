@@ -302,6 +302,12 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		auto field_lock= field_ptr.lock_imut();
 		var ClassField& class_field= field_lock.get_ref();
 
+		if( class_field.source_class.lock() != class_type_ptr )
+		{
+			REPORT_ERROR( InitializerForBaseClassField, names_scope, member_initializer.file_pos, member_initializer.name )
+			return LLVMValueRef::Null;
+		}
+
 		if( class_field.index == ~0s ){ is_constexpr= false; continue; } // May be in case of error
 
 		if( class_field.is_reference )
@@ -1190,6 +1196,12 @@ fn CodeBuilder::BuildConstructorInitialization(
 		{
 			have_fields_errors= true;
 			REPORT_ERROR( InitializerForNonfieldStructMember, names_scope, member_initializer.file_pos, member_initializer.name )
+			continue;
+		}
+		if( class_field_ptr.lock_imut().get_ref().source_class.lock() != class_type )
+		{
+			have_fields_errors= true;
+			REPORT_ERROR( InitializerForBaseClassField, names_scope, member_initializer.file_pos, member_initializer.name )
 			continue;
 		}
 

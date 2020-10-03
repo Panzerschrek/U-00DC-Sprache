@@ -1,6 +1,7 @@
 import "/box.u"
 import "/shared/shared_ptr_final_nullable.u"
 import "/shared/weak_ptr_imut.u"
+import "/shared/weak_ptr_mut.u"
 import "/unordered_map.u"
 import "/variant.u"
 import "/vector.u"
@@ -393,6 +394,9 @@ struct ClassField
 	size_type index= ~0s; // for "getelementptr" instruction
 	size_type original_index= ~0s; // Index of class field in class declaration
 	ust::shared_ptr_final</ Synt::ClassField /> syntax_element;
+
+	// Class, where this field is defined. May be not same class in case of inheritance.
+	ust::weak_ptr_mut</ClassType/> source_class;
 }
 
 struct Enum

@@ -469,6 +469,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		.is_reference= class_field.get_ref().reference_modifier == Synt::ReferenceModifier::Reference,
 		.is_mutable= true,
 		.original_index= field_index,
+		.source_class= class_type,
 	};
 
 	if( field.is_reference )

@@ -13,6 +13,7 @@ import "mangling.uh"
 			.is_reference= false,
 			.index= fields_llvm_types.size(),
 			.syntax_element= dummy_syntax_element,
+			.source_class= typeinfo_class,
 		};
 
 		fields_llvm_types.push_back( class_field.t.GetLLVMType() );
@@ -35,6 +36,7 @@ import "mangling.uh"
 			.is_reference= false,
 			.index= fields_llvm_types.size(),
 			.syntax_element= dummy_syntax_element,
+			.source_class= typeinfo_class,
 		};
 
 		fields_llvm_types.push_back( class_field.t.GetLLVMType() );
@@ -58,6 +60,7 @@ import "mangling.uh"
 			.is_reference= true,
 			.index= fields_llvm_types.size(),
 			.syntax_element= dummy_syntax_element,
+			.source_class= typeinfo_class,
 		};
 
 		unsafe{  fields_llvm_types.push_back( LLVMPointerType( class_field.t.GetLLVMType(), 0u ) );  }
@@ -81,6 +84,7 @@ import "mangling.uh"
 			.is_reference= false,
 			.index= fields_llvm_types.size(),
 			.syntax_element= dummy_syntax_element,
+			.source_class= typeinfo_class,
 		};
 
 		fields_llvm_types.push_back( class_field.t.GetLLVMType() );
@@ -111,6 +115,7 @@ import "mangling.uh"
 			.is_reference= false,
 			.index= fields_llvm_types.size(),
 			.syntax_element= dummy_syntax_element,
+			.source_class= typeinfo_class,
 		};
 
 		fields_llvm_types.push_back( class_field.t.GetLLVMType() );
@@ -329,7 +334,12 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 			class_.kind == ClassType::Kind::PolymorphNonFinal ||
 			class_.kind == ClassType::Kind::PolymorphFinal;
 
-		ADD_SIZE_FIELD( "field_count", class_.fields_order.size() ) // TODO - maybe count also inheretid fields?
+		var size_type mut field_count= 0s;
+		foreach( &member : class_.members.lock_imut().get_ref().GetInternalContainer() )
+		{
+			field_count+= select( member.value().Get</ClassField/>().empty() ? 0s : 1s );
+		}
+		ADD_SIZE_FIELD( "field_count", field_count )
 
 		ADD_SIZE_FIELD( "parent_count", class_.parents.size() )
 
@@ -514,10 +524,14 @@ fn CodeBuilder::BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_name
 	var NamesScope& class_members= class_members_lock.get_ref();
 	auto class_llvm_type= class_type.lock_imut().get_ref().llvm_type;
 
-	// TODO - add also fields of parents.
-	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
+	foreach( &member : class_members.GetInternalContainer() )
 	{
-		auto field_ptr= class_members.GetThisScopeValue(field_name).get_ref().Get</ClassField/>();
+		auto field_ptr= member.value().Get</ClassField/>();
+		if( field_ptr.empty() )
+		{
+			continue;
+		}
+
 		auto field_lock= field_ptr.lock_imut();
 		var ClassField& field= field_lock.get_ref();
 
@@ -528,7 +542,7 @@ fn CodeBuilder::BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_name
 		var ust::vector</LLVMValueRef/> mut fields_initializers;
 
 		ADD_TYPEINFO_FIELD( "type", field.t )
-		ADD_TYPEINFO_FIELD( "class_type", class_type )
+		ADD_TYPEINFO_FIELD( "class_type", ust::to_non_nullable( field.source_class.lock() ) )
 
 		auto mut offset= 0u64;
 		unsafe{  offset= LLVMOffsetOfElement( data_layout_, class_llvm_type, u32(field.index) );  }
@@ -537,7 +551,7 @@ fn CodeBuilder::BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_name
 		ADD_BOOL_FIELD( "is_mutable", field.is_mutable )
 		ADD_BOOL_FIELD( "is_reference", field.is_reference )
 
-		ADD_CLASS_MEMBER_COMMON_FIELDS( field_name )
+		ADD_CLASS_MEMBER_COMMON_FIELDS( member.key() )
 
 		FinishTypeinfoClass( typeinfo_class, fields_llvm_types );
 
@@ -726,6 +740,7 @@ fn CodeBuilder::BuildTypeinfoEnumElementsList( mut this, NamesScopePtr& root_nam
 				.is_reference= false,
 				.index= fields_llvm_types.size(),
 				.syntax_element= dummy_syntax_element,
+				.source_class= typeinfo_class,
 			};
 
 			fields_llvm_types.push_back( class_field.t.GetLLVMType() );

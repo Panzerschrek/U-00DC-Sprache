@@ -331,25 +331,29 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 		auto& field= field_lock.get_ref();
 		auto& field_name= field.syntax_element.get_ref().name;
 
+		if( field.index == ~0s ){ return ErrorValue(); } // May be in case of error
+
 		if( function_context.this_.empty() )
 		{
 			REPORT_ERROR( ClassFieldAccessInStaticMethod, names_scope, file_pos, field_name )
 			return ErrorValue();
 		}
 
-		auto field_class= names_scope.lock_imut().get_ref().GetClass();
-		auto this_class= function_context.this_.get_ref().t.GetClassType().get_ref();
-		var ust::shared_ptr_nullable_mut</ClassType/> mut current_class= this_class;
 		auto mut this_value_corrected= function_context.this_.get_ref().llvm_value;
-		while( !current_class.empty() && current_class != field_class )
-		{
-			var ust::shared_ptr_nullable_mut</ClassType/> next= cast_imut(current_class).lock_imut().get_ref().base_class;
 
-			if( !next.empty() )
+		var ClassTypePtr this_class= function_context.this_.get_ref().t.GetClassType().get_ref();
+		auto field_source_class= field.source_class.lock();
+		var ust::shared_ptr_nullable_imut</ClassType/> mut current_class= this_class;
+		while( !current_class.empty() && current_class != field_source_class )
+		{
+			auto base_class= current_class.lock_imut().get_ref().base_class;
+			if( base_class.empty() )
 			{
-				this_value_corrected= CreateBaseClassFieldGEP( this_value_corrected, function_context );
+				current_class= ust::shared_ptr_nullable_imut</ClassType/>();
+				break;
 			}
-			current_class= next;
+			this_value_corrected= CreateBaseClassFieldGEP( this_value_corrected, function_context );
+			current_class= base_class;
 		}
 
 		if( current_class.empty() )
@@ -361,13 +365,11 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 		if( function_context.whole_this_is_unavailable )
 		{
 			if( !function_context.uninitialized_this_fields.find( field_name ).empty() ||
-				( current_class != this_class && !function_context.uninitialized_this_fields.find( KeywordToString( Keyword::base_ ) ).empty() ) )
+				( field_source_class != this_class && !function_context.uninitialized_this_fields.find( KeywordToString( Keyword::base_ ) ).empty() ) )
 			{
 				REPORT_ERROR( FieldIsNotInitializedYet, names_scope, file_pos, field_name )
 			}
 		}
-
-		if( field.index == ~0s ){ return ErrorValue(); } // May be in case of error
 
 		auto op_name_nt= "." + field_name + "\0";
 		if( field.is_reference )

@@ -808,6 +808,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			auto &mut dst_members_= dst_members_lock.get_ref();
 
 			if( !member_value.value().Get</ClassType/>().empty() ||
+				!member_value.value().Get</ClassField/>().empty() ||
 				!member_value.value().Get</Enum/>().empty() ||
 				!member_value.value().Get</TypeAlias/>().empty() ||
 				!member_value.value().Get</GlobalVariable/>().empty() ||

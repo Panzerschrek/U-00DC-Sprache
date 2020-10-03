@@ -362,48 +362,6 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 		return move(base_);
 	}
-	if( !function_context.this_.empty() )
-	{
-		// Process access to "this" and parent class fields separately.
-		// This needed, because parent class fields does not added into class namespace.
-
-		auto this_class_type= function_context.this_.get_ref().t.GetClassType().get_ref();
-		var ust::shared_ptr_nullable_mut</ClassType/> mut class_type= this_class_type;
-		var ust::optional</NamesScopeValue/> mut class_member;
-
-		auto mut this_value_corrected= function_context.this_.get_ref().llvm_value;
-		while( !class_type.empty() && class_member.empty() )
-		{
-			var ust::shared_ptr_nullable_mut</ClassType/> mut next;
-			{
-				auto class_type_lock= class_type.lock_imut();
-				if( !(class_type != this_class_type &&
-					 class_type_lock.get_ref().GetMemberVisibility( name ) == Synt::ClassVisibility::Private ) ) // Ignore private parent fields.
-				{
-					auto class_members_lock= class_type_lock.get_ref().members.lock_imut();
-					if_var( &member : class_members_lock.get_ref().GetThisScopeValue( name ) )
-					{
-						class_member= member;
-						break;
-					}
-				}
-
-				next= class_type_lock.get_ref().base_class;
-				if( !next.empty() )
-				{
-					this_value_corrected= CreateBaseClassFieldGEP( this_value_corrected, function_context );
-				}
-			}
-
-			class_type= next;
-		}
-
-		if( !class_member.empty() && !class_type.empty() )
-		{
-			auto class_members= class_type.lock_imut().get_ref().members;
-			return NamesScopeValueToValue( class_members, function_context, class_member.get_ref(), named_operand.file_pos );
-		}
-	}
 
 	return ResolveValue( names_scope, function_context, named_operand );
 }
@@ -939,35 +897,13 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, member_access_operator.file_pos, variable.t )
 		return ErrorValue();
 	}
+	var ClassTypePtr class_type= class_type_ref.get_ref();
 
-	var ust::shared_ptr_nullable_mut</ClassType/> mut class_type= class_type_ref.get_ref();
 	var ust::optional</NamesScopeValue/> mut class_member;
-
-	auto mut this_value_corrected= variable.llvm_value;
-	while( !class_type.empty() && class_member.empty() )
+	auto class_members= class_type.lock_imut().get_ref().members;
+	if_var( &member : class_members.lock_imut().get_ref().GetThisScopeValue( member_access_operator.member_name ) )
 	{
-		var ust::shared_ptr_nullable_mut</ClassType/> mut next;
-		{
-			auto class_type_lock= class_type.lock_imut();
-			if( !(class_type != class_type_ref.get_ref() &&
-				 class_type_lock.get_ref().GetMemberVisibility( member_access_operator.member_name ) == Synt::ClassVisibility::Private ) )  // Ignore private parent fields.
-			{
-				auto class_members_lock= class_type_lock.get_ref().members.lock_imut();
-				if_var( &member : class_members_lock.get_ref().GetThisScopeValue( member_access_operator.member_name ) )
-				{
-					class_member= member;
-					break;
-				}
-			}
-
-			next= class_type_lock.get_ref().base_class;
-			if( !next.empty() )
-			{
-				this_value_corrected= CreateBaseClassFieldGEP( this_value_corrected, function_context );
-			}
-		}
-
-		class_type= next;
+		class_member= member;
 	}
 
 	if( class_member.empty() )
@@ -976,7 +912,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return ErrorValue();
 	}
 
-	if( u32( names_scope.lock_imut().get_ref().GetAccessFor( ust::to_non_nullable(class_type) ) ) <
+	if( u32( names_scope.lock_imut().get_ref().GetAccessFor( class_type ) ) <
 		u32( class_type.lock_imut().get_ref().GetMemberVisibility( member_access_operator.member_name ) ) )
 	{
 		REPORT_ERROR( AccessingNonpublicClassMember, names_scope, member_access_operator.file_pos, member_access_operator.member_name, variable.t.ToString() )
@@ -995,6 +931,24 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			auto& field= field_lock.get_ref();
 
 			if( field.index == ~0s ){ return ErrorValue(); } // May be in case of error
+
+			auto mut this_value_corrected= variable.llvm_value;
+			{
+				var ClassTypePtr mut current_class_type= class_type;
+				auto field_source_class= field.source_class.lock();
+				while( current_class_type != field_source_class )
+				{
+					auto base_class= current_class_type.lock_imut().get_ref().base_class;
+					if( base_class.empty() )
+					{
+						// May be in case of errors.
+						REPORT_ERROR( AccessOfNonThisClassField, names_scope, member_access_operator.file_pos, member_access_operator.member_name )
+						return ErrorValue();
+					}
+					this_value_corrected= CreateBaseClassFieldGEP( this_value_corrected, function_context );
+					current_class_type= ust::to_non_nullable( base_class );
+				}
+			}
 
 			auto op_name_nt= "." + member_access_operator.member_name + "\0";
 			if( field.is_reference )

@@ -409,6 +409,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"ClassHaveNoCopyAssignementOperatorByDefault_Test0",
 		"ClassTypesInfo_Test0",
 		"ClassTypesInfo_Test1",
+		"ClassTypesInfo_Test2",
 		"ClassTypesInfo_Test3",
 		"ClassTypesInfo_Test4",
 		"ConstexprHalt_Test0",
