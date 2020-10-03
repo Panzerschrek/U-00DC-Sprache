@@ -61,10 +61,14 @@ private:
 	{
 		NodeId src;
 		NodeId dst;
+
+		op==(Link& l, Link& r ) : bool;
 	}
 
 private:
 	ust::unordered_map</NodeId, Node/> nodes_;
+
+	// Should NOT contain duplicates. // TODO - use sometthing like unordered_set.
 	ust::vector</Link/> links_;
 }
 

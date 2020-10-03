@@ -5,6 +5,11 @@ fn nomangle U1_ReferencesGraphGetNextUniqueId() : u32;
 namespace U1
 {
 
+op ReferencesGraph::Link::==(Link& l, Link& r ) : bool
+{
+	return l.src == r.src && l.dst == r.dst;
+}
+
 fn ReferencesGraph::AddNode( mut this, NodeKind kind, ust::string8 mut name ) : NodeId
 {
 	// Use unique identifiers for bugs prevention.
@@ -67,7 +72,20 @@ fn ReferencesGraph::RemoveNode( mut this, NodeId node_id )
 
 fn ReferencesGraph::AddLink( mut this, NodeId from, NodeId to )
 {
+	if( from == to )
+	{
+		return;
+	}
+
 	var Link link{ .src= from, .dst= to };
+
+	foreach( &prev_link : links_ )
+	{
+		if( link == prev_link )
+		{
+			return;
+		}
+	}
 	links_.push_back( link );
 }
 
