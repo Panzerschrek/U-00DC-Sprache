@@ -82,18 +82,18 @@ def main():
 
 	for test_name, test_func in tests_list:
 		if not tests_lib.filter_test( test_name ):
-			tests_filtered= tests_filtered + 1
+			tests_filtered+= 1
 		else:
 			try:
 				test_func()
 				tests_lib.free_program()
+				tests_passed+= 1
 			except Exception as ex:
 				print( "test " + test_name + " failed" )
 				traceback.print_exc( file= sys.stdout )
 				print()
-				tests_failed= tests_failed + 1
+				tests_failed+= 1
 				tests_lib.free_program()
-			tests_passed= tests_passed + 1
 
 	print( str(tests_passed) + " tests passed" )
 	print( str(tests_filtered) + " tests filtered" )
