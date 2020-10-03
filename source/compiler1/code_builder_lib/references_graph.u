@@ -327,6 +327,51 @@ fn ReferencesGraph::MergeIfBranches( ust::array_view_imut</ReferencesGraph/> bra
 	return move(result);
 }
 
+fn ReferencesGraph::CheckReferencesGraphAfterLoop( ReferencesGraph& state_before, ReferencesGraph& state_after, ErrorsContainer &mut errors, FilePos& file_pos )
+{
+	foreach( &node_before_pair : state_before.nodes_ )
+	{
+		var Node& node_before= node_before_pair.value();
+		var Node& node_after= state_after.nodes_[node_before_pair.key()];
+
+		if( !node_before.moved && node_after.moved )
+		{
+			var ust::vector</ust::string8/> mut format_args;
+			format_args.push_back( node_before.name );
+			errors.push_back( ReportError( CodeBuilderErrorCode::OuterVariableMoveInsideLoop, file_pos, format_args ) );
+		}
+
+		if( node_before.inner_reference_node == c_empty_node_id && node_after.inner_reference_node  == c_empty_node_id )
+		{
+			continue;
+		}
+
+		// TODO - what if inner variable node changed? What if links removed?
+		var NodesSet mut new_accessible_variables= state_after.GetAllAccessibleVariableNodes( node_after.inner_reference_node );
+		if( node_before.inner_reference_node != c_empty_node_id )
+		{
+			foreach( &node_pair : state_before.GetAllAccessibleVariableNodes( node_before.inner_reference_node ) )
+			{
+				var NodeId variable_node_id= node_pair.key();
+				if( !new_accessible_variables.find(variable_node_id).empty() )
+				{
+					new_accessible_variables.erase( variable_node_id );
+				}
+			}
+		}
+
+		foreach( &added_node_pair : new_accessible_variables )
+		{
+			var NodeId added_node_id= added_node_pair.key();
+
+			var ust::vector</ust::string8/> mut format_args;
+			format_args.push_back( node_before.name );
+			format_args.push_back( state_before.nodes_[added_node_id].name );
+			errors.push_back( ReportError( CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, file_pos, format_args ) );
+		}
+	}
+}
+
 fn ReferencesGraph::GetAllAccessibleVariableNodes_r( this, NodeId node_id, NodesSet &mut out_nodes )
 {
 	if( nodes_[node_id].kind == NodeKind::Variable )

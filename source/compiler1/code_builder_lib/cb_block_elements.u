@@ -799,7 +799,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WhileOperator& while_operator ) : BlockElementBuildInfo
 {
-	auto mut references_graph_before= function_context.references_graph;
+	auto mut references_graph_before_loop= function_context.references_graph;
 
 	var LLVMBasicBlockRef mut test_block= zero_init, mut while_block= zero_init, mut block_after_while= zero_init;
 	unsafe
@@ -861,7 +861,19 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	if( !info.have_terminal_instruction_inside )
 	{
 		unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, test_block );  }
+		function_context.loops_stack.back().continue_references_graphs.push_back( function_context.references_graph );
 	}
+
+	// Disallow outer variables state change in "continue" branches.
+	foreach( &state_after : function_context.loops_stack.back().continue_references_graphs )
+	{
+		CheckReferencesGraphAfterLoop( references_graph_before_loop, state_after, names_scope, while_operator.block.get_ref().end_file_pos );
+	}
+
+	// Result graph state is combination of graph state before loop and graph state of all branches terminated with "break".
+	var ust::vector</ReferencesGraph/> mut references_graphs_for_merge= take( function_context.loops_stack.back().break_references_graphs );
+	references_graphs_for_merge.push_back( move( references_graph_before_loop ) );
+	function_context.references_graph= MergeIfBranches( references_graphs_for_merge.range(), names_scope, while_operator.block.get_ref().end_file_pos );
 
 	function_context.loops_stack.pop_back();
 
@@ -871,9 +883,6 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_while );
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_while );
 	}
-
-	// TODO - process references graph changes in loop.
-	function_context.references_graph= move(references_graph_before);
 
 	return BlockElementBuildInfo();
 }
@@ -1152,6 +1161,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	CallDestructorsForLoopInnerVariables( names_scope, function_context, break_operator.file_pos );
 	unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, function_context.loops_stack.back().block_for_break );  }
 
+	function_context.loops_stack.back().break_references_graphs.push_back( function_context.references_graph );
+
 	return block_element_build_info;
 }
 
@@ -1167,6 +1178,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 	CallDestructorsForLoopInnerVariables( names_scope, function_context, continue_operator.file_pos );
 	unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, function_context.loops_stack.back().block_for_continue );  }
+
+	function_context.loops_stack.back().continue_references_graphs.push_back( function_context.references_graph );
 
 	return block_element_build_info;
 }

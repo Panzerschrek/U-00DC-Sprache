@@ -9,6 +9,10 @@ struct LoopFrame
 	LLVMBasicBlockRef block_for_continue;
 	// Number of variables frames at stack before loop block creation.
 	size_type variable_frames_stack_size;
+
+	// Populated during loop body building.
+	ust::vector</ReferencesGraph/> break_references_graphs;
+	ust::vector</ReferencesGraph/> continue_references_graphs;
 }
 
 class FunctionContext

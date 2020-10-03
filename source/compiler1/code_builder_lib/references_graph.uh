@@ -46,6 +46,7 @@ public:
 	fn GetAllAccessibleVariableInnerNodes( this, NodeId node_id ) : NodesSet;
 
 	fn MergeIfBranches( ust::array_view_imut</ReferencesGraph/> branches, ErrorsContainer &mut errors, FilePos& file_pos ) : ReferencesGraph;
+	fn CheckReferencesGraphAfterLoop( ReferencesGraph& state_before, ReferencesGraph& state_after, ErrorsContainer &mut errors, FilePos& file_pos );
 
 private:
 	fn GetAllAccessibleVariableNodes_r( this, NodeId node_id, NodesSet &mut out_nodes );

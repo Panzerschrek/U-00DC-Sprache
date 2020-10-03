@@ -175,6 +175,7 @@ bool FilterTest( const std::string& test_name )
 		"TemplateParametersDeductionFailed",
 		"ThisUnavailable_InConstructors_Test",
 		"UsingKeywordAsName_ForTypedef_Test",
+		"WhileMergeTest",
 
 		"auto_variables_errors_test.cpp",
 		"auto_variables_test.cpp",
