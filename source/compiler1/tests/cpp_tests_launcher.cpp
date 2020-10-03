@@ -208,6 +208,7 @@ bool FilterTest( const std::string& test_name )
 		"references_inside_structs_errors_test.cpp",
 		"type_conversions_test.cpp",
 		"typedefs_test.cpp",
+		"variables_state_merge_test.cpp",
 	};
 
 	if( std::find_if(

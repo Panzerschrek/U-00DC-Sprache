@@ -146,21 +146,23 @@ U_TEST( IfMergeTest5_BreakingReferenceProtectionInMergeResult1 )
 {
 	static const char c_program_text[]=
 	R"(
-		struct S { i32 &mut x; }
+		struct S { i32 & mut x; }
+		struct T { i32 &imut x; }
 		fn LinkMut ( S &mut s'a', i32&'b  mut x ) ' a <- b ' {}
-		fn LinkImut( S &mut s'a', i32&'b imut x ) ' a <- b ' {}
+		fn LinkImut( T &mut t'a', i32&'b imut x ) ' a <- b ' {}
 		fn Foo()
 		{
-			var i32 mut x= 0, mut y= 0, mut z= 0;
-			var S mut s0{ .x= x }, mut s1{ .x= y };
+			var i32 mut x= 0, imut y= 0, mut z= 0;
+			var S mut s{ .x= x };
+			var T mut t{ .x= y };
 
 			if( true )
 			{
-				LinkMut( s0, z );
+				LinkMut( s, z );
 			}
 			else
 			{
-				LinkImut( s1, z );
+				LinkImut( t, z );
 			} // Error here. In result variable 'z' have both mutable and immutable references inside 's0' and 's1'.
 		}
 	)";
@@ -171,7 +173,7 @@ U_TEST( IfMergeTest5_BreakingReferenceProtectionInMergeResult1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 17u );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 19u );
 }
 
 U_TEST( IfMergeTest6_ConditionAffectsLowerBranches0 )

@@ -1,4 +1,5 @@
 import "/string.u"
+import "/vector.u"
 import "/lex_synt_lib/file_pos.uh"
 
 namespace U1
@@ -28,5 +29,7 @@ struct CodeBuilderError
 	op!=(CodeBuilderError& l, CodeBuilderError& r) : bool;
 	op<(CodeBuilderError& l, CodeBuilderError& r) : bool;
 }
+
+type ErrorsContainer= ust::vector</ CodeBuilderError />;
 
 } // namespace U1

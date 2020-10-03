@@ -6,14 +6,10 @@ namespace U1
 fn FunctionContext::constructor(
 	LLVMContextRef llvm_context,
 	LLVMValueRef in_llvm_function,
-	Type mut in_return_type,
-	bool in_return_value_is_reference,
-	bool in_return_value_is_mutable )
+	FunctionType mut in_function_type )
 	(
-		return_type(in_return_type),
 		llvm_function(in_llvm_function),
-		return_value_is_reference(in_return_value_is_reference),
-		return_value_is_mutable(in_return_value_is_mutable),
+		function_type(move(in_function_type)),
 	)
 {
 	unsafe
