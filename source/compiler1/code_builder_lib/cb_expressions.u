@@ -508,9 +508,66 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MoveOperator& move_operator ) : Value
 {
-	// TODO
 	var Synt::ComplexName complex_name{ .file_pos= move_operator.file_pos, .start= move_operator.variable_name };
-	return ResolveValue( names_scope, function_context, complex_name );
+	var Value value= ResolveValue( names_scope, function_context, complex_name );
+	if( value.get</Variable/>().empty() )
+	{
+		REPORT_ERROR( ExpectedVariable, names_scope, move_operator.file_pos, GetValueKindName(value) )
+		return ErrorValue();
+	}
+
+	var Variable& variable= value.get</Variable/>().get_ref();
+	if( variable.node_id == ReferencesGraph::c_empty_node_id )
+	{
+		REPORT_ERROR( ExpectedVariable, names_scope, move_operator.file_pos, ust::string8( "global constant" ) )
+		return ErrorValue();
+	}
+	if( function_context.references_graph.GetNodeKind( variable.node_id ) != ReferencesGraph::NodeKind::Variable )
+	{
+		REPORT_ERROR( ExpectedVariable, names_scope, move_operator.file_pos, ust::string8( "reference" ) )
+		return ErrorValue();
+	}
+
+	if( variable.value_type != ValueType::ReferenceMut )
+	{
+		REPORT_ERROR( ExpectedReferenceValue, names_scope, move_operator.file_pos )
+		return ErrorValue();
+	}
+	if( function_context.references_graph.NodeIsMoved( variable.node_id ) )
+	{
+		REPORT_ERROR( AccessingMovedVariable, names_scope, move_operator.file_pos, function_context.references_graph.GetNodeName( variable.node_id ) )
+		return ErrorValue();
+	}
+	if( function_context.references_graph.HaveOutgoingLinks( variable.node_id ) )
+	{
+		REPORT_ERROR( MovedVariableHaveReferences, names_scope, move_operator.file_pos, function_context.references_graph.GetNodeName( variable.node_id ) )
+		return ErrorValue();
+	}
+
+	var Variable mut result= variable;
+	result.value_type= ValueType::Value;
+
+	var ust::string8 mut node_name= "moved ";
+	node_name+= function_context.references_graph.GetNodeName( variable.node_id );
+	result.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, move(node_name) );
+
+	SetupReferencesInCopyOrMove( names_scope, function_context, result.t, result.node_id, variable.node_id, move_operator.file_pos );
+
+	function_context.references_graph.MoveNode( variable.node_id );
+
+	{// Register variable for references checking.
+		var NamesScopeVariable names_scope_variable
+		{
+			.t= result.t,
+			.is_mutable= true,
+			.llvm_value= result.llvm_value,
+			.constexpr_value= result.constexpr_value,
+			.node_id= result.node_id,
+		};
+		function_context.variables_frames.back().push_back( names_scope_variable );
+	}
+
+	return move(result);
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
