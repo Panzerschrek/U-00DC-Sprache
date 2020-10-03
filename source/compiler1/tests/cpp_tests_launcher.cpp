@@ -71,6 +71,7 @@ bool FilterTest( const std::string& test_name )
 		"DestructorsTest17_ShouldBeDesdtroyedAfterUsage4",
 		"DestructorsTest18_ShouldBeDesdtroyedAfterUsage5",
 		"DestructorsTest19_DestuctorForInterface",
+		"DestructorsTest20_EarlyDestructorCallUsingMoveOperator",
 		"DestructorsTest28_DestructorForTuples",
 		"DestructorsTest29_DestructorForTuples",
 		"DestructorsTest30_MembersDestructorCallOrder",

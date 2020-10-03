@@ -307,6 +307,11 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 		auto lock= var_ptr.lock_imut();
 		auto& v= lock.get_ref();
 
+		if( v.node_id != ReferencesGraph::c_empty_node_id && function_context.references_graph.NodeIsMoved( v.node_id ) )
+		{
+			REPORT_ERROR( AccessingMovedVariable, names_scope, file_pos, function_context.references_graph.GetNodeName( v.node_id ) )
+		}
+
 		var Variable mut res
 		{
 			.t= v.t,

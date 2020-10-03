@@ -103,6 +103,12 @@ struct CastMut
 	ust::shared_ptr_final</Expression/> expression;
 }
 
+struct MoveOperator
+{
+	FilePos file_pos;
+	ust::string8 variable_name;
+}
+
 struct BinaryOperator
 {
 	FilePos file_pos;
@@ -174,6 +180,7 @@ type Expression= ust::variant</ tup[
 	CastRefUnsafe,
 	CastImut,
 	CastMut,
+	MoveOperator,
 	BinaryOperator,
 	BracketExpression,
 	IndexationOperator,
