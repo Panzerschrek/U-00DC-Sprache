@@ -148,7 +148,6 @@ bool FilterTest( const std::string& test_name )
 		"BasicReferenceInsideClassUsage",
 		"ConstructorOutsideClassTest",
 		"ConstructorMustReturnVoidTest",
-		"CStyleForMergeTest",
 		"DefaultConstructorNotFoundTest",
 		"DestructorTest_ForCStyleForOperator",
 		"DestructorOutsideClassTest0",
@@ -156,7 +155,6 @@ bool FilterTest( const std::string& test_name )
 		"ExpectedInitializer_InConstructors_Test",
 		"FieldIsNotInitializedYetTest",
 		"GeneratedCopyConstructorForStructsWithReferencesTest",
-		"IfMergeTest",
 		"InitializationListInNonconstructorTest",
 		"InitializerForNonfieldStructMember_InConstructors_Test0",
 		"InvalidTypeOfTemplateVariableArgumentTest",
@@ -175,9 +173,7 @@ bool FilterTest( const std::string& test_name )
 		"TemplateInstantiationRequiredTest",
 		"TemplateParametersDeductionFailed",
 		"ThisUnavailable_InConstructors_Test",
-		"TupleForMegeTest",
 		"UsingKeywordAsName_ForTypedef_Test",
-		"WhileMergeTest",
 
 		"auto_variables_errors_test.cpp",
 		"auto_variables_test.cpp",
@@ -212,6 +208,7 @@ bool FilterTest( const std::string& test_name )
 		"references_inside_structs_errors_test.cpp",
 		"type_conversions_test.cpp",
 		"typedefs_test.cpp",
+		"variables_state_merge_test.cpp",
 	};
 
 	if( std::find_if(
