@@ -923,6 +923,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			unsafe{  finish_basic_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );  }
 		}
 
+		var ust::vector</ReferencesGraph/> mut references_graphs_for_merge;
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
 			// Create separate names_scope for loop variable.
@@ -1011,11 +1012,10 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 			auto block_build_info= BuildBlockElement( names_scope, function_context, range_for_operator.block.get_ref() );
 
-			function_context.loops_stack.pop_back();
-
 			if( !block_build_info.have_terminal_instruction_inside )
 			{
 				CallDestructorsForTopVariablesFrame( names_scope, function_context, range_for_operator.file_pos ); // destroy loop variable
+				function_context.loops_stack.back().continue_references_graphs.push_back( function_context.references_graph );
 				unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, next_basic_block );  }
 			}
 			unsafe
@@ -1024,9 +1024,26 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, next_basic_block );
 			}
 
+			// Graph state in next iteration is combination of graph state of all branches with "continue" on previous iteration.
+			if( !function_context.loops_stack.back().continue_references_graphs.empty() )
+			{
+				function_context.references_graph= MergeIfBranches( function_context.loops_stack.back().continue_references_graphs.range(), names_scope, range_for_operator.block.get_ref().end_file_pos );
+			}
+
+			foreach( &mut break_refences_graph : function_context.loops_stack.back().break_references_graphs )
+			{
+				references_graphs_for_merge.push_back( take(break_refences_graph) );
+			}
+
+			function_context.loops_stack.pop_back();
+
 			// Clear args preevaluation cache because we evaluationg same expressions multiple times in different context.
 			function_context.args_preevaluation_cache.clear();
 		}
+
+		// References graph state after tuple-for is combination of graph state of all branches with "break" of all iterations.
+		references_graphs_for_merge.push_back( function_context.references_graph );
+		function_context.references_graph= MergeIfBranches( references_graphs_for_merge.range(), names_scope, range_for_operator.block.get_ref().end_file_pos );
 	}
 	else
 	{

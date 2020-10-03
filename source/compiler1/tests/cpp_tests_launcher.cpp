@@ -175,6 +175,7 @@ bool FilterTest( const std::string& test_name )
 		"TemplateInstantiationRequiredTest",
 		"TemplateParametersDeductionFailed",
 		"ThisUnavailable_InConstructors_Test",
+		"TupleForMegeTest",
 		"UsingKeywordAsName_ForTypedef_Test",
 		"WhileMergeTest",
 
