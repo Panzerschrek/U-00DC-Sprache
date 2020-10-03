@@ -814,6 +814,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				!member_value.value().Get</GlobalVariable/>().empty() ||
 				!member_value.value().Get</GlobalAutoVariable/>().empty() )
 			{
+				// TODO - set visibility?
 				dst_members_.AddName( member_value.key(), member_value.value() );
 			}
 
