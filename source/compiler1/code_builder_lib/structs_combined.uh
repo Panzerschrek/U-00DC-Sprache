@@ -671,7 +671,6 @@ public:
 // NamesScope
 //
 
-type ErrorsContainer= ust::vector</ CodeBuilderError />;
 type ErrorsContainerPtr= ust::shared_ptr_nullable_mut</ErrorsContainer/>;
 
 type NamesScopeMutPtr = ust::shared_ptr_mut </NamesScope/>;

@@ -1760,6 +1760,13 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 	}
 }
 
+fn CodeBuilder::MergeIfBranches( ust::array_view_imut</ReferencesGraph/> branches, NamesScopePtr names_scope, FilePos& file_pos ) : ReferencesGraph
+{
+	auto errors_container= names_scope.lock_imut().get_ref().GetErrors();
+	auto mut lock= errors_container.lock_mut();
+	return ReferencesGraph::MergeIfBranches( branches, lock.get_ref(), file_pos );
+}
+
 fn CodeBuilder::SetupReferencesInCopyOrMove(
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,

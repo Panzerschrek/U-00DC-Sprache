@@ -1,9 +1,16 @@
+import "error_reporting.uh"
 import "references_graph.uh"
 
 fn nomangle U1_ReferencesGraphGetNextUniqueId() : u32;
 
 namespace U1
 {
+
+struct NodeReplacement
+{
+	ReferencesGraph::NodeId first;
+	ReferencesGraph::NodeId second;
+}
 
 op ReferencesGraph::Link::==(Link& l, Link& r ) : bool
 {
@@ -188,6 +195,136 @@ fn ReferencesGraph::GetAllAccessibleVariableInnerNodes( this, NodeId node_id ) :
 	var NodesSet mut nodes_set;
 	GetAllAccessibleVariableInnerNodes_r( node_id, nodes_set );
 	return move(nodes_set);
+}
+
+fn ReferencesGraph::MergeIfBranches( ust::array_view_imut</ReferencesGraph/> branches,  ErrorsContainer &mut errors, FilePos& file_pos ) : ReferencesGraph
+{
+	var ReferencesGraph mut result;
+
+	var ust::vector</NodeReplacement/> mut replaced_nodes;
+	foreach( &branch_state : branches )
+	{
+		foreach( &node_pair : branch_state.nodes_ )
+		{
+			var NodeId node_id= node_pair.key();
+			var Node& src_node= node_pair.value();
+
+			if( result.nodes_.find( node_id ).empty() )
+			{
+				result.nodes_.insert( node_id, src_node );
+			}
+
+			var Node &mut dst_node= result.nodes_[ node_id ];
+			if( src_node.moved != dst_node.moved )
+			{
+				var ust::vector</ust::string8/> mut format_args;
+				format_args.push_back( src_node.name );
+				errors.push_back( ReportError( CodeBuilderErrorCode::ConditionalMove, file_pos, format_args ) );
+			}
+
+			if( src_node.inner_reference_node == dst_node.inner_reference_node )
+			{} // ok - same nodes.
+			else if( dst_node.inner_reference_node == c_empty_node_id )
+			{  // ok - dst have no node, take node from src.
+				dst_node.inner_reference_node= src_node.inner_reference_node;
+			}
+			else if( src_node.inner_reference_node == c_empty_node_id )
+			{} // ok - src have no node.
+			else
+			{
+				// Node created in both branches.
+				// Take mutable node and replace it with immutable node.
+				if( branch_state.nodes_[ src_node.inner_reference_node ].kind == NodeKind::ReferenceMut )
+				{
+					var NodeReplacement mut replacement{ .first= dst_node.inner_reference_node, .second= src_node.inner_reference_node };
+					replaced_nodes.push_back( move(replacement) );
+				}
+				else
+				{
+					var NodeReplacement mut replacement{ .first= src_node.inner_reference_node, .second= dst_node.inner_reference_node };
+					replaced_nodes.push_back( move(replacement) );
+				}
+			}
+		}
+
+		foreach( &src_link : branch_state.links_ )
+		{
+			var bool mut found= false;
+			foreach( &dst_link : result.links_ )
+			{
+				if( src_link == dst_link )
+				{
+					found= true;
+					break;
+				}
+			}
+
+			if( !found )
+			{
+				result.links_.push_back( src_link );
+			}
+		}
+	}
+
+	if( !replaced_nodes.empty() )
+	{
+		var ust::vector</Link/> mut links_corrected;
+		foreach( mut link : result.links_ )
+		{
+			foreach( &replacement : replaced_nodes )
+			{
+				if( link.src == replacement.first )
+				{
+					link.src = replacement.second;
+				}
+				if( link.dst == replacement.first )
+				{
+					link.dst= replacement.second;
+				}
+			}
+
+			var bool mut found= false;
+			foreach( &prev_link : links_corrected )
+			{
+				if( link == prev_link )
+				{
+					found= true;
+					break;
+				}
+			}
+
+			if( !found )
+			{
+				links_corrected.push_back( link );
+			}
+		}
+
+		result.links_= move(links_corrected);
+	}
+
+	// Check mutable reference count correctness.
+	foreach( &node_pair : cast_imut(result).nodes_ )
+	{
+		var size_type mut mutable_links_count= 0s, mut immutable_links_count= 0s;
+		foreach( &link : result.links_ )
+		{
+			if( link.src == node_pair.key() )
+			{
+				++select(
+					cast_imut(result).nodes_[link.dst].kind == NodeKind::ReferenceMut
+						? mutable_links_count
+						: immutable_links_count );
+			}
+		}
+		if( mutable_links_count > 1s || ( immutable_links_count > 0s && mutable_links_count > 0s ) )
+		{
+			var ust::vector</ust::string8/> mut format_args;
+			format_args.push_back( node_pair.value().name );
+			errors.push_back( ReportError( CodeBuilderErrorCode::ReferenceProtectionError, file_pos, format_args ) );
+		}
+	}
+
+	return move(result);
 }
 
 fn ReferencesGraph::GetAllAccessibleVariableNodes_r( this, NodeId node_id, NodesSet &mut out_nodes )

@@ -155,6 +155,7 @@ bool FilterTest( const std::string& test_name )
 		"ExpectedInitializer_InConstructors_Test",
 		"FieldIsNotInitializedYetTest",
 		"GeneratedCopyConstructorForStructsWithReferencesTest",
+		"IfMergeTest",
 		"InitializationListInNonconstructorTest",
 		"InitializerForNonfieldStructMember_InConstructors_Test0",
 		"InvalidTypeOfTemplateVariableArgumentTest",

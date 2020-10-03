@@ -634,7 +634,6 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfOperator& if_operator ) : BlockElementBuildInfo
 {
-	auto mut references_graph_before= function_context.references_graph;
 	var LLVMBasicBlockRef mut block_after_if= zero_init, mut next_condition_block= zero_init;
 
 	unsafe
@@ -647,6 +646,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	}
 
 	var BlockElementBuildInfo mut block_element_build_info{ .have_terminal_instruction_inside= true };
+
+	var ust::vector</ReferencesGraph/> mut branches_references_graphs;
 
 	for( auto mut i= 0s; i < if_operator.branches.size(); ++i )
 	{
@@ -713,6 +714,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		auto info= BuildBlockElement( names_scope, function_context, branch.block );
 		if( !info.have_terminal_instruction_inside )
 		{
+			branches_references_graphs.push_back( take(function_context.references_graph) );
 			block_element_build_info.have_terminal_instruction_inside= false;
 			unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, block_after_if );  }
 		}
@@ -743,7 +745,10 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		}
 	}
 
-	// TODO - merge references graph of all branches.
+	if( !branches_references_graphs.empty() )
+	{
+		function_context.references_graph= MergeIfBranches( branches_references_graphs.range(), names_scope, if_operator.end_file_pos );
+	}
 
 	return block_element_build_info;
 }

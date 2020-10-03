@@ -2240,6 +2240,7 @@ fn SyntaxAnalyzer::ParseIfOperator( mut this ) : IfOperator
 			.condition= move(condition),
 			.block( ParseBlock() )
 		};
+		if_operator.end_file_pos= branch.block.get_ref().end_file_pos;
 		if_operator.branches.push_back( move(branch) );
 
 		if( !if_operator.branches.back().condition.get</EmptyVariant/>().empty() )

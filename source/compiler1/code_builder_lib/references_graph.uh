@@ -1,6 +1,7 @@
 import "/string.u"
 import "/unordered_map.u"
 import "/vector.u"
+import "/code_builder_errors.uh"
 
 namespace U1
 {
@@ -43,6 +44,8 @@ public:
 	type NodesSet= ust::unordered_map</NodeId, i32/>; // TODO - use unordered_set
 	fn GetAllAccessibleVariableNodes( this, NodeId node_id ) : NodesSet;
 	fn GetAllAccessibleVariableInnerNodes( this, NodeId node_id ) : NodesSet;
+
+	fn MergeIfBranches( ust::array_view_imut</ReferencesGraph/> branches, ErrorsContainer &mut errors, FilePos& file_pos ) : ReferencesGraph;
 
 private:
 	fn GetAllAccessibleVariableNodes_r( this, NodeId node_id, NodesSet &mut out_nodes );
