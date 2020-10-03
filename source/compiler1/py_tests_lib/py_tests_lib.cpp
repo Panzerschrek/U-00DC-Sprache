@@ -764,6 +764,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"MacroDefenition_Test",
 		"MacroErrorsTest",
 		"MethodBodyGenerationFailed_Test",
+		"MoveOperatorDeclaration_Test",
 		"NonExistentTest",
 		"NoMangleMismatch_Test",
 		"NumericConstants",

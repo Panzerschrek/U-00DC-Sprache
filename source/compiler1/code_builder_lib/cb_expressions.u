@@ -506,6 +506,13 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	return move(r);
 }
 
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MoveOperator& move_operator ) : Value
+{
+	// TODO
+	var Synt::ComplexName complex_name{ .file_pos= move_operator.file_pos, .start= move_operator.variable_name };
+	return ResolveValue( names_scope, function_context, complex_name );
+}
+
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
 {
 	if( binary_operator.operator == BinaryOperatorType::LazyLogicalAnd || binary_operator.operator == BinaryOperatorType::LazyLogicalOr )

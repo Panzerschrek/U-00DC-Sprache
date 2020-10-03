@@ -832,6 +832,33 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 			var CastMut mut cast{ .file_pos= file_pos, .expression(move(e)) };
 			current_node= move(cast);
 		}
+		else if( IsKeyword( it_.front(), Keyword::move_ ) )
+		{
+			var MoveOperator mut move_operator{ .file_pos= it_.front().file_pos };
+
+			NextLexem();
+
+			if( it_.front().lexem_type != Lexem::Type::BracketLeft )
+			{
+				PushErrorMessage();
+			}
+			NextLexem();
+
+			if( it_.front().lexem_type != Lexem::Type::Identifier )
+			{
+				PushErrorMessage();
+			}
+			move_operator.variable_name= it_.front().text;
+			NextLexem();
+
+			if( it_.front().lexem_type != Lexem::Type::BracketRight )
+			{
+				PushErrorMessage();
+			}
+			NextLexem();
+
+			current_node= move(move_operator);
+		}
 		else if( it_.front().lexem_type == Lexem::Type::Identifier )
 		{
 			auto macro= FetchMacro( it_.front().text, Macro::Context::Expression );
