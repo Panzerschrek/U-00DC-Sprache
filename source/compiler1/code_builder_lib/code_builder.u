@@ -625,6 +625,7 @@ fn CodeBuilder::ResolveValue(
 			auto type_templates_set= current_value.get_ref().Get</TypeTemplatesSet/>();
 			auto t= current_value.get_ref().Get</Type/>();
 			auto type_alias= current_value.get_ref().Get</TypeAlias/>();
+			auto template_arg= current_value.get_ref().Get</TemplateArg/>();
 
 			if( !t.empty() )
 			{
@@ -643,6 +644,20 @@ fn CodeBuilder::ResolveValue(
 				BuildTypeAlias( names_scope, ust::to_non_nullable(type_alias) );
 
 				if_var( &t : type_alias.lock_imut().get_ref().t )
+				{
+					if_var( &class_type : t.GetClassType() )
+					{
+						class_= class_type;
+					}
+					if_var( &enum_type : t.GetEnumType() )
+					{
+						enum_= enum_type;
+					}
+				}
+			}
+			if( !template_arg.empty() )
+			{
+				if_var( &t : template_arg.lock_imut().get_ref().something.get</Type/>() )
 				{
 					if_var( &class_type : t.GetClassType() )
 					{
