@@ -528,6 +528,12 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	return move(result);
 }
 
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TakeOperator& take_operator ) : Value
+{
+	// TODO
+	return ErrorValue();
+}
+
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
 {
 	if( binary_operator.operator == BinaryOperatorType::LazyLogicalAnd || binary_operator.operator == BinaryOperatorType::LazyLogicalOr )
