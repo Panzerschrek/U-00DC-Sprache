@@ -412,6 +412,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.t= v.t,
 		.value_type= ValueType::ReferenceImut,
 		.location= Variable::Location::Pointer,
+		.node_id= v.node_id,
 	};
 
 	// TODO - maybe forbid reference casting for ValueType::Value?
@@ -445,6 +446,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.t= v.t,
 		.value_type= ValueType::ReferenceMut,
 		.location= Variable::Location::Pointer,
+		.node_id= v.node_id,
 	};
 
 	// TODO - maybe forbid reference casting for ValueType::Value?
@@ -1407,6 +1409,7 @@ fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionC
 		.t= t,
 		.value_type= select( v.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 		.location= Variable::Location::Pointer,
+		.node_id= v.node_id,
 	};
 
 	// TODO - maybe forbid reference casting for ValueType::Value?
