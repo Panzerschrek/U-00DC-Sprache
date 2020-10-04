@@ -4,6 +4,28 @@
 namespace U
 {
 
+U_TEST( EmptyProgramTest0 )
+{
+	// Empty string is valid program.
+	CreateEngine( BuildProgram( "" ) );
+}
+
+U_TEST( EmptyProgramTest1 )
+{
+	// String only with whitespaces is valid program.
+
+	static const char c_program_text[]=
+	u8R"(
+	    	
+	
+	
+               
+	)";
+	;
+
+	BuildProgram( c_program_text );
+}
+
 U_TEST( AdditionalSymbolsForIdentifiersTest0 )
 {
 	static const char c_program_text[]=
