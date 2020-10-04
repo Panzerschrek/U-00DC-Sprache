@@ -253,9 +253,7 @@ def TakenVariableHaveReferences_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 1 )
-	assert( errors_list[1].error_code == "MovedVariableHaveReferences" )
-	assert( errors_list[1].file_pos.line == 13 )
+	assert( HaveError( errors_list, "MovedVariableHaveReferences", 13 ) )
 
 
 def InnereReferenceTransferedInTakeOperator_Test0():
