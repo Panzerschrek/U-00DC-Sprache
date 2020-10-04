@@ -1590,12 +1590,18 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 
 		if( !can_be_constexpr )
 		{
-			REPORT_ERROR( InvalidTypeForConstexprFunction, names_scope, func_variable.body_syntax_element.get_ref().file_pos )
+			if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::ConstexprAuto )
+			{
+				REPORT_ERROR( InvalidTypeForConstexprFunction, names_scope, func_variable.body_syntax_element.get_ref().file_pos )
+			}
 			func_variable.constexpr_kind= FunctionVariable::ConstexprKind::NonConstexpr;
 		}
 		else if( function_context.have_non_constexpr_operations_inside )
 		{
-			REPORT_ERROR( ConstexprFunctionContainsUnallowedOperations, names_scope, func_variable.body_syntax_element.get_ref().file_pos )
+			if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::ConstexprAuto )
+			{
+				REPORT_ERROR( ConstexprFunctionContainsUnallowedOperations, names_scope, func_variable.body_syntax_element.get_ref().file_pos )
+			}
 			func_variable.constexpr_kind= FunctionVariable::ConstexprKind::NonConstexpr;
 		}
 		else

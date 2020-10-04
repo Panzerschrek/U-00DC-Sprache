@@ -322,6 +322,7 @@ struct FunctionVariable
 		NonConstexpr,
 		ConstexprIncomplete,  // Can be used in body of constexpr functions, but result of call can not be constexpr.
 		ConstexprComplete,
+		ConstexprAuto, // May be, or may be not constexpr. Becomes "NonConstexpr" or "ConstexprComplete" after function code building.
 	}
 
 	ConstexprKind constexpr_kind= ConstexprKind::NonConstexpr;

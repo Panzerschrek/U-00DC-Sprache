@@ -692,6 +692,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"AccessingPrivateMemberOutsideClass_Test",
 		"AccessingProtectedMember_Test",
 		"AccessingVariableThatHaveMutableReference_Test",
+		"AutoConstexprFunctionTemplate_Test",
 		"AutoVariableDeclaration_ForTuples",
 		"BaseUnavailable_Test",
 		"BodyForDeletedFunction_Test",

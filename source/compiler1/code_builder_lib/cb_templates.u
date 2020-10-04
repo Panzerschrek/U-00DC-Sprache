@@ -941,22 +941,38 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 	auto result_functions_set_ptr= result_namespace_value.Get</NamesScopeFunctionsSet/>();
 	BuildFunctionsSet( result_names_scope, ust::to_non_nullable(result_functions_set_ptr), false );
 
-	auto mut functions_set_lock= result_functions_set_ptr.lock_mut();
-	auto &mut functions_set= functions_set_lock.get_ref();
-
-	if( functions_set.functions_set.functions.size() != 1s )
+	if( result_functions_set_ptr.lock_imut().get_ref().functions_set.functions.size() != 1s )
 	{
 		return ust::optional</FunctionVariable/>();
 	}
 
-	auto &mut function_variable= functions_set.functions_set.functions.front();
+	// Set base template and mangled name.
+	auto mut function_variable= result_functions_set_ptr.lock_imut().get_ref().functions_set.functions.front();
 	function_variable.base_template= function_template_ptr;
 
 	auto name_mangled=
 		MangleFunction( function_template.parent_names_scope.lock().lock_imut().get_ref(), function_name, function_variable.t, result_template_args );
 	unsafe{  LLVMSetValueName2( function_variable.llvm_function, name_mangled.front(), name_mangled.size() - 1s );  }
 
-	return function_variable;
+	{
+		auto mut lock= result_functions_set_ptr.lock_mut();
+		lock.get_ref().functions_set.functions.front()= function_variable;
+	}
+
+	// Build func code to know constexpr-ness.
+	// TODO - do not even try to build func code right now, if function can't be constexpr because of types in signature.
+	if( function_variable.constexpr_kind != FunctionVariable::ConstexprKind::ConstexprComplete )
+	{
+		function_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto;
+		BuildFuncCode( result_names_scope, function_variable );
+	}
+
+	{
+		auto mut lock= result_functions_set_ptr.lock_mut();
+		lock.get_ref().functions_set.functions.front()= function_variable;
+	}
+
+	return move(function_variable);
 }
 
 fn CodeBuilder::ParametrizeTemplateFunctions(
