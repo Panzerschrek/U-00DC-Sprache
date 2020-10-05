@@ -10,10 +10,8 @@
 #include <llvm/IR/Verifier.h>
 #include <llvm/Linker/Linker.h>
 #include <llvm/MC/SubtargetFeature.h>
-#include <llvm/Support/FileSystem.h>
 #include <llvm/Support/InitLLVM.h>
 #include <llvm/Support/MemoryBuffer.h>
-#include <llvm/Support/Path.h>
 #include <llvm/Support/raw_os_ostream.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/TargetRegistry.h>
@@ -27,133 +25,13 @@
 #include "../code_builder_lib/code_builder.hpp"
 #include "../sprache_version/sprache_version.hpp"
 #include "dep_file.hpp"
+#include "vfs.hpp"
 
 namespace U
 {
 
 namespace
 {
-
-namespace fs= llvm::sys::fs;
-namespace fsp= llvm::sys::path;
-
-class VfsOverSystemFS final : public IVfs
-{
-	struct PrivateTag{};
-	using fs_path= llvm::SmallString<256>;
-
-public:
-	static std::shared_ptr<VfsOverSystemFS> Create( const std::vector<std::string>& include_dirs )
-	{
-		std::vector<fs_path> result_include_dirs;
-
-		bool all_ok= true;
-		for( const std::string& include_dir : include_dirs )
-		{
-			fs_path dir_path= llvm::StringRef( include_dir );
-			fs::make_absolute(dir_path);
-			if( !fs::exists(dir_path) )
-			{
-				std::cout << "include dir \"" << include_dir << "\" does not exists." << std::endl;
-				all_ok= false;
-				continue;
-			}
-			if( !fs::is_directory(dir_path) )
-			{
-				std::cout << "\"" << include_dir << "\" is not a directory." << std::endl;
-				all_ok= false;
-				continue;
-			}
-
-			result_include_dirs.push_back( std::move(dir_path) );
-		}
-
-		if( !all_ok )
-			return nullptr;
-
-		return std::make_shared<VfsOverSystemFS>( std::move(result_include_dirs), PrivateTag() );
-	}
-
-	VfsOverSystemFS( std::vector<fs_path> include_dirs, PrivateTag )
-		: include_dirs_(std::move(include_dirs))
-	{}
-
-public:
-	virtual std::optional<LoadFileResult> LoadFileContent( const Path& file_path, const Path& full_parent_file_path ) override
-	{
-		fs_path result_path= GetFullFilePathInternal( file_path, full_parent_file_path );
-		if( result_path.empty() )
-			return std::nullopt;
-
-		LoadFileResult result;
-
-		llvm::ErrorOr< std::unique_ptr<llvm::MemoryBuffer> > file_mapped=
-			llvm::MemoryBuffer::getFile( result_path );
-		if( !file_mapped || *file_mapped == nullptr )
-			return std::nullopt;
-
-		result.file_content.assign( (*file_mapped)->getBufferStart(), (*file_mapped)->getBufferEnd() );
-		result.full_file_path= result_path.str();
-		return std::move(result);
-	}
-
-	virtual Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path ) override
-	{
-		return GetFullFilePathInternal( file_path, full_parent_file_path ).str();
-	}
-
-private:
-	fs_path GetFullFilePathInternal( const Path& file_path, const Path& full_parent_file_path )
-	{
-		const fs_path file_path_r( file_path );
-		fs_path result_path;
-
-		if( full_parent_file_path.empty() )
-		{
-			result_path= file_path_r;
-			fs::make_absolute(result_path);
-		}
-		else if( !file_path.empty() && file_path[0] == '/' )
-		{
-			// If file path is absolute, like "/some_lib/some_file.u" search file in include dirs.
-			// Return real file system path to first existent file.
-			for( const fs_path& include_dir : include_dirs_ )
-			{
-				fs_path full_file_path= include_dir;
-				fsp::append( full_file_path, file_path_r );
-				if( fs::exists( full_file_path ) && fs::is_regular_file( full_file_path ) )
-				{
-					result_path= full_file_path;
-					break;
-				}
-			}
-		}
-		else
-		{
-			result_path= fsp::parent_path( full_parent_file_path );
-			fsp::append( result_path, file_path_r );
-		}
-		return NormalizePath( result_path );
-	}
-
-	static fs_path NormalizePath( const fs_path& p )
-	{
-		fs_path result;
-		for( auto it= llvm::sys::path::begin(p), it_end= llvm::sys::path::end(p); it != it_end; ++it)
-		{
-			if( it->size() == 1 && *it == "." )
-				continue;
-			if( it->size() == 2 && *it == ".." )
-				llvm::sys::path::remove_filename( result );
-			else
-				llvm::sys::path::append( result, *it );
-		}
-		return result;
-	}
-
-private:
-	const std::vector<fs_path> include_dirs_;
-};
 
 void PrintAvailableTargets()
 {
@@ -598,7 +476,7 @@ int Main( int argc, const char* argv[] )
 	std::vector<IVfs::Path> deps_list;
 
 	{
-		const auto vfs= VfsOverSystemFS::Create( Options::include_dir );
+		const auto vfs= CreateVfsOverSystemFS( Options::include_dir );
 		if( vfs == nullptr )
 			return 1u;
 
@@ -814,7 +692,7 @@ int Main( int argc, const char* argv[] )
 
 } // namespace
 
-} // namespace  U
+} // namespace U
 
 int main( const int argc, const char* argv[] )
 {
