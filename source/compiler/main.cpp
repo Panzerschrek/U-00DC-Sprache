@@ -9,9 +9,9 @@
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/Linker/Linker.h>
+#include <llvm/MC/SubtargetFeature.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/InitLLVM.h>
-#include <llvm/Support/JSON.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/Path.h>
 #include <llvm/Support/raw_os_ostream.h>
@@ -20,13 +20,13 @@
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Transforms/IPO.h>
 #include <llvm/Transforms/IPO/PassManagerBuilder.h>
-#include <llvm/MC/SubtargetFeature.h>
 #include "../compilers_common/pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/assert.hpp"
 #include "../lex_synt_lib/source_graph_loader.hpp"
 #include "../code_builder_lib/code_builder.hpp"
 #include "../sprache_version/sprache_version.hpp"
+#include "dep_file.hpp"
 
 namespace U
 {
@@ -264,123 +264,6 @@ void PrintAvailableTargets()
 	std::cout << "Available targets: " << targets_list << std::endl;
 }
 
-namespace UDepFile
-{
-
-const char c_version[]= "version";
-const char c_args[]= "args";
-const char c_deps[]= "deps";
-
-const char file_prefix[]= ".u_deps";
-
-} // namespace DepFile
-
-bool UDepFileNothingChanged(
-	const std::string& out_file_path,
-	const int argc, const char* const argv[] )
-{
-	llvm::sys::fs::file_status out_file_status;
-	if( llvm::sys::fs::status( out_file_path, out_file_status ) )
-		return false;
-	const auto out_file_modification_time= out_file_status.getLastModificationTime();
-
-	const llvm::ErrorOr< std::unique_ptr<llvm::MemoryBuffer> > file_mapped=
-		llvm::MemoryBuffer::getFile( out_file_path + UDepFile::file_prefix );
-
-	if( !file_mapped || *file_mapped == nullptr )
-		return false;
-
-	llvm::Expected<llvm::json::Value> json_parsed= llvm::json::parse( (*file_mapped)->getBuffer() );
-	if( !json_parsed || json_parsed->kind() != llvm::json::Value::Object )
-		return false;
-
-	const llvm::json::Object& json_root= *json_parsed->getAsObject();
-
-	if( const llvm::json::Value* const version= json_root.get(UDepFile::c_version) )
-	{
-		if( version->kind() != llvm::json::Value::String )
-			return false;
-		if( *(version->getAsString()) != getFullVersion() )
-			return false;
-	}
-	else
-		return false;
-
-	if( const llvm::json::Value* const args= json_root.get(UDepFile::c_args) )
-	{
-		if( args->kind() != llvm::json::Value::Array )
-			return false;
-
-		const llvm::json::Array& args_array= *args->getAsArray();
-		if( args_array.size() != size_t(argc) )
-			return false;
-
-		for( int i= 0; i < argc; ++i )
-		{
-			const llvm::json::Value& arg= args_array[size_t(i)];
-			if( arg.kind() != llvm::json::Value::String )
-				return false;
-			if( *(arg.getAsString()) != argv[i] )
-				return false;
-		}
-	}
-	else
-		return false;
-
-	if( const llvm::json::Value* const depends= json_root.get(UDepFile::c_deps) )
-	{
-		if( depends->kind() != llvm::json::Value::Array )
-			return false;
-
-		for( const llvm::json::Value& dependency : *(depends->getAsArray()) )
-		{
-			if( dependency.kind() != llvm::json::Value::String )
-				return false;
-
-			llvm::sys::fs::file_status file_status;
-			if( llvm::sys::fs::status( *(dependency.getAsString()), file_status ) )
-				return false;
-			if( file_status.getLastModificationTime() > out_file_modification_time )
-				return false;
-		}
-	}
-	else
-		return false;
-
-	return true;
-}
-
-void UDepFileWrite(
-	const std::string& out_file_path,
-	const int argc, const char* const argv[],
-	const std::vector<IVfs::Path>& deps_list )
-{
-	llvm::json::Object doc;
-	doc[UDepFile::c_version]= getFullVersion();
-
-	{
-		llvm::json::Array args;
-		args.reserve(size_t(argc));
-		for( int i= 0; i < argc; ++i )
-			args.push_back(argv[i]);
-		doc[UDepFile::c_args]= std::move(args);
-	}
-
-	{
-		llvm::json::Array paths_arr;
-		paths_arr.reserve( deps_list.size() );
-		for( const IVfs::Path& path : deps_list )
-			paths_arr.push_back( path );
-		doc[UDepFile::c_deps]= std::move(paths_arr);
-	}
-
-	std::error_code file_error_code;
-	llvm::raw_fd_ostream out_file_stream( out_file_path + UDepFile::file_prefix, file_error_code, llvm::sys::fs::F_None );
-
-	out_file_stream << llvm::json::Value(std::move(doc));
-	out_file_stream.flush();
-}
-
 std::string QuoteDepTargetString( const std::string& str )
 {
 	std::string result;
@@ -553,7 +436,7 @@ int Main( int argc, const char* argv[] )
 	llvm::cl::HideUnrelatedOptions( Options::options_category );
 	llvm::cl::ParseCommandLineOptions( argc, argv, "Ü-Sprache compiler\n" );
 
-	if( Options::deps_tracking && UDepFileNothingChanged( Options::output_file_name, argc, argv ) )
+	if( Options::deps_tracking && DepFile::NothingChanged( Options::output_file_name, argc, argv ) )
 		return 0;
 
 	// Select optimization level.
@@ -888,7 +771,7 @@ int Main( int argc, const char* argv[] )
 		deps_list.end() );
 
 	if( Options::deps_tracking )
-		UDepFileWrite( Options::output_file_name, argc, argv, deps_list );
+		DepFile::Write( Options::output_file_name, argc, argv, deps_list );
 
 	if( !Options::dep_file_name.empty() )
 	{
