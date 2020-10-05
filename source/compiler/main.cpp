@@ -188,7 +188,7 @@ bool WriteDepFile(
 	deps_file_stream.flush();
 	if( deps_file_stream.has_error() )
 	{
-		std::cout << "Error while writing dep file \"" << dep_file_path << "\": " << file_error_code.message() << std::endl;
+		std::cerr << "Error while writing dep file \"" << dep_file_path << "\": " << file_error_code.message() << std::endl;
 		return false;
 	}
 
@@ -341,7 +341,8 @@ int Main( int argc, const char* argv[] )
 
 	// Options
 	llvm::cl::SetVersionPrinter(
-		[]( llvm::raw_ostream& ) {
+		[]( llvm::raw_ostream& )
+		{
 			std::cout << "Ü-Sprache version " << getFullVersion() << ", llvm version " << LLVM_VERSION_STRING << std::endl;
 			llvm::InitializeAllTargets();
 			PrintAvailableTargets();
@@ -558,7 +559,7 @@ int Main( int argc, const char* argv[] )
 
 			if( !std_lib_module )
 			{
-				std::cout << "Internal compiler error - stdlib module parse error" << std::endl;
+				std::cerr << "Internal compiler error - stdlib module parse error" << std::endl;
 				return 1;
 			}
 
@@ -568,7 +569,7 @@ int Main( int argc, const char* argv[] )
 			llvm::raw_string_ostream err_stream( err_stream_str );
 			if( llvm::verifyModule( *std_lib_module.get(), &err_stream ) )
 			{
-				std::cout << "Internal compiler error - stdlib module verify error:\n" << err_stream.str() << std::endl;
+				std::cerr << "Internal compiler error - stdlib module verify error:\n" << err_stream.str() << std::endl;
 				return 1;
 			}
 
@@ -661,7 +662,7 @@ int Main( int argc, const char* argv[] )
 			llvm::legacy::PassManager pass_manager;
 			if( target_machine->addPassesToEmitFile( pass_manager, out_file_stream, nullptr, file_type ) )
 			{
-				std::cout << "Error, creating file emit pass." << std::endl;
+				std::cerr << "Error, creating file emit pass." << std::endl;
 				return 1;
 			}
 
@@ -671,7 +672,7 @@ int Main( int argc, const char* argv[] )
 		out_file_stream.flush();
 		if( out_file_stream.has_error() )
 		{
-			std::cout << "Error while writing output file \"" << Options::output_file_name << "\": " << file_error_code.message() << std::endl;
+			std::cerr << "Error while writing output file \"" << Options::output_file_name << "\": " << file_error_code.message() << std::endl;
 			return 1;
 		}
 	}

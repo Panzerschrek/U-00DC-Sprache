@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "../compilers_common/push_disable_llvm_warnings.hpp"
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/MemoryBuffer.h>
@@ -106,6 +108,7 @@ private:
 std::shared_ptr<IVfs> CreateVfsOverSystemFS( const std::vector<std::string>& include_dirs )
 {
 	std::vector<fs_path> result_include_dirs;
+	result_include_dirs.reserve( include_dirs.size() );
 
 	bool all_ok= true;
 	for( const std::string& include_dir : include_dirs )
@@ -114,13 +117,13 @@ std::shared_ptr<IVfs> CreateVfsOverSystemFS( const std::vector<std::string>& inc
 		fs::make_absolute(dir_path);
 		if( !fs::exists(dir_path) )
 		{
-			std::cout << "include dir \"" << include_dir << "\" does not exists." << std::endl;
+			std::cerr << "include dir \"" << include_dir << "\" does not exists." << std::endl;
 			all_ok= false;
 			continue;
 		}
 		if( !fs::is_directory(dir_path) )
 		{
-			std::cout << "\"" << include_dir << "\" is not a directory." << std::endl;
+			std::cerr << "\"" << include_dir << "\" is not a directory." << std::endl;
 			all_ok= false;
 			continue;
 		}
