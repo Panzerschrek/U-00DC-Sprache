@@ -155,6 +155,18 @@ private:
 	const std::vector<fs_path> include_dirs_;
 };
 
+void PrintAvailableTargets()
+{
+	std::string targets_list;
+	for( const llvm::Target& target : llvm::TargetRegistry::targets() )
+	{
+		if( !targets_list.empty() )
+			targets_list+= ", ";
+		targets_list+= target.getName();
+	}
+	std::cout << "Available targets: " << targets_list << std::endl;
+}
+
 std::string GetFeaturesStr( const llvm::ArrayRef<std::string> features_list )
 {
 	llvm::SubtargetFeatures features;
@@ -252,16 +264,12 @@ void PrintErrors( const SourceGraph& source_graph, const CodeBuilderErrorsContai
 	}
 }
 
-void PrintAvailableTargets()
+void PrintErrorsForTests( const SourceGraph& source_graph, const CodeBuilder::BuildResult& build_result )
 {
-	std::string targets_list;
-	for( const llvm::Target& target : llvm::TargetRegistry::targets() )
-	{
-		if( !targets_list.empty() )
-			targets_list+= ", ";
-		targets_list+= target.getName();
-	}
-	std::cout << "Available targets: " << targets_list << std::endl;
+	// For tests we print errors as "file.u 88 NameNotFound"
+	for( const CodeBuilderError& error : build_result.errors )
+		std::cout << source_graph.nodes_storage[error.file_pos.GetFileIndex() ].file_path
+			<< " " << error.file_pos.GetLine() << " " << CodeBuilderErrorCodeToString( error.code ) << "\n";
 }
 
 std::string QuoteDepTargetString( const std::string& str )
@@ -279,6 +287,34 @@ std::string QuoteDepTargetString( const std::string& str )
 	}
 
 	return result;
+}
+
+bool WriteDepFile(
+	const std::string& out_file_path,
+	const std::vector<IVfs::Path>& deps_list, // Files list should not contain duplicates.
+	const std::string& dep_file_path )
+{
+	std::string str= QuoteDepTargetString(out_file_path) + ":";
+	for( const IVfs::Path& path : deps_list )
+	{
+		str+= " ";
+		str+= QuoteDepTargetString(path);
+		if( &path != &deps_list.back() )
+			str+= " \\\n";
+	}
+
+	std::error_code file_error_code;
+	llvm::raw_fd_ostream deps_file_stream( dep_file_path, file_error_code, llvm::sys::fs::F_None );
+	deps_file_stream << str;
+
+	deps_file_stream.flush();
+	if( deps_file_stream.has_error() )
+	{
+		std::cout << "Error while writing dep file \"" << dep_file_path << "\": " << file_error_code.message() << std::endl;
+		return false;
+	}
+
+	return true;
 }
 
 namespace Options
@@ -556,72 +592,114 @@ int Main( int argc, const char* argv[] )
 	const bool is_msvc= target_machine->getTargetTriple().getEnvironment() == llvm::Triple::MSVC;
 	const auto errors_format= is_msvc ? ErrorsFormat::MSVC : ErrorsFormat::GCC;
 
-	const auto vfs= VfsOverSystemFS::Create( Options::include_dir );
-	if( vfs == nullptr )
-		return 1u;
-
 	// Compile multiple input files and link them together.
-	SourceGraphLoader source_graph_loader( vfs );
 	llvm::LLVMContext llvm_context;
 	std::unique_ptr<llvm::Module> result_module;
 	std::vector<IVfs::Path> deps_list;
-	bool have_some_errors= false;
-	for( const std::string& input_file : Options::input_files )
+
 	{
-		const SourceGraphPtr source_graph= source_graph_loader.LoadSource( input_file );
-		U_ASSERT( source_graph != nullptr );
+		const auto vfs= VfsOverSystemFS::Create( Options::include_dir );
+		if( vfs == nullptr )
+			return 1u;
 
-		PrintLexSyntErrors( *source_graph, errors_format );
-
-		for( const SourceGraph::Node& node : source_graph->nodes_storage )
-			deps_list.push_back( node.file_path );
-
-		if( !source_graph->errors.empty() )
+		SourceGraphLoader source_graph_loader( vfs );
+		bool have_some_errors= false;
+		for( const std::string& input_file : Options::input_files )
 		{
-			have_some_errors= true;
-			continue;
-		}
+			const SourceGraphPtr source_graph= source_graph_loader.LoadSource( input_file );
+			U_ASSERT( source_graph != nullptr );
 
-		CodeBuilder::BuildResult build_result=
-			CodeBuilder(
-				llvm_context,
-				data_layout,
-				Options::generate_debug_info ).BuildProgram( *source_graph );
+			PrintLexSyntErrors( *source_graph, errors_format );
 
-		if( Options::tests_output )
-		{
-			// For tests we print errors as "file.u 88 NameNotFound"
-			for( const CodeBuilderError& error : build_result.errors )
-				std::cout << source_graph->nodes_storage[error.file_pos.GetFileIndex() ].file_path
-					<< " " << error.file_pos.GetLine() << " " << CodeBuilderErrorCodeToString( error.code ) << "\n";
-		}
-		else
-		{
-			PrintErrors( *source_graph, build_result.errors, errors_format );
-		}
+			for( const SourceGraph::Node& node : source_graph->nodes_storage )
+				deps_list.push_back( node.file_path );
 
-		if( !build_result.errors.empty() )
-		{
-			have_some_errors= true;
-			continue;
-		}
-
-		if( result_module == nullptr )
-			result_module= std::move( build_result.module );
-		else
-		{
-			const bool not_ok=
-				llvm::Linker::linkModules( *result_module, std::move(build_result.module) );
-			if( not_ok )
+			if( !source_graph->errors.empty() )
 			{
-				std::cout << "Error, linking file \"" << input_file << "\"" << std::endl;
 				have_some_errors= true;
+				continue;
 			}
+
+			CodeBuilder::BuildResult build_result=
+				CodeBuilder(
+					llvm_context,
+					data_layout,
+					Options::generate_debug_info ).BuildProgram( *source_graph );
+
+			if( Options::tests_output )
+				PrintErrorsForTests( *source_graph, build_result );
+			else
+				PrintErrors( *source_graph, build_result.errors, errors_format );
+
+			if( !build_result.errors.empty() )
+			{
+				have_some_errors= true;
+				continue;
+			}
+
+			if( result_module == nullptr )
+				result_module= std::move( build_result.module );
+			else
+			{
+				const bool not_ok=
+					llvm::Linker::linkModules( *result_module, std::move(build_result.module) );
+				if( not_ok )
+				{
+					std::cout << "Error, linking file \"" << input_file << "\"" << std::endl;
+					have_some_errors= true;
+				}
+			}
+		}
+
+		if( have_some_errors )
+			return 1;
+	}
+
+	{
+		// Generated by "bin2c.cmake" arrays.
+		#include "asm_funcs.h"
+		#include "asm_funcs_32.h"
+		#include "asm_funcs_64.h"
+
+		// Prepare stdlib modules set.
+		const llvm::StringRef asm_funcs_modules[]=
+		{
+			llvm::StringRef( reinterpret_cast<const char*>(c_asm_funcs_file_content), sizeof(c_asm_funcs_file_content) ),
+			( data_layout.getPointerSizeInBits() == 32u
+				? llvm::StringRef( reinterpret_cast<const char*>(c_asm_funcs_32_file_content), sizeof(c_asm_funcs_32_file_content) )
+				: llvm::StringRef( reinterpret_cast<const char*>(c_asm_funcs_64_file_content), sizeof(c_asm_funcs_64_file_content) ) ),
+		};
+
+		// Link stdlib with result module.
+		for( const llvm::StringRef& asm_funcs_module : asm_funcs_modules )
+		{
+			llvm::Expected<std::unique_ptr<llvm::Module>> std_lib_module=
+				llvm::parseBitcodeFile(
+					llvm::MemoryBufferRef( asm_funcs_module, "ustlib asm file" ),
+					result_module->getContext() );
+
+			if( !std_lib_module )
+			{
+				std::cout << "Internal compiler error - stdlib module parse error" << std::endl;
+				return 1;
+			}
+
+			std_lib_module.get()->setDataLayout( data_layout );
+
+			std::string err_stream_str;
+			llvm::raw_string_ostream err_stream( err_stream_str );
+			if( llvm::verifyModule( *std_lib_module.get(), &err_stream ) )
+			{
+				std::cout << "Internal compiler error - stdlib module verify error:\n" << err_stream.str() << std::endl;
+				return 1;
+			}
+
+			llvm::Linker::linkModules( *result_module, std::move(std_lib_module.get()) );
 		}
 	}
 
-	if( have_some_errors )
-		return 1;
+	// Setup various module properties.
+	result_module->setTargetTriple( target_triple_str );
 
 	if( Options::generate_debug_info )
 	{
@@ -631,49 +709,6 @@ int Main( int argc, const char* argv[] )
 		else
 			result_module->addModuleFlag( llvm::Module::Warning, "Debug Info Version", 3 );
 	}
-
-// Generated by "bin2c.cmake" arrays.
-#include "asm_funcs.h"
-#include "asm_funcs_32.h"
-#include "asm_funcs_64.h"
-	
-	// Prepare stdlib modules set.
-	const llvm::StringRef asm_funcs_modules[]=
-	{
-		llvm::StringRef( reinterpret_cast<const char*>(c_asm_funcs_file_content), sizeof(c_asm_funcs_file_content) ),
-		( data_layout.getPointerSizeInBits() == 32u
-			? llvm::StringRef( reinterpret_cast<const char*>(c_asm_funcs_32_file_content), sizeof(c_asm_funcs_32_file_content) )
-			: llvm::StringRef( reinterpret_cast<const char*>(c_asm_funcs_64_file_content), sizeof(c_asm_funcs_64_file_content) ) ),
-	};
-
-	// Link stdlib with result module.
-	for( const llvm::StringRef& asm_funcs_module : asm_funcs_modules )
-	{
-		llvm::Expected<std::unique_ptr<llvm::Module>> std_lib_module=
-			llvm::parseBitcodeFile(
-				llvm::MemoryBufferRef( asm_funcs_module, "ustlib asm file" ),
-				result_module->getContext() );
-
-		if( !std_lib_module )
-		{
-			std::cout << "Internal compiler error - stdlib module parse error" << std::endl;
-			return 1;
-		}
-
-		std_lib_module.get()->setDataLayout( data_layout );
-
-		std::string err_stream_str;
-		llvm::raw_string_ostream err_stream( err_stream_str );
-		if( llvm::verifyModule( *std_lib_module.get(), &err_stream ) )
-		{
-			std::cout << "Internal compiler error - stdlib module verify error:\n" << err_stream.str() << std::endl;
-			return 1;
-		}
-
-		llvm::Linker::linkModules( *result_module, std::move(std_lib_module.get()) );
-	}
-
-	result_module->setTargetTriple( target_triple_str );
 
 	if( optimization_level > 0u || size_optimization_level > 0u )
 	{
@@ -717,91 +752,69 @@ int Main( int argc, const char* argv[] )
 		pass_manager.run( *result_module );
 	}
 
+	// Dump llvm code after optimization pass.
 	if( Options::print_llvm_asm )
 	{
 		llvm::raw_os_ostream stream(std::cout);
 		result_module->print( stream, nullptr );
 	}
 
-	std::error_code file_error_code;
-	llvm::raw_fd_ostream out_file_stream( Options::output_file_name, file_error_code, llvm::sys::fs::F_None );
-
-	if( Options::file_type == Options::FileType::BC )
-		llvm::WriteBitcodeToFile( *result_module, out_file_stream );
-	else if( Options::file_type == Options::FileType::LL )
-		result_module->print( out_file_stream, nullptr );
-	else
+	// Write result file.
 	{
-		llvm::TargetMachine::CodeGenFileType file_type= llvm::TargetMachine::CGFT_Null;
-		switch( Options::file_type )
-		{
-		case Options::FileType::Obj: file_type= llvm::TargetMachine::CGFT_ObjectFile; break;
-		case Options::FileType::Asm: file_type= llvm::TargetMachine::CGFT_AssemblyFile; break;
-		case Options::FileType::BC:
-		case Options::FileType::LL:
-		U_ASSERT(false);
-		};
+		std::error_code file_error_code;
+		llvm::raw_fd_ostream out_file_stream( Options::output_file_name, file_error_code, llvm::sys::fs::F_None );
 
-		llvm::legacy::PassManager pass_manager;
-
-		if( target_machine->addPassesToEmitFile(
-				pass_manager,
-				out_file_stream,
-				nullptr,
-				file_type ) )
+		if( Options::file_type == Options::FileType::BC )
+			llvm::WriteBitcodeToFile( *result_module, out_file_stream );
+		else if( Options::file_type == Options::FileType::LL )
+			result_module->print( out_file_stream, nullptr );
+		else
 		{
-			std::cout << "Error, creating file emit pass." << std::endl;
-			return 1;
+			llvm::TargetMachine::CodeGenFileType file_type= llvm::TargetMachine::CGFT_Null;
+			switch( Options::file_type )
+			{
+			case Options::FileType::Obj: file_type= llvm::TargetMachine::CGFT_ObjectFile; break;
+			case Options::FileType::Asm: file_type= llvm::TargetMachine::CGFT_AssemblyFile; break;
+			case Options::FileType::BC:
+			case Options::FileType::LL:
+			U_ASSERT(false);
+			};
+
+			llvm::legacy::PassManager pass_manager;
+			if( target_machine->addPassesToEmitFile( pass_manager, out_file_stream, nullptr, file_type ) )
+			{
+				std::cout << "Error, creating file emit pass." << std::endl;
+				return 1;
+			}
+
+			pass_manager.run(*result_module);
 		}
 
-		pass_manager.run(*result_module);
-	}
-
-	out_file_stream.flush();
-	if( out_file_stream.has_error() )
-	{
-		std::cout << "Error while writing output file \"" << Options::output_file_name << "\"" << std::endl;
-		return 1;
+		out_file_stream.flush();
+		if( out_file_stream.has_error() )
+		{
+			std::cout << "Error while writing output file \"" << Options::output_file_name << "\": " << file_error_code.message() << std::endl;
+			return 1;
+		}
 	}
 
 	// Left only unique paths in dependencies list.
 	std::sort( deps_list.begin(), deps_list.end() );
-	deps_list.erase(
-		std::unique( deps_list.begin(), deps_list.end() ),
-		deps_list.end() );
+	deps_list.erase( std::unique( deps_list.begin(), deps_list.end() ), deps_list.end() );
 
 	if( Options::deps_tracking )
 		DepFile::Write( Options::output_file_name, argc, argv, deps_list );
 
-	if( !Options::dep_file_name.empty() )
-	{
-		std::string str= QuoteDepTargetString(Options::output_file_name) + ":";
-		for( const IVfs::Path& path : deps_list )
-		{
-			str+= " ";
-			str+= QuoteDepTargetString(path);
-			if( &path != &deps_list.back() )
-				str+= " \\\n";
-		}
-
-		std::error_code file_error_code;
-		llvm::raw_fd_ostream deps_file_stream( Options::dep_file_name, file_error_code, llvm::sys::fs::F_None );
-		deps_file_stream << str;
-
-		deps_file_stream.flush();
-		if( deps_file_stream.has_error() )
-		{
-			std::cout << "Error while writing dep file \"" << Options::dep_file_name << "\"" << std::endl;
-			return 1;
-		}
-	}
+	if( !Options::dep_file_name.empty() &&
+		!WriteDepFile( Options::output_file_name, deps_list, Options::dep_file_name ) )
+		return 1;
 
 	return 0;
 }
 
-} // namespace U
-
 } // namespace
+
+} // namespace  U
 
 int main( const int argc, const char* argv[] )
 {
