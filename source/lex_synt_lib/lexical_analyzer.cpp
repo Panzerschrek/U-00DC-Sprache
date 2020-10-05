@@ -581,7 +581,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 				result.lexems.push_back( std::move(comment_lexem) );
 			}
 			else if( comments_depth < 0 )
-				result.errors.emplace_back( " Lexical error: unexpected */", FilePos( 0u, line, column ) );
+				result.errors.emplace_back( "Lexical error: unexpected */", FilePos( 0u, line, column ) );
 			it+= 2;
 			column+= 2u;
 			continue;
@@ -646,7 +646,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 
 			if( comments_depth == 0 )
 				result.errors.emplace_back(
-					" Lexical error: unrecognized character: " + std::to_string(c),
+					"Lexical error: unrecognized character: " + std::to_string(c),
 					FilePos( 0u, line, column ) );
 			++it;
 			continue;
@@ -663,7 +663,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 
 	if( !collect_comments )
 		for( int i= 0; i < comments_depth; ++i )
-			result.errors.emplace_back( " Lexical error: expected */", FilePos( 0u, line, column ) );
+			result.errors.emplace_back( "Lexical error: expected */", FilePos( 0u, line, column ) );
 
 	Lexem eof_lexem;
 	eof_lexem.type= Lexem::Type::EndOfFile;
@@ -675,13 +675,13 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 	if( line > FilePos::c_max_line )
 	{
 		result.errors.emplace_back(
-			" Lexical error: line limit reached, max is " + std::to_string( FilePos::c_max_line ),
+			"Lexical error: line limit reached, max is " + std::to_string( FilePos::c_max_line ),
 			FilePos( 0u, line, column ) );
 	}
 	if( max_column > FilePos::c_max_column )
 	{
 		result.errors.emplace_back(
-			" Lexical error: column limit reached, max is " + std::to_string( FilePos::c_max_column ),
+			"Lexical error: column limit reached, max is " + std::to_string( FilePos::c_max_column ),
 			FilePos( 0u, line, column ) );
 	}
 
