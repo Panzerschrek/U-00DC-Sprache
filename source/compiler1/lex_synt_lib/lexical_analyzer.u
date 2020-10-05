@@ -648,6 +648,9 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 		}
 	}
 
+	var Lexem mut end_of_file_lexem{ .file_pos( 0u, line, column ), .text= "EOF" };
+	result.lexems.push_back( end_of_file_lexem );
+
 	return move(result);
 }
 
