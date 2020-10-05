@@ -600,6 +600,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TemplateParametersDeductionFailed_Test8",
 		"TemplateParametersDeductionFailed_Test9",
 		"TemplateParametersDeductionFailed_Test10",
+		"TernaryOperatorParsing_Test0",
 		"TupleFor_Test0",
 		"TupleFor_Test1",
 		"TupleFor_Test2",

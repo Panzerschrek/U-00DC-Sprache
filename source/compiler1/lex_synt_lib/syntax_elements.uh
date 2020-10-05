@@ -115,6 +115,13 @@ struct TakeOperator
 	ust::shared_ptr_final</Expression/> expression;
 }
 
+struct TernaryOperator
+{
+	FilePos file_pos;
+	ust::shared_ptr_final</Expression/> condition;
+	[ ust::shared_ptr_final</Expression/>, 2 ] branches;
+}
+
 struct BinaryOperator
 {
 	FilePos file_pos;
@@ -188,6 +195,7 @@ type Expression= ust::variant</ tup[
 	CastMut,
 	MoveOperator,
 	TakeOperator,
+	TernaryOperator,
 	BinaryOperator,
 	BracketExpression,
 	IndexationOperator,

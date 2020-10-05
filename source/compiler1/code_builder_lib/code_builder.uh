@@ -251,6 +251,7 @@ private:
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CastMut& cast_mut_ ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MoveOperator& move_operator ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TakeOperator& take_operator ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TernaryOperator& ternary_operator ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BracketExpression& bracket_expression ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IndexationOperator& indexation_operator ) : Value;
