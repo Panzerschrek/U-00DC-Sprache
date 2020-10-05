@@ -70,6 +70,8 @@ size_t SourceGraphLoader::LoadNode_r(
 			return i;
 
 	const size_t node_index= result.nodes_storage.size();
+	result.nodes_storage.emplace_back();
+	result.nodes_storage[node_index].file_path= full_file_path;
 
 	const std::optional<IVfs::LoadFileResult> loaded_file= vfs_->LoadFileContent( file_path, parent_file_path );
 	if( loaded_file == std::nullopt )
@@ -80,7 +82,13 @@ size_t SourceGraphLoader::LoadNode_r(
 	}
 
 	LexicalAnalysisResult lex_result= LexicalAnalysis( loaded_file->file_content );
-	result.errors.insert( result.errors.end(), lex_result.errors.begin(), lex_result.errors.end() );
+
+	for( LexSyntError error: lex_result.errors )
+	{
+		error.file_pos.SetFileIndex(uint32_t(node_index));
+		result.errors.push_back( std::move(error) );
+	}
+
 	if( !lex_result.errors.empty() )
 		return ~0u;
 
@@ -89,8 +97,6 @@ size_t SourceGraphLoader::LoadNode_r(
 
 	const std::vector<Synt::Import> imports= Synt::ParseImports( lex_result.lexems );
 
-	result.nodes_storage.emplace_back();
-	result.nodes_storage[node_index].file_path= full_file_path;
 	result.nodes_storage[node_index].child_nodes_indeces.resize( imports.size() );
 
 	std::vector<Synt::MacrosPtr> imported_macroses;
