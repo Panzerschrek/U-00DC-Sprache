@@ -2,6 +2,7 @@
 #include <memory>
 #include <vector>
 
+#include "lex_synt_error.hpp"
 #include "macro.hpp"
 #include "syntax_elements.hpp"
 
@@ -10,14 +11,6 @@ namespace U
 
 namespace Synt
 {
-
-struct SyntaxErrorMessage
-{
-	std::string text;
-	FilePos file_pos;
-};
-
-using SyntaxErrorMessages= std::vector<SyntaxErrorMessage>;
 
 struct MacroExpansionContext
 {
@@ -34,7 +27,7 @@ struct SyntaxAnalysisResult
 	std::vector<Import> imports;
 	MacrosPtr macros;
 	ProgramElements program_elements;
-	SyntaxErrorMessages error_messages;
+	LexSyntErrors error_messages;
 };
 
 std::vector<Import> ParseImports( const Lexems& lexems );

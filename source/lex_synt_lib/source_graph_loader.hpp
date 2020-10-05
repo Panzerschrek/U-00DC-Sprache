@@ -1,5 +1,4 @@
 #pragma once
-#include <iostream>
 #include <memory>
 #include "syntax_analyzer.hpp"
 
@@ -42,9 +41,7 @@ struct SourceGraph final
 	// Use common storage of macro expansion context because macro declared in one file may be used in another one.
 	Synt::MacroExpansionContextsPtr macro_expansion_contexts;
 
-	LexicalErrorMessages lexical_errors;
-	Synt::SyntaxErrorMessages syntax_errors;
-	bool have_errors= false;
+	LexSyntErrors errors;
 };
 
 using SourceGraphPtr= std::unique_ptr<SourceGraph>;
@@ -52,7 +49,7 @@ using SourceGraphPtr= std::unique_ptr<SourceGraph>;
 class SourceGraphLoader final
 {
 public:
-	explicit SourceGraphLoader( IVfsPtr vfs, std::ostream& errors_stream= std::cerr );
+	explicit SourceGraphLoader( IVfsPtr vfs );
 
 	// Never returns nullptr.
 	SourceGraphPtr LoadSource( const IVfs::Path& root_file_path );
@@ -63,7 +60,6 @@ private:
 private:
 	const Synt::MacrosPtr built_in_macros_;
 	const IVfsPtr vfs_;
-	std::ostream& errors_stream_;
 
 	std::vector<IVfs::Path> processed_files_stack_;
 };

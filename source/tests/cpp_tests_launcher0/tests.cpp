@@ -89,8 +89,8 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 		SourceGraphLoader( std::make_shared<MultiFileVfs>( file_path, text ) ).LoadSource( file_path );
 
 	U_TEST_ASSERT( source_graph != nullptr );
-	U_TEST_ASSERT( source_graph->lexical_errors.empty() );
-	U_TEST_ASSERT( source_graph->syntax_errors.empty() );
+	PrintLexSyntErrors( *source_graph );
+	U_TEST_ASSERT( source_graph->errors.empty() );
 
 	CodeBuilder::BuildResult build_result=
 		CodeBuilder(
@@ -111,8 +111,8 @@ ErrorTestBuildResult BuildProgramWithErrors( const char* const text )
 		SourceGraphLoader( std::make_shared<MultiFileVfs>( file_path, text ) ).LoadSource( file_path );
 
 	U_TEST_ASSERT( source_graph != nullptr );
-	U_TEST_ASSERT( source_graph->lexical_errors.empty() );
-	U_TEST_ASSERT( source_graph->syntax_errors.empty() );
+	PrintLexSyntErrors( *source_graph );
+	U_TEST_ASSERT( source_graph->errors.empty() );
 
 	return
 		{ CodeBuilder(
@@ -127,8 +127,8 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 		SourceGraphLoader( std::make_shared<MultiFileVfs>( std::move(sources) ) ).LoadSource( root_file_path );
 
 	U_TEST_ASSERT( source_graph != nullptr );
-	U_TEST_ASSERT( source_graph->lexical_errors.empty() );
-	U_TEST_ASSERT( source_graph->syntax_errors.empty() );
+	PrintLexSyntErrors( *source_graph );
+	U_TEST_ASSERT( source_graph->errors.empty() );
 
 	CodeBuilder::BuildResult build_result=
 		CodeBuilder(
@@ -148,8 +148,8 @@ ErrorTestBuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry>
 		SourceGraphLoader( std::make_shared<MultiFileVfs>( std::move(sources) ) ).LoadSource( root_file_path );
 
 	U_TEST_ASSERT( source_graph != nullptr );
-	U_TEST_ASSERT( source_graph->lexical_errors.empty() );
-	U_TEST_ASSERT( source_graph->syntax_errors.empty() );
+	PrintLexSyntErrors( *source_graph );
+	U_TEST_ASSERT( source_graph->errors.empty() );
 
 	return
 		{ CodeBuilder(

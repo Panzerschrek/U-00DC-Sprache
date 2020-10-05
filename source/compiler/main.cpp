@@ -177,40 +177,78 @@ std::string GetNativeTargetFeaturesStr()
 	return features.getString();
 }
 
-void PrintErrors( const SourceGraph& source_graph, const CodeBuilderErrorsContainer& errors )
+void PrintErrors( const SourceGraph& source_graph, const CodeBuilderErrorsContainer& errors, const ErrorsFormat format )
 {
 	for( const CodeBuilderError& error : errors )
 	{
-		if( error.code == CodeBuilderErrorCode::TemplateContext )
+		if( format == ErrorsFormat::MSVC )
 		{
-			U_ASSERT( error.template_context != nullptr );
+			if( error.code == CodeBuilderErrorCode::TemplateContext )
+			{
+				U_ASSERT( error.template_context != nullptr );
 
-			std::cerr << source_graph.nodes_storage[ error.template_context->context_declaration_file_pos.GetFileIndex() ].file_path << ": "
-				<< "In instantiation of \"" << error.template_context->context_name
-				<< "\" " << error.template_context->parameters_description
-				<< "\n";
+				PrintErrors( source_graph, error.template_context->errors, format );
 
-			std::cerr << source_graph.nodes_storage[error.file_pos.GetFileIndex() ].file_path
-				<< ":" << error.file_pos.GetLine() << ":" << error.file_pos.GetColumn() << ": required from here: " << "\n";
-		}
-		else if( error.code == CodeBuilderErrorCode::MacroExpansionContext )
-		{
-			U_ASSERT( error.template_context != nullptr );
+				std::cerr << source_graph.nodes_storage[ error.template_context->context_declaration_file_pos.GetFileIndex() ].file_path
+					<< "(" << error.template_context->context_declaration_file_pos.GetLine() << "): note: "
+					<< "In instantiation of \"" << error.template_context->context_name
+					<< "\" " << error.template_context->parameters_description
+					<< "\n";
 
-			std::cerr << source_graph.nodes_storage[ error.template_context->context_declaration_file_pos.GetFileIndex() ].file_path << ": "
-				<< "In expansion of macro \"" << error.template_context->context_name << "\"\n";
+				std::cerr << source_graph.nodes_storage[ error.file_pos.GetFileIndex()  ].file_path
+					<< "(" << error.file_pos.GetLine() << "): note: " << error.text << "\n";
+			}
+			else if( error.code == CodeBuilderErrorCode::MacroExpansionContext )
+			{
+				PrintErrors( source_graph, error.template_context->errors, format );
 
-			std::cerr << source_graph.nodes_storage[error.file_pos.GetFileIndex() ].file_path
-				<< ":" << error.file_pos.GetLine() << ":" << error.file_pos.GetColumn() << ": required from here: " << "\n";
+				std::cerr << source_graph.nodes_storage[ error.template_context->context_declaration_file_pos.GetFileIndex() ].file_path
+					<< "(" << error.template_context->context_declaration_file_pos.GetLine() << "): note: "
+					<< "In expansion of macro \"" << error.template_context->context_name << "\"\n";
+
+				std::cerr << source_graph.nodes_storage[error.file_pos.GetFileIndex() ].file_path
+					<< "(" << error.file_pos.GetLine() << "): note: required from here\n";
+			}
+			else
+			{
+				std::cerr << source_graph.nodes_storage[ error.file_pos.GetFileIndex() ].file_path
+					<< "(" << error.file_pos.GetLine() << "): error: " << error.text << "\n";
+			}
 		}
 		else
 		{
-			std::cerr << source_graph.nodes_storage[error.file_pos.GetFileIndex() ].file_path
-				<< ":" << error.file_pos.GetLine() << ":" << error.file_pos.GetColumn() << ": error: " << error.text << "\n";
-		}
+			if( error.code == CodeBuilderErrorCode::TemplateContext )
+			{
+				U_ASSERT( error.template_context != nullptr );
 
-		if( error.template_context != nullptr )
-			PrintErrors( source_graph, error.template_context->errors );
+				std::cerr << source_graph.nodes_storage[ error.template_context->context_declaration_file_pos.GetFileIndex() ].file_path << ": "
+					<< "In instantiation of \"" << error.template_context->context_name
+					<< "\" " << error.template_context->parameters_description
+					<< "\n";
+
+				std::cerr << source_graph.nodes_storage[error.file_pos.GetFileIndex() ].file_path
+					<< ":" << error.file_pos.GetLine() << ":" << error.file_pos.GetColumn() << ": required from here: " << "\n";
+
+				PrintErrors( source_graph, error.template_context->errors, format );
+			}
+			else if( error.code == CodeBuilderErrorCode::MacroExpansionContext )
+			{
+				U_ASSERT( error.template_context != nullptr );
+
+				std::cerr << source_graph.nodes_storage[ error.template_context->context_declaration_file_pos.GetFileIndex() ].file_path << ": "
+					<< "In expansion of macro \"" << error.template_context->context_name << "\"\n";
+
+				std::cerr << source_graph.nodes_storage[error.file_pos.GetFileIndex() ].file_path
+					<< ":" << error.file_pos.GetLine() << ":" << error.file_pos.GetColumn() << ": required from here: " << "\n";
+
+				PrintErrors( source_graph, error.template_context->errors, format );
+			}
+			else
+			{
+				std::cerr << source_graph.nodes_storage[error.file_pos.GetFileIndex() ].file_path
+					<< ":" << error.file_pos.GetLine() << ":" << error.file_pos.GetColumn() << ": error: " << error.text << "\n";
+			}
+		}
 	}
 }
 
@@ -632,6 +670,9 @@ int Main( int argc, const char* argv[] )
 	}
 	const llvm::DataLayout data_layout= target_machine->createDataLayout();
 
+	const bool is_msvc= target_machine->getTargetTriple().getEnvironment() == llvm::Triple::MSVC;
+	const auto errors_format= is_msvc ? ErrorsFormat::MSVC : ErrorsFormat::GCC;
+
 	const auto vfs= VfsOverSystemFS::Create( Options::include_dir );
 	if( vfs == nullptr )
 		return 1u;
@@ -647,10 +688,12 @@ int Main( int argc, const char* argv[] )
 		const SourceGraphPtr source_graph= source_graph_loader.LoadSource( input_file );
 		U_ASSERT( source_graph != nullptr );
 
+		PrintLexSyntErrors( *source_graph, errors_format );
+
 		for( const SourceGraph::Node& node : source_graph->nodes_storage )
 			deps_list.push_back( node.file_path );
 
-		if( source_graph->have_errors || !source_graph->lexical_errors.empty() || !source_graph->syntax_errors.empty() )
+		if( !source_graph->errors.empty() )
 		{
 			have_some_errors= true;
 			continue;
@@ -671,7 +714,7 @@ int Main( int argc, const char* argv[] )
 		}
 		else
 		{
-			PrintErrors( *source_graph, build_result.errors );
+			PrintErrors( *source_graph, build_result.errors, errors_format );
 		}
 
 		if( !build_result.errors.empty() )
@@ -700,7 +743,7 @@ int Main( int argc, const char* argv[] )
 	if( Options::generate_debug_info )
 	{
 		// Dwarf debug info - default format.
-		if( target_machine->getTargetTriple().getEnvironment() == llvm::Triple::MSVC )
+		if( is_msvc )
 			result_module->addModuleFlag( llvm::Module::Warning, "CodeView", 1 );
 		else
 			result_module->addModuleFlag( llvm::Module::Warning, "Debug Info Version", 3 );

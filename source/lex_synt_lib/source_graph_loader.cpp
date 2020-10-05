@@ -14,7 +14,7 @@ extern const char c_build_in_macros_text[]=
 static Synt::MacrosPtr PrepareBuiltInMacros()
 {
 	const LexicalAnalysisResult lex_result= LexicalAnalysis( c_build_in_macros_text, sizeof(c_build_in_macros_text) );
-	U_ASSERT( lex_result.error_messages.empty() );
+	U_ASSERT( lex_result.errors.empty() );
 
 	const Synt::SyntaxAnalysisResult synt_result=
 		Synt::SyntaxAnalysis(
@@ -26,10 +26,9 @@ static Synt::MacrosPtr PrepareBuiltInMacros()
 	return synt_result.macros;
 }
 
-SourceGraphLoader::SourceGraphLoader( IVfsPtr vfs, std::ostream& errors_stream )
+SourceGraphLoader::SourceGraphLoader( IVfsPtr vfs )
 	: built_in_macros_(PrepareBuiltInMacros())
 	, vfs_(std::move(vfs))
-	, errors_stream_(errors_stream)
 {
 	U_ASSERT( built_in_macros_ != nullptr );
 	U_ASSERT( vfs_ != nullptr );
@@ -55,12 +54,13 @@ size_t SourceGraphLoader::LoadNode_r(
 	const auto prev_file_it= std::find( processed_files_stack_.begin(), processed_files_stack_.end(), full_file_path );
 	if( prev_file_it != processed_files_stack_.end() )
 	{
-		std::string imports_loop_str;
+		std::string imports_loop_str= "Import loop detected: ";
 		for( auto it= prev_file_it; it != processed_files_stack_.end(); ++it )
 			imports_loop_str+= *it + " -> ";
 		imports_loop_str+= full_file_path;
-		errors_stream_ << parent_file_path << ": 1:1: Import loop detected: " <<  imports_loop_str << std::endl;
-		result.have_errors= true;
+
+		result.errors.emplace_back( imports_loop_str, FilePos( 0u, 0u, 0u ) );
+
 		return ~0u;
 	}
 
@@ -70,37 +70,33 @@ size_t SourceGraphLoader::LoadNode_r(
 			return i;
 
 	const size_t node_index= result.nodes_storage.size();
+	result.nodes_storage.emplace_back();
+	result.nodes_storage[node_index].file_path= full_file_path;
 
-	std::optional<IVfs::LoadFileResult> loaded_file= vfs_->LoadFileContent( file_path, parent_file_path );
+	const std::optional<IVfs::LoadFileResult> loaded_file= vfs_->LoadFileContent( file_path, parent_file_path );
 	if( loaded_file == std::nullopt )
 	{
-		Synt::SyntaxErrorMessage error_message;
-		error_message.text= "Can not read file \"" + file_path + "\"";
-		error_message.file_pos= FilePos( uint32_t(node_index), 0u, 0u );
-
-		errors_stream_ << error_message.text << std::endl;
-		result.syntax_errors.push_back( std::move(error_message) );
-		result.have_errors= true;
+		LexSyntError error_message( "Can not read file \"" + file_path + "\"", FilePos( uint32_t(node_index), 0u, 0u ) );
+		result.errors.push_back( std::move(error_message) );
 		return ~0u;
 	}
 
 	LexicalAnalysisResult lex_result= LexicalAnalysis( loaded_file->file_content );
-	for( const std::string& lexical_error_message : lex_result.error_messages )
-		errors_stream_ << full_file_path << ": error: " << lexical_error_message << "\n";
-	result.lexical_errors.insert( result.lexical_errors.end(), lex_result.error_messages.begin(), lex_result.error_messages.end() );
-	if( !lex_result.error_messages.empty() )
+
+	for( LexSyntError error: lex_result.errors )
 	{
-		result.have_errors= true;
-		return ~0u;
+		error.file_pos.SetFileIndex(uint32_t(node_index));
+		result.errors.push_back( std::move(error) );
 	}
+
+	if( !lex_result.errors.empty() )
+		return ~0u;
 
 	for( Lexem& lexem :lex_result.lexems )
 		lexem.file_pos.SetFileIndex(uint32_t(node_index));
 
 	const std::vector<Synt::Import> imports= Synt::ParseImports( lex_result.lexems );
 
-	result.nodes_storage.emplace_back();
-	result.nodes_storage[node_index].file_path= full_file_path;
 	result.nodes_storage[node_index].child_nodes_indeces.resize( imports.size() );
 
 	std::vector<Synt::MacrosPtr> imported_macroses;
@@ -131,12 +127,9 @@ size_t SourceGraphLoader::LoadNode_r(
 				if( dst_map.find(macro_map_pair.first) != dst_map.end() &&
 					macro_map_pair.second.file_pos != dst_map.find(macro_map_pair.first)->second.file_pos )
 				{
-					Synt::SyntaxErrorMessage error_message;
-					error_message.text= "Macro \"" + macro_map_pair.first + "\" redefinition.";
-					error_message.file_pos= FilePos( 0u, 0u, uint32_t(node_index) );
-
-					errors_stream_ << error_message.text << std::endl;
-					result.syntax_errors.push_back( std::move(error_message) );
+					result.errors.emplace_back(
+						"Macro \"" + macro_map_pair.first + "\" redefinition.",
+						FilePos( uint32_t(node_index), 0u, 0u ) );
 				}
 				else
 					dst_map[macro_map_pair.first]= macro_map_pair.second;
@@ -151,12 +144,7 @@ size_t SourceGraphLoader::LoadNode_r(
 		std::move(merged_macroses),
 		result.macro_expansion_contexts );
 
-	for( const Synt::SyntaxErrorMessage& syntax_error_message : synt_result.error_messages )
-		errors_stream_ << full_file_path << ":"
-			<< syntax_error_message.file_pos.GetLine() << ":" << syntax_error_message.file_pos.GetColumn() << ": error: " << syntax_error_message.text << "\n";
-
-	result.syntax_errors.insert( result.syntax_errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
-	result.have_errors &= !synt_result.error_messages.empty();
+	result.errors.insert( result.errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
 
 	result.nodes_storage[node_index].ast= std::move( synt_result );
 	return node_index;
