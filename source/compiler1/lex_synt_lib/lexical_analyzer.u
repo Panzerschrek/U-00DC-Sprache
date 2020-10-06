@@ -551,8 +551,8 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 
 		auto c= GetUTF8FirstChar(it);
 
-		var char8 mut next_c= zero_init;
-		if( it.size() > 1s ) { next_c= it[1s]; }
+		var sprache_char mut next_c= zero_init;
+		if( it.size() > 1s ) { next_c= GetUTF8FirstChar( it.subrange( 1s, it.size() ) ); }
 
 		var Lexem mut lexem;
 
@@ -583,11 +583,11 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 		{
 			lexem= ParseIdentifier(it);
 		}
-		else if( c == "?"c32 && next_c == "?"c8 )
+		else if( c == "?"c32 && next_c == "?"c32 )
 		{
 			lexem= ParseMacroUniqueIdentifier(it);
 		}
-		else if( c == "?"c32 && next_c != ">"c8 )
+		else if( c == "?"c32 && IsIdentifierStartChar(next_c) )
 		{
 			lexem= ParseMacroIdentifier(it);
 		}
@@ -647,6 +647,9 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 			it.drop_front();
 		}
 	}
+
+	var Lexem mut end_of_file_lexem{ .file_pos( 0u, line, column ), .text= "EOF" };
+	result.lexems.push_back( end_of_file_lexem );
 
 	return move(result);
 }
