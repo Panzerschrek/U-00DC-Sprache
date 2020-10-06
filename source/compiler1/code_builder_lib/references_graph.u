@@ -240,6 +240,7 @@ fn ReferencesGraph::MergeReferencesGraphsAfterConditionalBranches( ust::array_vi
 				if( branch_state.nodes_[ src_node.inner_reference_node ].kind == NodeKind::ReferenceMut )
 				{
 					var NodeReplacement mut replacement{ .first= dst_node.inner_reference_node, .second= src_node.inner_reference_node };
+					dst_node.inner_reference_node= src_node.inner_reference_node;
 					replaced_nodes.push_back( move(replacement) );
 				}
 				else
@@ -303,6 +304,14 @@ fn ReferencesGraph::MergeReferencesGraphsAfterConditionalBranches( ust::array_vi
 		}
 
 		result.links_= move(links_corrected);
+	}
+
+	foreach( &replacement : replaced_nodes )
+	{
+		if( !result.nodes_.find( replacement.first ).empty() )
+		{
+			result.nodes_.erase( replacement.first );
+		}
 	}
 
 	// Check mutable reference count correctness.

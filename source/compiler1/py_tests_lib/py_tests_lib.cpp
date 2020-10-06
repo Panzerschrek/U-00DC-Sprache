@@ -454,6 +454,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"CreateMutableReferenceToVariableWithMutableReference",
 		"DefaultClassVisibilityIsPublic_Test0",
 		"DefaultConstructorGeneration_Test0",
+		"DestructorsCall_ForTernaryOperatorBranches_Test0",
+		"DestructorsCall_ForTernaryOperatorResult_Test0",
 		"DisableCopyAssignmentOperator_Test0",
 		"DisableCopyConstructor_Test0",
 		"DisabledFunction_Test0",
