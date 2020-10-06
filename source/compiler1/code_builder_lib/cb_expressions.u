@@ -678,7 +678,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	var ReferencesGraph references_graph_before= take(function_context.references_graph);
 	var [ ReferencesGraph, 2 ] mut branches_references_graphs;
-	var [ LLVMValueRef, 2 ] mut branches_reference_values= zero_init;
+	var [ LLVMValueRef, 2 ] mut branches_reference_values= zero_init, mut branches_constexpr_values= zero_init;
 	for( auto mut i= 0s; i < 2s; ++i )
 	{
 		function_context.references_graph= references_graph_before;
@@ -693,6 +693,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			}
 
 			var Variable branch_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, ternary_operator.branches[i].get_ref() );
+
+			branches_constexpr_values[i]= branch_result.constexpr_value;
 
 			if( result.value_type == ValueType::Value )
 			{
@@ -758,6 +760,13 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			LLVMAddIncoming( phi_node, branches_reference_values[0], branches_end_blocks[0], 2u );
 			result.llvm_value= phi_node;
 		}
+	}
+
+	if( condition.constexpr_value != LLVMValueRef::Null )
+	{
+		var u64 mut condition_value= 0u64;
+		unsafe{  condition_value= LLVMConstIntGetZExtValue( condition.constexpr_value );  }
+		result.constexpr_value= select( condition_value != 0u64 ? branches_constexpr_values[0] : branches_constexpr_values[1] );
 	}
 
 	{// Register variable for references checking and destruction.
