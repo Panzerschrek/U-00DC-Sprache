@@ -1223,6 +1223,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	var Variable mut result
 	{
 		.t= variable.t,
+		.value_type= ValueType::Value,
 		.location= Variable::Location::LLVMRegister,
 		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "-" ),
 	};
@@ -1298,6 +1299,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	var Variable mut result
 	{
 		.t= bool_type_,
+		.value_type= ValueType::Value,
 		.location= Variable::Location::LLVMRegister,
 		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "!" ),
 	};
@@ -1364,6 +1366,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	var Variable mut result
 	{
 		.t= variable.t,
+		.value_type= ValueType::Value,
 		.location= Variable::Location::LLVMRegister,
 		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "~" ),
 	};
