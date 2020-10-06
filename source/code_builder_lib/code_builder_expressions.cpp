@@ -636,6 +636,7 @@ Value CodeBuilder::BuildExpressionCode(
 
 	llvm::Value* branches_reference_values[2] { nullptr, nullptr };
 	llvm::Constant* branches_constexpr_values[2] { nullptr, nullptr };
+	llvm::BasicBlock* branches_end_basic_blocks[2]{ nullptr, nullptr };
 	ReferencesGraph variables_state_before= function_context.variables_state;
 	std::vector<ReferencesGraph> branches_variables_state(2u);
 	for( size_t i= 0u; i < 2u; ++i )
@@ -701,6 +702,7 @@ Value CodeBuilder::BuildExpressionCode(
 			CallDestructors( branch_temp_variables_storage, names, function_context, ternary_operator.file_pos_ );
 			function_context.llvm_ir_builder.CreateBr( result_block );
 		}
+		branches_end_basic_blocks[i]= function_context.llvm_ir_builder.GetInsertBlock();
 		branches_variables_state[i]= function_context.variables_state;
 	}
 	function_context.function->getBasicBlockList().push_back( result_block );
@@ -711,8 +713,8 @@ Value CodeBuilder::BuildExpressionCode(
 	if( result.value_type != ValueType::Value )
 	{
 		llvm::PHINode* const phi= function_context.llvm_ir_builder.CreatePHI( result.type.GetLLVMType()->getPointerTo(), 2u );
-		phi->addIncoming( branches_reference_values[0], branches_basic_blocks[0] );
-		phi->addIncoming( branches_reference_values[1], branches_basic_blocks[1] );
+		phi->addIncoming( branches_reference_values[0], branches_end_basic_blocks[0] );
+		phi->addIncoming( branches_reference_values[1], branches_end_basic_blocks[1] );
 		result.llvm_value= phi;
 	}
 
