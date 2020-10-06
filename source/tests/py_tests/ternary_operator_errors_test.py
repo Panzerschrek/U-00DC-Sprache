@@ -112,11 +112,7 @@ def DestroyedVariableStillHaveReference_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) >= 2 )
-	assert( errors_list[0].error_code == "DestroyedVariableStillHaveReferences" )
-	assert( errors_list[0].file_pos.line == 5 )
-	assert( errors_list[1].error_code == "DestroyedVariableStillHaveReferences" )
-	assert( errors_list[1].file_pos.line == 5 )
+	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 5 ) )
 
 
 def VariablesStateMerge_ForTernaryOperator_Test0():
