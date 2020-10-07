@@ -914,7 +914,6 @@ fn CodeBuilder::PrepareFunction(
 		function_variable.body_syntax_element= function_declaration_ptr;
 	}
 
-
 	function_variable.is_this_call=
 		!function_declaration.function_type.params.empty() &&
 		function_declaration.function_type.params.front().name == KeywordToString( Keyword::this_ );
@@ -934,6 +933,19 @@ fn CodeBuilder::PrepareFunction(
 		}
 
 		CheckOverloadedOperator( class_type, function_type, function_declaration.operator, names_scope_ptr, function_declaration.file_pos );
+	}
+
+	// Check conversion constructor.
+	if( function_declaration.is_conversion_constructor )
+	{
+		if( function_variable.t.params.size() == 2s )
+		{
+			function_variable.is_conversion_constructor= true;
+		}
+		else
+		{
+			REPORT_ERROR( ConversionConstructorMustHaveOneArgument, names_scope_ptr, function_declaration.file_pos )
+		}
 	}
 
 	// Setup references pollution for copy methods.
@@ -1112,6 +1124,13 @@ fn CodeBuilder::PrepareFunction(
 		if( prev_function.no_mangle != function_variable.no_mangle )
 		{
 			REPORT_ERROR( NoMangleMismatch, names_scope_ptr, function_declaration.file_pos, func_name )
+			return false;
+		}
+
+		if( prev_function.is_conversion_constructor != function_variable.is_conversion_constructor )
+		{
+			// TODO -use separate error code
+			REPORT_ERROR( NotImplemented, names_scope_ptr, function_declaration.file_pos, ust::string8("changing conversion constructor name") )
 			return false;
 		}
 

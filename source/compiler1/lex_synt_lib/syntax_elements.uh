@@ -516,6 +516,7 @@ struct Function
 
 	bool no_mangle= false;
 	bool constexpr_= false;
+	bool is_conversion_constructor= false;
 
 	ust::box_nullable</Expression/> condition; // enable_if
 

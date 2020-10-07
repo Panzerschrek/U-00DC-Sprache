@@ -735,6 +735,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"ConstexprStructDeclaration",
 		"ConstexprStructGeneratedMethodsAreConstexpr",
 		"ConstexprStructMemberIsConstexpr_Test",
+		"ConversionConstructorMustHaveOneArgument_Test",
 		"CopyChildToParent_Test",
 		"CouldNotOverloadFunction_ForUnsafe_Test",
 		"CouldNotOverloadFunctionIfNomangle_Test",

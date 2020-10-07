@@ -1577,6 +1577,13 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 		}
 	}
 
+	if( res.name.back() == KeywordToString( Keyword::conversion_constructor_ ) )
+	{
+		// Set internal name of conversion constructor to "constructor" and use special flag for indication of conversion constructor.
+		res.name.back()= KeywordToString( Keyword::constructor_ );
+		res.is_conversion_constructor= true;
+	}
+
 	res.function_type.file_pos= it_.front().file_pos;
 	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
 	{
