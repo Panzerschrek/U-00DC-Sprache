@@ -720,9 +720,7 @@ fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, 
 	auto dst_class= dst.GetClassType().get_ref();
 	auto dst_class_members= dst_class.lock_imut().get_ref().members;
 
-	auto members_lock= dst_class_members.lock_imut();
-
-	auto constructors_ptr= members_lock.get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).get_ref().Get</NamesScopeFunctionsSet/>();
+	auto constructors_ptr= dst_class_members.lock_imut().get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).get_ref().Get</NamesScopeFunctionsSet/>();
 	auto constructors_lock= constructors_ptr.lock_imut();
 	auto& constructors= constructors_lock.get_ref().functions_set;
 

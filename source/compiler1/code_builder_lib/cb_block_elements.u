@@ -496,19 +496,27 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		{
 			auto return_node= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "return value" );
 
-			var [ Variable, 2 ] constructor_args
-			[
-				{ .t= ret_type, .llvm_value= function_context.s_ret, .value_type= ValueType::ReferenceMut, .node_id= return_node },
-				expr,
-			];
-			DoCallFunction(
-				names_scope,
-				function_context,
-				conversion_constructor_,
-				constructor_args,
-				ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
-				ArgsEvaluationOrder::Direct,
-				return_operator.file_pos );
+			{
+				// Create temp variables storage for preventing of destruction of "expr".
+				var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+				auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+
+				var [ Variable, 2 ] constructor_args
+				[
+					{ .t= ret_type, .llvm_value= function_context.s_ret, .value_type= ValueType::ReferenceMut, .node_id= return_node },
+					expr,
+				];
+				DoCallFunction(
+					names_scope,
+					function_context,
+					conversion_constructor_,
+					constructor_args,
+					ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
+					ArgsEvaluationOrder::Direct,
+					return_operator.file_pos );
+
+				CallDestructorsForTopVariablesFrame( names_scope, function_context, return_operator.file_pos );
+			}
 
 			auto inner_reference_node= function_context.references_graph.GetNodeInnerReference( return_node );
 			if( inner_reference_node != ReferencesGraph::c_empty_node_id )

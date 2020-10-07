@@ -117,19 +117,26 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 		if_var( &conversion_constructor_ : GetConversionConstructor( names_scope, variable.t, expr_result.t, file_pos ) )
 		{
-			var [ Variable, 2 ] constructor_args
-			[
-				{ .t= variable.t, .llvm_value= variable.llvm_value, .value_type= ValueType::ReferenceMut, .node_id= variable.node_id },
-				expr_result
-			];
-			DoCallFunction(
-				names_scope,
-				function_context,
-				conversion_constructor_,
-				constructor_args,
-				ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
-				ArgsEvaluationOrder::Direct,
-				file_pos );
+			{
+				// Create temp variables storage for preventing of destruction of "expr".
+				var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+				auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+				var [ Variable, 2 ] constructor_args
+				[
+					{ .t= variable.t, .llvm_value= variable.llvm_value, .value_type= ValueType::ReferenceMut, .node_id= variable.node_id },
+					expr_result
+				];
+				DoCallFunction(
+					names_scope,
+					function_context,
+					conversion_constructor_,
+					constructor_args,
+					ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
+					ArgsEvaluationOrder::Direct,
+					file_pos );
+
+				CallDestructorsForTopVariablesFrame( names_scope, function_context, file_pos );
+			}
 
 			DestroyUnusedTemporaryVariables( names_scope, function_context, file_pos );
 			return LLVMValueRef::Null;

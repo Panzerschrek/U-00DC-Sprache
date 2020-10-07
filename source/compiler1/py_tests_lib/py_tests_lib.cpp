@@ -622,7 +622,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TypeConversion_InReturn_Test0",
 		"TypeConversion_InReturn_Test1",
 		"TypeConversion_InReturn_Test2",
-		//"TypeConversion_InReturn_Test3",
+		"TypeConversion_InReturn_Test3",
 		"TypeConversion_InReturn_Test4",
 		"TypeinfoCalssIsSameForSameTypes_Test0",
 		"TypeinfoForIncompleteType_Test0",
