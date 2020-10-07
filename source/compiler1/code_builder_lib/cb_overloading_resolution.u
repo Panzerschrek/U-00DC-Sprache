@@ -1,3 +1,4 @@
+import "../lex_synt_lib/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
 
@@ -701,6 +702,45 @@ fn CodeBuilder::GetOverloadedOperator(
 		}
 	}
 
+	return ust::optional</FunctionVariable/>();
+}
+
+fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, Type& src, FilePos& file_pos ) : ust::optional</FunctionVariable/>
+{
+	if( !EnsureTypeComplete( dst ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope, file_pos, dst )
+		return ust::optional</FunctionVariable/>();
+	}
+	if( dst.GetClassType().empty() )
+	{
+		return ust::optional</FunctionVariable/>();
+	}
+
+	auto dst_class= dst.GetClassType().get_ref();
+	auto dst_class_members= dst_class.lock_imut().get_ref().members;
+
+	auto members_lock= dst_class_members.lock_imut();
+
+	auto constructors_ptr= members_lock.get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).get_ref().Get</NamesScopeFunctionsSet/>();
+	auto constructors_lock= constructors_ptr.lock_imut();
+	auto& constructors= constructors_lock.get_ref().functions_set;
+
+	var [ VariableTypeExtened, 2 ] constructor_args
+	[
+		{ .t= dst, .value_type= ValueType::ReferenceMut },
+		{ .t= src, .value_type= ValueType::ReferenceImut },
+	];
+
+	auto mut function_selected= GetOverloadedFunction( constructors, constructor_args, true, names_scope, file_pos, true );
+	if( function_selected.empty() )
+	{
+		return move(function_selected);
+	}
+	if( function_selected.get_ref().is_conversion_constructor )
+	{
+		return move(function_selected);
+	}
 	return ust::optional</FunctionVariable/>();
 }
 
