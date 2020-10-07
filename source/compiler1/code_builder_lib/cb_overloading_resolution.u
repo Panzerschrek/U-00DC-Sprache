@@ -732,7 +732,7 @@ fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, 
 		{ .t= src, .value_type= ValueType::ReferenceImut },
 	];
 
-	auto mut function_selected= GetOverloadedFunction( constructors, constructor_args, true, names_scope, file_pos, true );
+	auto mut function_selected= GetOverloadedFunction( constructors, constructor_args, true, names_scope, file_pos, false );
 	if( function_selected.empty() )
 	{
 		return move(function_selected);

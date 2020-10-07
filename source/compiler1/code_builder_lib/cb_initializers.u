@@ -119,7 +119,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		{
 			var [ Variable, 2 ] constructor_args
 			[
-				{ .t= variable.t, .llvm_value= variable.llvm_value, .value_type= ValueType::ReferenceMut },
+				{ .t= variable.t, .llvm_value= variable.llvm_value, .value_type= ValueType::ReferenceMut, .node_id= variable.node_id },
 				expr_result
 			];
 			DoCallFunction(

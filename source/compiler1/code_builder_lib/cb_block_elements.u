@@ -440,20 +440,80 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	}
 	else
 	{
+		auto ret_type= function_context.function_type.return_type;
+
 		// TODO - allow reference conversion?
-		if( expr.t != function_context.function_type.return_type )
+		if( expr.t == ret_type )
 		{
-			REPORT_ERROR( TypesMismatch, names_scope, return_operator.file_pos, function_context.function_type.return_type, expr.t )
+			if( ret_type.GetInnerReferenceKind() != InnerReferenceKind::None && expr.node_id != ReferencesGraph::c_empty_node_id )
+			{
+				foreach( &inner_reference_node_value : function_context.references_graph.GetAllAccessibleVariableInnerNodes( expr.node_id ) )
+				{
+					foreach( &variable_node_value : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_node_value.key() ) )
+					{
+						if( !IsReferenceAllowedForReturn( function_context, variable_node_value.key() ) )
+						{
+							REPORT_ERROR( ReturningUnallowedReference, names_scope, return_operator.file_pos )
+						}
+					}
+				}
+			}
+
+			if( !ret_type.GetClassType().empty() || !ret_type.GetTupleType().empty() )
+			{
+				auto s_ret= function_context.s_ret;
+
+				if( expr.value_type == ValueType::Value && expr.t == function_context.function_type.return_type )
+				{
+					// Move
+					if( expr.node_id != ReferencesGraph::c_empty_node_id )
+					{
+						function_context.references_graph.MoveNode( expr.node_id );
+					}
+					CopyBytes( s_ret, expr.llvm_value, expr.t, function_context );
+				}
+				else
+				{
+					// Copy
+					BuildCopyConstructorPart( names_scope, function_context, s_ret, expr.llvm_value, expr.t, return_operator.file_pos );
+				}
+
+				CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.file_pos );
+				CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.file_pos );
+				unsafe{  LLVMBuildRetVoid( function_context.llvm_ir_builder );  }
+			}
+			else
+			{
+				auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr, function_context );
+				CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.file_pos );
+				CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.file_pos );
+				unsafe{  LLVMBuildRet( function_context.llvm_ir_builder, value_in_register );  }
+			}
 			return block_element_build_info;
 		}
 
-		auto ret_type= function_context.function_type.return_type;
-
-		if( ret_type.GetInnerReferenceKind() != InnerReferenceKind::None && expr.node_id != ReferencesGraph::c_empty_node_id )
+		if_var( &conversion_constructor_ : GetConversionConstructor( names_scope, ret_type, expr.t, return_operator.file_pos ) )
 		{
-			foreach( &inner_reference_node_value : function_context.references_graph.GetAllAccessibleVariableInnerNodes( expr.node_id ) )
+			auto return_node= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "return value" );
+
+			var [ Variable, 2 ] constructor_args
+			[
+				{ .t= ret_type, .llvm_value= function_context.s_ret, .value_type= ValueType::ReferenceMut, .node_id= return_node },
+				expr,
+			];
+			DoCallFunction(
+				names_scope,
+				function_context,
+				conversion_constructor_,
+				constructor_args,
+				ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
+				ArgsEvaluationOrder::Direct,
+				return_operator.file_pos );
+
+			auto inner_reference_node= function_context.references_graph.GetNodeInnerReference( return_node );
+			if( inner_reference_node != ReferencesGraph::c_empty_node_id )
 			{
-				foreach( &variable_node_value : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_node_value.key() ) )
+				foreach( &variable_node_value : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_node ) )
 				{
 					if( !IsReferenceAllowedForReturn( function_context, variable_node_value.key() ) )
 					{
@@ -461,38 +521,17 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 					}
 				}
 			}
-		}
 
-		if( !ret_type.GetClassType().empty() || !ret_type.GetTupleType().empty() )
-		{
-			auto s_ret= function_context.s_ret;
-
-			if( expr.value_type == ValueType::Value && expr.t == function_context.function_type.return_type )
-			{
-				// Move
-				if( expr.node_id != ReferencesGraph::c_empty_node_id )
-				{
-					function_context.references_graph.MoveNode( expr.node_id );
-				}
-				CopyBytes( s_ret, expr.llvm_value, expr.t, function_context );
-			}
-			else
-			{
-				// Copy
-				BuildCopyConstructorPart( names_scope, function_context, s_ret, expr.llvm_value, expr.t, return_operator.file_pos );
-			}
+			function_context.references_graph.RemoveNode( return_node );
 
 			CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.file_pos );
 			CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.file_pos );
 			unsafe{  LLVMBuildRetVoid( function_context.llvm_ir_builder );  }
+			return block_element_build_info;
 		}
-		else
-		{
-			auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr, function_context );
-			CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.file_pos );
-			CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.file_pos );
-			unsafe{  LLVMBuildRet( function_context.llvm_ir_builder, value_in_register );  }
-		}
+
+		REPORT_ERROR( TypesMismatch, names_scope, return_operator.file_pos, function_context.function_type.return_type, expr.t )
+		return block_element_build_info;
 	}
 
 	return block_element_build_info;
