@@ -45,7 +45,6 @@ bool FilterTest( const std::string& test_name )
 		"ExpectedConstantExpression_InTemplateSignatureArgument_Test0",
 		"ImportAccessRight_Test0",
 		"ImportInClassFieldInitializer_Test0",
-		"MethodTest6",
 		"NameNotFound_ForTypedefTemplate_Test0",
 	};
 
