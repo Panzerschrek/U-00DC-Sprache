@@ -82,6 +82,15 @@ fn ComplareConversionsType(
 			return ConversionsCompareResult::LeftIsBetter;
 		}
 	}
+	// Reference conversions are better, then type conversions.
+	if( src.ReferenceIsConvertibleTo( dst_left  ) )
+	{
+		return ConversionsCompareResult::LeftIsBetter ;
+	}
+	if( src.ReferenceIsConvertibleTo( dst_right ) )
+	{
+		return ConversionsCompareResult::RightIsBetter;
+	}
 
 	return ConversionsCompareResult::Incomparable;
 }
