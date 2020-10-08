@@ -82,6 +82,12 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope, variable_declaration.file_pos )
 		}
 
+		if( variable_declaration.reference_modifier != Synt::ReferenceModifier::Reference && t == void_type_ )
+		{
+			REPORT_ERROR( UsingIncompleteType, names_scope, variable_declaration.file_pos, t )
+			continue;
+		}
+
 		if( variable_declaration.reference_modifier != Synt::ReferenceModifier::Reference && !t.CanBeConstexpr() )
 		{
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
@@ -236,6 +242,11 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 	if( expr.t == invalid_type_ )
 	{
 		REPORT_ERROR( InvalidTypeForAutoVariable, names_scope, auto_variable_declaration.file_pos, auto_variable_declaration.name )
+		return BlockElementBuildInfo();
+	}
+	if( auto_variable_declaration.reference_modifier != Synt::ReferenceModifier::Reference && expr.t == void_type_ )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope, auto_variable_declaration.file_pos, expr.t )
 		return BlockElementBuildInfo();
 	}
 

@@ -1388,7 +1388,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			};
 
 			// Ensure type completness even for reference args because of reference checking.
-			if( !EnsureTypeComplete( out_arg.t ) )
+			if( !EnsureTypeComplete( out_arg.t ) || ( !type_arg.is_reference && out_arg.t == void_type_ ) )
 			{
 				REPORT_ERROR( UsingIncompleteType, names_scope, in_param.file_pos, out_arg.t )
 				return;

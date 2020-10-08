@@ -885,6 +885,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"VirtualFunctionDeclaration_Test",
 		"VirtualOperatorCall_Test",
 		"VisibilityLabelDeclaration_Test",
+		"VoidTypeIsIncomplete_Test",
 		"VoidTypeReference_Test",
 	};
 
