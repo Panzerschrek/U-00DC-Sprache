@@ -42,7 +42,6 @@ bool FilterTest( const std::string& test_name )
 	{
 		"CouldNotOverloadFunction_ForClassTemplates_Test0",
 		"CouldNotOverloadFunction_ForClassTemplates_Test1",
-		"DestructorsTest22_DestructorForTemporaryConvertedReferenceArgument",
 		"ExpectedConstantExpression_InTemplateSignatureArgument_Test0",
 		"ImportAccessRight_Test0",
 		"ImportInClassFieldInitializer_Test0",
