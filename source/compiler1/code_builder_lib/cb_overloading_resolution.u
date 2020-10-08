@@ -1,3 +1,4 @@
+import "../lex_synt_lib/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
 
@@ -80,6 +81,15 @@ fn ComplareConversionsType(
 		{
 			return ConversionsCompareResult::LeftIsBetter;
 		}
+	}
+	// Reference conversions are better, then type conversions.
+	if( src.ReferenceIsConvertibleTo( dst_left  ) )
+	{
+		return ConversionsCompareResult::LeftIsBetter ;
+	}
+	if( src.ReferenceIsConvertibleTo( dst_right ) )
+	{
+		return ConversionsCompareResult::RightIsBetter;
 	}
 
 	return ConversionsCompareResult::Incomparable;
@@ -439,13 +449,14 @@ fn CodeBuilder::ApplyOverloadedFunction(
 	return true;
 }
 
-fn CodeBuilder::GetOverloadedFunction(
+fn CodeBuilder::GetOverloadedFunctionImpl(
 	mut this,
-	FunctionsSet &'x functions_set,
+	FunctionsSet & functions_set,
 	ust::array_view_imut</VariableTypeExtened/> actual_args,
 	bool first_actual_arg_is_this,
 	NamesScopePtr& names_scope,
 	FilePos& file_pos,
+	bool allow_type_conversions,
 	bool produce_errors ) : ust::optional</FunctionVariable/>
 {
 	var ust::vector</FunctionVariable/> mut match_functions;
@@ -488,9 +499,15 @@ fn CodeBuilder::GetOverloadedFunction(
 
 					if( src_type.ReferenceIsConvertibleTo( dst_type ) )
 					{} // Ok - convert references.
+					else if(
+						allow_type_conversions &&
+						parameter_overloading_class == ArgOverloadingClass::ImmutableReference &&
+						!function.is_conversion_constructor && // Disable conversion for conversion constructor.
+						!( function.is_constructor && !dst_type.GetClassType().empty() && IsCopyConstructor( function, dst_type.GetClassType().get_ref() ) ) && // Disable conversion for copy constructor.
+						!GetConversionConstructor( names_scope, dst_type, src_type, file_pos ).empty() )
+					{} // Ok, can convert arg.
 					else
 					{
-						// TODO - apply here type/reference conversions
 						all_args_is_compatible= false;
 						break;
 					}
@@ -665,6 +682,17 @@ fn CodeBuilder::GetOverloadedFunction(
 	return selected_function;
 }
 
+fn CodeBuilder::GetOverloadedFunction(
+	mut this,
+	FunctionsSet& functions_set,
+	ust::array_view_imut</VariableTypeExtened/> actual_args,
+	bool first_actual_arg_is_this,
+	NamesScopePtr& names_scope,
+	FilePos& file_pos ) : ust::optional</FunctionVariable/>
+{
+	return GetOverloadedFunctionImpl( functions_set, actual_args, first_actual_arg_is_this, names_scope, file_pos, true, true );
+}
+
 fn CodeBuilder::GetOverloadedOperator(
 	mut this,
 	ust::array_view_imut</VariableTypeExtened/> args,
@@ -687,7 +715,7 @@ fn CodeBuilder::GetOverloadedOperator(
 					BuildFunctionsSet( class_members, ust::to_non_nullable( functions_set_ptr ), false );
 
 					auto functions_set_lock= functions_set_ptr.lock_imut();
-					if_var( &function_selected : GetOverloadedFunction( functions_set_lock.get_ref().functions_set, args, false, names_scope, file_pos, false ) )
+					if_var( &function_selected : GetOverloadedFunctionImpl( functions_set_lock.get_ref().functions_set, args, false, names_scope, file_pos, true, false ) )
 					{
 						return function_selected;
 					}
@@ -701,6 +729,43 @@ fn CodeBuilder::GetOverloadedOperator(
 		}
 	}
 
+	return ust::optional</FunctionVariable/>();
+}
+
+fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, Type& src, FilePos& file_pos ) : ust::optional</FunctionVariable/>
+{
+	if( !EnsureTypeComplete( dst ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope, file_pos, dst )
+		return ust::optional</FunctionVariable/>();
+	}
+	if( dst.GetClassType().empty() )
+	{
+		return ust::optional</FunctionVariable/>();
+	}
+
+	auto dst_class= dst.GetClassType().get_ref();
+	auto dst_class_members= dst_class.lock_imut().get_ref().members;
+
+	auto constructors_ptr= dst_class_members.lock_imut().get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).get_ref().Get</NamesScopeFunctionsSet/>();
+	auto constructors_lock= constructors_ptr.lock_imut();
+	auto& constructors= constructors_lock.get_ref().functions_set;
+
+	var [ VariableTypeExtened, 2 ] constructor_args
+	[
+		{ .t= dst, .value_type= ValueType::ReferenceMut },
+		{ .t= src, .value_type= ValueType::ReferenceImut },
+	];
+
+	auto mut function_selected= GetOverloadedFunctionImpl( constructors, constructor_args, true, names_scope, file_pos, false, false );
+	if( function_selected.empty() )
+	{
+		return move(function_selected);
+	}
+	if( function_selected.get_ref().is_conversion_constructor )
+	{
+		return move(function_selected);
+	}
 	return ust::optional</FunctionVariable/>();
 }
 

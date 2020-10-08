@@ -810,13 +810,19 @@ fn CodeBuilder::GenTemplateFunction(
 
 				if_var( &t : template_arg.something.get</Type/>() )
 				{
-					all_ok&= arg.t.ReferenceIsConvertibleTo( t );
+					// TODO - maybe forbid type conversion for copy and conversion constructors?
+					all_ok&=
+						arg.t.ReferenceIsConvertibleTo( t ) ||
+						( !param_is_mutable_reference && !GetConversionConstructor( result_names_scope, t, arg.t, file_pos ).empty() );
 					continue;
 				}
 			}
 			if_var( &type_param : param.GetTypeParam() )
 			{
-				all_ok&= arg.t.ReferenceIsConvertibleTo( type_param.t );
+				// TODO - maybe forbid type conversion for copy and conversion constructors?
+				all_ok&=
+					arg.t.ReferenceIsConvertibleTo( type_param.t ) ||
+					( !param_is_mutable_reference && !GetConversionConstructor( result_names_scope, type_param.t, arg.t, file_pos ).empty() );
 				continue;
 			}
 
