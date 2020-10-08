@@ -920,6 +920,8 @@ fn CodeBuilder::PrepareFunction(
 
 	auto is_constructor= func_name == KeywordToString( Keyword::constructor_ );
 	auto is_destructor = func_name == KeywordToString( Keyword::destructor_  );
+
+	function_variable.is_constructor= is_constructor;
 	{
 		auto& function_type= function_variable.t;
 		if( ( is_constructor || is_destructor ) &&

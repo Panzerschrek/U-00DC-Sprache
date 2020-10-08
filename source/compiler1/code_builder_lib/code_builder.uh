@@ -582,14 +582,23 @@ private:
 		NamesScopePtr& names_scope,
 		FilePos& file_pos ) : bool;
 
-	fn GetOverloadedFunction(
+	fn GetOverloadedFunctionImpl(
 		mut this,
-		FunctionsSet &'x functions_set,
+		FunctionsSet& functions_set,
 		ust::array_view_imut</VariableTypeExtened/> actual_args,
 		bool first_actual_arg_is_this,
 		NamesScopePtr& names_scope, // Needed only for errors reporting
 		FilePos& file_pos,
+		bool allow_type_conversions,
 		bool produce_errors ) : ust::optional</FunctionVariable/>;
+
+	fn GetOverloadedFunction(
+		mut this,
+		FunctionsSet& functions_set,
+		ust::array_view_imut</VariableTypeExtened/> actual_args,
+		bool first_actual_arg_is_this,
+		NamesScopePtr& names_scope, // Needed only for errors reporting
+		FilePos& file_pos ) : ust::optional</FunctionVariable/>;
 
 	fn GetOverloadedOperator(
 		mut this,
