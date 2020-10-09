@@ -159,7 +159,6 @@ fn GetTypeinfoVariableName( ClassTypePtr& typeinfo_class ) : ust::string8
 	return "_val_of_" + MangleType(typeinfo_class);
 }
 
-
 fn FinishTypeinfoList( LLVMContextRef llvm_context, ust::vector</Type/> mut element_types, ust::vector</LLVMValueRef/>& initializers ) : Variable
 {
 	var TupleType mut tuple_type{ .element_types= move(element_types) };
@@ -225,6 +224,14 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 
 	var TypeinfoStruct mut typeinfo_struct{ .t= t, .v= v };
 	typeinfo_cache_.push_back( typeinfo_struct );
+
+	// Add type as typedef into class members namespace.
+	// This allows us to get typename itself, using typeinfo variable and use such type as normal.
+	{
+		auto class_members= typeinfo_class.lock_imut().get_ref().members;
+		auto mut members_lock= class_members.lock_mut();
+		members_lock.get_ref().AddName( "src_type", t );
+	}
 
 	return v;
 }
