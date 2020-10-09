@@ -1,5 +1,5 @@
 import "/string_conversions.u"
-import "../lex_synt_lib/keywords.uh"
+import "/keywords.uh"
 import "mangling.uh"
 
 namespace U1

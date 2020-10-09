@@ -64,8 +64,18 @@ configure_file( code_builder_lib/code_builder_errors.uh.in ${CMAKE_CURRENT_BINAR
 # Combine together lexical/syntaxis analyzer lib and code builder to speed up build.
 # Add also some files, needed by tests
 
+string(
+	REGEX REPLACE
+	${KEYWORDS_LIST_REGEXP}
+	"	\\0_,"
+	KEYWORDS_LIST
+	${KEYWORDS_LIST_CONTENT} )
+
+configure_file( lex_synt_lib/keywords.uh.in ${CMAKE_CURRENT_BINARY_DIR}/keywords.uh )
+
 file( GLOB LEX_SYNT_LIB_HEADERS "lex_synt_lib/*.uh" )
 file( GLOB LEX_SYNT_LIB_SOURCES "lex_synt_lib/*.u" )
+file( GLOB LEX_SYNT_LIB_SOURCES_GENERATED ${CMAKE_CURRENT_BINARY_DIR}/keywords.uh )
 CompileUSources( LEX_SYNT_LIB_SOURCES LEX_SYNT_LIB_OBJECTS )
 
 file( GLOB CODE_BUILDER_LIB_HEADERS "code_builder_lib/*.uh" )

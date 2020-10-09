@@ -1,0 +1,14 @@
+import "/string.u"
+
+namespace U1
+{
+
+enum Keyword : u8
+{
+@KEYWORDS_LIST@
+}
+
+fn IsKeyword( ust::string8& str ) : bool;
+fn KeywordToString( Keyword k ) : ust::array_view_imut</ char8 />;
+
+} // namespace U1

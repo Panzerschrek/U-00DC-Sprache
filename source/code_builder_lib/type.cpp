@@ -3,7 +3,7 @@
 #include "../compilers_common/pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/assert.hpp"
-#include "../lex_synt_lib/keywords.hpp"
+#include "keywords.hpp"
 #include "class.hpp"
 #include "enum.hpp"
 #include "template_types.hpp"

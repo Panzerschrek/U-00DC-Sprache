@@ -1,4 +1,4 @@
-import "../lex_synt_lib/keywords.uh"
+import "/keywords.uh"
 import "error_reporting.uh"
 import "mangling.uh"
 import "code_builder.uh"

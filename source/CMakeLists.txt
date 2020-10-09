@@ -144,11 +144,38 @@ endif()
 add_subdirectory(sprache_version)
 
 #
+# Generated stuff
+#
+
+file( READ keywords_list.txt KEYWORDS_LIST_CONTENT )
+set( KEYWORDS_LIST_REGEXP "[A-Za-z][A-Za-z0-9_]*" )
+
+#
 # LexSyntLib
 #
 
-file( GLOB LEX_SYNT_LIB_SOURCES "lex_synt_lib/*" )
-add_library( LexSyntLib ${LEX_SYNT_LIB_SOURCES} )
+string(
+	REGEX REPLACE
+	${KEYWORDS_LIST_REGEXP}
+	"	\\0_,"
+	KEYWORDS_LIST
+	${KEYWORDS_LIST_CONTENT} )
+
+string(
+	REGEX REPLACE
+	${KEYWORDS_LIST_REGEXP}
+	"	\"\\0\","
+	KEYWORDS_LIST_STRINGS
+	${KEYWORDS_LIST_CONTENT} )
+
+configure_file( lex_synt_lib/keywords.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/keywords.hpp )
+configure_file( lex_synt_lib/keywords.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/keywords.cpp )
+
+file( GLOB LEX_SYNT_LIB_SOURCES "lex_synt_lib/*.cpp" )
+file( GLOB LEX_SYNT_LIB_HEADERS "lex_synt_lib/*.hpp" )
+set( LEX_SYNT_LIB_SOURCES_GENERATED ${CMAKE_CURRENT_BINARY_DIR}/keywords.hpp ${CMAKE_CURRENT_BINARY_DIR}/keywords.cpp )
+add_library( LexSyntLib ${LEX_SYNT_LIB_SOURCES} ${LEX_SYNT_LIB_HEADERS} ${LEX_SYNT_LIB_SOURCES_GENERATED} )
+target_include_directories( LexSyntLib PUBLIC ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/lex_synt_lib )
 
 #
 # CompilersCommonLib

@@ -8,9 +8,7 @@ namespace U
 // Names same, as in Ü-Sprache, but with '_' at the end, for prevention of intersection with C++ keywords.
 enum class Keywords : unsigned int
 {
-	#define PROCESS_KEYWORD(x) x##_,
-	#include "keywords_list.hpp"
-	#undef PROCESS_KEYWORD
+@KEYWORDS_LIST@
 	LastKeyword,
 };
 

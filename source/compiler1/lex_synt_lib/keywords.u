@@ -1,4 +1,4 @@
-import "keywords.uh"
+import "/keywords.uh"
 
 namespace U1
 {

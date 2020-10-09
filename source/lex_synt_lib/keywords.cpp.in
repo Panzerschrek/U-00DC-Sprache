@@ -10,16 +10,12 @@ namespace
 
 const ProgramStringSet g_keywords_set
 {
-	#define PROCESS_KEYWORD(x) #x,
-	#include "keywords_list.hpp"
-	#undef PROCESS_KEYWORD
+@KEYWORDS_LIST_STRINGS@
 };
 
 const std::string g_keywords[ size_t(Keywords::LastKeyword) ]
 {
-	#define PROCESS_KEYWORD(x) #x,
-	#include "keywords_list.hpp"
-	#undef PROCESS_KEYWORD
+@KEYWORDS_LIST_STRINGS@
 };
 
 } // namespace
