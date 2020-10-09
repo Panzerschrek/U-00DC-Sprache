@@ -8,7 +8,7 @@
 #include "../compilers_common/pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/assert.hpp"
-#include "../lex_synt_lib/keywords.hpp"
+#include "keywords.hpp"
 #include "../lex_synt_lib/program_string.hpp"
 
 #include "u_ast_builder.hpp"
