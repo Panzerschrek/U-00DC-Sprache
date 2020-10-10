@@ -345,13 +345,15 @@ private:
 
 private:
 	ust::array_view_imut</Lexem/> it_;
+	ust::array_view_imut</Lexem/> last_error_it_;
+	size_type last_error_repeats_= 0s;
 	SyntaxErrorMessages error_messages_;
 
 	MacrosPtr macros_;
 }
 
 fn SyntaxAnalyzer::constructor( this'a', Lexems&'b lexems, MacrosPtr mut macros ) ' a <- b '
-	( it_= lexems.range(), macros_(move(macros)) )
+	( it_= lexems.range(), last_error_it_= it_, macros_(move(macros)) )
 {
 }
 
@@ -4027,6 +4029,24 @@ fn SyntaxAnalyzer::PushErrorMessage( mut this )
 			.text= "Syntax error - unexpected lexem: \"" + it_.front().text + "\""
 		};
 		error_messages_.push_back( move(error_message) );
+	}
+
+	// HACK! Advance current position if we report about error in current position multiple times.
+	if( it_.size() == last_error_it_.size() )
+	{
+		++last_error_repeats_;
+		if( last_error_repeats_ > 10s )
+		{
+			NextLexem();
+			last_error_repeats_= 0s;
+		}
+	}
+	else
+	{
+		last_error_repeats_= 0s;
+
+		auto it_copy= it_;
+		last_error_it_= it_copy;
 	}
 }
 
