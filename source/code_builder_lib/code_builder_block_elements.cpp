@@ -955,13 +955,17 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		if( condition_expression.type != bool_type_ )
 		{
 			REPORT_ERROR( TypesMismatch, names.GetErrors(), condition_file_pos, bool_type_, condition_expression.type );
-			return BlockBuildInfo();
+
+			// Create instruction even in case of error, because we needs to store basic blocs somewhere.
+			function_context.llvm_ir_builder.CreateCondBr( llvm::UndefValue::get( fundamental_llvm_types_.bool_ ), while_block, block_after_while );
 		}
+		else
+		{
+			llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+			CallDestructors( temp_variables_storage, names, function_context, condition_file_pos );
 
-		llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
-		CallDestructors( temp_variables_storage, names, function_context, condition_file_pos );
-
-		function_context.llvm_ir_builder.CreateCondBr( condition_in_register, while_block, block_after_while );
+			function_context.llvm_ir_builder.CreateCondBr( condition_in_register, while_block, block_after_while );
+		}
 	}
 
 	// While block code.
