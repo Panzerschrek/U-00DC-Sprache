@@ -1,3 +1,4 @@
+import "/shared/shared_ptr_nullable_mut.u"
 import "/string.u"
 import "/vector.u"
 import "/lex_synt_lib/file_pos.uh"
@@ -24,6 +25,7 @@ struct CodeBuilderError
 	CodeBuilderErrorCode code;
 	FilePos file_pos;
 	ust::string8 text;
+	ust::shared_ptr_nullable_mut</TemplateErrorsContext/> errors_context;
 
 	op==(CodeBuilderError& l, CodeBuilderError& r) : bool;
 	op!=(CodeBuilderError& l, CodeBuilderError& r) : bool;
@@ -31,5 +33,14 @@ struct CodeBuilderError
 }
 
 type ErrorsContainer= ust::vector</ CodeBuilderError />;
+
+struct TemplateErrorsContext
+{
+	ust::shared_ptr_mut</ErrorsContainer/> errors;
+	FilePos context_declaration_file_pos; // Declaration position of context, macro.
+
+	ust::string8 context_name; // Name of template, macro.
+	ust::string8 args_description;
+}
 
 } // namespace U1
