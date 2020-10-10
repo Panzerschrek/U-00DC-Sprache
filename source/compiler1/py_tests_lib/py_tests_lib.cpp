@@ -267,8 +267,8 @@ PyObject* RunFunction( PyObject* const self, PyObject* const args )
 	return Py_None;
 }
 
-static void ErrorHandler(
-	void* const data,
+static UserHandle ErrorHandler(
+	const UserHandle data,
 	const uint32_t line,
 	const uint32_t column,
 	const uint32_t error_code,
@@ -292,8 +292,32 @@ static void ErrorHandler(
 
 	PyDict_SetItemString( dict, "text", PyUnicode_DecodeUTF8( error_text.data, Py_ssize_t(error_text.size), nullptr ) );
 
-	PyList_Append( reinterpret_cast<PyObject*>(data), dict );
+	const auto list_object= reinterpret_cast<PyObject*>(data);
+	PyList_Append( list_object, dict );
+
+	return reinterpret_cast<UserHandle>(list_object);
 }
+
+UserHandle TemplateErrorsContextHandler(
+	const UserHandle data, // should be "CodeBuilderError*"
+	const uint32_t line,
+	const uint32_t column,
+	const U1_StringView& context_name,
+	const U1_StringView& args_description )
+{
+	(void)data;
+	(void)line;
+	(void)column;
+	(void)context_name;
+	(void)args_description;
+	return 0;
+}
+
+static const ErrorsHandlingCallbacks g_error_handling_callbacks
+{
+	ErrorHandler,
+	TemplateErrorsContextHandler,
+};
 
 PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 {
@@ -315,8 +339,8 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 			text_view,
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout),
-			ErrorHandler,
-			errors_list );
+			g_error_handling_callbacks,
+			reinterpret_cast<UserHandle>(errors_list) );
 
 	llvm::llvm_shutdown();
 
@@ -340,7 +364,7 @@ PyObject* BuildProgramWithSyntaxErrors( PyObject* const self, PyObject* const ar
 
 	const U1_StringView text_view{ program_text, std::strlen(program_text) };
 	PyObject* const errors_list= PyList_New(0);
-	U1_BuildProgramWithSyntaxErrors( text_view, ErrorHandler, errors_list );
+	U1_BuildProgramWithSyntaxErrors( text_view, g_error_handling_callbacks, reinterpret_cast<UserHandle>(errors_list) );
 
 	return errors_list;
 }

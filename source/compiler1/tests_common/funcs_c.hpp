@@ -19,7 +19,13 @@ struct U1_SourceFile
 	U1_StringView file_content;
 };
 
-using ErrorHanglerFunc= void(*)( void* data, uint32_t line, uint32_t column, uint32_t error_code, const U1_StringView& error_text );
+using UserHandle= size_t;
+
+struct ErrorsHandlingCallbacks
+{
+	UserHandle (*error_callback)( UserHandle data, uint32_t line, uint32_t column, uint32_t error_code, const U1_StringView& error_text );
+	UserHandle (*template_errors_context_callback)( UserHandle data, uint32_t line, uint32_t column, const U1_StringView& context_name, const U1_StringView& args_description );
+};
 
 // Return pointer to llvm module. Use "delete" to delete result.
 // Returns null if program build failed and prints errors to stderr.
@@ -32,13 +38,13 @@ bool U1_BuildProgramWithErrors(
 	const U1_StringView& program_text_start,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
-	ErrorHanglerFunc error_handler_func,
-	void* data );
+	const ErrorsHandlingCallbacks& errors_handling_callbacks,
+	UserHandle data );
 
 void U1_BuildProgramWithSyntaxErrors(
 	const U1_StringView& program_text_start,
-	ErrorHanglerFunc error_handler_func,
-	void* data );
+	const ErrorsHandlingCallbacks& errors_handling_callbacks,
+	UserHandle data );
 
 LLVMModuleRef U1_BuildMultisourceProgram(
 	const U1_SourceFile* source_files,
@@ -53,8 +59,8 @@ bool U1_BuildMultisourceProgramWithErrors(
 	const U1_StringView& root_file_path,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
-	ErrorHanglerFunc error_handler_func,
-	void* data );
+	const ErrorsHandlingCallbacks& errors_handling_callbacks,
+	UserHandle data );
 
 // Returns static string for error code.
 void U1_CodeBuilderCodeToString(
