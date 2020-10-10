@@ -131,14 +131,22 @@ U_TEST( NameNotFound_ForTypedefTemplate_Test0 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( build_result.errors.size() >= 2u );
-	const CodeBuilderError& error= build_result.errors[0u];
+	U_TEST_ASSERT( !build_result.errors.empty() );
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TemplateContext );
-	U_TEST_ASSERT( error.template_context != nullptr );
-	U_TEST_ASSERT( !error.template_context->errors.empty() );
-	U_TEST_ASSERT( error.template_context->errors.front().code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.template_context->errors.front().file_pos.GetLine() == 3u );
+	bool found= false;
+	for( const CodeBuilderError& error : build_result.errors )
+	{
+		if( error.template_context == nullptr )
+			continue;
+		found= true;
+
+		U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TemplateContext );
+		U_TEST_ASSERT( error.template_context != nullptr );
+		U_TEST_ASSERT( !error.template_context->errors.empty() );
+		U_TEST_ASSERT( error.template_context->errors.front().code == CodeBuilderErrorCode::NameNotFound );
+		U_TEST_ASSERT( error.template_context->errors.front().file_pos.GetLine() == 3u );
+	}
+	U_TEST_ASSERT(found);
 }
 
 U_TEST( NameNotFound_ForTypedefTemplate_Test1 )

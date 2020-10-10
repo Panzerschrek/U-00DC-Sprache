@@ -545,7 +545,7 @@ fn CodeBuilder::GenTemplateType(
 	}
 	if( candidate_type_templates.size() == 1s )
 	{
-		return FinishTypeTemplateGeneration( candidate_type_templates.front() );
+		return FinishTypeTemplateGeneration( candidate_type_templates.front(), template_instantiation_file_pos );
 	}
 
 	var ust::vector</TypeTemplatePtr/> mut templates_for_check;
@@ -561,7 +561,7 @@ fn CodeBuilder::GenTemplateType(
 		return ust::optional</Type/>();
 	}
 
-	return FinishTypeTemplateGeneration( candidate_type_templates[index] );
+	return FinishTypeTemplateGeneration( candidate_type_templates[index], template_instantiation_file_pos );
 }
 
 fn CodeBuilder::EvaluateTemplateTypeArgs(
@@ -682,7 +682,8 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 
 fn CodeBuilder::FinishTypeTemplateGeneration(
 	mut this,
-	TemplateTypeArgsEvaluationResult& template_args_evaluation_result ) : ust::optional</Type/>
+	TemplateTypeArgsEvaluationResult& template_args_evaluation_result,
+	FilePos& template_instantiation_file_pos ) : ust::optional</Type/>
 {
 	var TypeTemplatePtr& type_template_ptr= template_args_evaluation_result.type_template;
 
@@ -713,12 +714,12 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 	var NamesScopeMutPtr& args_names_scope= template_args_evaluation_result.args_names_scope;
 
 	auto template_errors_context=
-		CreateTemplateErrorsContext( type_template_ptr.get_ref(), args_names_scope.lock_imut().get_ref(), FilePos() );
+		CreateTemplateErrorsContext( type_template_ptr.get_ref(), args_names_scope.lock_imut().get_ref(), template_instantiation_file_pos );
 	{
 		var CodeBuilderError mut template_context_error
 		{
 			.code= CodeBuilderErrorCode::TemplateContext,
-			.file_pos= FilePos(), // TODO
+			.file_pos= template_instantiation_file_pos,
 			.errors_context= template_errors_context,
 		};
 

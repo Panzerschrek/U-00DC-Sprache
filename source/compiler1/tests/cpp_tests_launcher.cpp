@@ -65,12 +65,9 @@ bool FilterTest( const std::string& test_name )
 
 	static const std::unordered_set<std::string> c_test_to_disable
 	{
-		"CouldNotOverloadFunction_ForClassTemplates_Test0",
-		"CouldNotOverloadFunction_ForClassTemplates_Test1",
 		"ExpectedConstantExpression_InTemplateSignatureArgument_Test0",
 		"ImportAccessRight_Test0",
 		"ImportInClassFieldInitializer_Test0",
-		"NameNotFound_ForTypedefTemplate_Test0",
 	};
 
 	return c_test_to_disable.count( test_name_without_file_name ) == 0;
