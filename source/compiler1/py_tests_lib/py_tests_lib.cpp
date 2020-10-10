@@ -594,6 +594,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"NomangleFunctionMustBeGlobal_Test0",
 		"NomangleFunctionMustBeGlobal_Test1",
 		"NomangleFunctionMustBeGlobal_Test2",
+		"NomangleFunctionMustBeGlobal_Test3",
 		"NomangleTest0",
 		"NomangleTest1",
 		"OkTest",
