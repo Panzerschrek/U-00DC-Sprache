@@ -8,7 +8,8 @@ op CodeBuilderError::==(CodeBuilderError& l, CodeBuilderError& r) : bool
 	return
 		l.code == r.code &&
 		l.file_pos == r.file_pos &&
-		l.text == r.text;
+		l.text == r.text &&
+		l.errors_context == r.errors_context;
 }
 
 op CodeBuilderError::!=(CodeBuilderError& l, CodeBuilderError& r) : bool
@@ -111,20 +112,29 @@ fn NormalizeErrors( ust::vector</CodeBuilderError/> &mut errors )
 
 	// Leave only unique errors.
 	// TODO - do not use temporary container.
-	if( !errors.empty() )
+	var ust::vector</CodeBuilderError/> mut res;
+	foreach( &err : errors )
 	{
-		var ust::vector</CodeBuilderError/> mut res;
-		res.push_back( errors.front() );
-		foreach( &err : errors )
+		if( res.empty() || err != res.back() )
 		{
-			if( err != res.back() )
+			auto mut err_copy= err;
+			if( !err_copy.errors_context.empty() )
 			{
-				res.push_back(err);
+				auto sub_errors_ptr= err_copy.errors_context.lock_imut().get_ref().errors;
+				auto mut sub_errors_lock= sub_errors_ptr.lock_mut();
+				auto &mut sub_errors= sub_errors_lock.get_ref();
+				NormalizeErrors( sub_errors );
+				if( sub_errors.empty() )
+				{
+					continue;
+				}
 			}
-		}
 
-		errors= move(res);
+			res.push_back(move(err_copy));
+		}
 	}
+
+	errors= move(res);
 }
 
 } // namespace U1

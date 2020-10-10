@@ -3,6 +3,38 @@ import "../code_builder_lib/code_builder.uh"
 import "print.uh"
 import "funcs_u.uh"
 
+fn U1_ProcessCodeBuilderErrors(
+	ErrorsHandlingCallbacks& errors_handling_callbacks,
+	UserHandle data,
+	U1::ErrorsContainer& errors )
+{
+	foreach( & err : errors )
+	{
+		unsafe
+		{
+			var U1_StringView text_view{ .data= err.text.front_unsafe(), .size= err.text.size() };
+
+			var UserHandle error_data= errors_handling_callbacks.error_callback( data, err.file_pos.GetLine(), err.file_pos.GetColumn(), u32(err.code), text_view );
+			if( !err.errors_context.empty() )
+			{
+				auto lock= err.errors_context.lock_imut();
+				var U1::TemplateErrorsContext& errors_context= lock.get_ref();
+
+				var U1_StringView context_name{ .data= errors_context.context_name.front_unsafe(), .size= errors_context.context_name.size() };
+				var U1_StringView args_description{ .data= errors_context.args_description.front_unsafe(), .size= errors_context.args_description.size() };
+
+				var UserHandle context_user_handle= errors_handling_callbacks.template_errors_context_callback(
+					error_data,
+					errors_context.context_declaration_file_pos.GetLine(),
+					errors_context.context_declaration_file_pos.GetColumn(),
+					context_name,
+					args_description );
+
+				U1_ProcessCodeBuilderErrors( errors_handling_callbacks, context_user_handle, errors_context.errors.lock_imut().get_ref() );
+			}
+		}
+	}
+}
 
 fn nomangle U1_BuildProgram(
 	U1_StringView& program_text,
@@ -53,8 +85,8 @@ fn nomangle U1_BuildProgramWithErrors(
 	U1_StringView& program_text,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
-	ErrorHanglerFunc error_handler_func,
-	void &mut data ) unsafe : bool
+	ErrorsHandlingCallbacks& errors_handling_callbacks,
+	UserHandle data ) unsafe : bool
 {
 	unsafe
 	{
@@ -75,14 +107,7 @@ fn nomangle U1_BuildProgramWithErrors(
 
 			unsafe{  LLVMDisposeModule( code_builder_res.llvm_module );  }
 
-			foreach( & err : code_builder_res.errors )
-			{
-				var U1_StringView text_view{ .data= err.text.front(), .size= err.text.size() };
-				unsafe
-				{
-					error_handler_func( data, err.file_pos.GetLine(), err.file_pos.GetColumn(), u32(err.code), text_view );
-				}
-			}
+			U1_ProcessCodeBuilderErrors( errors_handling_callbacks, data, code_builder_res.errors );
 		}
 	}
 
@@ -91,8 +116,8 @@ fn nomangle U1_BuildProgramWithErrors(
 
 fn nomangle U1_BuildProgramWithSyntaxErrors(
 	U1_StringView& program_text,
-	ErrorHanglerFunc error_handler_func,
-	void &mut data ) unsafe
+	ErrorsHandlingCallbacks& errors_handling_callbacks,
+	UserHandle data ) unsafe
 {
 	unsafe
 	{
@@ -108,12 +133,11 @@ fn nomangle U1_BuildProgramWithSyntaxErrors(
 				var U1_StringView text_view{ .data= err.text.front(), .size= err.text.size() };
 				unsafe
 				{
-					error_handler_func( data, err.file_pos.GetLine(), err.file_pos.GetColumn(), u32(U1::CodeBuilderErrorCode::BuildFailed), text_view );
+					errors_handling_callbacks.error_callback( data, err.file_pos.GetLine(), err.file_pos.GetColumn(), u32(U1::CodeBuilderErrorCode::BuildFailed), text_view );
 				}
 			}
 		}
 	}
-
 }
 
 fn nomangle U1_CodeBuilderCodeToString(
@@ -196,8 +220,8 @@ fn nomangle U1_BuildMultisourceProgramWithErrors(
 	U1_StringView& root_file_path,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
-	ErrorHanglerFunc error_handler_func,
-	void &mut data ) unsafe : bool
+	ErrorsHandlingCallbacks& errors_handling_callbacks,
+	UserHandle data ) unsafe : bool
 {
 	var U1::TestVfs::SourceEntries mut source_entries;
 	unsafe
@@ -231,14 +255,7 @@ fn nomangle U1_BuildMultisourceProgramWithErrors(
 
 	unsafe{  LLVMDisposeModule( code_builder_res.llvm_module );  }
 
-	foreach( & err : code_builder_res.errors )
-	{
-		var U1_StringView text_view{ .data= err.text.front(), .size= err.text.size() };
-		unsafe
-		{
-			error_handler_func( data, err.file_pos.GetLine(), err.file_pos.GetColumn(), u32(err.code), text_view );
-		}
-	}
+	U1_ProcessCodeBuilderErrors( errors_handling_callbacks, data, code_builder_res.errors );
 
 	return true;
 }

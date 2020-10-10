@@ -427,7 +427,8 @@ private:
 
 	fn FinishTypeTemplateGeneration(
 		mut this,
-		TemplateTypeArgsEvaluationResult& template_args_evaluation_result ) : ust::optional</Type/>;
+		TemplateTypeArgsEvaluationResult& template_args_evaluation_result,
+		FilePos& template_instantiation_file_pos ) : ust::optional</Type/>;
 
 	fn GenTemplateFunction(
 		mut this,

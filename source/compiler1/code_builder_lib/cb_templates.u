@@ -6,6 +6,76 @@ import "code_builder.uh"
 namespace U1
 {
 
+template</type TemplateT/>
+fn CreateTemplateErrorsContext(
+	TemplateT& template_, // type template or function template
+	NamesScopeMutPtr& args_names_scope_ptr,
+	FilePos& instantiation_file_pos )
+{
+	auto mut args_names_scope_lock= args_names_scope_ptr.lock_mut();
+	var NamesScope &mut args_names_scope= args_names_scope_lock.get_ref();
+
+	var ust::shared_ptr_mut</ErrorsContainer/> errors_container( ErrorsContainer() );
+
+	var TemplateErrorsContext mut result
+	{
+		.errors= errors_container,
+		.context_declaration_file_pos= instantiation_file_pos,
+		.context_name= template_.syntax_element.get_ref().name,
+	};
+
+	result.args_description+= "[ with ";
+	foreach( &param : template_.params )
+	{
+		result.args_description+= param.name;
+		result.args_description+= " = ";
+
+		auto arg_ptr= args_names_scope.GetThisScopeValue( param.name ).get_ref().Get</TemplateArg/>();
+		auto arg_lock= arg_ptr.lock_imut();
+		var TemplateArg& arg= arg_lock.get_ref();
+		if_var( &t : arg.something.get</Type/>() )
+		{
+			result.args_description+= t.ToString();
+		}
+		if_var( &v : arg.something.get</NamesScopeVariable/>() )
+		{
+			if_var( &fundamental_type : v.t.GetFundamentalType() )
+			{
+				// TODO - maybe process "bool" here separately?
+				if( IsSignedInteger( fundamental_type.fundamental_type ) )
+				{
+					unsafe{  result.args_description+= ust::to_string8( LLVMConstIntGetSExtValue( v.constexpr_value ) );  }
+				}
+				else
+				{
+					unsafe{  result.args_description+= ust::to_string8( LLVMConstIntGetZExtValue( v.constexpr_value ) );  }
+				}
+			}
+		}
+
+		if( ust::ref_to_int(param) != ust::ref_to_int(template_.params.back()) )
+		{
+			result.args_description+= ", ";
+		}
+	}
+	result.args_description+= " ]";
+
+	{
+		var CodeBuilderError mut template_context_error
+		{
+			.code= CodeBuilderErrorCode::TemplateContext,
+			.file_pos= instantiation_file_pos,
+			.errors_context( move(result) ),
+		};
+
+		auto prev_errors= args_names_scope.GetErrors();
+		auto mut errors_lock= prev_errors.lock_mut();
+		errors_lock.get_ref().push_back( move(template_context_error) );
+	}
+
+	args_names_scope.SetErrors( errors_container );
+}
+
 fn CodeBuilder::PrepareTypeTemplate(
 	mut this,
 	NamesScopePtr& names_scope,
@@ -491,7 +561,7 @@ fn CodeBuilder::GenTemplateType(
 	}
 	if( candidate_type_templates.size() == 1s )
 	{
-		return FinishTypeTemplateGeneration( candidate_type_templates.front() );
+		return FinishTypeTemplateGeneration( candidate_type_templates.front(), template_instantiation_file_pos );
 	}
 
 	var ust::vector</TypeTemplatePtr/> mut templates_for_check;
@@ -507,7 +577,7 @@ fn CodeBuilder::GenTemplateType(
 		return ust::optional</Type/>();
 	}
 
-	return FinishTypeTemplateGeneration( candidate_type_templates[index] );
+	return FinishTypeTemplateGeneration( candidate_type_templates[index], template_instantiation_file_pos );
 }
 
 fn CodeBuilder::EvaluateTemplateTypeArgs(
@@ -628,7 +698,8 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 
 fn CodeBuilder::FinishTypeTemplateGeneration(
 	mut this,
-	TemplateTypeArgsEvaluationResult& template_args_evaluation_result ) : ust::optional</Type/>
+	TemplateTypeArgsEvaluationResult& template_args_evaluation_result,
+	FilePos& template_instantiation_file_pos ) : ust::optional</Type/>
 {
 	var TypeTemplatePtr& type_template_ptr= template_args_evaluation_result.type_template;
 
@@ -657,6 +728,8 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 
 	var Synt::TypeTemplate& syntax_element= type_template_ptr.get_ref().syntax_element.get_ref();
 	var NamesScopeMutPtr& args_names_scope= template_args_evaluation_result.args_names_scope;
+
+	CreateTemplateErrorsContext( type_template_ptr.get_ref(), args_names_scope, template_instantiation_file_pos );
 
 	if_var( &class_syntax_element : syntax_element.something.get</ ust::shared_ptr_final</ Synt::Class /> />() )
 	{
@@ -940,6 +1013,8 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 		return ust::optional</FunctionVariable/>();
 	}
 	generated_template_things_.insert( template_key, result_names_scope );
+
+	CreateTemplateErrorsContext( function_template, result_names_scope, file_pos );
 
 	NamesScopeFill( result_names_scope, template_syntax_element.function, function_template.class_, Synt::ClassVisibility::Public /* TODO - set correct visibility */ );
 	auto result_namespace_value= result_names_scope.lock_imut().get_ref().GetThisScopeValue( function_name ).get_ref();

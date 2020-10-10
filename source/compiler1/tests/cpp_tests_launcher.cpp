@@ -19,8 +19,8 @@ namespace
 
 llvm::ManagedStatic<llvm::LLVMContext> g_llvm_context;
 
-void ErrorHanlder(
-	void* const data, // should be ErrorTestBuildResult
+UserHandle ErrorHanlder(
+	const UserHandle data, // should be "std::vector<CodeBuilderError>"
 	const uint32_t line,
 	const uint32_t column,
 	const uint32_t error_code,
@@ -30,8 +30,33 @@ void ErrorHanlder(
 	error.file_pos= FilePos( 0u, line, column );
 	error.code= CodeBuilderErrorCode(error_code);
 	error.text= std::string( error_text.data, error_text.data + error_text.size );
-	reinterpret_cast<ErrorTestBuildResult*>(data)->errors.push_back( std::move(error) );
+
+	const auto errors_container= reinterpret_cast<std::vector<CodeBuilderError>*>(data);
+	errors_container->push_back( std::move(error) );
+	return reinterpret_cast<UserHandle>(&errors_container->back());
 }
+
+UserHandle TemplateErrorsContextHandler(
+	const UserHandle data, // should be "CodeBuilderError*"
+	const uint32_t line,
+	const uint32_t column,
+	const U1_StringView& context_name,
+	const U1_StringView& args_description )
+{
+	const auto out_error= reinterpret_cast<CodeBuilderError*>(data);
+	out_error->template_context= std::make_shared<TemplateErrorsContext>();
+	out_error->template_context->context_declaration_file_pos= FilePos( 0u, line, column );
+	out_error->template_context->context_name= std::string( context_name.data, context_name.data + context_name.size );
+	out_error->template_context->parameters_description= std::string( args_description.data, args_description.data + args_description.size );
+
+	return reinterpret_cast<UserHandle>( & out_error->template_context->errors );
+}
+
+const ErrorsHandlingCallbacks g_error_handling_callbacks
+{
+	ErrorHanlder,
+	TemplateErrorsContextHandler,
+};
 
 // Returns "true" if should enable test.
 bool FilterTest( const std::string& test_name )
@@ -40,12 +65,9 @@ bool FilterTest( const std::string& test_name )
 
 	static const std::unordered_set<std::string> c_test_to_disable
 	{
-		"CouldNotOverloadFunction_ForClassTemplates_Test0",
-		"CouldNotOverloadFunction_ForClassTemplates_Test1",
 		"ExpectedConstantExpression_InTemplateSignatureArgument_Test0",
 		"ImportAccessRight_Test0",
 		"ImportInClassFieldInitializer_Test0",
-		"NameNotFound_ForTypedefTemplate_Test0",
 	};
 
 	return c_test_to_disable.count( test_name_without_file_name ) == 0;
@@ -86,8 +108,8 @@ ErrorTestBuildResult BuildProgramWithErrors( const char* const text )
 			text_view,
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout),
-			ErrorHanlder,
-			&build_result );
+			g_error_handling_callbacks,
+			reinterpret_cast<UserHandle>(&build_result.errors) );
 	U_TEST_ASSERT(ok);
 
 	return build_result;
@@ -152,8 +174,8 @@ ErrorTestBuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry>
 			root_file_path_view,
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout),
-			ErrorHanlder,
-			&build_result );
+			g_error_handling_callbacks,
+			reinterpret_cast<UserHandle>(&build_result.errors) );
 	U_TEST_ASSERT( ok );
 
 	return build_result;

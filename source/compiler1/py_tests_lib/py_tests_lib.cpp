@@ -267,8 +267,22 @@ PyObject* RunFunction( PyObject* const self, PyObject* const args )
 	return Py_None;
 }
 
-static void ErrorHandler(
-	void* const data,
+PyObject* BuildFilePos( const uint32_t line, const uint32_t column )
+{
+	PyObject* const dict= PyDict_New();
+	PyDict_SetItemString( dict, "file_index", PyLong_FromLongLong(0) );
+	PyDict_SetItemString( dict, "line", PyLong_FromLongLong(line) );
+	PyDict_SetItemString( dict, "column", PyLong_FromLongLong(column) );
+	return dict;
+}
+
+PyObject* BuildString( const U1_StringView& str )
+{
+	return PyUnicode_DecodeUTF8( str.data, Py_ssize_t(str.size), nullptr );
+}
+
+UserHandle ErrorHandler(
+	const UserHandle data, // Should be python list
 	const uint32_t line,
 	const uint32_t column,
 	const uint32_t error_code,
@@ -276,24 +290,46 @@ static void ErrorHandler(
 {
 	PyObject* const dict= PyDict_New();
 
-	{
-		PyObject* const file_pos_dict= PyDict_New();
-		PyDict_SetItemString( file_pos_dict, "file_index", PyLong_FromLongLong(0) );
-		PyDict_SetItemString( file_pos_dict, "line", PyLong_FromLongLong(line) );
-		PyDict_SetItemString( file_pos_dict, "column", PyLong_FromLongLong(column) );
-
-		PyDict_SetItemString( dict, "file_pos", file_pos_dict );
-	}
+	PyDict_SetItemString( dict, "file_pos", BuildFilePos( line, column ) );
 
 	const char* error_code_str= nullptr;
 	size_t error_code_len= 0u;
 	U1_CodeBuilderCodeToString( error_code, error_code_str, error_code_len );
 	PyDict_SetItemString( dict, "code", PyUnicode_DecodeUTF8( error_code_str, Py_ssize_t(error_code_len), nullptr ) );
 
-	PyDict_SetItemString( dict, "text", PyUnicode_DecodeUTF8( error_text.data, Py_ssize_t(error_text.size), nullptr ) );
+	PyDict_SetItemString( dict, "text", BuildString( error_text ) );
 
 	PyList_Append( reinterpret_cast<PyObject*>(data), dict );
+
+	return reinterpret_cast<UserHandle>(dict);
 }
+
+UserHandle TemplateErrorsContextHandler(
+	const UserHandle data, // should be python dictionary
+	const uint32_t line,
+	const uint32_t column,
+	const U1_StringView& context_name,
+	const U1_StringView& args_description )
+{
+	PyObject* const dict= PyDict_New();
+
+	PyDict_SetItemString( dict, "file_pos", BuildFilePos( line, column ) );
+	PyDict_SetItemString( dict, "template_name", BuildString( context_name ) );
+	PyDict_SetItemString( dict, "parameters_description", BuildString( args_description ) );
+
+	const auto errors_list= PyList_New(0);
+	PyDict_SetItemString( dict, "errors", errors_list );
+
+	PyDict_SetItemString( reinterpret_cast<PyObject*>(data), "template_context", dict );
+
+	return reinterpret_cast<UserHandle>(errors_list);
+}
+
+const ErrorsHandlingCallbacks g_error_handling_callbacks
+{
+	ErrorHandler,
+	TemplateErrorsContextHandler,
+};
 
 PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 {
@@ -315,8 +351,8 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 			text_view,
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout),
-			ErrorHandler,
-			errors_list );
+			g_error_handling_callbacks,
+			reinterpret_cast<UserHandle>(errors_list) );
 
 	llvm::llvm_shutdown();
 
@@ -340,7 +376,7 @@ PyObject* BuildProgramWithSyntaxErrors( PyObject* const self, PyObject* const ar
 
 	const U1_StringView text_view{ program_text, std::strlen(program_text) };
 	PyObject* const errors_list= PyList_New(0);
-	U1_BuildProgramWithSyntaxErrors( text_view, ErrorHandler, errors_list );
+	U1_BuildProgramWithSyntaxErrors( text_view, g_error_handling_callbacks, reinterpret_cast<UserHandle>(errors_list) );
 
 	return errors_list;
 }
@@ -558,6 +594,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"NomangleFunctionMustBeGlobal_Test0",
 		"NomangleFunctionMustBeGlobal_Test1",
 		"NomangleFunctionMustBeGlobal_Test2",
+		"NomangleFunctionMustBeGlobal_Test3",
 		"NomangleTest0",
 		"NomangleTest1",
 		"OkTest",
@@ -846,6 +883,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TemplateFunction_versus_TypesConversion_Test",
 		"TemplateMethod_Test",
 		"TemplateOperator_Test",
+		"TemplateParametersInErrorInsideTemplate_Test",
 		"TernaryOperatorIsLazy_Test",
 		"TernaryOperator_Constexpr_Test",
 		"TernaryOperator_ForReferenceValue_Test",
