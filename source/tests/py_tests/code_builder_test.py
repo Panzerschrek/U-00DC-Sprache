@@ -412,3 +412,47 @@ def Int128_Test0():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == ( 1 * (-8) ) + int( 8657 / 12 ) )
+
+
+def Comments_Test0():
+	c_program_text= """
+	fn Foo() : i32
+	{
+		// Singleline comment.
+		return 0;
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def Comments_Test1():
+	c_program_text= """
+	fn Foo() : i32
+	{
+		/* Multi
+		line
+		comment
+		.
+		*/
+		return 0;
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def Comments_Test2():
+	c_program_text= """
+	fn Foo() : i32
+	{
+		/*
+			/* Multi
+			line
+			comment
+			. */
+			Inside multiline
+			comment
+		*/
+		return 0;
+	}
+	"""
+	tests_lib.build_program( c_program_text )

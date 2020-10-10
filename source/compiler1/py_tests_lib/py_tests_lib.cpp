@@ -760,6 +760,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"ChildToParentReferenceCast_Test",
 		"ClassContainsPureVirtualFunctions_Test",
 		"ClassHaveNoCopyConstructorByDefault_Test",
+		"Comments_Test",
 		"CommonValueType_Test",
 		"ConditionalMove",
 		"ConstexprCall_ResultTypeIs_",

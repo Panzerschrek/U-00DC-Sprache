@@ -557,11 +557,43 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 		var Lexem mut lexem;
 
 		// single line comment
-		if( c == "/"c32 && it.size() >= 2s && it[1s] == "/"c8 )
+		if( c == "/"c32 && next_c == "/"c32 )
 		{
 			while( !it.empty() && !IsNewline(sprache_char(it.front())) )
 			{
 				it.drop_front();
+			}
+
+			continue;
+		}
+		// multiline comment
+		if( c == "/"c32 && next_c == "*"c32 )
+		{
+			it.drop_front();
+			it.drop_front();
+			auto mut comments_depth= 1u;
+			while( it.size() >= 2s && comments_depth > 0u )
+			{
+				if( it[0s] == "*"c8 && it[1s] == "/"c8 )
+				{
+					it.drop_front();
+					it.drop_front();
+					--comments_depth;
+				}
+				else if( it[0s] == "/"c8 && it[1s] == "*"c8 )
+				{
+					it.drop_front();
+					it.drop_front();
+					++comments_depth;
+				}
+				else
+				{
+					it.drop_front();
+				}
+			}
+			if( comments_depth != 0u )
+			{
+				result.error_messages.push_back( "Lexical error: expected */" );
 			}
 
 			continue;
@@ -643,7 +675,7 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 		else
 		{
 			move(lexem);
-			// TODO - maybe produce error ?
+			result.error_messages.push_back( "Lexical error: unexpected lexem" );
 			it.drop_front();
 		}
 	}
