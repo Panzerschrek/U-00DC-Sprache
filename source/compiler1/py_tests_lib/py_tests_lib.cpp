@@ -267,8 +267,22 @@ PyObject* RunFunction( PyObject* const self, PyObject* const args )
 	return Py_None;
 }
 
-static UserHandle ErrorHandler(
-	const UserHandle data,
+PyObject* BuildFilePos( const uint32_t line, const uint32_t column )
+{
+	PyObject* const dict= PyDict_New();
+	PyDict_SetItemString( dict, "file_index", PyLong_FromLongLong(0) );
+	PyDict_SetItemString( dict, "line", PyLong_FromLongLong(line) );
+	PyDict_SetItemString( dict, "column", PyLong_FromLongLong(column) );
+	return dict;
+}
+
+PyObject* BuildString( const U1_StringView& str )
+{
+	return PyUnicode_DecodeUTF8( str.data, Py_ssize_t(str.size), nullptr );
+}
+
+UserHandle ErrorHandler(
+	const UserHandle data, // Should be python list
 	const uint32_t line,
 	const uint32_t column,
 	const uint32_t error_code,
@@ -276,44 +290,42 @@ static UserHandle ErrorHandler(
 {
 	PyObject* const dict= PyDict_New();
 
-	{
-		PyObject* const file_pos_dict= PyDict_New();
-		PyDict_SetItemString( file_pos_dict, "file_index", PyLong_FromLongLong(0) );
-		PyDict_SetItemString( file_pos_dict, "line", PyLong_FromLongLong(line) );
-		PyDict_SetItemString( file_pos_dict, "column", PyLong_FromLongLong(column) );
-
-		PyDict_SetItemString( dict, "file_pos", file_pos_dict );
-	}
+	PyDict_SetItemString( dict, "file_pos", BuildFilePos( line, column ) );
 
 	const char* error_code_str= nullptr;
 	size_t error_code_len= 0u;
 	U1_CodeBuilderCodeToString( error_code, error_code_str, error_code_len );
 	PyDict_SetItemString( dict, "code", PyUnicode_DecodeUTF8( error_code_str, Py_ssize_t(error_code_len), nullptr ) );
 
-	PyDict_SetItemString( dict, "text", PyUnicode_DecodeUTF8( error_text.data, Py_ssize_t(error_text.size), nullptr ) );
+	PyDict_SetItemString( dict, "text", BuildString( error_text ) );
 
-	const auto list_object= reinterpret_cast<PyObject*>(data);
-	PyList_Append( list_object, dict );
+	PyList_Append( reinterpret_cast<PyObject*>(data), dict );
 
-	return reinterpret_cast<UserHandle>(list_object);
+	return reinterpret_cast<UserHandle>(dict);
 }
 
 UserHandle TemplateErrorsContextHandler(
-	const UserHandle data, // should be "CodeBuilderError*"
+	const UserHandle data, // should be python dictionary
 	const uint32_t line,
 	const uint32_t column,
 	const U1_StringView& context_name,
 	const U1_StringView& args_description )
 {
-	(void)data;
-	(void)line;
-	(void)column;
-	(void)context_name;
-	(void)args_description;
-	return 0;
+	PyObject* const dict= PyDict_New();
+
+	PyDict_SetItemString( dict, "file_pos", BuildFilePos( line, column ) );
+	PyDict_SetItemString( dict, "template_name", BuildString( context_name ) );
+	PyDict_SetItemString( dict, "parameters_description", BuildString( args_description ) );
+
+	const auto errors_list= PyList_New(0);
+	PyDict_SetItemString( dict, "errors", errors_list );
+
+	PyDict_SetItemString( reinterpret_cast<PyObject*>(data), "template_context", dict );
+
+	return reinterpret_cast<UserHandle>(errors_list);
 }
 
-static const ErrorsHandlingCallbacks g_error_handling_callbacks
+const ErrorsHandlingCallbacks g_error_handling_callbacks
 {
 	ErrorHandler,
 	TemplateErrorsContextHandler,
