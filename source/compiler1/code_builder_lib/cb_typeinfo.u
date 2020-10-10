@@ -399,7 +399,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 	return v;
 }
 
-fn CodeBuilder::CreateTypeinfoClass( this, NamesScopePtr& root_namespace, Type& src_type, ust::string8& name ) : ClassTypePtr
+fn CodeBuilder::CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Type& src_type, ust::string8& name ) : ClassTypePtr
 {
 	var NamesScopeMutPtr class_members( NamesScope( name, root_namespace ) );
 	var ClassType mut class_type
@@ -430,6 +430,8 @@ fn CodeBuilder::CreateTypeinfoClass( this, NamesScopePtr& root_namespace, Type& 
 		auto mut lock= class_type_ptr.lock_mut();
 		lock.get_ref().llvm_type= LLVMStructCreateNamed( llvm_context_, name_mangled.front() );
 	}
+
+	typeinfo_class_table_.push_back( class_type_ptr );
 
 	return move(class_type_ptr);
 }

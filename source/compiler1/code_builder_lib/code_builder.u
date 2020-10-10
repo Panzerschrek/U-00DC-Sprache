@@ -6,6 +6,16 @@ import "code_builder.uh"
 namespace U1
 {
 
+fn ClearClassInternals( ClassTypePtr& class_type, NamesScopeMutPtr& dummy_class_names_scope )
+{
+	auto mut lock= class_type.lock_mut();
+	auto &mut class_= lock.get_ref();
+	class_.members= dummy_class_names_scope;
+	class_.parents.clear();
+	class_.virtual_table.clear();
+	class_.typeinfo_src_type_.reset();
+}
+
 fn CodeBuilder::constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data_layout )
 	(
 		llvm_context_(llvm_context),
@@ -125,16 +135,19 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 		{
 			foreach( &mut class_table_entry : node.class_table )
 			{
-				auto mut lock= class_table_entry.key().lock_mut();
-				auto &mut class_= lock.get_ref();
-				class_.members= dummy_class_names_scope;
-				class_.parents.clear();
-				class_.virtual_table.clear();
+				ClearClassInternals( class_table_entry.key(), dummy_class_names_scope );
 			}
+		}
+
+		foreach( & class_type_ptr : typeinfo_class_table_ )
+		{
+			ClearClassInternals( class_type_ptr, dummy_class_names_scope );
 		}
 	}
 
 	compiled_sources_cache_.clear();
+	generated_template_things_.clear();
+	typeinfo_cache_.clear();
 
 	var BuildResult mut res
 	{

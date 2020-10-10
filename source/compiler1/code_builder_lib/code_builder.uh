@@ -536,7 +536,7 @@ private:
 	fn GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_namespace ) : Variable;
 	fn BuildFullTypeinfo( mut this, Type& t ) : Variable;
 
-	fn CreateTypeinfoClass( this, NamesScopePtr& root_namespace, Type& src_type, ust::string8& name ) : ClassTypePtr;
+	fn CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Type& src_type, ust::string8& name ) : ClassTypePtr;
 	fn FinishTypeinfoClass( this, ClassTypePtr& typeinfo_class, ust::vector</LLVMTypeRef/>& fields_llvm_types );
 
 	fn BuildTypeinfoTupleElementsList( mut this, NamesScopePtr& root_namespace, TupleType& tuple_type ) : Variable;
@@ -756,6 +756,7 @@ private:
 	// TODO - use unorederd_map
 	struct TypeinfoStruct{ Type t; Variable v; }
 	ust::vector</TypeinfoStruct/> typeinfo_cache_;
+	ust::vector</ ClassTypePtr /> typeinfo_class_table_;
 
 	LLVMValueRef halt_function_= LLVMValueRef::Null;
 
