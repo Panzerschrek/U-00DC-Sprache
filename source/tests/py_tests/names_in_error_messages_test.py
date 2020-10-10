@@ -264,9 +264,9 @@ def TemplateParametersInErrorInsideTemplate_Test0():
 def TemplateParametersInErrorInsideTemplate_Test1():
 	c_program_text= """
 		template</ type A, type B />
-		fn Add( A a, B b ) : auto
+		fn Add( A a, B b )
 		{
-			return a + b;
+			a + b;
 		}
 		fn Foo()
 		{
@@ -288,9 +288,9 @@ def TemplateParametersInErrorInsideTemplate_Test1():
 def TemplateParametersInErrorInsideTemplate_Test2():
 	c_program_text= """
 		template</ type A, type B />
-		fn Add( A a, B b ) : auto
+		fn Add( A a, B b )
 		{
-			return a + b;
+			a + b;
 		}
 		fn Foo()
 		{

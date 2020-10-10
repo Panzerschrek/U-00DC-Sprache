@@ -882,6 +882,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TemplateFunction_versus_TypesConversion_Test",
 		"TemplateMethod_Test",
 		"TemplateOperator_Test",
+		"TemplateParametersInErrorInsideTemplate_Test",
 		"TernaryOperatorIsLazy_Test",
 		"TernaryOperator_Constexpr_Test",
 		"TernaryOperator_ForReferenceValue_Test",

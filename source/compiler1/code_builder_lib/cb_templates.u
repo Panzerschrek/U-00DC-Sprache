@@ -6,8 +6,9 @@ import "code_builder.uh"
 namespace U1
 {
 
+template</type TemplateT/>
 fn CreateTemplateErrorsContext(
-	TemplateBase& template_,
+	TemplateT& template_, // type template or function template
 	NamesScope& args_names_scope,
 	FilePos& instantiation_file_pos ) : ust::shared_ptr_nullable_mut</TemplateErrorsContext/>
 {
@@ -15,6 +16,7 @@ fn CreateTemplateErrorsContext(
 	{
 		.errors( ErrorsContainer() ),
 		.context_declaration_file_pos= instantiation_file_pos,
+		.context_name= template_.syntax_element.get_ref().name,
 	};
 
 	var ust::string8 mut args_description;
@@ -22,7 +24,7 @@ fn CreateTemplateErrorsContext(
 	foreach( &param : template_.params )
 	{
 		args_description+= param.name;
-		args_description+= "= ";
+		args_description+= " = ";
 
 		auto arg_ptr= args_names_scope.GetThisScopeValue( param.name ).get_ref().Get</TemplateArg/>();
 		auto arg_lock= arg_ptr.lock_imut();
@@ -1014,6 +1016,25 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 		return ust::optional</FunctionVariable/>();
 	}
 	generated_template_things_.insert( template_key, result_names_scope );
+
+	auto template_errors_context=
+		CreateTemplateErrorsContext( function_template, result_names_scope.lock_imut().get_ref(), file_pos );
+	{
+		var CodeBuilderError mut template_context_error
+		{
+			.code= CodeBuilderErrorCode::TemplateContext,
+			.file_pos= file_pos,
+			.errors_context= template_errors_context,
+		};
+
+		auto prev_errors= result_names_scope.lock_imut().get_ref().GetErrors();
+		auto mut errors_lock= prev_errors.lock_mut();
+		errors_lock.get_ref().push_back( move(template_context_error) );
+	}
+	{
+		auto mut result_names_scope_lock= result_names_scope.lock_mut();
+		result_names_scope_lock.get_ref().SetErrors( template_errors_context.lock_imut().get_ref().errors );
+	}
 
 	NamesScopeFill( result_names_scope, template_syntax_element.function, function_template.class_, Synt::ClassVisibility::Public /* TODO - set correct visibility */ );
 	auto result_namespace_value= result_names_scope.lock_imut().get_ref().GetThisScopeValue( function_name ).get_ref();
