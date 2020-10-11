@@ -52,6 +52,11 @@ fn CodeBuilder::DeepCopyNamesScopeValue( NamesScopeMutPtr& namespace_, NamesScop
 
 	var NamesScopeMutPtr mut copy_ptr( NamesScope( src.GetThisNamespaceName(), target_names_scope ) );
 
+	{
+		auto mut copy_lock= copy_ptr.lock_mut();
+		copy_lock.get_ref().CopyAccessRightsFrom( src );
+	}
+
 	NamesScopeMerge( copy_ptr, src );
 
 	return move(copy_ptr);
@@ -69,6 +74,11 @@ fn CodeBuilder::DeepCopyNamesScopeValue( ClassTypePtr& class_type, NamesScopePtr
 	auto& src= src_lock.get_ref();
 
 	var NamesScopeMutPtr mut dst_namespace( NamesScope( src.GetThisNamespaceName(), target_names_scope ) );
+
+	{
+		auto mut dst_namespace_lock= dst_namespace.lock_mut();
+		dst_namespace_lock.get_ref().CopyAccessRightsFrom( src );
+	}
 
 	NamesScopeMerge( dst_namespace, src );
 

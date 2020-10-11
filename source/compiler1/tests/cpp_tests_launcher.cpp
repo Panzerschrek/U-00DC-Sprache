@@ -66,7 +66,6 @@ bool FilterTest( const std::string& test_name )
 	static const std::unordered_set<std::string> c_test_to_disable
 	{
 		"ExpectedConstantExpression_InTemplateSignatureArgument_Test0",
-		"ImportAccessRight_Test0",
 		"ImportInClassFieldInitializer_Test0",
 	};
 

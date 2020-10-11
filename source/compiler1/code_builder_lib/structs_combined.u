@@ -1220,4 +1220,9 @@ fn NamesScope::GetAccessFor( this, ClassTypePtr& class_type ) : Synt::ClassVisib
 	return select( u32(this_namespace_visibility) > u32(parent_namespace_visibility) ? this_namespace_visibility : parent_namespace_visibility );
 }
 
+fn NamesScope::CopyAccessRightsFrom( mut this, NamesScope& src )
+{
+	access_rights_= src.access_rights_;
+}
+
 } // namespace U1
