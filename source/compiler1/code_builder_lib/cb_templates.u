@@ -518,6 +518,12 @@ fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_sco
 	}
 	if_var( &v : value.get</Variable/>() )
 	{
+		if( v.constexpr_value == LLVMValueRef::Null )
+		{
+			REPORT_ERROR( ExpectedConstantExpression, names_scope, file_pos )
+			return TemplateSignatureParam::TypeParam();
+		}
+
 		var TemplateSignatureParam::VariableParam mut variable_param{ .v= v };
 		return move(variable_param);
 	}
