@@ -380,3 +380,54 @@ def WithOperatorVariableShadowsOuterVariables_Test1():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 5 * 7 )
+
+
+def TemporariesSaved_In_WithOperator_Test0():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x )( x= in_x ) {}
+			fn destructor(){ x= 0; }
+		}
+		fn Foo() : i32
+		{
+			var i32 mut res= 0;
+			with( &x : S(998877).x ) // Create temporary of type 'S' and bind its member to reference.
+			{
+				res= x;
+			} // 's' should be destroyed here
+			return res;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 998877 )
+
+
+def TemporariesSaved_In_WithOperator_Test1():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x )( x= in_x ) {}
+			fn destructor(){ x= 0; }
+		}
+		struct R
+		{
+			S& s;
+			fn constructor( this'x', S &'y in_s ) ' x <- y ' ( s= in_s ) {}
+		}
+		fn Foo() : i32
+		{
+			var i32 mut res= 0;
+			with( r : R(S(66123)) ) // Create temporary of type 'S', then create tomporary of type 'R', which has reference to 's', then temporary of type 'R' to 'r'.
+			{
+				res= r.s.x;
+			} // 's' should be destroyed here
+			return res;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 66123 )

@@ -65,6 +65,16 @@ bool FilterTest( const std::string& test_name )
 
 	static const std::unordered_set<std::string> c_test_to_disable
 	{
+		"DestructorTest_For_WithOperator0",
+		"DestructorTest_For_WithOperator1",
+		"DestructorTest_For_WithOperator2",
+		"DestructorTest_For_WithOperator3",
+		"DestructorTest_For_WithOperator4",
+		"DestructorTest_For_WithOperator5",
+		"DestructorTest_For_WithOperator6",
+		"DestructorTest_For_WithOperator7",
+		"DestructorTest_For_WithOperator8",
+		"DestructorTest_For_WithOperator9",
 		"ImportInClassFieldInitializer_Test0",
 	};
 

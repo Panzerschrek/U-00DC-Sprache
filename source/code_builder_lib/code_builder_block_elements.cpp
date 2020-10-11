@@ -1184,6 +1184,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		return BlockBuildInfo();
 	}
 
+	{ // Destroy unused temporaries after variable initialization.
+		const ReferencesGraphNodeHolder variable_lock(
+			std::make_shared<ReferencesGraphNode>( "lock " + var_node->name, ReferencesGraphNode::Kind::ReferenceImut ),
+			function_context );
+		function_context.variables_state.AddLink( var_node, variable_lock.Node() );
+		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), with_operator.file_pos_ );
+	}
+
 	// Create separate namespace for variable. Redefinition here is not possible.
 	NamesScope variable_names_scope( "", &names );
 	variable_names_scope.AddName( with_operator.variable_name_, Value( variable, with_operator.file_pos_ ) );
