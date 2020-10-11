@@ -1184,18 +1184,17 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		return BlockBuildInfo();
 	}
 
-	const Value* const inserted_value=
-		names.AddName( with_operator.variable_name_, Value( variable, with_operator.file_pos_ ) );
-	if( inserted_value == nullptr )
-		REPORT_ERROR( Redefinition, names.GetErrors(), with_operator.file_pos_, with_operator.variable_name_ );
+	// Create separate namespace for variable. Redefinition here is not possible.
+	NamesScope variable_names_scope( "", &names );
+	variable_names_scope.AddName( with_operator.variable_name_, Value( variable, with_operator.file_pos_ ) );
 
 	// Build block. This creates new variables frame and prevents destruction of initializer expression and/or created variable.
-	const BlockBuildInfo block_build_info= BuildBlockElement( with_operator.block_, names, function_context );
+	const BlockBuildInfo block_build_info= BuildBlockElement( with_operator.block_, variable_names_scope, function_context );
 
 	if( !block_build_info.have_terminal_instruction_inside )
 	{
 		// Destroy all temporaries.
-		CallDestructors( variables_storage, names, function_context, with_operator.file_pos_ );
+		CallDestructors( variables_storage, variable_names_scope, function_context, with_operator.file_pos_ );
 	}
 
 	return block_build_info;

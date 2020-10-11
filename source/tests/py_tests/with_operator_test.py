@@ -305,3 +305,78 @@ def WithOperatorForMutReference_Test0():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 29567 )
+
+
+def BindingConstReferenceToNonconstReference_For_WithOperator_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 p= 0;
+			with( &mut x : p ) // Binding immatable reference to mutable reference.
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "BindingConstReferenceToNonconstReference" )
+	assert( errors_list[0].file_pos.line == 5 )
+
+
+def ExpectedReferenceValue_For_WithOperator_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			with( &mut x : 66 ) // Binding value to mutable reference.
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def UsingKeywordAsName_For_WithOperator_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			with( class : 66 )
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "UsingKeywordAsName" )
+	assert( errors_list[0].file_pos.line == 4 )
+
+
+def WithOperatorVariableShadowsOuterVariables_Test0():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			var f32 mut x= 0.0f;
+			with( &x : 959595 )
+			{
+				return x; // Should see "with" operator variable here, not external variable.
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 959595 )
+
+
+def WithOperatorVariableShadowsOuterVariables_Test1():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			var i32 x= 5;
+			with( &x : x * 7 ) // Outer variable is visible in expression
+			{
+				return x;
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 5 * 7 )
