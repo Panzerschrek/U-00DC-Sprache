@@ -1056,11 +1056,149 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
-	// TODO
-	(void)with_operator;
-	(void)names;
-	(void)function_context;
-	return CodeBuilder::BlockBuildInfo();
+	StackVariablesStorage variables_storage( function_context );
+
+	const Variable expr= BuildExpressionCodeEnsureVariable( with_operator.expression_, names, function_context );
+
+	Variable variable;
+	variable.type= expr.type;
+	variable.value_type= with_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::Reference : ValueType::ConstReference;
+	variable.location= Variable::Location::Pointer;
+
+	ReferencesGraphNode::Kind node_kind;
+	if( with_operator.reference_modifier_ != ReferenceModifier::Reference )
+		node_kind= ReferencesGraphNode::Kind::Variable;
+	else if( with_operator.mutability_modifier_ == MutabilityModifier::Mutable )
+		node_kind= ReferencesGraphNode::Kind::ReferenceMut;
+	else
+		node_kind= ReferencesGraphNode::Kind::ReferenceImut;
+	const auto var_node= std::make_shared<ReferencesGraphNode>( with_operator.variable_name_, node_kind );
+
+	if( with_operator.reference_modifier_ != ReferenceModifier::Reference &&
+		!EnsureTypeCompleteness( variable.type, TypeCompleteness::Complete ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), with_operator.file_pos_, variable.type );
+		return BlockBuildInfo();
+	}
+	if( with_operator.reference_modifier_ != ReferenceModifier::Reference && variable.type.IsAbstract() )
+	{
+		REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), with_operator.file_pos_, variable.type );
+		return BlockBuildInfo();
+	}
+
+	if( with_operator.reference_modifier_ == ReferenceModifier::Reference )
+	{
+		if( expr.value_type == ValueType::ConstReference && variable.value_type != ValueType::ConstReference )
+		{
+			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), with_operator.file_pos_ );
+			return BlockBuildInfo();
+		}
+		if( expr.value_type == ValueType::Value && variable.value_type == ValueType::Reference )
+		{
+			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), with_operator.file_pos_ );
+			return BlockBuildInfo();
+		}
+
+		if( expr.location == Variable::Location::LLVMRegister )
+		{
+			// Binding value to const reference.
+			llvm::Value* const storage= function_context.alloca_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
+			function_context.llvm_ir_builder.CreateStore( expr.llvm_value, storage );
+			variable.llvm_value= storage;
+		}
+		else
+			variable.llvm_value= expr.llvm_value;
+
+		variable.constexpr_value= expr.constexpr_value;
+
+		CreateVariableDebugInfo( variable, with_operator.variable_name_, with_operator.file_pos_, function_context );
+
+		variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
+		variable.node= var_node;
+
+		const bool is_mutable= variable.value_type == ValueType::Reference;
+		if( expr.node != nullptr )
+		{
+			if( is_mutable )
+			{
+				if( function_context.variables_state.HaveOutgoingLinks( expr.node ) )
+					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), with_operator.file_pos_, expr.node->name );
+			}
+			else if( function_context.variables_state.HaveOutgoingMutableNodes( expr.node ) )
+				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), with_operator.file_pos_, expr.node->name );
+			function_context.variables_state.AddLink( expr.node, var_node );
+		}
+	}
+	else if( with_operator.reference_modifier_ == ReferenceModifier::None )
+	{
+		if( !variable.type.CanBeConstexpr() )
+			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
+
+		variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType(), nullptr, with_operator.variable_name_ );
+
+		CreateVariableDebugInfo( variable, with_operator.variable_name_, with_operator.file_pos_, function_context );
+
+		variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
+		variable.node= var_node;
+
+		SetupReferencesInCopyOrMove( function_context, variable, expr, names.GetErrors(), with_operator.file_pos_ );
+
+		if( expr.value_type == ValueType::Value )
+		{
+			const ReferencesGraphNodePtr& variable_for_move= expr.node;
+			if( variable_for_move != nullptr )
+			{
+				U_ASSERT(variable_for_move->kind == ReferencesGraphNode::Kind::Variable );
+				function_context.variables_state.MoveNode( variable_for_move );
+			}
+
+			CopyBytes( expr.llvm_value, variable.llvm_value, variable.type, function_context );
+		}
+		else
+		{
+			if( !variable.type.IsCopyConstructible() )
+			{
+				REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), with_operator.file_pos_, variable.type );
+				return BlockBuildInfo();
+			}
+			BuildCopyConstructorPart(
+				variable.llvm_value, expr.llvm_value,
+				variable.type,
+				function_context );
+		}
+		// constexpr preserved for move/copy.
+		variable.constexpr_value= expr.constexpr_value;
+	}
+	else U_ASSERT(false);
+
+	// Reset constexpr initial value for mutable variables.
+	if( variable.value_type != ValueType::ConstReference )
+		variable.constexpr_value= nullptr;
+
+	if( IsKeyword( with_operator.variable_name_ ) )
+		REPORT_ERROR( UsingKeywordAsName, names.GetErrors(), with_operator.file_pos_ );
+
+	if( NameShadowsTemplateArgument( with_operator.variable_name_, names ) )
+	{
+		REPORT_ERROR( DeclarationShadowsTemplateArgument, names.GetErrors(), with_operator.file_pos_, with_operator.variable_name_ );
+		return BlockBuildInfo();
+	}
+
+	const Value* const inserted_value=
+		names.AddName( with_operator.variable_name_, Value( variable, with_operator.file_pos_ ) );
+	if( inserted_value == nullptr )
+		REPORT_ERROR( Redefinition, names.GetErrors(), with_operator.file_pos_, with_operator.variable_name_ );
+
+	// Build block. This creates new variables frame and prevents destruction of initializer expression and/or created variable.
+	const BlockBuildInfo block_build_info= BuildBlockElement( with_operator.block_, names, function_context );
+
+	if( !block_build_info.have_terminal_instruction_inside )
+	{
+		// Destroy all temporaries.
+		CallDestructors( variables_storage, names, function_context, with_operator.file_pos_ );
+	}
+
+	return block_build_info;
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(

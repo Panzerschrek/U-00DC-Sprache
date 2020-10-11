@@ -266,7 +266,7 @@ private:
 		FunctionContext& function_context );
 
 	void CopyBytes(
-		llvm::Value* src, llvm::Value* dst,
+		llvm::Value* src, llvm::Value* dst, // TODO - swap dst and src.
 		const Type& type,
 		FunctionContext& function_context );
 
