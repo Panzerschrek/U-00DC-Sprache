@@ -872,6 +872,27 @@ U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test2 )
 	U_TEST_ASSERT( error.file_pos.GetLine() == 12u );
 }
 
+U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test3 )
+{
+	// "this" inner variables pollution in constructor.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 &imut x;
+			fn constructor( this, i32 &imut in_x )( x= in_x ) {}
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnallowedReferencePollution );
+	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+}
+
 U_TEST( ReferencePollutionErrorsTest_ExplicitReferencePollutionForCopyConstructor )
 {
 	static const char c_program_text[]=

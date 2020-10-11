@@ -1611,8 +1611,6 @@ void CodeBuilder::BuildConstructorInitialization(
 		function_context.uninitialized_this_fields.insert( field->syntax_element->name );
 	} // for fields initializers
 
-	ProgramStringSet uninitialized_fields;
-
 	// Initialize fields, missing in initializer list.
 	for( const std::string& field_name : base_class.fields_order )
 	{
