@@ -3,11 +3,11 @@ R"(
 ?macro <? if_var:block ( ?r:opt<? & ?> ?m:opt<? mut ?> ?var_name:ident : ?e:expr ) ?b:block ?>
 ->
 <?
+	with( & ?m<? mut ?> ??e_result : ?e )
 	{
-		auto lock_temps& ?m<? mut ?> ??e_result= ?e;
 		if( !??e_result.empty() )
 		{
-			auto lock_temps ?r<? & ?> ?m<? mut ?> ?var_name= ??e_result.get_ref();
+			with( ?r<? & ?> ?m<? mut ?> ?var_name : ??e_result.get_ref() )
 			?b
 		}
 	}
@@ -16,8 +16,8 @@ R"(
 ?macro <? foreach:block ( ?r:opt<? & ?> ?m:opt<? mut ?> ?var_name:ident : ?e:expr ) ?b:block ?>
 ->
 <?
+	with( & ?m<? mut ?> ??e_result : ?e )
 	{
-		auto lock_temps& ?m<? mut ?> ??e_result= ?e;
 		static_if( typeinfo</ typeof(??e_result) />.is_array )
 		{
 			for( var size_type mut ??i(0u); ??i < typeinfo</ typeof(??e_result) />.element_count; ++ ??i )
@@ -37,8 +37,10 @@ R"(
 			{
 				for( auto mut ??r= ??e_result.range(); !??r.empty(); ??r.drop_front_unsafe() )
 				{
-					auto lock_temps ?r<? & ?> ?m<? mut ?> ?var_name= ??r.front_unsafe();
-					safe{ ?b }
+					with( ?r<? & ?> ?m<? mut ?> ?var_name : ??r.front_unsafe() )
+					{
+						safe{ ?b }
+					}
 				}
 			}
 		}
