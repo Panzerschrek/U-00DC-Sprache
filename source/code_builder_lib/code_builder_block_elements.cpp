@@ -337,21 +337,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 
 		if( initializer_experrsion.value_type == ValueType::Value )
 		{
-			if( auto_variable_declaration.lock_temps )
-			{
-				// In case of "lock_temps" we can bind "Value" to "Reference" or "ConstReference".
-				if( initializer_experrsion.location == Variable::Location::LLVMRegister )
-				{
-					llvm::Value* const storage= function_context.alloca_ir_builder.CreateAlloca( initializer_experrsion.type.GetLLVMType() );
-					function_context.llvm_ir_builder.CreateStore( initializer_experrsion.llvm_value, storage );
-					variable.llvm_value= storage;
-				}
-			}
-			else
-			{
-				REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), auto_variable_declaration.file_pos_ );
-				return BlockBuildInfo();
-			}
+			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), auto_variable_declaration.file_pos_ );
+			return BlockBuildInfo();
 		}
 
 		CreateVariableDebugInfo( variable, auto_variable_declaration.name, auto_variable_declaration.file_pos_, function_context );
@@ -434,37 +421,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		names.AddName( auto_variable_declaration.name, Value( variable, auto_variable_declaration.file_pos_ ) );
 	if( inserted_value == nullptr )
 		REPORT_ERROR( Redefinition, names.GetErrors(), auto_variable_declaration.file_pos_, auto_variable_declaration.name );
-
-	if( auto_variable_declaration.lock_temps )
-	{
-		const auto accesible_variable_nodes= function_context.variables_state.GetAllAccessibleVariableNodes( var_node );
-		std::unordered_set<ReferencesGraphNodePtr> indirect_accesible_variable_nodes;
-
-		// Get accesible by inner references variables. Currently, we have onyl 1 level of indirection.
-		for( const ReferencesGraphNodePtr& accesible_variable_node : accesible_variable_nodes )
-		{
-			if( const ReferencesGraphNodePtr& inner_reference = function_context.variables_state.GetNodeInnerReference( accesible_variable_node ) )
-			{
-				const auto accesible_variable_nodes2= function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference );
-				indirect_accesible_variable_nodes.insert( accesible_variable_nodes2.begin(), accesible_variable_nodes2.end() );
-			}
-		}
-
-		std::vector<StackVariablesStorage::NodeAndVariable>& src_storage= function_context.stack_variables_stack.back()->variables_;
-		std::vector<StackVariablesStorage::NodeAndVariable>& dst_storage= function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->variables_;
-		for( size_t i = 0u; i < src_storage.size(); )
-		{
-			if( src_storage[i].first->kind == ReferencesGraphNode::Kind::Variable &&
-				( accesible_variable_nodes .count( src_storage[i].first ) != 0 ||
-				indirect_accesible_variable_nodes.count( src_storage[i].first ) != 0 ) )
-			{
-				dst_storage.insert( dst_storage.begin() + std::ptrdiff_t( dst_storage.size() - 1u ), src_storage[i] ); // insert before declared variable storage.
-				src_storage.erase( src_storage.begin() + std::ptrdiff_t(i) );
-			}
-			else
-				++i;
-		}
-	}
 
 	// After lock of references we can call destructors.
 	CallDestructors( temp_variables_storage, names, function_context, auto_variable_declaration.file_pos_ );

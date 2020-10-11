@@ -2,7 +2,6 @@ fn
 op
 var
 auto
-lock_temps
 return
 while
 break

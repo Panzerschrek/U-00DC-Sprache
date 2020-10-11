@@ -589,7 +589,6 @@ struct AutoVariableDeclaration final : public SyntaxElementBase
 	Expression initializer_expression;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
-	bool lock_temps= false;
 };
 
 struct ReturnOperator final : public SyntaxElementBase

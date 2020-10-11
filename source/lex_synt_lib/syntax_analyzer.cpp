@@ -2216,12 +2216,6 @@ AutoVariableDeclaration SyntaxAnalyzer::ParseAutoVariableDeclaration()
 	AutoVariableDeclaration result( it_->file_pos );
 	NextLexem();
 
-	if (it_->type == Lexem::Type::Identifier && it_->text == Keywords::lock_temps_ )
-	{
-		NextLexem();
-		result.lock_temps= true;
-	}
-
 	if( it_->type == Lexem::Type::And )
 	{
 		result.reference_modifier= ReferenceModifier::Reference;

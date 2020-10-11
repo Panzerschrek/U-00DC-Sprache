@@ -13,7 +13,7 @@ import "type_traits.u"
 			auto ??ref= ??variant.get</ typeof(??element_type_typeinfo.type)::src_type />();
 			if( !??ref.empty() )
 			{
-				auto lock_temps ?r<? & ?> ?m<? mut ?> ?var_name= ??ref.get_ref();
+				with( ?r<? & ?> ?m<? mut ?> ?var_name : ??ref.get_ref() )
 				?b
 			}
 		}
