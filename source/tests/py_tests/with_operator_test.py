@@ -307,6 +307,19 @@ def WithOperatorForMutReference_Test0():
 	assert( call_result == 29567 )
 
 
+def WithOperatorForMutReference_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			with( &mut x : 66 ) //Ok, binding value to mutable reference.
+			{
+				++x;
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def BindingConstReferenceToNonconstReference_For_WithOperator_Test0():
 	c_program_text= """
 		fn Foo()
@@ -320,20 +333,6 @@ def BindingConstReferenceToNonconstReference_For_WithOperator_Test0():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "BindingConstReferenceToNonconstReference" )
 	assert( errors_list[0].file_pos.line == 5 )
-
-
-def ExpectedReferenceValue_For_WithOperator_Test0():
-	c_program_text= """
-		fn Foo()
-		{
-			with( &mut x : 66 ) // Binding value to mutable reference.
-			{}
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
-	assert( errors_list[0].file_pos.line == 4 )
 
 
 def UsingKeywordAsName_For_WithOperator_Test0():

@@ -1093,15 +1093,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), with_operator.file_pos_ );
 			return BlockBuildInfo();
 		}
-		if( expr.value_type == ValueType::Value && variable.value_type == ValueType::Reference )
-		{
-			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), with_operator.file_pos_ );
-			return BlockBuildInfo();
-		}
 
 		if( expr.location == Variable::Location::LLVMRegister )
 		{
-			// Binding value to const reference.
+			// Binding value to reference.
 			llvm::Value* const storage= function_context.alloca_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
 			function_context.llvm_ir_builder.CreateStore( expr.llvm_value, storage );
 			variable.llvm_value= storage;
