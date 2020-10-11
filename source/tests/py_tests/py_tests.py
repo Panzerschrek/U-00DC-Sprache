@@ -70,6 +70,7 @@ def main():
 		"uninitialized_initializer_test",
 		"unsafe_test",
 		"virtual_functions_test",
+		"with_operator_test",
 		"references_graph_test"
 		]
 

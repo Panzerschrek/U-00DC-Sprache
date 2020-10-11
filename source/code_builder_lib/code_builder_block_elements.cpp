@@ -1052,6 +1052,18 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
+	const Synt::WithOperator& with_operator,
+	NamesScope& names,
+	FunctionContext& function_context )
+{
+	// TODO
+	(void)with_operator;
+	(void)names;
+	(void)function_context;
+	return CodeBuilder::BlockBuildInfo();
+}
+
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	const Synt::IfOperator& if_operator,
 	NamesScope& names,
 	FunctionContext& function_context )

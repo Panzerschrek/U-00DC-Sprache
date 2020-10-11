@@ -275,6 +275,7 @@ private:
 	CStyleForOperator ParseCStyleForOperator();
 	BreakOperator ParseBreakOperator();
 	ContinueOperator ParseContinueOperator();
+	WithOperator ParseWithOperator();
 	IfOperator ParseIfOperator();
 	StaticIfOperator ParseStaticIfOperator();
 	StaticAssert ParseStaticAssert();
@@ -1959,7 +1960,7 @@ Initializer SyntaxAnalyzer::ParseInitializer( const bool parse_expression_initia
 	}
 	else if( it_->type == Lexem::Type::BracketLeft )
 	{
-		return ParseConstructorInitializer();
+		return ParseConstructorInitializer(); // TODO - fix case, like :    var [ i32, 1] x[ (1 + 2) * 3 ];
 	}
 	else if( it_->type == Lexem::Type::BraceLeft )
 	{
@@ -2577,6 +2578,71 @@ ContinueOperator SyntaxAnalyzer::ParseContinueOperator()
 	return result;
 }
 
+WithOperator SyntaxAnalyzer::ParseWithOperator()
+{
+	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::with_ );
+	WithOperator result( it_->file_pos );
+
+	NextLexem();
+	if( it_->type != Lexem::Type::BracketLeft )
+	{
+		PushErrorMessage();
+		return result;
+	}
+
+	NextLexem();
+
+	if( it_->type == Lexem::Type::And )
+	{
+		result.reference_modifier_= ReferenceModifier::Reference;
+		NextLexem();
+	}
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mut_ )
+	{
+		result.mutability_modifier_= MutabilityModifier::Mutable;
+		NextLexem();
+	}
+	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::imut_ )
+	{
+		result.mutability_modifier_= MutabilityModifier::Immutable;
+		NextLexem();
+	}
+
+	if( it_->type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage();
+		return result;
+	}
+	result.variable_name_= it_->text;
+	NextLexem();
+
+	if( it_->type != Lexem::Type::Colon )
+	{
+		PushErrorMessage();
+		return result;
+	}
+	NextLexem();
+
+	result.expression_= ParseExpression();
+
+	if( it_->type != Lexem::Type::BracketRight )
+	{
+		PushErrorMessage();
+		return result;
+	}
+
+	NextLexem();
+
+	if( it_->type != Lexem::Type::BraceLeft )
+	{
+		PushErrorMessage();
+		return result;
+	}
+
+	result.block_= ParseBlock();
+	return result;
+}
+
 IfOperator SyntaxAnalyzer::ParseIfOperator()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::if_  || it_->text == Keywords::static_if_ ) );
@@ -2837,6 +2903,8 @@ std::vector<BlockElement> SyntaxAnalyzer::ParseBlockElements()
 			elements.emplace_back( ParseBreakOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::continue_ )
 			elements.emplace_back( ParseContinueOperator() );
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::with_ )
+			elements.emplace_back( ParseWithOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::if_ )
 			elements.emplace_back( ParseIfOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_if_ )

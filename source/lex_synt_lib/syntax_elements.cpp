@@ -204,6 +204,11 @@ ContinueOperator::ContinueOperator( const FilePos& file_pos )
 	: SyntaxElementBase(file_pos)
 {}
 
+WithOperator::WithOperator( const FilePos& file_pos )
+	: SyntaxElementBase(file_pos)
+	, block_(file_pos)
+{}
+
 IfOperator::IfOperator( const FilePos& start_file_pos )
 	: SyntaxElementBase(start_file_pos)
 {}
