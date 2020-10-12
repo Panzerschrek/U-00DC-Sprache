@@ -327,12 +327,12 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	# Build rule for "Ü" files
 	# Returns result in ${out_object}
 	function( CompileUSource u_source_file out_object )
-		get_filename_component( source_name ${u_source_file} NAME_WE )
-		set( object_name ${source_name}.o )
+		file( RELATIVE_PATH source_name_rel ${CMAKE_CURRENT_SOURCE_DIR} ${u_source_file} )
+		set( object_name ${CMAKE_CURRENT_BINARY_DIR}/${source_name_rel}.o )
 		add_custom_command(
 			OUTPUT ${object_name}
 			DEPENDS ${u_source_file} Compiler
-			COMMAND Compiler ${CMAKE_SOURCE_DIR}/${u_source_file} -o ${object_name} ${SPRACHE_COMPILER_PIC_OPTIONS} )
+			COMMAND Compiler ${u_source_file} -o ${object_name} ${SPRACHE_COMPILER_PIC_OPTIONS} )
 		set( ${out_object} ${object_name} PARENT_SCOPE )
 	endfunction()
 
@@ -345,146 +345,15 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 		set( ${out_objects} ${out_objects_local} PARENT_SCOPE )
 	endfunction()
 
-	#
-	# CPP-Linkage test
-	#
-	if( NOT MSVC ) # Eenable only on compiler with Itanium ABI mangling.
-		# Compile simple program on "Ü-Sprache", link it together with C++ program.
-		set( CPP_LINKAGE_SOURCES tests/cpp_linkage_test/cpp_linkage.u )
-		CompileUSources( "${CPP_LINKAGE_SOURCES}" CPP_LINKAGE_OBJECTS )
-
-		add_executable( CPPLinkageTest tests/cpp_linkage_test/cpp_linkage.cpp ${CPP_LINKAGE_SOURCES} ${CPP_LINKAGE_OBJECTS} )
-		add_dependencies( CPPLinkageTest Compiler )
-	endif()
-
-	#
-	# Inline linkage test
-	#
-	# Compile multimodule program on "Ü-Sprache". Each module includes one common file.
-	set( INLINE_LINKAGE_SOURCES
-		tests/inline_linkage_test/a.u
-		tests/inline_linkage_test/b.u
-		tests/inline_linkage_test/c.u
-		tests/inline_linkage_test/entry.u )
-	CompileUSources( "${INLINE_LINKAGE_SOURCES}" INLINE_LINKAGE_OBJECTS )
-
-	add_executable( InlineLinkageTest tests/dummy.cpp ${INLINE_LINKAGE_SOURCES} ${INLINE_LINKAGE_OBJECTS} )
-	add_dependencies( InlineLinkageTest Compiler )
-
-	#
-	# Imports test
-	#
-	set( IMPORT_TEST_SOURCES tests/import_test/root.u )
-	CompileUSources( "${IMPORT_TEST_SOURCES}" IMPORT_TEST_OBJECTS )
-
-	add_executable( ImportTest tests/import_test/entry.cpp ${IMPORT_TEST_SOURCES} ${IMPORT_TEST_OBJECTS} )
-	add_dependencies( ImportTest Compiler )
-
-	#
-	# Unciode file names test
-	#
-	if( U_BUILD_UNICODE_FILE_NAMES_TEST )
-		set( UNICODE_FILE_NAMES_SOURCES "tests/unicode_file_names_test/Entry ФшЯё_66.ü" )
-		CompileUSources( "${UNICODE_FILE_NAMES_SOURCES}" UNICODE_FILE_NAMES_OBJECTS )
-
-		add_executable( UnicodeFileNamesTest tests/dummy.cpp ${UNICODE_FILE_NAMES_SOURCES} ${UNICODE_FILE_NAMES_OBJECTS} )
-		add_dependencies( UnicodeFileNamesTest Compiler )
-	endif()
-
-	#
-	# Include dirs test
-	#
-	add_custom_command(
-		OUTPUT include_dirs_test.o
-		DEPENDS Compiler
-		COMMAND
-			Compiler
-			${CMAKE_SOURCE_DIR}/tests/include_dirs_test/root.u -o include_dirs_test.o
-			${SPRACHE_COMPILER_PIC_OPTIONS}
-			--include-dir ${CMAKE_SOURCE_DIR}/tests/include_dirs_test/a
-			--include-dir ${CMAKE_SOURCE_DIR}/tests/include_dirs_test/b
-			--include-dir ${CMAKE_SOURCE_DIR}/tests/include_dirs_test/c )
-
-	add_executable( IncludeDirsTest tests/dummy.cpp tests/include_dirs_test/root.u include_dirs_test.o )
-	add_dependencies( IncludeDirsTest Compiler )
-
-	#
-	# type_id test
-	#
-	set( TYPE_ID_TEST_SOURCES tests/type_id_test/type_id_a.u tests/type_id_test/type_id_b.u )
-	CompileUSources( "${TYPE_ID_TEST_SOURCES}" TYPE_ID_TEST_OBJECTS )
-
-	add_executable( TypeIdTest tests/type_id_test/entry.cpp ${TYPE_ID_TEST_SOURCES} ${TYPE_ID_TEST_OBJECTS} )
-	add_dependencies( TypeIdTest Compiler )
-
-	# Run type_id test
-	add_custom_command( TARGET TypeIdTest POST_BUILD COMMAND TypeIdTest )
-
-	#
-	# Debug info test
-	#
-	set( DEBUG_INFO_TEST_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tests/debug_info_test/debug_info_test.u )
-	set( DEBUG_INFO_TEST_FILE_OUT ${CMAKE_CURRENT_BINARY_DIR}/debug_info_test.o )
-	add_custom_command(
-		OUTPUT ${DEBUG_INFO_TEST_FILE_OUT}
-		DEPENDS Compiler ${DEBUG_INFO_TEST_FILE}
-		COMMAND
-			Compiler
-			${DEBUG_INFO_TEST_FILE} -o ${DEBUG_INFO_TEST_FILE_OUT}
-			${SPRACHE_COMPILER_PIC_OPTIONS}
-			-O0 # Disable optimization
-			-g # Generate debug info
-		)
-
-	add_executable( DebugInfoTest tests/dummy.cpp ${DEBUG_INFO_TEST_FILE} ${DEBUG_INFO_TEST_FILE_OUT} )
-	add_dependencies( DebugInfoTest Compiler )
-
-	#
-	# Dependency file test
-	#
-	if( ${CMAKE_GENERATOR} STREQUAL "Ninja" )
-		message( "Build DepFileTest" )
-
-		add_custom_command(
-			OUTPUT dep_main.o
-			DEPENDS Compiler
-			COMMAND
-				Compiler
-				${CMAKE_SOURCE_DIR}/tests/dep_file_test/dep_main.u -o dep_main.o -MF dep_main.d
-				${SPRACHE_COMPILER_PIC_OPTIONS}
-			DEPFILE dep_main.d # This works only for Ninja
-			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} )
-
-		add_executable( DepFileTest tests/dummy.cpp dep_main.o )
-		add_dependencies( DepFileTest Compiler )
-
-	else()
-		message( "DepFileTest test disabled because it is not supported by current cmake generator" )
-	endif()
-
-	#
-	# CppHeaderConverter test
-	#
-	if( REALLY_BUILD_CPP_HEADER_CONVERTER )
-		add_custom_command(
-			OUTPUT c_converted.u
-			DEPENDS tests/cpp_header_converter_test/c_test.h CppHeaderConverter
-			COMMAND
-				CppHeaderConverter -o c_converted.u
-				${CMAKE_SOURCE_DIR}/tests/cpp_header_converter_test/c_test.h -- -std=c11 )
-
-		add_custom_command(
-			OUTPUT cpp_header_converter_test.o
-			DEPENDS tests/cpp_header_converter_test/cpp_header_converter_test.u  c_converted.u Compiler
-			COMMAND
-				Compiler
-				${CMAKE_SOURCE_DIR}/tests/cpp_header_converter_test/cpp_header_converter_test.u -o cpp_header_converter_test.o
-				${SPRACHE_COMPILER_PIC_OPTIONS}
-				--include-dir ${CMAKE_BINARY_DIR} )
-
-		add_executable( CppHeaderConverterTest cpp_header_converter_test.o tests/cpp_header_converter_test/c_test.cpp )
-		add_dependencies( CppHeaderConverterTest Compiler )
-	endif()
+	add_subdirectory( tests/cpp_header_converter_test )
+	add_subdirectory( tests/cpp_linkage_test )
+	add_subdirectory( tests/debug_info_test )
+	add_subdirectory( tests/dep_file_test )
+	add_subdirectory( tests/import_test )
+	add_subdirectory( tests/include_dirs_test )
+	add_subdirectory( tests/inline_linkage_test )
+	add_subdirectory( tests/type_id_test )
+	add_subdirectory( tests/unicode_file_names_test )
 
 endif( REALLY_BUILD_LINKAGE_TESTS )
 
