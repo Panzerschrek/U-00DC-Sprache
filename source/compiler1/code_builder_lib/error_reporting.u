@@ -93,48 +93,128 @@ fn ComplexNameToString( Synt::ComplexName& complex_name ) : ust::string8
 	return move(result);
 }
 
-fn NormalizeErrors( ust::vector</CodeBuilderError/> &mut errors )
+
+fn NormalizeErrors( ErrorsContainer &mut errors, Synt::MacroExpansionContexts& macro_expansion_contexts )
+{
+	errors= NormalizeErrors_impl( ExpandErrorsInMacros( errors,  macro_expansion_contexts ) );
+}
+
+fn ExpandErrorsInMacros( ErrorsContainer& in_errors, Synt::MacroExpansionContexts& macro_expansion_contexts ) : ErrorsContainer
+{
+	var ErrorsContainer mut macro_contexts_errors;
+	var ust::vector</ ust::shared_ptr_mut</ErrorsContainer/> /> mut macro_contexts_errors_internals;
+
+	foreach( &macro_expansion_context : macro_expansion_contexts )
+	{
+		var ust::shared_ptr_mut</ErrorsContainer/> internal_errors( ErrorsContainer() );
+
+		var TemplateErrorsContext mut template_errors_context
+		{
+			.errors= internal_errors,
+			.context_declaration_file_pos= macro_expansion_context.macro_declaration_file_pos,
+			.context_name= macro_expansion_context.macro_name,
+		};
+
+		var CodeBuilderError mut macro_expansion_context_error
+		{
+			.code= CodeBuilderErrorCode::MacroExpansionContext,
+			.file_pos= macro_expansion_context.file_pos,
+			.text = "in expansion of macro \"" + macro_expansion_context.macro_name + "\"",
+			.errors_context( move(template_errors_context) ),
+		};
+
+		macro_contexts_errors.push_back( move(macro_expansion_context_error) );
+		macro_contexts_errors_internals.push_back( internal_errors );
+	}
+
+	var ErrorsContainer mut out_errors;
+	foreach( &in_error : in_errors )
+	{
+		var CodeBuilderError mut error= in_error;
+		if( !error.errors_context.empty() )
+		{
+			var TemplateErrorsContext mut new_context= error.errors_context.lock_imut().get_ref(); // take copy
+			new_context.errors= ust::shared_ptr_mut</ErrorsContainer/>( ExpandErrorsInMacros( new_context.errors.lock_imut().get_ref(), macro_expansion_contexts ) );
+			error.errors_context= ust::shared_ptr_nullable_mut</TemplateErrorsContext/>( move(new_context) );
+		}
+
+		auto macro_expansion_index= size_type(error.file_pos.GetMacroExpansionIndex());
+		if( macro_expansion_index < macro_contexts_errors_internals.size() )
+		{
+			auto mut lock= macro_contexts_errors_internals[ macro_expansion_index ].lock_mut();
+			lock.get_ref().push_back( move(error) );
+		}
+		else
+		{
+			out_errors.push_back( move(error) );
+		}
+	}
+
+	foreach( &macro_context_error : macro_contexts_errors )
+	{
+		auto macro_expansion_index= size_type(macro_context_error.file_pos.GetMacroExpansionIndex());
+		if( macro_expansion_index < macro_contexts_errors_internals.size() )
+		{
+			auto mut lock= macro_contexts_errors_internals[ macro_expansion_index ].lock_mut();
+			lock.get_ref().push_back( macro_context_error );
+		}
+		else
+		{
+			out_errors.push_back( macro_context_error );
+		}
+	}
+
+	return move(out_errors);
+}
+
+fn NormalizeErrors_impl( ErrorsContainer mut errors ) : ErrorsContainer
 {
 	// Use simple bubble sorting. TODO - use REAL sorting.
+	for( auto mut i= 0s; i < errors.size(); ++i )
 	{
-
-		for( auto mut i= 0s; i < errors.size(); ++i )
+		for( auto mut j= i + 1s; j < errors.size(); ++j )
 		{
-			for( auto mut j= i + 1s; j < errors.size(); ++j )
+			if( cast_imut(errors)[j] < cast_imut(errors)[i] )
 			{
-				if( cast_imut(errors)[j] < cast_imut(errors)[i] )
-				{
-					errors.swap( i, j );
-				}
+				errors.swap( i, j );
 			}
 		}
 	}
 
 	// Leave only unique errors.
-	// TODO - do not use temporary container.
-	var ust::vector</CodeBuilderError/> mut res;
-	foreach( &err : errors )
+	auto mut dst= 0s;
+	for( auto mut src= 0s; src < errors.size(); ++src )
 	{
-		if( res.empty() || err != res.back() )
+		if( dst != src && cast_imut(errors)[src] == cast_imut(errors)[dst] )
 		{
-			auto mut err_copy= err;
-			if( !err_copy.errors_context.empty() )
+			continue;
+		}
+
+		{
+			var CodeBuilderError &mut src_error= errors[src];
+			if( !src_error.errors_context.empty() )
 			{
-				auto sub_errors_ptr= err_copy.errors_context.lock_imut().get_ref().errors;
-				auto mut sub_errors_lock= sub_errors_ptr.lock_mut();
-				auto &mut sub_errors= sub_errors_lock.get_ref();
-				NormalizeErrors( sub_errors );
+				var TemplateErrorsContext mut new_context= src_error.errors_context.lock_imut().get_ref(); // take copy
+
+				var ErrorsContainer mut sub_errors= NormalizeErrors_impl( new_context.errors.lock_imut().get_ref() );
 				if( sub_errors.empty() )
 				{
 					continue;
 				}
+				new_context.errors= ust::shared_ptr_mut</ErrorsContainer/>( move(sub_errors) );
+				src_error.errors_context= ust::shared_ptr_nullable_mut</TemplateErrorsContext/>( move(new_context) );
 			}
-
-			res.push_back(move(err_copy));
 		}
+
+		errors.swap( dst, src );
+		++dst;
+	}
+	while( dst < errors.size() )
+	{
+		errors.drop_back();
 	}
 
-	errors= move(res);
+	return move(errors);
 }
 
 } // namespace U1

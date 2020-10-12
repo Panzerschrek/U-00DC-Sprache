@@ -3,6 +3,7 @@ import "/string_conversions.u"
 import "/type_traits.u"
 import "/vector.u"
 import "/code_builder_errors.uh"
+import "../lex_synt_lib/syntax_analyzer.uh"
 import "structs_combined.uh"
 
 ?macro <? REPORT_ERROR:block ( ?error_code:ident, ?names_scope:expr, ?file_pos:expr ?args:rep<? , ?arg:expr ?> ) ?> ->
@@ -61,6 +62,6 @@ fn PreprocessErrorArg( T& x ) : ust::string8
 
 fn ComplexNameToString( Synt::ComplexName& complex_name ) : ust::string8;
 
-fn NormalizeErrors( ust::vector</CodeBuilderError/> &mut errors );
+fn NormalizeErrors( ErrorsContainer &mut errors, Synt::MacroExpansionContexts& macro_expansion_contexts );
 
 } // namespace U1

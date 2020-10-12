@@ -25,7 +25,21 @@ struct SyntaxAnalysisResult
 	MacrosByContextMap macros;
 }
 
-fn SyntaxAnalysis( Lexems& lexems, MacrosByContextMap mut macros ) : SyntaxAnalysisResult;
+struct MacroExpansionContext
+{
+	ust::string8 macro_name;
+	FilePos macro_declaration_file_pos;
+	FilePos file_pos; // Contains also macro expansion context of parent macro.
+}
+
+type MacroExpansionContexts= ust::vector</MacroExpansionContext/>;
+type MacroExpansionContextsPtr= ust::shared_ptr_mut</MacroExpansionContexts/>;
+
+fn SyntaxAnalysis(
+	Lexems& lexems,
+	MacrosByContextMap mut macros,
+	MacroExpansionContextsPtr mut macro_expansion_contexts /*in-out param*/ ) : SyntaxAnalysisResult;
+
 fn ParseImports( Lexems& lexems ) : ImportsList;
 
 } // namespace Synt

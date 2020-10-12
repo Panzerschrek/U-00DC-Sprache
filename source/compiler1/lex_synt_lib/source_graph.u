@@ -7,7 +7,7 @@ namespace U1
 
 fn LoadSourceGraph( IVfs &mut vfs, ust::string8& root_file_path, CppIoStreamRef errors_stream ) : SourceGraph
 {
-	var SourceGraph mut source_graph;
+	var SourceGraph mut source_graph{ .macro_expansion_contexts(Synt::MacroExpansionContexts()) };
 	LoadSourceGraph_r( vfs, errors_stream, root_file_path, "", source_graph );
 	return move(source_graph);
 }
@@ -122,7 +122,7 @@ fn LoadSourceGraph_r(
 	}
 	source_graph.have_errors|= !macros_ok;
 
-	auto mut synt_result= Synt::SyntaxAnalysis( lex_result.lexems, move(macros) );
+	auto mut synt_result= Synt::SyntaxAnalysis( lex_result.lexems, move(macros), source_graph.macro_expansion_contexts );
 	foreach( &error_message : synt_result.error_messages )
 	{
 		var ust::string8 mut str= file_path_normalized;
