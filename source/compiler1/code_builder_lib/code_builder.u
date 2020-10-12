@@ -155,7 +155,7 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 		.errors= root_errors_container_.lock_imut().get_ref(),
 	 };
 
-	NormalizeErrors( res.errors );
+	NormalizeErrors( res.errors, source_graph.macro_expansion_contexts.lock_imut().get_ref() );
 
 	root_errors_container_= ErrorsContainerPtr();
 
