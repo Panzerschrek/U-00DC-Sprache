@@ -222,7 +222,11 @@ fn VectorAppend( ust::vector</T/> &mut dst, ust::vector</T/> mut src )
 class SyntaxAnalyzer
 {
 public:
-	fn constructor( this'a', Lexems&'b lexems, MacrosPtr mut macros ) ' a <- b ';
+	fn constructor(
+		this'a',
+		Lexems&'b lexems,
+		MacrosPtr mut macros,
+		MacroExpansionContextsPtr mut macro_expansion_contexts ) ' a <- b ';
 
 	fn DoAnalyzis( mut this ) : SyntaxAnalysisResult;
 	fn ParseImports( mut this ) : ImportsList;
@@ -300,7 +304,7 @@ private:
 	fn ExpandMacro( mut this, Macro& macro ) : T
 	{
 		var Lexems lexems_expanded= ExpandMacroImpl( macro );
-		var SyntaxAnalyzer mut syntax_analyzer( lexems_expanded, macros_ );
+		var SyntaxAnalyzer mut syntax_analyzer( lexems_expanded, macros_, macro_expansion_contexts_ );
 		var T mut result;
 		static_if( ust::is_same_type</T, Expression/>() )
 		{
@@ -351,10 +355,20 @@ private:
 	SyntaxErrorMessages error_messages_;
 
 	MacrosPtr macros_;
+	MacroExpansionContextsPtr macro_expansion_contexts_;
 }
 
-fn SyntaxAnalyzer::constructor( this'a', Lexems&'b lexems, MacrosPtr mut macros ) ' a <- b '
-	( it_= lexems.range(), last_error_it_= it_, macros_(move(macros)) )
+fn SyntaxAnalyzer::constructor(
+	this'a',
+	Lexems&'b lexems,
+	MacrosPtr mut macros,
+	MacroExpansionContextsPtr mut macro_expansion_contexts ) ' a <- b '
+	(
+		it_= lexems.range(),
+		last_error_it_= it_,
+		macros_(move(macros)),
+		macro_expansion_contexts_(move(macro_expansion_contexts))
+	)
 {
 }
 
@@ -3796,6 +3810,27 @@ fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro ) : Lexems
 	lexems.push_back( end_of_file_lexem );
 	lexems.push_back( end_of_file_lexem );
 
+	var u32 mut macro_expansion_index= ~0u;
+	{
+		var MacroExpansionContext mut macro_expansion_context
+		{
+			.macro_name= macro.name,
+			.macro_declaration_file_pos= macro.file_pos,
+			.file_pos= expansion_file_pos,
+		};
+
+		auto mut lock= macro_expansion_contexts_.lock_mut();
+		var MacroExpansionContexts &mut macro_expansion_contexts= lock.get_ref();
+
+		macro_expansion_index= u32(macro_expansion_contexts.size());
+		macro_expansion_contexts.push_back( move(macro_expansion_context) );
+	}
+
+	foreach( &mut lexem : lexems )
+	{
+		lexem.file_pos.SetMacroExpansionIndex( macro_expansion_index );
+	}
+
 	return move(lexems);
 }
 
@@ -4114,15 +4149,21 @@ fn SyntaxAnalyzer::PushMacroErrorMessage( mut this, FilePos& file_pos, ust::stri
 	error_messages_.push_back( move(error_message) );
 }
 
-fn SyntaxAnalysis( Lexems& lexems, MacrosByContextMap mut macros ) : SyntaxAnalysisResult
+fn SyntaxAnalysis(
+	Lexems& lexems,
+	MacrosByContextMap mut macros,
+	MacroExpansionContextsPtr mut macro_expansion_contexts /*in-out param*/ ) : SyntaxAnalysisResult
 {
-	var SyntaxAnalyzer mut analyzer( lexems, MacrosPtr( move(macros) ) );
+	var SyntaxAnalyzer mut analyzer( lexems, MacrosPtr( move(macros) ), move(macro_expansion_contexts) );
 	return analyzer.DoAnalyzis();
 }
 
 fn ParseImports( Lexems& lexems ) : ImportsList
 {
-	var SyntaxAnalyzer mut analyzer(lexems, MacrosPtr( MacrosByContextMap() ) );
+	var SyntaxAnalyzer mut analyzer(
+		lexems,
+		MacrosPtr( MacrosByContextMap() ),
+		MacroExpansionContextsPtr( MacroExpansionContexts() ) );
 	return analyzer.ParseImports();
 }
 

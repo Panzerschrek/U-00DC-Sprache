@@ -27,6 +27,7 @@ struct SourceGraph
 	}
 
 	ust::vector</Node/> nodes; // Node #0 is root
+	Synt::MacroExpansionContextsPtr macro_expansion_contexts;
 	bool have_errors= false;
 }
 
