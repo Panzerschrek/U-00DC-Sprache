@@ -927,6 +927,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"VisibilityLabelDeclaration_Test",
 		"VoidTypeIsIncomplete_Test",
 		"VoidTypeReference_Test",
+		"WithOperator",
 	};
 
 	if( std::find_if(
