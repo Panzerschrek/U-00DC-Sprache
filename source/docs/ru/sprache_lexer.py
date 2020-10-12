@@ -26,7 +26,6 @@ class SpracheLexer(RegexLexer):
 			(r'op(?![a-zA-Z_0-9])', token.Keyword),
 			(r'var(?![a-zA-Z_0-9])', token.Keyword),
 			(r'auto(?![a-zA-Z_0-9])', token.Keyword),
-			(r'lock_temps(?![a-zA-Z_0-9])', token.Keyword),
 			(r'return(?![a-zA-Z_0-9])', token.Keyword),
 			(r'while(?![a-zA-Z_0-9])', token.Keyword),
 			(r'break(?![a-zA-Z_0-9])', token.Keyword),

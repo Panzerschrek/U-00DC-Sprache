@@ -888,22 +888,25 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 			return nullptr;
 		}
 
-		ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( dst_node );
-		if( inner_reference == nullptr )
+		for( const ReferencesGraphNodePtr& dst_variable_node : function_context.variables_state.GetAllAccessibleVariableNodes( dst_node ) )
 		{
-			inner_reference= std::make_shared<ReferencesGraphNode>( dst_node->name + "/inner_variable", field.is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
-			function_context.variables_state.SetNodeInnerReference( dst_node, inner_reference );
-		}
-		else
-		{
-			if( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceImut && field.is_mutable )
+			ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( dst_variable_node );
+			if( inner_reference == nullptr )
 			{
-				// TODO - make separate error.
-				REPORT_ERROR( NotImplemented, block_names.GetErrors(), initializer_file_pos, "inner reference mutability changing" );
-				return nullptr;
+				inner_reference= std::make_shared<ReferencesGraphNode>( dst_variable_node->name + "/inner_variable", field.is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+				function_context.variables_state.SetNodeInnerReference( dst_variable_node, inner_reference );
 			}
+			else
+			{
+				if( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceImut && field.is_mutable )
+				{
+					// TODO - make separate error.
+					REPORT_ERROR( NotImplemented, block_names.GetErrors(), initializer_file_pos, "inner reference mutability changing" );
+					return nullptr;
+				}
+			}
+			function_context.variables_state.AddLink( src_node, inner_reference );
 		}
-		function_context.variables_state.AddLink( src_node, inner_reference );
 	}
 
 	llvm::Value* const address_of_reference=

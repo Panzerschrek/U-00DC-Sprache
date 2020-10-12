@@ -25,7 +25,6 @@ def main():
 		"auto_constexpr_function_templates_test",
 		"auto_for_return_type_test",
 		"auto_for_return_type_errors_test",
-		"auto_lock_temps_test",
 		"c_style_for_operator_test",
 		"char_literals_test",
 		"char_test",
@@ -70,6 +69,7 @@ def main():
 		"uninitialized_initializer_test",
 		"unsafe_test",
 		"virtual_functions_test",
+		"with_operator_test",
 		"references_graph_test"
 		]
 

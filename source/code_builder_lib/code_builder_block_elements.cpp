@@ -337,21 +337,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 
 		if( initializer_experrsion.value_type == ValueType::Value )
 		{
-			if( auto_variable_declaration.lock_temps )
-			{
-				// In case of "lock_temps" we can bind "Value" to "Reference" or "ConstReference".
-				if( initializer_experrsion.location == Variable::Location::LLVMRegister )
-				{
-					llvm::Value* const storage= function_context.alloca_ir_builder.CreateAlloca( initializer_experrsion.type.GetLLVMType() );
-					function_context.llvm_ir_builder.CreateStore( initializer_experrsion.llvm_value, storage );
-					variable.llvm_value= storage;
-				}
-			}
-			else
-			{
-				REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), auto_variable_declaration.file_pos_ );
-				return BlockBuildInfo();
-			}
+			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), auto_variable_declaration.file_pos_ );
+			return BlockBuildInfo();
 		}
 
 		CreateVariableDebugInfo( variable, auto_variable_declaration.name, auto_variable_declaration.file_pos_, function_context );
@@ -434,37 +421,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		names.AddName( auto_variable_declaration.name, Value( variable, auto_variable_declaration.file_pos_ ) );
 	if( inserted_value == nullptr )
 		REPORT_ERROR( Redefinition, names.GetErrors(), auto_variable_declaration.file_pos_, auto_variable_declaration.name );
-
-	if( auto_variable_declaration.lock_temps )
-	{
-		const auto accesible_variable_nodes= function_context.variables_state.GetAllAccessibleVariableNodes( var_node );
-		std::unordered_set<ReferencesGraphNodePtr> indirect_accesible_variable_nodes;
-
-		// Get accesible by inner references variables. Currently, we have onyl 1 level of indirection.
-		for( const ReferencesGraphNodePtr& accesible_variable_node : accesible_variable_nodes )
-		{
-			if( const ReferencesGraphNodePtr& inner_reference = function_context.variables_state.GetNodeInnerReference( accesible_variable_node ) )
-			{
-				const auto accesible_variable_nodes2= function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference );
-				indirect_accesible_variable_nodes.insert( accesible_variable_nodes2.begin(), accesible_variable_nodes2.end() );
-			}
-		}
-
-		std::vector<StackVariablesStorage::NodeAndVariable>& src_storage= function_context.stack_variables_stack.back()->variables_;
-		std::vector<StackVariablesStorage::NodeAndVariable>& dst_storage= function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2u ]->variables_;
-		for( size_t i = 0u; i < src_storage.size(); )
-		{
-			if( src_storage[i].first->kind == ReferencesGraphNode::Kind::Variable &&
-				( accesible_variable_nodes .count( src_storage[i].first ) != 0 ||
-				indirect_accesible_variable_nodes.count( src_storage[i].first ) != 0 ) )
-			{
-				dst_storage.insert( dst_storage.begin() + std::ptrdiff_t( dst_storage.size() - 1u ), src_storage[i] ); // insert before declared variable storage.
-				src_storage.erase( src_storage.begin() + std::ptrdiff_t(i) );
-			}
-			else
-				++i;
-		}
-	}
 
 	// After lock of references we can call destructors.
 	CallDestructors( temp_variables_storage, names, function_context, auto_variable_declaration.file_pos_ );
@@ -1049,6 +1005,158 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	function_context.llvm_ir_builder.CreateBr( function_context.loops_stack.back().block_for_continue );
 
 	return block_info;
+}
+
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
+	const Synt::WithOperator& with_operator,
+	NamesScope& names,
+	FunctionContext& function_context )
+{
+	StackVariablesStorage variables_storage( function_context );
+
+	const Variable expr= BuildExpressionCodeEnsureVariable( with_operator.expression_, names, function_context );
+
+	Variable variable;
+	variable.type= expr.type;
+	variable.value_type= with_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::Reference : ValueType::ConstReference;
+	variable.location= Variable::Location::Pointer;
+
+	ReferencesGraphNode::Kind node_kind;
+	if( with_operator.reference_modifier_ != ReferenceModifier::Reference )
+		node_kind= ReferencesGraphNode::Kind::Variable;
+	else if( with_operator.mutability_modifier_ == MutabilityModifier::Mutable )
+		node_kind= ReferencesGraphNode::Kind::ReferenceMut;
+	else
+		node_kind= ReferencesGraphNode::Kind::ReferenceImut;
+	const auto var_node= std::make_shared<ReferencesGraphNode>( with_operator.variable_name_, node_kind );
+
+	if( with_operator.reference_modifier_ != ReferenceModifier::Reference &&
+		!EnsureTypeCompleteness( variable.type, TypeCompleteness::Complete ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), with_operator.file_pos_, variable.type );
+		return BlockBuildInfo();
+	}
+	if( with_operator.reference_modifier_ != ReferenceModifier::Reference && variable.type.IsAbstract() )
+	{
+		REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), with_operator.file_pos_, variable.type );
+		return BlockBuildInfo();
+	}
+
+	if( with_operator.reference_modifier_ == ReferenceModifier::Reference )
+	{
+		if( expr.value_type == ValueType::ConstReference && variable.value_type != ValueType::ConstReference )
+		{
+			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), with_operator.file_pos_ );
+			return BlockBuildInfo();
+		}
+
+		if( expr.location == Variable::Location::LLVMRegister )
+		{
+			// Binding value to reference.
+			llvm::Value* const storage= function_context.alloca_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
+			function_context.llvm_ir_builder.CreateStore( expr.llvm_value, storage );
+			variable.llvm_value= storage;
+		}
+		else
+			variable.llvm_value= expr.llvm_value;
+
+		variable.constexpr_value= expr.constexpr_value;
+
+		CreateVariableDebugInfo( variable, with_operator.variable_name_, with_operator.file_pos_, function_context );
+
+		variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
+		variable.node= var_node;
+
+		const bool is_mutable= variable.value_type == ValueType::Reference;
+		if( expr.node != nullptr )
+		{
+			if( is_mutable )
+			{
+				if( function_context.variables_state.HaveOutgoingLinks( expr.node ) )
+					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), with_operator.file_pos_, expr.node->name );
+			}
+			else if( function_context.variables_state.HaveOutgoingMutableNodes( expr.node ) )
+				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), with_operator.file_pos_, expr.node->name );
+			function_context.variables_state.AddLink( expr.node, var_node );
+		}
+	}
+	else if( with_operator.reference_modifier_ == ReferenceModifier::None )
+	{
+		if( !variable.type.CanBeConstexpr() )
+			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
+
+		variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType(), nullptr, with_operator.variable_name_ );
+
+		CreateVariableDebugInfo( variable, with_operator.variable_name_, with_operator.file_pos_, function_context );
+
+		variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
+		variable.node= var_node;
+
+		SetupReferencesInCopyOrMove( function_context, variable, expr, names.GetErrors(), with_operator.file_pos_ );
+
+		if( expr.value_type == ValueType::Value )
+		{
+			const ReferencesGraphNodePtr& variable_for_move= expr.node;
+			if( variable_for_move != nullptr )
+			{
+				U_ASSERT(variable_for_move->kind == ReferencesGraphNode::Kind::Variable );
+				function_context.variables_state.MoveNode( variable_for_move );
+			}
+
+			CopyBytes( expr.llvm_value, variable.llvm_value, variable.type, function_context );
+		}
+		else
+		{
+			if( !variable.type.IsCopyConstructible() )
+			{
+				REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), with_operator.file_pos_, variable.type );
+				return BlockBuildInfo();
+			}
+			BuildCopyConstructorPart(
+				variable.llvm_value, expr.llvm_value,
+				variable.type,
+				function_context );
+		}
+		// constexpr preserved for move/copy.
+		variable.constexpr_value= expr.constexpr_value;
+	}
+	else U_ASSERT(false);
+
+	// Reset constexpr initial value for mutable variables.
+	if( variable.value_type != ValueType::ConstReference )
+		variable.constexpr_value= nullptr;
+
+	if( IsKeyword( with_operator.variable_name_ ) )
+		REPORT_ERROR( UsingKeywordAsName, names.GetErrors(), with_operator.file_pos_ );
+
+	if( NameShadowsTemplateArgument( with_operator.variable_name_, names ) )
+	{
+		REPORT_ERROR( DeclarationShadowsTemplateArgument, names.GetErrors(), with_operator.file_pos_, with_operator.variable_name_ );
+		return BlockBuildInfo();
+	}
+
+	{ // Destroy unused temporaries after variable initialization.
+		const ReferencesGraphNodeHolder variable_lock(
+			std::make_shared<ReferencesGraphNode>( "lock " + var_node->name, ReferencesGraphNode::Kind::ReferenceImut ),
+			function_context );
+		function_context.variables_state.AddLink( var_node, variable_lock.Node() );
+		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), with_operator.file_pos_ );
+	}
+
+	// Create separate namespace for variable. Redefinition here is not possible.
+	NamesScope variable_names_scope( "", &names );
+	variable_names_scope.AddName( with_operator.variable_name_, Value( variable, with_operator.file_pos_ ) );
+
+	// Build block. This creates new variables frame and prevents destruction of initializer expression and/or created variable.
+	const BlockBuildInfo block_build_info= BuildBlockElement( with_operator.block_, variable_names_scope, function_context );
+
+	if( !block_build_info.have_terminal_instruction_inside )
+	{
+		// Destroy all temporaries.
+		CallDestructors( variables_storage, variable_names_scope, function_context, with_operator.file_pos_ );
+	}
+
+	return block_build_info;
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(

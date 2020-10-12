@@ -64,6 +64,7 @@ struct ForOperator;
 struct CStyleForOperator;
 struct BreakOperator;
 struct ContinueOperator;
+struct WithOperator;
 struct IfOperator;
 struct StaticIfOperator;
 struct SingleExpressionOperator;
@@ -148,6 +149,7 @@ using BlockElement= std::variant<
 	CStyleForOperator,
 	BreakOperator,
 	ContinueOperator,
+	WithOperator,
 	IfOperator,
 	StaticIfOperator,
 	SingleExpressionOperator,
@@ -587,7 +589,6 @@ struct AutoVariableDeclaration final : public SyntaxElementBase
 	Expression initializer_expression;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
-	bool lock_temps= false;
 };
 
 struct ReturnOperator final : public SyntaxElementBase
@@ -654,6 +655,18 @@ struct ContinueOperator final : public SyntaxElementBase
 {
 public:
 	explicit ContinueOperator( const FilePos& file_pos );
+};
+
+struct WithOperator final : public SyntaxElementBase
+{
+public:
+	WithOperator( const FilePos& file_pos );
+
+	ReferenceModifier reference_modifier_= ReferenceModifier::None;
+	MutabilityModifier mutability_modifier_= MutabilityModifier::None;
+	std::string variable_name_;
+	Expression expression_;
+	Block block_;
 };
 
 struct IfOperator final : public SyntaxElementBase

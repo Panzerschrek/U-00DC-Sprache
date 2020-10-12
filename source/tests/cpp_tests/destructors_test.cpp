@@ -2092,4 +2092,381 @@ U_TEST(DestructorTest_ForCStyleForOperator5)
 		std::vector<int>( { -0, -3, -6, -9, 12, 666 } ) );
 }
 
+U_TEST(DestructorTest_For_WithOperator0)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor()
+			{
+				DestructorCalled(x);
+			}
+		}
+		fn Foo()
+		{
+			DestructorCalled( 1 );
+			with( &s : S(99) ) // Bind temporary to reference - expand its lifetime.
+			{
+				DestructorCalled( 2 );
+			} // temporary of type "S" should be destroyed here.
+			DestructorCalled( 3 );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 1, 2, 99, 3 } ) );
+}
+
+U_TEST(DestructorTest_For_WithOperator1)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor()
+			{
+				DestructorCalled(x);
+			}
+		}
+		fn Foo()
+		{
+			DestructorCalled( 101 );
+			with( &x : S(85).x ) // Bind temporary part to reference - expand its lifetime.
+			{
+				DestructorCalled( 102 );
+			} // temporary of type "S" should be destroyed here.
+			DestructorCalled( 103 );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 101, 102, 85, 103 } ) );
+}
+
+U_TEST(DestructorTest_For_WithOperator2)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor()
+			{
+				DestructorCalled(x);
+			}
+		}
+		fn Foo()
+		{
+			DestructorCalled( 11 );
+			with( s : S(113) ) // Move temporary to variable.
+			{
+				DestructorCalled( 22 );
+			} // 's' should be sestroyed here.
+			DestructorCalled( 33 );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 11, 22, 113, 33 } ) );
+}
+
+U_TEST(DestructorTest_For_WithOperator3)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor()
+			{
+				DestructorCalled(x);
+			}
+		}
+		fn Foo()
+		{
+			DestructorCalled( 1000 );
+			with( x : S(777).x ) // Copy part of temporary to variable. Should destroy temporary here.
+			{
+				DestructorCalled( 2000 );
+			}
+			DestructorCalled( 3000 );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 1000, 777, 2000, 3000 } ) );
+}
+
+U_TEST(DestructorTest_For_WithOperator4)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x )( x= in_x ) {}
+			fn destructor(){ DestructorCalled(x); }
+		}
+		struct R
+		{
+			S& s;
+			fn constructor( this'x', S &'y in_s ) ' x <- y ' ( s= in_s ) {}
+			fn destructor(){ DestructorCalled(5555); }
+		}
+		fn Foo()
+		{
+			var i32 mut res= 0;
+			DestructorCalled( 901 );
+			with( r : R(S(66123)) ) // Create temporary of type 'S', then create tomporary of type 'R', which has reference to 's', then temporary of type 'R' to 'r'.
+			{
+				DestructorCalled( 902 );
+			} // 'r', than 's' should be destroyed here
+			DestructorCalled( 903 );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 901, 902, 5555, 66123, 903 } ) );
+}
+
+U_TEST(DestructorTest_For_WithOperator5)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor()
+			{
+				DestructorCalled(x);
+			}
+		}
+		fn Foo()
+		{
+			DestructorCalled( 31 );
+			with( x : S(777).x ) // Should destroy temporary of type 'S' here.
+			{
+				DestructorCalled( 32 );
+			}
+			DestructorCalled( 33 );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 31, 777, 32, 33 } ) );
+}
+
+U_TEST(DestructorTest_For_WithOperator6)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor()
+			{
+				DestructorCalled(x);
+			}
+		}
+		fn Foo()
+		{
+			var S s1(1);
+			with( x : 42 )
+			{
+				var S s2(2);
+				return; // Should destroy here 's2', than 's1'
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 2, 1 } ) );
+}
+
+U_TEST(DestructorTest_For_WithOperator7)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor()
+			{
+				DestructorCalled(x);
+			}
+		}
+		fn Foo()
+		{
+			var S s1(1);
+			while(true)
+			{
+				var S s2(2);
+				with( x : 42 )
+				{
+					var S s3(3);
+					break; // should destroy 's3', 's2' here.
+				}
+			}
+			DestructorCalled(555);
+		} // should destroy 's1' here
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 3, 2, 555, 1 } ) );
+}
+
+U_TEST(DestructorTest_For_WithOperator8)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor()
+			{
+				DestructorCalled(x);
+			}
+		}
+		fn Foo()
+		{
+			with( s : S(55) )
+			{
+				DestructorCalled(1);
+				return; // should destroy 's' here.
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 1, 55 } ) );
+}
+
+U_TEST(DestructorTest_For_WithOperator9)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor()
+			{
+				DestructorCalled(x);
+			}
+		}
+		fn Foo()
+		{
+			with( &s : S(321) )
+			{
+				DestructorCalled(44);
+				return; // should destroy temporary of type 'S' here.
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 44, 321 } ) );
+}
+
 } // namespace U

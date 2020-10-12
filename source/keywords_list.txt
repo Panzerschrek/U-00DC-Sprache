@@ -2,7 +2,6 @@ fn
 op
 var
 auto
-lock_temps
 return
 while
 break
@@ -78,6 +77,7 @@ import
 default
 delete
 for
+with
 do
 switch
 case

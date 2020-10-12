@@ -6,14 +6,14 @@ import "type_traits.u"
 ?macro <? variant_visit:block ( ?r:opt<? & ?> ?m:opt<? mut ?> ?var_name:ident : ?e:expr ) ?b:block ?>
 ->
 <?
+	with( & ?m<? mut ?> ??variant : ?e )
 	{
-		auto lock_temps& ?m<? mut ?> ??variant= ?e;
 		for( & ??element_type_typeinfo : typeinfo</ typeof(??variant)::elements_tuple />.elements_list )
 		{
 			auto ??ref= ??variant.get</ typeof(??element_type_typeinfo.type)::src_type />();
 			if( !??ref.empty() )
 			{
-				auto lock_temps ?r<? & ?> ?m<? mut ?> ?var_name= ??ref.get_ref();
+				with( ?r<? & ?> ?m<? mut ?> ?var_name : ??ref.get_ref() )
 				?b
 			}
 		}

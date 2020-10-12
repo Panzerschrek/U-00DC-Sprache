@@ -266,7 +266,7 @@ private:
 		FunctionContext& function_context );
 
 	void CopyBytes(
-		llvm::Value* src, llvm::Value* dst,
+		llvm::Value* src, llvm::Value* dst, // TODO - swap dst and src.
 		const Type& type,
 		FunctionContext& function_context );
 
@@ -487,6 +487,7 @@ private:
 	BlockBuildInfo BuildBlockElement( const Synt::WhileOperator& while_operator, NamesScope& names, FunctionContext& function_context );
 	BlockBuildInfo BuildBlockElement( const Synt::BreakOperator& break_operator, NamesScope& names, FunctionContext& function_context );
 	BlockBuildInfo BuildBlockElement( const Synt::ContinueOperator& continue_operator, NamesScope& names, FunctionContext& function_context );
+	BlockBuildInfo BuildBlockElement( const Synt::WithOperator& with_operator, NamesScope& names, FunctionContext& function_context );
 	BlockBuildInfo BuildBlockElement( const Synt::IfOperator& if_operator, NamesScope& names, FunctionContext& function_context );
 	BlockBuildInfo BuildBlockElement( const Synt::StaticIfOperator& static_if_operator, NamesScope& names, FunctionContext& function_context );
 	BlockBuildInfo BuildBlockElement( const Synt::SingleExpressionOperator& single_expression_operator, NamesScope& names, FunctionContext& function_context );
