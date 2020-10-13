@@ -1,11 +1,14 @@
 #include <iostream>
-#include <unordered_set>
+#include <sstream>
 
 #include <Python.h>
 
-#include "../../compiler0/lex_synt_lib/assert.hpp" // TODO - remove such dependency?
+#include "../code_builder_lib/code_builder.hpp"
+#include "../lex_synt_lib/assert.hpp"
+#include "../lex_synt_lib/lexical_analyzer.hpp"
+#include "../lex_synt_lib/syntax_analyzer.hpp"
+#include "../lex_synt_lib/source_graph_loader.hpp"
 #include "../../tests/tests_common.hpp"
-#include "../tests_common/funcs_c.hpp"
 
 #include "../../compilers_common/push_disable_llvm_warnings.hpp"
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
@@ -14,7 +17,6 @@
 #include <llvm/Support/DynamicLibrary.h>
 #include <llvm/Support/ManagedStatic.h>
 #include <llvm/Support/raw_os_ostream.h>
-#include <llvm/Support/Signals.h>
 #include "../../compilers_common/pop_llvm_warnings.hpp"
 
 namespace U
@@ -23,26 +25,66 @@ namespace U
 namespace
 {
 
+class SingeFileVfs final : public IVfs
+{
+public:
+
+	SingeFileVfs( std::string file_path, const char* const text )
+		: file_path_(file_path), file_text_(text)
+	{}
+
+	virtual std::optional<LoadFileResult> LoadFileContent( const Path& file_path, const Path& full_parent_file_path ) override
+	{
+		U_UNUSED( full_parent_file_path );
+		if( file_path == file_path_ )
+			return LoadFileResult{ file_path_, file_text_ };
+		return std::nullopt;
+	}
+
+	virtual Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path ) override
+	{
+		U_UNUSED(full_parent_file_path);
+		return file_path;
+	}
+
+private:
+	const std::string file_path_;
+	const char* const file_text_;
+};
+
 llvm::ManagedStatic<llvm::LLVMContext> g_llvm_context;
+
+std::unique_ptr<CodeBuilder> CreateCodeBuilder()
+{
+	const bool build_debug_info= true;
+	return
+		std::make_unique<CodeBuilder>(
+			*g_llvm_context,
+			llvm::DataLayout( GetTestsDataLayout() ),
+			build_debug_info );
+}
 
 std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 {
-	const U1_StringView text_view{ text, std::strlen(text) };
+	const std::string file_path= "_";
+	const SourceGraphPtr source_graph=
+		SourceGraphLoader( std::make_shared<SingeFileVfs>( file_path, text ) ).LoadSource( file_path );
 
-	llvm::LLVMContext& llvm_context= *g_llvm_context;
+	if( source_graph != nullptr )
+		PrintLexSyntErrors( *source_graph );
 
-	llvm::DataLayout data_layout( GetTestsDataLayout() );
-
-	auto ptr=
-		U1_BuildProgram(
-			text_view,
-			llvm::wrap(&llvm_context),
-			llvm::wrap(&data_layout) );
-
-	if( ptr == nullptr )
+	if( source_graph == nullptr || !source_graph->errors.empty() )
 		return nullptr;
 
-	return std::unique_ptr<llvm::Module>( reinterpret_cast<llvm::Module*>(ptr) );
+	CodeBuilder::BuildResult build_result= CreateCodeBuilder()->BuildProgram( *source_graph );
+
+	for( const CodeBuilderError& error : build_result.errors )
+		std::cerr << error.file_pos.GetLine() << ":" << error.file_pos.GetColumn() << " " << error.text << "\n";
+
+	if( !build_result.errors.empty() )
+		return nullptr;
+
+	return std::move(build_result.module);
 }
 
 class HaltException final : public std::exception
@@ -267,69 +309,53 @@ PyObject* RunFunction( PyObject* const self, PyObject* const args )
 	return Py_None;
 }
 
-PyObject* BuildFilePos( const uint32_t line, const uint32_t column )
+
+PyObject* BuildFilePos( const FilePos& file_pos )
 {
-	PyObject* const dict= PyDict_New();
-	PyDict_SetItemString( dict, "file_index", PyLong_FromLongLong(0) );
-	PyDict_SetItemString( dict, "line", PyLong_FromLongLong(line) );
-	PyDict_SetItemString( dict, "column", PyLong_FromLongLong(column) );
-	return dict;
+	PyObject* const file_pos_dict= PyDict_New();
+	PyDict_SetItemString( file_pos_dict, "file_index", PyLong_FromLongLong( file_pos.GetFileIndex() ) );
+	PyDict_SetItemString( file_pos_dict, "line", PyLong_FromLongLong( file_pos.GetLine() ) );
+	PyDict_SetItemString( file_pos_dict, "column", PyLong_FromLongLong( file_pos.GetColumn() ) );
+	return file_pos_dict;
 }
 
-PyObject* BuildString( const U1_StringView& str )
+PyObject* BuildString( const std::string& str )
 {
-	return PyUnicode_DecodeUTF8( str.data, Py_ssize_t(str.size), nullptr );
+	return PyUnicode_DecodeUTF8( str.data(), Py_ssize_t(str.size()), nullptr );
 }
 
-UserHandle ErrorHandler(
-	const UserHandle data, // Should be python list
-	const uint32_t line,
-	const uint32_t column,
-	const uint32_t error_code,
-	const U1_StringView& error_text )
+PyObject* BuildErrorsList( const CodeBuilderErrorsContainer& errors )
 {
-	PyObject* const dict= PyDict_New();
+	PyObject* const list= PyList_New(0);
 
-	PyDict_SetItemString( dict, "file_pos", BuildFilePos( line, column ) );
+	for( const CodeBuilderError& error : errors )
+	{
+		PyObject* const dict= PyDict_New();
 
-	const char* error_code_str= nullptr;
-	size_t error_code_len= 0u;
-	U1_CodeBuilderCodeToString( error_code, error_code_str, error_code_len );
-	PyDict_SetItemString( dict, "code", PyUnicode_DecodeUTF8( error_code_str, Py_ssize_t(error_code_len), nullptr ) );
+		PyDict_SetItemString( dict, "file_pos", BuildFilePos( error.file_pos ) );
 
-	PyDict_SetItemString( dict, "text", BuildString( error_text ) );
+		const char* const error_code_str= CodeBuilderErrorCodeToString( error.code );
+		PyDict_SetItemString( dict, "code", PyUnicode_DecodeUTF8( error_code_str, Py_ssize_t(std::strlen(error_code_str)), nullptr ) );
 
-	PyList_Append( reinterpret_cast<PyObject*>(data), dict );
+		PyDict_SetItemString( dict, "text", BuildString( error.text ) );
 
-	return reinterpret_cast<UserHandle>(dict);
+		if( error.template_context != nullptr )
+		{
+			PyObject* const template_context_dict= PyDict_New();
+
+			PyDict_SetItemString( template_context_dict, "errors", BuildErrorsList( error.template_context->errors ) );
+			PyDict_SetItemString( template_context_dict, "file_pos", BuildFilePos( error.template_context->context_declaration_file_pos ) );
+			PyDict_SetItemString( template_context_dict, "template_name", BuildString( error.template_context->context_name ) );
+			PyDict_SetItemString( template_context_dict, "parameters_description", BuildString( error.template_context->parameters_description ) );
+
+			PyDict_SetItemString( dict, "template_context", template_context_dict );
+		}
+
+		PyList_Append( list, dict );
+	}
+
+	return list;
 }
-
-UserHandle TemplateErrorsContextHandler(
-	const UserHandle data, // should be python dictionary
-	const uint32_t line,
-	const uint32_t column,
-	const U1_StringView& context_name,
-	const U1_StringView& args_description )
-{
-	PyObject* const dict= PyDict_New();
-
-	PyDict_SetItemString( dict, "file_pos", BuildFilePos( line, column ) );
-	PyDict_SetItemString( dict, "template_name", BuildString( context_name ) );
-	PyDict_SetItemString( dict, "parameters_description", BuildString( args_description ) );
-
-	const auto errors_list= PyList_New(0);
-	PyDict_SetItemString( dict, "errors", errors_list );
-
-	PyDict_SetItemString( reinterpret_cast<PyObject*>(data), "template_context", dict );
-
-	return reinterpret_cast<UserHandle>(errors_list);
-}
-
-const ErrorsHandlingCallbacks g_error_handling_callbacks
-{
-	ErrorHandler,
-	TemplateErrorsContextHandler,
-};
 
 PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 {
@@ -340,29 +366,23 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 	if( !PyArg_ParseTuple( args, "s", &program_text ) )
 		return nullptr;
 
-	const U1_StringView text_view{ program_text, std::strlen(program_text) };
-	llvm::LLVMContext& llvm_context= *g_llvm_context;
-	llvm::DataLayout data_layout( GetTestsDataLayout() );
+	const std::string file_path= "_";
+	const SourceGraphPtr source_graph=
+		SourceGraphLoader( std::make_shared<SingeFileVfs>( file_path, program_text ) ).LoadSource( file_path );
 
-	PyObject* const errors_list= PyList_New(0);
+	if( source_graph != nullptr )
+		PrintLexSyntErrors( *source_graph );
 
-	const bool ok=
-		U1_BuildProgramWithErrors(
-			text_view,
-			llvm::wrap(&llvm_context),
-			llvm::wrap(&data_layout),
-			g_error_handling_callbacks,
-			reinterpret_cast<UserHandle>(errors_list) );
-
-	llvm::llvm_shutdown();
-
-	if( !ok )
+	if( source_graph == nullptr || !source_graph->errors.empty() )
 	{
 		PyErr_SetString( PyExc_RuntimeError, "source tree build failed" );
 		return nullptr;
 	}
 
-	return errors_list;
+	PyObject* const list= BuildErrorsList( CreateCodeBuilder()->BuildProgram( *source_graph ).errors );
+	llvm::llvm_shutdown();
+
+	return list;
 }
 
 PyObject* BuildProgramWithSyntaxErrors( PyObject* const self, PyObject* const args )
@@ -374,11 +394,23 @@ PyObject* BuildProgramWithSyntaxErrors( PyObject* const self, PyObject* const ar
 	if( !PyArg_ParseTuple( args, "s", &program_text ) )
 		return nullptr;
 
-	const U1_StringView text_view{ program_text, std::strlen(program_text) };
-	PyObject* const errors_list= PyList_New(0);
-	U1_BuildProgramWithSyntaxErrors( text_view, g_error_handling_callbacks, reinterpret_cast<UserHandle>(errors_list) );
+	const std::string file_path= "_";
 
-	return errors_list;
+	SourceGraphLoader source_graph_loader( std::make_shared<SingeFileVfs>( file_path, program_text ) );
+	const SourceGraphPtr source_graph= source_graph_loader.LoadSource( file_path );
+
+	std::vector<CodeBuilderError> errors_converted;
+	errors_converted.reserve( source_graph->errors.size() );
+	for( const LexSyntError& error_message : source_graph->errors )
+	{
+		CodeBuilderError error_converted;
+		error_converted.code= CodeBuilderErrorCode::BuildFailed;
+		error_converted.file_pos= error_message.file_pos;
+		error_converted.text= error_message.text;
+		errors_converted.push_back( std::move(error_converted) );
+	}
+
+	return BuildErrorsList( errors_converted );
 }
 
 PyObject* FilterTest( PyObject* const self, PyObject* const args )
@@ -394,37 +426,11 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 	if( !PyArg_Parse( func_name_arg, "s", &func_name ) )
 		return nullptr; // Parse will raise
 
-	const std::string func_name_str= func_name;
-
-	static const std::unordered_set<std::string> c_test_to_disable
+	static const std::unordered_set<std::string> c_tests_to_ignore
 	{
-		"AutoForFunctionTemplate_Test0",
-		"AutoForFunctionTemplate_Test1",
-		"AutoForReturnType_Test0",
-		"AutoForReturnType_Test1",
-		"AutoForReturnType_Test2",
-		"AutoForReturnType_Test3",
-		"AutoForReturnType_Test4",
-		"AutoForReturnType_Test5",
-		"AutoForReturnType_Test6",
-		"AutoFunctionInsideClassesNotAllowed_Test0",
-		"AutoFunctionInsideClassesNotAllowed_Test1",
-		"ExpectedBodyForAutoFunction_Test0",
-		"ExpectedBodyForAutoFunction_Test1",
-		"ExpectedReferenceValue_ForAutoReturnValue_Test0",
-		"GlobalsLoop_ForFunctionWithAutoReturnType_Test0",
-		"GlobalsLoop_ForFunctionWithAutoReturnType_Test1",
-		"TypesMismtach_ForAutoReturnValue_Test0",
-		"TypesMismtach_ForAutoReturnValue_Test1",
-		"TemplateParametersDeductionFailed_Test11",
-		"VirtualForFunctionTemplate_Test0",
-		"PreResolve_Test2",
-		"CastRefUnsafe_Test9_CompletenessStillRequiredForUnsafeCast",
-		"CastRef_Test7_CompleteteTypeRequiredForSource",
-		"VirtualForPrivateFunction_Test0",
 	};
 
-	if( c_test_to_disable.count( func_name_str ) > 0 )
+	if( c_tests_to_ignore.count(func_name) > 0 )
 	{
 		Py_INCREF(Py_False);
 		return Py_False;
@@ -469,6 +475,5 @@ struct PyModuleDef g_module=
 
 extern "C" U_EXTERN_VISIBILITY PyObject* PyInit_sprache_compiler_tests_py_lib()
 {
-	llvm::sys::PrintStackTraceOnErrorSignal("");
 	return PyModule_Create( &U::g_module );
 }

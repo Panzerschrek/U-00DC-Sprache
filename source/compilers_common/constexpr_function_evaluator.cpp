@@ -4,7 +4,7 @@
 #include <llvm/IR/Instructions.h>
 #include "pop_llvm_warnings.hpp"
 
-#include "../lex_synt_lib/assert.hpp"
+#include "../compiler0/lex_synt_lib/assert.hpp" // TODO - remove such dependency?
 #include "constexpr_function_evaluator.hpp"
 
 namespace U

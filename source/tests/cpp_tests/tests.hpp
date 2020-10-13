@@ -6,7 +6,7 @@
 #include <llvm/ExecutionEngine/Interpreter.h>
 #include "../../compilers_common/pop_llvm_warnings.hpp"
 
-#include "../../code_builder_lib/code_builder_errors.hpp"
+#include "../../compiler0/code_builder_lib/code_builder_errors.hpp"
 
 #include "funcs_registrator.hpp"
 

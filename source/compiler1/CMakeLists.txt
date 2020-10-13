@@ -115,7 +115,7 @@ if( U_BUILD_TESTS )
 
 	set( TESTS_SOURCES
 		tests/cpp_tests_launcher.cpp
-		../lex_synt_lib/file_pos.cpp # Hack! FilePos methods like "GetLine" and "constructor" used in tests.
+		../compiler0/lex_synt_lib/file_pos.cpp # Hack! FilePos methods like "GetLine" and "constructor" used in tests.
 		)
 
 	add_executable(
