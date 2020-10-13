@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include "../lex_synt_lib/source_graph_loader.hpp"
+#include "../compiler0/lex_synt_lib/source_graph_loader.hpp"
 
 namespace U
 {

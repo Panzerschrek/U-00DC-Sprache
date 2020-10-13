@@ -6,12 +6,24 @@ namespace U
 
 void PrintLexSyntErrors( const SourceGraph& source_graph, const ErrorsFormat format, std::ostream& errors_stream )
 {
+	std::vector<std::string> source_files;
+	source_files.reserve( source_graph.nodes_storage.size() );
+	for( const auto& node : source_graph.nodes_storage )
+	{
+		source_files.push_back( node.file_path );
+	}
+
+	PrintLexSyntErrors( source_files, source_graph.errors, format, errors_stream );
+}
+
+void PrintLexSyntErrors( const std::vector<std::string>& source_files, const LexSyntErrors& errors, const ErrorsFormat format, std::ostream& errors_stream )
+{
 	const std::string empty_file_path;
-	for( const LexSyntError& error : source_graph.errors )
+	for( const LexSyntError& error : errors )
 	{
 		const std::string* file_path= &empty_file_path;
-		if( error.file_pos.GetFileIndex() < source_graph.nodes_storage.size() )
-			file_path= &source_graph.nodes_storage[error.file_pos.GetFileIndex()].file_path;
+		if( error.file_pos.GetFileIndex() < source_files.size() )
+			file_path= &source_files[error.file_pos.GetFileIndex()];
 
 		switch(format)
 		{

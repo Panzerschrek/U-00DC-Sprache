@@ -1,10 +1,10 @@
-#include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
+#include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/JSON.h>
 #include <llvm/Support/MemoryBuffer.h>
-#include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
+#include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
-#include "../../sprache_version/sprache_version.hpp"
+#include "../sprache_version/sprache_version.hpp"
 #include "dep_file.hpp"
 
 namespace U

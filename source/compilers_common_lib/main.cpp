@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
+#include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/Analysis/TargetTransformInfo.h>
 #include <llvm/AsmParser/Parser.h>
 #include <llvm/Bitcode/BitcodeReader.h>
@@ -18,12 +18,11 @@
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Transforms/IPO.h>
 #include <llvm/Transforms/IPO/PassManagerBuilder.h>
-#include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
+#include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
-#include "../lex_synt_lib/assert.hpp"
-#include "../lex_synt_lib/source_graph_loader.hpp"
-#include "../code_builder_lib/code_builder.hpp"
-#include "../../sprache_version/sprache_version.hpp"
+#include "../compiler0/lex_synt_lib/assert.hpp"
+#include "../sprache_version/sprache_version.hpp"
+#include  "code_builder_launcher.hpp"
 #include "dep_file.hpp"
 #include "vfs.hpp"
 
@@ -67,7 +66,7 @@ std::string GetNativeTargetFeaturesStr()
 	return features.getString();
 }
 
-void PrintErrors( const SourceGraph& source_graph, const CodeBuilderErrorsContainer& errors, const ErrorsFormat format )
+void PrintErrors( const std::vector<IVfs::Path>& source_files, const CodeBuilderErrorsContainer& errors, const ErrorsFormat format )
 {
 	for( const CodeBuilderError& error : errors )
 	{
@@ -77,31 +76,31 @@ void PrintErrors( const SourceGraph& source_graph, const CodeBuilderErrorsContai
 			{
 				U_ASSERT( error.template_context != nullptr );
 
-				PrintErrors( source_graph, error.template_context->errors, format );
+				PrintErrors( source_files, error.template_context->errors, format );
 
-				std::cerr << source_graph.nodes_storage[ error.template_context->context_declaration_file_pos.GetFileIndex() ].file_path
+				std::cerr << source_files[ error.template_context->context_declaration_file_pos.GetFileIndex() ]
 					<< "(" << error.template_context->context_declaration_file_pos.GetLine() << "): note: "
 					<< "In instantiation of \"" << error.template_context->context_name
 					<< "\" " << error.template_context->parameters_description
 					<< "\n";
 
-				std::cerr << source_graph.nodes_storage[ error.file_pos.GetFileIndex()  ].file_path
+				std::cerr << source_files[ error.file_pos.GetFileIndex() ]
 					<< "(" << error.file_pos.GetLine() << "): note: " << error.text << "\n";
 			}
 			else if( error.code == CodeBuilderErrorCode::MacroExpansionContext )
 			{
-				PrintErrors( source_graph, error.template_context->errors, format );
+				PrintErrors( source_files, error.template_context->errors, format );
 
-				std::cerr << source_graph.nodes_storage[ error.template_context->context_declaration_file_pos.GetFileIndex() ].file_path
+				std::cerr << source_files[ error.template_context->context_declaration_file_pos.GetFileIndex() ]
 					<< "(" << error.template_context->context_declaration_file_pos.GetLine() << "): note: "
 					<< "In expansion of macro \"" << error.template_context->context_name << "\"\n";
 
-				std::cerr << source_graph.nodes_storage[error.file_pos.GetFileIndex() ].file_path
+				std::cerr << source_files[error.file_pos.GetFileIndex() ]
 					<< "(" << error.file_pos.GetLine() << "): note: required from here\n";
 			}
 			else
 			{
-				std::cerr << source_graph.nodes_storage[ error.file_pos.GetFileIndex() ].file_path
+				std::cerr << source_files[ error.file_pos.GetFileIndex() ]
 					<< "(" << error.file_pos.GetLine() << "): error: " << error.text << "\n";
 			}
 		}
@@ -111,42 +110,42 @@ void PrintErrors( const SourceGraph& source_graph, const CodeBuilderErrorsContai
 			{
 				U_ASSERT( error.template_context != nullptr );
 
-				std::cerr << source_graph.nodes_storage[ error.template_context->context_declaration_file_pos.GetFileIndex() ].file_path << ": "
+				std::cerr << source_files[ error.template_context->context_declaration_file_pos.GetFileIndex() ] << ": "
 					<< "In instantiation of \"" << error.template_context->context_name
 					<< "\" " << error.template_context->parameters_description
 					<< "\n";
 
-				std::cerr << source_graph.nodes_storage[error.file_pos.GetFileIndex() ].file_path
+				std::cerr << source_files[error.file_pos.GetFileIndex() ]
 					<< ":" << error.file_pos.GetLine() << ":" << error.file_pos.GetColumn() << ": required from here: " << "\n";
 
-				PrintErrors( source_graph, error.template_context->errors, format );
+				PrintErrors( source_files, error.template_context->errors, format );
 			}
 			else if( error.code == CodeBuilderErrorCode::MacroExpansionContext )
 			{
 				U_ASSERT( error.template_context != nullptr );
 
-				std::cerr << source_graph.nodes_storage[ error.template_context->context_declaration_file_pos.GetFileIndex() ].file_path << ": "
+				std::cerr << source_files[ error.template_context->context_declaration_file_pos.GetFileIndex() ] << ": "
 					<< "In expansion of macro \"" << error.template_context->context_name << "\"\n";
 
-				std::cerr << source_graph.nodes_storage[error.file_pos.GetFileIndex() ].file_path
+				std::cerr << source_files[ error.file_pos.GetFileIndex() ]
 					<< ":" << error.file_pos.GetLine() << ":" << error.file_pos.GetColumn() << ": required from here: " << "\n";
 
-				PrintErrors( source_graph, error.template_context->errors, format );
+				PrintErrors( source_files, error.template_context->errors, format );
 			}
 			else
 			{
-				std::cerr << source_graph.nodes_storage[error.file_pos.GetFileIndex() ].file_path
+				std::cerr << source_files[ error.file_pos.GetFileIndex() ]
 					<< ":" << error.file_pos.GetLine() << ":" << error.file_pos.GetColumn() << ": error: " << error.text << "\n";
 			}
 		}
 	}
 }
 
-void PrintErrorsForTests( const SourceGraph& source_graph, const CodeBuilder::BuildResult& build_result )
+void PrintErrorsForTests( const std::vector<IVfs::Path>& source_files, const CodeBuilderErrorsContainer& errors )
 {
 	// For tests we print errors as "file.u 88 NameNotFound"
-	for( const CodeBuilderError& error : build_result.errors )
-		std::cout << source_graph.nodes_storage[error.file_pos.GetFileIndex() ].file_path
+	for( const CodeBuilderError& error : errors )
+		std::cout << source_files[error.file_pos.GetFileIndex() ]
 			<< " " << error.file_pos.GetLine() << " " << CodeBuilderErrorCodeToString( error.code ) << "\n";
 }
 
@@ -481,47 +480,35 @@ int Main( int argc, const char* argv[] )
 		if( vfs == nullptr )
 			return 1u;
 
-		SourceGraphLoader source_graph_loader( vfs );
 		bool have_some_errors= false;
 		for( const std::string& input_file : Options::input_files )
 		{
-			const SourceGraphPtr source_graph= source_graph_loader.LoadSource( input_file );
-			U_ASSERT( source_graph != nullptr );
+			CodeBuilderLaunchResult code_builder_launch_result=
+				launchCodeBuilder( input_file, vfs, llvm_context, data_layout, Options::generate_debug_info );
 
-			PrintLexSyntErrors( *source_graph, errors_format );
+			deps_list.insert( deps_list.end(), code_builder_launch_result.dependent_files.begin(), code_builder_launch_result.dependent_files.end() );
 
-			for( const SourceGraph::Node& node : source_graph->nodes_storage )
-				deps_list.push_back( node.file_path );
-
-			if( !source_graph->errors.empty() )
-			{
-				have_some_errors= true;
-				continue;
-			}
-
-			CodeBuilder::BuildResult build_result=
-				CodeBuilder(
-					llvm_context,
-					data_layout,
-					Options::generate_debug_info ).BuildProgram( *source_graph );
+			PrintLexSyntErrors( code_builder_launch_result.dependent_files, code_builder_launch_result.lex_synt_errors, errors_format );
 
 			if( Options::tests_output )
-				PrintErrorsForTests( *source_graph, build_result );
+				PrintErrorsForTests( code_builder_launch_result.dependent_files, code_builder_launch_result.code_builder_errors );
 			else
-				PrintErrors( *source_graph, build_result.errors, errors_format );
+				PrintErrors( code_builder_launch_result.dependent_files, code_builder_launch_result.code_builder_errors, errors_format );
 
-			if( !build_result.errors.empty() )
+			if( !code_builder_launch_result.lex_synt_errors.empty() ||
+				!code_builder_launch_result.code_builder_errors.empty() ||
+				code_builder_launch_result.llvm_module == nullptr )
 			{
 				have_some_errors= true;
 				continue;
 			}
 
 			if( result_module == nullptr )
-				result_module= std::move( build_result.module );
+				result_module= std::move( code_builder_launch_result.llvm_module );
 			else
 			{
 				const bool not_ok=
-					llvm::Linker::linkModules( *result_module, std::move(build_result.module) );
+					llvm::Linker::linkModules( *result_module, std::move(code_builder_launch_result.llvm_module) );
 				if( not_ok )
 				{
 					std::cout << "Error, linking file \"" << input_file << "\"" << std::endl;
