@@ -10,14 +10,14 @@
 #include "../lex_synt_lib/source_graph_loader.hpp"
 #include "../../tests/tests_common.hpp"
 
-#include "../../compilers_common/push_disable_llvm_warnings.hpp"
+#include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
 #include <llvm/ExecutionEngine/Interpreter.h>
 #include <llvm/Support/DynamicLibrary.h>
 #include <llvm/Support/ManagedStatic.h>
 #include <llvm/Support/raw_os_ostream.h>
-#include "../../compilers_common/pop_llvm_warnings.hpp"
+#include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 namespace U
 {

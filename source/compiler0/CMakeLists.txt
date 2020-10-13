@@ -31,7 +31,7 @@ target_include_directories( LexSyntLib PUBLIC ${CMAKE_CURRENT_BINARY_DIR} ${CMAK
 
 file( GLOB COMPILER_LIB_SOURCES "code_builder_lib/*" )
 add_library( CodeBuilderLib ${COMPILER_LIB_SOURCES} )
-target_link_libraries( CodeBuilderLib LexSyntLib SpracheVersion CompilersCommonLib ${LLVM_LIBS_FOR_CODE_BUILDER_LIB} )
+target_link_libraries( CodeBuilderLib LexSyntLib SpracheVersion CodeBuilderLibCommon )
 
 #
 # Compiler

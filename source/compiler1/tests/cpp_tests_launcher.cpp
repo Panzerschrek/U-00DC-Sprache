@@ -1,11 +1,11 @@
 #include <iostream>
 #include <unordered_set>
 
-#include "../../compilers_common/push_disable_llvm_warnings.hpp"
+#include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/Support/InitLLVM.h>
 #include <llvm/Support/ManagedStatic.h>
 #include <llvm/Support/raw_os_ostream.h>
-#include "../../compilers_common/pop_llvm_warnings.hpp"
+#include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../../tests/tests_common.hpp"
 #include "../../tests/cpp_tests/tests.hpp"

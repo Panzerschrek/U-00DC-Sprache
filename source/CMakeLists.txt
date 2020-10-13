@@ -168,12 +168,12 @@ file( READ keywords_list.txt KEYWORDS_LIST_CONTENT )
 set( KEYWORDS_LIST_REGEXP "[A-Za-z][A-Za-z0-9_]*" )
 
 #
-# CompilersCommonLib
+# CodeBuilderLibCommon
 #
 
-file( GLOB COMPILERS_COMMON_SOURCES "compilers_common/*" )
-add_library( CompilersCommonLib ${COMPILERS_COMMON_SOURCES} )
-target_link_libraries( CompilersCommonLib )
+file( GLOB CODE_BUILDER_COMMON_SOURCES "code_builder_lib_common/*" )
+add_library( CodeBuilderLibCommon ${CODE_BUILDER_COMMON_SOURCES} )
+target_link_libraries( CodeBuilderLibCommon ${LLVM_LIBS_FOR_CODE_BUILDER_LIB} )
 
 #
 # TestsLib

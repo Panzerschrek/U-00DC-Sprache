@@ -1,10 +1,10 @@
-#include "../../compilers_common/push_disable_llvm_warnings.hpp"
+#include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Constant.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/Support/Host.h>
 #include <llvm/Support/TargetRegistry.h>
 #include <llvm/Support/TargetSelect.h>
-#include "../../compilers_common/pop_llvm_warnings.hpp"
+#include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/assert.hpp"
 #include "keywords.hpp"

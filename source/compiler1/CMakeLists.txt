@@ -105,7 +105,7 @@ add_library(
 		${TESTS_COMMON_HEADERS}
 		${TESTS_COMMON_OBJECTS}
 	)
-target_link_libraries( CodeBuilderLib${CURRENT_COMPLIER_GENERATION} CompilersCommonLib ${LLVM_LIBS_FOR_CODE_BUILDER_LIB} )
+target_link_libraries( CodeBuilderLib${CURRENT_COMPLIER_GENERATION} CodeBuilderLibCommon )
 
 #
 # Tests

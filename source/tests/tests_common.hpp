@@ -1,7 +1,7 @@
 #pragma once
-#include "../compilers_common/push_disable_llvm_warnings.hpp"
+#include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/Support/Host.h>
-#include "../compilers_common/pop_llvm_warnings.hpp"
+#include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 namespace U
 {

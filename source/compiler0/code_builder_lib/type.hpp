@@ -2,11 +2,11 @@
 #include <set>
 #include <variant>
 
-#include "../../compilers_common/push_disable_llvm_warnings.hpp"
+#include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/IR/DerivedTypes.h>
-#include "../../compilers_common/pop_llvm_warnings.hpp"
+#include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
-#include "../../compilers_common/small_types.hpp"
+#include "../../code_builder_lib_common/small_types.hpp"
 #include "lang_types.hpp"
 
 

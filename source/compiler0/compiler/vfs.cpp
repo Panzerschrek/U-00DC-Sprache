@@ -1,10 +1,10 @@
 #include <iostream>
 
-#include "../../compilers_common/push_disable_llvm_warnings.hpp"
+#include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/Path.h>
-#include "../../compilers_common/pop_llvm_warnings.hpp"
+#include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "vfs.hpp"
 
