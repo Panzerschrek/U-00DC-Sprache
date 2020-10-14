@@ -64,7 +64,7 @@ bool U1_BuildMultisourceProgramWithErrors(
 
 struct IVfsInterface
 {
-	using FillStringCallback= void(*)( UserHandle user_data, U1_StringView& result_path_normalized );
+	using FillStringCallback= void(*)( UserHandle user_data, const U1_StringView& result_path_normalized );
 
 	UserHandle this_;
 	void (*normalize_path_function)( UserHandle this_, const U1_StringView& file_path, const U1_StringView& parent_file_path_normalized, FillStringCallback result_callback, UserHandle user_data );
