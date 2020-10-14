@@ -62,6 +62,21 @@ bool U1_BuildMultisourceProgramWithErrors(
 	const ErrorsHandlingCallbacks& errors_handling_callbacks,
 	UserHandle data );
 
+struct IVfsInterface
+{
+	using FillStringCallback= void(*)( UserHandle user_data, U1_StringView& result_path_normalized );
+
+	UserHandle this_;
+	void (*normalize_path_function)( UserHandle this_, const U1_StringView& file_path, const U1_StringView& parent_file_path_normalized, FillStringCallback result_callback, UserHandle user_data );
+	bool (*load_file_content_function)( UserHandle this_, const U1_StringView& file_path, const U1_StringView& parent_file_path_normalized, FillStringCallback result_callback, UserHandle user_data );
+};
+
+extern "C" LLVMModuleRef U1_BuildProgrammUsingVFS(
+	const IVfsInterface& vfs_interface,
+	const U1_StringView& root_file_path,
+	LLVMContextRef llvm_context,
+	LLVMTargetDataRef data_layout );
+
 // Returns static string for error code.
 void U1_CodeBuilderCodeToString(
 	uint32_t error_code,

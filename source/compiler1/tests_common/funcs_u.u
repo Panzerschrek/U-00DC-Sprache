@@ -140,6 +140,41 @@ fn nomangle U1_BuildProgramWithSyntaxErrors(
 	}
 }
 
+fn nomangle U1_BuildProgrammUsingVFS(
+	IVfsInterface& vfs_interface,
+	U1_StringView& root_file_path,
+	LLVMContextRef llvm_context,
+	LLVMTargetDataRef data_layout ) : LLVMModuleRef
+{
+	var U1::ExternalVfsWrapper mut vfs( vfs_interface );
+
+	unsafe
+	{
+		auto path= U1::StringToArrayView( root_file_path.data, root_file_path.size );
+
+		safe
+		{
+			auto source_graph= U1::LoadSourceGraph( vfs, path );
+
+			if( source_graph.have_errors || source_graph.nodes.empty() )
+			{
+				return LLVMModuleRef::Null;
+			}
+
+			var U1::CodeBuilder mut code_builder( llvm_context, data_layout );
+			auto code_builder_res= code_builder.BuildProgram( source_graph );
+
+			if( !code_builder_res.errors.empty() )
+			{
+				unsafe{  LLVMDisposeModule( code_builder_res.llvm_module );  }
+				return LLVMModuleRef::Null;
+			}
+
+			return code_builder_res.llvm_module;
+		}
+	}
+}
+
 fn nomangle U1_CodeBuilderCodeToString(
 	u32 error_code,
 	CharPtr &mut out_text,
@@ -308,11 +343,14 @@ public:
 		return file_path;
 	}
 
-	fn virtual override LoadFile( mut this, ust::string8& path ) : ust::optional</ust::string8/>
+	fn virtual override LoadFile(
+		mut this,
+		ust::string8& file_path,
+		ust::string8& parent_file_path_normalized ) : ust::optional</ust::string8/>
 	{
 		foreach( &entry : source_entries_ )
 		{
-			if( path == entry.file_path )
+			if( file_path == entry.file_path )
 			{
 				return entry.file_content;
 			}
@@ -322,6 +360,78 @@ public:
 
 private:
 	SourceEntries source_entries_;
+}
+
+class ExternalVfsWrapper final : IVfs
+{
+public:
+	fn constructor( IVfsInterface mut vfs_interface )
+		( vfs_interface_= move(vfs_interface) )
+	{}
+
+public:
+	fn virtual override NormalizeFilePath(
+		mut this,
+		ust::string8& file_path,
+		ust::string8& parent_file_path_normalized ) : ust::string8
+	{
+		unsafe
+		{
+			var ust::string8 mut result;
+
+			var U1_StringView file_path_view{ .data= file_path.front_unsafe(), .size= file_path.size() };
+			var U1_StringView parent_file_path_normalized_view{ .data= parent_file_path_normalized.front_unsafe(), .size= parent_file_path_normalized.size() };
+
+			var IVfsInterface::FillStringCallback callback= FillStringCallback;
+			vfs_interface_.normalize_path_function(
+				vfs_interface_.this_,
+				file_path_view,
+				parent_file_path_normalized_view,
+				callback,
+				ust::ref_to_int(result) );
+			return move(result);
+		}
+	}
+
+	fn virtual override LoadFile(
+		mut this,
+		ust::string8& file_path,
+		ust::string8& parent_file_path_normalized ) : ust::optional</ust::string8/>
+	{
+		unsafe
+		{
+			var ust::string8 mut result;
+
+			var U1_StringView file_path_view{ .data= file_path.front_unsafe(), .size= file_path.size() };
+			var U1_StringView parent_file_path_normalized_view{ .data= parent_file_path_normalized.front_unsafe(), .size= parent_file_path_normalized.size() };
+
+			var IVfsInterface::FillStringCallback callback= FillStringCallback;
+			var bool ok= vfs_interface_.load_file_content_function(
+				vfs_interface_.this_,
+				file_path_view,
+				parent_file_path_normalized_view,
+				callback,
+				ust::ref_to_int(result) );
+			if( ok )
+			{
+				return move(result);
+			}
+		}
+		return ust::optional</ust::string8/>();
+	}
+
+private:
+	fn FillStringCallback( UserHandle user_data, U1_StringView& result_path_normalized )
+	{
+		unsafe
+		{
+			auto &mut str= cast_mut(cast_ref_unsafe</ust::string8/>(ust::int_to_ref(user_data)));
+			str= U1::StringToArrayView( result_path_normalized.data, result_path_normalized.size );
+		}
+	}
+
+private:
+	IVfsInterface vfs_interface_;
 }
 
 } // namespace U1
