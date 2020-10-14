@@ -107,10 +107,20 @@ add_library(
 	)
 target_link_libraries( CodeBuilderLib${CURRENT_COMPLIER_GENERATION} CodeBuilderLibCommon )
 
+
+#
+# Compiler
+#
+if( U_BUILD_COMPILER )
+	file( GLOB COMPILER_SOURCES "compiler/*" )
+
+	add_executable( Compiler1 ${COMPILER_SOURCES} )
+	target_link_libraries( Compiler1 CodeBuilderLib CodeBuilderLib${CURRENT_COMPLIER_GENERATION} CompilersCommonLib )
+endif()
+
 #
 # Tests
 #
-
 if( U_BUILD_TESTS )
 
 	set( TESTS_SOURCES
@@ -137,6 +147,9 @@ if( U_BUILD_TESTS )
 
 endif()
 
+#
+# PyTests
+#
 if( U_BUILD_PY_TESTS )
 	set( PY_TESTS_LIB_SOURCES
 		py_tests_lib/py_tests_lib.cpp
