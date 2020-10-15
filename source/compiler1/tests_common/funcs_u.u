@@ -144,7 +144,9 @@ fn nomangle U1_BuildProgrammUsingVFS(
 	IVfsInterface& vfs_interface,
 	U1_StringView& root_file_path,
 	LLVMContextRef llvm_context,
-	LLVMTargetDataRef data_layout ) : LLVMModuleRef
+	LLVMTargetDataRef data_layout,
+	ErrorsHandlingCallbacks& errors_handling_callbacks,
+	UserHandle error_processing_data ) : LLVMModuleRef
 {
 	var U1::ExternalVfsWrapper mut vfs( vfs_interface );
 
@@ -156,6 +158,7 @@ fn nomangle U1_BuildProgrammUsingVFS(
 		{
 			auto source_graph= U1::LoadSourceGraph( vfs, path );
 
+			// TODO - process syntax errors.
 			if( source_graph.have_errors || source_graph.nodes.empty() )
 			{
 				return LLVMModuleRef::Null;
@@ -163,6 +166,8 @@ fn nomangle U1_BuildProgrammUsingVFS(
 
 			var U1::CodeBuilder mut code_builder( llvm_context, data_layout );
 			auto code_builder_res= code_builder.BuildProgram( source_graph );
+
+			U1_ProcessCodeBuilderErrors( errors_handling_callbacks, error_processing_data, code_builder_res.errors );
 
 			if( !code_builder_res.errors.empty() )
 			{

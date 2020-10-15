@@ -75,7 +75,9 @@ extern "C" LLVMModuleRef U1_BuildProgrammUsingVFS(
 	const IVfsInterface& vfs_interface,
 	const U1_StringView& root_file_path,
 	LLVMContextRef llvm_context,
-	LLVMTargetDataRef data_layout );
+	LLVMTargetDataRef data_layout,
+	const ErrorsHandlingCallbacks& errors_handling_callbacks,
+	UserHandle error_processing_data );
 
 // Returns static string for error code.
 void U1_CodeBuilderCodeToString(

@@ -49,6 +49,45 @@ bool LoadFileContent(
 	return true;
 }
 
+UserHandle ErrorHanlder(
+	const UserHandle data, // should be "CodeBuilderErrorsContainer"
+	const uint32_t line,
+	const uint32_t column,
+	const uint32_t error_code,
+	const U1_StringView& error_text )
+{
+	CodeBuilderError error;
+	error.file_pos= FilePos( 0u, line, column );
+	error.code= CodeBuilderErrorCode(error_code);
+	error.text= std::string( error_text.data, error_text.data + error_text.size );
+
+	const auto errors_container= reinterpret_cast<CodeBuilderErrorsContainer*>(data);
+	errors_container->push_back( std::move(error) );
+	return reinterpret_cast<UserHandle>(&errors_container->back());
+}
+
+UserHandle TemplateErrorsContextHandler(
+	const UserHandle data, // should be "CodeBuilderError*"
+	const uint32_t line,
+	const uint32_t column,
+	const U1_StringView& context_name,
+	const U1_StringView& args_description )
+{
+	const auto out_error= reinterpret_cast<CodeBuilderError*>(data);
+	out_error->template_context= std::make_shared<TemplateErrorsContext>();
+	out_error->template_context->context_declaration_file_pos= FilePos( 0u, line, column );
+	out_error->template_context->context_name= std::string( context_name.data, context_name.data + context_name.size );
+	out_error->template_context->parameters_description= std::string( args_description.data, args_description.data + args_description.size );
+
+	return reinterpret_cast<UserHandle>( & out_error->template_context->errors );
+}
+
+const ErrorsHandlingCallbacks g_error_handling_callbacks
+{
+	ErrorHanlder,
+	TemplateErrorsContextHandler,
+};
+
 } // namespace
 
 CodeBuilderLaunchResult launchCodeBuilder(
@@ -67,9 +106,11 @@ CodeBuilderLaunchResult launchCodeBuilder(
 			IVfsInterface{ reinterpret_cast<UserHandle>(vfs.get()), GetFullFilePath, LoadFileContent },
 			U1_StringView{ input_file.data(), input_file.size() },
 			llvm::wrap(&llvm_context),
-			llvm::wrap(&data_layout ) );
+			llvm::wrap(&data_layout ),
+			g_error_handling_callbacks,
+			reinterpret_cast<UserHandle>(&result.code_builder_errors) );
 
-	// TODO - process errors
+	// TODO - process syntax errors.
 	if( llvm_module == nullptr )
 		return result;
 

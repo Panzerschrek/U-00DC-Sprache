@@ -69,7 +69,9 @@ fn nomangle U1_BuildProgrammUsingVFS(
 	IVfsInterface& vfs_interface,
 	U1_StringView& root_file_path,
 	LLVMContextRef llvm_context,
-	LLVMTargetDataRef data_layout ) : LLVMModuleRef;
+	LLVMTargetDataRef data_layout,
+	ErrorsHandlingCallbacks& errors_handling_callbacks,
+	UserHandle error_processing_data ) : LLVMModuleRef;
 
 enum CharPtr : size_type { Null }
 
