@@ -29,7 +29,7 @@ bool operator< ( const CodeBuilderError& l, const CodeBuilderError& r )
 	return l.template_context < r.template_context;
 }
 
-const char* CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
+std::string_view CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 {
 	switch(code)
 	{

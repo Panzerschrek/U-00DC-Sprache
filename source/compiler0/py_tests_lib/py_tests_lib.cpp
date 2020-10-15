@@ -334,8 +334,8 @@ PyObject* BuildErrorsList( const CodeBuilderErrorsContainer& errors )
 
 		PyDict_SetItemString( dict, "file_pos", BuildFilePos( error.file_pos ) );
 
-		const char* const error_code_str= CodeBuilderErrorCodeToString( error.code );
-		PyDict_SetItemString( dict, "code", PyUnicode_DecodeUTF8( error_code_str, Py_ssize_t(std::strlen(error_code_str)), nullptr ) );
+		const std::string_view error_code_str= CodeBuilderErrorCodeToString( error.code );
+		PyDict_SetItemString( dict, "code", PyUnicode_DecodeUTF8( error_code_str.data(), Py_ssize_t(error_code_str.size()), nullptr ) );
 
 		PyDict_SetItemString( dict, "text", BuildString( error.text ) );
 

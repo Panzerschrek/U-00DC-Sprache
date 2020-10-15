@@ -78,4 +78,12 @@ CodeBuilderLaunchResult launchCodeBuilder(
 	return result;
 }
 
+std::string_view CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
+{
+	const char* text= nullptr;
+	size_t length= 0;
+	U1_CodeBuilderCodeToString( uint32_t(code), text, length );
+	return std::string_view( text, length );
+}
+
 } // namespace U

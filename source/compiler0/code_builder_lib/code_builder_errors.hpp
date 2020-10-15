@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 #include "../lex_synt_lib/file_pos.hpp"
 
@@ -42,6 +43,6 @@ bool operator==( const CodeBuilderError& l, const CodeBuilderError& r );
 bool operator!=( const CodeBuilderError& l, const CodeBuilderError& r );
 bool operator< ( const CodeBuilderError& l, const CodeBuilderError& r ); // For sorting, using file_pos
 
-const char* CodeBuilderErrorCodeToString( CodeBuilderErrorCode code );
+std::string_view CodeBuilderErrorCodeToString( CodeBuilderErrorCode code );
 
 } // namespace U
