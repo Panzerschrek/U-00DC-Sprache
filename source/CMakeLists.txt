@@ -247,8 +247,8 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 		set( object_name ${CMAKE_CURRENT_BINARY_DIR}/${source_name_rel}.o )
 		add_custom_command(
 			OUTPUT ${object_name}
-			DEPENDS ${u_source_file} Compiler
-			COMMAND Compiler ${u_source_file} -o ${object_name} ${SPRACHE_COMPILER_PIC_OPTIONS} )
+			DEPENDS ${u_source_file} Compiler${CURRENT_COMPILER_GENERATION}
+			COMMAND Compiler${CURRENT_COMPILER_GENERATION} ${u_source_file} -o ${object_name} ${SPRACHE_COMPILER_PIC_OPTIONS} )
 		set( ${out_object} ${object_name} PARENT_SCOPE )
 	endfunction()
 
@@ -261,6 +261,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 		set( ${out_objects} ${out_objects_local} PARENT_SCOPE )
 	endfunction()
 
+	set( CURRENT_COMPILER_GENERATION "" )
 	add_subdirectory( tests/cpp_header_converter_test )
 	add_subdirectory( tests/cpp_linkage_test )
 	add_subdirectory( tests/debug_info_test )
@@ -270,6 +271,13 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	add_subdirectory( tests/inline_linkage_test )
 	add_subdirectory( tests/type_id_test )
 	add_subdirectory( tests/unicode_file_names_test )
+
+	set( CURRENT_COMPILER_GENERATION "1" )
+
+	if( U_BUILD_COMPILER1 )
+		add_subdirectory( tests/debug_info_test tests1/debug_info_test )
+		add_subdirectory( tests/include_dirs_test tests1/include_dirs_test )
+	endif()
 
 endif( REALLY_BUILD_LINKAGE_TESTS )
 

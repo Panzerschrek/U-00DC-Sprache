@@ -1,5 +1,5 @@
 set( IMPORT_TEST_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/root.u )
 CompileUSources( "${IMPORT_TEST_SOURCES}" IMPORT_TEST_OBJECTS )
 
-add_executable( ImportTest entry.cpp ${IMPORT_TEST_SOURCES} ${IMPORT_TEST_OBJECTS} )
-add_dependencies( ImportTest Compiler )
+add_executable( ImportTest${CURRENT_COMPILER_GENERATION} entry.cpp ${IMPORT_TEST_SOURCES} ${IMPORT_TEST_OBJECTS} )
+add_dependencies( ImportTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
