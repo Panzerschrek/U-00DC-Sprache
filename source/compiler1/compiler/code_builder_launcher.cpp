@@ -60,7 +60,7 @@ UserHandle ErrorHanlder(
 	CodeBuilderError error;
 	error.file_pos= FilePos( file_index, line, column );
 	error.code= CodeBuilderErrorCode(error_code);
-	error.text= std::string( error_text.data, error_text.data + error_text.size );
+	error.text= StringViewToString( error_text );
 
 	const auto errors_container= reinterpret_cast<CodeBuilderErrorsContainer*>(data);
 	errors_container->push_back( std::move(error) );
@@ -78,8 +78,8 @@ UserHandle TemplateErrorsContextHandler(
 	const auto out_error= reinterpret_cast<CodeBuilderError*>(data);
 	out_error->template_context= std::make_shared<TemplateErrorsContext>();
 	out_error->template_context->context_declaration_file_pos= FilePos( file_index, line, column );
-	out_error->template_context->context_name= std::string( context_name.data, context_name.data + context_name.size );
-	out_error->template_context->parameters_description= std::string( args_description.data, args_description.data + args_description.size );
+	out_error->template_context->context_name= StringViewToString( context_name );
+	out_error->template_context->parameters_description= StringViewToString( args_description );
 
 	return reinterpret_cast<UserHandle>( & out_error->template_context->errors );
 }
@@ -94,7 +94,7 @@ void SourceFilePathProcessingFunction(
 	const UserHandle data, // should be "std::vector<IVfs::Path>*"
 	const U1_StringView& file_path )
 {
-	reinterpret_cast< std::vector<IVfs::Path>* >(data)->emplace_back( file_path.data, file_path.data + file_path.size );
+	reinterpret_cast< std::vector<IVfs::Path>* >(data)->push_back( StringViewToString(file_path) );
 }
 
 void LexSyntErrorProcessingFunction(
@@ -106,7 +106,7 @@ void LexSyntErrorProcessingFunction(
 {
 	LexSyntError out_error;
 	out_error.file_pos= FilePos( file_index, line, column );
-	out_error.text= std::string( text.data, text.data + text.size );
+	out_error.text= StringViewToString(text);
 
 	reinterpret_cast< LexSyntErrors* >(data)->push_back( std::move(out_error) );
 }
