@@ -267,10 +267,10 @@ PyObject* RunFunction( PyObject* const self, PyObject* const args )
 	return Py_None;
 }
 
-PyObject* BuildFilePos( const uint32_t line, const uint32_t column )
+PyObject* BuildFilePos( const uint32_t file_index, const uint32_t line, const uint32_t column )
 {
 	PyObject* const dict= PyDict_New();
-	PyDict_SetItemString( dict, "file_index", PyLong_FromLongLong(0) );
+	PyDict_SetItemString( dict, "file_index", PyLong_FromLongLong(file_index) );
 	PyDict_SetItemString( dict, "line", PyLong_FromLongLong(line) );
 	PyDict_SetItemString( dict, "column", PyLong_FromLongLong(column) );
 	return dict;
@@ -283,6 +283,7 @@ PyObject* BuildString( const U1_StringView& str )
 
 UserHandle ErrorHandler(
 	const UserHandle data, // Should be python list
+	const uint32_t file_index,
 	const uint32_t line,
 	const uint32_t column,
 	const uint32_t error_code,
@@ -290,7 +291,7 @@ UserHandle ErrorHandler(
 {
 	PyObject* const dict= PyDict_New();
 
-	PyDict_SetItemString( dict, "file_pos", BuildFilePos( line, column ) );
+	PyDict_SetItemString( dict, "file_pos", BuildFilePos( file_index, line, column ) );
 
 	const char* error_code_str= nullptr;
 	size_t error_code_len= 0u;
@@ -306,6 +307,7 @@ UserHandle ErrorHandler(
 
 UserHandle TemplateErrorsContextHandler(
 	const UserHandle data, // should be python dictionary
+	const uint32_t file_index,
 	const uint32_t line,
 	const uint32_t column,
 	const U1_StringView& context_name,
@@ -313,7 +315,7 @@ UserHandle TemplateErrorsContextHandler(
 {
 	PyObject* const dict= PyDict_New();
 
-	PyDict_SetItemString( dict, "file_pos", BuildFilePos( line, column ) );
+	PyDict_SetItemString( dict, "file_pos", BuildFilePos( file_index, line, column ) );
 	PyDict_SetItemString( dict, "template_name", BuildString( context_name ) );
 	PyDict_SetItemString( dict, "parameters_description", BuildString( args_description ) );
 

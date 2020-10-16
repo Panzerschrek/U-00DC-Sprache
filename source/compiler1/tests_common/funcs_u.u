@@ -14,7 +14,7 @@ fn U1_ProcessCodeBuilderErrors(
 		{
 			var U1_StringView text_view{ .data= err.text.front_unsafe(), .size= err.text.size() };
 
-			var UserHandle error_data= errors_handling_callbacks.error_callback( data, err.file_pos.GetLine(), err.file_pos.GetColumn(), u32(err.code), text_view );
+			var UserHandle error_data= errors_handling_callbacks.error_callback( data, err.file_pos.GetFileIndex(), err.file_pos.GetLine(), err.file_pos.GetColumn(), u32(err.code), text_view );
 			if( !err.errors_context.empty() )
 			{
 				auto lock= err.errors_context.lock_imut();
@@ -25,6 +25,7 @@ fn U1_ProcessCodeBuilderErrors(
 
 				var UserHandle context_user_handle= errors_handling_callbacks.template_errors_context_callback(
 					error_data,
+					errors_context.context_declaration_file_pos.GetFileIndex(),
 					errors_context.context_declaration_file_pos.GetLine(),
 					errors_context.context_declaration_file_pos.GetColumn(),
 					context_name,
@@ -133,7 +134,7 @@ fn nomangle U1_BuildProgramWithSyntaxErrors(
 				var U1_StringView text_view{ .data= err.text.front(), .size= err.text.size() };
 				unsafe
 				{
-					errors_handling_callbacks.error_callback( data, err.file_pos.GetLine(), err.file_pos.GetColumn(), u32(U1::CodeBuilderErrorCode::BuildFailed), text_view );
+					errors_handling_callbacks.error_callback( data, err.file_pos.GetFileIndex(), err.file_pos.GetLine(), err.file_pos.GetColumn(), u32(U1::CodeBuilderErrorCode::BuildFailed), text_view );
 				}
 			}
 		}

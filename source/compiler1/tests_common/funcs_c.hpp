@@ -23,8 +23,8 @@ using UserHandle= size_t;
 
 struct ErrorsHandlingCallbacks
 {
-	UserHandle (*error_callback)( UserHandle data, uint32_t line, uint32_t column, uint32_t error_code, const U1_StringView& error_text );
-	UserHandle (*template_errors_context_callback)( UserHandle data, uint32_t line, uint32_t column, const U1_StringView& context_name, const U1_StringView& args_description );
+	UserHandle (*error_callback)( UserHandle data, uint32_t file_index, uint32_t line, uint32_t column, uint32_t error_code, const U1_StringView& error_text );
+	UserHandle (*template_errors_context_callback)( UserHandle data, uint32_t file_index, uint32_t line, uint32_t column, const U1_StringView& context_name, const U1_StringView& args_description );
 };
 
 // Return pointer to llvm module. Use "delete" to delete result.
