@@ -147,6 +147,8 @@ fn nomangle U1_BuildProgrammUsingVFS(
 	LLVMTargetDataRef data_layout,
 	SourceFilePathCallback result_source_file_path_callback,
 	UserHandle result_source_file_path_processing_data,
+	LexSyntErrorCallback lex_synt_error_callback,
+	UserHandle lex_synt_error_callback_data,
 	ErrorsHandlingCallbacks& errors_handling_callbacks,
 	UserHandle error_processing_data ) : LLVMModuleRef
 {
@@ -156,37 +158,55 @@ fn nomangle U1_BuildProgrammUsingVFS(
 	{
 		auto path= U1::StringToArrayView( root_file_path.data, root_file_path.size );
 
-		safe
-		{
-			auto source_graph= U1::LoadSourceGraph( vfs, path );
+		auto source_graph= U1::LoadSourceGraph( vfs, path, U1_GetNullStream() );
 
-			foreach( &node : source_graph.nodes )
+		foreach( &node : source_graph.nodes )
+		{
+			unsafe
+			{
+				var U1_StringView path_view{ .data= node.file_path_normalized.front_unsafe(), .size= node.file_path_normalized.size() };
+				result_source_file_path_callback( result_source_file_path_processing_data, path_view );
+			}
+		}
+
+		foreach( &node : source_graph.nodes )
+		{
+			foreach( &err : node.lexical_error_messages )
 			{
 				unsafe
 				{
-					var U1_StringView path_view{ .data= node.file_path_normalized.front_unsafe(), .size= node.file_path_normalized.size() };
-					result_source_file_path_callback( result_source_file_path_processing_data, path_view );
+					var U1_StringView text{ .data= err.front_unsafe(), .size= err.size() };
+					// TODO - set FilePos
+					lex_synt_error_callback( lex_synt_error_callback_data, 0u, 0u, 0u, text );
 				}
 			}
-			// TODO - process syntax errors.
-			if( source_graph.have_errors || source_graph.nodes.empty() )
+			foreach( &err : node.synt_result.error_messages )
 			{
-				return LLVMModuleRef::Null;
+				unsafe
+				{
+					var U1_StringView text{ .data= err.text.front_unsafe(), .size= err.text.size() };
+					lex_synt_error_callback( lex_synt_error_callback_data, err.file_pos.GetFileIndex(), err.file_pos.GetLine(), err.file_pos.GetColumn(), text );
+				}
 			}
-
-			var U1::CodeBuilder mut code_builder( llvm_context, data_layout );
-			auto code_builder_res= code_builder.BuildProgram( source_graph );
-
-			U1_ProcessCodeBuilderErrors( errors_handling_callbacks, error_processing_data, code_builder_res.errors );
-
-			if( !code_builder_res.errors.empty() )
-			{
-				unsafe{  LLVMDisposeModule( code_builder_res.llvm_module );  }
-				return LLVMModuleRef::Null;
-			}
-
-			return code_builder_res.llvm_module;
 		}
+
+		if( source_graph.have_errors || source_graph.nodes.empty() )
+		{
+			return LLVMModuleRef::Null;
+		}
+
+		var U1::CodeBuilder mut code_builder( llvm_context, data_layout );
+		auto code_builder_res= code_builder.BuildProgram( source_graph );
+
+		U1_ProcessCodeBuilderErrors( errors_handling_callbacks, error_processing_data, code_builder_res.errors );
+
+		if( !code_builder_res.errors.empty() )
+		{
+			LLVMDisposeModule( code_builder_res.llvm_module );
+			return LLVMModuleRef::Null;
+		}
+
+		return code_builder_res.llvm_module;
 	}
 }
 

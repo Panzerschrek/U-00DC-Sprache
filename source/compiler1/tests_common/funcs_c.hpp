@@ -73,6 +73,8 @@ struct IVfsInterface
 
 using SourceFilePathCallback= void(*)( UserHandle data, const U1_StringView& file_path_normalized );
 
+using LexSyntErrorCallback= void(*)( UserHandle data, uint32_t file_index, uint32_t line, uint32_t column, const U1_StringView& text );
+
 extern "C" LLVMModuleRef U1_BuildProgrammUsingVFS(
 	const IVfsInterface& vfs_interface,
 	const U1_StringView& root_file_path,
@@ -80,6 +82,8 @@ extern "C" LLVMModuleRef U1_BuildProgrammUsingVFS(
 	LLVMTargetDataRef data_layout,
 	SourceFilePathCallback result_source_file_path_callback,
 	UserHandle result_source_file_path_processing_data,
+	LexSyntErrorCallback lex_synt_error_callback,
+	UserHandle lex_synt_error_callback_data,
 	const ErrorsHandlingCallbacks& errors_handling_callbacks,
 	UserHandle error_processing_data );
 

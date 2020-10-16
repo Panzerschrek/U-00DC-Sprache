@@ -95,6 +95,20 @@ void SourceFilePathProcessingFunction(
 	reinterpret_cast< std::vector<IVfs::Path>* >(data)->emplace_back( file_path.data, file_path.data + file_path.size );
 }
 
+void LexSyntErrorProcessingFunction(
+	const UserHandle data, // Should be "LexSyntErrors*"
+	const uint32_t file_index,
+	const uint32_t line,
+	const uint32_t column,
+	const U1_StringView& text )
+{
+	LexSyntError out_error;
+	out_error.file_pos= FilePos( file_index, line, column );
+	out_error.text= std::string( text.data, text.data + text.size );
+
+	reinterpret_cast< LexSyntErrors* >(data)->push_back( std::move(out_error) );
+}
+
 } // namespace
 
 CodeBuilderLaunchResult launchCodeBuilder(
@@ -116,6 +130,8 @@ CodeBuilderLaunchResult launchCodeBuilder(
 			llvm::wrap(&data_layout ),
 			SourceFilePathProcessingFunction,
 			reinterpret_cast<UserHandle>(&result.dependent_files),
+			LexSyntErrorProcessingFunction,
+			reinterpret_cast<UserHandle>(&result.lex_synt_errors),
 			g_error_handling_callbacks,
 			reinterpret_cast<UserHandle>(&result.code_builder_errors) );
 
