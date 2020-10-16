@@ -145,6 +145,8 @@ fn nomangle U1_BuildProgrammUsingVFS(
 	U1_StringView& root_file_path,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
+	SourceFilePathCallback result_source_file_path_callback,
+	UserHandle result_source_file_path_processing_data,
 	ErrorsHandlingCallbacks& errors_handling_callbacks,
 	UserHandle error_processing_data ) : LLVMModuleRef
 {
@@ -158,6 +160,14 @@ fn nomangle U1_BuildProgrammUsingVFS(
 		{
 			auto source_graph= U1::LoadSourceGraph( vfs, path );
 
+			foreach( &node : source_graph.nodes )
+			{
+				unsafe
+				{
+					var U1_StringView path_view{ .data= node.file_path_normalized.front_unsafe(), .size= node.file_path_normalized.size() };
+					result_source_file_path_callback( result_source_file_path_processing_data, path_view );
+				}
+			}
 			// TODO - process syntax errors.
 			if( source_graph.have_errors || source_graph.nodes.empty() )
 			{

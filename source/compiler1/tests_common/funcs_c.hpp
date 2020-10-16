@@ -71,11 +71,15 @@ struct IVfsInterface
 	bool (*load_file_content_function)( UserHandle this_, const U1_StringView& file_path, const U1_StringView& parent_file_path_normalized, FillStringCallback result_callback, UserHandle user_data );
 };
 
+using SourceFilePathCallback= void(*)( UserHandle data, const U1_StringView& file_path_normalized );
+
 extern "C" LLVMModuleRef U1_BuildProgrammUsingVFS(
 	const IVfsInterface& vfs_interface,
 	const U1_StringView& root_file_path,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
+	SourceFilePathCallback result_source_file_path_callback,
+	UserHandle result_source_file_path_processing_data,
 	const ErrorsHandlingCallbacks& errors_handling_callbacks,
 	UserHandle error_processing_data );
 

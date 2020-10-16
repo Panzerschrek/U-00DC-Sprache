@@ -88,6 +88,13 @@ const ErrorsHandlingCallbacks g_error_handling_callbacks
 	TemplateErrorsContextHandler,
 };
 
+void SourceFilePathProcessingFunction(
+	const UserHandle data, // should be "std::vector<IVfs::Path>*"
+	const U1_StringView& file_path )
+{
+	reinterpret_cast< std::vector<IVfs::Path>* >(data)->emplace_back( file_path.data, file_path.data + file_path.size );
+}
+
 } // namespace
 
 CodeBuilderLaunchResult launchCodeBuilder(
@@ -107,6 +114,8 @@ CodeBuilderLaunchResult launchCodeBuilder(
 			U1_StringView{ input_file.data(), input_file.size() },
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout ),
+			SourceFilePathProcessingFunction,
+			reinterpret_cast<UserHandle>(&result.dependent_files),
 			g_error_handling_callbacks,
 			reinterpret_cast<UserHandle>(&result.code_builder_errors) );
 
