@@ -7,7 +7,8 @@ namespace U1
 fn LoadSourceGraph( IVfs &mut vfs, ust::string8& root_file_path ) : SourceGraph
 {
 	var SourceGraph mut source_graph{ .macro_expansion_contexts(Synt::MacroExpansionContexts()) };
-	LoadSourceGraph_r( vfs, root_file_path, "", source_graph );
+	var ust::vector</ust::string8/> mut imports_stack;
+	LoadSourceGraph_r( vfs, root_file_path, "", source_graph, imports_stack );
 	return move(source_graph);
 }
 
@@ -16,9 +17,27 @@ fn LoadSourceGraph_r(
 	IVfs &mut vfs,
 	ust::string8& file_path,
 	ust::string8& parent_file_path,
-	SourceGraph& mut source_graph ) : size_type
+	SourceGraph& mut source_graph,
+	ust::vector</ust::string8/> &mut imports_stack ) : size_type
 {
 	auto file_path_normalized= vfs.NormalizeFilePath( file_path, parent_file_path );
+
+	// Check for dependency loops.
+	for( auto mut i= imports_stack.size(); i > 0s; --i )
+	{
+		if( file_path_normalized == imports_stack[ i - 1s ] )
+		{
+			var ust::string8 mut imports_loop_str= "Import loop detected: ";
+			for( auto mut j= i - 1s; j < imports_stack.size(); ++j )
+			{
+				imports_loop_str+= imports_stack[j] + " -> ";
+			}
+			imports_loop_str+= file_path_normalized;
+
+			source_graph.errors.push_back( LexSyntError( FilePos( 0u, 0u, 0u ), move(imports_loop_str) ) );
+			return ~0s;
+		}
+	}
 
 	// Check, if already loaded.
 	for( auto mut i= 0s; i < source_graph.nodes.size(); ++i )
@@ -62,16 +81,18 @@ fn LoadSourceGraph_r(
 	};
 
 	// Recursively load imports.
-	// TODO - check for dependency loops.
 	var Synt::ImportsList imports= Synt::ParseImports( lex_result.lexems );
+
+	imports_stack.push_back( file_path_normalized );
 	foreach( &import_ : imports )
 	{
-		auto child= LoadSourceGraph_r( vfs, import_, file_path_normalized, source_graph );
+		auto child= LoadSourceGraph_r( vfs, import_, file_path_normalized, source_graph, imports_stack );
 		if( child != ~0s )
 		{
 			node.children.push_back(child);
 		}
 	}
+	imports_stack.pop_back();
 
 	// Merge macroses
 	var Synt::MacrosByContextMap mut macros;
