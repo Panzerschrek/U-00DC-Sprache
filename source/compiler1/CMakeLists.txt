@@ -104,23 +104,28 @@ add_library(
 		${TESTS_COMMON_SOURCES}
 		${TESTS_COMMON_HEADERS}
 		${TESTS_COMMON_OBJECTS}
+		# Hack! Build some helper functions from compiler0. TODO - remove this.
+		../compiler0/lex_synt_lib/file_pos.cpp
+		../compiler0/lex_synt_lib/lex_synt_error.cpp
 	)
-target_link_libraries( CodeBuilderLib${CURRENT_COMPLIER_GENERATION} CompilersCommonLib ${LLVM_LIBS_FOR_CODE_BUILDER_LIB} )
+target_link_libraries( CodeBuilderLib${CURRENT_COMPLIER_GENERATION} CodeBuilderLibCommon )
+
+#
+# Compiler
+#
+if( U_BUILD_COMPILER )
+	file( GLOB COMPILER_SOURCES "compiler/*" )
+
+	add_executable( Compiler1 ${COMPILER_SOURCES} )
+	target_link_libraries( Compiler1 CodeBuilderLib CodeBuilderLib${CURRENT_COMPLIER_GENERATION} CompilersCommonLib )
+endif()
 
 #
 # Tests
 #
-
 if( U_BUILD_TESTS )
 
-	set( TESTS_SOURCES
-		tests/cpp_tests_launcher.cpp
-		../lex_synt_lib/file_pos.cpp # Hack! FilePos methods like "GetLine" and "constructor" used in tests.
-		)
-
-	add_executable(
-		Tests${CURRENT_COMPLIER_GENERATION}
-			${TESTS_SOURCES} )
+	add_executable( Tests${CURRENT_COMPLIER_GENERATION} tests/cpp_tests_launcher.cpp )
 
 	target_link_libraries(
 		Tests${CURRENT_COMPLIER_GENERATION}
@@ -137,12 +142,11 @@ if( U_BUILD_TESTS )
 
 endif()
 
+#
+# PyTests
+#
 if( U_BUILD_PY_TESTS )
-	set( PY_TESTS_LIB_SOURCES
-		py_tests_lib/py_tests_lib.cpp
-		../tests/tests_common.hpp )
-
-	add_library( PyTestsLib${CURRENT_COMPLIER_GENERATION} SHARED ${PY_TESTS_LIB_SOURCES} )
+	add_library( PyTestsLib${CURRENT_COMPLIER_GENERATION} SHARED py_tests_lib/py_tests_lib.cpp )
 	target_link_libraries(
 		PyTestsLib${CURRENT_COMPLIER_GENERATION}
 			PRIVATE

@@ -105,6 +105,23 @@ else()
 	message( STATUS "Skip c++ header converter" )
 endif()
 
+# Python
+
+if( U_BUILD_PY_TESTS )
+	# Fix python search on systems with both python2/python3 installed.
+	# LLVM CMake file calls "FindPythonInterp" without version specified, so, version 2 may be found.
+	# If python2 found, search for python3 failed. To fix that, reset related cache variables.
+	unset( PYTHON_EXECUTABLE CACHE )
+	unset( PYTHONINTERP_FOUND CACHE )
+	unset( PYTHON_VERSION_STRING CACHE )
+	unset( PYTHON_VERSION_MAJOR CACHE )
+	unset( PYTHON_VERSION_MINOR CACHE )
+	unset( PYTHON_VERSION_PATCH CACHE )
+
+	find_package( PythonLibs 3 REQUIRED )
+	find_package( PythonInterp 3 REQUIRED )
+endif()
+
 #
 # Compiler options for Ü-Sprache projects
 #
@@ -151,54 +168,17 @@ file( READ keywords_list.txt KEYWORDS_LIST_CONTENT )
 set( KEYWORDS_LIST_REGEXP "[A-Za-z][A-Za-z0-9_]*" )
 
 #
-# LexSyntLib
+# CodeBuilderLibCommon
 #
 
-string(
-	REGEX REPLACE
-	${KEYWORDS_LIST_REGEXP}
-	"	\\0_,"
-	KEYWORDS_LIST
-	${KEYWORDS_LIST_CONTENT} )
-
-string(
-	REGEX REPLACE
-	${KEYWORDS_LIST_REGEXP}
-	"	\"\\0\","
-	KEYWORDS_LIST_STRINGS
-	${KEYWORDS_LIST_CONTENT} )
-
-configure_file( lex_synt_lib/keywords.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/keywords.hpp )
-configure_file( lex_synt_lib/keywords.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/keywords.cpp )
-
-file( GLOB LEX_SYNT_LIB_SOURCES "lex_synt_lib/*.cpp" )
-file( GLOB LEX_SYNT_LIB_HEADERS "lex_synt_lib/*.hpp" )
-set( LEX_SYNT_LIB_SOURCES_GENERATED ${CMAKE_CURRENT_BINARY_DIR}/keywords.hpp ${CMAKE_CURRENT_BINARY_DIR}/keywords.cpp )
-add_library( LexSyntLib ${LEX_SYNT_LIB_SOURCES} ${LEX_SYNT_LIB_HEADERS} ${LEX_SYNT_LIB_SOURCES_GENERATED} )
-target_include_directories( LexSyntLib PUBLIC ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/lex_synt_lib )
+file( GLOB CODE_BUILDER_COMMON_SOURCES "code_builder_lib_common/*" )
+add_library( CodeBuilderLibCommon ${CODE_BUILDER_COMMON_SOURCES} )
+target_link_libraries( CodeBuilderLibCommon ${LLVM_LIBS_FOR_CODE_BUILDER_LIB} )
 
 #
 # CompilersCommonLib
 #
-
-file( GLOB COMPILERS_COMMON_SOURCES "compilers_common/*" )
-add_library( CompilersCommonLib ${COMPILERS_COMMON_SOURCES} )
-target_link_libraries( CompilersCommonLib )
-
-#
-# CodeBuilderLib
-#
-
-file( GLOB COMPILER_LIB_SOURCES "code_builder_lib/*" )
-add_library( CodeBuilderLib ${COMPILER_LIB_SOURCES} )
-target_link_libraries( CodeBuilderLib LexSyntLib SpracheVersion CompilersCommonLib ${LLVM_LIBS_FOR_CODE_BUILDER_LIB} )
-
-#
-# Compiler
-#
 if( U_BUILD_COMPILER )
-	file( GLOB COMPILER_SOURCES "compiler/*" )
-
 	function( CompileLLFile ll_file )
 		get_filename_component( source_name ${ll_file} NAME_WE )
 		set( bc_name ${source_name}.bc )
@@ -207,12 +187,13 @@ if( U_BUILD_COMPILER )
 			OUTPUT ${bc_name}
 			DEPENDS ${CMAKE_SOURCE_DIR}/ustlib/src/${ll_file}
 			DEPENDS llvm-as
-			COMMAND llvm-as ${CMAKE_SOURCE_DIR}/ustlib/src/${ll_file} -o ${bc_name} )
+			COMMAND llvm-as ${CMAKE_SOURCE_DIR}/ustlib/src/${ll_file} -o ${bc_name}
+			)
 		add_custom_command(
 			OUTPUT ${bc_header_path}
 			DEPENDS ${bc_name}
-			DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/bin2c.cmake ${bc_name}
-			COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/bin2c.cmake ${bc_name} ${bc_header_path} c_${source_name}_file_content
+			DEPENDS ${CMAKE_SOURCE_DIR}/bin2c.cmake ${bc_name}
+			COMMAND ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/bin2c.cmake ${bc_name} ${bc_header_path} c_${source_name}_file_content
 			)
 		set( BC_FILE ${bc_header_path} PARENT_SCOPE )
 	endfunction()
@@ -228,25 +209,15 @@ if( U_BUILD_COMPILER )
 	file( GLOB_RECURSE USTLIB_SOURCES "ustlib/*.u" "ustlib/src/*.ll" )
 	file( GLOB_RECURSE USTLIB_TEST_SOURCES "ustlib_test/*.u" )
 
-	add_executable( Compiler ${COMPILER_SOURCES} ${bc_files} ${USTLIB_SOURCES} ${USTLIB_TEST_SOURCES} )
-	target_link_libraries( Compiler CodeBuilderLib ${LLVM_LIBS_FOR_COMPILER} )
-	target_include_directories( Compiler PRIVATE ${CMAKE_CURRENT_BINARY_DIR} )
+	file( GLOB COMPILERS_COMMON_LIB_SOURCES "compilers_common_lib/*" )
+	add_library( CompilersCommonLib ${COMPILERS_COMMON_LIB_SOURCES} ${bc_files} ${USTLIB_SOURCES} ${USTLIB_TEST_SOURCES} )
+	target_link_libraries( CompilersCommonLib ${LLVM_LIBS_FOR_COMPILER} )
+	target_include_directories( CompilersCommonLib PRIVATE ${CMAKE_CURRENT_BINARY_DIR} )
 endif()
 
 #
-# CppHeaderConverter
+# TestsLib
 #
-
-if( REALLY_BUILD_CPP_HEADER_CONVERTER )
-	file( GLOB CPP_HEADER_CONVERTER_SOURCES "cpp_header_converter/*" )
-	add_executable( CppHeaderConverter ${CPP_HEADER_CONVERTER_SOURCES} )
-	target_link_libraries( CppHeaderConverter LexSyntLib clangTooling )
-	# Hack! Clang libraries does not exports their include directories, set it manually.
-	target_include_directories( CppHeaderConverter PRIVATE ${LLVM_EXTERNAL_CLANG_SOURCE_DIR}/include )
-	target_include_directories( CppHeaderConverter PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/llvm/tools/clang/include )
-endif()
-
-
 if( U_BUILD_TESTS )
 
 	#
@@ -262,77 +233,22 @@ if( U_BUILD_TESTS )
 		set( TESTS_LIB_WRAPPED -Wl,--whole-archive ${TESTS_LIB_WRAPPED} -Wl,--no-whole-archive )
 	endif()
 
-	#
-	# C++ tests launcher
-	#
-	file( GLOB TESTS_LAUNCHER0_SOURCES "tests/cpp_tests_launcher0/*" )
-	add_executable( Tests ${TESTS_LAUNCHER0_SOURCES} )
-	target_link_libraries( Tests CodeBuilderLib ${TESTS_LIB_WRAPPED} )
-	add_custom_command( TARGET Tests POST_BUILD COMMAND Tests )
-
-	if( MSVC )
-		set_target_properties( Tests PROPERTIES LINK_FLAGS /WHOLEARCHIVE:TestsLib )
-	endif()
-
 endif()
 
-#
-# PyTests
-#
-if( U_BUILD_PY_TESTS )
-	# Fix python search on systems with both python2/python3 installed.
-	# LLVM CMake file calls "FindPythonInterp" without version specified, so, version 2 may be found.
-	# If python2 found, search for python3 failed. To fix that, reset related cache variables.
-	unset( PYTHON_EXECUTABLE CACHE )
-	unset( PYTHONINTERP_FOUND CACHE )
-	unset( PYTHON_VERSION_STRING CACHE )
-	unset( PYTHON_VERSION_MAJOR CACHE )
-	unset( PYTHON_VERSION_MINOR CACHE )
-	unset( PYTHON_VERSION_PATCH CACHE )
+add_subdirectory( compiler0 )
 
-	find_package( PythonLibs 3 REQUIRED )
-	find_package( PythonInterp 3 REQUIRED )
-
-	set( PY_TESTS_LIB_SOURCES
-		tests/py_tests_lib/py_tests_lib.cpp
-		tests/tests_common.hpp )
-
-	add_library( PyTestsLib SHARED ${PY_TESTS_LIB_SOURCES} )
-	target_link_libraries( PyTestsLib CodeBuilderLib ${LLVM_LIBS_FOR_TESTS} ${PYTHON_LIBRARIES} )
-	target_include_directories( PyTestsLib PRIVATE ${PYTHON_INCLUDE_DIRS} )
-
-	# Set proper name for result dynamic library.
-	if( WIN32 )
-		set_target_properties( PyTestsLib
-			PROPERTIES OUTPUT_NAME sprache_compiler_tests_py_lib.pyd PREFIX "" SUFFIX "" )
-	else()
-		set_target_properties( PyTestsLib
-			PROPERTIES OUTPUT_NAME sprache_compiler_tests_py_lib.so PREFIX "" SUFFIX "" )
-	endif()
-
-	file( GLOB PY_TESTS_SOURCES "tests/py_tests/*.py" ) # Add all python files to sources list of target.
-
-	# Run result test.
-	add_custom_target(
-		PyTestsRun ALL
-		COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR} ${PYTHON_EXECUTABLE} tests/py_tests/py_tests.py
-		DEPENDS PyTestsLib
-		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-		SOURCES ${PY_TESTS_SOURCES} )
-
-endif()
 
 if( REALLY_BUILD_LINKAGE_TESTS )
 
 	# Build rule for "Ü" files
 	# Returns result in ${out_object}
 	function( CompileUSource u_source_file out_object )
-		get_filename_component( source_name ${u_source_file} NAME_WE )
-		set( object_name ${source_name}.o )
+		file( RELATIVE_PATH source_name_rel ${CMAKE_CURRENT_SOURCE_DIR} ${u_source_file} )
+		set( object_name ${CMAKE_CURRENT_BINARY_DIR}/${source_name_rel}.o )
 		add_custom_command(
 			OUTPUT ${object_name}
-			DEPENDS ${u_source_file} Compiler
-			COMMAND Compiler ${CMAKE_SOURCE_DIR}/${u_source_file} -o ${object_name} ${SPRACHE_COMPILER_PIC_OPTIONS} )
+			DEPENDS ${u_source_file} Compiler${CURRENT_COMPILER_GENERATION}
+			COMMAND Compiler${CURRENT_COMPILER_GENERATION} ${u_source_file} -o ${object_name} ${SPRACHE_COMPILER_PIC_OPTIONS} )
 		set( ${out_object} ${object_name} PARENT_SCOPE )
 	endfunction()
 
@@ -345,145 +261,23 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 		set( ${out_objects} ${out_objects_local} PARENT_SCOPE )
 	endfunction()
 
-	#
-	# CPP-Linkage test
-	#
-	if( NOT MSVC ) # Eenable only on compiler with Itanium ABI mangling.
-		# Compile simple program on "Ü-Sprache", link it together with C++ program.
-		set( CPP_LINKAGE_SOURCES tests/cpp_linkage_test/cpp_linkage.u )
-		CompileUSources( "${CPP_LINKAGE_SOURCES}" CPP_LINKAGE_OBJECTS )
+	set( CURRENT_COMPILER_GENERATION "" )
+	add_subdirectory( tests/cpp_header_converter_test )
+	add_subdirectory( tests/cpp_linkage_test )
+	add_subdirectory( tests/debug_info_test )
+	add_subdirectory( tests/dep_file_test )
+	add_subdirectory( tests/import_test )
+	add_subdirectory( tests/include_dirs_test )
+	add_subdirectory( tests/inline_linkage_test )
+	add_subdirectory( tests/type_id_test )
+	add_subdirectory( tests/unicode_file_names_test )
 
-		add_executable( CPPLinkageTest tests/cpp_linkage_test/cpp_linkage.cpp ${CPP_LINKAGE_SOURCES} ${CPP_LINKAGE_OBJECTS} )
-		add_dependencies( CPPLinkageTest Compiler )
-	endif()
+	set( CURRENT_COMPILER_GENERATION "1" )
 
-	#
-	# Inline linkage test
-	#
-	# Compile multimodule program on "Ü-Sprache". Each module includes one common file.
-	set( INLINE_LINKAGE_SOURCES
-		tests/inline_linkage_test/a.u
-		tests/inline_linkage_test/b.u
-		tests/inline_linkage_test/c.u
-		tests/inline_linkage_test/entry.u )
-	CompileUSources( "${INLINE_LINKAGE_SOURCES}" INLINE_LINKAGE_OBJECTS )
-
-	add_executable( InlineLinkageTest tests/dummy.cpp ${INLINE_LINKAGE_SOURCES} ${INLINE_LINKAGE_OBJECTS} )
-	add_dependencies( InlineLinkageTest Compiler )
-
-	#
-	# Imports test
-	#
-	set( IMPORT_TEST_SOURCES tests/import_test/root.u )
-	CompileUSources( "${IMPORT_TEST_SOURCES}" IMPORT_TEST_OBJECTS )
-
-	add_executable( ImportTest tests/import_test/entry.cpp ${IMPORT_TEST_SOURCES} ${IMPORT_TEST_OBJECTS} )
-	add_dependencies( ImportTest Compiler )
-
-	#
-	# Unciode file names test
-	#
-	if( U_BUILD_UNICODE_FILE_NAMES_TEST )
-		set( UNICODE_FILE_NAMES_SOURCES "tests/unicode_file_names_test/Entry ФшЯё_66.ü" )
-		CompileUSources( "${UNICODE_FILE_NAMES_SOURCES}" UNICODE_FILE_NAMES_OBJECTS )
-
-		add_executable( UnicodeFileNamesTest tests/dummy.cpp ${UNICODE_FILE_NAMES_SOURCES} ${UNICODE_FILE_NAMES_OBJECTS} )
-		add_dependencies( UnicodeFileNamesTest Compiler )
-	endif()
-
-	#
-	# Include dirs test
-	#
-	add_custom_command(
-		OUTPUT include_dirs_test.o
-		DEPENDS Compiler
-		COMMAND
-			Compiler
-			${CMAKE_SOURCE_DIR}/tests/include_dirs_test/root.u -o include_dirs_test.o
-			${SPRACHE_COMPILER_PIC_OPTIONS}
-			--include-dir ${CMAKE_SOURCE_DIR}/tests/include_dirs_test/a
-			--include-dir ${CMAKE_SOURCE_DIR}/tests/include_dirs_test/b
-			--include-dir ${CMAKE_SOURCE_DIR}/tests/include_dirs_test/c )
-
-	add_executable( IncludeDirsTest tests/dummy.cpp tests/include_dirs_test/root.u include_dirs_test.o )
-	add_dependencies( IncludeDirsTest Compiler )
-
-	#
-	# type_id test
-	#
-	set( TYPE_ID_TEST_SOURCES tests/type_id_test/type_id_a.u tests/type_id_test/type_id_b.u )
-	CompileUSources( "${TYPE_ID_TEST_SOURCES}" TYPE_ID_TEST_OBJECTS )
-
-	add_executable( TypeIdTest tests/type_id_test/entry.cpp ${TYPE_ID_TEST_SOURCES} ${TYPE_ID_TEST_OBJECTS} )
-	add_dependencies( TypeIdTest Compiler )
-
-	# Run type_id test
-	add_custom_command( TARGET TypeIdTest POST_BUILD COMMAND TypeIdTest )
-
-	#
-	# Debug info test
-	#
-	set( DEBUG_INFO_TEST_FILE ${CMAKE_CURRENT_SOURCE_DIR}/tests/debug_info_test/debug_info_test.u )
-	set( DEBUG_INFO_TEST_FILE_OUT ${CMAKE_CURRENT_BINARY_DIR}/debug_info_test.o )
-	add_custom_command(
-		OUTPUT ${DEBUG_INFO_TEST_FILE_OUT}
-		DEPENDS Compiler ${DEBUG_INFO_TEST_FILE}
-		COMMAND
-			Compiler
-			${DEBUG_INFO_TEST_FILE} -o ${DEBUG_INFO_TEST_FILE_OUT}
-			${SPRACHE_COMPILER_PIC_OPTIONS}
-			-O0 # Disable optimization
-			-g # Generate debug info
-		)
-
-	add_executable( DebugInfoTest tests/dummy.cpp ${DEBUG_INFO_TEST_FILE} ${DEBUG_INFO_TEST_FILE_OUT} )
-	add_dependencies( DebugInfoTest Compiler )
-
-	#
-	# Dependency file test
-	#
-	if( ${CMAKE_GENERATOR} STREQUAL "Ninja" )
-		message( "Build DepFileTest" )
-
-		add_custom_command(
-			OUTPUT dep_main.o
-			DEPENDS Compiler
-			COMMAND
-				Compiler
-				${CMAKE_SOURCE_DIR}/tests/dep_file_test/dep_main.u -o dep_main.o -MF dep_main.d
-				${SPRACHE_COMPILER_PIC_OPTIONS}
-			DEPFILE dep_main.d # This works only for Ninja
-			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} )
-
-		add_executable( DepFileTest tests/dummy.cpp dep_main.o )
-		add_dependencies( DepFileTest Compiler )
-
-	else()
-		message( "DepFileTest test disabled because it is not supported by current cmake generator" )
-	endif()
-
-	#
-	# CppHeaderConverter test
-	#
-	if( REALLY_BUILD_CPP_HEADER_CONVERTER )
-		add_custom_command(
-			OUTPUT c_converted.u
-			DEPENDS tests/cpp_header_converter_test/c_test.h CppHeaderConverter
-			COMMAND
-				CppHeaderConverter -o c_converted.u
-				${CMAKE_SOURCE_DIR}/tests/cpp_header_converter_test/c_test.h -- -std=c11 )
-
-		add_custom_command(
-			OUTPUT cpp_header_converter_test.o
-			DEPENDS tests/cpp_header_converter_test/cpp_header_converter_test.u  c_converted.u Compiler
-			COMMAND
-				Compiler
-				${CMAKE_SOURCE_DIR}/tests/cpp_header_converter_test/cpp_header_converter_test.u -o cpp_header_converter_test.o
-				${SPRACHE_COMPILER_PIC_OPTIONS}
-				--include-dir ${CMAKE_BINARY_DIR} )
-
-		add_executable( CppHeaderConverterTest cpp_header_converter_test.o tests/cpp_header_converter_test/c_test.cpp )
-		add_dependencies( CppHeaderConverterTest Compiler )
+	if( U_BUILD_COMPILER1 )
+		add_subdirectory( tests/cpp_linkage_test tests1/cpp_linkage_test )
+		add_subdirectory( tests/debug_info_test tests1/debug_info_test )
+		add_subdirectory( tests/include_dirs_test tests1/include_dirs_test )
 	endif()
 
 endif( REALLY_BUILD_LINKAGE_TESTS )

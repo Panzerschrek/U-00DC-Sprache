@@ -1,12 +1,12 @@
 #pragma once
 
-#include "../../compilers_common/push_disable_llvm_warnings.hpp"
+#include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
 #include <llvm/ExecutionEngine/Interpreter.h>
-#include "../../compilers_common/pop_llvm_warnings.hpp"
+#include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
-#include "../../code_builder_lib/code_builder_errors.hpp"
+#include "../../compiler0/code_builder_lib/code_builder_errors.hpp"
 
 #include "funcs_registrator.hpp"
 

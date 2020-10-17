@@ -1,11 +1,11 @@
 #include <iostream>
 #include <unordered_set>
 
-#include "../../compilers_common/push_disable_llvm_warnings.hpp"
+#include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/Support/InitLLVM.h>
 #include <llvm/Support/ManagedStatic.h>
 #include <llvm/Support/raw_os_ostream.h>
-#include "../../compilers_common/pop_llvm_warnings.hpp"
+#include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../../tests/tests_common.hpp"
 #include "../../tests/cpp_tests/tests.hpp"
@@ -21,13 +21,14 @@ llvm::ManagedStatic<llvm::LLVMContext> g_llvm_context;
 
 UserHandle ErrorHanlder(
 	const UserHandle data, // should be "std::vector<CodeBuilderError>"
+	const uint32_t file_index,
 	const uint32_t line,
 	const uint32_t column,
 	const uint32_t error_code,
 	const U1_StringView& error_text )
 {
 	CodeBuilderError error;
-	error.file_pos= FilePos( 0u, line, column );
+	error.file_pos= FilePos( file_index, line, column );
 	error.code= CodeBuilderErrorCode(error_code);
 	error.text= std::string( error_text.data, error_text.data + error_text.size );
 
@@ -38,6 +39,7 @@ UserHandle ErrorHanlder(
 
 UserHandle TemplateErrorsContextHandler(
 	const UserHandle data, // should be "CodeBuilderError*"
+	const uint32_t file_index,
 	const uint32_t line,
 	const uint32_t column,
 	const U1_StringView& context_name,
@@ -45,7 +47,7 @@ UserHandle TemplateErrorsContextHandler(
 {
 	const auto out_error= reinterpret_cast<CodeBuilderError*>(data);
 	out_error->template_context= std::make_shared<TemplateErrorsContext>();
-	out_error->template_context->context_declaration_file_pos= FilePos( 0u, line, column );
+	out_error->template_context->context_declaration_file_pos= FilePos( file_index, line, column );
 	out_error->template_context->context_name= std::string( context_name.data, context_name.data + context_name.size );
 	out_error->template_context->parameters_description= std::string( args_description.data, args_description.data + args_description.size );
 

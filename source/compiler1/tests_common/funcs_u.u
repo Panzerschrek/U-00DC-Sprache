@@ -14,7 +14,7 @@ fn U1_ProcessCodeBuilderErrors(
 		{
 			var U1_StringView text_view{ .data= err.text.front_unsafe(), .size= err.text.size() };
 
-			var UserHandle error_data= errors_handling_callbacks.error_callback( data, err.file_pos.GetLine(), err.file_pos.GetColumn(), u32(err.code), text_view );
+			var UserHandle error_data= errors_handling_callbacks.error_callback( data, err.file_pos.GetFileIndex(), err.file_pos.GetLine(), err.file_pos.GetColumn(), u32(err.code), text_view );
 			if( !err.errors_context.empty() )
 			{
 				auto lock= err.errors_context.lock_imut();
@@ -25,6 +25,7 @@ fn U1_ProcessCodeBuilderErrors(
 
 				var UserHandle context_user_handle= errors_handling_callbacks.template_errors_context_callback(
 					error_data,
+					errors_context.context_declaration_file_pos.GetFileIndex(),
 					errors_context.context_declaration_file_pos.GetLine(),
 					errors_context.context_declaration_file_pos.GetColumn(),
 					context_name,
@@ -133,10 +134,80 @@ fn nomangle U1_BuildProgramWithSyntaxErrors(
 				var U1_StringView text_view{ .data= err.text.front(), .size= err.text.size() };
 				unsafe
 				{
-					errors_handling_callbacks.error_callback( data, err.file_pos.GetLine(), err.file_pos.GetColumn(), u32(U1::CodeBuilderErrorCode::BuildFailed), text_view );
+					errors_handling_callbacks.error_callback( data, err.file_pos.GetFileIndex(), err.file_pos.GetLine(), err.file_pos.GetColumn(), u32(U1::CodeBuilderErrorCode::BuildFailed), text_view );
 				}
 			}
 		}
+	}
+}
+
+fn nomangle U1_BuildProgrammUsingVFS(
+	IVfsInterface& vfs_interface,
+	U1_StringView& root_file_path,
+	LLVMContextRef llvm_context,
+	LLVMTargetDataRef data_layout,
+	SourceFilePathCallback result_source_file_path_callback,
+	UserHandle result_source_file_path_processing_data,
+	LexSyntErrorCallback lex_synt_error_callback,
+	UserHandle lex_synt_error_callback_data,
+	ErrorsHandlingCallbacks& errors_handling_callbacks,
+	UserHandle error_processing_data ) : LLVMModuleRef
+{
+	var U1::ExternalVfsWrapper mut vfs( vfs_interface );
+
+	unsafe
+	{
+		auto path= U1::StringToArrayView( root_file_path.data, root_file_path.size );
+
+		auto source_graph= U1::LoadSourceGraph( vfs, path, U1_GetNullStream() );
+
+		foreach( &node : source_graph.nodes )
+		{
+			unsafe
+			{
+				var U1_StringView path_view{ .data= node.file_path_normalized.front_unsafe(), .size= node.file_path_normalized.size() };
+				result_source_file_path_callback( result_source_file_path_processing_data, path_view );
+			}
+		}
+
+		foreach( &node : source_graph.nodes )
+		{
+			foreach( &err : node.lexical_error_messages )
+			{
+				unsafe
+				{
+					var U1_StringView text{ .data= err.front_unsafe(), .size= err.size() };
+					// TODO - set FilePos
+					lex_synt_error_callback( lex_synt_error_callback_data, 0u, 0u, 0u, text );
+				}
+			}
+			foreach( &err : node.synt_result.error_messages )
+			{
+				unsafe
+				{
+					var U1_StringView text{ .data= err.text.front_unsafe(), .size= err.text.size() };
+					lex_synt_error_callback( lex_synt_error_callback_data, err.file_pos.GetFileIndex(), err.file_pos.GetLine(), err.file_pos.GetColumn(), text );
+				}
+			}
+		}
+
+		if( source_graph.have_errors || source_graph.nodes.empty() )
+		{
+			return LLVMModuleRef::Null;
+		}
+
+		var U1::CodeBuilder mut code_builder( llvm_context, data_layout );
+		auto code_builder_res= code_builder.BuildProgram( source_graph );
+
+		U1_ProcessCodeBuilderErrors( errors_handling_callbacks, error_processing_data, code_builder_res.errors );
+
+		if( !code_builder_res.errors.empty() )
+		{
+			LLVMDisposeModule( code_builder_res.llvm_module );
+			return LLVMModuleRef::Null;
+		}
+
+		return code_builder_res.llvm_module;
 	}
 }
 
@@ -308,11 +379,14 @@ public:
 		return file_path;
 	}
 
-	fn virtual override LoadFile( mut this, ust::string8& path ) : ust::optional</ust::string8/>
+	fn virtual override LoadFile(
+		mut this,
+		ust::string8& file_path,
+		ust::string8& parent_file_path_normalized ) : ust::optional</ust::string8/>
 	{
 		foreach( &entry : source_entries_ )
 		{
-			if( path == entry.file_path )
+			if( file_path == entry.file_path )
 			{
 				return entry.file_content;
 			}
@@ -322,6 +396,78 @@ public:
 
 private:
 	SourceEntries source_entries_;
+}
+
+class ExternalVfsWrapper final : IVfs
+{
+public:
+	fn constructor( IVfsInterface mut vfs_interface )
+		( vfs_interface_= move(vfs_interface) )
+	{}
+
+public:
+	fn virtual override NormalizeFilePath(
+		mut this,
+		ust::string8& file_path,
+		ust::string8& parent_file_path_normalized ) : ust::string8
+	{
+		unsafe
+		{
+			var ust::string8 mut result;
+
+			var U1_StringView file_path_view{ .data= file_path.front_unsafe(), .size= file_path.size() };
+			var U1_StringView parent_file_path_normalized_view{ .data= parent_file_path_normalized.front_unsafe(), .size= parent_file_path_normalized.size() };
+
+			var IVfsInterface::FillStringCallback callback= FillStringCallback;
+			vfs_interface_.normalize_path_function(
+				vfs_interface_.this_,
+				file_path_view,
+				parent_file_path_normalized_view,
+				callback,
+				ust::ref_to_int(result) );
+			return move(result);
+		}
+	}
+
+	fn virtual override LoadFile(
+		mut this,
+		ust::string8& file_path,
+		ust::string8& parent_file_path_normalized ) : ust::optional</ust::string8/>
+	{
+		unsafe
+		{
+			var ust::string8 mut result;
+
+			var U1_StringView file_path_view{ .data= file_path.front_unsafe(), .size= file_path.size() };
+			var U1_StringView parent_file_path_normalized_view{ .data= parent_file_path_normalized.front_unsafe(), .size= parent_file_path_normalized.size() };
+
+			var IVfsInterface::FillStringCallback callback= FillStringCallback;
+			var bool ok= vfs_interface_.load_file_content_function(
+				vfs_interface_.this_,
+				file_path_view,
+				parent_file_path_normalized_view,
+				callback,
+				ust::ref_to_int(result) );
+			if( ok )
+			{
+				return move(result);
+			}
+		}
+		return ust::optional</ust::string8/>();
+	}
+
+private:
+	fn FillStringCallback( UserHandle user_data, U1_StringView& result_path_normalized )
+	{
+		unsafe
+		{
+			auto &mut str= cast_mut(cast_ref_unsafe</ust::string8/>(ust::int_to_ref(user_data)));
+			str= U1::StringToArrayView( result_path_normalized.data, result_path_normalized.size );
+		}
+	}
+
+private:
+	IVfsInterface vfs_interface_;
 }
 
 } // namespace U1

@@ -1,6 +1,6 @@
 // If this file changed, "constexpr_function_evaluator_bindings.uh" must be changed too!
 
-#include "../../compilers_common/constexpr_function_evaluator.hpp"
+#include "../../code_builder_lib_common/constexpr_function_evaluator.hpp"
 
 extern "C" U::ConstexprFunctionEvaluator* U1_ConstexprFunctionEvaluatorCreate( const llvm::DataLayout& data_layout )
 {

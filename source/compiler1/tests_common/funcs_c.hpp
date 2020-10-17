@@ -23,8 +23,8 @@ using UserHandle= size_t;
 
 struct ErrorsHandlingCallbacks
 {
-	UserHandle (*error_callback)( UserHandle data, uint32_t line, uint32_t column, uint32_t error_code, const U1_StringView& error_text );
-	UserHandle (*template_errors_context_callback)( UserHandle data, uint32_t line, uint32_t column, const U1_StringView& context_name, const U1_StringView& args_description );
+	UserHandle (*error_callback)( UserHandle data, uint32_t file_index, uint32_t line, uint32_t column, uint32_t error_code, const U1_StringView& error_text );
+	UserHandle (*template_errors_context_callback)( UserHandle data, uint32_t file_index, uint32_t line, uint32_t column, const U1_StringView& context_name, const U1_StringView& args_description );
 };
 
 // Return pointer to llvm module. Use "delete" to delete result.
@@ -61,6 +61,31 @@ bool U1_BuildMultisourceProgramWithErrors(
 	LLVMTargetDataRef data_layout,
 	const ErrorsHandlingCallbacks& errors_handling_callbacks,
 	UserHandle data );
+
+struct IVfsInterface
+{
+	using FillStringCallback= void(*)( UserHandle user_data, const U1_StringView& result_path_normalized );
+
+	UserHandle this_;
+	void (*normalize_path_function)( UserHandle this_, const U1_StringView& file_path, const U1_StringView& parent_file_path_normalized, FillStringCallback result_callback, UserHandle user_data );
+	bool (*load_file_content_function)( UserHandle this_, const U1_StringView& file_path, const U1_StringView& parent_file_path_normalized, FillStringCallback result_callback, UserHandle user_data );
+};
+
+using SourceFilePathCallback= void(*)( UserHandle data, const U1_StringView& file_path_normalized );
+
+using LexSyntErrorCallback= void(*)( UserHandle data, uint32_t file_index, uint32_t line, uint32_t column, const U1_StringView& text );
+
+extern "C" LLVMModuleRef U1_BuildProgrammUsingVFS(
+	const IVfsInterface& vfs_interface,
+	const U1_StringView& root_file_path,
+	LLVMContextRef llvm_context,
+	LLVMTargetDataRef data_layout,
+	SourceFilePathCallback result_source_file_path_callback,
+	UserHandle result_source_file_path_processing_data,
+	LexSyntErrorCallback lex_synt_error_callback,
+	UserHandle lex_synt_error_callback_data,
+	const ErrorsHandlingCallbacks& errors_handling_callbacks,
+	UserHandle error_processing_data );
 
 // Returns static string for error code.
 void U1_CodeBuilderCodeToString(
