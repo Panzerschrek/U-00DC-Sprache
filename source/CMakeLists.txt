@@ -275,6 +275,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	set( CURRENT_COMPILER_GENERATION "1" )
 
 	if( U_BUILD_COMPILER1 )
+		add_subdirectory( tests/cpp_linkage_test tests1/cpp_linkage_test )
 		add_subdirectory( tests/debug_info_test tests1/debug_info_test )
 		add_subdirectory( tests/include_dirs_test tests1/include_dirs_test )
 	endif()
