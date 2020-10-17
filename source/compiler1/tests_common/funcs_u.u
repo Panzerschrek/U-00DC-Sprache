@@ -61,18 +61,7 @@ fn nomangle U1_BuildProgram(
 			var U1::CodeBuilder mut code_builder( llvm_context, data_layout );
 			auto code_builder_res= code_builder.BuildProgram( source_graph );
 
-			foreach( & err : code_builder_res.errors )
-			{
-				unsafe
-				{
-					auto stream= U1_GetCerr();
-					U1_PrintInt( stream, i64(err.file_pos.GetLine()) );
-					U1_PrintStr( stream, ":\0"[0] );
-					U1_PrintInt( stream, i64(err.file_pos.GetColumn()) );
-					U1_PrintStr( stream, (": " + err.text + "\n\0").front() );
-					U1_PrintEndl( stream );
-				}
-			}
+			U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
 			if( !code_builder_res.errors.empty() )
 			{
 				unsafe{  LLVMDisposeModule( code_builder_res.llvm_module );  }
@@ -225,26 +214,10 @@ fn nomangle U1_BuildMultisourceProgram(
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout ) unsafe : LLVMModuleRef
 {
-	var U1::TestVfs::SourceEntries mut source_entries;
-	unsafe
-	{
-		auto& files_array= cast_ref_unsafe</ [ U1_SourceFile, 1000000 ] />( source_files );
-		for( auto mut i= 0s; i < source_file_count; ++i )
-		{
-			auto &source_file= files_array[i];
-			var U1::TestVfs::SourceEntry mut entry
-			{
-				.file_path= U1::StringToArrayView( source_file.file_path.data, source_file.file_path.size ),
-				.file_content= U1::StringToArrayView( source_file.file_content.data, source_file.file_content.size ),
-			};
-			source_entries.push_back( move(entry) );
-		}
-	}
-
 	var ust::string8 mut root_file_path_str;
 	unsafe{ root_file_path_str= U1::StringToArrayView( root_file_path.data, root_file_path.size ); }
 
-	var U1::TestVfs mut test_vfs( move(source_entries) );
+	var U1::TestVfs mut test_vfs( U1::TransformSourceFiles( source_files, source_file_count ) );
 	auto source_graph= U1::LoadSourceGraph( test_vfs, root_file_path_str );
 
 	if( !source_graph.errors.empty() || source_graph.nodes.empty() )
@@ -255,18 +228,7 @@ fn nomangle U1_BuildMultisourceProgram(
 	var U1::CodeBuilder mut code_builder( llvm_context, data_layout );
 	auto code_builder_res= code_builder.BuildProgram( source_graph );
 
-	foreach( & err : code_builder_res.errors )
-	{
-		unsafe
-		{
-			auto stream= U1_GetCerr();
-			U1_PrintInt( stream, i64(err.file_pos.GetLine()) );
-			U1_PrintStr( stream, ":\0"[0] );
-			U1_PrintInt( stream, i64(err.file_pos.GetColumn()) );
-			U1_PrintStr( stream, (": " + err.text + "\n\0").front() );
-			U1_PrintEndl( stream );
-		}
-	}
+	U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
 	if( !code_builder_res.errors.empty() )
 	{
 		unsafe{  LLVMDisposeModule( code_builder_res.llvm_module );  }
@@ -285,26 +247,10 @@ fn nomangle U1_BuildMultisourceProgramWithErrors(
 	ErrorsHandlingCallbacks& errors_handling_callbacks,
 	UserHandle data ) unsafe : bool
 {
-	var U1::TestVfs::SourceEntries mut source_entries;
-	unsafe
-	{
-		auto& files_array= cast_ref_unsafe</ [ U1_SourceFile, 1000000 ] />( source_files );
-		for( auto mut i= 0s; i < source_file_count; ++i )
-		{
-			auto &source_file= files_array[i];
-			var U1::TestVfs::SourceEntry mut entry
-			{
-				.file_path= U1::StringToArrayView( source_file.file_path.data, source_file.file_path.size ),
-				.file_content= U1::StringToArrayView( source_file.file_content.data, source_file.file_content.size ),
-			};
-			source_entries.push_back( move(entry) );
-		}
-	}
-
 	var ust::string8 mut root_file_path_str;
 	unsafe{ root_file_path_str= U1::StringToArrayView( root_file_path.data, root_file_path.size ); }
 
-	var U1::TestVfs mut test_vfs( move(source_entries) );
+	var U1::TestVfs mut test_vfs( U1::TransformSourceFiles( source_files, source_file_count ) );
 	auto source_graph= U1::LoadSourceGraph( test_vfs, root_file_path_str );
 
 	if( !source_graph.errors.empty() || source_graph.nodes.empty() )
@@ -337,9 +283,52 @@ fn StringToArrayView( char8 &'x string_start, size_type string_size ) unsafe : u
 	}
 }
 
+fn TransformSourceFiles( U1_SourceFile& source_files, size_type source_file_count ) : TestVfs::SourceEntries
+{
+	var TestVfs::SourceEntries mut source_entries;
+	unsafe
+	{
+		auto& files_array= cast_ref_unsafe</ [ U1_SourceFile, 1000000 ] />( source_files );
+		for( auto mut i= 0s; i < source_file_count; ++i )
+		{
+			auto &source_file= files_array[i];
+			var U1::TestVfs::SourceEntry mut entry
+			{
+				.file_path= StringToArrayView( source_file.file_path.data, source_file.file_path.size ),
+				.file_content= StringToArrayView( source_file.file_content.data, source_file.file_content.size ),
+			};
+			source_entries.push_back( move(entry) );
+		}
+	}
+	return move(source_entries);
+}
+
 fn PrintLexSyntErrors( SourceGraph& source_graph )
 {
 	foreach( &err : source_graph.errors )
+	{
+		var ust::string8 mut str;
+
+		auto file_index= size_type(err.file_pos.GetFileIndex());
+		if( file_index < source_graph.nodes.size() )
+		{
+			str+= source_graph.nodes[file_index].file_path_normalized;
+		}
+
+		str+= ":";
+		str+= ust::to_string8( err.file_pos.GetLine() );
+		str+= ":";
+		str+= ust::to_string8( err.file_pos.GetColumn() );
+		str+= ": error: ";
+		str+= err.text;
+		str+= "\n\0";
+		unsafe{  U1_PrintStr( U1_GetCerr(), str.front() );  }
+	}
+}
+
+fn PrintCodeBuilderErrors( SourceGraph& source_graph, ErrorsContainer& errors )
+{
+	foreach( & err : errors )
 	{
 		var ust::string8 mut str;
 
@@ -429,12 +418,11 @@ public:
 			var U1_StringView file_path_view{ .data= file_path.front_unsafe(), .size= file_path.size() };
 			var U1_StringView parent_file_path_normalized_view{ .data= parent_file_path_normalized.front_unsafe(), .size= parent_file_path_normalized.size() };
 
-			var IVfsInterface::FillStringCallback callback= FillStringCallback;
 			vfs_interface_.normalize_path_function(
 				vfs_interface_.this_,
 				file_path_view,
 				parent_file_path_normalized_view,
-				callback,
+				IVfsInterface::FillStringCallback(FillStringCallback),
 				ust::ref_to_int(result) );
 			return move(result);
 		}
@@ -448,11 +436,10 @@ public:
 
 			var U1_StringView full_file_path_view{ .data= full_file_path.front_unsafe(), .size= full_file_path.size() };
 
-			var IVfsInterface::FillStringCallback callback= FillStringCallback;
 			var bool ok= vfs_interface_.load_file_content_function(
 				vfs_interface_.this_,
 				full_file_path_view,
-				callback,
+				IVfsInterface::FillStringCallback(FillStringCallback),
 				ust::ref_to_int(result) );
 			if( ok )
 			{
