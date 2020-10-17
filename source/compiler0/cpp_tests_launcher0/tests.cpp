@@ -35,13 +35,12 @@ public:
 		: sources_( { SourceEntry{ file_path, text } } )
 	{}
 
-	virtual std::optional<LoadFileResult> LoadFileContent( const Path& file_path, const Path& full_parent_file_path ) override
+	virtual std::optional<FileContent> LoadFileContent( const Path& full_file_path ) override
 	{
-		U_UNUSED( full_parent_file_path );
 		for( const SourceEntry& source_entry : sources_ )
 		{
-			if( file_path == source_entry.file_path )
-				return LoadFileResult{ file_path, source_entry.text };
+			if( full_file_path == source_entry.file_path )
+				return source_entry.text;
 		}
 		return std::nullopt;
 	}

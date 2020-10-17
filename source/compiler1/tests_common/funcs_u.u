@@ -379,14 +379,11 @@ public:
 		return file_path;
 	}
 
-	fn virtual override LoadFile(
-		mut this,
-		ust::string8& file_path,
-		ust::string8& parent_file_path_normalized ) : ust::optional</ust::string8/>
+	fn virtual override LoadFile( mut this, ust::string8& full_file_path ) : ust::optional</ust::string8/>
 	{
 		foreach( &entry : source_entries_ )
 		{
-			if( file_path == entry.file_path )
+			if( full_file_path == entry.file_path )
 			{
 				return entry.file_content;
 			}
@@ -429,23 +426,18 @@ public:
 		}
 	}
 
-	fn virtual override LoadFile(
-		mut this,
-		ust::string8& file_path,
-		ust::string8& parent_file_path_normalized ) : ust::optional</ust::string8/>
+	fn virtual override LoadFile( mut this, ust::string8& full_file_path ) : ust::optional</ust::string8/>
 	{
 		unsafe
 		{
 			var ust::string8 mut result;
 
-			var U1_StringView file_path_view{ .data= file_path.front_unsafe(), .size= file_path.size() };
-			var U1_StringView parent_file_path_normalized_view{ .data= parent_file_path_normalized.front_unsafe(), .size= parent_file_path_normalized.size() };
+			var U1_StringView full_file_path_view{ .data= full_file_path.front_unsafe(), .size= full_file_path.size() };
 
 			var IVfsInterface::FillStringCallback callback= FillStringCallback;
 			var bool ok= vfs_interface_.load_file_content_function(
 				vfs_interface_.this_,
-				file_path_view,
-				parent_file_path_normalized_view,
+				full_file_path_view,
 				callback,
 				ust::ref_to_int(result) );
 			if( ok )

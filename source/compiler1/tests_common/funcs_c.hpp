@@ -68,7 +68,7 @@ struct IVfsInterface
 
 	UserHandle this_;
 	void (*normalize_path_function)( UserHandle this_, const U1_StringView& file_path, const U1_StringView& parent_file_path_normalized, FillStringCallback result_callback, UserHandle user_data );
-	bool (*load_file_content_function)( UserHandle this_, const U1_StringView& file_path, const U1_StringView& parent_file_path_normalized, FillStringCallback result_callback, UserHandle user_data );
+	bool (*load_file_content_function)( UserHandle this_, const U1_StringView& full_file_path, FillStringCallback result_callback, UserHandle user_data );
 };
 
 using SourceFilePathCallback= void(*)( UserHandle data, const U1_StringView& file_path_normalized );

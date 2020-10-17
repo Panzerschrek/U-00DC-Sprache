@@ -62,7 +62,7 @@ struct IVfsInterface ordered
 
 	UserHandle this_;
 	( fn( UserHandle this_, U1_StringView& file_path, U1_StringView& parent_file_path_normalized, FillStringCallback result_callback, UserHandle user_data ) ) normalize_path_function;
-	( fn( UserHandle this_, U1_StringView& file_path, U1_StringView& parent_file_path_normalized, FillStringCallback result_callback, UserHandle user_data ) : bool ) load_file_content_function;
+	( fn( UserHandle this_, U1_StringView& full_file_path, FillStringCallback result_callback, UserHandle user_data ) : bool ) load_file_content_function;
 }
 
 type SourceFilePathCallback= fn( UserHandle data, U1_StringView& file_path_normalized );

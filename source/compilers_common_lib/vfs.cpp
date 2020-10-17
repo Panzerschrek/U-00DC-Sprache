@@ -27,31 +27,17 @@ public:
 	{}
 
 public: // IVfs
-	virtual std::optional<LoadFileResult> LoadFileContent( const Path& file_path, const Path& full_parent_file_path ) override
+	virtual std::optional<FileContent> LoadFileContent( const Path& full_file_path ) override
 	{
-		fs_path result_path= GetFullFilePathInternal( file_path, full_parent_file_path );
-		if( result_path.empty() )
-			return std::nullopt;
-
-		LoadFileResult result;
-
-		llvm::ErrorOr< std::unique_ptr<llvm::MemoryBuffer> > file_mapped=
-			llvm::MemoryBuffer::getFile( result_path );
+		const llvm::ErrorOr< std::unique_ptr<llvm::MemoryBuffer> > file_mapped=
+			llvm::MemoryBuffer::getFile( full_file_path );
 		if( !file_mapped || *file_mapped == nullptr )
 			return std::nullopt;
 
-		result.file_content.assign( (*file_mapped)->getBufferStart(), (*file_mapped)->getBufferEnd() );
-		result.full_file_path= result_path.str();
-		return std::move(result);
+		return std::string( (*file_mapped)->getBufferStart(), (*file_mapped)->getBufferEnd() );
 	}
 
 	virtual Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path ) override
-	{
-		return GetFullFilePathInternal( file_path, full_parent_file_path ).str();
-	}
-
-private:
-	fs_path GetFullFilePathInternal( const Path& file_path, const Path& full_parent_file_path )
 	{
 		const fs_path file_path_r( file_path );
 		fs_path result_path;
@@ -81,9 +67,10 @@ private:
 			result_path= fsp::parent_path( full_parent_file_path );
 			fsp::append( result_path, file_path_r );
 		}
-		return NormalizePath( result_path );
+		return NormalizePath( result_path ).str();
 	}
 
+private:
 	static fs_path NormalizePath( const fs_path& p )
 	{
 		fs_path result;

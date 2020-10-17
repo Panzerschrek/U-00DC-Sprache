@@ -73,15 +73,15 @@ size_t SourceGraphLoader::LoadNode_r(
 	result.nodes_storage.emplace_back();
 	result.nodes_storage[node_index].file_path= full_file_path;
 
-	const std::optional<IVfs::LoadFileResult> loaded_file= vfs_->LoadFileContent( file_path, parent_file_path );
+	const std::optional<IVfs::FileContent> loaded_file= vfs_->LoadFileContent( full_file_path );
 	if( loaded_file == std::nullopt )
 	{
-		LexSyntError error_message( "Can not read file \"" + file_path + "\"", FilePos( uint32_t(node_index), 0u, 0u ) );
+		LexSyntError error_message( "Can not read file \"" + full_file_path + "\"", FilePos( uint32_t(node_index), 0u, 0u ) );
 		result.errors.push_back( std::move(error_message) );
 		return ~0u;
 	}
 
-	LexicalAnalysisResult lex_result= LexicalAnalysis( loaded_file->file_content );
+	LexicalAnalysisResult lex_result= LexicalAnalysis( *loaded_file );
 
 	for( LexSyntError error: lex_result.errors )
 	{

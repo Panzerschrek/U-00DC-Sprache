@@ -11,10 +11,7 @@ class IVfs interface
 		ust::string8& file_path,
 		ust::string8& parent_file_path_normalized ) : ust::string8;
 
-	fn virtual pure LoadFile(
-		mut this,
-		ust::string8& file_path,
-		ust::string8& parent_file_path_normalized ) : ust::optional</ust::string8/>;
+	fn virtual pure LoadFile( mut this, ust::string8& full_file_path ) : ust::optional</ust::string8/>;
 }
 
 struct SourceGraph

@@ -31,7 +31,7 @@ fn LoadSourceGraph_r(
 		}
 	}
 
-	auto file_content_opt= vfs.LoadFile( file_path, parent_file_path );
+	auto file_content_opt= vfs.LoadFile( file_path_normalized );
 	if( file_content_opt.empty() )
 	{
 		var ust::string8 mut str;

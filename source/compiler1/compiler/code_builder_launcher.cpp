@@ -34,20 +34,17 @@ void GetFullFilePath(
 
 bool LoadFileContent(
 	const UserHandle this_,
-	const U1_StringView& path,
-	const U1_StringView& parent_file_path_normalized,
+	const U1_StringView& path_normalized,
 	const IVfsInterface::FillStringCallback result_callback,
 	const UserHandle user_data )
 {
-	const std::optional<IVfs::LoadFileResult> load_file_result=
-		reinterpret_cast<IVfs*>(this_)->LoadFileContent(
-			StringViewToString(path),
-			StringViewToString(parent_file_path_normalized) );
+	const std::optional<IVfs::FileContent> file_content=
+		reinterpret_cast<IVfs*>(this_)->LoadFileContent( StringViewToString(path_normalized) );
 
-	if( load_file_result == std::nullopt )
+	if( file_content == std::nullopt )
 		return false;
 
-	result_callback( user_data, StringToStringView( load_file_result->file_content ) );
+	result_callback( user_data, StringToStringView( *file_content ) );
 	return true;
 }
 

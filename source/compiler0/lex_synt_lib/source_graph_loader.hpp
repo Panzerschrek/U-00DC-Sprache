@@ -8,18 +8,14 @@ namespace U
 class IVfs
 {
 public:
-	using Path=std::string;
-	struct LoadFileResult
-	{
-		Path full_file_path;
-		std::string file_content;
-	};
+	using Path= std::string;
+	using FileContent= std::string;
 
 	virtual ~IVfs()= default;
 
-	// Empty "full_parent_file_path" means root file.
-	virtual std::optional<LoadFileResult> LoadFileContent( const Path& file_path, const Path& full_parent_file_path )= 0;
+	virtual std::optional<FileContent> LoadFileContent( const Path& full_file_path)= 0;
 
+	// Empty "full_parent_file_path" means root file.
 	virtual Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path )= 0;
 };
 
