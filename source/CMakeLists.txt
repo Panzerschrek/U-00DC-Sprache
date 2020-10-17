@@ -278,6 +278,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 		add_subdirectory( tests/cpp_linkage_test tests1/cpp_linkage_test )
 		add_subdirectory( tests/debug_info_test tests1/debug_info_test )
 		add_subdirectory( tests/include_dirs_test tests1/include_dirs_test )
+		add_subdirectory( tests/unicode_file_names_test tests1/unicode_file_names_test )
 	endif()
 
 endif( REALLY_BUILD_LINKAGE_TESTS )
