@@ -7,6 +7,11 @@ namespace U
 namespace
 {
 
+U1_StringView StringToStringView( const std::string& s )
+{
+	return U1_StringView{ s.data(), s.size() };
+}
+
 const std::string StringViewToString( const U1_StringView view )
 {
 	return std::string( view.data, view.data + view.size );
@@ -24,7 +29,7 @@ void GetFullFilePath(
 			StringViewToString(file_path),
 			StringViewToString(parent_file_path_normalized) );
 
-	result_callback( user_data, U1_StringView{ path.data(), path.size() } );
+	result_callback( user_data, StringToStringView(path) );
 }
 
 bool LoadFileContent(
@@ -42,10 +47,7 @@ bool LoadFileContent(
 	if( load_file_result == std::nullopt )
 		return false;
 
-	result_callback(
-		user_data,
-		U1_StringView{ load_file_result->file_content.data(), load_file_result->file_content.size() } );
-
+	result_callback( user_data, StringToStringView( load_file_result->file_content ) );
 	return true;
 }
 
@@ -81,14 +83,9 @@ UserHandle TemplateErrorsContextHandler(
 	out_error->template_context->context_name= StringViewToString( context_name );
 	out_error->template_context->parameters_description= StringViewToString( args_description );
 
-	return reinterpret_cast<UserHandle>( & out_error->template_context->errors );
+	return reinterpret_cast<UserHandle>(&out_error->template_context->errors);
 }
 
-const ErrorsHandlingCallbacks g_error_handling_callbacks
-{
-	ErrorHanlder,
-	TemplateErrorsContextHandler,
-};
 
 void SourceFilePathProcessingFunction(
 	const UserHandle data, // should be "std::vector<IVfs::Path>*"
@@ -127,17 +124,16 @@ CodeBuilderLaunchResult launchCodeBuilder(
 	const LLVMModuleRef llvm_module=
 		U1_BuildProgrammUsingVFS(
 			IVfsInterface{ reinterpret_cast<UserHandle>(vfs.get()), GetFullFilePath, LoadFileContent },
-			U1_StringView{ input_file.data(), input_file.size() },
+			StringToStringView(input_file),
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout ),
 			SourceFilePathProcessingFunction,
 			reinterpret_cast<UserHandle>(&result.dependent_files),
 			LexSyntErrorProcessingFunction,
 			reinterpret_cast<UserHandle>(&result.lex_synt_errors),
-			g_error_handling_callbacks,
+			ErrorsHandlingCallbacks{ ErrorHanlder, TemplateErrorsContextHandler },
 			reinterpret_cast<UserHandle>(&result.code_builder_errors) );
 
-	// TODO - process syntax errors.
 	if( llvm_module == nullptr )
 		return result;
 
