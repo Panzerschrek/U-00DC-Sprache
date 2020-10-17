@@ -630,7 +630,7 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 		else if( c == "\""c32 )
 		{
 			lexem= ParseString( it, result.errors, file_pos );
-			if( IsIdentifierStartChar( GetUTF8FirstChar( it ) ) )
+			if( !it.empty() && IsIdentifierStartChar( GetUTF8FirstChar( it ) ) )
 			{
 				lexem.file_pos= file_pos;
 				result.lexems.push_back( take(lexem) );
