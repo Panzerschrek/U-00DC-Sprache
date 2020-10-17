@@ -1,0 +1,21 @@
+import "/string.u"
+import "/vector.u"
+import "file_pos.uh"
+
+namespace U1
+{
+
+struct LexSyntError
+{
+	FilePos file_pos;
+	ust::string8 text;
+
+	fn constructor() = default;
+	fn constructor( FilePos& in_file_pos, ust::string8 mut in_text )
+		( file_pos= in_file_pos, text= move(in_text) )
+		{}
+}
+
+type LexSyntErrors= ust::vector</LexSyntError/>;
+
+} // namespace U1
