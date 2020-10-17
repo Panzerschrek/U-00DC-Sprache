@@ -1,21 +1,19 @@
-import "/string_conversions.u"
 import "../tests_common/print.uh"
 import "source_graph.uh"
 
 namespace U1
 {
 
-fn LoadSourceGraph( IVfs &mut vfs, ust::string8& root_file_path, CppIoStreamRef errors_stream ) : SourceGraph
+fn LoadSourceGraph( IVfs &mut vfs, ust::string8& root_file_path ) : SourceGraph
 {
 	var SourceGraph mut source_graph{ .macro_expansion_contexts(Synt::MacroExpansionContexts()) };
-	LoadSourceGraph_r( vfs, errors_stream, root_file_path, "", source_graph );
+	LoadSourceGraph_r( vfs, root_file_path, "", source_graph );
 	return move(source_graph);
 }
 
 // Returns node index or ~0 in case of error.
 fn LoadSourceGraph_r(
 	IVfs &mut vfs,
-	CppIoStreamRef errors_stream,
 	ust::string8& file_path,
 	ust::string8& parent_file_path,
 	SourceGraph& mut source_graph ) : size_type
@@ -37,10 +35,9 @@ fn LoadSourceGraph_r(
 		var ust::string8 mut str;
 		str+= "Error, can not read file: \"";
 		str+= file_path_normalized;
-		str+= "\"\n\0";
-		unsafe{  U1_PrintStr( errors_stream, str.front() );  }
+		str+= "\"";
 
-		source_graph.have_errors= true;
+		source_graph.errors.push_back( LexSyntError( FilePos( 0u, 0u, 0u ), move(str) ) );
 		return ~0s;
 	}
 
@@ -49,15 +46,10 @@ fn LoadSourceGraph_r(
 	source_graph.nodes.push_back( SourceGraph::Node() );
 
 	auto mut lex_result= LexicalAnalysis( file_content_opt.get_ref().range() );
-	foreach( &error_message : lex_result.error_messages )
+	foreach( &error : lex_result.errors )
 	{
-		var ust::string8 mut str= file_path_normalized;
-		str+= ": error: ";
-		str+= error_message;
-		str+= "\n\0";
-		unsafe{  U1_PrintStr( errors_stream, str.front() );  }
+		source_graph.errors.push_back( error );
 	}
-	source_graph.have_errors|= !lex_result.error_messages.empty();
 
 	foreach( &mut lexem : lex_result.lexems )
 	{
@@ -67,7 +59,6 @@ fn LoadSourceGraph_r(
 	var SourceGraph::Node mut node
 	{
 		.file_path_normalized= file_path_normalized,
-		.lexical_error_messages= take(lex_result.error_messages),
 	};
 
 	// Recursively load imports.
@@ -75,7 +66,7 @@ fn LoadSourceGraph_r(
 	var Synt::ImportsList imports= Synt::ParseImports( lex_result.lexems );
 	foreach( &import_ : imports )
 	{
-		auto child= LoadSourceGraph_r( vfs, errors_stream, import_, file_path_normalized, source_graph );
+		auto child= LoadSourceGraph_r( vfs, import_, file_path_normalized, source_graph );
 		if( child != ~0s )
 		{
 			node.children.push_back(child);
@@ -84,7 +75,7 @@ fn LoadSourceGraph_r(
 
 	// Merge macroses
 	var Synt::MacrosByContextMap mut macros;
-	var bool mut macros_ok= true;
+	var LexSyntErrors mut macro_errors;
 	foreach( &child_index : node.children )
 	{
 		var SourceGraph::Node& src_node= source_graph.nodes[child_index];
@@ -105,37 +96,23 @@ fn LoadSourceGraph_r(
 				}
 				else if( dst_map[ macro.key() ].get_ref().file_pos != macro.value().get_ref().file_pos )
 				{
-					var Synt::Macro& redefined_macro= macro.value().get_ref();
-					var ust::string8 mut str= src_node.file_path_normalized;
-					str+= ":";
-					str+= ust::to_string8( redefined_macro.file_pos.GetLine() );
-					str+= ":";
-					str+= ust::to_string8( redefined_macro.file_pos.GetColumn() );
-					str+= ": error: macro \"";
-					str+= redefined_macro.name;
-					str+= "\" redefinition\n\0";
-					unsafe{  U1_PrintStr( errors_stream, str.front() );  }
-					macros_ok= false;
+					macro_errors.push_back( LexSyntError(
+						macro.value().get_ref().file_pos ,
+						"Macro \"" + macro.key() + "\" redefinition." ) );
 				}
 			}
 		}
 	}
-	source_graph.have_errors|= !macros_ok;
+	foreach( &mut macro_error : macro_errors )
+	{
+		source_graph.errors.push_back( take(macro_error) );
+	}
 
 	auto mut synt_result= Synt::SyntaxAnalysis( lex_result.lexems, move(macros), source_graph.macro_expansion_contexts );
-	foreach( &error_message : synt_result.error_messages )
+	foreach( &error : synt_result.errors )
 	{
-		var ust::string8 mut str= file_path_normalized;
-		str+= ":";
-		str+= ust::to_string8( error_message.file_pos.GetLine() );
-		str+= ":";
-		str+= ust::to_string8( error_message.file_pos.GetColumn() );
-		str+= ": error: ";
-		str+= error_message.text;
-		str+= "\n\0";
-		unsafe{  U1_PrintStr( errors_stream, str.front() );  }
+		source_graph.errors.push_back( error );
 	}
-	source_graph.have_errors|= !synt_result.error_messages.empty();
 	node.synt_result= move(synt_result);
 
 	source_graph.nodes[node_index]= move(node);

@@ -1,5 +1,6 @@
 import "macro.uh"
 import "syntax_elements.uh"
+import "lex_synt_error.uh"
 
 namespace U1
 {
@@ -7,21 +8,13 @@ namespace U1
 namespace Synt
 {
 
-struct SyntaxErrorMessage
-{
-	ust::string8 text;
-	FilePos file_pos;
-}
-
-type SyntaxErrorMessages= ust::vector</SyntaxErrorMessage/>;
-
 type ImportsList= ust::vector</ust::string8/>;
 
 struct SyntaxAnalysisResult
 {
 	ImportsList imports_list;
 	ProgramElements program_elements;
-	SyntaxErrorMessages error_messages;
+	LexSyntErrors errors;
 	MacrosByContextMap macros;
 }
 

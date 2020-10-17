@@ -1,5 +1,4 @@
 import "syntax_analyzer.uh"
-import "../tests_common/print.uh"
 
 namespace U1
 {
@@ -19,23 +18,15 @@ struct SourceGraph
 	struct Node
 	{
 		ust::string8 file_path_normalized;
-
-		LexicalErrorMessages lexical_error_messages;
 		Synt::SyntaxAnalysisResult synt_result;
-
 		ust::vector</size_type/> children;
 	}
 
 	ust::vector</Node/> nodes; // Node #0 is root
 	Synt::MacroExpansionContextsPtr macro_expansion_contexts;
-	bool have_errors= false;
+	LexSyntErrors errors;
 }
 
-fn LoadSourceGraph( IVfs &mut vfs, ust::string8& root_file_path, CppIoStreamRef errors_stream ) : SourceGraph;
-
-fn LoadSourceGraph( IVfs &mut vfs, ust::string8& root_file_path ) : SourceGraph
-{
-	unsafe{  return LoadSourceGraph( vfs, root_file_path, U1_GetCerr() );  }
-}
+fn LoadSourceGraph( IVfs &mut vfs, ust::string8& root_file_path ) : SourceGraph;
 
 } // namespace U1

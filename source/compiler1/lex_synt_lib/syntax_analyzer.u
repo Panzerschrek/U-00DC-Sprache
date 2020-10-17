@@ -324,7 +324,7 @@ private:
 		}
 		else{ static_assert(false); }
 
-		VectorAppend( error_messages_, syntax_analyzer.error_messages_ );
+		VectorAppend( errors_, take(syntax_analyzer.errors_) );
 		return move(result);
 	}
 
@@ -352,7 +352,7 @@ private:
 	ust::array_view_imut</Lexem/> it_;
 	ust::array_view_imut</Lexem/> last_error_it_;
 	size_type last_error_repeats_= 0s;
-	SyntaxErrorMessages error_messages_;
+	LexSyntErrors errors_;
 
 	MacrosPtr macros_;
 	MacroExpansionContextsPtr macro_expansion_contexts_;
@@ -384,7 +384,7 @@ fn SyntaxAnalyzer::DoAnalyzis( mut this ) : SyntaxAnalysisResult
 	}
 
 	res.program_elements= ParseNamespaceBody( Lexem::Type::EndOfFile );
-	res.error_messages= take(error_messages_);
+	res.errors= take(errors_);
 
 	{
 		auto mut lock= macros_.lock_mut();
@@ -4114,14 +4114,10 @@ fn SyntaxAnalyzer::NextLexem( mut this )
 
 fn SyntaxAnalyzer::PushErrorMessage( mut this )
 {
-	if( error_messages_.empty() || FilePos(error_messages_.back().file_pos) != it_.front().file_pos )
+	if( errors_.empty() || FilePos(errors_.back().file_pos) != it_.front().file_pos )
 	{
-		var SyntaxErrorMessage mut error_message
-		{
-			.file_pos= it_.front().file_pos,
-			.text= "Syntax error - unexpected lexem: \"" + it_.front().text + "\""
-		};
-		error_messages_.push_back( move(error_message) );
+		var LexSyntError mut error( it_.front().file_pos, "Syntax error - unexpected lexem: \"" + it_.front().text + "\"" );
+		errors_.push_back( move(error) );
 	}
 
 	// HACK! Advance current position if we report about error in current position multiple times.
@@ -4145,8 +4141,7 @@ fn SyntaxAnalyzer::PushErrorMessage( mut this )
 
 fn SyntaxAnalyzer::PushMacroErrorMessage( mut this, FilePos& file_pos, ust::string8 mut text )
 {
-	var SyntaxErrorMessage mut error_message{ .file_pos= file_pos, .text= move(text) };
-	error_messages_.push_back( move(error_message) );
+	errors_.push_back( LexSyntError( file_pos, move(text) ) );
 }
 
 fn SyntaxAnalysis(

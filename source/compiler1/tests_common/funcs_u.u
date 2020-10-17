@@ -1,3 +1,4 @@
+import "/string_conversions.u"
 import "../lex_synt_lib/source_graph.uh"
 import "../code_builder_lib/code_builder.uh"
 import "print.uh"
@@ -51,7 +52,8 @@ fn nomangle U1_BuildProgram(
 			var U1::TestVfs mut test_vfs( program_text );
 			auto source_graph= U1::LoadSourceGraph( test_vfs, "_" );
 
-			if( source_graph.have_errors || source_graph.nodes.empty() )
+			U1::PrintLexSyntErrors( source_graph );
+			if( !source_graph.errors.empty() || source_graph.nodes.empty() )
 			{
 				return LLVMModuleRef::Null;
 			}
@@ -98,7 +100,8 @@ fn nomangle U1_BuildProgramWithErrors(
 			var U1::TestVfs mut test_vfs( program_text );
 			auto source_graph= U1::LoadSourceGraph( test_vfs, "_" );
 
-			if( source_graph.have_errors || source_graph.nodes.empty() )
+			U1::PrintLexSyntErrors( source_graph );
+			if( !source_graph.errors.empty() || source_graph.nodes.empty() )
 			{
 				return false;
 			}
@@ -125,11 +128,11 @@ fn nomangle U1_BuildProgramWithSyntaxErrors(
 		auto program_text= U1::StringToArrayView( program_text.data, program_text.size );
 
 		var U1::TestVfs mut test_vfs( program_text );
-		auto source_graph= U1::LoadSourceGraph( test_vfs, "_", U1_GetNullStream() );
+		auto source_graph= U1::LoadSourceGraph( test_vfs, "_");
 
 		foreach( &node : source_graph.nodes )
 		{
-			foreach( &err : node.synt_result.error_messages )
+			foreach( &err : node.synt_result.errors )
 			{
 				var U1_StringView text_view{ .data= err.text.front(), .size= err.text.size() };
 				unsafe
@@ -159,7 +162,7 @@ fn nomangle U1_BuildProgrammUsingVFS(
 	{
 		auto path= U1::StringToArrayView( root_file_path.data, root_file_path.size );
 
-		auto source_graph= U1::LoadSourceGraph( vfs, path, U1_GetNullStream() );
+		auto source_graph= U1::LoadSourceGraph( vfs, path );
 
 		foreach( &node : source_graph.nodes )
 		{
@@ -170,28 +173,16 @@ fn nomangle U1_BuildProgrammUsingVFS(
 			}
 		}
 
-		foreach( &node : source_graph.nodes )
+		foreach( &err : source_graph.errors )
 		{
-			foreach( &err : node.lexical_error_messages )
+			unsafe
 			{
-				unsafe
-				{
-					var U1_StringView text{ .data= err.front_unsafe(), .size= err.size() };
-					// TODO - set FilePos
-					lex_synt_error_callback( lex_synt_error_callback_data, 0u, 0u, 0u, text );
-				}
-			}
-			foreach( &err : node.synt_result.error_messages )
-			{
-				unsafe
-				{
-					var U1_StringView text{ .data= err.text.front_unsafe(), .size= err.text.size() };
-					lex_synt_error_callback( lex_synt_error_callback_data, err.file_pos.GetFileIndex(), err.file_pos.GetLine(), err.file_pos.GetColumn(), text );
-				}
+				var U1_StringView text{ .data= err.text.front_unsafe(), .size= err.text.size() };
+				lex_synt_error_callback( lex_synt_error_callback_data, err.file_pos.GetFileIndex(), err.file_pos.GetLine(), err.file_pos.GetColumn(), text );
 			}
 		}
 
-		if( source_graph.have_errors || source_graph.nodes.empty() )
+		if( !source_graph.errors.empty() || source_graph.nodes.empty() )
 		{
 			return LLVMModuleRef::Null;
 		}
@@ -256,7 +247,7 @@ fn nomangle U1_BuildMultisourceProgram(
 	var U1::TestVfs mut test_vfs( move(source_entries) );
 	auto source_graph= U1::LoadSourceGraph( test_vfs, root_file_path_str );
 
-	if( source_graph.have_errors || source_graph.nodes.empty() )
+	if( !source_graph.errors.empty() || source_graph.nodes.empty() )
 	{
 		return LLVMModuleRef::Null;
 	}
@@ -316,7 +307,7 @@ fn nomangle U1_BuildMultisourceProgramWithErrors(
 	var U1::TestVfs mut test_vfs( move(source_entries) );
 	auto source_graph= U1::LoadSourceGraph( test_vfs, root_file_path_str );
 
-	if( source_graph.have_errors || source_graph.nodes.empty() )
+	if( !source_graph.errors.empty() || source_graph.nodes.empty() )
 	{
 		return false;
 	}
@@ -343,6 +334,29 @@ fn StringToArrayView( char8 &'x string_start, size_type string_size ) unsafe : u
 		return ust::array_view_imut</ char8 />(
 			ptr,
 			ptr + string_size );
+	}
+}
+
+fn PrintLexSyntErrors( SourceGraph& source_graph )
+{
+	foreach( &err : source_graph.errors )
+	{
+		var ust::string8 mut str;
+
+		auto file_index= size_type(err.file_pos.GetFileIndex());
+		if( file_index < source_graph.nodes.size() )
+		{
+			str+= source_graph.nodes[file_index].file_path_normalized;
+		}
+
+		str+= ":";
+		str+= ust::to_string8( err.file_pos.GetLine() );
+		str+= ":";
+		str+= ust::to_string8( err.file_pos.GetColumn() );
+		str+= ": error: ";
+		str+= err.text;
+		str+= "\n\0";
+		unsafe{  U1_PrintStr( U1_GetCerr(), str.front() );  }
 	}
 }
 

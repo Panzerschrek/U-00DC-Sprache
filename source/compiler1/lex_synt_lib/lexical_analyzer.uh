@@ -1,6 +1,6 @@
 import "/string.u"
 import "/vector.u"
-import "file_pos.uh"
+import "lex_synt_error.uh"
 
 namespace U1
 {
@@ -115,13 +115,10 @@ struct Lexem
 
 type Lexems= ust::vector</Lexem/>;
 
-type LexicalErrorMessage= ust::string8;
-type LexicalErrorMessages= ust::vector</LexicalErrorMessage/>;
-
 struct LexicalAnalysisResult
 {
 	Lexems lexems;
-	LexicalErrorMessages error_messages;
+	LexSyntErrors errors;
 }
 
 fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnalysisResult;
