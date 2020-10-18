@@ -282,6 +282,7 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 		add_subdirectory( tests/import_test tests1/import_test )
 		add_subdirectory( tests/inline_linkage_test tests1/inline_linkage_test )
 		add_subdirectory( tests/include_dirs_test tests1/include_dirs_test )
+		add_subdirectory( tests/type_id_test tests1/type_id_test )
 		add_subdirectory( tests/unicode_file_names_test tests1/unicode_file_names_test )
 	endif()
 

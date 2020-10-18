@@ -552,6 +552,7 @@ private:
 	fn PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr );
 	fn PrepareClassVirtualTableType( this, ClassTypePtr& class_type_ptr );
 
+	fn BuildClassPolymorphTypeId( this, ClassTypePtr& class_type_ptr );
 	fn BuildClassVirtualTable_r( this, ClassType& ancestor_class, ClassType& dst_class, LLVMValueRef dst_class_ptr_null_based ) : LLVMValueRef;
 	fn BuildClassVirtualTable( this, ClassTypePtr& class_type_ptr );
 

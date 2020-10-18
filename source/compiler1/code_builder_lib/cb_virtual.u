@@ -320,6 +320,39 @@ fn CodeBuilder::PrepareClassVirtualTableType( this, ClassTypePtr& class_type_ptr
 	}
 }
 
+fn CodeBuilder::BuildClassPolymorphTypeId( this, ClassTypePtr& class_type_ptr )
+{
+	var ClassType::Kind class_kind= class_type_ptr.lock_imut().get_ref().kind;
+	if( !(
+		class_kind == ClassType::Kind::Interface ||
+		class_kind == ClassType::Kind::Abstract ||
+		class_kind == ClassType::Kind::PolymorphNonFinal ||
+		class_kind == ClassType::Kind::PolymorphFinal ) )
+	{
+		return;
+	}
+
+	var LLVMTypeRef type_id_type= fundamental_llvm_types_.int_ptr;
+	var ust::string8 name_mangled_null_terminated= "_type_id_for_" + MangleType( class_type_ptr );
+
+	unsafe
+	{
+		var LLVMValueRef global_value= LLVMAddGlobal( module_, type_id_type, name_mangled_null_terminated.front_unsafe() );
+		LLVMSetLinkage( global_value, LLVMLinkage::External );
+		LLVMSetGlobalConstant( global_value, LLVMBool::True );
+		LLVMSetInitializer( global_value, LLVMConstNull( type_id_type ) );
+
+		var LLVMComdatRef comdat= LLVMGetOrInsertComdat( module_, name_mangled_null_terminated.front_unsafe() );
+		LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
+		LLVMSetComdat( global_value, comdat );
+
+		auto mut lock= class_type_ptr.lock_mut();
+		var ClassType& mut class_type= lock.get_ref();
+		halt if( class_type.polymorph_type_id != LLVMValueRef::Null );
+		class_type.polymorph_type_id= global_value;
+	}
+}
+
 fn CodeBuilder::BuildClassVirtualTable_r( this, ClassType& ancestor_class, ClassType& dst_class, LLVMValueRef dst_class_ptr_null_based ) : LLVMValueRef
 {
 	var ust::vector</LLVMValueRef/> mut initializer_values;
@@ -351,8 +384,8 @@ fn CodeBuilder::BuildClassVirtualTable_r( this, ClassType& ancestor_class, Class
 			initializer_values.push_back(
 				LLVMBuildPtrToInt( function_context.llvm_ir_builder, dst_class_ptr_null_based, fundamental_llvm_types_.int_ptr, "\0"[0] ) );
 
-			// TODO - Type id
-			initializer_values.push_back( LLVMConstNull( LLVMPointerType( fundamental_llvm_types_.int_ptr, 0u ) ) );
+			// Type id
+			initializer_values.push_back( dst_class.polymorph_type_id );
 		}
 
 		auto array_type= LLVMStructGetTypeAtIndex( ancestor_class.virtual_table_llvm_type, u32(initializer_values.size() ) );

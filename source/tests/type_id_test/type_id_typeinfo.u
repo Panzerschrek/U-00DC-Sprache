@@ -1,0 +1,6 @@
+import "inc.u"
+
+fn nomangle GetSomeClassIdTypeinfo() : size_type&
+{
+	return typeinfo</SomeClass/>.type_id;
+}

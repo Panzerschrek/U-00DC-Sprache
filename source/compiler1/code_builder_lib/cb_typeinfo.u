@@ -357,7 +357,21 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 
 		if( is_polymorph )
 		{
-			// TODO - add polymorph type id
+			var ClassField mut class_field
+			{
+				.t= size_type_,
+				.is_mutable= false,
+				.is_reference= true,
+				.index= fields_llvm_types.size(),
+				.syntax_element= dummy_syntax_element,
+				.source_class= typeinfo_class,
+			};
+
+			fields_llvm_types.push_back( class_field.t.GetLLVMType() );
+			fields_initializers.push_back( class_.polymorph_type_id );
+
+			auto mut members_lock= class_members.lock_mut();
+			members_lock.get_ref().AddName( "type_id", move(class_field) );
 		}
 
 		ADD_BOOL_FIELD( "is_struct", class_.kind == ClassType::Kind::Struct )

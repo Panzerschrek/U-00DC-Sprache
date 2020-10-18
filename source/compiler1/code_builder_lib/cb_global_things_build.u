@@ -756,6 +756,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		class_.inner_reference_kind= class_inner_reference_kind;
 	}
 
+	BuildClassPolymorphTypeId( class_type );
 	BuildClassVirtualTable( class_type );
 
 	TryGenerateDefaultConstructor( class_type );
