@@ -70,7 +70,9 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 {
 	unsafe // Create module.
 	{
-		module_ = LLVMModuleCreateWithNameInContext( "some_module\0"[0], llvm_context_ );
+		var ust::string8 mut module_name= source_graph.nodes.front().file_path_normalized;
+		module_name += "\0";
+		module_ = LLVMModuleCreateWithNameInContext( module_name.front_unsafe(), llvm_context_ );
 		LLVMSetModuleDataLayout( module_, data_layout_ );
 	}
 
