@@ -367,7 +367,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 				.source_class= typeinfo_class,
 			};
 
-			fields_llvm_types.push_back( class_field.t.GetLLVMType() );
+			unsafe{  fields_llvm_types.push_back( LLVMPointerType( class_field.t.GetLLVMType(), 0u ) );  }
 			fields_initializers.push_back( class_.polymorph_type_id );
 
 			auto mut members_lock= class_members.lock_mut();
@@ -546,6 +546,7 @@ fn CodeBuilder::BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_name
 	auto class_members_lock= class_members_ptr.lock_imut();
 	var NamesScope& class_members= class_members_lock.get_ref();
 
+	// TODO - use some predictable order.
 	foreach( &member : class_members.GetInternalContainer() )
 	{
 		auto field_ptr= member.value().Get</ClassField/>();
