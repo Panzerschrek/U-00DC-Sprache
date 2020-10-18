@@ -2001,6 +2001,10 @@ fn CodeBuilder::SetupLLVMFunctionAttributes( this, FunctionVariable& func_variab
 		LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any ); // Actually, we needs something, like ExactMatch, but it works not in all cases.
 		LLVMSetComdat( func_variable.llvm_function, comdat );
 	}
+
+	// Merge functions with identical code.
+	// We doesn't need different addresses for different functions.
+	unsafe{  LLVMSetUnnamedAddress( func_variable.llvm_function, LLVMUnnamedAddr::GlobalUnnamedAddr );  }
 }
 
 fn CodeBuilder::GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef
