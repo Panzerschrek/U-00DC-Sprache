@@ -236,30 +236,13 @@ if( U_BUILD_TESTS )
 endif()
 
 add_subdirectory( compiler0 )
-
+if( U_BUILD_COMPILER AND U_BUILD_COMPILER1 )
+	set( CURRENT_COMPILER Compiler )
+	set( CURRENT_COMPLIER_GENERATION 1 )
+	add_subdirectory( compiler1 )
+endif()
 
 if( REALLY_BUILD_LINKAGE_TESTS )
-
-	# Build rule for "Ü" files
-	# Returns result in ${out_object}
-	function( CompileUSource u_source_file out_object )
-		file( RELATIVE_PATH source_name_rel ${CMAKE_CURRENT_SOURCE_DIR} ${u_source_file} )
-		set( object_name ${CMAKE_CURRENT_BINARY_DIR}/${source_name_rel}.o )
-		add_custom_command(
-			OUTPUT ${object_name}
-			DEPENDS ${u_source_file} Compiler${CURRENT_COMPILER_GENERATION}
-			COMMAND Compiler${CURRENT_COMPILER_GENERATION} ${u_source_file} -o ${object_name} ${SPRACHE_COMPILER_PIC_OPTIONS} )
-		set( ${out_object} ${object_name} PARENT_SCOPE )
-	endfunction()
-
-	# Returns list of objects in ${out_objects}
-	function( CompileUSources u_source_files out_objects )
-		foreach( source ${u_source_files} )
-			CompileUSource( ${source} out_object )
-			list( APPEND out_objects_local ${out_object} )
-		endforeach()
-		set( ${out_objects} ${out_objects_local} PARENT_SCOPE )
-	endfunction()
 
 	set( CURRENT_COMPILER_GENERATION "" )
 	add_subdirectory( tests )
@@ -282,11 +265,4 @@ if( U_BUILD_DOCS )
 	else()
 		message( "Sphinx not found, skip Ü docs" )
 	endif()
-endif()
-
-
-if( U_BUILD_COMPILER AND U_BUILD_COMPILER1 )
-	set( CURRENT_COMPILER Compiler )
-	set( CURRENT_COMPLIER_GENERATION 1 )
-	add_subdirectory( compiler1 )
 endif()
