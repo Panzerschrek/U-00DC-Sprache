@@ -2005,6 +2005,18 @@ fn CodeBuilder::SetupLLVMFunctionAttributes( this, FunctionVariable& func_variab
 	// Merge functions with identical code.
 	// We doesn't need different addresses for different functions.
 	unsafe{  LLVMSetUnnamedAddress( func_variable.llvm_function, LLVMUnnamedAddr::GlobalUnnamedAddr );  }
+
+	// We do not support exceptions. So, mark all functions as "nounwind".
+	unsafe
+	{
+		var ust::array_view_imut</ char8 /> attr_name= "nounwind";
+		auto attr_kind= LLVMGetEnumAttributeKindForName( attr_name.front(), attr_name.size() );
+		auto attr= LLVMCreateEnumAttribute( llvm_context_, attr_kind, 0u64 );
+
+		LLVMAddAttributeAtIndex( func_variable.llvm_function, LLVMAttributeFunctionIndex, attr );
+	}
+
+	// TODO - add attribute "uwtable" if we are building debug info.
 }
 
 fn CodeBuilder::GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef
