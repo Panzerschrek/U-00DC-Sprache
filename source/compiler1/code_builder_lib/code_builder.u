@@ -1348,6 +1348,8 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		}
 	}
 
+	SetupLLVMFunctionAttributes( func_variable );
+
 	var FunctionContext mut function_context_value(
 		llvm_context_,
 		func_variable.llvm_function,
@@ -1981,6 +1983,40 @@ fn CodeBuilder::AddGlobalConstantVariable( this, ust::string8& name_null_termina
 		}
 		return global_value;
 	}
+}
+
+fn CodeBuilder::SetupLLVMFunctionAttributes( this, FunctionVariable& func_variable )
+{
+	// Set comdat. This needed because we want linkage like "inline" in C++ but for all functions.
+	unsafe
+	{
+		var size_type mut name_length = zero_init;
+		var char8& name_start= LLVMGetValueName2( func_variable.llvm_function, name_length );
+
+		var ust::string8 mut name_str;
+		name_str.resize( name_length + 1s, "\0"c8 );
+		ust::memory_copy( name_str.front_unsafe(), name_start, name_length );
+
+		auto comdat= LLVMGetOrInsertComdat( module_, name_str.front_unsafe() );
+		LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any ); // Actually, we needs something, like ExactMatch, but it works not in all cases.
+		LLVMSetComdat( func_variable.llvm_function, comdat );
+	}
+
+	// Merge functions with identical code.
+	// We doesn't need different addresses for different functions.
+	unsafe{  LLVMSetUnnamedAddress( func_variable.llvm_function, LLVMUnnamedAddr::GlobalUnnamedAddr );  }
+
+	// We do not support exceptions. So, mark all functions as "nounwind".
+	unsafe
+	{
+		var ust::array_view_imut</ char8 /> attr_name= "nounwind";
+		auto attr_kind= LLVMGetEnumAttributeKindForName( attr_name.front(), attr_name.size() );
+		auto attr= LLVMCreateEnumAttribute( llvm_context_, attr_kind, 0u64 );
+
+		LLVMAddAttributeAtIndex( func_variable.llvm_function, LLVMAttributeFunctionIndex, attr );
+	}
+
+	// TODO - add attribute "uwtable" if we are building debug info.
 }
 
 fn CodeBuilder::GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef

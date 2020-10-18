@@ -18,6 +18,7 @@ DefineLLVMRef LLVMValueRef
 DefineLLVMRef LLVMBasicBlockRef
 DefineLLVMRef LLVMTargetDataRef // Actually this is DataLayout
 DefineLLVMRef LLVMAttributeRef
+DefineLLVMRef LLVMComdatRef
 
 type NullTerminatedString= char8;
 
@@ -123,6 +124,15 @@ auto LLVMAttributeReturnIndex= 0u;
 auto LLVMAttributeFunctionIndex= ~0u;
 auto LLVMAttributeFirstParamIndex= 1u;
 
+enum LLVMComdatSelectionKind : u32
+{
+	Any,        ///< The linker may choose any COMDAT.
+	ExactMatch, ///< The data referenced by the COMDAT must  be the same.
+	Largest,    ///< The linker will choose the largest COMDAT.
+	NoDuplicates, ///< No other Module may specify this COMDAT.
+	SameSize ///< The data referenced by the COMDAT must be the same size.
+}
+
 // Functions
 
 // Context
@@ -180,6 +190,7 @@ fn nomangle LLVMGetTypeKind(LLVMTypeRef Ty) unsafe : LLVMTypeKind;
 // Value
 
 fn nomangle LLVMTypeOf(LLVMValueRef Val) unsafe : LLVMTypeRef;
+fn nomangle LLVMGetValueName2(LLVMValueRef Val, size_type &mut Length) : char8&;
 fn nomangle LLVMSetValueName2(LLVMValueRef Val, char8& Name, size_type NameLen) unsafe;
 fn nomangle LLVMConstIntGetZExtValue(LLVMValueRef ConstantVal) unsafe : u64;
 fn nomangle LLVMConstIntGetSExtValue(LLVMValueRef ConstantVal) unsafe : i64;
@@ -192,7 +203,6 @@ fn nomangle LLVMIsUndef(LLVMValueRef Val) unsafe : LLVMBool;
 fn nomangle LLVMAddFunction(LLVMModuleRef M, NullTerminatedString& Name, LLVMTypeRef FunctionTy) unsafe : LLVMValueRef;
 fn nomangle LLVMSetLinkage(LLVMValueRef Global, LLVMLinkage Linkage) unsafe;
 fn nomangle LLVMSetUnnamedAddress(LLVMValueRef Global, LLVMUnnamedAddr UnnamedAddr) unsafe;
-
 
 // Global variable
 
@@ -217,6 +227,12 @@ fn nomangle LLVMCreateBasicBlockInContext(LLVMContextRef C, NullTerminatedString
 fn nomangle LLVMAppendBasicBlockInContext(LLVMContextRef C, LLVMValueRef Fn, NullTerminatedString& Name) unsafe : LLVMBasicBlockRef;
 fn nomangle LLVMAppendExistingBasicBlock(LLVMValueRef Fn, LLVMBasicBlockRef BB) unsafe;
 fn nomangle LLVMDeleteBasicBlock(LLVMBasicBlockRef BB) unsafe;
+
+// Comdat
+
+fn nomangle LLVMGetOrInsertComdat(LLVMModuleRef M, NullTerminatedString& Name) unsafe : LLVMComdatRef;
+fn nomangle LLVMSetComdatSelectionKind(LLVMComdatRef C, LLVMComdatSelectionKind Kind) unsafe;
+fn nomangle LLVMSetComdat(LLVMValueRef V, LLVMComdatRef C) unsafe;
 
 // Module helpers
 
