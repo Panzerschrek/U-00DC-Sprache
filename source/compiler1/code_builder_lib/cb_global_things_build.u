@@ -389,7 +389,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		auto type_alias_ptr= member.value().Get</ TypeAlias />();
 		if( !type_alias_ptr.empty() )
 		{
-			BuildTypeAlias( names_scope_ptr, ust::to_non_nullable(type_alias_ptr) );
+			BuildTypeAlias( class_members, ust::to_non_nullable(type_alias_ptr) );
 		}
 		// TODO - maybe build here also inner classes, enums, global variables?
 	}
