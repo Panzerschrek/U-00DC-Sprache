@@ -1,5 +1,3 @@
-R"(
-
 ?macro <? if_var:block ( ?r:opt<? & ?> ?m:opt<? mut ?> ?var_name:ident : ?e:expr ) ?b:block ?>
 ->
 <?
@@ -46,5 +44,3 @@ R"(
 		}
 	}
 ?>
-
-)"
