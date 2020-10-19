@@ -396,13 +396,13 @@ fn MangleTypeImpl( Type& t ) : MangleGraphNode
 			var MangleGraphNode mut rr_node;
 			rr_node.prefix= "_RR";
 
-			halt if( function_type.return_references.size() < 36s );
+			halt if( function_type.return_references.size() >= 36s );
 			rr_node.prefix.push_back( Base36Digit(function_type.return_references.size()) );
 
 			foreach( &param_reference : function_type.return_references )
 			{
-				halt if( param_reference.param_index < 36u8 );
-				halt if( param_reference.reference_index < 36u8 || param_reference.reference_index == FunctionType::c_param_reference_number );
+				halt if( param_reference.param_index >= 36u8 );
+				halt if( param_reference.reference_index >= 36u8 && param_reference.reference_index != FunctionType::c_param_reference_number );
 
 				rr_node.prefix.push_back( Base36Digit( size_type(param_reference.param_index) ) );
 				rr_node.prefix.push_back( select(
