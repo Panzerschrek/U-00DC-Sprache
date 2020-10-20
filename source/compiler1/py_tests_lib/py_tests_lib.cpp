@@ -420,7 +420,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TypesMismtach_ForAutoReturnValue_Test1",
 		"TemplateParametersDeductionFailed_Test11",
 		"VirtualForFunctionTemplate_Test0",
-		"PreResolve_Test2",
 		"CastRefUnsafe_Test9_CompletenessStillRequiredForUnsafeCast",
 		"CastRef_Test7_CompleteteTypeRequiredForSource",
 		"VirtualForPrivateFunction_Test0",

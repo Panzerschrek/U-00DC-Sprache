@@ -889,9 +889,7 @@ def PreResolve_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 14 )
+	assert( HaveError( errors_list, "CouldNotSelectOverloadedFunction", 14 ) )
 
 
 def PreResolve_Test4():
