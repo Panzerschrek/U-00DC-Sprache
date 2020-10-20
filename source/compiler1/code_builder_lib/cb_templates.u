@@ -169,6 +169,10 @@ fn CodeBuilder::PrepareFunctionTemplate(
 	{
 		REPORT_ERROR( IncompleteMemberOfClassTemplate, names_scope, function_template_syntax_element.get_ref().file_pos, function_template_name )
 	}
+	if( syntax_element.function.get_ref().virtual_kind != Synt::Function::VirtualKind::None )
+	{
+		REPORT_ERROR( VirtualForFunctionTemplate, names_scope, function_template_syntax_element.get_ref().file_pos, function_template_name )
+	}
 
 	auto mut template_params= PrepareTemplateParams( names_scope, syntax_element.params );
 
