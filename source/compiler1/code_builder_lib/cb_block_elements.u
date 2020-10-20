@@ -1573,8 +1573,10 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 	unsafe
 	{
 		auto operand_value= CreateMoveToLLVMRegisterInstruction( variable, function_context );
-		auto delta_value= LLVMConstInt( variable.t.GetLLVMType(), u64(delta), LLVMBool::True );
-		auto result_value= LLVMBuildAdd( function_context.llvm_ir_builder, operand_value, delta_value, "\0"[0] );
+		auto one_value= LLVMConstInt( variable.t.GetLLVMType(), 1u64, LLVMBool::True );
+		auto result_value= select( delta > 0
+			? LLVMBuildAdd( function_context.llvm_ir_builder, operand_value, one_value, "++\0"[0] )
+			: LLVMBuildSub( function_context.llvm_ir_builder, operand_value, one_value, "--\0"[0] ) );
 		LLVMBuildStore( function_context.llvm_ir_builder, result_value, variable.llvm_value );
 	}
 
