@@ -422,7 +422,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"VirtualForFunctionTemplate_Test0",
 		"CastRefUnsafe_Test9_CompletenessStillRequiredForUnsafeCast",
 		"CastRef_Test7_CompleteteTypeRequiredForSource",
-		"VirtualForPrivateFunction_Test0",
 	};
 
 	if( c_test_to_disable.count( func_name_str ) > 0 )

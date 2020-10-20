@@ -112,7 +112,6 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 
 			var FilePos mut file_pos;
 			var Synt::Function::VirtualKind mut virtual_kind= Synt::Function::VirtualKind::None;
-
 			if( !function.body_syntax_element.empty() )
 			{
 				auto& el= function.body_syntax_element.get_ref();
@@ -124,6 +123,12 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 				auto& el= function.prototype_syntax_element.get_ref();
 				file_pos= el.file_pos;
 				virtual_kind= el.virtual_kind;
+			}
+
+			if( virtual_kind != Synt::Function::VirtualKind::None && class_type.GetMemberVisibility( function_name ) == Synt::ClassVisibility::Private )
+			{
+				// Private members not visible in child classes. So, virtual private function is 100% error.
+				REPORT_ERROR( VirtualForPrivateFunction, class_members_ptr, file_pos, function_name )
 			}
 
 			if( virtual_kind == Synt::Function::VirtualKind::None )
