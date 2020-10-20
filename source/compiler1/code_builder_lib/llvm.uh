@@ -231,7 +231,9 @@ fn nomangle LLVMDeleteBasicBlock(LLVMBasicBlockRef BB) unsafe;
 // Comdat
 
 fn nomangle LLVMGetOrInsertComdat(LLVMModuleRef M, NullTerminatedString& Name) unsafe : LLVMComdatRef;
+fn nomangle LLVMGetComdatSelectionKind(LLVMComdatRef C) unsafe : LLVMComdatSelectionKind;
 fn nomangle LLVMSetComdatSelectionKind(LLVMComdatRef C, LLVMComdatSelectionKind Kind) unsafe;
+fn nomangle LLVMGetComdat(LLVMValueRef V) unsafe : LLVMComdatRef;
 fn nomangle LLVMSetComdat(LLVMValueRef V, LLVMComdatRef C) unsafe;
 
 // Module helpers
