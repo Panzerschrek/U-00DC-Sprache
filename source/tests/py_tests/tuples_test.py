@@ -476,7 +476,7 @@ def TupleFor_Test5():
 			for( e : t )
 			{
 				return e;
-				// Leter iterations of the loop are ignored, because first iteration is terminal.
+				// Later iterations of the loop are ignored, because first iteration is terminal.
 			}
 			// 'return' does not required here.
 		}

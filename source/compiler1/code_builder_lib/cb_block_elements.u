@@ -1130,11 +1130,19 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				{
 					if( !is_last_iteration )
 					{
-						// TODO - fix test crash and delete it.
-						//LLVMDeleteBasicBlock( next_basic_block );
+						LLVMAppendExistingBasicBlock( function_context.llvm_function, next_basic_block );
+						LLVMDeleteBasicBlock( next_basic_block );
 					}
-					LLVMAppendExistingBasicBlock( function_context.llvm_function, finish_basic_block );
-					LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, finish_basic_block );
+					if( !references_graphs_for_merge.empty() )
+					{
+						LLVMAppendExistingBasicBlock( function_context.llvm_function, finish_basic_block );
+						LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, finish_basic_block );
+					}
+					else
+					{
+						LLVMAppendExistingBasicBlock( function_context.llvm_function, finish_basic_block );
+						LLVMDeleteBasicBlock( finish_basic_block );
+					}
 				}
 				break;
 			}

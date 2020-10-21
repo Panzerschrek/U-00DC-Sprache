@@ -768,8 +768,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 				if( !is_last_iteration )
 					delete next_basic_block;
 
-				function_context.function->getBasicBlockList().push_back( finish_basic_block );
-				function_context.llvm_ir_builder.SetInsertPoint( finish_basic_block );
+				if( !break_variables_states.empty() )
+				{
+					function_context.function->getBasicBlockList().push_back( finish_basic_block );
+					function_context.llvm_ir_builder.SetInsertPoint( finish_basic_block );
+				}
+				else
+					delete finish_basic_block;
+
 				break;
 			}
 		}
