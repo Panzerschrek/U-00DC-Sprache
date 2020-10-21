@@ -468,6 +468,68 @@ def TupleFor_Test4():
 	assert( errors_list[0].file_pos.line == 9 )
 
 
+def TupleFor_Test5():
+	c_program_text= """
+		fn Foo() : f32
+		{
+			var tup[ f32, i64, bool ] t[ 0.25f, 29i64, true ];
+			for( e : t )
+			{
+				return e;
+				// Later iterations of the loop are ignored, because first iteration is terminal.
+			}
+			// 'return' does not required here.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result = tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 0.25 )
+
+
+def TupleFor_Test6():
+	c_program_text= """
+		struct S{}
+		template</type T/> struct IsF64{ auto value= false; }
+		template<//> struct IsF64</f64/>{ auto value= true; }
+		fn Foo() : f64
+		{
+			var tup[ i32, f64, S ] t[ 33, 1.25, {} ];
+			var f64 mut res= 0.0;
+			for( e : t )
+			{
+				res+= f64(e);
+				static_if( IsF64</ typeof(e) />::value )
+				{
+					break;
+				}
+				// Loop iterations after "f64" are ignored, because iteration with "f64" is terminal.
+			}
+			return res;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result = tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 34.25 )
+
+
+def TupleFor_Test7():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ bool, f32 ] t= zero_init;
+			for( e : t )
+			{
+				return;
+			}
+			auto x= 0; // This code is unreachable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "UnreachableCode" )
+	assert( errors_list[0].file_pos.line == 9 )
+
+
 def AutoVariableDeclaration_ForTuples_Test0():
 	c_program_text= """
 		fn Foo()
