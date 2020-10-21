@@ -512,6 +512,24 @@ def TupleFor_Test6():
 	assert( call_result == 34.25 )
 
 
+def TupleFor_Test7():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ bool, f32 ] t= zero_init;
+			for( e : t )
+			{
+				return;
+			}
+			auto x= 0; // This code is unreachable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "UnreachableCode" )
+	assert( errors_list[0].file_pos.line == 9 )
+
+
 def AutoVariableDeclaration_ForTuples_Test0():
 	c_program_text= """
 		fn Foo()
