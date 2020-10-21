@@ -107,7 +107,7 @@ void LexSyntErrorProcessingFunction(
 
 } // namespace
 
-CodeBuilderLaunchResult launchCodeBuilder(
+CodeBuilderLaunchResult LaunchCodeBuilder(
 	const IVfs::Path& input_file,
 	const IVfsPtr& vfs,
 	llvm::LLVMContext& llvm_context,

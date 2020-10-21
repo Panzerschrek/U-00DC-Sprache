@@ -484,7 +484,7 @@ int Main( int argc, const char* argv[] )
 		for( const std::string& input_file : Options::input_files )
 		{
 			CodeBuilderLaunchResult code_builder_launch_result=
-				launchCodeBuilder( input_file, vfs, llvm_context, data_layout, Options::generate_debug_info );
+				LaunchCodeBuilder( input_file, vfs, llvm_context, data_layout, Options::generate_debug_info );
 
 			deps_list.insert( deps_list.end(), code_builder_launch_result.dependent_files.begin(), code_builder_launch_result.dependent_files.end() );
 

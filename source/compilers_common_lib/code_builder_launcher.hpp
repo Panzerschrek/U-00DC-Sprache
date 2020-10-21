@@ -20,7 +20,7 @@ struct CodeBuilderLaunchResult
 };
 
 // There are different implementations of this function for different implementations of CodeBuilderLib.
-CodeBuilderLaunchResult launchCodeBuilder(
+CodeBuilderLaunchResult LaunchCodeBuilder(
 	const IVfs::Path& input_file,
 	const IVfsPtr& vfs,
 	llvm::LLVMContext& llvm_context,
