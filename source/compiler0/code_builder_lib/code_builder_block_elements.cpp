@@ -632,6 +632,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
+	BlockBuildInfo block_build_info;
+
 	const StackVariablesStorage temp_variables_storage( function_context );
 	const Variable sequence_expression= BuildExpressionCodeEnsureVariable( for_operator.sequence_, names, function_context );
 
@@ -722,18 +724,17 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 
 			loop_names.AddName( for_operator.loop_variable_name_, Value( std::move(variable), for_operator.file_pos_ ) );
 
+			const bool is_last_iteration= element_index + 1u == tuple_type->elements.size();
 			llvm::BasicBlock* const next_basic_block=
-				( element_index + 1u == tuple_type->elements.size() )
-					? finish_basic_block
-					: llvm::BasicBlock::Create( llvm_context_ );
+				is_last_iteration ? finish_basic_block : llvm::BasicBlock::Create( llvm_context_ );
 			function_context.loops_stack.emplace_back();
 			function_context.loops_stack.back().block_for_continue= next_basic_block;
 			function_context.loops_stack.back().block_for_break= finish_basic_block;
 			function_context.loops_stack.back().stack_variables_stack_size= function_context.stack_variables_stack.size() - 1u; // Extra 1 for loop variable destruction in 'break' or 'continue'.
 
 			// TODO - create template errors context.
-			const BlockBuildInfo block_build_info= BuildBlockElement( for_operator.block_, loop_names, function_context );
-			if( !block_build_info.have_terminal_instruction_inside )
+			const BlockBuildInfo inner_block_build_info= BuildBlockElement( for_operator.block_, loop_names, function_context );
+			if( !inner_block_build_info.have_terminal_instruction_inside )
 			{
 				CallDestructors( element_pass_variables_storage, names, function_context, for_operator.file_pos_ );
 				function_context.llvm_ir_builder.CreateBr( next_basic_block );
@@ -741,7 +742,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			}
 
 			// Variables state for next iteration is combination of variables states in "continue" branches in previous iteration.
-			if( !function_context.loops_stack.back().continue_variables_states.empty() )
+			const bool continue_branches_is_empty= function_context.loops_stack.back().continue_variables_states.empty();
+			if( !continue_branches_is_empty )
 				function_context.variables_state= MergeVariablesStateAfterIf( function_context.loops_stack.back().continue_variables_states, names.GetErrors(), for_operator.block_.end_file_pos_ );
 
 			for( ReferencesGraph& variables_state : function_context.loops_stack.back().break_variables_states )
@@ -752,13 +754,33 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 
 			function_context.loops_stack.pop_back();
 
-			function_context.function->getBasicBlockList().push_back( next_basic_block );
-			function_context.llvm_ir_builder.SetInsertPoint( next_basic_block );
+			if( !continue_branches_is_empty )
+			{
+				function_context.function->getBasicBlockList().push_back( next_basic_block );
+				function_context.llvm_ir_builder.SetInsertPoint( next_basic_block );
+
+				if( is_last_iteration )
+					break_variables_states.push_back( function_context.variables_state );
+			}
+			else
+			{
+				// Finish building tuple-for if current iteration have no "continue" branches.
+				if( !is_last_iteration )
+					delete next_basic_block;
+
+				function_context.function->getBasicBlockList().push_back( finish_basic_block );
+				function_context.llvm_ir_builder.SetInsertPoint( finish_basic_block );
+				break;
+			}
 		}
 
+		if( tuple_type->elements.empty() )
+		{} // Just keep variables state.
 		// Variables state after tuple-for is combination of variables state of all branches with "break" of all iterations.
-		break_variables_states.push_back( function_context.variables_state );
-		function_context.variables_state= MergeVariablesStateAfterIf( break_variables_states, names.GetErrors(), for_operator.block_.end_file_pos_ );
+		else if( !break_variables_states.empty() )
+			function_context.variables_state= MergeVariablesStateAfterIf( break_variables_states, names.GetErrors(), for_operator.block_.end_file_pos_ );
+		else
+			block_build_info.have_terminal_instruction_inside= true;
 	}
 	else
 	{
@@ -769,7 +791,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 
 	CallDestructors( temp_variables_storage, names, function_context, for_operator.file_pos_ );
 
-	return BlockBuildInfo();
+	return block_build_info;
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
