@@ -789,7 +789,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		return BlockBuildInfo();
 	}
 
-	CallDestructors( temp_variables_storage, names, function_context, for_operator.file_pos_ );
+	if( !block_build_info.have_terminal_instruction_inside )
+		CallDestructors( temp_variables_storage, names, function_context, for_operator.file_pos_ );
 
 	return block_build_info;
 }
