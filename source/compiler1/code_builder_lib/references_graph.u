@@ -112,13 +112,16 @@ fn ReferencesGraph::CreateNodeInnerReference( mut this, NodeId node_id, NodeKind
 
 fn ReferencesGraph::MoveNode( mut this, NodeId node_id )
 {
+	var NodeId mut inner_reference_node_id= c_empty_node_id;
 	{
 		var Node &mut node= nodes_[node_id];
 		halt if(node.moved);
 		node.moved= true;
+
+		inner_reference_node_id= node.inner_reference_node;
+		node.inner_reference_node= c_empty_node_id;
 	}
 
-	var NodeId inner_reference_node_id= nodes_[node_id].inner_reference_node;
 	RemoveNode( inner_reference_node_id );
 
 	for( auto mut i= 0s; i < links_.size(); )
