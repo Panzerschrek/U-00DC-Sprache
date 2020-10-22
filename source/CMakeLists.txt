@@ -11,6 +11,7 @@ option( U_BUILD_UNICODE_FILE_NAMES_TEST "Enable compilation of unicode filenames
 option( U_BUILD_DOCS "Enable Ǖ docs (Sphinx Required)" YES )
 option( U_BUILD_COMPILER1 "Build compiler1 (written on Ǖ)" YES)
 option( U_BUILD_COMPILER2 "Build compiler2 (using compiler1)" NO)
+option( U_BUILD_COMPILER3 "Build compiler3 (using compiler3)" NO)
 
 if( U_BUILD_COMPILER )
 	message( STATUS "Build compiler" )
@@ -247,9 +248,19 @@ if( U_BUILD_COMPILER AND U_BUILD_COMPILER1 )
 	add_subdirectory( compiler1 )
 
 	if( U_BUILD_COMPILER2 )
+
 		set( CURRENT_COMPILER_GENERATION "1" )
 		set( NEXT_COMPILER_GENERATION "2" )
 		add_subdirectory( compiler1 compiler2 )
+
+		if( U_BUILD_COMPILER3 )
+
+			set( CURRENT_COMPILER_GENERATION "2" )
+			set( NEXT_COMPILER_GENERATION "3" )
+			add_subdirectory( compiler1 compiler3 )
+
+		endif()
+
 	endif()
 
 endif()
@@ -260,8 +271,22 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 	add_subdirectory( tests )
 
 	if( U_BUILD_COMPILER1 )
+
 		set( CURRENT_COMPILER_GENERATION "1" )
 		add_subdirectory( tests tests1 )
+
+		if( U_BUILD_COMPILER2 )
+
+			set( CURRENT_COMPILER_GENERATION "2" )
+			add_subdirectory( tests tests2 )
+
+			if( U_BUILD_COMPILER3 )
+				set( CURRENT_COMPILER_GENERATION "3" )
+				add_subdirectory( tests tests3 )
+			endif()
+
+		endif()
+
 	endif()
 
 endif( REALLY_BUILD_LINKAGE_TESTS )
