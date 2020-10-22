@@ -6,14 +6,15 @@ endif()
 
 # Build rule for "Ü" files.
 function( CompileUSource u_source_file out_object )
+	file( RELATIVE_PATH current_subdir ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR} )
 	file( RELATIVE_PATH u_source_file_relative ${CMAKE_CURRENT_SOURCE_DIR} ${u_source_file} )
 	add_custom_command(
 		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.o
-		DEPENDS ${u_source_file} ${CURRENT_COMPILER}
+		DEPENDS ${u_source_file} Compiler${CURRENT_COMPILER_GENERATION}
 		COMMAND
-			${CURRENT_COMPILER}
+			Compiler${CURRENT_COMPILER_GENERATION}
 			${u_source_file}
-			-o compiler1/${u_source_file_relative}.o
+			-o ${current_subdir}/${u_source_file_relative}.o
 			-MF ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
 			${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS}
 			--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
@@ -99,7 +100,7 @@ file( GLOB TESTS_COMMON_CPP_HEADERS "tests_common/*.hpp" )
 CompileUSources( TESTS_COMMON_SOURCES TESTS_COMMON_OBJECTS )
 
 add_library(
-	CodeBuilderLib${CURRENT_COMPLIER_GENERATION}
+	CodeBuilderLib${NEXT_COMPILER_GENERATION}
 		${LEX_SYNT_LIB_HEADERS}
 		${LEX_SYNT_LIB_SOURCES}
 		${LEX_SYNT_LIB_SOURCES_GENERATED}
@@ -117,7 +118,7 @@ add_library(
 		../compiler0/lex_synt_lib/file_pos.cpp
 		../compiler0/lex_synt_lib/lex_synt_error.cpp
 	)
-target_link_libraries( CodeBuilderLib${CURRENT_COMPLIER_GENERATION} CodeBuilderLibCommon )
+target_link_libraries( CodeBuilderLib${NEXT_COMPILER_GENERATION} CodeBuilderLibCommon )
 
 #
 # Compiler
@@ -125,8 +126,8 @@ target_link_libraries( CodeBuilderLib${CURRENT_COMPLIER_GENERATION} CodeBuilderL
 if( U_BUILD_COMPILER )
 	file( GLOB COMPILER_SOURCES "compiler/*" )
 
-	add_executable( Compiler1 ${COMPILER_SOURCES} )
-	target_link_libraries( Compiler1 CodeBuilderLib CodeBuilderLib${CURRENT_COMPLIER_GENERATION} CompilersCommonLib )
+	add_executable( Compiler${NEXT_COMPILER_GENERATION} ${COMPILER_SOURCES} )
+	target_link_libraries( Compiler${NEXT_COMPILER_GENERATION} CodeBuilderLib CodeBuilderLib${NEXT_COMPILER_GENERATION} CompilersCommonLib )
 endif()
 
 #
@@ -134,20 +135,20 @@ endif()
 #
 if( U_BUILD_TESTS )
 
-	add_executable( Tests${CURRENT_COMPLIER_GENERATION} tests/cpp_tests_launcher.cpp )
+	add_executable( Tests${NEXT_COMPILER_GENERATION} tests/cpp_tests_launcher.cpp )
 
 	target_link_libraries(
-		Tests${CURRENT_COMPLIER_GENERATION}
+		Tests${NEXT_COMPILER_GENERATION}
 		PRIVATE
-			CodeBuilderLib${CURRENT_COMPLIER_GENERATION}
+			CodeBuilderLib${NEXT_COMPILER_GENERATION}
 			${TESTS_LIB_WRAPPED}
 		)
 
 	if( MSVC )
-		set_target_properties( Tests${CURRENT_COMPLIER_GENERATION} PROPERTIES LINK_FLAGS /WHOLEARCHIVE:TestsLib )
+		set_target_properties( Tests${NEXT_COMPILER_GENERATION} PROPERTIES LINK_FLAGS /WHOLEARCHIVE:TestsLib )
 	endif()
 
-	add_custom_command( TARGET Tests${CURRENT_COMPLIER_GENERATION} POST_BUILD COMMAND Tests${CURRENT_COMPLIER_GENERATION} )
+	add_custom_command( TARGET Tests${NEXT_COMPILER_GENERATION} POST_BUILD COMMAND Tests${NEXT_COMPILER_GENERATION} )
 
 endif()
 
@@ -155,23 +156,23 @@ endif()
 # PyTests
 #
 if( U_BUILD_PY_TESTS )
-	add_library( PyTestsLib${CURRENT_COMPLIER_GENERATION} SHARED py_tests_lib/py_tests_lib.cpp )
+	add_library( PyTestsLib${NEXT_COMPILER_GENERATION} SHARED py_tests_lib/py_tests_lib.cpp )
 	target_link_libraries(
-		PyTestsLib${CURRENT_COMPLIER_GENERATION}
+		PyTestsLib${NEXT_COMPILER_GENERATION}
 			PRIVATE
-				CodeBuilderLib${CURRENT_COMPLIER_GENERATION}
+				CodeBuilderLib${NEXT_COMPILER_GENERATION}
 				${LLVM_LIBS_FOR_TESTS}
 				${PYTHON_LIBRARIES}
 			)
 
-	target_include_directories( PyTestsLib${CURRENT_COMPLIER_GENERATION} PRIVATE ${PYTHON_INCLUDE_DIRS} )
+	target_include_directories( PyTestsLib${NEXT_COMPILER_GENERATION} PRIVATE ${PYTHON_INCLUDE_DIRS} )
 
 	# Set proper name for result dynamic library.
 	if( WIN32 )
-		set_target_properties( PyTestsLib${CURRENT_COMPLIER_GENERATION}
+		set_target_properties( PyTestsLib${NEXT_COMPILER_GENERATION}
 			PROPERTIES OUTPUT_NAME sprache_compiler_tests_py_lib.pyd PREFIX "" SUFFIX "" )
 	else()
-		set_target_properties( PyTestsLib${CURRENT_COMPLIER_GENERATION}
+		set_target_properties( PyTestsLib${NEXT_COMPILER_GENERATION}
 			PROPERTIES OUTPUT_NAME sprache_compiler_tests_py_lib.so PREFIX "" SUFFIX "" )
 	endif()
 
@@ -179,9 +180,9 @@ if( U_BUILD_PY_TESTS )
 
 	# Run result test.
 	add_custom_target(
-		PyTests1Run ALL
+		PyTestsRun${NEXT_COMPILER_GENERATION} ALL
 		COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR} ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../tests/py_tests/py_tests.py
-		DEPENDS PyTestsLib${CURRENT_COMPLIER_GENERATION}
+		DEPENDS PyTestsLib${NEXT_COMPILER_GENERATION}
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		SOURCES ${PY_TESTS_SOURCES} )
 
