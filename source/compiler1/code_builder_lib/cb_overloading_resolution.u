@@ -537,7 +537,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 
 	foreach( &function_template : functions_set.function_templates )
 	{
-		if_var( mut generated_function : GenTemplateFunction( function_template, actual_args, first_actual_arg_is_this, file_pos ) )
+		if_var( mut generated_function : GenTemplateFunction( function_template, actual_args, first_actual_arg_is_this, names_scope, file_pos ) )
 		{
 			match_functions.push_back( move(generated_function) );
 		}
@@ -551,6 +551,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 				parametrized_function_template.known_args,
 				actual_args,
 				first_actual_arg_is_this,
+				names_scope,
 				file_pos );
 		if( !generated_function.empty() )
 		{

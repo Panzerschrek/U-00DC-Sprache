@@ -429,6 +429,7 @@ private:
 	fn FinishTypeTemplateGeneration(
 		mut this,
 		TemplateTypeArgsEvaluationResult& template_args_evaluation_result,
+		NamesScopePtr& instantiation_point_names_scope,
 		FilePos& template_instantiation_file_pos ) : ust::optional</Type/>;
 
 	fn GenTemplateFunction(
@@ -436,6 +437,7 @@ private:
 		FunctionTemplatePtr& function_template_ptr,
 		ust::array_view_imut</VariableTypeExtened/> mut args,
 		bool first_arg_is_this,
+		NamesScopePtr& instantiation_point_names_scope,
 		FilePos& file_pos ) : ust::optional</FunctionVariable/>;
 
 	fn GenTemplateFunction(
@@ -444,6 +446,7 @@ private:
 		TemplateArgsFinished& known_template_args,
 		ust::array_view_imut</VariableTypeExtened/> mut args,
 		bool first_arg_is_this,
+		NamesScopePtr& instantiation_point_names_scope,
 		FilePos& file_pos ) : ust::optional</FunctionVariable/>;
 
 	fn FinishFunctionTemplateParametrization(
@@ -455,6 +458,7 @@ private:
 		mut this,
 		FunctionTemplatePtr& function_template_ptr,
 		NamesScopeMutPtr& result_names_scope,
+		NamesScopePtr& instantiation_point_names_scope,
 		FilePos& file_pos ) : ust::optional</FunctionVariable/>;
 
 	fn ParametrizeTemplateFunctions(

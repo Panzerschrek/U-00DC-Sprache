@@ -512,6 +512,7 @@ struct ParametrizedFunctionTemplate
 {
 	TemplateArgsFinished known_args;
 	FunctionTemplatePtr base_template;
+	NamesScopePtr instantiation_point_names_scope;
 }
 
 struct TemplateArg

@@ -1018,7 +1018,11 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 				continue;
 			}
 
-			var ParametrizedFunctionTemplate parametrized_function_template{ .base_template= function_template };
+			var ParametrizedFunctionTemplate parametrized_function_template
+			{
+				.base_template= function_template,
+				.instantiation_point_names_scope= names_scope,
+			};
 			if_var( &function_variable : FinishFunctionTemplateParametrization( parametrized_function_template, initializer_file_pos ) )
 			{
 				if( function_variable.t == function_type )
