@@ -78,6 +78,7 @@ fn CodeBuilder::DeepCopyNamesScopeValue( ClassTypePtr& class_type, NamesScopePtr
 	{
 		auto mut dst_namespace_lock= dst_namespace.lock_mut();
 		dst_namespace_lock.get_ref().CopyAccessRightsFrom( src );
+		dst_namespace_lock.get_ref().SetClass( class_type );
 	}
 
 	NamesScopeMerge( dst_namespace, src );
