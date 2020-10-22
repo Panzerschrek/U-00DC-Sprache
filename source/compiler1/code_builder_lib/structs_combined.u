@@ -719,6 +719,7 @@ fn Type::GetInnerReferenceKind( this ) : InnerReferenceKind
 				inner_reference_type= element_inner_reference_type;
 			}
 		}
+		return inner_reference_type;
 	}
 	if_var( &class_type : GetClassType() )
 	{
