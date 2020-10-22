@@ -14,4 +14,5 @@ cmake --build . &&\
 \
 # Run ustlib tests
 cd .. &&\
-python3 source/annotated_tests_run.py --compiler-executable build-travis/compiler0/Compiler --use-position-independent-code --input-dir source/ustlib_test
+python3 source/annotated_tests_run.py --compiler-executable build-travis/compiler0/Compiler  --use-position-independent-code --input-dir source/ustlib_test &&\
+python3 source/annotated_tests_run.py --compiler-executable build-travis/compiler1/Compiler1 --use-position-independent-code --input-dir source/ustlib_test
