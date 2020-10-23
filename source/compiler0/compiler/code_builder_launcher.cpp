@@ -36,4 +36,9 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	return result;
 }
 
+uint32_t GetCompilerGeneration()
+{
+	return 0u;
+}
+
 } // namespace U

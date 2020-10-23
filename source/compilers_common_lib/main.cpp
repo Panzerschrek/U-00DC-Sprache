@@ -576,6 +576,45 @@ int Main( int argc, const char* argv[] )
 			result_module->addModuleFlag( llvm::Module::Warning, "Debug Info Version", 3 );
 	}
 
+	// Add module flags and global constants for compiler version and generation.
+	{
+		const auto constant= llvm::ConstantDataArray::getString( llvm_context, getFullVersion() );
+
+		result_module->addModuleFlag( llvm::Module::Warning, "Sprache compiler version", constant );
+
+		const auto variable=
+			new llvm::GlobalVariable(
+				*result_module,
+				constant->getType(),
+				true, // is_constant
+				llvm::GlobalValue::ExternalLinkage,
+				constant,
+				"__U_sprache_compiler_version" );
+		llvm::Comdat* const comdat= result_module->getOrInsertComdat( variable->getName() );
+		comdat->setSelectionKind( llvm::Comdat::Any );
+		variable->setComdat( comdat );
+	}
+	{
+		const auto constant=
+			llvm::ConstantInt::get(
+				llvm::IntegerType::getInt32Ty(llvm_context),
+				uint64_t(GetCompilerGeneration()), false );
+
+		result_module->addModuleFlag( llvm::Module::Warning, "Sprache compiler generation", constant );
+
+		const auto variable=
+			new llvm::GlobalVariable(
+				*result_module,
+				constant->getType(),
+				true, // is_constant
+				llvm::GlobalValue::ExternalLinkage,
+				constant,
+				"__U_sprache_compiler_generation" );
+		llvm::Comdat* const comdat= result_module->getOrInsertComdat( variable->getName() );
+		comdat->setSelectionKind( llvm::Comdat::Any );
+		variable->setComdat( comdat );
+	}
+
 	if( optimization_level > 0u || size_optimization_level > 0u )
 	{
 		llvm::legacy::FunctionPassManager function_pass_manager( result_module.get() );

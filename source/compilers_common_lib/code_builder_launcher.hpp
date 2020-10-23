@@ -27,4 +27,6 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const llvm::DataLayout& data_layout,
 	bool generate_debug_info );
 
+uint32_t GetCompilerGeneration();
+
 } // namespace U

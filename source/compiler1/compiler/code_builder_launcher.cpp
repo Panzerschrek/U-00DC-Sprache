@@ -139,4 +139,9 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	return result;
 }
 
+uint32_t GetCompilerGeneration()
+{
+	return U_COMPILER_GENERATION;
+}
+
 } // namespace U
