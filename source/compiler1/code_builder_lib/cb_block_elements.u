@@ -495,10 +495,29 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			}
 			else
 			{
-				auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr, function_context );
-				CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.file_pos );
-				CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.file_pos );
-				unsafe{  LLVMBuildRet( function_context.llvm_ir_builder, value_in_register );  }
+				if( ret_type == void_type_ || ret_type == void_type_for_ret_ )
+				{
+					CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.file_pos );
+					CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.file_pos );
+					unsafe
+					{
+						if( function_context.destructor_end_block != LLVMBasicBlockRef::Null )
+						{
+							LLVMBuildBr( function_context.llvm_ir_builder, function_context.destructor_end_block );
+						}
+						else
+						{
+							LLVMBuildRetVoid( function_context.llvm_ir_builder );
+						}
+					}
+				}
+				else
+				{
+					auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr, function_context );
+					CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.file_pos );
+					CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.file_pos );
+					unsafe{  LLVMBuildRet( function_context.llvm_ir_builder, value_in_register );  }
+				}
 			}
 			return block_element_build_info;
 		}
