@@ -109,10 +109,6 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 	// Finalize incomplete typeinfo.
 	for( auto mut i= 0s; i < typeinfo_cache_.size(); ++i )
 	{
-		auto t= typeinfo_cache_[i].t;
-		BuildFullTypeinfo(t);
-
-		// TODO - maybe mark incomplete typeinfo structs as "external" instead?
 		unsafe
 		{
 			auto llvm_type= typeinfo_cache_[i].v.t.GetLLVMType();
