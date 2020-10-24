@@ -1225,6 +1225,9 @@ Type CodeBuilder::BuildFuncCode(
 	}
 
 	// For functions with body we can use comdat.
+	if( parent_names_scope.IsInsideTemplate() )
+		llvm_function->setLinkage( llvm::GlobalValue::PrivateLinkage );
+	else
 	{
 		// Set comdat for correct linkage of same functions, emitted in several modules.
 		llvm::Comdat* const comdat= module_->getOrInsertComdat( llvm_function->getName() );

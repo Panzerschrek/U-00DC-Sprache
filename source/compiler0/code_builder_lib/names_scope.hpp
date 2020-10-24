@@ -40,6 +40,8 @@ public:
 	ClassMemberVisibility GetAccessFor( const ClassProxyPtr& class_ ) const;
 	void CopyAccessRightsFrom( const NamesScope& src );
 
+	bool IsInsideTemplate() const;
+
 	void SetErrors( CodeBuilderErrorsContainer& errors );
 	CodeBuilderErrorsContainer& GetErrors() const;
 

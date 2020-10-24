@@ -119,6 +119,15 @@ void NamesScope::CopyAccessRightsFrom( const NamesScope& src )
 	access_rights_= src.access_rights_;
 }
 
+bool NamesScope::IsInsideTemplate() const
+{
+	if( name_ == Class::c_template_class_name )
+		return true;
+	if( parent_ != nullptr )
+		return parent_->IsInsideTemplate();
+	return false;
+}
+
 void NamesScope::SetErrors( CodeBuilderErrorsContainer& errors )
 {
 	errors_= &errors;
