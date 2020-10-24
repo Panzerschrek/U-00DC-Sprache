@@ -1039,6 +1039,21 @@ fn NamesScope::GetThisScopeValue( this, ust::string8& name ) : ust::optional_ref
 	return names_map_.find( name );
 }
 
+fn NamesScope::IsInsideTemplate( this ) : bool
+{
+	if( name_ == c_template_args_namespace_name )
+	{
+		return true;
+	}
+	auto parent= GetParent();
+	if( !parent.empty() )
+	{
+		return parent.lock_imut().get_ref().IsInsideTemplate();
+	}
+
+	return false;
+}
+
 fn NamesScope::AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : ust::optional_ref</ NamesScopeValue, true />'this'
 {
 	if( !names_map_.find(name).empty() )

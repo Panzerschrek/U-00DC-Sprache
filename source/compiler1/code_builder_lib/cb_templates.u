@@ -624,7 +624,7 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 	}
 
 	var NamesScopePtr names_scope= ust::to_non_nullable( type_template.parent_names_scope.lock() ); // Parent namespace of type template
-	var NamesScopeMutPtr result_names_scope( NamesScope( "", names_scope ) ); // Where we place template arguments
+	var NamesScopeMutPtr result_names_scope( NamesScope( NamesScope::c_template_args_namespace_name, names_scope ) ); // Where we place template arguments
 
 	{
 		auto mut result_names_scope_lock= result_names_scope.lock_mut();
@@ -843,7 +843,7 @@ fn CodeBuilder::GenTemplateFunction(
 	}
 
 	var NamesScopePtr names_scope= ust::to_non_nullable( function_template.parent_names_scope.lock() ); // Parent namespace of type template
-	var NamesScopeMutPtr result_names_scope( NamesScope( "", names_scope ) ); // Where we place template arguments
+	var NamesScopeMutPtr result_names_scope( NamesScope( NamesScope::c_template_args_namespace_name, names_scope ) ); // Where we place template arguments
 
 	{
 		auto mut result_names_scope_lock= result_names_scope.lock_mut();
