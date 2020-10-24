@@ -127,7 +127,7 @@ if( U_BUILD_COMPILER )
 	file( GLOB COMPILER_SOURCES "compiler/*" )
 
 	add_executable( Compiler${NEXT_COMPILER_GENERATION} ${COMPILER_SOURCES} )
-	target_link_libraries( Compiler${NEXT_COMPILER_GENERATION} CodeBuilderLib CodeBuilderLib${NEXT_COMPILER_GENERATION} CompilersCommonLib )
+	target_link_libraries( Compiler${NEXT_COMPILER_GENERATION} CompilersCommonLib SpracheVersion CodeBuilderLib${NEXT_COMPILER_GENERATION} )
 endif()
 
 #
