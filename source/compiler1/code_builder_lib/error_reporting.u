@@ -93,14 +93,44 @@ fn ComplexNameToString( Synt::ComplexName& complex_name ) : ust::string8
 	return move(result);
 }
 
-
 fn NormalizeErrors( ErrorsContainer &mut errors, Synt::MacroExpansionContexts& macro_expansion_contexts )
 {
-	errors= NormalizeErrors_impl( ExpandErrorsInMacros( errors,  macro_expansion_contexts ) );
+	RemoveEmptyErrorsContexts( errors );
+	errors= ExpandErrorsInMacros( errors, macro_expansion_contexts );
+	RemoveEmptyErrorsContexts( errors );
+	SortErrorsAndRemoveDuplicates( errors );
+}
+
+fn RemoveEmptyErrorsContexts( ErrorsContainer &mut errors )
+{
+	for( auto mut i= 0s; i < errors.size(); )
+	{
+		if( !errors[i].errors_context.empty() )
+		{
+			var bool mut is_empty= false;
+			{
+				auto sub_errors_ptr= errors[i].errors_context.lock_imut().get_ref().errors;
+				auto mut sub_errors_lock= sub_errors_ptr.lock_mut();
+				var ErrorsContainer &mut sub_errors= sub_errors_lock.get_ref();
+				RemoveEmptyErrorsContexts( sub_errors );
+				is_empty= sub_errors.empty();
+			}
+			if( is_empty )
+			{
+				auto s= errors.size();
+				errors.swap( i, s - 1s );
+				errors.drop_back();
+				continue;
+			}
+		}
+		++i;
+	}
 }
 
 fn ExpandErrorsInMacros( ErrorsContainer& in_errors, Synt::MacroExpansionContexts& macro_expansion_contexts ) : ErrorsContainer
 {
+	// TODO - maybe not create macro expansion context if there are no errors inside it?
+
 	var ErrorsContainer mut macro_contexts_errors;
 	var ust::vector</ ust::shared_ptr_mut</ErrorsContainer/> /> mut macro_contexts_errors_internals;
 
@@ -133,9 +163,10 @@ fn ExpandErrorsInMacros( ErrorsContainer& in_errors, Synt::MacroExpansionContext
 		var CodeBuilderError mut error= in_error;
 		if( !error.errors_context.empty() )
 		{
-			var TemplateErrorsContext mut new_context= error.errors_context.lock_imut().get_ref(); // take copy
-			new_context.errors= ust::shared_ptr_mut</ErrorsContainer/>( ExpandErrorsInMacros( new_context.errors.lock_imut().get_ref(), macro_expansion_contexts ) );
-			error.errors_context= ust::shared_ptr_nullable_mut</TemplateErrorsContext/>( move(new_context) );
+			auto sub_errors_ptr= error.errors_context.lock_imut().get_ref().errors;
+			auto mut sub_errors_lock= sub_errors_ptr.lock_mut();
+			var ErrorsContainer &mut sub_errors= sub_errors_lock.get_ref();
+			sub_errors= ExpandErrorsInMacros( sub_errors, macro_expansion_contexts );
 		}
 
 		auto macro_expansion_index= size_type(error.file_pos.GetMacroExpansionIndex());
@@ -167,7 +198,7 @@ fn ExpandErrorsInMacros( ErrorsContainer& in_errors, Synt::MacroExpansionContext
 	return move(out_errors);
 }
 
-fn NormalizeErrors_impl( ErrorsContainer mut errors ) : ErrorsContainer
+fn SortErrorsAndRemoveDuplicates( ErrorsContainer &mut errors )
 {
 	// Use simple bubble sorting. TODO - use REAL sorting.
 	for( auto mut i= 0s; i < errors.size(); ++i )
@@ -194,15 +225,9 @@ fn NormalizeErrors_impl( ErrorsContainer mut errors ) : ErrorsContainer
 			var CodeBuilderError &mut src_error= errors[src];
 			if( !src_error.errors_context.empty() )
 			{
-				var TemplateErrorsContext mut new_context= src_error.errors_context.lock_imut().get_ref(); // take copy
-
-				var ErrorsContainer mut sub_errors= NormalizeErrors_impl( new_context.errors.lock_imut().get_ref() );
-				if( sub_errors.empty() )
-				{
-					continue;
-				}
-				new_context.errors= ust::shared_ptr_mut</ErrorsContainer/>( move(sub_errors) );
-				src_error.errors_context= ust::shared_ptr_nullable_mut</TemplateErrorsContext/>( move(new_context) );
+				auto sub_errors_ptr= src_error.errors_context.lock_imut().get_ref().errors;
+				auto mut sub_errors_lock= sub_errors_ptr.lock_mut();
+				SortErrorsAndRemoveDuplicates( sub_errors_lock.get_ref() );
 			}
 		}
 
@@ -213,8 +238,6 @@ fn NormalizeErrors_impl( ErrorsContainer mut errors ) : ErrorsContainer
 	{
 		errors.drop_back();
 	}
-
-	return move(errors);
 }
 
 } // namespace U1
