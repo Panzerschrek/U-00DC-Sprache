@@ -2046,10 +2046,7 @@ void CodeBuilder::SetupGeneratedFunctionAttributes( llvm::Function& function )
 	// We doesn`t need different addresses for different functions.
 	function.setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
 
-	// Set comdat for correct linkage of same functions, emitted in several modules.
-	llvm::Comdat* const comdat= module_->getOrInsertComdat( function.getName() );
-	comdat->setSelectionKind( llvm::Comdat::Any ); // Actually, we needs something, like ExactMatch, but it works not in all cases.
-	function.setComdat( comdat );
+	function.setLinkage( llvm::GlobalValue::PrivateLinkage );
 
 	function.setDoesNotThrow(); // We do not support exceptions.
 
