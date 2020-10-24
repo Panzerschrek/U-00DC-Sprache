@@ -1254,12 +1254,6 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 				*function_variable.type.GetFunctionType(),
 				&params_for_mangle );
 		function_variable.llvm_function->setName( mangled_name );
-		if( llvm::Comdat* const comdat= function_variable.llvm_function->getComdat() )
-		{
-			llvm::Comdat* const new_comdat= module_->getOrInsertComdat( mangled_name );
-			new_comdat->setSelectionKind( comdat->getSelectionKind() );
-			function_variable.llvm_function->setComdat( new_comdat );
-		}
 	}
 
 	// Two-step preparation needs for recursive function template call.
