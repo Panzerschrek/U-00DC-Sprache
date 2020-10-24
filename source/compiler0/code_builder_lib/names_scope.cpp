@@ -121,7 +121,7 @@ void NamesScope::CopyAccessRightsFrom( const NamesScope& src )
 
 bool NamesScope::IsInsideTemplate() const
 {
-	if( name_ == Class::c_template_class_name )
+	if( name_ == Class::c_template_class_name || name_ == "_tp_ns" )
 		return true;
 	if( parent_ != nullptr )
 		return parent_->IsInsideTemplate();
