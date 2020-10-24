@@ -2034,7 +2034,7 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalConstantVariable(
 			*module_,
 			type.GetLLVMType(),
 			true, // is constant
-			llvm::GlobalValue::InternalLinkage, // We have no external variables, so, use internal linkage.
+			llvm::GlobalValue::PrivateLinkage, // We have no external variables, so, use private linkage.
 			initializer,
 			mangled_name );
 

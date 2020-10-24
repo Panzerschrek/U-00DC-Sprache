@@ -1976,7 +1976,7 @@ fn CodeBuilder::AddGlobalConstantVariable( this, ust::string8& name_null_termina
 		}
 
 		var LLVMValueRef global_value= LLVMAddGlobal( module_, llvm_type, name_null_terminated.front() );
-		LLVMSetLinkage( global_value, LLVMLinkage::Internal );
+		LLVMSetLinkage( global_value, LLVMLinkage::Private );
 		LLVMSetUnnamedAddress( global_value, LLVMUnnamedAddr::GlobalUnnamedAddr );
 		LLVMSetGlobalConstant( global_value, LLVMBool::True );
 		if( initializer != LLVMValueRef::Null )
