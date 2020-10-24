@@ -319,7 +319,6 @@ void CodeBuilder::FinishTypeinfoClass( Class& class_, const ClassProxyPtr class_
 
 	const FunctionVariable& destructor= class_.members.GetThisScopeValue( Keyword( Keywords::destructor_ ) )->GetFunctionsSet()->functions.front();
 	destructor.llvm_function->setName( MangleFunction( class_.members, Keyword( Keywords::destructor_ ), *destructor.type.GetFunctionType() ) );
-	destructor.llvm_function->setComdat( module_->getOrInsertComdat( destructor.llvm_function->getName() ) );
 }
 
 Variable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, NamesScope& root_namespace )
