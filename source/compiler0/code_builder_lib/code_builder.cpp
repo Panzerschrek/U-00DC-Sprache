@@ -183,7 +183,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	debug_info_.classes_di_cache.clear();
 	debug_info_.enums_di_cache.clear();
 
-	global_errors_= ExpandErrorsInMacros( global_errors_, *source_graph.macro_expansion_contexts );
+	global_errors_= NormalizeErrors( global_errors_, *source_graph.macro_expansion_contexts );
 
 	BuildResult build_result;
 	build_result.errors.swap( global_errors_ );
