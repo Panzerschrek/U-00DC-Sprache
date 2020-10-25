@@ -10,7 +10,26 @@ namespace U
 namespace
 {
 
-void NormalizeErrors_r( CodeBuilderErrorsContainer& errors )
+void RemoveEmptyErrorsContexts_r( CodeBuilderErrorsContainer& errors )
+{
+	for( size_t i= 0u; i < errors.size(); )
+	{
+		if( errors[i].template_context != nullptr )
+		{
+			RemoveEmptyErrorsContexts_r( errors[i].template_context->errors );
+			if( errors[i].template_context->errors.empty() )
+			{
+				if( i + 1u < errors.size() )
+					errors[i]= std::move(errors.back());
+				errors.pop_back();
+				continue;
+			}
+		}
+		++i;
+	}
+}
+
+void SortErrorsAndRemoveDuplicates_r( CodeBuilderErrorsContainer& errors )
 {
 	// Soprt by file/line and left only unique error messages.
 	std::sort( errors.begin(), errors.end() );
@@ -19,22 +38,11 @@ void NormalizeErrors_r( CodeBuilderErrorsContainer& errors )
 	for( const CodeBuilderError& error : errors )
 	{
 		if( error.template_context != nullptr )
-			NormalizeErrors_r( error.template_context->errors );
+			SortErrorsAndRemoveDuplicates_r( error.template_context->errors );
 	}
-
-	errors.erase(
-		std::remove_if(
-			errors.begin(), errors.end(),
-			[]( const CodeBuilderError& error ) -> bool
-			{
-				return error.template_context != nullptr && error.template_context->errors.empty();
-			} ),
-		errors.end() );
 }
 
-} // namespace
-
-CodeBuilderErrorsContainer ExpandErrorsInMacros(
+CodeBuilderErrorsContainer ExpandErrorsInMacros_r(
 	const CodeBuilderErrorsContainer& errors,
 	const Synt::MacroExpansionContexts& macro_expanisoin_contexts )
 {
@@ -60,38 +68,47 @@ CodeBuilderErrorsContainer ExpandErrorsInMacros(
 
 	CodeBuilderErrorsContainer out_errors;
 	out_errors.reserve( errors.size() + macro_expanisoin_contexts.size() );
-	for( const CodeBuilderError& error : errors )
+	for( CodeBuilderError error : errors )
 	{
-		CodeBuilderError error_copy = error;
-		if( error_copy.template_context != nullptr && !error_copy.template_context->errors.empty() )
-			error_copy.template_context->errors= ExpandErrorsInMacros( error_copy.template_context->errors, macro_expanisoin_contexts );
+		if( error.template_context != nullptr && !error.template_context->errors.empty() )
+			error.template_context->errors= ExpandErrorsInMacros_r( error.template_context->errors, macro_expanisoin_contexts );
 
 		const auto macro_expansion_index= error.file_pos.GetMacroExpansionIndex();
 		if( macro_expansion_index < macro_contexts_internals.size() )
-			macro_contexts_internals[ macro_expansion_index ]->errors.push_back( std::move(error_copy) );
+			macro_contexts_internals[ macro_expansion_index ]->errors.push_back( std::move(error) );
 		else
-			out_errors.push_back( std::move(error_copy) );
+			out_errors.push_back( std::move(error) );
 	}
 
-	for( CodeBuilderError& macro_context_error : macro_contexts_errors )
+	for( CodeBuilderError macro_context_error : macro_contexts_errors )
 	{
 		const auto macro_expansion_index= macro_context_error.file_pos.GetMacroExpansionIndex();
 		if( macro_expansion_index < macro_contexts_internals.size() )
 			macro_contexts_internals[ macro_expansion_index ]->errors.push_back( std::move( macro_context_error ) );
+		else
+			out_errors.push_back( std::move( macro_context_error ) );
 	}
 
-	macro_contexts_errors.erase(
-		std::remove_if(
-			macro_contexts_errors.begin(), macro_contexts_errors.end(),
-			[]( const CodeBuilderError& error ) -> bool
-			{
-				return error.template_context == nullptr || error.template_context->errors.empty();
-			} ),
-		macro_contexts_errors.end() );
+	return out_errors;
+}
 
-	out_errors.insert( out_errors.end(), macro_contexts_errors.begin(), macro_contexts_errors.end() );
+} // namespace
 
-	NormalizeErrors_r( out_errors );
+CodeBuilderErrorsContainer NormalizeErrors(
+	const CodeBuilderErrorsContainer& errors,
+	const Synt::MacroExpansionContexts& macro_expanisoin_contexts )
+{
+	// Remove empty template contexts, than, expand errors in macros.
+	// This prevents creation of huge amount of macro contexts.
+
+	CodeBuilderErrorsContainer out_errors= errors;
+	RemoveEmptyErrorsContexts_r( out_errors );
+
+	out_errors= ExpandErrorsInMacros_r( out_errors, macro_expanisoin_contexts );
+
+	RemoveEmptyErrorsContexts_r( out_errors );
+	SortErrorsAndRemoveDuplicates_r( out_errors );
+
 	return out_errors;
 }
 

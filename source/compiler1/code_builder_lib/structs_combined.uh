@@ -704,6 +704,9 @@ public:
 
 	fn GetThisNamespaceName( this ) : ust::string8&;
 
+	auto& c_template_args_namespace_name= "_tp_ns";
+	fn IsInsideTemplate( this ) : bool;
+
 	// Get full name (with enclosing namespaces) un human-readable format.
 	fn ToString( this ) : ust::string8;
 

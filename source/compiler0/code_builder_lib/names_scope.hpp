@@ -40,6 +40,9 @@ public:
 	ClassMemberVisibility GetAccessFor( const ClassProxyPtr& class_ ) const;
 	void CopyAccessRightsFrom( const NamesScope& src );
 
+	static const std::string c_template_parameters_namespace_name;
+	bool IsInsideTemplate() const;
+
 	void SetErrors( CodeBuilderErrorsContainer& errors );
 	CodeBuilderErrorsContainer& GetErrors() const;
 

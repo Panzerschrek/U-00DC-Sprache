@@ -183,7 +183,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	debug_info_.classes_di_cache.clear();
 	debug_info_.enums_di_cache.clear();
 
-	global_errors_= ExpandErrorsInMacros( global_errors_, *source_graph.macro_expansion_contexts );
+	global_errors_= NormalizeErrors( global_errors_, *source_graph.macro_expansion_contexts );
 
 	BuildResult build_result;
 	build_result.errors.swap( global_errors_ );
@@ -1225,6 +1225,9 @@ Type CodeBuilder::BuildFuncCode(
 	}
 
 	// For functions with body we can use comdat.
+	if( parent_names_scope.IsInsideTemplate() )
+		llvm_function->setLinkage( llvm::GlobalValue::PrivateLinkage );
+	else
 	{
 		// Set comdat for correct linkage of same functions, emitted in several modules.
 		llvm::Comdat* const comdat= module_->getOrInsertComdat( llvm_function->getName() );
@@ -2031,7 +2034,7 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalConstantVariable(
 			*module_,
 			type.GetLLVMType(),
 			true, // is constant
-			llvm::GlobalValue::InternalLinkage, // We have no external variables, so, use internal linkage.
+			llvm::GlobalValue::PrivateLinkage, // We have no external variables, so, use private linkage.
 			initializer,
 			mangled_name );
 
@@ -2046,10 +2049,7 @@ void CodeBuilder::SetupGeneratedFunctionAttributes( llvm::Function& function )
 	// We doesn`t need different addresses for different functions.
 	function.setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
 
-	// Set comdat for correct linkage of same functions, emitted in several modules.
-	llvm::Comdat* const comdat= module_->getOrInsertComdat( function.getName() );
-	comdat->setSelectionKind( llvm::Comdat::Any ); // Actually, we needs something, like ExactMatch, but it works not in all cases.
-	function.setComdat( comdat );
+	function.setLinkage( llvm::GlobalValue::PrivateLinkage );
 
 	function.setDoesNotThrow(); // We do not support exceptions.
 

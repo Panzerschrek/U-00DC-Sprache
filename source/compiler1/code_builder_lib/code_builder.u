@@ -109,10 +109,6 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 	// Finalize incomplete typeinfo.
 	for( auto mut i= 0s; i < typeinfo_cache_.size(); ++i )
 	{
-		auto t= typeinfo_cache_[i].t;
-		BuildFullTypeinfo(t);
-
-		// TODO - maybe mark incomplete typeinfo structs as "external" instead?
 		unsafe
 		{
 			auto llvm_type= typeinfo_cache_[i].v.t.GetLLVMType();
@@ -1350,7 +1346,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		}
 	}
 
-	SetupLLVMFunctionAttributes( func_variable );
+	SetupLLVMFunctionAttributes( names_scope.lock_imut().get_ref(), func_variable );
 
 	var FunctionContext mut function_context_value(
 		llvm_context_,
@@ -1976,7 +1972,7 @@ fn CodeBuilder::AddGlobalConstantVariable( this, ust::string8& name_null_termina
 		}
 
 		var LLVMValueRef global_value= LLVMAddGlobal( module_, llvm_type, name_null_terminated.front() );
-		LLVMSetLinkage( global_value, LLVMLinkage::Internal );
+		LLVMSetLinkage( global_value, LLVMLinkage::Private );
 		LLVMSetUnnamedAddress( global_value, LLVMUnnamedAddr::GlobalUnnamedAddr );
 		LLVMSetGlobalConstant( global_value, LLVMBool::True );
 		if( initializer != LLVMValueRef::Null )
@@ -1987,21 +1983,28 @@ fn CodeBuilder::AddGlobalConstantVariable( this, ust::string8& name_null_termina
 	}
 }
 
-fn CodeBuilder::SetupLLVMFunctionAttributes( this, FunctionVariable& func_variable )
+fn CodeBuilder::SetupLLVMFunctionAttributes( this, NamesScope& names_scope, FunctionVariable& func_variable )
 {
-	// Set comdat. This needed because we want linkage like "inline" in C++ but for all functions.
-	unsafe
+	if( func_variable.is_generated || names_scope.IsInsideTemplate() )
 	{
-		var size_type mut name_length = zero_init;
-		var char8& name_start= LLVMGetValueName2( func_variable.llvm_function, name_length );
+		unsafe{  LLVMSetLinkage( func_variable.llvm_function, LLVMLinkage::Private );  }
+	}
+	else
+	{
+		// Set comdat. This needed because we want linkage like "inline" in C++ but for all functions.
+		unsafe
+		{
+			var size_type mut name_length = zero_init;
+			var char8& name_start= LLVMGetValueName2( func_variable.llvm_function, name_length );
 
-		var ust::string8 mut name_str;
-		name_str.resize( name_length + 1s, "\0"c8 );
-		ust::memory_copy( name_str.front_unsafe(), name_start, name_length );
+			var ust::string8 mut name_str;
+			name_str.resize( name_length + 1s, "\0"c8 );
+			ust::memory_copy( name_str.front_unsafe(), name_start, name_length );
 
-		auto comdat= LLVMGetOrInsertComdat( module_, name_str.front_unsafe() );
-		LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any ); // Actually, we needs something, like ExactMatch, but it works not in all cases.
-		LLVMSetComdat( func_variable.llvm_function, comdat );
+			auto comdat= LLVMGetOrInsertComdat( module_, name_str.front_unsafe() );
+			LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any ); // Actually, we needs something, like ExactMatch, but it works not in all cases.
+			LLVMSetComdat( func_variable.llvm_function, comdat );
+		}
 	}
 
 	// Merge functions with identical code.

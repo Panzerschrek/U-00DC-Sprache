@@ -624,7 +624,7 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 	}
 
 	var NamesScopePtr names_scope= ust::to_non_nullable( type_template.parent_names_scope.lock() ); // Parent namespace of type template
-	var NamesScopeMutPtr result_names_scope( NamesScope( "", names_scope ) ); // Where we place template arguments
+	var NamesScopeMutPtr result_names_scope( NamesScope( NamesScope::c_template_args_namespace_name, names_scope ) ); // Where we place template arguments
 
 	{
 		auto mut result_names_scope_lock= result_names_scope.lock_mut();
@@ -843,7 +843,7 @@ fn CodeBuilder::GenTemplateFunction(
 	}
 
 	var NamesScopePtr names_scope= ust::to_non_nullable( function_template.parent_names_scope.lock() ); // Parent namespace of type template
-	var NamesScopeMutPtr result_names_scope( NamesScope( "", names_scope ) ); // Where we place template arguments
+	var NamesScopeMutPtr result_names_scope( NamesScope( NamesScope::c_template_args_namespace_name, names_scope ) ); // Where we place template arguments
 
 	{
 		auto mut result_names_scope_lock= result_names_scope.lock_mut();
@@ -1069,15 +1069,6 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 	unsafe
 	{
 		LLVMSetValueName2( function_variable.llvm_function, name_mangled.front(), name_mangled.size() - 1s );
-
-		auto prev_comdat= LLVMGetComdat( function_variable.llvm_function );
-		if( prev_comdat != LLVMComdatRef::Null )
-		{
-			// Fix comdat name.
-			auto new_comdat= LLVMGetOrInsertComdat( module_, name_mangled.front_unsafe() );
-			LLVMSetComdatSelectionKind( new_comdat, LLVMGetComdatSelectionKind( prev_comdat ) );
-			LLVMSetComdat( function_variable.llvm_function, new_comdat );
-		}
 	}
 
 	{
