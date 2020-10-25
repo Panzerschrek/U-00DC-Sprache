@@ -22,8 +22,6 @@ namespace CodeBuilderPrivate
 namespace
 {
 
-const std::string g_template_parameters_namespace_name= "_tp_ns";
-
 void CreateTemplateErrorsContext(
 	CodeBuilderErrorsContainer& errors_container,
 	const FilePos& file_pos,
@@ -881,7 +879,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 
 	DeducibleTemplateParameters deduced_template_args( type_template.template_parameters.size() );
 
-	const NamesScopePtr template_parameters_namespace= std::make_shared<NamesScope>( g_template_parameters_namespace_name, &template_names_scope );
+	const NamesScopePtr template_parameters_namespace= std::make_shared<NamesScope>( NamesScope::c_template_parameters_namespace_name, &template_names_scope );
 	for( const TypeTemplate::TemplateParameter& param : type_template.template_parameters )
 		template_parameters_namespace->AddName( param.name, YetNotDeducedTemplateArg() );
 
@@ -1063,7 +1061,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 
 	DeducibleTemplateParameters deduced_template_args( function_template.template_parameters.size() );
 
-	const auto template_parameters_namespace= std::make_shared<NamesScope>( g_template_parameters_namespace_name, &template_names_scope );
+	const auto template_parameters_namespace= std::make_shared<NamesScope>( NamesScope::c_template_parameters_namespace_name, &template_names_scope );
 	for( const auto& known_template_param : function_template.known_template_parameters )
 		template_parameters_namespace->AddName( known_template_param.first, known_template_param.second );
 	for( const auto& template_param : function_template.template_parameters )

@@ -119,9 +119,11 @@ void NamesScope::CopyAccessRightsFrom( const NamesScope& src )
 	access_rights_= src.access_rights_;
 }
 
+const std::string NamesScope::c_template_parameters_namespace_name= "_tp_ns";
+
 bool NamesScope::IsInsideTemplate() const
 {
-	if( name_ == Class::c_template_class_name || name_ == "_tp_ns" )
+	if( name_ == Class::c_template_class_name || name_ == c_template_parameters_namespace_name )
 		return true;
 	if( parent_ != nullptr )
 		return parent_->IsInsideTemplate();
