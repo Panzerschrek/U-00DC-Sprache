@@ -1,5 +1,5 @@
 #include <sstream>
-#include "../lex_synt_lib/assert.hpp"
+#include "../../lex_synt_lib_common/assert.hpp"
 #include "../lex_synt_lib/program_writer.hpp"
 #include "type.hpp"
 #include "error_reporting.hpp"

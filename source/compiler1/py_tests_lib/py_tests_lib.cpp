@@ -3,7 +3,7 @@
 
 #include <Python.h>
 
-#include "../../compiler0/lex_synt_lib/assert.hpp" // TODO - remove such dependency?
+#include "../../lex_synt_lib_common/assert.hpp"
 #include "../../tests/tests_common.hpp"
 #include "../tests_common/funcs_c.hpp"
 

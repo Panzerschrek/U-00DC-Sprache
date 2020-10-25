@@ -172,6 +172,13 @@ set( KEYWORDS_LIST_REGEXP "[A-Za-z][A-Za-z0-9_]*" )
 file( READ built_in_macros.u BUILT_IN_MACROS_FILE_CONTENT HEX )
 
 #
+# LexSyntLibCommon
+#
+
+file( GLOB LEX_SYNT_COMMON_SOURCES "lex_synt_lib_common/*" )
+add_library( LexSyntLibCommon ${LEX_SYNT_COMMON_SOURCES} )
+
+#
 # CodeBuilderLibCommon
 #
 

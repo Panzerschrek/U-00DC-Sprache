@@ -2,7 +2,7 @@
 #include <llvm/IR/Module.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
-#include "../compiler0/lex_synt_lib/lex_synt_error.hpp"
+#include "../lex_synt_lib_common/lex_synt_error.hpp"
 #include "../compiler0/lex_synt_lib/source_graph_loader.hpp"
 #include "../compiler0/code_builder_lib/code_builder_errors.hpp"
 

@@ -1,4 +1,4 @@
-#include "assert.hpp"
+#include "../../lex_synt_lib_common/assert.hpp"
 #include "syntax_analyzer.hpp"
 
 namespace U

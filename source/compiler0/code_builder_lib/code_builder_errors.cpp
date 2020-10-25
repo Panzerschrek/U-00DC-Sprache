@@ -1,5 +1,5 @@
 #include <algorithm>
-#include "../lex_synt_lib/assert.hpp"
+#include "../../lex_synt_lib_common/assert.hpp"
 #include "keywords.hpp"
 
 #include "code_builder_errors.hpp"

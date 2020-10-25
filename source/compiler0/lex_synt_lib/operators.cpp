@@ -1,4 +1,4 @@
-#include "assert.hpp"
+#include "../../lex_synt_lib_common/assert.hpp"
 
 #include "operators.hpp"
 

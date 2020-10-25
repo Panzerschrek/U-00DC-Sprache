@@ -6,7 +6,7 @@
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../code_builder_lib/code_builder.hpp"
-#include "../lex_synt_lib/assert.hpp"
+#include "../../lex_synt_lib_common/assert.hpp"
 #include "../lex_synt_lib/lexical_analyzer.hpp"
 #include "../lex_synt_lib/syntax_analyzer.hpp"
 #include "../lex_synt_lib/source_graph_loader.hpp"
@@ -54,6 +54,16 @@ public:
 private:
 	const std::vector<SourceEntry> sources_;
 };
+
+void PrintLexSyntErrors( const SourceGraph& source_graph )
+{
+	std::vector<std::string> source_files;
+	source_files.reserve( source_graph.nodes_storage.size() );
+	for( const auto& node : source_graph.nodes_storage )
+		source_files.push_back( node.file_path );
+
+	PrintLexSyntErrors( source_files, source_graph.errors );
+}
 
 // Returns "true" if should enable test.
 bool FilterTest( const std::string& test_name )

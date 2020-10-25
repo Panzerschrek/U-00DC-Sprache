@@ -1,20 +1,7 @@
-#include "source_graph_loader.hpp"
 #include "lex_synt_error.hpp"
 
 namespace U
 {
-
-void PrintLexSyntErrors( const SourceGraph& source_graph, const ErrorsFormat format, std::ostream& errors_stream )
-{
-	std::vector<std::string> source_files;
-	source_files.reserve( source_graph.nodes_storage.size() );
-	for( const auto& node : source_graph.nodes_storage )
-	{
-		source_files.push_back( node.file_path );
-	}
-
-	PrintLexSyntErrors( source_files, source_graph.errors, format, errors_stream );
-}
 
 void PrintLexSyntErrors( const std::vector<std::string>& source_files, const LexSyntErrors& errors, const ErrorsFormat format, std::ostream& errors_stream )
 {

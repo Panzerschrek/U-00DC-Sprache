@@ -114,11 +114,8 @@ add_library(
 		${TESTS_COMMON_SOURCES}
 		${TESTS_COMMON_HEADERS}
 		${TESTS_COMMON_OBJECTS}
-		# Hack! Build some helper functions from compiler0. TODO - remove this.
-		../compiler0/lex_synt_lib/file_pos.cpp
-		../compiler0/lex_synt_lib/lex_synt_error.cpp
 	)
-target_link_libraries( CodeBuilderLib${NEXT_COMPILER_GENERATION} CodeBuilderLibCommon )
+target_link_libraries( CodeBuilderLib${NEXT_COMPILER_GENERATION} LexSyntLibCommon CodeBuilderLibCommon )
 
 #
 # Compiler

@@ -7,7 +7,7 @@
 #include <llvm/Support/ConvertUTF.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
-#include "../lex_synt_lib/assert.hpp"
+#include "../../lex_synt_lib_common/assert.hpp"
 #include "keywords.hpp"
 #include "../lex_synt_lib/program_string.hpp"
 

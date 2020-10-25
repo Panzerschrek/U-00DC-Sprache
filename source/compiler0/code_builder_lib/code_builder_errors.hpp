@@ -3,7 +3,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
-#include "../lex_synt_lib/file_pos.hpp"
+#include "../../lex_synt_lib_common/file_pos.hpp"
 
 
 namespace U

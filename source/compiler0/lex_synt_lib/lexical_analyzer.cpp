@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <cstring>
 
-#include "assert.hpp"
+#include "../../lex_synt_lib_common/assert.hpp"
 #include "program_string.hpp"
 #include "lexical_analyzer.hpp"
 

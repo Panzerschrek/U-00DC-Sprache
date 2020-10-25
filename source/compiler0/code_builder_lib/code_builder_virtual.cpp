@@ -1,4 +1,4 @@
-#include "../lex_synt_lib/assert.hpp"
+#include "../../lex_synt_lib_common/assert.hpp"
 #include "keywords.hpp"
 #include "mangling.hpp"
 #include "error_reporting.hpp"

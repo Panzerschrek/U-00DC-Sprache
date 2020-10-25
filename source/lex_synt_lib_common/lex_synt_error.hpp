@@ -22,9 +22,7 @@ using LexSyntErrors= std::vector<LexSyntError>;
 
 enum class ErrorsFormat{ GCC, MSVC };
 
-struct SourceGraph;
 
-void PrintLexSyntErrors( const SourceGraph& source_graph, ErrorsFormat format= ErrorsFormat::GCC, std::ostream& errors_stream= std::cerr );
 void PrintLexSyntErrors( const std::vector<std::string>& source_files, const LexSyntErrors& errors, ErrorsFormat format= ErrorsFormat::GCC, std::ostream& errors_stream= std::cerr );
 
 

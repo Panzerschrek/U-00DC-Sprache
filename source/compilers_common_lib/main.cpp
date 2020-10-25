@@ -20,7 +20,7 @@
 #include <llvm/Transforms/IPO/PassManagerBuilder.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
-#include "../compiler0/lex_synt_lib/assert.hpp"
+#include "../lex_synt_lib_common/assert.hpp"
 #include "../sprache_version/sprache_version.hpp"
 #include  "code_builder_launcher.hpp"
 #include "dep_file.hpp"

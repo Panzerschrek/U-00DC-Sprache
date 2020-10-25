@@ -3,7 +3,7 @@
 #include <map>
 #include <set>
 
-#include "assert.hpp"
+#include "../../lex_synt_lib_common/assert.hpp"
 #include "keywords.hpp"
 #include "syntax_analyzer.hpp"
 

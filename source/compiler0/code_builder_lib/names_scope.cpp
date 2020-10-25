@@ -1,4 +1,4 @@
-#include "../lex_synt_lib/assert.hpp"
+#include "../../lex_synt_lib_common/assert.hpp"
 #include "class.hpp"
 #include "enum.hpp"
 #include "names_scope.hpp"

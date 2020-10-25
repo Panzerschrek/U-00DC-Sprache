@@ -31,6 +31,7 @@ set( LEX_SYNT_LIB_SOURCES_GENERATED
 	${CMAKE_CURRENT_BINARY_DIR}/built_in_macros.hpp
 	)
 add_library( LexSyntLib ${LEX_SYNT_LIB_SOURCES} ${LEX_SYNT_LIB_HEADERS} ${LEX_SYNT_LIB_SOURCES_GENERATED} )
+target_link_libraries( LexSyntLib LexSyntLibCommon )
 target_include_directories( LexSyntLib PUBLIC ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/lex_synt_lib )
 
 #

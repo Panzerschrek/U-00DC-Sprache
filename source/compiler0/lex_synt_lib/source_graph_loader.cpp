@@ -1,6 +1,6 @@
 #include <algorithm>
 
-#include "assert.hpp"
+#include "../../lex_synt_lib_common/assert.hpp"
 
 #include "source_graph_loader.hpp"
 
