@@ -3,6 +3,7 @@
 
 #include <Python.h>
 
+#include "../../code_builder_lib_common/code_builder_errors.hpp"
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "../../tests/tests_common.hpp"
 #include "../tests_common/funcs_c.hpp"
@@ -293,10 +294,8 @@ UserHandle ErrorHandler(
 
 	PyDict_SetItemString( dict, "file_pos", BuildFilePos( file_index, line, column ) );
 
-	const char* error_code_str= nullptr;
-	size_t error_code_len= 0u;
-	U1_CodeBuilderCodeToString( error_code, error_code_str, error_code_len );
-	PyDict_SetItemString( dict, "code", PyUnicode_DecodeUTF8( error_code_str, Py_ssize_t(error_code_len), nullptr ) );
+	const std::string_view error_code_str= CodeBuilderErrorCodeToString( CodeBuilderErrorCode(error_code) );
+	PyDict_SetItemString( dict, "code", PyUnicode_DecodeUTF8( error_code_str.data(), Py_ssize_t(error_code_str.size()), nullptr ) );
 
 	PyDict_SetItemString( dict, "text", BuildString( error_text ) );
 

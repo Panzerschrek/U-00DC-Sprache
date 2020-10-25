@@ -1,7 +1,4 @@
-#include <algorithm>
-#include "../../lex_synt_lib_common/assert.hpp"
-#include "keywords.hpp"
-
+#include "../lex_synt_lib_common/assert.hpp"
 #include "code_builder_errors.hpp"
 
 namespace U
@@ -34,7 +31,7 @@ std::string_view CodeBuilderErrorCodeToString( const CodeBuilderErrorCode code )
 	switch(code)
 	{
 	#define PROCESS_ERROR(Code, Message) case CodeBuilderErrorCode::Code: return #Code;
-	#include "../../errors_list.hpp"
+	#include "../errors_list.hpp"
 	#undef PROCESS_ERROR
 	};
 

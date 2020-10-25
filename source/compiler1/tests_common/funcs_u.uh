@@ -80,10 +80,3 @@ fn nomangle U1_BuildProgrammUsingVFS(
 	UserHandle lex_synt_error_callback_data,
 	ErrorsHandlingCallbacks& errors_handling_callbacks,
 	UserHandle error_processing_data ) : LLVMModuleRef;
-
-enum CharPtr : size_type { Null }
-
-fn nomangle U1_CodeBuilderCodeToString(
-	u32 error_code,
-	CharPtr &mut out_text,
-	size_type &mut out_text_length );

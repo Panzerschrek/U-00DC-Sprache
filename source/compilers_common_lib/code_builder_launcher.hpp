@@ -4,7 +4,7 @@
 
 #include "../lex_synt_lib_common/lex_synt_error.hpp"
 #include "../compiler0/lex_synt_lib/source_graph_loader.hpp"
-#include "../compiler0/code_builder_lib/code_builder_errors.hpp"
+#include "../code_builder_lib_common/code_builder_errors.hpp"
 
 namespace U
 {

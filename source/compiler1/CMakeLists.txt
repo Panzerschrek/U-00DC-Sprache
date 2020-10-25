@@ -158,6 +158,7 @@ if( U_BUILD_PY_TESTS )
 		PyTestsLib${NEXT_COMPILER_GENERATION}
 			PRIVATE
 				CodeBuilderLib${NEXT_COMPILER_GENERATION}
+				CodeBuilderLibCommon
 				${LLVM_LIBS_FOR_TESTS}
 				${PYTHON_LIBRARIES}
 			)

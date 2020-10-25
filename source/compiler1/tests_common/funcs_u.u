@@ -191,22 +191,6 @@ fn nomangle U1_BuildProgrammUsingVFS(
 	}
 }
 
-fn nomangle U1_CodeBuilderCodeToString(
-	u32 error_code,
-	CharPtr &mut out_text,
-	size_type &mut out_text_length )
-{
-	for( &el : typeinfo</U1::CodeBuilderErrorCode/>.elements_list )
-	{
-		if( error_code == u32(el.value) )
-		{
-			unsafe{  cast_ref_unsafe</size_type/>(out_text)= ust::ref_to_int(el.name[0]);  }
-			out_text_length= typeinfo</ typeof(el.name) />.element_count;
-			return;
-		}
-	}
-}
-
 fn nomangle U1_BuildMultisourceProgram(
 	U1_SourceFile& source_files,
 	size_type source_file_count,

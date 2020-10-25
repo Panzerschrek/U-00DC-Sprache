@@ -87,10 +87,4 @@ extern "C" LLVMModuleRef U1_BuildProgrammUsingVFS(
 	const ErrorsHandlingCallbacks& errors_handling_callbacks,
 	UserHandle error_processing_data );
 
-// Returns static string for error code.
-void U1_CodeBuilderCodeToString(
-	uint32_t error_code,
-	const char*& out_text,
-	size_t& out_text_length );
-
 } // extern "C"
