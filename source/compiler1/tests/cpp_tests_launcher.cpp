@@ -9,7 +9,7 @@
 
 #include "../../tests/tests_common.hpp"
 #include "../../tests/cpp_tests/tests.hpp"
-#include  "../tests_common/funcs_c.hpp"
+#include  "../launchers_common/funcs_c.hpp"
 
 namespace U
 {

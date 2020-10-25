@@ -6,7 +6,7 @@
 #include "../../code_builder_lib_common/code_builder_errors.hpp"
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "../../tests/tests_common.hpp"
-#include "../tests_common/funcs_c.hpp"
+#include "../launchers_common/funcs_c.hpp"
 
 #include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/ExecutionEngine/ExecutionEngine.h>

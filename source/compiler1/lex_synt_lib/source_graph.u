@@ -1,5 +1,4 @@
 import "/built_in_macros.uh"
-import "../tests_common/print.uh"
 import "source_graph.uh"
 
 namespace U1
