@@ -768,7 +768,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 					bool_type_,
 					condition_expression.t )
 
-				// TODO - continue here and create stub
+				CallDestructorsForTopVariablesFrame( names_scope, function_context, branch.file_pos );
+				unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, body_block );  }
 			}
 			else
 			{
