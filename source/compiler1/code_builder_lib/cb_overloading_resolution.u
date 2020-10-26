@@ -470,68 +470,66 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 			actual_args_corrected.drop_front();
 		}
 
-		// TODO - fix foreach and use continue here.
-		if( function_type.params.size() == actual_args_corrected.size() )
+		if( function_type.params.size() != actual_args_corrected.size() )
 		{
-			auto mut all_args_is_compatible= true;
+			continue;
+		}
 
-			for( auto mut arg_n= 0s; arg_n < actual_args_corrected.size(); ++arg_n )
+		auto mut all_args_is_compatible= true;
+		for( auto mut arg_n= 0s; arg_n < actual_args_corrected.size(); ++arg_n )
+		{
+			auto arg_overloading_class= GetArgOverloadingClass( actual_args_corrected[arg_n] );
+			auto parameter_overloading_class= GetArgOverloadingClass( function_type.params[arg_n] );
+
+			auto& src_type= actual_args_corrected[arg_n].t;
+			auto& dst_type= function_type.params[arg_n].t;
+			if( src_type != dst_type )
 			{
-				auto arg_overloading_class= GetArgOverloadingClass( actual_args_corrected[arg_n] );
-				auto parameter_overloading_class= GetArgOverloadingClass( function_type.params[arg_n] );
-
-				auto& src_type= actual_args_corrected[arg_n].t;
-				auto& dst_type= function_type.params[arg_n].t;
-				if( src_type == dst_type )
-				{} // ok
-				else
+				if( src_type != void_type_ && dst_type != void_type_ &&
+					!( EnsureTypeComplete( src_type ) && EnsureTypeComplete( dst_type ) ) )
 				{
-					if( src_type != void_type_ && dst_type != void_type_ &&
-						!( EnsureTypeComplete( src_type ) && EnsureTypeComplete( dst_type ) ) )
+					if( produce_errors )
 					{
-						if( produce_errors )
-						{
-							REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, file_pos )
-						}
-						all_args_is_compatible= false;
-						break;
+						REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, file_pos )
 					}
-
-					if( src_type.ReferenceIsConvertibleTo( dst_type ) )
-					{} // Ok - convert references.
-					else if(
-						allow_type_conversions &&
-						parameter_overloading_class == ArgOverloadingClass::ImmutableReference &&
-						!function.is_conversion_constructor && // Disable conversion for conversion constructor.
-						!( function.is_constructor && !dst_type.GetClassType().empty() && IsCopyConstructor( function, dst_type.GetClassType().get_ref() ) ) && // Disable conversion for copy constructor.
-						!GetConversionConstructor( names_scope, dst_type, src_type, file_pos ).empty() )
-					{} // Ok, can convert arg.
-					else
-					{
-						all_args_is_compatible= false;
-						break;
-					}
-				}
-
-				if( arg_overloading_class == parameter_overloading_class )
-				{} // All ok, exact match
-				else if( parameter_overloading_class == ArgOverloadingClass::MutalbeReference &&
-					arg_overloading_class != ArgOverloadingClass::MutalbeReference )
-				{
-					// We can only bind nonconst-reference arg to nonconst-reference parameter.
 					all_args_is_compatible= false;
 					break;
 				}
-				else if( parameter_overloading_class == ArgOverloadingClass::ImmutableReference &&
-					arg_overloading_class == ArgOverloadingClass::MutalbeReference )
-				{} // Ok, mut to imut conversion.
-				else{ halt; }
+
+				if( src_type.ReferenceIsConvertibleTo( dst_type ) )
+				{} // Ok - convert references.
+				else if(
+					allow_type_conversions &&
+					parameter_overloading_class == ArgOverloadingClass::ImmutableReference &&
+					!function.is_conversion_constructor && // Disable conversion for conversion constructor.
+					!( function.is_constructor && !dst_type.GetClassType().empty() && IsCopyConstructor( function, dst_type.GetClassType().get_ref() ) ) && // Disable conversion for copy constructor.
+					!GetConversionConstructor( names_scope, dst_type, src_type, file_pos ).empty() )
+				{} // Ok, can convert arg.
+				else
+				{
+					all_args_is_compatible= false;
+					break;
+				}
 			}
 
-			if( all_args_is_compatible )
+			if( arg_overloading_class == parameter_overloading_class )
+			{} // All ok, exact match
+			else if( parameter_overloading_class == ArgOverloadingClass::MutalbeReference &&
+				arg_overloading_class != ArgOverloadingClass::MutalbeReference )
 			{
-				match_functions.push_back(function);
+				// We can only bind nonconst-reference arg to nonconst-reference parameter.
+				all_args_is_compatible= false;
+				break;
 			}
+			else if( parameter_overloading_class == ArgOverloadingClass::ImmutableReference &&
+				arg_overloading_class == ArgOverloadingClass::MutalbeReference )
+			{} // Ok, mut to imut conversion.
+			else{ halt; }
+		}
+
+		if( all_args_is_compatible )
+		{
+			match_functions.push_back(function);
 		}
 	}
 
