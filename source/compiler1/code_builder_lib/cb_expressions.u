@@ -993,13 +993,29 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				return ErrorValue();
 			}
 
-			// TODO - check also signed types
 			var u64 mut type_index= ~0u64;
-			unsafe{  type_index= LLVMConstIntGetZExtValue( index.constexpr_value );  }
-			if( type_index >= u64(variable_tuple_type.element_types.size()) )
+			var i64 mut type_index_signed(-1);
+			unsafe
 			{
-				REPORT_ERROR( TupleIndexOutOfBounds, names_scope, indexation_operator.file_pos, type_index, variable_tuple_type.element_types.size() )
-				return ErrorValue();
+				type_index= LLVMConstIntGetZExtValue( index.constexpr_value );
+				type_index_signed= LLVMConstIntGetSExtValue( index.constexpr_value );
+			}
+
+			if( IsSignedInteger( index_fundamental_type.fundamental_type ) )
+			{
+				if( type_index_signed >= i64(variable_tuple_type.element_types.size()) || type_index_signed < 0i64 )
+				{
+					REPORT_ERROR( TupleIndexOutOfBounds, names_scope, indexation_operator.file_pos, type_index_signed, variable_tuple_type.element_types.size() )
+					return ErrorValue();
+				}
+			}
+			else
+			{
+				if( type_index >= u64(variable_tuple_type.element_types.size()) )
+				{
+					REPORT_ERROR( TupleIndexOutOfBounds, names_scope, indexation_operator.file_pos, type_index, variable_tuple_type.element_types.size() )
+					return ErrorValue();
+				}
 			}
 
 			var Variable mut result
