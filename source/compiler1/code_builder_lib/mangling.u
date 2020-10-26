@@ -355,15 +355,9 @@ fn MangleTypeImpl( Type& t ) : MangleGraphNode
 			signature.push_back( move(void_param) );
 		}
 
-		foreach( &arg : function_type.params )
+		foreach( &param : function_type.params )
 		{
-			var FunctionType::Param mut param_copy // TODO - create copy constructor for "Arg"
-			{
-				.t(arg.t),
-				.is_mutable= arg.is_mutable,
-				.is_reference= arg.is_reference,
-			};
-			signature.push_back(move(param_copy));
+			signature.push_back(param);
 		}
 
 		var MangleGraphNode mut res
