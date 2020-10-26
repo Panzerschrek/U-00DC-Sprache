@@ -673,6 +673,8 @@ private:
 
 	fn AddGlobalConstantVariable( this, ust::string8& name_null_terminated, LLVMTypeRef llvm_type, LLVMValueRef initializer ) : LLVMValueRef;
 
+	fn AddFunctionAttribute( this, LLVMValueRef llvm_function, u32 index, ust::array_view_imut</char8/> attr_name );
+
 	fn SetupLLVMFunctionAttributes( this, NamesScope& names_scope, FunctionVariable& func_variable );
 
 	fn GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef;

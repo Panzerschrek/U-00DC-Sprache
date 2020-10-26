@@ -86,20 +86,9 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 	{
 		auto halt_function_llvm_type= LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, LLVMTypeRef::Null, 0u, LLVMBool::False );
 		halt_function_= LLVMAddFunction( module_, "__U_halt\0"[0], halt_function_llvm_type );
-
-		{
-			var ust::array_view_imut</ char8 /> attr_name= "noreturn";
-			auto attr_kind= LLVMGetEnumAttributeKindForName( attr_name.front(), attr_name.size() );
-			auto attr= LLVMCreateEnumAttribute( llvm_context_, attr_kind, 0u64 );
-			LLVMAddAttributeAtIndex( halt_function_, LLVMAttributeFunctionIndex, attr );
-		}
-		{
-			var ust::array_view_imut</ char8 /> attr_name= "nounwind";
-			auto attr_kind= LLVMGetEnumAttributeKindForName( attr_name.front(), attr_name.size() );
-			auto attr= LLVMCreateEnumAttribute( llvm_context_, attr_kind, 0u64 );
-			LLVMAddAttributeAtIndex( halt_function_, LLVMAttributeFunctionIndex, attr );
-		}
 	}
+	AddFunctionAttribute( halt_function_, LLVMAttributeFunctionIndex, "noreturn" );
+	AddFunctionAttribute( halt_function_, LLVMAttributeFunctionIndex, "nounwind" );
 
 	root_errors_container_= ErrorsContainerPtr( ErrorsContainer() );
 
@@ -1371,14 +1360,9 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		auto is_s_ret= !func_variable.t.return_value_is_reference && ( !func_variable.t.return_type.GetClassType().empty() || !func_variable.t.return_type.GetTupleType().empty() );
 		if( is_s_ret )
 		{
+			AddFunctionAttribute( func_variable.llvm_function, LLVMAttributeFirstParamIndex, "sret" );
 			unsafe
 			{
-				var ust::array_view_imut</ char8 /> attr_name= "sret";
-				auto attr_kind= LLVMGetEnumAttributeKindForName( attr_name.front(), attr_name.size() );
-				auto attr= LLVMCreateEnumAttribute( llvm_context_, attr_kind, 0u64 );
-
-				LLVMAddAttributeAtIndex( func_variable.llvm_function, LLVMAttributeFirstParamIndex, attr );
-
 				function_context.s_ret= LLVMGetParam( func_variable.llvm_function, 0u );
 				var ust::array_view_imut</ char8 /> param_name= "_return_value";
 				LLVMSetValueName2( function_context.s_ret, param_name.front(), param_name.size() );
@@ -1983,6 +1967,16 @@ fn CodeBuilder::AddGlobalConstantVariable( this, ust::string8& name_null_termina
 	}
 }
 
+fn CodeBuilder::AddFunctionAttribute( this, LLVMValueRef llvm_function, u32 index, ust::array_view_imut</char8/> attr_name )
+{
+	unsafe
+	{
+		auto attr_kind= LLVMGetEnumAttributeKindForName( attr_name.front(), attr_name.size() );
+		auto attr= LLVMCreateEnumAttribute( llvm_context_, attr_kind, 0u64 );
+		LLVMAddAttributeAtIndex( llvm_function, index, attr );
+	}
+}
+
 fn CodeBuilder::SetupLLVMFunctionAttributes( this, NamesScope& names_scope, FunctionVariable& func_variable )
 {
 	if( func_variable.is_generated || names_scope.IsInsideTemplate() )
@@ -2012,14 +2006,7 @@ fn CodeBuilder::SetupLLVMFunctionAttributes( this, NamesScope& names_scope, Func
 	unsafe{  LLVMSetUnnamedAddress( func_variable.llvm_function, LLVMUnnamedAddr::GlobalUnnamedAddr );  }
 
 	// We do not support exceptions. So, mark all functions as "nounwind".
-	unsafe
-	{
-		var ust::array_view_imut</ char8 /> attr_name= "nounwind";
-		auto attr_kind= LLVMGetEnumAttributeKindForName( attr_name.front(), attr_name.size() );
-		auto attr= LLVMCreateEnumAttribute( llvm_context_, attr_kind, 0u64 );
-
-		LLVMAddAttributeAtIndex( func_variable.llvm_function, LLVMAttributeFunctionIndex, attr );
-	}
+	AddFunctionAttribute( func_variable.llvm_function, LLVMAttributeFunctionIndex, "nounwind" );
 
 	// TODO - add attribute "uwtable" if we are building debug info.
 }
