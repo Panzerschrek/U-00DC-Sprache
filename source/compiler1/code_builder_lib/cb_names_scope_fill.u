@@ -329,7 +329,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::VariablesDeclaration/>& variables_declaration )
 {
-	for( auto mut i= 0s;  i < variables_declaration.get_ref().variables.size(); ++i )
+	for( auto mut i= 0s; i < variables_declaration.get_ref().variables.size(); ++i )
 	{
 		auto& variable_declaration= variables_declaration.get_ref().variables[i];
 

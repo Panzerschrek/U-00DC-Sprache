@@ -369,7 +369,7 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 	}
 
 	// Can not merge things ot this kind.
-	REPORT_ERROR( Redefinition, target_names_scope, FilePos() /* TODO - file_pos */, name )
+	REPORT_ERROR( Redefinition, target_names_scope, GetValueFilePos( src ), name )
 }
 
 fn CodeBuilder::GetValueFilePos( NamesScopeValue& value ) : FilePos
@@ -479,6 +479,5 @@ fn CodeBuilder::GetValueFilePos( NamesScopeValue& value ) : FilePos
 
 	return FilePos();
 }
-
 
 } // namespace U1
