@@ -214,7 +214,6 @@ fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, FilePos& file_p
 			it.drop_front();
 		}
 	}
-	// TODO - handle bin, oct, hex constants.
 
 	var u64 mut integer_part(0), mut fractional_part(0);
 	var i32 mut fractional_part_digits= 0, mut exponent= 0;

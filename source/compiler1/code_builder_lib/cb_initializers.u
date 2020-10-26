@@ -511,7 +511,6 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	}
 	if_var( &class_type_ptr : variable.t.GetClassType() )
 	{
-		// TODO - disable zero_init for some classes.
 		auto class_type_lock= class_type_ptr.lock_imut();
 		var ClassType& class_type= class_type_lock.get_ref();
 
