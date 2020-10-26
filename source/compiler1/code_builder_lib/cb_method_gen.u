@@ -158,6 +158,8 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	auto mut this_llvm_value= LLVMValueRef::Null;
 	unsafe{  this_llvm_value= LLVMGetParam( function_variable.llvm_function, 0u );  }
 
+	auto file_pos= class_type.lock_imut().get_ref().syntax_element.get_ref().file_pos;
+
 	if( !base_class.empty() )
 	{
 		var NamesScopeVariable base_variable
@@ -167,7 +169,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 			.llvm_value= CreateBaseClassFieldGEP( this_llvm_value, function_context ),
 		};
 
-		BuildEmptyInitializer( class_members_ptr, function_context, base_variable, KeywordToString( Keyword::base_ ), FilePos( /* TODO - set correct file_pos */ ) );
+		BuildEmptyInitializer( class_members_ptr, function_context, base_variable, KeywordToString( Keyword::base_ ), file_pos );
 	}
 
 	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
@@ -188,7 +190,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		auto& initializer= class_field.syntax_element.get_ref().initializer;
 		if( !initializer.get</Synt::EmptyVariant/>().empty() )
 		{
-			BuildEmptyInitializer( class_members_ptr, function_context, field_variable, field_name, FilePos( /* TODO - set correct file_pos */ ) );
+			BuildEmptyInitializer( class_members_ptr, function_context, field_variable, field_name, file_pos );
 		}
 		else
 		{
