@@ -66,7 +66,20 @@ void CreateTemplateErrorsContext(
 			if( const Type* const type= std::get_if<Type>( &arg ) )
 				args_description+= type->ToString();
 			else if( const Variable* const variable= std::get_if<Variable>( &arg ) )
-				args_description+= std::to_string( int64_t(variable->constexpr_value->getUniqueInteger().getLimitedValue()) );
+			{
+				const llvm::APInt val= variable->constexpr_value->getUniqueInteger();
+				if( const auto fundamental_type= variable->type.GetFundamentalType() )
+				{
+					if( fundamental_type->fundamental_type == U_FundamentalType::Bool )
+						args_description+= val.isNullValue() ? "false" : "true";
+					else if( IsSignedInteger( fundamental_type->fundamental_type ) )
+						args_description+= std::to_string( val.getSExtValue() );
+					else
+						args_description+= std::to_string( val.getZExtValue() );
+				}
+				else
+					args_description+= std::to_string( val.getZExtValue() );
+			}
 			else U_ASSERT(false);
 
 			++args_processed;

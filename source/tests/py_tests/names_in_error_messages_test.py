@@ -307,3 +307,66 @@ def TemplateParametersInErrorInsideTemplate_Test2():
 	assert( errors_list[0].template_errors.parameters_description.find( "A = bool" ) != -1 )
 	assert( errors_list[0].template_errors.parameters_description.find( "B = f32" ) != -1 )
 	assert( errors_list[0].template_errors.template_name.find( "Add" ) != -1 )
+
+
+def TemplateParametersInErrorInsideTemplate_Test3():
+	c_program_text= """
+		template</ size_type s />
+		struct IVec
+		{
+			[ UnknownName, s ] x;
+		}
+
+		type B= IVec</ 4s />;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TemplateContext" )
+	assert( errors_list[0].file_pos.line == 8 )
+	assert( len(errors_list[0].template_errors.errors) > 0 )
+	assert( errors_list[0].template_errors.errors[0].error_code == "NameNotFound" )
+	assert( errors_list[0].template_errors.errors[0].file_pos.line == 5 )
+	assert( errors_list[0].template_errors.parameters_description.find( "s = 4" ) != -1 )
+	assert( errors_list[0].template_errors.template_name.find( "IVec" ) != -1 )
+
+
+def TemplateParametersInErrorInsideTemplate_Test4():
+	c_program_text= """
+		template</ i32 s />
+		struct Box
+		{
+			UnknownName x;
+		}
+
+		type B= Box</ -365 />;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TemplateContext" )
+	assert( errors_list[0].file_pos.line == 8 )
+	assert( len(errors_list[0].template_errors.errors) > 0 )
+	assert( errors_list[0].template_errors.errors[0].error_code == "NameNotFound" )
+	assert( errors_list[0].template_errors.errors[0].file_pos.line == 5 )
+	assert( errors_list[0].template_errors.parameters_description.find( "s = -365" ) != -1 )
+	assert( errors_list[0].template_errors.template_name.find( "Box" ) != -1 )
+
+
+def TemplateParametersInErrorInsideTemplate_Test5():
+	c_program_text= """
+		template</ bool b />
+		struct Box
+		{
+			UnknownName x;
+		}
+
+		type B= Box</ false />;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TemplateContext" )
+	assert( errors_list[0].file_pos.line == 8 )
+	assert( len(errors_list[0].template_errors.errors) > 0 )
+	assert( errors_list[0].template_errors.errors[0].error_code == "NameNotFound" )
+	assert( errors_list[0].template_errors.errors[0].file_pos.line == 5 )
+	assert( errors_list[0].template_errors.parameters_description.find( "b = false" ) != -1 )
+	assert( errors_list[0].template_errors.template_name.find( "Box" ) != -1 )
