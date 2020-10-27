@@ -45,6 +45,7 @@ Templates:
 Standart library:
 *) Associative containers - map, set, unordered_set, string_map
 *) Forbid non-thread-safe shared pointers in thread-safe shared pointers
+*) "memory_copy" with alignment
 *) Algorithms (sorting, etc.).
 *) Time library - get time functions, timers
 *) File library
@@ -52,16 +53,18 @@ Standart library:
 *) More math functions
 
 Compiler:
-*) Fix "while" block references, reference merging
 *) move-assignment without hacks.
 *) Use TBAA from LLVM.
 *) MSVC mangling.
 *) Virtual call for final function optimization
 *) Do not crash in some cases of code with errors
+*) Prevent execution of constexpr functions with errors
 *) Return value optimization
 *) Precompiled modules
-*) Faster compilation model - without emitting thousands of template functions in each object file
 *) Rework of "Value" class
+
+Compiler1:
+*) Debug info
 
 QtCreator plugin:
 *) Syntax errors highlighting
