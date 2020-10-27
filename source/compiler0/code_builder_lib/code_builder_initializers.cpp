@@ -1105,7 +1105,7 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassProxyPtr& class_type 
 	// We must check it, becauseinitializers may not be executed later.
 
 	const Class& class_= *class_type->class_;
-	U_ASSERT( class_.completeness == TypeCompleteness::Complete );
+	U_ASSERT( class_.is_complete );
 
 	FunctionContext& function_context= *global_function_context_;
 	const StackVariablesStorage dummy_stack_variables_storage( function_context );
