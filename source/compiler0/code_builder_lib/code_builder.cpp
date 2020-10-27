@@ -1806,7 +1806,7 @@ Value CodeBuilder::ResolveValue(
 						return ErrorValue();
 					}
 
-					GlobalThingBuildClass( type->GetClassTypeProxy(), TypeCompleteness::Complete );
+					GlobalThingBuildClass( type->GetClassTypeProxy() );
 
 					if( names_scope.GetAccessFor( type->GetClassTypeProxy() ) < class_->GetMemberVisibility( *component_name ) )
 						REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), file_pos, *component_name, class_->members.GetThisNamespaceName() );
@@ -1819,7 +1819,7 @@ Value CodeBuilder::ResolveValue(
 				}
 				else if( EnumPtr const enum_= type->GetEnumType() )
 				{
-					GlobalThingBuildEnum( enum_, TypeCompleteness::Complete );
+					GlobalThingBuildEnum( enum_ );
 					value= enum_->members.GetThisScopeValue( *component_name );
 					last_space= &enum_->members;
 				}
@@ -1899,7 +1899,7 @@ Value CodeBuilder::ResolveValue(
 		else if( const Type* const type= value->GetTypeName() )
 		{
 			if( const EnumPtr enum_= type->GetEnumTypePtr() )
-				GlobalThingBuildEnum( enum_, TypeCompleteness::Complete );
+				GlobalThingBuildEnum( enum_ );
 		}
 	}
 

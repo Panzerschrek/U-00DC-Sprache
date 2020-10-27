@@ -675,13 +675,13 @@ private:
 	// Global things build
 
 	bool IsTypeComplete( const Type& type ) const;
-	bool EnsureTypeCompleteness( const Type& type, TypeCompleteness completeness= TypeCompleteness::Complete ); // Returns true, if all ok
+	bool EnsureTypeCompleteness( const Type& type ); // Returns true, if all ok
 	bool ReferenceIsConvertible( const Type& from, const Type& to, CodeBuilderErrorsContainer& errors_container, const FilePos& file_pos ); // Returns true of all ok. If types are different can call EnsureTypeCompleteness.
 
 	void GlobalThingBuildNamespace( NamesScope& names_scope );
 	void GlobalThingBuildFunctionsSet( NamesScope& names_scope, OverloadedFunctionsSet& functions_set, bool build_body );
-	void GlobalThingBuildClass( ClassProxyPtr class_type, TypeCompleteness completeness );
-	void GlobalThingBuildEnum( const EnumPtr enum_, TypeCompleteness completeness );
+	void GlobalThingBuildClass( ClassProxyPtr class_type );
+	void GlobalThingBuildEnum( const EnumPtr enum_ );
 	void GlobalThingBuildTypeTemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set );
 	void GlobalThingBuildTypedef( NamesScope& names_scope, Value& typedef_value );
 	void GlobalThingBuildVariable( NamesScope& names_scope, Value& global_variable_value );

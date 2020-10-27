@@ -146,37 +146,32 @@ bool CodeBuilder::IsTypeComplete( const Type& type ) const
 	}
 }
 
-bool CodeBuilder::EnsureTypeCompleteness( const Type& type, const TypeCompleteness completeness )
+bool CodeBuilder::EnsureTypeCompleteness( const Type& type )
 {
-	if( completeness == TypeCompleteness::Incomplete )
-		return true;
-
 	if( const auto fundamental_type= type.GetFundamentalType() )
 	{
-		if( completeness > TypeCompleteness::Incomplete )
-			return fundamental_type->fundamental_type != U_FundamentalType::Void;
-		return true;
+		return fundamental_type->fundamental_type != U_FundamentalType::Void;
 	}
 	else if( type.GetFunctionType() != nullptr || type.GetFunctionPointerType() != nullptr )
 		return true;
 	else if( const auto enum_type= type.GetEnumType() )
 	{
-		GlobalThingBuildEnum( enum_type, completeness );
+		GlobalThingBuildEnum( enum_type );
 		return true;
 	}
 	else if( const auto array_type= type.GetArrayType() )
-		return EnsureTypeCompleteness( array_type->type, completeness );
+		return EnsureTypeCompleteness( array_type->type );
 	else if( const auto tuple_type= type.GetTupleType() )
 	{
 		bool ok= true;
 		for( const Type& element_type : tuple_type->elements )
-			ok= EnsureTypeCompleteness( element_type, completeness ) || ok;
+			ok= EnsureTypeCompleteness( element_type ) || ok;
 		return ok;
 	}
 	else if( const auto class_type= type.GetClassTypeProxy() )
 	{
-		GlobalThingBuildClass( class_type, completeness );
-		return class_type->class_->completeness >= completeness; // Return true if we achived required completeness.
+		GlobalThingBuildClass( class_type );
+		return class_type->class_->completeness >= TypeCompleteness::Complete; // Return true if we achived required completeness.
 	}
 	else U_ASSERT(false);
 
@@ -221,12 +216,12 @@ void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 					// Otherwise we can get loop, using typedef.
 					if( class_type->class_->members.GetParent() == &names_scope )
 					{
-						GlobalThingBuildClass( class_type, TypeCompleteness::Complete );
+						GlobalThingBuildClass( class_type );
 						GlobalThingBuildNamespace( class_type->class_->members );
 					}
 				}
 				else if( const EnumPtr enum_type= type->GetEnumType() )
-					GlobalThingBuildEnum( enum_type, TypeCompleteness::Complete );
+					GlobalThingBuildEnum( enum_type );
 				else U_ASSERT(false);
 			}
 			else if( const auto type_templates_set= value.GetTypeTemplatesSet() )
@@ -354,26 +349,20 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 	}
 }
 
-void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const TypeCompleteness completeness )
+void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 {
 	Class& the_class= *class_type->class_;
 
-	if( completeness <= the_class.completeness ||
-		completeness == TypeCompleteness::Incomplete ||
+	if( the_class.completeness == TypeCompleteness::Complete ||
 		( the_class.syntax_element != nullptr && the_class.syntax_element->is_forward_declaration_ ) )
 		return;
 
 	if( the_class.typeinfo_type != std::nullopt )
 	{
-		if( completeness < TypeCompleteness::Complete )
-			return;
-
 		const Type& type= *the_class.typeinfo_type;
 		BuildFullTypeinfo( type, typeinfo_cache_[type], *class_type->class_->members.GetRoot() );
 		return;
 	}
-	if( completeness < TypeCompleteness::Complete )
-		return;
 
 	const Synt::Class& class_declaration= *the_class.syntax_element;
 	const std::string& class_name= class_declaration.name_;
@@ -400,7 +389,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 			REPORT_ERROR( CanNotDeriveFromThisType, class_parent_namespace.GetErrors(), class_declaration.file_pos_, type_name );
 			continue;
 		}
-		if( !EnsureTypeCompleteness( *type_name) )
+		if( !EnsureTypeCompleteness( *type_name ) )
 		{
 			REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), class_declaration.file_pos_, type_name );
 			continue;
@@ -475,7 +464,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 
 			if( class_field->is_reference )
 			{
-				if( class_field->type != void_type_ && !EnsureTypeCompleteness( class_field->type, TypeCompleteness::Complete ) )
+				if( class_field->type != void_type_ && !EnsureTypeCompleteness( class_field->type ) )
 				{
 					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), in_field.file_pos_, class_field->type );
 					return;
@@ -510,7 +499,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				the_class.inner_reference_type= std::max( the_class.inner_reference_type, field->is_mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
 			else
 			{
-				if( !EnsureTypeCompleteness( field->type, TypeCompleteness::Complete ) )
+				if( !EnsureTypeCompleteness( field->type ) )
 					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), field->syntax_element->file_pos_, field->type );
 				the_class.inner_reference_type= std::max( the_class.inner_reference_type, field->type.GetInnerReferenceType() );
 			}
@@ -869,10 +858,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 		}); // for functions
 }
 
-void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_, TypeCompleteness completeness )
+void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 {
-	if( completeness < TypeCompleteness::Complete )
-		return;
 	if( enum_->syntax_element == nullptr )
 		return;
 
