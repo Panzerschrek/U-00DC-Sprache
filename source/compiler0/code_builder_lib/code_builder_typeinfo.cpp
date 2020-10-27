@@ -100,7 +100,6 @@ ClassProxyPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, cons
 	llvm_type->setName( MangleType( typeinfo_class_proxy ) );
 
 	typeinfo_class_proxy->class_->inner_reference_type= InnerReferenceType::Imut; // Almost all typeinfo have references to another typeinfo.
-	typeinfo_class_proxy->class_->completeness=  TypeCompleteness::ReferenceTagsComplete;
 
 	return typeinfo_class_proxy;
 }
@@ -125,7 +124,7 @@ Variable CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope& root
 
 void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variable, NamesScope& root_namespace )
 {
-	if( type != void_type_ && !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) )
+	if( type != void_type_ && !EnsureTypeComplete( type ) )
 	{
 		// Just ignore here incomplete types, report about error while building "typeinfo" operator.
 		return;
@@ -135,7 +134,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 
 	const ClassProxyPtr typeinfo_class_proxy= typeinfo_variable.type.GetClassTypeProxy();
 	Class& typeinfo_class= *typeinfo_variable.type.GetClassType();
-	if( typeinfo_class.completeness == TypeCompleteness::Complete )
+	if( typeinfo_class.is_complete )
 		return;
 
 	ClassFieldsVector<llvm::Type*> fields_llvm_types;
@@ -242,7 +241,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	}
 	else if( const Class* const class_type= type.GetClassType() )
 	{
-		U_ASSERT( class_type->completeness == TypeCompleteness::Complete );
+		U_ASSERT( class_type->is_complete );
 
 		const bool is_polymorph=
 			class_type->kind == Class::Kind::Interface ||
@@ -310,7 +309,7 @@ void CodeBuilder::FinishTypeinfoClass( Class& class_, const ClassProxyPtr class_
 {
 	class_.llvm_type->setBody( fields_llvm_types );
 	class_.kind= Class::Kind::Struct;
-	class_.completeness= TypeCompleteness::Complete;
+	class_.is_complete= true;
 	class_.can_be_constexpr= true;
 
 	// Generate only destructor, because almost all structs and classes must have it.

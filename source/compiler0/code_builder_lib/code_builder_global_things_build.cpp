@@ -32,10 +32,10 @@ public:
 private:
 	std::function<void()> function_;
 };
-#define DETECT_GLOBALS_LOOP( in_thing_ptr, in_name, in_file_pos, in_completeness ) \
+#define DETECT_GLOBALS_LOOP( in_thing_ptr, in_name, in_file_pos ) \
 	{ \
 		const FilePos file_pos__= in_file_pos; \
-		const GlobalThing global_thing( static_cast<const void*>(in_thing_ptr), in_name, file_pos__, in_completeness ); \
+		const GlobalThing global_thing( static_cast<const void*>(in_thing_ptr), in_name, file_pos__ ); \
 		const size_t loop_pos= GlobalThingDetectloop( global_thing ); \
 		if( loop_pos != ~0u ) \
 		{ \
@@ -138,7 +138,7 @@ bool CodeBuilder::IsTypeComplete( const Type& type ) const
 		return all_complete;
 	}
 	else if( const auto class_type= type.GetClassTypeProxy() )
-		return class_type->class_->completeness == TypeCompleteness::Complete;
+		return class_type->class_->is_complete;
 	else
 	{
 		U_ASSERT(false);
@@ -146,37 +146,32 @@ bool CodeBuilder::IsTypeComplete( const Type& type ) const
 	}
 }
 
-bool CodeBuilder::EnsureTypeCompleteness( const Type& type, const TypeCompleteness completeness )
+bool CodeBuilder::EnsureTypeComplete( const Type& type )
 {
-	if( completeness == TypeCompleteness::Incomplete )
-		return true;
-
 	if( const auto fundamental_type= type.GetFundamentalType() )
 	{
-		if( completeness > TypeCompleteness::Incomplete )
-			return fundamental_type->fundamental_type != U_FundamentalType::Void;
-		return true;
+		return fundamental_type->fundamental_type != U_FundamentalType::Void;
 	}
 	else if( type.GetFunctionType() != nullptr || type.GetFunctionPointerType() != nullptr )
 		return true;
 	else if( const auto enum_type= type.GetEnumType() )
 	{
-		GlobalThingBuildEnum( enum_type, completeness );
+		GlobalThingBuildEnum( enum_type );
 		return true;
 	}
 	else if( const auto array_type= type.GetArrayType() )
-		return EnsureTypeCompleteness( array_type->type, completeness );
+		return EnsureTypeComplete( array_type->type );
 	else if( const auto tuple_type= type.GetTupleType() )
 	{
 		bool ok= true;
 		for( const Type& element_type : tuple_type->elements )
-			ok= EnsureTypeCompleteness( element_type, completeness ) || ok;
+			ok= EnsureTypeComplete( element_type ) || ok;
 		return ok;
 	}
 	else if( const auto class_type= type.GetClassTypeProxy() )
 	{
-		GlobalThingBuildClass( class_type, completeness );
-		return class_type->class_->completeness >= completeness; // Return true if we achived required completeness.
+		GlobalThingBuildClass( class_type );
+		return class_type->class_->is_complete;
 	}
 	else U_ASSERT(false);
 
@@ -190,9 +185,9 @@ bool CodeBuilder::ReferenceIsConvertible( const Type& from, const Type& to, Code
 
 	if( from != void_type_ && to != void_type_ )
 	{
-		if( !EnsureTypeCompleteness( from, TypeCompleteness::Complete ) )
+		if( !EnsureTypeComplete( from ) )
 			REPORT_ERROR( UsingIncompleteType, errors_container, file_pos, from );
-		if( !EnsureTypeCompleteness(   to, TypeCompleteness::Complete ) )
+		if( !EnsureTypeComplete(   to ) )
 			REPORT_ERROR( UsingIncompleteType, errors_container, file_pos,   to );
 	}
 
@@ -221,12 +216,12 @@ void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 					// Otherwise we can get loop, using typedef.
 					if( class_type->class_->members.GetParent() == &names_scope )
 					{
-						GlobalThingBuildClass( class_type, TypeCompleteness::Complete );
+						GlobalThingBuildClass( class_type );
 						GlobalThingBuildNamespace( class_type->class_->members );
 					}
 				}
 				else if( const EnumPtr enum_type= type->GetEnumType() )
-					GlobalThingBuildEnum( enum_type, TypeCompleteness::Complete );
+					GlobalThingBuildEnum( enum_type );
 				else U_ASSERT(false);
 			}
 			else if( const auto type_templates_set= value.GetTypeTemplatesSet() )
@@ -260,7 +255,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 			functions_set_file_pos= functions_set.template_syntax_elements.front()->file_pos_;
 			functions_set_name= functions_set.template_syntax_elements.front()->function_->name_.back();
 		}
-		DETECT_GLOBALS_LOOP( &functions_set, functions_set_name, functions_set_file_pos, TypeCompleteness::Complete );
+		DETECT_GLOBALS_LOOP( &functions_set, functions_set_name, functions_set_file_pos );
 
 		for( const Synt::Function* const function : functions_set.syntax_elements )
 		{
@@ -354,20 +349,16 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 	}
 }
 
-void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const TypeCompleteness completeness )
+void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 {
 	Class& the_class= *class_type->class_;
 
-	if( completeness <= the_class.completeness ||
-		completeness == TypeCompleteness::Incomplete ||
+	if( the_class.is_complete ||
 		( the_class.syntax_element != nullptr && the_class.syntax_element->is_forward_declaration_ ) )
 		return;
 
 	if( the_class.typeinfo_type != std::nullopt )
 	{
-		if( completeness <= TypeCompleteness::ReferenceTagsComplete )
-			return;
-
 		const Type& type= *the_class.typeinfo_type;
 		BuildFullTypeinfo( type, typeinfo_cache_[type], *class_type->class_->members.GetRoot() );
 		return;
@@ -376,515 +367,503 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 	const Synt::Class& class_declaration= *the_class.syntax_element;
 	const std::string& class_name= class_declaration.name_;
 
-	if( completeness >= TypeCompleteness::ReferenceTagsComplete && the_class.completeness < TypeCompleteness::ReferenceTagsComplete )
+	DETECT_GLOBALS_LOOP( &the_class, the_class.members.GetThisNamespaceName(), the_class.body_file_pos );
+
+	the_class.have_shared_state= class_declaration.have_shared_state_;
+
+	NamesScope& class_parent_namespace= *the_class.members.GetParent();
+	for( const Synt::ComplexName& parent : class_declaration.parents_ )
 	{
-		DETECT_GLOBALS_LOOP( &the_class, the_class.members.GetThisNamespaceName(), the_class.body_file_pos, TypeCompleteness::ReferenceTagsComplete );
+		const Value parent_value= ResolveValue( class_declaration.file_pos_, class_parent_namespace, *global_function_context_, parent );
 
-		the_class.have_shared_state= class_declaration.have_shared_state_;
-
-		NamesScope& class_parent_namespace= *the_class.members.GetParent();
-		for( const Synt::ComplexName& parent : class_declaration.parents_ )
+		const Type* const type_name= parent_value.GetTypeName();
+		if( type_name == nullptr )
 		{
-			const Value parent_value= ResolveValue( class_declaration.file_pos_, class_parent_namespace, *global_function_context_, parent );
+			REPORT_ERROR( NameIsNotTypeName, class_parent_namespace.GetErrors(), class_declaration.file_pos_, parent );
+			continue;
+		}
 
-			const Type* const type_name= parent_value.GetTypeName();
-			if( type_name == nullptr )
-			{
-				REPORT_ERROR( NameIsNotTypeName, class_parent_namespace.GetErrors(), class_declaration.file_pos_, parent );
-				continue;
-			}
+		const ClassProxyPtr parent_class_proxy= type_name->GetClassTypeProxy();
+		if( parent_class_proxy == nullptr )
+		{
+			REPORT_ERROR( CanNotDeriveFromThisType, class_parent_namespace.GetErrors(), class_declaration.file_pos_, type_name );
+			continue;
+		}
+		if( !EnsureTypeComplete( *type_name ) )
+		{
+			REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), class_declaration.file_pos_, type_name );
+			continue;
+		}
 
-			const ClassProxyPtr parent_class_proxy= type_name->GetClassTypeProxy();
-			if( parent_class_proxy == nullptr )
-			{
-				REPORT_ERROR( CanNotDeriveFromThisType, class_parent_namespace.GetErrors(), class_declaration.file_pos_, type_name );
-				continue;
-			}
-			if( !EnsureTypeCompleteness( *type_name, TypeCompleteness::Complete ) )
-			{
-				REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), class_declaration.file_pos_, type_name );
-				continue;
-			}
-
-			bool duplicated= false;
-			for( const Class::Parent& parent : the_class.parents )
-				duplicated= duplicated || parent.class_ == parent_class_proxy;
-			if( duplicated )
-			{
-				REPORT_ERROR( DuplicatedParentClass, class_parent_namespace.GetErrors(), class_declaration.file_pos_, type_name );
-				continue;
-			}
-
-			const auto parent_kind= parent_class_proxy->class_->kind;
-			if( !( parent_kind == Class::Kind::Abstract || parent_kind == Class::Kind::Interface || parent_kind == Class::Kind::PolymorphNonFinal ) )
-			{
-				REPORT_ERROR( CanNotDeriveFromThisType, class_parent_namespace.GetErrors(), class_declaration.file_pos_, type_name );
-				continue;
-			}
-
-			if( parent_kind != Class::Kind::Interface ) // not interface=base
-			{
-				if( the_class.base_class != nullptr )
-				{
-					REPORT_ERROR( DuplicatedBaseClass, class_parent_namespace.GetErrors(), class_declaration.file_pos_, type_name );
-					continue;
-				}
-				the_class.base_class= parent_class_proxy;
-			}
-
-			the_class.parents.emplace_back();
-			the_class.parents.back().class_= parent_class_proxy;
-			AddAncestorsAccessRights_r( the_class, parent_class_proxy );
-		} // for parents
-
-		// Pre-mark class as polymorph. Later we know class kind exactly, now, we only needs to know, that is polymorph - for virtual functions preparation.
-		if( class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Polymorph ||
-			class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Interface ||
-			class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Abstract ||
-			!class_declaration.parents_.empty() )
-			the_class.kind= Class::Kind::PolymorphNonFinal;
-		else if( class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Struct )
-			the_class.kind= Class::Kind::Struct;
-		else
-			the_class.kind= Class::Kind::NonPolymorph;
-
-		the_class.can_be_constexpr= the_class.kind == Class::Kind::Struct;
-
-		the_class.members.ForEachValueInThisScope(
-			[&]( Value& value )
-			{
-				ClassField* const class_field= value.GetClassField();
-				if( class_field == nullptr )
-					return;
-
-				const Synt::ClassField& in_field= *class_field->syntax_element;
-
-				class_field->class_= class_type;
-				class_field->is_reference= in_field.reference_modifier == Synt::ReferenceModifier::Reference;
-				class_field->type= PrepareType( class_field->syntax_element->type, the_class.members, *global_function_context_ );
-
-				if( !class_field->is_reference || in_field.mutability_modifier == Synt::MutabilityModifier::Constexpr )
-				{
-					// Full type completeness required for value-fields and constexpr reference-fields.
-					if( !EnsureTypeCompleteness( class_field->type, TypeCompleteness::Complete ) )
-					{
-						REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), in_field.file_pos_, class_field->type );
-						return;
-					}
-				}
-
-				if( class_field->is_reference )
-				{
-					if( class_field->type != void_type_ && !EnsureTypeCompleteness( class_field->type, TypeCompleteness::ReferenceTagsComplete ) )
-					{
-						REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), in_field.file_pos_, class_field->type );
-						return;
-					}
-					if( class_field->type.ReferencesTagsCount() > 0u )
-						REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, class_parent_namespace.GetErrors(), in_field.file_pos_, in_field.name );
-				}
-				else if( class_field->type.IsAbstract() )
-					REPORT_ERROR( ConstructingAbstractClassOrInterface, class_parent_namespace.GetErrors(), in_field.file_pos_, class_field->type );
-
-				if( class_field->is_reference ) // Reference-fields are immutable by default
-					class_field->is_mutable= in_field.mutability_modifier == Synt::MutabilityModifier::Mutable;
-				else // But value-fields are mutable by default
-					class_field->is_mutable= in_field.mutability_modifier != Synt::MutabilityModifier::Immutable;
-
-				// Disable constexpr, if field can not be constexpr, or if field is mutable reference.
-				if( !class_field->type.CanBeConstexpr() || ( class_field->is_reference && class_field->is_mutable ) )
-					the_class.can_be_constexpr= false;
-
-				++the_class.field_count;
-			} );
-
-		// Determine inner reference type.
-		the_class.members.ForEachValueInThisScope(
-			[&]( const Value& value )
-			{
-				const ClassField* const field= value.GetClassField();
-				if( field == nullptr )
-					return;
-
-				if( field->is_reference )
-					the_class.inner_reference_type= std::max( the_class.inner_reference_type, field->is_mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
-				else
-				{
-					if( !EnsureTypeCompleteness( field->type, TypeCompleteness::ReferenceTagsComplete ) )
-						REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), field->syntax_element->file_pos_, field->type );
-					the_class.inner_reference_type= std::max( the_class.inner_reference_type, field->type.GetInnerReferenceType() );
-				}
-
-			});
-
+		bool duplicated= false;
 		for( const Class::Parent& parent : the_class.parents )
-			the_class.inner_reference_type= std::max( the_class.inner_reference_type, parent.class_->class_->inner_reference_type );
-
-		the_class.completeness= TypeCompleteness::ReferenceTagsComplete;
-	} // if reference tags completeness required
-
-	if( completeness == TypeCompleteness::Complete )
-	{
-		DETECT_GLOBALS_LOOP( &the_class, the_class.members.GetThisNamespaceName(), the_class.body_file_pos, TypeCompleteness::Complete );
-
-		// Fill llvm struct type fields
-		ClassFieldsVector<llvm::Type*> fields_llvm_types;
-
-		// Base must be always first field.
-		if( the_class.base_class != nullptr )
-			fields_llvm_types.push_back( the_class.base_class->class_->llvm_type );
-		// Add non-base (interface) fields.
-		for( Class::Parent& parent : the_class.parents )
+			duplicated= duplicated || parent.class_ == parent_class_proxy;
+		if( duplicated )
 		{
-			if( parent.class_ == the_class.base_class )
+			REPORT_ERROR( DuplicatedParentClass, class_parent_namespace.GetErrors(), class_declaration.file_pos_, type_name );
+			continue;
+		}
+
+		const auto parent_kind= parent_class_proxy->class_->kind;
+		if( !( parent_kind == Class::Kind::Abstract || parent_kind == Class::Kind::Interface || parent_kind == Class::Kind::PolymorphNonFinal ) )
+		{
+			REPORT_ERROR( CanNotDeriveFromThisType, class_parent_namespace.GetErrors(), class_declaration.file_pos_, type_name );
+			continue;
+		}
+
+		if( parent_kind != Class::Kind::Interface ) // not interface=base
+		{
+			if( the_class.base_class != nullptr )
 			{
-				parent.field_number= 0u;
+				REPORT_ERROR( DuplicatedBaseClass, class_parent_namespace.GetErrors(), class_declaration.file_pos_, type_name );
 				continue;
 			}
-
-			parent.field_number= static_cast<unsigned int>(fields_llvm_types.size());
-			fields_llvm_types.emplace_back( parent.class_->class_->llvm_type );
+			the_class.base_class= parent_class_proxy;
 		}
 
-		// Allocate virtual table pointer, if class have no parents.
-		// If class have at least one parent, reuse it's virtual table pointer.
-		bool allocate_virtual_table_pointer= false;
-		if( the_class.parents.empty() && (
-			class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Abstract ||
-			class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Polymorph ||
-			class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Interface ) )
+		the_class.parents.emplace_back();
+		the_class.parents.back().class_= parent_class_proxy;
+		AddAncestorsAccessRights_r( the_class, parent_class_proxy );
+	} // for parents
+
+	// Pre-mark class as polymorph. Later we know class kind exactly, now, we only needs to know, that is polymorph - for virtual functions preparation.
+	if( class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Polymorph ||
+		class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Interface ||
+		class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Abstract ||
+		!class_declaration.parents_.empty() )
+		the_class.kind= Class::Kind::PolymorphNonFinal;
+	else if( class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Struct )
+		the_class.kind= Class::Kind::Struct;
+	else
+		the_class.kind= Class::Kind::NonPolymorph;
+
+	the_class.can_be_constexpr= the_class.kind == Class::Kind::Struct;
+
+	the_class.members.ForEachValueInThisScope(
+		[&]( Value& value )
 		{
-			U_ASSERT( fields_llvm_types.empty() );
-			fields_llvm_types.emplace_back( fundamental_llvm_types_.void_->getPointerTo() ); // set exact type later.
-			allocate_virtual_table_pointer= true;
-		}
+			ClassField* const class_field= value.GetClassField();
+			if( class_field == nullptr )
+				return;
 
-		{ // Create fields.
-			std::map< unsigned int, ClassField* > class_fields_in_original_order;
+			const Synt::ClassField& in_field= *class_field->syntax_element;
 
-			the_class.members.ForEachValueInThisScope(
-				[&]( Value& value )
-				{
-					if( ClassField* const class_field= value.GetClassField() )
-						class_fields_in_original_order[class_field->original_index]= class_field;
-				});
+			class_field->class_= class_type;
+			class_field->is_reference= in_field.reference_modifier == Synt::ReferenceModifier::Reference;
+			class_field->type= PrepareType( class_field->syntax_element->type, the_class.members, *global_function_context_ );
 
-			for( const auto& field_entry : class_fields_in_original_order )
+			if( !class_field->is_reference || in_field.mutability_modifier == Synt::MutabilityModifier::Constexpr )
 			{
-				ClassField* const class_field= field_entry.second;
-				class_field->index= static_cast<unsigned int>(fields_llvm_types.size());
-				if( class_field->is_reference )
-					fields_llvm_types.emplace_back( class_field->type.GetLLVMType()->getPointerTo() );
-				else
+				// Full type completeness required for value-fields and constexpr reference-fields.
+				if( !EnsureTypeComplete( class_field->type ) )
 				{
-					if( !class_field->type.GetLLVMType()->isSized() )
-						fields_llvm_types.emplace_back( fundamental_llvm_types_.i8 );// May be in case of error (such dependency loop )
-					else
-						fields_llvm_types.emplace_back( class_field->type.GetLLVMType() );
+					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), in_field.file_pos_, class_field->type );
+					return;
 				}
 			}
 
-			if( !class_declaration.keep_fields_order_ )
-				SortClassFields( the_class, fields_llvm_types, data_layout_ );
+			if( class_field->is_reference )
+			{
+				if( class_field->type != void_type_ && !EnsureTypeComplete( class_field->type ) )
+				{
+					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), in_field.file_pos_, class_field->type );
+					return;
+				}
+				if( class_field->type.ReferencesTagsCount() > 0u )
+					REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, class_parent_namespace.GetErrors(), in_field.file_pos_, in_field.name );
+			}
+			else if( class_field->type.IsAbstract() )
+				REPORT_ERROR( ConstructingAbstractClassOrInterface, class_parent_namespace.GetErrors(), in_field.file_pos_, class_field->type );
+
+			if( class_field->is_reference ) // Reference-fields are immutable by default
+				class_field->is_mutable= in_field.mutability_modifier == Synt::MutabilityModifier::Mutable;
+			else // But value-fields are mutable by default
+				class_field->is_mutable= in_field.mutability_modifier != Synt::MutabilityModifier::Immutable;
+
+			// Disable constexpr, if field can not be constexpr, or if field is mutable reference.
+			if( !class_field->type.CanBeConstexpr() || ( class_field->is_reference && class_field->is_mutable ) )
+				the_class.can_be_constexpr= false;
+
+			++the_class.field_count;
+		} );
+
+	// Determine inner reference type.
+	the_class.members.ForEachValueInThisScope(
+		[&]( const Value& value )
+		{
+			const ClassField* const field= value.GetClassField();
+			if( field == nullptr )
+				return;
+
+			if( field->is_reference )
+				the_class.inner_reference_type= std::max( the_class.inner_reference_type, field->is_mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
+			else
+			{
+				if( !EnsureTypeComplete( field->type ) )
+					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), field->syntax_element->file_pos_, field->type );
+				the_class.inner_reference_type= std::max( the_class.inner_reference_type, field->type.GetInnerReferenceType() );
+			}
+
+		});
+
+	for( const Class::Parent& parent : the_class.parents )
+		the_class.inner_reference_type= std::max( the_class.inner_reference_type, parent.class_->class_->inner_reference_type );
+
+	// Fill llvm struct type fields
+	ClassFieldsVector<llvm::Type*> fields_llvm_types;
+
+	// Base must be always first field.
+	if( the_class.base_class != nullptr )
+		fields_llvm_types.push_back( the_class.base_class->class_->llvm_type );
+	// Add non-base (interface) fields.
+	for( Class::Parent& parent : the_class.parents )
+	{
+		if( parent.class_ == the_class.base_class )
+		{
+			parent.field_number= 0u;
+			continue;
 		}
 
-		// Fill container with fields names.
-		the_class.fields_order.resize( fields_llvm_types.size() );
-		the_class.members.ForEachInThisScope(
-			[&]( const std::string& name, const Value& value )
-			{
-				if( const auto field= value.GetClassField() )
-					the_class.fields_order[field->index]= name;
-			} );
+		parent.field_number= static_cast<unsigned int>(fields_llvm_types.size());
+		fields_llvm_types.emplace_back( parent.class_->class_->llvm_type );
+	}
 
-		// Complete another body elements.
-		// For class completeness we needs only fields, functions. Constants, types and type templates dones not needed.
-		std::vector< FunctionVariable* > class_functions;
+	// Allocate virtual table pointer, if class have no parents.
+	// If class have at least one parent, reuse it's virtual table pointer.
+	bool allocate_virtual_table_pointer= false;
+	if( the_class.parents.empty() && (
+		class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Abstract ||
+		class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Polymorph ||
+		class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Interface ) )
+	{
+		U_ASSERT( fields_llvm_types.empty() );
+		fields_llvm_types.emplace_back( fundamental_llvm_types_.void_->getPointerTo() ); // set exact type later.
+		allocate_virtual_table_pointer= true;
+	}
+
+	{ // Create fields.
+		std::map< unsigned int, ClassField* > class_fields_in_original_order;
+
 		the_class.members.ForEachValueInThisScope(
 			[&]( Value& value )
 			{
-				if( const auto functions_set= value.GetFunctionsSet() )
-				{
-					GlobalThingBuildFunctionsSet( the_class.members, *functions_set, false );
-					for( FunctionVariable& function : functions_set->functions )
-						class_functions.emplace_back( &function );
-				}
-				else if( value.GetClassField() != nullptr ) {} // Fields are already complete.
-				else if( value.GetTypeName() != nullptr ) {}
-				else if( value.GetVariable() != nullptr ){}
-				else if( value.GetErrorValue() != nullptr ){}
-				else if( value.GetStaticAssert() != nullptr ){}
-				else if( value.GetTypedef() != nullptr ) {}
-				else if( value.GetTypeTemplatesSet() != nullptr ) {}
-				else if( value.GetIncompleteGlobalVariable() != nullptr ) {}
-				else if( value.GetNamespace() != nullptr ) {} // Can be in case of type template parameters namespace.
-				else U_ASSERT(false);
+				if( ClassField* const class_field= value.GetClassField() )
+					class_fields_in_original_order[class_field->original_index]= class_field;
 			});
 
-		if( the_class.kind == Class::Kind::Interface ||
-			the_class.kind == Class::Kind::Abstract ||
-			the_class.kind == Class::Kind::PolymorphNonFinal ||
-			the_class.kind == Class::Kind::PolymorphFinal )
+		for( const auto& field_entry : class_fields_in_original_order )
 		{
-			// We needs strong order of functions in virtual table. So, sort them, using mangled name.
-			std::sort(
-				class_functions.begin(), class_functions.end(),
-				[]( const FunctionVariable* const l, const FunctionVariable* const r )
-				{
-					return l->llvm_function->getName() < r->llvm_function->getName();
-				} );
-
-			PrepareClassVirtualTable( the_class, class_type, class_functions );
-		}
-
-		// Search for explicit noncopy constructors.
-		if( const Value* const constructors_value=
-			the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
-		{
-			const OverloadedFunctionsSet* const constructors= constructors_value->GetFunctionsSet();
-			U_ASSERT( constructors != nullptr );
-			for( const FunctionVariable& constructor : constructors->functions )
+			ClassField* const class_field= field_entry.second;
+			class_field->index= static_cast<unsigned int>(fields_llvm_types.size());
+			if( class_field->is_reference )
+				fields_llvm_types.emplace_back( class_field->type.GetLLVMType()->getPointerTo() );
+			else
 			{
-				const Function& constructor_type= *constructor.type.GetFunctionType();
-
-				U_ASSERT( constructor_type.args.size() >= 1u && constructor_type.args.front().type == class_type );
-				if( !( constructor_type.args.size() == 2u && constructor_type.args.back().type == class_type && !constructor_type.args.back().is_mutable ) )
-				{
-					the_class.have_explicit_noncopy_constructors= true;
-					break;
-				}
-			};
+				if( !class_field->type.GetLLVMType()->isSized() )
+					fields_llvm_types.emplace_back( fundamental_llvm_types_.i8 );// May be in case of error (such dependency loop )
+				else
+					fields_llvm_types.emplace_back( class_field->type.GetLLVMType() );
+			}
 		}
 
-		// Disable constexpr possibility for structs with explicit destructors, non-default copy-assignment operators and non-default copy constructors.
-		if( const Value* const destructor_value=
-			the_class.members.GetThisScopeValue( Keyword( Keywords::destructor_ ) ) )
+		if( !class_declaration.keep_fields_order_ )
+			SortClassFields( the_class, fields_llvm_types, data_layout_ );
+	}
+
+	// Fill container with fields names.
+	the_class.fields_order.resize( fields_llvm_types.size() );
+	the_class.members.ForEachInThisScope(
+		[&]( const std::string& name, const Value& value )
 		{
-			const OverloadedFunctionsSet* const destructors= destructor_value->GetFunctionsSet();
-			// Destructors may be invalid in case of error.
-			if( !destructors->functions.empty() && !destructors->functions[0].is_generated )
+			if( const auto field= value.GetClassField() )
+				the_class.fields_order[field->index]= name;
+		} );
+
+	// Complete another body elements.
+	// For class completeness we needs only fields, functions. Constants, types and type templates dones not needed.
+	std::vector< FunctionVariable* > class_functions;
+	the_class.members.ForEachValueInThisScope(
+		[&]( Value& value )
+		{
+			if( const auto functions_set= value.GetFunctionsSet() )
+			{
+				GlobalThingBuildFunctionsSet( the_class.members, *functions_set, false );
+				for( FunctionVariable& function : functions_set->functions )
+					class_functions.emplace_back( &function );
+			}
+			else if( value.GetClassField() != nullptr ) {} // Fields are already complete.
+			else if( value.GetTypeName() != nullptr ) {}
+			else if( value.GetVariable() != nullptr ){}
+			else if( value.GetErrorValue() != nullptr ){}
+			else if( value.GetStaticAssert() != nullptr ){}
+			else if( value.GetTypedef() != nullptr ) {}
+			else if( value.GetTypeTemplatesSet() != nullptr ) {}
+			else if( value.GetIncompleteGlobalVariable() != nullptr ) {}
+			else if( value.GetNamespace() != nullptr ) {} // Can be in case of type template parameters namespace.
+			else U_ASSERT(false);
+		});
+
+	if( the_class.kind == Class::Kind::Interface ||
+		the_class.kind == Class::Kind::Abstract ||
+		the_class.kind == Class::Kind::PolymorphNonFinal ||
+		the_class.kind == Class::Kind::PolymorphFinal )
+	{
+		// We needs strong order of functions in virtual table. So, sort them, using mangled name.
+		std::sort(
+			class_functions.begin(), class_functions.end(),
+			[]( const FunctionVariable* const l, const FunctionVariable* const r )
+			{
+				return l->llvm_function->getName() < r->llvm_function->getName();
+			} );
+
+		PrepareClassVirtualTable( the_class, class_type, class_functions );
+	}
+
+	// Search for explicit noncopy constructors.
+	if( const Value* const constructors_value=
+		the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
+	{
+		const OverloadedFunctionsSet* const constructors= constructors_value->GetFunctionsSet();
+		U_ASSERT( constructors != nullptr );
+		for( const FunctionVariable& constructor : constructors->functions )
+		{
+			const Function& constructor_type= *constructor.type.GetFunctionType();
+
+			U_ASSERT( constructor_type.args.size() >= 1u && constructor_type.args.front().type == class_type );
+			if( !( constructor_type.args.size() == 2u && constructor_type.args.back().type == class_type && !constructor_type.args.back().is_mutable ) )
+			{
+				the_class.have_explicit_noncopy_constructors= true;
+				break;
+			}
+		};
+	}
+
+	// Disable constexpr possibility for structs with explicit destructors, non-default copy-assignment operators and non-default copy constructors.
+	if( const Value* const destructor_value=
+		the_class.members.GetThisScopeValue( Keyword( Keywords::destructor_ ) ) )
+	{
+		const OverloadedFunctionsSet* const destructors= destructor_value->GetFunctionsSet();
+		// Destructors may be invalid in case of error.
+		if( !destructors->functions.empty() && !destructors->functions[0].is_generated )
+			the_class.can_be_constexpr= false;
+	}
+	if( const Value* const constructor_value=
+		the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
+	{
+		const OverloadedFunctionsSet* const constructors= constructor_value->GetFunctionsSet();
+		U_ASSERT( constructors != nullptr );
+		for( const FunctionVariable& constructor : constructors->functions )
+		{
+			if( IsCopyConstructor( *constructor.type.GetFunctionType(), class_type ) && !constructor.is_generated )
 				the_class.can_be_constexpr= false;
 		}
-		if( const Value* const constructor_value=
-			the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
+	}
+	if( const Value* const assignment_operator_value=
+		the_class.members.GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Assign ) ) )
+	{
+		const OverloadedFunctionsSet* const operators= assignment_operator_value->GetFunctionsSet();
+		U_ASSERT( operators != nullptr );
+		for( const FunctionVariable& op : operators->functions )
 		{
-			const OverloadedFunctionsSet* const constructors= constructor_value->GetFunctionsSet();
-			U_ASSERT( constructors != nullptr );
-			for( const FunctionVariable& constructor : constructors->functions )
-			{
-				if( IsCopyConstructor( *constructor.type.GetFunctionType(), class_type ) && !constructor.is_generated )
-					the_class.can_be_constexpr= false;
-			}
+			if( IsCopyAssignmentOperator( *op.type.GetFunctionType(), class_type ) && !op.is_generated )
+				the_class.can_be_constexpr= false;
 		}
-		if( const Value* const assignment_operator_value=
-			the_class.members.GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Assign ) ) )
-		{
-			const OverloadedFunctionsSet* const operators= assignment_operator_value->GetFunctionsSet();
-			U_ASSERT( operators != nullptr );
-			for( const FunctionVariable& op : operators->functions )
-			{
-				if( IsCopyAssignmentOperator( *op.type.GetFunctionType(), class_type ) && !op.is_generated )
-					the_class.can_be_constexpr= false;
-			}
-		}
+	}
 
-		bool class_contains_pure_virtual_functions= false;
-		for( Class::VirtualTableEntry& virtual_table_entry : the_class.virtual_table )
+	bool class_contains_pure_virtual_functions= false;
+	for( Class::VirtualTableEntry& virtual_table_entry : the_class.virtual_table )
+	{
+		if( virtual_table_entry.is_pure )
 		{
-			if( virtual_table_entry.is_pure )
+			class_contains_pure_virtual_functions= true;
+			break;
+		}
+	}
+
+	// Check given kind attribute and actual class properties.
+	switch( class_declaration.kind_attribute_ )
+	{
+	case Synt::ClassKindAttribute::Struct:
+		U_ASSERT( class_declaration.parents_.empty() );
+		the_class.kind= Class::Kind::Struct;
+		break;
+
+	case Synt::ClassKindAttribute::Class: // Class without parents and without kind attribute is non-polymorph.
+		if( the_class.parents.empty() )
+			the_class.kind= Class::Kind::NonPolymorph;
+		else
+			the_class.kind= Class::Kind::PolymorphNonFinal;
+		if( class_contains_pure_virtual_functions )
+		{
+			REPORT_ERROR( ClassContainsPureVirtualFunctions, the_class.members.GetErrors(), class_declaration.file_pos_, class_name );
+			the_class.kind= Class::Kind::Abstract;
+		}
+		break;
+
+	case Synt::ClassKindAttribute::Final:
+		if( the_class.parents.empty() )
+			the_class.kind= Class::Kind::NonPolymorph;
+		else
+		{
+			for( Class::VirtualTableEntry& virtual_table_entry : the_class.virtual_table )
+				virtual_table_entry.is_final= true; // All virtual functions of final class is final.
+			the_class.kind= Class::Kind::PolymorphFinal;
+		}
+		if( class_contains_pure_virtual_functions )
+		{
+			REPORT_ERROR( ClassContainsPureVirtualFunctions, the_class.members.GetErrors(), class_declaration.file_pos_, class_name );
+			the_class.kind= Class::Kind::Abstract;
+		}
+		break;
+
+	case Synt::ClassKindAttribute::Polymorph:
+		the_class.kind= Class::Kind::PolymorphNonFinal;
+		if( class_contains_pure_virtual_functions )
+		{
+			REPORT_ERROR( ClassContainsPureVirtualFunctions, the_class.members.GetErrors(), class_declaration.file_pos_, class_name );
+			the_class.kind= Class::Kind::Abstract;
+		}
+		break;
+
+	case Synt::ClassKindAttribute::Interface:
+		if( the_class.field_count != 0u )
+			REPORT_ERROR( FieldsForInterfacesNotAllowed, the_class.members.GetErrors(), class_declaration.file_pos_ );
+		if( the_class.base_class != nullptr )
+			REPORT_ERROR( BaseClassForInterface, the_class.members.GetErrors(), class_declaration.file_pos_ );
+		if( the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) != nullptr )
+			REPORT_ERROR( ConstructorForInterface, the_class.members.GetErrors(), class_declaration.file_pos_ );
+		for( const Class::VirtualTableEntry& virtual_table_entry : the_class.virtual_table )
+		{
+			if( !virtual_table_entry.is_pure && virtual_table_entry.name != Keywords::destructor_ )
 			{
-				class_contains_pure_virtual_functions= true;
+				REPORT_ERROR( NonPureVirtualFunctionInInterface, the_class.members.GetErrors(), class_declaration.file_pos_, class_name );
 				break;
 			}
 		}
+		the_class.kind= Class::Kind::Interface;
+		break;
 
-		// Check given kind attribute and actual class properties.
-		switch( class_declaration.kind_attribute_ )
-		{
-		case Synt::ClassKindAttribute::Struct:
-			U_ASSERT( class_declaration.parents_.empty() );
-			the_class.kind= Class::Kind::Struct;
-			break;
+	case Synt::ClassKindAttribute::Abstract:
+		the_class.kind= Class::Kind::Abstract;
+		break;
+	};
 
-		case Synt::ClassKindAttribute::Class: // Class without parents and without kind attribute is non-polymorph.
-			if( the_class.parents.empty() )
-				the_class.kind= Class::Kind::NonPolymorph;
-			else
-				the_class.kind= Class::Kind::PolymorphNonFinal;
-			if( class_contains_pure_virtual_functions )
+	// Merge namespaces of parents into result class.
+	for( const Class::Parent& parent : the_class.parents )
+	{
+		const Class* const parent_class= parent.class_->class_;
+		parent_class->members.ForEachInThisScope(
+			[&]( const std::string& name, const Value& value )
 			{
-				REPORT_ERROR( ClassContainsPureVirtualFunctions, the_class.members.GetErrors(), class_declaration.file_pos_, class_name );
-				the_class.kind= Class::Kind::Abstract;
-			}
-			break;
+				if( parent_class->GetMemberVisibility( name ) == ClassMemberVisibility::Private )
+					return; // Do not inherit private members.
 
-		case Synt::ClassKindAttribute::Final:
-			if( the_class.parents.empty() )
-				the_class.kind= Class::Kind::NonPolymorph;
-			else
-			{
-				for( Class::VirtualTableEntry& virtual_table_entry : the_class.virtual_table )
-					virtual_table_entry.is_final= true; // All virtual functions of final class is final.
-				the_class.kind= Class::Kind::PolymorphFinal;
-			}
-			if( class_contains_pure_virtual_functions )
-			{
-				REPORT_ERROR( ClassContainsPureVirtualFunctions, the_class.members.GetErrors(), class_declaration.file_pos_, class_name );
-				the_class.kind= Class::Kind::Abstract;
-			}
-			break;
+				Value* const result_class_value= the_class.members.GetThisScopeValue(name);
 
-		case Synt::ClassKindAttribute::Polymorph:
-			the_class.kind= Class::Kind::PolymorphNonFinal;
-			if( class_contains_pure_virtual_functions )
-			{
-				REPORT_ERROR( ClassContainsPureVirtualFunctions, the_class.members.GetErrors(), class_declaration.file_pos_, class_name );
-				the_class.kind= Class::Kind::Abstract;
-			}
-			break;
-
-		case Synt::ClassKindAttribute::Interface:
-			if( the_class.field_count != 0u )
-				REPORT_ERROR( FieldsForInterfacesNotAllowed, the_class.members.GetErrors(), class_declaration.file_pos_ );
-			if( the_class.base_class != nullptr )
-				REPORT_ERROR( BaseClassForInterface, the_class.members.GetErrors(), class_declaration.file_pos_ );
-			if( the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) != nullptr )
-				REPORT_ERROR( ConstructorForInterface, the_class.members.GetErrors(), class_declaration.file_pos_ );
-			for( const Class::VirtualTableEntry& virtual_table_entry : the_class.virtual_table )
-			{
-				if( !virtual_table_entry.is_pure && virtual_table_entry.name != Keywords::destructor_ )
+				if( const OverloadedFunctionsSet* const functions= value.GetFunctionsSet() )
 				{
-					REPORT_ERROR( NonPureVirtualFunctionInInterface, the_class.members.GetErrors(), class_declaration.file_pos_, class_name );
-					break;
-				}
-			}
-			the_class.kind= Class::Kind::Interface;
-			break;
+					// SPARCHE_TODO - maybe also skip additive-assignment operators?
+					if( name == Keyword( Keywords::constructor_ ) ||
+						name == Keyword( Keywords::destructor_ ) ||
+						name == OverloadedOperatorToString( OverloadedOperator::Assign ) )
+						return; // Did not inherit constructors, destructors, assignment operators.
 
-		case Synt::ClassKindAttribute::Abstract:
-			the_class.kind= Class::Kind::Abstract;
-			break;
-		};
-
-		// Merge namespaces of parents into result class.
-		for( const Class::Parent& parent : the_class.parents )
-		{
-			const Class* const parent_class= parent.class_->class_;
-			parent_class->members.ForEachInThisScope(
-				[&]( const std::string& name, const Value& value )
-				{
-					if( parent_class->GetMemberVisibility( name ) == ClassMemberVisibility::Private )
-						return; // Do not inherit private members.
-
-					Value* const result_class_value= the_class.members.GetThisScopeValue(name);
-
-					if( const OverloadedFunctionsSet* const functions= value.GetFunctionsSet() )
+					if( result_class_value != nullptr )
 					{
-						// SPARCHE_TODO - maybe also skip additive-assignment operators?
-						if( name == Keyword( Keywords::constructor_ ) ||
-							name == Keyword( Keywords::destructor_ ) ||
-							name == OverloadedOperatorToString( OverloadedOperator::Assign ) )
-							return; // Did not inherit constructors, destructors, assignment operators.
-
-						if( result_class_value != nullptr )
+						if( OverloadedFunctionsSet* const result_class_functions= result_class_value->GetFunctionsSet() )
 						{
-							if( OverloadedFunctionsSet* const result_class_functions= result_class_value->GetFunctionsSet() )
+							if( the_class.GetMemberVisibility( name ) != parent_class->GetMemberVisibility( name ) )
 							{
-								if( the_class.GetMemberVisibility( name ) != parent_class->GetMemberVisibility( name ) )
-								{
-									const auto& file_pos= result_class_functions->functions.empty() ? result_class_functions->template_functions.front()->file_pos : result_class_functions->functions.front().prototype_file_pos;
-									REPORT_ERROR( FunctionsVisibilityMismatch, the_class.members.GetErrors(), file_pos, name );
-								}
-
-								// Merge function sets, if result class have functions set with given name.
-								for( const FunctionVariable& parent_function : functions->functions )
-								{
-									bool overrides= false;
-									for( FunctionVariable& result_class_function : result_class_functions->functions )
-									{
-										if( parent_function.type == result_class_function.type )
-										{
-											overrides= true; // Ok, result class function overrides parent clas function.
-											break;
-										}
-									}
-									if( !overrides )
-										ApplyOverloadedFunction( *result_class_functions, parent_function, the_class.members.GetErrors(), class_declaration.file_pos_ );
-								} // for parent functions
-
-								// TODO - merge function templates smarter.
-								for( const FunctionTemplatePtr& function_template : functions->template_functions )
-									result_class_functions->template_functions.push_back(function_template);
+								const auto& file_pos= result_class_functions->functions.empty() ? result_class_functions->template_functions.front()->file_pos : result_class_functions->functions.front().prototype_file_pos;
+								REPORT_ERROR( FunctionsVisibilityMismatch, the_class.members.GetErrors(), file_pos, name );
 							}
-						}
-						else
-						{
-							// Result class have no functions with this name. Inherit all functions from parent calass.
-							the_class.members.AddName( name, value );
+
+							// Merge function sets, if result class have functions set with given name.
+							for( const FunctionVariable& parent_function : functions->functions )
+							{
+								bool overrides= false;
+								for( FunctionVariable& result_class_function : result_class_functions->functions )
+								{
+									if( parent_function.type == result_class_function.type )
+									{
+										overrides= true; // Ok, result class function overrides parent clas function.
+										break;
+									}
+								}
+								if( !overrides )
+									ApplyOverloadedFunction( *result_class_functions, parent_function, the_class.members.GetErrors(), class_declaration.file_pos_ );
+							} // for parent functions
+
+							// TODO - merge function templates smarter.
+							for( const FunctionTemplatePtr& function_template : functions->template_functions )
+								result_class_functions->template_functions.push_back(function_template);
 						}
 					}
 					else
 					{
-						// Just override other kinds of symbols.
-						if( result_class_value == nullptr )
-							the_class.members.AddName( name, value );
+						// Result class have no functions with this name. Inherit all functions from parent calass.
+						the_class.members.AddName( name, value );
 					}
-				});
-		}
-
-		PrepareClassVirtualTableType( class_type );
-		if( allocate_virtual_table_pointer )
-			fields_llvm_types[0]= the_class.virtual_table_llvm_type->getPointerTo();
-
-		// Check opaque before set body for cases of errors (class body duplication).
-		if( the_class.llvm_type->isOpaque() )
-			the_class.llvm_type->setBody( fields_llvm_types );
-
-		BuildPolymorphClassTypeId( the_class, class_type );
-		BuildClassVirtualTable( the_class, class_type );
-
-		the_class.completeness= TypeCompleteness::Complete;
-
-		TryGenerateDefaultConstructor( the_class, class_type );
-		TryGenerateDestructor( the_class, class_type );
-		TryGenerateCopyConstructor( the_class, class_type );
-		TryGenerateCopyAssignmentOperator( the_class, class_type );
-
-		CheckClassFieldsInitializers( class_type );
-
-		// Immediately build constexpr functions.
-		the_class.members.ForEachInThisScope(
-			[&]( const std::string& name, Value& value )
-			{
-				OverloadedFunctionsSet* const functions_set= value.GetFunctionsSet();
-				if( functions_set == nullptr )
-					return;
-
-				for( FunctionVariable& function : functions_set->functions )
-				{
-					if( function.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr &&
-						function.syntax_element != nullptr )
-						BuildFuncCode(
-							function,
-							class_type,
-							the_class.members,
-							name,
-							function.syntax_element->type_.arguments_,
-							function.syntax_element->block_.get(),
-							function.syntax_element->constructor_initialization_list_.get() );
 				}
-			}); // for functions
-	} // if full comleteness required
+				else
+				{
+					// Just override other kinds of symbols.
+					if( result_class_value == nullptr )
+						the_class.members.AddName( name, value );
+				}
+			});
+	}
+
+	PrepareClassVirtualTableType( class_type );
+	if( allocate_virtual_table_pointer )
+		fields_llvm_types[0]= the_class.virtual_table_llvm_type->getPointerTo();
+
+	// Check opaque before set body for cases of errors (class body duplication).
+	if( the_class.llvm_type->isOpaque() )
+		the_class.llvm_type->setBody( fields_llvm_types );
+
+	BuildPolymorphClassTypeId( the_class, class_type );
+	BuildClassVirtualTable( the_class, class_type );
+
+	the_class.is_complete= true;
+
+	TryGenerateDefaultConstructor( the_class, class_type );
+	TryGenerateDestructor( the_class, class_type );
+	TryGenerateCopyConstructor( the_class, class_type );
+	TryGenerateCopyAssignmentOperator( the_class, class_type );
+
+	CheckClassFieldsInitializers( class_type );
+
+	// Immediately build constexpr functions.
+	the_class.members.ForEachInThisScope(
+		[&]( const std::string& name, Value& value )
+		{
+			OverloadedFunctionsSet* const functions_set= value.GetFunctionsSet();
+			if( functions_set == nullptr )
+				return;
+
+			for( FunctionVariable& function : functions_set->functions )
+			{
+				if( function.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr &&
+					function.syntax_element != nullptr )
+					BuildFuncCode(
+						function,
+						class_type,
+						the_class.members,
+						name,
+						function.syntax_element->type_.arguments_,
+						function.syntax_element->block_.get(),
+						function.syntax_element->constructor_initialization_list_.get() );
+			}
+		}); // for functions
 }
 
-void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_, TypeCompleteness completeness )
+void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 {
-	if( completeness < TypeCompleteness::Complete )
-		return;
 	if( enum_->syntax_element == nullptr )
 		return;
 
-	DETECT_GLOBALS_LOOP( enum_, enum_->members.GetThisNamespaceName(), enum_->syntax_element->file_pos_, TypeCompleteness::Complete );
+	DETECT_GLOBALS_LOOP( enum_, enum_->members.GetThisNamespaceName(), enum_->syntax_element->file_pos_ );
 
 	// Default underlaying type is 32bit. TODO - maybe do it platform-dependent?
 	enum_->underlaying_type= FundamentalType( U_FundamentalType::u32, fundamental_llvm_types_.u32 );
@@ -959,7 +938,7 @@ void CodeBuilder::GlobalThingBuildTypeTemplatesSet( NamesScope& names_scope, Typ
 {
 	if( !type_templates_set.syntax_elements.empty() )
 	{
-		DETECT_GLOBALS_LOOP( &type_templates_set, type_templates_set.syntax_elements.front()->name_, type_templates_set.syntax_elements.front()->file_pos_, TypeCompleteness::Complete );
+		DETECT_GLOBALS_LOOP( &type_templates_set, type_templates_set.syntax_elements.front()->name_, type_templates_set.syntax_elements.front()->file_pos_ );
 
 		for( const auto syntax_element : type_templates_set.syntax_elements )
 			PrepareTypeTemplate( *syntax_element, type_templates_set, names_scope );
@@ -973,7 +952,7 @@ void CodeBuilder::GlobalThingBuildTypedef( NamesScope& names_scope, Value& typed
 	U_ASSERT( typedef_value.GetTypedef() != nullptr );
 	const Synt::Typedef& syntax_element= *typedef_value.GetTypedef()->syntax_element;
 
-	DETECT_GLOBALS_LOOP( &typedef_value, syntax_element.name, syntax_element.file_pos_, TypeCompleteness::Complete );
+	DETECT_GLOBALS_LOOP( &typedef_value, syntax_element.name, syntax_element.file_pos_ );
 
 	// Replace value in names map, when typedef is comlete.
 	typedef_value= Value( PrepareType( syntax_element.value, names_scope, *global_function_context_ ), syntax_element.file_pos_ );
@@ -990,7 +969,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 	else if( incomplete_global_variable.auto_variable_declaration != nullptr )
 		file_pos= incomplete_global_variable.auto_variable_declaration->file_pos_;
 
-	DETECT_GLOBALS_LOOP( &global_variable_value, incomplete_global_variable.name, file_pos, TypeCompleteness::Complete );
+	DETECT_GLOBALS_LOOP( &global_variable_value, incomplete_global_variable.name, file_pos );
 	#define FAIL_RETURN { global_variable_value= ErrorValue(); return; }
 
 	FunctionContext& function_context= *global_function_context_;
@@ -1007,7 +986,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		}
 
 		const Type type= PrepareType( variables_declaration->type, names_scope, *global_function_context_ );
-		if( !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) ) // Global variables are all constexpr. Full completeness required for constexpr.
+		if( !EnsureTypeComplete( type ) ) // Global variables are all constexpr. Full completeness required for constexpr.
 		{
 			REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), variable_declaration.file_pos, type );
 			FAIL_RETURN;
@@ -1141,7 +1120,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		variable.value_type= ValueType::ConstReference;
 		variable.location= Variable::Location::Pointer;
 
-		if( !EnsureTypeCompleteness( variable.type, TypeCompleteness::Complete ) ) // Global variables are all constexpr. Full completeness required for constexpr.
+		if( !EnsureTypeComplete( variable.type ) ) // Global variables are all constexpr. Full completeness required for constexpr.
 		{
 			REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), auto_variable_declaration->file_pos_, variable.type );
 			FAIL_RETURN;
@@ -1209,7 +1188,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 size_t CodeBuilder::GlobalThingDetectloop( const GlobalThing& global_thing )
 {
 	for( const GlobalThing& prev_thing : global_things_stack_ )
-		if( prev_thing.thing_ptr == global_thing.thing_ptr && prev_thing.completeness == global_thing.completeness )
+		if( prev_thing.thing_ptr == global_thing.thing_ptr )
 			return size_t( &prev_thing - global_things_stack_.data() );
 
 	return ~0u;

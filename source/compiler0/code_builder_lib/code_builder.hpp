@@ -63,10 +63,9 @@ private:
 		const void* thing_ptr= nullptr;
 		std::string name;
 		FilePos file_pos;
-		TypeCompleteness completeness= TypeCompleteness::Incomplete;
 
-		GlobalThing( const void* const in_thing_ptr, const std::string& in_name, const FilePos& in_file_pos, const TypeCompleteness in_completeness )
-			: thing_ptr(in_thing_ptr), name(in_name), file_pos(in_file_pos), completeness(in_completeness)
+		GlobalThing( const void* const in_thing_ptr, const std::string& in_name, const FilePos& in_file_pos )
+			: thing_ptr(in_thing_ptr), name(in_name), file_pos(in_file_pos)
 		{}
 	};
 
@@ -675,13 +674,13 @@ private:
 	// Global things build
 
 	bool IsTypeComplete( const Type& type ) const;
-	bool EnsureTypeCompleteness( const Type& type, TypeCompleteness completeness ); // Returns true, if all ok
+	bool EnsureTypeComplete( const Type& type ); // Returns true, if complete
 	bool ReferenceIsConvertible( const Type& from, const Type& to, CodeBuilderErrorsContainer& errors_container, const FilePos& file_pos ); // Returns true of all ok. If types are different can call EnsureTypeCompleteness.
 
 	void GlobalThingBuildNamespace( NamesScope& names_scope );
 	void GlobalThingBuildFunctionsSet( NamesScope& names_scope, OverloadedFunctionsSet& functions_set, bool build_body );
-	void GlobalThingBuildClass( ClassProxyPtr class_type, TypeCompleteness completeness );
-	void GlobalThingBuildEnum( const EnumPtr enum_, TypeCompleteness completeness );
+	void GlobalThingBuildClass( ClassProxyPtr class_type );
+	void GlobalThingBuildEnum( const EnumPtr enum_ );
 	void GlobalThingBuildTypeTemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set );
 	void GlobalThingBuildTypedef( NamesScope& names_scope, Value& typedef_value );
 	void GlobalThingBuildVariable( NamesScope& names_scope, Value& global_variable_value );

@@ -382,17 +382,17 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 
 					U_ASSERT( dst_class->forward_declaration_file_pos == src_class.forward_declaration_file_pos );
 
-					if( dst_class->completeness == TypeCompleteness::Incomplete && src_class.completeness == TypeCompleteness::Incomplete )
+					if( !dst_class->is_complete && !src_class.is_complete )
 					{} // Ok
-					if( dst_class->completeness != TypeCompleteness::Incomplete && src_class.completeness == TypeCompleteness::Incomplete )
+					if( dst_class->is_complete && !src_class.is_complete )
 					{} // Dst class is complete, so, use it.
-					if( dst_class->completeness != TypeCompleteness::Incomplete && src_class.completeness != TypeCompleteness::Incomplete &&
+					if( dst_class->is_complete && src_class.is_complete &&
 						dst_class->body_file_pos != src_class.body_file_pos )
 					{
 						// Different bodies from different files.
 						REPORT_ERROR( ClassBodyDuplication, dst.GetErrors(), src_class.body_file_pos );
 					}
-					if(  dst_class->completeness == TypeCompleteness::Incomplete && src_class.completeness != TypeCompleteness::Incomplete )
+					if( !dst_class->is_complete && src_class.is_complete )
 					{
 						// Take body of more complete class and store in destintation class table.
 						CopyClass( src_class.forward_declaration_file_pos, src_class_proxy, dst_class_table, dst );
@@ -434,7 +434,7 @@ void CodeBuilder::CopyClass(
 	copy->syntax_element= src.syntax_element;
 	copy->field_count= src.field_count;
 	copy->inner_reference_type= src.inner_reference_type;
-	copy->completeness= src.completeness;
+	copy->is_complete= src.is_complete;
 
 	copy->have_explicit_noncopy_constructors= src.have_explicit_noncopy_constructors;
 	copy->is_default_constructible= src.is_default_constructible;
@@ -1242,14 +1242,14 @@ Type CodeBuilder::BuildFuncCode(
 	func_variable.have_body= true;
 
 	// Ensure completeness only for functions body.
+	// Require full completeness even for reference arguments.
 	for( const Function::Arg& arg : function_type.args )
 	{
-		if( !arg.is_reference && arg.type != void_type_ &&
-			!EnsureTypeCompleteness( arg.type, TypeCompleteness::Complete ) )
+		if( arg.type != void_type_ && !EnsureTypeComplete( arg.type ) )
 			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), args.front().file_pos_, arg.type );
 	}
 	if( !function_type.return_value_is_reference && function_type.return_type != void_type_ &&
-		!EnsureTypeCompleteness( function_type.return_type, TypeCompleteness::Complete ) )
+		!EnsureTypeComplete( function_type.return_type ) )
 		REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_file_pos, function_type.return_type );
 
 	NamesScope function_names( "", &parent_names_scope );
@@ -1347,9 +1347,6 @@ Type CodeBuilder::BuildFuncCode(
 			function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( var_node, var ) );
 			var.node= var_node;
 		}
-
-		if( arg.type != void_type_ && !EnsureTypeCompleteness( arg.type, TypeCompleteness::ReferenceTagsComplete ) )
-			REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), declaration_arg.file_pos_, arg.type );
 
 		if (arg.type.ReferencesTagsCount() > 0u )
 		{
@@ -1451,7 +1448,7 @@ Type CodeBuilder::BuildFuncCode(
 
 		if( !auto_contexpr )
 		{
-			if( function_type.return_type != void_type_for_ret_ && !EnsureTypeCompleteness( function_type.return_type, TypeCompleteness::Complete ) )
+			if( function_type.return_type != void_type_for_ret_ && !EnsureTypeComplete( function_type.return_type ) )
 				REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), func_variable.body_file_pos, function_type.return_type ); // Completeness required for constexpr possibility check.
 		}
 
@@ -1467,7 +1464,7 @@ Type CodeBuilder::BuildFuncCode(
 		{
 			if( !auto_contexpr )
 			{
-				if( arg.type != void_type_ && !EnsureTypeCompleteness( arg.type, TypeCompleteness::Complete ) )
+				if( arg.type != void_type_ && !EnsureTypeComplete( arg.type ) )
 					REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), func_variable.body_file_pos, arg.type ); // Completeness required for constexpr possibility check.
 			}
 
@@ -1809,7 +1806,7 @@ Value CodeBuilder::ResolveValue(
 						return ErrorValue();
 					}
 
-					GlobalThingBuildClass( type->GetClassTypeProxy(), TypeCompleteness::Complete );
+					GlobalThingBuildClass( type->GetClassTypeProxy() );
 
 					if( names_scope.GetAccessFor( type->GetClassTypeProxy() ) < class_->GetMemberVisibility( *component_name ) )
 						REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), file_pos, *component_name, class_->members.GetThisNamespaceName() );
@@ -1822,7 +1819,7 @@ Value CodeBuilder::ResolveValue(
 				}
 				else if( EnumPtr const enum_= type->GetEnumType() )
 				{
-					GlobalThingBuildEnum( enum_, TypeCompleteness::Complete );
+					GlobalThingBuildEnum( enum_ );
 					value= enum_->members.GetThisScopeValue( *component_name );
 					last_space= &enum_->members;
 				}
@@ -1902,7 +1899,7 @@ Value CodeBuilder::ResolveValue(
 		else if( const Type* const type= value->GetTypeName() )
 		{
 			if( const EnumPtr enum_= type->GetEnumTypePtr() )
-				GlobalThingBuildEnum( enum_, TypeCompleteness::Complete );
+				GlobalThingBuildEnum( enum_ );
 		}
 	}
 

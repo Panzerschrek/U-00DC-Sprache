@@ -1415,7 +1415,7 @@ void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& fi
 			{
 				if( Class* const subclass= type->GetClassType() )
 				{
-					if( subclass->completeness != TypeCompleteness::Complete )
+					if( !subclass->is_complete )
 						REPORT_ERROR( IncompleteMemberOfClassTemplate, class_.members.GetErrors(), file_pos, name );
 					else
 						ReportAboutIncompleteMembersOfTemplateClass( file_pos, *subclass );
