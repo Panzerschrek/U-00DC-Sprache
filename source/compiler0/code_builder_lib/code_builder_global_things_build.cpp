@@ -190,9 +190,9 @@ bool CodeBuilder::ReferenceIsConvertible( const Type& from, const Type& to, Code
 
 	if( from != void_type_ && to != void_type_ )
 	{
-		if( !EnsureTypeCompleteness( from, TypeCompleteness::Complete ) )
+		if( !EnsureTypeCompleteness( from ) )
 			REPORT_ERROR( UsingIncompleteType, errors_container, file_pos, from );
-		if( !EnsureTypeCompleteness(   to, TypeCompleteness::Complete ) )
+		if( !EnsureTypeCompleteness(   to ) )
 			REPORT_ERROR( UsingIncompleteType, errors_container, file_pos,   to );
 	}
 
@@ -400,7 +400,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				REPORT_ERROR( CanNotDeriveFromThisType, class_parent_namespace.GetErrors(), class_declaration.file_pos_, type_name );
 				continue;
 			}
-			if( !EnsureTypeCompleteness( *type_name, TypeCompleteness::Complete ) )
+			if( !EnsureTypeCompleteness( *type_name) )
 			{
 				REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), class_declaration.file_pos_, type_name );
 				continue;
@@ -466,7 +466,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type, const T
 				if( !class_field->is_reference || in_field.mutability_modifier == Synt::MutabilityModifier::Constexpr )
 				{
 					// Full type completeness required for value-fields and constexpr reference-fields.
-					if( !EnsureTypeCompleteness( class_field->type, TypeCompleteness::Complete ) )
+					if( !EnsureTypeCompleteness( class_field->type ) )
 					{
 						REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), in_field.file_pos_, class_field->type );
 						return;
@@ -1007,7 +1007,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		}
 
 		const Type type= PrepareType( variables_declaration->type, names_scope, *global_function_context_ );
-		if( !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) ) // Global variables are all constexpr. Full completeness required for constexpr.
+		if( !EnsureTypeCompleteness( type ) ) // Global variables are all constexpr. Full completeness required for constexpr.
 		{
 			REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), variable_declaration.file_pos, type );
 			FAIL_RETURN;
@@ -1141,7 +1141,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		variable.value_type= ValueType::ConstReference;
 		variable.location= Variable::Location::Pointer;
 
-		if( !EnsureTypeCompleteness( variable.type, TypeCompleteness::Complete ) ) // Global variables are all constexpr. Full completeness required for constexpr.
+		if( !EnsureTypeCompleteness( variable.type ) ) // Global variables are all constexpr. Full completeness required for constexpr.
 		{
 			REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), auto_variable_declaration->file_pos_, variable.type );
 			FAIL_RETURN;

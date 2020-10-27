@@ -606,7 +606,7 @@ Value CodeBuilder::BuildExpressionCode(
 		node_kind= ReferencesGraphNode::Kind::Variable;
 		if( !( result.type == void_type_ || result.type == void_type_for_ret_ ) )
 		{
-			if( !EnsureTypeCompleteness( result.type, TypeCompleteness::Complete ) )
+			if( !EnsureTypeCompleteness( result.type ) )
 			{
 				REPORT_ERROR( UsingIncompleteType, names.GetErrors(), ternary_operator.file_pos_, result.type );
 				return ErrorValue();
@@ -1143,7 +1143,7 @@ Value CodeBuilder::BuildExpressionCode(
 	if( type == invalid_type_ )
 		return ErrorValue();
 
-	if( type != void_type_ && !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) )
+	if( type != void_type_ && !EnsureTypeCompleteness( type ) )
 	{
 		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), typeinfo.file_pos_, type );
 		return ErrorValue();
@@ -1671,10 +1671,10 @@ Value CodeBuilder::DoReferenceCast(
 	{
 		// Complete types required for both safe and unsafe casting, except unsafe void to anything cast.
 		// This needs, becasue we must emit same code for places where types yet not complete, and where they are complete.
-		if( !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) )
+		if( !EnsureTypeCompleteness( type ) )
 			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), file_pos, type );
 
-		if( !( enable_unsafe && var.type == void_type_ ) && !EnsureTypeCompleteness( var.type, TypeCompleteness::Complete ) )
+		if( !( enable_unsafe && var.type == void_type_ ) && !EnsureTypeCompleteness( var.type ) )
 			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), file_pos, var.type );
 
 		if( ReferenceIsConvertible( var.type, type, names.GetErrors(), file_pos ) )
@@ -2115,7 +2115,7 @@ Value CodeBuilder::BuildPostfixOperator(
 		return ErrorValue();
 	}
 
-	if( !EnsureTypeCompleteness( variable.type, TypeCompleteness::Complete ) )
+	if( !EnsureTypeCompleteness( variable.type ) )
 	{
 		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), member_access_operator.file_pos_, value.GetKindName() );
 		return ErrorValue();
@@ -2212,7 +2212,7 @@ Value CodeBuilder::BuildPostfixOperator(
 		if( field->is_reference )
 		{
 			// Small hack for typeinfo - it's initializer initialized only if typeinfo is complete, so, make it complete before getting constexpr value for it.
-			if( EnsureTypeCompleteness( field->type, TypeCompleteness::Complete ) )
+			if( EnsureTypeCompleteness( field->type ) )
 			{
 				// TODO - what if storage for constexpr reference valus is not "GlobalVariable"?
 				const auto var= llvm::dyn_cast<llvm::GlobalVariable>( variable.constexpr_value->getAggregateElement( static_cast<unsigned int>( field->index ) ));
@@ -2379,7 +2379,7 @@ Value CodeBuilder::DoCallFunction(
 				const auto inner_references= function_context.variables_state.GetAllAccessibleInnerNodes( expr.node );
 				if( !inner_references.empty() )
 				{
-					EnsureTypeCompleteness( arg.type, TypeCompleteness::Complete );
+					EnsureTypeCompleteness( arg.type );
 					if( arg.type.ReferencesTagsCount() > 0 )
 					{
 						bool is_mutable= false;
@@ -2433,7 +2433,7 @@ Value CodeBuilder::DoCallFunction(
 				// Lock inner references.
 				// Do it only if arg type can contain any reference inside.
 				// Do it before potential moving.
-				EnsureTypeCompleteness( arg.type, TypeCompleteness::Complete ); // arg type for value arg must be already complete.
+				EnsureTypeCompleteness( arg.type ); // arg type for value arg must be already complete.
 				if( expr.node != nullptr && arg.type.ReferencesTagsCount() > 0u )
 				{
 					const auto inner_references= function_context.variables_state.GetAllAccessibleInnerNodes( expr.node );
@@ -2556,7 +2556,7 @@ Value CodeBuilder::DoCallFunction(
 	}
 	else
 	{
-		if( function_type.return_type != void_type_ && !EnsureTypeCompleteness( function_type.return_type, TypeCompleteness::Complete ) )
+		if( function_type.return_type != void_type_ && !EnsureTypeCompleteness( function_type.return_type ) )
 			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), call_file_pos, function_type.return_type );
 
 		result.location= return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
@@ -2710,7 +2710,7 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
-	if( !EnsureTypeCompleteness( type, TypeCompleteness::Complete ) )
+	if( !EnsureTypeCompleteness( type ) )
 	{
 		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), call_operator.file_pos_, type );
 		return Variable();
@@ -2750,7 +2750,7 @@ Variable CodeBuilder::ConvertVariable(
 	FunctionContext& function_context,
 	const FilePos& file_pos )
 {
-	if( !EnsureTypeCompleteness( dst_type, TypeCompleteness::Complete ) )
+	if( !EnsureTypeCompleteness( dst_type ) )
 	{
 		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), file_pos, dst_type );
 		return Variable();
