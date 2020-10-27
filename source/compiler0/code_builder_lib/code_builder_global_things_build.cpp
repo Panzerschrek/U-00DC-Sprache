@@ -146,7 +146,7 @@ bool CodeBuilder::IsTypeComplete( const Type& type ) const
 	}
 }
 
-bool CodeBuilder::EnsureTypeCompleteness( const Type& type )
+bool CodeBuilder::EnsureTypeComplete( const Type& type )
 {
 	if( const auto fundamental_type= type.GetFundamentalType() )
 	{
@@ -160,12 +160,12 @@ bool CodeBuilder::EnsureTypeCompleteness( const Type& type )
 		return true;
 	}
 	else if( const auto array_type= type.GetArrayType() )
-		return EnsureTypeCompleteness( array_type->type );
+		return EnsureTypeComplete( array_type->type );
 	else if( const auto tuple_type= type.GetTupleType() )
 	{
 		bool ok= true;
 		for( const Type& element_type : tuple_type->elements )
-			ok= EnsureTypeCompleteness( element_type ) || ok;
+			ok= EnsureTypeComplete( element_type ) || ok;
 		return ok;
 	}
 	else if( const auto class_type= type.GetClassTypeProxy() )
@@ -185,9 +185,9 @@ bool CodeBuilder::ReferenceIsConvertible( const Type& from, const Type& to, Code
 
 	if( from != void_type_ && to != void_type_ )
 	{
-		if( !EnsureTypeCompleteness( from ) )
+		if( !EnsureTypeComplete( from ) )
 			REPORT_ERROR( UsingIncompleteType, errors_container, file_pos, from );
-		if( !EnsureTypeCompleteness(   to ) )
+		if( !EnsureTypeComplete(   to ) )
 			REPORT_ERROR( UsingIncompleteType, errors_container, file_pos,   to );
 	}
 
@@ -389,7 +389,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 			REPORT_ERROR( CanNotDeriveFromThisType, class_parent_namespace.GetErrors(), class_declaration.file_pos_, type_name );
 			continue;
 		}
-		if( !EnsureTypeCompleteness( *type_name ) )
+		if( !EnsureTypeComplete( *type_name ) )
 		{
 			REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), class_declaration.file_pos_, type_name );
 			continue;
@@ -455,7 +455,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 			if( !class_field->is_reference || in_field.mutability_modifier == Synt::MutabilityModifier::Constexpr )
 			{
 				// Full type completeness required for value-fields and constexpr reference-fields.
-				if( !EnsureTypeCompleteness( class_field->type ) )
+				if( !EnsureTypeComplete( class_field->type ) )
 				{
 					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), in_field.file_pos_, class_field->type );
 					return;
@@ -464,7 +464,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 
 			if( class_field->is_reference )
 			{
-				if( class_field->type != void_type_ && !EnsureTypeCompleteness( class_field->type ) )
+				if( class_field->type != void_type_ && !EnsureTypeComplete( class_field->type ) )
 				{
 					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), in_field.file_pos_, class_field->type );
 					return;
@@ -499,7 +499,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 				the_class.inner_reference_type= std::max( the_class.inner_reference_type, field->is_mutable ? InnerReferenceType::Mut : InnerReferenceType::Imut );
 			else
 			{
-				if( !EnsureTypeCompleteness( field->type ) )
+				if( !EnsureTypeComplete( field->type ) )
 					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), field->syntax_element->file_pos_, field->type );
 				the_class.inner_reference_type= std::max( the_class.inner_reference_type, field->type.GetInnerReferenceType() );
 			}
@@ -986,7 +986,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		}
 
 		const Type type= PrepareType( variables_declaration->type, names_scope, *global_function_context_ );
-		if( !EnsureTypeCompleteness( type ) ) // Global variables are all constexpr. Full completeness required for constexpr.
+		if( !EnsureTypeComplete( type ) ) // Global variables are all constexpr. Full completeness required for constexpr.
 		{
 			REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), variable_declaration.file_pos, type );
 			FAIL_RETURN;
@@ -1120,7 +1120,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		variable.value_type= ValueType::ConstReference;
 		variable.location= Variable::Location::Pointer;
 
-		if( !EnsureTypeCompleteness( variable.type ) ) // Global variables are all constexpr. Full completeness required for constexpr.
+		if( !EnsureTypeComplete( variable.type ) ) // Global variables are all constexpr. Full completeness required for constexpr.
 		{
 			REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), auto_variable_declaration->file_pos_, variable.type );
 			FAIL_RETURN;

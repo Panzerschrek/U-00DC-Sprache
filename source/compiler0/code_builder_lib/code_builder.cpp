@@ -1245,11 +1245,11 @@ Type CodeBuilder::BuildFuncCode(
 	// Require full completeness even for reference arguments.
 	for( const Function::Arg& arg : function_type.args )
 	{
-		if( arg.type != void_type_ && !EnsureTypeCompleteness( arg.type ) )
+		if( arg.type != void_type_ && !EnsureTypeComplete( arg.type ) )
 			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), args.front().file_pos_, arg.type );
 	}
 	if( !function_type.return_value_is_reference && function_type.return_type != void_type_ &&
-		!EnsureTypeCompleteness( function_type.return_type ) )
+		!EnsureTypeComplete( function_type.return_type ) )
 		REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_file_pos, function_type.return_type );
 
 	NamesScope function_names( "", &parent_names_scope );
@@ -1448,7 +1448,7 @@ Type CodeBuilder::BuildFuncCode(
 
 		if( !auto_contexpr )
 		{
-			if( function_type.return_type != void_type_for_ret_ && !EnsureTypeCompleteness( function_type.return_type ) )
+			if( function_type.return_type != void_type_for_ret_ && !EnsureTypeComplete( function_type.return_type ) )
 				REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), func_variable.body_file_pos, function_type.return_type ); // Completeness required for constexpr possibility check.
 		}
 
@@ -1464,7 +1464,7 @@ Type CodeBuilder::BuildFuncCode(
 		{
 			if( !auto_contexpr )
 			{
-				if( arg.type != void_type_ && !EnsureTypeCompleteness( arg.type ) )
+				if( arg.type != void_type_ && !EnsureTypeComplete( arg.type ) )
 					REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), func_variable.body_file_pos, arg.type ); // Completeness required for constexpr possibility check.
 			}
 

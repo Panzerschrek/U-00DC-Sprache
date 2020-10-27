@@ -436,7 +436,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 				// We needs complete types for checking possible conversions.
 				// We can not just skip this function, if types are incomplete, because it will break "template instantiation equality rule".
 				if( function_type.args[i].type != void_type_ && actual_args_begin[i].type != void_type_ &&
-					!( EnsureTypeCompleteness( function_type.args[i].type ) && EnsureTypeCompleteness( actual_args_begin[i].type ) ) )
+					!( EnsureTypeComplete( function_type.args[i].type ) && EnsureTypeComplete( actual_args_begin[i].type ) ) )
 				{
 					if( produce_errors )
 						REPORT_ERROR( CouldNotSelectOverloadedFunction, errors_container, file_pos );
@@ -617,7 +617,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 
 		if( const Class* const class_= arg.type.GetClassType() )
 		{
-			if( !EnsureTypeCompleteness( arg.type ) )
+			if( !EnsureTypeComplete( arg.type ) )
 			{
 				REPORT_ERROR( UsingIncompleteType, errors_container, file_pos, arg.type );
 				return nullptr;
@@ -645,7 +645,7 @@ const FunctionVariable* CodeBuilder::GetConversionConstructor(
 	CodeBuilderErrorsContainer& errors_container,
 	const FilePos& file_pos )
 {
-	if( !EnsureTypeCompleteness( dst_type ) )
+	if( !EnsureTypeComplete( dst_type ) )
 	{
 		REPORT_ERROR( UsingIncompleteType, errors_container, file_pos, dst_type );
 		return nullptr;

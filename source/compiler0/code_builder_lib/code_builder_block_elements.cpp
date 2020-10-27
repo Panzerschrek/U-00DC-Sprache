@@ -93,7 +93,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr )
 		{
 			// Full completeness required for value-variables and any constexpr variable.
-			if( !EnsureTypeCompleteness( type ) )
+			if( !EnsureTypeComplete( type ) )
 			{
 				REPORT_ERROR( UsingIncompleteType, names.GetErrors(), variables_declaration.file_pos_, type );
 				continue;
@@ -309,7 +309,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr )
 	{
 		// Full completeness required for value-variables and any constexpr variable.
-		if( !EnsureTypeCompleteness( variable.type ) )
+		if( !EnsureTypeComplete( variable.type ) )
 		{
 			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), auto_variable_declaration.file_pos_, variable.type );
 			return BlockBuildInfo();
@@ -698,7 +698,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			}
 			else
 			{
-				if( !EnsureTypeCompleteness( element_type ) )
+				if( !EnsureTypeComplete( element_type ) )
 				{
 					REPORT_ERROR( UsingIncompleteType, names.GetErrors(), for_operator.file_pos_, element_type );
 					continue;
@@ -1060,7 +1060,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	const auto var_node= std::make_shared<ReferencesGraphNode>( with_operator.variable_name_, node_kind );
 
 	if( with_operator.reference_modifier_ != ReferenceModifier::Reference &&
-		!EnsureTypeCompleteness( variable.type ) )
+		!EnsureTypeComplete( variable.type ) )
 	{
 		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), with_operator.file_pos_, variable.type );
 		return BlockBuildInfo();
