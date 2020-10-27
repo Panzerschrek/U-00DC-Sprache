@@ -47,7 +47,6 @@ using EnumPtr= Enum*;
 enum class TypeCompleteness
 {
 	Incomplete, // Known nothing
-	ReferenceTagsComplete, // Known fields, parents.
 	Complete, // Known also member functions
 };
 
