@@ -32,10 +32,10 @@ public:
 private:
 	std::function<void()> function_;
 };
-#define DETECT_GLOBALS_LOOP( in_thing_ptr, in_name, in_file_pos, in_completeness ) \
+#define DETECT_GLOBALS_LOOP( in_thing_ptr, in_name, in_file_pos ) \
 	{ \
 		const FilePos file_pos__= in_file_pos; \
-		const GlobalThing global_thing( static_cast<const void*>(in_thing_ptr), in_name, file_pos__, in_completeness ); \
+		const GlobalThing global_thing( static_cast<const void*>(in_thing_ptr), in_name, file_pos__ ); \
 		const size_t loop_pos= GlobalThingDetectloop( global_thing ); \
 		if( loop_pos != ~0u ) \
 		{ \
@@ -138,7 +138,7 @@ bool CodeBuilder::IsTypeComplete( const Type& type ) const
 		return all_complete;
 	}
 	else if( const auto class_type= type.GetClassTypeProxy() )
-		return class_type->class_->completeness == TypeCompleteness::Complete;
+		return class_type->class_->is_complete;
 	else
 	{
 		U_ASSERT(false);
@@ -171,7 +171,7 @@ bool CodeBuilder::EnsureTypeCompleteness( const Type& type )
 	else if( const auto class_type= type.GetClassTypeProxy() )
 	{
 		GlobalThingBuildClass( class_type );
-		return class_type->class_->completeness >= TypeCompleteness::Complete; // Return true if we achived required completeness.
+		return class_type->class_->is_complete;
 	}
 	else U_ASSERT(false);
 
@@ -255,7 +255,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 			functions_set_file_pos= functions_set.template_syntax_elements.front()->file_pos_;
 			functions_set_name= functions_set.template_syntax_elements.front()->function_->name_.back();
 		}
-		DETECT_GLOBALS_LOOP( &functions_set, functions_set_name, functions_set_file_pos, TypeCompleteness::Complete );
+		DETECT_GLOBALS_LOOP( &functions_set, functions_set_name, functions_set_file_pos );
 
 		for( const Synt::Function* const function : functions_set.syntax_elements )
 		{
@@ -353,7 +353,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 {
 	Class& the_class= *class_type->class_;
 
-	if( the_class.completeness == TypeCompleteness::Complete ||
+	if( the_class.is_complete ||
 		( the_class.syntax_element != nullptr && the_class.syntax_element->is_forward_declaration_ ) )
 		return;
 
@@ -367,7 +367,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 	const Synt::Class& class_declaration= *the_class.syntax_element;
 	const std::string& class_name= class_declaration.name_;
 
-	DETECT_GLOBALS_LOOP( &the_class, the_class.members.GetThisNamespaceName(), the_class.body_file_pos, TypeCompleteness::Complete );
+	DETECT_GLOBALS_LOOP( &the_class, the_class.members.GetThisNamespaceName(), the_class.body_file_pos );
 
 	the_class.have_shared_state= class_declaration.have_shared_state_;
 
@@ -825,7 +825,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 	BuildPolymorphClassTypeId( the_class, class_type );
 	BuildClassVirtualTable( the_class, class_type );
 
-	the_class.completeness= TypeCompleteness::Complete;
+	the_class.is_complete= true;
 
 	TryGenerateDefaultConstructor( the_class, class_type );
 	TryGenerateDestructor( the_class, class_type );
@@ -863,7 +863,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 	if( enum_->syntax_element == nullptr )
 		return;
 
-	DETECT_GLOBALS_LOOP( enum_, enum_->members.GetThisNamespaceName(), enum_->syntax_element->file_pos_, TypeCompleteness::Complete );
+	DETECT_GLOBALS_LOOP( enum_, enum_->members.GetThisNamespaceName(), enum_->syntax_element->file_pos_ );
 
 	// Default underlaying type is 32bit. TODO - maybe do it platform-dependent?
 	enum_->underlaying_type= FundamentalType( U_FundamentalType::u32, fundamental_llvm_types_.u32 );
@@ -938,7 +938,7 @@ void CodeBuilder::GlobalThingBuildTypeTemplatesSet( NamesScope& names_scope, Typ
 {
 	if( !type_templates_set.syntax_elements.empty() )
 	{
-		DETECT_GLOBALS_LOOP( &type_templates_set, type_templates_set.syntax_elements.front()->name_, type_templates_set.syntax_elements.front()->file_pos_, TypeCompleteness::Complete );
+		DETECT_GLOBALS_LOOP( &type_templates_set, type_templates_set.syntax_elements.front()->name_, type_templates_set.syntax_elements.front()->file_pos_ );
 
 		for( const auto syntax_element : type_templates_set.syntax_elements )
 			PrepareTypeTemplate( *syntax_element, type_templates_set, names_scope );
@@ -952,7 +952,7 @@ void CodeBuilder::GlobalThingBuildTypedef( NamesScope& names_scope, Value& typed
 	U_ASSERT( typedef_value.GetTypedef() != nullptr );
 	const Synt::Typedef& syntax_element= *typedef_value.GetTypedef()->syntax_element;
 
-	DETECT_GLOBALS_LOOP( &typedef_value, syntax_element.name, syntax_element.file_pos_, TypeCompleteness::Complete );
+	DETECT_GLOBALS_LOOP( &typedef_value, syntax_element.name, syntax_element.file_pos_ );
 
 	// Replace value in names map, when typedef is comlete.
 	typedef_value= Value( PrepareType( syntax_element.value, names_scope, *global_function_context_ ), syntax_element.file_pos_ );
@@ -969,7 +969,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 	else if( incomplete_global_variable.auto_variable_declaration != nullptr )
 		file_pos= incomplete_global_variable.auto_variable_declaration->file_pos_;
 
-	DETECT_GLOBALS_LOOP( &global_variable_value, incomplete_global_variable.name, file_pos, TypeCompleteness::Complete );
+	DETECT_GLOBALS_LOOP( &global_variable_value, incomplete_global_variable.name, file_pos );
 	#define FAIL_RETURN { global_variable_value= ErrorValue(); return; }
 
 	FunctionContext& function_context= *global_function_context_;
@@ -1188,7 +1188,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 size_t CodeBuilder::GlobalThingDetectloop( const GlobalThing& global_thing )
 {
 	for( const GlobalThing& prev_thing : global_things_stack_ )
-		if( prev_thing.thing_ptr == global_thing.thing_ptr && prev_thing.completeness == global_thing.completeness )
+		if( prev_thing.thing_ptr == global_thing.thing_ptr )
 			return size_t( &prev_thing - global_things_stack_.data() );
 
 	return ~0u;

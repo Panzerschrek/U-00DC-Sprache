@@ -68,7 +68,7 @@ public:
 
 	size_t field_count= 0u;
 	InnerReferenceType inner_reference_type= InnerReferenceType::None;
-	TypeCompleteness completeness= TypeCompleteness::Incomplete;
+	bool is_complete= false;
 	bool have_explicit_noncopy_constructors= false;
 	bool is_default_constructible= false;
 	bool is_copy_constructible= false;

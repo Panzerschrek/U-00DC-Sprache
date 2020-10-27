@@ -382,17 +382,17 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 
 					U_ASSERT( dst_class->forward_declaration_file_pos == src_class.forward_declaration_file_pos );
 
-					if( dst_class->completeness == TypeCompleteness::Incomplete && src_class.completeness == TypeCompleteness::Incomplete )
+					if( !dst_class->is_complete && !src_class.is_complete )
 					{} // Ok
-					if( dst_class->completeness != TypeCompleteness::Incomplete && src_class.completeness == TypeCompleteness::Incomplete )
+					if( dst_class->is_complete && !src_class.is_complete )
 					{} // Dst class is complete, so, use it.
-					if( dst_class->completeness != TypeCompleteness::Incomplete && src_class.completeness != TypeCompleteness::Incomplete &&
+					if( dst_class->is_complete && src_class.is_complete &&
 						dst_class->body_file_pos != src_class.body_file_pos )
 					{
 						// Different bodies from different files.
 						REPORT_ERROR( ClassBodyDuplication, dst.GetErrors(), src_class.body_file_pos );
 					}
-					if(  dst_class->completeness == TypeCompleteness::Incomplete && src_class.completeness != TypeCompleteness::Incomplete )
+					if( !dst_class->is_complete && src_class.is_complete )
 					{
 						// Take body of more complete class and store in destintation class table.
 						CopyClass( src_class.forward_declaration_file_pos, src_class_proxy, dst_class_table, dst );
@@ -434,7 +434,7 @@ void CodeBuilder::CopyClass(
 	copy->syntax_element= src.syntax_element;
 	copy->field_count= src.field_count;
 	copy->inner_reference_type= src.inner_reference_type;
-	copy->completeness= src.completeness;
+	copy->is_complete= src.is_complete;
 
 	copy->have_explicit_noncopy_constructors= src.have_explicit_noncopy_constructors;
 	copy->is_default_constructible= src.is_default_constructible;

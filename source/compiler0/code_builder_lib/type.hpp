@@ -44,12 +44,6 @@ using ClassProxyWeakPtr= std::weak_ptr<ClassProxy>;
 // Enum itself stored in class table.
 using EnumPtr= Enum*;
 
-enum class TypeCompleteness
-{
-	Incomplete, // Known nothing
-	Complete, // Known also member functions
-};
-
 struct FundamentalType final
 {
 	U_FundamentalType fundamental_type;

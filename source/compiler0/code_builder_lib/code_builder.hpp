@@ -63,10 +63,9 @@ private:
 		const void* thing_ptr= nullptr;
 		std::string name;
 		FilePos file_pos;
-		TypeCompleteness completeness= TypeCompleteness::Incomplete;
 
-		GlobalThing( const void* const in_thing_ptr, const std::string& in_name, const FilePos& in_file_pos, const TypeCompleteness in_completeness )
-			: thing_ptr(in_thing_ptr), name(in_name), file_pos(in_file_pos), completeness(in_completeness)
+		GlobalThing( const void* const in_thing_ptr, const std::string& in_name, const FilePos& in_file_pos )
+			: thing_ptr(in_thing_ptr), name(in_name), file_pos(in_file_pos)
 		{}
 	};
 

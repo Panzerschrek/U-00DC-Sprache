@@ -12,7 +12,7 @@ namespace CodeBuilderPrivate
 
 void CodeBuilder::PrepareClassVirtualTable( Class& the_class, const Type& class_type, const std::vector<FunctionVariable*>& functions )
 {
-	U_ASSERT( the_class.completeness != TypeCompleteness::Complete );
+	U_ASSERT( !the_class.is_complete );
 	U_ASSERT( the_class.virtual_table.empty() );
 
 	// First, borrow virtual table of parent with 0 offset.
@@ -260,7 +260,7 @@ void CodeBuilder::PrepareClassVirtualTableType( const ClassProxyPtr& class_type 
 	*/
 
 	Class& the_class= *class_type->class_;
-	U_ASSERT( the_class.completeness != TypeCompleteness::Complete );
+	U_ASSERT( !the_class.is_complete );
 	U_ASSERT( the_class.virtual_table_llvm_type == nullptr );
 
 	if( the_class.virtual_table.empty() )
@@ -398,7 +398,7 @@ llvm::Constant* CodeBuilder::BuildClassVirtualTable_r(
 
 void CodeBuilder::BuildClassVirtualTable( Class& the_class, const Type& class_type )
 {
-	U_ASSERT( the_class.completeness != TypeCompleteness::Complete );
+	U_ASSERT( !the_class.is_complete );
 	U_ASSERT( the_class.virtual_table_llvm_variable == nullptr );
 
 	// Build virtual table only for polymorph non-abstract classes.

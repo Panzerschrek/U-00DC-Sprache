@@ -275,7 +275,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 	const Class& the_class= *type->class_;
 
 	// Ignore incomplete type - do not create debug info for it.
-	if( the_class.completeness != TypeCompleteness::Complete )
+	if( !the_class.is_complete )
 		return nullptr;
 
 	if( const auto it= debug_info_.classes_di_cache.find(type); it != debug_info_.classes_di_cache.end() )
