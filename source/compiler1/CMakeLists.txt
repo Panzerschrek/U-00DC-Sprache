@@ -22,6 +22,7 @@ function( CompileUSource u_source_file out_object )
 			--include-dir ${CMAKE_CURRENT_BINARY_DIR}/
 		DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "compiler1/lex_syn_lib/file_pos.u.o:", but launches custom command in current binary directory
+		COMMENT "Building ${current_subdir}/${u_source_file_relative}.o"
 		)
 	set( ${out_object} ${u_source_file_relative}.o PARENT_SCOPE )
 endfunction()
