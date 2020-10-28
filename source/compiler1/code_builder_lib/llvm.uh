@@ -163,7 +163,7 @@ enum LLVMDWARFEmissionKind : u32
 
 // Context
 fn nomangle LLVMContextCreate() unsafe : LLVMContextRef;
-fn nomangle LLVMContextDispose(LLVMContextRef C);
+fn nomangle LLVMContextDispose(LLVMContextRef C) unsafe;
 
 // Module
 fn nomangle LLVMModuleCreateWithNameInContext(NullTerminatedString& ModuleID, LLVMContextRef C) unsafe : LLVMModuleRef;
@@ -216,7 +216,7 @@ fn nomangle LLVMGetTypeKind(LLVMTypeRef Ty) unsafe : LLVMTypeKind;
 // Value
 
 fn nomangle LLVMTypeOf(LLVMValueRef Val) unsafe : LLVMTypeRef;
-fn nomangle LLVMGetValueName2(LLVMValueRef Val, size_type &mut Length) : char8&;
+fn nomangle LLVMGetValueName2(LLVMValueRef Val, size_type &mut Length) unsafe : char8&;
 fn nomangle LLVMSetValueName2(LLVMValueRef Val, char8& Name, size_type NameLen) unsafe;
 fn nomangle LLVMConstIntGetZExtValue(LLVMValueRef ConstantVal) unsafe : u64;
 fn nomangle LLVMConstIntGetSExtValue(LLVMValueRef ConstantVal) unsafe : i64;
@@ -376,7 +376,7 @@ fn nomangle LLVMBuildMemCpy(
 fn nomangle LLVMCreateEnumAttribute(LLVMContextRef C, u32 KindID, u64 Val) unsafe : LLVMAttributeRef;
 fn nomangle LLVMGetEnumAttributeKindForName(char8& Name, size_type SLen) unsafe : u32;
 
-fn nomangle LLVMAddAttributeAtIndex(LLVMValueRef F, LLVMAttributeIndex Idx, LLVMAttributeRef A);
+fn nomangle LLVMAddAttributeAtIndex(LLVMValueRef F, LLVMAttributeIndex Idx, LLVMAttributeRef A) unsafe;
 
 // Debug info
 fn nomangle LLVMCreateDIBuilder(LLVMModuleRef M) unsafe : LLVMDIBuilderRef;
