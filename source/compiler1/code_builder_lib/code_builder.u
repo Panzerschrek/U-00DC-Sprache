@@ -108,7 +108,8 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 			}
 		}
 
-		var LLVMDWARFSourceLanguage c_dwarf_language_id= 0x8000u /* first user-defined language code */ + 0xDCu /* code of "Ü" letter */;
+		// TODO - fix this. LLVM C interface doesn't provide any way to specify custom language, so, use default value.
+		var LLVMDWARFSourceLanguage c_dwarf_language_id= 0u;
 
 		unsafe
 		{
