@@ -19,6 +19,8 @@ DefineLLVMRef LLVMBasicBlockRef
 DefineLLVMRef LLVMTargetDataRef // Actually this is DataLayout
 DefineLLVMRef LLVMAttributeRef
 DefineLLVMRef LLVMComdatRef
+DefineLLVMRef LLVMDIBuilderRef
+DefineLLVMRef LLVMMetadataRef
 
 type NullTerminatedString= char8;
 
@@ -131,6 +133,15 @@ enum LLVMComdatSelectionKind : u32
 	Largest,    ///< The linker will choose the largest COMDAT.
 	NoDuplicates, ///< No other Module may specify this COMDAT.
 	SameSize ///< The data referenced by the COMDAT must be the same size.
+}
+
+type LLVMDWARFSourceLanguage= u32;
+
+enum LLVMDWARFEmissionKind : u32
+{
+	None,
+	Full,
+	LineTablesOnly
 }
 
 // Functions
@@ -349,3 +360,27 @@ fn nomangle LLVMCreateEnumAttribute(LLVMContextRef C, u32 KindID, u64 Val) unsaf
 fn nomangle LLVMGetEnumAttributeKindForName(char8& Name, size_type SLen) unsafe : u32;
 
 fn nomangle LLVMAddAttributeAtIndex(LLVMValueRef F, LLVMAttributeIndex Idx, LLVMAttributeRef A);
+
+// Debug info
+fn nomangle LLVMCreateDIBuilder(LLVMModuleRef M) unsafe : LLVMDIBuilderRef;
+fn nomangle LLVMDIBuilderFinalize(LLVMDIBuilderRef Builder) unsafe;
+fn nomangle LLVMDisposeDIBuilder(LLVMDIBuilderRef Builder) unsafe;
+
+fn nomangle LLVMDIBuilderCreateFile(
+	LLVMDIBuilderRef Builder,
+	NullTerminatedString& Filename, size_type FilenameLen,
+	NullTerminatedString& Directory, size_type DirectoryLen) unsafe : LLVMMetadataRef;
+
+fn nomangle LLVMDIBuilderCreateCompileUnit(
+	LLVMDIBuilderRef Builder,
+	LLVMDWARFSourceLanguage Lang,
+	LLVMMetadataRef FileRef,
+	NullTerminatedString& Producer, size_type ProducerLen,
+	LLVMBool isOptimized,
+	NullTerminatedString& Flags, size_type FlagsLen,
+	u32 RuntimeVer,
+	NullTerminatedString& SplitName, size_type SplitNameLen,
+	LLVMDWARFEmissionKind Kind,
+	u32 DWOId,
+	LLVMBool SplitDebugInlining,
+	LLVMBool DebugInfoForProfiling) unsafe : LLVMMetadataRef;

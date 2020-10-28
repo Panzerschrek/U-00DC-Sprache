@@ -91,6 +91,45 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 	AddFunctionAttribute( halt_function_, LLVMAttributeFunctionIndex, "noreturn" );
 	AddFunctionAttribute( halt_function_, LLVMAttributeFunctionIndex, "nounwind" );
 
+	// prepare debug info
+	if( build_debug_info_ )
+	{
+		unsafe{  debug_info_.builder= LLVMCreateDIBuilder( module_ );  }
+
+		foreach( & node : source_graph.nodes )
+		{
+			unsafe
+			{
+				debug_info_.source_file_entries.push_back(
+					LLVMDIBuilderCreateFile(
+						debug_info_.builder,
+						node.file_path_normalized.front(), node.file_path_normalized.size(),
+						"\0"c8, 0s ) );
+			}
+		}
+
+		var LLVMDWARFSourceLanguage c_dwarf_language_id= 0x8000u /* first user-defined language code */ + 0xDCu /* code of "Ü" letter */;
+
+		unsafe
+		{
+			debug_info_.compile_unit=
+				LLVMDIBuilderCreateCompileUnit(
+					debug_info_.builder,
+					c_dwarf_language_id,
+					debug_info_.source_file_entries.front(),
+					"\0"c8, 0s, // TODO - set producer
+					LLVMBool::False, // TODO - pass "optimized' flag
+					"\0"c8, 0s, // Flags
+					0u, // Runtime version
+					"\0"c8, 0s, // SplitName
+					LLVMDWARFEmissionKind::Full,
+					0u, // DWOId
+					LLVMBool::True, // SplitDebugInlining
+					LLVMBool::False // DebugInfoForProfiling
+				);
+		}
+	}
+
 	root_errors_container_= ErrorsContainerPtr( ErrorsContainer() );
 
 	compiled_sources_cache_.resize( source_graph.nodes.size() );
@@ -136,6 +175,17 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 	compiled_sources_cache_.clear();
 	generated_template_things_.clear();
 	typeinfo_cache_.clear();
+
+	if( debug_info_.builder != LLVMDIBuilderRef::Null )
+	{
+		unsafe
+		{
+			LLVMDIBuilderFinalize( debug_info_.builder );
+			LLVMDisposeDIBuilder( debug_info_.builder );
+		}
+		debug_info_.builder= LLVMDIBuilderRef::Null;
+		debug_info_.compile_unit= LLVMMetadataRef::Null;
+	}
 
 	var BuildResult mut res
 	{
