@@ -41,25 +41,7 @@ fn CreateTemplateErrorsContext(
 			}
 			if_var( &v : arg.something.get</NamesScopeVariable/>() )
 			{
-				if_var( &fundamental_type : v.t.GetFundamentalType() )
-				{
-					if( fundamental_type.fundamental_type == U_FundamentalType::bool_ )
-					{
-						var u64 mut value= zero_init;
-						unsafe{  value= LLVMConstIntGetZExtValue( v.constexpr_value );  }
-						if( value == 0u64 ) {  result.args_description+= "false";  }
-						else {  result.args_description+= "true";  }
-					}
-					else if( IsSignedInteger( fundamental_type.fundamental_type ) )
-					{
-						unsafe{  result.args_description+= ust::to_string8( LLVMConstIntGetSExtValue( v.constexpr_value ) );  }
-					}
-					else
-					{
-						unsafe{  result.args_description+= ust::to_string8( LLVMConstIntGetZExtValue( v.constexpr_value ) );  }
-					}
-				}
-				// TODO - process enum here.
+				result.args_description+= ConstantVariableToString( v.t, v.constexpr_value );
 			}
 
 			if( ust::ref_to_int(param) != ust::ref_to_int(template_.params.back()) )

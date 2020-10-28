@@ -830,6 +830,72 @@ fn ClassType::SetMemberVisibility( mut this, ust::string8& member_name, Synt::Cl
 // Value
 //
 
+fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::string8
+{
+	if( constant_value == LLVMValueRef::Null )
+	{
+		return "";
+	}
+
+	if_var( &fundamental_type : t.GetFundamentalType() )
+	{
+		if( fundamental_type.fundamental_type == U_FundamentalType::bool_ )
+		{
+			var u64 mut value= zero_init;
+			unsafe{  value= LLVMConstIntGetZExtValue( constant_value );  }
+			if( value == 0u64 ) {  return "false";  }
+			else {  return "true";  }
+		}
+		else if( IsSignedInteger( fundamental_type.fundamental_type ) )
+		{
+			var ust::string8 mut suffix;
+			if( fundamental_type.fundamental_type == U_FundamentalType::i32_ )
+			{  suffix= "";  }
+			else
+			{  suffix= GetFundamentalTypeName( fundamental_type.fundamental_type );  }
+
+			unsafe{  return ust::to_string8( LLVMConstIntGetSExtValue( constant_value ) ) + suffix;  }
+		}
+		else if( IsUnsignedInteger( fundamental_type.fundamental_type ) )
+		{
+			var ust::string8 mut suffix;
+			if( fundamental_type.fundamental_type == U_FundamentalType::u32_ )
+			{  suffix= "u";  }
+			else
+			{  suffix= GetFundamentalTypeName( fundamental_type.fundamental_type );  }
+
+			unsafe{  return ust::to_string8( LLVMConstIntGetZExtValue( constant_value ) )  + suffix;  }
+		}
+		else if( IsChar( fundamental_type.fundamental_type ) )
+		{
+			var ust::string8 mut suffix;
+			if( fundamental_type.fundamental_type == U_FundamentalType::char8_  ) {  suffix= "c8" ;  }
+			if( fundamental_type.fundamental_type == U_FundamentalType::char16_ ) {  suffix= "c16";  }
+			if( fundamental_type.fundamental_type == U_FundamentalType::char32_ ) {  suffix= "c32";  }
+			unsafe{  return ust::to_string8( LLVMConstIntGetZExtValue( constant_value ) ) + suffix;  }
+		}
+	}
+	if_var( &enum_type : t.GetEnumType() )
+	{
+		foreach( &element : enum_type.lock_imut().get_ref().elements )
+		{
+			unsafe
+			{
+				if( LLVMConstIntGetZExtValue( constant_value ) == LLVMConstIntGetZExtValue( element.value().constexpr_value ) )
+				{
+					var ust::string8 mut res;
+					res+= t.ToString();
+					res+= "::";
+					res+= element.key();
+					return res;
+				}
+			}
+		}
+	}
+
+	return "";
+}
+
 fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
 {
 	halt if( !( this.is_this_call && other.is_this_call ) );
@@ -1127,38 +1193,7 @@ fn NamesScope::ToString( this ) : ust::string8
 					}
 					if_var( v : arg.get</Variable/>() )
 					{
-						if( v.constexpr_value != LLVMValueRef::Null )
-						{
-							// TODO - maybe print arg type too?
-							if_var( &fundamental_type : v.t.GetFundamentalType() )
-							{
-								// TODO - maybe process "bool" here separately?
-								if( IsSignedInteger( fundamental_type.fundamental_type ) )
-								{
-									unsafe{  res+= ust::to_string8( LLVMConstIntGetSExtValue( v.constexpr_value ) );  }
-								}
-								else
-								{
-									unsafe{  res+= ust::to_string8( LLVMConstIntGetZExtValue( v.constexpr_value ) );  }
-								}
-							}
-							if_var( &enum_type : v.t.GetEnumType() )
-							{
-								foreach( &element : enum_type.lock_imut().get_ref().elements )
-								{
-									unsafe
-									{
-										if( LLVMConstIntGetZExtValue( v.constexpr_value ) == LLVMConstIntGetZExtValue( element.value().constexpr_value ) )
-										{
-											res+= v.t.ToString();
-											res+= "::";
-											res+= element.key();
-											break;
-										}
-									}
-								}
-							}
-						}
+						res+= ConstantVariableToString( v.t, v.constexpr_value );
 					}
 
 					if( ust::ref_to_int(arg) != ust::ref_to_int( class_type.base_template.get_ref().signature_args.back() ) )

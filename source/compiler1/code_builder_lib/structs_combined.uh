@@ -301,6 +301,8 @@ struct Variable
 	ReferencesGraph::NodeId node_id= ReferencesGraph::c_empty_node_id;
 }
 
+fn ConstantVariableToString( Type&  t, LLVMValueRef constant_value ) : ust::string8;
+
 struct VariableTypeExtened
 {
 	Type t;
