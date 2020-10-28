@@ -620,35 +620,7 @@ std::string Type::ToString() const
 					if( const Type* const param_as_type = std::get_if<Type>( &param ) )
 						result+= param_as_type->ToString();
 					else if( const Variable* const param_as_variable= std::get_if<Variable>( &param ) )
-					{
-						U_ASSERT( param_as_variable->constexpr_value != nullptr );
-						const uint64_t param_numeric_value= param_as_variable->constexpr_value->getUniqueInteger().getLimitedValue();
-
-						if( const FundamentalType* fundamental_type= param_as_variable->type.GetFundamentalType())
-						{
-							if( IsSignedInteger( fundamental_type->fundamental_type ) )
-								result+= std::to_string(  int64_t(param_numeric_value) );
-							else
-								result+= std::to_string( uint64_t(param_numeric_value) );
-						}
-						else if( const Enum* enum_type= param_as_variable->type.GetEnumType() )
-						{
-							std::string enum_member_name;
-							enum_type->members.ForEachInThisScope(
-								[&]( const std::string& name, const Value& enum_member )
-								{
-									if( const Variable* enum_variable= enum_member.GetVariable() )
-									{
-										U_ASSERT( enum_variable->constexpr_value != nullptr );
-										if( enum_variable->constexpr_value->getUniqueInteger().getLimitedValue() == param_numeric_value )
-											enum_member_name= name;
-									}
-								});
-							U_ASSERT( !enum_member_name.empty() );
-							result+= enum_type->members.ToString() + "::" + enum_member_name;
-						}
-						else U_ASSERT(false);
-					}
+						result+= ConstantVariableToString( *param_as_variable );
 					else U_ASSERT(false);
 
 					if( &param != &class_->class_->base_template->signature_parameters.back() )

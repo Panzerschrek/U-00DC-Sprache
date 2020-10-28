@@ -120,6 +120,9 @@ struct Variable final
 		llvm::Value* in_llvm_value= nullptr, llvm::Constant* in_constexpr_value= nullptr );
 };
 
+// Used for displaying of template args.
+std::string ConstantVariableToString( const Variable& variable );
+
 struct ClassField final
 {
 	Type type;

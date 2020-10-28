@@ -415,9 +415,11 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"ExpectedReferenceValue_ForAutoReturnValue_Test0",
 		"GlobalsLoop_ForFunctionWithAutoReturnType_Test0",
 		"GlobalsLoop_ForFunctionWithAutoReturnType_Test1",
+		"TemplateParametersDeductionFailed_Test11",
+		"TemplateParametersInErrorInsideTemplate_Test6",
+		"TypeNameInErrorMessage_ClassTemplate_Test10",
 		"TypesMismtach_ForAutoReturnValue_Test0",
 		"TypesMismtach_ForAutoReturnValue_Test1",
-		"TemplateParametersDeductionFailed_Test11",
 		"CastRefUnsafe_Test9_CompletenessStillRequiredForUnsafeCast",
 		"CastRef_Test7_CompleteteTypeRequiredForSource",
 	};

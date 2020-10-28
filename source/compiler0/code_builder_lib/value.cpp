@@ -44,6 +44,78 @@ Variable::Variable(
 	, llvm_value(in_llvm_value), constexpr_value(in_constexpr_value)
 {}
 
+std::string ConstantVariableToString( const Variable& variable )
+{
+	if( variable.constexpr_value == nullptr )
+		return "";
+
+	if( const auto fundamental_type= variable.type.GetFundamentalType() )
+	{
+		if( fundamental_type->fundamental_type == U_FundamentalType::Bool )
+			return variable.constexpr_value->getUniqueInteger().isNullValue() ? "false" : "true";
+		else if( IsFloatingPoint( fundamental_type->fundamental_type ) )
+		{
+			if( const auto constant_fp= llvm::dyn_cast<llvm::ConstantFP>( variable.constexpr_value ) )
+			{
+				llvm::SmallString<256> str;
+				constant_fp->getValueAPF().toString(str);
+				if( fundamental_type->fundamental_type == U_FundamentalType::f32 )
+					str+= "f";
+				return str.str();
+			}
+		}
+		else if( IsSignedInteger( fundamental_type->fundamental_type ) )
+		{
+			const std::string suffix=
+				fundamental_type->fundamental_type == U_FundamentalType::i32
+					? ""
+					: GetFundamentalTypeName( fundamental_type->fundamental_type );
+
+			return std::to_string( variable.constexpr_value->getUniqueInteger().getSExtValue() ) + suffix;
+		}
+		else if( IsUnsignedInteger( fundamental_type->fundamental_type ) )
+		{
+			const std::string suffix=
+				fundamental_type->fundamental_type == U_FundamentalType::u32
+					? "u"
+					: GetFundamentalTypeName( fundamental_type->fundamental_type );
+
+			return std::to_string( variable.constexpr_value->getUniqueInteger().getZExtValue() ) + suffix;
+		}
+		else if( IsChar( fundamental_type->fundamental_type ) )
+		{
+			const char* suffix= "";
+			if( fundamental_type->fundamental_type == U_FundamentalType::char8  )
+				suffix= "c8" ;
+			if( fundamental_type->fundamental_type == U_FundamentalType::char16 )
+				suffix= "c16";
+			if( fundamental_type->fundamental_type == U_FundamentalType::char32 )
+				suffix= "c32";
+
+			return std::to_string( variable.constexpr_value->getUniqueInteger().getZExtValue() ) + suffix;
+		}
+	}
+	else if( const auto enum_type= variable.type.GetEnumType() )
+	{
+		const llvm::APInt num_value= variable.constexpr_value->getUniqueInteger();
+		std::string enum_member_name;
+		enum_type->members.ForEachInThisScope(
+			[&]( const std::string& name, const Value& enum_member )
+			{
+				if( const Variable* const enum_variable= enum_member.GetVariable() )
+				{
+					U_ASSERT( enum_variable->constexpr_value != nullptr );
+					if( enum_variable->constexpr_value->getUniqueInteger().getLimitedValue() == num_value )
+						enum_member_name= name;
+				}
+			});
+
+		return enum_type->members.ToString() + "::" + enum_member_name;
+	}
+
+	return "";
+}
+
 //
 // ClassField
 //

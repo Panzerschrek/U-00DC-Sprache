@@ -154,7 +154,7 @@ def TypeNameInErrorMessage_ClassTemplate_Test3():
 	assert( errors_list[0].error_code == "TypesMismatch" )
 	assert( errors_list[0].file_pos.line == 6 )
 	assert( errors_list[0].text.find( "i32" ) != -1 )
-	assert( errors_list[0].text.find( "Box</S, 66/>" ) != -1 )
+	assert( errors_list[0].text.find( "Box</S, 66" ) != -1 )
 
 
 def TypeNameInErrorMessage_ClassTemplate_Test4():
@@ -237,6 +237,38 @@ def TypeNameInErrorMessage_ClassTemplate_Test8():
 	assert( errors_list[0].file_pos.line == 5 )
 	assert( errors_list[0].text.find( "i32" ) != -1 )
 	assert( errors_list[0].text.find( "Box</typeof(typeinfo</f64/>)/>" ) != -1 )
+
+
+def TypeNameInErrorMessage_ClassTemplate_Test9():
+	c_program_text= """
+		template</ i32 s /> struct Box{}
+		fn Foo()
+		{
+			var i32 x= Box</ -365 />();
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TypesMismatch" )
+	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].text.find( "i32" ) != -1 )
+	assert( errors_list[0].text.find( "Box</-365/>" ) != -1 )
+
+
+def TypeNameInErrorMessage_ClassTemplate_Test10():
+	c_program_text= """
+		template</ char16 C /> struct Box{}
+		fn Foo()
+		{
+			var i32 x= Box</ 45c16 />();
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TypesMismatch" )
+	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].text.find( "i32" ) != -1 )
+	assert( errors_list[0].text.find( "Box</45c16/>" ) != -1 )
 
 
 def TemplateParametersInErrorInsideTemplate_Test0():
@@ -369,4 +401,26 @@ def TemplateParametersInErrorInsideTemplate_Test5():
 	assert( errors_list[0].template_errors.errors[0].error_code == "NameNotFound" )
 	assert( errors_list[0].template_errors.errors[0].file_pos.line == 5 )
 	assert( errors_list[0].template_errors.parameters_description.find( "b = false" ) != -1 )
+	assert( errors_list[0].template_errors.template_name.find( "Box" ) != -1 )
+
+
+def TemplateParametersInErrorInsideTemplate_Test6():
+	c_program_text= """
+		enum ErT{ One, Two2, Blue }
+		template</ ErT e />
+		struct Box
+		{
+			UnknownName x;
+		}
+
+		type B= Box</ ErT::Two2 />;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TemplateContext" )
+	assert( errors_list[0].file_pos.line == 9 )
+	assert( len(errors_list[0].template_errors.errors) > 0 )
+	assert( errors_list[0].template_errors.errors[0].error_code == "NameNotFound" )
+	assert( errors_list[0].template_errors.errors[0].file_pos.line == 6 )
+	assert( errors_list[0].template_errors.parameters_description.find( "e = ErT::Two2" ) != -1 )
 	assert( errors_list[0].template_errors.template_name.find( "Box" ) != -1 )
