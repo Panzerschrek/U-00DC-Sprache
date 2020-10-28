@@ -80,6 +80,7 @@ extern "C" LLVMModuleRef U1_BuildProgrammUsingVFS(
 	const U1_StringView& root_file_path,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
+	bool build_debug_info,
 	SourceFilePathCallback result_source_file_path_callback,
 	UserHandle result_source_file_path_processing_data,
 	LexSyntErrorCallback lex_synt_error_callback,

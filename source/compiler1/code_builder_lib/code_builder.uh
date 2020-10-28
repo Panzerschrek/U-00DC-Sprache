@@ -55,7 +55,7 @@ class CodeBuilder
 {
 public:
 	// llvm context, data layout should live longer, than this class.
-	fn constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data_layout );
+	fn constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data_layout, bool build_debug_info );
 
 	struct BuildResult
 	{
@@ -772,6 +772,9 @@ private:
 
 	// For globals loops detection.
 	GlobalThingsStackPtr global_things_stack_ptr_;
+
+	// Debug info
+	bool imut build_debug_info_;
 }
 
 } // namespace U1

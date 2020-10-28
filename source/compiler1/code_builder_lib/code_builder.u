@@ -16,12 +16,13 @@ fn ClearClassInternals( ClassTypePtr& class_type, NamesScopeMutPtr& dummy_class_
 	class_.typeinfo_src_type_.reset();
 }
 
-fn CodeBuilder::constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data_layout )
+fn CodeBuilder::constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data_layout, bool build_debug_info )
 	(
 		llvm_context_(llvm_context),
 		data_layout_(data_layout),
 		constexpr_function_evaluator_(data_layout),
 		global_things_stack_ptr_(GlobalThingsStack()),
+		build_debug_info_(build_debug_info)
 	)
 {
 	unsafe
