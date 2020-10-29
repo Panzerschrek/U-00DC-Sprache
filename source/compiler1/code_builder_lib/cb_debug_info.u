@@ -1,0 +1,123 @@
+import "code_builder.uh"
+
+namespace U1
+{
+
+fn CodeBuilder::CreateDIType( this, Type& t ) : LLVMMetadataRef
+{
+	if_var( &tt : t.GetFundamentalType() )
+	{
+		return CreateDITypeImpl( tt );
+	}
+
+	var ust::array_view_imut</char8/> stub_type_name= "_stub_debug_type";
+
+	unsafe
+	{
+		return LLVMDIBuilderCreateBasicType(
+			debug_info_.builder,
+			stub_type_name.front(), stub_type_name.size(),
+			8u,
+			LLVMDWARFTypeEncoding::unsigned,
+			0u );
+	}
+}
+
+fn CodeBuilder::CreateDITypeImpl( this, FundamentalType& t ) : LLVMMetadataRef
+{
+	auto type_name= GetFundamentalTypeName( t.fundamental_type );
+
+	var LLVMDWARFTypeEncoding mut encoding= LLVMDWARFTypeEncoding::unsigned;
+	if( t.fundamental_type == U_FundamentalType::bool_ ){  encoding= LLVMDWARFTypeEncoding::boolean;        }
+	else if( IsFloatingPoint( t.fundamental_type )     ){  encoding= LLVMDWARFTypeEncoding::float;          }
+	else if( IsChar( t.fundamental_type )              ){  encoding= LLVMDWARFTypeEncoding::unsigned_char;  }
+	else if( IsSignedInteger( t.fundamental_type )     ){  encoding= LLVMDWARFTypeEncoding::signed;         }
+	else if( IsUnsignedInteger( t.fundamental_type )   ){  encoding= LLVMDWARFTypeEncoding::unsigned;       }
+
+	unsafe
+	{
+		return LLVMDIBuilderCreateBasicType(
+			debug_info_.builder,
+			type_name.front(), type_name.size(),
+			u32( t.GetSize() * 8s ),
+			encoding,
+			0u );
+	}
+}
+
+fn CodeBuilder::CreateDITypeImpl( this, ArrayType& t ) : LLVMMetadataRef
+{
+	// TODO
+	return LLVMMetadataRef::Null;
+}
+
+fn CodeBuilder::CreateDITypeImpl( this, TupleType& t ) : LLVMMetadataRef
+{
+	// TODO
+	return LLVMMetadataRef::Null;
+}
+
+fn CodeBuilder::CreateDITypeImpl( this, FunctionType& t ) : LLVMMetadataRef
+{
+	var ust::vector</LLVMMetadataRef/> mut di_types;
+	{
+		auto mut di_type= CreateDIType( t.return_type );
+		if( t.return_value_is_reference )
+		{
+			// TODO
+			/*
+			unsafe
+			{
+				di_type= LLVMDIBuilderCreatePointerType(
+					debug_info_.builder,
+					di_type,
+					size,
+					align,
+					space,
+					"\0"c8, 0s );
+			}
+			*/
+		}
+
+		di_types.push_back( di_type );
+	}
+
+	foreach( &param : t.params )
+	{
+		auto mut di_type= CreateDIType( param.t );
+		if( param.is_reference )
+		{
+			// TODO
+		}
+		di_types.push_back( di_type );
+	}
+
+	unsafe
+	{
+		return LLVMDIBuilderCreateSubroutineType(
+			debug_info_.builder,
+			debug_info_.source_file_entries.front(),
+			cast_imut(di_types).front_unsafe(), u32( di_types.size() ),
+			LLVMDIFlags(0) );
+	}
+}
+
+fn CodeBuilder::CreateDITypeImpl( this, FunctionPointerType& t ) : LLVMMetadataRef
+{
+	// TODO
+	return LLVMMetadataRef::Null;
+}
+
+fn CodeBuilder::CreateDITypeImpl( this, ClassTypePtr& t ) : LLVMMetadataRef
+{
+	// TODO
+	return LLVMMetadataRef::Null;
+}
+
+fn CodeBuilder::CreateDITypeImpl( this, EnumTypePtr& t ) : LLVMMetadataRef
+{
+	// TODO
+	return LLVMMetadataRef::Null;
+}
+
+} // namespace U1

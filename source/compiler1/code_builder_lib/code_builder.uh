@@ -552,6 +552,16 @@ private:
 	fn BuildTypeinfoClassParentsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : Variable;
 	fn BuildTypeinfoEnumElementsList( mut this, NamesScopePtr& root_namespace, EnumTypePtr& enum_type ) : Variable;
 
+	// Debug info
+	fn CreateDIType( this, Type& t ) : LLVMMetadataRef;
+	fn CreateDITypeImpl( this, FundamentalType& t ) : LLVMMetadataRef;
+	fn CreateDITypeImpl( this, ArrayType& t ) : LLVMMetadataRef;
+	fn CreateDITypeImpl( this, TupleType& t ) : LLVMMetadataRef;
+	fn CreateDITypeImpl( this, FunctionType& t ) : LLVMMetadataRef;
+	fn CreateDITypeImpl( this, FunctionPointerType& t ) : LLVMMetadataRef;
+	fn CreateDITypeImpl( this, ClassTypePtr& t ) : LLVMMetadataRef;
+	fn CreateDITypeImpl( this, EnumTypePtr& t ) : LLVMMetadataRef;
+
 	// Virtual stuff
 	fn PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr );
 	fn PrepareClassVirtualTableType( this, ClassTypePtr& class_type_ptr );
