@@ -454,6 +454,8 @@ fn nomangle LLVMDIBuilderCreateDebugLocation(
 	LLVMMetadataRef Scope,
 	LLVMMetadataRef InlinedAt) unsafe : LLVMMetadataRef;
 
+fn nomangle LLVMDIBuilderCreateExpression(LLVMDIBuilderRef Builder, i64& Addr, size_type Length) unsafe : LLVMMetadataRef;
+
 fn nomangle LLVMDIBuilderCreateBasicType(
 	LLVMDIBuilderRef Builder,
 	NullTerminatedString& Name, size_type NameLen,

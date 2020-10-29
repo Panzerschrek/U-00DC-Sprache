@@ -1505,6 +1505,8 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 					}
 				}
 
+				CreateVariableDebugInfo( function_context, out_arg, in_param.name, in_param.file_pos );
+
 				out_arg.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, in_param.name );
 				if( type_arg.t.GetInnerReferenceKind() != InnerReferenceKind::None )
 				{

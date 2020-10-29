@@ -58,6 +58,43 @@ fn CodeBuilder::SetCurrentDebugLocation( this, FunctionContext& function_context
 	}
 }
 
+fn CodeBuilder::CreateVariableDebugInfo( this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, FilePos& file_pos )
+{
+	if( !build_debug_info_ )
+	{
+		return;
+	}
+
+	unsafe
+	{
+		auto di_variable= LLVMDIBuilderCreateAutoVariable(
+			debug_info_.builder,
+			function_context.current_debug_info_scope,
+			name.front_unsafe(), name.size(),
+			debug_info_.source_file_entries[ file_pos.GetFileIndex() ],
+			file_pos.GetLine(),
+			CreateDIType( variable.t ),
+			LLVMBool::False, // AlwaysPreserve
+			LLVMDIFlags(0),
+			0u /* TODO - set alignment */ );
+
+		auto debug_location= LLVMDIBuilderCreateDebugLocation(
+			llvm_context_,
+			file_pos.GetLine(),
+			file_pos.GetColumn(),
+			function_context.current_debug_info_scope,
+			LLVMMetadataRef::Null );
+
+		LLVMDIBuilderInsertDeclareAtEnd(
+			debug_info_.builder,
+			variable.llvm_value,
+			di_variable,
+			LLVMDIBuilderCreateExpression( debug_info_.builder, 0i64, 0s ),
+			debug_location,
+			LLVMGetInsertBlock(function_context.llvm_ir_builder) );
+	}
+}
+
 fn CodeBuilder::CreateDIType( this, Type& t ) : LLVMMetadataRef
 {
 	if_var( &tt : t.GetFundamentalType() )
