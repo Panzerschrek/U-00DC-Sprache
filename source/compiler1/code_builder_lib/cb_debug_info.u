@@ -3,9 +3,68 @@ import "code_builder.uh"
 namespace U1
 {
 
+fn CodeBuilder::CreateFunctionDebugInfo( this, FunctionVariable& func_variable )
+{
+	if( !build_debug_info_ )
+	{
+		return;
+	}
+
+	var Synt::Function& syntax_element= func_variable.body_syntax_element.get_ref();
+	var FilePos& file_pos= syntax_element.file_pos;
+	var ust::string8& name= syntax_element.name.back();
+
+	unsafe
+	{
+		var size_type mut linkage_name_size= 0s;
+		var char8& linkage_name_start= LLVMGetValueName2( func_variable.llvm_function, linkage_name_size );
+
+		var LLVMMetadataRef file= debug_info_.source_file_entries[ file_pos.GetFileIndex() ];
+
+		auto di_function= LLVMDIBuilderCreateFunction(
+			debug_info_.builder,
+			file,
+			name.front_unsafe(), name.size(),
+			linkage_name_start, linkage_name_size,
+			file,
+			file_pos.GetLine(),
+			CreateDIType( func_variable.t ),
+			LLVMBool::False, // IsLocalToUnit
+			LLVMBool::True, // IsDefinition
+			file_pos.GetLine(),
+			LLVMDIFlags(0),
+			LLVMBool::False /* TODO - pass optimized flag*/ );
+
+		LLVMSetSubprogram( func_variable.llvm_function, di_function );
+	}
+}
+
+fn CodeBuilder::SetCurrentDebugLocation( this, FunctionContext& function_context, FilePos& file_pos )
+{
+	if( !build_debug_info_ )
+	{
+		return;
+	}
+
+	unsafe
+	{
+		auto debug_location= LLVMDIBuilderCreateDebugLocation(
+			llvm_context_,
+			file_pos.GetLine(),
+			file_pos.GetColumn(),
+			function_context.current_debug_info_scope,
+			LLVMMetadataRef::Null );
+		LLVMSetCurrentDebugLocation2( function_context.llvm_ir_builder, debug_location );
+	}
+}
+
 fn CodeBuilder::CreateDIType( this, Type& t ) : LLVMMetadataRef
 {
 	if_var( &tt : t.GetFundamentalType() )
+	{
+		return CreateDITypeImpl( tt );
+	}
+	if_var( &tt : t.GetFunctionType() )
 	{
 		return CreateDITypeImpl( tt );
 	}
@@ -38,7 +97,7 @@ fn CodeBuilder::CreateDITypeImpl( this, FundamentalType& t ) : LLVMMetadataRef
 	{
 		return LLVMDIBuilderCreateBasicType(
 			debug_info_.builder,
-			type_name.front(), type_name.size(),
+			type_name.front_unsafe(), type_name.size(),
 			u32( t.GetSize() * 8s ),
 			encoding,
 			0u );

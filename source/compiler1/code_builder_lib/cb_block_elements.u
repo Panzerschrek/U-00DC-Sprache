@@ -46,6 +46,19 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 		variant_visit( &el : block_element )
 		{
+			static_if( ust::is_same_type</ typeof(el), ust::box</Synt::Block/> />() )
+			{
+				SetCurrentDebugLocation( function_context, el.get_ref().file_pos );
+			}
+			else if( ust::is_same_type</ typeof(el), Synt::Expression />() )
+			{
+				SetCurrentDebugLocation( function_context, Synt::GetFilePos(el) );
+			}
+			else
+			{
+				SetCurrentDebugLocation( function_context, el.file_pos );
+			}
+
 			auto info = BuildBlockElement( block_names_scope, function_context, el );
 			block_element_build_info.have_terminal_instruction_inside |= info.have_terminal_instruction_inside;
 		}

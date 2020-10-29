@@ -1389,6 +1389,8 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 
 	SetupLLVMFunctionAttributes( names_scope.lock_imut().get_ref(), func_variable );
 
+	CreateFunctionDebugInfo( func_variable );
+
 	var FunctionContext mut function_context_value(
 		llvm_context_,
 		func_variable.llvm_function,

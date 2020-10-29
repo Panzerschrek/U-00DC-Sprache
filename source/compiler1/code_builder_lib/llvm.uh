@@ -445,6 +445,15 @@ fn nomangle LLVMDIBuilderCreateFunction(
 	LLVMDIFlags Flags,
 	LLVMBool IsOptimized) unsafe : LLVMMetadataRef;
 
+fn nomangle LLVMSetSubprogram(LLVMValueRef Func, LLVMMetadataRef SP) unsafe;
+
+fn nomangle LLVMDIBuilderCreateDebugLocation(
+	LLVMContextRef Ctx,
+	u32 Line,
+	u32 Column,
+	LLVMMetadataRef Scope,
+	LLVMMetadataRef InlinedAt) unsafe : LLVMMetadataRef;
+
 fn nomangle LLVMDIBuilderCreateBasicType(
 	LLVMDIBuilderRef Builder,
 	NullTerminatedString& Name, size_type NameLen,

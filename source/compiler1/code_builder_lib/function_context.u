@@ -21,6 +21,8 @@ fn FunctionContext::constructor(
 		function_basic_block= LLVMAppendBasicBlockInContext( llvm_context, llvm_function, "func_code\0"[0] );
 		llvm_ir_builder= LLVMCreateBuilderInContext( llvm_context );
 		LLVMPositionBuilderAtEnd( llvm_ir_builder, function_basic_block );
+
+		current_debug_info_scope= LLVMGetSubprogram( llvm_function );
 	}
 }
 
