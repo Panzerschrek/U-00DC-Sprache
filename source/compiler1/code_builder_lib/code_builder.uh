@@ -557,6 +557,7 @@ private:
 	fn CreateFunctionDebugInfo( this, FunctionVariable& func_variable );
 	fn SetCurrentDebugLocation( this, FunctionContext& function_context, FilePos& file_pos );
 	fn CreateVariableDebugInfo( this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, FilePos& file_pos );
+	fn CreateReferenceVariableDebugInfo( this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, FilePos& file_pos );
 
 	fn CreateDIType( this, Type& t ) : LLVMMetadataRef;
 	fn CreateDITypeImpl( this, FundamentalType& t ) : LLVMMetadataRef;

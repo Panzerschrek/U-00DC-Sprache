@@ -209,6 +209,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 
 			out_variable.llvm_value= CreateReferenceCast( expression_result.llvm_value, expression_result.t, t, function_context );
 			out_variable.constexpr_value= expression_result.constexpr_value;
+
+			CreateReferenceVariableDebugInfo( function_context, out_variable, variable_declaration.name, variable_declaration.file_pos );
 		}
 		else{ halt; }
 
@@ -306,6 +308,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		}
 
 		out_variable.llvm_value= expr.llvm_value;
+
+		CreateReferenceVariableDebugInfo( function_context, out_variable, auto_variable_declaration.name, auto_variable_declaration.file_pos );
 	}
 	else if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 	{
@@ -1072,6 +1076,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				}
 
 				variable.llvm_value= src_element_llvm_value;
+
+				CreateReferenceVariableDebugInfo( function_context, variable, range_for_operator.loop_variable_name, range_for_operator.file_pos );
 			}
 			else if( range_for_operator.reference_modifier == Synt::ReferenceModifier::None )
 			{
@@ -1403,6 +1409,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		{
 			out_variable.llvm_value= expr.llvm_value;
 		}
+
+		CreateReferenceVariableDebugInfo( function_context, out_variable, with_operator.variable_name, with_operator.file_pos );
 
 		if( expr.node_id != ReferencesGraph::c_empty_node_id )
 		{

@@ -1461,6 +1461,8 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 					out_arg.llvm_value= arg_value;
 				}
 
+				CreateReferenceVariableDebugInfo( function_context, out_arg, in_param.name, in_param.file_pos );
+
 				// Create variable node and reference node for it.
 				var ReferencesGraph::NodeId variable_node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, in_param.name + " variable" );
 
