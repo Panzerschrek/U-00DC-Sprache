@@ -1,3 +1,4 @@
+import "/string_conversions.u"
 import "code_builder.uh"
 
 namespace U1
@@ -97,13 +98,20 @@ fn CodeBuilder::CreateVariableDebugInfo( this, FunctionContext& function_context
 
 fn CodeBuilder::CreateDIType( this, Type& t ) : LLVMMetadataRef
 {
-	if_var( &tt : t.GetFundamentalType() )
+	if( IsTypeComplete( t ) )
 	{
-		return CreateDITypeImpl( tt );
-	}
-	if_var( &tt : t.GetFunctionType() )
-	{
-		return CreateDITypeImpl( tt );
+		if_var( &tt : t.GetFundamentalType() )
+		{
+			return CreateDITypeImpl( tt );
+		}
+		if_var( &tt : t.GetFunctionType() )
+		{
+			return CreateDITypeImpl( tt );
+		}
+		if_var( &tt : t.GetTupleType() )
+		{
+			return CreateDITypeImpl( tt );
+		}
 	}
 
 	var ust::array_view_imut</char8/> stub_type_name= "_stub_debug_type";
@@ -149,8 +157,53 @@ fn CodeBuilder::CreateDITypeImpl( this, ArrayType& t ) : LLVMMetadataRef
 
 fn CodeBuilder::CreateDITypeImpl( this, TupleType& t ) : LLVMMetadataRef
 {
-	// TODO
-	return LLVMMetadataRef::Null;
+	var ust::vector</LLVMMetadataRef/> mut elements;
+
+	auto di_file= debug_info_.source_file_entries.front();
+
+	for( auto mut i= 0s; i < t.element_types.size(); ++i )
+	{
+		var ust::string8 name= ust::to_string8(i);
+		var Type& element_type= t.element_types[i];
+		var LLVMMetadataRef element_di_type= CreateDIType( element_type );
+		var LLVMTypeRef llvm_element_type= element_type.GetLLVMType();
+
+		unsafe
+		{
+			elements.push_back(
+				LLVMDIBuilderCreateMemberType(
+					debug_info_.builder,
+					di_file,
+					name.front_unsafe(), name.size(),
+					di_file,
+					0u, // Line
+					LLVMABISizeOfType( data_layout_, llvm_element_type ) * 8u64,
+					LLVMABIAlignmentOfType( data_layout_, llvm_element_type ) * 8u32,
+					LLVMOffsetOfElement( data_layout_, t.llvm_type, u32(i) ) * 8u64,
+					LLVMDIFlags(0),
+					element_di_type) );
+		}
+	}
+
+	var ust::string8 name= Type(t).ToString();
+
+	unsafe
+	{
+		return LLVMDIBuilderCreateStructType(
+			debug_info_.builder,
+			di_file,
+			name.front_unsafe(), name.size(),
+			di_file,
+			0u, // Line
+			LLVMABISizeOfType( data_layout_, t.llvm_type ) * 8u64,
+			LLVMABIAlignmentOfType( data_layout_, t.llvm_type ) * 8u32,
+			LLVMDIFlags(0),
+			LLVMMetadataRef::Null, // DerivedFrom
+			cast_imut(elements).front_unsafe(), u32(elements.size()),
+			0u, // RuntimeLang
+			LLVMMetadataRef::Null,// VTableHolder
+			"\0"c8, 0s);
+	}
 }
 
 fn CodeBuilder::CreateDITypeImpl( this, FunctionType& t ) : LLVMMetadataRef

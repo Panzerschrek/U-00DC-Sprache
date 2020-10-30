@@ -680,6 +680,7 @@ private:
 		FilePos& file_pos );
 
 	// Returns "false" if not complete.
+	fn IsTypeComplete( this, Type& t ) : bool;
 	fn EnsureTypeComplete( mut this, Type& t ) : bool;
 
 	fn IsDefaultConstructor( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool;

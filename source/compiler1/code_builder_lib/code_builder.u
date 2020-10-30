@@ -1941,6 +1941,29 @@ fn CodeBuilder::SetupReferencesInCopyOrMove(
 	}
 }
 
+fn CodeBuilder::IsTypeComplete( this, Type& t ) : bool
+{
+	if_var( &class_type_ptr : t.GetClassType() )
+	{
+		return class_type_ptr.lock_imut().get_ref().is_complete;
+	}
+	if_var( &array_type : t.GetArrayType() )
+	{
+		return IsTypeComplete( array_type.element_type );
+	}
+	if_var( &tuple_type : t.GetTupleType() )
+	{
+		var bool mut complete= true;
+		foreach( &element_type : tuple_type.element_types )
+		{
+			complete&= IsTypeComplete( element_type );
+		}
+		return complete;
+	}
+
+	return true;
+}
+
 fn CodeBuilder::EnsureTypeComplete( mut this, Type& t ) : bool
 {
 	if_var( &class_type_ptr : t.GetClassType() )
