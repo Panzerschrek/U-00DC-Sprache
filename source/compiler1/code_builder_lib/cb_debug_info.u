@@ -112,6 +112,10 @@ fn CodeBuilder::CreateDIType( this, Type& t ) : LLVMMetadataRef
 		{
 			return CreateDITypeImpl( tt );
 		}
+		if_var( &tt : t.GetArrayType() )
+		{
+			return CreateDITypeImpl( tt );
+		}
 		if_var( &tt : t.GetTupleType() )
 		{
 			return CreateDITypeImpl( tt );
@@ -159,8 +163,15 @@ fn CodeBuilder::CreateDITypeImpl( this, FundamentalType& t ) : LLVMMetadataRef
 
 fn CodeBuilder::CreateDITypeImpl( this, ArrayType& t ) : LLVMMetadataRef
 {
-	// TODO
-	return LLVMMetadataRef::Null;
+	unsafe
+	{
+		return LLVMDIBuilderCreateArrayType(
+			debug_info_.builder,
+			u32( LLVMABISizeOfType( data_layout_, t.llvm_type ) ) * 8u,
+			LLVMABIAlignmentOfType( data_layout_, t.llvm_type ) * 8u,
+			CreateDIType( t.element_type ),
+			LLVMDIBuilderGetOrCreateSubrange( debug_info_.builder, 0i64, i64(t.element_count) ), 1u );
+	}
 }
 
 fn CodeBuilder::CreateDITypeImpl( this, TupleType& t ) : LLVMMetadataRef

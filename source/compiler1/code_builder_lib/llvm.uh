@@ -520,6 +520,8 @@ fn nomangle LLVMDIBuilderCreateClassType(
 	LLVMMetadataRef TemplateParamsNode,
 	NullTerminatedString& UniqueIdentifier, size_type UniqueIdentifierLen) unsafe : LLVMMetadataRef;
 
+fn nomangle LLVMDIBuilderGetOrCreateSubrange(LLVMDIBuilderRef Builder, i64 LowerBound, i64 Count) unsafe : LLVMMetadataRef;
+
 fn nomangle LLVMDIBuilderCreateArrayType(
 	LLVMDIBuilderRef Builder,
 	u32 Size,
