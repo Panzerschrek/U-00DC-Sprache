@@ -108,6 +108,10 @@ fn CodeBuilder::CreateDIType( this, Type& t ) : LLVMMetadataRef
 		{
 			return CreateDITypeImpl( tt );
 		}
+		if_var( &tt : t.GetFunctionPointerType() )
+		{
+			return CreateDITypeImpl( tt );
+		}
 		if_var( &tt : t.GetTupleType() )
 		{
 			return CreateDITypeImpl( tt );
@@ -213,19 +217,17 @@ fn CodeBuilder::CreateDITypeImpl( this, FunctionType& t ) : LLVMMetadataRef
 		auto mut di_type= CreateDIType( t.return_type );
 		if( t.return_value_is_reference )
 		{
-			// TODO
-			/*
 			unsafe
 			{
+				auto pointer_llvm_type= LLVMPointerType( t.return_type.GetLLVMType(), 0u );
 				di_type= LLVMDIBuilderCreatePointerType(
 					debug_info_.builder,
 					di_type,
-					size,
-					align,
-					space,
+					LLVMABISizeOfType( data_layout_, pointer_llvm_type ) * 8u64,
+					LLVMABIAlignmentOfType( data_layout_, pointer_llvm_type ) * 8u32,
+					0u, // address space
 					"\0"c8, 0s );
 			}
-			*/
 		}
 
 		di_types.push_back( di_type );
@@ -236,7 +238,17 @@ fn CodeBuilder::CreateDITypeImpl( this, FunctionType& t ) : LLVMMetadataRef
 		auto mut di_type= CreateDIType( param.t );
 		if( param.is_reference )
 		{
-			// TODO
+			unsafe
+			{
+				auto pointer_llvm_type= LLVMPointerType( param.t.GetLLVMType(), 0u );
+				di_type= LLVMDIBuilderCreatePointerType(
+					debug_info_.builder,
+					di_type,
+					LLVMABISizeOfType( data_layout_, pointer_llvm_type ) * 8u64,
+					LLVMABIAlignmentOfType( data_layout_, pointer_llvm_type ) * 8u32,
+					0u, // address space
+					"\0"c8, 0s );
+			}
 		}
 		di_types.push_back( di_type );
 	}
@@ -253,8 +265,16 @@ fn CodeBuilder::CreateDITypeImpl( this, FunctionType& t ) : LLVMMetadataRef
 
 fn CodeBuilder::CreateDITypeImpl( this, FunctionPointerType& t ) : LLVMMetadataRef
 {
-	// TODO
-	return LLVMMetadataRef::Null;
+	unsafe
+	{
+		return LLVMDIBuilderCreatePointerType(
+			debug_info_.builder,
+			CreateDITypeImpl( t.function_type ),
+			LLVMABISizeOfType( data_layout_, t.llvm_type ) * 8u64,
+			LLVMABIAlignmentOfType( data_layout_, t.llvm_type ) * 8u32,
+			0u, // address space
+			"\0"c8, 0s );
+	}
 }
 
 fn CodeBuilder::CreateDITypeImpl( this, ClassTypePtr& t ) : LLVMMetadataRef
