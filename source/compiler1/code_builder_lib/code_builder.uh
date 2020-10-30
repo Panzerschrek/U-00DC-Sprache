@@ -555,7 +555,11 @@ private:
 	// Debug info
 
 	fn CreateFunctionDebugInfo( this, FunctionVariable& func_variable );
+
 	fn SetCurrentDebugLocation( this, FunctionContext& function_context, FilePos& file_pos );
+	fn DebugInfoStartBlock( this, FunctionContext &mut function_context, FilePos& file_pos ) : LLVMMetadataRef;
+	fn DebugInfoEndBlock( this, FunctionContext &mut function_context, LLVMMetadataRef prev_block );
+
 	fn CreateVariableDebugInfo( this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, FilePos& file_pos );
 	fn CreateReferenceVariableDebugInfo( this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, FilePos& file_pos );
 

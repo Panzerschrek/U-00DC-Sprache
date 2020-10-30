@@ -36,6 +36,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		function_context.have_non_constexpr_operations_inside= true; // Unsafe operations can not be used in constexpr functions.
 	}
 
+	auto prev_debug_info_block= DebugInfoStartBlock( function_context, block.file_pos );
+
 	var BlockElementBuildInfo mut block_element_build_info;
 	foreach( &block_element : block.elements )
 	{
@@ -68,6 +70,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	{
 		CallDestructorsForTopVariablesFrame( names_scope, function_context, block.end_file_pos );
 	}
+
+	DebugInfoEndBlock( function_context, prev_debug_info_block );
 
 	function_context.is_in_unsafe_block= prev_safety;
 

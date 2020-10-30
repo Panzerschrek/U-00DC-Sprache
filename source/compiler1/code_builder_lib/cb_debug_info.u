@@ -59,6 +59,39 @@ fn CodeBuilder::SetCurrentDebugLocation( this, FunctionContext& function_context
 	}
 }
 
+fn CodeBuilder::DebugInfoStartBlock( this, FunctionContext &mut function_context, FilePos& file_pos ) : LLVMMetadataRef
+{
+	if( !build_debug_info_ )
+	{
+		return LLVMMetadataRef::Null;
+	}
+
+	auto prev= function_context.current_debug_info_scope;
+	unsafe
+	{
+		function_context.current_debug_info_scope= LLVMDIBuilderCreateLexicalBlock(
+			debug_info_.builder,
+			function_context.current_debug_info_scope,
+			debug_info_.source_file_entries[ file_pos.GetFileIndex() ],
+			file_pos.GetLine(),
+			file_pos.GetColumn() );
+	}
+	return prev;
+}
+
+fn CodeBuilder::DebugInfoEndBlock( this, FunctionContext &mut function_context, LLVMMetadataRef prev_block )
+{
+	if( !build_debug_info_ )
+	{
+		return;
+	}
+
+	unsafe
+	{
+		function_context.current_debug_info_scope= prev_block;
+	}
+}
+
 fn CodeBuilder::CreateVariableDebugInfo( this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, FilePos& file_pos )
 {
 	if( !build_debug_info_ )
