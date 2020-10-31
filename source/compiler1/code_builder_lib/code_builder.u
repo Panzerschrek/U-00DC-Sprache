@@ -1949,6 +1949,10 @@ fn CodeBuilder::IsTypeComplete( this, Type& t ) : bool
 	{
 		return class_type_ptr.lock_imut().get_ref().is_complete;
 	}
+	if_var( &enum_type_ptr : t.GetEnumType() )
+	{
+		return enum_type_ptr.lock_imut().get_ref().underlaying_type.llvm_type != LLVMTypeRef::Null;
+	}
 	if_var( &array_type : t.GetArrayType() )
 	{
 		return IsTypeComplete( array_type.element_type );
@@ -1975,6 +1979,13 @@ fn CodeBuilder::EnsureTypeComplete( mut this, Type& t ) : bool
 
 		BuildClass( class_parent_scope, class_type_ptr );
 		return class_type_ptr.lock_imut().get_ref().is_complete;
+	}
+	if_var( &enum_type_ptr : t.GetEnumType() )
+	{
+		auto enum_parent_scope= ust::to_non_nullable( enum_type_ptr.lock_imut().get_ref().names_scope.lock_imut().get_ref().GetParent() );
+		BuildEnum( enum_parent_scope, enum_type_ptr );
+
+		return enum_type_ptr.lock_imut().get_ref().underlaying_type.llvm_type != LLVMTypeRef::Null;
 	}
 	if_var( &array_type : t.GetArrayType() )
 	{
