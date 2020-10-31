@@ -206,6 +206,10 @@ fn CodeBuilder::CreateDIType( this, Type& t ) : LLVMMetadataRef
 		{
 			return CreateDITypeImpl( tt );
 		}
+		if_var( &tt : t.GetEnumType() )
+		{
+			return CreateDITypeImpl( tt );
+		}
 	}
 
 	var ust::array_view_imut</char8/> stub_type_name= "_stub_debug_type";
@@ -479,8 +483,46 @@ fn CodeBuilder::CreateDITypeImpl( this, ClassTypePtr& t ) : LLVMMetadataRef
 
 fn CodeBuilder::CreateDITypeImpl( this, EnumTypePtr& t ) : LLVMMetadataRef
 {
-	// TODO
-	return LLVMMetadataRef::Null;
+	auto enum_lock= t.lock_imut();
+	var Enum& enum_= enum_lock.get_ref();
+
+	var bool is_unsigned= IsUnsignedInteger( enum_.underlaying_type.fundamental_type );
+
+	var ust::vector</LLVMMetadataRef/> mut elements;
+	foreach( &element_pair : enum_.elements )
+	{
+		var ust::string8& name= element_pair.key();
+		unsafe
+		{
+			var LLVMValueRef constexpr_value= element_pair.value().constexpr_value;
+
+			elements.push_back(
+				LLVMDIBuilderCreateEnumerator(
+					debug_info_.builder,
+					name.front_unsafe(), name.size(),
+					select( is_unsigned ? i64(LLVMConstIntGetZExtValue(constexpr_value)) : LLVMConstIntGetSExtValue(constexpr_value) ),
+					select( is_unsigned ? LLVMBool::True : LLVMBool::False ) ) );
+		}
+	}
+
+	var FilePos& file_pos= enum_.syntax_element.get_ref().file_pos;
+	auto di_file= debug_info_.source_file_entries[ file_pos.GetFileIndex() ];
+
+	var ust::string8 name= Type(t).ToString();
+
+	unsafe
+	{
+		return LLVMDIBuilderCreateEnumerationType(
+			debug_info_.builder,
+			di_file,
+			name.front_unsafe(), name.size(),
+			di_file,
+			file_pos.GetLine(),
+			LLVMABISizeOfType( data_layout_, enum_.underlaying_type.llvm_type ) * 8u64,
+			LLVMABIAlignmentOfType( data_layout_, enum_.underlaying_type.llvm_type ) * 8u32,
+			cast_imut(elements).front_unsafe(), u32(elements.size()),
+			CreateDITypeImpl(enum_.underlaying_type) );
+	}
 }
 
 } // namespace U1
