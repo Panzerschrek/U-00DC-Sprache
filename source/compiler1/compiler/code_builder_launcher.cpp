@@ -124,6 +124,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 			StringToStringView(input_file),
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout ),
+			generate_debug_info,
 			SourceFilePathProcessingFunction,
 			reinterpret_cast<UserHandle>(&result.dependent_files),
 			LexSyntErrorProcessingFunction,

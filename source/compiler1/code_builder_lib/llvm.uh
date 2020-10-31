@@ -19,6 +19,8 @@ DefineLLVMRef LLVMBasicBlockRef
 DefineLLVMRef LLVMTargetDataRef // Actually this is DataLayout
 DefineLLVMRef LLVMAttributeRef
 DefineLLVMRef LLVMComdatRef
+DefineLLVMRef LLVMDIBuilderRef
+DefineLLVMRef LLVMMetadataRef
 
 type NullTerminatedString= char8;
 
@@ -133,11 +135,35 @@ enum LLVMComdatSelectionKind : u32
 	SameSize ///< The data referenced by the COMDAT must be the same size.
 }
 
+type LLVMDWARFSourceLanguage= u32;
+type LLVMDIFlags= u32;
+
+enum LLVMDWARFTypeEncoding : u32
+{
+	none,
+	address,
+	boolean,
+	complex_float,
+	float,
+	signed,
+	signed_char,
+	unsigned,
+	unsigned_char,
+}
+static_assert( i32(LLVMDWARFTypeEncoding::unsigned_char) == 0x08 );
+
+enum LLVMDWARFEmissionKind : u32
+{
+	None,
+	Full,
+	LineTablesOnly
+}
+
 // Functions
 
 // Context
 fn nomangle LLVMContextCreate() unsafe : LLVMContextRef;
-fn nomangle LLVMContextDispose(LLVMContextRef C);
+fn nomangle LLVMContextDispose(LLVMContextRef C) unsafe;
 
 // Module
 fn nomangle LLVMModuleCreateWithNameInContext(NullTerminatedString& ModuleID, LLVMContextRef C) unsafe : LLVMModuleRef;
@@ -190,7 +216,7 @@ fn nomangle LLVMGetTypeKind(LLVMTypeRef Ty) unsafe : LLVMTypeKind;
 // Value
 
 fn nomangle LLVMTypeOf(LLVMValueRef Val) unsafe : LLVMTypeRef;
-fn nomangle LLVMGetValueName2(LLVMValueRef Val, size_type &mut Length) : char8&;
+fn nomangle LLVMGetValueName2(LLVMValueRef Val, size_type &mut Length) unsafe : char8&;
 fn nomangle LLVMSetValueName2(LLVMValueRef Val, char8& Name, size_type NameLen) unsafe;
 fn nomangle LLVMConstIntGetZExtValue(LLVMValueRef ConstantVal) unsafe : u64;
 fn nomangle LLVMConstIntGetSExtValue(LLVMValueRef ConstantVal) unsafe : i64;
@@ -250,6 +276,8 @@ fn nomangle LLVMGetInsertBlock(LLVMBuilderRef Builder) unsafe : LLVMBasicBlockRe
 
 fn nomangle LLVMPositionBuilderAtEnd(LLVMBuilderRef Builder, LLVMBasicBlockRef Block) unsafe;
 fn nomangle LLVMInsertExistingBasicBlockAfterInsertBlock(LLVMBuilderRef Builder, LLVMBasicBlockRef BB) unsafe;
+
+fn nomangle LLVMSetCurrentDebugLocation2(LLVMBuilderRef Builder, LLVMMetadataRef Loc) unsafe;
 
 // Constants
 fn nomangle LLVMConstInt(LLVMTypeRef IntTy, u64 N, LLVMBool SignExtend) unsafe : LLVMValueRef;
@@ -348,4 +376,172 @@ fn nomangle LLVMBuildMemCpy(
 fn nomangle LLVMCreateEnumAttribute(LLVMContextRef C, u32 KindID, u64 Val) unsafe : LLVMAttributeRef;
 fn nomangle LLVMGetEnumAttributeKindForName(char8& Name, size_type SLen) unsafe : u32;
 
-fn nomangle LLVMAddAttributeAtIndex(LLVMValueRef F, LLVMAttributeIndex Idx, LLVMAttributeRef A);
+fn nomangle LLVMAddAttributeAtIndex(LLVMValueRef F, LLVMAttributeIndex Idx, LLVMAttributeRef A) unsafe;
+
+// Debug info
+fn nomangle LLVMCreateDIBuilder(LLVMModuleRef M) unsafe : LLVMDIBuilderRef;
+fn nomangle LLVMDIBuilderFinalize(LLVMDIBuilderRef Builder) unsafe;
+fn nomangle LLVMDisposeDIBuilder(LLVMDIBuilderRef Builder) unsafe;
+
+fn nomangle LLVMDIBuilderCreateFile(
+	LLVMDIBuilderRef Builder,
+	NullTerminatedString& Filename, size_type FilenameLen,
+	NullTerminatedString& Directory, size_type DirectoryLen) unsafe : LLVMMetadataRef;
+
+fn nomangle LLVMDIBuilderCreateCompileUnit(
+	LLVMDIBuilderRef Builder,
+	LLVMDWARFSourceLanguage Lang,
+	LLVMMetadataRef FileRef,
+	NullTerminatedString& Producer, size_type ProducerLen,
+	LLVMBool isOptimized,
+	NullTerminatedString& Flags, size_type FlagsLen,
+	u32 RuntimeVer,
+	NullTerminatedString& SplitName, size_type SplitNameLen,
+	LLVMDWARFEmissionKind Kind,
+	u32 DWOId,
+	LLVMBool SplitDebugInlining,
+	LLVMBool DebugInfoForProfiling) unsafe : LLVMMetadataRef;
+
+fn nomangle LLVMDIBuilderCreateLexicalBlock(
+	LLVMDIBuilderRef Builder,
+	LLVMMetadataRef Scope,
+	LLVMMetadataRef File,
+	u32 Line,
+	u32 Column) unsafe : LLVMMetadataRef;
+
+fn nomangle LLVMDILocationGetScope(LLVMMetadataRef Location) unsafe : LLVMMetadataRef;
+fn nomangle LLVMGetSubprogram(LLVMValueRef Func) unsafe : LLVMMetadataRef;
+
+fn nomangle LLVMDIBuilderCreateAutoVariable(
+	LLVMDIBuilderRef Builder,
+	LLVMMetadataRef Scope,
+	NullTerminatedString& Name, size_type NameLen,
+	LLVMMetadataRef File,
+	u32 LineNo,
+	LLVMMetadataRef Ty,
+	LLVMBool AlwaysPreserve,
+	LLVMDIFlags Flags,
+	u32 AlignInBits) unsafe : LLVMMetadataRef;
+
+fn nomangle LLVMDIBuilderInsertDeclareAtEnd(
+	LLVMDIBuilderRef Builder,
+	LLVMValueRef Storage,
+	LLVMMetadataRef VarInfo,
+	LLVMMetadataRef Expr,
+	LLVMMetadataRef DebugLoc,
+	LLVMBasicBlockRef Block) unsafe : LLVMValueRef;
+
+fn nomangle LLVMDIBuilderCreateFunction(
+	LLVMDIBuilderRef Builder,
+	LLVMMetadataRef Scope,
+	NullTerminatedString& Name, size_type NameLen,
+	NullTerminatedString& LinkageName, size_type LinkageNameLen,
+	LLVMMetadataRef File,
+	u32 LineNo,
+	LLVMMetadataRef Ty,
+	LLVMBool IsLocalToUnit,
+	LLVMBool IsDefinition,
+	u32 ScopeLine,
+	LLVMDIFlags Flags,
+	LLVMBool IsOptimized) unsafe : LLVMMetadataRef;
+
+fn nomangle LLVMSetSubprogram(LLVMValueRef Func, LLVMMetadataRef SP) unsafe;
+
+fn nomangle LLVMDIBuilderCreateDebugLocation(
+	LLVMContextRef Ctx,
+	u32 Line,
+	u32 Column,
+	LLVMMetadataRef Scope,
+	LLVMMetadataRef InlinedAt) unsafe : LLVMMetadataRef;
+
+fn nomangle LLVMDIBuilderCreateExpression(LLVMDIBuilderRef Builder, i64& Addr, size_type Length) unsafe : LLVMMetadataRef;
+
+fn nomangle LLVMDIBuilderCreateBasicType(
+	LLVMDIBuilderRef Builder,
+	NullTerminatedString& Name, size_type NameLen,
+	u32 SizeInBits,
+	LLVMDWARFTypeEncoding Encoding,
+	LLVMDIFlags Flags) unsafe : LLVMMetadataRef;
+
+fn nomangle LLVMDIBuilderCreatePointerType(
+	LLVMDIBuilderRef Builder,
+	LLVMMetadataRef PointeeTy,
+	u64 SizeInBits,
+	u32 AlignInBits,
+	u32 AddressSpace,
+	NullTerminatedString& Name, size_type NameLen) unsafe : LLVMMetadataRef;
+
+fn nomangle LLVMDIBuilderCreateSubroutineType(
+	LLVMDIBuilderRef Builder,
+	LLVMMetadataRef File,
+	LLVMMetadataRef& ParameterTypes, u32 NumParameterTypes,
+	LLVMDIFlags Flags) unsafe : LLVMMetadataRef;
+
+fn nomangle LLVMDIBuilderCreateStructType(
+	LLVMDIBuilderRef Builder,
+	LLVMMetadataRef Scope,
+	NullTerminatedString& Name, size_type NameLen,
+	LLVMMetadataRef File,
+	u32 LineNumber,
+	u64 SizeInBits,
+	u32 AlignInBits,
+	LLVMDIFlags Flags,
+	LLVMMetadataRef DerivedFrom,
+	LLVMMetadataRef& Elements, u32 NumElements,
+	u32 RunTimeLang,
+	LLVMMetadataRef VTableHolder,
+	NullTerminatedString& UniqueId, size_type UniqueIdLen) unsafe : LLVMMetadataRef;
+
+fn nomangle LLVMDIBuilderCreateMemberType(
+	LLVMDIBuilderRef Builder,
+	LLVMMetadataRef Scope,
+	NullTerminatedString& Name, size_type NameLen,
+	LLVMMetadataRef File,
+	u32 LineNo,
+	u64 SizeInBits,
+	u32 AlignInBits,
+	u64 OffsetInBits,
+	LLVMDIFlags Flags,
+	LLVMMetadataRef Ty) unsafe : LLVMMetadataRef;
+
+fn nomangle LLVMDIBuilderCreateClassType(
+	LLVMDIBuilderRef Builder,
+	LLVMMetadataRef Scope,
+	NullTerminatedString& Name, size_type NameLen,
+	LLVMMetadataRef File,
+	u32 LineNumber,
+	u64 SizeInBits,
+	u32 AlignInBits,
+	u64 OffsetInBits,
+	LLVMDIFlags Flags,
+	LLVMMetadataRef DerivedFrom,
+	LLVMMetadataRef& Elements, u32 NumElements,
+	LLVMMetadataRef VTableHolder,
+	LLVMMetadataRef TemplateParamsNode,
+	NullTerminatedString& UniqueIdentifier, size_type UniqueIdentifierLen) unsafe : LLVMMetadataRef;
+
+fn nomangle LLVMDIBuilderGetOrCreateSubrange(LLVMDIBuilderRef Builder, i64 LowerBound, i64 Count) unsafe : LLVMMetadataRef;
+
+fn nomangle LLVMDIBuilderCreateArrayType(
+	LLVMDIBuilderRef Builder,
+	u32 Size,
+	u32 AlignInBits,
+	LLVMMetadataRef Ty,
+	LLVMMetadataRef& Subscripts, u32 NumSubscripts) unsafe : LLVMMetadataRef;
+
+fn nomangle LLVMDIBuilderCreateEnumerator(
+	LLVMDIBuilderRef Builder,
+	NullTerminatedString& Name, size_type NameLen,
+	i64 Value,
+	LLVMBool IsUnsigned) unsafe : LLVMMetadataRef;
+
+fn nomangle LLVMDIBuilderCreateEnumerationType(
+	LLVMDIBuilderRef Builder,
+	LLVMMetadataRef Scope,
+	NullTerminatedString& Name, size_type NameLen,
+	LLVMMetadataRef File,
+	u32 LineNumber,
+	u64 SizeInBits,
+	u32 AlignInBits,
+	LLVMMetadataRef& Elements, u32 NumElements,
+	LLVMMetadataRef ClassTy) unsafe : LLVMMetadataRef;

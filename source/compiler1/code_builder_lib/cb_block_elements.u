@@ -36,6 +36,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		function_context.have_non_constexpr_operations_inside= true; // Unsafe operations can not be used in constexpr functions.
 	}
 
+	auto prev_debug_info_block= DebugInfoStartBlock( function_context, block.file_pos );
+
 	var BlockElementBuildInfo mut block_element_build_info;
 	foreach( &block_element : block.elements )
 	{
@@ -43,6 +45,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		{
 			REPORT_ERROR( UnreachableCode, block_names_scope, Synt::GetFilePos(block_element) )
 		}
+
+		SetCurrentDebugLocation( function_context, Synt::GetFilePos(block_element) );
 
 		variant_visit( &el : block_element )
 		{
@@ -55,6 +59,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	{
 		CallDestructorsForTopVariablesFrame( names_scope, function_context, block.end_file_pos );
 	}
+
+	DebugInfoEndBlock( function_context, prev_debug_info_block );
 
 	function_context.is_in_unsafe_block= prev_safety;
 
@@ -122,6 +128,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 				out_variable.llvm_value=
 					LLVMBuildAlloca( function_context.alloca_ir_builder, t.GetLLVMType(), (variable_declaration.name + "\0").front() );
 			}
+
+			CreateVariableDebugInfo( function_context, out_variable, variable_declaration.name, variable_declaration.file_pos );
 
 			if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
 			{
@@ -194,6 +202,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 
 			out_variable.llvm_value= CreateReferenceCast( expression_result.llvm_value, expression_result.t, t, function_context );
 			out_variable.constexpr_value= expression_result.constexpr_value;
+
+			CreateReferenceVariableDebugInfo( function_context, out_variable, variable_declaration.name, variable_declaration.file_pos );
 		}
 		else{ halt; }
 
@@ -291,6 +301,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		}
 
 		out_variable.llvm_value= expr.llvm_value;
+
+		CreateReferenceVariableDebugInfo( function_context, out_variable, auto_variable_declaration.name, auto_variable_declaration.file_pos );
 	}
 	else if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 	{
@@ -310,6 +322,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			out_variable.llvm_value=
 				LLVMBuildAlloca( function_context.alloca_ir_builder, out_variable.t.GetLLVMType(), (auto_variable_declaration.name + "\0").front() );
 		}
+
+		CreateVariableDebugInfo( function_context, out_variable, auto_variable_declaration.name, auto_variable_declaration.file_pos );
 
 		SetupReferencesInCopyOrMove( names_scope, function_context, out_variable.t, out_variable.node_id, expr.node_id, auto_variable_declaration.file_pos );
 
@@ -1055,6 +1069,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				}
 
 				variable.llvm_value= src_element_llvm_value;
+
+				CreateReferenceVariableDebugInfo( function_context, variable, range_for_operator.loop_variable_name, range_for_operator.file_pos );
 			}
 			else if( range_for_operator.reference_modifier == Synt::ReferenceModifier::None )
 			{
@@ -1063,6 +1079,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 					variable.llvm_value=
 						LLVMBuildAlloca( function_context.alloca_ir_builder, variable.t.GetLLVMType(), (range_for_operator.loop_variable_name + "\0").front() );
 				}
+
+				CreateVariableDebugInfo( function_context, variable, range_for_operator.loop_variable_name, range_for_operator.file_pos );
 
 				variable.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, range_for_operator.loop_variable_name );
 
@@ -1385,6 +1403,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			out_variable.llvm_value= expr.llvm_value;
 		}
 
+		CreateReferenceVariableDebugInfo( function_context, out_variable, with_operator.variable_name, with_operator.file_pos );
+
 		if( expr.node_id != ReferencesGraph::c_empty_node_id )
 		{
 			if( (  out_variable.is_mutable && function_context.references_graph.HaveOutgoingLinks( expr.node_id ) ) ||
@@ -1416,6 +1436,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			out_variable.llvm_value=
 				LLVMBuildAlloca( function_context.alloca_ir_builder, out_variable.t.GetLLVMType(), (with_operator.variable_name + "\0").front() );
 		}
+
+		CreateVariableDebugInfo( function_context, out_variable, with_operator.variable_name, with_operator.file_pos );
 
 		SetupReferencesInCopyOrMove( names_scope, function_context, out_variable.t, out_variable.node_id, expr.node_id, with_operator.file_pos );
 

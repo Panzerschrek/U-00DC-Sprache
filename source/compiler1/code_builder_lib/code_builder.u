@@ -16,12 +16,13 @@ fn ClearClassInternals( ClassTypePtr& class_type, NamesScopeMutPtr& dummy_class_
 	class_.typeinfo_src_type_.reset();
 }
 
-fn CodeBuilder::constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data_layout )
+fn CodeBuilder::constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data_layout, bool build_debug_info )
 	(
 		llvm_context_(llvm_context),
 		data_layout_(data_layout),
 		constexpr_function_evaluator_(data_layout),
 		global_things_stack_ptr_(GlobalThingsStack()),
+		build_debug_info_(build_debug_info)
 	)
 {
 	unsafe
@@ -90,6 +91,46 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 	AddFunctionAttribute( halt_function_, LLVMAttributeFunctionIndex, "noreturn" );
 	AddFunctionAttribute( halt_function_, LLVMAttributeFunctionIndex, "nounwind" );
 
+	// prepare debug info
+	if( build_debug_info_ )
+	{
+		unsafe{  debug_info_.builder= LLVMCreateDIBuilder( module_ );  }
+
+		foreach( & node : source_graph.nodes )
+		{
+			unsafe
+			{
+				debug_info_.source_file_entries.push_back(
+					LLVMDIBuilderCreateFile(
+						debug_info_.builder,
+						node.file_path_normalized.front(), node.file_path_normalized.size(),
+						"\0"c8, 0s ) );
+			}
+		}
+
+		// TODO - fix this. LLVM C interface doesn't provide any way to specify custom language, so, use default value.
+		var LLVMDWARFSourceLanguage c_dwarf_language_id= 0u;
+
+		unsafe
+		{
+			debug_info_.compile_unit=
+				LLVMDIBuilderCreateCompileUnit(
+					debug_info_.builder,
+					c_dwarf_language_id,
+					debug_info_.source_file_entries.front(),
+					"\0"c8, 0s, // TODO - set producer
+					LLVMBool::False, // TODO - pass "optimized' flag
+					"\0"c8, 0s, // Flags
+					0u, // Runtime version
+					"\0"c8, 0s, // SplitName
+					LLVMDWARFEmissionKind::Full,
+					0u, // DWOId
+					LLVMBool::True, // SplitDebugInlining
+					LLVMBool::False // DebugInfoForProfiling
+				);
+		}
+	}
+
 	root_errors_container_= ErrorsContainerPtr( ErrorsContainer() );
 
 	compiled_sources_cache_.resize( source_graph.nodes.size() );
@@ -135,6 +176,20 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 	compiled_sources_cache_.clear();
 	generated_template_things_.clear();
 	typeinfo_cache_.clear();
+
+	if( debug_info_.builder != LLVMDIBuilderRef::Null )
+	{
+		unsafe
+		{
+			LLVMDIBuilderFinalize( debug_info_.builder );
+			LLVMDisposeDIBuilder( debug_info_.builder );
+		}
+		debug_info_.builder= LLVMDIBuilderRef::Null;
+		debug_info_.compile_unit= LLVMMetadataRef::Null;
+
+		debug_info_.classes_di_types.clear();
+		debug_info_.enums_di_types.clear();
+	}
 
 	var BuildResult mut res
 	{
@@ -1337,6 +1392,8 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 
 	SetupLLVMFunctionAttributes( names_scope.lock_imut().get_ref(), func_variable );
 
+	CreateFunctionDebugInfo( func_variable );
+
 	var FunctionContext mut function_context_value(
 		llvm_context_,
 		func_variable.llvm_function,
@@ -1407,6 +1464,8 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 					out_arg.llvm_value= arg_value;
 				}
 
+				CreateReferenceVariableDebugInfo( function_context, out_arg, in_param.name, in_param.file_pos );
+
 				// Create variable node and reference node for it.
 				var ReferencesGraph::NodeId variable_node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, in_param.name + " variable" );
 
@@ -1450,6 +1509,8 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 						LLVMBuildStore( function_context.llvm_ir_builder, arg_value, out_arg.llvm_value );
 					}
 				}
+
+				CreateVariableDebugInfo( function_context, out_arg, in_param.name, in_param.file_pos );
 
 				out_arg.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, in_param.name );
 				if( type_arg.t.GetInnerReferenceKind() != InnerReferenceKind::None )
@@ -1885,6 +1946,33 @@ fn CodeBuilder::SetupReferencesInCopyOrMove(
 	}
 }
 
+fn CodeBuilder::IsTypeComplete( this, Type& t ) : bool
+{
+	if_var( &class_type_ptr : t.GetClassType() )
+	{
+		return class_type_ptr.lock_imut().get_ref().is_complete;
+	}
+	if_var( &enum_type_ptr : t.GetEnumType() )
+	{
+		return enum_type_ptr.lock_imut().get_ref().underlaying_type.llvm_type != LLVMTypeRef::Null;
+	}
+	if_var( &array_type : t.GetArrayType() )
+	{
+		return IsTypeComplete( array_type.element_type );
+	}
+	if_var( &tuple_type : t.GetTupleType() )
+	{
+		var bool mut complete= true;
+		foreach( &element_type : tuple_type.element_types )
+		{
+			complete&= IsTypeComplete( element_type );
+		}
+		return complete;
+	}
+
+	return true;
+}
+
 fn CodeBuilder::EnsureTypeComplete( mut this, Type& t ) : bool
 {
 	if_var( &class_type_ptr : t.GetClassType() )
@@ -1894,6 +1982,13 @@ fn CodeBuilder::EnsureTypeComplete( mut this, Type& t ) : bool
 
 		BuildClass( class_parent_scope, class_type_ptr );
 		return class_type_ptr.lock_imut().get_ref().is_complete;
+	}
+	if_var( &enum_type_ptr : t.GetEnumType() )
+	{
+		auto enum_parent_scope= ust::to_non_nullable( enum_type_ptr.lock_imut().get_ref().names_scope.lock_imut().get_ref().GetParent() );
+		BuildEnum( enum_parent_scope, enum_type_ptr );
+
+		return enum_type_ptr.lock_imut().get_ref().underlaying_type.llvm_type != LLVMTypeRef::Null;
 	}
 	if_var( &array_type : t.GetArrayType() )
 	{
@@ -2008,7 +2103,10 @@ fn CodeBuilder::SetupLLVMFunctionAttributes( this, NamesScope& names_scope, Func
 	// We do not support exceptions. So, mark all functions as "nounwind".
 	AddFunctionAttribute( func_variable.llvm_function, LLVMAttributeFunctionIndex, "nounwind" );
 
-	// TODO - add attribute "uwtable" if we are building debug info.
+	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
+	{
+		AddFunctionAttribute( func_variable.llvm_function, LLVMAttributeFunctionIndex, "uwtable" );
+	}
 }
 
 fn CodeBuilder::GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef

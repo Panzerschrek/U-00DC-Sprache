@@ -51,7 +51,7 @@ fn IsChar( U_FundamentalType t ) : bool
 
 fn GetFundamentalTypeName( U_FundamentalType t ) : ust::array_view_imut</ char8 />
 {
-	if( t == U_FundamentalType::InvalidType	) { return ust::array_view_imut</ char8 />("");}
+	if( t == U_FundamentalType::InvalidType	) { return ust::array_view_imut</ char8 />("invalid_type");}
 	if( t == U_FundamentalType::void_		) { return KeywordToString( Keyword::void_	); }
 	if( t == U_FundamentalType::bool_		) { return KeywordToString( Keyword::bool_	); }
 	if( t == U_FundamentalType::i8_			) { return KeywordToString( Keyword::i8_	); }

@@ -58,6 +58,8 @@ public:
 	ust::vector</VariablesFrame/> variables_frames;
 
 	ReferencesGraph references_graph;
+
+	LLVMMetadataRef current_debug_info_scope= LLVMMetadataRef::Null;
 }
 
 class VariablesFrameHolder
