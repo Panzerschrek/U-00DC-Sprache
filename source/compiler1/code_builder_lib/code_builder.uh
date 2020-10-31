@@ -554,23 +554,23 @@ private:
 
 	// Debug info
 
-	fn CreateFunctionDebugInfo( this, FunctionVariable& func_variable );
+	fn CreateFunctionDebugInfo( mut this, FunctionVariable& func_variable );
 
-	fn SetCurrentDebugLocation( this, FunctionContext& function_context, FilePos& file_pos );
-	fn DebugInfoStartBlock( this, FunctionContext &mut function_context, FilePos& file_pos ) : LLVMMetadataRef;
-	fn DebugInfoEndBlock( this, FunctionContext &mut function_context, LLVMMetadataRef prev_block );
+	fn SetCurrentDebugLocation( mut this, FunctionContext& function_context, FilePos& file_pos );
+	fn DebugInfoStartBlock( mut this, FunctionContext &mut function_context, FilePos& file_pos ) : LLVMMetadataRef;
+	fn DebugInfoEndBlock( mut this, FunctionContext &mut function_context, LLVMMetadataRef prev_block );
 
-	fn CreateVariableDebugInfo( this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, FilePos& file_pos );
-	fn CreateReferenceVariableDebugInfo( this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, FilePos& file_pos );
+	fn CreateVariableDebugInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, FilePos& file_pos );
+	fn CreateReferenceVariableDebugInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, FilePos& file_pos );
 
-	fn CreateDIType( this, Type& t ) : LLVMMetadataRef;
-	fn CreateDITypeImpl( this, FundamentalType& t ) : LLVMMetadataRef;
-	fn CreateDITypeImpl( this, ArrayType& t ) : LLVMMetadataRef;
-	fn CreateDITypeImpl( this, TupleType& t ) : LLVMMetadataRef;
-	fn CreateDITypeImpl( this, FunctionType& t ) : LLVMMetadataRef;
-	fn CreateDITypeImpl( this, FunctionPointerType& t ) : LLVMMetadataRef;
-	fn CreateDITypeImpl( this, ClassTypePtr& t ) : LLVMMetadataRef;
-	fn CreateDITypeImpl( this, EnumTypePtr& t ) : LLVMMetadataRef;
+	fn CreateDIType( mut this, Type& t ) : LLVMMetadataRef;
+	fn CreateDITypeImpl( mut this, FundamentalType& t ) : LLVMMetadataRef;
+	fn CreateDITypeImpl( mut this, ArrayType& t ) : LLVMMetadataRef;
+	fn CreateDITypeImpl( mut this, TupleType& t ) : LLVMMetadataRef;
+	fn CreateDITypeImpl( mut this, FunctionType& t ) : LLVMMetadataRef;
+	fn CreateDITypeImpl( mut this, FunctionPointerType& t ) : LLVMMetadataRef;
+	fn CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef;
+	fn CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadataRef;
 
 	// Virtual stuff
 	fn PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr );
@@ -802,6 +802,10 @@ private:
 		LLVMDIBuilderRef builder= LLVMDIBuilderRef::Null;
 		ust::vector</LLVMMetadataRef/> source_file_entries; // Entry for each file in sources graph.
 		LLVMMetadataRef compile_unit= LLVMMetadataRef::Null;
+
+		// Cache of debug info types for classes and enums.
+		ust::unordered_map</ ClassTypePtr, LLVMMetadataRef /> classes_di_types;
+		ust::unordered_map</ EnumTypePtr, LLVMMetadataRef /> enums_di_types;
 	}
 	DebugInfo debug_info_;
 }

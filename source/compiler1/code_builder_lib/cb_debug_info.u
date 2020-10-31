@@ -4,7 +4,7 @@ import "code_builder.uh"
 namespace U1
 {
 
-fn CodeBuilder::CreateFunctionDebugInfo( this, FunctionVariable& func_variable )
+fn CodeBuilder::CreateFunctionDebugInfo( mut this, FunctionVariable& func_variable )
 {
 	if( !build_debug_info_ )
 	{
@@ -40,7 +40,7 @@ fn CodeBuilder::CreateFunctionDebugInfo( this, FunctionVariable& func_variable )
 	}
 }
 
-fn CodeBuilder::SetCurrentDebugLocation( this, FunctionContext& function_context, FilePos& file_pos )
+fn CodeBuilder::SetCurrentDebugLocation( mut this, FunctionContext& function_context, FilePos& file_pos )
 {
 	if( !build_debug_info_ )
 	{
@@ -59,7 +59,7 @@ fn CodeBuilder::SetCurrentDebugLocation( this, FunctionContext& function_context
 	}
 }
 
-fn CodeBuilder::DebugInfoStartBlock( this, FunctionContext &mut function_context, FilePos& file_pos ) : LLVMMetadataRef
+fn CodeBuilder::DebugInfoStartBlock( mut this, FunctionContext &mut function_context, FilePos& file_pos ) : LLVMMetadataRef
 {
 	if( !build_debug_info_ )
 	{
@@ -79,7 +79,7 @@ fn CodeBuilder::DebugInfoStartBlock( this, FunctionContext &mut function_context
 	return prev;
 }
 
-fn CodeBuilder::DebugInfoEndBlock( this, FunctionContext &mut function_context, LLVMMetadataRef prev_block )
+fn CodeBuilder::DebugInfoEndBlock( mut this, FunctionContext &mut function_context, LLVMMetadataRef prev_block )
 {
 	if( !build_debug_info_ )
 	{
@@ -92,7 +92,7 @@ fn CodeBuilder::DebugInfoEndBlock( this, FunctionContext &mut function_context, 
 	}
 }
 
-fn CodeBuilder::CreateVariableDebugInfo( this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, FilePos& file_pos )
+fn CodeBuilder::CreateVariableDebugInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, FilePos& file_pos )
 {
 	if( !build_debug_info_ )
 	{
@@ -129,7 +129,7 @@ fn CodeBuilder::CreateVariableDebugInfo( this, FunctionContext& function_context
 	}
 }
 
-fn CodeBuilder::CreateReferenceVariableDebugInfo( this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, FilePos& file_pos )
+fn CodeBuilder::CreateReferenceVariableDebugInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, FilePos& file_pos )
 {
 	if( !build_debug_info_ )
 	{
@@ -178,7 +178,7 @@ fn CodeBuilder::CreateReferenceVariableDebugInfo( this, FunctionContext& functio
 	}
 }
 
-fn CodeBuilder::CreateDIType( this, Type& t ) : LLVMMetadataRef
+fn CodeBuilder::CreateDIType( mut this, Type& t ) : LLVMMetadataRef
 {
 	if( IsTypeComplete( t ) )
 	{
@@ -225,7 +225,7 @@ fn CodeBuilder::CreateDIType( this, Type& t ) : LLVMMetadataRef
 	}
 }
 
-fn CodeBuilder::CreateDITypeImpl( this, FundamentalType& t ) : LLVMMetadataRef
+fn CodeBuilder::CreateDITypeImpl( mut this, FundamentalType& t ) : LLVMMetadataRef
 {
 	auto type_name= GetFundamentalTypeName( t.fundamental_type );
 
@@ -247,7 +247,7 @@ fn CodeBuilder::CreateDITypeImpl( this, FundamentalType& t ) : LLVMMetadataRef
 	}
 }
 
-fn CodeBuilder::CreateDITypeImpl( this, ArrayType& t ) : LLVMMetadataRef
+fn CodeBuilder::CreateDITypeImpl( mut this, ArrayType& t ) : LLVMMetadataRef
 {
 	unsafe
 	{
@@ -260,7 +260,7 @@ fn CodeBuilder::CreateDITypeImpl( this, ArrayType& t ) : LLVMMetadataRef
 	}
 }
 
-fn CodeBuilder::CreateDITypeImpl( this, TupleType& t ) : LLVMMetadataRef
+fn CodeBuilder::CreateDITypeImpl( mut this, TupleType& t ) : LLVMMetadataRef
 {
 	var ust::vector</LLVMMetadataRef/> mut elements;
 
@@ -311,7 +311,7 @@ fn CodeBuilder::CreateDITypeImpl( this, TupleType& t ) : LLVMMetadataRef
 	}
 }
 
-fn CodeBuilder::CreateDITypeImpl( this, FunctionType& t ) : LLVMMetadataRef
+fn CodeBuilder::CreateDITypeImpl( mut this, FunctionType& t ) : LLVMMetadataRef
 {
 	var ust::vector</LLVMMetadataRef/> mut di_types;
 	{
@@ -364,7 +364,7 @@ fn CodeBuilder::CreateDITypeImpl( this, FunctionType& t ) : LLVMMetadataRef
 	}
 }
 
-fn CodeBuilder::CreateDITypeImpl( this, FunctionPointerType& t ) : LLVMMetadataRef
+fn CodeBuilder::CreateDITypeImpl( mut this, FunctionPointerType& t ) : LLVMMetadataRef
 {
 	unsafe
 	{
@@ -378,8 +378,13 @@ fn CodeBuilder::CreateDITypeImpl( this, FunctionPointerType& t ) : LLVMMetadataR
 	}
 }
 
-fn CodeBuilder::CreateDITypeImpl( this, ClassTypePtr& t ) : LLVMMetadataRef
+fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
 {
+	if_var( cache_value : debug_info_.classes_di_types.find( t ) )
+	{
+		return cache_value;
+	}
+
 	auto class_lock= t.lock_imut();
 	var ClassType& class_type= class_lock.get_ref();
 	var FilePos mut file_pos;
@@ -464,7 +469,7 @@ fn CodeBuilder::CreateDITypeImpl( this, ClassTypePtr& t ) : LLVMMetadataRef
 
 	unsafe
 	{
-		return LLVMDIBuilderCreateStructType(
+		auto di_type= LLVMDIBuilderCreateStructType(
 			debug_info_.builder,
 			di_file,
 			name.front_unsafe(), name.size(),
@@ -478,11 +483,19 @@ fn CodeBuilder::CreateDITypeImpl( this, ClassTypePtr& t ) : LLVMMetadataRef
 			0u, // RuntimeLang
 			LLVMMetadataRef::Null,// VTableHolder
 			"\0"c8, 0s);
+
+		debug_info_.classes_di_types.insert( t, di_type );
+		return di_type;
 	}
 }
 
-fn CodeBuilder::CreateDITypeImpl( this, EnumTypePtr& t ) : LLVMMetadataRef
+fn CodeBuilder::CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadataRef
 {
+	if_var( cache_value : debug_info_.enums_di_types.find( t ) )
+	{
+		return cache_value;
+	}
+
 	auto enum_lock= t.lock_imut();
 	var Enum& enum_= enum_lock.get_ref();
 
@@ -512,7 +525,7 @@ fn CodeBuilder::CreateDITypeImpl( this, EnumTypePtr& t ) : LLVMMetadataRef
 
 	unsafe
 	{
-		return LLVMDIBuilderCreateEnumerationType(
+		auto di_type= LLVMDIBuilderCreateEnumerationType(
 			debug_info_.builder,
 			di_file,
 			name.front_unsafe(), name.size(),
@@ -522,6 +535,9 @@ fn CodeBuilder::CreateDITypeImpl( this, EnumTypePtr& t ) : LLVMMetadataRef
 			LLVMABIAlignmentOfType( data_layout_, enum_.underlaying_type.llvm_type ) * 8u32,
 			cast_imut(elements).front_unsafe(), u32(elements.size()),
 			CreateDITypeImpl(enum_.underlaying_type) );
+
+		debug_info_.enums_di_types.insert( t, di_type );
+		return di_type;
 	}
 }
 

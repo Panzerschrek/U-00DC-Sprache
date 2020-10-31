@@ -186,6 +186,9 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 		}
 		debug_info_.builder= LLVMDIBuilderRef::Null;
 		debug_info_.compile_unit= LLVMMetadataRef::Null;
+
+		debug_info_.classes_di_types.clear();
+		debug_info_.enums_di_types.clear();
 	}
 
 	var BuildResult mut res
