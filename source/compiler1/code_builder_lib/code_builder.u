@@ -2089,7 +2089,10 @@ fn CodeBuilder::SetupLLVMFunctionAttributes( this, NamesScope& names_scope, Func
 	// We do not support exceptions. So, mark all functions as "nounwind".
 	AddFunctionAttribute( func_variable.llvm_function, LLVMAttributeFunctionIndex, "nounwind" );
 
-	// TODO - add attribute "uwtable" if we are building debug info.
+	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
+	{
+		AddFunctionAttribute( func_variable.llvm_function, LLVMAttributeFunctionIndex, "uwtable" );
+	}
 }
 
 fn CodeBuilder::GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef
