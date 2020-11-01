@@ -89,6 +89,65 @@ void CreateTemplateErrorsContext(
 
 } // namesapce
 
+bool CodeBuilder::TemplateThingKey::operator==( const CodeBuilder::TemplateThingKey& other ) const
+{
+	const CodeBuilder::TemplateThingKey& l= *this;
+	const CodeBuilder::TemplateThingKey& r= other;
+
+	if( l.t != r.t )
+		return false;
+	if( l.additional_data != r.additional_data )
+		return false;
+	if( l.template_parameters.size() != r.template_parameters.size() )
+		return false;
+
+	for( size_t i= 0u; i < l.template_parameters.size(); ++i )
+	{
+		if( l.template_parameters[i].index() != r.template_parameters[i].index() )
+			return false;
+
+		if( const auto l_var= std::get_if<Variable>( & l.template_parameters[i] ) )
+		{
+			const auto r_var= std::get_if<Variable>( & r.template_parameters[i] );
+
+			if( l_var->type != r_var->type )
+				return false;
+			if( l_var->constexpr_value == nullptr || r_var->constexpr_value == nullptr )
+				return false;
+			if( l_var->constexpr_value->getUniqueInteger() != r_var->constexpr_value->getUniqueInteger() )
+				return false;
+		}
+		if( const auto l_type= std::get_if<Type>( & l.template_parameters[i] ) )
+		{
+			const auto r_type= std::get_if<Type>( & r.template_parameters[i] );
+			if( *l_type != *r_type )
+				return false;
+		}
+	}
+
+	return true;
+}
+
+size_t CodeBuilder::TemplateThingKeyHaser::operator()( const TemplateThingKey& key ) const
+{
+	size_t hash= reinterpret_cast<uintptr_t>( key.t );
+	hash= llvm::hash_combine( hash, key.additional_data );
+
+	for( const TemplateParameter& param : key.template_parameters )
+	{
+		if( const auto variable= std::get_if<Variable>( &param ) )
+		{
+			if( variable->constexpr_value != nullptr )
+				hash= llvm::hash_combine( hash, variable->constexpr_value->getUniqueInteger() );
+		}
+
+		if( const auto type= std::get_if<Type>( &param ) )
+			hash= llvm::hash_combine( hash, type->Hash() );
+	}
+
+	return hash;
+}
+
 void CodeBuilder::PrepareTypeTemplate(
 	const Synt::TypeTemplateBase& type_template_declaration,
 	TypeTemplatesSet& type_templates_set,
@@ -959,12 +1018,15 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		return result;
 
 	// Encode name for caching. Name must be unique for each template and its parameters.
-	const std::string name_encoded=
-		std::to_string( reinterpret_cast<uintptr_t>( &type_template ) ) + // Encode template address, because we needs unique keys for templates with same name.
-		MangleTemplateParameters( result_signature_parameters );
+	const TemplateThingKey template_key
+	{
+		&type_template,
+		result_signature_parameters,
+		""
+	};
 
 	{ // Check, if already type generated.
-		const auto it= generated_template_things_storage_.find( name_encoded );
+		const auto it= generated_template_things_storage_.find( template_key );
 		if( it != generated_template_things_storage_.end() )
 		{
 			const NamesScopePtr template_parameters_space= it->second.GetNamespace();
@@ -974,13 +1036,13 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		}
 	}
 
-	generated_template_things_storage_.insert( std::make_pair( name_encoded, Value( template_parameters_namespace, type_template.syntax_element->file_pos_ ) ) );
+	generated_template_things_storage_.insert( std::make_pair( template_key, Value( template_parameters_namespace, type_template.syntax_element->file_pos_ ) ) );
 
 	CreateTemplateErrorsContext( arguments_names_scope.GetErrors(), file_pos, template_parameters_namespace, type_template, type_template.syntax_element->name_, deduced_template_args );
 
 	if( type_template.syntax_element->kind_ == Synt::TypeTemplateBase::Kind::Class )
 	{
-		const auto cache_class_it= template_classes_cache_.find( name_encoded );
+		const auto cache_class_it= template_classes_cache_.find( template_key );
 		if( cache_class_it != template_classes_cache_.end() )
 		{
 			result.type=
@@ -1010,7 +1072,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		}
 		the_class.base_template->signature_parameters= std::move(result_signature_parameters);
 
-		template_classes_cache_[name_encoded]= class_proxy;
+		template_classes_cache_[template_key]= class_proxy;
 		result.type= template_parameters_namespace->GetThisScopeValue( Class::c_template_class_name );
 
 		class_proxy->class_->llvm_type->setName( MangleType( class_proxy ) ); // Update llvm type name after setting base template.
@@ -1197,13 +1259,16 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		else U_ASSERT(false);
 	}
 
-	// Encode name for caching. Name must be unique for each template and its parameters.
-	const std::string name_encoded=
-		std::to_string( reinterpret_cast<uintptr_t>( function_template.parent != nullptr ? function_template.parent.get() : &function_template ) ) + // Encode template address, because we needs unique keys for templates with same name.
-		MangleTemplateParameters( params_for_mangle );
+	// Encode key for caching. Key must be unique for each template and its parameters.
+	const TemplateThingKey template_key
+	{
+		function_template.parent != nullptr ? function_template.parent.get() : &function_template,
+		params_for_mangle,
+		"",
+	};
 
 	{
-		const auto it= generated_template_things_storage_.find( name_encoded );
+		const auto it= generated_template_things_storage_.find( template_key );
 		if( it != generated_template_things_storage_.end() )
 		{
 			//Function for this template arguments already generated.
@@ -1216,7 +1281,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 				return nullptr; // May be in case of error or in case of "enable_if".
 		}
 	}
-	generated_template_things_storage_.insert( std::make_pair( name_encoded, Value( template_parameters_namespace, function_declaration.file_pos_ ) ) );
+	generated_template_things_storage_.insert( std::make_pair( template_key, Value( template_parameters_namespace, function_declaration.file_pos_ ) ) );
 
 	CreateTemplateErrorsContext( errors_container, file_pos, template_parameters_namespace, function_template, func_name, deduced_template_args, function_template.known_template_parameters );
 
@@ -1298,10 +1363,15 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 		name_encoded+= std::to_string( reinterpret_cast<uintptr_t>( &template_ ) );
 		name_encoded+= "_";
 	}
-	name_encoded+= MangleTemplateParameters( template_parameters );
+	const TemplateThingKey template_key
+	{
+		nullptr,
+		template_parameters,
+		name_encoded,
+	};
 
 	{
-		const auto it= generated_template_things_storage_.find( name_encoded );
+		const auto it= generated_template_things_storage_.find( template_key );
 		if( it != generated_template_things_storage_.end() )
 			return &it->second; // Already generated.
 	}
@@ -1364,7 +1434,7 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 		return nullptr;
 	}
 
-	return & generated_template_things_storage_.insert( std::make_pair( name_encoded, result ) ).first->second;
+	return & generated_template_things_storage_.insert( std::make_pair( template_key, result ) ).first->second;
 }
 
 bool CodeBuilder::NameShadowsTemplateArgument( const std::string& name, NamesScope& names_scope )

@@ -233,14 +233,14 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 	// Finalize building template classes.
 	// Save and update keys separately, because "generated_template_things_storage_" may change during iterations.
 	{
-		ProgramStringSet generated_template_things_keys;
+		std::unordered_set< TemplateThingKey, TemplateThingKeyHaser > generated_template_things_keys;
 		for( const auto& thing_pair : generated_template_things_storage_ )
 			generated_template_things_keys.insert(thing_pair.first);
-		ProgramStringSet new_generated_template_things_keys= generated_template_things_keys;
+		std::unordered_set< TemplateThingKey, TemplateThingKeyHaser > new_generated_template_things_keys= generated_template_things_keys;
 
 		while(!new_generated_template_things_keys.empty())
 		{
-			for( const std::string& key : new_generated_template_things_keys )
+			for( const TemplateThingKey& key : new_generated_template_things_keys )
 			{
 				if( const auto namespace_= generated_template_things_storage_[key].GetNamespace() )
 					GlobalThingBuildNamespace( *namespace_ );

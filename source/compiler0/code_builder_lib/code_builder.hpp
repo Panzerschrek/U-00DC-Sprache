@@ -807,17 +807,31 @@ private:
 	// Storage for enum types. Do not use shared pointers for enums for loops preventing.
 	std::vector< std::unique_ptr<Enum> > enums_table_;
 
-	// Cache needs for generating same classes as template instantiation result in different source files.
-	// We can use same classes in different files, because template classes are logically unchangeable after instantiation.
-	// Unchangeable they are because incomplete template classes ( or classes inside template classes, etc. ) currently forbidden.
-	ProgramStringMap< ClassProxyPtr > template_classes_cache_;
-
 	// We needs to generate same typeinfo classes for same types. Use cache for it.
 	std::unordered_map< Type, Variable, TypeHasher > typeinfo_cache_;
 	ClassTable typeinfo_class_table_;
 
+	struct TemplateThingKey
+	{
+		const TemplateBase* t= nullptr;
+		std::vector<TemplateParameter> template_parameters;
+		std::string additional_data;
+
+		bool operator==( const TemplateThingKey& other ) const;
+	};
+
+	struct TemplateThingKeyHaser
+	{
+		size_t operator()( const TemplateThingKey& key ) const;
+	};
+
 	// Names map for generated template types/functions. We can not insert it in regular namespaces, because we needs insert it, while iterating regular namespaces.
-	ProgramStringMap<Value> generated_template_things_storage_;
+	std::unordered_map<TemplateThingKey, Value, TemplateThingKeyHaser> generated_template_things_storage_;
+
+	// Cache needs for generating same classes as template instantiation result in different source files.
+	// We can use same classes in different files, because template classes are logically unchangeable after instantiation.
+	// Unchangeable they are because incomplete template classes ( or classes inside template classes, etc. ) currently forbidden.
+	std::unordered_map<TemplateThingKey,  ClassProxyPtr, TemplateThingKeyHaser> template_classes_cache_;
 
 	std::vector<GlobalThing> global_things_stack_;
 
