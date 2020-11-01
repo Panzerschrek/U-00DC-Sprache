@@ -123,12 +123,12 @@ Type::Type( Function&& function_type )
 
 Type::Type( const Array& array_type )
 {
-	something_= std::make_unique<Array>( array_type );
+	something_= std::make_shared<Array>( array_type );
 }
 
 Type::Type( Array&& array_type )
 {
-	something_= std::make_unique<Array>( std::move( array_type ) );
+	something_= std::make_shared<Array>( std::move( array_type ) );
 }
 
 Type::Type( const Tuple& tuple_type )
@@ -175,7 +175,7 @@ Type& Type::operator=( const Type& other )
 		void operator()( const ArrayPtr& array )
 		{
 			U_ASSERT( array != nullptr );
-			this_.something_= std::make_unique<Array>( *array );
+			this_.something_= array;
 		}
 
 		void operator()( const Tuple& tuple )
@@ -246,14 +246,6 @@ const FunctionPointer* Type::GetFunctionPointerType() const
 	if( function_pointer_type == nullptr )
 		return nullptr;
 	return function_pointer_type->get();
-}
-
-Array* Type::GetArrayType()
-{
-	ArrayPtr* const array_type= std::get_if<ArrayPtr>( &something_ );
-	if( array_type == nullptr )
-		return nullptr;
-	return array_type->get();
 }
 
 const Array* Type::GetArrayType() const

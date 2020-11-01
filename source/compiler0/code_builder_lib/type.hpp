@@ -94,7 +94,6 @@ public:
 	const Function* GetFunctionType() const;
 	FunctionPointer* GetFunctionPointerType();
 	const FunctionPointer* GetFunctionPointerType() const;
-	Array* GetArrayType();
 	const Array* GetArrayType() const;
 	Tuple* GetTupleType();
 	const Tuple* GetTupleType() const;
@@ -127,7 +126,7 @@ private:
 
 	using FunctionPtr= std::unique_ptr<Function>;
 	using FunctionPointerPtr= std::unique_ptr<FunctionPointer>;
-	using ArrayPtr= std::unique_ptr<Array>;
+	using ArrayPtr= std::shared_ptr<const Array>;
 
 	std::variant<
 		FundamentalType,
