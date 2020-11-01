@@ -17,6 +17,7 @@
 #include <llvm/Support/TargetRegistry.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Transforms/IPO.h>
+#include <llvm/Transforms/IPO/GlobalDCE.h>
 #include <llvm/Transforms/IPO/PassManagerBuilder.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
@@ -645,6 +646,12 @@ int Main( int argc, const char* argv[] )
 
 			pass_manager_builder.populateFunctionPassManager(function_pass_manager);
 			pass_manager_builder.populateModulePassManager(pass_manager);
+		}
+
+		{ // Remove unused functions, before run optimizations for them.
+			llvm::ModuleAnalysisManager mm;
+			llvm::GlobalDCEPass pass;
+			pass.run(*result_module, mm);
 		}
 
 		// Run per-function optimizations.
