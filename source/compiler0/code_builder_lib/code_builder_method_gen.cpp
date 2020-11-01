@@ -93,7 +93,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 			llvm::Function::Create(
 				constructor_type.llvm_function_type,
 				llvm::Function::LinkageTypes::ExternalLinkage,
-				MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
+				"_",
 				module_.get() );
 
 		FunctionVariable new_constructor_variable;
@@ -277,7 +277,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 			llvm::Function::Create(
 				constructor_type.llvm_function_type,
 				llvm::Function::LinkageTypes::ExternalLinkage,
-				MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
+				"_",
 				module_.get() );
 
 		// Add generated constructor
@@ -366,6 +366,8 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 
 FunctionVariable CodeBuilder::GenerateDestructorPrototype( Class& the_class, const Type& class_type )
 {
+	(void)the_class;
+
 	Function destructor_type;
 	destructor_type.return_type= void_type_for_ret_;
 	destructor_type.args.resize(1u);
@@ -390,7 +392,7 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( Class& the_class, con
 		llvm::Function::Create(
 			destructor_type.llvm_function_type,
 			llvm::Function::LinkageTypes::ExternalLinkage,
-			MangleFunction( the_class.members, Keyword( Keywords::destructor_ ), destructor_type ),
+			"_",
 			module_.get() );
 
 	return destructor_function;
@@ -551,7 +553,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 			llvm::Function::Create(
 				op_type.llvm_function_type,
 				llvm::Function::LinkageTypes::ExternalLinkage,
-				MangleFunction( the_class.members, op_name, op_type ),
+				"_",
 				module_.get() );
 
 		// Add generated assignment operator
