@@ -1240,22 +1240,22 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		else U_ASSERT(false);
 	}
 
-	std::vector<TemplateParameter> params_for_mangle;
+	std::vector<TemplateParameter> params_for_key;
 	for( const auto& known_param : function_template.known_template_parameters )
 	{
 		if( const auto type= known_param.second.GetTypeName() )
-			params_for_mangle.emplace_back( *type );
+			params_for_key.emplace_back( *type );
 		else if( const auto variable= known_param.second.GetVariable() )
-			params_for_mangle.emplace_back( *variable );
+			params_for_key.emplace_back( *variable );
 		else U_ASSERT(false);
 	}
 
 	for( const auto& param : deduced_template_args )
 	{
 		if( const auto type= std::get_if<Type>( &param ) )
-			params_for_mangle.emplace_back( *type );
+			params_for_key.emplace_back( *type );
 		else if( const auto variable= std::get_if<Variable>( &param ) )
-			params_for_mangle.emplace_back( *variable );
+			params_for_key.emplace_back( *variable );
 		else U_ASSERT(false);
 	}
 
@@ -1263,7 +1263,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	const TemplateThingKey template_key
 	{
 		function_template.parent != nullptr ? function_template.parent.get() : &function_template,
-		params_for_mangle,
+		std::move(params_for_key),
 		"",
 	};
 
