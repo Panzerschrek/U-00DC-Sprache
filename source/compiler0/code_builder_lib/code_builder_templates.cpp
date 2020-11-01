@@ -1307,18 +1307,6 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 			function_template.syntax_element->function_->block_.get(),
 			function_template.syntax_element->function_->constructor_initialization_list_.get() );
 
-	// Set correct mangled name
-	if( function_variable.llvm_function != nullptr )
-	{
-		const std::string mangled_name =
-			MangleFunction(
-				template_names_scope,
-				func_name,
-				*function_variable.type.GetFunctionType(),
-				&params_for_mangle );
-		function_variable.llvm_function->setName( mangled_name );
-	}
-
 	// Two-step preparation needs for recursive function template call.
 
 	return &function_variable;

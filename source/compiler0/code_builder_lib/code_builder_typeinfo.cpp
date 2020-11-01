@@ -315,9 +315,6 @@ void CodeBuilder::FinishTypeinfoClass( Class& class_, const ClassProxyPtr class_
 	// Generate only destructor, because almost all structs and classes must have it.
 	// Other methods - constructors, assignment operators does not needs for typeinfo classes.
 	TryGenerateDestructor( class_, class_proxy );
-
-	const FunctionVariable& destructor= class_.members.GetThisScopeValue( Keyword( Keywords::destructor_ ) )->GetFunctionsSet()->functions.front();
-	destructor.llvm_function->setName( MangleFunction( class_.members, Keyword( Keywords::destructor_ ), *destructor.type.GetFunctionType() ) );
 }
 
 Variable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, NamesScope& root_namespace )
