@@ -33,16 +33,18 @@ fn do_sort( ust::random_access_range</T, true/> range )
 		return;
 	}
 
+	// TODO - find approximate middle element and place it into last position.
+
 	var size_type s= range.size();
 	var size_type last= s - 1s;
-	var size_type mut lo= 0s,mut  hi= last;
+	var size_type mut lo= 0s, mut hi= last;
 
 	while( lo < hi )
 	{
 		var bool mut less= false;
 		{
 			var ust::random_access_range</T, false/> range_copy= range;
-			less= range_copy[lo] < range_copy[hi];
+			less= range_copy[lo] < range_copy[last];
 		}
 
 		if( less )
