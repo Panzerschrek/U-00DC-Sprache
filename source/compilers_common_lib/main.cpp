@@ -205,7 +205,7 @@ cl::OptionCategory options_category( "Ü compier options" );
 cl::list<std::string> input_files(
 	cl::Positional,
 	cl::desc("<source0> [... <sourceN>]"),
-	cl::value_desc("iinput files"),
+	cl::value_desc("input files"),
 	cl::OneOrMore,
 	cl::cat(options_category) );
 
@@ -219,8 +219,8 @@ cl::opt<std::string> output_file_name(
 cl::list<std::string> include_dir(
 	"include-dir",
 	cl::Prefix,
-	cl::desc("<dir0> [... <dirN>]"),
-	cl::value_desc("directory for search of \"import\" files"),
+	cl::desc("Add directory for search of \"import\" files"),
+	cl::value_desc("dir"),
 	cl::ZeroOrMore,
 	cl::cat(options_category));
 
