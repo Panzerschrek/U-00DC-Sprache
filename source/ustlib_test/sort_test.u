@@ -1,0 +1,30 @@
+//##success_test
+import "../ustlib/sort.u"
+
+type IntRange= ust::random_access_range_mut</i32/>;
+
+template</ type T, size_type S />
+fn ArrayEq( [ T, S ]& l, [ T, S ]& r ) : bool
+{
+	for( auto mut i= 0s; i < S; ++i )
+	{
+		if( l[i] != r[i] ){ return false; }
+	}
+	return true;
+}
+
+fn nomangle main() : i32
+{
+	{
+		var [ i32, 1 ] mut arr[ 45254 ];
+		{
+			var IntRange range(arr);
+			ust::sort( range );
+		}
+
+		var [ i32, 1 ] mut res[ 45254 ];
+		halt if( !ArrayEq( arr, res ) );
+	}
+
+	return 0;
+}
