@@ -89,5 +89,36 @@ fn nomangle main() : i32
 		halt if( res != 31 + 22 + 7 + 6 );
 		halt if( iterations != 4 );
 	}
+	{ // swap
+		var [ i32, 5 ] mut arr[ 0, 1, 2, 3, 4 ];
+		{
+			var IntRangeMut range( arr );
+			range.swap( 2s, 4s );
+		}
+		halt if( arr[0] != 0 );
+		halt if( arr[1] != 1 );
+		halt if( arr[2] != 4 );
+		halt if( arr[3] != 3 );
+		halt if( arr[4] != 2 );
+	}
+	{ // swap
+		var [ i32, 4 ] mut arr[ 33, 11, 55, 78 ];
+		{
+			var IntRangeMut range( arr );
+			range.swap( 0s, 3s );
+		}
+		halt if( arr[0] != 78 );
+		halt if( arr[1] != 11 );
+		halt if( arr[2] != 55 );
+		halt if( arr[3] != 33 );
+	}
+	{ // swap
+		var [ i32, 1 ] mut arr[ 654 ];
+		{
+			var IntRangeMut range( arr );
+			range.swap( 0s, 0s );
+		}
+		halt if( arr[0] != 654 );
+	}
 	return 0;
 }
