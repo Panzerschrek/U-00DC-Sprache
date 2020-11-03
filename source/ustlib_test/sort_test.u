@@ -1,5 +1,6 @@
 //##success_test
 import "../ustlib/sort.u"
+import "../ustlib/vector.u"
 
 type IntRange= ust::random_access_range_mut</i32/>;
 
@@ -25,6 +26,33 @@ fn IsSorted( [ T, S ]& arr ) : bool
 	}
 
 	return true;
+}
+
+template</ type T />
+fn IsSorted( ust::vector</T/>& vec ) : bool
+{
+	for( auto mut i= 1s; i < vec.size(); ++i )
+	{
+		if( vec[i] < vec[i-1s] )
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+class RandGenerator
+{
+public:
+	fn Next( mut this ) : u32
+	{
+		state_= ( 22695477u * state_ + 1u ) & 0x7FFFFFFFu;
+		return state_ >> 16u;
+	}
+
+private:
+	u32 state_= 0u;
 }
 
 fn nomangle main() : i32
@@ -146,6 +174,100 @@ fn nomangle main() : i32
 		}
 	}
 
+	{ // All elements are same.
+		var [ i32, 50 ] mut arr= zero_init;
+		ust::sort( IntRange(arr) );
+		halt if( !IsSorted( arr ) );
+	}
+	{ // Cases, where all elements are same, except one element which is greater than others.
+		auto num= 100;
+		for( auto mut i= 0; i < num; ++i )
+		{
+			var [ i32, num ] mut arr= zero_init;
+			arr[ u32(i) ]= 1;
+			ust::sort( IntRange(arr) );
+			halt if( !IsSorted( arr ) );
+		}
+	}
+	{ // Cases, where all elements are same, except one element which is less than others.
+		auto num= 100;
+		for( auto mut i= 0; i < num; ++i )
+		{
+			var [ i32, num ] mut arr= zero_init;
+			arr[ u32(i) ]= -1;
+			ust::sort( IntRange(arr) );
+			halt if( !IsSorted( arr ) );
+		}
+	}
+	{ // Sort sorted array.
+		auto num= 150;
+		var [ i32, num ] mut arr= zero_init;
+		for( auto mut i= 0; i < num; ++i )
+		{
+			arr[ u32(i) ]= i;
+		}
+		halt if( !IsSorted( arr ) );
+		ust::sort( IntRange(arr) );
+		halt if( !IsSorted( arr ) );
+	}
+
+	{ // Sort reverse-sorted array.
+		auto num= 133;
+		var [ i32, num ] mut arr= zero_init;
+		for( auto mut i= 0; i < num; ++i )
+		{
+			arr[ u32(i) ]= num - i;
+		}
+
+		ust::sort( IntRange(arr) );
+		halt if( !IsSorted( arr ) );
+	}
+	{ // Sort array with only two values - 0 or 1.
+		auto num= 107;
+		var [ i32, num ] mut arr= zero_init;
+		for( auto mut i= 0; i < num; ++i )
+		{
+			arr[ u32(i) ]= i & 1;
+		}
+
+		ust::sort( IntRange(arr) );
+		halt if( !IsSorted( arr ) );
+	}
+	{ // Sort sorted array with only two values - 0 or 1.
+		auto num= 120;
+		var [ i32, num ] mut arr= zero_init;
+		for( auto mut i= 0; i < num; ++i )
+		{
+			arr[ u32(i) ]= i * 2 / num;
+		}
+
+		ust::sort( IntRange(arr) );
+		halt if( !IsSorted( arr ) );
+	}
+	{ // Sort reverse-sorted array with only two values - 0 or 1.
+		auto num= 106;
+		var [ i32, num ] mut arr= zero_init;
+		for( auto mut i= 0; i < num; ++i )
+		{
+			arr[ u32(i) ]= ( num - 1 - i ) * 2 / num;
+		}
+
+		ust::sort( IntRange(arr) );
+		halt if( !IsSorted( arr ) );
+	}
+	{ // Test for complexity. Sort array of million pseudo-random numbers.
+		var ust::vector</i32/> mut vec;
+		vec.resize( size_type( 1024 * 1024 ), 0 );
+
+		var RandGenerator mut gen;
+		foreach( &mut i : vec )
+		{
+			i= i32(gen.Next());
+		}
+
+		ust::sort( vec.range() );
+		halt if( !IsSorted( vec ) );
+	}
 
 	return 0;
 }
