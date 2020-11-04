@@ -338,6 +338,19 @@ fn nomangle main() : i32
 		ust::sort( ust::array_view_mut</ ust::string8 />( arr ), comp );
 		halt if( !IsSorted( arr, comp ) );
 	}
+	{ // Sort strings using default (<) comparator
+		auto num= 23s;
+		var [ ust::string8, num ]
+			 mut arr[ "4", "8", "15", "16", "23", "42", "quck", "brown", "fox", "jumps", "over", "the", "lazy", "dog", "Bc", "Ba", "A", "Af", "L", "lolwat", "Zy", "XXX", "" ],
+			imut res[ "", "15", "16", "23", "4", "42", "8", "A", "Af", "Ba", "Bc", "L", "XXX", "Zy", "brown", "dog", "fox", "jumps", "lazy", "lolwat", "over", "quck", "the" ];
+		ust::sort( ust::array_view_mut</ ust::string8 />( arr ) );
+		halt if( !IsSorted( arr ) );
+
+		for( auto mut i= 0s; i < num; ++i )
+		{
+			halt if( arr[i] != res[i] );
+		}
+	}
 
 	return 0;
 }

@@ -184,6 +184,80 @@ fn nomangle main() : i32
 		str= ust::string8("W") + range;
 		halt if( str != "WRaNgE" );
 	}
+	{ // Order compare
+		halt if( ust::string8("") < ust::string8("") );
+		halt if( ust::string8("") > ust::string8("") );
+		halt if( !( ust::string8("") <= ust::string8("") ) );
+		halt if( !( ust::string8("") >= ust::string8("") ) );
+
+		// Difference in first symbol.
+		halt if( !( ust::string8("a") < ust::string8("b") ) );
+		halt if( !( ust::string8("a0123") < ust::string8("b") ) );
+		halt if( !( ust::string8("a") < ust::string8("b0123") ) );
+		halt if( ust::string8("734") < ust::string8("120") );
+		halt if( ust::string8("94B") < ust::string8("84") );
+
+		// Difference in non-first symbol.
+		halt if( !( ust::string8("0123v567") < ust::string8("0123w567") ) );
+		halt if( !( ust::string8("aaFbb") < ust::string8("aaQaa") ) );
+		halt if( ust::string8("bbrX7tt") < ust::string8("bbrX2") );
+		halt if( ust::string8("013f") < ust::string8("010f") );
+
+		// Difference in last symbol.
+		halt if( !( ust::string8("9518470") < ust::string8("9518475") ) );
+		halt if( ust::string8("013") < ust::string8("010") );
+
+		// Substring is always less than full string.
+		halt if( !( ust::string8("a") < ust::string8("abc") ) );
+		halt if( ust::string8("qwerty") < ust::string8("qwe") );
+		halt if( !( ust::string8("") < ust::string8("another string") ) ); // empty string is less than all other strings.
+
+		halt if( !( ust::string8("a") <= ust::string8("b") ) );
+		halt if( !( ust::string8("abcd") <= ust::string8("b") ) );
+		halt if( !( ust::string8("01A") <= ust::string8("01B") ) );
+		halt if( !( ust::string8("22rTX") <= ust::string8("22rX") ) );
+		halt if( !( ust::string8("lolw") <= ust::string8("lolwat") ) );
+		halt if( !( ust::string8("jrfhwaqQ") <= ust::string8("jrfhwaqQ") ) );
+		halt if( ust::string8("d") <= ust::string8("a") );
+		halt if( ust::string8("57r8") <= ust::string8("57f8") );
+	}
+	{
+		var [ [ ust::string8, 2 ], 9 ] string_pairs
+		[
+			[ "", "" ],
+			[ "QwE", "QwE" ],
+			[ "a", "b" ],
+			[ "ab0", "ab1" ],
+			[ "abcQrtg", "abcZ" ],
+			[ "str", "str054534" ],
+			[ "wtfggt", "wt" ],
+			[ "", "nonempty" ],
+			[ "NonEmpty2", "" ],
+		];
+
+		foreach( &pair : string_pairs )
+		{
+			auto l = pair[0] <  pair[1];
+			auto le= pair[0] <= pair[1];
+			auto g = pair[0] >  pair[1];
+			auto ge= pair[0] >= pair[1];
+			auto eq= pair[0] == pair[1];
+			auto ne= pair[0] != pair[1];
+
+			// Opposite conditions.
+			halt if( eq == ne );
+			halt if( l == ge );
+			halt if( g == le );
+
+			halt if( g & l ); // Can not be greater and less simultaneously.
+			halt if( l & eq ); // Can not be less and equal simultaneously.
+			halt if( g & eq ); // Can not be greater and equal simultaneously.
+			halt if( eq & !le ); // If equal, should be also less and equal.
+			halt if( eq & !ge ); // If equal, should be also greater and equal.
+			halt if( ne & le == ge ); // If not equal, less equal and greater equal should not be same.
+			halt if( le & ge & !eq ); // If less equal and greater equal, should be also equal.
+		}
+	}
 	{ // substr.
 		var ust::string8 s( "abcdef012345" );
 		auto l= s.substr( size_type(0), size_type(6) );
