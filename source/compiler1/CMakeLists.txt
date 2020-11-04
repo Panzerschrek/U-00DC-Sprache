@@ -9,22 +9,23 @@ function( CompileUSource u_source_file out_object )
 	file( RELATIVE_PATH current_subdir ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR} )
 	file( RELATIVE_PATH u_source_file_relative ${CMAKE_CURRENT_SOURCE_DIR} ${u_source_file} )
 	add_custom_command(
-		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.o
+		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.bc
 		DEPENDS ${u_source_file} Compiler${CURRENT_COMPILER_GENERATION}
 		COMMAND
 			Compiler${CURRENT_COMPILER_GENERATION}
 			${u_source_file}
-			-o ${current_subdir}/${u_source_file_relative}.o
+			-filetype=bc
+			-o ${current_subdir}/${u_source_file_relative}.bc
 			-MF ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
 			${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS}
 			--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
 			--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/
 			--include-dir ${CMAKE_CURRENT_BINARY_DIR}/
 		DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "compiler1/lex_syn_lib/file_pos.u.o:", but launches custom command in current binary directory
-		COMMENT "Building ${current_subdir}/${u_source_file_relative}.o"
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "compiler1/lex_syn_lib/file_pos.u.bc:", but launches custom command in current binary directory
+		COMMENT "Building ${current_subdir}/${u_source_file_relative}.bc"
 		)
-	set( ${out_object} ${u_source_file_relative}.o PARENT_SCOPE )
+	set( ${out_object} ${u_source_file_relative}.bc PARENT_SCOPE )
 endfunction()
 
 # Returns list of objects in ${out_objects}
@@ -100,21 +101,31 @@ file( GLOB LAUNCHERS_COMMON_CPP_SOURCES "launchers_common/*.cpp" )
 file( GLOB LAUNCHERS_COMMON_CPP_HEADERS "launchers_common/*.hpp" )
 CompileUSources( LAUNCHERS_COMMON_SOURCES LAUNCHERS_COMMON_OBJECTS )
 
+add_custom_command(
+	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CodeBuilderLib_u.o
+	DEPENDS ${LEX_SYNT_LIB_OBJECTS} ${CODE_BUILDER_LIB_OBJECTS} ${LAUNCHERS_COMMON_OBJECTS}
+	COMMAND
+		Compiler${CURRENT_COMPILER_GENERATION}
+		${LEX_SYNT_LIB_OBJECTS} ${CODE_BUILDER_LIB_OBJECTS} ${LAUNCHERS_COMMON_OBJECTS}
+		-filetype=obj
+		-o ${CMAKE_CURRENT_BINARY_DIR}/CodeBuilderLib_u.o
+		${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS}
+	WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+	)
+
 add_library(
 	CodeBuilderLib${NEXT_COMPILER_GENERATION}
 		${LEX_SYNT_LIB_HEADERS}
 		${LEX_SYNT_LIB_SOURCES}
 		${LEX_SYNT_LIB_SOURCES_GENERATED}
-		${LEX_SYNT_LIB_OBJECTS}
 		${CODE_BUILDER_LIB_CPP_SOURCES}
 		${CODE_BUILDER_LIB_HEADERS}
 		${CODE_BUILDER_LIB_SOURCES}
-		${CODE_BUILDER_LIB_OBJECTS}
 		${LAUNCHERS_COMMON_CPP_SOURCES}
 		${LAUNCHERS_COMMON_CPP_HEADERS}
 		${LAUNCHERS_COMMON_SOURCES}
 		${LAUNCHERS_COMMON_HEADERS}
-		${LAUNCHERS_COMMON_OBJECTS}
+		${CMAKE_CURRENT_BINARY_DIR}/CodeBuilderLib_u.o
 	)
 target_link_libraries( CodeBuilderLib${NEXT_COMPILER_GENERATION} LexSyntLibCommon CodeBuilderLibCommon )
 
