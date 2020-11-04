@@ -1,3 +1,4 @@
+import "aligned_storage.u"
 import "container_utils.u"
 import "memory.u"
 import "pointer.u"
@@ -161,6 +162,26 @@ public:
 	fn data( this ) unsafe : ptr_type
 	{
 		return begin_;
+	}
+
+	fn enable_if( is_mutable ) swap( this, size_type i0, size_type i1 )
+	{
+		halt if( i0 >= size() );
+		halt if( i1 >= size() );
+
+		if( i0 == i1 ){ return; }
+
+		unsafe
+		{
+			var ptr_type mut ptr0= begin_ + i0;
+			var ptr_type mut ptr1= begin_ + i1;
+
+			auto c_element_size= typeinfo</T/>.size_of;
+			var aligned_storage</ c_element_size, typeinfo</T/>.align_of /> mut temp= uninitialized;
+			memory_copy( temp          , ptr0.get_ref(), c_element_size );
+			memory_copy( ptr0.get_ref(), ptr1.get_ref(), c_element_size );
+			memory_copy( ptr1.get_ref(), temp          , c_element_size );
+		}
 	}
 
 private:

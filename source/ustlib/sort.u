@@ -1,0 +1,93 @@
+import "random_access_range.u"
+
+namespace ust
+{
+
+template</type T/>
+fn sort( ust::random_access_range</T, true/> range )
+{
+	sort_impl::do_sort( range, sort_impl::default_compare</T/>() );
+}
+
+template</type T, type Compare/>
+fn sort( ust::random_access_range</T, true/> range, Compare& comp )
+{
+	sort_impl::do_sort( range, comp );
+}
+
+namespace sort_impl
+{
+
+template</type T/>
+struct default_compare
+{
+	op()( this, T& a, T& b ) : bool
+	{
+		return a < b;
+	}
+}
+
+/*
+Simple quicksort implementation. Average complexity - O(log(n)), worst case complexity - O(n^2).
+ TODO:
+ * Use raw pointers instead of random_access_range.
+ * Remove unnecessary bounds checks (inside "swap" and "[]" methods).
+ * Use more simple sorting algorithm for small number of elements.
+ * Select median element smartely.
+ * Prevent stack overflow in worst case (O(n^2)) and large number of elements.
+*/
+
+template</type T, type Compare/>
+fn do_sort( ust::random_access_range</T, true/> range, Compare& comp )
+{
+	if( range.size() <= 1s )
+	{
+		return;
+	}
+	if( range.size() == 2s )
+	{
+		var bool mut c= false;
+		{
+			var ust::random_access_range</T, false/> range_copy= range;
+			c= comp( range_copy.front(), range_copy.back() );
+		}
+		if( !c )
+		{
+			range.swap( 0s, 1s );
+		}
+		return;
+	}
+
+	var size_type s= range.size(), last= s - 1s, mut lo= 0s, mut hi= last;
+
+	while( lo < hi )
+	{
+		var bool mut c= false;
+		{
+			var ust::random_access_range</T, false/> range_copy= range;
+			c= comp( range_copy[lo], range_copy[last] );
+		}
+
+		if( c )
+		{
+			++lo;
+		}
+		else
+		{
+			--hi;
+			range.swap( lo, hi );
+		}
+	}
+
+	if( hi < last )
+	{
+		range.swap( hi, last );
+	}
+
+	do_sort( range.subrange( 0s, hi ), comp );
+	do_sort( range.subrange( hi + 1s, s ), comp );
+}
+
+} // namespace sort_impl
+
+} // namespace ust
