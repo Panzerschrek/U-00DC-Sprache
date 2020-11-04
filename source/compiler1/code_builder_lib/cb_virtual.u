@@ -1,10 +1,24 @@
 import "/keywords.uh"
+import "/sort.u"
 import "error_reporting.uh"
 import "code_builder.uh"
 import "mangling.uh"
 
 namespace U1
 {
+
+struct VirtualFunctionWithName
+{
+	ust::shared_ptr_mut</NamesScopeFunctionsSet/> functions_set;
+	size_type index;
+	ust::string8 name;
+	ust::string8 mangled_name;
+
+	op<( VirtualFunctionWithName& l, VirtualFunctionWithName& r ) : bool
+	{
+		return l.mangled_name < r.mangled_name;
+	}
+}
 
 fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 {
@@ -77,9 +91,10 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 		} // for parent virtual table entries
 	} // for parents
 
-	// Process functions.
-	var u32 mut own_virtual_table_index= 0u;
-	// TODO - process functions in some strong order, not in order of hash table. This is needed because we needs stable order of functions in virtual table.
+	// Sort functions, using mangled name, before adding them into virtual table.
+	// This needed for strong predicatable order of functions in virtual table.
+	var ust::vector</ VirtualFunctionWithName /> mut this_virtual_functions;
+
 	auto class_members_ptr= class_type.members;
 	foreach( &class_member : class_members_ptr.lock_imut().get_ref().GetInternalContainer() )
 	{
@@ -89,92 +104,94 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 			continue;
 		}
 
-		var ust::string8& function_name= class_member.key();
-
 		auto mut functions_set_lock= functions_set_ptr.lock_mut();
-		foreach( &mut function : functions_set_lock.get_ref().functions_set.functions )
+		var FunctionsSet& functions_set= functions_set_lock.get_ref().functions_set;
+		for( auto mut i= 0s; i < functions_set.functions.size(); ++i )
 		{
-			if( !function.is_this_call )
+			if( !functions_set.functions[i].is_this_call )
 			{
 				continue; // May be in case of error
 			}
 
-			auto mut virtual_table_index= ~0u;
-			for( auto mut i= 0s; i < class_type.virtual_table.size(); ++i )
+			var VirtualFunctionWithName mut f
 			{
-				var ClassType::VirtualTableEntry& entry= class_type.virtual_table[i];
-				if( function_name == entry.name && function.VirtuallyEquals( entry.function_variable ) )
-				{
-					virtual_table_index= u32(i);
-					break;
-				}
+				.functions_set= ust::to_non_nullable( functions_set_ptr ),
+				.index= i,
+				.name= class_member.key(),
+			};
+
+			unsafe
+			{
+				var size_type mut name_length= 0s;
+				var char8& name_start= LLVMGetValueName2( functions_set.functions[i].llvm_function, name_length );
+
+				f.mangled_name.resize( name_length, "\0"c8 );
+				ust::memory_copy( f.mangled_name.front_unsafe(), name_start, name_length );
 			}
 
-			var FilePos mut file_pos;
-			var Synt::Function::VirtualKind mut virtual_kind= Synt::Function::VirtualKind::None;
-			if( !function.body_syntax_element.empty() )
-			{
-				auto& el= function.body_syntax_element.get_ref();
-				file_pos= el.file_pos;
-				virtual_kind= el.virtual_kind;
-			}
-			else if( !function.prototype_syntax_element.empty() )
-			{
-				auto& el= function.prototype_syntax_element.get_ref();
-				file_pos= el.file_pos;
-				virtual_kind= el.virtual_kind;
-			}
+			this_virtual_functions.push_back( move(f) );
+		}
+	}
 
-			if( virtual_kind != Synt::Function::VirtualKind::None && class_type.GetMemberVisibility( function_name ) == Synt::ClassVisibility::Private )
-			{
-				// Private members not visible in child classes. So, virtual private function is 100% error.
-				REPORT_ERROR( VirtualForPrivateFunction, class_members_ptr, file_pos, function_name )
-			}
+	ust::sort( this_virtual_functions.range() );
 
-			if( virtual_kind == Synt::Function::VirtualKind::None )
-			{
-				if( function_name == KeywordToString( Keyword::destructor_ ) )
-				{
-					// For destructors virtual specifiers are optional.
-					// If destructor not marked as virtual, but it placed in polymorph class, make it virtual.
-					if( virtual_table_index != ~0u )
-					{
-						function.virtual_table_index= virtual_table_index;
-						class_type.virtual_table[virtual_table_index].function_variable= function;
-					}
-					else if(
-						class_type.kind == ClassType::Kind::PolymorphFinal ||
-						class_type.kind == ClassType::Kind::PolymorphNonFinal ||
-						class_type.kind == ClassType::Kind::Interface ||
-						class_type.kind == ClassType::Kind::Abstract )
-					{
-						function.virtual_table_index= u32(class_type.virtual_table.size());
+	// Process functions.
+	var u32 mut own_virtual_table_index= 0u;
+	foreach( &f : this_virtual_functions )
+	{
+		var ust::string8& function_name= f.name;
 
-						var ClassType::VirtualTableEntry mut new_virtual_table_entry
-						{
-							.name= function_name,
-							.function_variable= function,
-							.is_pure= false,
-							.is_final= false,
-							.index_in_table= own_virtual_table_index,
-							.parent_virtual_table_index= ~0u,
-						};
-						class_type.virtual_table.push_back( move( new_virtual_table_entry ) );
-						++own_virtual_table_index;
-					}
-				}
-				else if( virtual_table_index != ~0u )
-				{
-					REPORT_ERROR( VirtualRequired, class_members_ptr, file_pos, function_name )
-				}
-			}
-			else if( virtual_kind == Synt::Function::VirtualKind::DeclareVirtual )
+		auto mut functions_set_lock= f.functions_set.lock_mut();
+		var FunctionVariable &mut function= functions_set_lock.get_ref().functions_set.functions[ f.index ];
+
+		auto mut virtual_table_index= ~0u;
+		for( auto mut i= 0s; i < class_type.virtual_table.size(); ++i )
+		{
+			var ClassType::VirtualTableEntry& entry= class_type.virtual_table[i];
+			if( function_name == entry.name && function.VirtuallyEquals( entry.function_variable ) )
 			{
+				virtual_table_index= u32(i);
+				break;
+			}
+		}
+
+		var FilePos mut file_pos;
+		var Synt::Function::VirtualKind mut virtual_kind= Synt::Function::VirtualKind::None;
+		if( !function.body_syntax_element.empty() )
+		{
+			auto& el= function.body_syntax_element.get_ref();
+			file_pos= el.file_pos;
+			virtual_kind= el.virtual_kind;
+		}
+		else if( !function.prototype_syntax_element.empty() )
+		{
+			auto& el= function.prototype_syntax_element.get_ref();
+			file_pos= el.file_pos;
+			virtual_kind= el.virtual_kind;
+		}
+
+		if( virtual_kind != Synt::Function::VirtualKind::None && class_type.GetMemberVisibility( function_name ) == Synt::ClassVisibility::Private )
+		{
+			// Private members not visible in child classes. So, virtual private function is 100% error.
+			REPORT_ERROR( VirtualForPrivateFunction, class_members_ptr, file_pos, function_name )
+		}
+
+		if( virtual_kind == Synt::Function::VirtualKind::None )
+		{
+			if( function_name == KeywordToString( Keyword::destructor_ ) )
+			{
+				// For destructors virtual specifiers are optional.
+				// If destructor not marked as virtual, but it placed in polymorph class, make it virtual.
 				if( virtual_table_index != ~0u )
 				{
-					REPORT_ERROR( OverrideRequired, class_members_ptr, file_pos, function_name )
+					function.virtual_table_index= virtual_table_index;
+					class_type.virtual_table[virtual_table_index].function_variable= function;
 				}
-				else
+				else if(
+					class_type.kind == ClassType::Kind::PolymorphFinal ||
+					class_type.kind == ClassType::Kind::PolymorphNonFinal ||
+					class_type.kind == ClassType::Kind::Interface ||
+					class_type.kind == ClassType::Kind::Abstract )
 				{
 					function.virtual_table_index= u32(class_type.virtual_table.size());
 
@@ -191,81 +208,108 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 					++own_virtual_table_index;
 				}
 			}
-			else if( virtual_kind == Synt::Function::VirtualKind::VirtualOverride )
+			else if( virtual_table_index != ~0u )
 			{
-				if( virtual_table_index == ~0u )
-				{
-					REPORT_ERROR( FunctionDoesNotOverride, class_members_ptr, file_pos, function_name )
-				}
-				else if( class_type.virtual_table[virtual_table_index].is_final )
-				{
-					REPORT_ERROR( OverrideFinalFunction, class_members_ptr, file_pos, function_name )
-				}
-				else
-				{
-					function.virtual_table_index= virtual_table_index;
-					var ClassType::VirtualTableEntry &mut entry= class_type.virtual_table[virtual_table_index];
-					entry.function_variable= function;
-					entry.is_pure= false;
-				}
+				REPORT_ERROR( VirtualRequired, class_members_ptr, file_pos, function_name )
 			}
-			else if( virtual_kind == Synt::Function::VirtualKind::VirtualFinal )
+		}
+		else if( virtual_kind == Synt::Function::VirtualKind::DeclareVirtual )
+		{
+			if( virtual_table_index != ~0u )
 			{
-				if( virtual_table_index == ~0u )
-				{
-					REPORT_ERROR( FinalForFirstVirtualFunction, class_members_ptr, file_pos, function_name )
-				}
-				else if( class_type.virtual_table[virtual_table_index].is_final )
-				{
-					REPORT_ERROR( OverrideFinalFunction, class_members_ptr, file_pos, function_name )
-				}
-				else
-				{
-					function.virtual_table_index= virtual_table_index;
-					var ClassType::VirtualTableEntry &mut entry= class_type.virtual_table[virtual_table_index];
-					entry.function_variable= function;
-					entry.is_pure= false;
-					entry.is_final= true;
-				}
+				REPORT_ERROR( OverrideRequired, class_members_ptr, file_pos, function_name )
 			}
-			else if( virtual_kind == Synt::Function::VirtualKind::VirtualPure )
+			else
 			{
-				if( virtual_table_index != ~0u )
+				function.virtual_table_index= u32(class_type.virtual_table.size());
+
+				var ClassType::VirtualTableEntry mut new_virtual_table_entry
 				{
-					REPORT_ERROR( OverrideRequired, class_members_ptr, file_pos, function_name )
-				}
-				else
-				{
-					if( !function.body_syntax_element.empty() )
-					{
-						REPORT_ERROR( BodyForPureVirtualFunction, class_members_ptr, file_pos, function_name )
-					}
-					if( function_name == KeywordToString( Keyword::destructor_ ) )
-					{
-						REPORT_ERROR( PureDestructor, class_members_ptr, file_pos, ust::string8("/TODO - name") )
-					}
-
-					// TODO - prevent body generation for pure functions.
-
-					function.virtual_table_index= u32(class_type.virtual_table.size());
-
-					var ClassType::VirtualTableEntry mut new_virtual_table_entry
-					{
-						.name= function_name,
-						.function_variable= function,
-						.is_pure= true,
-						.is_final= false,
-						.index_in_table= own_virtual_table_index,
-						.parent_virtual_table_index= ~0u,
-					};
-					class_type.virtual_table.push_back( move( new_virtual_table_entry ) );
-					++own_virtual_table_index;
-				}
+					.name= function_name,
+					.function_variable= function,
+					.is_pure= false,
+					.is_final= false,
+					.index_in_table= own_virtual_table_index,
+					.parent_virtual_table_index= ~0u,
+				};
+				class_type.virtual_table.push_back( move( new_virtual_table_entry ) );
+				++own_virtual_table_index;
 			}
-			else{ halt; }
+		}
+		else if( virtual_kind == Synt::Function::VirtualKind::VirtualOverride )
+		{
+			if( virtual_table_index == ~0u )
+			{
+				REPORT_ERROR( FunctionDoesNotOverride, class_members_ptr, file_pos, function_name )
+			}
+			else if( class_type.virtual_table[virtual_table_index].is_final )
+			{
+				REPORT_ERROR( OverrideFinalFunction, class_members_ptr, file_pos, function_name )
+			}
+			else
+			{
+				function.virtual_table_index= virtual_table_index;
+				var ClassType::VirtualTableEntry &mut entry= class_type.virtual_table[virtual_table_index];
+				entry.function_variable= function;
+				entry.is_pure= false;
+			}
+		}
+		else if( virtual_kind == Synt::Function::VirtualKind::VirtualFinal )
+		{
+			if( virtual_table_index == ~0u )
+			{
+				REPORT_ERROR( FinalForFirstVirtualFunction, class_members_ptr, file_pos, function_name )
+			}
+			else if( class_type.virtual_table[virtual_table_index].is_final )
+			{
+				REPORT_ERROR( OverrideFinalFunction, class_members_ptr, file_pos, function_name )
+			}
+			else
+			{
+				function.virtual_table_index= virtual_table_index;
+				var ClassType::VirtualTableEntry &mut entry= class_type.virtual_table[virtual_table_index];
+				entry.function_variable= function;
+				entry.is_pure= false;
+				entry.is_final= true;
+			}
+		}
+		else if( virtual_kind == Synt::Function::VirtualKind::VirtualPure )
+		{
+			if( virtual_table_index != ~0u )
+			{
+				REPORT_ERROR( OverrideRequired, class_members_ptr, file_pos, function_name )
+			}
+			else
+			{
+				if( !function.body_syntax_element.empty() )
+				{
+					REPORT_ERROR( BodyForPureVirtualFunction, class_members_ptr, file_pos, function_name )
+				}
+				if( function_name == KeywordToString( Keyword::destructor_ ) )
+				{
+					REPORT_ERROR( PureDestructor, class_members_ptr, file_pos, ust::string8("/TODO - name") )
+				}
 
-		} // for functions
-	} // for class members
+				// TODO - prevent body generation for pure functions.
+
+				function.virtual_table_index= u32(class_type.virtual_table.size());
+
+				var ClassType::VirtualTableEntry mut new_virtual_table_entry
+				{
+					.name= function_name,
+					.function_variable= function,
+					.is_pure= true,
+					.is_final= false,
+					.index_in_table= own_virtual_table_index,
+					.parent_virtual_table_index= ~0u,
+				};
+				class_type.virtual_table.push_back( move( new_virtual_table_entry ) );
+				++own_virtual_table_index;
+			}
+		}
+		else{ halt; }
+
+	} // for functions
 }
 
 fn CodeBuilder::PrepareClassVirtualTableType( this, ClassTypePtr& class_type_ptr )
