@@ -113,7 +113,7 @@ private:
 	llvm::FunctionType* GetLLVMFunctionType( const Function& function_type );
 
 	// Virtual stuff
-	void PrepareClassVirtualTable( Class& the_class, const Type& class_type, const std::vector<FunctionVariable*>& functions );
+	void PrepareClassVirtualTable( Class& the_class );
 	void PrepareClassVirtualTableType( const ClassProxyPtr& class_type );
 
 	void BuildPolymorphClassTypeId( Class& the_class, const Type& class_type );

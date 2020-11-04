@@ -10,7 +10,7 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-void CodeBuilder::PrepareClassVirtualTable( Class& the_class, const Type& class_type, const std::vector<FunctionVariable*>& functions )
+void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 {
 	U_ASSERT( !the_class.is_complete );
 	U_ASSERT( the_class.virtual_table.empty() );
@@ -60,14 +60,33 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class, const Type& class_
 		} // for parent virtual table
 	}
 
+	struct ClassFunction
+	{
+		FunctionVariable* function;
+		std::string name;
+		bool operator<( ClassFunction& other ) const{ return this->function->llvm_function->getName() < other.function->llvm_function->getName(); }
+	};
+	std::vector<ClassFunction> class_functions;
+
+	the_class.members.ForEachInThisScope(
+		[&]( const std::string& name, Value& value )
+		{
+			if( const auto functions_set= value.GetFunctionsSet() )
+				for( FunctionVariable& function : functions_set->functions )
+					class_functions.emplace_back( ClassFunction{ &function, name } );
+		});
+
+	// We needs strong order of functions in virtual table. So, sort them, using mangled name.
+	std::sort( class_functions.begin(), class_functions.end() );
+
 	uint32_t own_virtual_table_index= 0;
 
 	// Process functions
-	for( FunctionVariable* const function_ptr : functions )
+	for( const ClassFunction& class_function : class_functions )
 	{
-		FunctionVariable& function= *function_ptr;
+		FunctionVariable& function= *class_function.function;
 
-		const std::string& function_name= function.syntax_element->name_.back();
+		const std::string& function_name= class_function.name;
 		const FilePos& file_pos= function.syntax_element->file_pos_;
 		CodeBuilderErrorsContainer& errors_container= the_class.members.GetErrors();
 
@@ -197,43 +216,6 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class, const Type& class_
 			}
 			break;
 		};
-	}
-
-	// Generate destructor prototype.
-	if( the_class.members.GetThisScopeValue( Keyword( Keywords::destructor_ ) ) == nullptr )
-	{
-		FunctionVariable destructor_function_variable= GenerateDestructorPrototype( the_class, class_type );
-		destructor_function_variable.prototype_file_pos= destructor_function_variable.body_file_pos= FilePos(); // TODO - set correct file_pos
-
-		// Add destructor to virtual table.
-		Class::VirtualTableEntry* virtual_table_entry= nullptr;
-		for( Class::VirtualTableEntry& e : the_class.virtual_table )
-		{
-			if( e.name == Keywords::destructor_ )
-			{
-				virtual_table_entry= &e;
-				break;
-			}
-		}
-		if( virtual_table_entry == nullptr )
-		{
-			destructor_function_variable.virtual_table_index= uint32_t(the_class.virtual_table.size());
-			Class::VirtualTableEntry new_virtual_table_entry;
-			new_virtual_table_entry.function_variable= destructor_function_variable;
-			new_virtual_table_entry.name= Keyword( Keywords::destructor_ );
-			new_virtual_table_entry.is_pure= false;
-			new_virtual_table_entry.is_final= false;
-			new_virtual_table_entry.index_in_table= own_virtual_table_index;
-			++own_virtual_table_index;
-			the_class.virtual_table.push_back( std::move( new_virtual_table_entry ) );
-		}
-		else
-			virtual_table_entry->function_variable= destructor_function_variable;
-
-		// Add destructor to names scope.
-		OverloadedFunctionsSet destructors_set;
-		destructors_set.functions.push_back(destructor_function_variable);
-		the_class.members.AddName( Keyword( Keywords::destructor_ ), std::move(destructors_set) );
 	}
 }
 
