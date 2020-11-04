@@ -66,6 +66,7 @@ def main():
 		"typeinfo_test",
 		"typeof_test",
 		"static_if_test",
+		"strong_order_test",
 		"uninitialized_initializer_test",
 		"unsafe_test",
 		"virtual_functions_test",
