@@ -134,3 +134,56 @@ def VirtualTableOrder_Test1():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def TypeinfoFunctionParamsList_Order_Test0():
+	c_program_text= """
+		struct S{}
+		type FnPtr= fn( i32 x, f32 y, bool z, S& s );
+		auto& ti= typeinfo</FnPtr/>.element_type;
+
+		static_assert( ti.arguments_list[0].type.is_signed_integer );
+		static_assert( !ti.arguments_list[0].is_reference );
+
+		static_assert( ti.arguments_list[1].type.is_float );
+		static_assert( !ti.arguments_list[1].is_reference );
+
+		static_assert( ti.arguments_list[2].type.is_bool );
+		static_assert( !ti.arguments_list[2].is_reference );
+
+		static_assert( ti.arguments_list[3].type.is_class );
+		static_assert( ti.arguments_list[3].is_reference );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoTupleElementsListList_Order_Test0():
+	c_program_text= """
+		struct S{}
+		type t0= tup[ i32, f32, bool, S ];
+		type t1= tup[ S, i32, bool, f32 ];
+		auto& ti0= typeinfo</t0/>;
+		auto& ti1= typeinfo</t1/>;
+
+		// Elemenst in typeinfo have same order as in original tuple.
+		// Tuple elements placed in memory continiously.
+
+		static_assert( ti0.elements_list[0].type.is_signed_integer );
+		static_assert( ti0.elements_list[1].type.is_float );
+		static_assert( ti0.elements_list[2].type.is_bool );
+		static_assert( ti0.elements_list[3].type.is_class );
+
+		static_assert( ti0.elements_list[0].offset <= ti0.elements_list[1].offset );
+		static_assert( ti0.elements_list[1].offset <= ti0.elements_list[2].offset );
+		static_assert( ti0.elements_list[1].offset <= ti0.elements_list[3].offset );
+
+		static_assert( ti1.elements_list[0].type.is_class );
+		static_assert( ti1.elements_list[1].type.is_signed_integer );
+		static_assert( ti1.elements_list[2].type.is_bool );
+		static_assert( ti1.elements_list[3].type.is_float );
+
+		static_assert( ti1.elements_list[0].offset <= ti1.elements_list[1].offset );
+		static_assert( ti1.elements_list[1].offset <= ti1.elements_list[2].offset );
+		static_assert( ti1.elements_list[1].offset <= ti1.elements_list[3].offset );
+	"""
+	tests_lib.build_program( c_program_text )
