@@ -18,7 +18,7 @@ import "mangling.uh"
 
 		fields_llvm_types.push_back( class_field.t.GetLLVMType() );
 
-		unsafe{  fields_initializers.push_back( LLVMConstInt( class_field.t.GetLLVMType(), select( ?value ? 1u64 : 0u64 ), LLVMBool::True ) );  }
+		unsafe{  fields_initializers.push_back( LLVMConstInt( class_field.t.GetLLVMType(), select( ?value ? 1u64 : 0u64 ), LLVMBool::False ) );  }
 
 		auto mut members_lock= class_members.lock_mut();
 		members_lock.get_ref().AddName( ?name, move(class_field) );
@@ -248,7 +248,6 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 		}
 	}
 
-
 	var ClassTypePtr typeinfo_class= typeinfo_cache_[entry_index].v.t.GetClassType().get_ref();
 	if( typeinfo_class.lock_imut().get_ref().is_complete )
 	{
@@ -258,6 +257,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 	if( !EnsureTypeComplete( t ) )
 	{
 		// Ignore incomplete types here, generate error in "typeinfo" operator evaluation instead.
+		// TODO - what if user try to access incomplete member of incomplete typeinfo class?
 		return typeinfo_cache_[entry_index].v;
 	}
 
