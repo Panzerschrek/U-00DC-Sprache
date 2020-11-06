@@ -187,3 +187,75 @@ def TypeinfoTupleElementsListList_Order_Test0():
 		static_assert( ti1.elements_list[1].offset <= ti1.elements_list[3].offset );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoClassFieldsList_Order_Test0():
+	c_program_text= """
+		struct S
+		{
+			i32 b;
+			[ i32, 2 ] qwerty;
+			f32 a;
+			bool ar;
+			void& fff;
+		}
+		// Order should be "a", "ar", "b", "fff", "qwerty"
+
+		auto& ti= typeinfo</S/>;
+
+		static_assert( ti.fields_list[0].type.is_float );
+		static_assert( ti.fields_list[0].name[0] == "a"c8 );
+
+		static_assert( ti.fields_list[1].type.is_bool );
+		static_assert( ti.fields_list[1].name[0] == "a"c8 );
+
+		static_assert( ti.fields_list[2].type.is_signed_integer );
+		static_assert( ti.fields_list[2].name[0] == "b"c8 );
+
+		static_assert( ti.fields_list[3].type.is_void );
+		static_assert( ti.fields_list[3].name[0] == "f"c8 );
+
+		static_assert( ti.fields_list[4].type.is_array );
+		static_assert( ti.fields_list[4].name[0] == "q"c8 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoClassFieldsList_Order_Test1():
+	c_program_text= """
+		class Base polymorph
+		{
+			f32 c;
+			i16 a;
+			[ f64, 8 ] e;
+		}
+
+		class Derived : Base
+		{
+			u32 b;
+			bool d;
+			tup[] f;
+		}
+		// Order should be "a", "b", "c", "d", "e", "f"
+
+		auto& ti= typeinfo</Derived/>;
+
+		static_assert( ti.fields_list[0].type.is_signed_integer );
+		static_assert( ti.fields_list[0].name[0] == "a"c8 );
+
+		static_assert( ti.fields_list[1].type.is_unsigned_integer );
+		static_assert( ti.fields_list[1].name[0] == "b"c8 );
+
+		static_assert( ti.fields_list[2].type.is_float );
+		static_assert( ti.fields_list[2].name[0] == "c"c8 );
+
+		static_assert( ti.fields_list[3].type.is_bool );
+		static_assert( ti.fields_list[3].name[0] == "d"c8 );
+
+		static_assert( ti.fields_list[4].type.is_array );
+		static_assert( ti.fields_list[4].name[0] == "e"c8 );
+
+		static_assert( ti.fields_list[5].type.is_tuple );
+		static_assert( ti.fields_list[5].name[0] == "f"c8 );
+	"""
+	tests_lib.build_program( c_program_text )

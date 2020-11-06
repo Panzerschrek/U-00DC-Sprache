@@ -1,7 +1,9 @@
+import "/sort.u"
 import "/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
 import "mangling.uh"
+
 ?macro <? ADD_BOOL_FIELD:block( ?name:expr, ?value:expr ) ?>
 ->
 <?
@@ -152,6 +154,17 @@ auto& g_typeinfo_class_functions_list_node_class_name= "_TICFuL_";
 auto& g_typeinfo_class_types_list_node_class_name= "_TICTL_";
 auto& g_typeinfo_class_parents_list_node_class_name= "_TICPL_";
 auto& g_typeinfo_enum_elements_list_node_class_name= "_TIEL_";
+
+struct ClassFieldForTypeinfo
+{
+	ust::shared_ptr_imut</ClassField/> class_field;
+	ust::string8 name;
+
+	op<( ClassFieldForTypeinfo& l, ClassFieldForTypeinfo& r ) : bool
+	{
+		return l.name < r.name;
+	}
+}
 
 // Returns null-terminated string.
 fn GetTypeinfoVariableName( ClassTypePtr& typeinfo_class ) : ust::string8
@@ -537,25 +550,34 @@ fn CodeBuilder::BuildTypeinfoFunctionParamsList( mut this, NamesScopePtr& root_n
 
 fn CodeBuilder::BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : Variable
 {
+	var ust::vector</ ClassFieldForTypeinfo /> mut class_fields;
+	{
+		auto class_members_ptr= class_type.lock_imut().get_ref().members;
+		auto class_members_lock= class_members_ptr.lock_imut();
+		var NamesScope& class_members= class_members_lock.get_ref();
+
+		foreach( &member : class_members.GetInternalContainer() )
+		{
+			auto field_ptr= member.value().Get</ClassField/>();
+			if( !field_ptr.empty() )
+			{
+				var ClassFieldForTypeinfo mut f{ .class_field= ust::to_non_nullable(field_ptr), .name= member.key() };
+				class_fields.push_back( move(f) );
+			}
+		}
+	}
+
+	// Sort class fields in typeinfo by name, because we need strong order.
+	ust::sort( class_fields.range() );
+
 	var ust::vector</Type/> mut list_types;
 	var ust::vector</LLVMValueRef/> mut list_initializers;
 
 	var ust::shared_ptr_final</ Synt::ClassField /> dummy_syntax_element( Synt::ClassField() );
 
-	auto class_members_ptr= class_type.lock_imut().get_ref().members;
-	auto class_members_lock= class_members_ptr.lock_imut();
-	var NamesScope& class_members= class_members_lock.get_ref();
-
-	// TODO - use some predictable order.
-	foreach( &member : class_members.GetInternalContainer() )
+	foreach( &class_field_for_typeinfo : class_fields )
 	{
-		auto field_ptr= member.value().Get</ClassField/>();
-		if( field_ptr.empty() )
-		{
-			continue;
-		}
-
-		auto field_lock= field_ptr.lock_imut();
+		auto field_lock= class_field_for_typeinfo.class_field.lock_imut();
 		var ClassField& field= field_lock.get_ref();
 
 		auto field_source_class= ust::to_non_nullable( field.source_class.lock() );
@@ -579,7 +601,7 @@ fn CodeBuilder::BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_name
 		ADD_BOOL_FIELD( "is_mutable", field.is_mutable )
 		ADD_BOOL_FIELD( "is_reference", field.is_reference )
 
-		ADD_CLASS_MEMBER_COMMON_FIELDS( member.key() )
+		ADD_CLASS_MEMBER_COMMON_FIELDS( class_field_for_typeinfo.name )
 
 		FinishTypeinfoClass( typeinfo_class, fields_llvm_types );
 
