@@ -34,6 +34,13 @@ fn call_destructor( T&mut t ) unsafe
 			unsafe{ ust::call_destructor( t[i] ); }
 		}
 	}
+	else if( typeinfo</T/>.is_tuple )
+	{
+		for( &mut el : t )
+		{
+			unsafe{ ust::call_destructor( el ); }
+		}
+	}
 }
 
 fn move_into_nowhere_impl(){}
