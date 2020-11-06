@@ -259,3 +259,67 @@ def TypeinfoClassFieldsList_Order_Test1():
 		static_assert( ti.fields_list[5].name[0] == "f"c8 );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoClassTypesList_Order_Test0():
+	c_program_text= """
+		struct S
+		{
+			type b= bool;
+			type lolwat= tup[ f32, i32 ];
+			type abc= f32;
+			type wtf= i32;
+			type arr= [ i32, 4 ];
+		}
+		// Order should be "abc", "arr", "b", "lolwat", "wtf"
+
+		auto& ti= typeinfo</S/>;
+
+		static_assert( ti.types_list[0].type.is_float );
+		static_assert( ti.types_list[0].name[0] == "a"c8 );
+
+		static_assert( ti.types_list[1].type.is_array );
+		static_assert( ti.types_list[1].name[0] == "a"c8 );
+
+		static_assert( ti.types_list[2].type.is_bool );
+		static_assert( ti.types_list[2].name[0] == "b"c8 );
+
+		static_assert( ti.types_list[3].type.is_tuple );
+		static_assert( ti.types_list[3].name[0] == "l"c8 );
+
+		static_assert( ti.types_list[4].type.is_signed_integer );
+		static_assert( ti.types_list[4].name[0] == "w"c8 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoClassTypesList_Order_Test1():
+	c_program_text= """
+		class Base polymorph
+		{
+			type Q= i8;
+			type B= bool;
+		}
+
+		class Derived : Base
+		{
+			type A= [ f32, 16 ];
+			type O= void;
+		}
+		// Order should be "A", "B", "Q", "O"
+
+		auto& ti= typeinfo</Derived/>;
+
+		static_assert( ti.types_list[0].type.is_array );
+		static_assert( ti.types_list[0].name[0] == "A"c8 );
+
+		static_assert( ti.types_list[1].type.is_bool );
+		static_assert( ti.types_list[1].name[0] == "B"c8 );
+
+		static_assert( ti.types_list[2].type.is_void );
+		static_assert( ti.types_list[2].name[0] == "O"c8 );
+
+		static_assert( ti.types_list[3].type.is_signed_integer );
+		static_assert( ti.types_list[3].name[0] == "Q"c8 );
+	"""
+	tests_lib.build_program( c_program_text )
