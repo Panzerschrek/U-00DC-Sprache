@@ -71,7 +71,7 @@ public:
 
 			for( var size_type mut i(0); i < size_; ++i )
 			{
-				ptr_[i].constructor(); // Call default constructor here. TODO - what if element is tuple?
+				call_default_constructor( ptr_[i] );
 			}
 		}
 	}
@@ -375,7 +375,7 @@ public:
 
 				for( auto mut i= size_;  i < new_size; ++i )
 				{
-					ptr_[ size_ + i ].constructor();
+					call_default_constructor( ptr_[ size_ + i ] );
 				}
 				size_= new_size;
 			}
