@@ -323,3 +323,51 @@ def TypeinfoClassTypesList_Order_Test1():
 		static_assert( ti.types_list[3].name[0] == "Q"c8 );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoClassFunctionsList_Order_Test0():
+	c_program_text= """
+		struct S
+		{
+			fn Foo(){}
+			fn Bar( this ){}
+			fn Lolwat( this, i32 x ){}
+			fn Get( this, i32 x ){}
+			fn Get( this, f32 x ){}
+			fn Get( this ) {}
+		}
+		auto& ti= typeinfo</S/>;
+
+		static_assert( StringEquals( ti.functions_list[0].name, "destructor" ) ); // _ZN1S10destructorERS_
+		static_assert( StringEquals( ti.functions_list[1].name, "constructor" ) ); // _ZN1S11constructorERS_
+		static_assert( StringEquals( ti.functions_list[2].name, "constructor" ) ); // _ZN1S11constructorERS_RKS_
+		static_assert( StringEquals( ti.functions_list[3].name, "Bar" ) ); // _ZN1S3BarERKS_
+		static_assert( StringEquals( ti.functions_list[4].name, "Foo" ) ); // _ZN1S3FooEv
+		static_assert( StringEquals( ti.functions_list[5].name, "Get" ) ); // _ZN1S3GetERKS_
+
+		// _ZN1S3GetERKS_f
+		static_assert( StringEquals( ti.functions_list[6].name, "Get" ) );
+		static_assert( ti.functions_list[6].type.arguments_list[1].type.is_float );
+
+		// _ZN1S3GetERKS_f
+		static_assert( StringEquals( ti.functions_list[7].name, "Get" ) );
+		static_assert( ti.functions_list[7].type.arguments_list[1].type.is_signed_integer );
+
+		static_assert( StringEquals( ti.functions_list[8].name, "Lolwat" ) ); // _ZN1S6LolwatERKS_i
+		static_assert( StringEquals( ti.functions_list[9].name, "=" ) ); // _ZN1SaSERS_RKS_
+
+		template</ size_type size0, size_type size1 />
+		fn constexpr StringEquals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
+		{
+			if( size0 != size1 ) { return false; }
+			var size_type mut i(0);
+			while( i < size0 )
+			{
+				if( s0[i] != s1[i] ) { return false; }
+				++i;
+			}
+			return true;
+		}
+
+	"""
+	tests_lib.build_program( c_program_text )
