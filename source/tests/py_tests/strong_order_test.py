@@ -1,6 +1,43 @@
 from py_tests_common import *
 
 
+def ClassParentsOrder_Test0():
+	c_program_text= """
+		class Base polymorph {}
+		class I0 interface {}
+		class I1 interface {}
+		class I2 interface {}
+
+		class C : I1, I0, Base, I2 {}
+
+		auto& ti= typeinfo</C/>;
+		auto ptr_size= typeinfo</size_type/>.size_of;
+
+		template</ type T /> fn MustBeSame( T& a, T& b ) : bool { return true; }
+
+		// Base class always have zero offset.
+		// Other parents (interfaces) are placed in order of declaration.
+		// ORder in typeinfo is equal to order of declaration for all parents.
+
+		static_assert( ti.parents_list[0].offset == ptr_size );
+		static_assert( ti.parents_list[0].type.is_interface );
+		static_assert( MustBeSame( ti.parents_list[0].type, typeinfo</I1/> ) );
+
+		static_assert( ti.parents_list[1].offset == ptr_size * 2s );
+		static_assert( ti.parents_list[1].type.is_interface );
+		static_assert( MustBeSame( ti.parents_list[1].type, typeinfo</I0/> ) );
+
+		static_assert( ti.parents_list[2].offset == 0s );
+		static_assert( !ti.parents_list[2].type.is_interface );
+		static_assert( MustBeSame( ti.parents_list[2].type, typeinfo</Base/> ) );
+
+		static_assert( ti.parents_list[3].offset == ptr_size * 3s );
+		static_assert( ti.parents_list[3].type.is_interface );
+		static_assert( MustBeSame( ti.parents_list[3].type, typeinfo</I2/> ) );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def VirtualTableOrder_Test0():
 	c_program_text= """
 		class C polymorph
