@@ -658,3 +658,59 @@ def TupleElementsInitializationOrder_Test0():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 237941 )
+
+
+def VariablesInitializationOrder_Test0():
+	c_program_text= """
+		fn AddMul10( i32 &mut x, i32 y ) : i32
+		{
+			x= x * 10 + y;
+			return x;
+		}
+
+		fn Foo() : i32
+		{
+			var i32 mut x= 0;
+			// Initializator call order should be equal to declaration order.
+			var i32 c= AddMul10( x, 7 ), B= AddMul10( x, 6 ), a= AddMul10( x, 1 ), d1= AddMul10( x, 5 );
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 7615 )
+
+
+def VariablesInitializationOrder_Test1():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			// Variables, became visible after initialization and can be used for next variables initializatio.
+			var i32 a= 5, b= a + 7, c= b * 3, d= c - 1;
+			return d;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == (5 + 7) * 3 - 1 )
+
+
+def CStyleForOperator_IterationPartEvaluationOrder_Test0():
+	c_program_text= """
+		fn AddMul10( i32 &mut x, i32 y ) : i32
+		{
+			x= x * 10 + y;
+			return x;
+		}
+
+		fn Foo() : i32
+		{
+			var i32 mut x= 0;
+			for( ; x == 0; AddMul10( x, 5 ), AddMul10( x, 2 ), AddMul10( x, 7 ), AddMul10( x, 1 ) )
+			{}
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 5271 )
