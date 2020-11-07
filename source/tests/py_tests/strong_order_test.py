@@ -371,3 +371,155 @@ def TypeinfoClassFunctionsList_Order_Test0():
 
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ArgumenstEvaluationOrder_Test0():
+	c_program_text= """
+		fn AddMul10( i32 &mut x, i32 y ) : i32
+		{
+			x= x * 10 + y;
+			return x;
+		}
+
+		fn Bar( i32 a, i32 b, i32 c ){}
+
+		fn Foo() : i32
+		{
+			var i32 mut x= 0;
+			// Function arguments should be evaluated in direct order.
+			Bar( AddMul10( x, 3 ), AddMul10( x, 7 ), AddMul10( x, 2 ) );
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 372 )
+
+
+def ArgumenstEvaluationOrder_Test1():
+	c_program_text= """
+		fn AddMul10( i32 &mut x, i32 y ) : i32
+		{
+			x= x * 10 + y;
+			return x;
+		}
+
+		fn Foo() : i32
+		{
+			var i32 mut x= 0;
+			// Binary operator argumenst should be evaluated in direct order.
+			AddMul10( x, 5 ) * AddMul10( x, 3 );
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 53 )
+
+
+def ArgumenstEvaluationOrder_Test2():
+	c_program_text= """
+		fn AddMul10( i32 &mut x, i32 y ) : i32
+		{
+			x= x * 10 + y;
+			return x;
+		}
+
+		struct S
+		{
+			fn constructor()= default;
+			fn constructor( i32 x ) {}
+			op+( S& a, S& b ) : S { return S(); }
+		}
+
+		fn Foo() : i32
+		{
+			var i32 mut x= 0;
+			// Overloaded binary operator argumenst should be evaluated in direct order.
+			S( AddMul10( x, 7 ) ) + S( AddMul10( x, 1 ) );
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 71 )
+
+
+def ArgumenstEvaluationOrder_Test3():
+	c_program_text= """
+		fn AddMul10Pass( i32 &mut x, i32 y, i32 &'r mut z ) : i32 &'r mut
+		{
+			x= x * 10 + y;
+			return z;
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 66, mut z= 5;
+			// Additive assignment operator argumenst should be evaluated in reverse order.
+			AddMul10Pass( x, 3, y ) /= AddMul10Pass( x, 8, z );
+
+			halt if( x != 83 );
+			halt if( y != 66 / 5 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def ArgumenstEvaluationOrder_Test4():
+	c_program_text= """
+		fn AddMul10Pass( i32 &mut x, i32 y, S &'r mut z ) : S &'r mut
+		{
+			x= x * 10 + y;
+			return z;
+		}
+
+		struct S
+		{
+			fn constructor( i32 x ) (v=x) {}
+			op/=( mut this, S& b ){ this.v /= b.v; }
+
+			i32 v;
+		}
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S mut a(675), mut b(12);
+			// Overloaded additive assignment operator argumenst should be evaluated in reverse order.
+			AddMul10Pass( x, 4, a ) /= AddMul10Pass( x, 9, b );
+
+			halt if( x != 94 );
+			halt if( a.v != 675 / 12 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def ArgumenstEvaluationOrder_Test6():
+	c_program_text= """
+		fn AddMul10( i32 &mut x, i32 y ) : i32
+		{
+			x= x * 10 + y;
+			return x;
+		}
+
+		struct S
+		{
+			op()( this, i32 a, i32 b, i32 c ){}
+		}
+
+		fn Foo() : i32
+		{
+			var i32 mut x= 0;
+			var S s;
+			// overloaded () operator arguments should be evaluated in direct order.
+			s( AddMul10( x, 2 ), AddMul10( x, 1 ), AddMul10( x, 7 ) );
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 217 )
