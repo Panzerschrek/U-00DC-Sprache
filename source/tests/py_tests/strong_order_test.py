@@ -523,3 +523,138 @@ def ArgumenstEvaluationOrder_Test6():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 217 )
+
+
+def StructElementsInitializationOrder_Test0():
+	c_program_text= """
+		fn AddMul10( i32 &mut x, i32 y ) : i32
+		{
+			x= x * 10 + y;
+			return x;
+		}
+
+		struct S
+		{
+			[ i16, 1 ] f;
+			i32 b;
+			i32 a;
+			bool c;
+			f32 d;
+		}
+
+		fn Foo() : i32
+		{
+			var i32 mut x= 0;
+			// Initialization order should be equal to order in initializator.
+			var S s
+			{
+				.b= AddMul10( x, 5 ),
+				.a= AddMul10( x, 1 ),
+				.f[ i16( AddMul10( x, 7 ) ) ],
+				.c= AddMul10( x, 9 ) != 0,
+				.d( AddMul10( x, 4 ) ),
+			};
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 51794 )
+
+
+def StructElementsInitializationOrder_Test1():
+	c_program_text= """
+		fn AddMul10( i32 &mut x, i32 y ) : i32
+		{
+			x= x * 10 + y;
+			return x;
+		}
+
+		struct S
+		{
+			[ i16, 1 ] f;
+			i32 b;
+			i32 a;
+			bool c;
+			f32 d;
+
+			fn constructor( i32 &mut x )
+			// Initialization order should be equal to order in initializator.
+			(
+				b= AddMul10( x, 3 ),
+				a= AddMul10( x, 6 ),
+				f[ i16( AddMul10( x, 8 ) ) ],
+				c= AddMul10( x, 7 ) != 0,
+				d( AddMul10( x, 1 ) ),
+			)
+			{}
+		}
+
+		fn Foo() : i32
+		{
+			var i32 mut x= 0;
+			var S s(x);
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 36871 )
+
+
+def ArrayElementsInitializationOrder_Test0():
+	c_program_text= """
+		fn AddMul10( i32 &mut x, i32 y ) : i32
+		{
+			x= x * 10 + y;
+			return x;
+		}
+
+		fn Foo() : i32
+		{
+			var i32 mut x= 0;
+			// Initialization order should be equal to order in initializator.
+			var [ i32, 6 ] a
+			[
+				AddMul10( x, 5 ),
+				AddMul10( x, 2 ),
+				AddMul10( x, 4 ),
+				AddMul10( x, 6 ),
+				AddMul10( x, 9 ),
+				AddMul10( x, 1 ),
+			];
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 524691 )
+
+
+def TupleElementsInitializationOrder_Test0():
+	c_program_text= """
+		fn AddMul10( i32 &mut x, i32 y ) : i32
+		{
+			x= x * 10 + y;
+			return x;
+		}
+
+		fn Foo() : i32
+		{
+			var i32 mut x= 0;
+			// Initialization order should be equal to order in initializator.
+			var tup[ i32, f64, bool, f32, i16, char8 ] a
+			[
+				AddMul10( x, 2 ),
+				f64( AddMul10( x, 3 ) ),
+				AddMul10( x, 7 ) == 0,
+				f32( AddMul10( x, 9 ) ),
+				i16( AddMul10( x, 4 ) ),
+				char8( AddMul10( x, 1 ) ),
+			];
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 237941 )
