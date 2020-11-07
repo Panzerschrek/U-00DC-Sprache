@@ -1221,29 +1221,35 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				}
 			}
 
+			var LLVMValueRef gep_result= CreateFieldGEP( this_value_corrected, field, function_context );
+
 			auto op_name_nt= "." + member_access_operator.member_name + "\0";
+
+			var Variable mut result{ .t= field.t, .location= Variable::Location::Pointer };
+
 			if( field.is_reference )
 			{
-				var Variable mut result
-				{
-					.t= field.t,
-					.location= Variable::Location::Pointer,
-					.value_type= select( field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-				};
-
-				auto ptr_value= CreateFieldGEP( this_value_corrected, field, function_context );
-				unsafe{  result.llvm_value= LLVMBuildLoad( function_context.llvm_ir_builder, ptr_value, op_name_nt.front() );  }
+				result.value_type= select( field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 
 				if( variable.constexpr_value != LLVMValueRef::Null )
 				{
-					// Small hack for typeinfo - it's initializer initialized only if typeinfo is complete, so, make it complete before getting constexpr value for it.
+					// Create constant "extractvalue" instead of "load" for constexpr structs.
 					if( EnsureTypeComplete( field.t ) )
 					{
 						unsafe
 						{
-							result.constexpr_value= LLVMGetInitializer( LLVMConstExtractValue( variable.constexpr_value, u32(field.index), 1u ) );
+							result.llvm_value= LLVMConstExtractValue( variable.constexpr_value, u32(field.index), 1u );
+							result.constexpr_value= LLVMGetInitializer( result.llvm_value ); // References in constexpr structs should be implementing, using global variables.
 						}
 					}
+					else
+					{
+						return ErrorValue(); // Actual error will be reported in another place.
+					}
+				}
+				else
+				{
+					unsafe{  result.llvm_value= LLVMBuildLoad( function_context.llvm_ir_builder, gep_result, op_name_nt.front() );  }
 				}
 
 				if( variable.node_id != ReferencesGraph::c_empty_node_id )
@@ -1281,27 +1287,21 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					};
 					function_context.variables_frames.back().push_back( move(names_scope_variable) );
 				}
-
-				return move(result);
 			}
 			else
 			{
-				var Variable mut result
-				{
-					.t= field.t,
-					.location= Variable::Location::Pointer,
-					.value_type= select( variable.value_type == ValueType::ReferenceMut && field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-					.llvm_value= CreateFieldGEP( this_value_corrected, field, function_context ),
-					.node_id= variable.node_id,
-				};
+				result.value_type= select( variable.value_type == ValueType::ReferenceMut && field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 
+				result.llvm_value= gep_result;
 				if( variable.constexpr_value != LLVMValueRef::Null )
 				{
 					unsafe{ result.constexpr_value= LLVMConstExtractValue( variable.constexpr_value, u32(field.index), 1u ); }
 				}
 
-				return move(result);
+				result.node_id= variable.node_id;
 			}
+
+			return move(result);
 		}
 		{
 			auto functions_set_ptr= class_member.get_ref().Get</NamesScopeFunctionsSet/>();

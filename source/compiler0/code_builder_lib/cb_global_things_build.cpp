@@ -581,16 +581,11 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 
 	// Complete another body elements.
 	// For class completeness we needs only fields, functions. Constants, types and type templates dones not needed.
-	std::vector< FunctionVariable* > class_functions;
 	the_class.members.ForEachValueInThisScope(
 		[&]( Value& value )
 		{
 			if( const auto functions_set= value.GetFunctionsSet() )
-			{
 				GlobalThingBuildFunctionsSet( the_class.members, *functions_set, false );
-				for( FunctionVariable& function : functions_set->functions )
-					class_functions.emplace_back( &function );
-			}
 			else if( value.GetClassField() != nullptr ) {} // Fields are already complete.
 			else if( value.GetTypeName() != nullptr ) {}
 			else if( value.GetVariable() != nullptr ){}
@@ -603,21 +598,20 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 			else U_ASSERT(false);
 		});
 
+	// Generate destructor prototype before perparing virtual table to mark it as virtual and setup virtual table index.
+	if( the_class.members.GetThisScopeValue( Keyword( Keywords::destructor_ ) ) == nullptr )
+	{
+		FunctionVariable destructor_function_variable= GenerateDestructorPrototype( the_class, class_type );
+		OverloadedFunctionsSet destructors_set;
+		destructors_set.functions.push_back( std::move(destructor_function_variable) );
+		the_class.members.AddName( Keyword( Keywords::destructor_ ), std::move(destructors_set) );
+	}
+
 	if( the_class.kind == Class::Kind::Interface ||
 		the_class.kind == Class::Kind::Abstract ||
 		the_class.kind == Class::Kind::PolymorphNonFinal ||
 		the_class.kind == Class::Kind::PolymorphFinal )
-	{
-		// We needs strong order of functions in virtual table. So, sort them, using mangled name.
-		std::sort(
-			class_functions.begin(), class_functions.end(),
-			[]( const FunctionVariable* const l, const FunctionVariable* const r )
-			{
-				return l->llvm_function->getName() < r->llvm_function->getName();
-			} );
-
-		PrepareClassVirtualTable( the_class, class_type, class_functions );
-	}
+		PrepareClassVirtualTable( the_class );
 
 	// Search for explicit noncopy constructors.
 	if( const Value* const constructors_value=

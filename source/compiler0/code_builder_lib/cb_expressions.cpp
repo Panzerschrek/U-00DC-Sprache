@@ -2198,35 +2198,30 @@ Value CodeBuilder::BuildPostfixOperator(
 	}
 
 	index_list[1]= GetFieldGEPIndex( field->index );
+	llvm::Value* const gep_result= function_context.llvm_ir_builder.CreateGEP( actual_field_class_ptr, index_list );
 
 	Variable result;
 	result.location= Variable::Location::Pointer;
-	result.value_type= ( variable.value_type == ValueType::Reference && field->is_mutable ) ? ValueType::Reference : ValueType::ConstReference;
-	result.node= variable.node;
 	result.type= field->type;
-	result.llvm_value=
-		function_context.llvm_ir_builder.CreateGEP( actual_field_class_ptr, index_list );
-
-	if( variable.constexpr_value != nullptr )
-	{
-		if( field->is_reference )
-		{
-			// Small hack for typeinfo - it's initializer initialized only if typeinfo is complete, so, make it complete before getting constexpr value for it.
-			if( EnsureTypeComplete( field->type ) )
-			{
-				// TODO - what if storage for constexpr reference valus is not "GlobalVariable"?
-				const auto var= llvm::dyn_cast<llvm::GlobalVariable>( variable.constexpr_value->getAggregateElement( static_cast<unsigned int>( field->index ) ));
-				result.constexpr_value= var->getInitializer();
-			}
-		}
-		else
-			result.constexpr_value= variable.constexpr_value->getAggregateElement( static_cast<unsigned int>( field->index ) );
-	}
 
 	if( field->is_reference )
 	{
 		result.value_type= field->is_mutable ? ValueType::Reference : ValueType::ConstReference;
-		result.llvm_value= function_context.llvm_ir_builder.CreateLoad( result.llvm_value );
+
+		if( variable.constexpr_value != nullptr )
+		{
+			if( EnsureTypeComplete( field->type ) )
+			{
+				// Constexpr references field should be "GlobalVariable"
+				const auto var= llvm::dyn_cast<llvm::GlobalVariable>( variable.constexpr_value->getAggregateElement( static_cast<unsigned int>( field->index ) ));
+				result.llvm_value= var;
+				result.constexpr_value= var->getInitializer();
+			}
+			else
+				return ErrorValue(); // Actual error will be reported in another place.
+		}
+		else
+			result.llvm_value= function_context.llvm_ir_builder.CreateLoad( gep_result );
 
 		if( variable.node != nullptr )
 		{
@@ -2242,6 +2237,16 @@ Value CodeBuilder::BuildPostfixOperator(
 					function_context.variables_state.AddLink( inner_reference, result.node );
 			}
 		}
+	}
+	else
+	{
+		result.value_type= ( variable.value_type == ValueType::Reference && field->is_mutable ) ? ValueType::Reference : ValueType::ConstReference;
+
+		result.llvm_value= gep_result;
+		if( variable.constexpr_value != nullptr )
+			result.constexpr_value= variable.constexpr_value->getAggregateElement( static_cast<unsigned int>( field->index ) );
+
+		result.node= variable.node;
 	}
 
 	return Value( std::move(result), member_access_operator.file_pos_ );
