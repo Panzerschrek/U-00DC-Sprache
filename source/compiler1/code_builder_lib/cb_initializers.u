@@ -789,7 +789,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 
 		return LLVMValueRef::Null;
 	}
-	if_var( tuple_type : variable.t.GetTupleType() )
+	if( !variable.t.GetArrayType().empty() || !variable.t.GetTupleType().empty() )
 	{
 		if( args.size() != 1s )
 		{

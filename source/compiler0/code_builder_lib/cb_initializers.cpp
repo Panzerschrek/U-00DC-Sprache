@@ -726,7 +726,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 		return InitializeFunctionPointer( variable, call_operator.arguments_.front(), block_names, function_context );
 	}
-	else if( variable.type.GetTupleType() != nullptr )
+	else if( variable.type.GetArrayType() != nullptr || variable.type.GetTupleType() != nullptr )
 	{
 		if( call_operator.arguments_.size() != 1u )
 		{
@@ -743,7 +743,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 		SetupReferencesInCopyOrMove( function_context, variable, expression_result, block_names.GetErrors(), call_operator.file_pos_ );
 
-		// Copy/move initialize tuple.
+		// Copy/move initialize array/tuple.
 		if( expression_result.value_type == ValueType::Value )
 		{
 			if( expression_result.node != nullptr )
