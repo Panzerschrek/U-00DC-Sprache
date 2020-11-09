@@ -45,12 +45,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	{
 		return InitializeFunctionPointer( names_scope, function_context, variable, expression_initializer );
 	}
-	if( !variable.t.GetArrayType().empty() )
-	{
-		REPORT_ERROR( NotImplemented, names_scope, file_pos, ust::string8("expression initialization for arrays") )
-		return LLVMValueRef::Null;
-	}
-	if( !variable.t.GetTupleType().empty() )
+	if( !variable.t.GetArrayType().empty() || !variable.t.GetTupleType().empty() )
 	{
 		auto expr_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression_initializer );
 		if( expr_result.t != variable.t )

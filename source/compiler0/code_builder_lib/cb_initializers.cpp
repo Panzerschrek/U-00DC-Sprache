@@ -296,7 +296,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 	}
 	else if( variable.type.GetFunctionPointerType() != nullptr )
 		return InitializeFunctionPointer( variable, initializer.expression, names, function_context );
-	else if( variable.type.GetTupleType() != nullptr )
+	else if( variable.type.GetArrayType() != nullptr || variable.type.GetTupleType() != nullptr )
 	{
 		Variable expression_result= BuildExpressionCodeEnsureVariable( initializer.expression, names, function_context );
 		if( expression_result.type != variable.type )
@@ -308,7 +308,6 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 		SetupReferencesInCopyOrMove( function_context, variable, expression_result, names.GetErrors(), initializer.file_pos_ );
 
 		// Move or try call copy constructor.
-		// TODO - produce constant initializer for generated copy constructor, if source is constant.
 		if( expression_result.value_type == ValueType::Value && expression_result.type == variable.type )
 		{
 			if( expression_result.node != nullptr )
