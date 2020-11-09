@@ -29,3 +29,33 @@ def ArraysAreCopyConstructible_Test1():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == (72 - 12) * 3 )
+
+
+def ArraysAreCopyConstructible_Test2():
+	c_program_text= """
+		fn Foo() : f64
+		{
+			var [ f64, 2 ] mut a[ 37.0, 22.0 ];
+			var tup[ bool, [ f64, 2 ] ] mut t[ false, (a) ]; // Call copy constructor for array tuple element
+
+			return t[1][0] - t[1][1];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 37.0 - 22.0 )
+
+
+def ArraysAreCopyConstructible_Test3():
+	c_program_text= """
+		fn Foo() : u32
+		{
+			var [ u32, 4 ] mut a[ 4u, 8u, 15u, 16u ];
+			var [ [ u32, 4 ], 2 ] mut aa[ a, zero_init ]; // Call copy constructor for array tuple element
+
+			return aa[0][0] * aa[0][1] - aa[0][3] / aa[0][2];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 4 * 8 - int(16 / 15) )
