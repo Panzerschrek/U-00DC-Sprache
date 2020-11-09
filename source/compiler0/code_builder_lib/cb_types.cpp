@@ -182,7 +182,7 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const Function& function_t
 			function_type.return_type.GetEnumType() != nullptr ||
 			function_type.return_type.GetFunctionPointerType() != nullptr )
 		{}
-		else if( function_type.return_type.GetClassType() != nullptr || function_type.return_type.GetTupleType() != nullptr )
+		else if( function_type.return_type.GetClassType() != nullptr || function_type.return_type.GetArrayType() != nullptr || function_type.return_type.GetTupleType() != nullptr )
 		{
 			// Add return-value ponter as "sret" argument for class and tuple types.
 			args_llvm_types.push_back( function_type.return_type.GetLLVMType()->getPointerTo() );

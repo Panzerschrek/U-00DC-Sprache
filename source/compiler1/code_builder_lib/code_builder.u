@@ -1414,7 +1414,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		auto mut args_names_scope_lock= args_names_scope_ptr.lock_mut();
 		auto &mut args_names_scope= args_names_scope_lock.get_ref();
 
-		auto is_s_ret= !func_variable.t.return_value_is_reference && ( !func_variable.t.return_type.GetClassType().empty() || !func_variable.t.return_type.GetTupleType().empty() );
+		auto is_s_ret= !func_variable.t.return_value_is_reference && ( !func_variable.t.return_type.GetClassType().empty() || !func_variable.t.return_type.GetArrayType().empty() || !func_variable.t.return_type.GetTupleType().empty() );
 		if( is_s_ret )
 		{
 			AddFunctionAttribute( func_variable.llvm_function, LLVMAttributeFirstParamIndex, "sret" );

@@ -2497,7 +2497,7 @@ Value CodeBuilder::DoCallFunction(
 
 	const bool return_value_is_sret=
 		!function_type.return_value_is_reference &&
-		( function_type.return_type.GetClassType() != nullptr || function_type.return_type.GetTupleType() != nullptr );
+		( function_type.return_type.GetClassType() != nullptr || function_type.return_type.GetArrayType() != nullptr || function_type.return_type.GetTupleType() != nullptr );
 
 	llvm::Value* s_ret_value= nullptr;
 	if( return_value_is_sret )
