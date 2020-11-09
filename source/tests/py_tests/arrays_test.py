@@ -302,3 +302,51 @@ def ArraysAssignment_Test2():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == int( 79 / 3 ) )
+
+
+def StringLiteralAsInitializator_Test0():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			var [ char8, 3 ] mut str("kRt"); // constructor initializer
+			return i32(str[0]) + 256 * i32(str[1]) + 65536 * i32(str[2]);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ord('k') + 256 * ord('R') + 65536 * ord('t') )
+
+
+def StringLiteralAsInitializator_Test1():
+	c_program_text= """
+		fn Foo() : u32
+		{
+			var [ char8, 3 ] mut str= "1_S"; // expression initializer
+			return u32(str[0]) + 256u * u32(str[1]) + 65536u * u32(str[2]);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ord('1') + 256 * ord('_') + 65536 * ord('S') )
+
+
+def StringLiteralAsInitializator_Test2():
+	c_program_text= """
+		fn Foo() : u64
+		{
+			auto mut str= "R_4f+"; // auto variable initialization
+			var u64 mut r(0);
+			for( auto mut i= 0s; i < typeinfo</typeof(str)/>.element_count; ++i )
+			{
+				r|= u64(str[i]) << (i << 3u);
+			}
+			return r;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( ( ( call_result >>  0 ) & 255) == ord('R') )
+	assert( ( ( call_result >>  8 ) & 255) == ord('_') )
+	assert( ( ( call_result >> 16 ) & 255) == ord('4') )
+	assert( ( ( call_result >> 24 ) & 255) == ord('f') )
+	assert( ( ( call_result >> 32 ) & 255) == ord('+') )
