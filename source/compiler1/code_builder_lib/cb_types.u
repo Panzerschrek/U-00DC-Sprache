@@ -212,7 +212,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 		else
 		{
 			// Pass aggregate types by-reference.
-			if( !param.t.GetClassType().empty() || !param.t.GetTupleType().empty() )
+			if( !param.t.GetClassType().empty() || !param.t.GetArrayType().empty() || !param.t.GetTupleType().empty() )
 			{
 				unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  }
 			}

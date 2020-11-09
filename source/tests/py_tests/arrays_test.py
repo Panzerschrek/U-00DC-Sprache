@@ -59,3 +59,21 @@ def ArraysAreCopyConstructible_Test3():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 4 * 8 - int(16 / 15) )
+
+
+def ArrayAsValueArgument_Test0():
+	c_program_text= """
+		fn Dot( [ f32, 2 ] a, [ f32, 2 ] b ) : f32
+		{
+			return a[0] * b[0] + a[1] * b[1];
+		}
+		fn Foo() : f32
+		{
+			var [ f32, 2 ] mut a[ 3.5f, 0.25f ], mut b[ 4.0f, 10.0f ];
+
+			return Dot( a, b );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 3.5 * 4.0 + 0.25 * 10.0 )

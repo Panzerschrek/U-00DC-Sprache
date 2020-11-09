@@ -870,17 +870,6 @@ size_t CodeBuilder::PrepareFunction(
 			out_arg.is_mutable= ( is_this && is_special_method ) || arg.mutability_modifier_ == MutabilityModifier::Mutable;
 			out_arg.is_reference= is_this || arg.reference_modifier_ == ReferenceModifier::Reference;
 
-			if( !out_arg.is_reference &&
-				!( out_arg.type.GetFundamentalType() != nullptr ||
-				   out_arg.type.GetClassType() != nullptr ||
-				   out_arg.type.GetTupleType() != nullptr ||
-				   out_arg.type.GetEnumType() != nullptr ||
-				   out_arg.type.GetFunctionPointerType() != nullptr ) )
-			{
-				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.file_pos_, "parameters types except fundamentals, classes, enums, functionpointers" );
-				return ~0u;
-			}
-
 			ProcessFunctionArgReferencesTags( names_scope.GetErrors(), func.type_, function_type, arg, out_arg, function_type.args.size() - 1u );
 		} // for arguments
 
@@ -1317,9 +1306,9 @@ Type CodeBuilder::BuildFuncCode(
 				var.llvm_value= address;
 				var.location= Variable::Location::Pointer;
 			}
-			else if( arg.type.GetClassType() != nullptr || arg.type.GetTupleType() != nullptr )
+			else if( arg.type.GetClassType() != nullptr || arg.type.GetArrayType() != nullptr || arg.type.GetTupleType() != nullptr )
 			{
-				// Value classes and tuples parameters using llvm-pointers.
+				// Composite types use llvm-pointers.
 				var.location= Variable::Location::Pointer;
 			}
 			else U_ASSERT(false);

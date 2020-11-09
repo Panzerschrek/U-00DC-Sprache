@@ -1486,7 +1486,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			}
 			else
 			{
-				if( !out_arg.t.GetClassType().empty() || !out_arg.t.GetTupleType().empty() )
+				if( !out_arg.t.GetClassType().empty() || !out_arg.t.GetArrayType().empty() || !out_arg.t.GetTupleType().empty() )
 				{
 					// Aggregate types are passed by reference.
 					unsafe

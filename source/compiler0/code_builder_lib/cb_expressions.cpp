@@ -2433,7 +2433,7 @@ Value CodeBuilder::DoCallFunction(
 
 			if( arg.type.GetFundamentalType() != nullptr || arg.type.GetEnumType() != nullptr || arg.type.GetFunctionPointerType() != nullptr )
 				llvm_args[j]= CreateMoveToLLVMRegisterInstruction( expr, function_context );
-			else if( arg.type.GetClassType() != nullptr || arg.type.GetTupleType() != nullptr )
+			else if( arg.type.GetClassType() != nullptr || arg.type.GetArrayType() != nullptr || arg.type.GetTupleType() != nullptr )
 			{
 				// Lock inner references.
 				// Do it only if arg type can contain any reference inside.

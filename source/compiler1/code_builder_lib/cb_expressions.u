@@ -2703,7 +2703,7 @@ fn CodeBuilder::DoCallFunction(
 				}
 			}
 
-			if( !arg.t.GetClassType().empty() || !arg.t.GetTupleType().empty() )
+			if( !arg.t.GetClassType().empty() || !arg.t.GetArrayType().empty() || !arg.t.GetTupleType().empty() )
 			{
 				if( arg.value_type == ValueType::Value && arg.t == expected_arg_type )
 				{
