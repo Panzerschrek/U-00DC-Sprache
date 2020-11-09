@@ -61,6 +61,66 @@ def ArraysAreCopyConstructible_Test3():
 	assert( call_result == 4 * 8 - int(16 / 15) )
 
 
+def ArraysAreCopyConstructible_Test4():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			var [ i32, 2 ] mut a0[ 7568, 13 ];
+			auto a1= a0; // Copy array in auto variable initialization.
+
+			return a1[0] - a1[1];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 7568 - 13 )
+
+
+def ArraysAreCopyConstructible_Test5():
+	c_program_text= """
+		class S {} // Class is noncopyable by-default
+		fn Foo()
+		{
+			var [ S, 4 ] mut a0;
+			var [ S, 4 ] mut a1(a0); // Error, array is not copyable, because element is not copyable
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def ArraysAreCopyConstructible_Test6():
+	c_program_text= """
+		class S {} // Class is noncopyable by-default
+		fn Foo()
+		{
+			var [ S, 4 ] mut a0;
+			var [ S, 4 ] mut a1= a0; // Error, array is not copyable, because element is not copyable
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def ArraysAreCopyConstructible_Test7():
+	c_program_text= """
+		class S {} // Class is noncopyable by-default
+		fn Foo()
+		{
+			var [ S, 4 ] mut a0;
+			auto mut a1= a0; // Error, array is not copyable, because element is not copyable
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
 def ArrayAsValueArgument_Test0():
 	c_program_text= """
 		fn Dot( [ f32, 2 ] a, [ f32, 2 ] b ) : f32
@@ -77,6 +137,65 @@ def ArrayAsValueArgument_Test0():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 3.5 * 4.0 + 0.25 * 10.0 )
+
+
+def ArrayAsValueArgument_Test1():
+	c_program_text= """
+		struct S{ i32 x; }
+		fn Sum( [ S, 4 ] arr ) : i32
+		{
+			return arr[0].x + arr[1].x + arr[2].x + arr[3].x;
+		}
+		fn Foo() : i32
+		{
+			var [ S, 4 ] mut a[ { .x= 56 }, { .x= 94 }, { .x=176 }, { .x= 6434 } ];
+
+			return Sum( a );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 56 + 94 + 176 + 6434 )
+
+
+def ArrayAsValueArgument_Test2():
+	c_program_text= """
+		class S {} // Class is noncopyable by-default
+		fn Bar( [ S, 4 ] arr );
+		fn Foo()
+		{
+			var [ S, 4 ] a;
+			return Bar( a ); // Error, array is not copyable
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
+	assert( errors_list[0].file_pos.line == 7 )
+
+
+def ArrayAsValueArgument_Test3():
+	c_program_text= """
+		class S
+		{
+			i32 x;
+			// Class is noncopyable by-default
+			fn constructor( i32 in_x ) (x= in_x) {}
+		}
+		fn Product( [ S, 3 ] arr ) : i32
+		{
+			return arr[0].x * arr[1].x * arr[2].x;
+		}
+		fn Foo() : i32
+		{
+			var [ S, 3 ] mut a[ (17), (2), (97) ];
+
+			return Product( move(a) ); // Ok, move, not copy
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 17 * 2 * 97 )
 
 
 def ArrayAsReturnValue_Test0():
@@ -97,6 +216,45 @@ def ArrayAsReturnValue_Test0():
 	assert( call_result == int( ( 78 - 12 ) * 156 / 8 ) )
 
 
+def ArrayAsReturnValue_Test1():
+	c_program_text= """
+		class S {} // Class is noncopyable by-default
+		fn GetArr() : [ S, 8 ]
+		{
+			var [ S, 8 ] a;
+			return a; // Error, array is noncopyable
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def ArrayAsReturnValue_Test2():
+	c_program_text= """
+		class S
+		{
+			i32 x;
+			// Class is noncopyable by-default
+			fn constructor( i32 in_x ) (x= in_x) {}
+		}
+		fn GetArr() : [ S, 2 ]
+		{
+			var [ S, 2 ] mut a[ (33), (97) ];
+			return move(a); // Ok, move, not copy
+		}
+		fn Foo() : i32
+		{
+			auto a= GetArr();
+			return a[1].x / a[0].x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == int( 97 / 33 ) )
+
+
 def ArraysAssignment_Test0():
 	c_program_text= """
 		fn Foo() : u32
@@ -109,3 +267,38 @@ def ArraysAssignment_Test0():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 45 - 11 * 2 )
+
+
+def ArraysAssignment_Test1():
+	c_program_text= """
+		class S {} // Class is noncopyable by-default
+		fn Foo()
+		{
+			var [ S, 8 ] mut a0, mut a1;
+			a0= a1;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
+	assert( errors_list[0].file_pos.line == 6 )
+
+
+def ArraysAssignment_Test2():
+	c_program_text= """
+		class S
+		{
+			i32 x;
+			// Class is noncopyable by-default
+			fn constructor( i32 in_x ) (x= in_x) {}
+		}
+		fn Foo() : i32
+		{
+			var [ S, 2 ] mut a0[ (0), (0) ], mut a1[ (79), (3) ];
+			a0= move(a1); // ok, copy, not move
+			return a0[0].x / a0[1].x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == int( 79 / 3 ) )

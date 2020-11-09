@@ -2195,7 +2195,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 
 	if( operator == OverloadedOperator::Assign &&
 		cast_imut(args).front().t == cast_imut(args).back().t &&
-		( !cast_imut(args).front().t.GetClassType().empty() || !cast_imut(args).front().t.GetTupleType().empty() ) &&
+		( !cast_imut(args).front().t.GetClassType().empty() || !cast_imut(args).front().t.GetArrayType().empty() || !cast_imut(args).front().t.GetTupleType().empty() ) &&
 		cast_imut(args).front().value_type == ValueType::ReferenceMut &&
 		cast_imut(args).back().value_type == ValueType::Value )
 	{

@@ -2469,4 +2469,84 @@ U_TEST(DestructorTest_For_WithOperator9)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 44, 321 } ) );
 }
 
+U_TEST(DestructorTest_ForArrayValueArgument_Test0)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn constructor( mut this, S &other ) ( x= other.x + 100 ) {}
+			fn destructor()
+			{
+				DestructorCalled(x);
+			}
+		}
+
+		fn Bar( [ S, 2 ] a )
+		{
+		} // Should destroy array here.
+		fn Foo()
+		{
+			var [ S, 2 ] a [ (4), (7) ];
+			Bar( a );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 104, 107, 4, 7 } ) );
+}
+
+U_TEST(DestructorTest_ForArrayValueArgument_Test1)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn constructor( mut this, S &other ) ( x= other.x + 100 ) {}
+			fn destructor()
+			{
+				DestructorCalled(x);
+			}
+		}
+
+		fn Bar( [ S, 3 ] a )
+		{
+		} // Should destroy array here.
+		fn Baz() : [ S, 3 ]
+		{
+			var [ S, 3 ] mut a[ (62), (11), (99) ];
+			return move(a); // Should move 'a' here and not destroy it
+		}
+		fn Foo()
+		{
+			Bar(Baz()); // Should move value result to value argument.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 62, 11, 99 } ) );
+}
+
 } // namespace U

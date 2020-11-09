@@ -81,11 +81,11 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			const Variable l_var= BuildExpressionCodeEnsureVariable( left_expr , names, function_context );
 			const Variable r_var= BuildExpressionCodeEnsureVariable( right_expr, names, function_context );
 
-			// Try apply move-assignment for class types. TODO - what about move-assignment for arrays?
+			// Try apply move-assignment for composite types.
 			needs_move_assign=
 				op == OverloadedOperator::Assign && r_var.value_type == ValueType::Value &&
 				r_var.type == l_var.type &&
-				( r_var.type.GetClassType() != nullptr || r_var.type.GetTupleType() != nullptr ) &&
+				( r_var.type.GetClassType() != nullptr || r_var.type.GetArrayType() != nullptr || r_var.type.GetTupleType() != nullptr ) &&
 				l_var.value_type == ValueType::Reference;
 
 			args.emplace_back();
