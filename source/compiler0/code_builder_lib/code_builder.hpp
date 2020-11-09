@@ -388,7 +388,7 @@ private:
 		NamesScope& names,
 		FunctionContext& function_context );
 
-	Value CallBinaryOperatorForTuple(
+	Value CallBinaryOperatorForArrayOrTuple(
 		OverloadedOperator op,
 		const Synt::Expression&  left_expr,
 		const Synt::Expression& right_expr,

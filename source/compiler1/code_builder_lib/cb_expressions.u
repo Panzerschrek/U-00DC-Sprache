@@ -2233,9 +2233,9 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 		var Variable mut move_result{ .t= void_type_for_ret_ };
 		return Value( move(move_result) );
 	}
-	else if( cast_imut(args).front().t == cast_imut(args).back().t && !args.front().t.GetTupleType().empty() )
+	else if( cast_imut(args).front().t == cast_imut(args).back().t && ( !cast_imut(args).front().t.GetArrayType().empty() || !cast_imut(args).front().t.GetTupleType().empty() ) )
 	{
-		return CallBinaryOperatorForTuple( names_scope, function_context, operator, arg_l, arg_r, file_pos );
+		return CallBinaryOperatorForArrayOrTuple( names_scope, function_context, operator, arg_l, arg_r, file_pos );
 	}
 
 	if_var( &overloaded_operator : GetOverloadedOperator( args.range(), operator, names_scope, file_pos ) )
@@ -2263,7 +2263,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 	return ust::optional</Value/>();
 }
 
-fn CodeBuilder::CallBinaryOperatorForTuple(
+fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
@@ -2272,7 +2272,7 @@ fn CodeBuilder::CallBinaryOperatorForTuple(
 	ust::shared_ptr_final</Synt::Expression/>& arg_r,
 	FilePos& file_pos ) : Value
 {
-	// Currently only copy assignment supported for tuples.
+	// Currently only copy assignment supported for arrays and tuples.
 	if( operator != OverloadedOperator::Assign )
 	{
 		var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.get_ref() );

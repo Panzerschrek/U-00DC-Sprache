@@ -77,3 +77,35 @@ def ArrayAsValueArgument_Test0():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 3.5 * 4.0 + 0.25 * 10.0 )
+
+
+def ArrayAsReturnValue_Test0():
+	c_program_text= """
+		fn GetArr() : [ i32, 4 ]
+		{
+			var [ i32, 4 ] mut a[ 78, 12, 156, 8 ];
+			return a;
+		}
+		fn Foo() : i32
+		{
+			auto a= GetArr();
+			return ( a[0] - a[1] ) * a[2] / a[3];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == int( ( 78 - 12 ) * 156 / 8 ) )
+
+
+def ArraysAssignment_Test0():
+	c_program_text= """
+		fn Foo() : u32
+		{
+			var [ u32, 3 ] mut a0= zero_init, mut a1[ 45u, 11u, 2u ];
+			a0= a1;
+			return a0[0] - a0[1] * a0[2];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 45 - 11 * 2 )

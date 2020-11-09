@@ -281,7 +281,7 @@ private:
 		ArgsEvaluationOrder args_evaluation_order,
 		FilePos& file_pos ) : ust::optional</Value/>;
 
-	fn CallBinaryOperatorForTuple(
+	fn CallBinaryOperatorForArrayOrTuple(
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,

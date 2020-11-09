@@ -133,8 +133,8 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			move_result.type= void_type_;
 			return Value( std::move(move_result), file_pos );
 		}
-		else if( args.front().type == args.back().type && args.front().type.GetTupleType() != nullptr )
-			return CallBinaryOperatorForTuple( op, left_expr, right_expr, file_pos, names, function_context );
+		else if( args.front().type == args.back().type && ( args.front().type.GetArrayType() != nullptr || args.front().type.GetTupleType() != nullptr ) )
+			return CallBinaryOperatorForArrayOrTuple( op, left_expr, right_expr, file_pos, names, function_context );
 
 		overloaded_operator= GetOverloadedOperator( args, op, names.GetErrors(), file_pos );
 
@@ -176,7 +176,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	return std::nullopt;
 }
 
-Value CodeBuilder::CallBinaryOperatorForTuple(
+Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 	OverloadedOperator op,
 	const Synt::Expression&  left_expr,
 	const Synt::Expression& right_expr,
