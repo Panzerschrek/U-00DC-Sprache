@@ -484,10 +484,9 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				}
 			}
 
-			if( !ret_type.GetClassType().empty() || !ret_type.GetTupleType().empty() )
+			auto s_ret= function_context.s_ret;
+			if( s_ret != LLVMValueRef::Null )
 			{
-				auto s_ret= function_context.s_ret;
-
 				if( expr.value_type == ValueType::Value && expr.t == function_context.function_type.return_type )
 				{
 					// Move

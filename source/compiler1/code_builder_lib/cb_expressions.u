@@ -2195,7 +2195,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 
 	if( operator == OverloadedOperator::Assign &&
 		cast_imut(args).front().t == cast_imut(args).back().t &&
-		( !cast_imut(args).front().t.GetClassType().empty() || !cast_imut(args).front().t.GetTupleType().empty() ) &&
+		( !cast_imut(args).front().t.GetClassType().empty() || !cast_imut(args).front().t.GetArrayType().empty() || !cast_imut(args).front().t.GetTupleType().empty() ) &&
 		cast_imut(args).front().value_type == ValueType::ReferenceMut &&
 		cast_imut(args).back().value_type == ValueType::Value )
 	{
@@ -2233,9 +2233,9 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 		var Variable mut move_result{ .t= void_type_for_ret_ };
 		return Value( move(move_result) );
 	}
-	else if( cast_imut(args).front().t == cast_imut(args).back().t && !args.front().t.GetTupleType().empty() )
+	else if( cast_imut(args).front().t == cast_imut(args).back().t && ( !cast_imut(args).front().t.GetArrayType().empty() || !cast_imut(args).front().t.GetTupleType().empty() ) )
 	{
-		return CallBinaryOperatorForTuple( names_scope, function_context, operator, arg_l, arg_r, file_pos );
+		return CallBinaryOperatorForArrayOrTuple( names_scope, function_context, operator, arg_l, arg_r, file_pos );
 	}
 
 	if_var( &overloaded_operator : GetOverloadedOperator( args.range(), operator, names_scope, file_pos ) )
@@ -2263,7 +2263,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 	return ust::optional</Value/>();
 }
 
-fn CodeBuilder::CallBinaryOperatorForTuple(
+fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
@@ -2272,7 +2272,7 @@ fn CodeBuilder::CallBinaryOperatorForTuple(
 	ust::shared_ptr_final</Synt::Expression/>& arg_r,
 	FilePos& file_pos ) : Value
 {
-	// Currently only copy assignment supported for tuples.
+	// Currently only copy assignment supported for arrays and tuples.
 	if( operator != OverloadedOperator::Assign )
 	{
 		var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.get_ref() );
@@ -2483,7 +2483,7 @@ fn CodeBuilder::DoCallFunction(
 	var ust::vector</LLVMValueRef/> mut llvm_args;
 
 	auto mut s_ret_value= LLVMValueRef::Null;
-	auto is_s_ret= !function_type.return_value_is_reference && ( !function_type.return_type.GetClassType().empty() || !function_type.return_type.GetTupleType().empty() );
+	auto is_s_ret= !function_type.return_value_is_reference && ( !function_type.return_type.GetClassType().empty() || !function_type.return_type.GetArrayType().empty() || !function_type.return_type.GetTupleType().empty() );
 	if( is_s_ret )
 	{
 		unsafe{  s_ret_value= LLVMBuildAlloca( function_context.alloca_ir_builder, function_type.return_type.GetLLVMType(), "\0"[0] );  }
@@ -2703,7 +2703,7 @@ fn CodeBuilder::DoCallFunction(
 				}
 			}
 
-			if( !arg.t.GetClassType().empty() || !arg.t.GetTupleType().empty() )
+			if( !arg.t.GetClassType().empty() || !arg.t.GetArrayType().empty() || !arg.t.GetTupleType().empty() )
 			{
 				if( arg.value_type == ValueType::Value && arg.t == expected_arg_type )
 				{

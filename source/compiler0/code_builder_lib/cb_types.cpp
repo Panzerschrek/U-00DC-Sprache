@@ -124,14 +124,6 @@ Type CodeBuilder::PrepareType( const Synt::FunctionTypePtr& function_type_name_p
 		out_arg.is_mutable= arg.mutability_modifier_ == MutabilityModifier::Mutable;
 		out_arg.is_reference= arg.reference_modifier_ == ReferenceModifier::Reference;
 
-		if( !out_arg.is_reference &&
-			!( out_arg.type.GetFundamentalType() != nullptr ||
-			   out_arg.type.GetClassType() != nullptr ||
-			   out_arg.type.GetTupleType() != nullptr ||
-			   out_arg.type.GetEnumType() != nullptr ||
-			   out_arg.type.GetFunctionPointerType() != nullptr ) )
-			REPORT_ERROR( NotImplemented, names_scope.GetErrors(), arg.file_pos_, "parameters types except fundamentals, classes, enums, functionpointers" );
-
 		ProcessFunctionArgReferencesTags( names_scope.GetErrors(), function_type_name, function_type, arg, out_arg, function_type.args.size() - 1u );
 	}
 
@@ -190,7 +182,7 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const Function& function_t
 			function_type.return_type.GetEnumType() != nullptr ||
 			function_type.return_type.GetFunctionPointerType() != nullptr )
 		{}
-		else if( function_type.return_type.GetClassType() != nullptr || function_type.return_type.GetTupleType() != nullptr )
+		else if( function_type.return_type.GetClassType() != nullptr || function_type.return_type.GetArrayType() != nullptr || function_type.return_type.GetTupleType() != nullptr )
 		{
 			// Add return-value ponter as "sret" argument for class and tuple types.
 			args_llvm_types.push_back( function_type.return_type.GetLLVMType()->getPointerTo() );
@@ -208,9 +200,9 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const Function& function_t
 		{
 			if( arg.type.GetFundamentalType() != nullptr || arg.type.GetEnumType() != nullptr || arg.type.GetFunctionPointerType() )
 			{}
-			else if( arg.type.GetClassType() != nullptr || arg.type.GetTupleType() )
+			else if( arg.type.GetClassType() != nullptr || arg.type.GetArrayType() != nullptr || arg.type.GetTupleType() != nullptr )
 			{
-				// Mark value-parameters of class and tuple types as pointer.
+				// Mark value-parameters of composite types as pointer.
 				type= type->getPointerTo();
 			}
 			else U_ASSERT( false );

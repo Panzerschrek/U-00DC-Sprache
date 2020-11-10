@@ -81,11 +81,11 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			const Variable l_var= BuildExpressionCodeEnsureVariable( left_expr , names, function_context );
 			const Variable r_var= BuildExpressionCodeEnsureVariable( right_expr, names, function_context );
 
-			// Try apply move-assignment for class types. TODO - what about move-assignment for arrays?
+			// Try apply move-assignment for composite types.
 			needs_move_assign=
 				op == OverloadedOperator::Assign && r_var.value_type == ValueType::Value &&
 				r_var.type == l_var.type &&
-				( r_var.type.GetClassType() != nullptr || r_var.type.GetTupleType() != nullptr ) &&
+				( r_var.type.GetClassType() != nullptr || r_var.type.GetArrayType() != nullptr || r_var.type.GetTupleType() != nullptr ) &&
 				l_var.value_type == ValueType::Reference;
 
 			args.emplace_back();
@@ -133,8 +133,8 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			move_result.type= void_type_;
 			return Value( std::move(move_result), file_pos );
 		}
-		else if( args.front().type == args.back().type && args.front().type.GetTupleType() != nullptr )
-			return CallBinaryOperatorForTuple( op, left_expr, right_expr, file_pos, names, function_context );
+		else if( args.front().type == args.back().type && ( args.front().type.GetArrayType() != nullptr || args.front().type.GetTupleType() != nullptr ) )
+			return CallBinaryOperatorForArrayOrTuple( op, left_expr, right_expr, file_pos, names, function_context );
 
 		overloaded_operator= GetOverloadedOperator( args, op, names.GetErrors(), file_pos );
 
@@ -176,7 +176,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	return std::nullopt;
 }
 
-Value CodeBuilder::CallBinaryOperatorForTuple(
+Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 	OverloadedOperator op,
 	const Synt::Expression&  left_expr,
 	const Synt::Expression& right_expr,
@@ -2433,7 +2433,7 @@ Value CodeBuilder::DoCallFunction(
 
 			if( arg.type.GetFundamentalType() != nullptr || arg.type.GetEnumType() != nullptr || arg.type.GetFunctionPointerType() != nullptr )
 				llvm_args[j]= CreateMoveToLLVMRegisterInstruction( expr, function_context );
-			else if( arg.type.GetClassType() != nullptr || arg.type.GetTupleType() != nullptr )
+			else if( arg.type.GetClassType() != nullptr || arg.type.GetArrayType() != nullptr || arg.type.GetTupleType() != nullptr )
 			{
 				// Lock inner references.
 				// Do it only if arg type can contain any reference inside.
@@ -2497,7 +2497,7 @@ Value CodeBuilder::DoCallFunction(
 
 	const bool return_value_is_sret=
 		!function_type.return_value_is_reference &&
-		( function_type.return_type.GetClassType() != nullptr || function_type.return_type.GetTupleType() != nullptr );
+		( function_type.return_type.GetClassType() != nullptr || function_type.return_type.GetArrayType() != nullptr || function_type.return_type.GetTupleType() != nullptr );
 
 	llvm::Value* s_ret_value= nullptr;
 	if( return_value_is_sret )

@@ -196,7 +196,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 	var ust::vector</LLVMTypeRef/> mut llvm_param_types;
 
 	// s_ret
-	auto is_s_ret= !res.return_value_is_reference && ( !res.return_type.GetClassType().empty() || !res.return_type.GetTupleType().empty() );
+	auto is_s_ret= !res.return_value_is_reference && ( !res.return_type.GetClassType().empty() || !res.return_type.GetArrayType().empty() || !res.return_type.GetTupleType().empty() );
 	if( is_s_ret )
 	{
 		unsafe{  llvm_param_types.push_back( LLVMPointerType( res.return_type.GetLLVMType(), 0u ) );  }
@@ -212,7 +212,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 		else
 		{
 			// Pass aggregate types by-reference.
-			if( !param.t.GetClassType().empty() || !param.t.GetTupleType().empty() )
+			if( !param.t.GetClassType().empty() || !param.t.GetArrayType().empty() || !param.t.GetTupleType().empty() )
 			{
 				unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  }
 			}
