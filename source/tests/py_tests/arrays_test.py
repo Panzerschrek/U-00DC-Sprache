@@ -350,3 +350,29 @@ def StringLiteralAsInitializator_Test2():
 	assert( ( ( call_result >> 16 ) & 255) == ord('4') )
 	assert( ( ( call_result >> 24 ) & 255) == ord('f') )
 	assert( ( ( call_result >> 32 ) & 255) == ord('+') )
+
+
+def LargeArrayCopy_Test0():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			auto s= 65536s;
+			var [ i32, s ] mut a0= zero_init;
+			a0[657]= 565;
+			a0[3456]= -54;
+			a0[312]= 78423;
+			a0[22]= 88;
+			a0[1274]= 751;
+			a0[47231]= 51;
+			a0[26754]= -4623;
+
+			var [ i32, s ] mut a1= a0; // Copy here large array.
+
+			auto mut r= 0;
+			for( auto mut i= 0s; i < s; ++i ){ r+= a1[i]; }
+			return r;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 565 -54 + 78423 + 88 + 751 + 51 -4623 )
