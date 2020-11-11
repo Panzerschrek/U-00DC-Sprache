@@ -79,30 +79,32 @@ public:
 			auto mut insert_index= ~0s;
 			while( true )
 			{
-				auto &mut table_value= cast_mut( cast_ref_unsafe</TableValue/>( int_to_ref( ref_to_int( table_[ key_hash_wrapped ] ) ) ) );
-				if( table_value.cell_content == TableValue::CellContent::Empty )
+				auto cell_content= table_[ key_hash_wrapped ].cell_content;
+				if( cell_content == TableValue::CellContent::Empty )
 				{
+					++size_;
+
 					// Insert new value into place of tombstone (if it exists) or in first empty cell.
 					if( insert_index == ~0s ){ insert_index= key_hash_wrapped; }
 
-					auto &mut dst_value= cast_mut( cast_ref_unsafe</TableValue/>( int_to_ref( ref_to_int( table_[ insert_index ] ) ) ) );
+					auto &mut dst_value= table_[ insert_index ];
 
 					move_unsafe( dst_value.key_storage, key );
 					move_unsafe( dst_value.value_storage, move(value) );
 					dst_value.cell_content= TableValue::CellContent::HaveValue;
-					++size_;
 					return dst_value.value_storage;
 				}
-				else if( table_value.cell_content == TableValue::CellContent::ValueRemoved )
+				else if( cell_content == TableValue::CellContent::ValueRemoved )
 				{
 					insert_index= key_hash_wrapped; // Insert new value into place of tombstone.
 				}
-				else if( table_value.cell_content == TableValue::CellContent::HaveValue )
+				else if( cell_content == TableValue::CellContent::HaveValue )
 				{
-					if( key == table_value.key_storage )
+					auto &mut dst_value= table_[ key_hash_wrapped ];
+					if( key == dst_value.key_storage )
 					{
-						table_value.value_storage= move(value);
-						return table_value.value_storage;
+						dst_value.value_storage= move(value);
+						return dst_value.value_storage;
 					}
 				}
 
@@ -177,7 +179,7 @@ public:
 		if( table_.is_null() ) { return; }
 		unsafe
 		{
-			for( var size_type mut i(0); i < capacity_; ++i )
+			for( auto mut i= 0s; i < capacity_; ++i )
 			{
 				auto &mut table_value= table_[i];
 				if( table_value.cell_content == TableValue::CellContent::HaveValue )
@@ -217,18 +219,16 @@ private:
 			auto new_capacity_mask= new_capacity - size_type(1);
 
 			// Allocate and initialize new table.
-			var ptr_type new_table= ptr_type( cast_ref_unsafe</TableValue/>( memory_allocate( new_capacity * typeinfo</TableValue/>.size_of ) ) );
+			auto new_table= ptr_type( cast_ref_unsafe</TableValue/>( memory_allocate( new_capacity * typeinfo</TableValue/>.size_of ) ) );
+			for( auto mut i= 0s; i < new_capacity; ++i )
 			{
-				for( var size_type mut i(0); i < new_capacity; ++i )
-				{
-					new_table[i].cell_content= TableValue::CellContent::Empty;
-				}
+				new_table[i].cell_content= TableValue::CellContent::Empty;
 			}
 
 			// Move content of old table into new table.
 			if( !table_.is_null() )
 			{
-				for( var size_type mut i(0); i < capacity_; ++i )
+				for( auto mut i= 0s; i < capacity_; ++i )
 				{
 					auto &mut old_value= table_[i];
 					if( old_value.cell_content == TableValue::CellContent::Empty || old_value.cell_content == TableValue::CellContent::ValueRemoved )
