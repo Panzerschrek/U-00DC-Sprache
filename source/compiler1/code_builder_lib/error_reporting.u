@@ -1,3 +1,4 @@
+import "/sort.u"
 import "error_reporting.uh"
 
 namespace U1
@@ -24,9 +25,12 @@ op CodeBuilderError::<(CodeBuilderError& l, CodeBuilderError& r) : bool
 	{
 		return l.file_pos < r.file_pos;
 	}
-	return u32(l.code) < u32(r.code);
-	// TODO - compare also texts.
-	//return l.text < r.text;
+	if( l.code != r.code )
+	{
+		return u32(l.code) < u32(r.code);
+	}
+
+	return l.text < r.text;
 }
 
 fn ReportError( CodeBuilderErrorCode code, FilePos file_pos, ust::vector</ust::string8/>& format_args ) : CodeBuilderError
@@ -200,17 +204,7 @@ fn ExpandErrorsInMacros( ErrorsContainer& in_errors, Synt::MacroExpansionContext
 
 fn SortErrorsAndRemoveDuplicates( ErrorsContainer &mut errors )
 {
-	// Use simple bubble sorting. TODO - use REAL sorting.
-	for( auto mut i= 0s; i < errors.size(); ++i )
-	{
-		for( auto mut j= i + 1s; j < errors.size(); ++j )
-		{
-			if( cast_imut(errors)[j] < cast_imut(errors)[i] )
-			{
-				errors.swap( i, j );
-			}
-		}
-	}
+	ust::sort( errors.range() );
 
 	// Leave only unique errors.
 	auto mut dst= 0s;
