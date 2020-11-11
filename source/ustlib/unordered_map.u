@@ -17,13 +17,17 @@ public:
 	type this_type= unordered_map</ key_type, value_type />;
 	type hasher= default_hasher;
 
+	// Key type should be copyable.
+	static_assert( typeinfo</K/>.is_copy_constructible );
+	static_assert( typeinfo</K/>.is_copy_assignable );
+
 public:
 	// Default constructor.
 	fn constructor()= default;
 
 	// Copy constructor.
-	// TODO - enable it only for copyable types.
-	fn constructor( mut this, this_type &imut other )
+	fn enable_if( typeinfo</V/>.is_copy_constructible )
+	constructor( mut this, this_type &imut other )
 	{
 		unsafe
 		{
@@ -48,8 +52,8 @@ public:
 	}
 
 	// Copy assignment operator.
-	// TODO - enable it only for copyable types.
-	op=( mut this, this_type &imut other )
+	op enable_if( typeinfo</V/>.is_copy_constructible )
+	=( mut this, this_type &imut other )
 	{
 		this= this_type(other);
 	}
