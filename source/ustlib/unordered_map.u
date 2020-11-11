@@ -76,16 +76,26 @@ public:
 			auto capacity_mask= capacity_ - size_type(1);
 			auto key_hash= hash(key);
 			auto mut key_hash_wrapped= key_hash & capacity_mask;
+			auto mut insert_index= ~0s;
 			while( true )
 			{
 				auto &mut table_value= cast_mut( cast_ref_unsafe</TableValue/>( int_to_ref( ref_to_int( table_[ key_hash_wrapped ] ) ) ) );
-				if( table_value.cell_content == TableValue::CellContent::Empty || table_value.cell_content == TableValue::CellContent::ValueRemoved )
+				if( table_value.cell_content == TableValue::CellContent::Empty )
 				{
-					move_unsafe( table_value.key_storage, key );
-					move_unsafe( table_value.value_storage, move(value) );
-					table_value.cell_content= TableValue::CellContent::HaveValue;
+					// Insert new value into place of tombstone (if it exists) or in first empty cell.
+					if( insert_index == ~0s ){ insert_index= key_hash_wrapped; }
+
+					auto &mut dst_value= cast_mut( cast_ref_unsafe</TableValue/>( int_to_ref( ref_to_int( table_[ insert_index ] ) ) ) );
+
+					move_unsafe( dst_value.key_storage, key );
+					move_unsafe( dst_value.value_storage, move(value) );
+					dst_value.cell_content= TableValue::CellContent::HaveValue;
 					++size_;
-					return table_value.value_storage;
+					return dst_value.value_storage;
+				}
+				else if( table_value.cell_content == TableValue::CellContent::ValueRemoved )
+				{
+					insert_index= key_hash_wrapped; // Insert new value into place of tombstone.
 				}
 				else if( table_value.cell_content == TableValue::CellContent::HaveValue )
 				{
