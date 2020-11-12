@@ -670,7 +670,8 @@ void ConstexprFunctionEvaluator::ProcessUnaryArithmeticInstruction( const llvm::
 		break;
 
 	case llvm::Instruction::BitCast:
-		val.IntVal= llvm::APInt( dst_type->getIntegerBitWidth(), op.IntVal.getLimitedValue() );
+		// Cast function pointer or pointer for memcpy
+		val.IntVal= llvm::APInt( static_cast<unsigned int>(data_layout_.getTypeAllocSizeInBits( dst_type )), op.IntVal.getLimitedValue() );
 		break;
 
 	default:
