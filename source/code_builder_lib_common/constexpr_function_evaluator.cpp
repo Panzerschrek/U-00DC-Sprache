@@ -2,6 +2,7 @@
 #include <llvm/IR/GlobalVariable.h>
 #include <llvm/IR/InstrTypes.h>
 #include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
 #include "pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib_common/assert.hpp"
@@ -533,6 +534,11 @@ void ConstexprFunctionEvaluator::ProcessCall( const llvm::Instruction* const ins
 
 	if(function->getName() == "llvm.dbg.declare")
 		return;
+	if( function->getIntrinsicID() == llvm::Intrinsic::memcpy || function->getIntrinsicID() == llvm::Intrinsic::memmove )
+	{
+		ProcessMemmove( instruction );
+		return;
+	}
 
 	InstructionsMap new_instructions_map;
 
@@ -553,6 +559,24 @@ void ConstexprFunctionEvaluator::ProcessCall( const llvm::Instruction* const ins
 		instructions_map_[instruction]= result_val;
 
 	stack_.resize( prev_stack_size ); // Drop temporary byval arguments.
+}
+
+void ConstexprFunctionEvaluator::ProcessMemmove( const llvm::Instruction* const instruction )
+{
+	const size_t dst_offset= size_t( GetVal( instruction->getOperand(0u) ).IntVal.getLimitedValue() );
+	const size_t src_offset= size_t( GetVal( instruction->getOperand(1u) ).IntVal.getLimitedValue() );
+	const size_t size= size_t( GetVal( instruction->getOperand(2u) ).IntVal.getLimitedValue() );
+
+	unsigned char* const dst_ptr=
+		( dst_offset >= g_constants_segment_offset )
+			? ( constants_stack_.data() + ( dst_offset - g_constants_segment_offset ) )
+			: ( stack_.data() + dst_offset );
+	const unsigned char* const src_ptr=
+		( src_offset >= g_constants_segment_offset )
+			? ( constants_stack_.data() + ( src_offset - g_constants_segment_offset ) )
+			: ( stack_.data() + src_offset );
+
+	std::memmove( dst_ptr, src_ptr, size );
 }
 
 void ConstexprFunctionEvaluator::ProcessUnaryArithmeticInstruction( const llvm::Instruction* const instruction )

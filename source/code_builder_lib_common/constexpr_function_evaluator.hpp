@@ -48,6 +48,7 @@ private:
 	void ProcessStore( const llvm::Instruction* instruction );
 	void ProcessGEP( const llvm::Instruction* instruction );
 	void ProcessCall( const llvm::Instruction* instruction, size_t stack_depth );
+	void ProcessMemmove( const llvm::Instruction* instruction );
 
 	void ProcessUnaryArithmeticInstruction( const llvm::Instruction* instruction );
 	void ProcessBinaryArithmeticInstruction( const llvm::Instruction* instruction );

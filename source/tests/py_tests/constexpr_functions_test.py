@@ -860,6 +860,22 @@ def ConstexprFunction_ReturnStruct_Test7():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def ConstexprFunction_ReturnStruct_Test8():
+	c_program_text= """
+		struct S{ i32 x; i32 y; }
+		fn constexpr Foo() : S
+		{
+			var S mut s{ .x= 111, .y= -3 };
+			// "move" in "constexpr" function
+			return move(s);
+		}
+		auto constexpr g_s= Foo();
+		static_assert( g_s.x == 111 );
+		static_assert( g_s.y == -3 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def ConstexprFunction_RecursiveCall_Test0():
 	c_program_text= """
 		fn constexpr Factorial( u32 x ) : u32
