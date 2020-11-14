@@ -879,15 +879,10 @@ struct TemplateBase : public SyntaxElementBase
 public:
 	explicit TemplateBase( const FilePos& file_pos );
 
-	// For type arguments, like template</ type A, type B />, arg_type is empty.
-	// For value arguments, like template</ type A, A x, i32 y />, arg_type is comples name of argument.
 	struct Param
 	{
-		const ComplexName* param_type= nullptr; // pointer to arg_type_expr
-		std::unique_ptr<Expression> param_type_expr; // Actyally, only NamedOperand
-
-		const ComplexName* name= nullptr; // Actually, only name with one component
-		std::unique_ptr<Expression> name_expr;
+		std::optional<ComplexName> param_type; // For variable params.
+		std::string name;
 	};
 
 	std::vector<Param> params_;

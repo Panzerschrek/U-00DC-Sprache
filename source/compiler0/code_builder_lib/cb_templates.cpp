@@ -104,11 +104,12 @@ void CodeBuilder::PrepareTypeTemplate(
 	{
 		U_ASSERT( type_template_declaration.signature_params_.empty() );
 		// Assign template params to signature params.
-		for( const Synt::TypeTemplateBase::Param& param : type_template_declaration.params_ )
+		for( size_t i= 0u; i < type_template_declaration.params_.size(); ++i )
 		{
-			type_template->signature_params.push_back(
-				CreateTemplateSignatureParameter( type_template_declaration.file_pos_, *param.name, names_scope, *global_function_context_, template_parameters, template_parameters_usage_flags ) );
+			type_template->signature_params.push_back( TemplateSignatureParam::TemplateParam{ i } );
+			template_parameters_usage_flags[i]= true;
 		}
+
 		type_template->first_optional_signature_param= type_template->signature_params.size();
 	}
 	else
@@ -206,23 +207,20 @@ void CodeBuilder::ProcessTemplateParams(
 	U_ASSERT( template_parameters_usage_flags.empty() );
 
 	// Check and fill template parameters.
-	for( const Synt::TemplateBase::Param& params : params )
+	for( const Synt::TemplateBase::Param& param : params )
 	{
-		U_ASSERT( std::get_if<std::string>( &params.name->start_value ) != nullptr );
-		const std::string& param_name= std::get<std::string>(params.name->start_value);
-
 		// Check redefinition
-		for( const auto& prev_arg : template_parameters )
+		for( const auto& prev_param : template_parameters )
 		{
-			if( prev_arg.name == param_name )
+			if( prev_param.name == param.name )
 			{
-				REPORT_ERROR( Redefinition, names_scope.GetErrors(), file_pos, param_name );
+				REPORT_ERROR( Redefinition, names_scope.GetErrors(), file_pos, param.name );
 				continue;
 			}
 		}
 
 		template_parameters.emplace_back();
-		template_parameters.back().name= param_name;
+		template_parameters.back().name= param.name;
 		template_parameters_usage_flags.push_back(false);
 	}
 
@@ -230,7 +228,7 @@ void CodeBuilder::ProcessTemplateParams(
 
 	for( size_t i= 0u; i < template_parameters.size(); ++i )
 	{
-		if( params[i].param_type == nullptr )
+		if( params[i].param_type == std::nullopt )
 			continue;
 
 		template_parameters[i].type=

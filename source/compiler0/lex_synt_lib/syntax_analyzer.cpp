@@ -3777,11 +3777,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
 			NextLexem();
 		else
-		{
-			auto arg_type= std::make_unique<Expression>( NamedOperand( it_->file_pos, ParseComplexName() ) );
-			params.back().param_type= &std::get_if<NamedOperand>(arg_type.get())->name_;
-			params.back().param_type_expr= std::move(arg_type);
-		}
+			params.back().param_type= ParseComplexName();
 
 		if( it_->type != Lexem::Type::Identifier )
 		{
@@ -3789,12 +3785,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 			return EmptyVariant();
 		}
 
-		ComplexName name;
-		name.start_value= it_->text;
-		auto name_ptr= std::make_unique<Expression>( NamedOperand( it_->file_pos, std::move(name) ) );
-		params.back().name= &std::get_if<NamedOperand>(name_ptr.get())->name_;
-		params.back().name_expr= std::move(name_ptr);
-
+		params.back().name= it_->text;
 		NextLexem();
 
 		if( it_->type == Lexem::Type::Comma )
