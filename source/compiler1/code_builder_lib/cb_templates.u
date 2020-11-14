@@ -91,10 +91,11 @@ fn CodeBuilder::PrepareTypeTemplate(
 
 		if( syntax_element.is_short_form )
 		{
-			foreach( &template_param : syntax_element.params )
+			for( auto mut i= 0s; i < template_params.size(); ++i )
 			{
-				signature_params.push_back(
-					CreateTemplateSignatureParam( names_scope, global_function_context, template_params, template_param.name, template_params_usage_flags ) );
+				var TemplateSignatureParam::TemplateParam mut p{ .index= i };
+				signature_params.push_back( move(p) );
+				template_params_usage_flags[i]= true;
 			}
 		}
 		else
@@ -120,7 +121,7 @@ fn CodeBuilder::PrepareTypeTemplate(
 	{
 		if( !template_params_usage_flags[i] )
 		{
-			REPORT_ERROR( TemplateArgumentNotUsedInSignature, names_scope, Synt::GetFilePos(syntax_element.params[i].name), template_params[i].name )
+			REPORT_ERROR( TemplateArgumentNotUsedInSignature, names_scope, syntax_element.params[i].file_pos, template_params[i].name )
 		}
 	}
 
@@ -215,17 +216,15 @@ fn CodeBuilder::PrepareTemplateParams(
 	var ust::vector</ TemplateBase::Param /> mut template_params;
 	foreach( &param : in_params )
 	{
-		var ust::string8& name= param.name.get</Synt::ComplexName/>().get_ref().start.get</ust::string8/>().get_ref();
-
 		foreach( &prev_param : template_params )
 		{
-			if( name == prev_param.name )
+			if( param.name == prev_param.name )
 			{
-				REPORT_ERROR( Redefinition, names_scope, Synt::GetFilePos( param.name ), name )
+				REPORT_ERROR( Redefinition, names_scope, param.file_pos, param.name )
 			}
 		}
 
-		var TemplateBase::Param mut out_param{ .name= name };
+		var TemplateBase::Param mut out_param{ .name= param.name };
 		template_params.push_back( move(out_param) );
 	}
 

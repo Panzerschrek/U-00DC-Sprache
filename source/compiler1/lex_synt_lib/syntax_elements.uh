@@ -622,8 +622,9 @@ struct Enum
 
 struct TemplateParam
 {
+	FilePos file_pos;
 	Expression t; // Actually, only ComplexName. Empty if type parameter.
-	Expression name; // Actually, only name with one component
+	ust::string8 name;
 }
 
 struct TypeTemplate

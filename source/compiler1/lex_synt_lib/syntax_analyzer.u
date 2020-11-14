@@ -3200,10 +3200,9 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 			PushErrorMessage();
 		}
 
-		var ComplexName mut param_name{ .file_pos= it_.front().file_pos, .start= it_.front().text };
+		param.name= it_.front().text;
+		param.file_pos= it_.front().file_pos;
 		NextLexem();
-
-		param.name= move(param_name);
 
 		params.push_back( move(param) );
 
