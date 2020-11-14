@@ -2,6 +2,7 @@
 
 #include "../lex_synt_lib/syntax_elements.hpp"
 #include "names_scope.hpp"
+#include "deduced_template_parameter.hpp"
 
 namespace U
 {
@@ -19,11 +20,10 @@ struct TemplateBase
 	struct TemplateParameter
 	{
 		std::string name;
+		std::optional<DeducedTemplateParameter> type; // For variable params.
 	};
 
 	std::vector< TemplateParameter > template_params;
-	std::vector< std::optional<DeducedTemplateParameter> > params_types;
-
 	std::vector<DeducedTemplateParameter> signature_params; // Function params for function templates.
 
 	NamesScope* parent_namespace= nullptr; // NamesScope, where defined. NOT changed after import.

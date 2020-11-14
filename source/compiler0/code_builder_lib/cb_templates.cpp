@@ -136,11 +136,10 @@ void CodeBuilder::PrepareTypeTemplate(
 	}
 	U_ASSERT( type_template->first_optional_signature_param <= type_template->signature_params.size() );
 
-	type_template->params_types.resize( type_template->template_params.size() );
 	for( size_t i= 0u; i < type_template->template_params.size(); ++i )
 	{
 		if( type_template_declaration.args_[i].arg_type != nullptr )
-			type_template->params_types[i]=
+			type_template->template_params[i].type=
 				CreateTemplateSignatureParameter(
 					type_template_declaration.file_pos_,
 					*type_template_declaration.args_[i].arg_type,
@@ -198,11 +197,10 @@ void CodeBuilder::PrepareFunctionTemplate(
 		}
 	}
 
-	function_template->params_types.resize( function_template->template_params.size() );
 	for( size_t i= 0u; i < function_template->template_params.size(); ++i )
 	{
 		if( function_template_declaration.args_[i].arg_type != nullptr )
-			function_template->params_types[i]=
+			function_template->template_params[i].type=
 				CreateTemplateSignatureParameter(
 					function_template_declaration.file_pos_,
 					*function_template_declaration.args_[i].arg_type,
@@ -574,7 +572,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	U_ASSERT( value != nullptr );
 	if( value->GetYetNotDeducedTemplateArg() != nullptr )
 	{
-		const auto param_type= template_.params_types[ template_param.index ];
+		const auto param_type= template_.template_params[ template_param.index ].type;
 		const bool is_variable_param= param_type != std::nullopt;
 
 		if( const auto given_type= std::get_if<Type>( &template_arg ) )
@@ -1224,7 +1222,6 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 		new_template->syntax_element= function_template.syntax_element;
 		new_template->base_class= function_template.base_class;
 		new_template->signature_params= function_template.signature_params;
-		new_template->params_types= function_template.params_types;
 		new_template->parent= function_template_ptr;
 
 		new_template->known_template_args= template_args;
