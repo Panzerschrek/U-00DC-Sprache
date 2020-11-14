@@ -495,11 +495,9 @@ bool CodeBuilder::MatchTemplateArgImpl(
 
 	if( const auto given_variable= std::get_if<Variable>( &template_arg ) )
 	{
-		if( given_variable->type != template_param.v.type )
-			return false;
-		if( given_variable->constexpr_value->getUniqueInteger() != template_param.v.constexpr_value->getUniqueInteger() )
-			return false;
-		return true;
+		return
+			given_variable->type == template_param.v.type &&
+			given_variable->constexpr_value->getUniqueInteger() == template_param.v.constexpr_value->getUniqueInteger();
 	}
 
 	return false;
@@ -571,10 +569,9 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	{
 		if( const auto given_varaible= std::get_if<Variable>( &template_arg ) )
 		{
-			if( given_varaible->type != prev_variable->type )
-				return false;
-
-			return given_varaible->constexpr_value->getUniqueInteger() == prev_variable->constexpr_value->getUniqueInteger();
+			return
+				given_varaible->type == prev_variable->type &&
+				given_varaible->constexpr_value->getUniqueInteger() == prev_variable->constexpr_value->getUniqueInteger();
 		}
 
 		return false;
@@ -654,26 +651,22 @@ bool CodeBuilder::MatchTemplateArgImpl(
 		{
 			const Function& given_function_type= given_function_pointer_type->function;
 
-			if( given_function_type.unsafe != template_param.is_unsafe )
-				return false;
-			if( given_function_type.return_value_is_mutable != template_param.return_value_is_mutable )
-				return false;
-			if( given_function_type.return_value_is_reference != template_param.return_value_is_reference )
-				return false;
-
-			if( !MatchTemplateArg( template_, args_names_scope, given_function_type.return_type, file_pos, *template_param.return_type ) )
-				return false;
-
-			if( given_function_type.args.size() != template_param.params.size() )
+			if( !(
+				given_function_type.unsafe == template_param.is_unsafe &&
+				given_function_type.return_value_is_mutable == template_param.return_value_is_mutable &&
+				given_function_type.return_value_is_reference == template_param.return_value_is_reference &&
+				MatchTemplateArg( template_, args_names_scope, given_function_type.return_type, file_pos, *template_param.return_type ) &&
+				given_function_type.args.size() == template_param.params.size()
+				) )
 				return false;
 
 			for( size_t i= 0; i < template_param.params.size(); ++i )
 			{
-				if( given_function_type.args[i].is_mutable != template_param.params[i].is_mutable )
-					return false;
-				if( given_function_type.args[i].is_reference != template_param.params[i].is_reference )
-					return false;
-				if( ! MatchTemplateArg( template_, args_names_scope, given_function_type.args[i].type, file_pos, *template_param.params[i].type ) )
+				if( !(
+					given_function_type.args[i].is_mutable == template_param.params[i].is_mutable &&
+					given_function_type.args[i].is_reference == template_param.params[i].is_reference &&
+					MatchTemplateArg( template_, args_names_scope, given_function_type.args[i].type, file_pos, *template_param.params[i].type )
+					) )
 					return false;
 			}
 
@@ -696,21 +689,15 @@ bool CodeBuilder::MatchTemplateArgImpl(
 		if( const auto given_class_type= given_type->GetClassTypeProxy() )
 		{
 			const Class& given_class= *given_class_type->class_;
-			if( given_class.base_template == std::nullopt )
-				return false;
 
-			bool is_one_of_templates= false;
-			for( const TypeTemplatePtr& type_template :template_param.type_templates )
-				if( given_class.base_template->class_template == type_template )
-				{
-					is_one_of_templates= true;
-					break;
-				}
-
-			if( !is_one_of_templates )
-				return false;
-
-			if( template_param.params.size() != given_class.base_template->signature_args.size() )
+			if( !(
+					given_class.base_template != std::nullopt &&
+					std::find(
+						template_param.type_templates.begin(),
+						template_param.type_templates.end(),
+						given_class.base_template->class_template ) != template_param.type_templates.end() &&
+					template_param.params.size() == given_class.base_template->signature_args.size()
+				) )
 				return false;
 
 			for( size_t i= 0; i < template_param.params.size(); ++i )
@@ -799,11 +786,9 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	TemplateArgs result_signature_args(type_template.signature_params.size());
 	for( size_t i= 0u; i < type_template.signature_params.size(); ++i )
 	{
-		Value value;
-		if( i < template_arguments.size() )
-			value= template_arguments[i];
-		else
-			value= BuildExpressionCode( type_template.syntax_element->signature_args_[i].default_value, *template_args_namespace, *global_function_context_ );
+		const Value value= i < template_arguments.size()
+			? template_arguments[i]
+			: BuildExpressionCode( type_template.syntax_element->signature_args_[i].default_value, *template_args_namespace, *global_function_context_ );
 
 		if( const Type* const type_name= value.GetTypeName() )
 			result_signature_args[i]= *type_name;
@@ -817,7 +802,6 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 
 		if( !MatchTemplateArg( type_template, *template_args_namespace, result_signature_args[i], file_pos, type_template.signature_params[i] ) )
 			return result;
-
 	} // for signature arguments
 
 	TemplateArgs result_template_args;
