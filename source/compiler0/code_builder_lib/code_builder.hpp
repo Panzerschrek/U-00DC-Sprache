@@ -190,31 +190,7 @@ private:
 		const Synt::ComplexName& signature_parameter,
 		NamesScope& names_scope );
 
-	// Returns deduced parameter, if all ok.
-	DeducedTemplateParameter DeduceTemplateArguments(
-		const TemplateBase& template_,
-		const TemplateArg& template_arg,
-		const Synt::ComplexName& signature_parameter,
-		const FilePos& signature_parameter_file_pos,
-		DeducibleTemplateArgs& deducible_template_args,
-		NamesScope& names_scope );
-
-	DeducedTemplateParameter DeduceTemplateArguments(
-		const TemplateBase& template_,
-		const TemplateArg& template_arg,
-		const Synt::Expression& signature_parameter,
-		const FilePos& signature_parameter_file_pos,
-		DeducibleTemplateArgs& deducible_template_args,
-		NamesScope& names_scope );
-
-	DeducedTemplateParameter DeduceTemplateArguments(
-		const TemplateBase& template_,
-		const TemplateArg& template_arg,
-		const Synt::TypeName& signature_parameter,
-		const FilePos& signature_parameter_file_pos,
-		DeducibleTemplateArgs& deducible_template_args,
-		NamesScope& names_scope );
-
+	// Returns "true" if all ok.
 	bool MatchTemplateArg(
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
