@@ -1174,36 +1174,6 @@ bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
 	return false;
 }
 
-void CodeBuilder::ReportAboutIncompleteMembersOfTemplateClass( const FilePos& file_pos, Class& class_ )
-{
-	class_.members.ForEachInThisScope(
-		[this, file_pos, &class_]( const std::string& name, const Value& value )
-		{
-			if( const Type* const type= value.GetTypeName() )
-			{
-				if( Class* const subclass= type->GetClassType() )
-				{
-					if( !subclass->is_complete )
-						REPORT_ERROR( IncompleteMemberOfClassTemplate, class_.members.GetErrors(), file_pos, name );
-					else
-						ReportAboutIncompleteMembersOfTemplateClass( file_pos, *subclass );
-				}
-			}
-			else if( const OverloadedFunctionsSet* const functions_set= value.GetFunctionsSet() )
-			{
-				for( const FunctionVariable& function : functions_set->functions )
-				{
-					if( !function.have_body )
-						REPORT_ERROR( IncompleteMemberOfClassTemplate, class_.members.GetErrors(), file_pos, name );
-				}
-			}
-			else if( value.GetClassField() != nullptr ) {}
-			else if( value.GetTypeTemplatesSet() != nullptr ) {}
-			else if( value.GetVariable() != nullptr ) {}
-			else U_ASSERT(false);
-		} );
-}
-
 } // namespace CodeBuilderPrivate
 
 } // namespace U

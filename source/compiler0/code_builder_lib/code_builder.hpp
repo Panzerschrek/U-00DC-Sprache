@@ -279,8 +279,6 @@ private:
 
 	bool TypeIsValidForTemplateVariableArgument( const Type& type );
 
-	void ReportAboutIncompleteMembersOfTemplateClass( const FilePos& file_pos, Class& class_ );
-
 	// Constructors/destructors
 	void TryGenerateDefaultConstructor( Class& the_class, const Type& class_type );
 	void TryGenerateCopyConstructor( Class& the_class, const Type& class_type );
