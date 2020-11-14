@@ -866,56 +866,47 @@ fn CodeBuilder::GenTemplateFunction(
 	auto mut all_ok= true;
 	for( auto mut i= 0s; i < args.size(); ++i )
 	{
-		var Synt::FunctionType::Param& param= function_syntax_element.function_type.params[i];
+		var Synt::FunctionType::Param& function_param= function_syntax_element.function_type.params[i];
 		var VariableTypeExtened& arg= args[i];
 
-		auto is_this= param.name == KeywordToString( Keyword::this_ );
+		auto is_this= function_param.name == KeywordToString( Keyword::this_ );
 		auto param_is_mutable_reference=
-			param.mutability_modifier == Synt::MutabilityModifier::Mutable &&
-			( param.reference_modifier == Synt::ReferenceModifier::Reference || is_this );
+			function_param.mutability_modifier == Synt::MutabilityModifier::Mutable &&
+			( function_param.reference_modifier == Synt::ReferenceModifier::Reference || is_this );
 		if( param_is_mutable_reference && arg.value_type != ValueType::ReferenceMut )
 		{
 			return ust::optional</FunctionVariable/>();
 		}
 
-		if( is_this )
+		auto& param= function_template.signature_params[i];
+		if_var( &template_param : param.GetTemplateParam() )
 		{
-			all_ok&=
-				!function_template.class_.empty() &&
-				arg.t.ReferenceIsConvertibleTo( ust::to_non_nullable(function_template.class_) );
-		}
-		else
-		{
-			auto& param= function_template.signature_params[i];
-			if_var( &template_param : param.GetTemplateParam() )
-			{
-				auto& param_name= function_template.params[template_param.index].name;
-				auto template_arg_value= result_names_scope.lock_imut().get_ref().GetThisScopeValue( param_name ).get_ref();
-				auto template_arg_ptr= template_arg_value.Get</TemplateArg/>();
+			auto& param_name= function_template.params[template_param.index].name;
+			auto template_arg_value= result_names_scope.lock_imut().get_ref().GetThisScopeValue( param_name ).get_ref();
+			auto template_arg_ptr= template_arg_value.Get</TemplateArg/>();
 
-				auto template_arg_lock= template_arg_ptr.lock_imut();
-				auto& template_arg= template_arg_lock.get_ref();
+			auto template_arg_lock= template_arg_ptr.lock_imut();
+			auto& template_arg= template_arg_lock.get_ref();
 
-				if_var( &t : template_arg.something.get</Type/>() )
-				{
-					// TODO - maybe forbid type conversion for copy and conversion constructors?
-					all_ok&=
-						arg.t.ReferenceIsConvertibleTo( t ) ||
-						( !param_is_mutable_reference && !GetConversionConstructor( result_names_scope, t, arg.t, file_pos ).empty() );
-					continue;
-				}
-			}
-			if_var( &type_param : param.GetTypeParam() )
+			if_var( &t : template_arg.something.get</Type/>() )
 			{
 				// TODO - maybe forbid type conversion for copy and conversion constructors?
 				all_ok&=
-					arg.t.ReferenceIsConvertibleTo( type_param.t ) ||
-					( !param_is_mutable_reference && !GetConversionConstructor( result_names_scope, type_param.t, arg.t, file_pos ).empty() );
+					arg.t.ReferenceIsConvertibleTo( t ) ||
+					( !param_is_mutable_reference && !GetConversionConstructor( result_names_scope, t, arg.t, file_pos ).empty() );
 				continue;
 			}
-
-			all_ok&= MatchTemplateArgument( result_names_scope, function_template, param, arg.t, file_pos );
 		}
+		if_var( &type_param : param.GetTypeParam() )
+		{
+			// TODO - maybe forbid type conversion for copy and conversion constructors?
+			all_ok&=
+				arg.t.ReferenceIsConvertibleTo( type_param.t ) ||
+				( !param_is_mutable_reference && !GetConversionConstructor( result_names_scope, type_param.t, arg.t, file_pos ).empty() );
+			continue;
+		}
+
+		all_ok&= MatchTemplateArgument( result_names_scope, function_template, param, arg.t, file_pos );
 	}
 
 	if( !all_ok )
