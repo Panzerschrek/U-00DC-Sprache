@@ -137,19 +137,6 @@ void CodeBuilder::PrepareTypeTemplate(
 	U_ASSERT( type_template->first_optional_signature_param <= type_template->signature_params.size() );
 
 	for( size_t i= 0u; i < type_template->template_params.size(); ++i )
-	{
-		if( type_template_declaration.args_[i].arg_type != nullptr )
-			type_template->template_params[i].type=
-				CreateTemplateSignatureParameter(
-					type_template_declaration.file_pos_,
-					*type_template_declaration.args_[i].arg_type,
-					names_scope,
-					*global_function_context_,
-					template_parameters,
-					template_parameters_usage_flags );
-	}
-
-	for( size_t i= 0u; i < type_template->template_params.size(); ++i )
 		if( !template_parameters_usage_flags[i] )
 			REPORT_ERROR( TemplateArgumentNotUsedInSignature, names_scope.GetErrors(), type_template_declaration.file_pos_, type_template->template_params[i].name );
 }
@@ -197,19 +184,6 @@ void CodeBuilder::PrepareFunctionTemplate(
 		}
 	}
 
-	for( size_t i= 0u; i < function_template->template_params.size(); ++i )
-	{
-		if( function_template_declaration.args_[i].arg_type != nullptr )
-			function_template->template_params[i].type=
-				CreateTemplateSignatureParameter(
-					function_template_declaration.file_pos_,
-					*function_template_declaration.args_[i].arg_type,
-					names_scope,
-					*global_function_context_,
-					function_template->template_params,
-					template_parameters_usage_flags );
-	}
-
 	// Do not report about unused template parameters because they may not be used in function signature or even in function type but used only inside body.
 	// For example:
 	// template</ type T /> fn Foo()
@@ -252,47 +226,34 @@ void CodeBuilder::ProcessTemplateArgs(
 		template_parameters.emplace_back();
 		template_parameters.back().name= arg_name;
 		template_parameters_usage_flags.push_back(false);
-
-		if( arg.arg_type != nullptr )
-		{
-			// If template parameter is variable.
-
-			bool arg_type_is_template= false;
-			const std::string* const arg_type_start= std::get_if<std::string>( &arg.arg_type->start_value );
-			if( arg_type_start != nullptr && arg.arg_type->tail == nullptr )
-			{
-				for( const TypeTemplate::TemplateParameter& template_parameter : template_parameters )
-				{
-					if( template_parameter.name == *arg_type_start)
-					{
-						arg_type_is_template= true;
-						template_parameters_usage_flags[ size_t(&template_parameter - template_parameters.data()) ]= true;
-						break;
-					}
-				}
-			}
-
-			if( !arg_type_is_template )
-			{
-				// Resolve from outer space or from this template parameters.
-				const Value type_value= ResolveValue( file_pos, names_scope, *global_function_context_, *arg.arg_type );
-				const Type* const type= type_value.GetTypeName();
-				if( type == nullptr )
-				{
-					REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), file_pos, *arg.arg_type );
-					continue;
-				}
-
-				if( !TypeIsValidForTemplateVariableArgument( *type ) )
-				{
-					REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), file_pos, type );
-					continue;
-				}
-			}
-		}
 	}
 
 	U_ASSERT( template_parameters_usage_flags.size() == template_parameters.size() );
+
+	for( size_t i= 0u; i < template_parameters.size(); ++i )
+	{
+		if( args[i].arg_type == nullptr )
+			continue;
+
+		template_parameters[i].type=
+			CreateTemplateSignatureParameter(
+				file_pos,
+				*args[i].arg_type,
+				names_scope,
+				*global_function_context_,
+				template_parameters,
+				template_parameters_usage_flags );
+
+		if( const auto type_param= template_parameters[i].type->GetType() )
+		{
+			if( !TypeIsValidForTemplateVariableArgument( type_param->t ) )
+				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), file_pos, type_param->t );
+		}
+		else if( template_parameters[i].type->IsTemplateParam() )
+		{}
+		else
+			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), file_pos, *args[i].arg_type );
+	}
 }
 
 TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(

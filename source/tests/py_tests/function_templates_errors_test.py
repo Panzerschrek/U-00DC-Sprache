@@ -89,7 +89,7 @@ def NameIsNotTypeName_ForFunctionTemplateParameter():
 		fn Foo(){}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "NameIsNotTypeName", 3 ) or HaveError( errors_list, "InvalidValueAsTemplateArgument", 3 ) )
+	assert( HaveError( errors_list, "InvalidTypeOfTemplateVariableArgument", 3 ) or HaveError( errors_list, "InvalidValueAsTemplateArgument", 3 ) )
 
 
 def InvalidTypeOfTemplateVariableArgument_ForFunctionTemplateParameter():
