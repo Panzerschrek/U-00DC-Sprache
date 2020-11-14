@@ -1622,20 +1622,20 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 		if( template_args.size() > function_template.template_params.size() )
 			continue;
 
+
+		NamesScope args_names_scope("", function_template.parent_namespace );
+		for( const TemplateBase::TemplateParameter& param : function_template.template_params )
+			args_names_scope.AddName( param.name, YetNotDeducedTemplateArg() );
+
 		bool ok= true;
-		DeducibleTemplateArgs deducible_template_args( function_template.template_params.size() );
 		for( size_t i= 0u; i < template_args.size(); ++i )
 		{
-			const auto deduced=
-				DeduceTemplateArguments(
-					function_template,
-					template_args[i],
-					*function_template.syntax_element->args_[i].name,
-					Synt::GetExpressionFilePos( *function_template.syntax_element->args_[i].name_expr ),
-					deducible_template_args,
-					*function_template.parent_namespace );
-			if( deduced.IsInvalid() )
-				ok= false;
+			ok&= MatchTemplateArg(
+				function_template,
+				args_names_scope,
+				template_args[i],
+				Synt::GetExpressionFilePos( *function_template.syntax_element->args_[i].name_expr ),
+				DeducedTemplateParameter::TemplateParameter{ i } );
 		}
 
 		if( !ok )
