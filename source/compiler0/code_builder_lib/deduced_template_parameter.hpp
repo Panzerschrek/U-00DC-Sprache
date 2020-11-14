@@ -94,6 +94,9 @@ public:
 	bool IsType() const;
 	bool IsVariable() const;
 	bool IsTemplateParameter() const;
+	const TypeParam* GetType() const;
+	const VariableParam* GetVariable() const;
+	const TemplateParameter* GetTemplateParameter() const;
 	const ArrayParam* GetArray() const;
 	const TupleParam* GetTuple() const;
 	const FunctionParam* GetFunction() const;

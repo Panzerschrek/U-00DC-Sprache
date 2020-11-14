@@ -9,6 +9,9 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
+using TemplateArg= std::variant< Variable, Type >;
+using TemplateArgs= std::vector<TemplateArg>;
+
 struct TemplateBase
 {
 	virtual ~TemplateBase()= default;
@@ -22,6 +25,8 @@ struct TemplateBase
 	std::vector< TemplateParameter > template_params;
 	std::vector< std::optional<DeducedTemplateParameter> > params_types;
 
+	std::vector<DeducedTemplateParameter> signature_params_new; // Function params for function templates.
+
 	NamesScope* parent_namespace= nullptr; // NamesScope, where defined. NOT changed after import.
 
 	FilePos file_pos;
@@ -33,7 +38,6 @@ struct TypeTemplate final : TemplateBase
 	std::vector< const Synt::Expression* > default_signature_params;
 	size_t first_optional_signature_param= ~0u;
 
-	std::vector<DeducedTemplateParameter> signature_params_new;
 
 	enum class Kind
 	{
@@ -56,7 +60,7 @@ struct FunctionTemplate final : public TemplateBase
 	ClassProxyPtr base_class;
 
 	// In case of manual parameters specifying, like foo</A, B, C/> we create new template and store known arguments and reference to base template.
-	std::vector< std::pair< std::string, Value > > known_template_args;
+	TemplateArgs known_template_args;
 	FunctionTemplatePtr parent;
 };
 

@@ -1,15 +1,12 @@
 #pragma once
 #include "../lex_synt_lib/program_string.hpp"
-#include "names_scope.hpp"
+#include "template_types.hpp"
 
 namespace U
 {
 
 namespace CodeBuilderPrivate
 {
-
-using TemplateArg= std::variant< Variable, Type >;
-using TemplateArgs= std::vector<TemplateArg>;
 
 class Class final
 {

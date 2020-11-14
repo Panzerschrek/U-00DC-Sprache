@@ -106,6 +106,21 @@ bool DeducedTemplateParameter::IsTemplateParameter() const
 	return std::get_if<TemplateParameter>( &something_ ) != nullptr;
 }
 
+const DeducedTemplateParameter::TypeParam* DeducedTemplateParameter::GetType() const
+{
+	return std::get_if<TypeParam>( &something_ );
+}
+
+const DeducedTemplateParameter::VariableParam* DeducedTemplateParameter::GetVariable() const
+{
+	return std::get_if<VariableParam>( &something_ );
+}
+
+const DeducedTemplateParameter::TemplateParameter* DeducedTemplateParameter::GetTemplateParameter() const
+{
+	return std::get_if<TemplateParameter>( &something_ );
+}
+
 const DeducedTemplateParameter::ArrayParam* DeducedTemplateParameter::GetArray() const
 {
 	return std::get_if<ArrayParam>( &something_ );

@@ -991,7 +991,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	// Try also select template functions with zero template parameters and template functions with all template parameters known.
 	for( const FunctionTemplatePtr& function_template : candidate_functions->template_functions )
 	{
-		if( function_template->template_params.empty() )
+		if( function_template->template_params.size() == function_template->known_template_args.size() )
 		{
 			const FunctionVariable* const func=
 				GenTemplateFunction(
