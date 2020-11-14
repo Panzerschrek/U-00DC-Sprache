@@ -277,10 +277,7 @@ private:
 		NamesScope& arguments_names_scope,
 		FunctionContext& function_context );
 
-	bool NameShadowsTemplateArgument( const std::string& name, NamesScope& names_scope );
-
 	bool TypeIsValidForTemplateVariableArgument( const Type& type );
-
 
 	void ReportAboutIncompleteMembersOfTemplateClass( const FilePos& file_pos, Class& class_ );
 

@@ -220,8 +220,6 @@ void CodeBuilder::ProcessTemplateArgs(
 				continue;
 			}
 		}
-		if( NameShadowsTemplateArgument( arg_name, names_scope ) )
-			REPORT_ERROR( DeclarationShadowsTemplateArgument, names_scope.GetErrors(), file_pos, arg_name );
 
 		template_parameters.emplace_back();
 		template_parameters.back().name= arg_name;
@@ -1156,14 +1154,6 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 	}
 
 	return & generated_template_things_storage_.insert( std::make_pair( name_encoded, result ) ).first->second;
-}
-
-bool CodeBuilder::NameShadowsTemplateArgument( const std::string& name, NamesScope& names_scope )
-{
-	// Not implemented correctly yet.
-	U_UNUSED(name);
-	U_UNUSED(names_scope);
-	return false;
 }
 
 bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )

@@ -888,8 +888,6 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 	{
 		if( IsKeyword( in_member.name ) )
 			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), in_member.file_pos );
-		if( NameShadowsTemplateArgument( in_member.name, names_scope ) )
-			REPORT_ERROR( DeclarationShadowsTemplateArgument, names_scope.GetErrors(), in_member.file_pos, in_member.name );
 
 		Variable var;
 

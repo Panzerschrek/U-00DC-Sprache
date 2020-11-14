@@ -241,12 +241,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		if( variable.value_type != ValueType::ConstReference )
 			variable.constexpr_value= nullptr;
 
-		if( NameShadowsTemplateArgument( variable_declaration.name, names ) )
-		{
-			REPORT_ERROR( DeclarationShadowsTemplateArgument, names.GetErrors(), variables_declaration.file_pos_, variable_declaration.name );
-			continue;
-		}
-
 		const Value* const inserted_value=
 			names.AddName( variable_declaration.name, Value( variable, variable_declaration.file_pos ) );
 		if( inserted_value == nullptr )
@@ -410,12 +404,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	// Reset constexpr initial value for mutable variables.
 	if( variable.value_type != ValueType::ConstReference )
 		variable.constexpr_value= nullptr;
-
-	if( NameShadowsTemplateArgument( auto_variable_declaration.name, names ) )
-	{
-		REPORT_ERROR( DeclarationShadowsTemplateArgument, names.GetErrors(), auto_variable_declaration.file_pos_, auto_variable_declaration.name );
-		return BlockBuildInfo();
-	}
 
 	const Value* const inserted_value=
 		names.AddName( auto_variable_declaration.name, Value( variable, auto_variable_declaration.file_pos_ ) );
@@ -1157,12 +1145,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 
 	if( IsKeyword( with_operator.variable_name_ ) )
 		REPORT_ERROR( UsingKeywordAsName, names.GetErrors(), with_operator.file_pos_ );
-
-	if( NameShadowsTemplateArgument( with_operator.variable_name_, names ) )
-	{
-		REPORT_ERROR( DeclarationShadowsTemplateArgument, names.GetErrors(), with_operator.file_pos_, with_operator.variable_name_ );
-		return BlockBuildInfo();
-	}
 
 	{ // Destroy unused temporaries after variable initialization.
 		const ReferencesGraphNodeHolder variable_lock(
