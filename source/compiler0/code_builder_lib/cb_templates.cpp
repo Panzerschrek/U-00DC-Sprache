@@ -125,7 +125,7 @@ void CodeBuilder::PrepareTypeTemplate(
 		// Assign template arguments to signature arguments.
 		for( const Synt::TypeTemplateBase::Arg& arg : type_template_declaration.args_ )
 		{
-			CheckTemplateSignatureParameter( type_template_declaration.file_pos_, *arg.name, names_scope, template_parameters, template_parameters_usage_flags );
+			CheckTemplateSignatureParameter( type_template_declaration.file_pos_, *arg.name, names_scope, *global_function_context_, template_parameters, template_parameters_usage_flags );
 			type_template->signature_params.push_back(arg.name_expr.get());
 			type_template->default_signature_params.push_back(nullptr);
 		}
@@ -137,12 +137,12 @@ void CodeBuilder::PrepareTypeTemplate(
 		type_template->first_optional_signature_param= 0u;
 		for( const Synt::TypeTemplateBase::SignatureArg& signature_arg : type_template_declaration.signature_args_ )
 		{
-			CheckTemplateSignatureParameter( signature_arg.name, names_scope, template_parameters, template_parameters_usage_flags );
+			CheckTemplateSignatureParameter( signature_arg.name, names_scope, *global_function_context_, template_parameters, template_parameters_usage_flags );
 			type_template->signature_params.push_back(&signature_arg.name);
 
 			if( std::get_if<Synt::EmptyVariant>( &signature_arg.default_value ) == nullptr )
 			{
-				CheckTemplateSignatureParameter( signature_arg.default_value, names_scope, template_parameters, template_parameters_usage_flags );
+				CheckTemplateSignatureParameter( signature_arg.default_value, names_scope, *global_function_context_, template_parameters, template_parameters_usage_flags );
 				type_template->default_signature_params.push_back(&signature_arg.default_value);
 			}
 			else
@@ -282,10 +282,11 @@ void CodeBuilder::ProcessTemplateArgs(
 	U_ASSERT( template_parameters_usage_flags.size() == template_parameters.size() );
 }
 
-void CodeBuilder::CheckTemplateSignatureParameter(
+DeducedTemplateParameter CodeBuilder::CheckTemplateSignatureParameter(
 	const FilePos& file_pos,
 	const Synt::ComplexName& signature_parameter,
 	NamesScope& names_scope,
+	FunctionContext& function_context,
 	const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 	std::vector<bool>& template_parameters_usage_flags )
 {
@@ -297,20 +298,22 @@ void CodeBuilder::CheckTemplateSignatureParameter(
 		{
 			if( template_parameter.name == *signature_parameter_start )
 			{
-				template_parameters_usage_flags[ size_t(&template_parameter - template_parameters.data()) ]= true;
-				return;
+				const size_t param_index= size_t(&template_parameter - template_parameters.data());
+				template_parameters_usage_flags[ param_index ]= true;
+
+				return DeducedTemplateParameter::TemplateParameter{ param_index };
 			}
 		}
 	}
 
 	const Value start_value= ResolveForTemplateSignatureParameter( file_pos, signature_parameter, names_scope );
-	if( start_value.GetTypeTemplatesSet() != nullptr )
+	if( const auto type_templates_set= start_value.GetTypeTemplatesSet() )
 	{
 		const Synt::ComplexName::Component* name_component= signature_parameter.tail.get();
 		if( name_component == nullptr )
 		{
 			REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), file_pos, "TODO: template name" );
-			return;
+			return DeducedTemplateParameter::InvalidParam();
 		}
 
 		while( name_component->next != nullptr )
@@ -320,72 +323,152 @@ void CodeBuilder::CheckTemplateSignatureParameter(
 		if( last_template_parameters == nullptr )
 		{
 			REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), file_pos, "TODO:  template name" );
-			return;
+			return DeducedTemplateParameter::InvalidParam();
 		}
 
+		DeducedTemplateParameter::SpecializedTemplateParam specialized_template;
+
+		bool all_args_are_known= true;
 		for( const Synt::Expression& template_parameter : *last_template_parameters )
-			CheckTemplateSignatureParameter( template_parameter, names_scope, template_parameters, template_parameters_usage_flags );
+		{
+			specialized_template.params.push_back( CheckTemplateSignatureParameter( template_parameter, names_scope, function_context, template_parameters, template_parameters_usage_flags ) );
+			all_args_are_known&= specialized_template.params.back().IsType() || specialized_template.params.back().IsVariable();
+		}
+
+		if( all_args_are_known )
+			return ValueToTemplateParam( ResolveValue( file_pos, names_scope, function_context, signature_parameter ), names_scope );
+
+		specialized_template.type_templates= type_templates_set->type_templates;
+
+		return specialized_template;
 	}
+
+	return ValueToTemplateParam( ResolveValue( file_pos, names_scope, function_context, signature_parameter ), names_scope );
 }
 
-void CodeBuilder::CheckTemplateSignatureParameter(
+DeducedTemplateParameter CodeBuilder::CheckTemplateSignatureParameter(
 	const Synt::Expression& template_parameter,
 	NamesScope& names_scope,
+	FunctionContext& function_context,
 	const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 	std::vector<bool>& template_parameters_usage_flags )
 {
 	if( const auto named_operand= std::get_if<Synt::NamedOperand>( &template_parameter ) )
 	{
 		if( named_operand->postfix_operators_.empty() && named_operand->prefix_operators_.empty() )
-			return CheckTemplateSignatureParameter( named_operand->file_pos_, named_operand->name_, names_scope, template_parameters, template_parameters_usage_flags );
+			return CheckTemplateSignatureParameter( named_operand->file_pos_, named_operand->name_, names_scope, function_context, template_parameters, template_parameters_usage_flags );
 	}
 	else if( const auto type_name= std::get_if<Synt::TypeNameInExpression>( &template_parameter ) )
-		return CheckTemplateSignatureParameter( type_name->type_name, names_scope, template_parameters, template_parameters_usage_flags );
+		return CheckTemplateSignatureParameter( type_name->type_name, names_scope, function_context, template_parameters, template_parameters_usage_flags );
 	else if( const auto bracket_expression= std::get_if<Synt::BracketExpression>( &template_parameter ) )
 	{
 		if( bracket_expression->postfix_operators_.empty() && bracket_expression->prefix_operators_.empty() )
-			return CheckTemplateSignatureParameter( *bracket_expression->expression_, names_scope, template_parameters, template_parameters_usage_flags );
+			return CheckTemplateSignatureParameter( *bracket_expression->expression_, names_scope, function_context, template_parameters, template_parameters_usage_flags );
 	}
 
-	// If this is not special expression - assume that this is variable-expression.
-	const Variable var= BuildExpressionCodeEnsureVariable( template_parameter, names_scope, *global_function_context_ );
-	if( !TypeIsValidForTemplateVariableArgument( var.type ) )
-	{
-		REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), Synt::GetExpressionFilePos( template_parameter ), var.type );
-		return;
-	}
-	if( var.constexpr_value == nullptr )
-		REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), Synt::GetExpressionFilePos( template_parameter ) );
+	return ValueToTemplateParam( BuildExpressionCode( template_parameter, names_scope, function_context ), names_scope );
 }
 
-void CodeBuilder::CheckTemplateSignatureParameter(
+DeducedTemplateParameter CodeBuilder::CheckTemplateSignatureParameter(
 	const Synt::TypeName& type_name_template_parameter,
 	NamesScope& names_scope,
+	FunctionContext& function_context,
 	const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 	std::vector<bool>& template_parameters_usage_flags )
 {
 	if( const auto named_type_name= std::get_if<Synt::NamedTypeName>(&type_name_template_parameter) )
-		CheckTemplateSignatureParameter( named_type_name->file_pos_, named_type_name->name, names_scope, template_parameters, template_parameters_usage_flags );
+		return CheckTemplateSignatureParameter( named_type_name->file_pos_, named_type_name->name, names_scope, function_context, template_parameters, template_parameters_usage_flags );
 	else if( const auto array_type_name= std::get_if<Synt::ArrayTypeName>(&type_name_template_parameter) )
 	{
-		CheckTemplateSignatureParameter( *array_type_name->size, names_scope, template_parameters, template_parameters_usage_flags );
-		CheckTemplateSignatureParameter( *array_type_name->element_type, names_scope, template_parameters, template_parameters_usage_flags );
+		DeducedTemplateParameter::ArrayParam array_param;
+		array_param.size= std::make_unique<DeducedTemplateParameter>( CheckTemplateSignatureParameter( *array_type_name->size, names_scope, function_context, template_parameters, template_parameters_usage_flags ) );
+		array_param.type= std::make_unique<DeducedTemplateParameter>( CheckTemplateSignatureParameter( *array_type_name->element_type, names_scope, function_context, template_parameters, template_parameters_usage_flags ) );
+
+		if( array_param.size->IsVariable() && array_param.type->IsType() )
+			return DeducedTemplateParameter::TypeParam{ PrepareType( *array_type_name, names_scope, function_context ) };
+
+		return array_param;
 	}
 	else if( const auto tuple_type_name= std::get_if<Synt::TupleType>(&type_name_template_parameter) )
 	{
+		DeducedTemplateParameter::TupleParam tuple_param;
+
+		bool all_types_are_known= true;
 		for( const auto& element_type : tuple_type_name->element_types_ )
-			CheckTemplateSignatureParameter( element_type, names_scope, template_parameters, template_parameters_usage_flags );
+		{
+			tuple_param.element_types.push_back( CheckTemplateSignatureParameter( element_type, names_scope, function_context, template_parameters, template_parameters_usage_flags ) );
+			all_types_are_known&= tuple_param.element_types.back().IsType();
+		}
+
+		if( all_types_are_known )
+			return DeducedTemplateParameter::TypeParam{ PrepareType( *tuple_type_name, names_scope, function_context ) };
+
+		return tuple_param;
 	}
 	else if( const auto function_pointer_type_name_ptr= std::get_if<Synt::FunctionTypePtr>(&type_name_template_parameter) )
 	{
+		DeducedTemplateParameter::FunctionParam function_param;
+
+		bool all_types_are_known= true;
+
 		const Synt::FunctionType& function_pointer_type_name= **function_pointer_type_name_ptr;
+
+		function_param.return_value_is_reference= function_pointer_type_name.return_value_reference_modifier_ == Synt::ReferenceModifier::Reference;
+		function_param.return_value_is_mutable= function_pointer_type_name.return_value_mutability_modifier_ == Synt::MutabilityModifier::Mutable;
+		function_param.is_unsafe= function_pointer_type_name.unsafe_;
+
 		// TODO - maybe check also reference tags?
 		if( function_pointer_type_name.return_type_ != nullptr )
-			CheckTemplateSignatureParameter(*function_pointer_type_name.return_type_, names_scope, template_parameters, template_parameters_usage_flags );
+			function_param.return_type= std::make_unique<DeducedTemplateParameter>( CheckTemplateSignatureParameter(*function_pointer_type_name.return_type_, names_scope, function_context, template_parameters, template_parameters_usage_flags ) );
+		else
+			function_param.return_type= std::make_unique<DeducedTemplateParameter>( DeducedTemplateParameter::TypeParam{ void_type_for_ret_ } );
+
+		all_types_are_known&= function_param.return_type->IsType();
+
 		for( const Synt::FunctionArgument& arg : function_pointer_type_name.arguments_ )
-			CheckTemplateSignatureParameter( arg.type_, names_scope, template_parameters, template_parameters_usage_flags );
+		{
+			auto t= CheckTemplateSignatureParameter( arg.type_, names_scope, function_context, template_parameters, template_parameters_usage_flags );
+			all_types_are_known*= t.IsType();
+
+			DeducedTemplateParameter::FunctionParam::Param param;
+			param.type= std::make_unique<DeducedTemplateParameter>( std::move(t) );
+			param.is_mutable= arg.mutability_modifier_ == Synt::MutabilityModifier::Mutable;
+			param.is_reference= arg.reference_modifier_ == Synt::ReferenceModifier::Reference;
+
+			function_param.params.push_back( std::move(param) );
+		}
+
+		if( all_types_are_known )
+			return DeducedTemplateParameter::TypeParam{ PrepareType( function_pointer_type_name, names_scope, function_context ) };
+
+		return function_param;
 	}
 	else U_ASSERT(false);
+
+	return DeducedTemplateParameter::InvalidParam();
+}
+
+DeducedTemplateParameter CodeBuilder::ValueToTemplateParam( const Value& value, NamesScope& names_scope )
+{
+	if( const auto type= value.GetTypeName() )
+		return DeducedTemplateParameter::TypeParam{ *type };
+
+	if( const auto variable= value.GetVariable() )
+	{
+		if( !TypeIsValidForTemplateVariableArgument( variable->type ) )
+		{
+			REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), value.GetFilePos(), variable->type );
+			return DeducedTemplateParameter::InvalidParam();
+		}
+		if( variable->constexpr_value == nullptr )
+		{
+			REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), value.GetFilePos() );
+			return DeducedTemplateParameter::InvalidParam();
+		}
+		return DeducedTemplateParameter::VariableParam{ *variable };
+	}
+
+	return DeducedTemplateParameter::InvalidParam();
 }
 
 Value CodeBuilder::ResolveForTemplateSignatureParameter(

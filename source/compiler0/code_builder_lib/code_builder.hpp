@@ -108,6 +108,7 @@ private:
 	Type PrepareType( const Synt::ArrayTypeName& array_type_name, NamesScope& names_scope, FunctionContext& function_context );
 	Type PrepareType( const Synt::TypeofTypeName& typeof_type_name, NamesScope& names_scope, FunctionContext& function_context );
 	Type PrepareType( const Synt::FunctionTypePtr& function_type_name_ptr, NamesScope& names_scope, FunctionContext& function_context );
+	Type PrepareType( const Synt::FunctionType& function_type_name, NamesScope& names_scope, FunctionContext& function_context );
 	Type PrepareType( const Synt::TupleType& tuple_type_name, NamesScope& names_scope, FunctionContext& function_context );
 	Type PrepareType( const Synt::NamedTypeName& named_type_name, NamesScope& names_scope, FunctionContext& function_context );
 
@@ -159,24 +160,29 @@ private:
 		std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags );
 
-	void CheckTemplateSignatureParameter(
+	DeducedTemplateParameter CheckTemplateSignatureParameter(
 		const FilePos& file_pos,
 		const Synt::ComplexName& signature_parameter,
 		NamesScope& names_scope,
+		FunctionContext& function_context,
 		const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags );
 
-	void CheckTemplateSignatureParameter(
+	DeducedTemplateParameter CheckTemplateSignatureParameter(
 		const Synt::Expression& template_parameter,
 		NamesScope& names_scope,
+		FunctionContext& function_context,
 		const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags );
 
-	void CheckTemplateSignatureParameter(
+	DeducedTemplateParameter CheckTemplateSignatureParameter(
 		const Synt::TypeName& template_parameter,
 		NamesScope& names_scope,
+		FunctionContext& function_context,
 		const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags );
+
+	DeducedTemplateParameter ValueToTemplateParam( const Value& value, NamesScope& names_scope );
 
 	// Resolve as deep, as can, but does not instantiate last component, if it is template.
 	Value ResolveForTemplateSignatureParameter(

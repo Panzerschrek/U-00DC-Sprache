@@ -76,6 +76,7 @@ public:
 
 	struct SpecializedTemplateParam
 	{
+		std::vector<TypeTemplatePtr> type_templates;
 		std::vector<DeducedTemplateParameter> params;
 	};
 
