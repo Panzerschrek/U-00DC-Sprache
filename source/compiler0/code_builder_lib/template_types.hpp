@@ -62,9 +62,6 @@ struct FunctionTemplate final : public TemplateBase
 	FunctionTemplatePtr parent;
 };
 
-using DeducibleTemplateArg= std::variant< int, Type, Variable >; // int means not deduced
-using DeducibleTemplateArgs= std::vector<DeducibleTemplateArg>;
-
 } //namespace CodeBuilderPrivate
 
 } // namespace U
