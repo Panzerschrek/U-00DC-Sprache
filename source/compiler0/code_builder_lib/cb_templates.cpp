@@ -106,9 +106,8 @@ void CodeBuilder::PrepareTypeTemplate(
 		// Assign template arguments to signature arguments.
 		for( const Synt::TypeTemplateBase::Arg& arg : type_template_declaration.args_ )
 		{
-			type_template->signature_params_new.push_back(
+			type_template->signature_params.push_back(
 				CheckTemplateSignatureParameter( type_template_declaration.file_pos_, *arg.name, names_scope, *global_function_context_, template_parameters, template_parameters_usage_flags ) );
-			type_template->signature_params.push_back(arg.name_expr.get());
 			type_template->default_signature_params.push_back(nullptr);
 		}
 		type_template->first_optional_signature_param= type_template->signature_params.size();
@@ -119,9 +118,8 @@ void CodeBuilder::PrepareTypeTemplate(
 		type_template->first_optional_signature_param= 0u;
 		for( const Synt::TypeTemplateBase::SignatureArg& signature_arg : type_template_declaration.signature_args_ )
 		{
-			type_template->signature_params_new.push_back(
+			type_template->signature_params.push_back(
 				CheckTemplateSignatureParameter( signature_arg.name, names_scope, *global_function_context_, template_parameters, template_parameters_usage_flags ) );
-			type_template->signature_params.push_back(&signature_arg.name);
 
 			if( std::get_if<Synt::EmptyVariant>( &signature_arg.default_value ) == nullptr )
 			{
@@ -196,10 +194,10 @@ void CodeBuilder::PrepareFunctionTemplate(
 	for( const Synt::FunctionArgument& function_param : function_template_declaration.function_->type_.arguments_ )
 	{
 		if( base_class != nullptr && function_param.name_ == Keyword( Keywords::this_ ) )
-			function_template->signature_params_new.push_back( DeducedTemplateParameter::TypeParam{ Type(base_class) } );
+			function_template->signature_params.push_back( DeducedTemplateParameter::TypeParam{ Type(base_class) } );
 		else
 		{
-			function_template->signature_params_new.push_back(
+			function_template->signature_params.push_back(
 				CheckTemplateSignatureParameter( function_param.type_, names_scope, *global_function_context_, function_template->template_params, template_parameters_usage_flags ) );
 		}
 	}
@@ -866,7 +864,6 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 
 	bool deduction_failed= false;
 	TemplateArgs result_signature_args(type_template.signature_params.size());
-	result.deduced_template_parameters.resize(type_template.signature_params.size());
 	for( size_t i= 0u; i < type_template.signature_params.size(); ++i )
 	{
 		Value value;
@@ -885,8 +882,9 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 			continue;
 		}
 
-		if( !MatchTemplateArg( type_template, *template_args_namespace, result_signature_args[i], file_pos, type_template.signature_params_new[i] ) )
+		if( !MatchTemplateArg( type_template, *template_args_namespace, result_signature_args[i], file_pos, type_template.signature_params[i] ) )
 		{
+			// TODO - maybe return here?
 			deduction_failed= true;
 			continue;
 		}
@@ -914,7 +912,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		}
 	}
 
-	result.deduced_template_parameters= type_template.signature_params_new;
+	result.deduced_template_parameters= type_template.signature_params;
 	result.type_template= type_template_ptr;
 
 	if( skip_type_generation )
@@ -1043,7 +1041,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		if( expected_arg_is_mutalbe_reference && !given_args[i].is_mutable )
 			return nullptr;
 
-		const DeducedTemplateParameter& signature_param= function_template.signature_params_new[i];
+		const DeducedTemplateParameter& signature_param= function_template.signature_params[i];
 		const Type& given_type= given_args[i].type;
 
 		bool deduced_specially= false;
@@ -1119,7 +1117,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		return nullptr; // Function prepare failed
 
 	FunctionVariable& function_variable= result_functions_set.functions.front();
-	function_variable.deduced_temlpate_parameters= function_template.signature_params_new;
+	function_variable.deduced_temlpate_parameters= function_template.signature_params;
 
 	// And generate function body after insertion of prototype.
 	if( !function_variable.have_body ) // if function is constexpr, body may be already generated.
@@ -1230,7 +1228,7 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 		new_template->file_pos= function_template.file_pos;
 		new_template->syntax_element= function_template.syntax_element;
 		new_template->base_class= function_template.base_class;
-		new_template->signature_params_new= function_template.signature_params_new;
+		new_template->signature_params= function_template.signature_params;
 		new_template->params_types= function_template.params_types;
 		new_template->parent= function_template_ptr;
 
