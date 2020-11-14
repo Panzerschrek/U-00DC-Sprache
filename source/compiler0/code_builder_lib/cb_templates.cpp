@@ -923,10 +923,9 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 			return result;
 
 		Class& the_class= *class_proxy->class_;
-		// Save in class info about it`s base template.
+		// Save in class info about its base template.
 		the_class.base_template.emplace();
 		the_class.base_template->class_template= type_template_ptr;
-		the_class.base_template->template_args= std::move(result_template_args);
 		the_class.base_template->signature_args= std::move(result_signature_args);
 
 		template_classes_cache_[name_encoded]= class_proxy;

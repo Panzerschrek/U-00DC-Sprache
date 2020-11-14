@@ -28,7 +28,6 @@ public:
 	struct BaseTemplate
 	{
 		TypeTemplatePtr class_template;
-		TemplateArgs template_args;
 		TemplateArgs signature_args;
 	};
 
