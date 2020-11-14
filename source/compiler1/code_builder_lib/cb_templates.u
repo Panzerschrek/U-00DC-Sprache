@@ -1149,6 +1149,7 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 			NamesScope(
 				"",
 				ust::to_non_nullable( function_template.parent_names_scope.lock() ) ) );
+
 		{
 			auto mut result_names_scope_lock= result_names_scope.lock_mut();
 			for( auto mut i= 0s; i < function_template.params.size(); ++i )
@@ -1161,41 +1162,23 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 		auto mut all_ok= true;
 		for( auto mut i= 0s; i < template_args_finished.size(); ++i )
 		{
-			auto& param= function_template.params[i];
 			auto& arg= template_args_finished[i];
 
 			var TemplateSignatureParam::TemplateParam mut signature_param{ .index= i };
 			var TemplateSignatureParam signature_param_abstract( move(signature_param) );
 
-			if( !param.t.empty() )
+			var Value mut arg_as_value;
+			if_var( &v : arg.get</Variable/>() )
 			{
-				if_var( &v : arg.get</Variable/>() )
-				{
-					if( !MatchTemplateArgument( result_names_scope, function_template, signature_param_abstract, v, file_pos ) )
-					{
-						all_ok= false;
-						break;
-					}
-					continue;
-				}
-
-				// Binding type arg to variable param
-				all_ok= false;
-				break;
+				arg_as_value= v;
 			}
-			else
+			if_var( &t : arg.get</Type/>() )
 			{
-				if_var( &t : arg.get</Type/>() )
-				{
-					if( !MatchTemplateArgument( result_names_scope, function_template, signature_param_abstract, t, file_pos ) )
-					{
-						all_ok= false;
-						break;
-					}
-					continue;
-				}
+				arg_as_value= t;
+			}
 
-				// Binding variable arg to type param
+			if( !MatchTemplateArgument( result_names_scope, function_template, signature_param_abstract, arg_as_value, file_pos ) )
+			{
 				all_ok= false;
 				break;
 			}
