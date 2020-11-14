@@ -108,7 +108,6 @@ void CodeBuilder::PrepareTypeTemplate(
 		{
 			type_template->signature_params.push_back(
 				CreateTemplateSignatureParameter( type_template_declaration.file_pos_, *arg.name, names_scope, *global_function_context_, template_parameters, template_parameters_usage_flags ) );
-			type_template->default_signature_params.push_back(nullptr);
 		}
 		type_template->first_optional_signature_param= type_template->signature_params.size();
 	}
@@ -124,7 +123,6 @@ void CodeBuilder::PrepareTypeTemplate(
 			if( std::get_if<Synt::EmptyVariant>( &signature_arg.default_value ) == nullptr )
 			{
 				CreateTemplateSignatureParameter( signature_arg.default_value, names_scope, *global_function_context_, template_parameters, template_parameters_usage_flags );
-				type_template->default_signature_params.push_back(&signature_arg.default_value);
 			}
 			else
 			{
@@ -132,13 +130,11 @@ void CodeBuilder::PrepareTypeTemplate(
 				if (index > type_template->first_optional_signature_param )
 					REPORT_ERROR( MandatoryTemplateSignatureArgumentAfterOptionalArgument, names_scope.GetErrors(), type_template_declaration.file_pos_ );
 
-				type_template->default_signature_params.push_back(nullptr);
 				++type_template->first_optional_signature_param;
 			}
 		}
 	}
-	U_ASSERT( type_template->signature_params.size() == type_template->default_signature_params.size() );
-	U_ASSERT( type_template->first_optional_signature_param <= type_template->default_signature_params.size() );
+	U_ASSERT( type_template->first_optional_signature_param <= type_template->signature_params.size() );
 
 	type_template->params_types.resize( type_template->template_params.size() );
 	for( size_t i= 0u; i < type_template->template_params.size(); ++i )
@@ -870,7 +866,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		if( i < template_arguments.size() )
 			value= template_arguments[i];
 		else
-			value= BuildExpressionCode( *type_template.default_signature_params[i], *template_args_namespace, *global_function_context_ );
+			value= BuildExpressionCode( type_template.syntax_element->signature_args_[i].default_value, *template_args_namespace, *global_function_context_ );
 
 		if( const Type* const type_name= value.GetTypeName() )
 			result_signature_args[i]= *type_name;

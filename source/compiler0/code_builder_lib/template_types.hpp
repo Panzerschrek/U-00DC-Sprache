@@ -34,7 +34,6 @@ struct TemplateBase
 
 struct TypeTemplate final : TemplateBase
 {
-	std::vector< const Synt::Expression* > default_signature_params;
 	size_t first_optional_signature_param= ~0u;
 
 	enum class Kind
