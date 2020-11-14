@@ -6,51 +6,6 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-
-TemplateSignatureParam::ArrayParam::ArrayParam( const ArrayParam& other )
-{
-	*this= other;
-}
-
-TemplateSignatureParam::ArrayParam& TemplateSignatureParam::ArrayParam::operator=( const ArrayParam& other )
-{
-	size= std::make_unique<TemplateSignatureParam>( *other.size );
-	type= std::make_unique<TemplateSignatureParam>( *other.type );
-	return *this;
-}
-
-TemplateSignatureParam::FunctionParam::FunctionParam( const FunctionParam& other )
-{
-	*this= other;
-}
-
-TemplateSignatureParam::FunctionParam& TemplateSignatureParam::FunctionParam::operator=( const FunctionParam& other )
-{
-	return_type= std::make_unique<TemplateSignatureParam>( *other.return_type );
-
-	return_value_is_mutable= other.return_value_is_mutable;
-	return_value_is_reference= other.return_value_is_reference;
-	is_unsafe= other.is_unsafe;
-
-	params.clear();
-	params.reserve( other.params.size() );
-	for( const Param& param : other.params )
-	{
-		Param out_param;
-		out_param.type= std::make_unique<TemplateSignatureParam>( *param.type );
-		out_param.is_mutable= param.is_mutable;
-		out_param.is_reference= param.is_reference;
-		params.push_back( std::move(out_param) );
-	}
-
-	return *this;
-}
-
-TemplateSignatureParam::TemplateSignatureParam( InvalidParam invalid )
-{
-	something_= std::move(invalid);
-}
-
 TemplateSignatureParam::TemplateSignatureParam( TypeParam type )
 {
 	something_= std::move(type);
@@ -84,11 +39,6 @@ TemplateSignatureParam::TemplateSignatureParam( FunctionParam function )
 TemplateSignatureParam::TemplateSignatureParam( SpecializedTemplateParam template_ )
 {
 	something_= std::move(template_);
-}
-
-bool TemplateSignatureParam::IsInvalid() const
-{
-	return std::get_if<InvalidParam>( &something_ ) != nullptr;
 }
 
 bool TemplateSignatureParam::IsType() const

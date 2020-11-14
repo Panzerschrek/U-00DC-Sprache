@@ -203,13 +203,6 @@ private:
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
 		const FilePos& file_pos,
-		const TemplateSignatureParam::InvalidParam& template_param );
-
-	bool MatchTemplateArgImpl(
-		const TemplateBase& template_,
-		NamesScope& args_names_scope,
-		const TemplateArg& template_arg,
-		const FilePos& file_pos,
 		const TemplateSignatureParam::TypeParam& template_param );
 
 	bool MatchTemplateArgImpl(

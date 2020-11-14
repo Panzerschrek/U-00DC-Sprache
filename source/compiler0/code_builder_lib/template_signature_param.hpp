@@ -15,8 +15,6 @@ namespace CodeBuilderPrivate
 class TemplateSignatureParam
 {
 public:
-	struct InvalidParam{};
-
 	struct TypeParam
 	{
 		Type t;
@@ -32,17 +30,13 @@ public:
 		size_t index;
 	};
 
+	// HACK!
+	// use shared_ptr to avoid manual copy constructors creation.
+
 	struct ArrayParam
 	{
-		std::unique_ptr<TemplateSignatureParam> size;
-		std::unique_ptr<TemplateSignatureParam> type;
-
-		ArrayParam()= default;
-		ArrayParam(ArrayParam&&)= default;
-		ArrayParam& operator=(ArrayParam&&)= default;
-
-		ArrayParam( const ArrayParam& other );
-		ArrayParam& operator=( const ArrayParam& other );
+		std::shared_ptr<const TemplateSignatureParam> size;
+		std::shared_ptr<const TemplateSignatureParam> type;
 	};
 
 	struct TupleParam
@@ -52,7 +46,7 @@ public:
 
 	struct FunctionParam
 	{
-		std::unique_ptr<TemplateSignatureParam> return_type;
+		std::shared_ptr<const TemplateSignatureParam> return_type;
 		bool return_value_is_mutable;
 		bool return_value_is_reference;
 
@@ -60,18 +54,11 @@ public:
 
 		struct Param
 		{
-			std::unique_ptr<TemplateSignatureParam> type;
+			std::shared_ptr<const TemplateSignatureParam> type;
 			bool is_mutable;
 			bool is_reference;
 		};
 		std::vector<Param> params;
-
-		FunctionParam()= default;
-		FunctionParam(FunctionParam&&)= default;
-		FunctionParam& operator=(FunctionParam&&)= default;
-
-		FunctionParam( const FunctionParam& other );
-		FunctionParam& operator=( const FunctionParam& other );
 	};
 
 	struct SpecializedTemplateParam
@@ -81,8 +68,7 @@ public:
 	};
 
 public:
-	TemplateSignatureParam( InvalidParam invalid= InvalidParam() );
-	TemplateSignatureParam( TypeParam type );
+	TemplateSignatureParam( TypeParam type= TypeParam() );
 	TemplateSignatureParam( VariableParam variable );
 	TemplateSignatureParam( TemplateParam template_parameter );
 	TemplateSignatureParam( ArrayParam array );
@@ -90,7 +76,6 @@ public:
 	TemplateSignatureParam( FunctionParam function );
 	TemplateSignatureParam( SpecializedTemplateParam template_ );
 
-	bool IsInvalid() const;
 	bool IsType() const;
 	bool IsVariable() const;
 	bool IsTemplateParam() const;
@@ -110,7 +95,6 @@ public:
 
 private:
 	std::variant<
-		InvalidParam,
 		TypeParam,
 		VariableParam,
 		TemplateParam,
