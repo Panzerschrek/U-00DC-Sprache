@@ -160,7 +160,7 @@ private:
 		std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags );
 
-	DeducedTemplateParameter CheckTemplateSignatureParameter(
+	DeducedTemplateParameter CreateTemplateSignatureParameter(
 		const FilePos& file_pos,
 		const Synt::ComplexName& signature_parameter,
 		NamesScope& names_scope,
@@ -168,14 +168,14 @@ private:
 		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags );
 
-	DeducedTemplateParameter CheckTemplateSignatureParameter(
+	DeducedTemplateParameter CreateTemplateSignatureParameter(
 		const Synt::Expression& template_parameter,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags );
 
-	DeducedTemplateParameter CheckTemplateSignatureParameter(
+	DeducedTemplateParameter CreateTemplateSignatureParameter(
 		const Synt::TypeName& template_parameter,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
