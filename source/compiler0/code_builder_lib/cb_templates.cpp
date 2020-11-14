@@ -247,8 +247,7 @@ void CodeBuilder::ProcessTemplateArgs(
 			if( !TypeIsValidForTemplateVariableArgument( type_param->t ) )
 				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), file_pos, type_param->t );
 		}
-		else if( template_parameters[i].type->IsTemplateParam() )
-		{}
+		else if( template_parameters[i].type->IsTemplateParam() ) {}
 		else
 			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), file_pos, *args[i].arg_type );
 	}
@@ -563,7 +562,6 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	{
 		if( const auto given_type= std::get_if<Type>( &template_arg ) )
 			return *given_type == *prev_type;
-		return false;
 	}
 	else if( const auto prev_variable= value->GetVariable() )
 	{
@@ -573,8 +571,6 @@ bool CodeBuilder::MatchTemplateArgImpl(
 				given_varaible->type == prev_variable->type &&
 				given_varaible->constexpr_value->getUniqueInteger() == prev_variable->constexpr_value->getUniqueInteger();
 		}
-
-		return false;
 	}
 
 	return false;
@@ -805,9 +801,9 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	} // for signature arguments
 
 	TemplateArgs result_template_args;
-	for( size_t i = 0u; i < type_template.template_params.size() ; ++i )
+	for( const auto& template_param : type_template.template_params )
 	{
-		const Value* const value= template_args_namespace->GetThisScopeValue( type_template.template_params[i].name );
+		const Value* const value= template_args_namespace->GetThisScopeValue( template_param.name );
 
 		if( const auto type= value->GetTypeName() )
 			result_template_args.push_back( *type );
@@ -832,25 +828,21 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		std::to_string( reinterpret_cast<uintptr_t>( &type_template ) ) + // Encode template address, because we needs unique keys for templates with same name.
 		MangleTemplateArgs( result_signature_args );
 
-	{ // Check, if already type generated.
-		const auto it= generated_template_things_storage_.find( name_encoded );
-		if( it != generated_template_things_storage_.end() )
-		{
-			const NamesScopePtr template_parameters_space= it->second.GetNamespace();
-			U_ASSERT( template_parameters_space != nullptr );
-			result.type= template_parameters_space->GetThisScopeValue( Class::c_template_class_name );
-			return result;
-		}
+	// Check, if already type generated.
+	if( const auto it= generated_template_things_storage_.find( name_encoded ); it != generated_template_things_storage_.end() )
+	{
+		const NamesScopePtr template_parameters_space= it->second.GetNamespace();
+		U_ASSERT( template_parameters_space != nullptr );
+		result.type= template_parameters_space->GetThisScopeValue( Class::c_template_class_name );
+		return result;
 	}
-
 	generated_template_things_storage_.insert( std::make_pair( name_encoded, Value( template_args_namespace, type_template.syntax_element->file_pos_ ) ) );
 
 	CreateTemplateErrorsContext( arguments_names_scope.GetErrors(), file_pos, template_args_namespace, type_template, type_template.syntax_element->name_, result_template_args );
 
 	if( type_template.syntax_element->kind_ == Synt::TypeTemplateBase::Kind::Class )
 	{
-		const auto cache_class_it= template_classes_cache_.find( name_encoded );
-		if( cache_class_it != template_classes_cache_.end() )
+		if( const auto cache_class_it= template_classes_cache_.find( name_encoded ); cache_class_it != template_classes_cache_.end() )
 		{
 			result.type=
 				template_args_namespace->AddName(
@@ -922,20 +914,22 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 
 	const auto template_args_namespace= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, &template_names_scope );
 
-	for( size_t i= 0u; i < function_template.known_template_args.size(); ++i )
+	for( size_t i= 0u; i < function_template.template_params.size(); ++i )
 	{
-		const TemplateArg& arg= function_template.known_template_args[i];
-
 		Value v;
-		if( const auto type= std::get_if<Type>( &arg ) ) v= Value( *type, file_pos );
-		else if( const auto variable= std::get_if<Variable>( &arg ) ) v= Value( *variable, file_pos );
-		else U_ASSERT(false);
+		if( i < function_template.known_template_args.size() )
+		{
+			const TemplateArg& arg= function_template.known_template_args[i];
+
+			if( const auto type= std::get_if<Type>( &arg ) ) v= Value( *type, file_pos );
+			else if( const auto variable= std::get_if<Variable>( &arg ) ) v= Value( *variable, file_pos );
+			else U_ASSERT(false);
+		}
+		else
+			v= YetNotDeducedTemplateArg();
 
 		template_args_namespace->AddName( function_template.template_params[i].name, std::move(v) );
 	}
-
-	for( size_t i= function_template.known_template_args.size(); i < function_template.template_params.size(); ++i )
-		template_args_namespace->AddName( function_template.template_params[i].name, YetNotDeducedTemplateArg() );
 
 	for( size_t i= 0u; i < function_declaration.type_.arguments_.size() && !skip_arguments; ++i )
 	{
@@ -976,9 +970,9 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	} // for template function arguments
 
 	TemplateArgs args_for_mangle;
-	for( size_t i= 0u; i < function_template.template_params.size() ; ++i )
+	for( const auto& template_param : function_template.template_params )
 	{
-		const Value* const value= template_args_namespace->GetThisScopeValue( function_template.template_params[i].name );
+		const Value* const value= template_args_namespace->GetThisScopeValue( template_param.name );
 
 		if( const auto type= value->GetTypeName() )
 			args_for_mangle.push_back( *type );
@@ -1114,7 +1108,7 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 				function_template,
 				args_names_scope,
 				template_args[i],
-				Synt::GetExpressionFilePos( *function_template.syntax_element->args_[i].name_expr ),
+				file_pos,
 				TemplateSignatureParam::TemplateParam{ i } );
 		}
 
@@ -1144,10 +1138,10 @@ bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
 {
 	if( const FundamentalType* const fundamental= type.GetFundamentalType() )
 	{
-		if( IsInteger( fundamental->fundamental_type ) ||
+		return
+			IsInteger( fundamental->fundamental_type ) ||
 			IsChar( fundamental->fundamental_type ) ||
-			fundamental->fundamental_type == U_FundamentalType::Bool )
-			return true;
+			fundamental->fundamental_type == U_FundamentalType::Bool;
 	}
 	if( type.GetEnumType() != nullptr )
 	{
