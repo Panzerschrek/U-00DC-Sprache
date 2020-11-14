@@ -19,7 +19,6 @@ struct TemplateBase
 	struct TemplateParameter
 	{
 		std::string name;
-		const Synt::ComplexName* type_name= nullptr; // Exists for value parameters.
 	};
 
 	std::vector< TemplateParameter > template_params;

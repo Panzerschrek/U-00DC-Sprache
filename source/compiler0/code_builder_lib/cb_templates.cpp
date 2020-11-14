@@ -139,11 +139,11 @@ void CodeBuilder::PrepareTypeTemplate(
 	type_template->params_types.resize( type_template->template_params.size() );
 	for( size_t i= 0u; i < type_template->template_params.size(); ++i )
 	{
-		if( type_template->template_params[i].type_name != nullptr )
+		if( type_template_declaration.args_[i].arg_type != nullptr )
 			type_template->params_types[i]=
 				CreateTemplateSignatureParameter(
 					type_template_declaration.file_pos_,
-					*type_template->template_params[i].type_name,
+					*type_template_declaration.args_[i].arg_type,
 					names_scope,
 					*global_function_context_,
 					template_parameters,
@@ -201,11 +201,11 @@ void CodeBuilder::PrepareFunctionTemplate(
 	function_template->params_types.resize( function_template->template_params.size() );
 	for( size_t i= 0u; i < function_template->template_params.size(); ++i )
 	{
-		if( function_template->template_params[i].type_name != nullptr )
+		if( function_template_declaration.args_[i].arg_type != nullptr )
 			function_template->params_types[i]=
 				CreateTemplateSignatureParameter(
 					function_template_declaration.file_pos_,
-					*function_template->template_params[i].type_name,
+					*function_template_declaration.args_[i].arg_type,
 					names_scope,
 					*global_function_context_,
 					function_template->template_params,
@@ -258,7 +258,6 @@ void CodeBuilder::ProcessTemplateArgs(
 		if( arg.arg_type != nullptr )
 		{
 			// If template parameter is variable.
-			template_parameters.back().type_name= arg.arg_type;
 
 			bool arg_type_is_template= false;
 			const std::string* const arg_type_start= std::get_if<std::string>( &arg.arg_type->start_value );
