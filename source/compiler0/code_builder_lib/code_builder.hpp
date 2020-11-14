@@ -152,8 +152,8 @@ private:
 		NamesScope& names_scope,
 		const ClassProxyPtr& base_class );
 
-	void ProcessTemplateArgs(
-		const std::vector<Synt::TemplateBase::Arg>& args,
+	void ProcessTemplateParams(
+		const std::vector<Synt::TemplateBase::Param>& params,
 		NamesScope& names_scope,
 		const FilePos& file_pos,
 		std::vector<TypeTemplate::TemplateParameter>& template_parameters,

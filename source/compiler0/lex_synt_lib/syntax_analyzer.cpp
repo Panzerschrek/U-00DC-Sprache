@@ -3755,7 +3755,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 	NextLexem();
 
 	// TemplateBase parameters
-	std::vector<TemplateBase::Arg> args;
+	std::vector<TemplateBase::Param> params;
 
 	if( it_->type != Lexem::Type::TemplateBracketLeft )
 	{
@@ -3772,15 +3772,15 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 			break;
 		}
 
-		args.emplace_back();
+		params.emplace_back();
 
 		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
 			NextLexem();
 		else
 		{
 			auto arg_type= std::make_unique<Expression>( NamedOperand( it_->file_pos, ParseComplexName() ) );
-			args.back().arg_type= &std::get_if<NamedOperand>(arg_type.get())->name_;
-			args.back().arg_type_expr= std::move(arg_type);
+			params.back().param_type= &std::get_if<NamedOperand>(arg_type.get())->name_;
+			params.back().param_type_expr= std::move(arg_type);
 		}
 
 		if( it_->type != Lexem::Type::Identifier )
@@ -3792,8 +3792,8 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 		ComplexName name;
 		name.start_value= it_->text;
 		auto name_ptr= std::make_unique<Expression>( NamedOperand( it_->file_pos, std::move(name) ) );
-		args.back().name= &std::get_if<NamedOperand>(name_ptr.get())->name_;
-		args.back().name_expr= std::move(name_ptr);
+		params.back().name= &std::get_if<NamedOperand>(name_ptr.get())->name_;
+		params.back().name_expr= std::move(name_ptr);
 
 		NextLexem();
 
@@ -3858,7 +3858,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 	else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::fn_ || it_->text == Keywords::op_ ) )
 	{
 		FunctionTemplate function_template( template_file_pos );
-		function_template.args_= std::move(args);
+		function_template.params_= std::move(params);
 		function_template.function_= ParseFunction();
 		if( function_template.function_ != nullptr )
 		{
@@ -3875,12 +3875,12 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 	}
 
 	// TypeTemplateBase parameters
-	std::vector<TypeTemplateBase::SignatureArg> signature_args;
+	std::vector<TypeTemplateBase::SignatureParam> signature_params;
 	bool is_short_form= false;
 
 	if( it_->type == Lexem::Type::TemplateBracketLeft )
 	{
-		// Parse signature args
+		// Parse signature params
 		NextLexem();
 		while( NotEndOfFile() )
 		{
@@ -3890,13 +3890,13 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 				break;
 			}
 
-			signature_args.emplace_back();
-			signature_args.back().name= ParseExpression();
+			signature_params.emplace_back();
+			signature_params.back().name= ParseExpression();
 
 			if( it_->type == Lexem::Type::Assignment )
 			{
 				NextLexem();
-				signature_args.back().default_value= ParseExpression();
+				signature_params.back().default_value= ParseExpression();
 			}
 
 			if( it_->type == Lexem::Type::Comma )
@@ -3923,8 +3923,8 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 	case TemplateKind::Struct:
 		{
 			ClassTemplate class_template( template_file_pos );
-			class_template.args_= std::move(args);
-			class_template.signature_args_= std::move(signature_args);
+			class_template.params_= std::move(params);
+			class_template.signature_params_= std::move(signature_params);
 			class_template.name_= name;
 			class_template.is_short_form_= is_short_form;
 
@@ -3953,8 +3953,8 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 	case TemplateKind::Typedef:
 		{
 			TypedefTemplate typedef_template( template_file_pos );
-			typedef_template.args_= std::move(args);
-			typedef_template.signature_args_= std::move(signature_args);
+			typedef_template.params_= std::move(params);
+			typedef_template.signature_params_= std::move(signature_params);
 			typedef_template.name_= name;
 			typedef_template.is_short_form_= is_short_form;
 

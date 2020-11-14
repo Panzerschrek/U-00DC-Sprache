@@ -881,16 +881,16 @@ public:
 
 	// For type arguments, like template</ type A, type B />, arg_type is empty.
 	// For value arguments, like template</ type A, A x, i32 y />, arg_type is comples name of argument.
-	struct Arg
+	struct Param
 	{
-		const ComplexName* arg_type= nullptr; // pointer to arg_type_expr
-		std::unique_ptr<Expression> arg_type_expr; // Actyally, only NamedOperand
+		const ComplexName* param_type= nullptr; // pointer to arg_type_expr
+		std::unique_ptr<Expression> param_type_expr; // Actyally, only NamedOperand
 
 		const ComplexName* name= nullptr; // Actually, only name with one component
 		std::unique_ptr<Expression> name_expr;
 	};
 
-	std::vector<Arg> args_;
+	std::vector<Param> params_;
 };
 
 struct TypeTemplateBase : public TemplateBase
@@ -901,14 +901,14 @@ public:
 	explicit TypeTemplateBase( const FilePos& file_pos, Kind kind );
 
 	// Argument in template signature.
-	struct SignatureArg
+	struct SignatureParam
 	{
 		Expression name;
 		Expression default_value;
 	};
 
 	const Kind kind_;
-	std::vector<SignatureArg> signature_args_;
+	std::vector<SignatureParam> signature_params_;
 	std::string name_;
 
 	// Short form means that template argumenst are also signature arguments.

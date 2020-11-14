@@ -90,11 +90,11 @@ void CodeBuilder::PrepareTypeTemplate(
 	type_template->file_pos= type_template_declaration.file_pos_;
 
 	std::vector<TypeTemplate::TemplateParameter>& template_parameters= type_template->template_params;
-	template_parameters.reserve( type_template_declaration.args_.size() );
+	template_parameters.reserve( type_template_declaration.params_.size() );
 	std::vector<bool> template_parameters_usage_flags;
 
-	ProcessTemplateArgs(
-		type_template_declaration.args_,
+	ProcessTemplateParams(
+		type_template_declaration.params_,
 		names_scope,
 		type_template_declaration.file_pos_,
 		template_parameters,
@@ -102,12 +102,12 @@ void CodeBuilder::PrepareTypeTemplate(
 
 	if( type_template_declaration.is_short_form_ )
 	{
-		U_ASSERT( type_template_declaration.signature_args_.empty() );
-		// Assign template arguments to signature arguments.
-		for( const Synt::TypeTemplateBase::Arg& arg : type_template_declaration.args_ )
+		U_ASSERT( type_template_declaration.signature_params_.empty() );
+		// Assign template params to signature params.
+		for( const Synt::TypeTemplateBase::Param& param : type_template_declaration.params_ )
 		{
 			type_template->signature_params.push_back(
-				CreateTemplateSignatureParameter( type_template_declaration.file_pos_, *arg.name, names_scope, *global_function_context_, template_parameters, template_parameters_usage_flags ) );
+				CreateTemplateSignatureParameter( type_template_declaration.file_pos_, *param.name, names_scope, *global_function_context_, template_parameters, template_parameters_usage_flags ) );
 		}
 		type_template->first_optional_signature_param= type_template->signature_params.size();
 	}
@@ -115,14 +115,14 @@ void CodeBuilder::PrepareTypeTemplate(
 	{
 		// Check and fill signature args.
 		type_template->first_optional_signature_param= 0u;
-		for( const Synt::TypeTemplateBase::SignatureArg& signature_arg : type_template_declaration.signature_args_ )
+		for( const Synt::TypeTemplateBase::SignatureParam& signature_param : type_template_declaration.signature_params_ )
 		{
 			type_template->signature_params.push_back(
-				CreateTemplateSignatureParameter( signature_arg.name, names_scope, *global_function_context_, template_parameters, template_parameters_usage_flags ) );
+				CreateTemplateSignatureParameter( signature_param.name, names_scope, *global_function_context_, template_parameters, template_parameters_usage_flags ) );
 
-			if( std::get_if<Synt::EmptyVariant>( &signature_arg.default_value ) == nullptr )
+			if( std::get_if<Synt::EmptyVariant>( &signature_param.default_value ) == nullptr )
 			{
-				CreateTemplateSignatureParameter( signature_arg.default_value, names_scope, *global_function_context_, template_parameters, template_parameters_usage_flags );
+				CreateTemplateSignatureParameter( signature_param.default_value, names_scope, *global_function_context_, template_parameters, template_parameters_usage_flags );
 			}
 			else
 			{
@@ -166,8 +166,8 @@ void CodeBuilder::PrepareFunctionTemplate(
 
 	std::vector<bool> template_parameters_usage_flags; // Currently unused, because function template have no signature.
 
-	ProcessTemplateArgs(
-		function_template_declaration.args_,
+	ProcessTemplateParams(
+		function_template_declaration.params_,
 		names_scope,
 		function_template_declaration.file_pos_,
 		function_template->template_params,
@@ -195,8 +195,8 @@ void CodeBuilder::PrepareFunctionTemplate(
 	functions_set.template_functions.push_back( function_template );
 }
 
-void CodeBuilder::ProcessTemplateArgs(
-	const std::vector<Synt::TemplateBase::Arg>& args,
+void CodeBuilder::ProcessTemplateParams(
+	const std::vector<Synt::TemplateBase::Param>& params,
 	NamesScope& names_scope,
 	const FilePos& file_pos,
 	std::vector<TypeTemplate::TemplateParameter>& template_parameters,
@@ -206,23 +206,23 @@ void CodeBuilder::ProcessTemplateArgs(
 	U_ASSERT( template_parameters_usage_flags.empty() );
 
 	// Check and fill template parameters.
-	for( const Synt::TemplateBase::Arg& arg : args )
+	for( const Synt::TemplateBase::Param& params : params )
 	{
-		U_ASSERT( std::get_if<std::string>( &arg.name->start_value ) != nullptr );
-		const std::string& arg_name= std::get<std::string>(arg.name->start_value);
+		U_ASSERT( std::get_if<std::string>( &params.name->start_value ) != nullptr );
+		const std::string& param_name= std::get<std::string>(params.name->start_value);
 
 		// Check redefinition
 		for( const auto& prev_arg : template_parameters )
 		{
-			if( prev_arg.name == arg_name )
+			if( prev_arg.name == param_name )
 			{
-				REPORT_ERROR( Redefinition, names_scope.GetErrors(), file_pos, arg_name );
+				REPORT_ERROR( Redefinition, names_scope.GetErrors(), file_pos, param_name );
 				continue;
 			}
 		}
 
 		template_parameters.emplace_back();
-		template_parameters.back().name= arg_name;
+		template_parameters.back().name= param_name;
 		template_parameters_usage_flags.push_back(false);
 	}
 
@@ -230,13 +230,13 @@ void CodeBuilder::ProcessTemplateArgs(
 
 	for( size_t i= 0u; i < template_parameters.size(); ++i )
 	{
-		if( args[i].arg_type == nullptr )
+		if( params[i].param_type == nullptr )
 			continue;
 
 		template_parameters[i].type=
 			CreateTemplateSignatureParameter(
 				file_pos,
-				*args[i].arg_type,
+				*params[i].param_type,
 				names_scope,
 				*global_function_context_,
 				template_parameters,
@@ -249,7 +249,7 @@ void CodeBuilder::ProcessTemplateArgs(
 		}
 		else if( template_parameters[i].type->IsTemplateParam() ) {}
 		else
-			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), file_pos, *args[i].arg_type );
+			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), file_pos, *params[i].param_type );
 	}
 }
 
@@ -784,7 +784,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	{
 		const Value value= i < template_arguments.size()
 			? template_arguments[i]
-			: BuildExpressionCode( type_template.syntax_element->signature_args_[i].default_value, *template_args_namespace, *global_function_context_ );
+			: BuildExpressionCode( type_template.syntax_element->signature_params_[i].default_value, *template_args_namespace, *global_function_context_ );
 
 		if( const Type* const type_name= value.GetTypeName() )
 			result_signature_args[i]= *type_name;
