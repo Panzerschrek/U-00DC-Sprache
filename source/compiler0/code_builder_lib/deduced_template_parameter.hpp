@@ -99,6 +99,12 @@ public:
 	const FunctionParam* GetFunction() const;
 	const SpecializedTemplateParam* GetTemplate() const;
 
+	template<class Func>
+	auto Visit( const Func& func ) const
+	{
+		return std::visit( func, something_ );
+	}
+
 private:
 	std::variant<
 		InvalidParam,

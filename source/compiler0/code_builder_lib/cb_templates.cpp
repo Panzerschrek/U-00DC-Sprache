@@ -898,6 +898,273 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 	return DeducedTemplateParameter::InvalidParam();
 }
 
+bool CodeBuilder::MatchTemplateArg(
+	const TemplateBase& template_,
+	NamesScope& args_names_scope,
+	const TemplateArg& template_arg,
+	const FilePos& file_pos,
+	const DeducedTemplateParameter& template_param )
+{
+	return
+		template_param.Visit(
+			[&]( const auto& param )
+			{
+				return MatchTemplateArgImpl( template_, args_names_scope, template_arg, file_pos, param );
+			} );
+}
+
+bool CodeBuilder::MatchTemplateArgImpl(
+	const TemplateBase& template_,
+	NamesScope& args_names_scope,
+	const TemplateArg& template_arg,
+	const FilePos& file_pos,
+	const DeducedTemplateParameter::InvalidParam& template_param )
+{
+	(void) template_;
+	(void) args_names_scope;
+	(void) template_arg;
+	(void) template_param;
+	(void)file_pos;
+	return false;
+}
+
+bool CodeBuilder::MatchTemplateArgImpl(
+	const TemplateBase& template_,
+	NamesScope& args_names_scope,
+	const TemplateArg& template_arg,
+	const FilePos& file_pos,
+	const DeducedTemplateParameter::TypeParam& template_param )
+{
+	(void)template_;
+	(void)args_names_scope;
+	(void)file_pos;
+
+	if( const auto given_type= std::get_if<Type>( &template_arg ) )
+		return *given_type == template_param.t;
+	return false;
+}
+
+bool CodeBuilder::MatchTemplateArgImpl(
+	const TemplateBase& template_,
+	NamesScope& args_names_scope,
+	const TemplateArg& template_arg,
+	const FilePos& file_pos,
+	const DeducedTemplateParameter::VariableParam& template_param )
+{
+	(void)template_;
+	(void)args_names_scope;
+	(void)file_pos;
+
+	if( const auto given_variable= std::get_if<Variable>( &template_arg ) )
+	{
+		if( given_variable->type != template_param.v.type )
+			return false;
+		if( given_variable->constexpr_value->getUniqueInteger() != template_param.v.constexpr_value->getUniqueInteger() )
+			return false;
+		return true;
+	}
+
+	return false;
+}
+
+bool CodeBuilder::MatchTemplateArgImpl(
+	const TemplateBase& template_,
+	NamesScope& args_names_scope,
+	const TemplateArg& template_arg,
+	const FilePos& file_pos,
+	const DeducedTemplateParameter::TemplateParameter& template_param )
+{
+	Value* const value= args_names_scope.GetThisScopeValue( template_.template_params[ template_param.index ].name );
+	U_ASSERT( value != nullptr );
+	if( value->GetYetNotDeducedTemplateArg() != nullptr )
+	{
+		const bool is_type_param= template_.template_params[ template_param.index ].type_name != nullptr;
+
+		if( const auto given_type= std::get_if<Type>( &template_arg ) )
+		{
+			if( !is_type_param )
+				return false;
+
+			*value= Value( *given_type, file_pos );
+		}
+		if( const auto given_varaible= std::get_if<Variable>( &template_arg ) )
+		{
+			if( is_type_param )
+				return false;
+
+			if( !TypeIsValidForTemplateVariableArgument( given_varaible->type ) )
+			{
+				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, args_names_scope.GetErrors(), file_pos, given_varaible->type );
+				return false;
+			}
+			if( given_varaible->constexpr_value == nullptr )
+				REPORT_ERROR( ExpectedConstantExpression, args_names_scope.GetErrors(), file_pos );
+
+			*value= Value( *given_varaible, file_pos );
+		}
+	}
+	else if( const auto prev_type= value->GetTypeName() )
+	{
+		if( const auto given_type= std::get_if<Type>( &template_arg ) )
+			return given_type == prev_type;
+		return false;
+	}
+	else if( const auto prev_variable= value->GetVariable() )
+	{
+		if( const auto given_varaible= std::get_if<Variable>( &template_arg ) )
+		{
+			if( given_varaible->type != prev_variable->type )
+				return false;
+
+			return given_varaible->constexpr_value->getUniqueInteger() == prev_variable->constexpr_value->getUniqueInteger();
+		}
+
+		return false;
+	}
+
+	return false;
+}
+
+bool CodeBuilder::MatchTemplateArgImpl(
+	const TemplateBase& template_,
+	NamesScope& args_names_scope,
+	const TemplateArg& template_arg,
+	const FilePos& file_pos,
+	const DeducedTemplateParameter::ArrayParam& template_param )
+{
+	if( const auto given_type= std::get_if<Type>( &template_arg ) )
+	{
+		if( const auto given_array_type= given_type->GetArrayType() )
+		{
+			if( !MatchTemplateArg( template_, args_names_scope, given_array_type->type, file_pos, *template_param.type ) )
+				return false;
+
+			Variable size_variable;
+			size_variable.type= size_type_;
+			size_variable.constexpr_value=
+				llvm::ConstantInt::get(
+					size_type_.GetLLVMType(),
+					llvm::APInt( static_cast<unsigned int>(size_type_.GetFundamentalType()->GetSize() * 8), given_array_type->size ) );
+
+			if( !MatchTemplateArg( template_, args_names_scope, size_variable, file_pos, *template_param.size ) )
+				return false;
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool CodeBuilder::MatchTemplateArgImpl(
+	const TemplateBase& template_,
+	NamesScope& args_names_scope,
+	const TemplateArg& template_arg,
+	const FilePos& file_pos,
+	const DeducedTemplateParameter::TupleParam& template_param )
+{
+	if( const auto given_type= std::get_if<Type>( &template_arg ) )
+	{
+		if( const auto given_tuple_type= given_type->GetTupleType() )
+		{
+			if( given_tuple_type->elements.size() != template_param.element_types.size() )
+				return false;
+
+			for( size_t i= 0; i < template_param.element_types.size(); ++i )
+			{
+				if( !MatchTemplateArg( template_, args_names_scope, given_tuple_type->elements[i], file_pos, template_param.element_types[i] ) )
+					return false;
+			}
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool CodeBuilder::MatchTemplateArgImpl(
+	const TemplateBase& template_,
+	NamesScope& args_names_scope,
+	const TemplateArg& template_arg,
+	const FilePos& file_pos,
+	const DeducedTemplateParameter::FunctionParam& template_param )
+{
+	if( const auto given_type= std::get_if<Type>( &template_arg ) )
+	{
+		if( const auto given_function_pointer_type= given_type->GetFunctionPointerType() )
+		{
+			const Function& given_function_type= given_function_pointer_type->function;
+
+			if( given_function_type.unsafe != template_param.is_unsafe )
+				return false;
+			if( given_function_type.return_value_is_mutable != template_param.return_value_is_mutable )
+				return false;
+			if( given_function_type.return_value_is_reference != template_param.return_value_is_reference )
+				return false;
+
+			if( given_function_type.args.size() != template_param.params.size() )
+				return false;
+
+			for( size_t i= 0; i < template_param.params.size(); ++i )
+			{
+				if( given_function_type.args[i].is_mutable != template_param.params[i].is_mutable )
+					return false;
+				if( given_function_type.args[i].is_reference != template_param.params[i].is_reference )
+					return false;
+				if( ! MatchTemplateArg( template_, args_names_scope, given_function_type.args[i].type, file_pos, *template_param.params[i].type ) )
+					return false;
+			}
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool CodeBuilder::MatchTemplateArgImpl(
+	const TemplateBase& template_,
+	NamesScope& args_names_scope,
+	const TemplateArg& template_arg,
+	const FilePos& file_pos,
+	const DeducedTemplateParameter::SpecializedTemplateParam& template_param )
+{
+	if( const auto given_type= std::get_if<Type>( &template_arg ) )
+	{
+		if( const auto given_class_type= given_type->GetClassTypeProxy() )
+		{
+			const Class& given_class= *given_class_type->class_;
+			if( given_class.base_template == std::nullopt )
+				return false;
+
+			bool is_one_of_templates= false;
+			for( const TypeTemplatePtr& type_template :template_param.type_templates )
+				if( given_class.base_template->class_template == type_template )
+				{
+					is_one_of_templates= true;
+					break;
+				}
+
+			if( !is_one_of_templates )
+				return false;
+
+			if( template_param.params.size() != given_class.base_template->signature_args.size() )
+				return false;
+
+			for( size_t i= 0; i < template_param.params.size(); ++i )
+			{
+				if( !MatchTemplateArg( template_, args_names_scope, given_class.base_template->signature_args[i], file_pos, template_param.params[i] ) )
+					return false;
+			}
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
 Value* CodeBuilder::GenTemplateType(
 	const FilePos& file_pos,
 	const TypeTemplatesSet& type_templates_set,

@@ -215,6 +215,69 @@ private:
 		DeducibleTemplateArgs& deducible_template_args,
 		NamesScope& names_scope );
 
+	bool MatchTemplateArg(
+		const TemplateBase& template_,
+		NamesScope& args_names_scope,
+		const TemplateArg& template_arg,
+		const FilePos& file_pos,
+		const DeducedTemplateParameter& template_param );
+
+	bool MatchTemplateArgImpl(
+		const TemplateBase& template_,
+		NamesScope& args_names_scope,
+		const TemplateArg& template_arg,
+		const FilePos& file_pos,
+		const DeducedTemplateParameter::InvalidParam& template_param );
+
+	bool MatchTemplateArgImpl(
+		const TemplateBase& template_,
+		NamesScope& args_names_scope,
+		const TemplateArg& template_arg,
+		const FilePos& file_pos,
+		const DeducedTemplateParameter::TypeParam& template_param );
+
+	bool MatchTemplateArgImpl(
+		const TemplateBase& template_,
+		NamesScope& args_names_scope,
+		const TemplateArg& template_arg,
+		const FilePos& file_pos,
+		const DeducedTemplateParameter::VariableParam& template_param );
+
+	bool MatchTemplateArgImpl(
+		const TemplateBase& template_,
+		NamesScope& args_names_scope,
+		const TemplateArg& template_arg,
+		const FilePos& file_pos,
+		const DeducedTemplateParameter::TemplateParameter& template_param );
+
+	bool MatchTemplateArgImpl(
+		const TemplateBase& template_,
+		NamesScope& args_names_scope,
+		const TemplateArg& template_arg,
+		const FilePos& file_pos,
+		const DeducedTemplateParameter::ArrayParam& template_param );
+
+	bool MatchTemplateArgImpl(
+		const TemplateBase& template_,
+		NamesScope& args_names_scope,
+		const TemplateArg& template_arg,
+		const FilePos& file_pos,
+		const DeducedTemplateParameter::TupleParam& template_param );
+
+	bool MatchTemplateArgImpl(
+		const TemplateBase& template_,
+		NamesScope& args_names_scope,
+		const TemplateArg& template_arg,
+		const FilePos& file_pos,
+		const DeducedTemplateParameter::FunctionParam& template_param );
+
+	bool MatchTemplateArgImpl(
+		const TemplateBase& template_,
+		NamesScope& args_names_scope,
+		const TemplateArg& template_arg,
+		const FilePos& file_pos,
+		const DeducedTemplateParameter::SpecializedTemplateParam& template_param );
+
 	// Returns nullptr in case of fail.
 	Value* GenTemplateType(
 		const FilePos& file_pos,
