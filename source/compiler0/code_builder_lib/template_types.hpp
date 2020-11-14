@@ -20,6 +20,7 @@ struct TemplateBase
 	};
 
 	std::vector< TemplateParameter > template_params;
+	std::vector< std::optional<DeducedTemplateParameter> > params_types;
 
 	NamesScope* parent_namespace= nullptr; // NamesScope, where defined. NOT changed after import.
 
@@ -31,6 +32,8 @@ struct TypeTemplate final : TemplateBase
 	std::vector< const Synt::Expression* > signature_params;
 	std::vector< const Synt::Expression* > default_signature_params;
 	size_t first_optional_signature_param= ~0u;
+
+	std::vector<DeducedTemplateParameter> signature_params_new;
 
 	enum class Kind
 	{

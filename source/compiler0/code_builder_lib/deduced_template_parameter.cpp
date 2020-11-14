@@ -28,6 +28,8 @@ DeducedTemplateParameter::FunctionParam& DeducedTemplateParameter::FunctionParam
 {
 	return_type= std::make_unique<DeducedTemplateParameter>( *other.return_type );
 
+	return_value_is_mutable= other.return_value_is_mutable;
+	return_value_is_reference= other.return_value_is_reference;
 	is_unsafe= other.is_unsafe;
 
 	params.clear();
@@ -38,6 +40,7 @@ DeducedTemplateParameter::FunctionParam& DeducedTemplateParameter::FunctionParam
 		out_param.type= std::make_unique<DeducedTemplateParameter>( *param.type );
 		out_param.is_mutable= param.is_mutable;
 		out_param.is_reference= param.is_reference;
+		params.push_back( std::move(out_param) );
 	}
 
 	return *this;
