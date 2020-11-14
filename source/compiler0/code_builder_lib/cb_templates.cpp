@@ -1110,7 +1110,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		return nullptr; // Function prepare failed
 
 	FunctionVariable& function_variable= result_functions_set.functions.front();
-	function_variable.deduced_temlpate_parameters= function_template.signature_params;
+	function_variable.base_template= function_template_ptr;
 
 	// And generate function body after insertion of prototype.
 	if( !function_variable.have_body ) // if function is constexpr, body may be already generated.

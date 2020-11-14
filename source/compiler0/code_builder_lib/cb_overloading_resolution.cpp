@@ -535,8 +535,8 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 						actual_args[arg_n],
 						l_type.args[l_arg_n],
 						r_type.args[r_arg_n],
-						function_l->deduced_temlpate_parameters.empty() ? TemplateSignatureParam::TypeParam() : function_l->deduced_temlpate_parameters[l_arg_n],
-						function_r->deduced_temlpate_parameters.empty() ? TemplateSignatureParam::TypeParam() : function_r->deduced_temlpate_parameters[r_arg_n] );
+						function_l->base_template == nullptr ? TemplateSignatureParam::TypeParam() : function_l->base_template->signature_params[l_arg_n],
+						function_r->base_template == nullptr ? TemplateSignatureParam::TypeParam() : function_r->base_template->signature_params[r_arg_n] );
 
 				if( comp == ConversionsCompareResult::Same || comp == ConversionsCompareResult::LeftIsBetter )
 					continue;
@@ -567,8 +567,8 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 							actual_args[arg_n],
 							l_type.args[l_arg_n],
 							r_type.args[r_arg_n],
-							function_l->deduced_temlpate_parameters.empty() ? TemplateSignatureParam::TypeParam() : function_l->deduced_temlpate_parameters[l_arg_n],
-							function_r. deduced_temlpate_parameters.empty() ? TemplateSignatureParam::TypeParam() : function_r. deduced_temlpate_parameters[r_arg_n] );
+							function_l->base_template == nullptr ? TemplateSignatureParam::TypeParam() : function_l->base_template->signature_params[l_arg_n],
+							function_r. base_template == nullptr ? TemplateSignatureParam::TypeParam() : function_r. base_template->signature_params[r_arg_n] );
 
 					U_ASSERT( comp != ConversionsCompareResult::Incomparable && comp != ConversionsCompareResult::RightIsBetter );
 

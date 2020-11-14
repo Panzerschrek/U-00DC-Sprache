@@ -44,8 +44,8 @@ struct FunctionVariable final
 
 	Type type; // Function type 100%
 
-	// For function templates is nonempty and have size of args. Needs for selection of better (more specialized) template function.
-	std::vector<TemplateSignatureParam> deduced_temlpate_parameters;
+	// For functions generated from templates.
+	std::shared_ptr<FunctionTemplate> base_template;
 
 	unsigned int virtual_table_index= ~0u; // For virtual functions number in virtual functions table in class of first arg(this).
 	bool have_body= false;
