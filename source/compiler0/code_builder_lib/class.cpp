@@ -1,5 +1,5 @@
+#include "deduced_template_parameter.hpp"
 #include "class.hpp"
-
 
 namespace U
 {

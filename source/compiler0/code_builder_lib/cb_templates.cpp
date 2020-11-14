@@ -434,26 +434,26 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 					TypeIsValidForTemplateVariableArgument( named_variable->type ) &&
 					named_variable->constexpr_value != nullptr && variable->constexpr_value != nullptr &&
 					named_variable->constexpr_value->getUniqueInteger() == variable->constexpr_value->getUniqueInteger() )
-					return DeducedTemplateParameter::Variable();
+					return DeducedTemplateParameter::VariableParam();
 			}
-			return DeducedTemplateParameter::Invalid();
+			return DeducedTemplateParameter::InvalidParam();
 		}
 
 		if( !TypeIsValidForTemplateVariableArgument( variable->type ) )
 		{
 			REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), signature_parameter_file_pos, variable->type );
-			return DeducedTemplateParameter::Invalid();
+			return DeducedTemplateParameter::InvalidParam();
 		}
 
 		if( variable->constexpr_value == nullptr )
 		{
 			REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), signature_parameter_file_pos );
-			return DeducedTemplateParameter::Invalid();
+			return DeducedTemplateParameter::InvalidParam();
 		}
 
 		// Check given type and type from signature, deduce also some complex names.
 		if( template_.template_params[ dependend_arg_index ].type_name == nullptr )
-			return DeducedTemplateParameter::Invalid();
+			return DeducedTemplateParameter::InvalidParam();
 
 		const DeducedTemplateParameter deduced_value_type=
 			DeduceTemplateArguments(
@@ -464,7 +464,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 				deducible_template_args,
 				names_scope );
 		if( deduced_value_type.IsInvalid() )
-			return DeducedTemplateParameter::Invalid();
+			return DeducedTemplateParameter::InvalidParam();
 
 		// Allocate global variable, because we needs address.
 
@@ -482,14 +482,14 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 		if( std::get_if<int>( &deducible_template_args[ dependend_arg_index ] ) != nullptr )
 			deducible_template_args[ dependend_arg_index ]= std::move( variable_for_insertion ); // Set empty arg.
 		else if( std::get_if<Type>( &deducible_template_args[ dependend_arg_index ] ) != nullptr )
-			return DeducedTemplateParameter::Invalid(); // WTF?
+			return DeducedTemplateParameter::InvalidParam(); // WTF?
 		else if( const Variable* const prev_variable_value= std::get_if<Variable>( &deducible_template_args[ dependend_arg_index ] )  )
 		{
 			// Variable already known, Check conflicts.
 			// TODO - do real comparision
 			// TODO - maybe generate error in this case?
 			if( prev_variable_value->constexpr_value->getUniqueInteger() != variable_for_insertion.constexpr_value->getUniqueInteger() )
-				return DeducedTemplateParameter::Invalid();
+				return DeducedTemplateParameter::InvalidParam();
 		}
 
 		return DeducedTemplateParameter::TemplateParameter();
@@ -503,7 +503,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 		if( template_.template_params[ dependend_arg_index ].type_name != nullptr )
 		{
 			// Expected variable, but type given.
-			return DeducedTemplateParameter::Invalid();
+			return DeducedTemplateParameter::InvalidParam();
 		}
 		else if( std::get_if<int>( &deducible_template_args[ dependend_arg_index ] ) != nullptr )
 		{
@@ -514,12 +514,12 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 		{
 			// Type already known. Check conflicts.
 			if( *prev_type != given_type )
-				return DeducedTemplateParameter::Invalid();
+				return DeducedTemplateParameter::InvalidParam();
 		}
 		else if( std::get_if<Variable>( &deducible_template_args[ dependend_arg_index ] ) != nullptr )
 		{
 			// Bind type argument to variable parameter.
-			return DeducedTemplateParameter::Invalid();
+			return DeducedTemplateParameter::InvalidParam();
 		}
 		return DeducedTemplateParameter::TemplateParameter();
 	}
@@ -529,16 +529,16 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 	if( const Type* const type= signature_parameter_value.GetTypeName() )
 	{
 		if( *type == given_type )
-			return DeducedTemplateParameter::Type();
-		return DeducedTemplateParameter::Invalid();
+			return DeducedTemplateParameter::TypeParam();
+		return DeducedTemplateParameter::InvalidParam();
 	}
 	else if( const TypeTemplatesSet* const inner_type_templates_set= signature_parameter_value.GetTypeTemplatesSet() )
 	{
 		const Class* const given_type_class= given_type.GetClassType();
 		if( given_type_class == nullptr )
-			return DeducedTemplateParameter::Invalid();
+			return DeducedTemplateParameter::InvalidParam();
 		if( given_type_class->base_template == std::nullopt )
-			return DeducedTemplateParameter::Invalid();
+			return DeducedTemplateParameter::InvalidParam();
 
 		// TODO - build type templates set here
 		const TypeTemplate* inner_type_template= nullptr;
@@ -551,20 +551,20 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 			}
 		}
 		if( inner_type_template == nullptr )
-			return DeducedTemplateParameter::Invalid();
+			return DeducedTemplateParameter::InvalidParam();
 
 		const Synt::ComplexName::Component* name_component= signature_parameter.tail.get();
 		if( name_component == nullptr )
-			return DeducedTemplateParameter::Invalid();
+			return DeducedTemplateParameter::InvalidParam();
 
 		while( name_component->next != nullptr )
 			name_component= name_component->next.get();
 
 		const auto template_parameters= std::get_if< std::vector<Synt::Expression> >( &name_component->name_or_template_paramenters );
 		if( template_parameters == nullptr || template_parameters->size() < inner_type_template->first_optional_signature_param )
-			return DeducedTemplateParameter::Invalid();
+			return DeducedTemplateParameter::InvalidParam();
 
-		DeducedTemplateParameter::Template result;
+		DeducedTemplateParameter::SpecializedTemplateParam result;
 		for( size_t i= 0u; i < template_parameters->size(); ++i)
 		{
 			DeducedTemplateParameter deduced=
@@ -576,13 +576,13 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 					deducible_template_args,
 					names_scope );
 			if( deduced.IsInvalid() )
-				return DeducedTemplateParameter::Invalid();
-			result.args.push_back(std::move(deduced));
+				return DeducedTemplateParameter::InvalidParam();
+			result.params.push_back(std::move(deduced));
 		}
 
 		// Check, if given something, like std::tuple</ i32, std::vector</float/>, [ bool, 4 ] />.
 		bool all_template_parameters_is_concrete= true;
-		for( const DeducedTemplateParameter& param : result.args )
+		for( const DeducedTemplateParameter& param : result.params )
 		{
 			if( !( param.IsType() || param.IsVariable() ) )
 			{
@@ -591,12 +591,12 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 			}
 		}
 		if( all_template_parameters_is_concrete )
-			return DeducedTemplateParameter::Type();
+			return DeducedTemplateParameter::TypeParam();
 
 		return result;
 	}
 
-	return DeducedTemplateParameter::Invalid();
+	return DeducedTemplateParameter::InvalidParam();
 }
 
 DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
@@ -624,24 +624,24 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 
 	const Variable* const param_var= std::get_if<Variable>( &template_arg );
 	if( param_var == nullptr )
-		return DeducedTemplateParameter::Invalid();
+		return DeducedTemplateParameter::InvalidParam();
 	if( !TypeIsValidForTemplateVariableArgument( param_var->type ) )
-		return DeducedTemplateParameter::Invalid();
+		return DeducedTemplateParameter::InvalidParam();
 
 	const Value val= BuildExpressionCode( signature_parameter, names_scope, *global_function_context_ );
 	if( val.GetVariable() == nullptr )
-		return DeducedTemplateParameter::Invalid();
+		return DeducedTemplateParameter::InvalidParam();
 	const Variable& var= *val.GetVariable();
 	if( !TypeIsValidForTemplateVariableArgument( var.type ) )
-		return DeducedTemplateParameter::Invalid();
+		return DeducedTemplateParameter::InvalidParam();
 
 	// SPRACHE_TODO - maybe try compare integers without type?
 	if( param_var->type != var.type )
-		return DeducedTemplateParameter::Invalid();
+		return DeducedTemplateParameter::InvalidParam();
 	if( param_var->constexpr_value->getUniqueInteger() != var.constexpr_value->getUniqueInteger() )
-		return DeducedTemplateParameter::Invalid();
+		return DeducedTemplateParameter::InvalidParam();
 
-	return DeducedTemplateParameter::Variable();
+	return DeducedTemplateParameter::VariableParam();
 }
 
 DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
@@ -658,10 +658,10 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 	{
 		const Type* const param_type= std::get_if<Type>( &template_arg );
 		if( param_type == nullptr )
-			return DeducedTemplateParameter::Invalid();
+			return DeducedTemplateParameter::InvalidParam();
 		const Array* const param_array_type= param_type->GetArrayType();
 		if( param_array_type == nullptr )
-			return DeducedTemplateParameter::Invalid();
+			return DeducedTemplateParameter::InvalidParam();
 
 		Variable size_var;
 		size_var.type= size_type_;
@@ -669,7 +669,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 		size_var.llvm_value= size_var.constexpr_value=
 			llvm::Constant::getIntegerValue( size_var.type.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), param_array_type->size ) );
 
-		DeducedTemplateParameter::Array result;
+		DeducedTemplateParameter::ArrayParam result;
 		result.type=
 			std::make_unique<DeducedTemplateParameter>(
 				DeduceTemplateArguments( template_, param_array_type->type, *array_type->element_type, signature_parameter_file_pos, deducible_template_args, names_scope ) );
@@ -677,11 +677,11 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 			std::make_unique<DeducedTemplateParameter>(
 				DeduceTemplateArguments( template_, size_var, *array_type->size, signature_parameter_file_pos, deducible_template_args, names_scope ) );
 		if( result.type->IsInvalid() || result.size->IsInvalid() ) // TODO - what is size is not variable, but type name? Check this.
-			return DeducedTemplateParameter::Invalid();
+			return DeducedTemplateParameter::InvalidParam();
 
 		// All array parameters is known, so, this is concrete type.
 		if( result.type->IsType() && result.size->IsVariable() )
-			return DeducedTemplateParameter::Type();
+			return DeducedTemplateParameter::TypeParam();
 
 		return std::move(result);
 	}
@@ -689,26 +689,26 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 	{
 		const Type* const param_type= std::get_if<Type>( &template_arg );
 		if( param_type == nullptr )
-			return DeducedTemplateParameter::Invalid();
+			return DeducedTemplateParameter::InvalidParam();
 		const Tuple* const param_tuple_type= param_type->GetTupleType();
 		if( param_tuple_type == nullptr )
-			return DeducedTemplateParameter::Invalid();
+			return DeducedTemplateParameter::InvalidParam();
 		if( tuple_type_ptr->element_types_.size() != param_tuple_type->elements.size() )
-			return DeducedTemplateParameter::Invalid();
+			return DeducedTemplateParameter::InvalidParam();
 
-		DeducedTemplateParameter::Tuple result;
+		DeducedTemplateParameter::TupleParam result;
 		result.element_types.reserve( param_tuple_type->elements.size() );
 		bool all_types_are_known= true;
 		for( size_t i= 0u; i < param_tuple_type->elements.size(); ++i )
 		{
 			result.element_types.push_back( DeduceTemplateArguments( template_, param_tuple_type->elements[i], tuple_type_ptr->element_types_[i], signature_parameter_file_pos, deducible_template_args, names_scope ) );
 			if( result.element_types.back().IsInvalid() )
-				return DeducedTemplateParameter::Invalid();
+				return DeducedTemplateParameter::InvalidParam();
 			all_types_are_known= all_types_are_known && result.element_types.back().IsType();
 		}
 
 		if( all_types_are_known )
-			return DeducedTemplateParameter::Type();
+			return DeducedTemplateParameter::TypeParam();
 		else
 			return std::move(result);
 	}
@@ -717,19 +717,23 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 		const Synt::FunctionType* const function_pointer_type= function_pointer_type_ptr->get();
 		const auto param_type= std::get_if<Type>( &template_arg );
 		if( param_type == nullptr )
-			return DeducedTemplateParameter::Invalid();
+			return DeducedTemplateParameter::InvalidParam();
 		const FunctionPointer* const param_function_pointer_type= param_type->GetFunctionPointerType();
 		if( param_function_pointer_type == nullptr )
-			return DeducedTemplateParameter::Invalid();
+			return DeducedTemplateParameter::InvalidParam();
 
-		DeducedTemplateParameter::Function result;
+		DeducedTemplateParameter::FunctionParam result;
 
 		// Process return value.
 		const bool expected_ret_mutable= function_pointer_type->return_value_mutability_modifier_ == MutabilityModifier::Mutable;
 		const bool expected_ret_reference= function_pointer_type->return_value_reference_modifier_ == ReferenceModifier::Reference;
 		if( expected_ret_mutable != param_function_pointer_type->function.return_value_is_mutable ||
 			expected_ret_reference != param_function_pointer_type->function.return_value_is_reference )
-			return DeducedTemplateParameter::Invalid();
+			return DeducedTemplateParameter::InvalidParam();
+
+		result.return_value_is_mutable= expected_ret_mutable;
+		result.return_value_is_reference= expected_ret_reference;
+		result.is_unsafe= function_pointer_type->unsafe_;
 
 		if( function_pointer_type->return_type_ != nullptr )
 		{
@@ -742,14 +746,14 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 					deducible_template_args,
 					names_scope );
 			if( ret_type_result.IsInvalid() )
-				return DeducedTemplateParameter::Invalid();
+				return DeducedTemplateParameter::InvalidParam();
 			result.return_type= std::make_unique<DeducedTemplateParameter>( std::move(ret_type_result) );
 		}
 		else
 		{
 			if( param_function_pointer_type->function.return_type != void_type_ )
-				return DeducedTemplateParameter::Invalid();
-			result.return_type= std::make_unique<DeducedTemplateParameter>( DeducedTemplateParameter::Type() );
+				return DeducedTemplateParameter::InvalidParam();
+			result.return_type= std::make_unique<DeducedTemplateParameter>( DeducedTemplateParameter::TypeParam() );
 		}
 
 		if( !function_pointer_type->return_value_inner_reference_tag_.empty() ||
@@ -758,7 +762,7 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 
 		// Process args.
 		if( param_function_pointer_type->function.args.size() != function_pointer_type->arguments_.size() )
-			return DeducedTemplateParameter::Invalid();
+			return DeducedTemplateParameter::InvalidParam();
 		for( size_t i= 0u; i < function_pointer_type->arguments_.size(); ++i)
 		{
 			const Synt::FunctionArgument& expected_arg= function_pointer_type->arguments_[i];
@@ -768,44 +772,47 @@ DeducedTemplateParameter CodeBuilder::DeduceTemplateArguments(
 			const bool expected_reference= expected_arg.reference_modifier_ == ReferenceModifier::Reference;
 
 			if( expected_mutable != given_arg.is_mutable || expected_reference != given_arg.is_reference )
-				return DeducedTemplateParameter::Invalid();
+				return DeducedTemplateParameter::InvalidParam();
 
-			result.argument_types.push_back(
-				DeduceTemplateArguments( template_, given_arg.type, expected_arg.type_, signature_parameter_file_pos, deducible_template_args, names_scope ));
+			DeducedTemplateParameter::FunctionParam::Param p;
+			p.type= std::make_unique<DeducedTemplateParameter>( DeduceTemplateArguments( template_, given_arg.type, expected_arg.type_, signature_parameter_file_pos, deducible_template_args, names_scope ) );
+			p.is_mutable= given_arg.is_mutable;
+			p.is_reference= given_arg.is_reference;
+			result.params.push_back( std::move(p) );
 
-			if( result.argument_types.back().IsInvalid() )
-				return DeducedTemplateParameter::Invalid();
+			if( result.params.back().type->IsInvalid() )
+				return DeducedTemplateParameter::InvalidParam();
 
 			if( !expected_arg.inner_arg_reference_tag_.empty() || !expected_arg.reference_tag_.empty() )
 				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), function_pointer_type->file_pos_, "reference tags for template signature parameters" );
 		}
 
 		if( param_function_pointer_type->function.unsafe != function_pointer_type->unsafe_ )
-			return DeducedTemplateParameter::Invalid();
+			return DeducedTemplateParameter::InvalidParam();
 
 		bool all_types_are_known= true;
 		if( !result.return_type->IsType() )
 			all_types_are_known= false;
-		for( const DeducedTemplateParameter& arg : result.argument_types )
+		for( const DeducedTemplateParameter::FunctionParam::Param& param : result.params )
 		{
-			if( !arg.IsType() )
+			if( !param.type->IsType() )
 				all_types_are_known= false;
-			if( arg.IsVariable() )
-				return DeducedTemplateParameter::Invalid();
+			if( param.type->IsVariable() )
+				return DeducedTemplateParameter::InvalidParam();
 		}
 
 		if( result.return_type->IsVariable() )
-			return DeducedTemplateParameter::Invalid();
+			return DeducedTemplateParameter::InvalidParam();
 
 		if( all_types_are_known )
-			return DeducedTemplateParameter::Type();
+			return DeducedTemplateParameter::TypeParam();
 
 		return result;
 	}
 
 	else U_ASSERT(false);
 
-	return DeducedTemplateParameter::Invalid();
+	return DeducedTemplateParameter::InvalidParam();
 }
 
 Value* CodeBuilder::GenTemplateType(
@@ -1084,7 +1091,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 			if( function_template.base_class != nullptr &&
 				!( given_args[i].type == function_template.base_class || ReferenceIsConvertible( given_args[i].type, function_template.base_class, errors_container, file_pos ) ) )
 				return nullptr;
-			deduced_temlpate_parameters[i]= DeducedTemplateParameter::Type();
+			deduced_temlpate_parameters[i]= DeducedTemplateParameter::TypeParam();
 		}
 		else
 		{
@@ -1116,7 +1123,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 						if( *type == given_args[i].type || ReferenceIsConvertible( given_args[i].type, *type, errors_container, file_pos ) ||
 							( !expected_arg_is_mutalbe_reference && GetConversionConstructor( given_args[i].type, *type, errors_container, file_pos ) != nullptr ) )
 						{
-							deduced_temlpate_parameters[i]= DeducedTemplateParameter::Type();
+							deduced_temlpate_parameters[i]= DeducedTemplateParameter::TypeParam();
 							deduced_specially= true;
 						}
 						else

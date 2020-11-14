@@ -7,41 +7,53 @@ namespace CodeBuilderPrivate
 {
 
 
-DeducedTemplateParameter::Array::Array( const Array& other )
+DeducedTemplateParameter::ArrayParam::ArrayParam( const ArrayParam& other )
 {
 	*this= other;
 }
 
-DeducedTemplateParameter::Array& DeducedTemplateParameter::Array::operator=( const Array& other )
+DeducedTemplateParameter::ArrayParam& DeducedTemplateParameter::ArrayParam::operator=( const ArrayParam& other )
 {
 	size= std::make_unique<DeducedTemplateParameter>( *other.size );
 	type= std::make_unique<DeducedTemplateParameter>( *other.type );
 	return *this;
 }
 
-DeducedTemplateParameter::Function::Function( const Function& other )
+DeducedTemplateParameter::FunctionParam::FunctionParam( const FunctionParam& other )
 {
 	*this= other;
 }
 
-DeducedTemplateParameter::Function& DeducedTemplateParameter::Function::operator=( const Function& other )
+DeducedTemplateParameter::FunctionParam& DeducedTemplateParameter::FunctionParam::operator=( const FunctionParam& other )
 {
 	return_type= std::make_unique<DeducedTemplateParameter>( *other.return_type );
-	argument_types= other.argument_types;
+
+	is_unsafe= other.is_unsafe;
+
+	params.clear();
+	params.reserve( other.params.size() );
+	for( const Param& param : other.params )
+	{
+		Param out_param;
+		out_param.type= std::make_unique<DeducedTemplateParameter>( *param.type );
+		out_param.is_mutable= param.is_mutable;
+		out_param.is_reference= param.is_reference;
+	}
+
 	return *this;
 }
 
-DeducedTemplateParameter::DeducedTemplateParameter( Invalid invalid )
+DeducedTemplateParameter::DeducedTemplateParameter( InvalidParam invalid )
 {
 	something_= std::move(invalid);
 }
 
-DeducedTemplateParameter::DeducedTemplateParameter( Type type )
+DeducedTemplateParameter::DeducedTemplateParameter( TypeParam type )
 {
 	something_= std::move(type);
 }
 
-DeducedTemplateParameter::DeducedTemplateParameter( Variable variable )
+DeducedTemplateParameter::DeducedTemplateParameter( VariableParam variable )
 {
 	something_= std::move(variable);
 }
@@ -51,39 +63,39 @@ DeducedTemplateParameter::DeducedTemplateParameter( TemplateParameter template_p
 	something_= std::move(template_parameter);
 }
 
-DeducedTemplateParameter::DeducedTemplateParameter( Array array )
+DeducedTemplateParameter::DeducedTemplateParameter( ArrayParam array )
 {
 	something_= std::move(array);
 }
 
-DeducedTemplateParameter::DeducedTemplateParameter( Tuple tuple )
+DeducedTemplateParameter::DeducedTemplateParameter( TupleParam tuple )
 {
 	something_= std::move(tuple);
 }
 
-DeducedTemplateParameter::DeducedTemplateParameter( Function function )
+DeducedTemplateParameter::DeducedTemplateParameter( FunctionParam function )
 {
 	something_= std::move(function);
 }
 
-DeducedTemplateParameter::DeducedTemplateParameter( Template template_ )
+DeducedTemplateParameter::DeducedTemplateParameter( SpecializedTemplateParam template_ )
 {
 	something_= std::move(template_);
 }
 
 bool DeducedTemplateParameter::IsInvalid() const
 {
-	return std::get_if<Invalid>( &something_ ) != nullptr;
+	return std::get_if<InvalidParam>( &something_ ) != nullptr;
 }
 
 bool DeducedTemplateParameter::IsType() const
 {
-	return std::get_if<Type>( &something_ ) != nullptr;
+	return std::get_if<TypeParam>( &something_ ) != nullptr;
 }
 
 bool DeducedTemplateParameter::IsVariable() const
 {
-	return std::get_if<Variable>( &something_ ) != nullptr;
+	return std::get_if<VariableParam>( &something_ ) != nullptr;
 }
 
 bool DeducedTemplateParameter::IsTemplateParameter() const
@@ -91,24 +103,24 @@ bool DeducedTemplateParameter::IsTemplateParameter() const
 	return std::get_if<TemplateParameter>( &something_ ) != nullptr;
 }
 
-const DeducedTemplateParameter::Array* DeducedTemplateParameter::GetArray() const
+const DeducedTemplateParameter::ArrayParam* DeducedTemplateParameter::GetArray() const
 {
-	return std::get_if<Array>( &something_ );
+	return std::get_if<ArrayParam>( &something_ );
 }
 
-const DeducedTemplateParameter::Tuple* DeducedTemplateParameter::GetTuple() const
+const DeducedTemplateParameter::TupleParam* DeducedTemplateParameter::GetTuple() const
 {
-	return std::get_if<Tuple>( &something_ );
+	return std::get_if<TupleParam>( &something_ );
 }
 
-const DeducedTemplateParameter::Function* DeducedTemplateParameter::GetFunction() const
+const DeducedTemplateParameter::FunctionParam* DeducedTemplateParameter::GetFunction() const
 {
-	return std::get_if<Function>( &something_ );
+	return std::get_if<FunctionParam>( &something_ );
 }
 
-const DeducedTemplateParameter::Template* DeducedTemplateParameter::GetTemplate() const
+const DeducedTemplateParameter::SpecializedTemplateParam* DeducedTemplateParameter::GetTemplate() const
 {
-	return std::get_if<Template>( &something_ );
+	return std::get_if<SpecializedTemplateParam>( &something_ );
 }
 
 } // namespace CodeBuilderPrivate

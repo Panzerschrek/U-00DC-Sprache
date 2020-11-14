@@ -5,7 +5,6 @@
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/syntax_elements.hpp"
-#include "deduced_template_parameter.hpp"
 #include "references_graph.hpp"
 #include "type.hpp"
 
@@ -15,6 +14,8 @@ namespace U
 
 namespace CodeBuilderPrivate
 {
+
+class DeducedTemplateParameter;
 
 class NamesScope;
 using NamesScopePtr= std::shared_ptr<NamesScope>;

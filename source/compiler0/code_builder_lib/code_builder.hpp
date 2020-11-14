@@ -13,6 +13,7 @@
 #include "../lex_synt_lib/source_graph_loader.hpp"
 #include "../../code_builder_lib_common/constexpr_function_evaluator.hpp"
 #include "class.hpp"
+#include "deduced_template_parameter.hpp"
 #include "enum.hpp"
 #include "function_context.hpp"
 #include "template_types.hpp"

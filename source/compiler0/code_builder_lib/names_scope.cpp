@@ -1,5 +1,6 @@
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "class.hpp"
+#include "deduced_template_parameter.hpp"
 #include "enum.hpp"
 #include "names_scope.hpp"
 

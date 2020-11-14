@@ -2,6 +2,7 @@
 #include <memory>
 #include <variant>
 #include <vector>
+#include "value.hpp"
 
 
 namespace U
@@ -10,79 +11,103 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
+
 class DeducedTemplateParameter
 {
 public:
-	struct Invalid{};
-	struct Type{};
-	struct Variable{};
-	struct TemplateParameter{};
+	struct InvalidParam{};
 
-	struct Array
+	struct TypeParam
+	{
+		Type t;
+	};
+
+	struct VariableParam
+	{
+		Variable v;
+	};
+
+	struct TemplateParameter
+	{
+		size_t index;
+	};
+
+	struct ArrayParam
 	{
 		std::unique_ptr<DeducedTemplateParameter> size;
 		std::unique_ptr<DeducedTemplateParameter> type;
 
-		Array()= default;
-		Array(Array&&)= default;
-		Array& operator=(Array&&)= default;
+		ArrayParam()= default;
+		ArrayParam(ArrayParam&&)= default;
+		ArrayParam& operator=(ArrayParam&&)= default;
 
-		Array( const Array& other );
-		Array& operator=( const Array& other );
+		ArrayParam( const ArrayParam& other );
+		ArrayParam& operator=( const ArrayParam& other );
 	};
 
-	struct Tuple
+	struct TupleParam
 	{
 		std::vector<DeducedTemplateParameter> element_types;
 	};
 
-	struct Function
+	struct FunctionParam
 	{
 		std::unique_ptr<DeducedTemplateParameter> return_type;
-		std::vector<DeducedTemplateParameter> argument_types;
+		bool return_value_is_mutable;
+		bool return_value_is_reference;
 
-		Function()= default;
-		Function(Function&&)= default;
-		Function& operator=(Function&&)= default;
+		bool is_unsafe;
 
-		Function( const Function& other );
-		Function& operator=( const Function& other );
+		struct Param
+		{
+			std::unique_ptr<DeducedTemplateParameter> type;
+			bool is_mutable;
+			bool is_reference;
+		};
+		std::vector<Param> params;
+
+		FunctionParam()= default;
+		FunctionParam(FunctionParam&&)= default;
+		FunctionParam& operator=(FunctionParam&&)= default;
+
+		FunctionParam( const FunctionParam& other );
+		FunctionParam& operator=( const FunctionParam& other );
 	};
 
-	struct Template
+	struct SpecializedTemplateParam
 	{
-		std::vector<DeducedTemplateParameter> args;
+		std::vector<DeducedTemplateParameter> params;
 	};
 
 public:
-	DeducedTemplateParameter( Invalid invalid= Invalid() );
-	DeducedTemplateParameter( Type type );
-	DeducedTemplateParameter( Variable variable );
+	DeducedTemplateParameter( InvalidParam invalid= InvalidParam() );
+	DeducedTemplateParameter( TypeParam type );
+	DeducedTemplateParameter( VariableParam variable );
 	DeducedTemplateParameter( TemplateParameter template_parameter );
-	DeducedTemplateParameter( Array array );
-	DeducedTemplateParameter( Tuple tuple );
-	DeducedTemplateParameter( Function function );
-	DeducedTemplateParameter( Template template_ );
+	DeducedTemplateParameter( ArrayParam array );
+	DeducedTemplateParameter( TupleParam tuple );
+	DeducedTemplateParameter( FunctionParam function );
+	DeducedTemplateParameter( SpecializedTemplateParam template_ );
 
 	bool IsInvalid() const;
 	bool IsType() const;
 	bool IsVariable() const;
 	bool IsTemplateParameter() const;
-	const Array* GetArray() const;
-	const Tuple* GetTuple() const;
-	const Function* GetFunction() const;
-	const Template* GetTemplate() const;
+	const ArrayParam* GetArray() const;
+	const TupleParam* GetTuple() const;
+	const FunctionParam* GetFunction() const;
+	const SpecializedTemplateParam* GetTemplate() const;
 
 private:
 	std::variant<
-		Invalid,
-		Type,
-		Variable,
+		InvalidParam,
+		TypeParam,
+		VariableParam,
 		TemplateParameter,
-		Array,
-		Tuple,
-		Function,
-		Template> something_;
+		ArrayParam,
+		TupleParam,
+		FunctionParam,
+		SpecializedTemplateParam> something_;
 };
 
 } // namespace CodeBuilderPrivate

@@ -1,4 +1,5 @@
 #include "class.hpp"
+#include "deduced_template_parameter.hpp"
 #include "enum.hpp"
 
 

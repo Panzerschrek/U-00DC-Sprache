@@ -203,13 +203,13 @@ ConversionsCompareResult TemplateSpecializationCompare(
 			return ConversionsCompareResult::LeftIsBetter; // Function is more specialized, then template parameter.
 		else if( const auto r_function= right_template_parameter.GetFunction() )
 		{
-			if( l_function->argument_types.size() != r_function->argument_types.size() )
+			if( l_function->params.size() != r_function->params.size() )
 				return ConversionsCompareResult::Incomparable; // TODO - it is possible?
 
 			ConversionsCompareResult result= TemplateSpecializationCompare( *l_function->return_type, *r_function->return_type );
-			for( size_t i= 0u; i < l_function->argument_types.size(); ++i )
+			for( size_t i= 0u; i < l_function->params.size(); ++i )
 			{
-				const ConversionsCompareResult arg_result= TemplateSpecializationCompare( l_function->argument_types[i], r_function->argument_types[i] );
+				const ConversionsCompareResult arg_result= TemplateSpecializationCompare( *l_function->params[i].type, *r_function->params[i].type );
 				if( arg_result == ConversionsCompareResult::Incomparable )
 					return ConversionsCompareResult::Incomparable;
 
@@ -233,13 +233,13 @@ ConversionsCompareResult TemplateSpecializationCompare(
 		else if( const auto r_template= right_template_parameter.GetTemplate() )
 		{
 			// Templates with different arg count is uncomparable.
-			if( l_template->args.size() != r_template->args.size() )
+			if( l_template->params.size() != r_template->params.size() )
 				return ConversionsCompareResult::Incomparable;
 
 			ConversionsCompareResult result= ConversionsCompareResult::Same;
-			for( size_t i= 0u; i < l_template->args.size(); ++i )
+			for( size_t i= 0u; i < l_template->params.size(); ++i )
 			{
-				const ConversionsCompareResult arg_result= TemplateSpecializationCompare( l_template->args[i], r_template->args[i] );
+				const ConversionsCompareResult arg_result= TemplateSpecializationCompare( l_template->params[i], r_template->params[i] );
 				if( arg_result == ConversionsCompareResult::Incomparable )
 					return ConversionsCompareResult::Incomparable;
 
@@ -535,8 +535,8 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 						actual_args[arg_n],
 						l_type.args[l_arg_n],
 						r_type.args[r_arg_n],
-						function_l->deduced_temlpate_parameters.empty() ? DeducedTemplateParameter::Type() : function_l->deduced_temlpate_parameters[l_arg_n],
-						function_r->deduced_temlpate_parameters.empty() ? DeducedTemplateParameter::Type() : function_r->deduced_temlpate_parameters[r_arg_n] );
+						function_l->deduced_temlpate_parameters.empty() ? DeducedTemplateParameter::TypeParam() : function_l->deduced_temlpate_parameters[l_arg_n],
+						function_r->deduced_temlpate_parameters.empty() ? DeducedTemplateParameter::TypeParam() : function_r->deduced_temlpate_parameters[r_arg_n] );
 
 				if( comp == ConversionsCompareResult::Same || comp == ConversionsCompareResult::LeftIsBetter )
 					continue;
@@ -567,8 +567,8 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 							actual_args[arg_n],
 							l_type.args[l_arg_n],
 							r_type.args[r_arg_n],
-							function_l->deduced_temlpate_parameters.empty() ? DeducedTemplateParameter::Type() : function_l->deduced_temlpate_parameters[l_arg_n],
-							function_r. deduced_temlpate_parameters.empty() ? DeducedTemplateParameter::Type() : function_r. deduced_temlpate_parameters[r_arg_n] );
+							function_l->deduced_temlpate_parameters.empty() ? DeducedTemplateParameter::TypeParam() : function_l->deduced_temlpate_parameters[l_arg_n],
+							function_r. deduced_temlpate_parameters.empty() ? DeducedTemplateParameter::TypeParam() : function_r. deduced_temlpate_parameters[r_arg_n] );
 
 					U_ASSERT( comp != ConversionsCompareResult::Incomparable && comp != ConversionsCompareResult::RightIsBetter );
 
