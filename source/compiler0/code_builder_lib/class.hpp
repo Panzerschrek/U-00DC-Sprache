@@ -8,7 +8,8 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-using TemplateParameter= std::variant< Variable, Type >;
+using TemplateArg= std::variant< Variable, Type >;
+using TemplateArgs= std::vector<TemplateArg>;
 
 class Class final
 {
@@ -30,8 +31,8 @@ public:
 	struct BaseTemplate
 	{
 		TypeTemplatePtr class_template;
-		std::vector<TemplateParameter> template_parameters;
-		std::vector<TemplateParameter> signature_parameters;
+		TemplateArgs template_args;
+		TemplateArgs signature_args;
 	};
 
 	enum class Kind

@@ -115,16 +115,16 @@ std::string MangleGraphFinalize( const MangleGraphNode& node )
 MangleGraphNode GetTypeName( const Type& type );
 MangleGraphNode GetNamespacePrefix_r( const NamesScope& names_scope );
 
-MangleGraphNode EncodeTemplateParameters( const std::vector<TemplateParameter>& template_parameters )
+MangleGraphNode EncodeTemplateArgs( const TemplateArgs& template_args )
 {
 	MangleGraphNode result;
 	result.prefix= "I";
 
-	for( const TemplateParameter& template_paremater : template_parameters )
+	for( const TemplateArg& template_arg : template_args )
 	{
-		if( const auto type= std::get_if<Type>( &template_paremater ) )
+		if( const auto type= std::get_if<Type>( &template_arg ) )
 			result.childs.push_back( GetTypeName( *type ) );
-		else if( const auto variable= std::get_if<Variable>( &template_paremater ) )
+		else if( const auto variable= std::get_if<Variable>( &template_arg ) )
 		{
 			MangleGraphNode variable_param_node;
 			variable_param_node.prefix= "L";
@@ -178,11 +178,11 @@ MangleGraphNode GetTemplateClassName( const Class& the_class )
 		if( !parent->GetThisNamespaceName().empty() )
 			name_node.childs.push_back( GetNamespacePrefix_r( *parent ) );
 
-	MangleGraphNode params_node= EncodeTemplateParameters( the_class.base_template->signature_parameters );
+	MangleGraphNode args_node= EncodeTemplateArgs( the_class.base_template->signature_args );
 
 	MangleGraphNode result;
 	result.childs.push_back( std::move( name_node ) );
-	result.childs.push_back( std::move( params_node ) );
+	result.childs.push_back( std::move( args_node ) );
 	return result;
 }
 
@@ -214,7 +214,7 @@ MangleGraphNode GetNestedName(
 	const std::string& name,
 	const NamesScope& parent_scope,
 	const bool no_name_num_prefix= false,
-	const std::vector<TemplateParameter>* template_parameters= nullptr )
+	const TemplateArgs* template_args= nullptr )
 {
 	MangleGraphNode result;
 
@@ -224,17 +224,17 @@ MangleGraphNode GetNestedName(
 	const std::string num_prefix=  no_name_num_prefix ? "" : std::to_string( name.size() );
 	if( parent_scope.GetParent() != nullptr )
 	{
-		if( template_parameters != nullptr )
+		if( template_args != nullptr )
 		{
 			MangleGraphNode name_node;
 			name_node.postfix= num_prefix + name;
 			name_node.childs.push_back( GetNamespacePrefix_r( parent_scope ) );
 
-			MangleGraphNode params_node= EncodeTemplateParameters( *template_parameters );
+			MangleGraphNode args_node= EncodeTemplateArgs( *template_args );
 
 			result.prefix= "N";
 			result.childs.push_back( std::move( name_node ) );
-			result.childs.push_back( std::move( params_node ) );
+			result.childs.push_back( std::move( args_node ) );
 			result.postfix= "Ev";
 		}
 		else
@@ -246,15 +246,15 @@ MangleGraphNode GetNestedName(
 	}
 	else
 	{
-		if( template_parameters != nullptr )
+		if( template_args != nullptr )
 		{
 			MangleGraphNode name_node;
 			name_node.postfix= num_prefix + name;
 
-			MangleGraphNode params_node= EncodeTemplateParameters( *template_parameters );
+			MangleGraphNode args_node= EncodeTemplateArgs( *template_args );
 
 			result.childs.push_back( std::move( name_node ) );
-			result.childs.push_back( std::move( params_node ) );
+			result.childs.push_back( std::move( args_node ) );
 			result.postfix= "v";
 		}
 		else
@@ -307,16 +307,16 @@ MangleGraphNode GetTypeName( const Type& type )
 		const std::string& keyword= Keyword( Keywords::tup_ );
 		name_node.postfix= std::to_string(keyword.size()) + keyword;
 
-		MangleGraphNode params_node;
-		params_node.prefix= "I";
-		params_node.childs.reserve( tuple_type->elements.size() );
+		MangleGraphNode args_node;
+		args_node.prefix= "I";
+		args_node.childs.reserve( tuple_type->elements.size() );
 		for( const Type& element_type : tuple_type->elements )
-			params_node.childs.push_back( GetTypeName( element_type ) );
-		params_node.postfix= "E";
-		params_node.cachable= false;
+			args_node.childs.push_back( GetTypeName( element_type ) );
+		args_node.postfix= "E";
+		args_node.cachable= false;
 
 		result.childs.push_back(std::move(name_node));
-		result.childs.push_back(std::move(params_node));
+		result.childs.push_back(std::move(args_node));
 	}
 	else if( const auto class_type= type.GetClassType() )
 	{
@@ -326,9 +326,9 @@ MangleGraphNode GetTypeName( const Type& type )
 			const std::string& class_name= class_type->members.GetThisNamespaceName();
 			name_node.postfix= std::to_string( class_name.size() ) + class_name;
 
-			std::vector<TemplateParameter> typeinfo_pseudo_parameters;
-			typeinfo_pseudo_parameters.push_back( *class_type->typeinfo_type );
-			MangleGraphNode params_node= EncodeTemplateParameters( typeinfo_pseudo_parameters );
+			TemplateArgs typeinfo_pseudo_args;
+			typeinfo_pseudo_args.push_back( *class_type->typeinfo_type );
+			MangleGraphNode params_node= EncodeTemplateArgs( typeinfo_pseudo_args );
 
 			result.childs.push_back( std::move( name_node ) );
 			result.childs.push_back( std::move( params_node ) );
@@ -534,14 +534,14 @@ std::string MangleFunction(
 	const NamesScope& parent_scope,
 	const std::string& function_name,
 	const Function& function_type,
-	const std::vector<TemplateParameter>* template_parameters )
+	const TemplateArgs* template_args )
 {
 	MangleGraphNode result;
 	const std::string& operator_decoded= DecodeOperator( function_name );
 	if( !operator_decoded.empty() )
-		result.childs.push_back( GetNestedName( operator_decoded, parent_scope, true, template_parameters ) );
+		result.childs.push_back( GetNestedName( operator_decoded, parent_scope, true, template_args ) );
 	else
-		result.childs.push_back( GetNestedName( function_name, parent_scope, false, template_parameters ) );
+		result.childs.push_back( GetNestedName( function_name, parent_scope, false, template_args ) );
 	result.childs.back().cachable= false;
 
 	for( const Function::Arg& arg : function_type.args )
@@ -590,9 +590,9 @@ std::string MangleType( const Type& type )
 	return MangleGraphFinalize( GetTypeName( type ) );
 }
 
-std::string MangleTemplateParameters( const std::vector<TemplateParameter>& template_parameters )
+std::string MangleTemplateArgs( const TemplateArgs& template_parameters )
 {
-	return MangleGraphFinalize( EncodeTemplateParameters( template_parameters ) );
+	return MangleGraphFinalize( EncodeTemplateArgs( template_parameters ) );
 }
 
 std::string MangleVirtualTable( const Type& type )

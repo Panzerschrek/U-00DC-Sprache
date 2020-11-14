@@ -19,7 +19,7 @@ struct TemplateBase
 		const Synt::ComplexName* type_name= nullptr; // Exists for value parameters.
 	};
 
-	std::vector< TemplateParameter > template_parameters;
+	std::vector< TemplateParameter > template_params;
 
 	NamesScope* parent_namespace= nullptr; // NamesScope, where defined. NOT changed after import.
 
@@ -28,9 +28,9 @@ struct TemplateBase
 
 struct TypeTemplate final : TemplateBase
 {
-	std::vector< const Synt::Expression* > signature_arguments;
-	std::vector< const Synt::Expression* > default_signature_arguments;
-	size_t first_optional_signature_argument= ~0u;
+	std::vector< const Synt::Expression* > signature_params;
+	std::vector< const Synt::Expression* > default_signature_params;
+	size_t first_optional_signature_param= ~0u;
 
 	enum class Kind
 	{
@@ -53,12 +53,12 @@ struct FunctionTemplate final : public TemplateBase
 	ClassProxyPtr base_class;
 
 	// In case of manual parameters specifying, like foo</A, B, C/> we create new template and store known arguments and reference to base template.
-	std::vector< std::pair< std::string, Value > > known_template_parameters;
+	std::vector< std::pair< std::string, Value > > known_template_args;
 	FunctionTemplatePtr parent;
 };
 
-using DeducibleTemplateParameter= std::variant< int, Type, Variable >; // int means not deduced
-using DeducibleTemplateParameters= std::vector<DeducibleTemplateParameter>;
+using DeducibleTemplateArg= std::variant< int, Type, Variable >; // int means not deduced
+using DeducibleTemplateArgs= std::vector<DeducibleTemplateArg>;
 
 } //namespace CodeBuilderPrivate
 
