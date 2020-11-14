@@ -56,7 +56,6 @@ private:
 	{
 		TypeTemplatePtr type_template;
 		Value* type= nullptr;
-		std::vector<TemplateSignatureParam> deduced_template_parameters;
 	};
 
 	struct GlobalThing // TODO - move struct out of here

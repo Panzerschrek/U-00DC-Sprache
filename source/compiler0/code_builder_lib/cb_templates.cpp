@@ -790,10 +790,7 @@ Value* CodeBuilder::GenTemplateType(
 				arguments_names_scope,
 				true );
 		if( generated_type.type_template != nullptr )
-		{
-			U_ASSERT(generated_type.deduced_template_parameters.size() >= template_arguments.size());
 			generated_types.push_back( std::move(generated_type) );
-		}
 	}
 
 	if( generated_types.empty() )
@@ -840,7 +837,6 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 	for( const TypeTemplate::TemplateParameter& param : type_template.template_params )
 		template_args_namespace->AddName( param.name, YetNotDeducedTemplateArg() );
 
-	bool deduction_failed= false;
 	TemplateArgs result_signature_args(type_template.signature_params.size());
 	for( size_t i= 0u; i < type_template.signature_params.size(); ++i )
 	{
@@ -861,26 +857,19 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		}
 
 		if( !MatchTemplateArg( type_template, *template_args_namespace, result_signature_args[i], file_pos, type_template.signature_params[i] ) )
-		{
-			// TODO - maybe return here?
-			deduction_failed= true;
-			continue;
-		}
+			return result;
 
 	} // for signature arguments
 
-	if( deduction_failed )
-		return result;
-
-	TemplateArgs deduced_template_args;
+	TemplateArgs result_template_args;
 	for( size_t i = 0u; i < type_template.template_params.size() ; ++i )
 	{
 		const Value* const value= template_args_namespace->GetThisScopeValue( type_template.template_params[i].name );
 
 		if( const auto type= value->GetTypeName() )
-			deduced_template_args.push_back( *type );
+			result_template_args.push_back( *type );
 		else if( const auto variable= value->GetVariable() )
-			deduced_template_args.push_back( *variable );
+			result_template_args.push_back( *variable );
 		else
 		{
 			// SPRACHE_TODO - maybe not generate this error?
@@ -890,7 +879,6 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		}
 	}
 
-	result.deduced_template_parameters= type_template.signature_params;
 	result.type_template= type_template_ptr;
 
 	if( skip_type_generation )
@@ -914,7 +902,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 
 	generated_template_things_storage_.insert( std::make_pair( name_encoded, Value( template_args_namespace, type_template.syntax_element->file_pos_ ) ) );
 
-	CreateTemplateErrorsContext( arguments_names_scope.GetErrors(), file_pos, template_args_namespace, type_template, type_template.syntax_element->name_, deduced_template_args );
+	CreateTemplateErrorsContext( arguments_names_scope.GetErrors(), file_pos, template_args_namespace, type_template, type_template.syntax_element->name_, result_template_args );
 
 	if( type_template.syntax_element->kind_ == Synt::TypeTemplateBase::Kind::Class )
 	{
@@ -938,7 +926,7 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		// Save in class info about it`s base template.
 		the_class.base_template.emplace();
 		the_class.base_template->class_template= type_template_ptr;
-		the_class.base_template->template_args= deduced_template_args;
+		the_class.base_template->template_args= std::move(result_template_args);
 		the_class.base_template->signature_args= std::move(result_signature_args);
 
 		template_classes_cache_[name_encoded]= class_proxy;
@@ -1068,19 +1056,16 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		std::to_string( reinterpret_cast<uintptr_t>( function_template.parent != nullptr ? function_template.parent.get() : &function_template ) ) + // Encode template address, because we needs unique keys for templates with same name.
 		MangleTemplateArgs( args_for_mangle );
 
+	if( const auto it= generated_template_things_storage_.find( name_encoded ); it != generated_template_things_storage_.end() )
 	{
-		const auto it= generated_template_things_storage_.find( name_encoded );
-		if( it != generated_template_things_storage_.end() )
-		{
-			//Function for this template arguments already generated.
-			const NamesScopePtr template_parameters_space= it->second.GetNamespace();
-			U_ASSERT( template_parameters_space != nullptr );
-			OverloadedFunctionsSet& result_functions_set= *template_parameters_space->GetThisScopeValue( func_name )->GetFunctionsSet();
-			if( result_functions_set.functions.size() >= 1u )
-				return &result_functions_set.functions.front();
-			else
-				return nullptr; // May be in case of error or in case of "enable_if".
-		}
+		//Function for this template arguments already generated.
+		const NamesScopePtr template_parameters_space= it->second.GetNamespace();
+		U_ASSERT( template_parameters_space != nullptr );
+		OverloadedFunctionsSet& result_functions_set= *template_parameters_space->GetThisScopeValue( func_name )->GetFunctionsSet();
+		if( result_functions_set.functions.size() >= 1u )
+			return &result_functions_set.functions.front();
+		else
+			return nullptr; // May be in case of error or in case of "enable_if".
 	}
 	generated_template_things_storage_.insert( std::make_pair( name_encoded, Value( template_args_namespace, function_declaration.file_pos_ ) ) );
 
@@ -1166,11 +1151,8 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 	}
 	name_encoded+= MangleTemplateArgs( template_args );
 
-	{
-		const auto it= generated_template_things_storage_.find( name_encoded );
-		if( it != generated_template_things_storage_.end() )
-			return &it->second; // Already generated.
-	}
+	if( const auto it= generated_template_things_storage_.find( name_encoded ); it != generated_template_things_storage_.end() )
+		return &it->second; // Already generated.
 
 	OverloadedFunctionsSet result;
 	for( const FunctionTemplatePtr& function_template_ptr : function_templates )
@@ -1178,7 +1160,6 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 		const FunctionTemplate& function_template= *function_template_ptr;
 		if( template_args.size() > function_template.template_params.size() )
 			continue;
-
 
 		NamesScope args_names_scope("", function_template.parent_namespace );
 		for( const TemplateBase::TemplateParameter& param : function_template.template_params )
@@ -1198,17 +1179,10 @@ Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
 		if( !ok )
 			continue;
 
-		const auto new_template= std::make_shared<FunctionTemplate>();
-		// Reduce count of template arguments in new function template.
-		new_template->template_params= function_template.template_params;
-
-		new_template->parent_namespace= function_template.parent_namespace;
-		new_template->file_pos= function_template.file_pos;
-		new_template->syntax_element= function_template.syntax_element;
-		new_template->base_class= function_template.base_class;
-		new_template->signature_params= function_template.signature_params;
+		const auto new_template= std::make_shared<FunctionTemplate>(function_template);
 		new_template->parent= function_template_ptr;
 
+		// Reduce count of template arguments in new function template.
 		new_template->known_template_args= template_args;
 		new_template->known_template_args.resize( std::min( new_template->known_template_args.size(), function_template.template_params.size() ) );
 

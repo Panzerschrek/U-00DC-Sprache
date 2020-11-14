@@ -687,13 +687,7 @@ const CodeBuilder::TemplateTypeGenerationResult* CodeBuilder::SelectTemplateType
 
 	std::vector<bool> best_templates( candidate_templates.size(), true );
 
-	for( const TemplateTypeGenerationResult& template_ : candidate_templates )
-	{
-		U_UNUSED( template_ );
-		U_ASSERT( template_.deduced_template_parameters.size() >= arg_count );
-	}
-
-	for( size_t arg_n= 0u; arg_n < arg_count; ++arg_n )
+	for( size_t i= 0u; i < arg_count; ++i )
 	{
 		for( const TemplateTypeGenerationResult& candidate_l : candidate_templates )
 		{
@@ -701,7 +695,7 @@ const CodeBuilder::TemplateTypeGenerationResult* CodeBuilder::SelectTemplateType
 			for( const TemplateTypeGenerationResult& candidate_r : candidate_templates )
 			{
 				const ConversionsCompareResult comp=
-					TemplateSpecializationCompare( candidate_l.deduced_template_parameters[arg_n], candidate_r.deduced_template_parameters[arg_n] );
+					TemplateSpecializationCompare( candidate_l.type_template->signature_params[i], candidate_r.type_template->signature_params[i] );
 
 				if( comp == ConversionsCompareResult::Incomparable || comp == ConversionsCompareResult::RightIsBetter )
 				{
@@ -715,7 +709,7 @@ const CodeBuilder::TemplateTypeGenerationResult* CodeBuilder::SelectTemplateType
 				for( const TemplateTypeGenerationResult& candidate_r : candidate_templates )
 				{
 					const ConversionsCompareResult comp=
-						TemplateSpecializationCompare( candidate_l.deduced_template_parameters[arg_n], candidate_r.deduced_template_parameters[arg_n] );
+						TemplateSpecializationCompare( candidate_l.type_template->signature_params[i], candidate_r.type_template->signature_params[i] );
 
 					if( comp != ConversionsCompareResult::Same )
 						best_templates[ size_t(&candidate_r - candidate_templates.data()) ]= false;
