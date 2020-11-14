@@ -12,7 +12,7 @@ namespace CodeBuilderPrivate
 {
 
 
-class DeducedTemplateParameter
+class TemplateSignatureParam
 {
 public:
 	struct InvalidParam{};
@@ -27,15 +27,15 @@ public:
 		Variable v;
 	};
 
-	struct TemplateParameter
+	struct TemplateParam
 	{
 		size_t index;
 	};
 
 	struct ArrayParam
 	{
-		std::unique_ptr<DeducedTemplateParameter> size;
-		std::unique_ptr<DeducedTemplateParameter> type;
+		std::unique_ptr<TemplateSignatureParam> size;
+		std::unique_ptr<TemplateSignatureParam> type;
 
 		ArrayParam()= default;
 		ArrayParam(ArrayParam&&)= default;
@@ -47,12 +47,12 @@ public:
 
 	struct TupleParam
 	{
-		std::vector<DeducedTemplateParameter> element_types;
+		std::vector<TemplateSignatureParam> element_types;
 	};
 
 	struct FunctionParam
 	{
-		std::unique_ptr<DeducedTemplateParameter> return_type;
+		std::unique_ptr<TemplateSignatureParam> return_type;
 		bool return_value_is_mutable;
 		bool return_value_is_reference;
 
@@ -60,7 +60,7 @@ public:
 
 		struct Param
 		{
-			std::unique_ptr<DeducedTemplateParameter> type;
+			std::unique_ptr<TemplateSignatureParam> type;
 			bool is_mutable;
 			bool is_reference;
 		};
@@ -77,26 +77,26 @@ public:
 	struct SpecializedTemplateParam
 	{
 		std::vector<TypeTemplatePtr> type_templates;
-		std::vector<DeducedTemplateParameter> params;
+		std::vector<TemplateSignatureParam> params;
 	};
 
 public:
-	DeducedTemplateParameter( InvalidParam invalid= InvalidParam() );
-	DeducedTemplateParameter( TypeParam type );
-	DeducedTemplateParameter( VariableParam variable );
-	DeducedTemplateParameter( TemplateParameter template_parameter );
-	DeducedTemplateParameter( ArrayParam array );
-	DeducedTemplateParameter( TupleParam tuple );
-	DeducedTemplateParameter( FunctionParam function );
-	DeducedTemplateParameter( SpecializedTemplateParam template_ );
+	TemplateSignatureParam( InvalidParam invalid= InvalidParam() );
+	TemplateSignatureParam( TypeParam type );
+	TemplateSignatureParam( VariableParam variable );
+	TemplateSignatureParam( TemplateParam template_parameter );
+	TemplateSignatureParam( ArrayParam array );
+	TemplateSignatureParam( TupleParam tuple );
+	TemplateSignatureParam( FunctionParam function );
+	TemplateSignatureParam( SpecializedTemplateParam template_ );
 
 	bool IsInvalid() const;
 	bool IsType() const;
 	bool IsVariable() const;
-	bool IsTemplateParameter() const;
+	bool IsTemplateParam() const;
 	const TypeParam* GetType() const;
 	const VariableParam* GetVariable() const;
-	const TemplateParameter* GetTemplateParameter() const;
+	const TemplateParam* GetTemplateParam() const;
 	const ArrayParam* GetArray() const;
 	const TupleParam* GetTuple() const;
 	const FunctionParam* GetFunction() const;
@@ -113,7 +113,7 @@ private:
 		InvalidParam,
 		TypeParam,
 		VariableParam,
-		TemplateParameter,
+		TemplateParam,
 		ArrayParam,
 		TupleParam,
 		FunctionParam,

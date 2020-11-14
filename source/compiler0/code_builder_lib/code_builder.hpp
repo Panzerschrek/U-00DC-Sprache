@@ -13,7 +13,7 @@
 #include "../lex_synt_lib/source_graph_loader.hpp"
 #include "../../code_builder_lib_common/constexpr_function_evaluator.hpp"
 #include "class.hpp"
-#include "deduced_template_parameter.hpp"
+#include "template_signature_param.hpp"
 #include "enum.hpp"
 #include "function_context.hpp"
 #include "template_types.hpp"
@@ -56,7 +56,7 @@ private:
 	{
 		TypeTemplatePtr type_template;
 		Value* type= nullptr;
-		std::vector<DeducedTemplateParameter> deduced_template_parameters;
+		std::vector<TemplateSignatureParam> deduced_template_parameters;
 	};
 
 	struct GlobalThing // TODO - move struct out of here
@@ -160,7 +160,7 @@ private:
 		std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags );
 
-	DeducedTemplateParameter CreateTemplateSignatureParameter(
+	TemplateSignatureParam CreateTemplateSignatureParameter(
 		const FilePos& file_pos,
 		const Synt::ComplexName& signature_parameter,
 		NamesScope& names_scope,
@@ -168,21 +168,21 @@ private:
 		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags );
 
-	DeducedTemplateParameter CreateTemplateSignatureParameter(
+	TemplateSignatureParam CreateTemplateSignatureParameter(
 		const Synt::Expression& template_parameter,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags );
 
-	DeducedTemplateParameter CreateTemplateSignatureParameter(
+	TemplateSignatureParam CreateTemplateSignatureParameter(
 		const Synt::TypeName& template_parameter,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags );
 
-	DeducedTemplateParameter ValueToTemplateParam( const Value& value, NamesScope& names_scope );
+	TemplateSignatureParam ValueToTemplateParam( const Value& value, NamesScope& names_scope );
 
 	// Resolve as deep, as can, but does not instantiate last component, if it is template.
 	Value ResolveForTemplateSignatureParameter(
@@ -196,63 +196,63 @@ private:
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
 		const FilePos& file_pos,
-		const DeducedTemplateParameter& template_param );
+		const TemplateSignatureParam& template_param );
 
 	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
 		const FilePos& file_pos,
-		const DeducedTemplateParameter::InvalidParam& template_param );
+		const TemplateSignatureParam::InvalidParam& template_param );
 
 	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
 		const FilePos& file_pos,
-		const DeducedTemplateParameter::TypeParam& template_param );
+		const TemplateSignatureParam::TypeParam& template_param );
 
 	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
 		const FilePos& file_pos,
-		const DeducedTemplateParameter::VariableParam& template_param );
+		const TemplateSignatureParam::VariableParam& template_param );
 
 	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
 		const FilePos& file_pos,
-		const DeducedTemplateParameter::TemplateParameter& template_param );
+		const TemplateSignatureParam::TemplateParam& template_param );
 
 	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
 		const FilePos& file_pos,
-		const DeducedTemplateParameter::ArrayParam& template_param );
+		const TemplateSignatureParam::ArrayParam& template_param );
 
 	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
 		const FilePos& file_pos,
-		const DeducedTemplateParameter::TupleParam& template_param );
+		const TemplateSignatureParam::TupleParam& template_param );
 
 	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
 		const FilePos& file_pos,
-		const DeducedTemplateParameter::FunctionParam& template_param );
+		const TemplateSignatureParam::FunctionParam& template_param );
 
 	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
 		const FilePos& file_pos,
-		const DeducedTemplateParameter::SpecializedTemplateParam& template_param );
+		const TemplateSignatureParam::SpecializedTemplateParam& template_param );
 
 	// Returns nullptr in case of fail.
 	Value* GenTemplateType(

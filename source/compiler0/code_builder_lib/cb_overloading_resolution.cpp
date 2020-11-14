@@ -113,8 +113,8 @@ ConversionsCompareResult CompareConversionsMutability(
 }
 
 ConversionsCompareResult TemplateSpecializationCompare(
-	const DeducedTemplateParameter& left_template_parameter,
-	const DeducedTemplateParameter& right_template_parameter )
+	const TemplateSignatureParam& left_template_parameter,
+	const TemplateSignatureParam& right_template_parameter )
 {
 	U_ASSERT( ! left_template_parameter.IsInvalid() );
 	U_ASSERT( !right_template_parameter.IsInvalid() );
@@ -123,7 +123,7 @@ ConversionsCompareResult TemplateSpecializationCompare(
 	{
 		if( right_template_parameter.IsType() )
 			return ConversionsCompareResult::Same;
-		else if( right_template_parameter.IsTemplateParameter() )
+		else if( right_template_parameter.IsTemplateParam() )
 			return ConversionsCompareResult::LeftIsBetter; // Concrete type is better, then template parameter.
 		else if( right_template_parameter.GetArray() != nullptr )
 			return ConversionsCompareResult::LeftIsBetter; // Type is more specialized, then array.
@@ -139,7 +139,7 @@ ConversionsCompareResult TemplateSpecializationCompare(
 	{
 		if( right_template_parameter.IsVariable() )
 			return ConversionsCompareResult::Same;
-		else if( right_template_parameter.IsTemplateParameter() )
+		else if( right_template_parameter.IsTemplateParam() )
 			return ConversionsCompareResult::LeftIsBetter; // Value is more specialized, then template parameter.
 		else U_ASSERT(false);
 	}
@@ -147,7 +147,7 @@ ConversionsCompareResult TemplateSpecializationCompare(
 	{
 		if( right_template_parameter.IsType() )
 			return ConversionsCompareResult::RightIsBetter; // Type is more specialized, then array.
-		else if( right_template_parameter.IsTemplateParameter() )
+		else if( right_template_parameter.IsTemplateParam() )
 			return ConversionsCompareResult::LeftIsBetter; // Array is more specialized, then template parameter.
 		else if( const auto r_array= right_template_parameter.GetArray() )
 		{
@@ -169,7 +169,7 @@ ConversionsCompareResult TemplateSpecializationCompare(
 	{
 		if( right_template_parameter.IsType() )
 			return ConversionsCompareResult::RightIsBetter; // Type is more specialized, then tuple.
-		else if( right_template_parameter.IsTemplateParameter() )
+		else if( right_template_parameter.IsTemplateParam() )
 			return ConversionsCompareResult::LeftIsBetter; // Tuple is more specialized, then template parameter.
 		else if( const auto r_tuple= right_template_parameter.GetTuple() )
 		{
@@ -199,7 +199,7 @@ ConversionsCompareResult TemplateSpecializationCompare(
 	{
 		if( right_template_parameter.IsType() )
 			return ConversionsCompareResult::RightIsBetter; // Type is more specialized, then function.
-		else if( right_template_parameter.IsTemplateParameter() )
+		else if( right_template_parameter.IsTemplateParam() )
 			return ConversionsCompareResult::LeftIsBetter; // Function is more specialized, then template parameter.
 		else if( const auto r_function= right_template_parameter.GetFunction() )
 		{
@@ -228,7 +228,7 @@ ConversionsCompareResult TemplateSpecializationCompare(
 	{
 		if( right_template_parameter.IsType() )
 			return ConversionsCompareResult::RightIsBetter; // Type is more specialized, then template.
-		else if( right_template_parameter.IsTemplateParameter() )
+		else if( right_template_parameter.IsTemplateParam() )
 			return ConversionsCompareResult::LeftIsBetter; // Template is more specialized, then template parameter.
 		else if( const auto r_template= right_template_parameter.GetTemplate() )
 		{
@@ -254,13 +254,13 @@ ConversionsCompareResult TemplateSpecializationCompare(
 		}
 		else U_ASSERT(false);
 	}
-	else if( left_template_parameter.IsTemplateParameter() )
+	else if( left_template_parameter.IsTemplateParam() )
 	{
 		if( right_template_parameter.IsType() )
 			return ConversionsCompareResult::RightIsBetter;  // Concrete type is better, then template parameter.
 		else if( right_template_parameter.IsVariable() )
 			return ConversionsCompareResult::RightIsBetter; // Value is more specialized, then template parameter.
-		else if( right_template_parameter.IsTemplateParameter() )
+		else if( right_template_parameter.IsTemplateParam() )
 			return ConversionsCompareResult::Same;
 		else if( right_template_parameter.GetArray() != nullptr )
 			return ConversionsCompareResult::RightIsBetter; // Array is more specialized, then template parameter.
@@ -303,8 +303,8 @@ ConversionsCompareResult CompareConversions(
 	const Function::Arg& src,
 	const Function::Arg& dst_left,
 	const Function::Arg& dst_right,
-	const DeducedTemplateParameter& dst_left_template_parameter,
-	const DeducedTemplateParameter& dst_right_template_parameter )
+	const TemplateSignatureParam& dst_left_template_parameter,
+	const TemplateSignatureParam& dst_right_template_parameter )
 {
 	const ConversionsCompareResult conversions_compare= CompareConversions( src, dst_left, dst_right );
 	const ConversionsCompareResult template_specialization_compare= TemplateSpecializationCompare( dst_left_template_parameter, dst_right_template_parameter );
@@ -535,8 +535,8 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 						actual_args[arg_n],
 						l_type.args[l_arg_n],
 						r_type.args[r_arg_n],
-						function_l->deduced_temlpate_parameters.empty() ? DeducedTemplateParameter::TypeParam() : function_l->deduced_temlpate_parameters[l_arg_n],
-						function_r->deduced_temlpate_parameters.empty() ? DeducedTemplateParameter::TypeParam() : function_r->deduced_temlpate_parameters[r_arg_n] );
+						function_l->deduced_temlpate_parameters.empty() ? TemplateSignatureParam::TypeParam() : function_l->deduced_temlpate_parameters[l_arg_n],
+						function_r->deduced_temlpate_parameters.empty() ? TemplateSignatureParam::TypeParam() : function_r->deduced_temlpate_parameters[r_arg_n] );
 
 				if( comp == ConversionsCompareResult::Same || comp == ConversionsCompareResult::LeftIsBetter )
 					continue;
@@ -567,8 +567,8 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 							actual_args[arg_n],
 							l_type.args[l_arg_n],
 							r_type.args[r_arg_n],
-							function_l->deduced_temlpate_parameters.empty() ? DeducedTemplateParameter::TypeParam() : function_l->deduced_temlpate_parameters[l_arg_n],
-							function_r. deduced_temlpate_parameters.empty() ? DeducedTemplateParameter::TypeParam() : function_r. deduced_temlpate_parameters[r_arg_n] );
+							function_l->deduced_temlpate_parameters.empty() ? TemplateSignatureParam::TypeParam() : function_l->deduced_temlpate_parameters[l_arg_n],
+							function_r. deduced_temlpate_parameters.empty() ? TemplateSignatureParam::TypeParam() : function_r. deduced_temlpate_parameters[r_arg_n] );
 
 					U_ASSERT( comp != ConversionsCompareResult::Incomparable && comp != ConversionsCompareResult::RightIsBetter );
 

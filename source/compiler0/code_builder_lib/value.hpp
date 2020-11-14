@@ -15,7 +15,7 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-class DeducedTemplateParameter;
+class TemplateSignatureParam;
 
 class NamesScope;
 using NamesScopePtr= std::shared_ptr<NamesScope>;
@@ -45,7 +45,7 @@ struct FunctionVariable final
 	Type type; // Function type 100%
 
 	// For function templates is nonempty and have size of args. Needs for selection of better (more specialized) template function.
-	std::vector<DeducedTemplateParameter> deduced_temlpate_parameters;
+	std::vector<TemplateSignatureParam> deduced_temlpate_parameters;
 
 	unsigned int virtual_table_index= ~0u; // For virtual functions number in virtual functions table in class of first arg(this).
 	bool have_body= false;
