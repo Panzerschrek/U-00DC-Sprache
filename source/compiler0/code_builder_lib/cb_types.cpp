@@ -93,7 +93,11 @@ Type CodeBuilder::PrepareType( const Synt::TypeofTypeName& typeof_type_name, Nam
 
 Type CodeBuilder::PrepareType( const Synt::FunctionTypePtr& function_type_name_ptr, NamesScope& names_scope, FunctionContext& function_context )
 {
-	const Synt::FunctionType& function_type_name= *function_type_name_ptr;
+	return PrepareType( *function_type_name_ptr, names_scope, function_context );
+}
+
+Type CodeBuilder::PrepareType( const Synt::FunctionType& function_type_name, NamesScope& names_scope, FunctionContext& function_context )
+{
 	FunctionPointer function_pointer_type;
 	Function& function_type= function_pointer_type.function;
 

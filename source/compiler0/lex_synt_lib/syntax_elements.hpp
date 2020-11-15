@@ -82,8 +82,7 @@ struct Enum;
 struct Class;
 struct ClassField;
 struct ClassVisibilityLabel;
-struct ClassTemplate;
-struct TypedefTemplate;
+struct TypeTemplate;
 struct FunctionTemplate;
 
 struct Namespace;
@@ -172,8 +171,7 @@ using ClassElement= std::variant<
 	ClassField,
 	ClassVisibilityLabel,
 	ClassPtr,
-	ClassTemplate,
-	TypedefTemplate,
+	TypeTemplate,
 	FunctionTemplate >;
 
 using ClassElements= std::vector<ClassElement>;
@@ -186,8 +184,7 @@ using ProgramElement= std::variant<
 	Enum,
 	FunctionPtr,
 	ClassPtr,
-	ClassTemplate,
-	TypedefTemplate,
+	TypeTemplate,
 	FunctionTemplate,
 	NamespacePtr >;
 
@@ -879,56 +876,34 @@ struct TemplateBase : public SyntaxElementBase
 public:
 	explicit TemplateBase( const FilePos& file_pos );
 
-	// For type arguments, like template</ type A, type B />, arg_type is empty.
-	// For value arguments, like template</ type A, A x, i32 y />, arg_type is comples name of argument.
-	struct Arg
+	struct Param
 	{
-		const ComplexName* arg_type= nullptr; // pointer to arg_type_expr
-		std::unique_ptr<Expression> arg_type_expr; // Actyally, only NamedOperand
-
-		const ComplexName* name= nullptr; // Actually, only name with one component
-		std::unique_ptr<Expression> name_expr;
+		std::optional<ComplexName> param_type; // For variable params.
+		std::string name;
 	};
 
-	std::vector<Arg> args_;
+	std::vector<Param> params_;
 };
 
-struct TypeTemplateBase : public TemplateBase
+struct TypeTemplate : public TemplateBase
 {
 public:
-	enum class Kind{ Class, Typedef, }; // HACK! Replacement for RTTI.
-
-	explicit TypeTemplateBase( const FilePos& file_pos, Kind kind );
+	explicit TypeTemplate( const FilePos& file_pos );
 
 	// Argument in template signature.
-	struct SignatureArg
+	struct SignatureParam
 	{
 		Expression name;
 		Expression default_value;
 	};
 
-	const Kind kind_;
-	std::vector<SignatureArg> signature_args_;
+	std::vector<SignatureParam> signature_params_;
 	std::string name_;
 
 	// Short form means that template argumenst are also signature arguments.
 	bool is_short_form_= false;
-};
 
-struct ClassTemplate final : public TypeTemplateBase
-{
-public:
-	explicit ClassTemplate( const FilePos& file_pos );
-
-	ClassPtr class_;
-};
-
-struct TypedefTemplate final : public TypeTemplateBase
-{
-public:
-	explicit TypedefTemplate( const FilePos& file_pos );
-
-	std::unique_ptr<Typedef> typedef_;
+	std::variant<ClassPtr, std::unique_ptr<Typedef>> something_;
 };
 
 struct FunctionTemplate final : public TemplateBase

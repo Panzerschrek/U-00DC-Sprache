@@ -2144,7 +2144,7 @@ Value CodeBuilder::BuildPostfixOperator(
 			else
 			{
 				const Value* const inserted_value=
-					GenTemplateFunctionsUsingTemplateParameters(
+					ParametrizeFunctionTemplate(
 						member_access_operator.file_pos_,
 						functions_set->template_functions,
 						member_access_operator.template_parameters,

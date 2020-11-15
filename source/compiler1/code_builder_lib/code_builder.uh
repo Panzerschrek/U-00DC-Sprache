@@ -475,7 +475,7 @@ private:
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
 		TemplateSignatureParam& param,
-		Value& given_arg,
+		TemplateArgFinished& given_arg,
 		FilePos& file_pos ) : bool;
 
 	fn MatchTemplateArgumentImpl(
@@ -483,7 +483,7 @@ private:
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
 		TemplateSignatureParam::TemplateParam& template_param,
-		Value& given_arg,
+		TemplateArgFinished& given_arg,
 		FilePos& file_pos ) : bool;
 
 	fn MatchTemplateArgumentImpl(
@@ -491,7 +491,7 @@ private:
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
 		TemplateSignatureParam::TypeParam& type_param,
-		Value& given_arg,
+		TemplateArgFinished& given_arg,
 		FilePos& file_pos ) : bool;
 
 	fn MatchTemplateArgumentImpl(
@@ -499,7 +499,7 @@ private:
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
 		TemplateSignatureParam::VariableParam& variable_param,
-		Value& given_arg,
+		TemplateArgFinished& given_arg,
 		FilePos& file_pos ) : bool;
 
 	fn MatchTemplateArgumentImpl(
@@ -507,7 +507,7 @@ private:
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
 		TemplateSignatureParam::ArrayTypeParam& array_type_param,
-		Value& given_arg,
+		TemplateArgFinished& given_arg,
 		FilePos& file_pos ) : bool;
 
 	fn MatchTemplateArgumentImpl(
@@ -515,7 +515,7 @@ private:
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
 		TemplateSignatureParam::TupleTypeParam& tuple_type_param,
-		Value& given_arg,
+		TemplateArgFinished& given_arg,
 		FilePos& file_pos ) : bool;
 
 	fn MatchTemplateArgumentImpl(
@@ -523,7 +523,7 @@ private:
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
 		TemplateSignatureParam::FunctionTypeParam& function_type_param,
-		Value& given_arg,
+		TemplateArgFinished& given_arg,
 		FilePos& file_pos ) : bool;
 
 	fn MatchTemplateArgumentImpl(
@@ -531,7 +531,7 @@ private:
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
 		TemplateSignatureParam::SpecializedTemplateParam& specialized_template_param,
-		Value& given_arg,
+		TemplateArgFinished& given_arg,
 		FilePos& file_pos ) : bool;
 
 	fn TypeIsValidForTemplateVariableArgument( Type& t ) : bool;

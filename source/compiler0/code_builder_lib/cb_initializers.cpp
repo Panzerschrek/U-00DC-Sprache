@@ -991,30 +991,21 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	// Try also select template functions with zero template parameters and template functions with all template parameters known.
 	for( const FunctionTemplatePtr& function_template : candidate_functions->template_functions )
 	{
-		if( function_template->template_parameters.empty() )
+		if( const auto func= FinishTemplateFunctionParametrization( block_names.GetErrors(), initializer_expression_file_pos, function_template ) )
 		{
-			const FunctionVariable* const func=
-				GenTemplateFunction(
-					block_names.GetErrors(),
-					initializer_expression_file_pos,
-					function_template,
-					ArgsVector<Function::Arg>(), false, true );
-			if( func != nullptr )
+			if( func->type == function_pointer_type.function )
 			{
-				if( func->type == function_pointer_type.function )
+				if( exact_match_function_variable != nullptr )
 				{
-					if( exact_match_function_variable != nullptr )
-					{
-						// Error, exist more, then one non-exact match function.
-						// TODO - maybe generate separate error?
-						REPORT_ERROR( TooManySuitableOverloadedFunctions, block_names.GetErrors(), initializer_expression_file_pos );
-						return nullptr;
-					}
-					exact_match_function_variable= func;
+					// Error, exist more, then one non-exact match function.
+					// TODO - maybe generate separate error?
+					REPORT_ERROR( TooManySuitableOverloadedFunctions, block_names.GetErrors(), initializer_expression_file_pos );
+					return nullptr;
 				}
-				else if( func->type.GetFunctionType()->PointerCanBeConvertedTo( function_pointer_type.function ) )
-					convertible_function_variables.push_back(func);
+				exact_match_function_variable= func;
 			}
+			else if( func->type.GetFunctionType()->PointerCanBeConvertedTo( function_pointer_type.function ) )
+				convertible_function_variables.push_back(func);
 		}
 	}
 

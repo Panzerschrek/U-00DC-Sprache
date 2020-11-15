@@ -37,7 +37,7 @@ void ElementWrite( const AutoVariableDeclaration& auto_variable_declaration, std
 void ElementWrite( const StaticAssert& static_assert_, std::ostream& stream );
 void ElementWrite( const Enum& enum_, std::ostream& stream );
 void ElementWrite( const Typedef& typedef_, std::ostream& stream );
-void ElementWrite( const TypeTemplateBase& type_template, std::ostream& stream );
+void ElementWrite( const TypeTemplate& type_template, std::ostream& stream );
 void ElementWrite( const FunctionTemplate& function_template, std::ostream& stream );
 void ElementWrite( const ClassField& class_field, std::ostream& stream );
 void ElementWrite( const ClassVisibilityLabel& visibility_label, std::ostream& stream );
@@ -743,7 +743,7 @@ void ElementWrite( const Typedef& typedef_, std::ostream& stream )
 	stream << ";\n";
 }
 
-void ElementWrite( const TypeTemplateBase& type_template, std::ostream& stream )
+void ElementWrite( const TypeTemplate& type_template, std::ostream& stream )
 {
 	U_UNUSED(type_template);
 	U_UNUSED(stream);

@@ -2,12 +2,16 @@
 
 #include "../lex_synt_lib/syntax_elements.hpp"
 #include "names_scope.hpp"
+#include "template_signature_param.hpp"
 
 namespace U
 {
 
 namespace CodeBuilderPrivate
 {
+
+using TemplateArg= std::variant< Variable, Type >;
+using TemplateArgs= std::vector<TemplateArg>;
 
 struct TemplateBase
 {
@@ -16,10 +20,11 @@ struct TemplateBase
 	struct TemplateParameter
 	{
 		std::string name;
-		const Synt::ComplexName* type_name= nullptr; // Exists for value parameters.
+		std::optional<TemplateSignatureParam> type; // For variable params.
 	};
 
-	std::vector< TemplateParameter > template_parameters;
+	std::vector<TemplateParameter> template_params;
+	std::vector<TemplateSignatureParam> signature_params; // Function params for function templates.
 
 	NamesScope* parent_namespace= nullptr; // NamesScope, where defined. NOT changed after import.
 
@@ -28,20 +33,11 @@ struct TemplateBase
 
 struct TypeTemplate final : TemplateBase
 {
-	std::vector< const Synt::Expression* > signature_arguments;
-	std::vector< const Synt::Expression* > default_signature_arguments;
-	size_t first_optional_signature_argument= ~0u;
+	size_t first_optional_signature_param= ~0u;
 
-	enum class Kind
-	{
-		Class,
-		Typedef,
-	};
-
-	Kind kind= Kind::Class;
 	// Store syntax tree element for instantiation.
 	// Syntax tree must live longer, than this struct.
-	const Synt::TypeTemplateBase* syntax_element= nullptr;
+	const Synt::TypeTemplate* syntax_element= nullptr;
 };
 
 struct FunctionTemplate final : public TemplateBase
@@ -53,12 +49,9 @@ struct FunctionTemplate final : public TemplateBase
 	ClassProxyPtr base_class;
 
 	// In case of manual parameters specifying, like foo</A, B, C/> we create new template and store known arguments and reference to base template.
-	std::vector< std::pair< std::string, Value > > known_template_parameters;
+	TemplateArgs known_template_args;
 	FunctionTemplatePtr parent;
 };
-
-using DeducibleTemplateParameter= std::variant< int, Type, Variable >; // int means not deduced
-using DeducibleTemplateParameters= std::vector<DeducibleTemplateParameter>;
 
 } //namespace CodeBuilderPrivate
 

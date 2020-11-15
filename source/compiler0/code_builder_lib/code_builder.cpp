@@ -1349,9 +1349,6 @@ Type CodeBuilder::BuildFuncCode(
 		}
 		else
 		{
-			if( NameShadowsTemplateArgument( arg_name, function_names ) )
-				REPORT_ERROR( DeclarationShadowsTemplateArgument, function_names.GetErrors(), declaration_arg.file_pos_, arg_name );
-
 			const Value* const inserted_arg=
 				function_names.AddName( arg_name, Value( var, declaration_arg.file_pos_ ) );
 			if( inserted_arg == nullptr )
@@ -1841,7 +1838,7 @@ Value CodeBuilder::ResolveValue(
 				}
 
 				value=
-					GenTemplateFunctionsUsingTemplateParameters(
+					ParametrizeFunctionTemplate(
 						file_pos,
 						functions_set->template_functions,
 						*template_parameters,

@@ -615,15 +615,15 @@ std::string Type::ToString() const
 				const std::string& class_name= class_->class_->base_template->class_template->syntax_element->name_;
 				result+= class_name;
 				result+= "</";
-				for( const TemplateParameter& param : class_->class_->base_template->signature_parameters )
+				for( const TemplateArg& arg : class_->class_->base_template->signature_args )
 				{
-					if( const Type* const param_as_type = std::get_if<Type>( &param ) )
+					if( const Type* const param_as_type = std::get_if<Type>( &arg ) )
 						result+= param_as_type->ToString();
-					else if( const Variable* const param_as_variable= std::get_if<Variable>( &param ) )
+					else if( const Variable* const param_as_variable= std::get_if<Variable>( &arg ) )
 						result+= ConstantVariableToString( *param_as_variable );
 					else U_ASSERT(false);
 
-					if( &param != &class_->class_->base_template->signature_parameters.back() )
+					if( &arg != &class_->class_->base_template->signature_args.back() )
 						result+= ", ";
 				}
 				result+= "/>";

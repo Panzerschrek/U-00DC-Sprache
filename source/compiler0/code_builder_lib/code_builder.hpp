@@ -13,6 +13,7 @@
 #include "../lex_synt_lib/source_graph_loader.hpp"
 #include "../../code_builder_lib_common/constexpr_function_evaluator.hpp"
 #include "class.hpp"
+#include "template_signature_param.hpp"
 #include "enum.hpp"
 #include "function_context.hpp"
 #include "template_types.hpp"
@@ -51,11 +52,19 @@ private:
 		bool have_terminal_instruction_inside= false;
 	};
 
-	struct TemplateTypeGenerationResult
+	struct TemplateTypePreparationResult
 	{
 		TypeTemplatePtr type_template;
-		Value* type= nullptr;
-		std::vector<DeducedTemplateParameter> deduced_template_parameters;
+		NamesScopePtr template_args_namespace;
+		TemplateArgs template_args;
+		TemplateArgs signature_args;
+	};
+
+	struct TemplateFunctionPreparationResult
+	{
+		FunctionTemplatePtr function_template;
+		NamesScopePtr template_args_namespace;
+		TemplateArgs template_args;
 	};
 
 	struct GlobalThing // TODO - move struct out of here
@@ -107,6 +116,7 @@ private:
 	Type PrepareType( const Synt::ArrayTypeName& array_type_name, NamesScope& names_scope, FunctionContext& function_context );
 	Type PrepareType( const Synt::TypeofTypeName& typeof_type_name, NamesScope& names_scope, FunctionContext& function_context );
 	Type PrepareType( const Synt::FunctionTypePtr& function_type_name_ptr, NamesScope& names_scope, FunctionContext& function_context );
+	Type PrepareType( const Synt::FunctionType& function_type_name, NamesScope& names_scope, FunctionContext& function_context );
 	Type PrepareType( const Synt::TupleType& tuple_type_name, NamesScope& names_scope, FunctionContext& function_context );
 	Type PrepareType( const Synt::NamedTypeName& named_type_name, NamesScope& names_scope, FunctionContext& function_context );
 
@@ -141,7 +151,7 @@ private:
 
 	// Templates
 	void PrepareTypeTemplate(
-		const Synt::TypeTemplateBase& type_template_declaration,
+		const Synt::TypeTemplate& type_template_declaration,
 		TypeTemplatesSet& type_templates_set,
 		NamesScope& names_scope );
 
@@ -151,31 +161,36 @@ private:
 		NamesScope& names_scope,
 		const ClassProxyPtr& base_class );
 
-	void ProcessTemplateArgs(
-		const std::vector<Synt::TemplateBase::Arg>& args,
+	void ProcessTemplateParams(
+		const std::vector<Synt::TemplateBase::Param>& params,
 		NamesScope& names_scope,
 		const FilePos& file_pos,
 		std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags );
 
-	void CheckTemplateSignatureParameter(
+	TemplateSignatureParam CreateTemplateSignatureParameter(
 		const FilePos& file_pos,
 		const Synt::ComplexName& signature_parameter,
 		NamesScope& names_scope,
-		const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
+		FunctionContext& function_context,
+		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags );
 
-	void CheckTemplateSignatureParameter(
+	TemplateSignatureParam CreateTemplateSignatureParameter(
 		const Synt::Expression& template_parameter,
 		NamesScope& names_scope,
-		const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
+		FunctionContext& function_context,
+		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags );
 
-	void CheckTemplateSignatureParameter(
+	TemplateSignatureParam CreateTemplateSignatureParameter(
 		const Synt::TypeName& template_parameter,
 		NamesScope& names_scope,
-		const std::vector<TypeTemplate::TemplateParameter>& template_parameters,
+		FunctionContext& function_context,
+		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags );
+
+	TemplateSignatureParam ValueToTemplateParam( const Value& value, NamesScope& names_scope );
 
 	// Resolve as deep, as can, but does not instantiate last component, if it is template.
 	Value ResolveForTemplateSignatureParameter(
@@ -183,30 +198,62 @@ private:
 		const Synt::ComplexName& signature_parameter,
 		NamesScope& names_scope );
 
-	// Returns deduced parameter, if all ok.
-	DeducedTemplateParameter DeduceTemplateArguments(
+	// Returns "true" if all ok.
+	bool MatchTemplateArg(
 		const TemplateBase& template_,
-		const TemplateParameter& template_parameter,
-		const Synt::ComplexName& signature_parameter,
-		const FilePos& signature_parameter_file_pos,
-		DeducibleTemplateParameters& deducible_template_parameters,
-		NamesScope& names_scope );
+		NamesScope& args_names_scope,
+		const TemplateArg& template_arg,
+		const FilePos& file_pos,
+		const TemplateSignatureParam& template_param );
 
-	DeducedTemplateParameter DeduceTemplateArguments(
+	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
-		const TemplateParameter& template_parameter,
-		const Synt::Expression& signature_parameter,
-		const FilePos& signature_parameter_file_pos,
-		DeducibleTemplateParameters& deducible_template_parameters,
-		NamesScope& names_scope );
+		NamesScope& args_names_scope,
+		const TemplateArg& template_arg,
+		const FilePos& file_pos,
+		const TemplateSignatureParam::TypeParam& template_param );
 
-	DeducedTemplateParameter DeduceTemplateArguments(
+	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
-		const TemplateParameter& template_parameter,
-		const Synt::TypeName& signature_parameter,
-		const FilePos& signature_parameter_file_pos,
-		DeducibleTemplateParameters& deducible_template_parameters,
-		NamesScope& names_scope );
+		NamesScope& args_names_scope,
+		const TemplateArg& template_arg,
+		const FilePos& file_pos,
+		const TemplateSignatureParam::VariableParam& template_param );
+
+	bool MatchTemplateArgImpl(
+		const TemplateBase& template_,
+		NamesScope& args_names_scope,
+		const TemplateArg& template_arg,
+		const FilePos& file_pos,
+		const TemplateSignatureParam::TemplateParam& template_param );
+
+	bool MatchTemplateArgImpl(
+		const TemplateBase& template_,
+		NamesScope& args_names_scope,
+		const TemplateArg& template_arg,
+		const FilePos& file_pos,
+		const TemplateSignatureParam::ArrayParam& template_param );
+
+	bool MatchTemplateArgImpl(
+		const TemplateBase& template_,
+		NamesScope& args_names_scope,
+		const TemplateArg& template_arg,
+		const FilePos& file_pos,
+		const TemplateSignatureParam::TupleParam& template_param );
+
+	bool MatchTemplateArgImpl(
+		const TemplateBase& template_,
+		NamesScope& args_names_scope,
+		const TemplateArg& template_arg,
+		const FilePos& file_pos,
+		const TemplateSignatureParam::FunctionParam& template_param );
+
+	bool MatchTemplateArgImpl(
+		const TemplateBase& template_,
+		NamesScope& args_names_scope,
+		const TemplateArg& template_arg,
+		const FilePos& file_pos,
+		const TemplateSignatureParam::SpecializedTemplateParam& template_param );
 
 	// Returns nullptr in case of fail.
 	Value* GenTemplateType(
@@ -217,34 +264,49 @@ private:
 		FunctionContext& function_context );
 
 	// Returns nullptr in case of fail.
-	TemplateTypeGenerationResult GenTemplateType(
+	TemplateTypePreparationResult PrepareTemplateType(
 		const FilePos& file_pos,
 		const TypeTemplatePtr& type_template_ptr,
 		const std::vector<Value>& template_arguments,
+		NamesScope& arguments_names_scope );
+
+	Value* FinishTemplateTypeGeneration(
+		const FilePos& file_pos,
 		NamesScope& arguments_names_scope,
-		bool skip_type_generation );
+		const TemplateTypePreparationResult& template_type_preparation_result );
 
 	const FunctionVariable* GenTemplateFunction(
 		CodeBuilderErrorsContainer& errors_container,
 		const FilePos& file_pos,
 		const FunctionTemplatePtr& function_template_ptr,
 		const ArgsVector<Function::Arg>& actual_args,
-		bool first_actual_arg_is_this,
-		bool skip_arguments= false );
+		bool first_actual_arg_is_this );
 
-	Value* GenTemplateFunctionsUsingTemplateParameters(
+	TemplateFunctionPreparationResult PrepareTemplateFunction(
+		CodeBuilderErrorsContainer& errors_container,
+		const FilePos& file_pos,
+		const FunctionTemplatePtr& function_template_ptr,
+		const ArgsVector<Function::Arg>& actual_args,
+		bool first_actual_arg_is_this );
+
+	const FunctionVariable* FinishTemplateFunctionParametrization(
+		CodeBuilderErrorsContainer& errors_container,
+		const FilePos& file_pos,
+		const FunctionTemplatePtr& function_template_ptr );
+
+	const FunctionVariable* FinishTemplateFunctionGeneration(
+		CodeBuilderErrorsContainer& errors_container,
+		const FilePos& file_pos,
+		const TemplateFunctionPreparationResult& template_function_preparation_result );
+
+	Value* ParametrizeFunctionTemplate(
 		const FilePos& file_pos,
 		const std::vector<FunctionTemplatePtr>& function_templates,
 		const std::vector<Synt::Expression>& template_arguments,
 		NamesScope& arguments_names_scope,
 		FunctionContext& function_context );
 
-	bool NameShadowsTemplateArgument( const std::string& name, NamesScope& names_scope );
-
 	bool TypeIsValidForTemplateVariableArgument( const Type& type );
-
-
-	void ReportAboutIncompleteMembersOfTemplateClass( const FilePos& file_pos, Class& class_ );
 
 	// Constructors/destructors
 	void TryGenerateDefaultConstructor( Class& the_class, const Type& class_type );
@@ -556,8 +618,8 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const FilePos& file_pos );
 
-	const TemplateTypeGenerationResult* SelectTemplateType(
-		const std::vector<TemplateTypeGenerationResult>& candidate_templates,
+	const TemplateTypePreparationResult* SelectTemplateType(
+		const std::vector<TemplateTypePreparationResult>& candidate_templates,
 		size_t arg_count );
 
 	// Initializers.
@@ -665,7 +727,7 @@ private:
 	void NamesScopeFill( const Synt::FunctionPtr& function_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( const Synt::FunctionTemplate& function_template_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	ClassProxyPtr NamesScopeFill( const Synt::ClassPtr& class_declaration, NamesScope& names_scope, const std::string& override_name= "" );
-	void NamesScopeFill( const Synt::TypeTemplateBase& type_template_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	void NamesScopeFill( const Synt::TypeTemplate& type_template_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( const Synt::Enum& enum_declaration, NamesScope& names_scope );
 	void NamesScopeFill( const Synt::Typedef& typedef_declaration, NamesScope& names_scope );
 	void NamesScopeFill( const Synt::StaticAssert& static_assert_, NamesScope& names_scope );

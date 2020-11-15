@@ -1,14 +1,12 @@
 #pragma once
 #include "../lex_synt_lib/program_string.hpp"
-#include "names_scope.hpp"
+#include "template_types.hpp"
 
 namespace U
 {
 
 namespace CodeBuilderPrivate
 {
-
-using TemplateParameter= std::variant< Variable, Type >;
 
 class Class final
 {
@@ -30,8 +28,7 @@ public:
 	struct BaseTemplate
 	{
 		TypeTemplatePtr class_template;
-		std::vector<TemplateParameter> template_parameters;
-		std::vector<TemplateParameter> signature_parameters;
+		TemplateArgs signature_args;
 	};
 
 	enum class Kind

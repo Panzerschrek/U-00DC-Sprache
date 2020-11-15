@@ -5,7 +5,6 @@
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/syntax_elements.hpp"
-#include "deduced_template_parameter.hpp"
 #include "references_graph.hpp"
 #include "type.hpp"
 
@@ -15,6 +14,8 @@ namespace U
 
 namespace CodeBuilderPrivate
 {
+
+class TemplateSignatureParam;
 
 class NamesScope;
 using NamesScopePtr= std::shared_ptr<NamesScope>;
@@ -43,8 +44,8 @@ struct FunctionVariable final
 
 	Type type; // Function type 100%
 
-	// For function templates is nonempty and have size of args. Needs for selection of better (more specialized) template function.
-	std::vector<DeducedTemplateParameter> deduced_temlpate_parameters;
+	// For functions generated from templates.
+	std::shared_ptr<FunctionTemplate> base_template;
 
 	unsigned int virtual_table_index= ~0u; // For virtual functions number in virtual functions table in class of first arg(this).
 	bool have_body= false;
@@ -86,7 +87,7 @@ struct TypeTemplatesSet
 	std::vector<TypeTemplatePtr> type_templates;
 
 	// Is incomplete, if there are some syntax elements in containers.
-	std::vector<const Synt::TypeTemplateBase*> syntax_elements;
+	std::vector<const Synt::TypeTemplate*> syntax_elements;
 };
 
 enum class ValueType
