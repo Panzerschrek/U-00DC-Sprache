@@ -719,52 +719,42 @@ Value* CodeBuilder::GenTemplateType(
 	for( const Synt::Expression& expr : template_arguments )
 		arguments_calculated.push_back( BuildExpressionCode( expr, arguments_names_scope, function_context ) );
 
-	std::vector<TemplateTypeGenerationResult> generated_types;
+	std::vector<TemplateTypePreparationResult> prepared_types;
 	for( const TypeTemplatePtr& type_template : type_templates_set.type_templates )
 	{
-		TemplateTypeGenerationResult generated_type=
-			GenTemplateType(
+		TemplateTypePreparationResult generated_type=
+			PrepareTemplateType(
 				file_pos,
 				type_template,
 				arguments_calculated,
-				arguments_names_scope,
-				true );
+				arguments_names_scope );
 		if( generated_type.type_template != nullptr )
-			generated_types.push_back( std::move(generated_type) );
+			prepared_types.push_back( std::move(generated_type) );
 	}
 
-	if( generated_types.empty() )
+	if( prepared_types.empty() )
 	{
 		REPORT_ERROR( TemplateParametersDeductionFailed, arguments_names_scope.GetErrors(), file_pos );
 		return nullptr;
 	}
 
-	if( const TemplateTypeGenerationResult* const selected_template= SelectTemplateType( generated_types, template_arguments.size() ) )
-		return
-			GenTemplateType(
-				file_pos,
-				selected_template->type_template,
-				arguments_calculated,
-				arguments_names_scope,
-				false ).type;
-	else
-	{
-		REPORT_ERROR( CouldNotSelectMoreSpicializedTypeTemplate, arguments_names_scope.GetErrors(), file_pos );
-		return nullptr;
-	}
+	if( const auto selected_template= SelectTemplateType( prepared_types, template_arguments.size() ) )
+		return FinishTemplateTypeGeneration( file_pos, arguments_names_scope, *selected_template );
+
+	REPORT_ERROR( CouldNotSelectMoreSpicializedTypeTemplate, arguments_names_scope.GetErrors(), file_pos );
+	return nullptr;
 }
 
-CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
+CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 	const FilePos& file_pos,
 	const TypeTemplatePtr& type_template_ptr,
 	const std::vector<Value>& template_arguments,
-	NamesScope& arguments_names_scope,
-	const bool skip_type_generation )
+	NamesScope& arguments_names_scope )
 {
 	// This method does not generate some errors, because instantiation may fail
 	// for one class template, but success for other.
 
-	TemplateTypeGenerationResult result;
+	TemplateTypePreparationResult result;
 
 	const TypeTemplate& type_template= *type_template_ptr;
 	NamesScope& template_names_scope= *type_template.parent_namespace;
@@ -773,40 +763,39 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 		template_arguments.size() > type_template.signature_params.size() )
 		return result;
 
-	const NamesScopePtr template_args_namespace= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, &template_names_scope );
+	result.template_args_namespace= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, &template_names_scope );
 	for( const TypeTemplate::TemplateParameter& param : type_template.template_params )
-		template_args_namespace->AddName( param.name, YetNotDeducedTemplateArg() );
+		result.template_args_namespace->AddName( param.name, YetNotDeducedTemplateArg() );
 
-	TemplateArgs result_signature_args(type_template.signature_params.size());
+	result.signature_args.resize( type_template.signature_params.size() );
 	for( size_t i= 0u; i < type_template.signature_params.size(); ++i )
 	{
 		const Value value= i < template_arguments.size()
 			? template_arguments[i]
-			: BuildExpressionCode( type_template.syntax_element->signature_params_[i].default_value, *template_args_namespace, *global_function_context_ );
+			: BuildExpressionCode( type_template.syntax_element->signature_params_[i].default_value, *result.template_args_namespace, *global_function_context_ );
 
 		if( const Type* const type_name= value.GetTypeName() )
-			result_signature_args[i]= *type_name;
+			result.signature_args[i]= *type_name;
 		else if( const Variable* const variable= value.GetVariable() )
-			result_signature_args[i]= *variable;
+			result.signature_args[i]= *variable;
 		else
 		{
 			REPORT_ERROR( InvalidValueAsTemplateArgument, arguments_names_scope.GetErrors(), file_pos, value.GetKindName() );
 			continue;
 		}
 
-		if( !MatchTemplateArg( type_template, *template_args_namespace, result_signature_args[i], file_pos, type_template.signature_params[i] ) )
+		if( !MatchTemplateArg( type_template, *result.template_args_namespace, result.signature_args[i], file_pos, type_template.signature_params[i] ) )
 			return result;
 	} // for signature arguments
 
-	TemplateArgs result_template_args;
 	for( const auto& template_param : type_template.template_params )
 	{
-		const Value* const value= template_args_namespace->GetThisScopeValue( template_param.name );
+		const Value* const value= result.template_args_namespace->GetThisScopeValue( template_param.name );
 
 		if( const auto type= value->GetTypeName() )
-			result_template_args.push_back( *type );
+			result.template_args.push_back( *type );
 		else if( const auto variable= value->GetVariable() )
-			result_template_args.push_back( *variable );
+			result.template_args.push_back( *variable );
 		else
 		{
 			// SPRACHE_TODO - maybe not generate this error?
@@ -818,69 +807,78 @@ CodeBuilder::TemplateTypeGenerationResult CodeBuilder::GenTemplateType(
 
 	result.type_template= type_template_ptr;
 
-	if( skip_type_generation )
-		return result;
+	return result;
+}
+
+Value* CodeBuilder::FinishTemplateTypeGeneration(
+	const FilePos& file_pos,
+	NamesScope& arguments_names_scope,
+	const TemplateTypePreparationResult& template_type_preparation_result )
+{
+	const TypeTemplatePtr& type_template_ptr= template_type_preparation_result.type_template;
+	const TypeTemplate& type_template= *type_template_ptr;
+	const NamesScopePtr& template_args_namespace= template_type_preparation_result.template_args_namespace;
 
 	// Encode name for caching. Name must be unique for each template and its parameters.
 	const std::string name_encoded=
 		std::to_string( reinterpret_cast<uintptr_t>( &type_template ) ) + // Encode template address, because we needs unique keys for templates with same name.
-		MangleTemplateArgs( result_signature_args );
+		MangleTemplateArgs( template_type_preparation_result.signature_args );
 
 	// Check, if already type generated.
 	if( const auto it= generated_template_things_storage_.find( name_encoded ); it != generated_template_things_storage_.end() )
 	{
 		const NamesScopePtr template_parameters_space= it->second.GetNamespace();
 		U_ASSERT( template_parameters_space != nullptr );
-		result.type= template_parameters_space->GetThisScopeValue( Class::c_template_class_name );
-		return result;
+		return template_parameters_space->GetThisScopeValue( Class::c_template_class_name );
 	}
-	generated_template_things_storage_.insert( std::make_pair( name_encoded, Value( template_args_namespace, type_template.syntax_element->file_pos_ ) ) );
+	generated_template_things_storage_.emplace( name_encoded, Value( template_args_namespace, type_template.syntax_element->file_pos_ ) );
 
-	CreateTemplateErrorsContext( arguments_names_scope.GetErrors(), file_pos, template_args_namespace, type_template, type_template.syntax_element->name_, result_template_args );
+	CreateTemplateErrorsContext(
+		arguments_names_scope.GetErrors(),
+		file_pos,
+		template_args_namespace,
+		type_template,
+		type_template.syntax_element->name_,
+		template_type_preparation_result.template_args );
 
 	if( type_template.syntax_element->kind_ == Synt::TypeTemplateBase::Kind::Class )
 	{
 		if( const auto cache_class_it= template_classes_cache_.find( name_encoded ); cache_class_it != template_classes_cache_.end() )
 		{
-			result.type=
+			return
 				template_args_namespace->AddName(
 					Class::c_template_class_name,
-					Value(
-						cache_class_it->second,
-						type_template.syntax_element->file_pos_ /* TODO - check file_pos */ ) );
-			return result;
+					Value( cache_class_it->second, type_template.syntax_element->file_pos_ /* TODO - check file_pos */ ) );
 		}
 
 		const ClassProxyPtr class_proxy= NamesScopeFill( static_cast<const Synt::ClassTemplate*>( type_template.syntax_element )->class_, *template_args_namespace, Class::c_template_class_name );
 		if( class_proxy == nullptr )
-			return result;
+			return nullptr;
 
 		Class& the_class= *class_proxy->class_;
 		// Save in class info about its base template.
 		the_class.base_template.emplace();
 		the_class.base_template->class_template= type_template_ptr;
-		the_class.base_template->signature_args= std::move(result_signature_args);
+		the_class.base_template->signature_args= template_type_preparation_result.signature_args;
 
 		template_classes_cache_[name_encoded]= class_proxy;
-		result.type= template_args_namespace->GetThisScopeValue( Class::c_template_class_name );
 
 		class_proxy->class_->llvm_type->setName( MangleType( class_proxy ) ); // Update llvm type name after setting base template.
 
-		return result;
+		return template_args_namespace->GetThisScopeValue( Class::c_template_class_name );
 	}
 	else if( type_template.syntax_element->kind_ == Synt::TypeTemplateBase::Kind::Typedef )
 	{
 		const Type type= PrepareType( static_cast<const Synt::TypedefTemplate*>( type_template.syntax_element )->typedef_->value, *template_args_namespace, *global_function_context_ );
 
 		if( type == invalid_type_ )
-			return result;
+			return nullptr;
 
-		result.type= template_args_namespace->AddName( Class::c_template_class_name, Value( type, file_pos /* TODO - check file_pos */ ) );
-		return result;
+		return template_args_namespace->AddName( Class::c_template_class_name, Value( type, file_pos /* TODO - check file_pos */ ) );
 	}
 	else U_ASSERT(false);
 
-	return result;
+	return nullptr;
 }
 
 const FunctionVariable* CodeBuilder::GenTemplateFunction(

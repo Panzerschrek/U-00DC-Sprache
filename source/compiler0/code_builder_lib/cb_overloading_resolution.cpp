@@ -675,8 +675,8 @@ const FunctionVariable* CodeBuilder::GetConversionConstructor(
 	return nullptr;
 }
 
-const CodeBuilder::TemplateTypeGenerationResult* CodeBuilder::SelectTemplateType(
-	const std::vector<TemplateTypeGenerationResult>& candidate_templates,
+const CodeBuilder::TemplateTypePreparationResult* CodeBuilder::SelectTemplateType(
+	const std::vector<TemplateTypePreparationResult>& candidate_templates,
 	const size_t arg_count )
 {
 	if( candidate_templates.empty() )
@@ -689,10 +689,10 @@ const CodeBuilder::TemplateTypeGenerationResult* CodeBuilder::SelectTemplateType
 
 	for( size_t i= 0u; i < arg_count; ++i )
 	{
-		for( const TemplateTypeGenerationResult& candidate_l : candidate_templates )
+		for( const TemplateTypePreparationResult& candidate_l : candidate_templates )
 		{
 			bool is_best_template_for_current_arg= true;
-			for( const TemplateTypeGenerationResult& candidate_r : candidate_templates )
+			for( const TemplateTypePreparationResult& candidate_r : candidate_templates )
 			{
 				const ConversionsCompareResult comp=
 					TemplateSpecializationCompare( candidate_l.type_template->signature_params[i], candidate_r.type_template->signature_params[i] );
@@ -706,7 +706,7 @@ const CodeBuilder::TemplateTypeGenerationResult* CodeBuilder::SelectTemplateType
 
 			if( is_best_template_for_current_arg )
 			{
-				for( const TemplateTypeGenerationResult& candidate_r : candidate_templates )
+				for( const TemplateTypePreparationResult& candidate_r : candidate_templates )
 				{
 					const ConversionsCompareResult comp=
 						TemplateSpecializationCompare( candidate_l.type_template->signature_params[i], candidate_r.type_template->signature_params[i] );
@@ -718,7 +718,7 @@ const CodeBuilder::TemplateTypeGenerationResult* CodeBuilder::SelectTemplateType
 		}
 	}
 
-	const TemplateTypeGenerationResult* selected_template= nullptr;
+	const TemplateTypePreparationResult* selected_template= nullptr;
 	for( size_t template_n= 0u; template_n < candidate_templates.size(); ++ template_n )
 	{
 		if( best_templates[template_n] )

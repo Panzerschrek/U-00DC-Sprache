@@ -52,10 +52,12 @@ private:
 		bool have_terminal_instruction_inside= false;
 	};
 
-	struct TemplateTypeGenerationResult
+	struct TemplateTypePreparationResult
 	{
 		TypeTemplatePtr type_template;
-		Value* type= nullptr;
+		NamesScopePtr template_args_namespace;
+		TemplateArgs template_args;
+		TemplateArgs signature_args;
 	};
 
 	struct GlobalThing // TODO - move struct out of here
@@ -255,12 +257,16 @@ private:
 		FunctionContext& function_context );
 
 	// Returns nullptr in case of fail.
-	TemplateTypeGenerationResult GenTemplateType(
+	TemplateTypePreparationResult PrepareTemplateType(
 		const FilePos& file_pos,
 		const TypeTemplatePtr& type_template_ptr,
 		const std::vector<Value>& template_arguments,
+		NamesScope& arguments_names_scope );
+
+	Value* FinishTemplateTypeGeneration(
+		const FilePos& file_pos,
 		NamesScope& arguments_names_scope,
-		bool skip_type_generation );
+		const TemplateTypePreparationResult& template_type_preparation_result );
 
 	const FunctionVariable* GenTemplateFunction(
 		CodeBuilderErrorsContainer& errors_container,
@@ -589,8 +595,8 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const FilePos& file_pos );
 
-	const TemplateTypeGenerationResult* SelectTemplateType(
-		const std::vector<TemplateTypeGenerationResult>& candidate_templates,
+	const TemplateTypePreparationResult* SelectTemplateType(
+		const std::vector<TemplateTypePreparationResult>& candidate_templates,
 		size_t arg_count );
 
 	// Initializers.
