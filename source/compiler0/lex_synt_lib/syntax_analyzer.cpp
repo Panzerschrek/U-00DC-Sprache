@@ -300,8 +300,7 @@ private:
 	using TemplateVar=
 		std::variant<
 			EmptyVariant,
-			ClassTemplate,
-			TypedefTemplate,
+			TypeTemplate,
 			FunctionTemplate >;
 	TemplateVar ParseTemplate();
 
@@ -800,10 +799,8 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
 		{
 			TemplateVar template_= ParseTemplate();
-			if( auto* const class_template= std::get_if<ClassTemplate>(&template_) )
-				program_elements.emplace_back( std::move( *class_template ) );
-			else if( auto* const typedef_template= std::get_if<TypedefTemplate>(&template_) )
-				program_elements.emplace_back( std::move( *typedef_template ) );
+			if( auto* const type_template= std::get_if<TypeTemplate>(&template_) )
+				program_elements.emplace_back( std::move( *type_template ) );
 			else if( auto* const function_template= std::get_if<FunctionTemplate>(&template_) )
 				program_elements.emplace_back( std::move( *function_template ) );
 			else if( std::get_if<EmptyVariant>(&template_) )
@@ -3611,10 +3608,8 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 		{
 			TemplateVar template_= ParseTemplate();
 			
-			if( auto* const class_template= std::get_if<ClassTemplate>(&template_) )
-				result.emplace_back( std::move( *class_template ) );
-			else if( auto* const typedef_template= std::get_if<TypedefTemplate>(&template_) )
-				result.emplace_back( std::move( *typedef_template ) );
+			if( auto* const type_template= std::get_if<TypeTemplate>(&template_) )
+				result.emplace_back( std::move( *type_template ) );
 			else if( auto* const function_template= std::get_if<FunctionTemplate>(&template_) )
 				result.emplace_back( std::move( *function_template ) );
 			else if( std::get_if<EmptyVariant>(&template_) )
@@ -3866,7 +3861,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 	}
 
 	// TypeTemplateBase parameters
-	std::vector<TypeTemplateBase::SignatureParam> signature_params;
+	std::vector<TypeTemplate::SignatureParam> signature_params;
 	bool is_short_form= false;
 
 	if( it_->type == Lexem::Type::TemplateBracketLeft )
@@ -3913,7 +3908,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 	case TemplateKind::Class:
 	case TemplateKind::Struct:
 		{
-			ClassTemplate class_template( template_file_pos );
+			TypeTemplate class_template( template_file_pos );
 			class_template.params_= std::move(params);
 			class_template.signature_params_= std::move(signature_params);
 			class_template.name_= name;
@@ -3928,29 +3923,33 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 			}
 			const bool have_shared_state= TryParseClassSharedState();
 			const bool keep_fields_order= TryParseClassFieldsOrdered();
-			class_template.class_= ParseClassBody();
-			if( class_template.class_ != nullptr )
+
+			ClassPtr class_= ParseClassBody();
+			if( class_ != nullptr )
 			{
-				class_template.class_->file_pos_= template_thing_file_pos;
-				class_template.class_->name_= std::move(name);
-				class_template.class_->kind_attribute_= class_kind_attribute;
-				class_template.class_->have_shared_state_= have_shared_state;
-				class_template.class_->keep_fields_order_= keep_fields_order;
-				class_template.class_->parents_= std::move(class_parents_list);
+				class_->file_pos_= template_thing_file_pos;
+				class_->name_= std::move(name);
+				class_->kind_attribute_= class_kind_attribute;
+				class_->have_shared_state_= have_shared_state;
+				class_->keep_fields_order_= keep_fields_order;
+				class_->parents_= std::move(class_parents_list);
+				class_template.something_= std::move(class_);
 			}
 			return std::move(class_template);
 		}
 
 	case TemplateKind::Typedef:
 		{
-			TypedefTemplate typedef_template( template_file_pos );
+			TypeTemplate typedef_template( template_file_pos );
 			typedef_template.params_= std::move(params);
 			typedef_template.signature_params_= std::move(signature_params);
 			typedef_template.name_= name;
 			typedef_template.is_short_form_= is_short_form;
 
-			typedef_template.typedef_= std::make_unique<Typedef>( ParseTypedefBody() );
-			typedef_template.typedef_->name= std::move(name);
+			auto typedef_= std::make_unique<Typedef>( ParseTypedefBody() );
+			typedef_->name= std::move(name);
+
+			typedef_template.something_= std::move(typedef_);
 			return std::move(typedef_template);
 		}
 

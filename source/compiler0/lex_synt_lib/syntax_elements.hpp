@@ -82,8 +82,7 @@ struct Enum;
 struct Class;
 struct ClassField;
 struct ClassVisibilityLabel;
-struct ClassTemplate;
-struct TypedefTemplate;
+struct TypeTemplate;
 struct FunctionTemplate;
 
 struct Namespace;
@@ -172,8 +171,7 @@ using ClassElement= std::variant<
 	ClassField,
 	ClassVisibilityLabel,
 	ClassPtr,
-	ClassTemplate,
-	TypedefTemplate,
+	TypeTemplate,
 	FunctionTemplate >;
 
 using ClassElements= std::vector<ClassElement>;
@@ -186,8 +184,7 @@ using ProgramElement= std::variant<
 	Enum,
 	FunctionPtr,
 	ClassPtr,
-	ClassTemplate,
-	TypedefTemplate,
+	TypeTemplate,
 	FunctionTemplate,
 	NamespacePtr >;
 
@@ -888,12 +885,10 @@ public:
 	std::vector<Param> params_;
 };
 
-struct TypeTemplateBase : public TemplateBase
+struct TypeTemplate : public TemplateBase
 {
 public:
-	enum class Kind{ Class, Typedef, }; // HACK! Replacement for RTTI.
-
-	explicit TypeTemplateBase( const FilePos& file_pos, Kind kind );
+	explicit TypeTemplate( const FilePos& file_pos );
 
 	// Argument in template signature.
 	struct SignatureParam
@@ -902,28 +897,13 @@ public:
 		Expression default_value;
 	};
 
-	const Kind kind_;
 	std::vector<SignatureParam> signature_params_;
 	std::string name_;
 
 	// Short form means that template argumenst are also signature arguments.
 	bool is_short_form_= false;
-};
 
-struct ClassTemplate final : public TypeTemplateBase
-{
-public:
-	explicit ClassTemplate( const FilePos& file_pos );
-
-	ClassPtr class_;
-};
-
-struct TypedefTemplate final : public TypeTemplateBase
-{
-public:
-	explicit TypedefTemplate( const FilePos& file_pos );
-
-	std::unique_ptr<Typedef> typedef_;
+	std::variant<ClassPtr, std::unique_ptr<Typedef>> something_;
 };
 
 struct FunctionTemplate final : public TemplateBase

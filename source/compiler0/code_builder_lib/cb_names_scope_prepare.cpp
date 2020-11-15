@@ -269,7 +269,7 @@ ClassProxyPtr CodeBuilder::NamesScopeFill(
 					REPORT_ERROR( VisibilityForStruct, the_class.members.GetErrors(), visibility_label.file_pos_, class_name );
 				current_visibility= visibility_label.visibility_;
 			}
-			void operator()( const Synt::TypeTemplateBase& type_template )
+			void operator()( const Synt::TypeTemplate& type_template )
 			{
 				this_.NamesScopeFill( type_template, the_class.members, class_type, current_visibility );
 			}
@@ -314,7 +314,7 @@ ClassProxyPtr CodeBuilder::NamesScopeFill(
 }
 
 void CodeBuilder::NamesScopeFill(
-	const Synt::TypeTemplateBase& type_template_declaration,
+	const Synt::TypeTemplate& type_template_declaration,
 	NamesScope& names_scope,
 	const ClassProxyPtr& base_class,
 	const ClassMemberVisibility visibility )

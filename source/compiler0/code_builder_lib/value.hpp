@@ -87,7 +87,7 @@ struct TypeTemplatesSet
 	std::vector<TypeTemplatePtr> type_templates;
 
 	// Is incomplete, if there are some syntax elements in containers.
-	std::vector<const Synt::TypeTemplateBase*> syntax_elements;
+	std::vector<const Synt::TypeTemplate*> syntax_elements;
 };
 
 enum class ValueType

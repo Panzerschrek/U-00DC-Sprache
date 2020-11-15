@@ -71,7 +71,7 @@ void CreateTemplateErrorsContext(
 } // namesapce
 
 void CodeBuilder::PrepareTypeTemplate(
-	const Synt::TypeTemplateBase& type_template_declaration,
+	const Synt::TypeTemplate& type_template_declaration,
 	TypeTemplatesSet& type_templates_set,
 	NamesScope& names_scope )
 {
@@ -116,7 +116,7 @@ void CodeBuilder::PrepareTypeTemplate(
 	{
 		// Check and fill signature args.
 		type_template->first_optional_signature_param= 0u;
-		for( const Synt::TypeTemplateBase::SignatureParam& signature_param : type_template_declaration.signature_params_ )
+		for( const Synt::TypeTemplate::SignatureParam& signature_param : type_template_declaration.signature_params_ )
 		{
 			type_template->signature_params.push_back(
 				CreateTemplateSignatureParameter( signature_param.name, names_scope, *global_function_context_, template_parameters, template_parameters_usage_flags ) );
@@ -841,7 +841,7 @@ Value* CodeBuilder::FinishTemplateTypeGeneration(
 		type_template.syntax_element->name_,
 		template_type_preparation_result.template_args );
 
-	if( type_template.syntax_element->kind_ == Synt::TypeTemplateBase::Kind::Class )
+	if( const auto class_ptr= std::get_if<Synt::ClassPtr>( &type_template.syntax_element->something_ ) )
 	{
 		if( const auto cache_class_it= template_classes_cache_.find( name_encoded ); cache_class_it != template_classes_cache_.end() )
 		{
@@ -851,7 +851,7 @@ Value* CodeBuilder::FinishTemplateTypeGeneration(
 					Value( cache_class_it->second, type_template.syntax_element->file_pos_ /* TODO - check file_pos */ ) );
 		}
 
-		const ClassProxyPtr class_proxy= NamesScopeFill( static_cast<const Synt::ClassTemplate*>( type_template.syntax_element )->class_, *template_args_namespace, Class::c_template_class_name );
+		const ClassProxyPtr class_proxy= NamesScopeFill( *class_ptr, *template_args_namespace, Class::c_template_class_name );
 		if( class_proxy == nullptr )
 			return nullptr;
 
@@ -867,9 +867,9 @@ Value* CodeBuilder::FinishTemplateTypeGeneration(
 
 		return template_args_namespace->GetThisScopeValue( Class::c_template_class_name );
 	}
-	else if( type_template.syntax_element->kind_ == Synt::TypeTemplateBase::Kind::Typedef )
+	if( const auto typedef_ptr= std::get_if< std::unique_ptr<Synt::Typedef> >( &type_template.syntax_element->something_ ) )
 	{
-		const Type type= PrepareType( static_cast<const Synt::TypedefTemplate*>( type_template.syntax_element )->typedef_->value, *template_args_namespace, *global_function_context_ );
+		const Type type= PrepareType( (*typedef_ptr)->value, *template_args_namespace, *global_function_context_ );
 
 		if( type == invalid_type_ )
 			return nullptr;

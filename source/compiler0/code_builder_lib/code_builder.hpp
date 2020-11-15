@@ -144,7 +144,7 @@ private:
 
 	// Templates
 	void PrepareTypeTemplate(
-		const Synt::TypeTemplateBase& type_template_declaration,
+		const Synt::TypeTemplate& type_template_declaration,
 		TypeTemplatesSet& type_templates_set,
 		NamesScope& names_scope );
 
@@ -704,7 +704,7 @@ private:
 	void NamesScopeFill( const Synt::FunctionPtr& function_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( const Synt::FunctionTemplate& function_template_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	ClassProxyPtr NamesScopeFill( const Synt::ClassPtr& class_declaration, NamesScope& names_scope, const std::string& override_name= "" );
-	void NamesScopeFill( const Synt::TypeTemplateBase& type_template_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	void NamesScopeFill( const Synt::TypeTemplate& type_template_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( const Synt::Enum& enum_declaration, NamesScope& names_scope );
 	void NamesScopeFill( const Synt::Typedef& typedef_declaration, NamesScope& names_scope );
 	void NamesScopeFill( const Synt::StaticAssert& static_assert_, NamesScope& names_scope );

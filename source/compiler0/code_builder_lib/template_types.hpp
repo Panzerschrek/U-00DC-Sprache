@@ -37,7 +37,7 @@ struct TypeTemplate final : TemplateBase
 
 	// Store syntax tree element for instantiation.
 	// Syntax tree must live longer, than this struct.
-	const Synt::TypeTemplateBase* syntax_element= nullptr;
+	const Synt::TypeTemplate* syntax_element= nullptr;
 };
 
 struct FunctionTemplate final : public TemplateBase
