@@ -925,13 +925,7 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 	{
 		Value v;
 		if( i < function_template.known_template_args.size() )
-		{
-			const TemplateArg& arg= function_template.known_template_args[i];
-
-			if( const auto type= std::get_if<Type>( &arg ) ) v= Value( *type, file_pos );
-			else if( const auto variable= std::get_if<Variable>( &arg ) ) v= Value( *variable, file_pos );
-			else U_ASSERT(false);
-		}
+			v= std::visit( [&]( const auto& x ){ return Value( x, file_pos ); }, function_template.known_template_args[i] );
 		else
 			v= YetNotDeducedTemplateArg();
 
@@ -940,11 +934,11 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 
 	for( size_t i= 0u; i < function_declaration.type_.arguments_.size(); ++i )
 	{
-		const Synt::FunctionArgument& function_argument= function_declaration.type_.arguments_[i];
+		const Synt::FunctionArgument& function_param= function_declaration.type_.arguments_[i];
 
 		const bool expected_arg_is_mutalbe_reference=
-			function_argument.mutability_modifier_ == Synt::MutabilityModifier::Mutable &&
-			( function_argument.reference_modifier_ == Synt::ReferenceModifier::Reference || function_argument.name_ == Keywords::this_ );
+			function_param.mutability_modifier_ == Synt::MutabilityModifier::Mutable &&
+			( function_param.reference_modifier_ == Synt::ReferenceModifier::Reference || function_param.name_ == Keywords::this_ );
 
 		// Functin arg declared as "mut&", but given something immutable.
 		if( expected_arg_is_mutalbe_reference && !given_args[i].is_mutable )
@@ -1013,14 +1007,9 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionParametrization(
 
 	for( size_t i= 0u; i < function_template.template_params.size(); ++i )
 	{
-		Value v;
-		const TemplateArg& arg= function_template.known_template_args[i];
-
-		if( const auto type= std::get_if<Type>( &arg ) ) v= Value( *type, file_pos );
-		else if( const auto variable= std::get_if<Variable>( &arg ) ) v= Value( *variable, file_pos );
-		else U_ASSERT(false);
-
-		result.template_args_namespace->AddName( function_template.template_params[i].name, std::move(v) );
+		result.template_args_namespace->AddName(
+			function_template.template_params[i].name,
+			std::visit( [&]( const auto& x ){ return Value( x, file_pos ); }, function_template.known_template_args[i] ) );
 	}
 
 	result.template_args= function_template.known_template_args;
@@ -1052,7 +1041,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 		const NamesScopePtr template_parameters_space= it->second.GetNamespace();
 		U_ASSERT( template_parameters_space != nullptr );
 		OverloadedFunctionsSet& result_functions_set= *template_parameters_space->GetThisScopeValue( func_name )->GetFunctionsSet();
-		if( result_functions_set.functions.size() >= 1u )
+		if( !result_functions_set.functions.empty() )
 			return &result_functions_set.functions.front();
 		else
 			return nullptr; // May be in case of error or in case of "enable_if".
@@ -1078,22 +1067,19 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 			function_variable,
 			function_template.base_class,
 			*template_args_namespace,
-			function_template.syntax_element->function_->name_.back(),
-			function_template.syntax_element->function_->type_.arguments_,
-			function_template.syntax_element->function_->block_.get(),
-			function_template.syntax_element->function_->constructor_initialization_list_.get() );
+			func_name,
+			function_declaration.type_.arguments_,
+			function_declaration.block_.get(),
+			function_declaration.constructor_initialization_list_.get() );
 
 	// Set correct mangled name
 	if( function_variable.llvm_function != nullptr )
-	{
-		const std::string mangled_name =
+		function_variable.llvm_function->setName(
 			MangleFunction(
 				*function_template.parent_namespace,
 				func_name,
 				*function_variable.type.GetFunctionType(),
-				&template_args );
-		function_variable.llvm_function->setName( mangled_name );
-	}
+				&template_args ) );
 
 	// Two-step preparation needs for recursive function template call.
 
