@@ -886,14 +886,23 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	const FilePos& file_pos,
 	const FunctionTemplatePtr& function_template_ptr,
 	const ArgsVector<Function::Arg>& actual_args,
-	const bool first_actual_arg_is_this,
-	const bool skip_arguments )
+	const bool first_actual_arg_is_this )
+{
+	const auto res= PrepareTemplateFunction( errors_container, file_pos, function_template_ptr, actual_args, first_actual_arg_is_this );
+	if( res.function_template != nullptr )
+		return FinishTemplateFunctionGeneration( errors_container, file_pos, res );
+	return nullptr;
+}
+
+CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunction(
+	CodeBuilderErrorsContainer& errors_container,
+	const FilePos& file_pos,
+	const FunctionTemplatePtr& function_template_ptr,
+	const ArgsVector<Function::Arg>& actual_args,
+	const bool first_actual_arg_is_this )
 {
 	const FunctionTemplate& function_template= *function_template_ptr;
 	const Synt::Function& function_declaration= *function_template.syntax_element->function_;
-	const std::string& func_name= function_declaration.name_.back();
-
-	NamesScope& template_names_scope= *function_template.parent_namespace;
 
 	const Function::Arg* given_args= actual_args.data();
 	size_t given_arg_count= actual_args.size();
@@ -905,10 +914,12 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		--given_arg_count;
 	}
 
-	if( !skip_arguments && given_arg_count != function_declaration.type_.arguments_.size() )
-		return nullptr;
+	TemplateFunctionPreparationResult result;
 
-	const auto template_args_namespace= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, &template_names_scope );
+	if( given_arg_count != function_declaration.type_.arguments_.size() )
+		return result;
+
+	result.template_args_namespace= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, function_template.parent_namespace );
 
 	for( size_t i= 0u; i < function_template.template_params.size(); ++i )
 	{
@@ -924,10 +935,10 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		else
 			v= YetNotDeducedTemplateArg();
 
-		template_args_namespace->AddName( function_template.template_params[i].name, std::move(v) );
+		result.template_args_namespace->AddName( function_template.template_params[i].name, std::move(v) );
 	}
 
-	for( size_t i= 0u; i < function_declaration.type_.arguments_.size() && !skip_arguments; ++i )
+	for( size_t i= 0u; i < function_declaration.type_.arguments_.size(); ++i )
 	{
 		const Synt::FunctionArgument& function_argument= function_declaration.type_.arguments_[i];
 
@@ -937,7 +948,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 
 		// Functin arg declared as "mut&", but given something immutable.
 		if( expected_arg_is_mutalbe_reference && !given_args[i].is_mutable )
-			return nullptr;
+			return result;
 
 		const TemplateSignatureParam& signature_param= function_template.signature_params[i];
 		const Type& given_type= given_args[i].type;
@@ -952,7 +963,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		}
 		else if( const auto template_param= signature_param.GetTemplateParam() )
 		{
-			if( const auto type= template_args_namespace->GetThisScopeValue( function_template.template_params[ template_param->index ].name )->GetTypeName() )
+			if( const auto type= result.template_args_namespace->GetThisScopeValue( function_template.template_params[ template_param->index ].name )->GetTypeName() )
 			{
 				if( *type == given_type || ReferenceIsConvertible( given_type, *type, errors_container, file_pos ) ||
 					( !expected_arg_is_mutalbe_reference && GetConversionConstructor( given_type, *type, errors_container, file_pos ) != nullptr ) )
@@ -960,33 +971,80 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 			}
 		}
 
-		if( !deduced_specially && !MatchTemplateArg( function_template, *template_args_namespace, given_type, file_pos, signature_param ) )
-			return nullptr;
+		if( !deduced_specially && !MatchTemplateArg( function_template, *result.template_args_namespace, given_type, file_pos, signature_param ) )
+			return result;
 
 	} // for template function arguments
 
-	TemplateArgs args_for_mangle;
 	for( const auto& template_param : function_template.template_params )
 	{
-		const Value* const value= template_args_namespace->GetThisScopeValue( template_param.name );
+		const Value* const value= result.template_args_namespace->GetThisScopeValue( template_param.name );
 
 		if( const auto type= value->GetTypeName() )
-			args_for_mangle.push_back( *type );
+			result.template_args.push_back( *type );
 		else if( const auto variable= value->GetVariable() )
-			args_for_mangle.push_back( *variable );
+			result.template_args.push_back( *variable );
 		else
 		{
 			// SPRACHE_TODO - maybe not generate this error?
 			// Other function templates, for example, can match given aruments.
-			REPORT_ERROR( TemplateParametersDeductionFailed, template_args_namespace->GetErrors(), file_pos );
-			return nullptr;
+			REPORT_ERROR( TemplateParametersDeductionFailed, result.template_args_namespace->GetErrors(), file_pos );
+			return result;
 		}
 	}
+
+	result.function_template= function_template_ptr;
+	return result;
+}
+
+const FunctionVariable* CodeBuilder::FinishTemplateFunctionParametrization(
+	CodeBuilderErrorsContainer& errors_container,
+	const FilePos& file_pos,
+	const FunctionTemplatePtr& function_template_ptr )
+{
+	const FunctionTemplate& function_template= *function_template_ptr;
+
+	if( function_template_ptr->template_params.size() != function_template_ptr->known_template_args.size() )
+		return nullptr;
+
+	TemplateFunctionPreparationResult result;
+
+	result.template_args_namespace= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, function_template.parent_namespace );
+
+	for( size_t i= 0u; i < function_template.template_params.size(); ++i )
+	{
+		Value v;
+		const TemplateArg& arg= function_template.known_template_args[i];
+
+		if( const auto type= std::get_if<Type>( &arg ) ) v= Value( *type, file_pos );
+		else if( const auto variable= std::get_if<Variable>( &arg ) ) v= Value( *variable, file_pos );
+		else U_ASSERT(false);
+
+		result.template_args_namespace->AddName( function_template.template_params[i].name, std::move(v) );
+	}
+
+	result.template_args= function_template.known_template_args;
+	result.function_template= function_template_ptr;
+	return FinishTemplateFunctionGeneration( errors_container, file_pos, result );
+}
+
+const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
+	CodeBuilderErrorsContainer& errors_container,
+	const FilePos& file_pos,
+	const TemplateFunctionPreparationResult& template_function_preparation_result )
+{
+	const FunctionTemplatePtr& function_template_ptr= template_function_preparation_result.function_template;
+	const FunctionTemplate& function_template= *function_template_ptr;
+	const Synt::Function& function_declaration= *function_template.syntax_element->function_;
+	const std::string& func_name= function_declaration.name_.back();
+
+	const NamesScopePtr& template_args_namespace= template_function_preparation_result.template_args_namespace;
+	const TemplateArgs& template_args= template_function_preparation_result.template_args;
 
 	// Encode name for caching. Name must be unique for each template and its parameters.
 	const std::string name_encoded=
 		std::to_string( reinterpret_cast<uintptr_t>( function_template.parent != nullptr ? function_template.parent.get() : &function_template ) ) + // Encode template address, because we needs unique keys for templates with same name.
-		MangleTemplateArgs( args_for_mangle );
+		MangleTemplateArgs( template_args );
 
 	if( const auto it= generated_template_things_storage_.find( name_encoded ); it != generated_template_things_storage_.end() )
 	{
@@ -999,9 +1057,9 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 		else
 			return nullptr; // May be in case of error or in case of "enable_if".
 	}
-	generated_template_things_storage_.insert( std::make_pair( name_encoded, Value( template_args_namespace, function_declaration.file_pos_ ) ) );
+	generated_template_things_storage_.emplace( name_encoded, Value( template_args_namespace, function_declaration.file_pos_ ) );
 
-	CreateTemplateErrorsContext( errors_container, file_pos, template_args_namespace, function_template, func_name, args_for_mangle );
+	CreateTemplateErrorsContext( errors_container, file_pos, template_args_namespace, function_template, func_name, template_args );
 
 	// First, prepare only as prototype.
 	NamesScopeFill( function_template.syntax_element->function_, *template_args_namespace, function_template.base_class );
@@ -1030,10 +1088,10 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	{
 		const std::string mangled_name =
 			MangleFunction(
-				template_names_scope,
+				*function_template.parent_namespace,
 				func_name,
 				*function_variable.type.GetFunctionType(),
-				&args_for_mangle );
+				&template_args );
 		function_variable.llvm_function->setName( mangled_name );
 	}
 
@@ -1042,7 +1100,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	return &function_variable;
 }
 
-Value* CodeBuilder::GenTemplateFunctionsUsingTemplateParameters(
+Value* CodeBuilder::ParametrizeFunctionTemplate(
 	const FilePos& file_pos,
 	const std::vector<FunctionTemplatePtr>& function_templates,
 	const std::vector<Synt::Expression>& template_arguments,

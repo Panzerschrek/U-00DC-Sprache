@@ -60,6 +60,13 @@ private:
 		TemplateArgs signature_args;
 	};
 
+	struct TemplateFunctionPreparationResult
+	{
+		FunctionTemplatePtr function_template;
+		NamesScopePtr template_args_namespace;
+		TemplateArgs template_args;
+	};
+
 	struct GlobalThing // TODO - move struct out of here
 	{
 		const void* thing_ptr= nullptr;
@@ -273,10 +280,26 @@ private:
 		const FilePos& file_pos,
 		const FunctionTemplatePtr& function_template_ptr,
 		const ArgsVector<Function::Arg>& actual_args,
-		bool first_actual_arg_is_this,
-		bool skip_arguments= false );
+		bool first_actual_arg_is_this );
 
-	Value* GenTemplateFunctionsUsingTemplateParameters(
+	TemplateFunctionPreparationResult PrepareTemplateFunction(
+		CodeBuilderErrorsContainer& errors_container,
+		const FilePos& file_pos,
+		const FunctionTemplatePtr& function_template_ptr,
+		const ArgsVector<Function::Arg>& actual_args,
+		bool first_actual_arg_is_this );
+
+	const FunctionVariable* FinishTemplateFunctionParametrization(
+		CodeBuilderErrorsContainer& errors_container,
+		const FilePos& file_pos,
+		const FunctionTemplatePtr& function_template_ptr );
+
+	const FunctionVariable* FinishTemplateFunctionGeneration(
+		CodeBuilderErrorsContainer& errors_container,
+		const FilePos& file_pos,
+		const TemplateFunctionPreparationResult& template_function_preparation_result );
+
+	Value* ParametrizeFunctionTemplate(
 		const FilePos& file_pos,
 		const std::vector<FunctionTemplatePtr>& function_templates,
 		const std::vector<Synt::Expression>& template_arguments,

@@ -1838,7 +1838,7 @@ Value CodeBuilder::ResolveValue(
 				}
 
 				value=
-					GenTemplateFunctionsUsingTemplateParameters(
+					ParametrizeFunctionTemplate(
 						file_pos,
 						functions_set->template_functions,
 						*template_parameters,
