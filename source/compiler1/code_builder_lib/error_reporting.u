@@ -8,7 +8,7 @@ op CodeBuilderError::==(CodeBuilderError& l, CodeBuilderError& r) : bool
 {
 	return
 		l.code == r.code &&
-		l.file_pos == r.file_pos &&
+		l.src_loc == r.src_loc &&
 		l.text == r.text &&
 		l.errors_context == r.errors_context;
 }
@@ -21,9 +21,9 @@ op CodeBuilderError::!=(CodeBuilderError& l, CodeBuilderError& r) : bool
 op CodeBuilderError::<(CodeBuilderError& l, CodeBuilderError& r) : bool
 {
 	// Sort by position in file, then, by code, then, by text.
-	if( l.file_pos != r.file_pos )
+	if( l.src_loc != r.src_loc )
 	{
-		return l.file_pos < r.file_pos;
+		return l.src_loc < r.src_loc;
 	}
 	if( l.code != r.code )
 	{
@@ -33,7 +33,7 @@ op CodeBuilderError::<(CodeBuilderError& l, CodeBuilderError& r) : bool
 	return l.text < r.text;
 }
 
-fn ReportError( CodeBuilderErrorCode code, SrcLoc file_pos, ust::vector</ust::string8/>& format_args ) : CodeBuilderError
+fn ReportError( CodeBuilderErrorCode code, SrcLoc src_loc, ust::vector</ust::string8/>& format_args ) : CodeBuilderError
 {
 	var ust::string8 mut result_error_text;
 
@@ -62,7 +62,7 @@ fn ReportError( CodeBuilderErrorCode code, SrcLoc file_pos, ust::vector</ust::st
 	{
 		.code= code,
 		.text= move(result_error_text),
-		.file_pos= file_pos,
+		.src_loc= src_loc,
 	};
 
 	return move(err);
@@ -145,14 +145,14 @@ fn ExpandErrorsInMacros( ErrorsContainer& in_errors, Synt::MacroExpansionContext
 		var TemplateErrorsContext mut template_errors_context
 		{
 			.errors= internal_errors,
-			.context_declaration_file_pos= macro_expansion_context.macro_declaration_file_pos,
+			.context_declaration_src_loc= macro_expansion_context.macro_declaration_src_loc,
 			.context_name= macro_expansion_context.macro_name,
 		};
 
 		var CodeBuilderError mut macro_expansion_context_error
 		{
 			.code= CodeBuilderErrorCode::MacroExpansionContext,
-			.file_pos= macro_expansion_context.file_pos,
+			.src_loc= macro_expansion_context.src_loc,
 			.text = "in expansion of macro \"" + macro_expansion_context.macro_name + "\"",
 			.errors_context( move(template_errors_context) ),
 		};
@@ -173,7 +173,7 @@ fn ExpandErrorsInMacros( ErrorsContainer& in_errors, Synt::MacroExpansionContext
 			sub_errors= ExpandErrorsInMacros( sub_errors, macro_expansion_contexts );
 		}
 
-		auto macro_expansion_index= size_type(error.file_pos.GetMacroExpansionIndex());
+		auto macro_expansion_index= size_type(error.src_loc.GetMacroExpansionIndex());
 		if( macro_expansion_index < macro_contexts_errors_internals.size() )
 		{
 			auto mut lock= macro_contexts_errors_internals[ macro_expansion_index ].lock_mut();
@@ -187,7 +187,7 @@ fn ExpandErrorsInMacros( ErrorsContainer& in_errors, Synt::MacroExpansionContext
 
 	foreach( &macro_context_error : macro_contexts_errors )
 	{
-		auto macro_expansion_index= size_type(macro_context_error.file_pos.GetMacroExpansionIndex());
+		auto macro_expansion_index= size_type(macro_context_error.src_loc.GetMacroExpansionIndex());
 		if( macro_expansion_index < macro_contexts_errors_internals.size() )
 		{
 			auto mut lock= macro_contexts_errors_internals[ macro_expansion_index ].lock_mut();

@@ -23,7 +23,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 		return t;
 	}
 
-	REPORT_ERROR( NameIsNotTypeName, names_scope, named_type.file_pos, named_type )
+	REPORT_ERROR( NameIsNotTypeName, names_scope, named_type.src_loc, named_type )
 	return Type( FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ ) );
 }
 
@@ -64,7 +64,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 				else
 				{
 					out_array_type.element_count= 0u64;
-					REPORT_ERROR( ArraySizeIsNegative, names_scope,  array_type.file_pos  )
+					REPORT_ERROR( ArraySizeIsNegative, names_scope,  array_type.src_loc  )
 				}
 			}
 			else
@@ -74,12 +74,12 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 		}
 		else
 		{
-			REPORT_ERROR( ArraySizeIsNotInteger, names_scope, array_type.file_pos )
+			REPORT_ERROR( ArraySizeIsNotInteger, names_scope, array_type.src_loc )
 		}
 	}
 	else
 	{
-		REPORT_ERROR( ExpectedConstantExpression, names_scope, array_type.file_pos )
+		REPORT_ERROR( ExpectedConstantExpression, names_scope, array_type.src_loc )
 	}
 
 	unsafe{ out_array_type.llvm_type= LLVMArrayType( out_array_type.element_type.GetLLVMType(), u32(out_array_type.element_count) ); }
@@ -158,11 +158,11 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 			// TODO - make "this" mutable in constructors and destructors.
 			if( class_type.empty() )
 			{
-				REPORT_ERROR( ThisInNonclassFunction, names_scope, param.file_pos, ust::string8("TODO - func name") )
+				REPORT_ERROR( ThisInNonclassFunction, names_scope, param.src_loc, ust::string8("TODO - func name") )
 			}
 			else if( ust::ref_to_int(param) != ust::ref_to_int(function_type.params.front() ) )
 			{
-				REPORT_ERROR( UsingKeywordAsName, names_scope, param.file_pos )
+				REPORT_ERROR( UsingKeywordAsName, names_scope, param.src_loc )
 			}
 			else
 			{
@@ -173,7 +173,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 				}
 				if( !param_ok )
 				{
-					REPORT_ERROR( UsingKeywordAsName, names_scope, param.file_pos )
+					REPORT_ERROR( UsingKeywordAsName, names_scope, param.src_loc )
 				}
 
 				out_param.is_reference= true;
@@ -184,7 +184,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 		{
 			if( IsKeyword( param.name ) )
 			{
-				REPORT_ERROR( UsingKeywordAsName, names_scope, param.file_pos )
+				REPORT_ERROR( UsingKeywordAsName, names_scope, param.src_loc )
 			}
 
 			out_param.t= PrepareType( names_scope, function_context, param.t );
@@ -257,7 +257,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 
 		if( !any_found )
 		{
-			REPORT_ERROR( NameNotFound, names_scope, function_type.file_pos, function_type.return_value_reference_tag )
+			REPORT_ERROR( NameNotFound, names_scope, function_type.src_loc, function_type.return_value_reference_tag )
 		}
 	}
 	else if( res.return_value_is_reference ) // Auto-generate return reference mapping if return tag is empty, but only for returning references and not for returning values.
@@ -278,7 +278,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 	{
 		if( in_pollution.dst == in_pollution.src )
 		{
-			REPORT_ERROR( SelfReferencePollution, names_scope, function_type.file_pos )
+			REPORT_ERROR( SelfReferencePollution, names_scope, function_type.src_loc )
 			continue;
 		}
 
@@ -296,13 +296,13 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 				}
 				else if( in_pollution.dst == function_type.params[i].reference_tag )
 				{
-					REPORT_ERROR( ArgReferencePollution, names_scope, function_type.file_pos )
+					REPORT_ERROR( ArgReferencePollution, names_scope, function_type.src_loc )
 				}
 			}
 
 			if( !any_dst_found )
 			{
-				REPORT_ERROR( NameNotFound, names_scope, function_type.file_pos, in_pollution.dst )
+				REPORT_ERROR( NameNotFound, names_scope, function_type.src_loc, in_pollution.dst )
 				continue;
 			}
 		}
@@ -326,7 +326,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 
 			if( !any_src_found )
 			{
-				REPORT_ERROR( NameNotFound, names_scope, function_type.file_pos, in_pollution.src )
+				REPORT_ERROR( NameNotFound, names_scope, function_type.src_loc, in_pollution.src )
 				continue;
 			}
 		}

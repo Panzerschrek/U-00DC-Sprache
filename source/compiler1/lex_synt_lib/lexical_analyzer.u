@@ -184,7 +184,7 @@ fn NumberFunc16( char8 c ) : u64
 
 type NumberParseFunc= (fn (char8 c) : u64);
 
-fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& file_pos ) : Lexem
+fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc ) : Lexem
 {
 	var u64 mut base_(10);
 	var NumberParseFunc mut number_func= NumberFunc10;
@@ -233,7 +233,7 @@ fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& file_po
 
 		if( integer_part < integer_part_before ) // Check overflow
 		{
-			out_errors.push_back( LexSyntError( file_pos, "Integer part of numeric literal is too long" ) );
+			out_errors.push_back( LexSyntError( src_loc, "Integer part of numeric literal is too long" ) );
 			break;
 		}
 	}
@@ -258,7 +258,7 @@ fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& file_po
 
 			if( fractional_part < fractional_part_before ) // Check overflow
 			{
-				out_errors.push_back( LexSyntError( file_pos,"Fractional part of numeric literal is too long" ) );
+				out_errors.push_back( LexSyntError( src_loc,"Fractional part of numeric literal is too long" ) );
 				break;
 			}
 		}
@@ -349,7 +349,7 @@ fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& file_po
 		var Lexem type_suffix= ParseIdentifier( it );
 		if( type_suffix.text.size() >= max_size )
 		{
-			out_errors.push_back( LexSyntError( file_pos, "Type suffix of numeric literal is too long" ) );
+			out_errors.push_back( LexSyntError( src_loc, "Type suffix of numeric literal is too long" ) );
 		}
 
 		for( auto mut i= 0s; i < ust::min( type_suffix.text.size(), max_size ); ++i )
@@ -365,7 +365,7 @@ fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& file_po
 	return move(result_lexem);
 }
 
-fn ParseString( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& file_pos ) : Lexem
+fn ParseString( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc ) : Lexem
 {
 	var Lexem mut result_lexem{ .lexem_type= Lexem::Type::String };
 
@@ -401,7 +401,7 @@ fn ParseString( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& file_po
 			{
 				if( it.size() < 4s )
 				{
-					out_errors.push_back( LexSyntError( file_pos, "expected 4 hex digits" ) );
+					out_errors.push_back( LexSyntError( src_loc, "expected 4 hex digits" ) );
 					return result_lexem;
 				}
 				auto mut char_code= 0u;
@@ -423,7 +423,7 @@ fn ParseString( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& file_po
 					}
 					else
 					{
-						out_errors.push_back( LexSyntError( file_pos, "expected hex number" ) );
+						out_errors.push_back( LexSyntError( src_loc, "expected hex number" ) );
 						return result_lexem;
 					}
 					char_code|= digit << ( ( 3u - i ) * 4u );
@@ -438,7 +438,7 @@ fn ParseString( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& file_po
 			{
 				var ust::string8 mut err= "invalid escape sequence: \\";
 				err.push_back( escaped_c );
-				out_errors.push_back( LexSyntError( file_pos, move(err) ) );
+				out_errors.push_back( LexSyntError( src_loc, move(err) ) );
 				return result_lexem;
 			}
 		}
@@ -453,7 +453,7 @@ fn ParseString( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& file_po
 
 op Lexem::==( Lexem& l, Lexem& r ) : bool
 {
-	return l.text == r.text && l.file_pos == r.file_pos && l.lexem_type == r.lexem_type;
+	return l.text == r.text && l.src_loc == r.src_loc && l.lexem_type == r.lexem_type;
 }
 
 op Lexem::!=( Lexem& l, Lexem& r ) : bool
@@ -553,7 +553,7 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 	{
 		column+= u32( DiffUTF8Chars( prev_it, it ) );
 		prev_it= it;
-		var SrcLoc file_pos( 0u, line, column );
+		var SrcLoc src_loc( 0u, line, column );
 
 		auto c= GetUTF8FirstChar(it);
 
@@ -599,7 +599,7 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 			}
 			if( comments_depth != 0u )
 			{
-				result.errors.push_back( LexSyntError( file_pos, "Lexical error: expected */" ) );
+				result.errors.push_back( LexSyntError( src_loc, "Lexical error: expected */" ) );
 			}
 
 			continue;
@@ -631,14 +631,14 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 		}
 		else if( IsNumberStartChar(c) )
 		{
-			lexem= ParseNumber( it, result.errors, file_pos );
+			lexem= ParseNumber( it, result.errors, src_loc );
 		}
 		else if( c == "\""c32 )
 		{
-			lexem= ParseString( it, result.errors, file_pos );
+			lexem= ParseString( it, result.errors, src_loc );
 			if( !it.empty() && IsIdentifierStartChar( GetUTF8FirstChar( it ) ) )
 			{
-				lexem.file_pos= file_pos;
+				lexem.src_loc= src_loc;
 				result.lexems.push_back( take(lexem) );
 
 				lexem= ParseIdentifier(it);
@@ -685,18 +685,18 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 
 		if( lexem.lexem_type != Lexem::Type::None )
 		{
-			lexem.file_pos= file_pos;
+			lexem.src_loc= src_loc;
 			result.lexems.push_back(move(lexem));
 		}
 		else
 		{
 			move(lexem);
-			result.errors.push_back( LexSyntError( file_pos, "Lexical error: unexpected lexem" ) );
+			result.errors.push_back( LexSyntError( src_loc, "Lexical error: unexpected lexem" ) );
 			it.drop_front();
 		}
 	}
 
-	var Lexem mut end_of_file_lexem{ .file_pos( 0u, line, column ), .text= "EOF" };
+	var Lexem mut end_of_file_lexem{ .src_loc( 0u, line, column ), .text= "EOF" };
 	result.lexems.push_back( end_of_file_lexem );
 
 	return move(result);

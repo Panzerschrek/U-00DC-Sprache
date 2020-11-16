@@ -245,13 +245,13 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_
 				if( !prev_class_value.syntax_element.empty() && !new_class_value.syntax_element.empty() &&
 					prev_class_value.syntax_element != new_class_value.syntax_element )
 				{
-					REPORT_ERROR( ClassBodyDuplication, global_names_scope, new_class_value.syntax_element.get_ref().file_pos, new_class_value.syntax_element.get_ref().name )
+					REPORT_ERROR( ClassBodyDuplication, global_names_scope, new_class_value.syntax_element.get_ref().src_loc, new_class_value.syntax_element.get_ref().name )
 				}
 				if( !prev_class_value.forward_declaration_syntax_element.empty() && !new_class_value.forward_declaration_syntax_element.empty() &&
 					prev_class_value.forward_declaration_syntax_element != new_class_value.forward_declaration_syntax_element )
 				{
 					// TODO - generate another error
-					REPORT_ERROR( ClassBodyDuplication, global_names_scope, new_class_value.syntax_element.get_ref().file_pos, new_class_value.forward_declaration_syntax_element.get_ref().name )
+					REPORT_ERROR( ClassBodyDuplication, global_names_scope, new_class_value.syntax_element.get_ref().src_loc, new_class_value.forward_declaration_syntax_element.get_ref().name )
 				}
 
 				// Select complete class.
@@ -324,7 +324,7 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_
 	}
 }
 
-fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeValue& names_scope_value, SrcLoc& file_pos ) : Value
+fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeValue& names_scope_value, SrcLoc& src_loc ) : Value
 {
 	auto t= names_scope_value.Get</Type/>();
 	if( !t.empty() )
@@ -364,7 +364,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 
 		if( v.node_id != ReferencesGraph::c_empty_node_id && function_context.references_graph.NodeIsMoved( v.node_id ) )
 		{
-			REPORT_ERROR( AccessingMovedVariable, names_scope, file_pos, function_context.references_graph.GetNodeName( v.node_id ) )
+			REPORT_ERROR( AccessingMovedVariable, names_scope, src_loc, function_context.references_graph.GetNodeName( v.node_id ) )
 		}
 
 		var Variable mut res
@@ -390,7 +390,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 
 		if( function_context.this_.empty() )
 		{
-			REPORT_ERROR( ClassFieldAccessInStaticMethod, names_scope, file_pos, field_name )
+			REPORT_ERROR( ClassFieldAccessInStaticMethod, names_scope, src_loc, field_name )
 			return ErrorValue();
 		}
 
@@ -413,7 +413,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 
 		if( current_class.empty() )
 		{
-			REPORT_ERROR( AccessOfNonThisClassField, names_scope, file_pos, field_name )
+			REPORT_ERROR( AccessOfNonThisClassField, names_scope, src_loc, field_name )
 			return ErrorValue();
 		}
 
@@ -422,7 +422,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 			if( !function_context.uninitialized_this_fields.find( field_name ).empty() ||
 				( field_source_class != this_class && !function_context.uninitialized_this_fields.find( KeywordToString( Keyword::base_ ) ).empty() ) )
 			{
-				REPORT_ERROR( FieldIsNotInitializedYet, names_scope, file_pos, field_name )
+				REPORT_ERROR( FieldIsNotInitializedYet, names_scope, src_loc, field_name )
 			}
 		}
 
@@ -456,7 +456,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 					if( (  field.is_mutable && function_context.references_graph.HaveOutgoingLinks( inner_node ) ) ||
 						( !field.is_mutable && function_context.references_graph.HaveOutgoingMutableNodes( inner_node ) ) )
 					{
-						REPORT_ERROR( ReferenceProtectionError, names_scope, file_pos, function_context.references_graph.GetNodeName( inner_node ) )
+						REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( inner_node ) )
 					}
 					else
 					{
@@ -656,14 +656,14 @@ fn CodeBuilder::ResolveValue(
 		{
 			if( !function_context.is_in_unsafe_block )
 			{
-				REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope, complex_name.file_pos, start_name )
+				REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope, complex_name.src_loc, start_name )
 			}
 		}
 	}
 
 	if( current_value.empty() )
 	{
-		REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, complex_name )
+		REPORT_ERROR( NameNotFound, names_scope, complex_name.src_loc, complex_name )
 		return ErrorValue();
 	}
 
@@ -738,7 +738,7 @@ fn CodeBuilder::ResolveValue(
 				if( u32( names_scope.lock_imut().get_ref().GetAccessFor( ust::to_non_nullable(class_) ) ) <
 					u32( class_ref.GetMemberVisibility( name_component_name ) ) )
 				{
-					REPORT_ERROR( AccessingNonpublicClassMember, names_scope, complex_name.file_pos, name_component_name, Type(ust::to_non_nullable(class_)).ToString() )
+					REPORT_ERROR( AccessingNonpublicClassMember, names_scope, complex_name.src_loc, name_component_name, Type(ust::to_non_nullable(class_)).ToString() )
 				}
 			}
 
@@ -748,7 +748,7 @@ fn CodeBuilder::ResolveValue(
 				auto new_value= namespace_lock.get_ref().GetThisScopeValue( name_component_name );
 				if( new_value.empty() )
 				{
-					REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, name_component_name )
+					REPORT_ERROR( NameNotFound, names_scope, complex_name.src_loc, name_component_name )
 					return ErrorValue();
 				}
 
@@ -765,7 +765,7 @@ fn CodeBuilder::ResolveValue(
 				auto element= lock.get_ref().elements.find( name_component_name );
 				if( element.empty() )
 				{
-					REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, name_component_name )
+					REPORT_ERROR( NameNotFound, names_scope, complex_name.src_loc, name_component_name )
 					return ErrorValue();
 				}
 
@@ -781,12 +781,12 @@ fn CodeBuilder::ResolveValue(
 			}
 			else if( !type_templates_set.empty() )
 			{
-				REPORT_ERROR( TemplateInstantiationRequired, names_scope, complex_name.file_pos, name_component_name )
+				REPORT_ERROR( TemplateInstantiationRequired, names_scope, complex_name.src_loc, name_component_name )
 				return ErrorValue();
 			}
 			else
 			{
-				REPORT_ERROR( NameNotFound, names_scope, complex_name.file_pos, name_component_name ) // TODO -print more relevant error
+				REPORT_ERROR( NameNotFound, names_scope, complex_name.src_loc, name_component_name ) // TODO -print more relevant error
 				return ErrorValue();
 			}
 
@@ -795,7 +795,7 @@ fn CodeBuilder::ResolveValue(
 			{
 				if( !function_context.is_in_unsafe_block )
 				{
-					REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope, complex_name.file_pos, name_component_name )
+					REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope, complex_name.src_loc, name_component_name )
 				}
 			}
 		}
@@ -817,7 +817,7 @@ fn CodeBuilder::ResolveValue(
 					function_context,
 					ust::to_non_nullable(type_templates_set),
 					template_args.get_ref(),
-					complex_name.file_pos );
+					complex_name.src_loc );
 				if( !generated_type.empty() )
 				{
 					current_value.get_ref()= generated_type.get_ref();
@@ -840,7 +840,7 @@ fn CodeBuilder::ResolveValue(
 
 				if( f.functions_set.function_templates.empty() )
 				{
-					REPORT_ERROR( ValueIsNotTemplate, names_scope, complex_name.file_pos )
+					REPORT_ERROR( ValueIsNotTemplate, names_scope, complex_name.src_loc )
 					return ErrorValue();
 				}
 
@@ -850,7 +850,7 @@ fn CodeBuilder::ResolveValue(
 						function_context,
 						f.functions_set,
 						template_args.get_ref(),
-						complex_name.file_pos );
+						complex_name.src_loc );
 				if( current_value.empty() )
 				{
 					return ErrorValue();
@@ -858,7 +858,7 @@ fn CodeBuilder::ResolveValue(
 			}
 			else
 			{
-				REPORT_ERROR( ValueIsNotTemplate, names_scope, complex_name.file_pos )
+				REPORT_ERROR( ValueIsNotTemplate, names_scope, complex_name.src_loc )
 				return ErrorValue();
 			}
 		}
@@ -872,13 +872,13 @@ fn CodeBuilder::ResolveValue(
 			auto& template_arg= template_arg_lock.get_ref();
 			if( !template_arg.something.get</TemplateArg::NotKnownYet/>().empty() )
 			{
-				REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, complex_name.file_pos, complex_name )
+				REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, complex_name.src_loc, complex_name )
 				return ErrorValue();
 			}
 		}
 	}
 
-	return NamesScopeValueToValue( ust::to_non_nullable(current_scope), function_context, current_value.get_ref(), complex_name.file_pos );
+	return NamesScopeValueToValue( ust::to_non_nullable(current_scope), function_context, current_value.get_ref(), complex_name.src_loc );
 }
 
 fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
@@ -925,7 +925,7 @@ fn CodeBuilder::PrepareFunction(
 
 	if( !function_declaration.constructor_initializer_list.empty() && func_name != KeywordToString( Keyword::constructor_ ) )
 	{
-		REPORT_ERROR( InitializationListInNonconstructor, names_scope_ptr, function_declaration.constructor_initializer_list.get_ref().file_pos )
+		REPORT_ERROR( InitializationListInNonconstructor, names_scope_ptr, function_declaration.constructor_initializer_list.get_ref().src_loc )
 	}
 
 	// TODO - maybe clear global constext after it's usage?
@@ -982,14 +982,14 @@ fn CodeBuilder::PrepareFunction(
 		if( ( is_constructor || is_destructor ) &&
 			!(function_type.return_type == void_type_ && !function_type.return_value_is_reference ) )
 		{
-			REPORT_ERROR( ConstructorAndDestructorMustReturnVoid, names_scope_ptr, function_declaration.file_pos )
+			REPORT_ERROR( ConstructorAndDestructorMustReturnVoid, names_scope_ptr, function_declaration.src_loc )
 		}
 		if( is_destructor && function_type.params.size() > 1s )
 		{
-			REPORT_ERROR( ExplicitArgumentsInDestructor, names_scope_ptr, function_declaration.file_pos )
+			REPORT_ERROR( ExplicitArgumentsInDestructor, names_scope_ptr, function_declaration.src_loc )
 		}
 
-		CheckOverloadedOperator( class_type, function_type, function_declaration.operator, names_scope_ptr, function_declaration.file_pos );
+		CheckOverloadedOperator( class_type, function_type, function_declaration.operator, names_scope_ptr, function_declaration.src_loc );
 	}
 
 	// Check conversion constructor.
@@ -1001,7 +1001,7 @@ fn CodeBuilder::PrepareFunction(
 		}
 		else
 		{
-			REPORT_ERROR( ConversionConstructorMustHaveOneArgument, names_scope_ptr, function_declaration.file_pos )
+			REPORT_ERROR( ConversionConstructorMustHaveOneArgument, names_scope_ptr, function_declaration.src_loc )
 		}
 	}
 
@@ -1016,11 +1016,11 @@ fn CodeBuilder::PrepareFunction(
 			{
 				if( is_constructor )
 				{
-					REPORT_ERROR( ExplicitReferencePollutionForCopyConstructor, names_scope_ptr, function_declaration.file_pos )
+					REPORT_ERROR( ExplicitReferencePollutionForCopyConstructor, names_scope_ptr, function_declaration.src_loc )
 				}
 				else
 				{
-					REPORT_ERROR( ExplicitReferencePollutionForCopyAssignmentOperator, names_scope_ptr, function_declaration.file_pos )
+					REPORT_ERROR( ExplicitReferencePollutionForCopyAssignmentOperator, names_scope_ptr, function_declaration.src_loc )
 				}
 				function_variable.t.references_pollution.clear();
 			}
@@ -1038,11 +1038,11 @@ fn CodeBuilder::PrepareFunction(
 	{
 		if( function_declaration.block.empty() )
 		{
-			REPORT_ERROR( ConstexprFunctionsMustHaveBody, names_scope_ptr, function_declaration.file_pos )
+			REPORT_ERROR( ConstexprFunctionsMustHaveBody, names_scope_ptr, function_declaration.src_loc )
 		}
 		else if( function_declaration.virtual_kind != Synt::Function::VirtualKind::None )
 		{
-			REPORT_ERROR( ConstexprFunctionCanNotBeVirtual, names_scope_ptr, function_declaration.file_pos )
+			REPORT_ERROR( ConstexprFunctionCanNotBeVirtual, names_scope_ptr, function_declaration.src_loc )
 		}
 		else
 		{
@@ -1054,15 +1054,15 @@ fn CodeBuilder::PrepareFunction(
 	{
 		if( class_type.empty() )
 		{
-			REPORT_ERROR( VirtualForNonclassFunction, names_scope_ptr, function_declaration.file_pos, func_name )
+			REPORT_ERROR( VirtualForNonclassFunction, names_scope_ptr, function_declaration.src_loc, func_name )
 		}
 		if( !function_variable.is_this_call )
 		{
-			REPORT_ERROR( VirtualForNonThisCallFunction, names_scope_ptr, function_declaration.file_pos, func_name )
+			REPORT_ERROR( VirtualForNonThisCallFunction, names_scope_ptr, function_declaration.src_loc, func_name )
 		}
 		if( is_constructor )
 		{
-			REPORT_ERROR( FunctionCanNotBeVirtual, names_scope_ptr, function_declaration.file_pos, func_name )
+			REPORT_ERROR( FunctionCanNotBeVirtual, names_scope_ptr, function_declaration.src_loc, func_name )
 		}
 		if( !class_type.empty() )
 		{
@@ -1070,12 +1070,12 @@ fn CodeBuilder::PrepareFunction(
 			auto& class_ref= class_lock.get_ref();
 			if( class_ref.kind == ClassType::Kind::Struct || class_ref.kind == ClassType::Kind::NonPolymorph )
 			{
-				REPORT_ERROR( VirtualForNonpolymorphClass, names_scope_ptr, function_declaration.file_pos, func_name )
+				REPORT_ERROR( VirtualForNonpolymorphClass, names_scope_ptr, function_declaration.src_loc, func_name )
 			}
 		}
 		if( is_out_of_line_function )
 		{
-			REPORT_ERROR( VirtualForFunctionImplementation, names_scope_ptr, function_declaration.file_pos, func_name )
+			REPORT_ERROR( VirtualForFunctionImplementation, names_scope_ptr, function_declaration.src_loc, func_name )
 		}
 	}
 
@@ -1097,7 +1097,7 @@ fn CodeBuilder::PrepareFunction(
 
 		if( invalid_func )
 		{
-			REPORT_ERROR( InvalidMethodForBodyGeneration, names_scope_ptr, function_declaration.file_pos )
+			REPORT_ERROR( InvalidMethodForBodyGeneration, names_scope_ptr, function_declaration.src_loc )
 		}
 		else
 		{
@@ -1113,7 +1113,7 @@ fn CodeBuilder::PrepareFunction(
 		}
 		else
 		{
-			REPORT_ERROR( NoMangleForNonglobalFunction, names_scope_ptr, function_declaration.file_pos, func_name )
+			REPORT_ERROR( NoMangleForNonglobalFunction, names_scope_ptr, function_declaration.src_loc, func_name )
 		}
 	}
 
@@ -1128,7 +1128,7 @@ fn CodeBuilder::PrepareFunction(
 			REPORT_ERROR(
 				FunctionPrototypeDuplication,
 				names_scope_ptr,
-				ust::max( function_declaration.file_pos, prev_function.prototype_syntax_element.get_ref().file_pos ),
+				ust::max( function_declaration.src_loc, prev_function.prototype_syntax_element.get_ref().src_loc ),
 				func_name )
 			return false;
 		}
@@ -1142,14 +1142,14 @@ fn CodeBuilder::PrepareFunction(
 			REPORT_ERROR(
 				FunctionBodyDuplication,
 				names_scope_ptr,
-				ust::max( function_declaration.file_pos, prev_function.body_syntax_element.get_ref().file_pos ),
+				ust::max( function_declaration.src_loc, prev_function.body_syntax_element.get_ref().src_loc ),
 				func_name )
 			return false;
 		}
 
 		if( prev_function.is_this_call != function_variable.is_this_call )
 		{
-			REPORT_ERROR( ThiscallMismatch, names_scope_ptr, function_declaration.file_pos, func_name )
+			REPORT_ERROR( ThiscallMismatch, names_scope_ptr, function_declaration.src_loc, func_name )
 			return false;
 		}
 
@@ -1157,37 +1157,37 @@ fn CodeBuilder::PrepareFunction(
 			!prev_function.body_syntax_element.empty() && !prev_function.prototype_syntax_element.empty() &&
 			prev_function.body_syntax_element.get_ref().virtual_kind != prev_function.prototype_syntax_element.get_ref().virtual_kind )
 		{
-			REPORT_ERROR( VirtualMismatch, names_scope_ptr, prev_function.body_syntax_element.get_ref().file_pos, func_name )
+			REPORT_ERROR( VirtualMismatch, names_scope_ptr, prev_function.body_syntax_element.get_ref().src_loc, func_name )
 			return false;
 		}
 		if( !prev_function.body_syntax_element.empty() && !prev_function.prototype_syntax_element.empty() &&
 			prev_function.prototype_syntax_element.get_ref().virtual_kind == Synt::Function::VirtualKind::VirtualPure )
 		{
-			REPORT_ERROR( BodyForPureVirtualFunction, names_scope_ptr, prev_function.body_syntax_element.get_ref().file_pos, func_name )
+			REPORT_ERROR( BodyForPureVirtualFunction, names_scope_ptr, prev_function.body_syntax_element.get_ref().src_loc, func_name )
 			return false;
 		}
 
 		if( prev_function.is_deleted != function_variable.is_deleted )
 		{
-			REPORT_ERROR( BodyForDeletedFunction, names_scope_ptr, prev_function.prototype_syntax_element.get_ref().file_pos, func_name )
+			REPORT_ERROR( BodyForDeletedFunction, names_scope_ptr, prev_function.prototype_syntax_element.get_ref().src_loc, func_name )
 			return false;
 		}
 		if( prev_function.is_generated != function_variable.is_generated )
 		{
-			REPORT_ERROR( BodyForGeneratedFunction, names_scope_ptr, prev_function.prototype_syntax_element.get_ref().file_pos, func_name )
+			REPORT_ERROR( BodyForGeneratedFunction, names_scope_ptr, prev_function.prototype_syntax_element.get_ref().src_loc, func_name )
 			return false;
 		}
 
 		if( prev_function.no_mangle != function_variable.no_mangle )
 		{
-			REPORT_ERROR( NoMangleMismatch, names_scope_ptr, function_declaration.file_pos, func_name )
+			REPORT_ERROR( NoMangleMismatch, names_scope_ptr, function_declaration.src_loc, func_name )
 			return false;
 		}
 
 		if( prev_function.is_conversion_constructor != function_variable.is_conversion_constructor )
 		{
 			// TODO -use separate error code
-			REPORT_ERROR( NotImplemented, names_scope_ptr, function_declaration.file_pos, ust::string8("changing conversion constructor name") )
+			REPORT_ERROR( NotImplemented, names_scope_ptr, function_declaration.src_loc, ust::string8("changing conversion constructor name") )
 			return false;
 		}
 
@@ -1196,7 +1196,7 @@ fn CodeBuilder::PrepareFunction(
 
 	if( is_out_of_line_function )
 	{
-		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope_ptr, function_declaration.file_pos )
+		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope_ptr, function_declaration.src_loc )
 		return false;
 	}
 
@@ -1224,7 +1224,7 @@ fn CodeBuilder::PrepareFunction(
 				function_variable.t.llvm_type );
 	}
 
-	return ApplyOverloadedFunction( functions_set, move(function_variable), names_scope_ptr, function_declaration.file_pos );
+	return ApplyOverloadedFunction( functions_set, move(function_variable), names_scope_ptr, function_declaration.src_loc );
 }
 
 fn CodeBuilder::CheckOverloadedOperator(
@@ -1233,13 +1233,13 @@ fn CodeBuilder::CheckOverloadedOperator(
 	FunctionType& func_type,
 	OverloadedOperator operator,
 	NamesScopePtr& names_scope,
-	SrcLoc& file_pos )
+	SrcLoc& src_loc )
 {
 	if( operator == OverloadedOperator::None ) { return; } // Non-operator
 
 	if( class_type.empty() )
 	{
-		REPORT_ERROR( OperatorDeclarationOutsideClass, names_scope, file_pos )
+		REPORT_ERROR( OperatorDeclarationOutsideClass, names_scope, src_loc )
 		return;
 	}
 
@@ -1257,7 +1257,7 @@ fn CodeBuilder::CheckOverloadedOperator(
 
 	if( !is_this_class )
 	{
-		REPORT_ERROR( OperatorDoesNotHaveParentClassArguments, names_scope, file_pos )
+		REPORT_ERROR( OperatorDoesNotHaveParentClassArguments, names_scope, src_loc )
 	}
 
 	auto ret_is_void=
@@ -1269,7 +1269,7 @@ fn CodeBuilder::CheckOverloadedOperator(
 	{
 		if( !( func_type.params.size() == 1s || func_type.params.size() == 2s ) )
 		{
-			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
+			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, src_loc )
 		}
 	}
 	else
@@ -1284,7 +1284,7 @@ fn CodeBuilder::CheckOverloadedOperator(
 	{
 		if( func_type.params.size() != 2s )
 		{
-			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
+			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, src_loc )
 		}
 	}
 	else
@@ -1302,11 +1302,11 @@ fn CodeBuilder::CheckOverloadedOperator(
 	{
 		if( func_type.params.size() != 2s )
 		{
-			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
+			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, src_loc )
 		}
 		if( !ret_is_void )
 		{
-			REPORT_ERROR( InvalidReturnTypeForOperator, names_scope, file_pos, void_type_ )
+			REPORT_ERROR( InvalidReturnTypeForOperator, names_scope, src_loc, void_type_ )
 		}
 	}
 	else
@@ -1319,11 +1319,11 @@ fn CodeBuilder::CheckOverloadedOperator(
 	{
 		if( func_type.params.size() != 2s )
 		{
-			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
+			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, src_loc )
 		}
 		if( !( func_type.return_type == bool_type_ && !func_type.return_value_is_reference ) )
 		{
-			REPORT_ERROR( InvalidReturnTypeForOperator, names_scope, file_pos, void_type_ )
+			REPORT_ERROR( InvalidReturnTypeForOperator, names_scope, src_loc, void_type_ )
 		}
 	}
 	else
@@ -1332,7 +1332,7 @@ fn CodeBuilder::CheckOverloadedOperator(
 	{
 		if( func_type.params.size() != 1s )
 		{
-			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
+			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, src_loc )
 		}
 	}
 	else
@@ -1341,23 +1341,23 @@ fn CodeBuilder::CheckOverloadedOperator(
 	{
 		if( func_type.params.size() != 1s )
 		{
-			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
+			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, src_loc )
 		}
 		if( !ret_is_void )
 		{
-			REPORT_ERROR( InvalidReturnTypeForOperator, names_scope, file_pos, void_type_ )
+			REPORT_ERROR( InvalidReturnTypeForOperator, names_scope, src_loc, void_type_ )
 		}
 	}
 	else if( operator == OverloadedOperator::Indexing )
 	{
 		if( func_type.params.size() != 2s )
 		{
-			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
+			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, src_loc )
 		}
 		// Indexing operator must have first argument of parent class.
 		if( !func_type.params.empty() && func_type.params.front().t != class_type_non_null )
 		{
-			REPORT_ERROR( OperatorDoesNotHaveParentClassArguments, names_scope, file_pos )
+			REPORT_ERROR( OperatorDoesNotHaveParentClassArguments, names_scope, src_loc )
 		}
 		// TODO - maybe also disable non-this-call indexing operator?
 	}
@@ -1365,12 +1365,12 @@ fn CodeBuilder::CheckOverloadedOperator(
 	{
 		if( func_type.params.empty() )
 		{
-			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, file_pos )
+			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, src_loc )
 		}
 		// Call operator must have first argument of parent class.
 		if( !func_type.params.empty() && func_type.params.front().t != class_type_non_null )
 		{
-			REPORT_ERROR( OperatorDoesNotHaveParentClassArguments, names_scope, file_pos )
+			REPORT_ERROR( OperatorDoesNotHaveParentClassArguments, names_scope, src_loc )
 		}
 		// TODO - maybe also disable non-this-call call operator?
 	}
@@ -1407,7 +1407,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 	// TODO - maybe forbid incomplete types even for references?
 	if( !func_variable.t.return_value_is_reference && !EnsureTypeComplete( func_variable.t.return_type ) )
 	{
-		REPORT_ERROR( UsingIncompleteType, names_scope, func_variable.body_syntax_element.get_ref().file_pos, func_variable.t.return_type )
+		REPORT_ERROR( UsingIncompleteType, names_scope, func_variable.body_syntax_element.get_ref().src_loc, func_variable.t.return_type )
 	}
 
 	{
@@ -1444,7 +1444,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			// Ensure type completness even for reference args because of reference checking.
 			if( !EnsureTypeComplete( out_arg.t ) || ( !type_arg.is_reference && out_arg.t == void_type_ ) )
 			{
-				REPORT_ERROR( UsingIncompleteType, names_scope, in_param.file_pos, out_arg.t )
+				REPORT_ERROR( UsingIncompleteType, names_scope, in_param.src_loc, out_arg.t )
 				return;
 			}
 
@@ -1464,7 +1464,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 					out_arg.llvm_value= arg_value;
 				}
 
-				CreateReferenceVariableDebugInfo( function_context, out_arg, in_param.name, in_param.file_pos );
+				CreateReferenceVariableDebugInfo( function_context, out_arg, in_param.name, in_param.src_loc );
 
 				// Create variable node and reference node for it.
 				var ReferencesGraph::NodeId variable_node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, in_param.name + " variable" );
@@ -1510,7 +1510,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 					}
 				}
 
-				CreateVariableDebugInfo( function_context, out_arg, in_param.name, in_param.file_pos );
+				CreateVariableDebugInfo( function_context, out_arg, in_param.name, in_param.src_loc );
 
 				out_arg.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, in_param.name );
 				if( type_arg.t.GetInnerReferenceKind() != InnerReferenceKind::None )
@@ -1543,7 +1543,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				var bool insert_ok= !args_names_scope.AddName( in_param.name, NamesScopeValue( move(out_arg) ) ).empty();
 				if( !insert_ok )
 				{
-					REPORT_ERROR( Redefinition, names_scope, in_param.file_pos, in_param.name )
+					REPORT_ERROR( Redefinition, names_scope, in_param.src_loc, in_param.name )
 				}
 			}
 		}
@@ -1568,7 +1568,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			}
 			else
 			{
-				var Synt::StructNamedInitializer dummy_initializer{ .file_pos= block.file_pos };
+				var Synt::StructNamedInitializer dummy_initializer{ .src_loc= block.src_loc };
 				BuildConstructorInitialization(
 					args_names_scope_ptr,
 					function_context,
@@ -1606,8 +1606,8 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			if( func_variable.t.return_type == void_type_ && !func_variable.t.return_value_is_reference )
 			{
 				// Manually generate "return" for void-return functions.
-				CallDestructorsForAllVariablesFrames( args_names_scope_ptr, function_context, block.end_file_pos );
-				CheckReferencesPollutionBeforeReturn( names_scope, function_context, block.end_file_pos );
+				CallDestructorsForAllVariablesFrames( args_names_scope_ptr, function_context, block.end_src_loc );
+				CheckReferencesPollutionBeforeReturn( names_scope, function_context, block.end_src_loc );
 				unsafe
 				{
 					if( function_context.destructor_end_block != LLVMBasicBlockRef::Null )
@@ -1622,7 +1622,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			}
 			else
 			{
-				REPORT_ERROR( NoReturnInFunctionReturningNonVoid, args_names_scope_ptr, block.end_file_pos )
+				REPORT_ERROR( NoReturnInFunctionReturningNonVoid, args_names_scope_ptr, block.end_src_loc )
 				return;
 			}
 		}
@@ -1671,7 +1671,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		{
 			if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::ConstexprAuto )
 			{
-				REPORT_ERROR( InvalidTypeForConstexprFunction, names_scope, func_variable.body_syntax_element.get_ref().file_pos )
+				REPORT_ERROR( InvalidTypeForConstexprFunction, names_scope, func_variable.body_syntax_element.get_ref().src_loc )
 			}
 			func_variable.constexpr_kind= FunctionVariable::ConstexprKind::NonConstexpr;
 		}
@@ -1679,7 +1679,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		{
 			if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::ConstexprAuto )
 			{
-				REPORT_ERROR( ConstexprFunctionContainsUnallowedOperations, names_scope, func_variable.body_syntax_element.get_ref().file_pos )
+				REPORT_ERROR( ConstexprFunctionContainsUnallowedOperations, names_scope, func_variable.body_syntax_element.get_ref().src_loc )
 			}
 			func_variable.constexpr_kind= FunctionVariable::ConstexprKind::NonConstexpr;
 		}
@@ -1696,21 +1696,21 @@ fn CodeBuilder::TryCallCopyConstructor(
 	FunctionContext &mut function_context,
 	LLVMValueRef dst, LLVMValueRef src,
 	ClassTypePtr& class_type,
-	SrcLoc& file_pos )
+	SrcLoc& src_loc )
 {
 	// TODO - maybe combine this with "BuildCopyConstructorPart" method?
 	if( !class_type.lock_imut().get_ref().is_copy_constructible )
 	{
-		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, file_pos, Type(class_type) )
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, Type(class_type) )
 		return;
 	}
 
 	// TODO - what if copy constructor is unsafe?
 
-	BuildCopyConstructorPart( names_scope, function_context, dst, src, class_type, file_pos );
+	BuildCopyConstructorPart( names_scope, function_context, dst, src, class_type, src_loc );
 }
 
-fn CodeBuilder::CallDestructorsForVariablesFrame( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, size_type variables_frame_index, SrcLoc& file_pos )
+fn CodeBuilder::CallDestructorsForVariablesFrame( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, size_type variables_frame_index, SrcLoc& src_loc )
 {
 	// Call destructors in reverse order.
 	for( auto mut i= function_context.variables_frames[variables_frame_index].size(); i > 0s; --i )
@@ -1723,11 +1723,11 @@ fn CodeBuilder::CallDestructorsForVariablesFrame( this, NamesScopePtr& names_sco
 			{
 				if( function_context.references_graph.HaveOutgoingLinks( variable.node_id ) )
 				{
-					REPORT_ERROR( DestroyedVariableStillHaveReferences, names_scope, file_pos, function_context.references_graph.GetNodeName( variable.node_id ) )
+					REPORT_ERROR( DestroyedVariableStillHaveReferences, names_scope, src_loc, function_context.references_graph.GetNodeName( variable.node_id ) )
 				}
 				if( !function_context.references_graph.NodeIsMoved( variable.node_id ) )
 				{
-					BuildDestructorPart( names_scope, function_context, variable.llvm_value, variable.t, file_pos );
+					BuildDestructorPart( names_scope, function_context, variable.llvm_value, variable.t, src_loc );
 				}
 			}
 
@@ -1736,29 +1736,29 @@ fn CodeBuilder::CallDestructorsForVariablesFrame( this, NamesScopePtr& names_sco
 	}
 }
 
-fn CodeBuilder::CallDestructorsForTopVariablesFrame( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& file_pos )
+fn CodeBuilder::CallDestructorsForTopVariablesFrame( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc )
 {
 	auto variables_frame_index= function_context.variables_frames.size() - 1s;
-	CallDestructorsForVariablesFrame( names_scope, function_context, variables_frame_index, file_pos );
+	CallDestructorsForVariablesFrame( names_scope, function_context, variables_frame_index, src_loc );
 }
 
-fn CodeBuilder::CallDestructorsForAllVariablesFrames( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& file_pos )
+fn CodeBuilder::CallDestructorsForAllVariablesFrames( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc )
 {
 	for( auto mut i= function_context.variables_frames.size(); i > 0s; --i )
 	{
-		CallDestructorsForVariablesFrame( names_scope, function_context, i - 1s, file_pos );
+		CallDestructorsForVariablesFrame( names_scope, function_context, i - 1s, src_loc );
 	}
 }
 
-fn CodeBuilder::CallDestructorsForLoopInnerVariables( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& file_pos )
+fn CodeBuilder::CallDestructorsForLoopInnerVariables( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc )
 {
 	for( var size_type mut i= function_context.variables_frames.size(), i_end= function_context.loops_stack.back().variable_frames_stack_size; i > i_end; --i )
 	{
-		CallDestructorsForVariablesFrame( names_scope, function_context, i - 1s, file_pos );
+		CallDestructorsForVariablesFrame( names_scope, function_context, i - 1s, src_loc );
 	}
 }
 
-fn CodeBuilder::DestroyUnusedTemporaryVariables( this, NamesScopePtr& names_scope, FunctionContext& mut function_context, SrcLoc& file_pos )
+fn CodeBuilder::DestroyUnusedTemporaryVariables( this, NamesScopePtr& names_scope, FunctionContext& mut function_context, SrcLoc& src_loc )
 {
 	// TODO - maybe iterate in reverse order?
 	// TODO - maybe we should iterate multiple times until all unused nodes is not removed?
@@ -1775,7 +1775,7 @@ fn CodeBuilder::DestroyUnusedTemporaryVariables( this, NamesScopePtr& names_scop
 			{
 				var LLVMValueRef llvm_value= function_context.variables_frames.back()[i].llvm_value;
 				var Type t= function_context.variables_frames.back()[i].t;
-				BuildDestructorPart( names_scope, function_context, llvm_value, t, file_pos );
+				BuildDestructorPart( names_scope, function_context, llvm_value, t, src_loc );
 			}
 		}
 	}
@@ -1801,7 +1801,7 @@ fn CodeBuilder::IsReferenceAllowedForReturn( this, FunctionContext& function_con
 	return false;
 }
 
-fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names_scope, FunctionContext& function_context, SrcLoc& file_pos )
+fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names_scope, FunctionContext& function_context, SrcLoc& src_loc )
 {
 	auto& function_type= function_context.function_type;
 	auto& params= function_type.params;
@@ -1864,24 +1864,24 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 
 			if( !found )
 			{
-				REPORT_ERROR( UnallowedReferencePollution, names_scope, file_pos )
+				REPORT_ERROR( UnallowedReferencePollution, names_scope, src_loc )
 			}
 		}
 	}
 }
 
-fn CodeBuilder::MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches, NamesScopePtr names_scope, SrcLoc& file_pos ) : ReferencesGraph
+fn CodeBuilder::MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches, NamesScopePtr names_scope, SrcLoc& src_loc ) : ReferencesGraph
 {
 	auto errors_container= names_scope.lock_imut().get_ref().GetErrors();
 	auto mut lock= errors_container.lock_mut();
-	return ReferencesGraph::MergeReferencesGraphsAfterConditionalBranches( branches, lock.get_ref(), file_pos );
+	return ReferencesGraph::MergeReferencesGraphsAfterConditionalBranches( branches, lock.get_ref(), src_loc );
 }
 
-fn CodeBuilder::CheckReferencesGraphAfterLoop( ReferencesGraph& state_before, ReferencesGraph& state_after, NamesScopePtr names_scope, SrcLoc& file_pos )
+fn CodeBuilder::CheckReferencesGraphAfterLoop( ReferencesGraph& state_before, ReferencesGraph& state_after, NamesScopePtr names_scope, SrcLoc& src_loc )
 {
 	auto errors_container= names_scope.lock_imut().get_ref().GetErrors();
 	auto mut lock= errors_container.lock_mut();
-	ReferencesGraph::CheckReferencesGraphAfterLoop( state_before, state_after, lock.get_ref(), file_pos );
+	ReferencesGraph::CheckReferencesGraphAfterLoop( state_before, state_after, lock.get_ref(), src_loc );
 }
 
 fn CodeBuilder::SetupReferencesInCopyOrMove(
@@ -1890,7 +1890,7 @@ fn CodeBuilder::SetupReferencesInCopyOrMove(
 	Type& dst_type,
 	ReferencesGraph::NodeId dst_node,
 	ReferencesGraph::NodeId src_node,
-	SrcLoc& file_pos )
+	SrcLoc& src_loc )
 {
 	if( dst_node == ReferencesGraph::c_empty_node_id ||
 		src_node == ReferencesGraph::c_empty_node_id ||
@@ -1936,7 +1936,7 @@ fn CodeBuilder::SetupReferencesInCopyOrMove(
 			var bool src_inner_reference_node_is_mutable= references_graph.GetNodeKind( src_inner_reference_node ) == ReferencesGraph::NodeKind::ReferenceMut;
 			if( dst_inner_reference_node_is_mutable != src_inner_reference_node_is_mutable )
 			{
-				REPORT_ERROR( ReferenceProtectionError, names_scope, file_pos, references_graph.GetNodeName( src_inner_reference_node ) )
+				REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, references_graph.GetNodeName( src_inner_reference_node ) )
 			}
 			else
 			{

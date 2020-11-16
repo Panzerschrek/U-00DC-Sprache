@@ -45,8 +45,8 @@ public:
 	fn GetAllAccessibleVariableNodes( this, NodeId node_id ) : NodesSet;
 	fn GetAllAccessibleVariableInnerNodes( this, NodeId node_id ) : NodesSet;
 
-	fn MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches, ErrorsContainer &mut errors, SrcLoc& file_pos ) : ReferencesGraph;
-	fn CheckReferencesGraphAfterLoop( ReferencesGraph& state_before, ReferencesGraph& state_after, ErrorsContainer &mut errors, SrcLoc& file_pos );
+	fn MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches, ErrorsContainer &mut errors, SrcLoc& src_loc ) : ReferencesGraph;
+	fn CheckReferencesGraphAfterLoop( ReferencesGraph& state_before, ReferencesGraph& state_after, ErrorsContainer &mut errors, SrcLoc& src_loc );
 
 private:
 	fn GetAllAccessibleVariableNodes_r( this, NodeId node_id, NodesSet &mut out_nodes );

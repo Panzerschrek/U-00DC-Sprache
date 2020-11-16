@@ -12,7 +12,7 @@ fn CodeBuilder::CreateFunctionDebugInfo( mut this, FunctionVariable& func_variab
 	}
 
 	var Synt::Function& syntax_element= func_variable.body_syntax_element.get_ref();
-	var SrcLoc& file_pos= syntax_element.file_pos;
+	var SrcLoc& src_loc= syntax_element.src_loc;
 	var ust::string8& name= syntax_element.name.back();
 
 	unsafe
@@ -20,7 +20,7 @@ fn CodeBuilder::CreateFunctionDebugInfo( mut this, FunctionVariable& func_variab
 		var size_type mut linkage_name_size= 0s;
 		var char8& linkage_name_start= LLVMGetValueName2( func_variable.llvm_function, linkage_name_size );
 
-		var LLVMMetadataRef file= debug_info_.source_file_entries[ file_pos.GetFileIndex() ];
+		var LLVMMetadataRef file= debug_info_.source_file_entries[ src_loc.GetFileIndex() ];
 
 		auto di_function= LLVMDIBuilderCreateFunction(
 			debug_info_.builder,
@@ -28,11 +28,11 @@ fn CodeBuilder::CreateFunctionDebugInfo( mut this, FunctionVariable& func_variab
 			name.front_unsafe(), name.size(),
 			linkage_name_start, linkage_name_size,
 			file,
-			file_pos.GetLine(),
+			src_loc.GetLine(),
 			CreateDIType( func_variable.t ),
 			LLVMBool::False, // IsLocalToUnit
 			LLVMBool::True, // IsDefinition
-			file_pos.GetLine(),
+			src_loc.GetLine(),
 			LLVMDIFlags(0),
 			LLVMBool::False /* TODO - pass optimized flag*/ );
 
@@ -40,7 +40,7 @@ fn CodeBuilder::CreateFunctionDebugInfo( mut this, FunctionVariable& func_variab
 	}
 }
 
-fn CodeBuilder::SetCurrentDebugLocation( mut this, FunctionContext& function_context, SrcLoc& file_pos )
+fn CodeBuilder::SetCurrentDebugLocation( mut this, FunctionContext& function_context, SrcLoc& src_loc )
 {
 	if( !build_debug_info_ )
 	{
@@ -51,15 +51,15 @@ fn CodeBuilder::SetCurrentDebugLocation( mut this, FunctionContext& function_con
 	{
 		auto debug_location= LLVMDIBuilderCreateDebugLocation(
 			llvm_context_,
-			file_pos.GetLine(),
-			file_pos.GetColumn(),
+			src_loc.GetLine(),
+			src_loc.GetColumn(),
 			function_context.current_debug_info_scope,
 			LLVMMetadataRef::Null );
 		LLVMSetCurrentDebugLocation2( function_context.llvm_ir_builder, debug_location );
 	}
 }
 
-fn CodeBuilder::DebugInfoStartBlock( mut this, FunctionContext &mut function_context, SrcLoc& file_pos ) : LLVMMetadataRef
+fn CodeBuilder::DebugInfoStartBlock( mut this, FunctionContext &mut function_context, SrcLoc& src_loc ) : LLVMMetadataRef
 {
 	if( !build_debug_info_ )
 	{
@@ -72,9 +72,9 @@ fn CodeBuilder::DebugInfoStartBlock( mut this, FunctionContext &mut function_con
 		function_context.current_debug_info_scope= LLVMDIBuilderCreateLexicalBlock(
 			debug_info_.builder,
 			function_context.current_debug_info_scope,
-			debug_info_.source_file_entries[ file_pos.GetFileIndex() ],
-			file_pos.GetLine(),
-			file_pos.GetColumn() );
+			debug_info_.source_file_entries[ src_loc.GetFileIndex() ],
+			src_loc.GetLine(),
+			src_loc.GetColumn() );
 	}
 	return prev;
 }
@@ -92,7 +92,7 @@ fn CodeBuilder::DebugInfoEndBlock( mut this, FunctionContext &mut function_conte
 	}
 }
 
-fn CodeBuilder::CreateVariableDebugInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, SrcLoc& file_pos )
+fn CodeBuilder::CreateVariableDebugInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, SrcLoc& src_loc )
 {
 	if( !build_debug_info_ )
 	{
@@ -105,8 +105,8 @@ fn CodeBuilder::CreateVariableDebugInfo( mut this, FunctionContext& function_con
 			debug_info_.builder,
 			function_context.current_debug_info_scope,
 			name.front_unsafe(), name.size(),
-			debug_info_.source_file_entries[ file_pos.GetFileIndex() ],
-			file_pos.GetLine(),
+			debug_info_.source_file_entries[ src_loc.GetFileIndex() ],
+			src_loc.GetLine(),
 			CreateDIType( variable.t ),
 			LLVMBool::False, // AlwaysPreserve
 			LLVMDIFlags(0),
@@ -114,8 +114,8 @@ fn CodeBuilder::CreateVariableDebugInfo( mut this, FunctionContext& function_con
 
 		auto debug_location= LLVMDIBuilderCreateDebugLocation(
 			llvm_context_,
-			file_pos.GetLine(),
-			file_pos.GetColumn(),
+			src_loc.GetLine(),
+			src_loc.GetColumn(),
 			function_context.current_debug_info_scope,
 			LLVMMetadataRef::Null );
 
@@ -129,7 +129,7 @@ fn CodeBuilder::CreateVariableDebugInfo( mut this, FunctionContext& function_con
 	}
 }
 
-fn CodeBuilder::CreateReferenceVariableDebugInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, SrcLoc& file_pos )
+fn CodeBuilder::CreateReferenceVariableDebugInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, SrcLoc& src_loc )
 {
 	if( !build_debug_info_ )
 	{
@@ -150,8 +150,8 @@ fn CodeBuilder::CreateReferenceVariableDebugInfo( mut this, FunctionContext& fun
 			debug_info_.builder,
 			function_context.current_debug_info_scope,
 			name.front_unsafe(), name.size(),
-			debug_info_.source_file_entries[ file_pos.GetFileIndex() ],
-			file_pos.GetLine(),
+			debug_info_.source_file_entries[ src_loc.GetFileIndex() ],
+			src_loc.GetLine(),
 			di_type,
 			LLVMBool::False, // AlwaysPreserve
 			LLVMDIFlags(0),
@@ -163,8 +163,8 @@ fn CodeBuilder::CreateReferenceVariableDebugInfo( mut this, FunctionContext& fun
 
 		auto debug_location= LLVMDIBuilderCreateDebugLocation(
 			llvm_context_,
-			file_pos.GetLine(),
-			file_pos.GetColumn(),
+			src_loc.GetLine(),
+			src_loc.GetColumn(),
 			function_context.current_debug_info_scope,
 			LLVMMetadataRef::Null );
 
@@ -387,13 +387,13 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
 
 	auto class_lock= t.lock_imut();
 	var ClassType& class_type= class_lock.get_ref();
-	var SrcLoc mut file_pos;
+	var SrcLoc mut src_loc;
 	if( !class_type.syntax_element.empty() )
 	{
-		class_type.syntax_element.get_ref().file_pos;
+		class_type.syntax_element.get_ref().src_loc;
 	}
 
-	auto di_file= debug_info_.source_file_entries[ file_pos.GetFileIndex() ];
+	auto di_file= debug_info_.source_file_entries[ src_loc.GetFileIndex() ];
 
 	var ust::vector</LLVMMetadataRef/> mut elements;
 
@@ -474,7 +474,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
 			di_file,
 			name.front_unsafe(), name.size(),
 			di_file,
-			file_pos.GetLine(),
+			src_loc.GetLine(),
 			LLVMABISizeOfType( data_layout_, class_type.llvm_type ) * 8u64,
 			LLVMABIAlignmentOfType( data_layout_, class_type.llvm_type ) * 8u32,
 			LLVMDIFlags(0),
@@ -518,8 +518,8 @@ fn CodeBuilder::CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadataRef
 		}
 	}
 
-	var SrcLoc& file_pos= enum_.syntax_element.get_ref().file_pos;
-	auto di_file= debug_info_.source_file_entries[ file_pos.GetFileIndex() ];
+	var SrcLoc& src_loc= enum_.syntax_element.get_ref().src_loc;
+	auto di_file= debug_info_.source_file_entries[ src_loc.GetFileIndex() ];
 
 	var ust::string8 name= Type(t).ToString();
 
@@ -530,7 +530,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadataRef
 			di_file,
 			name.front_unsafe(), name.size(),
 			di_file,
-			file_pos.GetLine(),
+			src_loc.GetLine(),
 			LLVMABISizeOfType( data_layout_, enum_.underlaying_type.llvm_type ) * 8u64,
 			LLVMABIAlignmentOfType( data_layout_, enum_.underlaying_type.llvm_type ) * 8u32,
 			cast_imut(elements).front_unsafe(), u32(elements.size()),

@@ -17,7 +17,7 @@ fn U1_ProcessCodeBuilderErrors(
 		{
 			var U1_StringView text_view{ .data= err.text.front_unsafe(), .size= err.text.size() };
 
-			var UserHandle error_data= errors_handling_callbacks.error_callback( data, err.file_pos.GetFileIndex(), err.file_pos.GetLine(), err.file_pos.GetColumn(), u32(err.code), text_view );
+			var UserHandle error_data= errors_handling_callbacks.error_callback( data, err.src_loc.GetFileIndex(), err.src_loc.GetLine(), err.src_loc.GetColumn(), u32(err.code), text_view );
 			if( !err.errors_context.empty() )
 			{
 				auto lock= err.errors_context.lock_imut();
@@ -28,9 +28,9 @@ fn U1_ProcessCodeBuilderErrors(
 
 				var UserHandle context_user_handle= errors_handling_callbacks.template_errors_context_callback(
 					error_data,
-					errors_context.context_declaration_file_pos.GetFileIndex(),
-					errors_context.context_declaration_file_pos.GetLine(),
-					errors_context.context_declaration_file_pos.GetColumn(),
+					errors_context.context_declaration_src_loc.GetFileIndex(),
+					errors_context.context_declaration_src_loc.GetLine(),
+					errors_context.context_declaration_src_loc.GetColumn(),
 					context_name,
 					args_description );
 
@@ -128,7 +128,7 @@ fn nomangle U1_BuildProgramWithSyntaxErrors(
 				var U1_StringView text_view{ .data= err.text.front(), .size= err.text.size() };
 				unsafe
 				{
-					errors_handling_callbacks.error_callback( data, err.file_pos.GetFileIndex(), err.file_pos.GetLine(), err.file_pos.GetColumn(), u32(U1::CodeBuilderErrorCode::BuildFailed), text_view );
+					errors_handling_callbacks.error_callback( data, err.src_loc.GetFileIndex(), err.src_loc.GetLine(), err.src_loc.GetColumn(), u32(U1::CodeBuilderErrorCode::BuildFailed), text_view );
 				}
 			}
 		}
@@ -170,7 +170,7 @@ fn nomangle U1_BuildProgrammUsingVFS(
 			unsafe
 			{
 				var U1_StringView text{ .data= err.text.front_unsafe(), .size= err.text.size() };
-				lex_synt_error_callback( lex_synt_error_callback_data, err.file_pos.GetFileIndex(), err.file_pos.GetLine(), err.file_pos.GetColumn(), text );
+				lex_synt_error_callback( lex_synt_error_callback_data, err.src_loc.GetFileIndex(), err.src_loc.GetLine(), err.src_loc.GetColumn(), text );
 			}
 		}
 
@@ -296,16 +296,16 @@ fn PrintLexSyntErrors( SourceGraph& source_graph )
 	{
 		var ust::string8 mut str;
 
-		auto file_index= size_type(err.file_pos.GetFileIndex());
+		auto file_index= size_type(err.src_loc.GetFileIndex());
 		if( file_index < source_graph.nodes.size() )
 		{
 			str+= source_graph.nodes[file_index].file_path_normalized;
 		}
 
 		str+= ":";
-		str+= ust::to_string8( err.file_pos.GetLine() );
+		str+= ust::to_string8( err.src_loc.GetLine() );
 		str+= ":";
-		str+= ust::to_string8( err.file_pos.GetColumn() );
+		str+= ust::to_string8( err.src_loc.GetColumn() );
 		str+= ": error: ";
 		str+= err.text;
 		str+= "\n\0";
@@ -319,16 +319,16 @@ fn PrintCodeBuilderErrors( SourceGraph& source_graph, ErrorsContainer& errors )
 	{
 		var ust::string8 mut str;
 
-		auto file_index= size_type(err.file_pos.GetFileIndex());
+		auto file_index= size_type(err.src_loc.GetFileIndex());
 		if( file_index < source_graph.nodes.size() )
 		{
 			str+= source_graph.nodes[file_index].file_path_normalized;
 		}
 
 		str+= ":";
-		str+= ust::to_string8( err.file_pos.GetLine() );
+		str+= ust::to_string8( err.src_loc.GetLine() );
 		str+= ":";
-		str+= ust::to_string8( err.file_pos.GetColumn() );
+		str+= ust::to_string8( err.src_loc.GetColumn() );
 		str+= ": error: ";
 		str+= err.text;
 		str+= "\n\0";

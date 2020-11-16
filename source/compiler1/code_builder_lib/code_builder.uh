@@ -68,7 +68,7 @@ public:
 private:
 	fn BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_type node_index );
 
-	fn NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeValue& names_scope_value, SrcLoc& file_pos ) : Value;
+	fn NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeValue& names_scope_value, SrcLoc& src_loc ) : Value;
 	fn ResolveValue( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& complex_name ) : Value;
 	fn ResolveValue(
 		mut this,
@@ -100,7 +100,7 @@ private:
 
 	fn NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& src, ust::string8& name, NamesScopePtr& target_names_scope );
 
-	fn GetValueSrcLoc( NamesScopeValue& value ) : SrcLoc; // Get file_pos or empty value
+	fn GetValueSrcLoc( NamesScopeValue& value ) : SrcLoc; // Get src_loc or empty value
 
 	fn NamesScopeFillClass( mut this, NamesScopeMutPtr& names_scope_ptr, Synt::ClassElements& class_elements, ClassTypePtr& class_type );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, Synt::NamespaceElements& namespace_elements );
@@ -169,7 +169,7 @@ private:
 		FunctionType& func_type,
 		OverloadedOperator operator,
 		NamesScopePtr& names_scope,
-		SrcLoc& file_pos );
+		SrcLoc& src_loc );
 
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TypeName& type_name ) : Type;
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_type ) : Type;
@@ -190,8 +190,8 @@ private:
 	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ConstructorInitializer& constructor_initializer ) : LLVMValueRef;
 	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ZeroInitializer& zero_initializer ) : LLVMValueRef;
 	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::UninitializedInitializer& uninitialized_initializer ) : LLVMValueRef;
-	fn BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::string8& variable_name, SrcLoc& file_pos );
-	fn BuildConstructorInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args, SrcLoc& file_pos )  : LLVMValueRef;
+	fn BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::string8& variable_name, SrcLoc& src_loc );
+	fn BuildConstructorInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args, SrcLoc& src_loc )  : LLVMValueRef;
 
 	fn InitializeFunctionPointer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Expression& initializer_expression ) : LLVMValueRef;
 
@@ -235,7 +235,7 @@ private:
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Halt& halt_ ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::HaltIf& halt_if ) : BlockElementBuildInfo;
 
-	fn BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& file_pos, i32 delta );
+	fn BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc, i32 delta );
 
 	fn BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Variable;
 
@@ -266,9 +266,9 @@ private:
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::TupleType/>& tuple_type ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type ) : Value;
 
-	fn DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TypeName& type_name, Synt::Expression& expression, SrcLoc& file_pos, bool allow_unsafe ) : Value;
+	fn DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TypeName& type_name, Synt::Expression& expression, SrcLoc& src_loc, bool allow_unsafe ) : Value;
 
-	fn BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& l_var, Variable& r_var, BinaryOperatorType operator, SrcLoc& file_pos ) : Value;
+	fn BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& l_var, Variable& r_var, BinaryOperatorType operator, SrcLoc& src_loc ) : Value;
 	fn BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value;
 
 	fn TryCallOverloadedBinaryOperator(
@@ -279,7 +279,7 @@ private:
 		ust::shared_ptr_final</Synt::Expression/>& arg_l,
 		ust::shared_ptr_final</Synt::Expression/>& arg_r,
 		ArgsEvaluationOrder args_evaluation_order,
-		SrcLoc& file_pos ) : ust::optional</Value/>;
+		SrcLoc& src_loc ) : ust::optional</Value/>;
 
 	fn CallBinaryOperatorForArrayOrTuple(
 		mut this,
@@ -288,7 +288,7 @@ private:
 		OverloadedOperator operator,
 		ust::shared_ptr_final</Synt::Expression/>& arg_l,
 		ust::shared_ptr_final</Synt::Expression/>& arg_r,
-		SrcLoc& file_pos ) : Value;
+		SrcLoc& src_loc ) : Value;
 
 	fn CallFunctionsSet(
 		mut this,
@@ -297,7 +297,7 @@ private:
 		ust::optional_ref</ Variable, false /> mut this_,
 		FunctionsSet& functions_set,
 		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
-		SrcLoc& file_pos ) : Value;
+		SrcLoc& src_loc ) : Value;
 
 	fn DoCallFunction(
 		mut this,
@@ -306,7 +306,7 @@ private:
 		ust::optional_ref</ Variable, false />& this_,
 		FunctionVariable& function,
 		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
-		SrcLoc& file_pos ) : Value;
+		SrcLoc& src_loc ) : Value;
 
 	enum ArgsEvaluationOrder{ Direct, Reversed }
 
@@ -318,7 +318,7 @@ private:
 		ust::array_view_imut</ Variable />& preevaluated_args,
 		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 		ArgsEvaluationOrder args_evaluation_order,
-		SrcLoc& file_pos ) : Value;
+		SrcLoc& src_loc ) : Value;
 
 	fn BuildTempVariableConstruction(
 		mut this,
@@ -326,7 +326,7 @@ private:
 		FunctionContext &mut function_context,
 		Type& t,
 		ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args,
-		SrcLoc& file_pos ) : Value;
+		SrcLoc& src_loc ) : Value;
 
 	// Templates
 	fn PrepareTypeTemplate(
@@ -401,7 +401,7 @@ private:
 		Synt::FunctionType& signature_param,
 		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
 
-	fn CreateTemplateSignatureParam( mut this, NamesScopePtr& names_scope, Value& value, SrcLoc& file_pos ) : TemplateSignatureParam;
+	fn CreateTemplateSignatureParam( mut this, NamesScopePtr& names_scope, Value& value, SrcLoc& src_loc ) : TemplateSignatureParam;
 
 	fn GenTemplateType(
 		mut this,
@@ -409,7 +409,7 @@ private:
 		FunctionContext &mut function_context,
 		ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set_ptr,
 		Synt::TemplateArgs& template_args,
-		SrcLoc& template_instantiation_file_pos ) : ust::optional</Type/>;
+		SrcLoc& template_instantiation_src_loc ) : ust::optional</Type/>;
 
 	struct TemplateTypeArgsEvaluationResult
 	{
@@ -424,13 +424,13 @@ private:
 		FunctionContext &mut function_context,
 		TypeTemplatePtr& type_template_ptr,
 		Synt::TemplateArgs& template_args,
-		SrcLoc& template_instantiation_file_pos ) : ust::optional</TemplateTypeArgsEvaluationResult/>;
+		SrcLoc& template_instantiation_src_loc ) : ust::optional</TemplateTypeArgsEvaluationResult/>;
 
 	fn FinishTypeTemplateGeneration(
 		mut this,
 		TemplateTypeArgsEvaluationResult& template_args_evaluation_result,
 		NamesScopePtr& instantiation_point_names_scope,
-		SrcLoc& template_instantiation_file_pos ) : ust::optional</Type/>;
+		SrcLoc& template_instantiation_src_loc ) : ust::optional</Type/>;
 
 	fn GenTemplateFunction(
 		mut this,
@@ -438,7 +438,7 @@ private:
 		ust::array_view_imut</VariableTypeExtened/> mut args,
 		bool first_arg_is_this,
 		NamesScopePtr& instantiation_point_names_scope,
-		SrcLoc& file_pos ) : ust::optional</FunctionVariable/>;
+		SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
 
 	fn GenTemplateFunction(
 		mut this,
@@ -447,19 +447,19 @@ private:
 		ust::array_view_imut</VariableTypeExtened/> mut args,
 		bool first_arg_is_this,
 		NamesScopePtr& instantiation_point_names_scope,
-		SrcLoc& file_pos ) : ust::optional</FunctionVariable/>;
+		SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
 
 	fn FinishFunctionTemplateParametrization(
 		mut this,
 		ParametrizedFunctionTemplate& parametrized_function_template,
-		SrcLoc& file_pos ) : ust::optional</FunctionVariable/>;
+		SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
 
 	fn FinishTemplateFunctionGeneration(
 		mut this,
 		FunctionTemplatePtr& function_template_ptr,
 		NamesScopeMutPtr& result_names_scope,
 		NamesScopePtr& instantiation_point_names_scope,
-		SrcLoc& file_pos ) : ust::optional</FunctionVariable/>;
+		SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
 
 	fn ParametrizeTemplateFunctions(
 		mut this,
@@ -467,7 +467,7 @@ private:
 		FunctionContext &mut function_context,
 		FunctionsSet& functions_set,
 		Synt::TemplateArgs& template_args,
-		SrcLoc& file_pos ) : ust::optional</NamesScopeValue/>;
+		SrcLoc& src_loc ) : ust::optional</NamesScopeValue/>;
 
 	// Returns true if ok
 	fn MatchTemplateArgument(
@@ -476,7 +476,7 @@ private:
 		TemplateBase& template_,
 		TemplateSignatureParam& param,
 		TemplateArgFinished& given_arg,
-		SrcLoc& file_pos ) : bool;
+		SrcLoc& src_loc ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
@@ -484,7 +484,7 @@ private:
 		TemplateBase& template_,
 		TemplateSignatureParam::TemplateParam& template_param,
 		TemplateArgFinished& given_arg,
-		SrcLoc& file_pos ) : bool;
+		SrcLoc& src_loc ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
@@ -492,7 +492,7 @@ private:
 		TemplateBase& template_,
 		TemplateSignatureParam::TypeParam& type_param,
 		TemplateArgFinished& given_arg,
-		SrcLoc& file_pos ) : bool;
+		SrcLoc& src_loc ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
@@ -500,7 +500,7 @@ private:
 		TemplateBase& template_,
 		TemplateSignatureParam::VariableParam& variable_param,
 		TemplateArgFinished& given_arg,
-		SrcLoc& file_pos ) : bool;
+		SrcLoc& src_loc ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
@@ -508,7 +508,7 @@ private:
 		TemplateBase& template_,
 		TemplateSignatureParam::ArrayTypeParam& array_type_param,
 		TemplateArgFinished& given_arg,
-		SrcLoc& file_pos ) : bool;
+		SrcLoc& src_loc ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
@@ -516,7 +516,7 @@ private:
 		TemplateBase& template_,
 		TemplateSignatureParam::TupleTypeParam& tuple_type_param,
 		TemplateArgFinished& given_arg,
-		SrcLoc& file_pos ) : bool;
+		SrcLoc& src_loc ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
@@ -524,7 +524,7 @@ private:
 		TemplateBase& template_,
 		TemplateSignatureParam::FunctionTypeParam& function_type_param,
 		TemplateArgFinished& given_arg,
-		SrcLoc& file_pos ) : bool;
+		SrcLoc& src_loc ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
@@ -532,7 +532,7 @@ private:
 		TemplateBase& template_,
 		TemplateSignatureParam::SpecializedTemplateParam& specialized_template_param,
 		TemplateArgFinished& given_arg,
-		SrcLoc& file_pos ) : bool;
+		SrcLoc& src_loc ) : bool;
 
 	fn TypeIsValidForTemplateVariableArgument( Type& t ) : bool;
 
@@ -556,12 +556,12 @@ private:
 
 	fn CreateFunctionDebugInfo( mut this, FunctionVariable& func_variable );
 
-	fn SetCurrentDebugLocation( mut this, FunctionContext& function_context, SrcLoc& file_pos );
-	fn DebugInfoStartBlock( mut this, FunctionContext &mut function_context, SrcLoc& file_pos ) : LLVMMetadataRef;
+	fn SetCurrentDebugLocation( mut this, FunctionContext& function_context, SrcLoc& src_loc );
+	fn DebugInfoStartBlock( mut this, FunctionContext &mut function_context, SrcLoc& src_loc ) : LLVMMetadataRef;
 	fn DebugInfoEndBlock( mut this, FunctionContext &mut function_context, LLVMMetadataRef prev_block );
 
-	fn CreateVariableDebugInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, SrcLoc& file_pos );
-	fn CreateReferenceVariableDebugInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, SrcLoc& file_pos );
+	fn CreateVariableDebugInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, SrcLoc& src_loc );
+	fn CreateReferenceVariableDebugInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, SrcLoc& src_loc );
 
 	fn CreateDIType( mut this, Type& t ) : LLVMMetadataRef;
 	fn CreateDITypeImpl( mut this, FundamentalType& t ) : LLVMMetadataRef;
@@ -607,7 +607,7 @@ private:
 		FunctionsSet &mut functions_set,
 		FunctionVariable mut function,
 		NamesScopePtr& names_scope,
-		SrcLoc& file_pos ) : bool;
+		SrcLoc& src_loc ) : bool;
 
 	fn GetOverloadedFunctionImpl(
 		mut this,
@@ -615,7 +615,7 @@ private:
 		ust::array_view_imut</VariableTypeExtened/> actual_args,
 		bool first_actual_arg_is_this,
 		NamesScopePtr& names_scope, // Needed only for errors reporting
-		SrcLoc& file_pos,
+		SrcLoc& src_loc,
 		bool allow_type_conversions,
 		bool produce_errors ) : ust::optional</FunctionVariable/>;
 
@@ -625,16 +625,16 @@ private:
 		ust::array_view_imut</VariableTypeExtened/> actual_args,
 		bool first_actual_arg_is_this,
 		NamesScopePtr& names_scope, // Needed only for errors reporting
-		SrcLoc& file_pos ) : ust::optional</FunctionVariable/>;
+		SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
 
 	fn GetOverloadedOperator(
 		mut this,
 		ust::array_view_imut</VariableTypeExtened/> args,
 		OverloadedOperator operator,
 		NamesScopePtr& names_scope, // Needed only for errors reporting
-		SrcLoc& file_pos ) : ust::optional</FunctionVariable/>;
+		SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
 
-	fn GetConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, Type& src, SrcLoc& file_pos ) : ust::optional</FunctionVariable/>;
+	fn GetConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, Type& src, SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
 
 	// Returns index of more specialized or ~0s
 	fn SelectMoreSpecializedTemplate(
@@ -650,9 +650,9 @@ private:
 	fn TryGenerateDestructorPrototype( this, ClassTypePtr& class_type );
 	fn TryGenerateDestructor( this, ClassTypePtr& class_type );
 
-	fn BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, SrcLoc& file_pos );
-	fn BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, SrcLoc& file_pos );
-	fn BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef value, Type& t, SrcLoc& file_pos );
+	fn BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, SrcLoc& src_loc );
+	fn BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, SrcLoc& src_loc );
+	fn BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef value, Type& t, SrcLoc& src_loc );
 	fn BuildMembersDestructors( this, FunctionContext &mut function_context, LLVMValueRef value, ClassTypePtr& class_type );
 
 	fn TryCallCopyConstructor(
@@ -661,20 +661,20 @@ private:
 		FunctionContext &mut function_context,
 		LLVMValueRef dst, LLVMValueRef src,
 		ClassTypePtr& class_type,
-		SrcLoc& file_pos );
+		SrcLoc& src_loc );
 
-	fn CallDestructorsForVariablesFrame( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, size_type variables_frame_index, SrcLoc& file_pos );
-	fn CallDestructorsForTopVariablesFrame( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& file_pos );
-	fn CallDestructorsForAllVariablesFrames( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& file_pos );
-	fn CallDestructorsForLoopInnerVariables( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& file_pos );
+	fn CallDestructorsForVariablesFrame( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, size_type variables_frame_index, SrcLoc& src_loc );
+	fn CallDestructorsForTopVariablesFrame( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
+	fn CallDestructorsForAllVariablesFrames( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
+	fn CallDestructorsForLoopInnerVariables( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
 
-	fn DestroyUnusedTemporaryVariables( this, NamesScopePtr& names_scope, FunctionContext& mut function_context, SrcLoc& file_pos );
+	fn DestroyUnusedTemporaryVariables( this, NamesScopePtr& names_scope, FunctionContext& mut function_context, SrcLoc& src_loc );
 
 	fn IsReferenceAllowedForReturn( this, FunctionContext& function_context, ReferencesGraph::NodeId variable_node ) : bool;
-	fn CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names_scope, FunctionContext& function_context, SrcLoc& file_pos );
+	fn CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names_scope, FunctionContext& function_context, SrcLoc& src_loc );
 
-	fn MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches, NamesScopePtr names_scope, SrcLoc& file_pos ) : ReferencesGraph; // TODO - rename
-	fn CheckReferencesGraphAfterLoop( ReferencesGraph& state_before, ReferencesGraph& state_after, NamesScopePtr names_scope, SrcLoc& file_pos );
+	fn MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches, NamesScopePtr names_scope, SrcLoc& src_loc ) : ReferencesGraph; // TODO - rename
+	fn CheckReferencesGraphAfterLoop( ReferencesGraph& state_before, ReferencesGraph& state_after, NamesScopePtr names_scope, SrcLoc& src_loc );
 
 	fn SetupReferencesInCopyOrMove(
 		NamesScopePtr& names_scope,
@@ -682,7 +682,7 @@ private:
 		Type& dst_type,
 		ReferencesGraph::NodeId dst_node,
 		ReferencesGraph::NodeId src_node,
-		SrcLoc& file_pos );
+		SrcLoc& src_loc );
 
 	// Returns "false" if not complete.
 	fn IsTypeComplete( this, Type& t ) : bool;

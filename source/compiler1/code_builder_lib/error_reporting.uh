@@ -6,7 +6,7 @@ import "/code_builder_errors.uh"
 import "../lex_synt_lib/syntax_analyzer.uh"
 import "structs_combined.uh"
 
-?macro <? REPORT_ERROR:block ( ?error_code:ident, ?names_scope:expr, ?file_pos:expr ?args:rep<? , ?arg:expr ?> ) ?> ->
+?macro <? REPORT_ERROR:block ( ?error_code:ident, ?names_scope:expr, ?src_loc:expr ?args:rep<? , ?arg:expr ?> ) ?> ->
 <?
 	{
 		var ust::vector</ust::string8/> mut ??format_args;
@@ -14,25 +14,25 @@ import "structs_combined.uh"
 
 		auto ??container= ?names_scope.lock_imut().get_ref().GetErrors();
 		auto mut ??lock= ??container.lock_mut();
-		??lock.get_ref().push_back( ReportError( CodeBuilderErrorCode::?error_code, ?file_pos, ??format_args ) );
+		??lock.get_ref().push_back( ReportError( CodeBuilderErrorCode::?error_code, ?src_loc, ??format_args ) );
 	}
 ?>
 
 namespace U1
 {
 
-fn ReportError( CodeBuilderErrorCode code, SrcLoc file_pos, ust::vector</ust::string8/>& format_args ) : CodeBuilderError;
+fn ReportError( CodeBuilderErrorCode code, SrcLoc src_loc, ust::vector</ust::string8/>& format_args ) : CodeBuilderError;
 
-fn ReportError( CodeBuilderErrorCode code, SrcLoc file_pos ) : CodeBuilderError
+fn ReportError( CodeBuilderErrorCode code, SrcLoc src_loc ) : CodeBuilderError
 {
-	return ReportError( code, file_pos, ust::vector</ust::string8/>() );
+	return ReportError( code, src_loc, ust::vector</ust::string8/>() );
 }
 
-fn ReportError( CodeBuilderErrorCode code, SrcLoc file_pos, ust::string8 mut arg ) : CodeBuilderError
+fn ReportError( CodeBuilderErrorCode code, SrcLoc src_loc, ust::string8 mut arg ) : CodeBuilderError
 {
 	var ust::vector</ust::string8/> mut args;
 	args.push_back( move(arg) );
-	return ReportError( code, file_pos, args );
+	return ReportError( code, src_loc, args );
 }
 
 template</type T/>

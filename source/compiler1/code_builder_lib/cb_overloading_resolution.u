@@ -392,7 +392,7 @@ fn CodeBuilder::ApplyOverloadedFunction(
 	FunctionsSet &mut functions_set,
 	FunctionVariable mut function,
 	NamesScopePtr& names_scope,
-	SrcLoc& file_pos ) : bool
+	SrcLoc& src_loc ) : bool
 {
 	if( functions_set.functions.empty() )
 	{
@@ -412,7 +412,7 @@ fn CodeBuilder::ApplyOverloadedFunction(
 		{
 			if( function.no_mangle || set_function.no_mangle )
 			{
-				REPORT_ERROR( CouldNotOverloadFunction, names_scope, file_pos )
+				REPORT_ERROR( CouldNotOverloadFunction, names_scope, src_loc )
 				return false;
 			}
 
@@ -438,7 +438,7 @@ fn CodeBuilder::ApplyOverloadedFunction(
 
 			if( arg_is_same_count == function_type.params.size() )
 			{
-				REPORT_ERROR( CouldNotOverloadFunction, names_scope, file_pos )
+				REPORT_ERROR( CouldNotOverloadFunction, names_scope, src_loc )
 				return false;
 			}
 		} // For functions in set.
@@ -455,7 +455,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 	ust::array_view_imut</VariableTypeExtened/> actual_args,
 	bool first_actual_arg_is_this,
 	NamesScopePtr& names_scope,
-	SrcLoc& file_pos,
+	SrcLoc& src_loc,
 	bool allow_type_conversions,
 	bool produce_errors ) : ust::optional</FunctionVariable/>
 {
@@ -490,7 +490,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 				{
 					if( produce_errors )
 					{
-						REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, file_pos )
+						REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, src_loc )
 					}
 					all_args_is_compatible= false;
 					break;
@@ -503,7 +503,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 					parameter_overloading_class == ArgOverloadingClass::ImmutableReference &&
 					!function.is_conversion_constructor && // Disable conversion for conversion constructor.
 					!( function.is_constructor && !dst_type.GetClassType().empty() && IsCopyConstructor( function, dst_type.GetClassType().get_ref() ) ) && // Disable conversion for copy constructor.
-					!GetConversionConstructor( names_scope, dst_type, src_type, file_pos ).empty() )
+					!GetConversionConstructor( names_scope, dst_type, src_type, src_loc ).empty() )
 				{} // Ok, can convert arg.
 				else
 				{
@@ -535,7 +535,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 
 	foreach( &function_template : functions_set.function_templates )
 	{
-		if_var( mut generated_function : GenTemplateFunction( function_template, actual_args, first_actual_arg_is_this, names_scope, file_pos ) )
+		if_var( mut generated_function : GenTemplateFunction( function_template, actual_args, first_actual_arg_is_this, names_scope, src_loc ) )
 		{
 			match_functions.push_back( move(generated_function) );
 		}
@@ -550,7 +550,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 				actual_args,
 				first_actual_arg_is_this,
 				names_scope,
-				file_pos );
+				src_loc );
 		if( !generated_function.empty() )
 		{
 			match_functions.push_back( generated_function.get_ref() );
@@ -561,7 +561,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 	{
 		if( produce_errors )
 		{
-			REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, file_pos )
+			REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, src_loc )
 		}
 		return ust::optional</FunctionVariable/>();
 	}
@@ -675,7 +675,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 
 	if( selected_function.empty() && produce_errors )
 	{
-		REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope, file_pos )
+		REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope, src_loc )
 	}
 
 	return selected_function;
@@ -687,9 +687,9 @@ fn CodeBuilder::GetOverloadedFunction(
 	ust::array_view_imut</VariableTypeExtened/> actual_args,
 	bool first_actual_arg_is_this,
 	NamesScopePtr& names_scope,
-	SrcLoc& file_pos ) : ust::optional</FunctionVariable/>
+	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
 {
-	return GetOverloadedFunctionImpl( functions_set, actual_args, first_actual_arg_is_this, names_scope, file_pos, true, true );
+	return GetOverloadedFunctionImpl( functions_set, actual_args, first_actual_arg_is_this, names_scope, src_loc, true, true );
 }
 
 fn CodeBuilder::GetOverloadedOperator(
@@ -697,7 +697,7 @@ fn CodeBuilder::GetOverloadedOperator(
 	ust::array_view_imut</VariableTypeExtened/> args,
 	OverloadedOperator operator,
 	NamesScopePtr& names_scope, // Needed only for errors reporting
-	SrcLoc& file_pos ) : ust::optional</FunctionVariable/>
+	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
 {
 	foreach( &arg : args )
 	{
@@ -714,7 +714,7 @@ fn CodeBuilder::GetOverloadedOperator(
 					BuildFunctionsSet( class_members, ust::to_non_nullable( functions_set_ptr ), false );
 
 					auto functions_set_lock= functions_set_ptr.lock_imut();
-					if_var( &function_selected : GetOverloadedFunctionImpl( functions_set_lock.get_ref().functions_set, args, false, names_scope, file_pos, true, false ) )
+					if_var( &function_selected : GetOverloadedFunctionImpl( functions_set_lock.get_ref().functions_set, args, false, names_scope, src_loc, true, false ) )
 					{
 						return function_selected;
 					}
@@ -731,11 +731,11 @@ fn CodeBuilder::GetOverloadedOperator(
 	return ust::optional</FunctionVariable/>();
 }
 
-fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, Type& src, SrcLoc& file_pos ) : ust::optional</FunctionVariable/>
+fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, Type& src, SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
 {
 	if( !EnsureTypeComplete( dst ) )
 	{
-		REPORT_ERROR( UsingIncompleteType, names_scope, file_pos, dst )
+		REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, dst )
 		return ust::optional</FunctionVariable/>();
 	}
 	if( dst.GetClassType().empty() )
@@ -756,7 +756,7 @@ fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, 
 		{ .t= src, .value_type= ValueType::ReferenceImut },
 	];
 
-	auto mut function_selected= GetOverloadedFunctionImpl( constructors, constructor_args, true, names_scope, file_pos, false, false );
+	auto mut function_selected= GetOverloadedFunctionImpl( constructors, constructor_args, true, names_scope, src_loc, false, false );
 	if( function_selected.empty() )
 	{
 		return move(function_selected);

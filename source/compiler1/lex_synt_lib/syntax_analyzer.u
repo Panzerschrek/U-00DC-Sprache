@@ -143,7 +143,7 @@ struct BinaryOperatorsChainComponent
 {
 	Expression expression;
 	BinaryOperatorType operator= zero_init; // Value of last component is ignored
-	SrcLoc file_pos;
+	SrcLoc src_loc;
 }
 
 type BinaryOperatorsChain= ust::vector</BinaryOperatorsChainComponent/>;
@@ -177,7 +177,7 @@ fn FoldBinaryOperatorsChain( ust::array_view_mut</BinaryOperatorsChainComponent/
 		.l( FoldBinaryOperatorsChain( chain.subrange( 0s, split_op_pos + 1s ) ) ),
 		.r( FoldBinaryOperatorsChain( chain.subrange( split_op_pos + 1s,  s ) ) ),
 		.operator= chain[ split_op_pos ].operator,
-		.file_pos= chain[ split_op_pos ].file_pos,
+		.src_loc= chain[ split_op_pos ].src_loc,
 	};
 
 	return move(binary_operator);
@@ -339,7 +339,7 @@ private:
 		ust::vector</Macro::ResultElement/>& result_elements,
 		MacroVariablesMapsStack &mut macro_variables_maps_stack,
 		UniqueMacroIdentifiersMap &mut unique_macro_indentifiers_map,
-		SrcLoc& expansion_file_pos ) : Lexems;
+		SrcLoc& expansion_src_loc ) : Lexems;
 
 	fn FetchMacroVariable( MacroVariablesMapsStack& macro_variables_maps_stack, ust::string8& variable_name ) : ust::optional</ParsedMacroElement/>;
 
@@ -347,7 +347,7 @@ private:
 	fn NotEndOfFile( this ) : bool;
 	fn NextLexem( mut this );
 	fn PushErrorMessage( mut this );
-	fn PushMacroErrorMessage( mut this, SrcLoc& file_pos, ust::string8 mut text );
+	fn PushMacroErrorMessage( mut this, SrcLoc& src_loc, ust::string8 mut text );
 
 private:
 	ust::array_view_imut</Lexem/> it_;
@@ -497,7 +497,7 @@ fn SyntaxAnalyzer::ParseNamespace( mut this ) : Namespace
 	}
 	var Namespace mut namespace_
 	{
-		.file_pos= it_.front().file_pos,
+		.src_loc= it_.front().src_loc,
 		.name= it_.front().text,
 	};
 	NextLexem();
@@ -556,7 +556,7 @@ fn SyntaxAnalyzer::ParseTemplateArgs( mut this ) : TemplateArgs
 
 fn SyntaxAnalyzer::ParseComplexName( mut this ) : ComplexName
 {
-	var ComplexName mut complex_name{ .file_pos= it_.front().file_pos };
+	var ComplexName mut complex_name{ .src_loc= it_.front().src_loc };
 	if( IsKeyword( it_.front(), Keyword::typeof_ ) )
 	{
 		NextLexem();
@@ -629,25 +629,25 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 		{
 			if( it_.front().lexem_type == Lexem::Type::Plus )
 			{
-				var UnaryPlus mut unary_plus{ .file_pos= it_.front().file_pos, .expr(Expression()) };
+				var UnaryPlus mut unary_plus{ .src_loc= it_.front().src_loc, .expr(Expression()) };
 				NextLexem();
 				GetMostRightExpressionInPrefixOperatorsChain( prefix_operator )= move(unary_plus);
 			}
 			else if( it_.front().lexem_type == Lexem::Type::Minus )
 			{
-				var UnaryMinus mut unary_minus{ .file_pos= it_.front().file_pos, .expr(Expression()) };
+				var UnaryMinus mut unary_minus{ .src_loc= it_.front().src_loc, .expr(Expression()) };
 				NextLexem();
 				GetMostRightExpressionInPrefixOperatorsChain( prefix_operator )= move(unary_minus);
 			}
 			else if( it_.front().lexem_type == Lexem::Type::Not )
 			{
-				var LogicalNot mut logical_not{ .file_pos= it_.front().file_pos, .expr(Expression()) };
+				var LogicalNot mut logical_not{ .src_loc= it_.front().src_loc, .expr(Expression()) };
 				NextLexem();
 				GetMostRightExpressionInPrefixOperatorsChain( prefix_operator )= move(logical_not);
 			}
 			else if( it_.front().lexem_type == Lexem::Type::Tilda )
 			{
-				var BitwiseNot mut bitwise_not{ .file_pos= it_.front().file_pos, .expr(Expression()) };
+				var BitwiseNot mut bitwise_not{ .src_loc= it_.front().src_loc, .expr(Expression()) };
 				NextLexem();
 				GetMostRightExpressionInPrefixOperatorsChain( prefix_operator )= move(bitwise_not);
 			}
@@ -660,7 +660,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 		// Main component.
 		if( it_.front().lexem_type == Lexem::Type::Number )
 		{
-			var NumericConstant mut numeric_constant{ .file_pos= it_.front().file_pos };
+			var NumericConstant mut numeric_constant{ .src_loc= it_.front().src_loc };
 			halt if( it_.front().text.size() < typeinfo</NumberLexemData/>.size_of );
 
 			unsafe
@@ -676,7 +676,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 		{
 			var StringLiteral mut string_literal
 			{
-				.file_pos= it_.front().file_pos,
+				.src_loc= it_.front().src_loc,
 				.value= it_.front().text,
 			};
 			NextLexem();
@@ -699,13 +699,13 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 		}
 		else if( IsKeyword( it_.front(), Keyword::false_ ) )
 		{
-			var BooleanConstant mut boolean_constant{ .file_pos= it_.front().file_pos, .value= false };
+			var BooleanConstant mut boolean_constant{ .src_loc= it_.front().src_loc, .value= false };
 			NextLexem();
 			current_node= move(boolean_constant);
 		}
 		else if( IsKeyword( it_.front(), Keyword::true_  ) )
 		{
-			var BooleanConstant mut boolean_constant{ .file_pos= it_.front().file_pos, .value= true  };
+			var BooleanConstant mut boolean_constant{ .src_loc= it_.front().src_loc, .value= true  };
 			NextLexem();
 			current_node= move(boolean_constant);
 		}
@@ -715,7 +715,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 		}
 		else if( IsKeyword( it_.front(), Keyword::typeinfo_ ) )
 		{
-			var Typeinfo mut typeinfo_{ .file_pos= it_.front().file_pos };
+			var Typeinfo mut typeinfo_{ .src_loc= it_.front().src_loc };
 			NextLexem();
 
 			if( it_.front().lexem_type != Lexem::Type::TemplateBracketLeft )
@@ -736,7 +736,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 		}
 		else if( IsKeyword( it_.front(), Keyword::cast_ref_ ) )
 		{
-			auto file_pos= it_.front().file_pos;
+			auto src_loc= it_.front().src_loc;
 			NextLexem();
 
 			if( it_.front().lexem_type != Lexem::Type::TemplateBracketLeft )
@@ -767,12 +767,12 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 			}
 			NextLexem();
 
-			var CastRef mut cast{ .file_pos= file_pos, .t(move(t)), .expression(move(e)) };
+			var CastRef mut cast{ .src_loc= src_loc, .t(move(t)), .expression(move(e)) };
 			current_node= move(cast);
 		}
 		else if( IsKeyword( it_.front(), Keyword::cast_ref_unsafe_ ) )
 		{
-			auto file_pos= it_.front().file_pos;
+			auto src_loc= it_.front().src_loc;
 			NextLexem();
 
 			if( it_.front().lexem_type != Lexem::Type::TemplateBracketLeft )
@@ -803,12 +803,12 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 			}
 			NextLexem();
 
-			var CastRefUnsafe mut cast{ .file_pos= file_pos, .t(move(t)), .expression(move(e)) };
+			var CastRefUnsafe mut cast{ .src_loc= src_loc, .t(move(t)), .expression(move(e)) };
 			current_node= move(cast);
 		}
 		else if( IsKeyword( it_.front(), Keyword::cast_imut_ ) )
 		{
-			auto file_pos= it_.front().file_pos;
+			auto src_loc= it_.front().src_loc;
 			NextLexem();
 
 			if( it_.front().lexem_type != Lexem::Type::BracketLeft )
@@ -825,12 +825,12 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 			}
 			NextLexem();
 
-			var CastImut mut cast{ .file_pos= file_pos, .expression(move(e)) };
+			var CastImut mut cast{ .src_loc= src_loc, .expression(move(e)) };
 			current_node= move(cast);
 		}
 		else if( IsKeyword( it_.front(), Keyword::cast_mut_ ) )
 		{
-			auto file_pos= it_.front().file_pos;
+			auto src_loc= it_.front().src_loc;
 			NextLexem();
 
 			if( it_.front().lexem_type != Lexem::Type::BracketLeft )
@@ -847,12 +847,12 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 			}
 			NextLexem();
 
-			var CastMut mut cast{ .file_pos= file_pos, .expression(move(e)) };
+			var CastMut mut cast{ .src_loc= src_loc, .expression(move(e)) };
 			current_node= move(cast);
 		}
 		else if( IsKeyword( it_.front(), Keyword::move_ ) )
 		{
-			var MoveOperator mut move_operator{ .file_pos= it_.front().file_pos };
+			var MoveOperator mut move_operator{ .src_loc= it_.front().src_loc };
 
 			NextLexem();
 
@@ -879,7 +879,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 		}
 		else if( IsKeyword( it_.front(), Keyword::take_ ) )
 		{
-			auto file_pos= it_.front().file_pos;
+			auto src_loc= it_.front().src_loc;
 			NextLexem();
 
 			if( it_.front().lexem_type != Lexem::Type::BracketLeft )
@@ -896,12 +896,12 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 			}
 			NextLexem();
 
-			var TakeOperator mut take_operator{ .file_pos= file_pos, .expression(move(e)) };
+			var TakeOperator mut take_operator{ .src_loc= src_loc, .expression(move(e)) };
 			current_node= move(take_operator);
 		}
 		else if( IsKeyword( it_.front(), Keyword::select_ ) )
 		{
-			auto file_pos= it_.front().file_pos;
+			auto src_loc= it_.front().src_loc;
 			NextLexem();
 
 			if( it_.front().lexem_type != Lexem::Type::BracketLeft )
@@ -933,7 +933,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 
 			var TernaryOperator mut ternary_operator
 			{
-				.file_pos= file_pos,
+				.src_loc= src_loc,
 				.condition( move(condition) ),
 				.branches[ ( move(true_branch) ), ( move(false_branch) ) ],
 			};
@@ -957,7 +957,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 		}
 		else if( it_.front().lexem_type == Lexem::Type::BracketLeft )
 		{
-			var BracketExpression mut bracket_expression{ .file_pos= it_.front().file_pos, .expr(Expression()) };
+			var BracketExpression mut bracket_expression{ .src_loc= it_.front().src_loc, .expr(Expression()) };
 			NextLexem();
 
 			bracket_expression.expr.get_ref()= ParseExpression();
@@ -980,7 +980,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 		{
 			if( it_.front().lexem_type == Lexem::Type::SquareBracketLeft )
 			{
-				auto file_pos= it_.front().file_pos;
+				auto src_loc= it_.front().src_loc;
 				NextLexem();
 
 				auto mut index= ParseExpression();
@@ -993,7 +993,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 
 				var IndexationOperator mut indexation_operator
 				{
-					.file_pos= file_pos,
+					.src_loc= src_loc,
 					.value(take(current_node)),
 					.index(move(index))
 				};
@@ -1004,7 +1004,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 			{
 				var CallOperator mut call_operator
 				{
-					.file_pos= it_.front().file_pos,
+					.src_loc= it_.front().src_loc,
 					.value(take(current_node))
 				};
 				NextLexem();
@@ -1040,7 +1040,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 			{
 				var MemberAccessOperator mut member_access_operator
 				{
-					.file_pos =it_.front().file_pos,
+					.src_loc =it_.front().src_loc,
 					.value(take(current_node))
 				};
 				NextLexem();
@@ -1077,7 +1077,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 		if( IsBinaryOperator( it_.front() ) )
 		{
 			binary_operators_chain.back().operator= LexemToBinaryOperator( it_.front() );
-			binary_operators_chain.back().file_pos= it_.front().file_pos;
+			binary_operators_chain.back().src_loc= it_.front().src_loc;
 			NextLexem();
 		}
 		else
@@ -1140,7 +1140,7 @@ fn SyntaxAnalyzer::ParseArrayType( mut this ) : ArrayType
 	{
 		PushErrorMessage();
 	}
-	var ArrayType mut array_type{ .file_pos= it_.front().file_pos };
+	var ArrayType mut array_type{ .src_loc= it_.front().src_loc };
 	NextLexem();
 
 	array_type.element_type= ParseTypeName();
@@ -1164,7 +1164,7 @@ fn SyntaxAnalyzer::ParseArrayType( mut this ) : ArrayType
 
 fn SyntaxAnalyzer::ParseTupleType( mut this ) : TupleType
 {
-	var TupleType mut tuple_type{ .file_pos= it_.front().file_pos };
+	var TupleType mut tuple_type{ .src_loc= it_.front().src_loc };
 
 	halt if( !IsKeyword( it_.front(), Keyword::tup_ ) );
 	NextLexem();
@@ -1199,7 +1199,7 @@ fn SyntaxAnalyzer::ParseTupleType( mut this ) : TupleType
 
 fn SyntaxAnalyzer::ParseFunctionType( mut this ) : FunctionType
 {
-	var FunctionType mut function_type{ .file_pos= it_.front().file_pos };
+	var FunctionType mut function_type{ .src_loc= it_.front().src_loc };
 
 	if( !IsKeyword( it_.front(), Keyword::fn_ ) )
 	{
@@ -1247,7 +1247,7 @@ fn SyntaxAnalyzer::ParseFunctionType( mut this ) : FunctionType
 
 fn SyntaxAnalyzer::ParseFunctionParam( mut this ) : FunctionType::Param
 {
-	var FunctionType::Param mut param{ .file_pos= it_.front().file_pos, .t= ParseTypeName() };
+	var FunctionType::Param mut param{ .src_loc= it_.front().src_loc, .t= ParseTypeName() };
 
 	if( it_.front().lexem_type == Lexem::Type::And )
 	{
@@ -1432,7 +1432,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 		PushErrorMessage();
 	}
 
-	var Function mut res{ .file_pos= it_.front().file_pos };
+	var Function mut res{ .src_loc= it_.front().src_loc };
 	NextLexem();
 
 	if( IsKeyword( it_.front(), Keyword::virtual_ ) )
@@ -1602,7 +1602,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 		res.is_conversion_constructor= true;
 	}
 
-	res.function_type.file_pos= it_.front().file_pos;
+	res.function_type.src_loc= it_.front().src_loc;
 	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
 	{
 		PushErrorMessage();
@@ -1636,7 +1636,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 		{
 			PushErrorMessage();
 		}
-		this_param.file_pos= it_.front().file_pos;
+		this_param.src_loc= it_.front().src_loc;
 		NextLexem();
 
 		if( is_constructor_or_destructor ){ this_param.mutability_modifier= MutabilityModifier::Mutable; }
@@ -1665,7 +1665,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 	{
 		var FunctionType::Param mut this_param
 		{
-			.file_pos= it_.front().file_pos,
+			.src_loc= it_.front().src_loc,
 			.name= KeywordToString( Keyword::this_ ),
 			.mutability_modifier= MutabilityModifier::Mutable,
 		};
@@ -1734,7 +1734,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 	{
 		if( it_.front().lexem_type == Lexem::Type::BracketLeft )
 		{
-			var StructNamedInitializer mut constructor_initializer_list{ .file_pos= it_.front().file_pos };
+			var StructNamedInitializer mut constructor_initializer_list{ .src_loc= it_.front().src_loc };
 			NextLexem();
 
 			while( NotEndOfFile() )
@@ -1753,7 +1753,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 
 				var StructNamedInitializer::Member mut member_initializer
 				{
-					.file_pos= it_.front().file_pos,
+					.src_loc= it_.front().src_loc,
 					.name= it_.front().text,
 					.initializer( Initializer() ),
 				};
@@ -1797,7 +1797,7 @@ fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer
 {
 	if( it_.front().lexem_type == Lexem::Type::SquareBracketLeft )
 	{
-		var SequenceInitializer mut sequence_initializer{ .file_pos= it_.front().file_pos };
+		var SequenceInitializer mut sequence_initializer{ .src_loc= it_.front().src_loc };
 		NextLexem();
 
 		while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::SquareBracketRight )
@@ -1824,7 +1824,7 @@ fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer
 	else if( it_.front().lexem_type == Lexem::Type::BracketLeft )
 	{
 		/// TODO - fix case, like :    var [ i32, 1] x[ (1 + 2) * 3 ];
-		var ConstructorInitializer mut constructor_initializer{ .file_pos= it_.front().file_pos };
+		var ConstructorInitializer mut constructor_initializer{ .src_loc= it_.front().src_loc };
 		NextLexem();
 
 		while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::BracketRight )
@@ -1854,7 +1854,7 @@ fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer
 	}
 	else if( it_.front().lexem_type == Lexem::Type::BraceLeft )
 	{
-		var StructNamedInitializer mut struct_named_initializer{ .file_pos= it_.front().file_pos };
+		var StructNamedInitializer mut struct_named_initializer{ .src_loc= it_.front().src_loc };
 		NextLexem();
 
 		while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::BraceRight )
@@ -1870,7 +1870,7 @@ fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer
 				PushErrorMessage();
 			}
 			auto& name= it_.front().text;
-			auto& file_pos= it_.front().file_pos;
+			auto& src_loc= it_.front().src_loc;
 			NextLexem();
 
 			auto mut initializer= ParseVariableInitializer();
@@ -1881,7 +1881,7 @@ fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer
 
 			var StructNamedInitializer::Member mut member_initializer
 			{
-				.file_pos= file_pos,
+				.src_loc= src_loc,
 				.name= name,
 				.initializer( move(initializer) ),
 			};
@@ -1902,13 +1902,13 @@ fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer
 	}
 	else if( IsKeyword( it_.front(), Keyword::zero_init_ ) )
 	{
-		var ZeroInitializer mut zero_initializer{ .file_pos= it_.front().file_pos };
+		var ZeroInitializer mut zero_initializer{ .src_loc= it_.front().src_loc };
 		NextLexem();
 		return move(zero_initializer);
 	}
 	else if( IsKeyword( it_.front(), Keyword::uninitialized_ ) )
 	{
-		var UninitializedInitializer mut uninitialized_initializer{ .file_pos= it_.front().file_pos };
+		var UninitializedInitializer mut uninitialized_initializer{ .src_loc= it_.front().src_loc };
 		NextLexem();
 		return move(uninitialized_initializer);
 	}
@@ -1931,13 +1931,13 @@ fn SyntaxAnalyzer::ParseVariableInitializer( mut this ) : Initializer
 		NextLexem();
 		if( IsKeyword( it_.front(), Keyword::zero_init_ ) )
 		{
-			var ZeroInitializer mut zero_initializer{ .file_pos= it_.front().file_pos };
+			var ZeroInitializer mut zero_initializer{ .src_loc= it_.front().src_loc };
 			NextLexem();
 			return Initializer( move(zero_initializer) );
 		}
 		if( IsKeyword( it_.front(), Keyword::uninitialized_ ) )
 		{
-			var UninitializedInitializer mut uninitialized_initializer{ .file_pos= it_.front().file_pos };
+			var UninitializedInitializer mut uninitialized_initializer{ .src_loc= it_.front().src_loc };
 			NextLexem();
 			return move(uninitialized_initializer);
 		}
@@ -1964,13 +1964,13 @@ fn SyntaxAnalyzer::ParseBlock( mut this ) : Block
 		PushErrorMessage();
 	}
 
-	var Block mut block{ .file_pos= it_.front().file_pos };
+	var Block mut block{ .src_loc= it_.front().src_loc };
 
 	NextLexem(); // {
 
 	block.elements= ParseBlockElements();
 
-	block.end_file_pos= it_.front().file_pos;
+	block.end_src_loc= it_.front().src_loc;
 
 	if( it_.front().lexem_type == Lexem::Type::BraceRight )
 	{
@@ -2058,7 +2058,7 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 		}
 		else if( it_.front().lexem_type == Lexem::Type::Increment )
 		{
-			var IncrementOperator mut increment_operator{ .file_pos= it_.front().file_pos };
+			var IncrementOperator mut increment_operator{ .src_loc= it_.front().src_loc };
 			NextLexem();
 			increment_operator.expression= ParseExpression();
 
@@ -2072,7 +2072,7 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 		}
 		else if( it_.front().lexem_type == Lexem::Type::Decrement )
 		{
-			var DecrementOperator mut decrement_operator{ .file_pos= it_.front().file_pos };
+			var DecrementOperator mut decrement_operator{ .src_loc= it_.front().src_loc };
 			NextLexem();
 			decrement_operator.expression= ParseExpression();
 
@@ -2102,11 +2102,11 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 			auto additive_assignment_operator_type= GetAdditiveAssignmentOperator( it_.front() );
 			if( !additive_assignment_operator_type.empty() )
 			{
-				auto file_pos= it_.front().file_pos;
+				auto src_loc= it_.front().src_loc;
 				NextLexem();
 				var AdditiveAssignmentOperator mut additive_assignment_operator
 				{
-					.file_pos= file_pos,
+					.src_loc= src_loc,
 					.operator= additive_assignment_operator_type.get_ref(),
 					.l(move(expr)),
 					.r(ParseExpression()),
@@ -2116,11 +2116,11 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 			}
 			else if( it_.front().lexem_type == Lexem::Type::Assignment )
 			{
-				auto file_pos= it_.front().file_pos;
+				auto src_loc= it_.front().src_loc;
 				NextLexem();
 				var AssignmentOperator mut assignment_operator
 				{
-					.file_pos= file_pos,
+					.src_loc= src_loc,
 					.l( move(expr) ),
 					.r( ParseExpression() ),
 				};
@@ -2148,7 +2148,7 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 
 fn SyntaxAnalyzer::ParseVariablesDeclaration( mut this ) : VariablesDeclaration
 {
-	var VariablesDeclaration mut variables_declaration{ .file_pos= it_.front().file_pos };
+	var VariablesDeclaration mut variables_declaration{ .src_loc= it_.front().src_loc };
 
 	NextLexem(); // var
 
@@ -2185,7 +2185,7 @@ fn SyntaxAnalyzer::ParseVariablesDeclaration( mut this ) : VariablesDeclaration
 			PushErrorMessage();
 			break;
 		}
-		variable_entry.file_pos= it_.front().file_pos;
+		variable_entry.src_loc= it_.front().src_loc;
 		variable_entry.name= it_.front().text;
 		NextLexem();
 
@@ -2237,7 +2237,7 @@ fn SyntaxAnalyzer::ParseAutoVariableDeclaration( mut this ) : AutoVariableDeclar
 	}
 
 	variable_declaration.name= it_.front().text;
-	variable_declaration.file_pos= it_.front().file_pos;
+	variable_declaration.src_loc= it_.front().src_loc;
 	NextLexem();
 
 	if( it_.front().lexem_type == Lexem::Type::Assignment )
@@ -2265,7 +2265,7 @@ fn SyntaxAnalyzer::ParseAutoVariableDeclaration( mut this ) : AutoVariableDeclar
 
 fn SyntaxAnalyzer::ParseReturnOperator( mut this ) : ReturnOperator
 {
-	var ReturnOperator mut res{ .file_pos= it_.front().file_pos };
+	var ReturnOperator mut res{ .src_loc= it_.front().src_loc };
 	NextLexem(); // return
 
 	res.expr= ParseExpression();
@@ -2282,10 +2282,10 @@ fn SyntaxAnalyzer::ParseReturnOperator( mut this ) : ReturnOperator
 
 fn SyntaxAnalyzer::ParseIfOperator( mut this ) : IfOperator
 {
-	auto start_file_pos= it_.front().file_pos;
+	auto start_src_loc= it_.front().src_loc;
 	NextLexem(); // "if" or "static_if"
 
-	var IfOperator mut if_operator{ .file_pos= start_file_pos };
+	var IfOperator mut if_operator{ .src_loc= start_src_loc };
 
 	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
 	{
@@ -2308,16 +2308,16 @@ fn SyntaxAnalyzer::ParseIfOperator( mut this ) : IfOperator
 
 	var IfOperator::Branch mut first_branch
 	{
-		.file_pos= start_file_pos,
+		.src_loc= start_src_loc,
 		.condition= move(if_expression),
 		.block( ParseBlock() )
 	};
-	if_operator.end_file_pos= first_branch.block.get_ref().end_file_pos;
+	if_operator.end_src_loc= first_branch.block.get_ref().end_src_loc;
 	if_operator.branches.push_back( move(first_branch) );
 
 	while( NotEndOfFile() )
 	{
-		auto else_file_pos= it_.front().file_pos;
+		auto else_src_loc= it_.front().src_loc;
 		if( !IsKeyword( it_.front(), Keyword::else_ ) )
 		{
 			break;
@@ -2354,11 +2354,11 @@ fn SyntaxAnalyzer::ParseIfOperator( mut this ) : IfOperator
 
 		var IfOperator::Branch mut branch
 		{
-			.file_pos= else_file_pos,
+			.src_loc= else_src_loc,
 			.condition= move(condition),
 			.block( ParseBlock() )
 		};
-		if_operator.end_file_pos= branch.block.get_ref().end_file_pos;
+		if_operator.end_src_loc= branch.block.get_ref().end_src_loc;
 		if_operator.branches.push_back( move(branch) );
 
 		if( !if_operator.branches.back().condition.get</EmptyVariant/>().empty() )
@@ -2379,7 +2379,7 @@ fn SyntaxAnalyzer::ParseStaticIfOperator( mut this ) : StaticIfOperator
 
 	var StaticIfOperator mut static_if_operator
 	{
-		.file_pos= it_.front().file_pos,
+		.src_loc= it_.front().src_loc,
 		.if_operator= ParseIfOperator()
 	};
 	return move(static_if_operator);
@@ -2387,7 +2387,7 @@ fn SyntaxAnalyzer::ParseStaticIfOperator( mut this ) : StaticIfOperator
 
 fn SyntaxAnalyzer::ParseWhileOperator( mut this ) : WhileOperator
 {
-	auto start_file_pos= it_.front().file_pos;
+	auto start_src_loc= it_.front().src_loc;
 	NextLexem(); // while
 
 	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
@@ -2411,7 +2411,7 @@ fn SyntaxAnalyzer::ParseWhileOperator( mut this ) : WhileOperator
 
 	var WhileOperator mut while_operator
 	{
-		.file_pos= start_file_pos,
+		.src_loc= start_src_loc,
 		.condition= move(condition),
 		.block( ParseBlock() )
 	};
@@ -2434,7 +2434,7 @@ fn SyntaxAnalyzer::ParseForOperator( mut this ) : BlockElement
 
 fn SyntaxAnalyzer::ParseRangeForOperator( mut this ) : RangeForOperator
 {
-	var RangeForOperator mut for_operator{ .file_pos= it_.front().file_pos, .block(Block()) };
+	var RangeForOperator mut for_operator{ .src_loc= it_.front().src_loc, .block(Block()) };
 	NextLexem();
 
 	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
@@ -2487,7 +2487,7 @@ fn SyntaxAnalyzer::ParseRangeForOperator( mut this ) : RangeForOperator
 
 fn SyntaxAnalyzer::ParseCStyleForOperator( mut this ) : CStyleForOperator
 {
-	var CStyleForOperator mut for_operator{ .file_pos= it_.front().file_pos, .block(Block()) };
+	var CStyleForOperator mut for_operator{ .src_loc= it_.front().src_loc, .block(Block()) };
 	NextLexem();
 
 	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
@@ -2532,7 +2532,7 @@ fn SyntaxAnalyzer::ParseCStyleForOperator( mut this ) : CStyleForOperator
 	{
 		if( it_.front().lexem_type == Lexem::Type::Increment )
 		{
-			var IncrementOperator mut increment_operator{ .file_pos= it_.front().file_pos };
+			var IncrementOperator mut increment_operator{ .src_loc= it_.front().src_loc };
 			NextLexem();
 			increment_operator.expression= ParseExpression();
 
@@ -2540,7 +2540,7 @@ fn SyntaxAnalyzer::ParseCStyleForOperator( mut this ) : CStyleForOperator
 		}
 		else if( it_.front().lexem_type == Lexem::Type::Decrement )
 		{
-			var DecrementOperator mut decrement_operator{ .file_pos= it_.front().file_pos };
+			var DecrementOperator mut decrement_operator{ .src_loc= it_.front().src_loc };
 			NextLexem();
 			decrement_operator.expression= ParseExpression();
 
@@ -2553,11 +2553,11 @@ fn SyntaxAnalyzer::ParseCStyleForOperator( mut this ) : CStyleForOperator
 			auto additive_assignment_operator_type= GetAdditiveAssignmentOperator( it_.front() );
 			if( !additive_assignment_operator_type.empty() )
 			{
-				auto file_pos= it_.front().file_pos;
+				auto src_loc= it_.front().src_loc;
 				NextLexem();
 				var AdditiveAssignmentOperator mut additive_assignment_operator
 				{
-					.file_pos= file_pos,
+					.src_loc= src_loc,
 					.operator= additive_assignment_operator_type.get_ref(),
 					.l(move(expression_l)),
 					.r(ParseExpression()),
@@ -2567,11 +2567,11 @@ fn SyntaxAnalyzer::ParseCStyleForOperator( mut this ) : CStyleForOperator
 			}
 			else if( it_.front().lexem_type == Lexem::Type::Assignment )
 			{
-				auto file_pos= it_.front().file_pos;
+				auto src_loc= it_.front().src_loc;
 				NextLexem();
 				var AssignmentOperator mut assignment_operator
 				{
-					.file_pos= file_pos,
+					.src_loc= src_loc,
 					.l(move(expression_l)),
 					.r( ParseExpression() ),
 				};
@@ -2609,7 +2609,7 @@ fn SyntaxAnalyzer::ParseCStyleForOperator( mut this ) : CStyleForOperator
 
 fn SyntaxAnalyzer::ParseBreakOperator( mut this ) : BreakOperator
 {
-	var BreakOperator mut break_operator{ .file_pos= it_.front().file_pos };
+	var BreakOperator mut break_operator{ .src_loc= it_.front().src_loc };
 	NextLexem();
 
 	if( it_.front().lexem_type != Lexem::Type::Semicolon )
@@ -2623,7 +2623,7 @@ fn SyntaxAnalyzer::ParseBreakOperator( mut this ) : BreakOperator
 
 fn SyntaxAnalyzer::ParseContinueOperator( mut this ) : ContinueOperator
 {
-	var ContinueOperator mut continue_operator{ .file_pos= it_.front().file_pos };
+	var ContinueOperator mut continue_operator{ .src_loc= it_.front().src_loc };
 	NextLexem();
 
 	if( it_.front().lexem_type != Lexem::Type::Semicolon )
@@ -2637,7 +2637,7 @@ fn SyntaxAnalyzer::ParseContinueOperator( mut this ) : ContinueOperator
 
 fn SyntaxAnalyzer::ParseWithOperator( mut this ) : WithOperator
 {
-	var WithOperator mut with_operator{ .file_pos= it_.front().file_pos, .block(Block()) };
+	var WithOperator mut with_operator{ .src_loc= it_.front().src_loc, .block(Block()) };
 	NextLexem();
 
 	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
@@ -2695,7 +2695,7 @@ fn SyntaxAnalyzer::ParseStaticAssert( mut this ) : StaticAssert
 		PushErrorMessage();
 	}
 
-	var StaticAssert mut static_assert_{ .file_pos= it_.front().file_pos };
+	var StaticAssert mut static_assert_{ .src_loc= it_.front().src_loc };
 	NextLexem();
 
 	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
@@ -2727,19 +2727,19 @@ fn SyntaxAnalyzer::ParseHalt( mut this ) : BlockElement
 	{
 		PushErrorMessage();
 	}
-	auto file_pos= it_.front().file_pos;
+	auto src_loc= it_.front().src_loc;
 	NextLexem();
 
 	if( it_.front().lexem_type == Lexem::Type::Semicolon )
 	{
 		NextLexem();
 
-		var Halt mut halt_{ .file_pos= file_pos };
+		var Halt mut halt_{ .src_loc= src_loc };
 		return move(halt_);
 	}
 	else
 	{
-		var HaltIf mut halt_if{ .file_pos= file_pos };
+		var HaltIf mut halt_if{ .src_loc= src_loc };
 
 		if( !IsKeyword( it_.front(), Keyword::if_ ) )
 		{
@@ -2787,7 +2787,7 @@ fn SyntaxAnalyzer::ParseClass( mut this ) : Class
 	{
 		PushErrorMessage();
 	}
-	class_.file_pos= it_.front().file_pos;
+	class_.src_loc= it_.front().src_loc;
 	class_.name= it_.front().text;
 	NextLexem();
 
@@ -2847,7 +2847,7 @@ fn SyntaxAnalyzer::ParseClassBodyElements( mut this ) : ClassElements
 		}
 		else if( IsKeyword( it_.front(), Keyword::public_ ) )
 		{
-			var ClassVisibilityLabel mut class_visibility_label{ .file_pos= it_.front().file_pos, .visibility= ClassVisibility::Public };
+			var ClassVisibilityLabel mut class_visibility_label{ .src_loc= it_.front().src_loc, .visibility= ClassVisibility::Public };
 			NextLexem();
 
 			if( it_.front().lexem_type != Lexem::Type::Colon )
@@ -2860,7 +2860,7 @@ fn SyntaxAnalyzer::ParseClassBodyElements( mut this ) : ClassElements
 		}
 		else if( IsKeyword( it_.front(), Keyword::protected_ ) )
 		{
-			var ClassVisibilityLabel mut class_visibility_label{ .file_pos= it_.front().file_pos, .visibility= ClassVisibility::Protected };
+			var ClassVisibilityLabel mut class_visibility_label{ .src_loc= it_.front().src_loc, .visibility= ClassVisibility::Protected };
 			NextLexem();
 
 			if( it_.front().lexem_type != Lexem::Type::Colon )
@@ -2873,7 +2873,7 @@ fn SyntaxAnalyzer::ParseClassBodyElements( mut this ) : ClassElements
 		}
 		else if( IsKeyword( it_.front(), Keyword::private_ ) )
 		{
-			var ClassVisibilityLabel mut class_visibility_label{ .file_pos= it_.front().file_pos, .visibility= ClassVisibility::Private };
+			var ClassVisibilityLabel mut class_visibility_label{ .src_loc= it_.front().src_loc, .visibility= ClassVisibility::Private };
 			NextLexem();
 
 			if( it_.front().lexem_type != Lexem::Type::Colon )
@@ -2957,7 +2957,7 @@ fn SyntaxAnalyzer::ParseClassBodyElements( mut this ) : ClassElements
 			{
 				PushErrorMessage();
 			}
-			class_field.file_pos= it_.front().file_pos;
+			class_field.src_loc= it_.front().src_loc;
 			class_field.name= it_.front().text;
 			NextLexem();
 
@@ -3066,7 +3066,7 @@ fn SyntaxAnalyzer::ParseEnum( mut this ) : Enum
 
 	var Enum mut enum_
 	{
-		.file_pos= it_.front().file_pos,
+		.src_loc= it_.front().src_loc,
 		.name= it_.front().text,
 	};
 	NextLexem();
@@ -3091,7 +3091,7 @@ fn SyntaxAnalyzer::ParseEnum( mut this ) : Enum
 		}
 		var Enum::Element mut element
 		{
-			.file_pos= it_.front().file_pos,
+			.src_loc= it_.front().src_loc,
 			.name= it_.front().text,
 		};
 		NextLexem();
@@ -3137,7 +3137,7 @@ fn SyntaxAnalyzer::ParseTypeAlias( mut this ) : TypeAlias
 
 	var TypeAlias mut type_alias
 	{
-		.file_pos= it_.front().file_pos,
+		.src_loc= it_.front().src_loc,
 		.name= it_.front().text,
 	};
 	NextLexem();
@@ -3161,7 +3161,7 @@ fn SyntaxAnalyzer::ParseTypeAlias( mut this ) : TypeAlias
 
 fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 {
-	auto template_file_pos= it_.front().file_pos;
+	auto template_src_loc= it_.front().src_loc;
 
 	if( !IsKeyword( it_.front(), Keyword::template_ ) )
 	{
@@ -3201,7 +3201,7 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 		}
 
 		param.name= it_.front().text;
-		param.file_pos= it_.front().file_pos;
+		param.src_loc= it_.front().src_loc;
 		NextLexem();
 
 		params.push_back( move(param) );
@@ -3233,7 +3233,7 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 			PushErrorMessage();
 		}
 		auto template_name= it_.front().text;
-		auto type_alias_file_pos= it_.front().file_pos;
+		auto type_alias_src_loc= it_.front().src_loc;
 		NextLexem();
 
 		auto mut is_short_form= false;
@@ -3264,13 +3264,13 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 
 		var TypeAlias mut type_alias
 		{
-			.file_pos= type_alias_file_pos,
+			.src_loc= type_alias_src_loc,
 			.name= "_", // Give special name for all template type aliases.
 			.type_name= move(type_name),
 		};
 		var TypeTemplate mut type_template
 		{
-			.file_pos= template_file_pos,
+			.src_loc= template_src_loc,
 			.name= template_name,
 			.something( ust::shared_ptr_final</TypeAlias/>( move(type_alias) ) ),
 			.params= move(params),
@@ -3290,7 +3290,7 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 			PushErrorMessage();
 		}
 		auto template_name= it_.front().text;
-		auto class_file_pos= it_.front().file_pos;
+		auto class_src_loc= it_.front().src_loc;
 		NextLexem();
 
 		auto mut is_short_form= false;
@@ -3307,7 +3307,7 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 
 		var Class mut class_
 		{
-			.file_pos= class_file_pos,
+			.src_loc= class_src_loc,
 			.name= "_", // Give special name for all template classes
 		};
 
@@ -3327,7 +3327,7 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 
 		var TypeTemplate mut type_template
 		{
-			.file_pos= template_file_pos,
+			.src_loc= template_src_loc,
 			.name= template_name,
 			.something( ust::shared_ptr_final</Class/>( move(class_) ) ),
 			.params= move(params),
@@ -3341,7 +3341,7 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 	{
 		var FunctionTemplate mut function_template
 		{
-			.file_pos= template_file_pos,
+			.src_loc= template_src_loc,
 			.params= move(params),
 			.function( ParseFunction() ),
 		};
@@ -3433,7 +3433,7 @@ fn SyntaxAnalyzer::ParseMacro( mut this )
 	{
 		PushErrorMessage();
 	}
-	macro.file_pos= it_.front().file_pos;
+	macro.src_loc= it_.front().src_loc;
 	macro.name= it_.front().text;
 	NextLexem();
 
@@ -3447,7 +3447,7 @@ fn SyntaxAnalyzer::ParseMacro( mut this )
 	{
 		PushErrorMessage();
 	}
-	var SrcLoc macro_context_file_pos= it_.front().file_pos;
+	var SrcLoc macro_context_src_loc= it_.front().src_loc;
 	var ust::string8& macro_context_str= it_.front().text;
 	NextLexem();
 
@@ -3458,7 +3458,7 @@ fn SyntaxAnalyzer::ParseMacro( mut this )
 	else if( macro_context_str == "namespace" ) { macro_context= Macro::Context::Namespace; }
 	else
 	{
-		PushMacroErrorMessage( macro_context_file_pos, "\"" + macro_context_str + "\" unknown macro context" );
+		PushMacroErrorMessage( macro_context_src_loc, "\"" + macro_context_str + "\" unknown macro context" );
 	}
 
 	// Match block
@@ -3508,7 +3508,7 @@ fn SyntaxAnalyzer::ParseMacro( mut this )
 	}
 	else
 	{
-		PushMacroErrorMessage( cast_imut(macro).file_pos, "\"" + macro.name + "\" macro redefinition." );
+		PushMacroErrorMessage( cast_imut(macro).src_loc, "\"" + macro.name + "\" macro redefinition." );
 		move(macro);
 	}
 }
@@ -3528,7 +3528,7 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 		}
 		if( it_.front().lexem_type == Lexem::Type::MacroIdentifier )
 		{
-			var SrcLoc match_element_file_pos= it_.front().file_pos;
+			var SrcLoc match_element_src_loc= it_.front().src_loc;
 			var Macro::MatchElement mut match_element{ .name= it_.front().text };
 			NextLexem();
 
@@ -3542,7 +3542,7 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 			{
 				PushErrorMessage();
 			}
-			var SrcLoc element_type_file_pos= it_.front().file_pos;
+			var SrcLoc element_type_src_loc= it_.front().src_loc;
 			var ust::string8& element_type= it_.front().text;
 			NextLexem();
 
@@ -3616,17 +3616,17 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 			}
 			else
 			{
-				PushMacroErrorMessage( element_type_file_pos, "\"" + element_type + "\" unknown macro variable type" );
+				PushMacroErrorMessage( element_type_src_loc, "\"" + element_type + "\" unknown macro variable type" );
 			}
 
 			// Check if name is ok.
 			if( U1::IsKeyword( match_element.name ) )
 			{
-				PushMacroErrorMessage( match_element_file_pos, "Using keyword as macro element name." );
+				PushMacroErrorMessage( match_element_src_loc, "Using keyword as macro element name." );
 			}
 			if( !elements_set.find( match_element.name ).empty() )
 			{
-				PushMacroErrorMessage( match_element_file_pos, "\"" + match_element.name + "\" macro parameter redefinition." );
+				PushMacroErrorMessage( match_element_src_loc, "\"" + match_element.name + "\" macro parameter redefinition." );
 			}
 			elements_set.insert( match_element.name, 0 );
 
@@ -3649,7 +3649,7 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 			continue;
 		}
 
-		var SrcLoc match_element_file_pos= it_.front().file_pos; // TODO - get REAL value.
+		var SrcLoc match_element_src_loc= it_.front().src_loc; // TODO - get REAL value.
 
 		var ust::optional</Lexem/> mut start_lexem, mut end_lexem;
 
@@ -3673,7 +3673,7 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 		}
 		else
 		{
-			PushMacroErrorMessage( match_element_file_pos, "Expected lexem at start or after \"" + match_elements[i].name + "\" element." );
+			PushMacroErrorMessage( match_element_src_loc, "Expected lexem at start or after \"" + match_elements[i].name + "\" element." );
 		}
 
 		if( element_kind == Macro::MatchElementKind::Optional )
@@ -3682,7 +3682,7 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 				start_lexem.get_ref().lexem_type == end_lexem.get_ref().lexem_type &&
 				start_lexem.get_ref().text == end_lexem.get_ref().text )
 			{
-				PushMacroErrorMessage( match_element_file_pos, "Start lexem of optional macro block must be different from first lexem after optional block." );
+				PushMacroErrorMessage( match_element_src_loc, "Start lexem of optional macro block must be different from first lexem after optional block." );
 			}
 		}
 		if( element_kind == Macro::MatchElementKind::Repeated )
@@ -3693,7 +3693,7 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 					match_elements[i].lexem.lexem_type == end_lexem.get_ref().lexem_type &&
 					match_elements[i].lexem.text == end_lexem.get_ref().text )
 				{
-					PushMacroErrorMessage( match_element_file_pos, "Separator lexem of repeated macro block must be different from first lexem after repeated block." );
+					PushMacroErrorMessage( match_element_src_loc, "Separator lexem of repeated macro block must be different from first lexem after repeated block." );
 				}
 			}
 			else // Empty separator
@@ -3702,7 +3702,7 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 					start_lexem.get_ref().lexem_type == end_lexem.get_ref().lexem_type &&
 					start_lexem.get_ref().text == end_lexem.get_ref().text )
 				{
-					PushMacroErrorMessage( match_element_file_pos, "Start lexem of repeated macro block without separator must be different from first lexem after repeated block." );
+					PushMacroErrorMessage( match_element_src_loc, "Start lexem of repeated macro block without separator must be different from first lexem after repeated block." );
 				}
 			}
 		}
@@ -3803,7 +3803,7 @@ fn SyntaxAnalyzer::FetchMacro( this, ust::string8& name, Macro::Context context 
 
 fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro ) : Lexems
 {
-	var SrcLoc expansion_file_pos= it_.front().file_pos;
+	var SrcLoc expansion_src_loc= it_.front().src_loc;
 	NextLexem(); // Skip macro name itself.
 
 	auto macro_variables_map_opt= MatchMacroBlock( macro.match_template_elements );
@@ -3817,7 +3817,7 @@ fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro ) : Lexems
 
 	var UniqueMacroIdentifiersMap mut unique_macro_indentifiers_map;
 
-	auto mut lexems= ExpandMacroBlock( macro.result_template_elements, macro_variables_maps_stack, unique_macro_indentifiers_map, expansion_file_pos );
+	auto mut lexems= ExpandMacroBlock( macro.result_template_elements, macro_variables_maps_stack, unique_macro_indentifiers_map, expansion_src_loc );
 
 	var Lexem end_of_file_lexem{ .lexem_type= Lexem::Type::EndOfFile };
 	lexems.push_back( end_of_file_lexem );
@@ -3828,8 +3828,8 @@ fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro ) : Lexems
 		var MacroExpansionContext mut macro_expansion_context
 		{
 			.macro_name= macro.name,
-			.macro_declaration_file_pos= macro.file_pos,
-			.file_pos= expansion_file_pos,
+			.macro_declaration_src_loc= macro.src_loc,
+			.src_loc= expansion_src_loc,
 		};
 
 		auto mut lock= macro_expansion_contexts_.lock_mut();
@@ -3841,7 +3841,7 @@ fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro ) : Lexems
 
 	foreach( &mut lexem : lexems )
 	{
-		lexem.file_pos.SetMacroExpansionIndex( macro_expansion_index );
+		lexem.src_loc.SetMacroExpansionIndex( macro_expansion_index );
 	}
 
 	return move(lexems);
@@ -4011,7 +4011,7 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 	ust::vector</Macro::ResultElement/>& result_elements,
 	MacroVariablesMapsStack &mut macro_variables_maps_stack,
 	UniqueMacroIdentifiersMap &mut unique_macro_indentifiers_map,
-	SrcLoc& expansion_file_pos ) : Lexems
+	SrcLoc& expansion_src_loc ) : Lexems
 {
 	var Lexems mut lexems_expanded;
 	foreach( &result_element : result_elements )
@@ -4047,7 +4047,7 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 			auto variable_opt= FetchMacroVariable( macro_variables_maps_stack, result_element.name );
 			if( variable_opt.empty() )
 			{
-				PushMacroErrorMessage( expansion_file_pos, "\"" + result_element.name + "\" - not found" );
+				PushMacroErrorMessage( expansion_src_loc, "\"" + result_element.name + "\" - not found" );
 				continue;
 			}
 
@@ -4061,14 +4061,14 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 			auto variable_opt= FetchMacroVariable( macro_variables_maps_stack, result_element.name );
 			if( variable_opt.empty() )
 			{
-				PushMacroErrorMessage( expansion_file_pos, "\"" + result_element.name + "\" - not found" );
+				PushMacroErrorMessage( expansion_src_loc, "\"" + result_element.name + "\" - not found" );
 				continue;
 			}
 
 			var ParsedMacroElement& variable= variable_opt.get_ref();
 			if( !( variable.kind == Macro::MatchElementKind::Optional || variable.kind == Macro::MatchElementKind::Repeated ) )
 			{
-				PushMacroErrorMessage( expansion_file_pos, "Expected optional or repated" );
+				PushMacroErrorMessage( expansion_src_loc, "Expected optional or repated" );
 				continue;
 			}
 
@@ -4076,7 +4076,7 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 			{
 				macro_variables_maps_stack.push_back( variable_element );
 
-				auto mut internal_lexems_expanded= ExpandMacroBlock( result_element.sub_elements.get_ref(), macro_variables_maps_stack, unique_macro_indentifiers_map, expansion_file_pos );
+				auto mut internal_lexems_expanded= ExpandMacroBlock( result_element.sub_elements.get_ref(), macro_variables_maps_stack, unique_macro_indentifiers_map, expansion_src_loc );
 				VectorAppend( lexems_expanded, move(internal_lexems_expanded) );
 
 				macro_variables_maps_stack.drop_back();
@@ -4127,9 +4127,9 @@ fn SyntaxAnalyzer::NextLexem( mut this )
 
 fn SyntaxAnalyzer::PushErrorMessage( mut this )
 {
-	if( errors_.empty() || SrcLoc(errors_.back().file_pos) != it_.front().file_pos )
+	if( errors_.empty() || SrcLoc(errors_.back().src_loc) != it_.front().src_loc )
 	{
-		var LexSyntError mut error( it_.front().file_pos, "Syntax error - unexpected lexem: \"" + it_.front().text + "\"" );
+		var LexSyntError mut error( it_.front().src_loc, "Syntax error - unexpected lexem: \"" + it_.front().text + "\"" );
 		errors_.push_back( move(error) );
 	}
 
@@ -4152,9 +4152,9 @@ fn SyntaxAnalyzer::PushErrorMessage( mut this )
 	}
 }
 
-fn SyntaxAnalyzer::PushMacroErrorMessage( mut this, SrcLoc& file_pos, ust::string8 mut text )
+fn SyntaxAnalyzer::PushMacroErrorMessage( mut this, SrcLoc& src_loc, ust::string8 mut text )
 {
-	errors_.push_back( LexSyntError( file_pos, move(text) ) );
+	errors_.push_back( LexSyntError( src_loc, move(text) ) );
 }
 
 fn SyntaxAnalysis(
