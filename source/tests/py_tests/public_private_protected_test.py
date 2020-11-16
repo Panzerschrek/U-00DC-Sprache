@@ -52,7 +52,7 @@ def VisibilityForEnumMember_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "AccessingNonpublicClassMember" )
-	assert( errors_list[0].file_pos.line == 10 )
+	assert( errors_list[0].src_loc.line == 10 )
 
 
 def VisibilityForTypeTempateMember_Test0():
@@ -72,7 +72,7 @@ def VisibilityForTypeTempateMember_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "AccessingNonpublicClassMember" )
-	assert( errors_list[0].file_pos.line == 11 )
+	assert( errors_list[0].src_loc.line == 11 )
 
 
 def AccessingPrivateMemberOutsideClass_Test0():
@@ -91,7 +91,7 @@ def AccessingPrivateMemberOutsideClass_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "AccessingNonpublicClassMember" )
-	assert( errors_list[0].file_pos.line == 10 )
+	assert( errors_list[0].src_loc.line == 10 )
 
 
 def AccessingPrivateMemberOutsideClass_Test1():
@@ -107,7 +107,7 @@ def AccessingPrivateMemberOutsideClass_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "AccessingNonpublicClassMember" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def AccessingPrivateMemberOutsideClass_Test2():
@@ -123,7 +123,7 @@ def AccessingPrivateMemberOutsideClass_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "AccessingNonpublicClassMember" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def AccessingPrivateMemberOutsideClass_Test3():
@@ -142,7 +142,7 @@ def AccessingPrivateMemberOutsideClass_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "AccessingNonpublicClassMember" )
-	assert( errors_list[0].file_pos.line == 10 )
+	assert( errors_list[0].src_loc.line == 10 )
 
 
 def AccessingPrivateMemberOutsideClass_Test4():
@@ -159,7 +159,7 @@ def AccessingPrivateMemberOutsideClass_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "AccessingNonpublicClassMember" )
-	assert( errors_list[0].file_pos.line == 9 )
+	assert( errors_list[0].src_loc.line == 9 )
 
 
 def AccessingPrivateMemberInsideClass_Test0():
@@ -299,7 +299,7 @@ def AccessingProtectedMember_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "AccessingNonpublicClassMember" )
-	assert( errors_list[0].file_pos.line == 10 )
+	assert( errors_list[0].src_loc.line == 10 )
 
 
 def AccessingProtectedMember_Test3():
@@ -334,7 +334,7 @@ def AccessingPrivateMemberOutsideClass_ViaMemberAccessOperator_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "AccessingNonpublicClassMember" )
-	assert( errors_list[0].file_pos.line == 10 )
+	assert( errors_list[0].src_loc.line == 10 )
 
 
 def AccessingPrivateMemberOutsideClass_ViaMemberAccessOperator_Test1():
@@ -354,7 +354,7 @@ def AccessingPrivateMemberOutsideClass_ViaMemberAccessOperator_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "AccessingNonpublicClassMember" )
-	assert( errors_list[0].file_pos.line == 11 )
+	assert( errors_list[0].src_loc.line == 11 )
 
 
 def FunctionsVisibilityMismatch_Test0():
@@ -370,7 +370,7 @@ def FunctionsVisibilityMismatch_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionsVisibilityMismatch" )
-	assert( errors_list[0].file_pos.line == 7 )
+	assert( errors_list[0].src_loc.line == 7 )
 
 
 def FunctionsVisibilityMismatch_Test1():
@@ -387,7 +387,7 @@ def FunctionsVisibilityMismatch_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionsVisibilityMismatch" )
-	assert( errors_list[0].file_pos.line == 7 )
+	assert( errors_list[0].src_loc.line == 7 )
 
 
 def FunctionsVisibilityMismatch_Test2():
@@ -405,7 +405,7 @@ def FunctionsVisibilityMismatch_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionsVisibilityMismatch" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def FunctionsVisibilityMismatch_Test3():
@@ -421,7 +421,7 @@ def FunctionsVisibilityMismatch_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionsVisibilityMismatch" )
-	assert( errors_list[0].file_pos.line == 7 )
+	assert( errors_list[0].src_loc.line == 7 )
 
 
 def FunctionsVisibilityMismatch_Test4():
@@ -440,7 +440,7 @@ def FunctionsVisibilityMismatch_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionsVisibilityMismatch" )
-	assert( errors_list[0].file_pos.line == 10 )
+	assert( errors_list[0].src_loc.line == 10 )
 
 
 def FunctionsVisibilityMismatch_Test5():
@@ -459,7 +459,7 @@ def FunctionsVisibilityMismatch_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionsVisibilityMismatch" )
-	assert( errors_list[0].file_pos.line == 10 )
+	assert( errors_list[0].src_loc.line == 10 )
 
 
 def FunctionsVisibilityMismatch_Test6():
@@ -478,7 +478,7 @@ def FunctionsVisibilityMismatch_Test6():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionsVisibilityMismatch" )
-	assert( errors_list[0].file_pos.line == 10 )
+	assert( errors_list[0].src_loc.line == 10 )
 
 
 def TypeTemplatesVisibilityMismatch_Test0():
@@ -494,7 +494,7 @@ def TypeTemplatesVisibilityMismatch_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TypeTemplatesVisibilityMismatch" )
-	assert( errors_list[0].file_pos.line == 7 )
+	assert( errors_list[0].src_loc.line == 7 )
 
 
 def FunctionBodyVisibilityIsUnsignificant_Test1():
@@ -547,7 +547,7 @@ def PrivateMembersNotInherited_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NameNotFound" )
-	assert( errors_list[0].file_pos.line == 11 )
+	assert( errors_list[0].src_loc.line == 11 )
 
 
 def PrivateMembersNotInherited_Test2():
@@ -669,4 +669,4 @@ def VisibilityForStruct_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "VisibilityForStruct" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )

@@ -14,7 +14,7 @@ def ConstexprHalt_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstexprFunctionEvaluationError" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def ConstexprFunctionEvaluationError_Test1():
@@ -33,7 +33,7 @@ def ConstexprFunctionEvaluationError_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstexprFunctionEvaluationError" )
-	assert( errors_list[0].file_pos.line == 11 )
+	assert( errors_list[0].src_loc.line == 11 )
 
 
 def ConstexprFunctionEvaluationError_Test3():
@@ -51,7 +51,7 @@ def ConstexprFunctionEvaluationError_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstexprFunctionEvaluationError" )
-	assert( errors_list[0].file_pos.line == 9 )
+	assert( errors_list[0].src_loc.line == 9 )
 
 
 def ConstexprFunctionEvaluationError_Test4():
@@ -66,7 +66,7 @@ def ConstexprFunctionEvaluationError_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstexprFunctionEvaluationError" )
-	assert( errors_list[0].file_pos.line == 7 )
+	assert( errors_list[0].src_loc.line == 7 )
 
 
 def ConstexprFunctionsMustHaveBody_Test0():
@@ -76,7 +76,7 @@ def ConstexprFunctionsMustHaveBody_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstexprFunctionsMustHaveBody" )
-	assert( errors_list[0].file_pos.line == 2 )
+	assert( errors_list[0].src_loc.line == 2 )
 
 
 def ConstexprFunctionsMustHaveBody_Test1():
@@ -89,7 +89,7 @@ def ConstexprFunctionsMustHaveBody_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstexprFunctionsMustHaveBody" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def ConstexprFunctionCanNotBeVirtual_Test0():
@@ -123,7 +123,7 @@ def InvalidTypeForConstexprFunction_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidTypeForConstexprFunction" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def InvalidTypeForConstexprFunction_Test2():
@@ -134,7 +134,7 @@ def InvalidTypeForConstexprFunction_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidTypeForConstexprFunction" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 3 )
 
 
 def InvalidTypeForConstexprFunction_Test3():
@@ -146,7 +146,7 @@ def InvalidTypeForConstexprFunction_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidTypeForConstexprFunction" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def InvalidTypeForConstexprFunction_Test5():
@@ -161,7 +161,7 @@ def InvalidTypeForConstexprFunction_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidTypeForConstexprFunction" )
-	assert( errors_list[0].file_pos.line == 7 )
+	assert( errors_list[0].src_loc.line == 7 )
 
 
 def InvalidTypeForConstexprFunction_Test6():
@@ -171,7 +171,7 @@ def InvalidTypeForConstexprFunction_Test6():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidTypeForConstexprFunction" )
-	assert( errors_list[0].file_pos.line == 2 )
+	assert( errors_list[0].src_loc.line == 2 )
 
 
 def ConstexprFunctionContainsUnallowedOperations_Test0():
@@ -182,7 +182,7 @@ def ConstexprFunctionContainsUnallowedOperations_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstexprFunctionContainsUnallowedOperations" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 3 )
 
 
 def ConstexprFunctionContainsUnallowedOperations_Test1():
@@ -194,7 +194,7 @@ def ConstexprFunctionContainsUnallowedOperations_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstexprFunctionContainsUnallowedOperations" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def ConstexprFunctionContainsUnallowedOperations_Test2():
@@ -208,7 +208,7 @@ def ConstexprFunctionContainsUnallowedOperations_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstexprFunctionContainsUnallowedOperations" )
-	assert( errors_list[0].file_pos.line == 2 )
+	assert( errors_list[0].src_loc.line == 2 )
 
 
 def ConstexprFunctionContainsUnallowedOperations_Test3():
@@ -222,7 +222,7 @@ def ConstexprFunctionContainsUnallowedOperations_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstexprFunctionContainsUnallowedOperations" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 3 )
 
 
 def ConstexprFunctionContainsUnallowedOperations_Test4():
@@ -236,7 +236,7 @@ def ConstexprFunctionContainsUnallowedOperations_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstexprFunctionContainsUnallowedOperations" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 3 )
 
 
 def ConstexprFunctionContainsUnallowedOperations_Test5():
@@ -254,7 +254,7 @@ def ConstexprFunctionContainsUnallowedOperations_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstexprFunctionContainsUnallowedOperations" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def ConstexprFunctionContainsUnallowedOperations_Test6():
@@ -272,4 +272,4 @@ def ConstexprFunctionContainsUnallowedOperations_Test6():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstexprFunctionContainsUnallowedOperations" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )

@@ -268,7 +268,7 @@ PyObject* RunFunction( PyObject* const self, PyObject* const args )
 	return Py_None;
 }
 
-PyObject* BuildFilePos( const uint32_t file_index, const uint32_t line, const uint32_t column )
+PyObject* BuildSrcLoc( const uint32_t file_index, const uint32_t line, const uint32_t column )
 {
 	PyObject* const dict= PyDict_New();
 	PyDict_SetItemString( dict, "file_index", PyLong_FromLongLong(file_index) );
@@ -292,7 +292,7 @@ UserHandle ErrorHandler(
 {
 	PyObject* const dict= PyDict_New();
 
-	PyDict_SetItemString( dict, "file_pos", BuildFilePos( file_index, line, column ) );
+	PyDict_SetItemString( dict, "src_loc", BuildSrcLoc( file_index, line, column ) );
 
 	const std::string_view error_code_str= CodeBuilderErrorCodeToString( CodeBuilderErrorCode(error_code) );
 	PyDict_SetItemString( dict, "code", PyUnicode_DecodeUTF8( error_code_str.data(), Py_ssize_t(error_code_str.size()), nullptr ) );
@@ -314,7 +314,7 @@ UserHandle TemplateErrorsContextHandler(
 {
 	PyObject* const dict= PyDict_New();
 
-	PyDict_SetItemString( dict, "file_pos", BuildFilePos( file_index, line, column ) );
+	PyDict_SetItemString( dict, "src_loc", BuildSrcLoc( file_index, line, column ) );
 	PyDict_SetItemString( dict, "template_name", BuildString( context_name ) );
 	PyDict_SetItemString( dict, "parameters_description", BuildString( args_description ) );
 

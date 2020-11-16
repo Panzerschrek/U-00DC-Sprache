@@ -113,7 +113,7 @@ def StaticIfIsUnconditional_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NoReturnInFunctionReturningNonVoid" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def StaticIfIsUnconditional_Test2():
@@ -131,7 +131,7 @@ def StaticIfIsUnconditional_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UnreachableCode" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def StaticIfForTemplateDependentExpression_Test0():
@@ -156,7 +156,7 @@ def ExpectedVariable_InStaticIf_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 1 )
 	assert( errors_list[1].error_code == "ExpectedVariable" )
-	assert( errors_list[1].file_pos.line == 4 )
+	assert( errors_list[1].src_loc.line == 4 )
 
 
 def ExpectedBool_InStaticIf_Test0():
@@ -169,7 +169,7 @@ def ExpectedBool_InStaticIf_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def ExpectedConstantExpression_InStaticIf_Test0():
@@ -183,7 +183,7 @@ def ExpectedConstantExpression_InStaticIf_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedConstantExpression" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def StaticIfHaveSeparateVisibilityScope_Test():

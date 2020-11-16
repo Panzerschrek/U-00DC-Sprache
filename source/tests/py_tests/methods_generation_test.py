@@ -13,7 +13,7 @@ def ClassHaveNoCopyConstructorByDefault_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def ClassHaveNoCopyConstructorByDefault_Test1():
@@ -28,7 +28,7 @@ def ClassHaveNoCopyConstructorByDefault_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def ClassHaveNoCopyConstructorByDefault_Test2():
@@ -43,7 +43,7 @@ def ClassHaveNoCopyConstructorByDefault_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def ClassHaveNoCopyAssignementOperatorByDefault_Test0():
@@ -58,7 +58,7 @@ def ClassHaveNoCopyAssignementOperatorByDefault_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def CopyConstructorGeneration_Test0():
@@ -141,7 +141,7 @@ def DisableDefaultConstructor_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedInitializer" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def DisableDefaultConstructor_Test1():
@@ -158,7 +158,7 @@ def DisableDefaultConstructor_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedInitializer" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def DisableCopyConstructor_Test0():
@@ -176,7 +176,7 @@ def DisableCopyConstructor_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "AccessingDeletedMethod" )
-	assert( errors_list[0].file_pos.line == 9 )
+	assert( errors_list[0].src_loc.line == 9 )
 
 
 def DisableCopyAssignmentOperator_Test0():
@@ -206,7 +206,7 @@ def BodyForGeneratedFunction_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "BodyForGeneratedFunction" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def BodyForGeneratedFunction_Test1():
@@ -220,7 +220,7 @@ def BodyForGeneratedFunction_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "BodyForGeneratedFunction" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def BodyForDeletedFunction_Test0():
@@ -234,7 +234,7 @@ def BodyForDeletedFunction_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "BodyForDeletedFunction" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def BodyForDeletedFunction_Test1():
@@ -248,7 +248,7 @@ def BodyForDeletedFunction_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "BodyForDeletedFunction" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def InvalidMethodForBodyGeneration_Test0():
@@ -258,7 +258,7 @@ def InvalidMethodForBodyGeneration_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidMethodForBodyGeneration" )
-	assert( errors_list[0].file_pos.line == 2 )
+	assert( errors_list[0].src_loc.line == 2 )
 
 
 def InvalidMethodForBodyGeneration_Test1():
@@ -271,7 +271,7 @@ def InvalidMethodForBodyGeneration_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidMethodForBodyGeneration" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def InvalidMethodForBodyGeneration_Test2():
@@ -284,7 +284,7 @@ def InvalidMethodForBodyGeneration_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidMethodForBodyGeneration" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def InvalidMethodForBodyGeneration_Test3():
@@ -297,7 +297,7 @@ def InvalidMethodForBodyGeneration_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidMethodForBodyGeneration" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def InvalidMethodForBodyGeneration_Test4():
@@ -310,7 +310,7 @@ def InvalidMethodForBodyGeneration_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidMethodForBodyGeneration" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def MethodBodyGenerationFailed_Test0():
@@ -325,7 +325,7 @@ def MethodBodyGenerationFailed_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "MethodBodyGenerationFailed" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def MethodBodyGenerationFailed_Test1():
@@ -340,7 +340,7 @@ def MethodBodyGenerationFailed_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "MethodBodyGenerationFailed" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def MethodBodyGenerationFailed_Test2():
@@ -354,7 +354,7 @@ def MethodBodyGenerationFailed_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "MethodBodyGenerationFailed" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def MethodBodyGenerationFailed_Test3():
@@ -368,7 +368,7 @@ def MethodBodyGenerationFailed_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "MethodBodyGenerationFailed" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def MethodBodyGenerationFailed_Test4():
@@ -382,4 +382,4 @@ def MethodBodyGenerationFailed_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "MethodBodyGenerationFailed" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )

@@ -29,7 +29,7 @@ def NomangleFunctionMustBeGlobal_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NoMangleForNonglobalFunction" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def NomangleFunctionMustBeGlobal_Test1():
@@ -42,7 +42,7 @@ def NomangleFunctionMustBeGlobal_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NoMangleForNonglobalFunction" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def NomangleFunctionMustBeGlobal_Test2():
@@ -55,7 +55,7 @@ def NomangleFunctionMustBeGlobal_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NoMangleForNonglobalFunction" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def NomangleFunctionMustBeGlobal_Test3():
@@ -67,7 +67,7 @@ def NomangleFunctionMustBeGlobal_Test3():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TemplateContext" )
 	assert( errors_list[0].template_errors.errors[0].error_code == "NoMangleForNonglobalFunction" )
-	assert( errors_list[0].template_errors.errors[0].file_pos.line == 2 )
+	assert( errors_list[0].template_errors.errors[0].src_loc.line == 2 )
 
 
 def CouldNotOverloadFunctionIfNomangle_Test0():
@@ -78,7 +78,7 @@ def CouldNotOverloadFunctionIfNomangle_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotOverloadFunction" )
-	assert( errors_list[0].file_pos.line == 2 or errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 2 or errors_list[0].src_loc.line == 3 )
 
 
 def CouldNotOverloadFunctionIfNomangle_Test1():
@@ -89,7 +89,7 @@ def CouldNotOverloadFunctionIfNomangle_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotOverloadFunction" )
-	assert( errors_list[0].file_pos.line == 2 or errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 2 or errors_list[0].src_loc.line == 3 )
 
 
 def NoMangleMismatch_Test0():
@@ -100,7 +100,7 @@ def NoMangleMismatch_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NoMangleMismatch" )
-	assert( errors_list[0].file_pos.line == 2 or errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 2 or errors_list[0].src_loc.line == 3 )
 
 
 def NoMangleMismatch_Test1():
@@ -115,4 +115,4 @@ def NoMangleMismatch_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NoMangleMismatch" )
-	assert( errors_list[0].file_pos.line == 2 or errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 2 or errors_list[0].src_loc.line == 4 )

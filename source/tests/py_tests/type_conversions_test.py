@@ -268,7 +268,7 @@ def TypeConversion_InReturn_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 10 )
+	assert( errors_list[0].src_loc.line == 10 )
 
 
 def TypeConversion_InReturn_Test2():
@@ -348,7 +348,7 @@ def TypeConversion_InReturn_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 14 )
+	assert( errors_list[0].src_loc.line == 14 )
 
 
 def ConversionConstructorMustHaveOneArgument_Test0():
@@ -362,7 +362,7 @@ def ConversionConstructorMustHaveOneArgument_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConversionConstructorMustHaveOneArgument" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def ConversionConstructorMustHaveOneArgument_Test1():
@@ -376,7 +376,7 @@ def ConversionConstructorMustHaveOneArgument_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConversionConstructorMustHaveOneArgument" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def ConversionConstructorMustHaveOneArgument_Test2():
@@ -390,7 +390,7 @@ def ConversionConstructorMustHaveOneArgument_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConversionConstructorMustHaveOneArgument" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def ConversionConstructorMustHaveOneArgument_Test3():
@@ -404,7 +404,7 @@ def ConversionConstructorMustHaveOneArgument_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConversionConstructorMustHaveOneArgument" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def DeepTypeConversionDisabled_Test0():
@@ -425,7 +425,7 @@ def DeepTypeConversionDisabled_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 12 )
+	assert( errors_list[0].src_loc.line == 12 )
 
 
 def DeepTypeConversionDisabled_Test1():

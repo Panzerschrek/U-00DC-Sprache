@@ -43,7 +43,7 @@ def TupleElementAccess_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedConstantExpression" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def TupleElementAccess_Test2():
@@ -57,7 +57,7 @@ def TupleElementAccess_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def TupleElementAccess_Test3():
@@ -71,7 +71,7 @@ def TupleElementAccess_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TupleIndexOutOfBounds" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def TupleElementAccess_Test4():
@@ -85,7 +85,7 @@ def TupleElementAccess_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TupleIndexOutOfBounds" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def TupleElementAccess_Test5():
@@ -99,7 +99,7 @@ def TupleElementAccess_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TupleIndexOutOfBounds" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def TupleElementAccess_Test6():
@@ -113,7 +113,7 @@ def TupleElementAccess_Test6():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TupleIndexOutOfBounds" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def TupleFunctionArgument_Test0():
@@ -343,7 +343,7 @@ def TupleCopyAssignment_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
-	assert( errors_list[0].file_pos.line == 11 )
+	assert( errors_list[0].src_loc.line == 11 )
 
 
 def TupleCopyAssignment_Test4():
@@ -358,7 +358,7 @@ def TupleCopyAssignment_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def TupleMoveAsignment_Test0():
@@ -447,7 +447,7 @@ def TupleFor_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "BindingConstReferenceToNonconstReference" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def TupleFor_Test4():
@@ -465,7 +465,7 @@ def TupleFor_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
-	assert( errors_list[0].file_pos.line == 9 )
+	assert( errors_list[0].src_loc.line == 9 )
 
 
 def TupleFor_Test5():
@@ -527,7 +527,7 @@ def TupleFor_Test7():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UnreachableCode" )
-	assert( errors_list[0].file_pos.line == 9 )
+	assert( errors_list[0].src_loc.line == 9 )
 
 
 def AutoVariableDeclaration_ForTuples_Test0():
@@ -576,7 +576,7 @@ def AutoVariableDeclaration_ForTuples_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
-	assert( errors_list[0].file_pos.line == 10 )
+	assert( errors_list[0].src_loc.line == 10 )
 
 
 def TupleFieldCopy_Test0():
@@ -635,7 +635,7 @@ def TupleFieldCopy_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 13 )
+	assert( errors_list[0].src_loc.line == 13 )
 
 
 def TupleFieldCopy_Test3():
@@ -658,7 +658,7 @@ def TupleFieldCopy_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
-	assert( errors_list[0].file_pos.line == 14 )
+	assert( errors_list[0].src_loc.line == 14 )
 
 
 def TuplesConstexpr_Test0():

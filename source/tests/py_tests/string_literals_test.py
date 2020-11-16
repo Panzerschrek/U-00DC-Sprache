@@ -94,7 +94,7 @@ def StringLiteralIsConstantReference_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def StringLiteralIsNotNullTerminated_Test0():
@@ -160,7 +160,7 @@ def UnknownStringLiteralSuffix_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UnknownStringLiteralSuffix" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def UnknownStringLiteralSuffix_Test1():
@@ -173,7 +173,7 @@ def UnknownStringLiteralSuffix_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UnknownStringLiteralSuffix" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def UnknownStringLiteralSuffix_Test2():
@@ -186,7 +186,7 @@ def UnknownStringLiteralSuffix_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UnknownStringLiteralSuffix" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def StringLiteral_UTF8_Test0():

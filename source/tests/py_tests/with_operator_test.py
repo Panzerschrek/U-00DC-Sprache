@@ -210,7 +210,7 @@ def WithOperatorForImutReference_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].file_pos.line == 7 )
+	assert( errors_list[0].src_loc.line == 7 )
 
 
 def WithOperatorForImutReference_Test4():
@@ -332,7 +332,7 @@ def BindingConstReferenceToNonconstReference_For_WithOperator_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "BindingConstReferenceToNonconstReference" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def UsingKeywordAsName_For_WithOperator_Test0():
@@ -346,7 +346,7 @@ def UsingKeywordAsName_For_WithOperator_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UsingKeywordAsName" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def WithOperatorVariableShadowsOuterVariables_Test0():

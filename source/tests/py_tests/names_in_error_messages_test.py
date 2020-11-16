@@ -12,7 +12,7 @@ def TypeNameInErrorMessage_FundamentalTypes():
 	assert( len(errors_list) > 0 )
 	# must print something, like "conversion from f32 to i32"
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 	assert( errors_list[0].text.find( "i32" ) != -1 )
 	assert( errors_list[0].text.find( "f32" ) != -1 )
 
@@ -29,7 +29,7 @@ def TypeNameInErrorMessage_ClassTypeInGlobalNamespace():
 	assert( len(errors_list) > 0 )
 	# must print something, like "conversion from SomeType to i32"
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 	assert( errors_list[0].text.find( "i32" ) != -1 )
 	assert( errors_list[0].text.find( "SomeType" ) != -1 )
 
@@ -46,7 +46,7 @@ def TypeNameInErrorMessage_ClassTypeInNamespace_Test0():
 	assert( len(errors_list) > 0 )
 	# must print something, like "conversion from SomeType to i32"
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 	assert( errors_list[0].text.find( "i32" ) != -1 )
 	assert( errors_list[0].text.find( "NNN::SomeType" ) != -1 )
 
@@ -63,7 +63,7 @@ def TypeNameInErrorMessage_ClassTypeInNamespace_Test1():
 	assert( len(errors_list) > 0 )
 	# must print something, like "conversion from NNN::SomeType to i32"
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 	assert( errors_list[0].text.find( "i32" ) != -1 )
 	assert( errors_list[0].text.find( "NNN::Bar::SomeType" ) != -1 )
 
@@ -86,7 +86,7 @@ def TypeNameInErrorMessage_ClassTypeInNamespace_Test2():
 	assert( len(errors_list) > 0 )
 	# must print full type name
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 9 )
+	assert( errors_list[0].src_loc.line == 9 )
 	assert( errors_list[0].text.find( "i32" ) != -1 )
 	assert( errors_list[0].text.find( "NNN::Bar::SomeType" ) != -1 )
 
@@ -102,7 +102,7 @@ def TypeNameInErrorMessage_ClassTemplate_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 	assert( errors_list[0].text.find( "i32" ) != -1 )
 	assert( errors_list[0].text.find( "Box</f64/>" ) != -1 )
 
@@ -118,7 +118,7 @@ def TypeNameInErrorMessage_ClassTemplate_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 	assert( errors_list[0].text.find( "i32" ) != -1 )
 	assert( errors_list[0].text.find( "Bar::Box</bool/>" ) != -1 )
 
@@ -135,7 +135,7 @@ def TypeNameInErrorMessage_ClassTemplate_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 	assert( errors_list[0].text.find( "i32" ) != -1 )
 	assert( errors_list[0].text.find( "Box</S/>" ) != -1 )
 
@@ -152,7 +152,7 @@ def TypeNameInErrorMessage_ClassTemplate_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 	assert( errors_list[0].text.find( "i32" ) != -1 )
 	assert( errors_list[0].text.find( "Box</S, 66" ) != -1 )
 
@@ -169,7 +169,7 @@ def TypeNameInErrorMessage_ClassTemplate_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 	assert( errors_list[0].text.find( "i32" ) != -1 )
 	assert( errors_list[0].text.find( "Box</E::B, E::G, E::A/>" ) != -1 )
 
@@ -185,7 +185,7 @@ def TypeNameInErrorMessage_ClassTemplate_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 	assert( errors_list[0].text.find( "i32" ) != -1 )
 	assert( errors_list[0].text.find( "Box<//>" ) != -1 )
 
@@ -202,7 +202,7 @@ def TypeNameInErrorMessage_ClassTemplate_Test6():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 	assert( errors_list[0].text.find( "i32" ) != -1 )
 	assert( errors_list[0].text.find( "Box</F</u16/>/>" ) != -1 )
 
@@ -218,7 +218,7 @@ def TypeNameInErrorMessage_ClassTemplate_Test7():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 	assert( errors_list[0].text.find( "i32" ) != -1 )
 	assert( errors_list[0].text.find( "Box</i32/>" ) != -1 )
 
@@ -234,7 +234,7 @@ def TypeNameInErrorMessage_ClassTemplate_Test8():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 	assert( errors_list[0].text.find( "i32" ) != -1 )
 	assert( errors_list[0].text.find( "Box</typeof(typeinfo</f64/>)/>" ) != -1 )
 
@@ -250,7 +250,7 @@ def TypeNameInErrorMessage_ClassTemplate_Test9():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 	assert( errors_list[0].text.find( "i32" ) != -1 )
 	assert( errors_list[0].text.find( "Box</-365/>" ) != -1 )
 
@@ -266,7 +266,7 @@ def TypeNameInErrorMessage_ClassTemplate_Test10():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 	assert( errors_list[0].text.find( "i32" ) != -1 )
 	assert( errors_list[0].text.find( "Box</45c16/>" ) != -1 )
 
@@ -285,10 +285,10 @@ def TemplateParametersInErrorInsideTemplate_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TemplateContext" )
-	assert( errors_list[0].file_pos.line == 9 )
+	assert( errors_list[0].src_loc.line == 9 )
 	assert( len(errors_list[0].template_errors.errors) > 0 )
 	assert( errors_list[0].template_errors.errors[0].error_code == "NameNotFound" )
-	assert( errors_list[0].template_errors.errors[0].file_pos.line == 6 )
+	assert( errors_list[0].template_errors.errors[0].src_loc.line == 6 )
 	assert( errors_list[0].template_errors.parameters_description.find( "T = i32" ) != -1 )
 	assert( errors_list[0].template_errors.template_name.find( "Box" ) != -1 )
 
@@ -308,10 +308,10 @@ def TemplateParametersInErrorInsideTemplate_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TemplateContext" )
-	assert( errors_list[0].file_pos.line == 9 )
+	assert( errors_list[0].src_loc.line == 9 )
 	assert( len(errors_list[0].template_errors.errors) > 0 )
 	assert( errors_list[0].template_errors.errors[0].error_code == "NoMatchBinaryOperatorForGivenTypes" )
-	assert( errors_list[0].template_errors.errors[0].file_pos.line == 5 )
+	assert( errors_list[0].template_errors.errors[0].src_loc.line == 5 )
 	assert( errors_list[0].template_errors.parameters_description.find( "A = i32" ) != -1 )
 	assert( errors_list[0].template_errors.parameters_description.find( "B = f64" ) != -1 )
 	assert( errors_list[0].template_errors.template_name.find( "Add" ) != -1 )
@@ -332,10 +332,10 @@ def TemplateParametersInErrorInsideTemplate_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TemplateContext" )
-	assert( errors_list[0].file_pos.line == 9 )
+	assert( errors_list[0].src_loc.line == 9 )
 	assert( len(errors_list[0].template_errors.errors) > 0 )
 	assert( errors_list[0].template_errors.errors[0].error_code == "NoMatchBinaryOperatorForGivenTypes" )
-	assert( errors_list[0].template_errors.errors[0].file_pos.line == 5 )
+	assert( errors_list[0].template_errors.errors[0].src_loc.line == 5 )
 	assert( errors_list[0].template_errors.parameters_description.find( "A = bool" ) != -1 )
 	assert( errors_list[0].template_errors.parameters_description.find( "B = f32" ) != -1 )
 	assert( errors_list[0].template_errors.template_name.find( "Add" ) != -1 )
@@ -354,10 +354,10 @@ def TemplateParametersInErrorInsideTemplate_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TemplateContext" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 	assert( len(errors_list[0].template_errors.errors) > 0 )
 	assert( errors_list[0].template_errors.errors[0].error_code == "NameNotFound" )
-	assert( errors_list[0].template_errors.errors[0].file_pos.line == 5 )
+	assert( errors_list[0].template_errors.errors[0].src_loc.line == 5 )
 	assert( errors_list[0].template_errors.parameters_description.find( "s = 4" ) != -1 )
 	assert( errors_list[0].template_errors.template_name.find( "IVec" ) != -1 )
 
@@ -375,10 +375,10 @@ def TemplateParametersInErrorInsideTemplate_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TemplateContext" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 	assert( len(errors_list[0].template_errors.errors) > 0 )
 	assert( errors_list[0].template_errors.errors[0].error_code == "NameNotFound" )
-	assert( errors_list[0].template_errors.errors[0].file_pos.line == 5 )
+	assert( errors_list[0].template_errors.errors[0].src_loc.line == 5 )
 	assert( errors_list[0].template_errors.parameters_description.find( "s = -365" ) != -1 )
 	assert( errors_list[0].template_errors.template_name.find( "Box" ) != -1 )
 
@@ -396,10 +396,10 @@ def TemplateParametersInErrorInsideTemplate_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TemplateContext" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 	assert( len(errors_list[0].template_errors.errors) > 0 )
 	assert( errors_list[0].template_errors.errors[0].error_code == "NameNotFound" )
-	assert( errors_list[0].template_errors.errors[0].file_pos.line == 5 )
+	assert( errors_list[0].template_errors.errors[0].src_loc.line == 5 )
 	assert( errors_list[0].template_errors.parameters_description.find( "b = false" ) != -1 )
 	assert( errors_list[0].template_errors.template_name.find( "Box" ) != -1 )
 
@@ -418,9 +418,9 @@ def TemplateParametersInErrorInsideTemplate_Test6():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TemplateContext" )
-	assert( errors_list[0].file_pos.line == 9 )
+	assert( errors_list[0].src_loc.line == 9 )
 	assert( len(errors_list[0].template_errors.errors) > 0 )
 	assert( errors_list[0].template_errors.errors[0].error_code == "NameNotFound" )
-	assert( errors_list[0].template_errors.errors[0].file_pos.line == 6 )
+	assert( errors_list[0].template_errors.errors[0].src_loc.line == 6 )
 	assert( errors_list[0].template_errors.parameters_description.find( "e = ErT::Two2" ) != -1 )
 	assert( errors_list[0].template_errors.template_name.find( "Box" ) != -1 )

@@ -9,7 +9,7 @@ def CouldNotConvertFunctionPointer_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 3 )
 
 
 def CouldNotConvertFunctionPointer_Test1():
@@ -20,7 +20,7 @@ def CouldNotConvertFunctionPointer_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 3 )
 
 
 def CouldNotConvertFunctionPointer_Test2():
@@ -31,7 +31,7 @@ def CouldNotConvertFunctionPointer_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 3 )
 
 
 def CouldNotConvertFunctionPointer_Test3():
@@ -42,7 +42,7 @@ def CouldNotConvertFunctionPointer_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 3 )
 
 
 def CouldNotConvertFunctionPointer_Test4():
@@ -53,7 +53,7 @@ def CouldNotConvertFunctionPointer_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 3 )
 
 
 def CouldNotConvertFunctionPointer_Test5():
@@ -64,7 +64,7 @@ def CouldNotConvertFunctionPointer_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 3 )
 
 
 def CouldNotConvertFunctionPointer_Test6():
@@ -75,7 +75,7 @@ def CouldNotConvertFunctionPointer_Test6():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 3 )
 
 
 def CouldNotConvertFunctionPointer_Test7():
@@ -86,7 +86,7 @@ def CouldNotConvertFunctionPointer_Test7():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 3 )
 
 
 def CouldNotConvertFunctionPointer_Test8():
@@ -97,7 +97,7 @@ def CouldNotConvertFunctionPointer_Test8():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 3 )
 
 
 def CouldNotConvertFunctionPointer_Test9():
@@ -108,7 +108,7 @@ def CouldNotConvertFunctionPointer_Test9():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 3 )
 
 
 def CouldNotConvertFunctionPointer_Test10():
@@ -119,7 +119,7 @@ def CouldNotConvertFunctionPointer_Test10():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 3 )
 
 
 def CouldNotConvertFunctionPointer_Test11():
@@ -137,7 +137,7 @@ def CouldNotConvertFunctionPointer_Test11():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 10 )
+	assert( errors_list[0].src_loc.line == 10 )
 
 
 def CouldNotConvertFunctionPointer_Test12():
@@ -149,7 +149,7 @@ def CouldNotConvertFunctionPointer_Test12():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def CouldNotSelectFunctionForPointer_Test0():
@@ -161,7 +161,7 @@ def CouldNotSelectFunctionForPointer_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def FunctionPointerReferencesIsNotCompatible_Test0():
@@ -173,7 +173,7 @@ def FunctionPointerReferencesIsNotCompatible_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def FunctionPointerReferencesIsNotCompatible_Test1():
@@ -185,7 +185,7 @@ def FunctionPointerReferencesIsNotCompatible_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def InvalidFunctionArgumentCount_Test0():
@@ -200,7 +200,7 @@ def InvalidFunctionArgumentCount_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidFunctionArgumentCount" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def InvalidFunctionArgumentCount_Test1():
@@ -215,7 +215,7 @@ def InvalidFunctionArgumentCount_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidFunctionArgumentCount" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def TypesMismatch_InFunctionPointerCall_Test0():
@@ -230,7 +230,7 @@ def TypesMismatch_InFunctionPointerCall_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def TypesMismatch_InFunctionPointerCall_Test1():
@@ -245,7 +245,7 @@ def TypesMismatch_InFunctionPointerCall_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def BindingConstReferenceToNonconstReference_InFunctionPointerCall_Test0():
@@ -261,7 +261,7 @@ def BindingConstReferenceToNonconstReference_InFunctionPointerCall_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "BindingConstReferenceToNonconstReference" )
-	assert( errors_list[0].file_pos.line == 7 )
+	assert( errors_list[0].src_loc.line == 7 )
 
 
 def ExpectedReferenceValue_InFunctionPointerCall_Test0():
@@ -276,7 +276,7 @@ def ExpectedReferenceValue_InFunctionPointerCall_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def TemplateDeductionFailed_WithFunctionPointerTypeAsTemplateSignatureArgument_Test0():

@@ -12,7 +12,7 @@ def GlobalsLoop_ForFunctionWithAutoReturnType_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "GlobalsLoopDetected" )
-	assert( errors_list[0].file_pos.line == 2 )
+	assert( errors_list[0].src_loc.line == 2 )
 
 
 
@@ -28,7 +28,7 @@ def GlobalsLoop_ForFunctionWithAutoReturnType_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "GlobalsLoopDetected" )
-	assert( errors_list[0].file_pos.line == 2 )
+	assert( errors_list[0].src_loc.line == 2 )
 
 
 def ExpectedBodyForAutoFunction_Test0():
@@ -38,7 +38,7 @@ def ExpectedBodyForAutoFunction_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedBodyForAutoFunction" )
-	assert( errors_list[0].file_pos.line == 2 )
+	assert( errors_list[0].src_loc.line == 2 )
 
 
 def ExpectedBodyForAutoFunction_Test1():
@@ -48,7 +48,7 @@ def ExpectedBodyForAutoFunction_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedBodyForAutoFunction" )
-	assert( errors_list[0].file_pos.line == 2 )
+	assert( errors_list[0].src_loc.line == 2 )
 
 
 def AutoFunctionInsideClassesNotAllowed_Test0():
@@ -61,7 +61,7 @@ def AutoFunctionInsideClassesNotAllowed_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "AutoFunctionInsideClassesNotAllowed" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def AutoFunctionInsideClassesNotAllowed_Test1():
@@ -74,7 +74,7 @@ def AutoFunctionInsideClassesNotAllowed_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "AutoFunctionInsideClassesNotAllowed" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 def TypesMismtach_ForAutoReturnValue_Test0():
 	c_program_text= """
@@ -88,7 +88,7 @@ def TypesMismtach_ForAutoReturnValue_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def TypesMismtach_ForAutoReturnValue_Test1():
@@ -103,7 +103,7 @@ def TypesMismtach_ForAutoReturnValue_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def ExpectedReferenceValue_ForAutoReturnValue_Test0():
@@ -116,4 +116,4 @@ def ExpectedReferenceValue_ForAutoReturnValue_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 1 )
 	assert( errors_list[1].error_code == "ExpectedReferenceValue" )
-	assert( errors_list[1].file_pos.line == 4 )
+	assert( errors_list[1].src_loc.line == 4 )
