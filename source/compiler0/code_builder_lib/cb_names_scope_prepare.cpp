@@ -35,15 +35,15 @@ void CodeBuilder::NamesScopeFill(
 		if( const NamesScopePtr same_namespace= same_value->GetNamespace() )
 			result_scope= same_namespace.get(); // Extend existend namespace.
 		else
-			REPORT_ERROR( Redefinition, names_scope.GetErrors(), namespace_->file_pos_, namespace_->name_ );
+			REPORT_ERROR( Redefinition, names_scope.GetErrors(), namespace_->src_loc_, namespace_->name_ );
 	}
 	else
 	{
 		if( IsKeyword( namespace_->name_ ) )
-			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), namespace_->file_pos_ );
+			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), namespace_->src_loc_ );
 
 		const auto new_names_scope= std::make_shared<NamesScope>( namespace_->name_, &names_scope );
-		names_scope.AddName( namespace_->name_, Value( new_names_scope, namespace_->file_pos_ ) );
+		names_scope.AddName( namespace_->name_, Value( new_names_scope, namespace_->src_loc_ ) );
 		result_scope= new_names_scope.get();
 	}
 
@@ -57,15 +57,15 @@ void CodeBuilder::NamesScopeFill(
 	for( const Synt::VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration.variables )
 	{
 		if( IsKeyword( variable_declaration.name ) )
-			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), variable_declaration.file_pos );
+			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), variable_declaration.src_loc );
 
 		IncompleteGlobalVariable incomplete_global_variable;
 		incomplete_global_variable.variables_declaration= &variables_declaration;
 		incomplete_global_variable.element_index= size_t( &variable_declaration - variables_declaration.variables.data() );
 		incomplete_global_variable.name= variable_declaration.name;
 
-		if( names_scope.AddName( variable_declaration.name, Value( incomplete_global_variable, variable_declaration.file_pos ) ) == nullptr )
-			REPORT_ERROR( Redefinition, names_scope.GetErrors(), variable_declaration.file_pos, variable_declaration.name );
+		if( names_scope.AddName( variable_declaration.name, Value( incomplete_global_variable, variable_declaration.src_loc ) ) == nullptr )
+			REPORT_ERROR( Redefinition, names_scope.GetErrors(), variable_declaration.src_loc, variable_declaration.name );
 	}
 }
 
@@ -74,14 +74,14 @@ void CodeBuilder::NamesScopeFill(
 	NamesScope& names_scope )
 {
 	if( IsKeyword( variable_declaration.name ) )
-		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), variable_declaration.file_pos_ );
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), variable_declaration.src_loc_ );
 
 	IncompleteGlobalVariable incomplete_global_variable;
 	incomplete_global_variable.auto_variable_declaration= &variable_declaration;
 	incomplete_global_variable.name= variable_declaration.name;
 
-	if( names_scope.AddName( variable_declaration.name, Value( incomplete_global_variable, variable_declaration.file_pos_ ) ) == nullptr )
-		REPORT_ERROR( Redefinition, names_scope.GetErrors(), variable_declaration.file_pos_, variable_declaration.name );
+	if( names_scope.AddName( variable_declaration.name, Value( incomplete_global_variable, variable_declaration.src_loc_ ) ) == nullptr )
+		REPORT_ERROR( Redefinition, names_scope.GetErrors(), variable_declaration.src_loc_, variable_declaration.name );
 }
 
 void CodeBuilder::NamesScopeFill(
@@ -97,20 +97,20 @@ void CodeBuilder::NamesScopeFill(
 
 	const std::string& func_name= function_declaration.name_.back();
 	if( IsKeyword( func_name ) && func_name != Keywords::constructor_ && func_name != Keywords::destructor_ )
-		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), function_declaration.file_pos_ );
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), function_declaration.src_loc_ );
 
 	if( Value* const prev_value= names_scope.GetThisScopeValue( func_name ) )
 	{
 		if( OverloadedFunctionsSet* const functions_set= prev_value->GetFunctionsSet() )
 		{
 			if( base_class != nullptr && base_class->class_->GetMemberVisibility( func_name ) != visibility )
-				REPORT_ERROR( FunctionsVisibilityMismatch, names_scope.GetErrors(), function_declaration.file_pos_, func_name );
+				REPORT_ERROR( FunctionsVisibilityMismatch, names_scope.GetErrors(), function_declaration.src_loc_, func_name );
 
 			U_ASSERT( functions_set->base_class == base_class );
 			functions_set->syntax_elements.push_back( &function_declaration );
 		}
 		else
-			REPORT_ERROR( Redefinition, names_scope.GetErrors(), function_declaration.file_pos_, func_name );
+			REPORT_ERROR( Redefinition, names_scope.GetErrors(), function_declaration.src_loc_, func_name );
 	}
 	else
 	{
@@ -135,22 +135,22 @@ void CodeBuilder::NamesScopeFill(
 	const std::string& function_template_name= full_name.front();
 
 	if( full_name.size() > 1u )
-		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), function_template_declaration.file_pos_ );
+		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), function_template_declaration.src_loc_ );
 	if( IsKeyword( function_template_name ) && function_template_name != Keywords::constructor_ && function_template_name != Keywords::destructor_ )
-		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), function_template_declaration.file_pos_ );
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), function_template_declaration.src_loc_ );
 
 	if( Value* const prev_value= names_scope.GetThisScopeValue( function_template_name ) )
 	{
 		if( OverloadedFunctionsSet* const functions_set= prev_value->GetFunctionsSet() )
 		{
 			if( base_class != nullptr && base_class->class_->GetMemberVisibility( function_template_name ) != visibility )
-				REPORT_ERROR( FunctionsVisibilityMismatch, names_scope.GetErrors(), function_template_declaration.file_pos_, function_template_name );
+				REPORT_ERROR( FunctionsVisibilityMismatch, names_scope.GetErrors(), function_template_declaration.src_loc_, function_template_name );
 
 			U_ASSERT( functions_set->base_class == base_class );
 			functions_set->template_syntax_elements.push_back( &function_template_declaration );
 		}
 		else
-			REPORT_ERROR( Redefinition, names_scope.GetErrors(), function_template_declaration.file_pos_, function_template_name );
+			REPORT_ERROR( Redefinition, names_scope.GetErrors(), function_template_declaration.src_loc_, function_template_name );
 	}
 	else
 	{
@@ -174,7 +174,7 @@ ClassProxyPtr CodeBuilder::NamesScopeFill(
 
 	const std::string& class_name= override_name.empty() ? class_declaration.name_: override_name;
 	if( IsKeyword( class_name ) )
-		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), class_declaration.file_pos_ );
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), class_declaration.src_loc_ );
 
 	ClassProxyPtr class_type;
 	if( const Value* const prev_value= names_scope.GetThisScopeValue( class_name ) )
@@ -185,19 +185,19 @@ ClassProxyPtr CodeBuilder::NamesScopeFill(
 			{
 				class_type= prev_class_type;
 				if(  class_type->class_->syntax_element->is_forward_declaration_ &&  class_declaration.is_forward_declaration_ )
-					REPORT_ERROR( Redefinition, names_scope.GetErrors(), class_declaration.file_pos_, class_name );
+					REPORT_ERROR( Redefinition, names_scope.GetErrors(), class_declaration.src_loc_, class_name );
 				if( !class_type->class_->syntax_element->is_forward_declaration_ && !class_declaration.is_forward_declaration_ )
-					REPORT_ERROR( ClassBodyDuplication, names_scope.GetErrors(), class_declaration.file_pos_ );
+					REPORT_ERROR( ClassBodyDuplication, names_scope.GetErrors(), class_declaration.src_loc_ );
 			}
 			else
 			{
-				REPORT_ERROR( Redefinition, names_scope.GetErrors(), class_declaration.file_pos_, class_name );
+				REPORT_ERROR( Redefinition, names_scope.GetErrors(), class_declaration.src_loc_, class_name );
 				return nullptr;
 			}
 		}
 		else
 		{
-			REPORT_ERROR( Redefinition, names_scope.GetErrors(), class_declaration.file_pos_, class_name );
+			REPORT_ERROR( Redefinition, names_scope.GetErrors(), class_declaration.src_loc_, class_name );
 			return nullptr;
 		}
 	}
@@ -207,9 +207,9 @@ ClassProxyPtr CodeBuilder::NamesScopeFill(
 		(*current_class_table_)[ class_type ]= std::make_unique<Class>( class_name, &names_scope );
 		class_type->class_= (*current_class_table_)[ class_type ].get();
 
-		names_scope.AddName( class_name, Value( Type( class_type ), class_declaration.file_pos_ ) );
+		names_scope.AddName( class_name, Value( Type( class_type ), class_declaration.src_loc_ ) );
 		class_type->class_->syntax_element= &class_declaration;
-		class_type->class_->body_file_pos= class_type->class_->forward_declaration_file_pos= class_declaration.file_pos_;
+		class_type->class_->body_src_loc= class_type->class_->forward_declaration_src_loc= class_declaration.src_loc_;
 		class_type->class_->llvm_type= llvm::StructType::create( llvm_context_, MangleType( class_type ) );
 
 		class_type->class_->members.AddAccessRightsFor( class_type, ClassMemberVisibility::Private );
@@ -218,10 +218,10 @@ ClassProxyPtr CodeBuilder::NamesScopeFill(
 	Class& the_class= *class_type->class_;
 
 	if( class_declaration.is_forward_declaration_ )
-		the_class.forward_declaration_file_pos= class_declaration.file_pos_;
+		the_class.forward_declaration_src_loc= class_declaration.src_loc_;
 	else
 	{
-		the_class.body_file_pos= class_declaration.file_pos_;
+		the_class.body_src_loc= class_declaration.src_loc_;
 		the_class.syntax_element= &class_declaration;
 	}
 
@@ -248,9 +248,9 @@ ClassProxyPtr CodeBuilder::NamesScopeFill(
 				class_field.original_index= field_number;
 
 				if( IsKeyword( in_class_field.name ) )
-					REPORT_ERROR( UsingKeywordAsName, the_class.members.GetErrors(), in_class_field.file_pos_ );
-				if( the_class.members.AddName( in_class_field.name, Value( class_field, in_class_field.file_pos_ ) ) == nullptr )
-					REPORT_ERROR( Redefinition, the_class.members.GetErrors(), in_class_field.file_pos_, in_class_field.name );
+					REPORT_ERROR( UsingKeywordAsName, the_class.members.GetErrors(), in_class_field.src_loc_ );
+				if( the_class.members.AddName( in_class_field.name, Value( class_field, in_class_field.src_loc_ ) ) == nullptr )
+					REPORT_ERROR( Redefinition, the_class.members.GetErrors(), in_class_field.src_loc_, in_class_field.name );
 
 				++field_number;
 				the_class.SetMemberVisibility( in_class_field.name, current_visibility );
@@ -266,7 +266,7 @@ ClassProxyPtr CodeBuilder::NamesScopeFill(
 			void operator()( const Synt::ClassVisibilityLabel& visibility_label )
 			{
 				if( class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Struct )
-					REPORT_ERROR( VisibilityForStruct, the_class.members.GetErrors(), visibility_label.file_pos_, class_name );
+					REPORT_ERROR( VisibilityForStruct, the_class.members.GetErrors(), visibility_label.src_loc_, class_name );
 				current_visibility= visibility_label.visibility_;
 			}
 			void operator()( const Synt::TypeTemplate& type_template )
@@ -321,17 +321,17 @@ void CodeBuilder::NamesScopeFill(
 {
 	const std::string type_template_name= type_template_declaration.name_;
 	if( IsKeyword( type_template_name ) )
-		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), type_template_declaration.file_pos_ );
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), type_template_declaration.src_loc_ );
 
 	if( Value* const prev_value= names_scope.GetThisScopeValue( type_template_name ) )
 	{
 		if( base_class != nullptr && base_class->class_->GetMemberVisibility( type_template_name ) != visibility )
-			REPORT_ERROR( TypeTemplatesVisibilityMismatch, names_scope.GetErrors(), type_template_declaration.file_pos_, type_template_name ); // TODO - use separate error code
+			REPORT_ERROR( TypeTemplatesVisibilityMismatch, names_scope.GetErrors(), type_template_declaration.src_loc_, type_template_name ); // TODO - use separate error code
 
 		if( TypeTemplatesSet* const type_templates_set= prev_value->GetTypeTemplatesSet() )
 			type_templates_set->syntax_elements.push_back( &type_template_declaration );
 		else
-			REPORT_ERROR( Redefinition, names_scope.GetErrors(), type_template_declaration.file_pos_, type_template_name );
+			REPORT_ERROR( Redefinition, names_scope.GetErrors(), type_template_declaration.src_loc_, type_template_name );
 	}
 	else
 	{
@@ -340,7 +340,7 @@ void CodeBuilder::NamesScopeFill(
 
 		TypeTemplatesSet type_templates_set;
 		type_templates_set.syntax_elements.push_back( &type_template_declaration );
-		names_scope.AddName( type_template_name, Value( std::move(type_templates_set), type_template_declaration.file_pos_ ) );
+		names_scope.AddName( type_template_name, Value( std::move(type_templates_set), type_template_declaration.src_loc_ ) );
 	}
 }
 
@@ -349,15 +349,15 @@ void CodeBuilder::NamesScopeFill(
 	NamesScope& names_scope )
 {
 	if( IsKeyword( enum_declaration.name ) )
-		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), enum_declaration.file_pos_ );
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), enum_declaration.src_loc_ );
 
 	enums_table_.push_back( std::make_unique<Enum>( enum_declaration.name, &names_scope ) );
 	const EnumPtr enum_= enums_table_.back().get();
 
 	enum_->syntax_element= &enum_declaration;
 
-	if( names_scope.AddName( enum_declaration.name, Value( Type( enum_ ), enum_declaration.file_pos_ ) ) == nullptr )
-		REPORT_ERROR( Redefinition, names_scope.GetErrors(), enum_declaration.file_pos_, enum_declaration.name );
+	if( names_scope.AddName( enum_declaration.name, Value( Type( enum_ ), enum_declaration.src_loc_ ) ) == nullptr )
+		REPORT_ERROR( Redefinition, names_scope.GetErrors(), enum_declaration.src_loc_, enum_declaration.name );
 }
 
 void CodeBuilder::NamesScopeFill(
@@ -365,13 +365,13 @@ void CodeBuilder::NamesScopeFill(
 	NamesScope& names_scope )
 {
 	if( IsKeyword( typedef_declaration.name ) )
-		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), typedef_declaration.file_pos_ );
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), typedef_declaration.src_loc_ );
 
 	Typedef typedef_;
 	typedef_.syntax_element= &typedef_declaration;
 
-	if( names_scope.AddName( typedef_declaration.name, Value( typedef_, typedef_declaration.file_pos_ ) ) == nullptr )
-		REPORT_ERROR( Redefinition, names_scope.GetErrors(), typedef_declaration.file_pos_, typedef_declaration.name );
+	if( names_scope.AddName( typedef_declaration.name, Value( typedef_, typedef_declaration.src_loc_ ) ) == nullptr )
+		REPORT_ERROR( Redefinition, names_scope.GetErrors(), typedef_declaration.src_loc_, typedef_declaration.name );
 }
 
 void CodeBuilder::NamesScopeFill(
@@ -383,7 +383,7 @@ void CodeBuilder::NamesScopeFill(
 
 	names_scope.AddName(
 		"_sa_" + std::to_string(reinterpret_cast<uintptr_t>(&static_assert_declaration)),
-		Value( static_assert_, static_assert_declaration.file_pos_ ) );
+		Value( static_assert_, static_assert_declaration.src_loc_ ) );
 }
 
 void CodeBuilder::NamesScopeFillOutOfLineElements(
@@ -416,7 +416,7 @@ void CodeBuilder::NamesScopeFillOutOfLineElements(
 
 			if( prev_value == nullptr )
 			{
-				REPORT_ERROR( NameNotFound, names_scope.GetErrors(), func.file_pos_, func.name_.front() );
+				REPORT_ERROR( NameNotFound, names_scope.GetErrors(), func.src_loc_, func.name_.front() );
 				continue;
 			}
 
@@ -431,12 +431,12 @@ void CodeBuilder::NamesScopeFillOutOfLineElements(
 				}
 
 				if( prev_value == nullptr )
-					REPORT_ERROR( NameNotFound, names_scope.GetErrors(), func.file_pos_, func.name_[i] );
+					REPORT_ERROR( NameNotFound, names_scope.GetErrors(), func.src_loc_, func.name_[i] );
 			}
 
 			if( prev_value == nullptr || prev_value->GetFunctionsSet() == nullptr )
 			{
-				REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), func.file_pos_ );
+				REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), func.src_loc_ );
 				continue;
 			}
 			prev_value->GetFunctionsSet()->out_of_line_syntax_elements.push_back(&func);

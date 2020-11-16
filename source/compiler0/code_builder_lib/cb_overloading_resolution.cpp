@@ -334,7 +334,7 @@ bool CodeBuilder::ApplyOverloadedFunction(
 	OverloadedFunctionsSet& functions_set,
 	const FunctionVariable& function,
 	CodeBuilderErrorsContainer& errors_container,
-	const FilePos& file_pos )
+	const SrcLoc& src_loc )
 {
 	if( functions_set.functions.empty() )
 	{
@@ -374,7 +374,7 @@ bool CodeBuilder::ApplyOverloadedFunction(
 
 		if( arg_is_same_count == function_type->args.size() )
 		{
-			REPORT_ERROR( CouldNotOverloadFunction, errors_container, file_pos );
+			REPORT_ERROR( CouldNotOverloadFunction, errors_container, src_loc );
 			return false;
 		}
 	} // For functions in set.
@@ -389,7 +389,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	const ArgsVector<Function::Arg>& actual_args,
 	const bool first_actual_arg_is_this,
 	CodeBuilderErrorsContainer& errors_container,
-	const FilePos& file_pos,
+	const SrcLoc& src_loc,
 	const bool produce_errors,
 	const bool enable_type_conversions )
 {
@@ -436,18 +436,18 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 					!( EnsureTypeComplete( function_type.args[i].type ) && EnsureTypeComplete( actual_args_begin[i].type ) ) )
 				{
 					if( produce_errors )
-						REPORT_ERROR( CouldNotSelectOverloadedFunction, errors_container, file_pos );
+						REPORT_ERROR( CouldNotSelectOverloadedFunction, errors_container, src_loc );
 					all_args_is_compatible= false;
 					break;
 				}
 
-				if( ReferenceIsConvertible( actual_args_begin[i].type, function_type.args[i].type, errors_container, file_pos ) )
+				if( ReferenceIsConvertible( actual_args_begin[i].type, function_type.args[i].type, errors_container, src_loc ) )
 				{}
 				// Enable type conversion only if argument is not mutable reference.
 				else if(
 					enable_type_conversions && parameter_overloading_class == ArgOverloadingClass::ImmutableReference &&
 					!function.is_conversion_constructor && !( function.is_constructor && IsCopyConstructor( function_type, function_type.args.front().type ) ) && // Disable convesin constructors call for copy constructors and conversion constructors
-					GetConversionConstructor( actual_args_begin[i].type, function_type.args[i].type, errors_container, file_pos ) != nullptr )
+					GetConversionConstructor( actual_args_begin[i].type, function_type.args[i].type, errors_container, src_loc ) != nullptr )
 				{}
 				else
 				{
@@ -482,7 +482,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	for( const FunctionTemplatePtr& function_template_ptr : functions_set.template_functions )
 	{
 		const FunctionVariable* const generated_function=
-			GenTemplateFunction( errors_container, file_pos, function_template_ptr, actual_args, first_actual_arg_is_this );
+			GenTemplateFunction( errors_container, src_loc, function_template_ptr, actual_args, first_actual_arg_is_this );
 		if( generated_function != nullptr )
 			match_functions.push_back( generated_function );
 	}
@@ -490,7 +490,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	if( match_functions.empty() )
 	{
 		if( produce_errors )
-			REPORT_ERROR( CouldNotSelectOverloadedFunction, errors_container, file_pos );
+			REPORT_ERROR( CouldNotSelectOverloadedFunction, errors_container, src_loc );
 		return nullptr;
 	}
 	else if( match_functions.size() == 1u )
@@ -596,7 +596,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 
 	if( selected_function == nullptr )
 		if( produce_errors )
-			REPORT_ERROR( TooManySuitableOverloadedFunctions, errors_container, file_pos );
+			REPORT_ERROR( TooManySuitableOverloadedFunctions, errors_container, src_loc );
 
 	return selected_function;
 }
@@ -605,7 +605,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 	const ArgsVector<Function::Arg>& actual_args,
 	OverloadedOperator op,
 	CodeBuilderErrorsContainer& errors_container,
-	const FilePos& file_pos )
+	const SrcLoc& src_loc )
 {
 	const std::string op_name= OverloadedOperatorToString( op );
 
@@ -618,7 +618,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 		{
 			if( !EnsureTypeComplete( arg.type ) )
 			{
-				REPORT_ERROR( UsingIncompleteType, errors_container, file_pos, arg.type );
+				REPORT_ERROR( UsingIncompleteType, errors_container, src_loc, arg.type );
 				return nullptr;
 			}
 
@@ -629,7 +629,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 			const OverloadedFunctionsSet* const operators_set= value_in_class->GetFunctionsSet();
 			U_ASSERT( operators_set != nullptr ); // If we found something in names map with operator name, it must be operator.
 
-			const FunctionVariable* const func= GetOverloadedFunction( *operators_set, actual_args, false, errors_container, file_pos, false );
+			const FunctionVariable* const func= GetOverloadedFunction( *operators_set, actual_args, false, errors_container, src_loc, false );
 			if( func != nullptr )
 				return func;
 		}
@@ -642,11 +642,11 @@ const FunctionVariable* CodeBuilder::GetConversionConstructor(
 	const Type& src_type,
 	const Type& dst_type,
 	CodeBuilderErrorsContainer& errors_container,
-	const FilePos& file_pos )
+	const SrcLoc& src_loc )
 {
 	if( !EnsureTypeComplete( dst_type ) )
 	{
-		REPORT_ERROR( UsingIncompleteType, errors_container, file_pos, dst_type );
+		REPORT_ERROR( UsingIncompleteType, errors_container, src_loc, dst_type );
 		return nullptr;
 	}
 	const Class* const dst_class_type= dst_type.GetClassType();
@@ -668,7 +668,7 @@ const FunctionVariable* CodeBuilder::GetConversionConstructor(
 	actual_args[1u].is_mutable= false;
 	actual_args[1u].is_reference= true;
 
-	const FunctionVariable* const func= GetOverloadedFunction( constructors, actual_args, true, errors_container, file_pos, false, false );
+	const FunctionVariable* const func= GetOverloadedFunction( constructors, actual_args, true, errors_container, src_loc, false, false );
 	if( func != nullptr && func->is_conversion_constructor )
 		return func;
 

@@ -12,7 +12,7 @@ def ExpectedReferenceValue_ForMove_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def ExpectedReferenceValue_ForMove_Test1():
@@ -25,7 +25,7 @@ def ExpectedReferenceValue_ForMove_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def ExpectedReferenceValue_ForMove_Test2():
@@ -39,7 +39,7 @@ def ExpectedReferenceValue_ForMove_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedVariable" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def ExpectedVariable_ForMove_Test0():
@@ -54,7 +54,7 @@ def ExpectedVariable_ForMove_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedVariable" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def ExpectedVariable_ForMove_Test1():
@@ -71,7 +71,7 @@ def ExpectedVariable_ForMove_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedVariable" )
-	assert( errors_list[0].file_pos.line == 7 )
+	assert( errors_list[0].src_loc.line == 7 )
 
 
 def ExpectedVariable_ForMove_Test2():
@@ -84,7 +84,7 @@ def ExpectedVariable_ForMove_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedVariable" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def AccessingMovedVariable_Test0():
@@ -99,7 +99,7 @@ def AccessingMovedVariable_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "AccessingMovedVariable" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def AccessingMovedVariable_Test1():
@@ -114,7 +114,7 @@ def AccessingMovedVariable_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "AccessingMovedVariable" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def AccessingMovedVariable_Test2():
@@ -128,7 +128,7 @@ def AccessingMovedVariable_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "AccessingMovedVariable" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def AccessingMovedVariable_Test3():
@@ -143,7 +143,7 @@ def AccessingMovedVariable_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "AccessingMovedVariable" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def AccessingMovedVariable_Test4():
@@ -157,7 +157,7 @@ def AccessingMovedVariable_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "AccessingMovedVariable" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def AccessingMovedVariable_Test5():
@@ -171,7 +171,7 @@ def AccessingMovedVariable_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "AccessingMovedVariable" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def AccessingMovedVariable_Test6():
@@ -185,7 +185,7 @@ def AccessingMovedVariable_Test6():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "AccessingMovedVariable" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def AccessingMovedVariable_InTupleFor_Test0():
@@ -203,7 +203,7 @@ def AccessingMovedVariable_InTupleFor_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "AccessingMovedVariable" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def AccessingMovedVariable_InTupleFor_Test1():
@@ -248,7 +248,7 @@ def OuterVariableMoveInsideLoop_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "OuterVariableMoveInsideLoop" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def OuterVariableMoveInsideLoop_Test1():
@@ -261,7 +261,7 @@ def OuterVariableMoveInsideLoop_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "OuterVariableMoveInsideLoop" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def OuterVariableMoveInsideLoop_Test2():
@@ -278,7 +278,7 @@ def OuterVariableMoveInsideLoop_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "OuterVariableMoveInsideLoop" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def ConditionalMove_Test0():
@@ -292,7 +292,7 @@ def ConditionalMove_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConditionalMove" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def ConditionalMove_Test1():
@@ -307,7 +307,7 @@ def ConditionalMove_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConditionalMove" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def ConditionalMove_Test2():
@@ -323,7 +323,7 @@ def ConditionalMove_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConditionalMove" )
-	assert( errors_list[0].file_pos.line == 7 )
+	assert( errors_list[0].src_loc.line == 7 )
 
 
 def ConditionalMove_Test3():
@@ -338,7 +338,7 @@ def ConditionalMove_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConditionalMove" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def ConditionalMove_InTupleFor_Test0():
@@ -361,7 +361,7 @@ def ConditionalMove_InTupleFor_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConditionalMove" )
-	assert( errors_list[0].file_pos.line == 14 )
+	assert( errors_list[0].src_loc.line == 14 )
 
 
 def ConditionalMove_ForLazyLogicalOperators_Test0():
@@ -375,7 +375,7 @@ def ConditionalMove_ForLazyLogicalOperators_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConditionalMove" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def ConditionalMove_ForLazyLogicalOperators_Test1():
@@ -389,7 +389,7 @@ def ConditionalMove_ForLazyLogicalOperators_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConditionalMove" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def ConditionalMove_ForLazyLogicalOperators_Test2():
@@ -403,7 +403,7 @@ def ConditionalMove_ForLazyLogicalOperators_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConditionalMove" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def MovedVariableHaveReferences_Test0():
@@ -418,7 +418,7 @@ def MovedVariableHaveReferences_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "MovedVariableHaveReferences" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def MovedVariableHaveReferences_Test1():
@@ -432,7 +432,7 @@ def MovedVariableHaveReferences_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "MovedVariableHaveReferences" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def MovedVariableHaveReferences_Test2():
@@ -451,7 +451,7 @@ def MovedVariableHaveReferences_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "MovedVariableHaveReferences" )
-	assert( errors_list[0].file_pos.line == 10 )
+	assert( errors_list[0].src_loc.line == 10 )
 
 
 def MovedVariableHaveReferences_Test3():
@@ -472,4 +472,4 @@ def MovedVariableHaveReferences_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[-1].error_code == "MovedVariableHaveReferences" ) # HACK! Access last error
-	assert( errors_list[-1].file_pos.line == 12 )
+	assert( errors_list[-1].src_loc.line == 12 )

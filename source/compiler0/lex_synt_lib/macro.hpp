@@ -62,7 +62,7 @@ struct Macro
 		std::vector<ResultElement> sub_elements; // For optionals, loops
 	};
 
-	FilePos file_pos;
+	SrcLoc src_loc;
 	std::string name;
 	std::vector<MatchElement> match_template_elements;
 	std::vector<ResultElement> result_template_elements;

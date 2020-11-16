@@ -9,7 +9,7 @@ def UsingIncompleteType_ForInheritance_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UsingIncompleteType" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 3 )
 
 
 def BaseUnavailable_Test0():
@@ -24,7 +24,7 @@ def BaseUnavailable_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "BaseUnavailable" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def BaseUnavailable_Test1():
@@ -44,7 +44,7 @@ def BaseUnavailable_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 1 )
 	assert( errors_list[1].error_code == "BaseUnavailable" )
-	assert( errors_list[1].file_pos.line == 10 )
+	assert( errors_list[1].src_loc.line == 10 )
 
 
 def BaseUnavailable_Test2():
@@ -62,7 +62,7 @@ def BaseUnavailable_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "BaseUnavailable" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def BaseUnavailable_Test3():
@@ -78,7 +78,7 @@ def BaseUnavailable_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "BaseUnavailable" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def FieldIsNotInitializedYet_ForBase_Test0():
@@ -140,7 +140,7 @@ def CanNotDeriveFromThisType_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CanNotDeriveFromThisType" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 3 )
 
 
 def CanNotDeriveFromThisType_Test1():
@@ -152,7 +152,7 @@ def CanNotDeriveFromThisType_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CanNotDeriveFromThisType" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def CanNotDeriveFromThisType_Test2():
@@ -162,7 +162,7 @@ def CanNotDeriveFromThisType_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CanNotDeriveFromThisType" )
-	assert( errors_list[0].file_pos.line == 2 )
+	assert( errors_list[0].src_loc.line == 2 )
 
 
 def DuplicatedParentClass_Test0():
@@ -173,7 +173,7 @@ def DuplicatedParentClass_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "DuplicatedParentClass" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 3 )
 
 
 def DuplicatedParentClass_Test1():
@@ -186,7 +186,7 @@ def DuplicatedParentClass_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "DuplicatedParentClass" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def DuplicatedBaseClass_Test0():
@@ -198,7 +198,7 @@ def DuplicatedBaseClass_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "DuplicatedBaseClass" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def FieldsForInterfacesNotAllowed_Test0():
@@ -211,7 +211,7 @@ def FieldsForInterfacesNotAllowed_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FieldsForInterfacesNotAllowed" )
-	assert( errors_list[0].file_pos.line == 2 )
+	assert( errors_list[0].src_loc.line == 2 )
 
 
 def BaseClassForInterface_Test0():
@@ -222,7 +222,7 @@ def BaseClassForInterface_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "BaseClassForInterface" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 3 )
 
 
 def ConstructorForInterface_Test0():
@@ -235,7 +235,7 @@ def ConstructorForInterface_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstructorForInterface" )
-	assert( errors_list[0].file_pos.line == 2 )
+	assert( errors_list[0].src_loc.line == 2 )
 
 
 def ConstructingAbstractClassOrInterface_Test0():
@@ -249,7 +249,7 @@ def ConstructingAbstractClassOrInterface_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstructingAbstractClassOrInterface" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def ConstructingAbstractClassOrInterface_Test1():
@@ -286,7 +286,7 @@ def ConstructingAbstractClassOrInterface_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstructingAbstractClassOrInterface" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 3 )
 
 
 def ConstructingAbstractClassOrInterface_Test4():
@@ -332,7 +332,7 @@ def ConstructingAbstractClassOrInterface_Test7():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstructingAbstractClassOrInterface" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def ConstructingAbstractClassOrInterface_Test8():
@@ -346,7 +346,7 @@ def ConstructingAbstractClassOrInterface_Test8():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstructingAbstractClassOrInterface" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def ConstructingAbstractClassOrInterface_Test9():
@@ -360,7 +360,7 @@ def ConstructingAbstractClassOrInterface_Test9():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstructingAbstractClassOrInterface" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def ConstructingAbstractClassOrInterface_Test10():
@@ -374,7 +374,7 @@ def ConstructingAbstractClassOrInterface_Test10():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstructingAbstractClassOrInterface" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def ConstructingAbstractClassOrInterface_Test11():

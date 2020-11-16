@@ -17,7 +17,7 @@ U_TEST(ConstructorOutsideClassTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ConstructorOrDestructorOutsideClass );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 
 U_TEST(ConstructorOutsideClassTest1)
@@ -34,7 +34,7 @@ U_TEST(ConstructorOutsideClassTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ConstructorOrDestructorOutsideClass );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 
 U_TEST(ConstructorMustReturnVoidTest0)
@@ -53,7 +53,7 @@ U_TEST(ConstructorMustReturnVoidTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ConstructorAndDestructorMustReturnVoid );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(ConstructorMustReturnVoidTest1)
@@ -72,7 +72,7 @@ U_TEST(ConstructorMustReturnVoidTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ConstructorAndDestructorMustReturnVoid );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(InitializationListInNonconstructorTest0)
@@ -91,7 +91,7 @@ U_TEST(InitializationListInNonconstructorTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InitializationListInNonconstructor );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
 }
 
 U_TEST(InitializationListInNonconstructorTest1)
@@ -113,7 +113,7 @@ U_TEST(InitializationListInNonconstructorTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InitializationListInNonconstructor );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 U_TEST(FieldIsNotInitializedYetTest0)
@@ -138,7 +138,7 @@ U_TEST(FieldIsNotInitializedYetTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FieldIsNotInitializedYet );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 7u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 7u );
 }
 
 U_TEST(FieldIsNotInitializedYetTest1)
@@ -161,7 +161,7 @@ U_TEST(FieldIsNotInitializedYetTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FieldIsNotInitializedYet );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 6u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
 U_TEST(FieldIsNotInitializedYetTest2)
@@ -263,7 +263,7 @@ U_TEST( ExpectedInitializer_InConstructors_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 7u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 7u );
 }
 
 U_TEST( ExpectedInitializer_InConstructors_Test1 )
@@ -287,7 +287,7 @@ U_TEST( ExpectedInitializer_InConstructors_Test1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 7u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 7u );
 }
 
 U_TEST( ExpectedInitializer_InConstructors_Test2 )
@@ -310,7 +310,7 @@ U_TEST( ExpectedInitializer_InConstructors_Test2 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 7u || error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 7u || error.src_loc.GetLine() == 4u );
 }
 
 U_TEST( InitializerForNonfieldStructMember_InConstructors_Test0 )
@@ -332,7 +332,7 @@ U_TEST( InitializerForNonfieldStructMember_InConstructors_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InitializerForNonfieldStructMember );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 6u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
 U_TEST( DuplicatedStructMemberInitializer_InConstructors_Test0 )
@@ -354,7 +354,7 @@ U_TEST( DuplicatedStructMemberInitializer_InConstructors_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DuplicatedStructMemberInitializer );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 6u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
 U_TEST( DefaultConstructorNotFoundTest0 )
@@ -380,7 +380,7 @@ U_TEST( DefaultConstructorNotFoundTest0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 11u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 11u );
 }
 
 U_TEST( DefaultConstructorNotFoundTest1 )
@@ -412,7 +412,7 @@ U_TEST( DefaultConstructorNotFoundTest1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 17u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 17u );
 }
 
 U_TEST( DefaultConstructorNotFoundTest2 )
@@ -435,7 +435,7 @@ U_TEST( DefaultConstructorNotFoundTest2 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedInitializer );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 8u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 8u );
 }
 
 U_TEST( InitializerForBaseClassField_Test0 )
@@ -459,7 +459,7 @@ U_TEST( InitializerForBaseClassField_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InitializerForBaseClassField );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 9u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 9u );
 }
 
 U_TEST( InitializerForBaseClassField_Test1 )
@@ -484,7 +484,7 @@ U_TEST( InitializerForBaseClassField_Test1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InitializerForBaseClassField );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 10u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 10u );
 }
 
 } // namespace U

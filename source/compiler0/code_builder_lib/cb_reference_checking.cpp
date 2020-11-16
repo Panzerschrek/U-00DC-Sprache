@@ -63,7 +63,7 @@ void CodeBuilder::ProcessFunctionReturnValueReferenceTags(
 				}
 			}
 			if( !found )
-				REPORT_ERROR( NameNotFound, errors_container, func.file_pos_, func.return_value_inner_reference_tag_ );
+				REPORT_ERROR( NameNotFound, errors_container, func.src_loc_, func.return_value_inner_reference_tag_ );
 		}
 	}
 }
@@ -91,7 +91,7 @@ void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
 			}
 
 			if( !tag_found ) // Tag exists, but referenced args is empty - means tag apperas only in return value, but not in any argument.
-				REPORT_ERROR( NameNotFound, errors_container, func.file_pos_, func.return_value_reference_tag_ );
+				REPORT_ERROR( NameNotFound, errors_container, func.src_loc_, func.return_value_reference_tag_ );
 		}
 
 		// If there is no tag for return reference, assume, that it may refer to any reference argument, but not inner reference of any argument.
@@ -112,7 +112,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	if( func.name_.back() == Keywords::constructor_ && IsCopyConstructor( function_type, base_class ) )
 	{
 		if( !func.type_.referecnces_pollution_list_.empty() )
-			REPORT_ERROR( ExplicitReferencePollutionForCopyConstructor, errors_container, func.file_pos_ );
+			REPORT_ERROR( ExplicitReferencePollutionForCopyConstructor, errors_container, func.src_loc_ );
 
 		// This is copy constructor. Generate reference pollution for it automatically.
 		Function::ReferencePollution ref_pollution;
@@ -125,7 +125,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	else if( func.name_.back() == OverloadedOperatorToString( OverloadedOperator::Assign ) && IsCopyAssignmentOperator( function_type, base_class ) )
 	{
 		if( !func.type_.referecnces_pollution_list_.empty() )
-			REPORT_ERROR( ExplicitReferencePollutionForCopyAssignmentOperator, errors_container, func.file_pos_ );
+			REPORT_ERROR( ExplicitReferencePollutionForCopyAssignmentOperator, errors_container, func.src_loc_ );
 
 		// This is copy assignment operator. Generate reference pollution for it automatically.
 		Function::ReferencePollution ref_pollution;
@@ -167,7 +167,7 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 		}
 
 		if( !any_ref_found && result.empty() )
-			REPORT_ERROR( NameNotFound, errors_container, func.file_pos_, name );
+			REPORT_ERROR( NameNotFound, errors_container, func.src_loc_, name );
 
 		return result;
 	};
@@ -176,7 +176,7 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 	{
 		if( pollution.first == pollution.second )
 		{
-			REPORT_ERROR( SelfReferencePollution, errors_container, func.file_pos_ );
+			REPORT_ERROR( SelfReferencePollution, errors_container, func.src_loc_ );
 			continue;
 		}
 
@@ -187,7 +187,7 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 		{
 			if( dst_ref.second == Function::c_arg_reference_tag_number )
 			{
-				REPORT_ERROR( ArgReferencePollution, errors_container, func.file_pos_ );
+				REPORT_ERROR( ArgReferencePollution, errors_container, func.src_loc_ );
 				continue;
 			}
 
@@ -202,7 +202,7 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 	} // for pollution
 }
 
-void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context, const Variable& dst_variable, const Variable& src_variable, CodeBuilderErrorsContainer& errors_container, const FilePos& file_pos )
+void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context, const Variable& dst_variable, const Variable& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
 	const ReferencesGraphNodePtr& src_node= src_variable.node;
 	const ReferencesGraphNodePtr& dst_node= dst_variable.node;
@@ -233,7 +233,7 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 			if( ( dst_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut && function_context.variables_state.HaveOutgoingLinks( src_node_inner_reference ) ) ||
 				function_context.variables_state.HaveOutgoingMutableNodes( src_node_inner_reference ) )
 			{
-				REPORT_ERROR( ReferenceProtectionError, errors_container, file_pos, src_node_inner_reference->name );
+				REPORT_ERROR( ReferenceProtectionError, errors_container, src_loc, src_node_inner_reference->name );
 			}
 			else
 				function_context.variables_state.AddLink( src_node_inner_reference, dst_node_inner_reference );
@@ -241,7 +241,7 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 	}
 }
 
-void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const FilePos& file_pos )
+void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
 	StackVariablesStorage& temporary_variables_storage= *function_context.stack_variables_stack.back();
 	for( const StackVariablesStorage::NodeAndVariable& variable : temporary_variables_storage.variables_ )
@@ -250,7 +250,7 @@ void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_con
 			!function_context.variables_state.NodeMoved( variable.first ) )
 		{
 			if( variable.first->kind == ReferencesGraphNode::Kind::Variable && variable.second.type.HaveDestructor() )
-				CallDestructor( variable.second.llvm_value, variable.second.type, function_context, errors_container, file_pos );
+				CallDestructor( variable.second.llvm_value, variable.second.type, function_context, errors_container, src_loc );
 			function_context.variables_state.MoveNode( variable.first );
 		}
 	}
@@ -259,9 +259,9 @@ void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_con
 ReferencesGraph CodeBuilder::MergeVariablesStateAfterIf(
 	const std::vector<ReferencesGraph>& bracnhes_variables_state,
 	CodeBuilderErrorsContainer& errors_container,
-	const FilePos& file_pos )
+	const SrcLoc& src_loc )
 {
-	ReferencesGraph::MergeResult res= ReferencesGraph::MergeVariablesStateAfterIf( bracnhes_variables_state, file_pos );
+	ReferencesGraph::MergeResult res= ReferencesGraph::MergeVariablesStateAfterIf( bracnhes_variables_state, src_loc );
 	errors_container.insert( errors_container.end(), res.second.begin(), res.second.end() );
 	return std::move(res.first);
 }
@@ -283,7 +283,7 @@ bool CodeBuilder::IsReferenceAllowedForReturn( FunctionContext& function_context
 void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 	FunctionContext& function_context,
 	CodeBuilderErrorsContainer& errors_container,
-	const FilePos& file_pos )
+	const SrcLoc& src_loc )
 {
 	for( size_t i= 0u; i < function_context.function_type.args.size(); ++i )
 	{
@@ -319,7 +319,7 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 				if( function_context.function_type.references_pollution.count( pollution ) != 0u )
 					continue;
 			}
-			REPORT_ERROR( UnallowedReferencePollution, errors_container, file_pos );
+			REPORT_ERROR( UnallowedReferencePollution, errors_container, src_loc );
 		}
 	}
 }

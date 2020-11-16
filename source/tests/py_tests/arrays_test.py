@@ -88,7 +88,7 @@ def ArraysAreCopyConstructible_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def ArraysAreCopyConstructible_Test6():
@@ -103,7 +103,7 @@ def ArraysAreCopyConstructible_Test6():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def ArraysAreCopyConstructible_Test7():
@@ -118,7 +118,7 @@ def ArraysAreCopyConstructible_Test7():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def ArrayAsValueArgument_Test0():
@@ -171,7 +171,7 @@ def ArrayAsValueArgument_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
-	assert( errors_list[0].file_pos.line == 7 )
+	assert( errors_list[0].src_loc.line == 7 )
 
 
 def ArrayAsValueArgument_Test3():
@@ -228,7 +228,7 @@ def ArrayAsReturnValue_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def ArrayAsReturnValue_Test2():
@@ -281,7 +281,7 @@ def ArraysAssignment_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def ArraysAssignment_Test2():

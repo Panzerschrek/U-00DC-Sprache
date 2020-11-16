@@ -169,7 +169,7 @@ def TypeTemplatesOvelroading_SpecializationErrors_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 1 )
 	assert( errors_list[1].error_code == "CouldNotSelectMoreSpicializedTypeTemplate" )
-	assert( errors_list[1].file_pos.line == 5 )
+	assert( errors_list[1].src_loc.line == 5 )
 
 
 def TypeTemplatesOvelroading_SpecializationErrors_Test1():
@@ -185,7 +185,7 @@ def TypeTemplatesOvelroading_SpecializationErrors_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 1 )
 	assert( errors_list[1].error_code == "CouldNotSelectMoreSpicializedTypeTemplate" )
-	assert( errors_list[1].file_pos.line == 8 )
+	assert( errors_list[1].src_loc.line == 8 )
 
 
 def LessSpecializedTemplateTypesNotGenerated_Test0():

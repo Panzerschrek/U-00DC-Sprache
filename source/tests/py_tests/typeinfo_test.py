@@ -418,7 +418,7 @@ def TypeinfoForIncompleteType_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UsingIncompleteType" )
-	#assert( errors_list[0].file_pos.line == 3 )
+	#assert( errors_list[0].src_loc.line == 3 )
 
 
 def TypeinfoForIncompleteTypeIsIncomplete_Test0():
@@ -458,7 +458,7 @@ def TypeinfoFieldsDependsOnTypeKind_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NameNotFound" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def TypeinfoFieldsDependsOnTypeKind_Test1():
@@ -471,7 +471,7 @@ def TypeinfoFieldsDependsOnTypeKind_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NameNotFound" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def TypeinfoFieldsDependsOnTypeKind_Test2():
@@ -484,7 +484,7 @@ def TypeinfoFieldsDependsOnTypeKind_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NameNotFound" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def TypeinfoFieldsDependsOnTypeKind_Test3():
@@ -498,7 +498,7 @@ def TypeinfoFieldsDependsOnTypeKind_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NameNotFound" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def TypeinfoFieldsDependsOnTypeKind_Test4():
@@ -511,7 +511,7 @@ def TypeinfoFieldsDependsOnTypeKind_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NameNotFound" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def TypeinfoFieldsDependsOnTypeKind_Test5():
@@ -525,7 +525,7 @@ def TypeinfoFieldsDependsOnTypeKind_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NameNotFound" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def TypeinfoFieldsDependsOnTypeKind_Test6():
@@ -538,7 +538,7 @@ def TypeinfoFieldsDependsOnTypeKind_Test6():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NameNotFound" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def TypeinfoFieldsDependsOnTypeKind_Test7():
@@ -552,7 +552,7 @@ def TypeinfoFieldsDependsOnTypeKind_Test7():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NameNotFound" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def TypeinfoFieldsDependsOnTypeKind_Test8():
@@ -565,7 +565,7 @@ def TypeinfoFieldsDependsOnTypeKind_Test8():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NameNotFound" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def TypeinfoList_FunctionTypeParams_Test0():

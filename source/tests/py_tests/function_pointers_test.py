@@ -551,7 +551,7 @@ def ReferencePollution_ForFunctionPointer_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].file_pos.line == 15 )
+	assert( errors_list[0].src_loc.line == 15 )
 
 
 def ReturnReferenceTags_ForFunctionPointers_Test0():
@@ -575,7 +575,7 @@ def ReturnReferenceTags_ForFunctionPointers_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].file_pos.line == 15 )
+	assert( errors_list[0].src_loc.line == 15 )
 
 
 def FunctionPointerAsSpecializedTemplateParameter_Test0():

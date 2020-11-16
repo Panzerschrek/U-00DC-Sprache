@@ -1,7 +1,7 @@
 namespace U1
 {
 
-class FilePos
+class SrcLoc
 {
 public:
 	var u32 c_max_file_index= 65535u;
@@ -13,8 +13,8 @@ public:
 	fn constructor()= default;
 	fn constructor( mut this, u32 file_index, u32 line, u32 column );
 
-	fn constructor( mut this, FilePos& other )= default;
-	op=( mut this, FilePos& other )= default;
+	fn constructor( mut this, SrcLoc& other )= default;
+	op=( mut this, SrcLoc& other )= default;
 
 	fn GetFileIndex(this) : u32;
 	fn GetMacroExpansionIndex(this) : u32;
@@ -25,10 +25,10 @@ public:
 	fn SetFileIndex( mut this, u32 file_index );
 	fn SetMacroExpansionIndex( mut this, u32 macro_expansion_index );
 
-	op==( FilePos& l, FilePos& r ) : bool;
-	op!=( FilePos& l, FilePos& r ) : bool;
-	op< ( FilePos& l, FilePos& r ) : bool;
-	op<=( FilePos& l, FilePos& r ) : bool;
+	op==( SrcLoc& l, SrcLoc& r ) : bool;
+	op!=( SrcLoc& l, SrcLoc& r ) : bool;
+	op< ( SrcLoc& l, SrcLoc& r ) : bool;
+	op<=( SrcLoc& l, SrcLoc& r ) : bool;
 
 private:
 	u16 file_index_(0);

@@ -11,14 +11,14 @@ fn CreateTemplateErrorsContext(
 	TemplateT& template_, // type template or function template
 	NamesScopePtr& instantiation_point_names_scope_ptr,
 	NamesScopeMutPtr& args_names_scope_ptr,
-	FilePos& instantiation_file_pos )
+	SrcLoc& instantiation_src_loc )
 {
 	var ust::shared_ptr_mut</ErrorsContainer/> errors_container( ErrorsContainer() );
 
 	var TemplateErrorsContext mut result
 	{
 		.errors= errors_container,
-		.context_declaration_file_pos= instantiation_file_pos,
+		.context_declaration_src_loc= instantiation_src_loc,
 		.context_name= template_.syntax_element.get_ref().name,
 	};
 
@@ -56,7 +56,7 @@ fn CreateTemplateErrorsContext(
 		var CodeBuilderError mut template_context_error
 		{
 			.code= CodeBuilderErrorCode::TemplateContext,
-			.file_pos= instantiation_file_pos,
+			.src_loc= instantiation_src_loc,
 			.errors_context( move(result) ),
 		};
 
@@ -121,7 +121,7 @@ fn CodeBuilder::PrepareTypeTemplate(
 	{
 		if( !template_params_usage_flags[i] )
 		{
-			REPORT_ERROR( TemplateArgumentNotUsedInSignature, names_scope, syntax_element.params[i].file_pos, template_params[i].name )
+			REPORT_ERROR( TemplateArgumentNotUsedInSignature, names_scope, syntax_element.params[i].src_loc, template_params[i].name )
 		}
 	}
 
@@ -135,7 +135,7 @@ fn CodeBuilder::PrepareTypeTemplate(
 		}
 		else if( first_default_param < i )
 		{
-			REPORT_ERROR( MandatoryTemplateSignatureArgumentAfterOptionalArgument, names_scope, syntax_element.file_pos )
+			REPORT_ERROR( MandatoryTemplateSignatureArgumentAfterOptionalArgument, names_scope, syntax_element.src_loc )
 			return;
 		}
 	}
@@ -163,11 +163,11 @@ fn CodeBuilder::PrepareFunctionTemplate(
 
 	if( syntax_element.function.get_ref().block.empty() )
 	{
-		REPORT_ERROR( IncompleteMemberOfClassTemplate, names_scope, function_template_syntax_element.get_ref().file_pos, function_template_name )
+		REPORT_ERROR( IncompleteMemberOfClassTemplate, names_scope, function_template_syntax_element.get_ref().src_loc, function_template_name )
 	}
 	if( syntax_element.function.get_ref().virtual_kind != Synt::Function::VirtualKind::None )
 	{
-		REPORT_ERROR( VirtualForFunctionTemplate, names_scope, function_template_syntax_element.get_ref().file_pos, function_template_name )
+		REPORT_ERROR( VirtualForFunctionTemplate, names_scope, function_template_syntax_element.get_ref().src_loc, function_template_name )
 	}
 
 	auto mut template_params= PrepareTemplateParams( names_scope, syntax_element.params );
@@ -220,7 +220,7 @@ fn CodeBuilder::PrepareTemplateParams(
 		{
 			if( param.name == prev_param.name )
 			{
-				REPORT_ERROR( Redefinition, names_scope, param.file_pos, param.name )
+				REPORT_ERROR( Redefinition, names_scope, param.src_loc, param.name )
 			}
 		}
 
@@ -254,7 +254,7 @@ fn CodeBuilder::FillVariableTemplateParamsTypes(
 			{
 				if( !TypeIsValidForTemplateVariableArgument(type_param.t) )
 				{
-					REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, Synt::GetFilePos(template_param.t), type_param.t )
+					REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, Synt::GetSrcLoc(template_param.t), type_param.t )
 				}
 			}
 		}
@@ -292,7 +292,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 
 	// Nothing special - process as regular expression
 	auto expression_value= BuildExpressionCode( names_scope, function_context, param );
-	return CreateTemplateSignatureParam( names_scope, expression_value, Synt::GetFilePos(param) );
+	return CreateTemplateSignatureParam( names_scope, expression_value, Synt::GetSrcLoc(param) );
 }
 
 fn CodeBuilder::CreateTemplateSignatureParam(
@@ -355,12 +355,12 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 				return move(specialized_template_param);
 			}
 		}
-		REPORT_ERROR( TemplateInstantiationRequired, names_scope, param.file_pos, param )
+		REPORT_ERROR( TemplateInstantiationRequired, names_scope, param.src_loc, param )
 	}
 
 	// Nothing special - process as regular expression
 	auto expression_value= BuildExpressionCode( names_scope, function_context, param );
-	return CreateTemplateSignatureParam( names_scope, expression_value, param.file_pos );
+	return CreateTemplateSignatureParam( names_scope, expression_value, param.src_loc );
 }
 
 fn CodeBuilder::CreateTemplateSignatureParam(
@@ -507,7 +507,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	return move(function_type_param);
 }
 
-fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_scope, Value& value, FilePos& file_pos ) : TemplateSignatureParam
+fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_scope, Value& value, SrcLoc& src_loc ) : TemplateSignatureParam
 {
 	if_var( &t : value.get</Type/>() )
 	{
@@ -518,7 +518,7 @@ fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_sco
 	{
 		if( v.constexpr_value == LLVMValueRef::Null )
 		{
-			REPORT_ERROR( ExpectedConstantExpression, names_scope, file_pos )
+			REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
 			return TemplateSignatureParam::TypeParam();
 		}
 
@@ -526,7 +526,7 @@ fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_sco
 		return move(variable_param);
 	}
 
-	REPORT_ERROR( InvalidValueAsTemplateArgument, names_scope, file_pos, GetValueKindName( value ) )
+	REPORT_ERROR( InvalidValueAsTemplateArgument, names_scope, src_loc, GetValueKindName( value ) )
 	return TemplateSignatureParam::TypeParam();
 }
 
@@ -536,7 +536,7 @@ fn CodeBuilder::GenTemplateType(
 	FunctionContext &mut function_context,
 	ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set_ptr,
 	Synt::TemplateArgs& template_args,
-	FilePos& template_instantiation_file_pos ) : ust::optional</Type/>
+	SrcLoc& template_instantiation_src_loc ) : ust::optional</Type/>
 {
 	auto type_templates_set_lock= type_templates_set_ptr.lock_imut();
 	var TypeTemplatesSet& type_templates_set= type_templates_set_lock.get_ref();
@@ -549,7 +549,7 @@ fn CodeBuilder::GenTemplateType(
 			function_context,
 			type_template_ptr,
 			template_args,
-			template_instantiation_file_pos );
+			template_instantiation_src_loc );
 		if( !res.empty() )
 		{
 			candidate_type_templates.push_back( res.get_ref() );
@@ -560,12 +560,12 @@ fn CodeBuilder::GenTemplateType(
 
 	if( candidate_type_templates.empty() )
 	{
-		REPORT_ERROR( TemplateParametersDeductionFailed, args_names_scope, template_instantiation_file_pos )
+		REPORT_ERROR( TemplateParametersDeductionFailed, args_names_scope, template_instantiation_src_loc )
 		return ust::optional</Type/>();
 	}
 	if( candidate_type_templates.size() == 1s )
 	{
-		return FinishTypeTemplateGeneration( candidate_type_templates.front(), args_names_scope, template_instantiation_file_pos );
+		return FinishTypeTemplateGeneration( candidate_type_templates.front(), args_names_scope, template_instantiation_src_loc );
 	}
 
 	var ust::vector</TypeTemplatePtr/> mut templates_for_check;
@@ -577,11 +577,11 @@ fn CodeBuilder::GenTemplateType(
 	auto index= SelectMoreSpecializedTemplate( templates_for_check.range(), template_args.size() );
 	if( index == ~0s )
 	{
-		REPORT_ERROR( CouldNotSelectMoreSpicializedTypeTemplate, args_names_scope, template_instantiation_file_pos )
+		REPORT_ERROR( CouldNotSelectMoreSpicializedTypeTemplate, args_names_scope, template_instantiation_src_loc )
 		return ust::optional</Type/>();
 	}
 
-	return FinishTypeTemplateGeneration( candidate_type_templates[index], args_names_scope, template_instantiation_file_pos );
+	return FinishTypeTemplateGeneration( candidate_type_templates[index], args_names_scope, template_instantiation_src_loc );
 }
 
 fn CodeBuilder::EvaluateTemplateTypeArgs(
@@ -590,7 +590,7 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 	FunctionContext &mut function_context,
 	TypeTemplatePtr& type_template_ptr,
 	Synt::TemplateArgs& template_args,
-	FilePos& template_instantiation_file_pos ) : ust::optional</TemplateTypeArgsEvaluationResult/>
+	SrcLoc& template_instantiation_src_loc ) : ust::optional</TemplateTypeArgsEvaluationResult/>
 {
 	var TypeTemplate& type_template= type_template_ptr.get_ref();
 
@@ -633,7 +633,7 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 			auto arg= BuildExpressionCode( args_names_scope, function_context, template_args[i] );
 			if( arg.get</Type/>().empty() && arg.get</Variable/>().empty() )
 			{
-				REPORT_ERROR( InvalidValueAsTemplateArgument, args_names_scope, Synt::GetFilePos(template_args[i]), GetValueKindName(arg) )
+				REPORT_ERROR( InvalidValueAsTemplateArgument, args_names_scope, Synt::GetSrcLoc(template_args[i]), GetValueKindName(arg) )
 				all_ok= false;
 				continue;
 			}
@@ -647,7 +647,7 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 				result_signature_template_args.push_back( v );
 			}
 
-			all_ok&= MatchTemplateArgument( result_names_scope, type_template, type_template.signature_params[i], result_signature_template_args.back(), Synt::GetFilePos(template_args[i]) );
+			all_ok&= MatchTemplateArgument( result_names_scope, type_template, type_template.signature_params[i], result_signature_template_args.back(), Synt::GetSrcLoc(template_args[i]) );
 		}
 	}
 	else
@@ -655,21 +655,21 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 		for( auto mut i= 0s; i < syntax_element.signature_params.size(); ++i )
 		{
 			var Value mut arg;
-			var FilePos mut file_pos;
+			var SrcLoc mut src_loc;
 			if( i < template_args.size() )
 			{
-				file_pos= Synt::GetFilePos( template_args[i] );
+				src_loc= Synt::GetSrcLoc( template_args[i] );
 				arg= BuildExpressionCode( args_names_scope, function_context, template_args[i] );
 			}
 			else
 			{
-				file_pos= Synt::GetFilePos( syntax_element.signature_params[i].default_value );
+				src_loc= Synt::GetSrcLoc( syntax_element.signature_params[i].default_value );
 				arg= BuildExpressionCode( result_names_scope, function_context, syntax_element.signature_params[i].default_value );
 			}
 
 			if( arg.get</Type/>().empty() && arg.get</Variable/>().empty() )
 			{
-				REPORT_ERROR( InvalidValueAsTemplateArgument, args_names_scope, file_pos, GetValueKindName(arg) )
+				REPORT_ERROR( InvalidValueAsTemplateArgument, args_names_scope, src_loc, GetValueKindName(arg) )
 				all_ok= false;
 				continue;
 			}
@@ -683,7 +683,7 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 				result_signature_template_args.push_back( v );
 			}
 
-			all_ok&= MatchTemplateArgument( result_names_scope, type_template, type_template.signature_params[i], result_signature_template_args.back(), file_pos );
+			all_ok&= MatchTemplateArgument( result_names_scope, type_template, type_template.signature_params[i], result_signature_template_args.back(), src_loc );
 		}
 	}
 
@@ -706,7 +706,7 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 	mut this,
 	TemplateTypeArgsEvaluationResult& template_args_evaluation_result,
 	NamesScopePtr& instantiation_point_names_scope,
-	FilePos& template_instantiation_file_pos ) : ust::optional</Type/>
+	SrcLoc& template_instantiation_src_loc ) : ust::optional</Type/>
 {
 	var TypeTemplatePtr& type_template_ptr= template_args_evaluation_result.type_template;
 
@@ -740,7 +740,7 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 		type_template_ptr.get_ref(),
 		instantiation_point_names_scope,
 		args_names_scope,
-		template_instantiation_file_pos );
+		template_instantiation_src_loc );
 
 	if_var( &class_syntax_element : syntax_element.something.get</ ust::shared_ptr_final</ Synt::Class /> />() )
 	{
@@ -796,7 +796,7 @@ fn CodeBuilder::GenTemplateFunction(
 	ust::array_view_imut</VariableTypeExtened/> mut args,
 	bool first_arg_is_this,
 	NamesScopePtr& instantiation_point_names_scope,
-	FilePos& file_pos ) : ust::optional</FunctionVariable/>
+	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
 {
 	return GenTemplateFunction(
 		function_template_ptr,
@@ -804,7 +804,7 @@ fn CodeBuilder::GenTemplateFunction(
 		args,
 		first_arg_is_this,
 		instantiation_point_names_scope,
-		file_pos );
+		src_loc );
 }
 
 fn CodeBuilder::GenTemplateFunction(
@@ -814,7 +814,7 @@ fn CodeBuilder::GenTemplateFunction(
 	ust::array_view_imut</VariableTypeExtened/> mut args,
 	bool first_arg_is_this,
 	NamesScopePtr& instantiation_point_names_scope,
-	FilePos& file_pos ) : ust::optional</FunctionVariable/>
+	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
 {
 	var FunctionTemplate& function_template= function_template_ptr.get_ref();
 
@@ -892,7 +892,7 @@ fn CodeBuilder::GenTemplateFunction(
 				// TODO - maybe forbid type conversion for copy and conversion constructors?
 				all_ok&=
 					arg.t.ReferenceIsConvertibleTo( t ) ||
-					( !param_is_mutable_reference && !GetConversionConstructor( result_names_scope, t, arg.t, file_pos ).empty() );
+					( !param_is_mutable_reference && !GetConversionConstructor( result_names_scope, t, arg.t, src_loc ).empty() );
 				continue;
 			}
 		}
@@ -901,11 +901,11 @@ fn CodeBuilder::GenTemplateFunction(
 			// TODO - maybe forbid type conversion for copy and conversion constructors?
 			all_ok&=
 				arg.t.ReferenceIsConvertibleTo( type_param.t ) ||
-				( !param_is_mutable_reference && !GetConversionConstructor( result_names_scope, type_param.t, arg.t, file_pos ).empty() );
+				( !param_is_mutable_reference && !GetConversionConstructor( result_names_scope, type_param.t, arg.t, src_loc ).empty() );
 			continue;
 		}
 
-		all_ok&= MatchTemplateArgument( result_names_scope, function_template, param, arg.t, file_pos );
+		all_ok&= MatchTemplateArgument( result_names_scope, function_template, param, arg.t, src_loc );
 	}
 
 	if( !all_ok )
@@ -913,13 +913,13 @@ fn CodeBuilder::GenTemplateFunction(
 		return ust::optional</FunctionVariable/>();
 	}
 
-	return FinishTemplateFunctionGeneration( function_template_ptr, result_names_scope, instantiation_point_names_scope, file_pos );
+	return FinishTemplateFunctionGeneration( function_template_ptr, result_names_scope, instantiation_point_names_scope, src_loc );
 }
 
 fn CodeBuilder::FinishFunctionTemplateParametrization(
 	mut this,
 	ParametrizedFunctionTemplate& parametrized_function_template,
-	FilePos& file_pos ) : ust::optional</FunctionVariable/>
+	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
 {
 	auto& function_template= parametrized_function_template.base_template.get_ref();
 	auto& known_template_args= parametrized_function_template.known_args;
@@ -960,7 +960,7 @@ fn CodeBuilder::FinishFunctionTemplateParametrization(
 		parametrized_function_template.base_template,
 		result_names_scope,
 		parametrized_function_template.instantiation_point_names_scope,
-		file_pos );
+		src_loc );
 }
 
 fn CodeBuilder::FinishTemplateFunctionGeneration(
@@ -968,7 +968,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 	FunctionTemplatePtr& function_template_ptr,
 	NamesScopeMutPtr& result_names_scope,
 	NamesScopePtr& instantiation_point_names_scope,
-	FilePos& file_pos ) : ust::optional</FunctionVariable/>
+	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
 {
 	var FunctionTemplate& function_template= function_template_ptr.get_ref();
 	var Synt::FunctionTemplate& template_syntax_element= function_template.syntax_element.get_ref();
@@ -996,7 +996,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 				continue;
 			}
 
-			REPORT_ERROR( TemplateParametersDeductionFailed, result_names_scope, file_pos )
+			REPORT_ERROR( TemplateParametersDeductionFailed, result_names_scope, src_loc )
 			return ust::optional</FunctionVariable/>();
 		}
 	}
@@ -1028,7 +1028,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 		function_template,
 		instantiation_point_names_scope,
 		result_names_scope,
-		file_pos );
+		src_loc );
 
 	NamesScopeFill( result_names_scope, template_syntax_element.function, function_template.class_, Synt::ClassVisibility::Public /* TODO - set correct visibility */ );
 	auto result_namespace_value= result_names_scope.lock_imut().get_ref().GetThisScopeValue( function_name ).get_ref();
@@ -1079,7 +1079,7 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 	FunctionContext &mut function_context,
 	FunctionsSet& functions_set,
 	Synt::TemplateArgs& template_args,
-	FilePos& file_pos ) : ust::optional</NamesScopeValue/>
+	SrcLoc& src_loc ) : ust::optional</NamesScopeValue/>
 {
 	var TemplateArgsFinished mut template_args_finished;
 	auto mut have_some_errors= false;
@@ -1095,7 +1095,7 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 		{
 			if( !TypeIsValidForTemplateVariableArgument( v.t ) )
 			{
-				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, args_names_scope, file_pos, v.t )
+				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, args_names_scope, src_loc, v.t )
 				have_some_errors= true;
 			}
 
@@ -1104,7 +1104,7 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 		}
 
 		have_some_errors= true;
-		REPORT_ERROR( InvalidValueAsTemplateArgument, args_names_scope, Synt::GetFilePos(arg), GetValueKindName(value) )
+		REPORT_ERROR( InvalidValueAsTemplateArgument, args_names_scope, Synt::GetSrcLoc(arg), GetValueKindName(value) )
 	}
 
 	if( have_some_errors )
@@ -1157,7 +1157,7 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 			var TemplateSignatureParam::TemplateParam mut signature_param{ .index= i };
 			var TemplateSignatureParam signature_param_abstract( move(signature_param) );
 
-			if( !MatchTemplateArgument( result_names_scope, function_template, signature_param_abstract, template_args_finished[i], file_pos ) )
+			if( !MatchTemplateArgument( result_names_scope, function_template, signature_param_abstract, template_args_finished[i], src_loc ) )
 			{
 				all_ok= false;
 				break;
@@ -1181,7 +1181,7 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 
 	if( result_functions_set.functions_set.parametrized_function_templates.empty() )
 	{
-		REPORT_ERROR( TemplateFunctionGenerationFailed, args_names_scope, file_pos, ust::string8("TODO - name") )
+		REPORT_ERROR( TemplateFunctionGenerationFailed, args_names_scope, src_loc, ust::string8("TODO - name") )
 		return ust::optional</NamesScopeValue/>();
 	}
 
@@ -1204,35 +1204,35 @@ fn CodeBuilder::MatchTemplateArgument(
 	TemplateBase& template_,
 	TemplateSignatureParam& param,
 	TemplateArgFinished& given_arg,
-	FilePos& file_pos ) : bool
+	SrcLoc& src_loc ) : bool
 {
 	if_var( &template_param : param.GetTemplateParam() )
 	{
-		return MatchTemplateArgumentImpl( names_scope, template_, template_param, given_arg, file_pos );
+		return MatchTemplateArgumentImpl( names_scope, template_, template_param, given_arg, src_loc );
 	}
 	if_var( &type_param : param.GetTypeParam() )
 	{
-		return MatchTemplateArgumentImpl( names_scope, template_, type_param, given_arg, file_pos );
+		return MatchTemplateArgumentImpl( names_scope, template_, type_param, given_arg, src_loc );
 	}
 	if_var( &variable_param : param.GetVariableParam() )
 	{
-		return MatchTemplateArgumentImpl( names_scope, template_, variable_param, given_arg, file_pos );
+		return MatchTemplateArgumentImpl( names_scope, template_, variable_param, given_arg, src_loc );
 	}
 	if_var( &array_type_param : param.GetArrayTypeParam() )
 	{
-		return MatchTemplateArgumentImpl( names_scope, template_, array_type_param, given_arg, file_pos );
+		return MatchTemplateArgumentImpl( names_scope, template_, array_type_param, given_arg, src_loc );
 	}
 	if_var( &tuple_type_param : param.GetTupleTypeParam() )
 	{
-		return MatchTemplateArgumentImpl( names_scope, template_, tuple_type_param, given_arg, file_pos );
+		return MatchTemplateArgumentImpl( names_scope, template_, tuple_type_param, given_arg, src_loc );
 	}
 	if_var( &function_type_param : param.GetFunctionTypeParam() )
 	{
-		return MatchTemplateArgumentImpl( names_scope, template_, function_type_param, given_arg, file_pos );
+		return MatchTemplateArgumentImpl( names_scope, template_, function_type_param, given_arg, src_loc );
 	}
 	if_var( &specialized_template_param : param.GetSpecializedTemplateParam() )
 	{
-		return MatchTemplateArgumentImpl( names_scope, template_, specialized_template_param, given_arg, file_pos );
+		return MatchTemplateArgumentImpl( names_scope, template_, specialized_template_param, given_arg, src_loc );
 	}
 
 	halt;
@@ -1244,7 +1244,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 	TemplateBase& template_,
 	TemplateSignatureParam::TemplateParam& template_param,
 	TemplateArgFinished& given_arg,
-	FilePos& file_pos ) : bool
+	SrcLoc& src_loc ) : bool
 {
 	auto& param_name= template_.params[template_param.index].name;
 	auto template_arg_value= names_scope.lock_imut().get_ref().GetThisScopeValue( param_name ).get_ref();
@@ -1261,16 +1261,16 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 		{
 			if( !TypeIsValidForTemplateVariableArgument( given_variable.t ) )
 			{
-				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, file_pos, given_variable.t )
+				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, src_loc, given_variable.t )
 				return false;
 			}
 			if( given_variable.constexpr_value == LLVMValueRef::Null )
 			{
-				REPORT_ERROR( ExpectedConstantExpression, names_scope, file_pos )
+				REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
 				return false;
 			}
 
-			if( !MatchTemplateArgument( names_scope, template_, param_type.get_ref(), given_variable.t, file_pos ) )
+			if( !MatchTemplateArgument( names_scope, template_, param_type.get_ref(), given_variable.t, src_loc ) )
 			{
 				return false;
 			}
@@ -1296,7 +1296,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 
 				if( given_variable.constexpr_value == LLVMValueRef::Null || v.constexpr_value == LLVMValueRef::Null )
 				{
-					REPORT_ERROR( ExpectedConstantExpression, names_scope, file_pos )
+					REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
 					return false;
 				}
 
@@ -1335,7 +1335,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 	TemplateBase& template_,
 	TemplateSignatureParam::TypeParam& type_param,
 	TemplateArgFinished& given_arg,
-	FilePos& file_pos ) : bool
+	SrcLoc& src_loc ) : bool
 {
 	if_var( &given_type : given_arg.get</Type/>() )
 	{
@@ -1350,7 +1350,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 	TemplateBase& template_,
 	TemplateSignatureParam::VariableParam& variable_param,
 	TemplateArgFinished& given_arg,
-	FilePos& file_pos ) : bool
+	SrcLoc& src_loc ) : bool
 {
 	if_var( &given_variable : given_arg.get</Variable/>() )
 	{
@@ -1361,7 +1361,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 
 		if( given_variable.constexpr_value == LLVMValueRef::Null || variable_param.v.constexpr_value == LLVMValueRef::Null )
 		{
-			REPORT_ERROR( ExpectedConstantExpression, names_scope, file_pos )
+			REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
 			return false;
 		}
 
@@ -1382,13 +1382,13 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 	TemplateBase& template_,
 	TemplateSignatureParam::ArrayTypeParam& array_type_param,
 	TemplateArgFinished& given_arg,
-	FilePos& file_pos ) : bool
+	SrcLoc& src_loc ) : bool
 {
 	if_var( &given_type : given_arg.get</Type/>() )
 	{
 		if_var( &given_array_type : given_type.GetArrayType() )
 		{
-			if( !MatchTemplateArgument( names_scope, template_, array_type_param.element_type, given_array_type.element_type, file_pos ) )
+			if( !MatchTemplateArgument( names_scope, template_, array_type_param.element_type, given_array_type.element_type, src_loc ) )
 			{
 				return false;
 			}
@@ -1405,7 +1405,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				size_var.llvm_value= size_var.constexpr_value;
 			}
 
-			if( !MatchTemplateArgument( names_scope, template_, array_type_param.element_count, move(size_var), file_pos ) )
+			if( !MatchTemplateArgument( names_scope, template_, array_type_param.element_count, move(size_var), src_loc ) )
 			{
 				return false;
 			}
@@ -1421,7 +1421,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 	TemplateBase& template_,
 	TemplateSignatureParam::TupleTypeParam& tuple_type_param,
 	TemplateArgFinished& given_arg,
-	FilePos& file_pos ) : bool
+	SrcLoc& src_loc ) : bool
 {
 	if_var( &given_type : given_arg.get</Type/>() )
 	{
@@ -1434,7 +1434,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 
 			for( auto mut i= 0s; i < given_tuple_type.element_types.size(); ++i )
 			{
-				if( !MatchTemplateArgument( names_scope, template_, tuple_type_param.element_types[i], given_tuple_type.element_types[i], file_pos ) )
+				if( !MatchTemplateArgument( names_scope, template_, tuple_type_param.element_types[i], given_tuple_type.element_types[i], src_loc ) )
 				{
 					return false;
 				}
@@ -1453,7 +1453,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 	TemplateBase& template_,
 	TemplateSignatureParam::FunctionTypeParam& function_type_param,
 	TemplateArgFinished& given_arg,
-	FilePos& file_pos ) : bool
+	SrcLoc& src_loc ) : bool
 {
 	if_var( &given_type : given_arg.get</Type/>() )
 	{
@@ -1468,7 +1468,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				return false;
 			}
 
-			if( !MatchTemplateArgument( names_scope, template_, function_type_param.return_type, given_function_type.return_type, file_pos ) )
+			if( !MatchTemplateArgument( names_scope, template_, function_type_param.return_type, given_function_type.return_type, src_loc ) )
 			{
 				return false;
 			}
@@ -1488,7 +1488,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				{
 					return false;
 				}
-				if( !MatchTemplateArgument( names_scope, template_, expected_param.t, given_arg.t, file_pos ) )
+				if( !MatchTemplateArgument( names_scope, template_, expected_param.t, given_arg.t, src_loc ) )
 				{
 					return false;
 				}
@@ -1507,7 +1507,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 	TemplateBase& template_,
 	TemplateSignatureParam::SpecializedTemplateParam& specialized_template_param,
 	TemplateArgFinished& given_arg,
-	FilePos& file_pos ) : bool
+	SrcLoc& src_loc ) : bool
 {
 	if_var( &given_type : given_arg.get</Type/>() )
 	{
@@ -1537,7 +1537,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				}
 				for( auto mut i= 0s; i < specialized_template_param.params.size(); ++i )
 				{
-					if( !MatchTemplateArgument( names_scope, template_, specialized_template_param.params[i], base_template.signature_args[i], file_pos ) )
+					if( !MatchTemplateArgument( names_scope, template_, specialized_template_param.params[i], base_template.signature_args[i], src_loc ) )
 					{
 						return false;
 					}

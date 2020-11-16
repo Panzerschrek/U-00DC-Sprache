@@ -108,7 +108,7 @@ struct Lexem
 	};
 
 	std::string text; // Contains text for all lexem types, except numbers. Contains data of "struct NumberLexemData" for numbers.
-	FilePos file_pos;
+	SrcLoc src_loc;
 	Type type= Type::None;
 };
 

@@ -56,7 +56,7 @@ size_t SourceGraphLoader::LoadNode_r(
 			imports_loop_str+= *it + " -> ";
 		imports_loop_str+= full_file_path;
 
-		result.errors.emplace_back( imports_loop_str, FilePos( 0u, 0u, 0u ) );
+		result.errors.emplace_back( imports_loop_str, SrcLoc( 0u, 0u, 0u ) );
 
 		return ~0u;
 	}
@@ -73,7 +73,7 @@ size_t SourceGraphLoader::LoadNode_r(
 	const std::optional<IVfs::FileContent> loaded_file= vfs_->LoadFileContent( full_file_path );
 	if( loaded_file == std::nullopt )
 	{
-		LexSyntError error_message( "Can not read file \"" + full_file_path + "\"", FilePos( uint32_t(node_index), 0u, 0u ) );
+		LexSyntError error_message( "Can not read file \"" + full_file_path + "\"", SrcLoc( uint32_t(node_index), 0u, 0u ) );
 		result.errors.push_back( std::move(error_message) );
 		return ~0u;
 	}
@@ -82,7 +82,7 @@ size_t SourceGraphLoader::LoadNode_r(
 
 	for( LexSyntError error: lex_result.errors )
 	{
-		error.file_pos.SetFileIndex(uint32_t(node_index));
+		error.src_loc.SetFileIndex(uint32_t(node_index));
 		result.errors.push_back( std::move(error) );
 	}
 
@@ -90,7 +90,7 @@ size_t SourceGraphLoader::LoadNode_r(
 		return ~0u;
 
 	for( Lexem& lexem :lex_result.lexems )
-		lexem.file_pos.SetFileIndex(uint32_t(node_index));
+		lexem.src_loc.SetFileIndex(uint32_t(node_index));
 
 	const std::vector<Synt::Import> imports= Synt::ParseImports( lex_result.lexems );
 
@@ -122,11 +122,11 @@ size_t SourceGraphLoader::LoadNode_r(
 			for( const auto& macro_map_pair : context_macro_map_pair.second )
 			{
 				if( dst_map.find(macro_map_pair.first) != dst_map.end() &&
-					macro_map_pair.second.file_pos != dst_map.find(macro_map_pair.first)->second.file_pos )
+					macro_map_pair.second.src_loc != dst_map.find(macro_map_pair.first)->second.src_loc )
 				{
 					result.errors.emplace_back(
 						"Macro \"" + macro_map_pair.first + "\" redefinition.",
-						FilePos( uint32_t(node_index), 0u, 0u ) );
+						SrcLoc( uint32_t(node_index), 0u, 0u ) );
 				}
 				else
 					dst_map[macro_map_pair.first]= macro_map_pair.second;

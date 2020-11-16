@@ -220,7 +220,7 @@ void ReferencesGraph::GetAllAccessibleVariableNodes_r(
 			GetAllAccessibleVariableNodes_r( link.src, visited_nodes_set, result_set );
 }
 
-ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const std::vector<ReferencesGraph>& branches_variables_state, const FilePos& file_pos )
+ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const std::vector<ReferencesGraph>& branches_variables_state, const SrcLoc& src_loc )
 {
 	ReferencesGraph result;
 	std::vector<CodeBuilderError> errors;
@@ -237,7 +237,7 @@ ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const 
 			NodeState& result_state= result.nodes_[ node_pair.first ];
 
 			if( result_state.moved != src_state.moved )
-				REPORT_ERROR( ConditionalMove, errors, file_pos, node_pair.first->name );
+				REPORT_ERROR( ConditionalMove, errors, src_loc, node_pair.first->name );
 
 				 if( result_state.inner_reference == nullptr && src_state.inner_reference == nullptr ) {}
 			else if( result_state.inner_reference == nullptr && src_state.inner_reference != nullptr )
@@ -303,13 +303,13 @@ ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const 
 			}
 		}
 		if( mutable_links_count > 1u || ( immutable_links_count > 0u && mutable_links_count > 0u ) )
-			REPORT_ERROR( ReferenceProtectionError, errors, file_pos, node.first->name );
+			REPORT_ERROR( ReferenceProtectionError, errors, src_loc, node.first->name );
 	}
 
 	return std::make_pair( std::move(result), std::move(errors) );
 }
 
-std::vector<CodeBuilderError> ReferencesGraph::CheckWhileBlokVariablesState( const ReferencesGraph& state_before, const ReferencesGraph& state_after, const FilePos& file_pos )
+std::vector<CodeBuilderError> ReferencesGraph::CheckWhileBlokVariablesState( const ReferencesGraph& state_before, const ReferencesGraph& state_after, const SrcLoc& src_loc )
 {
 	std::vector<CodeBuilderError> errors;
 
@@ -321,7 +321,7 @@ std::vector<CodeBuilderError> ReferencesGraph::CheckWhileBlokVariablesState( con
 		const auto& var_after= *state_after.nodes_.find( var_before.first );
 
 		if( !var_before.second.moved && var_after.second.moved )
-			REPORT_ERROR( OuterVariableMoveInsideLoop, errors, file_pos, var_before.first->name );
+			REPORT_ERROR( OuterVariableMoveInsideLoop, errors, src_loc, var_before.first->name );
 
 		if( var_before.second.inner_reference != var_after.second.inner_reference || // Reference pollution added first time
 			// Or accessible variables changed.
@@ -335,7 +335,7 @@ std::vector<CodeBuilderError> ReferencesGraph::CheckWhileBlokVariablesState( con
 					added_nodes.erase(node);
 			}
 			for( const auto& node : added_nodes )
-				REPORT_ERROR( ReferencePollutionOfOuterLoopVariable, errors, file_pos, var_before.first->name, node->name );
+				REPORT_ERROR( ReferencePollutionOfOuterLoopVariable, errors, src_loc, var_before.first->name, node->name );
 		}
 	}
 	return errors;

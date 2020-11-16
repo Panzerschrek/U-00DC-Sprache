@@ -57,7 +57,7 @@ UserHandle ErrorHanlder(
 	const U1_StringView& error_text )
 {
 	CodeBuilderError error;
-	error.file_pos= FilePos( file_index, line, column );
+	error.src_loc= SrcLoc( file_index, line, column );
 	error.code= CodeBuilderErrorCode(error_code);
 	error.text= StringViewToString( error_text );
 
@@ -76,7 +76,7 @@ UserHandle TemplateErrorsContextHandler(
 {
 	const auto out_error= reinterpret_cast<CodeBuilderError*>(data);
 	out_error->template_context= std::make_shared<TemplateErrorsContext>();
-	out_error->template_context->context_declaration_file_pos= FilePos( file_index, line, column );
+	out_error->template_context->context_declaration_src_loc= SrcLoc( file_index, line, column );
 	out_error->template_context->context_name= StringViewToString( context_name );
 	out_error->template_context->parameters_description= StringViewToString( args_description );
 
@@ -99,7 +99,7 @@ void LexSyntErrorProcessingFunction(
 	const U1_StringView& text )
 {
 	LexSyntError out_error;
-	out_error.file_pos= FilePos( file_index, line, column );
+	out_error.src_loc= SrcLoc( file_index, line, column );
 	out_error.text= StringViewToString(text);
 
 	reinterpret_cast< LexSyntErrors* >(data)->push_back( std::move(out_error) );

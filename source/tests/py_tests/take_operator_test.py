@@ -140,7 +140,7 @@ def TakeForConstReference_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
-	assert( errors_list[0].file_pos.line == 16 )
+	assert( errors_list[0].src_loc.line == 16 )
 
 
 def TakeForConstReference_Test1():
@@ -164,7 +164,7 @@ def TakeForConstReference_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
-	assert( errors_list[0].file_pos.line == 15 )
+	assert( errors_list[0].src_loc.line == 15 )
 
 
 def TakenVariableHaveReferences_Test0():
@@ -187,7 +187,7 @@ def TakenVariableHaveReferences_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "MovedVariableHaveReferences" )
-	assert( errors_list[0].file_pos.line == 14 )
+	assert( errors_list[0].src_loc.line == 14 )
 
 
 def TakenVariableHaveReferences_Test1():
@@ -210,7 +210,7 @@ def TakenVariableHaveReferences_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "MovedVariableHaveReferences" )
-	assert( errors_list[0].file_pos.line == 14 )
+	assert( errors_list[0].src_loc.line == 14 )
 
 
 def TakenVariableHaveReferences_Test2():
@@ -233,7 +233,7 @@ def TakenVariableHaveReferences_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "MovedVariableHaveReferences" )
-	assert( errors_list[0].file_pos.line == 14 )
+	assert( errors_list[0].src_loc.line == 14 )
 
 
 def TakenVariableHaveReferences_Test3():
@@ -280,4 +280,4 @@ def InnereReferenceTransferedInTakeOperator_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].file_pos.line == 18 )
+	assert( errors_list[0].src_loc.line == 18 )

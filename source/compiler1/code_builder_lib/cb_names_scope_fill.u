@@ -19,7 +19,7 @@ fn CodeBuilder::NamesScopeFillClass( mut this, NamesScopeMutPtr& names_scope_ptr
 			{
 				if( is_struct )
 				{
-					REPORT_ERROR( VisibilityForStruct, names_scope_ptr, el.file_pos, Type(class_type).ToString() )
+					REPORT_ERROR( VisibilityForStruct, names_scope_ptr, el.src_loc, Type(class_type).ToString() )
 				}
 				else
 				{
@@ -68,13 +68,13 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	{
 		if( class_type.empty() )
 		{
-			REPORT_ERROR( ConstructorOrDestructorOutsideClass, names_scope_ptr, function.get_ref().file_pos )
+			REPORT_ERROR( ConstructorOrDestructorOutsideClass, names_scope_ptr, function.get_ref().src_loc )
 			return;
 		}
 	}
 	else if( IsKeyword( func_name ) )
 	{
-		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, function.get_ref().file_pos )
+		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, function.get_ref().src_loc )
 		return;
 	}
 
@@ -93,7 +93,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		{
 			auto errors_container= names_scope.GetErrors();
 			auto mut errors_container_lock= errors_container.lock_mut();
-			errors_container_lock.get_ref().push_back( ReportError( CodeBuilderErrorCode::Redefinition, function.get_ref().file_pos ) );
+			errors_container_lock.get_ref().push_back( ReportError( CodeBuilderErrorCode::Redefinition, function.get_ref().src_loc ) );
 			return;
 		}
 
@@ -101,7 +101,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		{
 			auto errors_container= names_scope.GetErrors();
 			auto mut errors_container_lock= errors_container.lock_mut();
-			errors_container_lock.get_ref().push_back( ReportError( CodeBuilderErrorCode::FunctionsVisibilityMismatch, function.get_ref().file_pos, func_name ) );
+			errors_container_lock.get_ref().push_back( ReportError( CodeBuilderErrorCode::FunctionsVisibilityMismatch, function.get_ref().src_loc, func_name ) );
 			return;
 		}
 
@@ -137,20 +137,20 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	{
 		if( class_type.empty() )
 		{
-			REPORT_ERROR( ConstructorOrDestructorOutsideClass, names_scope_ptr, function_template.get_ref().file_pos )
+			REPORT_ERROR( ConstructorOrDestructorOutsideClass, names_scope_ptr, function_template.get_ref().src_loc )
 			return;
 		}
 	}
 	else if( IsKeyword( func_name ) )
 	{
-		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, function_template.get_ref().file_pos )
+		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, function_template.get_ref().src_loc )
 		return;
 	}
 
 	if( function_template.get_ref().function.get_ref().name.size() > 1s )
 	{
 		// Only simple names allowed for function templates.
-		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope_ptr, function_template.get_ref().file_pos )
+		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope_ptr, function_template.get_ref().src_loc )
 		return;
 	}
 
@@ -164,7 +164,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		{
 			auto errors_container= names_scope.GetErrors();
 			auto mut errors_container_lock= errors_container.lock_mut();
-			errors_container_lock.get_ref().push_back( ReportError( CodeBuilderErrorCode::Redefinition, function_template.get_ref().file_pos ) );
+			errors_container_lock.get_ref().push_back( ReportError( CodeBuilderErrorCode::Redefinition, function_template.get_ref().src_loc ) );
 			return;
 		}
 
@@ -172,7 +172,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		{
 			auto errors_container= names_scope.GetErrors();
 			auto mut errors_container_lock= errors_container.lock_mut();
-			errors_container_lock.get_ref().push_back( ReportError( CodeBuilderErrorCode::FunctionsVisibilityMismatch, function_template.get_ref().file_pos, func_name ) );
+			errors_container_lock.get_ref().push_back( ReportError( CodeBuilderErrorCode::FunctionsVisibilityMismatch, function_template.get_ref().src_loc, func_name ) );
 			return;
 		}
 
@@ -215,7 +215,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	auto& name= enum_.get_ref().name;
 	if( IsKeyword( name ) )
 	{
-		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, enum_.get_ref().file_pos )
+		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, enum_.get_ref().src_loc )
 		return;
 	}
 
@@ -233,7 +233,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 
 	if( insert_not_ok )
 	{
-		REPORT_ERROR( Redefinition, names_scope_ptr, enum_.get_ref().file_pos, name )
+		REPORT_ERROR( Redefinition, names_scope_ptr, enum_.get_ref().src_loc, name )
 	}
 }
 
@@ -252,7 +252,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	auto& name= type_alias.get_ref().name;
 	if( IsKeyword( name ) )
 	{
-		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, type_alias.get_ref().file_pos )
+		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, type_alias.get_ref().src_loc )
 		return;
 	}
 
@@ -266,7 +266,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 
 	if( insert_not_ok )
 	{
-		REPORT_ERROR( Redefinition, names_scope_ptr, type_alias.get_ref().file_pos, name )
+		REPORT_ERROR( Redefinition, names_scope_ptr, type_alias.get_ref().src_loc, name )
 	}
 }
 
@@ -298,7 +298,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		{
 			auto errors_container= names_scope.GetErrors();
 			auto mut errors_container_lock= errors_container.lock_mut();
-			errors_container_lock.get_ref().push_back( ReportError( CodeBuilderErrorCode::Redefinition, type_template.get_ref().file_pos ) );
+			errors_container_lock.get_ref().push_back( ReportError( CodeBuilderErrorCode::Redefinition, type_template.get_ref().src_loc ) );
 			return;
 		}
 
@@ -306,7 +306,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		{
 			auto errors_container= names_scope.GetErrors();
 			auto mut errors_container_lock= errors_container.lock_mut();
-			errors_container_lock.get_ref().push_back( ReportError( CodeBuilderErrorCode::TypeTemplatesVisibilityMismatch, type_template.get_ref().file_pos, template_name ) );
+			errors_container_lock.get_ref().push_back( ReportError( CodeBuilderErrorCode::TypeTemplatesVisibilityMismatch, type_template.get_ref().src_loc, template_name ) );
 			return;
 		}
 
@@ -335,7 +335,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 
 		if( IsKeyword( variable_declaration.name ) )
 		{
-			REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, variable_declaration.file_pos )
+			REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, variable_declaration.src_loc )
 			continue;
 		}
 
@@ -353,7 +353,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 
 		if( insert_not_ok )
 		{
-			REPORT_ERROR( Redefinition, names_scope_ptr, variable_declaration.file_pos, variable_declaration.name )
+			REPORT_ERROR( Redefinition, names_scope_ptr, variable_declaration.src_loc, variable_declaration.name )
 		}
 	}
 }
@@ -375,7 +375,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 {
 	if( IsKeyword( auto_variable_declaration.get_ref().name ) )
 	{
-		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, auto_variable_declaration.get_ref().file_pos )
+		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, auto_variable_declaration.get_ref().src_loc )
 		return;
 	}
 
@@ -389,7 +389,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 
 	if( insert_not_ok )
 	{
-		REPORT_ERROR( Redefinition, names_scope_ptr, auto_variable_declaration.get_ref().file_pos, auto_variable_declaration.get_ref().name )
+		REPORT_ERROR( Redefinition, names_scope_ptr, auto_variable_declaration.get_ref().src_loc, auto_variable_declaration.get_ref().name )
 	}
 }
 
@@ -418,7 +418,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		}
 		else
 		{
-			REPORT_ERROR( Redefinition, names_scope_ptr, static_asert.get_ref().file_pos, key )
+			REPORT_ERROR( Redefinition, names_scope_ptr, static_asert.get_ref().src_loc, key )
 		}
 		return;
 	}
@@ -447,7 +447,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		}
 		else
 		{
-			REPORT_ERROR( Redefinition, names_scope_ptr, namespace_.get_ref().file_pos, namespace_.get_ref().name )
+			REPORT_ERROR( Redefinition, names_scope_ptr, namespace_.get_ref().src_loc, namespace_.get_ref().name )
 		}
 		return;
 	}
@@ -464,7 +464,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	auto& field_name= class_field.get_ref().name;
 	if( IsKeyword( field_name ) )
 	{
-		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, class_field.get_ref().file_pos )
+		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, class_field.get_ref().src_loc )
 		return;
 	}
 
@@ -496,7 +496,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 
 	if( insert_not_ok )
 	{
-		REPORT_ERROR( Redefinition, names_scope_ptr, class_field.get_ref().file_pos, field_name )
+		REPORT_ERROR( Redefinition, names_scope_ptr, class_field.get_ref().src_loc, field_name )
 	}
 
 	auto mut class_lock= class_type.lock_mut();
@@ -555,7 +555,7 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 			}
 			if( current_scope.empty() )
 			{
-				REPORT_ERROR( NameNotFound, names_scope_ptr, function_declaration.file_pos, name_components.front() )
+				REPORT_ERROR( NameNotFound, names_scope_ptr, function_declaration.src_loc, name_components.front() )
 				continue;
 			}
 			for( auto mut i= start_component_index; i < name_components.size(); ++i )
@@ -570,7 +570,7 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 					auto new_value= namespace_lock.get_ref().GetThisScopeValue( name_component );
 					if( new_value.empty() )
 					{
-						REPORT_ERROR( NameNotFound, names_scope_ptr, function_declaration.file_pos, name_component )
+						REPORT_ERROR( NameNotFound, names_scope_ptr, function_declaration.src_loc, name_component )
 						current_value.reset();
 						break;
 					}
@@ -585,7 +585,7 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 					auto new_value= namespace_lock.get_ref().GetThisScopeValue( name_component );
 					if( new_value.empty() )
 					{
-						REPORT_ERROR( NameNotFound, names_scope_ptr, function_declaration.file_pos, name_component )
+						REPORT_ERROR( NameNotFound, names_scope_ptr, function_declaration.src_loc, name_component )
 						current_value.reset();
 						break;
 					}
@@ -595,7 +595,7 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 				}
 				else
 				{
-					REPORT_ERROR( NameNotFound, names_scope_ptr, function_declaration.file_pos, name_components.front() ) // TODO -print more relevant error
+					REPORT_ERROR( NameNotFound, names_scope_ptr, function_declaration.src_loc, name_components.front() ) // TODO -print more relevant error
 					current_value.reset();
 					break;
 				}
@@ -611,7 +611,7 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 				}
 				else
 				{
-					REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope_ptr, function_declaration.file_pos )
+					REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope_ptr, function_declaration.src_loc )
 				}
 			}
 		}
@@ -635,7 +635,7 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 	auto& class_name= class_.get_ref().name;
 	if( IsKeyword( class_name ) )
 	{
-		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, class_.get_ref().file_pos )
+		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, class_.get_ref().src_loc )
 		return ust::shared_ptr_nullable_mut</ClassType/>();
 	}
 
@@ -652,7 +652,7 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 				{
 					if( !class_type.forward_declaration_syntax_element.empty() )
 					{
-						REPORT_ERROR( Redefinition, names_scope_ptr, class_.get_ref().file_pos, class_name )
+						REPORT_ERROR( Redefinition, names_scope_ptr, class_.get_ref().src_loc, class_name )
 					}
 					else
 					{
@@ -663,7 +663,7 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 				{
 					if( !class_type.syntax_element.empty() )
 					{
-						REPORT_ERROR( ClassBodyDuplication, names_scope_ptr, class_.get_ref().file_pos )
+						REPORT_ERROR( ClassBodyDuplication, names_scope_ptr, class_.get_ref().src_loc )
 					}
 					else
 					{
@@ -681,7 +681,7 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 		}
 		else
 		{
-			REPORT_ERROR( Redefinition, names_scope_ptr, class_.get_ref().file_pos, class_name )
+			REPORT_ERROR( Redefinition, names_scope_ptr, class_.get_ref().src_loc, class_name )
 			return ust::shared_ptr_nullable_mut</ClassType/>();
 		}
 	}
@@ -733,7 +733,7 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 
 	if( insert_not_ok )
 	{
-		REPORT_ERROR( Redefinition, names_scope_ptr, class_.get_ref().file_pos, class_name )
+		REPORT_ERROR( Redefinition, names_scope_ptr, class_.get_ref().src_loc, class_name )
 		return ust::shared_ptr_nullable_mut</ClassType/>();
 	}
 

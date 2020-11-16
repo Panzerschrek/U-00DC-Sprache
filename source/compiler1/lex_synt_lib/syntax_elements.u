@@ -6,69 +6,69 @@ namespace U1
 namespace Synt
 {
 
-fn GetFilePos( Initializer& initializer ) : FilePos
+fn GetSrcLoc( Initializer& initializer ) : SrcLoc
 {
 	variant_visit( &el : initializer )
 	{
 		static_if( ust::is_same_type</ typeof(el), EmptyVariant />() )
 		{
-			return FilePos();
+			return SrcLoc();
 		}
 		else if( ust::is_same_type</ typeof(el), Expression />() )
 		{
-			return GetFilePos(el);
+			return GetSrcLoc(el);
 		}
 		else
 		{
-			return el.file_pos;
+			return el.src_loc;
 		}
 	}
 	halt;
 }
 
-fn GetFilePos( Expression& expression ) : FilePos
+fn GetSrcLoc( Expression& expression ) : SrcLoc
 {
 	variant_visit( &el : expression )
 	{
 		static_if( ust::is_same_type</ typeof(el), EmptyVariant />() )
 		{
-			return FilePos();
+			return SrcLoc();
 		}
 		else if( ust::is_same_type</ typeof(el), ust::box</ArrayType/> />() )
 		{
-			return el.get_ref().file_pos;
+			return el.get_ref().src_loc;
 		}
 		else if( ust::is_same_type</ typeof(el), ust::box</FunctionType/> />() )
 		{
-			return el.get_ref().file_pos;
+			return el.get_ref().src_loc;
 		}
 		else if( ust::is_same_type</ typeof(el), ust::box</TupleType/> />() )
 		{
-			return el.get_ref().file_pos;
+			return el.get_ref().src_loc;
 		}
 		else
 		{
-			return el.file_pos;
+			return el.src_loc;
 		}
 	}
 	halt;
 }
 
-fn GetFilePos( BlockElement& block_element ) : FilePos
+fn GetSrcLoc( BlockElement& block_element ) : SrcLoc
 {
 	variant_visit( &el : block_element )
 	{
 		static_if( ust::is_same_type</ typeof(el), Expression />() )
 		{
-			return GetFilePos(el);
+			return GetSrcLoc(el);
 		}
 		else if( ust::is_same_type</ typeof(el), ust::box</Block/> />() )
 		{
-			return el.get_ref().file_pos;
+			return el.get_ref().src_loc;
 		}
 		else
 		{
-			return el.file_pos;
+			return el.src_loc;
 		}
 	}
 	halt;

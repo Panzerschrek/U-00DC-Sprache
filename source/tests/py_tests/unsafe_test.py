@@ -36,7 +36,7 @@ def UnsafeFunctionCallOutsideUnsafeBlock_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UnsafeFunctionCallOutsideUnsafeBlock" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def UnsafeFunctionCallOutsideUnsafeBlock_Test1():
@@ -64,7 +64,7 @@ def UnsafeFunctionCallOutsideUnsafeBlock_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UnsafeFunctionCallOutsideUnsafeBlock" )
-	assert( errors_list[0].file_pos.line == 7 )
+	assert( errors_list[0].src_loc.line == 7 )
 
 
 def UnsafeFunctionCallOutsideUnsafeBlock_Test3():
@@ -81,7 +81,7 @@ def UnsafeFunctionCallOutsideUnsafeBlock_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UnsafeFunctionCallOutsideUnsafeBlock" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def UnsafeFunctionCallOutsideUnsafeBlock_Test4():
@@ -98,7 +98,7 @@ def UnsafeFunctionCallOutsideUnsafeBlock_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UnsafeFunctionCallOutsideUnsafeBlock" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def UnsafeFunctionCallOutsideUnsafeBlock_Test5():
@@ -116,7 +116,7 @@ def UnsafeFunctionCallOutsideUnsafeBlock_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UnsafeFunctionCallOutsideUnsafeBlock" )
-	assert( errors_list[0].file_pos.line == 9 )
+	assert( errors_list[0].src_loc.line == 9 )
 
 
 def UnsafeFunctionCallOutsideUnsafeBlock_Test6():
@@ -134,7 +134,7 @@ def UnsafeFunctionCallOutsideUnsafeBlock_Test6():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UnsafeFunctionCallOutsideUnsafeBlock" )
-	assert( errors_list[0].file_pos.line == 9 )
+	assert( errors_list[0].src_loc.line == 9 )
 
 
 def UnsafeFunctionCallOutsideUnsafeBlock_Test7():
@@ -152,7 +152,7 @@ def UnsafeFunctionCallOutsideUnsafeBlock_Test7():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UnsafeFunctionCallOutsideUnsafeBlock" )
-	assert( errors_list[0].file_pos.line == 9 )
+	assert( errors_list[0].src_loc.line == 9 )
 
 
 def UnsafeFunctionCallOutsideUnsafeBlock_Test8():
@@ -170,7 +170,7 @@ def UnsafeFunctionCallOutsideUnsafeBlock_Test8():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UnsafeFunctionCallOutsideUnsafeBlock" )
-	assert( errors_list[0].file_pos.line == 9 )
+	assert( errors_list[0].src_loc.line == 9 )
 
 
 def UnsafeFunctionCallOutsideUnsafeBlock_Test9():
@@ -188,7 +188,7 @@ def UnsafeFunctionCallOutsideUnsafeBlock_Test9():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UnsafeFunctionCallOutsideUnsafeBlock" )
-	assert( errors_list[0].file_pos.line == 9 )
+	assert( errors_list[0].src_loc.line == 9 )
 
 
 def UnsafeFunctionCallOutsideUnsafeBlock_Test10():
@@ -202,7 +202,7 @@ def UnsafeFunctionCallOutsideUnsafeBlock_Test10():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UnsafeFunctionCallOutsideUnsafeBlock" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def UnsafeFunctionCallOutsideUnsafeBlock_Test11():
@@ -219,7 +219,7 @@ def UnsafeFunctionCallOutsideUnsafeBlock_Test11():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UnsafeFunctionCallOutsideUnsafeBlock" )
-	assert( errors_list[0].file_pos.line == 9 )
+	assert( errors_list[0].src_loc.line == 9 )
 
 
 def UnsafeFunctionCallOutsideUnsafeBlock_Test12():
@@ -236,7 +236,7 @@ def UnsafeFunctionCallOutsideUnsafeBlock_Test12():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UnsafeFunctionCallOutsideUnsafeBlock" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def UnsafeFunctionCallInsideUnsafeBlock_Test0():
@@ -343,7 +343,7 @@ def CouldNotOverloadFunction_ForUnsafe_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotOverloadFunction" )
-	assert( errors_list[0].file_pos.line == 2 or errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 2 or errors_list[0].src_loc.line == 3 )
 
 
 def CouldNotOverloadFunction_ForUnsafe_Test1():
@@ -354,7 +354,7 @@ def CouldNotOverloadFunction_ForUnsafe_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotOverloadFunction" )
-	assert( errors_list[0].file_pos.line == 2 or errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 2 or errors_list[0].src_loc.line == 3 )
 
 
 def FunctionDoesNotOverride_ForUnsafe_Test0():
@@ -372,7 +372,7 @@ def FunctionDoesNotOverride_ForUnsafe_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionDoesNotOverride" )
-	assert( errors_list[0].file_pos.line == 9 )
+	assert( errors_list[0].src_loc.line == 9 )
 
 
 def ExplicitAccessToSpecialMethodsIsUnsafe_Test0():
@@ -387,7 +387,7 @@ def ExplicitAccessToSpecialMethodsIsUnsafe_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExplicitAccessToThisMethodIsUnsafe" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def ExplicitAccessToSpecialMethodsIsUnsafe_Test1():
@@ -401,7 +401,7 @@ def ExplicitAccessToSpecialMethodsIsUnsafe_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExplicitAccessToThisMethodIsUnsafe" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def ExplicitAccessToSpecialMethodsIsUnsafe_Test2():
@@ -416,7 +416,7 @@ def ExplicitAccessToSpecialMethodsIsUnsafe_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExplicitAccessToThisMethodIsUnsafe" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def ExplicitAccessToSpecialMethodsIsUnsafe_Test3():
@@ -430,7 +430,7 @@ def ExplicitAccessToSpecialMethodsIsUnsafe_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExplicitAccessToThisMethodIsUnsafe" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def ExplicitAccessToSpecialMethodsIsUnsafe_Test4():
@@ -474,7 +474,7 @@ def SafeBlockResetsUnsafe_Test():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UnsafeFunctionCallOutsideUnsafeBlock" )
-	assert( errors_list[0].file_pos.line == 9 )
+	assert( errors_list[0].src_loc.line == 9 )
 
 
 def UnsafeInsideUnsafe_Test():

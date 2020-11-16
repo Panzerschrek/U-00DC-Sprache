@@ -79,7 +79,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	{
 		if( constructor_index != ~0s )
 		{
-			REPORT_ERROR( MethodBodyGenerationFailed, class_members_ptr, constructors.functions[constructor_index].prototype_syntax_element.get_ref().file_pos )
+			REPORT_ERROR( MethodBodyGenerationFailed, class_members_ptr, constructors.functions[constructor_index].prototype_syntax_element.get_ref().src_loc )
 		}
 		return;
 	}
@@ -158,7 +158,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	auto mut this_llvm_value= LLVMValueRef::Null;
 	unsafe{  this_llvm_value= LLVMGetParam( function_variable.llvm_function, 0u );  }
 
-	auto file_pos= class_type.lock_imut().get_ref().syntax_element.get_ref().file_pos;
+	auto src_loc= class_type.lock_imut().get_ref().syntax_element.get_ref().src_loc;
 
 	if( !base_class.empty() )
 	{
@@ -169,7 +169,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 			.llvm_value= CreateBaseClassFieldGEP( this_llvm_value, function_context ),
 		};
 
-		BuildEmptyInitializer( class_members_ptr, function_context, base_variable, KeywordToString( Keyword::base_ ), file_pos );
+		BuildEmptyInitializer( class_members_ptr, function_context, base_variable, KeywordToString( Keyword::base_ ), src_loc );
 	}
 
 	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
@@ -190,7 +190,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		auto& initializer= class_field.syntax_element.get_ref().initializer;
 		if( !initializer.get</Synt::EmptyVariant/>().empty() )
 		{
-			BuildEmptyInitializer( class_members_ptr, function_context, field_variable, field_name, file_pos );
+			BuildEmptyInitializer( class_members_ptr, function_context, field_variable, field_name, src_loc );
 		}
 		else
 		{
@@ -273,7 +273,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 	{
 		if( constructor_index != ~0s )
 		{
-			REPORT_ERROR( MethodBodyGenerationFailed, class_members_ptr, constructors.functions[constructor_index].prototype_syntax_element.get_ref().file_pos )
+			REPORT_ERROR( MethodBodyGenerationFailed, class_members_ptr, constructors.functions[constructor_index].prototype_syntax_element.get_ref().src_loc )
 		}
 		return;
 	}
@@ -386,14 +386,14 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		src_llvm_value= LLVMGetParam( function_variable.llvm_function, 1u );
 	}
 
-	auto file_pos= class_type.lock_imut().get_ref().syntax_element.get_ref().file_pos;
+	auto src_loc= class_type.lock_imut().get_ref().syntax_element.get_ref().src_loc;
 
 	if( !base_class.empty() )
 	{
 		auto dst_member_value= CreateBaseClassFieldGEP( dst_llvm_value, function_context );
 		auto src_member_value= CreateBaseClassFieldGEP( src_llvm_value, function_context );
 
-		BuildCopyConstructorPart( class_members_ptr, function_context, dst_member_value, src_member_value, ust::to_non_nullable(base_class), file_pos );
+		BuildCopyConstructorPart( class_members_ptr, function_context, dst_member_value, src_member_value, ust::to_non_nullable(base_class), src_loc );
 	}
 
 	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
@@ -419,7 +419,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		}
 		else
 		{
-			BuildCopyConstructorPart( class_members_ptr, function_context, dst_member_value, src_member_value, class_field.t, file_pos );
+			BuildCopyConstructorPart( class_members_ptr, function_context, dst_member_value, src_member_value, class_field.t, src_loc );
 		}
 	}
 
@@ -490,7 +490,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 	{
 		if( operator_index != ~0s )
 		{
-			REPORT_ERROR( MethodBodyGenerationFailed, class_members_ptr, operators.functions[operator_index].prototype_syntax_element.get_ref().file_pos )
+			REPORT_ERROR( MethodBodyGenerationFailed, class_members_ptr, operators.functions[operator_index].prototype_syntax_element.get_ref().src_loc )
 		}
 		return;
 	}
@@ -603,14 +603,14 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		src_llvm_value= LLVMGetParam( function_variable.llvm_function, 1u );
 	}
 
-	auto file_pos= class_type.lock_imut().get_ref().syntax_element.get_ref().file_pos;
+	auto src_loc= class_type.lock_imut().get_ref().syntax_element.get_ref().src_loc;
 
 	if( !base_class.empty() )
 	{		
 		auto dst_member_value= CreateBaseClassFieldGEP( dst_llvm_value, function_context );
 		auto src_member_value= CreateBaseClassFieldGEP( src_llvm_value, function_context );
 
-		BuildCopyAssignmentOperatorPart( class_members_ptr, function_context, dst_member_value, src_member_value, ust::to_non_nullable(base_class), file_pos );
+		BuildCopyAssignmentOperatorPart( class_members_ptr, function_context, dst_member_value, src_member_value, ust::to_non_nullable(base_class), src_loc );
 	}
 
 	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
@@ -624,7 +624,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		auto dst_member_value= CreateFieldGEP( dst_llvm_value, class_field, function_context );
 		auto src_member_value= CreateFieldGEP( src_llvm_value, class_field, function_context );
 
-		BuildCopyAssignmentOperatorPart( class_members_ptr, function_context, dst_member_value, src_member_value, class_field.t, file_pos );
+		BuildCopyAssignmentOperatorPart( class_members_ptr, function_context, dst_member_value, src_member_value, class_field.t, src_loc );
 	}
 
 	// Finish function - add remaining instructions.
@@ -743,7 +743,7 @@ fn CodeBuilder::TryGenerateDestructor( this, ClassTypePtr& class_type )
 	}
 }
 
-fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, FilePos& file_pos )
+fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, SrcLoc& src_loc )
 {
 	if( !t.GetFundamentalType().empty() || !t.GetEnumType().empty() || !t.GetFunctionPointerType().empty() )
 	{
@@ -779,7 +779,7 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 					src_element_value= LLVMBuildGEP( function_context.llvm_ir_builder, src, indexes[0], 2u, "[]\0"[0] );
 				}
 
-				BuildCopyConstructorPart( names_scope, function_context, dst_element_value, src_element_value, array_type.element_type, file_pos );
+				BuildCopyConstructorPart( names_scope, function_context, dst_element_value, src_element_value, array_type.element_type, src_loc );
 			}
 		)
 		return;
@@ -790,7 +790,7 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 		{
 			auto dst_element_value= CreateTupleElementGEP( dst, i, function_context );
 			auto src_element_value= CreateTupleElementGEP( src, i, function_context );
-			BuildCopyConstructorPart( names_scope, function_context, dst_element_value, src_element_value, tuple_type.element_types[i], file_pos );
+			BuildCopyConstructorPart( names_scope, function_context, dst_element_value, src_element_value, tuple_type.element_types[i], src_loc );
 		}
 
 		return;
@@ -799,7 +799,7 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 	{
 		if( !class_type.lock_imut().get_ref().is_copy_constructible )
 		{
-			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, file_pos, Type(class_type) )
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, Type(class_type) )
 			return;
 		}
 
@@ -814,7 +814,7 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 				// SPRACHE_TODO - maybe disallow unsafe copy constructors?
 				if( constructor_.t.is_unsafe && !function_context.is_in_unsafe_block )
 				{
-					REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope, file_pos )
+					REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope, src_loc )
 				}
 
 				// Call it.
@@ -832,7 +832,7 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 	halt; // Unhandled type kind
 }
 
-fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, FilePos& file_pos )
+fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, SrcLoc& src_loc )
 {
 	if( !t.GetFundamentalType().empty() || !t.GetEnumType().empty() || !t.GetFunctionPointerType().empty() )
 	{
@@ -868,7 +868,7 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 					src_element_value= LLVMBuildGEP( function_context.llvm_ir_builder, src, indexes[0], 2u, "[]\0"[0] );
 				}
 
-				BuildCopyAssignmentOperatorPart( names_scope, function_context, dst_element_value, src_element_value, array_type.element_type, file_pos );
+				BuildCopyAssignmentOperatorPart( names_scope, function_context, dst_element_value, src_element_value, array_type.element_type, src_loc );
 			}
 		)
 		return;
@@ -879,7 +879,7 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 		{
 			auto dst_element_value= CreateTupleElementGEP( dst, i, function_context );
 			auto src_element_value= CreateTupleElementGEP( src, i, function_context );
-			BuildCopyAssignmentOperatorPart( names_scope, function_context, dst_element_value, src_element_value, tuple_type.element_types[i], file_pos );
+			BuildCopyAssignmentOperatorPart( names_scope, function_context, dst_element_value, src_element_value, tuple_type.element_types[i], src_loc );
 		}
 
 		return;
@@ -903,7 +903,7 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 				// SPRACHE_TODO - maybe disallow unsafe copy assignment operators?
 				if( operator_.t.is_unsafe && !function_context.is_in_unsafe_block )
 				{
-					REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope, file_pos )
+					REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope, src_loc )
 				}
 
 				// Call it.
@@ -921,7 +921,7 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 	halt; // Unhandled type kind
 }
 
-fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef value, Type& t, FilePos& file_pos )
+fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef value, Type& t, SrcLoc& src_loc )
 {
 	if_var( &array_type : t.GetArrayType() )
 	{
@@ -937,7 +937,7 @@ fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionC
 					element_value= LLVMBuildGEP( function_context.llvm_ir_builder, value, indexes[0], 2u, "[]\0"[0] );
 				}
 
-				BuildDestructorPart( names_scope, function_context, element_value, array_type.element_type, file_pos );
+				BuildDestructorPart( names_scope, function_context, element_value, array_type.element_type, src_loc );
 			}
 		)
 	}
@@ -946,7 +946,7 @@ fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionC
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
 			var LLVMValueRef element_value= CreateTupleElementGEP( value, i, function_context );
-			BuildDestructorPart( names_scope, function_context, element_value, tuple_type.element_types[i], file_pos );
+			BuildDestructorPart( names_scope, function_context, element_value, tuple_type.element_types[i], src_loc );
 		}
 	}
 	if_var( &class_type : t.GetClassType() )
@@ -961,7 +961,7 @@ fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionC
 		// SPRACHE_TODO - maybe disallow unsafe destructors?
 		if( destructor_.t.is_unsafe && !function_context.is_in_unsafe_block )
 		{
-			REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope, file_pos )
+			REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope, src_loc )
 		}
 
 		// Call it.
@@ -978,19 +978,19 @@ fn CodeBuilder::BuildMembersDestructors( this, FunctionContext &mut function_con
 	auto class_members_lock= class_members_ptr.lock_imut();
 	auto& class_members= class_members_lock.get_ref();
 
-	var FilePos mut file_pos;
+	var SrcLoc mut src_loc;
 	{
 		auto syntax_element= class_type.lock_imut().get_ref().syntax_element;
 		if( !syntax_element.empty() )
 		{
-			file_pos= syntax_element.get_ref().file_pos;
+			src_loc= syntax_element.get_ref().src_loc;
 		}
 	}
 
 	foreach( &parent : class_type.lock_imut().get_ref().parents )
 	{
 		auto parent_llvm_value= CreateParentFieldGEP( value, parent, function_context );
-		BuildDestructorPart( class_members_ptr, function_context, parent_llvm_value, parent.class_, file_pos );
+		BuildDestructorPart( class_members_ptr, function_context, parent_llvm_value, parent.class_, src_loc );
 	}
 
 	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
@@ -1004,7 +1004,7 @@ fn CodeBuilder::BuildMembersDestructors( this, FunctionContext &mut function_con
 
 		auto field_llvm_value= CreateFieldGEP( value, class_field, function_context );
 
-		BuildDestructorPart( class_members_ptr, function_context, field_llvm_value, class_field.t, file_pos ); // TODO - maybe use field file_pos instead?
+		BuildDestructorPart( class_members_ptr, function_context, field_llvm_value, class_field.t, src_loc ); // TODO - maybe use field src_loc instead?
 	}
 }
 

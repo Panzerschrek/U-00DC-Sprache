@@ -38,7 +38,7 @@ fn LoadSourceGraph_r(
 			}
 			imports_loop_str+= file_path_normalized;
 
-			source_graph.errors.push_back( LexSyntError( FilePos( 0u, 0u, 0u ), move(imports_loop_str) ) );
+			source_graph.errors.push_back( LexSyntError( SrcLoc( 0u, 0u, 0u ), move(imports_loop_str) ) );
 			return ~0s;
 		}
 	}
@@ -60,7 +60,7 @@ fn LoadSourceGraph_r(
 		str+= file_path_normalized;
 		str+= "\"";
 
-		source_graph.errors.push_back( LexSyntError( FilePos( 0u, 0u, 0u ), move(str) ) );
+		source_graph.errors.push_back( LexSyntError( SrcLoc( 0u, 0u, 0u ), move(str) ) );
 		return ~0s;
 	}
 
@@ -76,7 +76,7 @@ fn LoadSourceGraph_r(
 
 	foreach( &mut lexem : lex_result.lexems )
 	{
-		lexem.file_pos.SetFileIndex( u32(node_index) );
+		lexem.src_loc.SetFileIndex( u32(node_index) );
 	}
 
 	var SourceGraph::Node mut node
@@ -119,10 +119,10 @@ fn LoadSourceGraph_r(
 				{
 					dst_map.insert( macro.key(), macro.value() );
 				}
-				else if( dst_map[ macro.key() ].get_ref().file_pos != macro.value().get_ref().file_pos )
+				else if( dst_map[ macro.key() ].get_ref().src_loc != macro.value().get_ref().src_loc )
 				{
 					macro_errors.push_back( LexSyntError(
-						macro.value().get_ref().file_pos ,
+						macro.value().get_ref().src_loc ,
 						"Macro \"" + macro.key() + "\" redefinition." ) );
 				}
 			}

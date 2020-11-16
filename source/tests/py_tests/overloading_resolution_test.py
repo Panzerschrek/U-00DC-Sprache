@@ -9,7 +9,7 @@ def CouldNotOverloadFunction_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotOverloadFunction" )
-	assert( errors_list[0].file_pos.line == 2 or errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 2 or errors_list[0].src_loc.line == 3 )
 
 
 def CouldNotOverloadFunction_Test1():
@@ -20,7 +20,7 @@ def CouldNotOverloadFunction_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotOverloadFunction" )
-	assert( errors_list[0].file_pos.line == 2 or errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 2 or errors_list[0].src_loc.line == 3 )
 
 
 def CouldNotOverloadFunction_Test2():
@@ -31,7 +31,7 @@ def CouldNotOverloadFunction_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotOverloadFunction" )
-	assert( errors_list[0].file_pos.line == 2 or errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 2 or errors_list[0].src_loc.line == 3 )
 
 
 def CouldNotOverloadFunction_Test3():
@@ -47,7 +47,7 @@ def CouldNotOverloadFunction_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotOverloadFunction" )
-	assert( errors_list[0].file_pos.line == 7 or errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 7 or errors_list[0].src_loc.line == 8 )
 
 
 def CouldNotOverloadFunction_Test4():
@@ -62,7 +62,7 @@ def CouldNotOverloadFunction_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotOverloadFunction" )
-	assert( errors_list[0].file_pos.line == 6 or errors_list[0].file_pos.line == 7 )
+	assert( errors_list[0].src_loc.line == 6 or errors_list[0].src_loc.line == 7 )
 
 
 def CouldNotSelectOverloadedFunction_Test0():
@@ -79,7 +79,7 @@ def CouldNotSelectOverloadedFunction_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def OverloadingResolutionTest_OnlyMutabilityCheck_Test0():
@@ -444,7 +444,7 @@ def OverloadingResolutionTest_ForFunctionTemplates_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
-	assert( errors_list[0].file_pos.line == 16 )
+	assert( errors_list[0].src_loc.line == 16 )
 
 
 def OverloadingResolutionTest_ForFunctionTemplates_Test1():
@@ -653,7 +653,7 @@ def OverloadingResolutionTest_TypeConversions_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
-	assert( errors_list[0].file_pos.line == 16 )
+	assert( errors_list[0].src_loc.line == 16 )
 
 
 def OverloadingResolutionTest_TypeConversions_Test1():

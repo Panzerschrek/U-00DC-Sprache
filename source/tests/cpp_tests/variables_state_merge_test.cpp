@@ -107,7 +107,7 @@ U_TEST( IfMergeTest3_ResultPollutionOccursIfPollutionOccursNotInAllBranches )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 16u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 16u );
 }
 
 U_TEST( IfMergeTest4_BreakingReferenceProtectionInMergeResult0 )
@@ -139,7 +139,7 @@ U_TEST( IfMergeTest4_BreakingReferenceProtectionInMergeResult0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 17u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 17u );
 }
 
 U_TEST( IfMergeTest5_BreakingReferenceProtectionInMergeResult1 )
@@ -173,7 +173,7 @@ U_TEST( IfMergeTest5_BreakingReferenceProtectionInMergeResult1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 19u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 19u );
 }
 
 U_TEST( IfMergeTest6_ConditionAffectsLowerBranches0 )
@@ -200,7 +200,7 @@ U_TEST( IfMergeTest6_ConditionAffectsLowerBranches0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 11u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 11u );
 }
 
 U_TEST( IfMergeTest7_ConditionAffectsLowerBranches1 )
@@ -228,7 +228,7 @@ U_TEST( IfMergeTest7_ConditionAffectsLowerBranches1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 12u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 12u );
 }
 
 U_TEST( IfMergeTest8_ConditionAffectsLowerBranches2 )
@@ -253,7 +253,7 @@ U_TEST( IfMergeTest8_ConditionAffectsLowerBranches2 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 10u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 10u );
 }
 
 U_TEST( IfMergeTest9_ConditionAffectsLowerBranches3 )

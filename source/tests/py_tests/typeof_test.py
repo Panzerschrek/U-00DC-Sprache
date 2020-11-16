@@ -137,4 +137,4 @@ def Typeof_ChecksExpression_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NameNotFound" )
-	assert( errors_list[0].file_pos.line == 2 )
+	assert( errors_list[0].src_loc.line == 2 )

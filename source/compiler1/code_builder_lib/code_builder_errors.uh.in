@@ -1,7 +1,7 @@
 import "/shared/shared_ptr_nullable_mut.u"
 import "/string.u"
 import "/vector.u"
-import "/lex_synt_lib/file_pos.uh"
+import "/lex_synt_lib/src_loc.uh"
 
 namespace U1
 {
@@ -23,7 +23,7 @@ fn GetErrorMessagePattern( CodeBuilderErrorCode e ) : ust::array_view_imut</ cha
 struct CodeBuilderError
 {
 	CodeBuilderErrorCode code;
-	FilePos file_pos;
+	SrcLoc src_loc;
 	ust::string8 text;
 	ust::shared_ptr_nullable_mut</TemplateErrorsContext/> errors_context;
 
@@ -37,7 +37,7 @@ type ErrorsContainer= ust::vector</ CodeBuilderError />;
 struct TemplateErrorsContext
 {
 	ust::shared_ptr_mut</ErrorsContainer/> errors;
-	FilePos context_declaration_file_pos; // Declaration position of context, macro.
+	SrcLoc context_declaration_src_loc; // Declaration position of context, macro.
 
 	ust::string8 context_name; // Name of template, macro.
 	ust::string8 args_description;

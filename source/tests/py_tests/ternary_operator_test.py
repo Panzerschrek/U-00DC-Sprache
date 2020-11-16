@@ -245,7 +245,7 @@ def TernaryOperator_Constexpr_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "VariableInitializerIsNotConstantExpression" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def TernaryOperator_Constexpr_Test6():
@@ -259,7 +259,7 @@ def TernaryOperator_Constexpr_Test6():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "VariableInitializerIsNotConstantExpression" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def TernaryOperator_Constexpr_Test7():

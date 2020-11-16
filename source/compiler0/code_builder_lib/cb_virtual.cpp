@@ -87,14 +87,14 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 		FunctionVariable& function= *class_function.function;
 
 		const std::string& function_name= class_function.name;
-		const FilePos& file_pos= function.syntax_element->file_pos_;
+		const SrcLoc& src_loc= function.syntax_element->src_loc_;
 		CodeBuilderErrorsContainer& errors_container= the_class.members.GetErrors();
 
 		if( function.virtual_function_kind != Synt::VirtualFunctionKind::None &&
 			the_class.GetMemberVisibility( function_name ) == ClassMemberVisibility::Private )
 		{
 			// Private members not visible in child classes. So, virtual private function is 100% error.
-			REPORT_ERROR( VirtualForPrivateFunction, errors_container, file_pos, function_name );
+			REPORT_ERROR( VirtualForPrivateFunction, errors_container, src_loc, function_name );
 		}
 
 		if( !function.is_this_call )
@@ -141,12 +141,12 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 				}
 			}
 			else if( virtual_table_entry != nullptr )
-				REPORT_ERROR( VirtualRequired, errors_container, file_pos, function_name );
+				REPORT_ERROR( VirtualRequired, errors_container, src_loc, function_name );
 			break;
 
 		case Synt::VirtualFunctionKind::DeclareVirtual:
 			if( virtual_table_entry != nullptr )
-				REPORT_ERROR( OverrideRequired, errors_container, file_pos, function_name );
+				REPORT_ERROR( OverrideRequired, errors_container, src_loc, function_name );
 			else
 			{
 				function.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
@@ -164,9 +164,9 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 
 		case Synt::VirtualFunctionKind::VirtualOverride:
 			if( virtual_table_entry == nullptr )
-				REPORT_ERROR( FunctionDoesNotOverride, errors_container, file_pos, function_name );
+				REPORT_ERROR( FunctionDoesNotOverride, errors_container, src_loc, function_name );
 			else if( virtual_table_entry->is_final )
-				REPORT_ERROR( OverrideFinalFunction, errors_container, file_pos, function_name );
+				REPORT_ERROR( OverrideFinalFunction, errors_container, src_loc, function_name );
 			else
 			{
 				function.virtual_table_index= virtual_table_index;
@@ -177,11 +177,11 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 
 		case Synt::VirtualFunctionKind::VirtualFinal:
 			if( virtual_table_entry == nullptr )
-				REPORT_ERROR( FinalForFirstVirtualFunction, errors_container, file_pos, function_name );
+				REPORT_ERROR( FinalForFirstVirtualFunction, errors_container, src_loc, function_name );
 			else
 			{
 				if( virtual_table_entry->is_final )
-					REPORT_ERROR( OverrideFinalFunction, errors_container, file_pos, function_name );
+					REPORT_ERROR( OverrideFinalFunction, errors_container, src_loc, function_name );
 				else
 				{
 					function.virtual_table_index= virtual_table_index;
@@ -194,13 +194,13 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 
 		case Synt::VirtualFunctionKind::VirtualPure:
 			if( virtual_table_entry != nullptr )
-				REPORT_ERROR( OverrideRequired, errors_container, file_pos, function_name );
+				REPORT_ERROR( OverrideRequired, errors_container, src_loc, function_name );
 			else
 			{
 				if( function.syntax_element->block_ != nullptr )
-					REPORT_ERROR( BodyForPureVirtualFunction, errors_container, file_pos, function_name );
+					REPORT_ERROR( BodyForPureVirtualFunction, errors_container, src_loc, function_name );
 				if( function_name == Keyword( Keywords::destructor_ ) )
-					REPORT_ERROR( PureDestructor, errors_container, file_pos, the_class.members.GetThisNamespaceName() );
+					REPORT_ERROR( PureDestructor, errors_container, src_loc, the_class.members.GetThisNamespaceName() );
 				function.have_body= true; // Mark pure function as "with body", because we needs to disable real body creation for pure function.
 
 				function.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
@@ -410,11 +410,11 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	const FunctionVariable& function,
 	FunctionContext& function_context,
 	CodeBuilderErrorsContainer& errors_container,
-	const FilePos& file_pos )
+	const SrcLoc& src_loc )
 {
 	const Function& function_type= *function.type.GetFunctionType();
 
-	if( !ReferenceIsConvertible( this_.type, function_type.args.front().type, errors_container, file_pos ) )
+	if( !ReferenceIsConvertible( this_.type, function_type.args.front().type, errors_container, src_loc ) )
 		return std::make_pair( this_, function.llvm_function );
 
 	Variable this_casted= this_;

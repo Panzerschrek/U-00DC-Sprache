@@ -12,7 +12,7 @@ def CommonValueType_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def CommonValueType_Test1():
@@ -26,7 +26,7 @@ def CommonValueType_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def CommonValueType_Test2():
@@ -39,7 +39,7 @@ def CommonValueType_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def TernaryOperator_TypesMismatch_Test0():
@@ -52,7 +52,7 @@ def TernaryOperator_TypesMismatch_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 	assert( errors_list[0].text.find( "bool" ) != -1 )
 
 
@@ -66,7 +66,7 @@ def TernaryOperator_TypesMismatch_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 	assert( errors_list[0].text.find( "f32" ) != -1 )
 	assert( errors_list[0].text.find( "u32" ) != -1 )
 
@@ -83,7 +83,7 @@ def TernaryOperator_ReferenceProtectionError_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 	assert( errors_list[0].text.find( "\"x\"" ) != -1 )
 
 
@@ -99,7 +99,7 @@ def TernaryOperator_ReferenceProtectionError_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 	assert( errors_list[0].text.find( "\"y\"" ) != -1 )
 
 
@@ -126,7 +126,7 @@ def VariablesStateMerge_ForTernaryOperator_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConditionalMove" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def VariablesStateMerge_ForTernaryOperator_Test1():
@@ -140,7 +140,7 @@ def VariablesStateMerge_ForTernaryOperator_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConditionalMove" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def VariablesStateMerge_ForTernaryOperator_Test2():
@@ -158,7 +158,7 @@ def VariablesStateMerge_ForTernaryOperator_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].file_pos.line == 9 )
+	assert( errors_list[0].src_loc.line == 9 )
 
 
 def VariablesStateMerge_ForTernaryOperator_Test3():
@@ -176,7 +176,7 @@ def VariablesStateMerge_ForTernaryOperator_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].file_pos.line == 9 )
+	assert( errors_list[0].src_loc.line == 9 )
 
 
 def VariablesStateMerge_ForTernaryOperator_Test4():
@@ -193,7 +193,7 @@ def VariablesStateMerge_ForTernaryOperator_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def TernaryOperator_SavesInnerReferences_Test0():
@@ -218,6 +218,6 @@ def TernaryOperator_SavesInnerReferences_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) >= 2 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].file_pos.line == 15 )
+	assert( errors_list[0].src_loc.line == 15 )
 	assert( errors_list[1].error_code == "ReferenceProtectionError" )
-	assert( errors_list[1].file_pos.line == 16 )
+	assert( errors_list[1].src_loc.line == 16 )

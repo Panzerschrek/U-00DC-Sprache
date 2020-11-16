@@ -156,7 +156,7 @@ def CastRef_Test9_ShouldPreserveReferencedVariables():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "DestroyedVariableStillHaveReferences" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def CastRef_Test10_ShouldPreserveReferencedVariables():
@@ -177,7 +177,7 @@ def CastRef_Test10_ShouldPreserveReferencedVariables():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].file_pos.line == 12 )
+	assert( errors_list[0].src_loc.line == 12 )
 
 
 def CastRefUnsafe_Test0_SholudCastIncompatibleReferences():
@@ -289,7 +289,7 @@ def CastRefUnsafe_Test6_OperatorAllowedOnlyInsideUnsafeBlock():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UnsafeReferenceCastOutsideUnsafeBlock" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def CastRefUnsafe_Test7_OperatorAllowedOnlyInsideUnsafeBlock():
@@ -302,7 +302,7 @@ def CastRefUnsafe_Test7_OperatorAllowedOnlyInsideUnsafeBlock():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UnsafeReferenceCastOutsideUnsafeBlock" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def CastRefUnsafe_Test8_CompletenessStillRequiredForUnsafeCast():
@@ -388,7 +388,7 @@ def CastImut_Test3_ShouldPreserveReferences():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def CastMut_Test0_CastImmutableReferenceToMutableReference():
@@ -453,7 +453,7 @@ def CastMut_Test3_ShouldPreserveReferences():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def CastMut_Test4_OperationIsUnsafe():
@@ -467,7 +467,7 @@ def CastMut_Test4_OperationIsUnsafe():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "MutableReferenceCastOutsideUnsafeBlock" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def CastMut_Test5_OperationIsUnsafe():
@@ -481,7 +481,7 @@ def CastMut_Test5_OperationIsUnsafe():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "MutableReferenceCastOutsideUnsafeBlock" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def CastMut_Test6_ConstexprLostInConversion():
@@ -498,4 +498,4 @@ def CastMut_Test6_ConstexprLostInConversion():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "VariableInitializerIsNotConstantExpression" )
-	assert( errors_list[0].file_pos.line == 7 )
+	assert( errors_list[0].src_loc.line == 7 )

@@ -574,7 +574,7 @@ def VirtualForNonclassFunction_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "VirtualForNonclassFunction" )
-	assert( errors_list[0].file_pos.line == 2 )
+	assert( errors_list[0].src_loc.line == 2 )
 
 
 def VirtualForNonThisCallFunction_Test0():
@@ -587,7 +587,7 @@ def VirtualForNonThisCallFunction_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "VirtualForNonThisCallFunction" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def FunctionCanNotBeVirtual_Test0():
@@ -600,7 +600,7 @@ def FunctionCanNotBeVirtual_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionCanNotBeVirtual" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def VirtualRequired_Test0():
@@ -617,7 +617,7 @@ def VirtualRequired_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "VirtualRequired" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def OverrideRequired_Test0():
@@ -634,7 +634,7 @@ def OverrideRequired_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "OverrideRequired" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def OverrideRequired_Test1():
@@ -651,7 +651,7 @@ def OverrideRequired_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "OverrideRequired" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def FunctionDoesNotOverride_Test0():
@@ -668,7 +668,7 @@ def FunctionDoesNotOverride_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionDoesNotOverride" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def FunctionDoesNotOverride_Test1():
@@ -685,7 +685,7 @@ def FunctionDoesNotOverride_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionDoesNotOverride" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def FunctionDoesNotOverride_Test2():
@@ -702,7 +702,7 @@ def FunctionDoesNotOverride_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionDoesNotOverride" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def OverrideFinalFunction_Test0():
@@ -723,7 +723,7 @@ def OverrideFinalFunction_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "OverrideFinalFunction" )
-	assert( errors_list[0].file_pos.line == 12 )
+	assert( errors_list[0].src_loc.line == 12 )
 
 
 def OverrideFinalFunction_Test1():
@@ -744,7 +744,7 @@ def OverrideFinalFunction_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "OverrideFinalFunction" )
-	assert( errors_list[0].file_pos.line == 12 )
+	assert( errors_list[0].src_loc.line == 12 )
 
 
 def FinalForFirstVirtualFunction_Test0():
@@ -757,7 +757,7 @@ def FinalForFirstVirtualFunction_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FinalForFirstVirtualFunction" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def BodyForPureVirtualFunction_Test0():
@@ -770,7 +770,7 @@ def BodyForPureVirtualFunction_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "BodyForPureVirtualFunction" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def BodyForPureVirtualFunction_Test1():
@@ -784,7 +784,7 @@ def BodyForPureVirtualFunction_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "BodyForPureVirtualFunction" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def VirtualMismatch_Test0():
@@ -802,7 +802,7 @@ def VirtualMismatch_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "VirtualMismatch" )
-	assert( errors_list[0].file_pos.line == 9 )
+	assert( errors_list[0].src_loc.line == 9 )
 
 
 def VirtualForNonpolymorphClass_Test0():
@@ -815,7 +815,7 @@ def VirtualForNonpolymorphClass_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "VirtualForNonpolymorphClass" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def ClassContainsPureVirtualFunctions_Test0():
@@ -830,7 +830,7 @@ def ClassContainsPureVirtualFunctions_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ClassContainsPureVirtualFunctions" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def ClassContainsPureVirtualFunctions_Test1():
@@ -845,7 +845,7 @@ def ClassContainsPureVirtualFunctions_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ClassContainsPureVirtualFunctions" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def ClassContainsPureVirtualFunctions_Test2():
@@ -860,7 +860,7 @@ def ClassContainsPureVirtualFunctions_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ClassContainsPureVirtualFunctions" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def NonPureVirtualFunctionInInterface_Test0():
@@ -873,7 +873,7 @@ def NonPureVirtualFunctionInInterface_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NonPureVirtualFunctionInInterface" )
-	assert( errors_list[0].file_pos.line == 2 )
+	assert( errors_list[0].src_loc.line == 2 )
 
 
 def PureDestructor_Test0():
@@ -886,7 +886,7 @@ def PureDestructor_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "PureDestructor" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def VirtualForFunctionImplementation_Test2():
@@ -900,7 +900,7 @@ def VirtualForFunctionImplementation_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "VirtualForFunctionImplementation" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def VirtualForPrivateFunction_Test0():
@@ -914,7 +914,7 @@ def VirtualForPrivateFunction_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "VirtualForPrivateFunction" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def PointerCastForVirtualCall_Test0():

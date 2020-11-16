@@ -61,7 +61,7 @@ U_TEST( LockVariableMultipleTimesInSameStruct_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 11u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 11u );
 }
 
 U_TEST( LockVariableMultipleTimesInSameStruct_Test1 )
@@ -87,7 +87,7 @@ U_TEST( LockVariableMultipleTimesInSameStruct_Test1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 11u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 11u );
 }
 
 U_TEST( LockVariableMultipleTimesInSameStruct_Test2 )
@@ -113,7 +113,7 @@ U_TEST( LockVariableMultipleTimesInSameStruct_Test2 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 11u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 11u );
 }
 
 U_TEST( LockVariableMultipleTimesInSameStruct_Test3 )
@@ -167,7 +167,7 @@ U_TEST( ReturnReferenceFromArg_Test1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReturningUnallowedReference );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 U_TEST( ReturnReferenceFromArg_Test2 )
@@ -190,7 +190,7 @@ U_TEST( ReturnReferenceFromArg_Test2 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReturningUnallowedReference );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 7u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 7u );
 }
 
 U_TEST( ReturnReferenceFromArg_Test3 )
@@ -248,7 +248,7 @@ U_TEST( ReturnReferenceFromArg_Test5 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReturningUnallowedReference );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 9u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 9u );
 }
 
 U_TEST( ReturnReferenceToLocalVariableInsideStruct )
@@ -271,7 +271,7 @@ U_TEST( ReturnReferenceToLocalVariableInsideStruct )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReturningUnallowedReference );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 8u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 8u );
 }
 
 U_TEST( GetReturnedReferencePassedThroughArgument_Test0 )
@@ -299,7 +299,7 @@ U_TEST( GetReturnedReferencePassedThroughArgument_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 13u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 13u );
 }
 
 U_TEST( GetReturnedReferencePassedThroughArgument_Test1 )
@@ -386,7 +386,7 @@ U_TEST( ReturnStructWithReferenceFromFunction_Test1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 14u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 14u );
 }
 
 U_TEST( ReturnStructWithReferenceFromFunction_Test2 )
@@ -427,7 +427,7 @@ U_TEST( TwoLevelsOfIndirection_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceFieldOfTypeWithReferencesInside );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
 }
 
 U_TEST( TwoLevelsOfIndirection_Test1 )
@@ -444,7 +444,7 @@ U_TEST( TwoLevelsOfIndirection_Test1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceFieldOfTypeWithReferencesInside );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
 }
 
 U_TEST( ReferencePollutionTest0 )
@@ -508,7 +508,7 @@ U_TEST( ReferencePollutionTest2_LinkAsImmutableIfAllLinkedVariablesAreMutable )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 14u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 14u );
 }
 
 U_TEST( ReferencePollutionTest3_LinkAsImmutableIfAllLinkedVariablesAreMutable )
@@ -534,7 +534,7 @@ U_TEST( ReferencePollutionTest3_LinkAsImmutableIfAllLinkedVariablesAreMutable )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 11u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 11u );
 }
 
 U_TEST( ReferencePollutionTest4_LinkAsImmutableIfAllLinkedVariablesAreMutable )
@@ -584,7 +584,7 @@ U_TEST( ConstructorLinksPassedReference_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 14u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 14u );
 }
 
 U_TEST( ConstructorLinksPassedReference_Test1 )
@@ -613,7 +613,7 @@ U_TEST( ConstructorLinksPassedReference_Test1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 14u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 14u );
 }
 
 U_TEST( ConvertedVariableCanLostInnerReference_Test0 )
@@ -703,7 +703,7 @@ U_TEST( AutoVariableContainsCopyOfReference_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 14u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 14u );
 }
 
 U_TEST( ExpressionInitializedVariableContainsCopyOfReference_Test0 )
@@ -732,7 +732,7 @@ U_TEST( ExpressionInitializedVariableContainsCopyOfReference_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 14u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 14u );
 }
 
 U_TEST( CopyAssignmentOperator_PollutionTest )
@@ -764,7 +764,7 @@ U_TEST( CopyAssignmentOperator_PollutionTest )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 17u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 17u );
 }
 
 U_TEST( ReferencePollutionErrorsTest_SelfReferencePollution )
@@ -782,7 +782,7 @@ U_TEST( ReferencePollutionErrorsTest_SelfReferencePollution )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::SelfReferencePollution );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
 }
 
 U_TEST( ReferencePollutionErrorsTest_ArgReferencePollution )
@@ -818,7 +818,7 @@ U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnallowedReferencePollution );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 9u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 9u );
 }
 
 U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test1 )
@@ -842,7 +842,7 @@ U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 10u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 10u );
 }
 
 U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test2 )
@@ -869,7 +869,7 @@ U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test2 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnallowedReferencePollution );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 12u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 12u );
 }
 
 U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test3 )
@@ -890,7 +890,7 @@ U_TEST( ReferencePollutionErrorsTest_UnallowedReferencePollution_Test3 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnallowedReferencePollution );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 U_TEST( ReferencePollutionErrorsTest_ExplicitReferencePollutionForCopyConstructor )
@@ -912,7 +912,7 @@ U_TEST( ReferencePollutionErrorsTest_ExplicitReferencePollutionForCopyConstructo
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExplicitReferencePollutionForCopyConstructor );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 
@@ -934,7 +934,7 @@ U_TEST( ReferencePollutionErrorsTest_ExplicitReferencePollutionForCopyAssignment
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExplicitReferencePollutionForCopyAssignmentOperator );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 U_TEST( TryGrabReferenceToTempVariable_Test0 )
@@ -963,7 +963,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 14u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 14u );
 }
 
 U_TEST( TryGrabReferenceToTempVariable_Test1 )
@@ -992,7 +992,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 14u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 14u );
 }
 
 U_TEST( TryGrabReferenceToTempVariable_Test2 )
@@ -1023,7 +1023,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test2 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 16u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 16u );
 }
 
 U_TEST( TryGrabReferenceToTempVariable_Test3 )
@@ -1048,7 +1048,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test3 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 10u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 10u );
 }
 
 U_TEST( TryGrabReferenceToTempVariable_Test4 )
@@ -1074,7 +1074,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test4 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 11u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 11u );
 }
 
 U_TEST( TryGrabReferenceToTempVariable_Test5 )
@@ -1099,7 +1099,7 @@ U_TEST( TryGrabReferenceToTempVariable_Test5 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::DestroyedVariableStillHaveReferences );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 10u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 10u );
 }
 
 U_TEST( NameNotFound_ForReferenceTags_Test0 )
@@ -1115,7 +1115,7 @@ U_TEST( NameNotFound_ForReferenceTags_Test0 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 
 U_TEST( NameNotFound_ForReferenceTags_Test1 )
@@ -1132,7 +1132,7 @@ U_TEST( NameNotFound_ForReferenceTags_Test1 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
 }
 
 U_TEST( NameNotFound_ForReferenceTags_Test2 )
@@ -1149,7 +1149,7 @@ U_TEST( NameNotFound_ForReferenceTags_Test2 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
 }
 
 } // namespace U

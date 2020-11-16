@@ -39,7 +39,7 @@ def DisabledFunction_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def DisabledFunction_Test1():
@@ -73,7 +73,7 @@ def DisabledFunction_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 9 )
+	assert( errors_list[0].src_loc.line == 9 )
 
 
 def DisabledFunction_Test3():
@@ -203,7 +203,7 @@ def EnabledFunction_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NoReturnInFunctionReturningNonVoid" )
-	assert( errors_list[0].file_pos.line == 2 )
+	assert( errors_list[0].src_loc.line == 2 )
 
 
 def EnabledFunction_Test1():
@@ -254,7 +254,7 @@ def TypesMismatch_ForEnableIf_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "TypesMismatch" )
-	assert( errors_list[0].file_pos.line == 2 )
+	assert( errors_list[0].src_loc.line == 2 )
 
 
 def ExpectedConstantExpression_ForEnableIf_Test0():
@@ -265,7 +265,7 @@ def ExpectedConstantExpression_ForEnableIf_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ExpectedConstantExpression" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 3 )
 
 
 def DifferentFunctionImplementations_UsingEnableIf_Test0():
@@ -319,7 +319,7 @@ def EnableIf_ForPrototypeAndBody_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionBodyDuplication" )
-	assert( errors_list[0].file_pos.line == 4 or errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 4 or errors_list[0].src_loc.line == 6 )
 
 
 def EnableIf_ForPrototypeAndBody_Test2():

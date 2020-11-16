@@ -23,7 +23,7 @@ U_TEST(InvalidTypeForAutoVariableTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InvalidTypeForAutoVariable );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 U_TEST(InvalidTypeForAutoVariableTest1)
@@ -44,7 +44,7 @@ U_TEST(InvalidTypeForAutoVariableTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InvalidTypeForAutoVariable );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 U_TEST(RedefinitionTest0)
@@ -65,7 +65,7 @@ U_TEST(RedefinitionTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 U_TEST(RedefinitionTest1)
@@ -86,7 +86,7 @@ U_TEST(RedefinitionTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 U_TEST(ExpectedReferenceValueTest0)
@@ -106,7 +106,7 @@ U_TEST(ExpectedReferenceValueTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(ExpectedReferenceValueTest1)
@@ -126,7 +126,7 @@ U_TEST(ExpectedReferenceValueTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(BindingConstReferenceToNonconstReferenceTest0)
@@ -147,7 +147,7 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 } // namespace U

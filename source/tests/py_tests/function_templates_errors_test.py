@@ -27,7 +27,7 @@ def ValueIsNotTemplate_ForFunctionTemplates_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ValueIsNotTemplate" )
-	assert( errors_list[0].file_pos.line == 10 )
+	assert( errors_list[0].src_loc.line == 10 )
 
 
 def ValueIsNotTemplate_ForFunctionTemplates_Test2():
@@ -46,7 +46,7 @@ def ValueIsNotTemplate_ForFunctionTemplates_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ValueIsNotTemplate" )
-	assert( errors_list[0].file_pos.line == 10 )
+	assert( errors_list[0].src_loc.line == 10 )
 
 
 def IncompleteMemberOfClassTemplate_ForFunctionTemplates_Test0():
@@ -57,7 +57,7 @@ def IncompleteMemberOfClassTemplate_ForFunctionTemplates_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "IncompleteMemberOfClassTemplate" )
-	assert( errors_list[0].file_pos.line == 2 )
+	assert( errors_list[0].src_loc.line == 2 )
 
 
 def Redefinition_ForFunctionTemplateParameter():
@@ -68,7 +68,7 @@ def Redefinition_ForFunctionTemplateParameter():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "Redefinition" )
-	assert( errors_list[0].file_pos.line == 2 )
+	assert( errors_list[0].src_loc.line == 2 )
 
 
 def NameNotFound_ForFunctionTemplateParameter():
@@ -79,7 +79,7 @@ def NameNotFound_ForFunctionTemplateParameter():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NameNotFound" )
-	assert( errors_list[0].file_pos.line == 2 )
+	assert( errors_list[0].src_loc.line == 2 )
 
 
 def NameIsNotTypeName_ForFunctionTemplateParameter():
@@ -101,7 +101,7 @@ def InvalidTypeOfTemplateVariableArgument_ForFunctionTemplateParameter():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidTypeOfTemplateVariableArgument" )
-	assert( errors_list[0].file_pos.line == 3 )
+	assert( errors_list[0].src_loc.line == 3 )
 
 
 def VirtualForFunctionTemplate_Test0():
@@ -112,7 +112,7 @@ def VirtualForFunctionTemplate_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "VirtualForFunctionTemplate" )
-	assert( errors_list[0].file_pos.line == 2 )
+	assert( errors_list[0].src_loc.line == 2 )
 
 
 def TemplateParametersDeductionFailed_Test0():
@@ -161,7 +161,7 @@ def TemplateParametersDeductionFailed_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" ) # In given case must be this error.
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def TemplateParametersDeductionFailed_Test3():
@@ -181,7 +181,7 @@ def TemplateParametersDeductionFailed_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 11 )
+	assert( errors_list[0].src_loc.line == 11 )
 
 
 def TemplateParametersDeductionFailed_Test4():
@@ -204,7 +204,7 @@ def TemplateParametersDeductionFailed_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 14 )
+	assert( errors_list[0].src_loc.line == 14 )
 
 
 def TemplateParametersDeductionFailed_Test5():
@@ -226,7 +226,7 @@ def TemplateParametersDeductionFailed_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 13 )
+	assert( errors_list[0].src_loc.line == 13 )
 
 
 def TemplateParametersDeductionFailed_Test6():
@@ -246,7 +246,7 @@ def TemplateParametersDeductionFailed_Test6():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 11 )
+	assert( errors_list[0].src_loc.line == 11 )
 
 
 def TemplateParametersDeductionFailed_Test7():
@@ -273,7 +273,7 @@ def TemplateParametersDeductionFailed_Test7():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 18 )
+	assert( errors_list[0].src_loc.line == 18 )
 
 
 def TemplateParametersDeductionFailed_Test8():
@@ -289,7 +289,7 @@ def TemplateParametersDeductionFailed_Test8():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 7 )
+	assert( errors_list[0].src_loc.line == 7 )
 
 
 def TemplateParametersDeductionFailed_Test9():
@@ -305,7 +305,7 @@ def TemplateParametersDeductionFailed_Test9():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 7 )
+	assert( errors_list[0].src_loc.line == 7 )
 
 
 def TemplateParametersDeductionFailed_Test10():
@@ -325,7 +325,7 @@ def TemplateParametersDeductionFailed_Test10():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 11 )
+	assert( errors_list[0].src_loc.line == 11 )
 
 
 def TemplateParametersDeductionFailed_Test11():
@@ -343,7 +343,7 @@ def TemplateParametersDeductionFailed_Test11():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].file_pos.line == 9 )
+	assert( errors_list[0].src_loc.line == 9 )
 
 
 def TemplateFunctionGenerationFailed_Test0():

@@ -19,7 +19,7 @@ U_TEST(NameNotFoundTest_Minus1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 
 U_TEST(NameNotFoundTest0)
@@ -56,7 +56,7 @@ U_TEST(NameNotFoundTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(NameNotFoundTest2)
@@ -94,7 +94,7 @@ U_TEST(UsingKeywordAsName0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingKeywordAsName );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 
 U_TEST(UsingKeywordAsName1)
@@ -114,7 +114,7 @@ U_TEST(UsingKeywordAsName1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingKeywordAsName );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 
 U_TEST(UsingKeywordAsName2)
@@ -131,7 +131,7 @@ U_TEST(UsingKeywordAsName2)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingKeywordAsName );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 
 U_TEST(UsingKeywordAsName3)
@@ -152,7 +152,7 @@ U_TEST(UsingKeywordAsName3)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingKeywordAsName );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(UsingKeywordAsName4)
@@ -172,7 +172,7 @@ U_TEST(UsingKeywordAsName4)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingKeywordAsName );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(UsingKeywordAsName5)
@@ -192,7 +192,7 @@ U_TEST(UsingKeywordAsName5)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingKeywordAsName );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(UsingKeywordAsName6)
@@ -212,7 +212,7 @@ U_TEST(UsingKeywordAsName6)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingKeywordAsName );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(Redefinition0)
@@ -234,7 +234,7 @@ U_TEST(Redefinition0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 U_TEST(Redefinition1)
@@ -274,7 +274,7 @@ U_TEST(Redefinition3)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 8u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 8u );
 }
 
 U_TEST( Redefinition4 )
@@ -298,7 +298,7 @@ U_TEST( Redefinition4 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 9u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 9u );
 }
 
 U_TEST( Redefinition5 )
@@ -315,7 +315,7 @@ U_TEST( Redefinition5 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 
 U_TEST(UnknownNumericConstantTypeTest0)
@@ -371,17 +371,17 @@ U_TEST(OperationNotSupportedForThisTypeTest0)
 
 	U_TEST_ASSERT( build_result.errors.size() >= 6u );
 	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( build_result.errors[0].file_pos.GetLine() == 7u );
+	U_TEST_ASSERT( build_result.errors[0].src_loc.GetLine() == 7u );
 	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( build_result.errors[1].file_pos.GetLine() == 8u );
+	U_TEST_ASSERT( build_result.errors[1].src_loc.GetLine() == 8u );
 	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( build_result.errors[2].file_pos.GetLine() == 9u );
+	U_TEST_ASSERT( build_result.errors[2].src_loc.GetLine() == 9u );
 	U_TEST_ASSERT( build_result.errors[3].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( build_result.errors[3].file_pos.GetLine() == 10u );
+	U_TEST_ASSERT( build_result.errors[3].src_loc.GetLine() == 10u );
 	U_TEST_ASSERT( build_result.errors[4].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( build_result.errors[4].file_pos.GetLine() == 11u );
+	U_TEST_ASSERT( build_result.errors[4].src_loc.GetLine() == 11u );
 	U_TEST_ASSERT( build_result.errors[5].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( build_result.errors[5].file_pos.GetLine() == 12u );
+	U_TEST_ASSERT( build_result.errors[5].src_loc.GetLine() == 12u );
 }
 
 U_TEST(OperationNotSupportedForThisTypeTest1)
@@ -404,9 +404,9 @@ U_TEST(OperationNotSupportedForThisTypeTest1)
 
 	U_TEST_ASSERT( build_result.errors.size() >= 2u );
 	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( build_result.errors[0].file_pos.GetLine() == 8u );
+	U_TEST_ASSERT( build_result.errors[0].src_loc.GetLine() == 8u );
 	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
-	U_TEST_ASSERT( build_result.errors[1].file_pos.GetLine() == 9u );
+	U_TEST_ASSERT( build_result.errors[1].src_loc.GetLine() == 9u );
 }
 
 U_TEST(OperationNotSupportedForThisTypeTest2)
@@ -476,7 +476,7 @@ U_TEST(TypesMismatchTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(TypesMismatchTest1)
@@ -500,7 +500,7 @@ U_TEST(TypesMismatchTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(TypesMismatchTest2)
@@ -522,7 +522,7 @@ U_TEST(TypesMismatchTest2)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 U_TEST(TypesMismatchTest3)
@@ -542,7 +542,7 @@ U_TEST(TypesMismatchTest3)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(TypesMismatchTest4)
@@ -562,7 +562,7 @@ U_TEST(TypesMismatchTest4)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(TypesMismatchTest5)
@@ -583,7 +583,7 @@ U_TEST(TypesMismatchTest5)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 U_TEST(TypesMismatchTest6)
@@ -603,7 +603,7 @@ U_TEST(TypesMismatchTest6)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(TypesMismatchTest7)
@@ -623,7 +623,7 @@ U_TEST(TypesMismatchTest7)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(TypesMismatchTest8)
@@ -643,7 +643,7 @@ U_TEST(TypesMismatchTest8)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(TypesMismatchTest9)
@@ -663,7 +663,7 @@ U_TEST(TypesMismatchTest9)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(TypesMismatchTest10)
@@ -684,7 +684,7 @@ U_TEST(TypesMismatchTest10)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 U_TEST(TypesMismatchTest11)
@@ -706,7 +706,7 @@ U_TEST(TypesMismatchTest11)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TypesMismatch );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 6u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
 U_TEST(TypesMismatchTest12)
@@ -754,7 +754,7 @@ U_TEST(NoMatchBinaryOperatorForGivenTypesTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NoMatchBinaryOperatorForGivenTypes );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 6u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
 U_TEST(NoMatchBinaryOperatorForGivenTypesTest1)
@@ -776,7 +776,7 @@ U_TEST(NoMatchBinaryOperatorForGivenTypesTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NoMatchBinaryOperatorForGivenTypes );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 6u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
 U_TEST(ArraySizeIsNotInteger)
@@ -796,7 +796,7 @@ U_TEST(ArraySizeIsNotInteger)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ArraySizeIsNotInteger );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(ArraySizeIsNegative)
@@ -816,7 +816,7 @@ U_TEST(ArraySizeIsNegative)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ArraySizeIsNegative );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST( ExpectedVariableInArraySizeTest0 )
@@ -852,7 +852,7 @@ U_TEST(BreakOutsideLoopTest)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BreakOutsideLoop );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(ContinueOutsideLoopTest)
@@ -872,7 +872,7 @@ U_TEST(ContinueOutsideLoopTest)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ContinueOutsideLoop );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(NameIsNotTypeNameTest)
@@ -893,7 +893,7 @@ U_TEST(NameIsNotTypeNameTest)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameIsNotTypeName );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 U_TEST(UnreachableCodeTest0)
@@ -914,7 +914,7 @@ U_TEST(UnreachableCodeTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnreachableCode );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 U_TEST(UnreachableCodeTest1)
@@ -935,7 +935,7 @@ U_TEST(UnreachableCodeTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnreachableCode );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 U_TEST(UnreachableCodeTest2)
@@ -957,7 +957,7 @@ U_TEST(UnreachableCodeTest2)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnreachableCode );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 6u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
 U_TEST(UnreachableCodeTest3)
@@ -1017,7 +1017,7 @@ U_TEST(UnreachableCodeTest5)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnreachableCode );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 7u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 7u );
 }
 
 U_TEST(UnreachableCodeTest6)
@@ -1041,7 +1041,7 @@ U_TEST(UnreachableCodeTest6)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnreachableCode );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 7u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 7u );
 }
 
 U_TEST(UnreachableCodeTest7)
@@ -1065,7 +1065,7 @@ U_TEST(UnreachableCodeTest7)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnreachableCode );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 7u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 7u );
 }
 
 U_TEST(UnreachableCodeTest8)
@@ -1122,7 +1122,7 @@ U_TEST(NoReturnInFunctionReturningNonVoidTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NoReturnInFunctionReturningNonVoid );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(NoReturnInFunctionReturningNonVoidTest1)
@@ -1142,7 +1142,7 @@ U_TEST(NoReturnInFunctionReturningNonVoidTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NoReturnInFunctionReturningNonVoid );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 U_TEST(NoReturnInFunctionReturningNonVoidTest2)
@@ -1163,7 +1163,7 @@ U_TEST(NoReturnInFunctionReturningNonVoidTest2)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NoReturnInFunctionReturningNonVoid );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 6u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
 U_TEST(NoReturnInFunctionReturningNonVoidTest3)
@@ -1220,7 +1220,7 @@ U_TEST(ExpectedReferenceValueTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(ExpectedReferenceValueTest2)
@@ -1240,7 +1240,7 @@ U_TEST(ExpectedReferenceValueTest2)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(ExpectedReferenceValueTest3)
@@ -1261,7 +1261,7 @@ U_TEST(ExpectedReferenceValueTest3)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 U_TEST(ExpectedReferenceValueTest4)
@@ -1281,7 +1281,7 @@ U_TEST(ExpectedReferenceValueTest4)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(ExpectedReferenceValueTest5)
@@ -1302,7 +1302,7 @@ U_TEST(ExpectedReferenceValueTest5)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 U_TEST(ExpectedReferenceValueTest6)
@@ -1323,7 +1323,7 @@ U_TEST(ExpectedReferenceValueTest6)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotSelectOverloadedFunction );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 U_TEST(ExpectedReferenceValueTest7)
@@ -1343,7 +1343,7 @@ U_TEST(ExpectedReferenceValueTest7)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(ExpectedReferenceValueTest8)
@@ -1364,7 +1364,7 @@ U_TEST(ExpectedReferenceValueTest8)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 U_TEST(ExpectedReferenceValueTest9)
@@ -1384,7 +1384,7 @@ U_TEST(ExpectedReferenceValueTest9)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(ExpectedVariableInAssignmentTest0)
@@ -1525,11 +1525,11 @@ U_TEST(ExpectedVariableInReferenceCastOperatorsTest0)
 	U_TEST_ASSERT( build_result.errors.size() >= 3u );
 
 	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::ExpectedVariable );
-	U_TEST_ASSERT( build_result.errors[0].file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( build_result.errors[0].src_loc.GetLine() == 5u );
 	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::ExpectedVariable );
-	U_TEST_ASSERT( build_result.errors[1].file_pos.GetLine() == 6u );
+	U_TEST_ASSERT( build_result.errors[1].src_loc.GetLine() == 6u );
 	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::ExpectedVariable );
-	U_TEST_ASSERT( build_result.errors[2].file_pos.GetLine() == 7u );
+	U_TEST_ASSERT( build_result.errors[2].src_loc.GetLine() == 7u );
 }
 
 U_TEST(CouldNotOverloadFunctionTest1)
@@ -1547,7 +1547,7 @@ U_TEST(CouldNotOverloadFunctionTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 2u || error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 2u || error.src_loc.GetLine() == 3u );
 }
 
 U_TEST(CouldNotOverloadFunctionTest2)
@@ -1565,7 +1565,7 @@ U_TEST(CouldNotOverloadFunctionTest2)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 2u || error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 2u || error.src_loc.GetLine() == 3u );
 }
 
 U_TEST(CouldNotOverloadFunctionTest3)
@@ -1601,7 +1601,7 @@ U_TEST(CouldNotSelectOverloadedFunction0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotSelectOverloadedFunction );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 6u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
 U_TEST(CouldNotSelectOverloadedFunction1)
@@ -1623,7 +1623,7 @@ U_TEST(CouldNotSelectOverloadedFunction1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotSelectOverloadedFunction );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 6u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
 U_TEST(FunctionPrototypeDuplicationTest0)
@@ -1641,7 +1641,7 @@ U_TEST(FunctionPrototypeDuplicationTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FunctionPrototypeDuplication );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
 }
 
 U_TEST(FunctionPrototypeDuplicationTest1)
@@ -1659,7 +1659,7 @@ U_TEST(FunctionPrototypeDuplicationTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FunctionPrototypeDuplication );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
 }
 
 U_TEST(FunctionBodyDuplicationTest0)
@@ -1677,7 +1677,7 @@ U_TEST(FunctionBodyDuplicationTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FunctionBodyDuplication );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
 }
 
 U_TEST(FunctionBodyDuplicationTest1)
@@ -1695,7 +1695,7 @@ U_TEST(FunctionBodyDuplicationTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FunctionBodyDuplication );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
 }
 
 U_TEST(ReturnValueDiffersFromPrototypeTest0)
@@ -1716,7 +1716,7 @@ U_TEST(ReturnValueDiffersFromPrototypeTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 2u || error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 2u || error.src_loc.GetLine() == 3u );
 }
 
 U_TEST(ReturnValueDiffersFromPrototypeTest1)
@@ -1737,7 +1737,7 @@ U_TEST(ReturnValueDiffersFromPrototypeTest1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 2u || error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 2u || error.src_loc.GetLine() == 3u );
 }
 
 U_TEST(ReturnValueDiffersFromPrototypeTest2)
@@ -1758,7 +1758,7 @@ U_TEST(ReturnValueDiffersFromPrototypeTest2)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 2u || error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 2u || error.src_loc.GetLine() == 3u );
 }
 
 U_TEST(ReturnValueDiffersFromPrototypeTest3)
@@ -1779,7 +1779,7 @@ U_TEST(ReturnValueDiffersFromPrototypeTest3)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 2u || error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 2u || error.src_loc.GetLine() == 3u );
 }
 
 } // namespace U

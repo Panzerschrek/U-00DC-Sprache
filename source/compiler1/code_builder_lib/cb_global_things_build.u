@@ -167,7 +167,7 @@ fn CodeBuilder::DetectGlobalsLoop( this, NamesScopeValue& global_thing ) : bool
 	args.push_back( description );
 
 	errors_container_lock.get_ref().push_back(
-		ReportError( CodeBuilderErrorCode::GlobalsLoopDetected, GetValueFilePos(global_thing), args ) );
+		ReportError( CodeBuilderErrorCode::GlobalsLoopDetected, GetValueSrcLoc(global_thing), args ) );
 
 	return true;
 }
@@ -272,13 +272,13 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		auto parent_type= PrepareType( names_scope_ptr, global_function_context, parent_name );
 		if( parent_type.GetClassType().empty() )
 		{
-			REPORT_ERROR( CanNotDeriveFromThisType, names_scope_ptr, syntax_element.file_pos, parent_type )
+			REPORT_ERROR( CanNotDeriveFromThisType, names_scope_ptr, syntax_element.src_loc, parent_type )
 			continue;
 		}
 
 		if( !EnsureTypeComplete( parent_type ) )
 		{
-			REPORT_ERROR( UsingIncompleteType, names_scope_ptr, syntax_element.file_pos, parent_type )
+			REPORT_ERROR( UsingIncompleteType, names_scope_ptr, syntax_element.src_loc, parent_type )
 			continue;
 		}
 
@@ -294,14 +294,14 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		}
 		if( duplicated )
 		{
-			REPORT_ERROR( DuplicatedParentClass, names_scope_ptr, syntax_element.file_pos, parent_type )
+			REPORT_ERROR( DuplicatedParentClass, names_scope_ptr, syntax_element.src_loc, parent_type )
 			continue;
 		}
 
 		auto parent_kind= parent_class.lock_imut().get_ref().kind;
 		if( !( parent_kind == ClassType::Kind::Abstract || parent_kind == ClassType::Kind::Interface || parent_kind == ClassType::Kind::PolymorphNonFinal ) )
 		{
-			REPORT_ERROR( CanNotDeriveFromThisType, names_scope_ptr, syntax_element.file_pos, parent_type )
+			REPORT_ERROR( CanNotDeriveFromThisType, names_scope_ptr, syntax_element.src_loc, parent_type )
 			continue;
 		}
 
@@ -309,7 +309,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		{
 			if( !class_.base_class.empty() )
 			{
-				REPORT_ERROR( DuplicatedBaseClass, names_scope_ptr, syntax_element.file_pos, parent_type )
+				REPORT_ERROR( DuplicatedBaseClass, names_scope_ptr, syntax_element.src_loc, parent_type )
 				continue;
 			}
 			class_.base_class= parent_class;
@@ -364,18 +364,18 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 			if( !EnsureTypeComplete( field.t ) || (!field.is_reference && field.t == void_type_) )
 			{
-				REPORT_ERROR( UsingIncompleteType, class_members, field.syntax_element.get_ref().file_pos, field.t )
+				REPORT_ERROR( UsingIncompleteType, class_members, field.syntax_element.get_ref().src_loc, field.t )
 				field.t= invalid_type_;
 				continue;
 			}
 			if( !field.is_reference && field.t.IsAbstract() )
 			{
-				REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope_ptr, field.syntax_element.get_ref().file_pos, field.t )
+				REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope_ptr, field.syntax_element.get_ref().src_loc, field.t )
 				continue;
 			}
 			if( field.is_reference && field.t.GetInnerReferenceKind() != InnerReferenceKind::None )
 			{
-				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names_scope_ptr, field.syntax_element.get_ref().file_pos, field.syntax_element.get_ref().name )
+				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names_scope_ptr, field.syntax_element.get_ref().src_loc, field.syntax_element.get_ref().name )
 				field.t= invalid_type_;
 				continue;
 			}
@@ -615,7 +615,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			class_.kind= select( have_parents ? ClassType::Kind::NonPolymorph : ClassType::Kind::PolymorphNonFinal );
 			if( class_contains_pure_virtual_functions )
 			{
-				REPORT_ERROR( ClassContainsPureVirtualFunctions, names_scope_ptr, syntax_element.file_pos, syntax_element.name )
+				REPORT_ERROR( ClassContainsPureVirtualFunctions, names_scope_ptr, syntax_element.src_loc, syntax_element.name )
 				class_.kind= ClassType::Kind::Abstract;
 			}
 		}
@@ -624,7 +624,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			class_.kind= select( have_parents ? ClassType::Kind::NonPolymorph : ClassType::Kind::PolymorphFinal );
 			if( class_contains_pure_virtual_functions )
 			{
-				REPORT_ERROR( ClassContainsPureVirtualFunctions, names_scope_ptr, syntax_element.file_pos, syntax_element.name )
+				REPORT_ERROR( ClassContainsPureVirtualFunctions, names_scope_ptr, syntax_element.src_loc, syntax_element.name )
 				class_.kind= ClassType::Kind::Abstract;
 			}
 		}
@@ -633,7 +633,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			class_.kind= ClassType::Kind::PolymorphNonFinal;
 			if( class_contains_pure_virtual_functions )
 			{
-				REPORT_ERROR( ClassContainsPureVirtualFunctions, names_scope_ptr, syntax_element.file_pos, syntax_element.name )
+				REPORT_ERROR( ClassContainsPureVirtualFunctions, names_scope_ptr, syntax_element.src_loc, syntax_element.name )
 				class_.kind= ClassType::Kind::Abstract;
 			}
 		}
@@ -641,11 +641,11 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		{
 			if( !class_.base_class.empty() )
 			{
-				REPORT_ERROR( BaseClassForInterface, names_scope_ptr, syntax_element.file_pos )
+				REPORT_ERROR( BaseClassForInterface, names_scope_ptr, syntax_element.src_loc )
 			}
 			if( field_count != 0u )
 			{
-				REPORT_ERROR( FieldsForInterfacesNotAllowed, names_scope_ptr, syntax_element.file_pos )
+				REPORT_ERROR( FieldsForInterfacesNotAllowed, names_scope_ptr, syntax_element.src_loc )
 			}
 
 			{
@@ -655,15 +655,15 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				auto& constructors= constructors_lock.get_ref();
 				if( !constructors.functions_set.functions.empty() || !constructors.functions_set.function_templates.empty() )
 				{
-					REPORT_ERROR( ConstructorForInterface, names_scope_ptr, syntax_element.file_pos )
+					REPORT_ERROR( ConstructorForInterface, names_scope_ptr, syntax_element.src_loc )
 				}
 			}
 			foreach( &virtual_table_entry : class_.virtual_table )
 			{
 				if( !virtual_table_entry.is_pure && virtual_table_entry.name != KeywordToString( Keyword::destructor_ ) )
 				{
-					// TODO - report using function file_pos for each function.
-					REPORT_ERROR( NonPureVirtualFunctionInInterface, names_scope_ptr, syntax_element.file_pos, syntax_element.name )
+					// TODO - report using function src_loc for each function.
+					REPORT_ERROR( NonPureVirtualFunctionInInterface, names_scope_ptr, syntax_element.src_loc, syntax_element.name )
 					break;
 				}
 			}
@@ -854,24 +854,24 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 				if( parent_member_visibility != class_type.lock_imut().get_ref().GetMemberVisibility( member_value.key() ) )
 				{
-					var FilePos mut file_pos= syntax_element.file_pos;
+					var SrcLoc mut src_loc= syntax_element.src_loc;
 					if( !result_functions_set.functions_set.functions.empty() )
 					{
 						auto& f= result_functions_set.functions_set.functions.front();
 						if( !f.prototype_syntax_element.empty() )
 						{
-							file_pos= f.prototype_syntax_element.get_ref().file_pos;
+							src_loc= f.prototype_syntax_element.get_ref().src_loc;
 						}
 						else if( !f.body_syntax_element.empty() )
 						{
-							file_pos= f.body_syntax_element.get_ref().file_pos;
+							src_loc= f.body_syntax_element.get_ref().src_loc;
 						}
 					}
 					else if( !result_functions_set.functions_set.function_templates.empty() )
 					{
-						file_pos= result_functions_set.functions_set.function_templates.front().get_ref().syntax_element.get_ref().file_pos;
+						src_loc= result_functions_set.functions_set.function_templates.front().get_ref().syntax_element.get_ref().src_loc;
 					}
-					REPORT_ERROR( FunctionsVisibilityMismatch, names_scope_ptr, file_pos, member_value.key() )
+					REPORT_ERROR( FunctionsVisibilityMismatch, names_scope_ptr, src_loc, member_value.key() )
 				}
 
 				foreach( &src_function : src_functions_set.functions_set.functions )
@@ -880,7 +880,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 					{
 						continue; // New class function shadows function with same type in source class, so, skip it.
 					}
-					ApplyOverloadedFunction( result_functions_set.functions_set, src_function, class_members, syntax_element.file_pos );
+					ApplyOverloadedFunction( result_functions_set.functions_set, src_function, class_members, syntax_element.src_loc );
 				}
 
 				// TODO - merge function templates smarter.
@@ -950,7 +950,7 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 		if( fundamental_type.empty() || !IsInteger( fundamental_type.get_ref().fundamental_type ) )
 		{
 			// SPRACHE_TODO - maybe allow inheritance of enums?
-			REPORT_ERROR( TypesMismatch, names_scope_ptr, enum_declaration.file_pos, ust::string8("any integer type"), t )
+			REPORT_ERROR( TypesMismatch, names_scope_ptr, enum_declaration.src_loc, ust::string8("any integer type"), t )
 		}
 		else
 		{
@@ -963,12 +963,12 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 	{
 		if( IsKeyword( element.name ) )
 		{
-			REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, element.file_pos )
+			REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, element.src_loc )
 		}
 
 		if( !enum_elements.find( element.name ).empty() )
 		{
-			REPORT_ERROR( Redefinition,  names_scope_ptr, element.file_pos, element.name )
+			REPORT_ERROR( Redefinition,  names_scope_ptr, element.src_loc, element.name )
 		}
 
 		var Enum::Element mut out_element;
@@ -989,7 +989,7 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 
 		if( u64(enum_elements.size()) > max_value )
 		{
-			REPORT_ERROR( UnderlayingTypeForEnumIsTooSmall, names_scope_ptr, enum_declaration.file_pos, enum_elements.size() - 1s, max_value )
+			REPORT_ERROR( UnderlayingTypeForEnumIsTooSmall, names_scope_ptr, enum_declaration.src_loc, enum_elements.size() - 1s, max_value )
 		}
 	}
 
@@ -1065,17 +1065,17 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 	variable.t= PrepareType( names_scope_ptr, function_context, variables_declaration.t );
 	if( !EnsureTypeComplete( variable.t ) )
 	{
-		REPORT_ERROR( UsingIncompleteType, names_scope_ptr, variables_declaration.file_pos, variable.t )
+		REPORT_ERROR( UsingIncompleteType, names_scope_ptr, variables_declaration.src_loc, variable.t )
 		return;
 	}
 	if( !variable.t.CanBeConstexpr() )
 	{
-		REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope_ptr, variable_declaration.file_pos )
+		REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope_ptr, variable_declaration.src_loc )
 		return;
 	}
 	if( variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable )
 	{
-		REPORT_ERROR( GlobalVariableMustBeConstexpr, names_scope_ptr, variable_declaration.file_pos, variable_declaration.name )
+		REPORT_ERROR( GlobalVariableMustBeConstexpr, names_scope_ptr, variable_declaration.src_loc, variable_declaration.name )
 		return;
 	}
 
@@ -1086,7 +1086,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 
 		if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
 		{
-			BuildEmptyInitializer( names_scope_ptr, function_context, variable, variable_declaration.name, variable_declaration.file_pos );
+			BuildEmptyInitializer( names_scope_ptr, function_context, variable, variable_declaration.name, variable_declaration.src_loc );
 		}
 		else
 		{
@@ -1095,7 +1095,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 
 		if( variable.constexpr_value == LLVMValueRef::Null )
 		{
-			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope_ptr, variable_declaration.file_pos )
+			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope_ptr, variable_declaration.src_loc )
 			return;
 		}
 
@@ -1105,7 +1105,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 	{
 		if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
 		{
-			REPORT_ERROR( ExpectedInitializer, names_scope_ptr, variable_declaration.file_pos, variable_declaration.name )
+			REPORT_ERROR( ExpectedInitializer, names_scope_ptr, variable_declaration.src_loc, variable_declaration.name )
 			return;
 		}
 
@@ -1118,7 +1118,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 		{
 			if( constructor_initializer.args.size() != 1s )
 			{
-				REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names_scope_ptr, constructor_initializer.file_pos )
+				REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names_scope_ptr, constructor_initializer.src_loc )
 				return;
 			}
 
@@ -1127,7 +1127,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 
 		if( initializer_expression.empty() )
 		{
-			REPORT_ERROR( UnsupportedInitializerForReference, names_scope_ptr, variable_declaration.file_pos )
+			REPORT_ERROR( UnsupportedInitializerForReference, names_scope_ptr, variable_declaration.src_loc )
 			return;
 		}
 
@@ -1135,7 +1135,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 		// TODO - allow reference conversion
 		if( expression_result.t != variable.t )
 		{
-			REPORT_ERROR( TypesMismatch, names_scope_ptr, variable_declaration.file_pos, variable.t, expression_result.t )
+			REPORT_ERROR( TypesMismatch, names_scope_ptr, variable_declaration.src_loc, variable.t, expression_result.t )
 			return;
 		}
 
@@ -1144,7 +1144,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 
 		if( variable.constexpr_value == LLVMValueRef::Null )
 		{
-			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope_ptr, variable_declaration.file_pos )
+			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope_ptr, variable_declaration.src_loc )
 		}
 	}
 	else{ halt; }
@@ -1176,24 +1176,24 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 	variable.t= expr.t;
 	if( variable.t == invalid_type_ )
 	{
-		REPORT_ERROR( InvalidTypeForAutoVariable, names_scope_ptr, auto_variable_declaration.file_pos, auto_variable_declaration.name )
+		REPORT_ERROR( InvalidTypeForAutoVariable, names_scope_ptr, auto_variable_declaration.src_loc, auto_variable_declaration.name )
 		return;
 	}
 	if( !variable.t.CanBeConstexpr() )
 	{
-		REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope_ptr, auto_variable_declaration.file_pos )
+		REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope_ptr, auto_variable_declaration.src_loc )
 		return;
 	}
 	if( auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable )
 	{
-		REPORT_ERROR( GlobalVariableMustBeConstexpr, names_scope_ptr, auto_variable_declaration.file_pos, auto_variable_declaration.name )
+		REPORT_ERROR( GlobalVariableMustBeConstexpr, names_scope_ptr, auto_variable_declaration.src_loc, auto_variable_declaration.name )
 		return;
 	}
 
 	variable.constexpr_value= expr.constexpr_value;
 	if( variable.constexpr_value == LLVMValueRef::Null )
 	{
-		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope_ptr, auto_variable_declaration.file_pos )
+		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope_ptr, auto_variable_declaration.src_loc )
 		return;
 	}
 
@@ -1201,7 +1201,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 	{
 		if( expr.value_type == ValueType::Value )
 		{
-			REPORT_ERROR( ExpectedReferenceValue,  names_scope_ptr, auto_variable_declaration.file_pos )
+			REPORT_ERROR( ExpectedReferenceValue,  names_scope_ptr, auto_variable_declaration.src_loc )
 			return;
 		}
 
@@ -1214,10 +1214,10 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 
 		if( !expr.t.IsCopyConstructible() )
 		{
-			REPORT_ERROR( OperationNotSupportedForThisType, names_scope_ptr, auto_variable_declaration.file_pos, variable.t )
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope_ptr, auto_variable_declaration.src_loc, variable.t )
 		}
 
-		BuildCopyConstructorPart( names_scope_ptr, function_context, variable.llvm_value, expr.llvm_value, variable.t, auto_variable_declaration.file_pos );
+		BuildCopyConstructorPart( names_scope_ptr, function_context, variable.llvm_value, expr.llvm_value, variable.t, auto_variable_declaration.src_loc );
 	}
 	else { halt; }
 

@@ -61,7 +61,7 @@ struct Macro
 		ust::shared_ptr_final_nullable</ ust::vector</ResultElement/> /> sub_elements; // For optionals, loops.  TODO - remove pointer
 	}
 
-	FilePos file_pos;
+	SrcLoc src_loc;
 	ust::string8 name;
 	ust::vector</MatchElement/> match_template_elements;
 	ust::vector</ResultElement/> result_template_elements;

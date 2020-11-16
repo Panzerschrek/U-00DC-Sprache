@@ -24,14 +24,14 @@ def ErrorsTest0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( "fn Foo() : i32 {}" ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NoReturnInFunctionReturningNonVoid" )
-	assert( errors_list[0].file_pos.line == 1 )
+	assert( errors_list[0].src_loc.line == 1 )
 
 
 def ErrorsTest1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( "fn Foo() : UnknownType {}" ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NameNotFound" )
-	assert( errors_list[0].file_pos.line == 1 )
+	assert( errors_list[0].src_loc.line == 1 )
 
 
 def ZeroInitializerForStructWithReferenceTest():
@@ -45,7 +45,7 @@ def ZeroInitializerForStructWithReferenceTest():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UnsupportedInitializerForReference" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def VoidTypeReferenceMustBeReturned_Test():
@@ -61,7 +61,7 @@ def VoidTypeReferenceMustBeReturned_Test():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "NoReturnInFunctionReturningNonVoid" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def VoidTypeIsIncomplete_Test0():
@@ -74,7 +74,7 @@ def VoidTypeIsIncomplete_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UsingIncompleteType" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def VoidTypeIsIncomplete_Test1():
@@ -88,7 +88,7 @@ def VoidTypeIsIncomplete_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UsingIncompleteType" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def VoidTypeIsIncomplete_Test2():
@@ -98,7 +98,7 @@ def VoidTypeIsIncomplete_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UsingIncompleteType" )
-	assert( errors_list[0].file_pos.line == 2 )
+	assert( errors_list[0].src_loc.line == 2 )
 
 
 def VoidTypeReference_Test0():

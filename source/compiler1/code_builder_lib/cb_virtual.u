@@ -155,25 +155,25 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 			}
 		}
 
-		var FilePos mut file_pos;
+		var SrcLoc mut src_loc;
 		var Synt::Function::VirtualKind mut virtual_kind= Synt::Function::VirtualKind::None;
 		if( !function.body_syntax_element.empty() )
 		{
 			auto& el= function.body_syntax_element.get_ref();
-			file_pos= el.file_pos;
+			src_loc= el.src_loc;
 			virtual_kind= el.virtual_kind;
 		}
 		else if( !function.prototype_syntax_element.empty() )
 		{
 			auto& el= function.prototype_syntax_element.get_ref();
-			file_pos= el.file_pos;
+			src_loc= el.src_loc;
 			virtual_kind= el.virtual_kind;
 		}
 
 		if( virtual_kind != Synt::Function::VirtualKind::None && class_type.GetMemberVisibility( function_name ) == Synt::ClassVisibility::Private )
 		{
 			// Private members not visible in child classes. So, virtual private function is 100% error.
-			REPORT_ERROR( VirtualForPrivateFunction, class_members_ptr, file_pos, function_name )
+			REPORT_ERROR( VirtualForPrivateFunction, class_members_ptr, src_loc, function_name )
 		}
 
 		if( virtual_kind == Synt::Function::VirtualKind::None )
@@ -210,14 +210,14 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 			}
 			else if( virtual_table_index != ~0u )
 			{
-				REPORT_ERROR( VirtualRequired, class_members_ptr, file_pos, function_name )
+				REPORT_ERROR( VirtualRequired, class_members_ptr, src_loc, function_name )
 			}
 		}
 		else if( virtual_kind == Synt::Function::VirtualKind::DeclareVirtual )
 		{
 			if( virtual_table_index != ~0u )
 			{
-				REPORT_ERROR( OverrideRequired, class_members_ptr, file_pos, function_name )
+				REPORT_ERROR( OverrideRequired, class_members_ptr, src_loc, function_name )
 			}
 			else
 			{
@@ -240,11 +240,11 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 		{
 			if( virtual_table_index == ~0u )
 			{
-				REPORT_ERROR( FunctionDoesNotOverride, class_members_ptr, file_pos, function_name )
+				REPORT_ERROR( FunctionDoesNotOverride, class_members_ptr, src_loc, function_name )
 			}
 			else if( class_type.virtual_table[virtual_table_index].is_final )
 			{
-				REPORT_ERROR( OverrideFinalFunction, class_members_ptr, file_pos, function_name )
+				REPORT_ERROR( OverrideFinalFunction, class_members_ptr, src_loc, function_name )
 			}
 			else
 			{
@@ -258,11 +258,11 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 		{
 			if( virtual_table_index == ~0u )
 			{
-				REPORT_ERROR( FinalForFirstVirtualFunction, class_members_ptr, file_pos, function_name )
+				REPORT_ERROR( FinalForFirstVirtualFunction, class_members_ptr, src_loc, function_name )
 			}
 			else if( class_type.virtual_table[virtual_table_index].is_final )
 			{
-				REPORT_ERROR( OverrideFinalFunction, class_members_ptr, file_pos, function_name )
+				REPORT_ERROR( OverrideFinalFunction, class_members_ptr, src_loc, function_name )
 			}
 			else
 			{
@@ -277,17 +277,17 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 		{
 			if( virtual_table_index != ~0u )
 			{
-				REPORT_ERROR( OverrideRequired, class_members_ptr, file_pos, function_name )
+				REPORT_ERROR( OverrideRequired, class_members_ptr, src_loc, function_name )
 			}
 			else
 			{
 				if( !function.body_syntax_element.empty() )
 				{
-					REPORT_ERROR( BodyForPureVirtualFunction, class_members_ptr, file_pos, function_name )
+					REPORT_ERROR( BodyForPureVirtualFunction, class_members_ptr, src_loc, function_name )
 				}
 				if( function_name == KeywordToString( Keyword::destructor_ ) )
 				{
-					REPORT_ERROR( PureDestructor, class_members_ptr, file_pos, ust::string8("/TODO - name") )
+					REPORT_ERROR( PureDestructor, class_members_ptr, src_loc, ust::string8("/TODO - name") )
 				}
 
 				// TODO - prevent body generation for pure functions.

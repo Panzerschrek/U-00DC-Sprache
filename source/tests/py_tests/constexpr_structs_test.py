@@ -143,7 +143,7 @@ def VariableInitializerIsNotConstantExpression_ForStructs_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "VariableInitializerIsNotConstantExpression" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def VariableInitializerIsNotConstantExpression_ForStructs_Test1():
@@ -157,7 +157,7 @@ def VariableInitializerIsNotConstantExpression_ForStructs_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "VariableInitializerIsNotConstantExpression" )
-	assert( errors_list[0].file_pos.line == 5 )
+	assert( errors_list[0].src_loc.line == 5 )
 
 
 def VariableInitializerIsNotConstantExpression_ForStructs_Test2():
@@ -170,7 +170,7 @@ def VariableInitializerIsNotConstantExpression_ForStructs_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "VariableInitializerIsNotConstantExpression" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def InvalidTypeForConstantExpressionVariable_ForStructs_Test1():
@@ -187,7 +187,7 @@ def InvalidTypeForConstantExpressionVariable_ForStructs_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidTypeForConstantExpressionVariable" )
-	assert( errors_list[0].file_pos.line == 8 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def InvalidTypeForConstantExpressionVariable_ForStructs_Test3():
@@ -200,7 +200,7 @@ def InvalidTypeForConstantExpressionVariable_ForStructs_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidTypeForConstantExpressionVariable" )
-	assert( errors_list[0].file_pos.line == 4 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def InvalidTypeForConstantExpressionVariable_ForStructs_Test4():
@@ -215,7 +215,7 @@ def InvalidTypeForConstantExpressionVariable_ForStructs_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidTypeForConstantExpressionVariable" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def InvalidTypeForConstantExpressionVariable_ForStructs_Test5():
@@ -235,7 +235,7 @@ def InvalidTypeForConstantExpressionVariable_ForStructs_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidTypeForConstantExpressionVariable" )
-	assert( errors_list[0].file_pos.line == 11 )
+	assert( errors_list[0].src_loc.line == 11 )
 
 
 def InvalidTypeForConstantExpressionVariable_ForStructs_Tes6():
@@ -249,7 +249,7 @@ def InvalidTypeForConstantExpressionVariable_ForStructs_Tes6():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidTypeForConstantExpressionVariable" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def InvalidTypeForConstantExpressionVariable_ForStructs_Tes7():
@@ -263,4 +263,4 @@ def InvalidTypeForConstantExpressionVariable_ForStructs_Tes7():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidTypeForConstantExpressionVariable" )
-	assert( errors_list[0].file_pos.line == 6 )
+	assert( errors_list[0].src_loc.line == 6 )
