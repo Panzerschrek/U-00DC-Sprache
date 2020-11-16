@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include "file_pos.hpp"
+#include "src_loc.hpp"
 
 namespace U
 {
@@ -10,10 +10,10 @@ namespace U
 struct LexSyntError
 {
 	std::string text;
-	FilePos file_pos;
+	SrcLoc file_pos;
 
 	LexSyntError()= default;
-	LexSyntError( std::string in_text, FilePos in_file_pos )
+	LexSyntError( std::string in_text, SrcLoc in_file_pos )
 		: text(std::move(in_text)), file_pos(std::move(in_file_pos))
 	{}
 };

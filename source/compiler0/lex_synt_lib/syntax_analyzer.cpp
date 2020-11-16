@@ -1231,7 +1231,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 			{
 				if( auto macro= FetchMacro( it_->text, Macro::Context::Expression ) )
 				{
-					const FilePos& macro_file_pos= it_->file_pos;
+					const SrcLoc& macro_file_pos= it_->file_pos;
 					Expression macro_expression= ExpandMacro( *macro, &SyntaxAnalyzer::ParseExpression );
 					if( std::get_if<EmptyVariant>( &macro_expression ) != nullptr )
 						return EmptyVariant();
@@ -2823,7 +2823,7 @@ Enum SyntaxAnalyzer::ParseEnum()
 BlockElement SyntaxAnalyzer::ParseHalt()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::halt_ );
-	const FilePos& file_pos= it_->file_pos;
+	const SrcLoc& file_pos= it_->file_pos;
 	NextLexem();
 
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::if_ )
@@ -3391,7 +3391,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 
 		if( is_this )
 		{
-			const FilePos& file_pos= it_->file_pos;
+			const SrcLoc& file_pos= it_->file_pos;
 
 			std::string inner_reference_tag;
 			if( it_->type == Lexem::Type::Apostrophe )
@@ -3533,7 +3533,7 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()
 {
 	U_ASSERT( it_->text == Keywords::struct_ || it_->text == Keywords::class_ );
 	const bool is_class= it_->text == Keywords::class_;
-	const FilePos& class_file_pos= it_->file_pos;
+	const SrcLoc& class_file_pos= it_->file_pos;
 	NextLexem();
 
 	if( it_->type != Lexem::Type::Identifier )
@@ -3746,7 +3746,7 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClassBody()
 SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ );
-	const FilePos& template_file_pos= it_->file_pos;
+	const SrcLoc& template_file_pos= it_->file_pos;
 	NextLexem();
 
 	// TemplateBase parameters
@@ -3814,7 +3814,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 	TemplateKind template_kind= TemplateKind::Invalid;
 
 	std::string name;
-	const FilePos& template_thing_file_pos= it_->file_pos;
+	const SrcLoc& template_thing_file_pos= it_->file_pos;
 	if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::struct_ || it_->text == Keywords::class_ ) )
 	{
 		template_kind= it_->text == Keywords::struct_ ? TemplateKind::Struct : TemplateKind::Class;
@@ -3974,7 +3974,7 @@ const Macro* SyntaxAnalyzer::FetchMacro( const std::string& macro_name, const Ma
 template<typename ParseFnResult>
 ParseFnResult SyntaxAnalyzer::ExpandMacro( const Macro& macro, ParseFnResult (SyntaxAnalyzer::*parse_fn)() )
 {
-	const FilePos& expansion_file_pos = it_->file_pos;
+	const SrcLoc& expansion_file_pos = it_->file_pos;
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == macro.name );
 	NextLexem();
 

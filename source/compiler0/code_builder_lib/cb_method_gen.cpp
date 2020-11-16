@@ -146,7 +146,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 				this_llvm_value,
 				{ GetZeroGEPIndex(), GetFieldGEPIndex( 0u /*base class is allways first field */ ) } );
 
-		ApplyEmptyInitializer( Keyword( Keywords::base_ ), FilePos()/*TODO*/, base_variable, the_class.members, function_context );
+		ApplyEmptyInitializer( Keyword( Keywords::base_ ), SrcLoc()/*TODO*/, base_variable, the_class.members, function_context );
 	}
 
 	for( const std::string& field_name : the_class.fields_order )
@@ -177,7 +177,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 			if( field.syntax_element->initializer != nullptr )
 				InitializeClassFieldWithInClassIninitalizer( field_variable, field, function_context );
 			else
-				ApplyEmptyInitializer( field_name, FilePos()/*TODO*/, field_variable, the_class.members, function_context );
+				ApplyEmptyInitializer( field_name, SrcLoc()/*TODO*/, field_variable, the_class.members, function_context );
 		}
 	}
 

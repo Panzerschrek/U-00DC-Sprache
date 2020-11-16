@@ -334,7 +334,7 @@ bool CodeBuilder::ApplyOverloadedFunction(
 	OverloadedFunctionsSet& functions_set,
 	const FunctionVariable& function,
 	CodeBuilderErrorsContainer& errors_container,
-	const FilePos& file_pos )
+	const SrcLoc& file_pos )
 {
 	if( functions_set.functions.empty() )
 	{
@@ -389,7 +389,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	const ArgsVector<Function::Arg>& actual_args,
 	const bool first_actual_arg_is_this,
 	CodeBuilderErrorsContainer& errors_container,
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	const bool produce_errors,
 	const bool enable_type_conversions )
 {
@@ -605,7 +605,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 	const ArgsVector<Function::Arg>& actual_args,
 	OverloadedOperator op,
 	CodeBuilderErrorsContainer& errors_container,
-	const FilePos& file_pos )
+	const SrcLoc& file_pos )
 {
 	const std::string op_name= OverloadedOperatorToString( op );
 
@@ -642,7 +642,7 @@ const FunctionVariable* CodeBuilder::GetConversionConstructor(
 	const Type& src_type,
 	const Type& dst_type,
 	CodeBuilderErrorsContainer& errors_container,
-	const FilePos& file_pos )
+	const SrcLoc& file_pos )
 {
 	if( !EnsureTypeComplete( dst_type ) )
 	{

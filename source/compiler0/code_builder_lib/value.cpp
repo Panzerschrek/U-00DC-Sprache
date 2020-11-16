@@ -161,7 +161,7 @@ const OverloadedFunctionsSet& ThisOverloadedMethodsSet::GetOverloadedFunctionsSe
 
 static_assert( sizeof(Value) <= 160u, "Value is too heavy!" );
 
-Value::Value( Variable variable, const FilePos& file_pos )
+Value::Value( Variable variable, const SrcLoc& file_pos )
 	: file_pos_(file_pos)
 {
 	something_= std::move(variable);
@@ -172,13 +172,13 @@ Value::Value( OverloadedFunctionsSet functions_set )
 	something_= std::move(functions_set);
 }
 
-Value::Value( Type type, const FilePos& file_pos )
+Value::Value( Type type, const SrcLoc& file_pos )
 	: file_pos_(file_pos)
 {
 	something_= std::move(type);
 }
 
-Value::Value( ClassField class_field, const FilePos& file_pos )
+Value::Value( ClassField class_field, const SrcLoc& file_pos )
 	: file_pos_(file_pos)
 {
 	something_= std::move( class_field );
@@ -189,33 +189,33 @@ Value::Value( ThisOverloadedMethodsSet this_overloaded_methods_set )
 	something_= std::move( this_overloaded_methods_set );
 }
 
-Value::Value( const NamesScopePtr& namespace_, const FilePos& file_pos )
+Value::Value( const NamesScopePtr& namespace_, const SrcLoc& file_pos )
 	: file_pos_(file_pos)
 {
 	U_ASSERT( namespace_ != nullptr );
 	something_= namespace_;
 }
 
-Value::Value( TypeTemplatesSet type_templates, const FilePos& file_pos )
+Value::Value( TypeTemplatesSet type_templates, const SrcLoc& file_pos )
 	: file_pos_(file_pos)
 {
 	something_= std::move(type_templates);
 }
 
 
-Value::Value( StaticAssert static_assert_, const FilePos& file_pos )
+Value::Value( StaticAssert static_assert_, const SrcLoc& file_pos )
 	: file_pos_(file_pos)
 {
 	something_= std::move(static_assert_);
 }
 
-Value::Value( Typedef typedef_, const FilePos& file_pos )
+Value::Value( Typedef typedef_, const SrcLoc& file_pos )
 	: file_pos_(file_pos)
 {
 	something_= std::move(typedef_);
 }
 
-Value::Value( IncompleteGlobalVariable incomplete_global_variable, const FilePos& file_pos )
+Value::Value( IncompleteGlobalVariable incomplete_global_variable, const SrcLoc& file_pos )
 	: file_pos_(file_pos)
 {
 	something_= std::move(incomplete_global_variable);
@@ -258,7 +258,7 @@ std::string Value::GetKindName() const
 	return std::visit( Visitor(), something_ );
 }
 
-const FilePos& Value::GetFilePos() const
+const SrcLoc& Value::GetFilePos() const
 {
 	return file_pos_;
 }

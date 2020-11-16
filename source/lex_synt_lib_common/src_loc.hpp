@@ -5,7 +5,8 @@
 namespace U
 {
 
-class FilePos
+// Location in program source.
+class SrcLoc
 {
 public:
 	static constexpr uint32_t c_max_file_index= std::numeric_limits<uint16_t>::max();
@@ -14,8 +15,8 @@ public:
 	static constexpr uint32_t c_max_column= std::numeric_limits<uint16_t>::max();
 
 public:
-	FilePos();
-	FilePos( uint32_t file_index, uint32_t line, uint32_t column );
+	SrcLoc();
+	SrcLoc( uint32_t file_index, uint32_t line, uint32_t column );
 
 	uint32_t GetFileIndex() const;
 	uint32_t GetMacroExpansionIndex() const;
@@ -26,10 +27,10 @@ public:
 	void SetFileIndex( uint32_t file_index );
 	void SetMacroExpansionIndex( uint32_t macro_expansion_index );
 
-	bool operator==( const FilePos& other ) const;
-	bool operator!=( const FilePos& other ) const;
-	bool operator< ( const FilePos& other ) const;
-	bool operator<=( const FilePos& other ) const;
+	bool operator==( const SrcLoc& other ) const;
+	bool operator!=( const SrcLoc& other ) const;
+	bool operator< ( const SrcLoc& other ) const;
+	bool operator<=( const SrcLoc& other ) const;
 
 private:
 	uint16_t file_index_;

@@ -31,7 +31,7 @@ std::string PreprocessArg( const Synt::ComplexName& name );
 template<class T> const T& PreprocessArg( const T& t ) { return t; }
 
 template<class ... Args>
-CodeBuilderError ReportError( const CodeBuilderErrorCode code, const FilePos& file_pos, const Args& ... args )
+CodeBuilderError ReportError( const CodeBuilderErrorCode code, const SrcLoc& file_pos, const Args& ... args )
 {
 	CodeBuilderError error;
 	error.code= code;

@@ -56,7 +56,7 @@ size_t SourceGraphLoader::LoadNode_r(
 			imports_loop_str+= *it + " -> ";
 		imports_loop_str+= full_file_path;
 
-		result.errors.emplace_back( imports_loop_str, FilePos( 0u, 0u, 0u ) );
+		result.errors.emplace_back( imports_loop_str, SrcLoc( 0u, 0u, 0u ) );
 
 		return ~0u;
 	}
@@ -73,7 +73,7 @@ size_t SourceGraphLoader::LoadNode_r(
 	const std::optional<IVfs::FileContent> loaded_file= vfs_->LoadFileContent( full_file_path );
 	if( loaded_file == std::nullopt )
 	{
-		LexSyntError error_message( "Can not read file \"" + full_file_path + "\"", FilePos( uint32_t(node_index), 0u, 0u ) );
+		LexSyntError error_message( "Can not read file \"" + full_file_path + "\"", SrcLoc( uint32_t(node_index), 0u, 0u ) );
 		result.errors.push_back( std::move(error_message) );
 		return ~0u;
 	}
@@ -126,7 +126,7 @@ size_t SourceGraphLoader::LoadNode_r(
 				{
 					result.errors.emplace_back(
 						"Macro \"" + macro_map_pair.first + "\" redefinition.",
-						FilePos( uint32_t(node_index), 0u, 0u ) );
+						SrcLoc( uint32_t(node_index), 0u, 0u ) );
 				}
 				else
 					dst_map[macro_map_pair.first]= macro_map_pair.second;

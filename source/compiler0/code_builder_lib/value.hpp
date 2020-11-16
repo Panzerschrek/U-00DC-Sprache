@@ -61,8 +61,8 @@ struct FunctionVariable final
 
 	llvm::Function* llvm_function= nullptr;
 
-	FilePos prototype_file_pos;
-	FilePos body_file_pos;
+	SrcLoc prototype_file_pos;
+	SrcLoc body_file_pos;
 
 	bool VirtuallyEquals( const FunctionVariable& other ) const;
 };
@@ -190,22 +190,22 @@ class Value final
 {
 public:
 	Value() = default;
-	Value( Variable variable, const FilePos& file_pos );
+	Value( Variable variable, const SrcLoc& file_pos );
 	Value( OverloadedFunctionsSet functions_set );
-	Value( Type type, const FilePos& file_pos );
-	Value( ClassField class_field, const FilePos& file_pos );
+	Value( Type type, const SrcLoc& file_pos );
+	Value( ClassField class_field, const SrcLoc& file_pos );
 	Value( ThisOverloadedMethodsSet class_field );
-	Value( const NamesScopePtr& namespace_, const FilePos& file_pos );
-	Value( TypeTemplatesSet type_templates, const FilePos& file_pos );
-	Value( StaticAssert static_assert_, const FilePos& file_pos );
-	Value( Typedef typedef_, const FilePos& file_pos );
-	Value( IncompleteGlobalVariable incomplete_global_variable, const FilePos& file_pos );
+	Value( const NamesScopePtr& namespace_, const SrcLoc& file_pos );
+	Value( TypeTemplatesSet type_templates, const SrcLoc& file_pos );
+	Value( StaticAssert static_assert_, const SrcLoc& file_pos );
+	Value( Typedef typedef_, const SrcLoc& file_pos );
+	Value( IncompleteGlobalVariable incomplete_global_variable, const SrcLoc& file_pos );
 	Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg );
 	Value( ErrorValue error_value );
 
 	size_t GetKindIndex() const;
 	std::string GetKindName() const;
-	const FilePos& GetFilePos() const;
+	const SrcLoc& GetFilePos() const;
 
 	Variable* GetVariable();
 	const Variable* GetVariable() const;
@@ -260,7 +260,7 @@ private:
 	// File_pos used as unique id for entry, needed for imports merging.
 	// Two values are 100% same, if their file_pos are identical.
 	// Not for all values file_pos required, so, fill it with zeros for it.
-	FilePos file_pos_;
+	SrcLoc file_pos_;
 };
 
 } //namespace CodeBuilderPrivate

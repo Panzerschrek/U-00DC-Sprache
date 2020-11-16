@@ -24,7 +24,7 @@ namespace
 
 void CreateTemplateErrorsContext(
 	CodeBuilderErrorsContainer& errors_container,
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	const NamesScopePtr& template_parameters_namespace,
 	const TemplateBase& template_,
 	const std::string& template_name,
@@ -199,7 +199,7 @@ void CodeBuilder::PrepareFunctionTemplate(
 void CodeBuilder::ProcessTemplateParams(
 	const std::vector<Synt::TemplateBase::Param>& params,
 	NamesScope& names_scope,
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 	std::vector<bool>& template_parameters_usage_flags )
 {
@@ -252,7 +252,7 @@ void CodeBuilder::ProcessTemplateParams(
 }
 
 TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	const Synt::ComplexName& signature_parameter,
 	NamesScope& names_scope,
 	FunctionContext& function_context,
@@ -441,7 +441,7 @@ TemplateSignatureParam CodeBuilder::ValueToTemplateParam( const Value& value, Na
 }
 
 Value CodeBuilder::ResolveForTemplateSignatureParameter(
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	const Synt::ComplexName& signature_parameter,
 	NamesScope& names_scope )
 {
@@ -452,7 +452,7 @@ bool CodeBuilder::MatchTemplateArg(
 	const TemplateBase& template_,
 	NamesScope& args_names_scope,
 	const TemplateArg& template_arg,
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	const TemplateSignatureParam& template_param )
 {
 	return
@@ -467,7 +467,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	const TemplateBase& template_,
 	NamesScope& args_names_scope,
 	const TemplateArg& template_arg,
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	const TemplateSignatureParam::TypeParam& template_param )
 {
 	(void)template_;
@@ -483,7 +483,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	const TemplateBase& template_,
 	NamesScope& args_names_scope,
 	const TemplateArg& template_arg,
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	const TemplateSignatureParam::VariableParam& template_param )
 {
 	(void)template_;
@@ -504,7 +504,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	const TemplateBase& template_,
 	NamesScope& args_names_scope,
 	const TemplateArg& template_arg,
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	const TemplateSignatureParam::TemplateParam& template_param )
 {
 	Value* const value= args_names_scope.GetThisScopeValue( template_.template_params[ template_param.index ].name );
@@ -578,7 +578,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	const TemplateBase& template_,
 	NamesScope& args_names_scope,
 	const TemplateArg& template_arg,
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	const TemplateSignatureParam::ArrayParam& template_param )
 {
 	if( const auto given_type= std::get_if<Type>( &template_arg ) )
@@ -609,7 +609,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	const TemplateBase& template_,
 	NamesScope& args_names_scope,
 	const TemplateArg& template_arg,
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	const TemplateSignatureParam::TupleParam& template_param )
 {
 	if( const auto given_type= std::get_if<Type>( &template_arg ) )
@@ -636,7 +636,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	const TemplateBase& template_,
 	NamesScope& args_names_scope,
 	const TemplateArg& template_arg,
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	const TemplateSignatureParam::FunctionParam& template_param )
 {
 	if( const auto given_type= std::get_if<Type>( &template_arg ) )
@@ -675,7 +675,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	const TemplateBase& template_,
 	NamesScope& args_names_scope,
 	const TemplateArg& template_arg,
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	const TemplateSignatureParam::SpecializedTemplateParam& template_param )
 {
 	if( const auto given_type= std::get_if<Type>( &template_arg ) )
@@ -708,7 +708,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 }
 
 Value* CodeBuilder::GenTemplateType(
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	const TypeTemplatesSet& type_templates_set,
 	const std::vector<Synt::Expression>& template_arguments,
 	NamesScope& arguments_names_scope,
@@ -746,7 +746,7 @@ Value* CodeBuilder::GenTemplateType(
 }
 
 CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	const TypeTemplatePtr& type_template_ptr,
 	const std::vector<Value>& template_arguments,
 	NamesScope& arguments_names_scope )
@@ -811,7 +811,7 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 }
 
 Value* CodeBuilder::FinishTemplateTypeGeneration(
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	NamesScope& arguments_names_scope,
 	const TemplateTypePreparationResult& template_type_preparation_result )
 {
@@ -883,7 +883,7 @@ Value* CodeBuilder::FinishTemplateTypeGeneration(
 
 const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	CodeBuilderErrorsContainer& errors_container,
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	const FunctionTemplatePtr& function_template_ptr,
 	const ArgsVector<Function::Arg>& actual_args,
 	const bool first_actual_arg_is_this )
@@ -896,7 +896,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 
 CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunction(
 	CodeBuilderErrorsContainer& errors_container,
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	const FunctionTemplatePtr& function_template_ptr,
 	const ArgsVector<Function::Arg>& actual_args,
 	const bool first_actual_arg_is_this )
@@ -993,7 +993,7 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 
 const FunctionVariable* CodeBuilder::FinishTemplateFunctionParametrization(
 	CodeBuilderErrorsContainer& errors_container,
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	const FunctionTemplatePtr& function_template_ptr )
 {
 	const FunctionTemplate& function_template= *function_template_ptr;
@@ -1019,7 +1019,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionParametrization(
 
 const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 	CodeBuilderErrorsContainer& errors_container,
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	const TemplateFunctionPreparationResult& template_function_preparation_result )
 {
 	const FunctionTemplatePtr& function_template_ptr= template_function_preparation_result.function_template;
@@ -1087,7 +1087,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 }
 
 Value* CodeBuilder::ParametrizeFunctionTemplate(
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	const std::vector<FunctionTemplatePtr>& function_templates,
 	const std::vector<Synt::Expression>& template_arguments,
 	NamesScope& arguments_names_scope,

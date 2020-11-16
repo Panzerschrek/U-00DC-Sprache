@@ -320,7 +320,7 @@ PyObject* RunFunction( PyObject* const self, PyObject* const args )
 }
 
 
-PyObject* BuildFilePos( const FilePos& file_pos )
+PyObject* BuildFilePos( const SrcLoc& file_pos )
 {
 	PyObject* const file_pos_dict= PyDict_New();
 	PyDict_SetItemString( file_pos_dict, "file_index", PyLong_FromLongLong( file_pos.GetFileIndex() ) );

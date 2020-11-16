@@ -220,7 +220,7 @@ void ReferencesGraph::GetAllAccessibleVariableNodes_r(
 			GetAllAccessibleVariableNodes_r( link.src, visited_nodes_set, result_set );
 }
 
-ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const std::vector<ReferencesGraph>& branches_variables_state, const FilePos& file_pos )
+ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const std::vector<ReferencesGraph>& branches_variables_state, const SrcLoc& file_pos )
 {
 	ReferencesGraph result;
 	std::vector<CodeBuilderError> errors;
@@ -309,7 +309,7 @@ ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const 
 	return std::make_pair( std::move(result), std::move(errors) );
 }
 
-std::vector<CodeBuilderError> ReferencesGraph::CheckWhileBlokVariablesState( const ReferencesGraph& state_before, const ReferencesGraph& state_after, const FilePos& file_pos )
+std::vector<CodeBuilderError> ReferencesGraph::CheckWhileBlokVariablesState( const ReferencesGraph& state_before, const ReferencesGraph& state_after, const SrcLoc& file_pos )
 {
 	std::vector<CodeBuilderError> errors;
 

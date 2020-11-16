@@ -193,11 +193,11 @@ using ProgramElements= std::vector<ProgramElement>;
 struct SyntaxElementBase
 {
 public:
-	explicit SyntaxElementBase( const FilePos& file_pos );
+	explicit SyntaxElementBase( const SrcLoc& file_pos );
 	// WARNING! This struct have NO virtual destructor for, size optimization.
 	// Do not like this:  SyntaxElementBase* x= new Derived();
 
-	FilePos file_pos_;
+	SrcLoc file_pos_;
 };
 
 enum class MutabilityModifier : uint8_t
@@ -218,7 +218,7 @@ enum class ReferenceModifier : uint8_t
 struct TypeofTypeName final : public SyntaxElementBase
 {
 public:
-	explicit TypeofTypeName( const FilePos& file_pos );
+	explicit TypeofTypeName( const SrcLoc& file_pos );
 
 	std::unique_ptr<Expression> expression;
 };
@@ -246,7 +246,7 @@ struct ComplexName
 struct ArrayTypeName final : public SyntaxElementBase
 {
 public:
-	explicit ArrayTypeName( const FilePos& file_pos );
+	explicit ArrayTypeName( const SrcLoc& file_pos );
 
 	std::unique_ptr<TypeName> element_type;
 	std::unique_ptr<Expression> size;
@@ -255,7 +255,7 @@ public:
 struct TupleType final : public SyntaxElementBase
 {
 public:
-	TupleType( const FilePos& file_pos );
+	TupleType( const SrcLoc& file_pos );
 
 public:
 	std::vector<TypeName> element_types_;
@@ -264,7 +264,7 @@ public:
 struct NamedTypeName final : public SyntaxElementBase
 {
 public:
-	explicit NamedTypeName( const FilePos& file_pos );
+	explicit NamedTypeName( const SrcLoc& file_pos );
 
 	ComplexName name;
 };
@@ -278,7 +278,7 @@ using FunctionArgumentsDeclaration= std::vector<FunctionArgument>;
 struct FunctionType final : public SyntaxElementBase
 {
 public:
-	FunctionType( const FilePos& file_pos );
+	FunctionType( const SrcLoc& file_pos );
 
 	std::unique_ptr<TypeName> return_type_;
 	std::string return_value_reference_tag_;
@@ -294,7 +294,7 @@ public:
 struct FunctionArgument final : public SyntaxElementBase
 {
 public:
-	FunctionArgument( const FilePos& file_pos );
+	FunctionArgument( const SrcLoc& file_pos );
 
 public:
 	std::string name_;
@@ -308,7 +308,7 @@ public:
 struct BinaryOperator final : public SyntaxElementBase
 {
 public:
-	explicit BinaryOperator( const FilePos& file_pos );
+	explicit BinaryOperator( const SrcLoc& file_pos );
 
 	BinaryOperatorType operator_type_;
 	std::unique_ptr<Expression> left_;
@@ -318,7 +318,7 @@ public:
 struct ExpressionComponentWithUnaryOperators : public SyntaxElementBase
 {
 public:
-	explicit ExpressionComponentWithUnaryOperators( const FilePos& file_pos );
+	explicit ExpressionComponentWithUnaryOperators( const SrcLoc& file_pos );
 
 	std::vector<UnaryPrefixOperator > prefix_operators_ ; // Should evaluate in reverse order.
 	std::vector<UnaryPostfixOperator> postfix_operators_;
@@ -327,7 +327,7 @@ public:
 struct TernaryOperator final : public ExpressionComponentWithUnaryOperators
 {
 public:
-	explicit TernaryOperator( const FilePos& file_pos );
+	explicit TernaryOperator( const SrcLoc& file_pos );
 
 	std::unique_ptr<Expression> condition;
 	std::unique_ptr<Expression> true_branch;
@@ -337,7 +337,7 @@ public:
 struct NamedOperand final : public ExpressionComponentWithUnaryOperators
 {
 public:
-	NamedOperand( const FilePos& file_pos, ComplexName name );
+	NamedOperand( const SrcLoc& file_pos, ComplexName name );
 
 	ComplexName name_;
 };
@@ -345,7 +345,7 @@ public:
 struct MoveOperator final : public ExpressionComponentWithUnaryOperators
 {
 public:
-	MoveOperator( const FilePos& file_pos );
+	MoveOperator( const SrcLoc& file_pos );
 
 	std::string var_name_;
 };
@@ -353,7 +353,7 @@ public:
 struct TakeOperator final : public ExpressionComponentWithUnaryOperators
 {
 public:
-	TakeOperator( const FilePos& file_pos );
+	TakeOperator( const SrcLoc& file_pos );
 
 	std::unique_ptr<Expression> expression_;
 };
@@ -361,7 +361,7 @@ public:
 struct CastRef final : public ExpressionComponentWithUnaryOperators
 {
 public:
-	CastRef( const FilePos& file_pos );
+	CastRef( const SrcLoc& file_pos );
 
 	std::unique_ptr<TypeName> type_;
 	std::unique_ptr<Expression> expression_;
@@ -370,7 +370,7 @@ public:
 struct CastRefUnsafe final : public ExpressionComponentWithUnaryOperators
 {
 public:
-	CastRefUnsafe( const FilePos& file_pos );
+	CastRefUnsafe( const SrcLoc& file_pos );
 
 	std::unique_ptr<TypeName> type_;
 	std::unique_ptr<Expression> expression_;
@@ -379,7 +379,7 @@ public:
 struct CastImut final : public ExpressionComponentWithUnaryOperators
 {
 public:
-	CastImut( const FilePos& file_pos );
+	CastImut( const SrcLoc& file_pos );
 
 	std::unique_ptr<Expression> expression_;
 };
@@ -387,7 +387,7 @@ public:
 struct CastMut final : public ExpressionComponentWithUnaryOperators
 {
 public:
-	CastMut( const FilePos& file_pos );
+	CastMut( const SrcLoc& file_pos );
 
 	std::unique_ptr<Expression> expression_;
 };
@@ -395,7 +395,7 @@ public:
 struct TypeInfo final : public ExpressionComponentWithUnaryOperators
 {
 public:
-	TypeInfo( const FilePos& file_pos );
+	TypeInfo( const SrcLoc& file_pos );
 
 	std::unique_ptr<TypeName> type_;
 };
@@ -403,7 +403,7 @@ public:
 struct BooleanConstant final : public ExpressionComponentWithUnaryOperators
 {
 public:
-	BooleanConstant( const FilePos& file_pos, bool value );
+	BooleanConstant( const SrcLoc& file_pos, bool value );
 
 	bool value_;
 };
@@ -413,13 +413,13 @@ using TypeSuffix= std::array<char, 7>;
 struct NumericConstant final : public ExpressionComponentWithUnaryOperators, public NumberLexemData
 {
 public:
-	NumericConstant( const FilePos& file_pos );
+	NumericConstant( const SrcLoc& file_pos );
 };
 
 struct StringLiteral final : public ExpressionComponentWithUnaryOperators
 {
 public:
-	StringLiteral( const FilePos& file_pos );
+	StringLiteral( const SrcLoc& file_pos );
 
 	std::string value_;
 	TypeSuffix type_suffix_;
@@ -428,7 +428,7 @@ public:
 struct BracketExpression final : public ExpressionComponentWithUnaryOperators
 {
 public:
-	BracketExpression( const FilePos& file_pos );
+	BracketExpression( const SrcLoc& file_pos );
 
 	std::unique_ptr<Expression> expression_;
 };
@@ -436,7 +436,7 @@ public:
 struct TypeNameInExpression final : public ExpressionComponentWithUnaryOperators
 {
 public:
-	explicit TypeNameInExpression( const FilePos& file_pos );
+	explicit TypeNameInExpression( const SrcLoc& file_pos );
 
 	TypeName type_name;
 };
@@ -444,31 +444,31 @@ public:
 struct UnaryPlus final : public SyntaxElementBase
 {
 public:
-	explicit UnaryPlus( const FilePos& file_pos );
+	explicit UnaryPlus( const SrcLoc& file_pos );
 };
 
 struct UnaryMinus final : public SyntaxElementBase
 {
 public:
-	explicit UnaryMinus( const FilePos& file_pos );
+	explicit UnaryMinus( const SrcLoc& file_pos );
 };
 
 struct LogicalNot final : public SyntaxElementBase
 {
 public:
-	explicit LogicalNot( const FilePos& file_pos );
+	explicit LogicalNot( const SrcLoc& file_pos );
 };
 
 struct BitwiseNot final : public SyntaxElementBase
 {
 public:
-	explicit BitwiseNot( const FilePos& file_pos );
+	explicit BitwiseNot( const SrcLoc& file_pos );
 };
 
 struct CallOperator final : public SyntaxElementBase
 {
 public:
-	CallOperator( const FilePos& file_pos );
+	CallOperator( const SrcLoc& file_pos );
 
 	std::vector<Expression> arguments_;
 };
@@ -476,7 +476,7 @@ public:
 struct IndexationOperator final : public SyntaxElementBase
 {
 public:
-	explicit IndexationOperator( const FilePos& file_pos );
+	explicit IndexationOperator( const SrcLoc& file_pos );
 
 	Expression index_;
 };
@@ -484,7 +484,7 @@ public:
 struct MemberAccessOperator final : public SyntaxElementBase
 {
 public:
-	MemberAccessOperator( const FilePos& file_pos );
+	MemberAccessOperator( const SrcLoc& file_pos );
 
 	std::string member_name_;
 	std::vector<Expression> template_parameters;
@@ -494,7 +494,7 @@ public:
 struct ArrayInitializer final : public SyntaxElementBase
 {
 public:
-	explicit ArrayInitializer( const FilePos& file_pos );
+	explicit ArrayInitializer( const SrcLoc& file_pos );
 
 	std::vector<Initializer> initializers;
 	bool has_continious_initializer= false; // ... after last initializator.
@@ -503,7 +503,7 @@ public:
 struct StructNamedInitializer final : public SyntaxElementBase
 {
 public:
-	explicit StructNamedInitializer( const FilePos& file_pos );
+	explicit StructNamedInitializer( const SrcLoc& file_pos );
 
 	struct MemberInitializer;
 
@@ -513,7 +513,7 @@ public:
 struct ConstructorInitializer final : public SyntaxElementBase
 {
 public:
-	ConstructorInitializer( const FilePos& file_pos );
+	ConstructorInitializer( const SrcLoc& file_pos );
 
 	CallOperator call_operator;
 };
@@ -521,7 +521,7 @@ public:
 struct ExpressionInitializer final : public SyntaxElementBase
 {
 public:
-	ExpressionInitializer( const FilePos& file_pos );
+	ExpressionInitializer( const SrcLoc& file_pos );
 
 	Expression expression;
 };
@@ -529,13 +529,13 @@ public:
 struct ZeroInitializer final : public SyntaxElementBase
 {
 public:
-	explicit ZeroInitializer( const FilePos& file_pos );
+	explicit ZeroInitializer( const SrcLoc& file_pos );
 };
 
 struct UninitializedInitializer final : public SyntaxElementBase
 {
 public:
-	explicit UninitializedInitializer( const FilePos& file_pos );
+	explicit UninitializedInitializer( const SrcLoc& file_pos );
 };
 
 struct StructNamedInitializer::MemberInitializer
@@ -547,7 +547,7 @@ struct StructNamedInitializer::MemberInitializer
 struct Block final : public SyntaxElementBase
 {
 public:
-	Block( const FilePos& start_file_pos );
+	Block( const SrcLoc& start_file_pos );
 
 	enum class Safety : uint8_t
 	{
@@ -556,18 +556,18 @@ public:
 		Unsafe,
 	};
 public:
-	FilePos end_file_pos_;
+	SrcLoc end_file_pos_;
 	std::vector<BlockElement> elements_;
 	Safety safety_= Safety::None;
 };
 
 struct VariablesDeclaration final : public SyntaxElementBase
 {
-	VariablesDeclaration( const FilePos& file_pos );
+	VariablesDeclaration( const SrcLoc& file_pos );
 
 	struct VariableEntry
 	{
-		FilePos file_pos;
+		SrcLoc file_pos;
 		std::string name;
 		std::unique_ptr<Initializer> initializer; // May be null for types with default constructor.
 		MutabilityModifier mutability_modifier= MutabilityModifier::None;
@@ -580,7 +580,7 @@ struct VariablesDeclaration final : public SyntaxElementBase
 
 struct AutoVariableDeclaration final : public SyntaxElementBase
 {
-	explicit AutoVariableDeclaration( const FilePos& file_pos );
+	explicit AutoVariableDeclaration( const SrcLoc& file_pos );
 
 	std::string name;
 	Expression initializer_expression;
@@ -591,7 +591,7 @@ struct AutoVariableDeclaration final : public SyntaxElementBase
 struct ReturnOperator final : public SyntaxElementBase
 {
 public:
-	ReturnOperator( const FilePos& file_pos );
+	ReturnOperator( const SrcLoc& file_pos );
 
 	Expression expression_;
 };
@@ -599,7 +599,7 @@ public:
 struct WhileOperator final : public SyntaxElementBase
 {
 public:
-	WhileOperator( const FilePos& file_pos );
+	WhileOperator( const SrcLoc& file_pos );
 
 	Expression condition_;
 	Block block_;
@@ -608,7 +608,7 @@ public:
 struct ForOperator final : public SyntaxElementBase
 {
 public:
-	ForOperator( const FilePos& file_pos );
+	ForOperator( const SrcLoc& file_pos );
 
 	ReferenceModifier reference_modifier_= ReferenceModifier::None;
 	MutabilityModifier mutability_modifier_= MutabilityModifier::None;
@@ -620,7 +620,7 @@ public:
 struct CStyleForOperator final : public SyntaxElementBase
 {
 public:
-	CStyleForOperator( const FilePos& file_pos );
+	CStyleForOperator( const SrcLoc& file_pos );
 
 	std::unique_ptr<
 		std::variant<
@@ -645,19 +645,19 @@ public:
 struct BreakOperator final : public SyntaxElementBase
 {
 public:
-	explicit BreakOperator( const FilePos& file_pos );
+	explicit BreakOperator( const SrcLoc& file_pos );
 };
 
 struct ContinueOperator final : public SyntaxElementBase
 {
 public:
-	explicit ContinueOperator( const FilePos& file_pos );
+	explicit ContinueOperator( const SrcLoc& file_pos );
 };
 
 struct WithOperator final : public SyntaxElementBase
 {
 public:
-	WithOperator( const FilePos& file_pos );
+	WithOperator( const SrcLoc& file_pos );
 
 	ReferenceModifier reference_modifier_= ReferenceModifier::None;
 	MutabilityModifier mutability_modifier_= MutabilityModifier::None;
@@ -676,16 +676,16 @@ public:
 		Block block;
 	};
 
-	IfOperator( const FilePos& start_file_pos );
+	IfOperator( const SrcLoc& start_file_pos );
 
 	std::vector<Branch> branches_; // else if()
-	FilePos end_file_pos_;
+	SrcLoc end_file_pos_;
 };
 
 struct StaticIfOperator final : public SyntaxElementBase
 {
 public:
-	StaticIfOperator( const FilePos& file_pos );
+	StaticIfOperator( const SrcLoc& file_pos );
 
 	IfOperator if_operator_;
 };
@@ -693,7 +693,7 @@ public:
 struct SingleExpressionOperator final : public SyntaxElementBase
 {
 public:
-	SingleExpressionOperator( const FilePos& file_pos );
+	SingleExpressionOperator( const SrcLoc& file_pos );
 
 	Expression expression_;
 };
@@ -701,7 +701,7 @@ public:
 struct AssignmentOperator final : public SyntaxElementBase
 {
 public:
-	AssignmentOperator( const FilePos& file_pos );
+	AssignmentOperator( const SrcLoc& file_pos );
 
 	Expression l_value_;
 	Expression r_value_;
@@ -710,7 +710,7 @@ public:
 struct AdditiveAssignmentOperator final : public SyntaxElementBase
 {
 public:
-	explicit AdditiveAssignmentOperator( const FilePos& file_pos );
+	explicit AdditiveAssignmentOperator( const SrcLoc& file_pos );
 
 	BinaryOperatorType additive_operation_;
 	Expression l_value_;
@@ -720,7 +720,7 @@ public:
 struct IncrementOperator final : public SyntaxElementBase
 {
 public:
-	explicit IncrementOperator( const FilePos& file_pos );
+	explicit IncrementOperator( const SrcLoc& file_pos );
 
 	Expression expression;
 };
@@ -728,7 +728,7 @@ public:
 struct DecrementOperator final : public SyntaxElementBase
 {
 public:
-	explicit DecrementOperator( const FilePos& file_pos );
+	explicit DecrementOperator( const SrcLoc& file_pos );
 
 	Expression expression;
 };
@@ -736,7 +736,7 @@ public:
 struct StaticAssert final : public SyntaxElementBase
 {
 public:
-	explicit StaticAssert( const FilePos& file_pos );
+	explicit StaticAssert( const SrcLoc& file_pos );
 
 	Expression expression;
 };
@@ -746,7 +746,7 @@ struct Halt final
 
 {
 public:
-	explicit Halt( const FilePos& file_pos );
+	explicit Halt( const SrcLoc& file_pos );
 };
 
 struct HaltIf final
@@ -754,7 +754,7 @@ struct HaltIf final
 
 {
 public:
-	explicit HaltIf( const FilePos& file_pos );
+	explicit HaltIf( const SrcLoc& file_pos );
 
 	Expression condition;
 };
@@ -762,7 +762,7 @@ public:
 struct Typedef final : public SyntaxElementBase
 {
 public:
-	explicit Typedef( const FilePos& file_pos );
+	explicit Typedef( const SrcLoc& file_pos );
 
 	std::string name;
 	TypeName value;
@@ -771,11 +771,11 @@ public:
 struct Enum final : public SyntaxElementBase
 {
 public:
-	explicit Enum( const FilePos& file_pos );
+	explicit Enum( const SrcLoc& file_pos );
 
 	struct Member
 	{
-		FilePos file_pos;
+		SrcLoc file_pos;
 		std::string name;
 	};
 
@@ -796,7 +796,7 @@ enum class VirtualFunctionKind : uint8_t
 struct Function final : public SyntaxElementBase
 {
 public:
-	Function( const FilePos& file_pos );
+	Function( const SrcLoc& file_pos );
 
 	enum class BodyKind : uint8_t
 	{
@@ -822,7 +822,7 @@ public:
 struct ClassField final : public SyntaxElementBase
 {
 public:
-	explicit ClassField( const FilePos& file_pos );
+	explicit ClassField( const SrcLoc& file_pos );
 
 	TypeName type;
 	std::string name;
@@ -852,7 +852,7 @@ enum class ClassMemberVisibility : uint8_t
 struct ClassVisibilityLabel final : public SyntaxElementBase
 {
 public:
-	ClassVisibilityLabel( const FilePos& file_pos, ClassMemberVisibility visibility );
+	ClassVisibilityLabel( const SrcLoc& file_pos, ClassMemberVisibility visibility );
 
 	const ClassMemberVisibility visibility_;
 };
@@ -860,7 +860,7 @@ public:
 struct Class final : public SyntaxElementBase
 {
 public:
-	explicit Class( const FilePos& file_pos );
+	explicit Class( const SrcLoc& file_pos );
 
 	ClassElements elements_;
 	std::string name_;
@@ -874,7 +874,7 @@ public:
 struct TemplateBase : public SyntaxElementBase
 {
 public:
-	explicit TemplateBase( const FilePos& file_pos );
+	explicit TemplateBase( const SrcLoc& file_pos );
 
 	struct Param
 	{
@@ -888,7 +888,7 @@ public:
 struct TypeTemplate : public TemplateBase
 {
 public:
-	explicit TypeTemplate( const FilePos& file_pos );
+	explicit TypeTemplate( const SrcLoc& file_pos );
 
 	// Argument in template signature.
 	struct SignatureParam
@@ -909,7 +909,7 @@ public:
 struct FunctionTemplate final : public TemplateBase
 {
 public:
-	explicit FunctionTemplate( const FilePos& file_pos );
+	explicit FunctionTemplate( const SrcLoc& file_pos );
 
 	FunctionPtr function_;
 };
@@ -917,7 +917,7 @@ public:
 struct Namespace final : public SyntaxElementBase
 {
 public:
-	explicit Namespace( const FilePos& file_pos );
+	explicit Namespace( const SrcLoc& file_pos );
 
 	std::string name_;
 	ProgramElements elements_;
@@ -926,16 +926,16 @@ public:
 struct Import final : public SyntaxElementBase
 {
 public:
-	explicit Import( const FilePos& file_pos );
+	explicit Import( const SrcLoc& file_pos );
 
 	std::string import_name;
 };
 
 // Utility functions for manipulations with variants.
 
-FilePos GetExpressionFilePos( const Expression& expression );
-FilePos GetInitializerFilePos( const Initializer& initializer );
-FilePos GetBlockElementFilePos( const BlockElement& block_element );
+SrcLoc GetExpressionFilePos( const Expression& expression );
+SrcLoc GetInitializerFilePos( const Initializer& initializer );
+SrcLoc GetBlockElementFilePos( const BlockElement& block_element );
 
 OverloadedOperator PrefixOperatorKind( const UnaryPrefixOperator& prefix_operator );
 

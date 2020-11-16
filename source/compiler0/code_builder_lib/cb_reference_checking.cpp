@@ -202,7 +202,7 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 	} // for pollution
 }
 
-void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context, const Variable& dst_variable, const Variable& src_variable, CodeBuilderErrorsContainer& errors_container, const FilePos& file_pos )
+void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context, const Variable& dst_variable, const Variable& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& file_pos )
 {
 	const ReferencesGraphNodePtr& src_node= src_variable.node;
 	const ReferencesGraphNodePtr& dst_node= dst_variable.node;
@@ -241,7 +241,7 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 	}
 }
 
-void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const FilePos& file_pos )
+void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const SrcLoc& file_pos )
 {
 	StackVariablesStorage& temporary_variables_storage= *function_context.stack_variables_stack.back();
 	for( const StackVariablesStorage::NodeAndVariable& variable : temporary_variables_storage.variables_ )
@@ -259,7 +259,7 @@ void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_con
 ReferencesGraph CodeBuilder::MergeVariablesStateAfterIf(
 	const std::vector<ReferencesGraph>& bracnhes_variables_state,
 	CodeBuilderErrorsContainer& errors_container,
-	const FilePos& file_pos )
+	const SrcLoc& file_pos )
 {
 	ReferencesGraph::MergeResult res= ReferencesGraph::MergeVariablesStateAfterIf( bracnhes_variables_state, file_pos );
 	errors_container.insert( errors_container.end(), res.second.begin(), res.second.end() );
@@ -283,7 +283,7 @@ bool CodeBuilder::IsReferenceAllowedForReturn( FunctionContext& function_context
 void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 	FunctionContext& function_context,
 	CodeBuilderErrorsContainer& errors_container,
-	const FilePos& file_pos )
+	const SrcLoc& file_pos )
 {
 	for( size_t i= 0u; i < function_context.function_type.args.size(); ++i )
 	{

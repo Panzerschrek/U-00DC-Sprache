@@ -16,7 +16,7 @@ llvm::DIFile* CodeBuilder::GetDIFile(const size_t file_index)
 void CodeBuilder::CreateVariableDebugInfo(
 	const Variable& variable,
 	const std::string& variable_name,
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	FunctionContext& function_context )
 {
 	if( !build_debug_info_ )
@@ -41,7 +41,7 @@ void CodeBuilder::CreateVariableDebugInfo(
 void CodeBuilder::CreateReferenceVariableDebugInfo(
 	const Variable& variable,
 	const std::string& variable_name,
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	FunctionContext& function_context )
 {
 	if( !build_debug_info_ )
@@ -88,7 +88,7 @@ void CodeBuilder::CreateFunctionDebugInfo(
 }
 
 void CodeBuilder::SetCurrentDebugLocation(
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	FunctionContext& function_context )
 {
 	if( !build_debug_info_ )
@@ -101,7 +101,7 @@ void CodeBuilder::SetCurrentDebugLocation(
 			function_context.current_debug_info_scope ) );
 }
 
-void CodeBuilder::DebugInfoStartBlock( const FilePos& file_pos, FunctionContext& function_context )
+void CodeBuilder::DebugInfoStartBlock( const SrcLoc& file_pos, FunctionContext& function_context )
 {
 	if( build_debug_info_ )
 		function_context.current_debug_info_scope=

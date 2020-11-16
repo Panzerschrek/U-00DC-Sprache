@@ -505,7 +505,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 
 void CodeBuilder::ApplyEmptyInitializer(
 	const std::string& variable_name,
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	const Variable& variable,
 	NamesScope& block_names,
 	FunctionContext& function_context )
@@ -833,7 +833,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	U_ASSERT( variable.type.GetClassType() != nullptr );
 	U_ASSERT( variable.type.GetClassTypeProxy() == field.class_.lock() );
 
-	const FilePos initializer_file_pos= Synt::GetInitializerFilePos( initializer );
+	const SrcLoc initializer_file_pos= Synt::GetInitializerFilePos( initializer );
 	const Synt::Expression* initializer_expression= nullptr;
 	if( const auto expression_initializer= std::get_if<Synt::ExpressionInitializer>( &initializer ) )
 	{
@@ -856,7 +856,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 
 	const Variable initializer_variable= BuildExpressionCodeEnsureVariable( *initializer_expression, block_names, function_context );
 
-	const FilePos initializer_expression_file_pos= Synt::GetExpressionFilePos( *initializer_expression );
+	const SrcLoc initializer_expression_file_pos= Synt::GetExpressionFilePos( *initializer_expression );
 	if( !ReferenceIsConvertible( initializer_variable.type, field.type, block_names.GetErrors(), initializer_expression_file_pos ) )
 	{
 		REPORT_ERROR( TypesMismatch, block_names.GetErrors(), initializer_expression_file_pos, field.type, initializer_variable.type );
@@ -939,7 +939,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 {
 	U_ASSERT( variable.type.GetFunctionPointerType() != nullptr );
 
-	const FilePos initializer_expression_file_pos= Synt::GetExpressionFilePos( initializer_expression );
+	const SrcLoc initializer_expression_file_pos= Synt::GetExpressionFilePos( initializer_expression );
 	const FunctionPointer& function_pointer_type= *variable.type.GetFunctionPointerType();
 
 	const Value initializer_value= BuildExpressionCode( initializer_expression, block_names, function_context );

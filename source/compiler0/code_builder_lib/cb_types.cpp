@@ -44,7 +44,7 @@ Type CodeBuilder::PrepareType( const Synt::ArrayTypeName& array_type_name, Names
 	array_type.type= PrepareType( *array_type_name.element_type, names_scope, function_context );
 
 	const Synt::Expression& num= *array_type_name.size;
-	const FilePos num_file_pos= Synt::GetExpressionFilePos( num );
+	const SrcLoc num_file_pos= Synt::GetExpressionFilePos( num );
 
 	const Variable size_variable= BuildExpressionCodeEnsureVariable( num, names_scope, function_context );
 	if( size_variable.constexpr_value != nullptr )

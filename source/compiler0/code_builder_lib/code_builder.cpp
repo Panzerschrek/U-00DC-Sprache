@@ -413,7 +413,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 }
 
 void CodeBuilder::CopyClass(
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	const ClassProxyPtr& src_class,
 	ClassTable& dst_class_table,
 	NamesScope& dst_namespace )
@@ -478,7 +478,7 @@ void CodeBuilder::SetCurrentClassTable( ClassTable& table )
 
 void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
 {
-	const FilePos fundamental_globals_file_pos( FilePos::c_max_file_index, FilePos::c_max_line, FilePos::c_max_column );
+	const SrcLoc fundamental_globals_file_pos( SrcLoc::c_max_file_index, SrcLoc::c_max_line, SrcLoc::c_max_column );
 
 	for( size_t i= size_t(U_FundamentalType::Void); i < size_t(U_FundamentalType::LastType); ++i )
 	{
@@ -495,7 +495,7 @@ void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
 
 void CodeBuilder::TryCallCopyConstructor(
 	CodeBuilderErrorsContainer& errors_container,
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	llvm::Value* const this_, llvm::Value* const src,
 	const ClassProxyPtr& class_proxy,
 	FunctionContext& function_context )
@@ -579,7 +579,7 @@ void CodeBuilder::CallDestructorsImpl(
 	const StackVariablesStorage& stack_variables_storage,
 	FunctionContext& function_context,
 	CodeBuilderErrorsContainer& errors_container,
-	const FilePos& file_pos )
+	const SrcLoc& file_pos )
 {
 	// Call destructors in reverse order.
 	for( auto it = stack_variables_storage.variables_.rbegin(); it != stack_variables_storage.variables_.rend(); ++it )
@@ -605,7 +605,7 @@ void CodeBuilder::CallDestructors(
 	const StackVariablesStorage& stack_variables_storage,
 	NamesScope& names_scope,
 	FunctionContext& function_context,
-	const FilePos& file_pos )
+	const SrcLoc& file_pos )
 {
 	CallDestructorsImpl( stack_variables_storage, function_context, names_scope.GetErrors(), file_pos );
 }
@@ -615,7 +615,7 @@ void CodeBuilder::CallDestructor(
 	const Type& type,
 	FunctionContext& function_context,
 	CodeBuilderErrorsContainer& errors_container,
-	const FilePos& file_pos )
+	const SrcLoc& file_pos )
 {
 	U_ASSERT( type.HaveDestructor() );
 
@@ -664,7 +664,7 @@ void CodeBuilder::CallDestructor(
 	else U_ASSERT(false);
 }
 
-void CodeBuilder::CallDestructorsForLoopInnerVariables( NamesScope& names_scope, FunctionContext& function_context, const FilePos& file_pos )
+void CodeBuilder::CallDestructorsForLoopInnerVariables( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& file_pos )
 {
 	U_ASSERT( !function_context.loops_stack.empty() );
 
@@ -680,14 +680,14 @@ void CodeBuilder::CallDestructorsForLoopInnerVariables( NamesScope& names_scope,
 	}
 }
 
-void CodeBuilder::CallDestructorsBeforeReturn( NamesScope& names_scope, FunctionContext& function_context, const FilePos& file_pos )
+void CodeBuilder::CallDestructorsBeforeReturn( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& file_pos )
 {
 	// We must call ALL destructors of local variables, arguments, etc before each return.
 	for( auto it= function_context.stack_variables_stack.rbegin(); it != function_context.stack_variables_stack.rend(); ++it )
 		CallDestructorsImpl( **it, function_context, names_scope.GetErrors(), file_pos );
 }
 
-void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const FilePos& file_pos )
+void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const SrcLoc& file_pos )
 {
 	U_ASSERT( function_context.this_ != nullptr );
 	const Class* const class_= function_context.this_->type.GetClassType();
@@ -1023,7 +1023,7 @@ void CodeBuilder::CheckOverloadedOperator(
 	const Function& func_type,
 	const OverloadedOperator overloaded_operator,
 	CodeBuilderErrorsContainer& errors_container,
-	const FilePos& file_pos )
+	const SrcLoc& file_pos )
 {
 	if( overloaded_operator == OverloadedOperator::None )
 		return; // Not operator
@@ -1706,7 +1706,7 @@ void CodeBuilder::BuildStaticAssert( StaticAssert& static_assert_, NamesScope& n
 }
 
 Value CodeBuilder::ResolveValue(
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::ComplexName& complex_name,

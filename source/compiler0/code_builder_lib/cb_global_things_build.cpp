@@ -34,7 +34,7 @@ private:
 };
 #define DETECT_GLOBALS_LOOP( in_thing_ptr, in_name, in_file_pos ) \
 	{ \
-		const FilePos file_pos__= in_file_pos; \
+		const SrcLoc file_pos__= in_file_pos; \
 		const GlobalThing global_thing( static_cast<const void*>(in_thing_ptr), in_name, file_pos__ ); \
 		const size_t loop_pos= GlobalThingDetectloop( global_thing ); \
 		if( loop_pos != ~0u ) \
@@ -178,7 +178,7 @@ bool CodeBuilder::EnsureTypeComplete( const Type& type )
 	return false;
 }
 
-bool CodeBuilder::ReferenceIsConvertible( const Type& from, const Type& to, CodeBuilderErrorsContainer& errors_container, const FilePos& file_pos )
+bool CodeBuilder::ReferenceIsConvertible( const Type& from, const Type& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& file_pos )
 {
 	if( from == to )
 		return true;
@@ -243,7 +243,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 {
 	if( !functions_set.syntax_elements.empty() || !functions_set.out_of_line_syntax_elements.empty() || !functions_set.template_syntax_elements.empty() )
 	{
-		FilePos functions_set_file_pos;
+		SrcLoc functions_set_file_pos;
 		std::string functions_set_name;
 		if( !functions_set.syntax_elements.empty() )
 		{
@@ -955,7 +955,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 	U_ASSERT( global_variable_value.GetIncompleteGlobalVariable() != nullptr );
 	const IncompleteGlobalVariable incomplete_global_variable= *global_variable_value.GetIncompleteGlobalVariable();
 
-	FilePos file_pos;
+	SrcLoc file_pos;
 	if( incomplete_global_variable.variables_declaration != nullptr )
 		file_pos= incomplete_global_variable.variables_declaration->variables[ incomplete_global_variable.element_index ].file_pos;
 	else if( incomplete_global_variable.auto_variable_declaration != nullptr )
@@ -1186,11 +1186,11 @@ size_t CodeBuilder::GlobalThingDetectloop( const GlobalThing& global_thing )
 	return ~0u;
 }
 
-void CodeBuilder::GlobalThingReportAboutLoop( const size_t loop_start_stack_index, const std::string& last_loop_element_name, const FilePos& last_loop_element_file_pos )
+void CodeBuilder::GlobalThingReportAboutLoop( const size_t loop_start_stack_index, const std::string& last_loop_element_name, const SrcLoc& last_loop_element_file_pos )
 {
 	std::string description;
 
-	FilePos min_file_pos= last_loop_element_file_pos;
+	SrcLoc min_file_pos= last_loop_element_file_pos;
 	for( size_t i= loop_start_stack_index; i < global_things_stack_.size(); ++i )
 	{
 		min_file_pos= std::min( min_file_pos, global_things_stack_[i].file_pos );

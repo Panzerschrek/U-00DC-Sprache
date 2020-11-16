@@ -829,7 +829,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		const StackVariablesStorage temp_variables_storage( function_context );
 		const Variable condition_expression= BuildExpressionCodeEnsureVariable( c_style_for_operator.loop_condition_, loop_names_scope, function_context );
 
-		const FilePos condition_file_pos= Synt::GetExpressionFilePos( c_style_for_operator.loop_condition_ );
+		const SrcLoc condition_file_pos= Synt::GetExpressionFilePos( c_style_for_operator.loop_condition_ );
 		if( condition_expression.type != bool_type_ )
 		{
 			REPORT_ERROR( TypesMismatch,
@@ -924,7 +924,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		const StackVariablesStorage temp_variables_storage( function_context );
 		const Variable condition_expression= BuildExpressionCodeEnsureVariable( while_operator.condition_, names, function_context );
 
-		const FilePos condition_file_pos= Synt::GetExpressionFilePos( while_operator.condition_ );
+		const SrcLoc condition_file_pos= Synt::GetExpressionFilePos( while_operator.condition_ );
 		if( condition_expression.type != bool_type_ )
 		{
 			REPORT_ERROR( TypesMismatch, names.GetErrors(), condition_file_pos, bool_type_, condition_expression.type );
@@ -1298,7 +1298,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		if( std::get_if<Synt::EmptyVariant>(&branch.condition) == nullptr )
 		{
 			const Synt::Expression& condition= branch.condition;
-			const FilePos condition_file_pos= Synt::GetExpressionFilePos( condition );
+			const SrcLoc condition_file_pos= Synt::GetExpressionFilePos( condition );
 
 			const StackVariablesStorage temp_variables_storage( function_context );
 
@@ -1606,7 +1606,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 
 	const StackVariablesStorage temp_variables_storage( function_context );
 	const Variable condition_expression= BuildExpressionCodeEnsureVariable( halt_if.condition, names, function_context );
-	const FilePos condition_expression_file_pos= Synt::GetExpressionFilePos( halt_if.condition );
+	const SrcLoc condition_expression_file_pos= Synt::GetExpressionFilePos( halt_if.condition );
 	if( condition_expression.type!= bool_type_ )
 	{
 		REPORT_ERROR( TypesMismatch,
@@ -1639,7 +1639,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 
 void CodeBuilder::BuildDeltaOneOperatorCode(
 	const Synt::Expression& expression,
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	bool positive, // true - increment, false - decrement
 	NamesScope& block_names,
 	FunctionContext& function_context )

@@ -59,7 +59,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	const Synt::Expression&  left_expr,
 	const Synt::Expression& right_expr,
 	const bool evaluate_args_in_reverse_order,
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	NamesScope& names,
 	FunctionContext& function_context )
 {
@@ -180,7 +180,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 	OverloadedOperator op,
 	const Synt::Expression&  left_expr,
 	const Synt::Expression& right_expr,
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	NamesScope& names,
 	FunctionContext& function_context )
 {
@@ -1162,7 +1162,7 @@ Value CodeBuilder::BuildBinaryOperator(
 	const Variable& l_var,
 	const Variable& r_var,
 	const BinaryOperatorType binary_operator,
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	NamesScope& names,
 	FunctionContext& function_context )
 {
@@ -1551,7 +1551,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	const Synt::Expression& l_expression,
 	const Synt::Expression& r_expression,
 	const Synt::BinaryOperator& binary_operator,
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	NamesScope& names,
 	FunctionContext& function_context )
 {
@@ -1637,7 +1637,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 
 
 Value CodeBuilder::DoReferenceCast(
-	const FilePos& file_pos,
+	const SrcLoc& file_pos,
 	const Synt::TypeName& type_name,
 	const Synt::Expression& expression,
 	bool enable_unsafe,
@@ -2255,7 +2255,7 @@ Value CodeBuilder::BuildPostfixOperator(
 Value CodeBuilder::DoCallFunction(
 	llvm::Value* function,
 	const Function& function_type,
-	const FilePos& call_file_pos,
+	const SrcLoc& call_file_pos,
 	const std::vector<Variable>& preevaluated_args,
 	const std::vector<const Synt::Expression*>& args,
 	const bool evaluate_args_in_reverse_order,
@@ -2283,7 +2283,7 @@ Value CodeBuilder::DoCallFunction(
 		const Function::Arg& arg= function_type.args[j];
 
 		Variable expr;
-		FilePos file_pos;
+		SrcLoc file_pos;
 		if( j < preevaluated_args.size() )
 		{
 			expr= preevaluated_args[j];
@@ -2753,7 +2753,7 @@ Variable CodeBuilder::ConvertVariable(
 	const FunctionVariable& conversion_constructor,
 	NamesScope& names,
 	FunctionContext& function_context,
-	const FilePos& file_pos )
+	const SrcLoc& file_pos )
 {
 	if( !EnsureTypeComplete( dst_type ) )
 	{

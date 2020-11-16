@@ -3,7 +3,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
-#include "../lex_synt_lib_common/file_pos.hpp"
+#include "../lex_synt_lib_common/src_loc.hpp"
 
 
 namespace U
@@ -24,7 +24,7 @@ using CodeBuilderErrorsContainer= std::vector<CodeBuilderError>;
 struct TemplateErrorsContext
 {
 	CodeBuilderErrorsContainer errors;
-	FilePos context_declaration_file_pos; // Declaration position of context, macro.
+	SrcLoc context_declaration_file_pos; // Declaration position of context, macro.
 
 	std::string context_name; // Name of template, macro.
 	std::string parameters_description;
@@ -36,7 +36,7 @@ struct CodeBuilderError
 	std::string text;
 	TemplateErrorsContextPtr template_context; // For errors of type "TemplateContext" or "MacroExpansionContext"
 	CodeBuilderErrorCode code;
-	FilePos file_pos;
+	SrcLoc file_pos;
 };
 
 bool operator==( const CodeBuilderError& l, const CodeBuilderError& r );

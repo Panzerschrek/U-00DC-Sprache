@@ -136,7 +136,7 @@ bool IsIdentifierChar( const sprache_char c )
 	return IsIdentifierStartChar(c) || IsNumberStartChar(c) || c == '_';
 }
 
-Lexem ParseString( Iterator& it, const Iterator it_end, const FilePos& file_pos, LexSyntErrors& out_errors )
+Lexem ParseString( Iterator& it, const Iterator it_end, const SrcLoc& file_pos, LexSyntErrors& out_errors )
 {
 	U_ASSERT( *it == '"' );
 	++it;
@@ -293,7 +293,7 @@ double PowI( const uint64_t base, const uint64_t pow )
 	return res;
 }
 
-Lexem ParseNumber( Iterator& it, const Iterator it_end, FilePos file_pos, LexSyntErrors& out_errors )
+Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc file_pos, LexSyntErrors& out_errors )
 {
 	uint64_t base= 10u;
 	// Returns -1 for non-numbers
@@ -531,7 +531,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 			if( collect_comments )
 			{
 				Lexem comment_lexem;
-				comment_lexem.file_pos= FilePos( 0u, line, column );
+				comment_lexem.file_pos= SrcLoc( 0u, line, column );
 				comment_lexem.type= Lexem::Type::Comment;
 
 				while( it < it_end && !IsNewline(sprache_char(*it)) )
@@ -558,7 +558,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 			if( collect_comments )
 			{
 				Lexem comment_lexem;
-				comment_lexem.file_pos= FilePos( 0u, line, column );
+				comment_lexem.file_pos= SrcLoc( 0u, line, column );
 				comment_lexem.type= Lexem::Type::Comment;
 				comment_lexem.text= "/*";
 				advance_column();
@@ -574,14 +574,14 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 			if( collect_comments )
 			{
 				Lexem comment_lexem;
-				comment_lexem.file_pos= FilePos( 0u, line, column );
+				comment_lexem.file_pos= SrcLoc( 0u, line, column );
 				comment_lexem.type= Lexem::Type::Comment;
 				comment_lexem.text= "*/";
 				advance_column();
 				result.lexems.push_back( std::move(comment_lexem) );
 			}
 			else if( comments_depth < 0 )
-				result.errors.emplace_back( "Lexical error: unexpected */", FilePos( 0u, line, column ) );
+				result.errors.emplace_back( "Lexical error: unexpected */", SrcLoc( 0u, line, column ) );
 			it+= 2;
 			column+= 2u;
 			continue;
@@ -601,11 +601,11 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 		}
 		else if( c == '"' )
 		{
-			lexem= ParseString( it, it_end, FilePos( 0u, line, column ), result.errors );
+			lexem= ParseString( it, it_end, SrcLoc( 0u, line, column ), result.errors );
 			if( IsIdentifierStartChar( GetUTF8FirstChar( it, it_end ) ) )
 			{
 				// Parse string suffix.
-				lexem.file_pos= FilePos( 0u, line, column );
+				lexem.file_pos= SrcLoc( 0u, line, column );
 
 				advance_column();
 				if( comments_depth == 0 || collect_comments )
@@ -616,7 +616,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 			}
 		}
 		else if( IsNumberStartChar(c) )
-			lexem= ParseNumber( it, it_end, FilePos( 0u, line, column ), result.errors );
+			lexem= ParseNumber( it, it_end, SrcLoc( 0u, line, column ), result.errors );
 		else if( IsIdentifierStartChar(c) )
 			lexem= ParseIdentifier( it, it_end );
 		else if( IsMacroIdentifierStartChar(c) &&
@@ -647,13 +647,13 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 			if( comments_depth == 0 )
 				result.errors.emplace_back(
 					"Lexical error: unrecognized character: " + std::to_string(c),
-					FilePos( 0u, line, column ) );
+					SrcLoc( 0u, line, column ) );
 			++it;
 			continue;
 		}
 
 	push_lexem:
-		lexem.file_pos= FilePos( 0u, line, column );
+		lexem.file_pos= SrcLoc( 0u, line, column );
 
 		advance_column();
 
@@ -663,26 +663,26 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 
 	if( !collect_comments )
 		for( int i= 0; i < comments_depth; ++i )
-			result.errors.emplace_back( "Lexical error: expected */", FilePos( 0u, line, column ) );
+			result.errors.emplace_back( "Lexical error: expected */", SrcLoc( 0u, line, column ) );
 
 	Lexem eof_lexem;
 	eof_lexem.type= Lexem::Type::EndOfFile;
 	eof_lexem.text= "EOF";
-	eof_lexem.file_pos= FilePos( 0u, line, column );
+	eof_lexem.file_pos= SrcLoc( 0u, line, column );
 
 	result.lexems.emplace_back( std::move(eof_lexem) );
 
-	if( line > FilePos::c_max_line )
+	if( line > SrcLoc::c_max_line )
 	{
 		result.errors.emplace_back(
-			"Lexical error: line limit reached, max is " + std::to_string( FilePos::c_max_line ),
-			FilePos( 0u, line, column ) );
+			"Lexical error: line limit reached, max is " + std::to_string( SrcLoc::c_max_line ),
+			SrcLoc( 0u, line, column ) );
 	}
-	if( max_column > FilePos::c_max_column )
+	if( max_column > SrcLoc::c_max_column )
 	{
 		result.errors.emplace_back(
-			"Lexical error: column limit reached, max is " + std::to_string( FilePos::c_max_column ),
-			FilePos( 0u, line, column ) );
+			"Lexical error: column limit reached, max is " + std::to_string( SrcLoc::c_max_column ),
+			SrcLoc( 0u, line, column ) );
 	}
 
 	return result;
