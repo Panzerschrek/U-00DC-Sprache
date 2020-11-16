@@ -14,7 +14,7 @@ fn CodeBuilder::BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& name
 		return take(v);
 	}
 
-	REPORT_ERROR( ExpectedVariable, names_scope, Synt::GetFilePos(expression), GetValueKindName(value) )
+	REPORT_ERROR( ExpectedVariable, names_scope, Synt::GetSrcLoc(expression), GetValueKindName(value) )
 
 	var Variable mut dummy;
 	dummy.t= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
@@ -1598,7 +1598,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	return PrepareType( names_scope, function_context, function_type );
 }
 
-fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TypeName& type_name, Synt::Expression& expression, FilePos& file_pos, bool allow_unsafe ) : Value
+fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TypeName& type_name, Synt::Expression& expression, SrcLoc& file_pos, bool allow_unsafe ) : Value
 {
 	var Type t= PrepareType( names_scope, function_context, type_name );
 	var Variable v= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression );
@@ -1669,7 +1669,7 @@ fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionC
 	return move(r);
 }
 
-fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& l_var, Variable& r_var, BinaryOperatorType operator, FilePos& file_pos ) : Value
+fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& l_var, Variable& r_var, BinaryOperatorType operator, SrcLoc& file_pos ) : Value
 {
 	auto l_in_register= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
 	auto r_in_register= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
@@ -2168,7 +2168,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 	ust::shared_ptr_final</Synt::Expression/>& arg_l,
 	ust::shared_ptr_final</Synt::Expression/>& arg_r,
 	ArgsEvaluationOrder args_evaluation_order,
-	FilePos& file_pos ) : ust::optional</Value/>
+	SrcLoc& file_pos ) : ust::optional</Value/>
 {
 	var [ ust::shared_ptr_final</Synt::Expression/>, 2 ] in_args[ arg_l, arg_r ];
 
@@ -2270,7 +2270,7 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 	OverloadedOperator operator,
 	ust::shared_ptr_final</Synt::Expression/>& arg_l,
 	ust::shared_ptr_final</Synt::Expression/>& arg_r,
-	FilePos& file_pos ) : Value
+	SrcLoc& file_pos ) : Value
 {
 	// Currently only copy assignment supported for arrays and tuples.
 	if( operator != OverloadedOperator::Assign )
@@ -2333,7 +2333,7 @@ fn CodeBuilder::CallFunctionsSet(
 	ust::optional_ref</ Variable, false /> mut this_,
 	FunctionsSet& functions_set,
 	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
-	FilePos& file_pos ) : Value
+	SrcLoc& file_pos ) : Value
 {
 	// Pre-evaluate arguments to know exact types and select exact function.
 	var ust::vector</VariableTypeExtened/> mut args_evaluated;
@@ -2415,7 +2415,7 @@ fn CodeBuilder::DoCallFunction(
 	ust::optional_ref</ Variable, false />& this_,
 	FunctionVariable& function,
 	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
-	FilePos& file_pos ) : Value
+	SrcLoc& file_pos ) : Value
 {
 	if( function.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
 	{
@@ -2457,7 +2457,7 @@ fn CodeBuilder::DoCallFunction(
 	ust::array_view_imut</ Variable />& preevaluated_args,
 	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 	ArgsEvaluationOrder args_evaluation_order,
-	FilePos& file_pos ) : Value
+	SrcLoc& file_pos ) : Value
 {
 	auto total_args= preevaluated_args.size() + args.size();
 
@@ -2996,7 +2996,7 @@ fn CodeBuilder::BuildTempVariableConstruction(
 	FunctionContext &mut function_context,
 	Type& t,
 	ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args,
-	FilePos& file_pos ) : Value
+	SrcLoc& file_pos ) : Value
 {
 	if( !EnsureTypeComplete( t ) )
 	{

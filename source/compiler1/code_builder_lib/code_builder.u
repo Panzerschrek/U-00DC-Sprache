@@ -324,7 +324,7 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_
 	}
 }
 
-fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeValue& names_scope_value, FilePos& file_pos ) : Value
+fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeValue& names_scope_value, SrcLoc& file_pos ) : Value
 {
 	auto t= names_scope_value.Get</Type/>();
 	if( !t.empty() )
@@ -583,7 +583,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 			};
 			return move(res);
 		}
-		REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, FilePos(), ust::string8("TODO - name" ) )
+		REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, SrcLoc(), ust::string8("TODO - name" ) )
 	}
 
 	auto type_templates_set_ptr= names_scope_value.Get</TypeTemplatesSet/>();
@@ -947,12 +947,12 @@ fn CodeBuilder::PrepareFunction(
 			}
 			else
 			{
-				REPORT_ERROR( ExpectedConstantExpression, names_scope_ptr, Synt::GetFilePos( expr ) )
+				REPORT_ERROR( ExpectedConstantExpression, names_scope_ptr, Synt::GetSrcLoc( expr ) )
 			}
 		}
 		else
 		{
-			REPORT_ERROR( TypesMismatch, names_scope_ptr, Synt::GetFilePos( expr ), bool_type_, condition_variable.t )
+			REPORT_ERROR( TypesMismatch, names_scope_ptr, Synt::GetSrcLoc( expr ), bool_type_, condition_variable.t )
 		}
 	}
 
@@ -1233,7 +1233,7 @@ fn CodeBuilder::CheckOverloadedOperator(
 	FunctionType& func_type,
 	OverloadedOperator operator,
 	NamesScopePtr& names_scope,
-	FilePos& file_pos )
+	SrcLoc& file_pos )
 {
 	if( operator == OverloadedOperator::None ) { return; } // Non-operator
 
@@ -1696,7 +1696,7 @@ fn CodeBuilder::TryCallCopyConstructor(
 	FunctionContext &mut function_context,
 	LLVMValueRef dst, LLVMValueRef src,
 	ClassTypePtr& class_type,
-	FilePos& file_pos )
+	SrcLoc& file_pos )
 {
 	// TODO - maybe combine this with "BuildCopyConstructorPart" method?
 	if( !class_type.lock_imut().get_ref().is_copy_constructible )
@@ -1710,7 +1710,7 @@ fn CodeBuilder::TryCallCopyConstructor(
 	BuildCopyConstructorPart( names_scope, function_context, dst, src, class_type, file_pos );
 }
 
-fn CodeBuilder::CallDestructorsForVariablesFrame( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, size_type variables_frame_index, FilePos& file_pos )
+fn CodeBuilder::CallDestructorsForVariablesFrame( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, size_type variables_frame_index, SrcLoc& file_pos )
 {
 	// Call destructors in reverse order.
 	for( auto mut i= function_context.variables_frames[variables_frame_index].size(); i > 0s; --i )
@@ -1736,13 +1736,13 @@ fn CodeBuilder::CallDestructorsForVariablesFrame( this, NamesScopePtr& names_sco
 	}
 }
 
-fn CodeBuilder::CallDestructorsForTopVariablesFrame( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, FilePos& file_pos )
+fn CodeBuilder::CallDestructorsForTopVariablesFrame( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& file_pos )
 {
 	auto variables_frame_index= function_context.variables_frames.size() - 1s;
 	CallDestructorsForVariablesFrame( names_scope, function_context, variables_frame_index, file_pos );
 }
 
-fn CodeBuilder::CallDestructorsForAllVariablesFrames( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, FilePos& file_pos )
+fn CodeBuilder::CallDestructorsForAllVariablesFrames( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& file_pos )
 {
 	for( auto mut i= function_context.variables_frames.size(); i > 0s; --i )
 	{
@@ -1750,7 +1750,7 @@ fn CodeBuilder::CallDestructorsForAllVariablesFrames( this, NamesScopePtr& names
 	}
 }
 
-fn CodeBuilder::CallDestructorsForLoopInnerVariables( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, FilePos& file_pos )
+fn CodeBuilder::CallDestructorsForLoopInnerVariables( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& file_pos )
 {
 	for( var size_type mut i= function_context.variables_frames.size(), i_end= function_context.loops_stack.back().variable_frames_stack_size; i > i_end; --i )
 	{
@@ -1758,7 +1758,7 @@ fn CodeBuilder::CallDestructorsForLoopInnerVariables( this, NamesScopePtr& names
 	}
 }
 
-fn CodeBuilder::DestroyUnusedTemporaryVariables( this, NamesScopePtr& names_scope, FunctionContext& mut function_context, FilePos& file_pos )
+fn CodeBuilder::DestroyUnusedTemporaryVariables( this, NamesScopePtr& names_scope, FunctionContext& mut function_context, SrcLoc& file_pos )
 {
 	// TODO - maybe iterate in reverse order?
 	// TODO - maybe we should iterate multiple times until all unused nodes is not removed?
@@ -1801,7 +1801,7 @@ fn CodeBuilder::IsReferenceAllowedForReturn( this, FunctionContext& function_con
 	return false;
 }
 
-fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names_scope, FunctionContext& function_context, FilePos& file_pos )
+fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names_scope, FunctionContext& function_context, SrcLoc& file_pos )
 {
 	auto& function_type= function_context.function_type;
 	auto& params= function_type.params;
@@ -1870,14 +1870,14 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 	}
 }
 
-fn CodeBuilder::MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches, NamesScopePtr names_scope, FilePos& file_pos ) : ReferencesGraph
+fn CodeBuilder::MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches, NamesScopePtr names_scope, SrcLoc& file_pos ) : ReferencesGraph
 {
 	auto errors_container= names_scope.lock_imut().get_ref().GetErrors();
 	auto mut lock= errors_container.lock_mut();
 	return ReferencesGraph::MergeReferencesGraphsAfterConditionalBranches( branches, lock.get_ref(), file_pos );
 }
 
-fn CodeBuilder::CheckReferencesGraphAfterLoop( ReferencesGraph& state_before, ReferencesGraph& state_after, NamesScopePtr names_scope, FilePos& file_pos )
+fn CodeBuilder::CheckReferencesGraphAfterLoop( ReferencesGraph& state_before, ReferencesGraph& state_after, NamesScopePtr names_scope, SrcLoc& file_pos )
 {
 	auto errors_container= names_scope.lock_imut().get_ref().GetErrors();
 	auto mut lock= errors_container.lock_mut();
@@ -1890,7 +1890,7 @@ fn CodeBuilder::SetupReferencesInCopyOrMove(
 	Type& dst_type,
 	ReferencesGraph::NodeId dst_node,
 	ReferencesGraph::NodeId src_node,
-	FilePos& file_pos )
+	SrcLoc& file_pos )
 {
 	if( dst_node == ReferencesGraph::c_empty_node_id ||
 		src_node == ReferencesGraph::c_empty_node_id ||

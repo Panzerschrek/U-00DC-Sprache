@@ -6,17 +6,17 @@ namespace U1
 namespace Synt
 {
 
-fn GetFilePos( Initializer& initializer ) : FilePos
+fn GetSrcLoc( Initializer& initializer ) : SrcLoc
 {
 	variant_visit( &el : initializer )
 	{
 		static_if( ust::is_same_type</ typeof(el), EmptyVariant />() )
 		{
-			return FilePos();
+			return SrcLoc();
 		}
 		else if( ust::is_same_type</ typeof(el), Expression />() )
 		{
-			return GetFilePos(el);
+			return GetSrcLoc(el);
 		}
 		else
 		{
@@ -26,13 +26,13 @@ fn GetFilePos( Initializer& initializer ) : FilePos
 	halt;
 }
 
-fn GetFilePos( Expression& expression ) : FilePos
+fn GetSrcLoc( Expression& expression ) : SrcLoc
 {
 	variant_visit( &el : expression )
 	{
 		static_if( ust::is_same_type</ typeof(el), EmptyVariant />() )
 		{
-			return FilePos();
+			return SrcLoc();
 		}
 		else if( ust::is_same_type</ typeof(el), ust::box</ArrayType/> />() )
 		{
@@ -54,13 +54,13 @@ fn GetFilePos( Expression& expression ) : FilePos
 	halt;
 }
 
-fn GetFilePos( BlockElement& block_element ) : FilePos
+fn GetSrcLoc( BlockElement& block_element ) : SrcLoc
 {
 	variant_visit( &el : block_element )
 	{
 		static_if( ust::is_same_type</ typeof(el), Expression />() )
 		{
-			return GetFilePos(el);
+			return GetSrcLoc(el);
 		}
 		else if( ust::is_same_type</ typeof(el), ust::box</Block/> />() )
 		{

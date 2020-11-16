@@ -184,7 +184,7 @@ fn NumberFunc16( char8 c ) : u64
 
 type NumberParseFunc= (fn (char8 c) : u64);
 
-fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, FilePos& file_pos ) : Lexem
+fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& file_pos ) : Lexem
 {
 	var u64 mut base_(10);
 	var NumberParseFunc mut number_func= NumberFunc10;
@@ -365,7 +365,7 @@ fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, FilePos& file_p
 	return move(result_lexem);
 }
 
-fn ParseString( Iterator &mut it, LexSyntErrors &mut out_errors, FilePos& file_pos ) : Lexem
+fn ParseString( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& file_pos ) : Lexem
 {
 	var Lexem mut result_lexem{ .lexem_type= Lexem::Type::String };
 
@@ -553,7 +553,7 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 	{
 		column+= u32( DiffUTF8Chars( prev_it, it ) );
 		prev_it= it;
-		var FilePos file_pos( 0u, line, column );
+		var SrcLoc file_pos( 0u, line, column );
 
 		auto c= GetUTF8FirstChar(it);
 

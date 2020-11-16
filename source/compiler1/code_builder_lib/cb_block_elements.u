@@ -43,10 +43,10 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	{
 		if( block_element_build_info.have_terminal_instruction_inside )
 		{
-			REPORT_ERROR( UnreachableCode, block_names_scope, Synt::GetFilePos(block_element) )
+			REPORT_ERROR( UnreachableCode, block_names_scope, Synt::GetSrcLoc(block_element) )
 		}
 
-		SetCurrentDebugLocation( function_context, Synt::GetFilePos(block_element) );
+		SetCurrentDebugLocation( function_context, Synt::GetSrcLoc(block_element) );
 
 		variant_visit( &el : block_element )
 		{
@@ -718,7 +718,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 	BuildExpressionCode( names_scope, function_context, expression );
 
-	CallDestructorsForTopVariablesFrame( names_scope, function_context, Synt::GetFilePos(expression) );
+	CallDestructorsForTopVariablesFrame( names_scope, function_context, Synt::GetSrcLoc(expression) );
 	return BlockElementBuildInfo();
 }
 
@@ -777,7 +777,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			{
 				REPORT_ERROR( TypesMismatch,
 					names_scope,
-					Synt::GetFilePos( branch.condition ),
+					Synt::GetSrcLoc( branch.condition ),
 					bool_type_,
 					condition_expression.t )
 
@@ -864,14 +864,14 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			{
 				REPORT_ERROR( TypesMismatch,
 					names_scope,
-					Synt::GetFilePos( branch.condition ),
+					Synt::GetSrcLoc( branch.condition ),
 					bool_type_,
 					condition_expression.t )
 				return BlockElementBuildInfo();
 			}
 			if( condition_expression.constexpr_value == LLVMValueRef::Null )
 			{
-				REPORT_ERROR( ExpectedConstantExpression, names_scope, Synt::GetFilePos( branch.condition ) )
+				REPORT_ERROR( ExpectedConstantExpression, names_scope, Synt::GetSrcLoc( branch.condition ) )
 				return BlockElementBuildInfo();
 			}
 
@@ -911,7 +911,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
 		var Variable condition_expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, while_operator.condition );
-		var FilePos condition_file_pos= Synt::GetFilePos( while_operator.condition );
+		var SrcLoc condition_file_pos= Synt::GetSrcLoc( while_operator.condition );
 		if( condition_expression.t != bool_type_ )
 		{
 			REPORT_ERROR( TypesMismatch,
@@ -1254,7 +1254,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
 		var Variable condition_expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, c_style_for_operator.loop_condition );
-		var FilePos condition_file_pos= Synt::GetFilePos( c_style_for_operator.loop_condition );
+		var SrcLoc condition_file_pos= Synt::GetSrcLoc( c_style_for_operator.loop_condition );
 		if( condition_expression.t != bool_type_ )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope, condition_file_pos, bool_type_, condition_expression.t )
@@ -1572,7 +1572,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	auto condition= BuildExpressionCodeEnsureVariable( names_scope, function_context, halt_if.condition );
 	if( condition.t != bool_type_ )
 	{
-		REPORT_ERROR( TypesMismatch, names_scope, Synt::GetFilePos( halt_if.condition ), bool_type_, condition.t )
+		REPORT_ERROR( TypesMismatch, names_scope, Synt::GetSrcLoc( halt_if.condition ), bool_type_, condition.t )
 		return BlockElementBuildInfo();
 	}
 
@@ -1601,7 +1601,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, FilePos& file_pos, i32 delta )
+fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& file_pos, i32 delta )
 {
 	var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();

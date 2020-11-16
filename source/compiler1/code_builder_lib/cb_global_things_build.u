@@ -167,7 +167,7 @@ fn CodeBuilder::DetectGlobalsLoop( this, NamesScopeValue& global_thing ) : bool
 	args.push_back( description );
 
 	errors_container_lock.get_ref().push_back(
-		ReportError( CodeBuilderErrorCode::GlobalsLoopDetected, GetValueFilePos(global_thing), args ) );
+		ReportError( CodeBuilderErrorCode::GlobalsLoopDetected, GetValueSrcLoc(global_thing), args ) );
 
 	return true;
 }
@@ -854,7 +854,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 				if( parent_member_visibility != class_type.lock_imut().get_ref().GetMemberVisibility( member_value.key() ) )
 				{
-					var FilePos mut file_pos= syntax_element.file_pos;
+					var SrcLoc mut file_pos= syntax_element.file_pos;
 					if( !result_functions_set.functions_set.functions.empty() )
 					{
 						auto& f= result_functions_set.functions_set.functions.front();

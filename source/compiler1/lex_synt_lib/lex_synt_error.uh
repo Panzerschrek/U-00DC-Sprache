@@ -7,11 +7,11 @@ namespace U1
 
 struct LexSyntError
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::string8 text;
 
 	fn constructor() = default;
-	fn constructor( FilePos& in_file_pos, ust::string8 mut in_text )
+	fn constructor( SrcLoc& in_file_pos, ust::string8 mut in_text )
 		( file_pos= in_file_pos, text= move(in_text) )
 		{}
 }

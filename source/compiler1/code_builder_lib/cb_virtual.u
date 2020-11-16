@@ -155,7 +155,7 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 			}
 		}
 
-		var FilePos mut file_pos;
+		var SrcLoc mut file_pos;
 		var Synt::Function::VirtualKind mut virtual_kind= Synt::Function::VirtualKind::None;
 		if( !function.body_syntax_element.empty() )
 		{

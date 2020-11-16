@@ -161,8 +161,8 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 {
 	if( dst.something_.index() != src.something_.index() )
 	{
-		auto src_file_pos= GetValueFilePos( src );
-		auto dst_file_pos= GetValueFilePos( dst );
+		auto src_file_pos= GetValueSrcLoc( src );
+		auto dst_file_pos= GetValueSrcLoc( dst );
 		auto file_pos= select( src_file_pos.GetLine() == 0u32 ? dst_file_pos : src_file_pos );
 
 		REPORT_ERROR( Redefinition, target_names_scope, file_pos, name )
@@ -185,7 +185,7 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 		{
 			if( dst_type_ptr.lock_imut().get_ref() != src_type_ptr.lock_imut().get_ref() )
 			{
-				REPORT_ERROR( Redefinition, target_names_scope, FilePos() /* TODO - file_pos */, name )
+				REPORT_ERROR( Redefinition, target_names_scope, SrcLoc() /* TODO - file_pos */, name )
 				return;
 			}
 			return;
@@ -369,47 +369,47 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 	}
 
 	// Can not merge things ot this kind.
-	REPORT_ERROR( Redefinition, target_names_scope, GetValueFilePos( src ), name )
+	REPORT_ERROR( Redefinition, target_names_scope, GetValueSrcLoc( src ), name )
 }
 
-fn CodeBuilder::GetValueFilePos( NamesScopeValue& value ) : FilePos
+fn CodeBuilder::GetValueSrcLoc( NamesScopeValue& value ) : SrcLoc
 {
 	{
 		auto functions_set_ptr= value.Get</NamesScopeFunctionsSet/>();
 		if( !functions_set_ptr.empty() )
 		{
-			var FilePos mut min_file_pos( FilePos::c_max_file_index, FilePos::c_max_line, FilePos::c_max_column );
+			var SrcLoc mut min_file_pos( SrcLoc::c_max_file_index, SrcLoc::c_max_line, SrcLoc::c_max_column );
 
 			auto lock= functions_set_ptr.lock_imut();
 			var NamesScopeFunctionsSet& functions_set= lock.get_ref();
 
 			foreach( &syntax_element : functions_set.syntax_elements )
 			{
-				min_file_pos= ust::min( FilePos(min_file_pos), syntax_element.get_ref().file_pos );
+				min_file_pos= ust::min( SrcLoc(min_file_pos), syntax_element.get_ref().file_pos );
 			}
 			foreach( &syntax_element : functions_set.out_of_line_syntax_elements )
 			{
-				min_file_pos= ust::min( FilePos(min_file_pos), syntax_element.get_ref().file_pos );
+				min_file_pos= ust::min( SrcLoc(min_file_pos), syntax_element.get_ref().file_pos );
 			}
 			foreach( &syntax_element : functions_set.function_templates_syntax_elements )
 			{
-				min_file_pos= ust::min( FilePos(min_file_pos), syntax_element.get_ref().file_pos );
+				min_file_pos= ust::min( SrcLoc(min_file_pos), syntax_element.get_ref().file_pos );
 			}
 
 			foreach( &function : functions_set.functions_set.functions )
 			{
 				if( !function.prototype_syntax_element.empty() )
 				{
-					min_file_pos= ust::min( FilePos(min_file_pos), function.prototype_syntax_element.get_ref().file_pos );
+					min_file_pos= ust::min( SrcLoc(min_file_pos), function.prototype_syntax_element.get_ref().file_pos );
 				}
 				if( !function.body_syntax_element.empty() )
 				{
-					min_file_pos= ust::min( FilePos(min_file_pos), function.body_syntax_element.get_ref().file_pos );
+					min_file_pos= ust::min( SrcLoc(min_file_pos), function.body_syntax_element.get_ref().file_pos );
 				}
 			}
 			foreach( &function_template_ptr : functions_set.functions_set.function_templates )
 			{
-				min_file_pos= ust::min( FilePos(min_file_pos), function_template_ptr.get_ref().syntax_element.get_ref().file_pos );
+				min_file_pos= ust::min( SrcLoc(min_file_pos), function_template_ptr.get_ref().syntax_element.get_ref().file_pos );
 			}
 
 			return min_file_pos;
@@ -426,18 +426,18 @@ fn CodeBuilder::GetValueFilePos( NamesScopeValue& value ) : FilePos
 		auto type_templates_set_ptr= value.Get</TypeTemplatesSet/>();
 		if( !type_templates_set_ptr.empty() )
 		{
-			var FilePos mut min_file_pos( FilePos::c_max_file_index, FilePos::c_max_line, FilePos::c_max_column );
+			var SrcLoc mut min_file_pos( SrcLoc::c_max_file_index, SrcLoc::c_max_line, SrcLoc::c_max_column );
 
 			auto lock= type_templates_set_ptr.lock_imut();
 			var TypeTemplatesSet& type_templates_set= lock.get_ref();
 
 			foreach( &syntax_element : type_templates_set.syntax_elements )
 			{
-				min_file_pos= ust::min( FilePos(min_file_pos), syntax_element.get_ref().file_pos );
+				min_file_pos= ust::min( SrcLoc(min_file_pos), syntax_element.get_ref().file_pos );
 			}
 			foreach( &type_template_ptr : type_templates_set.type_templates )
 			{
-				min_file_pos= ust::min( FilePos(min_file_pos), type_template_ptr.get_ref().syntax_element.get_ref().file_pos );
+				min_file_pos= ust::min( SrcLoc(min_file_pos), type_template_ptr.get_ref().syntax_element.get_ref().file_pos );
 			}
 
 			return min_file_pos;
@@ -477,7 +477,7 @@ fn CodeBuilder::GetValueFilePos( NamesScopeValue& value ) : FilePos
 		}
 	}
 
-	return FilePos();
+	return SrcLoc();
 }
 
 } // namespace U1

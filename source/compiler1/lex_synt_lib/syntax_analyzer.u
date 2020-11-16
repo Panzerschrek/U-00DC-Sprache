@@ -143,7 +143,7 @@ struct BinaryOperatorsChainComponent
 {
 	Expression expression;
 	BinaryOperatorType operator= zero_init; // Value of last component is ignored
-	FilePos file_pos;
+	SrcLoc file_pos;
 }
 
 type BinaryOperatorsChain= ust::vector</BinaryOperatorsChainComponent/>;
@@ -339,7 +339,7 @@ private:
 		ust::vector</Macro::ResultElement/>& result_elements,
 		MacroVariablesMapsStack &mut macro_variables_maps_stack,
 		UniqueMacroIdentifiersMap &mut unique_macro_indentifiers_map,
-		FilePos& expansion_file_pos ) : Lexems;
+		SrcLoc& expansion_file_pos ) : Lexems;
 
 	fn FetchMacroVariable( MacroVariablesMapsStack& macro_variables_maps_stack, ust::string8& variable_name ) : ust::optional</ParsedMacroElement/>;
 
@@ -347,7 +347,7 @@ private:
 	fn NotEndOfFile( this ) : bool;
 	fn NextLexem( mut this );
 	fn PushErrorMessage( mut this );
-	fn PushMacroErrorMessage( mut this, FilePos& file_pos, ust::string8 mut text );
+	fn PushMacroErrorMessage( mut this, SrcLoc& file_pos, ust::string8 mut text );
 
 private:
 	ust::array_view_imut</Lexem/> it_;
@@ -3447,7 +3447,7 @@ fn SyntaxAnalyzer::ParseMacro( mut this )
 	{
 		PushErrorMessage();
 	}
-	var FilePos macro_context_file_pos= it_.front().file_pos;
+	var SrcLoc macro_context_file_pos= it_.front().file_pos;
 	var ust::string8& macro_context_str= it_.front().text;
 	NextLexem();
 
@@ -3528,7 +3528,7 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 		}
 		if( it_.front().lexem_type == Lexem::Type::MacroIdentifier )
 		{
-			var FilePos match_element_file_pos= it_.front().file_pos;
+			var SrcLoc match_element_file_pos= it_.front().file_pos;
 			var Macro::MatchElement mut match_element{ .name= it_.front().text };
 			NextLexem();
 
@@ -3542,7 +3542,7 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 			{
 				PushErrorMessage();
 			}
-			var FilePos element_type_file_pos= it_.front().file_pos;
+			var SrcLoc element_type_file_pos= it_.front().file_pos;
 			var ust::string8& element_type= it_.front().text;
 			NextLexem();
 
@@ -3649,7 +3649,7 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 			continue;
 		}
 
-		var FilePos match_element_file_pos= it_.front().file_pos; // TODO - get REAL value.
+		var SrcLoc match_element_file_pos= it_.front().file_pos; // TODO - get REAL value.
 
 		var ust::optional</Lexem/> mut start_lexem, mut end_lexem;
 
@@ -3803,7 +3803,7 @@ fn SyntaxAnalyzer::FetchMacro( this, ust::string8& name, Macro::Context context 
 
 fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro ) : Lexems
 {
-	var FilePos expansion_file_pos= it_.front().file_pos;
+	var SrcLoc expansion_file_pos= it_.front().file_pos;
 	NextLexem(); // Skip macro name itself.
 
 	auto macro_variables_map_opt= MatchMacroBlock( macro.match_template_elements );
@@ -4011,7 +4011,7 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 	ust::vector</Macro::ResultElement/>& result_elements,
 	MacroVariablesMapsStack &mut macro_variables_maps_stack,
 	UniqueMacroIdentifiersMap &mut unique_macro_indentifiers_map,
-	FilePos& expansion_file_pos ) : Lexems
+	SrcLoc& expansion_file_pos ) : Lexems
 {
 	var Lexems mut lexems_expanded;
 	foreach( &result_element : result_elements )
@@ -4127,7 +4127,7 @@ fn SyntaxAnalyzer::NextLexem( mut this )
 
 fn SyntaxAnalyzer::PushErrorMessage( mut this )
 {
-	if( errors_.empty() || FilePos(errors_.back().file_pos) != it_.front().file_pos )
+	if( errors_.empty() || SrcLoc(errors_.back().file_pos) != it_.front().file_pos )
 	{
 		var LexSyntError mut error( it_.front().file_pos, "Syntax error - unexpected lexem: \"" + it_.front().text + "\"" );
 		errors_.push_back( move(error) );
@@ -4152,7 +4152,7 @@ fn SyntaxAnalyzer::PushErrorMessage( mut this )
 	}
 }
 
-fn SyntaxAnalyzer::PushMacroErrorMessage( mut this, FilePos& file_pos, ust::string8 mut text )
+fn SyntaxAnalyzer::PushMacroErrorMessage( mut this, SrcLoc& file_pos, ust::string8 mut text )
 {
 	errors_.push_back( LexSyntError( file_pos, move(text) ) );
 }

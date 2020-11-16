@@ -23,7 +23,7 @@ fn GetErrorMessagePattern( CodeBuilderErrorCode e ) : ust::array_view_imut</ cha
 struct CodeBuilderError
 {
 	CodeBuilderErrorCode code;
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::string8 text;
 	ust::shared_ptr_nullable_mut</TemplateErrorsContext/> errors_context;
 
@@ -37,7 +37,7 @@ type ErrorsContainer= ust::vector</ CodeBuilderError />;
 struct TemplateErrorsContext
 {
 	ust::shared_ptr_mut</ErrorsContainer/> errors;
-	FilePos context_declaration_file_pos; // Declaration position of context, macro.
+	SrcLoc context_declaration_file_pos; // Declaration position of context, macro.
 
 	ust::string8 context_name; // Name of template, macro.
 	ust::string8 args_description;

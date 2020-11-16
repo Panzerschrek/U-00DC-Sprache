@@ -12,7 +12,7 @@ fn CodeBuilder::CreateFunctionDebugInfo( mut this, FunctionVariable& func_variab
 	}
 
 	var Synt::Function& syntax_element= func_variable.body_syntax_element.get_ref();
-	var FilePos& file_pos= syntax_element.file_pos;
+	var SrcLoc& file_pos= syntax_element.file_pos;
 	var ust::string8& name= syntax_element.name.back();
 
 	unsafe
@@ -40,7 +40,7 @@ fn CodeBuilder::CreateFunctionDebugInfo( mut this, FunctionVariable& func_variab
 	}
 }
 
-fn CodeBuilder::SetCurrentDebugLocation( mut this, FunctionContext& function_context, FilePos& file_pos )
+fn CodeBuilder::SetCurrentDebugLocation( mut this, FunctionContext& function_context, SrcLoc& file_pos )
 {
 	if( !build_debug_info_ )
 	{
@@ -59,7 +59,7 @@ fn CodeBuilder::SetCurrentDebugLocation( mut this, FunctionContext& function_con
 	}
 }
 
-fn CodeBuilder::DebugInfoStartBlock( mut this, FunctionContext &mut function_context, FilePos& file_pos ) : LLVMMetadataRef
+fn CodeBuilder::DebugInfoStartBlock( mut this, FunctionContext &mut function_context, SrcLoc& file_pos ) : LLVMMetadataRef
 {
 	if( !build_debug_info_ )
 	{
@@ -92,7 +92,7 @@ fn CodeBuilder::DebugInfoEndBlock( mut this, FunctionContext &mut function_conte
 	}
 }
 
-fn CodeBuilder::CreateVariableDebugInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, FilePos& file_pos )
+fn CodeBuilder::CreateVariableDebugInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, SrcLoc& file_pos )
 {
 	if( !build_debug_info_ )
 	{
@@ -129,7 +129,7 @@ fn CodeBuilder::CreateVariableDebugInfo( mut this, FunctionContext& function_con
 	}
 }
 
-fn CodeBuilder::CreateReferenceVariableDebugInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, FilePos& file_pos )
+fn CodeBuilder::CreateReferenceVariableDebugInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, SrcLoc& file_pos )
 {
 	if( !build_debug_info_ )
 	{
@@ -387,7 +387,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
 
 	auto class_lock= t.lock_imut();
 	var ClassType& class_type= class_lock.get_ref();
-	var FilePos mut file_pos;
+	var SrcLoc mut file_pos;
 	if( !class_type.syntax_element.empty() )
 	{
 		class_type.syntax_element.get_ref().file_pos;
@@ -518,7 +518,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadataRef
 		}
 	}
 
-	var FilePos& file_pos= enum_.syntax_element.get_ref().file_pos;
+	var SrcLoc& file_pos= enum_.syntax_element.get_ref().file_pos;
 	auto di_file= debug_info_.source_file_entries[ file_pos.GetFileIndex() ];
 
 	var ust::string8 name= Type(t).ToString();

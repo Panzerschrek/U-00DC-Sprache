@@ -38,7 +38,7 @@ fn LoadSourceGraph_r(
 			}
 			imports_loop_str+= file_path_normalized;
 
-			source_graph.errors.push_back( LexSyntError( FilePos( 0u, 0u, 0u ), move(imports_loop_str) ) );
+			source_graph.errors.push_back( LexSyntError( SrcLoc( 0u, 0u, 0u ), move(imports_loop_str) ) );
 			return ~0s;
 		}
 	}
@@ -60,7 +60,7 @@ fn LoadSourceGraph_r(
 		str+= file_path_normalized;
 		str+= "\"";
 
-		source_graph.errors.push_back( LexSyntError( FilePos( 0u, 0u, 0u ), move(str) ) );
+		source_graph.errors.push_back( LexSyntError( SrcLoc( 0u, 0u, 0u ), move(str) ) );
 		return ~0s;
 	}
 

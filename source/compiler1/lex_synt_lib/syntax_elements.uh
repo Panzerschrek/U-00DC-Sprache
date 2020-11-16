@@ -40,7 +40,7 @@ struct Typeof
 
 struct ComplexName
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 
 	ust::variant</ tup[
 		EmptyVariant, // for name, started with ::
@@ -54,77 +54,77 @@ struct ComplexName
 
 struct NumericConstant
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	NumberLexemData num= zero_init;
 }
 
 struct BooleanConstant
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	bool value;
 }
 
 struct StringLiteral
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::string8 value;
 	ust::string8 type_suffix;
 }
 
 struct Typeinfo
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	TypeName type_name;
 }
 
 struct CastRef
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	TypeName t;
 	ust::shared_ptr_final</Expression/> expression;
 }
 
 struct CastRefUnsafe
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	TypeName t;
 	ust::shared_ptr_final</Expression/> expression;
 }
 
 struct CastImut
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::shared_ptr_final</Expression/> expression;
 }
 
 struct CastMut
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::shared_ptr_final</Expression/> expression;
 }
 
 struct MoveOperator
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::string8 variable_name;
 }
 
 struct TakeOperator
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::shared_ptr_final</Expression/> expression;
 }
 
 struct TernaryOperator
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::shared_ptr_final</Expression/> condition;
 	[ ust::shared_ptr_final</Expression/>, 2 ] branches;
 }
 
 struct BinaryOperator
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::shared_ptr_final</Expression/> l;
 	ust::shared_ptr_final</Expression/> r;
 	BinaryOperatorType operator;
@@ -132,27 +132,27 @@ struct BinaryOperator
 
 struct BracketExpression
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::box</Expression/> expr;
 }
 
 struct IndexationOperator
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::shared_ptr_final</Expression/> value;
 	ust::shared_ptr_final</Expression/> index;
 }
 
 struct CallOperator
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::box</Expression/> value;
 	ust::vector</ ust::shared_ptr_final</Expression/> /> args;
 }
 
 struct MemberAccessOperator
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::box</Expression/> value;
 	ust::string8 member_name;
 	ust::box_nullable</TemplateArgs/> template_args;
@@ -160,25 +160,25 @@ struct MemberAccessOperator
 
 struct UnaryPlus
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::box</Expression/> expr;
 }
 
 struct UnaryMinus
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::box</Expression/> expr;
 }
 
 struct LogicalNot
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::box</Expression/> expr;
 }
 
 struct BitwiseNot
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::box</Expression/> expr;
 }
 
@@ -212,24 +212,24 @@ type Expression= ust::variant</ tup[
 
 struct ArrayType
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	TypeName element_type;
 	Expression element_count;
 }
 
 struct TupleType
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::vector</ TypeName /> elements;
 }
 
 struct FunctionType
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 
 	struct Param
 	{
-		FilePos file_pos;
+		SrcLoc file_pos;
 		TypeName t;
 		ReferenceModifier reference_modifier= ReferenceModifier::None;
 		MutabilityModifier mutability_modifier= MutabilityModifier::None;
@@ -262,17 +262,17 @@ type TypeName= ust::variant</ tup[
 
 struct SequenceInitializer
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::vector</ ust::box</ Initializer /> /> elements_initializers;
 }
 
 struct StructNamedInitializer
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 
 	struct Member
 	{
-		FilePos file_pos;
+		SrcLoc file_pos;
 		ust::string8 name;
 		ust::box</ Initializer /> initializer;
 	}
@@ -282,18 +282,18 @@ struct StructNamedInitializer
 
 struct ConstructorInitializer
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::vector</ ust::shared_ptr_final</Expression/> /> args;
 }
 
 struct ZeroInitializer
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 }
 
 struct UninitializedInitializer
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 }
 
 type Initializer= ust::variant</ tup [
@@ -312,8 +312,8 @@ struct Block
 
 	Safety safety= Safety::None;
 
-	FilePos file_pos;
-	FilePos end_file_pos;
+	SrcLoc file_pos;
+	SrcLoc end_file_pos;
 	BlockElements elements;
 }
 
@@ -321,21 +321,21 @@ struct VariablesDeclaration
 {
 	struct VariableEntry
 	{
-		FilePos file_pos;
+		SrcLoc file_pos;
 		ReferenceModifier reference_modifier= ReferenceModifier::None;
 		MutabilityModifier mutability_modifier= MutabilityModifier::None;
 		ust::string8 name;
 		Initializer initializer;
 	}
 
-	FilePos file_pos;
+	SrcLoc file_pos;
 	TypeName t;
 	ust::vector</VariableEntry/> variables;
 }
 
 struct AutoVariableDeclaration
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ust::string8 name;
@@ -344,20 +344,20 @@ struct AutoVariableDeclaration
 
 struct ReturnOperator
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	Expression expr;
 }
 
 struct AssignmentOperator
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::shared_ptr_final</Expression/> l;
 	ust::shared_ptr_final</Expression/> r;
 }
 
 struct AdditiveAssignmentOperator
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	BinaryOperatorType operator;
 	ust::shared_ptr_final</Expression/> l;
 	ust::shared_ptr_final</Expression/> r;
@@ -365,13 +365,13 @@ struct AdditiveAssignmentOperator
 
 struct IncrementOperator
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	Expression expression;
 }
 
 struct DecrementOperator
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	Expression expression;
 }
 
@@ -379,33 +379,33 @@ struct IfOperator
 {
 	struct Branch
 	{
-		FilePos file_pos;
+		SrcLoc file_pos;
 		// Condition - EmptyVariant for last if.
 		Expression condition;
 		ust::box</Block/> block;
 	}
 
-	FilePos file_pos;
-	FilePos end_file_pos;
+	SrcLoc file_pos;
+	SrcLoc end_file_pos;
 	ust::vector</Branch/> branches;
 }
 
 struct StaticIfOperator
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	IfOperator if_operator;
 }
 
 struct WhileOperator
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	Expression condition;
 	ust::box</Block/> block;
 }
 
 struct RangeForOperator
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ust::string8 loop_variable_name;
@@ -415,7 +415,7 @@ struct RangeForOperator
 
 struct CStyleForOperator
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 
 	ust::variant</ tup[
 		EmptyVariant,
@@ -441,17 +441,17 @@ struct CStyleForOperator
 
 struct BreakOperator
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 }
 
 struct ContinueOperator
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 }
 
 struct WithOperator
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ust::string8 variable_name;
@@ -461,18 +461,18 @@ struct WithOperator
 
 struct StaticAssert
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	Expression expression;
 }
 
 struct Halt
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 }
 
 struct HaltIf
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	Expression condition;
 }
 
@@ -503,7 +503,7 @@ type BlockElements= ust::vector</BlockElement/>;
 
 struct Function
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::vector</ ust::string8 /> name; // A, A::B, A::B::C::D, ::A, ::A::B
 	OverloadedOperator operator= OverloadedOperator::None;
 
@@ -538,14 +538,14 @@ struct Function
 
 struct TypeAlias
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::string8 name;
 	TypeName type_name;
 }
 
 struct ClassField
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::string8 name;
 	TypeName t;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
@@ -563,7 +563,7 @@ enum ClassVisibility : u8
 
 struct ClassVisibilityLabel
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ClassVisibility visibility;
 }
 
@@ -595,7 +595,7 @@ struct Class
 		Abstract,
 	}
 
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::string8 name;
 	KindAttribute kind_attribute= KindAttribute::Struct;
 	ust::vector</ComplexName/> parents;
@@ -607,13 +607,13 @@ struct Class
 
 struct Enum
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::string8 name;
 	ComplexName underlaying_type;
 
 	struct Element
 	{
-		FilePos file_pos;
+		SrcLoc file_pos;
 		ust::string8 name;
 	}
 
@@ -622,21 +622,21 @@ struct Enum
 
 struct TemplateParam
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	Expression t; // Actually, only ComplexName. Empty if type parameter.
 	ust::string8 name;
 }
 
 struct TypeTemplate
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::string8 name;
 
 	ust::vector</TemplateParam/> params;
 
 	struct SignatureParam
 	{
-		FilePos file_pos;
+		SrcLoc file_pos;
 		Expression name;
 		Expression default_value;
 	}
@@ -653,7 +653,7 @@ struct TypeTemplate
 
 struct FunctionTemplate
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::string8 name;
 
 	ust::vector</TemplateParam/> params;
@@ -663,7 +663,7 @@ struct FunctionTemplate
 
 struct Namespace
 {
-	FilePos file_pos;
+	SrcLoc file_pos;
 	ust::string8 name;
 	NamespaceElements elements;
 }
@@ -686,9 +686,9 @@ type NamespaceElements= ust::vector</NamespaceElement/>;
 type ProgramElement= NamespaceElement;
 type ProgramElements= ust::vector</ProgramElement/>;
 
-fn GetFilePos( Initializer& initializer ) : FilePos;
-fn GetFilePos( Expression& expression ) : FilePos;
-fn GetFilePos( BlockElement& block_element ) : FilePos;
+fn GetSrcLoc( Initializer& initializer ) : SrcLoc;
+fn GetSrcLoc( Expression& expression ) : SrcLoc;
+fn GetSrcLoc( BlockElement& block_element ) : SrcLoc;
 
 } // namespace Synt
 

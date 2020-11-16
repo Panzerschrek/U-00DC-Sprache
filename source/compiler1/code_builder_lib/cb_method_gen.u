@@ -743,7 +743,7 @@ fn CodeBuilder::TryGenerateDestructor( this, ClassTypePtr& class_type )
 	}
 }
 
-fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, FilePos& file_pos )
+fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, SrcLoc& file_pos )
 {
 	if( !t.GetFundamentalType().empty() || !t.GetEnumType().empty() || !t.GetFunctionPointerType().empty() )
 	{
@@ -832,7 +832,7 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 	halt; // Unhandled type kind
 }
 
-fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, FilePos& file_pos )
+fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, SrcLoc& file_pos )
 {
 	if( !t.GetFundamentalType().empty() || !t.GetEnumType().empty() || !t.GetFunctionPointerType().empty() )
 	{
@@ -921,7 +921,7 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 	halt; // Unhandled type kind
 }
 
-fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef value, Type& t, FilePos& file_pos )
+fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef value, Type& t, SrcLoc& file_pos )
 {
 	if_var( &array_type : t.GetArrayType() )
 	{
@@ -978,7 +978,7 @@ fn CodeBuilder::BuildMembersDestructors( this, FunctionContext &mut function_con
 	auto class_members_lock= class_members_ptr.lock_imut();
 	auto& class_members= class_members_lock.get_ref();
 
-	var FilePos mut file_pos;
+	var SrcLoc mut file_pos;
 	{
 		auto syntax_element= class_type.lock_imut().get_ref().syntax_element;
 		if( !syntax_element.empty() )
