@@ -71,10 +71,10 @@ private:
 	{
 		const void* thing_ptr= nullptr;
 		std::string name;
-		SrcLoc file_pos;
+		SrcLoc src_loc;
 
-		GlobalThing( const void* const in_thing_ptr, const std::string& in_name, const SrcLoc& in_file_pos )
-			: thing_ptr(in_thing_ptr), name(in_name), file_pos(in_file_pos)
+		GlobalThing( const void* const in_thing_ptr, const std::string& in_name, const SrcLoc& in_src_loc )
+			: thing_ptr(in_thing_ptr), name(in_name), src_loc(in_src_loc)
 		{}
 	};
 
@@ -102,7 +102,7 @@ private:
 	void MergeNameScopes( NamesScope& dst, const NamesScope& src, ClassTable& dst_class_table );
 
 	void CopyClass(
-		const SrcLoc& file_pos, // FilePos or original class.
+		const SrcLoc& src_loc, // SrcLoc or original class.
 		const ClassProxyPtr& src_class,
 		ClassTable& dst_class_table,
 		NamesScope& dst_namespace );
@@ -136,7 +136,7 @@ private:
 		const FunctionVariable& function,
 		FunctionContext& function_context,
 		CodeBuilderErrorsContainer& errors_container,
-		const SrcLoc& file_pos );
+		const SrcLoc& src_loc );
 
 	void SetupVirtualTablePointers_r(
 		llvm::Value* this_,
@@ -164,12 +164,12 @@ private:
 	void ProcessTemplateParams(
 		const std::vector<Synt::TemplateBase::Param>& params,
 		NamesScope& names_scope,
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags );
 
 	TemplateSignatureParam CreateTemplateSignatureParameter(
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		const Synt::ComplexName& signature_parameter,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
@@ -194,7 +194,7 @@ private:
 
 	// Resolve as deep, as can, but does not instantiate last component, if it is template.
 	Value ResolveForTemplateSignatureParameter(
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		const Synt::ComplexName& signature_parameter,
 		NamesScope& names_scope );
 
@@ -203,61 +203,61 @@ private:
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		const TemplateSignatureParam& template_param );
 
 	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		const TemplateSignatureParam::TypeParam& template_param );
 
 	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		const TemplateSignatureParam::VariableParam& template_param );
 
 	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		const TemplateSignatureParam::TemplateParam& template_param );
 
 	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		const TemplateSignatureParam::ArrayParam& template_param );
 
 	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		const TemplateSignatureParam::TupleParam& template_param );
 
 	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		const TemplateSignatureParam::FunctionParam& template_param );
 
 	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		const TemplateSignatureParam::SpecializedTemplateParam& template_param );
 
 	// Returns nullptr in case of fail.
 	Value* GenTemplateType(
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		const TypeTemplatesSet& type_templates_set,
 		const std::vector<Synt::Expression>& template_arguments,
 		NamesScope& arguments_names_scope,
@@ -265,42 +265,42 @@ private:
 
 	// Returns nullptr in case of fail.
 	TemplateTypePreparationResult PrepareTemplateType(
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		const TypeTemplatePtr& type_template_ptr,
 		const std::vector<Value>& template_arguments,
 		NamesScope& arguments_names_scope );
 
 	Value* FinishTemplateTypeGeneration(
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		NamesScope& arguments_names_scope,
 		const TemplateTypePreparationResult& template_type_preparation_result );
 
 	const FunctionVariable* GenTemplateFunction(
 		CodeBuilderErrorsContainer& errors_container,
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		const FunctionTemplatePtr& function_template_ptr,
 		const ArgsVector<Function::Arg>& actual_args,
 		bool first_actual_arg_is_this );
 
 	TemplateFunctionPreparationResult PrepareTemplateFunction(
 		CodeBuilderErrorsContainer& errors_container,
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		const FunctionTemplatePtr& function_template_ptr,
 		const ArgsVector<Function::Arg>& actual_args,
 		bool first_actual_arg_is_this );
 
 	const FunctionVariable* FinishTemplateFunctionParametrization(
 		CodeBuilderErrorsContainer& errors_container,
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		const FunctionTemplatePtr& function_template_ptr );
 
 	const FunctionVariable* FinishTemplateFunctionGeneration(
 		CodeBuilderErrorsContainer& errors_container,
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		const TemplateFunctionPreparationResult& template_function_preparation_result );
 
 	Value* ParametrizeFunctionTemplate(
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		const std::vector<FunctionTemplatePtr>& function_templates,
 		const std::vector<Synt::Expression>& template_arguments,
 		NamesScope& arguments_names_scope,
@@ -337,7 +337,7 @@ private:
 
 	void TryCallCopyConstructor(
 		CodeBuilderErrorsContainer& errors_container,
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		llvm::Value* this_, llvm::Value* src,
 		const ClassProxyPtr& class_proxy,
 		FunctionContext& function_context );
@@ -357,24 +357,24 @@ private:
 		const StackVariablesStorage& stack_variables_storage,
 		FunctionContext& function_context,
 		CodeBuilderErrorsContainer& errors_container,
-		const SrcLoc& file_pos );
+		const SrcLoc& src_loc );
 
 	void CallDestructors(
 		const StackVariablesStorage& stack_variables_storage,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		const SrcLoc& file_pos );
+		const SrcLoc& src_loc );
 
 	void CallDestructor(
 		llvm::Value* ptr,
 		const Type& type,
 		FunctionContext& function_context,
 		CodeBuilderErrorsContainer& errors_container,
-		const SrcLoc& file_pos );
+		const SrcLoc& src_loc );
 
-	void CallDestructorsForLoopInnerVariables( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& file_pos );
-	void CallDestructorsBeforeReturn( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& file_pos );
-	void CallMembersDestructors( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const SrcLoc& file_pos );
+	void CallDestructorsForLoopInnerVariables( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
+	void CallDestructorsBeforeReturn( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
+	void CallMembersDestructors( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 	// Returns index of function in set, if function successfuly prepared and inserted. Returns ~0 on fail.
 	size_t PrepareFunction(
@@ -389,7 +389,7 @@ private:
 		const Function& func_type,
 		OverloadedOperator overloaded_operator,
 		CodeBuilderErrorsContainer& errors_container,
-		const SrcLoc& file_pos );
+		const SrcLoc& src_loc );
 
 	// Returns type of return value.
 	Type BuildFuncCode(
@@ -446,7 +446,7 @@ private:
 		const Synt::Expression&  left_expr,
 		const Synt::Expression& right_expr,
 		bool evaluate_args_in_reverse_order,
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		NamesScope& names,
 		FunctionContext& function_context );
 
@@ -454,7 +454,7 @@ private:
 		OverloadedOperator op,
 		const Synt::Expression&  left_expr,
 		const Synt::Expression& right_expr,
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		NamesScope& names,
 		FunctionContext& function_context );
 
@@ -462,7 +462,7 @@ private:
 		const Variable& l_var,
 		const Variable& r_var,
 		BinaryOperatorType binary_operator,
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		NamesScope& names,
 		FunctionContext& function_context );
 		
@@ -470,12 +470,12 @@ private:
 		const Synt::Expression& l_expression,
 		const Synt::Expression& r_expression,
 		const Synt::BinaryOperator& binary_operator,
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		NamesScope& names,
 		FunctionContext& function_context );
 
 	Value DoReferenceCast(
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		const Synt::TypeName& type_name,
 		const Synt::Expression& expression,
 		bool enable_unsafe,
@@ -490,7 +490,7 @@ private:
 	Value DoCallFunction(
 		llvm::Value* function,
 		const Function& function_type,
-		const SrcLoc& call_file_pos,
+		const SrcLoc& call_src_loc,
 		const std::vector<Variable>& preevaluated_args,
 		const std::vector<const Synt::Expression*>& args,
 		const bool evaluate_args_in_reverse_order,
@@ -510,7 +510,7 @@ private:
 		const FunctionVariable& conversion_constructor,
 		NamesScope& names,
 		FunctionContext& function_context,
-		const SrcLoc& file_pos );
+		const SrcLoc& src_loc );
 
 	// Prefix operators
 	Value BuildPrefixOperator( const Synt::UnaryMinus& unary_minus, const Value& value, NamesScope& names, FunctionContext& function_context );
@@ -563,7 +563,7 @@ private:
 	// ++ and -- operations
 	void BuildDeltaOneOperatorCode(
 		const Synt::Expression& expression,
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		bool positive, // true - increment, false - decrement
 		NamesScope& block_names,
 		FunctionContext& function_context );
@@ -578,7 +578,7 @@ private:
 	};
 
 	Value ResolveValue(
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		const Synt::ComplexName& complex_name,
@@ -595,14 +595,14 @@ private:
 		OverloadedFunctionsSet& functions_set,
 		const FunctionVariable& function,
 		CodeBuilderErrorsContainer& errors_container,
-		const SrcLoc& file_pos );
+		const SrcLoc& src_loc );
 
 	const FunctionVariable* GetOverloadedFunction(
 		const OverloadedFunctionsSet& functions_set,
 		const ArgsVector<Function::Arg>& actual_args,
 		bool first_actual_arg_is_this,
 		CodeBuilderErrorsContainer& errors_container,
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		bool produce_errors= true,
 		bool enable_type_conversions= true);
 
@@ -610,13 +610,13 @@ private:
 		const ArgsVector<Function::Arg>& actual_args,
 		OverloadedOperator op,
 		CodeBuilderErrorsContainer& errors_container,
-		const SrcLoc& file_pos );
+		const SrcLoc& src_loc );
 
 	const FunctionVariable* GetConversionConstructor(
 		const Type& src_type,
 		const Type& dst_type,
 		CodeBuilderErrorsContainer& errors_container,
-		const SrcLoc& file_pos );
+		const SrcLoc& src_loc );
 
 	const TemplateTypePreparationResult* SelectTemplateType(
 		const std::vector<TemplateTypePreparationResult>& candidate_templates,
@@ -636,7 +636,7 @@ private:
 
 	void ApplyEmptyInitializer(
 		const std::string& variable_name,
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		const Variable& variable,
 		NamesScope& block_names,
 		FunctionContext& function_context );
@@ -702,21 +702,21 @@ private:
 		const Synt::FunctionType& func,
 		Function& function_type );
 
-	void SetupReferencesInCopyOrMove( FunctionContext& function_context, const Variable& dst_variable, const Variable& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& file_pos );
+	void SetupReferencesInCopyOrMove( FunctionContext& function_context, const Variable& dst_variable, const Variable& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
-	void DestroyUnusedTemporaryVariables( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const SrcLoc& file_pos );
+	void DestroyUnusedTemporaryVariables( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 	ReferencesGraph MergeVariablesStateAfterIf(
 		const std::vector<ReferencesGraph>& bracnhes_variables_state,
 		CodeBuilderErrorsContainer& errors_container,
-		const SrcLoc& file_pos );
+		const SrcLoc& src_loc );
 
 	bool IsReferenceAllowedForReturn( FunctionContext& function_context, const ReferencesGraphNodePtr& variable_node );
 
 	void CheckReferencesPollutionBeforeReturn(
 		FunctionContext& function_context,
 		CodeBuilderErrorsContainer& errors_container,
-		const SrcLoc& file_pos );
+		const SrcLoc& src_loc );
 
 	// NamesScope fill
 
@@ -737,7 +737,7 @@ private:
 
 	bool IsTypeComplete( const Type& type ) const;
 	bool EnsureTypeComplete( const Type& type ); // Returns true, if complete
-	bool ReferenceIsConvertible( const Type& from, const Type& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& file_pos ); // Returns true of all ok. If types are different can call EnsureTypeCompleteness.
+	bool ReferenceIsConvertible( const Type& from, const Type& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc ); // Returns true of all ok. If types are different can call EnsureTypeCompleteness.
 
 	void GlobalThingBuildNamespace( NamesScope& names_scope );
 	void GlobalThingBuildFunctionsSet( NamesScope& names_scope, OverloadedFunctionsSet& functions_set, bool build_body );
@@ -747,7 +747,7 @@ private:
 	void GlobalThingBuildTypedef( NamesScope& names_scope, Value& typedef_value );
 	void GlobalThingBuildVariable( NamesScope& names_scope, Value& global_variable_value );
 	size_t GlobalThingDetectloop( const GlobalThing& global_thing ); // returns loop start index or ~0u
-	void GlobalThingReportAboutLoop( size_t loop_start_stack_index, const std::string& last_loop_element_name, const SrcLoc& last_loop_element_file_pos );
+	void GlobalThingReportAboutLoop( size_t loop_start_stack_index, const std::string& last_loop_element_name, const SrcLoc& last_loop_element_src_loc );
 
 	// Debug info
 
@@ -756,13 +756,13 @@ private:
 	void CreateVariableDebugInfo(
 		const Variable& variable,
 		const std::string& variable_name,
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		FunctionContext& function_context );
 
 	void CreateReferenceVariableDebugInfo(
 		const Variable& variable,
 		const std::string& variable_name,
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		FunctionContext& function_context );
 
 	void CreateFunctionDebugInfo(
@@ -770,10 +770,10 @@ private:
 		const std::string& function_name );
 
 	void SetCurrentDebugLocation(
-		const SrcLoc& file_pos,
+		const SrcLoc& src_loc,
 		FunctionContext& function_context );
 
-	void DebugInfoStartBlock( const SrcLoc& file_pos, FunctionContext& function_context );
+	void DebugInfoStartBlock( const SrcLoc& src_loc, FunctionContext& function_context );
 	void DebugInfoEndBlock( FunctionContext& function_context );
 
 	llvm::DIType* CreateDIType( const Type& type );

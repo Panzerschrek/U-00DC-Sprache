@@ -209,7 +209,7 @@ ClassProxyPtr CodeBuilder::NamesScopeFill(
 
 		names_scope.AddName( class_name, Value( Type( class_type ), class_declaration.src_loc_ ) );
 		class_type->class_->syntax_element= &class_declaration;
-		class_type->class_->body_file_pos= class_type->class_->forward_declaration_file_pos= class_declaration.src_loc_;
+		class_type->class_->body_src_loc= class_type->class_->forward_declaration_src_loc= class_declaration.src_loc_;
 		class_type->class_->llvm_type= llvm::StructType::create( llvm_context_, MangleType( class_type ) );
 
 		class_type->class_->members.AddAccessRightsFor( class_type, ClassMemberVisibility::Private );
@@ -218,10 +218,10 @@ ClassProxyPtr CodeBuilder::NamesScopeFill(
 	Class& the_class= *class_type->class_;
 
 	if( class_declaration.is_forward_declaration_ )
-		the_class.forward_declaration_file_pos= class_declaration.src_loc_;
+		the_class.forward_declaration_src_loc= class_declaration.src_loc_;
 	else
 	{
-		the_class.body_file_pos= class_declaration.src_loc_;
+		the_class.body_src_loc= class_declaration.src_loc_;
 		the_class.syntax_element= &class_declaration;
 	}
 

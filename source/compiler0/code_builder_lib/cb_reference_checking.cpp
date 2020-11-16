@@ -202,7 +202,7 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 	} // for pollution
 }
 
-void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context, const Variable& dst_variable, const Variable& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& file_pos )
+void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context, const Variable& dst_variable, const Variable& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
 	const ReferencesGraphNodePtr& src_node= src_variable.node;
 	const ReferencesGraphNodePtr& dst_node= dst_variable.node;
@@ -233,7 +233,7 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 			if( ( dst_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut && function_context.variables_state.HaveOutgoingLinks( src_node_inner_reference ) ) ||
 				function_context.variables_state.HaveOutgoingMutableNodes( src_node_inner_reference ) )
 			{
-				REPORT_ERROR( ReferenceProtectionError, errors_container, file_pos, src_node_inner_reference->name );
+				REPORT_ERROR( ReferenceProtectionError, errors_container, src_loc, src_node_inner_reference->name );
 			}
 			else
 				function_context.variables_state.AddLink( src_node_inner_reference, dst_node_inner_reference );
@@ -241,7 +241,7 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 	}
 }
 
-void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const SrcLoc& file_pos )
+void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
 	StackVariablesStorage& temporary_variables_storage= *function_context.stack_variables_stack.back();
 	for( const StackVariablesStorage::NodeAndVariable& variable : temporary_variables_storage.variables_ )
@@ -250,7 +250,7 @@ void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_con
 			!function_context.variables_state.NodeMoved( variable.first ) )
 		{
 			if( variable.first->kind == ReferencesGraphNode::Kind::Variable && variable.second.type.HaveDestructor() )
-				CallDestructor( variable.second.llvm_value, variable.second.type, function_context, errors_container, file_pos );
+				CallDestructor( variable.second.llvm_value, variable.second.type, function_context, errors_container, src_loc );
 			function_context.variables_state.MoveNode( variable.first );
 		}
 	}
@@ -259,9 +259,9 @@ void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_con
 ReferencesGraph CodeBuilder::MergeVariablesStateAfterIf(
 	const std::vector<ReferencesGraph>& bracnhes_variables_state,
 	CodeBuilderErrorsContainer& errors_container,
-	const SrcLoc& file_pos )
+	const SrcLoc& src_loc )
 {
-	ReferencesGraph::MergeResult res= ReferencesGraph::MergeVariablesStateAfterIf( bracnhes_variables_state, file_pos );
+	ReferencesGraph::MergeResult res= ReferencesGraph::MergeVariablesStateAfterIf( bracnhes_variables_state, src_loc );
 	errors_container.insert( errors_container.end(), res.second.begin(), res.second.end() );
 	return std::move(res.first);
 }
@@ -283,7 +283,7 @@ bool CodeBuilder::IsReferenceAllowedForReturn( FunctionContext& function_context
 void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 	FunctionContext& function_context,
 	CodeBuilderErrorsContainer& errors_container,
-	const SrcLoc& file_pos )
+	const SrcLoc& src_loc )
 {
 	for( size_t i= 0u; i < function_context.function_type.args.size(); ++i )
 	{
@@ -319,7 +319,7 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 				if( function_context.function_type.references_pollution.count( pollution ) != 0u )
 					continue;
 			}
-			REPORT_ERROR( UnallowedReferencePollution, errors_container, file_pos );
+			REPORT_ERROR( UnallowedReferencePollution, errors_container, src_loc );
 		}
 	}
 }

@@ -28,7 +28,7 @@ struct TemplateBase
 
 	NamesScope* parent_namespace= nullptr; // NamesScope, where defined. NOT changed after import.
 
-	SrcLoc file_pos;
+	SrcLoc src_loc;
 };
 
 struct TypeTemplate final : TemplateBase

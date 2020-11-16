@@ -61,8 +61,8 @@ struct FunctionVariable final
 
 	llvm::Function* llvm_function= nullptr;
 
-	SrcLoc prototype_file_pos;
-	SrcLoc body_file_pos;
+	SrcLoc prototype_src_loc;
+	SrcLoc body_src_loc;
 
 	bool VirtuallyEquals( const FunctionVariable& other ) const;
 };
@@ -190,22 +190,22 @@ class Value final
 {
 public:
 	Value() = default;
-	Value( Variable variable, const SrcLoc& file_pos );
+	Value( Variable variable, const SrcLoc& src_loc );
 	Value( OverloadedFunctionsSet functions_set );
-	Value( Type type, const SrcLoc& file_pos );
-	Value( ClassField class_field, const SrcLoc& file_pos );
+	Value( Type type, const SrcLoc& src_loc );
+	Value( ClassField class_field, const SrcLoc& src_loc );
 	Value( ThisOverloadedMethodsSet class_field );
-	Value( const NamesScopePtr& namespace_, const SrcLoc& file_pos );
-	Value( TypeTemplatesSet type_templates, const SrcLoc& file_pos );
-	Value( StaticAssert static_assert_, const SrcLoc& file_pos );
-	Value( Typedef typedef_, const SrcLoc& file_pos );
-	Value( IncompleteGlobalVariable incomplete_global_variable, const SrcLoc& file_pos );
+	Value( const NamesScopePtr& namespace_, const SrcLoc& src_loc );
+	Value( TypeTemplatesSet type_templates, const SrcLoc& src_loc );
+	Value( StaticAssert static_assert_, const SrcLoc& src_loc );
+	Value( Typedef typedef_, const SrcLoc& src_loc );
+	Value( IncompleteGlobalVariable incomplete_global_variable, const SrcLoc& src_loc );
 	Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg );
 	Value( ErrorValue error_value );
 
 	size_t GetKindIndex() const;
 	std::string GetKindName() const;
-	const SrcLoc& GetFilePos() const;
+	const SrcLoc& GetSrcLoc() const;
 
 	Variable* GetVariable();
 	const Variable* GetVariable() const;
@@ -257,10 +257,10 @@ private:
 		YetNotDeducedTemplateArg,
 		ErrorValue > something_;
 
-	// File_pos used as unique id for entry, needed for imports merging.
-	// Two values are 100% same, if their file_pos are identical.
-	// Not for all values file_pos required, so, fill it with zeros for it.
-	SrcLoc file_pos_;
+	// SrcLoc used as unique id for entry, needed for imports merging.
+	// Two values are 100% same, if their src_loc are identical.
+	// Not for all values SrcLoc required, so, fill it with zeros for it.
+	SrcLoc src_loc_;
 };
 
 } //namespace CodeBuilderPrivate

@@ -31,11 +31,11 @@ std::string PreprocessArg( const Synt::ComplexName& name );
 template<class T> const T& PreprocessArg( const T& t ) { return t; }
 
 template<class ... Args>
-CodeBuilderError ReportError( const CodeBuilderErrorCode code, const SrcLoc& file_pos, const Args& ... args )
+CodeBuilderError ReportError( const CodeBuilderErrorCode code, const SrcLoc& src_loc, const Args& ... args )
 {
 	CodeBuilderError error;
 	error.code= code;
-	error.src_loc= file_pos;
+	error.src_loc= src_loc;
 	error.text= llvm::formatv( GetErrorMessagePattern(code), PreprocessArg(args)... ).str();
 	return error;
 }

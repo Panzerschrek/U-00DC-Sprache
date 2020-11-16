@@ -829,12 +829,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		const StackVariablesStorage temp_variables_storage( function_context );
 		const Variable condition_expression= BuildExpressionCodeEnsureVariable( c_style_for_operator.loop_condition_, loop_names_scope, function_context );
 
-		const SrcLoc condition_file_pos= Synt::GetExpressionSrcLoc( c_style_for_operator.loop_condition_ );
+		const SrcLoc condition_src_loc= Synt::GetExpressionSrcLoc( c_style_for_operator.loop_condition_ );
 		if( condition_expression.type != bool_type_ )
 		{
 			REPORT_ERROR( TypesMismatch,
 					names.GetErrors(),
-					condition_file_pos,
+					condition_src_loc,
 					bool_type_,
 					condition_expression.type );
 			function_context.llvm_ir_builder.CreateBr( loop_block );
@@ -842,7 +842,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		else
 		{
 			llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
-			CallDestructors( temp_variables_storage, names, function_context, condition_file_pos );
+			CallDestructors( temp_variables_storage, names, function_context, condition_src_loc );
 			function_context.llvm_ir_builder.CreateCondBr( condition_in_register, loop_block, block_after_loop );
 		}
 	}
@@ -924,10 +924,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		const StackVariablesStorage temp_variables_storage( function_context );
 		const Variable condition_expression= BuildExpressionCodeEnsureVariable( while_operator.condition_, names, function_context );
 
-		const SrcLoc condition_file_pos= Synt::GetExpressionSrcLoc( while_operator.condition_ );
+		const SrcLoc condition_src_loc= Synt::GetExpressionSrcLoc( while_operator.condition_ );
 		if( condition_expression.type != bool_type_ )
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), condition_file_pos, bool_type_, condition_expression.type );
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), condition_src_loc, bool_type_, condition_expression.type );
 
 			// Create instruction even in case of error, because we needs to store basic blocs somewhere.
 			function_context.llvm_ir_builder.CreateCondBr( llvm::UndefValue::get( fundamental_llvm_types_.bool_ ), while_block, block_after_while );
@@ -935,7 +935,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		else
 		{
 			llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
-			CallDestructors( temp_variables_storage, names, function_context, condition_file_pos );
+			CallDestructors( temp_variables_storage, names, function_context, condition_src_loc );
 
 			function_context.llvm_ir_builder.CreateCondBr( condition_in_register, while_block, block_after_while );
 		}
@@ -1298,26 +1298,26 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		if( std::get_if<Synt::EmptyVariant>(&branch.condition) == nullptr )
 		{
 			const Synt::Expression& condition= branch.condition;
-			const SrcLoc condition_file_pos= Synt::GetExpressionSrcLoc( condition );
+			const SrcLoc condition_src_loc= Synt::GetExpressionSrcLoc( condition );
 
 			const StackVariablesStorage temp_variables_storage( function_context );
 
 			const Variable condition_expression= BuildExpressionCodeEnsureVariable( condition, names, function_context );
 			if( condition_expression.type != bool_type_ )
 			{
-				REPORT_ERROR( TypesMismatch, names.GetErrors(), condition_file_pos, bool_type_, condition_expression.type );
+				REPORT_ERROR( TypesMismatch, names.GetErrors(), condition_src_loc, bool_type_, condition_expression.type );
 				continue;
 			}
 			if( condition_expression.constexpr_value == nullptr )
 			{
-				REPORT_ERROR( ExpectedConstantExpression, names.GetErrors(), condition_file_pos );
+				REPORT_ERROR( ExpectedConstantExpression, names.GetErrors(), condition_src_loc );
 				continue;
 			}
 
 			if( condition_expression.constexpr_value->getUniqueInteger().getLimitedValue() != 0u )
 				return BuildBlockElement( branch.block, names, function_context ); // Ok, this static if produdes block.
 
-			CallDestructors( temp_variables_storage, names, function_context, condition_file_pos );
+			CallDestructors( temp_variables_storage, names, function_context, condition_src_loc );
 		}
 		else
 		{
@@ -1606,19 +1606,19 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 
 	const StackVariablesStorage temp_variables_storage( function_context );
 	const Variable condition_expression= BuildExpressionCodeEnsureVariable( halt_if.condition, names, function_context );
-	const SrcLoc condition_expression_file_pos= Synt::GetExpressionSrcLoc( halt_if.condition );
+	const SrcLoc condition_expression_src_loc= Synt::GetExpressionSrcLoc( halt_if.condition );
 	if( condition_expression.type!= bool_type_ )
 	{
 		REPORT_ERROR( TypesMismatch,
 			names.GetErrors(),
-			condition_expression_file_pos,
+			condition_expression_src_loc,
 			bool_type_,
 			condition_expression.type );
 		return block_info;
 	}
 
 	llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
-	CallDestructors( temp_variables_storage, names, function_context, condition_expression_file_pos );
+	CallDestructors( temp_variables_storage, names, function_context, condition_expression_src_loc );
 
 	function_context.llvm_ir_builder.CreateCondBr( condition_in_register, true_block, false_block );
 
@@ -1639,7 +1639,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 
 void CodeBuilder::BuildDeltaOneOperatorCode(
 	const Synt::Expression& expression,
-	const SrcLoc& file_pos,
+	const SrcLoc& src_loc,
 	bool positive, // true - increment, false - decrement
 	NamesScope& block_names,
 	FunctionContext& function_context )
@@ -1651,7 +1651,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	const Variable* const variable= value.GetVariable();
 	if( variable == nullptr )
 	{
-		REPORT_ERROR( ExpectedVariable, block_names.GetErrors(), file_pos, value.GetKindName() );
+		REPORT_ERROR( ExpectedVariable, block_names.GetErrors(), src_loc, value.GetKindName() );
 		return;
 	}
 
@@ -1661,7 +1661,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	args.back().is_mutable= variable->value_type == ValueType::Reference;
 	args.back().is_reference= variable->value_type != ValueType::Value;
 	const FunctionVariable* const overloaded_operator=
-		GetOverloadedOperator( args, positive ? OverloadedOperator::Increment : OverloadedOperator::Decrement, block_names.GetErrors(), file_pos );
+		GetOverloadedOperator( args, positive ? OverloadedOperator::Increment : OverloadedOperator::Decrement, block_names.GetErrors(), src_loc );
 	if( overloaded_operator != nullptr )
 	{
 		if( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
@@ -1669,27 +1669,27 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 
 		if( overloaded_operator->is_this_call )
 		{
-			const auto fetch_result= TryFetchVirtualFunction( *variable, *overloaded_operator, function_context, block_names.GetErrors(), file_pos );
-			DoCallFunction( fetch_result.second, *overloaded_operator->type.GetFunctionType(), file_pos, { fetch_result.first }, {}, false, block_names, function_context );
+			const auto fetch_result= TryFetchVirtualFunction( *variable, *overloaded_operator, function_context, block_names.GetErrors(), src_loc );
+			DoCallFunction( fetch_result.second, *overloaded_operator->type.GetFunctionType(), src_loc, { fetch_result.first }, {}, false, block_names, function_context );
 		}
 		else
-			DoCallFunction( overloaded_operator->llvm_function, *overloaded_operator->type.GetFunctionType(), file_pos, { *variable }, {}, false, block_names, function_context );
+			DoCallFunction( overloaded_operator->llvm_function, *overloaded_operator->type.GetFunctionType(), src_loc, { *variable }, {}, false, block_names, function_context );
 	}
 	else if( const FundamentalType* const fundamental_type= variable->type.GetFundamentalType() )
 	{
 		if( !IsInteger( fundamental_type->fundamental_type ) )
 		{
-			REPORT_ERROR( OperationNotSupportedForThisType, block_names.GetErrors(), file_pos, variable->type );
+			REPORT_ERROR( OperationNotSupportedForThisType, block_names.GetErrors(), src_loc, variable->type );
 			return;
 		}
 		if( variable->value_type != ValueType::Reference )
 		{
-			REPORT_ERROR( ExpectedReferenceValue, block_names.GetErrors(), file_pos );
+			REPORT_ERROR( ExpectedReferenceValue, block_names.GetErrors(), src_loc );
 			return;
 		}
 
 		if( variable->node != nullptr && function_context.variables_state.HaveOutgoingLinks( variable->node ) )
-			REPORT_ERROR( ReferenceProtectionError, block_names.GetErrors(), file_pos, variable->node->name );
+			REPORT_ERROR( ReferenceProtectionError, block_names.GetErrors(), src_loc, variable->node->name );
 
 		llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( *variable, function_context );
 		llvm::Value* const one=
@@ -1707,11 +1707,11 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	}
 	else
 	{
-		REPORT_ERROR( OperationNotSupportedForThisType, block_names.GetErrors(), file_pos, variable->type );
+		REPORT_ERROR( OperationNotSupportedForThisType, block_names.GetErrors(), src_loc, variable->type );
 		return;
 	}
 
-	CallDestructors( temp_variables_storage, block_names, function_context, file_pos );
+	CallDestructors( temp_variables_storage, block_names, function_context, src_loc );
 }
 
 } // namespace CodeBuilderPrivate

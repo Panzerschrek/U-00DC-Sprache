@@ -44,7 +44,7 @@ Type CodeBuilder::PrepareType( const Synt::ArrayTypeName& array_type_name, Names
 	array_type.type= PrepareType( *array_type_name.element_type, names_scope, function_context );
 
 	const Synt::Expression& num= *array_type_name.size;
-	const SrcLoc num_file_pos= Synt::GetExpressionSrcLoc( num );
+	const SrcLoc num_src_loc= Synt::GetExpressionSrcLoc( num );
 
 	const Variable size_variable= BuildExpressionCodeEnsureVariable( num, names_scope, function_context );
 	if( size_variable.constexpr_value != nullptr )
@@ -59,19 +59,19 @@ Type CodeBuilder::PrepareType( const Synt::ArrayTypeName& array_type_name, Names
 				{
 					const llvm::APInt& size_value= size_variable.constexpr_value->getUniqueInteger();
 					if( IsSignedInteger( size_fundamental_type->fundamental_type ) && size_value.isNegative() )
-						REPORT_ERROR( ArraySizeIsNegative, names_scope.GetErrors(), num_file_pos );
+						REPORT_ERROR( ArraySizeIsNegative, names_scope.GetErrors(), num_src_loc );
 					else
 						array_type.size= size_value.getLimitedValue();
 				}
 			}
 			else
-				REPORT_ERROR( ArraySizeIsNotInteger, names_scope.GetErrors(), num_file_pos );
+				REPORT_ERROR( ArraySizeIsNotInteger, names_scope.GetErrors(), num_src_loc );
 		}
 		else
 			U_ASSERT( false && "Nonfundamental constexpr? WTF?" );
 	}
 	else
-		REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), num_file_pos );
+		REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), num_src_loc );
 
 	// TODO - generate error, if total size of type (incuding arrays) is more, than half of address space of target architecture.
 	array_type.llvm_type= llvm::ArrayType::get( array_type.type.GetLLVMType(), array_type.size );

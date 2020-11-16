@@ -32,14 +32,14 @@ public:
 private:
 	std::function<void()> function_;
 };
-#define DETECT_GLOBALS_LOOP( in_thing_ptr, in_name, in_file_pos ) \
+#define DETECT_GLOBALS_LOOP( in_thing_ptr, in_name, in_src_loc ) \
 	{ \
-		const SrcLoc file_pos__= in_file_pos; \
-		const GlobalThing global_thing( static_cast<const void*>(in_thing_ptr), in_name, file_pos__ ); \
+		const SrcLoc src_loc__= in_src_loc; \
+		const GlobalThing global_thing( static_cast<const void*>(in_thing_ptr), in_name, src_loc__ ); \
 		const size_t loop_pos= GlobalThingDetectloop( global_thing ); \
 		if( loop_pos != ~0u ) \
 		{ \
-			GlobalThingReportAboutLoop( loop_pos, in_name, file_pos__ ); \
+			GlobalThingReportAboutLoop( loop_pos, in_name, src_loc__ ); \
 			return; \
 		} \
 		global_things_stack_.push_back( global_thing ); \
@@ -178,7 +178,7 @@ bool CodeBuilder::EnsureTypeComplete( const Type& type )
 	return false;
 }
 
-bool CodeBuilder::ReferenceIsConvertible( const Type& from, const Type& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& file_pos )
+bool CodeBuilder::ReferenceIsConvertible( const Type& from, const Type& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
 	if( from == to )
 		return true;
@@ -186,9 +186,9 @@ bool CodeBuilder::ReferenceIsConvertible( const Type& from, const Type& to, Code
 	if( from != void_type_ && to != void_type_ )
 	{
 		if( !EnsureTypeComplete( from ) )
-			REPORT_ERROR( UsingIncompleteType, errors_container, file_pos, from );
+			REPORT_ERROR( UsingIncompleteType, errors_container, src_loc, from );
 		if( !EnsureTypeComplete(   to ) )
-			REPORT_ERROR( UsingIncompleteType, errors_container, file_pos,   to );
+			REPORT_ERROR( UsingIncompleteType, errors_container, src_loc,   to );
 	}
 
 	return from.ReferenceIsConvertibleTo(to);
@@ -243,19 +243,19 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 {
 	if( !functions_set.syntax_elements.empty() || !functions_set.out_of_line_syntax_elements.empty() || !functions_set.template_syntax_elements.empty() )
 	{
-		SrcLoc functions_set_file_pos;
+		SrcLoc functions_set_src_loc;
 		std::string functions_set_name;
 		if( !functions_set.syntax_elements.empty() )
 		{
-			functions_set_file_pos= functions_set.syntax_elements.front()->src_loc_;
+			functions_set_src_loc= functions_set.syntax_elements.front()->src_loc_;
 			functions_set_name= functions_set.syntax_elements.front()->name_.back();
 		}
 		else if( !functions_set.template_syntax_elements.empty() )
 		{
-			functions_set_file_pos= functions_set.template_syntax_elements.front()->src_loc_;
+			functions_set_src_loc= functions_set.template_syntax_elements.front()->src_loc_;
 			functions_set_name= functions_set.template_syntax_elements.front()->function_->name_.back();
 		}
-		DETECT_GLOBALS_LOOP( &functions_set, functions_set_name, functions_set_file_pos );
+		DETECT_GLOBALS_LOOP( &functions_set, functions_set_name, functions_set_src_loc );
 
 		for( const Synt::Function* const function : functions_set.syntax_elements )
 		{
@@ -367,7 +367,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 	const Synt::Class& class_declaration= *the_class.syntax_element;
 	const std::string& class_name= class_declaration.name_;
 
-	DETECT_GLOBALS_LOOP( &the_class, the_class.members.GetThisNamespaceName(), the_class.body_file_pos );
+	DETECT_GLOBALS_LOOP( &the_class, the_class.members.GetThisNamespaceName(), the_class.body_src_loc );
 
 	the_class.have_shared_state= class_declaration.have_shared_state_;
 
@@ -768,8 +768,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 						{
 							if( the_class.GetMemberVisibility( name ) != parent_class->GetMemberVisibility( name ) )
 							{
-								const auto& file_pos= result_class_functions->functions.empty() ? result_class_functions->template_functions.front()->file_pos : result_class_functions->functions.front().prototype_file_pos;
-								REPORT_ERROR( FunctionsVisibilityMismatch, the_class.members.GetErrors(), file_pos, name );
+								const auto& src_loc= result_class_functions->functions.empty() ? result_class_functions->template_functions.front()->src_loc : result_class_functions->functions.front().prototype_src_loc;
+								REPORT_ERROR( FunctionsVisibilityMismatch, the_class.members.GetErrors(), src_loc, name );
 							}
 
 							// Merge function sets, if result class have functions set with given name.
@@ -955,13 +955,13 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 	U_ASSERT( global_variable_value.GetIncompleteGlobalVariable() != nullptr );
 	const IncompleteGlobalVariable incomplete_global_variable= *global_variable_value.GetIncompleteGlobalVariable();
 
-	SrcLoc file_pos;
+	SrcLoc src_loc;
 	if( incomplete_global_variable.variables_declaration != nullptr )
-		file_pos= incomplete_global_variable.variables_declaration->variables[ incomplete_global_variable.element_index ].src_loc;
+		src_loc= incomplete_global_variable.variables_declaration->variables[ incomplete_global_variable.element_index ].src_loc;
 	else if( incomplete_global_variable.auto_variable_declaration != nullptr )
-		file_pos= incomplete_global_variable.auto_variable_declaration->src_loc_;
+		src_loc= incomplete_global_variable.auto_variable_declaration->src_loc_;
 
-	DETECT_GLOBALS_LOOP( &global_variable_value, incomplete_global_variable.name, file_pos );
+	DETECT_GLOBALS_LOOP( &global_variable_value, incomplete_global_variable.name, src_loc );
 	#define FAIL_RETURN { global_variable_value= ErrorValue(); return; }
 
 	FunctionContext& function_context= *global_function_context_;
@@ -1186,19 +1186,19 @@ size_t CodeBuilder::GlobalThingDetectloop( const GlobalThing& global_thing )
 	return ~0u;
 }
 
-void CodeBuilder::GlobalThingReportAboutLoop( const size_t loop_start_stack_index, const std::string& last_loop_element_name, const SrcLoc& last_loop_element_file_pos )
+void CodeBuilder::GlobalThingReportAboutLoop( const size_t loop_start_stack_index, const std::string& last_loop_element_name, const SrcLoc& last_loop_element_src_loc )
 {
 	std::string description;
 
-	SrcLoc min_file_pos= last_loop_element_file_pos;
+	SrcLoc min_src_loc= last_loop_element_src_loc;
 	for( size_t i= loop_start_stack_index; i < global_things_stack_.size(); ++i )
 	{
-		min_file_pos= std::min( min_file_pos, global_things_stack_[i].file_pos );
+		min_src_loc= std::min( min_src_loc, global_things_stack_[i].src_loc );
 		description+= global_things_stack_[i].name + " -> ";
 	}
 	description+= last_loop_element_name;
 
-	REPORT_ERROR( GlobalsLoopDetected, global_errors_, min_file_pos, description );
+	REPORT_ERROR( GlobalsLoopDetected, global_errors_, min_src_loc, description );
 }
 
 } // namespace CodeBuilderPrivate

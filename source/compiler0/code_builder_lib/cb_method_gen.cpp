@@ -69,7 +69,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 	if( !all_fields_is_default_constructible )
 	{
 		if( constructor_variable != nullptr )
-			REPORT_ERROR( MethodBodyGenerationFailed, the_class.members.GetErrors(), constructor_variable->prototype_file_pos );
+			REPORT_ERROR( MethodBodyGenerationFailed, the_class.members.GetErrors(), constructor_variable->prototype_src_loc );
 		return;
 	}
 
@@ -239,7 +239,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 	if( !all_fields_is_copy_constructible )
 	{
 		if( constructor_variable != nullptr )
-			REPORT_ERROR( MethodBodyGenerationFailed, the_class.members.GetErrors(), constructor_variable->prototype_file_pos );
+			REPORT_ERROR( MethodBodyGenerationFailed, the_class.members.GetErrors(), constructor_variable->prototype_src_loc );
 		return;
 	}
 
@@ -416,7 +416,7 @@ void CodeBuilder::GenerateDestructorBody( Class& the_class, const Type& class_ty
 		destructor_function.llvm_function );
 	function_context.this_= &this_;
 
-	CallMembersDestructors( function_context, the_class.members.GetErrors(), the_class.body_file_pos );
+	CallMembersDestructors( function_context, the_class.members.GetErrors(), the_class.body_src_loc );
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 	function_context.llvm_ir_builder.CreateRetVoid();
 
@@ -513,7 +513,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 	if( !all_fields_is_copy_assignable )
 	{
 		if( operator_variable != nullptr )
-			REPORT_ERROR( MethodBodyGenerationFailed, the_class.members.GetErrors(), operator_variable->prototype_file_pos );
+			REPORT_ERROR( MethodBodyGenerationFailed, the_class.members.GetErrors(), operator_variable->prototype_src_loc );
 		return;
 	}
 

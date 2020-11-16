@@ -54,8 +54,8 @@ public:
 	NodesSet GetAllAccessibleVariableNodes( const ReferencesGraphNodePtr& node ) const;
 
 	using MergeResult= std::pair<ReferencesGraph, std::vector<CodeBuilderError> >;
-	static MergeResult MergeVariablesStateAfterIf( const std::vector<ReferencesGraph>& branches_variables_state, const SrcLoc& file_pos );
-	static std::vector<CodeBuilderError> CheckWhileBlokVariablesState( const ReferencesGraph& state_before, const ReferencesGraph& state_after, const SrcLoc& file_pos );
+	static MergeResult MergeVariablesStateAfterIf( const std::vector<ReferencesGraph>& branches_variables_state, const SrcLoc& src_loc );
+	static std::vector<CodeBuilderError> CheckWhileBlokVariablesState( const ReferencesGraph& state_before, const ReferencesGraph& state_after, const SrcLoc& src_loc );
 
 private:
 	struct NodeState
