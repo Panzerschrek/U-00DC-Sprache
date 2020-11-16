@@ -24,7 +24,7 @@ U_TEST( BindingConstReferenceToNonconstReference_InThisCall_Test0 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotSelectOverloadedFunction );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 9u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 9u );
 }
 
 U_TEST( BindingConstReferenceToNonconstReference_InThisCall_Test1 )
@@ -52,7 +52,7 @@ U_TEST( BindingConstReferenceToNonconstReference_InThisCall_Test1 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotSelectOverloadedFunction );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 7u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 7u );
 }
 
 U_TEST( ClassFieldAccessInStaticMethodTest0 )
@@ -96,7 +96,7 @@ U_TEST(FunctionBodyDuplication_ForMethods_Test0)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FunctionBodyDuplication );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 6u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
 U_TEST(FunctionPrototypeDuplication_ForMethods_Test0)
@@ -117,7 +117,7 @@ U_TEST(FunctionPrototypeDuplication_ForMethods_Test0)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FunctionPrototypeDuplication );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 6u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
 U_TEST(ThisInNonclassFunctionTest0)
@@ -132,7 +132,7 @@ U_TEST(ThisInNonclassFunctionTest0)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ThisInNonclassFunction );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 
 U_TEST(ThiscallMismatch_Test0)
@@ -151,7 +151,7 @@ U_TEST(ThiscallMismatch_Test0)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ThiscallMismatch );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u || error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u || error.src_loc.GetLine() == 5u );
 }
 
 U_TEST(ThiscallMismatch_Test1)
@@ -170,7 +170,7 @@ U_TEST(ThiscallMismatch_Test1)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ThiscallMismatch );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 6u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
 U_TEST( AccessOfNonThisClassFieldTest0 )
@@ -198,11 +198,11 @@ U_TEST( AccessOfNonThisClassFieldTest0 )
 	U_TEST_ASSERT( build_result.errors.size() >= 3 );
 
 	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::AccessOfNonThisClassField );
-	U_TEST_ASSERT( build_result.errors[0].file_pos.GetLine() == 11u );
+	U_TEST_ASSERT( build_result.errors[0].src_loc.GetLine() == 11u );
 	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::AccessOfNonThisClassField );
-	U_TEST_ASSERT( build_result.errors[1].file_pos.GetLine() == 12u );
+	U_TEST_ASSERT( build_result.errors[1].src_loc.GetLine() == 12u );
 	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::AccessOfNonThisClassField );
-	U_TEST_ASSERT( build_result.errors[2].file_pos.GetLine() == 13u );
+	U_TEST_ASSERT( build_result.errors[2].src_loc.GetLine() == 13u );
 }
 
 U_TEST(ThisUnavailableTest0)
@@ -218,7 +218,7 @@ U_TEST(ThisUnavailableTest0)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ThisUnavailable );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 
 U_TEST(ThisUnavailableTest1)
@@ -240,7 +240,7 @@ U_TEST(ThisUnavailableTest1)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ThisUnavailable );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 6u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
 } // namespace U

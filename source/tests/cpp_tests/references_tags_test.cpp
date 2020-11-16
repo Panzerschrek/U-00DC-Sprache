@@ -46,7 +46,7 @@ U_TEST( ReferncesTagsTest_BaseReferencesDefinition1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 11u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 11u );
 }
 
 U_TEST( ReferncesTagsTest_TryReturnUnallowedReference0 )
@@ -65,7 +65,7 @@ U_TEST( ReferncesTagsTest_TryReturnUnallowedReference0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReturningUnallowedReference );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST( ReferncesTagsTest_TryReturnUnallowedReference1 )
@@ -84,7 +84,7 @@ U_TEST( ReferncesTagsTest_TryReturnUnallowedReference1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReturningUnallowedReference );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST( ReferncesTagsTest_ReturnReferenceToGlobalConstant0 )
@@ -148,7 +148,7 @@ U_TEST( NameNotFound_ForReturnReferenceTag_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 
 U_TEST( NameNotFound_ForReturnReferenceTag_Test1 )
@@ -168,7 +168,7 @@ U_TEST( NameNotFound_ForReturnReferenceTag_Test1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
 }
 
 U_TEST( ImplicitThisTag )

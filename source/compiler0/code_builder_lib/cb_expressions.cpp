@@ -2522,7 +2522,7 @@ Value CodeBuilder::DoCallFunction(
 			{
 				CodeBuilderError error;
 				error.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError;
-				error.file_pos= call_file_pos;
+				error.src_loc= call_file_pos;
 				error.text= error_text;
 				names.GetErrors().push_back( std::move(error) );
 			}

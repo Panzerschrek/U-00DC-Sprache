@@ -312,7 +312,7 @@ U_TEST( GlobalStaticAssert_Test1 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::StaticAssertionFailed );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
 }
 
 U_TEST( StaticAssertInsideClass_Test0 )
@@ -345,7 +345,7 @@ U_TEST( StaticAssertInsideClass_Test1 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::StaticAssertionFailed );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 } // namespace U

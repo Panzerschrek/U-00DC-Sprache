@@ -28,7 +28,7 @@ UserHandle ErrorHanlder(
 	const U1_StringView& error_text )
 {
 	CodeBuilderError error;
-	error.file_pos= SrcLoc( file_index, line, column );
+	error.src_loc= SrcLoc( file_index, line, column );
 	error.code= CodeBuilderErrorCode(error_code);
 	error.text= std::string( error_text.data, error_text.data + error_text.size );
 
@@ -47,7 +47,7 @@ UserHandle TemplateErrorsContextHandler(
 {
 	const auto out_error= reinterpret_cast<CodeBuilderError*>(data);
 	out_error->template_context= std::make_shared<TemplateErrorsContext>();
-	out_error->template_context->context_declaration_file_pos= SrcLoc( file_index, line, column );
+	out_error->template_context->context_declaration_src_loc= SrcLoc( file_index, line, column );
 	out_error->template_context->context_name= std::string( context_name.data, context_name.data + context_name.size );
 	out_error->template_context->parameters_description= std::string( args_description.data, args_description.data + args_description.size );
 
@@ -205,7 +205,7 @@ bool HaveError( const std::vector<CodeBuilderError>& errors, const CodeBuilderEr
 {
 	for( const CodeBuilderError& error : errors )
 	{
-		if( error.code == code && error.file_pos.GetLine() == line )
+		if( error.code == code && error.src_loc.GetLine() == line )
 			return true;
 	}
 	return false;

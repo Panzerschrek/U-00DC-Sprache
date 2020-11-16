@@ -89,7 +89,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	CodeBuilder::BuildResult build_result= CreateCodeBuilder()->BuildProgram( *source_graph );
 
 	for( const CodeBuilderError& error : build_result.errors )
-		std::cerr << error.file_pos.GetLine() << ":" << error.file_pos.GetColumn() << " " << error.text << "\n";
+		std::cerr << error.src_loc.GetLine() << ":" << error.src_loc.GetColumn() << " " << error.text << "\n";
 
 	if( !build_result.errors.empty() )
 		return nullptr;
@@ -342,7 +342,7 @@ PyObject* BuildErrorsList( const CodeBuilderErrorsContainer& errors )
 	{
 		PyObject* const dict= PyDict_New();
 
-		PyDict_SetItemString( dict, "file_pos", BuildFilePos( error.file_pos ) );
+		PyDict_SetItemString( dict, "file_pos", BuildFilePos( error.src_loc ) );
 
 		const std::string_view error_code_str= CodeBuilderErrorCodeToString( error.code );
 		PyDict_SetItemString( dict, "code", PyUnicode_DecodeUTF8( error_code_str.data(), Py_ssize_t(error_code_str.size()), nullptr ) );
@@ -354,7 +354,7 @@ PyObject* BuildErrorsList( const CodeBuilderErrorsContainer& errors )
 			PyObject* const template_context_dict= PyDict_New();
 
 			PyDict_SetItemString( template_context_dict, "errors", BuildErrorsList( error.template_context->errors ) );
-			PyDict_SetItemString( template_context_dict, "file_pos", BuildFilePos( error.template_context->context_declaration_file_pos ) );
+			PyDict_SetItemString( template_context_dict, "file_pos", BuildFilePos( error.template_context->context_declaration_src_loc ) );
 			PyDict_SetItemString( template_context_dict, "template_name", BuildString( error.template_context->context_name ) );
 			PyDict_SetItemString( template_context_dict, "parameters_description", BuildString( error.template_context->parameters_description ) );
 
@@ -415,7 +415,7 @@ PyObject* BuildProgramWithSyntaxErrors( PyObject* const self, PyObject* const ar
 	{
 		CodeBuilderError error_converted;
 		error_converted.code= CodeBuilderErrorCode::BuildFailed;
-		error_converted.file_pos= error_message.src_loc;
+		error_converted.src_loc= error_message.src_loc;
 		error_converted.text= error_message.text;
 		errors_converted.push_back( std::move(error_converted) );
 	}

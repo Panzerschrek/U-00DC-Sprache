@@ -35,7 +35,7 @@ CodeBuilderError ReportError( const CodeBuilderErrorCode code, const SrcLoc& fil
 {
 	CodeBuilderError error;
 	error.code= code;
-	error.file_pos= file_pos;
+	error.src_loc= file_pos;
 	error.text= llvm::formatv( GetErrorMessagePattern(code), PreprocessArg(args)... ).str();
 	return error;
 }

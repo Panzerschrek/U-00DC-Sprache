@@ -57,7 +57,7 @@ UserHandle ErrorHanlder(
 	const U1_StringView& error_text )
 {
 	CodeBuilderError error;
-	error.file_pos= SrcLoc( file_index, line, column );
+	error.src_loc= SrcLoc( file_index, line, column );
 	error.code= CodeBuilderErrorCode(error_code);
 	error.text= StringViewToString( error_text );
 
@@ -76,7 +76,7 @@ UserHandle TemplateErrorsContextHandler(
 {
 	const auto out_error= reinterpret_cast<CodeBuilderError*>(data);
 	out_error->template_context= std::make_shared<TemplateErrorsContext>();
-	out_error->template_context->context_declaration_file_pos= SrcLoc( file_index, line, column );
+	out_error->template_context->context_declaration_src_loc= SrcLoc( file_index, line, column );
 	out_error->template_context->context_name= StringViewToString( context_name );
 	out_error->template_context->parameters_description= StringViewToString( args_description );
 

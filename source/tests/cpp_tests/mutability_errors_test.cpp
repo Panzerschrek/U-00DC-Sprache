@@ -21,7 +21,7 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 U_TEST(BindingConstReferenceToNonconstReferenceTest2)
@@ -41,7 +41,7 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest2)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST(BindingConstReferenceToNonconstReferenceTest3)
@@ -64,7 +64,7 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest3)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 6u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
 U_TEST(BindingConstReferenceToNonconstReferenceTest5)
@@ -88,7 +88,7 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest5)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 7u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 7u );
 }
 
 U_TEST(BindingConstReferenceToNonconstReferenceTest6)
@@ -112,7 +112,7 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest6)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 7u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 7u );
 }
 
 U_TEST(BindingConstReferenceToNonconstReferenceTest7)
@@ -137,7 +137,7 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest7)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 8u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 8u );
 }
 
 U_TEST(BindingConstReferenceToNonconstReferenceTest8)
@@ -162,7 +162,7 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest8)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotSelectOverloadedFunction );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 8u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 8u );
 }
 
 U_TEST(ImmutableClassField_Test0)
@@ -187,7 +187,7 @@ U_TEST(ImmutableClassField_Test0)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 9u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 9u );
 }
 
 U_TEST(ImmutableClassField_Test1)
@@ -212,7 +212,7 @@ U_TEST(ImmutableClassField_Test1)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 7u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 7u );
 }
 
 U_TEST(ImmutableClassField_Test2)
@@ -237,7 +237,7 @@ U_TEST(ImmutableClassField_Test2)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 7u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 7u );
 }
 
 
@@ -263,7 +263,7 @@ U_TEST(ImmutableClassField_Test3)
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 8u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 8u );
 }
 
 U_TEST(ImmutableClassField_Test4)

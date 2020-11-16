@@ -56,11 +56,11 @@ CodeBuilderErrorsContainer ExpandErrorsInMacros_r(
 	{
 		CodeBuilderError macro_context_error;
 		macro_context_error.text = "in expansion of macro \"" + macro_expansion_context.macro_name + "\"";
-		macro_context_error.file_pos= macro_expansion_context.src_loc;
+		macro_context_error.src_loc= macro_expansion_context.src_loc;
 		macro_context_error.code= CodeBuilderErrorCode::MacroExpansionContext;
 		macro_context_error.template_context= std::make_shared<TemplateErrorsContext>();
 		macro_context_error.template_context->context_name= macro_expansion_context.macro_name;
-		macro_context_error.template_context->context_declaration_file_pos= macro_expansion_context.macro_declaration_src_loc;
+		macro_context_error.template_context->context_declaration_src_loc= macro_expansion_context.macro_declaration_src_loc;
 
 		macro_contexts_internals.push_back( macro_context_error.template_context );
 		macro_contexts_errors.push_back(std::move(macro_context_error));
@@ -73,7 +73,7 @@ CodeBuilderErrorsContainer ExpandErrorsInMacros_r(
 		if( error.template_context != nullptr && !error.template_context->errors.empty() )
 			error.template_context->errors= ExpandErrorsInMacros_r( error.template_context->errors, macro_expanisoin_contexts );
 
-		const auto macro_expansion_index= error.file_pos.GetMacroExpansionIndex();
+		const auto macro_expansion_index= error.src_loc.GetMacroExpansionIndex();
 		if( macro_expansion_index < macro_contexts_internals.size() )
 			macro_contexts_internals[ macro_expansion_index ]->errors.push_back( std::move(error) );
 		else
@@ -82,7 +82,7 @@ CodeBuilderErrorsContainer ExpandErrorsInMacros_r(
 
 	for( CodeBuilderError macro_context_error : macro_contexts_errors )
 	{
-		const auto macro_expansion_index= macro_context_error.file_pos.GetMacroExpansionIndex();
+		const auto macro_expansion_index= macro_context_error.src_loc.GetMacroExpansionIndex();
 		if( macro_expansion_index < macro_contexts_internals.size() )
 			macro_contexts_internals[ macro_expansion_index ]->errors.push_back( std::move( macro_context_error ) );
 		else

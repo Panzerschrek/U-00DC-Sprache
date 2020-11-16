@@ -287,7 +287,7 @@ U_TEST( StaticAssertTest1 )
 	U_TEST_ASSERT( !build_result.errors.empty() );
 
 	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::StaticAssertionFailed );
-	U_TEST_ASSERT( build_result.errors[0].file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( build_result.errors[0].src_loc.GetLine() == 4u );
 }
 
 U_TEST( StaticAssertTest2 )

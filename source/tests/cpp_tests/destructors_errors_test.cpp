@@ -19,7 +19,7 @@ U_TEST( FunctionBodyDuplication_ForDestructors_Test0 )
 
 	const CodeBuilderError& error= build_result.errors.front();
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FunctionBodyDuplication );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 U_TEST( DestructorOutsideClassTest0 )
@@ -34,7 +34,7 @@ U_TEST( DestructorOutsideClassTest0 )
 
 	const CodeBuilderError& error= build_result.errors.front();
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ConstructorOrDestructorOutsideClass );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 
 U_TEST( DestructorMustReturnVoidTest0 )
@@ -52,7 +52,7 @@ U_TEST( DestructorMustReturnVoidTest0 )
 
 	const CodeBuilderError& error= build_result.errors.front();
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ConstructorAndDestructorMustReturnVoid );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST( ExplicitArgumentsInDestructorTest1 )
@@ -70,7 +70,7 @@ U_TEST( ExplicitArgumentsInDestructorTest1 )
 
 	const CodeBuilderError& error= build_result.errors.front();
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExplicitArgumentsInDestructor );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 } // namespace U

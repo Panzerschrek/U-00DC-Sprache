@@ -71,7 +71,7 @@ U_TEST( NameNotFound_ForClassTemplateSingatureArguments_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 
 U_TEST( NameNotFound_ForClassTemplateArguments_Test0 )
@@ -88,7 +88,7 @@ U_TEST( NameNotFound_ForClassTemplateArguments_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 
 U_TEST( NameNotFound_ForClassTemplateDefaultSignatureArguments_Test0 )
@@ -105,7 +105,7 @@ U_TEST( NameNotFound_ForClassTemplateDefaultSignatureArguments_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 
 U_TEST( ValueIsNotTemplateTest0 )
@@ -179,7 +179,7 @@ U_TEST( CouldNotOverloadFunction_ForClassTemplates_Test0 )
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TemplateContext );
 	U_TEST_ASSERT( error.template_context != nullptr );
 	U_TEST_ASSERT( error.template_context->errors.front().code == CodeBuilderErrorCode::CouldNotOverloadFunction );
-	const auto line= error.template_context->errors.front().file_pos.GetLine();
+	const auto line= error.template_context->errors.front().src_loc.GetLine();
 	U_TEST_ASSERT( line == 5u || line == 6u );
 }
 
@@ -212,11 +212,11 @@ U_TEST( CouldNotOverloadFunction_ForClassTemplates_Test1 )
 	U_TEST_ASSERT( errors.size() >= 3u );
 
 	U_TEST_ASSERT( errors[0].code == CodeBuilderErrorCode::CouldNotOverloadFunction );
-	U_TEST_ASSERT( errors[0].file_pos.GetLine() == 5u || errors[0].file_pos.GetLine() == 6u );
+	U_TEST_ASSERT( errors[0].src_loc.GetLine() == 5u || errors[0].src_loc.GetLine() == 6u );
 	U_TEST_ASSERT( errors[1].code == CodeBuilderErrorCode::FunctionBodyDuplication );
-	U_TEST_ASSERT( errors[1].file_pos.GetLine() == 5u || errors[1].file_pos.GetLine() == 7u );
+	U_TEST_ASSERT( errors[1].src_loc.GetLine() == 5u || errors[1].src_loc.GetLine() == 7u );
 	U_TEST_ASSERT( errors[2].code == CodeBuilderErrorCode::CouldNotOverloadFunction );
-	U_TEST_ASSERT( errors[2].file_pos.GetLine() == 9u || errors[2].file_pos.GetLine() == 10u );
+	U_TEST_ASSERT( errors[2].src_loc.GetLine() == 9u || errors[2].src_loc.GetLine() == 10u );
 }
 
 U_TEST( MandatoryTemplateSignatureArgumentAfterOptionalArgument_Test0 )
@@ -232,7 +232,7 @@ U_TEST( MandatoryTemplateSignatureArgumentAfterOptionalArgument_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::MandatoryTemplateSignatureArgumentAfterOptionalArgument );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 
 U_TEST( TemplateArgumentIsNotDeducedYet_Test0 )
@@ -283,7 +283,7 @@ U_TEST( TemplateArgumentNotUsedInSignature_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TemplateArgumentNotUsedInSignature );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 2u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test0 )
@@ -576,7 +576,7 @@ U_TEST( ExpectedConstantExpression_InTemplateSignatureArgument_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedConstantExpression );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 U_TEST( ExpectedConstantExpression_InTemplateSignatureArgument_Test1 )

@@ -17,7 +17,7 @@ U_TEST( OperatorDeclarationOutsideClass_Test )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::OperatorDeclarationOutsideClass );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 3u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
 }
 
 U_TEST( OperatorDoesNotHaveParentClassArguments_Test0 )
@@ -36,7 +36,7 @@ U_TEST( OperatorDoesNotHaveParentClassArguments_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::OperatorDoesNotHaveParentClassArguments );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST( OperatorDoesNotHaveParentClassArguments_Test1 )
@@ -55,7 +55,7 @@ U_TEST( OperatorDoesNotHaveParentClassArguments_Test1 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::OperatorDoesNotHaveParentClassArguments );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST( OperatorDoesNotHaveParentClassArguments_Test2 )
@@ -90,7 +90,7 @@ U_TEST( OperatorDoesNotHaveParentClassArguments_Test3 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::OperatorDoesNotHaveParentClassArguments );
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 U_TEST( InvalidArgumentCountForOperator_Test )
@@ -113,17 +113,17 @@ U_TEST( InvalidArgumentCountForOperator_Test )
 	U_TEST_ASSERT( build_result.errors.size() >= 6u );
 
 	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::InvalidArgumentCountForOperator );
-	U_TEST_ASSERT( build_result.errors[0].file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( build_result.errors[0].src_loc.GetLine() == 4u );
 	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::InvalidArgumentCountForOperator );
-	U_TEST_ASSERT( build_result.errors[1].file_pos.GetLine() == 5u );
+	U_TEST_ASSERT( build_result.errors[1].src_loc.GetLine() == 5u );
 	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::InvalidArgumentCountForOperator );
-	U_TEST_ASSERT( build_result.errors[2].file_pos.GetLine() == 6u );
+	U_TEST_ASSERT( build_result.errors[2].src_loc.GetLine() == 6u );
 	U_TEST_ASSERT( build_result.errors[3].code == CodeBuilderErrorCode::InvalidArgumentCountForOperator );
-	U_TEST_ASSERT( build_result.errors[3].file_pos.GetLine() == 7u );
+	U_TEST_ASSERT( build_result.errors[3].src_loc.GetLine() == 7u );
 	U_TEST_ASSERT( build_result.errors[4].code == CodeBuilderErrorCode::InvalidArgumentCountForOperator );
-	U_TEST_ASSERT( build_result.errors[4].file_pos.GetLine() == 8u );
+	U_TEST_ASSERT( build_result.errors[4].src_loc.GetLine() == 8u );
 	U_TEST_ASSERT( build_result.errors[5].code == CodeBuilderErrorCode::InvalidArgumentCountForOperator );
-	U_TEST_ASSERT( build_result.errors[5].file_pos.GetLine() == 9u );
+	U_TEST_ASSERT( build_result.errors[5].src_loc.GetLine() == 9u );
 }
 
 U_TEST( InvalidReturnTypeForOperator_Test )
@@ -196,7 +196,7 @@ U_TEST( IndexationOperatorHaveFirstArgumentOfNonparentClass )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::OperatorDoesNotHaveParentClassArguments ); // TODO - use separate error code for this case
-	U_TEST_ASSERT( error.file_pos.GetLine() == 4u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
 } // namespace U

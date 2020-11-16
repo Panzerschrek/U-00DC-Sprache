@@ -79,30 +79,30 @@ void PrintErrors( const std::vector<IVfs::Path>& source_files, const CodeBuilder
 
 				PrintErrors( source_files, error.template_context->errors, format );
 
-				std::cerr << source_files[ error.template_context->context_declaration_file_pos.GetFileIndex() ]
-					<< "(" << error.template_context->context_declaration_file_pos.GetLine() << "): note: "
+				std::cerr << source_files[ error.template_context->context_declaration_src_loc.GetFileIndex() ]
+					<< "(" << error.template_context->context_declaration_src_loc.GetLine() << "): note: "
 					<< "In instantiation of \"" << error.template_context->context_name
 					<< "\" " << error.template_context->parameters_description
 					<< "\n";
 
-				std::cerr << source_files[ error.file_pos.GetFileIndex() ]
-					<< "(" << error.file_pos.GetLine() << "): note: " << error.text << "\n";
+				std::cerr << source_files[ error.src_loc.GetFileIndex() ]
+					<< "(" << error.src_loc.GetLine() << "): note: " << error.text << "\n";
 			}
 			else if( error.code == CodeBuilderErrorCode::MacroExpansionContext )
 			{
 				PrintErrors( source_files, error.template_context->errors, format );
 
-				std::cerr << source_files[ error.template_context->context_declaration_file_pos.GetFileIndex() ]
-					<< "(" << error.template_context->context_declaration_file_pos.GetLine() << "): note: "
+				std::cerr << source_files[ error.template_context->context_declaration_src_loc.GetFileIndex() ]
+					<< "(" << error.template_context->context_declaration_src_loc.GetLine() << "): note: "
 					<< "In expansion of macro \"" << error.template_context->context_name << "\"\n";
 
-				std::cerr << source_files[error.file_pos.GetFileIndex() ]
-					<< "(" << error.file_pos.GetLine() << "): note: required from here\n";
+				std::cerr << source_files[error.src_loc.GetFileIndex() ]
+					<< "(" << error.src_loc.GetLine() << "): note: required from here\n";
 			}
 			else
 			{
-				std::cerr << source_files[ error.file_pos.GetFileIndex() ]
-					<< "(" << error.file_pos.GetLine() << "): error: " << error.text << "\n";
+				std::cerr << source_files[ error.src_loc.GetFileIndex() ]
+					<< "(" << error.src_loc.GetLine() << "): error: " << error.text << "\n";
 			}
 		}
 		else
@@ -111,13 +111,13 @@ void PrintErrors( const std::vector<IVfs::Path>& source_files, const CodeBuilder
 			{
 				U_ASSERT( error.template_context != nullptr );
 
-				std::cerr << source_files[ error.template_context->context_declaration_file_pos.GetFileIndex() ] << ": "
+				std::cerr << source_files[ error.template_context->context_declaration_src_loc.GetFileIndex() ] << ": "
 					<< "In instantiation of \"" << error.template_context->context_name
 					<< "\" " << error.template_context->parameters_description
 					<< "\n";
 
-				std::cerr << source_files[error.file_pos.GetFileIndex() ]
-					<< ":" << error.file_pos.GetLine() << ":" << error.file_pos.GetColumn() << ": required from here: " << "\n";
+				std::cerr << source_files[error.src_loc.GetFileIndex() ]
+					<< ":" << error.src_loc.GetLine() << ":" << error.src_loc.GetColumn() << ": required from here: " << "\n";
 
 				PrintErrors( source_files, error.template_context->errors, format );
 			}
@@ -125,18 +125,18 @@ void PrintErrors( const std::vector<IVfs::Path>& source_files, const CodeBuilder
 			{
 				U_ASSERT( error.template_context != nullptr );
 
-				std::cerr << source_files[ error.template_context->context_declaration_file_pos.GetFileIndex() ] << ": "
+				std::cerr << source_files[ error.template_context->context_declaration_src_loc.GetFileIndex() ] << ": "
 					<< "In expansion of macro \"" << error.template_context->context_name << "\"\n";
 
-				std::cerr << source_files[ error.file_pos.GetFileIndex() ]
-					<< ":" << error.file_pos.GetLine() << ":" << error.file_pos.GetColumn() << ": required from here: " << "\n";
+				std::cerr << source_files[ error.src_loc.GetFileIndex() ]
+					<< ":" << error.src_loc.GetLine() << ":" << error.src_loc.GetColumn() << ": required from here: " << "\n";
 
 				PrintErrors( source_files, error.template_context->errors, format );
 			}
 			else
 			{
-				std::cerr << source_files[ error.file_pos.GetFileIndex() ]
-					<< ":" << error.file_pos.GetLine() << ":" << error.file_pos.GetColumn() << ": error: " << error.text << "\n";
+				std::cerr << source_files[ error.src_loc.GetFileIndex() ]
+					<< ":" << error.src_loc.GetLine() << ":" << error.src_loc.GetColumn() << ": error: " << error.text << "\n";
 			}
 		}
 	}
@@ -146,8 +146,8 @@ void PrintErrorsForTests( const std::vector<IVfs::Path>& source_files, const Cod
 {
 	// For tests we print errors as "file.u 88 NameNotFound"
 	for( const CodeBuilderError& error : errors )
-		std::cout << source_files[error.file_pos.GetFileIndex() ]
-			<< " " << error.file_pos.GetLine() << " " << CodeBuilderErrorCodeToString( error.code ) << "\n";
+		std::cout << source_files[error.src_loc.GetFileIndex() ]
+			<< " " << error.src_loc.GetLine() << " " << CodeBuilderErrorCodeToString( error.code ) << "\n";
 }
 
 std::string QuoteDepTargetString( const std::string& str )
