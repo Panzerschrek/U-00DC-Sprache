@@ -87,7 +87,7 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 		FunctionVariable& function= *class_function.function;
 
 		const std::string& function_name= class_function.name;
-		const SrcLoc& file_pos= function.syntax_element->file_pos_;
+		const SrcLoc& file_pos= function.syntax_element->src_loc_;
 		CodeBuilderErrorsContainer& errors_container= the_class.members.GetErrors();
 
 		if( function.virtual_function_kind != Synt::VirtualFunctionKind::None &&

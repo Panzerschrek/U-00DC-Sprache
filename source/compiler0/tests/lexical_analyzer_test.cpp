@@ -17,7 +17,7 @@ void TestLexResult( const char* const program_text, const Lexems& expected_resul
 	for( size_t i= 0; i < expected_result.size(); ++i )
 	{
 		U_TEST_ASSERT( lex_result.lexems[i].type == expected_result[i].type );
-		U_TEST_ASSERT( lex_result.lexems[i].file_pos == expected_result[i].file_pos );
+		U_TEST_ASSERT( lex_result.lexems[i].src_loc == expected_result[i].src_loc );
 
 		// Do not compare number text, because in number lexem text actually stored special struct.
 		if( expected_result[i].type != Lexem::Type::Number )

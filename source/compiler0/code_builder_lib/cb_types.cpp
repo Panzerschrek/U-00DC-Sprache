@@ -44,7 +44,7 @@ Type CodeBuilder::PrepareType( const Synt::ArrayTypeName& array_type_name, Names
 	array_type.type= PrepareType( *array_type_name.element_type, names_scope, function_context );
 
 	const Synt::Expression& num= *array_type_name.size;
-	const SrcLoc num_file_pos= Synt::GetExpressionFilePos( num );
+	const SrcLoc num_file_pos= Synt::GetExpressionSrcLoc( num );
 
 	const Variable size_variable= BuildExpressionCodeEnsureVariable( num, names_scope, function_context );
 	if( size_variable.constexpr_value != nullptr )
@@ -114,12 +114,12 @@ Type CodeBuilder::PrepareType( const Synt::FunctionType& function_type_name, Nam
 		   function_type.return_type.GetTupleType() != nullptr ||
 		   function_type.return_type.GetEnumType() != nullptr ||
 		   function_type.return_type.GetFunctionPointerType() != nullptr ) )
-		REPORT_ERROR( NotImplemented, names_scope.GetErrors(), function_type_name.file_pos_, "return value types except fundamentals, enums, classes, function pointers" );
+		REPORT_ERROR( NotImplemented, names_scope.GetErrors(), function_type_name.src_loc_, "return value types except fundamentals, enums, classes, function pointers" );
 
 	for( const Synt::FunctionArgument& arg : function_type_name.arguments_ )
 	{
 		if( IsKeyword( arg.name_ ) )
-			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), arg.file_pos_ );
+			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), arg.src_loc_ );
 
 		function_type.args.emplace_back();
 		Function::Arg& out_arg= function_type.args.back();
@@ -166,11 +166,11 @@ Type CodeBuilder::PrepareType( const Synt::TupleType& tuple_type_name, NamesScop
 
 Type CodeBuilder::PrepareType( const Synt::NamedTypeName& named_type_name, NamesScope& names_scope, FunctionContext& function_context )
 {
-	const Value value= ResolveValue( named_type_name.file_pos_, names_scope, function_context, named_type_name.name );
+	const Value value= ResolveValue( named_type_name.src_loc_, names_scope, function_context, named_type_name.name );
 	if( const Type* const type= value.GetTypeName() )
 		return *type;
 	else
-		REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), named_type_name.file_pos_, named_type_name.name );
+		REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), named_type_name.src_loc_, named_type_name.name );
 
 	return invalid_type_;
 }

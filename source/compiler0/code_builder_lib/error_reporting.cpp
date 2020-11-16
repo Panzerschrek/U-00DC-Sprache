@@ -56,11 +56,11 @@ CodeBuilderErrorsContainer ExpandErrorsInMacros_r(
 	{
 		CodeBuilderError macro_context_error;
 		macro_context_error.text = "in expansion of macro \"" + macro_expansion_context.macro_name + "\"";
-		macro_context_error.file_pos= macro_expansion_context.file_pos;
+		macro_context_error.file_pos= macro_expansion_context.src_loc;
 		macro_context_error.code= CodeBuilderErrorCode::MacroExpansionContext;
 		macro_context_error.template_context= std::make_shared<TemplateErrorsContext>();
 		macro_context_error.template_context->context_name= macro_expansion_context.macro_name;
-		macro_context_error.template_context->context_declaration_file_pos=  macro_expansion_context.macro_declaration_file_pos;
+		macro_context_error.template_context->context_declaration_file_pos= macro_expansion_context.macro_declaration_src_loc;
 
 		macro_contexts_internals.push_back( macro_context_error.template_context );
 		macro_contexts_errors.push_back(std::move(macro_context_error));

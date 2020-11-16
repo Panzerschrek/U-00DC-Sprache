@@ -136,7 +136,7 @@ bool IsIdentifierChar( const sprache_char c )
 	return IsIdentifierStartChar(c) || IsNumberStartChar(c) || c == '_';
 }
 
-Lexem ParseString( Iterator& it, const Iterator it_end, const SrcLoc& file_pos, LexSyntErrors& out_errors )
+Lexem ParseString( Iterator& it, const Iterator it_end, const SrcLoc& src_loc, LexSyntErrors& out_errors )
 {
 	U_ASSERT( *it == '"' );
 	++it;
@@ -155,7 +155,7 @@ Lexem ParseString( Iterator& it, const Iterator it_end, const SrcLoc& file_pos, 
 		}
 		else if( ( /* *it >= 0x00u && */ sprache_char(*it) < 0x20u ) || *it == 0x7F ) // TODO - is this correct control character?
 		{
-			out_errors.emplace_back( "control character inside string", file_pos );
+			out_errors.emplace_back( "control character inside string", src_loc );
 			return result;
 		}
 		else if( *it == '\\' )
@@ -185,7 +185,7 @@ Lexem ParseString( Iterator& it, const Iterator it_end, const SrcLoc& file_pos, 
 					++it;
 					if( it_end - it < 4 )
 					{
-						out_errors.emplace_back( "expected 4 hex digits", file_pos );
+						out_errors.emplace_back( "expected 4 hex digits", src_loc );
 						return result;
 					}
 
@@ -198,7 +198,7 @@ Lexem ParseString( Iterator& it, const Iterator it_end, const SrcLoc& file_pos, 
 						else if( *it >= 'A' && *it <= 'F' ) digit= uint32_t( *it - 'A' + 10 );
 						else
 						{
-							out_errors.emplace_back( "expected hex number", file_pos );
+							out_errors.emplace_back( "expected hex number", src_loc );
 							return result;
 						}
 						char_code|= digit << ( ( 3u - i ) * 4u );
@@ -209,7 +209,7 @@ Lexem ParseString( Iterator& it, const Iterator it_end, const SrcLoc& file_pos, 
 				break;
 
 			default:
-				out_errors.emplace_back( std::string("invalid escape sequence: \\") + char(*it), file_pos );
+				out_errors.emplace_back( std::string("invalid escape sequence: \\") + char(*it), src_loc );
 				return result;
 			};
 		}
@@ -293,7 +293,7 @@ double PowI( const uint64_t base, const uint64_t pow )
 	return res;
 }
 
-Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc file_pos, LexSyntErrors& out_errors )
+Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
 {
 	uint64_t base= 10u;
 	// Returns -1 for non-numbers
@@ -372,7 +372,7 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc file_pos, LexSynt
 
 		if( integer_part < integer_part_before ) // Check overflow
 		{
-			out_errors.emplace_back( "Integer part of numeric literal is too long", file_pos );
+			out_errors.emplace_back( "Integer part of numeric literal is too long", src_loc );
 			break;
 		}
 	}
@@ -395,7 +395,7 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc file_pos, LexSynt
 
 			if( fractional_part < fractional_part_before ) // Check overflow
 			{
-				out_errors.emplace_back( "Fractional part of numeric literal is too long", file_pos );
+				out_errors.emplace_back( "Fractional part of numeric literal is too long", src_loc );
 				break;
 			}
 		}
@@ -465,7 +465,7 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc file_pos, LexSynt
 	{
 		const Lexem type_suffix= ParseIdentifier( it, it_end );
 		if( type_suffix.text.size() >= sizeof(result.type_suffix) )
-			out_errors.emplace_back( "Type suffix of numeric literal is too long", file_pos );
+			out_errors.emplace_back( "Type suffix of numeric literal is too long", src_loc );
 
 		std::memcpy( result.type_suffix.data(), type_suffix.text.data(), std::min( type_suffix.text.size(), sizeof(result.type_suffix) ) );
 	}
@@ -481,7 +481,7 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc file_pos, LexSynt
 
 bool operator==(const Lexem& l, const Lexem& r )
 {
-	return l.text == r.text && l.file_pos == r.file_pos && l.type == r.type;
+	return l.text == r.text && l.src_loc == r.src_loc && l.type == r.type;
 }
 
 bool operator!=(const Lexem& l, const Lexem& r )
@@ -531,7 +531,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 			if( collect_comments )
 			{
 				Lexem comment_lexem;
-				comment_lexem.file_pos= SrcLoc( 0u, line, column );
+				comment_lexem.src_loc= SrcLoc( 0u, line, column );
 				comment_lexem.type= Lexem::Type::Comment;
 
 				while( it < it_end && !IsNewline(sprache_char(*it)) )
@@ -558,7 +558,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 			if( collect_comments )
 			{
 				Lexem comment_lexem;
-				comment_lexem.file_pos= SrcLoc( 0u, line, column );
+				comment_lexem.src_loc= SrcLoc( 0u, line, column );
 				comment_lexem.type= Lexem::Type::Comment;
 				comment_lexem.text= "/*";
 				advance_column();
@@ -574,7 +574,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 			if( collect_comments )
 			{
 				Lexem comment_lexem;
-				comment_lexem.file_pos= SrcLoc( 0u, line, column );
+				comment_lexem.src_loc= SrcLoc( 0u, line, column );
 				comment_lexem.type= Lexem::Type::Comment;
 				comment_lexem.text= "*/";
 				advance_column();
@@ -605,7 +605,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 			if( IsIdentifierStartChar( GetUTF8FirstChar( it, it_end ) ) )
 			{
 				// Parse string suffix.
-				lexem.file_pos= SrcLoc( 0u, line, column );
+				lexem.src_loc= SrcLoc( 0u, line, column );
 
 				advance_column();
 				if( comments_depth == 0 || collect_comments )
@@ -653,7 +653,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 		}
 
 	push_lexem:
-		lexem.file_pos= SrcLoc( 0u, line, column );
+		lexem.src_loc= SrcLoc( 0u, line, column );
 
 		advance_column();
 
@@ -668,7 +668,7 @@ LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, cons
 	Lexem eof_lexem;
 	eof_lexem.type= Lexem::Type::EndOfFile;
 	eof_lexem.text= "EOF";
-	eof_lexem.file_pos= SrcLoc( 0u, line, column );
+	eof_lexem.src_loc= SrcLoc( 0u, line, column );
 
 	result.lexems.emplace_back( std::move(eof_lexem) );
 

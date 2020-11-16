@@ -90,7 +90,7 @@ size_t SourceGraphLoader::LoadNode_r(
 		return ~0u;
 
 	for( Lexem& lexem :lex_result.lexems )
-		lexem.file_pos.SetFileIndex(uint32_t(node_index));
+		lexem.src_loc.SetFileIndex(uint32_t(node_index));
 
 	const std::vector<Synt::Import> imports= Synt::ParseImports( lex_result.lexems );
 
@@ -122,7 +122,7 @@ size_t SourceGraphLoader::LoadNode_r(
 			for( const auto& macro_map_pair : context_macro_map_pair.second )
 			{
 				if( dst_map.find(macro_map_pair.first) != dst_map.end() &&
-					macro_map_pair.second.file_pos != dst_map.find(macro_map_pair.first)->second.file_pos )
+					macro_map_pair.second.src_loc != dst_map.find(macro_map_pair.first)->second.src_loc )
 				{
 					result.errors.emplace_back(
 						"Macro \"" + macro_map_pair.first + "\" redefinition.",

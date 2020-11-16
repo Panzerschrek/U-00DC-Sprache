@@ -15,8 +15,8 @@ namespace Synt
 struct MacroExpansionContext
 {
 	std::string macro_name;
-	SrcLoc macro_declaration_file_pos;
-	SrcLoc file_pos; // Contains also macro expansion context of parent macro.
+	SrcLoc macro_declaration_src_loc;
+	SrcLoc src_loc; // Contains also macro expansion context of parent macro.
 };
 
 using MacroExpansionContexts= std::vector<MacroExpansionContext>;

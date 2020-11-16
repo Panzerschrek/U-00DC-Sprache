@@ -54,7 +54,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 		{
 			REPORT_ERROR( ArrayInitializersCountMismatch,
 				names.GetErrors(),
-				initializer.file_pos_,
+				initializer.src_loc_,
 				array_type->size,
 				initializer.initializers.size() );
 			return nullptr;
@@ -97,7 +97,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 		{
 			REPORT_ERROR( TupleInitializersCountMismatch,
 				names.GetErrors(),
-				initializer.file_pos_,
+				initializer.src_loc_,
 				tuple_type->elements.size(),
 				initializer.initializers.size() );
 			return nullptr;
@@ -135,7 +135,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 	}
 	else
 	{
-		REPORT_ERROR( ArrayInitializerForNonArray, names.GetErrors(), initializer.file_pos_ );
+		REPORT_ERROR( ArrayInitializerForNonArray, names.GetErrors(), initializer.src_loc_ );
 		return nullptr;
 	}
 
@@ -151,12 +151,12 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 	const Class* const class_type= variable.type.GetClassType();
 	if( class_type == nullptr || class_type->kind != Class::Kind::Struct )
 	{
-		REPORT_ERROR( StructInitializerForNonStruct, names.GetErrors(), initializer.file_pos_ );
+		REPORT_ERROR( StructInitializerForNonStruct, names.GetErrors(), initializer.src_loc_ );
 		return nullptr;
 	}
 
 	if( class_type->have_explicit_noncopy_constructors )
-		REPORT_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, names.GetErrors(), initializer.file_pos_ );
+		REPORT_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, names.GetErrors(), initializer.src_loc_ );
 
 	ProgramStringSet initialized_members_names;
 
@@ -175,25 +175,25 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 	{
 		if( initialized_members_names.count( member_initializer.name ) != 0 )
 		{
-			REPORT_ERROR( DuplicatedStructMemberInitializer, names.GetErrors(), initializer.file_pos_, member_initializer.name );
+			REPORT_ERROR( DuplicatedStructMemberInitializer, names.GetErrors(), initializer.src_loc_, member_initializer.name );
 			continue;
 		}
 
 		const Value* const class_member= class_type->members.GetThisScopeValue( member_initializer.name );
 		if( class_member == nullptr )
 		{
-			REPORT_ERROR( NameNotFound, names.GetErrors(), initializer.file_pos_, member_initializer.name );
+			REPORT_ERROR( NameNotFound, names.GetErrors(), initializer.src_loc_, member_initializer.name );
 			continue;
 		}
 		const ClassField* const field= class_member->GetClassField();
 		if( field == nullptr )
 		{
-			REPORT_ERROR( InitializerForNonfieldStructMember, names.GetErrors(), initializer.file_pos_, member_initializer.name );
+			REPORT_ERROR( InitializerForNonfieldStructMember, names.GetErrors(), initializer.src_loc_, member_initializer.name );
 			continue;
 		}
 		if( field->class_.lock() != variable.type )
 		{
-			REPORT_ERROR( InitializerForBaseClassField, names.GetErrors(), initializer.file_pos_, member_initializer.name );
+			REPORT_ERROR( InitializerForBaseClassField, names.GetErrors(), initializer.src_loc_, member_initializer.name );
 			continue;
 		}
 
@@ -233,7 +233,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 		if( field.is_reference )
 		{
 			if( field.syntax_element->initializer == nullptr )
-				REPORT_ERROR( ExpectedInitializer, names.GetErrors(), initializer.file_pos_, field_name ); // References is not default-constructible.
+				REPORT_ERROR( ExpectedInitializer, names.GetErrors(), initializer.src_loc_, field_name ); // References is not default-constructible.
 			else
 				constant_initializer= InitializeReferenceClassFieldWithInClassIninitalizer( variable, field, function_context );
 		}
@@ -247,7 +247,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 				constant_initializer=
 					InitializeClassFieldWithInClassIninitalizer( struct_member, field, function_context );
 			else
-				ApplyEmptyInitializer( field_name, initializer.file_pos_, struct_member, names, function_context );
+				ApplyEmptyInitializer( field_name, initializer.src_loc_, struct_member, names, function_context );
 		}
 
 		if( constant_initializer == nullptr )
@@ -282,14 +282,14 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 		const Variable expression_result= BuildExpressionCodeEnsureVariable( initializer.expression, names, function_context );
 		if( expression_result.type != variable.type )
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), initializer.file_pos_, variable.type, expression_result.type );
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), initializer.src_loc_, variable.type, expression_result.type );
 			return nullptr;
 		}
 
 		llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
 		function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
 
-		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), initializer.file_pos_ );
+		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), initializer.src_loc_ );
 
 		if( llvm::Constant* const constexpr_value= expression_result.constexpr_value )
 			return constexpr_value;
@@ -301,11 +301,11 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 		Variable expression_result= BuildExpressionCodeEnsureVariable( initializer.expression, names, function_context );
 		if( expression_result.type != variable.type )
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), initializer.file_pos_, variable.type, expression_result.type );
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), initializer.src_loc_, variable.type, expression_result.type );
 			return nullptr;
 		}
 
-		SetupReferencesInCopyOrMove( function_context, variable, expression_result, names.GetErrors(), initializer.file_pos_ );
+		SetupReferencesInCopyOrMove( function_context, variable, expression_result, names.GetErrors(), initializer.src_loc_ );
 
 		// Move or try call copy constructor.
 		if( expression_result.value_type == ValueType::Value && expression_result.type == variable.type )
@@ -317,13 +317,13 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 			}
 			CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
 
-			DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), initializer.file_pos_ );
+			DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), initializer.src_loc_ );
 		}
 		else
 		{
 			if( !variable.type.IsCopyConstructible() )
 			{
-				REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), initializer.file_pos_, variable.type );
+				REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), initializer.src_loc_, variable.type );
 				return nullptr;
 			}
 
@@ -344,20 +344,20 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 		Variable expression_result= BuildExpressionCodeEnsureVariable( initializer.expression, names, function_context );
 		if( expression_result.type == variable.type )
 		{} // Ok, same types.
-		else if( ReferenceIsConvertible( expression_result.type, variable.type, names.GetErrors(), initializer.file_pos_ ) )
+		else if( ReferenceIsConvertible( expression_result.type, variable.type, names.GetErrors(), initializer.src_loc_ ) )
 		{} // Ok, can do reference conversion.
-		else if( const FunctionVariable* const conversion_constructor= GetConversionConstructor( expression_result.type, variable.type, names.GetErrors(), initializer.file_pos_ ) )
+		else if( const FunctionVariable* const conversion_constructor= GetConversionConstructor( expression_result.type, variable.type, names.GetErrors(), initializer.src_loc_ ) )
 		{
 			// Type conversion required.
-			expression_result= ConvertVariable( expression_result, variable.type, *conversion_constructor, names, function_context, initializer.file_pos_ );
+			expression_result= ConvertVariable( expression_result, variable.type, *conversion_constructor, names, function_context, initializer.src_loc_ );
 		}
 		else
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), initializer.file_pos_, variable.type, expression_result.type );
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), initializer.src_loc_, variable.type, expression_result.type );
 			return nullptr;
 		}
 
-		SetupReferencesInCopyOrMove( function_context, variable, expression_result, names.GetErrors(), initializer.file_pos_ );
+		SetupReferencesInCopyOrMove( function_context, variable, expression_result, names.GetErrors(), initializer.src_loc_ );
 
 		// Move or try call copy constructor.
 		// TODO - produce constant initializer for generated copy constructor, if source is constant.
@@ -370,7 +370,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 			}
 			CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
 
-			DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), initializer.file_pos_ );
+			DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), initializer.src_loc_ );
 
 			return expression_result.constexpr_value; // Move can preserve constexpr.
 		}
@@ -380,12 +380,12 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 			if( expression_result.type != variable.type )
 				value_for_copy= CreateReferenceCast( value_for_copy, expression_result.type, variable.type, function_context );
 			TryCallCopyConstructor(
-				names.GetErrors(), initializer.file_pos_, variable.llvm_value, value_for_copy, variable.type.GetClassTypeProxy(), function_context );
+				names.GetErrors(), initializer.src_loc_, variable.llvm_value, value_for_copy, variable.type.GetClassTypeProxy(), function_context );
 		}
 	}
 	else
 	{
-		REPORT_ERROR( NotImplemented, names.GetErrors(), initializer.file_pos_, "expression initialization for arrays" );
+		REPORT_ERROR( NotImplemented, names.GetErrors(), initializer.src_loc_, "expression initialization for arrays" );
 		return nullptr;
 	}
 
@@ -450,9 +450,9 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 	else if( const Class* const class_type= variable.type.GetClassType() )
 	{
 		if( class_type->have_explicit_noncopy_constructors )
-			REPORT_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, names.GetErrors(), initializer.file_pos_ );
+			REPORT_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, names.GetErrors(), initializer.src_loc_ );
 		if( class_type->kind != Class::Kind::Struct )
-			REPORT_ERROR( ZeroInitializerForClass, names.GetErrors(), initializer.file_pos_ );
+			REPORT_ERROR( ZeroInitializerForClass, names.GetErrors(), initializer.src_loc_ );
 
 		Variable struct_member= variable;
 		struct_member.location= Variable::Location::Pointer;
@@ -467,7 +467,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 			if( field.is_reference )
 			{
 				all_fields_are_constant= false;
-				REPORT_ERROR( UnsupportedInitializerForReference, names.GetErrors(), initializer.file_pos_ );
+				REPORT_ERROR( UnsupportedInitializerForReference, names.GetErrors(), initializer.src_loc_ );
 				continue;
 			}
 
@@ -495,7 +495,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 	FunctionContext& function_context )
 {
 	if( !function_context.is_in_unsafe_block )
-		REPORT_ERROR( UninitializedInitializerOutsideUnsafeBlock, block_names.GetErrors(), initializer.file_pos_ );
+		REPORT_ERROR( UninitializedInitializerOutsideUnsafeBlock, block_names.GetErrors(), initializer.src_loc_ );
 
 	if( variable.type.CanBeConstexpr() )
 		return llvm::UndefValue::get( variable.type.GetLLVMType() );
@@ -584,7 +584,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 	{
 		if( call_operator.arguments_.size() != 1u )
 		{
-			REPORT_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, block_names.GetErrors(), call_operator.file_pos_ );
+			REPORT_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, block_names.GetErrors(), call_operator.src_loc_ );
 			return nullptr;
 		}
 
@@ -600,7 +600,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 		if( src_type == nullptr )
 		{
-			REPORT_ERROR( TypesMismatch, block_names.GetErrors(), call_operator.file_pos_, variable.type, src_var.type );
+			REPORT_ERROR( TypesMismatch, block_names.GetErrors(), call_operator.src_loc_, variable.type, src_var.type );
 			return nullptr;
 		}
 
@@ -679,14 +679,14 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				{
 					// TODO - error, bool have no constructors from other types
 				}
-				REPORT_ERROR( TypesMismatch, block_names.GetErrors(), call_operator.file_pos_, variable.type, src_var.type );
+				REPORT_ERROR( TypesMismatch, block_names.GetErrors(), call_operator.src_loc_, variable.type, src_var.type );
 				return nullptr;
 			}
 		} // If needs conversion
 
 		function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
 
-		DestroyUnusedTemporaryVariables( function_context, block_names.GetErrors(), call_operator.file_pos_ );
+		DestroyUnusedTemporaryVariables( function_context, block_names.GetErrors(), call_operator.src_loc_ );
 
 		return llvm::dyn_cast<llvm::Constant>(value_for_assignment);
 	}
@@ -695,14 +695,14 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		if( call_operator.arguments_.size() != 1u )
 		{
 			// TODO - generate separate error for enums.
-			REPORT_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, block_names.GetErrors(), call_operator.file_pos_ );
+			REPORT_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, block_names.GetErrors(), call_operator.src_loc_ );
 			return nullptr;
 		}
 
 		const Variable expression_result= BuildExpressionCodeEnsureVariable( call_operator.arguments_.front(), block_names, function_context );
 		if( expression_result.type != variable.type )
 		{
-			REPORT_ERROR( TypesMismatch, block_names.GetErrors(), call_operator.file_pos_, variable.type, expression_result.type );
+			REPORT_ERROR( TypesMismatch, block_names.GetErrors(), call_operator.src_loc_, variable.type, expression_result.type );
 			return nullptr;
 		}
 
@@ -710,7 +710,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			CreateMoveToLLVMRegisterInstruction( expression_result, function_context ),
 			variable.llvm_value );
 
-		DestroyUnusedTemporaryVariables( function_context, block_names.GetErrors(), call_operator.file_pos_ );
+		DestroyUnusedTemporaryVariables( function_context, block_names.GetErrors(), call_operator.src_loc_ );
 
 		return expression_result.constexpr_value;
 	}
@@ -719,7 +719,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		if( call_operator.arguments_.size() != 1u )
 		{
 			// TODO - generate separate error for function pointers.
-			REPORT_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, block_names.GetErrors(), call_operator.file_pos_ );
+			REPORT_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, block_names.GetErrors(), call_operator.src_loc_ );
 			return nullptr;
 		}
 
@@ -729,18 +729,18 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 	{
 		if( call_operator.arguments_.size() != 1u )
 		{
-			REPORT_ERROR( ConstructorInitializerForUnsupportedType, block_names.GetErrors(), call_operator.file_pos_ );
+			REPORT_ERROR( ConstructorInitializerForUnsupportedType, block_names.GetErrors(), call_operator.src_loc_ );
 			return nullptr;
 		}
 
 		const Variable expression_result= BuildExpressionCodeEnsureVariable( call_operator.arguments_.front(), block_names, function_context );
 		if( expression_result.type != variable.type )
 		{
-			REPORT_ERROR( TypesMismatch, block_names.GetErrors(), call_operator.file_pos_, variable.type, expression_result.type );
+			REPORT_ERROR( TypesMismatch, block_names.GetErrors(), call_operator.src_loc_, variable.type, expression_result.type );
 			return nullptr;
 		}
 
-		SetupReferencesInCopyOrMove( function_context, variable, expression_result, block_names.GetErrors(), call_operator.file_pos_ );
+		SetupReferencesInCopyOrMove( function_context, variable, expression_result, block_names.GetErrors(), call_operator.src_loc_ );
 
 		// Copy/move initialize array/tuple.
 		if( expression_result.value_type == ValueType::Value )
@@ -754,7 +754,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		{
 			if( !variable.type.IsCopyConstructible() )
 			{
-				REPORT_ERROR( OperationNotSupportedForThisType, block_names.GetErrors(), call_operator.file_pos_, variable.type );
+				REPORT_ERROR( OperationNotSupportedForThisType, block_names.GetErrors(), call_operator.src_loc_, variable.type );
 				return nullptr;
 			}
 
@@ -787,7 +787,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		{
 			const Variable initializer_variable= BuildExpressionCodeEnsureVariable( call_operator.arguments_.front(), block_names, function_context );
 
-			SetupReferencesInCopyOrMove( function_context, variable, initializer_variable, block_names.GetErrors(), call_operator.file_pos_ );
+			SetupReferencesInCopyOrMove( function_context, variable, initializer_variable, block_names.GetErrors(), call_operator.src_loc_ );
 
 			if( initializer_variable.node != nullptr )
 				function_context.variables_state.MoveNode( initializer_variable.node );
@@ -801,7 +801,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			class_type->members.GetThisScopeValue( Keyword( Keywords::constructor_ ) );
 		if( constructor_value == nullptr )
 		{
-			REPORT_ERROR( ClassHaveNoConstructors, block_names.GetErrors(), call_operator.file_pos_ );
+			REPORT_ERROR( ClassHaveNoConstructors, block_names.GetErrors(), call_operator.src_loc_ );
 			return nullptr;
 		}
 
@@ -816,7 +816,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 	}
 	else
 	{
-		REPORT_ERROR( ConstructorInitializerForUnsupportedType, block_names.GetErrors(), call_operator.file_pos_ );
+		REPORT_ERROR( ConstructorInitializerForUnsupportedType, block_names.GetErrors(), call_operator.src_loc_ );
 		return nullptr;
 	}
 
@@ -833,7 +833,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	U_ASSERT( variable.type.GetClassType() != nullptr );
 	U_ASSERT( variable.type.GetClassTypeProxy() == field.class_.lock() );
 
-	const SrcLoc initializer_file_pos= Synt::GetInitializerFilePos( initializer );
+	const SrcLoc initializer_file_pos= Synt::GetInitializerSrcLoc( initializer );
 	const Synt::Expression* initializer_expression= nullptr;
 	if( const auto expression_initializer= std::get_if<Synt::ExpressionInitializer>( &initializer ) )
 	{
@@ -843,7 +843,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	{
 		if( constructor_initializer->call_operator.arguments_.size() != 1u )
 		{
-			REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, block_names.GetErrors(), constructor_initializer->file_pos_ );
+			REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, block_names.GetErrors(), constructor_initializer->src_loc_ );
 			return nullptr;
 		}
 		initializer_expression= &constructor_initializer->call_operator.arguments_.front();
@@ -856,7 +856,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 
 	const Variable initializer_variable= BuildExpressionCodeEnsureVariable( *initializer_expression, block_names, function_context );
 
-	const SrcLoc initializer_expression_file_pos= Synt::GetExpressionFilePos( *initializer_expression );
+	const SrcLoc initializer_expression_file_pos= Synt::GetExpressionSrcLoc( *initializer_expression );
 	if( !ReferenceIsConvertible( initializer_variable.type, field.type, block_names.GetErrors(), initializer_expression_file_pos ) )
 	{
 		REPORT_ERROR( TypesMismatch, block_names.GetErrors(), initializer_expression_file_pos, field.type, initializer_variable.type );
@@ -939,7 +939,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 {
 	U_ASSERT( variable.type.GetFunctionPointerType() != nullptr );
 
-	const SrcLoc initializer_expression_file_pos= Synt::GetExpressionFilePos( initializer_expression );
+	const SrcLoc initializer_expression_file_pos= Synt::GetExpressionSrcLoc( initializer_expression );
 	const FunctionPointer& function_pointer_type= *variable.type.GetFunctionPointerType();
 
 	const Value initializer_value= BuildExpressionCode( initializer_expression, block_names, function_context );

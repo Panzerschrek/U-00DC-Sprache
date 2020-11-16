@@ -63,7 +63,7 @@ void CodeBuilder::ProcessFunctionReturnValueReferenceTags(
 				}
 			}
 			if( !found )
-				REPORT_ERROR( NameNotFound, errors_container, func.file_pos_, func.return_value_inner_reference_tag_ );
+				REPORT_ERROR( NameNotFound, errors_container, func.src_loc_, func.return_value_inner_reference_tag_ );
 		}
 	}
 }
@@ -91,7 +91,7 @@ void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
 			}
 
 			if( !tag_found ) // Tag exists, but referenced args is empty - means tag apperas only in return value, but not in any argument.
-				REPORT_ERROR( NameNotFound, errors_container, func.file_pos_, func.return_value_reference_tag_ );
+				REPORT_ERROR( NameNotFound, errors_container, func.src_loc_, func.return_value_reference_tag_ );
 		}
 
 		// If there is no tag for return reference, assume, that it may refer to any reference argument, but not inner reference of any argument.
@@ -112,7 +112,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	if( func.name_.back() == Keywords::constructor_ && IsCopyConstructor( function_type, base_class ) )
 	{
 		if( !func.type_.referecnces_pollution_list_.empty() )
-			REPORT_ERROR( ExplicitReferencePollutionForCopyConstructor, errors_container, func.file_pos_ );
+			REPORT_ERROR( ExplicitReferencePollutionForCopyConstructor, errors_container, func.src_loc_ );
 
 		// This is copy constructor. Generate reference pollution for it automatically.
 		Function::ReferencePollution ref_pollution;
@@ -125,7 +125,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	else if( func.name_.back() == OverloadedOperatorToString( OverloadedOperator::Assign ) && IsCopyAssignmentOperator( function_type, base_class ) )
 	{
 		if( !func.type_.referecnces_pollution_list_.empty() )
-			REPORT_ERROR( ExplicitReferencePollutionForCopyAssignmentOperator, errors_container, func.file_pos_ );
+			REPORT_ERROR( ExplicitReferencePollutionForCopyAssignmentOperator, errors_container, func.src_loc_ );
 
 		// This is copy assignment operator. Generate reference pollution for it automatically.
 		Function::ReferencePollution ref_pollution;
@@ -167,7 +167,7 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 		}
 
 		if( !any_ref_found && result.empty() )
-			REPORT_ERROR( NameNotFound, errors_container, func.file_pos_, name );
+			REPORT_ERROR( NameNotFound, errors_container, func.src_loc_, name );
 
 		return result;
 	};
@@ -176,7 +176,7 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 	{
 		if( pollution.first == pollution.second )
 		{
-			REPORT_ERROR( SelfReferencePollution, errors_container, func.file_pos_ );
+			REPORT_ERROR( SelfReferencePollution, errors_container, func.src_loc_ );
 			continue;
 		}
 
@@ -187,7 +187,7 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 		{
 			if( dst_ref.second == Function::c_arg_reference_tag_number )
 			{
-				REPORT_ERROR( ArgReferencePollution, errors_container, func.file_pos_ );
+				REPORT_ERROR( ArgReferencePollution, errors_container, func.src_loc_ );
 				continue;
 			}
 

@@ -742,21 +742,21 @@ size_t CodeBuilder::PrepareFunction(
 		U_ASSERT( func.type_.arguments_.size() >= 1u && func.type_.arguments_.front().name_ == Keywords::this_ );
 
 	if( !is_special_method && IsKeyword( func_name ) )
-		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), func.file_pos_ );
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), func.src_loc_ );
 
 	if( is_special_method && base_class == nullptr )
 	{
-		REPORT_ERROR( ConstructorOrDestructorOutsideClass, names_scope.GetErrors(), func.file_pos_ );
+		REPORT_ERROR( ConstructorOrDestructorOutsideClass, names_scope.GetErrors(), func.src_loc_ );
 		return ~0u;
 	}
 	if( !is_constructor && func.constructor_initialization_list_ != nullptr )
 	{
-		REPORT_ERROR( InitializationListInNonconstructor, names_scope.GetErrors(), func.constructor_initialization_list_->file_pos_ );
+		REPORT_ERROR( InitializationListInNonconstructor, names_scope.GetErrors(), func.constructor_initialization_list_->src_loc_ );
 		return ~0u;
 	}
 	if( is_destructor && func.type_.arguments_.size() >= 2u )
 	{
-		REPORT_ERROR( ExplicitArgumentsInDestructor, names_scope.GetErrors(), func.file_pos_ );
+		REPORT_ERROR( ExplicitArgumentsInDestructor, names_scope.GetErrors(), func.src_loc_ );
 		return ~0u;
 	}
 
@@ -771,10 +771,10 @@ size_t CodeBuilder::PrepareFunction(
 					return ~0u; // Function disabled.
 			}
 			else
-				REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), Synt::GetExpressionFilePos( func.condition_ ) );
+				REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( func.condition_ ) );
 		}
 		else
-			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), Synt::GetExpressionFilePos( func.condition_ ), bool_type_, expression.type );
+			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( func.condition_ ), bool_type_, expression.type );
 	}
 
 	FunctionVariable func_variable;
@@ -795,9 +795,9 @@ size_t CodeBuilder::PrepareFunction(
 				{
 					func_variable.return_type_is_auto= true;
 					if( base_class != nullptr )
-						REPORT_ERROR( AutoFunctionInsideClassesNotAllowed, names_scope.GetErrors(), func.file_pos_, func_name );
+						REPORT_ERROR( AutoFunctionInsideClassesNotAllowed, names_scope.GetErrors(), func.src_loc_, func_name );
 					if( func.block_ == nullptr )
-						REPORT_ERROR( ExpectedBodyForAutoFunction, names_scope.GetErrors(), func.file_pos_, func_name );
+						REPORT_ERROR( ExpectedBodyForAutoFunction, names_scope.GetErrors(), func.src_loc_, func_name );
 
 					if( func.type_.return_value_reference_modifier_ == ReferenceModifier::Reference )
 						function_type.return_type= void_type_;
@@ -823,7 +823,7 @@ size_t CodeBuilder::PrepareFunction(
 			function_type.return_type= void_type_for_ret_;
 
 		if( is_special_method && !( function_type.return_type == void_type_ && !function_type.return_value_is_reference ) )
-			REPORT_ERROR( ConstructorAndDestructorMustReturnVoid, names_scope.GetErrors(), func.file_pos_ );
+			REPORT_ERROR( ConstructorAndDestructorMustReturnVoid, names_scope.GetErrors(), func.src_loc_ );
 
 		ProcessFunctionReturnValueReferenceTags( names_scope.GetErrors(), func.type_, function_type );
 
@@ -838,7 +838,7 @@ size_t CodeBuilder::PrepareFunction(
 				std::get_if<Synt::EmptyVariant>(&arg.type_) != nullptr;
 
 			if( !is_this && IsKeyword( arg.name_ ) )
-				REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), arg.file_pos_ );
+				REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), arg.src_loc_ );
 
 			function_type.args.emplace_back();
 			Function::Arg& out_arg= function_type.args.back();
@@ -848,7 +848,7 @@ size_t CodeBuilder::PrepareFunction(
 				func_variable.is_this_call= true;
 				if( base_class == nullptr )
 				{
-					REPORT_ERROR( ThisInNonclassFunction, names_scope.GetErrors(), arg.file_pos_, func_name );
+					REPORT_ERROR( ThisInNonclassFunction, names_scope.GetErrors(), arg.src_loc_, func_name );
 					return ~0u;
 				}
 				out_arg.type= base_class;
@@ -866,7 +866,7 @@ size_t CodeBuilder::PrepareFunction(
 
 		TryGenerateFunctionReturnReferencesMapping( names_scope.GetErrors(), func.type_, function_type );
 		ProcessFunctionReferencesPollution( names_scope.GetErrors(), func, function_type, base_class );
-		CheckOverloadedOperator( base_class, function_type, func.overloaded_operator_, names_scope.GetErrors(), func.file_pos_ );
+		CheckOverloadedOperator( base_class, function_type, func.overloaded_operator_, names_scope.GetErrors(), func.src_loc_ );
 
 	} // end prepare function type
 
@@ -874,9 +874,9 @@ size_t CodeBuilder::PrepareFunction(
 	if( func.constexpr_ )
 	{
 		if( func.block_ == nullptr )
-			REPORT_ERROR( ConstexprFunctionsMustHaveBody, names_scope.GetErrors(), func.file_pos_ );
+			REPORT_ERROR( ConstexprFunctionsMustHaveBody, names_scope.GetErrors(), func.src_loc_ );
 		if( func.virtual_function_kind_ != Synt::VirtualFunctionKind::None )
-			REPORT_ERROR( ConstexprFunctionCanNotBeVirtual, names_scope.GetErrors(), func.file_pos_ );
+			REPORT_ERROR( ConstexprFunctionCanNotBeVirtual, names_scope.GetErrors(), func.src_loc_ );
 
 		func_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprIncomplete;
 	}
@@ -887,15 +887,15 @@ size_t CodeBuilder::PrepareFunction(
 	if( func.virtual_function_kind_ != Synt::VirtualFunctionKind::None )
 	{
 		if( base_class == nullptr )
-			REPORT_ERROR( VirtualForNonclassFunction, names_scope.GetErrors(), func.file_pos_, func_name );
+			REPORT_ERROR( VirtualForNonclassFunction, names_scope.GetErrors(), func.src_loc_, func_name );
 		if( !func_variable.is_this_call )
-			REPORT_ERROR( VirtualForNonThisCallFunction, names_scope.GetErrors(), func.file_pos_, func_name );
+			REPORT_ERROR( VirtualForNonThisCallFunction, names_scope.GetErrors(), func.src_loc_, func_name );
 		if( is_constructor )
-			REPORT_ERROR( FunctionCanNotBeVirtual, names_scope.GetErrors(), func.file_pos_, func_name );
+			REPORT_ERROR( FunctionCanNotBeVirtual, names_scope.GetErrors(), func.src_loc_, func_name );
 		if( base_class != nullptr && ( base_class->class_->kind == Class::Kind::Struct || base_class->class_->kind == Class::Kind::NonPolymorph ) )
-			REPORT_ERROR( VirtualForNonpolymorphClass, names_scope.GetErrors(), func.file_pos_, func_name );
+			REPORT_ERROR( VirtualForNonpolymorphClass, names_scope.GetErrors(), func.src_loc_, func_name );
 		if( is_out_of_line_function )
-			REPORT_ERROR( VirtualForFunctionImplementation, names_scope.GetErrors(), func.file_pos_, func_name );
+			REPORT_ERROR( VirtualForFunctionImplementation, names_scope.GetErrors(), func.src_loc_, func_name );
 
 		func_variable.virtual_function_kind= func.virtual_function_kind_;
 	}
@@ -906,7 +906,7 @@ size_t CodeBuilder::PrepareFunction(
 		// Allow only global no-mangle function. This prevents existing of multiple "nomangle" functions with same name in different namespaces.
 		// If function is operator, it can not be global.
 		if( names_scope.GetParent() != nullptr )
-			REPORT_ERROR( NoMangleForNonglobalFunction, names_scope.GetErrors(), func.file_pos_, func_name );
+			REPORT_ERROR( NoMangleForNonglobalFunction, names_scope.GetErrors(), func.src_loc_, func_name );
 		func_variable.no_mangle= true;
 	}
 
@@ -914,7 +914,7 @@ size_t CodeBuilder::PrepareFunction(
 	func_variable.is_conversion_constructor= func.is_conversion_constructor_;
 	U_ASSERT( !( func.is_conversion_constructor_ && !is_constructor ) );
 	if( func.is_conversion_constructor_ && func_variable.type.GetFunctionType()->args.size() != 2u )
-		REPORT_ERROR( ConversionConstructorMustHaveOneArgument, names_scope.GetErrors(), func.file_pos_ );
+		REPORT_ERROR( ConversionConstructorMustHaveOneArgument, names_scope.GetErrors(), func.src_loc_ );
 	func_variable.is_constructor= is_constructor;
 
 	// Check "=default" / "=delete".
@@ -934,7 +934,7 @@ size_t CodeBuilder::PrepareFunction(
 			invalid_func= true;
 
 		if( invalid_func )
-			REPORT_ERROR( InvalidMethodForBodyGeneration, names_scope.GetErrors(), func.file_pos_ );
+			REPORT_ERROR( InvalidMethodForBodyGeneration, names_scope.GetErrors(), func.src_loc_ );
 		else
 		{
 			if( func.body_kind == Synt::Function::BodyKind::BodyGenerationRequired )
@@ -949,24 +949,24 @@ size_t CodeBuilder::PrepareFunction(
 			 if( prev_function->syntax_element->block_ == nullptr && func.block_ != nullptr )
 		{ // Ok, body after prototype.
 			prev_function->syntax_element= &func;
-			prev_function->body_file_pos= func.file_pos_;
+			prev_function->body_file_pos= func.src_loc_;
 		}
 		else if( prev_function->syntax_element->block_ != nullptr && func.block_ == nullptr )
 		{ // Ok, prototype after body. Since order-independent resolving this is correct.
-			prev_function->prototype_file_pos= func.file_pos_;
+			prev_function->prototype_file_pos= func.src_loc_;
 		}
 		else if( prev_function->syntax_element->block_ == nullptr && func.block_ == nullptr )
-			REPORT_ERROR( FunctionPrototypeDuplication, names_scope.GetErrors(), func.file_pos_, func_name );
+			REPORT_ERROR( FunctionPrototypeDuplication, names_scope.GetErrors(), func.src_loc_, func_name );
 		else if( prev_function->syntax_element->block_ != nullptr && func.block_ != nullptr )
-			REPORT_ERROR( FunctionBodyDuplication, names_scope.GetErrors(), func.file_pos_, func_name );
+			REPORT_ERROR( FunctionBodyDuplication, names_scope.GetErrors(), func.src_loc_, func_name );
 
 		if( prev_function->is_this_call != func_variable.is_this_call )
-			REPORT_ERROR( ThiscallMismatch, names_scope.GetErrors(), func.file_pos_, func_name );
+			REPORT_ERROR( ThiscallMismatch, names_scope.GetErrors(), func.src_loc_, func_name );
 
 		if( !is_out_of_line_function )
 		{
 			if( prev_function->virtual_function_kind != func.virtual_function_kind_ )
-				REPORT_ERROR( VirtualMismatch, names_scope.GetErrors(), func.file_pos_, func_name );
+				REPORT_ERROR( VirtualMismatch, names_scope.GetErrors(), func.src_loc_, func_name );
 		}
 		if( prev_function->is_deleted != func_variable.is_deleted )
 			REPORT_ERROR( BodyForDeletedFunction, names_scope.GetErrors(), prev_function->prototype_file_pos, func_name );
@@ -974,10 +974,10 @@ size_t CodeBuilder::PrepareFunction(
 			REPORT_ERROR( BodyForGeneratedFunction, names_scope.GetErrors(), prev_function->prototype_file_pos, func_name );
 
 		if( prev_function->no_mangle != func_variable.no_mangle )
-			REPORT_ERROR( NoMangleMismatch, names_scope.GetErrors(), func.file_pos_, func_name );
+			REPORT_ERROR( NoMangleMismatch, names_scope.GetErrors(), func.src_loc_, func_name );
 
 		if( prev_function->is_conversion_constructor != func_variable.is_conversion_constructor )
-			REPORT_ERROR( CouldNotOverloadFunction, names_scope.GetErrors(), func.file_pos_ );
+			REPORT_ERROR( CouldNotOverloadFunction, names_scope.GetErrors(), func.src_loc_ );
 
 		return size_t(prev_function - functions_set.functions.data());
 	}
@@ -985,16 +985,16 @@ size_t CodeBuilder::PrepareFunction(
 	{
 		if( is_out_of_line_function )
 		{
-			REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), func.file_pos_ );
+			REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), func.src_loc_ );
 			return ~0u;
 		}
 		if( functions_set.have_nomangle_function || ( !functions_set.functions.empty() && func_variable.no_mangle ) )
 		{
-			REPORT_ERROR( CouldNotOverloadFunction, names_scope.GetErrors(), func.file_pos_ );
+			REPORT_ERROR( CouldNotOverloadFunction, names_scope.GetErrors(), func.src_loc_ );
 			return ~0u;
 		}
 
-		const bool overloading_ok= ApplyOverloadedFunction( functions_set, func_variable, names_scope.GetErrors(), func.file_pos_ );
+		const bool overloading_ok= ApplyOverloadedFunction( functions_set, func_variable, names_scope.GetErrors(), func.src_loc_ );
 		if( !overloading_ok )
 			return ~0u;
 
@@ -1002,7 +1002,7 @@ size_t CodeBuilder::PrepareFunction(
 			functions_set.have_nomangle_function= true;
 
 		FunctionVariable& inserted_func_variable= functions_set.functions.back();
-		inserted_func_variable.body_file_pos= inserted_func_variable.prototype_file_pos= func.file_pos_;
+		inserted_func_variable.body_file_pos= inserted_func_variable.prototype_file_pos= func.src_loc_;
 		inserted_func_variable.syntax_element= &func;
 
 		BuildFuncCode(
@@ -1224,7 +1224,7 @@ Type CodeBuilder::BuildFuncCode(
 	for( const Function::Arg& arg : function_type.args )
 	{
 		if( arg.type != void_type_ && !EnsureTypeComplete( arg.type ) )
-			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), args.front().file_pos_, arg.type );
+			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), args.front().src_loc_, arg.type );
 	}
 	if( !function_type.return_value_is_reference && function_type.return_type != void_type_ &&
 		!EnsureTypeComplete( function_type.return_type ) )
@@ -1278,7 +1278,7 @@ Type CodeBuilder::BuildFuncCode(
 		if( arg.is_reference )
 		{
 			var.location= Variable::Location::Pointer;
-			CreateReferenceVariableDebugInfo( var, arg_name, declaration_arg.file_pos_, function_context );
+			CreateReferenceVariableDebugInfo( var, arg_name, declaration_arg.src_loc_, function_context );
 		}
 		else
 		{
@@ -1302,7 +1302,7 @@ Type CodeBuilder::BuildFuncCode(
 			}
 			else U_ASSERT(false);
 
-			CreateVariableDebugInfo( var, arg_name, declaration_arg.file_pos_, function_context );
+			CreateVariableDebugInfo( var, arg_name, declaration_arg.src_loc_, function_context );
 		}
 
 		// Create variable node, because only variable node can have inner reference node.
@@ -1350,9 +1350,9 @@ Type CodeBuilder::BuildFuncCode(
 		else
 		{
 			const Value* const inserted_arg=
-				function_names.AddName( arg_name, Value( var, declaration_arg.file_pos_ ) );
+				function_names.AddName( arg_name, Value( var, declaration_arg.src_loc_ ) );
 			if( inserted_arg == nullptr )
-				REPORT_ERROR( Redefinition, function_names.GetErrors(), declaration_arg.file_pos_, arg_name );
+				REPORT_ERROR( Redefinition, function_names.GetErrors(), declaration_arg.src_loc_, arg_name );
 		}
 
 		llvm_arg.setName( "_arg_" + arg_name );
@@ -1369,7 +1369,7 @@ Type CodeBuilder::BuildFuncCode(
 		if( constructor_initialization_list == nullptr )
 		{
 			// Create dummy initialization list for constructors without explicit initialization list.
-			const Synt::StructNamedInitializer dumy_initialization_list( block->file_pos_ );
+			const Synt::StructNamedInitializer dumy_initialization_list( block->src_loc_ );
 
 			BuildConstructorInitialization(
 				*function_context.this_,
@@ -1485,8 +1485,8 @@ Type CodeBuilder::BuildFuncCode(
 		if( function_type.return_type == void_type_ && !function_type.return_value_is_reference )
 		{
 			// Manually generate "return" for void-return functions.
-			CallDestructors( args_storage, function_names, function_context, block->end_file_pos_ );
-			CheckReferencesPollutionBeforeReturn( function_context, function_names.GetErrors(), block->end_file_pos_ );
+			CallDestructors( args_storage, function_names, function_context, block->end_src_loc_ );
+			CheckReferencesPollutionBeforeReturn( function_context, function_names.GetErrors(), block->end_src_loc_ );
 
 			if( function_context.destructor_end_block == nullptr )
 				function_context.llvm_ir_builder.CreateRetVoid();
@@ -1498,7 +1498,7 @@ Type CodeBuilder::BuildFuncCode(
 		}
 		else
 		{
-			REPORT_ERROR( NoReturnInFunctionReturningNonVoid, function_names.GetErrors(), block->end_file_pos_ );
+			REPORT_ERROR( NoReturnInFunctionReturningNonVoid, function_names.GetErrors(), block->end_src_loc_ );
 			return function_type.return_type;
 		}
 	}
@@ -1513,7 +1513,7 @@ Type CodeBuilder::BuildFuncCode(
 		function_context.llvm_ir_builder.SetInsertPoint( function_context.destructor_end_block );
 		llvm_function->getBasicBlockList().push_back( function_context.destructor_end_block );
 
-		CallMembersDestructors( function_context, function_names.GetErrors(), block->end_file_pos_ );		
+		CallMembersDestructors( function_context, function_names.GetErrors(), block->end_src_loc_ );
 		function_context.llvm_ir_builder.CreateRetVoid();
 	}
 
@@ -1539,13 +1539,13 @@ void CodeBuilder::BuildConstructorInitialization(
 			if( base_class.base_class == nullptr )
 			{
 				have_fields_errors= true;
-				REPORT_ERROR( BaseUnavailable, names_scope.GetErrors(), constructor_initialization_list.file_pos_ );
+				REPORT_ERROR( BaseUnavailable, names_scope.GetErrors(), constructor_initialization_list.src_loc_ );
 				continue;
 			}
 			if( base_initialized )
 			{
 				have_fields_errors= true;
-				REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope.GetErrors(), constructor_initialization_list.file_pos_, field_initializer.name );
+				REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field_initializer.name );
 				continue;
 			}
 			base_initialized= true;
@@ -1557,7 +1557,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		if( class_member == nullptr )
 		{
 			have_fields_errors= true;
-			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), constructor_initialization_list.file_pos_, field_initializer.name );
+			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field_initializer.name );
 			continue;
 		}
 
@@ -1565,20 +1565,20 @@ void CodeBuilder::BuildConstructorInitialization(
 		if( field == nullptr )
 		{
 			have_fields_errors= true;
-			REPORT_ERROR( InitializerForNonfieldStructMember, names_scope.GetErrors(), constructor_initialization_list.file_pos_, field_initializer.name );
+			REPORT_ERROR( InitializerForNonfieldStructMember, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field_initializer.name );
 			continue;
 		}
 		if( field->class_.lock()->class_ != &base_class )
 		{
 			have_fields_errors= true;
-			REPORT_ERROR( InitializerForBaseClassField, names_scope.GetErrors(), constructor_initialization_list.file_pos_, field_initializer.name );
+			REPORT_ERROR( InitializerForBaseClassField, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field_initializer.name );
 			continue;
 		}
 
 		if( initialized_fields.find( field_initializer.name ) != initialized_fields.end() )
 		{
 			have_fields_errors= true;
-			REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope.GetErrors(), constructor_initialization_list.file_pos_, field_initializer.name );
+			REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field_initializer.name );
 			continue;
 		}
 
@@ -1600,7 +1600,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		{
 			if( field.syntax_element->initializer == nullptr )
 			{
-				REPORT_ERROR( ExpectedInitializer, names_scope.GetErrors(), constructor_initialization_list.file_pos_, field_name );
+				REPORT_ERROR( ExpectedInitializer, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field_name );
 				continue;
 			}
 			InitializeReferenceClassFieldWithInClassIninitalizer( this_, field, function_context );
@@ -1618,9 +1618,9 @@ void CodeBuilder::BuildConstructorInitialization(
 			if( field.syntax_element->initializer != nullptr )
 				InitializeClassFieldWithInClassIninitalizer( field_variable, field, function_context );
 			else
-				ApplyEmptyInitializer( field_name, constructor_initialization_list.file_pos_, field_variable, names_scope, function_context );
+				ApplyEmptyInitializer( field_name, constructor_initialization_list.src_loc_, field_variable, names_scope, function_context );
 		}
-		CallDestructors( temp_variables_storage, names_scope, function_context, constructor_initialization_list.file_pos_ );
+		CallDestructors( temp_variables_storage, names_scope, function_context, constructor_initialization_list.src_loc_ );
 	}
 	if( !base_initialized && base_class.base_class != nullptr )
 	{
@@ -1635,10 +1635,10 @@ void CodeBuilder::BuildConstructorInitialization(
 		base_variable.llvm_value=
 			function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( 0u /* base class is allways first field */ ) } );
 
-		ApplyEmptyInitializer( base_class.base_class->class_->members.GetThisNamespaceName(), constructor_initialization_list.file_pos_, base_variable, names_scope, function_context );
+		ApplyEmptyInitializer( base_class.base_class->class_->members.GetThisNamespaceName(), constructor_initialization_list.src_loc_, base_variable, names_scope, function_context );
 		function_context.base_initialized= true;
 
-		CallDestructors( temp_variables_storage, names_scope, function_context, constructor_initialization_list.file_pos_ );
+		CallDestructors( temp_variables_storage, names_scope, function_context, constructor_initialization_list.src_loc_ );
 	}
 
 	if( have_fields_errors )
@@ -1690,7 +1690,7 @@ void CodeBuilder::BuildConstructorInitialization(
 
 		function_context.uninitialized_this_fields.erase( field->syntax_element->name );
 
-		CallDestructors( temp_variables_storage, names_scope, function_context, Synt::GetInitializerFilePos( field_initializer.initializer ) );
+		CallDestructors( temp_variables_storage, names_scope, function_context, Synt::GetInitializerSrcLoc( field_initializer.initializer ) );
 	} // for fields initializers
 
 	SetupVirtualTablePointers( this_.llvm_value, base_class, function_context );

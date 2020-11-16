@@ -87,7 +87,7 @@ void CodeBuilder::PrepareTypeTemplate(
 
 	type_template->parent_namespace= &names_scope;
 	type_template->syntax_element= &type_template_declaration;
-	type_template->file_pos= type_template_declaration.file_pos_;
+	type_template->file_pos= type_template_declaration.src_loc_;
 
 	std::vector<TypeTemplate::TemplateParameter>& template_parameters= type_template->template_params;
 	template_parameters.reserve( type_template_declaration.params_.size() );
@@ -96,7 +96,7 @@ void CodeBuilder::PrepareTypeTemplate(
 	ProcessTemplateParams(
 		type_template_declaration.params_,
 		names_scope,
-		type_template_declaration.file_pos_,
+		type_template_declaration.src_loc_,
 		template_parameters,
 		template_parameters_usage_flags );
 
@@ -129,7 +129,7 @@ void CodeBuilder::PrepareTypeTemplate(
 			{
 				const size_t index= type_template->signature_params.size() - 1u;
 				if (index > type_template->first_optional_signature_param )
-					REPORT_ERROR( MandatoryTemplateSignatureArgumentAfterOptionalArgument, names_scope.GetErrors(), type_template_declaration.file_pos_ );
+					REPORT_ERROR( MandatoryTemplateSignatureArgumentAfterOptionalArgument, names_scope.GetErrors(), type_template_declaration.src_loc_ );
 
 				++type_template->first_optional_signature_param;
 			}
@@ -139,7 +139,7 @@ void CodeBuilder::PrepareTypeTemplate(
 
 	for( size_t i= 0u; i < type_template->template_params.size(); ++i )
 		if( !template_parameters_usage_flags[i] )
-			REPORT_ERROR( TemplateArgumentNotUsedInSignature, names_scope.GetErrors(), type_template_declaration.file_pos_, type_template->template_params[i].name );
+			REPORT_ERROR( TemplateArgumentNotUsedInSignature, names_scope.GetErrors(), type_template_declaration.src_loc_, type_template->template_params[i].name );
 }
 
 void CodeBuilder::PrepareFunctionTemplate(
@@ -152,16 +152,16 @@ void CodeBuilder::PrepareFunctionTemplate(
 	const std::string& function_template_name= full_name.front();
 
 	if( full_name.size() > 1u )
-		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), function_template_declaration.file_pos_ );
+		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), function_template_declaration.src_loc_ );
 
 	if( function_template_declaration.function_->block_ == nullptr )
-		REPORT_ERROR( IncompleteMemberOfClassTemplate, names_scope.GetErrors(), function_template_declaration.file_pos_, function_template_name );
+		REPORT_ERROR( IncompleteMemberOfClassTemplate, names_scope.GetErrors(), function_template_declaration.src_loc_, function_template_name );
 	if( function_template_declaration.function_->virtual_function_kind_ != Synt::VirtualFunctionKind::None )
-		REPORT_ERROR( VirtualForFunctionTemplate, names_scope.GetErrors(), function_template_declaration.file_pos_, function_template_name );
+		REPORT_ERROR( VirtualForFunctionTemplate, names_scope.GetErrors(), function_template_declaration.src_loc_, function_template_name );
 
 	const auto function_template= std::make_shared<FunctionTemplate>();
 	function_template->syntax_element= &function_template_declaration;
-	function_template->file_pos= function_template_declaration.file_pos_;
+	function_template->file_pos= function_template_declaration.src_loc_;
 	function_template->parent_namespace= &names_scope;
 	function_template->base_class= base_class;
 
@@ -170,7 +170,7 @@ void CodeBuilder::PrepareFunctionTemplate(
 	ProcessTemplateParams(
 		function_template_declaration.params_,
 		names_scope,
-		function_template_declaration.file_pos_,
+		function_template_declaration.src_loc_,
 		function_template->template_params,
 		template_parameters_usage_flags );
 
@@ -325,7 +325,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	if( const auto named_operand= std::get_if<Synt::NamedOperand>( &template_parameter ) )
 	{
 		if( named_operand->postfix_operators_.empty() && named_operand->prefix_operators_.empty() )
-			return CreateTemplateSignatureParameter( named_operand->file_pos_, named_operand->name_, names_scope, function_context, template_parameters, template_parameters_usage_flags );
+			return CreateTemplateSignatureParameter( named_operand->src_loc_, named_operand->name_, names_scope, function_context, template_parameters, template_parameters_usage_flags );
 	}
 	else if( const auto type_name= std::get_if<Synt::TypeNameInExpression>( &template_parameter ) )
 		return CreateTemplateSignatureParameter( type_name->type_name, names_scope, function_context, template_parameters, template_parameters_usage_flags );
@@ -346,7 +346,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	std::vector<bool>& template_parameters_usage_flags )
 {
 	if( const auto named_type_name= std::get_if<Synt::NamedTypeName>(&type_name_template_parameter) )
-		return CreateTemplateSignatureParameter( named_type_name->file_pos_, named_type_name->name, names_scope, function_context, template_parameters, template_parameters_usage_flags );
+		return CreateTemplateSignatureParameter( named_type_name->src_loc_, named_type_name->name, names_scope, function_context, template_parameters, template_parameters_usage_flags );
 	else if( const auto array_type_name= std::get_if<Synt::ArrayTypeName>(&type_name_template_parameter) )
 	{
 		TemplateSignatureParam::ArrayParam array_param;
@@ -831,7 +831,7 @@ Value* CodeBuilder::FinishTemplateTypeGeneration(
 		U_ASSERT( template_parameters_space != nullptr );
 		return template_parameters_space->GetThisScopeValue( Class::c_template_class_name );
 	}
-	generated_template_things_storage_.emplace( name_encoded, Value( template_args_namespace, type_template.syntax_element->file_pos_ ) );
+	generated_template_things_storage_.emplace( name_encoded, Value( template_args_namespace, type_template.syntax_element->src_loc_ ) );
 
 	CreateTemplateErrorsContext(
 		arguments_names_scope.GetErrors(),
@@ -848,7 +848,7 @@ Value* CodeBuilder::FinishTemplateTypeGeneration(
 			return
 				template_args_namespace->AddName(
 					Class::c_template_class_name,
-					Value( cache_class_it->second, type_template.syntax_element->file_pos_ /* TODO - check file_pos */ ) );
+					Value( cache_class_it->second, type_template.syntax_element->src_loc_ /* TODO - check file_pos */ ) );
 		}
 
 		const ClassProxyPtr class_proxy= NamesScopeFill( *class_ptr, *template_args_namespace, Class::c_template_class_name );
@@ -1046,7 +1046,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 		else
 			return nullptr; // May be in case of error or in case of "enable_if".
 	}
-	generated_template_things_storage_.emplace( name_encoded, Value( template_args_namespace, function_declaration.file_pos_ ) );
+	generated_template_things_storage_.emplace( name_encoded, Value( template_args_namespace, function_declaration.src_loc_ ) );
 
 	CreateTemplateErrorsContext( errors_container, file_pos, template_args_namespace, function_template, func_name, template_args );
 
@@ -1104,9 +1104,9 @@ Value* CodeBuilder::ParametrizeFunctionTemplate(
 		else if( const auto variable= value.GetVariable() )
 		{
 			if( !TypeIsValidForTemplateVariableArgument( variable->type ) )
-				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, arguments_names_scope.GetErrors(), Synt::GetExpressionFilePos(expr), variable->type );
+				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, arguments_names_scope.GetErrors(), Synt::GetExpressionSrcLoc(expr), variable->type );
 			else if( variable->constexpr_value == nullptr )
-				REPORT_ERROR( ExpectedConstantExpression, arguments_names_scope.GetErrors(), Synt::GetExpressionFilePos(expr) );
+				REPORT_ERROR( ExpectedConstantExpression, arguments_names_scope.GetErrors(), Synt::GetExpressionSrcLoc(expr) );
 			else
 				template_args.push_back( *variable );
 		}

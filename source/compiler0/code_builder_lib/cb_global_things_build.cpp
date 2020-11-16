@@ -247,12 +247,12 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 		std::string functions_set_name;
 		if( !functions_set.syntax_elements.empty() )
 		{
-			functions_set_file_pos= functions_set.syntax_elements.front()->file_pos_;
+			functions_set_file_pos= functions_set.syntax_elements.front()->src_loc_;
 			functions_set_name= functions_set.syntax_elements.front()->name_.back();
 		}
 		else if( !functions_set.template_syntax_elements.empty() )
 		{
-			functions_set_file_pos= functions_set.template_syntax_elements.front()->file_pos_;
+			functions_set_file_pos= functions_set.template_syntax_elements.front()->src_loc_;
 			functions_set_name= functions_set.template_syntax_elements.front()->function_->name_.back();
 		}
 		DETECT_GLOBALS_LOOP( &functions_set, functions_set_name, functions_set_file_pos );
@@ -374,24 +374,24 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 	NamesScope& class_parent_namespace= *the_class.members.GetParent();
 	for( const Synt::ComplexName& parent : class_declaration.parents_ )
 	{
-		const Value parent_value= ResolveValue( class_declaration.file_pos_, class_parent_namespace, *global_function_context_, parent );
+		const Value parent_value= ResolveValue( class_declaration.src_loc_, class_parent_namespace, *global_function_context_, parent );
 
 		const Type* const type_name= parent_value.GetTypeName();
 		if( type_name == nullptr )
 		{
-			REPORT_ERROR( NameIsNotTypeName, class_parent_namespace.GetErrors(), class_declaration.file_pos_, parent );
+			REPORT_ERROR( NameIsNotTypeName, class_parent_namespace.GetErrors(), class_declaration.src_loc_, parent );
 			continue;
 		}
 
 		const ClassProxyPtr parent_class_proxy= type_name->GetClassTypeProxy();
 		if( parent_class_proxy == nullptr )
 		{
-			REPORT_ERROR( CanNotDeriveFromThisType, class_parent_namespace.GetErrors(), class_declaration.file_pos_, type_name );
+			REPORT_ERROR( CanNotDeriveFromThisType, class_parent_namespace.GetErrors(), class_declaration.src_loc_, type_name );
 			continue;
 		}
 		if( !EnsureTypeComplete( *type_name ) )
 		{
-			REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), class_declaration.file_pos_, type_name );
+			REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), class_declaration.src_loc_, type_name );
 			continue;
 		}
 
@@ -400,14 +400,14 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 			duplicated= duplicated || parent.class_ == parent_class_proxy;
 		if( duplicated )
 		{
-			REPORT_ERROR( DuplicatedParentClass, class_parent_namespace.GetErrors(), class_declaration.file_pos_, type_name );
+			REPORT_ERROR( DuplicatedParentClass, class_parent_namespace.GetErrors(), class_declaration.src_loc_, type_name );
 			continue;
 		}
 
 		const auto parent_kind= parent_class_proxy->class_->kind;
 		if( !( parent_kind == Class::Kind::Abstract || parent_kind == Class::Kind::Interface || parent_kind == Class::Kind::PolymorphNonFinal ) )
 		{
-			REPORT_ERROR( CanNotDeriveFromThisType, class_parent_namespace.GetErrors(), class_declaration.file_pos_, type_name );
+			REPORT_ERROR( CanNotDeriveFromThisType, class_parent_namespace.GetErrors(), class_declaration.src_loc_, type_name );
 			continue;
 		}
 
@@ -415,7 +415,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 		{
 			if( the_class.base_class != nullptr )
 			{
-				REPORT_ERROR( DuplicatedBaseClass, class_parent_namespace.GetErrors(), class_declaration.file_pos_, type_name );
+				REPORT_ERROR( DuplicatedBaseClass, class_parent_namespace.GetErrors(), class_declaration.src_loc_, type_name );
 				continue;
 			}
 			the_class.base_class= parent_class_proxy;
@@ -457,7 +457,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 				// Full type completeness required for value-fields and constexpr reference-fields.
 				if( !EnsureTypeComplete( class_field->type ) )
 				{
-					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), in_field.file_pos_, class_field->type );
+					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), in_field.src_loc_, class_field->type );
 					return;
 				}
 			}
@@ -466,14 +466,14 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 			{
 				if( class_field->type != void_type_ && !EnsureTypeComplete( class_field->type ) )
 				{
-					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), in_field.file_pos_, class_field->type );
+					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), in_field.src_loc_, class_field->type );
 					return;
 				}
 				if( class_field->type.ReferencesTagsCount() > 0u )
-					REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, class_parent_namespace.GetErrors(), in_field.file_pos_, in_field.name );
+					REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, class_parent_namespace.GetErrors(), in_field.src_loc_, in_field.name );
 			}
 			else if( class_field->type.IsAbstract() )
-				REPORT_ERROR( ConstructingAbstractClassOrInterface, class_parent_namespace.GetErrors(), in_field.file_pos_, class_field->type );
+				REPORT_ERROR( ConstructingAbstractClassOrInterface, class_parent_namespace.GetErrors(), in_field.src_loc_, class_field->type );
 
 			if( class_field->is_reference ) // Reference-fields are immutable by default
 				class_field->is_mutable= in_field.mutability_modifier == Synt::MutabilityModifier::Mutable;
@@ -500,7 +500,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 			else
 			{
 				if( !EnsureTypeComplete( field->type ) )
-					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), field->syntax_element->file_pos_, field->type );
+					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), field->syntax_element->src_loc_, field->type );
 				the_class.inner_reference_type= std::max( the_class.inner_reference_type, field->type.GetInnerReferenceType() );
 			}
 
@@ -689,7 +689,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 			the_class.kind= Class::Kind::PolymorphNonFinal;
 		if( class_contains_pure_virtual_functions )
 		{
-			REPORT_ERROR( ClassContainsPureVirtualFunctions, the_class.members.GetErrors(), class_declaration.file_pos_, class_name );
+			REPORT_ERROR( ClassContainsPureVirtualFunctions, the_class.members.GetErrors(), class_declaration.src_loc_, class_name );
 			the_class.kind= Class::Kind::Abstract;
 		}
 		break;
@@ -705,7 +705,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 		}
 		if( class_contains_pure_virtual_functions )
 		{
-			REPORT_ERROR( ClassContainsPureVirtualFunctions, the_class.members.GetErrors(), class_declaration.file_pos_, class_name );
+			REPORT_ERROR( ClassContainsPureVirtualFunctions, the_class.members.GetErrors(), class_declaration.src_loc_, class_name );
 			the_class.kind= Class::Kind::Abstract;
 		}
 		break;
@@ -714,23 +714,23 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 		the_class.kind= Class::Kind::PolymorphNonFinal;
 		if( class_contains_pure_virtual_functions )
 		{
-			REPORT_ERROR( ClassContainsPureVirtualFunctions, the_class.members.GetErrors(), class_declaration.file_pos_, class_name );
+			REPORT_ERROR( ClassContainsPureVirtualFunctions, the_class.members.GetErrors(), class_declaration.src_loc_, class_name );
 			the_class.kind= Class::Kind::Abstract;
 		}
 		break;
 
 	case Synt::ClassKindAttribute::Interface:
 		if( the_class.field_count != 0u )
-			REPORT_ERROR( FieldsForInterfacesNotAllowed, the_class.members.GetErrors(), class_declaration.file_pos_ );
+			REPORT_ERROR( FieldsForInterfacesNotAllowed, the_class.members.GetErrors(), class_declaration.src_loc_ );
 		if( the_class.base_class != nullptr )
-			REPORT_ERROR( BaseClassForInterface, the_class.members.GetErrors(), class_declaration.file_pos_ );
+			REPORT_ERROR( BaseClassForInterface, the_class.members.GetErrors(), class_declaration.src_loc_ );
 		if( the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) != nullptr )
-			REPORT_ERROR( ConstructorForInterface, the_class.members.GetErrors(), class_declaration.file_pos_ );
+			REPORT_ERROR( ConstructorForInterface, the_class.members.GetErrors(), class_declaration.src_loc_ );
 		for( const Class::VirtualTableEntry& virtual_table_entry : the_class.virtual_table )
 		{
 			if( !virtual_table_entry.is_pure && virtual_table_entry.name != Keywords::destructor_ )
 			{
-				REPORT_ERROR( NonPureVirtualFunctionInInterface, the_class.members.GetErrors(), class_declaration.file_pos_, class_name );
+				REPORT_ERROR( NonPureVirtualFunctionInInterface, the_class.members.GetErrors(), class_declaration.src_loc_, class_name );
 				break;
 			}
 		}
@@ -785,7 +785,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 									}
 								}
 								if( !overrides )
-									ApplyOverloadedFunction( *result_class_functions, parent_function, the_class.members.GetErrors(), class_declaration.file_pos_ );
+									ApplyOverloadedFunction( *result_class_functions, parent_function, the_class.members.GetErrors(), class_declaration.src_loc_ );
 							} // for parent functions
 
 							// TODO - merge function templates smarter.
@@ -857,7 +857,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 	if( enum_->syntax_element == nullptr )
 		return;
 
-	DETECT_GLOBALS_LOOP( enum_, enum_->members.GetThisNamespaceName(), enum_->syntax_element->file_pos_ );
+	DETECT_GLOBALS_LOOP( enum_, enum_->members.GetThisNamespaceName(), enum_->syntax_element->src_loc_ );
 
 	// Default underlaying type is 32bit. TODO - maybe do it platform-dependent?
 	enum_->underlaying_type= FundamentalType( U_FundamentalType::u32, fundamental_llvm_types_.u32 );
@@ -867,17 +867,17 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 
 	if( !( std::get_if<Synt::EmptyVariant>( &enum_decl.underlaying_type_name.start_value ) != nullptr && enum_decl.underlaying_type_name.tail == nullptr ) )
 	{
-		const Value type_value= ResolveValue( enum_decl.file_pos_, names_scope, *global_function_context_, enum_decl.underlaying_type_name );
+		const Value type_value= ResolveValue( enum_decl.src_loc_, names_scope, *global_function_context_, enum_decl.underlaying_type_name );
 		const Type* const type= type_value.GetTypeName();
 		if( type == nullptr )
-			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), enum_decl.file_pos_, enum_decl.underlaying_type_name );
+			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), enum_decl.src_loc_, enum_decl.underlaying_type_name );
 		else
 		{
 			const FundamentalType* const fundamental_type= type->GetFundamentalType();
 			if( fundamental_type == nullptr || !IsInteger( fundamental_type->fundamental_type ) )
 			{
 				// SPRACHE_TODO - maybe allow inheritance of enums?
-				REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), enum_decl.file_pos_, "any integer type", type );
+				REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), enum_decl.src_loc_, "any integer type", type );
 			}
 			else
 				enum_->underlaying_type= *fundamental_type;
@@ -887,7 +887,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 	for( const Synt::Enum::Member& in_member : enum_decl.members )
 	{
 		if( IsKeyword( in_member.name ) )
-			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), in_member.file_pos );
+			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), in_member.src_loc );
 
 		Variable var;
 
@@ -904,8 +904,8 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 				MangleGlobalVariable( enum_->members, in_member.name ),
 				var.constexpr_value );
 
-		if( enum_->members.AddName( in_member.name, Value( var, in_member.file_pos ) ) == nullptr )
-			REPORT_ERROR( Redefinition, names_scope.GetErrors(), in_member.file_pos, in_member.name );
+		if( enum_->members.AddName( in_member.name, Value( var, in_member.src_loc ) ) == nullptr )
+			REPORT_ERROR( Redefinition, names_scope.GetErrors(), in_member.src_loc, in_member.name );
 
 		++enum_->element_count;
 	}
@@ -919,7 +919,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 			const uint64_t max_value= max_value_plus_one - 1u;
 
 			if( enum_->element_count > max_value )
-				REPORT_ERROR( UnderlayingTypeForEnumIsTooSmall, names_scope.GetErrors(), enum_decl.file_pos_, enum_->element_count - 1u, max_value );
+				REPORT_ERROR( UnderlayingTypeForEnumIsTooSmall, names_scope.GetErrors(), enum_decl.src_loc_, enum_->element_count - 1u, max_value );
 		}
 	}
 
@@ -930,7 +930,7 @@ void CodeBuilder::GlobalThingBuildTypeTemplatesSet( NamesScope& names_scope, Typ
 {
 	if( !type_templates_set.syntax_elements.empty() )
 	{
-		DETECT_GLOBALS_LOOP( &type_templates_set, type_templates_set.syntax_elements.front()->name_, type_templates_set.syntax_elements.front()->file_pos_ );
+		DETECT_GLOBALS_LOOP( &type_templates_set, type_templates_set.syntax_elements.front()->name_, type_templates_set.syntax_elements.front()->src_loc_ );
 
 		for( const auto syntax_element : type_templates_set.syntax_elements )
 			PrepareTypeTemplate( *syntax_element, type_templates_set, names_scope );
@@ -944,10 +944,10 @@ void CodeBuilder::GlobalThingBuildTypedef( NamesScope& names_scope, Value& typed
 	U_ASSERT( typedef_value.GetTypedef() != nullptr );
 	const Synt::Typedef& syntax_element= *typedef_value.GetTypedef()->syntax_element;
 
-	DETECT_GLOBALS_LOOP( &typedef_value, syntax_element.name, syntax_element.file_pos_ );
+	DETECT_GLOBALS_LOOP( &typedef_value, syntax_element.name, syntax_element.src_loc_ );
 
 	// Replace value in names map, when typedef is comlete.
-	typedef_value= Value( PrepareType( syntax_element.value, names_scope, *global_function_context_ ), syntax_element.file_pos_ );
+	typedef_value= Value( PrepareType( syntax_element.value, names_scope, *global_function_context_ ), syntax_element.src_loc_ );
 }
 
 void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& global_variable_value )
@@ -957,9 +957,9 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 	SrcLoc file_pos;
 	if( incomplete_global_variable.variables_declaration != nullptr )
-		file_pos= incomplete_global_variable.variables_declaration->variables[ incomplete_global_variable.element_index ].file_pos;
+		file_pos= incomplete_global_variable.variables_declaration->variables[ incomplete_global_variable.element_index ].src_loc;
 	else if( incomplete_global_variable.auto_variable_declaration != nullptr )
-		file_pos= incomplete_global_variable.auto_variable_declaration->file_pos_;
+		file_pos= incomplete_global_variable.auto_variable_declaration->src_loc_;
 
 	DETECT_GLOBALS_LOOP( &global_variable_value, incomplete_global_variable.name, file_pos );
 	#define FAIL_RETURN { global_variable_value= ErrorValue(); return; }
@@ -973,20 +973,20 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 		if( variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable )
 		{
-			REPORT_ERROR( GlobalVariableMustBeConstexpr, names_scope.GetErrors(), variable_declaration.file_pos, variable_declaration.name );
+			REPORT_ERROR( GlobalVariableMustBeConstexpr, names_scope.GetErrors(), variable_declaration.src_loc, variable_declaration.name );
 			FAIL_RETURN;
 		}
 
 		const Type type= PrepareType( variables_declaration->type, names_scope, *global_function_context_ );
 		if( !EnsureTypeComplete( type ) ) // Global variables are all constexpr. Full completeness required for constexpr.
 		{
-			REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), variable_declaration.file_pos, type );
+			REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), variable_declaration.src_loc, type );
 			FAIL_RETURN;
 		}
 
 		if( !type.CanBeConstexpr() )
 		{
-			REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope.GetErrors(), variable_declaration.file_pos );
+			REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope.GetErrors(), variable_declaration.src_loc );
 			FAIL_RETURN;
 		}
 
@@ -1006,7 +1006,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			if( variable_declaration.initializer != nullptr )
 				variable.constexpr_value= ApplyInitializer( *variable_declaration.initializer, variable, names_scope, function_context );
 			else
-				ApplyEmptyInitializer( variable_declaration.name, variable_declaration.file_pos, variable, names_scope, function_context );
+				ApplyEmptyInitializer( variable_declaration.name, variable_declaration.src_loc, variable, names_scope, function_context );
 
 			// Make immutable, if needed, only after initialization, because in initialization we need call constructors, which is mutable methods.
 			variable.value_type= ValueType::ConstReference;
@@ -1018,7 +1018,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		{
 			if( variable_declaration.initializer == nullptr )
 			{
-				REPORT_ERROR( ExpectedInitializer, names_scope.GetErrors(), variable_declaration.file_pos, variable_declaration.name );
+				REPORT_ERROR( ExpectedInitializer, names_scope.GetErrors(), variable_declaration.src_loc, variable_declaration.name );
 				FAIL_RETURN;
 			}
 
@@ -1031,32 +1031,32 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			{
 				if( constructor_initializer->call_operator.arguments_.size() != 1u )
 				{
-					REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names_scope.GetErrors(), constructor_initializer->file_pos_ );
+					REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names_scope.GetErrors(), constructor_initializer->src_loc_ );
 					FAIL_RETURN;
 				}
 				initializer_expression= &constructor_initializer->call_operator.arguments_.front();
 			}
 			else
 			{
-				REPORT_ERROR( UnsupportedInitializerForReference, names_scope.GetErrors(), variable_declaration.file_pos );
+				REPORT_ERROR( UnsupportedInitializerForReference, names_scope.GetErrors(), variable_declaration.src_loc );
 				FAIL_RETURN;
 			}
 
 			const Variable expression_result= BuildExpressionCodeEnsureVariable( *initializer_expression, names_scope, function_context );
 
-			if( !ReferenceIsConvertible( expression_result.type, variable.type, names_scope.GetErrors(), variable_declaration.file_pos ) )
+			if( !ReferenceIsConvertible( expression_result.type, variable.type, names_scope.GetErrors(), variable_declaration.src_loc ) )
 			{
-				REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), variable_declaration.file_pos, variable.type, expression_result.type );
+				REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), variable_declaration.src_loc, variable.type, expression_result.type );
 				FAIL_RETURN;
 			}
 			if( expression_result.value_type == ValueType::Value )
 			{
-				REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), variable_declaration.file_pos );
+				REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), variable_declaration.src_loc );
 				FAIL_RETURN;
 			}
 			if( expression_result.value_type == ValueType::ConstReference && variable.value_type == ValueType::Reference )
 			{
-				REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), variable_declaration.file_pos );
+				REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), variable_declaration.src_loc );
 				FAIL_RETURN;
 			}
 
@@ -1071,19 +1071,19 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 		if( variable.constexpr_value == nullptr )
 		{
-			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope.GetErrors(), variable_declaration.file_pos );
+			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope.GetErrors(), variable_declaration.src_loc );
 			FAIL_RETURN;
 		}
 
 		// Do not call destructors, because global variables can be only constexpr and any constexpr type have trivial destructor.
 
-		global_variable_value= Value( variable, variable_declaration.file_pos );
+		global_variable_value= Value( variable, variable_declaration.src_loc );
 	}
 	else if( const auto auto_variable_declaration= incomplete_global_variable.auto_variable_declaration )
 	{
 		if( auto_variable_declaration->mutability_modifier == MutabilityModifier::Mutable )
 		{
-			REPORT_ERROR( GlobalVariableMustBeConstexpr, names_scope.GetErrors(), auto_variable_declaration->file_pos_, auto_variable_declaration->name );
+			REPORT_ERROR( GlobalVariableMustBeConstexpr, names_scope.GetErrors(), auto_variable_declaration->src_loc_, auto_variable_declaration->name );
 			FAIL_RETURN;
 		}
 
@@ -1102,7 +1102,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				initializer_experrsion.type.GetFunctionPointerType() != nullptr;
 			if( !type_is_ok || initializer_experrsion.type == invalid_type_ )
 			{
-				REPORT_ERROR( InvalidTypeForAutoVariable, names_scope.GetErrors(), auto_variable_declaration->file_pos_, initializer_experrsion.type );
+				REPORT_ERROR( InvalidTypeForAutoVariable, names_scope.GetErrors(), auto_variable_declaration->src_loc_, initializer_experrsion.type );
 				FAIL_RETURN;
 			}
 		}
@@ -1114,12 +1114,12 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 		if( !EnsureTypeComplete( variable.type ) ) // Global variables are all constexpr. Full completeness required for constexpr.
 		{
-			REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), auto_variable_declaration->file_pos_, variable.type );
+			REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), auto_variable_declaration->src_loc_, variable.type );
 			FAIL_RETURN;
 		}
 		if( !variable.type.CanBeConstexpr() )
 		{
-			REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope.GetErrors(), auto_variable_declaration->file_pos_ );
+			REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope.GetErrors(), auto_variable_declaration->src_loc_ );
 			FAIL_RETURN;
 		}
 
@@ -1127,12 +1127,12 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		{
 			if( initializer_experrsion.value_type == ValueType::Value )
 			{
-				REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), auto_variable_declaration->file_pos_ );
+				REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), auto_variable_declaration->src_loc_ );
 				FAIL_RETURN;
 			}
 			if( initializer_experrsion.value_type == ValueType::ConstReference && variable.value_type != ValueType::ConstReference )
 			{
-				REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), auto_variable_declaration->file_pos_ );
+				REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), auto_variable_declaration->src_loc_ );
 				FAIL_RETURN;
 			}
 
@@ -1164,13 +1164,13 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 		if( variable.constexpr_value == nullptr )
 		{
-			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope.GetErrors(), auto_variable_declaration->file_pos_ );
+			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope.GetErrors(), auto_variable_declaration->src_loc_ );
 			FAIL_RETURN;
 		}
 
 		// Do not call destructors, because global variables can be only constexpr and any constexpr type have trivial destructor.
 
-		global_variable_value= Value( variable, auto_variable_declaration->file_pos_ );
+		global_variable_value= Value( variable, auto_variable_declaration->src_loc_ );
 	}
 	else U_ASSERT(false);
 
