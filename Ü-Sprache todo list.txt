@@ -9,9 +9,9 @@ General:
 *) Less requirements of complete types (helps for recursive types)
 *) Different calling conventions (for API calls, for example)
 *) Anonymous (module-local) symbols - functions, classes, variables.
+*) <, <=, >, >= for enums.
 *) Forbid inner reference kind changing in inheritance.
 *) Forbid "shared" tag changing in inheritance.
-*) Enable arrays as parameters/return values, enable expression initialization and copy assignment for arrays.
 *) build-in "for" for array types.
 *) type for raw data representation (like "char" in C++, which may alias with every type).
 *) switch-case
@@ -46,7 +46,7 @@ Standart library:
 *) Associative containers - map, set, unordered_set, string_map
 *) Forbid non-thread-safe shared pointers in thread-safe shared pointers
 *) "memory_copy" with alignment
-*) Algorithms (sorting, etc.).
+*) More algorithms
 *) Time library - get time functions, timers
 *) File library
 *) More type traits
@@ -64,7 +64,6 @@ Compiler:
 *) Rework of "Value" class
 
 Compiler1:
-*) Debug info
 
 QtCreator plugin:
 *) Syntax errors highlighting
@@ -72,6 +71,8 @@ QtCreator plugin:
 *) "go to defenition" possibility
 *) Indentation in editor
 *) More advanced program model updating
+
+*) Plugins for other IDEs
 
 CPP Header converter:
 *) fix "typedef struct X{} X;"
