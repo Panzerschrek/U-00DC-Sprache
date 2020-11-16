@@ -415,7 +415,7 @@ PyObject* BuildProgramWithSyntaxErrors( PyObject* const self, PyObject* const ar
 	{
 		CodeBuilderError error_converted;
 		error_converted.code= CodeBuilderErrorCode::BuildFailed;
-		error_converted.file_pos= error_message.file_pos;
+		error_converted.file_pos= error_message.src_loc;
 		error_converted.text= error_message.text;
 		errors_converted.push_back( std::move(error_converted) );
 	}

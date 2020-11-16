@@ -82,7 +82,7 @@ size_t SourceGraphLoader::LoadNode_r(
 
 	for( LexSyntError error: lex_result.errors )
 	{
-		error.file_pos.SetFileIndex(uint32_t(node_index));
+		error.src_loc.SetFileIndex(uint32_t(node_index));
 		result.errors.push_back( std::move(error) );
 	}
 

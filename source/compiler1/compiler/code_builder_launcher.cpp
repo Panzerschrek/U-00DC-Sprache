@@ -99,7 +99,7 @@ void LexSyntErrorProcessingFunction(
 	const U1_StringView& text )
 {
 	LexSyntError out_error;
-	out_error.file_pos= SrcLoc( file_index, line, column );
+	out_error.src_loc= SrcLoc( file_index, line, column );
 	out_error.text= StringViewToString(text);
 
 	reinterpret_cast< LexSyntErrors* >(data)->push_back( std::move(out_error) );

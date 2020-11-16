@@ -9,17 +9,17 @@ void PrintLexSyntErrors( const std::vector<std::string>& source_files, const Lex
 	for( const LexSyntError& error : errors )
 	{
 		const std::string* file_path= &empty_file_path;
-		if( error.file_pos.GetFileIndex() < source_files.size() )
-			file_path= &source_files[error.file_pos.GetFileIndex()];
+		if( error.src_loc.GetFileIndex() < source_files.size() )
+			file_path= &source_files[error.src_loc.GetFileIndex()];
 
 		switch(format)
 		{
 		case ErrorsFormat::GCC:
-			errors_stream << *file_path << ":" << error.file_pos.GetLine() << ":" << error.file_pos.GetColumn() << ": error: " << error.text << "\n";
+			errors_stream << *file_path << ":" << error.src_loc.GetLine() << ":" << error.src_loc.GetColumn() << ": error: " << error.text << "\n";
 			break;
 
 		case ErrorsFormat::MSVC:
-			errors_stream << *file_path << "(" << error.file_pos.GetLine() << "): error: " << error.text << "\n";
+			errors_stream << *file_path << "(" << error.src_loc.GetLine() << "): error: " << error.text << "\n";
 			break;
 		};
 	}
