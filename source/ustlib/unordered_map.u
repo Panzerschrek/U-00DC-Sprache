@@ -75,12 +75,14 @@ public:
 			rehash( size_ + size_type(1) );
 			auto capacity_mask= capacity_ - size_type(1);
 			auto key_hash= hash(key);
-			auto mut key_hash_wrapped= key_hash & capacity_mask;
+			auto initial_key_hash_wrapped= key_hash & capacity_mask;
+			auto mut key_hash_wrapped= initial_key_hash_wrapped;
 			auto mut insert_index= ~0s;
 			while( true )
 			{
 				auto cell_content= table_[ key_hash_wrapped ].cell_content;
-				if( cell_content == TableValue::CellContent::Empty )
+				auto next_key_hash_wrapped= ( key_hash_wrapped + size_type(1) ) & capacity_mask;
+				if( cell_content == TableValue::CellContent::Empty || next_key_hash_wrapped == initial_key_hash_wrapped )
 				{
 					++size_;
 
@@ -108,7 +110,7 @@ public:
 					}
 				}
 
-				key_hash_wrapped= ( key_hash_wrapped + size_type(1) ) & capacity_mask;
+				key_hash_wrapped= next_key_hash_wrapped;
 				// We must finish loop, bacause capacity_ >= size_.
 			}
 			halt;
