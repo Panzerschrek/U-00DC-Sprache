@@ -1,0 +1,106 @@
+//##success_test
+import "../ustlib/unordered_set.u"
+
+type IntSet = ust::unordered_set</i32/>;
+
+fn nomangle main() : i32
+{
+	{ // Basic "unordered_set" operations.
+		var IntSet mut s;
+
+		s.insert( 666 );
+		halt if( s.empty() );
+		halt if( s.size() != 1s );
+		halt if( !s.exists( 666 ) );
+		halt if(  s.exists( 999 ) );
+
+		s.drop( 999 );
+		halt if( s.empty() );
+		halt if( s.size() != 1s );
+
+		s.drop( 666 );
+		halt if( !s.empty() );
+		halt if( s.size() != 0s );
+		halt if( s.exists( 666 ) );
+	}
+
+	{ // Multiple values.
+
+		var IntSet mut s;
+
+		s.insert( 555 );
+		s.insert( 4 );
+		s.insert( 22 );
+		s.insert( 4 );
+		halt if( s.empty() );
+		halt if( s.size() != 3s );
+		halt if( !s.exists( 555 ) );
+		halt if( !s.exists( 4 ) );
+		halt if( !s.exists( 22 ) );
+
+		s.drop( 4 );
+		halt if( s.empty() );
+		halt if( s.size() != 2s );
+		halt if( !s.exists( 555 ) );
+		halt if(  s.exists( 4 ) );
+		halt if( !s.exists( 22 ) );
+
+		s.clear();
+		halt if( !s.empty() );
+		halt if( s.size() != 0s );
+		halt if( s.exists( 555 ) );
+		halt if( s.exists( 4 ) );
+		halt if( s.exists( 22 ) );
+	}
+	{ // Copy constructor.
+
+		var IntSet mut s0;
+		s0.insert( 667 );
+		s0.insert( 12 );
+
+		var IntSet s1(s0);
+
+		halt if( s1.size() != 2s );
+		halt if( !s1.exists( 12 ) );
+		halt if( !s1.exists( 667 ) );
+		halt if(  s1.exists( 13 ) );
+	}
+	{ // Copy assignment operator.
+
+		var IntSet mut s0;
+		s0.insert( 854 );
+		s0.insert( 144 );
+		s0.insert( -22 );
+
+		var IntSet mut s1;
+		s1= s0;
+
+		halt if( s1.size() != 3s );
+		halt if( !s1.exists( 854 ) );
+		halt if( !s1.exists( 144 ) );
+		halt if( !s1.exists( -22 ) );
+		halt if( !s1.exists( 144 ) );
+		halt if(  s1.exists( 0 ) );
+	}
+	{ // Copy assignment operator for non-empty destination.
+
+		var IntSet mut s0;
+		s0.insert( 11 );
+		s0.insert( 987 );
+		s0.insert( 33 );
+
+		var IntSet mut s1;
+		s1.insert( -54 );
+		s1.insert( 100 );
+		s1= s0;
+
+		halt if( s1.size() != 3s );
+		halt if( !s1.exists( 11 ) );
+		halt if( !s1.exists( 987 ) );
+		halt if( !s1.exists( 33 ) );
+		halt if(  s1.exists( -54 ) );
+		halt if(  s1.exists( 100 ) );
+	}
+
+	return 0;
+}

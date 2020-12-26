@@ -1,0 +1,67 @@
+import "unordered_map.u"
+
+namespace ust
+{
+
+template</ type T />
+class unordered_set
+{
+public:
+	type this_type= unordered_set</ T />;
+	type key_type= T;
+	type value_type= T;
+
+	// Set type should be copyable.
+	static_assert( typeinfo</T/>.is_copy_constructible );
+	static_assert( typeinfo</T/>.is_copy_assignable );
+
+public:
+	// Default constructor.
+	fn constructor() = default;
+	// Copy constructor.
+	fn constructor( mut this, this_type &imut other ) = default;
+	// Copy assignment operator.
+	op=( mut this, this_type &imut other ) = default;
+
+	fn size( this ) : size_type
+	{
+		return impl_.size();
+	}
+
+	fn empty( this ) : bool
+	{
+		return impl_.empty();
+	}
+
+	fn insert( mut this, T& key )
+	{
+		impl_.insert( key, DummyValue() );
+	}
+
+	fn exists( this, T& key ) : bool
+	{
+		return !impl_.find( key ).empty();
+	}
+
+	fn drop( mut this, T& key )
+	{
+		// TODO - optimize this, do not perform search twice.
+		if( exists( key ) )
+		{
+			impl_.drop(key);
+		}
+	}
+
+	fn clear( mut this )
+	{
+		impl_.clear();
+	}
+
+private:
+	struct DummyValue{}
+
+private:
+	unordered_map</T, DummyValue/> impl_;
+}
+
+} // namespace ust
