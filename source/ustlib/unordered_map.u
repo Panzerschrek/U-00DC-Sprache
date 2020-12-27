@@ -300,18 +300,7 @@ private:
 		return default_hasher::hash(key);
 	}
 
-private:
-	struct TableValue
-	{
-		enum CellContent : u8 { Empty, HaveValue, ValueRemoved }
-		CellContent cell_content;
-		// Actually, destructors and constructors not called.
-		key_type key_storage;
-		value_type value_storage;
-	}
-
-	type ptr_type= raw_ptr_mut</ TableValue />;
-
+public:
 	template</ bool is_mutable />
 	class unordered_map_range
 	{
@@ -437,6 +426,18 @@ private:
 		size_type size_;
 		size_type capacity_;
 	}
+
+private:
+	struct TableValue
+	{
+		enum CellContent : u8 { Empty, HaveValue, ValueRemoved }
+		CellContent cell_content;
+		// Actually, destructors and constructors not called.
+		key_type key_storage;
+		value_type value_storage;
+	}
+
+	type ptr_type= raw_ptr_mut</ TableValue />;
 
 private:
 	ContainerTag</ K /> key_tag_;
