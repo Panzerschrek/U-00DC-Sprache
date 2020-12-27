@@ -350,7 +350,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	// Prepare fields types.
 	auto class_members= class_type.lock_imut().get_ref().members;
 	auto mut field_count= 0u;
-	foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
+	foreach( &member : class_members.lock_imut().get_ref() )
 	{
 		auto field_ptr= member.value().Get</ ClassField />();
 		if( !field_ptr.empty() )
@@ -434,7 +434,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	}
 	{
 		var ust::vector</ ust::shared_ptr_mut</ClassField/> /> mut fields_left;
-		foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
+		foreach( &member : class_members.lock_imut().get_ref() )
 		{
 			auto field_ptr= member.value().Get</ ClassField />();
 			if( !field_ptr.empty() )
@@ -683,7 +683,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 		class_.can_be_constexpr= class_.kind == ClassType::Kind::Struct;
 
-		foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
+		foreach( &member : class_members.lock_imut().get_ref() )
 		{
 			auto field_ptr= member.value().Get</ ClassField />();
 			if( !field_ptr.empty() )
@@ -798,7 +798,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	foreach( &parent : class_type.lock_imut().get_ref().parents )
 	{
 		auto parent_members= parent.class_.lock_imut().get_ref().members;
-		foreach( &member_value : parent_members.lock_imut().get_ref().GetInternalContainer() )
+		foreach( &member_value : parent_members.lock_imut().get_ref() )
 		{
 			auto parent_member_visibility= parent.class_.lock_imut().get_ref().GetMemberVisibility( member_value.key() );
 			if( parent_member_visibility == Synt::ClassVisibility::Private )
@@ -902,7 +902,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	CheckClassFieldsInitializers( class_type );
 
 	// Build constexpr methods after class completion.
-	foreach( &member : class_members.lock_imut().get_ref().GetInternalContainer() )
+	foreach( &member : class_members.lock_imut().get_ref() )
 	{
 		auto functions_set_ptr= member.value().Get</ NamesScopeFunctionsSet />();
 		if( functions_set_ptr.empty() )

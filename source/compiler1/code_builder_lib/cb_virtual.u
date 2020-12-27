@@ -96,7 +96,7 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 	var ust::vector</ VirtualFunctionWithName /> mut this_virtual_functions;
 
 	auto class_members_ptr= class_type.members;
-	foreach( &class_member : class_members_ptr.lock_imut().get_ref().GetInternalContainer() )
+	foreach( &class_member : class_members_ptr.lock_imut().get_ref() )
 	{
 		auto functions_set_ptr= class_member.value().Get</NamesScopeFunctionsSet/>();
 		if( functions_set_ptr.empty() )
