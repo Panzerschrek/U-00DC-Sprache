@@ -57,11 +57,59 @@ public:
 		impl_.clear();
 	}
 
-private:
-	struct DummyValue{}
+	fn range( this ) : unordered_set_range
+	{
+		return unordered_set_range( impl_.range() );
+	}
+
+public:
+	class unordered_set_range
+	{
+	public:
+		fn constructor( mut this'x', Impl::unordered_map_range</false/> mut impl'y' ) ' x <- y '
+			( impl_( move(impl) ) )
+		{}
+
+		fn size( this ) : size_type
+		{
+			return impl_.size();
+		}
+
+		fn empty( this ) : bool
+		{
+			return impl_.empty();
+		}
+
+		fn drop_front( mut this )
+		{
+			return impl_.drop_front();
+		}
+
+		fn drop_front_unsafe( mut this ) unsafe
+		{
+			unsafe{  return impl_.drop_front_unsafe();  }
+		}
+
+		fn front( this'x' ) : T &'x
+		{
+			return impl_.front().key();
+		}
+
+		fn front_unsafe( this'x' ) unsafe : T &'x
+		{
+			unsafe{  return impl_.front_unsafe().key();  }
+		}
+
+	private:
+		Impl::unordered_map_range</false/> impl_;
+	}
 
 private:
-	unordered_map</T, DummyValue/> impl_;
+	struct DummyValue{}
+	type Impl = unordered_map</T, DummyValue/>;
+
+private:
+	Impl impl_;
 }
 
 } // namespace ust

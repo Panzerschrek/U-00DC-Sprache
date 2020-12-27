@@ -101,6 +101,73 @@ fn nomangle main() : i32
 		halt if(  s1.exists( -54 ) );
 		halt if(  s1.exists( 100 ) );
 	}
+	{ // Iteration for empty set
+
+		var IntSet s;
+		auto mut i= 0s;
+		foreach( &key : s ){ ++i; }
+
+		halt if( i != 0s );
+	}
+	{ // Iteration for set with one element.
+
+		var IntSet mut s;
+		s.insert( 6246347 );
+		auto mut i= 0s;
+		foreach( &key : s )
+		{
+			halt if( key != 6246347 );
+			++i;
+		}
+
+		halt if( i != 1s );
+	}
+	{ // Iteration for set wit several elements
+		var IntSet mut s;
+		s.insert( 11 );
+		s.insert( 44 );
+		s.insert( 33 );
+		s.insert( 00 );
+		s.insert( 66 );
+
+		var [ u32, 8 ] mut arr= zero_init;
+		auto mut i= 0s;
+		foreach( key : s )
+		{
+			++arr[ u32(key) / 11u ];
+			++i;
+		}
+		halt if( i != 5s );
+
+		halt if( arr[0] != 1u );
+		halt if( arr[1] != 1u );
+		halt if( arr[2] != 0u );
+		halt if( arr[3] != 1u );
+		halt if( arr[4] != 1u );
+		halt if( arr[5] != 0u );
+		halt if( arr[6] != 1u );
+		halt if( arr[7] != 0u );
+	}
+	{ // Iteration for set with deleted elements.
+		var IntSet mut s;
+		s.insert( 100 );
+		s.insert( 200 );
+		s.insert( 300 );
+		s.drop( 200 );
+
+		auto mut i= 0s;
+		var i32 mut sum= 0;
+		foreach( key : s )
+		{
+			halt if( key == 200 );
+			++i;
+			sum+= key;
+
+		}
+		halt if( i != 2s );
+		halt if( sum != 100 + 300 );
+	}
+
 
 	return 0;
 }
