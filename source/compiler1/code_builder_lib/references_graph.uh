@@ -1,5 +1,6 @@
 import "/string.u"
 import "/unordered_map.u"
+import "/unordered_set.u"
 import "/vector.u"
 import "/code_builder_errors.uh"
 
@@ -41,7 +42,7 @@ public:
 	fn GetNodeName( this, NodeId node_id ) : ust::string8&;
 	fn GetNodeInnerReference( this, NodeId node_id ) : NodeId;
 
-	type NodesSet= ust::unordered_map</NodeId, i32/>; // TODO - use unordered_set
+	type NodesSet= ust::unordered_set</NodeId/>;
 	fn GetAllAccessibleVariableNodes( this, NodeId node_id ) : NodesSet;
 	fn GetAllAccessibleVariableInnerNodes( this, NodeId node_id ) : NodesSet;
 

@@ -285,28 +285,28 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_
 	// Finalize building template classes.
 	// Save and update keys separately, because "generated_template_things_storage_" may change during iterations.
 	{
-		var ust::unordered_map</ ust::string8, i32 /> mut generated_template_things_keys;
+		var ust::unordered_set</ ust::string8 /> mut generated_template_things_keys;
 		foreach( &el : generated_template_things_ )
 		{
-			generated_template_things_keys.insert( el.key(), 0 );
+			generated_template_things_keys.insert( el.key() );
 		}
 		auto mut new_generated_template_things_keys= generated_template_things_keys;
 
 		while( !new_generated_template_things_keys.empty() )
 		{
-			foreach( &el : new_generated_template_things_keys )
+			foreach( &key : new_generated_template_things_keys )
 			{
-				auto names_scope= generated_template_things_.find(el.key()).get_ref();
+				auto names_scope= generated_template_things_.find(key).get_ref();
 				NamesScopeBuild( names_scope );
 			}
 
 			new_generated_template_things_keys.clear();
 			foreach( &el : generated_template_things_ )
 			{
-				if( generated_template_things_keys.find( el.key() ).empty() )
+				if( !generated_template_things_keys.exists( el.key() ) )
 				{
-					generated_template_things_keys.insert( el.key(), 0 );
-					new_generated_template_things_keys.insert( el.key(), 0 );
+					generated_template_things_keys.insert( el.key() );
+					new_generated_template_things_keys.insert( el.key() );
 				}
 			}
 		}
@@ -419,8 +419,8 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 
 		if( function_context.whole_this_is_unavailable )
 		{
-			if( !function_context.uninitialized_this_fields.find( field_name ).empty() ||
-				( field_source_class != this_class && !function_context.uninitialized_this_fields.find( KeywordToString( Keyword::base_ ) ).empty() ) )
+			if( function_context.uninitialized_this_fields.exists( field_name ) ||
+				( field_source_class != this_class && function_context.uninitialized_this_fields.exists( KeywordToString( Keyword::base_ ) ) ) )
 			{
 				REPORT_ERROR( FieldIsNotInitializedYet, names_scope, src_loc, field_name )
 			}
@@ -450,9 +450,8 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 					move(node_name) );
 				result.node_id= reference_field_node;
 
-				foreach( &inner_node_value : function_context.references_graph.GetAllAccessibleVariableInnerNodes( node_id ) )
+				foreach( &inner_node : function_context.references_graph.GetAllAccessibleVariableInnerNodes( node_id ) )
 				{
-					var ReferencesGraph::NodeId inner_node= inner_node_value.key();
 					if( (  field.is_mutable && function_context.references_graph.HaveOutgoingLinks( inner_node ) ) ||
 						( !field.is_mutable && function_context.references_graph.HaveOutgoingMutableNodes( inner_node ) ) )
 					{
@@ -1817,10 +1816,8 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 			continue;
 		}
 
-		foreach( &accessible_variable_node_value : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_node ) )
+		foreach( accessible_variable_node : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_node ) )
 		{
-			var ReferencesGraph::NodeId accessible_variable_node= accessible_variable_node_value.key();
-
 			if( accessible_variable_node == function_context.args_inner_variable_nodes[i] )
 			{
 				continue;
@@ -1910,16 +1907,15 @@ fn CodeBuilder::SetupReferencesInCopyOrMove(
 	}
 
 	var bool mut node_is_mutable= false;
-	foreach( &src_inner_reference_node_value : src_inner_reference_nodes )
+	foreach( src_inner_reference_node_id : src_inner_reference_nodes )
 	{
-		node_is_mutable |= references_graph.GetNodeKind( src_inner_reference_node_value.key() ) == ReferencesGraph::NodeKind::ReferenceMut;
+		node_is_mutable |= references_graph.GetNodeKind( src_inner_reference_node_id ) == ReferencesGraph::NodeKind::ReferenceMut;
 	}
 
 	node_is_mutable&= dst_type.GetInnerReferenceKind() == InnerReferenceKind::Mut;
 
-	foreach( &dst_variable_node_value : dst_variable_nodes )
+	foreach( dst_variable_node : dst_variable_nodes )
 	{
-		var ReferencesGraph::NodeId dst_variable_node= dst_variable_node_value.key();
 		var ReferencesGraph::NodeId mut dst_inner_reference_node= references_graph.GetNodeInnerReference( dst_variable_node );
 		if( dst_inner_reference_node == ReferencesGraph::c_empty_node_id )
 		{
@@ -1930,9 +1926,8 @@ fn CodeBuilder::SetupReferencesInCopyOrMove(
 
 		var bool dst_inner_reference_node_is_mutable= references_graph.GetNodeKind( dst_inner_reference_node ) == ReferencesGraph::NodeKind::ReferenceMut;
 
-		foreach( &src_inner_reference_node_value : src_inner_reference_nodes )
+		foreach( src_inner_reference_node : src_inner_reference_nodes )
 		{
-			var ReferencesGraph::NodeId src_inner_reference_node= src_inner_reference_node_value.key();
 			var bool src_inner_reference_node_is_mutable= references_graph.GetNodeKind( src_inner_reference_node ) == ReferencesGraph::NodeKind::ReferenceMut;
 			if( dst_inner_reference_node_is_mutable != src_inner_reference_node_is_mutable )
 			{
