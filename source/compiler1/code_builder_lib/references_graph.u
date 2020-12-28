@@ -365,20 +365,17 @@ fn ReferencesGraph::CheckReferencesGraphAfterLoop( ReferencesGraph& state_before
 		var NodesSet mut new_accessible_variables= state_after.GetAllAccessibleVariableNodes( node_after.inner_reference_node );
 		if( node_before.inner_reference_node != c_empty_node_id )
 		{
-			foreach( &node_pair : state_before.GetAllAccessibleVariableNodes( node_before.inner_reference_node ) )
+			foreach( variable_node_id : state_before.GetAllAccessibleVariableNodes( node_before.inner_reference_node ) )
 			{
-				var NodeId variable_node_id= node_pair.key();
-				if( !new_accessible_variables.find(variable_node_id).empty() )
+				if( new_accessible_variables.exists(variable_node_id) )
 				{
-					new_accessible_variables.erase( variable_node_id );
+					new_accessible_variables.drop( variable_node_id );
 				}
 			}
 		}
 
-		foreach( &added_node_pair : new_accessible_variables )
+		foreach( added_node_id : new_accessible_variables )
 		{
-			var NodeId added_node_id= added_node_pair.key();
-
 			var ust::vector</ust::string8/> mut format_args;
 			format_args.push_back( node_before.name );
 			format_args.push_back( state_before.nodes_[added_node_id].name );
@@ -391,7 +388,7 @@ fn ReferencesGraph::GetAllAccessibleVariableNodes_r( this, NodeId node_id, Nodes
 {
 	if( nodes_[node_id].kind == NodeKind::Variable )
 	{
-		out_nodes.insert( node_id, 0 );
+		out_nodes.insert( node_id );
 	}
 
 	foreach( &link : links_ )
@@ -408,7 +405,7 @@ fn ReferencesGraph::GetAllAccessibleVariableInnerNodes_r( this, NodeId node_id, 
 	auto inner_node= nodes_[node_id].inner_reference_node;
 	if( inner_node != c_empty_node_id )
 	{
-		out_nodes.insert( inner_node, 0 );
+		out_nodes.insert( inner_node );
 	}
 
 	foreach( &link : links_ )

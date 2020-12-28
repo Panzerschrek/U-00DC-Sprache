@@ -378,7 +378,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 			class_.kind == ClassType::Kind::PolymorphFinal;
 
 		var size_type mut field_count= 0s;
-		foreach( &member : class_.members.lock_imut().get_ref().GetInternalContainer() )
+		foreach( &member : class_.members.lock_imut().get_ref() )
 		{
 			field_count+= select( member.value().Get</ClassField/>().empty() ? 0s : 1s );
 		}
@@ -579,7 +579,7 @@ fn CodeBuilder::BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_name
 		auto class_members_lock= class_members_ptr.lock_imut();
 		var NamesScope& class_members= class_members_lock.get_ref();
 
-		foreach( &member : class_members.GetInternalContainer() )
+		foreach( &member : class_members )
 		{
 			auto field_ptr= member.value().Get</ClassField/>();
 			if( !field_ptr.empty() )
@@ -644,7 +644,7 @@ fn CodeBuilder::BuildTypeinfoClassFunctionsList( mut this, NamesScopePtr& root_n
 
 	with( class_members_ptr : class_type.lock_imut().get_ref().members )
 	{
-		foreach( &class_member : class_members_ptr.lock_imut().get_ref().GetInternalContainer() )
+		foreach( &class_member : class_members_ptr.lock_imut().get_ref() )
 		{
 			auto functions_set_ptr= class_member.value().Get</NamesScopeFunctionsSet/>();
 			if( functions_set_ptr.empty() )
@@ -717,7 +717,7 @@ fn CodeBuilder::BuildTypeinfoClassTypesList( mut this, NamesScopePtr& root_names
 		auto class_members_lock= class_members_ptr.lock_imut();
 		var NamesScope& class_members= class_members_lock.get_ref();
 
-		foreach( &class_member : class_members.GetInternalContainer() )
+		foreach( &class_member : class_members)
 		{
 			var Type mut t;
 

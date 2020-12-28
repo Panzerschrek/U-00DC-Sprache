@@ -6,7 +6,7 @@ namespace U1
 
 fn CodeBuilder::NamesScopeBuild( mut this, NamesScopePtr& names_scope_ptr )
 {
-	foreach( &el : names_scope_ptr.lock_imut().get_ref().GetInternalContainer() )
+	foreach( &el : names_scope_ptr.lock_imut().get_ref() )
 	{
 		variant_visit( &v : el.value().something_ )
 		{

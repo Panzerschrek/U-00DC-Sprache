@@ -17,6 +17,14 @@ struct OneBitHash
 	op==( OneBitHash& a, OneBitHash& b ) : bool { return a.x == b.x; }
 }
 
+class C
+{
+	// noncopyable by default.
+	fn constructor( i32 in_x ) ( x= in_x ) {}
+
+	i32 x;
+}
+
 fn nomangle main() : i32
 {
 	{
@@ -190,6 +198,24 @@ fn nomangle main() : i32
 
 		m.insert( 5, 32 );
 		halt if( m.size() != size_type(1) );
+	}
+	{ // noncopyable value
+
+		var ust::unordered_map</i32, C/> mut m;
+
+		m.insert( 66, C(6) );
+		m.insert( 777, C(7) );
+		m.insert( 1, C(1) );
+
+		halt if( m[66].x != 6 );
+		halt if( m[777].x != 7 );
+		halt if( m[1].x != 1 );
+
+		m.insert( 66, C(0) );
+		halt if( m[66].x != 0 );
+
+		m[777]= C(777);
+		halt if( m[777].x != 777 );
 	}
 
 	return 0;

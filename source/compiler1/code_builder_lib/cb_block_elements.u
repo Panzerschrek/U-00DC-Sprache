@@ -431,9 +431,9 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		}
 		if( expr.node_id != ReferencesGraph::c_empty_node_id )
 		{
-			foreach( &node_pair : function_context.references_graph.GetAllAccessibleVariableNodes( expr.node_id ) )
+			foreach( &node_id : function_context.references_graph.GetAllAccessibleVariableNodes( expr.node_id ) )
 			{
-				if( !IsReferenceAllowedForReturn( function_context, node_pair.key() ) )
+				if( !IsReferenceAllowedForReturn( function_context, node_id ) )
 				{
 					REPORT_ERROR( ReturningUnallowedReference, names_scope, return_operator.src_loc )
 				}
@@ -472,11 +472,11 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		{
 			if( ret_type.GetInnerReferenceKind() != InnerReferenceKind::None && expr.node_id != ReferencesGraph::c_empty_node_id )
 			{
-				foreach( &inner_reference_node_value : function_context.references_graph.GetAllAccessibleVariableInnerNodes( expr.node_id ) )
+				foreach( &inner_reference_node_id : function_context.references_graph.GetAllAccessibleVariableInnerNodes( expr.node_id ) )
 				{
-					foreach( &variable_node_value : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_node_value.key() ) )
+					foreach( &variable_node_id : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_node_id ) )
 					{
-						if( !IsReferenceAllowedForReturn( function_context, variable_node_value.key() ) )
+						if( !IsReferenceAllowedForReturn( function_context, variable_node_id ) )
 						{
 							REPORT_ERROR( ReturningUnallowedReference, names_scope, return_operator.src_loc )
 						}
@@ -564,9 +564,9 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			auto inner_reference_node= function_context.references_graph.GetNodeInnerReference( return_node );
 			if( inner_reference_node != ReferencesGraph::c_empty_node_id )
 			{
-				foreach( &variable_node_value : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_node ) )
+				foreach( &variable_node_id : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_node ) )
 				{
-					if( !IsReferenceAllowedForReturn( function_context, variable_node_value.key() ) )
+					if( !IsReferenceAllowedForReturn( function_context, variable_node_id ) )
 					{
 						REPORT_ERROR( ReturningUnallowedReference, names_scope, return_operator.src_loc )
 					}

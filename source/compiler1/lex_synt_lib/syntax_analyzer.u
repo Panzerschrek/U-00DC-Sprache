@@ -1,5 +1,6 @@
 import "/shared/shared_ptr_final_nullable.u"
 import "/string_conversions.u"
+import "/unordered_set.u"
 import "/keywords.uh"
 import "syntax_analyzer.uh"
 
@@ -3517,7 +3518,7 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 {
 	var ust::vector</Macro::MatchElement/> mut match_elements;
 
-	var ust::unordered_map</ ust::string8, i32 /> mut elements_set; // TODO - use unordered_set
+	var ust::unordered_set</ ust::string8 /> mut elements_set;
 	while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::MacroBracketRight )
 	{
 		if( it_.front().lexem_type == Lexem::Type::MacroBracketLeft ||
@@ -3624,11 +3625,11 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 			{
 				PushMacroErrorMessage( match_element_src_loc, "Using keyword as macro element name." );
 			}
-			if( !elements_set.find( match_element.name ).empty() )
+			if( elements_set.exists( match_element.name ) )
 			{
 				PushMacroErrorMessage( match_element_src_loc, "\"" + match_element.name + "\" macro parameter redefinition." );
 			}
-			elements_set.insert( match_element.name, 0 );
+			elements_set.insert( match_element.name );
 
 			match_elements.push_back( move(match_element) );
 		}

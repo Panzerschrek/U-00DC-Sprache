@@ -1137,9 +1137,8 @@ fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, 
 	{
 		var ReferencesGraph &mut references_graph= function_context.references_graph;
 
-		foreach( &dst_variable_node_value : references_graph.GetAllAccessibleVariableNodes( variable.node_id ) )
+		foreach( &dst_variable_node_id : references_graph.GetAllAccessibleVariableNodes( variable.node_id ) )
 		{
-			auto dst_variable_node_id= dst_variable_node_value.key();
 			var ReferencesGraph::NodeId mut inner_reference_node_id= references_graph.GetNodeInnerReference( dst_variable_node_id);
 			if( inner_reference_node_id == ReferencesGraph::c_empty_node_id )
 			{
@@ -1191,7 +1190,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 	auto base_class= class_type.lock_imut().get_ref().base_class;
 
 	// Check for errors, build list of initialized fields.
-	var ust::unordered_map</ust::string8, i32/> mut initialized_fields; // TODO - use unordered_set
+	var ust::unordered_set</ust::string8/> mut initialized_fields;
 	auto mut have_fields_errors= false;
 	auto mut base_initialized= false;
 	foreach( &member_initializer : constructor_initialization_list.members_initializers )
@@ -1211,7 +1210,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 				continue;
 			}
 			base_initialized= true;
-			function_context.uninitialized_this_fields.insert( KeywordToString( Keyword::base_ ), 0 );
+			function_context.uninitialized_this_fields.insert( KeywordToString( Keyword::base_ ) );
 			continue;
 		}
 
@@ -1236,15 +1235,15 @@ fn CodeBuilder::BuildConstructorInitialization(
 			continue;
 		}
 
-		if( !initialized_fields.find( member_initializer.name ).empty() )
+		if( initialized_fields.exists( member_initializer.name ) )
 		{
 			have_fields_errors= true;
 			REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope, member_initializer.src_loc, member_initializer.name )
 			continue;
 		}
 
-		initialized_fields.insert( member_initializer.name, 0 );
-		function_context.uninitialized_this_fields.insert( member_initializer.name, 0 );
+		initialized_fields.insert( member_initializer.name );
+		function_context.uninitialized_this_fields.insert( member_initializer.name );
 	}
 
 	var Variable this_= function_context.this_.get_ref();
@@ -1263,7 +1262,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 	}
 	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
 	{
-		if( !initialized_fields.find( field_name ).empty() )
+		if( initialized_fields.exists( field_name ) )
 		{
 			continue;
 		}
@@ -1331,7 +1330,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 
 			BuildInitializer( names_scope, function_context, base_variable, member_initializer.initializer.get_ref() );
 
-			function_context.uninitialized_this_fields.erase( KeywordToString( Keyword::base_ ) );
+			function_context.uninitialized_this_fields.drop( KeywordToString( Keyword::base_ ) );
 			continue;
 		}
 
@@ -1364,7 +1363,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 			BuildInitializer( names_scope, function_context, field_variable, member_initializer.initializer.get_ref() );
 		}
 
-		function_context.uninitialized_this_fields.erase( member_initializer.name );
+		function_context.uninitialized_this_fields.drop( member_initializer.name );
 	}
 }
 

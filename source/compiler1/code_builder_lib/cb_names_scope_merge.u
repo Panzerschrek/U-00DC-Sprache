@@ -8,7 +8,7 @@ namespace U1
 
 fn CodeBuilder::NamesScopeMerge( NamesScopeMutPtr& dst_ptr, NamesScope& src )
 {
-	foreach( &el : src.GetInternalContainer() )
+	foreach( &el : src )
 	{
 		{
 			auto dst_lock= dst_ptr.lock_imut();

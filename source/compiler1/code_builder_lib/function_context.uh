@@ -1,3 +1,4 @@
+import "/unordered_set.u"
 import "structs_combined.uh"
 
 namespace U1
@@ -34,7 +35,7 @@ public:
 	LLVMValueRef s_ret= LLVMValueRef::Null;
 
 	ust::optional</Variable/> this_;
-	ust::unordered_map</ust::string8, i32/> uninitialized_this_fields; // TODO - use something like "unordered_set"
+	ust::unordered_set</ust::string8/> uninitialized_this_fields;
 	bool whole_this_is_unavailable= false;
 
 	bool have_non_constexpr_operations_inside= false; // While building code, may set to "true".
