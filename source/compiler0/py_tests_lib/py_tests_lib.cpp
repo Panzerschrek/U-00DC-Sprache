@@ -438,6 +438,10 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 
 	static const std::unordered_set<std::string> c_tests_to_ignore
 	{
+		"PointerTypeDeclaration_Test0",
+		"PointerTypeDeclaration_Test1",
+		"PointerTypeDeclaration_Test2",
+		"PointerTypeDeclaration_Test3",
 		"TemplateParametersDeductionFailed_Test11",
 	};
 

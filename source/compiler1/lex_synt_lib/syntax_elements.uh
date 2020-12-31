@@ -223,6 +223,12 @@ struct TupleType
 	ust::vector</ TypeName /> elements;
 }
 
+struct RawPointerType
+{
+	SrcLoc src_loc;
+	TypeName element_type;
+}
+
 struct FunctionType
 {
 	SrcLoc src_loc;
@@ -257,6 +263,7 @@ type TypeName= ust::variant</ tup[
 	ComplexName,
 	ust::box</ArrayType/>,
 	ust::box</TupleType/>,
+	ust::box</RawPointerType/>,
 	ust::box</FunctionType/>
 	] />;
 

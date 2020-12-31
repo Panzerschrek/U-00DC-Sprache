@@ -46,6 +46,10 @@ fn GetSrcLoc( Expression& expression ) : SrcLoc
 		{
 			return el.get_ref().src_loc;
 		}
+		else if( ust::is_same_type</ typeof(el), ust::box</RawPointerType/> />() )
+		{
+			return el.get_ref().src_loc;
+		}
 		else
 		{
 			return el.src_loc;
