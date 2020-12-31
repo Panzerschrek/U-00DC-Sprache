@@ -26,3 +26,10 @@ def PointerTypeDeclaration_Test3():
 		type EmptyTupPtr = $(tup[]);
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def RawPointerTypeUsage_Test0():
+	c_program_text= """
+		fn Foo( $(i32) x, $($(f32)) y ){}
+	"""
+	tests_lib.build_program( c_program_text )

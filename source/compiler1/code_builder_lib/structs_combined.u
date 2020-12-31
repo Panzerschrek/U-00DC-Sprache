@@ -53,6 +53,17 @@ fn ToString( TupleType& tuple_type ) : ust::string8
 	return move(result);
 }
 
+fn ToString( RawPointerType& raw_pointer_type ) : ust::string8
+{
+	var ust::string8 mut result;
+	result+= "$";
+	result+= "(";
+	result+= raw_pointer_type.element_type.ToString();
+	result+= ")";
+
+	return move(result);
+}
+
 fn ToString( FunctionType& function_type ) : ust::string8
 {
 	var ust::string8 mut result;
@@ -169,6 +180,16 @@ op TupleType::==( TupleType& l, TupleType& r ) : bool
 }
 
 op TupleType::!=( TupleType& l, TupleType& r ) : bool
+{
+	return !(l == r);
+}
+
+op RawPointerType::==( RawPointerType& l, RawPointerType& r ) : bool
+{
+	return l.element_type == r.element_type;
+}
+
+op RawPointerType::!=( RawPointerType& l, RawPointerType& r ) : bool
 {
 	return !(l == r);
 }
@@ -371,6 +392,11 @@ op Type::=( mut this, Type &imut other )
 		this= Type( tuple_type );
 		return;
 	}
+	if_var( &raw_pointer_type : other.GetRawPointerType() )
+	{
+		this= Type( raw_pointer_type );
+		return;
+	}
 	if_var( &function_type : other.GetFunctionType() )
 	{
 		this= Type( function_type );
@@ -405,6 +431,10 @@ fn Type::conversion_constructor( ArrayType mut array_type )
 
 fn Type::conversion_constructor( TupleType mut tuple_type )
 	( something_( ust::box</TupleType/>(move(tuple_type)) ) )
+{}
+
+fn Type::conversion_constructor( RawPointerType mut raw_pointer_type )
+	( something_( ust::box</RawPointerType/>(move(raw_pointer_type)) ) )
 {}
 
 fn Type::conversion_constructor( FunctionType mut function_type )
@@ -471,6 +501,26 @@ fn Type::GetTupleType( imut this ) : ust::optional_ref</TupleType, false />'this
 	}
 
 	return ust::optional_ref</TupleType, false />();
+}
+
+fn Type::GetRawPointerType(  mut this ) : ust::optional_ref</RawPointerType, true  />'this'
+{
+	if_var( &mut b : something_.get</ust::box</RawPointerType/>/>() )
+	{
+		return ust::optional_ref</RawPointerType, true  />( b.get_ref() );
+	}
+
+	return ust::optional_ref</RawPointerType, true  />();
+}
+
+fn Type::GetRawPointerType( imut this ) : ust::optional_ref</RawPointerType, false />'this'
+{
+	if_var( &b : something_.get</ust::box</RawPointerType/>/>() )
+	{
+		return ust::optional_ref</RawPointerType, false />( b.get_ref() );
+	}
+
+	return ust::optional_ref</RawPointerType, false />();
 }
 
 fn Type::GetFunctionType(  mut this ) : ust::optional_ref</FunctionType, true  />'this'
@@ -547,6 +597,10 @@ fn Type::GetLLVMType( this ) : LLVMTypeRef
 	{
 		return tuple_type.llvm_type;
 	}
+	if_var( &raw_pointer_type : GetRawPointerType() )
+	{
+		return raw_pointer_type.llvm_type;
+	}
 	if_var( &function_type : GetFunctionType() )
 	{
 		return function_type.llvm_type;
@@ -593,7 +647,10 @@ fn Type::IsDefaultConstructible( this ) : bool
 
 fn Type::IsCopyConstructible( this ) : bool
 {
-	if( !GetFundamentalType().empty() || !GetEnumType().empty() || !GetFunctionPointerType().empty() )
+	if( !GetFundamentalType().empty() |
+		!GetEnumType().empty() ||
+		!GetFunctionPointerType().empty() ||
+		!GetRawPointerType().empty() )
 	{
 		return true;
 	}
@@ -621,7 +678,10 @@ fn Type::IsCopyConstructible( this ) : bool
 
 fn Type::IsCopyAssignable( this ) : bool
 {
-	if( !GetFundamentalType().empty() || !GetEnumType().empty() || !GetFunctionPointerType().empty() )
+	if( !GetFundamentalType().empty() |
+		!GetEnumType().empty() ||
+		!GetFunctionPointerType().empty() ||
+		!GetRawPointerType().empty() )
 	{
 		return true;
 	}
@@ -649,6 +709,7 @@ fn Type::IsCopyAssignable( this ) : bool
 
 fn Type::CanBeConstexpr( this ) : bool
 {
+	// TODO - what about raw pointer type?
 	if( !GetFundamentalType().empty() || !GetEnumType().empty() || !GetFunctionPointerType().empty() )
 	{
 		return true;
@@ -778,6 +839,7 @@ op Type::==( Type& l, Type& r ) : bool
 		static_if(
 			ust::is_same_type</ typeof(l_t), ust::box</ArrayType/> />() ||
 			ust::is_same_type</ typeof(l_t), ust::box</TupleType/> />() ||
+			ust::is_same_type</ typeof(l_t), ust::box</RawPointerType/> />() ||
 			ust::is_same_type</ typeof(l_t), ust::box</FunctionType/> />() ||
 			ust::is_same_type</ typeof(l_t), ust::box</FunctionPointerType/> />() )
 		{
