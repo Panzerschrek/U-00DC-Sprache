@@ -831,8 +831,27 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RawPointerToReferenceOperator& raw_pointer_to_reference_operator ) : Value
 {
-	// TODO
-	return ErrorValue();
+	// TODO - generate error if outside unsafe block.
+
+	var Variable v= BuildExpressionCodeEnsureVariable( names_scope, function_context, raw_pointer_to_reference_operator.expression.get_ref() );
+
+	auto pointer_type_ref= v.t.GetRawPointerType();
+	if( pointer_type_ref.empty() )
+	{
+		// TODO - generate error
+		return ErrorValue();
+	}
+
+	var Variable mut res
+	{
+		.t= pointer_type_ref.get_ref().element_type,
+		.location= Variable::Location::Pointer,
+		.value_type= ValueType::ReferenceMut, // Unlike C++ all raw pointers in Ü are mutable.
+		.llvm_value= CreateMoveToLLVMRegisterInstruction( v, function_context ), // llvm value of reference is actually value of pointer
+		// There is no reference graph node associated with raw pointer.
+	};
+
+	return move(res);
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value

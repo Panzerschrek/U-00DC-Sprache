@@ -75,3 +75,61 @@ def ReferenceToPointerOperator_Test1():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result != 0 ) # variable should have non-zero address
+
+
+def PointerToReferenceOperator_Test0():
+	c_program_text= """
+		fn Foo() : u32
+		{
+			var u32 mut x= 0u;
+			var $(u32) x_ptr= $<(x);
+			$>(x_ptr)= 678u; // Write value, using pointer.
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 678 )
+
+
+def PointerToReferenceOperator_Test1():
+	c_program_text= """
+		fn Foo() : f64
+		{
+			auto mut f= -1.0;
+			var $(f64) f_ptr= $<(f);
+			auto f_ptr_ptr= $<(f_ptr);
+			$>($>(f_ptr_ptr))= 37.5;
+			return f;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 37.5 )
+
+
+def PointerToReferenceOperator_Test2():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			auto x= 73472;
+			auto ptr= $<(x);
+			return $>(ptr); // Read value, using pointer.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 73472 )
+
+
+def PointerToReferenceOperator_Test3():
+	c_program_text= """
+		fn Foo() : f32
+		{
+			auto x= 654.5f;
+			return $>($<(x)); // Directly use pointer for conversion to reference
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 654.5 )

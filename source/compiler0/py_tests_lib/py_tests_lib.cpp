@@ -438,6 +438,10 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 
 	static const std::unordered_set<std::string> c_tests_to_ignore
 	{
+		"PointerToReferenceOperator_Test0",
+		"PointerToReferenceOperator_Test1",
+		"PointerToReferenceOperator_Test2",
+		"PointerToReferenceOperator_Test3",
 		"PointerTypeDeclaration_Test0",
 		"PointerTypeDeclaration_Test1",
 		"PointerTypeDeclaration_Test2",
