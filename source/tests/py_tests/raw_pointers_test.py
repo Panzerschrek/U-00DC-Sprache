@@ -33,3 +33,16 @@ def RawPointerTypeUsage_Test0():
 		fn Foo( $(i32) x, $($(f32)) y ){}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def RawPointerInitializers_Test0():
+	c_program_text= """
+		fn Foo() : size_type
+		{
+			var $(i32) z= zero_init;
+			unsafe{  return cast_ref_unsafe</size_type/>(z);  }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 0 )

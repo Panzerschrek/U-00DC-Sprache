@@ -605,7 +605,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	else
 	{
 		auto r= BuildExpressionCodeEnsureVariable( names_scope, function_context, assignment_operator.r.get_ref() );
-		if( r.t.GetFundamentalType().empty() && r.t.GetEnumType().empty() && r.t.GetFunctionPointerType().empty() )
+		if( r.t.GetFundamentalType().empty() && r.t.GetEnumType().empty() && r.t.GetRawPointerType().empty() && r.t.GetFunctionPointerType().empty() )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, assignment_operator.src_loc, r.t )
 			return BlockElementBuildInfo();
