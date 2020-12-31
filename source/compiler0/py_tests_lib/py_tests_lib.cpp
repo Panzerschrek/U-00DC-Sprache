@@ -444,6 +444,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"PointerTypeDeclaration_Test3",
 		"RawPointerInitializers_Test0",
 		"RawPointerTypeUsage_Test0",
+		"ReferenceToPointerOperator_Test0",
+		"ReferenceToPointerOperator_Test1",
 		"TemplateParametersDeductionFailed_Test11",
 	};
 

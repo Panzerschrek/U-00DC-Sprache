@@ -785,8 +785,48 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReferenceToRawPointerOperator& reference_to_raw_pointer_operator ) : Value
 {
-	// TODO
-	return ErrorValue();
+	// TODO - maybe allow reference to pointer conversion only in unsafe code?
+
+	var Variable v= BuildExpressionCodeEnsureVariable( names_scope, function_context, reference_to_raw_pointer_operator.expression.get_ref() );
+	if( v.value_type == ValueType::Value )
+	{
+		// TODO - maybe generate another error?
+		REPORT_ERROR( ExpectedReferenceValue, names_scope, reference_to_raw_pointer_operator.src_loc )
+		return ErrorValue();
+	}
+
+	// Reference to pointer conversion can break functional purity, so, disable such conversions in constexpr functions.
+	// For example:
+	/*
+		fn constexpr GetX(i32& x, i32& y) : size_type // Memory location of reference arguments is unpredictable.
+		{
+			return $<(x) - $<(y);
+		}
+	*/
+	function_context.have_non_constexpr_operations_inside= true;
+
+	var RawPointerType mut t{ .element_type= v.t };
+	unsafe{  t.llvm_type= LLVMTypeOf( v.llvm_value );  } // llvm type of reference is actually type of pointer
+	var Variable mut res
+	{
+		.t= move(t),
+		.location= Variable::Location::LLVMRegister,
+		.value_type= ValueType::Value,
+		.llvm_value= v.llvm_value, // llvm value of reference is actually value of pointer
+		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "$" )
+	};
+
+	// Register variable for references checking.
+	var NamesScopeVariable mut names_scope_variable
+	{
+		.t= res.t,
+		.is_mutable= true,
+		.llvm_value= res.llvm_value,
+		.node_id= res.node_id,
+	};
+	function_context.variables_frames.back().push_back( move(names_scope_variable) );
+
+	return move(res);
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RawPointerToReferenceOperator& raw_pointer_to_reference_operator ) : Value
