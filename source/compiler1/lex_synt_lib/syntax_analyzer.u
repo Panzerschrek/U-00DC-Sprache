@@ -960,7 +960,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 			}
 			NextLexem();
 
-			return move(o);
+			current_node= move(o);
 		}
 		else if( it_.front().lexem_type == Lexem::Type::PointerToReference )
 		{
@@ -981,7 +981,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 			}
 			NextLexem();
 
-			return move(o);
+			current_node= move(o);
 		}
 		else if( it_.front().lexem_type == Lexem::Type::Identifier )
 		{
