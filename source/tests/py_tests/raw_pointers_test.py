@@ -356,3 +356,78 @@ def RawPointerCopy_Test2():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 44445 )
+
+
+def RawPointerAsFunctionArgument_Test0():
+	c_program_text= """
+		fn DerefAndAdd1( $(i32) ptr ) : i32
+		{
+			unsafe{  return $>(ptr) + 1;  }
+		}
+
+		fn Foo() : i32
+		{
+			var i32 i= 56;
+			return DerefAndAdd1( $<(i) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 57 )
+
+
+def RawPointerAsFunctionArgument_Test1():
+	c_program_text= """
+		fn SetToMax( $(u32) ptr )
+		{
+			unsafe{  $>(ptr)= ~0u;  }
+		}
+
+		fn Foo() : u32
+		{
+			var u32 mut i= 985u;
+			SetToMax( $<(i) );
+			return i;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 0xFFFFFFFF )
+
+
+def RawPointerAsReturnValue_Test0():
+	c_program_text= """
+		fn ArrayMemberToPtr( [ f32, 4 ] &mut arr, size_type index ) : $(f32)
+		{
+			return $<(arr[index]);
+		}
+
+		fn Foo() : f32
+		{
+			var [ f32, 4 ] mut a[ 67.5f, -22.0f, 17.0f, 6666666.0f ];
+			unsafe{  return $>( ArrayMemberToPtr( a, 2s ) );  }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 17.0 )
+
+
+def RawPointerAsReturnValue_Test1():
+	c_program_text= """
+		struct S{ f32 y; u64 x; }
+		fn GetX( S &mut s ) : $(u64)
+		{
+			return $<(s.x);
+		}
+
+		fn Foo() : u64
+		{
+			var S mut s= zero_init;
+			unsafe{  $>( GetX( s ) )= u64(6536234);  }
+			return s.x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 6536234 )

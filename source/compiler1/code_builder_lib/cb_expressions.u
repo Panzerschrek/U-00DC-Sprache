@@ -787,6 +787,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 {
 	// TODO - maybe allow reference to pointer conversion only in unsafe code?
 
+	// TODO - maybe disable immutable reference to pointer conversion?
+
 	var Variable v= BuildExpressionCodeEnsureVariable( names_scope, function_context, reference_to_raw_pointer_operator.expression.get_ref() );
 	if( v.value_type == ValueType::Value )
 	{
