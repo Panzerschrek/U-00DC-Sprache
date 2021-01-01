@@ -83,7 +83,7 @@ def PointerToReferenceOperator_Test0():
 		{
 			var u32 mut x= 0u;
 			var $(u32) x_ptr= $<(x);
-			$>(x_ptr)= 678u; // Write value, using pointer.
+			unsafe{  $>(x_ptr)= 678u;  } // Write value, using pointer.
 			return x;
 		}
 	"""
@@ -99,7 +99,7 @@ def PointerToReferenceOperator_Test1():
 			auto mut f= -1.0;
 			var $(f64) f_ptr= $<(f);
 			auto f_ptr_ptr= $<(f_ptr);
-			$>($>(f_ptr_ptr))= 37.5;
+			unsafe{  $>($>(f_ptr_ptr))= 37.5;  }
 			return f;
 		}
 	"""
@@ -114,7 +114,7 @@ def PointerToReferenceOperator_Test2():
 		{
 			auto x= 73472;
 			auto ptr= $<(x);
-			return $>(ptr); // Read value, using pointer.
+			unsafe{  return $>(ptr);  } // Read value, using pointer.
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -127,7 +127,7 @@ def PointerToReferenceOperator_Test3():
 		fn Foo() : f32
 		{
 			auto x= 654.5f;
-			return $>($<(x)); // Directly use pointer for conversion to reference
+			unsafe{  return $>($<(x));  } // Directly use pointer for conversion to reference
 		}
 	"""
 	tests_lib.build_program( c_program_text )

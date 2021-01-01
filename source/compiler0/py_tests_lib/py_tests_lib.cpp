@@ -447,10 +447,20 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"PointerTypeDeclaration_Test2",
 		"PointerTypeDeclaration_Test3",
 		"RawPointerInitializers_Test0",
+		"RawPointerToReferenceConversionOutsideUnsafeBlock_Test0",
+		"RawPointerToReferenceConversionOutsideUnsafeBlock_Test1",
 		"RawPointerTypeUsage_Test0",
 		"ReferenceToPointerOperator_Test0",
 		"ReferenceToPointerOperator_Test1",
 		"TemplateParametersDeductionFailed_Test11",
+		"ValueIsNotPointer_Test0",
+		"ValueIsNotPointer_Test1",
+		"ValueIsNotPointer_Test2",
+		"ValueIsNotPointer_Test3",
+		"ValueIsNotReference_Test0",
+		"ValueIsNotReference_Test1",
+		"ValueIsNotReference_Test2",
+		"ValueIsNotReference_Test3",
 	};
 
 	if( c_tests_to_ignore.count(func_name) > 0 )
