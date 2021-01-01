@@ -151,6 +151,20 @@ def RawPointerInitializers_Test7():
 	assert( call_result == 9632 )
 
 
+def RawPointerInitializers_Test8():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			var i32 mut x= 7645621;
+			auto ptr= $<(x); // Auto variable of pointer type.
+			unsafe{  return $>(ptr);  }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 7645621 )
+
+
 def ReferenceToPointerOperator_Test0():
 	c_program_text= """
 		fn Foo() : size_type
@@ -236,3 +250,34 @@ def PointerToReferenceOperator_Test3():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 654.5 )
+
+
+def RawPointerAssignment_Test0():
+	c_program_text= """
+		fn Foo() : u32
+		{
+			var u32 mut x= 77u, mut y= 1452u;
+			auto mut ptr= $<(x);
+			ptr= $<(y); // Re-assign pointer value.
+			unsafe{  return $>(ptr);  }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 1452 )
+
+
+def RawPointerAssignment_Test1():
+	c_program_text= """
+		struct S{ $(i64) ptr; }
+		fn Foo() : i64
+		{
+			var S mut s= zero_init;
+			var i64 mut iii(95655);
+			s.ptr= $<(iii); // Assign value to struct member - pointer.
+			unsafe{  return $>(s.ptr);  }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 95655 )
