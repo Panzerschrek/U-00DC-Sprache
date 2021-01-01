@@ -39,13 +39,116 @@ def RawPointerInitializers_Test0():
 	c_program_text= """
 		fn Foo() : size_type
 		{
-			var $(i32) z= zero_init;
+			var $(i32) z= zero_init; // Zero initializer for raw pointer.
 			unsafe{  return cast_ref_unsafe</size_type/>(z);  }
 		}
 	"""
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 0 )
+
+
+def RawPointerInitializers_Test1():
+	c_program_text= """
+		struct S{ $(i32) ptr; }
+		fn Foo() : size_type
+		{
+			var S s= zero_init; // Zero initializer for raw pointer inside struct.
+			unsafe{  return cast_ref_unsafe</size_type/>(s.ptr);  }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 0 )
+
+
+def RawPointerInitializers_Test2():
+	c_program_text= """
+		struct S{ $(i32) ptr; }
+		fn Foo() : size_type
+		{
+			var S s{ .ptr= zero_init }; // Zero initializer for raw pointer inside struct.
+			unsafe{  return cast_ref_unsafe</size_type/>(s.ptr);  }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 0 )
+
+
+def RawPointerInitializers_Test3():
+	c_program_text= """
+		fn Foo() : size_type
+		{
+			var [ $(i32), 4 ] arr= zero_init; // Zero initializer for array of pointers.
+			unsafe{  return cast_ref_unsafe</size_type/>(arr[2]);  }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 0 )
+
+
+def RawPointerInitializers_Test4():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			var i32 mut x= 0;
+			var $(i32) ptr= $<(x); // Expression initializer for pointer.
+			unsafe{  $>(ptr)= 67890;  }
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 67890 )
+
+
+def RawPointerInitializers_Test5():
+	c_program_text= """
+		struct S{ $(i32) ptr; }
+		fn Foo() : i32
+		{
+			var i32 mut x= 0;
+			var S s{ .ptr= $<(x) }; // Expression initializer for pointer inside struct.
+			unsafe{  $>(s.ptr)= 9632;  }
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 9632 )
+
+
+def RawPointerInitializers_Test6():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			var i32 mut x= 0;
+			var $(i32) ptr($<(x)); // Constructor initializer for pointer.
+			unsafe{  $>(ptr)= 67890;  }
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 67890 )
+
+
+def RawPointerInitializers_Test7():
+	c_program_text= """
+		struct S{ $(i32) ptr; }
+		fn Foo() : i32
+		{
+			var i32 mut x= 0;
+			var S s{ .ptr( $<(x) ) }; // Constructor initializer for pointer inside struct.
+			unsafe{  $>(s.ptr)= 9632;  }
+			return x;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 9632 )
 
 
 def ReferenceToPointerOperator_Test0():
