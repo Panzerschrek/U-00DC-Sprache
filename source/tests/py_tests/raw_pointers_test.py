@@ -281,3 +281,78 @@ def RawPointerAssignment_Test1():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 95655 )
+
+
+def RawPointerAssignment_Test2():
+	c_program_text= """
+		struct S{ $(char8) ptr; }
+		fn Foo() : char8
+		{
+			var char8 c= "$"c8;
+			var S mut s0= zero_init, s1{ .ptr= $<(c) };
+			s0= s1; // Assign struct with pointer inside. Generated assignment operator should assign raw pointers.
+			unsafe{  return $>(s0.ptr);  }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ord('$') )
+
+
+def RawPointerAssignment_Test3():
+	c_program_text= """
+		fn Foo() : f64
+		{
+			var f64 f= 3.25;
+			var tup[ f32, $(f64) ] mut t0= zero_init, t1[ 0.0f, $<(f) ];
+			t0= t1; // Assignment should work for pointer member of tuple.
+			unsafe{  return $>(t0[1]);  }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 3.25 )
+
+
+def RawPointerCopy_Test0():
+	c_program_text= """
+		struct S{ $(char8) ptr; }
+		fn Foo() : char8
+		{
+			var char8 c= "E"c8;
+			var S s0{ .ptr= $<(c) };
+			var S s1(s0); // Generated copy constructor should copy raw pointer.
+			unsafe{  return $>(s0.ptr);  }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ord('E') )
+
+
+def RawPointerCopy_Test1():
+	c_program_text= """
+		fn Foo() : f32
+		{
+			var f32 f= 568.125f;
+			var tup[ i32, $(f32), bool ] t0[ 5, $<(f), false ], t1= t0; // Should copy pointer in copy-initializer for tuple.
+			unsafe{  return $>(t1[1]);  }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 568.125 )
+
+
+def RawPointerCopy_Test2():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			var i32 i= 44445;
+			var [ $(i32), 4 ] a0[ zero_init, zero_init, $<(i), zero_init ], a1(a0); // Should copy pointer in copy-initializer for array.
+			unsafe{  return $>(a1[2]);  }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 44445 )
