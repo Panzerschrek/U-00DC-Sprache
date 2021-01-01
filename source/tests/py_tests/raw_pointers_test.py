@@ -442,9 +442,66 @@ def RawPointersCompare_Test0():
 			halt if( x_ptr == y_ptr );
 			halt if( y_ptr == x_ptr );
 			halt if( !( x_ptr != y_ptr ) );
-			halt if( !( y_ptr == x_ptr ) );
+			halt if( !( y_ptr != x_ptr ) );
 			halt if( x_ptr != x_ptr );
 			halt if( y_ptr != y_ptr );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def RawPointersCompare_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var [ f32, 3 ] a= zero_init;
+			var $(f32) ptr0= $<(a[0]), ptr1= $<(a[1]), ptr2= $<(a[2]);
+
+			// <
+			halt if( !( ptr0 < ptr1 ) );
+			halt if( !( ptr1 < ptr2 ) );
+			halt if( !( ptr0 < ptr2 ) );
+			halt if( ptr0 < ptr0 );
+			halt if( ptr1 < ptr1 );
+			halt if( ptr2 < ptr2 );
+			halt if( ptr1 < ptr0 );
+			halt if( ptr2 < ptr1 );
+			halt if( ptr2 < ptr0 );
+
+			// <=
+			halt if( !( ptr0 <= ptr1 ) );
+			halt if( !( ptr1 <= ptr2 ) );
+			halt if( !( ptr0 <= ptr2 ) );
+			halt if( !( ptr0 <= ptr0 ) );
+			halt if( !( ptr1 <= ptr1 ) );
+			halt if( !( ptr2 <= ptr2 ) );
+			halt if( ptr1 <= ptr0 );
+			halt if( ptr2 <= ptr1 );
+			halt if( ptr2 <= ptr0 );
+
+			// >
+			halt if( ptr0 > ptr1 );
+			halt if( ptr1 > ptr2 );
+			halt if( ptr0 > ptr2 );
+			halt if( ptr0 > ptr0 );
+			halt if( ptr1 > ptr1 );
+			halt if( ptr2 > ptr2 );
+			halt if( !( ptr1 > ptr0 ) );
+			halt if( !( ptr2 > ptr1 ) );
+			halt if( !( ptr2 > ptr0 ) );
+
+			// >=
+			halt if( ptr0 >= ptr1 );
+			halt if( ptr1 >= ptr2 );
+			halt if( ptr0 >= ptr2 );
+			halt if( !( ptr0 >= ptr0 ) );
+			halt if( !( ptr1 >= ptr1 ) );
+			halt if( !( ptr2 >= ptr2 ) );
+			halt if( !( ptr1 >= ptr0 ) );
+			halt if( !( ptr2 >= ptr1 ) );
+			halt if( !( ptr2 >= ptr0 ) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

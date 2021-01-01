@@ -1977,7 +1977,7 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 			return ErrorValue();
 		}
 
-		var bool if_float= !l_fundamental_type.empty() && IsFloatingPoint( l_fundamental_type.get_ref().fundamental_type );
+		var bool is_float= !l_fundamental_type.empty() && IsFloatingPoint( l_fundamental_type.get_ref().fundamental_type );
 
 		res.t= bool_type_;
 
@@ -1986,7 +1986,7 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 		{
 				 if( operator == BinaryOperatorType::Equal )
 			{
-				if( if_float )
+				if( is_float )
 				{
 					res.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OEQ, l_in_register, r_in_register, "==\0"[0] );
 				}
@@ -1997,7 +1997,7 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 			}
 			else if( operator == BinaryOperatorType::NotEqual )
 			{
-				if( if_float )
+				if( is_float )
 				{
 					res.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::UNE, l_in_register, r_in_register, "!=\0"[0] );
 				}
@@ -2019,19 +2019,25 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names_scope, src_loc, r_type, l_type, BinaryOperatorToString( operator ) )
 			return ErrorValue();
 		}
-		if( l_fundamental_type.empty() )
+		// TODO - maybe allow order compare for enums?
+		if( l_fundamental_type.empty() && l_type.GetRawPointerType().empty() )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
 			return ErrorValue();
 		}
 
-		var bool if_float= IsFloatingPoint( l_fundamental_type.get_ref().fundamental_type );
-		var bool is_char= IsChar( l_fundamental_type.get_ref().fundamental_type );
-		var bool is_signed= !is_char && IsSignedInteger( l_fundamental_type.get_ref().fundamental_type );
-		if( !( IsInteger( l_fundamental_type.get_ref().fundamental_type ) || if_float || is_char ) )
+		var bool mut is_float= false, mut is_signed= false;
+		if( !l_fundamental_type.empty() )
 		{
-			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
-			return ErrorValue();
+			auto t= l_fundamental_type.get_ref().fundamental_type;
+			is_float= IsFloatingPoint(t);
+			is_signed= IsSignedInteger(t);
+
+			if( !( IsInteger(t) || IsChar(t) || is_float ) )
+			{
+				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
+				return ErrorValue();
+			}
 		}
 
 		res.t= bool_type_;
@@ -2040,7 +2046,7 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 		{
 				 if( operator == BinaryOperatorType::Less )
 			{
-				if( if_float )
+				if( is_float )
 				{
 					res.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OLT, l_in_register, r_in_register, "<\0"[0] );
 				}
@@ -2055,7 +2061,7 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 			}
 			else if( operator == BinaryOperatorType::LessEqual )
 			{
-				if( if_float )
+				if( is_float )
 				{
 					res.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OLE, l_in_register, r_in_register, "<=\0"[0] );
 				}
@@ -2070,7 +2076,7 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 			}
 			else if( operator == BinaryOperatorType::Greater )
 			{
-				if( if_float )
+				if( is_float )
 				{
 					res.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OGT, l_in_register, r_in_register, ">\0"[0] );
 				}
@@ -2085,7 +2091,7 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 			}
 			else if( operator == BinaryOperatorType::GreaterEqual )
 			{
-				if( if_float )
+				if( is_float )
 				{
 					res.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OGE, l_in_register, r_in_register, ">=\0"[0] );
 				}
