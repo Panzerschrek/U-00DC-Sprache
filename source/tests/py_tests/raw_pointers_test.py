@@ -431,3 +431,20 @@ def RawPointerAsReturnValue_Test1():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 6536234 )
+
+
+def RawPointersCompare_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var $(i32) x_ptr= $<(x), y_ptr= $<(y);
+			halt if( x_ptr == y_ptr );
+			halt if( y_ptr == x_ptr );
+			halt if( !( x_ptr != y_ptr ) );
+			halt if( !( y_ptr == x_ptr ) );
+			halt if( x_ptr != x_ptr );
+			halt if( y_ptr != y_ptr );
+		}
+	"""
+	tests_lib.build_program( c_program_text )

@@ -466,6 +466,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"RawPointerInitializers_Test6",
 		"RawPointerInitializers_Test7",
 		"RawPointerInitializers_Test8",
+		"RawPointersCompare_Test0",
 		"RawPointerToReferenceConversionOutsideUnsafeBlock_Test0",
 		"RawPointerToReferenceConversionOutsideUnsafeBlock_Test1",
 		"RawPointerTypeUsage_Test0",
