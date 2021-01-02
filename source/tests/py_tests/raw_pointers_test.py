@@ -624,3 +624,32 @@ def RawPointerIntegerSub_Test1():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def RawPointersDifference_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var [ i32, 3 ] a= zero_init;
+			var $(i32) ptr0= $<(a[0]), ptr1= $<(a[1]), ptr2= $<(a[2]);
+
+			// Difference between pointer is divided by element size.
+			halt if( i32(ptr0 - ptr0) != 0 );
+			halt if( i32(ptr1 - ptr0) != 1 );
+			halt if( i32(ptr2 - ptr0) != 2 );
+			halt if( i32(ptr0 - ptr1) != -1 );
+			halt if( i32(ptr0 - ptr2) != -2 );
+
+			halt if( (ptr2 - ptr1) + (ptr1 - ptr0) != ptr2 - ptr0 );
+
+			halt if( i32( ptr2 + 100 - ptr2 ) != 100 );
+
+			// Difference type must be signed integer.
+			halt if( !typeinfo</ typeof( ptr0 - ptr0 ) />.is_signed_integer );
+
+			// Size of difference type must be equal to size of "size_type".
+			halt if( typeinfo</size_type/>.size_of != typeinfo</ typeof( ptr0 - ptr0 ) />.size_of );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

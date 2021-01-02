@@ -254,3 +254,30 @@ def SubtractRawPointer_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HaveError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 6 ) )
+
+
+def DifferenceBetweenRawPointersWithDifferentTypes_Test0():
+	c_program_text= """
+		struct S{}
+		fn Foo()
+		{
+			var $(i32) ptr_i= zero_init;
+			var $(S) ptr_s= zero_init;
+			s - ptr_i;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 7 ) )
+
+
+def DifferenceBetweenRawPointersWithDifferentTypes_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var $(i32) ptr_i= zero_init;
+			var $(u32) ptr_s= zero_init;
+			s - ptr_i; // Should generate an error even if size of element is same.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 6 ) )

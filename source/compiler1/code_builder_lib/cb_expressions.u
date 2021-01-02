@@ -1840,8 +1840,30 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 	}
 	else if( operator == BinaryOperatorType::Sub && !l_raw_pointer_type.empty() && !r_raw_pointer_type.empty() )
 	{
-		// TODO - subtract pointers.
-		halt;
+		if( l_type != r_type )
+		{
+			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names_scope, src_loc, r_type, l_type, BinaryOperatorToString( operator ) )
+			return ErrorValue();
+		}
+
+		var size_type pointer_size= size_type_.GetFundamentalType().get_ref().GetSize();
+		var U_FundamentalType diff_type= select( pointer_size == 4s ? U_FundamentalType::i32_ : U_FundamentalType::i64_ );
+		var LLVMTypeRef diff_llvm_type= GetFundamentalLLVMType( diff_type );
+
+		res.t= FundamentalType( diff_type, diff_llvm_type );
+
+		unsafe
+		{
+			var u64 element_size= LLVMABISizeOfType( data_layout_, l_raw_pointer_type.get_ref().element_type.GetLLVMType() );
+
+			var LLVMValueRef
+				l_as_int= LLVMBuildPtrToInt( function_context.llvm_ir_builder, l_in_register, diff_llvm_type, "\0"[0] ),
+				r_as_int= LLVMBuildPtrToInt( function_context.llvm_ir_builder, r_in_register, diff_llvm_type, "\0"[0] ),
+				diff= LLVMBuildSub( function_context.llvm_ir_builder, l_as_int, r_as_int, "-\0"[0] ),
+				element_size_contant= LLVMConstInt( diff_llvm_type, element_size, LLVMBool::False ),
+				diff_divided= LLVMBuildSDiv( function_context.llvm_ir_builder, diff, element_size_contant, "/\0"[0] );
+			res.llvm_value= diff_divided;
+		}
 	}
 	else if( operator == BinaryOperatorType::Sub && !l_raw_pointer_type.empty() )
 	{
