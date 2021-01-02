@@ -686,6 +686,12 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			return BlockElementBuildInfo();
 		}
 
+		if( op_result_variable_ref.get_ref().t != l_var.t )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, additive_assignment_operator.src_loc, l_var.t, op_result_variable_ref.get_ref().t )
+			return BlockElementBuildInfo();
+		}
+
 		unsafe
 		{
 			LLVMBuildStore(

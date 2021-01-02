@@ -653,3 +653,35 @@ def RawPointersDifference_Test0():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def AdditiveAssignmentForRawPointers_Test0():
+	c_program_text= """
+		fn Foo() : i32
+		{
+			var [ i32, 3 ] a[ 33, 55, 77 ];
+			var $(i32) mut ptr= $<(a[0]);
+
+			ptr+= 2;
+			ptr-= 1;
+			unsafe{  return $>(ptr);  }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 55 )
+
+
+def AdditiveAssignmentForRawPointers_Test1():
+	c_program_text= """
+		fn Foo() : f64
+		{
+			var f64 f= 67785.5;
+			var $(f64) mut ptr= zero_init;
+			ptr+= ( $<(f) - ptr );
+			unsafe{  return $>(ptr);  }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 67785.5 )

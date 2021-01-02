@@ -281,3 +281,66 @@ def DifferenceBetweenRawPointersWithDifferentTypes_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HaveError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 6 ) )
+
+
+def AdditiveAssignmentErrors_ForRawPointers_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var $(i32) ptr= zero_init;
+			ptr+= 66; // Can not mutate immutable pointer.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 5 ) )
+
+
+def AdditiveAssignmentErrors_ForRawPointers_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var $(i32) mut ptr= zero_init;
+			ptr+= 66.0f; // Can not add float value.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+
+
+def AdditiveAssignmentErrors_ForRawPointers_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var $(i32) mut ptr= zero_init;
+			ptr*= 5; // Can not multiply pointer by integer.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 5 ) )
+
+
+def AdditiveAssignmentErrors_ForRawPointers_Test3():
+	c_program_text= """
+		template<//> struct get_signed_type  </ u32 /> { type t= i32; }
+		template<//> struct get_signed_type  </ u64 /> { type t= i64; }
+		fn Foo()
+		{
+			var $(i32) mut ptr= zero_init;
+			var get_signed_type</size_type/>::t mut i(0);
+			i+= ptr; // Can not add pointer to integer.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "TypesMismatch", 8 ) )
+
+
+def AdditiveAssignmentErrors_ForRawPointers_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			var $(i32) mut ptr0= zero_init, ptr1= zero_init;
+			ptr0-= ptr1; // Can not subtract pointer from pointer.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "TypesMismatch", 5 ) )
