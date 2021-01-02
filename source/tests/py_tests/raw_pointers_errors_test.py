@@ -191,3 +191,66 @@ def AddStructToRawPointer_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 7 ) )
+
+
+def SubtractTooLargeIntegerFromRawPointer_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var $(i32) ptr= zero_init;
+			ptr - i128(666);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+
+
+def SubtractFloatFromRawPointer_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var $(i32) ptr= zero_init;
+			ptr - 17.0f;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+
+
+def SubtructStructFromRawPointer_Test0():
+	c_program_text= """
+		struct S{}
+		fn Foo()
+		{
+			var $(i32) ptr= zero_init;
+			var S s;
+			ptr - s;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 7 ) )
+
+
+def SubtractRawPointer_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var $(i32) ptr= zero_init;
+			66 - ptr;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 5 ) )
+
+
+def SubtractRawPointer_Test1():
+	c_program_text= """
+		struct S{}
+		fn Foo()
+		{
+			var $(i32) ptr= zero_init;
+			S() - ptr;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 6 ) )

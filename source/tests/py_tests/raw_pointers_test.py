@@ -564,3 +564,63 @@ def RawPointerIntegerAdd_Test1():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def RawPointerIntegerSub_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var [ i32, 3 ] a[ 33, 55, 77 ];
+			var $(i32) ptr0= $<(a[0]), ptr1= $<(a[1]), ptr2= $<(a[2]);
+
+			halt if( ptr0 - 0 != ptr0 );
+			halt if( ptr1 - 1 != ptr0 );
+			halt if( ptr2 - 2 != ptr0 );
+			halt if( ptr2 - 1 != ptr1 );
+
+			unsafe
+			{
+				halt if( $>(ptr1 - 1) != 33 );
+				halt if( $>(ptr2 - 2) != 33 );
+				halt if( $>(ptr2 - 1) != 55 );
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def RawPointerIntegerSub_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var [ i32, 3 ] a[ 33, 55, 77 ];
+			var $(i32) ptr0= $<(a[0]), ptr1= $<(a[1]), ptr2= $<(a[2]);
+
+			unsafe
+			{
+				// Subtract signed positive value.
+				halt if( ptr1 - i32(1) != ptr0 );
+				halt if( $>( ptr1 - i32(1) ) != 33 );
+			}
+			unsafe
+			{
+				// Subtract unsigned positive value.
+				halt if( ptr2 - u16(1) != ptr1 );
+				halt if( $>( ptr2 - u16(1) ) != 55 );
+			}
+			unsafe
+			{
+				// Subtract signed negative value value.
+				halt if( ptr0 - i8(-2) != ptr2 );
+				halt if( $>( ptr0 - i8(-2) ) != 77 );
+			}
+			unsafe
+			{
+				// Subtract large unsinged value.
+				halt if( ptr0 - u16(0xFABC) >= ptr0 );
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

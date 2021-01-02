@@ -1772,6 +1772,7 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 
 	if( operator == BinaryOperatorType::Add && ( !l_raw_pointer_type.empty() || !r_raw_pointer_type.empty() ) )
 	{
+		// Add pointer and integer.
 		var size_type pointer_size= size_type_.GetFundamentalType().get_ref().GetSize();
 		var size_type mut int_size(0);
 
@@ -1814,6 +1815,7 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 
 		if( !IsInteger( int_type ) || int_size > pointer_size )
 		{
+			// TODO - maybe generate another error?
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, GetFundamentalTypeName( int_type ) )
 			return ErrorValue();
 		}
@@ -1834,6 +1836,55 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 			}
 
 			res.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, ptr_value, index_value, 1u, "+\0"[0] );
+		}
+	}
+	else if( operator == BinaryOperatorType::Sub && !l_raw_pointer_type.empty() && !r_raw_pointer_type.empty() )
+	{
+		// TODO - subtract pointers.
+		halt;
+	}
+	else if( operator == BinaryOperatorType::Sub && !l_raw_pointer_type.empty() )
+	{
+		// Subtract integer from pointer.
+
+		if( r_fundamental_type.empty() )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, r_type )
+			return ErrorValue();
+		}
+
+		var U_FundamentalType int_type= r_fundamental_type.get_ref().fundamental_type;
+
+		var size_type
+			int_size= r_fundamental_type.get_ref().GetSize(),
+			pointer_size= size_type_.GetFundamentalType().get_ref().GetSize();
+
+		if( !IsInteger( int_type ) || int_size > pointer_size )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, r_type )
+			return ErrorValue();
+		}
+
+		res.t= l_type;
+
+		unsafe
+		{
+			var LLVMValueRef mut sub_value= r_in_register;
+			if( int_size < pointer_size )
+			{
+				var LLVMTypeRef dst_type= size_type_.GetLLVMType();
+				if( IsSignedInteger( int_type ) )
+				{
+					sub_value= LLVMBuildSExt( function_context.llvm_ir_builder, sub_value, dst_type, "\0"[0] );
+				}
+				else
+				{
+					sub_value= LLVMBuildZExt( function_context.llvm_ir_builder, sub_value, dst_type, "\0"[0] );
+				}
+			}
+			auto index_negative= LLVMBuildNeg( function_context.llvm_ir_builder, sub_value, "\0"[0] );
+
+			res.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, l_in_register, index_negative, 1u, "-\0"[0] );
 		}
 	}
 	else if(
