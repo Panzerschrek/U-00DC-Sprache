@@ -471,6 +471,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"RawPointerCopy_Test0",
 		"RawPointerCopy_Test1",
 		"RawPointerCopy_Test2",
+		"RawPointerDeltaOne_Test0",
 		"RawPointerInitializers_Test0",
 		"RawPointerInitializers_Test1",
 		"RawPointerInitializers_Test2",

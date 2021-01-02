@@ -685,3 +685,36 @@ def AdditiveAssignmentForRawPointers_Test1():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 67785.5 )
+
+
+def RawPointerDeltaOne_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var [ i32, 3 ] a[ 33, 55, 77 ];
+			var $(i32) ptr0= $<(a[0]), ptr1= $<(a[1]), ptr2= $<(a[2]);
+
+			auto mut ptr= ptr0;
+
+			unsafe
+			{
+				++ptr;
+				halt if( ptr != ptr1 );
+				halt if( $>(ptr) != 55 );
+
+				++ptr;
+				halt if( ptr != ptr2 );
+				halt if( $>(ptr) != 77 );
+
+				--ptr;
+				halt if( ptr != ptr1 );
+				halt if( $>(ptr) != 55 );
+
+				--ptr;
+				halt if( ptr != ptr0 );
+				halt if( $>(ptr) != 33 );
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
