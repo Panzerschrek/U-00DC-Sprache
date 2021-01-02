@@ -1753,6 +1753,15 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 	auto l_fundamental_type= l_type.GetFundamentalType();
 	auto r_fundamental_type= r_type.GetFundamentalType();
 
+	var bool mut is_float= false, mut is_integer= false, mut is_signed= false;
+	if( !l_fundamental_type.empty() )
+	{
+		auto t= l_fundamental_type.get_ref().fundamental_type;
+		is_float= IsFloatingPoint(t);
+		is_integer= IsInteger(t);
+		is_signed= IsSignedInteger(t);
+	}
+
 	var Variable mut res
 	{
 		.location= Variable::Location::LLVMRegister,
@@ -1783,15 +1792,12 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 			return ErrorValue();
 		}
 
-		var bool is_float= IsFloatingPoint( l_fundamental_type.get_ref().fundamental_type );
-		if( !( IsInteger( l_fundamental_type.get_ref().fundamental_type  ) || is_float ) )
+		if( !( is_integer || is_float ) )
 		{
 			// this operations allowed only for integer and floating point operands.
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
 			return ErrorValue();
 		}
-
-		var bool is_signed= IsSignedInteger( l_fundamental_type.get_ref().fundamental_type );
 
 		res.t= l_type;
 
@@ -1916,7 +1922,7 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 		operator == BinaryOperatorType::ShiftLeft ||
 		operator == BinaryOperatorType::ShiftRight )
 	{
-		if( l_fundamental_type.empty() || !IsInteger( l_fundamental_type.get_ref().fundamental_type ) )
+		if( l_fundamental_type.empty() || !is_integer )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
 			return ErrorValue();
@@ -1977,8 +1983,6 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 			return ErrorValue();
 		}
 
-		var bool is_float= !l_fundamental_type.empty() && IsFloatingPoint( l_fundamental_type.get_ref().fundamental_type );
-
 		res.t= bool_type_;
 
 		// Use ordered floating point compare operations, which result is false for NaN, except !=. nan != nan must be true.
@@ -2026,18 +2030,10 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 			return ErrorValue();
 		}
 
-		var bool mut is_float= false, mut is_signed= false;
-		if( !l_fundamental_type.empty() )
+		if( !l_fundamental_type.empty() && !( is_integer || is_float || IsChar( l_fundamental_type.get_ref().fundamental_type ) ) )
 		{
-			auto t= l_fundamental_type.get_ref().fundamental_type;
-			is_float= IsFloatingPoint(t);
-			is_signed= IsSignedInteger(t);
-
-			if( !( IsInteger(t) || IsChar(t) || is_float ) )
-			{
 				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
 				return ErrorValue();
-			}
 		}
 
 		res.t= bool_type_;
