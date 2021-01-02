@@ -129,3 +129,65 @@ def ValueIsNotPointer_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HaveError( errors_list, "ValueIsNotPointer", 5 ) )
+
+
+def AddTooLargeIntegerToRawPointer_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var $(i32) ptr= zero_init;
+			ptr + i128(1);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+
+
+def AddTooLargeIntegerToRawPointer_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var $(i32) ptr= zero_init;
+			u128(10) + ptr;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+
+
+def AddFloatToRawPointer_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var $(i32) ptr= zero_init;
+			ptr + 17.0f;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+
+
+def AddRawPointerToRawPointer_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var $(i32) ptr= zero_init;
+			ptr + ptr;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+
+
+def AddStructToRawPointer_Test0():
+	c_program_text= """
+		struct S{}
+		fn Foo()
+		{
+			var $(i32) ptr= zero_init;
+			var S s;
+			s + ptr;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 7 ) )

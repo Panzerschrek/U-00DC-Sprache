@@ -505,3 +505,62 @@ def RawPointersCompare_Test1():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def RawPointerIntegerAdd_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var [ i32, 3 ] a[ 33, 55, 77 ];
+			var $(i32) ptr0= $<(a[0]), ptr1= $<(a[1]), ptr2= $<(a[2]);
+
+			halt if( ptr0 + 0 != ptr0 );
+			halt if( 0 + ptr0 != ptr0 );
+
+			halt if( ptr0 + 1 != ptr1 );
+			halt if( 1 + ptr0 != ptr1 );
+
+			halt if( ptr0 + 2 != ptr2 );
+			halt if( 2 + ptr0 != ptr2 );
+
+			halt if( ptr1 + 1 != ptr2 );
+			halt if( 1 + ptr1 != ptr2 );
+
+			halt if( ptr1 + (-1) != ptr0 );
+			halt if( (-1) + ptr1 != ptr0 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def RawPointerIntegerAdd_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var [ i32, 3 ] a[ 33, 55, 77 ];
+			var $(i32) ptr0= $<(a[0]), ptr1= $<(a[1]), ptr2= $<(a[2]);
+
+			// Add signed positive value.
+			halt if( ptr0 + i32(1) != ptr1 );
+			halt if( i32(1) + ptr0 != ptr1 );
+
+			// Add unsigned positive value.
+			halt if( ptr0 + u32(1) != ptr1 );
+			halt if( u32(1) + ptr0 != ptr1 );
+
+			// Add signed negative value.
+			halt if( ptr1 + i32(-1) != ptr0 );
+			halt if( i32(-1) + ptr1 != ptr0 );
+
+			// Add unsigned value of small type.
+			halt if( ptr2 + u8(0xFE) < ptr2 );
+			halt if( u8(0xFE) + ptr2 < ptr2 );
+
+			// Add signed value of small type.
+			halt if( ptr2 + i8(0xFE) != ptr0 );
+			halt if( i8(0xFE) + ptr2 !=  ptr0 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

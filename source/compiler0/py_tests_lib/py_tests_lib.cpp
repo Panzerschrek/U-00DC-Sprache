@@ -438,6 +438,11 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 
 	static const std::unordered_set<std::string> c_tests_to_ignore
 	{
+		"AddFloatToRawPointer_Test0",
+		"AddRawPointerToRawPointer_Test0",
+		"AddStructToRawPointer_Test0",
+		"AddTooLargeIntegerToRawPointer_Test0",
+		"AddTooLargeIntegerToRawPointer_Test1",
 		"PointerToReferenceOperator_Test0",
 		"PointerToReferenceOperator_Test1",
 		"PointerToReferenceOperator_Test2",
@@ -466,6 +471,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"RawPointerInitializers_Test6",
 		"RawPointerInitializers_Test7",
 		"RawPointerInitializers_Test8",
+		"RawPointerIntegerAdd_Test0",
+		"RawPointerIntegerAdd_Test1",
 		"RawPointersCompare_Test0",
 		"RawPointersCompare_Test1",
 		"RawPointerToReferenceConversionOutsideUnsafeBlock_Test0",

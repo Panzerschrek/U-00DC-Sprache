@@ -1752,6 +1752,8 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 	var Type& r_type= r_var.t;
 	auto l_fundamental_type= l_type.GetFundamentalType();
 	auto r_fundamental_type= r_type.GetFundamentalType();
+	auto l_raw_pointer_type= l_type.GetRawPointerType();
+	auto r_raw_pointer_type= r_type.GetRawPointerType();
 
 	var bool mut is_float= false, mut is_integer= false, mut is_signed= false;
 	if( !l_fundamental_type.empty() )
@@ -1768,7 +1770,73 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 		.value_type= ValueType::Value,
 	};
 
-	if(
+	if( operator == BinaryOperatorType::Add && ( !l_raw_pointer_type.empty() || !r_raw_pointer_type.empty() ) )
+	{
+		var size_type pointer_size= size_type_.GetFundamentalType().get_ref().GetSize();
+		var size_type mut int_size(0);
+
+		var LLVMValueRef mut ptr_value= LLVMValueRef::Null, mut index_value= LLVMValueRef::Null;
+		var U_FundamentalType mut int_type= U_FundamentalType::InvalidType;
+
+		if( r_raw_pointer_type.empty() )
+		{
+			if( r_fundamental_type.empty() )
+			{
+				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, r_type )
+				return ErrorValue();
+			}
+			int_type= r_fundamental_type.get_ref().fundamental_type;
+			int_size= r_fundamental_type.get_ref().GetSize();
+
+			res.t= l_type;
+			ptr_value= l_in_register;
+			index_value= r_in_register;
+		}
+		else if( l_raw_pointer_type.empty() )
+		{
+			if( l_fundamental_type.empty() )
+			{
+				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
+				return ErrorValue();
+			}
+			int_type= l_fundamental_type.get_ref().fundamental_type;
+			int_size= l_fundamental_type.get_ref().GetSize();
+
+			res.t= r_type;
+			ptr_value= r_in_register;
+			index_value= l_in_register;
+		}
+		else
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
+			return ErrorValue();
+		}
+
+		if( !IsInteger( int_type ) || int_size > pointer_size )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, GetFundamentalTypeName( int_type ) )
+			return ErrorValue();
+		}
+
+		unsafe
+		{
+			if( int_size < pointer_size )
+			{
+				var LLVMTypeRef dst_type= size_type_.GetLLVMType();
+				if( IsSignedInteger( int_type ) )
+				{
+					index_value= LLVMBuildSExt( function_context.llvm_ir_builder, index_value, dst_type, "\0"[0] );
+				}
+				else
+				{
+					index_value= LLVMBuildZExt( function_context.llvm_ir_builder, index_value, dst_type, "\0"[0] );
+				}
+			}
+
+			res.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, ptr_value, index_value, 1u, "+\0"[0] );
+		}
+	}
+	else if(
 		operator == BinaryOperatorType::Add ||
 		operator == BinaryOperatorType::Sub ||
 		operator == BinaryOperatorType::Mul ||
@@ -1977,7 +2045,7 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names_scope, src_loc, r_type, l_type, BinaryOperatorToString( operator ) )
 			return ErrorValue();
 		}
-		if( l_fundamental_type.empty() && l_type.GetEnumType().empty() && l_type.GetRawPointerType().empty() && l_type.GetFunctionPointerType().empty() )
+		if( l_fundamental_type.empty() && l_type.GetEnumType().empty() && l_raw_pointer_type.empty() && l_type.GetFunctionPointerType().empty() )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
 			return ErrorValue();
@@ -2024,7 +2092,7 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 			return ErrorValue();
 		}
 		// TODO - maybe allow order compare for enums?
-		if( l_fundamental_type.empty() && l_type.GetRawPointerType().empty() )
+		if( l_fundamental_type.empty() && l_raw_pointer_type.empty() )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
 			return ErrorValue();
