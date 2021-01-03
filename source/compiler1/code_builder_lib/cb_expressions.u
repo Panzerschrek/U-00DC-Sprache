@@ -1856,6 +1856,12 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 		{
 			var u64 element_size= LLVMABISizeOfType( data_layout_, l_raw_pointer_type.get_ref().element_type.GetLLVMType() );
 
+			if( element_size == 0u64 )
+			{
+				REPORT_ERROR( DifferenceBetweenRawPointersWithZeroElementSize, names_scope, src_loc, l_type )
+				return ErrorValue();
+			}
+
 			var LLVMValueRef
 				l_as_int= LLVMBuildPtrToInt( function_context.llvm_ir_builder, l_in_register, diff_llvm_type, "\0"[0] ),
 				r_as_int= LLVMBuildPtrToInt( function_context.llvm_ir_builder, r_in_register, diff_llvm_type, "\0"[0] ),

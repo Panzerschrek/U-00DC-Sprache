@@ -283,6 +283,43 @@ def DifferenceBetweenRawPointersWithDifferentTypes_Test1():
 	assert( HaveError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 6 ) )
 
 
+def DifferenceBetweenRawPointersWithZeroElementSize_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var $(tup[]) ptr= zero_init;
+			ptr - ptr;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "DifferenceBetweenRawPointersWithZeroElementSize", 5 ) )
+
+
+def DifferenceBetweenRawPointersWithZeroElementSize_Test1():
+	c_program_text= """
+		struct S{}
+		fn Foo()
+		{
+			var $(S) ptr= zero_init;
+			ptr - ptr;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "DifferenceBetweenRawPointersWithZeroElementSize", 6 ) )
+
+
+def DifferenceBetweenRawPointersWithZeroElementSize_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var $( [ i32, 0 ] ) ptr= zero_init;
+			ptr - ptr;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "DifferenceBetweenRawPointersWithZeroElementSize", 5 ) )
+
+
 def AdditiveAssignmentErrors_ForRawPointers_Test0():
 	c_program_text= """
 		fn Foo()

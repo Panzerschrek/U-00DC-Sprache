@@ -566,6 +566,23 @@ def RawPointerIntegerAdd_Test1():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def RawPointerIntegerAdd_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[] t= zero_init;
+			auto ptr= $<(t);
+
+			// Integer to pointer addition produces pointer value itslef for element types with zero size.
+			halt if( ptr + 1 != ptr );
+			halt if( ptr - 2 != ptr );
+			halt if( ptr + 100 != ptr - 222 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def RawPointerIntegerSub_Test0():
 	c_program_text= """
 		fn Foo()

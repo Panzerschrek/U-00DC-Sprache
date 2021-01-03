@@ -196,3 +196,4 @@ PROCESS_ERROR( UninitializedInitializerOutsideUnsafeBlock, "Unsafe initializer o
 PROCESS_ERROR( ValueIsNotReference, "Value is not a reference. Expected mutable or immutable reference, got immediate value." )
 PROCESS_ERROR( ValueIsNotPointer, "Value of type \"{0}\" is not a pointer." )
 PROCESS_ERROR( RawPointerToReferenceConversionOutsideUnsafeBlock, "Raw pointer to reference conversion outside unsafe block." )
+PROCESS_ERROR( DifferenceBetweenRawPointersWithZeroElementSize, "Can not calculate difference between pointers of type \"{0}\" with zero element size." )
