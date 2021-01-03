@@ -724,6 +724,24 @@ Value CodeBuilder::BuildExpressionCode(
 	return Value( result, ternary_operator.src_loc_ );
 }
 
+Value CodeBuilder::BuildExpressionCode( const Synt::ReferenceToRawPointerOperator& reference_to_raw_pointer_operator, NamesScope& names, FunctionContext& function_context )
+{
+	// TODO
+	(void)reference_to_raw_pointer_operator;
+	(void)names;
+	(void)function_context;
+	return ErrorValue();
+}
+
+Value CodeBuilder::BuildExpressionCode( const Synt::RawPointerToReferenceOperator& raw_pointer_to_reference_operator, NamesScope& names, FunctionContext& function_context )
+{
+	// TODO
+	(void)raw_pointer_to_reference_operator;
+	(void)names;
+	(void)function_context;
+	return ErrorValue();
+}
+
 Value CodeBuilder::BuildExpressionCode(
 	const Synt::TypeNameInExpression& type_name_in_expression,
 	NamesScope& names,

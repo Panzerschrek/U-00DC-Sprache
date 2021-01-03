@@ -34,6 +34,10 @@ TupleType::TupleType( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 
+RawPointerType::RawPointerType( const SrcLoc& src_loc )
+	: SyntaxElementBase(src_loc)
+{}
+
 TypeofTypeName::TypeofTypeName( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
@@ -105,6 +109,14 @@ ExpressionComponentWithUnaryOperators::ExpressionComponentWithUnaryOperators( co
 {}
 
 TernaryOperator::TernaryOperator( const SrcLoc& src_loc )
+	: ExpressionComponentWithUnaryOperators( src_loc )
+{}
+
+ReferenceToRawPointerOperator::ReferenceToRawPointerOperator( const SrcLoc& src_loc )
+	: ExpressionComponentWithUnaryOperators( src_loc )
+{}
+
+RawPointerToReferenceOperator::RawPointerToReferenceOperator( const SrcLoc& src_loc )
 	: ExpressionComponentWithUnaryOperators( src_loc )
 {}
 
