@@ -196,7 +196,7 @@ def ReferenceToPointerOperator_Test0():
 	c_program_text= """
 		fn Foo() : size_type
 		{
-			var i32 x= 0;
+			var i32 mut x= 0;
 			var $(i32) x_ptr= $<(x);
 			unsafe{  return cast_ref_unsafe</size_type/>(x_ptr);  }
 		}
@@ -210,8 +210,8 @@ def ReferenceToPointerOperator_Test1():
 	c_program_text= """
 		fn Foo() : size_type
 		{
-			var i32 x= 0;
-			var $(i32) x_ptr= $<(x);
+			var i32 mut x= 0;
+			var $(i32) mut x_ptr= $<(x);
 			var $($(i32)) x_ptr_ptr= $<(x_ptr);
 			unsafe{  return cast_ref_unsafe</size_type/>(x_ptr_ptr);  }
 		}
@@ -241,7 +241,7 @@ def PointerToReferenceOperator_Test1():
 		fn Foo() : f64
 		{
 			auto mut f= -1.0;
-			var $(f64) f_ptr= $<(f);
+			var $(f64) mut f_ptr= $<(f);
 			auto f_ptr_ptr= $<(f_ptr);
 			unsafe{  $>($>(f_ptr_ptr))= 37.5;  }
 			return f;
@@ -256,7 +256,7 @@ def PointerToReferenceOperator_Test2():
 	c_program_text= """
 		fn Foo() : i32
 		{
-			auto x= 73472;
+			auto mut x= 73472;
 			auto ptr= $<(x);
 			unsafe{  return $>(ptr);  } // Read value, using pointer.
 		}
@@ -270,7 +270,7 @@ def PointerToReferenceOperator_Test3():
 	c_program_text= """
 		fn Foo() : f32
 		{
-			auto x= 654.5f;
+			auto mut x= 654.5f;
 			unsafe{  return $>($<(x));  } // Directly use pointer for conversion to reference
 		}
 	"""
@@ -315,7 +315,7 @@ def RawPointerAssignment_Test2():
 		struct S{ $(char8) ptr; }
 		fn Foo() : char8
 		{
-			var char8 c= "$"c8;
+			var char8 mut c= "$"c8;
 			var S mut s0= zero_init, s1{ .ptr= $<(c) };
 			s0= s1; // Assign struct with pointer inside. Generated assignment operator should assign raw pointers.
 			unsafe{  return $>(s0.ptr);  }
@@ -330,7 +330,7 @@ def RawPointerAssignment_Test3():
 	c_program_text= """
 		fn Foo() : f64
 		{
-			var f64 f= 3.25;
+			var f64 mut f= 3.25;
 			var tup[ f32, $(f64) ] mut t0= zero_init, t1[ 0.0f, $<(f) ];
 			t0= t1; // Assignment should work for pointer member of tuple.
 			unsafe{  return $>(t0[1]);  }
@@ -346,7 +346,7 @@ def RawPointerCopy_Test0():
 		struct S{ $(char8) ptr; }
 		fn Foo() : char8
 		{
-			var char8 c= "E"c8;
+			var char8 mut c= "E"c8;
 			var S s0{ .ptr= $<(c) };
 			var S s1(s0); // Generated copy constructor should copy raw pointer.
 			unsafe{  return $>(s0.ptr);  }
@@ -361,7 +361,7 @@ def RawPointerCopy_Test1():
 	c_program_text= """
 		fn Foo() : f32
 		{
-			var f32 f= 568.125f;
+			var f32 mut f= 568.125f;
 			var tup[ i32, $(f32), bool ] t0[ 5, $<(f), false ], t1= t0; // Should copy pointer in copy-initializer for tuple.
 			unsafe{  return $>(t1[1]);  }
 		}
@@ -375,7 +375,7 @@ def RawPointerCopy_Test2():
 	c_program_text= """
 		fn Foo() : i32
 		{
-			var i32 i= 44445;
+			var i32 mut i= 44445;
 			var [ $(i32), 4 ] a0[ zero_init, zero_init, $<(i), zero_init ], a1(a0); // Should copy pointer in copy-initializer for array.
 			unsafe{  return $>(a1[2]);  }
 		}
@@ -394,7 +394,7 @@ def RawPointerAsFunctionArgument_Test0():
 
 		fn Foo() : i32
 		{
-			var i32 i= 56;
+			var i32 mut i= 56;
 			return DerefAndAdd1( $<(i) );
 		}
 	"""
@@ -482,7 +482,7 @@ def RawPointersCompare_Test1():
 	c_program_text= """
 		fn Foo()
 		{
-			var [ f32, 3 ] a= zero_init;
+			var [ f32, 3 ] mut a= zero_init;
 			var $(f32) ptr0= $<(a[0]), ptr1= $<(a[1]), ptr2= $<(a[2]);
 
 			// <
@@ -538,7 +538,7 @@ def RawPointerIntegerAdd_Test0():
 	c_program_text= """
 		fn Foo()
 		{
-			var [ i32, 3 ] a[ 33, 55, 77 ];
+			var [ i32, 3 ] mut a[ 33, 55, 77 ];
 			var $(i32) ptr0= $<(a[0]), ptr1= $<(a[1]), ptr2= $<(a[2]);
 
 			halt if( ptr0 + 0 != ptr0 );
@@ -565,7 +565,7 @@ def RawPointerIntegerAdd_Test1():
 	c_program_text= """
 		fn Foo()
 		{
-			var [ i32, 3 ] a[ 33, 55, 77 ];
+			var [ i32, 3 ] mut a[ 33, 55, 77 ];
 			var $(i32) ptr0= $<(a[0]), ptr1= $<(a[1]), ptr2= $<(a[2]);
 
 			// Add signed positive value.
@@ -597,7 +597,7 @@ def RawPointerIntegerAdd_Test2():
 	c_program_text= """
 		fn Foo()
 		{
-			var tup[] t= zero_init;
+			var tup[] mut t= zero_init;
 			auto ptr= $<(t);
 
 			// Integer to pointer addition produces pointer value itslef for element types with zero size.
@@ -614,7 +614,7 @@ def RawPointerIntegerSub_Test0():
 	c_program_text= """
 		fn Foo()
 		{
-			var [ i32, 3 ] a[ 33, 55, 77 ];
+			var [ i32, 3 ] mut a[ 33, 55, 77 ];
 			var $(i32) ptr0= $<(a[0]), ptr1= $<(a[1]), ptr2= $<(a[2]);
 
 			halt if( ptr0 - 0 != ptr0 );
@@ -638,7 +638,7 @@ def RawPointerIntegerSub_Test1():
 	c_program_text= """
 		fn Foo()
 		{
-			var [ i32, 3 ] a[ 33, 55, 77 ];
+			var [ i32, 3 ] mut a[ 33, 55, 77 ];
 			var $(i32) ptr0= $<(a[0]), ptr1= $<(a[1]), ptr2= $<(a[2]);
 
 			unsafe
@@ -674,7 +674,7 @@ def RawPointersDifference_Test0():
 	c_program_text= """
 		fn Foo()
 		{
-			var [ i32, 3 ] a= zero_init;
+			var [ i32, 3 ] mut a= zero_init;
 			var $(i32) ptr0= $<(a[0]), ptr1= $<(a[1]), ptr2= $<(a[2]);
 
 			// Difference between pointer is divided by element size.
@@ -703,7 +703,7 @@ def AdditiveAssignmentForRawPointers_Test0():
 	c_program_text= """
 		fn Foo() : i32
 		{
-			var [ i32, 3 ] a[ 33, 55, 77 ];
+			var [ i32, 3 ] mut a[ 33, 55, 77 ];
 			var $(i32) mut ptr= $<(a[0]);
 
 			ptr+= 2;
@@ -720,7 +720,7 @@ def AdditiveAssignmentForRawPointers_Test1():
 	c_program_text= """
 		fn Foo() : f64
 		{
-			var f64 f= 67785.5;
+			var f64 mut f= 67785.5;
 			var $(f64) mut ptr= zero_init;
 			ptr+= ( $<(f) - ptr );
 			unsafe{  return $>(ptr);  }
@@ -735,7 +735,7 @@ def RawPointerDeltaOne_Test0():
 	c_program_text= """
 		fn Foo()
 		{
-			var [ i32, 3 ] a[ 33, 55, 77 ];
+			var [ i32, 3 ] mut a[ 33, 55, 77 ];
 			var $(i32) ptr0= $<(a[0]), ptr1= $<(a[1]), ptr2= $<(a[2]);
 
 			auto mut ptr= ptr0;

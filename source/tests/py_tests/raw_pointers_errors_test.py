@@ -51,6 +51,43 @@ def ValueIsNotReference_Test3():
 	assert( HaveError( errors_list, "ValueIsNotReference", 9 ) )
 
 
+def ExpectedReferenceValue_ForReferenceToRawPointerConversion_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto x= 0;
+			$<(x); // Error, `x` is not mutable
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 5 ) )
+
+
+def ExpectedReferenceValue_ForReferenceToRawPointerConversion_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var [ i32, 4 ] arr= zero_init;
+			$<(arr[2]); // Error, value is not a mutable reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 5 ) )
+
+
+def ExpectedReferenceValue_ForReferenceToRawPointerConversion_Test2():
+	c_program_text= """
+		struct S{ i32 x; f32 y; }
+		fn Foo()
+		{
+			var S s= zero_init;
+			$<(s.y); // Error, value is not a mutable reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 6 ) )
+
+
 def RawPointerToReferenceConversionOutsideUnsafeBlock_Test0():
 	c_program_text= """
 		fn Foo()
@@ -476,7 +513,7 @@ def RawPointerTypeIsNotConstexpr_Test1():
 	c_program_text= """
 		fn constexpr Foo()
 		{
-			auto x= 0;
+			auto mut x= 0;
 			$<(x); // Reference to raw pointer conversion breaks constexpr rules.
 		}
 	"""
@@ -488,7 +525,7 @@ def RawPointerTypeIsNotConstexpr_Test2():
 	c_program_text= """
 		fn constexpr Foo()
 		{
-			auto x= 0;
+			auto mut x= 0;
 			auto ptr= $<(x);
 		}
 	"""
@@ -528,7 +565,7 @@ def RawPointerTypeIsNotConstexpr_Test6():
 	c_program_text= """
 		fn Foo()
 		{
-			auto x= 0;
+			auto mut x= 0;
 			auto constexpr ptr= $<(x);
 		}
 	"""
