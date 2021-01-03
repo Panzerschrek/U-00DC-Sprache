@@ -762,3 +762,38 @@ def RawPointerDeltaOne_Test0():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def Typeinfo_ForRawPointerType_Test0():
+	c_program_text= """
+		auto& ti= typeinfo</ $(i32) />;
+		static_assert( ti.is_raw_pointer );
+		static_assert( ensure_same_type( ti.element_type, typeinfo</i32/> ) );
+
+		template</type T/> fn ensure_same_type( T& a, T& b ) : bool { return true; }
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def Typeinfo_ForRawPointerType_Test1():
+	c_program_text= """
+		// Size of all pointers is same.
+		static_assert( typeinfo</ $(i32) />.size_of == typeinfo</ $(i16) />.size_of );
+		static_assert( typeinfo</ $(f64) />.size_of == typeinfo</ $( tup[ f32, bool, char16 ] ) />.size_of );
+		static_assert( typeinfo</ $(char8) />.size_of == typeinfo</ $( [ i32, 256 ] ) />.size_of );
+
+		// Size of pointer is equal to size of "size_type"
+		static_assert( typeinfo</ $([ f64, 4 ] ) />.size_of == typeinfo</ size_type />.size_of );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def Typeinfo_ForRawPointerType_Test2():
+	c_program_text= """
+		class C{}
+		auto& ti= typeinfo</ $(C) />;
+		static_assert( !ti.is_default_constructible );
+		static_assert( ti.is_copy_constructible );
+		static_assert( ti.is_copy_assignable );
+	"""
+	tests_lib.build_program( c_program_text )
