@@ -20,6 +20,7 @@ struct Function;
 struct FunctionPointer;
 struct Array;
 struct Tuple;
+struct RawPointer;
 class Class;
 struct Enum;
 class Type;
@@ -82,6 +83,8 @@ public:
 	Type( Function&& function_type );
 	Type( const Array& array_type );
 	Type( Array&& array_type );
+	Type( const RawPointer& raw_pointer_type );
+	Type( RawPointer&& raw_pointer_type );
 	Type( const Tuple& tuple_type );
 	Type( Tuple&& tuple_type );
 	Type( ClassProxyPtr class_type );
@@ -96,6 +99,8 @@ public:
 	const FunctionPointer* GetFunctionPointerType() const;
 	Array* GetArrayType();
 	const Array* GetArrayType() const;
+	RawPointer* GetRawPointerType();
+	const RawPointer* GetRawPointerType() const;
 	Tuple* GetTupleType();
 	const Tuple* GetTupleType() const;
 	ClassProxyPtr GetClassTypeProxy() const;
@@ -128,11 +133,13 @@ private:
 	using FunctionPtr= std::unique_ptr<Function>;
 	using FunctionPointerPtr= std::unique_ptr<FunctionPointer>;
 	using ArrayPtr= std::unique_ptr<Array>;
+	using RawPointerPtr= std::unique_ptr<RawPointer>;
 
 	std::variant<
 		FundamentalType,
 		FunctionPtr,
 		ArrayPtr,
+		RawPointerPtr,
 		ClassProxyPtr,
 		EnumPtr,
 		FunctionPointerPtr,
@@ -152,6 +159,15 @@ struct Array final
 
 bool operator==( const Array& r, const Array& l );
 bool operator!=( const Array& r, const Array& l );
+
+struct RawPointer final
+{
+	Type type;
+	llvm::PointerType* llvm_type= nullptr;
+};
+
+bool operator==( const RawPointer& r, const RawPointer& l );
+bool operator!=( const RawPointer& r, const RawPointer& l );
 
 struct Function final
 {

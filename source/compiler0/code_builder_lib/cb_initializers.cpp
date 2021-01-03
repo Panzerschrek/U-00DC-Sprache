@@ -277,7 +277,9 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
-	if( variable.type.GetFundamentalType() != nullptr || variable.type.GetEnumType() != nullptr )
+	if( variable.type.GetFundamentalType() != nullptr ||
+		variable.type.GetRawPointerType() != nullptr ||
+		variable.type.GetEnumType() != nullptr )
 	{
 		const Variable expression_result= BuildExpressionCodeEnsureVariable( initializer.expression, names, function_context );
 		if( expression_result.type != variable.type )
@@ -400,6 +402,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 {
 	if( variable.type.GetFundamentalType() != nullptr ||
 		variable.type.GetEnumType() != nullptr ||
+		variable.type.GetRawPointerType() != nullptr ||
 		variable.type.GetFunctionPointerType() != nullptr )
 	{
 		// "0" for numbers, "false" for boolean type, first element for enums, "nullptr" for function pointers.
@@ -690,7 +693,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 		return llvm::dyn_cast<llvm::Constant>(value_for_assignment);
 	}
-	else if( variable.type.GetEnumType() != nullptr )
+	else if( variable.type.GetEnumType() != nullptr || variable.type.GetRawPointerType() != nullptr )
 	{
 		if( call_operator.arguments_.size() != 1u )
 		{

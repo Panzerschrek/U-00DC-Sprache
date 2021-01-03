@@ -1393,7 +1393,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		if( l_var.node != nullptr && function_context.variables_state.HaveOutgoingLinks( l_var.node ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), assignment_operator.src_loc_, l_var.node->name );
 
-		if( l_var.type.GetFundamentalType() != nullptr || l_var.type.GetEnumType() != nullptr || l_var.type.GetFunctionPointerType() != nullptr )
+		if( l_var.type.GetFundamentalType() != nullptr ||
+			l_var.type.GetEnumType() != nullptr ||
+			l_var.type.GetRawPointerType() != nullptr ||
+			l_var.type.GetFunctionPointerType() != nullptr )
 		{
 			if( l_var.location != Variable::Location::Pointer )
 			{

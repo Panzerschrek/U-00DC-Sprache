@@ -131,6 +131,16 @@ Type::Type( Array&& array_type )
 	something_= std::make_unique<Array>( std::move( array_type ) );
 }
 
+Type::Type( const RawPointer& raw_pointer_type )
+{
+	something_= std::make_unique<RawPointer>( raw_pointer_type );
+}
+
+Type::Type( RawPointer&& raw_pointer_type )
+{
+	something_= std::make_unique<RawPointer>( std::move( raw_pointer_type ) );
+}
+
 Type::Type( const Tuple& tuple_type )
 {
 	something_= tuple_type;
@@ -178,6 +188,12 @@ Type& Type::operator=( const Type& other )
 			this_.something_= std::make_unique<Array>( *array );
 		}
 
+		void operator()( const RawPointerPtr& raw_pointer )
+		{
+			U_ASSERT( raw_pointer != nullptr );
+			this_.something_= std::make_unique<RawPointer>( *raw_pointer );
+		}
+
 		void operator()( const Tuple& tuple )
 		{
 			this_.something_= tuple;
@@ -204,7 +220,6 @@ Type& Type::operator=( const Type& other )
 	std::visit( visitor, other.something_ );
 	return *this;
 }
-
 
 FundamentalType* Type::GetFundamentalType()
 {
@@ -262,6 +277,22 @@ const Array* Type::GetArrayType() const
 	if( array_type == nullptr )
 		return nullptr;
 	return array_type->get();
+}
+
+RawPointer* Type::GetRawPointerType()
+{
+	RawPointerPtr* const raw_pointer_type= std::get_if<RawPointerPtr>( &something_ );
+	if( raw_pointer_type == nullptr )
+		return nullptr;
+	return raw_pointer_type->get();
+}
+
+const RawPointer* Type::GetRawPointerType() const
+{
+	const RawPointerPtr* const raw_pointer_type= std::get_if<RawPointerPtr>( &something_ );
+	if( raw_pointer_type == nullptr )
+		return nullptr;
+	return raw_pointer_type->get();
 }
 
 Tuple* Type::GetTupleType()
@@ -357,12 +388,11 @@ bool Type::IsDefaultConstructible() const
 
 bool Type::IsCopyConstructible() const
 {
-	if( std::get_if<FundamentalType>( &something_ ) != nullptr ||
-		std::get_if<EnumPtr>( &something_ ) != nullptr ||
-		std::get_if<FunctionPointerPtr>( &something_ ) != nullptr )
-	{
+	if( GetFundamentalType() != nullptr ||
+		GetEnumType() != nullptr ||
+		GetRawPointerType() != nullptr ||
+		GetFunctionPointerType() != nullptr )
 		return true;
-	}
 	else if( const ClassProxyPtr* const class_= std::get_if<ClassProxyPtr>( &something_ ) )
 	{
 		U_ASSERT( *class_ != nullptr && (*class_)->class_ != nullptr );
@@ -386,7 +416,10 @@ bool Type::IsCopyConstructible() const
 
 bool Type::IsCopyAssignable() const
 {
-	if( GetFundamentalType() != nullptr || GetEnumType() != nullptr || GetFunctionPointerType() != nullptr )
+	if( GetFundamentalType() != nullptr ||
+		GetEnumType() != nullptr ||
+		GetRawPointerType() != nullptr ||
+		GetFunctionPointerType() != nullptr )
 		return true;
 	else if( const ClassProxyPtr* const class_= std::get_if<ClassProxyPtr>( &something_ ) )
 	{
@@ -440,6 +473,9 @@ bool Type::CanBeConstexpr() const
 	{
 		return true;
 	}
+
+	// Raw pointer type is not constexpr.
+
 	else if( const ArrayPtr* const array= std::get_if<ArrayPtr>( &something_ ) )
 	{
 		U_ASSERT( *array != nullptr );
@@ -532,6 +568,12 @@ llvm::Type* Type::GetLLVMType() const
 			return array->llvm_type;
 		}
 
+		llvm::Type* operator()( const RawPointerPtr& raw_pointer ) const
+		{
+			U_ASSERT( array != nullptr );
+			return raw_pointer->llvm_type;
+		}
+
 		llvm::Type* operator()( const Tuple& tuple ) const
 		{
 			return tuple.llvm_type;
@@ -576,6 +618,11 @@ std::string Type::ToString() const
 			return
 				"[ " + array->type.ToString() + ", " +
 				std::to_string( array->size ) + " ]";
+		}
+
+		std::string operator()( const RawPointerPtr& raw_pointer ) const
+		{
+			return "$( " + raw_pointer->type.ToString() + " )";
 		}
 
 		std::string operator()( const Tuple& tuple ) const
@@ -693,6 +740,11 @@ size_t Type::Hash() const
 			return llvm::hash_combine( array->type.Hash(), array->size );
 		}
 
+		size_t operator()( const RawPointerPtr& raw_pointer ) const
+		{
+			return raw_pointer->type.Hash();
+		}
+
 		size_t operator()( const Tuple& tuple ) const
 		{
 			size_t hash= 0;
@@ -763,17 +815,21 @@ bool operator==( const Type& l, const Type& r )
 	}
 	else if( l.something_.index() == 3 )
 	{
-		return l.GetClassTypeProxy() == r.GetClassTypeProxy();
+		return *l.GetRawPointerType() == *r.GetRawPointerType();
 	}
 	else if( l.something_.index() == 4 )
 	{
-		return l.GetEnumType() == r.GetEnumType();
+		return l.GetClassTypeProxy() == r.GetClassTypeProxy();
 	}
 	else if( l.something_.index() == 5 )
 	{
-		return *l.GetFunctionPointerType() == *r.GetFunctionPointerType();
+		return l.GetEnumType() == r.GetEnumType();
 	}
 	else if( l.something_.index() == 6 )
+	{
+		return *l.GetFunctionPointerType() == *r.GetFunctionPointerType();
+	}
+	else if( l.something_.index() == 7 )
 	{
 		return *l.GetTupleType() == *r.GetTupleType();
 	}
@@ -797,6 +853,16 @@ bool operator==( const Array& l, const Array& r )
 }
 
 bool operator!=( const Array& l, const Array& r )
+{
+	return !( l == r );
+}
+
+bool operator==( const RawPointer& l, const RawPointer& r )
+{
+	return l.type == r.type;
+}
+
+bool operator!=( const RawPointer& l, const RawPointer& r )
 {
 	return !( l == r );
 }

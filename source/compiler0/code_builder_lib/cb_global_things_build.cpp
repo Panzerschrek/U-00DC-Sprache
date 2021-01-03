@@ -130,6 +130,8 @@ bool CodeBuilder::IsTypeComplete( const Type& type ) const
 		return enum_type->syntax_element == nullptr;
 	else if( const auto array_type= type.GetArrayType() )
 		return IsTypeComplete( array_type->type );
+	else if( type.GetRawPointerType() != nullptr )
+		return true; // Pointer is always complete.
 	else if( const auto tuple_type= type.GetTupleType() )
 	{
 		bool all_complete= true;
@@ -161,6 +163,8 @@ bool CodeBuilder::EnsureTypeComplete( const Type& type )
 	}
 	else if( const auto array_type= type.GetArrayType() )
 		return EnsureTypeComplete( array_type->type );
+	else if( type.GetRawPointerType() != nullptr )
+		return true; // Pointer is always complete.
 	else if( const auto tuple_type= type.GetTupleType() )
 	{
 		bool ok= true;

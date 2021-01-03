@@ -166,11 +166,11 @@ Type CodeBuilder::PrepareType( const Synt::TupleType& tuple_type_name, NamesScop
 
 Type CodeBuilder::PrepareType( const Synt::RawPointerType& raw_pointer_type_name, NamesScope& names_scope, FunctionContext& function_context )
 {
-	// TODO
-	(void)raw_pointer_type_name;
-	(void)names_scope;
-	(void)function_context;
-	return invalid_type_;
+	RawPointer raw_pointer;
+	raw_pointer.type= PrepareType( *raw_pointer_type_name.element_type, names_scope, function_context );
+	raw_pointer.llvm_type= raw_pointer.type.GetLLVMType()->getPointerTo();
+
+	return raw_pointer;
 }
 
 Type CodeBuilder::PrepareType( const Synt::NamedTypeName& named_type_name, NamesScope& names_scope, FunctionContext& function_context )
