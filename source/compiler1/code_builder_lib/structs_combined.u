@@ -709,11 +709,13 @@ fn Type::IsCopyAssignable( this ) : bool
 
 fn Type::CanBeConstexpr( this ) : bool
 {
-	// TODO - what about raw pointer type?
 	if( !GetFundamentalType().empty() || !GetEnumType().empty() || !GetFunctionPointerType().empty() )
 	{
 		return true;
 	}
+
+	// Raw pointer type is not constexpr, because pointer dereference and pointer arithmetic can break functional purity of constexpr functions.
+
 	if_var( &array_type : GetArrayType() )
 	{
 		return array_type.element_type.CanBeConstexpr();

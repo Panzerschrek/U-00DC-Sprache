@@ -459,3 +459,78 @@ def UsingIncompleteType_ForRawPointerArithmetic_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HaveError( errors_list, "UsingIncompleteType", 6 ) )
+
+
+def RawPointerTypeIsNotConstexpr_Test0():
+	c_program_text= """
+		fn constexpr Foo()
+		{
+			var $(i32) ptr= zero_init;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ConstexprFunctionContainsUnallowedOperations", 2 ) )
+
+
+def RawPointerTypeIsNotConstexpr_Test1():
+	c_program_text= """
+		fn constexpr Foo()
+		{
+			auto x= 0;
+			$<(x); // Reference to raw pointer conversion breaks constexpr rules.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ConstexprFunctionContainsUnallowedOperations", 2 ) )
+
+
+def RawPointerTypeIsNotConstexpr_Test2():
+	c_program_text= """
+		fn constexpr Foo()
+		{
+			auto x= 0;
+			auto ptr= $<(x);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ConstexprFunctionContainsUnallowedOperations", 2 ) )
+
+
+def RawPointerTypeIsNotConstexpr_Test3():
+	c_program_text= """
+		fn constexpr Foo( $(i32) ptr ){}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "InvalidTypeForConstexprFunction", 2 ) )
+
+
+def RawPointerTypeIsNotConstexpr_Test4():
+	c_program_text= """
+		struct S{ $(i32) ptr; }
+		fn constexpr Foo( S s ){}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "InvalidTypeForConstexprFunction", 3 ) )
+
+
+def RawPointerTypeIsNotConstexpr_Test5():
+	c_program_text= """
+		fn Foo()
+		{
+			var $(i32) constexpr ptr= zero_init;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "InvalidTypeForConstantExpressionVariable", 4 ) )
+
+
+def RawPointerTypeIsNotConstexpr_Test6():
+	c_program_text= """
+		fn Foo()
+		{
+			auto x= 0;
+			auto constexpr ptr= $<(x);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 5 ) )
