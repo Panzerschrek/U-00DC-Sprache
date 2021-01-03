@@ -1677,6 +1677,14 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 	}
 	else if( !variable.t.GetRawPointerType().empty() )
 	{
+		var Type& element_type= variable.t.GetRawPointerType().get_ref().element_type;
+		if( !EnsureTypeComplete( element_type ) )
+		{
+			// Complete types required for pointer arithmetic.
+			REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, element_type )
+			return;
+		}
+
 		var LLVMValueRef pointer_value= CreateMoveToLLVMRegisterInstruction( variable, function_context );
 		auto& op_name= select( delta > 0 ? "++\0" : "--\0" );
 		unsafe

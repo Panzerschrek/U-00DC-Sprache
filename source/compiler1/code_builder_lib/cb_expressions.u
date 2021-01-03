@@ -1743,7 +1743,7 @@ fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionC
 	return move(r);
 }
 
-fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& l_var, Variable& r_var, BinaryOperatorType operator, SrcLoc& src_loc ) : Value
+fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& l_var, Variable& r_var, BinaryOperatorType operator, SrcLoc& src_loc ) : Value
 {
 	auto l_in_register= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
 	auto r_in_register= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
@@ -1813,6 +1813,15 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 			return ErrorValue();
 		}
 
+		{
+			var Type& element_type= res.t.GetRawPointerType().get_ref().element_type;
+			if( !EnsureTypeComplete( element_type ) )
+			{
+				// Complete types required for pointer arithmetic.
+				REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, element_type )
+				return ErrorValue();
+			}
+		}
 		if( !IsInteger( int_type ) || int_size > pointer_size )
 		{
 			// TODO - maybe generate another error?
@@ -1843,6 +1852,14 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 		if( l_type != r_type )
 		{
 			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names_scope, src_loc, r_type, l_type, BinaryOperatorToString( operator ) )
+			return ErrorValue();
+		}
+
+		var Type& element_type= l_raw_pointer_type.get_ref().element_type;
+		if( !EnsureTypeComplete( element_type ) )
+		{
+			// Complete types required for pointer arithmetic.
+			REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, element_type )
 			return ErrorValue();
 		}
 
@@ -1890,6 +1907,14 @@ fn CodeBuilder::BuildBinaryOperator( this, NamesScopePtr& names_scope, FunctionC
 		if( !IsInteger( int_type ) || int_size > pointer_size )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, r_type )
+			return ErrorValue();
+		}
+
+		var Type& element_type= l_raw_pointer_type.get_ref().element_type;
+		if( !EnsureTypeComplete( element_type ) )
+		{
+			// Complete types required for pointer arithmetic.
+			REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, element_type )
 			return ErrorValue();
 		}
 
