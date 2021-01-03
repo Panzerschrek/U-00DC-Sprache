@@ -122,6 +122,18 @@ struct TernaryOperator
 	[ ust::shared_ptr_final</Expression/>, 2 ] branches;
 }
 
+struct ReferenceToRawPointerOperator
+{
+	SrcLoc src_loc;
+	ust::shared_ptr_final</Expression/> expression;
+}
+
+struct RawPointerToReferenceOperator
+{
+	SrcLoc src_loc;
+	ust::shared_ptr_final</Expression/> expression;
+}
+
 struct BinaryOperator
 {
 	SrcLoc src_loc;
@@ -196,6 +208,8 @@ type Expression= ust::variant</ tup[
 	MoveOperator,
 	TakeOperator,
 	TernaryOperator,
+	ReferenceToRawPointerOperator,
+	RawPointerToReferenceOperator,
 	BinaryOperator,
 	BracketExpression,
 	IndexationOperator,
@@ -221,6 +235,12 @@ struct TupleType
 {
 	SrcLoc src_loc;
 	ust::vector</ TypeName /> elements;
+}
+
+struct RawPointerType
+{
+	SrcLoc src_loc;
+	TypeName element_type;
 }
 
 struct FunctionType
@@ -257,6 +277,7 @@ type TypeName= ust::variant</ tup[
 	ComplexName,
 	ust::box</ArrayType/>,
 	ust::box</TupleType/>,
+	ust::box</RawPointerType/>,
 	ust::box</FunctionType/>
 	] />;
 

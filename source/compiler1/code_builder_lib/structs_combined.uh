@@ -65,6 +65,15 @@ struct TupleType
 	op!=( TupleType& l, TupleType& r ) : bool;
 }
 
+struct RawPointerType
+{
+	Type element_type;
+	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
+
+	op==( RawPointerType& l, RawPointerType& r ) : bool;
+	op!=( RawPointerType& l, RawPointerType& r ) : bool;
+}
+
 struct FunctionType
 {
 	struct Param
@@ -217,6 +226,7 @@ public:
 	fn conversion_constructor( FundamentalType mut fundamental_type );
 	fn conversion_constructor( ArrayType mut array_type );
 	fn conversion_constructor( TupleType mut tuple_type );
+	fn conversion_constructor( RawPointerType mut raw_pointer_type );
 	fn conversion_constructor( FunctionType mut function_type );
 	fn conversion_constructor( FunctionPointerType mut function_pointer_type );
 	fn conversion_constructor( ClassTypePtr mut class_type );
@@ -230,6 +240,9 @@ public:
 
 	fn GetTupleType(  mut this ) : ust::optional_ref</TupleType, true  />'this';
 	fn GetTupleType( imut this ) : ust::optional_ref</TupleType, false />'this';
+
+	fn GetRawPointerType(  mut this ) : ust::optional_ref</RawPointerType, true  />'this';
+	fn GetRawPointerType( imut this ) : ust::optional_ref</RawPointerType, false />'this';
 
 	fn GetFunctionType(  mut this ) : ust::optional_ref</FunctionType, true  />'this';
 	fn GetFunctionType( imut this ) : ust::optional_ref</FunctionType, false />'this';
@@ -266,6 +279,7 @@ private:
 		FundamentalType,
 		ust::box</ArrayType/>,
 		ust::box</TupleType/>,
+		ust::box</RawPointerType/>,
 		ust::box</FunctionType/>,
 		ust::box</FunctionPointerType/>,
 		ClassTypePtr,

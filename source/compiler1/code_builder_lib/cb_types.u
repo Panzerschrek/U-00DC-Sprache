@@ -112,6 +112,19 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 	return move(out_tuple_type);
 }
 
+fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::RawPointerType/>& raw_pointer_type ) : Type
+{
+	return PrepareType( names_scope, function_context, raw_pointer_type.get_ref() );
+}
+
+fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RawPointerType& raw_pointer_type ) : Type
+{
+	var RawPointerType mut out_type{ .element_type = PrepareType( names_scope, function_context, raw_pointer_type.element_type ) };
+	unsafe{  out_type.llvm_type= LLVMPointerType( out_type.element_type.GetLLVMType(), 0u );  }
+
+	return move(out_type);
+}
+
 fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type_ptr ) : Type
 {
 	return PrepareType( names_scope, function_context, function_type_ptr.get_ref() );

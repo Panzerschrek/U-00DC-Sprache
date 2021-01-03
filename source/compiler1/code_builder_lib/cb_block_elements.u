@@ -605,7 +605,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	else
 	{
 		auto r= BuildExpressionCodeEnsureVariable( names_scope, function_context, assignment_operator.r.get_ref() );
-		if( r.t.GetFundamentalType().empty() && r.t.GetEnumType().empty() && r.t.GetFunctionPointerType().empty() )
+		if( r.t.GetFundamentalType().empty() && r.t.GetEnumType().empty() && r.t.GetRawPointerType().empty() && r.t.GetFunctionPointerType().empty() )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, assignment_operator.src_loc, r.t )
 			return BlockElementBuildInfo();
@@ -683,6 +683,12 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		auto op_result_variable_ref= op_result.get</Variable/>();
 		if( op_result_variable_ref.empty() )
 		{
+			return BlockElementBuildInfo();
+		}
+
+		if( op_result_variable_ref.get_ref().t != l_var.t )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, additive_assignment_operator.src_loc, l_var.t, op_result_variable_ref.get_ref().t )
 			return BlockElementBuildInfo();
 		}
 
@@ -1650,22 +1656,49 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 		}
 	}
 
-	// Process operator for fundamental type.
+	if( !variable.t.GetFundamentalType().empty() )
+	{
+		// Process operator for fundamental type.
+		if( !IsInteger( variable.t.GetFundamentalType().get_ref().fundamental_type ) )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, variable.t )
+			return;
+		}
 
-	if( variable.t.GetFundamentalType().empty() || !IsInteger( variable.t.GetFundamentalType().get_ref().fundamental_type ) )
+		unsafe
+		{
+			auto operand_value= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+			auto one_value= LLVMConstInt( variable.t.GetLLVMType(), 1u64, LLVMBool::True );
+			auto result_value= select( delta > 0
+				? LLVMBuildAdd( function_context.llvm_ir_builder, operand_value, one_value, "++\0"[0] )
+				: LLVMBuildSub( function_context.llvm_ir_builder, operand_value, one_value, "--\0"[0] ) );
+			LLVMBuildStore( function_context.llvm_ir_builder, result_value, variable.llvm_value );
+		}
+	}
+	else if( !variable.t.GetRawPointerType().empty() )
+	{
+		var Type& element_type= variable.t.GetRawPointerType().get_ref().element_type;
+		if( !EnsureTypeComplete( element_type ) )
+		{
+			// Complete types required for pointer arithmetic.
+			REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, element_type )
+			return;
+		}
+
+		var LLVMValueRef pointer_value= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+		auto& op_name= select( delta > 0 ? "++\0" : "--\0" );
+		unsafe
+		{
+			var LLVMValueRef
+				delta_value= LLVMConstInt( size_type_.GetLLVMType(), u64(i64(delta)), LLVMBool::True ),
+				result_value= LLVMBuildGEP( function_context.llvm_ir_builder, pointer_value, delta_value, 1u, op_name[0] );
+			LLVMBuildStore( function_context.llvm_ir_builder, result_value, variable.llvm_value );
+		}
+	}
+	else
 	{
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, variable.t )
 		return;
-	}
-
-	unsafe
-	{
-		auto operand_value= CreateMoveToLLVMRegisterInstruction( variable, function_context );
-		auto one_value= LLVMConstInt( variable.t.GetLLVMType(), 1u64, LLVMBool::True );
-		auto result_value= select( delta > 0
-			? LLVMBuildAdd( function_context.llvm_ir_builder, operand_value, one_value, "++\0"[0] )
-			: LLVMBuildSub( function_context.llvm_ir_builder, operand_value, one_value, "--\0"[0] ) );
-		LLVMBuildStore( function_context.llvm_ir_builder, result_value, variable.llvm_value );
 	}
 
 	CallDestructorsForTopVariablesFrame( names_scope, function_context, src_loc );

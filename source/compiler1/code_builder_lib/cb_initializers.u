@@ -22,7 +22,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Expression& expression_initializer ) : LLVMValueRef
 {
 	auto src_loc= Synt::GetSrcLoc(expression_initializer);
-	if( !variable.t.GetFundamentalType().empty() || !variable.t.GetEnumType().empty() )
+	if( !variable.t.GetFundamentalType().empty() || !variable.t.GetEnumType().empty() || !variable.t.GetRawPointerType().empty() )
 	{
 		auto expr_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression_initializer );
 		if( expr_result.t != variable.t )
@@ -448,7 +448,10 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ZeroInitializer& zero_initializer ) : LLVMValueRef
 {
-	if( !variable.t.GetFundamentalType().empty() || !variable.t.GetEnumType().empty() || !variable.t.GetFunctionPointerType().empty() )
+	if( !variable.t.GetFundamentalType().empty() ||
+		!variable.t.GetEnumType().empty() ||
+		!variable.t.GetRawPointerType().empty() ||
+		!variable.t.GetFunctionPointerType().empty() )
 	{
 		// Currently, first element of enum have zero value.
 		unsafe
@@ -827,7 +830,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 		// Copy constructor for constexpr type is trivial, so, we can just take constexpr value of source.
 		return expr_result.constexpr_value;
 	}
-	if_var( &enum_type : variable.t.GetEnumType() )
+	if( !variable.t.GetEnumType().empty() || !variable.t.GetRawPointerType().empty() )
 	{
 		if( args.size() != 1s )
 		{

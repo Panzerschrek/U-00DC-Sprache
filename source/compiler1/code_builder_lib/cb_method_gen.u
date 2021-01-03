@@ -745,7 +745,11 @@ fn CodeBuilder::TryGenerateDestructor( this, ClassTypePtr& class_type )
 
 fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, SrcLoc& src_loc )
 {
-	if( !t.GetFundamentalType().empty() || !t.GetEnumType().empty() || !t.GetFunctionPointerType().empty() )
+	if(
+		!t.GetFundamentalType().empty() ||
+		!t.GetEnumType().empty() ||
+		!t.GetRawPointerType().empty() ||
+		!t.GetFunctionPointerType().empty() )
 	{
 		unsafe
 		{
@@ -834,7 +838,11 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 
 fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, SrcLoc& src_loc )
 {
-	if( !t.GetFundamentalType().empty() || !t.GetEnumType().empty() || !t.GetFunctionPointerType().empty() )
+	if(
+		!t.GetFundamentalType().empty() ||
+		!t.GetEnumType().empty() ||
+		!t.GetRawPointerType().empty() ||
+		!t.GetFunctionPointerType().empty() )
 	{
 		unsafe
 		{
