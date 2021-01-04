@@ -570,4 +570,4 @@ def RawPointerTypeIsNotConstexpr_Test6():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 5 ) )
+	assert( HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 5 ) or HaveError( errors_list, "InvalidTypeForConstantExpressionVariable", 5 ) )

@@ -438,13 +438,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 
 	static const std::unordered_set<std::string> c_tests_to_ignore
 	{
-		"RawPointerTypeIsNotConstexpr_Test0",
-		"RawPointerTypeIsNotConstexpr_Test1",
-		"RawPointerTypeIsNotConstexpr_Test2",
-		"RawPointerTypeIsNotConstexpr_Test3",
-		"RawPointerTypeIsNotConstexpr_Test4",
-		"RawPointerTypeIsNotConstexpr_Test5",
-		"RawPointerTypeIsNotConstexpr_Test6",
 		"TemplateParametersDeductionFailed_Test11",
 	};
 
