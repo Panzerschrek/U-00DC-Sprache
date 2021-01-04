@@ -1444,14 +1444,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			additive_assignment_operator.src_loc_,
 			names,
 			function_context ) == std::nullopt )
-	{ // Here process default additive assignment operators for fundamental types.
+	{ // Here process default additive assignment operators for fundamental types or raw pointers.
 		Variable r_var=
 			BuildExpressionCodeEnsureVariable(
 				additive_assignment_operator.r_value_,
 				names,
 				function_context );
 
-		if( r_var.type.GetFundamentalType() != nullptr )
+		if( r_var.type.GetFundamentalType() != nullptr || r_var.type.GetRawPointerType() != nullptr )
 		{
 			// We must read value, because referenced by reference value may be changed in l_var evaluation.
 			if( r_var.location != Variable::Location::LLVMRegister )
@@ -1472,47 +1472,45 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		if( l_var.type == invalid_type_ || r_var.type == invalid_type_ )
 			return BlockBuildInfo();
 
+		if( l_var.value_type != ValueType::Reference )
+		{
+			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), additive_assignment_operator.src_loc_ );
+			return BlockBuildInfo();
+		}
+
 		// Check references of destination.
 		if( l_var.node != nullptr && function_context.variables_state.HaveOutgoingLinks( l_var.node ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), additive_assignment_operator.src_loc_, l_var.node->name );
 
-		const FundamentalType* const l_var_fundamental_type= l_var.type.GetFundamentalType();
-		const FundamentalType* const r_var_fundamental_type= r_var.type.GetFundamentalType();
-		if( l_var_fundamental_type != nullptr && r_var_fundamental_type != nullptr )
-		{
-			// Generate binary operator and assignment for fundamental types.
-			const Value operation_result_value=
-				BuildBinaryOperator(
-					l_var, r_var,
-					additive_assignment_operator.additive_operation_,
-					additive_assignment_operator.src_loc_,
-					names,
-					function_context );
-			if( operation_result_value.GetVariable() == nullptr ) // Not variable in case of error or if template-dependent stuff.
-				return BlockBuildInfo();
-			const Variable& operation_result= *operation_result_value.GetVariable();
-
-			if( l_var.value_type != ValueType::Reference )
-			{
-				REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), additive_assignment_operator.src_loc_ );
-				return BlockBuildInfo();
-			}
-
-			if( operation_result.type != l_var.type )
-			{
-				REPORT_ERROR( TypesMismatch, names.GetErrors(), additive_assignment_operator.src_loc_, l_var.type, operation_result.type );
-				return BlockBuildInfo();
-			}
-
-			U_ASSERT( l_var.location == Variable::Location::Pointer );
-			llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( operation_result, function_context );
-			function_context.llvm_ir_builder.CreateStore( value_in_register, l_var.llvm_value );
-		}
-		else
+		// Allow additive assignment operators only for fundamentals and raw pointers.
+		if( !( l_var.type.GetFundamentalType() != nullptr || l_var.type.GetRawPointerType() != nullptr ) )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), additive_assignment_operator.src_loc_, l_var.type );
 			return BlockBuildInfo();
 		}
+
+		// Generate binary operator and assignment for fundamental types.
+		const Value operation_result_value=
+			BuildBinaryOperator(
+				l_var, r_var,
+				additive_assignment_operator.additive_operation_,
+				additive_assignment_operator.src_loc_,
+				names,
+				function_context );
+		if( operation_result_value.GetVariable() == nullptr ) // Not variable in case of error.
+			return BlockBuildInfo();
+
+		const Variable& operation_result= *operation_result_value.GetVariable();
+
+		if( operation_result.type != l_var.type )
+		{
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), additive_assignment_operator.src_loc_, l_var.type, operation_result.type );
+			return BlockBuildInfo();
+		}
+
+		U_ASSERT( l_var.location == Variable::Location::Pointer );
+		llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( operation_result, function_context );
+		function_context.llvm_ir_builder.CreateStore( value_in_register, l_var.llvm_value );
 	}
 	// Destruct temporary variables of right and left expressions.
 	CallDestructors( temp_variables_storage, names, function_context, additive_assignment_operator.src_loc_ );

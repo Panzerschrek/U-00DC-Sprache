@@ -438,13 +438,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 
 	static const std::unordered_set<std::string> c_tests_to_ignore
 	{
-		"AdditiveAssignmentErrors_ForRawPointers_Test0",
-		"AdditiveAssignmentErrors_ForRawPointers_Test1",
-		"AdditiveAssignmentErrors_ForRawPointers_Test2",
-		"AdditiveAssignmentErrors_ForRawPointers_Test3",
-		"AdditiveAssignmentErrors_ForRawPointers_Test4",
-		"AdditiveAssignmentForRawPointers_Test0",
-		"AdditiveAssignmentForRawPointers_Test1",
 		"RawPointerDeltaOne_Test0",
 		"RawPointerTypeIsNotConstexpr_Test0",
 		"RawPointerTypeIsNotConstexpr_Test1",
@@ -458,7 +451,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"Typeinfo_ForRawPointerType_Test1",
 		"Typeinfo_ForRawPointerType_Test2",
 		"UsingIncompleteType_ForRawPointerArithmetic_Test4",
-		"UsingIncompleteType_ForRawPointerArithmetic_Test5",
 	};
 
 	if( c_tests_to_ignore.count(func_name) > 0 )
