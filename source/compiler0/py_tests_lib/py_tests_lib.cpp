@@ -461,7 +461,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"RawPointerIntegerAdd_Test2",
 		"RawPointerIntegerSub_Test0",
 		"RawPointerIntegerSub_Test1",
-		"RawPointersCompare_Test1",
 		"RawPointersDifference_Test0",
 		"RawPointerTypeIsNotConstexpr_Test0",
 		"RawPointerTypeIsNotConstexpr_Test1",

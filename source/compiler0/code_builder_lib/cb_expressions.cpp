@@ -1384,26 +1384,30 @@ Value CodeBuilder::BuildBinaryOperator(
 	case BinaryOperatorType::LessEqual:
 	case BinaryOperatorType::Greater:
 	case BinaryOperatorType::GreaterEqual:
-
-		if( r_var.type != l_var.type )
 		{
-			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names.GetErrors(), src_loc, r_var.type, l_var.type, BinaryOperatorToString( binary_operator ) );
-			return ErrorValue();
-		}
-		if( l_fundamental_type == nullptr )
-		{
-			REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, l_type );
-			return ErrorValue();
-		}
-		else
-		{
-			const bool if_float= IsFloatingPoint( l_fundamental_type->fundamental_type );
-			const bool is_char= IsChar( l_fundamental_type->fundamental_type );
-			const bool is_signed= !is_char && IsSignedInteger( l_fundamental_type->fundamental_type );
-			if( !( IsInteger( l_fundamental_type->fundamental_type ) || if_float || is_char ) )
+			if( r_var.type != l_var.type )
+			{
+				REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names.GetErrors(), src_loc, r_var.type, l_var.type, BinaryOperatorToString( binary_operator ) );
+				return ErrorValue();
+			}
+			// TODO - maybe allow order compare for enums?
+			if( !( l_fundamental_type != nullptr || l_type.GetRawPointerType() != nullptr ) )
 			{
 				REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, l_type );
 				return ErrorValue();
+			}
+
+			bool is_float= false, is_signed= false;
+			if( l_fundamental_type != nullptr )
+			{
+				const auto t= l_fundamental_type->fundamental_type;
+				is_float= IsFloatingPoint( t );
+				is_signed= IsSignedInteger( t );
+				if( !( IsInteger(t) || IsChar(t) || is_float ) )
+				{
+					REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, l_type );
+					return ErrorValue();
+				}
 			}
 
 			llvm::Value* result_value= nullptr;
@@ -1412,7 +1416,7 @@ Value CodeBuilder::BuildBinaryOperator(
 			{
 			// Use ordered floating point compare operations, which result is false for NaN.
 			case BinaryOperatorType::Less:
-				if( if_float )
+				if( is_float )
 					result_value= function_context.llvm_ir_builder.CreateFCmpOLT( l_value_for_op, r_value_for_op );
 				else if( is_signed )
 					result_value= function_context.llvm_ir_builder.CreateICmpSLT( l_value_for_op, r_value_for_op );
@@ -1421,7 +1425,7 @@ Value CodeBuilder::BuildBinaryOperator(
 				break;
 
 			case BinaryOperatorType::LessEqual:
-				if( if_float )
+				if( is_float )
 					result_value= function_context.llvm_ir_builder.CreateFCmpOLE( l_value_for_op, r_value_for_op );
 				else if( is_signed )
 					result_value= function_context.llvm_ir_builder.CreateICmpSLE( l_value_for_op, r_value_for_op );
@@ -1430,7 +1434,7 @@ Value CodeBuilder::BuildBinaryOperator(
 				break;
 
 			case BinaryOperatorType::Greater:
-				if( if_float )
+				if( is_float )
 					result_value= function_context.llvm_ir_builder.CreateFCmpOGT( l_value_for_op, r_value_for_op );
 				else if( is_signed )
 					result_value= function_context.llvm_ir_builder.CreateICmpSGT( l_value_for_op, r_value_for_op );
@@ -1439,7 +1443,7 @@ Value CodeBuilder::BuildBinaryOperator(
 				break;
 
 			case BinaryOperatorType::GreaterEqual:
-				if( if_float )
+				if( is_float )
 					result_value= function_context.llvm_ir_builder.CreateFCmpOGE( l_value_for_op, r_value_for_op );
 				else if( is_signed )
 					result_value= function_context.llvm_ir_builder.CreateICmpSGE( l_value_for_op, r_value_for_op );
