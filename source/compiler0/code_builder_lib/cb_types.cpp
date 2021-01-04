@@ -185,6 +185,7 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const Function& function_t
 	{
 		if( function_type.return_type.GetFundamentalType() != nullptr ||
 			function_type.return_type.GetEnumType() != nullptr ||
+			function_type.return_type.GetRawPointerType() != nullptr ||
 			function_type.return_type.GetFunctionPointerType() != nullptr )
 		{}
 		else if( function_type.return_type.GetClassType() != nullptr || function_type.return_type.GetArrayType() != nullptr || function_type.return_type.GetTupleType() != nullptr )
@@ -203,7 +204,10 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const Function& function_t
 			type= type->getPointerTo();
 		else
 		{
-			if( arg.type.GetFundamentalType() != nullptr || arg.type.GetEnumType() != nullptr || arg.type.GetFunctionPointerType() )
+			if( arg.type.GetFundamentalType() != nullptr ||
+				arg.type.GetEnumType() != nullptr ||
+				arg.type.GetRawPointerType() != nullptr ||
+				arg.type.GetFunctionPointerType() )
 			{}
 			else if( arg.type.GetClassType() != nullptr || arg.type.GetArrayType() != nullptr || arg.type.GetTupleType() != nullptr )
 			{

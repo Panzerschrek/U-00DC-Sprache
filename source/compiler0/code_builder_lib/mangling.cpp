@@ -349,6 +349,11 @@ MangleGraphNode GetTypeName( const Type& type )
 	{
 		result= GetNestedName( enum_type->members.GetThisNamespaceName(), *enum_type->members.GetParent() );
 	}
+	else if( const auto raw_pointer= type.GetRawPointerType() )
+	{
+		result.prefix= "P";
+		result.childs.push_back( GetTypeName( raw_pointer->type ) );
+	}
 	else if( const auto function_pointer= type.GetFunctionPointerType() )
 	{
 		result.prefix= "P";

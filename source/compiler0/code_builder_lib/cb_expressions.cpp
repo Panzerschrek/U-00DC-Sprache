@@ -383,7 +383,10 @@ Value CodeBuilder::BuildExpressionCode(
 			names,
 			function_context );
 
-	if( l_var.type.GetFundamentalType() != nullptr || l_var.type.GetEnumType() != nullptr || l_var.type.GetFunctionPointerType() != nullptr )
+	if( l_var.type.GetFundamentalType() != nullptr ||
+		l_var.type.GetEnumType() != nullptr ||
+		l_var.type.GetRawPointerType() != nullptr ||
+		l_var.type.GetFunctionPointerType() != nullptr )
 	{
 		// Save l_var in register, because build-in binary operators require value-parameters.
 		if( l_var.location == Variable::Location::Pointer )
@@ -726,20 +729,63 @@ Value CodeBuilder::BuildExpressionCode(
 
 Value CodeBuilder::BuildExpressionCode( const Synt::ReferenceToRawPointerOperator& reference_to_raw_pointer_operator, NamesScope& names, FunctionContext& function_context )
 {
-	// TODO
-	(void)reference_to_raw_pointer_operator;
-	(void)names;
-	(void)function_context;
-	return ErrorValue();
+	const Variable v= BuildExpressionCodeEnsureVariable( *reference_to_raw_pointer_operator.expression, names, function_context );
+	if( v.value_type == ValueType::Value )
+	{
+		REPORT_ERROR( ValueIsNotReference, names.GetErrors(), reference_to_raw_pointer_operator.src_loc_ );
+		return ErrorValue();
+	}
+	if( v.value_type == ValueType::ConstReference )
+	{
+		// Disable immutable reference to pointer conversion, because pointer dereference produces mutable value.
+		REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), reference_to_raw_pointer_operator.src_loc_ );
+		return ErrorValue();
+	}
+
+	U_ASSERT( v.location == Variable::Location::Pointer );
+
+	// Reference to pointer conversion can break functional purity, so, disable such conversions in constexpr functions.
+	function_context.have_non_constexpr_operations_inside= true;
+
+	RawPointer raw_pointer_type;
+	raw_pointer_type.type= v.type;
+	raw_pointer_type.llvm_type= llvm::PointerType::get( v.type.GetLLVMType(), 0u );
+
+	Variable res;
+	res.type= std::move(raw_pointer_type);
+	res.llvm_value= v.llvm_value;
+	res.value_type= ValueType::Value;
+	res.location= Variable::Location::LLVMRegister;
+
+	const ReferencesGraphNodePtr node= std::make_shared<ReferencesGraphNode>( "ptr", ReferencesGraphNode::Kind::Variable );
+	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, res ) );
+	res.node= node;
+
+	return Value( std::move(res), reference_to_raw_pointer_operator.src_loc_ );
 }
 
 Value CodeBuilder::BuildExpressionCode( const Synt::RawPointerToReferenceOperator& raw_pointer_to_reference_operator, NamesScope& names, FunctionContext& function_context )
 {
-	// TODO
-	(void)raw_pointer_to_reference_operator;
-	(void)names;
-	(void)function_context;
-	return ErrorValue();
+	if( !function_context.is_in_unsafe_block )
+		REPORT_ERROR( RawPointerToReferenceConversionOutsideUnsafeBlock, names.GetErrors(), raw_pointer_to_reference_operator.src_loc_ );
+
+	const Variable v= BuildExpressionCodeEnsureVariable( *raw_pointer_to_reference_operator.expression, names, function_context );
+	const RawPointer* const raw_pointer_type= v.type.GetRawPointerType();
+
+	if( raw_pointer_type == nullptr )
+	{
+		REPORT_ERROR( ValueIsNotPointer, names.GetErrors(), raw_pointer_to_reference_operator.src_loc_, v.type );
+		return ErrorValue();
+	}
+
+	Variable res;
+	res.type= raw_pointer_type->type;
+	res.llvm_value= CreateMoveToLLVMRegisterInstruction( v, function_context );
+	res.value_type= ValueType::Reference;
+	res.location= Variable::Location::Pointer;
+	res.node= nullptr; // There is no reference graph node associated with raw pointer.
+
+	return Value( std::move(res), raw_pointer_to_reference_operator.src_loc_ );
 }
 
 Value CodeBuilder::BuildExpressionCode(
@@ -2449,7 +2495,10 @@ Value CodeBuilder::DoCallFunction(
 				}
 			}
 
-			if( arg.type.GetFundamentalType() != nullptr || arg.type.GetEnumType() != nullptr || arg.type.GetFunctionPointerType() != nullptr )
+			if( arg.type.GetFundamentalType() != nullptr ||
+				arg.type.GetEnumType() != nullptr ||
+				arg.type.GetRawPointerType() != nullptr ||
+				arg.type.GetFunctionPointerType() != nullptr )
 				llvm_args[j]= CreateMoveToLLVMRegisterInstruction( expr, function_context );
 			else if( arg.type.GetClassType() != nullptr || arg.type.GetArrayType() != nullptr || arg.type.GetTupleType() != nullptr )
 			{

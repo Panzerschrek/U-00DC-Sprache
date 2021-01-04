@@ -277,6 +277,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			initializer_experrsion.type.GetTupleType() != nullptr ||
 			initializer_experrsion.type.GetClassType() != nullptr ||
 			initializer_experrsion.type.GetEnumType() != nullptr ||
+			initializer_experrsion.type.GetRawPointerType() != nullptr ||
 			initializer_experrsion.type.GetFunctionPointerType() != nullptr;
 		if( !type_is_ok || initializer_experrsion.type == invalid_type_ )
 		{
@@ -586,7 +587,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		else
 		{
 			// Now we can return by value only fundamentals end enums.
-			U_ASSERT( expression_result.type.GetFundamentalType() != nullptr || expression_result.type.GetEnumType() != nullptr || expression_result.type.GetFunctionPointerType() != nullptr );
+			U_ASSERT(
+				expression_result.type.GetFundamentalType() != nullptr||
+				expression_result.type.GetEnumType() != nullptr ||
+				expression_result.type.GetRawPointerType() != nullptr ||
+				expression_result.type.GetFunctionPointerType() != nullptr );
 
 			if( expression_result.type == void_type_ || expression_result.type == void_type_for_ret_ )
 			{
@@ -1360,7 +1365,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		// Evaluate right part
 		Variable r_var= BuildExpressionCodeEnsureVariable( assignment_operator.r_value_, names, function_context );
 
-		if( r_var.type.GetFundamentalType() != nullptr || r_var.type.GetEnumType() != nullptr || r_var.type.GetFunctionPointerType() != nullptr )
+		if( r_var.type.GetFundamentalType() != nullptr ||
+			r_var.type.GetEnumType() != nullptr ||
+			r_var.type.GetRawPointerType() != nullptr ||
+			r_var.type.GetFunctionPointerType() != nullptr )
 		{
 			// We must read value, because referenced by reference value may be changed in l_var evaluation.
 			if( r_var.location != Variable::Location::LLVMRegister )

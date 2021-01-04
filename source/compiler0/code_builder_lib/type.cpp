@@ -570,7 +570,7 @@ llvm::Type* Type::GetLLVMType() const
 
 		llvm::Type* operator()( const RawPointerPtr& raw_pointer ) const
 		{
-			U_ASSERT( array != nullptr );
+			U_ASSERT( raw_pointer != nullptr );
 			return raw_pointer->llvm_type;
 		}
 
