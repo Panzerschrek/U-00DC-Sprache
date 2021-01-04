@@ -169,7 +169,7 @@ bool CodeBuilder::EnsureTypeComplete( const Type& type )
 	{
 		bool ok= true;
 		for( const Type& element_type : tuple_type->elements )
-			ok= EnsureTypeComplete( element_type ) || ok;
+			ok&= EnsureTypeComplete( element_type );
 		return ok;
 	}
 	else if( const auto class_type= type.GetClassTypeProxy() )

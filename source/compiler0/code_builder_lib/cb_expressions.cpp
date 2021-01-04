@@ -1577,11 +1577,7 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 	result.location= Variable::Location::LLVMRegister;
 	result.value_type= ValueType::Value;
 
-
-	if( binary_operator == BinaryOperatorType::Sub )
-	{
-	}
-	else if( binary_operator == BinaryOperatorType::Add )
+	if( binary_operator == BinaryOperatorType::Add )
 	{
 		const size_t ptr_size= fundamental_llvm_types_.int_ptr->getIntegerBitWidth() / 8;
 		size_t int_size= 0u;
@@ -1637,6 +1633,82 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 				index_value= function_context.llvm_ir_builder.CreateZExt( index_value, fundamental_llvm_types_.int_ptr );
 		}
 		result.llvm_value= function_context.llvm_ir_builder.CreateGEP( ptr_value, index_value );
+	}
+	else if( binary_operator == BinaryOperatorType::Sub )
+	{
+		const auto ptr_type= l_var.type.GetRawPointerType();
+		if( ptr_type == nullptr )
+		{
+			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names.GetErrors(), src_loc, l_var.type, r_var.type, BinaryOperatorToString( binary_operator ) );
+			return ErrorValue();
+		}
+
+		if( !EnsureTypeComplete( ptr_type->type ) )
+		{
+			// Complete types required for pointer arithmetic.
+			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), src_loc, ptr_type->type );
+			return ErrorValue();
+		}
+
+		if( const auto r_ptr_type= r_var.type.GetRawPointerType() )
+		{
+			// Pointer difference.
+			if( *r_ptr_type != *ptr_type )
+			{
+				REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names.GetErrors(), src_loc, l_var.type, r_var.type, BinaryOperatorToString( binary_operator ) );
+				return ErrorValue();
+			}
+
+			const U_FundamentalType diff_type= fundamental_llvm_types_.int_ptr->getIntegerBitWidth() == 32u ? U_FundamentalType::i32 : U_FundamentalType::i64;
+			llvm::Type* const diff_llvm_type= GetFundamentalLLVMType( diff_type );
+
+			result.type= FundamentalType( diff_type, diff_llvm_type );
+
+			const auto element_size= data_layout_.getTypeAllocSize( ptr_type->type.GetLLVMType() );
+			if( element_size == 0 )
+			{
+				REPORT_ERROR( DifferenceBetweenRawPointersWithZeroElementSize, names.GetErrors(), src_loc, l_var.type );
+				return ErrorValue();
+			}
+
+			llvm::Value* const l_as_int= function_context.llvm_ir_builder.CreatePtrToInt( l_value_for_op, diff_llvm_type );
+			llvm::Value* const r_as_int= function_context.llvm_ir_builder.CreatePtrToInt( r_value_for_op, diff_llvm_type );
+			llvm::Value* const diff= function_context.llvm_ir_builder.CreateSub( l_as_int, r_as_int );
+			llvm::Value* const element_size_constant= llvm::ConstantInt::get( diff_llvm_type, uint64_t(element_size), false );
+			llvm::Value* const diff_divided= function_context.llvm_ir_builder.CreateSDiv( diff, element_size_constant );
+			result.llvm_value= diff_divided;
+		}
+		else if( const auto r_fundamental_type= r_var.type.GetFundamentalType() )
+		{
+			// Subtract integer from pointer.
+
+			const size_t ptr_size= fundamental_llvm_types_.int_ptr->getIntegerBitWidth() / 8;
+			const size_t int_size= r_fundamental_type->GetSize();
+
+			if( !IsInteger( r_fundamental_type->fundamental_type ) || int_size > ptr_size )
+			{
+				REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, r_var.type );
+				return ErrorValue();
+			}
+
+			result.type= l_var.type;
+
+			llvm::Value* index_value= r_value_for_op;
+			if( int_size < ptr_size )
+			{
+				if( IsSignedInteger( r_fundamental_type->fundamental_type ) )
+					index_value= function_context.llvm_ir_builder.CreateSExt( index_value, fundamental_llvm_types_.int_ptr );
+				else
+					index_value= function_context.llvm_ir_builder.CreateZExt( index_value, fundamental_llvm_types_.int_ptr );
+			}
+			llvm::Value* const index_value_negative= function_context.llvm_ir_builder.CreateNeg( index_value );
+			result.llvm_value= function_context.llvm_ir_builder.CreateGEP( l_value_for_op, index_value_negative );
+		}
+		else
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, r_var.type );
+			return ErrorValue();
+		}
 	}
 	else{ U_ASSERT(false); }
 
