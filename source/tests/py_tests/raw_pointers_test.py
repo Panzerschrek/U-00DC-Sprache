@@ -894,6 +894,12 @@ def RawPointerTypeTemplateSpecialization_Test3():
 def RawPointerTypeTemplateSpecialization_Test4():
 	c_program_text= """
 		template</ type T />
+		struct S</ T />
+		{
+			auto c= 3s;
+		}
+
+		template</ type T />
 		struct S</ $(T) />
 		{
 			auto c= 22s;
@@ -905,6 +911,7 @@ def RawPointerTypeTemplateSpecialization_Test4():
 			auto c= 666s;
 		}
 
+		static_assert( S</ i8 />::c == 3s ); // Selected specialization for any type (not only pointer).
 		static_assert( S</ $(f32) />::c == 22s ); // General specialization selected.
 		static_assert( S</ $(char8) />::c == 666s ); // Exact specialization selected.
 	"""
@@ -923,3 +930,39 @@ def RawPointerTypeTemplateSpecialization_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HaveError( errors_list, "TemplateParametersDeductionFailed", 8 ) )
+
+
+def RawPointerTemplateFunctionSpecialization_Test0():
+	c_program_text= """
+		template</ type T /> fn Bar( T t ) : size_type { return  3s; }
+		template</ type T /> fn Bar( $(T) t ) : size_type { return 9s; }
+		template</ type T, size_type s /> fn Bar( [ T, s ] t ) : size_type { return 99999999s; }
+		template<//> fn Bar( $(i32) t ) : size_type { return 27s; }
+		template</ type T, size_type s /> fn Bar( $( [ T, s ] ) t ) : size_type { return s; }
+		template</ type T, size_type s /> fn Bar( [ $(T), s ] arr ) : size_type{ return s * 100s; }
+
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var $(i32) mut x_ptr= $<(x);
+			var $($(i32)) x_ptr_ptr= $<(x_ptr);
+
+			halt if( Bar( x ) != 3s ); // General function selected.
+			halt if( Bar( x_ptr ) != 27s ); // Exact specialization selected.
+			halt if( Bar( x_ptr_ptr ) != 9s ); // Specialization for general raw pointer selected.
+
+			// Specialization for pointer to array.
+			var [ f32, 33 ] mut f_arr= zero_init;
+			var [ bool, 7 ] mut b_arr= zero_init;
+			halt if( Bar( $<(f_arr) ) != 33s );
+			halt if( Bar( $<(b_arr) ) != 7s );
+
+			// Specialization for array of pointers.
+			var [ $(i32), 3 ] int_ptr_arr= zero_init;
+			var [ $($(f32)), 11 ] f_ptr_ptr_arr= zero_init;
+			halt if( Bar( int_ptr_arr ) != 300s );
+			halt if( Bar( f_ptr_ptr_arr ) != 1100s );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

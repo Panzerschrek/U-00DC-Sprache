@@ -438,6 +438,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 
 	static const std::unordered_set<std::string> c_tests_to_ignore
 	{
+		"RawPointerTemplateFunctionSpecialization_Test0",
 		"RawPointerTypeTemplateSpecialization_Test0",
 		"RawPointerTypeTemplateSpecialization_Test1",
 		"RawPointerTypeTemplateSpecialization_Test2",
