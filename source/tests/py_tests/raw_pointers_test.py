@@ -797,3 +797,129 @@ def Typeinfo_ForRawPointerType_Test2():
 		static_assert( ti.is_copy_assignable );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def RawPointerTypeTemplateSpecialization_Test0():
+	c_program_text= """
+		template</ type T />
+		struct S</ $(T) />
+		{
+			auto is_pointer= true;
+		}
+
+		static_assert( S</ $(char32) />::is_pointer );
+		static_assert( S</ $( $(bool) ) />::is_pointer );
+
+		type PtrAlias= $( tup[ bool, char16, [ i32, 2 ] ] );
+		static_assert( S</ PtrAlias />::is_pointer );
+
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def RawPointerTypeTemplateSpecialization_Test1():
+	c_program_text= """
+		template</ type T />
+		struct RemovePointer</ $(T) />
+		{
+			type t= T;
+		}
+
+		static_assert( typeinfo</ RemovePointer</ $(char8) />::t />.is_char );
+		static_assert( typeinfo</ RemovePointer</ $(tup[]) />::t />.is_tuple );
+
+		static_assert( typeinfo</ RemovePointer</ $($(f32)) />::t />.is_raw_pointer );
+		static_assert( typeinfo</ RemovePointer</ $($(f32)) />::t />.element_type.is_float );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def RawPointerTypeTemplateSpecialization_Test2():
+	c_program_text= """
+
+		// Template with raw pointer type is more specialized, so, this template will be selected recursively until non-pointer type reached.
+
+		template</ type T />
+		struct RemovePointer_r</ $(T) />
+		{
+			type t= ::RemovePointer_r</ T />::t;
+			auto constexpr depth= 1s + ::RemovePointer_r</ T />::depth;
+		}
+
+		template</ type T />
+		struct RemovePointer_r</ T />
+		{
+			type t= T;
+			auto constexpr depth= 0s;
+		}
+
+		static_assert( typeinfo</ RemovePointer_r</i32/>::t />.is_signed_integer );
+		static_assert( RemovePointer_r</i32/>::depth == 0s );
+
+		static_assert( typeinfo</ RemovePointer_r</ $(f32) />::t />.is_float );
+		static_assert( RemovePointer_r</ $(f32) />::depth == 1s );
+
+		static_assert( typeinfo</ RemovePointer_r</ $($($( [ bool, 16] ))) />::t />.is_array );
+		static_assert( RemovePointer_r</ $($($( [ bool, 16] ))) />::depth == 3s );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def RawPointerTypeTemplateSpecialization_Test3():
+	c_program_text= """
+
+		// One of two specializations selected.
+
+		template</ type T />
+		struct ExtractElement</ $(T) />
+		{
+			type t= T;
+		}
+
+		template</ type T, size_type s />
+		struct ExtractElement</ [ T, s ] />
+		{
+			type t= T;
+		}
+
+		static_assert( typeinfo</ ExtractElement</ $(i32) />::t />.is_signed_integer );
+		static_assert( typeinfo</ ExtractElement</ [ bool, 64 ] />::t />.is_bool );
+
+		static_assert( typeinfo</ ExtractElement</ $($(u16)) />::t />.is_raw_pointer );
+		static_assert( typeinfo</ ExtractElement</ $( [ f32, 3 ] ) />::t />.is_array );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def RawPointerTypeTemplateSpecialization_Test4():
+	c_program_text= """
+		template</ type T />
+		struct S</ $(T) />
+		{
+			auto c= 22s;
+		}
+
+		template</ />
+		struct S</ $(char8) />
+		{
+			auto c= 666s;
+		}
+
+		static_assert( S</ $(f32) />::c == 22s ); // General specialization selected.
+		static_assert( S</ $(char8) />::c == 666s ); // Exact specialization selected.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def RawPointerTypeTemplateSpecialization_Test5():
+	c_program_text= """
+		template</ type T />
+		struct RemovePointer</ $(T) />
+		{
+			type t= T;
+		}
+
+		type WTF= RemovePointer</ bool />;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "TemplateParametersDeductionFailed", 8 ) )

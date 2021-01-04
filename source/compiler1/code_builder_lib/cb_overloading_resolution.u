@@ -296,9 +296,21 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 			return result;
 		}
 	}
-
-	// TODO - process here raw pointer type.
-
+	if_var( &l_raw_pointer_type : l.GetRawPointerTypeParam() )
+	{
+		if( !r.GetTemplateParam().empty() )
+		{
+			return ConversionsCompareResult::LeftIsBetter; // Raw pointer type is more specialized, then template parameter.
+		}
+		if( !r.GetTypeParam().empty() )
+		{
+			return ConversionsCompareResult::RightIsBetter; // Concrete type is better, then raw pointer type.
+		}
+		if_var( &r_raw_pointer_type : r.GetRawPointerTypeParam() )
+		{
+			return CompareTemplateSpecialization( l_raw_pointer_type.element_type, r_raw_pointer_type.element_type );
+		}
+	}
 	if_var( &l_function_type : l.GetFunctionTypeParam() )
 	{
 		if( !r.GetTemplateParam().empty() )
