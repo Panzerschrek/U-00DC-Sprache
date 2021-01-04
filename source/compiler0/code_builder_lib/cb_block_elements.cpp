@@ -1664,6 +1664,15 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 		return;
 	}
 
+	if( variable->value_type != ValueType::Reference )
+	{
+		REPORT_ERROR( ExpectedReferenceValue, block_names.GetErrors(), src_loc );
+		return;
+	}
+
+	if( variable->node != nullptr && function_context.variables_state.HaveOutgoingLinks( variable->node ) )
+		REPORT_ERROR( ReferenceProtectionError, block_names.GetErrors(), src_loc, variable->node->name );
+
 	ArgsVector<Function::Arg> args;
 	args.emplace_back();
 	args.back().type= variable->type;
@@ -1691,14 +1700,6 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 			REPORT_ERROR( OperationNotSupportedForThisType, block_names.GetErrors(), src_loc, variable->type );
 			return;
 		}
-		if( variable->value_type != ValueType::Reference )
-		{
-			REPORT_ERROR( ExpectedReferenceValue, block_names.GetErrors(), src_loc );
-			return;
-		}
-
-		if( variable->node != nullptr && function_context.variables_state.HaveOutgoingLinks( variable->node ) )
-			REPORT_ERROR( ReferenceProtectionError, block_names.GetErrors(), src_loc, variable->node->name );
 
 		llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( *variable, function_context );
 		llvm::Value* const one=
@@ -1710,6 +1711,21 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 			positive
 				? function_context.llvm_ir_builder.CreateAdd( value_in_register, one )
 				: function_context.llvm_ir_builder.CreateSub( value_in_register, one );
+
+		U_ASSERT( variable->location == Variable::Location::Pointer );
+		function_context.llvm_ir_builder.CreateStore( new_value, variable->llvm_value );
+	}
+	else if( const auto raw_poiter_type= variable->type.GetRawPointerType() )
+	{
+		if( !EnsureTypeComplete( raw_poiter_type->type ) )
+		{
+			REPORT_ERROR( UsingIncompleteType, block_names.GetErrors(), src_loc, raw_poiter_type->type );
+			return;
+		}
+
+		llvm::Value* const ptr_value= CreateMoveToLLVMRegisterInstruction( *variable, function_context );
+		llvm::Value* const one= llvm::ConstantInt::get( fundamental_llvm_types_.int_ptr, positive ? uint64_t(1u) : ~uint64_t(0), true );
+		llvm::Value* const new_value= function_context.llvm_ir_builder.CreateGEP( ptr_value, one );
 
 		U_ASSERT( variable->location == Variable::Location::Pointer );
 		function_context.llvm_ir_builder.CreateStore( new_value, variable->llvm_value );
