@@ -456,8 +456,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"DifferenceBetweenRawPointersWithZeroElementSize_Test1",
 		"DifferenceBetweenRawPointersWithZeroElementSize_Test2",
 		"RawPointerDeltaOne_Test0",
-		"RawPointerIntegerAdd_Test0",
-		"RawPointerIntegerAdd_Test1",
 		"RawPointerIntegerAdd_Test2",
 		"RawPointerIntegerSub_Test0",
 		"RawPointerIntegerSub_Test1",

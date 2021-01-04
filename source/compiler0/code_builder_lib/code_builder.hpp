@@ -468,6 +468,14 @@ private:
 		const SrcLoc& src_loc,
 		NamesScope& names,
 		FunctionContext& function_context );
+
+	Value BuildBinaryArithmeticOperatorForRawPointers(
+		const Variable& l_var,
+		const Variable& r_var,
+		BinaryOperatorType binary_operator,
+		const SrcLoc& src_loc,
+		NamesScope& names,
+		FunctionContext& function_context );
 		
 	Value BuildLazyBinaryOperator(
 		const Synt::Expression& l_expression,

@@ -1230,8 +1230,15 @@ Value CodeBuilder::BuildBinaryOperator(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
+	using BinaryOperatorType= BinaryOperatorType;
+
 	const Type& l_type= l_var.type;
 	const Type& r_type= r_var.type;
+
+	if( ( l_type.GetRawPointerType() != nullptr || r_type.GetRawPointerType() != nullptr ) &&
+		( binary_operator == BinaryOperatorType::Add || binary_operator == BinaryOperatorType::Sub ) )
+		return BuildBinaryArithmeticOperatorForRawPointers( l_var, r_var, binary_operator, src_loc, names, function_context );
+
 	const FundamentalType* const l_fundamental_type= l_type.GetFundamentalType();
 	const FundamentalType* const r_fundamental_type= r_type.GetFundamentalType();
 
@@ -1242,7 +1249,6 @@ Value CodeBuilder::BuildBinaryOperator(
 	result.location= Variable::Location::LLVMRegister;
 	result.value_type= ValueType::Value;
 
-	using BinaryOperatorType= BinaryOperatorType;
 	switch( binary_operator )
 	{
 	case BinaryOperatorType::Add:
@@ -1547,6 +1553,92 @@ Value CodeBuilder::BuildBinaryOperator(
 			result.constexpr_value= nullptr;
 		}
 	}
+
+	const auto node= std::make_shared<ReferencesGraphNode>( BinaryOperatorToString(binary_operator), ReferencesGraphNode::Kind::Variable );
+	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
+	result.node= node;
+	return Value( std::move(result), src_loc );
+}
+
+Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
+	const Variable& l_var,
+	const Variable& r_var,
+	BinaryOperatorType binary_operator,
+	const SrcLoc& src_loc,
+	NamesScope& names,
+	FunctionContext& function_context )
+{
+	U_ASSERT( l_var.type.GetRawPointerType() != nullptr || r_var.type.GetRawPointerType() != nullptr );
+
+	llvm::Value* const l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
+	llvm::Value* const r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
+
+	Variable result;
+	result.location= Variable::Location::LLVMRegister;
+	result.value_type= ValueType::Value;
+
+
+	if( binary_operator == BinaryOperatorType::Sub )
+	{
+	}
+	else if( binary_operator == BinaryOperatorType::Add )
+	{
+		const size_t ptr_size= fundamental_llvm_types_.int_ptr->getIntegerBitWidth() / 8;
+		size_t int_size= 0u;
+		U_FundamentalType int_type= U_FundamentalType::InvalidType;
+
+		llvm::Value* ptr_value= nullptr;
+		llvm::Value* index_value= nullptr;
+
+		if( const auto l_fundamental_type= l_var.type.GetFundamentalType() )
+		{
+			int_size= l_fundamental_type->GetSize();
+			int_type= l_fundamental_type->fundamental_type;
+			index_value= l_value_for_op;
+
+			U_ASSERT( r_var.type.GetRawPointerType() != nullptr );
+			result.type= r_var.type;
+			ptr_value= r_value_for_op;
+		}
+		else if( const auto r_fundamental_type= r_var.type.GetFundamentalType() )
+		{
+			int_size= r_fundamental_type->GetSize();
+			int_type= r_fundamental_type->fundamental_type;
+			index_value= r_value_for_op;
+
+			U_ASSERT( l_var.type.GetRawPointerType() != nullptr );
+			result.type= l_var.type;
+			ptr_value= l_value_for_op;
+		}
+		else
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, l_var.type );
+			return ErrorValue();
+		}
+
+		const Type& element_type= result.type.GetRawPointerType()->type;
+		if( !EnsureTypeComplete( element_type ) )
+		{
+			// Complete types required for pointer arithmetic.
+			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), src_loc, element_type );
+			return ErrorValue();
+		}
+		if( !IsInteger( int_type ) || int_size > ptr_size )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, GetFundamentalTypeName( int_type ) );
+			return ErrorValue();
+		}
+
+		if( int_size < ptr_size )
+		{
+			if( IsSignedInteger( int_type ) )
+				index_value= function_context.llvm_ir_builder.CreateSExt( index_value, fundamental_llvm_types_.int_ptr );
+			else
+				index_value= function_context.llvm_ir_builder.CreateZExt( index_value, fundamental_llvm_types_.int_ptr );
+		}
+		result.llvm_value= function_context.llvm_ir_builder.CreateGEP( ptr_value, index_value );
+	}
+	else{ U_ASSERT(false); }
 
 	const auto node= std::make_shared<ReferencesGraphNode>( BinaryOperatorToString(binary_operator), ReferencesGraphNode::Kind::Variable );
 	function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( node, result ) );
