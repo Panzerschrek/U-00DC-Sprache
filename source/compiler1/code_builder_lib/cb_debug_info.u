@@ -186,6 +186,10 @@ fn CodeBuilder::CreateDIType( mut this, Type& t ) : LLVMMetadataRef
 		{
 			return CreateDITypeImpl( tt );
 		}
+		if_var( &tt : t.GetRawPointerType() )
+		{
+			return CreateDITypeImpl( tt );
+		}
 		if_var( &tt : t.GetFunctionType() )
 		{
 			return CreateDITypeImpl( tt );
@@ -308,6 +312,20 @@ fn CodeBuilder::CreateDITypeImpl( mut this, TupleType& t ) : LLVMMetadataRef
 			0u, // RuntimeLang
 			LLVMMetadataRef::Null,// VTableHolder
 			"\0"c8, 0s);
+	}
+}
+
+fn CodeBuilder::CreateDITypeImpl( mut this, RawPointerType& t ) : LLVMMetadataRef
+{
+	unsafe
+	{
+		return LLVMDIBuilderCreatePointerType(
+			debug_info_.builder,
+			CreateDIType( t.element_type ),
+			LLVMABISizeOfType( data_layout_, t.llvm_type ) * 8u64,
+			LLVMABIAlignmentOfType( data_layout_, t.llvm_type ) * 8u32,
+			0u, // address space
+			"\0"c8, 0s );
 	}
 }
 
