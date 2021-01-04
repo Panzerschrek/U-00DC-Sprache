@@ -118,6 +118,7 @@ private:
 	Type PrepareType( const Synt::FunctionTypePtr& function_type_name_ptr, NamesScope& names_scope, FunctionContext& function_context );
 	Type PrepareType( const Synt::FunctionType& function_type_name, NamesScope& names_scope, FunctionContext& function_context );
 	Type PrepareType( const Synt::TupleType& tuple_type_name, NamesScope& names_scope, FunctionContext& function_context );
+	Type PrepareType( const Synt::RawPointerType& raw_pointer_type_name, NamesScope& names_scope, FunctionContext& function_context );
 	Type PrepareType( const Synt::NamedTypeName& named_type_name, NamesScope& names_scope, FunctionContext& function_context );
 
 	llvm::FunctionType* GetLLVMFunctionType( const Function& function_type );
@@ -414,6 +415,8 @@ private:
 	Value BuildExpressionCode( const Synt::BinaryOperator& binary_operator, NamesScope& names, FunctionContext& function_context );
 	Value BuildExpressionCode( const Synt::NamedOperand& named_operand, NamesScope& names, FunctionContext& function_context );
 	Value BuildExpressionCode( const Synt::TernaryOperator& ternary_operator, NamesScope& names, FunctionContext& function_context );
+	Value BuildExpressionCode( const Synt::ReferenceToRawPointerOperator& reference_to_raw_pointer_operator, NamesScope& names, FunctionContext& function_context );
+	Value BuildExpressionCode( const Synt::RawPointerToReferenceOperator& raw_pointer_to_reference_operator, NamesScope& names, FunctionContext& function_context );
 	Value BuildExpressionCode( const Synt::TypeNameInExpression& type_name_in_expression, NamesScope& names, FunctionContext& function_context );
 	Value BuildExpressionCode( const Synt::NumericConstant& numeric_constant, NamesScope& names, FunctionContext& function_context );
 	Value BuildExpressionCode( const Synt::BracketExpression& bracket_expression, NamesScope& names, FunctionContext& function_context );
@@ -459,6 +462,14 @@ private:
 		FunctionContext& function_context );
 
 	Value BuildBinaryOperator(
+		const Variable& l_var,
+		const Variable& r_var,
+		BinaryOperatorType binary_operator,
+		const SrcLoc& src_loc,
+		NamesScope& names,
+		FunctionContext& function_context );
+
+	Value BuildBinaryArithmeticOperatorForRawPointers(
 		const Variable& l_var,
 		const Variable& r_var,
 		BinaryOperatorType binary_operator,

@@ -51,6 +51,8 @@ const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
 		{ "!", Lexem::Type::Not },
 
 		{ "'", Lexem::Type::Apostrophe },
+
+		{ "$", Lexem::Type::PointerTypeMark },
 	},
 	FixedLexemsMap
 	{ // Two symbol lexems.
@@ -87,6 +89,9 @@ const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
 
 		{ "<-", Lexem::Type::LeftArrow  },
 		{ "->", Lexem::Type::RightArrow },
+
+		{ "$<", Lexem::Type::ReferenceToPointer },
+		{ "$>", Lexem::Type::PointerToReference },
 	},
 	FixedLexemsMap
 	{ // Three symbol lexems.

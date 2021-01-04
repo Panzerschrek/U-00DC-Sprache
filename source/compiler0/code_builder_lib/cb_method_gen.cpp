@@ -632,7 +632,10 @@ void CodeBuilder::BuildCopyConstructorPart(
 	const Type& type,
 	FunctionContext& function_context )
 {
-	if( type.GetFundamentalType() != nullptr || type.GetEnumType() != nullptr || type.GetFunctionPointerType() != nullptr )
+	if( type.GetFundamentalType() != nullptr ||
+		type.GetEnumType() != nullptr ||
+		type.GetRawPointerType() != nullptr ||
+		type.GetFunctionPointerType() != nullptr )
 	{
 		// Create simple load-store.
 		if( src->getType() == dst->getType() )
@@ -708,7 +711,10 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 	const Type& type,
 	FunctionContext& function_context )
 {
-	if( type.GetFundamentalType() != nullptr || type.GetEnumType() != nullptr || type.GetFunctionPointerType() != nullptr )
+	if( type.GetFundamentalType() != nullptr ||
+		type.GetEnumType() != nullptr ||
+		type.GetRawPointerType() != nullptr ||
+		type.GetFunctionPointerType() != nullptr )
 	{
 		// Create simple load-store.
 		if( src->getType() == dst->getType() )

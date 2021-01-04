@@ -108,14 +108,6 @@ Type CodeBuilder::PrepareType( const Synt::FunctionType& function_type_name, Nam
 	function_type.return_value_is_mutable= function_type_name.return_value_mutability_modifier_ == MutabilityModifier::Mutable;
 	function_type.return_value_is_reference= function_type_name.return_value_reference_modifier_ == ReferenceModifier::Reference;
 
-	if( !function_type.return_value_is_reference &&
-		!( function_type.return_type.GetFundamentalType() != nullptr ||
-		   function_type.return_type.GetClassType() != nullptr ||
-		   function_type.return_type.GetTupleType() != nullptr ||
-		   function_type.return_type.GetEnumType() != nullptr ||
-		   function_type.return_type.GetFunctionPointerType() != nullptr ) )
-		REPORT_ERROR( NotImplemented, names_scope.GetErrors(), function_type_name.src_loc_, "return value types except fundamentals, enums, classes, function pointers" );
-
 	for( const Synt::FunctionArgument& arg : function_type_name.arguments_ )
 	{
 		if( IsKeyword( arg.name_ ) )
@@ -164,6 +156,15 @@ Type CodeBuilder::PrepareType( const Synt::TupleType& tuple_type_name, NamesScop
 	return std::move(tuple);
 }
 
+Type CodeBuilder::PrepareType( const Synt::RawPointerType& raw_pointer_type_name, NamesScope& names_scope, FunctionContext& function_context )
+{
+	RawPointer raw_pointer;
+	raw_pointer.type= PrepareType( *raw_pointer_type_name.element_type, names_scope, function_context );
+	raw_pointer.llvm_type= raw_pointer.type.GetLLVMType()->getPointerTo();
+
+	return raw_pointer;
+}
+
 Type CodeBuilder::PrepareType( const Synt::NamedTypeName& named_type_name, NamesScope& names_scope, FunctionContext& function_context )
 {
 	const Value value= ResolveValue( named_type_name.src_loc_, names_scope, function_context, named_type_name.name );
@@ -184,6 +185,7 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const Function& function_t
 	{
 		if( function_type.return_type.GetFundamentalType() != nullptr ||
 			function_type.return_type.GetEnumType() != nullptr ||
+			function_type.return_type.GetRawPointerType() != nullptr ||
 			function_type.return_type.GetFunctionPointerType() != nullptr )
 		{}
 		else if( function_type.return_type.GetClassType() != nullptr || function_type.return_type.GetArrayType() != nullptr || function_type.return_type.GetTupleType() != nullptr )
@@ -202,7 +204,10 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const Function& function_t
 			type= type->getPointerTo();
 		else
 		{
-			if( arg.type.GetFundamentalType() != nullptr || arg.type.GetEnumType() != nullptr || arg.type.GetFunctionPointerType() )
+			if( arg.type.GetFundamentalType() != nullptr ||
+				arg.type.GetEnumType() != nullptr ||
+				arg.type.GetRawPointerType() != nullptr ||
+				arg.type.GetFunctionPointerType() )
 			{}
 			else if( arg.type.GetClassType() != nullptr || arg.type.GetArrayType() != nullptr || arg.type.GetTupleType() != nullptr )
 			{

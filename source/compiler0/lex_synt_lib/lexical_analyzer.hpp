@@ -100,6 +100,10 @@ struct Lexem
 		LeftArrow,  // <-
 		RightArrow, // ->
 
+		PointerTypeMark, // $
+		ReferenceToPointer, // $<
+		PointerToReference, // $>
+
 		Ellipsis, // ...
 
 		// TODO - add other lexems.

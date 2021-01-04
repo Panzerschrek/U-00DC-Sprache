@@ -1284,6 +1284,7 @@ Type CodeBuilder::BuildFuncCode(
 		{
 			if( arg.type.GetFundamentalType() != nullptr ||
 				arg.type.GetEnumType() != nullptr ||
+				arg.type.GetRawPointerType() != nullptr ||
 				arg.type.GetFunctionPointerType() != nullptr )
 			{
 				// Move parameters to stack for assignment possibility.

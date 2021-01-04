@@ -130,6 +130,8 @@ bool CodeBuilder::IsTypeComplete( const Type& type ) const
 		return enum_type->syntax_element == nullptr;
 	else if( const auto array_type= type.GetArrayType() )
 		return IsTypeComplete( array_type->type );
+	else if( type.GetRawPointerType() != nullptr )
+		return true; // Pointer is always complete.
 	else if( const auto tuple_type= type.GetTupleType() )
 	{
 		bool all_complete= true;
@@ -161,11 +163,13 @@ bool CodeBuilder::EnsureTypeComplete( const Type& type )
 	}
 	else if( const auto array_type= type.GetArrayType() )
 		return EnsureTypeComplete( array_type->type );
+	else if( type.GetRawPointerType() != nullptr )
+		return true; // Pointer is always complete.
 	else if( const auto tuple_type= type.GetTupleType() )
 	{
 		bool ok= true;
 		for( const Type& element_type : tuple_type->elements )
-			ok= EnsureTypeComplete( element_type ) || ok;
+			ok&= EnsureTypeComplete( element_type );
 		return ok;
 	}
 	else if( const auto class_type= type.GetClassTypeProxy() )
@@ -208,6 +212,7 @@ void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 				if( type->GetFundamentalType() != nullptr ||
 					type->GetFunctionPointerType() != nullptr ||
 					type->GetArrayType() != nullptr ||
+					type->GetRawPointerType() != nullptr ||
 					type->GetTupleType() != nullptr )
 				{}
 				else if( const ClassProxyPtr class_type= type->GetClassTypeProxy() )
@@ -1099,6 +1104,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				initializer_experrsion.type.GetTupleType() != nullptr ||
 				initializer_experrsion.type.GetClassType() != nullptr ||
 				initializer_experrsion.type.GetEnumType() != nullptr ||
+				initializer_experrsion.type.GetRawPointerType() != nullptr ||
 				initializer_experrsion.type.GetFunctionPointerType() != nullptr;
 			if( !type_is_ok || initializer_experrsion.type == invalid_type_ )
 			{

@@ -277,6 +277,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			initializer_experrsion.type.GetTupleType() != nullptr ||
 			initializer_experrsion.type.GetClassType() != nullptr ||
 			initializer_experrsion.type.GetEnumType() != nullptr ||
+			initializer_experrsion.type.GetRawPointerType() != nullptr ||
 			initializer_experrsion.type.GetFunctionPointerType() != nullptr;
 		if( !type_is_ok || initializer_experrsion.type == invalid_type_ )
 		{
@@ -586,7 +587,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		else
 		{
 			// Now we can return by value only fundamentals end enums.
-			U_ASSERT( expression_result.type.GetFundamentalType() != nullptr || expression_result.type.GetEnumType() != nullptr || expression_result.type.GetFunctionPointerType() != nullptr );
+			U_ASSERT(
+				expression_result.type.GetFundamentalType() != nullptr||
+				expression_result.type.GetEnumType() != nullptr ||
+				expression_result.type.GetRawPointerType() != nullptr ||
+				expression_result.type.GetFunctionPointerType() != nullptr );
 
 			if( expression_result.type == void_type_ || expression_result.type == void_type_for_ret_ )
 			{
@@ -1360,7 +1365,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		// Evaluate right part
 		Variable r_var= BuildExpressionCodeEnsureVariable( assignment_operator.r_value_, names, function_context );
 
-		if( r_var.type.GetFundamentalType() != nullptr || r_var.type.GetEnumType() != nullptr || r_var.type.GetFunctionPointerType() != nullptr )
+		if( r_var.type.GetFundamentalType() != nullptr ||
+			r_var.type.GetEnumType() != nullptr ||
+			r_var.type.GetRawPointerType() != nullptr ||
+			r_var.type.GetFunctionPointerType() != nullptr )
 		{
 			// We must read value, because referenced by reference value may be changed in l_var evaluation.
 			if( r_var.location != Variable::Location::LLVMRegister )
@@ -1393,7 +1401,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		if( l_var.node != nullptr && function_context.variables_state.HaveOutgoingLinks( l_var.node ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), assignment_operator.src_loc_, l_var.node->name );
 
-		if( l_var.type.GetFundamentalType() != nullptr || l_var.type.GetEnumType() != nullptr || l_var.type.GetFunctionPointerType() != nullptr )
+		if( l_var.type.GetFundamentalType() != nullptr ||
+			l_var.type.GetEnumType() != nullptr ||
+			l_var.type.GetRawPointerType() != nullptr ||
+			l_var.type.GetFunctionPointerType() != nullptr )
 		{
 			if( l_var.location != Variable::Location::Pointer )
 			{
@@ -1433,14 +1444,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			additive_assignment_operator.src_loc_,
 			names,
 			function_context ) == std::nullopt )
-	{ // Here process default additive assignment operators for fundamental types.
+	{ // Here process default additive assignment operators for fundamental types or raw pointers.
 		Variable r_var=
 			BuildExpressionCodeEnsureVariable(
 				additive_assignment_operator.r_value_,
 				names,
 				function_context );
 
-		if( r_var.type.GetFundamentalType() != nullptr )
+		if( r_var.type.GetFundamentalType() != nullptr || r_var.type.GetRawPointerType() != nullptr )
 		{
 			// We must read value, because referenced by reference value may be changed in l_var evaluation.
 			if( r_var.location != Variable::Location::LLVMRegister )
@@ -1461,47 +1472,45 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		if( l_var.type == invalid_type_ || r_var.type == invalid_type_ )
 			return BlockBuildInfo();
 
+		if( l_var.value_type != ValueType::Reference )
+		{
+			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), additive_assignment_operator.src_loc_ );
+			return BlockBuildInfo();
+		}
+
 		// Check references of destination.
 		if( l_var.node != nullptr && function_context.variables_state.HaveOutgoingLinks( l_var.node ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), additive_assignment_operator.src_loc_, l_var.node->name );
 
-		const FundamentalType* const l_var_fundamental_type= l_var.type.GetFundamentalType();
-		const FundamentalType* const r_var_fundamental_type= r_var.type.GetFundamentalType();
-		if( l_var_fundamental_type != nullptr && r_var_fundamental_type != nullptr )
-		{
-			// Generate binary operator and assignment for fundamental types.
-			const Value operation_result_value=
-				BuildBinaryOperator(
-					l_var, r_var,
-					additive_assignment_operator.additive_operation_,
-					additive_assignment_operator.src_loc_,
-					names,
-					function_context );
-			if( operation_result_value.GetVariable() == nullptr ) // Not variable in case of error or if template-dependent stuff.
-				return BlockBuildInfo();
-			const Variable& operation_result= *operation_result_value.GetVariable();
-
-			if( l_var.value_type != ValueType::Reference )
-			{
-				REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), additive_assignment_operator.src_loc_ );
-				return BlockBuildInfo();
-			}
-
-			if( operation_result.type != l_var.type )
-			{
-				REPORT_ERROR( TypesMismatch, names.GetErrors(), additive_assignment_operator.src_loc_, l_var.type, operation_result.type );
-				return BlockBuildInfo();
-			}
-
-			U_ASSERT( l_var.location == Variable::Location::Pointer );
-			llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( operation_result, function_context );
-			function_context.llvm_ir_builder.CreateStore( value_in_register, l_var.llvm_value );
-		}
-		else
+		// Allow additive assignment operators only for fundamentals and raw pointers.
+		if( !( l_var.type.GetFundamentalType() != nullptr || l_var.type.GetRawPointerType() != nullptr ) )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), additive_assignment_operator.src_loc_, l_var.type );
 			return BlockBuildInfo();
 		}
+
+		// Generate binary operator and assignment for fundamental types.
+		const Value operation_result_value=
+			BuildBinaryOperator(
+				l_var, r_var,
+				additive_assignment_operator.additive_operation_,
+				additive_assignment_operator.src_loc_,
+				names,
+				function_context );
+		if( operation_result_value.GetVariable() == nullptr ) // Not variable in case of error.
+			return BlockBuildInfo();
+
+		const Variable& operation_result= *operation_result_value.GetVariable();
+
+		if( operation_result.type != l_var.type )
+		{
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), additive_assignment_operator.src_loc_, l_var.type, operation_result.type );
+			return BlockBuildInfo();
+		}
+
+		U_ASSERT( l_var.location == Variable::Location::Pointer );
+		llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( operation_result, function_context );
+		function_context.llvm_ir_builder.CreateStore( value_in_register, l_var.llvm_value );
 	}
 	// Destruct temporary variables of right and left expressions.
 	CallDestructors( temp_variables_storage, names, function_context, additive_assignment_operator.src_loc_ );
@@ -1655,6 +1664,15 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 		return;
 	}
 
+	if( variable->value_type != ValueType::Reference )
+	{
+		REPORT_ERROR( ExpectedReferenceValue, block_names.GetErrors(), src_loc );
+		return;
+	}
+
+	if( variable->node != nullptr && function_context.variables_state.HaveOutgoingLinks( variable->node ) )
+		REPORT_ERROR( ReferenceProtectionError, block_names.GetErrors(), src_loc, variable->node->name );
+
 	ArgsVector<Function::Arg> args;
 	args.emplace_back();
 	args.back().type= variable->type;
@@ -1682,14 +1700,6 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 			REPORT_ERROR( OperationNotSupportedForThisType, block_names.GetErrors(), src_loc, variable->type );
 			return;
 		}
-		if( variable->value_type != ValueType::Reference )
-		{
-			REPORT_ERROR( ExpectedReferenceValue, block_names.GetErrors(), src_loc );
-			return;
-		}
-
-		if( variable->node != nullptr && function_context.variables_state.HaveOutgoingLinks( variable->node ) )
-			REPORT_ERROR( ReferenceProtectionError, block_names.GetErrors(), src_loc, variable->node->name );
 
 		llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( *variable, function_context );
 		llvm::Value* const one=
@@ -1701,6 +1711,21 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 			positive
 				? function_context.llvm_ir_builder.CreateAdd( value_in_register, one )
 				: function_context.llvm_ir_builder.CreateSub( value_in_register, one );
+
+		U_ASSERT( variable->location == Variable::Location::Pointer );
+		function_context.llvm_ir_builder.CreateStore( new_value, variable->llvm_value );
+	}
+	else if( const auto raw_poiter_type= variable->type.GetRawPointerType() )
+	{
+		if( !EnsureTypeComplete( raw_poiter_type->type ) )
+		{
+			REPORT_ERROR( UsingIncompleteType, block_names.GetErrors(), src_loc, raw_poiter_type->type );
+			return;
+		}
+
+		llvm::Value* const ptr_value= CreateMoveToLLVMRegisterInstruction( *variable, function_context );
+		llvm::Value* const one= llvm::ConstantInt::get( fundamental_llvm_types_.int_ptr, positive ? uint64_t(1u) : ~uint64_t(0), true );
+		llvm::Value* const new_value= function_context.llvm_ir_builder.CreateGEP( ptr_value, one );
 
 		U_ASSERT( variable->location == Variable::Location::Pointer );
 		function_context.llvm_ir_builder.CreateStore( new_value, variable->llvm_value );

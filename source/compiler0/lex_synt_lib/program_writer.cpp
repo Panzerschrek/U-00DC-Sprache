@@ -19,6 +19,7 @@ void ElementWrite( const EmptyVariant& empty_variant, std::ostream& stream );
 void ElementWrite( const ComplexName& complex_name, std::ostream& stream );
 void ElementWrite( const ArrayTypeName& array_type_name, std::ostream& stream );
 void ElementWrite( const TupleType& tuple_type_name, std::ostream& stream );
+void ElementWrite( const RawPointerType& raw_pointer_type_name, std::ostream& stream );
 void ElementWrite( const TypeofTypeName& typeof_type_name, std::ostream& stream );
 void ElementWrite( const NamedTypeName& named_type_name, std::ostream& stream );
 void ElementWriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& stream );
@@ -121,6 +122,14 @@ void ElementWrite( const TupleType& tuple_type_name, std::ostream& stream )
 			stream << ", ";
 	}
 	stream << " )";
+}
+
+void ElementWrite( const RawPointerType& raw_pointer_type_name, std::ostream& stream )
+{
+	stream << "$";
+	stream << "(";
+	ElementWrite( *raw_pointer_type_name.element_type, stream );
+	stream << ")";
 }
 
 void ElementWrite( const TypeofTypeName& typeof_type_name, std::ostream& stream )
@@ -243,6 +252,24 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			stream << " : ";
 			ElementWrite( *ternary_operator.false_branch, stream );
 			stream << " )";
+		}
+		void operator()( const ReferenceToRawPointerOperator& reference_to_raw_pointer_operator ) const
+		{
+			if( reference_to_raw_pointer_operator.expression == nullptr )
+				return;
+			stream << "$<";
+			stream << "(";
+			ElementWrite( *reference_to_raw_pointer_operator.expression, stream );
+			stream << ")";
+		}
+		void operator()( const RawPointerToReferenceOperator& raw_pointer_to_reference_operator ) const
+		{
+			if( raw_pointer_to_reference_operator.expression == nullptr )
+				return;
+			stream << "$>";
+			stream << "(";
+			ElementWrite( *raw_pointer_to_reference_operator.expression, stream );
+			stream << ")";
 		}
 		void operator()( const NumericConstant& numeric_constant ) const
 		{

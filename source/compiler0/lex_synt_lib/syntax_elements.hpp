@@ -22,6 +22,7 @@ struct TypeofTypeName;
 struct NamedTypeName;
 struct FunctionType;
 struct TupleType;
+struct RawPointerType;
 
 struct UnaryPlus;
 struct UnaryMinus;
@@ -35,6 +36,8 @@ struct MemberAccessOperator;
 struct BinaryOperator;
 struct NamedOperand;
 struct TernaryOperator;
+struct ReferenceToRawPointerOperator;
+struct RawPointerToReferenceOperator;
 struct TypeNameInExpression;
 struct NumericConstant;
 struct BracketExpression;
@@ -98,7 +101,8 @@ using TypeName= std::variant<
 	ArrayTypeName,
 	NamedTypeName,
 	FunctionTypePtr,
-	TupleType >;
+	TupleType,
+	RawPointerType >;
 
 using UnaryPrefixOperator= std::variant<
 	UnaryPlus,
@@ -116,6 +120,8 @@ using Expression= std::variant<
 	BinaryOperator,
 	NamedOperand,
 	TernaryOperator,
+	ReferenceToRawPointerOperator,
+	RawPointerToReferenceOperator,
 	TypeNameInExpression,
 	NumericConstant,
 	BracketExpression,
@@ -261,6 +267,14 @@ public:
 	std::vector<TypeName> element_types_;
 };
 
+struct RawPointerType final : public SyntaxElementBase
+{
+public:
+	RawPointerType( const SrcLoc& src_loc );
+
+	std::unique_ptr<TypeName> element_type;
+};
+
 struct NamedTypeName final : public SyntaxElementBase
 {
 public:
@@ -332,6 +346,22 @@ public:
 	std::unique_ptr<Expression> condition;
 	std::unique_ptr<Expression> true_branch;
 	std::unique_ptr<Expression> false_branch;
+};
+
+struct ReferenceToRawPointerOperator final : public ExpressionComponentWithUnaryOperators
+{
+public:
+	explicit ReferenceToRawPointerOperator( const SrcLoc& src_loc );
+
+	std::unique_ptr<Expression> expression;
+};
+
+struct RawPointerToReferenceOperator final : public ExpressionComponentWithUnaryOperators
+{
+public:
+	explicit RawPointerToReferenceOperator( const SrcLoc& src_loc );
+
+	std::unique_ptr<Expression> expression;
 };
 
 struct NamedOperand final : public ExpressionComponentWithUnaryOperators
