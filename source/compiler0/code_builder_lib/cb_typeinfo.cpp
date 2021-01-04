@@ -205,6 +205,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	add_bool_field( "is_array"           , type.GetArrayType()           != nullptr );
 	add_bool_field( "is_tuple"           , type.GetTupleType()           != nullptr );
 	add_bool_field( "is_class"           , type.GetClassType()           != nullptr );
+	add_bool_field( "is_raw_pointer"     , type.GetRawPointerType()      != nullptr );
 	add_bool_field( "is_function_pointer", type.GetFunctionPointerType() != nullptr );
 	add_bool_field( "is_function"        , type.GetFunctionType()        != nullptr );
 
@@ -282,6 +283,10 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 
 		add_bool_field( "is_typeinfo", class_type->typeinfo_type != std::nullopt );
 		add_bool_field( "shared", class_type->have_shared_state );
+	}
+	else if( const RawPointer* const raw_pointer_type= type.GetRawPointerType() )
+	{
+		add_typeinfo_field( "element_type", raw_pointer_type->type );
 	}
 	else if( const FunctionPointer* const function_pointer_type= type.GetFunctionPointerType() )
 	{

@@ -446,9 +446,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"RawPointerTypeIsNotConstexpr_Test5",
 		"RawPointerTypeIsNotConstexpr_Test6",
 		"TemplateParametersDeductionFailed_Test11",
-		"Typeinfo_ForRawPointerType_Test0",
-		"Typeinfo_ForRawPointerType_Test1",
-		"Typeinfo_ForRawPointerType_Test2",
 	};
 
 	if( c_tests_to_ignore.count(func_name) > 0 )
