@@ -919,6 +919,8 @@ Expression SyntaxAnalyzer::ParseExpression()
 			case Lexem::Type::String:
 			case Lexem::Type::BracketLeft:
 			case Lexem::Type::SquareBracketLeft:
+			case Lexem::Type::ReferenceToPointer:
+			case Lexem::Type::PointerToReference:
 				goto parse_operand;
 
 			case Lexem::Type::Plus:
@@ -1067,54 +1069,6 @@ Expression SyntaxAnalyzer::ParseExpression()
 
 				current_node= std::move(ternary_operator);
 				current_node_ptr= std::get_if<TernaryOperator>( &current_node );
-			}
-			else if( it_->type == Lexem::Type::ReferenceToPointer )
-			{
-				ReferenceToRawPointerOperator reference_to_raw_pointer_operator( it_->src_loc );
-				NextLexem();
-
-				if( it_->type != Lexem::Type::BracketLeft )
-				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
-				NextLexem();
-
-				reference_to_raw_pointer_operator.expression= std::make_unique<Expression>( ParseExpression() );
-
-				if( it_->type != Lexem::Type::BracketRight )
-				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
-				NextLexem();
-
-				current_node= std::move(reference_to_raw_pointer_operator);
-				current_node_ptr= std::get_if<ReferenceToRawPointerOperator>( &current_node );
-			}
-			else if( it_->type == Lexem::Type::PointerToReference )
-			{
-				RawPointerToReferenceOperator raw_pointer_to_reference_operator( it_->src_loc );
-				NextLexem();
-
-				if( it_->type != Lexem::Type::BracketLeft )
-				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
-				NextLexem();
-
-				raw_pointer_to_reference_operator.expression= std::make_unique<Expression>( ParseExpression() );
-
-				if( it_->type != Lexem::Type::BracketRight )
-				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
-				NextLexem();
-
-				current_node= std::move(raw_pointer_to_reference_operator);
-				current_node_ptr= std::get_if<ReferenceToRawPointerOperator>( &current_node );
 			}
 			else if( it_->text == Keywords::cast_ref_ )
 			{
@@ -1354,6 +1308,54 @@ Expression SyntaxAnalyzer::ParseExpression()
 			type_name_in_expression.type_name= ParseTypeName();
 			current_node= std::move(type_name_in_expression);
 			current_node_ptr= std::get_if<TypeNameInExpression>( &current_node );
+		}
+		else if( it_->type == Lexem::Type::ReferenceToPointer )
+		{
+			ReferenceToRawPointerOperator reference_to_raw_pointer_operator( it_->src_loc );
+			NextLexem();
+
+			if( it_->type != Lexem::Type::BracketLeft )
+			{
+				PushErrorMessage();
+				return EmptyVariant();
+			}
+			NextLexem();
+
+			reference_to_raw_pointer_operator.expression= std::make_unique<Expression>( ParseExpression() );
+
+			if( it_->type != Lexem::Type::BracketRight )
+			{
+				PushErrorMessage();
+				return EmptyVariant();
+			}
+			NextLexem();
+
+			current_node= std::move(reference_to_raw_pointer_operator);
+			current_node_ptr= std::get_if<ReferenceToRawPointerOperator>( &current_node );
+		}
+		else if( it_->type == Lexem::Type::PointerToReference )
+		{
+			RawPointerToReferenceOperator raw_pointer_to_reference_operator( it_->src_loc );
+			NextLexem();
+
+			if( it_->type != Lexem::Type::BracketLeft )
+			{
+				PushErrorMessage();
+				return EmptyVariant();
+			}
+			NextLexem();
+
+			raw_pointer_to_reference_operator.expression= std::make_unique<Expression>( ParseExpression() );
+
+			if( it_->type != Lexem::Type::BracketRight )
+			{
+				PushErrorMessage();
+				return EmptyVariant();
+			}
+			NextLexem();
+
+			current_node= std::move(raw_pointer_to_reference_operator);
+			current_node_ptr= std::get_if<RawPointerToReferenceOperator>( &current_node );
 		}
 		else U_ASSERT(false);
 
