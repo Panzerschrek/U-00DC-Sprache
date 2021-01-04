@@ -108,14 +108,6 @@ Type CodeBuilder::PrepareType( const Synt::FunctionType& function_type_name, Nam
 	function_type.return_value_is_mutable= function_type_name.return_value_mutability_modifier_ == MutabilityModifier::Mutable;
 	function_type.return_value_is_reference= function_type_name.return_value_reference_modifier_ == ReferenceModifier::Reference;
 
-	if( !function_type.return_value_is_reference &&
-		!( function_type.return_type.GetFundamentalType() != nullptr ||
-		   function_type.return_type.GetClassType() != nullptr ||
-		   function_type.return_type.GetTupleType() != nullptr ||
-		   function_type.return_type.GetEnumType() != nullptr ||
-		   function_type.return_type.GetFunctionPointerType() != nullptr ) )
-		REPORT_ERROR( NotImplemented, names_scope.GetErrors(), function_type_name.src_loc_, "return value types except fundamentals, enums, classes, function pointers" );
-
 	for( const Synt::FunctionArgument& arg : function_type_name.arguments_ )
 	{
 		if( IsKeyword( arg.name_ ) )
