@@ -326,6 +326,12 @@ fn MangleTypeImpl( Type& t ) : MangleGraphNode
 
 		return GetNestedName( enum_members_ref.GetThisNamespaceName(), enum_members_ref.GetParent().lock_imut().get_ref() );
 	}
+	if_var( &raw_poiter_type : t.GetRawPointerType() )
+	{
+		var MangleGraphNode mut res{ .prefix= "P" };
+		res.childs.push_back( ust::box</MangleGraphNode/>( MangleTypeImpl( raw_poiter_type.element_type ) ) );
+		return move(res);
+	}
 	if_var( &function_pointer_type : t.GetFunctionPointerType() )
 	{
 		var MangleGraphNode mut res{ .prefix= "P" };
