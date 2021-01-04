@@ -560,6 +560,11 @@ public:
 		ust::vector</TemplateSignatureParam/> element_types;
 	}
 
+	struct RawPointerTypeParam
+	{
+		TemplateSignatureParam element_type;
+	}
+
 	struct FunctionTypeParam
 	{
 		TemplateSignatureParam return_type;
@@ -588,6 +593,7 @@ public:
 	fn conversion_constructor( VariableParam mut variable_param );
 	fn conversion_constructor( ArrayTypeParam mut array_type_param );
 	fn conversion_constructor( TupleTypeParam mut tuple_type_param );
+	fn conversion_constructor( RawPointerTypeParam mut raw_pointer_type_param );
 	fn conversion_constructor( FunctionTypeParam mut function_type_param );
 	fn conversion_constructor( SpecializedTemplateParam mut specialized_template_param );
 
@@ -596,6 +602,7 @@ public:
 	fn GetVariableParam(this) : ust::optional_ref</ VariableParam, false />'this';
 	fn GetArrayTypeParam(this) : ust::optional_ref</ ArrayTypeParam, false />'this';
 	fn GetTupleTypeParam(this) : ust::optional_ref</ TupleTypeParam, false />'this';
+	fn GetRawPointerTypeParam(this) : ust::optional_ref</ RawPointerTypeParam, false />'this';
 	fn GetFunctionTypeParam(this) : ust::optional_ref</ FunctionTypeParam, false />'this';
 	fn GetSpecializedTemplateParam(this) : ust::optional_ref</ SpecializedTemplateParam, false />'this';
 
@@ -606,6 +613,7 @@ private:
 		VariableParam,
 		ust::box</ ArrayTypeParam />,
 		ust::box</ TupleTypeParam />,
+		ust::box</ RawPointerTypeParam />,
 		ust::box</ FunctionTypeParam />,
 		ust::box</ SpecializedTemplateParam />
 		] />;

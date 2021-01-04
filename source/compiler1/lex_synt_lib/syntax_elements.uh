@@ -221,6 +221,7 @@ type Expression= ust::variant</ tup[
 	BitwiseNot,
 	ust::box</ArrayType/>,
 	ust::box</TupleType/>,
+	ust::box</RawPointerType/>,
 	ust::box</FunctionType/>
 	] />;
 
