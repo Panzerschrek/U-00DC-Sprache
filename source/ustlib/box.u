@@ -16,7 +16,6 @@ public:
 	fn constructor()= delete;
 
 	fn constructor( mut this, T mut val )
-	( ptr_= zero_init )
 	{
 		unsafe
 		{
@@ -28,7 +27,6 @@ public:
 	template</ type U />
 	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
 	conversion_constructor( mut this, box</U/> mut val )
-	( ptr_= zero_init )
 	{
 		unsafe
 		{
@@ -77,7 +75,7 @@ private:
 	type element_type_for_shared_check= T;
 
 private:
-	$(T) ptr_;
+	$(T) ptr_= zero_init;
 }
 
 struct box_hasher

@@ -33,7 +33,6 @@ public:
 
 	fn enable_if( !is_mutable )
 	conversion_constructor( mut this'a', random_access_range</ T, true />& src_range'b' ) ' a <- b '
-	( size_(0) )
 	{
 		unsafe
 		{	// Hack! we can not access begin_/end_ members of different range type, so, just copy memory.

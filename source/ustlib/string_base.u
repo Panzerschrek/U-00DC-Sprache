@@ -16,13 +16,11 @@ public:
 
 public:
 	// Default constructor.
-	fn constructor()
-	( ptr_= zero_init, size_(0), capacity_(0) )
-	{}
+	fn constructor()= default;
 
 	// Copy constructor.
 	fn constructor( this_type& other )
-	( ptr_=zero_init, size_(other.size_), capacity_(0) )
+		( size_(other.size_) )
 	{
 		if( other.empty() ){ return; }
 
@@ -38,7 +36,7 @@ public:
 	// Construct form char array.
 	template</ size_type array_size />
 	fn conversion_constructor( [ char_type, array_size ]& array )
-	( ptr_=zero_init, size_(array_size), capacity_(0) )
+		( size_(array_size) )
 	{
 		if( array_size == size_type(0) ){ return; }
 
@@ -53,7 +51,7 @@ public:
 
 	// Construct from char range.
 	fn conversion_constructor( range_imut range )
-	( ptr_= zero_init, size_(range.size()), capacity_(0) )
+		( size_(range.size()) )
 	{
 		if( size_ == size_type(0) ){ return; }
 
@@ -68,7 +66,7 @@ public:
 
 	// Fill constructor.
 	fn constructor( size_type count, char_type value )
-	( ptr_= zero_init, size_(count), capacity_(0) )
+		( size_(count) )
 	{
 		if( count == size_type(0) ){ return; }
 
@@ -654,9 +652,9 @@ private:
 	}
 
 private:
-	$(char_type) ptr_;
-	size_type size_;
-	size_type capacity_;
+	$(char_type) ptr_= zero_init;
+	size_type size_(0);
+	size_type capacity_(0);
 }
 
 struct string_base_hasher

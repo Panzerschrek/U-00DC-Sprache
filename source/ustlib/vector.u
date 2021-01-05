@@ -17,13 +17,11 @@ public:
 
 public:
 	// Default constructor.
-	fn constructor()
-	( ptr_= zero_init, size_(0), capacity_(0) )
-	{}
+	fn constructor()= default;
 
 	// Copy constructor.
 	fn enable_if( typeinfo</T/>.is_copy_constructible ) constructor( this_type& other )
-	( ptr_= zero_init, size_(other.size_), capacity_(0) )
+		( size_(other.size_) )
 	{
 		if( other.empty() ){ return; }
 
@@ -41,7 +39,7 @@ public:
 
 	// Fill constructor.
 	fn enable_if( typeinfo</T/>.is_copy_constructible ) constructor( size_type count, T& value )
-	( ptr_= zero_init, size_(count), capacity_(0) )
+		( size_(count) )
 	{
 		if( size_ == size_type(0) ) { return; }
 
@@ -59,7 +57,7 @@ public:
 
 	// Constructor with size only (for default-constructible elements).
 	fn enable_if( typeinfo</T/>.is_default_constructible ) constructor( size_type count )
-	( ptr_= zero_init, size_(count), capacity_(0) )
+		( size_(count) )
 	{
 		if( size_ == size_type(0) ) { return; }
 
@@ -468,9 +466,9 @@ private:
 private:
 	ContainerTag</ T /> container_tag_;
 
-	$(T) ptr_;
-	size_type size_;
-	size_type capacity_;
+	$(T) ptr_= zero_init;
+	size_type size_(0);
+	size_type capacity_(0);
 }
 
 } // namespace ust
