@@ -3,7 +3,6 @@ import "container_utils.u"
 import "minmax.u"
 import "hash.u"
 import "optional_ref.u"
-import "pointer.u"
 
 namespace ust
 {
@@ -33,7 +32,7 @@ public:
 		{
 			for( var size_type mut i(0); i < other.capacity_; ++i )
 			{
-				auto &mut table_value= other.table_[i];
+				auto &mut table_value= $>(other.table_ + i);
 				if( table_value.cell_content == TableValue::CellContent::HaveValue )
 				{
 					this.insert( table_value.key_storage, table_value.value_storage );
@@ -45,9 +44,9 @@ public:
 	fn destructor()
 	{
 		clear();
-		if( !table_.is_null() )
+		if( table_ != nullptr</TableValue/>() )
 		{
-			unsafe{  memory_free( table_.get_ref() );  }
+			unsafe{  memory_free( $>(table_) );  }
 		}
 	}
 
@@ -80,7 +79,7 @@ public:
 			auto mut insert_index= ~0s;
 			while( true )
 			{
-				auto cell_content= table_[ key_hash_wrapped ].cell_content;
+				auto cell_content= $>(table_ + key_hash_wrapped).cell_content;
 				auto next_key_hash_wrapped= ( key_hash_wrapped + size_type(1) ) & capacity_mask;
 				if( cell_content == TableValue::CellContent::Empty || next_key_hash_wrapped == initial_key_hash_wrapped )
 				{
@@ -89,7 +88,7 @@ public:
 					// Insert new value into place of tombstone (if it exists) or in first empty cell.
 					if( insert_index == ~0s ){ insert_index= key_hash_wrapped; }
 
-					auto &mut dst_value= table_[ insert_index ];
+					auto &mut dst_value= $>(table_ + insert_index);
 
 					move_unsafe( dst_value.key_storage, key );
 					move_unsafe( dst_value.value_storage, move(value) );
@@ -102,7 +101,7 @@ public:
 				}
 				else if( cell_content == TableValue::CellContent::HaveValue )
 				{
-					auto &mut dst_value= table_[ key_hash_wrapped ];
+					auto &mut dst_value= $>(table_ + key_hash_wrapped);
 					if( key == dst_value.key_storage )
 					{
 						dst_value.value_storage= move(value);
@@ -123,9 +122,9 @@ public:
 		unsafe
 		{
 			var ptr_type table_value_ptr= find_key( key );
-			if( ! table_value_ptr.is_null() )
+			if( table_value_ptr != nullptr</TableValue/>() )
 			{
-				auto &mut table_value= table_value_ptr.get_ref();
+				auto &mut table_value= $>(table_value_ptr);
 				--size_;
 				table_value.cell_content= TableValue::CellContent::ValueRemoved;
 				call_destructor( table_value.key_storage );
@@ -157,9 +156,9 @@ public:
 		unsafe
 		{
 			var ptr_type table_value_ptr= find_key( key );
-			if( ! table_value_ptr.is_null() )
+			if( table_value_ptr != nullptr</TableValue/>() )
 			{
-				return optional_ref</ value_type, true  />( cast_mut( cast_ref_unsafe</value_type/>( int_to_ref( ref_to_int( table_value_ptr.get_ref().value_storage ) ) ) ) );
+				return optional_ref</ value_type, true  />( $>(table_value_ptr).value_storage );
 			}
 		}
 
@@ -178,12 +177,12 @@ public:
 
 	fn clear( mut this )
 	{
-		if( table_.is_null() ) { return; }
+		if( table_ == nullptr</TableValue/>() ) { return; }
 		unsafe
 		{
 			for( auto mut i= 0s; i < capacity_; ++i )
 			{
-				auto &mut table_value= table_[i];
+				auto &mut table_value= $>(table_ + i);
 				if( table_value.cell_content == TableValue::CellContent::HaveValue )
 				{
 					table_value.cell_content= TableValue::CellContent::ValueRemoved;
@@ -221,18 +220,18 @@ private:
 			auto new_capacity_mask= new_capacity - size_type(1);
 
 			// Allocate and initialize new table.
-			auto new_table= ptr_type( cast_ref_unsafe</TableValue/>( memory_allocate( new_capacity * typeinfo</TableValue/>.size_of ) ) );
+			auto new_table= $<( cast_ref_unsafe</TableValue/>( memory_allocate( new_capacity * typeinfo</TableValue/>.size_of ) ) );
 			for( auto mut i= 0s; i < new_capacity; ++i )
 			{
-				new_table[i].cell_content= TableValue::CellContent::Empty;
+				$>(new_table + i).cell_content= TableValue::CellContent::Empty;
 			}
 
 			// Move content of old table into new table.
-			if( !table_.is_null() )
+			if( table_ != nullptr</TableValue/>() )
 			{
 				for( auto mut i= 0s; i < capacity_; ++i )
 				{
-					auto &mut old_value= table_[i];
+					auto &mut old_value= $>(table_ + i);
 					if( old_value.cell_content == TableValue::CellContent::Empty || old_value.cell_content == TableValue::CellContent::ValueRemoved )
 					{}
 					else if( old_value.cell_content == TableValue::CellContent::HaveValue )
@@ -242,7 +241,7 @@ private:
 						auto mut key_hash_wrapped= key_hash & new_capacity_mask;
 						while( true )
 						{
-							auto &mut new_value= new_table[ key_hash_wrapped ];
+							auto &mut new_value= $>(new_table + key_hash_wrapped);
 							if( new_value.cell_content == TableValue::CellContent::Empty )
 							{
 								new_value.cell_content= TableValue::CellContent::HaveValue;
@@ -257,7 +256,7 @@ private:
 				} // for all old table.
 
 				// All value moved, so, we can free old memory.
-				memory_free( table_.get_ref() );
+				memory_free( $>(table_) );
 			}
 			capacity_= new_capacity;
 			table_= new_table;
@@ -267,7 +266,7 @@ private:
 	// Returns bucket for specific key. Returns 'null', if key not found.
 	fn find_key( mut this, key_type& key ) : ptr_type
 	{
-		if( empty() ){ return ptr_type(); }
+		if( empty() ){ return nullptr</TableValue/>(); }
 
 		unsafe
 		{
@@ -277,14 +276,14 @@ private:
 			auto key_hash_wrapped_finish= key_hash_wrapped;
 			while( true )
 			{
-				auto &mut table_value= table_[ key_hash_wrapped ];
+				auto &mut table_value= $>(table_ + key_hash_wrapped);
 				if( table_value.cell_content == TableValue::CellContent::Empty ) { break; }
 				else if( table_value.cell_content == TableValue::CellContent::ValueRemoved ) {}
 				else if( table_value.cell_content == TableValue::CellContent::HaveValue )
 				{
 					if( key == table_value.key_storage )
 					{
-						return ptr_type( table_value );
+						return $<( table_value );
 					}
 				}
 
@@ -292,7 +291,7 @@ private:
 				if( key_hash_wrapped == key_hash_wrapped_finish ){ break; } // Value not found in whole table.
 			}
 		}
-		return ptr_type();
+		return nullptr</TableValue/>();
 	}
 
 	fn hash( key_type& key ) : size_type
@@ -392,19 +391,13 @@ public:
 		fn enable_if( is_mutable )
 		front_unsafe( this'x' ) unsafe : element_mut'x'
 		{
-			unsafe
-			{
-				return element_mut( cast_mut( cast_ref_unsafe</TableValue/>( int_to_ref( ref_to_int( table_.get_ref() ) ) ) ) );
-			}
+			unsafe{  return element_mut( $>(table_) );  }
 		}
 
 		fn enable_if( !is_mutable )
 		front_unsafe( this'x' ) unsafe : element_imut'x'
 		{
-			unsafe
-			{
-				return element_imut( cast_ref_unsafe</TableValue/>( int_to_ref( ref_to_int( table_[size_type(0)] ) ) ) );
-			}
+			unsafe{  return element_imut( $>(table_) );  }
 		}
 
 	private:
@@ -412,7 +405,7 @@ public:
 		{
 			unsafe
 			{
-				while( capacity_ > size_type(0) && table_.get_ref().cell_content != TableValue::CellContent::HaveValue )
+				while( capacity_ > size_type(0) && $>(table_).cell_content != TableValue::CellContent::HaveValue )
 				{
 					++table_;
 					--capacity_;
@@ -437,12 +430,12 @@ private:
 		value_type value_storage;
 	}
 
-	type ptr_type= raw_ptr_mut</ TableValue />;
+	type ptr_type= $(TableValue);
 
 private:
 	ContainerTag</ K /> key_tag_;
 	ContainerTag</ V /> value_tag_;
-	ptr_type table_;
+	ptr_type table_= zero_init;
 	size_type size_(0);
 	size_type capacity_(0); // Always must be power of two.
 }
