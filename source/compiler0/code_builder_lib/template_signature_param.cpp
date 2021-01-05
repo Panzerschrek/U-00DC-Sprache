@@ -26,6 +26,11 @@ TemplateSignatureParam::TemplateSignatureParam( ArrayParam array )
 	something_= std::move(array);
 }
 
+TemplateSignatureParam::TemplateSignatureParam( RawPointerParam raw_pointer )
+{
+	something_= std::move(raw_pointer);
+}
+
 TemplateSignatureParam::TemplateSignatureParam( TupleParam tuple )
 {
 	something_= std::move(tuple);
@@ -79,6 +84,11 @@ const TemplateSignatureParam::ArrayParam* TemplateSignatureParam::GetArray() con
 const TemplateSignatureParam::TupleParam* TemplateSignatureParam::GetTuple() const
 {
 	return std::get_if<TupleParam>( &something_ );
+}
+
+const TemplateSignatureParam::RawPointerParam* TemplateSignatureParam::GetRawPointer() const
+{
+	return std::get_if<RawPointerParam>( &something_ );
 }
 
 const TemplateSignatureParam::FunctionParam* TemplateSignatureParam::GetFunction() const

@@ -247,6 +247,13 @@ private:
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
 		const SrcLoc& src_loc,
+		const TemplateSignatureParam::RawPointerParam& template_param );
+
+	bool MatchTemplateArgImpl(
+		const TemplateBase& template_,
+		NamesScope& args_names_scope,
+		const TemplateArg& template_arg,
+		const SrcLoc& src_loc,
 		const TemplateSignatureParam::FunctionParam& template_param );
 
 	bool MatchTemplateArgImpl(

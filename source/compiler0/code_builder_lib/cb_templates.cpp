@@ -374,6 +374,23 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 
 		return tuple_param;
 	}
+	else if( const auto raw_pointer_type_name= std::get_if<Synt::RawPointerType>(&type_name_template_parameter) )
+	{
+		TemplateSignatureParam::RawPointerParam raw_pointer_param;
+		raw_pointer_param.type=
+			std::make_unique<TemplateSignatureParam>(
+				CreateTemplateSignatureParameter(
+					*raw_pointer_type_name->element_type,
+					names_scope,
+					function_context,
+					template_parameters,
+					template_parameters_usage_flags ) );
+
+		if( raw_pointer_param.type->IsType() )
+			return TemplateSignatureParam::TypeParam{ PrepareType( *raw_pointer_type_name, names_scope, function_context ) };
+
+		return raw_pointer_param;
+	}
 	else if( const auto function_pointer_type_name_ptr= std::get_if<Synt::FunctionTypePtr>(&type_name_template_parameter) )
 	{
 		TemplateSignatureParam::FunctionParam function_param;
@@ -626,6 +643,24 @@ bool CodeBuilder::MatchTemplateArgImpl(
 			}
 
 			return true;
+		}
+	}
+
+	return false;
+}
+
+bool CodeBuilder::MatchTemplateArgImpl(
+	const TemplateBase& template_,
+	NamesScope& args_names_scope,
+	const TemplateArg& template_arg,
+	const SrcLoc& src_loc,
+	const TemplateSignatureParam::RawPointerParam& template_param )
+{
+	if( const auto given_type= std::get_if<Type>( &template_arg ) )
+	{
+		if( const auto given_raw_ponter_type= given_type->GetRawPointerType() )
+		{
+			return MatchTemplateArg( template_, args_names_scope, given_raw_ponter_type->type, src_loc, *template_param.type );
 		}
 	}
 

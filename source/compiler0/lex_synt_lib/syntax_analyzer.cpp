@@ -919,6 +919,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 			case Lexem::Type::String:
 			case Lexem::Type::BracketLeft:
 			case Lexem::Type::SquareBracketLeft:
+			case Lexem::Type::PointerTypeMark:
 			case Lexem::Type::ReferenceToPointer:
 			case Lexem::Type::PointerToReference:
 				goto parse_operand;
@@ -1304,6 +1305,14 @@ Expression SyntaxAnalyzer::ParseExpression()
 		else if( it_->type == Lexem::Type::SquareBracketLeft )
 		{
 			// Parse array type name: [ ElementType, 42 ]
+			TypeNameInExpression type_name_in_expression(it_->src_loc );
+			type_name_in_expression.type_name= ParseTypeName();
+			current_node= std::move(type_name_in_expression);
+			current_node_ptr= std::get_if<TypeNameInExpression>( &current_node );
+		}
+		else if( it_->type == Lexem::Type::PointerTypeMark )
+		{
+			// Parse raw pointer type name: $(ElementType)
 			TypeNameInExpression type_name_in_expression(it_->src_loc );
 			type_name_in_expression.type_name= ParseTypeName();
 			current_node= std::move(type_name_in_expression);

@@ -44,6 +44,11 @@ public:
 		std::vector<TemplateSignatureParam> element_types;
 	};
 
+	struct RawPointerParam
+	{
+		std::shared_ptr<const TemplateSignatureParam> type;
+	};
+
 	struct FunctionParam
 	{
 		std::shared_ptr<const TemplateSignatureParam> return_type;
@@ -73,6 +78,7 @@ public:
 	TemplateSignatureParam( TemplateParam template_parameter );
 	TemplateSignatureParam( ArrayParam array );
 	TemplateSignatureParam( TupleParam tuple );
+	TemplateSignatureParam( RawPointerParam raw_pointer );
 	TemplateSignatureParam( FunctionParam function );
 	TemplateSignatureParam( SpecializedTemplateParam template_ );
 
@@ -84,6 +90,7 @@ public:
 	const TemplateParam* GetTemplateParam() const;
 	const ArrayParam* GetArray() const;
 	const TupleParam* GetTuple() const;
+	const RawPointerParam* GetRawPointer() const;
 	const FunctionParam* GetFunction() const;
 	const SpecializedTemplateParam* GetTemplate() const;
 
@@ -100,6 +107,7 @@ private:
 		TemplateParam,
 		ArrayParam,
 		TupleParam,
+		RawPointerParam,
 		FunctionParam,
 		SpecializedTemplateParam> something_;
 };
