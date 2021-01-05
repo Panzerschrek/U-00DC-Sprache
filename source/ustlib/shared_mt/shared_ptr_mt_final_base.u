@@ -26,9 +26,9 @@ public:
 	{
 		unsafe
 		{
-			ptr_= storage_ptr( cast_ref_unsafe</storage/>( memory_allocate( typeinfo</storage/>.size_of ) ) );
-			move_unsafe( ptr_.get_ref().value, move(value) );
-			ptr_.get_ref().counter= 1u;
+			ptr_= $<( cast_ref_unsafe</storage/>( memory_allocate( typeinfo</storage/>.size_of ) ) );
+			move_unsafe( $>(ptr_).value, move(value) );
+			$>(ptr_).counter= 1u;
 		}
 	}
 
@@ -47,10 +47,10 @@ public:
 		reset();
 		unsafe
 		{
-			if( !other.ptr_.is_null() )
+			if( other.ptr_ != nullptr</storage/>() )
 			{
 				ptr_= other.ptr_;
-				ust::atomic_inc( ptr_.get_ref().counter );
+				ust::atomic_inc( $>(ptr_).counter );
 			}
 		}
 	}
@@ -60,12 +60,12 @@ public:
 		if( empty() ) { return; }
 		unsafe
 		{
-			if( ust::atomic_dec( ptr_.get_ref().counter ) == 1u )
+			if( ust::atomic_dec( $>(ptr_).counter ) == 1u )
 			{
-				call_destructor( ptr_.get_ref().value );
-				memory_free( ptr_.get_ref() );
+				call_destructor( $>(ptr_).value );
+				memory_free( $>(ptr_) );
 			}
-			ptr_= storage_ptr();
+			ptr_= nullptr</storage/>();
 		}
 	}
 
@@ -76,14 +76,14 @@ public:
 
 	fn empty( this ) : bool
 	{
-		return ptr_.is_null();
+		return ptr_ == nullptr</storage/>();
 	}
 
 	fn get_ref_unsafe( this ) unsafe : T &imut
 	{
 		unsafe
 		{
-			return ptr_.get_ref().value;
+			return $>(ptr_).value;
 		}
 	}
 
@@ -105,10 +105,9 @@ private:
 		u32 counter;
 		T value;
 	}
-	type storage_ptr= raw_ptr_mut</storage/>;
 
 private:
-	storage_ptr ptr_;
+	$(storage) ptr_= zero_init;
 }
 
 struct shared_ptr_mt_final_base_hasher
