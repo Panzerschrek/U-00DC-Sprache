@@ -15,20 +15,34 @@ public:
 	op=( mut this, this_type &imut other )= default;
 
 	// Default constructor - set to zero
-	fn constructor() ( val_= size_type(0) ) {}
+	fn constructor() ( val_= zero_init ) {}
+
 	// Construct from reference
-	fn constructor( T &mut ref ) ( val_= ref_to_int(ref) ) {}
+	fn constructor( T &mut ref )
+	( val_= zero_init )
+	{
+		unsafe{  val_= $<(ref);  }
+	}
+
 	// Construct from reference to array
 	template</ size_type array_size />
-	fn constructor( [ T, array_size ] &mut ref ) ( val_= ref_to_int(ref) ) {}
+	fn constructor( [ T, array_size ] &mut ref )
+	( val_= zero_init )
+	{
+		unsafe{  val_= $<( cast_ref_unsafe</T/>(ref) );  }
+	}
 
-	fn is_null( this ) : bool  { return val_ == size_type(0); }
+	fn is_null( this ) : bool
+	{
+		var $(T) null= zero_init;
+		return val_ == null;
+	}
 
 	// Dereference and indexing.
 
 	fn get_ref( this ) unsafe : T &mut
 	{
-		unsafe{  return cast_mut( cast_ref_unsafe</ T />( int_to_ref(val_) ) );  }
+		unsafe{  return $>(val_);  }
 	}
 
 	template</ size_type array_size />
@@ -39,8 +53,7 @@ public:
 
 	op[]( this, size_type s ) unsafe : T&mut
 	{
-		auto p= val_ + c_element_size_ * s;
-		unsafe{  return cast_mut( cast_ref_unsafe</ T />( int_to_ref(p) ) );  }
+		unsafe{  return $>( val_ + s );  }
 	}
 
 	// Compare.
@@ -52,10 +65,10 @@ public:
 	op!=( this, this_type other ) : bool  { return this.val_ != other.val_; }
 
 	// Pointer to int operations
-	op++( mut this )  { val_+= c_element_size_; }
-	op--( mut this )  { val_-= c_element_size_; }
-	op+=( mut this, size_type s )  { val_+= c_element_size_ * s; }
-	op-=( mut this, size_type s )  { val_-= c_element_size_ * s; }
+	op++( mut this )  { ++val_; }
+	op--( mut this )  { --val_; }
+	op+=( mut this, size_type s )  { val_+= s; }
+	op-=( mut this, size_type s )  { val_-= s; }
 
 	op+( this, size_type s ) : this_type
 	{
@@ -76,15 +89,18 @@ public:
 
 	op-( this_type a, this_type b ) : ptr_diff_type
 	{
-		// size_of is constant, division by constant will be optimized and replaced with multiplication.
-		return ptr_diff_type( a.val_ - b.val_ ) / ptr_diff_type( c_element_size_ );
+		static_if( typeinfo</T/>.size_of > 0s )
+		{
+			return a.val_ - b.val_;
+		}
+		else
+		{
+			return ptr_diff_type(0);
+		}
 	}
 
 private:
-	auto constexpr c_element_size_= typeinfo</T/>.size_of;
-
-private:
-	size_type val_;
+	$(T) val_;
 }
 
 } // namespace ust
