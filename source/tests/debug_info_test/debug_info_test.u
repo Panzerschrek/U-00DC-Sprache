@@ -57,6 +57,21 @@ fn StructTypesTest()
 	return;
 }
 
+fn RawPointerTypeTest()
+{
+	auto mut x= 0;
+	auto mut x_ptr= $<(x);
+	++x_ptr;
+	--x_ptr;
+	unsafe{  $>(x_ptr)= 66;  }
+
+	var $(f32) f_zero= zero_init;
+
+	var S0 mut s{ .x= 65345, .y= 46346.747f };
+	auto s_ptr= $<(s);
+	unsafe{  $>(s_ptr).y= 0.0f;  }
+}
+
 fn MakeS1() : S1
 {
 	var S1 s= zero_init;
@@ -247,6 +262,7 @@ fn nomangle main() : i32
 	ArrayTypesTest();
 	TupleTypesTest();
 	StructTypesTest();
+	RawPointerTypeTest();
 	AutoVariablesTest();
 	ParametersTest();
 	StructsWithReferencesTest();

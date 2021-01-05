@@ -247,6 +247,13 @@ private:
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
 		const SrcLoc& src_loc,
+		const TemplateSignatureParam::RawPointerParam& template_param );
+
+	bool MatchTemplateArgImpl(
+		const TemplateBase& template_,
+		NamesScope& args_names_scope,
+		const TemplateArg& template_arg,
+		const SrcLoc& src_loc,
 		const TemplateSignatureParam::FunctionParam& template_param );
 
 	bool MatchTemplateArgImpl(
@@ -792,6 +799,7 @@ private:
 	llvm::DICompositeType* CreateDIType( const Array& type );
 	llvm::DICompositeType* CreateDIType( const Tuple& type );
 	llvm::DISubroutineType* CreateDIType( const Function& type );
+	llvm::DIDerivedType* CreateDIType( const RawPointer& type );
 	llvm::DIDerivedType* CreateDIType( const FunctionPointer& type );
 	llvm::DICompositeType* CreateDIType( const ClassProxyPtr& type );
 	llvm::DICompositeType* CreateDIType( const EnumPtr& type );

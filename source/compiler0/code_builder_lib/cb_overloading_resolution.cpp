@@ -126,6 +126,8 @@ ConversionsCompareResult TemplateSpecializationCompare(
 			return ConversionsCompareResult::LeftIsBetter; // Type is more specialized, then array.
 		if( right_template_parameter.GetTuple() != nullptr )
 			return ConversionsCompareResult::LeftIsBetter; // Type is more specialized, then tuple.
+		if( right_template_parameter.GetRawPointer() != nullptr )
+			return ConversionsCompareResult::LeftIsBetter; // Type is more specialized, then raw pointer.
 		if( right_template_parameter.GetFunction() != nullptr )
 			return ConversionsCompareResult::LeftIsBetter; // Type is more specialized, then function.
 		if( right_template_parameter.GetTemplate() != nullptr )
@@ -190,6 +192,16 @@ ConversionsCompareResult TemplateSpecializationCompare(
 			}
 			return result;
 		}
+		else U_ASSERT(false);
+	}
+	else if( const auto l_raw_pointer= left_template_parameter.GetRawPointer() )
+	{
+		if( right_template_parameter.IsType() )
+			return ConversionsCompareResult::RightIsBetter; // Type is more specialized, then raw pointer.
+		else if( right_template_parameter.IsTemplateParam() )
+			return ConversionsCompareResult::LeftIsBetter; // Raw pointer is more specialized, then template parameter.
+		else if( const auto r_raw_pointer= right_template_parameter.GetRawPointer() )
+			return TemplateSpecializationCompare( *l_raw_pointer->type, *r_raw_pointer->type );
 		else U_ASSERT(false);
 	}
 	else if( const auto l_function= left_template_parameter.GetFunction() )
@@ -263,6 +275,8 @@ ConversionsCompareResult TemplateSpecializationCompare(
 			return ConversionsCompareResult::RightIsBetter; // Array is more specialized, then template parameter.
 		else if( right_template_parameter.GetTuple() != nullptr )
 			return ConversionsCompareResult::RightIsBetter; // Tuple is more specialized, then template parameter.
+		else if( right_template_parameter.GetRawPointer() != nullptr )
+			return ConversionsCompareResult::RightIsBetter; // Raw pointer is more specialized, then template parameter.
 		else if( right_template_parameter.GetFunction() != nullptr )
 			return ConversionsCompareResult::RightIsBetter; // Function is more specialized, then template parameter.
 		else if( right_template_parameter.GetTemplate() != nullptr )

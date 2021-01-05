@@ -285,6 +285,10 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	{
 		return CreateTemplateSignatureParam( names_scope, function_context, template_params, tuple_type.get_ref(), template_params_usage_flags );
 	}
+	if_var( &raw_pointer_type : param.get</ ust::box</ Synt::RawPointerType /> />() )
+	{
+		return CreateTemplateSignatureParam( names_scope, function_context, template_params, raw_pointer_type.get_ref(), template_params_usage_flags );
+	}
 	if_var( &function_type : param.get</ ust::box</Synt::FunctionType/> />() )
 	{
 		return CreateTemplateSignatureParam( names_scope, function_context, template_params, function_type.get_ref(), template_params_usage_flags );
@@ -383,6 +387,10 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	{
 		return CreateTemplateSignatureParam( names_scope, function_context, template_params, tuple_type.get_ref(), template_params_usage_flags );
 	}
+	if_var( &raw_pointer_type : param.get</ ust::box</Synt::RawPointerType/> />() )
+	{
+		return CreateTemplateSignatureParam( names_scope, function_context, template_params, raw_pointer_type.get_ref(), template_params_usage_flags );
+	}
 	if_var( &function_type : param.get</ ust::box</Synt::FunctionType/> />() )
 	{
 		return CreateTemplateSignatureParam( names_scope, function_context, template_params, function_type.get_ref(), template_params_usage_flags );
@@ -451,6 +459,31 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	}
 
 	return move(tuple_type_param);
+}
+
+fn CodeBuilder::CreateTemplateSignatureParam(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	ust::vector</TemplateBase::Param/>& template_params,
+	Synt::RawPointerType& signature_param,
+	ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam
+{
+	var TemplateSignatureParam::RawPointerTypeParam mut raw_pointer_type_param
+	{
+		.element_type= CreateTemplateSignatureParam( names_scope, function_context, template_params, signature_param.element_type, template_params_usage_flags )
+	};
+
+	if( !raw_pointer_type_param.element_type.GetTypeParam().empty() )
+	{
+		var TemplateSignatureParam::TypeParam mut t
+		{
+			.t= PrepareType( names_scope, function_context, signature_param )
+		};
+		return move(t);
+	}
+
+	return move(raw_pointer_type_param);
 }
 
 fn CodeBuilder::CreateTemplateSignatureParam(
@@ -1226,6 +1259,10 @@ fn CodeBuilder::MatchTemplateArgument(
 	{
 		return MatchTemplateArgumentImpl( names_scope, template_, tuple_type_param, given_arg, src_loc );
 	}
+	if_var( &raw_pointer_type_param : param.GetRawPointerTypeParam() )
+	{
+		return MatchTemplateArgumentImpl( names_scope, template_, raw_pointer_type_param, given_arg, src_loc );
+	}
 	if_var( &function_type_param : param.GetFunctionTypeParam() )
 	{
 		return MatchTemplateArgumentImpl( names_scope, template_, function_type_param, given_arg, src_loc );
@@ -1444,6 +1481,24 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 		}
 	}
 
+	return false;
+}
+
+fn CodeBuilder::MatchTemplateArgumentImpl(
+	mut this,
+	NamesScopePtr& names_scope,
+	TemplateBase& template_,
+	TemplateSignatureParam::RawPointerTypeParam& raw_pointer_type_param,
+	TemplateArgFinished& given_arg,
+	SrcLoc& src_loc ) : bool
+{
+	if_var( &given_type : given_arg.get</Type/>() )
+	{
+		if_var( &given_raw_pointer_type : given_type.GetRawPointerType() )
+		{
+			return MatchTemplateArgument( names_scope, template_, raw_pointer_type_param.element_type, given_raw_pointer_type.element_type, src_loc );
+		}
+	}
 	return false;
 }
 

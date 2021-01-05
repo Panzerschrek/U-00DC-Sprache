@@ -1066,6 +1066,10 @@ fn TemplateSignatureParam::conversion_constructor( TupleTypeParam mut tuple_type
 	( something_( ust::box</ TupleTypeParam />( move(tuple_type_param) ) ) )
 {}
 
+fn TemplateSignatureParam::conversion_constructor( RawPointerTypeParam mut raw_pointer_type_param )
+	( something_( ust::box</ RawPointerTypeParam />( move(raw_pointer_type_param) ) ) )
+{}
+
 fn TemplateSignatureParam::conversion_constructor( FunctionTypeParam mut function_type_param )
 	( something_( ust::box</ FunctionTypeParam />( move(function_type_param) ) ) )
 {}
@@ -1107,6 +1111,16 @@ fn TemplateSignatureParam::GetTupleTypeParam(this) : ust::optional_ref</ TupleTy
 	}
 
 	return ust::optional_ref</ TupleTypeParam, false />();
+}
+
+fn TemplateSignatureParam::GetRawPointerTypeParam(this) : ust::optional_ref</ RawPointerTypeParam, false />'this'
+{
+	if_var( &raw_pointer_type_param : something_.get</ ust::box</RawPointerTypeParam/> />() )
+	{
+		return ust::optional_ref</ RawPointerTypeParam, false />(raw_pointer_type_param.get_ref());
+	}
+
+	return ust::optional_ref</ RawPointerTypeParam, false />();
 }
 
 fn TemplateSignatureParam::GetFunctionTypeParam(this) : ust::optional_ref</ FunctionTypeParam, false />'this'

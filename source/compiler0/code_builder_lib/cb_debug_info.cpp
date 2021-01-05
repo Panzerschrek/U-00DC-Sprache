@@ -133,6 +133,8 @@ llvm::DIType* CodeBuilder::CreateDIType( const Type& type )
 		result_type= CreateDIType( *function_type );
 	else if( const auto function_pointer_type= type.GetFunctionPointerType() )
 		result_type= CreateDIType( *function_pointer_type );
+	else if( const auto raw_pointer_type= type.GetRawPointerType() )
+		result_type= CreateDIType( *raw_pointer_type );
 	else if( const auto class_type= type.GetClassTypeProxy() )
 		result_type= CreateDIType( class_type );
 	else if( const auto enum_type= type.GetEnumTypePtr() )
@@ -256,6 +258,16 @@ llvm::DISubroutineType* CodeBuilder::CreateDIType( const Function& type )
 	}
 
 	return debug_info_.builder->createSubroutineType( debug_info_.builder->getOrCreateTypeArray(args) );
+}
+
+llvm::DIDerivedType* CodeBuilder::CreateDIType( const RawPointer& type )
+{
+	U_ASSERT(build_debug_info_);
+
+	return
+		debug_info_.builder->createPointerType(
+			CreateDIType(type.type),
+			data_layout_.getTypeAllocSizeInBits(type.llvm_type) );
 }
 
 llvm::DIDerivedType* CodeBuilder::CreateDIType( const FunctionPointer& type )

@@ -505,6 +505,31 @@ U_TEST( TupleTypesManglengTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3SSS3tupI10SomeStructiES0_" ) != nullptr );
 }
 
+U_TEST( RawPointerTypeManglingTest )
+{
+	static const char c_program_text[]=
+	R"(
+		struct SomeStruct{}
+		fn FooA( $(i32) x ){}
+		fn FooB( $(bool) b ){}
+		fn FooC( $(f32)& c ){}
+		fn FooD( $(u64) &mut i ){}
+		fn FooE( $($(u32)) ptr_to_ptr ) {}
+		fn FooF( $(SomeStruct) s ){}
+		fn FooG( $(fn(i32 x, f32& y, bool& mut z) : SomeStruct) ptr_to_function_ptr, [ i32, 4 ] arr ) {}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4FooAPi" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4FooBPb" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4FooCRKPf" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4FooDRPy" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4FooEPPj" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4FooFP10SomeStruct" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4FooGPPF10SomeStructiRKfRbEA4_i" ) != nullptr );
+}
+
 U_TEST( ClassTemplatesMangling_Test0 )
 {
 	static const char c_program_text[]=

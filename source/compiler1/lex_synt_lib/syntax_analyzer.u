@@ -941,6 +941,10 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 			};
 			current_node= move(ternary_operator);
 		}
+		else if( it_.front().lexem_type == Lexem::Type::PointerTypeMark )
+		{
+			current_node= ust::box</ RawPointerType />( ParseRawPointerType() );
+		}
 		else if( it_.front().lexem_type == Lexem::Type::ReferenceToPointer )
 		{
 			auto src_loc= it_.front().src_loc;

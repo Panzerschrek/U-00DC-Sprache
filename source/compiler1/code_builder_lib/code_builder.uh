@@ -268,6 +268,7 @@ private:
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BitwiseNot& bitwise_not ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::ArrayType/>& array_type ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::TupleType/>& tuple_type ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::RawPointerType/>& raw_pointer_type ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type ) : Value;
 
 	fn DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TypeName& type_name, Synt::Expression& expression, SrcLoc& src_loc, bool allow_unsafe ) : Value;
@@ -402,6 +403,14 @@ private:
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		ust::vector</TemplateBase::Param/>& template_params,
+		Synt::RawPointerType& signature_param,
+		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
+
+	fn CreateTemplateSignatureParam(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		ust::vector</TemplateBase::Param/>& template_params,
 		Synt::FunctionType& signature_param,
 		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
 
@@ -526,6 +535,14 @@ private:
 		mut this,
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
+		TemplateSignatureParam::RawPointerTypeParam& raw_pointer_type_param,
+		TemplateArgFinished& given_arg,
+		SrcLoc& src_loc ) : bool;
+
+	fn MatchTemplateArgumentImpl(
+		mut this,
+		NamesScopePtr& names_scope,
+		TemplateBase& template_,
 		TemplateSignatureParam::FunctionTypeParam& function_type_param,
 		TemplateArgFinished& given_arg,
 		SrcLoc& src_loc ) : bool;
@@ -571,6 +588,7 @@ private:
 	fn CreateDITypeImpl( mut this, FundamentalType& t ) : LLVMMetadataRef;
 	fn CreateDITypeImpl( mut this, ArrayType& t ) : LLVMMetadataRef;
 	fn CreateDITypeImpl( mut this, TupleType& t ) : LLVMMetadataRef;
+	fn CreateDITypeImpl( mut this, RawPointerType& t ) : LLVMMetadataRef;
 	fn CreateDITypeImpl( mut this, FunctionType& t ) : LLVMMetadataRef;
 	fn CreateDITypeImpl( mut this, FunctionPointerType& t ) : LLVMMetadataRef;
 	fn CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef;
