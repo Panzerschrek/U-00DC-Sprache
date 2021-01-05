@@ -50,6 +50,12 @@ public:
 		( begin_(begin), size_(size) )
 	{}
 
+	fn constructor( $(T) begin, size_type size ) unsafe
+		( begin_(), size_(size) )
+	{
+		unsafe{  begin_= ptr_type( $>(begin) );  }
+	}
+
 	op enable_if( is_mutable )
 	[]( this'x', size_type index ) : T &'x  mut
 	{

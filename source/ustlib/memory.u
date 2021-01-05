@@ -24,4 +24,11 @@ fn memory_free( void& mem ) unsafe;
 fn memory_copy( void&mut dst, void & src, size_type size_bytes ) unsafe;
 fn memory_equals( void& a, void& b, size_type size ) unsafe : bool;
 
+template</type T/>
+fn nullptr() : $(T)
+{
+	var $(T) ptr= zero_init;
+	return ptr;
+}
+
 } // namespace ust

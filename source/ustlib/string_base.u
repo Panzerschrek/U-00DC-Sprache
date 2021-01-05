@@ -18,70 +18,70 @@ public:
 public:
 	// Default constructor.
 	fn constructor()
-	( ptr_(), size_(0), capacity_(0) )
+	( ptr_= zero_init, size_(0), capacity_(0) )
 	{}
 
 	// Copy constructor.
 	fn constructor( this_type& other )
-	( ptr_(), size_(other.size_), capacity_(0) )
+	( ptr_=zero_init, size_(other.size_), capacity_(0) )
 	{
 		if( other.empty() ){ return; }
 
 		unsafe
 		{
 			capacity_= max( get_first_allocation_size(), other.size_ );
-			ptr_= ptr_type( cast_ref_unsafe</char_type/>( memory_allocate( capacity_ * c_element_size_ ) ) );
+			ptr_= $<( cast_ref_unsafe</char_type/>( memory_allocate( capacity_ * c_element_size_ ) ) );
 
-			memory_copy( ptr_.get_ref(), other.ptr_.get_ref(), size_ * c_element_size_ );
+			memory_copy( $>(ptr_), $>(other.ptr_), size_ * c_element_size_ );
 		}
 	}
 
 	// Construct form char array.
 	template</ size_type array_size />
 	fn conversion_constructor( [ char_type, array_size ]& array )
-	( ptr_(), size_(array_size), capacity_(0) )
+	( ptr_=zero_init, size_(array_size), capacity_(0) )
 	{
 		if( array_size == size_type(0) ){ return; }
 
 		unsafe
 		{
 			capacity_= max( get_first_allocation_size(), array_size );
-			ptr_= ptr_type( cast_ref_unsafe</char_type/>( memory_allocate( capacity_ * c_element_size_ ) ) );
+			ptr_= $<( cast_ref_unsafe</char_type/>( memory_allocate( capacity_ * c_element_size_ ) ) );
 
-			memory_copy( ptr_.get_ref(), array, size_ * c_element_size_ );
+			memory_copy( $>(ptr_), array, size_ * c_element_size_ );
 		}
 	}
 
 	// Construct from char range.
 	fn conversion_constructor( range_imut range )
-	( ptr_(), size_(range.size()), capacity_(0) )
+	( ptr_= zero_init, size_(range.size()), capacity_(0) )
 	{
 		if( size_ == size_type(0) ){ return; }
 
 		unsafe
 		{
 			capacity_= max( get_first_allocation_size(), size_ );
-			ptr_= ptr_type( cast_ref_unsafe</char_type/>( memory_allocate( capacity_ * c_element_size_ ) ) );
+			ptr_= $<( cast_ref_unsafe</char_type/>( memory_allocate( capacity_ * c_element_size_ ) ) );
 
-			memory_copy( ptr_.get_ref(), range.data().get_ref(), size_ * c_element_size_ );
+			memory_copy( $>(ptr_), range.data().get_ref(), size_ * c_element_size_ );
 		}
 	}
 
 	// Fill constructor.
 	fn constructor( size_type count, char_type value )
-	( ptr_(), size_(count), capacity_(0) )
+	( ptr_= zero_init, size_(count), capacity_(0) )
 	{
 		if( count == size_type(0) ){ return; }
 
 		unsafe
 		{
 			capacity_= max( get_first_allocation_size(), size_ );
-			ptr_= ptr_type( cast_ref_unsafe</char_type/>( memory_allocate( capacity_ * c_element_size_ ) ) );
+			ptr_= $<( cast_ref_unsafe</char_type/>( memory_allocate( capacity_ * c_element_size_ ) ) );
 
 
 			for( var size_type mut i(0); i < size_; ++i )
 			{
-				ptr_[i]= value;
+				$>(ptr_ + i)= value;
 			}
 		}
 	}
@@ -93,7 +93,7 @@ public:
 		{
 			ensure_capacity( other.size_ );
 			size_= other.size_;
-			memory_copy( this.ptr_.get_ref(), other.ptr_.get_ref(), size_ * c_element_size_ );
+			memory_copy( $>(this.ptr_), $>(other.ptr_), size_ * c_element_size_ );
 		}
 	}
 
@@ -105,7 +105,7 @@ public:
 		{
 			ensure_capacity( array_size );
 			size_= array_size;
-			memory_copy( this.ptr_.get_ref(), array, size_ * c_element_size_ );
+			memory_copy( $>(this.ptr_), array, size_ * c_element_size_ );
 		}
 	}
 
@@ -116,7 +116,7 @@ public:
 		{
 			ensure_capacity( range.size() );
 			size_= range.size();
-			memory_copy( this.ptr_.get_ref(), range.data().get_ref(), size_ * c_element_size_ );
+			memory_copy( $>(this.ptr_), range.data().get_ref(), size_ * c_element_size_ );
 		}
 	}
 
@@ -124,9 +124,9 @@ public:
 	{
 		unsafe
 		{
-			if( !ptr_.is_null() )
+			if( ptr_ != nullptr</char_type/>() )
 			{
-				memory_free( ptr_.get_ref() );
+				memory_free( $>(ptr_) );
 			}
 		}
 	}
@@ -151,23 +151,23 @@ public:
 	op[]( mut this, size_type index ) : char_type &mut
 	{
 		halt if( index >= size_ );
-		unsafe{  return ptr_[ index ];  }
+		unsafe{  return $>(ptr_ + index );  }
 	}
 
 	op[]( imut this, size_type index ) : char_type &imut
 	{
 		halt if( index >= size_ );
-		unsafe{  return ptr_[ index ];  }
+		unsafe{  return $>(ptr_ + index );  }
 	}
 
 	fn index_unsafe( mut this, size_type index ) unsafe : char_type &mut
 	{
-		unsafe{  return ptr_[ index ];  }
+		unsafe{  return $>(ptr_ + index );  }
 	}
 
 	fn index_unsafe( imut this, size_type index ) unsafe : char_type &imut
 	{
-		unsafe{  return ptr_[ index ];  }
+		unsafe{  return $>(ptr_ + index );  }
 	}
 
 	op enable_if( c_size_type_is_u64_ ) []( mut this, u32 index ) : char_type &mut
@@ -197,45 +197,45 @@ public:
 	fn front( mut this ) : char_type &mut
 	{
 		halt if(empty());
-		unsafe{  return ptr_[ size_type(0) ];  }
+		unsafe{  return $>(ptr_);  }
 	}
 
 	fn front( imut this ) : char_type &imut
 	{
 		halt if(empty());
-		unsafe{  return ptr_[ size_type(0) ];  }
+		unsafe{  return $>(ptr_);  }
 	}
 
 	fn back( mut this ) : char_type &mut
 	{
 		halt if(empty());
-		unsafe{  return ptr_[ size_ - size_type(1) ];  }
+		unsafe{  return $>(ptr_ + size_ - 1s);  }
 	}
 
 	fn back( imut this ) : char_type &imut
 	{
 		halt if(empty());
-		unsafe{  return ptr_[ size_ - size_type(1) ];  }
+		unsafe{  return $>(ptr_ + size_ - 1s);  }
 	}
 
 	fn front_unsafe( mut this ) unsafe : char_type &mut
 	{
-		unsafe{  return ptr_[ size_type(0) ];  }
+		unsafe{  return $>(ptr_);  }
 	}
 
 	fn front_unsafe( imut this ) unsafe : char_type &imut
 	{
-		unsafe{  return ptr_[ size_type(0) ];  }
+		unsafe{  return $>(ptr_);  }
 	}
 
 	fn back_unsafe( mut this ) unsafe : char_type &mut
 	{
-		unsafe{  return ptr_[ size_ - size_type(1) ];  }
+		unsafe{  return $>(ptr_ + size_ - 1s);  }
 	}
 
 	fn back_unsafe( imut this ) unsafe : char_type &imut
 	{
-		unsafe{  return ptr_[ size_ - size_type(1) ];  }
+		unsafe{  return $>(ptr_ + size_ - 1s);  }
 	}
 
 	// ranges
@@ -263,7 +263,7 @@ public:
 
 		unsafe
 		{
-			return memory_equals( l.ptr_.get_ref(), r.ptr_.get_ref(), l.size_ * c_element_size_ );
+			return memory_equals( $>(l.ptr_), $>(r.ptr_), l.size_ * c_element_size_ );
 		}
 	}
 
@@ -274,7 +274,7 @@ public:
 
 		unsafe
 		{
-			return memory_equals( l.ptr_.get_ref(), array, array_size * c_element_size_ );
+			return memory_equals( $>(l.ptr_), array, array_size * c_element_size_ );
 		}
 	}
 
@@ -291,7 +291,7 @@ public:
 		unsafe
 		{
 			auto size= l.size();
-			return memory_equals( l.ptr_.get_ref(), r.data().get_ref(), size * c_element_size_ );
+			return memory_equals( $>(l.ptr_), r.data().get_ref(), size * c_element_size_ );
 		}
 	}
 
@@ -335,9 +335,9 @@ public:
 		{
 			unsafe
 			{
-				if( l.ptr_[i] != r.ptr_[i] )
+				if( $>(l.ptr_ + i) != $>(r.ptr_ + i) )
 				{
-					return l.ptr_[i] < r.ptr_[i];
+					return $>(l.ptr_ + i) < $>(r.ptr_ + i);
 				}
 			}
 		}
@@ -352,9 +352,9 @@ public:
 		{
 			unsafe
 			{
-				if( l.ptr_[i] != r.ptr_[i] )
+				if( $>(l.ptr_ + i) != $>(r.ptr_ + i) )
 				{
-					return l.ptr_[i] < r.ptr_[i];
+					return $>(l.ptr_ + i) < $>(r.ptr_ + i);
 				}
 			}
 		}
@@ -384,10 +384,10 @@ public:
 
 		unsafe
 		{
-			var char_type c0= ptr_[i0];
-			var char_type c1= ptr_[i1];
-			ptr_[i0]= c1;
-			ptr_[i1]= c0;
+			var char_type c0= $>(ptr_ + i0);
+			var char_type c1= $>(ptr_ + i1);
+			$>(ptr_ + i0)= c1;
+			$>(ptr_ + i1)= c0;
 		}
 	}
 
@@ -409,7 +409,7 @@ public:
 		{
 			auto new_size= add_overflow_check_halt( size_, size_type(1) );
 			ensure_capacity( new_size );
-			ptr_[size_]= val;
+			$>(ptr_ + size_)= val;
 			size_= new_size;
 		}
 	}
@@ -423,7 +423,7 @@ public:
 
 			for( var size_type mut i(0); i < count; ++i )
 			{
-				ptr_[ size_ + i ]= val;
+				$>(ptr_ + size_ + i)= val;
 			}
 			size_= new_size;
 		}
@@ -447,7 +447,7 @@ public:
 		unsafe
 		{
 			--size_;
-			return ptr_[size_];
+			return $>(ptr_ + size_);
 		}
 	}
 
@@ -456,7 +456,7 @@ public:
 		unsafe
 		{
 			--size_;
-			return ptr_[size_];
+			return $>(ptr_ + size_);
 		}
 	}
 
@@ -487,13 +487,13 @@ public:
 			{
 				if( capacity_ == size_type(0) )
 				{
-					memory_free( ptr_.get_ref() );
-					ptr_= ptr_type();
+					memory_free( $>(ptr_) );
+					ptr_= nullptr</char_type/>();
 				}
 				else
 				{
-					auto &mut ref= cast_ref_unsafe</char_type/>( memory_reallocate( ptr_.get_ref(), capacity_ * c_element_size_ ) );
-					ptr_= ptr_type( ref );
+					auto &mut ref= cast_ref_unsafe</char_type/>( memory_reallocate( $>(ptr_), capacity_ * c_element_size_ ) );
+					ptr_= $<(ref);
 				}
 			}
 		}
@@ -509,8 +509,8 @@ public:
 			auto result_size= add_overflow_check_halt( l.size_, r.size_ );
 			result.ensure_capacity( result_size );
 			result.size_= result_size;
-			memory_copy( result.ptr_.get_ref(), l.ptr_.get_ref(), l.size_ * c_element_size_ );
-			memory_copy( result.ptr_[l.size_], r.ptr_.get_ref(), r.size_ * c_element_size_ );
+			memory_copy( $>(result.ptr_), $>(l.ptr_), l.size_ * c_element_size_ );
+			memory_copy( $>(result.ptr_ + l.size_) $>(r.ptr_), r.size_ * c_element_size_ );
 		}
 
 		return move(result);
@@ -525,8 +525,8 @@ public:
 			auto result_size= add_overflow_check_halt( l.size_, array_size );
 			result.ensure_capacity( result_size );
 			result.size_= result_size;
-			memory_copy( result.ptr_.get_ref(), l.ptr_.get_ref(), l.size_ * c_element_size_ );
-			memory_copy( result.ptr_[l.size_], array, array_size * c_element_size_ );
+			memory_copy( $>(result.ptr_), $>(l.ptr_), l.size_ * c_element_size_ );
+			memory_copy( $>(result.ptr_ + l.size_), array, array_size * c_element_size_ );
 		}
 
 		return move(result);
@@ -541,8 +541,8 @@ public:
 			auto result_size= add_overflow_check_halt( array_size, r.size_ );
 			result.ensure_capacity( result_size );
 			result.size_= result_size;
-			memory_copy( result.ptr_.get_ref(), array, array_size * c_element_size_ );
-			memory_copy( result.ptr_[array_size], r.ptr_.get_ref(), r.size_ * c_element_size_ );
+			memory_copy( $>(result.ptr_), array, array_size * c_element_size_ );
+			memory_copy( $>(result.ptr_ + array_size), $>(r.ptr_), r.size_ * c_element_size_ );
 		}
 
 		return move(result);
@@ -556,8 +556,8 @@ public:
 			auto result_size= add_overflow_check_halt( l.size_, range.size() );
 			result.ensure_capacity( result_size );
 			result.size_= result_size;
-			memory_copy( result.ptr_.get_ref(), l.ptr_.get_ref(), l.size_ * c_element_size_ );
-			memory_copy( result.ptr_[l.size_], range.data().get_ref(), range.size() * c_element_size_ );
+			memory_copy( $>(result.ptr_), $>(l.ptr_), l.size_ * c_element_size_ );
+			memory_copy( $>(result.ptr_ + l.size_), range.data().get_ref(), range.size() * c_element_size_ );
 		}
 
 		return move(result);
@@ -571,8 +571,8 @@ public:
 			auto result_size= add_overflow_check_halt( range.size(), r.size_ );
 			result.ensure_capacity( result_size );
 			result.size_= result_size;
-			memory_copy( result.ptr_.get_ref(), range.data().get_ref(), range.size() * c_element_size_ );
-			memory_copy( result.ptr_[range.size()], r.ptr_.get_ref(), r.size_ * c_element_size_ );
+			memory_copy( $>(result.ptr_), range.data().get_ref(), range.size() * c_element_size_ );
+			memory_copy( $>(result.ptr_ + range.size()), $>(r.ptr_), r.size_ * c_element_size_ );
 		}
 
 		return move(result);
@@ -586,7 +586,7 @@ public:
 		{
 			auto new_size= add_overflow_check_halt( this.size_, other.size_ );
 			ensure_capacity( new_size );
-			memory_copy( ptr_[size_], other.ptr_.get_ref(), other.size_ * c_element_size_ );
+			memory_copy( $>( ptr_ + size_ ), $>(other.ptr_), other.size_ * c_element_size_ );
 			size_= new_size;
 		}
 	}
@@ -598,7 +598,7 @@ public:
 		{
 			auto new_size= add_overflow_check_halt( this.size_, array_size );
 			ensure_capacity( new_size );
-			memory_copy( ptr_[size_], array, array_size * c_element_size_ );
+			memory_copy( $>( ptr_ + size_ ), array, array_size * c_element_size_ );
 			size_= new_size;
 		}
 	}
@@ -609,13 +609,12 @@ public:
 		{
 			auto new_size= add_overflow_check_halt( this.size_, range.size() );
 			ensure_capacity( new_size );
-			memory_copy( ptr_[size_], range.data().get_ref(), range.size() * c_element_size_ );
+			memory_copy( $>( ptr_ + size_ ), range.data().get_ref(), range.size() * c_element_size_ );
 			size_= new_size;
 		}
 	}
 
 private:
-	type ptr_type= raw_ptr_mut</char_type/>;
 	type range_mut=  random_access_range</ char_type, true  />;
 	type range_imut= random_access_range</ char_type, false />;
 	auto constexpr c_element_size_= typeinfo</char_type/>.size_of;
@@ -645,18 +644,18 @@ private:
 			else if( capacity_ == size_type(0) )
 			{
 				capacity_= max( get_first_allocation_size(), new_size );
-				ptr_= ptr_type( cast_ref_unsafe</char_type/>( memory_allocate( capacity_ * c_element_size_ ) ) );
+				ptr_= $<( cast_ref_unsafe</char_type/>( memory_allocate( capacity_ * c_element_size_ ) ) );
 			}
 			else // if( capacity_ < new_size )
 			{
 				while( capacity_ < new_size ) { capacity_= mul_overflow_check_halt( capacity_, size_type(2) ); }
-				ptr_= ptr_type( cast_ref_unsafe</char_type/>( memory_reallocate( ptr_.get_ref(), capacity_ * c_element_size_ ) ) );
+				ptr_= $<( cast_ref_unsafe</char_type/>( memory_reallocate( $>(ptr_), capacity_ * c_element_size_ ) ) );
 			}
 		}
 	}
 
 private:
-	ptr_type ptr_;
+	$(char_type) ptr_;
 	size_type size_;
 	size_type capacity_;
 }
