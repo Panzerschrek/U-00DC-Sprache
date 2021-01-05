@@ -37,8 +37,8 @@ fn nomangle main() : i32
 {
 	// Box have pointer size.
 	static_assert( typeinfo</ ust::box</ BigStruct /> />.size_of == typeinfo</S/>.size_of );
-	static_assert( typeinfo</ ust::box</ BigStruct /> />.size_of == typeinfo</ ust::raw_ptr_mut</i32/> />.size_of );
-	static_assert( typeinfo</ ust::box</ BigStruct /> />.size_of == typeinfo</ ust::box</u8/> />.size_of );
+	static_assert( typeinfo</ ust::box</ BigStruct /> />.size_of == typeinfo</ $(i32) />.size_of );
+	static_assert( typeinfo</ ust::box</ BigStruct /> />.size_of == typeinfo</ $(u8) />.size_of );
 
 	{ // box constructs with value.
 		var ust::box</ i32 /> box(42);
