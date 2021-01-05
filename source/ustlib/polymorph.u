@@ -1,5 +1,4 @@
 import "optional_ref.u"
-import "pointer.u"
 import "type_traits.u"
 
 namespace ust
@@ -15,8 +14,8 @@ fn polymorph_restore_original_ref( T &imut ref ) : void &imut
 			// Virtual table pointer is always first field in class.
 			auto offset= cast_ref_unsafe</ polymorph_impl::virtual_class />(ref).vptr.offset_of_allocated_object;
 
-			auto original_ptr= raw_ptr_mut</u8/>( cast_ref_unsafe</u8/>(cast_mut(ref)) ) - offset;
-			return int_to_ref( ref_to_int( original_ptr.get_ref() ) );
+			auto original_ptr= $<( cast_ref_unsafe</u8/>(cast_mut(ref)) ) - offset;
+			return $>(original_ptr);
 		}
 	}
 	else
