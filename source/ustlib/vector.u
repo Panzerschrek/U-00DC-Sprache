@@ -3,7 +3,6 @@ import "checked_math.u"
 import "container_utils.u"
 import "hash.u"
 import "minmax.u"
-import "pointer.u"
 import "random_access_range.u"
 
 namespace ust
@@ -19,59 +18,59 @@ public:
 public:
 	// Default constructor.
 	fn constructor()
-	( ptr_(), size_(0), capacity_(0) )
+	( ptr_= zero_init, size_(0), capacity_(0) )
 	{}
 
 	// Copy constructor.
 	fn enable_if( typeinfo</T/>.is_copy_constructible ) constructor( this_type& other )
-	( ptr_(), size_(other.size_), capacity_(0) )
+	( ptr_= zero_init, size_(other.size_), capacity_(0) )
 	{
 		if( other.empty() ){ return; }
 
 		unsafe
 		{
 			capacity_= max( get_first_allocation_size(), other.size_ );
-			ptr_= ptr_type( cast_ref_unsafe</T/>( memory_allocate( capacity_ * c_element_size_ ) ) );
+			ptr_= $<( cast_ref_unsafe</T/>( memory_allocate( capacity_ * c_element_size_ ) ) );
 
 			for( var size_type mut i(0); i < size_; ++i )
 			{
-				move_unsafe( ptr_[i], other.ptr_[i] ); // Copy-constructor called here.
+				move_unsafe( $>(ptr_ + i), $>(other.ptr_ + i) ); // Copy-constructor called here.
 			}
 		}
 	}
 
 	// Fill constructor.
 	fn enable_if( typeinfo</T/>.is_copy_constructible ) constructor( size_type count, T& value )
-	( ptr_(), size_(count), capacity_(0) )
+	( ptr_= zero_init, size_(count), capacity_(0) )
 	{
 		if( size_ == size_type(0) ) { return; }
 
 		unsafe
 		{
 			capacity_= max( get_first_allocation_size(), size_ );
-			ptr_= ptr_type( cast_ref_unsafe</T/>( memory_allocate( capacity_ * c_element_size_ ) ) );
+			ptr_= $<( cast_ref_unsafe</T/>( memory_allocate( capacity_ * c_element_size_ ) ) );
 
 			for( var size_type mut i(0); i < size_; ++i )
 			{
-				move_unsafe( ptr_[i], value ); // Copy-constructor called here.
+				move_unsafe( $>(ptr_ + i), value ); // Copy-constructor called here.
 			}
 		}
 	}
 
 	// Constructor with size only (for default-constructible elements).
 	fn enable_if( typeinfo</T/>.is_default_constructible ) constructor( size_type count )
-	( ptr_(), size_(count), capacity_(0) )
+	( ptr_= zero_init, size_(count), capacity_(0) )
 	{
 		if( size_ == size_type(0) ) { return; }
 
 		unsafe
 		{
 			capacity_= max( get_first_allocation_size(), size_ );
-			ptr_= ptr_type( cast_ref_unsafe</T/>( memory_allocate( capacity_ * c_element_size_ ) ) );
+			ptr_= $<( cast_ref_unsafe</T/>( memory_allocate( capacity_ * c_element_size_ ) ) );
 
 			for( var size_type mut i(0); i < size_; ++i )
 			{
-				call_default_constructor( ptr_[i] );
+				call_default_constructor( $>(ptr_ + i) );
 			}
 		}
 	}
@@ -84,7 +83,7 @@ public:
 			var size_type mut i(0);
 			while( i < this.size_ & i < other.size_ )
 			{
-				this.ptr_[i]= other.ptr_[i]; // Copy-assignment operator called here.
+				$>(this.ptr_ + i)= $>(other.ptr_ + i); // Copy-assignment operator called here.
 				++i;
 			}
 
@@ -93,19 +92,19 @@ public:
 				if( capacity_ < other.size_ )
 				{
 					capacity_= other.size_;
-					if( ptr_.is_null() )
+					if( ptr_ == nullptr</T/>() )
 					{
-						ptr_= ptr_type( cast_ref_unsafe</T/>( memory_allocate( capacity_ * c_element_size_ ) ) );
+						ptr_= $<( cast_ref_unsafe</T/>( memory_allocate( capacity_ * c_element_size_ ) ) );
 					}
 					else
 					{
-						ptr_= ptr_type( cast_ref_unsafe</T/>( memory_reallocate( ptr_.get_ref(), capacity_ * c_element_size_ ) ) );
+						ptr_= $<( cast_ref_unsafe</T/>( memory_reallocate( $>(ptr_), capacity_ * c_element_size_ ) ) );
 					}
 				}
 
 				while( i < other.size_ )
 				{
-					move_unsafe( ptr_[i], other.ptr_[i] ); // Copy-constructor called here.
+					move_unsafe( $>(ptr_ + i), $>(other.ptr_ + i) ); // Copy-constructor called here.
 					++i;
 				}
 			}
@@ -113,7 +112,7 @@ public:
 			{
 				while( i < this.size_ )
 				{
-					call_destructor( ptr_[i] );
+					call_destructor( $>(ptr_ + i) );
 					++i;
 				}
 			}
@@ -128,11 +127,11 @@ public:
 		{
 			for( var size_type mut i(0); i < size_; ++i )
 			{
-				call_destructor( ptr_[i] );
+				call_destructor( $>(ptr_ + i) );
 			}
-			if( !ptr_.is_null() )
+			if( ptr_ != nullptr</T/>() )
 			{
-				memory_free( ptr_.get_ref() );
+				memory_free( $>(ptr_) );
 			}
 		}
 	}
@@ -157,23 +156,23 @@ public:
 	op[]( mut this, size_type index ) : T &mut
 	{
 		halt if( index >= size_ );
-		unsafe{  return ptr_[ index ];  }
+		unsafe{  return $>(ptr_ + index);  }
 	}
 
 	op[]( imut this, size_type index ) : T &imut
 	{
 		halt if( index >= size_ );
-		unsafe{  return ptr_[ index ];  }
+		unsafe{  return $>(ptr_ + index);  }
 	}
 
 	fn index_unsafe( mut this, size_type index ) unsafe : T &mut
 	{
-		unsafe{  return ptr_[ index ];  }
+		unsafe{  return $>(ptr_ + index);  }
 	}
 
 	fn index_unsafe( imut this, size_type index ) unsafe : T &imut
 	{
-		unsafe{  return ptr_[ index ];  }
+		unsafe{  return $>(ptr_ + index);  }
 	}
 
 	op enable_if( c_size_type_is_u64_ ) []( mut this, u32 index ) : T &mut
@@ -203,45 +202,45 @@ public:
 	fn front( mut this ) : T &mut
 	{
 		halt if(empty());
-		unsafe{  return ptr_[ size_type(0) ];  }
+		unsafe{  return $>(ptr_);  }
 	}
 
 	fn front( imut this ) : T &imut
 	{
 		halt if(empty());
-		unsafe{  return ptr_[ size_type(0) ];  }
+		unsafe{  return $>(ptr_);  }
 	}
 
 	fn back( mut this ) : T &mut
 	{
 		halt if(empty());
-		unsafe{  return ptr_[ size_ - size_type(1) ];  }
+		unsafe{  return $>(ptr_ + size_ - 1s);  }
 	}
 
 	fn back( imut this ) : T &imut
 	{
 		halt if(empty());
-		unsafe{  return ptr_[ size_ - size_type(1) ];  }
+		unsafe{  return $>(ptr_ + size_ - 1s);  }
 	}
 
 	fn front_unsafe( mut this ) unsafe : T &mut
 	{
-		unsafe{  return ptr_[ size_type(0) ];  }
+		unsafe{  return $>(ptr_);  }
 	}
 
 	fn front_unsafe( imut this ) unsafe : T &imut
 	{
-		unsafe{  return ptr_[ size_type(0) ];  }
+		unsafe{  return $>(ptr_);  }
 	}
 
 	fn back_unsafe( mut this ) unsafe : T &mut
 	{
-		unsafe{  return ptr_[ size_ - size_type(1) ];  }
+		unsafe{  return $>(ptr_ + size_ - 1s);  }
 	}
 
 	fn back_unsafe( imut this ) unsafe : T &imut
 	{
-		unsafe{  return ptr_[ size_ - size_type(1) ];  }
+		unsafe{  return $>(ptr_ + size_ - 1s);  }
 	}
 
 	// modificators
@@ -255,13 +254,13 @@ public:
 
 		unsafe
 		{
-			var ptr_type mut ptr0= ptr_ + i0;
-			var ptr_type mut ptr1= ptr_ + i1;
+			var $(T) ptr0= ptr_ + i0;
+			var $(T) ptr1= ptr_ + i1;
 
 			var aligned_storage</ typeinfo</T/>.size_of, typeinfo</T/>.align_of /> mut temp= uninitialized;
-			memory_copy( temp          , ptr0.get_ref(), c_element_size_ );
-			memory_copy( ptr0.get_ref(), ptr1.get_ref(), c_element_size_ );
-			memory_copy( ptr1.get_ref(), temp          , c_element_size_ );
+			memory_copy( temp    , $>(ptr0), c_element_size_ );
+			memory_copy( $>(ptr0), $>(ptr1), c_element_size_ );
+			memory_copy( $>(ptr1), temp    , c_element_size_ );
 		}
 	}
 
@@ -284,7 +283,7 @@ public:
 			auto new_size= add_overflow_check_halt( size_, size_type(1) );
 			ensure_capacity( new_size );
 
-			move_unsafe</T/>( ptr_[size_], move(val) );
+			move_unsafe</T/>( $>(ptr_ + size_), move(val) );
 			size_= new_size;
 		}
 	}
@@ -298,7 +297,7 @@ public:
 
 			for( var size_type mut i(0); i < count; ++i )
 			{
-				move_unsafe</T/>( ptr_[ size_ + i ], val );
+				move_unsafe</T/>( $>(ptr_ + size_ + i), val );
 			}
 			size_= new_size;
 		}
@@ -310,7 +309,7 @@ public:
 		unsafe
 		{
 			--size_;
-			call_destructor(ptr_[size_]);
+			call_destructor($>(ptr_ + size_));
 		}
 	}
 
@@ -323,7 +322,7 @@ public:
 
 			for( var size_type mut i(0); i < count; ++i )
 			{
-				call_destructor( ptr_[ size_ + i ] );
+				call_destructor( $>(ptr_ + size_ + i) );
 			}
 		}
 	}
@@ -335,7 +334,7 @@ public:
 		{
 			--size_;
 			var T mut result= uninitialized;
-			memory_copy( result, ptr_[size_], c_element_size_ );
+			memory_copy( result, $>(ptr_ + size_), c_element_size_ );
 			return move(result);
 		}
 	}
@@ -346,7 +345,7 @@ public:
 		{
 			--size_;
 			var T mut result= uninitialized;
-			memory_copy( result, ptr_[size_], c_element_size_ );
+			memory_copy( result, $>(ptr_ + size_), c_element_size_ );
 			return move(result);
 		}
 	}
@@ -373,9 +372,9 @@ public:
 			{
 				ensure_capacity( new_size );
 
-				for( auto mut i= size_;  i < new_size; ++i )
+				for( auto mut i= size_; i < new_size; ++i )
 				{
-					call_default_constructor( ptr_[ size_ + i ] );
+					call_default_constructor( $>(ptr_ + i) );
 				}
 				size_= new_size;
 			}
@@ -402,7 +401,7 @@ public:
 	{
 		for( var size_type mut i(0); i < size_; ++i )
 		{
-			unsafe{  call_destructor(ptr_[i]);  }
+			unsafe{  call_destructor($>(ptr_ +i));  }
 		}
 		size_= size_type(0);
 	}
@@ -416,20 +415,19 @@ public:
 			{
 				if( capacity_ == size_type(0) )
 				{
-					memory_free( ptr_.get_ref() );
-					ptr_= ptr_type();
+					memory_free( $>(ptr_) );
+					ptr_= nullptr</T/>();
 				}
 				else
 				{
-					auto &mut ref= cast_ref_unsafe</T/>( memory_reallocate( ptr_.get_ref(), capacity_ * c_element_size_ ) );
-					ptr_= ptr_type( ref );
+					auto &mut ref= cast_ref_unsafe</T/>( memory_reallocate( $>(ptr_), capacity_ * c_element_size_ ) );
+					ptr_= $<( ref );
 				}
 			}
 		}
 	}
 
 private:
-	type ptr_type= raw_ptr_mut</T/>;
 	auto constexpr c_element_size_= typeinfo</T/>.size_of;
 
 	fn constexpr get_first_allocation_size() : size_type
@@ -457,12 +455,12 @@ private:
 			else if( capacity_ == size_type(0) )
 			{
 				capacity_= max( get_first_allocation_size(), new_size );
-				ptr_= ptr_type( cast_ref_unsafe</T/>( memory_allocate( capacity_ * c_element_size_ ) ) );
+				ptr_= $<( cast_ref_unsafe</T/>( memory_allocate( capacity_ * c_element_size_ ) ) );
 			}
 			else // if( capacity_ < new_size )
 			{
 				while( capacity_ < new_size ) { capacity_= mul_overflow_check_halt( capacity_, size_type(2) ); }
-				ptr_= ptr_type( cast_ref_unsafe</T/>( memory_reallocate( ptr_.get_ref(), capacity_ * c_element_size_ ) ) );
+				ptr_= $<( cast_ref_unsafe</T/>( memory_reallocate( $>(ptr_), capacity_ * c_element_size_ ) ) );
 			}
 		}
 	}
@@ -470,7 +468,7 @@ private:
 private:
 	ContainerTag</ T /> container_tag_;
 
-	ptr_type ptr_;
+	$(T) ptr_;
 	size_type size_;
 	size_type capacity_;
 }
