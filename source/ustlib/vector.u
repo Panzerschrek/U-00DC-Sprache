@@ -389,13 +389,13 @@ public:
 	fn enable_if( typeinfo</ T />.references_tags_count == size_type(0) )
 	range(  mut this ) : random_access_range</ T, true  />
 	{
-		unsafe{  return random_access_range</ T, true  />( ptr_, ptr_ + size_ );  }
+		unsafe{  return random_access_range</ T, true  />( ptr_, size_ );  }
 	}
 
 	fn enable_if( typeinfo</ T />.references_tags_count == size_type(0) )
 	range( imut this ) : random_access_range</ T, false />
 	{
-		unsafe{  return random_access_range</ T, false />( ptr_, ptr_ + size_ );  }
+		unsafe{  return random_access_range</ T, false />( ptr_, size_ );  }
 	}
 
 	fn clear( mut this )

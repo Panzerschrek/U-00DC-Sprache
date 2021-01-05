@@ -242,12 +242,12 @@ public:
 
 	fn range(  mut this ) : range_mut
 	{
-		unsafe{  return range_mut ( ptr_, ptr_ + size_ );  }
+		unsafe{  return range_mut ( ptr_, size_ );  }
 	}
 
 	fn range( imut this ) : range_imut
 	{
-		unsafe{  return range_imut( ptr_, ptr_ + size_ );  }
+		unsafe{  return range_imut( ptr_, size_ );  }
 	}
 
 	fn substr( this, size_type start_index, size_type end_index ) : this_type
