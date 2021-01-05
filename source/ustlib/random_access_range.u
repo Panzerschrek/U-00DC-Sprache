@@ -1,7 +1,6 @@
 import "aligned_storage.u"
 import "container_utils.u"
 import "memory.u"
-import "pointer.u"
 
 namespace ust
 {
@@ -10,9 +9,7 @@ template</ type T, bool is_mutable />
 class random_access_range
 {
 public:
-	fn constructor( mut this )
-	( begin_(), size_(0) )
-	{}
+	fn constructor()= default;
 
 	fn constructor( mut this, this_type &imut other )= default;
 
@@ -21,18 +18,17 @@ public:
 	template</ size_type size />
 	fn enable_if( is_mutable )
 	conversion_constructor( mut this'a', [ T, size ] &'b  mut arr ) ' a <-  b '
-	( begin_(arr), size_(size) )
-	{}
+		( size_(size) )
+	{
+		unsafe{  begin_= $<( cast_ref_unsafe</T/>(arr) );  }
+	}
 
 	template</ size_type size />
 	fn enable_if( !is_mutable )
 	conversion_constructor( mut this'a', [ T, size ] &'b imut arr ) ' a <- b '
-	( size_(size) )
+		( size_(size) )
 	{
-		unsafe
-		{
-			begin_= ptr_type( cast_mut(arr) );
-		}
+		unsafe{  begin_= $<( cast_mut( cast_ref_unsafe</T/>(arr) ) );  }
 	}
 
 	fn enable_if( !is_mutable )
@@ -46,24 +42,15 @@ public:
 		}
 	}
 
-	fn constructor( raw_ptr_mut</ T /> begin, size_type size ) unsafe
+	fn constructor( $(T) begin, size_type size ) unsafe
 		( begin_(begin), size_(size) )
 	{}
-
-	fn constructor( $(T) begin, size_type size ) unsafe
-		( begin_(), size_(size) )
-	{
-		unsafe{  begin_= ptr_type( $>(begin) );  }
-	}
 
 	op enable_if( is_mutable )
 	[]( this'x', size_type index ) : T &'x  mut
 	{
 		halt if( empty() );
-		unsafe
-		{
-			return cast_mut( cast_ref_unsafe</T/>( int_to_ref( ref_to_int( begin_[index] ) ) ) );
-		}
+		unsafe{  return $>(begin_ + index);  }
 	}
 
 	op
@@ -71,10 +58,7 @@ public:
 	[]( this'x', size_type index ) : T &'x imut
 	{
 		halt if( empty() );
-		unsafe
-		{
-			return cast_ref_unsafe</T/>( int_to_ref( ref_to_int( begin_[index] ) ) );
-		}
+		unsafe{  return $>(begin_ + index);  }
 	}
 
 	fn enable_if(  is_mutable ) front( this'x' ) : T &'x  mut
@@ -103,22 +87,22 @@ public:
 
 	fn enable_if(  is_mutable ) front_unsafe( this'x' ) unsafe : T &'x  mut
 	{
-		unsafe{  return cast_mut( cast_ref_unsafe</T/>( int_to_ref( ref_to_int( begin_.get_ref() ) ) ) );  }
+		unsafe{  return $>(begin_);  }
 	}
 
 	fn enable_if( !is_mutable ) front_unsafe( this'x' ) unsafe : T &'x imut
 	{
-		unsafe{  return cast_mut( cast_ref_unsafe</T/>( int_to_ref( ref_to_int( begin_.get_ref() ) ) ) );  }
+		unsafe{  return $>(begin_);  }
 	}
 
 	fn enable_if(  is_mutable ) back_unsafe ( this'x' ) unsafe : T &'x  mut
 	{
-		unsafe{  return cast_mut( cast_ref_unsafe</T/>( int_to_ref( ref_to_int( ( begin_ + size_ - size_type(1) ).get_ref() ) ) ) );  }
+		unsafe{  return $>(begin_ + size_ - 1s);  }
 	}
 
 	fn enable_if( !is_mutable ) back_unsafe ( this'x' ) unsafe : T &'x imut
 	{
-		unsafe{  return cast_mut( cast_ref_unsafe</T/>( int_to_ref( ref_to_int( ( begin_ + size_ - size_type(1) ).get_ref() ) ) ) );  }
+		unsafe{  return $>(begin_ + size_ - 1s);  }
 	}
 
 	fn subrange( this'x', size_type start_index, size_type end_index ) : this_type'x'
@@ -170,7 +154,7 @@ public:
 	}
 
 	// Access raw data.
-	fn data( this ) unsafe : ptr_type
+	fn data( this ) unsafe : $(T)
 	{
 		return begin_;
 	}
@@ -184,20 +168,19 @@ public:
 
 		unsafe
 		{
-			var ptr_type mut ptr0= begin_ + i0;
-			var ptr_type mut ptr1= begin_ + i1;
+			var $(T) ptr0= begin_ + i0;
+			var $(T) ptr1= begin_ + i1;
 
 			auto c_element_size= typeinfo</T/>.size_of;
 			var aligned_storage</ c_element_size, typeinfo</T/>.align_of /> mut temp= uninitialized;
-			memory_copy( temp          , ptr0.get_ref(), c_element_size );
-			memory_copy( ptr0.get_ref(), ptr1.get_ref(), c_element_size );
-			memory_copy( ptr1.get_ref(), temp          , c_element_size );
+			memory_copy( temp    , $>(ptr0), c_element_size );
+			memory_copy( $>(ptr0), $>(ptr1), c_element_size );
+			memory_copy( $>(ptr1), temp    , c_element_size );
 		}
 	}
 
 private:
 	type this_type= random_access_range</ T, is_mutable />;
-	type ptr_type= raw_ptr_mut</ T />;
 
 private:
 	ReferenceContainerTag</ T, is_mutable /> reference_tag_;
@@ -205,8 +188,8 @@ private:
 private:
 	// Store begin + size, instead of begin + end because we need to support elements with zero size.
 	// TODO - maybe use begin + end for non-zero-sized elements?
-	ptr_type begin_;
-	size_type size_;
+	$(T) begin_= zero_init;
+	size_type size_= 0s;
 }
 
 template</ type T />

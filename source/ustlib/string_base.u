@@ -62,7 +62,7 @@ public:
 			capacity_= max( get_first_allocation_size(), size_ );
 			ptr_= $<( cast_ref_unsafe</char_type/>( memory_allocate( capacity_ * c_element_size_ ) ) );
 
-			memory_copy( $>(ptr_), range.data().get_ref(), size_ * c_element_size_ );
+			memory_copy( $>(ptr_), $>(range.data()), size_ * c_element_size_ );
 		}
 	}
 
@@ -115,7 +115,7 @@ public:
 		{
 			ensure_capacity( range.size() );
 			size_= range.size();
-			memory_copy( $>(this.ptr_), range.data().get_ref(), size_ * c_element_size_ );
+			memory_copy( $>(this.ptr_), $>(range.data()), size_ * c_element_size_ );
 		}
 	}
 
@@ -290,7 +290,7 @@ public:
 		unsafe
 		{
 			auto size= l.size();
-			return memory_equals( $>(l.ptr_), r.data().get_ref(), size * c_element_size_ );
+			return memory_equals( $>(l.ptr_), $>(r.data()), size * c_element_size_ );
 		}
 	}
 
@@ -556,7 +556,7 @@ public:
 			result.ensure_capacity( result_size );
 			result.size_= result_size;
 			memory_copy( $>(result.ptr_), $>(l.ptr_), l.size_ * c_element_size_ );
-			memory_copy( $>(result.ptr_ + l.size_), range.data().get_ref(), range.size() * c_element_size_ );
+			memory_copy( $>(result.ptr_ + l.size_), $>(range.data()), range.size() * c_element_size_ );
 		}
 
 		return move(result);
@@ -570,7 +570,7 @@ public:
 			auto result_size= add_overflow_check_halt( range.size(), r.size_ );
 			result.ensure_capacity( result_size );
 			result.size_= result_size;
-			memory_copy( $>(result.ptr_), range.data().get_ref(), range.size() * c_element_size_ );
+			memory_copy( $>(result.ptr_), $>(range.data()), range.size() * c_element_size_ );
 			memory_copy( $>(result.ptr_ + range.size()), $>(r.ptr_), r.size_ * c_element_size_ );
 		}
 
@@ -608,7 +608,7 @@ public:
 		{
 			auto new_size= add_overflow_check_halt( this.size_, range.size() );
 			ensure_capacity( new_size );
-			memory_copy( $>( ptr_ + size_ ), range.data().get_ref(), range.size() * c_element_size_ );
+			memory_copy( $>( ptr_ + size_ ), $>(range.data()), range.size() * c_element_size_ );
 			size_= new_size;
 		}
 	}
