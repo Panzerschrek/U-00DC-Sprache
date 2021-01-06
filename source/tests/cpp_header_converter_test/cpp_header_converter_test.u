@@ -94,8 +94,17 @@ fn nomangle main() : i32
 		static_assert( types_are_same</ MultidimentionalArrayType44, [ [ f32, 4 ], 4 ] />() );
 	}
 	{
-		var i32 mut a= 0, imut b= 0;
-		var RegularStruct s{ .x= 0, .y= 0.0f, .ptr_field= a, .const_ptr_field= b, .function_ptr_field= SomeLocalFunc };
+		var i32 mut a= 0, mut b= 0;
+		var $(i32) mut a_ptr= $<(a);
+		var RegularStruct s
+		{
+			.x= 0,
+			.y= 0.0f,
+			.ptr_field= $<(a),
+			.const_ptr_field= $<(b),
+			.ptr_to_ptr_field= $<(a_ptr),
+			.function_ptr_field= SomeLocalFunc,
+		};
 		unsafe{ s.function_ptr_field( 3.14f ); }
 	}
 	{

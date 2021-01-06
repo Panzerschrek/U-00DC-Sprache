@@ -259,19 +259,20 @@ void CppAstConsumer::ProcessClassDecl( const clang::Decl& decl, Synt::ClassEleme
 
 		const clang::Type* field_type= field_decl->getType().getTypePtr();
 
-		if( ( field_type->isPointerType() || field_type->isReferenceType() ) && !field_type->isFunctionPointerType() )
+		if( field_type->isReferenceType() )
 		{
-			field.reference_modifier= Synt::ReferenceModifier::Reference;
+			// Ü has some restrictions for references in structs. So, replace all references with raw pointers.
 			const clang::QualType type_qual= field_type->getPointeeType();
 			field_type= type_qual.getTypePtr();
 
-			if( type_qual.isConstQualified() )
-				field.mutability_modifier= Synt::MutabilityModifier::Immutable;
-			else
-				field.mutability_modifier= Synt::MutabilityModifier::Mutable;
-		}
+			Synt::RawPointerType raw_pointer_type( g_dummy_src_loc );
+			raw_pointer_type.element_type= std::make_unique<Synt::TypeName>( TranslateType( *field_type ) );
 
-		field.type= TranslateType( *field_type );
+			field.type= std::move(raw_pointer_type );
+		}
+		else
+			field.type= TranslateType( *field_type );
+
 		field.name= TranslateIdentifier( field_decl->getName() );
 		if( IsKeyword( field.name ) )
 			field.name+= "_";
