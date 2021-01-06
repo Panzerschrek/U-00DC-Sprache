@@ -4080,7 +4080,7 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>
 		macro_variables_map.insert( match_element.name, move(element) );
 	}
 
-	return ust::shared_ptr_final_nullable</MacroVariablesMap/>( move(macro_variables_map) );
+	return ust::make_shared_ptr_final( move(macro_variables_map) );
 }
 
 fn SyntaxAnalyzer::ExpandMacroBlock(
