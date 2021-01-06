@@ -4,9 +4,7 @@ Delete the features from the list as soon as they are implemented.
 
 General:
 *) Dereference operator - for pointer-like classes.
-*) Raw pointers (for C interaction).
 *) Continious initializer for arrays
-*) Less requirements of complete types (helps for recursive types)
 *) Different calling conventions (for API calls, for example)
 *) Anonymous (module-local) symbols - functions, classes, variables.
 *) <, <=, >, >= for enums.
@@ -43,7 +41,7 @@ Templates:
 *) Equality comparison for type and function templates with same name
 
 Standart library:
-*) Associative containers - map, set, unordered_set, string_map
+*) Associative containers - map, set, string_map
 *) Forbid non-thread-safe shared pointers in thread-safe shared pointers
 *) "memory_copy" with alignment
 *) More algorithms
