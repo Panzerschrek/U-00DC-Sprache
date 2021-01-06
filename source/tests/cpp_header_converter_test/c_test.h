@@ -22,9 +22,11 @@ void Function_ZeroArgs();
 void Function_ArgVal( int x );
 void Function_ArgPtr( int* x );
 void Function_ArgConstPtr( const int* x );
+void Function_ArgPtrToPtr( float** f );
 int Function_RetVal();
 int* Function_RetPtr();
 const int* Function_RetConstPtr();
+float** Function_RetPtrToPtr();
 
 void Function_UnnamedArgs( int, float, double );
 
@@ -55,6 +57,7 @@ struct RegularStruct
 	float y;
 	int* ptr_field;
 	const int* const_ptr_field;
+	int** ptr_to_ptr_field;
 	void (*function_ptr_field)(float);
 };
 
@@ -96,3 +99,24 @@ enum NonSequentialEnum
 {
 	Zero= 0, One= 1, Ten= 10, MinusTwo= -2, Large32bit= 5000000, LargeNegative= -142536 - 50
 };
+
+typedef enum
+{
+	A, B, C,
+} TypedefForEnumABC;
+
+typedef enum
+{
+	X= 23, Y= 24, Z= 25,
+} TypedefForEnumXYZ;
+
+typedef struct SameNameForStructAndTypedef
+{
+	int dummy;
+} SameNameForStructAndTypedef;
+
+typedef struct DifferentNamesForStructAndTypedef_0
+{
+	int dummy0;
+	float dummy1;
+} DifferentNamesForStructAndTypedef_1;

@@ -22,6 +22,11 @@ void Function_ArgConstPtr( const int* x )
 	(void)x;
 }
 
+void Function_ArgPtrToPtr( float** x )
+{
+	(void)x;
+}
+
 int Function_RetVal()
 {
 	return 0;
@@ -31,7 +36,13 @@ int* Function_RetPtr()
 {
 	return 0;
 }
+
 const int* Function_RetConstPtr()
+{
+	return 0;
+}
+
+float** Function_RetPtrToPtr()
 {
 	return 0;
 }

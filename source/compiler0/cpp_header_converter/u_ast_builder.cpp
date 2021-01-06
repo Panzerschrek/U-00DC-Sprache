@@ -223,7 +223,20 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 	else if( const auto type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
 	{
 		if( type_alias_decl->isFirstDecl() )
-			program_elements.push_back( ProcessTypedef(*type_alias_decl) );
+		{
+			Synt::Typedef type_alias= ProcessTypedef(*type_alias_decl);
+
+			bool is_same_name= false;
+			if( const auto named_type_name= std::get_if<Synt::NamedTypeName>( &type_alias.value ) )
+			{
+				is_same_name=
+					named_type_name->name.tail == nullptr &&
+					std::get_if<std::string>( &named_type_name->name.start_value ) != nullptr &&
+					std::get<std::string>( named_type_name->name.start_value ) == type_alias.name;
+			}
+			if( !is_same_name )
+				program_elements.push_back( std::move(type_alias) );
+		}
 	}
 	else if( const auto func_decl= llvm::dyn_cast<clang::FunctionDecl>(&decl) )
 	{
@@ -259,19 +272,20 @@ void CppAstConsumer::ProcessClassDecl( const clang::Decl& decl, Synt::ClassEleme
 
 		const clang::Type* field_type= field_decl->getType().getTypePtr();
 
-		if( ( field_type->isPointerType() || field_type->isReferenceType() ) && !field_type->isFunctionPointerType() )
+		if( field_type->isReferenceType() )
 		{
-			field.reference_modifier= Synt::ReferenceModifier::Reference;
+			// Ü has some restrictions for references in structs. So, replace all references with raw pointers.
 			const clang::QualType type_qual= field_type->getPointeeType();
 			field_type= type_qual.getTypePtr();
 
-			if( type_qual.isConstQualified() )
-				field.mutability_modifier= Synt::MutabilityModifier::Immutable;
-			else
-				field.mutability_modifier= Synt::MutabilityModifier::Mutable;
-		}
+			Synt::RawPointerType raw_pointer_type( g_dummy_src_loc );
+			raw_pointer_type.element_type= std::make_unique<Synt::TypeName>( TranslateType( *field_type ) );
 
-		field.type= TranslateType( *field_type );
+			field.type= std::move(raw_pointer_type );
+		}
+		else
+			field.type= TranslateType( *field_type );
+
 		field.name= TranslateIdentifier( field_decl->getName() );
 		if( IsKeyword( field.name ) )
 			field.name+= "_";
@@ -392,7 +406,7 @@ Synt::FunctionPtr CppAstConsumer::ProcessFunction( const clang::FunctionDecl& fu
 			arg.name_+= "_";
 
 		const clang::Type* arg_type= param->getType().getTypePtr();
-		if( ( arg_type->isPointerType() || arg_type->isReferenceType() ) && ! arg_type->isFunctionPointerType() )
+		if( arg_type->isReferenceType() )
 		{
 			arg.reference_modifier_= Synt::ReferenceModifier::Reference;
 			const clang::QualType type_qual= arg_type->getPointeeType();
@@ -410,7 +424,7 @@ Synt::FunctionPtr CppAstConsumer::ProcessFunction( const clang::FunctionDecl& fu
 	}
 
 	const clang::Type* return_type= func_decl.getReturnType().getTypePtr();
-	if( ( return_type->isPointerType() || return_type->isReferenceType() ) && ! return_type->isFunctionPointerType() )
+	if( return_type->isReferenceType() )
 	{
 		func->type_.return_value_reference_modifier_= Synt::ReferenceModifier::Reference;
 		const clang::QualType type_qual= return_type->getPointeeType();
@@ -433,6 +447,8 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 
 	const std::string enum_name= TranslateIdentifier( enum_decl.getName() );
 	const auto enumerators_range= enum_decl.enumerators();
+
+	enum_names_cache_[ &enum_decl ]= enum_name;
 
 	// C++ enum can be Ü enum, if it`s members form sequence 0-N with step 1.
 	bool can_be_u_enum= true;
@@ -532,6 +548,15 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 		named_type.name.start_value= TranslateRecordType( *record_type );
 		return std::move(named_type);
 	}
+	else if( const auto enum_type= llvm::dyn_cast<clang::EnumType>(&in_type) )
+	{
+		if( const auto it= enum_names_cache_.find( enum_type->getDecl() ); it != enum_names_cache_.end() )
+		{
+			Synt::NamedTypeName named_type(g_dummy_src_loc);
+			named_type.name.start_value= it->second;
+			return std::move(named_type);
+		}
+	}
 	else if( const auto typedef_type= llvm::dyn_cast<clang::TypedefType>(&in_type) )
 		return TranslateNamedType( typedef_type->getDecl()->getName() );
 	else if( const auto constna_array_type= llvm::dyn_cast<clang::ConstantArrayType>(&in_type) )
@@ -571,10 +596,12 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 		if( const auto function_proto_type= llvm::dyn_cast<clang::FunctionProtoType>( function_type ) )
 			return TranslateFunctionType( *function_proto_type );
 	}
-	else if( in_type.isPointerType() )
+	else if( const auto pointer_type= llvm::dyn_cast<clang::PointerType>(&in_type) )
 	{
-		// Ü does not spports pointers. Use int with size of pointer.
-		return TranslateNamedType( Keyword( Keywords::size_type_ ) );
+		Synt::RawPointerType raw_pointer_type( g_dummy_src_loc );
+		raw_pointer_type.element_type= std::make_unique<Synt::TypeName>( TranslateType( *pointer_type->getPointeeType().getTypePtr() ) );
+
+		return std::move(raw_pointer_type);
 	}
 	else if( const auto decltype_type= llvm::dyn_cast<clang::DecltypeType>( &in_type ) )
 		return TranslateType( *decltype_type->desugar().getTypePtr() );
@@ -671,7 +698,7 @@ Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::Functi
 		arg.name_= "arg" + std::to_string(i);
 
 		const clang::Type* arg_type= param_qual.getTypePtr();
-		if( ( arg_type->isPointerType() || arg_type->isReferenceType() ) && !arg_type->isFunctionPointerType() )
+		if( arg_type->isReferenceType() )
 		{
 			arg.reference_modifier_= Synt::ReferenceModifier::Reference;
 			const clang::QualType type_qual= arg_type->getPointeeType();
@@ -689,7 +716,7 @@ Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::Functi
 	}
 
 	const clang::Type* return_type= in_type.getReturnType().getTypePtr();
-	if( ( return_type->isPointerType() || return_type->isReferenceType() ) && !return_type->isFunctionPointerType() )
+	if( return_type->isReferenceType() )
 	{
 		function_type->return_value_reference_modifier_= Synt::ReferenceModifier::Reference;
 		const clang::QualType type_qual= return_type->getPointeeType();

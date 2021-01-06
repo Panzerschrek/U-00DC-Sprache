@@ -70,11 +70,13 @@ fn nomangle main() : i32
 		var i32 mut x= 0;
 		Function_ZeroArgs();
 		Function_ArgVal(x);
-		Function_ArgPtr(x);
-		Function_ArgConstPtr(x);
+		Function_ArgPtr( $<(x) );
+		Function_ArgConstPtr( $<(x) );
 		var i32 r0= Function_RetVal();
-		var i32& mut r1= Function_RetPtr();
-		var i32& imut r2= Function_RetConstPtr();
+		var $(i32) r1= Function_RetPtr();
+		var $(i32) r2= Function_RetConstPtr();
+		var $($(f32)) ptr_to_ptr_to_f= Function_RetPtrToPtr();
+		Function_ArgPtrToPtr( ptr_to_ptr_to_f );
 		Function_UnnamedArgs( 0, 0.0f, 0.0 );
 		DuplicatedProto(0);
 	}
@@ -94,8 +96,17 @@ fn nomangle main() : i32
 		static_assert( types_are_same</ MultidimentionalArrayType44, [ [ f32, 4 ], 4 ] />() );
 	}
 	{
-		var i32 mut a= 0, imut b= 0;
-		var RegularStruct s{ .x= 0, .y= 0.0f, .ptr_field= a, .const_ptr_field= b, .function_ptr_field= SomeLocalFunc };
+		var i32 mut a= 0, mut b= 0;
+		var $(i32) mut a_ptr= $<(a);
+		var RegularStruct s
+		{
+			.x= 0,
+			.y= 0.0f,
+			.ptr_field= $<(a),
+			.const_ptr_field= $<(b),
+			.ptr_to_ptr_field= $<(a_ptr),
+			.function_ptr_field= SomeLocalFunc,
+		};
 		unsafe{ s.function_ptr_field( 3.14f ); }
 	}
 	{
@@ -132,6 +143,15 @@ fn nomangle main() : i32
 	static_assert( NonSequentialEnum_namespace::LargeNegative == -142586 );
 
 	var NonSequentialEnum ersatz_vnum_value= NonSequentialEnum_namespace::Zero;
+
+	var TypedefForEnumABC typedefed_sequential_enum_value= TypedefForEnumABC::B;
+	var TypedefForEnumXYZ typedefed_non_sequential_enum_value= zero_init;
+
+	var SameNameForStructAndTypedef same_name_for_struct_and_typedef{ .dummy= 666 };
+
+	var DifferentNamesForStructAndTypedef_0 different_names_for_struct_and_typedef_0{ .dummy0= 0, .dummy1= 0.0f };
+	var DifferentNamesForStructAndTypedef_1 different_names_for_struct_and_typedef_1{ .dummy0= 1, .dummy1= 1.0f };
+	static_assert( types_are_same</ DifferentNamesForStructAndTypedef_0 , DifferentNamesForStructAndTypedef_1 />() );
 
 	return 0;
 }
