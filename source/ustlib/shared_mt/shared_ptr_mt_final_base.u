@@ -1,7 +1,6 @@
 import "../atomic.u"
 import "../container_utils.u"
 import "../memory.u"
-import "../pointer.u"
 import "../type_traits.u"
 
 namespace ust
