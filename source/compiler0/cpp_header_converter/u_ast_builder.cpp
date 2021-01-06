@@ -448,6 +448,8 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 	const std::string enum_name= TranslateIdentifier( enum_decl.getName() );
 	const auto enumerators_range= enum_decl.enumerators();
 
+	enum_names_cache_[ &enum_decl ]= enum_name;
+
 	// C++ enum can be Ü enum, if it`s members form sequence 0-N with step 1.
 	bool can_be_u_enum= true;
 	{
@@ -545,6 +547,15 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 		Synt::NamedTypeName named_type(g_dummy_src_loc);
 		named_type.name.start_value= TranslateRecordType( *record_type );
 		return std::move(named_type);
+	}
+	else if( const auto enum_type= llvm::dyn_cast<clang::EnumType>(&in_type) )
+	{
+		if( const auto it= enum_names_cache_.find( enum_type->getDecl() ); it != enum_names_cache_.end() )
+		{
+			Synt::NamedTypeName named_type(g_dummy_src_loc);
+			named_type.name.start_value= it->second;
+			return std::move(named_type);
+		}
 	}
 	else if( const auto typedef_type= llvm::dyn_cast<clang::TypedefType>(&in_type) )
 		return TranslateNamedType( typedef_type->getDecl()->getName() );

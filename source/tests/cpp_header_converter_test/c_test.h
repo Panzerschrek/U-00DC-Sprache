@@ -100,6 +100,16 @@ enum NonSequentialEnum
 	Zero= 0, One= 1, Ten= 10, MinusTwo= -2, Large32bit= 5000000, LargeNegative= -142536 - 50
 };
 
+typedef enum
+{
+	A, B, C,
+} TypedefForEnumABC;
+
+typedef enum
+{
+	X= 23, Y= 24, Z= 25,
+} TypedefForEnumXYZ;
+
 typedef struct SameNameForStructAndTypedef
 {
 	int dummy;

@@ -49,6 +49,7 @@ private:
 
 	size_t unique_name_index_= 0u;
 	std::unordered_map< const clang::RecordType*, std::string > anon_records_names_cache_;
+	std::unordered_map< const clang::EnumDecl*, std::string > enum_names_cache_;
 };
 
 using ParsedUnits= std::map< std::string, Synt::ProgramElements >;

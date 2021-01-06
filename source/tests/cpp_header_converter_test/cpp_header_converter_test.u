@@ -144,6 +144,9 @@ fn nomangle main() : i32
 
 	var NonSequentialEnum ersatz_vnum_value= NonSequentialEnum_namespace::Zero;
 
+	var TypedefForEnumABC typedefed_sequential_enum_value= TypedefForEnumABC::B;
+	var TypedefForEnumXYZ typedefed_non_sequential_enum_value= zero_init;
+
 	var SameNameForStructAndTypedef same_name_for_struct_and_typedef{ .dummy= 666 };
 
 	var DifferentNamesForStructAndTypedef_0 different_names_for_struct_and_typedef_0{ .dummy0= 0, .dummy1= 0.0f };
