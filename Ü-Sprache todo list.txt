@@ -75,7 +75,7 @@ QtCreator plugin:
 *) Plugins for other IDEs
 
 CPP Header converter:
-*) fix "typedef struct X{} X;"
+*) fix "typedef enum { A, B, C } X;"
 
 Documentation:
 *) Macros

@@ -223,7 +223,20 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 	else if( const auto type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
 	{
 		if( type_alias_decl->isFirstDecl() )
-			program_elements.push_back( ProcessTypedef(*type_alias_decl) );
+		{
+			Synt::Typedef type_alias= ProcessTypedef(*type_alias_decl);
+
+			bool is_same_name= false;
+			if( const auto named_type_name= std::get_if<Synt::NamedTypeName>( &type_alias.value ) )
+			{
+				is_same_name=
+					named_type_name->name.tail == nullptr &&
+					std::get_if<std::string>( &named_type_name->name.start_value ) != nullptr &&
+					std::get<std::string>( named_type_name->name.start_value ) == type_alias.name;
+			}
+			if( !is_same_name )
+				program_elements.push_back( std::move(type_alias) );
+		}
 	}
 	else if( const auto func_decl= llvm::dyn_cast<clang::FunctionDecl>(&decl) )
 	{

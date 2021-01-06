@@ -144,5 +144,11 @@ fn nomangle main() : i32
 
 	var NonSequentialEnum ersatz_vnum_value= NonSequentialEnum_namespace::Zero;
 
+	var SameNameForStructAndTypedef same_name_for_struct_and_typedef{ .dummy= 666 };
+
+	var DifferentNamesForStructAndTypedef_0 different_names_for_struct_and_typedef_0{ .dummy0= 0, .dummy1= 0.0f };
+	var DifferentNamesForStructAndTypedef_1 different_names_for_struct_and_typedef_1{ .dummy0= 1, .dummy1= 1.0f };
+	static_assert( types_are_same</ DifferentNamesForStructAndTypedef_0 , DifferentNamesForStructAndTypedef_1 />() );
+
 	return 0;
 }

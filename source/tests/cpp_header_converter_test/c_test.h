@@ -99,3 +99,14 @@ enum NonSequentialEnum
 {
 	Zero= 0, One= 1, Ten= 10, MinusTwo= -2, Large32bit= 5000000, LargeNegative= -142536 - 50
 };
+
+typedef struct SameNameForStructAndTypedef
+{
+	int dummy;
+} SameNameForStructAndTypedef;
+
+typedef struct DifferentNamesForStructAndTypedef_0
+{
+	int dummy0;
+	float dummy1;
+} DifferentNamesForStructAndTypedef_1;
