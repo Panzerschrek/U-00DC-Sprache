@@ -72,6 +72,11 @@ fn nomangle main() : i32
 		var ust::box</ ImplDerived /> mut box0( ImplDerived() );
 		var ust::box</ I1 /> mut box1( move(box0) );
 	}
+	// make_box
+	{
+		auto box= ust::make_box( 77 );
+		halt if( box.get_ref() != 77 );
+	}
 
 	return 0;
 }

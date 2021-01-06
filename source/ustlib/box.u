@@ -87,4 +87,11 @@ struct box_hasher
 	}
 }
 
+// Constructor helper.
+template</type T/>
+fn make_box(T mut t) : box</T/>
+{
+	return box</T/>( move(t) );
+}
+
 } // namespace ust

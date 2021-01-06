@@ -585,7 +585,7 @@ fn SyntaxAnalyzer::ParseComplexName( mut this ) : ComplexName
 
 		if( it_.front().lexem_type == Lexem::Type::TemplateBracketLeft )
 		{
-			complex_name.tail.push_back( ust::box</ TemplateArgs />( ParseTemplateArgs() ) );
+			complex_name.tail.push_back( ust::make_box( ParseTemplateArgs() ) );
 		}
 	}
 	else if( it_.front().lexem_type == Lexem::Type::Scope )
@@ -610,7 +610,7 @@ fn SyntaxAnalyzer::ParseComplexName( mut this ) : ComplexName
 
 		if( it_.front().lexem_type == Lexem::Type::TemplateBracketLeft )
 		{
-			complex_name.tail.push_back( ust::box</ TemplateArgs />( ParseTemplateArgs() ) );
+			complex_name.tail.push_back( ust::make_box( ParseTemplateArgs() ) );
 		}
 	}
 
@@ -693,11 +693,11 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 		}
 		else if( it_.front().lexem_type == Lexem::Type::SquareBracketLeft )
 		{
-			current_node= ust::box</ ArrayType />( ParseArrayType() );
+			current_node= ust::make_box( ParseArrayType() );
 		}
 		else if( IsKeyword( it_.front(), Keyword::tup_ ) )
 		{
-			current_node= ust::box</ TupleType />( ParseTupleType() );
+			current_node= ust::make_box( ParseTupleType() );
 		}
 		else if( IsKeyword( it_.front(), Keyword::false_ ) )
 		{
@@ -713,7 +713,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 		}
 		else if( IsKeyword( it_.front(), Keyword::fn_ ) )
 		{
-			current_node= ust::box</FunctionType/>( ParseFunctionType() );
+			current_node= ust::make_box( ParseFunctionType() );
 		}
 		else if( IsKeyword( it_.front(), Keyword::typeinfo_ ) )
 		{
@@ -943,7 +943,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 		}
 		else if( it_.front().lexem_type == Lexem::Type::PointerTypeMark )
 		{
-			current_node= ust::box</ RawPointerType />( ParseRawPointerType() );
+			current_node= ust::make_box( ParseRawPointerType() );
 		}
 		else if( it_.front().lexem_type == Lexem::Type::ReferenceToPointer )
 		{
@@ -1145,15 +1145,15 @@ fn SyntaxAnalyzer::ParseTypeName( mut this ) : TypeName
 {
 	if( IsKeyword( it_.front(), Keyword::fn_ ) )
 	{
-		return ust::box</FunctionType/>( ParseFunctionType() );
+		return ust::make_box( ParseFunctionType() );
 	}
 	else if( IsKeyword( it_.front(), Keyword::tup_ ) )
 	{
-		return ust::box</TupleType/>( ParseTupleType() );
+		return ust::make_box( ParseTupleType() );
 	}
 	else if( it_.front().lexem_type == Lexem::Type::PointerTypeMark )
 	{
-		return ust::box</RawPointerType/>( ParseRawPointerType() );
+		return ust::make_box( ParseRawPointerType() );
 	}
 	else if( it_.front().lexem_type == Lexem::Type::Identifier || it_.front().lexem_type == Lexem::Type::Scope )
 	{
@@ -1161,7 +1161,7 @@ fn SyntaxAnalyzer::ParseTypeName( mut this ) : TypeName
 	}
 	else if( it_.front().lexem_type == Lexem::Type::SquareBracketLeft )
 	{
-		return ust::box</ArrayType/>( ParseArrayType() );
+		return ust::make_box( ParseArrayType() );
 	}
 	else if( it_.front().lexem_type == Lexem::Type::BracketLeft )
 	{
@@ -1879,7 +1879,7 @@ fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer
 
 		while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::SquareBracketRight )
 		{
-			sequence_initializer.elements_initializers.push_back( ust::box</Initializer/>( ParseInitializer( true ) ) );
+			sequence_initializer.elements_initializers.push_back( ust::make_box( ParseInitializer( true ) ) );
 			if( it_.front().lexem_type == Lexem::Type::Comma )
 			{
 				NextLexem();
@@ -2069,21 +2069,21 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 	{
 		if( it_.front().lexem_type == Lexem::Type::BraceLeft )
 		{
-			block_elements.push_back( ust::box</Block/>(ParseBlock()) );
+			block_elements.push_back( ust::make_box(ParseBlock()) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::safe_ ) )
 		{
 			NextLexem();
 			auto mut inner_block= ParseBlock();
 			inner_block.safety= Block::Safety::Safe;
-			block_elements.push_back( ust::box</Block/>(move(inner_block)) );
+			block_elements.push_back( ust::make_box(move(inner_block)) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::unsafe_ ) )
 		{
 			NextLexem();
 			auto mut inner_block= ParseBlock();
 			inner_block.safety= Block::Safety::Unsafe;
-			block_elements.push_back( ust::box</Block/>(move(inner_block)) );
+			block_elements.push_back( ust::make_box(move(inner_block)) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::var_ ) )
 		{
