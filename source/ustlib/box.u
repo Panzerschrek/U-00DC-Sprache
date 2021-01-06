@@ -1,6 +1,5 @@
 import "container_utils.u"
 import "hash.u"
-import "pointer.u"
 import "polymorph.u"
 import "type_traits.u"
 
@@ -20,8 +19,8 @@ public:
 	{
 		unsafe
 		{
-			ptr_= raw_ptr_mut</ T />( cast_ref_unsafe</T/>( memory_allocate( typeinfo</T/>.size_of ) ) );
-			move_unsafe</T/>( ptr_.get_ref(), move(val) );
+			ptr_= $<( cast_ref_unsafe</T/>( memory_allocate( typeinfo</T/>.size_of ) ) );
+			move_unsafe</T/>( $>(ptr_), move(val) );
 		}
 	}
 
@@ -31,7 +30,7 @@ public:
 	{
 		unsafe
 		{
-			ptr_= raw_ptr_mut</ T />( val.get_ref() ); // Convert reference here.
+			ptr_= $<( cast_ref</T/>(val.get_ref()) );
 			move_into_nowhere( move(val) );
 		}
 	}
@@ -42,8 +41,8 @@ public:
 	{
 		unsafe
 		{
-			call_destructor( ptr_.get_ref() );
-			memory_free( polymorph_restore_original_ref( ptr_.get_ref() ) );
+			call_destructor( $>(ptr_) );
+			memory_free( polymorph_restore_original_ref( $>(ptr_) ) );
 		}
 	}
 
@@ -59,12 +58,12 @@ public:
 
 	fn get_ref_unsafe( mut this ) unsafe : T &mut
 	{
-		unsafe{  return ptr_.get_ref();  }
+		unsafe{  return $>(ptr_);  }
 	}
 
 	fn get_ref_unsafe( imut this ) unsafe : T &imut
 	{
-		unsafe{  return ptr_.get_ref();  }
+		unsafe{  return $>(ptr_);  }
 	}
 
 private:
@@ -76,7 +75,7 @@ private:
 	type element_type_for_shared_check= T;
 
 private:
-	raw_ptr_mut</ T /> ptr_;
+	$(T) ptr_= zero_init;
 }
 
 struct box_hasher

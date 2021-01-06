@@ -1,6 +1,5 @@
 import "../container_utils.u"
 import "../memory.u"
-import "../pointer.u"
 import "../polymorph.u"
 import "../type_traits.u"
 
@@ -22,13 +21,13 @@ public:
 	{
 		unsafe
 		{
-			value_= value_ptr( cast_ref_unsafe</T/>( memory_allocate( typeinfo</T/>.size_of ) ) );
-			move_unsafe( value_.get_ref(), move(value) );
+			value_= $<( cast_ref_unsafe</T/>( memory_allocate( typeinfo</T/>.size_of ) ) );
+			move_unsafe( $>(value_), move(value) );
 
-			counter_= counter_ptr( cast_ref_unsafe</ shared_ptr_impl::counter />( memory_allocate( typeinfo</ shared_ptr_impl::counter />.size_of ) ) );
-			counter_.get_ref().use_count_total= 1u;
-			counter_.get_ref().use_count_strong= 1u;
-			counter_.get_ref().lock_count= 0;
+			counter_= $<( cast_ref_unsafe</ shared_ptr_impl::counter />( memory_allocate( typeinfo</ shared_ptr_impl::counter />.size_of ) ) );
+			$>(counter_).use_count_total= 1u;
+			$>(counter_).use_count_strong= 1u;
+			$>(counter_).lock_count= 0;
 		}
 	}
 
@@ -40,10 +39,10 @@ public:
 		{
 			unsafe
 			{
-				value_= raw_ptr_mut</ T />( ptr.get_value_ptr().get_ref() ); // Convert reference here.
+				value_= $<( cast_ref</T/>( $>(ptr.get_value_ptr() ) ) );
 				counter_= ptr.get_counter_ptr();
-				++counter_.get_ref().use_count_total;
-				++counter_.get_ref().use_count_strong;
+				++$>(counter_).use_count_total;
+				++$>(counter_).use_count_strong;
 			}
 		}
 	}
@@ -63,12 +62,12 @@ public:
 		reset();
 		unsafe
 		{
-			if( !other.counter_.is_null() )
+			if( other.counter_ != nullptr</shared_ptr_impl::counter/>() )
 			{
 				value_= other.value_;
 				counter_= other.counter_;
-				++counter_.get_ref().use_count_total;
-				++counter_.get_ref().use_count_strong;
+				++$>(counter_).use_count_total;
+				++$>(counter_).use_count_strong;
 			}
 		}
 	}
@@ -78,21 +77,21 @@ public:
 		if( empty() ) { return; }
 		unsafe
 		{
-			--counter_.get_ref().use_count_strong;
-			if( counter_.get_ref().use_count_strong == 0u )
+			--$>(counter_).use_count_strong;
+			if( $>(counter_).use_count_strong == 0u )
 			{
-				call_destructor( value_.get_ref() );
-				memory_free( polymorph_restore_original_ref( value_.get_ref() ) );
+				call_destructor( $>(value_) );
+				memory_free( polymorph_restore_original_ref( $>(value_) ) );
 			}
-			value_= value_ptr();
+			value_= nullptr</T/>();
 
-			--counter_.get_ref().use_count_total;
-			if( counter_.get_ref().use_count_total == 0u )
+			--$>(counter_).use_count_total;
+			if( $>(counter_).use_count_total == 0u )
 			{
-				memory_free( counter_.get_ref() );
+				memory_free( $>(counter_) );
 			}
 
-			counter_= counter_ptr();
+			counter_= nullptr</shared_ptr_impl::counter/>();
 		}
 	}
 
@@ -103,19 +102,19 @@ public:
 
 	fn empty( this ) : bool
 	{
-		return value_.is_null();
+		return value_ == nullptr</T/>();
 	}
 
 	fn lock_mut ( this ) : lock_mut_t 'this'
 	{
 		halt if( empty() );
-		unsafe{  return lock_mut_t ( value_.get_ref(), counter_ );  }
+		unsafe{  return lock_mut_t ( $>(value_), counter_ );  }
 	}
 
 	fn lock_imut( this ) : lock_imut_t'this'
 	{
 		halt if( empty() );
-		unsafe{  return lock_imut_t( value_.get_ref(), counter_ );  }
+		unsafe{  return lock_imut_t( $>(value_), counter_ );  }
 	}
 
 	op==( this_type& l, this_type& r ) : bool
@@ -130,31 +129,31 @@ public:
 
 public: // Methods for internal usage.
 
-	fn get_value_ptr( this ) unsafe : raw_ptr_mut</T/>
+	fn get_value_ptr( this ) unsafe : $(T)
 	{
 		return value_;
 	}
 
-	fn get_counter_ptr( this ) unsafe : raw_ptr_mut</ shared_ptr_impl::counter />
+	fn get_counter_ptr( this ) unsafe : $(shared_ptr_impl::counter)
 	{
 		return counter_;
 	}
 
 	// Counter must be incremented before this constructor call.
-	fn constructor( raw_ptr_mut</T/> value_ptr, raw_ptr_mut</ shared_ptr_impl::counter /> counter_ptr ) unsafe
+	fn constructor( $(T) value_ptr, $(shared_ptr_impl::counter) counter_ptr ) unsafe
 	( value_(value_ptr), counter_(counter_ptr) )
 	{}
 
 private:
 	type this_type= shared_ptr_base</ T />;
-	type value_ptr= raw_ptr_mut</T/>;
-	type counter_ptr= raw_ptr_mut</ shared_ptr_impl::counter />;
+	type value_ptr= $(T);
+	type counter_ptr= $(shared_ptr_impl::counter);
 	type lock_mut_t = shared_ptr_impl::lock_mut </T/>;
 	type lock_imut_t= shared_ptr_impl::lock_imut</T/>;
 
 private:
-	value_ptr value_();
-	counter_ptr counter_();
+	value_ptr value_= zero_init;
+	counter_ptr counter_= zero_init;
 }
 
 struct shared_ptr_base_hasher
@@ -164,7 +163,7 @@ struct shared_ptr_base_hasher
 	{
 		unsafe
 		{
-			return ust::ref_to_int( ptr.get_value_ptr().get_ref() );
+			return ust::ref_to_int( $>( ptr.get_value_ptr() ) );
 		}
 	}
 }
@@ -190,9 +189,9 @@ public:
 		{
 			value_= ptr.get_value_ptr();
 			counter_= ptr.get_counter_ptr();
-			if( !counter_.is_null() )
+			if( counter_ != nullptr</shared_ptr_impl::counter/>() )
 			{
-				++counter_.get_ref().use_count_total;
+				++$>(counter_).use_count_total;
 			}
 		}
 	}
@@ -203,11 +202,11 @@ public:
 	{
 		unsafe
 		{
-			if( !ptr.get_value_ptr().is_null() )
+			if( ptr.get_value_ptr() != nullptr</U/>() )
 			{
-				value_= raw_ptr_mut</ T />( ptr.get_value_ptr().get_ref() ); // Convert reference here.
+				value_= $<( cast_ref</T/>( $>( ptr.get_value_ptr() ) ) ); // Convert reference here.
 				counter_= ptr.get_counter_ptr();
-				++counter_.get_ref().use_count_total;
+				++$>(counter_).use_count_total;
 			}
 		}
 	}
@@ -227,11 +226,11 @@ public:
 		reset();
 		unsafe
 		{
-			if( !other.counter_.is_null() )
+			if( other.counter_ != nullptr</shared_ptr_impl::counter/>() )
 			{
 				value_= other.value_;
 				counter_= other.counter_;
-				++counter_.get_ref().use_count_total;
+				++$>(counter_).use_count_total;
 			}
 		}
 	}
@@ -240,15 +239,15 @@ public:
 	{
 		unsafe
 		{
-			if( !counter_.is_null() )
+			if( counter_ != nullptr</shared_ptr_impl::counter/>() )
 			{
-				--counter_.get_ref().use_count_total;
-				if( counter_.get_ref().use_count_total == 0u )
+				--$>(counter_).use_count_total;
+				if( $>(counter_).use_count_total == 0u )
 				{
-					memory_free( counter_.get_ref() );
-					value_= value_ptr();
+					memory_free( $>(counter_) );
+					value_= nullptr</T/>();
 				}
-				counter_= counter_ptr();
+				counter_= nullptr</shared_ptr_impl::counter/>();
 			}
 		}
 	}
@@ -257,37 +256,37 @@ public:
 	{
 		unsafe
 		{
-			if( counter_.is_null() || counter_.get_ref().use_count_strong == 0u )
+			if( counter_ == nullptr</shared_ptr_impl::counter/>() || $>(counter_).use_count_strong == 0u )
 			{
 				return shared_ptr_base</T/>();
 			}
-			++counter_.get_ref().use_count_total;
-			++counter_.get_ref().use_count_strong;
+			++$>(counter_).use_count_total;
+			++$>(counter_).use_count_strong;
 			return shared_ptr_base</T/>( value_, counter_ );
 		}
 	}
 
 public: // Methods for internal usage.
-	fn get_value_ptr( this ) unsafe : raw_ptr_mut</T/>
+	fn get_value_ptr( this ) unsafe : $(T)
 	{
 		return value_;
 	}
 
-	fn get_counter_ptr( this ) unsafe : raw_ptr_mut</ shared_ptr_impl::counter />
+	fn get_counter_ptr( this ) unsafe : $(shared_ptr_impl::counter)
 	{
 		return counter_;
 	}
 
 private:
 	type this_type= weak_ptr_base</ T />;
-	type value_ptr= raw_ptr_mut</T/>;
-	type counter_ptr= raw_ptr_mut</ shared_ptr_impl::counter />;
+	type value_ptr= $(T);
+	type counter_ptr= $(shared_ptr_impl::counter);
 	type lock_mut_t = shared_ptr_impl::lock_mut </T/>;
 	type lock_imut_t= shared_ptr_impl::lock_imut</T/>;
 
 private:
-	value_ptr value_();
-	counter_ptr counter_();
+	value_ptr value_= zero_init;
+	counter_ptr counter_= zero_init;
 }
 
 namespace shared_ptr_impl
@@ -304,19 +303,19 @@ template</ type T />
 class lock_mut
 {
 public:
-	fn constructor( mut this'a', T &'b  mut value, raw_ptr_mut</counter/> counter ) ' a <- b ' unsafe
+	fn constructor( mut this'a', T &'b  mut value, $(counter) counter ) ' a <- b ' unsafe
 		( value_(value), counter_(counter) )
 	{
 		unsafe
 		{
-			halt if( counter_.get_ref().lock_count != 0 ); // halt if have any locks
-			counter_.get_ref().lock_count= -1;
+			halt if( $>(counter_).lock_count != 0 ); // halt if have any locks
+			$>(counter_).lock_count= -1;
 		}
 	}
 
 	fn destructor()
 	{
-		unsafe{  counter_.get_ref().lock_count= 0;  }
+		unsafe{  $>(counter_).lock_count= 0;  }
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
@@ -330,26 +329,26 @@ public:
 
 private:
 	T & mut value_;
-	raw_ptr_mut</counter/> counter_();
+	$(counter) counter_= zero_init;
 }
 
 template</ type T />
 class lock_imut
 {
 public:
-	fn constructor( mut this'a', T &'b imut value, raw_ptr_mut</counter/> counter ) ' a <- b ' unsafe
+	fn constructor( mut this'a', T &'b imut value, $(counter) counter ) ' a <- b ' unsafe
 		( value_(value), counter_(counter) )
 	{
 		unsafe
 		{
-			halt if( counter_.get_ref().lock_count < 0 ); // halt if have mutable locks
-			++counter_.get_ref().lock_count;
+			halt if( $>(counter_).lock_count < 0 ); // halt if have mutable locks
+			++$>(counter_).lock_count;
 		}
 	}
 
 	fn destructor()
 	{
-		unsafe{  --counter_.get_ref().lock_count;  }
+		unsafe{  --$>(counter_).lock_count;  }
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
@@ -363,7 +362,7 @@ public:
 
 private:
 	T &imut value_;
-	raw_ptr_mut</counter/> counter_();
+	$(counter) counter_= zero_init;
 }
 
 } // namespace shared_ptr_impl

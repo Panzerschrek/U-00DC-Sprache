@@ -1,5 +1,4 @@
 import "container_utils.u"
-import "pointer.u"
 
 namespace ust
 {
@@ -20,12 +19,14 @@ public:
 	// Construct from reference
 	fn enable_if( is_mutable )
 	constructor( mut this'x', T &'y  mut ref ) ' x <- y '
-	( ptr_(ref) ) {}
+	{
+		unsafe{  ptr_= $<(ref);  }
+	}
 
 	fn enable_if( !is_mutable )
 	constructor( mut this'x', T &'y imut ref ) ' x <- y '
 	{
-		unsafe{  ptr_= ptr_type( cast_mut(ref) );  }
+		unsafe{  ptr_= $<( cast_mut(ref) );  }
 	}
 
 	// Construct 'imut' reference from 'mut' reference.
@@ -36,11 +37,15 @@ public:
 		{
 			unsafe{ reset( other.get_ref_unsafe() ); }
 		}
+		else
+		{
+			reset();
+		}
 	}
 
 	fn empty( this ) : bool
 	{
-		return ptr_.is_null();
+		return ptr_ == nullptr</T/>();
 	}
 
 	fn enable_if( is_mutable )
@@ -60,44 +65,35 @@ public:
 	fn enable_if( is_mutable )
 	get_ref_unsafe( this'x' ) unsafe : T &'x mut
 	{
-		unsafe
-		{
-			return cast_mut( cast_ref_unsafe</T/>( int_to_ref( ref_to_int( ptr_.get_ref() ) ) ) );
-		}
+		unsafe{  return $>(ptr_);  }
 	}
 
 	fn enable_if( !is_mutable )
 	get_ref_unsafe( this'x' ) unsafe : T &'x imut
 	{
-		unsafe
-		{
-			return cast_ref_unsafe</T/>( int_to_ref( ref_to_int( ptr_.get_ref() ) ) );
-		}
+		unsafe{  return $>(ptr_);  }
 	}
 
 	fn reset( mut this )
 	{
-		ptr_= ptr_type();
+		ptr_= nullptr</T/>();
 	}
 
 	fn enable_if( is_mutable )
 	reset( mut this'x', T &'y  mut ref ) ' x <-  y '
 	{
-		ptr_= ptr_type(ref);
+		ptr_= $<(ref);
 	}
 
 	fn enable_if( !is_mutable )
 	reset( mut this'x', T &'y imut ref ) ' x <- y '
 	{
-		unsafe{  ptr_= ptr_type( cast_mut(ref) );  }
+		unsafe{  ptr_= $<( cast_mut(ref) );  }
 	}
 
 private:
-	type ptr_type= raw_ptr_mut</T/>;
-
-private:
 	ReferenceContainerTag</ T, is_mutable /> container_tag_;
-	ptr_type ptr_;
+	$(T) ptr_= zero_init;
 }
 
 // TODO - add typedefs for mut/imut ref

@@ -262,11 +262,7 @@ fn StringToArrayView( char8 &'x string_start, size_type string_size ) unsafe : u
 {
 	unsafe
 	{
-		var ust::raw_ptr_mut</char8/> ptr( cast_mut(string_start) );
-
-		return ust::array_view_imut</ char8 />(
-			ptr,
-			ptr + string_size );
+		return ust::array_view_imut</ char8 />( $<( cast_mut(string_start) ), string_size );
 	}
 }
 
