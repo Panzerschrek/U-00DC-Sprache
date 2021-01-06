@@ -22,9 +22,11 @@ void Function_ZeroArgs();
 void Function_ArgVal( int x );
 void Function_ArgPtr( int* x );
 void Function_ArgConstPtr( const int* x );
+void Function_ArgPtrToPtr( float** f );
 int Function_RetVal();
 int* Function_RetPtr();
 const int* Function_RetConstPtr();
+float** Function_RetPtrToPtr();
 
 void Function_UnnamedArgs( int, float, double );
 

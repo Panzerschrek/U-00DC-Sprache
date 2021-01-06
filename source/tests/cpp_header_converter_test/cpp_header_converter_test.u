@@ -73,8 +73,10 @@ fn nomangle main() : i32
 		Function_ArgPtr( $<(x) );
 		Function_ArgConstPtr( $<(x) );
 		var i32 r0= Function_RetVal();
-		var i32& mut r1= Function_RetPtr();
-		var i32& imut r2= Function_RetConstPtr();
+		var $(i32) r1= Function_RetPtr();
+		var $(i32) r2= Function_RetConstPtr();
+		var $($(f32)) ptr_to_ptr_to_f= Function_RetPtrToPtr();
+		Function_ArgPtrToPtr( ptr_to_ptr_to_f );
 		Function_UnnamedArgs( 0, 0.0f, 0.0 );
 		DuplicatedProto(0);
 	}
