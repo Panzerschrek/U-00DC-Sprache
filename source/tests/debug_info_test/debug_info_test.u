@@ -72,6 +72,16 @@ fn RawPointerTypeTest()
 	unsafe{  $>(s_ptr).y= 0.0f;  }
 }
 
+struct StructWithRecursiveTypeDependency
+{
+	$(StructWithRecursiveTypeDependency) next;
+}
+
+fn RecursiveTypeDependencyTest()
+{
+	var StructWithRecursiveTypeDependency s{ .next= zero_init };
+}
+
 fn MakeS1() : S1
 {
 	var S1 s= zero_init;
@@ -263,6 +273,7 @@ fn nomangle main() : i32
 	TupleTypesTest();
 	StructTypesTest();
 	RawPointerTypeTest();
+	RecursiveTypeDependencyTest();
 	AutoVariablesTest();
 	ParametersTest();
 	StructsWithReferencesTest();

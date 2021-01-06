@@ -403,6 +403,9 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
 		return cache_value;
 	}
 
+	// Insert null first to prevent loops.
+	debug_info_.classes_di_types.insert( t, LLVMMetadataRef::Null );
+
 	auto class_lock= t.lock_imut();
 	var ClassType& class_type= class_lock.get_ref();
 	var SrcLoc mut src_loc;
@@ -502,7 +505,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
 			LLVMMetadataRef::Null,// VTableHolder
 			"\0"c8, 0s);
 
-		debug_info_.classes_di_types.insert( t, di_type );
+		debug_info_.classes_di_types[t]= di_type;
 		return di_type;
 	}
 }
