@@ -392,7 +392,7 @@ Synt::FunctionPtr CppAstConsumer::ProcessFunction( const clang::FunctionDecl& fu
 			arg.name_+= "_";
 
 		const clang::Type* arg_type= param->getType().getTypePtr();
-		if( ( arg_type->isPointerType() || arg_type->isReferenceType() ) && ! arg_type->isFunctionPointerType() )
+		if( arg_type->isReferenceType() )
 		{
 			arg.reference_modifier_= Synt::ReferenceModifier::Reference;
 			const clang::QualType type_qual= arg_type->getPointeeType();
@@ -571,10 +571,12 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 		if( const auto function_proto_type= llvm::dyn_cast<clang::FunctionProtoType>( function_type ) )
 			return TranslateFunctionType( *function_proto_type );
 	}
-	else if( in_type.isPointerType() )
+	else if( const auto pointer_type= llvm::dyn_cast<clang::PointerType>(&in_type) )
 	{
-		// Ü does not spports pointers. Use int with size of pointer.
-		return TranslateNamedType( Keyword( Keywords::size_type_ ) );
+		Synt::RawPointerType raw_pointer_type( g_dummy_src_loc );
+		raw_pointer_type.element_type= std::make_unique<Synt::TypeName>( TranslateType( *pointer_type->getPointeeType().getTypePtr() ) );
+
+		return std::move(raw_pointer_type);
 	}
 	else if( const auto decltype_type= llvm::dyn_cast<clang::DecltypeType>( &in_type ) )
 		return TranslateType( *decltype_type->desugar().getTypePtr() );
@@ -671,7 +673,7 @@ Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::Functi
 		arg.name_= "arg" + std::to_string(i);
 
 		const clang::Type* arg_type= param_qual.getTypePtr();
-		if( ( arg_type->isPointerType() || arg_type->isReferenceType() ) && !arg_type->isFunctionPointerType() )
+		if( arg_type->isReferenceType() )
 		{
 			arg.reference_modifier_= Synt::ReferenceModifier::Reference;
 			const clang::QualType type_qual= arg_type->getPointeeType();

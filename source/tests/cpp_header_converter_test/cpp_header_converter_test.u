@@ -70,8 +70,8 @@ fn nomangle main() : i32
 		var i32 mut x= 0;
 		Function_ZeroArgs();
 		Function_ArgVal(x);
-		Function_ArgPtr(x);
-		Function_ArgConstPtr(x);
+		Function_ArgPtr( $<(x) );
+		Function_ArgConstPtr( $<(x) );
 		var i32 r0= Function_RetVal();
 		var i32& mut r1= Function_RetPtr();
 		var i32& imut r2= Function_RetConstPtr();
