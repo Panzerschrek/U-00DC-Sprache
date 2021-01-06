@@ -64,4 +64,10 @@ private:
 	shared_ptr_final_base</T/> impl_;
 }
 
+template</type T/>
+fn make_shared_ptr_final( T mut value ) : shared_ptr_final</T/>
+{
+	return shared_ptr_final</T/>( move(value) );
+}
+
 } // namespace ust
