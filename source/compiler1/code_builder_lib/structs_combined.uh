@@ -655,7 +655,7 @@ public:
 
 	template</ type T />
 	fn enable_if( !IsSharedPtr</T/>::value ) conversion_constructor( T mut t )
-		( something_( ust::shared_ptr_mut</T/>(move(t))) )
+		( something_( ust::make_shared_ptr(move(t))) )
 	{}
 
 	template</ type T />

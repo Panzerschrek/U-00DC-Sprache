@@ -72,4 +72,10 @@ private:
 	shared_ptr_base</ T /> impl_;
 }
 
+template</type T/>
+fn make_shared_ptr( T mut value ) : shared_ptr_mut</T/>
+{
+	return shared_ptr_mut</T/>( move(value) );
+}
+
 } // namespace ust

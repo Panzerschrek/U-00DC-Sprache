@@ -426,19 +426,19 @@ fn SyntaxAnalyzer::ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : Names
 	{
 		if( IsKeyword( it_.front(), Keyword::fn_ ) || IsKeyword( it_.front(), Keyword::op_ ) )
 		{
-			namespace_elements.push_back( ust::shared_ptr_final</Function/>( ParseFunction() ) );
+			namespace_elements.push_back( ust::make_shared_ptr_final( ParseFunction() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::struct_ ) || IsKeyword( it_.front(), Keyword::class_ ) )
 		{
-			namespace_elements.push_back( ust::shared_ptr_final</Class/>( ParseClass() ) );
+			namespace_elements.push_back( ust::make_shared_ptr_final( ParseClass() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::enum_ ) )
 		{
-			namespace_elements.push_back( ust::shared_ptr_final</Enum/>( ParseEnum() ) );
+			namespace_elements.push_back( ust::make_shared_ptr_final( ParseEnum() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::type_ ) )
 		{
-			namespace_elements.push_back( ust::shared_ptr_final</TypeAlias/>( ParseTypeAlias() ) );
+			namespace_elements.push_back( ust::make_shared_ptr_final( ParseTypeAlias() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::template_ ) )
 		{
@@ -450,19 +450,19 @@ fn SyntaxAnalyzer::ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : Names
 		}
 		else if( IsKeyword( it_.front(), Keyword::namespace_ ) )
 		{
-			namespace_elements.push_back( ust::shared_ptr_final</Namespace/>( ParseNamespace() ) );
+			namespace_elements.push_back( ust::make_shared_ptr_final( ParseNamespace() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::var_ ) )
 		{
-			namespace_elements.push_back( ust::shared_ptr_final</VariablesDeclaration/>( ParseVariablesDeclaration() ) );
+			namespace_elements.push_back( ust::make_shared_ptr_final( ParseVariablesDeclaration() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::auto_ ) )
 		{
-			namespace_elements.push_back( ust::shared_ptr_final</AutoVariableDeclaration/>( ParseAutoVariableDeclaration() ) );
+			namespace_elements.push_back( ust::make_shared_ptr_final( ParseAutoVariableDeclaration() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::static_assert_ ) )
 		{
-			namespace_elements.push_back( ust::shared_ptr_final</StaticAssert/>( ParseStaticAssert() ) );
+			namespace_elements.push_back( ust::make_shared_ptr_final( ParseStaticAssert() ) );
 		}
 		else
 		{
@@ -585,7 +585,7 @@ fn SyntaxAnalyzer::ParseComplexName( mut this ) : ComplexName
 
 		if( it_.front().lexem_type == Lexem::Type::TemplateBracketLeft )
 		{
-			complex_name.tail.push_back( ust::box</ TemplateArgs />( ParseTemplateArgs() ) );
+			complex_name.tail.push_back( ust::make_box( ParseTemplateArgs() ) );
 		}
 	}
 	else if( it_.front().lexem_type == Lexem::Type::Scope )
@@ -610,7 +610,7 @@ fn SyntaxAnalyzer::ParseComplexName( mut this ) : ComplexName
 
 		if( it_.front().lexem_type == Lexem::Type::TemplateBracketLeft )
 		{
-			complex_name.tail.push_back( ust::box</ TemplateArgs />( ParseTemplateArgs() ) );
+			complex_name.tail.push_back( ust::make_box( ParseTemplateArgs() ) );
 		}
 	}
 
@@ -693,11 +693,11 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 		}
 		else if( it_.front().lexem_type == Lexem::Type::SquareBracketLeft )
 		{
-			current_node= ust::box</ ArrayType />( ParseArrayType() );
+			current_node= ust::make_box( ParseArrayType() );
 		}
 		else if( IsKeyword( it_.front(), Keyword::tup_ ) )
 		{
-			current_node= ust::box</ TupleType />( ParseTupleType() );
+			current_node= ust::make_box( ParseTupleType() );
 		}
 		else if( IsKeyword( it_.front(), Keyword::false_ ) )
 		{
@@ -713,7 +713,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 		}
 		else if( IsKeyword( it_.front(), Keyword::fn_ ) )
 		{
-			current_node= ust::box</FunctionType/>( ParseFunctionType() );
+			current_node= ust::make_box( ParseFunctionType() );
 		}
 		else if( IsKeyword( it_.front(), Keyword::typeinfo_ ) )
 		{
@@ -943,7 +943,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 		}
 		else if( it_.front().lexem_type == Lexem::Type::PointerTypeMark )
 		{
-			current_node= ust::box</ RawPointerType />( ParseRawPointerType() );
+			current_node= ust::make_box( ParseRawPointerType() );
 		}
 		else if( it_.front().lexem_type == Lexem::Type::ReferenceToPointer )
 		{
@@ -1065,7 +1065,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 						break;
 					}
 
-					call_operator.args.push_back( ust::shared_ptr_final</Expression/>( ParseExpression() ) );
+					call_operator.args.push_back( ust::make_shared_ptr_final( ParseExpression() ) );
 
 					if( it_.front().lexem_type== Lexem::Type::Comma )
 					{
@@ -1145,15 +1145,15 @@ fn SyntaxAnalyzer::ParseTypeName( mut this ) : TypeName
 {
 	if( IsKeyword( it_.front(), Keyword::fn_ ) )
 	{
-		return ust::box</FunctionType/>( ParseFunctionType() );
+		return ust::make_box( ParseFunctionType() );
 	}
 	else if( IsKeyword( it_.front(), Keyword::tup_ ) )
 	{
-		return ust::box</TupleType/>( ParseTupleType() );
+		return ust::make_box( ParseTupleType() );
 	}
 	else if( it_.front().lexem_type == Lexem::Type::PointerTypeMark )
 	{
-		return ust::box</RawPointerType/>( ParseRawPointerType() );
+		return ust::make_box( ParseRawPointerType() );
 	}
 	else if( it_.front().lexem_type == Lexem::Type::Identifier || it_.front().lexem_type == Lexem::Type::Scope )
 	{
@@ -1161,7 +1161,7 @@ fn SyntaxAnalyzer::ParseTypeName( mut this ) : TypeName
 	}
 	else if( it_.front().lexem_type == Lexem::Type::SquareBracketLeft )
 	{
-		return ust::box</ArrayType/>( ParseArrayType() );
+		return ust::make_box( ParseArrayType() );
 	}
 	else if( it_.front().lexem_type == Lexem::Type::BracketLeft )
 	{
@@ -1879,7 +1879,7 @@ fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer
 
 		while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::SquareBracketRight )
 		{
-			sequence_initializer.elements_initializers.push_back( ust::box</Initializer/>( ParseInitializer( true ) ) );
+			sequence_initializer.elements_initializers.push_back( ust::make_box( ParseInitializer( true ) ) );
 			if( it_.front().lexem_type == Lexem::Type::Comma )
 			{
 				NextLexem();
@@ -1906,7 +1906,7 @@ fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer
 
 		while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::BracketRight )
 		{
-			constructor_initializer.args.push_back( ust::shared_ptr_final</ Expression />( ParseExpression() ) );
+			constructor_initializer.args.push_back( ust::make_shared_ptr_final( ParseExpression() ) );
 			if( it_.front().lexem_type  == Lexem::Type::Comma )
 			{
 				NextLexem();
@@ -2069,21 +2069,21 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 	{
 		if( it_.front().lexem_type == Lexem::Type::BraceLeft )
 		{
-			block_elements.push_back( ust::box</Block/>(ParseBlock()) );
+			block_elements.push_back( ust::make_box(ParseBlock()) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::safe_ ) )
 		{
 			NextLexem();
 			auto mut inner_block= ParseBlock();
 			inner_block.safety= Block::Safety::Safe;
-			block_elements.push_back( ust::box</Block/>(move(inner_block)) );
+			block_elements.push_back( ust::make_box(move(inner_block)) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::unsafe_ ) )
 		{
 			NextLexem();
 			auto mut inner_block= ParseBlock();
 			inner_block.safety= Block::Safety::Unsafe;
-			block_elements.push_back( ust::box</Block/>(move(inner_block)) );
+			block_elements.push_back( ust::make_box(move(inner_block)) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::var_ ) )
 		{
@@ -2963,19 +2963,19 @@ fn SyntaxAnalyzer::ParseClassBodyElements( mut this ) : ClassElements
 		}
 		else if( IsKeyword( it_.front(), Keyword::fn_ ) || IsKeyword( it_.front(), Keyword::op_ ) )
 		{
-			class_elements.push_back( ust::shared_ptr_final</Function/>( ParseFunction() ) );
+			class_elements.push_back( ust::make_shared_ptr_final( ParseFunction() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::struct_ ) || IsKeyword( it_.front(), Keyword::class_ ) )
 		{
-			class_elements.push_back( ust::shared_ptr_final</Class/>( ParseClass() ) );
+			class_elements.push_back( ust::make_shared_ptr_final( ParseClass() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::enum_ ) )
 		{
-			class_elements.push_back( ust::shared_ptr_final</Enum/>( ParseEnum() ) );
+			class_elements.push_back( ust::make_shared_ptr_final( ParseEnum() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::type_ ) )
 		{
-			class_elements.push_back( ust::shared_ptr_final</TypeAlias/>( ParseTypeAlias() ) );
+			class_elements.push_back( ust::make_shared_ptr_final( ParseTypeAlias() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::template_ ) )
 		{
@@ -2987,15 +2987,15 @@ fn SyntaxAnalyzer::ParseClassBodyElements( mut this ) : ClassElements
 		}
 		else if( IsKeyword( it_.front(), Keyword::var_ ) )
 		{
-			class_elements.push_back( ust::shared_ptr_final</VariablesDeclaration/>( ParseVariablesDeclaration() ) );
+			class_elements.push_back( ust::make_shared_ptr_final( ParseVariablesDeclaration() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::auto_ ) )
 		{
-			class_elements.push_back( ust::shared_ptr_final</AutoVariableDeclaration/>( ParseAutoVariableDeclaration() ) );
+			class_elements.push_back( ust::make_shared_ptr_final( ParseAutoVariableDeclaration() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::static_assert_ ) )
 		{
-			class_elements.push_back( ust::shared_ptr_final</StaticAssert/>( ParseStaticAssert() ) );
+			class_elements.push_back( ust::make_shared_ptr_final( ParseStaticAssert() ) );
 		}
 		else
 		{
@@ -3046,7 +3046,7 @@ fn SyntaxAnalyzer::ParseClassBodyElements( mut this ) : ClassElements
 			}
 			NextLexem();
 
-			class_elements.push_back( ust::shared_ptr_final</ ClassField />( move(class_field) ) );
+			class_elements.push_back( ust::make_shared_ptr_final( move(class_field) ) );
 		}
 	}
 
@@ -3349,13 +3349,13 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 		{
 			.src_loc= template_src_loc,
 			.name= template_name,
-			.something( ust::shared_ptr_final</TypeAlias/>( move(type_alias) ) ),
+			.something( ust::make_shared_ptr_final( move(type_alias) ) ),
 			.params= move(params),
 			.signature_params= move(signature_params),
 			.is_short_form= is_short_form,
 		};
 
-		return ust::shared_ptr_final</TypeTemplate/>(move(type_template));
+		return ust::make_shared_ptr_final(move(type_template));
 	}
 	else if( IsKeyword( it_.front(), Keyword::struct_ ) || IsKeyword( it_.front(), Keyword::class_ ) )
 	{
@@ -3406,13 +3406,13 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 		{
 			.src_loc= template_src_loc,
 			.name= template_name,
-			.something( ust::shared_ptr_final</Class/>( move(class_) ) ),
+			.something( ust::make_shared_ptr_final( move(class_) ) ),
 			.params= move(params),
 			.signature_params= move(signature_params),
 			.is_short_form= is_short_form,
 		};
 
-		return ust::shared_ptr_final</TypeTemplate/>(move(type_template));
+		return ust::make_shared_ptr_final(move(type_template));
 	}
 	else if( IsKeyword( it_.front(), Keyword::fn_ ) || IsKeyword( it_.front(), Keyword::op_ ) )
 	{
@@ -3426,7 +3426,7 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 		auto mut name= function_template.function.get_ref().name.back();
 		function_template.name= move(name);
 
-		return ust::shared_ptr_final</FunctionTemplate/>( move(function_template) );
+		return ust::make_shared_ptr_final( move(function_template) );
 	}
 	else
 	{
@@ -3435,12 +3435,12 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 		// Fill dummpy
 		var TypeTemplate mut type_template
 		{
-			.something( ust::shared_ptr_final</TypeAlias/>( TypeAlias() ) ),
+			.something( ust::make_shared_ptr_final( TypeAlias() ) ),
 			.params= move(params),
 			.is_short_form= false,
 		};
 
-		return ust::shared_ptr_final</TypeTemplate/>(move(type_template));
+		return ust::make_shared_ptr_final(move(type_template));
 	}
 }
 
@@ -3581,7 +3581,7 @@ fn SyntaxAnalyzer::ParseMacro( mut this )
 
 	if( macro_map.find( macro.name ).empty() )
 	{
-		macro_map.insert( ust::string8(macro.name), ust::shared_ptr_final</Macro/>( move(macro) ) );
+		macro_map.insert( ust::string8(macro.name), ust::make_shared_ptr_final( move(macro) ) );
 	}
 	else
 	{
@@ -4080,7 +4080,7 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>
 		macro_variables_map.insert( match_element.name, move(element) );
 	}
 
-	return ust::shared_ptr_final_nullable</MacroVariablesMap/>( move(macro_variables_map) );
+	return ust::make_shared_ptr_final( move(macro_variables_map) );
 }
 
 fn SyntaxAnalyzer::ExpandMacroBlock(

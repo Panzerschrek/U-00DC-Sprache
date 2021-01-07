@@ -115,6 +115,11 @@ fn nomangle main() : i32
 		var ust::box_nullable</ ImplDerived /> mut box0( ImplDerived() );
 		var ust::box_nullable</ I1 /> mut box1( move(box0) );
 	}
+	// make_box
+	{
+		var ust::box_nullable</i32/> box= ust::make_box( 77 );
+		halt if( box.get_ref() != 77 );
+	}
 
 	return 0;
 }
