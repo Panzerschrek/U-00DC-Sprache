@@ -132,6 +132,13 @@ fn nomangle main() : i32
 		halt if( m.find( IntPtrNullable() ).empty() );
 		halt if( m.find( IntPtrNullable() ).get_ref() != 999 );
 	}
+	// make_shared_ptr_mt_final
+	{
+		var IntPtr ptr0= ust::make_shared_ptr_mt_final( 675 );
+		var IntPtrNullable ptr1= ust::make_shared_ptr_mt_final( 951 );
+		halt if( ptr0.get_ref() != 675 );
+		halt if( ptr1.get_ref() != 951 );
+	}
 
 	return 0;
 }
