@@ -1417,6 +1417,8 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		if( is_s_ret )
 		{
 			AddFunctionAttribute( func_variable.llvm_function, LLVMAttributeFirstParamIndex, "sret" );
+			AddFunctionAttribute( func_variable.llvm_function, LLVMAttributeFirstParamIndex, "noalias" );
+
 			unsafe
 			{
 				function_context.s_ret= LLVMGetParam( func_variable.llvm_function, 0u );
@@ -1431,30 +1433,42 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		for( auto mut arg_n= 0s; arg_n < func_variable.t.params.size(); ++arg_n )
 		{
 			auto& in_param= func_variable.body_syntax_element.get_ref().function_type.params[arg_n];
-			auto& type_arg= cast_imut(func_variable).t.params[arg_n];
+			var FunctionType::Param& type_param= cast_imut(func_variable).t.params[arg_n];
 			var u32 llvm_arg_n= first_llvm_arg + u32(arg_n);
+
+			// Mark reference-parameters as "nonnull".
+			// Mark mutable references as "noalias".
+			if( type_param.is_reference && type_param.is_mutable )
+			{
+				AddFunctionAttribute( func_variable.llvm_function, LLVMAttributeFirstParamIndex + llvm_arg_n, "noalias" );
+			}
+			if( type_param.is_reference
+				|| !type_param.t.GetClassType().empty() || !type_param.t.GetArrayType().empty() || !type_param.t.GetTupleType().empty() )
+			{
+				AddFunctionAttribute( func_variable.llvm_function, LLVMAttributeFirstParamIndex + llvm_arg_n, "nonnull" );
+			}
 
 			var NamesScopeVariable mut out_arg
 			{
-				.t= type_arg.t,
-				.is_mutable= type_arg.is_mutable,
+				.t= type_param.t,
+				.is_mutable= type_param.is_mutable,
 			};
 
 			// Ensure type completness even for reference args because of reference checking.
-			if( !EnsureTypeComplete( out_arg.t ) || ( !type_arg.is_reference && out_arg.t == void_type_ ) )
+			if( !EnsureTypeComplete( out_arg.t ) || ( !type_param.is_reference && out_arg.t == void_type_ ) )
 			{
 				REPORT_ERROR( UsingIncompleteType, names_scope, in_param.src_loc, out_arg.t )
 				return;
 			}
 
 			var ReferencesGraph::NodeId mut inner_reference_variable_node_id= ReferencesGraph::c_empty_node_id;
-			if( type_arg.t.GetInnerReferenceKind() != InnerReferenceKind::None )
+			if( type_param.t.GetInnerReferenceKind() != InnerReferenceKind::None )
 			{
 				inner_reference_variable_node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, in_param.name + " inner variable" );
 				function_context.args_inner_variable_nodes[arg_n]= inner_reference_variable_node_id;
 			}
 
-			if( type_arg.is_reference )
+			if( type_param.is_reference )
 			{
 				unsafe
 				{
@@ -1472,12 +1486,12 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				{
 					auto inner_reference_node= function_context.references_graph.CreateNodeInnerReference(
 						variable_node_id,
-						select( type_arg.t.GetInnerReferenceKind() == InnerReferenceKind::Mut ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ) );
+						select( type_param.t.GetInnerReferenceKind() == InnerReferenceKind::Mut ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ) );
 					function_context.references_graph.AddLink( inner_reference_variable_node_id, inner_reference_node );
 				}
 
 				out_arg.node_id= function_context.references_graph.AddNode(
-					select( type_arg.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
+					select( type_param.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
 					in_param.name );
 				function_context.references_graph.AddLink( variable_node_id, out_arg.node_id );
 
@@ -1512,11 +1526,11 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				CreateVariableDebugInfo( function_context, out_arg, in_param.name, in_param.src_loc );
 
 				out_arg.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, in_param.name );
-				if( type_arg.t.GetInnerReferenceKind() != InnerReferenceKind::None )
+				if( type_param.t.GetInnerReferenceKind() != InnerReferenceKind::None )
 				{
 					auto inner_reference_node= function_context.references_graph.CreateNodeInnerReference(
 						out_arg.node_id,
-						select( type_arg.t.GetInnerReferenceKind() == InnerReferenceKind::Mut ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ) );
+						select( type_param.t.GetInnerReferenceKind() == InnerReferenceKind::Mut ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ) );
 					function_context.references_graph.AddLink( inner_reference_variable_node_id, inner_reference_node );
 				}
 

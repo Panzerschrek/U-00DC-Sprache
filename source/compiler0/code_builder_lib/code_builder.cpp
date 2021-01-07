@@ -1176,7 +1176,8 @@ Type CodeBuilder::BuildFuncCode(
 		{
 			const unsigned int arg_attr_index= static_cast<unsigned int>(i + 1u + (first_arg_is_sret ? 1u : 0u ));
 			const Function::Arg& arg= function_type.args[i];
-			if( arg.is_reference || arg.type.GetClassType() != nullptr || arg.type.GetTupleType() )
+			if( arg.is_reference ||
+				arg.type.GetClassType() != nullptr || arg.type.GetArrayType() != nullptr || arg.type.GetTupleType() != nullptr )
 				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NonNull );
 			if( arg.is_reference && arg.is_mutable )
 				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NoAlias );
