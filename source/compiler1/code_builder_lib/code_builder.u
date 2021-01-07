@@ -1436,16 +1436,16 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			var FunctionType::Param& type_param= cast_imut(func_variable).t.params[arg_n];
 			var u32 llvm_arg_n= first_llvm_arg + u32(arg_n);
 
-			// Mark reference-parameters as "nonnull".
-			// Mark mutable references as "noalias".
-			if( type_param.is_reference && type_param.is_mutable )
-			{
-				AddFunctionAttribute( func_variable.llvm_function, LLVMAttributeFirstParamIndex + llvm_arg_n, "noalias" );
-			}
-			if( type_param.is_reference
-				|| !type_param.t.GetClassType().empty() || !type_param.t.GetArrayType().empty() || !type_param.t.GetTupleType().empty() )
+			var bool param_type_is_composite= !type_param.t.GetClassType().empty() || !type_param.t.GetArrayType().empty() || !type_param.t.GetTupleType().empty();
+			// Mark pointer-parameters as "nonnull".
+			if( type_param.is_reference || param_type_is_composite )
 			{
 				AddFunctionAttribute( func_variable.llvm_function, LLVMAttributeFirstParamIndex + llvm_arg_n, "nonnull" );
+			}
+			// Mutable reference args or composite value-args must not alias.
+			if( ( type_param.is_reference && type_param.is_mutable ) || ( !type_param.is_reference && param_type_is_composite ) )
+			{
+				AddFunctionAttribute( func_variable.llvm_function, LLVMAttributeFirstParamIndex + llvm_arg_n, "noalias" );
 			}
 
 			var NamesScopeVariable mut out_arg
