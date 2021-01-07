@@ -451,5 +451,22 @@ fn nomangle main() : i32
 		halt if( m.find( IntPtrNullableMut() ).empty() );
 		halt if( m.find( IntPtrNullableMut() ).get_ref() != 999 );
 	}
+	// make_shared_ptr_mt
+	{
+		var IntPtrMut  ptr0= ust::make_shared_ptr_mt( 99 );
+		var IntPtrImut ptr1= ust::make_shared_ptr_mt( 66 );
+		var IntPtrNullableMut  ptr2= ust::make_shared_ptr_mt( 85 );
+		var IntPtrNullableImut ptr3= ust::make_shared_ptr_mt( 58 );
+
+		halt if( ptr0.empty() );
+		halt if( ptr1.empty() );
+		halt if( ptr2.empty() );
+		halt if( ptr3.empty() );
+
+		halt if( ptr0.lock_imut().get_ref() != 99 );
+		halt if( ptr1.lock_imut().get_ref() != 66 );
+		halt if( ptr2.lock_imut().get_ref() != 85 );
+		halt if( ptr3.lock_imut().get_ref() != 58 );
+	}
 	return 0;
 }
