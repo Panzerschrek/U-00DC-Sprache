@@ -341,4 +341,28 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeReturnReferenceAttrs )
 	U_TEST_ASSERT( bar->getReturnType()->isPointerTy() );
 }
 
+U_TEST( LLVMFunctionAttrsTest_RawPointerTypeValueParamsAttrs )
+{
+	// No special attributes must be set for raw pointer value params.
+	// Raw pointers may alias and may be null.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( $(i32) x, $(f32) mut y, $(bool) z ){}
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* const function= module->getFunction( "_Z3FooPiPfPb" );
+	U_TEST_ASSERT( function != nullptr );
+
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
+
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NoAlias ) );
+}
+
 } // namespace U
