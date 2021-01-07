@@ -220,4 +220,125 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeReturnReferenceAttrs )
 	U_TEST_ASSERT( bar->getReturnType()->isPointerTy() );
 }
 
+U_TEST( LLVMFunctionAttrsTest_CompositeTypeValueParamsAttrs )
+{
+	// Composite type value-arguments passed by pointer.
+	// This pointer is non-null and actual storage is unique for each arg, so "noalias" must present.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( [ i32, 2 ] a, tup[ bool, f64 ] b ){}
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* const function= module->getFunction( "_Z3FooA2_i3tupIbdE" );
+	U_TEST_ASSERT( function != nullptr );
+
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( function->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
+
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( function->getFunctionType()->getParamType(1)->isPointerTy() ); // Passed by pointer.
+}
+
+U_TEST( LLVMFunctionAttrsTest_CompositeTypeImutReferenceParamsAttrs )
+{
+	// Immutalbe reference params of composite types marked as "nonnull", but not as "noalias".
+	static const char c_program_text[]=
+	R"(
+		fn Foo( [ i32, 2 ] &imut a, tup[ bool, f64 ] &imut b ){}
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* const function= module->getFunction( "_Z3FooRKA2_iRK3tupIbdE" );
+	U_TEST_ASSERT( function != nullptr );
+
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( function->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
+
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( function->getFunctionType()->getParamType(1)->isPointerTy() ); // Passed by pointer.
+}
+
+U_TEST( LLVMFunctionAttrsTest_CompositeTypeMutReferenceParamsAttrs )
+{
+	// Mutable reference params of composite types marked both as "nonnull"and "noalias".
+	static const char c_program_text[]=
+	R"(
+		fn Foo( [ i32, 2 ] &mut a, tup[ bool, f64 ] &mut b ){}
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* const function= module->getFunction( "_Z3FooRA2_iR3tupIbdE" );
+	U_TEST_ASSERT( function != nullptr );
+
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( function->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
+
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( function->getFunctionType()->getParamType(1)->isPointerTy() ); // Passed by pointer.
+}
+
+U_TEST( LLVMFunctionAttrsTest_CompositeTypeReturnValueAttrs )
+{
+	// For functions, returning composite type values, create hidden pointer param, where returned value placed.
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : [ f32, 16 ] { halt; }
+		fn Bar() : tup[ bool, [ i32, 2 ], f32 ] { halt; }
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* foo= module->getFunction( "_Z3Foov" );
+	U_TEST_ASSERT( foo != nullptr );
+
+	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::StructRet ) );
+	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( foo->getFunctionType()->getNumParams() == 1 );
+	U_TEST_ASSERT( foo->getFunctionType()->getParamType(0)->isPointerTy() );
+	U_TEST_ASSERT( foo->getReturnType()->isVoidTy() );
+
+	const llvm::Function* bar= module->getFunction( "_Z3Barv" );
+	U_TEST_ASSERT( bar != nullptr );
+
+	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::StructRet ) );
+	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( bar->getFunctionType()->getNumParams() == 1 );
+	U_TEST_ASSERT( bar->getFunctionType()->getParamType(0)->isPointerTy() );
+	U_TEST_ASSERT( bar->getReturnType()->isVoidTy() );
+}
+
+U_TEST( LLVMFunctionAttrsTest_CompositeTypeReturnReferenceAttrs )
+{
+	// For functions, returning references to composite types, return just pointer.
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : [ f32, 16 ] &mut { halt; }
+		fn Bar() : tup[ bool, [ i32, 2 ], f32 ] &imut { halt; }
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* foo= module->getFunction( "_Z3Foov" );
+	U_TEST_ASSERT( foo != nullptr );
+
+	U_TEST_ASSERT( foo->getFunctionType()->getNumParams() == 0 );
+	U_TEST_ASSERT( foo->getReturnType()->isPointerTy() );
+
+	const llvm::Function* bar= module->getFunction( "_Z3Barv" );
+	U_TEST_ASSERT( bar != nullptr );
+
+	U_TEST_ASSERT( bar->getFunctionType()->getNumParams() == 0 );
+	U_TEST_ASSERT( bar->getReturnType()->isPointerTy() );
+}
+
 } // namespace U
