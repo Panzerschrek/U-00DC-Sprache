@@ -306,6 +306,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 	constructor_variable->llvm_function->addAttribute( 1u, llvm::Attribute::NonNull );
 	constructor_variable->llvm_function->addAttribute( 1u, llvm::Attribute::NoAlias );
 	constructor_variable->llvm_function->addAttribute( 2u, llvm::Attribute::NonNull );
+	constructor_variable->llvm_function->addAttribute( 2u, llvm::Attribute::ReadOnly );
 
 	constructor_variable->have_body= true;
 	constructor_variable->is_this_call= true;
@@ -585,6 +586,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 	operator_variable->llvm_function->addAttribute( 1u, llvm::Attribute::NonNull );
 	operator_variable->llvm_function->addAttribute( 1u, llvm::Attribute::NoAlias );
 	operator_variable->llvm_function->addAttribute( 2u, llvm::Attribute::NonNull );
+	operator_variable->llvm_function->addAttribute( 2u, llvm::Attribute::ReadOnly );
 
 	operator_variable->have_body= true;
 	operator_variable->is_this_call= true;

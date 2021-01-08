@@ -19,17 +19,20 @@ U_TEST( LLVMFunctionAttrsTest_FundamentalTypeValueParamsAttrs )
 
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::ReadOnly ) );
 }
 
 U_TEST( LLVMFunctionAttrsTest_FundamentalTypeImutReferenceParamsAttrs )
 {
-	// Immutable reference params should have only "nonnull" attr, but not "noalias".
+	// Immutable reference params should have only "nonnull" and "readonly" attrs, but not "noalias".
 
 	static const char c_program_text[]=
 	R"(
@@ -43,17 +46,20 @@ U_TEST( LLVMFunctionAttrsTest_FundamentalTypeImutReferenceParamsAttrs )
 
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::ReadOnly ) );
 }
 
 U_TEST( LLVMFunctionAttrsTest_FundamentalTypeMutReferenceParamsAttrs )
 {
-	// Mutable reference params should have "nonnull" and "noalias" attrs.
+	// Mutable reference params should have "nonnull" and "noalias" attrs, but non "readonly".
 	// Add "noalias" because it is forbidden by reference checking to create two mutable references to same data.
 
 	static const char c_program_text[]=
@@ -68,18 +74,22 @@ U_TEST( LLVMFunctionAttrsTest_FundamentalTypeMutReferenceParamsAttrs )
 
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::ReadOnly ) );
 
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::ReadOnly ) );
 }
 
 U_TEST( LLVMFunctionAttrsTest_StructTypeValueParamsAttrs )
 {
 	// Structs (and other composite types) passed by pointer.
 	// This pointer is non-null and actual storage is unique for each arg, so "noalias" must present.
+	// Also "readonly" must be set for immutable value args.
 	static const char c_program_text[]=
 	R"(
 		struct S{ i32 x; f32 y; }
@@ -95,10 +105,12 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeValueParamsAttrs )
 
 	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( foo->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
 
 	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( foo->getFunctionType()->getParamType(1)->isPointerTy() ); // Passed by pointer.
 
 	const llvm::Function* bar= module->getFunction( "_Z3Bar1S1E" );
@@ -106,16 +118,18 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeValueParamsAttrs )
 
 	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( bar->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
 
 	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( bar->getFunctionType()->getParamType(1)->isPointerTy() ); // Passed by pointer.
 }
 
 U_TEST( LLVMFunctionAttrsTest_StructTypeImutReferenceParamsAttrs )
 {
-	// Immutalbe reference params of struct type marked as "nonnull", but not as "noalias".
+	// Immutalbe reference params of struct type marked as "nonnull" and "readonly", but not as "noalias".
 	static const char c_program_text[]=
 	R"(
 		struct S{ i32 x; f32 y; }
@@ -130,16 +144,18 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeImutReferenceParamsAttrs )
 
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(0)->isPointerTy() );
 
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(1)->isPointerTy() );
 }
 
 U_TEST( LLVMFunctionAttrsTest_StructTypeMutReferenceParamsAttrs )
 {
-	// Mutable reference params of struct type marked both as "nonnull"and "noalias".
+	// Mutable reference params of struct type marked both as "nonnull"and "noalias", but not as "readonly".
 	static const char c_program_text[]=
 	R"(
 		struct S{ i32 x; f32 y; }
@@ -154,10 +170,12 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeMutReferenceParamsAttrs )
 
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(0)->isPointerTy() );
 
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(1)->isPointerTy() );
 }
 
@@ -180,6 +198,7 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeReturnValueAttrs )
 
 	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::StructRet ) );
 	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( foo->getFunctionType()->getNumParams() == 1 );
 	U_TEST_ASSERT( foo->getFunctionType()->getParamType(0)->isPointerTy() );
 	U_TEST_ASSERT( foo->getReturnType()->isVoidTy() );
@@ -189,6 +208,7 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeReturnValueAttrs )
 
 	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::StructRet ) );
 	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( bar->getFunctionType()->getNumParams() == 1 );
 	U_TEST_ASSERT( bar->getFunctionType()->getParamType(0)->isPointerTy() );
 	U_TEST_ASSERT( bar->getReturnType()->isVoidTy() );
@@ -224,9 +244,10 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeValueParamsAttrs )
 {
 	// Composite type value-arguments passed by pointer.
 	// This pointer is non-null and actual storage is unique for each arg, so "noalias" must present.
+	// Also "readonly" must be set for mutable value-params.
 	static const char c_program_text[]=
 	R"(
-		fn Foo( [ i32, 2 ] a, tup[ bool, f64 ] b );
+		fn Foo( [ i32, 2 ] mut a, tup[ bool, f64 ] imut b );
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -236,16 +257,18 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeValueParamsAttrs )
 
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
 
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(1)->isPointerTy() ); // Passed by pointer.
 }
 
 U_TEST( LLVMFunctionAttrsTest_CompositeTypeImutReferenceParamsAttrs )
 {
-	// Immutalbe reference params of composite types marked as "nonnull", but not as "noalias".
+	// Immutalbe reference params of composite types marked as "nonnull" and "readonly", but not as "noalias".
 	static const char c_program_text[]=
 	R"(
 		fn Foo( [ i32, 2 ] &imut a, tup[ bool, f64 ] &imut b );
@@ -258,16 +281,18 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeImutReferenceParamsAttrs )
 
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
 
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(1)->isPointerTy() ); // Passed by pointer.
 }
 
 U_TEST( LLVMFunctionAttrsTest_CompositeTypeMutReferenceParamsAttrs )
 {
-	// Mutable reference params of composite types marked both as "nonnull"and "noalias".
+	// Mutable reference params of composite types marked both as "nonnull"and "noalias", but not as "readonly".
 	static const char c_program_text[]=
 	R"(
 		fn Foo( [ i32, 2 ] &mut a, tup[ bool, f64 ] &mut b );
@@ -280,10 +305,12 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeMutReferenceParamsAttrs )
 
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
 
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(1)->isPointerTy() ); // Passed by pointer.
 }
 
@@ -303,6 +330,7 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeReturnValueAttrs )
 
 	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::StructRet ) );
 	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( foo->getFunctionType()->getNumParams() == 1 );
 	U_TEST_ASSERT( foo->getFunctionType()->getParamType(0)->isPointerTy() );
 	U_TEST_ASSERT( foo->getReturnType()->isVoidTy() );
@@ -312,6 +340,7 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeReturnValueAttrs )
 
 	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::StructRet ) );
 	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( bar->getFunctionType()->getNumParams() == 1 );
 	U_TEST_ASSERT( bar->getFunctionType()->getParamType(0)->isPointerTy() );
 	U_TEST_ASSERT( bar->getReturnType()->isVoidTy() );
@@ -357,12 +386,15 @@ U_TEST( LLVMFunctionAttrsTest_RawPointerTypeValueParamsAttrs )
 
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::ReadOnly ) );
 }
 
 U_TEST( LLVMFunctionAttrsTest_GeneratedMethodsAttrsTest )
@@ -376,7 +408,7 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedMethodsAttrsTest )
 	const auto module= BuildProgram( c_program_text );
 
 	// "this" as mutable reference param should be marked with "nonnull" and "noalias".
-	// "src" (for copy methods) should be marked only as "nonnull", as any other immutable reference param.
+	// "src" (for copy methods) should be marked only as "nonnull" and "readonly", as any other immutable reference param.
 
 	{
 		const llvm::Function* const default_constructor= module->getFunction( "_ZN1S11constructorERS_" );
@@ -384,6 +416,7 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedMethodsAttrsTest )
 
 		U_TEST_ASSERT( default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
 		U_TEST_ASSERT( default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+		U_TEST_ASSERT( !default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 	}
 	{
 		const llvm::Function* const copy_constructor= module->getFunction( "_ZN1S11constructorERS_RKS_" );
@@ -391,9 +424,11 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedMethodsAttrsTest )
 
 		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
 		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+		U_TEST_ASSERT( !copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 
 		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 		U_TEST_ASSERT( !copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
+		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	}
 	{
 		const llvm::Function* const copy_assignment_operator= module->getFunction( "_ZN1SaSERS_RKS_" );
@@ -401,9 +436,11 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedMethodsAttrsTest )
 
 		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
 		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+		U_TEST_ASSERT( !copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 
 		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 		U_TEST_ASSERT( !copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
+		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	}
 	{
 		const llvm::Function* const destructor= module->getFunction( "_ZN1S10destructorERS_" );
@@ -411,6 +448,7 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedMethodsAttrsTest )
 
 		U_TEST_ASSERT( destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
 		U_TEST_ASSERT( destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+		U_TEST_ASSERT( !destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 	}
 }
 
@@ -429,7 +467,7 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedDefaultMethodsAttrsTest )
 	const auto module= BuildProgram( c_program_text );
 
 	// "this" as mutable reference param should be marked with "nonnull" and "noalias".
-	// "src" (for copy methods) should be marked only as "nonnull", as any other immutable reference param.
+	// "src" (for copy methods) should be marked only as "nonnull" and "readonly", as any other immutable reference param.
 
 	{
 		const llvm::Function* const default_constructor= module->getFunction( "_ZN1S11constructorERS_" );
@@ -437,6 +475,7 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedDefaultMethodsAttrsTest )
 
 		U_TEST_ASSERT( default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
 		U_TEST_ASSERT( default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+		U_TEST_ASSERT( !default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 	}
 	{
 		const llvm::Function* const copy_constructor= module->getFunction( "_ZN1S11constructorERS_RKS_" );
@@ -444,9 +483,11 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedDefaultMethodsAttrsTest )
 
 		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
 		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+		U_TEST_ASSERT( !copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 
 		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 		U_TEST_ASSERT( !copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
+		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	}
 	{
 		const llvm::Function* const copy_assignment_operator= module->getFunction( "_ZN1SaSERS_RKS_" );
@@ -454,9 +495,11 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedDefaultMethodsAttrsTest )
 
 		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
 		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+		U_TEST_ASSERT( !copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 
 		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 		U_TEST_ASSERT( !copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
+		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	}
 }
 

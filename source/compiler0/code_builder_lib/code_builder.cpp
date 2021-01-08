@@ -1181,6 +1181,9 @@ Type CodeBuilder::BuildFuncCode(
 			// Mutable reference args or composite value-args must not alias.
 			if( ( arg.is_reference && arg.is_mutable ) || ( !arg.is_reference && arg_is_composite ) )
 				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NoAlias );
+			// Mark as "readonly" immutable reference params and immutable value params of composite types.
+			if( !arg.is_mutable && ( arg.is_reference || arg_is_composite ) )
+				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::ReadOnly );
 		}
 
 		if( first_arg_is_sret )

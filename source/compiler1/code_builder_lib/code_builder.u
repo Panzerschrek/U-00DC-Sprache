@@ -1234,18 +1234,23 @@ fn CodeBuilder::PrepareFunction(
 	for( auto mut i= 0s; i < function_variable.t.params.size(); ++i )
 	{
 		var FunctionType::Param& param= function_variable.t.params[i];
-		var u32 llvm_param_n= select( is_s_ret ? 1u : 0u ) + u32(i);
+		var u32 llvm_param_n= LLVMAttributeFirstParamIndex + select( is_s_ret ? 1u : 0u ) + u32(i);
 
 		var bool param_type_is_composite= !param.t.GetClassType().empty() || !param.t.GetArrayType().empty() || !param.t.GetTupleType().empty();
 		// Mark pointer-parameters as "nonnull".
 		if( param.is_reference || param_type_is_composite )
 		{
-			AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + llvm_param_n, "nonnull" );
+			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "nonnull" );
 		}
 		// Mutable reference args or composite value-args must not alias.
 		if( ( param.is_reference && param.is_mutable ) || ( !param.is_reference && param_type_is_composite ) )
 		{
-			AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + llvm_param_n, "noalias" );
+			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "noalias" );
+		}
+		// Mark as "readonly" immutable reference params and immutable value params of composite types.
+		if( !param.is_mutable && ( param.is_reference || param_type_is_composite ) )
+		{
+			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "readonly" );
 		}
 	}
 
