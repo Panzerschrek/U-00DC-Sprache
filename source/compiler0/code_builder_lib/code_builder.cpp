@@ -1153,8 +1153,7 @@ Type CodeBuilder::BuildFuncCode(
 	Function& function_type= *func_variable.type.GetFunctionType();
 	function_type.llvm_function_type= GetLLVMFunctionType( function_type );
 
-	const bool first_arg_is_sret=
-		function_type.llvm_function_type->getReturnType()->isVoidTy() && function_type.return_type != void_type_;
+	const bool first_arg_is_sret= function_type.IsStructRet();
 
 	llvm::Function* llvm_function;
 	if( func_variable.llvm_function == nullptr )
