@@ -1224,10 +1224,7 @@ fn CodeBuilder::PrepareFunction(
 	}
 
 	// Setup attributes
-	var bool is_s_ret=
-		!function_variable.t.return_value_is_reference &&
-		( !function_variable.t.return_type.GetClassType().empty() || !function_variable.t.return_type.GetArrayType().empty() || !function_variable.t.return_type.GetTupleType().empty() );
-
+	var bool is_s_ret= function_variable.t.IsStructRet();
 	if( is_s_ret )
 	{
 		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "sret" );
@@ -1442,9 +1439,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		auto mut args_names_scope_lock= args_names_scope_ptr.lock_mut();
 		auto &mut args_names_scope= args_names_scope_lock.get_ref();
 
-		var bool is_s_ret=
-			!func_variable.t.return_value_is_reference &&
-			( !func_variable.t.return_type.GetClassType().empty() || !func_variable.t.return_type.GetArrayType().empty() || !func_variable.t.return_type.GetTupleType().empty() );
+		var bool is_s_ret= func_variable.t.IsStructRet();
 		if( is_s_ret )
 		{
 			unsafe

@@ -310,6 +310,13 @@ fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 	return true;
 }
 
+fn FunctionType::IsStructRet( this ) : bool
+{
+	return
+		!return_value_is_reference &&
+		( !return_type.GetClassType().empty() || !return_type.GetArrayType().empty() || !return_type.GetTupleType().empty() );
+}
+
 op FunctionType::==( FunctionType& l, FunctionType& r ) : bool
 {
 	if( l.params.size() != r.params.size() )

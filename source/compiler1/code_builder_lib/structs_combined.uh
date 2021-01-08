@@ -127,6 +127,7 @@ struct FunctionType
 	op!=( FunctionType& l, FunctionType& r ) : bool;
 
 	fn PointerCanBeConvertedTo( this, FunctionType& dst ) : bool;
+	fn IsStructRet( this ) : bool;
 }
 
 struct FunctionPointerType
