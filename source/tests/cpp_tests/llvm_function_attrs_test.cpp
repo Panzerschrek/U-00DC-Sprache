@@ -365,4 +365,99 @@ U_TEST( LLVMFunctionAttrsTest_RawPointerTypeValueParamsAttrs )
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NoAlias ) );
 }
 
+U_TEST( LLVMFunctionAttrsTest_GeneratedMethodsAttrsTest )
+{
+	static const char c_program_text[]=
+	R"(
+		// Default constructor, copy constructor, copy-assignment operator, destructor should be generated.
+		struct S{}
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	// "this" as mutable reference param should be marked with "nonnull" and "noalias".
+	// "src" (for copy methods) should be marked only as "nonnull", as any other immutable reference param.
+
+	{
+		const llvm::Function* const default_constructor= module->getFunction( "_ZN1S11constructorERS_" );
+		U_TEST_ASSERT( default_constructor != nullptr );
+
+		U_TEST_ASSERT( default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
+		U_TEST_ASSERT( default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+	}
+	{
+		const llvm::Function* const copy_constructor= module->getFunction( "_ZN1S11constructorERS_RKS_" );
+		U_TEST_ASSERT( copy_constructor != nullptr );
+
+		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
+		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+
+		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
+		U_TEST_ASSERT( !copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
+	}
+	{
+		const llvm::Function* const copy_assignment_operator= module->getFunction( "_ZN1SaSERS_RKS_" );
+		U_TEST_ASSERT( copy_assignment_operator != nullptr );
+
+		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
+		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+
+		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
+		U_TEST_ASSERT( !copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
+	}
+	{
+		const llvm::Function* const destructor= module->getFunction( "_ZN1S10destructorERS_" );
+		U_TEST_ASSERT( destructor != nullptr );
+
+		U_TEST_ASSERT( destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
+		U_TEST_ASSERT( destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+	}
+}
+
+U_TEST( LLVMFunctionAttrsTest_GeneratedDefaultMethodsAttrsTest )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			fn constructor()= default;
+			fn constructor( S &imut other )= default;
+			op=( mut this, S &imut other )= default;
+		}
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	// "this" as mutable reference param should be marked with "nonnull" and "noalias".
+	// "src" (for copy methods) should be marked only as "nonnull", as any other immutable reference param.
+
+	{
+		const llvm::Function* const default_constructor= module->getFunction( "_ZN1S11constructorERS_" );
+		U_TEST_ASSERT( default_constructor != nullptr );
+
+		U_TEST_ASSERT( default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
+		U_TEST_ASSERT( default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+	}
+	{
+		const llvm::Function* const copy_constructor= module->getFunction( "_ZN1S11constructorERS_RKS_" );
+		U_TEST_ASSERT( copy_constructor != nullptr );
+
+		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
+		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+
+		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
+		U_TEST_ASSERT( !copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
+	}
+	{
+		const llvm::Function* const copy_assignment_operator= module->getFunction( "_ZN1SaSERS_RKS_" );
+		U_TEST_ASSERT( copy_assignment_operator != nullptr );
+
+		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
+		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+
+		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
+		U_TEST_ASSERT( !copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
+	}
+}
+
 } // namespace U
