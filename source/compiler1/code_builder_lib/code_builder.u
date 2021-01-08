@@ -1223,6 +1223,35 @@ fn CodeBuilder::PrepareFunction(
 				function_variable.t.llvm_type );
 	}
 
+	// Setup attributes
+	var bool is_s_ret=
+		!function_variable.t.return_value_is_reference &&
+		( !function_variable.t.return_type.GetClassType().empty() || !function_variable.t.return_type.GetArrayType().empty() || !function_variable.t.return_type.GetTupleType().empty() );
+
+	if( is_s_ret )
+	{
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "sret" );
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "noalias" );
+	}
+
+	for( auto mut i= 0s; i < function_variable.t.params.size(); ++i )
+	{
+		var FunctionType::Param& param= function_variable.t.params[i];
+		var u32 llvm_param_n= select( is_s_ret ? 1u : 0u ) + u32(i);
+
+		var bool param_type_is_composite= !param.t.GetClassType().empty() || !param.t.GetArrayType().empty() || !param.t.GetTupleType().empty();
+		// Mark pointer-parameters as "nonnull".
+		if( param.is_reference || param_type_is_composite )
+		{
+			AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + llvm_param_n, "nonnull" );
+		}
+		// Mutable reference args or composite value-args must not alias.
+		if( ( param.is_reference && param.is_mutable ) || ( !param.is_reference && param_type_is_composite ) )
+		{
+			AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + llvm_param_n, "noalias" );
+		}
+	}
+
 	return ApplyOverloadedFunction( functions_set, move(function_variable), names_scope_ptr, function_declaration.src_loc );
 }
 
@@ -1413,12 +1442,11 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		auto mut args_names_scope_lock= args_names_scope_ptr.lock_mut();
 		auto &mut args_names_scope= args_names_scope_lock.get_ref();
 
-		auto is_s_ret= !func_variable.t.return_value_is_reference && ( !func_variable.t.return_type.GetClassType().empty() || !func_variable.t.return_type.GetArrayType().empty() || !func_variable.t.return_type.GetTupleType().empty() );
+		var bool is_s_ret=
+			!func_variable.t.return_value_is_reference &&
+			( !func_variable.t.return_type.GetClassType().empty() || !func_variable.t.return_type.GetArrayType().empty() || !func_variable.t.return_type.GetTupleType().empty() );
 		if( is_s_ret )
 		{
-			AddFunctionAttribute( func_variable.llvm_function, LLVMAttributeFirstParamIndex, "sret" );
-			AddFunctionAttribute( func_variable.llvm_function, LLVMAttributeFirstParamIndex, "noalias" );
-
 			unsafe
 			{
 				function_context.s_ret= LLVMGetParam( func_variable.llvm_function, 0u );
@@ -1435,18 +1463,6 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			auto& in_param= func_variable.body_syntax_element.get_ref().function_type.params[arg_n];
 			var FunctionType::Param& type_param= cast_imut(func_variable).t.params[arg_n];
 			var u32 llvm_arg_n= first_llvm_arg + u32(arg_n);
-
-			var bool param_type_is_composite= !type_param.t.GetClassType().empty() || !type_param.t.GetArrayType().empty() || !type_param.t.GetTupleType().empty();
-			// Mark pointer-parameters as "nonnull".
-			if( type_param.is_reference || param_type_is_composite )
-			{
-				AddFunctionAttribute( func_variable.llvm_function, LLVMAttributeFirstParamIndex + llvm_arg_n, "nonnull" );
-			}
-			// Mutable reference args or composite value-args must not alias.
-			if( ( type_param.is_reference && type_param.is_mutable ) || ( !type_param.is_reference && param_type_is_composite ) )
-			{
-				AddFunctionAttribute( func_variable.llvm_function, LLVMAttributeFirstParamIndex + llvm_arg_n, "noalias" );
-			}
 
 			var NamesScopeVariable mut out_arg
 			{
