@@ -118,7 +118,8 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		}
 	}
 	SetupGeneratedFunctionAttributes( *constructor_variable->llvm_function );
-	constructor_variable->llvm_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
+	constructor_variable->llvm_function->addAttribute( 1u, llvm::Attribute::NonNull );
+	constructor_variable->llvm_function->addAttribute( 1u, llvm::Attribute::NoAlias );
 
 	constructor_variable->have_body= true;
 	constructor_variable->is_this_call= true;
@@ -301,8 +302,11 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		}
 	}
 	SetupGeneratedFunctionAttributes( *constructor_variable->llvm_function );
-	constructor_variable->llvm_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
-	constructor_variable->llvm_function->addAttribute( 2u, llvm::Attribute::NonNull ); // and src is nonnull
+	// Both args are "nonnull", "this" is "noalias".
+	constructor_variable->llvm_function->addAttribute( 1u, llvm::Attribute::NonNull );
+	constructor_variable->llvm_function->addAttribute( 1u, llvm::Attribute::NoAlias );
+	constructor_variable->llvm_function->addAttribute( 2u, llvm::Attribute::NonNull );
+	constructor_variable->llvm_function->addAttribute( 2u, llvm::Attribute::ReadOnly );
 
 	constructor_variable->have_body= true;
 	constructor_variable->is_this_call= true;
@@ -392,6 +396,9 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( Class& the_class, con
 			llvm::Function::LinkageTypes::ExternalLinkage,
 			MangleFunction( the_class.members, Keyword( Keywords::destructor_ ), destructor_type ),
 			module_.get() );
+
+	destructor_function.llvm_function->addAttribute( 1u, llvm::Attribute::NonNull );
+	destructor_function.llvm_function->addAttribute( 1u, llvm::Attribute::NoAlias );
 
 	return destructor_function;
 }
@@ -575,8 +582,11 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 		}
 	}
 	SetupGeneratedFunctionAttributes( *operator_variable->llvm_function );
-	operator_variable->llvm_function->addAttribute( 1u, llvm::Attribute::NonNull ); // this is nonnull
-	operator_variable->llvm_function->addAttribute( 2u, llvm::Attribute::NonNull ); // and src is nonnull
+	// Both args are "nonnull", "this" is "noalias".
+	operator_variable->llvm_function->addAttribute( 1u, llvm::Attribute::NonNull );
+	operator_variable->llvm_function->addAttribute( 1u, llvm::Attribute::NoAlias );
+	operator_variable->llvm_function->addAttribute( 2u, llvm::Attribute::NonNull );
+	operator_variable->llvm_function->addAttribute( 2u, llvm::Attribute::ReadOnly );
 
 	operator_variable->have_body= true;
 	operator_variable->is_this_call= true;

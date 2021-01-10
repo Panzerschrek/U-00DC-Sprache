@@ -1223,6 +1223,37 @@ fn CodeBuilder::PrepareFunction(
 				function_variable.t.llvm_type );
 	}
 
+	// Setup attributes
+	var bool is_s_ret= function_variable.t.IsStructRet();
+	if( is_s_ret )
+	{
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "sret" );
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "noalias" );
+	}
+
+	for( auto mut i= 0s; i < function_variable.t.params.size(); ++i )
+	{
+		var FunctionType::Param& param= function_variable.t.params[i];
+		var u32 llvm_param_n= LLVMAttributeFirstParamIndex + select( is_s_ret ? 1u : 0u ) + u32(i);
+
+		var bool param_type_is_composite= !param.t.GetClassType().empty() || !param.t.GetArrayType().empty() || !param.t.GetTupleType().empty();
+		// Mark pointer-parameters as "nonnull".
+		if( param.is_reference || param_type_is_composite )
+		{
+			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "nonnull" );
+		}
+		// Mutable reference args or composite value-args must not alias.
+		if( ( param.is_reference && param.is_mutable ) || ( !param.is_reference && param_type_is_composite ) )
+		{
+			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "noalias" );
+		}
+		// Mark as "readonly" immutable reference params and immutable value params of composite types.
+		if( !param.is_mutable && ( param.is_reference || param_type_is_composite ) )
+		{
+			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "readonly" );
+		}
+	}
+
 	return ApplyOverloadedFunction( functions_set, move(function_variable), names_scope_ptr, function_declaration.src_loc );
 }
 
@@ -1413,10 +1444,9 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		auto mut args_names_scope_lock= args_names_scope_ptr.lock_mut();
 		auto &mut args_names_scope= args_names_scope_lock.get_ref();
 
-		auto is_s_ret= !func_variable.t.return_value_is_reference && ( !func_variable.t.return_type.GetClassType().empty() || !func_variable.t.return_type.GetArrayType().empty() || !func_variable.t.return_type.GetTupleType().empty() );
+		var bool is_s_ret= func_variable.t.IsStructRet();
 		if( is_s_ret )
 		{
-			AddFunctionAttribute( func_variable.llvm_function, LLVMAttributeFirstParamIndex, "sret" );
 			unsafe
 			{
 				function_context.s_ret= LLVMGetParam( func_variable.llvm_function, 0u );
@@ -1431,30 +1461,30 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		for( auto mut arg_n= 0s; arg_n < func_variable.t.params.size(); ++arg_n )
 		{
 			auto& in_param= func_variable.body_syntax_element.get_ref().function_type.params[arg_n];
-			auto& type_arg= cast_imut(func_variable).t.params[arg_n];
+			var FunctionType::Param& type_param= cast_imut(func_variable).t.params[arg_n];
 			var u32 llvm_arg_n= first_llvm_arg + u32(arg_n);
 
 			var NamesScopeVariable mut out_arg
 			{
-				.t= type_arg.t,
-				.is_mutable= type_arg.is_mutable,
+				.t= type_param.t,
+				.is_mutable= type_param.is_mutable,
 			};
 
 			// Ensure type completness even for reference args because of reference checking.
-			if( !EnsureTypeComplete( out_arg.t ) || ( !type_arg.is_reference && out_arg.t == void_type_ ) )
+			if( !EnsureTypeComplete( out_arg.t ) || ( !type_param.is_reference && out_arg.t == void_type_ ) )
 			{
 				REPORT_ERROR( UsingIncompleteType, names_scope, in_param.src_loc, out_arg.t )
 				return;
 			}
 
 			var ReferencesGraph::NodeId mut inner_reference_variable_node_id= ReferencesGraph::c_empty_node_id;
-			if( type_arg.t.GetInnerReferenceKind() != InnerReferenceKind::None )
+			if( type_param.t.GetInnerReferenceKind() != InnerReferenceKind::None )
 			{
 				inner_reference_variable_node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, in_param.name + " inner variable" );
 				function_context.args_inner_variable_nodes[arg_n]= inner_reference_variable_node_id;
 			}
 
-			if( type_arg.is_reference )
+			if( type_param.is_reference )
 			{
 				unsafe
 				{
@@ -1472,12 +1502,12 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				{
 					auto inner_reference_node= function_context.references_graph.CreateNodeInnerReference(
 						variable_node_id,
-						select( type_arg.t.GetInnerReferenceKind() == InnerReferenceKind::Mut ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ) );
+						select( type_param.t.GetInnerReferenceKind() == InnerReferenceKind::Mut ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ) );
 					function_context.references_graph.AddLink( inner_reference_variable_node_id, inner_reference_node );
 				}
 
 				out_arg.node_id= function_context.references_graph.AddNode(
-					select( type_arg.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
+					select( type_param.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
 					in_param.name );
 				function_context.references_graph.AddLink( variable_node_id, out_arg.node_id );
 
@@ -1512,11 +1542,11 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				CreateVariableDebugInfo( function_context, out_arg, in_param.name, in_param.src_loc );
 
 				out_arg.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, in_param.name );
-				if( type_arg.t.GetInnerReferenceKind() != InnerReferenceKind::None )
+				if( type_param.t.GetInnerReferenceKind() != InnerReferenceKind::None )
 				{
 					auto inner_reference_node= function_context.references_graph.CreateNodeInnerReference(
 						out_arg.node_id,
-						select( type_arg.t.GetInnerReferenceKind() == InnerReferenceKind::Mut ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ) );
+						select( type_param.t.GetInnerReferenceKind() == InnerReferenceKind::Mut ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ) );
 					function_context.references_graph.AddLink( inner_reference_variable_node_id, inner_reference_node );
 				}
 

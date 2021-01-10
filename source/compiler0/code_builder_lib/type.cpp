@@ -925,6 +925,13 @@ bool Function::PointerCanBeConvertedTo( const Function& other ) const
 	return true;
 }
 
+bool Function::IsStructRet() const
+{
+	return
+		!return_value_is_reference &&
+		( return_type.GetClassType() != nullptr || return_type.GetArrayType() != nullptr || return_type.GetTupleType() != nullptr );
+}
+
 bool operator==( const Function::Arg& l, const Function::Arg& r )
 {
 	return l.type == r.type && l.is_mutable == r.is_mutable && l.is_reference == r.is_reference;

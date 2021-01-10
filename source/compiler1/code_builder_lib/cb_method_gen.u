@@ -139,6 +139,8 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 						function_variable.t ).front(),
 					function_variable.t.llvm_type );
 		}
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "nonnull" );
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "noalias" );
 
 		constructor_index= constructors.functions.size();
 		constructors.functions.push_back( move(function_variable) );
@@ -363,6 +365,10 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 						function_variable.t ).front(),
 					function_variable.t.llvm_type );
 		}
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 0u, "nonnull" );
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 0u, "noalias" );
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 1u, "nonnull" );
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 1u, "readonly" );
 
 		constructor_index= constructors.functions.size();
 		constructors.functions.push_back( move(function_variable) );
@@ -580,6 +586,10 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 						function_variable.t ).front(),
 					function_variable.t.llvm_type);
 		}
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 0u, "nonnull" );
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 0u, "noalias" );
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 1u, "nonnull" );
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 1u, "readonly" );
 
 		operator_index= operators.functions.size();
 		operators.functions.push_back( move(function_variable) );
@@ -697,6 +707,8 @@ fn CodeBuilder::TryGenerateDestructorPrototype( this, ClassTypePtr& class_type )
 					function_variable.t ).front(),
 				function_variable.t.llvm_type );
 	}
+	AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "nonnull" );
+	AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "noalias" );
 
 	destructors.functions.push_back( move(function_variable) );
 }

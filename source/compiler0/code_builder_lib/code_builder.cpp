@@ -1153,8 +1153,7 @@ Type CodeBuilder::BuildFuncCode(
 	Function& function_type= *func_variable.type.GetFunctionType();
 	function_type.llvm_function_type= GetLLVMFunctionType( function_type );
 
-	const bool first_arg_is_sret=
-		function_type.llvm_function_type->getReturnType()->isVoidTy() && function_type.return_type != void_type_;
+	const bool first_arg_is_sret= function_type.IsStructRet();
 
 	llvm::Function* llvm_function;
 	if( func_variable.llvm_function == nullptr )
@@ -1170,16 +1169,21 @@ Type CodeBuilder::BuildFuncCode(
 		// We doesn`t need different addresses for different functions.
 		llvm_function->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
 
-		// Mark reference-parameters as nonnull.
-		// Mark mutable references as "noalias".
 		for( size_t i= 0u; i < function_type.args.size(); i++ )
 		{
 			const unsigned int arg_attr_index= static_cast<unsigned int>(i + 1u + (first_arg_is_sret ? 1u : 0u ));
 			const Function::Arg& arg= function_type.args[i];
-			if( arg.is_reference || arg.type.GetClassType() != nullptr || arg.type.GetTupleType() )
+
+			const bool arg_is_composite= arg.type.GetClassType() != nullptr || arg.type.GetArrayType() != nullptr || arg.type.GetTupleType() != nullptr;
+			// Mark pointer-parameters as nonnull.
+			if( arg.is_reference || arg_is_composite )
 				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NonNull );
-			if( arg.is_reference && arg.is_mutable )
+			// Mutable reference args or composite value-args must not alias.
+			if( ( arg.is_reference && arg.is_mutable ) || ( !arg.is_reference && arg_is_composite ) )
 				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NoAlias );
+			// Mark as "readonly" immutable reference params and immutable value params of composite types.
+			if( !arg.is_mutable && ( arg.is_reference || arg_is_composite ) )
+				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::ReadOnly );
 		}
 
 		if( first_arg_is_sret )

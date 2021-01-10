@@ -180,22 +180,9 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const Function& function_t
 {
 	ArgsVector<llvm::Type*> args_llvm_types;
 
-	bool first_arg_is_sret= false;
-	if( !function_type.return_value_is_reference )
-	{
-		if( function_type.return_type.GetFundamentalType() != nullptr ||
-			function_type.return_type.GetEnumType() != nullptr ||
-			function_type.return_type.GetRawPointerType() != nullptr ||
-			function_type.return_type.GetFunctionPointerType() != nullptr )
-		{}
-		else if( function_type.return_type.GetClassType() != nullptr || function_type.return_type.GetArrayType() != nullptr || function_type.return_type.GetTupleType() != nullptr )
-		{
-			// Add return-value ponter as "sret" argument for class and tuple types.
-			args_llvm_types.push_back( function_type.return_type.GetLLVMType()->getPointerTo() );
-			first_arg_is_sret= true;
-		}
-		else U_ASSERT( false );
-	}
+	const bool first_arg_is_sret= function_type.IsStructRet();
+	if( first_arg_is_sret )
+		args_llvm_types.push_back( function_type.return_type.GetLLVMType()->getPointerTo() );
 
 	for( const Function::Arg& arg : function_type.args )
 	{
