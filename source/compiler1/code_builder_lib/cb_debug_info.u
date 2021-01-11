@@ -257,7 +257,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ArrayType& t ) : LLVMMetadataRef
 	{
 		return LLVMDIBuilderCreateArrayType(
 			debug_info_.builder,
-			u32( LLVMABISizeOfType( data_layout_, t.llvm_type ) ) * 8u,
+			LLVMABISizeOfType( data_layout_, t.llvm_type ) * 8u64,
 			LLVMABIAlignmentOfType( data_layout_, t.llvm_type ) * 8u,
 			CreateDIType( t.element_type ),
 			LLVMDIBuilderGetOrCreateSubrange( debug_info_.builder, 0i64, i64(t.element_count) ), 1u );

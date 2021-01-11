@@ -524,7 +524,7 @@ fn nomangle LLVMDIBuilderGetOrCreateSubrange(LLVMDIBuilderRef Builder, i64 Lower
 
 fn nomangle LLVMDIBuilderCreateArrayType(
 	LLVMDIBuilderRef Builder,
-	u32 Size,
+	u64 Size,
 	u32 AlignInBits,
 	LLVMMetadataRef Ty,
 	LLVMMetadataRef& Subscripts, u32 NumSubscripts) unsafe : LLVMMetadataRef;
