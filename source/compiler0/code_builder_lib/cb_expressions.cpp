@@ -1579,8 +1579,8 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 
 	if( binary_operator == BinaryOperatorType::Add )
 	{
-		const size_t ptr_size= fundamental_llvm_types_.int_ptr->getIntegerBitWidth() / 8;
-		size_t int_size= 0u;
+		const uint64_t ptr_size= fundamental_llvm_types_.int_ptr->getIntegerBitWidth() / 8;
+		uint64_t int_size= 0u;
 		U_FundamentalType int_type= U_FundamentalType::InvalidType;
 
 		llvm::Value* ptr_value= nullptr;
@@ -1682,8 +1682,8 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 		{
 			// Subtract integer from pointer.
 
-			const size_t ptr_size= fundamental_llvm_types_.int_ptr->getIntegerBitWidth() / 8;
-			const size_t int_size= r_fundamental_type->GetSize();
+			const uint64_t ptr_size= fundamental_llvm_types_.int_ptr->getIntegerBitWidth() / 8;
+			const uint64_t int_size= r_fundamental_type->GetSize();
 
 			if( !IsInteger( r_fundamental_type->fundamental_type ) || int_size > ptr_size )
 			{
