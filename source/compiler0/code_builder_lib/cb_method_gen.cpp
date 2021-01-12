@@ -83,7 +83,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		constructor_type.args.back().is_mutable= true;
 		constructor_type.args.back().is_reference= true;
 
-		constructor_type.llvm_function_type=
+		constructor_type.llvm_type=
 			llvm::FunctionType::get(
 				fundamental_llvm_types_.void_for_ret,
 				{ class_type.GetLLVMType()->getPointerTo() },
@@ -91,7 +91,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 
 		llvm::Function* const llvm_constructor_function=
 			llvm::Function::Create(
-				constructor_type.llvm_function_type,
+				constructor_type.llvm_type,
 				llvm::Function::LinkageTypes::ExternalLinkage,
 				MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
 				module_.get() );
@@ -268,7 +268,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 			constructor_type.references_pollution.emplace(pollution);
 		}
 
-		constructor_type.llvm_function_type=
+		constructor_type.llvm_type=
 			llvm::FunctionType::get(
 				fundamental_llvm_types_.void_for_ret,
 				{ class_type.GetLLVMType()->getPointerTo(), class_type.GetLLVMType()->getPointerTo() },
@@ -276,7 +276,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 
 		llvm::Function* const llvm_constructor_function=
 			llvm::Function::Create(
-				constructor_type.llvm_function_type,
+				constructor_type.llvm_type,
 				llvm::Function::LinkageTypes::ExternalLinkage,
 				MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
 				module_.get() );
@@ -378,7 +378,7 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( Class& the_class, con
 	destructor_type.args[0].is_reference= true;
 
 	llvm::Type* const this_llvm_type= class_type.GetLLVMType()->getPointerTo();
-	destructor_type.llvm_function_type=
+	destructor_type.llvm_type=
 		llvm::FunctionType::get(
 			fundamental_llvm_types_.void_for_ret,
 			llvm::ArrayRef<llvm::Type*>( &this_llvm_type, 1u ),
@@ -392,7 +392,7 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( Class& the_class, con
 
 	destructor_function.llvm_function=
 		llvm::Function::Create(
-			destructor_type.llvm_function_type,
+			destructor_type.llvm_type,
 			llvm::Function::LinkageTypes::ExternalLinkage,
 			MangleFunction( the_class.members, Keyword( Keywords::destructor_ ), destructor_type ),
 			module_.get() );
@@ -548,7 +548,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 			op_type.references_pollution.emplace(pollution);
 		}
 
-		op_type.llvm_function_type=
+		op_type.llvm_type=
 			llvm::FunctionType::get(
 				fundamental_llvm_types_.void_for_ret,
 				{ class_type.GetLLVMType()->getPointerTo(), class_type.GetLLVMType()->getPointerTo() },
@@ -556,7 +556,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 
 		llvm::Function* const llvm_op_function=
 			llvm::Function::Create(
-				op_type.llvm_function_type,
+				op_type.llvm_type,
 				llvm::Function::LinkageTypes::ExternalLinkage,
 				MangleFunction( the_class.members, op_name, op_type ),
 				module_.get() );

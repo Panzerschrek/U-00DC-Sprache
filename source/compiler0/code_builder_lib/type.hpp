@@ -78,15 +78,11 @@ public:
 
 	// Construct from different type kinds.
 	Type( FundamentalType fundamental_type );
-	Type( const Function& function_type );
-	Type( const FunctionPointer& function_pointer_type );
-	Type( Function&& function_type );
-	Type( const Array& array_type );
-	Type( Array&& array_type );
-	Type( const RawPointer& raw_pointer_type );
-	Type( RawPointer&& raw_pointer_type );
-	Type( const Tuple& tuple_type );
-	Type( Tuple&& tuple_type );
+	Type( Function function_type );
+	Type( FunctionPointer function_pointer_type );
+	Type( Array array_type );
+	Type( RawPointer raw_pointer_type );
+	Type( Tuple tuple_type );
 	Type( ClassProxyPtr class_type );
 	Type( EnumPtr enum_type );
 
@@ -135,7 +131,7 @@ private:
 	using ArrayPtr= std::unique_ptr<Array>;
 	using RawPointerPtr= std::unique_ptr<RawPointer>;
 
-	std::variant<
+	using Variant= std::variant<
 		FundamentalType,
 		FunctionPtr,
 		ArrayPtr,
@@ -143,7 +139,23 @@ private:
 		ClassProxyPtr,
 		EnumPtr,
 		FunctionPointerPtr,
-		Tuple > something_;
+		Tuple >;
+
+	template<typename T>
+	static Variant CopyVariant( const std::unique_ptr<T>& boxed )
+	{
+		U_ASSERT(boxed != nullptr);
+		return std::make_unique<T>( *boxed );
+	}
+
+	template<typename T>
+	static Variant CopyVariant( const T& el )
+	{
+		return el;
+	}
+
+private:
+	Variant something_;
 };
 
 bool operator==( const Type& l, const Type& r );
@@ -209,7 +221,7 @@ public:
 	std::set<ArgReference> return_references;
 	std::set<ReferencePollution> references_pollution;
 
-	llvm::FunctionType* llvm_function_type= nullptr;
+	llvm::FunctionType* llvm_type= nullptr;
 };
 
 bool operator==( const Function::Arg& l, const Function::Arg& r );
@@ -220,7 +232,7 @@ bool operator!=( const Function& l, const Function& r );
 struct FunctionPointer
 {
 	Function function;
-	llvm::PointerType* llvm_function_pointer_type= nullptr;
+	llvm::PointerType* llvm_type= nullptr;
 };
 
 bool operator==( const FunctionPointer& l, const FunctionPointer& r );

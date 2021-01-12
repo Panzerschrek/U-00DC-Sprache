@@ -128,8 +128,8 @@ Type CodeBuilder::PrepareType( const Synt::FunctionType& function_type_name, Nam
 	TryGenerateFunctionReturnReferencesMapping( names_scope.GetErrors(), function_type_name, function_type );
 	ProcessFunctionTypeReferencesPollution( names_scope.GetErrors(), function_type_name, function_type );
 
-	function_type.llvm_function_type= GetLLVMFunctionType( function_type );
-	function_pointer_type.llvm_function_pointer_type= function_type.llvm_function_type->getPointerTo();
+	function_type.llvm_type= GetLLVMFunctionType( function_type );
+	function_pointer_type.llvm_type= function_type.llvm_type->getPointerTo();
 	return std::move(function_pointer_type);
 }
 

@@ -277,7 +277,7 @@ llvm::DIDerivedType* CodeBuilder::CreateDIType( const FunctionPointer& type )
 	return
 		debug_info_.builder->createPointerType(
 			CreateDIType(type.function),
-			data_layout_.getTypeAllocSizeInBits(type.llvm_function_pointer_type) );
+			data_layout_.getTypeAllocSizeInBits(type.llvm_type) );
 }
 
 llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )

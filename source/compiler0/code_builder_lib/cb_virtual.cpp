@@ -475,7 +475,7 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	llvm::Value* const ptr_to_function_ptr=
 		function_context.llvm_ir_builder.CreateGEP( functions_table_ptr, { GetZeroGEPIndex(), GetFieldGEPIndex( virtual_table_entry->index_in_table ) } );
 	llvm::Value* const abstract_function_ptr= function_context.llvm_ir_builder.CreateLoad( ptr_to_function_ptr );
-	llvm::Value* const function_ptr= function_context.llvm_ir_builder.CreateBitOrPointerCast( abstract_function_ptr, function_type.llvm_function_type->getPointerTo() );
+	llvm::Value* const function_ptr= function_context.llvm_ir_builder.CreateBitOrPointerCast( abstract_function_ptr, function_type.llvm_type->getPointerTo() );
 
 	// Correct "this" pointer.
 	// Only interfaces may have non-zero offsets. So, make pointer adjustment only for call via interface.

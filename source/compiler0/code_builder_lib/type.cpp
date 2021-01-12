@@ -48,6 +48,31 @@ uint64_t GetFundamentalTypeSize( const U_FundamentalType type )
 	return 0u;
 }
 
+template<typename T>
+llvm::Type* GetLLVMTypeImpl( const T& el )
+{
+	return el.llvm_type;
+}
+
+template<typename T>
+llvm::Type* GetLLVMTypeImpl( const std::unique_ptr<T>& boxed )
+{
+	U_ASSERT(boxed != nullptr);
+	return GetLLVMTypeImpl( *boxed );
+}
+
+llvm::Type* GetLLVMTypeImpl( const ClassProxyPtr& class_ )
+{
+	U_ASSERT( class_ != nullptr && class_->class_ != nullptr );
+	return class_->class_->llvm_type;
+}
+
+llvm::Type* GetLLVMTypeImpl( const EnumPtr& enum_ )
+{
+	U_ASSERT( enum_ != nullptr );
+	return enum_->underlaying_type.llvm_type;
+}
+
 } // namespace
 
 //
@@ -102,122 +127,40 @@ Type::Type( const Type& other )
 }
 
 Type::Type( FundamentalType fundamental_type )
-{
-	something_= std::move( fundamental_type );
-}
+	: something_( std::move(fundamental_type) )
+{}
 
-Type::Type( const Function& function_type )
-{
-	something_= std::make_unique<Function>( function_type );
-}
+Type::Type( Function function_type )
+	: something_( std::make_unique<Function>( std::move(function_type) ) )
+{}
 
-Type::Type( const FunctionPointer& function_pointer_type )
-{
-	something_= std::make_unique<FunctionPointer>( function_pointer_type );
-}
+Type::Type( FunctionPointer function_pointer_type )
+	: something_( std::make_unique<FunctionPointer>( std::move(function_pointer_type) ) )
+{}
 
-Type::Type( Function&& function_type )
-{
-	something_= std::make_unique<Function>( std::move( function_type ) );
-}
+Type::Type( Array array_type )
+	: something_( std::make_unique<Array>( std::move(array_type) ) )
+{}
 
-Type::Type( const Array& array_type )
-{
-	something_= std::make_unique<Array>( array_type );
-}
+Type::Type( RawPointer raw_pointer_type )
+	: something_( std::make_unique<RawPointer>( std::move(raw_pointer_type) ) )
+{}
 
-Type::Type( Array&& array_type )
-{
-	something_= std::make_unique<Array>( std::move( array_type ) );
-}
-
-Type::Type( const RawPointer& raw_pointer_type )
-{
-	something_= std::make_unique<RawPointer>( raw_pointer_type );
-}
-
-Type::Type( RawPointer&& raw_pointer_type )
-{
-	something_= std::make_unique<RawPointer>( std::move( raw_pointer_type ) );
-}
-
-Type::Type( const Tuple& tuple_type )
-{
-	something_= tuple_type;
-}
-
-Type::Type( Tuple&& tuple_type )
-{
-	something_= std::move( tuple_type );
-}
+Type::Type( Tuple tuple_type )
+	: something_( std::move(tuple_type) )
+{}
 
 Type::Type( ClassProxyPtr class_type )
-{
-	something_= std::move( class_type );
-}
+	: something_( std::move(class_type) )
+{}
 
 Type::Type( EnumPtr enum_type )
-{
-	something_= std::move( enum_type );
-}
+	: something_( std::move(enum_type) )
+{}
 
 Type& Type::operator=( const Type& other )
 {
-	struct Visitor final
-	{
-		Type& this_;
-
-		explicit Visitor( Type& in_this_ )
-			: this_(in_this_)
-		{}
-
-		void operator()( const FundamentalType& fundamental )
-		{
-			this_.something_= fundamental;
-		}
-
-		void operator()( const FunctionPtr& function )
-		{
-			U_ASSERT( function != nullptr );
-			this_.something_= std::make_unique<Function>( *function );
-		}
-
-		void operator()( const ArrayPtr& array )
-		{
-			U_ASSERT( array != nullptr );
-			this_.something_= std::make_unique<Array>( *array );
-		}
-
-		void operator()( const RawPointerPtr& raw_pointer )
-		{
-			U_ASSERT( raw_pointer != nullptr );
-			this_.something_= std::make_unique<RawPointer>( *raw_pointer );
-		}
-
-		void operator()( const Tuple& tuple )
-		{
-			this_.something_= tuple;
-		}
-
-		void operator()( const ClassProxyPtr& class_ )
-		{
-			this_.something_= class_;
-		}
-
-		void operator()( const EnumPtr& enum_ )
-		{
-			this_.something_= enum_;
-		}
-
-		void operator()( const FunctionPointerPtr& function_pointer )
-		{
-			U_ASSERT( function_pointer != nullptr );
-			this_.something_= std::make_unique<FunctionPointer>( *function_pointer );
-		}
-	};
-
-	Visitor visitor( *this );
-	std::visit( visitor, other.something_ );
+	something_= std::visit( [&]( const auto& el ) { return CopyVariant(el); }, other.something_ );
 	return *this;
 }
 
@@ -233,7 +176,7 @@ const FundamentalType* Type::GetFundamentalType() const
 
 Function* Type::GetFunctionType()
 {
-	FunctionPtr* const function_type= std::get_if<FunctionPtr>( &something_ );
+	const FunctionPtr* const function_type= std::get_if<FunctionPtr>( &something_ );
 	if( function_type == nullptr )
 		return nullptr;
 	return function_type->get();
@@ -249,7 +192,7 @@ const Function* Type::GetFunctionType() const
 
 FunctionPointer* Type::GetFunctionPointerType()
 {
-	FunctionPointerPtr* const function_pointer_type= std::get_if<FunctionPointerPtr>( &something_ );
+	const FunctionPointerPtr* const function_pointer_type= std::get_if<FunctionPointerPtr>( &something_ );
 	if( function_pointer_type == nullptr )
 		return nullptr;
 	return function_pointer_type->get();
@@ -265,7 +208,7 @@ const FunctionPointer* Type::GetFunctionPointerType() const
 
 Array* Type::GetArrayType()
 {
-	ArrayPtr* const array_type= std::get_if<ArrayPtr>( &something_ );
+	const ArrayPtr* const array_type= std::get_if<ArrayPtr>( &something_ );
 	if( array_type == nullptr )
 		return nullptr;
 	return array_type->get();
@@ -281,7 +224,7 @@ const Array* Type::GetArrayType() const
 
 RawPointer* Type::GetRawPointerType()
 {
-	RawPointerPtr* const raw_pointer_type= std::get_if<RawPointerPtr>( &something_ );
+	const RawPointerPtr* const raw_pointer_type= std::get_if<RawPointerPtr>( &something_ );
 	if( raw_pointer_type == nullptr )
 		return nullptr;
 	return raw_pointer_type->get();
@@ -297,12 +240,12 @@ const RawPointer* Type::GetRawPointerType() const
 
 Tuple* Type::GetTupleType()
 {
-	return  std::get_if<Tuple>( &something_ );
+	return std::get_if<Tuple>( &something_ );
 }
 
 const Tuple* Type::GetTupleType() const
 {
-	return  std::get_if<Tuple>( &something_ );
+	return std::get_if<Tuple>( &something_ );
 }
 
 ClassProxyPtr Type::GetClassTypeProxy() const
@@ -549,54 +492,7 @@ InnerReferenceType Type::GetInnerReferenceType() const
 
 llvm::Type* Type::GetLLVMType() const
 {
-	struct Visitor final
-	{
-		llvm::Type* operator()( const FundamentalType& fundamental ) const
-		{
-			return fundamental.llvm_type;
-		}
-
-		llvm::Type* operator()( const FunctionPtr& function ) const
-		{
-			U_ASSERT( function != nullptr );
-			return function->llvm_function_type;
-		}
-
-		llvm::Type* operator()( const ArrayPtr& array ) const
-		{
-			U_ASSERT( array != nullptr );
-			return array->llvm_type;
-		}
-
-		llvm::Type* operator()( const RawPointerPtr& raw_pointer ) const
-		{
-			U_ASSERT( raw_pointer != nullptr );
-			return raw_pointer->llvm_type;
-		}
-
-		llvm::Type* operator()( const Tuple& tuple ) const
-		{
-			return tuple.llvm_type;
-		}
-
-		llvm::Type* operator()( const ClassProxyPtr& class_ ) const
-		{
-			U_ASSERT( class_ != nullptr && class_->class_ != nullptr );
-			return class_->class_->llvm_type;
-		}
-
-		llvm::Type* operator()( const EnumPtr& enum_ ) const
-		{
-			return enum_->underlaying_type.llvm_type;
-		}
-
-		llvm::Type* operator()( const FunctionPointerPtr& function_pointer_type ) const
-		{
-			return function_pointer_type->llvm_function_pointer_type;
-		}
-	};
-
-	return std::visit( Visitor(), something_ );
+	return std::visit( []( const auto& el ){ return GetLLVMTypeImpl( el ); }, something_ );
 }
 
 std::string Type::ToString() const

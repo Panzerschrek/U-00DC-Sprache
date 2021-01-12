@@ -1151,7 +1151,7 @@ Type CodeBuilder::BuildFuncCode(
 	const Synt::StructNamedInitializer* const constructor_initialization_list )
 {
 	Function& function_type= *func_variable.type.GetFunctionType();
-	function_type.llvm_function_type= GetLLVMFunctionType( function_type );
+	function_type.llvm_type= GetLLVMFunctionType( function_type );
 
 	const bool first_arg_is_sret= function_type.IsStructRet();
 
@@ -1160,7 +1160,7 @@ Type CodeBuilder::BuildFuncCode(
 	{
 		llvm_function=
 			llvm::Function::Create(
-				function_type.llvm_function_type,
+				function_type.llvm_type,
 				llvm::Function::LinkageTypes::ExternalLinkage, // External - for prototype.
 				func_variable.no_mangle ? func_name : MangleFunction( parent_names_scope, func_name, function_type ),
 				module_.get() );
