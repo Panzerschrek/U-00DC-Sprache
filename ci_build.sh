@@ -8,7 +8,7 @@ tar -xf clang+llvm-9.0.0-x86_64-linux-gnu-ubuntu-16.04.tar &&\
 # Configure build
 mkdir build-travis &&\
 cd build-travis &&\
-cmake ../source/ -G Ninja -DCMAKE_BUILD_TYPE=Release -DLLVM_LIB_DIR=../clang+llvm-9.0.0-x86_64-linux-gnu-ubuntu-16.04/lib/ -DU_BUILD_COMPILER2=YES -DU_BUILD_COMPILER3=YES -DSPHINX_WARNINGS_AS_ERRORS=No &&\
+cmake ../source/ -G Ninja -DCMAKE_BUILD_TYPE=Release -DLLVM_LIB_DIR=../clang+llvm-9.0.0-x86_64-linux-gnu-ubuntu-16.04/lib/ -DU_BUILD_COMPILER1=No -DU_BUILD_COMPILER2=YES -DU_BUILD_COMPILER3=YES -DSPHINX_WARNINGS_AS_ERRORS=No &&\
 \
 cmake --build . &&\
 \
