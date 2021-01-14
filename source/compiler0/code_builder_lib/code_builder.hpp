@@ -859,7 +859,7 @@ private:
 		llvm::IntegerType* char16;
 		llvm::IntegerType* char32;
 
-		llvm::IntegerType* void_;
+		llvm::StructType* void_;
 		llvm::Type* void_for_ret;
 		llvm::Type* invalid_type;
 		llvm::IntegerType* bool_;

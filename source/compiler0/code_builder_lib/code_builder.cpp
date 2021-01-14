@@ -73,9 +73,11 @@ CodeBuilder::CodeBuilder(
 	fundamental_llvm_types_.char32= llvm::Type::getInt32Ty( llvm_context_ );
 
 	fundamental_llvm_types_.invalid_type= llvm::Type::getInt8Ty( llvm_context_ );
-	fundamental_llvm_types_.void_= llvm::Type::getInt8Ty( llvm_context_ );
 	fundamental_llvm_types_.void_for_ret= llvm::Type::getVoidTy( llvm_context_ );
 	fundamental_llvm_types_.bool_= llvm::Type::getInt1Ty( llvm_context_ );
+
+	// Use empty named structure for "void" type.
+	fundamental_llvm_types_.void_= llvm::StructType::create( llvm_context_, {}, "__U_void" );
 
 	fundamental_llvm_types_.int_ptr= data_layout_.getIntPtrType(llvm_context_);
 
