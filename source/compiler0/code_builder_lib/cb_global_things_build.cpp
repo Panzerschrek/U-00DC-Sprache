@@ -122,8 +122,8 @@ void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fields_llvm
 
 bool CodeBuilder::IsTypeComplete( const Type& type ) const
 {
-	if( const auto fundamental_type= type.GetFundamentalType() )
-		return fundamental_type->fundamental_type != U_FundamentalType::Void;
+	if( type.GetFundamentalType() != nullptr )
+		return true;
 	else if( type.GetFunctionType() != nullptr || type.GetFunctionPointerType() != nullptr )
 		return true;
 	else if( const auto enum_type= type.GetEnumType() )
@@ -150,10 +150,8 @@ bool CodeBuilder::IsTypeComplete( const Type& type ) const
 
 bool CodeBuilder::EnsureTypeComplete( const Type& type )
 {
-	if( const auto fundamental_type= type.GetFundamentalType() )
-	{
-		return fundamental_type->fundamental_type != U_FundamentalType::Void;
-	}
+	if( type.GetFundamentalType() != nullptr )
+		return true;
 	else if( type.GetFunctionType() != nullptr || type.GetFunctionPointerType() != nullptr )
 		return true;
 	else if( const auto enum_type= type.GetEnumType() )
@@ -469,7 +467,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 
 			if( class_field->is_reference )
 			{
-				if( class_field->type != void_type_ && !EnsureTypeComplete( class_field->type ) )
+				if( !EnsureTypeComplete( class_field->type ) )
 				{
 					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), in_field.src_loc_, class_field->type );
 					return;

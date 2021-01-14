@@ -214,6 +214,11 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const Function& function_t
 		llvm_function_return_type= function_type.return_type.GetLLVMType();
 		if( function_type.return_value_is_reference )
 			llvm_function_return_type= llvm_function_return_type->getPointerTo();
+		else if( function_type.return_type == void_type_ )
+		{
+			// Use true "void" LLVM type only for function return value. Use own "void" type in other cases.
+			llvm_function_return_type= fundamental_llvm_types_.void_for_ret;
+		}
 	}
 
 	return llvm::FunctionType::get( llvm_function_return_type, args_llvm_types, false );

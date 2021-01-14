@@ -607,16 +607,13 @@ Value CodeBuilder::BuildExpressionCode(
 	{
 		result.value_type= ValueType::Value;
 		node_kind= ReferencesGraphNode::Kind::Variable;
-		if( !( result.type == void_type_ || result.type == void_type_for_ret_ ) )
+		if( !EnsureTypeComplete( result.type ) )
 		{
-			if( !EnsureTypeComplete( result.type ) )
-			{
-				REPORT_ERROR( UsingIncompleteType, names.GetErrors(), ternary_operator.src_loc_, result.type );
-				return ErrorValue();
-			}
-			result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( result.type.GetLLVMType() );
-			result.llvm_value->setName( "select_result" );
+			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), ternary_operator.src_loc_, result.type );
+			return ErrorValue();
 		}
+		result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( result.type.GetLLVMType() );
+		result.llvm_value->setName( "select_result" );
 	}
 	else if( branches_value_types[0] == ValueType::ConstReference || branches_value_types[1] == ValueType::ConstReference )
 	{
@@ -1207,7 +1204,7 @@ Value CodeBuilder::BuildExpressionCode(
 	if( type == invalid_type_ )
 		return ErrorValue();
 
-	if( type != void_type_ && !EnsureTypeComplete( type ) )
+	if( !EnsureTypeComplete( type ) )
 	{
 		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), typeinfo.src_loc_, type );
 		return ErrorValue();
@@ -2709,6 +2706,9 @@ Value CodeBuilder::DoCallFunction(
 		}
 		if( call_result == nullptr )
 			call_result= function_context.llvm_ir_builder.CreateCall( function, llvm_args );
+
+		if( !function_type.return_value_is_reference && function_type.return_type == void_type_for_ret_ )
+			call_result= llvm::Constant::getNullValue( fundamental_llvm_types_.void_ );
 	}
 	else
 		call_result= llvm::UndefValue::get( llvm::dyn_cast<llvm::FunctionType>(function->getType())->getReturnType() );
@@ -2733,7 +2733,7 @@ Value CodeBuilder::DoCallFunction(
 	}
 	else
 	{
-		if( function_type.return_type != void_type_ && !EnsureTypeComplete( function_type.return_type ) )
+		if( !EnsureTypeComplete( function_type.return_type ) )
 			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), call_src_loc, function_type.return_type );
 
 		result.location= return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;

@@ -785,7 +785,7 @@ size_t CodeBuilder::PrepareFunction(
 		Function& function_type= *func_variable.type.GetFunctionType();
 
 		if( func.type_.return_type_ == nullptr )
-			function_type.return_type= void_type_for_ret_;
+			function_type.return_type= void_type_;
 		else
 		{
 			if( const auto named_return_type = std::get_if<Synt::NamedTypeName>(func.type_.return_type_.get()) )
@@ -818,11 +818,6 @@ size_t CodeBuilder::PrepareFunction(
 
 		function_type.return_value_is_mutable= func.type_.return_value_mutability_modifier_ == MutabilityModifier::Mutable;
 		function_type.return_value_is_reference= func.type_.return_value_reference_modifier_ == ReferenceModifier::Reference;
-
-		// HACK. We have different llvm types for "void".
-		// llvm::void used only for empty return value, for other purposes we use "i8" for Ü::void.
-		if( !function_type.return_value_is_reference && function_type.return_type == void_type_ )
-			function_type.return_type= void_type_for_ret_;
 
 		if( is_special_method && !( function_type.return_type == void_type_ && !function_type.return_value_is_reference ) )
 			REPORT_ERROR( ConstructorAndDestructorMustReturnVoid, names_scope.GetErrors(), func.src_loc_ );
@@ -1049,9 +1044,7 @@ void CodeBuilder::CheckOverloadedOperator(
 	if( !is_this_class )
 		REPORT_ERROR( OperatorDoesNotHaveParentClassArguments, errors_container, src_loc );
 
-	const bool ret_is_void=
-		( func_type.return_type == void_type_ || func_type.return_type == void_type_for_ret_ ) &&
-		!func_type.return_value_is_reference;
+	const bool ret_is_void= func_type.return_type == void_type_ && !func_type.return_value_is_reference;
 
 	switch( overloaded_operator )
 	{
@@ -1229,11 +1222,10 @@ Type CodeBuilder::BuildFuncCode(
 	// Require full completeness even for reference arguments.
 	for( const Function::Arg& arg : function_type.args )
 	{
-		if( arg.type != void_type_ && !EnsureTypeComplete( arg.type ) )
+		if( !EnsureTypeComplete( arg.type ) )
 			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), args.front().src_loc_, arg.type );
 	}
-	if( !function_type.return_value_is_reference && function_type.return_type != void_type_ &&
-		!EnsureTypeComplete( function_type.return_type ) )
+	if( !function_type.return_value_is_reference && !EnsureTypeComplete( function_type.return_type ) )
 		REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_src_loc, function_type.return_type );
 
 	NamesScope function_names( "", &parent_names_scope );
@@ -1428,11 +1420,8 @@ Type CodeBuilder::BuildFuncCode(
 		const bool auto_contexpr= func_variable.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprAuto;
 		bool can_be_constexpr= true;
 
-		if( !auto_contexpr )
-		{
-			if( function_type.return_type != void_type_for_ret_ && !EnsureTypeComplete( function_type.return_type ) )
-				REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), func_variable.body_src_loc, function_type.return_type ); // Completeness required for constexpr possibility check.
-		}
+		if( !auto_contexpr && !EnsureTypeComplete( function_type.return_type ) )
+			REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), func_variable.body_src_loc, function_type.return_type ); // Completeness required for constexpr possibility check.
 
 		if( function_type.unsafe ||
 			!function_type.return_type.CanBeConstexpr() ||
@@ -1444,11 +1433,8 @@ Type CodeBuilder::BuildFuncCode(
 
 		for( const Function::Arg& arg : function_type.args )
 		{
-			if( !auto_contexpr )
-			{
-				if( arg.type != void_type_ && !EnsureTypeComplete( arg.type ) )
-					REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), func_variable.body_src_loc, arg.type ); // Completeness required for constexpr possibility check.
-			}
+			if( !auto_contexpr && !EnsureTypeComplete( arg.type ) )
+				REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), func_variable.body_src_loc, arg.type ); // Completeness required for constexpr possibility check.
 
 			if( !arg.type.CanBeConstexpr() ) // Incomplete types are not constexpr.
 				can_be_constexpr= false; // Allowed only constexpr types.

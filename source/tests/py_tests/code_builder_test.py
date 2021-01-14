@@ -64,43 +64,6 @@ def VoidTypeReferenceMustBeReturned_Test():
 	assert( errors_list[0].src_loc.line == 8 )
 
 
-def VoidTypeIsIncomplete_Test0():
-	c_program_text= """
-	fn Foo()
-	{
-		var void v; // void variable
-	}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "UsingIncompleteType" )
-	assert( errors_list[0].src_loc.line == 4 )
-
-
-def VoidTypeIsIncomplete_Test1():
-	c_program_text= """
-	fn Bar(){}
-	fn Foo()
-	{
-		auto v= Bar(); // void auto variable
-	}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "UsingIncompleteType" )
-	assert( errors_list[0].src_loc.line == 5 )
-
-
-def VoidTypeIsIncomplete_Test2():
-	c_program_text= """
-	struct S{ void v; } // void struct field
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "UsingIncompleteType" )
-	assert( errors_list[0].src_loc.line == 2 )
-
-
 def VoidTypeReference_Test0():
 	c_program_text= """
 	fn Foo( void& v ) {}    // void type for reference-arg.

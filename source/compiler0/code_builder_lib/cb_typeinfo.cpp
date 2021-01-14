@@ -124,7 +124,7 @@ Variable CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope& root
 
 void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variable, NamesScope& root_namespace )
 {
-	if( type != void_type_ && !EnsureTypeComplete( type ) )
+	if( !EnsureTypeComplete( type ) )
 	{
 		// Just ignore here incomplete types, report about error while building "typeinfo" operator.
 		return;
