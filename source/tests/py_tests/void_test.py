@@ -191,3 +191,32 @@ def VoidTypeIsConstexpr_Test4():
 		auto constexpr v= Foo();
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def VoidTypeTypeinfo_Test0():
+	c_program_text= """
+		auto& ti= typeinfo</void/>;
+		static_assert( ti.is_fundamental );
+		static_assert( ti.is_void );
+		static_assert( ti.is_default_constructible );
+		static_assert( ti.is_copy_constructible );
+		static_assert( ti.is_copy_assignable );
+		static_assert( ti.size_of == 0s );
+		static_assert( ti.size_of <= 1s );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def VoidTypeTypeinfo_Test1():
+	c_program_text= """
+		struct S{ f32 x; void v; }
+		static_assert( typeinfo</S/>.size_of == typeinfo</f32/>.size_of );
+
+		struct T{ void v; i64 y; }
+		static_assert( typeinfo</T/>.size_of == typeinfo</i64/>.size_of );
+
+		static_assert( typeinfo</ [ void, 64 ] />.size_of == 0s );
+
+		static_assert( typeinfo</ tup[ void, f32, void, u32, void ] />.size_of == 8s );
+	"""
+	tests_lib.build_program( c_program_text )
