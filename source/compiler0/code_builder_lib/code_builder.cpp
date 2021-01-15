@@ -1288,7 +1288,8 @@ Type CodeBuilder::BuildFuncCode(
 				// TODO - do it, only if parameters are not constant.
 				llvm::Value* address= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
 				address->setName( arg_name );
-				function_context.llvm_ir_builder.CreateStore( var.llvm_value, address );
+				if( arg.type != void_type_ )
+					function_context.llvm_ir_builder.CreateStore( var.llvm_value, address );
 
 				var.llvm_value= address;
 				var.location= Variable::Location::Pointer;
@@ -1434,7 +1435,7 @@ Type CodeBuilder::BuildFuncCode(
 
 			if( !arg.type.CanBeConstexpr() ) // Incomplete types are not constexpr.
 				can_be_constexpr= false; // Allowed only constexpr types.
-			if( arg.type == void_type_ ) // Disallow "void" arguments, because we currently can not constantly convert any reference to "void" in constexpr function call.
+			if( arg.type == void_type_ && arg.is_reference ) // Disallow "void" reference arguments, because we currently can not constantly convert any reference to "void" in constexpr function call.
 				can_be_constexpr= false;
 			if( arg.type.GetFunctionPointerType() != nullptr ) // Currently function pointers not supported.
 				can_be_constexpr= false;
@@ -1932,7 +1933,7 @@ llvm::Value*CodeBuilder::CreateMoveToLLVMRegisterInstruction(
 		return variable.llvm_value;
 	case Variable::Location::Pointer:
 		if( variable.type == void_type_ )
-			return llvm::ConstantStruct::get(fundamental_llvm_types_.void_, {});
+			return llvm::UndefValue::get(fundamental_llvm_types_.void_);
 		else
 			return function_context.llvm_ir_builder.CreateLoad( variable.llvm_value );
 	};

@@ -2609,7 +2609,9 @@ Value CodeBuilder::DoCallFunction(
 				}
 			}
 
-			if( arg.type.GetFundamentalType() != nullptr ||
+			if( arg.type == void_type_ )
+				llvm_args[j]= llvm::UndefValue::get( fundamental_llvm_types_.void_ ); // Hack for interpreter - it can not process regular constant values properly.
+			else if( arg.type.GetFundamentalType() != nullptr ||
 				arg.type.GetEnumType() != nullptr ||
 				arg.type.GetRawPointerType() != nullptr ||
 				arg.type.GetFunctionPointerType() != nullptr )
@@ -2710,15 +2712,20 @@ Value CodeBuilder::DoCallFunction(
 				if( return_value_is_sret ) // We needs here block of memory with result constant struct.
 					MoveConstantToMemory( s_ret_value, evaluation_result.result_constant, function_context );
 
-				call_result= evaluation_result.result_constant;
-				constant_call_result= evaluation_result.result_constant;
+				if( function_type.return_value_is_reference && function_type.return_type == void_type_ )
+					constant_call_result= llvm::Constant::getNullValue( fundamental_llvm_types_.void_ );
+				else
+					constant_call_result= evaluation_result.result_constant;
 			}
 		}
-		if( call_result == nullptr )
+		if( constant_call_result != nullptr )
+			call_result= constant_call_result;
+		else
+		{
 			call_result= function_context.llvm_ir_builder.CreateCall( function, llvm_args );
-
-		if( !function_type.return_value_is_reference && function_type.return_type == void_type_ )
-			call_result= llvm::Constant::getNullValue( fundamental_llvm_types_.void_ );
+			if( !function_type.return_value_is_reference && function_type.return_type == void_type_ )
+				call_result= llvm::UndefValue::get( fundamental_llvm_types_.void_ );
+		}
 	}
 	else
 		call_result= llvm::UndefValue::get( llvm::dyn_cast<llvm::FunctionType>(function->getType())->getReturnType() );
