@@ -1935,7 +1935,10 @@ llvm::Value*CodeBuilder::CreateMoveToLLVMRegisterInstruction(
 	case Variable::Location::LLVMRegister:
 		return variable.llvm_value;
 	case Variable::Location::Pointer:
-		return function_context.llvm_ir_builder.CreateLoad( variable.llvm_value );
+		if( variable.type == void_type_ )
+			return llvm::ConstantStruct::get(fundamental_llvm_types_.void_, {});
+		else
+			return function_context.llvm_ir_builder.CreateLoad( variable.llvm_value );
 	};
 
 	U_ASSERT(false);

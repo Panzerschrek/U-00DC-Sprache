@@ -22,7 +22,7 @@ def VoidTypeIsComplete_Test2():
 	tests_lib.build_program( c_program_text )
 
 
-def VoidTypeIsComplete_Test3():
+def VoidTypeInitialization_Test0():
 	c_program_text= """
 		fn Foo()
 		{
@@ -30,3 +30,40 @@ def VoidTypeIsComplete_Test3():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def VoidTypeInitialization_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var void v0= zero_init;
+			var void v1= v0;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def VoidTypeInitialization_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var void v0= zero_init;
+			var void v1(v0);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def VoidTypeInitialization_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			var void v0= zero_init;
+			auto v1= v0;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

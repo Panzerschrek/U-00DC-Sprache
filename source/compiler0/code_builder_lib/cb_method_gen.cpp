@@ -648,7 +648,8 @@ void CodeBuilder::BuildCopyConstructorPart(
 		type.GetFunctionPointerType() != nullptr )
 	{
 		// Create simple load-store.
-		if( src->getType() == dst->getType() )
+		if( type == void_type_ ){} // Do nothing for "void".
+		else if( src->getType() == dst->getType() )
 			function_context.llvm_ir_builder.CreateStore( function_context.llvm_ir_builder.CreateLoad( src ), dst );
 		else if( src->getType() == dst->getType()->getPointerElementType() )
 			function_context.llvm_ir_builder.CreateStore( src, dst );
@@ -727,7 +728,8 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 		type.GetFunctionPointerType() != nullptr )
 	{
 		// Create simple load-store.
-		if( src->getType() == dst->getType() )
+		if( type == void_type_ ){} // Do nothing for "void".
+		else if( src->getType() == dst->getType() )
 			function_context.llvm_ir_builder.CreateStore( function_context.llvm_ir_builder.CreateLoad( src ), dst );
 		else if( src->getType() == dst->getType()->getPointerElementType() )
 			function_context.llvm_ir_builder.CreateStore( src, dst );

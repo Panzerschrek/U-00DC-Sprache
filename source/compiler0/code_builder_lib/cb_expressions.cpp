@@ -653,11 +653,17 @@ Value CodeBuilder::BuildExpressionCode(
 			if( result.value_type == ValueType::Value )
 			{
 				// Move or create copy.
-				if( result.type == void_type_ || result.type == void_type_for_ret_ )
-				{}
-				else if( result.type.GetFundamentalType() != nullptr || result.type.GetEnumType() != nullptr || result.type.GetFunctionPointerType() != nullptr )
+				if( result.type == void_type_ ){}
+				else if(
+					result.type.GetFundamentalType() != nullptr ||
+					result.type.GetEnumType() != nullptr ||
+					result.type.GetRawPointerType() != nullptr ||
+					result.type.GetFunctionPointerType() != nullptr )
 					function_context.llvm_ir_builder.CreateStore( CreateMoveToLLVMRegisterInstruction( branch_result, function_context ), result.llvm_value );
-				else if( result.type.GetClassTypeProxy() != nullptr || result.type.GetTupleType() != nullptr )
+				else if(
+					result.type.GetClassTypeProxy() != nullptr ||
+					result.type.GetTupleType() != nullptr ||
+					result.type.GetArrayType() != nullptr )
 				{
 					SetupReferencesInCopyOrMove( function_context, result, branch_result, names.GetErrors(), ternary_operator.src_loc_ );
 
@@ -1151,7 +1157,8 @@ Value CodeBuilder::BuildExpressionCode(
 	if( var.location == Variable::Location::LLVMRegister )
 	{
 		result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
-		function_context.llvm_ir_builder.CreateStore( var.llvm_value, result.llvm_value );
+		if( var.type != void_type_ )
+			function_context.llvm_ir_builder.CreateStore( var.llvm_value, result.llvm_value );
 	}
 
 	return Value( std::move(result), cast_mut.src_loc_ );
@@ -1170,7 +1177,8 @@ Value CodeBuilder::BuildExpressionCode(
 	if( var.location == Variable::Location::LLVMRegister )
 	{
 		result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
-		function_context.llvm_ir_builder.CreateStore( var.llvm_value, result.llvm_value );
+		if( var.type != void_type_ )
+			function_context.llvm_ir_builder.CreateStore( var.llvm_value, result.llvm_value );
 	}
 
 	return Value( std::move(result), cast_imut.src_loc_ );
@@ -1828,7 +1836,8 @@ Value CodeBuilder::DoReferenceCast(
 	if( var.location == Variable::Location::LLVMRegister )
 	{
 		src_value= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
-		function_context.llvm_ir_builder.CreateStore( var.llvm_value, src_value );
+		if( var.type != void_type_ )
+			function_context.llvm_ir_builder.CreateStore( var.llvm_value, src_value );
 	}
 
 	if( type == var.type )
@@ -2513,7 +2522,8 @@ Value CodeBuilder::DoCallFunction(
 					// Bind value to const reference.
 					// TODO - support nonfundamental values.
 					llvm::Value* const temp_storage= function_context.alloca_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
-					function_context.llvm_ir_builder.CreateStore( expr.llvm_value, temp_storage );
+					if( expr.type != void_type_ )
+						function_context.llvm_ir_builder.CreateStore( expr.llvm_value, temp_storage );
 					llvm_args[j]= temp_storage;
 				}
 				else
