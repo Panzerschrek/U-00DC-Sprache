@@ -436,9 +436,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			}
 
 			if( function_context.deduced_return_type == std::nullopt )
-				function_context.deduced_return_type = void_type_for_ret_;
-			else if( *function_context.deduced_return_type != void_type_for_ret_ )
-				REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc_, *function_context.deduced_return_type, void_type_for_ret_ );
+				function_context.deduced_return_type = void_type_;
+			else if( *function_context.deduced_return_type != void_type_ )
+				REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc_, *function_context.deduced_return_type, void_type_ );
 			return block_info;
 		}
 
@@ -593,7 +593,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 				expression_result.type.GetRawPointerType() != nullptr ||
 				expression_result.type.GetFunctionPointerType() != nullptr );
 
-			if( expression_result.type == void_type_ || expression_result.type == void_type_for_ret_ )
+			if( expression_result.type == void_type_ )
 			{
 				CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc_ );
 				CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc_ );

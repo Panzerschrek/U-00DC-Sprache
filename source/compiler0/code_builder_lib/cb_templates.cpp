@@ -407,7 +407,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 		if( function_pointer_type_name.return_type_ != nullptr )
 			function_param.return_type= std::make_unique<TemplateSignatureParam>( CreateTemplateSignatureParameter( *function_pointer_type_name.return_type_, names_scope, function_context, template_parameters, template_parameters_usage_flags ) );
 		else
-			function_param.return_type= std::make_unique<TemplateSignatureParam>( TemplateSignatureParam::TypeParam{ void_type_for_ret_ } );
+			function_param.return_type= std::make_unique<TemplateSignatureParam>( TemplateSignatureParam::TypeParam{ void_type_ } );
 
 		all_types_are_known&= function_param.return_type->IsType();
 

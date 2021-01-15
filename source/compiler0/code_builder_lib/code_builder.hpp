@@ -871,7 +871,6 @@ private:
 
 	Type invalid_type_;
 	Type void_type_;
-	Type void_type_for_ret_;
 	Type bool_type_;
 	Type size_type_; // Alias for u32 or u64
 

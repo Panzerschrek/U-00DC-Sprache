@@ -83,7 +83,6 @@ CodeBuilder::CodeBuilder(
 
 	invalid_type_= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type );
 	void_type_= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
-	void_type_for_ret_= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_for_ret );
 	bool_type_= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
 	size_type_=
 		fundamental_llvm_types_.int_ptr->getIntegerBitWidth() == 32u
@@ -125,11 +124,11 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 			module_.get() );
 
 	Function global_function_type;
-	global_function_type.return_type= void_type_for_ret_;
+	global_function_type.return_type= void_type_;
 
 	FunctionContext global_function_context(
 		std::move(global_function_type),
-		void_type_for_ret_,
+		void_type_,
 		llvm_context_,
 		global_function );
 	const StackVariablesStorage global_function_variables_storage( global_function_context );
@@ -804,7 +803,7 @@ size_t CodeBuilder::PrepareFunction(
 					if( func.type_.return_value_reference_modifier_ == ReferenceModifier::Reference )
 						function_type.return_type= void_type_;
 					else
-						function_type.return_type= void_type_for_ret_;
+						function_type.return_type= void_type_;
 				}
 			}
 
@@ -1404,10 +1403,7 @@ Type CodeBuilder::BuildFuncCode(
 	if( func_variable.return_type_is_auto )
 	{
 		func_variable.return_type_is_auto= false;
-		return
-			function_context.deduced_return_type
-				? *function_context.deduced_return_type
-				: ( function_type.return_value_is_reference ? void_type_ : void_type_for_ret_ );
+		return function_context.deduced_return_type ? *function_context.deduced_return_type : void_type_;
 	}
 
 	if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )

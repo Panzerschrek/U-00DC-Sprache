@@ -222,7 +222,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 			function_context );
 
 		Variable result;
-		result.type= void_type_for_ret_;
+		result.type= void_type_;
 		return Value( std::move(result), src_loc );
 	}
 	else
@@ -2717,7 +2717,7 @@ Value CodeBuilder::DoCallFunction(
 		if( call_result == nullptr )
 			call_result= function_context.llvm_ir_builder.CreateCall( function, llvm_args );
 
-		if( !function_type.return_value_is_reference && function_type.return_type == void_type_for_ret_ )
+		if( !function_type.return_value_is_reference && function_type.return_type == void_type_ )
 			call_result= llvm::Constant::getNullValue( fundamental_llvm_types_.void_ );
 	}
 	else

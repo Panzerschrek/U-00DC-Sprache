@@ -102,7 +102,7 @@ Type CodeBuilder::PrepareType( const Synt::FunctionType& function_type_name, Nam
 	Function& function_type= function_pointer_type.function;
 
 	if( function_type_name.return_type_ == nullptr )
-		function_type.return_type= void_type_for_ret_;
+		function_type.return_type= void_type_;
 	else
 		function_type.return_type= PrepareType( *function_type_name.return_type_, names_scope, function_context );
 	function_type.return_value_is_mutable= function_type_name.return_value_mutability_modifier_ == MutabilityModifier::Mutable;
