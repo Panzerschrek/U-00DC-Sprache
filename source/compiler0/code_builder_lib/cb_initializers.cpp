@@ -523,9 +523,13 @@ void CodeBuilder::ApplyEmptyInitializer(
 		return;
 	}
 
-	if( variable.type.GetFundamentalType() != nullptr || variable.type.GetEnumType() != nullptr )
+	if( variable.type.GetFundamentalType() != nullptr )
 	{
-		// Fundamentals and enums are not default-constructible, we should generate error about it before.
+		U_ASSERT( variable.type == void_type_ ); // "void" is only default-constructible fundamental type.
+	}
+	else if( variable.type.GetEnumType() != nullptr || variable.type.GetRawPointerType() != nullptr || variable.type.GetFunctionPointerType() != nullptr )
+	{
+		// This type is not default-constructible, we should generate error about it before.
 		U_ASSERT( false );
 	}
 	else if( const Array* const array_type= variable.type.GetArrayType() )

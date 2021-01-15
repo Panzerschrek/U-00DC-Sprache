@@ -308,7 +308,9 @@ bool Type::ReferenceIsConvertibleTo( const Type& other ) const
 
 bool Type::IsDefaultConstructible() const
 {
-	if( const ClassProxyPtr* const class_= std::get_if<ClassProxyPtr>( &something_ ) )
+	if( const auto fundamental_type= GetFundamentalType() )
+		return fundamental_type->fundamental_type == U_FundamentalType::Void;
+	else if( const ClassProxyPtr* const class_= std::get_if<ClassProxyPtr>( &something_ ) )
 	{
 		U_ASSERT( *class_ != nullptr && (*class_)->class_ != nullptr );
 		return (*class_)->class_->is_default_constructible;

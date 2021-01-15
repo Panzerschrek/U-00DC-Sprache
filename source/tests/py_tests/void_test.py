@@ -67,3 +67,28 @@ def VoidTypeInitialization_Test3():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def VoidTypeInitialization_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			var void v0;
+			static_assert( typeinfo</void/>.is_default_constructible);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def VoidTypeInitialization_Test5():
+	c_program_text= """
+		struct S{ void f; [ void, 4 ] a; }
+		fn Foo()
+		{
+			var S s;
+			static_assert( typeinfo</S/>.is_default_constructible);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
