@@ -399,6 +399,48 @@ llvm::GenericValue ConstexprFunctionEvaluator::GetVal( const llvm::Value* const 
 		res.IntVal= constant_int->getValue();
 	else if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>( val ) )
 		res.IntVal= llvm::APInt( 64u, MoveConstantToStack( *global_variable->getInitializer() ) );
+	else if( const auto constant_struct= llvm::dyn_cast<llvm::ConstantStruct>( val ) )
+	{
+		res.AggregateVal.resize( constant_struct->getType()->getNumElements() );
+		for( unsigned int i= 0u; i < res.AggregateVal.size(); ++i )
+			res.AggregateVal[i]= GetVal( constant_struct->getAggregateElement(i) );
+	}
+	else if( const auto constant_array= llvm::dyn_cast<llvm::ConstantArray>( val ) )
+	{
+		res.AggregateVal.resize( constant_array->getType()->getNumElements() );
+		for( unsigned int i= 0u; i < res.AggregateVal.size(); ++i )
+			res.AggregateVal[i]= GetVal( constant_array->getAggregateElement(i) );
+	}
+	else if( const auto constant_zero= llvm::dyn_cast<llvm::ConstantAggregateZero>( val ) )
+	{
+		res.AggregateVal.resize( constant_zero->getNumElements() );
+		for( unsigned int i= 0u; i < res.AggregateVal.size(); ++i )
+			res.AggregateVal[i]= GetVal( constant_zero->getElementValue(i) );
+	}
+	else if (const auto undef_value= llvm::dyn_cast<llvm::UndefValue>( val ) )
+	{
+		// Udef values are possible but compiler may produce it where it can not break functional purity.
+		// So, just fill undef value with zeros.
+		if( val->getType()->isFloatTy() )
+			res.FloatVal= 0.0f;
+		else if( val->getType()->isDoubleTy() )
+			res.DoubleVal= 0.0f;
+		else if( val->getType()->isIntegerTy() )
+			res.IntVal= undef_value->getUniqueInteger();
+		else if( const auto struct_type= llvm::dyn_cast<llvm::StructType>( val->getType() ) )
+		{
+			res.AggregateVal.resize( struct_type->getNumElements() );
+			for( unsigned int i= 0u; i < res.AggregateVal.size(); ++i )
+				res.AggregateVal[i]= GetVal( undef_value->getElementValue(i) );
+		}
+		else if( const auto array_type= llvm::dyn_cast<llvm::ArrayType>( val->getType() ) )
+		{
+			res.AggregateVal.resize( array_type->getNumElements() );
+			for( unsigned int i= 0u; i < res.AggregateVal.size(); ++i )
+				res.AggregateVal[i]= GetVal( undef_value->getElementValue(i) );
+		}
+		else U_ASSERT(false);
+	}
 	else if( llvm::dyn_cast<llvm::Function>(val) != nullptr )
 		errors_.push_back( "accessing function pointer" );
 	else if( auto constant_expression= llvm::dyn_cast<llvm::ConstantExpr>( val ) )
