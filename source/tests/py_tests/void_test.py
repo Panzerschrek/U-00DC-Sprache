@@ -193,6 +193,19 @@ def VoidTypeIsConstexpr_Test4():
 	tests_lib.build_program( c_program_text )
 
 
+def VoidTypeIsConstexpr_Test5():
+	c_program_text= """
+		fn Bar(){}
+		fn Foo()
+		{
+			// Result of non-constexpr "void" call is not constexpr.
+			var void constexpr v= Bar();
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 6 ) )
+
+
 def VoidTypeTypeinfo_Test0():
 	c_program_text= """
 		auto& ti= typeinfo</void/>;
@@ -284,3 +297,87 @@ def VoidEqualityCompare_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HaveError( errors_list, "StaticAssertExpressionIsNotConstant", 8 ) )
 	assert( HaveError( errors_list, "StaticAssertExpressionIsNotConstant", 9 ) )
+
+
+def VoidOrderCompare_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var void v0= zero_init, v1= zero_init;
+			v0 > v1;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+
+
+def VoidOrderCompare_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var void v0= zero_init, v1= zero_init;
+			v0 <= v1;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+
+
+def ArithmeticOperatorForVoid_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var void v0= zero_init, v1= zero_init;
+			v0 + v1;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+
+
+def ArithmeticOperatorForVoid_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var void v0= zero_init, v1= zero_init;
+			v0 / v1;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+
+
+def ArithmeticOperatorForVoid_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var void v;
+			-v;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+
+
+def BitwiseOperatorForVoid_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var void v0, v1;
+			v0 ^ v1;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
+
+
+def BitwiseOperatorForVoid_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var void v;
+			~v;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 5 ) )
