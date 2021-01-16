@@ -512,12 +512,15 @@ void ConstexprFunctionEvaluator::ProcessCall( const llvm::Instruction* const ins
 	U_ASSERT(function != nullptr);
 	U_ASSERT( function->arg_size() == instruction->getNumOperands() - 1u );
 
-	if(function->getName() == "llvm.dbg.declare")
-		return;
-	if( function->getIntrinsicID() == llvm::Intrinsic::memcpy || function->getIntrinsicID() == llvm::Intrinsic::memmove )
+	if( function->isIntrinsic() )
 	{
-		ProcessMemmove( instruction );
-		return;
+		if( function->getIntrinsicID() == llvm::Intrinsic::dbg_declare )
+			return;
+		if( function->getIntrinsicID() == llvm::Intrinsic::memcpy || function->getIntrinsicID() == llvm::Intrinsic::memmove )
+		{
+			ProcessMemmove( instruction );
+			return;
+		}
 	}
 
 	InstructionsMap new_instructions_map;
