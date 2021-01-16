@@ -40,7 +40,7 @@ private:
 	size_t MoveConstantToStack( const llvm::Constant& constant );
 	void CopyConstantToStack( const llvm::Constant& constant, size_t stack_offset );
 
-	llvm::Constant* CreateInitializerForStructElement( llvm::Type* type, size_t element_ptr );
+	llvm::Constant* ReadConstantFromStack( llvm::Type* type, size_t value_ptr );
 
 	llvm::GenericValue GetVal( const llvm::Value* val );
 	void ProcessAlloca( const llvm::Instruction* instruction );

@@ -44,6 +44,7 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 		if( arg.hasStructRetAttr() )
 		{
 			U_ASSERT(i == 0u);
+			U_ASSERT(arg.getType()->isPointerTy());
 			return_type= arg.getType()->getPointerElementType();
 
 			s_ret_ptr= stack_.size();
@@ -87,7 +88,7 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	else if( return_type->isVoidTy() )
 		result.result_constant= llvm::UndefValue::get( return_type ); // TODO - set correct value
 	else if( return_type->isArrayTy() || return_type->isStructTy() )
-		result.result_constant= CreateInitializerForStructElement( return_type, s_ret_ptr );
+		result.result_constant= ReadConstantFromStack( return_type, s_ret_ptr );
 	else if( return_type->isPointerTy() )
 		errors_.push_back( "returning pointer in constexpr function" );
 	else U_ASSERT(false);
@@ -293,46 +294,43 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 	else U_ASSERT(false);
 }
 
-llvm::Constant* ConstexprFunctionEvaluator::CreateInitializerForStructElement( llvm::Type* const type, const size_t element_ptr )
+llvm::Constant* ConstexprFunctionEvaluator::ReadConstantFromStack( llvm::Type* const type, const size_t value_ptr )
 {
-	if( type->isIntegerTy() )
+	if( const auto integer_type= llvm::dyn_cast<llvm::IntegerType>(type) )
 	{
 		uint64_t val; // TODO - check big-endian/little-endian correctness.
-		std::memcpy( &val, stack_.data() + element_ptr, sizeof(val) );
-		return llvm::Constant::getIntegerValue( type, llvm::APInt( type->getIntegerBitWidth(), val ) );
+		std::memcpy( &val, stack_.data() + value_ptr, sizeof(val) );
+		return llvm::Constant::getIntegerValue( type, llvm::APInt( integer_type->getBitWidth(), val ) );
 	}
 	else if( type->isFloatTy() )
 	{
 		float val;
-		std::memcpy( &val, stack_.data() + element_ptr, sizeof(val) );
-		return llvm::ConstantFP::get( type, static_cast<double>(val) );
+		std::memcpy( &val, stack_.data() + value_ptr, sizeof(val) );
+		return llvm::ConstantFP::get( type, double(val) );
 	}
 	else if( type->isDoubleTy() )
 	{
 		double val;
-		std::memcpy( &val, stack_.data() + element_ptr, sizeof(val) );
+		std::memcpy( &val, stack_.data() + value_ptr, sizeof(val) );
 		return llvm::ConstantFP::get( type, val );
 	}
-	else if( type->isArrayTy() )
+	else if( const auto array_type= llvm::dyn_cast<llvm::ArrayType>(type) )
 	{
-		llvm::ArrayType* const array_type= llvm::dyn_cast<llvm::ArrayType>(type);
-		llvm::Type* const element_type= array_type->getElementType();
-		const size_t element_size= size_t(data_layout_.getTypeAllocSize(element_type));
+		const size_t element_size= size_t(data_layout_.getTypeAllocSize(array_type->getElementType()));
 
 		std::vector<llvm::Constant*> initializers( size_t(array_type->getNumElements()), nullptr );
 		for( unsigned int i= 0u; i < array_type->getNumElements(); ++i )
-			initializers[i]= CreateInitializerForStructElement( array_type->getElementType(), element_ptr + i * element_size );
+			initializers[i]= ReadConstantFromStack( array_type->getElementType(), value_ptr + i * element_size );
 
 		return llvm::ConstantArray::get( array_type, initializers );
 	}
-	else if( type->isStructTy() )
+	else if( const auto struct_type= llvm::dyn_cast<llvm::StructType>(type) )
 	{
-		llvm::StructType* const struct_type= llvm::dyn_cast<llvm::StructType>(type);
 		const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( struct_type );
 
 		ClassFieldsVector<llvm::Constant*> initializers( struct_type->getNumElements(), nullptr );
 		for( unsigned int i= 0u; i < struct_type->getNumElements(); ++i )
-			initializers[i]= CreateInitializerForStructElement( struct_type->getElementType(i), element_ptr + size_t(struct_layout.getElementOffset(i)) );
+			initializers[i]= ReadConstantFromStack( struct_type->getElementType(i), value_ptr + size_t(struct_layout.getElementOffset(i)) );
 
 		return llvm::ConstantStruct::get( struct_type, initializers );
 	}
