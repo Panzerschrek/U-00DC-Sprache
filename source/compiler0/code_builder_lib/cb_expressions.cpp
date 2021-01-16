@@ -2712,7 +2712,7 @@ Value CodeBuilder::DoCallFunction(
 				if( return_value_is_sret ) // We needs here block of memory with result constant struct.
 					MoveConstantToMemory( s_ret_value, evaluation_result.result_constant, function_context );
 
-				if( function_type.return_value_is_reference && function_type.return_type == void_type_ )
+				if( !function_type.return_value_is_reference && function_type.return_type == void_type_ )
 					constant_call_result= llvm::Constant::getNullValue( fundamental_llvm_types_.void_ );
 				else
 					constant_call_result= evaluation_result.result_constant;

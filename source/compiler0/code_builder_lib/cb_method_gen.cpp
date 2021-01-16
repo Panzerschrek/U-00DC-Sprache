@@ -802,6 +802,9 @@ void CodeBuilder::CopyBytes(
 	const Type& type,
 	FunctionContext& function_context )
 {
+	if( type == void_type_ )
+		return; // Do nothing for "void" type.
+
 	llvm::Type* const llvm_type= type.GetLLVMType();
 	if( llvm_type->isIntegerTy() || llvm_type->isFloatingPointTy() || llvm_type->isPointerTy() )
 	{
