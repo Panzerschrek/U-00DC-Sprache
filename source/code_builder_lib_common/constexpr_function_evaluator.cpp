@@ -41,33 +41,33 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	size_t i= 0u;
 	for( const llvm::Argument& arg : llvm_function->args() )
 	{
-		if( arg.getType()->isPointerTy() )
+		if( arg.hasStructRetAttr() )
+		{
+			U_ASSERT(i == 0u);
+			return_type= arg.getType()->getPointerElementType();
+
+			s_ret_ptr= stack_.size();
+			const size_t new_stack_size= stack_.size() + size_t( data_layout_.getTypeAllocSize(return_type) );
+			if( new_stack_size >= g_max_data_stack_size )
+			{
+				ReportDataStackOverflow();
+				continue;
+			}
+			stack_.resize( new_stack_size );
+
+			llvm::GenericValue val;
+			val.IntVal= llvm::APInt( 64u, uint64_t(s_ret_ptr) );
+			instructions_map_[ &arg ]= std::move(val);
+		}
+		else if( arg.getType() == args[i]->getType() )
+			instructions_map_[ &arg ]= GetVal( args[i] );
+		else if( arg.getType()->isPointerTy() && arg.getType()->getPointerElementType() == args[i]->getType() )
 		{
 			llvm::GenericValue val;
-
-			if( arg.hasStructRetAttr() )
-			{
-				U_ASSERT(i == 0u);
-				return_type= arg.getType()->getPointerElementType();
-
-				s_ret_ptr= stack_.size();
-				const size_t new_stack_size= stack_.size() + size_t( data_layout_.getTypeAllocSize(return_type) );
-				if( new_stack_size >= g_max_data_stack_size )
-				{
-					ReportDataStackOverflow();
-					continue;
-				}
-				stack_.resize( new_stack_size );
-
-				val.IntVal= llvm::APInt( 64u, uint64_t(s_ret_ptr) );
-			}
-			else
-				val.IntVal= llvm::APInt( 64u, uint64_t( MoveConstantToStack( *args[i] ) ) );
-
-			instructions_map_[ &arg ]= val;
+			val.IntVal= llvm::APInt( 64u, uint64_t( MoveConstantToStack( *args[i] ) ) );
+			instructions_map_[ &arg ]= std::move(val);
 		}
-		else
-			instructions_map_[ &arg ]= GetVal( args[i] );
+		else U_ASSERT(false);
 
 		++i;
 	}
@@ -248,7 +248,7 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 
 			if( element_type->isPointerTy() )
 			{
-				if( llvm::dyn_cast<llvm::PointerType>(element_type)->getElementType()->isFunctionTy() )
+				if( element_type->getPointerElementType()->isFunctionTy() )
 					errors_.push_back( "passing function pointer to constexpr function" );
 				else
 				{
@@ -285,8 +285,7 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 	}
 	else if( constant_type->isPointerTy() )
 	{
-		const llvm::PointerType* const pointer_type= llvm::dyn_cast<llvm::PointerType>(constant_type);
-		if( pointer_type->getElementType()->isFunctionTy() )
+		if( constant_type->getPointerElementType()->isFunctionTy() )
 			errors_.push_back( "passing function pointer to constexpr function" );
 		else U_ASSERT(false);
 		std::memset( constants_stack_.data() + stack_offset, 0, size_t(data_layout_.getTypeAllocSize( constant_type )) );
@@ -362,10 +361,6 @@ llvm::GenericValue ConstexprFunctionEvaluator::GetVal( const llvm::Value* const 
 		res.IntVal= constant_int->getValue();
 	else if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>( val ) )
 		res.IntVal= llvm::APInt( 64u, MoveConstantToStack( *global_variable->getInitializer() ) );
-	else if( const auto constant_aggregate= llvm::dyn_cast<llvm::ConstantAggregate>(val) )
-		res.IntVal= llvm::APInt( 64u, uint64_t( MoveConstantToStack( *constant_aggregate ) ) );
-	else if( const auto constant_data_sequential= llvm::dyn_cast<llvm::ConstantDataSequential>(val) )
-		res.IntVal= llvm::APInt( 64u, uint64_t( MoveConstantToStack( *constant_data_sequential ) ) );
 	else if( llvm::dyn_cast<llvm::Function>(val) != nullptr )
 		errors_.push_back( "accessing function pointer" );
 	else if( auto constant_expression= llvm::dyn_cast<llvm::ConstantExpr>( val ) )
@@ -396,9 +391,7 @@ llvm::GenericValue ConstexprFunctionEvaluator::GetVal( const llvm::Value* const 
 				}
 				else U_ASSERT(false);
 			}
-			llvm::GenericValue new_ptr;
-			new_ptr.IntVal= ptr.IntVal + llvm::APInt( ptr.IntVal.getBitWidth(), index_accumulated );
-			return new_ptr;
+			res.IntVal= ptr.IntVal + llvm::APInt( ptr.IntVal.getBitWidth(), index_accumulated );
 		}
 		else U_ASSERT(false);
 	}
