@@ -220,3 +220,67 @@ def VoidTypeTypeinfo_Test1():
 		static_assert( typeinfo</ tup[ void, f32, void, u32, void ] />.size_of == 8s );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def VoidEqualityCompare_Test0():
+	c_program_text= """
+		fn Bar(){}
+		fn Foo()
+		{
+			// All "void" values are same.
+			var void v0= zero_init;
+			var void v1= v0;
+			var void mut v2= Bar();
+			halt if( v0 != v1 );
+			halt if( v1 != v0 );
+			halt if( v2 != v0 );
+			halt if( v2 != v1 );
+			halt if( v0 != v2 );
+			halt if( v1 != v2 );
+			halt if( v0 != v0 );
+			halt if( v2 != v2 );
+
+			halt if( !( v0 == v1 ) );
+			halt if( !( v1 == v0 ) );
+			halt if( !( v2 == v0 ) );
+			halt if( !( v2 == v1 ) );
+			halt if( !( v0 == v2 ) );
+			halt if( !( v1 == v2 ) );
+			halt if( !( v0 == v0 ) );
+			halt if( !( v2 == v2 ) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def VoidEqualityCompare_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			// Compare result for "void" constexpr arguments is constexpr.
+			var void constexpr v0= zero_init;
+			var void constexpr v1= zero_init;
+			static_assert( v0 == v1 );
+			static_assert( !( v0 != v1 ) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def VoidEqualityCompare_Test2():
+	c_program_text= """
+		fn Bar(){}
+		fn Foo()
+		{
+			// Compare result for "void" non-constexpr arguments is not constexpr.
+			var void constexpr v0= zero_init;
+			var void mut v1= Bar();
+			static_assert( v0 == v1 );
+			static_assert( v1 != v1 );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "StaticAssertExpressionIsNotConstant", 8 ) )
+	assert( HaveError( errors_list, "StaticAssertExpressionIsNotConstant", 9 ) )

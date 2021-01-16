@@ -1355,20 +1355,25 @@ Value CodeBuilder::BuildBinaryOperator(
 				return ErrorValue();
 			}
 
+			const bool is_void= l_fundamental_type != nullptr && l_fundamental_type->fundamental_type == U_FundamentalType::Void;
 			const bool is_float= l_fundamental_type != nullptr && IsFloatingPoint( l_fundamental_type->fundamental_type );
 
+			// Use ordered floating point compare operations, which result is false for NaN, except !=. nan != nan must be true.
 			switch( binary_operator )
 			{
-			// Use ordered floating point compare operations, which result is false for NaN, except !=. nan != nan must be true.
 			case BinaryOperatorType::Equal:
-				if( is_float )
+				if( is_void )
+					result.llvm_value= llvm::ConstantInt::getTrue( llvm_context_ ); // All "void" values are same.
+				else if( is_float )
 					result.llvm_value= function_context.llvm_ir_builder.CreateFCmpOEQ( l_value_for_op, r_value_for_op );
 				else
 					result.llvm_value= function_context.llvm_ir_builder.CreateICmpEQ( l_value_for_op, r_value_for_op );
 				break;
 
 			case BinaryOperatorType::NotEqual:
-				if( is_float )
+				if( is_void )
+					result.llvm_value= llvm::ConstantInt::getFalse( llvm_context_ ); // All "void" values are same.
+				else if( is_float )
 					result.llvm_value= function_context.llvm_ir_builder.CreateFCmpUNE( l_value_for_op, r_value_for_op );
 				else
 					result.llvm_value= function_context.llvm_ir_builder.CreateICmpNE( l_value_for_op, r_value_for_op );
@@ -1545,7 +1550,10 @@ Value CodeBuilder::BuildBinaryOperator(
 		break;
 	};
 
-	result.constexpr_value= llvm::dyn_cast<llvm::Constant>(result.llvm_value);
+	// Produce constexpr value only for constexpr arguments.
+	if( l_var.constexpr_value != nullptr && r_var.constexpr_value != nullptr )
+		result.constexpr_value= llvm::dyn_cast<llvm::Constant>(result.llvm_value);
+
 	if( result.constexpr_value != nullptr )
 	{
 		// Undef value can occurs in integer division by zero or something like it.
