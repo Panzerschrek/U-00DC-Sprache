@@ -344,6 +344,46 @@ llvm::Constant* ConstexprFunctionEvaluator::ReadConstantFromStack( llvm::Type* c
 	return nullptr;
 }
 
+llvm::GenericValue ConstexprFunctionEvaluator::BuildGEP( const llvm::User* const instruction )
+{
+	U_ASSERT( instruction->getNumOperands() >= 1u );
+
+	const llvm::GenericValue ptr= GetVal( instruction->getOperand(0u) );
+
+	llvm::Type* aggregate_type= instruction->getOperand(0u)->getType();
+
+	uint64_t offset_accumulated= 0u;
+	for( llvm::User::const_op_iterator op= std::next(instruction->op_begin()), op_end= instruction->op_end(); op != op_end; ++op)
+	{
+		const llvm::GenericValue index= GetVal( op->get() );
+
+		if( const auto pointer_type= llvm::dyn_cast<llvm::PointerType>(aggregate_type) )
+		{
+			const auto element_type= pointer_type->getElementType();
+			offset_accumulated+= index.IntVal.getLimitedValue() * data_layout_.getTypeAllocSize( element_type );
+			aggregate_type= element_type;
+		}
+		else if( const auto array_type= llvm::dyn_cast<llvm::ArrayType>(aggregate_type) )
+		{
+			const auto element_type= array_type->getElementType();
+			offset_accumulated+= index.IntVal.getLimitedValue() * data_layout_.getTypeAllocSize( element_type );
+			aggregate_type= element_type;
+		}
+		else if( const auto struct_type= llvm::dyn_cast<llvm::StructType>(aggregate_type) )
+		{
+			const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( struct_type );
+			const unsigned int element_index= static_cast<unsigned int>(index.IntVal.getLimitedValue());
+			offset_accumulated+= struct_layout.getElementOffset( element_index );
+			aggregate_type= aggregate_type->getStructElementType( element_index );
+		}
+		else U_ASSERT(false);
+	}
+
+	llvm::GenericValue new_ptr;
+	new_ptr.IntVal= ptr.IntVal + llvm::APInt( ptr.IntVal.getBitWidth(), offset_accumulated );
+	return new_ptr;
+}
+
 llvm::GenericValue ConstexprFunctionEvaluator::GetVal( const llvm::Value* const val )
 {
 	llvm::GenericValue res;
@@ -363,34 +403,8 @@ llvm::GenericValue ConstexprFunctionEvaluator::GetVal( const llvm::Value* const 
 		errors_.push_back( "accessing function pointer" );
 	else if( auto constant_expression= llvm::dyn_cast<llvm::ConstantExpr>( val ) )
 	{
-		// Process here constant GEP.
 		if( constant_expression->getOpcode() == llvm::Instruction::GetElementPtr )
-		{
-			const llvm::GenericValue ptr= GetVal( constant_expression->getOperand(0u) );
-
-			uint64_t index_accumulated= 0u;
-			llvm::Type* aggregate_type= constant_expression->getOperand(0u)->getType()->getPointerElementType();
-			for( unsigned int op= 2u; op < constant_expression->getNumOperands(); ++op )
-			{
-				const llvm::GenericValue index= GetVal( constant_expression->getOperand(op) );
-
-				if( aggregate_type->isArrayTy() )
-				{
-					llvm::Type* const element_type= aggregate_type->getArrayElementType();
-					index_accumulated+= index.IntVal.getLimitedValue() * data_layout_.getTypeAllocSize( element_type );
-					aggregate_type= element_type;
-				}
-				else if( aggregate_type->isStructTy() )
-				{
-					const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( llvm::dyn_cast<llvm::StructType>(aggregate_type) );
-					const unsigned int element_index= static_cast<unsigned int>(index.IntVal.getLimitedValue());
-					index_accumulated+= struct_layout.getElementOffset( element_index );
-					aggregate_type= aggregate_type->getStructElementType( element_index );
-				}
-				else U_ASSERT(false);
-			}
-			res.IntVal= ptr.IntVal + llvm::APInt( ptr.IntVal.getBitWidth(), index_accumulated );
-		}
+			res= BuildGEP( constant_expression );
 		else U_ASSERT(false);
 	}
 	else
@@ -489,32 +503,7 @@ void ConstexprFunctionEvaluator::ProcessStore( const llvm::Instruction* const in
 
 void ConstexprFunctionEvaluator::ProcessGEP( const llvm::Instruction* const instruction )
 {
-	U_ASSERT( instruction->getNumOperands() == 3u ); // Currently compiler generates only 3-operand GEP commands.
-
-	const llvm::GenericValue ptr= GetVal( instruction->getOperand(0u) );
-	const llvm::GenericValue index= GetVal( instruction->getOperand(2u) );
-
-	llvm::Type* const aggregate_type= llvm::dyn_cast<llvm::PointerType>(instruction->getOperand(0u)->getType())->getElementType();
-
-	llvm::GenericValue new_ptr;
-	if( aggregate_type->isArrayTy() )
-	{
-		llvm::Type* const element_type= llvm::dyn_cast<llvm::ArrayType>( aggregate_type )->getElementType();
-		new_ptr.IntVal=
-			ptr.IntVal +
-			llvm::APInt( ptr.IntVal.getBitWidth(), index.IntVal.getLimitedValue() ) *
-			llvm::APInt( ptr.IntVal.getBitWidth(), data_layout_.getTypeAllocSize( element_type ) );
-	}
-	else if( aggregate_type->isStructTy() )
-	{
-		const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( llvm::dyn_cast<llvm::StructType>(aggregate_type) );
-		new_ptr.IntVal=
-			ptr.IntVal +
-			llvm::APInt( ptr.IntVal.getBitWidth(), struct_layout.getElementOffset( static_cast<unsigned int>(index.IntVal.getLimitedValue()) ) );
-	}
-	else U_ASSERT(false);
-
-	instructions_map_[instruction]= new_ptr;
+	instructions_map_[instruction]= BuildGEP( instruction );
 }
 
 void ConstexprFunctionEvaluator::ProcessCall( const llvm::Instruction* const instruction, const size_t stack_depth )

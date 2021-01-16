@@ -42,6 +42,8 @@ private:
 
 	llvm::Constant* ReadConstantFromStack( llvm::Type* type, size_t value_ptr );
 
+	llvm::GenericValue BuildGEP( const llvm::User* instruction );
+
 	llvm::GenericValue GetVal( const llvm::Value* val );
 	void ProcessAlloca( const llvm::Instruction* instruction );
 	void ProcessLoad( const llvm::Instruction* instruction );
