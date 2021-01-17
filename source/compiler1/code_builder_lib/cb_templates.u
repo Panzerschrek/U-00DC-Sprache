@@ -511,7 +511,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	}
 	else
 	{
-		var TemplateSignatureParam::TypeParam mut t{ .t= void_type_for_ret_ };
+		var TemplateSignatureParam::TypeParam mut t{ .t= void_type_ };
 		function_type_param.return_type= TemplateSignatureParam(move(t));
 	}
 	foreach( &param : signature_param.params )

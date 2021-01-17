@@ -630,6 +630,10 @@ fn Type::GetLLVMType( this ) : LLVMTypeRef
 
 fn Type::IsDefaultConstructible( this ) : bool
 {
+	if_var( &fundamental_type : GetFundamentalType() )
+	{
+		return fundamental_type.fundamental_type == U_FundamentalType::void_;
+	}
 	if_var( &array_type : GetArrayType() )
 	{
 		return array_type.element_count == 0u64 || array_type.element_type.IsDefaultConstructible();

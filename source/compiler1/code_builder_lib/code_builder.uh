@@ -722,7 +722,7 @@ private:
 
 	fn GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef;
 	fn GetZeroGEPIndex( this ) : LLVMValueRef;
-	fn CreateMoveToLLVMRegisterInstruction( Variable& variable, FunctionContext& function_context ) : LLVMValueRef;
+	fn CreateMoveToLLVMRegisterInstruction( this, Variable& variable, FunctionContext& function_context ) : LLVMValueRef;
 	fn CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Type& dst_type, FunctionContext& function_context ) : LLVMValueRef;
 
 	fn CreateFieldGEP( this, LLVMValueRef value, ClassField& field, FunctionContext& function_context ) : LLVMValueRef;
@@ -784,7 +784,6 @@ private:
 
 	Type invalid_type_;
 	Type void_type_;
-	Type void_type_for_ret_;
 	Type bool_type_;
 	Type size_type_; // Alias for u32 or u64
 
