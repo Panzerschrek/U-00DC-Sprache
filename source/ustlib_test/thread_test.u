@@ -36,7 +36,7 @@ fn nomangle main() : i32
 {
 	{
 		// Can create thread for function.
-		auto thread= ust::thread_create( (fn())(Bar) );
+		auto thread= ust::make_thread_void( (fn())(Bar) );
 	}
 	{
 		// Can create thread for callable object.
@@ -45,7 +45,7 @@ fn nomangle main() : i32
 		var CallableObject mut obj{ .x= x };
 
 		{
-			auto thread= ust::thread_create( move(obj) );
+			auto thread= ust::make_thread_void( move(obj) );
 			// While thread is alive, we can do something.
 			++y;
 		}
@@ -54,18 +54,18 @@ fn nomangle main() : i32
 	}
 	{
 		// Can get result of thread.
-		var ust::thread_ret</ fn() : i32, i32 /> mut thread( (fn() : i32 )( Get42 ) );
+		auto mut thread= ust::make_thread</ i32 />( (fn() : i32 )( Get42 ) );
 		var i32 res= thread.join( move(thread) );
 		halt if( res != 42 );
 	}
 	{
 		var IntShared ptr(0);
 		var size_type mut i(0);
-		var ust::vector</ ust::thread</Incrementer/> /> mut threads;
+		var ust::vector</ ust::thread</ Incrementer, void /> /> mut threads;
 		while( i < size_type(64) )
 		{
 			var Incrementer incrementer{ .ptr= ptr };
-			threads.push_back( ust::thread_create(incrementer) );
+			threads.push_back( ust::make_thread_void(incrementer) );
 			++i;
 		}
 
