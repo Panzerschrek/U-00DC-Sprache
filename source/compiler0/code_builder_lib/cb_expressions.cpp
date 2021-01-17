@@ -1850,8 +1850,6 @@ Value CodeBuilder::DoReferenceCast(
 
 	if( type == var.type )
 		result.llvm_value= src_value;
-	else if( type == void_type_ )
-		result.llvm_value= CreateReferenceCast( src_value, var.type, type, function_context );
 	else
 	{
 		// Complete types required for both safe and unsafe casting, except unsafe void to anything cast.
@@ -1859,7 +1857,7 @@ Value CodeBuilder::DoReferenceCast(
 		if( !EnsureTypeComplete( type ) )
 			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), src_loc, type );
 
-		if( !( enable_unsafe && var.type == void_type_ ) && !EnsureTypeComplete( var.type ) )
+		if( !EnsureTypeComplete( var.type ) )
 			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), src_loc, var.type );
 
 		if( ReferenceIsConvertible( var.type, type, names.GetErrors(), src_loc ) )

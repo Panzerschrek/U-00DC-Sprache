@@ -55,20 +55,6 @@ ConversionsCompareResult CompareConversionsTypes(
 
 	if( src.ReferenceIsConvertibleTo( dst_left ) && src.ReferenceIsConvertibleTo( dst_right ) )
 	{
-		const Type void_type( FundamentalType( U_FundamentalType::Void, nullptr ) );
-
-		// If one of types are void - other is better (because it is not void ).
-		if( dst_left  == void_type )
-		{
-			U_ASSERT( dst_right != void_type );
-			return ConversionsCompareResult::RightIsBetter;
-		}
-		if( dst_right == void_type )
-		{
-			U_ASSERT( dst_left  != void_type );
-			return ConversionsCompareResult::LeftIsBetter;
-		}
-
 		// SPRACHE_TODO - select more relevant compare function.
 
 		//const Class&   src_class= *src.GetClassType();
@@ -446,8 +432,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 			{
 				// We needs complete types for checking possible conversions.
 				// We can not just skip this function, if types are incomplete, because it will break "template instantiation equality rule".
-				if( function_type.args[i].type != void_type_ && actual_args_begin[i].type != void_type_ &&
-					!( EnsureTypeComplete( function_type.args[i].type ) && EnsureTypeComplete( actual_args_begin[i].type ) ) )
+				if( !( EnsureTypeComplete( function_type.args[i].type ) && EnsureTypeComplete( actual_args_begin[i].type ) ) )
 				{
 					if( produce_errors )
 						REPORT_ERROR( CouldNotSelectOverloadedFunction, errors_container, src_loc );

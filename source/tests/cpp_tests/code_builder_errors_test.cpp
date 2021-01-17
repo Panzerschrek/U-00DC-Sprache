@@ -1514,7 +1514,6 @@ U_TEST(ExpectedVariableInReferenceCastOperatorsTest0)
 		namespace NS{}
 		fn Foo()
 		{
-			cast_ref</ void />(Foo);  // Function
 			unsafe{  cast_ref_unsafe</ i32 />( f32 );  }  // type name
 			cast_imut( NS );  // namespace
 		}
@@ -1522,14 +1521,12 @@ U_TEST(ExpectedVariableInReferenceCastOperatorsTest0)
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-	U_TEST_ASSERT( build_result.errors.size() >= 3u );
+	U_TEST_ASSERT( build_result.errors.size() >= 2u );
 
 	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[0].src_loc.GetLine() == 5u );
 	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( build_result.errors[1].src_loc.GetLine() == 6u );
-	U_TEST_ASSERT( build_result.errors[2].code == CodeBuilderErrorCode::ExpectedVariable );
-	U_TEST_ASSERT( build_result.errors[2].src_loc.GetLine() == 7u );
 }
 
 U_TEST(CouldNotOverloadFunctionTest1)

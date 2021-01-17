@@ -1959,25 +1959,20 @@ llvm::Value* CodeBuilder::CreateReferenceCast( llvm::Value* const ref, const Typ
 	if( src_type == dst_type )
 		return ref;
 
-	if( dst_type == void_type_ )
-		return function_context.llvm_ir_builder.CreatePointerCast( ref, dst_type.GetLLVMType()->getPointerTo() );
-	else
+	const Class* const src_class_type= src_type.GetClassType();
+	U_ASSERT( src_class_type != nullptr );
+
+	for( const Class::Parent& src_parent_class : src_class_type->parents )
 	{
-		const Class* const src_class_type= src_type.GetClassType();
-		U_ASSERT( src_class_type != nullptr );
+		llvm::Value* const sub_ref=
+			function_context.llvm_ir_builder.CreateGEP(
+				ref,
+				{ GetZeroGEPIndex(), GetFieldGEPIndex( src_parent_class.field_number ) } );
 
-		for( const Class::Parent& src_parent_class : src_class_type->parents )
-		{
-			llvm::Value* const sub_ref=
-				function_context.llvm_ir_builder.CreateGEP(
-					ref,
-					{ GetZeroGEPIndex(), GetFieldGEPIndex( src_parent_class.field_number ) } );
-
-			if( src_parent_class.class_ == dst_type )
-				return sub_ref;
-			else if( Type(src_parent_class.class_).ReferenceIsConvertibleTo( dst_type ) )
-				return CreateReferenceCast( sub_ref, src_parent_class.class_, dst_type, function_context );
-		}
+		if( src_parent_class.class_ == dst_type )
+			return sub_ref;
+		else if( Type(src_parent_class.class_).ReferenceIsConvertibleTo( dst_type ) )
+			return CreateReferenceCast( sub_ref, src_parent_class.class_, dst_type, function_context );
 	}
 
 	U_ASSERT(false);

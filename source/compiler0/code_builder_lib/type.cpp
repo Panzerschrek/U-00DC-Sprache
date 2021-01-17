@@ -285,20 +285,14 @@ bool Type::ReferenceIsConvertibleTo( const Type& other ) const
 	if( *this == other )
 		return true;
 
-	// SPRACHE_TODO - support other reference casting - derived to base, etc.
-	const FundamentalType* const other_fundamental= other.GetFundamentalType();
-	if( other_fundamental != nullptr && other_fundamental->fundamental_type == U_FundamentalType::Void )
-		return true;
-
 	const Class* const class_type= GetClassType();
 	const Class* const other_class_type= other.GetClassType();
 	if( class_type != nullptr && other_class_type != nullptr )
 	{
 		for( const Class::Parent& parent : class_type->parents )
 		{
-			if( parent.class_->class_ == other_class_type )
-				return true;
-			if( Type(parent.class_).ReferenceIsConvertibleTo( other ) )
+			if( parent.class_->class_ == other_class_type ||
+				Type(parent.class_).ReferenceIsConvertibleTo( other ) )
 				return true;
 		}
 	}

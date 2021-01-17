@@ -405,23 +405,6 @@ def OverloadingResolutionTest_MutabilityAndReferenceConversions_Test5():
 	assert( HaveError( errors_list, "TooManySuitableOverloadedFunctions", 10 ) )
 
 
-def OverloadingResolutionTest_MutabilityAndReferenceConversions_Test6():
-	c_program_text= """
-		class A polymorph {}
-		class B : A {}
-		fn Bar( A &imut a, i32 &imut x ) : i32 { return 111; }
-		fn Bar( B &imut b, void&imut x ) : i32 { return 222; }
-		fn Foo() : i32
-		{
-			var B imut b;
-			var i32 x= 0;
-			return Bar( b, x );  // Error, conversion for first arg ( B&imut -> B&imut ) is better, but for second arg conversion ( i32&mut -> i32&imut ) is better.
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TooManySuitableOverloadedFunctions", 10 ) )
-
-
 def OverloadingResolutionTest_ForFunctionTemplates_Test0():
 	c_program_text= """
 		class A polymorph {}

@@ -185,13 +185,10 @@ bool CodeBuilder::ReferenceIsConvertible( const Type& from, const Type& to, Code
 	if( from == to )
 		return true;
 
-	if( from != void_type_ && to != void_type_ )
-	{
-		if( !EnsureTypeComplete( from ) )
-			REPORT_ERROR( UsingIncompleteType, errors_container, src_loc, from );
-		if( !EnsureTypeComplete(   to ) )
-			REPORT_ERROR( UsingIncompleteType, errors_container, src_loc,   to );
-	}
+	if( !EnsureTypeComplete( from ) )
+		REPORT_ERROR( UsingIncompleteType, errors_container, src_loc, from );
+	if( !EnsureTypeComplete(   to ) )
+		REPORT_ERROR( UsingIncompleteType, errors_container, src_loc,   to );
 
 	return from.ReferenceIsConvertibleTo(to);
 }

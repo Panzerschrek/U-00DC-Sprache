@@ -39,6 +39,7 @@ def main():
 		"function_pointers_test",
 		"function_templates_errors_test",
 		"function_templates_test",
+		"implicit_casts_test",
 		"in_class_fields_initializers_test",
 		"in_class_fields_initializers_errors_test",
 		"inheritance_test",
