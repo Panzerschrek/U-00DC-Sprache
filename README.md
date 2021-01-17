@@ -21,4 +21,4 @@ Documentation available [here](https://u-00dc-sprache.readthedocs.io/ru/latest/c
 * Run qmake for qt_creator_plugin/usprace.pro. You must set path to QtCreator sources and binaries in qmake arguments.
 
 ### Authors
-Copyright © 2016-2020 Artöm "Panzerscrek" Kunz.
+Copyright © 2016-2021 Artöm "Panzerscrek" Kunz.
