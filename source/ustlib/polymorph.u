@@ -20,7 +20,7 @@ fn polymorph_restore_original_ref( T &imut ref ) : void &imut
 	}
 	else
 	{
-		return ref;
+		unsafe{  return  cast_ref_unsafe</void/>( ref );  }
 	}
 }
 

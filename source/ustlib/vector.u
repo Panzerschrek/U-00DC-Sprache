@@ -96,7 +96,7 @@ public:
 					}
 					else
 					{
-						ptr_= $<( cast_ref_unsafe</T/>( memory_reallocate( $>(ptr_), capacity_ * c_element_size_ ) ) );
+						ptr_= $<( cast_ref_unsafe</T/>( memory_reallocate( cast_ref_unsafe</void/>( $>(ptr_) ), capacity_ * c_element_size_ ) ) );
 					}
 				}
 
@@ -129,7 +129,7 @@ public:
 			}
 			if( ptr_ != nullptr</T/>() )
 			{
-				memory_free( $>(ptr_) );
+				memory_free( cast_ref_unsafe</void/>( $>(ptr_) ) );
 			}
 		}
 	}
@@ -256,9 +256,9 @@ public:
 			var $(T) ptr1= ptr_ + i1;
 
 			var aligned_storage</ typeinfo</T/>.size_of, typeinfo</T/>.align_of /> mut temp= uninitialized;
-			memory_copy( temp    , $>(ptr0), c_element_size_ );
-			memory_copy( $>(ptr0), $>(ptr1), c_element_size_ );
-			memory_copy( $>(ptr1), temp    , c_element_size_ );
+			memory_copy( cast_ref_unsafe</void/>( temp )    , cast_ref_unsafe</void/>( $>(ptr0) ), c_element_size_ );
+			memory_copy( cast_ref_unsafe</void/>( $>(ptr0) ), cast_ref_unsafe</void/>( $>(ptr1) ), c_element_size_ );
+			memory_copy( cast_ref_unsafe</void/>( $>(ptr1) ), cast_ref_unsafe</void/>( temp )    , c_element_size_ );
 		}
 	}
 
@@ -332,7 +332,7 @@ public:
 		{
 			--size_;
 			var T mut result= uninitialized;
-			memory_copy( result, $>(ptr_ + size_), c_element_size_ );
+			memory_copy( cast_ref_unsafe</void/>( result ), cast_ref_unsafe</void/>( $>(ptr_ + size_) ), c_element_size_ );
 			return move(result);
 		}
 	}
@@ -343,7 +343,7 @@ public:
 		{
 			--size_;
 			var T mut result= uninitialized;
-			memory_copy( result, $>(ptr_ + size_), c_element_size_ );
+			memory_copy( cast_ref_unsafe</void/>( result ), cast_ref_unsafe</void/>( $>(ptr_ + size_) ), c_element_size_ );
 			return move(result);
 		}
 	}
@@ -413,12 +413,12 @@ public:
 			{
 				if( capacity_ == size_type(0) )
 				{
-					memory_free( $>(ptr_) );
+					memory_free( cast_ref_unsafe</void/>( $>(ptr_) ) );
 					ptr_= nullptr</T/>();
 				}
 				else
 				{
-					auto &mut ref= cast_ref_unsafe</T/>( memory_reallocate( $>(ptr_), capacity_ * c_element_size_ ) );
+					auto &mut ref= cast_ref_unsafe</T/>( memory_reallocate( cast_ref_unsafe</void/>( $>(ptr_) ), capacity_ * c_element_size_ ) );
 					ptr_= $<( ref );
 				}
 			}
@@ -458,7 +458,7 @@ private:
 			else // if( capacity_ < new_size )
 			{
 				while( capacity_ < new_size ) { capacity_= mul_overflow_check_halt( capacity_, size_type(2) ); }
-				ptr_= $<( cast_ref_unsafe</T/>( memory_reallocate( $>(ptr_), capacity_ * c_element_size_ ) ) );
+				ptr_= $<( cast_ref_unsafe</T/>( memory_reallocate( cast_ref_unsafe</void/>( $>(ptr_) ), capacity_ * c_element_size_ ) ) );
 			}
 		}
 	}

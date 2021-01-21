@@ -37,7 +37,7 @@ public:
 		unsafe
 		{	// Hack! we can not access begin_/end_ members of different range type, so, just copy memory.
 			static_assert( typeinfo</typeof(this)/>.size_of == typeinfo</typeof(src_range)/>.size_of );
-			memory_copy( this, src_range, typeinfo</typeof(this)/>.size_of );
+			memory_copy( cast_ref_unsafe</void/>( this ), cast_ref_unsafe</void/>( src_range ), typeinfo</typeof(this)/>.size_of );
 		}
 	}
 
@@ -172,9 +172,9 @@ public:
 
 			auto c_element_size= typeinfo</T/>.size_of;
 			var aligned_storage</ c_element_size, typeinfo</T/>.align_of /> mut temp= uninitialized;
-			memory_copy( temp    , $>(ptr0), c_element_size );
-			memory_copy( $>(ptr0), $>(ptr1), c_element_size );
-			memory_copy( $>(ptr1), temp    , c_element_size );
+			memory_copy( cast_ref_unsafe</void/>( temp )    , cast_ref_unsafe</void/>( $>(ptr0) ), c_element_size );
+			memory_copy( cast_ref_unsafe</void/>( $>(ptr0) ), cast_ref_unsafe</void/>( $>(ptr1) ), c_element_size );
+			memory_copy( cast_ref_unsafe</void/>( $>(ptr1) ), cast_ref_unsafe</void/>( temp )    , c_element_size );
 		}
 	}
 

@@ -85,7 +85,7 @@ fn move_unsafe( T& mut uninitialized_dst, T mut src ) unsafe
 {
 	unsafe
 	{
-		memory_copy( uninitialized_dst, src, typeinfo</T/>.size_of );
+		memory_copy( cast_ref_unsafe</void/>( uninitialized_dst ), cast_ref_unsafe</void/>( src ), typeinfo</T/>.size_of );
 		move_into_nowhere( move(src) );
 	}
 }
