@@ -2115,7 +2115,7 @@ fn CodeBuilder::SetupLLVMFunctionAttributes( this, NamesScope& names_scope, Func
 
 			var ust::string8 mut name_str;
 			name_str.resize( name_length + 1s, "\0"c8 );
-			ust::memory_copy( name_str.front_unsafe(), name_start, name_length );
+			ust::memory_copy( cast_ref_unsafe</void/>( name_str.front_unsafe() ), cast_ref_unsafe</void/>( name_start ), name_length );
 
 			auto comdat= LLVMGetOrInsertComdat( module_, name_str.front_unsafe() );
 			LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any ); // Actually, we needs something, like ExactMatch, but it works not in all cases.

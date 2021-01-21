@@ -667,7 +667,7 @@ fn CodeBuilder::BuildTypeinfoClassFunctionsList( mut this, NamesScopePtr& root_n
 					var char8& name_start= LLVMGetValueName2( function.llvm_function, name_length );
 
 					f.mangled_name.resize( name_length, "\0"c8 );
-					ust::memory_copy( f.mangled_name.front_unsafe(), name_start, name_length );
+					ust::memory_copy( cast_ref_unsafe</void/>( f.mangled_name.front_unsafe() ), cast_ref_unsafe</void/>( name_start ), name_length );
 				}
 
 				functions_list.push_back( move(f) );

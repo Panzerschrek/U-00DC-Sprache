@@ -306,10 +306,13 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		// TODO - use unordered_set
 		foreach( &prev_initializer : struct_named_initializer.members_initializers )
 		{
-			if( ust::ref_to_int(prev_initializer) < ust::ref_to_int(member_initializer) &&
-				member_initializer.name == prev_initializer.name )
+			unsafe
 			{
-				REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope, member_initializer.src_loc, member_initializer.name )
+				if( ust::ref_to_int( cast_ref_unsafe</void/>( prev_initializer ) ) < ust::ref_to_int( cast_ref_unsafe</void/>(member_initializer) ) &&
+					member_initializer.name == prev_initializer.name )
+				{
+					REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope, member_initializer.src_loc, member_initializer.name )
+				}
 			}
 		}
 

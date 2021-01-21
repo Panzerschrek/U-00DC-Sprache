@@ -219,7 +219,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				array_size= U1_ConvertUTF8ToUTF16( string_literal.value.front_unsafe(), string_literal.value.size(), buff.front_unsafe(), buff_size );
 				halt if(array_size > buff.size());
 
-				constexpr_value= U1_ConstDataArray( element_llvm_type, cast_imut(buff).front_unsafe(), array_size * typeinfo</char16/>.size_of, array_size );
+				constexpr_value= U1_ConstDataArray( element_llvm_type, cast_ref_unsafe</void/>( cast_imut(buff).front_unsafe() ), array_size * typeinfo</char16/>.size_of, array_size );
 			}
 			else if( char_type == U_FundamentalType::char32_ )
 			{
@@ -230,7 +230,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				array_size= U1_ConvertUTF8ToUTF32( string_literal.value.front_unsafe(), string_literal.value.size(), buff.front_unsafe(), buff_size );
 				halt if(array_size > buff.size());
 
-				constexpr_value= U1_ConstDataArray( element_llvm_type, cast_imut(buff).front_unsafe(), array_size * typeinfo</char32/>.size_of, array_size );
+				constexpr_value= U1_ConstDataArray( element_llvm_type, cast_ref_unsafe</void/>( cast_imut(buff).front_unsafe() ), array_size * typeinfo</char32/>.size_of, array_size );
 			}
 			else{ halt; }
 
