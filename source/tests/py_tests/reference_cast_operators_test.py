@@ -156,7 +156,7 @@ def CastRef_Test9_ShouldPreserveReferencedVariables():
 		fn Foo() : void&
 		{
 			auto x= 0;
-			return cast_ref</ void />(x); //  Return reference to local variable.
+			unsafe{  return cast_ref_unsafe</ void />(x);  } //  Return reference to local variable.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

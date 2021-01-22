@@ -814,11 +814,6 @@ fn Type::ReferenceIsConvertibleTo( this, Type& dst ) : bool
 		return true;
 	}
 
-	if_var( &dst_fundamental_type : dst.GetFundamentalType() )
-	{
-		return dst_fundamental_type.fundamental_type == U_FundamentalType::void_;
-	}
-
 	if_var( &src_class_type : this.GetClassType() )
 	{
 		if_var( &dst_class_type : dst.GetClassType() )

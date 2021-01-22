@@ -1715,10 +1715,6 @@ fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionC
 	{
 		r.llvm_value= src_llvm_value;
 	}
-	else if( t == void_type_ )
-	{
-		r.llvm_value= CreateReferenceCast( src_llvm_value, v.t, t, function_context );
-	}
 	else
 	{
 		// We needs complete types to check reference conversion possibility.
