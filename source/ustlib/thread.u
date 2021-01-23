@@ -24,7 +24,7 @@ public:
 			var pthread_t mut thread_id(0);
 
 			halt if( pthread_attr_init( attr ) != 0 );
-			halt if( pthread_create( thread_id, attr, fn_ptr, $<( cast_ref</void/>(impl_.get_ref()) ) ) != 0 );
+			halt if( pthread_create( thread_id, attr, fn_ptr, $<( cast_ref_unsafe</void/>(impl_.get_ref()) ) ) != 0 );
 			halt if( pthread_attr_destroy( attr ) != 0 );
 
 			impl_.get_ref().thread_id= thread_id;
