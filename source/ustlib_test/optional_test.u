@@ -110,7 +110,7 @@ fn nomangle main() : i32
 
 		unsafe // Use unsafe, because mutable reference to "x" after "reset(val)" linked with "opt" and we can not access "x".
 		{
-			var i32& x_ref_unsafe= cast_ref_unsafe</ i32 />( ust::int_to_ref( ust::ref_to_int( x ) ) );
+			var i32& x_ref_unsafe= $>( $<(x) );
 			opt.reset( R(x) );
 			opt= opt_empty;
 			halt if( x_ref_unsafe != 1 );
@@ -122,7 +122,7 @@ fn nomangle main() : i32
 
 		unsafe // Use unsafe, because mutable reference to "x" after "reset(val)" linked with "opt" and we can not access "x".
 		{
-			var i32& x_ref_unsafe= cast_ref_unsafe</ i32 />( ust::int_to_ref( ust::ref_to_int( x ) ) );
+			var i32& x_ref_unsafe= $>( $<(x) );
 			opt.reset( R(x) );
 			opt.reset();
 			halt if( x_ref_unsafe != 1 );

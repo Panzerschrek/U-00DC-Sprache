@@ -4,18 +4,18 @@ import "../ustlib/variant.u"
 class S
 {
 public:
-	// HACK! convert reference to integer because we can not put struct with reference inside into container.
+	// HACK! convert reference to pointer because we can not put struct with reference inside into container.
 	fn constructor( i32 &mut x )
-		(ref_= ust::ref_to_int(x) )
+		(ptr_= $<(x) )
 	{}
 
 	fn destructor()
 	{
-		unsafe{ cast_ref_unsafe</i32/>( cast_mut( ust::int_to_ref(ref_) ) )= 0; }
+		unsafe{ $>(ptr_)= 0; }
 	}
 
 private:
-	size_type ref_;
+	$(i32) ptr_;
 }
 
 struct DC

@@ -62,7 +62,7 @@ public:
 			if( ust::atomic_dec( $>(ptr_).counter ) == 1u )
 			{
 				call_destructor( $>(ptr_).value );
-				memory_free( $>(ptr_) );
+				memory_free( cast_ref_unsafe</void/>( $>(ptr_) ) );
 			}
 			ptr_= nullptr</storage/>();
 		}
@@ -116,7 +116,7 @@ struct shared_ptr_mt_final_base_hasher
 	{
 		unsafe
 		{
-			return ust::ref_to_int( ptr.get_ref_unsafe() );
+			return ust::ref_to_int( cast_ref_unsafe</void/>( ptr.get_ref_unsafe() ) );
 		}
 	}
 }

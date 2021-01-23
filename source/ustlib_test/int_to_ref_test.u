@@ -14,7 +14,7 @@ fn nomangle main() : i32
 	{
 		// ref -> int -> ref must save value
 		var f32 num= 65.54f;
-		auto ref_num= ust::ref_to_int( num );
+		auto ref_num= ust::ref_to_int( cast_ref_unsafe</void/>(num) );
 		var f32& ref= cast_ref_unsafe</f32/>( ust::int_to_ref( ref_num ) );
 		halt if( ref != num );
 	}
