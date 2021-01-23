@@ -44,8 +44,7 @@ fn ToString( TupleType& tuple_type ) : ust::string8
 	{
 		result+= element_type.ToString();
 		var bool mut is_last_element= false;
-		unsafe{  is_last_element= ust::ref_to_int( cast_ref_unsafe</void/>( element_type ) ) == ust::ref_to_int( cast_ref_unsafe</void/>( tuple_type.element_types.back() ) );  }
-		if( !is_last_element )
+		if( ust::ref_cmp_ne( element_type, tuple_type.element_types.back() ) )
 		{
 			result+= ", ";
 		}
@@ -78,9 +77,7 @@ fn ToString( FunctionType& function_type ) : ust::string8
 		result+= param.t.ToString();
 		result+= " param";
 
-		var bool mut is_last_param= false;
-		unsafe{  is_last_param= ust::ref_to_int( cast_ref_unsafe</void/>( param ) ) == ust::ref_to_int( cast_ref_unsafe</void/>( function_type.params.back() ) );  }
-		if( !is_last_param )
+		if( ust::ref_cmp_ne( param, function_type.params.back() ) )
 		{
 			result+= ", ";
 		}
@@ -1284,9 +1281,7 @@ fn NamesScope::ToString( this ) : ust::string8
 						res+= ConstantVariableToString( v.t, v.constexpr_value );
 					}
 
-					var bool mut is_last_arg= false;
-					unsafe{  is_last_arg= ust::ref_to_int(cast_ref_unsafe</void/>(arg) ) == ust::ref_to_int( cast_ref_unsafe</void/>( class_type.base_template.get_ref().signature_args.back() ) );  }
-					if( !is_last_arg )
+					if( ust::ref_cmp_ne( arg, class_type.base_template.get_ref().signature_args.back() ) )
 					{
 						res+= ", ";
 					}

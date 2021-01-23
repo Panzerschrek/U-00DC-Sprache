@@ -159,8 +159,6 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 
 	foreach( &param : function_type.params )
 	{
-		var bool mut is_first_param= false;
-		unsafe{  is_first_param= ust::ref_to_int( cast_ref_unsafe</void/>(param) ) == ust::ref_to_int( cast_ref_unsafe</void/>( function_type.params.front() ) );  }
 		var FunctionType::Param mut out_param
 		{
 			.t( invalid_type_ ),
@@ -175,7 +173,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 			{
 				REPORT_ERROR( ThisInNonclassFunction, names_scope, param.src_loc, ust::string8("TODO - func name") )
 			}
-			else if( !is_first_param )
+			else if( ust::ref_cmp_ne( param, function_type.params.front() ) )
 			{
 				REPORT_ERROR( UsingKeywordAsName, names_scope, param.src_loc )
 			}
