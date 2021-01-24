@@ -795,7 +795,7 @@ private:
 	void DebugInfoEndBlock( FunctionContext& function_context );
 
 	llvm::DIType* CreateDIType( const Type& type );
-	llvm::DIBasicType* CreateDIType( const FundamentalType& type );
+	llvm::DIType* CreateDIType( const FundamentalType& type );
 	llvm::DICompositeType* CreateDIType( const Array& type );
 	llvm::DICompositeType* CreateDIType( const Tuple& type );
 	llvm::DISubroutineType* CreateDIType( const Function& type );

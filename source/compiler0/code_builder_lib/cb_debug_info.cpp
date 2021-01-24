@@ -146,9 +146,24 @@ llvm::DIType* CodeBuilder::CreateDIType( const Type& type )
 	return debug_info_.builder->createBasicType( "_stub_debug_type", 8, llvm::dwarf::DW_ATE_signed );
 }
 
-llvm::DIBasicType* CodeBuilder::CreateDIType( const FundamentalType& type )
+llvm::DIType* CodeBuilder::CreateDIType( const FundamentalType& type )
 {
 	U_ASSERT(build_debug_info_);
+
+	if( type.fundamental_type == U_FundamentalType::Void )
+	{
+		// Internal representation of void type is llvm struct with zero elements.
+		return debug_info_.builder->createStructType(
+			debug_info_.compile_unit,
+			GetFundamentalTypeName( type.fundamental_type ),
+			GetDIFile(0),
+			0u,
+			data_layout_.getTypeAllocSizeInBits( type.llvm_type ),
+			8u * data_layout_.getABITypeAlignment( type.llvm_type ),
+			llvm::DINode::DIFlags(),
+			nullptr,
+			debug_info_.builder->getOrCreateArray({}).get() );
+	}
 
 	unsigned int type_encoding= llvm::dwarf::DW_ATE_unsigned;
 	if( type.fundamental_type == U_FundamentalType::Bool )

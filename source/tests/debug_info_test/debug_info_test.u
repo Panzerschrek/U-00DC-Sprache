@@ -13,6 +13,8 @@ fn FundamentalTypesTest()
 	var char16 cc= "Ž"c16;
 	var char32 ccc= "Я"c32;
 	var [ char8, 4 ] ca[ "W"c8, "T"c8, "F"c8, 0c8 ];
+	var void v0;
+	var [ void, 16 ] v1= zero_init;
 	return;
 }
 
