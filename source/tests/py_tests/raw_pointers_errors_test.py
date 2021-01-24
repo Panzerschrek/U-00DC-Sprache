@@ -357,6 +357,18 @@ def DifferenceBetweenRawPointersWithZeroElementSize_Test2():
 	assert( HaveError( errors_list, "DifferenceBetweenRawPointersWithZeroElementSize", 5 ) )
 
 
+def DifferenceBetweenRawPointersWithZeroElementSize_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			var $(void) ptr= zero_init; // Size of "void" is zero.
+			ptr - ptr;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "DifferenceBetweenRawPointersWithZeroElementSize", 5 ) )
+
+
 def AdditiveAssignmentErrors_ForRawPointers_Test0():
 	c_program_text= """
 		fn Foo()

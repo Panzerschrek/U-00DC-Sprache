@@ -795,7 +795,7 @@ private:
 	void DebugInfoEndBlock( FunctionContext& function_context );
 
 	llvm::DIType* CreateDIType( const Type& type );
-	llvm::DIBasicType* CreateDIType( const FundamentalType& type );
+	llvm::DIType* CreateDIType( const FundamentalType& type );
 	llvm::DICompositeType* CreateDIType( const Array& type );
 	llvm::DICompositeType* CreateDIType( const Tuple& type );
 	llvm::DISubroutineType* CreateDIType( const Function& type );
@@ -859,7 +859,7 @@ private:
 		llvm::IntegerType* char16;
 		llvm::IntegerType* char32;
 
-		llvm::IntegerType* void_;
+		llvm::StructType* void_;
 		llvm::Type* void_for_ret;
 		llvm::Type* invalid_type;
 		llvm::IntegerType* bool_;
@@ -871,7 +871,6 @@ private:
 
 	Type invalid_type_;
 	Type void_type_;
-	Type void_type_for_ret_;
 	Type bool_type_;
 	Type size_type_; // Alias for u32 or u64
 

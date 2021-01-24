@@ -124,7 +124,7 @@ Variable CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope& root
 
 void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variable, NamesScope& root_namespace )
 {
-	if( type != void_type_ && !EnsureTypeComplete( type ) )
+	if( !EnsureTypeComplete( type ) )
 	{
 		// Just ignore here incomplete types, report about error while building "typeinfo" operator.
 		return;
@@ -189,10 +189,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 
 	if( type.GetFunctionType() == nullptr )
 	{
-		llvm::Type* llvm_type= type.GetLLVMType();
-		if( llvm_type == fundamental_llvm_types_.void_for_ret )
-			llvm_type= fundamental_llvm_types_.void_;
-
+		llvm::Type* const llvm_type= type.GetLLVMType();
 		// see llvm/lib/IR/DataLayout.cpp:40
 		add_size_field( "size_of" , data_layout_.getTypeAllocSize   ( llvm_type ) );
 		add_size_field( "align_of", data_layout_.getABITypeAlignment( llvm_type ) );

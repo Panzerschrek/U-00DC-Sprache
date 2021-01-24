@@ -95,7 +95,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		// Prepare function type.
 		var FunctionType mut function_type
 		{
-			.return_type( void_type_for_ret_ ),
+			.return_type( void_type_ ),
 			.return_value_is_mutable= false,
 			.return_value_is_reference= false,
 		};
@@ -300,7 +300,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		// Prepare function type.
 		var FunctionType mut function_type
 		{
-			.return_type( void_type_for_ret_ ),
+			.return_type( void_type_ ),
 			.return_value_is_mutable= false,
 			.return_value_is_reference= false,
 		};
@@ -521,7 +521,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		// Prepare function type.
 		var FunctionType mut function_type
 		{
-			.return_type( void_type_for_ret_ ),
+			.return_type( void_type_ ),
 			.return_value_is_mutable= false,
 			.return_value_is_reference= false,
 		};
@@ -664,7 +664,7 @@ fn CodeBuilder::TryGenerateDestructorPrototype( this, ClassTypePtr& class_type )
 	// Prepare function type.
 	var FunctionType mut function_type
 	{
-		.return_type( void_type_for_ret_ ),
+		.return_type( void_type_ ),
 		.return_value_is_mutable= false,
 		.return_value_is_reference= false,
 	};
@@ -765,7 +765,8 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 	{
 		unsafe
 		{
-			if( LLVMTypeOf( dst ) == LLVMTypeOf( src ) )
+			if( t == void_type_ ) {}
+			else if( LLVMTypeOf( dst ) == LLVMTypeOf( src ) )
 			{
 				// two pointers - do load-store
 				auto mut value= LLVMBuildLoad( function_context.llvm_ir_builder, src, "\0"[0] );
@@ -858,7 +859,8 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 	{
 		unsafe
 		{
-			if( LLVMTypeOf( dst ) == LLVMTypeOf( src ) )
+			if( t == void_type_ ) {}
+			else if( LLVMTypeOf( dst ) == LLVMTypeOf( src ) )
 			{
 				// two pointers - do load-store
 				auto mut value= LLVMBuildLoad( function_context.llvm_ir_builder, src, "\0"[0] );

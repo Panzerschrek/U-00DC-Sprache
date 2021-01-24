@@ -29,7 +29,7 @@ public:
 			capacity_= max( get_first_allocation_size(), other.size_ );
 			ptr_= $<( cast_ref_unsafe</char_type/>( memory_allocate( capacity_ * c_element_size_ ) ) );
 
-			memory_copy( $>(ptr_), $>(other.ptr_), size_ * c_element_size_ );
+			memory_copy( cast_ref_unsafe</void/>( $>(ptr_) ), cast_ref_unsafe</void/>( $>(other.ptr_) ), size_ * c_element_size_ );
 		}
 	}
 
@@ -45,7 +45,7 @@ public:
 			capacity_= max( get_first_allocation_size(), array_size );
 			ptr_= $<( cast_ref_unsafe</char_type/>( memory_allocate( capacity_ * c_element_size_ ) ) );
 
-			memory_copy( $>(ptr_), array, size_ * c_element_size_ );
+			memory_copy( cast_ref_unsafe</void/>( $>(ptr_) ), cast_ref_unsafe</void/>( array ), size_ * c_element_size_ );
 		}
 	}
 
@@ -60,7 +60,7 @@ public:
 			capacity_= max( get_first_allocation_size(), size_ );
 			ptr_= $<( cast_ref_unsafe</char_type/>( memory_allocate( capacity_ * c_element_size_ ) ) );
 
-			memory_copy( $>(ptr_), $>(range.data()), size_ * c_element_size_ );
+			memory_copy( cast_ref_unsafe</void/>( $>(ptr_) ), cast_ref_unsafe</void/>( $>(range.data()) ), size_ * c_element_size_ );
 		}
 	}
 
@@ -90,7 +90,7 @@ public:
 		{
 			ensure_capacity( other.size_ );
 			size_= other.size_;
-			memory_copy( $>(this.ptr_), $>(other.ptr_), size_ * c_element_size_ );
+			memory_copy( cast_ref_unsafe</void/>( $>(this.ptr_) ), cast_ref_unsafe</void/>( $>(other.ptr_) ), size_ * c_element_size_ );
 		}
 	}
 
@@ -102,7 +102,7 @@ public:
 		{
 			ensure_capacity( array_size );
 			size_= array_size;
-			memory_copy( $>(this.ptr_), array, size_ * c_element_size_ );
+			memory_copy(  cast_ref_unsafe</void/>( $>(this.ptr_) ), cast_ref_unsafe</void/>( array ), size_ * c_element_size_ );
 		}
 	}
 
@@ -113,7 +113,7 @@ public:
 		{
 			ensure_capacity( range.size() );
 			size_= range.size();
-			memory_copy( $>(this.ptr_), $>(range.data()), size_ * c_element_size_ );
+			memory_copy( cast_ref_unsafe</void/>( $>(this.ptr_) ), cast_ref_unsafe</void/>(  $>(range.data()) ), size_ * c_element_size_ );
 		}
 	}
 
@@ -123,7 +123,7 @@ public:
 		{
 			if( ptr_ != nullptr</char_type/>() )
 			{
-				memory_free( $>(ptr_) );
+				memory_free( cast_ref_unsafe</void/>( $>(ptr_) ) );
 			}
 		}
 	}
@@ -260,7 +260,7 @@ public:
 
 		unsafe
 		{
-			return memory_equals( $>(l.ptr_), $>(r.ptr_), l.size_ * c_element_size_ );
+			return memory_equals( cast_ref_unsafe</void/>( $>(l.ptr_) ), cast_ref_unsafe</void/>( $>(r.ptr_) ), l.size_ * c_element_size_ );
 		}
 	}
 
@@ -271,7 +271,7 @@ public:
 
 		unsafe
 		{
-			return memory_equals( $>(l.ptr_), array, array_size * c_element_size_ );
+			return memory_equals(  cast_ref_unsafe</void/>( $>(l.ptr_) ), cast_ref_unsafe</void/>( array ), array_size * c_element_size_ );
 		}
 	}
 
@@ -288,7 +288,7 @@ public:
 		unsafe
 		{
 			auto size= l.size();
-			return memory_equals( $>(l.ptr_), $>(r.data()), size * c_element_size_ );
+			return memory_equals( cast_ref_unsafe</void/>( $>(l.ptr_) ), cast_ref_unsafe</void/>( $>(r.data()) ), size * c_element_size_ );
 		}
 	}
 
@@ -484,12 +484,12 @@ public:
 			{
 				if( capacity_ == size_type(0) )
 				{
-					memory_free( $>(ptr_) );
+					memory_free( cast_ref_unsafe</void/>( $>(ptr_) ) );
 					ptr_= nullptr</char_type/>();
 				}
 				else
 				{
-					auto &mut ref= cast_ref_unsafe</char_type/>( memory_reallocate( $>(ptr_), capacity_ * c_element_size_ ) );
+					auto &mut ref= cast_ref_unsafe</char_type/>( memory_reallocate( cast_ref_unsafe</void/>( $>(ptr_) ), capacity_ * c_element_size_ ) );
 					ptr_= $<(ref);
 				}
 			}
@@ -506,8 +506,8 @@ public:
 			auto result_size= add_overflow_check_halt( l.size_, r.size_ );
 			result.ensure_capacity( result_size );
 			result.size_= result_size;
-			memory_copy( $>(result.ptr_), $>(l.ptr_), l.size_ * c_element_size_ );
-			memory_copy( $>(result.ptr_ + l.size_) $>(r.ptr_), r.size_ * c_element_size_ );
+			memory_copy( cast_ref_unsafe</void/>( $>(result.ptr_) ), cast_ref_unsafe</void/>( $>(l.ptr_) ), l.size_ * c_element_size_ );
+			memory_copy( cast_ref_unsafe</void/>( $>(result.ptr_ + l.size_) ), cast_ref_unsafe</void/>( $>(r.ptr_) ), r.size_ * c_element_size_ );
 		}
 
 		return move(result);
@@ -522,8 +522,8 @@ public:
 			auto result_size= add_overflow_check_halt( l.size_, array_size );
 			result.ensure_capacity( result_size );
 			result.size_= result_size;
-			memory_copy( $>(result.ptr_), $>(l.ptr_), l.size_ * c_element_size_ );
-			memory_copy( $>(result.ptr_ + l.size_), array, array_size * c_element_size_ );
+			memory_copy( cast_ref_unsafe</void/>( $>(result.ptr_) ), cast_ref_unsafe</void/>( $>(l.ptr_) ), l.size_ * c_element_size_ );
+			memory_copy( cast_ref_unsafe</void/>( $>(result.ptr_ + l.size_) ), cast_ref_unsafe</void/>( array ), array_size * c_element_size_ );
 		}
 
 		return move(result);
@@ -538,8 +538,8 @@ public:
 			auto result_size= add_overflow_check_halt( array_size, r.size_ );
 			result.ensure_capacity( result_size );
 			result.size_= result_size;
-			memory_copy( $>(result.ptr_), array, array_size * c_element_size_ );
-			memory_copy( $>(result.ptr_ + array_size), $>(r.ptr_), r.size_ * c_element_size_ );
+			memory_copy( cast_ref_unsafe</void/>( $>(result.ptr_) ), cast_ref_unsafe</void/>( array ), array_size * c_element_size_ );
+			memory_copy( cast_ref_unsafe</void/>( $>(result.ptr_ + array_size) ), cast_ref_unsafe</void/>( $>(r.ptr_) ), r.size_ * c_element_size_ );
 		}
 
 		return move(result);
@@ -553,8 +553,8 @@ public:
 			auto result_size= add_overflow_check_halt( l.size_, range.size() );
 			result.ensure_capacity( result_size );
 			result.size_= result_size;
-			memory_copy( $>(result.ptr_), $>(l.ptr_), l.size_ * c_element_size_ );
-			memory_copy( $>(result.ptr_ + l.size_), $>(range.data()), range.size() * c_element_size_ );
+			memory_copy( cast_ref_unsafe</void/>( $>(result.ptr_) ), cast_ref_unsafe</void/>( $>(l.ptr_) ), l.size_ * c_element_size_ );
+			memory_copy( cast_ref_unsafe</void/>( $>(result.ptr_ + l.size_) ), cast_ref_unsafe</void/>( $>(range.data()) ), range.size() * c_element_size_ );
 		}
 
 		return move(result);
@@ -568,8 +568,8 @@ public:
 			auto result_size= add_overflow_check_halt( range.size(), r.size_ );
 			result.ensure_capacity( result_size );
 			result.size_= result_size;
-			memory_copy( $>(result.ptr_), $>(range.data()), range.size() * c_element_size_ );
-			memory_copy( $>(result.ptr_ + range.size()), $>(r.ptr_), r.size_ * c_element_size_ );
+			memory_copy( cast_ref_unsafe</void/>( $>(result.ptr_) ), cast_ref_unsafe</void/>( $>(range.data()) ), range.size() * c_element_size_ );
+			memory_copy( cast_ref_unsafe</void/>( $>(result.ptr_ + range.size()) ), cast_ref_unsafe</void/>( $>(r.ptr_) ), r.size_ * c_element_size_ );
 		}
 
 		return move(result);
@@ -583,7 +583,7 @@ public:
 		{
 			auto new_size= add_overflow_check_halt( this.size_, other.size_ );
 			ensure_capacity( new_size );
-			memory_copy( $>( ptr_ + size_ ), $>(other.ptr_), other.size_ * c_element_size_ );
+			memory_copy( cast_ref_unsafe</void/>( $>( ptr_ + size_ ) ), cast_ref_unsafe</void/>( $>(other.ptr_) ), other.size_ * c_element_size_ );
 			size_= new_size;
 		}
 	}
@@ -595,7 +595,7 @@ public:
 		{
 			auto new_size= add_overflow_check_halt( this.size_, array_size );
 			ensure_capacity( new_size );
-			memory_copy( $>( ptr_ + size_ ), array, array_size * c_element_size_ );
+			memory_copy( cast_ref_unsafe</void/>( $>( ptr_ + size_ ) ), cast_ref_unsafe</void/>( array ), array_size * c_element_size_ );
 			size_= new_size;
 		}
 	}
@@ -606,7 +606,7 @@ public:
 		{
 			auto new_size= add_overflow_check_halt( this.size_, range.size() );
 			ensure_capacity( new_size );
-			memory_copy( $>( ptr_ + size_ ), $>(range.data()), range.size() * c_element_size_ );
+			memory_copy( cast_ref_unsafe</void/>( $>( ptr_ + size_ ) ), cast_ref_unsafe</void/>( $>(range.data()) ), range.size() * c_element_size_ );
 			size_= new_size;
 		}
 	}
@@ -646,7 +646,7 @@ private:
 			else // if( capacity_ < new_size )
 			{
 				while( capacity_ < new_size ) { capacity_= mul_overflow_check_halt( capacity_, size_type(2) ); }
-				ptr_= $<( cast_ref_unsafe</char_type/>( memory_reallocate( $>(ptr_), capacity_ * c_element_size_ ) ) );
+				ptr_= $<( cast_ref_unsafe</char_type/>( memory_reallocate( cast_ref_unsafe</void/>( $>(ptr_) ), capacity_ * c_element_size_ ) ) );
 			}
 		}
 	}

@@ -667,7 +667,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 
 			unsafe
 			{
-				ust::memory_copy( numeric_constant.num, it_.front().text.front(), typeinfo</NumberLexemData/>.size_of );
+				ust::memory_copy( cast_ref_unsafe</void/>( numeric_constant.num ), cast_ref_unsafe</void/>( it_.front().text.front() ), typeinfo</NumberLexemData/>.size_of );
 			}
 
 			NextLexem();
@@ -4159,8 +4159,7 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 				macro_variables_maps_stack.drop_back();
 
 				// Separator.
-				if( result_element.lexem.lexem_type != Lexem::Type::EndOfFile &&
-					ust::ref_to_int(variable_element) != ust::ref_to_int(variable.sub_elements.back()) )
+				if( result_element.lexem.lexem_type != Lexem::Type::EndOfFile && ust::ref_cmp_ne( variable_element, variable.sub_elements.back() ) )
 				{
 					lexems_expanded.push_back( result_element.lexem );
 				}

@@ -406,7 +406,7 @@ public:
 				file_path_view,
 				parent_file_path_normalized_view,
 				IVfsInterface::FillStringCallback(FillStringCallback),
-				ust::ref_to_int(result) );
+				ust::ref_to_int( cast_ref_unsafe</void/>( result ) ) );
 			return move(result);
 		}
 	}
@@ -423,7 +423,7 @@ public:
 				vfs_interface_.this_,
 				full_file_path_view,
 				IVfsInterface::FillStringCallback(FillStringCallback),
-				ust::ref_to_int(result) );
+				ust::ref_to_int( cast_ref_unsafe</void/>( result ) ) );
 			if( ok )
 			{
 				return move(result);

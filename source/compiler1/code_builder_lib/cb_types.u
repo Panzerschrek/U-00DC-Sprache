@@ -150,7 +150,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 		.return_type(
 			select(
 				function_type.return_type.empty()
-					? Type( FundamentalType( U_FundamentalType::void_, fundamental_llvm_types_.void_for_ret_ ) )
+					? Type( void_type_ )
 					: PrepareType( names_scope, function_context, function_type.return_type.get_ref() ) ) )
 		.return_value_is_reference= function_type.return_value_reference_modifier == Synt::ReferenceModifier::Reference,
 		.return_value_is_mutable= function_type.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable,
@@ -173,7 +173,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 			{
 				REPORT_ERROR( ThisInNonclassFunction, names_scope, param.src_loc, ust::string8("TODO - func name") )
 			}
-			else if( ust::ref_to_int(param) != ust::ref_to_int(function_type.params.front() ) )
+			else if( ust::ref_cmp_ne( param, function_type.params.front() ) )
 			{
 				REPORT_ERROR( UsingKeywordAsName, names_scope, param.src_loc )
 			}
@@ -240,7 +240,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 		{
 			ret_llvm_type= LLVMPointerType( ret_llvm_type, 0u );
 		}
-		else if( is_s_ret )
+		else if( is_s_ret || res.return_type == void_type_ )
 		{
 			ret_llvm_type= fundamental_llvm_types_.void_for_ret_;
 		}

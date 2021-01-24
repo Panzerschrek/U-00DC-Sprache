@@ -88,11 +88,6 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope, variable_declaration.src_loc )
 		}
 
-		if( variable_declaration.reference_modifier != Synt::ReferenceModifier::Reference && t == void_type_ )
-		{
-			REPORT_ERROR( UsingIncompleteType, names_scope, variable_declaration.src_loc, t )
-			continue;
-		}
 
 		if( variable_declaration.reference_modifier != Synt::ReferenceModifier::Reference && !t.CanBeConstexpr() )
 		{
@@ -252,11 +247,6 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 	if( expr.t == invalid_type_ )
 	{
 		REPORT_ERROR( InvalidTypeForAutoVariable, names_scope, auto_variable_declaration.src_loc, auto_variable_declaration.name )
-		return BlockElementBuildInfo();
-	}
-	if( auto_variable_declaration.reference_modifier != Synt::ReferenceModifier::Reference && expr.t == void_type_ )
-	{
-		REPORT_ERROR( UsingIncompleteType, names_scope, auto_variable_declaration.src_loc, expr.t )
 		return BlockElementBuildInfo();
 	}
 
@@ -508,7 +498,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			}
 			else
 			{
-				if( ret_type == void_type_ || ret_type == void_type_for_ret_ )
+				if( ret_type == void_type_ )
 				{
 					CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.src_loc );
 					CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.src_loc );
@@ -633,9 +623,9 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			REPORT_ERROR( ReferenceProtectionError, names_scope, assignment_operator.src_loc, function_context.references_graph.GetNodeName( l.node_id ) )
 		}
 
-		unsafe
+		if( r.t != void_type_ )
 		{
-			LLVMBuildStore( function_context.llvm_ir_builder, r_in_register, l.llvm_value );
+			unsafe{  LLVMBuildStore( function_context.llvm_ir_builder, r_in_register, l.llvm_value );  }
 		}
 	}
 
@@ -1365,11 +1355,6 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		REPORT_ERROR( InvalidTypeForAutoVariable, names_scope, with_operator.src_loc, with_operator.variable_name )
 		return BlockElementBuildInfo();
 	}
-	if( with_operator.reference_modifier != Synt::ReferenceModifier::Reference && expr.t == void_type_ )
-	{
-		REPORT_ERROR( UsingIncompleteType, names_scope, with_operator.src_loc, expr.t )
-		return BlockElementBuildInfo();
-	}
 
 	var NamesScopeVariable mut out_variable
 	{
@@ -1400,7 +1385,10 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			{
 				out_variable.llvm_value=
 					LLVMBuildAlloca( function_context.alloca_ir_builder, out_variable.t.GetLLVMType(), (with_operator.variable_name + "\0").front() );
-				LLVMBuildStore( function_context.llvm_ir_builder, expr.llvm_value, out_variable.llvm_value );
+				if( expr.t != void_type_ )
+				{
+					LLVMBuildStore( function_context.llvm_ir_builder, expr.llvm_value, out_variable.llvm_value );
+				}
 			}
 		}
 		else

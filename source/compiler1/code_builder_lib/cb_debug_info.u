@@ -233,6 +233,30 @@ fn CodeBuilder::CreateDITypeImpl( mut this, FundamentalType& t ) : LLVMMetadataR
 {
 	auto type_name= GetFundamentalTypeName( t.fundamental_type );
 
+	if( t.fundamental_type == U_FundamentalType::void_ )
+	{
+		// Internal representation of void type is llvm struct with zero elements.
+		auto di_file= debug_info_.source_file_entries.front();
+
+		unsafe
+		{
+			return LLVMDIBuilderCreateStructType(
+				debug_info_.builder,
+				di_file,
+				type_name.front_unsafe(), type_name.size(),
+				di_file,
+				0u, // Line
+				LLVMABISizeOfType( data_layout_, t.llvm_type ) * 8u64,
+				LLVMABIAlignmentOfType( data_layout_, t.llvm_type ) * 8u32,
+				LLVMDIFlags(0),
+				LLVMMetadataRef::Null, // DerivedFrom
+				LLVMMetadataRef::Null, 0u, // elements
+				0u, // RuntimeLang
+				LLVMMetadataRef::Null,// VTableHolder
+				"\0"c8, 0s);
+		}
+	}
+
 	var LLVMDWARFTypeEncoding mut encoding= LLVMDWARFTypeEncoding::unsigned;
 	if( t.fundamental_type == U_FundamentalType::bool_ ){  encoding= LLVMDWARFTypeEncoding::boolean;        }
 	else if( IsFloatingPoint( t.fundamental_type )     ){  encoding= LLVMDWARFTypeEncoding::float;          }

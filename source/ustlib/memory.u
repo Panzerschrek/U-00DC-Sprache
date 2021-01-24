@@ -31,4 +31,40 @@ fn nullptr() : $(T)
 	return ptr;
 }
 
+template</type T/>
+fn ref_cmp_eq( T& l, T& r ) : bool
+{
+	unsafe{ return $<(cast_mut(l)) == $<(cast_mut(r)); }
+}
+
+template</type T/>
+fn ref_cmp_ne( T& l, T& r ) : bool
+{
+	unsafe{ return $<(cast_mut(l)) != $<(cast_mut(r)); }
+}
+
+template</type T/>
+fn ref_cmp_lt( T& l, T& r ) : bool
+{
+	unsafe{ return $<(cast_mut(l)) <  $<(cast_mut(r)); }
+}
+
+template</type T/>
+fn ref_cmp_le( T& l, T& r ) : bool
+{
+	unsafe{ return $<(cast_mut(l)) <= $<(cast_mut(r)); }
+}
+
+template</type T/>
+fn ref_cmp_gt( T& l, T& r ) : bool
+{
+	unsafe{ return $<(cast_mut(l)) >  $<(cast_mut(r)); }
+}
+
+template</type T/>
+fn ref_cmp_ge( T& l, T& r ) : bool
+{
+	unsafe{ return $<(cast_mut(l)) >= $<(cast_mut(r)); }
+}
+
 } // namespace ust

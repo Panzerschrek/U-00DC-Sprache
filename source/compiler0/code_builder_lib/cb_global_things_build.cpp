@@ -122,8 +122,8 @@ void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fields_llvm
 
 bool CodeBuilder::IsTypeComplete( const Type& type ) const
 {
-	if( const auto fundamental_type= type.GetFundamentalType() )
-		return fundamental_type->fundamental_type != U_FundamentalType::Void;
+	if( type.GetFundamentalType() != nullptr )
+		return true;
 	else if( type.GetFunctionType() != nullptr || type.GetFunctionPointerType() != nullptr )
 		return true;
 	else if( const auto enum_type= type.GetEnumType() )
@@ -150,10 +150,8 @@ bool CodeBuilder::IsTypeComplete( const Type& type ) const
 
 bool CodeBuilder::EnsureTypeComplete( const Type& type )
 {
-	if( const auto fundamental_type= type.GetFundamentalType() )
-	{
-		return fundamental_type->fundamental_type != U_FundamentalType::Void;
-	}
+	if( type.GetFundamentalType() != nullptr )
+		return true;
 	else if( type.GetFunctionType() != nullptr || type.GetFunctionPointerType() != nullptr )
 		return true;
 	else if( const auto enum_type= type.GetEnumType() )
@@ -187,13 +185,10 @@ bool CodeBuilder::ReferenceIsConvertible( const Type& from, const Type& to, Code
 	if( from == to )
 		return true;
 
-	if( from != void_type_ && to != void_type_ )
-	{
-		if( !EnsureTypeComplete( from ) )
-			REPORT_ERROR( UsingIncompleteType, errors_container, src_loc, from );
-		if( !EnsureTypeComplete(   to ) )
-			REPORT_ERROR( UsingIncompleteType, errors_container, src_loc,   to );
-	}
+	if( !EnsureTypeComplete( from ) )
+		REPORT_ERROR( UsingIncompleteType, errors_container, src_loc, from );
+	if( !EnsureTypeComplete(   to ) )
+		REPORT_ERROR( UsingIncompleteType, errors_container, src_loc,   to );
 
 	return from.ReferenceIsConvertibleTo(to);
 }
@@ -469,7 +464,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 
 			if( class_field->is_reference )
 			{
-				if( class_field->type != void_type_ && !EnsureTypeComplete( class_field->type ) )
+				if( !EnsureTypeComplete( class_field->type ) )
 				{
 					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), in_field.src_loc_, class_field->type );
 					return;

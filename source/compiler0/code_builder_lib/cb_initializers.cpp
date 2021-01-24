@@ -288,8 +288,11 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 			return nullptr;
 		}
 
-		llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
-		function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
+		if( variable.type != void_type_ )
+		{
+			llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
+			function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
+		}
 
 		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), initializer.src_loc_ );
 
@@ -407,7 +410,8 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 	{
 		// "0" for numbers, "false" for boolean type, first element for enums, "nullptr" for function pointers.
 		const auto zero_value= llvm::Constant::getNullValue( variable.type.GetLLVMType() );
-		function_context.llvm_ir_builder.CreateStore( zero_value, variable.llvm_value );
+		if( variable.type != void_type_ )
+			function_context.llvm_ir_builder.CreateStore( zero_value, variable.llvm_value );
 		return zero_value;
 	}
 	else if( const Array* const array_type= variable.type.GetArrayType() )
@@ -519,9 +523,13 @@ void CodeBuilder::ApplyEmptyInitializer(
 		return;
 	}
 
-	if( variable.type.GetFundamentalType() != nullptr || variable.type.GetEnumType() != nullptr )
+	if( variable.type.GetFundamentalType() != nullptr )
 	{
-		// Fundamentals and enums are not default-constructible, we should generate error about it before.
+		U_ASSERT( variable.type == void_type_ ); // "void" is only default-constructible fundamental type.
+	}
+	else if( variable.type.GetEnumType() != nullptr || variable.type.GetRawPointerType() != nullptr || variable.type.GetFunctionPointerType() != nullptr )
+	{
+		// This type is not default-constructible, we should generate error about it before.
 		U_ASSERT( false );
 	}
 	else if( const Array* const array_type= variable.type.GetArrayType() )
@@ -687,7 +695,8 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			}
 		} // If needs conversion
 
-		function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
+		if( variable.type != void_type_ )
+			function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
 
 		DestroyUnusedTemporaryVariables( function_context, block_names.GetErrors(), call_operator.src_loc_ );
 

@@ -436,9 +436,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			}
 
 			if( function_context.deduced_return_type == std::nullopt )
-				function_context.deduced_return_type = void_type_for_ret_;
-			else if( *function_context.deduced_return_type != void_type_for_ret_ )
-				REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc_, *function_context.deduced_return_type, void_type_for_ret_ );
+				function_context.deduced_return_type = void_type_;
+			else if( *function_context.deduced_return_type != void_type_ )
+				REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc_, *function_context.deduced_return_type, void_type_ );
 			return block_info;
 		}
 
@@ -593,7 +593,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 				expression_result.type.GetRawPointerType() != nullptr ||
 				expression_result.type.GetFunctionPointerType() != nullptr );
 
-			if( expression_result.type == void_type_ || expression_result.type == void_type_for_ret_ )
+			if( expression_result.type == void_type_ )
 			{
 				CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc_ );
 				CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc_ );
@@ -1076,7 +1076,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		{
 			// Binding value to reference.
 			llvm::Value* const storage= function_context.alloca_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
-			function_context.llvm_ir_builder.CreateStore( expr.llvm_value, storage );
+			if( expr.type != void_type_ )
+				function_context.llvm_ir_builder.CreateStore( expr.llvm_value, storage );
 			variable.llvm_value= storage;
 		}
 		else
@@ -1412,7 +1413,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 				return BlockBuildInfo();
 			}
 			U_ASSERT( r_var.location == Variable::Location::LLVMRegister );
-			function_context.llvm_ir_builder.CreateStore( r_var.llvm_value, l_var.llvm_value );
+			if( r_var.type != void_type_ )
+				function_context.llvm_ir_builder.CreateStore( r_var.llvm_value, l_var.llvm_value );
 		}
 		else
 		{

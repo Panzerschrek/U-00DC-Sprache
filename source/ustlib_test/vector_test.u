@@ -75,7 +75,7 @@ fn nomangle main() : i32
 
 		unsafe // Use unsafe, because mutable reference to "x" after "push_back" linked with "v" and we can not access "x".
 		{
-			var i32& x_ref_unsafe= cast_ref_unsafe</ i32 />( ust::int_to_ref( ust::ref_to_int( x ) ) );
+			var i32& x_ref_unsafe= $>($<(x));
 			v.push_back( R(x) );
 			v.drop_back();  halt if( x_ref_unsafe != 1 );
 		}
@@ -106,8 +106,8 @@ fn nomangle main() : i32
 
 		unsafe // Use unsafe, because mutable reference to "x" after "push_back" linked with "v" and we can not access "x".
 		{
-			var i32& x_ref_unsafe= cast_ref_unsafe</ i32 />( ust::int_to_ref( ust::ref_to_int( x ) ) );
-			var i32& y_ref_unsafe= cast_ref_unsafe</ i32 />( ust::int_to_ref( ust::ref_to_int( y ) ) );
+			var i32& x_ref_unsafe= $>($<(x));
+			var i32& y_ref_unsafe= $>($<(y));
 			v.push_back( R(x) );
 			v.push_back( R(y) );
 			v.clear();
@@ -120,14 +120,14 @@ fn nomangle main() : i32
 
 		unsafe // Use unsafe, because mutable reference to "x" after "push_back" linked with "v" and we can not access "x".
 		{
-			var i32& x_ref_unsafe= cast_ref_unsafe</ i32 />( ust::int_to_ref( ust::ref_to_int( x ) ) );
+			var i32& x_ref_unsafe= $>($<(x));
 
 			var RVec mut v;
 			v.push_back( R(x) );
 
 			auto r= v.pop_back();
 			halt if( x_ref_unsafe != 0 ); // Move last value out of vector, destructor not called.
-			cast_ref_unsafe</ RVec />( ust::int_to_ref( ust::ref_to_int( v ) ) );  // Use unsafe casts, because methods of vector practically unaccesible, when reference to class inner reference exists.
+			$>($<(v)).clear();  // Use unsafe casts, because methods of vector practically unaccesible, when reference to class inner reference exists.
 			halt if( x_ref_unsafe != 0 );  // Destructor not called even after "clear".
 		}
 		halt if( x != 1 ); // Destructor called only for "r" local variable.
@@ -293,7 +293,7 @@ fn nomangle main() : i32
 
 		unsafe // Use unsafe, because mutable reference to "x" after "push_back" linked with "v" and we can not access "x".
 		{
-			var i32& x_ref_unsafe= cast_ref_unsafe</ i32 />( ust::int_to_ref( ust::ref_to_int( x ) ) );
+			var i32& x_ref_unsafe= $>($<(x));
 			v.push_back( R(x) );
 			v= RVec();
 			halt if( x_ref_unsafe != 1 );

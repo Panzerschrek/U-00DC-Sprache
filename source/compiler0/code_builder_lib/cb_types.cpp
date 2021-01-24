@@ -102,7 +102,7 @@ Type CodeBuilder::PrepareType( const Synt::FunctionType& function_type_name, Nam
 	Function& function_type= function_pointer_type.function;
 
 	if( function_type_name.return_type_ == nullptr )
-		function_type.return_type= void_type_for_ret_;
+		function_type.return_type= void_type_;
 	else
 		function_type.return_type= PrepareType( *function_type_name.return_type_, names_scope, function_context );
 	function_type.return_value_is_mutable= function_type_name.return_value_mutability_modifier_ == MutabilityModifier::Mutable;
@@ -206,14 +206,13 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const Function& function_t
 		args_llvm_types.push_back( type );
 	}
 
-	llvm::Type* llvm_function_return_type= nullptr;
-	if( first_arg_is_sret )
-		llvm_function_return_type= fundamental_llvm_types_.void_for_ret;
-	else
+	llvm::Type* llvm_function_return_type= function_type.return_type.GetLLVMType();
+	if( function_type.return_value_is_reference )
+		llvm_function_return_type= llvm_function_return_type->getPointerTo();
+	else if( first_arg_is_sret || function_type.return_type == void_type_ )
 	{
-		llvm_function_return_type= function_type.return_type.GetLLVMType();
-		if( function_type.return_value_is_reference )
-			llvm_function_return_type= llvm_function_return_type->getPointerTo();
+		// Use true "void" LLVM type only for function return value. Use own "void" type in other cases.
+		llvm_function_return_type= fundamental_llvm_types_.void_for_ret;
 	}
 
 	return llvm::FunctionType::get( llvm_function_return_type, args_llvm_types, false );

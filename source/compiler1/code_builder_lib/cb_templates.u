@@ -44,7 +44,7 @@ fn CreateTemplateErrorsContext(
 				result.args_description+= ConstantVariableToString( v.t, v.constexpr_value );
 			}
 
-			if( ust::ref_to_int(param) != ust::ref_to_int(template_.params.back()) )
+			if( ust::ref_cmp_ne( param, template_.params.front() ) )
 			{
 				result.args_description+= ", ";
 			}
@@ -511,7 +511,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	}
 	else
 	{
-		var TemplateSignatureParam::TypeParam mut t{ .t= void_type_for_ret_ };
+		var TemplateSignatureParam::TypeParam mut t{ .t= void_type_ };
 		function_type_param.return_type= TemplateSignatureParam(move(t));
 	}
 	foreach( &param : signature_param.params )
@@ -743,8 +743,10 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 {
 	var TypeTemplatePtr& type_template_ptr= template_args_evaluation_result.type_template;
 
+	var size_type mut int_ptr= zero_init;
+	unsafe{  int_ptr= ust::ref_to_int( cast_ref_unsafe</void/>( type_template_ptr.get_ref() ) );  }
 	auto template_key=
-		ust::to_string8( ust::ref_to_int( type_template_ptr.get_ref() ) ) +
+		ust::to_string8( int_ptr ) +
 		MangleTemplateArgs( template_args_evaluation_result.signature_args );
 
 	var ust::string8 template_class_name= "_";
@@ -1035,8 +1037,10 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 	}
 
 	// Use combination of template args (not signature params) and template pointer. This combination should be unique.
+	var size_type mut int_ptr= zero_init;
+	unsafe{  int_ptr= ust::ref_to_int( cast_ref_unsafe</void/>( function_template_ptr.get_ref() ) );  }
 	auto template_key=
-		ust::to_string8( ust::ref_to_int( function_template_ptr.get_ref() ) ) +
+		ust::to_string8( int_ptr ) +
 		MangleTemplateArgs( result_template_args );
 
 	auto& function_name= function_syntax_element.name.back();
@@ -1148,7 +1152,10 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 	var ust::string8 mut cache_key= "_parametrized_";
 	foreach( &function_template_ptr : functions_set.function_templates )
 	{
-		cache_key+= ust::to_string8( ust::ref_to_int( function_template_ptr.get_ref() ) );
+		unsafe
+		{
+			cache_key+= ust::to_string8( ust::ref_to_int( cast_ref_unsafe</void/>( function_template_ptr.get_ref() ) ) );
+		}
 		cache_key+= "_";
 	}
 	cache_key+= MangleTemplateArgs( template_args_finished );

@@ -46,7 +46,7 @@ fn ConstexprFunctionEvaluator::Evaluate( mut this, LLVMValueRef function, ust::a
 				args.front_unsafe(),
 				args.size(),
 				ConstexprFunctionEvaluatorErrorHandlerFunc( ErrorHandlerFunc ),
-				result.errors );
+				cast_ref_unsafe</void/>( result.errors ) );
 	}
 
 	return move(result);

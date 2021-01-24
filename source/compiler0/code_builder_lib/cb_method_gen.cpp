@@ -77,7 +77,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 	{
 		// Generate function
 		Function constructor_type;
-		constructor_type.return_type= void_type_for_ret_;
+		constructor_type.return_type= void_type_;
 		constructor_type.args.emplace_back();
 		constructor_type.args.back().type= class_type;
 		constructor_type.args.back().is_mutable= true;
@@ -129,7 +129,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 
 	FunctionContext function_context(
 		*constructor_variable->type.GetFunctionType(),
-		void_type_for_ret_,
+		void_type_,
 		llvm_context_,
 		constructor_variable->llvm_function );
 	StackVariablesStorage function_variables_storage( function_context );
@@ -248,7 +248,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 	{
 		// Generate copy-constructor
 		Function constructor_type;
-		constructor_type.return_type= void_type_for_ret_;
+		constructor_type.return_type= void_type_;
 		constructor_type.args.resize(2u);
 		constructor_type.args[0].type= class_type;
 		constructor_type.args[0].is_mutable= true;
@@ -316,7 +316,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 
 	FunctionContext function_context(
 		*constructor_variable->type.GetFunctionType(),
-		void_type_for_ret_,
+		void_type_,
 		llvm_context_,
 		constructor_variable->llvm_function );
 
@@ -371,7 +371,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 FunctionVariable CodeBuilder::GenerateDestructorPrototype( Class& the_class, const Type& class_type )
 {
 	Function destructor_type;
-	destructor_type.return_type= void_type_for_ret_;
+	destructor_type.return_type= void_type_;
 	destructor_type.args.resize(1u);
 	destructor_type.args[0].type= class_type;
 	destructor_type.args[0].is_mutable= true;
@@ -528,7 +528,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 	{
 		// Generate assignment operator
 		Function op_type;
-		op_type.return_type= void_type_for_ret_;
+		op_type.return_type= void_type_;
 		op_type.args.resize(2u);
 		op_type.args[0].type= class_type;
 		op_type.args[0].is_mutable= true;
@@ -595,7 +595,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 
 	FunctionContext function_context(
 		*operator_variable->type.GetFunctionType(),
-		void_type_for_ret_,
+		void_type_,
 		llvm_context_,
 		operator_variable->llvm_function );
 
@@ -648,7 +648,8 @@ void CodeBuilder::BuildCopyConstructorPart(
 		type.GetFunctionPointerType() != nullptr )
 	{
 		// Create simple load-store.
-		if( src->getType() == dst->getType() )
+		if( type == void_type_ ){} // Do nothing for "void".
+		else if( src->getType() == dst->getType() )
 			function_context.llvm_ir_builder.CreateStore( function_context.llvm_ir_builder.CreateLoad( src ), dst );
 		else if( src->getType() == dst->getType()->getPointerElementType() )
 			function_context.llvm_ir_builder.CreateStore( src, dst );
@@ -727,7 +728,8 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 		type.GetFunctionPointerType() != nullptr )
 	{
 		// Create simple load-store.
-		if( src->getType() == dst->getType() )
+		if( type == void_type_ ){} // Do nothing for "void".
+		else if( src->getType() == dst->getType() )
 			function_context.llvm_ir_builder.CreateStore( function_context.llvm_ir_builder.CreateLoad( src ), dst );
 		else if( src->getType() == dst->getType()->getPointerElementType() )
 			function_context.llvm_ir_builder.CreateStore( src, dst );
@@ -800,6 +802,9 @@ void CodeBuilder::CopyBytes(
 	const Type& type,
 	FunctionContext& function_context )
 {
+	if( type == void_type_ )
+		return; // Do nothing for "void" type.
+
 	llvm::Type* const llvm_type= type.GetLLVMType();
 	if( llvm_type->isIntegerTy() || llvm_type->isFloatingPointTy() || llvm_type->isPointerTy() )
 	{

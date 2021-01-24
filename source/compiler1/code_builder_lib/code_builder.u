@@ -46,16 +46,17 @@ fn CodeBuilder::constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data
 		fundamental_llvm_types_.char32_= LLVMInt32TypeInContext( llvm_context_ );
 
 		fundamental_llvm_types_.invalid_type_= LLVMInt8TypeInContext( llvm_context_ );
-		fundamental_llvm_types_.void_= LLVMInt8TypeInContext( llvm_context_ );
 		fundamental_llvm_types_.void_for_ret_= LLVMVoidTypeInContext( llvm_context_ );
 		fundamental_llvm_types_.bool_= LLVMInt1TypeInContext( llvm_context_ );
+
+		fundamental_llvm_types_.void_= LLVMStructCreateNamed( llvm_context_, "__U_void\0"[0] );
+		LLVMStructSetBody( fundamental_llvm_types_.void_, LLVMTypeRef::Null, 0u, LLVMBool::False );
 
 		fundamental_llvm_types_.int_ptr= LLVMIntPtrTypeInContext( llvm_context_, data_layout_ );
 	}
 
 	invalid_type_= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
 	void_type_= FundamentalType( U_FundamentalType::void_, fundamental_llvm_types_.void_ );
-	void_type_for_ret_= FundamentalType( U_FundamentalType::void_, fundamental_llvm_types_.void_for_ret_ );
 	bool_type_= FundamentalType( U_FundamentalType::bool_, fundamental_llvm_types_.bool_ );
 
 	unsafe
@@ -1290,9 +1291,7 @@ fn CodeBuilder::CheckOverloadedOperator(
 		REPORT_ERROR( OperatorDoesNotHaveParentClassArguments, names_scope, src_loc )
 	}
 
-	auto ret_is_void=
-		( func_type.return_type == void_type_ || func_type.return_type == void_type_for_ret_ ) &&
-		!func_type.return_value_is_reference;
+	auto ret_is_void= func_type.return_type == void_type_ && !func_type.return_value_is_reference;
 
 	if( operator == OverloadedOperator::Add ||
 		operator == OverloadedOperator::Sub )
@@ -1471,7 +1470,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			};
 
 			// Ensure type completness even for reference args because of reference checking.
-			if( !EnsureTypeComplete( out_arg.t ) || ( !type_param.is_reference && out_arg.t == void_type_ ) )
+			if( !EnsureTypeComplete( out_arg.t ) )
 			{
 				REPORT_ERROR( UsingIncompleteType, names_scope, in_param.src_loc, out_arg.t )
 				return;
@@ -1535,7 +1534,10 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 
 						out_arg.llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, out_arg.t.GetLLVMType(), (in_param.name + "\0").front() );
 
-						LLVMBuildStore( function_context.llvm_ir_builder, arg_value, out_arg.llvm_value );
+						if( out_arg.t != void_type_ )
+						{
+							LLVMBuildStore( function_context.llvm_ir_builder, arg_value, out_arg.llvm_value );
+						}
 					}
 				}
 
@@ -1691,7 +1693,6 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			{
 				can_be_constexpr&=
 					param.t.CanBeConstexpr() &&
-					param.t != void_type_ && // Disallow "void" arguments, because we currently can not constantly convert any reference to "void" in constexpr function call.
 					param.t.GetFunctionPointerType().empty();  // Currently function pointers not supported.
 			}
 		}
@@ -2113,7 +2114,7 @@ fn CodeBuilder::SetupLLVMFunctionAttributes( this, NamesScope& names_scope, Func
 
 			var ust::string8 mut name_str;
 			name_str.resize( name_length + 1s, "\0"c8 );
-			ust::memory_copy( name_str.front_unsafe(), name_start, name_length );
+			ust::memory_copy( cast_ref_unsafe</void/>( name_str.front_unsafe() ), cast_ref_unsafe</void/>( name_start ), name_length );
 
 			auto comdat= LLVMGetOrInsertComdat( module_, name_str.front_unsafe() );
 			LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any ); // Actually, we needs something, like ExactMatch, but it works not in all cases.
@@ -2163,13 +2164,17 @@ fn CodeBuilder::GetZeroGEPIndex( this ) : LLVMValueRef
 	unsafe{  return LLVMConstNull( fundamental_llvm_types_.i32_ );  }
 }
 
-fn CodeBuilder::CreateMoveToLLVMRegisterInstruction( Variable& variable, FunctionContext& function_context ) : LLVMValueRef
+fn CodeBuilder::CreateMoveToLLVMRegisterInstruction( this, Variable& variable, FunctionContext& function_context ) : LLVMValueRef
 {
 	if( variable.constexpr_value != LLVMValueRef::Null )
 	{
 		return variable.constexpr_value;
 	}
-	if( variable.location == Variable::Location::Pointer )
+	else if( variable.t == void_type_ )
+	{
+		unsafe{  return LLVMGetUndef( variable.t.GetLLVMType() );  }
+	}
+	else if( variable.location == Variable::Location::Pointer )
 	{
 		unsafe{  return LLVMBuildLoad( function_context.llvm_ir_builder, variable.llvm_value, "\0"[0] );  }
 	}
@@ -2186,14 +2191,6 @@ fn CodeBuilder::CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Typ
 	if( src_type == dst_type )
 	{
 		return ref;
-	}
-	if( dst_type == void_type_ )
-	{
-		unsafe
-		{
-			auto dst_pointer_type= LLVMPointerType( dst_type.GetLLVMType(), 0u );
-			return LLVMBuildPointerCast( function_context.llvm_ir_builder, ref, dst_pointer_type, "\0"[0] );
-		}
 	}
 
 	auto src_class_type= src_type.GetClassType().get_ref();
@@ -2328,6 +2325,11 @@ fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef const
 
 fn CodeBuilder::CopyBytes( this, LLVMValueRef dst, LLVMValueRef src, Type& t, FunctionContext &mut function_context )
 {
+	if( t == void_type_ )
+	{
+		return;
+	}
+
 	unsafe
 	{
 		var LLVMTypeRef llvm_type= t.GetLLVMType();
@@ -2411,7 +2413,7 @@ fn CodeBuilder::CreateGlobalFunctionContext( this ) : FunctionContext
 {
 	var FunctionType mut function_type
 	{
-		.return_type= void_type_for_ret_,
+		.return_type= void_type_,
 		.return_value_is_reference= false,
 		.return_value_is_mutable= false,
 	};

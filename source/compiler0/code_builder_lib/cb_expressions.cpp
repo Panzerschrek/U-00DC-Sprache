@@ -222,7 +222,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 			function_context );
 
 		Variable result;
-		result.type= void_type_for_ret_;
+		result.type= void_type_;
 		return Value( std::move(result), src_loc );
 	}
 	else
@@ -607,16 +607,13 @@ Value CodeBuilder::BuildExpressionCode(
 	{
 		result.value_type= ValueType::Value;
 		node_kind= ReferencesGraphNode::Kind::Variable;
-		if( !( result.type == void_type_ || result.type == void_type_for_ret_ ) )
+		if( !EnsureTypeComplete( result.type ) )
 		{
-			if( !EnsureTypeComplete( result.type ) )
-			{
-				REPORT_ERROR( UsingIncompleteType, names.GetErrors(), ternary_operator.src_loc_, result.type );
-				return ErrorValue();
-			}
-			result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( result.type.GetLLVMType() );
-			result.llvm_value->setName( "select_result" );
+			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), ternary_operator.src_loc_, result.type );
+			return ErrorValue();
 		}
+		result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( result.type.GetLLVMType() );
+		result.llvm_value->setName( "select_result" );
 	}
 	else if( branches_value_types[0] == ValueType::ConstReference || branches_value_types[1] == ValueType::ConstReference )
 	{
@@ -656,11 +653,17 @@ Value CodeBuilder::BuildExpressionCode(
 			if( result.value_type == ValueType::Value )
 			{
 				// Move or create copy.
-				if( result.type == void_type_ || result.type == void_type_for_ret_ )
-				{}
-				else if( result.type.GetFundamentalType() != nullptr || result.type.GetEnumType() != nullptr || result.type.GetFunctionPointerType() != nullptr )
+				if( result.type == void_type_ ){}
+				else if(
+					result.type.GetFundamentalType() != nullptr ||
+					result.type.GetEnumType() != nullptr ||
+					result.type.GetRawPointerType() != nullptr ||
+					result.type.GetFunctionPointerType() != nullptr )
 					function_context.llvm_ir_builder.CreateStore( CreateMoveToLLVMRegisterInstruction( branch_result, function_context ), result.llvm_value );
-				else if( result.type.GetClassTypeProxy() != nullptr || result.type.GetTupleType() != nullptr )
+				else if(
+					result.type.GetClassTypeProxy() != nullptr ||
+					result.type.GetTupleType() != nullptr ||
+					result.type.GetArrayType() != nullptr )
 				{
 					SetupReferencesInCopyOrMove( function_context, result, branch_result, names.GetErrors(), ternary_operator.src_loc_ );
 
@@ -1154,7 +1157,8 @@ Value CodeBuilder::BuildExpressionCode(
 	if( var.location == Variable::Location::LLVMRegister )
 	{
 		result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
-		function_context.llvm_ir_builder.CreateStore( var.llvm_value, result.llvm_value );
+		if( var.type != void_type_ )
+			function_context.llvm_ir_builder.CreateStore( var.llvm_value, result.llvm_value );
 	}
 
 	return Value( std::move(result), cast_mut.src_loc_ );
@@ -1173,7 +1177,8 @@ Value CodeBuilder::BuildExpressionCode(
 	if( var.location == Variable::Location::LLVMRegister )
 	{
 		result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
-		function_context.llvm_ir_builder.CreateStore( var.llvm_value, result.llvm_value );
+		if( var.type != void_type_ )
+			function_context.llvm_ir_builder.CreateStore( var.llvm_value, result.llvm_value );
 	}
 
 	return Value( std::move(result), cast_imut.src_loc_ );
@@ -1207,7 +1212,7 @@ Value CodeBuilder::BuildExpressionCode(
 	if( type == invalid_type_ )
 		return ErrorValue();
 
-	if( type != void_type_ && !EnsureTypeComplete( type ) )
+	if( !EnsureTypeComplete( type ) )
 	{
 		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), typeinfo.src_loc_, type );
 		return ErrorValue();
@@ -1350,20 +1355,25 @@ Value CodeBuilder::BuildBinaryOperator(
 				return ErrorValue();
 			}
 
+			const bool is_void= l_fundamental_type != nullptr && l_fundamental_type->fundamental_type == U_FundamentalType::Void;
 			const bool is_float= l_fundamental_type != nullptr && IsFloatingPoint( l_fundamental_type->fundamental_type );
 
+			// Use ordered floating point compare operations, which result is false for NaN, except !=. nan != nan must be true.
 			switch( binary_operator )
 			{
-			// Use ordered floating point compare operations, which result is false for NaN, except !=. nan != nan must be true.
 			case BinaryOperatorType::Equal:
-				if( is_float )
+				if( is_void )
+					result.llvm_value= llvm::ConstantInt::getTrue( llvm_context_ ); // All "void" values are same.
+				else if( is_float )
 					result.llvm_value= function_context.llvm_ir_builder.CreateFCmpOEQ( l_value_for_op, r_value_for_op );
 				else
 					result.llvm_value= function_context.llvm_ir_builder.CreateICmpEQ( l_value_for_op, r_value_for_op );
 				break;
 
 			case BinaryOperatorType::NotEqual:
-				if( is_float )
+				if( is_void )
+					result.llvm_value= llvm::ConstantInt::getFalse( llvm_context_ ); // All "void" values are same.
+				else if( is_float )
 					result.llvm_value= function_context.llvm_ir_builder.CreateFCmpUNE( l_value_for_op, r_value_for_op );
 				else
 					result.llvm_value= function_context.llvm_ir_builder.CreateICmpNE( l_value_for_op, r_value_for_op );
@@ -1540,7 +1550,10 @@ Value CodeBuilder::BuildBinaryOperator(
 		break;
 	};
 
-	result.constexpr_value= llvm::dyn_cast<llvm::Constant>(result.llvm_value);
+	// Produce constexpr value only for constexpr arguments.
+	if( l_var.constexpr_value != nullptr && r_var.constexpr_value != nullptr )
+		result.constexpr_value= llvm::dyn_cast<llvm::Constant>(result.llvm_value);
+
 	if( result.constexpr_value != nullptr )
 	{
 		// Undef value can occurs in integer division by zero or something like it.
@@ -1831,13 +1844,12 @@ Value CodeBuilder::DoReferenceCast(
 	if( var.location == Variable::Location::LLVMRegister )
 	{
 		src_value= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
-		function_context.llvm_ir_builder.CreateStore( var.llvm_value, src_value );
+		if( var.type != void_type_ )
+			function_context.llvm_ir_builder.CreateStore( var.llvm_value, src_value );
 	}
 
 	if( type == var.type )
 		result.llvm_value= src_value;
-	else if( type == void_type_ )
-		result.llvm_value= CreateReferenceCast( src_value, var.type, type, function_context );
 	else
 	{
 		// Complete types required for both safe and unsafe casting, except unsafe void to anything cast.
@@ -1845,7 +1857,7 @@ Value CodeBuilder::DoReferenceCast(
 		if( !EnsureTypeComplete( type ) )
 			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), src_loc, type );
 
-		if( !( enable_unsafe && var.type == void_type_ ) && !EnsureTypeComplete( var.type ) )
+		if( !EnsureTypeComplete( var.type ) )
 			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), src_loc, var.type );
 
 		if( ReferenceIsConvertible( var.type, type, names.GetErrors(), src_loc ) )
@@ -2516,7 +2528,8 @@ Value CodeBuilder::DoCallFunction(
 					// Bind value to const reference.
 					// TODO - support nonfundamental values.
 					llvm::Value* const temp_storage= function_context.alloca_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
-					function_context.llvm_ir_builder.CreateStore( expr.llvm_value, temp_storage );
+					if( expr.type != void_type_ )
+						function_context.llvm_ir_builder.CreateStore( expr.llvm_value, temp_storage );
 					llvm_args[j]= temp_storage;
 				}
 				else
@@ -2602,7 +2615,9 @@ Value CodeBuilder::DoCallFunction(
 				}
 			}
 
-			if( arg.type.GetFundamentalType() != nullptr ||
+			if( arg.type == void_type_ )
+				llvm_args[j]= llvm::UndefValue::get( fundamental_llvm_types_.void_ ); // Hack for interpreter - it can not process regular constant values properly.
+			else if( arg.type.GetFundamentalType() != nullptr ||
 				arg.type.GetEnumType() != nullptr ||
 				arg.type.GetRawPointerType() != nullptr ||
 				arg.type.GetFunctionPointerType() != nullptr )
@@ -2703,12 +2718,20 @@ Value CodeBuilder::DoCallFunction(
 				if( return_value_is_sret ) // We needs here block of memory with result constant struct.
 					MoveConstantToMemory( s_ret_value, evaluation_result.result_constant, function_context );
 
-				call_result= evaluation_result.result_constant;
-				constant_call_result= evaluation_result.result_constant;
+				if( !function_type.return_value_is_reference && function_type.return_type == void_type_ )
+					constant_call_result= llvm::Constant::getNullValue( fundamental_llvm_types_.void_ );
+				else
+					constant_call_result= evaluation_result.result_constant;
 			}
 		}
-		if( call_result == nullptr )
+		if( constant_call_result != nullptr )
+			call_result= constant_call_result;
+		else
+		{
 			call_result= function_context.llvm_ir_builder.CreateCall( function, llvm_args );
+			if( !function_type.return_value_is_reference && function_type.return_type == void_type_ )
+				call_result= llvm::UndefValue::get( fundamental_llvm_types_.void_ );
+		}
 	}
 	else
 		call_result= llvm::UndefValue::get( llvm::dyn_cast<llvm::FunctionType>(function->getType())->getReturnType() );
@@ -2733,7 +2756,7 @@ Value CodeBuilder::DoCallFunction(
 	}
 	else
 	{
-		if( function_type.return_type != void_type_ && !EnsureTypeComplete( function_type.return_type ) )
+		if( !EnsureTypeComplete( function_type.return_type ) )
 			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), call_src_loc, function_type.return_type );
 
 		result.location= return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;

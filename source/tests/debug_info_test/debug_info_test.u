@@ -13,6 +13,8 @@ fn FundamentalTypesTest()
 	var char16 cc= "Ž"c16;
 	var char32 ccc= "Я"c32;
 	var [ char8, 4 ] ca[ "W"c8, "T"c8, "F"c8, 0c8 ];
+	var void v0;
+	var [ void, 16 ] v1= zero_init;
 	return;
 }
 
@@ -124,7 +126,10 @@ fn StructsWithReferencesTest()
 {
 	auto b= false;
 	var S0 s0{ .x= 661215, .y= -6532.1f };
-	var StructWithRef struct_with_ref{ .v= b, .x= -5555, .s0= s0 };
+	unsafe
+	{
+		var StructWithRef struct_with_ref{ .v= cast_ref_unsafe</void/>(b), .x= -5555, .s0= s0 };
+	}
 	return;
 }
 

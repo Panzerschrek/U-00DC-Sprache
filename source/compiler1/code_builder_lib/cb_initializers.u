@@ -31,10 +31,13 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			return LLVMValueRef::Null;
 		}
 
-		unsafe
+		if( variable.t != void_type_ )
 		{
-			auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr_result, function_context );
-			LLVMBuildStore( function_context.llvm_ir_builder, value_in_register, variable.llvm_value );
+			unsafe
+			{
+				auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr_result, function_context );
+				LLVMBuildStore( function_context.llvm_ir_builder, value_in_register, variable.llvm_value );
+			}
 		}
 
 		DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
@@ -303,8 +306,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		// TODO - use unordered_set
 		foreach( &prev_initializer : struct_named_initializer.members_initializers )
 		{
-			if( ust::ref_to_int(prev_initializer) < ust::ref_to_int(member_initializer) &&
-				member_initializer.name == prev_initializer.name )
+			if( ust::ref_cmp_lt( prev_initializer, member_initializer ) && member_initializer.name == prev_initializer.name )
 			{
 				REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope, member_initializer.src_loc, member_initializer.name )
 			}
@@ -457,7 +459,10 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		unsafe
 		{
 			auto zero_value= LLVMConstNull( variable.t.GetLLVMType() );
-			LLVMBuildStore( function_context.llvm_ir_builder, zero_value, variable.llvm_value );
+			if( variable.t != void_type_ )
+			{
+				LLVMBuildStore( function_context.llvm_ir_builder, zero_value, variable.llvm_value );
+			}
 			return zero_value;
 		}
 	}
@@ -574,6 +579,12 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 		return;
 	}
 
+	if_var( &fundamental_type : variable.t.GetFundamentalType() )
+	{
+		// This is void type.
+		return;
+	}
+
 	if_var( &array_type : variable.t.GetArrayType() )
 	{
 		var NamesScopeVariable mut element_variable
@@ -642,6 +653,8 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 
 		return;
 	}
+
+	halt;
 }
 
 fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args, SrcLoc& src_loc )  : LLVMValueRef
@@ -778,7 +791,10 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 				return LLVMValueRef::Null;
 			}
 
-			LLVMBuildStore( function_context.llvm_ir_builder, llvm_value, variable.llvm_value );
+			if( variable.t != void_type_ )
+			{
+				LLVMBuildStore( function_context.llvm_ir_builder, llvm_value, variable.llvm_value );
+			}
 		}
 
 		DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );

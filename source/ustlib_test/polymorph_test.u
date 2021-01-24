@@ -10,27 +10,38 @@ class B : A { i32 y= 0; }
 
 class C : I0, I1 {}
 
+template</type A, type B />
+fn RefEq( A& a, B& b ) : bool
+{
+	unsafe
+	{
+		return ust::ref_to_int( cast_ref_unsafe</void/>(a) ) == ust::ref_to_int( cast_ref_unsafe</void/>(b) );
+	}
+}
+
 fn nomangle main() : i32
 {
+	unsafe
 	{
 		var i32 x= 0;
-		var void &ref= x;
-		halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ref ) ) != ust::ref_to_int(x) );
+		var void &ref= cast_ref_unsafe</void/>(x);
+		halt if( !RefEq( ust::polymorph_restore_original_ref( ref ), x ) );
 	}
+	unsafe
 	{
 		var S s;
-		var void &ref= s;
-		halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ref ) ) != ust::ref_to_int(s) );
+		var void &ref= cast_ref_unsafe</void/>(s);
+		halt if( !RefEq( ust::polymorph_restore_original_ref( ref ), s ) );
 	}
 	{
 		var B b;
 		var I0& i0= b;
 		var I1& i1= b;
 		var A& a= b;
-		halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( i0 ) ) != ust::ref_to_int(b) );
-		halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( i1 ) ) != ust::ref_to_int(b) );
-		halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( a  ) ) != ust::ref_to_int(b) );
-		halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( b  ) ) != ust::ref_to_int(b) );
+		halt if( !RefEq( ust::polymorph_restore_original_ref( i0 ), b ) );
+		halt if( !RefEq( ust::polymorph_restore_original_ref( i1 ), b ) );
+		halt if( !RefEq( ust::polymorph_restore_original_ref( a  ), b ) );
+		halt if( !RefEq( ust::polymorph_restore_original_ref( b  ), b ) );
 	}
 	{ // Compare type_id for same object
 		var B b;
@@ -103,10 +114,10 @@ fn nomangle main() : i32
 	}
 	{ // // dynamic cast.
 		var B imut b;
-		halt if( ust::ref_to_int( ust::polymorph_cast</B/>( cast_ref</B />(b) ).get_ref() ) != ust::ref_to_int(b) );
-		halt if( ust::ref_to_int( ust::polymorph_cast</B/>( cast_ref</A />(b) ).get_ref() ) != ust::ref_to_int(b) );
-		halt if( ust::ref_to_int( ust::polymorph_cast</B/>( cast_ref</I0/>(b) ).get_ref() ) != ust::ref_to_int(b) );
-		halt if( ust::ref_to_int( ust::polymorph_cast</B/>( cast_ref</I1/>(b) ).get_ref() ) != ust::ref_to_int(b) );
+		halt if( !RefEq( ust::polymorph_cast</B/>( cast_ref</B />(b) ).get_ref(), b ) );
+		halt if( !RefEq( ust::polymorph_cast</B/>( cast_ref</A />(b) ).get_ref(), b ) );
+		halt if( !RefEq( ust::polymorph_cast</B/>( cast_ref</I0/>(b) ).get_ref(), b ) );
+		halt if( !RefEq( ust::polymorph_cast</B/>( cast_ref</I1/>(b) ).get_ref(), b ) );
 
 		halt if( !ust::polymorph_cast</C/>( cast_ref</I0/>(b) ).empty() );
 		halt if( !ust::polymorph_cast</C/>( cast_ref</I1/>(b) ).empty() );

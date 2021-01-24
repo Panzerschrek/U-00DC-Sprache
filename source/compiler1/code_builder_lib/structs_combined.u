@@ -43,7 +43,8 @@ fn ToString( TupleType& tuple_type ) : ust::string8
 	foreach( &element_type : tuple_type.element_types )
 	{
 		result+= element_type.ToString();
-		if( ust::ref_to_int(element_type) != ust::ref_to_int(tuple_type.element_types.back()) )
+		var bool mut is_last_element= false;
+		if( ust::ref_cmp_ne( element_type, tuple_type.element_types.back() ) )
 		{
 			result+= ", ";
 		}
@@ -76,7 +77,7 @@ fn ToString( FunctionType& function_type ) : ust::string8
 		result+= param.t.ToString();
 		result+= " param";
 
-		if( ust::ref_to_int(param) != ust::ref_to_int(function_type.params.back()))
+		if( ust::ref_cmp_ne( param, function_type.params.back() ) )
 		{
 			result+= ", ";
 		}
@@ -630,6 +631,10 @@ fn Type::GetLLVMType( this ) : LLVMTypeRef
 
 fn Type::IsDefaultConstructible( this ) : bool
 {
+	if_var( &fundamental_type : GetFundamentalType() )
+	{
+		return fundamental_type.fundamental_type == U_FundamentalType::void_;
+	}
 	if_var( &array_type : GetArrayType() )
 	{
 		return array_type.element_count == 0u64 || array_type.element_type.IsDefaultConstructible();
@@ -804,11 +809,6 @@ fn Type::ReferenceIsConvertibleTo( this, Type& dst ) : bool
 	if( this == dst )
 	{
 		return true;
-	}
-
-	if_var( &dst_fundamental_type : dst.GetFundamentalType() )
-	{
-		return dst_fundamental_type.fundamental_type == U_FundamentalType::void_;
 	}
 
 	if_var( &src_class_type : this.GetClassType() )
@@ -1281,7 +1281,7 @@ fn NamesScope::ToString( this ) : ust::string8
 						res+= ConstantVariableToString( v.t, v.constexpr_value );
 					}
 
-					if( ust::ref_to_int(arg) != ust::ref_to_int( class_type.base_template.get_ref().signature_args.back() ) )
+					if( ust::ref_cmp_ne( arg, class_type.base_template.get_ref().signature_args.back() ) )
 					{
 						res+= ", ";
 					}

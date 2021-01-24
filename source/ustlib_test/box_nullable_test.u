@@ -2,21 +2,23 @@
 import "../ustlib/box.u"
 import "../ustlib/box_nullable.u"
 
-struct S
+class S
 {
-	//Convert reference to integer and use unsafe because references forbidden in box.
-	size_type x;
-	fn constructor( mut this, i32 &mut in_x )
-	( x= ust::ref_to_int(in_x) ){}
+public:
+	// HACK! convert reference to pointer because we can not put struct with reference inside into container.
+	fn constructor( i32 &mut x )
+		(ptr_= $<(x) )
+	{}
 
 	fn destructor()
 	{
-		unsafe
-		{
-			++cast_mut(cast_ref_unsafe</i32/>(ust::int_to_ref(x)));
-		}
+		unsafe{ ++$>(ptr_); }
 	}
+
+private:
+	$(i32) ptr_;
 }
+
 struct BigStruct
 {
 	[ i32, 1024 ] one_k_ints;
@@ -98,11 +100,12 @@ fn nomangle main() : i32
 		var ust::box_nullable</ B /> mut a_box, mut b_box;
 		a_box= move(b_box);
 	}
+	unsafe
 	{ // box_nullable can be converted to box.
 		var ust::box_nullable</ i32 /> mut box0( 46 );
-		auto addr0= ust::ref_to_int( box0.get_ref() );
+		auto addr0= ust::ref_to_int( cast_ref_unsafe</void/>( box0.get_ref() ) );
 		var ust::box</ i32 /> box1= ust::to_non_nullable( move(box0) );
-		auto addr1= ust::ref_to_int( box1.get_ref() );
+		auto addr1= ust::ref_to_int( cast_ref_unsafe</void/>( box1.get_ref() ) );
 
 		halt if( addr0 != addr1 );
 		halt if( box1.get_ref() != 46 );

@@ -73,15 +73,16 @@ CodeBuilder::CodeBuilder(
 	fundamental_llvm_types_.char32= llvm::Type::getInt32Ty( llvm_context_ );
 
 	fundamental_llvm_types_.invalid_type= llvm::Type::getInt8Ty( llvm_context_ );
-	fundamental_llvm_types_.void_= llvm::Type::getInt8Ty( llvm_context_ );
 	fundamental_llvm_types_.void_for_ret= llvm::Type::getVoidTy( llvm_context_ );
 	fundamental_llvm_types_.bool_= llvm::Type::getInt1Ty( llvm_context_ );
+
+	// Use empty named structure for "void" type.
+	fundamental_llvm_types_.void_= llvm::StructType::create( llvm_context_, {}, "__U_void" );
 
 	fundamental_llvm_types_.int_ptr= data_layout_.getIntPtrType(llvm_context_);
 
 	invalid_type_= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type );
 	void_type_= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
-	void_type_for_ret_= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_for_ret );
 	bool_type_= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
 	size_type_=
 		fundamental_llvm_types_.int_ptr->getIntegerBitWidth() == 32u
@@ -123,11 +124,11 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 			module_.get() );
 
 	Function global_function_type;
-	global_function_type.return_type= void_type_for_ret_;
+	global_function_type.return_type= void_type_;
 
 	FunctionContext global_function_context(
 		std::move(global_function_type),
-		void_type_for_ret_,
+		void_type_,
 		llvm_context_,
 		global_function );
 	const StackVariablesStorage global_function_variables_storage( global_function_context );
@@ -783,7 +784,7 @@ size_t CodeBuilder::PrepareFunction(
 		Function& function_type= *func_variable.type.GetFunctionType();
 
 		if( func.type_.return_type_ == nullptr )
-			function_type.return_type= void_type_for_ret_;
+			function_type.return_type= void_type_;
 		else
 		{
 			if( const auto named_return_type = std::get_if<Synt::NamedTypeName>(func.type_.return_type_.get()) )
@@ -799,10 +800,7 @@ size_t CodeBuilder::PrepareFunction(
 					if( func.block_ == nullptr )
 						REPORT_ERROR( ExpectedBodyForAutoFunction, names_scope.GetErrors(), func.src_loc_, func_name );
 
-					if( func.type_.return_value_reference_modifier_ == ReferenceModifier::Reference )
-						function_type.return_type= void_type_;
-					else
-						function_type.return_type= void_type_for_ret_;
+					function_type.return_type= void_type_;
 				}
 			}
 
@@ -816,11 +814,6 @@ size_t CodeBuilder::PrepareFunction(
 
 		function_type.return_value_is_mutable= func.type_.return_value_mutability_modifier_ == MutabilityModifier::Mutable;
 		function_type.return_value_is_reference= func.type_.return_value_reference_modifier_ == ReferenceModifier::Reference;
-
-		// HACK. We have different llvm types for "void".
-		// llvm::void used only for empty return value, for other purposes we use "i8" for Ü::void.
-		if( !function_type.return_value_is_reference && function_type.return_type == void_type_ )
-			function_type.return_type= void_type_for_ret_;
 
 		if( is_special_method && !( function_type.return_type == void_type_ && !function_type.return_value_is_reference ) )
 			REPORT_ERROR( ConstructorAndDestructorMustReturnVoid, names_scope.GetErrors(), func.src_loc_ );
@@ -1047,9 +1040,7 @@ void CodeBuilder::CheckOverloadedOperator(
 	if( !is_this_class )
 		REPORT_ERROR( OperatorDoesNotHaveParentClassArguments, errors_container, src_loc );
 
-	const bool ret_is_void=
-		( func_type.return_type == void_type_ || func_type.return_type == void_type_for_ret_ ) &&
-		!func_type.return_value_is_reference;
+	const bool ret_is_void= func_type.return_type == void_type_ && !func_type.return_value_is_reference;
 
 	switch( overloaded_operator )
 	{
@@ -1227,11 +1218,10 @@ Type CodeBuilder::BuildFuncCode(
 	// Require full completeness even for reference arguments.
 	for( const Function::Arg& arg : function_type.args )
 	{
-		if( arg.type != void_type_ && !EnsureTypeComplete( arg.type ) )
+		if( !EnsureTypeComplete( arg.type ) )
 			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), args.front().src_loc_, arg.type );
 	}
-	if( !function_type.return_value_is_reference && function_type.return_type != void_type_ &&
-		!EnsureTypeComplete( function_type.return_type ) )
+	if( !function_type.return_value_is_reference && !EnsureTypeComplete( function_type.return_type ) )
 		REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_src_loc, function_type.return_type );
 
 	NamesScope function_names( "", &parent_names_scope );
@@ -1295,7 +1285,8 @@ Type CodeBuilder::BuildFuncCode(
 				// TODO - do it, only if parameters are not constant.
 				llvm::Value* address= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
 				address->setName( arg_name );
-				function_context.llvm_ir_builder.CreateStore( var.llvm_value, address );
+				if( arg.type != void_type_ )
+					function_context.llvm_ir_builder.CreateStore( var.llvm_value, address );
 
 				var.llvm_value= address;
 				var.location= Variable::Location::Pointer;
@@ -1410,10 +1401,7 @@ Type CodeBuilder::BuildFuncCode(
 	if( func_variable.return_type_is_auto )
 	{
 		func_variable.return_type_is_auto= false;
-		return
-			function_context.deduced_return_type
-				? *function_context.deduced_return_type
-				: ( function_type.return_value_is_reference ? void_type_ : void_type_for_ret_ );
+		return function_context.deduced_return_type ? *function_context.deduced_return_type : void_type_;
 	}
 
 	if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
@@ -1426,11 +1414,8 @@ Type CodeBuilder::BuildFuncCode(
 		const bool auto_contexpr= func_variable.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprAuto;
 		bool can_be_constexpr= true;
 
-		if( !auto_contexpr )
-		{
-			if( function_type.return_type != void_type_for_ret_ && !EnsureTypeComplete( function_type.return_type ) )
-				REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), func_variable.body_src_loc, function_type.return_type ); // Completeness required for constexpr possibility check.
-		}
+		if( !auto_contexpr && !EnsureTypeComplete( function_type.return_type ) )
+			REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), func_variable.body_src_loc, function_type.return_type ); // Completeness required for constexpr possibility check.
 
 		if( function_type.unsafe ||
 			!function_type.return_type.CanBeConstexpr() ||
@@ -1442,17 +1427,11 @@ Type CodeBuilder::BuildFuncCode(
 
 		for( const Function::Arg& arg : function_type.args )
 		{
-			if( !auto_contexpr )
-			{
-				if( arg.type != void_type_ && !EnsureTypeComplete( arg.type ) )
-					REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), func_variable.body_src_loc, arg.type ); // Completeness required for constexpr possibility check.
-			}
+			if( !auto_contexpr && !EnsureTypeComplete( arg.type ) )
+				REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), func_variable.body_src_loc, arg.type ); // Completeness required for constexpr possibility check.
 
-			if( !arg.type.CanBeConstexpr() ) // Incomplete types are not constexpr.
-				can_be_constexpr= false; // Allowed only constexpr types.
-			if( arg.type == void_type_ ) // Disallow "void" arguments, because we currently can not constantly convert any reference to "void" in constexpr function call.
-				can_be_constexpr= false;
-			if( arg.type.GetFunctionPointerType() != nullptr ) // Currently function pointers not supported.
+			if( !arg.type.CanBeConstexpr() || // Allowed only constexpr types. Incomplete types are not constexpr.
+				arg.type.GetFunctionPointerType() != nullptr )
 				can_be_constexpr= false;
 
 			// We support constexpr functions with mutable reference-arguments, but such functions can not be used as root for constexpr function evaluation.
@@ -1947,7 +1926,10 @@ llvm::Value*CodeBuilder::CreateMoveToLLVMRegisterInstruction(
 	case Variable::Location::LLVMRegister:
 		return variable.llvm_value;
 	case Variable::Location::Pointer:
-		return function_context.llvm_ir_builder.CreateLoad( variable.llvm_value );
+		if( variable.type == void_type_ )
+			return llvm::UndefValue::get(fundamental_llvm_types_.void_);
+		else
+			return function_context.llvm_ir_builder.CreateLoad( variable.llvm_value );
 	};
 
 	U_ASSERT(false);
@@ -1971,25 +1953,20 @@ llvm::Value* CodeBuilder::CreateReferenceCast( llvm::Value* const ref, const Typ
 	if( src_type == dst_type )
 		return ref;
 
-	if( dst_type == void_type_ )
-		return function_context.llvm_ir_builder.CreatePointerCast( ref, dst_type.GetLLVMType()->getPointerTo() );
-	else
+	const Class* const src_class_type= src_type.GetClassType();
+	U_ASSERT( src_class_type != nullptr );
+
+	for( const Class::Parent& src_parent_class : src_class_type->parents )
 	{
-		const Class* const src_class_type= src_type.GetClassType();
-		U_ASSERT( src_class_type != nullptr );
+		llvm::Value* const sub_ref=
+			function_context.llvm_ir_builder.CreateGEP(
+				ref,
+				{ GetZeroGEPIndex(), GetFieldGEPIndex( src_parent_class.field_number ) } );
 
-		for( const Class::Parent& src_parent_class : src_class_type->parents )
-		{
-			llvm::Value* const sub_ref=
-				function_context.llvm_ir_builder.CreateGEP(
-					ref,
-					{ GetZeroGEPIndex(), GetFieldGEPIndex( src_parent_class.field_number ) } );
-
-			if( src_parent_class.class_ == dst_type )
-				return sub_ref;
-			else if( Type(src_parent_class.class_).ReferenceIsConvertibleTo( dst_type ) )
-				return CreateReferenceCast( sub_ref, src_parent_class.class_, dst_type, function_context );
-		}
+		if( src_parent_class.class_ == dst_type )
+			return sub_ref;
+		else if( Type(src_parent_class.class_).ReferenceIsConvertibleTo( dst_type ) )
+			return CreateReferenceCast( sub_ref, src_parent_class.class_, dst_type, function_context );
 	}
 
 	U_ASSERT(false);

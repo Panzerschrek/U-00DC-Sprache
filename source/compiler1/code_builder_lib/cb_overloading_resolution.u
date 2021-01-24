@@ -55,18 +55,6 @@ fn ComplareConversionsType(
 
 	if( src.ReferenceIsConvertibleTo( dst_left ) && src.ReferenceIsConvertibleTo( dst_right ) )
 	{
-		var Type void_type( FundamentalType( U_FundamentalType::void_, LLVMTypeRef::Null ) );
-
-		// If one of types are void - other is better (because it is not void ).
-		if( dst_left  == void_type )
-		{
-			return ConversionsCompareResult::RightIsBetter;
-		}
-		if( dst_right == void_type )
-		{
-			return ConversionsCompareResult::LeftIsBetter;
-		}
-
 		// SPRACHE_TODO - select more relevant compare function.
 
 		//const Class&   src_class= *src.GetClassType();
@@ -502,8 +490,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 			auto& dst_type= function_type.params[arg_n].t;
 			if( src_type != dst_type )
 			{
-				if( src_type != void_type_ && dst_type != void_type_ &&
-					!( EnsureTypeComplete( src_type ) && EnsureTypeComplete( dst_type ) ) )
+				if( !( EnsureTypeComplete( src_type ) && EnsureTypeComplete( dst_type ) ) )
 				{
 					if( produce_errors )
 					{

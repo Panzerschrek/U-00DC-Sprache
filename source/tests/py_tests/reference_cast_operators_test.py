@@ -3,12 +3,15 @@ from py_tests_common import *
 
 def CastRef_OperatorDeclaration_Test():
 	c_program_text= """
+		class A polymorph {}
+		class B : A {}
 		fn Foo()
 		{
-			auto x= 0;
-			cast_ref</ void />( x );
+			var B b;
+			cast_ref</ A/>( b );
 		}
 	"""
+	return
 	tests_lib.build_program( c_program_text )
 
 
@@ -45,14 +48,15 @@ def CastMut_OperatorDeclaration_Test():
 	tests_lib.build_program( c_program_text )
 
 
-def CastRef_Test0_ShouldCastToVoid():
+def CastRef_Test0_ShouldNotCastToVoid():
 	c_program_text= """
 		fn ToVoid( i32& x ) : void&
 		{
 			return cast_ref</ void />(x);
 		}
 	"""
-	tests_lib.build_program( c_program_text )
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
 
 
 def CastRef_Test1_ShouldCastChildToParent():
@@ -111,9 +115,11 @@ def CastRef_Test4_ShouldSaveMutability():
 
 def CastRef_Test5_ShouldCastValue():
 	c_program_text= """
+		class A polymorph {}
+		class B : A {}
 		fn Foo()
 		{
-			cast_ref</ void />( 42 );
+			cast_ref</ A />( B() );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -150,7 +156,7 @@ def CastRef_Test9_ShouldPreserveReferencedVariables():
 		fn Foo() : void&
 		{
 			auto x= 0;
-			return cast_ref</ void />(x); //  Return reference to local variable.
+			unsafe{  return cast_ref_unsafe</ void />(x);  } //  Return reference to local variable.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -200,8 +206,9 @@ def CastRefUnsafe_Test1_SholudCastVoidToAnything():
 		fn Foo() : i32
 		{
 			var i32 mut x= 0;
+			unsafe
 			{
-				auto &mut r= AsInt( cast_ref</ void />(x) );  // Cast to void and back
+				auto &mut r= AsInt( cast_ref_unsafe</ void />(x) );  // Cast to void and back
 				r= 66854;
 			}
 			return x;
@@ -223,8 +230,9 @@ def CastRefUnsafe_Test2_SholudCastVoidToAnything():
 		fn Foo() : f32
 		{
 			var S mut s{ .x= 0.0f };
+			unsafe
 			{
-				var S &mut r= AsS( cast_ref</ void />(s) );  // Cast to void and back
+				var S &mut r= AsS( cast_ref_unsafe</ void />(s) );  // Cast to void and back
 				r.x= 5565.5f;
 			}
 			return s.x;
@@ -243,8 +251,11 @@ def CastRefUnsafe_Test3_ShouldSaveMutability():
 		fn Foo() : i32
 		{
 			auto imut x= 0;
-			var void &imut v= x;
-			unsafe{  return A( cast_ref_unsafe</ i32 />(v) );  }
+			unsafe
+			{
+				auto &imut v= cast_ref_unsafe</void/>(x);
+				return A( cast_ref_unsafe</ i32 />(v) );
+			}
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -260,8 +271,11 @@ def CastRefUnsafe_Test4_ShouldSaveMutability():
 		fn Foo() : i32
 		{
 			auto mut x= 0;
-			var void &mut v= x;
-			unsafe{  return A( cast_ref_unsafe</ i32 />(v) );  }
+			unsafe
+			{
+				auto &mut v= cast_ref_unsafe</void/>( x );
+				return A( cast_ref_unsafe</ i32 />(v) );
+			}
 		}
 	"""
 	tests_lib.build_program( c_program_text )

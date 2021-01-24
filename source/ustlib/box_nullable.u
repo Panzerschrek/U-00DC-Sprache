@@ -34,7 +34,7 @@ public:
 		unsafe
 		{
 			static_assert( typeinfo</ box</T/> />.size_of == typeinfo</ $(T) />.size_of );
-			memory_copy( ptr_, val, typeinfo</ box</T/> />.size_of );
+			memory_copy(  cast_ref_unsafe</void/>(ptr_),  cast_ref_unsafe</void/>(val), typeinfo</ box</T/> />.size_of );
 			move_into_nowhere( move(val) );
 		}
 	}
@@ -171,7 +171,7 @@ fn to_non_nullable( box_nullable</T/> mut val ) : box</T/>
 	{
 		static_assert( typeinfo</ box</T/> />.size_of == typeinfo</ box_nullable</T/> />.size_of );
 		var box</T/> mut result= uninitialized;
-		memory_copy( result, val, typeinfo</ box</T/> />.size_of );
+		memory_copy( cast_ref_unsafe</void/>( result ), cast_ref_unsafe</void/>( val ), typeinfo</ box</T/> />.size_of );
 		move_into_nowhere( move(val) );
 		return move(result);
 	}
