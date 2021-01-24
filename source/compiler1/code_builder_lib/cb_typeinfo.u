@@ -307,11 +307,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 
 	if( t.GetFunctionType().empty() )
 	{
-		auto mut llvm_type= t.GetLLVMType();
-		if( llvm_type == fundamental_llvm_types_.void_for_ret_ )
-		{
-			llvm_type= fundamental_llvm_types_.void_;
-		}
+		var LLVMTypeRef llvm_type= t.GetLLVMType();
 
 		// see llvm/lib/IR/DataLayout.cpp:40
 		ADD_SIZE_FIELD( "size_of", LLVMABISizeOfType( data_layout_, llvm_type ) )

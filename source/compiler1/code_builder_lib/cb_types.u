@@ -240,11 +240,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 		{
 			ret_llvm_type= LLVMPointerType( ret_llvm_type, 0u );
 		}
-		else if( is_s_ret )
-		{
-			ret_llvm_type= fundamental_llvm_types_.void_for_ret_;
-		}
-		else if( res.return_type == void_type_ )
+		else if( is_s_ret || res.return_type == void_type_ )
 		{
 			ret_llvm_type= fundamental_llvm_types_.void_for_ret_;
 		}

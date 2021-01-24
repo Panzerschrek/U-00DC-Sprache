@@ -800,10 +800,7 @@ size_t CodeBuilder::PrepareFunction(
 					if( func.block_ == nullptr )
 						REPORT_ERROR( ExpectedBodyForAutoFunction, names_scope.GetErrors(), func.src_loc_, func_name );
 
-					if( func.type_.return_value_reference_modifier_ == ReferenceModifier::Reference )
-						function_type.return_type= void_type_;
-					else
-						function_type.return_type= void_type_;
+					function_type.return_type= void_type_;
 				}
 			}
 
