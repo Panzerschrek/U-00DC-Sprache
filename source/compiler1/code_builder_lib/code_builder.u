@@ -1693,7 +1693,6 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			{
 				can_be_constexpr&=
 					param.t.CanBeConstexpr() &&
-					!( param.t == void_type_ && param.is_reference ) && // Disallow "void" reference arguments, because we currently can not constantly convert any reference to "void" in constexpr function call.
 					param.t.GetFunctionPointerType().empty();  // Currently function pointers not supported.
 			}
 		}

@@ -1430,11 +1430,8 @@ Type CodeBuilder::BuildFuncCode(
 			if( !auto_contexpr && !EnsureTypeComplete( arg.type ) )
 				REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), func_variable.body_src_loc, arg.type ); // Completeness required for constexpr possibility check.
 
-			if( !arg.type.CanBeConstexpr() ) // Incomplete types are not constexpr.
-				can_be_constexpr= false; // Allowed only constexpr types.
-			if( arg.type == void_type_ && arg.is_reference ) // Disallow "void" reference arguments, because we currently can not constantly convert any reference to "void" in constexpr function call.
-				can_be_constexpr= false;
-			if( arg.type.GetFunctionPointerType() != nullptr ) // Currently function pointers not supported.
+			if( !arg.type.CanBeConstexpr() || // Allowed only constexpr types. Incomplete types are not constexpr.
+				arg.type.GetFunctionPointerType() != nullptr )
 				can_be_constexpr= false;
 
 			// We support constexpr functions with mutable reference-arguments, but such functions can not be used as root for constexpr function evaluation.

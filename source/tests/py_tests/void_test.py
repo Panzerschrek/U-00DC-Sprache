@@ -206,6 +206,15 @@ def VoidTypeIsConstexpr_Test5():
 	assert( HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 6 ) )
 
 
+def VoidTypeIsConstexpr_Test56():
+	c_program_text= """
+		fn constexpr Foo( void& r ) {}  // Function with void reference param can be constexpr.
+		var void v0= zero_init;
+		var void v1= Foo(v0);
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def VoidTypeTypeinfo_Test0():
 	c_program_text= """
 		auto& ti= typeinfo</void/>;
