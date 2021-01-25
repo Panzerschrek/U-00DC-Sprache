@@ -5,7 +5,7 @@
 #include "enum.hpp"
 #include "template_types.hpp"
 #include "mangling.hpp"
-
+#include <iostream>
 namespace U
 {
 
@@ -15,120 +15,149 @@ namespace CodeBuilderPrivate
 namespace
 {
 
-struct MangleGraphNode
+char Base36Digit( const size_t value )
 {
-	std::string prefix;
-	std::vector<MangleGraphNode> childs;
-	std::string postfix;
-	bool cachable= true;
-};
-
-char Base36Digit( size_t value )
-{
-	value %= 36u;
+	U_ASSERT( value < 36u );
 	if( value < 10 )
 		return char('0' + value);
 	else
 		return char('A' + ( value - 10 ) );
 }
 
-class NamesCache
+class ManglerState
 {
+private:
+	using LenType = uint16_t;
+
 public:
-	void AddName( std::string name )
+	void PushName( const char c )
 	{
-		for( const std::string& candidate : names_container_ )
-			if( candidate == name )
-				return;
-		names_container_.push_back( std::move(name) );
+		result_name_full_.push_back( c );
+		result_name_compressed_.push_back( c );
 	}
 
-	std::optional<std::string> GetReplacement( const std::string& name ) const
+	void PushName( const std::string_view name )
 	{
-		for( const std::string& candidate : names_container_ )
-			if( name == candidate )
+		result_name_full_+= name;
+		result_name_compressed_+= name;
+	}
+
+	std::string TakeResult()
+	{
+		return std::move(result_name_compressed_);
+	}
+
+public:
+	class NodeHolder
+	{
+	public:
+		explicit NodeHolder( ManglerState& state )
+			: state_(state), start_(state.GetCurrentPos()), compressed_start_(state.GetCurrentCompressedPos())
+		{}
+
+		~NodeHolder()
+		{
+			state_.FinalizePart( start_, compressed_start_ );
+		}
+
+	private:
+		ManglerState& state_;
+		const LenType start_;
+		const LenType compressed_start_;
+	};
+
+private:
+	LenType GetCurrentPos() const
+	{
+		return LenType( result_name_full_.size() );
+	}
+
+	LenType GetCurrentCompressedPos() const
+	{
+		return LenType( result_name_compressed_.size() );
+	}
+
+	void FinalizePart( const LenType start, const LenType compressed_start )
+	{
+		U_ASSERT( start <= result_name_full_.size() );
+		const auto size= LenType( result_name_full_.size() - start );
+		if( size == 0 )
+			return;
+		U_ASSERT( compressed_start <= result_name_compressed_.size() );
+
+		const std::string_view current_part= std::string_view(result_name_full_).substr( start, size );
+
+		// Search for replacement.
+		for( size_t i= 0; i < parts_.size(); ++i )
+		{
+			const NameRef& part= parts_[i];
+			const std::string_view prev_part= std::string_view(result_name_full_).substr( part.start, part.size );
+			if( prev_part == current_part )
 			{
-				const size_t index= size_t( &candidate - names_container_.data() );
+				result_name_compressed_.resize( compressed_start );
+				result_name_compressed_.push_back( 'S' );
 
-				if( index == 0u )
-					return "S_";
-
-				size_t n= index - 1u;
-				std::string result;
-
-				do // Converto to 36-base number representation.
+				if( i > 0u )
 				{
-					const size_t base36_digit= n % 36u;
-					n/= 36u;
-					result.insert( result.begin(), Base36Digit( base36_digit ) );
+					size_t n= i - 1u;
+					if( n < 36 )
+						result_name_compressed_.push_back( Base36Digit( n ) );
+					else if( n < 36 * 36 )
+					{
+						result_name_compressed_.push_back( Base36Digit( n / 36 ) );
+						result_name_compressed_.push_back( Base36Digit( n % 36 ) );
+					}
+					else if( n < 36 * 36 * 36 )
+					{
+						result_name_compressed_.push_back( Base36Digit( n / ( 36 * 36 ) ) );
+						result_name_compressed_.push_back( Base36Digit( n / 36 % 36 ) );
+						result_name_compressed_.push_back( Base36Digit( n % 36 ) );
+					}
+					else U_ASSERT(false); // TODO
 				}
-				while( n > 0u );
+				result_name_compressed_.push_back( '_' );
 
-				return "S" + result + "_";
+				//std::cout << "Result name: " << result_name_full_ << ", current part: " << current_part << ", replace with " << ( i == 0 ? "S_" : ( "S" + std::to_string(i - 1) ) + "_" ) << ", compressed: " << result_name_compressed_ << std::endl;
+
+				return;
 			}
+		}
 
-		return std::nullopt;
+		//std::cout << "Result name: " << result_name_full_ << ", current part: " << current_part << ", keep as is, compressed: " << result_name_compressed_ << std::endl;
+
+		// Not found replacement - add new part.
+		parts_.push_back( NameRef{ start, size } );
 	}
 
 private:
-	std::vector<std::string> names_container_;
+	struct NameRef
+	{
+		LenType start;
+		LenType size;
+	};
+
+private:
+	std::vector<NameRef> parts_;
+	std::string result_name_full_;
+	std::string result_name_compressed_;
 };
 
-struct NamePair
+void GetTypeName( ManglerState& mangler_state, const Type& type );
+void GetNamespacePrefix_r( ManglerState& mangler_state, const NamesScope& names_scope );
+
+void EncodeTemplateArgs( ManglerState& mangler_state, const TemplateArgs& template_args )
 {
-	std::string full;
-	std::string compressed;
-};
-
-NamePair MangleGraphFinalize_r( NamesCache& names_cache, const MangleGraphNode& node )
-{
-	NamePair result;
-
-	result.full+= node.prefix;
-	result.compressed+= node.prefix;
-	for( const MangleGraphNode& child_node : node.childs )
-	{
-		const NamePair child_node_result= MangleGraphFinalize_r( names_cache, child_node );
-		result.full+= child_node_result.full;
-		result.compressed+= child_node_result.compressed;
-	}
-	result.full+= node.postfix;
-	result.compressed+= node.postfix;
-
-	if( node.cachable )
-	{
-		if( const auto replacement = names_cache.GetReplacement( result.full ) )
-			result.compressed= *replacement;
-		else
-			names_cache.AddName( result.full );
-	}
-
-	return result;
-}
-
-std::string MangleGraphFinalize( const MangleGraphNode& node )
-{
-	NamesCache names_cache;
-	return MangleGraphFinalize_r( names_cache, node ).compressed;
-}
-
-MangleGraphNode GetTypeName( const Type& type );
-MangleGraphNode GetNamespacePrefix_r( const NamesScope& names_scope );
-
-MangleGraphNode EncodeTemplateArgs( const TemplateArgs& template_args )
-{
-	MangleGraphNode result;
-	result.prefix= "I";
+	mangler_state.PushName( "I" );
 
 	for( const TemplateArg& template_arg : template_args )
 	{
 		if( const auto type= std::get_if<Type>( &template_arg ) )
-			result.childs.push_back( GetTypeName( *type ) );
+			GetTypeName( mangler_state, *type );
 		else if( const auto variable= std::get_if<Variable>( &template_arg ) )
 		{
-			MangleGraphNode variable_param_node;
-			variable_param_node.prefix= "L";
-			variable_param_node.childs.push_back( GetTypeName( variable->type ) );
+			mangler_state.PushName( "L" );
+
+			GetTypeName( mangler_state, variable->type );
 
 			bool is_signed= false;
 			if( const auto fundamental_type= variable->type.GetFundamentalType() )
@@ -143,50 +172,48 @@ MangleGraphNode EncodeTemplateArgs( const TemplateArgs& template_args )
 			{
 				const int64_t value_signed= param_value.getSExtValue();
 				if( value_signed >= 0 )
-					variable_param_node.postfix= std::to_string( value_signed );
+					mangler_state.PushName( std::to_string( value_signed ) );
 				else
-					variable_param_node.postfix= "n" + std::to_string( -value_signed );
+				{
+					mangler_state.PushName( "n" );
+					mangler_state.PushName( std::to_string( -value_signed ) );
+				}
 			}
 			else
-				variable_param_node.postfix= std::to_string( param_value.getZExtValue() );
+				mangler_state.PushName( std::to_string( param_value.getZExtValue() ) );
 
-			variable_param_node.postfix+= "E";
-
-			variable_param_node.cachable= false;
-			result.childs.push_back( std::move( variable_param_node ) );
+			mangler_state.PushName( "E" );
 		}
 		else U_ASSERT(false);
 	}
 
-	result.postfix= "E";
-
-	result.cachable= false;
-	return result;
+	mangler_state.PushName( "E" );
 }
 
-MangleGraphNode GetTemplateClassName( const Class& the_class )
+void GetTemplateClassName( ManglerState& mangler_state, const Class& the_class )
 {
 	U_ASSERT( the_class.base_template != std::nullopt );
 
-	MangleGraphNode name_node;
-	const std::string& class_name= the_class.base_template->class_template->syntax_element->name_;
-	name_node.postfix= std::to_string( class_name.size() ) + class_name;
+	ManglerState::NodeHolder result_node( mangler_state );
 
-	// Skip template parameters namespace.
-	U_ASSERT( the_class.members.GetParent() != nullptr );
-	if( const auto parent= the_class.members.GetParent()->GetParent() )
-		if( !parent->GetThisNamespaceName().empty() )
-			name_node.childs.push_back( GetNamespacePrefix_r( *parent ) );
+	{
+		ManglerState::NodeHolder name_node( mangler_state );
 
-	MangleGraphNode args_node= EncodeTemplateArgs( the_class.base_template->signature_args );
+		// Skip template parameters namespace.
+		U_ASSERT( the_class.members.GetParent() != nullptr );
+		if( const auto parent= the_class.members.GetParent()->GetParent() )
+			if( !parent->GetThisNamespaceName().empty() )
+				GetNamespacePrefix_r( mangler_state, *parent );
 
-	MangleGraphNode result;
-	result.childs.push_back( std::move( name_node ) );
-	result.childs.push_back( std::move( args_node ) );
-	return result;
+		const std::string& class_name= the_class.base_template->class_template->syntax_element->name_;
+		mangler_state.PushName( std::to_string( class_name.size() ) );
+		mangler_state.PushName( class_name );
+	}
+
+	EncodeTemplateArgs( mangler_state, the_class.base_template->signature_args );
 }
 
-MangleGraphNode GetNamespacePrefix_r( const NamesScope& names_scope )
+void GetNamespacePrefix_r( ManglerState& mangler_state, const NamesScope& names_scope )
 {
 	const std::string& name= names_scope.GetThisNamespaceName();
 	if( name == Class::c_template_class_name )
@@ -196,171 +223,168 @@ MangleGraphNode GetNamespacePrefix_r( const NamesScope& names_scope )
 		//const auto& the_class= *reinterpret_cast<const Class*>( names_scope_address - offsetof(Class, members) );
 		const auto& the_class= *reinterpret_cast<const Class*>( names_scope_address - 0 );
 		if( the_class.base_template != std::nullopt )
-			return GetTemplateClassName( the_class );
+		{
+			GetTemplateClassName( mangler_state, the_class );
+			return;
+		}
 	}
 
-	MangleGraphNode result;
+	ManglerState::NodeHolder result_node( mangler_state );
 
 	if( const auto parent= names_scope.GetParent() )
 		if( !parent->GetThisNamespaceName().empty() )
-			result.childs.push_back( GetNamespacePrefix_r( *parent ) );
+			GetNamespacePrefix_r( mangler_state, *parent );
 
-	result.postfix= std::to_string( name.size() ) + name;
-
-	return result;
+	mangler_state.PushName( std::to_string( name.size() ) );
+	mangler_state.PushName( name );
 }
 
-MangleGraphNode GetNestedName(
+void GetNestedName(
+	ManglerState& mangler_state,
 	const std::string& name,
-	const NamesScope& parent_scope,
-	const bool no_name_num_prefix= false,
-	const TemplateArgs* template_args= nullptr )
+	const NamesScope& parent_scope )
 {
-	MangleGraphNode result;
-
 	// Normally we should use "T_" instead of "S_" for referencing template parameters in function signature.
 	// But without "T_" it works fine too.
 
-	const std::string num_prefix=  no_name_num_prefix ? "" : std::to_string( name.size() );
+	ManglerState::NodeHolder result_node( mangler_state );
+
+	const std::string num_prefix= std::to_string( name.size() );
 	if( parent_scope.GetParent() != nullptr )
 	{
-		if( template_args != nullptr )
-		{
-			MangleGraphNode name_node;
-			name_node.postfix= num_prefix + name;
-			name_node.childs.push_back( GetNamespacePrefix_r( parent_scope ) );
-
-			MangleGraphNode args_node= EncodeTemplateArgs( *template_args );
-
-			result.prefix= "N";
-			result.childs.push_back( std::move( name_node ) );
-			result.childs.push_back( std::move( args_node ) );
-			result.postfix= "Ev";
-		}
-		else
-		{
-			result.prefix= "N";
-			result.childs.push_back( GetNamespacePrefix_r( parent_scope ) );
-			result.postfix= num_prefix + name + "E";
-		}
+		mangler_state.PushName( "N" );
+		GetNamespacePrefix_r( mangler_state, parent_scope );
+		mangler_state.PushName( num_prefix );
+		mangler_state.PushName( name );
+		mangler_state.PushName( "E" );
 	}
 	else
 	{
-		if( template_args != nullptr )
-		{
-			MangleGraphNode name_node;
-			name_node.postfix= num_prefix + name;
-
-			MangleGraphNode args_node= EncodeTemplateArgs( *template_args );
-
-			result.childs.push_back( std::move( name_node ) );
-			result.childs.push_back( std::move( args_node ) );
-			result.postfix= "v";
-		}
-		else
-			result.prefix= num_prefix + name;
+		mangler_state.PushName( num_prefix );
+		mangler_state.PushName( name );
 	}
-
-	return result;
 }
 
-MangleGraphNode GetTypeName( const Type& type )
+std::string_view EncodeFundamentalType( const U_FundamentalType t )
 {
-	MangleGraphNode result;
+	switch( t )
+	{
+	case U_FundamentalType::InvalidType:
+	case U_FundamentalType::LastType:
+		 return "";
+	case U_FundamentalType::Void: return "v";
+	case U_FundamentalType::Bool: return "b";
+	case U_FundamentalType:: i8: return "a"; // C++ signed char
+	case U_FundamentalType:: u8: return "h"; // C++ unsigned char
+	case U_FundamentalType::i16: return "s";
+	case U_FundamentalType::u16: return "t";
+	case U_FundamentalType::i32: return "i";
+	case U_FundamentalType::u32: return "j";
+	case U_FundamentalType::i64: return "x";
+	case U_FundamentalType::u64: return "y";
+	case U_FundamentalType::i128: return "n";
+	case U_FundamentalType::u128: return "o";
+	case U_FundamentalType::f32: return "f";
+	case U_FundamentalType::f64: return "d";
+	case U_FundamentalType::char8 : return "c"; // C++ char
+	case U_FundamentalType::char16: return "Ds"; // C++ char16_t
+	case U_FundamentalType::char32: return "Di"; // C++ char32_t
+	};
 
+	U_ASSERT(false);
+	return "";
+}
+
+void GetTypeName( ManglerState& mangler_state, const Type& type )
+{
 	if( const auto fundamental_type= type.GetFundamentalType() )
 	{
-		switch( fundamental_type->fundamental_type )
-		{
-		case U_FundamentalType::InvalidType: break;
-		case U_FundamentalType::LastType: break;
-		case U_FundamentalType::Void: result.prefix= "v"; break;
-		case U_FundamentalType::Bool: result.prefix= "b"; break;
-		case U_FundamentalType:: i8: result.prefix= "a"; break; // C++ signed char
-		case U_FundamentalType:: u8: result.prefix= "h"; break; // C++ unsigned char
-		case U_FundamentalType::i16: result.prefix= "s"; break;
-		case U_FundamentalType::u16: result.prefix= "t"; break;
-		case U_FundamentalType::i32: result.prefix= "i"; break;
-		case U_FundamentalType::u32: result.prefix= "j"; break;
-		case U_FundamentalType::i64: result.prefix= "x"; break;
-		case U_FundamentalType::u64: result.prefix= "y"; break;
-		case U_FundamentalType::i128: result.prefix= "n"; break;
-		case U_FundamentalType::u128: result.prefix= "o"; break;
-		case U_FundamentalType::f32: result.prefix= "f"; break;
-		case U_FundamentalType::f64: result.prefix= "d"; break;
-		case U_FundamentalType::char8 : result.prefix= "c"; break; // C++ char
-		case U_FundamentalType::char16: result.prefix= "Ds"; break; // C++ char16_t
-		case U_FundamentalType::char32: result.prefix= "Di"; break;  // C++ char32_t
-		};
-
-		result.cachable= false; // Do not replace names of fundamental types
+		// Do not cache fundamental type names.
+		mangler_state.PushName( EncodeFundamentalType( fundamental_type->fundamental_type ) );
 	}
 	else if( const auto array_type= type.GetArrayType() )
 	{
-		result.prefix= "A" + std::to_string( array_type->size ) + "_";
-		result.childs.push_back( GetTypeName( array_type->type ) );
+		ManglerState::NodeHolder result_node( mangler_state );
+		mangler_state.PushName( "A" );
+		mangler_state.PushName( std::to_string( array_type->size ) );
+		mangler_state.PushName( "_" );
+		GetTypeName( mangler_state, array_type->type );
 	}
 	else if( const Tuple* const tuple_type= type.GetTupleType() )
 	{
 		// Encode tuples, like type templates.
-		MangleGraphNode name_node;
-		const std::string& keyword= Keyword( Keywords::tup_ );
-		name_node.postfix= std::to_string(keyword.size()) + keyword;
+		ManglerState::NodeHolder result_node( mangler_state );
+		{
+			ManglerState::NodeHolder name_hodler( mangler_state );
 
-		MangleGraphNode args_node;
-		args_node.prefix= "I";
-		args_node.childs.reserve( tuple_type->elements.size() );
+			const std::string& keyword= Keyword( Keywords::tup_ );
+			mangler_state.PushName( std::to_string(keyword.size()) );
+			mangler_state.PushName( keyword );
+		}
+
+		mangler_state.PushName( "I" );
 		for( const Type& element_type : tuple_type->elements )
-			args_node.childs.push_back( GetTypeName( element_type ) );
-		args_node.postfix= "E";
-		args_node.cachable= false;
-
-		result.childs.push_back(std::move(name_node));
-		result.childs.push_back(std::move(args_node));
+			GetTypeName( mangler_state, element_type );
+		mangler_state.PushName( "E" );
 	}
 	else if( const auto class_type= type.GetClassType() )
 	{
 		if( class_type->typeinfo_type != std::nullopt )
 		{
-			MangleGraphNode name_node;
-			const std::string& class_name= class_type->members.GetThisNamespaceName();
-			name_node.postfix= std::to_string( class_name.size() ) + class_name;
+			ManglerState::NodeHolder result_node( mangler_state );
+			{
+				ManglerState::NodeHolder name_node( mangler_state );
 
-			TemplateArgs typeinfo_pseudo_args;
-			typeinfo_pseudo_args.push_back( *class_type->typeinfo_type );
-			MangleGraphNode params_node= EncodeTemplateArgs( typeinfo_pseudo_args );
+				const std::string& class_name= class_type->members.GetThisNamespaceName();
+				mangler_state.PushName( std::to_string( class_name.size() ) );
+				mangler_state.PushName( class_name );
+			}
+			{
+				ManglerState::NodeHolder params_node( mangler_state );
 
-			result.childs.push_back( std::move( name_node ) );
-			result.childs.push_back( std::move( params_node ) );
+				TemplateArgs typeinfo_pseudo_args;
+				typeinfo_pseudo_args.push_back( *class_type->typeinfo_type );
+				EncodeTemplateArgs( mangler_state, typeinfo_pseudo_args );
+			}
 		}
 		else if( class_type->base_template != std::nullopt )
 		{
-			result= GetTemplateClassName( *class_type );
+
 			if( class_type->base_template->class_template->parent_namespace->GetParent() != nullptr )
 			{
-				result.prefix= "N";
-				result.postfix= "E";
+				ManglerState::NodeHolder result_node( mangler_state );
+
+				mangler_state.PushName( "N" );
+				GetTemplateClassName( mangler_state, *class_type );
+				mangler_state.PushName( "E" );
 			}
+			else
+				GetTemplateClassName( mangler_state, *class_type );
 		}
 		else
-			result= GetNestedName( class_type->members.GetThisNamespaceName(), *class_type->members.GetParent() );
+			GetNestedName( mangler_state, class_type->members.GetThisNamespaceName(), *class_type->members.GetParent() );
 	}
 	else if( const auto enum_type= type.GetEnumType() )
 	{
-		result= GetNestedName( enum_type->members.GetThisNamespaceName(), *enum_type->members.GetParent() );
+		GetNestedName( mangler_state, enum_type->members.GetThisNamespaceName(), *enum_type->members.GetParent() );
 	}
 	else if( const auto raw_pointer= type.GetRawPointerType() )
 	{
-		result.prefix= "P";
-		result.childs.push_back( GetTypeName( raw_pointer->type ) );
+		ManglerState::NodeHolder result_node( mangler_state );
+		mangler_state.PushName( "P" );
+		GetTypeName( mangler_state, raw_pointer->type );
 	}
 	else if( const auto function_pointer= type.GetFunctionPointerType() )
 	{
-		result.prefix= "P";
-		result.childs.push_back( GetTypeName( function_pointer->function ) );
+		ManglerState::NodeHolder result_node( mangler_state );
+		mangler_state.PushName( "P" );
+		GetTypeName( mangler_state, function_pointer->function );
 	}
 	else if( const auto function= type.GetFunctionType() )
 	{
+		ManglerState::NodeHolder function_node( mangler_state );
+		mangler_state.PushName( "F" );
+
 		std::vector<Function::Arg> signature;
 		{
 			Function::Arg ret;
@@ -379,57 +403,58 @@ MangleGraphNode GetTypeName( const Type& type )
 		}
 		signature.insert( signature.end(), function->args.begin(), function->args.end() );
 
-		result.childs.reserve( signature.size() );
 		for( const Function::Arg& arg : signature )
 		{
-			MangleGraphNode arg_node= GetTypeName( arg.type );
-			if( !arg.is_mutable && arg.is_reference ) // push "Konst" for reference immutable arguments
-			{
-				MangleGraphNode konst_node;
-				konst_node.prefix= "K";
-				konst_node.childs.push_back( std::move( arg_node ) );
-				arg_node= std::move( konst_node );
-			}
 			if( arg.is_reference )
 			{
-				MangleGraphNode ref_node;
-				ref_node.prefix= "R";
-				ref_node.childs.push_back( std::move( arg_node ) );
-				arg_node= std::move( ref_node );
-			}
+				if( arg.is_mutable )
+				{
+					ManglerState::NodeHolder ref_node( mangler_state );
+					mangler_state.PushName( "R" );
 
-			result.childs.push_back( std::move(arg_node) );
+					GetTypeName( mangler_state, arg.type );
+				}
+				else
+				{
+					ManglerState::NodeHolder ref_node( mangler_state );
+					mangler_state.PushName( "R" );
+					ManglerState::NodeHolder konst_node( mangler_state );
+					mangler_state.PushName( "K" );
+
+					GetTypeName( mangler_state, arg.type );
+				}
+			}
+			else
+				GetTypeName( mangler_state, arg.type );
 		}
 
 		if( !function->return_references.empty() )
 		{
-			MangleGraphNode rr_node;
-			rr_node.prefix= "_RR";
+			ManglerState::NodeHolder rr_node( mangler_state );
 
-			U_ASSERT( function->return_references.size() < 36u );
-			rr_node.prefix.push_back( Base36Digit(function->return_references.size()) );
+			mangler_state.PushName( "_RR" );
+
+			mangler_state.PushName( Base36Digit(function->return_references.size()) );
 
 			for( const Function::ArgReference& arg_and_tag : function->return_references )
 			{
 				U_ASSERT( arg_and_tag.first  < 36u );
 				U_ASSERT( arg_and_tag.second < 36u || arg_and_tag.second == Function::c_arg_reference_tag_number );
 
-				rr_node.prefix.push_back( Base36Digit(arg_and_tag.first) );
-				rr_node.prefix.push_back(
+				mangler_state.PushName( Base36Digit(arg_and_tag.first) );
+				mangler_state.PushName(
 					arg_and_tag.second == Function::c_arg_reference_tag_number
 					? '_'
 					: Base36Digit(arg_and_tag.second) );
 			}
-
-			result.childs.push_back( std::move( rr_node ) );
 		}
 		if( !function->references_pollution.empty() )
 		{
-			MangleGraphNode rp_node;
-			rp_node.prefix= "_RP";
+			ManglerState::NodeHolder rp_node( mangler_state );
+			mangler_state.PushName( "_RP" );
 
 			U_ASSERT( function->references_pollution.size() < 36u );
-			rp_node.prefix.push_back( Base36Digit(function->references_pollution.size()) );
+			mangler_state.PushName( Base36Digit(function->references_pollution.size()) );
 
 			for( const Function::ReferencePollution& pollution : function->references_pollution )
 			{
@@ -438,34 +463,30 @@ MangleGraphNode GetTypeName( const Type& type )
 				U_ASSERT( pollution.src.first  < 36u );
 				U_ASSERT( pollution.src.second < 36u || pollution.src.second == Function::c_arg_reference_tag_number );
 
-				rp_node.prefix.push_back( Base36Digit(pollution.dst.first) );
-				rp_node.prefix.push_back(
+				mangler_state.PushName( Base36Digit(pollution.dst.first) );
+				mangler_state.PushName(
 					pollution.dst.second == Function::c_arg_reference_tag_number
 					? '_'
 					: Base36Digit(pollution.dst.second) );
-				rp_node.prefix.push_back( Base36Digit(pollution.src.first) );
-				rp_node.prefix.push_back(
+				mangler_state.PushName( Base36Digit(pollution.src.first) );
+				mangler_state.PushName(
 					pollution.src.second == Function::c_arg_reference_tag_number
 					? '_'
 					: Base36Digit(pollution.src.second) );
 			}
 
-			result.childs.push_back( std::move( rp_node ) );
 		}
 		if( function->unsafe )
 		{
-			MangleGraphNode unsafe_node;
-			unsafe_node.prefix= "unsafe";
-			result.childs.push_back( std::move(unsafe_node) );
+			ManglerState::NodeHolder unsafe_node( mangler_state );
+			mangler_state.PushName( "unsafe" );
 		}
 
-		result.prefix= "F";
-		result.postfix= "E";
+		mangler_state.PushName( "E" );
 	}
 	else U_ASSERT(false);
-
-	return result;
 }
+
 
 const ProgramStringMap<std::string> g_op_names
 {
@@ -541,42 +562,89 @@ std::string MangleFunction(
 	const Function& function_type,
 	const TemplateArgs* template_args )
 {
-	MangleGraphNode result;
-	const std::string& operator_decoded= DecodeOperator( function_name );
-	if( !operator_decoded.empty() )
-		result.childs.push_back( GetNestedName( operator_decoded, parent_scope, true, template_args ) );
+	ManglerState mangler_state;
+
+	mangler_state.PushName( "_Z" );
+
+	std::string name_prefixed= DecodeOperator( function_name );
+	if( name_prefixed.empty() )
+	{
+		name_prefixed= std::to_string( function_name.size() );
+		name_prefixed+= function_name;
+	}
+
+	if( parent_scope.GetParent() != nullptr )
+	{
+		if( template_args != nullptr )
+		{
+			ManglerState::NodeHolder result_node( mangler_state );
+			mangler_state.PushName( "N" );
+
+			{
+				ManglerState::NodeHolder name_node( mangler_state );
+				GetNamespacePrefix_r( mangler_state, parent_scope );
+				mangler_state.PushName( name_prefixed );
+			}
+
+			EncodeTemplateArgs( mangler_state, *template_args );
+			mangler_state.PushName( "Ev" );
+		}
+		else
+		{
+			mangler_state.PushName( "N" );
+			GetNamespacePrefix_r( mangler_state, parent_scope );
+			mangler_state.PushName( name_prefixed );
+			mangler_state.PushName( "E" );
+		}
+	}
 	else
-		result.childs.push_back( GetNestedName( function_name, parent_scope, false, template_args ) );
-	result.childs.back().cachable= false;
+	{
+		if( template_args != nullptr )
+		{
+			ManglerState::NodeHolder result_node( mangler_state );
+
+			{
+				ManglerState::NodeHolder name_node( mangler_state );
+				mangler_state.PushName( name_prefixed );
+			}
+
+			EncodeTemplateArgs( mangler_state, *template_args );
+			mangler_state.PushName( "v" );
+		}
+		else
+			mangler_state.PushName( name_prefixed );
+	}
 
 	for( const Function::Arg& arg : function_type.args )
 	{
-		MangleGraphNode arg_node= GetTypeName( arg.type );
-		if( !arg.is_mutable && arg.is_reference ) // push "Konst" for reference immutable arguments
-		{
-			MangleGraphNode konst_node;
-			konst_node.prefix= "K";
-			konst_node.childs.push_back( std::move( arg_node ) );
-			arg_node= std::move( konst_node );
-		}
 		if( arg.is_reference )
 		{
-			MangleGraphNode ref_node;
-			ref_node.prefix= "R";
-			ref_node.childs.push_back( std::move( arg_node ) );
-			arg_node= std::move( ref_node );
-		}
+			if( arg.is_mutable )
+			{
+				ManglerState::NodeHolder ref_node( mangler_state );
+				mangler_state.PushName( "R" );
 
-		result.childs.push_back( std::move(arg_node) );
+				GetTypeName( mangler_state, arg.type );
+			}
+			else
+			{
+				ManglerState::NodeHolder ref_node( mangler_state );
+				mangler_state.PushName( "R" );
+				ManglerState::NodeHolder konst_node( mangler_state );
+				mangler_state.PushName( "K" );
+
+				GetTypeName( mangler_state, arg.type );
+			}
+		}
+		else
+			GetTypeName( mangler_state, arg.type );
 	}
 	if( function_type.args.empty() )
 	{
-		MangleGraphNode empty_args_node;
-		empty_args_node.postfix= "v";
-		result.childs.push_back( std::move( empty_args_node ) );
+		mangler_state.PushName( "v" );
 	}
 
-	return "_Z" + MangleGraphFinalize( result );
+	return mangler_state.TakeResult();
 }
 
 std::string MangleGlobalVariable(
@@ -587,22 +655,33 @@ std::string MangleGlobalVariable(
 	if( parent_scope.GetParent() == nullptr )
 		return variable_name;
 
-	return "_Z" + MangleGraphFinalize( GetNestedName( variable_name, parent_scope ) );
+	ManglerState mangler_state;
+	mangler_state.PushName( "_Z" );
+	GetNestedName( mangler_state, variable_name, parent_scope );
+
+	return mangler_state.TakeResult();
 }
 
 std::string MangleType( const Type& type )
 {
-	return MangleGraphFinalize( GetTypeName( type ) );
+	ManglerState mangler_state;
+	GetTypeName( mangler_state, type );
+	return mangler_state.TakeResult();
 }
 
 std::string MangleTemplateArgs( const TemplateArgs& template_parameters )
 {
-	return MangleGraphFinalize( EncodeTemplateArgs( template_parameters ) );
+	ManglerState mangler_state;
+	EncodeTemplateArgs( mangler_state, template_parameters );
+	return mangler_state.TakeResult();
 }
 
 std::string MangleVirtualTable( const Type& type )
 {
-	return "_ZTV" + MangleGraphFinalize( GetTypeName( type ) );
+	ManglerState mangler_state;
+	mangler_state.PushName( "_ZTV" );
+	GetTypeName( mangler_state, type );
+	return mangler_state.TakeResult();
 }
 
 } // namespace CodeBuilderPrivate
