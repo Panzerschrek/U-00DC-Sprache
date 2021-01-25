@@ -1,6 +1,5 @@
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "keywords.hpp"
-#include "mangling.hpp"
 #include "error_reporting.hpp"
 #include "code_builder.hpp"
 
@@ -210,7 +209,7 @@ ClassProxyPtr CodeBuilder::NamesScopeFill(
 		names_scope.AddName( class_name, Value( Type( class_type ), class_declaration.src_loc_ ) );
 		class_type->class_->syntax_element= &class_declaration;
 		class_type->class_->body_src_loc= class_type->class_->forward_declaration_src_loc= class_declaration.src_loc_;
-		class_type->class_->llvm_type= llvm::StructType::create( llvm_context_, MangleType( class_type ) );
+		class_type->class_->llvm_type= llvm::StructType::create( llvm_context_, mangler_.MangleType( class_type ) );
 
 		class_type->class_->members.AddAccessRightsFor( class_type, ClassMemberVisibility::Private );
 	}

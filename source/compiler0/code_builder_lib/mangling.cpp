@@ -24,118 +24,113 @@ char Base36Digit( const size_t value )
 		return char('A' + ( value - 10 ) );
 }
 
-class ManglerState
+} // namespace
+
+//
+// ManglerState
+//
+
+void ManglerState::PushName( const char c )
 {
-private:
-	using LenType = uint16_t;
+	result_name_full_.push_back( c );
+	result_name_compressed_.push_back( c );
+}
 
+void ManglerState::PushName( const std::string_view name )
+{
+	result_name_full_+= name;
+	result_name_compressed_+= name;
+}
+
+std::string ManglerState::TakeResult()
+{
+	// Take copy for result. This allows us to re-use internal buffer for mangling of next name.
+	std::string result= result_name_compressed_;
+
+	substitutions_.clear();
+	result_name_full_.clear();
+	result_name_compressed_.clear();
+
+	return result;
+}
+
+class ManglerState::NodeHolder
+{
 public:
-	void PushName( const char c )
+	explicit NodeHolder( ManglerState& state )
+		: state_(state), start_(state.GetCurrentPos()), compressed_start_(state.GetCurrentCompressedPos())
+	{}
+
+	~NodeHolder()
 	{
-		result_name_full_.push_back( c );
-		result_name_compressed_.push_back( c );
-	}
-
-	void PushName( const std::string_view name )
-	{
-		result_name_full_+= name;
-		result_name_compressed_+= name;
-	}
-
-	std::string TakeResult()
-	{
-		return std::move(result_name_compressed_);
-	}
-
-public:
-	class NodeHolder
-	{
-	public:
-		explicit NodeHolder( ManglerState& state )
-			: state_(state), start_(state.GetCurrentPos()), compressed_start_(state.GetCurrentCompressedPos())
-		{}
-
-		~NodeHolder()
-		{
-			state_.FinalizePart( start_, compressed_start_ );
-		}
-
-	private:
-		ManglerState& state_;
-		const LenType start_;
-		const LenType compressed_start_;
-	};
-
-private:
-	LenType GetCurrentPos() const
-	{
-		return LenType( result_name_full_.size() );
-	}
-
-	LenType GetCurrentCompressedPos() const
-	{
-		return LenType( result_name_compressed_.size() );
-	}
-
-	void FinalizePart( const LenType start, const LenType compressed_start )
-	{
-		U_ASSERT( start <= result_name_full_.size() );
-		const auto size= LenType( result_name_full_.size() - start );
-		if( size == 0 )
-			return;
-		U_ASSERT( compressed_start <= result_name_compressed_.size() );
-
-		const std::string_view current_part= std::string_view(result_name_full_).substr( start, size );
-
-		// Search for replacement.
-		for( size_t i= 0; i < substitutions_.size(); ++i )
-		{
-			const Substitution& part= substitutions_[i];
-			const std::string_view prev_part= std::string_view(result_name_full_).substr( part.start, part.size );
-			if( prev_part == current_part )
-			{
-				result_name_compressed_.resize( compressed_start );
-				result_name_compressed_.push_back( 'S' );
-
-				if( i > 0u )
-				{
-					size_t n= i - 1u;
-					if( n < 36 )
-						result_name_compressed_.push_back( Base36Digit( n ) );
-					else if( n < 36 * 36 )
-					{
-						result_name_compressed_.push_back( Base36Digit( n / 36 ) );
-						result_name_compressed_.push_back( Base36Digit( n % 36 ) );
-					}
-					else if( n < 36 * 36 * 36 )
-					{
-						result_name_compressed_.push_back( Base36Digit( n / ( 36 * 36 ) ) );
-						result_name_compressed_.push_back( Base36Digit( n / 36 % 36 ) );
-						result_name_compressed_.push_back( Base36Digit( n % 36 ) );
-					}
-					else U_ASSERT(false); // TODO
-				}
-				result_name_compressed_.push_back( '_' );
-				return;
-			}
-		}
-
-		// Not found replacement - add new part.
-		substitutions_.push_back( Substitution{ start, size } );
+		state_.FinalizePart( start_, compressed_start_ );
 	}
 
 private:
-	struct Substitution
-	{
-		LenType start;
-		LenType size;
-	};
-
-private:
-	std::vector<Substitution> substitutions_;
-	std::string result_name_full_;
-	std::string result_name_compressed_;
+	ManglerState& state_;
+	const LenType start_;
+	const LenType compressed_start_;
 };
+
+ManglerState::LenType ManglerState::GetCurrentPos() const
+{
+	return LenType( result_name_full_.size() );
+}
+
+ManglerState::LenType ManglerState::GetCurrentCompressedPos() const
+{
+	return LenType( result_name_compressed_.size() );
+}
+
+void ManglerState::FinalizePart( const LenType start, const LenType compressed_start )
+{
+	U_ASSERT( start <= result_name_full_.size() );
+	const auto size= LenType( result_name_full_.size() - start );
+	if( size == 0 )
+		return;
+	U_ASSERT( compressed_start <= result_name_compressed_.size() );
+
+	const std::string_view current_part= std::string_view(result_name_full_).substr( start, size );
+
+	// Search for replacement.
+	for( size_t i= 0; i < substitutions_.size(); ++i )
+	{
+		const Substitution& part= substitutions_[i];
+		const std::string_view prev_part= std::string_view(result_name_full_).substr( part.start, part.size );
+		if( prev_part == current_part )
+		{
+			result_name_compressed_.resize( compressed_start );
+			result_name_compressed_.push_back( 'S' );
+
+			if( i > 0u )
+			{
+				size_t n= i - 1u;
+				if( n < 36 )
+					result_name_compressed_.push_back( Base36Digit( n ) );
+				else if( n < 36 * 36 )
+				{
+					result_name_compressed_.push_back( Base36Digit( n / 36 ) );
+					result_name_compressed_.push_back( Base36Digit( n % 36 ) );
+				}
+				else if( n < 36 * 36 * 36 )
+				{
+					result_name_compressed_.push_back( Base36Digit( n / ( 36 * 36 ) ) );
+					result_name_compressed_.push_back( Base36Digit( n / 36 % 36 ) );
+					result_name_compressed_.push_back( Base36Digit( n % 36 ) );
+				}
+				else U_ASSERT(false); // TODO
+			}
+			result_name_compressed_.push_back( '_' );
+			return;
+		}
+	}
+
+	// Not found replacement - add new part.
+	substitutions_.push_back( Substitution{ start, size } );
+}
+
+namespace
+{
 
 void GetTypeName( ManglerState& mangler_state, const Type& type );
 void GetNamespacePrefix_r( ManglerState& mangler_state, const NamesScope& names_scope );
@@ -519,15 +514,13 @@ const std::string& DecodeOperator( const std::string& func_name )
 
 } // namespace
 
-std::string MangleFunction(
+std::string Mangler::MangleFunction(
 	const NamesScope& parent_scope,
 	const std::string& function_name,
 	const Function& function_type,
 	const TemplateArgs* const template_args )
 {
-	ManglerState mangler_state;
-
-	mangler_state.PushName( "_Z" );
+	state_.PushName( "_Z" );
 
 	std::string name_prefixed= DecodeOperator( function_name );
 	if( name_prefixed.empty() )
@@ -540,86 +533,82 @@ std::string MangleFunction(
 	// But without "T_" it works fine too.
 	if( template_args != nullptr )
 	{
-		ManglerState::NodeHolder result_node( mangler_state );
+		ManglerState::NodeHolder result_node( state_ );
 
 		if( parent_scope.GetParent() != nullptr )
 		{
-			mangler_state.PushName( "N" );
+			state_.PushName( "N" );
 			{
-				ManglerState::NodeHolder name_node( mangler_state );
-				GetNamespacePrefix_r( mangler_state, parent_scope );
-				mangler_state.PushName( name_prefixed );
+				ManglerState::NodeHolder name_node( state_ );
+				GetNamespacePrefix_r( state_, parent_scope );
+				state_.PushName( name_prefixed );
 			}
 
-			EncodeTemplateArgs( mangler_state, *template_args );
-			mangler_state.PushName( "Ev" );
+			EncodeTemplateArgs( state_, *template_args );
+			state_.PushName( "Ev" );
 		}
 		else
 		{
 			{
-				ManglerState::NodeHolder name_node( mangler_state );
-				mangler_state.PushName( name_prefixed );
+				ManglerState::NodeHolder name_node( state_ );
+				state_.PushName( name_prefixed );
 			}
 
-			EncodeTemplateArgs( mangler_state, *template_args );
-			mangler_state.PushName( "v" );
+			EncodeTemplateArgs( state_, *template_args );
+			state_.PushName( "v" );
 		}
 	}
 	else
 	{
 		if( parent_scope.GetParent() != nullptr )
 		{
-			mangler_state.PushName( "N" );
-			GetNamespacePrefix_r( mangler_state, parent_scope );
-			mangler_state.PushName( name_prefixed );
-			mangler_state.PushName( "E" );
+			state_.PushName( "N" );
+			GetNamespacePrefix_r( state_, parent_scope );
+			state_.PushName( name_prefixed );
+			state_.PushName( "E" );
 		}
 		else
-			mangler_state.PushName( name_prefixed );
+			state_.PushName( name_prefixed );
 	}
 
 	for( const Function::Arg& param : function_type.args )
-		GetParamName( mangler_state, param );
+		GetParamName( state_, param );
 
 	if( function_type.args.empty() )
-		mangler_state.PushName( "v" );
+		state_.PushName( "v" );
 
-	return mangler_state.TakeResult();
+	return state_.TakeResult();
 }
 
-std::string MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name )
+std::string Mangler::MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name )
 {
 	// Variables inside global namespace have simple names.
 	if( parent_scope.GetParent() == nullptr )
 		return variable_name;
 
-	ManglerState mangler_state;
-	mangler_state.PushName( "_Z" );
-	GetNestedName( mangler_state, variable_name, parent_scope );
+	state_.PushName( "_Z" );
+	GetNestedName( state_, variable_name, parent_scope );
 
-	return mangler_state.TakeResult();
+	return state_.TakeResult();
 }
 
-std::string MangleType( const Type& type )
+std::string Mangler::MangleType( const Type& type )
 {
-	ManglerState mangler_state;
-	GetTypeName( mangler_state, type );
-	return mangler_state.TakeResult();
+	GetTypeName( state_, type );
+	return state_.TakeResult();
 }
 
-std::string MangleTemplateArgs( const TemplateArgs& template_parameters )
+std::string Mangler::MangleTemplateArgs( const TemplateArgs& template_parameters )
 {
-	ManglerState mangler_state;
-	EncodeTemplateArgs( mangler_state, template_parameters );
-	return mangler_state.TakeResult();
+	EncodeTemplateArgs( state_, template_parameters );
+	return state_.TakeResult();
 }
 
-std::string MangleVirtualTable( const Type& type )
+std::string Mangler::MangleVirtualTable( const Type& type )
 {
-	ManglerState mangler_state;
-	mangler_state.PushName( "_ZTV" );
-	GetTypeName( mangler_state, type );
-	return mangler_state.TakeResult();
+	state_.PushName( "_ZTV" );
+	GetTypeName( state_, type );
+	return state_.TakeResult();
 }
 
 } // namespace CodeBuilderPrivate

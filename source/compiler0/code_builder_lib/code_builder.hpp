@@ -13,9 +13,10 @@
 #include "../lex_synt_lib/source_graph_loader.hpp"
 #include "../../code_builder_lib_common/constexpr_function_evaluator.hpp"
 #include "class.hpp"
-#include "template_signature_param.hpp"
 #include "enum.hpp"
 #include "function_context.hpp"
+#include "mangling.hpp"
+#include "template_signature_param.hpp"
 #include "template_types.hpp"
 
 namespace U
@@ -875,6 +876,7 @@ private:
 	Type size_type_; // Alias for u32 or u64
 
 	ConstexprFunctionEvaluator constexpr_function_evaluator_;
+	Mangler mangler_;
 
 	FunctionContext* global_function_context_= nullptr;
 

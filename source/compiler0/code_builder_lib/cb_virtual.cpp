@@ -1,6 +1,5 @@
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "keywords.hpp"
-#include "mangling.hpp"
 #include "error_reporting.hpp"
 #include "code_builder.hpp"
 
@@ -281,7 +280,7 @@ void CodeBuilder::PrepareClassVirtualTableType( const ClassProxyPtr& class_type 
 	virtual_table_struct_fields.push_back( own_virtual_functions_table_type );
 
 	// TODO - maybe create unnamed struct (like a tuple)?
-	the_class.virtual_table_llvm_type= llvm::StructType::create( virtual_table_struct_fields, "_vtable_type_" + MangleType(class_type) );
+	the_class.virtual_table_llvm_type= llvm::StructType::create( virtual_table_struct_fields, "_vtable_type_" + mangler_.MangleType(class_type) );
 }
 
 void CodeBuilder::BuildPolymorphClassTypeId( Class& the_class, const Type& class_type )
@@ -304,7 +303,7 @@ void CodeBuilder::BuildPolymorphClassTypeId( Class& the_class, const Type& class
 			true, // is_constant
 			llvm::GlobalValue::ExternalLinkage,
 			llvm::Constant::getNullValue( type_id_type ),
-			"_type_id_for_" + MangleType( class_type ) );
+			"_type_id_for_" + mangler_.MangleType( class_type ) );
 	llvm::Comdat* const type_id_comdat= module_->getOrInsertComdat( the_class.polymorph_type_id->getName() );
 	type_id_comdat->setSelectionKind( llvm::Comdat::Any );
 	the_class.polymorph_type_id->setComdat( type_id_comdat );
@@ -401,7 +400,7 @@ void CodeBuilder::BuildClassVirtualTable( Class& the_class, const Type& class_ty
 			true, // is constant
 			llvm::GlobalValue::PrivateLinkage,
 			virtual_table_initializer,
-			MangleVirtualTable(class_type) );
+			mangler_.MangleVirtualTable(class_type) );
 	the_class.virtual_table_llvm_variable->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
 }
 

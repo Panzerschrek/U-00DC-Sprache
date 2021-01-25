@@ -9,7 +9,6 @@
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "keywords.hpp"
 #include "error_reporting.hpp"
-#include "mangling.hpp"
 
 #include "code_builder.hpp"
 
@@ -857,7 +856,7 @@ Value* CodeBuilder::FinishTemplateTypeGeneration(
 	// Encode name for caching. Name must be unique for each template and its parameters.
 	const std::string name_encoded=
 		std::to_string( reinterpret_cast<uintptr_t>( &type_template ) ) + // Encode template address, because we needs unique keys for templates with same name.
-		MangleTemplateArgs( template_type_preparation_result.signature_args );
+		mangler_.MangleTemplateArgs( template_type_preparation_result.signature_args );
 
 	// Check, if already type generated.
 	if( const auto it= generated_template_things_storage_.find( name_encoded ); it != generated_template_things_storage_.end() )
@@ -898,7 +897,7 @@ Value* CodeBuilder::FinishTemplateTypeGeneration(
 
 		template_classes_cache_[name_encoded]= class_proxy;
 
-		class_proxy->class_->llvm_type->setName( MangleType( class_proxy ) ); // Update llvm type name after setting base template.
+		class_proxy->class_->llvm_type->setName( mangler_.MangleType( class_proxy ) ); // Update llvm type name after setting base template.
 
 		return template_args_namespace->GetThisScopeValue( Class::c_template_class_name );
 	}
@@ -1068,7 +1067,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 	// Encode name for caching. Name must be unique for each template and its parameters.
 	const std::string name_encoded=
 		std::to_string( reinterpret_cast<uintptr_t>( function_template.parent != nullptr ? function_template.parent.get() : &function_template ) ) + // Encode template address, because we needs unique keys for templates with same name.
-		MangleTemplateArgs( template_args );
+		mangler_.MangleTemplateArgs( template_args );
 
 	if( const auto it= generated_template_things_storage_.find( name_encoded ); it != generated_template_things_storage_.end() )
 	{
@@ -1110,7 +1109,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 	// Set correct mangled name
 	if( function_variable.llvm_function != nullptr )
 		function_variable.llvm_function->setName(
-			MangleFunction(
+			mangler_.MangleFunction(
 				*function_template.parent_namespace,
 				func_name,
 				*function_variable.type.GetFunctionType(),
@@ -1160,7 +1159,7 @@ Value* CodeBuilder::ParametrizeFunctionTemplate(
 		name_encoded+= std::to_string( reinterpret_cast<uintptr_t>( &template_ ) );
 		name_encoded+= "_";
 	}
-	name_encoded+= MangleTemplateArgs( template_args );
+	name_encoded+= mangler_.MangleTemplateArgs( template_args );
 
 	if( const auto it= generated_template_things_storage_.find( name_encoded ); it != generated_template_things_storage_.end() )
 		return &it->second; // Already generated.

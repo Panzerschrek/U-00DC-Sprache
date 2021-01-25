@@ -6,7 +6,6 @@
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "keywords.hpp"
 #include "error_reporting.hpp"
-#include "mangling.hpp"
 
 #include "code_builder.hpp"
 
@@ -93,7 +92,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 			llvm::Function::Create(
 				constructor_type.llvm_type,
 				llvm::Function::LinkageTypes::ExternalLinkage,
-				MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
+				mangler_.MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
 				module_.get() );
 
 		FunctionVariable new_constructor_variable;
@@ -278,7 +277,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 			llvm::Function::Create(
 				constructor_type.llvm_type,
 				llvm::Function::LinkageTypes::ExternalLinkage,
-				MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
+				mangler_.MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
 				module_.get() );
 
 		// Add generated constructor
@@ -394,7 +393,7 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( Class& the_class, con
 		llvm::Function::Create(
 			destructor_type.llvm_type,
 			llvm::Function::LinkageTypes::ExternalLinkage,
-			MangleFunction( the_class.members, Keyword( Keywords::destructor_ ), destructor_type ),
+			mangler_.MangleFunction( the_class.members, Keyword( Keywords::destructor_ ), destructor_type ),
 			module_.get() );
 
 	destructor_function.llvm_function->addAttribute( 1u, llvm::Attribute::NonNull );
@@ -558,7 +557,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 			llvm::Function::Create(
 				op_type.llvm_type,
 				llvm::Function::LinkageTypes::ExternalLinkage,
-				MangleFunction( the_class.members, op_name, op_type ),
+				mangler_.MangleFunction( the_class.members, op_name, op_type ),
 				module_.get() );
 
 		// Add generated assignment operator
