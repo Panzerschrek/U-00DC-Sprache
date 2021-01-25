@@ -194,8 +194,6 @@ void GetTemplateClassName( ManglerState& mangler_state, const Class& the_class )
 {
 	U_ASSERT( the_class.base_template != std::nullopt );
 
-	ManglerState::NodeHolder result_node( mangler_state );
-
 	{
 		ManglerState::NodeHolder name_node( mangler_state );
 
@@ -224,6 +222,8 @@ void GetNamespacePrefix_r( ManglerState& mangler_state, const NamesScope& names_
 		const auto& the_class= *reinterpret_cast<const Class*>( names_scope_address - 0 );
 		if( the_class.base_template != std::nullopt )
 		{
+			ManglerState::NodeHolder result_node( mangler_state );
+
 			GetTemplateClassName( mangler_state, the_class );
 			return;
 		}
@@ -349,10 +349,9 @@ void GetTypeName( ManglerState& mangler_state, const Type& type )
 		}
 		else if( class_type->base_template != std::nullopt )
 		{
-
+			ManglerState::NodeHolder result_node( mangler_state );
 			if( class_type->base_template->class_template->parent_namespace->GetParent() != nullptr )
 			{
-				ManglerState::NodeHolder result_node( mangler_state );
 
 				mangler_state.PushName( "N" );
 				GetTemplateClassName( mangler_state, *class_type );
