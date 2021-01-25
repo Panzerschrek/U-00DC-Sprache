@@ -5,7 +5,7 @@
 #include "enum.hpp"
 #include "template_types.hpp"
 #include "mangling.hpp"
-#include <iostream>
+
 namespace U
 {
 
@@ -88,9 +88,9 @@ private:
 		const std::string_view current_part= std::string_view(result_name_full_).substr( start, size );
 
 		// Search for replacement.
-		for( size_t i= 0; i < parts_.size(); ++i )
+		for( size_t i= 0; i < substitutions_.size(); ++i )
 		{
-			const NameRef& part= parts_[i];
+			const Substitution& part= substitutions_[i];
 			const std::string_view prev_part= std::string_view(result_name_full_).substr( part.start, part.size );
 			if( prev_part == current_part )
 			{
@@ -116,28 +116,23 @@ private:
 					else U_ASSERT(false); // TODO
 				}
 				result_name_compressed_.push_back( '_' );
-
-				//std::cout << "Result name: " << result_name_full_ << ", current part: " << current_part << ", replace with " << ( i == 0 ? "S_" : ( "S" + std::to_string(i - 1) ) + "_" ) << ", compressed: " << result_name_compressed_ << std::endl;
-
 				return;
 			}
 		}
 
-		//std::cout << "Result name: " << result_name_full_ << ", current part: " << current_part << ", keep as is, compressed: " << result_name_compressed_ << std::endl;
-
 		// Not found replacement - add new part.
-		parts_.push_back( NameRef{ start, size } );
+		substitutions_.push_back( Substitution{ start, size } );
 	}
 
 private:
-	struct NameRef
+	struct Substitution
 	{
 		LenType start;
 		LenType size;
 	};
 
 private:
-	std::vector<NameRef> parts_;
+	std::vector<Substitution> substitutions_;
 	std::string result_name_full_;
 	std::string result_name_compressed_;
 };
@@ -239,14 +234,8 @@ void GetNamespacePrefix_r( ManglerState& mangler_state, const NamesScope& names_
 	mangler_state.PushName( name );
 }
 
-void GetNestedName(
-	ManglerState& mangler_state,
-	const std::string& name,
-	const NamesScope& parent_scope )
+void GetNestedName( ManglerState& mangler_state, const std::string& name, const NamesScope& parent_scope )
 {
-	// Normally we should use "T_" instead of "S_" for referencing template parameters in function signature.
-	// But without "T_" it works fine too.
-
 	ManglerState::NodeHolder result_node( mangler_state );
 
 	const std::string num_prefix= std::to_string( name.size() );
@@ -271,7 +260,7 @@ std::string_view EncodeFundamentalType( const U_FundamentalType t )
 	{
 	case U_FundamentalType::InvalidType:
 	case U_FundamentalType::LastType:
-		 return "";
+		return "";
 	case U_FundamentalType::Void: return "v";
 	case U_FundamentalType::Bool: return "b";
 	case U_FundamentalType:: i8: return "a"; // C++ signed char
@@ -295,13 +284,29 @@ std::string_view EncodeFundamentalType( const U_FundamentalType t )
 	return "";
 }
 
+void GetParamName( ManglerState& mangler_state, const Function::Arg& param )
+{
+	if( param.is_reference )
+	{
+		ManglerState::NodeHolder ref_node( mangler_state );
+		mangler_state.PushName( "R" );
+		if( param.is_mutable )
+			GetTypeName( mangler_state, param.type );
+		else
+		{
+			ManglerState::NodeHolder konst_node( mangler_state );
+			mangler_state.PushName( "K" );
+			GetTypeName( mangler_state, param.type );
+		}
+	}
+	else
+		GetTypeName( mangler_state, param.type );
+}
+
 void GetTypeName( ManglerState& mangler_state, const Type& type )
 {
 	if( const auto fundamental_type= type.GetFundamentalType() )
-	{
-		// Do not cache fundamental type names.
 		mangler_state.PushName( EncodeFundamentalType( fundamental_type->fundamental_type ) );
-	}
 	else if( const auto array_type= type.GetArrayType() )
 	{
 		ManglerState::NodeHolder result_node( mangler_state );
@@ -310,12 +315,12 @@ void GetTypeName( ManglerState& mangler_state, const Type& type )
 		mangler_state.PushName( "_" );
 		GetTypeName( mangler_state, array_type->type );
 	}
-	else if( const Tuple* const tuple_type= type.GetTupleType() )
+	else if( const auto tuple_type= type.GetTupleType() )
 	{
 		// Encode tuples, like type templates.
 		ManglerState::NodeHolder result_node( mangler_state );
 		{
-			ManglerState::NodeHolder name_hodler( mangler_state );
+			ManglerState::NodeHolder name_node( mangler_state );
 
 			const std::string& keyword= Keyword( Keywords::tup_ );
 			mangler_state.PushName( std::to_string(keyword.size()) );
@@ -340,7 +345,7 @@ void GetTypeName( ManglerState& mangler_state, const Type& type )
 				mangler_state.PushName( class_name );
 			}
 			{
-				ManglerState::NodeHolder params_node( mangler_state );
+				ManglerState::NodeHolder args_node( mangler_state );
 
 				TemplateArgs typeinfo_pseudo_args;
 				typeinfo_pseudo_args.push_back( *class_type->typeinfo_type );
@@ -352,7 +357,6 @@ void GetTypeName( ManglerState& mangler_state, const Type& type )
 			ManglerState::NodeHolder result_node( mangler_state );
 			if( class_type->base_template->class_template->parent_namespace->GetParent() != nullptr )
 			{
-
 				mangler_state.PushName( "N" );
 				GetTemplateClassName( mangler_state, *class_type );
 				mangler_state.PushName( "E" );
@@ -364,9 +368,7 @@ void GetTypeName( ManglerState& mangler_state, const Type& type )
 			GetNestedName( mangler_state, class_type->members.GetThisNamespaceName(), *class_type->members.GetParent() );
 	}
 	else if( const auto enum_type= type.GetEnumType() )
-	{
 		GetNestedName( mangler_state, enum_type->members.GetThisNamespaceName(), *enum_type->members.GetParent() );
-	}
 	else if( const auto raw_pointer= type.GetRawPointerType() )
 	{
 		ManglerState::NodeHolder result_node( mangler_state );
@@ -384,55 +386,28 @@ void GetTypeName( ManglerState& mangler_state, const Type& type )
 		ManglerState::NodeHolder function_node( mangler_state );
 		mangler_state.PushName( "F" );
 
-		std::vector<Function::Arg> signature;
 		{
 			Function::Arg ret;
 			ret.is_mutable= function->return_value_is_mutable;
 			ret.is_reference= function->return_value_is_reference;
 			ret.type= function->return_type;
-			signature.push_back(ret);
+			GetParamName( mangler_state, ret );
 		}
 		if( function->args.empty() )
 		{
-			Function::Arg arg;
-			arg.is_mutable= false;
-			arg.is_reference= false;
-			arg.type= FundamentalType( U_FundamentalType::Void );
-			signature.push_back(arg);
+			Function::Arg param;
+			param.is_mutable= false;
+			param.is_reference= false;
+			param.type= FundamentalType( U_FundamentalType::Void );
+			GetParamName( mangler_state, param );
 		}
-		signature.insert( signature.end(), function->args.begin(), function->args.end() );
-
-		for( const Function::Arg& arg : signature )
-		{
-			if( arg.is_reference )
-			{
-				if( arg.is_mutable )
-				{
-					ManglerState::NodeHolder ref_node( mangler_state );
-					mangler_state.PushName( "R" );
-
-					GetTypeName( mangler_state, arg.type );
-				}
-				else
-				{
-					ManglerState::NodeHolder ref_node( mangler_state );
-					mangler_state.PushName( "R" );
-					ManglerState::NodeHolder konst_node( mangler_state );
-					mangler_state.PushName( "K" );
-
-					GetTypeName( mangler_state, arg.type );
-				}
-			}
-			else
-				GetTypeName( mangler_state, arg.type );
-		}
+		for( const Function::Arg& param : function->args )
+			GetParamName( mangler_state, param );
 
 		if( !function->return_references.empty() )
 		{
 			ManglerState::NodeHolder rr_node( mangler_state );
-
 			mangler_state.PushName( "_RR" );
-
 			mangler_state.PushName( Base36Digit(function->return_references.size()) );
 
 			for( const Function::ArgReference& arg_and_tag : function->return_references )
@@ -451,7 +426,6 @@ void GetTypeName( ManglerState& mangler_state, const Type& type )
 		{
 			ManglerState::NodeHolder rp_node( mangler_state );
 			mangler_state.PushName( "_RP" );
-
 			U_ASSERT( function->references_pollution.size() < 36u );
 			mangler_state.PushName( Base36Digit(function->references_pollution.size()) );
 
@@ -473,7 +447,6 @@ void GetTypeName( ManglerState& mangler_state, const Type& type )
 					? '_'
 					: Base36Digit(pollution.src.second) );
 			}
-
 		}
 		if( function->unsafe )
 		{
@@ -485,7 +458,6 @@ void GetTypeName( ManglerState& mangler_state, const Type& type )
 	}
 	else U_ASSERT(false);
 }
-
 
 const ProgramStringMap<std::string> g_op_names
 {
@@ -547,19 +519,11 @@ const std::string& DecodeOperator( const std::string& func_name )
 
 } // namespace
 
-const std::string& GetOperatorMangledName( const std::string& function_name )
-{
-	const std::string& operator_decoded= DecodeOperator( function_name );
-	if( !operator_decoded.empty() )
-		return operator_decoded;
-	return function_name;
-}
-
 std::string MangleFunction(
 	const NamesScope& parent_scope,
 	const std::string& function_name,
 	const Function& function_type,
-	const TemplateArgs* template_args )
+	const TemplateArgs* const template_args )
 {
 	ManglerState mangler_state;
 
@@ -572,13 +536,15 @@ std::string MangleFunction(
 		name_prefixed+= function_name;
 	}
 
-	if( parent_scope.GetParent() != nullptr )
+	// Normally we should use "T_" instead of "S_" for referencing template parameters in function signature.
+	// But without "T_" it works fine too.
+	if( template_args != nullptr )
 	{
-		if( template_args != nullptr )
-		{
-			ManglerState::NodeHolder result_node( mangler_state );
-			mangler_state.PushName( "N" );
+		ManglerState::NodeHolder result_node( mangler_state );
 
+		if( parent_scope.GetParent() != nullptr )
+		{
+			mangler_state.PushName( "N" );
 			{
 				ManglerState::NodeHolder name_node( mangler_state );
 				GetNamespacePrefix_r( mangler_state, parent_scope );
@@ -590,18 +556,6 @@ std::string MangleFunction(
 		}
 		else
 		{
-			mangler_state.PushName( "N" );
-			GetNamespacePrefix_r( mangler_state, parent_scope );
-			mangler_state.PushName( name_prefixed );
-			mangler_state.PushName( "E" );
-		}
-	}
-	else
-	{
-		if( template_args != nullptr )
-		{
-			ManglerState::NodeHolder result_node( mangler_state );
-
 			{
 				ManglerState::NodeHolder name_node( mangler_state );
 				mangler_state.PushName( name_prefixed );
@@ -610,45 +564,30 @@ std::string MangleFunction(
 			EncodeTemplateArgs( mangler_state, *template_args );
 			mangler_state.PushName( "v" );
 		}
+	}
+	else
+	{
+		if( parent_scope.GetParent() != nullptr )
+		{
+			mangler_state.PushName( "N" );
+			GetNamespacePrefix_r( mangler_state, parent_scope );
+			mangler_state.PushName( name_prefixed );
+			mangler_state.PushName( "E" );
+		}
 		else
 			mangler_state.PushName( name_prefixed );
 	}
 
-	for( const Function::Arg& arg : function_type.args )
-	{
-		if( arg.is_reference )
-		{
-			if( arg.is_mutable )
-			{
-				ManglerState::NodeHolder ref_node( mangler_state );
-				mangler_state.PushName( "R" );
+	for( const Function::Arg& param : function_type.args )
+		GetParamName( mangler_state, param );
 
-				GetTypeName( mangler_state, arg.type );
-			}
-			else
-			{
-				ManglerState::NodeHolder ref_node( mangler_state );
-				mangler_state.PushName( "R" );
-				ManglerState::NodeHolder konst_node( mangler_state );
-				mangler_state.PushName( "K" );
-
-				GetTypeName( mangler_state, arg.type );
-			}
-		}
-		else
-			GetTypeName( mangler_state, arg.type );
-	}
 	if( function_type.args.empty() )
-	{
 		mangler_state.PushName( "v" );
-	}
 
 	return mangler_state.TakeResult();
 }
 
-std::string MangleGlobalVariable(
-	const NamesScope& parent_scope,
-	const std::string& variable_name )
+std::string MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name )
 {
 	// Variables inside global namespace have simple names.
 	if( parent_scope.GetParent() == nullptr )
