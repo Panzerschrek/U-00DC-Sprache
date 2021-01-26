@@ -5,14 +5,6 @@ import "mangling.uh"
 namespace U1
 {
 
-struct MangleGraphNode
-{
-	ust::string8 prefix;
-	ust::vector</ ust::box</MangleGraphNode/> /> childs;
-	ust::string8 postfix;
-	bool cachable= true;
-}
-
 fn Base36Digit( size_type mut value ) : char8
 {
 	value %= 36s;
@@ -25,6 +17,37 @@ fn Base36Digit( size_type mut value ) : char8
 		return char8(size_type("A"c8) + ( value - 10s ) );
 	}
 }
+
+// TODO - implement library method for range comparing.
+
+fn StringViewEq( ust::array_view_imut</char8/> s0, ust::array_view_imut</char8/> s1 ) : bool
+{
+	if( s0.size() != s1.size() )
+	{
+		return false;
+	}
+
+	for( auto mut i= 0s; i < s0.size(); ++i )
+	{
+		if( s0[i] != s1[i] )
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+/*
+struct MangleGraphNode
+{
+	ust::string8 prefix;
+	ust::vector</ ust::box</MangleGraphNode/> /> childs;
+	ust::string8 postfix;
+	bool cachable= true;
+}
+
+
 
 class NamesCache
 {
@@ -705,6 +728,140 @@ fn MangleVirtualTable( Type& t ) : ust::string8
 	str+= MangleGraphFinalize(MangleTypeImpl(t));
 	str+= "\0";
 	return move(str);
+}
+
+*/
+
+class ManglerState
+{
+public:
+	fn Push( mut this, char8 c );
+	fn Push( mut this, ust::array_view_imut</char8/> name );
+	fn PushLengthPrefixed( mut this, ust::array_view_imut</char8/> name );
+
+	fn TakeResult( mut this ) : ust::string8;
+
+public:
+	class NodeHolder
+	{
+	public:
+		fn constructor( mut this'a', ManglerState &'b mut state ) ' a <- b '
+			( state_(state), start_= state_.GetCurrentPos(), compressed_start_= state_.GetCurrentCompressedPos() )
+		{}
+
+		fn destructor()
+		{
+			state_.FinalizePart( start_, compressed_start_ );
+		}
+
+	private:
+		ManglerState &mut state_;
+		size_type imut start_;
+		size_type imut compressed_start_;
+	}
+
+private:
+	fn GetCurrentPos( this ) : size_type;
+	fn GetCurrentCompressedPos( this ) : size_type;
+	fn FinalizePart( mut this, size_type start, size_type compressed_start );
+
+private:
+	type LenType= u16;
+	struct Substitution
+	{
+		LenType start;
+		LenType size;
+	}
+
+private:
+	ust::vector</Substitution/> substitutions_;
+	ust::string8 result_full_;
+	ust::string8 result_compressed_;
+}
+
+fn ManglerState::Push( mut this, char8 c )
+{
+	result_full_.push_back( c );
+	result_compressed_.push_back( c );
+}
+
+fn ManglerState::Push( mut this, ust::array_view_imut</char8/> name )
+{
+	result_full_+= name;
+	result_compressed_+= name;
+}
+
+fn ManglerState::PushLengthPrefixed( mut this, ust::array_view_imut</char8/> name )
+{
+	Push( ust::to_string8(name.size()).range() );
+	Push( name );
+}
+
+fn ManglerState::TakeResult( mut this ) : ust::string8
+{
+	// Take copy for result. This allows us to re-use internal buffer for mangling of next name.
+	var ust::string8 mut result= result_compressed_;
+
+	substitutions_.clear();
+	result_full_.clear();
+	result_compressed_.clear();
+
+	return move(result);
+}
+
+fn ManglerState::GetCurrentPos( this ) : size_type
+{
+	return result_full_.size();
+}
+
+fn ManglerState::GetCurrentCompressedPos( this ) : size_type
+{
+	return result_compressed_.size();
+}
+
+fn ManglerState::FinalizePart( mut this, size_type start, size_type compressed_start )
+{
+	auto size= result_full_.size() - start;
+
+	// Search for replacement.
+	for( auto mut i= 0s; i < substitutions_.size(); ++i )
+	{
+		var Substitution substitution= substitutions_[i];
+		if( StringViewEq(
+			cast_imut(result_full_).range().subrange( start, size ),
+			cast_imut(result_full_).range().subrange( size_type(substitution.start), size_type(substitution.size) ) ) )
+		{
+			result_compressed_.resize( compressed_start, "\0"c8 );
+			result_compressed_.push_back( "S"c8 );
+
+			if( i > 0s )
+			{
+				auto n= i - 1s;
+				if( n < 36s )
+				{
+					result_compressed_.push_back( Base36Digit( n ) );
+				}
+				else if( n < 36s * 36s )
+				{
+					result_compressed_.push_back( Base36Digit( n / 36s ) );
+					result_compressed_.push_back( Base36Digit( n % 36s ) );
+				}
+				else if( n < 36s * 36s * 36s )
+				{
+					result_compressed_.push_back( Base36Digit( n / ( 36s * 36s ) ) );
+					result_compressed_.push_back( Base36Digit( n / 36s % 36s ) );
+					result_compressed_.push_back( Base36Digit( n % 36s ) );
+				}
+				else { halt; } // Too much substitutions.
+			}
+			result_compressed_.push_back( "_"c8 );
+			return;
+		}
+	}
+
+	// Not found replacement - add new substitution.
+	var Substitution substitution{ .start= LenType(start), .size= LenType(size) };
+	substitutions_.push_back( substitution );
 }
 
 } // namespace U1
