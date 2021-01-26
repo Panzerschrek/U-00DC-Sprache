@@ -14,8 +14,9 @@ private:
 	using LenType = uint16_t;
 
 public:
-	void PushName( char c );
-	void PushName( std::string_view name );
+	void Push( char c );
+	void Push( std::string_view name );
+	void PushLengthPrefixed( std::string_view name );
 
 	std::string TakeResult();
 
@@ -36,8 +37,8 @@ private:
 
 private:
 	std::vector<Substitution> substitutions_;
-	std::string result_name_full_;
-	std::string result_name_compressed_;
+	std::string result_full_;
+	std::string result_compressed_;
 };
 
 // Mangling with Itanium ABI rules.
