@@ -237,12 +237,12 @@ public:
 
 	// ranges
 
-	fn range(  mut this ) : range_mut
+	fn range(  mut this ) : range_mut'this'
 	{
 		unsafe{  return range_mut ( ptr_, size_ );  }
 	}
 
-	fn range( imut this ) : range_imut
+	fn range( imut this ) : range_imut'this'
 	{
 		unsafe{  return range_imut( ptr_, size_ );  }
 	}
