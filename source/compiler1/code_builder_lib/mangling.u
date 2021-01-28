@@ -1,6 +1,15 @@
 import "/string_conversions.u"
 import "/keywords.uh"
 import "mangling.uh"
+?macro <? ADD_NODE:block( ?mangling_state:ident ) ?b:block?>
+->
+<?
+	{
+		var ManglerState::NodeHolder ??node( ?mangling_state );
+		auto &mut ?mangling_state= ??node.GetManglerState();
+		?b
+	}
+?>
 
 namespace U1
 {
@@ -38,700 +47,6 @@ fn StringViewEq( ust::array_view_imut</char8/> s0, ust::array_view_imut</char8/>
 	return true;
 }
 
-/*
-struct MangleGraphNode
-{
-	ust::string8 prefix;
-	ust::vector</ ust::box</MangleGraphNode/> /> childs;
-	ust::string8 postfix;
-	bool cachable= true;
-}
-
-
-
-class NamesCache
-{
-public:
-	fn AddName( mut this, ust::string8 mut name )
-	{
-		foreach( & candidate : names_container_ )
-		{
-			if( candidate == name )
-			{
-				return;
-			}
-		}
-		names_container_.push_back( name );
-	}
-
-	fn GetReplacement( this, ust::string8& name ) : ust::optional</ust::string8/>
-	{
-		for( auto mut index= 0s; index < names_container_.size(); ++index )
-		{
-			auto& candidate= names_container_[index];
-			if( name == candidate )
-			{
-				if( index == 0s )
-				{
-					return ust::string8("S_");
-				}
-				if( index == 1s )
-				{
-					return ust::string8("S0_");
-				}
-
-				var ust::string8 mut result, mut digit;
-				for( auto mut n= index - 1s; n > 0s; n/= 36s ) // Converto to 36-base number representation.
-				{
-					digit.push_back( Base36Digit( n ) );
-					result= digit + result;
-					digit.clear();
-				}
-
-				return "S" + result + "_";
-			}
-		}
-
-		return ust::optional</ust::string8/>();
-	}
-
-private:
-	ust::vector</ust::string8/> names_container_;
-}
-
-struct NamePair
-{
-	ust::string8 full;
-	ust::string8 compressed;
-}
-
-fn MangleGraphFinalize_r( NamesCache &mut names_cache, MangleGraphNode& node ) : NamePair
-{
-	var NamePair mut result;
-
-	result.full+= node.prefix;
-	result.compressed+= node.prefix;
-	foreach( &child_node : node.childs )
-	{
-		var NamePair child_node_result= MangleGraphFinalize_r( names_cache, child_node.get_ref() );
-		result.full+= child_node_result.full;
-		result.compressed+= child_node_result.compressed;
-	}
-	result.full+= node.postfix;
-	result.compressed+= node.postfix;
-
-	if( node.cachable )
-	{
-		auto replacement = names_cache.GetReplacement( result.full );
-		if( !replacement.empty() )
-		{
-			result.compressed= replacement.get_ref();
-		}
-		else
-		{
-			names_cache.AddName( result.full );
-		}
-	}
-
-	return move(result);
-}
-
-fn MangleGraphFinalize( MangleGraphNode& node ) : ust::string8
-{
-	var NamesCache mut names_cache;
-	return MangleGraphFinalize_r( names_cache, node ).compressed;
-}
-
-fn GetNestedName(
-	ust::string8& name,
-	NamesScope& parent_scope,
-	bool no_name_num_prefix,
-	ust::optional_ref</TemplateArgsFinished, false/> template_args ) : MangleGraphNode
-{
-	var MangleGraphNode mut res;
-
-	auto num_prefix= select( no_name_num_prefix ? ust::string8() : ust::to_string8(name.size()) );
-	if( !parent_scope.GetParent().empty() )
-	{
-		if( !template_args.empty() )
-		{
-			var MangleGraphNode mut name_node;
-			name_node.postfix+= num_prefix;
-			name_node.postfix+= name;
-			name_node.childs.push_back( ust::make_box( GetNamespacePrefix_r( parent_scope ) ) );
-
-			var MangleGraphNode mut args_node= MangleTemplateArgsImpl( template_args.get_ref() );
-
-			res.prefix+= "N";
-			res.childs.push_back( ust::make_box( move(name_node) ) );
-			res.childs.push_back( ust::make_box( move(args_node) ) );
-			res.postfix+= "Ev";
-		}
-		else
-		{
-			res.prefix+= "N";
-			res.childs.push_back( ust::make_box( GetNamespacePrefix_r( parent_scope ) ) );
-			res.postfix+= num_prefix;
-			res.postfix+= name;
-			res.postfix+= "E";
-		}
-	}
-	else
-	{
-		if( !template_args.empty() )
-		{
-			var MangleGraphNode mut name_node;
-			name_node.postfix+= num_prefix;
-			name_node.postfix+= name;
-
-			var MangleGraphNode mut args_node= MangleTemplateArgsImpl( template_args.get_ref() );
-
-			res.childs.push_back( ust::make_box( move(name_node) ) );
-			res.childs.push_back( ust::make_box( move(args_node) ) );
-			res.postfix+= "v";
-		}
-		else
-		{
-			res.prefix+= num_prefix;
-			res.prefix+= name;
-		}
-
-	}
-	return move(res);
-}
-
-fn GetNestedName(
-	ust::string8& name,
-	NamesScope& parent_scope,
-	bool no_name_num_prefix ) : MangleGraphNode
-{
-	return GetNestedName( name, parent_scope, no_name_num_prefix, ust::optional_ref</TemplateArgsFinished, false/>() );
-}
-
-fn GetNestedName(
-	ust::string8& name,
-	NamesScope& parent_scope ) : MangleGraphNode
-{
-	return GetNestedName( name, parent_scope, false );
-}
-
-fn MangleFundamentalTypeName( U_FundamentalType t ) : ust::string8
-{
-	if( t == U_FundamentalType::InvalidType ){ return ust::string8(); }
-	if( t == U_FundamentalType::LastType	){ return ust::string8(		); }
-	if( t == U_FundamentalType::void_		){ return ust::string8( "v"	); }
-	if( t == U_FundamentalType::bool_		){ return ust::string8( "b"	); }
-	if( t == U_FundamentalType::i8_			){ return ust::string8( "a"	); } // C++ signed char
-	if( t == U_FundamentalType::u8_			){ return ust::string8( "h"	); } // C++ unsigned char
-	if( t == U_FundamentalType::i16_		){ return ust::string8( "s"	); }
-	if( t == U_FundamentalType::u16_		){ return ust::string8( "t"	); }
-	if( t == U_FundamentalType::i32_		){ return ust::string8( "i"	); }
-	if( t == U_FundamentalType::u32_		){ return ust::string8( "j"	); }
-	if( t == U_FundamentalType::i64_		){ return ust::string8( "x"	); }
-	if( t == U_FundamentalType::u64_		){ return ust::string8( "y"	); }
-	if( t == U_FundamentalType::i128_		){ return ust::string8( "n"	); }
-	if( t == U_FundamentalType::u128_		){ return ust::string8( "o"	); }
-	if( t == U_FundamentalType::f32_		){ return ust::string8( "f"	); }
-	if( t == U_FundamentalType::f64_		){ return ust::string8( "d"	); }
-	if( t == U_FundamentalType::char8_		){ return ust::string8( "c"	); }
-	if( t == U_FundamentalType::char16_		){ return ust::string8( "Ds"); }
-	if( t == U_FundamentalType::char32_		){ return ust::string8( "Di"); }
-	return ust::string8();
-}
-
-fn GetTemplateClassName( ClassType& class_type ) : MangleGraphNode
-{
-	var MangleGraphNode mut name_node;
-	auto& class_name= class_type.base_template.get_ref().class_template.get_ref().syntax_element.get_ref().name;
-	name_node.postfix+= ust::to_string8( class_name.size() );
-	name_node.postfix+= class_name;
-
-	// Skip template parameters namespace.
-	auto parent= class_type.members.lock_imut().get_ref().GetParent().lock_imut().get_ref().GetParent();
-	if( !parent.lock_imut().get_ref().GetThisNamespaceName().empty() )
-	{
-		name_node.childs.push_back( ust::make_box( GetNamespacePrefix_r( parent.lock_imut().get_ref() ) ) );
-	}
-
-	auto mut params_node= MangleTemplateArgsImpl( class_type.base_template.get_ref().signature_args );
-
-	var MangleGraphNode mut result;
-	result.childs.push_back( ust::make_box( move( name_node ) ) );
-	result.childs.push_back( ust::make_box( move( params_node ) ) );
-	return move(result);
-}
-
-fn MangleTypeImpl( Type& t ) : MangleGraphNode
-{
-	if_var( fundamental_type : t.GetFundamentalType() )
-	{
-		var MangleGraphNode mut res;
-		res.prefix= MangleFundamentalTypeName( fundamental_type.fundamental_type );
-		res.cachable= false;
-		return move(res);
-	}
-	if_var( array_type : t.GetArrayType() )
-	{
-		var MangleGraphNode mut res;
-		res.prefix= "A";
-		res.prefix+= ust::to_string8(array_type.element_count);
-		res.prefix+= "_";
-		res.childs.push_back( ust::make_box( MangleTypeImpl( array_type.element_type ) ) );
-		return move(res);
-	}
-	if_var( tuple_type : t.GetTupleType() )
-	{
-		// Encode tuples, like type templates.
-		var MangleGraphNode mut name_node;
-		var ust::string8 keyword= KeywordToString( Keyword::tup_ );
-		name_node.postfix= ust::to_string8(keyword.size()) + keyword;
-
-		var MangleGraphNode mut params_node;
-		params_node.prefix= "I";
-		foreach( &element_type : tuple_type.element_types )
-		{
-			params_node.childs.push_back( ust::make_box( MangleTypeImpl( element_type ) ) );
-		}
-		params_node.postfix= "E";
-		params_node.cachable= false;
-
-		var MangleGraphNode mut res;
-		res.childs.push_back( ust::make_box( move(name_node) ) );
-		res.childs.push_back( ust::make_box( move(params_node) ) );
-		return move(res);
-	}
-	if_var( class_type_ptr : t.GetClassType() )
-	{
-		auto class_lock= class_type_ptr.lock_imut();
-		auto& class_type= class_lock.get_ref();
-		auto class_members= class_type.members;
-		auto class_members_lock= class_members.lock_imut();
-		auto& class_members_ref= class_members_lock.get_ref();
-
-		if( !class_type.typeinfo_src_type_.empty() )
-		{
-			var MangleGraphNode mut name_node;
-			var ust::string8 class_name= class_type.members.lock_imut().get_ref().GetThisNamespaceName();
-			name_node.postfix= ust::to_string8( class_name.size() ) + class_name;
-
-			var TemplateArgsFinished mut typeinfo_args;
-			typeinfo_args.push_back( class_type.typeinfo_src_type_.get_ref() );
-			var MangleGraphNode mut args_node= MangleTemplateArgsImpl( typeinfo_args );
-
-			var MangleGraphNode mut res;
-			res.childs.push_back( ust::make_box( move( name_node ) ) );
-			res.childs.push_back( ust::make_box( move( args_node ) ) );
-			return move(res);
-		}
-		else if( !class_type.base_template.empty() )
-		{
-			auto mut res= GetTemplateClassName( class_type );
-
-			auto t= class_type.base_template.get_ref().class_template;
-			auto t_namespace= t.get_ref().parent_names_scope.lock();
-			if( !t_namespace.empty() && !t_namespace.lock_imut().get_ref().GetParent().empty() )
-			{
-				res.prefix= "N";
-				res.postfix= "E";
-			}
-			return move(res);
-		}
-		else
-		{
-			return GetNestedName( class_members_ref.GetThisNamespaceName(), class_members_ref.GetParent().lock_imut().get_ref() );
-		}
-	}
-	if_var( enum_type : t.GetEnumType() )
-	{
-		auto enum_members= enum_type.lock_imut().get_ref().names_scope;
-		auto enum_members_lock= enum_members.lock_imut();
-		auto& enum_members_ref= enum_members_lock.get_ref();
-
-		return GetNestedName( enum_members_ref.GetThisNamespaceName(), enum_members_ref.GetParent().lock_imut().get_ref() );
-	}
-	if_var( &raw_poiter_type : t.GetRawPointerType() )
-	{
-		var MangleGraphNode mut res{ .prefix= "P" };
-		res.childs.push_back( ust::make_box( MangleTypeImpl( raw_poiter_type.element_type ) ) );
-		return move(res);
-	}
-	if_var( &function_pointer_type : t.GetFunctionPointerType() )
-	{
-		var MangleGraphNode mut res{ .prefix= "P" };
-		res.childs.push_back( ust::make_box( MangleTypeImpl( function_pointer_type.function_type ) ) );
-		return move(res);
-	}
-	if_var( &function_type : t.GetFunctionType() )
-	{
-		var ust::vector</FunctionType::Param/> mut signature;
-		{
-			var FunctionType::Param mut ret_arg
-			{
-				.t( function_type.return_type ),
-				.is_mutable= function_type.return_value_is_mutable,
-				.is_reference= function_type.return_value_is_reference,
-			};
-			signature.push_back( move(ret_arg) );
-		}
-		if( function_type.params.empty() )
-		{
-			var FunctionType::Param mut void_param
-			{
-				.t( Type( FundamentalType( U_FundamentalType::void_, LLVMTypeRef::Null ) ) ),
-				.is_mutable= false,
-				.is_reference= false,
-			};
-			signature.push_back( move(void_param) );
-		}
-
-		foreach( &param : function_type.params )
-		{
-			signature.push_back(param);
-		}
-
-		var MangleGraphNode mut res
-		{
-			.prefix= "F",
-			.postfix= "E",
-		};
-
-		foreach( &arg : signature )
-		{
-			var MangleGraphNode mut arg_node= MangleTypeImpl( arg.t );
-			if( !arg.is_mutable && arg.is_reference ) // push "Konst" for reference immutable arguments
-			{
-				var MangleGraphNode mut konst_node{ .prefix= "K" };
-				konst_node.childs.push_back( ust::make_box( take( arg_node ) ) );
-				arg_node= move( konst_node );
-			}
-			if( arg.is_reference )
-			{
-				var MangleGraphNode mut ref_node{ .prefix= "R" };
-				ref_node.childs.push_back( ust::make_box( take( arg_node ) ) );
-				arg_node= move( ref_node );
-			}
-
-			res.childs.push_back( ust::make_box( move(arg_node) ) );
-		}
-
-		if( !function_type.return_references.empty() )
-		{
-			var MangleGraphNode mut rr_node;
-			rr_node.prefix= "_RR";
-
-			halt if( function_type.return_references.size() >= 36s );
-			rr_node.prefix.push_back( Base36Digit(function_type.return_references.size()) );
-
-			foreach( &param_reference : function_type.return_references )
-			{
-				halt if( param_reference.param_index >= 36u8 );
-				halt if( param_reference.reference_index >= 36u8 && param_reference.reference_index != FunctionType::c_param_reference_number );
-
-				rr_node.prefix.push_back( Base36Digit( size_type(param_reference.param_index) ) );
-				rr_node.prefix.push_back( select(
-					param_reference.reference_index == FunctionType::c_param_reference_number
-					? "_"c8
-					: Base36Digit( size_type(param_reference.reference_index) ) ) );
-			}
-
-			res.childs.push_back( ust::make_box( move(rr_node) ) );
-		}
-		if( !function_type.references_pollution.empty() )
-		{
-			var MangleGraphNode mut rp_node;
-			rp_node.prefix= "_RP";
-
-			halt if( function_type.references_pollution.size() >= 36s );
-			rp_node.prefix.push_back( Base36Digit(function_type.references_pollution.size()) );
-
-			foreach( &pollution : function_type.references_pollution )
-			{
-				halt if( pollution.dst.param_index >= 36u8 );
-				halt if( pollution.dst.reference_index >= 36u8 && pollution.dst.reference_index != FunctionType::c_param_reference_number );
-				halt if( pollution.src.param_index >= 36u8 );
-				halt if( pollution.src.reference_index >= 36u8 && pollution.src.reference_index != FunctionType::c_param_reference_number );
-
-				rp_node.prefix.push_back( Base36Digit( size_type(pollution.dst.param_index) ) );
-				rp_node.prefix.push_back( select(
-					pollution.dst.reference_index == FunctionType::c_param_reference_number
-					? "_"c8
-					: Base36Digit( size_type(pollution.dst.reference_index) ) ) );
-				rp_node.prefix.push_back( Base36Digit( size_type(pollution.src.param_index) ) );
-				rp_node.prefix.push_back( select(
-					pollution.src.reference_index == FunctionType::c_param_reference_number
-					? "_"c8
-					: Base36Digit( size_type(pollution.src.reference_index) ) ) );
-			}
-
-			res.childs.push_back( ust::make_box( move(rp_node) ) );
-		}
-		if( function_type.is_unsafe )
-		{
-			var MangleGraphNode mut unsafe_node;
-			unsafe_node.prefix= "unsafe";
-			res.childs.push_back( ust::make_box( move(unsafe_node) ) );
-		}
-
-		return move(res);
-	}
-
-	return MangleGraphNode();
-}
-
-fn GetNamespacePrefix_r( NamesScope& names_scope ) : MangleGraphNode
-{
-	auto& name= names_scope.GetThisNamespaceName();
-
-	// Process separately class templates.
-	auto class_ptr= names_scope.GetClass();
-	if( !class_ptr.empty() )
-	{
-		auto class_lock= class_ptr.lock_imut();
-		auto& class_= class_lock.get_ref();
-		if( !class_.base_template.empty() )
-		{
-			return GetTemplateClassName( class_ );
-		}
-	}
-
-	var MangleGraphNode mut res;
-
-	auto parent= names_scope.GetParent();
-	if( !parent.empty() )
-	{
-		auto parent_lock= parent.lock_imut();
-		auto& parent_ref= parent_lock.get_ref();
-		if( !parent_ref.GetThisNamespaceName().empty() )
-		{
-			res.childs.push_back( ust::make_box( GetNamespacePrefix_r( parent_ref ) ) );
-		}
-	}
-
-	res.postfix+= ust::to_string8( name.size() );
-	res.postfix+= name;
-
-	return move(res);
-}
-
-fn MangleTemplateArgsImpl( TemplateArgsFinished& template_args ) : MangleGraphNode
-{
-	var MangleGraphNode mut result;
-	result.prefix= "I";
-
-	foreach( &arg : template_args )
-	{
-		if_var( &t : arg.get</Type/>() )
-		{
-			result.childs.push_back( ust::make_box( MangleTypeImpl( t ) ) );
-		}
-		if_var( &v : arg.get</Variable/>() )
-		{
-			var MangleGraphNode mut variable_param_node;
-			variable_param_node.prefix= "L";
-			variable_param_node.childs.push_back( ust::make_box( MangleTypeImpl( v.t ) ) );
-
-			auto mut is_signed= false;
-			if_var( fundamental_type : v.t.GetFundamentalType() )
-			{
-				is_signed= IsSignedInteger( fundamental_type.fundamental_type );
-			}
-			if_var( enum_type : v.t.GetEnumType() )
-			{
-				is_signed= IsSignedInteger( enum_type.lock_imut().get_ref().underlaying_type.fundamental_type );
-			}
-
-			if( v.constexpr_value != LLVMValueRef::Null )
-			{
-				unsafe
-				{
-					if( is_signed )
-					{
-						auto num= LLVMConstIntGetSExtValue( v.constexpr_value );
-						if( num >= 0i64 )
-						{
-							variable_param_node.postfix+= ust::to_string8( num );
-						}
-						else
-						{
-							variable_param_node.postfix+= "n";
-							variable_param_node.postfix+= ust::to_string8( -num );
-						}
-					}
-					else
-					{
-						variable_param_node.postfix+= ust::to_string8( LLVMConstIntGetZExtValue( v.constexpr_value ) );
-					}
-				}
-			}
-
-			variable_param_node.postfix+= "E";
-			variable_param_node.cachable= false;
-			result.childs.push_back( ust::make_box( move( variable_param_node ) ) );
-		}
-	}
-
-	result.postfix= "E";
-
-	result.cachable= false;
-	return move(result);
-}
-
-fn DecodeOperator( ust::string8& o ) : ust::array_view_imut</ char8 />
-{
-	if( o == "+" ){ return "pl"; }
-	if( o == "-" ){ return "mi"; }
-	if( o == "*" ){ return "ml"; }
-	if( o == "/" ){ return "dv"; }
-	if( o == "%" ){ return "rm"; }
-
-	if( o == "==" ){ return "eq"; }
-	if( o == "!=" ){ return "ne"; }
-	if( o == ">"  ){ return "gt"; }
-	if( o == ">=" ){ return "ge"; }
-	if( o == "<"  ){ return "lt"; }
-	if( o == "<=" ){ return "le"; }
-
-	if( o == "&" ){ return "an"; }
-	if( o == "|" ){ return "or"; }
-	if( o == "^" ){ return "eo"; }
-
-	if( o == "<<" ){ return "ls"; }
-	if( o == ">>" ){ return "rs"; }
-
-	if( o == "+=" ){ return "pL"; }
-	if( o == "-=" ){ return "mI"; }
-	if( o == "*=" ){ return "mL"; }
-	if( o == "/=" ){ return "dV"; }
-	if( o == "%=" ){ return "rM"; }
-
-	if( o == "&=" ){ return "aN"; }
-	if( o == "|=" ){ return "oR"; }
-	if( o == "^=" ){ return "eO"; }
-
-	if( o == "<<=" ){ return "lS"; }
-	if( o == ">>=" ){ return "rS"; }
-
-	if( o == "!" ){ return "nt"; }
-	if( o == "~" ){ return "co"; }
-
-	if( o == "=" ){ return "aS"; }
-	if( o == "++" ){ return "pp"; }
-	if( o == "--" ){ return "mm"; }
-
-	if( o == "()" ){ return "cl"; }
-	if( o == "[]" ){ return "ix"; }
-
-	return "";
-}
-
-fn MangleFunctionImpl(
-	NamesScope& parent_scope,
-	ust::string8& name,
-	FunctionType& function_type,
-	ust::optional_ref</TemplateArgsFinished, false/> template_args ) : ust::string8
-{
-	var MangleGraphNode mut res;
-
-	auto op_decoded= DecodeOperator( name );
-	if( !op_decoded.empty() )
-	{
-		res.childs.push_back( ust::make_box( GetNestedName( op_decoded, parent_scope, true, template_args ) ) );
-	}
-	else
-	{
-		res.childs.push_back( ust::make_box( GetNestedName( name, parent_scope, false, template_args ) ) );
-	}
-
-	res.childs.back().get_ref().cachable= false;
-
-	foreach( &param : function_type.params )
-	{
-		var MangleGraphNode mut param_node= MangleTypeImpl( param.t );
-		if( !param.is_mutable && param.is_reference ) // push "Konst" for reference immutable arguments
-		{
-			var MangleGraphNode mut konst_node;
-			konst_node.prefix= "K";
-			konst_node.childs.push_back( ust::make_box( take( param_node ) ) );
-			param_node= move( konst_node );
-		}
-		if( param.is_reference )
-		{
-			var MangleGraphNode mut ref_node;
-			ref_node.prefix= "R";
-			ref_node.childs.push_back( ust::make_box( take( param_node ) ) );
-			param_node= move( ref_node );
-		}
-
-		res.childs.push_back( ust::make_box( move(param_node) ) );
-	}
-	if( function_type.params.empty() )
-	{
-		var MangleGraphNode mut empty_params_node;
-		empty_params_node.postfix= "v";
-		res.childs.push_back( ust::make_box( move( empty_params_node ) ) );
-	}
-
-	var ust::string8 mut str= "_Z";
-	str+= MangleGraphFinalize(res);
-	str+= "\0";
-	return move(str);
-}
-
-fn MangleFunction(
-	NamesScope& parent_scope,
-	ust::string8& name,
-	FunctionType& function_type ) : ust::string8
-{
-	return MangleFunctionImpl( parent_scope, name, function_type, ust::optional_ref</TemplateArgsFinished, false/>() );
-}
-
-fn MangleFunction(
-	NamesScope& parent_scope,
-	ust::string8& name,
-	FunctionType& function_type,
-	TemplateArgsFinished& template_args ) : ust::string8
-{
-	return MangleFunctionImpl( parent_scope, name, function_type, ust::optional_ref</TemplateArgsFinished, false/>(template_args) );
-}
-
-fn MangleGlobalVariable( NamesScope& parent_scope, ust::string8& variable_name ) : ust::string8
-{
-	// Variables inside global namespace have simple names.
-	if( parent_scope.GetParent().empty() )
-	{
-		return variable_name + "\0";
-	}
-
-	var ust::string8 mut res= "_Z";
-	res+= MangleGraphFinalize( GetNestedName( variable_name, parent_scope ) );
-	res+= "\0";
-	return move(res);
-}
-
-fn MangleType( Type& t ) : ust::string8
-{
-	auto mut str= MangleGraphFinalize(MangleTypeImpl(t));
-	str+= "\0";
-	return move(str);
-}
-
-fn MangleTemplateArgs( TemplateArgsFinished& template_args ) : ust::string8
-{
-	auto mut str= MangleGraphFinalize(MangleTemplateArgsImpl(template_args));
-	str+= "\0";
-	return move(str);
-}
-
-fn MangleVirtualTable( Type& t ) : ust::string8
-{
-	var ust::string8 mut str= "_ZTV";
-	str+= MangleGraphFinalize(MangleTypeImpl(t));
-	str+= "\0";
-	return move(str);
-}
-
-*/
-
 class ManglerState
 {
 public:
@@ -752,6 +67,11 @@ public:
 		fn destructor()
 		{
 			state_.FinalizePart( start_, compressed_start_ );
+		}
+
+		fn GetManglerState( this'x' ) : ManglerState &'x mut
+		{
+			return state_;
 		}
 
 	private:
@@ -800,6 +120,7 @@ fn ManglerState::PushLengthPrefixed( mut this, ust::array_view_imut</char8/> nam
 fn ManglerState::TakeResult( mut this ) : ust::string8
 {
 	// Take copy for result. This allows us to re-use internal buffer for mangling of next name.
+	result_compressed_.push_back( "\0"c8 );
 	var ust::string8 mut result= result_compressed_;
 
 	substitutions_.clear();
@@ -862,6 +183,575 @@ fn ManglerState::FinalizePart( mut this, size_type start, size_type compressed_s
 	// Not found replacement - add new substitution.
 	var Substitution substitution{ .start= LenType(start), .size= LenType(size) };
 	substitutions_.push_back( substitution );
+}
+
+fn GetNestedName( ManglerState &mut mangler_state, ust::string8& name, NamesScope& parent_scope )
+{
+	ADD_NODE( mangler_state )
+	{
+		if( !parent_scope.GetParent().empty() )
+		{
+			mangler_state.Push( "N" );
+			GetNamespacePrefix_r( mangler_state, parent_scope );
+			mangler_state.PushLengthPrefixed( name.range() );
+			mangler_state.Push( "E" );
+		}
+		else
+		{
+			mangler_state.PushLengthPrefixed( name.range() );
+		}
+	}
+}
+
+fn MangleFundamentalTypeName( U_FundamentalType t ) : ust::string8
+{
+	if( t == U_FundamentalType::InvalidType ){ return ust::string8(); }
+	if( t == U_FundamentalType::LastType	){ return ust::string8(		); }
+	if( t == U_FundamentalType::void_		){ return ust::string8( "v"	); }
+	if( t == U_FundamentalType::bool_		){ return ust::string8( "b"	); }
+	if( t == U_FundamentalType::i8_			){ return ust::string8( "a"	); } // C++ signed char
+	if( t == U_FundamentalType::u8_			){ return ust::string8( "h"	); } // C++ unsigned char
+	if( t == U_FundamentalType::i16_		){ return ust::string8( "s"	); }
+	if( t == U_FundamentalType::u16_		){ return ust::string8( "t"	); }
+	if( t == U_FundamentalType::i32_		){ return ust::string8( "i"	); }
+	if( t == U_FundamentalType::u32_		){ return ust::string8( "j"	); }
+	if( t == U_FundamentalType::i64_		){ return ust::string8( "x"	); }
+	if( t == U_FundamentalType::u64_		){ return ust::string8( "y"	); }
+	if( t == U_FundamentalType::i128_		){ return ust::string8( "n"	); }
+	if( t == U_FundamentalType::u128_		){ return ust::string8( "o"	); }
+	if( t == U_FundamentalType::f32_		){ return ust::string8( "f"	); }
+	if( t == U_FundamentalType::f64_		){ return ust::string8( "d"	); }
+	if( t == U_FundamentalType::char8_		){ return ust::string8( "c"	); }
+	if( t == U_FundamentalType::char16_		){ return ust::string8( "Ds"); }
+	if( t == U_FundamentalType::char32_		){ return ust::string8( "Di"); }
+	return ust::string8();
+}
+
+fn EncodeTemplateClassName( ManglerState& mut mangler_state, ClassType& class_type )
+{
+	ADD_NODE( mangler_state )
+	{
+		auto& class_name= class_type.base_template.get_ref().class_template.get_ref().syntax_element.get_ref().name;
+		mangler_state.PushLengthPrefixed( class_name.range() );
+
+		// Skip template parameters namespace.
+		auto parent= class_type.members.lock_imut().get_ref().GetParent().lock_imut().get_ref().GetParent();
+		if( !parent.lock_imut().get_ref().GetThisNamespaceName().empty() )
+		{
+			GetNamespacePrefix_r( mangler_state, parent.lock_imut().get_ref() );
+		}
+	}
+
+	MangleTemplateArgsImpl( mangler_state, class_type.base_template.get_ref().signature_args );
+}
+
+
+fn EncodeFunctionParam( ManglerState& mut mangler_state, FunctionType::Param& param )
+{
+	if( param.is_reference )
+	{
+		ADD_NODE( mangler_state )
+		{
+			mangler_state.Push( "R" );
+			if( param.is_mutable )
+			{
+				MangleTypeImpl( mangler_state, param.t );
+			}
+			else
+			{
+				ADD_NODE( mangler_state )
+				{
+					mangler_state.Push( "K" );
+					MangleTypeImpl( mangler_state, param.t );
+				}
+			}
+		}
+	}
+	else
+	{
+		MangleTypeImpl( mangler_state, param.t );
+	}
+}
+
+fn EncodeFunctionParams( ManglerState& mut mangler_state, ust::vector</FunctionType::Param/>& params )
+{
+	foreach( &param : params )
+	{
+		EncodeFunctionParam( mangler_state, param );
+	}
+	if( params.empty() )
+	{
+		mangler_state.Push( "v" );
+	}
+}
+
+fn GetTemplateClassName( ManglerState &mut mangler_state, ClassType& class_type )
+{
+	ADD_NODE( mangler_state )
+	{
+		// Skip template parameters namespace.
+		auto parent= class_type.members.lock_imut().get_ref().GetParent().lock_imut().get_ref().GetParent();
+		if( !parent.lock_imut().get_ref().GetThisNamespaceName().empty() )
+		{
+			GetNamespacePrefix_r( mangler_state, parent.lock_imut().get_ref() );
+		}
+
+		auto& class_name= class_type.base_template.get_ref().class_template.get_ref().syntax_element.get_ref().name;
+		mangler_state.PushLengthPrefixed( class_name.range() );
+	}
+
+	MangleTemplateArgsImpl( mangler_state, class_type.base_template.get_ref().signature_args );
+}
+
+fn MangleTypeImpl( ManglerState& mut mangler_state, Type& t )
+{
+	if_var( fundamental_type : t.GetFundamentalType() )
+	{
+		mangler_state.Push( MangleFundamentalTypeName( fundamental_type.fundamental_type ).range() );
+		return;
+	}
+	if_var( array_type : t.GetArrayType() )
+	{
+		ADD_NODE( mangler_state )
+		{
+			mangler_state.Push( "A" );
+			mangler_state.Push( ust::to_string8(array_type.element_count).range() );
+			mangler_state.Push( "_" );
+			MangleTypeImpl( mangler_state, array_type.element_type );
+		}
+		return;
+	}
+	if_var( tuple_type : t.GetTupleType() )
+	{
+		ADD_NODE( mangler_state )
+		{
+			ADD_NODE( mangler_state )
+			{
+				mangler_state.PushLengthPrefixed( KeywordToString( Keyword::tup_ ) );
+			}
+
+			mangler_state.Push( "I" );
+			foreach( &element_type : tuple_type.element_types )
+			{
+				MangleTypeImpl( mangler_state, element_type );
+			}
+			mangler_state.Push( "E" );
+		}
+	}
+	if_var( class_type_ptr : t.GetClassType() )
+	{
+		auto class_lock= class_type_ptr.lock_imut();
+		auto& class_type= class_lock.get_ref();
+		auto class_members= class_type.members;
+		auto class_members_lock= class_members.lock_imut();
+		auto& class_members_ref= class_members_lock.get_ref();
+
+		if( !class_type.typeinfo_src_type_.empty() )
+		{
+			ADD_NODE( mangler_state )
+			{
+				ADD_NODE( mangler_state )
+				{
+					mangler_state.PushLengthPrefixed( class_type.members.lock_imut().get_ref().GetThisNamespaceName().range() );
+				}
+				ADD_NODE( mangler_state )
+				{
+					var TemplateArgsFinished mut typeinfo_args;
+					typeinfo_args.push_back( class_type.typeinfo_src_type_.get_ref() );
+					MangleTemplateArgsImpl( mangler_state, typeinfo_args );
+				}
+			}
+		}
+		else if( !class_type.base_template.empty() )
+		{
+			ADD_NODE( mangler_state )
+			{
+				auto t= class_type.base_template.get_ref().class_template;
+				auto t_namespace= t.get_ref().parent_names_scope.lock();
+				if( !t_namespace.empty() && !t_namespace.lock_imut().get_ref().GetParent().empty() )
+				{
+					mangler_state.Push( "N" );
+					GetTemplateClassName( mangler_state, class_type );
+					mangler_state.Push( "E" );
+				}
+				else
+				{
+					GetTemplateClassName( mangler_state, class_type );
+				}
+			}
+		}
+		else
+		{
+			GetNestedName( mangler_state, class_members_ref.GetThisNamespaceName(), class_members_ref.GetParent().lock_imut().get_ref() );
+		}
+		return;
+	}
+	if_var( enum_type : t.GetEnumType() )
+	{
+		auto enum_members= enum_type.lock_imut().get_ref().names_scope;
+		auto enum_members_lock= enum_members.lock_imut();
+		auto& enum_members_ref= enum_members_lock.get_ref();
+
+		GetNestedName( mangler_state, enum_members_ref.GetThisNamespaceName(), enum_members_ref.GetParent().lock_imut().get_ref() );
+		return;
+	}
+	if_var( &raw_poiter_type : t.GetRawPointerType() )
+	{
+		ADD_NODE( mangler_state )
+		{
+			mangler_state.Push( "P" );
+			MangleTypeImpl( mangler_state, raw_poiter_type.element_type );
+		}
+		return;
+	}
+	if_var( &function_pointer_type : t.GetFunctionPointerType() )
+	{
+		ADD_NODE( mangler_state )
+		{
+			mangler_state.Push( "P" );
+			MangleTypeImpl( mangler_state, function_pointer_type.function_type );
+		}
+		return;
+	}
+	if_var( &function_type : t.GetFunctionType() )
+	{
+		ADD_NODE( mangler_state )
+		{
+			mangler_state.Push( "F" );
+
+			{
+				var FunctionType::Param ret_param
+				{
+					.t( function_type.return_type ),
+					.is_mutable= function_type.return_value_is_mutable,
+					.is_reference= function_type.return_value_is_reference,
+				};
+				EncodeFunctionParam( mangler_state, ret_param );
+			}
+
+			EncodeFunctionParams( mangler_state, function_type.params );
+
+			if( !function_type.return_references.empty() )
+			{
+				ADD_NODE( mangler_state )
+				{
+					mangler_state.Push( "_RR" );
+
+					halt if( function_type.return_references.size() >= 36s );
+					mangler_state.Push( Base36Digit(function_type.return_references.size()) );
+
+					foreach( &param_reference : function_type.return_references )
+					{
+						halt if( param_reference.param_index >= 36u8 );
+						halt if( param_reference.reference_index >= 36u8 && param_reference.reference_index != FunctionType::c_param_reference_number );
+
+						mangler_state.Push( Base36Digit( size_type(param_reference.param_index) ) );
+						mangler_state.Push( select(
+							param_reference.reference_index == FunctionType::c_param_reference_number
+							? "_"c8
+							: Base36Digit( size_type(param_reference.reference_index) ) ) );
+					}
+				}
+			}
+			if( !function_type.references_pollution.empty() )
+			{
+				ADD_NODE( mangler_state )
+				{
+					mangler_state.Push( "_RP" );
+
+					halt if( function_type.references_pollution.size() >= 36s );
+					mangler_state.Push( Base36Digit(function_type.references_pollution.size()) );
+
+					foreach( &pollution : function_type.references_pollution )
+					{
+						halt if( pollution.dst.param_index >= 36u8 );
+						halt if( pollution.dst.reference_index >= 36u8 && pollution.dst.reference_index != FunctionType::c_param_reference_number );
+						halt if( pollution.src.param_index >= 36u8 );
+						halt if( pollution.src.reference_index >= 36u8 && pollution.src.reference_index != FunctionType::c_param_reference_number );
+
+						mangler_state.Push( Base36Digit( size_type(pollution.dst.param_index) ) );
+						mangler_state.Push( select(
+							pollution.dst.reference_index == FunctionType::c_param_reference_number
+							? "_"c8
+							: Base36Digit( size_type(pollution.dst.reference_index) ) ) );
+						mangler_state.Push( Base36Digit( size_type(pollution.src.param_index) ) );
+						mangler_state.Push( select(
+							pollution.src.reference_index == FunctionType::c_param_reference_number
+							? "_"c8
+							: Base36Digit( size_type(pollution.src.reference_index) ) ) );
+					}
+				}
+			}
+			if( function_type.is_unsafe )
+			{
+				mangler_state.Push( "unsafe" );
+			}
+
+			mangler_state.Push( "E" );
+		}
+		return;
+	}
+
+	halt;
+}
+
+fn GetNamespacePrefix_r( ManglerState& mut mangler_state, NamesScope& names_scope )
+{
+	var ust::string8& name= names_scope.GetThisNamespaceName();
+
+	// Process separately class templates.
+	auto class_ptr= names_scope.GetClass();
+	if( !class_ptr.empty() )
+	{
+		auto class_lock= class_ptr.lock_imut();
+		auto& class_= class_lock.get_ref();
+		if( !class_.base_template.empty() )
+		{
+			ADD_NODE( mangler_state )
+			{
+				GetTemplateClassName( mangler_state, class_ );
+			}
+			return;
+		}
+	}
+
+	ADD_NODE( mangler_state )
+	{
+		auto parent= names_scope.GetParent();
+		if( !parent.empty() )
+		{
+			auto parent_lock= parent.lock_imut();
+			auto& parent_ref= parent_lock.get_ref();
+			if( !parent_ref.GetThisNamespaceName().empty() )
+			{
+				 GetNamespacePrefix_r( mangler_state, parent_ref );
+			}
+		}
+
+		mangler_state.PushLengthPrefixed( name.range() );
+	}
+}
+
+fn MangleTemplateArgsImpl( ManglerState &mut mangler_state, TemplateArgsFinished& template_args )
+{
+	mangler_state.Push( "I" );
+
+	foreach( &arg : template_args )
+	{
+		if_var( &t : arg.get</Type/>() )
+		{
+			MangleTypeImpl( mangler_state, t );
+		}
+		if_var( &v : arg.get</Variable/>() )
+		{
+			mangler_state.Push( "L" );
+			MangleTypeImpl( mangler_state, v.t );
+
+			auto mut is_signed= false;
+			if_var( fundamental_type : v.t.GetFundamentalType() )
+			{
+				is_signed= IsSignedInteger( fundamental_type.fundamental_type );
+			}
+			if_var( enum_type : v.t.GetEnumType() )
+			{
+				is_signed= IsSignedInteger( enum_type.lock_imut().get_ref().underlaying_type.fundamental_type );
+			}
+
+			if( v.constexpr_value != LLVMValueRef::Null )
+			{
+				unsafe
+				{
+					if( is_signed )
+					{
+						auto num= LLVMConstIntGetSExtValue( v.constexpr_value );
+						if( num >= 0i64 )
+						{
+							mangler_state.Push( ust::to_string8( num ).range() );
+						}
+						else
+						{
+							mangler_state.Push( "n" );
+							mangler_state.Push( ust::to_string8( -num ).range() );
+						}
+					}
+					else
+					{
+						mangler_state.Push( ust::to_string8( LLVMConstIntGetZExtValue( v.constexpr_value ) ).range() );
+					}
+				}
+			}
+
+			mangler_state.Push( "E" );
+		}
+	}
+
+	mangler_state.Push( "E" );
+}
+
+fn DecodeOperator( ust::string8& o ) : ust::array_view_imut</ char8 />
+{
+	if( o == "+" ){ return "pl"; }
+	if( o == "-" ){ return "mi"; }
+	if( o == "*" ){ return "ml"; }
+	if( o == "/" ){ return "dv"; }
+	if( o == "%" ){ return "rm"; }
+
+	if( o == "==" ){ return "eq"; }
+	if( o == "!=" ){ return "ne"; }
+	if( o == ">"  ){ return "gt"; }
+	if( o == ">=" ){ return "ge"; }
+	if( o == "<"  ){ return "lt"; }
+	if( o == "<=" ){ return "le"; }
+
+	if( o == "&" ){ return "an"; }
+	if( o == "|" ){ return "or"; }
+	if( o == "^" ){ return "eo"; }
+
+	if( o == "<<" ){ return "ls"; }
+	if( o == ">>" ){ return "rs"; }
+
+	if( o == "+=" ){ return "pL"; }
+	if( o == "-=" ){ return "mI"; }
+	if( o == "*=" ){ return "mL"; }
+	if( o == "/=" ){ return "dV"; }
+	if( o == "%=" ){ return "rM"; }
+
+	if( o == "&=" ){ return "aN"; }
+	if( o == "|=" ){ return "oR"; }
+	if( o == "^=" ){ return "eO"; }
+
+	if( o == "<<=" ){ return "lS"; }
+	if( o == ">>=" ){ return "rS"; }
+
+	if( o == "!" ){ return "nt"; }
+	if( o == "~" ){ return "co"; }
+
+	if( o == "=" ){ return "aS"; }
+	if( o == "++" ){ return "pp"; }
+	if( o == "--" ){ return "mm"; }
+
+	if( o == "()" ){ return "cl"; }
+	if( o == "[]" ){ return "ix"; }
+
+	return "";
+}
+
+fn MangleFunctionImpl(
+	NamesScope& parent_scope,
+	ust::string8& name,
+	FunctionType& function_type,
+	ust::optional_ref</TemplateArgsFinished, false/> template_args ) : ust::string8
+{
+	var ManglerState mut mangler_state;
+	mangler_state.Push( "_Z" );
+
+	var ust::string8 mut name_prefixed= DecodeOperator( name );
+	if( name_prefixed.empty() )
+	{
+		name_prefixed= ust::to_string8( name.size() );
+		name_prefixed+= name;
+	}
+
+	if( !template_args.empty() )
+	{
+		ADD_NODE( mangler_state )
+		{
+			if( !parent_scope.GetParent().empty() )
+			{
+				mangler_state.Push( "N" );
+				ADD_NODE( mangler_state )
+				{
+					GetNamespacePrefix_r( mangler_state, parent_scope );
+					mangler_state.Push( name_prefixed.range() );
+				}
+
+				MangleTemplateArgsImpl( mangler_state, template_args.get_ref() );
+				mangler_state.Push( "Ev" );
+			}
+			else
+			{
+				ADD_NODE( mangler_state )
+				{
+					mangler_state.Push( name_prefixed.range() );
+				}
+
+				MangleTemplateArgsImpl( mangler_state, template_args.get_ref() );
+				mangler_state.Push( "v" );
+			}
+		}
+	}
+	else
+	{
+		if( !parent_scope.GetParent().empty() )
+		{
+			mangler_state.Push( "N" );
+			GetNamespacePrefix_r( mangler_state, parent_scope );
+			mangler_state.Push( name_prefixed.range() );
+			mangler_state.Push( "E" );
+		}
+		else
+		{
+			mangler_state.Push( name_prefixed.range() );
+		}
+	}
+
+	EncodeFunctionParams( mangler_state, function_type.params );
+
+	return mangler_state.TakeResult();
+}
+
+fn MangleFunction(
+	NamesScope& parent_scope,
+	ust::string8& name,
+	FunctionType& function_type ) : ust::string8
+{
+	return MangleFunctionImpl( parent_scope, name, function_type, ust::optional_ref</TemplateArgsFinished, false/>() );
+}
+
+fn MangleFunction(
+	NamesScope& parent_scope,
+	ust::string8& name,
+	FunctionType& function_type,
+	TemplateArgsFinished& template_args ) : ust::string8
+{
+	return MangleFunctionImpl( parent_scope, name, function_type, ust::optional_ref</TemplateArgsFinished, false/>(template_args) );
+}
+
+
+fn MangleGlobalVariable( NamesScope& parent_scope, ust::string8& variable_name ) : ust::string8
+{
+	// Variables inside global namespace have simple names.
+	if( parent_scope.GetParent().empty() )
+	{
+		return variable_name + "\0";
+	}
+
+	var ManglerState mut mangler_state;
+	mangler_state.Push( "_Z" );
+	GetNestedName( mangler_state, variable_name, parent_scope );
+	return mangler_state.TakeResult();
+}
+
+fn MangleType( Type& t ) : ust::string8
+{
+	var ManglerState mut mangler_state;
+	MangleTypeImpl(mangler_state, t);
+	return mangler_state.TakeResult();
+}
+
+fn MangleTemplateArgs( TemplateArgsFinished& template_args ) : ust::string8
+{
+	var ManglerState mut mangler_state;
+	MangleTemplateArgsImpl( mangler_state, template_args );
+	return mangler_state.TakeResult();
+}
+
+fn MangleVirtualTable( Type& t ) : ust::string8
+{
+	var ManglerState mut mangler_state;
+	mangler_state.Push( "_ZTV" );
+	MangleTypeImpl( mangler_state, t );
+	return mangler_state.TakeResult();
 }
 
 } // namespace U1
