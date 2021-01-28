@@ -149,8 +149,8 @@ fn ManglerState::FinalizePart( mut this, size_type start, size_type compressed_s
 	{
 		var Substitution substitution= substitutions_[i];
 		if( StringViewEq(
-			cast_imut(result_full_).range().subrange( start, size ),
-			cast_imut(result_full_).range().subrange( size_type(substitution.start), size_type(substitution.size) ) ) )
+			cast_imut(result_full_).range().subrange( start, start + size ),
+			cast_imut(result_full_).range().subrange( size_type(substitution.start), size_type(substitution.start) + size_type( substitution.size) ) ) )
 		{
 			result_compressed_.resize( compressed_start, "\0"c8 );
 			result_compressed_.push_back( "S"c8 );
@@ -245,7 +245,6 @@ fn EncodeTemplateClassName( ManglerState& mut mangler_state, ClassType& class_ty
 	MangleTemplateArgsImpl( mangler_state, class_type.base_template.get_ref().signature_args );
 }
 
-
 fn EncodeFunctionParam( ManglerState& mut mangler_state, FunctionType::Param& param )
 {
 	if( param.is_reference )
@@ -337,6 +336,7 @@ fn MangleTypeImpl( ManglerState& mut mangler_state, Type& t )
 			}
 			mangler_state.Push( "E" );
 		}
+		return;
 	}
 	if_var( class_type_ptr : t.GetClassType() )
 	{
@@ -524,7 +524,7 @@ fn GetNamespacePrefix_r( ManglerState& mut mangler_state, NamesScope& names_scop
 			auto& parent_ref= parent_lock.get_ref();
 			if( !parent_ref.GetThisNamespaceName().empty() )
 			{
-				 GetNamespacePrefix_r( mangler_state, parent_ref );
+				GetNamespacePrefix_r( mangler_state, parent_ref );
 			}
 		}
 
@@ -716,7 +716,6 @@ fn MangleFunction(
 {
 	return MangleFunctionImpl( parent_scope, name, function_type, ust::optional_ref</TemplateArgsFinished, false/>(template_args) );
 }
-
 
 fn MangleGlobalVariable( NamesScope& parent_scope, ust::string8& variable_name ) : ust::string8
 {
