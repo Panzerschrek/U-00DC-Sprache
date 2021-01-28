@@ -419,6 +419,8 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		{
 			fields_llvm_types.push_back( base_class.lock_imut().get_ref().llvm_type );
 		}
+		// TODO - fix "ReferenceProtectionError", return back commented code.
+		/*
 		foreach( &mut parent : class_.parents )
 		{
 			if( parent.class_ != base_class )
@@ -429,6 +431,19 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			else
 			{
 				parent.field_number= 0u;
+			}
+		}
+		*/
+		for( auto mut i= 0s; i < class_.parents.size(); ++i )
+		{
+			if( class_.parents[i].class_ != base_class )
+			{
+				class_.parents[i].field_number= u32(fields_llvm_types.size());
+				fields_llvm_types.push_back( class_.parents[i].class_.lock_imut().get_ref().llvm_type );
+			}
+			else
+			{
+				class_.parents[i].field_number= 0u;
 			}
 		}
 	}
