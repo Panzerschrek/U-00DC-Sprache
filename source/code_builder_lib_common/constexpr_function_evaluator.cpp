@@ -407,13 +407,13 @@ llvm::GenericValue ConstexprFunctionEvaluator::GetVal( const llvm::Value* const 
 	}
 	else if( const auto constant_array= llvm::dyn_cast<llvm::ConstantArray>( val ) )
 	{
-		res.AggregateVal.resize( constant_array->getType()->getNumElements() );
+		res.AggregateVal.resize( size_t(constant_array->getType()->getNumElements()) );
 		for( unsigned int i= 0u; i < res.AggregateVal.size(); ++i )
 			res.AggregateVal[i]= GetVal( constant_array->getAggregateElement(i) );
 	}
 	else if( const auto constant_zero= llvm::dyn_cast<llvm::ConstantAggregateZero>( val ) )
 	{
-		res.AggregateVal.resize( constant_zero->getNumElements() );
+		res.AggregateVal.resize( size_t(constant_zero->getNumElements()) );
 		for( unsigned int i= 0u; i < res.AggregateVal.size(); ++i )
 			res.AggregateVal[i]= GetVal( constant_zero->getElementValue(i) );
 	}
@@ -435,7 +435,7 @@ llvm::GenericValue ConstexprFunctionEvaluator::GetVal( const llvm::Value* const 
 		}
 		else if( const auto array_type= llvm::dyn_cast<llvm::ArrayType>( val->getType() ) )
 		{
-			res.AggregateVal.resize( array_type->getNumElements() );
+			res.AggregateVal.resize( size_t(array_type->getNumElements()) );
 			for( unsigned int i= 0u; i < res.AggregateVal.size(); ++i )
 				res.AggregateVal[i]= GetVal( undef_value->getElementValue(i) );
 		}

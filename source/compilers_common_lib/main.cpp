@@ -150,6 +150,21 @@ void PrintErrorsForTests( const std::vector<IVfs::Path>& source_files, const Cod
 			<< " " << error.src_loc.GetLine() << " " << CodeBuilderErrorCodeToString( error.code ) << "\n";
 }
 
+void AddModuleGlobalConstant( llvm::Module& module, llvm::Constant* const initializer, const llvm::Twine name )
+{
+	const auto variable=
+		new llvm::GlobalVariable(
+			module,
+			initializer->getType(),
+			true, // is_constant
+			llvm::GlobalValue::ExternalLinkage,
+			initializer,
+			name );
+	llvm::Comdat* const comdat= module.getOrInsertComdat( variable->getName() );
+	comdat->setSelectionKind( llvm::Comdat::Any );
+	variable->setComdat( comdat );
+}
+
 std::string QuoteDepTargetString( const std::string& str )
 {
 	std::string result;
@@ -440,15 +455,17 @@ int Main( int argc, const char* argv[] )
 
 		llvm::TargetOptions target_options;
 
-		llvm::CodeGenOpt::Level code_gen_optimization_level;
-		if( optimization_level >= 2u || size_optimization_level > 0u )
+		auto code_gen_optimization_level= llvm::CodeGenOpt::None;
+		if ( size_optimization_level > 0 )
 			code_gen_optimization_level= llvm::CodeGenOpt::Default;
-		else if( optimization_level == 1u )
-			code_gen_optimization_level= llvm::CodeGenOpt::Less;
-		else if( optimization_level == 3u )
-			code_gen_optimization_level= llvm::CodeGenOpt::Aggressive;
-		else
+		else if( optimization_level == 0 )
 			code_gen_optimization_level= llvm::CodeGenOpt::None;
+		else if( optimization_level == 1 )
+			code_gen_optimization_level= llvm::CodeGenOpt::Less;
+		else if( optimization_level == 2 )
+			code_gen_optimization_level= llvm::CodeGenOpt::Default;
+		else if( optimization_level == 3 )
+			code_gen_optimization_level= llvm::CodeGenOpt::Aggressive;
 
 		target_machine.reset(
 			target->createTargetMachine(
@@ -580,40 +597,16 @@ int Main( int argc, const char* argv[] )
 	// Add module flags and global constants for compiler version and generation.
 	{
 		const auto constant= llvm::ConstantDataArray::getString( llvm_context, getFullVersion() );
-
 		result_module->addModuleFlag( llvm::Module::Warning, "Sprache compiler version", constant );
-
-		const auto variable=
-			new llvm::GlobalVariable(
-				*result_module,
-				constant->getType(),
-				true, // is_constant
-				llvm::GlobalValue::ExternalLinkage,
-				constant,
-				"__U_sprache_compiler_version" );
-		llvm::Comdat* const comdat= result_module->getOrInsertComdat( variable->getName() );
-		comdat->setSelectionKind( llvm::Comdat::Any );
-		variable->setComdat( comdat );
+		AddModuleGlobalConstant( *result_module, constant, "__U_sprache_compiler_version" );
 	}
 	{
 		const auto constant=
 			llvm::ConstantInt::get(
 				llvm::IntegerType::getInt32Ty(llvm_context),
 				uint64_t(GetCompilerGeneration()), false );
-
 		result_module->addModuleFlag( llvm::Module::Warning, "Sprache compiler generation", constant );
-
-		const auto variable=
-			new llvm::GlobalVariable(
-				*result_module,
-				constant->getType(),
-				true, // is_constant
-				llvm::GlobalValue::ExternalLinkage,
-				constant,
-				"__U_sprache_compiler_generation" );
-		llvm::Comdat* const comdat= result_module->getOrInsertComdat( variable->getName() );
-		comdat->setSelectionKind( llvm::Comdat::Any );
-		variable->setComdat( comdat );
+		AddModuleGlobalConstant( *result_module, constant, "__U_sprache_compiler_generation" );
 	}
 
 	if( optimization_level > 0u || size_optimization_level > 0u )
