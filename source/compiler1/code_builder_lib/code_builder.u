@@ -1,6 +1,5 @@
 import "/keywords.uh"
 import "error_reporting.uh"
-import "mangling.uh"
 import "code_builder.uh"
 
 namespace U1
@@ -1209,7 +1208,7 @@ fn CodeBuilder::PrepareFunction(
 	else
 	{
 		llvm_function_name=
-			MangleFunction(
+			mangler_.MangleFunction(
 				names_scope_ptr.lock_imut().get_ref(),
 				func_name,
 				function_variable.t );

@@ -2,7 +2,6 @@ import "/sort.u"
 import "/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
-import "mangling.uh"
 
 ?macro <? ADD_BOOL_FIELD:block( ?name:expr, ?value:expr ) ?>
 ->
@@ -189,12 +188,6 @@ struct ClassInnerTypeForTypeinfo
 	}
 }
 
-// Returns null-terminated string.
-fn GetTypeinfoVariableName( ClassTypePtr& typeinfo_class ) : ust::string8
-{
-	return "_val_of_" + MangleType(typeinfo_class);
-}
-
 fn FinishTypeinfoList( LLVMContextRef llvm_context, ust::vector</Type/> mut element_types, ust::vector</LLVMValueRef/>& initializers ) : Variable
 {
 	var TupleType mut tuple_type{ .element_types= move(element_types) };
@@ -251,11 +244,13 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 		.location= Variable::Location::Pointer,
 	};
 
+	var ust::string8 mut variable_name = "_val_of_";
+	variable_name+= mangler_.MangleType(typeinfo_class);
 	unsafe
 	{
 		auto llvm_type= v.t.GetLLVMType();
 		v.constexpr_value= LLVMGetUndef( llvm_type ); // llvm::Constant is immutable, so, we can create real constant only if we build comple typeinfo.
-		v.llvm_value= AddGlobalConstantVariable( GetTypeinfoVariableName( typeinfo_class ), llvm_type, v.constexpr_value );
+		v.llvm_value= AddGlobalConstantVariable( variable_name, llvm_type, v.constexpr_value );
 	}
 
 	var TypeinfoStruct mut typeinfo_struct{ .t= t, .v= v };
@@ -475,7 +470,7 @@ fn CodeBuilder::CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Ty
 		lock.get_ref().SetClass( class_type_ptr );
 	}
 
-	auto name_mangled= MangleType( class_type_ptr );
+	auto name_mangled= mangler_.MangleType( class_type_ptr );
 	unsafe
 	{
 		auto mut lock= class_type_ptr.lock_mut();
@@ -487,7 +482,7 @@ fn CodeBuilder::CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Ty
 	return move(class_type_ptr);
 }
 
-fn CodeBuilder::FinishTypeinfoClass( this, ClassTypePtr& typeinfo_class, ust::vector</LLVMTypeRef/>& fields_llvm_types )
+fn CodeBuilder::FinishTypeinfoClass( mut this, ClassTypePtr& typeinfo_class, ust::vector</LLVMTypeRef/>& fields_llvm_types )
 {
 	{
 		auto mut class_lock= typeinfo_class.lock_mut();

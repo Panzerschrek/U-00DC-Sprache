@@ -2,6 +2,7 @@ import "../lex_synt_lib/source_graph.uh"
 import "/code_builder_errors.uh"
 import "constexpr_function_evaluator.uh"
 import "function_context.uh"
+import "mangling.uh"
 import "structs_combined.uh"
 
 // Macro for loops generation.
@@ -563,7 +564,7 @@ private:
 	fn BuildFullTypeinfo( mut this, Type& t ) : Variable;
 
 	fn CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Type& src_type, ust::string8& name ) : ClassTypePtr;
-	fn FinishTypeinfoClass( this, ClassTypePtr& typeinfo_class, ust::vector</LLVMTypeRef/>& fields_llvm_types );
+	fn FinishTypeinfoClass( mut this, ClassTypePtr& typeinfo_class, ust::vector</LLVMTypeRef/>& fields_llvm_types );
 
 	fn BuildTypeinfoTupleElementsList( mut this, NamesScopePtr& root_namespace, TupleType& tuple_type ) : Variable;
 	fn BuildTypeinfoFunctionParamsList( mut this, NamesScopePtr& root_namespace, FunctionType& function_type ) : Variable;
@@ -596,11 +597,11 @@ private:
 
 	// Virtual stuff
 	fn PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr );
-	fn PrepareClassVirtualTableType( this, ClassTypePtr& class_type_ptr );
+	fn PrepareClassVirtualTableType( mut this, ClassTypePtr& class_type_ptr );
 
-	fn BuildClassPolymorphTypeId( this, ClassTypePtr& class_type_ptr );
+	fn BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_ptr );
 	fn BuildClassVirtualTable_r( this, ClassType& ancestor_class, ClassType& dst_class, LLVMValueRef dst_class_ptr_null_based ) : LLVMValueRef;
-	fn BuildClassVirtualTable( this, ClassTypePtr& class_type_ptr );
+	fn BuildClassVirtualTable( mut this, ClassTypePtr& class_type_ptr );
 
 	fn SetupVirtualTablePointers_r(
 		this,
@@ -669,8 +670,8 @@ private:
 	fn TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_type );
 	fn TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type );
 	fn TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class_type );
-	fn TryGenerateDestructorPrototype( this, ClassTypePtr& class_type );
-	fn TryGenerateDestructor( this, ClassTypePtr& class_type );
+	fn TryGenerateDestructorPrototype( mut this, ClassTypePtr& class_type );
+	fn TryGenerateDestructor( mut this, ClassTypePtr& class_type );
 
 	fn BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, SrcLoc& src_loc );
 	fn BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, SrcLoc& src_loc );
@@ -752,6 +753,7 @@ private:
 	LLVMContextRef imut llvm_context_;
 	LLVMTargetDataRef imut data_layout_;
 	ConstexprFunctionEvaluator constexpr_function_evaluator_;
+	Mangler mangler_;
 
 	struct FundamentalLLVMTypes
 	{

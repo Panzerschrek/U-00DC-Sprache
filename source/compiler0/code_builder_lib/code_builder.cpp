@@ -10,7 +10,6 @@
 #include "keywords.hpp"
 #include "../../sprache_version/sprache_version.hpp"
 #include "error_reporting.hpp"
-#include "mangling.hpp"
 
 #include "code_builder.hpp"
 
@@ -1153,7 +1152,7 @@ Type CodeBuilder::BuildFuncCode(
 			llvm::Function::Create(
 				function_type.llvm_type,
 				llvm::Function::LinkageTypes::ExternalLinkage, // External - for prototype.
-				func_variable.no_mangle ? func_name : MangleFunction( parent_names_scope, func_name, function_type ),
+				func_variable.no_mangle ? func_name : mangler_.MangleFunction( parent_names_scope, func_name, function_type ),
 				module_.get() );
 
 		// Merge functions with identical code.

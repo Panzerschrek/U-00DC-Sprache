@@ -715,7 +715,6 @@ U_TEST( FunctionTemplatesMangling_Test1 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooIifiEvv" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooIbtjEvv" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooI3AbcS0_S0_Evv" ) != nullptr );
-
 }
 
 U_TEST( FunctionTemplatesMangling_Test2 )

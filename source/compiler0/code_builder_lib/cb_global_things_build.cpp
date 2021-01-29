@@ -1,6 +1,5 @@
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "keywords.hpp"
-#include "mangling.hpp"
 #include "error_reporting.hpp"
 #include "code_builder.hpp"
 
@@ -901,7 +900,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 		var.llvm_value=
 			CreateGlobalConstantVariable(
 				var.type,
-				MangleGlobalVariable( enum_->members, in_member.name ),
+				mangler_.MangleGlobalVariable( enum_->members, in_member.name ),
 				var.constexpr_value );
 
 		if( enum_->members.AddName( in_member.name, Value( var, in_member.src_loc ) ) == nullptr )
@@ -1001,7 +1000,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
 			llvm::GlobalVariable* global_variable= nullptr;
-			variable.llvm_value= global_variable= CreateGlobalConstantVariable( type, MangleGlobalVariable( names_scope, variable_declaration.name ) );
+			variable.llvm_value= global_variable= CreateGlobalConstantVariable( type, mangler_.MangleGlobalVariable( names_scope, variable_declaration.name ) );
 
 			if( variable_declaration.initializer != nullptr )
 				variable.constexpr_value= ApplyInitializer( *variable_declaration.initializer, variable, names_scope, function_context );
@@ -1142,7 +1141,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		}
 		else if( auto_variable_declaration->reference_modifier == ReferenceModifier::None )
 		{
-			llvm::GlobalVariable* const global_variable= CreateGlobalConstantVariable( variable.type, MangleGlobalVariable( names_scope, auto_variable_declaration->name ) );
+			llvm::GlobalVariable* const global_variable= CreateGlobalConstantVariable( variable.type, mangler_.MangleGlobalVariable( names_scope, auto_variable_declaration->name ) );
 			variable.llvm_value= global_variable;
 			// Copy constructor for constexpr type is trivial, so, we can just take constexpr value of source.
 			variable.constexpr_value= initializer_experrsion.constexpr_value;

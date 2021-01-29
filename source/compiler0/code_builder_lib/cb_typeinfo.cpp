@@ -1,6 +1,5 @@
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "keywords.hpp"
-#include "mangling.hpp"
 #include "error_reporting.hpp"
 #include "code_builder.hpp"
 
@@ -97,7 +96,7 @@ ClassProxyPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, cons
 	typeinfo_class_proxy->class_->llvm_type= llvm_type;
 	typeinfo_class_proxy->class_->typeinfo_type= src_type;
 
-	llvm_type->setName( MangleType( typeinfo_class_proxy ) );
+	llvm_type->setName( mangler_.MangleType( typeinfo_class_proxy ) );
 
 	typeinfo_class_proxy->class_->inner_reference_type= InnerReferenceType::Imut; // Almost all typeinfo have references to another typeinfo.
 
@@ -319,7 +318,7 @@ void CodeBuilder::FinishTypeinfoClass( Class& class_, const ClassProxyPtr class_
 	TryGenerateDestructor( class_, class_proxy );
 
 	const FunctionVariable& destructor= class_.members.GetThisScopeValue( Keyword( Keywords::destructor_ ) )->GetFunctionsSet()->functions.front();
-	destructor.llvm_function->setName( MangleFunction( class_.members, Keyword( Keywords::destructor_ ), *destructor.type.GetFunctionType() ) );
+	destructor.llvm_function->setName( mangler_.MangleFunction( class_.members, Keyword( Keywords::destructor_ ), *destructor.type.GetFunctionType() ) );
 }
 
 Variable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, NamesScope& root_namespace )
