@@ -494,17 +494,12 @@ bool operator!=(const Lexem& l, const Lexem& r )
 	return !(l == r );
 }
 
-LexicalAnalysisResult LexicalAnalysis( const std::string& program_text, const bool collect_comments )
-{
-	return LexicalAnalysis( program_text.data(), program_text.size(), collect_comments );
-}
-
-LexicalAnalysisResult LexicalAnalysis( const char* const program_text_data, const size_t program_text_size, const bool collect_comments )
+LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, const bool collect_comments )
 {
 	LexicalAnalysisResult result;
 
-	Iterator it= program_text_data;
-	const Iterator it_end= program_text_data + program_text_size;
+	Iterator it= &program_text.front();
+	const Iterator it_end= it + program_text.size();
 
 	int comments_depth= 0;
 

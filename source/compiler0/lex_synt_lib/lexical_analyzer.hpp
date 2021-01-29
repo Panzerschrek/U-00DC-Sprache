@@ -127,7 +127,5 @@ struct LexicalAnalysisResult
 	LexSyntErrors errors;
 };
 
-LexicalAnalysisResult LexicalAnalysis( const std::string& program_text, bool collect_comments= false );
-LexicalAnalysisResult LexicalAnalysis( const char* program_text_data, size_t program_text_size, bool collect_comments= false );
-
+LexicalAnalysisResult LexicalAnalysis( std::string_view program_text, bool collect_comments= false );
 } // namespace U
