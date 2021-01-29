@@ -1,6 +1,5 @@
 import "/keywords.uh"
 import "error_reporting.uh"
-import "mangling.uh"
 import "code_builder.uh"
 
 namespace U1
@@ -715,7 +714,7 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 
 	unsafe
 	{
-		auto name_mangled= MangleType( class_type_ptr );
+		auto name_mangled= mangler_.MangleType( class_type_ptr );
 		auto mut lock= class_type_ptr.lock_mut();
 		lock.get_ref().llvm_type= LLVMStructCreateNamed( llvm_context_, name_mangled.front() );
 	}

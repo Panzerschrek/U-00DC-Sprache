@@ -1,6 +1,5 @@
 import "/keywords.uh"
 import "error_reporting.uh"
-import "mangling.uh"
 import "code_builder.uh"
 
 ?macro <? GLOBALS_LOOP_DETECT:block ?value : expr ?>
@@ -988,7 +987,7 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 
 		var Enum::Element mut out_element;
 
-		auto name_mangled= MangleGlobalVariable( enum_inernal_names_scope.lock_imut().get_ref(), element.name );
+		auto name_mangled= mangler_.MangleGlobalVariable( enum_inernal_names_scope.lock_imut().get_ref(), element.name );
 		unsafe{  out_element.constexpr_value= LLVMConstInt( underlaying_type.llvm_type, u64(enum_elements.size()), LLVMBool::False );  }
 		out_element.llvm_value= AddGlobalConstantVariable( name_mangled, underlaying_type.llvm_type, out_element.constexpr_value );
 
@@ -1096,7 +1095,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 
 	if( variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 	{
-		auto name_mangled= MangleGlobalVariable( names_scope_ptr.lock_imut().get_ref(), variable_declaration.name );
+		auto name_mangled= mangler_.MangleGlobalVariable( names_scope_ptr.lock_imut().get_ref(), variable_declaration.name );
 		variable.llvm_value= AddGlobalConstantVariable( name_mangled, variable.t.GetLLVMType(), LLVMValueRef::Null );
 
 		if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
@@ -1224,7 +1223,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 	}
 	else if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 	{
-		auto name_mangled= MangleGlobalVariable( names_scope_ptr.lock_imut().get_ref(), auto_variable_declaration.name );
+		auto name_mangled= mangler_.MangleGlobalVariable( names_scope_ptr.lock_imut().get_ref(), auto_variable_declaration.name );
 		variable.llvm_value= AddGlobalConstantVariable( name_mangled, variable.t.GetLLVMType(), expr.constexpr_value );
 
 		if( !expr.t.IsCopyConstructible() )

@@ -47,59 +47,6 @@ fn StringViewEq( ust::array_view_imut</char8/> s0, ust::array_view_imut</char8/>
 	return true;
 }
 
-class ManglerState
-{
-public:
-	fn Push( mut this, char8 c );
-	fn Push( mut this, ust::array_view_imut</char8/> name );
-	fn PushLengthPrefixed( mut this, ust::array_view_imut</char8/> name );
-	fn PushDecimalNumber( mut this, u64 n );
-
-	fn TakeResult( mut this ) : ust::string8;
-
-public:
-	class NodeHolder
-	{
-	public:
-		fn constructor( mut this'a', ManglerState &'b mut state ) ' a <- b '
-			( state_(state), start_= state_.GetCurrentPos(), compressed_start_= state_.GetCurrentCompressedPos() )
-		{}
-
-		fn destructor()
-		{
-			state_.FinalizePart( start_, compressed_start_ );
-		}
-
-		fn GetManglerState( this'x' ) : ManglerState &'x mut
-		{
-			return state_;
-		}
-
-	private:
-		ManglerState &mut state_;
-		size_type imut start_;
-		size_type imut compressed_start_;
-	}
-
-private:
-	fn GetCurrentPos( this ) : size_type;
-	fn GetCurrentCompressedPos( this ) : size_type;
-	fn FinalizePart( mut this, size_type start, size_type compressed_start );
-
-private:
-	type LenType= u16;
-	struct Substitution
-	{
-		LenType start;
-		LenType size;
-	}
-
-private:
-	ust::vector</Substitution/> substitutions_;
-	ust::string8 result_full_;
-	ust::string8 result_compressed_;
-}
-
 fn ManglerState::Push( mut this, char8 c )
 {
 	result_full_.push_back( c );
@@ -644,14 +591,65 @@ fn DecodeOperator( ust::string8& o ) : ust::array_view_imut</ char8 />
 	return "";
 }
 
-fn MangleFunctionImpl(
+fn Mangler::MangleFunction(
+	mut this,
+	NamesScope& parent_scope,
+	ust::string8& name,
+	FunctionType& function_type ) : ust::string8
+{
+	return MangleFunctionImpl( parent_scope, name, function_type, ust::optional_ref</TemplateArgsFinished, false/>() );
+}
+
+fn Mangler::MangleFunction(
+	mut this,
+	NamesScope& parent_scope,
+	ust::string8& name,
+	FunctionType& function_type,
+	TemplateArgsFinished& template_args ) : ust::string8
+{
+	return MangleFunctionImpl( parent_scope, name, function_type, ust::optional_ref</TemplateArgsFinished, false/>(template_args) );
+}
+
+fn Mangler::MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string8& variable_name ) : ust::string8
+{
+	// Variables inside global namespace have simple names.
+	if( parent_scope.GetParent().empty() )
+	{
+		return variable_name + "\0";
+	}
+
+	state_.Push( "_Z" );
+	EncodeNestedName( state_, variable_name, parent_scope );
+	return state_.TakeResult();
+}
+
+fn Mangler::MangleType( mut this, Type& t ) : ust::string8
+{
+	EncodeTypeName(state_, t);
+	return state_.TakeResult();
+}
+
+fn Mangler::MangleTemplateArgs( mut this, TemplateArgsFinished& template_args ) : ust::string8
+{
+	EncodeTemplateArgs( state_, template_args );
+	return state_.TakeResult();
+}
+
+fn Mangler::MangleVirtualTable( mut this,Type& t ) : ust::string8
+{
+	state_.Push( "_ZTV" );
+	EncodeTypeName( state_, t );
+	return state_.TakeResult();
+}
+
+fn Mangler::MangleFunctionImpl(
+	mut this,
 	NamesScope& parent_scope,
 	ust::string8& name,
 	FunctionType& function_type,
 	ust::optional_ref</TemplateArgsFinished, false/> template_args ) : ust::string8
 {
-	var ManglerState mut mangler_state;
-	mangler_state.Push( "_Z" );
+	state_.Push( "_Z" );
 
 	var ust::string8 mut name_prefixed= DecodeOperator( name );
 	if( name_prefixed.empty() )
@@ -662,29 +660,29 @@ fn MangleFunctionImpl(
 
 	if( !template_args.empty() )
 	{
-		ADD_NODE( mangler_state )
+		ADD_NODE( state_ )
 		{
 			if( !parent_scope.GetParent().empty() )
 			{
-				mangler_state.Push( "N" );
-				ADD_NODE( mangler_state )
+				state_.Push( "N" );
+				ADD_NODE( state_ )
 				{
-					EncodeNamespacePrefix_r( mangler_state, parent_scope );
-					mangler_state.Push( name_prefixed.range() );
+					EncodeNamespacePrefix_r( state_, parent_scope );
+					state_.Push( name_prefixed.range() );
 				}
 
-				EncodeTemplateArgs( mangler_state, template_args.get_ref() );
-				mangler_state.Push( "Ev" );
+				EncodeTemplateArgs( state_, template_args.get_ref() );
+				state_.Push( "Ev" );
 			}
 			else
 			{
-				ADD_NODE( mangler_state )
+				ADD_NODE( state_ )
 				{
-					mangler_state.Push( name_prefixed.range() );
+					state_.Push( name_prefixed.range() );
 				}
 
-				EncodeTemplateArgs( mangler_state, template_args.get_ref() );
-				mangler_state.Push( "v" );
+				EncodeTemplateArgs( state_, template_args.get_ref() );
+				state_.Push( "v" );
 			}
 		}
 	}
@@ -692,73 +690,20 @@ fn MangleFunctionImpl(
 	{
 		if( !parent_scope.GetParent().empty() )
 		{
-			mangler_state.Push( "N" );
-			EncodeNamespacePrefix_r( mangler_state, parent_scope );
-			mangler_state.Push( name_prefixed.range() );
-			mangler_state.Push( "E" );
+			state_.Push( "N" );
+			EncodeNamespacePrefix_r( state_, parent_scope );
+			state_.Push( name_prefixed.range() );
+			state_.Push( "E" );
 		}
 		else
 		{
-			mangler_state.Push( name_prefixed.range() );
+			state_.Push( name_prefixed.range() );
 		}
 	}
 
-	EncodeFunctionParams( mangler_state, function_type.params );
+	EncodeFunctionParams( state_, function_type.params );
 
-	return mangler_state.TakeResult();
-}
-
-fn MangleFunction(
-	NamesScope& parent_scope,
-	ust::string8& name,
-	FunctionType& function_type ) : ust::string8
-{
-	return MangleFunctionImpl( parent_scope, name, function_type, ust::optional_ref</TemplateArgsFinished, false/>() );
-}
-
-fn MangleFunction(
-	NamesScope& parent_scope,
-	ust::string8& name,
-	FunctionType& function_type,
-	TemplateArgsFinished& template_args ) : ust::string8
-{
-	return MangleFunctionImpl( parent_scope, name, function_type, ust::optional_ref</TemplateArgsFinished, false/>(template_args) );
-}
-
-fn MangleGlobalVariable( NamesScope& parent_scope, ust::string8& variable_name ) : ust::string8
-{
-	// Variables inside global namespace have simple names.
-	if( parent_scope.GetParent().empty() )
-	{
-		return variable_name + "\0";
-	}
-
-	var ManglerState mut mangler_state;
-	mangler_state.Push( "_Z" );
-	EncodeNestedName( mangler_state, variable_name, parent_scope );
-	return mangler_state.TakeResult();
-}
-
-fn MangleType( Type& t ) : ust::string8
-{
-	var ManglerState mut mangler_state;
-	EncodeTypeName(mangler_state, t);
-	return mangler_state.TakeResult();
-}
-
-fn MangleTemplateArgs( TemplateArgsFinished& template_args ) : ust::string8
-{
-	var ManglerState mut mangler_state;
-	EncodeTemplateArgs( mangler_state, template_args );
-	return mangler_state.TakeResult();
-}
-
-fn MangleVirtualTable( Type& t ) : ust::string8
-{
-	var ManglerState mut mangler_state;
-	mangler_state.Push( "_ZTV" );
-	EncodeTypeName( mangler_state, t );
-	return mangler_state.TakeResult();
+	return state_.TakeResult();
 }
 
 } // namespace U1
