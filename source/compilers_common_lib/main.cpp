@@ -440,15 +440,17 @@ int Main( int argc, const char* argv[] )
 
 		llvm::TargetOptions target_options;
 
-		llvm::CodeGenOpt::Level code_gen_optimization_level;
-		if( optimization_level >= 2u || size_optimization_level > 0u )
+		auto code_gen_optimization_level= llvm::CodeGenOpt::None;
+		if ( size_optimization_level > 0 )
 			code_gen_optimization_level= llvm::CodeGenOpt::Default;
-		else if( optimization_level == 1u )
-			code_gen_optimization_level= llvm::CodeGenOpt::Less;
-		else if( optimization_level == 3u )
-			code_gen_optimization_level= llvm::CodeGenOpt::Aggressive;
-		else
+		else if( optimization_level == 0 )
 			code_gen_optimization_level= llvm::CodeGenOpt::None;
+		else if( optimization_level == 1 )
+			code_gen_optimization_level= llvm::CodeGenOpt::Less;
+		else if( optimization_level == 2 )
+			code_gen_optimization_level= llvm::CodeGenOpt::Default;
+		else if( optimization_level == 3 )
+			code_gen_optimization_level= llvm::CodeGenOpt::Aggressive;
 
 		target_machine.reset(
 			target->createTargetMachine(
