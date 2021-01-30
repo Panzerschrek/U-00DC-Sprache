@@ -209,6 +209,16 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			{
 				constexpr_value= LLVMConstStringInContext( llvm_context_, string_literal.value.front_unsafe(), u32(string_literal.value.size()), LLVMBool::True );
 				array_size= string_literal.value.size();
+
+				if( string_literals_cache_[0].find( string_literal.value ).empty() )
+				{
+					global_value= AddGlobalConstantVariable( "str\0", LLVMTypeOf( constexpr_value ), constexpr_value );
+					string_literals_cache_[0].insert( string_literal.value, global_value );
+				}
+				else
+				{
+					global_value= string_literals_cache_[0].find( string_literal.value ).get_ref();
+				}
 			}
 			else if( char_type == U_FundamentalType::char16_ )
 			{
@@ -218,8 +228,19 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 				array_size= U1_ConvertUTF8ToUTF16( string_literal.value.front_unsafe(), string_literal.value.size(), buff.front_unsafe(), buff_size );
 				halt if(array_size > buff.size());
+				buff.resize( array_size, "\0"c16  );
 
 				constexpr_value= U1_ConstDataArray( element_llvm_type, cast_ref_unsafe</void/>( cast_imut(buff).front_unsafe() ), array_size * typeinfo</char16/>.size_of, array_size );
+
+				if( string_literals_cache_[1].find( buff ).empty() )
+				{
+					global_value= AddGlobalConstantVariable( "str\0", LLVMTypeOf( constexpr_value ), constexpr_value );
+					string_literals_cache_[1].insert( buff, global_value );
+				}
+				else
+				{
+					global_value= string_literals_cache_[1].find( buff ).get_ref();
+				}
 			}
 			else if( char_type == U_FundamentalType::char32_ )
 			{
@@ -229,15 +250,23 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 				array_size= U1_ConvertUTF8ToUTF32( string_literal.value.front_unsafe(), string_literal.value.size(), buff.front_unsafe(), buff_size );
 				halt if(array_size > buff.size());
+				buff.resize( array_size, "\0"c32 );
 
 				constexpr_value= U1_ConstDataArray( element_llvm_type, cast_ref_unsafe</void/>( cast_imut(buff).front_unsafe() ), array_size * typeinfo</char32/>.size_of, array_size );
+
+				if( string_literals_cache_[2].find( buff ).empty() )
+				{
+					global_value= AddGlobalConstantVariable( "str\0", LLVMTypeOf( constexpr_value ), constexpr_value );
+					string_literals_cache_[2].insert( buff, global_value );
+				}
+				else
+				{
+					global_value= string_literals_cache_[2].find( buff ).get_ref();
+				}
 			}
-			else{ halt; }
+			else { halt; }
 
-			llvm_type= LLVMArrayType( element_llvm_type, u32(array_size) );
-
-			// TODO - reuse global variable for equal string literals.
-			global_value= AddGlobalConstantVariable( "TODO - name\0", llvm_type, constexpr_value );
+			llvm_type= LLVMTypeOf( constexpr_value );
 		}
 
 		var ArrayType mut array_type

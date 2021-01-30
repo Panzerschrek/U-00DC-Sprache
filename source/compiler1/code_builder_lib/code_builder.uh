@@ -812,6 +812,13 @@ private:
 	ust::vector</TypeinfoStruct/> typeinfo_cache_;
 	ust::vector</ ClassTypePtr /> typeinfo_class_table_;
 
+	// Maps string -> llvm::GlobalVariable
+	tup[
+		ust::unordered_map</ust::string8 , LLVMValueRef/>,
+		ust::unordered_map</ust::string16, LLVMValueRef/>,
+		ust::unordered_map</ust::string32, LLVMValueRef/> ]
+		string_literals_cache_;
+
 	LLVMValueRef halt_function_= LLVMValueRef::Null;
 
 	// For globals loops detection.
