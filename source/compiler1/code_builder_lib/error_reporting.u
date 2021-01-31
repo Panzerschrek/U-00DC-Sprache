@@ -33,7 +33,7 @@ op CodeBuilderError::<(CodeBuilderError& l, CodeBuilderError& r) : bool
 	return l.text < r.text;
 }
 
-fn ReportError( CodeBuilderErrorCode code, SrcLoc src_loc, ust::vector</ust::string8/>& format_args ) : CodeBuilderError
+fn ReportError( CodeBuilderErrorCode code, SrcLoc& src_loc, ust::vector</ust::string8/>& format_args ) : CodeBuilderError
 {
 	var ust::string8 mut result_error_text;
 
