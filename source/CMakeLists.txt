@@ -13,32 +13,6 @@ option( U_BUILD_COMPILER1 "Build compiler1 (written on Ǖ)" YES)
 option( U_BUILD_COMPILER2 "Build compiler2 (using compiler1)" NO)
 option( U_BUILD_COMPILER3 "Build compiler3 (using compiler3)" NO)
 
-if( U_BUILD_COMPILER )
-	message( STATUS "Build compiler" )
-else()
-	message( STATUS "Skip compiler" )
-endif()
-
-if( U_BUILD_TESTS )
-	message( STATUS "Build tests" )
-else()
-	message( STATUS "Skip tests" )
-endif()
-
-if( U_BUILD_LINKAGE_TESTS AND U_BUILD_COMPILER )
-	set( REALLY_BUILD_LINKAGE_TESTS YES )
-	message( STATUS "Build linkage tests" )
-else()
-	set( REALLY_BUILD_LINKAGE_TESTS NO )
-	message( STATUS "Skip linkage tests" )
-endif()
-
-if( U_BUILD_PY_TESTS )
-	message( STATUS "Build py_tests" )
-else()
-	message( STATUS "Skip py_tests" )
-endif()
-
 # Setup C++ version
 set( CMAKE_CXX_STANDARD 17 )
 set( CMAKE_CXX_STANDARD_REQUIRED On )
@@ -54,6 +28,7 @@ endif()
 # LLVM
 
 if( DEFINED LLVM_SRC_DIR )
+	message( STATUS "Build LLVM from sources" )
 
 	add_subdirectory( ${LLVM_SRC_DIR} ${CMAKE_BINARY_DIR}/llvm )
 
@@ -66,6 +41,7 @@ if( DEFINED LLVM_SRC_DIR )
 	endforeach()
 
 elseif( DEFINED LLVM_LIB_DIR )
+	message( STATUS "Use binary LLVM package" )
 
 	set( CMAKE_PREFIX_PATH
 		${CMAKE_PREFIX_PATH}
@@ -95,21 +71,11 @@ llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER
 	)
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_TESTS Interpreter )
 
-set( REALLY_BUILD_CPP_HEADER_CONVERTER NO )
-if( U_BUILD_CPP_HEADER_CONVERTER )
-	if( TARGET clangTooling )
-		set( REALLY_BUILD_CPP_HEADER_CONVERTER YES )
-		message( STATUS "Build c++ header converter" )
-	else()
-		message( STATUS "Clang not found, c++ header converter build disabled" )
-	endif()
-else()
-	message( STATUS "Skip c++ header converter" )
-endif()
-
 # Python
 
 if( U_BUILD_PY_TESTS )
+	message( STATUS "Build py_tests" )
+
 	# Fix python search on systems with both python2/python3 installed.
 	# LLVM CMake file calls "FindPythonInterp" without version specified, so, version 2 may be found.
 	# If python2 found, search for python3 failed. To fix that, reset related cache variables.
@@ -122,6 +88,9 @@ if( U_BUILD_PY_TESTS )
 
 	find_package( PythonLibs 3 REQUIRED )
 	find_package( PythonInterp 3 REQUIRED )
+
+else()
+	message( STATUS "Skip py_tests" )
 endif()
 
 #
@@ -190,6 +159,8 @@ target_link_libraries( CodeBuilderLibCommon ${LLVM_LIBS_FOR_CODE_BUILDER_LIB} )
 # CompilersCommonLib
 #
 if( U_BUILD_COMPILER )
+	message( STATUS "Build compiler" )
+
 	function( CompileLLFile ll_file )
 		get_filename_component( source_name ${ll_file} NAME_WE )
 		set( bc_name ${source_name}.bc )
@@ -224,16 +195,17 @@ if( U_BUILD_COMPILER )
 	add_library( CompilersCommonLib ${COMPILERS_COMMON_LIB_SOURCES} ${bc_files} ${USTLIB_SOURCES} ${USTLIB_TEST_SOURCES} )
 	target_link_libraries( CompilersCommonLib ${LLVM_LIBS_FOR_COMPILER} )
 	target_include_directories( CompilersCommonLib PRIVATE ${CMAKE_CURRENT_BINARY_DIR} )
+
+else()
+	message( STATUS "Skip compiler" )
 endif()
 
 #
 # TestsLib
 #
 if( U_BUILD_TESTS )
+	message( STATUS "Build tests" )
 
-	#
-	# C++ tests
-	#
 	file( GLOB TESTS_SOURCES "tests/cpp_tests/*" )
 	add_library( TestsLib ${TESTS_SOURCES} )
 	target_link_libraries( TestsLib PUBLIC ${LLVM_LIBS_FOR_TESTS} )
@@ -244,6 +216,8 @@ if( U_BUILD_TESTS )
 		set( TESTS_LIB_WRAPPED -Wl,--whole-archive ${TESTS_LIB_WRAPPED} -Wl,--no-whole-archive )
 	endif()
 
+else()
+	message( STATUS "Skip tests" )
 endif()
 
 add_subdirectory( compiler0 )
@@ -272,7 +246,8 @@ if( U_BUILD_COMPILER AND U_BUILD_COMPILER1 )
 
 endif()
 
-if( REALLY_BUILD_LINKAGE_TESTS )
+if( U_BUILD_COMPILER AND U_BUILD_LINKAGE_TESTS )
+	message( STATUS "Build linkage tests" )
 
 	set( CURRENT_COMPILER_GENERATION "" )
 	add_subdirectory( tests )
@@ -296,7 +271,9 @@ if( REALLY_BUILD_LINKAGE_TESTS )
 
 	endif()
 
-endif( REALLY_BUILD_LINKAGE_TESTS )
+else()
+	message( STATUS "Skip linkage tests" )
+endif()
 
 #
 # Docs

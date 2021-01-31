@@ -1,3 +1,5 @@
+message( "Build compiler ${NEXT_COMPILER_GENERATION}")
+
 if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
 	set( SPRACHE_COMPILER_OPT_OPTIONS -O0 -g )
 else()
