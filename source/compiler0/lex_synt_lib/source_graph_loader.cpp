@@ -10,7 +10,7 @@ namespace U
 static Synt::MacrosPtr PrepareBuiltInMacros()
 {
 	#include "built_in_macros.hpp"
-	const LexicalAnalysisResult lex_result= LexicalAnalysis( c_built_in_macros, sizeof(c_built_in_macros) );
+	const LexicalAnalysisResult lex_result= LexicalAnalysis( c_built_in_macros );
 	U_ASSERT( lex_result.errors.empty() );
 
 	const Synt::SyntaxAnalysisResult synt_result=
