@@ -35,7 +35,7 @@ public:
 
 	fn insert( mut this, T& key )
 	{
-		impl_.insert( key, DummyValue() );
+		impl_.insert( key, void() );
 	}
 
 	fn exists( this, T& key ) : bool
@@ -105,8 +105,7 @@ public:
 	}
 
 private:
-	struct DummyValue{}
-	type Impl = unordered_map</T, DummyValue/>;
+	type Impl = unordered_map</T, void/>;
 
 private:
 	Impl impl_;
