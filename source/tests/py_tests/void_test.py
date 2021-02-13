@@ -94,6 +94,31 @@ def VoidTypeInitialization_Test5():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def VoidTypeInitialization_Test6():
+	c_program_text= """
+		fn Foo()
+		{
+			var void v(); // constructor initializer with zero args.
+			static_assert( v == void() ); // constructor initializer with zero args produces constant value.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def VoidTypeInitialization_Test7():
+	c_program_text= """
+		fn Foo()
+		{
+			var void v0;
+			var void v1(v0); // constructor initializer with one arg.
+			static_assert( v1 == void() ); // constructor initializer with one arg produces constant value.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def VoidTypeAssignment_Test0():
 	c_program_text= """
 		fn Foo()

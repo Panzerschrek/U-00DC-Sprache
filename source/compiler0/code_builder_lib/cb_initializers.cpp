@@ -593,6 +593,9 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 {
 	if( const FundamentalType* const dst_type= variable.type.GetFundamentalType() )
 	{
+		if( dst_type->fundamental_type == U_FundamentalType::Void && call_operator.arguments_.empty() )
+			return llvm::Constant::getNullValue( dst_type->llvm_type );
+
 		if( call_operator.arguments_.size() != 1u )
 		{
 			REPORT_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, block_names.GetErrors(), call_operator.src_loc_ );

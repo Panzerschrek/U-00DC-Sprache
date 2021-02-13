@@ -661,6 +661,11 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 {
 	if_var( &dst_type : variable.t.GetFundamentalType() )
 	{
+		if( dst_type.fundamental_type == U_FundamentalType::void_ && args.empty() )
+		{
+			unsafe{  return LLVMConstNull( dst_type.llvm_type );  }
+		}
+
 		if( args.size() != 1s )
 		{
 			REPORT_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, names_scope, src_loc )
