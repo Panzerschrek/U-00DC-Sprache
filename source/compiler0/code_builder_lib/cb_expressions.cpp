@@ -1688,7 +1688,7 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 			llvm::Value* const r_as_int= function_context.llvm_ir_builder.CreatePtrToInt( r_value_for_op, diff_llvm_type );
 			llvm::Value* const diff= function_context.llvm_ir_builder.CreateSub( l_as_int, r_as_int );
 			llvm::Value* const element_size_constant= llvm::ConstantInt::get( diff_llvm_type, uint64_t(element_size), false );
-			llvm::Value* const diff_divided= function_context.llvm_ir_builder.CreateSDiv( diff, element_size_constant );
+			llvm::Value* const diff_divided= function_context.llvm_ir_builder.CreateSDiv( diff, element_size_constant, "", true /* exact */ );
 			result.llvm_value= diff_divided;
 		}
 		else if( const auto r_fundamental_type= r_var.type.GetFundamentalType() )

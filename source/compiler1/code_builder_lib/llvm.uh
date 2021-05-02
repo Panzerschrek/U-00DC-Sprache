@@ -319,7 +319,9 @@ fn nomangle LLVMBuildAdd(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef 
 fn nomangle LLVMBuildSub(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildMul(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildUDiv(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildExactUDiv(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildSDiv(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildExactSDiv(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildURem(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildSRem(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
 
