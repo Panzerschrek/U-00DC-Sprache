@@ -190,7 +190,7 @@ def KeepFieldsOrder_Test1():
 	static_assert( GetFieldOffset</CBA/>( "b" ) == 4s );
 	static_assert( GetFieldOffset</CBA/>( "a" ) == 8s );
 
-	// No reodrering applied here, because fields in intitial roder fits without any padding.
+	// No reodrering applied here, because fields in intitial order fits without any padding.
 	struct X
 	{
 		f32 a;
@@ -208,7 +208,7 @@ def KeepFieldsOrder_Test1():
 	static_assert( GetFieldOffset</X/>( "e" ) == 7s );
 	static_assert( GetFieldOffset</X/>( "f" ) == 8s );
 
-	// No reodrering applied here, because fields in intitial roder fits without any padding.
+	// No reodrering applied here, because fields in intitial order fits without any padding.
 	struct Y
 	{
 		f32 a;
