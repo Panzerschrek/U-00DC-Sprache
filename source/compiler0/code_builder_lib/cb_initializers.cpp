@@ -497,17 +497,14 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 
 llvm::Constant* CodeBuilder::ApplyInitializer(
 	const Synt::UninitializedInitializer& initializer,
-	const Variable& variable,
+	const Variable&,
 	NamesScope& block_names,
 	FunctionContext& function_context )
 {
 	if( !function_context.is_in_unsafe_block )
 		REPORT_ERROR( UninitializedInitializerOutsideUnsafeBlock, block_names.GetErrors(), initializer.src_loc_ );
 
-	if( variable.type.CanBeConstexpr() )
-		return llvm::UndefValue::get( variable.type.GetLLVMType() );
-	else
-		return nullptr;
+	return nullptr;
 }
 
 void CodeBuilder::ApplyEmptyInitializer(

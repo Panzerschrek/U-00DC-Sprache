@@ -67,6 +67,39 @@ def UninitializedInitializer_Test3():
 	tests_lib.build_program( c_program_text )
 
 
+def UninitializedInitializerIsNotConstexpr_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			unsafe
+			{
+				var i32 constexpr x= uninitialized;
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "VariableInitializerIsNotConstantExpression" )
+	assert( errors_list[0].src_loc.line == 6 )
+
+
+def UninitializedInitializerIsNotConstexpr_Test1():
+	c_program_text= """
+		struct S{ i32 x; }
+		fn Foo()
+		{
+			unsafe
+			{
+				var S constexpr s { .x= uninitialized };
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "VariableInitializerIsNotConstantExpression" )
+	assert( errors_list[0].src_loc.line == 7 )
+
+
 def UninitializedInitializerOutsideUnsafeBlock_Test0():
 	c_program_text= """
 		fn Foo()
