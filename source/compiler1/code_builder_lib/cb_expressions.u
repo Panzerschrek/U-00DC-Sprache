@@ -928,11 +928,6 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	return BuildBinaryOperator( names_scope, function_context, l_var, r_var, binary_operator.operator, binary_operator.src_loc );
 }
 
-fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BracketExpression& bracket_expression ) : Value
-{
-	return BuildExpressionCode( names_scope, function_context, bracket_expression.expr.get_ref() );
-}
-
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IndexationOperator& indexation_operator ) : Value
 {
 	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.value.get_ref() );

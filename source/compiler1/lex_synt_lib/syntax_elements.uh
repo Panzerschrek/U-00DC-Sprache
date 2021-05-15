@@ -142,12 +142,6 @@ struct BinaryOperator
 	BinaryOperatorType operator;
 }
 
-struct BracketExpression
-{
-	SrcLoc src_loc;
-	ust::box</Expression/> expr;
-}
-
 struct IndexationOperator
 {
 	SrcLoc src_loc;
@@ -211,7 +205,6 @@ type Expression= ust::variant</ tup[
 	ReferenceToRawPointerOperator,
 	RawPointerToReferenceOperator,
 	BinaryOperator,
-	BracketExpression,
 	IndexationOperator,
 	CallOperator,
 	MemberAccessOperator,

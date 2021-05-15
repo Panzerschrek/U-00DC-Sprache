@@ -272,10 +272,6 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	{
 		return CreateTemplateSignatureParam( names_scope, function_context, template_params, complex_name, template_params_usage_flags );
 	}
-	if_var( &bracket_exptession : param.get</Synt::BracketExpression/>() )
-	{
-		return CreateTemplateSignatureParam( names_scope, function_context, template_params, bracket_exptession.expr.get_ref(), template_params_usage_flags );
-	}
 	if_var( &array_type : param.get</ ust::box</ Synt::ArrayType /> />() )
 	{
 		return CreateTemplateSignatureParam( names_scope, function_context, template_params, array_type.get_ref(), template_params_usage_flags );

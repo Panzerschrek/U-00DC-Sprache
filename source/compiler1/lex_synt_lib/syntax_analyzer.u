@@ -1005,10 +1005,9 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 		}
 		else if( it_.front().lexem_type == Lexem::Type::BracketLeft )
 		{
-			var BracketExpression mut bracket_expression{ .src_loc= it_.front().src_loc, .expr(Expression()) };
 			NextLexem();
 
-			bracket_expression.expr.get_ref()= ParseExpression();
+			var Expression mut e= ParseExpression();
 
 			if( it_.front().lexem_type != Lexem::Type::BracketRight )
 			{
@@ -1016,7 +1015,7 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 			}
 			NextLexem();
 
-			current_node= move(bracket_expression);
+			current_node= move(e);
 		}
 		else
 		{
