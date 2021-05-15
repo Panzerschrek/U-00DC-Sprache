@@ -242,7 +242,7 @@ Value CodeBuilder::BuildExpressionCode(
 		std::visit(
 			[&]( const auto& t )
 			{
-				return BuildExpressionCode( t, names, function_context );
+				return BuildExpressionCodeImpl( names, function_context, t );
 			},
 			expression );
 	
@@ -338,19 +338,19 @@ Value CodeBuilder::BuildExpressionCode(
 	return result;
 }
 
-Value CodeBuilder::BuildExpressionCode(
-	const Synt::EmptyVariant&,
+Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope&,
-	FunctionContext& )
+	FunctionContext&,
+	const Synt::EmptyVariant& )
 {
 	U_ASSERT(false);
 	return Value();
 }
 
-Value CodeBuilder::BuildExpressionCode(
-	const Synt::BinaryOperator& binary_operator,
+Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::BinaryOperator& binary_operator	)
 {
 	if( binary_operator.operator_type_ == BinaryOperatorType::LazyLogicalAnd ||
 		binary_operator.operator_type_ == BinaryOperatorType::LazyLogicalOr )
@@ -407,10 +407,10 @@ Value CodeBuilder::BuildExpressionCode(
 	return BuildBinaryOperator( l_var, r_var, binary_operator.operator_type_, binary_operator.src_loc_, names, function_context );
 }
 
-Value CodeBuilder::BuildExpressionCode(
-	const Synt::NamedOperand& named_operand,
+Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::NamedOperand& named_operand )
 {
 	if( std::get_if<std::string>( &named_operand.name_.start_value ) != nullptr && named_operand.name_.tail == nullptr )
 	{
@@ -564,10 +564,10 @@ Value CodeBuilder::BuildExpressionCode(
 	return value_entry;
 }
 
-Value CodeBuilder::BuildExpressionCode(
-	const Synt::TernaryOperator& ternary_operator,
+Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::TernaryOperator& ternary_operator )
 {
 	const Variable condition= BuildExpressionCodeEnsureVariable( *ternary_operator.condition, names, function_context );
 	if( condition.type != bool_type_ )
@@ -730,7 +730,10 @@ Value CodeBuilder::BuildExpressionCode(
 	return Value( result, ternary_operator.src_loc_ );
 }
 
-Value CodeBuilder::BuildExpressionCode( const Synt::ReferenceToRawPointerOperator& reference_to_raw_pointer_operator, NamesScope& names, FunctionContext& function_context )
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
+	const Synt::ReferenceToRawPointerOperator& reference_to_raw_pointer_operator )
 {
 	const Variable v= BuildExpressionCodeEnsureVariable( *reference_to_raw_pointer_operator.expression, names, function_context );
 	if( v.value_type == ValueType::Value )
@@ -767,7 +770,10 @@ Value CodeBuilder::BuildExpressionCode( const Synt::ReferenceToRawPointerOperato
 	return Value( std::move(res), reference_to_raw_pointer_operator.src_loc_ );
 }
 
-Value CodeBuilder::BuildExpressionCode( const Synt::RawPointerToReferenceOperator& raw_pointer_to_reference_operator, NamesScope& names, FunctionContext& function_context )
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
+	const Synt::RawPointerToReferenceOperator& raw_pointer_to_reference_operator )
 {
 	if( !function_context.is_in_unsafe_block )
 		REPORT_ERROR( RawPointerToReferenceConversionOutsideUnsafeBlock, names.GetErrors(), raw_pointer_to_reference_operator.src_loc_ );
@@ -791,20 +797,20 @@ Value CodeBuilder::BuildExpressionCode( const Synt::RawPointerToReferenceOperato
 	return Value( std::move(res), raw_pointer_to_reference_operator.src_loc_ );
 }
 
-Value CodeBuilder::BuildExpressionCode(
-	const Synt::TypeNameInExpression& type_name_in_expression,
+Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::TypeNameInExpression& type_name_in_expression )
 {
 	return Value(
 		PrepareType( type_name_in_expression.type_name, names, function_context ),
 		type_name_in_expression.src_loc_ );
 }
 
-Value CodeBuilder::BuildExpressionCode(
-	const Synt::NumericConstant& numeric_constant,
+Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::NumericConstant& numeric_constant )
 {
 	U_FundamentalType type= U_FundamentalType::InvalidType;
 	const std::string type_suffix= numeric_constant.type_suffix.data();
@@ -858,18 +864,18 @@ Value CodeBuilder::BuildExpressionCode(
 	return Value( std::move(result), numeric_constant.src_loc_ );
 }
 
-Value CodeBuilder::BuildExpressionCode(
-	const Synt::BracketExpression& bracket_expression,
+Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::BracketExpression& bracket_expression )
 {
 	return BuildExpressionCode( *bracket_expression.expression_, names, function_context );
 }
 
-Value CodeBuilder::BuildExpressionCode(
-	const Synt::BooleanConstant& boolean_constant,
+Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::BooleanConstant& boolean_constant )
 {
 	U_UNUSED(names);
 	
@@ -889,10 +895,10 @@ Value CodeBuilder::BuildExpressionCode(
 	return Value ( std::move(result), boolean_constant.src_loc_ );
 }
 
-Value CodeBuilder::BuildExpressionCode(
-	const Synt::StringLiteral& string_literal,
+Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::StringLiteral& string_literal )
 {
 	U_UNUSED( function_context );
 
@@ -1008,10 +1014,10 @@ Value CodeBuilder::BuildExpressionCode(
 	return Value( std::move(result), string_literal.src_loc_ );
 }
 
-Value CodeBuilder::BuildExpressionCode(
-	const Synt::MoveOperator& move_operator,
+Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::MoveOperator& move_operator	)
 {
 	Synt::ComplexName complex_name;
 	complex_name.start_value= move_operator.var_name_;
@@ -1085,10 +1091,10 @@ Value CodeBuilder::BuildExpressionCode(
 	return Value( std::move(content), move_operator.src_loc_ );
 }
 
-Value CodeBuilder::BuildExpressionCode(
-	const Synt::TakeOperator& take_operator,
+Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::TakeOperator& take_operator	)
 {
 	Variable expression_result= BuildExpressionCodeEnsureVariable( *take_operator.expression_, names, function_context );
 	if( expression_result.value_type == ValueType::Value ) // If it is value - just pass it.
@@ -1140,10 +1146,10 @@ Value CodeBuilder::BuildExpressionCode(
 	return Value( std::move(result), take_operator.src_loc_ );
 }
 
-Value CodeBuilder::BuildExpressionCode(
-	const Synt::CastMut& cast_mut,
+Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::CastMut& cast_mut )
 {
 	if( !function_context.is_in_unsafe_block )
 		REPORT_ERROR( MutableReferenceCastOutsideUnsafeBlock, names.GetErrors(), cast_mut.src_loc_ );
@@ -1164,10 +1170,10 @@ Value CodeBuilder::BuildExpressionCode(
 	return Value( std::move(result), cast_mut.src_loc_ );
 }
 
-Value CodeBuilder::BuildExpressionCode(
-	const Synt::CastImut& cast_imut,
+Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::CastImut& cast_imut	)
 {
 	const Variable var= BuildExpressionCodeEnsureVariable( *cast_imut.expression_, names, function_context );
 
@@ -1184,18 +1190,18 @@ Value CodeBuilder::BuildExpressionCode(
 	return Value( std::move(result), cast_imut.src_loc_ );
 }
 
-Value CodeBuilder::BuildExpressionCode(
-	const Synt::CastRef& cast_ref,
+Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::CastRef& cast_ref )
 {
 	return DoReferenceCast( cast_ref.src_loc_, *cast_ref.type_, *cast_ref.expression_, false, names, function_context );
 }
 
-Value CodeBuilder::BuildExpressionCode(
-	const Synt::CastRefUnsafe& cast_ref_unsafe,
+Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::CastRefUnsafe& cast_ref_unsafe )
 {
 	if( !function_context.is_in_unsafe_block )
 		REPORT_ERROR( UnsafeReferenceCastOutsideUnsafeBlock, names.GetErrors(), cast_ref_unsafe.src_loc_ );
@@ -1203,10 +1209,10 @@ Value CodeBuilder::BuildExpressionCode(
 	return DoReferenceCast( cast_ref_unsafe.src_loc_, *cast_ref_unsafe.type_, *cast_ref_unsafe.expression_, true, names, function_context );
 }
 
-Value CodeBuilder::BuildExpressionCode(
-	const Synt::TypeInfo& typeinfo,
+Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::TypeInfo& typeinfo )
 {
 	const Type type= PrepareType( *typeinfo.type_, names, function_context );
 	if( type == invalid_type_ )

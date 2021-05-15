@@ -19,71 +19,32 @@ namespace CodeBuilderPrivate
 {
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
-	const Synt::Block& block,
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::BlockElement& block_element )
 {
-	DebugInfoStartBlock( block.src_loc_, function_context );
-
-	NamesScope block_names( "", &names );
-	const StackVariablesStorage block_variables_storage( function_context );
-
-	// Save unsafe flag.
-	const bool prev_unsafe= function_context.is_in_unsafe_block;
-	if( block.safety_ == Synt::Block::Safety::Unsafe )
-	{
-		function_context.have_non_constexpr_operations_inside= true; // Unsafe operations can not be used in constexpr functions.
-		function_context.is_in_unsafe_block= true;
-	}
-	else if( block.safety_ == Synt::Block::Safety::Safe )
-		function_context.is_in_unsafe_block= false;
-	else if( block.safety_ == Synt::Block::Safety::None ) {}
-	else U_ASSERT(false);
-
-	BlockBuildInfo block_build_info;
-	size_t block_element_index= 0u;
-	for( const Synt::BlockElement& block_element : block.elements_ )
-	{
-		++block_element_index;
-
-		const BlockBuildInfo info=
-			std::visit(
-				[&]( const auto& t )
-				{
-					SetCurrentDebugLocation( t.src_loc_, function_context );
-					return BuildBlockElement( t, block_names, function_context );
-				},
-				block_element );
-
-		if( info.have_terminal_instruction_inside )
-		{
-			block_build_info.have_terminal_instruction_inside= true;
-			break;
-		}
-	}
-
-	if( block_element_index < block.elements_.size() )
-		REPORT_ERROR( UnreachableCode, names.GetErrors(), Synt::GetBlockElementSrcLoc( block.elements_[ block_element_index ] ) );
-
-	SetCurrentDebugLocation( block.end_src_loc_, function_context );
-
-	// If there are undconditional "break", "continue", "return" operators,
-	// we didn`t need call destructors, it must be called in this operators.
-	if( !block_build_info.have_terminal_instruction_inside )
-		CallDestructors( block_variables_storage, block_names, function_context, block.end_src_loc_ );
-
-	// Restire unsafe flag.
-	function_context.is_in_unsafe_block= prev_unsafe;
-
-	DebugInfoEndBlock( function_context );
-
-	return block_build_info;
+	return
+		std::visit(
+			[&]( const auto& t )
+			{
+				SetCurrentDebugLocation( t.src_loc_, function_context );
+				return BuildBlockElementImpl( names, function_context, t );
+			},
+			block_element );
 }
 
-CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
-	const Synt::VariablesDeclaration& variables_declaration,
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::Block& block )
+{
+	return BuildBlock( names, function_context, block );
+}
+
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
+	const Synt::VariablesDeclaration& variables_declaration )
 {
 	const Type type= PrepareType( variables_declaration.type, names, function_context );
 
@@ -147,7 +108,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 
 			if( variable_declaration.initializer != nullptr )
 				variable.constexpr_value=
-					ApplyInitializer( *variable_declaration.initializer, variable, names, function_context );
+					ApplyInitializer( variable, names, function_context, *variable_declaration.initializer );
 			else
 				ApplyEmptyInitializer( variable_declaration.name, variable_declaration.src_loc, variable, names, function_context );
 
@@ -256,10 +217,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	return BlockBuildInfo();
 }
 
-CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
-	const Synt::AutoVariableDeclaration& auto_variable_declaration,
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::AutoVariableDeclaration& auto_variable_declaration )
 {
 	if( IsKeyword( auto_variable_declaration.name ) )
 		REPORT_ERROR( UsingKeywordAsName, names.GetErrors(), auto_variable_declaration.src_loc_ );
@@ -417,10 +378,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	return BlockBuildInfo();
 }
 
-CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
-	const Synt::ReturnOperator& return_operator,
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::ReturnOperator& return_operator )
 {
 	BlockBuildInfo block_info;
 	block_info.have_terminal_instruction_inside= true;
@@ -620,10 +581,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	return block_info;
 }
 
-CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
-	const Synt::ForOperator& for_operator,
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::ForOperator& for_operator )
 {
 	BlockBuildInfo block_build_info;
 
@@ -726,7 +687,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			function_context.loops_stack.back().stack_variables_stack_size= function_context.stack_variables_stack.size() - 1u; // Extra 1 for loop variable destruction in 'break' or 'continue'.
 
 			// TODO - create template errors context.
-			const BlockBuildInfo inner_block_build_info= BuildBlockElement( for_operator.block_, loop_names, function_context );
+			const BlockBuildInfo inner_block_build_info= BuildBlock( loop_names, function_context, for_operator.block_ );
 			if( !inner_block_build_info.have_terminal_instruction_inside )
 			{
 				CallDestructors( element_pass_variables_storage, names, function_context, for_operator.src_loc_ );
@@ -794,10 +755,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	return block_build_info;
 }
 
-CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
-	const Synt::CStyleForOperator& c_style_for_operator,
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::CStyleForOperator& c_style_for_operator )
 {
 	// TODO - process variables state.
 
@@ -810,7 +771,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			[&]( const auto& t )
 			{
 				SetCurrentDebugLocation( t.src_loc_, function_context );
-				BuildBlockElement( t, loop_names_scope, function_context );
+				BuildBlockElementImpl( loop_names_scope, function_context, t );
 			},
 			*c_style_for_operator.variable_declaration_part_ );
 
@@ -861,7 +822,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	function_context.function->getBasicBlockList().push_back( loop_block );
 	function_context.llvm_ir_builder.SetInsertPoint( loop_block );
 
-	const BlockBuildInfo loop_body_block_info= BuildBlockElement( c_style_for_operator.block_, loop_names_scope, function_context );
+	const BlockBuildInfo loop_body_block_info= BuildBlock( loop_names_scope, function_context, c_style_for_operator.block_ );
 	if( !loop_body_block_info.have_terminal_instruction_inside )
 	{
 		function_context.llvm_ir_builder.CreateBr( loop_iteration_block );
@@ -886,7 +847,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			[&]( const auto& t )
 			{
 				SetCurrentDebugLocation( t.src_loc_, function_context );
-				BuildBlockElement( t, loop_names_scope, function_context );
+				BuildBlockElementImpl( loop_names_scope, function_context, t );
 			},
 			element );
 	}
@@ -907,10 +868,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	return BlockBuildInfo();
 }
 
-CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
-	const Synt::WhileOperator& while_operator,
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::WhileOperator& while_operator )
 {
 	ReferencesGraph variables_state_before_loop= function_context.variables_state;
 
@@ -956,7 +917,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	function_context.function->getBasicBlockList().push_back( while_block );
 	function_context.llvm_ir_builder.SetInsertPoint( while_block );
 
-	const BlockBuildInfo loop_body_block_info= BuildBlockElement( while_operator.block_, names, function_context );
+	const BlockBuildInfo loop_body_block_info= BuildBlock( names, function_context, while_operator.block_ );
 	if( !loop_body_block_info.have_terminal_instruction_inside )
 	{
 		function_context.llvm_ir_builder.CreateBr( test_block );
@@ -985,10 +946,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	return BlockBuildInfo();
 }
 
-CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
-	const Synt::BreakOperator& break_operator,
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::BreakOperator& break_operator )
 {
 	BlockBuildInfo block_info;
 	block_info.have_terminal_instruction_inside= true;
@@ -1007,10 +968,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	return block_info;
 }
 
-CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
-	const Synt::ContinueOperator& continue_operator,
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+		const Synt::ContinueOperator& continue_operator )
 {
 	BlockBuildInfo block_info;
 	block_info.have_terminal_instruction_inside= true;
@@ -1029,10 +990,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	return block_info;
 }
 
-CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
-	const Synt::WithOperator& with_operator,
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::WithOperator& with_operator )
 {
 	StackVariablesStorage variables_storage( function_context );
 
@@ -1165,7 +1126,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	variable_names_scope.AddName( with_operator.variable_name_, Value( variable, with_operator.src_loc_ ) );
 
 	// Build block. This creates new variables frame and prevents destruction of initializer expression and/or created variable.
-	const BlockBuildInfo block_build_info= BuildBlockElement( with_operator.block_, variable_names_scope, function_context );
+	const BlockBuildInfo block_build_info= BuildBlock( variable_names_scope, function_context, with_operator.block_ );
 
 	if( !block_build_info.have_terminal_instruction_inside )
 	{
@@ -1176,10 +1137,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	return block_build_info;
 }
 
-CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
-	const Synt::IfOperator& if_operator,
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+		const Synt::IfOperator& if_operator )
 {
 	U_ASSERT( !if_operator.branches_.empty() );
 
@@ -1254,7 +1215,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		function_context.function->getBasicBlockList().push_back( body_block );
 		function_context.llvm_ir_builder.SetInsertPoint( body_block );
 
-		const BlockBuildInfo block_build_info= BuildBlockElement( branch.block, names, function_context );
+		const BlockBuildInfo block_build_info= BuildBlock( names, function_context, branch.block );
 
 		if( !block_build_info.have_terminal_instruction_inside )
 		{
@@ -1292,10 +1253,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	return if_operator_blocks_build_info;
 }
 
-CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
-	const Synt::StaticIfOperator& static_if_operator,
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::StaticIfOperator& static_if_operator )
 {
 	const auto& branches= static_if_operator.if_operator_.branches_;
 	for( unsigned int i= 0u; i < branches.size(); i++ )
@@ -1321,33 +1282,33 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 			}
 
 			if( condition_expression.constexpr_value->getUniqueInteger().getLimitedValue() != 0u )
-				return BuildBlockElement( branch.block, names, function_context ); // Ok, this static if produdes block.
+				return BuildBlock( names, function_context, branch.block ); // Ok, this static if produdes block.
 
 			CallDestructors( temp_variables_storage, names, function_context, condition_src_loc );
 		}
 		else
 		{
 			U_ASSERT( i == branches.size() - 1u );
-			return BuildBlockElement( branch.block, names, function_context );
+			return BuildBlock( names, function_context, branch.block );
 		}
 	}
 
 	return BlockBuildInfo();
 }
 
-CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
-	const Synt::SingleExpressionOperator& single_expression_operator,
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::SingleExpressionOperator& single_expression_operator )
 {
 	BuildExpressionCodeAndDestroyTemporaries( single_expression_operator.expression_, names, function_context );
 	return BlockBuildInfo();
 }
 
-CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
-	const Synt::AssignmentOperator& assignment_operator,
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::AssignmentOperator& assignment_operator	)
 {
 	// Destruction frame for temporary variables of expressions.
 	const StackVariablesStorage temp_variables_storage( function_context );
@@ -1428,10 +1389,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	return BlockBuildInfo();
 }
 
-CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
-	const Synt::AdditiveAssignmentOperator& additive_assignment_operator,
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::AdditiveAssignmentOperator& additive_assignment_operator )
 {
 	// Destruction frame for temporary variables of expressions.
 	const StackVariablesStorage temp_variables_storage( function_context );
@@ -1520,10 +1481,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	return  BlockBuildInfo();
 }
 
-CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
-	const Synt::IncrementOperator& increment_operator,
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::IncrementOperator& increment_operator )
 {
 	BuildDeltaOneOperatorCode(
 		increment_operator.expression,
@@ -1535,10 +1496,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	return BlockBuildInfo();
 }
 
-CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
-	const Synt::DecrementOperator& decrement_operator,
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::DecrementOperator& decrement_operator )
 {
 	BuildDeltaOneOperatorCode(
 		decrement_operator.expression,
@@ -1550,10 +1511,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	return  BlockBuildInfo();
 }
 
-CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
-	const Synt::StaticAssert& static_assert_,
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::StaticAssert& static_assert_ )
 {
 	BlockBuildInfo block_info;
 
@@ -1590,10 +1551,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	return block_info;
 }
 
-CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
-	const Synt::Halt&,
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope&,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::Halt& )
 {
 	function_context.llvm_ir_builder.CreateCall( halt_func_ );
 
@@ -1605,10 +1566,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	return block_info;
 }
 
-CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
-	const Synt::HaltIf& halt_if,
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::HaltIf& halt_if	)
 {
 	BlockBuildInfo block_info;
 
@@ -1647,6 +1608,59 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	return block_info;
 }
 
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlock(
+	NamesScope& names,
+	FunctionContext& function_context,
+	const Synt::Block& block )
+{
+	DebugInfoStartBlock( block.src_loc_, function_context );
+
+	NamesScope block_names( "", &names );
+	const StackVariablesStorage block_variables_storage( function_context );
+
+	// Save unsafe flag.
+	const bool prev_unsafe= function_context.is_in_unsafe_block;
+	if( block.safety_ == Synt::Block::Safety::Unsafe )
+	{
+		function_context.have_non_constexpr_operations_inside= true; // Unsafe operations can not be used in constexpr functions.
+		function_context.is_in_unsafe_block= true;
+	}
+	else if( block.safety_ == Synt::Block::Safety::Safe )
+		function_context.is_in_unsafe_block= false;
+	else if( block.safety_ == Synt::Block::Safety::None ) {}
+	else U_ASSERT(false);
+
+	BlockBuildInfo block_build_info;
+	size_t block_element_index= 0u;
+	for( const Synt::BlockElement& block_element : block.elements_ )
+	{
+		++block_element_index;
+
+		const BlockBuildInfo info= BuildBlockElement( block_names, function_context, block_element );
+		if( info.have_terminal_instruction_inside )
+		{
+			block_build_info.have_terminal_instruction_inside= true;
+			break;
+		}
+	}
+
+	if( block_element_index < block.elements_.size() )
+		REPORT_ERROR( UnreachableCode, names.GetErrors(), Synt::GetBlockElementSrcLoc( block.elements_[ block_element_index ] ) );
+
+	SetCurrentDebugLocation( block.end_src_loc_, function_context );
+
+	// If there are undconditional "break", "continue", "return" operators,
+	// we didn`t need call destructors, it must be called in this operators.
+	if( !block_build_info.have_terminal_instruction_inside )
+		CallDestructors( block_variables_storage, block_names, function_context, block.end_src_loc_ );
+
+	// Restire unsafe flag.
+	function_context.is_in_unsafe_block= prev_unsafe;
+
+	DebugInfoEndBlock( function_context );
+
+	return block_build_info;
+}
 
 void CodeBuilder::BuildDeltaOneOperatorCode(
 	const Synt::Expression& expression,

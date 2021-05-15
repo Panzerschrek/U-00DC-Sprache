@@ -1003,7 +1003,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			variable.llvm_value= global_variable= CreateGlobalConstantVariable( type, mangler_.MangleGlobalVariable( names_scope, variable_declaration.name ) );
 
 			if( variable_declaration.initializer != nullptr )
-				variable.constexpr_value= ApplyInitializer( *variable_declaration.initializer, variable, names_scope, function_context );
+				variable.constexpr_value= ApplyInitializer( variable, names_scope, function_context, *variable_declaration.initializer );
 			else
 				ApplyEmptyInitializer( variable_declaration.name, variable_declaration.src_loc, variable, names_scope, function_context );
 

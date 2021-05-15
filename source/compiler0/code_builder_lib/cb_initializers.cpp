@@ -18,35 +18,35 @@ namespace CodeBuilderPrivate
 {
 
 llvm::Constant* CodeBuilder::ApplyInitializer(
-	const Synt::Initializer& initializer,
 	const Variable& variable,
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::Initializer& initializer )
 {
 	return
 		std::visit(
 			[&]( const auto& t )
 			{
-				return ApplyInitializer( t, variable, names, function_context );
+				return ApplyInitializerImpl( variable, names, function_context, t );
 			},
 			initializer );
 }
 
-llvm::Constant* CodeBuilder::ApplyInitializer(
-	const Synt::EmptyVariant&,
+llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	const Variable&,
 	NamesScope&,
-	FunctionContext& )
+	FunctionContext&,
+	const Synt::EmptyVariant& )
 {
 	U_ASSERT(false);
 	return nullptr;
 }
 
-llvm::Constant* CodeBuilder::ApplyInitializer(
-	const Synt::ArrayInitializer& initializer,
+llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	const Variable& variable,
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::ArrayInitializer& initializer )
 {
 	if( const Array* const array_type= variable.type.GetArrayType() )
 	{
@@ -78,7 +78,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 			array_member.llvm_value= function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, index_list );
 
 			llvm::Constant* const member_constant=
-				ApplyInitializer( initializer.initializers[i], array_member, names, function_context );
+				ApplyInitializer( array_member, names, function_context, initializer.initializers[i] );
 
 			if( is_constant && member_constant != nullptr )
 				members_constants.push_back( member_constant );
@@ -120,7 +120,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 			tuple_element.type= tuple_type->elements[i];
 
 			llvm::Constant* const member_constant=
-				ApplyInitializer( initializer.initializers[i], tuple_element, names, function_context );
+				ApplyInitializer( tuple_element, names, function_context, initializer.initializers[i] );
 
 			if( is_constant && member_constant != nullptr )
 				members_constants.push_back( member_constant );
@@ -142,11 +142,11 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 	return nullptr;
 }
 
-llvm::Constant* CodeBuilder::ApplyInitializer(
-	const Synt::StructNamedInitializer& initializer,
+llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	const Variable& variable,
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::StructNamedInitializer& initializer )
 {
 	const Class* const class_type= variable.type.GetClassType();
 	if( class_type == nullptr || class_type->kind != Class::Kind::Struct )
@@ -210,7 +210,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 				function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field->index ) } );
 
 			constant_initializer=
-				ApplyInitializer( member_initializer.initializer, struct_member, names, function_context );
+				ApplyInitializer( struct_member, names, function_context, member_initializer.initializer );
 		}
 
 		if( constant_initializer == nullptr )
@@ -262,20 +262,20 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 	return nullptr;
 }
 
-llvm::Constant* CodeBuilder::ApplyInitializer(
-	const Synt::ConstructorInitializer& initializer,
+llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	const Variable& variable,
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::ConstructorInitializer& initializer )
 {
 	return ApplyConstructorInitializer( initializer.call_operator, variable, names, function_context );
 }
 
-llvm::Constant* CodeBuilder::ApplyInitializer(
-	const Synt::ExpressionInitializer& initializer,
+llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	const Variable& variable,
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::ExpressionInitializer& initializer )
 {
 	if( variable.type.GetFundamentalType() != nullptr ||
 		variable.type.GetRawPointerType() != nullptr ||
@@ -397,11 +397,11 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 	return nullptr;
 }
 
-llvm::Constant* CodeBuilder::ApplyInitializer(
-	const Synt::ZeroInitializer& initializer,
+llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	const Variable& variable,
 	NamesScope& names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::ZeroInitializer& initializer )
 {
 	if( variable.type.GetFundamentalType() != nullptr ||
 		variable.type.GetEnumType() != nullptr ||
@@ -426,7 +426,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 			{
 				array_member.llvm_value=
 					function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), counter_value } );
-				ApplyInitializer( initializer, array_member, names, function_context );
+				ApplyInitializer( array_member, names, function_context, initializer );
 			},
 			function_context);
 
@@ -446,7 +446,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 			tuple_member.type= element_type;
 			tuple_member.llvm_value= function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex(i) } );
 
-			ApplyInitializer( initializer, tuple_member, names, function_context );
+			ApplyInitializer( tuple_member, names, function_context, initializer );
 		}
 
 		if( variable.type.CanBeConstexpr() )
@@ -482,7 +482,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 			struct_member.llvm_value=
 				function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field.index ) } );
 
-			ApplyInitializer( initializer, struct_member, names, function_context );
+			ApplyInitializer( struct_member, names, function_context, initializer );
 		}
 
 		if( all_fields_are_constant )
@@ -495,11 +495,11 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 	return nullptr;
 }
 
-llvm::Constant* CodeBuilder::ApplyInitializer(
-	const Synt::UninitializedInitializer& initializer,
+llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	const Variable&,
 	NamesScope& block_names,
-	FunctionContext& function_context )
+	FunctionContext& function_context,
+	const Synt::UninitializedInitializer& initializer )
 {
 	if( !function_context.is_in_unsafe_block )
 		REPORT_ERROR( UninitializedInitializerOutsideUnsafeBlock, block_names.GetErrors(), initializer.src_loc_ );
@@ -1065,10 +1065,10 @@ llvm::Constant* CodeBuilder::InitializeClassFieldWithInClassIninitalizer(
 
 	llvm::Constant* const result=
 		ApplyInitializer(
-			*class_field.syntax_element->initializer,
 			field_variable,
 			class_field.class_.lock()->class_->members, // Use class members names scope.
-			function_context );
+			function_context,
+			*class_field.syntax_element->initializer );
 
 	function_context.this_= prev_this;
 

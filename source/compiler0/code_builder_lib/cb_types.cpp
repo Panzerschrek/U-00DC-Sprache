@@ -27,18 +27,18 @@ Type CodeBuilder::PrepareType(
 		std::visit(
 		[&](const auto& t)
 		{
-			return PrepareType( t, names_scope, function_context );
+			return PrepareTypeImpl( names_scope, function_context, t );
 		},
 		type_name);
 }
 
-Type CodeBuilder::PrepareType( const Synt::EmptyVariant&, NamesScope&, FunctionContext& )
+Type CodeBuilder::PrepareTypeImpl( NamesScope&, FunctionContext&, const Synt::EmptyVariant& )
 {
 	U_ASSERT(false);
 	return invalid_type_;
 }
 
-Type CodeBuilder::PrepareType( const Synt::ArrayTypeName& array_type_name, NamesScope& names_scope, FunctionContext& function_context )
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ArrayTypeName& array_type_name )
 {
 	Array array_type;
 	array_type.type= PrepareType( *array_type_name.element_type, names_scope, function_context );
@@ -78,7 +78,7 @@ Type CodeBuilder::PrepareType( const Synt::ArrayTypeName& array_type_name, Names
 	return std::move(array_type);
 }
 
-Type CodeBuilder::PrepareType( const Synt::TypeofTypeName& typeof_type_name, NamesScope& names_scope, FunctionContext& function_context )
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TypeofTypeName& typeof_type_name )
 {
 	Type result;
 	const auto prev_state= SaveInstructionsState( function_context );
@@ -91,13 +91,10 @@ Type CodeBuilder::PrepareType( const Synt::TypeofTypeName& typeof_type_name, Nam
 	return result;
 }
 
-Type CodeBuilder::PrepareType( const Synt::FunctionTypePtr& function_type_name_ptr, NamesScope& names_scope, FunctionContext& function_context )
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionTypePtr& function_type_name_ptr )
 {
-	return PrepareType( *function_type_name_ptr, names_scope, function_context );
-}
+	const Synt::FunctionType& function_type_name= *function_type_name_ptr;
 
-Type CodeBuilder::PrepareType( const Synt::FunctionType& function_type_name, NamesScope& names_scope, FunctionContext& function_context )
-{
 	FunctionPointer function_pointer_type;
 	Function& function_type= function_pointer_type.function;
 
@@ -133,7 +130,7 @@ Type CodeBuilder::PrepareType( const Synt::FunctionType& function_type_name, Nam
 	return std::move(function_pointer_type);
 }
 
-Type CodeBuilder::PrepareType( const Synt::TupleType& tuple_type_name, NamesScope& names_scope, FunctionContext& function_context )
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TupleType& tuple_type_name )
 {
 	Tuple tuple;
 	tuple.elements.reserve( tuple_type_name.element_types_.size() );
@@ -156,7 +153,7 @@ Type CodeBuilder::PrepareType( const Synt::TupleType& tuple_type_name, NamesScop
 	return std::move(tuple);
 }
 
-Type CodeBuilder::PrepareType( const Synt::RawPointerType& raw_pointer_type_name, NamesScope& names_scope, FunctionContext& function_context )
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RawPointerType& raw_pointer_type_name )
 {
 	RawPointer raw_pointer;
 	raw_pointer.type= PrepareType( *raw_pointer_type_name.element_type, names_scope, function_context );
@@ -165,7 +162,7 @@ Type CodeBuilder::PrepareType( const Synt::RawPointerType& raw_pointer_type_name
 	return raw_pointer;
 }
 
-Type CodeBuilder::PrepareType( const Synt::NamedTypeName& named_type_name, NamesScope& names_scope, FunctionContext& function_context )
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamedTypeName& named_type_name )
 {
 	const Value value= ResolveValue( named_type_name.src_loc_, names_scope, function_context, named_type_name.name );
 	if( const Type* const type= value.GetTypeName() )

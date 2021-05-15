@@ -1393,7 +1393,7 @@ Type CodeBuilder::BuildFuncCode(
 		function_context.destructor_end_block= llvm::BasicBlock::Create( llvm_context_ );
 	}
 
-	const BlockBuildInfo block_build_info= BuildBlockElement( *block, function_names, function_context );
+	const BlockBuildInfo block_build_info= BuildBlock( function_names, function_context, *block );
 	U_ASSERT( function_context.stack_variables_stack.size() == 1u );
 
 	// If we build func code only for return type deducing - we can return. Function code will be generated later.
@@ -1644,7 +1644,7 @@ void CodeBuilder::BuildConstructorInitialization(
 					this_.llvm_value,
 					{ GetZeroGEPIndex(), GetFieldGEPIndex( 0u /* base class is allways first field */ ) } );
 
-			ApplyInitializer( field_initializer.initializer, base_variable, names_scope, function_context );
+			ApplyInitializer( base_variable, names_scope, function_context, field_initializer.initializer );
 			function_context.base_initialized= true;
 			continue;
 		}
@@ -1668,7 +1668,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			field_variable.llvm_value=
 				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex(field->index) } );
 
-			ApplyInitializer( field_initializer.initializer, field_variable, names_scope, function_context );
+			ApplyInitializer( field_variable, names_scope, function_context, field_initializer.initializer );
 		}
 
 		function_context.uninitialized_this_fields.erase( field->syntax_element->name );
@@ -1684,7 +1684,7 @@ void CodeBuilder::BuildStaticAssert( StaticAssert& static_assert_, NamesScope& n
 	if( static_assert_.syntax_element == nullptr )
 		return;
 
-	BuildBlockElement( *static_assert_.syntax_element, names, function_context );
+	BuildBlockElementImpl( names, function_context, *static_assert_.syntax_element );
 	static_assert_.syntax_element= nullptr;
 }
 
@@ -1716,7 +1716,7 @@ Value CodeBuilder::ResolveValue(
 	}
 	else if( const auto typeof_type_name= std::get_if<Synt::TypeofTypeName>(&complex_name.start_value) )
 	{
-		temp_value_storage= Value( PrepareType( *typeof_type_name, names_scope, function_context ), src_loc );
+		temp_value_storage= Value( PrepareTypeImpl( names_scope, function_context, *typeof_type_name ), src_loc );
 		value= &temp_value_storage;
 	}
 	else if(const auto simple_name= std::get_if<std::string>(&complex_name.start_value) )
@@ -1913,8 +1913,7 @@ llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundman
 	return nullptr;
 }
 
-llvm::Value*CodeBuilder::CreateMoveToLLVMRegisterInstruction(
-	const Variable& variable, FunctionContext& function_context )
+llvm::Value* CodeBuilder::CreateMoveToLLVMRegisterInstruction( const Variable& variable, FunctionContext& function_context )
 {
 	// Contant values always are register-values.
 	if( variable.constexpr_value != nullptr )

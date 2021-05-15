@@ -353,7 +353,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 		array_param.type= std::make_unique<TemplateSignatureParam>( CreateTemplateSignatureParameter( *array_type_name->element_type, names_scope, function_context, template_parameters, template_parameters_usage_flags ) );
 
 		if( array_param.size->IsVariable() && array_param.type->IsType() )
-			return TemplateSignatureParam::TypeParam{ PrepareType( *array_type_name, names_scope, function_context ) };
+			return TemplateSignatureParam::TypeParam{ PrepareType( type_name_template_parameter, names_scope, function_context ) };
 
 		return std::move(array_param);
 	}
@@ -369,7 +369,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 		}
 
 		if( all_types_are_known )
-			return TemplateSignatureParam::TypeParam{ PrepareType( *tuple_type_name, names_scope, function_context ) };
+			return TemplateSignatureParam::TypeParam{ PrepareType( type_name_template_parameter, names_scope, function_context ) };
 
 		return tuple_param;
 	}
@@ -386,7 +386,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 					template_parameters_usage_flags ) );
 
 		if( raw_pointer_param.type->IsType() )
-			return TemplateSignatureParam::TypeParam{ PrepareType( *raw_pointer_type_name, names_scope, function_context ) };
+			return TemplateSignatureParam::TypeParam{ PrepareType( type_name_template_parameter, names_scope, function_context ) };
 
 		return raw_pointer_param;
 	}
@@ -424,7 +424,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 		}
 
 		if( all_types_are_known )
-			return TemplateSignatureParam::TypeParam{ PrepareType( function_pointer_type_name, names_scope, function_context ) };
+			return TemplateSignatureParam::TypeParam{ PrepareType( type_name_template_parameter, names_scope, function_context ) };
 
 		return std::move(function_param);
 	}
