@@ -3151,6 +3151,8 @@ fn CodeBuilder::DoCallFunction(
 				continue;
 			}
 
+			// TODO - what if arg is immutable reference and return reference is mutable?
+
 			// TODO - maybe check for errors before creating links?
 			if( param_reference.reference_index == FunctionType::c_param_reference_number )
 			{

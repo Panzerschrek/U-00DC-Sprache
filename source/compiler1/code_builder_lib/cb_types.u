@@ -280,6 +280,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 		{
 			if( res.params[i].is_reference )
 			{
+				// TODO - what if param is immutable reference and return reference is mutable?
 				var FunctionType::ParamReference mut param_reference{ .param_index= u8(i), .reference_index= FunctionType::c_param_reference_number };
 				res.return_references.push_back( move(param_reference) );
 			}
