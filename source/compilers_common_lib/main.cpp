@@ -150,8 +150,16 @@ void PrintErrorsForTests( const std::vector<IVfs::Path>& source_files, const Cod
 			<< " " << error.src_loc.GetLine() << " " << CodeBuilderErrorCodeToString( error.code ) << "\n";
 }
 
-void AddModuleGlobalConstant( llvm::Module& module, llvm::Constant* const initializer, const llvm::Twine name )
+void AddModuleGlobalConstant( llvm::Module& module, llvm::Constant* const initializer, const std::string& name )
 {
+	const auto prev_variable= module.getGlobalVariable( name );
+	if( prev_variable != nullptr )
+	{
+		if( prev_variable->getInitializer() != initializer )
+			std::cout << "Warning, overrideing Module constant \"" << name << "\" value" << std::endl;
+		return;
+	}
+
 	const auto variable=
 		new llvm::GlobalVariable(
 			module,
@@ -498,13 +506,14 @@ int Main( int argc, const char* argv[] )
 	const bool is_msvc= target_machine->getTargetTriple().getEnvironment() == llvm::Triple::MSVC;
 	const auto errors_format= is_msvc ? ErrorsFormat::MSVC : ErrorsFormat::GCC;
 
-	// Compile multiple input files and link them together.
 	llvm::LLVMContext llvm_context;
 	std::unique_ptr<llvm::Module> result_module;
 	std::vector<IVfs::Path> deps_list;
 
 	if( Options::input_files_type == Options::InputFileType::Source )
 	{
+		// Compile multiple input files and link them together.
+
 		const auto vfs= CreateVfsOverSystemFS( Options::include_dir );
 		if( vfs == nullptr )
 			return 1u;
@@ -551,6 +560,8 @@ int Main( int argc, const char* argv[] )
 	}
 	else if( Options::input_files_type == Options::InputFileType::BC )
 	{
+		// Load and link together multiple BC files.
+
 		bool have_some_errors= false;
 		for( const std::string& input_file : Options::input_files )
 		{
