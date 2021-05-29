@@ -103,9 +103,11 @@ endif()
 
 if( WIN32 )
 	set( SPRACHE_COMPILER_PIC_OPTIONS "" )
+	set( LLC_PIC_OPTIONS "" )
 else()
 	add_compile_options( -fPIC )
 	set( SPRACHE_COMPILER_PIC_OPTIONS --relocation-model pic )
+	set( LLC_PIC_OPTIONS --relocation-model pic )
 endif()
 
 if(MSVC)
