@@ -1183,8 +1183,6 @@ Type CodeBuilder::BuildFuncCode(
 		}
 
 		func_variable.llvm_function= llvm_function;
-
-		CreateFunctionDebugInfo( func_variable, func_name );
 	}
 	else
 		llvm_function= func_variable.llvm_function;
@@ -1195,6 +1193,9 @@ Type CodeBuilder::BuildFuncCode(
 		func_variable.have_body= false;
 		return function_type.return_type;
 	}
+
+	// Build debug info only for functions with body.
+	CreateFunctionDebugInfo( func_variable, func_name );
 
 	// For functions with body we can use comdat.
 	if( parent_names_scope.IsInsideTemplate() )
