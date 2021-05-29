@@ -5,6 +5,7 @@ Delete the features from the list as soon as they are implemented.
 General:
 *) Dereference operator - for pointer-like classes.
 *) Continious initializer for arrays
+*) Explicit definition of cross-language called functions (FFI). Something like "extern C" and "extern system" in Rust.
 *) Different calling conventions (for API calls, for example)
 *) Anonymous (module-local) symbols - functions, classes, variables.
 *) <, <=, >, >= for enums.
@@ -53,6 +54,7 @@ Standart library:
 Compiler:
 *) move-assignment without hacks.
 *) Use TBAA from LLVM.
+*) Faster calling convention for non-cross-language functions.
 *) MSVC mangling.
 *) Virtual call for final function optimization
 *) Do not crash in some cases of code with errors
