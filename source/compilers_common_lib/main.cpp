@@ -632,6 +632,9 @@ int Main( int argc, const char* argv[] )
 			pass_manager_builder.LoopVectorize= optimization_level > 1 && size_optimization_level < 2;
 			pass_manager_builder.SLPVectorize= optimization_level > 1 && size_optimization_level < 2;
 
+			// It's fine to merge functions in Ü because we have no guarantee for different addresses for diffrerent functions.
+			pass_manager_builder.MergeFunctions= true;
+
 			target_machine->adjustPassManager(pass_manager_builder);
 
 			if (llvm::TargetPassConfig* const target_pass_config= static_cast<llvm::LLVMTargetMachine &>(*target_machine).createPassConfig(pass_manager))
