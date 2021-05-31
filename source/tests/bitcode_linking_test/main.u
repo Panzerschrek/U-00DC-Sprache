@@ -1,0 +1,9 @@
+fn Foo();
+fn Bar();
+
+fn nomangle main() : u32
+{
+	Foo();
+	Bar();
+	return 0u;
+}

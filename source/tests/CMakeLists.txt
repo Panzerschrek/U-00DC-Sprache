@@ -19,6 +19,7 @@ function( CompileUSources u_source_files out_objects )
 	set( ${out_objects} ${out_objects_local} PARENT_SCOPE )
 endfunction()
 
+add_subdirectory( bitcode_linking_test )
 add_subdirectory( cpp_header_converter_test )
 add_subdirectory( cpp_linkage_test )
 add_subdirectory( debug_info_test )
