@@ -4,7 +4,7 @@
 #include <llvm/Analysis/TargetTransformInfo.h>
 #include <llvm/AsmParser/Parser.h>
 #include <llvm/Bitcode/BitcodeReader.h>
-#include <llvm/Bitcode/BitcodeWriter.h>
+#include <llvm/Bitcode/BitcodeWriterPass.h>
 #include <llvm/CodeGen/TargetPassConfig.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Verifier.h>
@@ -675,10 +675,18 @@ int Main( int argc, const char* argv[] )
 		AddModuleGlobalConstant( *result_module, constant, "__U_sprache_compiler_generation" );
 	}
 
+	// Create file write passes.
+	// This file stream must live longer than pass manager.
+	std::error_code file_error_code;
+	llvm::raw_fd_ostream out_file_stream( Options::output_file_name, file_error_code, llvm::sys::fs::F_None );
+
+	// Create pass manager for optimizations and output passes.
+	llvm::legacy::PassManager pass_manager;
+
+	// Create optimization passes.
 	if( optimization_level > 0u || size_optimization_level > 0u )
 	{
 		llvm::legacy::FunctionPassManager function_pass_manager( result_module.get() );
-		llvm::legacy::PassManager pass_manager;
 
 		// Setup target-dependent optimizations.
 		pass_manager.add( llvm::createTargetTransformInfoWrapperPass( target_machine->getTargetIRAnalysis() ) );
@@ -721,55 +729,51 @@ int Main( int argc, const char* argv[] )
 		for( llvm::Function& func : *result_module )
 			function_pass_manager.run(func);
 		function_pass_manager.doFinalization();
-
-		// Run optimizations for module.
-		pass_manager.run( *result_module );
 	}
 
-	// Dump llvm code after optimization pass.
+	switch( Options::file_type )
+	{
+	case Options::FileType::Obj:
+		if( target_machine->addPassesToEmitFile( pass_manager, out_file_stream, nullptr, llvm::TargetMachine::CGFT_ObjectFile ) )
+		{
+			std::cerr << "Error, creating file emit pass." << std::endl;
+			return 1;
+		}
+		break;
+
+	case Options::FileType::Asm:
+		if( target_machine->addPassesToEmitFile( pass_manager, out_file_stream, nullptr, llvm::TargetMachine::CGFT_AssemblyFile ) )
+		{
+			std::cerr << "Error, creating file emit pass." << std::endl;
+			return 1;
+		}
+		break;
+
+	case Options::FileType::BC:
+		pass_manager.add( llvm::createBitcodeWriterPass(out_file_stream ) );
+		break;
+
+	case Options::FileType::LL:
+		result_module->print( out_file_stream, nullptr );
+		break;
+	}
+
+	// Run all passes.
+	pass_manager.run(*result_module);
+
+	// Check if output file is ok.
+	out_file_stream.flush();
+	if( out_file_stream.has_error() )
+	{
+		std::cerr << "Error while writing output file \"" << Options::output_file_name << "\": " << file_error_code.message() << std::endl;
+		return 1;
+	}
+
+	// Dump llvm code after optimization passes.
 	if( Options::print_llvm_asm )
 	{
 		llvm::raw_os_ostream stream(std::cout);
 		result_module->print( stream, nullptr );
-	}
-
-	// Write result file.
-	{
-		std::error_code file_error_code;
-		llvm::raw_fd_ostream out_file_stream( Options::output_file_name, file_error_code, llvm::sys::fs::F_None );
-
-		if( Options::file_type == Options::FileType::BC )
-			llvm::WriteBitcodeToFile( *result_module, out_file_stream );
-		else if( Options::file_type == Options::FileType::LL )
-			result_module->print( out_file_stream, nullptr );
-		else
-		{
-			llvm::TargetMachine::CodeGenFileType file_type= llvm::TargetMachine::CGFT_Null;
-			switch( Options::file_type )
-			{
-			case Options::FileType::Obj: file_type= llvm::TargetMachine::CGFT_ObjectFile; break;
-			case Options::FileType::Asm: file_type= llvm::TargetMachine::CGFT_AssemblyFile; break;
-			case Options::FileType::BC:
-			case Options::FileType::LL:
-			U_ASSERT(false);
-			};
-
-			llvm::legacy::PassManager pass_manager;
-			if( target_machine->addPassesToEmitFile( pass_manager, out_file_stream, nullptr, file_type ) )
-			{
-				std::cerr << "Error, creating file emit pass." << std::endl;
-				return 1;
-			}
-
-			pass_manager.run(*result_module);
-		}
-
-		out_file_stream.flush();
-		if( out_file_stream.has_error() )
-		{
-			std::cerr << "Error while writing output file \"" << Options::output_file_name << "\": " << file_error_code.message() << std::endl;
-			return 1;
-		}
 	}
 
 	// Left only unique paths in dependencies list.
