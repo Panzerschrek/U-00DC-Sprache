@@ -231,20 +231,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	const Variable initializer_experrsion= BuildExpressionCodeEnsureVariable( auto_variable_declaration.initializer_expression, names, function_context );
 
-	{ // Check expression type. Expression can have exotic types, such "Overloading functions set", "class name", etc.
-		const bool type_is_ok=
-			initializer_experrsion.type.GetFundamentalType() != nullptr ||
-			initializer_experrsion.type.GetArrayType() != nullptr ||
-			initializer_experrsion.type.GetTupleType() != nullptr ||
-			initializer_experrsion.type.GetClassType() != nullptr ||
-			initializer_experrsion.type.GetEnumType() != nullptr ||
-			initializer_experrsion.type.GetRawPointerType() != nullptr ||
-			initializer_experrsion.type.GetFunctionPointerType() != nullptr;
-		if( !type_is_ok || initializer_experrsion.type == invalid_type_ )
-		{
-			REPORT_ERROR( InvalidTypeForAutoVariable, names.GetErrors(), auto_variable_declaration.src_loc_, initializer_experrsion.type );
-			return BlockBuildInfo();
-		}
+	if( initializer_experrsion.type == invalid_type_ )
+	{
+		REPORT_ERROR( InvalidTypeForAutoVariable, names.GetErrors(), auto_variable_declaration.src_loc_, initializer_experrsion.type );
+		return BlockBuildInfo();
 	}
 
 	Variable variable;
