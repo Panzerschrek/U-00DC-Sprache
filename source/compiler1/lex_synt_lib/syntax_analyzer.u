@@ -594,10 +594,6 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 		break;
 	}
 
-	if( binary_operators_chain.empty() )
-	{
-		return Expression();
-	}
 	return FoldBinaryOperatorsChain( binary_operators_chain.range() );
 }
 
@@ -1085,7 +1081,7 @@ fn SyntaxAnalyzer::ParseExpressionComponentHelper( mut this ) : Expression
 	}
 	else
 	{
-		// TODO - produce error here?
+		PushErrorMessage();
 		return Expression();
 	}
 }
@@ -2294,7 +2290,10 @@ fn SyntaxAnalyzer::ParseReturnOperator( mut this ) : ReturnOperator
 	var ReturnOperator mut res{ .src_loc= it_.front().src_loc };
 	NextLexem(); // return
 
-	res.expr= ParseExpression();
+	if( it_.front().lexem_type != Lexem::Type::Semicolon )
+	{
+		res.expr= ParseExpression();
+	}
 
 	if( it_.front().lexem_type != Lexem::Type::Semicolon )
 	{
