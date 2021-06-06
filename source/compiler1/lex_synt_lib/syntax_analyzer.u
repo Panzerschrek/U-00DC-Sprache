@@ -193,6 +193,7 @@ private:
 	fn ParseComplexName( mut this ) : ComplexName;
 
 	fn ParseExpression( mut this ) : Expression;
+	fn ParseExpressionInBrackets( mut this ) : Expression;
 	fn ParseExpressionComponent( mut this ) : Expression;
 	fn TryParseExpressionComponentPostfixOperator( mut this, Expression mut expr ) : Expression;
 	fn ParseExpressionComponentHelper( mut this ) : Expression;
@@ -597,6 +598,27 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 	return FoldBinaryOperatorsChain( binary_operators_chain.range() );
 }
 
+fn SyntaxAnalyzer::ParseExpressionInBrackets( mut this ) : Expression
+{
+	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
+	{
+		PushErrorMessage();
+		return Expression();
+	}
+	NextLexem();
+
+	var Expression mut e= ParseExpression();
+
+	if( it_.front().lexem_type != Lexem::Type::BracketRight )
+	{
+		PushErrorMessage();
+		return Expression();
+	}
+	NextLexem();
+
+	return move(e);
+}
+
 fn SyntaxAnalyzer::ParseExpressionComponent( mut this ) : Expression
 {
 	auto mut expr= ParseExpressionComponentHelper();
@@ -817,21 +839,7 @@ fn SyntaxAnalyzer::ParseExpressionComponentHelper( mut this ) : Expression
 		}
 		NextLexem();
 
-		if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
-		var Expression mut e= ParseExpression();
-
-		if( it_.front().lexem_type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
-		var CastRef mut cast{ .src_loc= src_loc, .t(move(t)), .expression(move(e)) };
+		var CastRef mut cast{ .src_loc= src_loc, .t(move(t)), .expression(ParseExpressionInBrackets()) };
 		return move(cast);
 	}
 	else if( IsKeyword( it_.front(), Keyword::cast_ref_unsafe_ ) )
@@ -853,65 +861,21 @@ fn SyntaxAnalyzer::ParseExpressionComponentHelper( mut this ) : Expression
 		}
 		NextLexem();
 
-		if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
-		var Expression mut e= ParseExpression();
-
-		if( it_.front().lexem_type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
-		var CastRefUnsafe mut cast{ .src_loc= src_loc, .t(move(t)), .expression(move(e)) };
+		var CastRefUnsafe mut cast{ .src_loc= src_loc, .t(move(t)), .expression(ParseExpressionInBrackets()) };
 		return move(cast);
 	}
 	else if( IsKeyword( it_.front(), Keyword::cast_imut_ ) )
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
-
-		if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
-		var Expression mut e= ParseExpression();
-
-		if( it_.front().lexem_type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
-		var CastImut mut cast{ .src_loc= src_loc, .expression(move(e)) };
+		var CastImut mut cast{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
 		return move(cast);
 	}
 	else if( IsKeyword( it_.front(), Keyword::cast_mut_ ) )
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
-
-		if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
-		var Expression mut e= ParseExpression();
-
-		if( it_.front().lexem_type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
-		var CastMut mut cast{ .src_loc= src_loc, .expression(move(e)) };
+		var CastMut mut cast{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
 		return move(cast);
 	}
 	else if( IsKeyword( it_.front(), Keyword::move_ ) )
@@ -946,21 +910,7 @@ fn SyntaxAnalyzer::ParseExpressionComponentHelper( mut this ) : Expression
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
 
-		if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
-		var Expression mut e= ParseExpression();
-
-		if( it_.front().lexem_type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
-		var TakeOperator mut take_operator{ .src_loc= src_loc, .expression(move(e)) };
+		var TakeOperator mut take_operator{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
 		return move(take_operator);
 	}
 	else if( IsKeyword( it_.front(), Keyword::select_ ) )
@@ -1011,21 +961,7 @@ fn SyntaxAnalyzer::ParseExpressionComponentHelper( mut this ) : Expression
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
-
-		if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
-		var ReferenceToRawPointerOperator mut o{ .src_loc= src_loc, .expression( ParseExpression() ) };
-
-		if( it_.front().lexem_type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
+		var ReferenceToRawPointerOperator mut o{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
 		return move(o);
 	}
 	else if( it_.front().lexem_type == Lexem::Type::PointerToReference )
@@ -1033,19 +969,9 @@ fn SyntaxAnalyzer::ParseExpressionComponentHelper( mut this ) : Expression
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
 
-		if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		var Expression mut e= ParseExpressionInBrackets();
 
-		var RawPointerToReferenceOperator mut o{ .src_loc= src_loc, .expression( ParseExpression() ) };
-
-		if( it_.front().lexem_type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		var RawPointerToReferenceOperator mut o{ .src_loc= src_loc, .expression(move(e)) };
 
 		return move(o);
 	}
@@ -1067,17 +993,7 @@ fn SyntaxAnalyzer::ParseExpressionComponentHelper( mut this ) : Expression
 	}
 	else if( it_.front().lexem_type == Lexem::Type::BracketLeft )
 	{
-		NextLexem();
-
-		var Expression mut e= ParseExpression();
-
-		if( it_.front().lexem_type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
-		return move(e);
+		return ParseExpressionInBrackets();
 	}
 	else
 	{
