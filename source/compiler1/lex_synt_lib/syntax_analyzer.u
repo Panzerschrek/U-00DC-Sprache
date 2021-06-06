@@ -67,34 +67,8 @@ fn GetBinaryOperatorPriority( BinaryOperatorType binary_operator ) : i32
 	halt;
 }
 
-fn IsBinaryOperator( Lexem& lexem ) : bool
-{
-	return
-		lexem.lexem_type == Lexem::Type::Plus ||
-		lexem.lexem_type == Lexem::Type::Minus ||
-		lexem.lexem_type == Lexem::Type::Star ||
-		lexem.lexem_type == Lexem::Type::Slash ||
-		lexem.lexem_type == Lexem::Type::Percent ||
 
-		lexem.lexem_type == Lexem::Type::CompareEqual ||
-		lexem.lexem_type == Lexem::Type::CompareNotEqual ||
-		lexem.lexem_type == Lexem::Type::CompareLess ||
-		lexem.lexem_type == Lexem::Type::CompareLessOrEqual ||
-		lexem.lexem_type == Lexem::Type::CompareGreater ||
-		lexem.lexem_type == Lexem::Type::CompareGreaterOrEqual ||
-
-		lexem.lexem_type == Lexem::Type::And ||
-		lexem.lexem_type == Lexem::Type::Or ||
-		lexem.lexem_type == Lexem::Type::Xor ||
-
-		lexem.lexem_type == Lexem::Type::ShiftLeft  ||
-		lexem.lexem_type == Lexem::Type::ShiftRight ||
-
-		lexem.lexem_type == Lexem::Type::Conjunction ||
-		lexem.lexem_type == Lexem::Type::Disjunction;
-}
-
-fn LexemToBinaryOperator( Lexem& lexem ) : BinaryOperatorType
+fn LexemToBinaryOperator( Lexem& lexem ) : ust::optional</BinaryOperatorType/>
 {
 	if( lexem.lexem_type == Lexem::Type::Plus	){ return BinaryOperatorType::Add; }
 	if( lexem.lexem_type == Lexem::Type::Minus	){ return BinaryOperatorType::Sub; }
@@ -119,7 +93,7 @@ fn LexemToBinaryOperator( Lexem& lexem ) : BinaryOperatorType
 	if( lexem.lexem_type == Lexem::Type::Conjunction ){ return BinaryOperatorType::LazyLogicalAnd; }
 	if( lexem.lexem_type == Lexem::Type::Disjunction ){ return BinaryOperatorType::LazyLogicalOr ; }
 
-	halt;
+	return ust::optional</BinaryOperatorType/>();
 }
 
 fn GetAdditiveAssignmentOperator( Lexem& lexem ) : ust::optional</BinaryOperatorType/>
@@ -610,16 +584,14 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 		var BinaryOperatorsChainComponent mut comp{ .expression= ParseExpressionComponent() };
 		binary_operators_chain.push_back( move(comp) );
 
-		if( IsBinaryOperator( it_.front() ) )
+		if_var( binary_operator : LexemToBinaryOperator( it_.front() ) )
 		{
-			binary_operators_chain.back().operator= LexemToBinaryOperator( it_.front() );
+			binary_operators_chain.back().operator= binary_operator;
 			binary_operators_chain.back().src_loc= it_.front().src_loc;
 			NextLexem();
+			continue;
 		}
-		else
-		{
-			break;
-		}
+		break;
 	}
 
 	if( binary_operators_chain.empty() )
