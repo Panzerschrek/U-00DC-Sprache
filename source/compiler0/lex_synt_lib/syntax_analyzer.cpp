@@ -100,34 +100,7 @@ int GetBinaryOperatorPriority( const BinaryOperatorType binary_operator )
 	#undef PRIORITY
 }
 
-bool IsBinaryOperator( const Lexem& lexem )
-{
-	return
-		lexem.type == Lexem::Type::Plus ||
-		lexem.type == Lexem::Type::Minus ||
-		lexem.type == Lexem::Type::Star ||
-		lexem.type == Lexem::Type::Slash ||
-		lexem.type == Lexem::Type::Percent ||
-
-		lexem.type == Lexem::Type::CompareEqual ||
-		lexem.type == Lexem::Type::CompareNotEqual ||
-		lexem.type == Lexem::Type::CompareLess ||
-		lexem.type == Lexem::Type::CompareLessOrEqual ||
-		lexem.type == Lexem::Type::CompareGreater ||
-		lexem.type == Lexem::Type::CompareGreaterOrEqual ||
-
-		lexem.type == Lexem::Type::And ||
-		lexem.type == Lexem::Type::Or ||
-		lexem.type == Lexem::Type::Xor ||
-
-		lexem.type == Lexem::Type::ShiftLeft  ||
-		lexem.type == Lexem::Type::ShiftRight ||
-
-		lexem.type == Lexem::Type::Conjunction ||
-		lexem.type == Lexem::Type::Disjunction;
-}
-
-BinaryOperatorType LexemToBinaryOperator( const Lexem& lexem )
+std::optional<BinaryOperatorType> LexemToBinaryOperator( const Lexem& lexem )
 {
 	switch( lexem.type )
 	{
@@ -155,9 +128,45 @@ BinaryOperatorType LexemToBinaryOperator( const Lexem& lexem )
 		case Lexem::Type::Disjunction: return BinaryOperatorType::LazyLogicalOr;
 
 		default:
-		U_ASSERT(false);
-		return BinaryOperatorType::Add;
+			return std::nullopt;
 	};
+}
+
+struct BinaryOperatorsChainComponent
+{
+	Expression expression;
+	BinaryOperatorType op= BinaryOperatorType::Add; // Value of last component is ignored
+	SrcLoc src_loc;
+};
+
+using BinaryOperatorsChain= std::vector<BinaryOperatorsChainComponent>;
+
+Expression FoldBinaryOperatorsChain( BinaryOperatorsChainComponent* const chain, const size_t size )
+{
+	// Should be non-empty.
+	if( size == 1 )
+		return std::move(chain[0].expression);
+
+	// Split binary operators chain using most-right operator with minimal priority. Than recursively process parts.
+	size_t split_op_pos= ~0u;
+	int min_priority= 9999;
+	for( size_t i= 0; i < size - 1u; ++i )
+	{
+		auto cur_priority= GetBinaryOperatorPriority( chain[i].op );
+		if( cur_priority <= min_priority )
+		{
+			min_priority= cur_priority;
+			split_op_pos= i;
+		}
+	}
+	const size_t split_pos_next= split_op_pos + 1;
+
+	BinaryOperator o( chain[ split_op_pos ].src_loc );
+	o.operator_type_= chain[ split_op_pos ].op;
+	o.left_ = std::make_unique<Expression>( FoldBinaryOperatorsChain( chain, split_pos_next ) );
+	o.right_= std::make_unique<Expression>( FoldBinaryOperatorsChain( chain + split_pos_next, size - split_pos_next ) );
+
+	return std::move(o);
 }
 
 bool IsAdditiveAssignmentOperator( const Lexem& lexem )
@@ -902,7 +911,7 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 
 Expression SyntaxAnalyzer::ParseExpression()
 {
-	Expression root;
+	BinaryOperatorsChain chain;
 
 	while( NotEndOfFile() )
 	{
@@ -945,17 +954,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 				break;
 
 			default:
-				if( prefix_operators.empty() )
-				{
-					if( std::get_if<EmptyVariant>( &root ) != nullptr )
-						PushErrorMessage();
-					return root;
-				}
-				else
-				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
+				break;
 			};
 		}
 
@@ -1371,7 +1370,6 @@ Expression SyntaxAnalyzer::ParseExpression()
 		U_ASSERT( current_node_ptr != nullptr );
 		current_node_ptr->prefix_operators_= std::move( prefix_operators );
 
-		bool is_binary_operator= false;
 		// Postfix operators.
 		bool end_postfix_operators= false;
 		while( !end_postfix_operators )
@@ -1451,7 +1449,6 @@ Expression SyntaxAnalyzer::ParseExpression()
 				} break;
 
 			default:
-				is_binary_operator= IsBinaryOperator( *it_ );
 				end_postfix_operators= true;
 				break;
 			};
@@ -1460,66 +1457,23 @@ Expression SyntaxAnalyzer::ParseExpression()
 				break;
 		}
 
-		if( std::get_if< EmptyVariant >( &root ) != nullptr )
-			root= std::move( current_node );
-		else
-		{
-			BinaryOperator* const root_as_binary_operator= std::get_if<BinaryOperator>( &root );
-			U_ASSERT( root_as_binary_operator != nullptr );
+		chain.emplace_back();
+		chain.back().expression= std::move(current_node);
 
-			// Place to existent tree last component.
-			BinaryOperator* most_right_with_null= root_as_binary_operator;
-			while( most_right_with_null->right_ != nullptr )
-			{
-				BinaryOperator* const right_as_binary_operator= std::get_if<BinaryOperator>( most_right_with_null->right_.get() );
-				U_ASSERT( right_as_binary_operator != nullptr );
-				most_right_with_null= right_as_binary_operator;
-			}
-			most_right_with_null->right_= std::make_unique<Expression>( std::move( current_node ) );
-		}
-
-		if( is_binary_operator )
+		if( const auto op= LexemToBinaryOperator( *it_ ) )
 		{
-			const BinaryOperatorType binary_operator_type= LexemToBinaryOperator( *it_ );
-			auto binary_operator= std::make_unique<BinaryOperator>( it_->src_loc );
-			binary_operator->operator_type_= binary_operator_type;
+			chain.back().op= *op;
+			chain.back().src_loc= it_->src_loc;
 			NextLexem();
-
-			if( BinaryOperator* const root_as_binary_operator= std::get_if<BinaryOperator>( &root ) )
-			{
-				BinaryOperator* node_to_replace_parent= nullptr;
-				BinaryOperator* node_to_replace= root_as_binary_operator;
-				while( GetBinaryOperatorPriority( binary_operator->operator_type_ ) > GetBinaryOperatorPriority( node_to_replace->operator_type_ ) )
-				{
-					node_to_replace_parent= node_to_replace;
-					BinaryOperator* const right_as_binary_operator= std::get_if<BinaryOperator>( node_to_replace->right_.get() );
-					if( right_as_binary_operator == nullptr )
-						break;
-					node_to_replace= right_as_binary_operator;
-				}
-
-				if( node_to_replace_parent != nullptr )
-				{
-					binary_operator->left_= std::move( node_to_replace_parent->right_ );
-					node_to_replace_parent->right_= std::make_unique<Expression>( std::move( *binary_operator ) );
-				}
-				else
-				{
-					binary_operator->left_= std::make_unique<Expression>( std::move( root ) );
-					root= std::move( *binary_operator );
-				}
-			}
-			else
-			{
-				binary_operator->left_= std::make_unique<Expression>( std::move( root ) );
-				root= std::move( *binary_operator );
-			}
 		}
 		else
 			break;
 	}
 
-	return root;
+	if(chain.empty())
+		return Expression();
+
+	return FoldBinaryOperatorsChain( chain.data(), chain.size() );
 }
 
 FunctionArgument SyntaxAnalyzer::ParseFunctionArgument()
