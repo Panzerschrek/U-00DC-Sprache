@@ -1564,9 +1564,7 @@ Value CodeBuilder::BuildBinaryOperator(
 	{
 		// Undef value can occurs in integer division by zero or something like it.
 		// But, if inputs are undef, this means, that they are template-dependent and this is not error case.
-		if( llvm::dyn_cast<llvm::UndefValue >(result.constexpr_value) != nullptr &&
-			llvm::dyn_cast<llvm::UndefValue >(r_var.constexpr_value) == nullptr &&
-			llvm::dyn_cast<llvm::UndefValue >(l_var.constexpr_value) == nullptr )
+		if( llvm::dyn_cast<llvm::UndefValue >(result.constexpr_value) != nullptr )
 		{
 			REPORT_ERROR( ConstantExpressionResultIsUndefined, names.GetErrors(), src_loc );
 			result.constexpr_value= nullptr;
@@ -2149,7 +2147,7 @@ Value CodeBuilder::BuildPostfixOperator(
 		}
 
 		// If index is constant and not undefined statically check index.
-		if( index.constexpr_value != nullptr && llvm::dyn_cast<llvm::UndefValue>(index.constexpr_value) == nullptr )
+		if( index.constexpr_value != nullptr )
 		{
 			const llvm::APInt index_value= index.constexpr_value->getUniqueInteger();
 			if( IsSignedInteger(index_fundamental_type->fundamental_type) )
@@ -2171,13 +2169,7 @@ Value CodeBuilder::BuildPostfixOperator(
 		result.type= array_type->type;
 
 		if( variable.constexpr_value != nullptr && index.constexpr_value != nullptr )
-		{
-			if( llvm::dyn_cast<llvm::UndefValue>(variable.constexpr_value) != nullptr ||
-				llvm::dyn_cast<llvm::UndefValue>(index.constexpr_value) != nullptr )
-				result.constexpr_value= llvm::UndefValue::get( array_type->llvm_type )->getElementValue( index.constexpr_value );
-			else
-				result.constexpr_value= variable.constexpr_value->getAggregateElement( index.constexpr_value );
-		}
+			result.constexpr_value= variable.constexpr_value->getAggregateElement( index.constexpr_value );
 
 		// Make first index = 0 for array to pointer conversion.
 		llvm::Value* index_list[2];

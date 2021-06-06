@@ -53,16 +53,11 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 		{
 			if( IsInteger( size_fundamental_type->fundamental_type ) )
 			{
-				if( llvm::dyn_cast<llvm::UndefValue>(size_variable.constexpr_value) != nullptr )
-					array_type.size= 1u;
+				const llvm::APInt& size_value= size_variable.constexpr_value->getUniqueInteger();
+				if( IsSignedInteger( size_fundamental_type->fundamental_type ) && size_value.isNegative() )
+					REPORT_ERROR( ArraySizeIsNegative, names_scope.GetErrors(), num_src_loc );
 				else
-				{
-					const llvm::APInt& size_value= size_variable.constexpr_value->getUniqueInteger();
-					if( IsSignedInteger( size_fundamental_type->fundamental_type ) && size_value.isNegative() )
-						REPORT_ERROR( ArraySizeIsNegative, names_scope.GetErrors(), num_src_loc );
-					else
-						array_type.size= size_value.getLimitedValue();
-				}
+					array_type.size= size_value.getLimitedValue();
 			}
 			else
 				REPORT_ERROR( ArraySizeIsNotInteger, names_scope.GetErrors(), num_src_loc );

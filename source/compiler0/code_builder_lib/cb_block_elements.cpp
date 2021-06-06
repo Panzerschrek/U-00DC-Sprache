@@ -1527,11 +1527,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		REPORT_ERROR( StaticAssertExpressionIsNotConstant, names.GetErrors(), static_assert_.src_loc_ );
 		return block_info;
 	}
-	if( llvm::dyn_cast<llvm::UndefValue>(variable.constexpr_value) != nullptr )
-	{
-		// Undef value means, that value is constexpr, but we are in template prepass, and exact value is unknown. Skip this static_assert
-		return block_info;
-	}
 
 	if( !variable.constexpr_value->isOneValue() )
 	{
