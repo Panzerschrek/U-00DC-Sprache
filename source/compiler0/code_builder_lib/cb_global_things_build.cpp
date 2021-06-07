@@ -1028,12 +1028,12 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				initializer_expression= &expression_initializer->expression;
 			else if( const auto constructor_initializer= std::get_if<Synt::ConstructorInitializer>( variable_declaration.initializer.get() ) )
 			{
-				if( constructor_initializer->call_operator.arguments_.size() != 1u )
+				if( constructor_initializer->arguments.size() != 1u )
 				{
 					REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names_scope.GetErrors(), constructor_initializer->src_loc_ );
 					FAIL_RETURN;
 				}
-				initializer_expression= &constructor_initializer->call_operator.arguments_.front();
+				initializer_expression= &constructor_initializer->arguments.front();
 			}
 			else
 			{

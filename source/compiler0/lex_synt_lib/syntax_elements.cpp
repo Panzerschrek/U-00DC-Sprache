@@ -85,7 +85,6 @@ StructNamedInitializer::StructNamedInitializer( const SrcLoc& src_loc )
 
 ConstructorInitializer::ConstructorInitializer( const SrcLoc& src_loc )
 	: SyntaxElementBase( src_loc )
-	, call_operator( src_loc )
 {}
 
 ExpressionInitializer::ExpressionInitializer( const SrcLoc& src_loc )

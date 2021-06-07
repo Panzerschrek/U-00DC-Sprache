@@ -271,6 +271,8 @@ private:
 	std::string ParseInnerReferenceTag();
 	FunctionReferencesPollutionList ParseFunctionReferencesPollutionList();
 
+	std::vector<Expression> ParseCall();
+
 	Initializer ParseInitializer( bool parse_expression_initializer );
 	Initializer ParseVariableInitializer();
 	Initializer ParseArrayInitializer();
@@ -910,32 +912,9 @@ Expression SyntaxAnalyzer::TryParseExpressionComponentPostfixOperator( Expressio
 	case Lexem::Type::BracketLeft:
 		{
 			CallOperator call_operator( it_->src_loc );
-			NextLexem();
 
 			call_operator.expression_= std::make_unique<Expression>(std::move(expr));
-
-			while( NotEndOfFile() )
-			{
-				if( it_->type == Lexem::Type::BracketRight )
-				{
-					NextLexem();
-					break;
-				}
-
-				call_operator.arguments_.emplace_back( ParseExpression() );
-
-				if( it_->type == Lexem::Type::Comma )
-				{
-					NextLexem();
-					if( it_->type == Lexem::Type::BracketRight )
-						PushErrorMessage();
-				}
-				else if( it_->type == Lexem::Type::BracketRight )
-				{
-					NextLexem();
-					break;
-				}
-			}
+			call_operator.arguments_= ParseCall();
 
 			return TryParseExpressionComponentPostfixOperator(std::move(call_operator));
 		}
@@ -1206,7 +1185,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 		}
 	};
 
-	// TODO - produce error here?
+	PushErrorMessage();
 	return Expression();
 }
 
@@ -1665,6 +1644,33 @@ FunctionReferencesPollutionList SyntaxAnalyzer::ParseFunctionReferencesPollution
 	return result;
 }
 
+std::vector<Expression> SyntaxAnalyzer::ParseCall()
+{
+	ExpectLexem( Lexem::Type::BracketLeft );
+
+	std::vector<Expression> args;
+	while( NotEndOfFile() && it_->type != Lexem::Type::BracketRight )
+	{
+		args.push_back( ParseExpression() );
+		if( it_->type == Lexem::Type::Comma )
+		{
+			NextLexem();
+			// Disallow comma after closing bracket
+			if( it_->type == Lexem::Type::BracketRight )
+			{
+				PushErrorMessage();
+				break;
+			}
+		}
+		else
+			break;
+	}
+
+	ExpectLexem( Lexem::Type::BracketRight );
+
+	return args;
+}
+
 Initializer SyntaxAnalyzer::ParseInitializer( const bool parse_expression_initializer )
 {
 	if( it_->type == Lexem::Type::SquareBracketLeft )
@@ -1799,30 +1805,8 @@ Initializer SyntaxAnalyzer::ParseStructNamedInitializer()
 
 Initializer SyntaxAnalyzer::ParseConstructorInitializer()
 {
-	U_ASSERT( it_->type == Lexem::Type::BracketLeft );
-	NextLexem();
-
-	std::vector<Expression> args;
-	while( NotEndOfFile() && it_->type != Lexem::Type::BracketRight )
-	{
-		args.push_back( ParseExpression() );
-		if( it_->type == Lexem::Type::Comma )
-		{
-			NextLexem();
-			// Disallow comma after closing bracket
-			if( it_->type == Lexem::Type::BracketRight )
-			{
-				PushErrorMessage();
-				return Initializer();
-			}
-		}
-		else
-			break;
-	}
-	ExpectLexem( Lexem::Type::BracketRight );
-
 	ConstructorInitializer result( it_->src_loc );
-	result.call_operator.arguments_= std::move(args);
+	result.arguments= ParseCall();
 	return std::move(result);
 }
 

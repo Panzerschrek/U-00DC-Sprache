@@ -536,7 +536,7 @@ struct ConstructorInitializer final : public SyntaxElementBase
 public:
 	ConstructorInitializer( const SrcLoc& src_loc );
 
-	CallOperator call_operator;
+	std::vector<Expression> arguments;
 };
 
 struct ExpressionInitializer final : public SyntaxElementBase

@@ -476,17 +476,17 @@ void ElementWrite( const Initializer& initializer, std::ostream& stream )
 {
 	if( const auto constructor_initializer= std::get_if<ConstructorInitializer>( &initializer ) )
 	{
-		if( constructor_initializer->call_operator.arguments_.empty() )
+		if( constructor_initializer->arguments.empty() )
 		{
 			stream << "()";
 		}
 		else
 		{
 			stream << "( ";
-			for( const Expression& arg :constructor_initializer->call_operator.arguments_ )
+			for( const Expression& arg :constructor_initializer->arguments )
 			{
 				ElementWrite( arg, stream );
-				if( &arg != &constructor_initializer->call_operator.arguments_.back() )
+				if( &arg != &constructor_initializer->arguments.back() )
 					stream << ", ";
 			}
 			stream << " )";

@@ -268,7 +268,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	FunctionContext& function_context,
 	const Synt::ConstructorInitializer& initializer )
 {
-	return ApplyConstructorInitializer( variable, initializer.call_operator.arguments_, initializer.call_operator.src_loc_, names, function_context );
+	return ApplyConstructorInitializer( variable, initializer.arguments, initializer.src_loc_, names, function_context );
 }
 
 llvm::Constant* CodeBuilder::ApplyInitializerImpl(
@@ -851,12 +851,12 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	}
 	else if( const auto constructor_initializer= std::get_if<Synt::ConstructorInitializer>( &initializer ) )
 	{
-		if( constructor_initializer->call_operator.arguments_.size() != 1u )
+		if( constructor_initializer->arguments.size() != 1u )
 		{
 			REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, block_names.GetErrors(), constructor_initializer->src_loc_ );
 			return nullptr;
 		}
-		initializer_expression= &constructor_initializer->call_operator.arguments_.front();
+		initializer_expression= &constructor_initializer->arguments.front();
 	}
 	else
 	{
