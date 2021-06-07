@@ -278,7 +278,6 @@ private:
 	Initializer ParseArrayInitializer();
 	Initializer ParseStructNamedInitializer();
 	Initializer ParseConstructorInitializer();
-	Initializer ParseExpressionInitializer();
 
 	VariablesDeclaration ParseVariablesDeclaration();
 	AutoVariableDeclaration ParseAutoVariableDeclaration();
@@ -1700,7 +1699,7 @@ Initializer SyntaxAnalyzer::ParseInitializer( const bool parse_expression_initia
 	else if( parse_expression_initializer )
 	{
 		// In some cases usage of expression in initializer is forbidden.
-		return ParseExpressionInitializer();
+		return ParseExpression();
 	}
 	else
 	{
@@ -1726,11 +1725,7 @@ Initializer SyntaxAnalyzer::ParseVariableInitializer()
 			NextLexem();
 		}
 		else
-		{
-			ExpressionInitializer expression_initializer( it_->src_loc );
-			expression_initializer.expression= ParseExpression();
-			initializer= std::move(expression_initializer);
-		}
+			initializer= ParseExpression();
 	}
 	else if(
 		it_->type == Lexem::Type::BracketLeft ||
@@ -1808,13 +1803,6 @@ Initializer SyntaxAnalyzer::ParseConstructorInitializer()
 	ConstructorInitializer result( it_->src_loc );
 	result.arguments= ParseCall();
 	return std::move(result);
-}
-
-Initializer SyntaxAnalyzer::ParseExpressionInitializer()
-{
-	ExpressionInitializer initializer( it_->src_loc );
-	initializer.expression= ParseExpression();
-	return std::move( initializer );
 }
 
 VariablesDeclaration SyntaxAnalyzer::ParseVariablesDeclaration()

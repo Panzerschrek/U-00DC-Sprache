@@ -275,16 +275,18 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	const Variable& variable,
 	NamesScope& names,
 	FunctionContext& function_context,
-	const Synt::ExpressionInitializer& initializer )
+	const Synt::Expression& initializer )
 {
+	const SrcLoc src_loc= Synt::GetExpressionSrcLoc(initializer);
+
 	if( variable.type.GetFundamentalType() != nullptr ||
 		variable.type.GetRawPointerType() != nullptr ||
 		variable.type.GetEnumType() != nullptr )
 	{
-		const Variable expression_result= BuildExpressionCodeEnsureVariable( initializer.expression, names, function_context );
+		const Variable expression_result= BuildExpressionCodeEnsureVariable( initializer, names, function_context );
 		if( expression_result.type != variable.type )
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), initializer.src_loc_, variable.type, expression_result.type );
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, variable.type, expression_result.type );
 			return nullptr;
 		}
 
@@ -294,23 +296,23 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
 		}
 
-		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), initializer.src_loc_ );
+		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), src_loc );
 
 		if( llvm::Constant* const constexpr_value= expression_result.constexpr_value )
 			return constexpr_value;
 	}
 	else if( variable.type.GetFunctionPointerType() != nullptr )
-		return InitializeFunctionPointer( variable, initializer.expression, names, function_context );
+		return InitializeFunctionPointer( variable, initializer, names, function_context );
 	else if( variable.type.GetArrayType() != nullptr || variable.type.GetTupleType() != nullptr )
 	{
-		Variable expression_result= BuildExpressionCodeEnsureVariable( initializer.expression, names, function_context );
+		Variable expression_result= BuildExpressionCodeEnsureVariable( initializer, names, function_context );
 		if( expression_result.type != variable.type )
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), initializer.src_loc_, variable.type, expression_result.type );
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, variable.type, expression_result.type );
 			return nullptr;
 		}
 
-		SetupReferencesInCopyOrMove( function_context, variable, expression_result, names.GetErrors(), initializer.src_loc_ );
+		SetupReferencesInCopyOrMove( function_context, variable, expression_result, names.GetErrors(), src_loc );
 
 		// Move or try call copy constructor.
 		if( expression_result.value_type == ValueType::Value && expression_result.type == variable.type )
@@ -322,13 +324,13 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			}
 			CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
 
-			DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), initializer.src_loc_ );
+			DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), src_loc );
 		}
 		else
 		{
 			if( !variable.type.IsCopyConstructible() )
 			{
-				REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), initializer.src_loc_, variable.type );
+				REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, variable.type );
 				return nullptr;
 			}
 
@@ -346,23 +348,23 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	{
 		// Currently we support "=" initializer for copying and moving of structs.
 
-		Variable expression_result= BuildExpressionCodeEnsureVariable( initializer.expression, names, function_context );
+		Variable expression_result= BuildExpressionCodeEnsureVariable( initializer, names, function_context );
 		if( expression_result.type == variable.type )
 		{} // Ok, same types.
-		else if( ReferenceIsConvertible( expression_result.type, variable.type, names.GetErrors(), initializer.src_loc_ ) )
+		else if( ReferenceIsConvertible( expression_result.type, variable.type, names.GetErrors(), src_loc ) )
 		{} // Ok, can do reference conversion.
-		else if( const FunctionVariable* const conversion_constructor= GetConversionConstructor( expression_result.type, variable.type, names.GetErrors(), initializer.src_loc_ ) )
+		else if( const FunctionVariable* const conversion_constructor= GetConversionConstructor( expression_result.type, variable.type, names.GetErrors(), src_loc ) )
 		{
 			// Type conversion required.
-			expression_result= ConvertVariable( expression_result, variable.type, *conversion_constructor, names, function_context, initializer.src_loc_ );
+			expression_result= ConvertVariable( expression_result, variable.type, *conversion_constructor, names, function_context, src_loc );
 		}
 		else
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), initializer.src_loc_, variable.type, expression_result.type );
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, variable.type, expression_result.type );
 			return nullptr;
 		}
 
-		SetupReferencesInCopyOrMove( function_context, variable, expression_result, names.GetErrors(), initializer.src_loc_ );
+		SetupReferencesInCopyOrMove( function_context, variable, expression_result, names.GetErrors(), src_loc );
 
 		// Move or try call copy constructor.
 		// TODO - produce constant initializer for generated copy constructor, if source is constant.
@@ -375,7 +377,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			}
 			CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
 
-			DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), initializer.src_loc_ );
+			DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), src_loc );
 
 			return expression_result.constexpr_value; // Move can preserve constexpr.
 		}
@@ -385,12 +387,12 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			if( expression_result.type != variable.type )
 				value_for_copy= CreateReferenceCast( value_for_copy, expression_result.type, variable.type, function_context );
 			TryCallCopyConstructor(
-				names.GetErrors(), initializer.src_loc_, variable.llvm_value, value_for_copy, variable.type.GetClassTypeProxy(), function_context );
+				names.GetErrors(), src_loc, variable.llvm_value, value_for_copy, variable.type.GetClassTypeProxy(), function_context );
 		}
 	}
 	else
 	{
-		REPORT_ERROR( NotImplemented, names.GetErrors(), initializer.src_loc_, "expression initialization for arrays" );
+		REPORT_ERROR( NotImplemented, names.GetErrors(), src_loc, "expression initialization for arrays" );
 		return nullptr;
 	}
 
@@ -845,10 +847,8 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 
 	const SrcLoc initializer_src_loc= Synt::GetInitializerSrcLoc( initializer );
 	const Synt::Expression* initializer_expression= nullptr;
-	if( const auto expression_initializer= std::get_if<Synt::ExpressionInitializer>( &initializer ) )
-	{
-		initializer_expression= &expression_initializer->expression;
-	}
+	if( const auto expression_initializer= std::get_if<Synt::Expression>( &initializer ) )
+		initializer_expression= expression_initializer;
 	else if( const auto constructor_initializer= std::get_if<Synt::ConstructorInitializer>( &initializer ) )
 	{
 		if( constructor_initializer->arguments.size() != 1u )

@@ -14,11 +14,11 @@ namespace Asserts
 // If one of types inside variant becomes too big, put it inside "unique_ptr".
 
 static_assert( sizeof(TypeName) <= 64u, "Size of variant too big" );
-static_assert( sizeof(Expression) <= 128u, "Size of variant too big" );
-static_assert( sizeof(Initializer) <= 160u, "Size of variant too big" );
-static_assert( sizeof(BlockElement) <= 288u, "Size of variant too big" );
-static_assert( sizeof(ClassElement) <= 208u, "Size of variant too big" );
-static_assert( sizeof(ProgramElement) <= 208u, "Size of variant too big" );
+static_assert( sizeof(Expression) <= 88u, "Size of variant too big" );
+static_assert( sizeof(Initializer) <= 96u, "Size of variant too big" );
+static_assert( sizeof(BlockElement) <= 200u, "Size of variant too big" );
+static_assert( sizeof(ClassElement) <= 144u, "Size of variant too big" );
+static_assert( sizeof(ProgramElement) <= 144u, "Size of variant too big" );
 
 }
 
@@ -84,10 +84,6 @@ StructNamedInitializer::StructNamedInitializer( const SrcLoc& src_loc )
 {}
 
 ConstructorInitializer::ConstructorInitializer( const SrcLoc& src_loc )
-	: SyntaxElementBase( src_loc )
-{}
-
-ExpressionInitializer::ExpressionInitializer( const SrcLoc& src_loc )
 	: SyntaxElementBase( src_loc )
 {}
 
@@ -312,6 +308,11 @@ struct GetSrcLocVisitor final
 	SrcLoc operator()( const EmptyVariant& ) const
 	{
 		return SrcLoc();
+	}
+
+	SrcLoc operator()( const Expression& expression ) const
+	{
+		return GetExpressionSrcLoc(expression);
 	}
 
 	SrcLoc operator()( const SyntaxElementBase& element ) const

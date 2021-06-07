@@ -53,7 +53,6 @@ struct TypeInfo;
 struct ArrayInitializer;
 struct StructNamedInitializer;
 struct ConstructorInitializer;
-struct ExpressionInitializer;
 struct ZeroInitializer;
 struct UninitializedInitializer;
 
@@ -137,7 +136,7 @@ using Initializer= std::variant<
 	ArrayInitializer,
 	StructNamedInitializer,
 	ConstructorInitializer,
-	ExpressionInitializer,
+	Expression,
 	ZeroInitializer,
 	UninitializedInitializer >;
 
@@ -518,7 +517,6 @@ public:
 	explicit ArrayInitializer( const SrcLoc& src_loc );
 
 	std::vector<Initializer> initializers;
-	bool has_continious_initializer= false; // ... after last initializator.
 };
 
 struct StructNamedInitializer final : public SyntaxElementBase
@@ -537,14 +535,6 @@ public:
 	ConstructorInitializer( const SrcLoc& src_loc );
 
 	std::vector<Expression> arguments;
-};
-
-struct ExpressionInitializer final : public SyntaxElementBase
-{
-public:
-	ExpressionInitializer( const SrcLoc& src_loc );
-
-	Expression expression;
 };
 
 struct ZeroInitializer final : public SyntaxElementBase

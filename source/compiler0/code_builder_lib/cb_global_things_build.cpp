@@ -1024,8 +1024,8 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			variable.value_type= ValueType::ConstReference;
 
 			const Synt::Expression* initializer_expression= nullptr;
-			if( const auto expression_initializer= std::get_if<Synt::ExpressionInitializer>( variable_declaration.initializer.get() ) )
-				initializer_expression= &expression_initializer->expression;
+			if( const auto expression_initializer= std::get_if<Synt::Expression>( variable_declaration.initializer.get() ) )
+				initializer_expression= expression_initializer;
 			else if( const auto constructor_initializer= std::get_if<Synt::ConstructorInitializer>( variable_declaration.initializer.get() ) )
 			{
 				if( constructor_initializer->arguments.size() != 1u )
