@@ -935,10 +935,7 @@ Expression SyntaxAnalyzer::TryParseExpressionComponentPostfixOperator( Expressio
 			NextLexem();
 
 			if( it_->type == Lexem::Type::TemplateBracketLeft )
-			{
-				member_access_operator.have_template_parameters= true;
 				member_access_operator.template_parameters= ParseTemplateParameters();
-			}
 
 			return TryParseExpressionComponentPostfixOperator(std::move(member_access_operator));
 		}
@@ -1483,7 +1480,7 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 	}
 	else if( it_->text == Keywords::typeof_ )
 	{
-		TypeofTypeName typeof_type_name( it_->src_loc );
+		TypeofTypeName typeof_type_name;
 		NextLexem();
 
 		typeof_type_name.expression= std::make_unique<Expression>( ParseExpressionInBrackets() );

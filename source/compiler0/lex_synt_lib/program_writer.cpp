@@ -429,13 +429,13 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		{
 			ElementWrite( *member_access_operator.expression_, stream );
 			stream << ".";
-			if( member_access_operator.have_template_parameters )
+			if( member_access_operator.template_parameters != std::nullopt )
 			{
 				stream << "</";
-				for( const Expression& template_param : member_access_operator.template_parameters )
+				for( const Expression& template_param : *member_access_operator.template_parameters )
 				{
 					ElementWrite( template_param, stream );
-					if( &template_param != &member_access_operator.template_parameters.back() )
+					if( &template_param != &member_access_operator.template_parameters->back() )
 						stream<< ", ";
 				}
 				stream << "/>";

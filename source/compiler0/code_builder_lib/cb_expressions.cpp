@@ -657,7 +657,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	if( const OverloadedFunctionsSet* functions_set= class_member->GetFunctionsSet() )
 	{
-		if( member_access_operator.have_template_parameters )
+		if( member_access_operator.template_parameters != std::nullopt )
 		{
 			if( functions_set->template_functions.empty() )
 				REPORT_ERROR( ValueIsNotTemplate, names.GetErrors(), member_access_operator.src_loc_ );
@@ -667,7 +667,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 					ParametrizeFunctionTemplate(
 						member_access_operator.src_loc_,
 						functions_set->template_functions,
-						member_access_operator.template_parameters,
+						*member_access_operator.template_parameters,
 						names,
 						function_context );
 				if( inserted_value == nullptr )
@@ -682,7 +682,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return std::move(this_overloaded_methods_set);
 	}
 
-	if( member_access_operator.have_template_parameters )
+	if( member_access_operator.template_parameters != std::nullopt )
 		REPORT_ERROR( ValueIsNotTemplate, names.GetErrors(), member_access_operator.src_loc_ );
 
 	const ClassField* const field= class_member->GetClassField();

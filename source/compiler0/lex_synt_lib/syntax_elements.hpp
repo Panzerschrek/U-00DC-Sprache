@@ -221,11 +221,8 @@ enum class ReferenceModifier : uint8_t
 	// SPRACE_TODO - add "move" references here
 };
 
-struct TypeofTypeName final : public SyntaxElementBase
+struct TypeofTypeName
 {
-public:
-	explicit TypeofTypeName( const SrcLoc& src_loc );
-
 	std::unique_ptr<Expression> expression;
 };
 
@@ -490,8 +487,7 @@ public:
 
 	std::unique_ptr<Expression> expression_;
 	std::string member_name_;
-	std::vector<Expression> template_parameters;
-	bool have_template_parameters= false;
+	std::optional<std::vector<Expression>> template_parameters;
 };
 
 struct ArrayInitializer final : public SyntaxElementBase

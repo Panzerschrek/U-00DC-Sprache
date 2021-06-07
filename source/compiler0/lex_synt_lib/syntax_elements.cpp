@@ -12,7 +12,7 @@ namespace Asserts
 
 // Sizes for x86-64.
 // If one of types inside variant becomes too big, put it inside "unique_ptr".
-
+static_assert( sizeof(ComplexName) <= 56u, "Size of variant too big" );
 static_assert( sizeof(TypeName) <= 64u, "Size of variant too big" );
 static_assert( sizeof(Expression) <= 88u, "Size of variant too big" );
 static_assert( sizeof(Initializer) <= 96u, "Size of variant too big" );
@@ -35,10 +35,6 @@ TupleType::TupleType( const SrcLoc& src_loc )
 {}
 
 RawPointerType::RawPointerType( const SrcLoc& src_loc )
-	: SyntaxElementBase(src_loc)
-{}
-
-TypeofTypeName::TypeofTypeName( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 
