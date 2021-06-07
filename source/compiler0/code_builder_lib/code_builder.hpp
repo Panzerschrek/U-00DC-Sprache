@@ -119,7 +119,7 @@ private:
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionTypePtr& function_type_name_ptr );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TupleType& tuple_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RawPointerType& raw_pointer_type_name );
-	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamedTypeName& named_type_name );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& named_type_name );
 
 	llvm::FunctionType* GetLLVMFunctionType( const Function& function_type );
 
@@ -170,7 +170,6 @@ private:
 		std::vector<bool>& template_parameters_usage_flags );
 
 	TemplateSignatureParam CreateTemplateSignatureParameter(
-		const SrcLoc& src_loc,
 		const Synt::ComplexName& signature_parameter,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
@@ -191,11 +190,45 @@ private:
 		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags );
 
+	TemplateSignatureParam CreateTemplateSignatureParameter(
+		const Synt::EmptyVariant& empty_variant,
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
+		std::vector<bool>& template_parameters_usage_flags );
+
+	TemplateSignatureParam CreateTemplateSignatureParameter(
+		const Synt::ArrayTypeName& array_type_name,
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
+		std::vector<bool>& template_parameters_usage_flags );
+
+	TemplateSignatureParam CreateTemplateSignatureParameter(
+		const Synt::FunctionTypePtr& function_pointer_type_name_ptr,
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
+		std::vector<bool>& template_parameters_usage_flags );
+
+	TemplateSignatureParam CreateTemplateSignatureParameter(
+		const Synt::TupleType& tuple_type_name,
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
+		std::vector<bool>& template_parameters_usage_flags );
+
+	TemplateSignatureParam CreateTemplateSignatureParameter(
+		const Synt::RawPointerType& raw_pointer_type_name,
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
+		std::vector<bool>& template_parameters_usage_flags );
+
 	TemplateSignatureParam ValueToTemplateParam( const Value& value, NamesScope& names_scope );
 
 	// Resolve as deep, as can, but does not instantiate last component, if it is template.
 	Value ResolveForTemplateSignatureParameter(
-		const SrcLoc& src_loc,
 		const Synt::ComplexName& signature_parameter,
 		NamesScope& names_scope );
 
@@ -419,14 +452,19 @@ private:
 	// Expressions.
 	Value BuildExpressionCode( const Synt::Expression& expression, NamesScope& names, FunctionContext& function_context );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::EmptyVariant& expression );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CallOperator& call_operator );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::IndexationOperator& indexation_operator );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MemberAccessOperator& member_access_operator );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::UnaryMinus& unary_minus );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::UnaryPlus& unary_plus );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::LogicalNot& logical_not );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::BitwiseNot& bitwise_not );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::BinaryOperator& binary_operator );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::NamedOperand& named_operand );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::ComplexName& named_operand );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TernaryOperator& ternary_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::ReferenceToRawPointerOperator& reference_to_raw_pointer_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::RawPointerToReferenceOperator& raw_pointer_to_reference_operator );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TypeNameInExpression& type_name_in_expression );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::NumericConstant& numeric_constant );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::BracketExpression& bracket_expression );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::BooleanConstant& boolean_constant );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::StringLiteral& string_literal );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MoveOperator& move_operator );
@@ -436,6 +474,10 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CastRef& cast_ref );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CastRefUnsafe& cast_ref_unsafe );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TypeInfo& typeinfo );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::ArrayTypeName& type_name );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::FunctionTypePtr& type_name );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TupleType& type_name );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::RawPointerType& type_name );
 
 	Value BuildExpressionCodeAndDestroyTemporaries(
 		const Synt::Expression& expression,
@@ -452,7 +494,6 @@ private:
 	// In success call of overloaded operator arguments evaluated in left to right order.
 	std::optional<Value> TryCallOverloadedBinaryOperator(
 		OverloadedOperator op,
-		const Synt::SyntaxElementBase& op_syntax_element,
 		const Synt::Expression&  left_expr,
 		const Synt::Expression& right_expr,
 		bool evaluate_args_in_reverse_order,
@@ -500,10 +541,12 @@ private:
 		NamesScope& names,
 		FunctionContext& function_context );
 
-	// Postfix operators
-	Value BuildPostfixOperator( const Synt::CallOperator& call_operator, const Value& value, NamesScope& names, FunctionContext& function_context );
-	Value BuildPostfixOperator( const Synt::IndexationOperator& indexation_operator, const Value& value, NamesScope& names, FunctionContext& function_context );
-	Value BuildPostfixOperator( const Synt::MemberAccessOperator& member_access_operator, const Value& value, NamesScope& names, FunctionContext& function_context );
+	Value CallFunction(
+		const Value& function_value,
+		const std::vector<Synt::Expression>& synt_args,
+		const SrcLoc& src_loc,
+		NamesScope& names,
+		FunctionContext& function_context );
 
 	Value DoCallFunction(
 		llvm::Value* function,
@@ -518,7 +561,8 @@ private:
 
 	Variable BuildTempVariableConstruction(
 		const Type& type,
-		const Synt::CallOperator& call_operator,
+		const std::vector<Synt::Expression>& synt_args,
+		const SrcLoc& src_loc,
 		NamesScope& names,
 		FunctionContext& function_context );
 
@@ -529,12 +573,6 @@ private:
 		NamesScope& names,
 		FunctionContext& function_context,
 		const SrcLoc& src_loc );
-
-	// Prefix operators
-	Value BuildPrefixOperator( const Synt::UnaryMinus& unary_minus, const Value& value, NamesScope& names, FunctionContext& function_context );
-	Value BuildPrefixOperator( const Synt::UnaryPlus& unary_plus, const Value& value, NamesScope& names, FunctionContext& function_context );
-	Value BuildPrefixOperator( const Synt::LogicalNot& logical_not, const Value& value, NamesScope& names, FunctionContext& function_context );
-	Value BuildPrefixOperator( const Synt::BitwiseNot& bitwise_not, 	const Value& value, NamesScope& names, FunctionContext& function_context );
 
 	// Typeinfo
 
@@ -599,7 +637,6 @@ private:
 	};
 
 	Value ResolveValue(
-		const SrcLoc& src_loc,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		const Synt::ComplexName& complex_name,
@@ -647,10 +684,10 @@ private:
 	// Some initializers returns nonnul constant, if initializer is constant.
 	llvm::Constant* ApplyInitializer( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::Initializer& initializer );
 	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::EmptyVariant& initializer );
-	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::ArrayInitializer& initializer );
+	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::SequenceInitializer& initializer );
 	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::StructNamedInitializer& initializer );
 	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::ConstructorInitializer& initializer );
-	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::ExpressionInitializer& initializer );
+	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::Expression& initializer );
 	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::ZeroInitializer& initializer );
 	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::UninitializedInitializer& uninitialized_initializer );
 
@@ -662,8 +699,9 @@ private:
 		FunctionContext& function_context );
 
 	llvm::Constant* ApplyConstructorInitializer(
-		const Synt::CallOperator& call_operator,
 		const Variable& variable,
+		const std::vector<Synt::Expression>& synt_args,
+		const SrcLoc& src_loc,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
@@ -749,7 +787,7 @@ private:
 	ClassProxyPtr NamesScopeFill( const Synt::ClassPtr& class_declaration, NamesScope& names_scope, const std::string& override_name= "" );
 	void NamesScopeFill( const Synt::TypeTemplate& type_template_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( const Synt::Enum& enum_declaration, NamesScope& names_scope );
-	void NamesScopeFill( const Synt::Typedef& typedef_declaration, NamesScope& names_scope );
+	void NamesScopeFill( const Synt::TypeAlias& type_alias_declaration, NamesScope& names_scope );
 	void NamesScopeFill( const Synt::StaticAssert& static_assert_, NamesScope& names_scope );
 	void NamesScopeFillOutOfLineElements( const Synt::ProgramElements& namespace_elements, NamesScope& names_scope );
 

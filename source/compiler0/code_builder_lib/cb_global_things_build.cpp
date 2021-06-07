@@ -373,7 +373,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 	NamesScope& class_parent_namespace= *the_class.members.GetParent();
 	for( const Synt::ComplexName& parent : class_declaration.parents_ )
 	{
-		const Value parent_value= ResolveValue( class_declaration.src_loc_, class_parent_namespace, *global_function_context_, parent );
+		const Value parent_value= ResolveValue( class_parent_namespace, *global_function_context_, parent );
 
 		const Type* const type_name= parent_value.GetTypeName();
 		if( type_name == nullptr )
@@ -866,7 +866,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 
 	if( !( std::get_if<Synt::EmptyVariant>( &enum_decl.underlaying_type_name.start_value ) != nullptr && enum_decl.underlaying_type_name.tail == nullptr ) )
 	{
-		const Value type_value= ResolveValue( enum_decl.src_loc_, names_scope, *global_function_context_, enum_decl.underlaying_type_name );
+		const Value type_value= ResolveValue( names_scope, *global_function_context_, enum_decl.underlaying_type_name );
 		const Type* const type= type_value.GetTypeName();
 		if( type == nullptr )
 			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), enum_decl.src_loc_, enum_decl.underlaying_type_name );
@@ -938,15 +938,15 @@ void CodeBuilder::GlobalThingBuildTypeTemplatesSet( NamesScope& names_scope, Typ
 	}
 }
 
-void CodeBuilder::GlobalThingBuildTypedef( NamesScope& names_scope, Value& typedef_value )
+void CodeBuilder::GlobalThingBuildTypedef( NamesScope& names_scope, Value& type_alias_value )
 {
-	U_ASSERT( typedef_value.GetTypedef() != nullptr );
-	const Synt::Typedef& syntax_element= *typedef_value.GetTypedef()->syntax_element;
+	U_ASSERT( type_alias_value.GetTypedef() != nullptr );
+	const Synt::TypeAlias& syntax_element= *type_alias_value.GetTypedef()->syntax_element;
 
-	DETECT_GLOBALS_LOOP( &typedef_value, syntax_element.name, syntax_element.src_loc_ );
+	DETECT_GLOBALS_LOOP( &type_alias_value, syntax_element.name, syntax_element.src_loc_ );
 
 	// Replace value in names map, when typedef is comlete.
-	typedef_value= Value( PrepareType( syntax_element.value, names_scope, *global_function_context_ ), syntax_element.src_loc_ );
+	type_alias_value= Value( PrepareType( syntax_element.value, names_scope, *global_function_context_ ), syntax_element.src_loc_ );
 }
 
 void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& global_variable_value )
@@ -1024,16 +1024,16 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			variable.value_type= ValueType::ConstReference;
 
 			const Synt::Expression* initializer_expression= nullptr;
-			if( const auto expression_initializer= std::get_if<Synt::ExpressionInitializer>( variable_declaration.initializer.get() ) )
-				initializer_expression= &expression_initializer->expression;
+			if( const auto expression_initializer= std::get_if<Synt::Expression>( variable_declaration.initializer.get() ) )
+				initializer_expression= expression_initializer;
 			else if( const auto constructor_initializer= std::get_if<Synt::ConstructorInitializer>( variable_declaration.initializer.get() ) )
 			{
-				if( constructor_initializer->call_operator.arguments_.size() != 1u )
+				if( constructor_initializer->arguments.size() != 1u )
 				{
 					REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names_scope.GetErrors(), constructor_initializer->src_loc_ );
 					FAIL_RETURN;
 				}
-				initializer_expression= &constructor_initializer->call_operator.arguments_.front();
+				initializer_expression= &constructor_initializer->arguments.front();
 			}
 			else
 			{

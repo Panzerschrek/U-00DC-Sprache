@@ -67,34 +67,7 @@ fn GetBinaryOperatorPriority( BinaryOperatorType binary_operator ) : i32
 	halt;
 }
 
-fn IsBinaryOperator( Lexem& lexem ) : bool
-{
-	return
-		lexem.lexem_type == Lexem::Type::Plus ||
-		lexem.lexem_type == Lexem::Type::Minus ||
-		lexem.lexem_type == Lexem::Type::Star ||
-		lexem.lexem_type == Lexem::Type::Slash ||
-		lexem.lexem_type == Lexem::Type::Percent ||
-
-		lexem.lexem_type == Lexem::Type::CompareEqual ||
-		lexem.lexem_type == Lexem::Type::CompareNotEqual ||
-		lexem.lexem_type == Lexem::Type::CompareLess ||
-		lexem.lexem_type == Lexem::Type::CompareLessOrEqual ||
-		lexem.lexem_type == Lexem::Type::CompareGreater ||
-		lexem.lexem_type == Lexem::Type::CompareGreaterOrEqual ||
-
-		lexem.lexem_type == Lexem::Type::And ||
-		lexem.lexem_type == Lexem::Type::Or ||
-		lexem.lexem_type == Lexem::Type::Xor ||
-
-		lexem.lexem_type == Lexem::Type::ShiftLeft  ||
-		lexem.lexem_type == Lexem::Type::ShiftRight ||
-
-		lexem.lexem_type == Lexem::Type::Conjunction ||
-		lexem.lexem_type == Lexem::Type::Disjunction;
-}
-
-fn LexemToBinaryOperator( Lexem& lexem ) : BinaryOperatorType
+fn LexemToBinaryOperator( Lexem& lexem ) : ust::optional</BinaryOperatorType/>
 {
 	if( lexem.lexem_type == Lexem::Type::Plus	){ return BinaryOperatorType::Add; }
 	if( lexem.lexem_type == Lexem::Type::Minus	){ return BinaryOperatorType::Sub; }
@@ -119,7 +92,7 @@ fn LexemToBinaryOperator( Lexem& lexem ) : BinaryOperatorType
 	if( lexem.lexem_type == Lexem::Type::Conjunction ){ return BinaryOperatorType::LazyLogicalAnd; }
 	if( lexem.lexem_type == Lexem::Type::Disjunction ){ return BinaryOperatorType::LazyLogicalOr ; }
 
-	halt;
+	return ust::optional</BinaryOperatorType/>();
 }
 
 fn GetAdditiveAssignmentOperator( Lexem& lexem ) : ust::optional</BinaryOperatorType/>
@@ -219,6 +192,7 @@ private:
 	fn ParseComplexName( mut this ) : ComplexName;
 
 	fn ParseExpression( mut this ) : Expression;
+	fn ParseExpressionInBrackets( mut this ) : Expression;
 	fn ParseExpressionComponent( mut this ) : Expression;
 	fn TryParseExpressionComponentPostfixOperator( mut this, Expression mut expr ) : Expression;
 	fn ParseExpressionComponentHelper( mut this ) : Expression;
@@ -233,6 +207,8 @@ private:
 	fn ParseInnerReferenceTag( mut this ) : ust::string8;
 
 	fn ParseFunction( mut this ) : Function;
+
+	fn ParseCall( mut this ) : ust::vector</ ust::shared_ptr_final</Expression/> /> ;
 
 	fn ParseInitializer( mut this, bool parse_expression_initializer  ) : Initializer;
 	fn ParseVariableInitializer( mut this ) : Initializer;
@@ -330,6 +306,8 @@ private:
 	fn FetchMacroVariable( MacroVariablesMapsStack& macro_variables_maps_stack, ust::string8& variable_name ) : ust::optional</ParsedMacroElement/>;
 
 	// Utilities.
+	fn ExpectSemicolon( mut this );
+	fn ExpectLexem( mut this, Lexem::Type t );
 	fn NotEndOfFile( this ) : bool;
 	fn NextLexem( mut this );
 	fn PushErrorMessage( mut this );
@@ -488,19 +466,11 @@ fn SyntaxAnalyzer::ParseNamespace( mut this ) : Namespace
 	};
 	NextLexem();
 
-	if( it_.front().lexem_type != Lexem::Type::BraceLeft )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::BraceLeft );
 
 	namespace_.elements= ParseNamespaceBody( Lexem::Type::BraceRight );
 
-	if( it_.front().lexem_type != Lexem::Type::BraceRight )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::BraceRight );
 
 	return namespace_;
 }
@@ -509,11 +479,7 @@ fn SyntaxAnalyzer::ParseTemplateArgs( mut this ) : TemplateArgs
 {
 	var TemplateArgs mut template_args;
 
-	if( it_.front().lexem_type != Lexem::Type::TemplateBracketLeft )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::TemplateBracketLeft );
 
 	while( NotEndOfFile() )
 	{
@@ -547,20 +513,12 @@ fn SyntaxAnalyzer::ParseComplexName( mut this ) : ComplexName
 	{
 		NextLexem();
 
-		if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		ExpectLexem(  Lexem::Type::BracketLeft );
 
 		var Typeof mut typeof_{ .expr( ParseExpression() ) };
 		complex_name.start= move(typeof_);
 
-		if( it_.front().lexem_type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		ExpectLexem( Lexem::Type::BracketRight );
 	}
 	else if( it_.front().lexem_type == Lexem::Type::Identifier )
 	{
@@ -610,23 +568,28 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 		var BinaryOperatorsChainComponent mut comp{ .expression= ParseExpressionComponent() };
 		binary_operators_chain.push_back( move(comp) );
 
-		if( IsBinaryOperator( it_.front() ) )
+		if_var( binary_operator : LexemToBinaryOperator( it_.front() ) )
 		{
-			binary_operators_chain.back().operator= LexemToBinaryOperator( it_.front() );
+			binary_operators_chain.back().operator= binary_operator;
 			binary_operators_chain.back().src_loc= it_.front().src_loc;
 			NextLexem();
+			continue;
 		}
-		else
-		{
-			break;
-		}
+		break;
 	}
 
-	if( binary_operators_chain.empty() )
-	{
-		return Expression();
-	}
 	return FoldBinaryOperatorsChain( binary_operators_chain.range() );
+}
+
+fn SyntaxAnalyzer::ParseExpressionInBrackets( mut this ) : Expression
+{
+	ExpectLexem( Lexem::Type::BracketLeft );
+
+	var Expression mut e= ParseExpression();
+
+	ExpectLexem( Lexem::Type::BracketRight );
+
+	return move(e);
 }
 
 fn SyntaxAnalyzer::ParseExpressionComponent( mut this ) : Expression
@@ -644,11 +607,7 @@ fn SyntaxAnalyzer::TryParseExpressionComponentPostfixOperator( mut this, Express
 
 		auto mut index= ParseExpression();
 
-		if( it_.front().lexem_type != Lexem::Type::SquareBracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		ExpectLexem( Lexem::Type::SquareBracketRight );
 
 		var IndexationOperator mut indexation_operator
 		{
@@ -664,34 +623,9 @@ fn SyntaxAnalyzer::TryParseExpressionComponentPostfixOperator( mut this, Express
 		var CallOperator mut call_operator
 		{
 			.src_loc= it_.front().src_loc,
-			.value(move(expr))
+			.value(move(expr)),
+			.args(ParseCall())
 		};
-		NextLexem();
-
-		while( NotEndOfFile() )
-		{
-			if( it_.front().lexem_type == Lexem::Type::BracketRight )
-			{
-				NextLexem();
-				break;
-			}
-
-			call_operator.args.push_back( ust::make_shared_ptr_final( ParseExpression() ) );
-
-			if( it_.front().lexem_type== Lexem::Type::Comma )
-			{
-				NextLexem();
-				if( it_.front().lexem_type== Lexem::Type::BracketRight )
-				{
-					PushErrorMessage();
-				}
-			}
-			else if( it_.front().lexem_type == Lexem::Type::BracketRight )
-			{
-				NextLexem();
-				break;
-			}
-		}
 
 		return TryParseExpressionComponentPostfixOperator(move(call_operator));
 	}
@@ -814,19 +748,11 @@ fn SyntaxAnalyzer::ParseExpressionComponentHelper( mut this ) : Expression
 		var Typeinfo mut typeinfo_{ .src_loc= it_.front().src_loc };
 		NextLexem();
 
-		if( it_.front().lexem_type != Lexem::Type::TemplateBracketLeft )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		ExpectLexem( Lexem::Type::TemplateBracketLeft );
 
 		typeinfo_.type_name= ParseTypeName();
 
-		if( it_.front().lexem_type != Lexem::Type::TemplateBracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		ExpectLexem( Lexem::Type::TemplateBracketRight );
 
 		return move(typeinfo_);
 	}
@@ -835,35 +761,13 @@ fn SyntaxAnalyzer::ParseExpressionComponentHelper( mut this ) : Expression
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
 
-		if( it_.front().lexem_type != Lexem::Type::TemplateBracketLeft )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		ExpectLexem( Lexem::Type::TemplateBracketLeft );
 
 		var TypeName mut t= ParseTypeName();
 
-		if( it_.front().lexem_type != Lexem::Type::TemplateBracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		ExpectLexem( Lexem::Type::TemplateBracketRight );
 
-		if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
-		var Expression mut e= ParseExpression();
-
-		if( it_.front().lexem_type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
-		var CastRef mut cast{ .src_loc= src_loc, .t(move(t)), .expression(move(e)) };
+		var CastRef mut cast{ .src_loc= src_loc, .t(move(t)), .expression(ParseExpressionInBrackets()) };
 		return move(cast);
 	}
 	else if( IsKeyword( it_.front(), Keyword::cast_ref_unsafe_ ) )
@@ -871,79 +775,27 @@ fn SyntaxAnalyzer::ParseExpressionComponentHelper( mut this ) : Expression
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
 
-		if( it_.front().lexem_type != Lexem::Type::TemplateBracketLeft )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		ExpectLexem( Lexem::Type::TemplateBracketLeft );
 
 		var TypeName mut t= ParseTypeName();
 
-		if( it_.front().lexem_type != Lexem::Type::TemplateBracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		ExpectLexem( Lexem::Type::TemplateBracketRight );
 
-		if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
-		var Expression mut e= ParseExpression();
-
-		if( it_.front().lexem_type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
-		var CastRefUnsafe mut cast{ .src_loc= src_loc, .t(move(t)), .expression(move(e)) };
+		var CastRefUnsafe mut cast{ .src_loc= src_loc, .t(move(t)), .expression(ParseExpressionInBrackets()) };
 		return move(cast);
 	}
 	else if( IsKeyword( it_.front(), Keyword::cast_imut_ ) )
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
-
-		if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
-		var Expression mut e= ParseExpression();
-
-		if( it_.front().lexem_type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
-		var CastImut mut cast{ .src_loc= src_loc, .expression(move(e)) };
+		var CastImut mut cast{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
 		return move(cast);
 	}
 	else if( IsKeyword( it_.front(), Keyword::cast_mut_ ) )
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
-
-		if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
-		var Expression mut e= ParseExpression();
-
-		if( it_.front().lexem_type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
-		var CastMut mut cast{ .src_loc= src_loc, .expression(move(e)) };
+		var CastMut mut cast{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
 		return move(cast);
 	}
 	else if( IsKeyword( it_.front(), Keyword::move_ ) )
@@ -952,11 +804,7 @@ fn SyntaxAnalyzer::ParseExpressionComponentHelper( mut this ) : Expression
 
 		NextLexem();
 
-		if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		ExpectLexem( Lexem::Type::BracketLeft );
 
 		if( it_.front().lexem_type != Lexem::Type::Identifier )
 		{
@@ -965,11 +813,7 @@ fn SyntaxAnalyzer::ParseExpressionComponentHelper( mut this ) : Expression
 		move_operator.variable_name= it_.front().text;
 		NextLexem();
 
-		if( it_.front().lexem_type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		ExpectLexem( Lexem::Type::BracketRight );
 
 		return move(move_operator);
 	}
@@ -978,21 +822,7 @@ fn SyntaxAnalyzer::ParseExpressionComponentHelper( mut this ) : Expression
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
 
-		if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
-		var Expression mut e= ParseExpression();
-
-		if( it_.front().lexem_type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
-		var TakeOperator mut take_operator{ .src_loc= src_loc, .expression(move(e)) };
+		var TakeOperator mut take_operator{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
 		return move(take_operator);
 	}
 	else if( IsKeyword( it_.front(), Keyword::select_ ) )
@@ -1000,32 +830,16 @@ fn SyntaxAnalyzer::ParseExpressionComponentHelper( mut this ) : Expression
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
 
-		if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		ExpectLexem( Lexem::Type::BracketLeft );
 		var Expression mut condition= ParseExpression();
 
-		if( it_.front().lexem_type != Lexem::Type::Question )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		ExpectLexem( Lexem::Type::Question );
 		var Expression mut true_branch= ParseExpression();
 
-		if( it_.front().lexem_type != Lexem::Type::Colon )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		ExpectLexem( Lexem::Type::Colon );
 		var Expression mut false_branch= ParseExpression();
 
-		if( it_.front().lexem_type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		ExpectLexem( Lexem::Type::BracketRight );
 
 		var TernaryOperator mut ternary_operator
 		{
@@ -1043,21 +857,7 @@ fn SyntaxAnalyzer::ParseExpressionComponentHelper( mut this ) : Expression
 	{
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
-
-		if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
-		var ReferenceToRawPointerOperator mut o{ .src_loc= src_loc, .expression( ParseExpression() ) };
-
-		if( it_.front().lexem_type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
+		var ReferenceToRawPointerOperator mut o{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
 		return move(o);
 	}
 	else if( it_.front().lexem_type == Lexem::Type::PointerToReference )
@@ -1065,19 +865,9 @@ fn SyntaxAnalyzer::ParseExpressionComponentHelper( mut this ) : Expression
 		auto src_loc= it_.front().src_loc;
 		NextLexem();
 
-		if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		var Expression mut e= ParseExpressionInBrackets();
 
-		var RawPointerToReferenceOperator mut o{ .src_loc= src_loc, .expression( ParseExpression() ) };
-
-		if( it_.front().lexem_type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		var RawPointerToReferenceOperator mut o{ .src_loc= src_loc, .expression(move(e)) };
 
 		return move(o);
 	}
@@ -1099,21 +889,11 @@ fn SyntaxAnalyzer::ParseExpressionComponentHelper( mut this ) : Expression
 	}
 	else if( it_.front().lexem_type == Lexem::Type::BracketLeft )
 	{
-		NextLexem();
-
-		var Expression mut e= ParseExpression();
-
-		if( it_.front().lexem_type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
-		return move(e);
+		return ParseExpressionInBrackets();
 	}
 	else
 	{
-		// TODO - produce error here?
+		PushErrorMessage();
 		return Expression();
 	}
 }
@@ -1143,16 +923,11 @@ fn SyntaxAnalyzer::ParseTypeName( mut this ) : TypeName
 	else if( it_.front().lexem_type == Lexem::Type::BracketLeft )
 	{
 		// Type name inside (). We needs this for better parsing of function pointer types, for example.
-
 		NextLexem();
 
 		auto mut type_name= ParseTypeName();
 
-		if( it_.front().lexem_type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		ExpectLexem( Lexem::Type::BracketRight );
 
 		return move(type_name);
 	}
@@ -1174,19 +949,11 @@ fn SyntaxAnalyzer::ParseArrayType( mut this ) : ArrayType
 
 	array_type.element_type= ParseTypeName();
 
-	if( it_.front().lexem_type != Lexem::Type::Comma )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::Comma );
 
 	array_type.element_count= ParseExpression();
 
-	if( it_.front().lexem_type != Lexem::Type::SquareBracketRight )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::SquareBracketRight );
 
 	return move(array_type);
 }
@@ -1198,11 +965,7 @@ fn SyntaxAnalyzer::ParseTupleType( mut this ) : TupleType
 	halt if( !IsKeyword( it_.front(), Keyword::tup_ ) );
 	NextLexem();
 
-	if( it_.front().lexem_type != Lexem::Type::SquareBracketLeft )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::SquareBracketLeft );
 
 	if( it_.front().lexem_type != Lexem::Type::SquareBracketRight )
 	{
@@ -1217,11 +980,7 @@ fn SyntaxAnalyzer::ParseTupleType( mut this ) : TupleType
 		}
 	}
 
-	if( it_.front().lexem_type != Lexem::Type::SquareBracketRight )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::SquareBracketRight );
 
 	return move(tuple_type);
 }
@@ -1234,19 +993,10 @@ fn SyntaxAnalyzer::ParseRawPointerType( mut this ) : RawPointerType
 
 	NextLexem();
 
-	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
-
+	ExpectLexem( Lexem::Type::BracketLeft );
 	raw_pointer_type.element_type= ParseTypeName();
 
-	if( it_.front().lexem_type != Lexem::Type::BracketRight )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::BracketRight );
 
 	return move(raw_pointer_type);
 }
@@ -1261,11 +1011,7 @@ fn SyntaxAnalyzer::ParseFunctionType( mut this ) : FunctionType
 	}
 	NextLexem();
 
-	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::BracketLeft );
 
 	while( NotEndOfFile() )
 	{
@@ -1371,11 +1117,7 @@ fn SyntaxAnalyzer::ParseFunctionTypeEnding( mut this, FunctionType &mut function
 				reference_pollution.dst= it_.front().text;
 				NextLexem();
 
-				if( it_.front().lexem_type != Lexem::Type::LeftArrow )
-				{
-					PushErrorMessage();
-				}
-				NextLexem();
+				ExpectLexem( Lexem::Type::LeftArrow );
 
 				if( it_.front().lexem_type != Lexem::Type::Identifier )
 				{
@@ -1455,11 +1197,7 @@ fn SyntaxAnalyzer::ParseFunctionTypeEnding( mut this, FunctionType &mut function
 
 fn SyntaxAnalyzer::ParseInnerReferenceTag( mut this ) : ust::string8
 {
-	if( it_.front().lexem_type != Lexem::Type::Apostrophe )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::Apostrophe );
 
 	if( it_.front().lexem_type != Lexem::Type::Identifier )
 	{
@@ -1468,11 +1206,7 @@ fn SyntaxAnalyzer::ParseInnerReferenceTag( mut this ) : ust::string8
 	var ust::string8 mut tag= it_.front().text;
 	NextLexem();
 
-	if( it_.front().lexem_type != Lexem::Type::Apostrophe )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::Apostrophe );
 
 	return move(tag);
 }
@@ -1523,19 +1257,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 	{
 		NextLexem();
 
-		if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
-		res.condition.reset( ParseExpression() );
-
-		if( it_.front().lexem_type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		res.condition.reset( ParseExpressionInBrackets() );
 	}
 
 	if( is_operator )
@@ -1631,7 +1353,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 	}
 	else
 	{
-		while( true )
+		while( NotEndOfFile() )
 		{
 			if( it_.front().lexem_type != Lexem::Type::Identifier )
 			{
@@ -1657,12 +1379,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 	}
 
 	res.function_type.src_loc= it_.front().src_loc;
-	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-	{
-		PushErrorMessage();
-		return Function();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::BracketLeft );
 
 	auto is_constructor_or_destructor=
 		res.name.back() == KeywordToString( Keyword::constructor_ ) || res.name.back() == KeywordToString( Keyword::destructor_ );
@@ -1778,11 +1495,7 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 
 		NextLexem();
 
-		if( it_.front().lexem_type != Lexem::Type::Semicolon )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		ExpectSemicolon();
 	}
 	else
 	{
@@ -1847,6 +1560,39 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 	return move(res);
 }
 
+fn SyntaxAnalyzer::ParseCall( mut this ) : ust::vector</ ust::shared_ptr_final</Expression/> />
+{
+	ExpectLexem( Lexem::Type::BracketLeft );
+
+	var ust::vector</ ust::shared_ptr_final</Expression/> />  mut args;
+	while( NotEndOfFile() )
+	{
+		if( it_.front().lexem_type == Lexem::Type::BracketRight )
+		{
+			break;
+		}
+
+		args.push_back( ust::make_shared_ptr_final( ParseExpression() ) );
+
+		if( it_.front().lexem_type== Lexem::Type::Comma )
+		{
+			NextLexem();
+			if( it_.front().lexem_type== Lexem::Type::BracketRight )
+			{
+				PushErrorMessage();
+			}
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	ExpectLexem( Lexem::Type::BracketRight );
+
+	return move(args);
+}
+
 fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer ) : Initializer
 {
 	if( it_.front().lexem_type == Lexem::Type::SquareBracketLeft )
@@ -1867,42 +1613,14 @@ fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer
 			}
 			// TODO - parse continious flag here
 		}
-		if( it_.front().lexem_type != Lexem::Type::SquareBracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		ExpectLexem( Lexem::Type::SquareBracketRight );
 
 		return move(sequence_initializer);
 	}
 	else if( it_.front().lexem_type == Lexem::Type::BracketLeft )
 	{
 		/// TODO - fix case, like :    var [ i32, 1] x[ (1 + 2) * 3 ];
-		var ConstructorInitializer mut constructor_initializer{ .src_loc= it_.front().src_loc };
-		NextLexem();
-
-		while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::BracketRight )
-		{
-			constructor_initializer.args.push_back( ust::make_shared_ptr_final( ParseExpression() ) );
-			if( it_.front().lexem_type  == Lexem::Type::Comma )
-			{
-				NextLexem();
-				// Disallow comma after closing bracket
-				if( it_.front().lexem_type  == Lexem::Type::BracketRight )
-				{
-					PushErrorMessage();
-				}
-			}
-			else
-			{
-				break;
-			}
-		}
-		if( it_.front().lexem_type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		var ConstructorInitializer mut constructor_initializer{ .src_loc= it_.front().src_loc, .args(ParseCall()) };
 
 		return move(constructor_initializer);
 	}
@@ -1913,11 +1631,7 @@ fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer
 
 		while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::BraceRight )
 		{
-			if( it_.front().lexem_type != Lexem::Type::Dot )
-			{
-				PushErrorMessage();
-			}
-			NextLexem();
+			ExpectLexem( Lexem::Type::Dot );
 
 			if( it_.front().lexem_type != Lexem::Type::Identifier )
 			{
@@ -1946,11 +1660,7 @@ fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer
 				NextLexem();
 			}
 		}
-		if( it_.front().lexem_type != Lexem::Type::BraceRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		ExpectLexem( Lexem::Type::BraceRight );
 
 		return move(struct_named_initializer);
 	}
@@ -2116,11 +1826,7 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 			NextLexem();
 			increment_operator.expression= ParseExpression();
 
-			if( it_.front().lexem_type != Lexem::Type::Semicolon )
-			{
-				PushErrorMessage();
-			}
-			NextLexem();
+			ExpectSemicolon();
 
 			block_elements.push_back( move(increment_operator) );
 		}
@@ -2130,11 +1836,7 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 			NextLexem();
 			decrement_operator.expression= ParseExpression();
 
-			if( it_.front().lexem_type != Lexem::Type::Semicolon )
-			{
-				PushErrorMessage();
-			}
-			NextLexem();
+			ExpectSemicolon();
 
 			block_elements.push_back( move(decrement_operator) );
 		}
@@ -2186,14 +1888,7 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 				block_elements.push_back( move(expr) );
 			}
 
-			if( it_.front().lexem_type == Lexem::Type::Semicolon )
-			{
-				NextLexem();
-			}
-			else
-			{
-				PushErrorMessage();
-			}
+			ExpectSemicolon();
 		}
 	}
 
@@ -2305,14 +2000,7 @@ fn SyntaxAnalyzer::ParseAutoVariableDeclaration( mut this ) : AutoVariableDeclar
 
 	variable_declaration.initializer_expression= ParseExpression();
 
-	if( it_.front().lexem_type == Lexem::Type::Semicolon )
-	{
-		NextLexem();
-	}
-	else
-	{
-		PushErrorMessage();
-	}
+	ExpectSemicolon();
 
 	return move(variable_declaration);
 }
@@ -2322,14 +2010,12 @@ fn SyntaxAnalyzer::ParseReturnOperator( mut this ) : ReturnOperator
 	var ReturnOperator mut res{ .src_loc= it_.front().src_loc };
 	NextLexem(); // return
 
-	res.expr= ParseExpression();
-
 	if( it_.front().lexem_type != Lexem::Type::Semicolon )
 	{
-		PushErrorMessage();
-		return ReturnOperator();
+		res.expr= ParseExpression();
 	}
-	NextLexem();
+
+	ExpectSemicolon();
 
 	return move(res);
 }
@@ -2341,29 +2027,10 @@ fn SyntaxAnalyzer::ParseIfOperator( mut this ) : IfOperator
 
 	var IfOperator mut if_operator{ .src_loc= start_src_loc };
 
-	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
-
-	auto mut if_expression= ParseExpression();
-
-	if( it_.front().lexem_type != Lexem::Type::BracketRight )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
-
-	if( it_.front().lexem_type != Lexem::Type::BraceLeft )
-	{
-		PushErrorMessage();
-	}
-
 	var IfOperator::Branch mut first_branch
 	{
 		.src_loc= start_src_loc,
-		.condition= move(if_expression),
+		.condition= ParseExpressionInBrackets(),
 		.block( ParseBlock() )
 	};
 	if_operator.end_src_loc= first_branch.block.get_ref().end_src_loc;
@@ -2383,28 +2050,9 @@ fn SyntaxAnalyzer::ParseIfOperator( mut this ) : IfOperator
 		if( IsKeyword( it_.front(), Keyword::if_ ) )
 		{
 			NextLexem();
-
-			if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-			{
-				PushErrorMessage();
-			}
-
-			NextLexem();
-
-			condition= ParseExpression();
-
-			if( it_.front().lexem_type != Lexem::Type::BracketRight )
-			{
-				PushErrorMessage();
-			}
-
-			NextLexem();
+			condition= ParseExpressionInBrackets();
 		}
 		// Block - common for "else" and "else if".
-		if( it_.front().lexem_type != Lexem::Type::BraceLeft )
-		{
-			PushErrorMessage();
-		}
 
 		var IfOperator::Branch mut branch
 		{
@@ -2444,29 +2092,10 @@ fn SyntaxAnalyzer::ParseWhileOperator( mut this ) : WhileOperator
 	auto start_src_loc= it_.front().src_loc;
 	NextLexem(); // while
 
-	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
-
-	auto mut condition= ParseExpression();
-
-	if( it_.front().lexem_type != Lexem::Type::BracketRight )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
-
-	if( it_.front().lexem_type != Lexem::Type::BraceLeft )
-	{
-		PushErrorMessage();
-	}
-
 	var WhileOperator mut while_operator
 	{
 		.src_loc= start_src_loc,
-		.condition= move(condition),
+		.condition= ParseExpressionInBrackets(),
 		.block( ParseBlock() )
 	};
 	return move(while_operator);
@@ -2491,11 +2120,7 @@ fn SyntaxAnalyzer::ParseRangeForOperator( mut this ) : RangeForOperator
 	var RangeForOperator mut for_operator{ .src_loc= it_.front().src_loc, .block(Block()) };
 	NextLexem();
 
-	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::BracketLeft );
 
 	if( it_.front().lexem_type == Lexem::Type::And )
 	{
@@ -2520,19 +2145,11 @@ fn SyntaxAnalyzer::ParseRangeForOperator( mut this ) : RangeForOperator
 	for_operator.loop_variable_name= it_.front().text;
 	NextLexem();
 
-	if( it_.front().lexem_type != Lexem::Type::Colon )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::Colon );
 
 	for_operator.sequence= ParseExpression();
 
-	if( it_.front().lexem_type != Lexem::Type::BracketRight )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::BracketRight );
 
 	for_operator.block.get_ref()= ParseBlock();
 
@@ -2544,11 +2161,7 @@ fn SyntaxAnalyzer::ParseCStyleForOperator( mut this ) : CStyleForOperator
 	var CStyleForOperator mut for_operator{ .src_loc= it_.front().src_loc, .block(Block()) };
 	NextLexem();
 
-	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::BracketLeft );
 
 	// Varaibles declaration
 	if( IsKeyword( it_.front(), Keyword::var_ ) )
@@ -2559,13 +2172,9 @@ fn SyntaxAnalyzer::ParseCStyleForOperator( mut this ) : CStyleForOperator
 	{
 		for_operator.variable_declaration_part= ParseAutoVariableDeclaration();
 	}
-	else if( it_.front().lexem_type == Lexem::Type::Semicolon )
-	{
-		NextLexem();
-	}
 	else
 	{
-		PushErrorMessage();
+		ExpectSemicolon();
 	}
 
 	// Condition.
@@ -2650,11 +2259,7 @@ fn SyntaxAnalyzer::ParseCStyleForOperator( mut this ) : CStyleForOperator
 		}
 	}
 
-	if( it_.front().lexem_type != Lexem::Type::BracketRight )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::BracketRight );
 
 	for_operator.block.get_ref()= ParseBlock();
 
@@ -2666,11 +2271,7 @@ fn SyntaxAnalyzer::ParseBreakOperator( mut this ) : BreakOperator
 	var BreakOperator mut break_operator{ .src_loc= it_.front().src_loc };
 	NextLexem();
 
-	if( it_.front().lexem_type != Lexem::Type::Semicolon )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectSemicolon();
 
 	return move(break_operator);
 }
@@ -2680,11 +2281,7 @@ fn SyntaxAnalyzer::ParseContinueOperator( mut this ) : ContinueOperator
 	var ContinueOperator mut continue_operator{ .src_loc= it_.front().src_loc };
 	NextLexem();
 
-	if( it_.front().lexem_type != Lexem::Type::Semicolon )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectSemicolon();
 
 	return move(continue_operator);
 }
@@ -2694,11 +2291,7 @@ fn SyntaxAnalyzer::ParseWithOperator( mut this ) : WithOperator
 	var WithOperator mut with_operator{ .src_loc= it_.front().src_loc, .block(Block()) };
 	NextLexem();
 
-	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::BracketLeft );
 
 	if( it_.front().lexem_type == Lexem::Type::And )
 	{
@@ -2723,19 +2316,11 @@ fn SyntaxAnalyzer::ParseWithOperator( mut this ) : WithOperator
 	with_operator.variable_name= it_.front().text;
 	NextLexem();
 
-	if( it_.front().lexem_type != Lexem::Type::Colon )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::Colon );
 
 	with_operator.expression= ParseExpression();
 
-	if( it_.front().lexem_type != Lexem::Type::BracketRight )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::BracketRight );
 
 	with_operator.block.get_ref()= ParseBlock();
 
@@ -2752,25 +2337,9 @@ fn SyntaxAnalyzer::ParseStaticAssert( mut this ) : StaticAssert
 	var StaticAssert mut static_assert_{ .src_loc= it_.front().src_loc };
 	NextLexem();
 
-	if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	static_assert_.expression= ParseExpressionInBrackets();
 
-	static_assert_.expression= ParseExpression();
-
-	if( it_.front().lexem_type != Lexem::Type::BracketRight )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
-
-	if( it_.front().lexem_type != Lexem::Type::Semicolon )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectSemicolon();
 
 	return move(static_assert_);
 }
@@ -2801,25 +2370,9 @@ fn SyntaxAnalyzer::ParseHalt( mut this ) : BlockElement
 		}
 		NextLexem();
 
-		if( it_.front().lexem_type != Lexem::Type::BracketLeft )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		halt_if.condition= ParseExpressionInBrackets();
 
-		halt_if.condition= ParseExpression();
-
-		if( it_.front().lexem_type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
-
-		if( it_.front().lexem_type != Lexem::Type::Semicolon )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		ExpectSemicolon();
 
 		return move(halt_if);
 	}
@@ -2872,19 +2425,11 @@ fn SyntaxAnalyzer::ParseClass( mut this ) : Class
 
 fn SyntaxAnalyzer::ParseClassBody( mut this ) : ClassElements
 {
-	if( it_.front().lexem_type != Lexem::Type::BraceLeft )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::BraceLeft );
 
 	auto mut class_elements= ParseClassBodyElements();
 
-	if( it_.front().lexem_type != Lexem::Type::BraceRight )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::BraceRight );
 
 	return move(class_elements);
 }
@@ -2904,11 +2449,7 @@ fn SyntaxAnalyzer::ParseClassBodyElements( mut this ) : ClassElements
 			var ClassVisibilityLabel mut class_visibility_label{ .src_loc= it_.front().src_loc, .visibility= ClassVisibility::Public };
 			NextLexem();
 
-			if( it_.front().lexem_type != Lexem::Type::Colon )
-			{
-				PushErrorMessage();
-			}
-			NextLexem();
+			ExpectLexem( Lexem::Type::Colon );
 
 			class_elements.push_back( move(class_visibility_label) );
 		}
@@ -2917,11 +2458,7 @@ fn SyntaxAnalyzer::ParseClassBodyElements( mut this ) : ClassElements
 			var ClassVisibilityLabel mut class_visibility_label{ .src_loc= it_.front().src_loc, .visibility= ClassVisibility::Protected };
 			NextLexem();
 
-			if( it_.front().lexem_type != Lexem::Type::Colon )
-			{
-				PushErrorMessage();
-			}
-			NextLexem();
+			ExpectLexem( Lexem::Type::Colon );
 
 			class_elements.push_back( move(class_visibility_label) );
 		}
@@ -2930,11 +2467,7 @@ fn SyntaxAnalyzer::ParseClassBodyElements( mut this ) : ClassElements
 			var ClassVisibilityLabel mut class_visibility_label{ .src_loc= it_.front().src_loc, .visibility= ClassVisibility::Private };
 			NextLexem();
 
-			if( it_.front().lexem_type != Lexem::Type::Colon )
-			{
-				PushErrorMessage();
-			}
-			NextLexem();
+			ExpectLexem( Lexem::Type::Colon );
 
 			class_elements.push_back( move(class_visibility_label) );
 		}
@@ -3017,11 +2550,7 @@ fn SyntaxAnalyzer::ParseClassBodyElements( mut this ) : ClassElements
 
 			class_field.initializer= ParseVariableInitializer();
 
-			if( it_.front().lexem_type != Lexem::Type::Semicolon )
-			{
-				PushErrorMessage();
-			}
-			NextLexem();
+			ExpectSemicolon();
 
 			class_elements.push_back( ust::make_shared_ptr_final( move(class_field) ) );
 		}
@@ -3131,11 +2660,7 @@ fn SyntaxAnalyzer::ParseEnum( mut this ) : Enum
 		enum_.underlaying_type= ParseComplexName();
 	}
 
-	if( it_.front().lexem_type != Lexem::Type::BraceLeft )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::BraceLeft );
 
 	while( NotEndOfFile() )
 	{
@@ -3196,19 +2721,11 @@ fn SyntaxAnalyzer::ParseTypeAlias( mut this ) : TypeAlias
 	};
 	NextLexem();
 
-	if( it_.front().lexem_type != Lexem::Type::Assignment )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::Assignment );
 
 	type_alias.type_name= ParseTypeName();
 
-	if( it_.front().lexem_type != Lexem::Type::Semicolon )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectSemicolon();
 
 	return move(type_alias);
 }
@@ -3224,11 +2741,7 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 	NextLexem();
 
 	// Template args.
-	if( it_.front().lexem_type != Lexem::Type::TemplateBracketLeft )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::TemplateBracketLeft );
 
 	var ust::vector</TemplateParam/> mut params;
 	while( NotEndOfFile() )
@@ -3302,19 +2815,11 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 			is_short_form= true;
 		}
 
-		if( it_.front().lexem_type != Lexem::Type::Assignment )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		ExpectLexem( Lexem::Type::Assignment );
 
 		auto mut type_name= ParseTypeName();
 
-		if( it_.front().lexem_type != Lexem::Type::Semicolon )
-		{
-			PushErrorMessage();
-		}
-		NextLexem();
+		ExpectSemicolon();
 
 		var TypeAlias mut type_alias
 		{
@@ -3425,11 +2930,7 @@ fn SyntaxAnalyzer::ParseTemplateSignatureParams( mut this ) : ust::vector</TypeT
 {
 	var ust::vector</TypeTemplate::SignatureParam/> mut signature_params;
 
-	if( it_.front().lexem_type != Lexem::Type::TemplateBracketLeft )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::TemplateBracketLeft );
 
 	while( NotEndOfFile() )
 	{
@@ -3477,11 +2978,7 @@ fn SyntaxAnalyzer::ParseMacro( mut this )
 	var Macro mut macro;
 
 	// Macro name and context
-	if( it_.front().lexem_type != Lexem::Type::MacroBracketLeft )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::MacroBracketLeft );
 
 	if( it_.front().lexem_type != Lexem::Type::Identifier )
 	{
@@ -3491,11 +2988,7 @@ fn SyntaxAnalyzer::ParseMacro( mut this )
 	macro.name= it_.front().text;
 	NextLexem();
 
-	if( it_.front().lexem_type != Lexem::Type::Colon )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::Colon );
 
 	if( it_.front().lexem_type != Lexem::Type::Identifier )
 	{
@@ -3518,32 +3011,16 @@ fn SyntaxAnalyzer::ParseMacro( mut this )
 	// Match block
 	macro.match_template_elements= ParseMacroMatchBlock();
 
-	if( it_.front().lexem_type != Lexem::Type::MacroBracketRight )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::MacroBracketRight );
 
-	if( it_.front().lexem_type != Lexem::Type::RightArrow )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::RightArrow );
 
 	// Result block
-	if( it_.front().lexem_type != Lexem::Type::MacroBracketLeft )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::MacroBracketLeft );
 
 	macro.result_template_elements= ParseMacroResultBlock();
 
-	if( it_.front().lexem_type != Lexem::Type::MacroBracketRight )
-	{
-		PushErrorMessage();
-	}
-	NextLexem();
+	ExpectLexem( Lexem::Type::MacroBracketRight );
 
 	// Inset result macro.
 	auto macros_copy= macros_;
@@ -3586,11 +3063,7 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 			var Macro::MatchElement mut match_element{ .name= it_.front().text };
 			NextLexem();
 
-			if( it_.front().lexem_type != Lexem::Type::Colon )
-			{
-				PushErrorMessage();
-			}
-			NextLexem();
+			ExpectLexem( Lexem::Type::Colon );
 
 			if( it_.front().lexem_type != Lexem::Type::Identifier )
 			{
@@ -3606,38 +3079,22 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 			else if( element_type == "block" ) { match_element.kind= Macro::MatchElementKind::Block; }
 			else if( element_type == "opt"   )
 			{
-				if( it_.front().lexem_type != Lexem::Type::MacroBracketLeft )
-				{
-					PushErrorMessage();
-				}
-				NextLexem();
+				ExpectLexem( Lexem::Type::MacroBracketLeft );
 
 				auto mut sub_elements= ParseMacroMatchBlock();
 
-				if( it_.front().lexem_type != Lexem::Type::MacroBracketRight )
-				{
-					PushErrorMessage();
-				}
-				NextLexem();
+				ExpectLexem( Lexem::Type::MacroBracketRight );
 
 				match_element.sub_elements= ust::shared_ptr_final_nullable</ ust::vector</Macro::MatchElement/> />( move(sub_elements) );
 				match_element.kind= Macro::MatchElementKind::Optional;
 			}
 			else if( element_type == "rep" )
 			{
-				if( it_.front().lexem_type != Lexem::Type::MacroBracketLeft )
-				{
-					PushErrorMessage();
-				}
-				NextLexem();
+				ExpectLexem( Lexem::Type::MacroBracketLeft );
 
 				auto mut sub_elements= ParseMacroMatchBlock();
 
-				if( it_.front().lexem_type != Lexem::Type::MacroBracketRight )
-				{
-					PushErrorMessage();
-				}
-				NextLexem();
+				ExpectLexem( Lexem::Type::MacroBracketRight );
 
 				// Separator.
 				if( it_.front().lexem_type == Lexem::Type::MacroBracketLeft )
@@ -3654,11 +3111,7 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 					match_element.lexem= it_.front();
 					NextLexem();
 
-					if( it_.front().lexem_type != Lexem::Type::MacroBracketRight )
-					{
-						PushErrorMessage();
-					}
-					NextLexem();
+					ExpectLexem( Lexem::Type::MacroBracketRight );
 				}
 				else
 				{
@@ -3787,11 +3240,7 @@ fn SyntaxAnalyzer::ParseMacroResultBlock( mut this ) : ust::vector</Macro::Resul
 
 				auto mut sub_elements= ParseMacroResultBlock();
 
-				if( it_.front().lexem_type != Lexem::Type::MacroBracketRight )
-				{
-					PushErrorMessage();
-				}
-				NextLexem();
+				ExpectLexem( Lexem::Type::MacroBracketRight );
 
 				// Separator.
 				if( it_.front().lexem_type == Lexem::Type::MacroBracketLeft )
@@ -3808,11 +3257,7 @@ fn SyntaxAnalyzer::ParseMacroResultBlock( mut this ) : ust::vector</Macro::Resul
 					result_element.lexem= it_.front();
 					NextLexem();
 
-					if( it_.front().lexem_type != Lexem::Type::MacroBracketRight )
-					{
-						PushErrorMessage();
-					}
-					NextLexem();
+					ExpectLexem( Lexem::Type::MacroBracketRight );
 				}
 				else
 				{
@@ -4163,6 +3608,23 @@ fn SyntaxAnalyzer::FetchMacroVariable( MacroVariablesMapsStack& macro_variables_
 	}
 
 	return ust::optional</ParsedMacroElement/>();
+}
+
+fn SyntaxAnalyzer::ExpectSemicolon( mut this )
+{
+	ExpectLexem( Lexem::Type::Semicolon );
+}
+
+fn SyntaxAnalyzer::ExpectLexem( mut this, Lexem::Type t )
+{
+	if( it_.front().lexem_type == t )
+	{
+		NextLexem();
+	}
+	else
+	{
+		PushErrorMessage();
+	}
 }
 
 fn SyntaxAnalyzer::NotEndOfFile( this ) : bool

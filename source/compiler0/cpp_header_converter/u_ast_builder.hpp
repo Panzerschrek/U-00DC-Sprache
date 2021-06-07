@@ -27,14 +27,14 @@ private:
 	void ProcessClassDecl( const clang::Decl& decl, Synt::ClassElements& class_elements, bool externc );
 
 	Synt::ClassPtr ProcessRecord( const clang::RecordDecl& record_decl, bool externc );
-	Synt::Typedef ProcessTypedef( const clang::TypedefNameDecl& typedef_decl );
+	Synt::TypeAlias ProcessTypedef( const clang::TypedefNameDecl& typedef_decl );
 	Synt::FunctionPtr ProcessFunction( const clang::FunctionDecl& func_decl, bool externc );
 	void ProcessEnum( const clang::EnumDecl& enum_decl, Synt::ProgramElements& out_elements );
 
 	Synt::TypeName TranslateType( const clang::Type& in_type );
 	std::string TranslateRecordType( const clang::RecordType& in_type );
 	std::string GetUFundamentalType( const clang::BuiltinType& in_type );
-	Synt::NamedTypeName TranslateNamedType( const std::string& cpp_type_name );
+	Synt::ComplexName TranslateNamedType( const std::string& cpp_type_name );
 	Synt::FunctionTypePtr TranslateFunctionType( const clang::FunctionProtoType& in_type );
 
 	std::string TranslateIdentifier( llvm::StringRef identifier );

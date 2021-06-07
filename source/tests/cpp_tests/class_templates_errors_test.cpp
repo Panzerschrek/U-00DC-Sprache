@@ -83,12 +83,7 @@ U_TEST( NameNotFound_ForClassTemplateArguments_Test0 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 2u ) );
 }
 
 U_TEST( NameNotFound_ForClassTemplateDefaultSignatureArguments_Test0 )

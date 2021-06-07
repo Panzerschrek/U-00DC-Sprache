@@ -21,7 +21,6 @@ void ElementWrite( const ArrayTypeName& array_type_name, std::ostream& stream );
 void ElementWrite( const TupleType& tuple_type_name, std::ostream& stream );
 void ElementWrite( const RawPointerType& raw_pointer_type_name, std::ostream& stream );
 void ElementWrite( const TypeofTypeName& typeof_type_name, std::ostream& stream );
-void ElementWrite( const NamedTypeName& named_type_name, std::ostream& stream );
 void ElementWriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& stream );
 void ElementWrite( const FunctionType& function_type_name, std::ostream& stream );
 void ElementWrite( const FunctionArgument& arg, std::ostream& stream );
@@ -37,7 +36,7 @@ void ElementWrite( const VariablesDeclaration& variables_declaration, std::ostre
 void ElementWrite( const AutoVariableDeclaration& auto_variable_declaration, std::ostream& stream );
 void ElementWrite( const StaticAssert& static_assert_, std::ostream& stream );
 void ElementWrite( const Enum& enum_, std::ostream& stream );
-void ElementWrite( const Typedef& typedef_, std::ostream& stream );
+void ElementWrite( const TypeAlias& type_alias, std::ostream& stream );
 void ElementWrite( const TypeTemplate& type_template, std::ostream& stream );
 void ElementWrite( const FunctionTemplate& function_template, std::ostream& stream );
 void ElementWrite( const ClassField& class_field, std::ostream& stream );
@@ -139,11 +138,6 @@ void ElementWrite( const TypeofTypeName& typeof_type_name, std::ostream& stream 
 	stream << " )";
 }
 
-void ElementWrite( const NamedTypeName& named_type_name, std::ostream& stream )
-{
-	ElementWrite( named_type_name.name, stream );
-}
-
 void ElementWriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& stream )
 {
 	if( function_type.unsafe_ )
@@ -237,9 +231,9 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			stream << " " << BinaryOperatorToString(binary_operator.operator_type_) << " ";
 			ElementWrite( *binary_operator.right_, stream );
 		}
-		void operator()( const NamedOperand& named_operand ) const
+		void operator()( const ComplexName& complex_name ) const
 		{
-			ElementWrite( named_operand.name_, stream );
+			ElementWrite( complex_name, stream );
 		}
 		void operator()( const TernaryOperator& ternary_operator ) const
 		{
@@ -350,18 +344,6 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		{
 			stream << ( boolean_constant.value_ ? Keyword( Keywords::true_ ) : Keyword( Keywords::false_ ) );
 		}
-		void operator()( const BracketExpression& bracket_expression ) const
-		{
-			if( bracket_expression.expression_ == nullptr )
-				return;
-			stream << "( ";
-			ElementWrite( *bracket_expression.expression_, stream );
-			stream << " )";
-		}
-		void operator()( const TypeNameInExpression& type_name_in_expression ) const
-		{
-			ElementWrite( type_name_in_expression.type_name, stream );
-		}
 		void operator()( const MoveOperator& move_operator ) const
 		{
 			stream << Keyword( Keywords::move_ ) << "( " << move_operator.var_name_ << " )";
@@ -416,119 +398,101 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			ElementWrite( *typeinfo_.type_, stream );
 			stream << " />";
 		}
+		void operator()( const UnaryMinus& unary_minus ) const
+		{
+			stream << OverloadedOperatorToString( OverloadedOperator::Sub );
+			ElementWrite( *unary_minus.expression_, stream );
+		}
+		void operator()( const UnaryPlus& unary_plus ) const
+		{
+			stream << OverloadedOperatorToString( OverloadedOperator::Add );
+			ElementWrite( *unary_plus.expression_, stream );
+		}
+		void operator()( const LogicalNot& logical_not ) const
+		{
+			stream << OverloadedOperatorToString( OverloadedOperator::LogicalNot );
+			ElementWrite( *logical_not.expression_, stream );
+		}
+		void operator()( const BitwiseNot& bitwise_not ) const
+		{
+			stream << OverloadedOperatorToString( OverloadedOperator::BitwiseNot );
+			ElementWrite( *bitwise_not.expression_, stream );
+		}
+		void operator()( const IndexationOperator& indexation_operator )
+		{
+			ElementWrite( *indexation_operator.expression_, stream );
+			stream << "[ ";
+			ElementWrite( *indexation_operator.index_, stream );
+			stream << " ]";
+		}
+		void operator()( const MemberAccessOperator& member_access_operator ) const
+		{
+			ElementWrite( *member_access_operator.expression_, stream );
+			stream << ".";
+			if( member_access_operator.template_parameters != std::nullopt )
+			{
+				stream << "</";
+				for( const Expression& template_param : *member_access_operator.template_parameters )
+				{
+					ElementWrite( template_param, stream );
+					if( &template_param != &member_access_operator.template_parameters->back() )
+						stream<< ", ";
+				}
+				stream << "/>";
+			}
+		}
+		void operator()( const CallOperator& call_operator ) const
+		{
+			ElementWrite( *call_operator.expression_, stream );
+			stream << "( ";
+			for( const Expression& arg : call_operator.arguments_ )
+			{
+				ElementWrite( arg, stream );
+
+				if( &arg != &call_operator.arguments_.back() )
+					stream << ", ";
+			}
+			stream << ")";
+		}
+		void operator()( const ArrayTypeName& array_type_name ) const
+		{
+			ElementWrite( array_type_name, stream );
+		}
+		void operator()( const FunctionTypePtr& function_type ) const
+		{
+			ElementWrite( *function_type, stream );
+		}
+		void operator()( const TupleType& tuple_type ) const
+		{
+			ElementWrite( tuple_type, stream );
+		}
+		void operator()( const RawPointerType& raw_pointer_type ) const
+		{
+			ElementWrite( raw_pointer_type, stream );
+		}
 
 	private:
 		std::ostream& stream;
 	};
 
 	std::visit( Visitor(stream), expression );
-
-	struct ExpressionWithUnaryOperatorsVisitor final
-	{
-		const ExpressionComponentWithUnaryOperators* operator()( const ExpressionComponentWithUnaryOperators& expression_with_unary_operators ) const
-		{
-			return &expression_with_unary_operators;
-		}
-		const ExpressionComponentWithUnaryOperators* operator()( const BinaryOperator& ) const
-		{
-			return nullptr;
-		}
-		const ExpressionComponentWithUnaryOperators* operator()( const EmptyVariant& ) const
-		{
-			return nullptr;
-		}
-	};
-
-	if( const auto expression_with_unary_operators= std::visit( ExpressionWithUnaryOperatorsVisitor(), expression ) )
-	{
-		struct PrefixVisitor final
-		{
-			std::string operator()( const UnaryMinus& ) const
-			{
-				return OverloadedOperatorToString( OverloadedOperator::Sub );
-			}
-			std::string operator()( const UnaryPlus& ) const
-			{
-				return OverloadedOperatorToString( OverloadedOperator::Add );
-			}
-			std::string operator()( const LogicalNot& ) const
-			{
-				return OverloadedOperatorToString( OverloadedOperator::LogicalNot );
-			}
-			std::string operator()( const BitwiseNot& ) const
-			{
-				return OverloadedOperatorToString( OverloadedOperator::BitwiseNot );
-			}
-		};
-
-		class PostifxVisitor final
-		{
-		public:
-			explicit PostifxVisitor( std::ostream& in_stream ) : stream(in_stream) {}
-
-			void operator()( const IndexationOperator& indexation_operator )
-			{
-				stream << "[ ";
-				ElementWrite( indexation_operator.index_, stream );
-				stream << " ]";
-			}
-			void operator()( const MemberAccessOperator& member_access_operator ) const
-			{
-				stream << ".";
-				if( member_access_operator.have_template_parameters )
-				{
-					stream << "</";
-					for( const Expression& template_param : member_access_operator.template_parameters )
-					{
-						ElementWrite( template_param, stream );
-						if( &template_param != &member_access_operator.template_parameters.back() )
-							stream<< ", ";
-					}
-					stream << "/>";
-				}
-			}
-			void operator()( const CallOperator& call_operator ) const
-			{
-				stream << "( ";
-				for( const Expression& arg : call_operator.arguments_ )
-				{
-					ElementWrite( arg, stream );
-
-					if( &arg != &call_operator.arguments_.back() )
-						stream << ", ";
-				}
-				stream << ")";
-			}
-
-		private:
-			std::ostream& stream;
-		};
-
-		PrefixVisitor prefix_visitor;
-		for( const UnaryPrefixOperator& prefix_operator : expression_with_unary_operators->prefix_operators_ )
-			stream << std::visit( prefix_visitor, prefix_operator );
-
-		PostifxVisitor postfix_visitor(stream);
-		for( const UnaryPostfixOperator& postfix_operator : expression_with_unary_operators->postfix_operators_ )
-			std::visit( postfix_visitor, postfix_operator );
-	}
 }
 
 void ElementWrite( const Initializer& initializer, std::ostream& stream )
 {
 	if( const auto constructor_initializer= std::get_if<ConstructorInitializer>( &initializer ) )
 	{
-		if( constructor_initializer->call_operator.arguments_.empty() )
+		if( constructor_initializer->arguments.empty() )
 		{
 			stream << "()";
 		}
 		else
 		{
 			stream << "( ";
-			for( const Expression& arg :constructor_initializer->call_operator.arguments_ )
+			for( const Expression& arg :constructor_initializer->arguments )
 			{
 				ElementWrite( arg, stream );
-				if( &arg != &constructor_initializer->call_operator.arguments_.back() )
+				if( &arg != &constructor_initializer->arguments.back() )
 					stream << ", ";
 			}
 			stream << " )";
@@ -763,10 +727,10 @@ void ElementWrite( const Enum& enum_, std::ostream& stream )
 	stream << "}\n";
 }
 
-void ElementWrite( const Typedef& typedef_, std::ostream& stream )
+void ElementWrite( const TypeAlias& type_alias, std::ostream& stream )
 {
-	stream << Keyword( Keywords::type_ ) << " " << typedef_.name << " = ";
-	ElementWrite( typedef_.value, stream );
+	stream << Keyword( Keywords::type_ ) << " " << type_alias.name << " = ";
+	ElementWrite( type_alias.value, stream );
 	stream << ";\n";
 }
 

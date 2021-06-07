@@ -129,16 +129,16 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			}
 
 			const Synt::Expression* initializer_expression= nullptr;
-			if( const auto expression_initializer= std::get_if<Synt::ExpressionInitializer>( variable_declaration.initializer.get() ) )
-				initializer_expression= &expression_initializer->expression;
+			if( const auto expression_initializer= std::get_if<Synt::Expression>( variable_declaration.initializer.get() ) )
+				initializer_expression= expression_initializer;
 			else if( const auto constructor_initializer= std::get_if<Synt::ConstructorInitializer>( variable_declaration.initializer.get() ) )
 			{
-				if( constructor_initializer->call_operator.arguments_.size() != 1u )
+				if( constructor_initializer->arguments.size() != 1u )
 				{
 					REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names.GetErrors(), constructor_initializer->src_loc_ );
 					continue;
 				}
-				initializer_expression= &constructor_initializer->call_operator.arguments_.front();
+				initializer_expression= &constructor_initializer->arguments.front();
 			}
 			else
 			{
@@ -693,8 +693,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			for( ReferencesGraph& variables_state : function_context.loops_stack.back().break_variables_states )
 				break_variables_states.push_back( std::move(variables_state) );
 
-			// Overloading resolution uses addresses of syntax elements as keys. Reset it, because we use same syntax elements multiple times.
-			function_context.overloading_resolution_cache.clear();
+			// Args preevaluation uses addresses of syntax elements as keys. Reset it, because we use same syntax elements multiple times.
+			function_context.args_preevaluation_cache.clear();
 
 			function_context.loops_stack.pop_back();
 
@@ -1306,7 +1306,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	if(
 		TryCallOverloadedBinaryOperator(
 			OverloadedOperator::Assign,
-			assignment_operator,
 			assignment_operator.l_value_,
 			assignment_operator.r_value_,
 			true, // evaluate args in reverse order
@@ -1390,7 +1389,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	if( // TODO - create temp variables frame here.
 		TryCallOverloadedBinaryOperator(
 			GetOverloadedOperatorForAdditiveAssignmentOperator( additive_assignment_operator.additive_operation_ ),
-			additive_assignment_operator,
 			additive_assignment_operator.l_value_,
 			additive_assignment_operator.r_value_,
 			true, // evaluate args in reverse order

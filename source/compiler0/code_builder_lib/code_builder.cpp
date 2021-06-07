@@ -786,12 +786,12 @@ size_t CodeBuilder::PrepareFunction(
 			function_type.return_type= void_type_;
 		else
 		{
-			if( const auto named_return_type = std::get_if<Synt::NamedTypeName>(func.type_.return_type_.get()) )
+			if( const auto named_return_type = std::get_if<Synt::ComplexName>(func.type_.return_type_.get()) )
 			{
 				// TODO - set flag "auto" in syntax analyzer.
-				if( named_return_type->name.tail == nullptr &&
-					std::get_if<std::string>( &named_return_type->name.start_value ) != nullptr &&
-					std::get<std::string>( named_return_type->name.start_value ) == Keywords::auto_ )
+				if( named_return_type->tail == nullptr &&
+					std::get_if<std::string>( &named_return_type->start_value ) != nullptr &&
+					std::get<std::string>( named_return_type->start_value ) == Keywords::auto_ )
 				{
 					func_variable.return_type_is_auto= true;
 					if( base_class != nullptr )
@@ -1690,12 +1690,13 @@ void CodeBuilder::BuildStaticAssert( StaticAssert& static_assert_, NamesScope& n
 }
 
 Value CodeBuilder::ResolveValue(
-	const SrcLoc& src_loc,
 	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::ComplexName& complex_name,
 	const ResolveMode resolve_mode )
 {
+	const SrcLoc& src_loc= complex_name.src_loc_;
+
 	Value* value= nullptr;
 	Value temp_value_storage;
 	const Synt::ComplexName::Component* component= complex_name.tail.get();

@@ -157,13 +157,13 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	return raw_pointer;
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamedTypeName& named_type_name )
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& named_type_name )
 {
-	const Value value= ResolveValue( named_type_name.src_loc_, names_scope, function_context, named_type_name.name );
+	const Value value= ResolveValue( names_scope, function_context, named_type_name );
 	if( const Type* const type= value.GetTypeName() )
 		return *type;
 	else
-		REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), named_type_name.src_loc_, named_type_name.name );
+		REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), named_type_name.src_loc_, named_type_name );
 
 	return invalid_type_;
 }

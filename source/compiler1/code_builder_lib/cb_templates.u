@@ -803,7 +803,7 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 		var Type mut t;
 		{
 			auto mut global_function_context= CreateGlobalFunctionContext();
-			t= PrepareType( args_names_scope global_function_context, type_alias_syntax_element.get_ref().type_name );
+			t= PrepareType( args_names_scope, global_function_context, type_alias_syntax_element.get_ref().type_name );
 		}
 
 		// Cache result.

@@ -607,7 +607,7 @@ fn CodeBuilder::TryFetchVirtualFunction(
 			LLVMBuildPointerCast(
 				function_context.llvm_ir_builder,
 				this_casted.llvm_value,
-				LLVMPointerType( LLVMPointerType( class_type.virtual_table_llvm_type, 0u ) 0u ),
+				LLVMPointerType( LLVMPointerType( class_type.virtual_table_llvm_type, 0u ), 0u ),
 				"\0"[0] );
 
 		auto virtual_table_ptr= LLVMBuildLoad( function_context.llvm_ir_builder, ptr_to_virtual_table_ptr, "\0"[0] );
