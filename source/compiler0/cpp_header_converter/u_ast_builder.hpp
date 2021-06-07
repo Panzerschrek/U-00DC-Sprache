@@ -34,7 +34,7 @@ private:
 	Synt::TypeName TranslateType( const clang::Type& in_type );
 	std::string TranslateRecordType( const clang::RecordType& in_type );
 	std::string GetUFundamentalType( const clang::BuiltinType& in_type );
-	Synt::NamedTypeName TranslateNamedType( const std::string& cpp_type_name );
+	Synt::ComplexName TranslateNamedType( const std::string& cpp_type_name );
 	Synt::FunctionTypePtr TranslateFunctionType( const clang::FunctionProtoType& in_type );
 
 	std::string TranslateIdentifier( llvm::StringRef identifier );

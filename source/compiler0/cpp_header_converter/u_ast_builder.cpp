@@ -227,12 +227,12 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 			Synt::Typedef type_alias= ProcessTypedef(*type_alias_decl);
 
 			bool is_same_name= false;
-			if( const auto named_type_name= std::get_if<Synt::NamedTypeName>( &type_alias.value ) )
+			if( const auto named_type_name= std::get_if<Synt::ComplexName>( &type_alias.value ) )
 			{
 				is_same_name=
-					named_type_name->name.tail == nullptr &&
-					std::get_if<std::string>( &named_type_name->name.start_value ) != nullptr &&
-					std::get<std::string>( named_type_name->name.start_value ) == type_alias.name;
+					named_type_name->tail == nullptr &&
+					std::get_if<std::string>( &named_type_name->start_value ) != nullptr &&
+					std::get<std::string>( named_type_name->start_value ) == type_alias.name;
 			}
 			if( !is_same_name )
 				program_elements.push_back( std::move(type_alias) );
@@ -353,8 +353,8 @@ Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_de
 			default: U_ASSERT(false); break;
 			};
 
-			Synt::NamedTypeName named_type_name(g_dummy_src_loc);
-			named_type_name.name.start_value= int_name;
+			Synt::ComplexName named_type_name(g_dummy_src_loc);
+			named_type_name.start_value= int_name;
 
 			Synt::ArrayTypeName array_type( g_dummy_src_loc );
 			array_type.element_type= std::make_unique<Synt::TypeName>( std::move(named_type_name) );
@@ -481,8 +481,8 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 		enum_.name= enum_name;
 
 		Synt::TypeName type_name= TranslateType( *enum_decl.getIntegerType().getTypePtr() );
-		if( Synt::NamedTypeName* const named_type_name= std::get_if<Synt::NamedTypeName>( &type_name ) )
-			enum_.underlaying_type_name= std::move(named_type_name->name);
+		if( const auto named_type_name= std::get_if<Synt::ComplexName>( &type_name ) )
+			enum_.underlaying_type_name= std::move(*named_type_name);
 
 		for( const clang::EnumConstantDecl* const enumerator : enum_decl.enumerators() )
 		{
@@ -518,7 +518,7 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 				initializer_number.value_int= val.getLimitedValue();
 			initializer_number.value_double= static_cast<double>(initializer_number.value_int);
 
-			initializer.call_operator.arguments_.push_back( std::move(initializer_number) );
+			initializer.arguments.push_back( std::move(initializer_number) );
 
 			var.initializer= std::make_unique<Synt::Initializer>( std::move(initializer) );
 			variables_declaration.variables.push_back( std::move(var) );
@@ -538,22 +538,22 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 {
 	if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>(&in_type) )
 	{
-		Synt::NamedTypeName named_type(g_dummy_src_loc);
-		named_type.name.start_value= GetUFundamentalType( *built_in_type );
+		Synt::ComplexName named_type(g_dummy_src_loc);
+		named_type.start_value= GetUFundamentalType( *built_in_type );
 		return std::move(named_type);
 	}
 	else if( const auto record_type= llvm::dyn_cast<clang::RecordType>(&in_type) )
 	{
-		Synt::NamedTypeName named_type(g_dummy_src_loc);
-		named_type.name.start_value= TranslateRecordType( *record_type );
+		Synt::ComplexName named_type(g_dummy_src_loc);
+		named_type.start_value= TranslateRecordType( *record_type );
 		return std::move(named_type);
 	}
 	else if( const auto enum_type= llvm::dyn_cast<clang::EnumType>(&in_type) )
 	{
 		if( const auto it= enum_names_cache_.find( enum_type->getDecl() ); it != enum_names_cache_.end() )
 		{
-			Synt::NamedTypeName named_type(g_dummy_src_loc);
-			named_type.name.start_value= it->second;
+			Synt::ComplexName named_type(g_dummy_src_loc);
+			named_type.start_value= it->second;
 			return std::move(named_type);
 		}
 	}
@@ -677,10 +677,10 @@ std::string CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& in_ty
 	};
 }
 
-Synt::NamedTypeName CppAstConsumer::TranslateNamedType( const std::string& cpp_type_name )
+Synt::ComplexName CppAstConsumer::TranslateNamedType( const std::string& cpp_type_name )
 {
-	Synt::NamedTypeName named_type(g_dummy_src_loc);
-	named_type.name.start_value= TranslateIdentifier( cpp_type_name );
+	Synt::ComplexName named_type(g_dummy_src_loc);
+	named_type.start_value= TranslateIdentifier( cpp_type_name );
 	return named_type;
 }
 
