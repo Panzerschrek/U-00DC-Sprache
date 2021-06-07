@@ -322,17 +322,9 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	std::vector<bool>& template_parameters_usage_flags )
 {
 	if( const auto named_operand= std::get_if<Synt::NamedOperand>( &template_parameter ) )
-	{
-		if( named_operand->postfix_operators_.empty() && named_operand->prefix_operators_.empty() )
-			return CreateTemplateSignatureParameter( named_operand->src_loc_, named_operand->name_, names_scope, function_context, template_parameters, template_parameters_usage_flags );
-	}
+		return CreateTemplateSignatureParameter( named_operand->src_loc_, named_operand->name_, names_scope, function_context, template_parameters, template_parameters_usage_flags );
 	else if( const auto type_name= std::get_if<Synt::TypeNameInExpression>( &template_parameter ) )
 		return CreateTemplateSignatureParameter( type_name->type_name, names_scope, function_context, template_parameters, template_parameters_usage_flags );
-	else if( const auto bracket_expression= std::get_if<Synt::BracketExpression>( &template_parameter ) )
-	{
-		if( bracket_expression->postfix_operators_.empty() && bracket_expression->prefix_operators_.empty() )
-			return CreateTemplateSignatureParameter( *bracket_expression->expression_, names_scope, function_context, template_parameters, template_parameters_usage_flags );
-	}
 
 	return ValueToTemplateParam( BuildExpressionCode( template_parameter, names_scope, function_context ), names_scope );
 }

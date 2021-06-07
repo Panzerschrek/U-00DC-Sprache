@@ -419,6 +419,13 @@ private:
 	// Expressions.
 	Value BuildExpressionCode( const Synt::Expression& expression, NamesScope& names, FunctionContext& function_context );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::EmptyVariant& expression );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CallOperator& call_operator );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::IndexationOperator& indexation_operator );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MemberAccessOperator& member_access_operator );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::UnaryMinus& unary_minus );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::UnaryPlus& unary_plus );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::LogicalNot& logical_not );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::BitwiseNot& bitwise_not );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::BinaryOperator& binary_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::NamedOperand& named_operand );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TernaryOperator& ternary_operator );
@@ -426,7 +433,6 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::RawPointerToReferenceOperator& raw_pointer_to_reference_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TypeNameInExpression& type_name_in_expression );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::NumericConstant& numeric_constant );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::BracketExpression& bracket_expression );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::BooleanConstant& boolean_constant );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::StringLiteral& string_literal );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MoveOperator& move_operator );
@@ -452,7 +458,6 @@ private:
 	// In success call of overloaded operator arguments evaluated in left to right order.
 	std::optional<Value> TryCallOverloadedBinaryOperator(
 		OverloadedOperator op,
-		const Synt::SyntaxElementBase& op_syntax_element,
 		const Synt::Expression&  left_expr,
 		const Synt::Expression& right_expr,
 		bool evaluate_args_in_reverse_order,
@@ -500,10 +505,12 @@ private:
 		NamesScope& names,
 		FunctionContext& function_context );
 
-	// Postfix operators
-	Value BuildPostfixOperator( const Synt::CallOperator& call_operator, const Value& value, NamesScope& names, FunctionContext& function_context );
-	Value BuildPostfixOperator( const Synt::IndexationOperator& indexation_operator, const Value& value, NamesScope& names, FunctionContext& function_context );
-	Value BuildPostfixOperator( const Synt::MemberAccessOperator& member_access_operator, const Value& value, NamesScope& names, FunctionContext& function_context );
+	Value CallFunction(
+		const Value& function_value,
+		const std::vector<Synt::Expression>& synt_args,
+		const SrcLoc& src_loc,
+		NamesScope& names,
+		FunctionContext& function_context );
 
 	Value DoCallFunction(
 		llvm::Value* function,
@@ -518,7 +525,8 @@ private:
 
 	Variable BuildTempVariableConstruction(
 		const Type& type,
-		const Synt::CallOperator& call_operator,
+		const std::vector<Synt::Expression>& synt_args,
+		const SrcLoc& src_loc,
 		NamesScope& names,
 		FunctionContext& function_context );
 
@@ -529,12 +537,6 @@ private:
 		NamesScope& names,
 		FunctionContext& function_context,
 		const SrcLoc& src_loc );
-
-	// Prefix operators
-	Value BuildPrefixOperator( const Synt::UnaryMinus& unary_minus, const Value& value, NamesScope& names, FunctionContext& function_context );
-	Value BuildPrefixOperator( const Synt::UnaryPlus& unary_plus, const Value& value, NamesScope& names, FunctionContext& function_context );
-	Value BuildPrefixOperator( const Synt::LogicalNot& logical_not, const Value& value, NamesScope& names, FunctionContext& function_context );
-	Value BuildPrefixOperator( const Synt::BitwiseNot& bitwise_not, 	const Value& value, NamesScope& names, FunctionContext& function_context );
 
 	// Typeinfo
 
@@ -662,8 +664,9 @@ private:
 		FunctionContext& function_context );
 
 	llvm::Constant* ApplyConstructorInitializer(
-		const Synt::CallOperator& call_operator,
 		const Variable& variable,
+		const std::vector<Synt::Expression>& synt_args,
+		const SrcLoc& src_loc,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 

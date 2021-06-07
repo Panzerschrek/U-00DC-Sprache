@@ -693,8 +693,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			for( ReferencesGraph& variables_state : function_context.loops_stack.back().break_variables_states )
 				break_variables_states.push_back( std::move(variables_state) );
 
-			// Overloading resolution uses addresses of syntax elements as keys. Reset it, because we use same syntax elements multiple times.
-			function_context.overloading_resolution_cache.clear();
+			// Args preevaluation uses addresses of syntax elements as keys. Reset it, because we use same syntax elements multiple times.
+			function_context.args_preevaluation_cache.clear();
 
 			function_context.loops_stack.pop_back();
 
@@ -1306,7 +1306,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	if(
 		TryCallOverloadedBinaryOperator(
 			OverloadedOperator::Assign,
-			assignment_operator,
 			assignment_operator.l_value_,
 			assignment_operator.r_value_,
 			true, // evaluate args in reverse order
@@ -1390,7 +1389,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	if( // TODO - create temp variables frame here.
 		TryCallOverloadedBinaryOperator(
 			GetOverloadedOperatorForAdditiveAssignmentOperator( additive_assignment_operator.additive_operation_ ),
-			additive_assignment_operator,
 			additive_assignment_operator.l_value_,
 			additive_assignment_operator.r_value_,
 			true, // evaluate args in reverse order

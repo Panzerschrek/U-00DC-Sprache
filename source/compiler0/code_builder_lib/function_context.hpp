@@ -11,9 +11,6 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-using OverloadingResolutionCache=
-	std::unordered_map< const Synt::SyntaxElementBase*, std::optional<FunctionVariable> >;
-
 struct FunctionContext;
 
 // Usage - create this struct on stack. FunctionContext::stack_variables_stack will be controlled automatically.
@@ -90,7 +87,9 @@ struct FunctionContext
 	std::vector<StackVariablesStorage*> stack_variables_stack;
 	ReferencesGraph variables_state;
 
-	OverloadingResolutionCache overloading_resolution_cache;
+	// Cache result of arguments pre-evaluation for selection of overloaded functions and operators.
+	// This needed for reducing exponential expression evaluation complexity.
+	std::unordered_map< const Synt::Expression*, Function::Arg > args_preevaluation_cache;
 
 	llvm::BasicBlock* destructor_end_block= nullptr; // exists, if function is destructor
 
