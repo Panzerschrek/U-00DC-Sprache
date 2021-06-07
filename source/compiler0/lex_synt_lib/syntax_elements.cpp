@@ -42,7 +42,7 @@ TypeofTypeName::TypeofTypeName( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 
-NamedTypeName::NamedTypeName( const SrcLoc& src_loc )
+ComplexName::ComplexName( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 
@@ -111,11 +111,6 @@ RawPointerToReferenceOperator::RawPointerToReferenceOperator( const SrcLoc& src_
 	: SyntaxElementBase( src_loc )
 {}
 
-NamedOperand::NamedOperand( const SrcLoc& src_loc, ComplexName name )
-	: SyntaxElementBase(src_loc)
-	, name_( std::move(name) )
-{}
-
 MoveOperator::MoveOperator( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
@@ -159,10 +154,6 @@ StringLiteral::StringLiteral( const SrcLoc& src_loc )
 {
 	std::fill( type_suffix_.begin(), type_suffix_.end(), 0 );
 }
-
-TypeNameInExpression::TypeNameInExpression( const SrcLoc& src_loc )
-	: SyntaxElementBase( src_loc )
-{}
 
 Block::Block( const SrcLoc& start_src_loc )
 	: SyntaxElementBase(start_src_loc)
@@ -256,6 +247,7 @@ Typedef::Typedef( const SrcLoc& src_loc )
 
 Enum::Enum( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
+	, underlaying_type_name(src_loc)
 {}
 
 FunctionArgument::FunctionArgument( const SrcLoc& src_loc )
@@ -319,11 +311,16 @@ struct GetSrcLocVisitor final
 	{
 		return element.src_loc_;
 	}
+
+	template<class T>
+	SrcLoc operator()( const std::unique_ptr<T>& element ) const
+	{
+		return (*this)(*element);
+	}
 };
 
 SrcLoc GetExpressionSrcLoc( const Expression& expression )
 {
-
 	return std::visit( GetSrcLocVisitor(), expression );
 }
 

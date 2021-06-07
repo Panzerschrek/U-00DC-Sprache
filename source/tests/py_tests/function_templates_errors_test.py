@@ -77,9 +77,7 @@ def NameNotFound_ForFunctionTemplateParameter():
 		fn Foo(){}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "NameNotFound" )
-	assert( errors_list[0].src_loc.line == 2 )
+	assert( HaveError( errors_list, "NameNotFound", 2 ) )
 
 
 def NameIsNotTypeName_ForFunctionTemplateParameter():

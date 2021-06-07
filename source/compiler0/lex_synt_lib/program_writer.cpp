@@ -21,7 +21,6 @@ void ElementWrite( const ArrayTypeName& array_type_name, std::ostream& stream );
 void ElementWrite( const TupleType& tuple_type_name, std::ostream& stream );
 void ElementWrite( const RawPointerType& raw_pointer_type_name, std::ostream& stream );
 void ElementWrite( const TypeofTypeName& typeof_type_name, std::ostream& stream );
-void ElementWrite( const NamedTypeName& named_type_name, std::ostream& stream );
 void ElementWriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& stream );
 void ElementWrite( const FunctionType& function_type_name, std::ostream& stream );
 void ElementWrite( const FunctionArgument& arg, std::ostream& stream );
@@ -139,11 +138,6 @@ void ElementWrite( const TypeofTypeName& typeof_type_name, std::ostream& stream 
 	stream << " )";
 }
 
-void ElementWrite( const NamedTypeName& named_type_name, std::ostream& stream )
-{
-	ElementWrite( named_type_name.name, stream );
-}
-
 void ElementWriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& stream )
 {
 	if( function_type.unsafe_ )
@@ -237,9 +231,9 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			stream << " " << BinaryOperatorToString(binary_operator.operator_type_) << " ";
 			ElementWrite( *binary_operator.right_, stream );
 		}
-		void operator()( const NamedOperand& named_operand ) const
+		void operator()( const ComplexName& complex_name ) const
 		{
-			ElementWrite( named_operand.name_, stream );
+			ElementWrite( complex_name, stream );
 		}
 		void operator()( const TernaryOperator& ternary_operator ) const
 		{
@@ -350,10 +344,6 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		{
 			stream << ( boolean_constant.value_ ? Keyword( Keywords::true_ ) : Keyword( Keywords::false_ ) );
 		}
-		void operator()( const TypeNameInExpression& type_name_in_expression ) const
-		{
-			ElementWrite( type_name_in_expression.type_name, stream );
-		}
 		void operator()( const MoveOperator& move_operator ) const
 		{
 			stream << Keyword( Keywords::move_ ) << "( " << move_operator.var_name_ << " )";
@@ -463,6 +453,22 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 					stream << ", ";
 			}
 			stream << ")";
+		}
+		void operator()( const ArrayTypeName& array_type_name ) const
+		{
+			ElementWrite( array_type_name, stream );
+		}
+		void operator()( const FunctionTypePtr& function_type ) const
+		{
+			ElementWrite( *function_type, stream );
+		}
+		void operator()( const TupleType& tuple_type ) const
+		{
+			ElementWrite( tuple_type, stream );
+		}
+		void operator()( const RawPointerType& raw_pointer_type ) const
+		{
+			ElementWrite( raw_pointer_type, stream );
 		}
 
 	private:

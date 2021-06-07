@@ -1041,11 +1041,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
 	FunctionContext& function_context,
-	const Synt::NamedOperand& named_operand )
+	const Synt::ComplexName& named_operand )
 {
-	if( std::get_if<std::string>( &named_operand.name_.start_value ) != nullptr && named_operand.name_.tail == nullptr )
+	if( std::get_if<std::string>( &named_operand.start_value ) != nullptr && named_operand.tail == nullptr )
 	{
-		const std::string& start_name= std::get<std::string>( named_operand.name_.start_value );
+		const std::string& start_name= std::get<std::string>( named_operand.start_value );
 		if( start_name == Keywords::this_ )
 		{
 			if( function_context.this_ == nullptr || function_context.whole_this_is_unavailable )
@@ -1081,7 +1081,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		}
 	}
 
-	const Value value_entry= ResolveValue( named_operand.src_loc_, names, function_context, named_operand.name_ );
+	const Value value_entry= ResolveValue( named_operand.src_loc_, names, function_context, named_operand );
 
 	if( const ClassField* const field= value_entry.GetClassField() )
 	{
@@ -1431,16 +1431,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
 	FunctionContext& function_context,
-	const Synt::TypeNameInExpression& type_name_in_expression )
-{
-	return Value(
-		PrepareType( type_name_in_expression.type_name, names, function_context ),
-		type_name_in_expression.src_loc_ );
-}
-
-Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope& names,
-	FunctionContext& function_context,
 	const Synt::NumericConstant& numeric_constant )
 {
 	U_FundamentalType type= U_FundamentalType::InvalidType;
@@ -1642,7 +1632,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::MoveOperator& move_operator	)
 {
-	Synt::ComplexName complex_name;
+	Synt::ComplexName complex_name(move_operator.src_loc_);
 	complex_name.start_value= move_operator.var_name_;
 
 	const Value resolved_value= ResolveValue( move_operator.src_loc_, names, function_context, complex_name );
@@ -1854,6 +1844,38 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	BuildFullTypeinfo( type, var, root_namespace );
 
 	return Value( var, typeinfo.src_loc_ );
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
+	const Synt::ArrayTypeName& type_name )
+{
+	return Value( PrepareTypeImpl( names, function_context, type_name ), type_name.src_loc_ );
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
+	const Synt::FunctionTypePtr& type_name )
+{
+	return Value( PrepareTypeImpl( names, function_context, type_name ), type_name->src_loc_ );
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
+	const Synt::TupleType& type_name )
+{
+	return Value( PrepareTypeImpl( names, function_context, type_name ), type_name.src_loc_ );
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
+	const Synt::RawPointerType& type_name )
+{
+	return Value( PrepareTypeImpl( names, function_context, type_name ), type_name.src_loc_ );
 }
 
 Value CodeBuilder::BuildBinaryOperator(

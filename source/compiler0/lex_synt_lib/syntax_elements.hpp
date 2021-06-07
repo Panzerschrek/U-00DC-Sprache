@@ -17,9 +17,10 @@ namespace Synt
 
 struct EmptyVariant{};
 
+struct ComplexName;
+
 struct ArrayTypeName;
 struct TypeofTypeName;
-struct NamedTypeName;
 struct FunctionType;
 struct TupleType;
 struct RawPointerType;
@@ -34,11 +35,9 @@ struct IndexationOperator;
 struct MemberAccessOperator;
 
 struct BinaryOperator;
-struct NamedOperand;
 struct TernaryOperator;
 struct ReferenceToRawPointerOperator;
 struct RawPointerToReferenceOperator;
-struct TypeNameInExpression;
 struct NumericConstant;
 struct BooleanConstant;
 struct StringLiteral;
@@ -97,7 +96,7 @@ using NamespacePtr= std::unique_ptr<Namespace>;
 using TypeName= std::variant<
 	EmptyVariant,
 	ArrayTypeName,
-	NamedTypeName,
+	ComplexName,
 	FunctionTypePtr,
 	TupleType,
 	RawPointerType >;
@@ -114,12 +113,11 @@ using Expression= std::variant<
 	LogicalNot,
 	BitwiseNot,
 	// Main components
+	ComplexName,
 	BinaryOperator,
-	NamedOperand,
 	TernaryOperator,
 	ReferenceToRawPointerOperator,
 	RawPointerToReferenceOperator,
-	TypeNameInExpression,
 	NumericConstant,
 	BooleanConstant,
 	StringLiteral,
@@ -129,7 +127,13 @@ using Expression= std::variant<
 	CastImut,
 	CastRef,
 	CastRefUnsafe,
-	TypeInfo >;
+	TypeInfo,
+	// Type name in expression context
+	ArrayTypeName,
+	FunctionTypePtr,
+	TupleType,
+	RawPointerType
+	>;
 
 using Initializer= std::variant<
 	EmptyVariant,
@@ -225,8 +229,11 @@ public:
 	std::unique_ptr<Expression> expression;
 };
 
-struct ComplexName
+struct ComplexName final : public SyntaxElementBase
 {
+public:
+	explicit ComplexName( const SrcLoc& src_loc );
+
 	std::variant<
 		EmptyVariant, // ::
 		TypeofTypeName, // typeof(x)
@@ -269,14 +276,6 @@ public:
 	RawPointerType( const SrcLoc& src_loc );
 
 	std::unique_ptr<TypeName> element_type;
-};
-
-struct NamedTypeName final : public SyntaxElementBase
-{
-public:
-	explicit NamedTypeName( const SrcLoc& src_loc );
-
-	ComplexName name;
 };
 
 using FunctionReferencesPollution= std::pair< std::string, std::string >;
@@ -349,14 +348,6 @@ public:
 	explicit RawPointerToReferenceOperator( const SrcLoc& src_loc );
 
 	std::unique_ptr<Expression> expression;
-};
-
-struct NamedOperand final : public SyntaxElementBase
-{
-public:
-	NamedOperand( const SrcLoc& src_loc, ComplexName name );
-
-	ComplexName name_;
 };
 
 struct MoveOperator final : public SyntaxElementBase
@@ -440,14 +431,6 @@ public:
 
 	std::string value_;
 	TypeSuffix type_suffix_;
-};
-
-struct TypeNameInExpression : public SyntaxElementBase
-{
-public:
-	explicit TypeNameInExpression( const SrcLoc& src_loc );
-
-	TypeName type_name;
 };
 
 struct UnaryPlus final : public SyntaxElementBase

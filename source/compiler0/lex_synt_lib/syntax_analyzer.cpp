@@ -985,7 +985,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 			return std::move(bitwise_not);
 		}
 	case Lexem::Type::Scope:
-			return NamedOperand( it_->src_loc, ParseComplexName() );
+			return ParseComplexName();
 	case Lexem::Type::Number:
 			return ParseNumericConstant();
 	case Lexem::Type::String:
@@ -1014,13 +1014,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 		return ParseExpressionInBrackets();
 	case Lexem::Type::SquareBracketLeft:
 	case Lexem::Type::PointerTypeMark:
-		{
-			// Parse array type name: [ ElementType, 42 ]
-			// Parse raw pointer type name: $(ElementType)
-			TypeNameInExpression type_name_in_expression(it_->src_loc );
-			type_name_in_expression.type_name= ParseTypeName();
-			return std::move(type_name_in_expression);
-		}
+			return std::visit( [&](auto t) -> Expression { return t; }, ParseTypeName() );
 	case Lexem::Type::ReferenceToPointer:
 		{
 			ReferenceToRawPointerOperator reference_to_raw_pointer_operator( it_->src_loc );
@@ -1163,12 +1157,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 			return std::move(typeinfo_);
 		}
 		else if( it_->text == Keywords::fn_ || it_->text == Keywords::typeof_ || it_->text == Keywords::tup_ )
-		{
-			// Parse function type name: fn( i32 x )
-			TypeNameInExpression type_name_in_expression( it_->src_loc );
-			type_name_in_expression.type_name= ParseTypeName();
-			return std::move(type_name_in_expression);
-		}
+			return std::visit( [&](auto t) -> Expression { return t; }, ParseTypeName() );
 		else
 		{
 			if( auto macro= FetchMacro( it_->text, Macro::Context::Expression ) )
@@ -1180,7 +1169,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 				return macro_expression;
 			}
 
-			return NamedOperand( it_->src_loc, ParseComplexName() );
+			return ParseComplexName();
 		}
 	};
 
@@ -1434,11 +1423,7 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ )
 		return ParseFunctionType();
 	else
-	{
-		NamedTypeName named_type_name( it_->src_loc );
-		named_type_name.name= ParseComplexName();
-		return std::move(named_type_name);
-	}
+		return ParseComplexName();
 }
 
 std::vector<Expression> SyntaxAnalyzer::ParseTemplateParameters()
@@ -1478,7 +1463,7 @@ std::vector<Expression> SyntaxAnalyzer::ParseTemplateParameters()
 
 ComplexName SyntaxAnalyzer::ParseComplexName()
 {
-	ComplexName complex_name;
+	ComplexName complex_name(it_->src_loc);
 	std::unique_ptr<ComplexName::Component>* component= &complex_name.tail;
 
 	if( !( it_->type == Lexem::Type::Identifier || it_->type == Lexem::Type::Scope ) )

@@ -119,7 +119,7 @@ private:
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionTypePtr& function_type_name_ptr );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TupleType& tuple_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RawPointerType& raw_pointer_type_name );
-	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamedTypeName& named_type_name );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& named_type_name );
 
 	llvm::FunctionType* GetLLVMFunctionType( const Function& function_type );
 
@@ -170,7 +170,6 @@ private:
 		std::vector<bool>& template_parameters_usage_flags );
 
 	TemplateSignatureParam CreateTemplateSignatureParameter(
-		const SrcLoc& src_loc,
 		const Synt::ComplexName& signature_parameter,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
@@ -186,6 +185,41 @@ private:
 
 	TemplateSignatureParam CreateTemplateSignatureParameter(
 		const Synt::TypeName& template_parameter,
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
+		std::vector<bool>& template_parameters_usage_flags );
+
+	TemplateSignatureParam CreateTemplateSignatureParameter(
+		const Synt::EmptyVariant& empty_variant,
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
+		std::vector<bool>& template_parameters_usage_flags );
+
+	TemplateSignatureParam CreateTemplateSignatureParameter(
+		const Synt::ArrayTypeName& array_type_name,
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
+		std::vector<bool>& template_parameters_usage_flags );
+
+	TemplateSignatureParam CreateTemplateSignatureParameter(
+		const Synt::FunctionTypePtr& function_pointer_type_name_ptr,
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
+		std::vector<bool>& template_parameters_usage_flags );
+
+	TemplateSignatureParam CreateTemplateSignatureParameter(
+		const Synt::TupleType& tuple_type_name,
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
+		std::vector<bool>& template_parameters_usage_flags );
+
+	TemplateSignatureParam CreateTemplateSignatureParameter(
+		const Synt::RawPointerType& raw_pointer_type_name,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
@@ -427,11 +461,10 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::LogicalNot& logical_not );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::BitwiseNot& bitwise_not );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::BinaryOperator& binary_operator );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::NamedOperand& named_operand );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::ComplexName& named_operand );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TernaryOperator& ternary_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::ReferenceToRawPointerOperator& reference_to_raw_pointer_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::RawPointerToReferenceOperator& raw_pointer_to_reference_operator );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TypeNameInExpression& type_name_in_expression );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::NumericConstant& numeric_constant );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::BooleanConstant& boolean_constant );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::StringLiteral& string_literal );
@@ -442,6 +475,10 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CastRef& cast_ref );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CastRefUnsafe& cast_ref_unsafe );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TypeInfo& typeinfo );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::ArrayTypeName& type_name );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::FunctionTypePtr& type_name );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TupleType& type_name );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::RawPointerType& type_name );
 
 	Value BuildExpressionCodeAndDestroyTemporaries(
 		const Synt::Expression& expression,
