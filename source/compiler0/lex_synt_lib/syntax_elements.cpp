@@ -104,77 +104,69 @@ BinaryOperator::BinaryOperator( const SrcLoc& src_loc )
 	: SyntaxElementBase( src_loc )
 {}
 
-ExpressionComponentWithUnaryOperators::ExpressionComponentWithUnaryOperators( const SrcLoc& src_loc )
+TernaryOperator::TernaryOperator( const SrcLoc& src_loc )
 	: SyntaxElementBase( src_loc )
 {}
 
-TernaryOperator::TernaryOperator( const SrcLoc& src_loc )
-	: ExpressionComponentWithUnaryOperators( src_loc )
-{}
-
 ReferenceToRawPointerOperator::ReferenceToRawPointerOperator( const SrcLoc& src_loc )
-	: ExpressionComponentWithUnaryOperators( src_loc )
+	: SyntaxElementBase( src_loc )
 {}
 
 RawPointerToReferenceOperator::RawPointerToReferenceOperator( const SrcLoc& src_loc )
-	: ExpressionComponentWithUnaryOperators( src_loc )
+	: SyntaxElementBase( src_loc )
 {}
 
 NamedOperand::NamedOperand( const SrcLoc& src_loc, ComplexName name )
-	: ExpressionComponentWithUnaryOperators(src_loc)
+	: SyntaxElementBase(src_loc)
 	, name_( std::move(name) )
 {}
 
 MoveOperator::MoveOperator( const SrcLoc& src_loc )
-	: ExpressionComponentWithUnaryOperators(src_loc)
+	: SyntaxElementBase(src_loc)
 {}
 
 TakeOperator::TakeOperator( const SrcLoc& src_loc )
-	: ExpressionComponentWithUnaryOperators(src_loc)
+	: SyntaxElementBase(src_loc)
 {}
 
 CastRef::CastRef( const SrcLoc& src_loc )
-	: ExpressionComponentWithUnaryOperators(src_loc)
+	: SyntaxElementBase(src_loc)
 {}
 
 CastRefUnsafe::CastRefUnsafe( const SrcLoc& src_loc )
-	: ExpressionComponentWithUnaryOperators(src_loc)
+	: SyntaxElementBase(src_loc)
 {}
 
 CastImut::CastImut( const SrcLoc& src_loc )
-	: ExpressionComponentWithUnaryOperators(src_loc)
+	: SyntaxElementBase(src_loc)
 {}
 
 CastMut::CastMut( const SrcLoc& src_loc )
-	: ExpressionComponentWithUnaryOperators(src_loc)
+	: SyntaxElementBase(src_loc)
 {}
 
 TypeInfo::TypeInfo( const SrcLoc& src_loc )
-	: ExpressionComponentWithUnaryOperators(src_loc)
+	: SyntaxElementBase(src_loc)
 {}
 
 BooleanConstant::BooleanConstant( const SrcLoc& src_loc, bool value )
-	: ExpressionComponentWithUnaryOperators(src_loc)
+	: SyntaxElementBase(src_loc)
 	, value_( value )
 {}
 
 NumericConstant::NumericConstant( const SrcLoc& src_loc )
-	: ExpressionComponentWithUnaryOperators(src_loc)
+	: SyntaxElementBase(src_loc)
 {
 }
 
 StringLiteral::StringLiteral( const SrcLoc& src_loc )
-	: ExpressionComponentWithUnaryOperators(src_loc)
+	: SyntaxElementBase(src_loc)
 {
 	std::fill( type_suffix_.begin(), type_suffix_.end(), 0 );
 }
 
-BracketExpression::BracketExpression( const SrcLoc& src_loc)
-	: ExpressionComponentWithUnaryOperators(src_loc)
-{}
-
 TypeNameInExpression::TypeNameInExpression( const SrcLoc& src_loc )
-	: ExpressionComponentWithUnaryOperators( src_loc )
+	: SyntaxElementBase( src_loc )
 {}
 
 Block::Block( const SrcLoc& start_src_loc )
@@ -353,14 +345,6 @@ OverloadedOperator PrefixOperatorKind( const UnaryMinus& ) { return OverloadedOp
 OverloadedOperator PrefixOperatorKind( const LogicalNot& ) { return OverloadedOperator::LogicalNot; }
 OverloadedOperator PrefixOperatorKind( const BitwiseNot& ) { return OverloadedOperator::BitwiseNot; }
 
-}
-
-OverloadedOperator PrefixOperatorKind( const UnaryPrefixOperator& prefix_operator )
-{
-	return
-		std::visit(
-			[]( const auto& t ) { return PrefixOperatorKind(t); },
-			prefix_operator );
 }
 
 } // namespace Synt

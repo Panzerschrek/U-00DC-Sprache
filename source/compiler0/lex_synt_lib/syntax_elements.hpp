@@ -40,7 +40,6 @@ struct ReferenceToRawPointerOperator;
 struct RawPointerToReferenceOperator;
 struct TypeNameInExpression;
 struct NumericConstant;
-struct BracketExpression;
 struct BooleanConstant;
 struct StringLiteral;
 struct MoveOperator;
@@ -104,19 +103,18 @@ using TypeName= std::variant<
 	TupleType,
 	RawPointerType >;
 
-using UnaryPrefixOperator= std::variant<
+using Expression= std::variant<
+	EmptyVariant,
+	// Postfix operators
+	CallOperator,
+	IndexationOperator,
+	MemberAccessOperator,
+	// Prefix operators
 	UnaryPlus,
 	UnaryMinus,
 	LogicalNot,
-	BitwiseNot >;
-
-using UnaryPostfixOperator= std::variant<
-	CallOperator,
-	IndexationOperator,
-	MemberAccessOperator >;
-
-using Expression= std::variant<
-	EmptyVariant,
+	BitwiseNot,
+	// Main components
 	BinaryOperator,
 	NamedOperand,
 	TernaryOperator,
@@ -124,7 +122,6 @@ using Expression= std::variant<
 	RawPointerToReferenceOperator,
 	TypeNameInExpression,
 	NumericConstant,
-	BracketExpression,
 	BooleanConstant,
 	StringLiteral,
 	MoveOperator,
@@ -329,16 +326,7 @@ public:
 	std::unique_ptr<Expression> right_;
 };
 
-struct ExpressionComponentWithUnaryOperators : public SyntaxElementBase
-{
-public:
-	explicit ExpressionComponentWithUnaryOperators( const SrcLoc& src_loc );
-
-	std::vector<UnaryPrefixOperator > prefix_operators_ ; // Should evaluate in reverse order.
-	std::vector<UnaryPostfixOperator> postfix_operators_;
-};
-
-struct TernaryOperator final : public ExpressionComponentWithUnaryOperators
+struct TernaryOperator final : public SyntaxElementBase
 {
 public:
 	explicit TernaryOperator( const SrcLoc& src_loc );
@@ -348,7 +336,7 @@ public:
 	std::unique_ptr<Expression> false_branch;
 };
 
-struct ReferenceToRawPointerOperator final : public ExpressionComponentWithUnaryOperators
+struct ReferenceToRawPointerOperator final : public SyntaxElementBase
 {
 public:
 	explicit ReferenceToRawPointerOperator( const SrcLoc& src_loc );
@@ -356,7 +344,7 @@ public:
 	std::unique_ptr<Expression> expression;
 };
 
-struct RawPointerToReferenceOperator final : public ExpressionComponentWithUnaryOperators
+struct RawPointerToReferenceOperator final : public SyntaxElementBase
 {
 public:
 	explicit RawPointerToReferenceOperator( const SrcLoc& src_loc );
@@ -364,7 +352,7 @@ public:
 	std::unique_ptr<Expression> expression;
 };
 
-struct NamedOperand final : public ExpressionComponentWithUnaryOperators
+struct NamedOperand final : public SyntaxElementBase
 {
 public:
 	NamedOperand( const SrcLoc& src_loc, ComplexName name );
@@ -372,7 +360,7 @@ public:
 	ComplexName name_;
 };
 
-struct MoveOperator final : public ExpressionComponentWithUnaryOperators
+struct MoveOperator final : public SyntaxElementBase
 {
 public:
 	MoveOperator( const SrcLoc& src_loc );
@@ -380,7 +368,7 @@ public:
 	std::string var_name_;
 };
 
-struct TakeOperator final : public ExpressionComponentWithUnaryOperators
+struct TakeOperator final : public SyntaxElementBase
 {
 public:
 	TakeOperator( const SrcLoc& src_loc );
@@ -388,7 +376,7 @@ public:
 	std::unique_ptr<Expression> expression_;
 };
 
-struct CastRef final : public ExpressionComponentWithUnaryOperators
+struct CastRef final : public SyntaxElementBase
 {
 public:
 	CastRef( const SrcLoc& src_loc );
@@ -397,7 +385,7 @@ public:
 	std::unique_ptr<Expression> expression_;
 };
 
-struct CastRefUnsafe final : public ExpressionComponentWithUnaryOperators
+struct CastRefUnsafe : public SyntaxElementBase
 {
 public:
 	CastRefUnsafe( const SrcLoc& src_loc );
@@ -406,7 +394,7 @@ public:
 	std::unique_ptr<Expression> expression_;
 };
 
-struct CastImut final : public ExpressionComponentWithUnaryOperators
+struct CastImut final : public SyntaxElementBase
 {
 public:
 	CastImut( const SrcLoc& src_loc );
@@ -414,7 +402,7 @@ public:
 	std::unique_ptr<Expression> expression_;
 };
 
-struct CastMut final : public ExpressionComponentWithUnaryOperators
+struct CastMut final : public SyntaxElementBase
 {
 public:
 	CastMut( const SrcLoc& src_loc );
@@ -422,7 +410,7 @@ public:
 	std::unique_ptr<Expression> expression_;
 };
 
-struct TypeInfo final : public ExpressionComponentWithUnaryOperators
+struct TypeInfo final : public SyntaxElementBase
 {
 public:
 	TypeInfo( const SrcLoc& src_loc );
@@ -430,7 +418,7 @@ public:
 	std::unique_ptr<TypeName> type_;
 };
 
-struct BooleanConstant final : public ExpressionComponentWithUnaryOperators
+struct BooleanConstant final : public SyntaxElementBase
 {
 public:
 	BooleanConstant( const SrcLoc& src_loc, bool value );
@@ -440,13 +428,13 @@ public:
 
 using TypeSuffix= std::array<char, 7>;
 
-struct NumericConstant final : public ExpressionComponentWithUnaryOperators, public NumberLexemData
+struct NumericConstant final : public SyntaxElementBase, public NumberLexemData
 {
 public:
 	NumericConstant( const SrcLoc& src_loc );
 };
 
-struct StringLiteral final : public ExpressionComponentWithUnaryOperators
+struct StringLiteral final : public SyntaxElementBase
 {
 public:
 	StringLiteral( const SrcLoc& src_loc );
@@ -455,15 +443,7 @@ public:
 	TypeSuffix type_suffix_;
 };
 
-struct BracketExpression final : public ExpressionComponentWithUnaryOperators
-{
-public:
-	BracketExpression( const SrcLoc& src_loc );
-
-	std::unique_ptr<Expression> expression_;
-};
-
-struct TypeNameInExpression final : public ExpressionComponentWithUnaryOperators
+struct TypeNameInExpression : public SyntaxElementBase
 {
 public:
 	explicit TypeNameInExpression( const SrcLoc& src_loc );
@@ -475,24 +455,32 @@ struct UnaryPlus final : public SyntaxElementBase
 {
 public:
 	explicit UnaryPlus( const SrcLoc& src_loc );
+
+	std::unique_ptr<Expression> expression_;
 };
 
 struct UnaryMinus final : public SyntaxElementBase
 {
 public:
 	explicit UnaryMinus( const SrcLoc& src_loc );
+
+	std::unique_ptr<Expression> expression_;
 };
 
 struct LogicalNot final : public SyntaxElementBase
 {
 public:
 	explicit LogicalNot( const SrcLoc& src_loc );
+
+	std::unique_ptr<Expression> expression_;
 };
 
 struct BitwiseNot final : public SyntaxElementBase
 {
 public:
 	explicit BitwiseNot( const SrcLoc& src_loc );
+
+	std::unique_ptr<Expression> expression_;
 };
 
 struct CallOperator final : public SyntaxElementBase
@@ -500,6 +488,7 @@ struct CallOperator final : public SyntaxElementBase
 public:
 	CallOperator( const SrcLoc& src_loc );
 
+	std::unique_ptr<Expression> expression_;
 	std::vector<Expression> arguments_;
 };
 
@@ -508,7 +497,8 @@ struct IndexationOperator final : public SyntaxElementBase
 public:
 	explicit IndexationOperator( const SrcLoc& src_loc );
 
-	Expression index_;
+	std::unique_ptr<Expression> expression_;
+	std::unique_ptr<Expression> index_;
 };
 
 struct MemberAccessOperator final : public SyntaxElementBase
@@ -516,6 +506,7 @@ struct MemberAccessOperator final : public SyntaxElementBase
 public:
 	MemberAccessOperator( const SrcLoc& src_loc );
 
+	std::unique_ptr<Expression> expression_;
 	std::string member_name_;
 	std::vector<Expression> template_parameters;
 	bool have_template_parameters= false;
@@ -966,8 +957,6 @@ public:
 SrcLoc GetExpressionSrcLoc( const Expression& expression );
 SrcLoc GetInitializerSrcLoc( const Initializer& initializer );
 SrcLoc GetBlockElementSrcLoc( const BlockElement& block_element );
-
-OverloadedOperator PrefixOperatorKind( const UnaryPrefixOperator& prefix_operator );
 
 } // namespace Synt
 

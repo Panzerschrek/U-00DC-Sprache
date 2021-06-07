@@ -256,6 +256,10 @@ private:
 	NumericConstant ParseNumericConstant();
 
 	Expression ParseExpression();
+	Expression ParseExpressionInBrackets();
+	Expression ParseExpressionComponent();
+	Expression TryParseExpressionComponentPostfixOperator( Expression expr );
+	Expression ParseExpressionComponentHelper();
 
 	FunctionArgument ParseFunctionArgument();
 	void ParseFunctionTypeEnding( FunctionType& result );
@@ -915,353 +919,176 @@ Expression SyntaxAnalyzer::ParseExpression()
 
 	while( NotEndOfFile() )
 	{
-		std::vector<UnaryPrefixOperator> prefix_operators;
+		chain.emplace_back();
+		chain.back().expression= ParseExpressionComponent();
 
-		// Prefix operators.
-		while( NotEndOfFile() )
+		if( const auto op= LexemToBinaryOperator( *it_ ) )
 		{
-			switch( it_->type )
+			chain.back().op= *op;
+			chain.back().src_loc= it_->src_loc;
+			NextLexem();
+		}
+		else
+			break;
+	}
+
+	if(chain.empty())
+		return Expression();
+
+	return FoldBinaryOperatorsChain( chain.data(), chain.size() );
+}
+
+Expression SyntaxAnalyzer::ParseExpressionInBrackets()
+{
+	if( it_->type != Lexem::Type::BracketLeft )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	Expression expr= ParseExpression();
+
+	if( it_->type != Lexem::Type::BracketRight )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	return expr;
+}
+
+Expression SyntaxAnalyzer::ParseExpressionComponent()
+{
+	return TryParseExpressionComponentPostfixOperator(ParseExpressionComponentHelper());
+}
+
+Expression SyntaxAnalyzer::TryParseExpressionComponentPostfixOperator( Expression expr )
+{
+	switch( it_->type )
+	{
+	case Lexem::Type::SquareBracketLeft:
+		{
+			IndexationOperator indexation_opearator( it_->src_loc );
+			NextLexem();
+
+			indexation_opearator.expression_= std::make_unique<Expression>(std::move(expr));
+			indexation_opearator.index_= std::make_unique<Expression>(ParseExpression());
+
+			if( it_->type != Lexem::Type::SquareBracketRight )
 			{
-			case Lexem::Type::Identifier:
-			case Lexem::Type::Scope:
-			case Lexem::Type::Number:
-			case Lexem::Type::String:
-			case Lexem::Type::BracketLeft:
-			case Lexem::Type::SquareBracketLeft:
-			case Lexem::Type::PointerTypeMark:
-			case Lexem::Type::ReferenceToPointer:
-			case Lexem::Type::PointerToReference:
-				goto parse_operand;
+				PushErrorMessage();
+				return EmptyVariant();
+			}
+			NextLexem();
 
-			case Lexem::Type::Plus:
-				 prefix_operators.emplace_back( UnaryPlus( it_->src_loc ) );
-				NextLexem();
-				break;
-
-			case Lexem::Type::Minus:
-				prefix_operators.emplace_back( UnaryMinus( it_->src_loc ) );
-				NextLexem();
-				break;
-
-			case Lexem::Type::Not:
-				prefix_operators.emplace_back( LogicalNot( it_->src_loc ) );
-				NextLexem();
-				break;
-
-			case Lexem::Type::Tilda:
-				prefix_operators.emplace_back( BitwiseNot( it_->src_loc ) );
-				NextLexem();
-				break;
-
-			default:
-				break;
-			};
+			return std::move(indexation_opearator);
 		}
 
-	parse_operand:
-		Expression current_node;
-		ExpressionComponentWithUnaryOperators* current_node_ptr= nullptr;
-
-		// Operand.
-		if( it_->type == Lexem::Type::Identifier )
+	case Lexem::Type::BracketLeft:
 		{
-			if( it_->text == Keywords::true_ )
+			CallOperator call_operator( it_->src_loc );
+			NextLexem();
+
+			call_operator.expression_= std::make_unique<Expression>(std::move(expr));
+
+			while( NotEndOfFile() )
 			{
-				current_node= BooleanConstant( it_->src_loc, true );
-				current_node_ptr= std::get_if<BooleanConstant>( &current_node );
-				NextLexem();
-			}
-			else if( it_->text == Keywords::false_ )
-			{
-				current_node= BooleanConstant( it_->src_loc, false );
-				current_node_ptr= std::get_if<BooleanConstant>( &current_node );
-				NextLexem();
-			}
-			else if( it_->text == Keywords::move_ )
-			{
-				MoveOperator move_operator( it_->src_loc );
-
-				NextLexem();
-				if( it_->type != Lexem::Type::BracketLeft )
+				if( it_->type == Lexem::Type::BracketRight )
 				{
-					PushErrorMessage();
-					return EmptyVariant();
+					NextLexem();
+					break;
 				}
-				NextLexem();
 
-				if( it_->type != Lexem::Type::Identifier )
+				call_operator.arguments_.emplace_back( ParseExpression() );
+
+				if( it_->type == Lexem::Type::Comma )
 				{
-					PushErrorMessage();
-					return EmptyVariant();
+					NextLexem();
+					if( it_->type == Lexem::Type::BracketRight )
+						PushErrorMessage();
 				}
-				move_operator.var_name_= it_->text;
-				NextLexem();
-
-				if( it_->type != Lexem::Type::BracketRight )
+				else if( it_->type == Lexem::Type::BracketRight )
 				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
-				NextLexem();
-
-				current_node= std::move(move_operator);
-				current_node_ptr= std::get_if<MoveOperator>( &current_node );
-			}
-			else if( it_->text == Keywords::take_ )
-			{
-				TakeOperator take_operator( it_->src_loc );
-
-				NextLexem();
-				if( it_->type != Lexem::Type::BracketLeft )
-				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
-				NextLexem();
-
-				take_operator.expression_= std::make_unique<Expression>(ParseExpression());
-
-				if( it_->type != Lexem::Type::BracketRight )
-				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
-				NextLexem();
-
-				current_node= std::move(take_operator);
-				current_node_ptr= std::get_if<TakeOperator>( &current_node );
-			}
-			else if( it_->text == Keywords::select_ )
-			{
-				TernaryOperator ternary_operator( it_->src_loc );
-
-				NextLexem();
-				if( it_->type != Lexem::Type::BracketLeft )
-				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
-				NextLexem();
-				ternary_operator.condition= std::make_unique<Expression>( ParseExpression() );
-
-				if( it_->type != Lexem::Type::Question )
-				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
-				NextLexem();
-				ternary_operator.true_branch= std::make_unique<Expression>( ParseExpression() );
-
-				if( it_->type != Lexem::Type::Colon )
-				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
-				NextLexem();
-				ternary_operator.false_branch= std::make_unique<Expression>( ParseExpression() );
-
-				if( it_->type != Lexem::Type::BracketRight )
-				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
-				NextLexem();
-
-				current_node= std::move(ternary_operator);
-				current_node_ptr= std::get_if<TernaryOperator>( &current_node );
-			}
-			else if( it_->text == Keywords::cast_ref_ )
-			{
-				CastRef cast( it_->src_loc );
-
-				NextLexem();
-				if( it_->type != Lexem::Type::TemplateBracketLeft )
-				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
-				NextLexem();
-
-				cast.type_= std::make_unique<TypeName>( ParseTypeName() );
-				if( it_->type != Lexem::Type::TemplateBracketRight )
-				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
-				NextLexem();
-
-				if( it_->type != Lexem::Type::BracketLeft )
-				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
-				NextLexem();
-
-				cast.expression_= std::make_unique<Expression>( ParseExpression() );
-
-				if( it_->type != Lexem::Type::BracketRight )
-				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
-				NextLexem();
-
-				current_node= std::move(cast);
-				current_node_ptr= std::get_if<CastRef>( &current_node );
-			}
-			else if( it_->text == Keywords::cast_ref_unsafe_ )
-			{
-				CastRefUnsafe cast( it_->src_loc );
-
-				NextLexem();
-				if( it_->type != Lexem::Type::TemplateBracketLeft )
-				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
-				NextLexem();
-
-				cast.type_= std::make_unique<TypeName>( ParseTypeName() );
-				if( it_->type != Lexem::Type::TemplateBracketRight )
-				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
-				NextLexem();
-
-				if( it_->type != Lexem::Type::BracketLeft )
-				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
-				NextLexem();
-
-				cast.expression_= std::make_unique<Expression>( ParseExpression() );
-
-				if( it_->type != Lexem::Type::BracketRight )
-				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
-				NextLexem();
-
-				current_node= std::move(cast);
-				current_node_ptr= std::get_if<CastRefUnsafe>( &current_node );
-			}
-			else if( it_->text == Keywords::cast_imut_ )
-			{
-				CastImut cast( it_->src_loc );
-
-				NextLexem();
-
-				if( it_->type != Lexem::Type::BracketLeft )
-				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
-				NextLexem();
-
-				cast.expression_= std::make_unique<Expression>( ParseExpression() );
-
-				if( it_->type != Lexem::Type::BracketRight )
-				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
-				NextLexem();
-
-				current_node= std::move(cast);
-				current_node_ptr= std::get_if<CastImut>( &current_node );
-			}
-			else if( it_->text == Keywords::cast_mut_ )
-			{
-				CastMut cast( it_->src_loc );
-
-				NextLexem();
-
-				if( it_->type != Lexem::Type::BracketLeft )
-				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
-				NextLexem();
-
-				cast.expression_= std::make_unique<Expression>( ParseExpression() );
-
-				if( it_->type != Lexem::Type::BracketRight )
-				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
-				NextLexem();
-
-				current_node= std::move(cast);
-				current_node_ptr= std::get_if<CastMut>( &current_node );
-			}
-			else if( it_->text == Keywords::typeinfo_ )
-			{
-				TypeInfo typeinfo_(it_->src_loc );
-				NextLexem();
-
-				if( it_->type != Lexem::Type::TemplateBracketLeft )
-				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
-				NextLexem();
-
-				typeinfo_.type_= std::make_unique<TypeName>( ParseTypeName() );
-				if( it_->type != Lexem::Type::TemplateBracketRight )
-				{
-					PushErrorMessage();
-					return EmptyVariant();
-				}
-				NextLexem();
-
-				current_node= std::move(typeinfo_);
-				current_node_ptr= std::get_if<TypeInfo>( &current_node );
-			}
-			else if( it_->text == Keywords::fn_ || it_->text == Keywords::typeof_ || it_->text == Keywords::tup_ )
-			{
-				// Parse function type name: fn( i32 x )
-				TypeNameInExpression type_name_in_expression( it_->src_loc );
-				type_name_in_expression.type_name= ParseTypeName();
-				current_node= std::move(type_name_in_expression);
-				current_node_ptr= std::get_if<TypeNameInExpression>( &current_node );
-			}
-			else
-			{
-				if( auto macro= FetchMacro( it_->text, Macro::Context::Expression ) )
-				{
-					const SrcLoc& macro_src_loc= it_->src_loc;
-					Expression macro_expression= ExpandMacro( *macro, &SyntaxAnalyzer::ParseExpression );
-					if( std::get_if<EmptyVariant>( &macro_expression ) != nullptr )
-						return EmptyVariant();
-
-					BracketExpression bracket_expression( macro_src_loc );
-					bracket_expression.expression_= std::make_unique<Expression>( std::move(macro_expression) );
-
-					current_node= std::move(bracket_expression);
-					current_node_ptr= std::get_if<BracketExpression>( &current_node );
-				}
-				else
-				{
-					current_node= NamedOperand( it_->src_loc, ParseComplexName() );
-					current_node_ptr= std::get_if<NamedOperand>( &current_node );
+					NextLexem();
+					break;
 				}
 			}
+
+			return std::move(call_operator);
+
 		}
-		else if( it_->type == Lexem::Type::Scope )
+
+	case Lexem::Type::Dot:
 		{
-			current_node= NamedOperand( it_->src_loc, ParseComplexName() );
-			current_node_ptr= std::get_if<NamedOperand>( &current_node );
+			MemberAccessOperator member_access_operator( it_->src_loc );
+			NextLexem();
+
+			member_access_operator.expression_= std::make_unique<Expression>(std::move(expr));
+
+			if( it_->type != Lexem::Type::Identifier )
+			{
+				PushErrorMessage();
+				return EmptyVariant();
+			}
+
+			member_access_operator.member_name_= it_->text;
+			NextLexem();
+
+			if( it_->type == Lexem::Type::TemplateBracketLeft )
+			{
+				member_access_operator.have_template_parameters= true;
+				member_access_operator.template_parameters= ParseTemplateParameters();
+			}
+
+			return std::move(member_access_operator);
 		}
-		else if( it_->type == Lexem::Type::Number )
+
+	default:
+		return std::move(expr);
+	};
+}
+
+Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
+{
+	switch( it_->type )
+	{
+	case Lexem::Type::Plus:
 		{
-			current_node= ParseNumericConstant();
-			current_node_ptr= std::get_if<NumericConstant>( &current_node );
+			UnaryPlus unary_plus( it_->src_loc );
+			NextLexem();
+
+			unary_plus.expression_= std::make_unique<Expression>(ParseExpressionComponent());
+			return std::move(unary_plus);
 		}
-		else if( it_->type == Lexem::Type::String )
+	case Lexem::Type::Minus:
+		{
+			UnaryMinus unary_minus( it_->src_loc );
+			NextLexem();
+
+			unary_minus.expression_= std::make_unique<Expression>(ParseExpressionComponent());
+			return std::move(unary_minus);
+		}
+	case Lexem::Type::Not:
+		{
+			LogicalNot logical_not( it_->src_loc );
+			NextLexem();
+
+			logical_not.expression_= std::make_unique<Expression>(ParseExpressionComponent());
+			return std::move(logical_not);
+		}
+	case Lexem::Type::Tilda:
+		{
+			BitwiseNot bitwise_not( it_->src_loc );
+			NextLexem();
+
+			bitwise_not.expression_= std::make_unique<Expression>(ParseExpressionComponent());
+			return std::move(bitwise_not);
+		}
+	case Lexem::Type::Scope:
+			return NamedOperand( it_->src_loc, ParseComplexName() );
+	case Lexem::Type::Number:
+			return ParseNumericConstant();
+	case Lexem::Type::String:
 		{
 			StringLiteral string_literal( it_->src_loc );
 			string_literal.value_= it_->text;
@@ -1281,43 +1108,20 @@ Expression SyntaxAnalyzer::ParseExpression()
 				NextLexem();
 			}
 
-			current_node= std::move(string_literal);
-			current_node_ptr= std::get_if<StringLiteral>( &current_node );
+			return std::move(string_literal);
 		}
-		else if( it_->type == Lexem::Type::BracketLeft )
-		{
-			NextLexem();
-
-			BracketExpression bracket_expression( (it_-1)->src_loc );
-			bracket_expression.expression_= std::make_unique<Expression>( ParseExpression() );
-
-			current_node= std::move(bracket_expression);
-			current_node_ptr= std::get_if<BracketExpression>( &current_node );
-
-			if( it_->type != Lexem::Type::BracketRight )
-			{
-				PushErrorMessage();
-				return EmptyVariant();
-			}
-			NextLexem();
-		}
-		else if( it_->type == Lexem::Type::SquareBracketLeft )
+	case Lexem::Type::BracketLeft:
+		return ParseExpressionInBrackets();
+	case Lexem::Type::SquareBracketLeft:
+	case Lexem::Type::PointerTypeMark:
 		{
 			// Parse array type name: [ ElementType, 42 ]
-			TypeNameInExpression type_name_in_expression(it_->src_loc );
-			type_name_in_expression.type_name= ParseTypeName();
-			current_node= std::move(type_name_in_expression);
-			current_node_ptr= std::get_if<TypeNameInExpression>( &current_node );
-		}
-		else if( it_->type == Lexem::Type::PointerTypeMark )
-		{
 			// Parse raw pointer type name: $(ElementType)
 			TypeNameInExpression type_name_in_expression(it_->src_loc );
 			type_name_in_expression.type_name= ParseTypeName();
-			current_node= std::move(type_name_in_expression);
-			current_node_ptr= std::get_if<TypeNameInExpression>( &current_node );
+			return std::move(type_name_in_expression);
 		}
-		else if( it_->type == Lexem::Type::ReferenceToPointer )
+	case Lexem::Type::ReferenceToPointer:
 		{
 			ReferenceToRawPointerOperator reference_to_raw_pointer_operator( it_->src_loc );
 			NextLexem();
@@ -1338,10 +1142,9 @@ Expression SyntaxAnalyzer::ParseExpression()
 			}
 			NextLexem();
 
-			current_node= std::move(reference_to_raw_pointer_operator);
-			current_node_ptr= std::get_if<ReferenceToRawPointerOperator>( &current_node );
+			return std::move(reference_to_raw_pointer_operator);
 		}
-		else if( it_->type == Lexem::Type::PointerToReference )
+	case Lexem::Type::PointerToReference:
 		{
 			RawPointerToReferenceOperator raw_pointer_to_reference_operator( it_->src_loc );
 			NextLexem();
@@ -1362,118 +1165,12 @@ Expression SyntaxAnalyzer::ParseExpression()
 			}
 			NextLexem();
 
-			current_node= std::move(raw_pointer_to_reference_operator);
-			current_node_ptr= std::get_if<RawPointerToReferenceOperator>( &current_node );
+			return std::move(raw_pointer_to_reference_operator);
 		}
-		else U_ASSERT(false);
+	};
 
-		U_ASSERT( current_node_ptr != nullptr );
-		current_node_ptr->prefix_operators_= std::move( prefix_operators );
-
-		// Postfix operators.
-		bool end_postfix_operators= false;
-		while( !end_postfix_operators )
-		{
-			switch( it_->type )
-			{
-			case Lexem::Type::SquareBracketLeft:
-				{
-					IndexationOperator indexation_opearator( it_->src_loc );
-					NextLexem();
-
-					indexation_opearator.index_= ParseExpression();
-					current_node_ptr->postfix_operators_.emplace_back( std::move(indexation_opearator) );
-
-					if( it_->type != Lexem::Type::SquareBracketRight )
-					{
-						PushErrorMessage();
-						return EmptyVariant();
-					}
-					NextLexem();
-				}
-				break;
-
-			case Lexem::Type::BracketLeft:
-				{
-					CallOperator call_operator( it_->src_loc );
-					NextLexem();
-
-					while( NotEndOfFile() )
-					{
-						if( it_->type == Lexem::Type::BracketRight )
-						{
-							NextLexem();
-							break;
-						}
-
-						call_operator.arguments_.emplace_back( ParseExpression() );
-
-						if( it_->type == Lexem::Type::Comma )
-						{
-							NextLexem();
-							if( it_->type == Lexem::Type::BracketRight )
-								PushErrorMessage();
-						}
-						else if( it_->type == Lexem::Type::BracketRight )
-						{
-							NextLexem();
-							break;
-						}
-					}
-
-					current_node_ptr->postfix_operators_.emplace_back( std::move(call_operator) );
-
-				} break;
-
-			case Lexem::Type::Dot:
-				{
-					MemberAccessOperator member_access_operator( it_->src_loc );
-					NextLexem();
-
-					if( it_->type != Lexem::Type::Identifier )
-					{
-						PushErrorMessage();
-						return EmptyVariant();
-					}
-
-					member_access_operator.member_name_= it_->text;
-					NextLexem();
-
-					if( it_->type == Lexem::Type::TemplateBracketLeft )
-					{
-						member_access_operator.have_template_parameters= true;
-						member_access_operator.template_parameters= ParseTemplateParameters();
-					}
-
-					current_node_ptr->postfix_operators_.emplace_back( std::move( member_access_operator ) );
-				} break;
-
-			default:
-				end_postfix_operators= true;
-				break;
-			};
-
-			if( end_postfix_operators )
-				break;
-		}
-
-		chain.emplace_back();
-		chain.back().expression= std::move(current_node);
-
-		if( const auto op= LexemToBinaryOperator( *it_ ) )
-		{
-			chain.back().op= *op;
-			chain.back().src_loc= it_->src_loc;
-			NextLexem();
-		}
-		else
-			break;
-	}
-
-	if(chain.empty())
-		return Expression();
-
-	return FoldBinaryOperatorsChain( chain.data(), chain.size() );
+	// TODO - produce error here?
+	return Expression();
 }
 
 FunctionArgument SyntaxAnalyzer::ParseFunctionArgument()
