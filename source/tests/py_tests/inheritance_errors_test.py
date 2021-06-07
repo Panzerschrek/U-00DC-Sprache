@@ -42,9 +42,7 @@ def BaseUnavailable_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 1 )
-	assert( errors_list[1].error_code == "BaseUnavailable" )
-	assert( errors_list[1].src_loc.line == 10 )
+	assert( HaveError( errors_list, "BaseUnavailable", 10 ) )
 
 
 def BaseUnavailable_Test2():
