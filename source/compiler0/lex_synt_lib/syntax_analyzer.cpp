@@ -1125,21 +1125,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 			ReferenceToRawPointerOperator reference_to_raw_pointer_operator( it_->src_loc );
 			NextLexem();
 
-			if( it_->type != Lexem::Type::BracketLeft )
-			{
-				PushErrorMessage();
-				return EmptyVariant();
-			}
-			NextLexem();
-
-			reference_to_raw_pointer_operator.expression= std::make_unique<Expression>( ParseExpression() );
-
-			if( it_->type != Lexem::Type::BracketRight )
-			{
-				PushErrorMessage();
-				return EmptyVariant();
-			}
-			NextLexem();
+			reference_to_raw_pointer_operator.expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
 
 			return std::move(reference_to_raw_pointer_operator);
 		}
@@ -1148,21 +1134,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 			RawPointerToReferenceOperator raw_pointer_to_reference_operator( it_->src_loc );
 			NextLexem();
 
-			if( it_->type != Lexem::Type::BracketLeft )
-			{
-				PushErrorMessage();
-				return EmptyVariant();
-			}
-			NextLexem();
-
-			raw_pointer_to_reference_operator.expression= std::make_unique<Expression>( ParseExpression() );
-
-			if( it_->type != Lexem::Type::BracketRight )
-			{
-				PushErrorMessage();
-				return EmptyVariant();
-			}
-			NextLexem();
+			raw_pointer_to_reference_operator.expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
 
 			return std::move(raw_pointer_to_reference_operator);
 		}
@@ -1211,23 +1183,9 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 		else if( it_->text == Keywords::take_ )
 		{
 			TakeOperator take_operator( it_->src_loc );
-
-			NextLexem();
-			if( it_->type != Lexem::Type::BracketLeft )
-			{
-				PushErrorMessage();
-				return EmptyVariant();
-			}
 			NextLexem();
 
-			take_operator.expression_= std::make_unique<Expression>(ParseExpression());
-
-			if( it_->type != Lexem::Type::BracketRight )
-			{
-				PushErrorMessage();
-				return EmptyVariant();
-			}
-			NextLexem();
+			take_operator.expression_= std::make_unique<Expression>(ParseExpressionInBrackets());
 
 			return std::move(take_operator);
 		}
@@ -1289,21 +1247,8 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 			}
 			NextLexem();
 
-			if( it_->type != Lexem::Type::BracketLeft )
-			{
-				PushErrorMessage();
-				return EmptyVariant();
-			}
-			NextLexem();
+			cast.expression_= std::make_unique<Expression>( ParseExpressionInBrackets() );
 
-			cast.expression_= std::make_unique<Expression>( ParseExpression() );
-
-			if( it_->type != Lexem::Type::BracketRight )
-			{
-				PushErrorMessage();
-				return EmptyVariant();
-			}
-			NextLexem();
 
 			return std::move(cast);
 		}
@@ -1327,69 +1272,25 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 			}
 			NextLexem();
 
-			if( it_->type != Lexem::Type::BracketLeft )
-			{
-				PushErrorMessage();
-				return EmptyVariant();
-			}
-			NextLexem();
-
-			cast.expression_= std::make_unique<Expression>( ParseExpression() );
-
-			if( it_->type != Lexem::Type::BracketRight )
-			{
-				PushErrorMessage();
-				return EmptyVariant();
-			}
-			NextLexem();
+			cast.expression_= std::make_unique<Expression>( ParseExpressionInBrackets() );
 
 			return std::move(cast);
 		}
 		else if( it_->text == Keywords::cast_imut_ )
 		{
 			CastImut cast( it_->src_loc );
-
 			NextLexem();
 
-			if( it_->type != Lexem::Type::BracketLeft )
-			{
-				PushErrorMessage();
-				return EmptyVariant();
-			}
-			NextLexem();
-
-			cast.expression_= std::make_unique<Expression>( ParseExpression() );
-
-			if( it_->type != Lexem::Type::BracketRight )
-			{
-				PushErrorMessage();
-				return EmptyVariant();
-			}
-			NextLexem();
+			cast.expression_= std::make_unique<Expression>( ParseExpressionInBrackets() );
 
 			return std::move(cast);
 		}
 		else if( it_->text == Keywords::cast_mut_ )
 		{
 			CastMut cast( it_->src_loc );
-
 			NextLexem();
 
-			if( it_->type != Lexem::Type::BracketLeft )
-			{
-				PushErrorMessage();
-				return EmptyVariant();
-			}
-			NextLexem();
-
-			cast.expression_= std::make_unique<Expression>( ParseExpression() );
-
-			if( it_->type != Lexem::Type::BracketRight )
-			{
-				PushErrorMessage();
-				return EmptyVariant();
-			}
-			NextLexem();
+			cast.expression_= std::make_unique<Expression>( ParseExpressionInBrackets() );
 
 			return std::move(cast);
 		}
@@ -1785,25 +1686,10 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 	}
 	else if( it_->text == Keywords::typeof_ )
 	{
-		NextLexem();
-
 		TypeofTypeName typeof_type_name( it_->src_loc );
-
-		if( it_->type != Lexem::Type::BracketLeft )
-		{
-			PushErrorMessage();
-			return complex_name;
-		}
 		NextLexem();
 
-		typeof_type_name.expression= std::make_unique<Expression>( ParseExpression() );
-
-		if( it_->type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-			return complex_name;
-		}
-		NextLexem();
+		typeof_type_name.expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
 
 		complex_name.start_value= std::move(typeof_type_name);
 	}
@@ -2300,31 +2186,9 @@ WhileOperator SyntaxAnalyzer::ParseWhileOperator()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::while_ );
 	WhileOperator result( it_->src_loc );
-
-	NextLexem();
-	if( it_->type != Lexem::Type::BracketLeft )
-	{
-		PushErrorMessage();
-		return result;
-	}
-
 	NextLexem();
 
-	result.condition_= ParseExpression();
-
-	if( it_->type != Lexem::Type::BracketRight )
-	{
-		PushErrorMessage();
-		return result;
-	}
-
-	NextLexem();
-
-	if( it_->type != Lexem::Type::BraceLeft )
-	{
-		PushErrorMessage();
-		return result;
-	}
+	result.condition_= ParseExpressionInBrackets();
 
 	result.block_= ParseBlock();
 	return result;
@@ -2641,23 +2505,7 @@ IfOperator SyntaxAnalyzer::ParseIfOperator()
 	IfOperator result( it_->src_loc );
 	NextLexem();
 
-	if( it_->type != Lexem::Type::BracketLeft )
-	{
-		PushErrorMessage();
-		return result;
-	}
-
-	NextLexem();
-
-	Expression if_expression= ParseExpression();
-
-	if( it_->type != Lexem::Type::BracketRight )
-	{
-		PushErrorMessage();
-		return result;
-	}
-
-	NextLexem();
+	Expression if_expression= ParseExpressionInBrackets();
 
 	if( it_->type != Lexem::Type::BraceLeft )
 	{
@@ -2680,23 +2528,7 @@ IfOperator SyntaxAnalyzer::ParseIfOperator()
 			{
 				NextLexem();
 
-				if( it_->type != Lexem::Type::BracketLeft )
-				{
-					PushErrorMessage();
-					return result;
-				}
-
-				NextLexem();
-
-				condition= ParseExpression();
-
-				if( it_->type != Lexem::Type::BracketRight )
-				{
-					PushErrorMessage();
-					return result;
-				}
-
-				NextLexem();
+				condition= ParseExpressionInBrackets();
 			}
 			// Block - common for "else" and "else if".
 			if( it_->type != Lexem::Type::BraceLeft )
@@ -2733,17 +2565,7 @@ StaticAssert SyntaxAnalyzer::ParseStaticAssert()
 	StaticAssert result( it_->src_loc );
 	NextLexem();
 
-	if( it_->type == Lexem::Type::BracketLeft )
-		NextLexem();
-	else
-		PushErrorMessage();
-
-	result.expression= ParseExpression();
-
-	if( it_->type == Lexem::Type::BracketRight )
-		NextLexem();
-	else
-		PushErrorMessage();
+	result.expression= ParseExpressionInBrackets();
 
 	if( it_->type == Lexem::Type::Semicolon )
 		NextLexem();
@@ -2832,21 +2654,7 @@ BlockElement SyntaxAnalyzer::ParseHalt()
 		NextLexem();
 		HaltIf result( src_loc );
 
-		if( it_->type != Lexem::Type::BracketLeft )
-		{
-			PushErrorMessage();
-			return std::move(result);
-		}
-		NextLexem();
-
-		result.condition= ParseExpression();
-
-		if( it_->type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-			return std::move(result);
-		}
-		NextLexem();
+		result.condition= ParseExpressionInBrackets();
 
 		if( it_->type != Lexem::Type::Semicolon )
 		{
@@ -3205,21 +3013,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 	{
 		NextLexem();
 
-		if( it_->type != Lexem::Type::BracketLeft )
-		{
-			PushErrorMessage();
-			return result;
-		}
-		NextLexem();
-
-		result->condition_= ParseExpression();
-
-		if( it_->type != Lexem::Type::BracketRight )
-		{
-			PushErrorMessage();
-			return result;
-		}
-		NextLexem();
+		result->condition_= ParseExpressionInBrackets();
 	}
 
 	// Parse complex name before function name - such "fn MyStruct::A::B"
