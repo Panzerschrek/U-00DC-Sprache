@@ -281,10 +281,10 @@ ClassProxyPtr CodeBuilder::NamesScopeFill(
 			{
 				this_.NamesScopeFill( static_assert_, the_class.members );
 			}
-			void operator()( const Synt::Typedef& typedef_ )
+			void operator()( const Synt::TypeAlias& type_alias )
 			{
-				this_.NamesScopeFill( typedef_, the_class.members );
-				the_class.SetMemberVisibility( typedef_.name, current_visibility );
+				this_.NamesScopeFill( type_alias, the_class.members );
+				the_class.SetMemberVisibility( type_alias.name, current_visibility );
 			}
 			void operator()( const Synt::VariablesDeclaration& variables_declaration )
 			{
@@ -360,7 +360,7 @@ void CodeBuilder::NamesScopeFill(
 }
 
 void CodeBuilder::NamesScopeFill(
-	const Synt::Typedef& typedef_declaration,
+	const Synt::TypeAlias& typedef_declaration,
 	NamesScope& names_scope )
 {
 	if( IsKeyword( typedef_declaration.name ) )

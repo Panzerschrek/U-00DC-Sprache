@@ -49,7 +49,7 @@ struct CastRef;
 struct CastRefUnsafe;
 struct TypeInfo;
 
-struct ArrayInitializer;
+struct SequenceInitializer;
 struct StructNamedInitializer;
 struct ConstructorInitializer;
 struct ZeroInitializer;
@@ -77,7 +77,7 @@ struct Halt;
 struct HaltIf;
 
 struct Function;
-struct Typedef;
+struct TypeAlias;
 struct Enum;
 struct Class;
 struct ClassField;
@@ -137,7 +137,7 @@ using Expression= std::variant<
 
 using Initializer= std::variant<
 	EmptyVariant,
-	ArrayInitializer,
+	SequenceInitializer,
 	StructNamedInitializer,
 	ConstructorInitializer,
 	Expression,
@@ -171,7 +171,7 @@ using ClassElement= std::variant<
 	VariablesDeclaration,
 	AutoVariableDeclaration,
 	StaticAssert,
-	Typedef,
+	TypeAlias,
 	Enum,
 	FunctionPtr,
 	ClassField,
@@ -186,7 +186,7 @@ using ProgramElement= std::variant<
 	VariablesDeclaration,
 	AutoVariableDeclaration,
 	StaticAssert,
-	Typedef,
+	TypeAlias,
 	Enum,
 	FunctionPtr,
 	ClassPtr,
@@ -490,10 +490,10 @@ public:
 	std::optional<std::vector<Expression>> template_parameters;
 };
 
-struct ArrayInitializer final : public SyntaxElementBase
+struct SequenceInitializer final : public SyntaxElementBase
 {
 public:
-	explicit ArrayInitializer( const SrcLoc& src_loc );
+	explicit SequenceInitializer( const SrcLoc& src_loc );
 
 	std::vector<Initializer> initializers;
 };
@@ -749,10 +749,10 @@ public:
 	Expression condition;
 };
 
-struct Typedef final : public SyntaxElementBase
+struct TypeAlias final : public SyntaxElementBase
 {
 public:
-	explicit Typedef( const SrcLoc& src_loc );
+	explicit TypeAlias( const SrcLoc& src_loc );
 
 	std::string name;
 	TypeName value;
@@ -893,7 +893,7 @@ public:
 	// Short form means that template argumenst are also signature arguments.
 	bool is_short_form_= false;
 
-	std::variant<ClassPtr, std::unique_ptr<Typedef>> something_;
+	std::variant<ClassPtr, std::unique_ptr<TypeAlias>> something_;
 };
 
 struct FunctionTemplate final : public TemplateBase

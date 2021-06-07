@@ -167,7 +167,7 @@ struct StaticAssert
 
 struct Typedef
 {
-	const Synt::Typedef* syntax_element= nullptr;
+	const Synt::TypeAlias* syntax_element= nullptr;
 };
 
 struct IncompleteGlobalVariable

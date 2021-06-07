@@ -36,7 +36,7 @@ void ElementWrite( const VariablesDeclaration& variables_declaration, std::ostre
 void ElementWrite( const AutoVariableDeclaration& auto_variable_declaration, std::ostream& stream );
 void ElementWrite( const StaticAssert& static_assert_, std::ostream& stream );
 void ElementWrite( const Enum& enum_, std::ostream& stream );
-void ElementWrite( const Typedef& typedef_, std::ostream& stream );
+void ElementWrite( const TypeAlias& type_alias, std::ostream& stream );
 void ElementWrite( const TypeTemplate& type_template, std::ostream& stream );
 void ElementWrite( const FunctionTemplate& function_template, std::ostream& stream );
 void ElementWrite( const ClassField& class_field, std::ostream& stream );
@@ -727,10 +727,10 @@ void ElementWrite( const Enum& enum_, std::ostream& stream )
 	stream << "}\n";
 }
 
-void ElementWrite( const Typedef& typedef_, std::ostream& stream )
+void ElementWrite( const TypeAlias& type_alias, std::ostream& stream )
 {
-	stream << Keyword( Keywords::type_ ) << " " << typedef_.name << " = ";
-	ElementWrite( typedef_.value, stream );
+	stream << Keyword( Keywords::type_ ) << " " << type_alias.name << " = ";
+	ElementWrite( type_alias.value, stream );
 	stream << ";\n";
 }
 

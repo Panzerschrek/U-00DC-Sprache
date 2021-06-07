@@ -46,7 +46,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	const Variable& variable,
 	NamesScope& names,
 	FunctionContext& function_context,
-	const Synt::ArrayInitializer& initializer )
+	const Synt::SequenceInitializer& initializer )
 {
 	if( const Array* const array_type= variable.type.GetArrayType() )
 	{

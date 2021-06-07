@@ -304,8 +304,8 @@ private:
 	bool TryParseClassSharedState();
 	bool TryParseClassFieldsOrdered();
 
-	Typedef ParseTypedef();
-	Typedef ParseTypedefBody();
+	TypeAlias ParseTypeAlias();
+	TypeAlias ParseTypeAliasBody();
 	std::unique_ptr<Function> ParseFunction();
 	std::unique_ptr<Class> ParseClass();
 	ClassElements ParseClassBodyElements();
@@ -784,7 +784,7 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
 		{
-			program_elements.emplace_back(ParseTypedef() );
+			program_elements.emplace_back(ParseTypeAlias() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::namespace_ )
 		{
@@ -1723,7 +1723,7 @@ Initializer SyntaxAnalyzer::ParseArrayInitializer()
 {
 	U_ASSERT( it_->type == Lexem::Type::SquareBracketLeft );
 
-	ArrayInitializer result( it_->src_loc );
+	SequenceInitializer result( it_->src_loc );
 	NextLexem();
 
 	while( NotEndOfFile() && it_->type != Lexem::Type::SquareBracketRight )
@@ -2548,7 +2548,7 @@ bool SyntaxAnalyzer::TryParseClassFieldsOrdered()
 	return false;
 }
 
-Typedef SyntaxAnalyzer::ParseTypedef()
+TypeAlias SyntaxAnalyzer::ParseTypeAlias()
 {
 	U_ASSERT( it_->text == Keywords::type_ );
 
@@ -2557,22 +2557,22 @@ Typedef SyntaxAnalyzer::ParseTypedef()
 	if( it_->type != Lexem::Type::Identifier )
 	{
 		PushErrorMessage();
-		return Typedef( it_->src_loc );
+		return TypeAlias( it_->src_loc );
 	}
 
 	const std::string& name= it_->text;
 	NextLexem();
 
-	Typedef result= ParseTypedefBody();
+	TypeAlias result= ParseTypeAliasBody();
 	result.name= name;
 	return result;
 }
 
-Typedef SyntaxAnalyzer::ParseTypedefBody()
+TypeAlias SyntaxAnalyzer::ParseTypeAliasBody()
 {
 	// Parse something like "- i32;"
 
-	Typedef result( it_->src_loc );
+	TypeAlias result( it_->src_loc );
 
 	ExpectLexem( Lexem::Type::Assignment );
 
@@ -3002,7 +3002,7 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
 		{
-			result.emplace_back( ParseTypedef() );
+			result.emplace_back( ParseTypeAlias() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
 		{
@@ -3334,10 +3334,10 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 			typedef_template.name_= name;
 			typedef_template.is_short_form_= is_short_form;
 
-			auto typedef_= std::make_unique<Typedef>( ParseTypedefBody() );
-			typedef_->name= std::move(name);
+			auto type_alias= std::make_unique<TypeAlias>( ParseTypeAliasBody() );
+			type_alias->name= std::move(name);
 
-			typedef_template.something_= std::move(typedef_);
+			typedef_template.something_= std::move(type_alias);
 			return std::move(typedef_template);
 		}
 

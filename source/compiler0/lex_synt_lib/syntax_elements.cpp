@@ -71,7 +71,7 @@ MemberAccessOperator::MemberAccessOperator(
 	: SyntaxElementBase( src_loc )
 {}
 
-ArrayInitializer::ArrayInitializer( const SrcLoc& src_loc )
+SequenceInitializer::SequenceInitializer( const SrcLoc& src_loc )
 	: SyntaxElementBase( src_loc )
 {}
 
@@ -237,7 +237,7 @@ HaltIf::HaltIf( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 
-Typedef::Typedef( const SrcLoc& src_loc )
+TypeAlias::TypeAlias( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 

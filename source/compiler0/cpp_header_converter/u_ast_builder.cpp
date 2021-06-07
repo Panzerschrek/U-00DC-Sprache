@@ -224,7 +224,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 	{
 		if( type_alias_decl->isFirstDecl() )
 		{
-			Synt::Typedef type_alias= ProcessTypedef(*type_alias_decl);
+			Synt::TypeAlias type_alias= ProcessTypedef(*type_alias_decl);
 
 			bool is_same_name= false;
 			if( const auto named_type_name= std::get_if<Synt::ComplexName>( &type_alias.value ) )
@@ -378,12 +378,12 @@ Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_de
 	return nullptr;
 }
 
-Synt::Typedef CppAstConsumer::ProcessTypedef( const clang::TypedefNameDecl& typedef_decl )
+Synt::TypeAlias CppAstConsumer::ProcessTypedef( const clang::TypedefNameDecl& typedef_decl )
 {
-	Synt::Typedef typedef_( g_dummy_src_loc );
-	typedef_.name= TranslateIdentifier( typedef_decl.getName() );
-	typedef_.value= TranslateType( *typedef_decl.getUnderlyingType().getTypePtr() );
-	return typedef_;
+	Synt::TypeAlias type_alias( g_dummy_src_loc );
+	type_alias.name= TranslateIdentifier( typedef_decl.getName() );
+	type_alias.value= TranslateType( *typedef_decl.getUnderlyingType().getTypePtr() );
+	return type_alias;
 }
 
 Synt::FunctionPtr CppAstConsumer::ProcessFunction( const clang::FunctionDecl& func_decl, bool externc )
@@ -527,10 +527,10 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 		enum_namespace_->elements_.push_back( std::move(variables_declaration) );
 		out_elements.push_back( std::move(enum_namespace_) );
 
-		Synt::Typedef typedef_( g_dummy_src_loc );
-		typedef_.name= enum_name;
-		typedef_.value= TranslateType( *enum_decl.getIntegerType().getTypePtr() );
-		out_elements.push_back( std::move( typedef_ ) );
+		Synt::TypeAlias type_alias( g_dummy_src_loc );
+		type_alias.name= enum_name;
+		type_alias.value= TranslateType( *enum_decl.getIntegerType().getTypePtr() );
+		out_elements.push_back( std::move( type_alias ) );
 	}
 }
 

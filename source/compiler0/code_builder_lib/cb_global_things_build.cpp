@@ -938,15 +938,15 @@ void CodeBuilder::GlobalThingBuildTypeTemplatesSet( NamesScope& names_scope, Typ
 	}
 }
 
-void CodeBuilder::GlobalThingBuildTypedef( NamesScope& names_scope, Value& typedef_value )
+void CodeBuilder::GlobalThingBuildTypedef( NamesScope& names_scope, Value& type_alias_value )
 {
-	U_ASSERT( typedef_value.GetTypedef() != nullptr );
-	const Synt::Typedef& syntax_element= *typedef_value.GetTypedef()->syntax_element;
+	U_ASSERT( type_alias_value.GetTypedef() != nullptr );
+	const Synt::TypeAlias& syntax_element= *type_alias_value.GetTypedef()->syntax_element;
 
-	DETECT_GLOBALS_LOOP( &typedef_value, syntax_element.name, syntax_element.src_loc_ );
+	DETECT_GLOBALS_LOOP( &type_alias_value, syntax_element.name, syntax_element.src_loc_ );
 
 	// Replace value in names map, when typedef is comlete.
-	typedef_value= Value( PrepareType( syntax_element.value, names_scope, *global_function_context_ ), syntax_element.src_loc_ );
+	type_alias_value= Value( PrepareType( syntax_element.value, names_scope, *global_function_context_ ), syntax_element.src_loc_ );
 }
 
 void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& global_variable_value )

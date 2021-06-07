@@ -684,7 +684,7 @@ private:
 	// Some initializers returns nonnul constant, if initializer is constant.
 	llvm::Constant* ApplyInitializer( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::Initializer& initializer );
 	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::EmptyVariant& initializer );
-	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::ArrayInitializer& initializer );
+	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::SequenceInitializer& initializer );
 	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::StructNamedInitializer& initializer );
 	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::ConstructorInitializer& initializer );
 	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::Expression& initializer );
@@ -787,7 +787,7 @@ private:
 	ClassProxyPtr NamesScopeFill( const Synt::ClassPtr& class_declaration, NamesScope& names_scope, const std::string& override_name= "" );
 	void NamesScopeFill( const Synt::TypeTemplate& type_template_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( const Synt::Enum& enum_declaration, NamesScope& names_scope );
-	void NamesScopeFill( const Synt::Typedef& typedef_declaration, NamesScope& names_scope );
+	void NamesScopeFill( const Synt::TypeAlias& type_alias_declaration, NamesScope& names_scope );
 	void NamesScopeFill( const Synt::StaticAssert& static_assert_, NamesScope& names_scope );
 	void NamesScopeFillOutOfLineElements( const Synt::ProgramElements& namespace_elements, NamesScope& names_scope );
 

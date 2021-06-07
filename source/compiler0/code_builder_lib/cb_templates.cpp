@@ -935,9 +935,9 @@ Value* CodeBuilder::FinishTemplateTypeGeneration(
 
 		return template_args_namespace->GetThisScopeValue( Class::c_template_class_name );
 	}
-	if( const auto typedef_ptr= std::get_if< std::unique_ptr<Synt::Typedef> >( &type_template.syntax_element->something_ ) )
+	if( const auto type_alias= std::get_if< std::unique_ptr<Synt::TypeAlias> >( &type_template.syntax_element->something_ ) )
 	{
-		const Type type= PrepareType( (*typedef_ptr)->value, *template_args_namespace, *global_function_context_ );
+		const Type type= PrepareType( (*type_alias)->value, *template_args_namespace, *global_function_context_ );
 
 		if( type == invalid_type_ )
 			return nullptr;
