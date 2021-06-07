@@ -198,7 +198,6 @@ using ProgramElements= std::vector<ProgramElement>;
 
 struct SyntaxElementBase
 {
-public:
 	explicit SyntaxElementBase( const SrcLoc& src_loc );
 	// WARNING! This struct have NO virtual destructor for, size optimization.
 	// Do not like this:  SyntaxElementBase* x= new Derived();
@@ -228,7 +227,6 @@ struct TypeofTypeName
 
 struct ComplexName final : public SyntaxElementBase
 {
-public:
 	explicit ComplexName( const SrcLoc& src_loc );
 
 	std::variant<
@@ -251,7 +249,6 @@ public:
 
 struct ArrayTypeName final : public SyntaxElementBase
 {
-public:
 	explicit ArrayTypeName( const SrcLoc& src_loc );
 
 	std::unique_ptr<TypeName> element_type;
@@ -260,16 +257,13 @@ public:
 
 struct TupleType final : public SyntaxElementBase
 {
-public:
 	TupleType( const SrcLoc& src_loc );
 
-public:
 	std::vector<TypeName> element_types_;
 };
 
 struct RawPointerType final : public SyntaxElementBase
 {
-public:
 	RawPointerType( const SrcLoc& src_loc );
 
 	std::unique_ptr<TypeName> element_type;
@@ -283,7 +277,6 @@ using FunctionArgumentsDeclaration= std::vector<FunctionArgument>;
 
 struct FunctionType final : public SyntaxElementBase
 {
-public:
 	FunctionType( const SrcLoc& src_loc );
 
 	std::unique_ptr<TypeName> return_type_;
@@ -299,10 +292,8 @@ public:
 
 struct FunctionArgument final : public SyntaxElementBase
 {
-public:
 	FunctionArgument( const SrcLoc& src_loc );
 
-public:
 	std::string name_;
 	TypeName type_;
 	std::string reference_tag_;
@@ -313,7 +304,6 @@ public:
 
 struct BinaryOperator final : public SyntaxElementBase
 {
-public:
 	explicit BinaryOperator( const SrcLoc& src_loc );
 
 	BinaryOperatorType operator_type_;
@@ -323,7 +313,6 @@ public:
 
 struct TernaryOperator final : public SyntaxElementBase
 {
-public:
 	explicit TernaryOperator( const SrcLoc& src_loc );
 
 	std::unique_ptr<Expression> condition;
@@ -333,7 +322,6 @@ public:
 
 struct ReferenceToRawPointerOperator final : public SyntaxElementBase
 {
-public:
 	explicit ReferenceToRawPointerOperator( const SrcLoc& src_loc );
 
 	std::unique_ptr<Expression> expression;
@@ -341,7 +329,6 @@ public:
 
 struct RawPointerToReferenceOperator final : public SyntaxElementBase
 {
-public:
 	explicit RawPointerToReferenceOperator( const SrcLoc& src_loc );
 
 	std::unique_ptr<Expression> expression;
@@ -349,7 +336,6 @@ public:
 
 struct MoveOperator final : public SyntaxElementBase
 {
-public:
 	MoveOperator( const SrcLoc& src_loc );
 
 	std::string var_name_;
@@ -357,7 +343,6 @@ public:
 
 struct TakeOperator final : public SyntaxElementBase
 {
-public:
 	TakeOperator( const SrcLoc& src_loc );
 
 	std::unique_ptr<Expression> expression_;
@@ -365,7 +350,6 @@ public:
 
 struct CastRef final : public SyntaxElementBase
 {
-public:
 	CastRef( const SrcLoc& src_loc );
 
 	std::unique_ptr<TypeName> type_;
@@ -374,7 +358,6 @@ public:
 
 struct CastRefUnsafe : public SyntaxElementBase
 {
-public:
 	CastRefUnsafe( const SrcLoc& src_loc );
 
 	std::unique_ptr<TypeName> type_;
@@ -383,7 +366,6 @@ public:
 
 struct CastImut final : public SyntaxElementBase
 {
-public:
 	CastImut( const SrcLoc& src_loc );
 
 	std::unique_ptr<Expression> expression_;
@@ -391,7 +373,6 @@ public:
 
 struct CastMut final : public SyntaxElementBase
 {
-public:
 	CastMut( const SrcLoc& src_loc );
 
 	std::unique_ptr<Expression> expression_;
@@ -399,7 +380,6 @@ public:
 
 struct TypeInfo final : public SyntaxElementBase
 {
-public:
 	TypeInfo( const SrcLoc& src_loc );
 
 	std::unique_ptr<TypeName> type_;
@@ -407,7 +387,6 @@ public:
 
 struct BooleanConstant final : public SyntaxElementBase
 {
-public:
 	BooleanConstant( const SrcLoc& src_loc, bool value );
 
 	bool value_;
@@ -417,13 +396,11 @@ using TypeSuffix= std::array<char, 7>;
 
 struct NumericConstant final : public SyntaxElementBase, public NumberLexemData
 {
-public:
 	NumericConstant( const SrcLoc& src_loc );
 };
 
 struct StringLiteral final : public SyntaxElementBase
 {
-public:
 	StringLiteral( const SrcLoc& src_loc );
 
 	std::string value_;
@@ -432,7 +409,6 @@ public:
 
 struct UnaryPlus final : public SyntaxElementBase
 {
-public:
 	explicit UnaryPlus( const SrcLoc& src_loc );
 
 	std::unique_ptr<Expression> expression_;
@@ -440,7 +416,6 @@ public:
 
 struct UnaryMinus final : public SyntaxElementBase
 {
-public:
 	explicit UnaryMinus( const SrcLoc& src_loc );
 
 	std::unique_ptr<Expression> expression_;
@@ -448,7 +423,6 @@ public:
 
 struct LogicalNot final : public SyntaxElementBase
 {
-public:
 	explicit LogicalNot( const SrcLoc& src_loc );
 
 	std::unique_ptr<Expression> expression_;
@@ -456,7 +430,6 @@ public:
 
 struct BitwiseNot final : public SyntaxElementBase
 {
-public:
 	explicit BitwiseNot( const SrcLoc& src_loc );
 
 	std::unique_ptr<Expression> expression_;
@@ -464,7 +437,6 @@ public:
 
 struct CallOperator final : public SyntaxElementBase
 {
-public:
 	CallOperator( const SrcLoc& src_loc );
 
 	std::unique_ptr<Expression> expression_;
@@ -473,7 +445,6 @@ public:
 
 struct IndexationOperator final : public SyntaxElementBase
 {
-public:
 	explicit IndexationOperator( const SrcLoc& src_loc );
 
 	std::unique_ptr<Expression> expression_;
@@ -482,7 +453,6 @@ public:
 
 struct MemberAccessOperator final : public SyntaxElementBase
 {
-public:
 	MemberAccessOperator( const SrcLoc& src_loc );
 
 	std::unique_ptr<Expression> expression_;
@@ -492,7 +462,6 @@ public:
 
 struct SequenceInitializer final : public SyntaxElementBase
 {
-public:
 	explicit SequenceInitializer( const SrcLoc& src_loc );
 
 	std::vector<Initializer> initializers;
@@ -500,7 +469,6 @@ public:
 
 struct StructNamedInitializer final : public SyntaxElementBase
 {
-public:
 	explicit StructNamedInitializer( const SrcLoc& src_loc );
 
 	struct MemberInitializer;
@@ -510,7 +478,6 @@ public:
 
 struct ConstructorInitializer final : public SyntaxElementBase
 {
-public:
 	ConstructorInitializer( const SrcLoc& src_loc );
 
 	std::vector<Expression> arguments;
@@ -518,13 +485,11 @@ public:
 
 struct ZeroInitializer final : public SyntaxElementBase
 {
-public:
 	explicit ZeroInitializer( const SrcLoc& src_loc );
 };
 
 struct UninitializedInitializer final : public SyntaxElementBase
 {
-public:
 	explicit UninitializedInitializer( const SrcLoc& src_loc );
 };
 
@@ -536,7 +501,6 @@ struct StructNamedInitializer::MemberInitializer
 
 struct Block final : public SyntaxElementBase
 {
-public:
 	Block( const SrcLoc& start_src_loc );
 
 	enum class Safety : uint8_t
@@ -545,7 +509,7 @@ public:
 		Safe,
 		Unsafe,
 	};
-public:
+
 	SrcLoc end_src_loc_;
 	std::vector<BlockElement> elements_;
 	Safety safety_= Safety::None;
@@ -580,7 +544,6 @@ struct AutoVariableDeclaration final : public SyntaxElementBase
 
 struct ReturnOperator final : public SyntaxElementBase
 {
-public:
 	ReturnOperator( const SrcLoc& src_loc );
 
 	Expression expression_;
@@ -588,7 +551,6 @@ public:
 
 struct WhileOperator final : public SyntaxElementBase
 {
-public:
 	WhileOperator( const SrcLoc& src_loc );
 
 	Expression condition_;
@@ -597,7 +559,6 @@ public:
 
 struct ForOperator final : public SyntaxElementBase
 {
-public:
 	ForOperator( const SrcLoc& src_loc );
 
 	ReferenceModifier reference_modifier_= ReferenceModifier::None;
@@ -609,7 +570,6 @@ public:
 
 struct CStyleForOperator final : public SyntaxElementBase
 {
-public:
 	CStyleForOperator( const SrcLoc& src_loc );
 
 	std::unique_ptr<
@@ -634,19 +594,16 @@ public:
 
 struct BreakOperator final : public SyntaxElementBase
 {
-public:
 	explicit BreakOperator( const SrcLoc& src_loc );
 };
 
 struct ContinueOperator final : public SyntaxElementBase
 {
-public:
 	explicit ContinueOperator( const SrcLoc& src_loc );
 };
 
 struct WithOperator final : public SyntaxElementBase
 {
-public:
 	WithOperator( const SrcLoc& src_loc );
 
 	ReferenceModifier reference_modifier_= ReferenceModifier::None;
@@ -658,7 +615,6 @@ public:
 
 struct IfOperator final : public SyntaxElementBase
 {
-public:
 	struct Branch
 	{
 		// Condition - nullptr for last if.
@@ -674,7 +630,6 @@ public:
 
 struct StaticIfOperator final : public SyntaxElementBase
 {
-public:
 	StaticIfOperator( const SrcLoc& src_loc );
 
 	IfOperator if_operator_;
@@ -682,7 +637,6 @@ public:
 
 struct SingleExpressionOperator final : public SyntaxElementBase
 {
-public:
 	SingleExpressionOperator( const SrcLoc& src_loc );
 
 	Expression expression_;
@@ -690,7 +644,6 @@ public:
 
 struct AssignmentOperator final : public SyntaxElementBase
 {
-public:
 	AssignmentOperator( const SrcLoc& src_loc );
 
 	Expression l_value_;
@@ -699,7 +652,6 @@ public:
 
 struct AdditiveAssignmentOperator final : public SyntaxElementBase
 {
-public:
 	explicit AdditiveAssignmentOperator( const SrcLoc& src_loc );
 
 	BinaryOperatorType additive_operation_;
@@ -709,7 +661,6 @@ public:
 
 struct IncrementOperator final : public SyntaxElementBase
 {
-public:
 	explicit IncrementOperator( const SrcLoc& src_loc );
 
 	Expression expression;
@@ -717,7 +668,6 @@ public:
 
 struct DecrementOperator final : public SyntaxElementBase
 {
-public:
 	explicit DecrementOperator( const SrcLoc& src_loc );
 
 	Expression expression;
@@ -725,25 +675,20 @@ public:
 
 struct StaticAssert final : public SyntaxElementBase
 {
-public:
 	explicit StaticAssert( const SrcLoc& src_loc );
 
 	Expression expression;
 };
 
-struct Halt final
-	: public SyntaxElementBase
+struct Halt final : public SyntaxElementBase
 
 {
-public:
 	explicit Halt( const SrcLoc& src_loc );
 };
 
-struct HaltIf final
-	: public SyntaxElementBase
+struct HaltIf final : public SyntaxElementBase
 
 {
-public:
 	explicit HaltIf( const SrcLoc& src_loc );
 
 	Expression condition;
@@ -751,7 +696,6 @@ public:
 
 struct TypeAlias final : public SyntaxElementBase
 {
-public:
 	explicit TypeAlias( const SrcLoc& src_loc );
 
 	std::string name;
@@ -760,7 +704,6 @@ public:
 
 struct Enum final : public SyntaxElementBase
 {
-public:
 	explicit Enum( const SrcLoc& src_loc );
 
 	struct Member
@@ -785,7 +728,6 @@ enum class VirtualFunctionKind : uint8_t
 
 struct Function final : public SyntaxElementBase
 {
-public:
 	Function( const SrcLoc& src_loc );
 
 	enum class BodyKind : uint8_t
@@ -811,7 +753,6 @@ public:
 
 struct ClassField final : public SyntaxElementBase
 {
-public:
 	explicit ClassField( const SrcLoc& src_loc );
 
 	TypeName type;
@@ -841,7 +782,6 @@ enum class ClassMemberVisibility : uint8_t
 
 struct ClassVisibilityLabel final : public SyntaxElementBase
 {
-public:
 	ClassVisibilityLabel( const SrcLoc& src_loc, ClassMemberVisibility visibility );
 
 	const ClassMemberVisibility visibility_;
@@ -849,7 +789,6 @@ public:
 
 struct Class final : public SyntaxElementBase
 {
-public:
 	explicit Class( const SrcLoc& src_loc );
 
 	ClassElements elements_;
@@ -863,7 +802,6 @@ public:
 
 struct TemplateBase : public SyntaxElementBase
 {
-public:
 	explicit TemplateBase( const SrcLoc& src_loc );
 
 	struct Param
@@ -877,7 +815,6 @@ public:
 
 struct TypeTemplate : public TemplateBase
 {
-public:
 	explicit TypeTemplate( const SrcLoc& src_loc );
 
 	// Argument in template signature.
@@ -898,7 +835,6 @@ public:
 
 struct FunctionTemplate final : public TemplateBase
 {
-public:
 	explicit FunctionTemplate( const SrcLoc& src_loc );
 
 	FunctionPtr function_;
@@ -906,7 +842,6 @@ public:
 
 struct Namespace final : public SyntaxElementBase
 {
-public:
 	explicit Namespace( const SrcLoc& src_loc );
 
 	std::string name_;
@@ -915,7 +850,6 @@ public:
 
 struct Import final : public SyntaxElementBase
 {
-public:
 	explicit Import( const SrcLoc& src_loc );
 
 	std::string import_name;
