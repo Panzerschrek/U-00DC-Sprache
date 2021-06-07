@@ -373,7 +373,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 	NamesScope& class_parent_namespace= *the_class.members.GetParent();
 	for( const Synt::ComplexName& parent : class_declaration.parents_ )
 	{
-		const Value parent_value= ResolveValue( class_declaration.src_loc_, class_parent_namespace, *global_function_context_, parent );
+		const Value parent_value= ResolveValue( class_parent_namespace, *global_function_context_, parent );
 
 		const Type* const type_name= parent_value.GetTypeName();
 		if( type_name == nullptr )
@@ -866,7 +866,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 
 	if( !( std::get_if<Synt::EmptyVariant>( &enum_decl.underlaying_type_name.start_value ) != nullptr && enum_decl.underlaying_type_name.tail == nullptr ) )
 	{
-		const Value type_value= ResolveValue( enum_decl.src_loc_, names_scope, *global_function_context_, enum_decl.underlaying_type_name );
+		const Value type_value= ResolveValue( names_scope, *global_function_context_, enum_decl.underlaying_type_name );
 		const Type* const type= type_value.GetTypeName();
 		if( type == nullptr )
 			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), enum_decl.src_loc_, enum_decl.underlaying_type_name );

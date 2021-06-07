@@ -159,7 +159,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 
 Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& named_type_name )
 {
-	const Value value= ResolveValue( named_type_name.src_loc_, names_scope, function_context, named_type_name );
+	const Value value= ResolveValue( names_scope, function_context, named_type_name );
 	if( const Type* const type= value.GetTypeName() )
 		return *type;
 	else

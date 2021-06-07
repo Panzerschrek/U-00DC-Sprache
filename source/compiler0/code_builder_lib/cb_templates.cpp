@@ -272,7 +272,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 		}
 	}
 
-	const Value start_value= ResolveForTemplateSignatureParameter( signature_parameter.src_loc_, signature_parameter, names_scope );
+	const Value start_value= ResolveForTemplateSignatureParameter( signature_parameter, names_scope );
 	if( const auto type_templates_set= start_value.GetTypeTemplatesSet() )
 	{
 		const Synt::ComplexName::Component* name_component= signature_parameter.tail.get();
@@ -302,14 +302,14 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 		}
 
 		if( all_args_are_known )
-			return ValueToTemplateParam( ResolveValue( signature_parameter.src_loc_, names_scope, function_context, signature_parameter ), names_scope );
+			return ValueToTemplateParam( ResolveValue( names_scope, function_context, signature_parameter ), names_scope );
 
 		specialized_template.type_templates= type_templates_set->type_templates;
 
 		return specialized_template;
 	}
 
-	return ValueToTemplateParam( ResolveValue( signature_parameter.src_loc_, names_scope, function_context, signature_parameter ), names_scope );
+	return ValueToTemplateParam( ResolveValue( names_scope, function_context, signature_parameter ), names_scope );
 }
 
 TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
@@ -492,11 +492,10 @@ TemplateSignatureParam CodeBuilder::ValueToTemplateParam( const Value& value, Na
 }
 
 Value CodeBuilder::ResolveForTemplateSignatureParameter(
-	const SrcLoc& src_loc,
 	const Synt::ComplexName& signature_parameter,
 	NamesScope& names_scope )
 {
-	return ResolveValue( src_loc, names_scope, *global_function_context_, signature_parameter, ResolveMode::ForTemplateSignatureParameter );
+	return ResolveValue( names_scope, *global_function_context_, signature_parameter, ResolveMode::ForTemplateSignatureParameter );
 }
 
 bool CodeBuilder::MatchTemplateArg(

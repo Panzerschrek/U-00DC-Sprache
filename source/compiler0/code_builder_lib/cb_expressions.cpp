@@ -1081,7 +1081,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		}
 	}
 
-	const Value value_entry= ResolveValue( named_operand.src_loc_, names, function_context, named_operand );
+	const Value value_entry= ResolveValue( names, function_context, named_operand );
 
 	if( const ClassField* const field= value_entry.GetClassField() )
 	{
@@ -1635,7 +1635,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	Synt::ComplexName complex_name(move_operator.src_loc_);
 	complex_name.start_value= move_operator.var_name_;
 
-	const Value resolved_value= ResolveValue( move_operator.src_loc_, names, function_context, complex_name );
+	const Value resolved_value= ResolveValue( names, function_context, complex_name );
 	const Variable* const variable_for_move= resolved_value.GetVariable();
 	if( variable_for_move == nullptr ||
 		variable_for_move->node == nullptr ||

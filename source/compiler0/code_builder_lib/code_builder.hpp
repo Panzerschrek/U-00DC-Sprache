@@ -229,7 +229,6 @@ private:
 
 	// Resolve as deep, as can, but does not instantiate last component, if it is template.
 	Value ResolveForTemplateSignatureParameter(
-		const SrcLoc& src_loc,
 		const Synt::ComplexName& signature_parameter,
 		NamesScope& names_scope );
 
@@ -638,7 +637,6 @@ private:
 	};
 
 	Value ResolveValue(
-		const SrcLoc& src_loc,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		const Synt::ComplexName& complex_name,

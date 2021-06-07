@@ -1690,12 +1690,13 @@ void CodeBuilder::BuildStaticAssert( StaticAssert& static_assert_, NamesScope& n
 }
 
 Value CodeBuilder::ResolveValue(
-	const SrcLoc& src_loc,
 	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const Synt::ComplexName& complex_name,
 	const ResolveMode resolve_mode )
 {
+	const SrcLoc& src_loc= complex_name.src_loc_;
+
 	Value* value= nullptr;
 	Value temp_value_storage;
 	const Synt::ComplexName::Component* component= complex_name.tail.get();
