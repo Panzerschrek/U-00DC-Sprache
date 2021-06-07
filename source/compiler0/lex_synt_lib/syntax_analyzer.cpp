@@ -941,7 +941,7 @@ Expression SyntaxAnalyzer::TryParseExpressionComponentPostfixOperator( Expressio
 		}
 
 	default:
-		return std::move(expr);
+		return expr;
 	};
 }
 
@@ -1168,10 +1168,11 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 
 			return ParseComplexName();
 		}
-	};
 
-	PushErrorMessage();
-	return Expression();
+	default:
+		PushErrorMessage();
+		return Expression();
+	};
 }
 
 FunctionArgument SyntaxAnalyzer::ParseFunctionArgument()

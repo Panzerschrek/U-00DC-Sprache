@@ -330,16 +330,6 @@ SrcLoc GetBlockElementSrcLoc( const BlockElement& block_element )
 	return std::visit( GetSrcLocVisitor(), block_element );
 }
 
-namespace
-{
-
-OverloadedOperator PrefixOperatorKind( const UnaryPlus& ) { return OverloadedOperator::Add; }
-OverloadedOperator PrefixOperatorKind( const UnaryMinus& ) { return OverloadedOperator::Sub; }
-OverloadedOperator PrefixOperatorKind( const LogicalNot& ) { return OverloadedOperator::LogicalNot; }
-OverloadedOperator PrefixOperatorKind( const BitwiseNot& ) { return OverloadedOperator::BitwiseNot; }
-
-}
-
 } // namespace Synt
 
 } // namespace U
