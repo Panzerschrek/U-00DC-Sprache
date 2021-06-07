@@ -1,4 +1,4 @@
-if( REALLY_BUILD_CPP_HEADER_CONVERTER )
+if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 	add_custom_command(
 		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/c_converted.u
 		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/c_test.h CppHeaderConverter
