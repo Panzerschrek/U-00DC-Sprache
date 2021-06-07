@@ -779,6 +779,39 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 {
 	const Variable variable= BuildExpressionCodeEnsureVariable( *unary_minus.expression_, names, function_context );
 
+	if( variable.type.GetClassType() != nullptr )
+	{
+		ArgsVector<Function::Arg> args;
+		args.emplace_back();
+		args.back().type= variable.type;
+		args.back().is_mutable= variable.value_type == ValueType::Reference;
+		args.back().is_reference= variable.value_type != ValueType::Value;
+
+		const FunctionVariable* const overloaded_operator=
+			GetOverloadedOperator( args, OverloadedOperator::Sub, names.GetErrors(), unary_minus.src_loc_ );
+
+		if( overloaded_operator != nullptr )
+		{
+			if( !( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
+				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+
+			std::pair<Variable, llvm::Value*> fetch_result( variable, overloaded_operator->llvm_function );
+			if( overloaded_operator->is_this_call && overloaded_operator->virtual_table_index != ~0u )
+				fetch_result= TryFetchVirtualFunction( variable, *overloaded_operator, function_context, names.GetErrors(), unary_minus.src_loc_ );
+
+			return
+				DoCallFunction(
+					fetch_result.second,
+					*overloaded_operator->type.GetFunctionType(),
+					unary_minus.src_loc_,
+					{ fetch_result.first },
+					{},
+					false,
+					names,
+					function_context );
+		}
+	}
+
 	const FundamentalType* const fundamental_type= variable.type.GetFundamentalType();
 	if( fundamental_type == nullptr )
 	{
@@ -829,6 +862,39 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 {
 	const Variable variable= BuildExpressionCodeEnsureVariable( *logical_not.expression_, names, function_context );
 
+	if( variable.type.GetClassType() != nullptr )
+	{
+		ArgsVector<Function::Arg> args;
+		args.emplace_back();
+		args.back().type= variable.type;
+		args.back().is_mutable= variable.value_type == ValueType::Reference;
+		args.back().is_reference= variable.value_type != ValueType::Value;
+
+		const FunctionVariable* const overloaded_operator=
+			GetOverloadedOperator( args, OverloadedOperator::LogicalNot, names.GetErrors(), logical_not.src_loc_ );
+
+		if( overloaded_operator != nullptr )
+		{
+			if( !( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
+				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+
+			std::pair<Variable, llvm::Value*> fetch_result( variable, overloaded_operator->llvm_function );
+			if( overloaded_operator->is_this_call && overloaded_operator->virtual_table_index != ~0u )
+				fetch_result= TryFetchVirtualFunction( variable, *overloaded_operator, function_context, names.GetErrors(), logical_not.src_loc_ );
+
+			return
+				DoCallFunction(
+					fetch_result.second,
+					*overloaded_operator->type.GetFunctionType(),
+					logical_not.src_loc_,
+					{ fetch_result.first },
+					{},
+					false,
+					names,
+					function_context );
+		}
+	}
+
 	if( variable.type != bool_type_ )
 	{
 		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), logical_not.src_loc_, variable.type );
@@ -854,6 +920,39 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const Synt::BitwiseNot& bitwise_not )
 {
 	const Variable variable= BuildExpressionCodeEnsureVariable( *bitwise_not.expression_, names, function_context );
+
+	if( variable.type.GetClassType() != nullptr )
+	{
+		ArgsVector<Function::Arg> args;
+		args.emplace_back();
+		args.back().type= variable.type;
+		args.back().is_mutable= variable.value_type == ValueType::Reference;
+		args.back().is_reference= variable.value_type != ValueType::Value;
+
+		const FunctionVariable* const overloaded_operator=
+			GetOverloadedOperator( args, OverloadedOperator::BitwiseNot, names.GetErrors(), bitwise_not.src_loc_ );
+
+		if( overloaded_operator != nullptr )
+		{
+			if( !( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
+				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+
+			std::pair<Variable, llvm::Value*> fetch_result( variable, overloaded_operator->llvm_function );
+			if( overloaded_operator->is_this_call && overloaded_operator->virtual_table_index != ~0u )
+				fetch_result= TryFetchVirtualFunction( variable, *overloaded_operator, function_context, names.GetErrors(), bitwise_not.src_loc_ );
+
+			return
+				DoCallFunction(
+					fetch_result.second,
+					*overloaded_operator->type.GetFunctionType(),
+					bitwise_not.src_loc_,
+					{ fetch_result.first },
+					{},
+					false,
+					names,
+					function_context );
+		}
+	}
 
 	const FundamentalType* const fundamental_type= variable.type.GetFundamentalType();
 	if( fundamental_type == nullptr )
