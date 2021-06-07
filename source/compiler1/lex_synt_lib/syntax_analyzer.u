@@ -208,6 +208,8 @@ private:
 
 	fn ParseFunction( mut this ) : Function;
 
+	fn ParseCall( mut this ) : ust::vector</ ust::shared_ptr_final</Expression/> /> ;
+
 	fn ParseInitializer( mut this, bool parse_expression_initializer  ) : Initializer;
 	fn ParseVariableInitializer( mut this ) : Initializer;
 
@@ -621,34 +623,9 @@ fn SyntaxAnalyzer::TryParseExpressionComponentPostfixOperator( mut this, Express
 		var CallOperator mut call_operator
 		{
 			.src_loc= it_.front().src_loc,
-			.value(move(expr))
+			.value(move(expr)),
+			.args(ParseCall())
 		};
-		NextLexem();
-
-		while( NotEndOfFile() )
-		{
-			if( it_.front().lexem_type == Lexem::Type::BracketRight )
-			{
-				NextLexem();
-				break;
-			}
-
-			call_operator.args.push_back( ust::make_shared_ptr_final( ParseExpression() ) );
-
-			if( it_.front().lexem_type== Lexem::Type::Comma )
-			{
-				NextLexem();
-				if( it_.front().lexem_type== Lexem::Type::BracketRight )
-				{
-					PushErrorMessage();
-				}
-			}
-			else if( it_.front().lexem_type == Lexem::Type::BracketRight )
-			{
-				NextLexem();
-				break;
-			}
-		}
 
 		return TryParseExpressionComponentPostfixOperator(move(call_operator));
 	}
@@ -1583,6 +1560,39 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 	return move(res);
 }
 
+fn SyntaxAnalyzer::ParseCall( mut this ) : ust::vector</ ust::shared_ptr_final</Expression/> />
+{
+	ExpectLexem( Lexem::Type::BracketLeft );
+
+	var ust::vector</ ust::shared_ptr_final</Expression/> />  mut args;
+	while( NotEndOfFile() )
+	{
+		if( it_.front().lexem_type == Lexem::Type::BracketRight )
+		{
+			break;
+		}
+
+		args.push_back( ust::make_shared_ptr_final( ParseExpression() ) );
+
+		if( it_.front().lexem_type== Lexem::Type::Comma )
+		{
+			NextLexem();
+			if( it_.front().lexem_type== Lexem::Type::BracketRight )
+			{
+				PushErrorMessage();
+			}
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	ExpectLexem( Lexem::Type::BracketRight );
+
+	return move(args);
+}
+
 fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer ) : Initializer
 {
 	if( it_.front().lexem_type == Lexem::Type::SquareBracketLeft )
@@ -1610,27 +1620,7 @@ fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer
 	else if( it_.front().lexem_type == Lexem::Type::BracketLeft )
 	{
 		/// TODO - fix case, like :    var [ i32, 1] x[ (1 + 2) * 3 ];
-		var ConstructorInitializer mut constructor_initializer{ .src_loc= it_.front().src_loc };
-		NextLexem();
-
-		while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::BracketRight )
-		{
-			constructor_initializer.args.push_back( ust::make_shared_ptr_final( ParseExpression() ) );
-			if( it_.front().lexem_type  == Lexem::Type::Comma )
-			{
-				NextLexem();
-				// Disallow comma after closing bracket
-				if( it_.front().lexem_type  == Lexem::Type::BracketRight )
-				{
-					PushErrorMessage();
-				}
-			}
-			else
-			{
-				break;
-			}
-		}
-		ExpectLexem( Lexem::Type::BracketRight );
+		var ConstructorInitializer mut constructor_initializer{ .src_loc= it_.front().src_loc, .args(ParseCall()) };
 
 		return move(constructor_initializer);
 	}
