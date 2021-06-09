@@ -156,30 +156,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		const auto state= SaveInstructionsState( function_context );
 		{
 			const StackVariablesStorage dummy_stack_variables_storage( function_context );
-
-			// Push "this" argument.
 			if( this_ != nullptr )
-			{
-				actual_args.emplace_back();
-				actual_args.back().type= this_->type;
-				actual_args.back().is_reference= true;
-				actual_args.back().is_mutable= this_->value_type == ValueType::Reference;
-			}
-			// Push arguments from call operator.
-			for( const Synt::Expression& arg_expression : call_operator.arguments_ )
-			{
-				if( function_context.args_preevaluation_cache.count(&arg_expression) == 0 )
-				{
-					const Variable v= BuildExpressionCodeEnsureVariable( arg_expression, names, function_context );
-					Function::Arg arg_type_extended;
-					arg_type_extended.type= v.type;
-					arg_type_extended.is_reference= v.value_type != ValueType::Value;
-					arg_type_extended.is_mutable= v.value_type == ValueType::Reference;
-					function_context.args_preevaluation_cache.emplace( &arg_expression, arg_type_extended);
+				actual_args.push_back( GetArgExtendedType(*this_) );
 
-				}
-				actual_args.push_back( function_context.args_preevaluation_cache[&arg_expression]);
-			}
+			for( const Synt::Expression& arg_expression : call_operator.arguments_ )
+				actual_args.push_back( PreEvaluateArg( arg_expression, names, function_context ) );
 		}
 		RestoreInstructionsState( function_context, state );
 
@@ -250,28 +231,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( variable.type.GetClassType() != nullptr ) // If this is class - try call overloaded [] operator.
 	{
 		ArgsVector<Function::Arg> args;
-		args.emplace_back();
-		args.back().type= variable.type;
-		args.back().is_reference= variable.value_type != ValueType::Value;
-		args.back().is_mutable= variable.value_type == ValueType::Reference;
+		args.push_back( GetArgExtendedType( variable ) );
 
 		// Know type of index.
 		const auto state= SaveInstructionsState( function_context );
 		{
 			const StackVariablesStorage dummy_stack_variables_storage( function_context );
-
-			// TODO - extract function like "EvaluateArgCached"
-			const auto expression_ptr= indexation_operator.index_.get();
-			if( function_context.args_preevaluation_cache.count(expression_ptr) == 0 )
-			{
-				const Variable v= BuildExpressionCodeEnsureVariable( *expression_ptr, names, function_context );
-				Function::Arg arg_type_extended;
-				arg_type_extended.type= v.type;
-				arg_type_extended.is_reference= v.value_type != ValueType::Value;
-				arg_type_extended.is_mutable= v.value_type == ValueType::Reference;
-				function_context.args_preevaluation_cache.emplace(expression_ptr, arg_type_extended);
-			}
-			args.push_back( function_context.args_preevaluation_cache[expression_ptr]);
+			args.push_back( PreEvaluateArg( *indexation_operator.index_, names, function_context ) );
 		}
 		RestoreInstructionsState( function_context, state );
 
@@ -1644,19 +1610,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	{
 		const StackVariablesStorage dummy_stack_variables_storage( function_context );
 		for( const Synt::Expression* const in_arg : { &left_expr, &right_expr } )
-		{
-			if( function_context.args_preevaluation_cache.count(in_arg) == 0 )
-			{
-				const Variable v= BuildExpressionCodeEnsureVariable( *in_arg, names, function_context );
-				Function::Arg arg_type_extended;
-				arg_type_extended.type= v.type;
-				arg_type_extended.is_reference= v.value_type != ValueType::Value;
-				arg_type_extended.is_mutable= v.value_type == ValueType::Reference;
-				function_context.args_preevaluation_cache.emplace(in_arg, arg_type_extended);
-
-			}
-			args.push_back( function_context.args_preevaluation_cache[in_arg]);
-		}
+			args.push_back( PreEvaluateArg( *in_arg, names, function_context ) );
 	}
 	RestoreInstructionsState( function_context, state );
 
@@ -2556,29 +2510,9 @@ Value CodeBuilder::CallFunction(
 		{
 			const StackVariablesStorage dummy_stack_variables_storage( function_context );
 
-			// Push "this" argument.
-			if( this_ != nullptr )
-			{
-				actual_args.emplace_back();
-				actual_args.back().type= this_->type;
-				actual_args.back().is_reference= true;
-				actual_args.back().is_mutable= this_->value_type == ValueType::Reference;
-			}
-			// Push arguments from call operator.
+			actual_args.push_back( GetArgExtendedType( *this_ ) );
 			for( const Synt::Expression& arg_expression : synt_args )
-			{
-				if( function_context.args_preevaluation_cache.count(&arg_expression) == 0 )
-				{
-					const Variable v= BuildExpressionCodeEnsureVariable( arg_expression, names, function_context );
-					Function::Arg arg_type_extended;
-					arg_type_extended.type= v.type;
-					arg_type_extended.is_reference= v.value_type != ValueType::Value;
-					arg_type_extended.is_mutable= v.value_type == ValueType::Reference;
-					function_context.args_preevaluation_cache.emplace( &arg_expression, arg_type_extended);
-
-				}
-				actual_args.push_back( function_context.args_preevaluation_cache[&arg_expression]);
-			}
+				actual_args.push_back( PreEvaluateArg( arg_expression, names, function_context ) );
 		}
 		RestoreInstructionsState( function_context, state );
 
@@ -3198,6 +3132,26 @@ Variable CodeBuilder::ConvertVariable(
 
 	result.value_type= ValueType::Value; // Make value after construction
 	return result;
+}
+
+Function::Arg CodeBuilder::PreEvaluateArg( const Synt::Expression& expression, NamesScope& names, FunctionContext& function_context )
+{
+	if( function_context.args_preevaluation_cache.count(&expression) == 0 )
+	{
+		const Variable v= BuildExpressionCodeEnsureVariable( expression, names, function_context );
+		function_context.args_preevaluation_cache.emplace( &expression,  GetArgExtendedType(v) );
+
+	}
+	return function_context.args_preevaluation_cache[&expression];
+}
+
+Function::Arg CodeBuilder::GetArgExtendedType( const Variable& variable )
+{
+	Function::Arg arg_type_extended;
+	arg_type_extended.type= variable.type;
+	arg_type_extended.is_reference= variable.value_type != ValueType::Value;
+	arg_type_extended.is_mutable= variable.value_type == ValueType::Reference;
+	return arg_type_extended;
 }
 
 } // namespace CodeBuilderPrivate

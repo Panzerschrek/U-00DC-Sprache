@@ -581,6 +581,11 @@ private:
 		FunctionContext& function_context,
 		const SrcLoc& src_loc );
 
+	// Preevaluate expresion to know it's extened type.
+	// Call this only inside save/state restore calls.
+	Function::Arg PreEvaluateArg( const Synt::Expression& expression, NamesScope& names, FunctionContext& function_context );
+	Function::Arg GetArgExtendedType( const Variable& variable );
+
 	// Typeinfo
 
 	Variable BuildTypeInfo( const Type& type, NamesScope& root_namespace );
