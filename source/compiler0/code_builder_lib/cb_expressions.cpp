@@ -123,7 +123,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				return ErrorValue();
 			}
 
-			std::vector<const Synt::Expression*> args;
+			ArgsVector<const Synt::Expression*> args;
 			args.reserve( call_operator.arguments_.size() );
 			for( const Synt::Expression& arg : call_operator.arguments_ )
 				args.push_back( &arg );
@@ -133,7 +133,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			return
 				DoCallFunction(
 					func_itself, function_pointer->function, call_operator.src_loc_,
-					{}, args, false,
+					nullptr, args, false,
 					names, function_context );
 		}
 	}
@@ -215,7 +215,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		DoCallFunction(
 			llvm_function_ptr, function_type,
 			call_operator.src_loc_,
-			this_ == nullptr ? std::vector<Variable>() : std::vector<Variable>{ *this_ },
+			this_,
 			synt_args, false,
 			names, function_context,
 			function.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete );
@@ -256,7 +256,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 						fetch_result.second,
 						*overloaded_operator->type.GetFunctionType(),
 						indexation_operator.src_loc_,
-						{ fetch_result.first }, { indexation_operator.index_.get() }, false,
+						&fetch_result.first, { indexation_operator.index_.get() }, false,
 						names, function_context );
 			}
 			else
@@ -265,7 +265,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 						overloaded_operator->llvm_function,
 						*overloaded_operator->type.GetFunctionType(),
 						indexation_operator.src_loc_,
-						{ variable }, { indexation_operator.index_.get() }, false,
+						&variable, { indexation_operator.index_.get() }, false,
 						names, function_context );
 
 		}
@@ -1676,7 +1676,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 				overloaded_operator->llvm_function,
 				*overloaded_operator->type.GetFunctionType(),
 				src_loc,
-				{},
+				nullptr,
 				synt_args,
 				evaluate_args_in_reverse_order,
 				names,
@@ -1776,7 +1776,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
 			fetch_result.second,
 			*overloaded_operator->type.GetFunctionType(),
 			src_loc,
-			{ fetch_result.first },
+			&fetch_result.first,
 			{},
 			false,
 			names,
@@ -2485,7 +2485,7 @@ Value CodeBuilder::CallFunction(
 			return
 				DoCallFunction(
 					func_itself, function_pointer->function, src_loc,
-					{}, args, false,
+					nullptr, args, false,
 					names, function_context );
 		}
 	}
@@ -2496,8 +2496,7 @@ Value CodeBuilder::CallFunction(
 		return ErrorValue();
 	}
 
-	size_t this_count= this_ == nullptr ? 0u : 1u;
-	size_t total_args= this_count + synt_args.size();
+	size_t total_args= (this_ == nullptr ? 0u : 1u) + synt_args.size();
 
 	const FunctionVariable* function_ptr= nullptr;
 
@@ -2531,7 +2530,6 @@ Value CodeBuilder::CallFunction(
 	{
 		// Static function call via "this".
 		// Just dump first "this" arg.
-		this_count--;
 		total_args--;
 		this_= nullptr;
 	}
@@ -2548,7 +2546,7 @@ Value CodeBuilder::CallFunction(
 	if( !( function_ptr->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || function_ptr->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 		function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
 
-	std::vector<const Synt::Expression*> synt_args_ptrs;
+	ArgsVector<const Synt::Expression*> synt_args_ptrs;
 	synt_args_ptrs.reserve( synt_args.size() );
 	for( const Synt::Expression& arg : synt_args )
 		synt_args_ptrs.push_back( &arg );
@@ -2567,18 +2565,41 @@ Value CodeBuilder::CallFunction(
 		DoCallFunction(
 			llvm_function_ptr, function_type,
 			src_loc,
-			this_ == nullptr ? std::vector<Variable>() : std::vector<Variable>{ *this_ },
+			this_,
 			synt_args_ptrs, false,
 			names, function_context,
 			function.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete );
 }
 
 Value CodeBuilder::DoCallFunction(
+	llvm::Value* const function,
+	const Function& function_type,
+	const SrcLoc& call_src_loc,
+	const Variable* const this_, // optional
+	const llvm::ArrayRef<const Synt::Expression*>& args,
+	const bool evaluate_args_in_reverse_order,
+	NamesScope& names,
+	FunctionContext& function_context,
+	const bool func_is_constexpr )
+{
+	return DoCallFunction(
+		function,
+		function_type,
+		call_src_loc,
+		this_ == nullptr ? llvm::ArrayRef<Variable>() : llvm::ArrayRef<Variable>( *this_ ),
+		args,
+		evaluate_args_in_reverse_order,
+		names,
+		function_context,
+		func_is_constexpr );
+}
+
+Value CodeBuilder::DoCallFunction(
 	llvm::Value* function,
 	const Function& function_type,
 	const SrcLoc& call_src_loc,
-	const std::vector<Variable>& preevaluated_args,
-	const std::vector<const Synt::Expression*>& args,
+	const llvm::ArrayRef<Variable>& preevaluated_args,
+	const llvm::ArrayRef<const Synt::Expression*>& args,
 	const bool evaluate_args_in_reverse_order,
 	NamesScope& names,
 	FunctionContext& function_context,

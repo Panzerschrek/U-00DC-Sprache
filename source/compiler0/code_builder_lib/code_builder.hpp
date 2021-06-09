@@ -559,9 +559,20 @@ private:
 		llvm::Value* function,
 		const Function& function_type,
 		const SrcLoc& call_src_loc,
-		const std::vector<Variable>& preevaluated_args,
-		const std::vector<const Synt::Expression*>& args,
-		const bool evaluate_args_in_reverse_order,
+		const Variable* this_, // optional
+		const llvm::ArrayRef<const Synt::Expression*>& args,
+		bool evaluate_args_in_reverse_order,
+		NamesScope& names,
+		FunctionContext& function_context,
+		bool func_is_constexpr= false );
+
+	Value DoCallFunction(
+		llvm::Value* function,
+		const Function& function_type,
+		const SrcLoc& call_src_loc,
+		const llvm::ArrayRef<Variable>& preevaluated_args,
+		const llvm::ArrayRef<const Synt::Expression*>& args,
+		bool evaluate_args_in_reverse_order,
 		NamesScope& names,
 		FunctionContext& function_context,
 		bool func_is_constexpr= false );
