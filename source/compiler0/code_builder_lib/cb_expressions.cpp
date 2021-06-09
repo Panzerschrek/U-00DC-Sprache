@@ -53,166 +53,6 @@ Variable CodeBuilder::BuildExpressionCodeEnsureVariable(
 	return std::move( *result_variable );
 }
 
-std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
-	const OverloadedOperator op,
-	const Synt::Expression&  left_expr,
-	const Synt::Expression& right_expr,
-	const bool evaluate_args_in_reverse_order,
-	const SrcLoc& src_loc,
-	NamesScope& names,
-	FunctionContext& function_context )
-{
-	// Know args types.
-	ArgsVector<Function::Arg> args;
-	const auto state= SaveInstructionsState( function_context );
-	{
-		const StackVariablesStorage dummy_stack_variables_storage( function_context );
-		for( const Synt::Expression* const in_arg : { &left_expr, &right_expr } )
-		{
-			if( function_context.args_preevaluation_cache.count(in_arg) == 0 )
-			{
-				const Variable v= BuildExpressionCodeEnsureVariable( *in_arg, names, function_context );
-				Function::Arg arg_type_extended;
-				arg_type_extended.type= v.type;
-				arg_type_extended.is_reference= v.value_type != ValueType::Value;
-				arg_type_extended.is_mutable= v.value_type == ValueType::Reference;
-				function_context.args_preevaluation_cache.emplace(in_arg, arg_type_extended);
-
-			}
-			args.push_back( function_context.args_preevaluation_cache[in_arg]);
-		}
-	}
-	RestoreInstructionsState( function_context, state );
-
-	// Apply here move-assignment.
-	if( op == OverloadedOperator::Assign &&
-		args.front().is_mutable && args.front().is_reference  &&
-		!args.back().is_reference &&
-		args.front().type == args.back().type &&
-		( args.front().type.GetClassType() != nullptr || args.front().type.GetArrayType() != nullptr || args.front().type.GetTupleType() != nullptr ) )
-	{
-		// Move here, instead of calling copy-assignment operator. Before moving we must also call destructor for destination.
-		const Variable r_var_real= *BuildExpressionCode( right_expr, names, function_context ).GetVariable();
-
-		std::optional<ReferencesGraphNodeHolder> r_var_lock;
-		if( r_var_real.node != nullptr )
-		{
-			if( function_context.variables_state.HaveOutgoingMutableNodes( r_var_real.node ) )
-				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, r_var_real.node->name );
-			r_var_lock.emplace(
-				std::make_shared<ReferencesGraphNode>( "lock " + r_var_real.node->name, ReferencesGraphNode::Kind::ReferenceImut ),
-				function_context );
-			function_context.variables_state.AddLink( r_var_real.node, r_var_lock->Node() );
-		}
-
-		const Variable l_var_real= *BuildExpressionCode(  left_expr, names, function_context ).GetVariable();
-
-		SetupReferencesInCopyOrMove( function_context, l_var_real, r_var_real, names.GetErrors(), src_loc );
-
-		if( l_var_real.type.HaveDestructor() )
-			CallDestructor( l_var_real.llvm_value, l_var_real.type, function_context, names.GetErrors(), src_loc );
-
-		if( r_var_real.node != nullptr )
-			function_context.variables_state.MoveNode( r_var_real.node );
-
-		CopyBytes( r_var_real.llvm_value, l_var_real.llvm_value, l_var_real.type, function_context );
-
-		Variable move_result;
-		move_result.type= void_type_;
-		return Value( std::move(move_result), src_loc );
-	}
-	else if( args.front().type == args.back().type && ( args.front().type.GetArrayType() != nullptr || args.front().type.GetTupleType() != nullptr ) )
-		return CallBinaryOperatorForArrayOrTuple( op, left_expr, right_expr, src_loc, names, function_context );
-
-	if( const auto overloaded_operator= GetOverloadedOperator( args, op, names.GetErrors(), src_loc ) )
-	{
-		if( overloaded_operator->is_deleted )
-			REPORT_ERROR( AccessingDeletedMethod, names.GetErrors(), src_loc );
-		if( !( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
-			function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
-
-		if( overloaded_operator->virtual_table_index != ~0u )
-		{
-			// We can not fetch virtual function here, because "this" may be evaluated as second operand for some binary operators.
-			REPORT_ERROR( NotImplemented, names.GetErrors(), src_loc, "calling virtual binary operators" );
-		}
-
-		std::vector<const Synt::Expression*> synt_args;
-		synt_args.reserve( 2u );
-		synt_args.push_back( & left_expr );
-		synt_args.push_back( &right_expr );
-		return
-			DoCallFunction(
-				overloaded_operator->llvm_function,
-				*overloaded_operator->type.GetFunctionType(),
-				src_loc,
-				{},
-				synt_args,
-				evaluate_args_in_reverse_order,
-				names,
-				function_context );
-	}
-
-	return std::nullopt;
-}
-
-Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
-	OverloadedOperator op,
-	const Synt::Expression&  left_expr,
-	const Synt::Expression& right_expr,
-	const SrcLoc& src_loc,
-	NamesScope& names,
-	FunctionContext& function_context )
-{
-	if( op == OverloadedOperator::Assign )
-	{
-		const Variable r_var= BuildExpressionCodeEnsureVariable( right_expr, names, function_context );
-		std::optional<ReferencesGraphNodeHolder> r_var_lock;
-		if( r_var.node != nullptr )
-		{
-			if( function_context.variables_state.HaveOutgoingMutableNodes( r_var.node ) )
-				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, r_var.node->name );
-			r_var_lock.emplace(
-				std::make_shared<ReferencesGraphNode>( "lock " + r_var.node->name, ReferencesGraphNode::Kind::ReferenceImut ),
-				function_context );
-			function_context.variables_state.AddLink( r_var.node, r_var_lock->Node() );
-		}
-
-		const Variable l_var= BuildExpressionCodeEnsureVariable(  left_expr, names, function_context );
-		if( l_var.node != nullptr && function_context.variables_state.HaveOutgoingLinks( l_var.node ) )
-			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, l_var.node->name );
-
-		U_ASSERT( l_var.type == r_var.type ); // Checked before.
-		if( !l_var.type.IsCopyAssignable() )
-		{
-			REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, l_var.type );
-			return ErrorValue();
-		}
-		if( l_var.value_type != ValueType::Reference )
-		{
-			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), src_loc );
-			return ErrorValue();
-		}
-
-		SetupReferencesInCopyOrMove( function_context, l_var, r_var, names.GetErrors(), src_loc );
-
-		BuildCopyAssignmentOperatorPart(
-			l_var.llvm_value, r_var.llvm_value,
-			l_var.type,
-			function_context );
-
-		Variable result;
-		result.type= void_type_;
-		return Value( std::move(result), src_loc );
-	}
-	else
-	{
-		const Variable l_var= BuildExpressionCodeEnsureVariable( left_expr, names, function_context );
-		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, l_var.type );
-		return ErrorValue();
-	}
-}
-
 Value CodeBuilder::BuildExpressionCode(
 	const Synt::Expression& expression,
 	NamesScope& names,
@@ -779,38 +619,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 {
 	const Variable variable= BuildExpressionCodeEnsureVariable( *unary_minus.expression_, names, function_context );
 
-	if( variable.type.GetClassType() != nullptr )
-	{
-		ArgsVector<Function::Arg> args;
-		args.emplace_back();
-		args.back().type= variable.type;
-		args.back().is_mutable= variable.value_type == ValueType::Reference;
-		args.back().is_reference= variable.value_type != ValueType::Value;
-
-		const FunctionVariable* const overloaded_operator=
-			GetOverloadedOperator( args, OverloadedOperator::Sub, names.GetErrors(), unary_minus.src_loc_ );
-
-		if( overloaded_operator != nullptr )
-		{
-			if( !( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
-				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
-
-			std::pair<Variable, llvm::Value*> fetch_result( variable, overloaded_operator->llvm_function );
-			if( overloaded_operator->is_this_call && overloaded_operator->virtual_table_index != ~0u )
-				fetch_result= TryFetchVirtualFunction( variable, *overloaded_operator, function_context, names.GetErrors(), unary_minus.src_loc_ );
-
-			return
-				DoCallFunction(
-					fetch_result.second,
-					*overloaded_operator->type.GetFunctionType(),
-					unary_minus.src_loc_,
-					{ fetch_result.first },
-					{},
-					false,
-					names,
-					function_context );
-		}
-	}
+	if( auto res= TryCallOverloadedUnaryOperator( variable, OverloadedOperator::Sub, unary_minus.src_loc_, names, function_context ) )
+		return std::move(*res);
 
 	const FundamentalType* const fundamental_type= variable.type.GetFundamentalType();
 	if( fundamental_type == nullptr )
@@ -862,38 +672,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 {
 	const Variable variable= BuildExpressionCodeEnsureVariable( *logical_not.expression_, names, function_context );
 
-	if( variable.type.GetClassType() != nullptr )
-	{
-		ArgsVector<Function::Arg> args;
-		args.emplace_back();
-		args.back().type= variable.type;
-		args.back().is_mutable= variable.value_type == ValueType::Reference;
-		args.back().is_reference= variable.value_type != ValueType::Value;
-
-		const FunctionVariable* const overloaded_operator=
-			GetOverloadedOperator( args, OverloadedOperator::LogicalNot, names.GetErrors(), logical_not.src_loc_ );
-
-		if( overloaded_operator != nullptr )
-		{
-			if( !( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
-				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
-
-			std::pair<Variable, llvm::Value*> fetch_result( variable, overloaded_operator->llvm_function );
-			if( overloaded_operator->is_this_call && overloaded_operator->virtual_table_index != ~0u )
-				fetch_result= TryFetchVirtualFunction( variable, *overloaded_operator, function_context, names.GetErrors(), logical_not.src_loc_ );
-
-			return
-				DoCallFunction(
-					fetch_result.second,
-					*overloaded_operator->type.GetFunctionType(),
-					logical_not.src_loc_,
-					{ fetch_result.first },
-					{},
-					false,
-					names,
-					function_context );
-		}
-	}
+	if( auto res= TryCallOverloadedUnaryOperator( variable, OverloadedOperator::LogicalNot, logical_not.src_loc_, names, function_context ) )
+		return std::move(*res);
 
 	if( variable.type != bool_type_ )
 	{
@@ -921,38 +701,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 {
 	const Variable variable= BuildExpressionCodeEnsureVariable( *bitwise_not.expression_, names, function_context );
 
-	if( variable.type.GetClassType() != nullptr )
-	{
-		ArgsVector<Function::Arg> args;
-		args.emplace_back();
-		args.back().type= variable.type;
-		args.back().is_mutable= variable.value_type == ValueType::Reference;
-		args.back().is_reference= variable.value_type != ValueType::Value;
-
-		const FunctionVariable* const overloaded_operator=
-			GetOverloadedOperator( args, OverloadedOperator::BitwiseNot, names.GetErrors(), bitwise_not.src_loc_ );
-
-		if( overloaded_operator != nullptr )
-		{
-			if( !( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
-				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
-
-			std::pair<Variable, llvm::Value*> fetch_result( variable, overloaded_operator->llvm_function );
-			if( overloaded_operator->is_this_call && overloaded_operator->virtual_table_index != ~0u )
-				fetch_result= TryFetchVirtualFunction( variable, *overloaded_operator, function_context, names.GetErrors(), bitwise_not.src_loc_ );
-
-			return
-				DoCallFunction(
-					fetch_result.second,
-					*overloaded_operator->type.GetFunctionType(),
-					bitwise_not.src_loc_,
-					{ fetch_result.first },
-					{},
-					false,
-					names,
-					function_context );
-		}
-	}
+	if( auto res= TryCallOverloadedUnaryOperator( variable, OverloadedOperator::BitwiseNot, bitwise_not.src_loc_, names, function_context ) )
+		return std::move(*res);
 
 	const FundamentalType* const fundamental_type= variable.type.GetFundamentalType();
 	if( fundamental_type == nullptr )
@@ -1876,6 +1626,207 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const Synt::RawPointerType& type_name )
 {
 	return Value( PrepareTypeImpl( names, function_context, type_name ), type_name.src_loc_ );
+}
+
+
+std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
+	const OverloadedOperator op,
+	const Synt::Expression&  left_expr,
+	const Synt::Expression& right_expr,
+	const bool evaluate_args_in_reverse_order,
+	const SrcLoc& src_loc,
+	NamesScope& names,
+	FunctionContext& function_context )
+{
+	// Know args types.
+	ArgsVector<Function::Arg> args;
+	const auto state= SaveInstructionsState( function_context );
+	{
+		const StackVariablesStorage dummy_stack_variables_storage( function_context );
+		for( const Synt::Expression* const in_arg : { &left_expr, &right_expr } )
+		{
+			if( function_context.args_preevaluation_cache.count(in_arg) == 0 )
+			{
+				const Variable v= BuildExpressionCodeEnsureVariable( *in_arg, names, function_context );
+				Function::Arg arg_type_extended;
+				arg_type_extended.type= v.type;
+				arg_type_extended.is_reference= v.value_type != ValueType::Value;
+				arg_type_extended.is_mutable= v.value_type == ValueType::Reference;
+				function_context.args_preevaluation_cache.emplace(in_arg, arg_type_extended);
+
+			}
+			args.push_back( function_context.args_preevaluation_cache[in_arg]);
+		}
+	}
+	RestoreInstructionsState( function_context, state );
+
+	// Apply here move-assignment.
+	if( op == OverloadedOperator::Assign &&
+		args.front().is_mutable && args.front().is_reference  &&
+		!args.back().is_reference &&
+		args.front().type == args.back().type &&
+		( args.front().type.GetClassType() != nullptr || args.front().type.GetArrayType() != nullptr || args.front().type.GetTupleType() != nullptr ) )
+	{
+		// Move here, instead of calling copy-assignment operator. Before moving we must also call destructor for destination.
+		const Variable r_var_real= *BuildExpressionCode( right_expr, names, function_context ).GetVariable();
+
+		std::optional<ReferencesGraphNodeHolder> r_var_lock;
+		if( r_var_real.node != nullptr )
+		{
+			if( function_context.variables_state.HaveOutgoingMutableNodes( r_var_real.node ) )
+				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, r_var_real.node->name );
+			r_var_lock.emplace(
+				std::make_shared<ReferencesGraphNode>( "lock " + r_var_real.node->name, ReferencesGraphNode::Kind::ReferenceImut ),
+				function_context );
+			function_context.variables_state.AddLink( r_var_real.node, r_var_lock->Node() );
+		}
+
+		const Variable l_var_real= *BuildExpressionCode(  left_expr, names, function_context ).GetVariable();
+
+		SetupReferencesInCopyOrMove( function_context, l_var_real, r_var_real, names.GetErrors(), src_loc );
+
+		if( l_var_real.type.HaveDestructor() )
+			CallDestructor( l_var_real.llvm_value, l_var_real.type, function_context, names.GetErrors(), src_loc );
+
+		if( r_var_real.node != nullptr )
+			function_context.variables_state.MoveNode( r_var_real.node );
+
+		CopyBytes( r_var_real.llvm_value, l_var_real.llvm_value, l_var_real.type, function_context );
+
+		Variable move_result;
+		move_result.type= void_type_;
+		return Value( std::move(move_result), src_loc );
+	}
+	else if( args.front().type == args.back().type && ( args.front().type.GetArrayType() != nullptr || args.front().type.GetTupleType() != nullptr ) )
+		return CallBinaryOperatorForArrayOrTuple( op, left_expr, right_expr, src_loc, names, function_context );
+
+	if( const auto overloaded_operator= GetOverloadedOperator( args, op, names.GetErrors(), src_loc ) )
+	{
+		if( overloaded_operator->is_deleted )
+			REPORT_ERROR( AccessingDeletedMethod, names.GetErrors(), src_loc );
+		if( !( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
+			function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+
+		if( overloaded_operator->virtual_table_index != ~0u )
+		{
+			// We can not fetch virtual function here, because "this" may be evaluated as second operand for some binary operators.
+			REPORT_ERROR( NotImplemented, names.GetErrors(), src_loc, "calling virtual binary operators" );
+		}
+
+		std::vector<const Synt::Expression*> synt_args;
+		synt_args.reserve( 2u );
+		synt_args.push_back( & left_expr );
+		synt_args.push_back( &right_expr );
+		return
+			DoCallFunction(
+				overloaded_operator->llvm_function,
+				*overloaded_operator->type.GetFunctionType(),
+				src_loc,
+				{},
+				synt_args,
+				evaluate_args_in_reverse_order,
+				names,
+				function_context );
+	}
+
+	return std::nullopt;
+}
+
+Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
+	OverloadedOperator op,
+	const Synt::Expression&  left_expr,
+	const Synt::Expression& right_expr,
+	const SrcLoc& src_loc,
+	NamesScope& names,
+	FunctionContext& function_context )
+{
+	if( op == OverloadedOperator::Assign )
+	{
+		const Variable r_var= BuildExpressionCodeEnsureVariable( right_expr, names, function_context );
+		std::optional<ReferencesGraphNodeHolder> r_var_lock;
+		if( r_var.node != nullptr )
+		{
+			if( function_context.variables_state.HaveOutgoingMutableNodes( r_var.node ) )
+				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, r_var.node->name );
+			r_var_lock.emplace(
+				std::make_shared<ReferencesGraphNode>( "lock " + r_var.node->name, ReferencesGraphNode::Kind::ReferenceImut ),
+				function_context );
+			function_context.variables_state.AddLink( r_var.node, r_var_lock->Node() );
+		}
+
+		const Variable l_var= BuildExpressionCodeEnsureVariable(  left_expr, names, function_context );
+		if( l_var.node != nullptr && function_context.variables_state.HaveOutgoingLinks( l_var.node ) )
+			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, l_var.node->name );
+
+		U_ASSERT( l_var.type == r_var.type ); // Checked before.
+		if( !l_var.type.IsCopyAssignable() )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, l_var.type );
+			return ErrorValue();
+		}
+		if( l_var.value_type != ValueType::Reference )
+		{
+			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), src_loc );
+			return ErrorValue();
+		}
+
+		SetupReferencesInCopyOrMove( function_context, l_var, r_var, names.GetErrors(), src_loc );
+
+		BuildCopyAssignmentOperatorPart(
+			l_var.llvm_value, r_var.llvm_value,
+			l_var.type,
+			function_context );
+
+		Variable result;
+		result.type= void_type_;
+		return Value( std::move(result), src_loc );
+	}
+	else
+	{
+		const Variable l_var= BuildExpressionCodeEnsureVariable( left_expr, names, function_context );
+		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, l_var.type );
+		return ErrorValue();
+	}
+}
+
+std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
+	const Variable& variable,
+	const OverloadedOperator op,
+	const SrcLoc& src_loc,
+	NamesScope& names,
+	FunctionContext& function_context )
+{
+	if( variable.type.GetClassType() == nullptr )
+		return std::nullopt;
+
+	ArgsVector<Function::Arg> args;
+	args.emplace_back();
+	args.back().type= variable.type;
+	args.back().is_mutable= variable.value_type == ValueType::Reference;
+	args.back().is_reference= variable.value_type != ValueType::Value;
+
+	const FunctionVariable* const overloaded_operator= GetOverloadedOperator( args, op, names.GetErrors(), src_loc );
+
+	if( overloaded_operator == nullptr )
+		return std::nullopt;
+
+	if( !( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
+		function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+
+	std::pair<Variable, llvm::Value*> fetch_result( variable, overloaded_operator->llvm_function );
+	if( overloaded_operator->is_this_call && overloaded_operator->virtual_table_index != ~0u )
+		fetch_result= TryFetchVirtualFunction( variable, *overloaded_operator, function_context, names.GetErrors(), src_loc );
+
+	return
+		DoCallFunction(
+			fetch_result.second,
+			*overloaded_operator->type.GetFunctionType(),
+			src_loc,
+			{ fetch_result.first },
+			{},
+			false,
+			names,
+			function_context );
 }
 
 Value CodeBuilder::BuildBinaryOperator(

@@ -450,6 +450,16 @@ private:
 		const Synt::StructNamedInitializer& constructor_initialization_list );
 
 	// Expressions.
+	Value BuildExpressionCodeAndDestroyTemporaries(
+		const Synt::Expression& expression,
+		NamesScope& names,
+		FunctionContext& function_context );
+
+	Variable BuildExpressionCodeEnsureVariable(
+		const Synt::Expression& expression,
+		NamesScope& names,
+		FunctionContext& function_context );
+
 	Value BuildExpressionCode( const Synt::Expression& expression, NamesScope& names, FunctionContext& function_context );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::EmptyVariant& expression );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CallOperator& call_operator );
@@ -479,16 +489,6 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TupleType& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::RawPointerType& type_name );
 
-	Value BuildExpressionCodeAndDestroyTemporaries(
-		const Synt::Expression& expression,
-		NamesScope& names,
-		FunctionContext& function_context );
-
-	Variable BuildExpressionCodeEnsureVariable(
-		const Synt::Expression& expression,
-		NamesScope& names,
-		FunctionContext& function_context );
-
 	// Returns Value, if overloaded operator selected or if arguments are template dependent or argumens are error values.
 	// Returns std::nullopt, if all ok, but there is no overloaded operator.
 	// In success call of overloaded operator arguments evaluated in left to right order.
@@ -505,6 +505,13 @@ private:
 		OverloadedOperator op,
 		const Synt::Expression&  left_expr,
 		const Synt::Expression& right_expr,
+		const SrcLoc& src_loc,
+		NamesScope& names,
+		FunctionContext& function_context );
+
+	std::optional<Value> TryCallOverloadedUnaryOperator(
+		const Variable& variable,
+		OverloadedOperator op,
 		const SrcLoc& src_loc,
 		NamesScope& names,
 		FunctionContext& function_context );
