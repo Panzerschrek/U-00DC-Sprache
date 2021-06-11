@@ -1192,52 +1192,23 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				call_operator.args.range(),
 				call_operator.src_loc );
 		}
-
-		// Try to call overloaded () operator.
-
-		var ust::vector</VariableTypeExtened/> mut args;
-
+		if_var( &class_type : variable.t.GetClassType() )
 		{
-			var VariableTypeExtened mut this_arg{ .t(variable.t), .value_type= variable.value_type };
-			args.push_back(move(this_arg));
-		}
-
-		{
-			var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-			auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-			auto instructions_state= SaveInstructionsState( function_context );
-
-			foreach( &in_arg : call_operator.args )
+			auto class_members= class_type.lock_imut().get_ref().members;
+			auto members_lock= class_members.lock_imut();
+			auto& members= members_lock.get_ref();
+			// Try to call overloaded () operator.
+			if_var( &operators_value : members.GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Call ) ) )
 			{
-				if( function_context.args_preevaluation_cache.find( in_arg ).empty() )
+				auto functions_set_ptr= operators_value.Get</NamesScopeFunctionsSet/>();
+				if( !functions_set_ptr.empty() )
 				{
-					auto arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.get_ref() );
-					var VariableTypeExtened mut f_arg{ .t(arg.t), .value_type= arg.value_type };
-					function_context.args_preevaluation_cache.insert( in_arg, move(f_arg) );
+					BuildFunctionsSet( class_members, ust::to_non_nullable( functions_set_ptr ), false );
+
+					this_.reset(variable);
+					return CallFunctionsSet( names_scope, function_context, this_, functions_set_ptr.lock_imut().get_ref().functions_set, call_operator.args.range(), call_operator.src_loc );
 				}
-				args.push_back( function_context.args_preevaluation_cache[in_arg] );
 			}
-
-			RestoreInstructionsState( function_context, instructions_state );
-		}
-
-		if_var( mut overloaded_operator : GetOverloadedOperator( args.range(), OverloadedOperator::Call, names_scope, call_operator.src_loc ) )
-		{
-			if( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
-			{
-				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
-			}
-
-			auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
-			overloaded_operator.llvm_function= fetch_result[1];
-
-			return DoCallFunction(
-				names_scope,
-				function_context,
-				ust::optional_ref</ Variable, false />(fetch_result[0]),
-				overloaded_operator,
-				call_operator.args.range(),
-				call_operator.src_loc );
 		}
 	}
 
