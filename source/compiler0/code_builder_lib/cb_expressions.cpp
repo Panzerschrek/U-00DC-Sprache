@@ -84,141 +84,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const Value function_value= BuildExpressionCode( *call_operator.expression_, names, function_context );
 	CHECK_RETURN_ERROR_VALUE(function_value);
 
-	if( const Type* const type= function_value.GetTypeName() )
-		return Value( BuildTempVariableConstruction( *type, call_operator.arguments_, call_operator.src_loc_, names, function_context ), call_operator.src_loc_ );
-
-	const Variable* this_= nullptr;
-	const OverloadedFunctionsSet* functions_set= function_value.GetFunctionsSet();
-
-	if( functions_set != nullptr )
-	{}
-	else if( const ThisOverloadedMethodsSet* const this_overloaded_methods_set=
-		function_value.GetThisOverloadedMethodsSet() )
-	{
-		functions_set= &this_overloaded_methods_set->GetOverloadedFunctionsSet();
-		this_= &this_overloaded_methods_set->this_;
-	}
-	else if( const Variable* const callable_variable= function_value.GetVariable() )
-	{
-		if( const Class* const class_type= callable_variable->type.GetClassType() )
-		{
-			// For classes try to find () operator inside it.
-			if( const Value* const value=
-				class_type->members.GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Call ) ) )
-			{
-				functions_set= value->GetFunctionsSet();
-				U_ASSERT( functions_set != nullptr ); // If we found (), this must be functions set.
-				this_= callable_variable;
-				// SPRACHE_TODO - maybe support not only thiscall () operators ?
-			}
-		}
-		else if( const FunctionPointer* const function_pointer= callable_variable->type.GetFunctionPointerType() )
-		{
-			function_context.have_non_constexpr_operations_inside= true; // Calling function, using pointer, is not constexpr. We can not garantee, that called function is constexpr.
-
-			// Call function pointer directly.
-			if( function_pointer->function.args.size() != call_operator.arguments_.size() )
-			{
-				REPORT_ERROR( InvalidFunctionArgumentCount, names.GetErrors(), call_operator.src_loc_, call_operator.arguments_.size(), function_pointer->function.args.size() );
-				return ErrorValue();
-			}
-
-			ArgsVector<const Synt::Expression*> args;
-			args.reserve( call_operator.arguments_.size() );
-			for( const Synt::Expression& arg : call_operator.arguments_ )
-				args.push_back( &arg );
-
-			llvm::Value* const func_itself= CreateMoveToLLVMRegisterInstruction( *callable_variable, function_context );
-
-			return
-				DoCallFunction(
-					func_itself, function_pointer->function, call_operator.src_loc_,
-					nullptr, args, false,
-					names, function_context );
-		}
-	}
-
-	if( functions_set == nullptr )
-	{
-		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), call_operator.src_loc_, function_value.GetKindName() );
-		return ErrorValue();
-	}
-
-	size_t this_count= this_ == nullptr ? 0u : 1u;
-	size_t total_args= this_count + call_operator.arguments_.size();
-
-	const FunctionVariable* function_ptr= nullptr;
-
-	// Make preevaluation af arguments for selection of overloaded function.
-	{
-		ArgsVector<Function::Arg> actual_args;
-		actual_args.reserve( total_args );
-		const auto state= SaveInstructionsState( function_context );
-		{
-			const StackVariablesStorage dummy_stack_variables_storage( function_context );
-			if( this_ != nullptr )
-				actual_args.push_back( GetArgExtendedType(*this_) );
-
-			for( const Synt::Expression& arg_expression : call_operator.arguments_ )
-				actual_args.push_back( PreEvaluateArg( arg_expression, names, function_context ) );
-		}
-		RestoreInstructionsState( function_context, state );
-
-		function_ptr=
-			GetOverloadedFunction( *functions_set, actual_args, this_ != nullptr, names.GetErrors(), call_operator.src_loc_ );
-	}
-
-	// SPRACHE_TODO - try get function with "this" parameter in signature and without it.
-	// We must support static functions call using "this".
-	if( function_ptr == nullptr )
-		return ErrorValue();
-	const FunctionVariable& function= *function_ptr;
-	const Function& function_type= *function.type.GetFunctionType();
-
-	if( this_ != nullptr && !function.is_this_call )
-	{
-		// Static function call via "this".
-		// Just dump first "this" arg.
-		this_count--;
-		total_args--;
-		this_= nullptr;
-	}
-
-	if( this_ == nullptr && function.is_this_call )
-	{
-		REPORT_ERROR( CallOfThiscallFunctionUsingNonthisArgument, names.GetErrors(), call_operator.src_loc_ );
-		return ErrorValue();
-	}
-
-	if( function_ptr->is_deleted )
-		REPORT_ERROR( AccessingDeletedMethod, names.GetErrors(), call_operator.src_loc_ );
-
-	if( !( function_ptr->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || function_ptr->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
-		function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
-
-	std::vector<const Synt::Expression*> synt_args;
-	synt_args.reserve( call_operator.arguments_.size() );
-	for( const Synt::Expression& arg : call_operator.arguments_ )
-		synt_args.push_back( &arg );
-
-	Variable this_casted;
-	llvm::Value* llvm_function_ptr= function.llvm_function;
-	if( this_ != nullptr )
-	{
-		auto fetch_result= TryFetchVirtualFunction( *this_, function, function_context, names.GetErrors(), call_operator.src_loc_ );
-		this_casted= std::move( fetch_result.first );
-		llvm_function_ptr= fetch_result.second;
-		this_= &this_casted;
-	}
-
-	return
-		DoCallFunction(
-			llvm_function_ptr, function_type,
-			call_operator.src_loc_,
-			this_,
-			synt_args, false,
-			names, function_context,
-			function.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete );
+	return CallFunction( function_value, call_operator.arguments_, call_operator.src_loc_, names, function_context );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -2509,7 +2375,9 @@ Value CodeBuilder::CallFunction(
 		{
 			const StackVariablesStorage dummy_stack_variables_storage( function_context );
 
-			actual_args.push_back( GetArgExtendedType( *this_ ) );
+			if( this_ != nullptr )
+				actual_args.push_back( GetArgExtendedType( *this_ ) );
+
 			for( const Synt::Expression& arg_expression : synt_args )
 				actual_args.push_back( PreEvaluateArg( arg_expression, names, function_context ) );
 		}
