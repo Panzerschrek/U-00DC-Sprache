@@ -1156,11 +1156,12 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 
 Value* CodeBuilder::ParametrizeFunctionTemplate(
 	const SrcLoc& src_loc,
-	const std::vector<FunctionTemplatePtr>& function_templates,
+	const OverloadedFunctionsSet& functions_set,
 	const std::vector<Synt::Expression>& template_arguments,
 	NamesScope& arguments_names_scope,
 	FunctionContext& function_context )
 {
+	const std::vector<FunctionTemplatePtr>& function_templates= functions_set.template_functions;
 	U_ASSERT( !function_templates.empty() );
 
 	TemplateArgs template_args;
@@ -1199,6 +1200,7 @@ Value* CodeBuilder::ParametrizeFunctionTemplate(
 		return &it->second; // Already generated.
 
 	OverloadedFunctionsSet result;
+	result.base_class= functions_set.base_class;
 	for( const FunctionTemplatePtr& function_template_ptr : function_templates )
 	{
 		const FunctionTemplate& function_template= *function_template_ptr;

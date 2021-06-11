@@ -342,7 +342,7 @@ private:
 
 	Value* ParametrizeFunctionTemplate(
 		const SrcLoc& src_loc,
-		const std::vector<FunctionTemplatePtr>& function_templates,
+		const OverloadedFunctionsSet& functions_set,
 		const std::vector<Synt::Expression>& template_arguments,
 		NamesScope& arguments_names_scope,
 		FunctionContext& function_context );

@@ -1825,7 +1825,7 @@ Value CodeBuilder::ResolveValue(
 				value=
 					ParametrizeFunctionTemplate(
 						src_loc,
-						functions_set->template_functions,
+						*functions_set,
 						*template_parameters,
 						names_scope,
 						function_context );
