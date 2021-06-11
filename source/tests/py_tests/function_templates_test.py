@@ -340,6 +340,66 @@ def TemplateMethod_Test7():
 	assert( call_result == 66521 * 23 )
 
 
+def TemplateMethod_Test8():
+	c_program_text= """
+		struct Num
+		{
+			f64 n;
+
+			template</ type T />
+			fn Set( mut this, T t )
+			{
+				n= f64(t);
+			}
+
+			fn Set5( mut this )
+			{
+				Set( 5 ); // Call this-call template method, type is deduced.
+			}
+		}
+
+		fn Foo() : f64
+		{
+			var Num mut num{ .n= 0.0 };
+			num.Set5();
+			return num.n;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 5 )
+
+
+def TemplateMethod_Test9():
+	c_program_text= """
+		struct Num
+		{
+			f64 n;
+
+			template</ type T />
+			fn Set( mut this, T t )
+			{
+				n= f64(t);
+			}
+
+			fn Set11( mut this )
+			{
+				Set</u32/>( 11u ); // Set type explicitly
+			}
+		}
+
+		fn Foo() : f64
+		{
+			var Num mut num{ .n= 0.0 };
+			num.Set11();
+			return num.n;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 11 )
+
+
 def TemplateOperator_Test0():
 	c_program_text= """
 		struct Num
