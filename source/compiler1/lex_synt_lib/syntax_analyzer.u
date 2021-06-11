@@ -433,7 +433,7 @@ fn SyntaxAnalyzer::ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : Names
 				auto macro= FetchMacro( it_.front().text, Macro::Context::Namespace );
 				if( !macro.empty() )
 				{
-					var NamespaceElements mut expanded_namespace_elements= this.ExpandMacro</NamespaceElements/>( macro.get_ref() ); // TODO - fix this, remove explicit "this"
+					var NamespaceElements mut expanded_namespace_elements= ExpandMacro</NamespaceElements/>( macro.get_ref() );
 					VectorAppend( namespace_elements, move(expanded_namespace_elements) );
 					continue;
 				}
@@ -876,7 +876,7 @@ fn SyntaxAnalyzer::ParseExpressionComponentHelper( mut this ) : Expression
 		auto macro= FetchMacro( it_.front().text, Macro::Context::Expression );
 		if( !macro.empty() )
 		{
-			return this.ExpandMacro</Expression/>( macro.get_ref() ); // TODO - fix this, remove explicit "this"
+			return ExpandMacro</Expression/>( macro.get_ref() );
 		}
 		else
 		{
@@ -1847,7 +1847,7 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 				auto macro= FetchMacro( it_.front().text, Macro::Context::Block );
 				if( !macro.empty() )
 				{
-					var BlockElements mut expanded_block_elements= this.ExpandMacro</BlockElements/>( macro.get_ref() ); // TODO - fix this, remove explicit "this"
+					var BlockElements mut expanded_block_elements= ExpandMacro</BlockElements/>( macro.get_ref() );
 					VectorAppend( block_elements, move(expanded_block_elements) );
 					continue;
 				}
@@ -2514,7 +2514,7 @@ fn SyntaxAnalyzer::ParseClassBodyElements( mut this ) : ClassElements
 				auto macro= FetchMacro( it_.front().text, Macro::Context::Class );
 				if( !macro.empty() )
 				{
-					var ClassElements mut expanded_class_elements= this.ExpandMacro</ClassElements/>( macro.get_ref() ); // TODO - fix this, remove explicit "this"
+					var ClassElements mut expanded_class_elements= ExpandMacro</ClassElements/>( macro.get_ref() );
 					VectorAppend( class_elements, move(expanded_class_elements) );
 					continue;
 				}
