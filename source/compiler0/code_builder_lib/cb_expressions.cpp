@@ -2402,12 +2402,6 @@ Value CodeBuilder::CallFunction(
 		this_= nullptr;
 	}
 
-	if( this_ == nullptr && function.is_this_call )
-	{
-		REPORT_ERROR( CallOfThiscallFunctionUsingNonthisArgument, names.GetErrors(), src_loc );
-		return ErrorValue();
-	}
-
 	if( function_ptr->is_deleted )
 		REPORT_ERROR( AccessingDeletedMethod, names.GetErrors(), src_loc );
 

@@ -2693,11 +2693,6 @@ fn CodeBuilder::DoCallFunction(
 		function_context.have_non_constexpr_operations_inside= true;
 	}
 
-	if( function.is_this_call && this_.empty() )
-	{
-		REPORT_ERROR( CallOfThiscallFunctionUsingNonthisArgument, names_scope, src_loc )
-		return ErrorValue();
-	}
 	/* TODO - what if we call non-this-call function using "this", like
 		struct S{ fn Foo( S& s ); }
 		fn Bar( S& s ) { s.Foo(); }
