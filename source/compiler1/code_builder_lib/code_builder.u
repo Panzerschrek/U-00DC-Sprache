@@ -1400,7 +1400,6 @@ fn CodeBuilder::CheckOverloadedOperator(
 		{
 			REPORT_ERROR( OperatorDoesNotHaveParentClassArguments, names_scope, src_loc )
 		}
-		// TODO - maybe also disable non-this-call call operator?
 	}
 }
 
