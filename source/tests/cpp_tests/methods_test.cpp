@@ -422,6 +422,67 @@ U_TEST(MethodTest12_ValueArgumentOfCurrentClassInMethod)
 	U_TEST_ASSERT( static_cast<uint64_t>( 584 + 41257 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(MethodTest13_PassThisAsRegularArgumentIntoThisCallFunction)
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			fn Set44( S &mut s ) // Static function (non-this-call).
+			{
+				Set( s, 44 ); // Should call this-call function with argument passed as non-this.
+			}
+
+			fn Set( mut this, i32 in_x ){ x= in_x; }
+
+			i32 x;
+		}
+
+		fn Foo() : i32
+		{
+			var S mut s= zero_init;
+			S::Set44(s);
+			return s.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, {} );
+	U_TEST_ASSERT( result_value.IntVal.getLimitedValue() == uint64_t(44) );
+}
+
+U_TEST(MethodTest14_PassThisAsRegularArgumentIntoThisCallFunction)
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			fn Set( mut this, i32 in_x ){ x= in_x; }
+
+			i32 x;
+		}
+
+		fn Foo() : i32
+		{
+			var S mut s= zero_init;
+			S::Set(s, 123); // Call this-call function passing this as regular argument.
+			return s.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, {} );
+	U_TEST_ASSERT( result_value.IntVal.getLimitedValue() == uint64_t(123) );
+}
+
 U_TEST( InnerClassTest0 )
 {
 	static const char c_program_text[]=
