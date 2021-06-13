@@ -96,45 +96,15 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	if( variable.type.GetClassType() != nullptr ) // If this is class - try call overloaded [] operator.
 	{
-		ArgsVector<Function::Arg> args;
-		args.push_back( GetArgExtendedType( variable ) );
-
-		// Know type of index.
-		const auto state= SaveInstructionsState( function_context );
-		{
-			const StackVariablesStorage dummy_stack_variables_storage( function_context );
-			args.push_back( PreEvaluateArg( *indexation_operator.index_, names, function_context ) );
-		}
-		RestoreInstructionsState( function_context, state );
-
-		const FunctionVariable* const overloaded_operator=
-			GetOverloadedOperator( args, OverloadedOperator::Indexing, names.GetErrors(), indexation_operator.src_loc_ );
-		if( overloaded_operator != nullptr )
-		{
-			if( !( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
-				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
-
-			if( overloaded_operator->is_this_call && overloaded_operator->virtual_table_index != ~0u  )
-			{
-				const auto fetch_result= TryFetchVirtualFunction( variable, *overloaded_operator, function_context, names.GetErrors(), indexation_operator.src_loc_ );
-				return
-					DoCallFunction(
-						fetch_result.second,
-						*overloaded_operator->type.GetFunctionType(),
-						indexation_operator.src_loc_,
-						&fetch_result.first, { indexation_operator.index_.get() }, false,
-						names, function_context );
-			}
-			else
-				return
-					DoCallFunction(
-						overloaded_operator->llvm_function,
-						*overloaded_operator->type.GetFunctionType(),
-						indexation_operator.src_loc_,
-						&variable, { indexation_operator.index_.get() }, false,
-						names, function_context );
-
-		}
+		if( auto res=
+				TryCallOverloadedPostfixOperator(
+					variable,
+					llvm::ArrayRef<Synt::Expression>(*indexation_operator.index_),
+					OverloadedOperator::Indexing,
+					indexation_operator.src_loc_,
+					names,
+					function_context ) )
+			return std::move(*res);
 
 		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), indexation_operator.src_loc_, variable.type );
 		return ErrorValue();
@@ -1645,6 +1615,53 @@ std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
 			function_context );
 }
 
+std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
+	const Variable& variable,
+	const llvm::ArrayRef<Synt::Expression>& synt_args,
+	const OverloadedOperator op,
+	const SrcLoc& src_loc,
+	NamesScope& names,
+	FunctionContext& function_context )
+{
+	ArgsVector<Function::Arg> actual_args;
+	actual_args.reserve( 1 + synt_args.size() );
+
+	const auto state= SaveInstructionsState( function_context );
+	{
+		const StackVariablesStorage dummy_stack_variables_storage( function_context );
+
+		actual_args.push_back( GetArgExtendedType( variable ) );
+		for( const Synt::Expression& arg_expression : synt_args )
+			actual_args.push_back( PreEvaluateArg( arg_expression, names, function_context ) );
+	}
+	RestoreInstructionsState( function_context, state );
+
+	const FunctionVariable* const function= GetOverloadedOperator( actual_args, op, names.GetErrors(), src_loc );
+	if(function == nullptr )
+		return std::nullopt;
+
+	if( !( function->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || function->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
+		function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+
+	ArgsVector<const Synt::Expression*> synt_args_ptrs;
+	synt_args_ptrs.reserve( synt_args.size() );
+	for( const Synt::Expression& arg : synt_args )
+		synt_args_ptrs.push_back( &arg );
+
+	const auto fetch_result= TryFetchVirtualFunction( variable, *function, function_context, names.GetErrors(), src_loc );
+
+	return DoCallFunction(
+		fetch_result.second,
+		*function->type.GetFunctionType(),
+		src_loc,
+		fetch_result.first,
+		synt_args_ptrs,
+		false,
+		names,
+		function_context,
+		function->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete );
+}
+
 Value CodeBuilder::BuildBinaryOperator(
 	const Variable& l_var,
 	const Variable& r_var,
@@ -2342,45 +2359,8 @@ Value CodeBuilder::CallFunction(
 		// Try to call overloaded () operator.
 		// DO NOT fill "this" here and continue this function because we should process callable object as non-this.
 
-		// Make preevaluation af arguments for selection of overloaded function.
-		{
-			ArgsVector<Function::Arg> actual_args;
-			actual_args.reserve( 1 + synt_args.size() );
-
-			const auto state= SaveInstructionsState( function_context );
-			{
-				const StackVariablesStorage dummy_stack_variables_storage( function_context );
-
-				actual_args.push_back( GetArgExtendedType( *callable_variable ) );
-				for( const Synt::Expression& arg_expression : synt_args )
-					actual_args.push_back( PreEvaluateArg( arg_expression, names, function_context ) );
-			}
-			RestoreInstructionsState( function_context, state );
-
-			if( const auto function= GetOverloadedOperator( actual_args, OverloadedOperator::Call, names.GetErrors(), src_loc ) )
-			{
-				if( !( function->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || function->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
-					function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
-
-				ArgsVector<const Synt::Expression*> synt_args_ptrs;
-				synt_args_ptrs.reserve( synt_args.size() );
-				for( const Synt::Expression& arg : synt_args )
-					synt_args_ptrs.push_back( &arg );
-
-				const auto fetch_result= TryFetchVirtualFunction( *callable_variable, *function, function_context, names.GetErrors(), src_loc );
-
-				return DoCallFunction(
-					fetch_result.second,
-					*function->type.GetFunctionType(),
-					src_loc,
-					fetch_result.first,
-					synt_args_ptrs,
-					false,
-					names,
-					function_context,
-					function->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete );
-			}
-		}
+		if( auto res= TryCallOverloadedPostfixOperator( *callable_variable, synt_args, OverloadedOperator::Call, src_loc, names, function_context ) )
+			return std::move(*res);
 	}
 
 	if( functions_set == nullptr )
