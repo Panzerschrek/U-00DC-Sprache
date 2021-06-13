@@ -1533,17 +1533,13 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			REPORT_ERROR( NotImplemented, names.GetErrors(), src_loc, "calling virtual binary operators" );
 		}
 
-		std::vector<const Synt::Expression*> synt_args;
-		synt_args.reserve( 2u );
-		synt_args.push_back( & left_expr );
-		synt_args.push_back( &right_expr );
 		return
 			DoCallFunction(
 				overloaded_operator->llvm_function,
 				*overloaded_operator->type.GetFunctionType(),
 				src_loc,
 				nullptr,
-				synt_args,
+				{ &left_expr, &right_expr },
 				evaluate_args_in_reverse_order,
 				names,
 				function_context );
