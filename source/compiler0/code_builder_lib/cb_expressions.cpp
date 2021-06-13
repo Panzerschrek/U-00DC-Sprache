@@ -2318,19 +2318,7 @@ Value CodeBuilder::CallFunction(
 	}
 	else if( const Variable* const callable_variable= function_value.GetVariable() )
 	{
-		if( const Class* const class_type= callable_variable->type.GetClassType() )
-		{
-			// For classes try to find () operator inside it.
-			if( const Value* const value=
-				class_type->members.GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Call ) ) )
-			{
-				functions_set= value->GetFunctionsSet();
-				U_ASSERT( functions_set != nullptr ); // If we found (), this must be functions set.
-				this_= callable_variable;
-				// SPRACHE_TODO - maybe support not only thiscall () operators ?
-			}
-		}
-		else if( const FunctionPointer* const function_pointer= callable_variable->type.GetFunctionPointerType() )
+		if( const FunctionPointer* const function_pointer= callable_variable->type.GetFunctionPointerType() )
 		{
 			function_context.have_non_constexpr_operations_inside= true; // Calling function, using pointer, is not constexpr. We can not garantee, that called function is constexpr.
 
@@ -2353,6 +2341,49 @@ Value CodeBuilder::CallFunction(
 					func_itself, function_pointer->function, src_loc,
 					nullptr, args, false,
 					names, function_context );
+		}
+
+		// Try to call overloaded () operator.
+		// DO NOT fill "this" here and continue this function because we should process callable object as non-this.
+
+		// Make preevaluation af arguments for selection of overloaded function.
+		{
+			ArgsVector<Function::Arg> actual_args;
+			actual_args.reserve( 1 + synt_args.size() );
+
+			const auto state= SaveInstructionsState( function_context );
+			{
+				const StackVariablesStorage dummy_stack_variables_storage( function_context );
+
+				actual_args.push_back( GetArgExtendedType( *callable_variable ) );
+				for( const Synt::Expression& arg_expression : synt_args )
+					actual_args.push_back( PreEvaluateArg( arg_expression, names, function_context ) );
+			}
+			RestoreInstructionsState( function_context, state );
+
+			if( const auto function= GetOverloadedOperator( actual_args, OverloadedOperator::Call, names.GetErrors(), src_loc ) )
+			{
+				if( !( function->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || function->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
+					function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+
+				ArgsVector<const Synt::Expression*> synt_args_ptrs;
+				synt_args_ptrs.reserve( synt_args.size() );
+				for( const Synt::Expression& arg : synt_args )
+					synt_args_ptrs.push_back( &arg );
+
+				const auto fetch_result= TryFetchVirtualFunction( *callable_variable, *function, function_context, names.GetErrors(), src_loc );
+
+				return DoCallFunction(
+					fetch_result.second,
+					*function->type.GetFunctionType(),
+					src_loc,
+					fetch_result.first,
+					synt_args_ptrs,
+					false,
+					names,
+					function_context,
+					function->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete );
+			}
 		}
 	}
 

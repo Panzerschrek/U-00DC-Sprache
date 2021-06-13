@@ -610,8 +610,8 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 
 	for( const Function::Arg& arg : actual_args )
 	{
-		if( op == OverloadedOperator::Indexing && &arg != &actual_args.front() )
-			break; // For indexing operator only check first argument.
+		if( (op == OverloadedOperator::Indexing || op == OverloadedOperator::Call) && &arg != &actual_args.front() )
+			break; // For indexing and call operators only check first argument.
 
 		if( const Class* const class_= arg.type.GetClassType() )
 		{
@@ -621,6 +621,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 				return nullptr;
 			}
 
+			// TODO - check here access rights.
 			const Value* const value_in_class= class_->members.GetThisScopeValue( op_name );
 			if( value_in_class == nullptr )
 				continue;

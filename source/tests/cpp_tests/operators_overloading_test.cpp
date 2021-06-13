@@ -680,6 +680,36 @@ U_TEST( OperatorsOverloadingTest_CallOperator1 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 1 + 77454 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( OperatorsOverloadingTest_CallOperator2 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			// Non-this-call operator
+			op()( S mut s ) : i32
+			{
+				++s.x;
+				return s.x * s.x;
+			}
+		}
+		fn Foo() : i32
+		{
+			var S mut s{ .x= 37 };
+			return s();
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, {} );
+	U_TEST_ASSERT( result_value.IntVal.getLimitedValue() == uint64_t(38 * 38) );
+}
+
 U_TEST( GeneratedCopyAssignmentOperatorTest0 )
 {
 	static const char c_program_text[]=
