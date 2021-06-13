@@ -295,6 +295,15 @@ private:
 		ust::shared_ptr_final</Synt::Expression/>& arg_r,
 		SrcLoc& src_loc ) : Value;
 
+	fn TryCallOverloadedPostifxOperator(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		OverloadedOperator operator,
+		Variable& variable,
+		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& synt_args,
+		SrcLoc& src_loc ) : ust::optional</Value/>;
+
 	fn CallFunctionsSet(
 		mut this,
 		NamesScopePtr& names_scope,
