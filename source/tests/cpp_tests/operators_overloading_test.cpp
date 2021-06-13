@@ -3,7 +3,7 @@
 namespace U
 {
 
-U_TEST( OperatorsOverloadingTest0 )
+U_TEST( OperatorsOverloadingTest0_NonThisCallOperators )
 {
 	static const char c_program_text[]=
 	R"(
@@ -69,6 +69,8 @@ U_TEST( OperatorsOverloadingTest0 )
 				return r;
 			}
 
+			// TODO - is this legal to declare non-this-call additive-assignment operators?
+
 			op+=( Box &mut a, Box &imut b )
 			{
 				a.x+= b.x;
@@ -121,11 +123,210 @@ U_TEST( OperatorsOverloadingTest0 )
 				--a.x;
 			}
 
+			// TODO - is this legal to declare non-this-call assignment operator?
 			op=( Box &mut a, Box &imut b )
 			{
 				a.x= b.x;
 			}
+		}
+	)";
 
+	BuildProgram( c_program_text );
+}
+
+U_TEST( OperatorsOverloadingTest_ThisCallOperators )
+{
+	static const char c_program_text[]=
+	R"(
+		struct Box
+		{
+			u32 x;
+
+			op+( this ) : Box
+			{
+				return this;
+			}
+			op-( this ) : Box
+			{
+				var Box r{ .x= -x };
+				return r;
+			}
+
+			op+( this, Box &imut b ) : Box
+			{
+				var Box r{ .x= x + b.x };
+				return r;
+			}
+			op-( this, Box &imut b ) : Box
+			{
+				var Box r{ .x= x - b.x };
+				return r;
+			}
+			op*( this, Box &imut b ) : Box
+			{
+				var Box r{ .x= x * b.x };
+				return r;
+			}
+			op/( this, Box &imut b ) : Box
+			{
+				var Box r{ .x= x / b.x };
+				return r;
+			}
+
+			op&( this, Box &imut b ) : Box
+			{
+				var Box r{ .x= x & b.x };
+				return r;
+			}
+			op|( this, Box &imut b ) : Box
+			{
+				var Box r{ .x= x | b.x };
+				return r;
+			}
+			op^( this, Box &imut b ) : Box
+			{
+				var Box r{ .x= x ^ b.x };
+				return r;
+			}
+
+			op<<( this, Box &imut b ) : Box
+			{
+				var Box r{ .x= x << b.x };
+				return r;
+			}
+			op>>( this, Box &imut b ) : Box
+			{
+				var Box r{ .x= x >> b.x };
+				return r;
+			}
+
+			op+=( mut this, Box &imut b )
+			{
+				x+= b.x;
+			}
+			op-=( mut this, Box &imut b )
+			{
+				x-= b.x;
+			}
+			op*=( mut this, Box &imut b )
+			{
+				x*= b.x;
+			}
+			op/=( mut this, Box &imut b )
+			{
+				x/= b.x;
+			}
+			op%=( mut this, Box &imut b )
+			{
+				x%= b.x;
+			}
+
+			op&=( mut this, Box &imut b )
+			{
+				x&= b.x;
+			}
+			op|=( mut this, Box &imut b )
+			{
+				x|= b.x;
+			}
+			op^=( mut this, Box &imut b )
+			{
+				x^= b.x;
+			}
+
+			op<<=( mut this, Box &imut b )
+			{
+				x <<= b.x;
+			}
+			op>>=( mut this, Box &imut b )
+			{
+				x >>= b.x;
+			}
+
+			op++( mut this )
+			{
+				++x;
+			}
+			op--( mut this )
+			{
+				--x;
+			}
+
+			op=( mut this, Box &imut b )
+			{
+				x= b.x;
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( OperatorsOverloadingTest_ValueArgumentsOperators )
+{
+	static const char c_program_text[]=
+	R"(
+		struct Box
+		{
+			u32 x;
+
+			op+( Box b ) : Box
+			{
+				return b;
+			}
+			op-( Box b ) : Box
+			{
+				var Box r{ .x= -b.x };
+				return r;
+			}
+
+			op+( Box a, Box b ) : Box
+			{
+				var Box r{ .x= a.x + b.x };
+				return r;
+			}
+			op-( Box a, Box b ) : Box
+			{
+				var Box r{ .x= a.x - b.x };
+				return r;
+			}
+			op*( Box a, Box b ) : Box
+			{
+				var Box r{ .x= a.x * b.x };
+				return r;
+			}
+			op/( Box a, Box b ) : Box
+			{
+				var Box r{ .x= a.x / b.x };
+				return r;
+			}
+
+			op&( Box a, Box b ) : Box
+			{
+				var Box r{ .x= a.x & b.x };
+				return r;
+			}
+			op|( Box a, Box b ) : Box
+			{
+				var Box r{ .x= a.x | b.x };
+				return r;
+			}
+			op^( Box a, Box b ) : Box
+			{
+				var Box r{ .x= a.x ^ b.x };
+				return r;
+			}
+
+			op<<( Box a, Box b ) : Box
+			{
+				var Box r{ .x= a.x << b.x };
+				return r;
+			}
+			op>>( Box a, Box b ) : Box
+			{
+				var Box r{ .x= a.x >> b.x };
+				return r;
+			}
 		}
 	)";
 
@@ -574,7 +775,7 @@ U_TEST( OperatorsOverloadingTest_EqualityOperators )
 	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 }
 
-U_TEST( OperatorsOverloadingTest_IndexationOperator )
+U_TEST( OperatorsOverloadingTest_IndexationOperator0 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -609,6 +810,36 @@ U_TEST( OperatorsOverloadingTest_IndexationOperator )
 
 	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 	U_TEST_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( OperatorsOverloadingTest_IndexationOperator1 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct MyIntVec
+		{
+			[ i32, 4 ] x;
+
+			op[]( MyIntVec v, i32 index ) : i32 // Non-this-call operator[]
+			{
+				return v.x[u32(index)];
+			}
+		}
+
+		fn Foo() : i32
+		{
+			var MyIntVec a{ .x[ 3, 75, 41, 98 ] };
+			return a.x[2u];
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, {} );
+	U_TEST_ASSERT( result_value.IntVal.getLimitedValue() == uint64_t(41) );
 }
 
 U_TEST( OperatorsOverloadingTest_CallOperator0 )
