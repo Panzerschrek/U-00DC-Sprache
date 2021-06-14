@@ -303,7 +303,7 @@ private:
 		Variable& variable,
 		SrcLoc& src_loc ) : ust::optional</Value/>;
 
-	fn TryCallOverloadedPostifxOperator(
+	fn TryCallOverloadedPostfixOperator(
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
