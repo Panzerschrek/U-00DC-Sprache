@@ -1599,9 +1599,8 @@ std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
 	if( !( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 		function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
 
-	std::pair<Variable, llvm::Value*> fetch_result( variable, overloaded_operator->llvm_function );
-	if( overloaded_operator->is_this_call && overloaded_operator->virtual_table_index != ~0u )
-		fetch_result= TryFetchVirtualFunction( variable, *overloaded_operator, function_context, names.GetErrors(), src_loc );
+	const std::pair<Variable, llvm::Value*> fetch_result=
+		TryFetchVirtualFunction( variable, *overloaded_operator, function_context, names.GetErrors(), src_loc );
 
 	return
 		DoCallFunction(

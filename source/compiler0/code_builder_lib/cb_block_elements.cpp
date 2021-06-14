@@ -1684,13 +1684,8 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 		if( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
 			function_context.have_non_constexpr_operations_inside= true;
 
-		if( overloaded_operator->is_this_call )
-		{
-			const auto fetch_result= TryFetchVirtualFunction( *variable, *overloaded_operator, function_context, block_names.GetErrors(), src_loc );
-			DoCallFunction( fetch_result.second, *overloaded_operator->type.GetFunctionType(), src_loc, &fetch_result.first, {}, false, block_names, function_context );
-		}
-		else
-			DoCallFunction( overloaded_operator->llvm_function, *overloaded_operator->type.GetFunctionType(), src_loc, variable, {}, false, block_names, function_context );
+		const auto fetch_result= TryFetchVirtualFunction( *variable, *overloaded_operator, function_context, block_names.GetErrors(), src_loc );
+		DoCallFunction( fetch_result.second, *overloaded_operator->type.GetFunctionType(), src_loc, &fetch_result.first, {}, false, block_names, function_context );
 	}
 	else if( const FundamentalType* const fundamental_type= variable->type.GetFundamentalType() )
 	{
