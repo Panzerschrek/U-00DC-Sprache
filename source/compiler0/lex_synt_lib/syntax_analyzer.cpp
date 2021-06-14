@@ -1011,7 +1011,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 		return ParseExpressionInBrackets();
 	case Lexem::Type::SquareBracketLeft:
 	case Lexem::Type::PointerTypeMark:
-			return std::visit( [&](auto t) -> Expression { return t; }, ParseTypeName() );
+			return std::visit( [&](auto&& t) -> Expression { return std::move(t); }, ParseTypeName() );
 	case Lexem::Type::ReferenceToPointer:
 		{
 			ReferenceToRawPointerOperator reference_to_raw_pointer_operator( it_->src_loc );
@@ -1154,7 +1154,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 			return std::move(typeinfo_);
 		}
 		else if( it_->text == Keywords::fn_ || it_->text == Keywords::typeof_ || it_->text == Keywords::tup_ )
-			return std::visit( [&](auto t) -> Expression { return t; }, ParseTypeName() );
+			return std::visit( [&](auto&& t) -> Expression { return std::move(t); }, ParseTypeName() );
 		else
 		{
 			if( auto macro= FetchMacro( it_->text, Macro::Context::Expression ) )
