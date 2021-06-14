@@ -1678,7 +1678,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	args.back().is_mutable= variable->value_type == ValueType::Reference;
 	args.back().is_reference= variable->value_type != ValueType::Value;
 	const FunctionVariable* const overloaded_operator=
-		GetOverloadedOperator( args, positive ? OverloadedOperator::Increment : OverloadedOperator::Decrement, block_names.GetErrors(), src_loc );
+		GetOverloadedOperator( args, positive ? OverloadedOperator::Increment : OverloadedOperator::Decrement, block_names, src_loc );
 	if( overloaded_operator != nullptr )
 	{
 		if( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )

@@ -1490,7 +1490,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	else if( args.front().type == args.back().type && ( args.front().type.GetArrayType() != nullptr || args.front().type.GetTupleType() != nullptr ) )
 		return CallBinaryOperatorForArrayOrTuple( op, left_expr, right_expr, src_loc, names, function_context );
 
-	if( const auto overloaded_operator= GetOverloadedOperator( args, op, names.GetErrors(), src_loc ) )
+	if( const auto overloaded_operator= GetOverloadedOperator( args, op, names, src_loc ) )
 	{
 		if( overloaded_operator->is_deleted )
 			REPORT_ERROR( AccessingDeletedMethod, names.GetErrors(), src_loc );
@@ -1591,7 +1591,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
 	args.back().is_mutable= variable.value_type == ValueType::Reference;
 	args.back().is_reference= variable.value_type != ValueType::Value;
 
-	const FunctionVariable* const overloaded_operator= GetOverloadedOperator( args, op, names.GetErrors(), src_loc );
+	const FunctionVariable* const overloaded_operator= GetOverloadedOperator( args, op, names, src_loc );
 
 	if( overloaded_operator == nullptr )
 		return std::nullopt;
@@ -1635,7 +1635,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
 	}
 	RestoreInstructionsState( function_context, state );
 
-	const FunctionVariable* const function= GetOverloadedOperator( actual_args, op, names.GetErrors(), src_loc );
+	const FunctionVariable* const function= GetOverloadedOperator( actual_args, op, names, src_loc );
 	if(function == nullptr )
 		return std::nullopt;
 

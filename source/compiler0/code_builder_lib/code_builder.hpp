@@ -698,7 +698,7 @@ private:
 	const FunctionVariable* GetOverloadedOperator(
 		const ArgsVector<Function::Arg>& actual_args,
 		OverloadedOperator op,
-		CodeBuilderErrorsContainer& errors_container,
+		NamesScope& names,
 		const SrcLoc& src_loc );
 
 	const FunctionVariable* GetConversionConstructor(
