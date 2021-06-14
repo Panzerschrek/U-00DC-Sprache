@@ -2662,12 +2662,6 @@ fn CodeBuilder::DoCallFunction(
 	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 	SrcLoc& src_loc ) : Value
 {
-	/* TODO - what if we call non-this-call function using "this", like
-		struct S{ fn Foo( S& s ); }
-		fn Bar( S& s ) { s.Foo(); }
-	???
-	*/
-
 	var ust::vector</ Variable /> mut preevaluated_args;
 	if( !this_.empty() )
 	{
