@@ -233,7 +233,7 @@ fn DoFloatsTest()
 	ExpectNear( ust::acos( +half_sqrt2 ), pi4, T(1.0e-5) );
 	ExpectNear( ust::acos( +half_sqrt3 ), pi6, T(1.0e-5) );
 	ExpectNear( ust::acos( -T(0.5) ), pi * T(2) / T(3), T(1.0e-5) );
-	ExpectNear( ust::acos( -half_sqrt2 ), pi * T(3) / T(4) T(1.0e-5) );
+	ExpectNear( ust::acos( -half_sqrt2 ), pi * T(3) / T(4), T(1.0e-5) );
 	ExpectNear( ust::acos( -half_sqrt3 ), pi * T(5) / T(6), T(1.0e-5) );
 	ExpectNear( ust::acos( -T(1.0) ), pi, T(1.0e-5) );
 	halt if( !ust::is_nan( ust::acos( ust::nan</T/>() ) ) ); // result for nan is nan
