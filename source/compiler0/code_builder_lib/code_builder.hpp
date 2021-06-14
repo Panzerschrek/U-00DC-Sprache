@@ -516,6 +516,14 @@ private:
 		NamesScope& names,
 		FunctionContext& function_context );
 
+	std::optional<Value> TryCallOverloadedPostfixOperator(
+		const Variable& variable,
+		const llvm::ArrayRef<Synt::Expression>& synt_args,
+		OverloadedOperator op,
+		const SrcLoc& src_loc,
+		NamesScope& names,
+		FunctionContext& function_context );
+
 	Value BuildBinaryOperator(
 		const Variable& l_var,
 		const Variable& r_var,
@@ -690,7 +698,7 @@ private:
 	const FunctionVariable* GetOverloadedOperator(
 		const ArgsVector<Function::Arg>& actual_args,
 		OverloadedOperator op,
-		CodeBuilderErrorsContainer& errors_container,
+		NamesScope& names,
 		const SrcLoc& src_loc );
 
 	const FunctionVariable* GetConversionConstructor(

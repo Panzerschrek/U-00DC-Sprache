@@ -934,43 +934,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	if( !variable.t.GetClassType().empty() )
 	{
-		// Try to call overloaded [] operator.
-		var [ VariableTypeExtened, 2 ] mut args
-		[
-			{ .t(variable.t), .value_type= variable.value_type },
-			{ .t(invalid_type_), .value_type= ValueType::Value },
-		];
-
+		// Try to call overloaded [] operator for class.
+		var [ ust::shared_ptr_final</Synt::Expression/>, 1 ] synt_args[ indexation_operator.index ];
+		if_var( &mut res : TryCallOverloadedPostfixOperator( names_scope, function_context, OverloadedOperator::Indexing, variable, synt_args, indexation_operator.src_loc ) )
 		{
-			var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-			auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-			auto instructions_state= SaveInstructionsState( function_context );
-
-			var Variable arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.index.get_ref() );
-			args[1].t= arg.t;
-			args[1].value_type= arg.value_type;
-
-			RestoreInstructionsState( function_context, instructions_state );
-		}
-
-		if_var( mut overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::Indexing, names_scope, indexation_operator.src_loc ) )
-		{
-			if( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
-			{
-				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
-			}
-
-			auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
-			overloaded_operator.llvm_function= fetch_result[1];
-
-			var [ ust::shared_ptr_final</Synt::Expression/>, 1 ] args[ indexation_operator.index ];
-			return DoCallFunction(
-				names_scope,
-				function_context,
-				ust::optional_ref</ Variable, false />( fetch_result[0] ),
-				overloaded_operator,
-				ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />( args ),
-				indexation_operator.src_loc );
+			return take(res);
 		}
 	}
 
@@ -1192,23 +1160,12 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				call_operator.args.range(),
 				call_operator.src_loc );
 		}
-		if_var( &class_type : variable.t.GetClassType() )
-		{
-			auto class_members= class_type.lock_imut().get_ref().members;
-			auto members_lock= class_members.lock_imut();
-			auto& members= members_lock.get_ref();
-			// Try to call overloaded () operator.
-			if_var( &operators_value : members.GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Call ) ) )
-			{
-				auto functions_set_ptr= operators_value.Get</NamesScopeFunctionsSet/>();
-				if( !functions_set_ptr.empty() )
-				{
-					BuildFunctionsSet( class_members, ust::to_non_nullable( functions_set_ptr ), false );
 
-					this_.reset(variable);
-					return CallFunctionsSet( names_scope, function_context, this_, functions_set_ptr.lock_imut().get_ref().functions_set, call_operator.args.range(), call_operator.src_loc );
-				}
-			}
+		// Try to call overloaded () operator.
+		// Do it here and not call "CallFunctionsSet" to allow non-this-call operator ().
+		if_var( &mut res : TryCallOverloadedPostfixOperator( names_scope, function_context, OverloadedOperator::Call, variable, call_operator.args.range(), call_operator.src_loc ) )
+		{
+			return take(res);
 		}
 	}
 
@@ -1453,28 +1410,9 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 {
 	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, unary_minus.expr.get_ref() );
 
-	if( !variable.t.GetClassType().empty() )
+	if_var( &mut res : TryCallOverloadedUnaryOperator( names_scope, function_context, OverloadedOperator::Sub, variable, unary_minus.src_loc ) )
 	{
-		var [ VariableTypeExtened, 1 ] args[ { .t(variable.t), .value_type= variable.value_type } ];
-
-		if_var( mut overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::Sub, names_scope, unary_minus.src_loc ) )
-		{
-			if( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
-			{
-				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
-			}
-
-			auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
-			overloaded_operator.llvm_function= fetch_result[1];
-
-			return DoCallFunction(
-				names_scope,
-				function_context,
-				ust::optional_ref</ Variable, false />(fetch_result[0]),
-				overloaded_operator,
-				ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
-				unary_minus.src_loc );
-		}
+		return take(res);
 	}
 
 	auto fundamental_type= variable.t.GetFundamentalType();
@@ -1530,28 +1468,9 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 {
 	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, logical_not.expr.get_ref() );
 
-	if( !variable.t.GetClassType().empty() )
+	if_var( &mut res : TryCallOverloadedUnaryOperator( names_scope, function_context, OverloadedOperator::LogicalNot, variable, logical_not.src_loc ) )
 	{
-		var [ VariableTypeExtened, 1 ] args[ { .t(variable.t), .value_type= variable.value_type} ];
-
-		if_var( mut overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::LogicalNot, names_scope, logical_not.src_loc ) )
-		{
-			if( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
-			{
-				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
-			}
-
-			auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
-			overloaded_operator.llvm_function= fetch_result[1];
-
-			return DoCallFunction(
-				names_scope,
-				function_context,
-				ust::optional_ref</ Variable, false />(fetch_result[0]),
-				overloaded_operator,
-				ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
-				logical_not.src_loc );
-		}
+		return take(res);
 	}
 
 	if( variable.t != bool_type_ )
@@ -1596,28 +1515,9 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 {
 	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, bitwise_not.expr.get_ref() );
 
-	if( !variable.t.GetClassType().empty() )
+	if_var( &mut res : TryCallOverloadedUnaryOperator( names_scope, function_context, OverloadedOperator::BitwiseNot, variable, bitwise_not.src_loc ) )
 	{
-		var [ VariableTypeExtened, 1 ] args[ { .t(variable.t), .value_type= variable.value_type} ];
-
-		if_var( mut overloaded_operator : GetOverloadedOperator( args, OverloadedOperator::BitwiseNot, names_scope, bitwise_not.src_loc ) )
-		{
-			if( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
-			{
-				function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
-			}
-
-			auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
-			overloaded_operator.llvm_function= fetch_result[1];
-
-			return DoCallFunction(
-				names_scope,
-				function_context,
-				ust::optional_ref</ Variable, false />(fetch_result[0]),
-				overloaded_operator,
-				ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
-				bitwise_not.src_loc );
-		}
+		return take(res);
 	}
 
 	auto fundamental_type= variable.t.GetFundamentalType();
@@ -2516,10 +2416,6 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 			REPORT_ERROR( AccessingDeletedMethod, names_scope, src_loc )
 			return ust::optional</Value/>();
 		}
-		if( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
-		{
-			function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
-		}
 
 		return DoCallFunction(
 			names_scope,
@@ -2595,6 +2491,84 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 
 	var Variable mut result{ .t= void_type_ };
 	return move(result);
+}
+
+fn CodeBuilder::TryCallOverloadedUnaryOperator(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	OverloadedOperator operator,
+	Variable& variable,
+	SrcLoc& src_loc ) : ust::optional</Value/>
+{
+	if( variable.t.GetClassType().empty() )
+	{
+		return ust::optional</Value/>();
+	}
+
+	var [ VariableTypeExtened, 1 ] args[ { .t(variable.t), .value_type= variable.value_type } ];
+
+	if_var( mut overloaded_operator : GetOverloadedOperator( args, operator, names_scope, src_loc ) )
+	{
+		auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
+		overloaded_operator.llvm_function= fetch_result[1];
+
+		return DoCallFunction(
+			names_scope,
+			function_context,
+			ust::optional_ref</ Variable, false />(fetch_result[0]),
+			overloaded_operator,
+			ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
+			src_loc );
+	}
+
+	return ust::optional</Value/>();
+}
+
+fn CodeBuilder::TryCallOverloadedPostfixOperator(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	OverloadedOperator operator,
+	Variable& variable,
+	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& synt_args,
+	SrcLoc& src_loc ) : ust::optional</Value/>
+{
+	var ust::vector</ VariableTypeExtened /> mut args;
+
+	var VariableTypeExtened mut this_type{ .t(variable.t), .value_type= variable.value_type };
+	args.push_back( move(this_type) );
+
+	{
+		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+		auto instructions_state= SaveInstructionsState( function_context );
+
+		foreach( &in_arg : synt_args )
+		{
+			var Variable arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.get_ref() );
+			var VariableTypeExtened mut type_extended{ .t(arg.t), .value_type= arg.value_type };
+			args.push_back( move(type_extended) );
+		}
+
+		RestoreInstructionsState( function_context, instructions_state );
+	}
+
+	if_var( mut overloaded_operator : GetOverloadedOperator( args.range(), operator, names_scope, src_loc ) )
+	{
+		auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
+		overloaded_operator.llvm_function= fetch_result[1];
+
+		return DoCallFunction(
+			names_scope,
+			function_context,
+			ust::optional_ref</ Variable, false />(fetch_result[0]),
+			overloaded_operator,
+			synt_args,
+			src_loc );
+	}
+
+	return ust::optional</Value/>();
 }
 
 fn CodeBuilder::CallFunctionsSet(
@@ -2688,22 +2662,6 @@ fn CodeBuilder::DoCallFunction(
 	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 	SrcLoc& src_loc ) : Value
 {
-	if( function.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
-	{
-		function_context.have_non_constexpr_operations_inside= true;
-	}
-
-	if( function.is_this_call && this_.empty() )
-	{
-		REPORT_ERROR( CallOfThiscallFunctionUsingNonthisArgument, names_scope, src_loc )
-		return ErrorValue();
-	}
-	/* TODO - what if we call non-this-call function using "this", like
-		struct S{ fn Foo( S& s ); }
-		fn Bar( S& s ) { s.Foo(); }
-	???
-	*/
-
 	var ust::vector</ Variable /> mut preevaluated_args;
 	if( !this_.empty() )
 	{
@@ -2730,6 +2688,11 @@ fn CodeBuilder::DoCallFunction(
 	ArgsEvaluationOrder args_evaluation_order,
 	SrcLoc& src_loc ) : Value
 {
+	if( function.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+	{
+		function_context.have_non_constexpr_operations_inside= true;
+	}
+
 	auto total_args= preevaluated_args.size() + args.size();
 
 	var FunctionType& function_type= function.t;

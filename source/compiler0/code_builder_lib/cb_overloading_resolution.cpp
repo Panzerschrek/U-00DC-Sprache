@@ -603,34 +603,41 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 	const ArgsVector<Function::Arg>& actual_args,
 	OverloadedOperator op,
-	CodeBuilderErrorsContainer& errors_container,
+	NamesScope& names,
 	const SrcLoc& src_loc )
 {
 	const std::string op_name= OverloadedOperatorToString( op );
 
 	for( const Function::Arg& arg : actual_args )
 	{
-		if( op == OverloadedOperator::Indexing && &arg != &actual_args.front() )
-			break; // For indexing operator only check first argument.
+		if( (op == OverloadedOperator::Indexing || op == OverloadedOperator::Call) && &arg != &actual_args.front() )
+			break; // For indexing and call operators only check first argument.
 
-		if( const Class* const class_= arg.type.GetClassType() )
+		if( Class* const class_= arg.type.GetClassType() )
 		{
 			if( !EnsureTypeComplete( arg.type ) )
 			{
-				REPORT_ERROR( UsingIncompleteType, errors_container, src_loc, arg.type );
+				REPORT_ERROR( UsingIncompleteType, names.GetErrors(), src_loc, arg.type );
 				return nullptr;
 			}
 
-			const Value* const value_in_class= class_->members.GetThisScopeValue( op_name );
+			Value* const value_in_class= class_->members.GetThisScopeValue( op_name );
 			if( value_in_class == nullptr )
 				continue;
 
-			const OverloadedFunctionsSet* const operators_set= value_in_class->GetFunctionsSet();
+			OverloadedFunctionsSet* const operators_set= value_in_class->GetFunctionsSet();
 			U_ASSERT( operators_set != nullptr ); // If we found something in names map with operator name, it must be operator.
+			GlobalThingBuildFunctionsSet( class_->members, *operators_set, false ); // Make sure functions set is complete.
 
-			const FunctionVariable* const func= GetOverloadedFunction( *operators_set, actual_args, false, errors_container, src_loc, false );
+			const FunctionVariable* const func= GetOverloadedFunction( *operators_set, actual_args, false, names.GetErrors(), src_loc, false );
 			if( func != nullptr )
+			{
+				// Check access rights after function selection.
+				if( names.GetAccessFor( arg.type.GetClassTypeProxy() ) < class_->GetMemberVisibility( op_name ) )
+					REPORT_ERROR( AccessingNonpublicClassMember, names.GetErrors(), src_loc, op_name, class_->members.GetThisNamespaceName() );
+
 				return func;
+			}
 		}
 	}
 

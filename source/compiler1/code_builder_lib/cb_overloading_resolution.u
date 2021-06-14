@@ -700,7 +700,7 @@ fn CodeBuilder::GetOverloadedOperator(
 	mut this,
 	ust::array_view_imut</VariableTypeExtened/> args,
 	OverloadedOperator operator,
-	NamesScopePtr& names_scope, // Needed only for errors reporting
+	NamesScopePtr& names_scope,
 	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
 {
 	foreach( &arg : args )
@@ -710,7 +710,9 @@ fn CodeBuilder::GetOverloadedOperator(
 			auto class_members= class_type.lock_imut().get_ref().members;
 			auto members_lock= class_members.lock_imut();
 			auto& members= members_lock.get_ref();
-			if_var( &operators_value : members.GetThisScopeValue( OverloadedOperatorToString( operator ) ) )
+
+			auto overloaded_operator_str= OverloadedOperatorToString( operator );
+			if_var( &operators_value : members.GetThisScopeValue( overloaded_operator_str ) )
 			{
 				auto functions_set_ptr= operators_value.Get</NamesScopeFunctionsSet/>();
 				if( !functions_set_ptr.empty() )
@@ -720,6 +722,13 @@ fn CodeBuilder::GetOverloadedOperator(
 					auto functions_set_lock= functions_set_ptr.lock_imut();
 					if_var( &function_selected : GetOverloadedFunctionImpl( functions_set_lock.get_ref().functions_set, args, false, names_scope, src_loc, true, false ) )
 					{
+						// Check access rights after function selection.
+						if( u32( names_scope.lock_imut().get_ref().GetAccessFor(class_type ) ) <
+							u32( class_type.lock_imut().get_ref().GetMemberVisibility( overloaded_operator_str ) ) )
+						{
+							REPORT_ERROR( AccessingNonpublicClassMember, names_scope, src_loc, overloaded_operator_str, arg.t.ToString() )
+						}
+
 						return function_selected;
 					}
 				}

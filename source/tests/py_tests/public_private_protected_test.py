@@ -162,6 +162,116 @@ def AccessingPrivateMemberOutsideClass_Test4():
 	assert( errors_list[0].src_loc.line == 9 )
 
 
+def AccessingPrivateMemberOutsideClass_Test5():
+	c_program_text= """
+		class A
+		{
+		public:
+			fn constructor( mut this )= default;
+		private:
+			op()( this ){}
+		}
+
+		fn Foo()
+		{
+			var A a;
+			a(); // Acessing private postfix operator.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "AccessingNonpublicClassMember" )
+	assert( errors_list[0].src_loc.line == 13 )
+
+
+def AccessingPrivateMemberOutsideClass_Test6():
+	c_program_text= """
+		class A
+		{
+		public:
+			fn constructor( mut this )= default;
+		private:
+			op++( mut this ){}
+		}
+
+		fn Foo()
+		{
+			var A mut a;
+			++a; // Acessing private prefix operator.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "AccessingNonpublicClassMember" )
+	assert( errors_list[0].src_loc.line == 13 )
+
+
+def AccessingPrivateMemberOutsideClass_Test7():
+	c_program_text= """
+		class A
+		{
+		public:
+			fn constructor( mut this )= default;
+		private:
+			op+=( mut this, i32 x ){}
+		}
+
+		fn Foo()
+		{
+			var A mut a;
+			a+= 66; // Acessing private binary operator.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "AccessingNonpublicClassMember" )
+	assert( errors_list[0].src_loc.line == 13 )
+
+
+def AccessingPrivateMemberOutsideClass_Test8():
+	c_program_text= """
+		class A
+		{
+		public:
+			fn constructor( mut this )= default;
+		private:
+			op[]( this, i32 x ) : i32 { return x; }
+		}
+
+		fn Foo()
+		{
+			var A a;
+			a[17]; // Accessing private postfix operator.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "AccessingNonpublicClassMember" )
+	assert( errors_list[0].src_loc.line == 13 )
+
+
+def AccessingPrivateMemberOutsideClass_Test9():
+	c_program_text= """
+		class A
+		{
+		public:
+			fn constructor( mut this )= default;
+		private:
+			op~( this ) : i32 { return 0; }
+		}
+
+		fn Foo()
+		{
+			var A a;
+			~a; // Accessing private unary prefix operator.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "AccessingNonpublicClassMember" )
+	assert( errors_list[0].src_loc.line == 13 )
+
+
 def AccessingPrivateMemberInsideClass_Test0():
 	c_program_text= """
 		class A

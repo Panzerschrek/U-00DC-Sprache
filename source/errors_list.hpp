@@ -99,7 +99,6 @@ PROCESS_ERROR( FieldIsNotInitializedYet, "Field \"{0}\" is not initialized yet."
 PROCESS_ERROR( ExplicitArgumentsInDestructor, "Explicit arguments in destructor." )
 
 // Methods errors.
-PROCESS_ERROR( CallOfThiscallFunctionUsingNonthisArgument, "Call of \"thiscall\" function using nonthis argument." )
 PROCESS_ERROR( ClassFieldAccessInStaticMethod, "Accessing field \"{0}\" in static method." )
 PROCESS_ERROR( ThisInNonclassFunction, "This in nonclass function \"{0}\"." )
 PROCESS_ERROR( ThiscallMismatch, "Thiscall for function \"{0}\" does not match to thiscall in prototype." )

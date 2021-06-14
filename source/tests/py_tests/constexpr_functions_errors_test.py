@@ -263,3 +263,39 @@ def ConstexprFunctionContainsUnallowedOperations_Test6():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstexprFunctionContainsUnallowedOperations" )
 	assert( errors_list[0].src_loc.line == 6 )
+
+
+def ConstexprFunctionContainsUnallowedOperations_Test7():
+	c_program_text= """
+		struct S
+		{
+			op()( this ){}
+		}
+		fn constexpr Foo()
+		{
+			var S s{};
+			s();   // Calling non-constexpr overloaded postfix operator in constexpr functions not allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstexprFunctionContainsUnallowedOperations" )
+	assert( errors_list[0].src_loc.line == 6 )
+
+
+def ConstexprFunctionContainsUnallowedOperations_Test8():
+	c_program_text= """
+		struct S
+		{
+			op~( S a ) : S { return S(); }
+		}
+		fn constexpr Foo()
+		{
+			var S s{};
+			~s;   // Calling non-constexpr overloaded unary prefix operator in constexpr functions not allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstexprFunctionContainsUnallowedOperations" )
+	assert( errors_list[0].src_loc.line == 6 )
