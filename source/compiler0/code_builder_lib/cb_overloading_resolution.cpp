@@ -613,7 +613,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 		if( (op == OverloadedOperator::Indexing || op == OverloadedOperator::Call) && &arg != &actual_args.front() )
 			break; // For indexing and call operators only check first argument.
 
-		if( const Class* const class_= arg.type.GetClassType() )
+		if( Class* const class_= arg.type.GetClassType() )
 		{
 			if( !EnsureTypeComplete( arg.type ) )
 			{
@@ -621,12 +621,13 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 				return nullptr;
 			}
 
-			const Value* const value_in_class= class_->members.GetThisScopeValue( op_name );
+			Value* const value_in_class= class_->members.GetThisScopeValue( op_name );
 			if( value_in_class == nullptr )
 				continue;
 
-			const OverloadedFunctionsSet* const operators_set= value_in_class->GetFunctionsSet();
+			OverloadedFunctionsSet* const operators_set= value_in_class->GetFunctionsSet();
 			U_ASSERT( operators_set != nullptr ); // If we found something in names map with operator name, it must be operator.
+			GlobalThingBuildFunctionsSet( class_->members, *operators_set, false ); // Make sure functions set is complete.
 
 			const FunctionVariable* const func= GetOverloadedFunction( *operators_set, actual_args, false, names.GetErrors(), src_loc, false );
 			if( func != nullptr )
