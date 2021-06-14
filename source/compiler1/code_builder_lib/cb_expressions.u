@@ -2416,10 +2416,6 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 			REPORT_ERROR( AccessingDeletedMethod, names_scope, src_loc )
 			return ust::optional</Value/>();
 		}
-		if( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
-		{
-			function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
-		}
 
 		return DoCallFunction(
 			names_scope,
@@ -2514,11 +2510,6 @@ fn CodeBuilder::TryCallOverloadedUnaryOperator(
 
 	if_var( mut overloaded_operator : GetOverloadedOperator( args, operator, names_scope, src_loc ) )
 	{
-		if( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
-		{
-			function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
-		}
-
 		auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
 		overloaded_operator.llvm_function= fetch_result[1];
 
@@ -2565,11 +2556,6 @@ fn CodeBuilder::TryCallOverloadedPostfixOperator(
 
 	if_var( mut overloaded_operator : GetOverloadedOperator( args.range(), operator, names_scope, src_loc ) )
 	{
-		if( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
-		{
-			function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
-		}
-
 		auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
 		overloaded_operator.llvm_function= fetch_result[1];
 
@@ -2676,11 +2662,6 @@ fn CodeBuilder::DoCallFunction(
 	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 	SrcLoc& src_loc ) : Value
 {
-	if( function.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
-	{
-		function_context.have_non_constexpr_operations_inside= true;
-	}
-
 	/* TODO - what if we call non-this-call function using "this", like
 		struct S{ fn Foo( S& s ); }
 		fn Bar( S& s ) { s.Foo(); }
@@ -2713,6 +2694,11 @@ fn CodeBuilder::DoCallFunction(
 	ArgsEvaluationOrder args_evaluation_order,
 	SrcLoc& src_loc ) : Value
 {
+	if( function.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+	{
+		function_context.have_non_constexpr_operations_inside= true;
+	}
+
 	auto total_args= preevaluated_args.size() + args.size();
 
 	var FunctionType& function_type= function.t;
