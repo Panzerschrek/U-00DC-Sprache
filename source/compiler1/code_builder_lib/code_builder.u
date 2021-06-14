@@ -1230,6 +1230,10 @@ fn CodeBuilder::PrepareFunction(
 		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "sret" );
 		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "noalias" );
 	}
+	if( function_variable.t.return_value_is_reference )
+	{
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeReturnIndex, "nonnull" );
+	}
 
 	for( auto mut i= 0s; i < function_variable.t.params.size(); ++i )
 	{
