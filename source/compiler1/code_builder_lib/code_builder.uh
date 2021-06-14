@@ -737,6 +737,8 @@ private:
 
 	fn SetupLLVMFunctionAttributes( this, NamesScope& names_scope, FunctionVariable& func_variable );
 
+	fn MarkLoadInstructionWithNonNullMetadata( this, LLVMValueRef load_instruction );
+
 	fn GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef;
 	fn GetZeroGEPIndex( this ) : LLVMValueRef;
 	fn CreateMoveToLLVMRegisterInstruction( this, Variable& variable, FunctionContext& function_context ) : LLVMValueRef;

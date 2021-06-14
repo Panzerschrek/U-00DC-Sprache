@@ -2133,6 +2133,18 @@ fn CodeBuilder::SetupLLVMFunctionAttributes( this, NamesScope& names_scope, Func
 	}
 }
 
+fn CodeBuilder::MarkLoadInstructionWithNonNullMetadata( this, LLVMValueRef load_instruction )
+{
+	unsafe
+	{
+		auto& name= "nonnull";
+		LLVMSetMetadata(
+			load_instruction,
+			LLVMGetMDKindIDInContext( llvm_context_, name[0], u32( typeinfo</typeof(name)/>.element_count ) ),
+			LLVMMetadataAsValue( llvm_context_, LLVMMDNodeInContext2( llvm_context_, LLVMMetadataRef::Null, 0s ) ) );
+	}
+}
+
 fn CodeBuilder::GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef
 {
 	if( t == U_FundamentalType::InvalidType	) { return fundamental_llvm_types_.invalid_type_; }
