@@ -1161,7 +1161,8 @@ Type CodeBuilder::BuildFuncCode(
 
 		for( size_t i= 0u; i < function_type.args.size(); i++ )
 		{
-			const unsigned int arg_attr_index= static_cast<unsigned int>(i + 1u + (first_arg_is_sret ? 1u : 0u ));
+			const auto arg_attr_index=
+				static_cast<unsigned int>(llvm::AttributeList::FirstArgIndex + i + (first_arg_is_sret ? 1u : 0u ));
 			const Function::Arg& arg= function_type.args[i];
 
 			const bool arg_is_composite= arg.type.GetClassType() != nullptr || arg.type.GetArrayType() != nullptr || arg.type.GetTupleType() != nullptr;
@@ -1178,9 +1179,11 @@ Type CodeBuilder::BuildFuncCode(
 
 		if( first_arg_is_sret )
 		{
-			llvm_function->addAttribute( 1u, llvm::Attribute::StructRet );
-			llvm_function->addAttribute( 1u, llvm::Attribute::NoAlias );
+			llvm_function->addAttribute( llvm::AttributeList::FirstArgIndex, llvm::Attribute::StructRet );
+			llvm_function->addAttribute( llvm::AttributeList::FirstArgIndex, llvm::Attribute::NoAlias );
 		}
+		if( function_type.return_value_is_reference )
+			llvm_function->addAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull );
 
 		func_variable.llvm_function= llvm_function;
 	}

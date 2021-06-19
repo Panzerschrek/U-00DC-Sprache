@@ -1230,6 +1230,10 @@ fn CodeBuilder::PrepareFunction(
 		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "sret" );
 		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "noalias" );
 	}
+	if( function_variable.t.return_value_is_reference )
+	{
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeReturnIndex, "nonnull" );
+	}
 
 	for( auto mut i= 0s; i < function_variable.t.params.size(); ++i )
 	{
@@ -2130,6 +2134,18 @@ fn CodeBuilder::SetupLLVMFunctionAttributes( this, NamesScope& names_scope, Func
 	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
 	{
 		AddFunctionAttribute( func_variable.llvm_function, LLVMAttributeFunctionIndex, "uwtable" );
+	}
+}
+
+fn CodeBuilder::MarkLoadInstructionWithNonNullMetadata( this, LLVMValueRef load_instruction )
+{
+	unsafe
+	{
+		auto& name= "nonnull";
+		LLVMSetMetadata(
+			load_instruction,
+			LLVMGetMDKindIDInContext( llvm_context_, name[0], u32( typeinfo</typeof(name)/>.element_count ) ),
+			LLVMMetadataAsValue( llvm_context_, LLVMMDNodeInContext2( llvm_context_, LLVMMetadataRef::Null, 0s ) ) );
 	}
 }
 

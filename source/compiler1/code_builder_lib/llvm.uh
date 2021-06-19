@@ -380,6 +380,13 @@ fn nomangle LLVMGetEnumAttributeKindForName(char8& Name, size_type SLen) unsafe 
 
 fn nomangle LLVMAddAttributeAtIndex(LLVMValueRef F, LLVMAttributeIndex Idx, LLVMAttributeRef A) unsafe;
 
+// Metadata
+
+fn nomangle LLVMSetMetadata(LLVMValueRef Val, u32 KindID, LLVMValueRef Node) unsafe;
+fn nomangle LLVMGetMDKindIDInContext(LLVMContextRef C, NullTerminatedString& Name, u32 SLen) unsafe : u32;
+fn nomangle LLVMMDNodeInContext2(LLVMContextRef C, LLVMMetadataRef& MDs, size_type Count) unsafe : LLVMMetadataRef;
+fn nomangle LLVMMetadataAsValue(LLVMContextRef C, LLVMMetadataRef MD) unsafe : LLVMValueRef;
+
 // Debug info
 fn nomangle LLVMCreateDIBuilder(LLVMModuleRef M) unsafe : LLVMDIBuilderRef;
 fn nomangle LLVMDIBuilderFinalize(LLVMDIBuilderRef Builder) unsafe;

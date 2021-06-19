@@ -1284,6 +1284,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				else
 				{
 					unsafe{  result.llvm_value= LLVMBuildLoad( function_context.llvm_ir_builder, gep_result, op_name_nt.front() );  }
+					MarkLoadInstructionWithNonNullMetadata( result.llvm_value ); // Reference field is never null.
 				}
 
 				if( variable.node_id != ReferencesGraph::c_empty_node_id )

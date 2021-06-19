@@ -431,7 +431,8 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	// Fetch vtable pointer.
 	// Virtual table pointer is always first field.
 	llvm::Value* const ptr_to_virtual_table_ptr= function_context.llvm_ir_builder.CreatePointerCast( this_casted.llvm_value, class_type.virtual_table_llvm_type->getPointerTo()->getPointerTo() );
-	llvm::Value* const virtual_table_ptr= function_context.llvm_ir_builder.CreateLoad( ptr_to_virtual_table_ptr );
+	llvm::LoadInst* const virtual_table_ptr= function_context.llvm_ir_builder.CreateLoad( ptr_to_virtual_table_ptr );
+	virtual_table_ptr->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) ); // Virtual table pointer is never null.
 
 	const unsigned int c_offset_field_number= 0u;
 	[[maybe_unused]] const unsigned int c_type_id_field_number= 1u;
@@ -473,7 +474,8 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	// Fetch function.
 	llvm::Value* const ptr_to_function_ptr=
 		function_context.llvm_ir_builder.CreateGEP( functions_table_ptr, { GetZeroGEPIndex(), GetFieldGEPIndex( virtual_table_entry->index_in_table ) } );
-	llvm::Value* const abstract_function_ptr= function_context.llvm_ir_builder.CreateLoad( ptr_to_function_ptr );
+	llvm::LoadInst* const abstract_function_ptr= function_context.llvm_ir_builder.CreateLoad( ptr_to_function_ptr );
+	abstract_function_ptr->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) ); // Function address in virtual table is never null.
 	llvm::Value* const function_ptr= function_context.llvm_ir_builder.CreateBitOrPointerCast( abstract_function_ptr, function_type.llvm_type->getPointerTo() );
 
 	// Correct "this" pointer.

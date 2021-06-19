@@ -383,7 +383,12 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				return ErrorValue(); // Actual error will be reported in another place.
 		}
 		else
-			result.llvm_value= function_context.llvm_ir_builder.CreateLoad( gep_result );
+		{
+			// Reference is never null, so, mark result of reference field load with "nonnull" metadata.
+			const auto load_res= function_context.llvm_ir_builder.CreateLoad( gep_result );
+			load_res->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) );
+			result.llvm_value= load_res;
+		}
 
 		if( variable.node != nullptr )
 		{
