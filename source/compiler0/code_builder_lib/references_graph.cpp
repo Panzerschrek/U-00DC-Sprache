@@ -246,7 +246,7 @@ ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const 
 				result_state.inner_reference= src_state.inner_reference;
 			}
 			else if( result_state.inner_reference != nullptr && src_state.inner_reference == nullptr ) {}
-			else // both nonnull
+			else if( result_state.inner_reference != src_state.inner_reference ) // both nonnull and different
 			{
 				// Variable inner reference created in multiple braches.
 

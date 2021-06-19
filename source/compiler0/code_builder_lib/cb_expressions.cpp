@@ -395,6 +395,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			const auto field_node= std::make_shared<ReferencesGraphNode>( "this." + member_access_operator.member_name_, field->is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
 			function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( field_node, result ) );
 			result.node= field_node;
+			// THIS IS WRONG! We should access inner node of first accessible variable in chanin!
 			for( const ReferencesGraphNodePtr& inner_reference : function_context.variables_state.GetAllAccessibleInnerNodes( variable.node ) )
 			{
 				if( (  field->is_mutable && function_context.variables_state.HaveOutgoingLinks( inner_reference ) ) ||
@@ -2597,6 +2598,7 @@ Value CodeBuilder::DoCallFunction(
 			// Lock inner references.
 			if( expr.node != nullptr )
 			{
+				// THIS IS WRONG! We should access inner node of first accessible variable in chanin!
 				const auto inner_references= function_context.variables_state.GetAllAccessibleInnerNodes( expr.node );
 				if( !inner_references.empty() )
 				{
