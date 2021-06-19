@@ -3,6 +3,7 @@ import "structs_combined.uh"
 namespace U1
 {
 
+/*
 fn ErrorTest( ClassTypePtr& class_type )
 {
 	auto mut lock= class_type.lock_mut();
@@ -16,6 +17,13 @@ fn ErrorTest( ClassTypePtr& class_type )
 		}
 	}
 }
+*/
 
+fn ErrorTest( ust::shared_ptr_impl::lock_mut</ClassType/> &mut lock )
+{
+	for( auto mut r= lock.get_ref().parents.range(); !r.empty(); )
+	{
+	}
+}
 
 } // namespace U1
