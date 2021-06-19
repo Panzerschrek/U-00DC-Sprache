@@ -1220,7 +1220,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		BuildBlockElement( names_scope, function_context, element );
 	}
 
-	auto mut references_graph_before_loop= function_context.references_graph;
+	auto references_graph_before_loop= function_context.references_graph;
 
 	var LLVMBasicBlockRef mut test_block= zero_init, mut loop_block= zero_init, mut loop_iteration_block= zero_init, mut block_after_loop= zero_init;
 	unsafe
@@ -1263,6 +1263,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		unsafe{  LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, loop_block, block_after_loop );  }
 	}
 
+	auto mut references_graph_after_test_block= function_context.references_graph;
+
 	// Loop block code.
 	var LoopFrame loop_frame
 	{
@@ -1292,7 +1294,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	}
 
 	var ust::vector</ReferencesGraph/> mut references_graphs_for_merge= take( function_context.loops_stack.back().break_references_graphs );
-	references_graphs_for_merge.push_back( references_graph_before_loop );
+	references_graphs_for_merge.push_back( move(references_graph_after_test_block) );
 
 	function_context.loops_stack.pop_back();
 

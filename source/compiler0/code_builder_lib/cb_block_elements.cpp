@@ -750,8 +750,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	FunctionContext& function_context,
 	const Synt::CStyleForOperator& c_style_for_operator )
 {
-	// TODO - process variables state.
-
 	const StackVariablesStorage loop_variables_storage( function_context );
 	NamesScope loop_names_scope("", &names);
 
@@ -803,6 +801,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 	}
 
+	ReferencesGraph variables_state_after_test_block= function_context.variables_state;
+
 	// Loop block code.
 	function_context.loops_stack.emplace_back();
 	function_context.loops_stack.back().block_for_break= block_after_loop;
@@ -824,7 +824,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.variables_state= MergeVariablesStateAfterIf( function_context.loops_stack.back().continue_variables_states, names.GetErrors(), c_style_for_operator.block_.end_src_loc_ );
 
 	std::vector<ReferencesGraph> variables_state_for_merge= std::move( function_context.loops_stack.back().break_variables_states );
-	variables_state_for_merge.push_back( variables_state_before_loop );
+	variables_state_for_merge.push_back( std::move(variables_state_after_test_block) );
 
 	function_context.loops_stack.pop_back();
 
