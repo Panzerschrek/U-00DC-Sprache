@@ -523,3 +523,39 @@ def ReferencesLoop_Test3():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def InnerReferencesChain_Test0():
+	c_program_text= """
+		struct S
+		{
+			i32 &mut x;
+			i32 y;
+			fn Bar(this) : bool;
+			fn GetY(mut this) : i32  &'this mut;
+		}
+		fn MakeS( i32 &'f mut x ) : S'f';
+		fn Foo( S &mut s )
+		{
+			for( auto mut ss= MakeS( s.GetY() ); ss.Bar(); ){}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def InnerReferencesChain_Test1():
+	c_program_text= """
+		struct S
+		{
+			i32 &mut x;
+			i32 y;
+			fn constructor( this'b', i32 &'f mut x ) ' b <- f ';
+			fn Bar(this) : bool;
+			fn GetY(mut this) : i32  &'this mut;
+		}
+		fn Foo( S &mut s )
+		{
+			for( var S mut ss( s.GetY() ); ss.Bar(); ){}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
