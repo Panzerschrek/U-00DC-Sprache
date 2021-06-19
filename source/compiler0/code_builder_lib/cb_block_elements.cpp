@@ -1147,7 +1147,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.llvm_ir_builder.CreateBr( next_condition_block );
 
 	ReferencesGraph variables_state_before_if= function_context.variables_state;
-	ReferencesGraph conditions_variable_state= function_context.variables_state;
 	std::vector<ReferencesGraph> bracnhes_variables_state;
 
 	for( unsigned int i= 0u; i < if_operator.branches_.size(); i++ )
@@ -1175,35 +1174,33 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 		else
 		{
-			function_context.variables_state= conditions_variable_state;
+			const StackVariablesStorage temp_variables_storage( function_context );
+			const Variable condition_expression= BuildExpressionCodeEnsureVariable( branch.condition, names, function_context );
+			if( condition_expression.type != bool_type_ )
 			{
-				const StackVariablesStorage temp_variables_storage( function_context );
-				const Variable condition_expression= BuildExpressionCodeEnsureVariable( branch.condition, names, function_context );
-				if( condition_expression.type != bool_type_ )
-				{
-					REPORT_ERROR( TypesMismatch,
-						names.GetErrors(),
-						Synt::GetExpressionSrcLoc( branch.condition ),
-						bool_type_,
-						condition_expression.type );
+				REPORT_ERROR( TypesMismatch,
+					names.GetErrors(),
+					Synt::GetExpressionSrcLoc( branch.condition ),
+					bool_type_,
+					condition_expression.type );
 
-					// Create instruction even in case of error, because we needs to store basic blocs somewhere.
-					function_context.llvm_ir_builder.CreateCondBr( llvm::UndefValue::get( fundamental_llvm_types_.bool_ ), body_block, next_condition_block );
-				}
-				else
-				{
-					llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
-					CallDestructors( temp_variables_storage, names, function_context, Synt::GetExpressionSrcLoc( branch.condition ) );
-
-					function_context.llvm_ir_builder.CreateCondBr( condition_in_register, body_block, next_condition_block );
-				}
+				// Create instruction even in case of error, because we needs to store basic blocs somewhere.
+				function_context.llvm_ir_builder.CreateCondBr( llvm::UndefValue::get( fundamental_llvm_types_.bool_ ), body_block, next_condition_block );
 			}
-			conditions_variable_state= function_context.variables_state;
+			else
+			{
+				llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+				CallDestructors( temp_variables_storage, names, function_context, Synt::GetExpressionSrcLoc( branch.condition ) );
+
+				function_context.llvm_ir_builder.CreateCondBr( condition_in_register, body_block, next_condition_block );
+			}
 		}
 
 		// Make body block code.
 		function_context.function->getBasicBlockList().push_back( body_block );
 		function_context.llvm_ir_builder.SetInsertPoint( body_block );
+
+		ReferencesGraph variables_state_before_this_branch= function_context.variables_state;
 
 		const BlockBuildInfo block_build_info= BuildBlock( names, function_context, branch.block );
 
@@ -1215,14 +1212,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			bracnhes_variables_state.push_back( function_context.variables_state );
 		}
 
-		function_context.variables_state= conditions_variable_state;
+		function_context.variables_state= variables_state_before_this_branch;
 	}
 
 	U_ASSERT( next_condition_block == block_after_if );
 
 	if( std::get_if<Synt::EmptyVariant>( &if_operator.branches_.back().condition ) == nullptr ) // Have no unconditional "else" at end.
 	{
-		bracnhes_variables_state.push_back( conditions_variable_state );
+		bracnhes_variables_state.push_back( function_context.variables_state );
 		if_operator_blocks_build_info.have_terminal_instruction_inside= false;
 	}
 
