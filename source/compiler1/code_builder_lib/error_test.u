@@ -1,0 +1,21 @@
+import "structs_combined.uh"
+
+namespace U1
+{
+
+fn ErrorTest( ClassTypePtr& class_type )
+{
+	auto mut lock= class_type.lock_mut();
+	auto &mut class_= lock.get_ref();
+
+	auto base_class= class_.base_class;
+	foreach( &mut parent : class_.parents )
+	{
+		if( parent.class_ != base_class )
+		{
+		}
+	}
+}
+
+
+} // namespace U1
