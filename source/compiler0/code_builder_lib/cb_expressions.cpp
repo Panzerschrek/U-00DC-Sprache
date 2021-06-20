@@ -112,6 +112,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	else if( const Array* const array_type= variable.type.GetArrayType() )
 	{
 		// Lock array. We must prevent modification of array in index calcualtion.
+		// TODO - check here array node links?
 		const ReferencesGraphNodeHolder array_lock(
 			std::make_shared<ReferencesGraphNode>( "array lock", variable.value_type == ValueType::Reference ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut ),
 			function_context );
@@ -2614,6 +2615,7 @@ Value CodeBuilder::DoCallFunction(
 							function_context );
 						for( const ReferencesGraphNodePtr& inner_reference : inner_references )
 						{
+							// TODO - check case with creation of immutable nodes for mutable node with existing outgoing links.
 							if( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut && function_context.variables_state.HaveOutgoingLinks( inner_reference ) )
 								REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, inner_reference->name );
 							else
@@ -2672,7 +2674,8 @@ Value CodeBuilder::DoCallFunction(
 
 					for( const ReferencesGraphNodePtr inner_reference : inner_references )
 					{
-						if( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut  && function_context.variables_state.HaveOutgoingLinks( inner_reference ) )
+						// TODO - check case with creation of immutable nodes for mutable node with existing outgoing links.
+						if( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut && function_context.variables_state.HaveOutgoingLinks( inner_reference ) )
 							REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, inner_reference->name );
 						else
 							function_context.variables_state.AddLink( inner_reference, value_arg_inner_node );
@@ -2774,6 +2777,9 @@ Value CodeBuilder::DoCallFunction(
 		call_result= s_ret_value;
 	}
 
+	// Clear inner references lock. Do this BEFORE result references management.
+	locked_args_inner_references.clear();
+
 	Variable result;
 	result.type= function_type.return_type;
 	result.llvm_value= call_result;
@@ -2804,10 +2810,25 @@ Value CodeBuilder::DoCallFunction(
 		for( const Function::ArgReference& arg_reference : function_type.return_references )
 		{
 			if( arg_reference.second == Function::c_arg_reference_tag_number )
-				function_context.variables_state.AddLink( locked_args_references[arg_reference.first].Node(), result_node );
+			{
+				const auto node= locked_args_references[arg_reference.first].Node();
+				if( (result_node->kind == ReferencesGraphNode::Kind::ReferenceMut  && function_context.variables_state.HaveOutgoingLinks(node) ) ||
+					(result_node->kind == ReferencesGraphNode::Kind::ReferenceImut && function_context.variables_state.HaveOutgoingMutableNodes(node) ) )
+					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), call_src_loc, node->name );
+				else
+					function_context.variables_state.AddLink( node, result_node );
+			}
 			else
+			{
 				for( const ReferencesGraphNodePtr& accesible_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( locked_args_references[arg_reference.first].Node() ) )
-					function_context.variables_state.AddLink( accesible_node, result_node );
+				{
+					if( (result_node->kind == ReferencesGraphNode::Kind::ReferenceMut  && function_context.variables_state.HaveOutgoingLinks(accesible_node) ) ||
+						(result_node->kind == ReferencesGraphNode::Kind::ReferenceImut && function_context.variables_state.HaveOutgoingMutableNodes(accesible_node) ) )
+						REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), call_src_loc, accesible_node->name );
+					else
+						function_context.variables_state.AddLink( accesible_node, result_node );
+				}
+			}
 		}
 	}
 	else if( function_type.return_type.ReferencesTagsCount() > 0u )
@@ -2848,10 +2869,23 @@ Value CodeBuilder::DoCallFunction(
 		for( const Function::ArgReference& arg_reference : function_type.return_references )
 		{
 			if( arg_reference.second == Function::c_arg_reference_tag_number )
-				function_context.variables_state.AddLink( locked_args_references[arg_reference.first].Node(), inner_reference_node );
+			{
+				const auto node= locked_args_references[arg_reference.first].Node();
+				if( (inner_reference_node->kind == ReferencesGraphNode::Kind::ReferenceMut  && function_context.variables_state.HaveOutgoingLinks(node) ) ||
+					(inner_reference_node->kind == ReferencesGraphNode::Kind::ReferenceImut && function_context.variables_state.HaveOutgoingMutableNodes(node) ) )
+					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), call_src_loc, node->name );
+				else
+					function_context.variables_state.AddLink( node, inner_reference_node );
+			}
 			else
 				for( const ReferencesGraphNodePtr& accesible_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( locked_args_references[arg_reference.first].Node() ) )
-					function_context.variables_state.AddLink( accesible_node, inner_reference_node );
+				{
+					if( (inner_reference_node->kind == ReferencesGraphNode::Kind::ReferenceMut  && function_context.variables_state.HaveOutgoingLinks(accesible_node) ) ||
+						(inner_reference_node->kind == ReferencesGraphNode::Kind::ReferenceImut && function_context.variables_state.HaveOutgoingMutableNodes(accesible_node) ) )
+						REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), call_src_loc, accesible_node->name );
+					else
+						function_context.variables_state.AddLink( accesible_node, inner_reference_node );
+				}
 		}
 	}
 
@@ -2912,9 +2946,14 @@ Value CodeBuilder::DoCallFunction(
 				if( inner_reference->kind != ReferencesGraphNode::Kind::ReferenceMut && result_node_is_mut )
 					REPORT_ERROR( NotImplemented, names.GetErrors(), call_src_loc, "changing inner node reference kind immutable to mutable" );
 
-				// TODO - check here for errors.
 				for( const ReferencesGraphNodePtr& src_node : src_nodes )
-					function_context.variables_state.AddLink( src_node, inner_reference );
+				{
+					if( (inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut  && function_context.variables_state.HaveOutgoingLinks(src_node) ) ||
+						(inner_reference->kind == ReferencesGraphNode::Kind::ReferenceImut && function_context.variables_state.HaveOutgoingMutableNodes(src_node) ) )
+						REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), call_src_loc, src_node->name );
+					else
+						function_context.variables_state.AddLink( src_node, inner_reference );
+				}
 			}
 		}
 		else
@@ -2923,7 +2962,6 @@ Value CodeBuilder::DoCallFunction(
 		}
 	}
 
-	locked_args_inner_references.clear();
 	locked_args_references.clear();
 	{ // Destroy unused temporary variables after each call.
 		const ReferencesGraphNodeHolder call_result_lock(
