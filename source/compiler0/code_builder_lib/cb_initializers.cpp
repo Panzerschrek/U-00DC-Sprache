@@ -907,10 +907,10 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 			}
 			else
 			{
-				if( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceImut && field.is_mutable )
+				if( ( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceImut &&  field.is_mutable ) ||
+					( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut  && !field.is_mutable ))
 				{
-					// TODO - make separate error.
-					REPORT_ERROR( NotImplemented, block_names.GetErrors(), initializer_src_loc, "inner reference mutability changing" );
+					REPORT_ERROR( InnerReferenceMutabilityChanging, block_names.GetErrors(), initializer_src_loc, inner_reference->name );
 					return nullptr;
 				}
 			}

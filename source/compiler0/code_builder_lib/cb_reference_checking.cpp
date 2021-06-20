@@ -228,13 +228,15 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 			function_context.variables_state.SetNodeInnerReference( dst_node, dst_node_inner_reference );
 		}
 
+		if( ( dst_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut  && !node_is_mutable ) ||
+			( dst_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceImut &&  node_is_mutable ) )
+			REPORT_ERROR( InnerReferenceMutabilityChanging, errors_container, src_loc, dst_node_inner_reference->name );
+
 		for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
 		{
-			if( ( dst_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut && function_context.variables_state.HaveOutgoingLinks( src_node_inner_reference ) ) ||
-				function_context.variables_state.HaveOutgoingMutableNodes( src_node_inner_reference ) )
-			{
+			if( ( dst_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut  && function_context.variables_state.HaveOutgoingLinks( src_node_inner_reference ) ) ||
+				( dst_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceImut && function_context.variables_state.HaveOutgoingMutableNodes( src_node_inner_reference ) ) )
 				REPORT_ERROR( ReferenceProtectionError, errors_container, src_loc, src_node_inner_reference->name );
-			}
 			else
 				function_context.variables_state.AddLink( src_node_inner_reference, dst_node_inner_reference );
 		}

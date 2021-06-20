@@ -2948,8 +2948,9 @@ Value CodeBuilder::DoCallFunction(
 							result_node_is_mut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
 					function_context.variables_state.SetNodeInnerReference( dst_node, inner_reference );
 				}
-				if( inner_reference->kind != ReferencesGraphNode::Kind::ReferenceMut && result_node_is_mut )
-					REPORT_ERROR( NotImplemented, names.GetErrors(), call_src_loc, "changing inner node reference kind immutable to mutable" );
+				if( ( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut  && !result_node_is_mut ) ||
+					( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceImut &&  result_node_is_mut ))
+					REPORT_ERROR( InnerReferenceMutabilityChanging, names.GetErrors(), call_src_loc, inner_reference->name );
 
 				for( const ReferencesGraphNodePtr& src_node : src_nodes )
 				{
