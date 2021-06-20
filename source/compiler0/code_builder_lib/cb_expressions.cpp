@@ -112,12 +112,17 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	else if( const Array* const array_type= variable.type.GetArrayType() )
 	{
 		// Lock array. We must prevent modification of array in index calcualtion.
-		// TODO - check here array node links?
 		const ReferencesGraphNodeHolder array_lock(
 			std::make_shared<ReferencesGraphNode>( "array lock", variable.value_type == ValueType::Reference ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut ),
 			function_context );
 		if( variable.node != nullptr )
-			function_context.variables_state.AddLink( variable.node, array_lock.Node() );
+		{
+			if( ( array_lock.Node()->kind == ReferencesGraphNode::Kind::ReferenceMut && function_context.variables_state.HaveOutgoingLinks( array_lock.Node() ) ) ||
+				( array_lock.Node()->kind == ReferencesGraphNode::Kind::ReferenceImut && function_context.variables_state.HaveOutgoingMutableNodes( array_lock.Node() ) ) )
+				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), indexation_operator.src_loc_, variable.node->name );
+			else
+				function_context.variables_state.AddLink( variable.node, array_lock.Node() );
+		}
 
 		const Variable index= BuildExpressionCodeEnsureVariable( *indexation_operator.index_, names, function_context );
 
@@ -2615,8 +2620,8 @@ Value CodeBuilder::DoCallFunction(
 							function_context );
 						for( const ReferencesGraphNodePtr& inner_reference : inner_references )
 						{
-							// TODO - check case with creation of immutable nodes for mutable node with existing outgoing links.
-							if( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut && function_context.variables_state.HaveOutgoingLinks( inner_reference ) )
+							if( (inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut  && function_context.variables_state.HaveOutgoingLinks( inner_reference ) ) ||
+								(inner_reference->kind == ReferencesGraphNode::Kind::ReferenceImut && function_context.variables_state.HaveOutgoingMutableNodes( inner_reference ) ) )
 								REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, inner_reference->name );
 							else
 								function_context.variables_state.AddLink( inner_reference, locked_args_inner_references.back().Node() );
@@ -2674,8 +2679,8 @@ Value CodeBuilder::DoCallFunction(
 
 					for( const ReferencesGraphNodePtr inner_reference : inner_references )
 					{
-						// TODO - check case with creation of immutable nodes for mutable node with existing outgoing links.
-						if( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut && function_context.variables_state.HaveOutgoingLinks( inner_reference ) )
+						if( ( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut && function_context.variables_state.HaveOutgoingLinks( inner_reference ) ) ||
+							( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceImut && function_context.variables_state.HaveOutgoingMutableNodes( inner_reference ) ) )
 							REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, inner_reference->name );
 						else
 							function_context.variables_state.AddLink( inner_reference, value_arg_inner_node );
