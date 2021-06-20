@@ -266,8 +266,9 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_
 		{
 			current_class_table_.push_back( class_table_entry.key() );
 
+			auto mut value= class_table_entry.value();
 			auto mut lock= class_table_entry.key().lock_mut();
-			lock.get_ref()= class_table_entry.value();
+			lock.get_ref()= move(value);
 		}
 	}
 	// Merge namespaces. This must be done AFTER class table praparation.
