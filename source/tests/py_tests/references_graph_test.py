@@ -559,3 +559,73 @@ def InnerReferencesChain_Test1():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def PollutionAndReturn_Test0():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		fn DoPollution( S& mut s'a', i32 &'b mut x ) ' a <- b ' : i32 &'b mut;
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S mut s {.x= x };
+			var i32 &mut y_ref= DoPollution( s, y ); // Creates two mutable references for 'y' - 'y_ref' and inside 's'.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].src_loc.line == 8 )
+
+
+def PollutionAndReturn_Test1():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		fn DoPollution( S& mut s0'a', S& mut s1'b' ) ' a <- b ' : i32 &'b mut;
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S mut s0 {.x= x }, mut s1{ .x= y };
+			var i32 &mut y_ref= DoPollution( s0, s1 ); // Creates two mutable references for 'y' - 'y_ref' and inside 's0'.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].src_loc.line == 8 )
+
+
+def DoublePollution_Test0():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		fn DoPollution( S& mut s0'a', S& mut s1'a', i32 &'b mut x ) ' a <- b '; // Call to this function will always produce error.
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0, mut z= 0;
+			var S mut s0 {.x= x }, mut s1{ .x= y };
+			DoPollution( s0, s1, z );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].src_loc.line == 8 )
+
+
+def DoublePollution_Test1():
+	c_program_text= """
+		struct Smut { i32 & mut x; }
+		struct Simut{ i32 &imut x; }
+		fn DoPollution( Smut& mut s0'a', Simut& mut s1'a', i32 &'b mut x ) ' a <- b '; // Call to this function will always produce error.
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0, mut z= 0;
+			var Smut  mut s_mut { .x= x };
+			var Simut mut s_imut{ .x= y };
+			DoPollution( s_mut, s_imut, z );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].src_loc.line == 10 )
