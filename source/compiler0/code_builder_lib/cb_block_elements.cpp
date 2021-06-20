@@ -498,7 +498,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		// Check correctness of returning references.
 		if( expression_result.type.ReferencesTagsCount() > 0u && expression_result.node != nullptr )
 		{
-			for( const ReferencesGraphNodePtr& inner_reference : function_context.variables_state.GetAllAccessibleInnerNodes( expression_result.node ) )
+			for( const ReferencesGraphNodePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( expression_result.node ) )
 			{
 				for( const ReferencesGraphNodePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
 				{

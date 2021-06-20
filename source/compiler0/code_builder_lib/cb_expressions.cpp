@@ -395,8 +395,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			const auto field_node= std::make_shared<ReferencesGraphNode>( "this." + member_access_operator.member_name_, field->is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
 			function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( field_node, result ) );
 			result.node= field_node;
-			// THIS IS WRONG! We should access inner node of first accessible variable in chanin!
-			for( const ReferencesGraphNodePtr& inner_reference : function_context.variables_state.GetAllAccessibleInnerNodes( variable.node ) )
+			for( const ReferencesGraphNodePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( variable.node ) )
 			{
 				if( (  field->is_mutable && function_context.variables_state.HaveOutgoingLinks( inner_reference ) ) ||
 					( !field->is_mutable && function_context.variables_state.HaveOutgoingMutableNodes( inner_reference ) ) )
@@ -715,7 +714,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				const auto field_node= std::make_shared<ReferencesGraphNode>( "this." + field->syntax_element->name, field->is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
 				function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( field_node, field_variable ) );
 				field_variable.node= field_node;
-				for( const ReferencesGraphNodePtr& node : function_context.variables_state.GetAllAccessibleInnerNodes( function_context.this_->node ) )
+				for( const ReferencesGraphNodePtr& node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( function_context.this_->node ) )
 				{
 					if( (  field->is_mutable && function_context.variables_state.HaveOutgoingLinks( node ) ) ||
 						( !field->is_mutable && function_context.variables_state.HaveOutgoingMutableNodes( node ) ) )
@@ -2598,8 +2597,7 @@ Value CodeBuilder::DoCallFunction(
 			// Lock inner references.
 			if( expr.node != nullptr )
 			{
-				// THIS IS WRONG! We should access inner node of first accessible variable in chanin!
-				const auto inner_references= function_context.variables_state.GetAllAccessibleInnerNodes( expr.node );
+				const auto inner_references= function_context.variables_state.GetAccessibleVariableNodesInnerReferences( expr.node );
 				if( !inner_references.empty() )
 				{
 					EnsureTypeComplete( arg.type );
@@ -2664,7 +2662,7 @@ Value CodeBuilder::DoCallFunction(
 				EnsureTypeComplete( arg.type ); // arg type for value arg must be already complete.
 				if( expr.node != nullptr && arg.type.ReferencesTagsCount() > 0u )
 				{
-					const auto inner_references= function_context.variables_state.GetAllAccessibleInnerNodes( expr.node );
+					const auto inner_references= function_context.variables_state.GetAccessibleVariableNodesInnerReferences( expr.node );
 					bool is_mutable= false;
 					for( const ReferencesGraphNodePtr& inner_reference : inner_references )
 						is_mutable= is_mutable || inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut;
@@ -2808,7 +2806,7 @@ Value CodeBuilder::DoCallFunction(
 			if( arg_reference.second == Function::c_arg_reference_tag_number )
 				function_context.variables_state.AddLink( locked_args_references[arg_reference.first].Node(), result_node );
 			else
-				for( const ReferencesGraphNodePtr& accesible_node : function_context.variables_state.GetAllAccessibleInnerNodes( locked_args_references[arg_reference.first].Node() ) )
+				for( const ReferencesGraphNodePtr& accesible_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( locked_args_references[arg_reference.first].Node() ) )
 					function_context.variables_state.AddLink( accesible_node, result_node );
 		}
 	}
@@ -2831,7 +2829,7 @@ Value CodeBuilder::DoCallFunction(
 			}
 			else
 			{
-				for( const ReferencesGraphNodePtr& accesible_node : function_context.variables_state.GetAllAccessibleInnerNodes( locked_args_references[arg_reference.first].Node() ) )
+				for( const ReferencesGraphNodePtr& accesible_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( locked_args_references[arg_reference.first].Node() ) )
 				{
 					if( accesible_node->kind == ReferencesGraphNode::Kind::Variable ||
 						accesible_node->kind == ReferencesGraphNode::Kind::ReferenceMut )
@@ -2852,7 +2850,7 @@ Value CodeBuilder::DoCallFunction(
 			if( arg_reference.second == Function::c_arg_reference_tag_number )
 				function_context.variables_state.AddLink( locked_args_references[arg_reference.first].Node(), inner_reference_node );
 			else
-				for( const ReferencesGraphNodePtr& accesible_node : function_context.variables_state.GetAllAccessibleInnerNodes( locked_args_references[arg_reference.first].Node() ) )
+				for( const ReferencesGraphNodePtr& accesible_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( locked_args_references[arg_reference.first].Node() ) )
 					function_context.variables_state.AddLink( accesible_node, inner_reference_node );
 		}
 	}
@@ -2868,7 +2866,7 @@ Value CodeBuilder::DoCallFunction(
 			continue;
 
 		bool src_variables_is_mut= false;
-		std::unordered_set<ReferencesGraphNodePtr> src_nodes;
+		ReferencesGraph::NodesSet src_nodes;
 		if( referene_pollution.src.second == Function::c_arg_reference_tag_number )
 		{
 			// Reference-arg itself
@@ -2886,7 +2884,7 @@ Value CodeBuilder::DoCallFunction(
 			if( function_type.args[ referene_pollution.src.first ].type.ReferencesTagsCount() == 0 )
 				continue;
 
-			for( const ReferencesGraphNodePtr& inner_reference : function_context.variables_state.GetAllAccessibleInnerNodes( locked_args_references[ referene_pollution.src.first ].Node() ) )
+			for( const ReferencesGraphNodePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( locked_args_references[ referene_pollution.src.first ].Node() ) )
 			{
 				src_nodes.insert( inner_reference );
 				if( inner_reference->kind != ReferencesGraphNode::Kind::ReferenceImut )

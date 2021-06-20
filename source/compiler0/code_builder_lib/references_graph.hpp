@@ -50,8 +50,8 @@ public:
 	bool NodeMoved( const ReferencesGraphNodePtr& node ) const;
 
 	using NodesSet= std::unordered_set<ReferencesGraphNodePtr>;
-	NodesSet GetAllAccessibleInnerNodes( const ReferencesGraphNodePtr& node ) const;
 	NodesSet GetAllAccessibleVariableNodes( const ReferencesGraphNodePtr& node ) const;
+	NodesSet GetAccessibleVariableNodesInnerReferences( const ReferencesGraphNodePtr& node ) const;
 
 	using MergeResult= std::pair<ReferencesGraph, std::vector<CodeBuilderError> >;
 	static MergeResult MergeVariablesStateAfterIf( const std::vector<ReferencesGraph>& branches_variables_state, const SrcLoc& src_loc );
@@ -80,8 +80,8 @@ private:
 	using LinksSet= std::unordered_set< Link, LinkHasher >;
 
 private:
-	void GetAllAccessibleInnerNodes_r( const ReferencesGraphNodePtr& node, NodesSet& visited_nodes_set, NodesSet& result_set ) const;
 	void GetAllAccessibleVariableNodes_r( const ReferencesGraphNodePtr& node, NodesSet& visited_nodes_set, NodesSet& result_set ) const;
+	void GetAccessibleVariableNodesInnerReferences_r( const ReferencesGraphNodePtr& node, NodesSet& visited_nodes_set, NodesSet& result_set ) const;
 
 private:
 	std::unordered_map<ReferencesGraphNodePtr, NodeState> nodes_;

@@ -209,7 +209,7 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 	if( src_node == nullptr || dst_node == nullptr || dst_variable.type.ReferencesTagsCount() == 0u )
 		return;
 
-	const ReferencesGraph::NodesSet src_node_inner_references= function_context.variables_state.GetAllAccessibleInnerNodes( src_node );
+	const ReferencesGraph::NodesSet src_node_inner_references= function_context.variables_state.GetAccessibleVariableNodesInnerReferences( src_node );
 	const ReferencesGraph::NodesSet dst_variable_nodes= function_context.variables_state.GetAllAccessibleVariableNodes( dst_node );
 
 	if( src_node_inner_references.empty() || dst_variable_nodes.empty() )
