@@ -1,3 +1,4 @@
+import "/sort.u"
 import "/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
@@ -343,17 +344,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 		}
 
 	}
-	// Sort refernces pollution. TODO - use library sorting function.
-	for( auto mut i= 0s; i < res.references_pollution.size(); ++i )
-	{
-		for( auto mut j= i + 1s; j < res.references_pollution.size(); ++j )
-		{
-			if( cast_imut(res.references_pollution)[j] < cast_imut(res.references_pollution)[i] )
-			{
-				res.references_pollution.swap(i, j);
-			}
-		}
-	}
+	ust::sort( res.references_pollution.range() );
 
 	return move(res);
 }
