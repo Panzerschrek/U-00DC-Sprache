@@ -3086,18 +3086,33 @@ fn CodeBuilder::DoCallFunction(
 				continue;
 			}
 
-			// TODO - what if arg is immutable reference and return reference is mutable?
-
-			// TODO - maybe check for errors before creating links?
+			auto result_node_kind= function_context.references_graph.GetNodeKind( result.node_id );
 			if( param_reference.reference_index == FunctionType::c_param_reference_number )
 			{
-				function_context.references_graph.AddLink( args_nodes[i], result.node_id );
+				auto node_id = args_nodes[i];
+				if( ( result_node_kind == ReferencesGraph::NodeKind::ReferenceMut  && function_context.references_graph.HaveOutgoingLinks( node_id ) ) ||
+					( result_node_kind == ReferencesGraph::NodeKind::ReferenceImut && function_context.references_graph.HaveOutgoingMutableNodes( node_id ) ) )
+				{
+					REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( node_id ) )
+				}
+				else
+				{
+					function_context.references_graph.AddLink( node_id, result.node_id );
+				}
 			}
 			if( param_reference.reference_index == 0u8 )
 			{
 				foreach( inner_node_id : function_context.references_graph.GetAccessibleVariableNodesInnerReferences( args_nodes[i] ) )
 				{
-					function_context.references_graph.AddLink( inner_node_id, result.node_id );
+					if( ( result_node_kind == ReferencesGraph::NodeKind::ReferenceMut  && function_context.references_graph.HaveOutgoingLinks( inner_node_id ) ) ||
+						( result_node_kind == ReferencesGraph::NodeKind::ReferenceImut && function_context.references_graph.HaveOutgoingMutableNodes( inner_node_id ) ) )
+					{
+						REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( inner_node_id ) )
+					}
+					else
+					{
+						function_context.references_graph.AddLink( inner_node_id, result.node_id );
+					}
 				}
 			}
 		}
@@ -3141,16 +3156,32 @@ fn CodeBuilder::DoCallFunction(
 				continue;
 			}
 
-			// TODO - maybe check for errors before creating links?
 			if( param_reference.reference_index == FunctionType::c_param_reference_number )
 			{
-				function_context.references_graph.AddLink( args_nodes[i], inner_node_id );
+				auto node_id = args_nodes[i];
+				if( (  inner_reference_is_mutable && function_context.references_graph.HaveOutgoingLinks( node_id ) ) ||
+					( !inner_reference_is_mutable && function_context.references_graph.HaveOutgoingMutableNodes( node_id ) ) )
+				{
+					REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( node_id ) )
+				}
+				else
+				{
+					function_context.references_graph.AddLink( node_id, inner_node_id );
+				}
 			}
 			if( param_reference.reference_index == 0u8 )
 			{
-				foreach( inner_node_id : function_context.references_graph.GetAccessibleVariableNodesInnerReferences( args_nodes[i] ) )
+				foreach( dst_inner_node_id : function_context.references_graph.GetAccessibleVariableNodesInnerReferences( args_nodes[i] ) )
 				{
-					function_context.references_graph.AddLink( inner_node_id, inner_node_id );
+					if( (  inner_reference_is_mutable && function_context.references_graph.HaveOutgoingLinks( dst_inner_node_id ) ) ||
+						( !inner_reference_is_mutable && function_context.references_graph.HaveOutgoingMutableNodes( dst_inner_node_id ) ) )
+					{
+						REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( dst_inner_node_id ) )
+					}
+					else
+					{
+						function_context.references_graph.AddLink( dst_inner_node_id, inner_node_id );
+					}
 				}
 			}
 		}
@@ -3208,10 +3239,17 @@ fn CodeBuilder::DoCallFunction(
 				REPORT_ERROR( NotImplemented, names_scope, src_loc, ust::string8( "changing inner node reference kind immutable to mutable" ) )
 			}
 
-			// TODO - check here for errors.
 			foreach( & src_node_id : src_nodes )
 			{
-				function_context.references_graph.AddLink( src_node_id, inner_reference_node_id );
+				if( (  result_node_is_mut && function_context.references_graph.HaveOutgoingLinks( src_node_id ) ) ||
+					( !result_node_is_mut && function_context.references_graph.HaveOutgoingMutableNodes( src_node_id ) ) )
+				{
+					REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( src_node_id ) )
+				}
+				else
+				{
+					function_context.references_graph.AddLink( src_node_id, inner_reference_node_id );
+				}
 			}
 		}
 	}
