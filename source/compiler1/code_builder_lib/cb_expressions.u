@@ -3206,7 +3206,6 @@ fn CodeBuilder::DoCallFunction(
 		{
 			// Reference-arg itself.
 			src_nodes.insert( args_nodes[src_arg] );
-
 			src_variables_is_mut= function_type.params[src_arg].is_mutable;
 		}
 		else
