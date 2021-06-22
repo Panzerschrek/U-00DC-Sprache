@@ -1297,7 +1297,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 						move(node_name) );
 					result.node_id= reference_field_node;
 
-					foreach( &inner_node : function_context.references_graph.GetAllAccessibleVariableInnerNodes( variable.node_id ) )
+					foreach( &inner_node : function_context.references_graph.GetAccessibleVariableNodesInnerReferences( variable.node_id ) )
 					{
 						if( (  field.is_mutable && function_context.references_graph.HaveOutgoingLinks( inner_node ) ) ||
 							( !field.is_mutable && function_context.references_graph.HaveOutgoingMutableNodes( inner_node ) ) )
@@ -2851,7 +2851,7 @@ fn CodeBuilder::DoCallFunction(
 
 				if( expected_arg_type.GetInnerReferenceKind() != InnerReferenceKind::None )
 				{
-					var ReferencesGraph::NodesSet inner_references= function_context.references_graph.GetAllAccessibleVariableInnerNodes( arg.node_id );
+					var ReferencesGraph::NodesSet inner_references= function_context.references_graph.GetAccessibleVariableNodesInnerReferences( arg.node_id );
 					var bool mut is_mutable= false;
 					foreach( inner_reference : inner_references )
 					{
@@ -2913,7 +2913,7 @@ fn CodeBuilder::DoCallFunction(
 
 				if( expected_arg_type.GetInnerReferenceKind() != InnerReferenceKind::None )
 				{
-					var ReferencesGraph::NodesSet inner_references= function_context.references_graph.GetAllAccessibleVariableInnerNodes( arg.node_id );
+					var ReferencesGraph::NodesSet inner_references= function_context.references_graph.GetAccessibleVariableNodesInnerReferences( arg.node_id );
 					var bool mut is_mutable= false;
 					foreach( inner_reference : inner_references )
 					{
@@ -3095,7 +3095,7 @@ fn CodeBuilder::DoCallFunction(
 			}
 			if( param_reference.reference_index == 0u8 )
 			{
-				foreach( inner_node_id : function_context.references_graph.GetAllAccessibleVariableInnerNodes( args_nodes[i] ) )
+				foreach( inner_node_id : function_context.references_graph.GetAccessibleVariableNodesInnerReferences( args_nodes[i] ) )
 				{
 					function_context.references_graph.AddLink( inner_node_id, result.node_id );
 				}
@@ -3120,7 +3120,7 @@ fn CodeBuilder::DoCallFunction(
 			}
 			if( param_reference.reference_index == 0u8 )
 			{
-				foreach( inner_node_id : function_context.references_graph.GetAllAccessibleVariableInnerNodes( args_nodes[i] ) )
+				foreach( inner_node_id : function_context.references_graph.GetAccessibleVariableNodesInnerReferences( args_nodes[i] ) )
 				{
 					inner_reference_is_mutable |= function_context.references_graph.GetNodeKind( inner_node_id ) == ReferencesGraph::NodeKind::ReferenceMut;
 				}
@@ -3148,7 +3148,7 @@ fn CodeBuilder::DoCallFunction(
 			}
 			if( param_reference.reference_index == 0u8 )
 			{
-				foreach( inner_node_id : function_context.references_graph.GetAllAccessibleVariableInnerNodes( args_nodes[i] ) )
+				foreach( inner_node_id : function_context.references_graph.GetAccessibleVariableNodesInnerReferences( args_nodes[i] ) )
 				{
 					function_context.references_graph.AddLink( inner_node_id, inner_node_id );
 				}
@@ -3181,7 +3181,7 @@ fn CodeBuilder::DoCallFunction(
 		else
 		{
 			// Variables, referenced by inner references_graph references.
-			src_nodes= function_context.references_graph.GetAllAccessibleVariableInnerNodes( args_nodes[src_arg] );
+			src_nodes= function_context.references_graph.GetAccessibleVariableNodesInnerReferences( args_nodes[src_arg] );
 
 			foreach( &node_id : src_nodes )
 			{

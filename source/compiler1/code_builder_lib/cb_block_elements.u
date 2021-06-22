@@ -462,7 +462,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		{
 			if( ret_type.GetInnerReferenceKind() != InnerReferenceKind::None && expr.node_id != ReferencesGraph::c_empty_node_id )
 			{
-				foreach( &inner_reference_node_id : function_context.references_graph.GetAllAccessibleVariableInnerNodes( expr.node_id ) )
+				foreach( &inner_reference_node_id : function_context.references_graph.GetAccessibleVariableNodesInnerReferences( expr.node_id ) )
 				{
 					foreach( &variable_node_id : function_context.references_graph.GetAllAccessibleVariableNodes( inner_reference_node_id ) )
 					{

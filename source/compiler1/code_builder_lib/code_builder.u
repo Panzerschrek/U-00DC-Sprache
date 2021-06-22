@@ -451,7 +451,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 					move(node_name) );
 				result.node_id= reference_field_node;
 
-				foreach( &inner_node : function_context.references_graph.GetAllAccessibleVariableInnerNodes( node_id ) )
+				foreach( &inner_node : function_context.references_graph.GetAccessibleVariableNodesInnerReferences( node_id ) )
 				{
 					if( (  field.is_mutable && function_context.references_graph.HaveOutgoingLinks( inner_node ) ) ||
 						( !field.is_mutable && function_context.references_graph.HaveOutgoingMutableNodes( inner_node ) ) )
@@ -1933,7 +1933,7 @@ fn CodeBuilder::SetupReferencesInCopyOrMove(
 	var ReferencesGraph& mut references_graph= function_context.references_graph;
 
 	var ReferencesGraph::NodesSet dst_variable_nodes= references_graph.GetAllAccessibleVariableNodes( dst_node );
-	var ReferencesGraph::NodesSet src_inner_reference_nodes= references_graph.GetAllAccessibleVariableInnerNodes( src_node );
+	var ReferencesGraph::NodesSet src_inner_reference_nodes= references_graph.GetAccessibleVariableNodesInnerReferences( src_node );
 
 	if( dst_variable_nodes.empty() || src_inner_reference_nodes.empty() )
 	{

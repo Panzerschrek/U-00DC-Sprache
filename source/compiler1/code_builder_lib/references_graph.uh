@@ -44,14 +44,14 @@ public:
 
 	type NodesSet= ust::unordered_set</NodeId/>;
 	fn GetAllAccessibleVariableNodes( this, NodeId node_id ) : NodesSet;
-	fn GetAllAccessibleVariableInnerNodes( this, NodeId node_id ) : NodesSet;
+	fn GetAccessibleVariableNodesInnerReferences( this, NodeId node_id ) : NodesSet;
 
 	fn MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches, ErrorsContainer &mut errors, SrcLoc& src_loc ) : ReferencesGraph;
 	fn CheckReferencesGraphAfterLoop( ReferencesGraph& state_before, ReferencesGraph& state_after, ErrorsContainer &mut errors, SrcLoc& src_loc );
 
 private:
 	fn GetAllAccessibleVariableNodes_r( this, NodeId node_id, NodesSet &mut out_nodes );
-	fn GetAllAccessibleVariableInnerNodes_r( this, NodeId node_id, NodesSet &mut out_nodes );
+	fn GetAccessibleVariableNodesInnerReferences_r( this, NodeId node_id, NodesSet &mut out_nodes );
 
 private:
 	struct Node
