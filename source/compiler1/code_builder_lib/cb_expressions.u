@@ -3142,7 +3142,7 @@ fn CodeBuilder::DoCallFunction(
 			}
 		}
 
-		// Then, create inner node and link input nodes with it.
+		// Than, create inner node and link input nodes with it.
 		var ReferencesGraph::NodeId inner_node_id=
 			function_context.references_graph.CreateNodeInnerReference(
 				result.node_id,
@@ -3234,9 +3234,10 @@ fn CodeBuilder::DoCallFunction(
 					select( result_node_is_mut ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ) );
 			}
 
-			if( function_context.references_graph.GetNodeKind( inner_reference_node_id ) != ReferencesGraph::NodeKind::ReferenceMut && result_node_is_mut )
+			if( (  result_node_is_mut && function_context.references_graph.GetNodeKind( inner_reference_node_id ) == ReferencesGraph::NodeKind::ReferenceImut ) ||
+				( !result_node_is_mut && function_context.references_graph.GetNodeKind( inner_reference_node_id ) == ReferencesGraph::NodeKind::ReferenceMut ) )
 			{
-				REPORT_ERROR( NotImplemented, names_scope, src_loc, ust::string8( "changing inner node reference kind immutable to mutable" ) )
+				REPORT_ERROR( InnerReferenceMutabilityChanging, names_scope, src_loc, function_context.references_graph.GetNodeName( inner_reference_node_id ) )
 			}
 
 			foreach( & src_node_id : src_nodes )

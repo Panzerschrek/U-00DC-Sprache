@@ -1175,9 +1175,11 @@ fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, 
 			{
 				REPORT_ERROR( ReferenceProtectionError, names_scope, initializer_src_loc, references_graph.GetNodeName( initializer_variable.node_id ) )
 			}
-			else if( field.is_mutable && references_graph.GetNodeKind( inner_reference_node_id ) != ReferencesGraph::NodeKind::ReferenceMut )
+			else if(
+				(  field.is_mutable && references_graph.GetNodeKind( inner_reference_node_id ) != ReferencesGraph::NodeKind::ReferenceMut ) ||
+				( !field.is_mutable && references_graph.GetNodeKind( inner_reference_node_id ) != ReferencesGraph::NodeKind::ReferenceImut ) )
 			{
-				REPORT_ERROR( NotImplemented, names_scope, initializer_src_loc, ust::string8("inner reference mutability changing") )
+				REPORT_ERROR( InnerReferenceMutabilityChanging, names_scope, initializer_src_loc, references_graph.GetNodeName( inner_reference_node_id ) )
 			}
 			else
 			{

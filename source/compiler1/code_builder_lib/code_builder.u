@@ -1958,12 +1958,16 @@ fn CodeBuilder::SetupReferencesInCopyOrMove(
 				select( node_is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ) );
 		}
 
-		var bool dst_inner_reference_node_is_mutable= references_graph.GetNodeKind( dst_inner_reference_node ) == ReferencesGraph::NodeKind::ReferenceMut;
+		if( (  node_is_mutable && references_graph.GetNodeKind( dst_inner_reference_node ) == ReferencesGraph::NodeKind::ReferenceImut ) ||
+			( !node_is_mutable && references_graph.GetNodeKind( dst_inner_reference_node ) == ReferencesGraph::NodeKind::ReferenceMut ) )
+		{
+			REPORT_ERROR( InnerReferenceMutabilityChanging, names_scope, src_loc, references_graph.GetNodeName( dst_inner_reference_node ) )
+		}
 
 		foreach( src_inner_reference_node : src_inner_reference_nodes )
 		{
 			var bool src_inner_reference_node_is_mutable= references_graph.GetNodeKind( src_inner_reference_node ) == ReferencesGraph::NodeKind::ReferenceMut;
-			if( dst_inner_reference_node_is_mutable != src_inner_reference_node_is_mutable )
+			if( node_is_mutable != src_inner_reference_node_is_mutable )
 			{
 				REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, references_graph.GetNodeName( src_inner_reference_node ) )
 			}
