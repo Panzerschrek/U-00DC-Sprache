@@ -660,7 +660,7 @@ U_TEST( BinaryOperatorArgumentsShouldBeEvaluatedInDirectOrder )
 
 		fn Foo() : i32
 		{
-			var [ S, 1 ] mut arr= zero_init;
+			var [ S, 1 ] arr= zero_init;
 			var i32 mut fff= 4;
 
 			arr[ Mul5(fff) ] + arr[ Div7(fff) ];  // Must first evaluate Mul5, then - Mul7

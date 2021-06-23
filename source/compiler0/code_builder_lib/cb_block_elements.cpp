@@ -176,18 +176,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			prev_variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
 			variable.node= var_node;
 
-			const bool is_mutable= variable.value_type == ValueType::Reference;
-			if( expression_result.node != nullptr )
-			{
-				if( is_mutable )
-				{
-					if( function_context.variables_state.HaveOutgoingLinks( expression_result.node ) )
-						REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), variable_declaration.src_loc, expression_result.node->name );
-				}
-				else if( function_context.variables_state.HaveOutgoingMutableNodes( expression_result.node ) )
-					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), variable_declaration.src_loc, expression_result.node->name );
-				function_context.variables_state.AddLink( expression_result.node, var_node );
-			}
+			if( expression_result.node != nullptr && !function_context.variables_state.TryAddLink( expression_result.node, var_node ) )
+				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), variable_declaration.src_loc, expression_result.node->name );
 		}
 		else U_ASSERT(false);
 
@@ -292,18 +282,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		prev_variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
 		variable.node= var_node;
 
-		const bool is_mutable= variable.value_type == ValueType::Reference;
-		if( initializer_experrsion.node != nullptr )
-		{
-			if( is_mutable )
-			{
-				if( function_context.variables_state.HaveOutgoingLinks( initializer_experrsion.node ) )
-					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), auto_variable_declaration.src_loc_, initializer_experrsion.node->name );
-			}
-			else if( function_context.variables_state.HaveOutgoingMutableNodes( initializer_experrsion.node ) )
-				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), auto_variable_declaration.src_loc_, initializer_experrsion.node->name );
-			function_context.variables_state.AddLink( initializer_experrsion.node, var_node );
-		}
+		if( initializer_experrsion.node != nullptr && !function_context.variables_state.TryAddLink( initializer_experrsion.node, var_node ) )
+			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), auto_variable_declaration.src_loc_, initializer_experrsion.node->name );
 	}
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
 	{
@@ -627,18 +607,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( var_node, variable ) );
 				variable.node= var_node;
 
-				const bool is_mutable= variable.value_type == ValueType::Reference;
-				if( sequence_lock != std::nullopt )
-				{
-					if( is_mutable )
-					{
-						if( function_context.variables_state.HaveOutgoingLinks( sequence_expression.node ) )
-							REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), for_operator.src_loc_, sequence_expression.node->name );
-					}
-					else if( function_context.variables_state.HaveOutgoingMutableNodes( sequence_expression.node ) )
-						REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), for_operator.src_loc_, sequence_expression.node->name );
-					function_context.variables_state.AddLink( sequence_lock->Node(), var_node );
-				}
+				if( sequence_lock != std::nullopt && !function_context.variables_state.TryAddLink( sequence_lock->Node(), var_node ) )
+					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), for_operator.src_loc_, sequence_expression.node->name );
 			}
 			else
 			{
@@ -1041,18 +1011,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
 		variable.node= var_node;
 
-		const bool is_mutable= variable.value_type == ValueType::Reference;
-		if( expr.node != nullptr )
-		{
-			if( is_mutable )
-			{
-				if( function_context.variables_state.HaveOutgoingLinks( expr.node ) )
-					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), with_operator.src_loc_, expr.node->name );
-			}
-			else if( function_context.variables_state.HaveOutgoingMutableNodes( expr.node ) )
-				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), with_operator.src_loc_, expr.node->name );
-			function_context.variables_state.AddLink( expr.node, var_node );
-		}
+		if( expr.node != nullptr && !function_context.variables_state.TryAddLink( expr.node, var_node ) )
+			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), with_operator.src_loc_, expr.node->name );
 	}
 	else if( with_operator.reference_modifier_ == ReferenceModifier::None )
 	{

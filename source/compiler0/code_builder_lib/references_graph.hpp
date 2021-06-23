@@ -37,6 +37,9 @@ public:
 	void AddLink( const ReferencesGraphNodePtr& from, const ReferencesGraphNodePtr& to );
 	void RemoveLink( const ReferencesGraphNodePtr& from, const ReferencesGraphNodePtr& to );
 
+	// Returns "false" in case of ReferenceProtectionError
+	bool TryAddLink( const ReferencesGraphNodePtr& from, const ReferencesGraphNodePtr& to );
+
 	ReferencesGraphNodePtr GetNodeInnerReference( const ReferencesGraphNodePtr& node ) const;
 	void SetNodeInnerReference( const ReferencesGraphNodePtr& node, ReferencesGraphNodePtr inner_reference );
 

@@ -234,11 +234,8 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 
 		for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
 		{
-			if( ( dst_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut  && function_context.variables_state.HaveOutgoingLinks( src_node_inner_reference ) ) ||
-				( dst_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceImut && function_context.variables_state.HaveOutgoingMutableNodes( src_node_inner_reference ) ) )
+			if( !function_context.variables_state.TryAddLink( src_node_inner_reference, dst_node_inner_reference ) )
 				REPORT_ERROR( ReferenceProtectionError, errors_container, src_loc, src_node_inner_reference->name );
-			else
-				function_context.variables_state.AddLink( src_node_inner_reference, dst_node_inner_reference );
 		}
 	}
 }

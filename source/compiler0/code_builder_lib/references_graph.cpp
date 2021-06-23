@@ -92,6 +92,16 @@ void ReferencesGraph::RemoveLink( const ReferencesGraphNodePtr& from, const Refe
 	U_ASSERT(erased); // Removing unexistent link.
 }
 
+bool ReferencesGraph::TryAddLink( const ReferencesGraphNodePtr& from, const ReferencesGraphNodePtr& to )
+{
+	if( (to->kind == ReferencesGraphNode::Kind::ReferenceMut && HaveOutgoingLinks( from ) ) ||
+		HaveOutgoingMutableNodes( from ) )
+		return false;
+
+	AddLink( from, to );
+	return true;
+}
+
 ReferencesGraphNodePtr ReferencesGraph::GetNodeInnerReference( const ReferencesGraphNodePtr& node ) const
 {
 	const auto it= nodes_.find( node );
