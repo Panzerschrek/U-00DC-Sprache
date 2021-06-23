@@ -96,6 +96,18 @@ fn ReferencesGraph::AddLink( mut this, NodeId from, NodeId to )
 	links_.push_back( link );
 }
 
+fn ReferencesGraph::TryAddLink( mut this, NodeId from, NodeId to ) : bool
+{
+	if( ( GetNodeKind( to ) == NodeKind::ReferenceMut && HaveOutgoingLinks( from ) ) ||
+		HaveOutgoingMutableNodes( from ) )
+	{
+		return false;
+	}
+
+	AddLink( from, to );
+	return true;
+}
+
 fn ReferencesGraph::CreateNodeInnerReference( mut this, NodeId node_id, NodeKind kind ) : NodeId
 {
 	halt if( kind == NodeKind::Variable );

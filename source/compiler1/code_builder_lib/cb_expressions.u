@@ -753,14 +753,9 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				branches_reference_values[i]= branch_result.llvm_value;
 				if( branch_result.node_id != ReferencesGraph::c_empty_node_id )
 				{
-					if( ( result.value_type == ValueType::ReferenceMut  && function_context.references_graph.HaveOutgoingLinks( branch_result.node_id ) ) ||
-						( result.value_type == ValueType::ReferenceImut && function_context.references_graph.HaveOutgoingMutableNodes( branch_result.node_id ) ) )
+					if( !function_context.references_graph.TryAddLink( branch_result.node_id, result.node_id ) )
 					{
 						REPORT_ERROR( ReferenceProtectionError, names_scope, ternary_operator.src_loc, function_context.references_graph.GetNodeName( branch_result.node_id ) )
-					}
-					else
-					{
-						function_context.references_graph.AddLink( branch_result.node_id, result.node_id );
 					}
 				}
 			}
@@ -1299,14 +1294,9 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 					foreach( &inner_node : function_context.references_graph.GetAccessibleVariableNodesInnerReferences( variable.node_id ) )
 					{
-						if( (  field.is_mutable && function_context.references_graph.HaveOutgoingLinks( inner_node ) ) ||
-							( !field.is_mutable && function_context.references_graph.HaveOutgoingMutableNodes( inner_node ) ) )
+						if( !function_context.references_graph.TryAddLink( inner_node, reference_field_node ) )
 						{
 							REPORT_ERROR( ReferenceProtectionError, names_scope, member_access_operator.src_loc, function_context.references_graph.GetNodeName( inner_node ) )
-						}
-						else
-						{
-							function_context.references_graph.AddLink( inner_node, reference_field_node );
 						}
 					}
 
@@ -2835,18 +2825,13 @@ fn CodeBuilder::DoCallFunction(
 
 			if( arg.node_id != ReferencesGraph::c_empty_node_id )
 			{
-				if( (  param.is_mutable && function_context.references_graph.HaveOutgoingLinks( arg.node_id ) ) ||
-					( !param.is_mutable && function_context.references_graph.HaveOutgoingMutableNodes( arg.node_id ) ) )
+				auto arg_node_id= function_context.references_graph.AddNode(
+					select( param.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
+					"_arg_" + ust::to_string8(arg_n) );
+				args_nodes[arg_n]= arg_node_id;
+				if( !function_context.references_graph.TryAddLink( arg.node_id, arg_node_id ) )
 				{
 					REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( arg.node_id ) )
-				}
-				else
-				{
-					auto arg_node_id= function_context.references_graph.AddNode(
-						select( param.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
-						"_arg_" + ust::to_string8(arg_n) );
-					args_nodes[arg_n]= arg_node_id;
-					function_context.references_graph.AddLink( arg.node_id, arg_node_id );
 				}
 
 				if( expected_arg_type.GetInnerReferenceKind() != InnerReferenceKind::None )
@@ -2865,14 +2850,9 @@ fn CodeBuilder::DoCallFunction(
 
 					foreach( inner_reference : inner_references )
 					{
-						if( (  is_mutable && function_context.references_graph.HaveOutgoingLinks( inner_reference ) ) ||
-							( !is_mutable && function_context.references_graph.HaveOutgoingMutableNodes( inner_reference ) ) )
+						if( !function_context.references_graph.TryAddLink( inner_reference, own_reference_node ) )
 						{
 							REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( inner_reference ) )
-						}
-						else
-						{
-							function_context.references_graph.AddLink( inner_reference, own_reference_node );
 						}
 					}
 				}
@@ -2926,14 +2906,9 @@ fn CodeBuilder::DoCallFunction(
 
 					foreach( inner_reference : inner_references )
 					{
-						if( (  is_mutable && function_context.references_graph.HaveOutgoingLinks( inner_reference ) ) ||
-							( !is_mutable && function_context.references_graph.HaveOutgoingMutableNodes( inner_reference ) ) )
+						if( !function_context.references_graph.TryAddLink( inner_reference, own_inner_reference ) )
 						{
 							REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( inner_reference ) )
-						}
-						else
-						{
-							function_context.references_graph.AddLink( inner_reference, own_inner_reference );
 						}
 					}
 				}
@@ -3090,28 +3065,18 @@ fn CodeBuilder::DoCallFunction(
 			if( param_reference.reference_index == FunctionType::c_param_reference_number )
 			{
 				auto node_id = args_nodes[i];
-				if( ( result_node_kind == ReferencesGraph::NodeKind::ReferenceMut  && function_context.references_graph.HaveOutgoingLinks( node_id ) ) ||
-					( result_node_kind == ReferencesGraph::NodeKind::ReferenceImut && function_context.references_graph.HaveOutgoingMutableNodes( node_id ) ) )
+				if( !function_context.references_graph.TryAddLink( node_id, result.node_id ) )
 				{
 					REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( node_id ) )
-				}
-				else
-				{
-					function_context.references_graph.AddLink( node_id, result.node_id );
 				}
 			}
 			if( param_reference.reference_index == 0u8 )
 			{
 				foreach( inner_node_id : function_context.references_graph.GetAccessibleVariableNodesInnerReferences( args_nodes[i] ) )
 				{
-					if( ( result_node_kind == ReferencesGraph::NodeKind::ReferenceMut  && function_context.references_graph.HaveOutgoingLinks( inner_node_id ) ) ||
-						( result_node_kind == ReferencesGraph::NodeKind::ReferenceImut && function_context.references_graph.HaveOutgoingMutableNodes( inner_node_id ) ) )
+					if( !function_context.references_graph.TryAddLink( inner_node_id, result.node_id ) )
 					{
 						REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( inner_node_id ) )
-					}
-					else
-					{
-						function_context.references_graph.AddLink( inner_node_id, result.node_id );
 					}
 				}
 			}
@@ -3159,28 +3124,18 @@ fn CodeBuilder::DoCallFunction(
 			if( param_reference.reference_index == FunctionType::c_param_reference_number )
 			{
 				auto node_id = args_nodes[i];
-				if( (  inner_reference_is_mutable && function_context.references_graph.HaveOutgoingLinks( node_id ) ) ||
-					( !inner_reference_is_mutable && function_context.references_graph.HaveOutgoingMutableNodes( node_id ) ) )
+				if( !function_context.references_graph.TryAddLink( node_id, inner_node_id ) )
 				{
 					REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( node_id ) )
-				}
-				else
-				{
-					function_context.references_graph.AddLink( node_id, inner_node_id );
 				}
 			}
 			if( param_reference.reference_index == 0u8 )
 			{
 				foreach( dst_inner_node_id : function_context.references_graph.GetAccessibleVariableNodesInnerReferences( args_nodes[i] ) )
 				{
-					if( (  inner_reference_is_mutable && function_context.references_graph.HaveOutgoingLinks( dst_inner_node_id ) ) ||
-						( !inner_reference_is_mutable && function_context.references_graph.HaveOutgoingMutableNodes( dst_inner_node_id ) ) )
+					if( !function_context.references_graph.TryAddLink( dst_inner_node_id, inner_node_id ) )
 					{
 						REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( dst_inner_node_id ) )
-					}
-					else
-					{
-						function_context.references_graph.AddLink( dst_inner_node_id, inner_node_id );
 					}
 				}
 			}
@@ -3241,14 +3196,9 @@ fn CodeBuilder::DoCallFunction(
 
 			foreach( & src_node_id : src_nodes )
 			{
-				if( (  result_node_is_mut && function_context.references_graph.HaveOutgoingLinks( src_node_id ) ) ||
-					( !result_node_is_mut && function_context.references_graph.HaveOutgoingMutableNodes( src_node_id ) ) )
+				if( !function_context.references_graph.TryAddLink( src_node_id, inner_reference_node_id ) )
 				{
 					REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( src_node_id ) )
-				}
-				else
-				{
-					function_context.references_graph.AddLink( src_node_id, inner_reference_node_id );
 				}
 			}
 		}

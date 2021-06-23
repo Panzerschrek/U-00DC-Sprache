@@ -30,6 +30,9 @@ public:
 	fn RemoveNode( mut this, NodeId node_id );
 	fn AddLink( mut this, NodeId from, NodeId to );
 
+	// Returns "false" in case of ReferenceProtectionError.
+	fn TryAddLink( mut this, NodeId from, NodeId to ) : bool;
+
 	fn CreateNodeInnerReference( mut this, NodeId node_id, NodeKind kind ) : NodeId;
 
 	fn MoveNode( mut this, NodeId node_id );

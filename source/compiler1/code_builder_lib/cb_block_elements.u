@@ -182,17 +182,9 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 				continue;
 			}
 
-			if( expression_result.node_id != ReferencesGraph::c_empty_node_id )
+			if( expression_result.node_id != ReferencesGraph::c_empty_node_id && !function_context.references_graph.TryAddLink( expression_result.node_id, out_variable.node_id ) )
 			{
-				if( (  out_variable.is_mutable && function_context.references_graph.HaveOutgoingLinks( expression_result.node_id ) ) ||
-					( !out_variable.is_mutable && function_context.references_graph.HaveOutgoingMutableNodes( expression_result.node_id ) ) )
-				{
-					REPORT_ERROR( ReferenceProtectionError, names_scope, variable_declaration.src_loc, function_context.references_graph.GetNodeName( expression_result.node_id ) )
-				}
-				else
-				{
-					function_context.references_graph.AddLink( expression_result.node_id, out_variable.node_id );
-				}
+				REPORT_ERROR( ReferenceProtectionError, names_scope, variable_declaration.src_loc, function_context.references_graph.GetNodeName( expression_result.node_id ) )
 			}
 
 			out_variable.llvm_value= CreateReferenceCast( expression_result.llvm_value, expression_result.t, t, function_context );
@@ -279,14 +271,9 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 
 		if( expr.node_id != ReferencesGraph::c_empty_node_id )
 		{
-			if( (  out_variable.is_mutable && function_context.references_graph.HaveOutgoingLinks( expr.node_id ) ) ||
-				( !out_variable.is_mutable && function_context.references_graph.HaveOutgoingMutableNodes( expr.node_id ) ) )
+			if( !function_context.references_graph.TryAddLink( expr.node_id, out_variable.node_id ) )
 			{
 				REPORT_ERROR( ReferenceProtectionError, names_scope, auto_variable_declaration.src_loc, function_context.references_graph.GetNodeName( expr.node_id ) )
-			}
-			else
-			{
-				function_context.references_graph.AddLink( expr.node_id, out_variable.node_id );
 			}
 		}
 
@@ -988,30 +975,25 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	if( sequence_expression.node_id != ReferencesGraph::c_empty_node_id )
 	{
 		auto is_mutable= range_for_operator.mutability_modifier == Synt::MutabilityModifier::Mutable;
-		if( (  is_mutable && function_context.references_graph.HaveOutgoingLinks( sequence_expression.node_id ) ) ||
-			( !is_mutable && function_context.references_graph.HaveOutgoingMutableNodes( sequence_expression.node_id ) ) )
+		var ust::string8 mut node_name= function_context.references_graph.GetNodeName( sequence_expression.node_id ) + " lock";
+		sequence_lock_node= function_context.references_graph.AddNode(
+			select( is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
+			move(node_name) );
+		if( !function_context.references_graph.TryAddLink( sequence_expression.node_id, sequence_lock_node ) )
 		{
 			REPORT_ERROR( ReferenceProtectionError, names_scope, range_for_operator.src_loc, function_context.references_graph.GetNodeName( sequence_expression.node_id ) )
 		}
-		else
-		{
-			var ust::string8 mut node_name= function_context.references_graph.GetNodeName( sequence_expression.node_id ) + " lock";
-			sequence_lock_node= function_context.references_graph.AddNode(
-				select( is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
-				move(node_name) );
-			function_context.references_graph.AddLink( sequence_expression.node_id, sequence_lock_node );
 
-			{// Register lock node for later destruction.
-				var NamesScopeVariable mut names_scope_variable
-				{
-					.t= sequence_expression.t,
-					.is_mutable= true,
-					.llvm_value= sequence_expression.llvm_value,
-					.constexpr_value= sequence_expression.constexpr_value,
-					.node_id= sequence_lock_node,
-				};
-				function_context.variables_frames.back().push_back( move(names_scope_variable) );
-			}
+		{// Register lock node for later destruction.
+			var NamesScopeVariable mut names_scope_variable
+			{
+				.t= sequence_expression.t,
+				.is_mutable= true,
+				.llvm_value= sequence_expression.llvm_value,
+				.constexpr_value= sequence_expression.constexpr_value,
+				.node_id= sequence_lock_node,
+			};
+			function_context.variables_frames.back().push_back( move(names_scope_variable) );
 		}
 	}
 
@@ -1400,17 +1382,9 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 		CreateReferenceVariableDebugInfo( function_context, out_variable, with_operator.variable_name, with_operator.src_loc );
 
-		if( expr.node_id != ReferencesGraph::c_empty_node_id )
+		if( expr.node_id != ReferencesGraph::c_empty_node_id && !function_context.references_graph.TryAddLink( expr.node_id, out_variable.node_id ) )
 		{
-			if( (  out_variable.is_mutable && function_context.references_graph.HaveOutgoingLinks( expr.node_id ) ) ||
-				( !out_variable.is_mutable && function_context.references_graph.HaveOutgoingMutableNodes( expr.node_id ) ) )
-			{
-				REPORT_ERROR( ReferenceProtectionError, names_scope, with_operator.src_loc, function_context.references_graph.GetNodeName( expr.node_id ) )
-			}
-			else
-			{
-				function_context.references_graph.AddLink( expr.node_id, out_variable.node_id );
-			}
+			REPORT_ERROR( ReferenceProtectionError, names_scope, with_operator.src_loc, function_context.references_graph.GetNodeName( expr.node_id ) )
 		}
 	}
 	else if( with_operator.reference_modifier == Synt::ReferenceModifier::None )
