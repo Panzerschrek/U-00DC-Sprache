@@ -663,7 +663,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		RestoreInstructionsState( function_context, instructions_state );
 	}
 
-	if( branches_types[0].t != branches_types[1].t )
+	if( cast_imut(branches_types)[0].t != cast_imut(branches_types)[1].t )
 	{
 		REPORT_ERROR( TypesMismatch, names_scope, ternary_operator.src_loc, branches_types[0].t, branches_types[1].t )
 		return ErrorValue();
