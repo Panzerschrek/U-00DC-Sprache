@@ -266,8 +266,9 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_
 		{
 			current_class_table_.push_back( class_table_entry.key() );
 
+			auto mut value= class_table_entry.value();
 			auto mut lock= class_table_entry.key().lock_mut();
-			lock.get_ref()= class_table_entry.value();
+			lock.get_ref()= move(value);
 		}
 	}
 	// Merge namespaces. This must be done AFTER class table praparation.
@@ -450,16 +451,11 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 					move(node_name) );
 				result.node_id= reference_field_node;
 
-				foreach( &inner_node : function_context.references_graph.GetAllAccessibleVariableInnerNodes( node_id ) )
+				foreach( &inner_node : function_context.references_graph.GetAccessibleVariableNodesInnerReferences( node_id ) )
 				{
-					if( (  field.is_mutable && function_context.references_graph.HaveOutgoingLinks( inner_node ) ) ||
-						( !field.is_mutable && function_context.references_graph.HaveOutgoingMutableNodes( inner_node ) ) )
+					if( !function_context.references_graph.TryAddLink( inner_node, reference_field_node ) )
 					{
 						REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( inner_node ) )
-					}
-					else
-					{
-						function_context.references_graph.AddLink( inner_node, reference_field_node );
 					}
 				}
 
@@ -1932,7 +1928,7 @@ fn CodeBuilder::SetupReferencesInCopyOrMove(
 	var ReferencesGraph& mut references_graph= function_context.references_graph;
 
 	var ReferencesGraph::NodesSet dst_variable_nodes= references_graph.GetAllAccessibleVariableNodes( dst_node );
-	var ReferencesGraph::NodesSet src_inner_reference_nodes= references_graph.GetAllAccessibleVariableInnerNodes( src_node );
+	var ReferencesGraph::NodesSet src_inner_reference_nodes= references_graph.GetAccessibleVariableNodesInnerReferences( src_node );
 
 	if( dst_variable_nodes.empty() || src_inner_reference_nodes.empty() )
 	{
@@ -1957,18 +1953,17 @@ fn CodeBuilder::SetupReferencesInCopyOrMove(
 				select( node_is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ) );
 		}
 
-		var bool dst_inner_reference_node_is_mutable= references_graph.GetNodeKind( dst_inner_reference_node ) == ReferencesGraph::NodeKind::ReferenceMut;
+		if( (  node_is_mutable && references_graph.GetNodeKind( dst_inner_reference_node ) == ReferencesGraph::NodeKind::ReferenceImut ) ||
+			( !node_is_mutable && references_graph.GetNodeKind( dst_inner_reference_node ) == ReferencesGraph::NodeKind::ReferenceMut ) )
+		{
+			REPORT_ERROR( InnerReferenceMutabilityChanging, names_scope, src_loc, references_graph.GetNodeName( dst_inner_reference_node ) )
+		}
 
 		foreach( src_inner_reference_node : src_inner_reference_nodes )
 		{
-			var bool src_inner_reference_node_is_mutable= references_graph.GetNodeKind( src_inner_reference_node ) == ReferencesGraph::NodeKind::ReferenceMut;
-			if( dst_inner_reference_node_is_mutable != src_inner_reference_node_is_mutable )
+			if( !references_graph.TryAddLink( src_inner_reference_node, dst_inner_reference_node ) )
 			{
 				REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, references_graph.GetNodeName( src_inner_reference_node ) )
-			}
-			else
-			{
-				references_graph.AddLink( src_inner_reference_node, dst_inner_reference_node );
 			}
 		}
 	}

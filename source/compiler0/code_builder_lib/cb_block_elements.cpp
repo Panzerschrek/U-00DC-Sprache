@@ -176,18 +176,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			prev_variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
 			variable.node= var_node;
 
-			const bool is_mutable= variable.value_type == ValueType::Reference;
-			if( expression_result.node != nullptr )
-			{
-				if( is_mutable )
-				{
-					if( function_context.variables_state.HaveOutgoingLinks( expression_result.node ) )
-						REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), variable_declaration.src_loc, expression_result.node->name );
-				}
-				else if( function_context.variables_state.HaveOutgoingMutableNodes( expression_result.node ) )
-					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), variable_declaration.src_loc, expression_result.node->name );
-				function_context.variables_state.AddLink( expression_result.node, var_node );
-			}
+			if( expression_result.node != nullptr && !function_context.variables_state.TryAddLink( expression_result.node, var_node ) )
+				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), variable_declaration.src_loc, expression_result.node->name );
 		}
 		else U_ASSERT(false);
 
@@ -292,18 +282,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		prev_variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
 		variable.node= var_node;
 
-		const bool is_mutable= variable.value_type == ValueType::Reference;
-		if( initializer_experrsion.node != nullptr )
-		{
-			if( is_mutable )
-			{
-				if( function_context.variables_state.HaveOutgoingLinks( initializer_experrsion.node ) )
-					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), auto_variable_declaration.src_loc_, initializer_experrsion.node->name );
-			}
-			else if( function_context.variables_state.HaveOutgoingMutableNodes( initializer_experrsion.node ) )
-				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), auto_variable_declaration.src_loc_, initializer_experrsion.node->name );
-			function_context.variables_state.AddLink( initializer_experrsion.node, var_node );
-		}
+		if( initializer_experrsion.node != nullptr && !function_context.variables_state.TryAddLink( initializer_experrsion.node, var_node ) )
+			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), auto_variable_declaration.src_loc_, initializer_experrsion.node->name );
 	}
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
 	{
@@ -498,7 +478,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		// Check correctness of returning references.
 		if( expression_result.type.ReferencesTagsCount() > 0u && expression_result.node != nullptr )
 		{
-			for( const ReferencesGraphNodePtr& inner_reference : function_context.variables_state.GetAllAccessibleInnerNodes( expression_result.node ) )
+			for( const ReferencesGraphNodePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( expression_result.node ) )
 			{
 				for( const ReferencesGraphNodePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
 				{
@@ -627,18 +607,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( var_node, variable ) );
 				variable.node= var_node;
 
-				const bool is_mutable= variable.value_type == ValueType::Reference;
-				if( sequence_lock != std::nullopt )
-				{
-					if( is_mutable )
-					{
-						if( function_context.variables_state.HaveOutgoingLinks( sequence_expression.node ) )
-							REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), for_operator.src_loc_, sequence_expression.node->name );
-					}
-					else if( function_context.variables_state.HaveOutgoingMutableNodes( sequence_expression.node ) )
-						REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), for_operator.src_loc_, sequence_expression.node->name );
-					function_context.variables_state.AddLink( sequence_lock->Node(), var_node );
-				}
+				if( sequence_lock != std::nullopt && !function_context.variables_state.TryAddLink( sequence_lock->Node(), var_node ) )
+					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), for_operator.src_loc_, sequence_expression.node->name );
 			}
 			else
 			{
@@ -750,8 +720,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	FunctionContext& function_context,
 	const Synt::CStyleForOperator& c_style_for_operator )
 {
-	// TODO - process variables state.
-
 	const StackVariablesStorage loop_variables_storage( function_context );
 	NamesScope loop_names_scope("", &names);
 
@@ -803,6 +771,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 	}
 
+	ReferencesGraph variables_state_after_test_block= function_context.variables_state;
+
 	// Loop block code.
 	function_context.loops_stack.emplace_back();
 	function_context.loops_stack.back().block_for_break= block_after_loop;
@@ -824,7 +794,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.variables_state= MergeVariablesStateAfterIf( function_context.loops_stack.back().continue_variables_states, names.GetErrors(), c_style_for_operator.block_.end_src_loc_ );
 
 	std::vector<ReferencesGraph> variables_state_for_merge= std::move( function_context.loops_stack.back().break_variables_states );
-	variables_state_for_merge.push_back( variables_state_before_loop );
+	variables_state_for_merge.push_back( std::move(variables_state_after_test_block) );
 
 	function_context.loops_stack.pop_back();
 
@@ -844,7 +814,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.llvm_ir_builder.CreateBr( test_block );
 
 	// Disallow outer variables state change in loop iteration part and its predecessors.
-	const auto errors= ReferencesGraph::CheckWhileBlokVariablesState( variables_state_before_loop, function_context.variables_state, c_style_for_operator.block_.end_src_loc_ );
+	const auto errors= ReferencesGraph::CheckWhileBlockVariablesState( variables_state_before_loop, function_context.variables_state, c_style_for_operator.block_.end_src_loc_ );
 	names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
 
 	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), c_style_for_operator.src_loc_ );
@@ -921,7 +891,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	// Disallow outer variables state change in "continue" branches.
 	for( const ReferencesGraph& variables_state : function_context.loops_stack.back().continue_variables_states )
 	{
-		const auto errors= ReferencesGraph::CheckWhileBlokVariablesState( variables_state_before_loop, variables_state, while_operator.block_.end_src_loc_ );
+		const auto errors= ReferencesGraph::CheckWhileBlockVariablesState( variables_state_before_loop, variables_state, while_operator.block_.end_src_loc_ );
 		names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
 	}
 
@@ -1041,18 +1011,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
 		variable.node= var_node;
 
-		const bool is_mutable= variable.value_type == ValueType::Reference;
-		if( expr.node != nullptr )
-		{
-			if( is_mutable )
-			{
-				if( function_context.variables_state.HaveOutgoingLinks( expr.node ) )
-					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), with_operator.src_loc_, expr.node->name );
-			}
-			else if( function_context.variables_state.HaveOutgoingMutableNodes( expr.node ) )
-				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), with_operator.src_loc_, expr.node->name );
-			function_context.variables_state.AddLink( expr.node, var_node );
-		}
+		if( expr.node != nullptr && !function_context.variables_state.TryAddLink( expr.node, var_node ) )
+			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), with_operator.src_loc_, expr.node->name );
 	}
 	else if( with_operator.reference_modifier_ == ReferenceModifier::None )
 	{
@@ -1147,7 +1107,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.llvm_ir_builder.CreateBr( next_condition_block );
 
 	ReferencesGraph variables_state_before_if= function_context.variables_state;
-	ReferencesGraph conditions_variable_state= function_context.variables_state;
 	std::vector<ReferencesGraph> bracnhes_variables_state;
 
 	for( unsigned int i= 0u; i < if_operator.branches_.size(); i++ )
@@ -1175,35 +1134,33 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 		else
 		{
-			function_context.variables_state= conditions_variable_state;
+			const StackVariablesStorage temp_variables_storage( function_context );
+			const Variable condition_expression= BuildExpressionCodeEnsureVariable( branch.condition, names, function_context );
+			if( condition_expression.type != bool_type_ )
 			{
-				const StackVariablesStorage temp_variables_storage( function_context );
-				const Variable condition_expression= BuildExpressionCodeEnsureVariable( branch.condition, names, function_context );
-				if( condition_expression.type != bool_type_ )
-				{
-					REPORT_ERROR( TypesMismatch,
-						names.GetErrors(),
-						Synt::GetExpressionSrcLoc( branch.condition ),
-						bool_type_,
-						condition_expression.type );
+				REPORT_ERROR( TypesMismatch,
+					names.GetErrors(),
+					Synt::GetExpressionSrcLoc( branch.condition ),
+					bool_type_,
+					condition_expression.type );
 
-					// Create instruction even in case of error, because we needs to store basic blocs somewhere.
-					function_context.llvm_ir_builder.CreateCondBr( llvm::UndefValue::get( fundamental_llvm_types_.bool_ ), body_block, next_condition_block );
-				}
-				else
-				{
-					llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
-					CallDestructors( temp_variables_storage, names, function_context, Synt::GetExpressionSrcLoc( branch.condition ) );
-
-					function_context.llvm_ir_builder.CreateCondBr( condition_in_register, body_block, next_condition_block );
-				}
+				// Create instruction even in case of error, because we needs to store basic blocs somewhere.
+				function_context.llvm_ir_builder.CreateCondBr( llvm::UndefValue::get( fundamental_llvm_types_.bool_ ), body_block, next_condition_block );
 			}
-			conditions_variable_state= function_context.variables_state;
+			else
+			{
+				llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+				CallDestructors( temp_variables_storage, names, function_context, Synt::GetExpressionSrcLoc( branch.condition ) );
+
+				function_context.llvm_ir_builder.CreateCondBr( condition_in_register, body_block, next_condition_block );
+			}
 		}
 
 		// Make body block code.
 		function_context.function->getBasicBlockList().push_back( body_block );
 		function_context.llvm_ir_builder.SetInsertPoint( body_block );
+
+		ReferencesGraph variables_state_before_this_branch= function_context.variables_state;
 
 		const BlockBuildInfo block_build_info= BuildBlock( names, function_context, branch.block );
 
@@ -1215,14 +1172,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			bracnhes_variables_state.push_back( function_context.variables_state );
 		}
 
-		function_context.variables_state= conditions_variable_state;
+		function_context.variables_state= variables_state_before_this_branch;
 	}
 
 	U_ASSERT( next_condition_block == block_after_if );
 
 	if( std::get_if<Synt::EmptyVariant>( &if_operator.branches_.back().condition ) == nullptr ) // Have no unconditional "else" at end.
 	{
-		bracnhes_variables_state.push_back( conditions_variable_state );
+		bracnhes_variables_state.push_back( function_context.variables_state );
 		if_operator_blocks_build_info.have_terminal_instruction_inside= false;
 	}
 

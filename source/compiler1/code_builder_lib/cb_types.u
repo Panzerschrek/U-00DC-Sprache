@@ -1,3 +1,4 @@
+import "/sort.u"
 import "/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
@@ -296,68 +297,54 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 			continue;
 		}
 
-		var FunctionType::ReferencePollution mut out_pollution= zero_init;
+		var ust::vector</FunctionType::ParamReference/> mut pollutions_dst, mut pollutions_src;
 
+		for( auto mut i= 0s; i < res.params.size(); ++i )
 		{
-			var bool mut any_dst_found= false;
-			for( auto mut i= 0s; i < res.params.size(); ++i )
+			if( in_pollution.dst == function_type.params[i].inner_reference_tag )
 			{
-				if( in_pollution.dst == function_type.params[i].inner_reference_tag )
-				{
-					any_dst_found= true;
-					out_pollution.dst.param_index= u8(i);
-					out_pollution.dst.reference_index= 0u8;
-				}
-				else if( in_pollution.dst == function_type.params[i].reference_tag )
-				{
-					REPORT_ERROR( ArgReferencePollution, names_scope, function_type.src_loc )
-				}
+				var FunctionType::ParamReference mut dst{ .param_index= u8(i), .reference_index= 0u8 };
+				pollutions_dst.push_back( move(dst) );
 			}
-
-			if( !any_dst_found )
+			else if( in_pollution.dst == function_type.params[i].reference_tag )
 			{
-				REPORT_ERROR( NameNotFound, names_scope, function_type.src_loc, in_pollution.dst )
-				continue;
+				REPORT_ERROR( ArgReferencePollution, names_scope, function_type.src_loc )
 			}
 		}
+		for( auto mut i= 0s; i < res.params.size(); ++i )
 		{
-			var bool mut any_src_found= false;
-			for( auto mut i= 0s; i < res.params.size(); ++i )
+			if( in_pollution.src == function_type.params[i].inner_reference_tag )
 			{
-				if( in_pollution.src == function_type.params[i].inner_reference_tag )
-				{
-					any_src_found= true;
-					out_pollution.src.param_index= u8(i);
-					out_pollution.src.reference_index= 0u8;
-				}
-				else if( in_pollution.src == function_type.params[i].reference_tag )
-				{
-					any_src_found= true;
-					out_pollution.src.param_index= u8(i);
-					out_pollution.src.reference_index= FunctionType::c_param_reference_number;
-				}
+				var FunctionType::ParamReference mut src{ .param_index= u8(i), .reference_index= 0u8 };
+				pollutions_src.push_back( move(src) );
 			}
-
-			if( !any_src_found )
+			else if( in_pollution.src == function_type.params[i].reference_tag )
 			{
-				REPORT_ERROR( NameNotFound, names_scope, function_type.src_loc, in_pollution.src )
-				continue;
+				var FunctionType::ParamReference mut src{ .param_index= u8(i), .reference_index= FunctionType::c_param_reference_number};
+				pollutions_src.push_back( move(src) );
 			}
 		}
 
-		res.references_pollution.push_back( move(out_pollution) );
+		if( pollutions_dst.empty() )
+		{
+			REPORT_ERROR( NameNotFound, names_scope, function_type.src_loc, in_pollution.dst )
+		}
+		if( pollutions_src.empty() )
+		{
+			REPORT_ERROR( NameNotFound, names_scope, function_type.src_loc, in_pollution.src )
+		}
+
+		foreach( dst : pollutions_dst )
+		{
+			foreach( src : pollutions_src )
+			{
+				var FunctionType::ReferencePollution mut pollution{ .dst= dst, .src= src };
+				res.references_pollution.push_back( move(pollution) );
+			}
+		}
+
 	}
-	// Sort refernces pollution. TODO - use library sorting function.
-	for( auto mut i= 0s; i < res.references_pollution.size(); ++i )
-	{
-		for( auto mut j= i + 1s; j < res.references_pollution.size(); ++j )
-		{
-			if( cast_imut(res.references_pollution)[j] < cast_imut(res.references_pollution)[i] )
-			{
-				res.references_pollution.swap(i, j);
-			}
-		}
-	}
+	ust::sort( res.references_pollution.range() );
 
 	return move(res);
 }

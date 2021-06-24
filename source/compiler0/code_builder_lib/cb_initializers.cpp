@@ -890,13 +890,6 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	const ReferencesGraphNodePtr& dst_node= variable.node;
 	if( src_node != nullptr && dst_node != nullptr )
 	{
-		if( ( field.is_mutable && function_context.variables_state.HaveOutgoingLinks( src_node ) ) ||
-			(!field.is_mutable && function_context.variables_state.HaveOutgoingMutableNodes( src_node ) ) )
-		{
-			REPORT_ERROR( ReferenceProtectionError, block_names.GetErrors(), initializer_src_loc, src_node->name );
-			return nullptr;
-		}
-
 		for( const ReferencesGraphNodePtr& dst_variable_node : function_context.variables_state.GetAllAccessibleVariableNodes( dst_node ) )
 		{
 			ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( dst_variable_node );
@@ -907,14 +900,15 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 			}
 			else
 			{
-				if( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceImut && field.is_mutable )
+				if( ( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceImut &&  field.is_mutable ) ||
+					( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut  && !field.is_mutable ))
 				{
-					// TODO - make separate error.
-					REPORT_ERROR( NotImplemented, block_names.GetErrors(), initializer_src_loc, "inner reference mutability changing" );
+					REPORT_ERROR( InnerReferenceMutabilityChanging, block_names.GetErrors(), initializer_src_loc, inner_reference->name );
 					return nullptr;
 				}
 			}
-			function_context.variables_state.AddLink( src_node, inner_reference );
+			if( !function_context.variables_state.TryAddLink( src_node, inner_reference ) )
+				REPORT_ERROR( ReferenceProtectionError,  block_names.GetErrors(), initializer_src_loc, src_node->name );
 		}
 	}
 

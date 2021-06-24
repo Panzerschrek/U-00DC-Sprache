@@ -37,6 +37,9 @@ public:
 	void AddLink( const ReferencesGraphNodePtr& from, const ReferencesGraphNodePtr& to );
 	void RemoveLink( const ReferencesGraphNodePtr& from, const ReferencesGraphNodePtr& to );
 
+	// Returns "false" in case of ReferenceProtectionError
+	bool TryAddLink( const ReferencesGraphNodePtr& from, const ReferencesGraphNodePtr& to );
+
 	ReferencesGraphNodePtr GetNodeInnerReference( const ReferencesGraphNodePtr& node ) const;
 	void SetNodeInnerReference( const ReferencesGraphNodePtr& node, ReferencesGraphNodePtr inner_reference );
 
@@ -50,12 +53,12 @@ public:
 	bool NodeMoved( const ReferencesGraphNodePtr& node ) const;
 
 	using NodesSet= std::unordered_set<ReferencesGraphNodePtr>;
-	NodesSet GetAllAccessibleInnerNodes( const ReferencesGraphNodePtr& node ) const;
 	NodesSet GetAllAccessibleVariableNodes( const ReferencesGraphNodePtr& node ) const;
+	NodesSet GetAccessibleVariableNodesInnerReferences( const ReferencesGraphNodePtr& node ) const;
 
 	using MergeResult= std::pair<ReferencesGraph, std::vector<CodeBuilderError> >;
 	static MergeResult MergeVariablesStateAfterIf( const std::vector<ReferencesGraph>& branches_variables_state, const SrcLoc& src_loc );
-	static std::vector<CodeBuilderError> CheckWhileBlokVariablesState( const ReferencesGraph& state_before, const ReferencesGraph& state_after, const SrcLoc& src_loc );
+	static std::vector<CodeBuilderError> CheckWhileBlockVariablesState( const ReferencesGraph& state_before, const ReferencesGraph& state_after, const SrcLoc& src_loc );
 
 private:
 	struct NodeState
@@ -80,8 +83,8 @@ private:
 	using LinksSet= std::unordered_set< Link, LinkHasher >;
 
 private:
-	void GetAllAccessibleInnerNodes_r( const ReferencesGraphNodePtr& node, NodesSet& visited_nodes_set, NodesSet& result_set ) const;
 	void GetAllAccessibleVariableNodes_r( const ReferencesGraphNodePtr& node, NodesSet& visited_nodes_set, NodesSet& result_set ) const;
+	void GetAccessibleVariableNodesInnerReferences_r( const ReferencesGraphNodePtr& node, NodesSet& visited_nodes_set, NodesSet& result_set ) const;
 
 private:
 	std::unordered_map<ReferencesGraphNodePtr, NodeState> nodes_;
