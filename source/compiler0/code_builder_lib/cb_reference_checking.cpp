@@ -148,25 +148,18 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 	[&]( const std::string& name ) -> ArgsVector<Function::ArgReference>
 	{
 		ArgsVector<Function::ArgReference> result;
-		bool any_ref_found= false;
 
 		for( size_t arg_n= 0u; arg_n < function_type.args.size(); ++arg_n )
 		{
 			const Synt::FunctionArgument& in_arg= func.arguments_[ arg_n ];
 
 			if( name == in_arg.reference_tag_ )
-			{
-				any_ref_found= true;
 				result.emplace_back( arg_n, Function::c_arg_reference_tag_number );
-			}
 			if( name == in_arg.inner_arg_reference_tag_ )
-			{
-				any_ref_found= true;
 				result.emplace_back( arg_n, 0u );
-			}
 		}
 
-		if( !any_ref_found && result.empty() )
+		if( result.empty() )
 			REPORT_ERROR( NameNotFound, errors_container, func.src_loc_, name );
 
 		return result;
