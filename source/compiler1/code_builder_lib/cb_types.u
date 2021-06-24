@@ -315,7 +315,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 				var FunctionType::ParamReference mut src{ .param_index= u8(i), .reference_index= 0u8 };
 				pollutions_src.push_back( move(src) );
 			}
-			else if( in_pollution.src == function_type.params[i].reference_tag )
+			if( in_pollution.src == function_type.params[i].reference_tag )
 			{
 				var FunctionType::ParamReference mut src{ .param_index= u8(i), .reference_index= FunctionType::c_param_reference_number};
 				pollutions_src.push_back( move(src) );
