@@ -2883,7 +2883,7 @@ Value CodeBuilder::DoCallFunction(
 			}
 		}
 
-		if( function_type.args[ dst_arg ].is_reference )
+		if( function_type.args[ dst_arg ].is_reference && !src_nodes.empty() )
 		{
 			const bool dst_inner_reference_is_mut= function_type.args[ dst_arg ].type.GetInnerReferenceType() == InnerReferenceType::Mut;
 			// Even if reference-pollution is mutable, but if src vars is immutable, link as immutable.

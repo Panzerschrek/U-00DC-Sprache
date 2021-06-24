@@ -3178,27 +3178,30 @@ fn CodeBuilder::DoCallFunction(
 		// Even if reference-pollution is mutable, but if src vars is immutable, link as immutable.
 		var bool result_node_is_mut= src_variables_is_mut && dst_inner_reference_is_mut;
 
-		foreach( dst_node : function_context.references_graph.GetAllAccessibleVariableNodes( args_nodes[dst_arg] ) )
+		if( !src_nodes.empty() )
 		{
-			var ReferencesGraph::NodeId mut inner_reference_node_id= function_context.references_graph.GetNodeInnerReference( dst_node );
-			if( inner_reference_node_id == ReferencesGraph::c_empty_node_id )
+			foreach( dst_node : function_context.references_graph.GetAllAccessibleVariableNodes( args_nodes[dst_arg] ) )
 			{
-				inner_reference_node_id= function_context.references_graph.CreateNodeInnerReference(
-					dst_node,
-					select( result_node_is_mut ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ) );
-			}
-
-			if( (  result_node_is_mut && function_context.references_graph.GetNodeKind( inner_reference_node_id ) == ReferencesGraph::NodeKind::ReferenceImut ) ||
-				( !result_node_is_mut && function_context.references_graph.GetNodeKind( inner_reference_node_id ) == ReferencesGraph::NodeKind::ReferenceMut ) )
-			{
-				REPORT_ERROR( InnerReferenceMutabilityChanging, names_scope, src_loc, function_context.references_graph.GetNodeName( inner_reference_node_id ) )
-			}
-
-			foreach( & src_node_id : src_nodes )
-			{
-				if( !function_context.references_graph.TryAddLink( src_node_id, inner_reference_node_id ) )
+				var ReferencesGraph::NodeId mut inner_reference_node_id= function_context.references_graph.GetNodeInnerReference( dst_node );
+				if( inner_reference_node_id == ReferencesGraph::c_empty_node_id )
 				{
-					REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( src_node_id ) )
+					inner_reference_node_id= function_context.references_graph.CreateNodeInnerReference(
+						dst_node,
+						select( result_node_is_mut ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ) );
+				}
+
+				if( (  result_node_is_mut && function_context.references_graph.GetNodeKind( inner_reference_node_id ) == ReferencesGraph::NodeKind::ReferenceImut ) ||
+					( !result_node_is_mut && function_context.references_graph.GetNodeKind( inner_reference_node_id ) == ReferencesGraph::NodeKind::ReferenceMut ) )
+				{
+					REPORT_ERROR( InnerReferenceMutabilityChanging, names_scope, src_loc, function_context.references_graph.GetNodeName( inner_reference_node_id ) )
+				}
+
+				foreach( & src_node_id : src_nodes )
+				{
+					if( !function_context.references_graph.TryAddLink( src_node_id, inner_reference_node_id ) )
+					{
+						REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( src_node_id ) )
+					}
 				}
 			}
 		}
