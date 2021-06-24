@@ -461,8 +461,8 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 			function_virtual_table=
 				function_context.llvm_ir_builder.CreateGEP( function_virtual_table, { GetZeroGEPIndex(), GetFieldGEPIndex( field_index ) } );
 
-			auto next_class= current_class->parents[ virtual_table_entry->parent_virtual_table_index ].class_->class_;
-			virtual_table_entry= &current_class->parents[ virtual_table_entry->parent_virtual_table_index ].class_->class_->virtual_table[ virtual_table_entry->index_in_table ];
+			const auto next_class= current_class->parents[ virtual_table_entry->parent_virtual_table_index ].class_->class_;
+			virtual_table_entry= &next_class->virtual_table[ virtual_table_entry->index_in_table ];
 			current_class= next_class;
 		}
 		functions_table_field_number= current_class->parents.empty() ? c_funcs_table_field_number : uint32_t(class_type.parents.size());
