@@ -15,15 +15,15 @@ StackVariablesStorage::StackVariablesStorage( FunctionContext& in_function_conte
 
 StackVariablesStorage::~StackVariablesStorage()
 {
-	for( const NodeAndVariable& node_and_variable : variables_ )
-		function_context_.variables_state.RemoveNode( node_and_variable.first );
+	for( const Variable& variable : variables_ )
+		function_context_.variables_state.RemoveNode( variable.node );
 	function_context_.stack_variables_stack.pop_back();
 }
 
-void StackVariablesStorage::RegisterVariable( NodeAndVariable node_and_variable )
+void StackVariablesStorage::RegisterVariable( Variable variable )
 {
-	function_context_.variables_state.AddNode( node_and_variable.first );
-	variables_.push_back( std::move(node_and_variable) );
+	function_context_.variables_state.AddNode( variable.node );
+	variables_.push_back( std::move(variable) );
 }
 
 FunctionContext::FunctionContext(

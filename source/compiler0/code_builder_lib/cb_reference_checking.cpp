@@ -236,14 +236,14 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
 	StackVariablesStorage& temporary_variables_storage= *function_context.stack_variables_stack.back();
-	for( const StackVariablesStorage::NodeAndVariable& variable : temporary_variables_storage.variables_ )
+	for( const Variable& variable : temporary_variables_storage.variables_ )
 	{
-		if( !function_context.variables_state.HaveOutgoingLinks( variable.first ) &&
-			!function_context.variables_state.NodeMoved( variable.first ) )
+		if( !function_context.variables_state.HaveOutgoingLinks( variable.node ) &&
+			!function_context.variables_state.NodeMoved( variable.node ) )
 		{
-			if( variable.first->kind == ReferencesGraphNode::Kind::Variable && variable.second.type.HaveDestructor() )
-				CallDestructor( variable.second.llvm_value, variable.second.type, function_context, errors_container, src_loc );
-			function_context.variables_state.MoveNode( variable.first );
+			if( variable.node->kind == ReferencesGraphNode::Kind::Variable && variable.type.HaveDestructor() )
+				CallDestructor( variable.llvm_value, variable.type, function_context, errors_container, src_loc );
+			function_context.variables_state.MoveNode( variable.node );
 		}
 	}
 }
