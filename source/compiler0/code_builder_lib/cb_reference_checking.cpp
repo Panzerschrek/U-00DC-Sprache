@@ -236,15 +236,25 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
 	StackVariablesStorage& temporary_variables_storage= *function_context.stack_variables_stack.back();
-	for( const Variable& variable : temporary_variables_storage.variables_ )
+	// Try to move unused nodes (variables and references) until we can't move anything.
+	// Multiple iterations needed to process complex references chains.
+	while(true)
 	{
-		if( !function_context.variables_state.HaveOutgoingLinks( variable.node ) &&
-			!function_context.variables_state.NodeMoved( variable.node ) )
+		bool any_node_moved= false;
+		for( const Variable& variable : temporary_variables_storage.variables_ )
 		{
-			if( variable.node->kind == ReferencesGraphNode::Kind::Variable && variable.type.HaveDestructor() )
-				CallDestructor( variable.llvm_value, variable.type, function_context, errors_container, src_loc );
-			function_context.variables_state.MoveNode( variable.node );
+			if( !function_context.variables_state.HaveOutgoingLinks( variable.node ) &&
+				!function_context.variables_state.NodeMoved( variable.node ) )
+			{
+				if( variable.node->kind == ReferencesGraphNode::Kind::Variable && variable.type.HaveDestructor() )
+					CallDestructor( variable.llvm_value, variable.type, function_context, errors_container, src_loc );
+				function_context.variables_state.MoveNode( variable.node );
+				any_node_moved= true;
+			}
 		}
+
+		if(!any_node_moved)
+			return;
 	}
 }
 
