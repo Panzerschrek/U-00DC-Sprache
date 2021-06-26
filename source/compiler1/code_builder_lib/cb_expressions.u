@@ -940,13 +940,16 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	// This is not a class - process indexation operator for array or tuple.
 
 	// Prevent modification of variable during index calculation.
-	var ReferencesGraph::NodeId mut variable_lock_node= ReferencesGraph::c_empty_node_id;
+	var ReferencesGraph::NodeId mut result_node_id= ReferencesGraph::c_empty_node_id;
 	if( variable.node_id != ReferencesGraph::c_empty_node_id )
 	{
-		variable_lock_node= function_context.references_graph.AddNode(
+		result_node_id= function_context.references_graph.AddNode(
 			select( variable.value_type == ValueType::ReferenceMut ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
 			"[]" );
-		function_context.references_graph.AddLink( variable.node_id, variable_lock_node );
+		if( !function_context.references_graph.TryAddLink( variable.node_id, result_node_id ) )
+		{
+			REPORT_ERROR( ReferenceProtectionError, names_scope, indexation_operator.src_loc, function_context.references_graph.GetNodeName( variable.node_id ) )
+		}
 	}
 
 	auto index= BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.index.get_ref() );
@@ -1020,7 +1023,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				.t= variable_array_type.element_type,
 				.location= Variable::Location::Pointer,
 				.value_type= select( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-				.node_id= variable.node_id,
+				.node_id= result_node_id,
 			};
 
 			unsafe
@@ -1038,10 +1041,16 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			}
 
 			DestroyUnusedTemporaryVariables( names_scope, function_context, indexation_operator.src_loc ); // Destroy index.
-			if( variable_lock_node != ReferencesGraph::c_empty_node_id )
+
+			// Register variable for references checking.
+			var NamesScopeVariable mut names_scope_variable
 			{
-				function_context.references_graph.RemoveNode( variable_lock_node );
-			}
+				.t= result.t,
+				.is_mutable= result.value_type == ValueType::ReferenceMut,
+				.llvm_value= result.llvm_value,
+				.node_id= result.node_id,
+			};
+			function_context.variables_frames.back().push_back( move(names_scope_variable) );
 
 			return move(result);
 		}
@@ -1093,7 +1102,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				.location= Variable::Location::Pointer,
 				.value_type= select( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 				.llvm_value= CreateTupleElementGEP( variable.llvm_value, size_type(type_index), function_context ),
-				.node_id= variable.node_id,
+				.node_id= result_node_id,
 			};
 
 			if( variable.constexpr_value != LLVMValueRef::Null )
@@ -1102,10 +1111,16 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			}
 
 			DestroyUnusedTemporaryVariables( names_scope, function_context, indexation_operator.src_loc ); // Destroy index.
-			if( variable_lock_node != ReferencesGraph::c_empty_node_id )
+
+			// Register variable for references checking.
+			var NamesScopeVariable mut names_scope_variable
 			{
-				function_context.references_graph.RemoveNode( variable_lock_node );
-			}
+				.t= result.t,
+				.is_mutable= result.value_type == ValueType::ReferenceMut,
+				.llvm_value= result.llvm_value,
+				.node_id= result.node_id,
+			};
+			function_context.variables_frames.back().push_back( move(names_scope_variable) );
 
 			return move(result);
 		}
@@ -2348,6 +2363,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 				auto arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.get_ref() );
 				var VariableTypeExtened mut f_arg{ .t(arg.t), .value_type= arg.value_type };
 				function_context.args_preevaluation_cache.insert( in_arg, move(f_arg) );
+				DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
 			}
 			args.push_back( function_context.args_preevaluation_cache[in_arg] );
 		}
@@ -2540,6 +2556,7 @@ fn CodeBuilder::TryCallOverloadedPostfixOperator(
 			var Variable arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.get_ref() );
 			var VariableTypeExtened mut type_extended{ .t(arg.t), .value_type= arg.value_type };
 			args.push_back( move(type_extended) );
+			DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
 		}
 
 		RestoreInstructionsState( function_context, instructions_state );
@@ -2592,6 +2609,7 @@ fn CodeBuilder::CallFunctionsSet(
 				auto arg_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg.get_ref() );
 				var VariableTypeExtened mut out_arg{ .t( arg_variable.t ), .value_type= arg_variable.value_type };
 				function_context.args_preevaluation_cache.insert( arg, move(out_arg) );
+				DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
 			}
 			args_evaluated.push_back( function_context.args_preevaluation_cache[arg] );
 		}
