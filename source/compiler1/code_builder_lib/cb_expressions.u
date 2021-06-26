@@ -698,6 +698,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		node_kind= ReferencesGraph::NodeKind::ReferenceMut;
 	}
 
+	// Do not forget to remove this node in case of error-return!!!
 	result.node_id= function_context.references_graph.AddNode( node_kind, "select result" );
 
 	var LLVMBasicBlockRef mut result_block= zero_init;
@@ -943,16 +944,14 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	// This is not a class - process indexation operator for array or tuple.
 
 	// Prevent modification of variable during index calculation.
-	var ReferencesGraph::NodeId mut result_node_id= ReferencesGraph::c_empty_node_id;
-	if( variable.node_id != ReferencesGraph::c_empty_node_id )
-	{
-		result_node_id= function_context.references_graph.AddNode(
+	// Do not forget to remove this node in case of error-return!!!
+	var ReferencesGraph::NodeId mut result_node_id =
+		function_context.references_graph.AddNode(
 			select( variable.value_type == ValueType::ReferenceMut ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
 			"[]" );
-		if( !function_context.references_graph.TryAddLink( variable.node_id, result_node_id ) )
-		{
-			REPORT_ERROR( ReferenceProtectionError, names_scope, indexation_operator.src_loc, function_context.references_graph.GetNodeName( variable.node_id ) )
-		}
+	if( variable.node_id != ReferencesGraph::c_empty_node_id && !function_context.references_graph.TryAddLink( variable.node_id, result_node_id )  )
+	{
+		REPORT_ERROR( ReferenceProtectionError, names_scope, indexation_operator.src_loc, function_context.references_graph.GetNodeName( variable.node_id ) )
 	}
 
 	auto index= BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.index.get_ref() );
@@ -966,11 +965,13 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				( IsSignedInteger( index_fundamental_type.fundamental_type ) && index.constexpr_value != LLVMValueRef::Null ) ) )
 			{
 				REPORT_ERROR( TypesMismatch, names_scope, indexation_operator.src_loc, ust::string8("any unsigned integer"), index.t )
+				function_context.references_graph.RemoveNode( result_node_id );
 				return ErrorValue();
 			}
 			if( variable.location != Variable::Location::Pointer )
 			{
 				// TODO - Strange variable location.
+				function_context.references_graph.RemoveNode( result_node_id );
 				return ErrorValue();
 			}
 
@@ -984,6 +985,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				if( index_value_num >= variable_array_type.element_count )
 				{
 					REPORT_ERROR( ArrayIndexOutOfBounds, names_scope, indexation_operator.src_loc, index_value_num, variable_array_type.element_count )
+					function_context.references_graph.RemoveNode( result_node_id );
 					return ErrorValue();
 				}
 			}
@@ -1088,6 +1090,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				if( type_index_signed >= i64(variable_tuple_type.element_types.size()) || type_index_signed < 0i64 )
 				{
 					REPORT_ERROR( TupleIndexOutOfBounds, names_scope, indexation_operator.src_loc, type_index_signed, variable_tuple_type.element_types.size() )
+					function_context.references_graph.RemoveNode( result_node_id );
 					return ErrorValue();
 				}
 			}
@@ -1096,6 +1099,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				if( type_index >= u64(variable_tuple_type.element_types.size()) )
 				{
 					REPORT_ERROR( TupleIndexOutOfBounds, names_scope, indexation_operator.src_loc, type_index, variable_tuple_type.element_types.size() )
+					function_context.references_graph.RemoveNode( result_node_id );
 					return ErrorValue();
 				}
 			}
@@ -1131,6 +1135,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	REPORT_ERROR( OperationNotSupportedForThisType, names_scope, indexation_operator.src_loc, variable.t )
 
+	function_context.references_graph.RemoveNode( result_node_id );
 	return ErrorValue();
 }
 
@@ -1364,6 +1369,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					}
 
 					// Prevent destruction of variable during evaluation of member function template args.
+					// Do not forget to remove node in case of error-return!!!
 					var ReferencesGraph::NodeId mut variable_lock_node= ReferencesGraph::c_empty_node_id;
 					if( variable.node_id != ReferencesGraph::c_empty_node_id )
 					{
@@ -1452,6 +1458,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	else
 	{
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, unary_minus.src_loc, variable.t )
+		function_context.references_graph.RemoveNode( result.node_id );
 		return ErrorValue();
 	}
 
