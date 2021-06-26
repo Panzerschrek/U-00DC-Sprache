@@ -975,6 +975,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			}
 
 			var LLVMValueRef mut index_value= CreateMoveToLLVMRegisterInstruction( index, function_context );
+			DestroyUnusedTemporaryVariables( names_scope, function_context, indexation_operator.src_loc ); // Destroy index.
 			if( index.constexpr_value != LLVMValueRef::Null )
 			{
 				// Statically check index.
@@ -1043,8 +1044,6 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				}
 			}
 
-			DestroyUnusedTemporaryVariables( names_scope, function_context, indexation_operator.src_loc ); // Destroy index.
-
 			// Register variable for references checking.
 			var NamesScopeVariable mut names_scope_variable
 			{
@@ -1073,6 +1072,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				REPORT_ERROR( ExpectedConstantExpression, names_scope, indexation_operator.src_loc )
 				return ErrorValue();
 			}
+
+			DestroyUnusedTemporaryVariables( names_scope, function_context, indexation_operator.src_loc ); // Destroy index.
 
 			var u64 mut type_index= ~0u64;
 			var i64 mut type_index_signed(-1);
@@ -1112,8 +1113,6 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			{
 				unsafe{  result.constexpr_value= LLVMConstExtractValue( variable.constexpr_value, u32(type_index), 1u );  }
 			}
-
-			DestroyUnusedTemporaryVariables( names_scope, function_context, indexation_operator.src_loc ); // Destroy index.
 
 			// Register variable for references checking.
 			var NamesScopeVariable mut names_scope_variable
@@ -1432,6 +1431,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	auto value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+	DestroyUnusedTemporaryVariables( names_scope, function_context, unary_minus.src_loc );
 
 	var Variable mut result
 	{
@@ -1456,8 +1456,6 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	unsafe{  if( LLVMIsConstant( result.llvm_value ) == LLVMBool::True ){ result.constexpr_value= result.llvm_value; }  }
-
-	DestroyUnusedTemporaryVariables( names_scope, function_context, unary_minus.src_loc );
 
 	// Register variable for references checking.
 	var NamesScopeVariable mut names_scope_variable
@@ -1489,6 +1487,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	auto value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+	DestroyUnusedTemporaryVariables( names_scope, function_context, logical_not.src_loc );
 
 	var Variable mut result
 	{
@@ -1503,8 +1502,6 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		result.llvm_value= LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "!\0"[0] );
 		if( LLVMIsConstant( result.llvm_value ) == LLVMBool::True ){ result.constexpr_value= result.llvm_value; }
 	}
-
-	DestroyUnusedTemporaryVariables( names_scope, function_context, logical_not.src_loc );
 
 	// Register variable for references checking.
 	var NamesScopeVariable mut names_scope_variable
@@ -1537,6 +1534,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	auto value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+	DestroyUnusedTemporaryVariables( names_scope, function_context, bitwise_not.src_loc );
 
 	var Variable mut result
 	{
@@ -1551,8 +1549,6 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		result.llvm_value= LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "~\0"[0] );
 		if( LLVMIsConstant( result.llvm_value ) == LLVMBool::True ){ result.constexpr_value= result.llvm_value; }
 	}
-
-	DestroyUnusedTemporaryVariables( names_scope, function_context, bitwise_not.src_loc );
 
 	// Register variable for references checking.
 	var NamesScopeVariable mut names_scope_variable
@@ -2244,7 +2240,6 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 	}
 
 	auto l_var_in_register= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
-
 	DestroyUnusedTemporaryVariables( names_scope, function_context, binary_operator.src_loc ); // Destroy right part temporaries.
 
 	var [ ReferencesGraph, 2 ] mut branches_references_graphs;
