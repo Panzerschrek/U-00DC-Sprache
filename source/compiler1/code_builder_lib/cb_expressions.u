@@ -647,6 +647,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return ErrorValue();
 	}
 
+	auto condition_in_register= CreateMoveToLLVMRegisterInstruction( condition, function_context );
+
 	// Know type and value type of each branch.
 	var [ VariableTypeExtened, 2 ] mut branches_types[ { .value_type= zero_init }, { .value_type= zero_init } ];
 	for( auto mut i= 0s; i < 2s; ++i )
@@ -659,6 +661,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			var Variable branch_value= BuildExpressionCodeEnsureVariable( names_scope, function_context, ternary_operator.branches[i].get_ref() );
 			branches_types[i].t= branch_value.t;
 			branches_types[i].value_type= branch_value.value_type;
+			DestroyUnusedTemporaryVariables( names_scope, function_context, ternary_operator.src_loc );
 		}
 		RestoreInstructionsState( function_context, instructions_state );
 	}
@@ -705,7 +708,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		branches_blocks[0]= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
 		branches_blocks[1]= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
 
-		LLVMBuildCondBr( function_context.llvm_ir_builder, CreateMoveToLLVMRegisterInstruction( condition, function_context ), branches_blocks[0], branches_blocks[1] );
+		LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, branches_blocks[0], branches_blocks[1] );
 	}
 
 	var ReferencesGraph references_graph_before= take(function_context.references_graph);
