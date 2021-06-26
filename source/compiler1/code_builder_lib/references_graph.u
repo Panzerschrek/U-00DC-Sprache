@@ -39,42 +39,10 @@ fn ReferencesGraph::RemoveNode( mut this, NodeId node_id )
 	var NodeId inner_reference_node_id= nodes_[node_id].inner_reference_node;
 	RemoveNode( inner_reference_node_id );
 
-	// Collect in/out nodes.
-	var ust::vector</NodeId/> mut in_nodes, mut out_nodes;
-	foreach( &link : links_ )
-	{
-		if( link.src == link.dst ){ continue; } // Self-loop link.
-
-		if( link.src == node_id ) { out_nodes.push_back( link.dst ); }
-		if( link.dst == node_id ) {  in_nodes.push_back( link.src ); }
-	}
-
-	// Remove links.
-	for( auto mut i= 0s; i < links_.size(); )
-	{
-		if( links_[i].src == node_id || links_[i].dst == node_id )
-		{
-			auto back= links_.size() - 1s;
-			links_.swap( i, back );
-			links_.pop_back();
-		}
-		else
-		{
-			++i;
-		}
-	}
+	RemoveNodeLinks( node_id );
 
 	// Erase node.
 	nodes_.erase( node_id );
-
-	// Create new links.
-	foreach( from : in_nodes )
-	{
-		foreach( to : out_nodes )
-		{
-			AddLink( from, to );
-		}
-	}
 }
 
 fn ReferencesGraph::AddLink( mut this, NodeId from, NodeId to )
@@ -135,20 +103,7 @@ fn ReferencesGraph::MoveNode( mut this, NodeId node_id )
 	}
 
 	RemoveNode( inner_reference_node_id );
-
-	for( auto mut i= 0s; i < links_.size(); )
-	{
-		if( links_[i].src == node_id || links_[i].dst == node_id )
-		{
-			auto back= links_.size() - 1s;
-			links_.swap( i, back );
-			links_.pop_back();
-		}
-		else
-		{
-			++i;
-		}
-	}
+	RemoveNodeLinks( node_id );
 }
 
 fn ReferencesGraph::NodeIsMoved( this, NodeId node_id ) : bool
@@ -426,6 +381,43 @@ fn ReferencesGraph::GetAccessibleVariableNodesInnerReferences_r( this, NodeId no
 		if( link.dst == node_id )
 		{
 			GetAccessibleVariableNodesInnerReferences_r( link.src, out_nodes );
+		}
+	}
+}
+
+fn ReferencesGraph::RemoveNodeLinks( mut this, NodeId node_id )
+{
+	// Collect in/out nodes.
+	var ust::vector</NodeId/> mut in_nodes, mut out_nodes;
+	foreach( &link : links_ )
+	{
+		if( link.src == link.dst ){ continue; } // Self-loop link.
+
+		if( link.src == node_id ) { out_nodes.push_back( link.dst ); }
+		if( link.dst == node_id ) {  in_nodes.push_back( link.src ); }
+	}
+
+	// Remove links.
+	for( auto mut i= 0s; i < links_.size(); )
+	{
+		if( links_[i].src == node_id || links_[i].dst == node_id )
+		{
+			auto back= links_.size() - 1s;
+			links_.swap( i, back );
+			links_.pop_back();
+		}
+		else
+		{
+			++i;
+		}
+	}
+
+	// Create new links.
+	foreach( from : in_nodes )
+	{
+		foreach( to : out_nodes )
+		{
+			AddLink( from, to );
 		}
 	}
 }

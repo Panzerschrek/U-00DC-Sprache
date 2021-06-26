@@ -55,6 +55,7 @@ public:
 private:
 	fn GetAllAccessibleVariableNodes_r( this, NodeId node_id, NodesSet &mut out_nodes );
 	fn GetAccessibleVariableNodesInnerReferences_r( this, NodeId node_id, NodesSet &mut out_nodes );
+	fn RemoveNodeLinks( mut this, NodeId node_id );
 
 private:
 	struct Node
