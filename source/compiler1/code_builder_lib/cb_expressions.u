@@ -114,15 +114,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	res.llvm_value= res.constexpr_value;
 
 	// Register variable for references checking.
-	var NamesScopeVariable mut names_scope_variable
-	{
-		.t= res.t,
-		.is_mutable= false,
-		.llvm_value= res.llvm_value,
-		.constexpr_value= res.constexpr_value,
-		.node_id= res.node_id,
-	};
-	function_context.variables_frames.back().push_back( move(names_scope_variable) );
+	RegisterTemporaryVariable( function_context, res );
 
 	return move(res);
 }
@@ -140,15 +132,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	res.llvm_value= res.constexpr_value;
 
 	// Register variable for references checking.
-	var NamesScopeVariable mut names_scope_variable
-	{
-		.t= res.t,
-		.is_mutable= false,
-		.llvm_value= res.llvm_value,
-		.constexpr_value= res.constexpr_value,
-		.node_id= res.node_id,
-	};
-	function_context.variables_frames.back().push_back( move(names_scope_variable) );
+	RegisterTemporaryVariable( function_context, res );
 
 	return move(res);
 }
@@ -550,17 +534,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	function_context.references_graph.MoveNode( variable.node_id );
 
-	{// Register variable for references checking and destruction.
-		var NamesScopeVariable mut names_scope_variable
-		{
-			.t= result.t,
-			.is_mutable= true,
-			.llvm_value= result.llvm_value,
-			.constexpr_value= result.constexpr_value,
-			.node_id= result.node_id,
-		};
-		function_context.variables_frames.back().push_back( move(names_scope_variable) );
-	}
+	// Register variable for references checking and destruction.
+	RegisterTemporaryVariable( function_context, result );
 
 	return move(result);
 }
@@ -623,17 +598,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		BuildEmptyInitializer( names_scope, function_context, names_scope_variable, src_variable_name, take_operator.src_loc );
 	}
 
-	{// Register variable for references checking and destruction.
-		var NamesScopeVariable mut names_scope_variable
-		{
-			.t= result.t,
-			.is_mutable= true,
-			.llvm_value= result.llvm_value,
-			.constexpr_value= result.constexpr_value,
-			.node_id= result.node_id,
-		};
-		function_context.variables_frames.back().push_back( move(names_scope_variable) );
-	}
+	// Register variable for references checking and destruction.
+	RegisterTemporaryVariable( function_context, result );
 
 	return move(result);
 }
@@ -800,17 +766,9 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		result.constexpr_value= select( condition_value != 0u64 ? branches_constexpr_values[0] : branches_constexpr_values[1] );
 	}
 
-	{// Register variable for references checking and destruction.
-		var NamesScopeVariable mut names_scope_variable
-		{
-			.t= result.t,
-			.is_mutable= true,
-			.llvm_value= result.llvm_value,
-			.constexpr_value= result.constexpr_value,
-			.node_id= result.node_id,
-		};
-		function_context.variables_frames.back().push_back( move(names_scope_variable) );
-	}
+	// Register variable for references checking and destruction.
+	RegisterTemporaryVariable( function_context, result );
+
 	return move(result);
 }
 
@@ -853,14 +811,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	};
 
 	// Register variable for references checking.
-	var NamesScopeVariable mut names_scope_variable
-	{
-		.t= res.t,
-		.is_mutable= true,
-		.llvm_value= res.llvm_value,
-		.node_id= res.node_id,
-	};
-	function_context.variables_frames.back().push_back( move(names_scope_variable) );
+	RegisterTemporaryVariable( function_context, res );
 
 	return move(res);
 }
@@ -1047,14 +998,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			}
 
 			// Register variable for references checking.
-			var NamesScopeVariable mut names_scope_variable
-			{
-				.t= result.t,
-				.is_mutable= result.value_type == ValueType::ReferenceMut,
-				.llvm_value= result.llvm_value,
-				.node_id= result.node_id,
-			};
-			function_context.variables_frames.back().push_back( move(names_scope_variable) );
+			RegisterTemporaryVariable( function_context, result );
 
 			return move(result);
 		}
@@ -1119,14 +1063,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			}
 
 			// Register variable for references checking.
-			var NamesScopeVariable mut names_scope_variable
-			{
-				.t= result.t,
-				.is_mutable= result.value_type == ValueType::ReferenceMut,
-				.llvm_value= result.llvm_value,
-				.node_id= result.node_id,
-			};
-			function_context.variables_frames.back().push_back( move(names_scope_variable) );
+			RegisterTemporaryVariable( function_context, result );
 
 			return move(result);
 		}
@@ -1323,15 +1260,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					}
 
 					// Register variable for references checking.
-					var NamesScopeVariable mut names_scope_variable
-					{
-						.t= result.t,
-						.is_mutable= field.is_mutable,
-						.llvm_value= result.llvm_value,
-						.constexpr_value= result.constexpr_value,
-						.node_id= reference_field_node,
-					};
-					function_context.variables_frames.back().push_back( move(names_scope_variable) );
+					RegisterTemporaryVariable( function_context, result );
 				}
 			}
 			else
@@ -1465,15 +1394,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	unsafe{  if( LLVMIsConstant( result.llvm_value ) == LLVMBool::True ){ result.constexpr_value= result.llvm_value; }  }
 
 	// Register variable for references checking.
-	var NamesScopeVariable mut names_scope_variable
-	{
-		.t= result.t,
-		.is_mutable= false,
-		.llvm_value= result.llvm_value,
-		.constexpr_value= result.constexpr_value,
-		.node_id= result.node_id,
-	};
-	function_context.variables_frames.back().push_back( move(names_scope_variable) );
+	RegisterTemporaryVariable( function_context, result );
 
 	return move(result);
 }
@@ -1511,15 +1432,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	// Register variable for references checking.
-	var NamesScopeVariable mut names_scope_variable
-	{
-		.t= result.t,
-		.is_mutable= false,
-		.llvm_value= result.llvm_value,
-		.constexpr_value= result.constexpr_value,
-		.node_id= result.node_id,
-	};
-	function_context.variables_frames.back().push_back( move(names_scope_variable) );
+	RegisterTemporaryVariable( function_context, result );
 
 	return move(result);
 }
@@ -1558,15 +1471,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	// Register variable for references checking.
-	var NamesScopeVariable mut names_scope_variable
-	{
-		.t= result.t,
-		.is_mutable= false,
-		.llvm_value= result.llvm_value,
-		.constexpr_value= result.constexpr_value,
-		.node_id= result.node_id,
-	};
-	function_context.variables_frames.back().push_back( move(names_scope_variable) );
+	RegisterTemporaryVariable( function_context, result );
 
 	return move(result);
 }
@@ -2216,15 +2121,7 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 	res.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, BinaryOperatorToString( operator ) );
 
 	// Register variable for references checking.
-	var NamesScopeVariable mut names_scope_variable
-	{
-		.t= res.t,
-		.is_mutable= true,
-		.llvm_value= res.llvm_value,
-		.constexpr_value= res.constexpr_value,
-		.node_id= res.node_id,
-	};
-	function_context.variables_frames.back().push_back( move(names_scope_variable) );
+	RegisterTemporaryVariable( function_context, res );
 
 	return move(res);
 }
@@ -2329,15 +2226,7 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 	result.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, BinaryOperatorToString( binary_operator.operator ) );
 
 	// Register variable for references checking.
-	var NamesScopeVariable mut names_scope_variable
-	{
-		.t= result.t,
-		.is_mutable= true,
-		.llvm_value= result.llvm_value,
-		.constexpr_value= result.constexpr_value,
-		.node_id= result.node_id,
-	};
-	function_context.variables_frames.back().push_back( move(names_scope_variable) );
+	RegisterTemporaryVariable( function_context, result );
 
 	return move(result);
 }
@@ -2804,15 +2693,7 @@ fn CodeBuilder::DoCallFunction(
 				DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc ); // Destroy source arg, if needed.
 
 				// Register variable for references checking and deestruction.
-				var NamesScopeVariable mut names_scope_variable
-				{
-					.t= arg_converted.t,
-					.is_mutable= true,
-					.llvm_value= arg_converted.llvm_value,
-					.constexpr_value= arg_converted.constexpr_value,
-					.node_id= arg_converted.node_id,
-				};
-				function_context.variables_frames.back().push_back( move(names_scope_variable) );
+				RegisterTemporaryVariable( function_context, arg_converted );
 
 				arg= move(arg_converted);
 			}
@@ -3242,17 +3123,8 @@ fn CodeBuilder::DoCallFunction(
 
 	DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc ); // Destroy temporary args.
 
-	{ 	// Register result variable for destruction and references graph checks.
-		var NamesScopeVariable mut names_scope_variable
-		{
-			.t= result.t,
-			.is_mutable= true,
-			.llvm_value= result.llvm_value,
-			.constexpr_value= result.constexpr_value,
-			.node_id= result.node_id,
-		};
-		function_context.variables_frames.back().push_back( move(names_scope_variable) );
-	}
+	// Register result variable for destruction and references graph checks.
+	RegisterTemporaryVariable( function_context, result );
 
 	return move(result);
 }

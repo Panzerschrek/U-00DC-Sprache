@@ -460,15 +460,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 				}
 
 				// Register variable for references checking.
-				var NamesScopeVariable mut names_scope_variable
-				{
-					.t= result.t,
-					.is_mutable= field.is_mutable,
-					.llvm_value= result.llvm_value,
-					.constexpr_value= result.constexpr_value,
-					.node_id= reference_field_node,
-				};
-				function_context.variables_frames.back().push_back( move(names_scope_variable) );
+				RegisterTemporaryVariable( function_context, result );
 			}
 
 			return move(result);
@@ -1821,6 +1813,19 @@ fn CodeBuilder::DestroyUnusedTemporaryVariables( this, NamesScopePtr& names_scop
 			break;
 		}
 	}
+}
+
+fn CodeBuilder::RegisterTemporaryVariable( FunctionContext& mut function_context, Variable& variable )
+{
+	var NamesScopeVariable mut names_scope_variable
+	{
+		.t= variable.t,
+		.is_mutable= variable.value_type == ValueType::ReferenceMut,
+		.llvm_value= variable.llvm_value,
+		.constexpr_value= variable.constexpr_value,
+		.node_id= variable.node_id,
+	};
+	function_context.variables_frames.back().push_back( move(names_scope_variable) );
 }
 
 fn CodeBuilder::IsReferenceAllowedForReturn( this, FunctionContext& function_context, ReferencesGraph::NodeId variable_node ) : bool
