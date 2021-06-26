@@ -775,3 +775,43 @@ def InnerReferenceMutabilityChanging_Test6():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InnerReferenceMutabilityChanging" )
 	assert( errors_list[0].src_loc.line == 13 )
+
+
+def TemporaryReferenceRemoving_Test0():
+	c_program_text= """
+		fn Pass( i32 &mut x ) : i32& mut;
+		fn Bar( i32 &imut x, i32 &imut y );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			// Temporary mutable reference produced here in call of "Pass", but it is destroyed after binding it to "imut" param and this allow us later take "imut" reference for "x".
+			Bar( Pass(x), x );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TemporaryReferenceRemoving_Test1():
+	c_program_text= """
+		fn Bar( i32 &imut x, i32 &imut y );
+		fn Foo(bool c)
+		{
+			var i32 mut x= 0, mut y= 0;
+			// Temporary mutable reference produced here as result of "select" operator, but it is destroyed after binding it to "imut" param and this allow us later take "imut" reference for "x".
+			Bar( select(c ? x : y), select(c ? cast_imut(y) : cast_imut(x)) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TemporaryReferenceRemoving_Test2():
+	c_program_text= """
+		fn Bar( i32 &imut x, i32 &imut y );
+		fn Foo(bool c)
+		{
+			var [ i32, 2 ] mut arr= zero_init;
+			// Temporary mutable reference produced here as result of "[]" operator, but it is destroyed after binding it to "imut" param and this allow us later take "imut" reference for "arr".
+			Bar( arr[0], cast_imut(arr)[1] );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
