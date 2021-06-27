@@ -40,38 +40,7 @@ void ReferencesGraph::RemoveNode( const ReferencesGraphNodePtr& node )
 	if( const auto inner_reference= GetNodeInnerReference( node ) )
 		RemoveNode( inner_reference );
 
-	// Collect in/out nodes.
-	std::vector<ReferencesGraphNodePtr> in_nodes;
-	std::vector<ReferencesGraphNodePtr> out_nodes;
-	for( const auto& link : links_ )
-	{
-		if( link.src == link.dst ) // Self loop link.
-			continue;
-
-		if( link.src == node )
-			out_nodes.push_back( link.dst );
-		if( link.dst == node )
-			in_nodes.push_back( link.src );
-	}
-
-	// Remove links.
-	for( auto it= links_.begin(); it != links_.end(); )
-	{
-		if( it->src == node || it->dst == node )
-		{
-			it= links_.erase(it);
-		}
-		else
-			++it;
-	}
-
-	// Erase node.
-	nodes_.erase(node);
-
-	// Create new links.
-	for( const ReferencesGraphNodePtr& from : in_nodes )
-		for( const ReferencesGraphNodePtr& to : out_nodes )
-			AddLink( from, to );
+	RemoveNodeLinks( node );
 }
 
 void ReferencesGraph::AddLink( const ReferencesGraphNodePtr& from, const ReferencesGraphNodePtr& to )
@@ -163,16 +132,7 @@ void ReferencesGraph::MoveNode( const ReferencesGraphNodePtr& node )
 		node_state.inner_reference= nullptr;
 	}
 
-	// Remove links.
-	for( auto it= links_.begin(); it != links_.end(); )
-	{
-		if( it->src == node || it->dst == node )
-		{
-			it= links_.erase(it);
-		}
-		else
-			++it;
-	}
+	RemoveNodeLinks( node );
 }
 
 bool ReferencesGraph::NodeMoved( const ReferencesGraphNodePtr& node ) const
@@ -357,6 +317,39 @@ std::vector<CodeBuilderError> ReferencesGraph::CheckWhileBlockVariablesState( co
 		}
 	}
 	return errors;
+}
+
+void ReferencesGraph::RemoveNodeLinks( const ReferencesGraphNodePtr& node )
+{
+	// Collect in/out nodes.
+	std::vector<ReferencesGraphNodePtr> in_nodes;
+	std::vector<ReferencesGraphNodePtr> out_nodes;
+	for( const auto& link : links_ )
+	{
+		if( link.src == link.dst ) // Self loop link.
+			continue;
+
+		if( link.src == node )
+			out_nodes.push_back( link.dst );
+		if( link.dst == node )
+			in_nodes.push_back( link.src );
+	}
+
+	// Remove links.
+	for( auto it= links_.begin(); it != links_.end(); )
+	{
+		if( it->src == node || it->dst == node )
+		{
+			it= links_.erase(it);
+		}
+		else
+			++it;
+	}
+
+	// Create new links.
+	for( const ReferencesGraphNodePtr& from : in_nodes )
+		for( const ReferencesGraphNodePtr& to : out_nodes )
+			AddLink( from, to );
 }
 
 } // namespace CodeBuilderPrivate

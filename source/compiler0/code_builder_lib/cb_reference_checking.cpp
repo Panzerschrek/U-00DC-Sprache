@@ -243,8 +243,11 @@ void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_con
 		bool any_node_moved= false;
 		for( const Variable& variable : temporary_variables_storage.variables_ )
 		{
-			if( !function_context.variables_state.HaveOutgoingLinks( variable.node ) &&
-				!function_context.variables_state.NodeMoved( variable.node ) )
+			// Destroy variables without links.
+			// Destroy all references, because all actual references that holds values should not yet be registered.
+			if( !function_context.variables_state.NodeMoved( variable.node )  &&
+				( variable.node->kind != ReferencesGraphNode::Kind::Variable ||
+					!function_context.variables_state.HaveOutgoingLinks( variable.node ) ) )
 			{
 				if( variable.node->kind == ReferencesGraphNode::Kind::Variable && variable.type.HaveDestructor() )
 					CallDestructor( variable.llvm_value, variable.type, function_context, errors_container, src_loc );

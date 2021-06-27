@@ -83,6 +83,7 @@ private:
 	using LinksSet= std::unordered_set< Link, LinkHasher >;
 
 private:
+	void RemoveNodeLinks( const ReferencesGraphNodePtr& node );
 	void GetAllAccessibleVariableNodes_r( const ReferencesGraphNodePtr& node, NodesSet& visited_nodes_set, NodesSet& result_set ) const;
 	void GetAccessibleVariableNodesInnerReferences_r( const ReferencesGraphNodePtr& node, NodesSet& visited_nodes_set, NodesSet& result_set ) const;
 
