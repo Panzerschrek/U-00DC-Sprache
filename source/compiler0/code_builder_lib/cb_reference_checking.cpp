@@ -233,6 +233,11 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 	}
 }
 
+void CodeBuilder::RegisterTemporaryVariable( FunctionContext& function_context, Variable variable )
+{
+	function_context.stack_variables_stack.back()->RegisterVariable( std::move(variable) );
+}
+
 void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
 	StackVariablesStorage& temporary_variables_storage= *function_context.stack_variables_stack.back();

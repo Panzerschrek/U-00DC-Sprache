@@ -794,6 +794,7 @@ private:
 
 	void SetupReferencesInCopyOrMove( FunctionContext& function_context, const Variable& dst_variable, const Variable& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
+	void RegisterTemporaryVariable( FunctionContext& function_context, Variable variable );
 	void DestroyUnusedTemporaryVariables( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 	ReferencesGraph MergeVariablesStateAfterIf(

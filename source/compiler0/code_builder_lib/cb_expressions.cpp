@@ -201,7 +201,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 		result.llvm_value= function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, index_list );
 
-		function_context.stack_variables_stack.back()->RegisterVariable( result );
+		RegisterTemporaryVariable( function_context, result );
 		return Value( std::move(result), indexation_operator.src_loc_ );
 	}
 	else if( const Tuple* const tuple_type= variable.type.GetTupleType() )
@@ -256,7 +256,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		if( variable.constexpr_value != nullptr )
 			result.constexpr_value= variable.constexpr_value->getAggregateElement( static_cast<unsigned int>(index_value) );
 
-		function_context.stack_variables_stack.back()->RegisterVariable( result );
+		RegisterTemporaryVariable( function_context, result );
 		return Value( std::move(result), indexation_operator.src_loc_ );
 	}
 	else
@@ -404,7 +404,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			else
 			{
 				result.node= function_context.variables_state.AddNode( field->is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut, "this." + member_access_operator.member_name_ );
-				function_context.stack_variables_stack.back()->RegisterVariable( result );
+				RegisterTemporaryVariable( function_context, result );
 				for( const ReferencesGraphNodePtr& inner_reference : inner_nodes )
 				{
 					if( !function_context.variables_state.TryAddLink( inner_reference, result.node ) )
@@ -466,7 +466,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	result.constexpr_value= llvm::dyn_cast<llvm::Constant>(result.llvm_value);
 
 	result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, OverloadedOperatorToString(OverloadedOperator::Sub) );
-	function_context.stack_variables_stack.back()->RegisterVariable( result );
+	RegisterTemporaryVariable( function_context, result );
 	return Value( std::move(result), unary_minus.src_loc_ );
 }
 
@@ -502,7 +502,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	result.llvm_value= function_context.llvm_ir_builder.CreateNot( CreateMoveToLLVMRegisterInstruction( variable, function_context ) );
 	result.constexpr_value= llvm::dyn_cast<llvm::Constant>(result.llvm_value);
 	result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, OverloadedOperatorToString(OverloadedOperator::LogicalNot) );
-	function_context.stack_variables_stack.back()->RegisterVariable( result );
+	RegisterTemporaryVariable( function_context, result );
 	return Value( std::move(result), logical_not.src_loc_ );
 }
 
@@ -535,7 +535,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	result.llvm_value= function_context.llvm_ir_builder.CreateNot( CreateMoveToLLVMRegisterInstruction( variable, function_context ) );
 	result.constexpr_value= llvm::dyn_cast<llvm::Constant>(result.llvm_value);
 	result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, OverloadedOperatorToString(OverloadedOperator::BitwiseNot) );
-	function_context.stack_variables_stack.back()->RegisterVariable( result );
+	RegisterTemporaryVariable( function_context, result );
 	return Value( std::move(result), bitwise_not.src_loc_ );
 }
 
@@ -723,7 +723,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				else
 				{
 					field_variable.node= function_context.variables_state.AddNode( field->is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut, "this." + field->syntax_element->name );
-					function_context.stack_variables_stack.back()->RegisterVariable( field_variable );
+					RegisterTemporaryVariable( function_context, field_variable );
 					for( const ReferencesGraphNodePtr& node : inner_nodes )
 					{
 						if( !function_context.variables_state.TryAddLink( node, field_variable.node ) )
@@ -920,7 +920,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( condition.constexpr_value != nullptr )
 		result.constexpr_value= condition.constexpr_value->getUniqueInteger().getLimitedValue() != 0u ? branches_constexpr_values[0] : branches_constexpr_values[1];
 
-	function_context.stack_variables_stack.back()->RegisterVariable( result );
+	RegisterTemporaryVariable( function_context, result );
 	return Value( result, ternary_operator.src_loc_ );
 }
 
@@ -957,7 +957,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	res.value_type= ValueType::Value;
 	res.location= Variable::Location::LLVMRegister;
 	res.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "ptr" );
-	function_context.stack_variables_stack.back()->RegisterVariable( res );
+	RegisterTemporaryVariable( function_context, res );
 
 	return Value( std::move(res), reference_to_raw_pointer_operator.src_loc_ );
 }
@@ -1041,7 +1041,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	result.llvm_value= result.constexpr_value;
 
 	result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "numeric constant " + std::to_string(numeric_constant.value_double) );
-	function_context.stack_variables_stack.back()->RegisterVariable( result );
+	RegisterTemporaryVariable( function_context, result );
 	return Value( std::move(result), numeric_constant.src_loc_ );
 }
 
@@ -1063,7 +1063,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			llvm::APInt( 1u, uint64_t(boolean_constant.value_) ) );
 
 	result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, Keyword( boolean_constant.value_ ? Keywords::true_ : Keywords::false_ ) );
-	function_context.stack_variables_stack.back()->RegisterVariable( result );
+	RegisterTemporaryVariable( function_context, result );
 	return Value ( std::move(result), boolean_constant.src_loc_ );
 }
 
@@ -1246,7 +1246,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	Variable content= *variable_for_move;
 	content.value_type= ValueType::Value;
 	content.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "_moved_" + node->name );
-	function_context.stack_variables_stack.back()->RegisterVariable( content );
+RegisterTemporaryVariable( function_context, content );
 
 	// We must save inner references of moved variable.
 	// TODO - maybe reset inner node of moved variable?
@@ -1289,7 +1289,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( result.type.GetLLVMType() );
 	result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "_moved_" + expression_result.node->name );
 	result.llvm_value->setName( result.node->name );
-	function_context.stack_variables_stack.back()->RegisterVariable( result );
+	RegisterTemporaryVariable( function_context, result );
 
 	// We must save inner references of moved variable.
 	if( const auto move_variable_inner_node= function_context.variables_state.GetNodeInnerReference( expression_result.node ) )
@@ -2003,7 +2003,7 @@ Value CodeBuilder::BuildBinaryOperator(
 	}
 
 	result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, BinaryOperatorToString(binary_operator) );
-	function_context.stack_variables_stack.back()->RegisterVariable( result );
+	RegisterTemporaryVariable( function_context, result );
 	return Value( std::move(result), src_loc );
 }
 
@@ -2160,7 +2160,7 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 	else{ U_ASSERT(false); }
 
 	result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, BinaryOperatorToString(binary_operator) );
-	function_context.stack_variables_stack.back()->RegisterVariable( result );
+	RegisterTemporaryVariable( function_context, result );
 	return Value( std::move(result), src_loc );
 }
 
@@ -2247,7 +2247,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	}
 
 	result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, BinaryOperatorToString(binary_operator.operator_type_));
-	function_context.stack_variables_stack.back()->RegisterVariable( result );
+	RegisterTemporaryVariable( function_context, result );
 	return Value( std::move(result), src_loc );
 }
 
@@ -2917,7 +2917,7 @@ Value CodeBuilder::DoCallFunction(
 
 	args_nodes.clear();
 	DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), call_src_loc );
-	function_context.stack_variables_stack.back()->RegisterVariable( result );
+	RegisterTemporaryVariable( function_context, result );
 
 	return Value( std::move(result), call_src_loc );
 }
@@ -2945,7 +2945,7 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 
 	const ReferencesGraphNodePtr node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "temp " + type.ToString() );
 	variable.node= node;
-	function_context.stack_variables_stack.back()->RegisterVariable( variable );
+	RegisterTemporaryVariable( function_context, variable );
 
 	// Lock variable, for preventing of temporary destruction.
 	const ReferencesGraphNodeHolder variable_lock(
@@ -2983,7 +2983,7 @@ Variable CodeBuilder::ConvertVariable(
 
 	const ReferencesGraphNodePtr node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "temp " + dst_type.ToString() );
 	result.node= node;
-	function_context.stack_variables_stack.back()->RegisterVariable( result );
+	RegisterTemporaryVariable( function_context, result );
 
 	// Lock variables, for preventing of temporary destruction.
 	const ReferencesGraphNodeHolder src_variable_lock(
