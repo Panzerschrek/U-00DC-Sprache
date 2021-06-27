@@ -214,7 +214,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				halt if(array_size > buff.size());
 				buff.resize( array_size, "\0"c16  );
 
-				constexpr_value= U1_ConstDataArray( element_llvm_type, cast_ref_unsafe</void/>( cast_imut(buff).front_unsafe() ), array_size * typeinfo</char16/>.size_of, array_size );
+				constexpr_value= U1_ConstDataArray( element_llvm_type, cast_ref_unsafe</void/>( buff.front_unsafe() ), array_size * typeinfo</char16/>.size_of, array_size );
 
 				if( string_literals_cache_[1].find( buff ).empty() )
 				{
@@ -236,7 +236,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				halt if(array_size > buff.size());
 				buff.resize( array_size, "\0"c32 );
 
-				constexpr_value= U1_ConstDataArray( element_llvm_type, cast_ref_unsafe</void/>( cast_imut(buff).front_unsafe() ), array_size * typeinfo</char32/>.size_of, array_size );
+				constexpr_value= U1_ConstDataArray( element_llvm_type, cast_ref_unsafe</void/>( buff.front_unsafe() ), array_size * typeinfo</char32/>.size_of, array_size );
 
 				if( string_literals_cache_[2].find( buff ).empty() )
 				{
@@ -2265,11 +2265,13 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 		RestoreInstructionsState( function_context, instructions_state );
 	}
 
+	auto& args_ref= args;
+
 	if( operator == OverloadedOperator::Assign &&
-		cast_imut(args).front().t == cast_imut(args).back().t &&
-		( !cast_imut(args).front().t.GetClassType().empty() || !cast_imut(args).front().t.GetArrayType().empty() || !cast_imut(args).front().t.GetTupleType().empty() ) &&
-		cast_imut(args).front().value_type == ValueType::ReferenceMut &&
-		cast_imut(args).back().value_type == ValueType::Value )
+		args_ref.front().t == args_ref.back().t &&
+		( !args_ref.front().t.GetClassType().empty() || !args_ref.front().t.GetArrayType().empty() || !args_ref.front().t.GetTupleType().empty() ) &&
+		args_ref.front().value_type == ValueType::ReferenceMut &&
+		args_ref.back().value_type == ValueType::Value )
 	{
 		// Do move assign.
 		// TODO - what exact evaluation order should be here?
@@ -2305,12 +2307,12 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 		var Variable mut move_result{ .t= void_type_ };
 		return Value( move(move_result) );
 	}
-	else if( cast_imut(args).front().t == cast_imut(args).back().t && ( !cast_imut(args).front().t.GetArrayType().empty() || !cast_imut(args).front().t.GetTupleType().empty() ) )
+	else if( args_ref.front().t == args_ref.back().t && ( !args_ref.front().t.GetArrayType().empty() || !args_ref.front().t.GetTupleType().empty() ) )
 	{
 		return CallBinaryOperatorForArrayOrTuple( names_scope, function_context, operator, arg_l, arg_r, src_loc );
 	}
 
-	if_var( &overloaded_operator : GetOverloadedOperator( args.range(), operator, names_scope, src_loc ) )
+	if_var( &overloaded_operator : GetOverloadedOperator( args_ref.range(), operator, names_scope, src_loc ) )
 	{
 		if( overloaded_operator.is_deleted )
 		{
@@ -2937,7 +2939,7 @@ fn CodeBuilder::DoCallFunction(
 		// Perform regular call for non-constexpr function or in case of error in constexpr function evaluation.
 		unsafe
 		{
-			auto call_result= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, cast_imut(llvm_args).front_unsafe(), u32(llvm_args.size()), "\0"[0] );
+			auto call_result= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, llvm_args.front_unsafe(), u32(llvm_args.size()), "\0"[0] );
 			if( !is_s_ret ){  result.llvm_value= call_result;  }
 			else if( !function.t.return_value_is_reference && function.t.return_type == void_type_ )
 			{

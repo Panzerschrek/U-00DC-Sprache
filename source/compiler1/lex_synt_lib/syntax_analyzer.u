@@ -3160,8 +3160,8 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 
 		var ust::optional</Lexem/> mut start_lexem, mut end_lexem;
 
-		if( !cast_imut(match_elements)[i].sub_elements.get_ref().empty() &&
-			 cast_imut(match_elements)[i].sub_elements.get_ref().front().kind == Macro::MatchElementKind::Lexem )
+		if( !match_elements[i].sub_elements.get_ref().empty() &&
+			 match_elements[i].sub_elements.get_ref().front().kind == Macro::MatchElementKind::Lexem )
 		{
 			start_lexem= match_elements[i].sub_elements.get_ref().front().lexem;
 		}

@@ -364,7 +364,7 @@ fn CodeBuilder::PrepareClassVirtualTableType( mut this, ClassTypePtr& class_type
 
 		// TODO - maybe create unnamed struct (like a tuple)?
 		class_type.virtual_table_llvm_type= LLVMStructCreateNamed( llvm_context_, virtual_table_type_name.front() );
-		LLVMStructSetBody( class_type.virtual_table_llvm_type, cast_imut(virtual_table_struct_fields).front(), u32(virtual_table_struct_fields.size()), LLVMBool::False );
+		LLVMStructSetBody( class_type.virtual_table_llvm_type, virtual_table_struct_fields.front(), u32(virtual_table_struct_fields.size()), LLVMBool::False );
 	}
 }
 
@@ -466,9 +466,9 @@ fn CodeBuilder::BuildClassVirtualTable_r( this, ClassType& ancestor_class, Class
 			}
 		}
 
-		initializer_values.push_back( LLVMConstArray( fn_type_ptr, cast_imut(function_pointers_initializer_values).front_unsafe(), u32(function_pointers_initializer_values.size()) ) );
+		initializer_values.push_back( LLVMConstArray( fn_type_ptr, function_pointers_initializer_values.front_unsafe(), u32(function_pointers_initializer_values.size()) ) );
 
-		return LLVMConstNamedStruct( ancestor_class.virtual_table_llvm_type, cast_imut(initializer_values).front(), u32(initializer_values.size()) );
+		return LLVMConstNamedStruct( ancestor_class.virtual_table_llvm_type, initializer_values.front(), u32(initializer_values.size()) );
 	}
 }
 

@@ -285,7 +285,7 @@ fn ReferencesGraph::MergeReferencesGraphsAfterConditionalBranches( ust::array_vi
 	}
 
 	// Check mutable reference count correctness.
-	foreach( &node_pair : cast_imut(result).nodes_ )
+	foreach( &node_pair : result.nodes_ )
 	{
 		var size_type mut mutable_links_count= 0s, mut immutable_links_count= 0s;
 		foreach( &link : result.links_ )

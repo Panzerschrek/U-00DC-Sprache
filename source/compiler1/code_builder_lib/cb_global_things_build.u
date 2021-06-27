@@ -589,7 +589,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			// Check opaque before set body for cases of errors (class body duplication).
 			if( LLVMIsOpaqueStruct( class_.llvm_type ) == LLVMBool::True )
 			{
-				LLVMStructSetBody( class_.llvm_type, cast_imut(fields_llvm_types).front_unsafe(), u32(fields_llvm_types.size()), LLVMBool::False );
+				LLVMStructSetBody( class_.llvm_type, fields_llvm_types.front_unsafe(), u32(fields_llvm_types.size()), LLVMBool::False );
 			}
 		}
 	}
@@ -834,7 +834,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				if( dst_members_.GetThisScopeValue( member_value.key() ).empty() )
 				{
 					// Just add new functions set.
-					dst_members_.AddName( cast_imut(member_value).key(), cast_imut(member_value).value() );
+					dst_members_.AddName( member_value.key(), member_value.value() );
 					continue;
 				}
 
