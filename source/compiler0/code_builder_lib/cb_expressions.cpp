@@ -395,12 +395,21 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 		if( variable.node != nullptr )
 		{
-			result.node= function_context.variables_state.AddNode( field->is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut, "this." + member_access_operator.member_name_ );
-			function_context.stack_variables_stack.back()->RegisterVariable( result );
-			for( const ReferencesGraphNodePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( variable.node ) )
+			const auto inner_nodes= function_context.variables_state.GetAccessibleVariableNodesInnerReferences( variable.node );
+			if( inner_nodes.size() == 1 )
 			{
-				if( !function_context.variables_state.TryAddLink( inner_reference, result.node ) )
-					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), member_access_operator.src_loc_, inner_reference->name );
+				// For cases with single inner node just return it. This hels preventing some cases of false "ReferenceProtectionError".
+				result.node= *inner_nodes.begin();
+			}
+			else
+			{
+				result.node= function_context.variables_state.AddNode( field->is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut, "this." + member_access_operator.member_name_ );
+				function_context.stack_variables_stack.back()->RegisterVariable( result );
+				for( const ReferencesGraphNodePtr& inner_reference : inner_nodes )
+				{
+					if( !function_context.variables_state.TryAddLink( inner_reference, result.node ) )
+						REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), member_access_operator.src_loc_, inner_reference->name );
+				}
 			}
 		}
 	}
@@ -705,12 +714,21 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 			if( function_context.this_->node != nullptr )
 			{
-				field_variable.node= function_context.variables_state.AddNode( field->is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut, "this." + field->syntax_element->name );
-				function_context.stack_variables_stack.back()->RegisterVariable( field_variable );
-				for( const ReferencesGraphNodePtr& node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( function_context.this_->node ) )
+				const auto inner_nodes= function_context.variables_state.GetAccessibleVariableNodesInnerReferences( function_context.this_->node );
+				if( inner_nodes.size() == 1 )
 				{
-					if( !function_context.variables_state.TryAddLink( node, field_variable.node ) )
-						REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), named_operand.src_loc_, node->name );
+					// For cases with single inner node just return it. This hels preventing some cases of false "ReferenceProtectionError".
+					field_variable.node= *inner_nodes.begin();
+				}
+				else
+				{
+					field_variable.node= function_context.variables_state.AddNode( field->is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut, "this." + field->syntax_element->name );
+					function_context.stack_variables_stack.back()->RegisterVariable( field_variable );
+					for( const ReferencesGraphNodePtr& node : inner_nodes )
+					{
+						if( !function_context.variables_state.TryAddLink( node, field_variable.node ) )
+							REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), named_operand.src_loc_, node->name );
+					}
 				}
 			}
 		}

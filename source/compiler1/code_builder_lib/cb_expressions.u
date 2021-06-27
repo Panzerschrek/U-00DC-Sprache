@@ -1243,24 +1243,34 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 				if( variable.node_id != ReferencesGraph::c_empty_node_id )
 				{
-					var ust::string8 mut node_name= function_context.references_graph.GetNodeName( variable.node_id );
-					node_name+= ".";
-					node_name+= field.syntax_element.get_ref().name;
-					auto reference_field_node= function_context.references_graph.AddNode(
-						select( field.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
-						move(node_name) );
-					result.node_id= reference_field_node;
+					auto inner_nodes = function_context.references_graph.GetAccessibleVariableNodesInnerReferences( variable.node_id );
 
-					foreach( &inner_node : function_context.references_graph.GetAccessibleVariableNodesInnerReferences( variable.node_id ) )
+					if( inner_nodes.size() == 1s )
 					{
-						if( !function_context.references_graph.TryAddLink( inner_node, reference_field_node ) )
-						{
-							REPORT_ERROR( ReferenceProtectionError, names_scope, member_access_operator.src_loc, function_context.references_graph.GetNodeName( inner_node ) )
-						}
+						// For cases with single inner node just return it. This hels preventing some cases of false "ReferenceProtectionError".
+						result.node_id= inner_nodes.range().front();
 					}
+					else
+					{
+						var ust::string8 mut node_name= function_context.references_graph.GetNodeName( variable.node_id );
+						node_name+= ".";
+						node_name+= field.syntax_element.get_ref().name;
+						auto reference_field_node= function_context.references_graph.AddNode(
+							select( field.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
+							move(node_name) );
+						result.node_id= reference_field_node;
 
-					// Register variable for references checking.
-					RegisterTemporaryVariable( function_context, result );
+						foreach( &inner_node : inner_nodes )
+						{
+							if( !function_context.references_graph.TryAddLink( inner_node, reference_field_node ) )
+							{
+								REPORT_ERROR( ReferenceProtectionError, names_scope, member_access_operator.src_loc, function_context.references_graph.GetNodeName( inner_node ) )
+							}
+						}
+
+						// Register variable for references checking.
+						RegisterTemporaryVariable( function_context, result );
+					}
 				}
 			}
 			else

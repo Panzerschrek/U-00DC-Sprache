@@ -815,3 +815,54 @@ def TemporaryReferenceRemoving_Test2():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ReferenceFieldNode_Test0():
+	c_program_text= """
+		struct S { i32 &mut r; }
+		fn Bar( i32 &imut x, i32 &imut y );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .r= x };
+			// Temporary reference is not produced here for member access operator for reference, because only one inner reference node is accessible here.
+			Bar( s.r, s.r );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ReferenceFieldNode_Test1():
+	c_program_text= """
+		fn Bar( i32 &imut x, i32 &imut y );
+		struct S
+		{
+			i32 &mut r;
+
+			fn Foo( this )
+			{
+				// Temporary reference is not produced here for member access operator for reference, because only one inner reference node is accessible here.
+				Bar( r, r );
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ReferenceFieldNode_Test2():
+	c_program_text= """
+		struct S { i32 &mut r; }
+		fn Bar( i32 &imut x, i32 &imut y );
+		fn Foo(bool cond)
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S s0{ .r= x }, s1 { .r= y };
+			auto& s_ref= select( cond ? s0 : s1 );
+			// Temporary mutable reference is produced here for member access operator for reference. Because of that we get error when creating reference node while accessing ".r" second time.
+			Bar( s_ref.r, s_ref.r );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].src_loc.line == 10 )
