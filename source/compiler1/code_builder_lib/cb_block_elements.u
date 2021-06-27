@@ -527,7 +527,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 		if_var( &conversion_constructor_ : GetConversionConstructor( names_scope, ret_type, expr.t, return_operator.src_loc ) )
 		{
-			auto return_node= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "return value" );
+			auto return_node= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "return value lock" );
 
 			{
 				// Create temp variables storage for preventing of destruction of "expr".
@@ -988,7 +988,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	if( sequence_expression.node_id != ReferencesGraph::c_empty_node_id )
 	{
 		auto is_mutable= range_for_operator.mutability_modifier == Synt::MutabilityModifier::Mutable;
-		var ust::string8 mut node_name= function_context.references_graph.GetNodeName( sequence_expression.node_id ) + " lock";
+		var ust::string8 mut node_name= function_context.references_graph.GetNodeName( sequence_expression.node_id ) + " sequence lock";
 		sequence_lock_node= function_context.references_graph.AddNode(
 			select( is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
 			move(node_name) );

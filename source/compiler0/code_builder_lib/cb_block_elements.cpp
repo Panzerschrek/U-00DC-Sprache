@@ -455,7 +455,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			ReferencesGraphNodeHolder return_value_lock(
 				function_context,
 				function_context.function_type.return_value_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
-				"ret result" );
+				"return value lock" );
 			if( expression_result.node != nullptr )
 				function_context.variables_state.AddLink( expression_result.node, return_value_lock.Node() );
 
@@ -572,7 +572,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		sequence_lock.emplace(
 			function_context,
 			sequence_expression.value_type == ValueType::Reference ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
-			sequence_expression.node->name + " seequence lock" );
+			sequence_expression.node->name + " sequence lock" );
 
 	if( const Tuple* const tuple_type= sequence_expression.type.GetTupleType() )
 	{

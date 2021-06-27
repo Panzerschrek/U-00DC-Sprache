@@ -1334,7 +1334,7 @@ Type CodeBuilder::BuildFuncCode(
 		if (arg.type.ReferencesTagsCount() > 0u )
 		{
 			// Create inner node + root variable.
-			const auto accesible_variable= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable , arg_name + " inner variable" );
+			const auto accesible_variable= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable , arg_name + " referenced variable" );
 
 			const auto inner_reference= function_context.variables_state.CreateNodeInnerReference(
 				var_node,

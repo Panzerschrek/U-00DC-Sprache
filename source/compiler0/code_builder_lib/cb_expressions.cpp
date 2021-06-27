@@ -111,11 +111,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 
 	// Lock variable. We must prevent modification of this variable in index calcualtion.
-	// You SHOULD register variable in case if you call "TakeNode"
+	// You SHOULD register variable in case if you call "TakeNode".
 	ReferencesGraphNodeHolder variable_lock(
 		function_context,
 		variable.value_type == ValueType::Reference ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
-		"array lock" );
+		"[]" );
 	if( variable.node != nullptr && !function_context.variables_state.TryAddLink( variable.node, variable_lock.Node() ) )
 		REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), indexation_operator.src_loc_, variable.node->name );
 
@@ -403,7 +403,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			}
 			else
 			{
-				result.node= function_context.variables_state.AddNode( field->is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut, "this." + member_access_operator.member_name_ );
+				result.node= function_context.variables_state.AddNode( field->is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut, variable.node->name + "." + member_access_operator.member_name_ );
 				RegisterTemporaryVariable( function_context, result );
 				for( const ReferencesGraphNodePtr& inner_reference : inner_nodes )
 				{
@@ -825,7 +825,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		node_kind= ReferencesGraphNode::Kind::ReferenceMut;
 	}
 	// Do not forget to remove node in case of error-return!!!
-	result.node= function_context.variables_state.AddNode( node_kind, "select_result" );
+	result.node= function_context.variables_state.AddNode( node_kind, Keyword( Keywords::select_ ) );
 
 	llvm::BasicBlock* const result_block= llvm::BasicBlock::Create( llvm_context_ );
 	llvm::BasicBlock* const branches_basic_blocks[2]{ llvm::BasicBlock::Create( llvm_context_ ), llvm::BasicBlock::Create( llvm_context_ ) };
@@ -1463,7 +1463,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			r_var_lock.emplace(
 				function_context,
 				ReferencesGraphNode::Kind::ReferenceImut,
-				"lock " + r_var_real.node->name );
+				r_var_real.node->name + " lock" );
 			if( !function_context.variables_state.TryAddLink( r_var_real.node, r_var_lock->Node() ) )
 				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, r_var_real.node->name );
 		}
@@ -1532,7 +1532,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 			r_var_lock.emplace(
 				function_context,
 				ReferencesGraphNode::Kind::ReferenceImut,
-				"lock " + r_var.node->name );
+				r_var.node->name + " lock" );
 			if( !function_context.variables_state.TryAddLink( r_var.node, r_var_lock->Node() ) )
 				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, r_var.node->name );
 		}
@@ -2561,7 +2561,7 @@ Value CodeBuilder::DoCallFunction(
 			args_nodes.emplace_back(
 				function_context,
 				arg.is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
-				"reference_arg_" + std::to_string(i) );
+				"reference_arg " + std::to_string(i) );
 
 			if( expr.node != nullptr && !function_context.variables_state.TryAddLink( expr.node, args_nodes.back().Node() ) )
 				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, expr.node->name );
@@ -2582,7 +2582,7 @@ Value CodeBuilder::DoCallFunction(
 						locked_args_inner_references.emplace_back(
 							function_context,
 							is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
-							"arg_lock_" + std::to_string(i) );
+							"inner reference lock " + std::to_string(i) );
 
 						for( const ReferencesGraphNodePtr& inner_reference : inner_references )
 						{

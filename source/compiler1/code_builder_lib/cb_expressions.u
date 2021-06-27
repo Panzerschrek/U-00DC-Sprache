@@ -92,7 +92,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.t= Type( FundamentalType( t, GetFundamentalLLVMType(t) ) ),
 		.location= Variable::Location::LLVMRegister,
 		.value_type= ValueType::Value,
-		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "numeric constant" ),
+		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "numeric constant " ),
 	};
 
 	unsafe
@@ -125,7 +125,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	{
 		.t= bool_type_,
 		.location= Variable::Location::LLVMRegister,
-		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "boolean constant" ),
+		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, KeywordToString( select( boolean_constant.value ? Keyword::true_ : Keyword::false_ ) ) ),
 	};
 
 	unsafe{ res.constexpr_value= LLVMConstInt( res.t.GetLLVMType(), select( boolean_constant.value ? 1u64 : 0u64 ), LLVMBool::True ); }
@@ -665,7 +665,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	// Do not forget to remove this node in case of error-return!!!
-	result.node_id= function_context.references_graph.AddNode( node_kind, "select result" );
+	result.node_id= function_context.references_graph.AddNode( node_kind, KeywordToString( Keyword::select_ ) );
 
 	var LLVMBasicBlockRef mut result_block= zero_init;
 	var [ LLVMBasicBlockRef, 2 ] mut branches_blocks= zero_init, mut branches_end_blocks= zero_init;
@@ -807,7 +807,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.location= Variable::Location::LLVMRegister,
 		.value_type= ValueType::Value,
 		.llvm_value= v.llvm_value, // llvm value of reference is actually value of pointer
-		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "$" )
+		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "ptr" )
 	};
 
 	// Register variable for references checking.
@@ -2661,6 +2661,8 @@ fn CodeBuilder::DoCallFunction(
 		auto arg_n= select( args_evaluation_order == ArgsEvaluationOrder::Direct ? i : total_args - i - 1s );
 		auto &mut llvm_arg= llvm_args[ first_llvm_arg_number + arg_n ];
 
+		var ust::string8 arg_number_str= ust::to_string8(arg_n);
+
 		auto& param= function_type.params[arg_n];
 		var Type& expected_arg_type= param.t;
 		var Variable mut arg=
@@ -2678,7 +2680,7 @@ fn CodeBuilder::DoCallFunction(
 					.t= expected_arg_type,
 					.value_type= ValueType::ReferenceMut,
 					.location= Variable::Location::Pointer,
-					.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "arg converted" ),
+					.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "converted arg " + arg_number_str ),
 				};
 				unsafe{  arg_converted.llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, arg_converted.t.GetLLVMType(), "\0"[0] );  }
 
@@ -2744,7 +2746,7 @@ fn CodeBuilder::DoCallFunction(
 			{
 				auto arg_node_id= function_context.references_graph.AddNode(
 					select( param.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
-					"_arg_" + ust::to_string8(arg_n) );
+					"reference arg " + arg_number_str );
 				args_nodes[arg_n]= arg_node_id;
 				if( !function_context.references_graph.TryAddLink( arg.node_id, arg_node_id ) )
 				{
@@ -2762,7 +2764,7 @@ fn CodeBuilder::DoCallFunction(
 
 					auto own_reference_node= function_context.references_graph.AddNode(
 						select( is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
-						"arg" + ust::to_string8(arg_n) + "lock" );
+						"inner reference lock " + arg_number_str );
 					reference_args_inner_nodes[arg_n]= own_reference_node;
 
 					foreach( inner_reference : inner_references )
@@ -2805,7 +2807,7 @@ fn CodeBuilder::DoCallFunction(
 
 			if( arg.node_id != ReferencesGraph::c_empty_node_id )
 			{
-				auto arg_node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "_arg_" + ust::to_string8(arg_n) );
+				auto arg_node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "value arg " + arg_number_str );
 				args_nodes[arg_n]= arg_node_id;
 
 				if( expected_arg_type.GetInnerReferenceKind() != InnerReferenceKind::None )
@@ -3167,7 +3169,7 @@ fn CodeBuilder::BuildTempVariableConstruction(
 		.value_type= ValueType::Value,
 	};
 
-	auto name= "_temp_" + t.ToString() + "\0";
+	auto name= "temp " + t.ToString() + "\0";
 	unsafe{  result.llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, t.GetLLVMType(), name.front() );  }
 
 	result.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, name );
