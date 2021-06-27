@@ -154,6 +154,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			}
 		}
 
+		// Make first index = 0 for array to pointer conversion.
+		llvm::Value* index_list[2];
+		index_list[0]= GetZeroGEPIndex();
+		index_list[1]= CreateMoveToLLVMRegisterInstruction( index, function_context );
+
+		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), indexation_operator.src_loc_ ); // Destroy temporaries of index expression.
+
 		Variable result;
 		result.location= Variable::Location::Pointer;
 		result.value_type= variable.value_type == ValueType::Reference ? ValueType::Reference : ValueType::ConstReference;
@@ -162,13 +169,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 		if( variable.constexpr_value != nullptr && index.constexpr_value != nullptr )
 			result.constexpr_value= variable.constexpr_value->getAggregateElement( index.constexpr_value );
-
-		// Make first index = 0 for array to pointer conversion.
-		llvm::Value* index_list[2];
-		index_list[0]= GetZeroGEPIndex();
-		index_list[1]= CreateMoveToLLVMRegisterInstruction( index, function_context );
-
-		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), indexation_operator.src_loc_ ); // Destroy temporaries of index expression.
 
 		// If index is not constant - check bounds.
 		if( index.constexpr_value == nullptr )
@@ -199,8 +199,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
 		}
 
-		result.llvm_value=
-			function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, index_list );
+		result.llvm_value= function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, index_list );
 
 		function_context.stack_variables_stack.back()->RegisterVariable( result );
 		return Value( std::move(result), indexation_operator.src_loc_ );
@@ -252,8 +251,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		result.value_type= variable.value_type == ValueType::Reference ? ValueType::Reference : ValueType::ConstReference;
 		result.node= variable_lock.TakeNode();
 		result.type= tuple_type->elements[static_cast<size_t>(index_value)];
-		result.llvm_value=
-			function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex(index_value) } );
+		result.llvm_value= function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex(index_value) } );
 
 		if( variable.constexpr_value != nullptr )
 			result.constexpr_value= variable.constexpr_value->getAggregateElement( static_cast<unsigned int>(index_value) );
@@ -2518,15 +2516,6 @@ Value CodeBuilder::DoCallFunction(
 					llvm_args[j]= expr.llvm_value;
 				else
 					llvm_args[j]= CreateReferenceCast( expr.llvm_value, expr.type, arg.type, function_context );
-
-				// Lock references.
-				locked_args_references.emplace_back(
-					function_context,
-					ReferencesGraphNode::Kind::ReferenceMut,
-					"reference_arg_" + std::to_string(i) );
-
-				if( expr.node != nullptr && !function_context.variables_state.TryAddLink( expr.node, locked_args_references.back().Node() ) )
-					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, expr.node->name );
 			}
 			else
 			{
@@ -2554,16 +2543,16 @@ Value CodeBuilder::DoCallFunction(
 						llvm_args[j]= expr.llvm_value;
 					}
 				}
-
-				// Lock references.
-				locked_args_references.emplace_back(
-					function_context,
-					ReferencesGraphNode::Kind::ReferenceImut,
-					"reference_arg_" + std::to_string(i) );
-
-				if( expr.node != nullptr && !function_context.variables_state.TryAddLink( expr.node, locked_args_references.back().Node() ) )
-					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, expr.node->name );
 			}
+
+			// Lock references.
+			locked_args_references.emplace_back(
+				function_context,
+				arg.is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
+				"reference_arg_" + std::to_string(i) );
+
+			if( expr.node != nullptr && !function_context.variables_state.TryAddLink( expr.node, locked_args_references.back().Node() ) )
+				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, expr.node->name );
 
 			// Lock inner references.
 			if( expr.node != nullptr )

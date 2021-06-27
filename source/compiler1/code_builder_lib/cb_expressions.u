@@ -462,7 +462,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.t= v.t,
 		.value_type= ValueType::ReferenceMut,
 		.location= Variable::Location::Pointer,
-		.node_id= v.node_id,
+		.node_id= v.node_id, // TODO - is it safe to re-use immutable node here?
 	};
 
 	// TODO - maybe forbid reference casting for ValueType::Value?
