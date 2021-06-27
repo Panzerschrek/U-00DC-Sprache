@@ -1246,7 +1246,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	Variable content= *variable_for_move;
 	content.value_type= ValueType::Value;
 	content.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "_moved_" + node->name );
-RegisterTemporaryVariable( function_context, content );
 
 	// We must save inner references of moved variable.
 	// TODO - maybe reset inner node of moved variable?
@@ -1257,6 +1256,7 @@ RegisterTemporaryVariable( function_context, content );
 	}
 	function_context.variables_state.MoveNode( node );
 
+	RegisterTemporaryVariable( function_context, content );
 	return Value( std::move(content), move_operator.src_loc_ );
 }
 
@@ -1289,9 +1289,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( result.type.GetLLVMType() );
 	result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "_moved_" + expression_result.node->name );
 	result.llvm_value->setName( result.node->name );
-	RegisterTemporaryVariable( function_context, result );
 
 	// We must save inner references of moved variable.
+	// TODO - this is wrong! We should call here "SetupReferencesInCopyOrMove"!!!
 	if( const auto move_variable_inner_node= function_context.variables_state.GetNodeInnerReference( expression_result.node ) )
 	{
 		const auto inner_node= function_context.variables_state.CreateNodeInnerReference( result.node, move_variable_inner_node->kind );
@@ -1301,16 +1301,10 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	// Copy content to new variable.
 	CopyBytes( expression_result.llvm_value, result.llvm_value, result.type, function_context );
 
-	// Lock variable, for preventing of result destruction during re-initialization of source variable.
-	const ReferencesGraphNodeHolder variable_lock(
-		function_context,
-		ReferencesGraphNode::Kind::ReferenceMut,
-		result.node->name + " temp variable lock" );
-	function_context.variables_state.AddLink( result.node, variable_lock.Node() );
-
 	// Construct empty value in old place.
 	ApplyEmptyInitializer( expression_result.node->name, take_operator.src_loc_, expression_result, names, function_context );
 
+	RegisterTemporaryVariable( function_context, result );
 	return Value( std::move(result), take_operator.src_loc_ );
 }
 
@@ -2942,22 +2936,11 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	variable.location= Variable::Location::Pointer;
 	variable.value_type= ValueType::Reference;
 	variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( type.GetLLVMType() );
-
-	const ReferencesGraphNodePtr node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "temp " + type.ToString() );
-	variable.node= node;
-	RegisterTemporaryVariable( function_context, variable );
-
-	// Lock variable, for preventing of temporary destruction.
-	const ReferencesGraphNodeHolder variable_lock(
-		function_context,
-		ReferencesGraphNode::Kind::ReferenceMut,
-		" temp variable lock" );
-	function_context.variables_state.AddLink( node, variable_lock.Node() );
-	variable.node= variable_lock.Node(); // Use lock node for constructor call.
-
+	variable.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "temp " + type.ToString() );
 	variable.constexpr_value= ApplyConstructorInitializer( variable, synt_args, src_loc, names, function_context );
 	variable.value_type= ValueType::Value; // Make value after construction
-	variable.node= node; // Return actual new variable node.
+	RegisterTemporaryVariable( function_context, variable );
+
 	return variable;
 }
 
@@ -2980,25 +2963,16 @@ Variable CodeBuilder::ConvertVariable(
 	result.location= Variable::Location::Pointer;
 	result.value_type= ValueType::Reference;
 	result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( dst_type.GetLLVMType() );
+	result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "temp " + dst_type.ToString() );
 
-	const ReferencesGraphNodePtr node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "temp " + dst_type.ToString() );
-	result.node= node;
-	RegisterTemporaryVariable( function_context, result );
-
-	// Lock variables, for preventing of temporary destruction.
+	// Lock src variable, for preventing of temporary destruction.
+	// TODO - this is wrong! We probably should check for "ReferenceProtectionError" and pass "src_variable_lock.Node()" to conversion constructor call!
 	const ReferencesGraphNodeHolder src_variable_lock(
 		function_context,
 		ReferencesGraphNode::Kind::ReferenceImut,
 		variable.type.ToString() + " variable lock" );
 	if( variable.node != nullptr )
 		function_context.variables_state.AddLink( variable.node, src_variable_lock.Node() );
-
-	const ReferencesGraphNodeHolder dst_variable_lock(
-		function_context,
-		ReferencesGraphNode::Kind::ReferenceMut,
-		dst_type.ToString() + " variable lock" );
-	function_context.variables_state.AddLink( node, dst_variable_lock.Node() );
-	result.node= dst_variable_lock.Node(); // Use lock node for constructor call.
 
 	DoCallFunction(
 		conversion_constructor.llvm_function,
@@ -3011,8 +2985,8 @@ Variable CodeBuilder::ConvertVariable(
 		function_context,
 		false );
 
-	result.node= node; // Return actual new variable node.
 	result.value_type= ValueType::Value; // Make value after construction
+	RegisterTemporaryVariable( function_context, result );
 	return result;
 }
 
