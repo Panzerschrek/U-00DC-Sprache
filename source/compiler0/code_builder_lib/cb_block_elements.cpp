@@ -441,10 +441,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		{ // Lock references to return value variables.
 			ReferencesGraphNodeHolder return_value_lock(
-				std::make_shared<ReferencesGraphNode>(
-					"ret result",
-					function_context.function_type.return_value_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut ),
-				function_context );
+				function_context,
+				function_context.function_type.return_value_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
+				"ret result" );
 			if( expression_result.node != nullptr )
 				function_context.variables_state.AddLink( expression_result.node, return_value_lock.Node() );
 
@@ -559,10 +558,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	std::optional<ReferencesGraphNodeHolder> sequence_lock;
 	if( sequence_expression.node != nullptr )
 		sequence_lock.emplace(
-			std::make_shared<ReferencesGraphNode>(
-				sequence_expression.node->name + " seequence lock",
-				sequence_expression.value_type == ValueType::Reference ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut ),
-			function_context );
+			function_context,
+			sequence_expression.value_type == ValueType::Reference ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
+			sequence_expression.node->name + " seequence lock" );
 
 	if( const Tuple* const tuple_type= sequence_expression.type.GetTupleType() )
 	{
@@ -1056,8 +1054,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	{ // Destroy unused temporaries after variable initialization.
 		const ReferencesGraphNodeHolder variable_lock(
-			std::make_shared<ReferencesGraphNode>( "lock " + variable.node->name, ReferencesGraphNode::Kind::ReferenceImut ),
-			function_context );
+			function_context,
+			ReferencesGraphNode::Kind::ReferenceImut,
+			"lock " + variable.node->name );
 		function_context.variables_state.AddLink( variable.node, variable_lock.Node() );
 		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), with_operator.src_loc_ );
 	}

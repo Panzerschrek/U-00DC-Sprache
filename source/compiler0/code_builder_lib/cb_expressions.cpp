@@ -113,8 +113,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	{
 		// Lock array. We must prevent modification of array in index calcualtion.
 		const ReferencesGraphNodeHolder array_lock(
-			std::make_shared<ReferencesGraphNode>( "array lock", variable.value_type == ValueType::Reference ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut ),
-			function_context );
+			function_context,
+			variable.value_type == ValueType::Reference ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
+			"array lock" );
 		if( variable.node != nullptr && !function_context.variables_state.TryAddLink( variable.node, array_lock.Node() ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), indexation_operator.src_loc_, variable.node->name );
 
@@ -1284,8 +1285,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	// Lock variable, for preventing of result destruction during re-initialization of source variable.
 	const ReferencesGraphNodeHolder variable_lock(
-		std::make_shared<ReferencesGraphNode>( result.node->name + " temp variable lock", ReferencesGraphNode::Kind::ReferenceMut ),
-		function_context );
+		function_context,
+		ReferencesGraphNode::Kind::ReferenceMut,
+		result.node->name + " temp variable lock" );
 	function_context.variables_state.AddLink( result.node, variable_lock.Node() );
 
 	// Construct empty value in old place.
@@ -1447,8 +1449,9 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		if( r_var_real.node != nullptr )
 		{
 			r_var_lock.emplace(
-				std::make_shared<ReferencesGraphNode>( "lock " + r_var_real.node->name, ReferencesGraphNode::Kind::ReferenceImut ),
-				function_context );
+				function_context,
+				ReferencesGraphNode::Kind::ReferenceImut,
+				"lock " + r_var_real.node->name );
 			if( !function_context.variables_state.TryAddLink( r_var_real.node, r_var_lock->Node() ) )
 				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, r_var_real.node->name );
 		}
@@ -1515,8 +1518,9 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		if( r_var.node != nullptr )
 		{
 			r_var_lock.emplace(
-				std::make_shared<ReferencesGraphNode>( "lock " + r_var.node->name, ReferencesGraphNode::Kind::ReferenceImut ),
-				function_context );
+				function_context,
+				ReferencesGraphNode::Kind::ReferenceImut,
+				"lock " + r_var.node->name );
 			if( !function_context.variables_state.TryAddLink( r_var.node, r_var_lock->Node() ) )
 				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, r_var.node->name );
 		}
@@ -2515,8 +2519,9 @@ Value CodeBuilder::DoCallFunction(
 
 				// Lock references.
 				locked_args_references.emplace_back(
-					std::make_shared<ReferencesGraphNode>( "reference_arg_" + std::to_string(i), ReferencesGraphNode::Kind::ReferenceMut ),
-					function_context );
+					function_context,
+					ReferencesGraphNode::Kind::ReferenceMut,
+					"reference_arg_" + std::to_string(i) );
 
 				if( expr.node != nullptr && !function_context.variables_state.TryAddLink( expr.node, locked_args_references.back().Node() ) )
 					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, expr.node->name );
@@ -2550,8 +2555,10 @@ Value CodeBuilder::DoCallFunction(
 
 				// Lock references.
 				locked_args_references.emplace_back(
-					std::make_shared<ReferencesGraphNode>("reference_arg_" + std::to_string(i), ReferencesGraphNode::Kind::ReferenceImut ),
-					function_context );
+					function_context,
+					ReferencesGraphNode::Kind::ReferenceImut,
+					"reference_arg_" + std::to_string(i) );
+
 				if( expr.node != nullptr && !function_context.variables_state.TryAddLink( expr.node, locked_args_references.back().Node() ) )
 					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, expr.node->name );
 			}
@@ -2570,10 +2577,10 @@ Value CodeBuilder::DoCallFunction(
 							is_mutable= is_mutable || inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut;
 
 						locked_args_inner_references.emplace_back(
-							std::make_shared<ReferencesGraphNode>(
-								"arg_lock_" + std::to_string(i),
-								is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut ),
-							function_context );
+							function_context,
+							is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
+							"arg_lock_" + std::to_string(i) );
+
 						for( const ReferencesGraphNodePtr& inner_reference : inner_references )
 						{
 							if( !function_context.variables_state.TryAddLink( inner_reference, locked_args_inner_references.back().Node() ) )
@@ -2586,8 +2593,9 @@ Value CodeBuilder::DoCallFunction(
 		else
 		{
 			locked_args_references.emplace_back(
-				std::make_shared<ReferencesGraphNode>( "value_arg_" + std::to_string(i), ReferencesGraphNode::Kind::Variable ),
-				function_context );
+				function_context,
+				ReferencesGraphNode::Kind::Variable,
+				"value_arg_" + std::to_string(i) );
 
 			if( !ReferenceIsConvertible( expr.type, arg.type, names.GetErrors(), call_src_loc ) &&
 				GetConversionConstructor( expr.type, arg.type, names.GetErrors(), src_loc ) == nullptr )
@@ -2904,8 +2912,9 @@ Value CodeBuilder::DoCallFunction(
 	locked_args_references.clear();
 	{ // Destroy unused temporary variables after each call.
 		const ReferencesGraphNodeHolder call_result_lock(
-			std::make_shared<ReferencesGraphNode>( "lock " + result.node->name, ReferencesGraphNode::Kind::ReferenceImut ),
-			function_context );
+			function_context,
+			ReferencesGraphNode::Kind::ReferenceImut,
+			"lock " + result.node->name );
 		function_context.variables_state.AddLink( result.node, call_result_lock.Node() );
 		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), call_src_loc );
 	}
@@ -2940,8 +2949,9 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 
 	// Lock variable, for preventing of temporary destruction.
 	const ReferencesGraphNodeHolder variable_lock(
-		std::make_shared<ReferencesGraphNode>( type.ToString() + " temp variable lock", ReferencesGraphNode::Kind::ReferenceMut ),
-		function_context );
+		function_context,
+		ReferencesGraphNode::Kind::ReferenceMut,
+		" temp variable lock" );
 	function_context.variables_state.AddLink( node, variable_lock.Node() );
 	variable.node= variable_lock.Node(); // Use lock node for constructor call.
 
@@ -2977,14 +2987,16 @@ Variable CodeBuilder::ConvertVariable(
 
 	// Lock variables, for preventing of temporary destruction.
 	const ReferencesGraphNodeHolder src_variable_lock(
-		std::make_shared<ReferencesGraphNode>( variable.type.ToString() + " variable lock", ReferencesGraphNode::Kind::ReferenceImut ),
-		function_context );
+		function_context,
+		ReferencesGraphNode::Kind::ReferenceImut,
+		variable.type.ToString() + " variable lock" );
 	if( variable.node != nullptr )
 		function_context.variables_state.AddLink( variable.node, src_variable_lock.Node() );
 
 	const ReferencesGraphNodeHolder dst_variable_lock(
-		std::make_shared<ReferencesGraphNode>( dst_type.ToString() + " variable lock", ReferencesGraphNode::Kind::ReferenceMut ),
-		function_context );
+		function_context,
+		ReferencesGraphNode::Kind::ReferenceMut,
+		dst_type.ToString() + " variable lock" );
 	function_context.variables_state.AddLink( node, dst_variable_lock.Node() );
 	result.node= dst_variable_lock.Node(); // Use lock node for constructor call.
 

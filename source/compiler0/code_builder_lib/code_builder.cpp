@@ -19,8 +19,12 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-CodeBuilder::ReferencesGraphNodeHolder::ReferencesGraphNodeHolder( ReferencesGraphNodePtr node, FunctionContext& function_context )
-	: node_(std::move(node)), function_context_(function_context)
+CodeBuilder::ReferencesGraphNodeHolder::ReferencesGraphNodeHolder(
+	FunctionContext& function_context,
+	const ReferencesGraphNode::Kind node_kind,
+	std::string node_name )
+	: node_( std::make_shared<ReferencesGraphNode>( std::move(node_name), node_kind ) )
+	, function_context_(function_context)
 {
 	function_context_.variables_state.AddNode( node_ );
 }
@@ -33,6 +37,9 @@ CodeBuilder::ReferencesGraphNodeHolder::ReferencesGraphNodeHolder( ReferencesGra
 
 CodeBuilder::ReferencesGraphNodeHolder& CodeBuilder::ReferencesGraphNodeHolder::operator=( ReferencesGraphNodeHolder&& other ) noexcept
 {
+	if( this->node_ != nullptr )
+		function_context_.variables_state.RemoveNode( node_ );
+
 	this->node_= other.node_;
 	other.node_= nullptr;
 	return *this;

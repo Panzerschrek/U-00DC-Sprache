@@ -82,7 +82,7 @@ private:
 	class ReferencesGraphNodeHolder final
 	{
 	public:
-		ReferencesGraphNodeHolder( ReferencesGraphNodePtr node, FunctionContext& function_context );
+		ReferencesGraphNodeHolder( FunctionContext& function_context, ReferencesGraphNode::Kind node_kind, std::string node_name );
 		ReferencesGraphNodeHolder( const ReferencesGraphNodeHolder& )= delete;
 		ReferencesGraphNodeHolder( ReferencesGraphNodeHolder&& other ) noexcept;
 
