@@ -90,7 +90,7 @@ ReferencesGraphNodePtr ReferencesGraph::CreateNodeInnerReference( const Referenc
 
 	const auto it= nodes_.find( node );
 	U_ASSERT( it != nodes_.end() );
-	U_ASSERT( it->second->inner_reference == nullptr );
+	U_ASSERT( it->second.inner_reference == nullptr );
 	it->second.inner_reference= inner_node;
 
 	return inner_node;
