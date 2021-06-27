@@ -2959,25 +2959,23 @@ Variable CodeBuilder::ConvertVariable(
 	result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( dst_type.GetLLVMType() );
 	result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "temp " + dst_type.ToString() );
 
-	// Lock src variable, for preventing of temporary destruction.
-	// TODO - this is wrong! We probably should check for "ReferenceProtectionError" and pass "src_variable_lock.Node()" to conversion constructor call!
-	const ReferencesGraphNodeHolder src_variable_lock(
-		function_context,
-		ReferencesGraphNode::Kind::ReferenceImut,
-		variable.type.ToString() + " variable lock" );
-	if( variable.node != nullptr )
-		function_context.variables_state.AddLink( variable.node, src_variable_lock.Node() );
+	{
+		// Create temp variables frame to prevent destruction of "src".
+		const StackVariablesStorage temp_variables_storage( function_context );
 
-	DoCallFunction(
-		conversion_constructor.llvm_function,
-		*conversion_constructor.type.GetFunctionType(),
-		src_loc,
-		{ result, variable },
-		{},
-		false,
-		names,
-		function_context,
-		false );
+		DoCallFunction(
+			conversion_constructor.llvm_function,
+			*conversion_constructor.type.GetFunctionType(),
+			src_loc,
+			{ result, variable },
+			{},
+			false,
+			names,
+			function_context,
+			false );
+
+		CallDestructors( temp_variables_storage, names, function_context, src_loc );
+	}
 
 	result.value_type= ValueType::Value; // Make value after construction
 	RegisterTemporaryVariable( function_context, result );
