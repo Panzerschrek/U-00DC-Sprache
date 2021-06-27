@@ -217,8 +217,8 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 		ReferencesGraphNodePtr dst_node_inner_reference= function_context.variables_state.GetNodeInnerReference( dst_variable_node );
 		if( dst_node_inner_reference == nullptr )
 		{
-			dst_node_inner_reference= std::make_shared<ReferencesGraphNode>( dst_node->name + " inner variable", node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
-			function_context.variables_state.SetNodeInnerReference( dst_node, dst_node_inner_reference );
+			dst_node_inner_reference=
+				function_context.variables_state.CreateNodeInnerReference( dst_node, node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
 		}
 
 		if( ( dst_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut  && !node_is_mutable ) ||

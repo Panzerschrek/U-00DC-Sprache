@@ -22,7 +22,6 @@ StackVariablesStorage::~StackVariablesStorage()
 
 void StackVariablesStorage::RegisterVariable( Variable variable )
 {
-	function_context_.variables_state.AddNode( variable.node );
 	variables_.push_back( std::move(variable) );
 }
 

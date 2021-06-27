@@ -22,10 +22,14 @@ size_t ReferencesGraph::LinkHasher::operator()( const Link& link ) const
 	return llvm::hash_combine( reinterpret_cast<uintptr_t>(link.src.get()), reinterpret_cast<uintptr_t>(link.dst.get()) );
 }
 
-void ReferencesGraph::AddNode( ReferencesGraphNodePtr node )
+ReferencesGraphNodePtr ReferencesGraph::AddNode( const ReferencesGraphNode::Kind kind, std::string name )
 {
+	const auto node= std::make_shared<ReferencesGraphNode>( std::move(name), kind );
+
 	U_ASSERT( nodes_.count(node) == 0 );
-	nodes_.emplace( std::move(node), NodeState() );
+	nodes_.emplace( node, NodeState() );
+
+	return node;
 }
 
 void ReferencesGraph::RemoveNode( const ReferencesGraphNodePtr& node )
@@ -109,14 +113,18 @@ ReferencesGraphNodePtr ReferencesGraph::GetNodeInnerReference( const ReferencesG
 	return it->second.inner_reference;
 }
 
-void ReferencesGraph::SetNodeInnerReference( const ReferencesGraphNodePtr& node, ReferencesGraphNodePtr inner_reference )
+ReferencesGraphNodePtr ReferencesGraph::CreateNodeInnerReference( const ReferencesGraphNodePtr& node, const ReferencesGraphNode::Kind kind )
 {
-	AddNode( inner_reference );
+	U_ASSERT( kind != ReferencesGraphNode::Kind::Variable );
+
+	const auto inner_node= AddNode( kind, node->name + " inner reference" );
 
 	const auto it= nodes_.find( node );
 	U_ASSERT( it != nodes_.end() );
-	U_ASSERT( it->second.inner_reference == nullptr );
-	it->second.inner_reference= std::move(inner_reference);
+	U_ASSERT( it->second->inner_reference == nullptr );
+	it->second.inner_reference= inner_node;
+
+	return inner_node;
 }
 
 bool ReferencesGraph::HaveOutgoingLinks( const ReferencesGraphNodePtr& from ) const

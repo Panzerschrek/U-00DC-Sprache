@@ -894,10 +894,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 		{
 			ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( dst_variable_node );
 			if( inner_reference == nullptr )
-			{
-				inner_reference= std::make_shared<ReferencesGraphNode>( dst_variable_node->name + "/inner_variable", field.is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
-				function_context.variables_state.SetNodeInnerReference( dst_variable_node, inner_reference );
-			}
+				inner_reference= function_context.variables_state.CreateNodeInnerReference( dst_variable_node, field.is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
 			else
 			{
 				if( ( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceImut &&  field.is_mutable ) ||

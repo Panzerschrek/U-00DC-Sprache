@@ -31,7 +31,7 @@ using ReferencesGraphNodePtr= std::shared_ptr<const ReferencesGraphNode>;
 class ReferencesGraph
 {
 public:
-	void AddNode( ReferencesGraphNodePtr node );
+	ReferencesGraphNodePtr AddNode( ReferencesGraphNode::Kind kind, std::string name );
 	void RemoveNode( const ReferencesGraphNodePtr& node );
 
 	void AddLink( const ReferencesGraphNodePtr& from, const ReferencesGraphNodePtr& to );
@@ -41,7 +41,7 @@ public:
 	bool TryAddLink( const ReferencesGraphNodePtr& from, const ReferencesGraphNodePtr& to );
 
 	ReferencesGraphNodePtr GetNodeInnerReference( const ReferencesGraphNodePtr& node ) const;
-	void SetNodeInnerReference( const ReferencesGraphNodePtr& node, ReferencesGraphNodePtr inner_reference );
+	ReferencesGraphNodePtr CreateNodeInnerReference( const ReferencesGraphNodePtr& node, ReferencesGraphNode::Kind kind );
 
 	// Each access to variable must produce temporary reference to it.
 	// Creating temporary mutable reference to reference node with outgoing links is compilation error.

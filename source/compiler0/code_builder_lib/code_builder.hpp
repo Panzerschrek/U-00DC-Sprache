@@ -91,6 +91,7 @@ private:
 		~ReferencesGraphNodeHolder();
 
 		const ReferencesGraphNodePtr& Node() const { return node_; }
+		ReferencesGraphNodePtr TakeNode();
 
 	private:
 		ReferencesGraphNodePtr node_;

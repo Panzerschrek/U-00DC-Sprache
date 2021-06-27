@@ -94,7 +94,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			node_kind= ReferencesGraphNode::Kind::ReferenceMut;
 		else
 			node_kind= ReferencesGraphNode::Kind::ReferenceImut;
-		variable.node= std::make_shared<ReferencesGraphNode>( variable_declaration.name, node_kind );
+		// Do not forget to remove node in case of error-return!!!
+		variable.node= function_context.variables_state.AddNode( node_kind, variable_declaration.name );
 
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
@@ -124,6 +125,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			if( variable_declaration.initializer == nullptr )
 			{
 				REPORT_ERROR( ExpectedInitializer, names.GetErrors(), variables_declaration.src_loc_, variable_declaration.name );
+				function_context.variables_state.RemoveNode( variable.node );
 				continue;
 			}
 
@@ -135,6 +137,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				if( constructor_initializer->arguments.size() != 1u )
 				{
 					REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names.GetErrors(), constructor_initializer->src_loc_ );
+					function_context.variables_state.RemoveNode( variable.node );
 					continue;
 				}
 				initializer_expression= &constructor_initializer->arguments.front();
@@ -142,6 +145,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			else
 			{
 				REPORT_ERROR( UnsupportedInitializerForReference, names.GetErrors(), variable_declaration.src_loc );
+				function_context.variables_state.RemoveNode( variable.node );
 				continue;
 			}
 
@@ -149,17 +153,20 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			if( !ReferenceIsConvertible( expression_result.type, variable.type, names.GetErrors(), variables_declaration.src_loc_ ) )
 			{
 				REPORT_ERROR( TypesMismatch, names.GetErrors(), variables_declaration.src_loc_, variable.type, expression_result.type );
+				function_context.variables_state.RemoveNode( variable.node );
 				continue;
 			}
 
 			if( expression_result.value_type == ValueType::Value )
 			{
 				REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), variables_declaration.src_loc_ );
+				function_context.variables_state.RemoveNode( variable.node );
 				continue;
 			}
 			if( expression_result.value_type == ValueType::ConstReference && variable.value_type == ValueType::Reference )
 			{
 				REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), variable_declaration.src_loc );
+				function_context.variables_state.RemoveNode( variable.node );
 				continue;
 			}
 
@@ -237,7 +244,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		node_kind= ReferencesGraphNode::Kind::ReferenceMut;
 	else
 		node_kind= ReferencesGraphNode::Kind::ReferenceImut;
-	variable.node= std::make_shared<ReferencesGraphNode>( auto_variable_declaration.name, node_kind );
+	// Do not forget to remove node in case of error-return!!!
+	variable.node= function_context.variables_state.AddNode( node_kind, auto_variable_declaration.name );
 
 	if( auto_variable_declaration.reference_modifier != ReferenceModifier::Reference ||
 		auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr )
@@ -246,6 +254,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( !EnsureTypeComplete( variable.type ) )
 		{
 			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), auto_variable_declaration.src_loc_, variable.type );
+			function_context.variables_state.RemoveNode(variable.node);
 			return BlockBuildInfo();
 		}
 	}
@@ -255,6 +264,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr && !variable.type.CanBeConstexpr() )
 	{
 		REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names.GetErrors(), auto_variable_declaration.src_loc_ );
+		function_context.variables_state.RemoveNode(variable.node);
 		return BlockBuildInfo();
 	}
 
@@ -263,6 +273,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( initializer_experrsion.value_type == ValueType::ConstReference && variable.value_type != ValueType::ConstReference )
 		{
 			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), auto_variable_declaration.src_loc_ );
+			function_context.variables_state.RemoveNode(variable.node);
 			return BlockBuildInfo();
 		}
 
@@ -272,6 +283,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( initializer_experrsion.value_type == ValueType::Value )
 		{
 			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), auto_variable_declaration.src_loc_ );
+			function_context.variables_state.RemoveNode(variable.node);
 			return BlockBuildInfo();
 		}
 
@@ -586,13 +598,15 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				node_kind= ReferencesGraphNode::Kind::ReferenceMut;
 			else
 				node_kind= ReferencesGraphNode::Kind::ReferenceImut;
-			variable.node= std::make_shared<ReferencesGraphNode>( for_operator.loop_variable_name_, node_kind );
+			// Do not forget to remove node in case of error-return!!!
+			variable.node= function_context.variables_state.AddNode( node_kind, for_operator.loop_variable_name_ );
 
 			if( for_operator.reference_modifier_ == ReferenceModifier::Reference )
 			{
 				if( for_operator.mutability_modifier_ == MutabilityModifier::Mutable && sequence_expression.value_type != ValueType::Reference )
 				{
 					REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), for_operator.src_loc_ );
+					function_context.variables_state.RemoveNode(variable.node);
 					continue;
 				}
 
@@ -607,11 +621,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				if( !EnsureTypeComplete( element_type ) )
 				{
 					REPORT_ERROR( UsingIncompleteType, names.GetErrors(), for_operator.src_loc_, element_type );
+					function_context.variables_state.RemoveNode(variable.node);
 					continue;
 				}
 				if( !element_type.IsCopyConstructible() )
 				{
 					REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), for_operator.src_loc_, element_type );
+					function_context.variables_state.RemoveNode(variable.node);
 					continue;
 				}
 
@@ -962,17 +978,20 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		node_kind= ReferencesGraphNode::Kind::ReferenceMut;
 	else
 		node_kind= ReferencesGraphNode::Kind::ReferenceImut;
-	variable.node= std::make_shared<ReferencesGraphNode>( with_operator.variable_name_, node_kind );
+	// Do not forget to remove node in case of error-return!!!
+	variable.node= function_context.variables_state.AddNode( node_kind , with_operator.variable_name_ );
 
 	if( with_operator.reference_modifier_ != ReferenceModifier::Reference &&
 		!EnsureTypeComplete( variable.type ) )
 	{
 		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), with_operator.src_loc_, variable.type );
+		function_context.variables_state.RemoveNode( variable.node );
 		return BlockBuildInfo();
 	}
 	if( with_operator.reference_modifier_ != ReferenceModifier::Reference && variable.type.IsAbstract() )
 	{
 		REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), with_operator.src_loc_, variable.type );
+		function_context.variables_state.RemoveNode( variable.node );
 		return BlockBuildInfo();
 	}
 
@@ -981,6 +1000,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( expr.value_type == ValueType::ConstReference && variable.value_type != ValueType::ConstReference )
 		{
 			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), with_operator.src_loc_ );
+			function_context.variables_state.RemoveNode( variable.node );
 			return BlockBuildInfo();
 		}
 
