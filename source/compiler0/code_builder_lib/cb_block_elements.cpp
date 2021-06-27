@@ -1019,8 +1019,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		CreateVariableDebugInfo( variable, with_operator.variable_name_, with_operator.src_loc_, function_context );
 
-		variables_storage.RegisterVariable( variable );
-
 		if( expr.node != nullptr && !function_context.variables_state.TryAddLink( expr.node, variable.node ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), with_operator.src_loc_, expr.node->name );
 	}
@@ -1032,8 +1030,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType(), nullptr, with_operator.variable_name_ );
 
 		CreateVariableDebugInfo( variable, with_operator.variable_name_, with_operator.src_loc_, function_context );
-
-		variables_storage.RegisterVariable( variable );
 
 		SetupReferencesInCopyOrMove( function_context, variable, expr, names.GetErrors(), with_operator.src_loc_ );
 
@@ -1051,14 +1047,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		else
 		{
 			if( !variable.type.IsCopyConstructible() )
-			{
 				REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), with_operator.src_loc_, variable.type );
-				return BlockBuildInfo();
-			}
-			BuildCopyConstructorPart(
-				variable.llvm_value, expr.llvm_value,
-				variable.type,
-				function_context );
+			else
+				BuildCopyConstructorPart(
+					variable.llvm_value, expr.llvm_value,
+					variable.type,
+					function_context );
 		}
 		// constexpr preserved for move/copy.
 		variable.constexpr_value= expr.constexpr_value;
@@ -1072,14 +1066,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	if( IsKeyword( with_operator.variable_name_ ) )
 		REPORT_ERROR( UsingKeywordAsName, names.GetErrors(), with_operator.src_loc_ );
 
-	{ // Destroy unused temporaries after variable initialization.
-		const ReferencesGraphNodeHolder variable_lock(
-			function_context,
-			ReferencesGraphNode::Kind::ReferenceImut,
-			"lock " + variable.node->name );
-		function_context.variables_state.AddLink( variable.node, variable_lock.Node() );
-		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), with_operator.src_loc_ );
-	}
+	// Destroy temporary variables of initializer expression. Do it before registretion of variable to prevent its destruction.
+	DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), with_operator.src_loc_ );
+	variables_storage.RegisterVariable( variable );
 
 	// Create separate namespace for variable. Redefinition here is not possible.
 	NamesScope variable_names_scope( "", &names );

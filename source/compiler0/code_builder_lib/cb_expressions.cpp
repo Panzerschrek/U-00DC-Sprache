@@ -168,6 +168,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		index_list[0]= GetZeroGEPIndex();
 		index_list[1]= CreateMoveToLLVMRegisterInstruction( index, function_context );
 
+		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), indexation_operator.src_loc_ ); // Destroy temporaries of index expression.
+
 		// If index is not constant - check bounds.
 		if( index.constexpr_value == nullptr )
 		{
@@ -197,8 +199,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
 		}
 
-		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), indexation_operator.src_loc_ ); // Destroy temporaries of index expression.
-
 		result.llvm_value=
 			function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, index_list );
 
@@ -207,6 +207,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 	else if( const Tuple* const tuple_type= variable.type.GetTupleType() )
 	{
+		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), indexation_operator.src_loc_ ); // Destroy temporaries of index expression.
+
 		const FundamentalType* const index_fundamental_type= index.type.GetFundamentalType();
 		if( index_fundamental_type == nullptr || !IsInteger( index_fundamental_type->fundamental_type ) )
 		{

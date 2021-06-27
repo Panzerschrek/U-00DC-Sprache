@@ -616,6 +616,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		}
 
 		llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( src_var, function_context );
+		DestroyUnusedTemporaryVariables( function_context, block_names.GetErrors(), src_loc );
 
 		if( dst_type->fundamental_type != src_type->fundamental_type )
 		{
@@ -697,8 +698,6 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 		if( variable.type != void_type_ )
 			function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
-
-		DestroyUnusedTemporaryVariables( function_context, block_names.GetErrors(), src_loc );
 
 		return llvm::dyn_cast<llvm::Constant>(value_for_assignment);
 	}
