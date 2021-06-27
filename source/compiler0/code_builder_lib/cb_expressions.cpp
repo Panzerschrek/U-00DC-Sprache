@@ -1290,13 +1290,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "_moved_" + expression_result.node->name );
 	result.llvm_value->setName( result.node->name );
 
-	// We must save inner references of moved variable.
-	// TODO - this is wrong! We should call here "SetupReferencesInCopyOrMove"!!!
-	if( const auto move_variable_inner_node= function_context.variables_state.GetNodeInnerReference( expression_result.node ) )
-	{
-		const auto inner_node= function_context.variables_state.CreateNodeInnerReference( result.node, move_variable_inner_node->kind );
-		function_context.variables_state.AddLink( move_variable_inner_node, inner_node );
-	}
+	SetupReferencesInCopyOrMove( function_context, result, expression_result, names.GetErrors(), take_operator.src_loc_ );
 
 	// Copy content to new variable.
 	CopyBytes( expression_result.llvm_value, result.llvm_value, result.type, function_context );
