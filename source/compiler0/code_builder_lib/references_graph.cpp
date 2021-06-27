@@ -41,6 +41,8 @@ void ReferencesGraph::RemoveNode( const ReferencesGraphNodePtr& node )
 		RemoveNode( inner_reference );
 
 	RemoveNodeLinks( node );
+
+	nodes_.erase( node );
 }
 
 void ReferencesGraph::AddLink( const ReferencesGraphNodePtr& from, const ReferencesGraphNodePtr& to )

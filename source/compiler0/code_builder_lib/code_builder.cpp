@@ -599,17 +599,14 @@ void CodeBuilder::CallDestructorsImpl(
 	{
 		const Variable& stored_variable= *it;
 
-		if( ! function_context.variables_state.NodeMoved( stored_variable.node ) )
+		if( stored_variable.node->kind == ReferencesGraphNode::Kind::Variable && !function_context.variables_state.NodeMoved( stored_variable.node ) )
 		{
-			if( stored_variable.node->kind == ReferencesGraphNode::Kind::Variable )
-			{
-				if( function_context.variables_state.HaveOutgoingLinks( stored_variable.node ) )
-					REPORT_ERROR( DestroyedVariableStillHaveReferences, errors_container, src_loc, stored_variable.node->name );
-				if( stored_variable.type.HaveDestructor() )
-					CallDestructor( stored_variable.llvm_value, stored_variable.type, function_context, errors_container, src_loc );
-			}
-			function_context.variables_state.RemoveNode( stored_variable.node );
+			if( function_context.variables_state.HaveOutgoingLinks( stored_variable.node ) )
+				REPORT_ERROR( DestroyedVariableStillHaveReferences, errors_container, src_loc, stored_variable.node->name );
+			if( stored_variable.type.HaveDestructor() )
+				CallDestructor( stored_variable.llvm_value, stored_variable.type, function_context, errors_container, src_loc );
 		}
+		function_context.variables_state.RemoveNode( stored_variable.node );
 	}
 }
 
