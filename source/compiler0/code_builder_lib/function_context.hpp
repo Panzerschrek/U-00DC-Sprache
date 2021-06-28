@@ -18,16 +18,15 @@ struct FunctionContext;
 struct StackVariablesStorage final
 {
 public:
-	using NodeAndVariable= std::pair< ReferencesGraphNodePtr, Variable >;
 
 	StackVariablesStorage( FunctionContext& function_context );
 	~StackVariablesStorage();
 
-	void RegisterVariable( NodeAndVariable node_and_variable );
+	void RegisterVariable( Variable variable );
 
 public:
 	FunctionContext& function_context_;
-	std::vector<NodeAndVariable> variables_;
+	std::vector<Variable> variables_;
 };
 
 struct LoopFrame final

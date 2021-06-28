@@ -415,7 +415,7 @@ U_TEST( ReferenceCheckTest_ReturnReferenceToLocalVariable_1 )
 
 U_TEST( ReferenceCheckTest_ReturnReferenceToLocalVariable_2 )
 {
-	// Conditional return of reference to member of stack variable, pussed through function.
+	// Conditional return of reference to member of stack variable, passed through function.
 	static const char c_program_text[]=
 	R"(
 		struct S{ [ i32, 2 ] x; }

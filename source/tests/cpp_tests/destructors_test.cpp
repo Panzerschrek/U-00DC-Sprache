@@ -1867,6 +1867,46 @@ U_TEST(EralyTempVariablesDestruction_Test14)
 		std::vector<int>( { -3, 3,  -666, 666 } ) );
 }
 
+U_TEST(EralyTempVariablesDestruction_Test15)
+{
+	DestructorTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(-x); }
+			fn destructor() { DestructorCalled(x); x= 0; }
+		}
+
+		fn Pass( S& s ) : S& { return s; }
+
+		fn Bar( i32 x ) : S
+		{
+			DestructorCalled( x * 10 );
+			return S(x * 3);
+		}
+
+		fn Foo()
+		{
+			// Should construct "S", call "Pass", read "S::x", destroy "S", call "Bar", constrcut "S" inside "Bar", return "S" and destroy it.
+			Bar( Pass( S(54) ).x );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT(
+		g_destructors_call_sequence ==
+		std::vector<int>( { -54, 54,  54 * 10,  -54 * 3, 54 * 3 } ) );
+}
+
 U_TEST(DestructorTest_ForCStyleForOperator0)
 {
 	DestructorTestPrepare();

@@ -108,6 +108,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		else if( variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable ){ node_kind= ReferencesGraph::NodeKind::ReferenceMut; }
 		else{ node_kind= ReferencesGraph::NodeKind::ReferenceImut; }
 
+		// Do not forget to remove node in case of error-return!!!
 		out_variable.node_id= function_context.references_graph.AddNode( node_kind, variable_declaration.name );
 
 		if( variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
@@ -115,6 +116,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			if( t.IsAbstract() )
 			{
 				REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, variable_declaration.src_loc, t )
+				function_context.references_graph.RemoveNode( out_variable.node_id );
 				continue;
 			}
 
@@ -140,6 +142,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
 			{
 				REPORT_ERROR( ExpectedInitializer, names_scope, variable_declaration.src_loc, variable_declaration.name )
+				function_context.references_graph.RemoveNode( out_variable.node_id );
 				continue;
 			}
 
@@ -153,6 +156,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 				if( constructor_initializer.args.size() != 1s )
 				{
 					REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names_scope, constructor_initializer.src_loc )
+					function_context.references_graph.RemoveNode( out_variable.node_id );
 					continue;
 				}
 
@@ -162,6 +166,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			if( initializer_expression.empty() )
 			{
 				REPORT_ERROR( UnsupportedInitializerForReference, names_scope, variable_declaration.src_loc )
+				function_context.references_graph.RemoveNode( out_variable.node_id );
 				continue;
 			}
 
@@ -169,16 +174,19 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			if( expression_result.t != t && !expression_result.t.ReferenceIsConvertibleTo( t ) )
 			{
 				REPORT_ERROR( TypesMismatch, names_scope, variable_declaration.src_loc, t, expression_result.t )
+				function_context.references_graph.RemoveNode( out_variable.node_id );
 				continue;
 			}
 			if( expression_result.value_type == ValueType::Value )
 			{
 				REPORT_ERROR( ExpectedReferenceValue, names_scope, variable_declaration.src_loc )
+				function_context.references_graph.RemoveNode( out_variable.node_id );
 				continue;
 			}
 			if( out_variable.is_mutable && expression_result.value_type == ValueType::ReferenceImut )
 			{
 				REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, variable_declaration.src_loc )
+				function_context.references_graph.RemoveNode( out_variable.node_id );
 				continue;
 			}
 
@@ -254,6 +262,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 	else if( auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable ){ node_kind= ReferencesGraph::NodeKind::ReferenceMut; }
 	else{ node_kind= ReferencesGraph::NodeKind::ReferenceImut; }
 
+	// Do not forget to remove node in case of errror-return!!!
 	out_variable.node_id= function_context.references_graph.AddNode( node_kind, auto_variable_declaration.name );
 
 	if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
@@ -261,11 +270,13 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		if( expr.value_type == ValueType::Value )
 		{
 			REPORT_ERROR( ExpectedReferenceValue, names_scope, auto_variable_declaration.src_loc )
+			function_context.references_graph.RemoveNode( out_variable.node_id );
 			return BlockElementBuildInfo();
 		}
 		if( out_variable.is_mutable && expr.value_type != ValueType::ReferenceMut )
 		{
 			REPORT_ERROR( BindingConstReferenceToNonconstReference,  names_scope, auto_variable_declaration.src_loc )
+			function_context.references_graph.RemoveNode( out_variable.node_id );
 			return BlockElementBuildInfo();
 		}
 
@@ -286,6 +297,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		if( expr.t.IsAbstract() )
 		{
 			REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, auto_variable_declaration.src_loc, expr.t )
+			function_context.references_graph.RemoveNode( out_variable.node_id );
 			return BlockElementBuildInfo();
 		}
 
@@ -320,6 +332,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			if( !expr.t.IsCopyConstructible() )
 			{
 				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, auto_variable_declaration.src_loc, out_variable.t )
+				function_context.references_graph.RemoveNode( out_variable.node_id );
 				return BlockElementBuildInfo();
 			}
 
@@ -514,7 +527,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 		if_var( &conversion_constructor_ : GetConversionConstructor( names_scope, ret_type, expr.t, return_operator.src_loc ) )
 		{
-			auto return_node= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "return value" );
+			auto return_node= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "return value lock" );
 
 			{
 				// Create temp variables storage for preventing of destruction of "expr".
@@ -975,7 +988,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	if( sequence_expression.node_id != ReferencesGraph::c_empty_node_id )
 	{
 		auto is_mutable= range_for_operator.mutability_modifier == Synt::MutabilityModifier::Mutable;
-		var ust::string8 mut node_name= function_context.references_graph.GetNodeName( sequence_expression.node_id ) + " lock";
+		var ust::string8 mut node_name= function_context.references_graph.GetNodeName( sequence_expression.node_id ) + " sequence lock";
 		sequence_lock_node= function_context.references_graph.AddNode(
 			select( is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
 			move(node_name) );
@@ -1039,6 +1052,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				}
 				if( sequence_lock_node != ReferencesGraph::c_empty_node_id )
 				{
+					// Do not forget to remove node in case of error-return!!!
 					variable.node_id= function_context.references_graph.AddNode(
 						select( variable.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
 						range_for_operator.loop_variable_name );
@@ -1059,6 +1073,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 				CreateVariableDebugInfo( function_context, variable, range_for_operator.loop_variable_name, range_for_operator.src_loc );
 
+				// Do not forget to remove node in case of error-return!!!
 				variable.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, range_for_operator.loop_variable_name );
 
 				SetupReferencesInCopyOrMove( names_scope, function_context, variable.t, variable.node_id, sequence_lock_node, range_for_operator.src_loc );
@@ -1066,9 +1081,11 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				if( !sequence_expression.t.IsCopyConstructible() )
 				{
 					REPORT_ERROR( OperationNotSupportedForThisType, names_scope, range_for_operator.src_loc, variable.t )
-					return BlockElementBuildInfo();
 				}
-				BuildCopyConstructorPart( names_scope, function_context, variable.llvm_value, src_element_llvm_value, variable.t, range_for_operator.src_loc );
+				else
+				{
+					BuildCopyConstructorPart( names_scope, function_context, variable.llvm_value, src_element_llvm_value, variable.t, range_for_operator.src_loc );
+				}
 			}
 			else{ halt; }
 
@@ -1352,6 +1369,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	else if( with_operator.mutability_modifier == Synt::MutabilityModifier::Mutable ){ node_kind= ReferencesGraph::NodeKind::ReferenceMut; }
 	else{ node_kind= ReferencesGraph::NodeKind::ReferenceImut; }
 
+	// Do not forget to remove node in case of error-return!!!
 	out_variable.node_id= function_context.references_graph.AddNode( node_kind, with_operator.variable_name );
 
 	if( with_operator.reference_modifier == Synt::ReferenceModifier::Reference )
@@ -1359,6 +1377,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		if( out_variable.is_mutable && expr.value_type == ValueType::ReferenceImut )
 		{
 			REPORT_ERROR( BindingConstReferenceToNonconstReference,  names_scope, with_operator.src_loc )
+			function_context.references_graph.RemoveNode( out_variable.node_id );
 			return BlockElementBuildInfo();
 		}
 
@@ -1392,6 +1411,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		if( expr.t.IsAbstract() )
 		{
 			REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, with_operator.src_loc, expr.t )
+			function_context.references_graph.RemoveNode( out_variable.node_id );
 			return BlockElementBuildInfo();
 		}
 
@@ -1426,6 +1446,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			if( !expr.t.IsCopyConstructible() )
 			{
 				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, with_operator.src_loc, out_variable.t )
+				function_context.references_graph.RemoveNode( out_variable.node_id );
 				return BlockElementBuildInfo();
 			}
 

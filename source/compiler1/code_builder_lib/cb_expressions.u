@@ -92,7 +92,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.t= Type( FundamentalType( t, GetFundamentalLLVMType(t) ) ),
 		.location= Variable::Location::LLVMRegister,
 		.value_type= ValueType::Value,
-		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "numeric constant" ),
+		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "numeric constant " ),
 	};
 
 	unsafe
@@ -114,15 +114,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	res.llvm_value= res.constexpr_value;
 
 	// Register variable for references checking.
-	var NamesScopeVariable mut names_scope_variable
-	{
-		.t= res.t,
-		.is_mutable= false,
-		.llvm_value= res.llvm_value,
-		.constexpr_value= res.constexpr_value,
-		.node_id= res.node_id,
-	};
-	function_context.variables_frames.back().push_back( move(names_scope_variable) );
+	RegisterTemporaryVariable( function_context, res );
 
 	return move(res);
 }
@@ -133,22 +125,14 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	{
 		.t= bool_type_,
 		.location= Variable::Location::LLVMRegister,
-		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "boolean constant" ),
+		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, KeywordToString( select( boolean_constant.value ? Keyword::true_ : Keyword::false_ ) ) ),
 	};
 
 	unsafe{ res.constexpr_value= LLVMConstInt( res.t.GetLLVMType(), select( boolean_constant.value ? 1u64 : 0u64 ), LLVMBool::True ); }
 	res.llvm_value= res.constexpr_value;
 
 	// Register variable for references checking.
-	var NamesScopeVariable mut names_scope_variable
-	{
-		.t= res.t,
-		.is_mutable= false,
-		.llvm_value= res.llvm_value,
-		.constexpr_value= res.constexpr_value,
-		.node_id= res.node_id,
-	};
-	function_context.variables_frames.back().push_back( move(names_scope_variable) );
+	RegisterTemporaryVariable( function_context, res );
 
 	return move(res);
 }
@@ -230,7 +214,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				halt if(array_size > buff.size());
 				buff.resize( array_size, "\0"c16  );
 
-				constexpr_value= U1_ConstDataArray( element_llvm_type, cast_ref_unsafe</void/>( cast_imut(buff).front_unsafe() ), array_size * typeinfo</char16/>.size_of, array_size );
+				constexpr_value= U1_ConstDataArray( element_llvm_type, cast_ref_unsafe</void/>( buff.front_unsafe() ), array_size * typeinfo</char16/>.size_of, array_size );
 
 				if( string_literals_cache_[1].find( buff ).empty() )
 				{
@@ -252,7 +236,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				halt if(array_size > buff.size());
 				buff.resize( array_size, "\0"c32 );
 
-				constexpr_value= U1_ConstDataArray( element_llvm_type, cast_ref_unsafe</void/>( cast_imut(buff).front_unsafe() ), array_size * typeinfo</char32/>.size_of, array_size );
+				constexpr_value= U1_ConstDataArray( element_llvm_type, cast_ref_unsafe</void/>( buff.front_unsafe() ), array_size * typeinfo</char32/>.size_of, array_size );
 
 				if( string_literals_cache_[2].find( buff ).empty() )
 				{
@@ -478,7 +462,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.t= v.t,
 		.value_type= ValueType::ReferenceMut,
 		.location= Variable::Location::Pointer,
-		.node_id= v.node_id,
+		.node_id= v.node_id, // TODO - is it safe to re-use immutable node here?
 	};
 
 	// TODO - maybe forbid reference casting for ValueType::Value?
@@ -550,17 +534,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	function_context.references_graph.MoveNode( variable.node_id );
 
-	{// Register variable for references checking and destruction.
-		var NamesScopeVariable mut names_scope_variable
-		{
-			.t= result.t,
-			.is_mutable= true,
-			.llvm_value= result.llvm_value,
-			.constexpr_value= result.constexpr_value,
-			.node_id= result.node_id,
-		};
-		function_context.variables_frames.back().push_back( move(names_scope_variable) );
-	}
+	// Register variable for references checking and destruction.
+	RegisterTemporaryVariable( function_context, result );
 
 	return move(result);
 }
@@ -623,17 +598,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		BuildEmptyInitializer( names_scope, function_context, names_scope_variable, src_variable_name, take_operator.src_loc );
 	}
 
-	{// Register variable for references checking and destruction.
-		var NamesScopeVariable mut names_scope_variable
-		{
-			.t= result.t,
-			.is_mutable= true,
-			.llvm_value= result.llvm_value,
-			.constexpr_value= result.constexpr_value,
-			.node_id= result.node_id,
-		};
-		function_context.variables_frames.back().push_back( move(names_scope_variable) );
-	}
+	// Register variable for references checking and destruction.
+	RegisterTemporaryVariable( function_context, result );
 
 	return move(result);
 }
@@ -647,6 +613,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return ErrorValue();
 	}
 
+	auto condition_in_register= CreateMoveToLLVMRegisterInstruction( condition, function_context );
+
 	// Know type and value type of each branch.
 	var [ VariableTypeExtened, 2 ] mut branches_types[ { .value_type= zero_init }, { .value_type= zero_init } ];
 	for( auto mut i= 0s; i < 2s; ++i )
@@ -659,6 +627,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			var Variable branch_value= BuildExpressionCodeEnsureVariable( names_scope, function_context, ternary_operator.branches[i].get_ref() );
 			branches_types[i].t= branch_value.t;
 			branches_types[i].value_type= branch_value.value_type;
+			DestroyUnusedTemporaryVariables( names_scope, function_context, ternary_operator.src_loc );
 		}
 		RestoreInstructionsState( function_context, instructions_state );
 	}
@@ -695,7 +664,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		node_kind= ReferencesGraph::NodeKind::ReferenceMut;
 	}
 
-	result.node_id= function_context.references_graph.AddNode( node_kind, "select result" );
+	// Do not forget to remove this node in case of error-return!!!
+	result.node_id= function_context.references_graph.AddNode( node_kind, KeywordToString( Keyword::select_ ) );
 
 	var LLVMBasicBlockRef mut result_block= zero_init;
 	var [ LLVMBasicBlockRef, 2 ] mut branches_blocks= zero_init, mut branches_end_blocks= zero_init;
@@ -705,7 +675,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		branches_blocks[0]= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
 		branches_blocks[1]= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
 
-		LLVMBuildCondBr( function_context.llvm_ir_builder, CreateMoveToLLVMRegisterInstruction( condition, function_context ), branches_blocks[0], branches_blocks[1] );
+		LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, branches_blocks[0], branches_blocks[1] );
 	}
 
 	var ReferencesGraph references_graph_before= take(function_context.references_graph);
@@ -796,17 +766,9 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		result.constexpr_value= select( condition_value != 0u64 ? branches_constexpr_values[0] : branches_constexpr_values[1] );
 	}
 
-	{// Register variable for references checking and destruction.
-		var NamesScopeVariable mut names_scope_variable
-		{
-			.t= result.t,
-			.is_mutable= true,
-			.llvm_value= result.llvm_value,
-			.constexpr_value= result.constexpr_value,
-			.node_id= result.node_id,
-		};
-		function_context.variables_frames.back().push_back( move(names_scope_variable) );
-	}
+	// Register variable for references checking and destruction.
+	RegisterTemporaryVariable( function_context, result );
+
 	return move(result);
 }
 
@@ -845,18 +807,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.location= Variable::Location::LLVMRegister,
 		.value_type= ValueType::Value,
 		.llvm_value= v.llvm_value, // llvm value of reference is actually value of pointer
-		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "$" )
+		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "ptr" )
 	};
 
 	// Register variable for references checking.
-	var NamesScopeVariable mut names_scope_variable
-	{
-		.t= res.t,
-		.is_mutable= true,
-		.llvm_value= res.llvm_value,
-		.node_id= res.node_id,
-	};
-	function_context.variables_frames.back().push_back( move(names_scope_variable) );
+	RegisterTemporaryVariable( function_context, res );
 
 	return move(res);
 }
@@ -940,13 +895,14 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	// This is not a class - process indexation operator for array or tuple.
 
 	// Prevent modification of variable during index calculation.
-	var ReferencesGraph::NodeId mut variable_lock_node= ReferencesGraph::c_empty_node_id;
-	if( variable.node_id != ReferencesGraph::c_empty_node_id )
-	{
-		variable_lock_node= function_context.references_graph.AddNode(
+	// Do not forget to remove this node in case of error-return!!!
+	var ReferencesGraph::NodeId mut result_node_id =
+		function_context.references_graph.AddNode(
 			select( variable.value_type == ValueType::ReferenceMut ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
 			"[]" );
-		function_context.references_graph.AddLink( variable.node_id, variable_lock_node );
+	if( variable.node_id != ReferencesGraph::c_empty_node_id && !function_context.references_graph.TryAddLink( variable.node_id, result_node_id )  )
+	{
+		REPORT_ERROR( ReferenceProtectionError, names_scope, indexation_operator.src_loc, function_context.references_graph.GetNodeName( variable.node_id ) )
 	}
 
 	auto index= BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.index.get_ref() );
@@ -960,15 +916,18 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				( IsSignedInteger( index_fundamental_type.fundamental_type ) && index.constexpr_value != LLVMValueRef::Null ) ) )
 			{
 				REPORT_ERROR( TypesMismatch, names_scope, indexation_operator.src_loc, ust::string8("any unsigned integer"), index.t )
+				function_context.references_graph.RemoveNode( result_node_id );
 				return ErrorValue();
 			}
 			if( variable.location != Variable::Location::Pointer )
 			{
 				// TODO - Strange variable location.
+				function_context.references_graph.RemoveNode( result_node_id );
 				return ErrorValue();
 			}
 
 			var LLVMValueRef mut index_value= CreateMoveToLLVMRegisterInstruction( index, function_context );
+			DestroyUnusedTemporaryVariables( names_scope, function_context, indexation_operator.src_loc ); // Destroy index.
 			if( index.constexpr_value != LLVMValueRef::Null )
 			{
 				// Statically check index.
@@ -977,6 +936,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				if( index_value_num >= variable_array_type.element_count )
 				{
 					REPORT_ERROR( ArrayIndexOutOfBounds, names_scope, indexation_operator.src_loc, index_value_num, variable_array_type.element_count )
+					function_context.references_graph.RemoveNode( result_node_id );
 					return ErrorValue();
 				}
 			}
@@ -1020,7 +980,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				.t= variable_array_type.element_type,
 				.location= Variable::Location::Pointer,
 				.value_type= select( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-				.node_id= variable.node_id,
+				.node_id= result_node_id,
 			};
 
 			unsafe
@@ -1037,11 +997,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				}
 			}
 
-			DestroyUnusedTemporaryVariables( names_scope, function_context, indexation_operator.src_loc ); // Destroy index.
-			if( variable_lock_node != ReferencesGraph::c_empty_node_id )
-			{
-				function_context.references_graph.RemoveNode( variable_lock_node );
-			}
+			// Register variable for references checking.
+			RegisterTemporaryVariable( function_context, result );
 
 			return move(result);
 		}
@@ -1062,6 +1019,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				return ErrorValue();
 			}
 
+			DestroyUnusedTemporaryVariables( names_scope, function_context, indexation_operator.src_loc ); // Destroy index.
+
 			var u64 mut type_index= ~0u64;
 			var i64 mut type_index_signed(-1);
 			unsafe
@@ -1075,6 +1034,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				if( type_index_signed >= i64(variable_tuple_type.element_types.size()) || type_index_signed < 0i64 )
 				{
 					REPORT_ERROR( TupleIndexOutOfBounds, names_scope, indexation_operator.src_loc, type_index_signed, variable_tuple_type.element_types.size() )
+					function_context.references_graph.RemoveNode( result_node_id );
 					return ErrorValue();
 				}
 			}
@@ -1083,6 +1043,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				if( type_index >= u64(variable_tuple_type.element_types.size()) )
 				{
 					REPORT_ERROR( TupleIndexOutOfBounds, names_scope, indexation_operator.src_loc, type_index, variable_tuple_type.element_types.size() )
+					function_context.references_graph.RemoveNode( result_node_id );
 					return ErrorValue();
 				}
 			}
@@ -1093,7 +1054,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				.location= Variable::Location::Pointer,
 				.value_type= select( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 				.llvm_value= CreateTupleElementGEP( variable.llvm_value, size_type(type_index), function_context ),
-				.node_id= variable.node_id,
+				.node_id= result_node_id,
 			};
 
 			if( variable.constexpr_value != LLVMValueRef::Null )
@@ -1101,11 +1062,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				unsafe{  result.constexpr_value= LLVMConstExtractValue( variable.constexpr_value, u32(type_index), 1u );  }
 			}
 
-			DestroyUnusedTemporaryVariables( names_scope, function_context, indexation_operator.src_loc ); // Destroy index.
-			if( variable_lock_node != ReferencesGraph::c_empty_node_id )
-			{
-				function_context.references_graph.RemoveNode( variable_lock_node );
-			}
+			// Register variable for references checking.
+			RegisterTemporaryVariable( function_context, result );
 
 			return move(result);
 		}
@@ -1114,6 +1072,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	REPORT_ERROR( OperationNotSupportedForThisType, names_scope, indexation_operator.src_loc, variable.t )
 
+	function_context.references_graph.RemoveNode( result_node_id );
 	return ErrorValue();
 }
 
@@ -1284,32 +1243,34 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 				if( variable.node_id != ReferencesGraph::c_empty_node_id )
 				{
-					var ust::string8 mut node_name= function_context.references_graph.GetNodeName( variable.node_id );
-					node_name+= ".";
-					node_name+= field.syntax_element.get_ref().name;
-					auto reference_field_node= function_context.references_graph.AddNode(
-						select( field.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
-						move(node_name) );
-					result.node_id= reference_field_node;
+					auto inner_nodes = function_context.references_graph.GetAccessibleVariableNodesInnerReferences( variable.node_id );
 
-					foreach( &inner_node : function_context.references_graph.GetAccessibleVariableNodesInnerReferences( variable.node_id ) )
+					if( inner_nodes.size() == 1s )
 					{
-						if( !function_context.references_graph.TryAddLink( inner_node, reference_field_node ) )
-						{
-							REPORT_ERROR( ReferenceProtectionError, names_scope, member_access_operator.src_loc, function_context.references_graph.GetNodeName( inner_node ) )
-						}
+						// For cases with single inner node just return it. This hels preventing some cases of false "ReferenceProtectionError".
+						result.node_id= inner_nodes.range().front();
 					}
-
-					// Register variable for references checking.
-					var NamesScopeVariable mut names_scope_variable
+					else
 					{
-						.t= result.t,
-						.is_mutable= field.is_mutable,
-						.llvm_value= result.llvm_value,
-						.constexpr_value= result.constexpr_value,
-						.node_id= reference_field_node,
-					};
-					function_context.variables_frames.back().push_back( move(names_scope_variable) );
+						var ust::string8 mut node_name= function_context.references_graph.GetNodeName( variable.node_id );
+						node_name+= ".";
+						node_name+= field.syntax_element.get_ref().name;
+						auto reference_field_node= function_context.references_graph.AddNode(
+							select( field.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
+							move(node_name) );
+						result.node_id= reference_field_node;
+
+						foreach( &inner_node : inner_nodes )
+						{
+							if( !function_context.references_graph.TryAddLink( inner_node, reference_field_node ) )
+							{
+								REPORT_ERROR( ReferenceProtectionError, names_scope, member_access_operator.src_loc, function_context.references_graph.GetNodeName( inner_node ) )
+							}
+						}
+
+						// Register variable for references checking.
+						RegisterTemporaryVariable( function_context, result );
+					}
 				}
 			}
 			else
@@ -1347,6 +1308,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					}
 
 					// Prevent destruction of variable during evaluation of member function template args.
+					// Do not forget to remove node in case of error-return!!!
 					var ReferencesGraph::NodeId mut variable_lock_node= ReferencesGraph::c_empty_node_id;
 					if( variable.node_id != ReferencesGraph::c_empty_node_id )
 					{
@@ -1414,6 +1376,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	auto value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+	DestroyUnusedTemporaryVariables( names_scope, function_context, unary_minus.src_loc );
 
 	var Variable mut result
 	{
@@ -1434,23 +1397,14 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	else
 	{
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, unary_minus.src_loc, variable.t )
+		function_context.references_graph.RemoveNode( result.node_id );
 		return ErrorValue();
 	}
 
 	unsafe{  if( LLVMIsConstant( result.llvm_value ) == LLVMBool::True ){ result.constexpr_value= result.llvm_value; }  }
 
-	DestroyUnusedTemporaryVariables( names_scope, function_context, unary_minus.src_loc );
-
 	// Register variable for references checking.
-	var NamesScopeVariable mut names_scope_variable
-	{
-		.t= result.t,
-		.is_mutable= false,
-		.llvm_value= result.llvm_value,
-		.constexpr_value= result.constexpr_value,
-		.node_id= result.node_id,
-	};
-	function_context.variables_frames.back().push_back( move(names_scope_variable) );
+	RegisterTemporaryVariable( function_context, result );
 
 	return move(result);
 }
@@ -1471,6 +1425,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	auto value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+	DestroyUnusedTemporaryVariables( names_scope, function_context, logical_not.src_loc );
 
 	var Variable mut result
 	{
@@ -1486,18 +1441,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		if( LLVMIsConstant( result.llvm_value ) == LLVMBool::True ){ result.constexpr_value= result.llvm_value; }
 	}
 
-	DestroyUnusedTemporaryVariables( names_scope, function_context, logical_not.src_loc );
-
 	// Register variable for references checking.
-	var NamesScopeVariable mut names_scope_variable
-	{
-		.t= result.t,
-		.is_mutable= false,
-		.llvm_value= result.llvm_value,
-		.constexpr_value= result.constexpr_value,
-		.node_id= result.node_id,
-	};
-	function_context.variables_frames.back().push_back( move(names_scope_variable) );
+	RegisterTemporaryVariable( function_context, result );
 
 	return move(result);
 }
@@ -1519,6 +1464,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	auto value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+	DestroyUnusedTemporaryVariables( names_scope, function_context, bitwise_not.src_loc );
 
 	var Variable mut result
 	{
@@ -1534,18 +1480,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		if( LLVMIsConstant( result.llvm_value ) == LLVMBool::True ){ result.constexpr_value= result.llvm_value; }
 	}
 
-	DestroyUnusedTemporaryVariables( names_scope, function_context, bitwise_not.src_loc );
-
 	// Register variable for references checking.
-	var NamesScopeVariable mut names_scope_variable
-	{
-		.t= result.t,
-		.is_mutable= false,
-		.llvm_value= result.llvm_value,
-		.constexpr_value= result.constexpr_value,
-		.node_id= result.node_id,
-	};
-	function_context.variables_frames.back().push_back( move(names_scope_variable) );
+	RegisterTemporaryVariable( function_context, result );
 
 	return move(result);
 }
@@ -2195,15 +2131,7 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 	res.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, BinaryOperatorToString( operator ) );
 
 	// Register variable for references checking.
-	var NamesScopeVariable mut names_scope_variable
-	{
-		.t= res.t,
-		.is_mutable= true,
-		.llvm_value= res.llvm_value,
-		.constexpr_value= res.constexpr_value,
-		.node_id= res.node_id,
-	};
-	function_context.variables_frames.back().push_back( move(names_scope_variable) );
+	RegisterTemporaryVariable( function_context, res );
 
 	return move(res);
 }
@@ -2226,7 +2154,6 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 	}
 
 	auto l_var_in_register= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
-
 	DestroyUnusedTemporaryVariables( names_scope, function_context, binary_operator.src_loc ); // Destroy right part temporaries.
 
 	var [ ReferencesGraph, 2 ] mut branches_references_graphs;
@@ -2309,15 +2236,7 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 	result.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, BinaryOperatorToString( binary_operator.operator ) );
 
 	// Register variable for references checking.
-	var NamesScopeVariable mut names_scope_variable
-	{
-		.t= result.t,
-		.is_mutable= true,
-		.llvm_value= result.llvm_value,
-		.constexpr_value= result.constexpr_value,
-		.node_id= result.node_id,
-	};
-	function_context.variables_frames.back().push_back( move(names_scope_variable) );
+	RegisterTemporaryVariable( function_context, result );
 
 	return move(result);
 }
@@ -2348,6 +2267,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 				auto arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.get_ref() );
 				var VariableTypeExtened mut f_arg{ .t(arg.t), .value_type= arg.value_type };
 				function_context.args_preevaluation_cache.insert( in_arg, move(f_arg) );
+				DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
 			}
 			args.push_back( function_context.args_preevaluation_cache[in_arg] );
 		}
@@ -2355,11 +2275,13 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 		RestoreInstructionsState( function_context, instructions_state );
 	}
 
+	auto& args_ref= args;
+
 	if( operator == OverloadedOperator::Assign &&
-		cast_imut(args).front().t == cast_imut(args).back().t &&
-		( !cast_imut(args).front().t.GetClassType().empty() || !cast_imut(args).front().t.GetArrayType().empty() || !cast_imut(args).front().t.GetTupleType().empty() ) &&
-		cast_imut(args).front().value_type == ValueType::ReferenceMut &&
-		cast_imut(args).back().value_type == ValueType::Value )
+		args_ref.front().t == args_ref.back().t &&
+		( !args_ref.front().t.GetClassType().empty() || !args_ref.front().t.GetArrayType().empty() || !args_ref.front().t.GetTupleType().empty() ) &&
+		args_ref.front().value_type == ValueType::ReferenceMut &&
+		args_ref.back().value_type == ValueType::Value )
 	{
 		// Do move assign.
 		// TODO - what exact evaluation order should be here?
@@ -2395,12 +2317,12 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 		var Variable mut move_result{ .t= void_type_ };
 		return Value( move(move_result) );
 	}
-	else if( cast_imut(args).front().t == cast_imut(args).back().t && ( !cast_imut(args).front().t.GetArrayType().empty() || !cast_imut(args).front().t.GetTupleType().empty() ) )
+	else if( args_ref.front().t == args_ref.back().t && ( !args_ref.front().t.GetArrayType().empty() || !args_ref.front().t.GetTupleType().empty() ) )
 	{
 		return CallBinaryOperatorForArrayOrTuple( names_scope, function_context, operator, arg_l, arg_r, src_loc );
 	}
 
-	if_var( &overloaded_operator : GetOverloadedOperator( args.range(), operator, names_scope, src_loc ) )
+	if_var( &overloaded_operator : GetOverloadedOperator( args_ref.range(), operator, names_scope, src_loc ) )
 	{
 		if( overloaded_operator.is_deleted )
 		{
@@ -2445,10 +2367,11 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 	if( r_var.node_id != ReferencesGraph::c_empty_node_id )
 	{
 		var ust::string8 mut node_name= function_context.references_graph.GetNodeName( r_var.node_id ) + " lock";
-		r_var_lock_node= function_context.references_graph.AddNode(
-			select( r_var.value_type == ValueType::ReferenceMut ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
-			move(node_name) );
-		function_context.references_graph.AddLink( r_var.node_id, r_var_lock_node );
+		r_var_lock_node= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::ReferenceImut, move(node_name) );
+		if( !function_context.references_graph.TryAddLink( r_var.node_id, r_var_lock_node ) )
+		{
+			REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( r_var.node_id ) )
+		}
 	}
 
 	var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.get_ref() );
@@ -2540,6 +2463,7 @@ fn CodeBuilder::TryCallOverloadedPostfixOperator(
 			var Variable arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.get_ref() );
 			var VariableTypeExtened mut type_extended{ .t(arg.t), .value_type= arg.value_type };
 			args.push_back( move(type_extended) );
+			DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
 		}
 
 		RestoreInstructionsState( function_context, instructions_state );
@@ -2592,6 +2516,7 @@ fn CodeBuilder::CallFunctionsSet(
 				auto arg_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg.get_ref() );
 				var VariableTypeExtened mut out_arg{ .t( arg_variable.t ), .value_type= arg_variable.value_type };
 				function_context.args_preevaluation_cache.insert( arg, move(out_arg) );
+				DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
 			}
 			args_evaluated.push_back( function_context.args_preevaluation_cache[arg] );
 		}
@@ -2736,6 +2661,8 @@ fn CodeBuilder::DoCallFunction(
 		auto arg_n= select( args_evaluation_order == ArgsEvaluationOrder::Direct ? i : total_args - i - 1s );
 		auto &mut llvm_arg= llvm_args[ first_llvm_arg_number + arg_n ];
 
+		var ust::string8 arg_number_str= ust::to_string8(arg_n);
+
 		auto& param= function_type.params[arg_n];
 		var Type& expected_arg_type= param.t;
 		var Variable mut arg=
@@ -2753,7 +2680,7 @@ fn CodeBuilder::DoCallFunction(
 					.t= expected_arg_type,
 					.value_type= ValueType::ReferenceMut,
 					.location= Variable::Location::Pointer,
-					.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "arg converted" ),
+					.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "converted arg " + arg_number_str ),
 				};
 				unsafe{  arg_converted.llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, arg_converted.t.GetLLVMType(), "\0"[0] );  }
 
@@ -2780,15 +2707,7 @@ fn CodeBuilder::DoCallFunction(
 				DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc ); // Destroy source arg, if needed.
 
 				// Register variable for references checking and deestruction.
-				var NamesScopeVariable mut names_scope_variable
-				{
-					.t= arg_converted.t,
-					.is_mutable= true,
-					.llvm_value= arg_converted.llvm_value,
-					.constexpr_value= arg_converted.constexpr_value,
-					.node_id= arg_converted.node_id,
-				};
-				function_context.variables_frames.back().push_back( move(names_scope_variable) );
+				RegisterTemporaryVariable( function_context, arg_converted );
 
 				arg= move(arg_converted);
 			}
@@ -2827,7 +2746,7 @@ fn CodeBuilder::DoCallFunction(
 			{
 				auto arg_node_id= function_context.references_graph.AddNode(
 					select( param.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
-					"_arg_" + ust::to_string8(arg_n) );
+					"reference arg " + arg_number_str );
 				args_nodes[arg_n]= arg_node_id;
 				if( !function_context.references_graph.TryAddLink( arg.node_id, arg_node_id ) )
 				{
@@ -2845,7 +2764,7 @@ fn CodeBuilder::DoCallFunction(
 
 					auto own_reference_node= function_context.references_graph.AddNode(
 						select( is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
-						"arg" + ust::to_string8(arg_n) + "lock" );
+						"inner reference lock " + arg_number_str );
 					reference_args_inner_nodes[arg_n]= own_reference_node;
 
 					foreach( inner_reference : inner_references )
@@ -2888,7 +2807,7 @@ fn CodeBuilder::DoCallFunction(
 
 			if( arg.node_id != ReferencesGraph::c_empty_node_id )
 			{
-				auto arg_node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "_arg_" + ust::to_string8(arg_n) );
+				auto arg_node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "value arg " + arg_number_str );
 				args_nodes[arg_n]= arg_node_id;
 
 				if( expected_arg_type.GetInnerReferenceKind() != InnerReferenceKind::None )
@@ -3032,7 +2951,7 @@ fn CodeBuilder::DoCallFunction(
 		// Perform regular call for non-constexpr function or in case of error in constexpr function evaluation.
 		unsafe
 		{
-			auto call_result= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, cast_imut(llvm_args).front_unsafe(), u32(llvm_args.size()), "\0"[0] );
+			auto call_result= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, llvm_args.front_unsafe(), u32(llvm_args.size()), "\0"[0] );
 			if( !is_s_ret ){  result.llvm_value= call_result;  }
 			else if( !function.t.return_value_is_reference && function.t.return_type == void_type_ )
 			{
@@ -3218,17 +3137,8 @@ fn CodeBuilder::DoCallFunction(
 
 	DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc ); // Destroy temporary args.
 
-	{ 	// Register result variable for destruction and references graph checks.
-		var NamesScopeVariable mut names_scope_variable
-		{
-			.t= result.t,
-			.is_mutable= true,
-			.llvm_value= result.llvm_value,
-			.constexpr_value= result.constexpr_value,
-			.node_id= result.node_id,
-		};
-		function_context.variables_frames.back().push_back( move(names_scope_variable) );
-	}
+	// Register result variable for destruction and references graph checks.
+	RegisterTemporaryVariable( function_context, result );
 
 	return move(result);
 }
@@ -3259,7 +3169,7 @@ fn CodeBuilder::BuildTempVariableConstruction(
 		.value_type= ValueType::Value,
 	};
 
-	auto name= "_temp_" + t.ToString() + "\0";
+	auto name= "temp " + t.ToString() + "\0";
 	unsafe{  result.llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, t.GetLLVMType(), name.front() );  }
 
 	result.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, name );

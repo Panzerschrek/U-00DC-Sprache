@@ -376,3 +376,35 @@ def LargeArrayCopy_Test0():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 565 -54 + 78423 + 88 + 751 + 51 -4623 )
+
+
+def ReferenceProtectionError_ForArrayCopying_Test0():
+	c_program_text= """
+		type Vec4= [ f32, 4 ];
+		fn Foo()
+		{
+			var Vec4 mut a0= zero_init, mut a1= zero_init;
+			auto &mut a1_ref= a1;
+			a0= a1;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].src_loc.line == 7 )
+
+
+def ReferenceProtectionError_ForArrayCopying_Test1():
+	c_program_text= """
+		type Vec4= [ f32, 4 ];
+		fn Foo()
+		{
+			var Vec4 mut a0= zero_init, mut a1= zero_init;
+			auto &mut a0_ref= a0;
+			a0= a1;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].src_loc.line == 7 )

@@ -616,6 +616,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		}
 
 		llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( src_var, function_context );
+		DestroyUnusedTemporaryVariables( function_context, block_names.GetErrors(), src_loc );
 
 		if( dst_type->fundamental_type != src_type->fundamental_type )
 		{
@@ -697,8 +698,6 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 		if( variable.type != void_type_ )
 			function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
-
-		DestroyUnusedTemporaryVariables( function_context, block_names.GetErrors(), src_loc );
 
 		return llvm::dyn_cast<llvm::Constant>(value_for_assignment);
 	}
@@ -894,10 +893,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 		{
 			ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( dst_variable_node );
 			if( inner_reference == nullptr )
-			{
-				inner_reference= std::make_shared<ReferencesGraphNode>( dst_variable_node->name + "/inner_variable", field.is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
-				function_context.variables_state.SetNodeInnerReference( dst_variable_node, inner_reference );
-			}
+				inner_reference= function_context.variables_state.CreateNodeInnerReference( dst_variable_node, field.is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
 			else
 			{
 				if( ( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceImut &&  field.is_mutable ) ||

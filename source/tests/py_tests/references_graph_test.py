@@ -775,3 +775,94 @@ def InnerReferenceMutabilityChanging_Test6():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InnerReferenceMutabilityChanging" )
 	assert( errors_list[0].src_loc.line == 13 )
+
+
+def TemporaryReferenceRemoving_Test0():
+	c_program_text= """
+		fn Pass( i32 &mut x ) : i32& mut;
+		fn Bar( i32 &imut x, i32 &imut y );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			// Temporary mutable reference produced here in call of "Pass", but it is destroyed after binding it to "imut" param and this allow us later take "imut" reference for "x".
+			Bar( Pass(x), x );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TemporaryReferenceRemoving_Test1():
+	c_program_text= """
+		fn Bar( i32 &imut x, i32 &imut y );
+		fn Foo(bool c)
+		{
+			var i32 mut x= 0, mut y= 0;
+			// Temporary mutable reference produced here as result of "select" operator, but it is destroyed after binding it to "imut" param and this allow us later take "imut" reference for "x".
+			Bar( select(c ? x : y), select(c ? cast_imut(y) : cast_imut(x)) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TemporaryReferenceRemoving_Test2():
+	c_program_text= """
+		fn Bar( i32 &imut x, i32 &imut y );
+		fn Foo(bool c)
+		{
+			var [ i32, 2 ] mut arr= zero_init;
+			// Temporary mutable reference produced here as result of "[]" operator, but it is destroyed after binding it to "imut" param and this allow us later take "imut" reference for "arr".
+			Bar( arr[0], cast_imut(arr)[1] );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ReferenceFieldNode_Test0():
+	c_program_text= """
+		struct S { i32 &mut r; }
+		fn Bar( i32 &imut x, i32 &imut y );
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var S s{ .r= x };
+			// Temporary reference is not produced here for member access operator for reference, because only one inner reference node is accessible here.
+			Bar( s.r, s.r );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ReferenceFieldNode_Test1():
+	c_program_text= """
+		fn Bar( i32 &imut x, i32 &imut y );
+		struct S
+		{
+			i32 &mut r;
+
+			fn Foo( this )
+			{
+				// Temporary reference is not produced here for member access operator for reference, because only one inner reference node is accessible here.
+				Bar( r, r );
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ReferenceFieldNode_Test2():
+	c_program_text= """
+		struct S { i32 &mut r; }
+		fn Bar( i32 &imut x, i32 &imut y );
+		fn Foo(bool cond)
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S s0{ .r= x }, s1 { .r= y };
+			auto& s_ref= select( cond ? s0 : s1 );
+			// Temporary mutable reference is produced here for member access operator for reference. Because of that we get error when creating reference node while accessing ".r" second time.
+			Bar( s_ref.r, s_ref.r );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ReferenceProtectionError" )
+	assert( errors_list[0].src_loc.line == 10 )

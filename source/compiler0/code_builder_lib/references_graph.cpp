@@ -22,10 +22,14 @@ size_t ReferencesGraph::LinkHasher::operator()( const Link& link ) const
 	return llvm::hash_combine( reinterpret_cast<uintptr_t>(link.src.get()), reinterpret_cast<uintptr_t>(link.dst.get()) );
 }
 
-void ReferencesGraph::AddNode( ReferencesGraphNodePtr node )
+ReferencesGraphNodePtr ReferencesGraph::AddNode( const ReferencesGraphNode::Kind kind, std::string name )
 {
+	const auto node= std::make_shared<ReferencesGraphNode>( std::move(name), kind );
+
 	U_ASSERT( nodes_.count(node) == 0 );
-	nodes_.emplace( std::move(node), NodeState() );
+	nodes_.emplace( node, NodeState() );
+
+	return node;
 }
 
 void ReferencesGraph::RemoveNode( const ReferencesGraphNodePtr& node )
@@ -36,38 +40,9 @@ void ReferencesGraph::RemoveNode( const ReferencesGraphNodePtr& node )
 	if( const auto inner_reference= GetNodeInnerReference( node ) )
 		RemoveNode( inner_reference );
 
-	// Collect in/out nodes.
-	std::vector<ReferencesGraphNodePtr> in_nodes;
-	std::vector<ReferencesGraphNodePtr> out_nodes;
-	for( const auto& link : links_ )
-	{
-		if( link.src == link.dst ) // Self loop link.
-			continue;
+	RemoveNodeLinks( node );
 
-		if( link.src == node )
-			out_nodes.push_back( link.dst );
-		if( link.dst == node )
-			in_nodes.push_back( link.src );
-	}
-
-	// Remove links.
-	for( auto it= links_.begin(); it != links_.end(); )
-	{
-		if( it->src == node || it->dst == node )
-		{
-			it= links_.erase(it);
-		}
-		else
-			++it;
-	}
-
-	// Erase node.
-	nodes_.erase(node);
-
-	// Create new links.
-	for( const ReferencesGraphNodePtr& from : in_nodes )
-		for( const ReferencesGraphNodePtr& to : out_nodes )
-			AddLink( from, to );
+	nodes_.erase( node );
 }
 
 void ReferencesGraph::AddLink( const ReferencesGraphNodePtr& from, const ReferencesGraphNodePtr& to )
@@ -109,14 +84,18 @@ ReferencesGraphNodePtr ReferencesGraph::GetNodeInnerReference( const ReferencesG
 	return it->second.inner_reference;
 }
 
-void ReferencesGraph::SetNodeInnerReference( const ReferencesGraphNodePtr& node, ReferencesGraphNodePtr inner_reference )
+ReferencesGraphNodePtr ReferencesGraph::CreateNodeInnerReference( const ReferencesGraphNodePtr& node, const ReferencesGraphNode::Kind kind )
 {
-	AddNode( inner_reference );
+	U_ASSERT( kind != ReferencesGraphNode::Kind::Variable );
+
+	const auto inner_node= AddNode( kind, node->name + " inner reference" );
 
 	const auto it= nodes_.find( node );
 	U_ASSERT( it != nodes_.end() );
 	U_ASSERT( it->second.inner_reference == nullptr );
-	it->second.inner_reference= std::move(inner_reference);
+	it->second.inner_reference= inner_node;
+
+	return inner_node;
 }
 
 bool ReferencesGraph::HaveOutgoingLinks( const ReferencesGraphNodePtr& from ) const
@@ -155,16 +134,7 @@ void ReferencesGraph::MoveNode( const ReferencesGraphNodePtr& node )
 		node_state.inner_reference= nullptr;
 	}
 
-	// Remove links.
-	for( auto it= links_.begin(); it != links_.end(); )
-	{
-		if( it->src == node || it->dst == node )
-		{
-			it= links_.erase(it);
-		}
-		else
-			++it;
-	}
+	RemoveNodeLinks( node );
 }
 
 bool ReferencesGraph::NodeMoved( const ReferencesGraphNodePtr& node ) const
@@ -349,6 +319,39 @@ std::vector<CodeBuilderError> ReferencesGraph::CheckWhileBlockVariablesState( co
 		}
 	}
 	return errors;
+}
+
+void ReferencesGraph::RemoveNodeLinks( const ReferencesGraphNodePtr& node )
+{
+	// Collect in/out nodes.
+	std::vector<ReferencesGraphNodePtr> in_nodes;
+	std::vector<ReferencesGraphNodePtr> out_nodes;
+	for( const auto& link : links_ )
+	{
+		if( link.src == link.dst ) // Self loop link.
+			continue;
+
+		if( link.src == node )
+			out_nodes.push_back( link.dst );
+		if( link.dst == node )
+			in_nodes.push_back( link.src );
+	}
+
+	// Remove links.
+	for( auto it= links_.begin(); it != links_.end(); )
+	{
+		if( it->src == node || it->dst == node )
+		{
+			it= links_.erase(it);
+		}
+		else
+			++it;
+	}
+
+	// Create new links.
+	for( const ReferencesGraphNodePtr& from : in_nodes )
+		for( const ReferencesGraphNodePtr& to : out_nodes )
+			AddLink( from, to );
 }
 
 } // namespace CodeBuilderPrivate

@@ -82,7 +82,7 @@ private:
 	class ReferencesGraphNodeHolder final
 	{
 	public:
-		ReferencesGraphNodeHolder( ReferencesGraphNodePtr node, FunctionContext& function_context );
+		ReferencesGraphNodeHolder( FunctionContext& function_context, ReferencesGraphNode::Kind node_kind, std::string node_name );
 		ReferencesGraphNodeHolder( const ReferencesGraphNodeHolder& )= delete;
 		ReferencesGraphNodeHolder( ReferencesGraphNodeHolder&& other ) noexcept;
 
@@ -91,6 +91,7 @@ private:
 		~ReferencesGraphNodeHolder();
 
 		const ReferencesGraphNodePtr& Node() const { return node_; }
+		ReferencesGraphNodePtr TakeNode();
 
 	private:
 		ReferencesGraphNodePtr node_;
@@ -793,6 +794,7 @@ private:
 
 	void SetupReferencesInCopyOrMove( FunctionContext& function_context, const Variable& dst_variable, const Variable& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
+	void RegisterTemporaryVariable( FunctionContext& function_context, Variable variable );
 	void DestroyUnusedTemporaryVariables( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 	ReferencesGraph MergeVariablesStateAfterIf(

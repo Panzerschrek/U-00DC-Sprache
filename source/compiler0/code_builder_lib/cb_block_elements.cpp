@@ -94,7 +94,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			node_kind= ReferencesGraphNode::Kind::ReferenceMut;
 		else
 			node_kind= ReferencesGraphNode::Kind::ReferenceImut;
-		const auto var_node= std::make_shared<ReferencesGraphNode>( variable_declaration.name, node_kind );
+		// Do not forget to remove node in case of error-return!!!
+		variable.node= function_context.variables_state.AddNode( node_kind, variable_declaration.name );
 
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
@@ -103,8 +104,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			CreateVariableDebugInfo( variable, variable_declaration.name, variable_declaration.src_loc, function_context );
 
-			prev_variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
-			variable.node= var_node;
+			prev_variables_storage.RegisterVariable( variable );
 
 			if( variable_declaration.initializer != nullptr )
 				variable.constexpr_value=
@@ -125,6 +125,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			if( variable_declaration.initializer == nullptr )
 			{
 				REPORT_ERROR( ExpectedInitializer, names.GetErrors(), variables_declaration.src_loc_, variable_declaration.name );
+				function_context.variables_state.RemoveNode( variable.node );
 				continue;
 			}
 
@@ -136,6 +137,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				if( constructor_initializer->arguments.size() != 1u )
 				{
 					REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names.GetErrors(), constructor_initializer->src_loc_ );
+					function_context.variables_state.RemoveNode( variable.node );
 					continue;
 				}
 				initializer_expression= &constructor_initializer->arguments.front();
@@ -143,6 +145,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			else
 			{
 				REPORT_ERROR( UnsupportedInitializerForReference, names.GetErrors(), variable_declaration.src_loc );
+				function_context.variables_state.RemoveNode( variable.node );
 				continue;
 			}
 
@@ -150,17 +153,20 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			if( !ReferenceIsConvertible( expression_result.type, variable.type, names.GetErrors(), variables_declaration.src_loc_ ) )
 			{
 				REPORT_ERROR( TypesMismatch, names.GetErrors(), variables_declaration.src_loc_, variable.type, expression_result.type );
+				function_context.variables_state.RemoveNode( variable.node );
 				continue;
 			}
 
 			if( expression_result.value_type == ValueType::Value )
 			{
 				REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), variables_declaration.src_loc_ );
+				function_context.variables_state.RemoveNode( variable.node );
 				continue;
 			}
 			if( expression_result.value_type == ValueType::ConstReference && variable.value_type == ValueType::Reference )
 			{
 				REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), variable_declaration.src_loc );
+				function_context.variables_state.RemoveNode( variable.node );
 				continue;
 			}
 
@@ -173,10 +179,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			CreateReferenceVariableDebugInfo( variable, variable_declaration.name, variable_declaration.src_loc, function_context );
 
-			prev_variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
-			variable.node= var_node;
+			prev_variables_storage.RegisterVariable( variable );
 
-			if( expression_result.node != nullptr && !function_context.variables_state.TryAddLink( expression_result.node, var_node ) )
+			if( expression_result.node != nullptr && !function_context.variables_state.TryAddLink( expression_result.node, variable.node ) )
 				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), variable_declaration.src_loc, expression_result.node->name );
 		}
 		else U_ASSERT(false);
@@ -239,7 +244,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		node_kind= ReferencesGraphNode::Kind::ReferenceMut;
 	else
 		node_kind= ReferencesGraphNode::Kind::ReferenceImut;
-	const auto var_node= std::make_shared<ReferencesGraphNode>( auto_variable_declaration.name, node_kind );
+	// Do not forget to remove node in case of error-return!!!
+	variable.node= function_context.variables_state.AddNode( node_kind, auto_variable_declaration.name );
 
 	if( auto_variable_declaration.reference_modifier != ReferenceModifier::Reference ||
 		auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr )
@@ -248,6 +254,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( !EnsureTypeComplete( variable.type ) )
 		{
 			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), auto_variable_declaration.src_loc_, variable.type );
+			function_context.variables_state.RemoveNode(variable.node);
 			return BlockBuildInfo();
 		}
 	}
@@ -257,6 +264,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr && !variable.type.CanBeConstexpr() )
 	{
 		REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names.GetErrors(), auto_variable_declaration.src_loc_ );
+		function_context.variables_state.RemoveNode(variable.node);
 		return BlockBuildInfo();
 	}
 
@@ -265,6 +273,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( initializer_experrsion.value_type == ValueType::ConstReference && variable.value_type != ValueType::ConstReference )
 		{
 			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), auto_variable_declaration.src_loc_ );
+			function_context.variables_state.RemoveNode(variable.node);
 			return BlockBuildInfo();
 		}
 
@@ -274,15 +283,15 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( initializer_experrsion.value_type == ValueType::Value )
 		{
 			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), auto_variable_declaration.src_loc_ );
+			function_context.variables_state.RemoveNode(variable.node);
 			return BlockBuildInfo();
 		}
 
 		CreateVariableDebugInfo( variable, auto_variable_declaration.name, auto_variable_declaration.src_loc_, function_context );
 
-		prev_variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
-		variable.node= var_node;
+		prev_variables_storage.RegisterVariable( variable );
 
-		if( initializer_experrsion.node != nullptr && !function_context.variables_state.TryAddLink( initializer_experrsion.node, var_node ) )
+		if( initializer_experrsion.node != nullptr && !function_context.variables_state.TryAddLink( initializer_experrsion.node, variable.node ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), auto_variable_declaration.src_loc_, initializer_experrsion.node->name );
 	}
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
@@ -294,8 +303,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		CreateVariableDebugInfo( variable, auto_variable_declaration.name, auto_variable_declaration.src_loc_, function_context );
 
-		prev_variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
-		variable.node= var_node;
+		prev_variables_storage.RegisterVariable( variable );
 
 		SetupReferencesInCopyOrMove( function_context, variable, initializer_experrsion, names.GetErrors(), auto_variable_declaration.src_loc_ );
 
@@ -445,10 +453,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		{ // Lock references to return value variables.
 			ReferencesGraphNodeHolder return_value_lock(
-				std::make_shared<ReferencesGraphNode>(
-					"ret result",
-					function_context.function_type.return_value_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut ),
-				function_context );
+				function_context,
+				function_context.function_type.return_value_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
+				"return value lock" );
 			if( expression_result.node != nullptr )
 				function_context.variables_state.AddLink( expression_result.node, return_value_lock.Node() );
 
@@ -517,7 +524,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 		else
 		{
-			// Now we can return by value only fundamentals end enums.
 			U_ASSERT(
 				expression_result.type.GetFundamentalType() != nullptr||
 				expression_result.type.GetEnumType() != nullptr ||
@@ -564,10 +570,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	std::optional<ReferencesGraphNodeHolder> sequence_lock;
 	if( sequence_expression.node != nullptr )
 		sequence_lock.emplace(
-			std::make_shared<ReferencesGraphNode>(
-				sequence_expression.node->name + " seequence lock",
-				sequence_expression.value_type == ValueType::Reference ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut ),
-			function_context );
+			function_context,
+			sequence_expression.value_type == ValueType::Reference ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
+			sequence_expression.node->name + " sequence lock" );
 
 	if( const Tuple* const tuple_type= sequence_expression.type.GetTupleType() )
 	{
@@ -593,21 +598,22 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				node_kind= ReferencesGraphNode::Kind::ReferenceMut;
 			else
 				node_kind= ReferencesGraphNode::Kind::ReferenceImut;
-			const auto var_node= std::make_shared<ReferencesGraphNode>( for_operator.loop_variable_name_, node_kind );
+			// Do not forget to remove node in case of error-return!!!
+			variable.node= function_context.variables_state.AddNode( node_kind, for_operator.loop_variable_name_ );
 
 			if( for_operator.reference_modifier_ == ReferenceModifier::Reference )
 			{
 				if( for_operator.mutability_modifier_ == MutabilityModifier::Mutable && sequence_expression.value_type != ValueType::Reference )
 				{
 					REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), for_operator.src_loc_ );
+					function_context.variables_state.RemoveNode(variable.node);
 					continue;
 				}
 
 				variable.llvm_value= function_context.llvm_ir_builder.CreateGEP( sequence_expression.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( element_index ) } );
-				function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( var_node, variable ) );
-				variable.node= var_node;
+				function_context.stack_variables_stack.back()->RegisterVariable( variable );
 
-				if( sequence_lock != std::nullopt && !function_context.variables_state.TryAddLink( sequence_lock->Node(), var_node ) )
+				if( sequence_lock != std::nullopt && !function_context.variables_state.TryAddLink( sequence_lock->Node(), variable.node ) )
 					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), for_operator.src_loc_, sequence_expression.node->name );
 			}
 			else
@@ -615,17 +621,18 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				if( !EnsureTypeComplete( element_type ) )
 				{
 					REPORT_ERROR( UsingIncompleteType, names.GetErrors(), for_operator.src_loc_, element_type );
+					function_context.variables_state.RemoveNode(variable.node);
 					continue;
 				}
 				if( !element_type.IsCopyConstructible() )
 				{
 					REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), for_operator.src_loc_, element_type );
+					function_context.variables_state.RemoveNode(variable.node);
 					continue;
 				}
 
 				variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( element_type.GetLLVMType(), nullptr, for_operator.loop_variable_name_ + std::to_string(element_index) );
-				function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( var_node, variable ) );
-				variable.node= var_node;
+				function_context.stack_variables_stack.back()->RegisterVariable( variable );
 
 				SetupReferencesInCopyOrMove( function_context, variable, sequence_expression, names.GetErrors(), for_operator.src_loc_ );
 
@@ -971,17 +978,20 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		node_kind= ReferencesGraphNode::Kind::ReferenceMut;
 	else
 		node_kind= ReferencesGraphNode::Kind::ReferenceImut;
-	const auto var_node= std::make_shared<ReferencesGraphNode>( with_operator.variable_name_, node_kind );
+	// Do not forget to remove node in case of error-return!!!
+	variable.node= function_context.variables_state.AddNode( node_kind , with_operator.variable_name_ );
 
 	if( with_operator.reference_modifier_ != ReferenceModifier::Reference &&
 		!EnsureTypeComplete( variable.type ) )
 	{
 		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), with_operator.src_loc_, variable.type );
+		function_context.variables_state.RemoveNode( variable.node );
 		return BlockBuildInfo();
 	}
 	if( with_operator.reference_modifier_ != ReferenceModifier::Reference && variable.type.IsAbstract() )
 	{
 		REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), with_operator.src_loc_, variable.type );
+		function_context.variables_state.RemoveNode( variable.node );
 		return BlockBuildInfo();
 	}
 
@@ -990,6 +1000,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( expr.value_type == ValueType::ConstReference && variable.value_type != ValueType::ConstReference )
 		{
 			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), with_operator.src_loc_ );
+			function_context.variables_state.RemoveNode( variable.node );
 			return BlockBuildInfo();
 		}
 
@@ -1008,10 +1019,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		CreateVariableDebugInfo( variable, with_operator.variable_name_, with_operator.src_loc_, function_context );
 
-		variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
-		variable.node= var_node;
-
-		if( expr.node != nullptr && !function_context.variables_state.TryAddLink( expr.node, var_node ) )
+		if( expr.node != nullptr && !function_context.variables_state.TryAddLink( expr.node, variable.node ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), with_operator.src_loc_, expr.node->name );
 	}
 	else if( with_operator.reference_modifier_ == ReferenceModifier::None )
@@ -1022,9 +1030,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType(), nullptr, with_operator.variable_name_ );
 
 		CreateVariableDebugInfo( variable, with_operator.variable_name_, with_operator.src_loc_, function_context );
-
-		variables_storage.RegisterVariable( std::make_pair( var_node, variable ) );
-		variable.node= var_node;
 
 		SetupReferencesInCopyOrMove( function_context, variable, expr, names.GetErrors(), with_operator.src_loc_ );
 
@@ -1042,14 +1047,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		else
 		{
 			if( !variable.type.IsCopyConstructible() )
-			{
 				REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), with_operator.src_loc_, variable.type );
-				return BlockBuildInfo();
-			}
-			BuildCopyConstructorPart(
-				variable.llvm_value, expr.llvm_value,
-				variable.type,
-				function_context );
+			else
+				BuildCopyConstructorPart(
+					variable.llvm_value, expr.llvm_value,
+					variable.type,
+					function_context );
 		}
 		// constexpr preserved for move/copy.
 		variable.constexpr_value= expr.constexpr_value;
@@ -1063,13 +1066,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	if( IsKeyword( with_operator.variable_name_ ) )
 		REPORT_ERROR( UsingKeywordAsName, names.GetErrors(), with_operator.src_loc_ );
 
-	{ // Destroy unused temporaries after variable initialization.
-		const ReferencesGraphNodeHolder variable_lock(
-			std::make_shared<ReferencesGraphNode>( "lock " + var_node->name, ReferencesGraphNode::Kind::ReferenceImut ),
-			function_context );
-		function_context.variables_state.AddLink( var_node, variable_lock.Node() );
-		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), with_operator.src_loc_ );
-	}
+	// Destroy temporary variables of initializer expression. Do it before registretion of variable to prevent its destruction.
+	DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), with_operator.src_loc_ );
+	variables_storage.RegisterVariable( variable );
 
 	// Create separate namespace for variable. Redefinition here is not possible.
 	NamesScope variable_names_scope( "", &names );

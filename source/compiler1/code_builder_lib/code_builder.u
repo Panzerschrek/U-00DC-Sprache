@@ -443,32 +443,33 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 			auto node_id= function_context.this_.get_ref().node_id;
 			if( node_id != ReferencesGraph::c_empty_node_id )
 			{
-				var ust::string8 mut node_name= function_context.references_graph.GetNodeName( node_id );
-				node_name+= ".";
-				node_name+= field.syntax_element.get_ref().name;
-				auto reference_field_node= function_context.references_graph.AddNode(
-					select( field.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
-					move(node_name) );
-				result.node_id= reference_field_node;
-
-				foreach( &inner_node : function_context.references_graph.GetAccessibleVariableNodesInnerReferences( node_id ) )
+				auto inner_nodes = function_context.references_graph.GetAccessibleVariableNodesInnerReferences( node_id );
+				if( inner_nodes.size() == 1s )
 				{
-					if( !function_context.references_graph.TryAddLink( inner_node, reference_field_node ) )
-					{
-						REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( inner_node ) )
-					}
+					// For cases with single inner node just return it. This hels preventing some cases of false "ReferenceProtectionError".
+					result.node_id= inner_nodes.range().front();
 				}
-
-				// Register variable for references checking.
-				var NamesScopeVariable mut names_scope_variable
+				else
 				{
-					.t= result.t,
-					.is_mutable= field.is_mutable,
-					.llvm_value= result.llvm_value,
-					.constexpr_value= result.constexpr_value,
-					.node_id= reference_field_node,
-				};
-				function_context.variables_frames.back().push_back( move(names_scope_variable) );
+					var ust::string8 mut node_name= function_context.references_graph.GetNodeName( node_id );
+					node_name+= ".";
+					node_name+= field.syntax_element.get_ref().name;
+					auto reference_field_node= function_context.references_graph.AddNode(
+						select( field.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
+						move(node_name) );
+					result.node_id= reference_field_node;
+
+					foreach( &inner_node : inner_nodes )
+					{
+						if( !function_context.references_graph.TryAddLink( inner_node, reference_field_node ) )
+						{
+							REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( inner_node ) )
+						}
+					}
+
+					// Register variable for references checking.
+					RegisterTemporaryVariable( function_context, result );
+				}
 			}
 
 			return move(result);
@@ -1788,25 +1789,52 @@ fn CodeBuilder::CallDestructorsForLoopInnerVariables( this, NamesScopePtr& names
 
 fn CodeBuilder::DestroyUnusedTemporaryVariables( this, NamesScopePtr& names_scope, FunctionContext& mut function_context, SrcLoc& src_loc )
 {
-	// TODO - maybe iterate in reverse order?
-	// TODO - maybe we should iterate multiple times until all unused nodes is not removed?
-	for( auto mut i= 0s; i < function_context.variables_frames.back().size(); ++i )
+	// Try to move unused nodes (variables and references) until we can't move anything.
+	// Multiple iterations needed to process complex references chains.
+	while(true)
 	{
-		auto node_id= function_context.variables_frames.back()[i].node_id;
-		if( node_id != ReferencesGraph::c_empty_node_id &&
-			!function_context.references_graph.NodeIsMoved( node_id ) &&
-			!function_context.references_graph.HaveOutgoingLinks( node_id ) )
+		auto mut any_node_moved= false;
+		// TODO - maybe iterate in reverse order?
+		for( auto mut i= 0s; i < function_context.variables_frames.back().size(); ++i )
 		{
-			function_context.references_graph.MoveNode( node_id );
-
-			if( function_context.references_graph.GetNodeKind( node_id ) == ReferencesGraph::NodeKind::Variable )
+			auto node_id= function_context.variables_frames.back()[i].node_id;
+			// Move variable nodes without links or all reference nodes.
+			// We can freely drop reference nodes here because there should be unregistered reference nodes for current used references.
+			if( node_id != ReferencesGraph::c_empty_node_id &&
+				!function_context.references_graph.NodeIsMoved( node_id ) &&
+				( function_context.references_graph.GetNodeKind( node_id ) != ReferencesGraph::NodeKind::Variable ||
+					!function_context.references_graph.HaveOutgoingLinks( node_id ) ) )
 			{
-				var LLVMValueRef llvm_value= function_context.variables_frames.back()[i].llvm_value;
-				var Type t= function_context.variables_frames.back()[i].t;
-				BuildDestructorPart( names_scope, function_context, llvm_value, t, src_loc );
+				any_node_moved= true;
+				function_context.references_graph.MoveNode( node_id );
+
+				if( function_context.references_graph.GetNodeKind( node_id ) == ReferencesGraph::NodeKind::Variable )
+				{
+					var LLVMValueRef llvm_value= function_context.variables_frames.back()[i].llvm_value;
+					var Type t= function_context.variables_frames.back()[i].t;
+					BuildDestructorPart( names_scope, function_context, llvm_value, t, src_loc );
+				}
 			}
 		}
+
+		if(!any_node_moved)
+		{
+			break;
+		}
 	}
+}
+
+fn CodeBuilder::RegisterTemporaryVariable( FunctionContext& mut function_context, Variable& variable )
+{
+	var NamesScopeVariable mut names_scope_variable
+	{
+		.t= variable.t,
+		.is_mutable= variable.value_type == ValueType::ReferenceMut,
+		.llvm_value= variable.llvm_value,
+		.constexpr_value= variable.constexpr_value,
+		.node_id= variable.node_id,
+	};
+	function_context.variables_frames.back().push_back( move(names_scope_variable) );
 }
 
 fn CodeBuilder::IsReferenceAllowedForReturn( this, FunctionContext& function_context, ReferencesGraph::NodeId variable_node ) : bool

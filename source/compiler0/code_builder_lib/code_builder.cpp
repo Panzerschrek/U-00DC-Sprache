@@ -19,10 +19,13 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-CodeBuilder::ReferencesGraphNodeHolder::ReferencesGraphNodeHolder( ReferencesGraphNodePtr node, FunctionContext& function_context )
-	: node_(std::move(node)), function_context_(function_context)
+CodeBuilder::ReferencesGraphNodeHolder::ReferencesGraphNodeHolder(
+	FunctionContext& function_context,
+	const ReferencesGraphNode::Kind node_kind,
+	std::string node_name )
+	: node_( function_context.variables_state.AddNode( node_kind, std::move(node_name) ) )
+	, function_context_(function_context)
 {
-	function_context_.variables_state.AddNode( node_ );
 }
 
 CodeBuilder::ReferencesGraphNodeHolder::ReferencesGraphNodeHolder( ReferencesGraphNodeHolder&& other) noexcept
@@ -33,6 +36,9 @@ CodeBuilder::ReferencesGraphNodeHolder::ReferencesGraphNodeHolder( ReferencesGra
 
 CodeBuilder::ReferencesGraphNodeHolder& CodeBuilder::ReferencesGraphNodeHolder::operator=( ReferencesGraphNodeHolder&& other ) noexcept
 {
+	if( this->node_ != nullptr )
+		function_context_.variables_state.RemoveNode( node_ );
+
 	this->node_= other.node_;
 	other.node_= nullptr;
 	return *this;
@@ -42,6 +48,13 @@ CodeBuilder::ReferencesGraphNodeHolder::~ReferencesGraphNodeHolder()
 {
 	if( node_ != nullptr )
 		function_context_.variables_state.RemoveNode( node_ );
+}
+
+ReferencesGraphNodePtr CodeBuilder::ReferencesGraphNodeHolder::TakeNode()
+{
+	auto res= node_;
+	node_= nullptr;
+	return res;
 }
 
 CodeBuilder::CodeBuilder(
@@ -584,20 +597,16 @@ void CodeBuilder::CallDestructorsImpl(
 	// Call destructors in reverse order.
 	for( auto it = stack_variables_storage.variables_.rbegin(); it != stack_variables_storage.variables_.rend(); ++it )
 	{
-		const StackVariablesStorage::NodeAndVariable& stored_variable= *it;
+		const Variable& stored_variable= *it;
 
-		if( ! function_context.variables_state.NodeMoved( stored_variable.first ) )
+		if( stored_variable.node->kind == ReferencesGraphNode::Kind::Variable && !function_context.variables_state.NodeMoved( stored_variable.node ) )
 		{
-			if( stored_variable.first->kind == ReferencesGraphNode::Kind::Variable )
-			{
-				if( function_context.variables_state.HaveOutgoingLinks( stored_variable.first ) )
-					REPORT_ERROR( DestroyedVariableStillHaveReferences, errors_container, src_loc, stored_variable.first->name );
-				const Variable& var= stored_variable.second;
-				if( var.type.HaveDestructor() )
-					CallDestructor( var.llvm_value, var.type, function_context, errors_container, src_loc );
-			}
-			function_context.variables_state.RemoveNode( stored_variable.first );
+			if( function_context.variables_state.HaveOutgoingLinks( stored_variable.node ) )
+				REPORT_ERROR( DestroyedVariableStillHaveReferences, errors_container, src_loc, stored_variable.node->name );
+			if( stored_variable.type.HaveDestructor() )
+				CallDestructor( stored_variable.llvm_value, stored_variable.type, function_context, errors_container, src_loc );
 		}
+		function_context.variables_state.RemoveNode( stored_variable.node );
 	}
 }
 
@@ -1306,35 +1315,30 @@ Type CodeBuilder::BuildFuncCode(
 
 		// Create variable node, because only variable node can have inner reference node.
 		// Register arg on stack, only if it is value-argument.
-		const auto var_node= std::make_shared<ReferencesGraphNode>( arg_name, ReferencesGraphNode::Kind::Variable );
+		const auto var_node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, arg_name );
 		function_context.args_nodes[ arg_number ].first= var_node;
 		if( arg.is_reference )
 		{
-			function_context.variables_state.AddNode( var_node );
-
-			const auto reference_node= std::make_shared<ReferencesGraphNode>(
-				arg_name + " reference",
-				arg.is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
-			function_context.variables_state.AddNode( reference_node );
+			const auto reference_node= function_context.variables_state.AddNode(
+				arg.is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
+				arg_name + " reference" );
 			function_context.variables_state.AddLink( var_node, reference_node );
 			var.node= reference_node;
 		}
 		else
 		{
-			function_context.stack_variables_stack.back()->RegisterVariable( std::make_pair( var_node, var ) );
 			var.node= var_node;
+			function_context.stack_variables_stack.back()->RegisterVariable( var );
 		}
 
 		if (arg.type.ReferencesTagsCount() > 0u )
 		{
 			// Create inner node + root variable.
-			const auto accesible_variable= std::make_shared<ReferencesGraphNode>( arg_name + " inner variable", ReferencesGraphNode::Kind::Variable );
-			function_context.variables_state.AddNode( accesible_variable );
+			const auto accesible_variable= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable , arg_name + " referenced variable" );
 
-			const auto inner_reference= std::make_shared<ReferencesGraphNode>(
-				arg_name + " inner reference",
+			const auto inner_reference= function_context.variables_state.CreateNodeInnerReference(
+				var_node,
 				arg.type.GetInnerReferenceType() == InnerReferenceType::Mut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
-			function_context.variables_state.SetNodeInnerReference( var_node, inner_reference );
 			function_context.variables_state.AddLink( accesible_variable, inner_reference );
 
 			function_context.args_nodes[ arg_number ].second= accesible_variable;
