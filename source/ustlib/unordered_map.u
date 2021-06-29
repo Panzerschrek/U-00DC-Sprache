@@ -194,12 +194,12 @@ public:
 		size_= size_type(0);
 	}
 
-	fn range( imut this ) : unordered_map_range</false/>
+	fn range( imut this ) : unordered_map_range</false/>'this'
 	{
 		unsafe{  return unordered_map_range</false/>( table_, size_, capacity_ );  }
 	}
 
-	fn range(  mut this ) : unordered_map_range</true />
+	fn range(  mut this ) : unordered_map_range</true />'this'
 	{
 		unsafe{  return unordered_map_range</true />( table_, size_, capacity_ );  }
 	}

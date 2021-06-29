@@ -29,6 +29,16 @@ fn nomangle main() : i32
 		var ust::unordered_map</i32, C/> m;
 		auto m_copy= m; //##expect_error OperationNotSupportedForThisType
 	}
+	{ // Range has reference to map.
+		var ust::unordered_map</i32, i32/> mut m;
+		auto r_imut= cast_imut(m).range();
+		auto r_mut = m.range(); //##expect_error ReferenceProtectionError
+	}
+	{ // Range has reference to map.
+		var ust::unordered_map</i32, i32/> mut m;
+		auto r= m.range();
+		m.insert( 0, 5 ); //##expect_error ReferenceProtectionError
+	}
 
 	return 0;
 }

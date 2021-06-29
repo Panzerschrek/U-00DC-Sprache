@@ -57,7 +57,7 @@ public:
 		impl_.clear();
 	}
 
-	fn range( this ) : unordered_set_range
+	fn range( this ) : unordered_set_range'this'
 	{
 		return unordered_set_range( impl_.range() );
 	}
