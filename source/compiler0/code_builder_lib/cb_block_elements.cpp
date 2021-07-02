@@ -639,7 +639,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				CreateVariableDebugInfo( variable, variable_name, for_operator.src_loc_, function_context );
 
 				CreateLifetimeStart( variable, function_context );
-				//CreateVariableDebugInfo( variable, variable_name, for_operator.src_loc_, function_context );
+				CreateVariableDebugInfo( variable, variable_name, for_operator.src_loc_, function_context );
 
 				function_context.stack_variables_stack.back()->RegisterVariable( variable );
 

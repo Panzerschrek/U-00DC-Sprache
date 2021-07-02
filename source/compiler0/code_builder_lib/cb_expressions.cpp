@@ -815,7 +815,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		result.llvm_value->setName( "select_result" );
 
 		CreateLifetimeStart( result, function_context );
-		//CreateVariableDebugInfo( result, result.node->name, ternary_operator.src_loc_, function_context );
 	}
 	else if( branches_value_types[0] == ValueType::ReferenceImut || branches_value_types[1] == ValueType::ReferenceImut )
 	{
@@ -1294,7 +1293,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	result.llvm_value->setName( result.node->name );
 
 	CreateLifetimeStart( result, function_context );
-	//CreateVariableDebugInfo( result, result.node->name, take_operator.src_loc_, function_context );
 
 	SetupReferencesInCopyOrMove( function_context, result, expression_result, names.GetErrors(), take_operator.src_loc_ );
 
@@ -2939,7 +2937,6 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	variable.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "temp " + type.ToString() );
 
 	CreateLifetimeStart( variable, function_context );
-	//CreateVariableDebugInfo( variable, variable.node->name, src_loc, function_context );
 
 	variable.constexpr_value= ApplyConstructorInitializer( variable, synt_args, src_loc, names, function_context );
 	variable.value_type= ValueType::Value; // Make value after construction
@@ -2970,7 +2967,6 @@ Variable CodeBuilder::ConvertVariable(
 	result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "temp " + dst_type.ToString() );
 
 	CreateLifetimeStart( result, function_context );
-	CreateVariableDebugInfo( variable, result.node->name, src_loc, function_context );
 
 	{
 		// Create temp variables frame to prevent destruction of "src".
