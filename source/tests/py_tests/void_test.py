@@ -249,7 +249,7 @@ def VoidTypeTypeinfo_Test0():
 		static_assert( ti.is_copy_constructible );
 		static_assert( ti.is_copy_assignable );
 		static_assert( ti.size_of == 0s );
-		static_assert( ti.size_of <= 1s );
+		static_assert( ti.align_of <= 1s );
 	"""
 	tests_lib.build_program( c_program_text )
 
