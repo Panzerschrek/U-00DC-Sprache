@@ -102,6 +102,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
 			variable.llvm_value->setName( variable_declaration.name );
 
+			CreateLifetimeStart( variable, function_context );
 			CreateVariableDebugInfo( variable, variable_declaration.name, variable_declaration.src_loc, function_context );
 
 			prev_variables_storage.RegisterVariable( variable );
@@ -301,6 +302,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType(), nullptr, auto_variable_declaration.name );
 
+		CreateLifetimeStart( variable, function_context );
 		CreateVariableDebugInfo( variable, auto_variable_declaration.name, auto_variable_declaration.src_loc_, function_context );
 
 		prev_variables_storage.RegisterVariable( variable );
@@ -631,7 +633,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					continue;
 				}
 
-				variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( element_type.GetLLVMType(), nullptr, for_operator.loop_variable_name_ + std::to_string(element_index) );
+				const std::string variable_name= for_operator.loop_variable_name_ + std::to_string(element_index);
+
+				variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( element_type.GetLLVMType(), nullptr, variable_name );
+
+				CreateLifetimeStart( variable, function_context );
+				//CreateVariableDebugInfo( variable, variable_name, for_operator.src_loc_, function_context );
+
 				function_context.stack_variables_stack.back()->RegisterVariable( variable );
 
 				SetupReferencesInCopyOrMove( function_context, variable, sequence_expression, names.GetErrors(), for_operator.src_loc_ );
@@ -1028,7 +1036,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
 		variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType(), nullptr, with_operator.variable_name_ );
-
+		CreateLifetimeStart( variable, function_context );
 		CreateVariableDebugInfo( variable, with_operator.variable_name_, with_operator.src_loc_, function_context );
 
 		SetupReferencesInCopyOrMove( function_context, variable, expr, names.GetErrors(), with_operator.src_loc_ );
