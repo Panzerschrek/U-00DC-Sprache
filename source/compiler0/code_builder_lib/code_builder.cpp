@@ -2025,7 +2025,12 @@ void CodeBuilder::SetupGeneratedFunctionAttributes( llvm::Function& function )
 
 void CodeBuilder::CreateLifetimeStart( const Variable& variable, FunctionContext& function_context )
 {
-	U_ASSERT( IsTypeComplete( variable.type ) );
+	if( !IsTypeComplete( variable.type ) )
+		return; // May be in case of error.
+
+	if( llvm::dyn_cast<llvm::AllocaInst>(variable.llvm_value) == nullptr )
+		return;
+
 	function_context.llvm_ir_builder.CreateLifetimeStart(
 		variable.llvm_value,
 		llvm::ConstantInt::get(
@@ -2035,10 +2040,12 @@ void CodeBuilder::CreateLifetimeStart( const Variable& variable, FunctionContext
 
 void CodeBuilder::CreateLifetimeEnd( const Variable& variable, FunctionContext& function_context )
 {
-	if( variable.location != Variable::Location::Pointer )
+	if( !IsTypeComplete( variable.type ) )
+		return; // May be in case of error.
+
+	if( llvm::dyn_cast<llvm::AllocaInst>(variable.llvm_value) == nullptr )
 		return;
 
-	U_ASSERT( IsTypeComplete( variable.type ) );
 	function_context.llvm_ir_builder.CreateLifetimeEnd(
 		variable.llvm_value,
 		llvm::ConstantInt::get(
