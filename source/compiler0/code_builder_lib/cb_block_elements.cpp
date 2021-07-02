@@ -638,7 +638,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( element_type.GetLLVMType(), nullptr, variable_name );
 
 				CreateLifetimeStart( variable, function_context );
-				//CreateVariableDebugInfo( variable, variable_name, for_operator.src_loc_, function_context );
+				CreateVariableDebugInfo( variable, variable_name, for_operator.src_loc_, function_context );
 
 				function_context.stack_variables_stack.back()->RegisterVariable( variable );
 
