@@ -813,6 +813,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		}
 		result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( result.type.GetLLVMType() );
 		result.llvm_value->setName( "select_result" );
+
+		CreateLifetimeStart( result, function_context );
+		//CreateVariableDebugInfo( result, result.node->name, ternary_operator.src_loc_, function_context );
 	}
 	else if( branches_value_types[0] == ValueType::ReferenceImut || branches_value_types[1] == ValueType::ReferenceImut )
 	{
@@ -1289,6 +1292,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( result.type.GetLLVMType() );
 	result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "_moved_" + expression_result.node->name );
 	result.llvm_value->setName( result.node->name );
+
+	CreateLifetimeStart( result, function_context );
+	//CreateVariableDebugInfo( result, result.node->name, take_operator.src_loc_, function_context );
 
 	SetupReferencesInCopyOrMove( function_context, result, expression_result, names.GetErrors(), take_operator.src_loc_ );
 
@@ -2681,12 +2687,18 @@ Value CodeBuilder::DoCallFunction(
 
 	const bool return_value_is_sret= function_type.IsStructRet();
 
-	llvm::Value* s_ret_value= nullptr;
+	Variable result;
+	result.type= function_type.return_type;
 	if( return_value_is_sret )
 	{
-		s_ret_value= function_context.alloca_ir_builder.CreateAlloca( function_type.return_type.GetLLVMType() );
-		llvm_args.insert( llvm_args.begin(), s_ret_value );
+		if( !EnsureTypeComplete( function_type.return_type ) )
+			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), call_src_loc, function_type.return_type );
+
+		result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( function_type.return_type.GetLLVMType() );
+		llvm_args.insert( llvm_args.begin(), result.llvm_value );
 		constant_llvm_args.insert( constant_llvm_args.begin(), nullptr );
+
+		CreateLifetimeStart( result, function_context );
 	}
 
 	llvm::Value* call_result= nullptr;
@@ -2711,7 +2723,7 @@ Value CodeBuilder::DoCallFunction(
 			if( evaluation_result.errors.empty() && evaluation_result.result_constant != nullptr )
 			{
 				if( return_value_is_sret ) // We needs here block of memory with result constant struct.
-					MoveConstantToMemory( s_ret_value, evaluation_result.result_constant, function_context );
+					MoveConstantToMemory( result.llvm_value, evaluation_result.result_constant, function_context );
 
 				if( !function_type.return_value_is_reference && function_type.return_type == void_type_ )
 					constant_call_result= llvm::Constant::getNullValue( fundamental_llvm_types_.void_ );
@@ -2731,18 +2743,12 @@ Value CodeBuilder::DoCallFunction(
 	else
 		call_result= llvm::UndefValue::get( llvm::dyn_cast<llvm::FunctionType>(function->getType())->getReturnType() );
 
-	if( return_value_is_sret )
-	{
-		U_ASSERT( s_ret_value != nullptr );
-		call_result= s_ret_value;
-	}
 
 	// Clear inner references locks. Do this BEFORE result references management.
 	locked_args_inner_references.clear();
 
-	Variable result;
-	result.type= function_type.return_type;
-	result.llvm_value= call_result;
+	if( !return_value_is_sret )
+		result.llvm_value= call_result;
 	result.constexpr_value= constant_call_result;
 
 	if( function_type.return_value_is_reference )
@@ -2931,10 +2937,14 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	variable.value_type= ValueType::ReferenceMut;
 	variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( type.GetLLVMType() );
 	variable.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "temp " + type.ToString() );
+
+	CreateLifetimeStart( variable, function_context );
+	//CreateVariableDebugInfo( variable, variable.node->name, src_loc, function_context );
+
 	variable.constexpr_value= ApplyConstructorInitializer( variable, synt_args, src_loc, names, function_context );
 	variable.value_type= ValueType::Value; // Make value after construction
-	RegisterTemporaryVariable( function_context, variable );
 
+	RegisterTemporaryVariable( function_context, variable );
 	return variable;
 }
 
@@ -2958,6 +2968,9 @@ Variable CodeBuilder::ConvertVariable(
 	result.value_type= ValueType::ReferenceMut;
 	result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( dst_type.GetLLVMType() );
 	result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "temp " + dst_type.ToString() );
+
+	CreateLifetimeStart( result, function_context );
+	CreateVariableDebugInfo( variable, result.node->name, src_loc, function_context );
 
 	{
 		// Create temp variables frame to prevent destruction of "src".

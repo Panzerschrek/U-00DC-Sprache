@@ -885,6 +885,9 @@ private:
 
 	void SetupGeneratedFunctionAttributes( llvm::Function& function );
 
+	void CreateLifetimeStart( const Variable& variable, FunctionContext& function_context );
+	void CreateLifetimeEnd( const Variable& variable, FunctionContext& function_context );
+
 	struct InstructionsState
 	{
 		ReferencesGraph variables_state;

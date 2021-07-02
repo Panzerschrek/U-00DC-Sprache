@@ -577,12 +577,16 @@ void CodeBuilder::CallDestructorsImpl(
 	{
 		const Variable& stored_variable= *it;
 
-		if( stored_variable.node->kind == ReferencesGraphNode::Kind::Variable && !function_context.variables_state.NodeMoved( stored_variable.node ) )
+		if( stored_variable.node->kind == ReferencesGraphNode::Kind::Variable )
 		{
-			if( function_context.variables_state.HaveOutgoingLinks( stored_variable.node ) )
-				REPORT_ERROR( DestroyedVariableStillHaveReferences, errors_container, src_loc, stored_variable.node->name );
-			if( stored_variable.type.HaveDestructor() )
-				CallDestructor( stored_variable.llvm_value, stored_variable.type, function_context, errors_container, src_loc );
+			if( !function_context.variables_state.NodeMoved( stored_variable.node ) )
+			{
+				if( function_context.variables_state.HaveOutgoingLinks( stored_variable.node ) )
+					REPORT_ERROR( DestroyedVariableStillHaveReferences, errors_container, src_loc, stored_variable.node->name );
+				if( stored_variable.type.HaveDestructor() )
+					CallDestructor( stored_variable.llvm_value, stored_variable.type, function_context, errors_container, src_loc );
+				CreateLifetimeEnd( stored_variable, function_context );
+			}
 		}
 		function_context.variables_state.RemoveNode( stored_variable.node );
 	}
@@ -2016,6 +2020,30 @@ void CodeBuilder::SetupGeneratedFunctionAttributes( llvm::Function& function )
 
 	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
 		function.addFnAttr( llvm::Attribute::UWTable );
+}
+
+
+void CodeBuilder::CreateLifetimeStart( const Variable& variable, FunctionContext& function_context )
+{
+	U_ASSERT( IsTypeComplete( variable.type ) );
+	function_context.llvm_ir_builder.CreateLifetimeStart(
+		variable.llvm_value,
+		llvm::ConstantInt::get(
+			fundamental_llvm_types_.u64,
+			data_layout_.getTypeAllocSize(variable.type.GetLLVMType()) ) );
+}
+
+void CodeBuilder::CreateLifetimeEnd( const Variable& variable, FunctionContext& function_context )
+{
+	if( variable.location != Variable::Location::Pointer )
+		return;
+
+	U_ASSERT( IsTypeComplete( variable.type ) );
+	function_context.llvm_ir_builder.CreateLifetimeEnd(
+		variable.llvm_value,
+		llvm::ConstantInt::get(
+			fundamental_llvm_types_.u64,
+			data_layout_.getTypeAllocSize(variable.type.GetLLVMType()) ) );
 }
 
 CodeBuilder::InstructionsState CodeBuilder::SaveInstructionsState( FunctionContext& function_context )
