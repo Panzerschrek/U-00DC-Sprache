@@ -1149,6 +1149,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			if( initializer_experrsion.value_type == ValueType::Value )
 			{
 				CopyBytes( initializer_experrsion.llvm_value, variable.llvm_value, variable.type, function_context );
+				CreateLifetimeEnd( initializer_experrsion, function_context );
 				variable.constexpr_value= initializer_experrsion.constexpr_value; // Move can preserve constexpr.
 			}
 			else
