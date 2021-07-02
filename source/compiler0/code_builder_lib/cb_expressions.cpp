@@ -1477,6 +1477,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			function_context.variables_state.MoveNode( r_var_real.node );
 
 		CopyBytes( r_var_real.llvm_value, l_var_real.llvm_value, l_var_real.type, function_context );
+		CreateLifetimeEnd( r_var_real, function_context );
 
 		Variable move_result;
 		move_result.type= void_type_;
@@ -2664,7 +2665,9 @@ Value CodeBuilder::DoCallFunction(
 					}
 
 					// Create copy of class or tuple value. Call copy constructor.
+					// TODO - create lifetime start/end?
 					llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( param.type.GetLLVMType() );
+
 					llvm_args[j]= arg_copy;
 					BuildCopyConstructorPart(
 						arg_copy,

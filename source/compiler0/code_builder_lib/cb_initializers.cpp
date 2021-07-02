@@ -320,6 +320,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				function_context.variables_state.MoveNode( expression_result.node );
 			}
 			CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
+			CreateLifetimeEnd( expression_result, function_context );
 
 			DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), src_loc );
 		}
@@ -373,6 +374,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				function_context.variables_state.MoveNode( expression_result.node );
 			}
 			CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
+			CreateLifetimeEnd( expression_result, function_context );
 
 			DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), src_loc );
 
@@ -757,6 +759,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				function_context.variables_state.MoveNode( expression_result.node );
 
 			CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
+			CreateLifetimeEnd( expression_result, function_context );
 		}
 		else
 		{
@@ -801,6 +804,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				function_context.variables_state.MoveNode( initializer_variable.node );
 
 			CopyBytes( initializer_variable.llvm_value, variable.llvm_value, variable.type, function_context );
+			CreateLifetimeEnd( initializer_variable, function_context );
 
 			return initializer_variable.constexpr_value; // Move can preserve constexpr.
 		}
