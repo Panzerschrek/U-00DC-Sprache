@@ -2535,7 +2535,6 @@ Value CodeBuilder::DoCallFunction(
 				if( expr.value_type == ValueType::Value && expr.location == Variable::Location::LLVMRegister )
 				{
 					// Bind value to const reference.
-					// TODO - support nonfundamental values.
 					llvm::Value* const temp_storage= function_context.alloca_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
 					if( expr.type != void_type_ )
 						function_context.llvm_ir_builder.CreateStore( expr.llvm_value, temp_storage );
