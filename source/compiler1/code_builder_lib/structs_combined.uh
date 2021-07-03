@@ -277,7 +277,7 @@ private:
 // Value
 //
 
-enum ValueType
+enum ValueType : u8
 {
 	Value,
 	ReferenceMut,
@@ -286,7 +286,7 @@ enum ValueType
 
 struct Variable
 {
-	enum Location
+	enum Location : u8
 	{
 		Pointer,
 		LLVMRegister,
