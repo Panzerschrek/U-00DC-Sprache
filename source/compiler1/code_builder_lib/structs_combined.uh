@@ -221,8 +221,8 @@ class Type
 {
 public:
 	fn constructor() = default;
-	fn constructor( mut this, Type &imut other );
-	op=( mut this, Type &imut other );
+	fn constructor( mut this, Type &imut other )= default;
+	op=( mut this, Type &imut other )= default;
 
 	fn conversion_constructor( FundamentalType mut fundamental_type );
 	fn conversion_constructor( ArrayType mut array_type );
@@ -263,11 +263,11 @@ public:
 private:
 	ust::variant</ tup[
 		FundamentalType,
-		ust::box</ArrayType/>,
-		ust::box</TupleType/>,
-		ust::box</RawPointerType/>,
-		ust::box</FunctionType/>,
-		ust::box</FunctionPointerType/>,
+		ust::shared_ptr_final</ArrayType/>,
+		ust::shared_ptr_final</TupleType/>,
+		ust::shared_ptr_final</RawPointerType/>,
+		ust::shared_ptr_final</FunctionType/>,
+		ust::shared_ptr_final</FunctionPointerType/>,
 		ClassTypePtr,
 		EnumTypePtr
 	] /> something_;
