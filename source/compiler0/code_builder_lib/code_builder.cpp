@@ -1256,17 +1256,16 @@ Type CodeBuilder::BuildFuncCode(
 		U_ASSERT( !( is_this && !param.is_reference ) );
 
 		Variable var;
-		var.location= Variable::Location::LLVMRegister;
+		var.location= Variable::Location::Pointer;
 		var.value_type= ValueType::ReferenceMut;
 		var.type= param.type;
-		var.llvm_value= &llvm_arg;
 
 		if( declaration_arg.mutability_modifier_ != MutabilityModifier::Mutable )
 			var.value_type= ValueType::ReferenceImut;
 
 		if( param.is_reference )
 		{
-			var.location= Variable::Location::Pointer;
+			var.llvm_value= &llvm_arg;
 			CreateReferenceVariableDebugInfo( var, arg_name, declaration_arg.src_loc_, function_context );
 		}
 		else
@@ -1277,14 +1276,12 @@ Type CodeBuilder::BuildFuncCode(
 				param.type.GetFunctionPointerType() != nullptr )
 			{
 				// Move parameters to stack for assignment possibility.
-				// TODO - do it, only if parameters are not constant.
-				llvm::Value* address= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
-				address->setName( arg_name );
-				if( param.type != void_type_ )
-					function_context.llvm_ir_builder.CreateStore( var.llvm_value, address );
+				var.llvm_value= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
+				var.llvm_value->setName( arg_name );
+				CreateLifetimeStart( var, function_context );
 
-				var.llvm_value= address;
-				var.location= Variable::Location::Pointer;
+				if( param.type != void_type_ )
+					function_context.llvm_ir_builder.CreateStore( &llvm_arg, var.llvm_value );
 			}
 			else if( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr )
 			{
