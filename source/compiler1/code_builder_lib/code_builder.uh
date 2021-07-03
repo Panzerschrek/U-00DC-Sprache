@@ -316,7 +316,7 @@ private:
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::optional_ref</ Variable, false /> mut this_,
+		ust::optional_ref_imut</ Variable /> mut this_,
 		FunctionsSet& functions_set,
 		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 		SrcLoc& src_loc ) : Value;
@@ -325,7 +325,7 @@ private:
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::optional_ref</ Variable, false />& this_,
+		ust::optional_ref_imut</ Variable /> this_,
 		FunctionVariable& function,
 		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 		SrcLoc& src_loc ) : Value;
@@ -640,7 +640,7 @@ private:
 
 	// Overloading
 
-	fn GetFunctionWithSameType( FunctionsSet &'x mut functions_set, Type& function_type ) : ust::optional_ref</ FunctionVariable, true />'x';
+	fn GetFunctionWithSameType( FunctionsSet &'x mut functions_set, Type& function_type ) : ust::optional_ref_mut</ FunctionVariable />'x';
 
 	fn ApplyOverloadedFunction(
 		FunctionsSet &mut functions_set,

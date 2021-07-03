@@ -147,7 +147,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 				continue;
 			}
 
-			var ust::optional_ref</Synt::Expression, false/> mut initializer_expression;
+			var ust::optional_ref_imut</Synt::Expression/> mut initializer_expression;
 			if_var( &expression_initializer : variable_declaration.initializer.get</Synt::Expression/>() )
 			{
 				initializer_expression.reset(expression_initializer);
@@ -1630,7 +1630,7 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 			DoCallFunction(
 				names_scope,
 				function_context,
-				ust::optional_ref</ Variable, false />(fetch_result[0]),
+				ust::optional_ref_imut</ Variable />(fetch_result[0]),
 				overloaded_operator,
 				ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
 				src_loc );

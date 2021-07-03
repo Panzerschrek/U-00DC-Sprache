@@ -1080,8 +1080,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 {
 	auto function= BuildExpressionCode( names_scope, function_context, call_operator.value.get_ref() );
 
-	var ust::optional_ref</ FunctionsSet, false /> mut functions_set;
-	var ust::optional_ref</ Variable, false /> mut this_;
+	var ust::optional_ref_imut</ FunctionsSet /> mut functions_set;
+	var ust::optional_ref_imut</ Variable /> mut this_;
 
 	if_var( &t : function.get</Type/>() )
 	{
@@ -1109,7 +1109,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			return DoCallFunction(
 				names_scope,
 				function_context,
-				ust::optional_ref</ Variable, false />(),
+				ust::optional_ref_imut</ Variable />(),
 				function_variable,
 				call_operator.args.range(),
 				call_operator.src_loc );
@@ -2430,7 +2430,7 @@ fn CodeBuilder::TryCallOverloadedUnaryOperator(
 		return DoCallFunction(
 			names_scope,
 			function_context,
-			ust::optional_ref</ Variable, false />(fetch_result[0]),
+			ust::optional_ref_imut</ Variable />(fetch_result[0]),
 			overloaded_operator,
 			ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
 			src_loc );
@@ -2477,7 +2477,7 @@ fn CodeBuilder::TryCallOverloadedPostfixOperator(
 		return DoCallFunction(
 			names_scope,
 			function_context,
-			ust::optional_ref</ Variable, false />(fetch_result[0]),
+			ust::optional_ref_imut</ Variable />(fetch_result[0]),
 			overloaded_operator,
 			synt_args,
 			src_loc );
@@ -2490,7 +2490,7 @@ fn CodeBuilder::CallFunctionsSet(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
-	ust::optional_ref</ Variable, false /> mut this_,
+	ust::optional_ref_imut</ Variable /> mut this_,
 	FunctionsSet& functions_set,
 	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 	SrcLoc& src_loc ) : Value
@@ -2554,7 +2554,7 @@ fn CodeBuilder::CallFunctionsSet(
 		return DoCallFunction(
 			names_scope,
 			function_context,
-			ust::optional_ref</Variable, false/>( fetch_res[0] ),
+			ust::optional_ref_imut</Variable/>( fetch_res[0] ),
 			function_selected.get_ref(),
 			args,
 			src_loc );
@@ -2573,7 +2573,7 @@ fn CodeBuilder::DoCallFunction(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
-	ust::optional_ref</ Variable, false />& this_,
+	ust::optional_ref_imut</ Variable /> this_,
 	FunctionVariable& function,
 	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 	SrcLoc& src_loc ) : Value
