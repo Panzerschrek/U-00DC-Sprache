@@ -287,7 +287,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			return BlockBuildInfo();
 		}
 
-		CreateVariableDebugInfo( variable, auto_variable_declaration.name, auto_variable_declaration.src_loc_, function_context );
+		CreateReferenceVariableDebugInfo( variable, auto_variable_declaration.name, auto_variable_declaration.src_loc_, function_context );
 
 		prev_variables_storage.RegisterVariable( variable );
 
@@ -584,6 +584,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		for( const Type& element_type : tuple_type->elements )
 		{
 			const size_t element_index= size_t( &element_type - tuple_type->elements.data() );
+			const std::string variable_name= for_operator.loop_variable_name_ + std::to_string(element_index);
 			NamesScope loop_names( "", &names );
 			const StackVariablesStorage element_pass_variables_storage( function_context );
 
@@ -611,6 +612,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				}
 
 				variable.llvm_value= function_context.llvm_ir_builder.CreateGEP( sequence_expression.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( element_index ) } );
+
+				CreateReferenceVariableDebugInfo( variable, variable_name, for_operator.src_loc_, function_context );
+
 				function_context.stack_variables_stack.back()->RegisterVariable( variable );
 
 				if( sequence_lock != std::nullopt && !function_context.variables_state.TryAddLink( sequence_lock->Node(), variable.node ) )
@@ -631,7 +635,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					continue;
 				}
 
-				variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( element_type.GetLLVMType(), nullptr, for_operator.loop_variable_name_ + std::to_string(element_index) );
+				variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( element_type.GetLLVMType(), nullptr, variable_name );
+
+				CreateVariableDebugInfo( variable, variable_name, for_operator.src_loc_, function_context );
+
 				function_context.stack_variables_stack.back()->RegisterVariable( variable );
 
 				SetupReferencesInCopyOrMove( function_context, variable, sequence_expression, names.GetErrors(), for_operator.src_loc_ );
@@ -1017,7 +1024,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		variable.constexpr_value= expr.constexpr_value;
 
-		CreateVariableDebugInfo( variable, with_operator.variable_name_, with_operator.src_loc_, function_context );
+		CreateReferenceVariableDebugInfo( variable, with_operator.variable_name_, with_operator.src_loc_, function_context );
 
 		if( expr.node != nullptr && !function_context.variables_state.TryAddLink( expr.node, variable.node ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), with_operator.src_loc_, expr.node->name );

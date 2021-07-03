@@ -271,6 +271,34 @@ fn ReferencesTest()
 	return;
 }
 
+fn TupleForTest()
+{
+	var tup[ i32, f32, S0, [ bool, 3 ] ] mut t[ 7, -4.5f, { .x= 666, .y= 667.3f }, [ true, false, true ] ];
+	for( el_copy : t )
+	{
+		StepInto2();
+	}
+
+	for( &el_ref : t )
+	{
+		StepInto2();
+	}
+}
+
+fn WithOperatorTest()
+{
+	var S0 mut s { .x= -55, .y= 0.025f };
+	with( s_copy : s )
+	{
+		StepInto2();
+	}
+
+	with( &s_ref : s )
+	{
+		StepInto2();
+	}
+}
+
 fn nomangle main() : i32
 {
 	FundamentalTypesTest();
@@ -292,5 +320,7 @@ fn nomangle main() : i32
 	ScopesTest();
 	VariableChangeTest();
 	ReferencesTest();
+	TupleForTest();
+	WithOperatorTest();
 	return 0;
 }
