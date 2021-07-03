@@ -61,6 +61,7 @@ CodeBuilder::CodeBuilder(
 	: llvm_context_( llvm_context )
 	, data_layout_(data_layout)
 	, build_debug_info_( build_debug_info )
+	, create_lifetimes_( true )
 	, constexpr_function_evaluator_( data_layout_ )
 {
 	fundamental_llvm_types_.i8 = llvm::Type::getInt8Ty( llvm_context_ );
@@ -2022,6 +2023,9 @@ void CodeBuilder::SetupGeneratedFunctionAttributes( llvm::Function& function )
 
 void CodeBuilder::CreateLifetimeStart( const Variable& variable, FunctionContext& function_context )
 {
+	if( !create_lifetimes_ )
+		return;
+
 	if( !IsTypeComplete( variable.type ) )
 		return; // May be in case of error.
 
@@ -2037,6 +2041,9 @@ void CodeBuilder::CreateLifetimeStart( const Variable& variable, FunctionContext
 
 void CodeBuilder::CreateLifetimeEnd( const Variable& variable, FunctionContext& function_context )
 {
+	if( !create_lifetimes_ )
+		return;
+
 	if( !IsTypeComplete( variable.type ) )
 		return; // May be in case of error.
 

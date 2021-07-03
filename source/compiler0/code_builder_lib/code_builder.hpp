@@ -905,6 +905,7 @@ private:
 	llvm::LLVMContext& llvm_context_;
 	const llvm::DataLayout data_layout_;
 	const bool build_debug_info_;
+	const bool create_lifetimes_;
 
 	struct
 	{
