@@ -324,7 +324,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 			if( name.empty() )
 				continue;
 
-			const ClassField& class_field= *the_class.members.GetThisScopeValue( name )->GetClassField();
+			const ClassField& class_field= *the_class.members->GetThisScopeValue( name )->GetClassField();
 
 			llvm::Type* field_type_llvm= class_field.type.GetLLVMType();
 			llvm::DIType* field_type_di= CreateDIType( class_field.type );
@@ -362,7 +362,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 			const auto member =
 				debug_info_.builder->createMemberType(
 					di_file,
-					parent.class_->class_->members.GetThisNamespaceName(),
+					parent.class_->class_->members->GetThisNamespaceName(),
 					di_file,
 					0u, // TODO - src_loc
 					data_layout_.getTypeAllocSizeInBits( parent_type_llvm ),

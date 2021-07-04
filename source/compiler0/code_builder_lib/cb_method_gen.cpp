@@ -20,7 +20,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 	// Search for explicit default constructor.
 	FunctionVariable* constructor_variable= nullptr;
 	if( Value* const constructors_value=
-		the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
+		the_class.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 	{
 		OverloadedFunctionsSet* const constructors= constructors_value->GetFunctionsSet();
 		U_ASSERT( constructors != nullptr );
@@ -55,7 +55,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		if( field_name.empty() )
 			continue;
 
-		const ClassField& field= *the_class.members.GetThisScopeValue( field_name )->GetClassField();
+		const ClassField& field= *the_class.members->GetThisScopeValue( field_name )->GetClassField();
 
 		if( field.syntax_element->initializer == nullptr &&
 			( field.is_reference || !field.type.IsDefaultConstructible() ) )
@@ -68,7 +68,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 	if( !all_fields_is_default_constructible )
 	{
 		if( constructor_variable != nullptr )
-			REPORT_ERROR( MethodBodyGenerationFailed, the_class.members.GetErrors(), constructor_variable->prototype_src_loc );
+			REPORT_ERROR( MethodBodyGenerationFailed, the_class.members->GetErrors(), constructor_variable->prototype_src_loc );
 		return;
 	}
 
@@ -92,7 +92,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 			llvm::Function::Create(
 				constructor_type.llvm_type,
 				llvm::Function::LinkageTypes::ExternalLinkage,
-				mangler_.MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
+				mangler_.MangleFunction( *the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
 				module_.get() );
 
 		FunctionVariable new_constructor_variable;
@@ -100,7 +100,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		new_constructor_variable.llvm_function= llvm_constructor_function;
 
 		// Add generated constructor
-		if( Value* const constructors_value= the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
+		if( Value* const constructors_value= the_class.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 		{
 			OverloadedFunctionsSet* const constructors= constructors_value->GetFunctionsSet();
 			U_ASSERT( constructors != nullptr );
@@ -111,7 +111,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		{
 			OverloadedFunctionsSet constructors;
 			constructors.functions.push_back( std::move( new_constructor_variable ) );
-			Value* const inserted_value= the_class.members.AddName( Keyword( Keywords::constructor_ ), std::move( constructors ) );
+			Value* const inserted_value= the_class.members->AddName( Keyword( Keywords::constructor_ ), std::move( constructors ) );
 			constructor_variable= &inserted_value->GetFunctionsSet()->functions.back();
 
 		}
@@ -146,7 +146,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 				this_llvm_value,
 				{ GetZeroGEPIndex(), GetFieldGEPIndex( 0u /*base class is allways first field */ ) } );
 
-		ApplyEmptyInitializer( Keyword( Keywords::base_ ), SrcLoc()/*TODO*/, base_variable, the_class.members, function_context );
+		ApplyEmptyInitializer( Keyword( Keywords::base_ ), SrcLoc()/*TODO*/, base_variable, *the_class.members, function_context );
 	}
 
 	for( const std::string& field_name : the_class.fields_order )
@@ -154,7 +154,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		if( field_name.empty() )
 			continue;
 
-		const ClassField& field= *the_class.members.GetThisScopeValue( field_name )->GetClassField();
+		const ClassField& field= *the_class.members->GetThisScopeValue( field_name )->GetClassField();
 
 		if( field.is_reference )
 		{
@@ -177,7 +177,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 			if( field.syntax_element->initializer != nullptr )
 				InitializeClassFieldWithInClassIninitalizer( field_variable, field, function_context );
 			else
-				ApplyEmptyInitializer( field_name, SrcLoc()/*TODO*/, field_variable, the_class.members, function_context );
+				ApplyEmptyInitializer( field_name, SrcLoc()/*TODO*/, field_variable, *the_class.members, function_context );
 		}
 	}
 
@@ -194,7 +194,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 {
 	// Search for explicit copy constructor.
 	FunctionVariable* constructor_variable= nullptr;
-	if( Value* const constructors_value= the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
+	if( Value* const constructors_value= the_class.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 	{
 		OverloadedFunctionsSet* const constructors= constructors_value->GetFunctionsSet();
 		U_ASSERT( constructors != nullptr );
@@ -227,7 +227,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		if( field_name.empty() )
 			continue;
 
-		const ClassField& field= *the_class.members.GetThisScopeValue( field_name )->GetClassField();
+		const ClassField& field= *the_class.members->GetThisScopeValue( field_name )->GetClassField();
 
 		if( !field.is_reference && !field.type.IsCopyConstructible() )
 			all_fields_is_copy_constructible= false;
@@ -239,7 +239,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 	if( !all_fields_is_copy_constructible )
 	{
 		if( constructor_variable != nullptr )
-			REPORT_ERROR( MethodBodyGenerationFailed, the_class.members.GetErrors(), constructor_variable->prototype_src_loc );
+			REPORT_ERROR( MethodBodyGenerationFailed, the_class.members->GetErrors(), constructor_variable->prototype_src_loc );
 		return;
 	}
 
@@ -277,7 +277,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 			llvm::Function::Create(
 				constructor_type.llvm_type,
 				llvm::Function::LinkageTypes::ExternalLinkage,
-				mangler_.MangleFunction( the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
+				mangler_.MangleFunction( *the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
 				module_.get() );
 
 		// Add generated constructor
@@ -285,7 +285,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		new_constructor_variable.type= std::move( constructor_type );
 		new_constructor_variable.llvm_function= llvm_constructor_function;
 
-		if( Value* const constructors_value= the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
+		if( Value* const constructors_value= the_class.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 		{
 			OverloadedFunctionsSet* const constructors= constructors_value->GetFunctionsSet();
 			U_ASSERT( constructors != nullptr );
@@ -296,7 +296,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		{
 			OverloadedFunctionsSet constructors;
 			constructors.functions.push_back( std::move( new_constructor_variable ) );
-			Value* const inserted_value= the_class.members.AddName( Keyword( Keywords::constructor_ ), std::move( constructors ) );
+			Value* const inserted_value= the_class.members->AddName( Keyword( Keywords::constructor_ ), std::move( constructors ) );
 			constructor_variable= &inserted_value->GetFunctionsSet()->functions.back();
 		}
 	}
@@ -339,7 +339,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		if( field_name.empty() )
 			continue;
 
-		const ClassField& field= *the_class.members.GetThisScopeValue( field_name )->GetClassField();
+		const ClassField& field= *the_class.members->GetThisScopeValue( field_name )->GetClassField();
 
 		llvm::Value* const index_list[2] { GetZeroGEPIndex(), GetFieldGEPIndex( field.index ) };
 		llvm::Value* const dst= function_context.llvm_ir_builder.CreateGEP( this_llvm_value, index_list );
@@ -393,7 +393,7 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( Class& the_class, con
 		llvm::Function::Create(
 			destructor_type.llvm_type,
 			llvm::Function::LinkageTypes::ExternalLinkage,
-			mangler_.MangleFunction( the_class.members, Keyword( Keywords::destructor_ ), destructor_type ),
+			mangler_.MangleFunction( *the_class.members, Keyword( Keywords::destructor_ ), destructor_type ),
 			module_.get() );
 
 	destructor_function.llvm_function->addAttribute( 1u, llvm::Attribute::NonNull );
@@ -422,7 +422,7 @@ void CodeBuilder::GenerateDestructorBody( Class& the_class, const Type& class_ty
 		destructor_function.llvm_function );
 	function_context.this_= &this_;
 
-	CallMembersDestructors( function_context, the_class.members.GetErrors(), the_class.body_src_loc );
+	CallMembersDestructors( function_context, the_class.members->GetErrors(), the_class.body_src_loc );
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 	function_context.llvm_ir_builder.CreateRetVoid();
 
@@ -435,7 +435,7 @@ void CodeBuilder::TryGenerateDestructor( Class& the_class, const Type& class_typ
 {
 	// Search for explicit destructor.
 	if( Value* const destructor_value=
-		the_class.members.GetThisScopeValue( Keyword( Keywords::destructor_ ) ) )
+		the_class.members->GetThisScopeValue( Keyword( Keywords::destructor_ ) ) )
 	{
 		OverloadedFunctionsSet* const destructors= destructor_value->GetFunctionsSet();
 		if( destructors->functions.empty() )
@@ -461,7 +461,7 @@ void CodeBuilder::TryGenerateDestructor( Class& the_class, const Type& class_typ
 	OverloadedFunctionsSet destructors;
 	destructors.functions.push_back( std::move( destructor_variable ) );
 
-	the_class.members.AddName( Keyword( Keywords::destructor_ ), Value( std::move( destructors ) ) );
+	the_class.members->AddName( Keyword( Keywords::destructor_ ), Value( std::move( destructors ) ) );
 
 	// Say "we have destructor".
 	the_class.have_destructor= true;
@@ -473,7 +473,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 
 	// Search for explicit assignment operator.
 	FunctionVariable* operator_variable= nullptr;
-	if( Value* const assignment_operator_value= the_class.members.GetThisScopeValue( op_name ) )
+	if( Value* const assignment_operator_value= the_class.members->GetThisScopeValue( op_name ) )
 	{
 		OverloadedFunctionsSet* const operators= assignment_operator_value->GetFunctionsSet();
 		for( FunctionVariable& op : operators->functions )
@@ -506,7 +506,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 		if( field_name.empty() )
 			continue;
 
-		const ClassField& field= *the_class.members.GetThisScopeValue( field_name )->GetClassField();
+		const ClassField& field= *the_class.members->GetThisScopeValue( field_name )->GetClassField();
 
 		// We can not generate assignment operator for classes with references, for classes with immutable fields, for classes with noncopyable fields.
 		if( field.is_reference || !field.type.IsCopyAssignable() || !field.is_mutable )
@@ -519,7 +519,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 	if( !all_fields_is_copy_assignable )
 	{
 		if( operator_variable != nullptr )
-			REPORT_ERROR( MethodBodyGenerationFailed, the_class.members.GetErrors(), operator_variable->prototype_src_loc );
+			REPORT_ERROR( MethodBodyGenerationFailed, the_class.members->GetErrors(), operator_variable->prototype_src_loc );
 		return;
 	}
 
@@ -557,7 +557,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 			llvm::Function::Create(
 				op_type.llvm_type,
 				llvm::Function::LinkageTypes::ExternalLinkage,
-				mangler_.MangleFunction( the_class.members, op_name, op_type ),
+				mangler_.MangleFunction( *the_class.members, op_name, op_type ),
 				module_.get() );
 
 		// Add generated assignment operator
@@ -565,7 +565,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 		new_op_variable.type= std::move( op_type );
 		new_op_variable.llvm_function= llvm_op_function;
 
-		if( Value* const operators_value= the_class.members.GetThisScopeValue( op_name ) )
+		if( Value* const operators_value= the_class.members->GetThisScopeValue( op_name ) )
 		{
 			OverloadedFunctionsSet* const operators= operators_value->GetFunctionsSet();
 			U_ASSERT( operators != nullptr );
@@ -576,7 +576,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 		{
 			OverloadedFunctionsSet operators;
 			operators.functions.push_back( std::move( new_op_variable ) );
-			Value* const inserted_value= the_class.members.AddName( op_name, std::move( operators ) );
+			Value* const inserted_value= the_class.members->AddName( op_name, std::move( operators ) );
 			operator_variable= &inserted_value->GetFunctionsSet()->functions.back();
 		}
 	}
@@ -618,7 +618,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 		if( field_name.empty() )
 			continue;
 
-		const ClassField& field= *the_class.members.GetThisScopeValue( field_name )->GetClassField();
+		const ClassField& field= *the_class.members->GetThisScopeValue( field_name )->GetClassField();
 		U_ASSERT( field.type.IsCopyAssignable() );
 
 		llvm::Value* const index_list[2] { GetZeroGEPIndex(), GetFieldGEPIndex( field.index ) };
@@ -690,7 +690,7 @@ void CodeBuilder::BuildCopyConstructorPart(
 
 		// Search copy constructor.
 		const Value* constructor_value=
-			class_type.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) );
+			class_type.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) );
 		U_ASSERT( constructor_value != nullptr );
 		const OverloadedFunctionsSet* const constructors_set= constructor_value->GetFunctionsSet();
 		U_ASSERT( constructors_set != nullptr );
@@ -770,7 +770,7 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 
 		// Search copy-assignment aoperator.
 		const Value* op_value=
-			class_type.members.GetThisScopeValue( "=" );
+			class_type.members->GetThisScopeValue( "=" );
 		U_ASSERT( op_value != nullptr );
 		const OverloadedFunctionsSet* const operators_set= op_value->GetFunctionsSet();
 		U_ASSERT( operators_set != nullptr );

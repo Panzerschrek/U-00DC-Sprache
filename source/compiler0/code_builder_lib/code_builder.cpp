@@ -302,8 +302,8 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 						if( const ClassProxyPtr class_proxy= type->GetClassTypeProxy() )
 						{
 							// If current namespace is parent for this class and name is primary.
-							if( class_proxy->class_->members.GetParent() == &src &&
-								class_proxy->class_->members.GetThisNamespaceName() == src_name )
+							if( class_proxy->class_->members->GetParent() == &src &&
+								class_proxy->class_->members->GetThisNamespaceName() == src_name )
 							{
 								CopyClass( src_member.GetSrcLoc(), class_proxy, dst_class_table, dst );
 								class_copied= true;
@@ -435,11 +435,11 @@ void CodeBuilder::CopyClass(
 	// This needs for prevention of modification of source class and affection of imported file.
 
 	const Class& src= *src_class->class_;
-	auto copy= std::make_unique<Class>( src.members.GetThisNamespaceName(), &dst_namespace );
+	auto copy= std::make_unique<Class>( src.members->GetThisNamespaceName(), &dst_namespace );
 
 	// Make deep copy of inner namespace.
-	MergeNameScopes( copy->members, src.members, dst_class_table );
-	copy->members.CopyAccessRightsFrom( src.members );
+	MergeNameScopes( *copy->members, *src.members, dst_class_table );
+	copy->members->CopyAccessRightsFrom( *src.members );
 
 	// Copy fields.
 	copy->members_visibility= src.members_visibility;
@@ -476,7 +476,7 @@ void CodeBuilder::CopyClass(
 	copy->polymorph_type_id= src.polymorph_type_id;
 
 	// Register copy in destination namespace and current class table.
-	dst_namespace.AddName( src.members.GetThisNamespaceName(), Value( src_class, src_loc ) );
+	dst_namespace.AddName( src.members->GetThisNamespaceName(), Value( src_class, src_loc ) );
 	dst_class_table[ src_class ]= std::move(copy);
 }
 
@@ -525,7 +525,7 @@ void CodeBuilder::TryCallCopyConstructor(
 	}
 
 	// Search for copy-constructor.
-	const Value* const constructos_value= class_.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) );
+	const Value* const constructos_value= class_.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) );
 	U_ASSERT( constructos_value != nullptr );
 	const OverloadedFunctionsSet* const constructors= constructos_value->GetFunctionsSet();
 	U_ASSERT(constructors != nullptr );
@@ -630,7 +630,7 @@ void CodeBuilder::CallDestructor(
 
 	if( const Class* const class_= type.GetClassType() )
 	{
-		const Value* const destructor_value= class_->members.GetThisScopeValue( Keyword( Keywords::destructor_ ) );
+		const Value* const destructor_value= class_->members->GetThisScopeValue( Keyword( Keywords::destructor_ ) );
 		U_ASSERT( destructor_value != nullptr );
 		const OverloadedFunctionsSet* const destructors= destructor_value->GetFunctionsSet();
 		U_ASSERT(destructors != nullptr && destructors->functions.size() == 1u );
@@ -720,7 +720,7 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, Cod
 		if( field_name.empty() )
 			continue;
 
-		const ClassField& field= *class_->members.GetThisScopeValue( field_name )->GetClassField();
+		const ClassField& field= *class_->members->GetThisScopeValue( field_name )->GetClassField();
 		if( !field.type.HaveDestructor() || field.is_reference )
 			continue;
 
@@ -1545,7 +1545,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			continue;
 		}
 
-		const Value* const class_member= base_class.members.GetThisScopeValue( field_initializer.name );
+		const Value* const class_member= base_class.members->GetThisScopeValue( field_initializer.name );
 		if( class_member == nullptr )
 		{
 			have_fields_errors= true;
@@ -1584,7 +1584,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		if( field_name.empty() || initialized_fields.count(field_name) != 0 )
 			continue;
 
-		const ClassField& field= *base_class.members.GetThisScopeValue( field_name )->GetClassField();
+		const ClassField& field= *base_class.members->GetThisScopeValue( field_name )->GetClassField();
 
 		const StackVariablesStorage temp_variables_storage( function_context );
 
@@ -1627,7 +1627,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		base_variable.llvm_value=
 			function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( 0u /* base class is allways first field */ ) } );
 
-		ApplyEmptyInitializer( base_class.base_class->class_->members.GetThisNamespaceName(), constructor_initialization_list.src_loc_, base_variable, names_scope, function_context );
+		ApplyEmptyInitializer( base_class.base_class->class_->members->GetThisNamespaceName(), constructor_initialization_list.src_loc_, base_variable, names_scope, function_context );
 		function_context.base_initialized= true;
 
 		CallDestructors( temp_variables_storage, names_scope, function_context, constructor_initialization_list.src_loc_ );
@@ -1659,7 +1659,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		}
 
 		const Value* const class_member=
-			base_class.members.GetThisScopeValue( field_initializer.name );
+			base_class.members->GetThisScopeValue( field_initializer.name );
 		U_ASSERT( class_member != nullptr );
 		const ClassField* const field= class_member->GetClassField();
 		U_ASSERT( field != nullptr );
@@ -1777,13 +1777,13 @@ Value CodeBuilder::ResolveValue(
 					GlobalThingBuildClass( type->GetClassTypeProxy() );
 
 					if( names_scope.GetAccessFor( type->GetClassTypeProxy() ) < class_->GetMemberVisibility( *component_name ) )
-						REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), src_loc, *component_name, class_->members.GetThisNamespaceName() );
+						REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), src_loc, *component_name, class_->members->GetThisNamespaceName() );
 
 					if( ( *component_name == Keywords::constructor_ || *component_name == Keywords::destructor_ ) && !function_context.is_in_unsafe_block )
 						REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope.GetErrors(), src_loc, *component_name );
 
-					value= class_->members.GetThisScopeValue( *component_name );
-					last_space= & class_->members;
+					value= class_->members->GetThisScopeValue( *component_name );
+					last_space= class_->members.get();
 				}
 				else if( EnumPtr const enum_= type->GetEnumType() )
 				{
@@ -1819,7 +1819,7 @@ Value CodeBuilder::ResolveValue(
 				const Type* const type= value->GetTypeName();
 				U_ASSERT( type != nullptr );
 				if( Class* const class_= type->GetClassType() )
-					last_space= &class_->members;
+					last_space= class_->members.get();
 			}
 			else if( OverloadedFunctionsSet* const functions_set= value->GetFunctionsSet() )
 			{

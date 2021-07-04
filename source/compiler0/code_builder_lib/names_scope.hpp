@@ -36,6 +36,10 @@ public:
 	NamesScope* GetRoot();
 	const NamesScope* GetRoot() const;
 
+	// Store class for namespaces of classes.
+	void SetClass(const ClassProxyPtr& in_class );
+	ClassProxyPtr GetClass() const;
+
 	void AddAccessRightsFor( const ClassProxyPtr& class_, ClassMemberVisibility visibility );
 	ClassMemberVisibility GetAccessFor( const ClassProxyPtr& class_ ) const;
 	void CopyAccessRightsFrom( const NamesScope& src );
@@ -95,6 +99,8 @@ public:
 private:
 	std::string name_;
 	NamesScope* parent_;
+
+	std::weak_ptr<ClassProxy> class_;
 
 	llvm::StringMap< Value > names_map_;
 	size_t max_key_size_= 0u;

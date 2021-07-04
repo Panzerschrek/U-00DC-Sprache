@@ -56,7 +56,7 @@ public:
 public:
 	// If you change this, you must change CodeBuilder::CopyClass too!
 
-	NamesScope members;
+	NamesScopePtr members;
 
 	// have no visibility for member, means it is public.
 	ProgramStringMap< ClassMemberVisibility > members_visibility;

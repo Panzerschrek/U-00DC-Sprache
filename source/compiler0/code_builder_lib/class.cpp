@@ -14,7 +14,7 @@ namespace CodeBuilderPrivate
 const std::string Class::c_template_class_name= "_";
 
 Class::Class( std::string in_name, NamesScope* const parent_scope )
-	: members( std::move(in_name), parent_scope )
+	: members( std::make_shared<NamesScope>( std::move(in_name), parent_scope ) )
 {}
 
 ClassMemberVisibility Class::GetMemberVisibility( const std::string& member_name ) const

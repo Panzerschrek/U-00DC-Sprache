@@ -211,7 +211,8 @@ ClassProxyPtr CodeBuilder::NamesScopeFill(
 		class_type->class_->body_src_loc= class_type->class_->forward_declaration_src_loc= class_declaration.src_loc_;
 		class_type->class_->llvm_type= llvm::StructType::create( llvm_context_, mangler_.MangleType( class_type ) );
 
-		class_type->class_->members.AddAccessRightsFor( class_type, ClassMemberVisibility::Private );
+		class_type->class_->members->AddAccessRightsFor( class_type, ClassMemberVisibility::Private );
+		class_type->class_->members->SetClass( class_type );
 	}
 
 	Class& the_class= *class_type->class_;
@@ -247,59 +248,59 @@ ClassProxyPtr CodeBuilder::NamesScopeFill(
 				class_field.original_index= field_number;
 
 				if( IsKeyword( in_class_field.name ) )
-					REPORT_ERROR( UsingKeywordAsName, the_class.members.GetErrors(), in_class_field.src_loc_ );
-				if( the_class.members.AddName( in_class_field.name, Value( class_field, in_class_field.src_loc_ ) ) == nullptr )
-					REPORT_ERROR( Redefinition, the_class.members.GetErrors(), in_class_field.src_loc_, in_class_field.name );
+					REPORT_ERROR( UsingKeywordAsName, the_class.members->GetErrors(), in_class_field.src_loc_ );
+				if( the_class.members->AddName( in_class_field.name, Value( class_field, in_class_field.src_loc_ ) ) == nullptr )
+					REPORT_ERROR( Redefinition, the_class.members->GetErrors(), in_class_field.src_loc_, in_class_field.name );
 
 				++field_number;
 				the_class.SetMemberVisibility( in_class_field.name, current_visibility );
 			}
 			void operator()( const Synt::FunctionPtr& func )
 			{
-				this_.NamesScopeFill( func, the_class.members, class_type, current_visibility );
+				this_.NamesScopeFill( func, *the_class.members, class_type, current_visibility );
 			}
 			void operator()( const Synt::FunctionTemplate& func_template )
 			{
-				this_.NamesScopeFill( func_template, the_class.members, class_type, current_visibility );
+				this_.NamesScopeFill( func_template, *the_class.members, class_type, current_visibility );
 			}
 			void operator()( const Synt::ClassVisibilityLabel& visibility_label )
 			{
 				if( class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Struct )
-					REPORT_ERROR( VisibilityForStruct, the_class.members.GetErrors(), visibility_label.src_loc_, class_name );
+					REPORT_ERROR( VisibilityForStruct, the_class.members->GetErrors(), visibility_label.src_loc_, class_name );
 				current_visibility= visibility_label.visibility_;
 			}
 			void operator()( const Synt::TypeTemplate& type_template )
 			{
-				this_.NamesScopeFill( type_template, the_class.members, class_type, current_visibility );
+				this_.NamesScopeFill( type_template, *the_class.members, class_type, current_visibility );
 			}
 			void operator()( const Synt::Enum& enum_ )
 			{
-				this_.NamesScopeFill( enum_, the_class.members );
+				this_.NamesScopeFill( enum_, *the_class.members );
 				the_class.SetMemberVisibility( enum_.name, current_visibility );
 			}
 			void operator()( const Synt::StaticAssert& static_assert_ )
 			{
-				this_.NamesScopeFill( static_assert_, the_class.members );
+				this_.NamesScopeFill( static_assert_, *the_class.members );
 			}
 			void operator()( const Synt::TypeAlias& type_alias )
 			{
-				this_.NamesScopeFill( type_alias, the_class.members );
+				this_.NamesScopeFill( type_alias, *the_class.members );
 				the_class.SetMemberVisibility( type_alias.name, current_visibility );
 			}
 			void operator()( const Synt::VariablesDeclaration& variables_declaration )
 			{
-				this_.NamesScopeFill( variables_declaration, the_class.members );
+				this_.NamesScopeFill( variables_declaration, *the_class.members );
 				for( const auto& variable_declaration : variables_declaration.variables )
 					the_class.SetMemberVisibility( variable_declaration.name, current_visibility );
 			}
 			void operator()( const Synt::AutoVariableDeclaration& auto_variable_declaration )
 			{
-				this_.NamesScopeFill( auto_variable_declaration, the_class.members );
+				this_.NamesScopeFill( auto_variable_declaration, *the_class.members );
 				the_class.SetMemberVisibility( auto_variable_declaration.name, current_visibility );
 			}
 			void operator()( const Synt::ClassPtr& inner_class )
 			{
-				this_.NamesScopeFill( inner_class, the_class.members );
+				this_.NamesScopeFill( inner_class, *the_class.members );
 				the_class.SetMemberVisibility( inner_class->name_, current_visibility );
 			}
 		};
@@ -426,7 +427,7 @@ void CodeBuilder::NamesScopeFillOutOfLineElements(
 				else if( const auto type= prev_value->GetTypeName() )
 				{
 					if( const auto class_= type->GetClassType() )
-						prev_value= class_->members.GetThisScopeValue( func.name_[i] );
+						prev_value= class_->members->GetThisScopeValue( func.name_[i] );
 				}
 
 				if( prev_value == nullptr )

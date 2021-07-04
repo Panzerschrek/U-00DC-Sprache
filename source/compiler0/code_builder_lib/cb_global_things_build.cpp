@@ -14,7 +14,7 @@ namespace
 
 void AddAncestorsAccessRights_r( Class& the_class, const ClassProxyPtr& ancestor_class )
 {
-	the_class.members.AddAccessRightsFor( ancestor_class, ClassMemberVisibility::Protected );
+	the_class.members->AddAccessRightsFor( ancestor_class, ClassMemberVisibility::Protected );
 	for( const Class::Parent& parent : ancestor_class->class_->parents )
 		AddAncestorsAccessRights_r( the_class, parent.class_ );
 }
@@ -52,7 +52,7 @@ void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fields_llvm
 	FieldsMap fields;
 
 	bool fields_is_ok= true;
-	class_.members.ForEachValueInThisScope(
+	class_.members->ForEachValueInThisScope(
 		[&]( Value& value )
 		{
 			if( ClassField* const field= value.GetClassField() )
@@ -213,10 +213,10 @@ void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 				{
 					// Build classes only from parent namespace.
 					// Otherwise we can get loop, using typedef.
-					if( class_type->class_->members.GetParent() == &names_scope )
+					if( class_type->class_->members->GetParent() == &names_scope )
 					{
 						GlobalThingBuildClass( class_type );
-						GlobalThingBuildNamespace( class_type->class_->members );
+						GlobalThingBuildNamespace( *class_type->class_->members );
 					}
 				}
 				else if( const EnumPtr enum_type= type->GetEnumType() )
@@ -361,18 +361,18 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 	if( the_class.typeinfo_type != std::nullopt )
 	{
 		const Type& type= *the_class.typeinfo_type;
-		BuildFullTypeinfo( type, typeinfo_cache_[type], *class_type->class_->members.GetRoot() );
+		BuildFullTypeinfo( type, typeinfo_cache_[type], *class_type->class_->members->GetRoot() );
 		return;
 	}
 
 	const Synt::Class& class_declaration= *the_class.syntax_element;
 	const std::string& class_name= class_declaration.name_;
 
-	DETECT_GLOBALS_LOOP( &the_class, the_class.members.GetThisNamespaceName(), the_class.body_src_loc );
+	DETECT_GLOBALS_LOOP( &the_class, the_class.members->GetThisNamespaceName(), the_class.body_src_loc );
 
 	the_class.have_shared_state= class_declaration.have_shared_state_;
 
-	NamesScope& class_parent_namespace= *the_class.members.GetParent();
+	NamesScope& class_parent_namespace= *the_class.members->GetParent();
 	for( const Synt::ComplexName& parent : class_declaration.parents_ )
 	{
 		const Value parent_value= ResolveValue( class_parent_namespace, *global_function_context_, parent );
@@ -440,7 +440,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 
 	the_class.can_be_constexpr= the_class.kind == Class::Kind::Struct;
 
-	the_class.members.ForEachValueInThisScope(
+	the_class.members->ForEachValueInThisScope(
 		[&]( Value& value )
 		{
 			ClassField* const class_field= value.GetClassField();
@@ -451,7 +451,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 
 			class_field->class_= class_type;
 			class_field->is_reference= in_field.reference_modifier == Synt::ReferenceModifier::Reference;
-			class_field->type= PrepareType( class_field->syntax_element->type, the_class.members, *global_function_context_ );
+			class_field->type= PrepareType( class_field->syntax_element->type, *the_class.members, *global_function_context_ );
 
 			if( !class_field->is_reference || in_field.mutability_modifier == Synt::MutabilityModifier::Constexpr )
 			{
@@ -489,7 +489,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 		} );
 
 	// Determine inner reference type.
-	the_class.members.ForEachValueInThisScope(
+	the_class.members->ForEachValueInThisScope(
 		[&]( const Value& value )
 		{
 			const ClassField* const field= value.GetClassField();
@@ -545,7 +545,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 	{ // Create fields.
 		std::map< unsigned int, ClassField* > class_fields_in_original_order;
 
-		the_class.members.ForEachValueInThisScope(
+		the_class.members->ForEachValueInThisScope(
 			[&]( Value& value )
 			{
 				if( ClassField* const class_field= value.GetClassField() )
@@ -573,7 +573,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 
 	// Fill container with fields names.
 	the_class.fields_order.resize( fields_llvm_types.size() );
-	the_class.members.ForEachInThisScope(
+	the_class.members->ForEachInThisScope(
 		[&]( const std::string& name, const Value& value )
 		{
 			if( const auto field= value.GetClassField() )
@@ -582,11 +582,11 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 
 	// Complete another body elements.
 	// For class completeness we needs only fields, functions. Constants, types and type templates dones not needed.
-	the_class.members.ForEachValueInThisScope(
+	the_class.members->ForEachValueInThisScope(
 		[&]( Value& value )
 		{
 			if( const auto functions_set= value.GetFunctionsSet() )
-				GlobalThingBuildFunctionsSet( the_class.members, *functions_set, false );
+				GlobalThingBuildFunctionsSet( *the_class.members, *functions_set, false );
 			else if( value.GetClassField() != nullptr ) {} // Fields are already complete.
 			else if( value.GetTypeName() != nullptr ) {}
 			else if( value.GetVariable() != nullptr ){}
@@ -600,12 +600,12 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 		});
 
 	// Generate destructor prototype before perparing virtual table to mark it as virtual and setup virtual table index.
-	if( the_class.members.GetThisScopeValue( Keyword( Keywords::destructor_ ) ) == nullptr )
+	if( the_class.members->GetThisScopeValue( Keyword( Keywords::destructor_ ) ) == nullptr )
 	{
 		FunctionVariable destructor_function_variable= GenerateDestructorPrototype( the_class, class_type );
 		OverloadedFunctionsSet destructors_set;
 		destructors_set.functions.push_back( std::move(destructor_function_variable) );
-		the_class.members.AddName( Keyword( Keywords::destructor_ ), std::move(destructors_set) );
+		the_class.members->AddName( Keyword( Keywords::destructor_ ), std::move(destructors_set) );
 	}
 
 	if( the_class.kind == Class::Kind::Interface ||
@@ -616,7 +616,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 
 	// Search for explicit noncopy constructors.
 	if( const Value* const constructors_value=
-		the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
+		the_class.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 	{
 		const OverloadedFunctionsSet* const constructors= constructors_value->GetFunctionsSet();
 		U_ASSERT( constructors != nullptr );
@@ -635,7 +635,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 
 	// Disable constexpr possibility for structs with explicit destructors, non-default copy-assignment operators and non-default copy constructors.
 	if( const Value* const destructor_value=
-		the_class.members.GetThisScopeValue( Keyword( Keywords::destructor_ ) ) )
+		the_class.members->GetThisScopeValue( Keyword( Keywords::destructor_ ) ) )
 	{
 		const OverloadedFunctionsSet* const destructors= destructor_value->GetFunctionsSet();
 		// Destructors may be invalid in case of error.
@@ -643,7 +643,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 			the_class.can_be_constexpr= false;
 	}
 	if( const Value* const constructor_value=
-		the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
+		the_class.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 	{
 		const OverloadedFunctionsSet* const constructors= constructor_value->GetFunctionsSet();
 		U_ASSERT( constructors != nullptr );
@@ -654,7 +654,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 		}
 	}
 	if( const Value* const assignment_operator_value=
-		the_class.members.GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Assign ) ) )
+		the_class.members->GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Assign ) ) )
 	{
 		const OverloadedFunctionsSet* const operators= assignment_operator_value->GetFunctionsSet();
 		U_ASSERT( operators != nullptr );
@@ -690,7 +690,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 			the_class.kind= Class::Kind::PolymorphNonFinal;
 		if( class_contains_pure_virtual_functions )
 		{
-			REPORT_ERROR( ClassContainsPureVirtualFunctions, the_class.members.GetErrors(), class_declaration.src_loc_, class_name );
+			REPORT_ERROR( ClassContainsPureVirtualFunctions, the_class.members->GetErrors(), class_declaration.src_loc_, class_name );
 			the_class.kind= Class::Kind::Abstract;
 		}
 		break;
@@ -706,7 +706,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 		}
 		if( class_contains_pure_virtual_functions )
 		{
-			REPORT_ERROR( ClassContainsPureVirtualFunctions, the_class.members.GetErrors(), class_declaration.src_loc_, class_name );
+			REPORT_ERROR( ClassContainsPureVirtualFunctions, the_class.members->GetErrors(), class_declaration.src_loc_, class_name );
 			the_class.kind= Class::Kind::Abstract;
 		}
 		break;
@@ -715,23 +715,23 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 		the_class.kind= Class::Kind::PolymorphNonFinal;
 		if( class_contains_pure_virtual_functions )
 		{
-			REPORT_ERROR( ClassContainsPureVirtualFunctions, the_class.members.GetErrors(), class_declaration.src_loc_, class_name );
+			REPORT_ERROR( ClassContainsPureVirtualFunctions, the_class.members->GetErrors(), class_declaration.src_loc_, class_name );
 			the_class.kind= Class::Kind::Abstract;
 		}
 		break;
 
 	case Synt::ClassKindAttribute::Interface:
 		if( the_class.field_count != 0u )
-			REPORT_ERROR( FieldsForInterfacesNotAllowed, the_class.members.GetErrors(), class_declaration.src_loc_ );
+			REPORT_ERROR( FieldsForInterfacesNotAllowed, the_class.members->GetErrors(), class_declaration.src_loc_ );
 		if( the_class.base_class != nullptr )
-			REPORT_ERROR( BaseClassForInterface, the_class.members.GetErrors(), class_declaration.src_loc_ );
-		if( the_class.members.GetThisScopeValue( Keyword( Keywords::constructor_ ) ) != nullptr )
-			REPORT_ERROR( ConstructorForInterface, the_class.members.GetErrors(), class_declaration.src_loc_ );
+			REPORT_ERROR( BaseClassForInterface, the_class.members->GetErrors(), class_declaration.src_loc_ );
+		if( the_class.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) ) != nullptr )
+			REPORT_ERROR( ConstructorForInterface, the_class.members->GetErrors(), class_declaration.src_loc_ );
 		for( const Class::VirtualTableEntry& virtual_table_entry : the_class.virtual_table )
 		{
 			if( !virtual_table_entry.is_pure && virtual_table_entry.name != Keywords::destructor_ )
 			{
-				REPORT_ERROR( NonPureVirtualFunctionInInterface, the_class.members.GetErrors(), class_declaration.src_loc_, class_name );
+				REPORT_ERROR( NonPureVirtualFunctionInInterface, the_class.members->GetErrors(), class_declaration.src_loc_, class_name );
 				break;
 			}
 		}
@@ -747,13 +747,13 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 	for( const Class::Parent& parent : the_class.parents )
 	{
 		const Class* const parent_class= parent.class_->class_;
-		parent_class->members.ForEachInThisScope(
+		parent_class->members->ForEachInThisScope(
 			[&]( const std::string& name, const Value& value )
 			{
 				if( parent_class->GetMemberVisibility( name ) == ClassMemberVisibility::Private )
 					return; // Do not inherit private members.
 
-				Value* const result_class_value= the_class.members.GetThisScopeValue(name);
+				Value* const result_class_value= the_class.members->GetThisScopeValue(name);
 
 				if( const OverloadedFunctionsSet* const functions= value.GetFunctionsSet() )
 				{
@@ -770,7 +770,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 							if( the_class.GetMemberVisibility( name ) != parent_class->GetMemberVisibility( name ) )
 							{
 								const auto& src_loc= result_class_functions->functions.empty() ? result_class_functions->template_functions.front()->src_loc : result_class_functions->functions.front().prototype_src_loc;
-								REPORT_ERROR( FunctionsVisibilityMismatch, the_class.members.GetErrors(), src_loc, name );
+								REPORT_ERROR( FunctionsVisibilityMismatch, the_class.members->GetErrors(), src_loc, name );
 							}
 
 							// Merge function sets, if result class have functions set with given name.
@@ -786,7 +786,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 									}
 								}
 								if( !overrides )
-									ApplyOverloadedFunction( *result_class_functions, parent_function, the_class.members.GetErrors(), class_declaration.src_loc_ );
+									ApplyOverloadedFunction( *result_class_functions, parent_function, the_class.members->GetErrors(), class_declaration.src_loc_ );
 							} // for parent functions
 
 							// TODO - merge function templates smarter.
@@ -797,14 +797,14 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 					else
 					{
 						// Result class have no functions with this name. Inherit all functions from parent calass.
-						the_class.members.AddName( name, value );
+						the_class.members->AddName( name, value );
 					}
 				}
 				else
 				{
 					// Just override other kinds of symbols.
 					if( result_class_value == nullptr )
-						the_class.members.AddName( name, value );
+						the_class.members->AddName( name, value );
 				}
 			});
 	}
@@ -830,7 +830,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 	CheckClassFieldsInitializers( class_type );
 
 	// Immediately build constexpr functions.
-	the_class.members.ForEachInThisScope(
+	the_class.members->ForEachInThisScope(
 		[&]( const std::string& name, Value& value )
 		{
 			OverloadedFunctionsSet* const functions_set= value.GetFunctionsSet();
@@ -844,7 +844,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 					BuildFuncCode(
 						function,
 						class_type,
-						the_class.members,
+						*the_class.members,
 						name,
 						function.syntax_element->type_.params_,
 						function.syntax_element->block_.get(),

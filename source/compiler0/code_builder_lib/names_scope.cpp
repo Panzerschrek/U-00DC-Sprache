@@ -102,6 +102,16 @@ const NamesScope* NamesScope::GetRoot() const
 	return root;
 }
 
+void NamesScope::SetClass(const ClassProxyPtr& in_class )
+{
+	this->class_= in_class;
+}
+
+ClassProxyPtr NamesScope::GetClass() const
+{
+	return class_.lock();
+}
+
 void NamesScope::AddAccessRightsFor( const ClassProxyPtr& class_, const ClassMemberVisibility visibility )
 {
 	access_rights_[class_]= visibility;

@@ -621,20 +621,20 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 				return nullptr;
 			}
 
-			Value* const value_in_class= class_->members.GetThisScopeValue( op_name );
+			Value* const value_in_class= class_->members->GetThisScopeValue( op_name );
 			if( value_in_class == nullptr )
 				continue;
 
 			OverloadedFunctionsSet* const operators_set= value_in_class->GetFunctionsSet();
 			U_ASSERT( operators_set != nullptr ); // If we found something in names map with operator name, it must be operator.
-			GlobalThingBuildFunctionsSet( class_->members, *operators_set, false ); // Make sure functions set is complete.
+			GlobalThingBuildFunctionsSet( *class_->members, *operators_set, false ); // Make sure functions set is complete.
 
 			const FunctionVariable* const func= GetOverloadedFunction( *operators_set, actual_args, false, names.GetErrors(), src_loc, false );
 			if( func != nullptr )
 			{
 				// Check access rights after function selection.
 				if( names.GetAccessFor( arg.type.GetClassTypeProxy() ) < class_->GetMemberVisibility( op_name ) )
-					REPORT_ERROR( AccessingNonpublicClassMember, names.GetErrors(), src_loc, op_name, class_->members.GetThisNamespaceName() );
+					REPORT_ERROR( AccessingNonpublicClassMember, names.GetErrors(), src_loc, op_name, class_->members->GetThisNamespaceName() );
 
 				return func;
 			}
@@ -659,7 +659,7 @@ const FunctionVariable* CodeBuilder::GetConversionConstructor(
 	if( dst_class_type == nullptr )
 		return nullptr;
 
-	const Value* const constructors_value= dst_class_type->members.GetThisScopeValue( Keyword( Keywords::constructor_ ) );
+	const Value* const constructors_value= dst_class_type->members->GetThisScopeValue( Keyword( Keywords::constructor_ ) );
 	if( constructors_value == nullptr )
 		return nullptr;
 

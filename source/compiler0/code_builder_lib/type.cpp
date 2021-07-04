@@ -494,7 +494,7 @@ std::string Type::ToString() const
 			else if( class_->class_->base_template != std::nullopt )
 			{
 				// Skip template parameters namespace.
-				const std::string template_namespace_name= class_->class_->members.GetParent()->GetParent()->ToString();
+				const std::string template_namespace_name= class_->class_->members->GetParent()->GetParent()->ToString();
 				if( !template_namespace_name.empty() )
 					result+= template_namespace_name + "::";
 
@@ -515,7 +515,7 @@ std::string Type::ToString() const
 				result+= "/>";
 			}
 			else
-				result+= class_->class_->members.ToString();
+				result+= class_->class_->members->ToString();
 			return result;
 		}
 
