@@ -166,7 +166,8 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	}
 
 	// Build graph.
-	BuildProgramInternal( source_graph, 0u );
+	compiled_sources_.resize( source_graph.nodes_storage.size() );
+	BuildSourceGraphNode( source_graph, 0u );
 
 	global_function->eraseFromParent(); // Kill global function.
 
@@ -184,7 +185,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	}
 
 	// Clear internal structures.
-	compiled_sources_cache_.clear();
+	compiled_sources_.clear();
 	current_class_table_= nullptr;
 	enums_table_.clear();
 	template_classes_cache_.clear();
@@ -204,11 +205,11 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	return build_result;
 }
 
-CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
-	const SourceGraph& source_graph,
-	const size_t node_index )
+void CodeBuilder::BuildSourceGraphNode( const SourceGraph& source_graph, const size_t node_index )
 {
-	BuildResultInternal result;
+	SourceBuildResult& result= compiled_sources_[ node_index ];
+	if( result.names_map != nullptr )
+		return;
 
 	result.names_map= std::make_unique<NamesScope>( "", nullptr );
 	result.names_map->SetErrors( global_errors_ );
@@ -217,23 +218,15 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 
 	U_ASSERT( node_index < source_graph.nodes_storage.size() );
 	const SourceGraph::Node& source_graph_node= source_graph.nodes_storage[ node_index ];
+
+	for( const size_t child_node_inex : source_graph_node.child_nodes_indeces )
+		BuildSourceGraphNode( source_graph, child_node_inex );
+
 	for( const size_t child_node_inex : source_graph_node.child_nodes_indeces )
 	{
-		// Compile each source once and put it to cache.
-		const auto it= compiled_sources_cache_.find( child_node_inex );
-		if( it != compiled_sources_cache_.end() )
-		{
-			SetCurrentClassTable( *it->second.class_table ); // Before merge each ClassProxy must points to members of "dst.names_map".
-			MergeNameScopes( *result.names_map, *it->second.names_map, *result.class_table );
-			continue;
-		}
-
-		BuildResultInternal child_result=
-			BuildProgramInternal( source_graph, child_node_inex );
-
+		SourceBuildResult& child_result= compiled_sources_[ child_node_inex ];
+		SetCurrentClassTable( *child_result.class_table ); // Before merge each ClassProxy must points to members of "dst.names_map".
 		MergeNameScopes( *result.names_map, *child_result.names_map, *result.class_table );
-
-		compiled_sources_cache_.emplace( child_node_inex, std::move( child_result ) );
 	}
 
 	SetCurrentClassTable( *result.class_table );
@@ -271,8 +264,6 @@ CodeBuilder::BuildResultInternal CodeBuilder::BuildProgramInternal(
 			}
 		};
 	}
-
-	return result;
 }
 
 void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, ClassTable& dst_class_table )

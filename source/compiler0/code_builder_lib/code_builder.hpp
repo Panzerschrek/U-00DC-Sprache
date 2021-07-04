@@ -42,7 +42,7 @@ public:
 
 private:
 	using ClassTable= std::unordered_map< ClassProxyPtr, std::unique_ptr<Class> >;
-	struct BuildResultInternal
+	struct SourceBuildResult
 	{
 		std::unique_ptr<NamesScope> names_map;
 		std::unique_ptr<ClassTable> class_table;
@@ -99,7 +99,7 @@ private:
 	};
 
 private:
-	BuildResultInternal BuildProgramInternal( const SourceGraph& source_graph, size_t node_index );
+	void BuildSourceGraphNode( const SourceGraph& source_graph, size_t node_index );
 
 	void MergeNameScopes( NamesScope& dst, const NamesScope& src, ClassTable& dst_class_table );
 
@@ -955,7 +955,7 @@ private:
 	std::unique_ptr<llvm::Module> module_;
 	std::vector<CodeBuilderError> global_errors_; // Do not use directly. Use NamesScope::GetErrors() instead.
 
-	std::unordered_map< size_t, BuildResultInternal > compiled_sources_cache_;
+	std::vector<SourceBuildResult> compiled_sources_;
 	ClassTable* current_class_table_= nullptr;
 
 	// Storage for enum types. Do not use shared pointers for enums for loops preventing.
