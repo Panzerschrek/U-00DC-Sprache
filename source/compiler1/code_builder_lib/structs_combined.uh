@@ -195,7 +195,7 @@ struct ClassType
 		bool is_pure;
 		bool is_final;
 
-		// Virtual table may consist of many nested structs, because virtual table of child contains wirtual tables of parents.
+		// Virtual table may consist of many nested structs, because virtual table of child contains virtual tables of parents.
 		u32 index_in_table;
 		u32 parent_virtual_table_index;
 	}
