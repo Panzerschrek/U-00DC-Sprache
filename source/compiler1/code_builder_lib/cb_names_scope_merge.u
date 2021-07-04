@@ -64,11 +64,9 @@ fn CodeBuilder::DeepCopyNamesScopeValue( NamesScopeMutPtr& namespace_, NamesScop
 
 fn CodeBuilder::DeepCopyNamesScopeValue( ClassTypePtr& class_type, NamesScopePtr& target_names_scope  ) : NamesScopeValue
 {
-	// Take shared pointer to same class object. For class modification prevention used different mechanism.
-	// Now class must contains actual data (complete state, if it is complete in one of imported modules).
-	// To prevent modification of base classes, take copy of internal namespace.
+	// Take copy of internal class namespace to prevent modification of source namespace.
+	// We can freely modify class structure itself because we anyway save class table for each source file.
 
-	// TODO - maybe optimize this - not copy namespace of complete class?
 	auto src_namespace= class_type.lock_imut().get_ref().members;
 	auto src_lock= src_namespace.lock_imut();
 	auto& src= src_lock.get_ref();
@@ -117,13 +115,13 @@ fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</ClassField/>& clas
 fn CodeBuilder::DeepCopyNamesScopeValue( EnumTypePtr& enum_type ) : NamesScopeValue
 {
 	// Enum type is uncahged once it prepared, so, we can just take copy of shared pointer.
-	// TODO - what about enum internal namespace?
+	// Enum internal namespace does not contain actual data, so, we can just take copy of its shared pointer.
 	return enum_type;
 }
 
 fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</TypeAlias/>& type_alias ) : NamesScopeValue
 {
-	// Type alias is uncahged once it prepared, so, we can just take copy of shared pointer.
+	// Type alias is unchaged once it prepared, so, we can just take copy of shared pointer.
 	return type_alias;
 }
 
@@ -213,6 +211,7 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 				{
 					if( function.prototype_syntax_element == prev_function.prototype_syntax_element )
 					{
+						// TODO - check here attrubute mismatch (nomangle, virtual, generated, etc.).
 						if( function.body_syntax_element == prev_function.body_syntax_element )
 						{
 							// Ok - body is same or empty.
