@@ -165,7 +165,7 @@ bool operator!=( const RawPointerType& r, const RawPointerType& l );
 struct FunctionType final
 {
 public:
-	struct Arg
+	struct Param
 	{
 		Type type;
 		bool is_reference;
@@ -174,12 +174,12 @@ public:
 
 	// "first" - arg number, "second" is inner tag number or ~0, if it is reference itself
 	static constexpr size_t c_arg_reference_tag_number= ~0u;
-	using ArgReference= std::pair< size_t, size_t >;
+	using ParamReference= std::pair< size_t, size_t >;
 
 	struct ReferencePollution
 	{
-		ArgReference dst;
-		ArgReference src; // second = ~0, if reference itself, else - inner reference.
+		ParamReference dst;
+		ParamReference src; // second = ~0, if reference itself, else - inner reference.
 		bool operator==( const ReferencePollution& other ) const;
 		bool operator<( const ReferencePollution& other ) const;
 	};
@@ -189,7 +189,7 @@ public:
 
 public:
 	// If this changed, virtual functions compare function must be changed too!
-	ArgsVector<Arg> args;
+	ArgsVector<Param> params;
 	Type return_type;
 	bool return_value_is_reference= false;
 	bool return_value_is_mutable= false;
@@ -199,14 +199,14 @@ public:
 
 	// for functions, returning references this is references of reference itslef.
 	// For function, returning values, this is inner references.
-	std::set<ArgReference> return_references;
+	std::set<ParamReference> return_references;
 	std::set<ReferencePollution> references_pollution;
 
 	llvm::FunctionType* llvm_type= nullptr;
 };
 
-bool operator==( const FunctionType::Arg& l, const FunctionType::Arg& r );
-bool operator!=( const FunctionType::Arg& l, const FunctionType::Arg& r );
+bool operator==( const FunctionType::Param& l, const FunctionType::Param& r );
+bool operator!=( const FunctionType::Param& l, const FunctionType::Param& r );
 bool operator==( const FunctionType& l, const FunctionType& r );
 bool operator!=( const FunctionType& l, const FunctionType& r );
 

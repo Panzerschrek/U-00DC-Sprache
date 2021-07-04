@@ -718,16 +718,16 @@ bool CodeBuilder::MatchTemplateArgImpl(
 				given_function_type.return_value_is_mutable == template_param.return_value_is_mutable &&
 				given_function_type.return_value_is_reference == template_param.return_value_is_reference &&
 				MatchTemplateArg( template_, args_names_scope, given_function_type.return_type, src_loc, *template_param.return_type ) &&
-				given_function_type.args.size() == template_param.params.size()
+				given_function_type.params.size() == template_param.params.size()
 				) )
 				return false;
 
 			for( size_t i= 0; i < template_param.params.size(); ++i )
 			{
 				if( !(
-					given_function_type.args[i].is_mutable == template_param.params[i].is_mutable &&
-					given_function_type.args[i].is_reference == template_param.params[i].is_reference &&
-					MatchTemplateArg( template_, args_names_scope, given_function_type.args[i].type, src_loc, *template_param.params[i].type )
+					given_function_type.params[i].is_mutable == template_param.params[i].is_mutable &&
+					given_function_type.params[i].is_reference == template_param.params[i].is_reference &&
+					MatchTemplateArg( template_, args_names_scope, given_function_type.params[i].type, src_loc, *template_param.params[i].type )
 					) )
 					return false;
 			}
@@ -953,7 +953,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc,
 	const FunctionTemplatePtr& function_template_ptr,
-	const ArgsVector<FunctionType::Arg>& actual_args,
+	const ArgsVector<FunctionType::Param>& actual_args,
 	const bool first_actual_arg_is_this )
 {
 	const auto res= PrepareTemplateFunction( errors_container, src_loc, function_template_ptr, actual_args, first_actual_arg_is_this );
@@ -966,13 +966,13 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc,
 	const FunctionTemplatePtr& function_template_ptr,
-	const ArgsVector<FunctionType::Arg>& actual_args,
+	const ArgsVector<FunctionType::Param>& actual_args,
 	const bool first_actual_arg_is_this )
 {
 	const FunctionTemplate& function_template= *function_template_ptr;
 	const Synt::Function& function_declaration= *function_template.syntax_element->function_;
 
-	const FunctionType::Arg* given_args= actual_args.data();
+	const FunctionType::Param* given_args= actual_args.data();
 	size_t given_arg_count= actual_args.size();
 
 	if( first_actual_arg_is_this &&

@@ -28,7 +28,7 @@ ArgOverloadingClass GetArgOverloadingClass( const bool is_reference, const bool 
 	return ArgOverloadingClass::ImmutableReference;
 }
 
-ArgOverloadingClass GetArgOverloadingClass( const FunctionType::Arg& arg )
+ArgOverloadingClass GetArgOverloadingClass( const FunctionType::Param& arg )
 {
 	return GetArgOverloadingClass( arg.is_reference, arg.is_mutable );
 }
@@ -79,9 +79,9 @@ ConversionsCompareResult CompareConversionsTypes(
 }
 
 ConversionsCompareResult CompareConversionsMutability(
-	const FunctionType::Arg& src,
-	const FunctionType::Arg& dst_left,
-	const FunctionType::Arg& dst_right)
+	const FunctionType::Param& src,
+	const FunctionType::Param& dst_left,
+	const FunctionType::Param& dst_right)
 {
 	U_UNUSED(src);
 	//const ArgOverloadingClass   src_overloding_class= GetArgOverloadingClass(src);
@@ -275,9 +275,9 @@ ConversionsCompareResult TemplateSpecializationCompare(
 }
 
 ConversionsCompareResult CompareConversions(
-	const FunctionType::Arg& src,
-	const FunctionType::Arg& dst_left,
-	const FunctionType::Arg& dst_right)
+	const FunctionType::Param& src,
+	const FunctionType::Param& dst_left,
+	const FunctionType::Param& dst_right)
 {
 	const ConversionsCompareResult types_compare= CompareConversionsTypes( src.type, dst_left.type, dst_right.type );
 	const ConversionsCompareResult mutability_compare= CompareConversionsMutability( src, dst_left, dst_right );
@@ -297,9 +297,9 @@ ConversionsCompareResult CompareConversions(
 }
 
 ConversionsCompareResult CompareConversions(
-	const FunctionType::Arg& src,
-	const FunctionType::Arg& dst_left,
-	const FunctionType::Arg& dst_right,
+	const FunctionType::Param& src,
+	const FunctionType::Param& dst_left,
+	const FunctionType::Param& dst_right,
 	const TemplateSignatureParam& dst_left_template_parameter,
 	const TemplateSignatureParam& dst_right_template_parameter )
 {
@@ -356,23 +356,23 @@ bool CodeBuilder::ApplyOverloadedFunction(
 
 		// If argument count differs - allow overloading.
 		// SPRACHE_TODO - handle default arguments.
-		if( function_type->args.size() != set_function_type.args.size() )
+		if( function_type->params.size() != set_function_type.params.size() )
 			continue;
 
-		unsigned int arg_is_same_count= 0u;
-		for( size_t i= 0u; i < function_type->args.size(); i++ )
+		unsigned int param_is_same_count= 0u;
+		for( size_t i= 0u; i < function_type->params.size(); i++ )
 		{
-			const FunctionType::Arg& arg= function_type->args[i];
-			const FunctionType::Arg& set_arg= set_function_type.args[i];
+			const FunctionType::Param& param= function_type->params[i];
+			const FunctionType::Param& set_param= set_function_type.params[i];
 
-			if( arg.type != set_arg.type )
+			if( param.type != set_param.type )
 				continue;
 
-			if( GetArgOverloadingClass( arg ) == GetArgOverloadingClass( set_arg ) )
-				arg_is_same_count++;
+			if( GetArgOverloadingClass( param ) == GetArgOverloadingClass( set_param ) )
+				param_is_same_count++;
 		} // For args.
 
-		if( arg_is_same_count == function_type->args.size() )
+		if( param_is_same_count == function_type->params.size() )
 		{
 			REPORT_ERROR( CouldNotOverloadFunction, errors_container, src_loc );
 			return false;
@@ -386,7 +386,7 @@ bool CodeBuilder::ApplyOverloadedFunction(
 
 const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	const OverloadedFunctionsSet& functions_set,
-	const ArgsVector<FunctionType::Arg>& actual_args,
+	const ArgsVector<FunctionType::Param>& actual_args,
 	const bool first_actual_arg_is_this,
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc,
@@ -403,7 +403,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 		const FunctionType& function_type= *function.type.GetFunctionType();
 
 		size_t actial_arg_count;
-		const FunctionType::Arg* actual_args_begin;
+		const FunctionType::Param* actual_args_begin;
 		if( first_actual_arg_is_this && !function.is_this_call )
 		{
 			// In case of static function call via "this" compare actual args without "this".
@@ -417,22 +417,22 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 		}
 
 		// SPRACHE_TODO - handle functions with default arguments.
-		if( function_type.args.size() != actial_arg_count )
+		if( function_type.params.size() != actial_arg_count )
 			continue;
 
 		bool all_args_is_compatible= true;
 		for( unsigned int i= 0u; i < actial_arg_count; i++ )
 		{
 			const ArgOverloadingClass arg_overloading_class= GetArgOverloadingClass( actual_args_begin[i] );
-			const ArgOverloadingClass parameter_overloading_class= GetArgOverloadingClass( function_type.args[i] );
+			const ArgOverloadingClass parameter_overloading_class= GetArgOverloadingClass( function_type.params[i] );
 
-			if( actual_args_begin[i].type == function_type.args[i].type )
+			if( actual_args_begin[i].type == function_type.params[i].type )
 			{} // ok
 			else
 			{
 				// We needs complete types for checking possible conversions.
 				// We can not just skip this function, if types are incomplete, because it will break "template instantiation equality rule".
-				if( !( EnsureTypeComplete( function_type.args[i].type ) && EnsureTypeComplete( actual_args_begin[i].type ) ) )
+				if( !( EnsureTypeComplete( function_type.params[i].type ) && EnsureTypeComplete( actual_args_begin[i].type ) ) )
 				{
 					if( produce_errors )
 						REPORT_ERROR( CouldNotSelectOverloadedFunction, errors_container, src_loc );
@@ -440,13 +440,13 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 					break;
 				}
 
-				if( ReferenceIsConvertible( actual_args_begin[i].type, function_type.args[i].type, errors_container, src_loc ) )
+				if( ReferenceIsConvertible( actual_args_begin[i].type, function_type.params[i].type, errors_container, src_loc ) )
 				{}
 				// Enable type conversion only if argument is not mutable reference.
 				else if(
 					enable_type_conversions && parameter_overloading_class == ArgOverloadingClass::ImmutableReference &&
-					!function.is_conversion_constructor && !( function.is_constructor && IsCopyConstructor( function_type, function_type.args.front().type ) ) && // Disable convesin constructors call for copy constructors and conversion constructors
-					GetConversionConstructor( actual_args_begin[i].type, function_type.args[i].type, errors_container, src_loc ) != nullptr )
+					!function.is_conversion_constructor && !( function.is_constructor && IsCopyConstructor( function_type, function_type.params.front().type ) ) && // Disable convesin constructors call for copy constructors and conversion constructors
+					GetConversionConstructor( actual_args_begin[i].type, function_type.params[i].type, errors_container, src_loc ) != nullptr )
 				{}
 				else
 				{
@@ -531,8 +531,8 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 				const ConversionsCompareResult comp=
 					CompareConversions(
 						actual_args[arg_n],
-						l_type.args[l_arg_n],
-						r_type.args[r_arg_n],
+						l_type.params[l_arg_n],
+						r_type.params[r_arg_n],
 						function_l->base_template == nullptr ? dummy_type_param : function_l->base_template->signature_params[l_arg_n],
 						function_r->base_template == nullptr ? dummy_type_param : function_r->base_template->signature_params[r_arg_n] );
 
@@ -563,8 +563,8 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 					const ConversionsCompareResult comp=
 						CompareConversions(
 							actual_args[arg_n],
-							l_type.args[l_arg_n],
-							r_type.args[r_arg_n],
+							l_type.params[l_arg_n],
+							r_type.params[r_arg_n],
 							function_l->base_template == nullptr ? dummy_type_param : function_l->base_template->signature_params[l_arg_n],
 							function_r. base_template == nullptr ? dummy_type_param : function_r. base_template->signature_params[r_arg_n] );
 
@@ -601,14 +601,14 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 }
 
 const FunctionVariable* CodeBuilder::GetOverloadedOperator(
-	const ArgsVector<FunctionType::Arg>& actual_args,
+	const ArgsVector<FunctionType::Param>& actual_args,
 	OverloadedOperator op,
 	NamesScope& names,
 	const SrcLoc& src_loc )
 {
 	const std::string op_name= OverloadedOperatorToString( op );
 
-	for( const FunctionType::Arg& arg : actual_args )
+	for( const FunctionType::Param& arg : actual_args )
 	{
 		if( (op == OverloadedOperator::Indexing || op == OverloadedOperator::Call) && &arg != &actual_args.front() )
 			break; // For indexing and call operators only check first argument.
@@ -665,7 +665,7 @@ const FunctionVariable* CodeBuilder::GetConversionConstructor(
 
 	const OverloadedFunctionsSet& constructors= *constructors_value->GetFunctionsSet();
 
-	ArgsVector<FunctionType::Arg> actual_args;
+	ArgsVector<FunctionType::Param> actual_args;
 	actual_args.resize(2u);
 	actual_args[0u].type= dst_type;
 	actual_args[0u].is_mutable= true;

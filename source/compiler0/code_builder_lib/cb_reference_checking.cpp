@@ -9,12 +9,12 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-void CodeBuilder::ProcessFunctionArgReferencesTags(
+void CodeBuilder::ProcessFunctionParamReferencesTags(
 	CodeBuilderErrorsContainer& errors_container,
 	const Synt::FunctionType& func,
 	FunctionType& function_type,
-	const Synt::FunctionArgument& in_arg,
-	const FunctionType::Arg& out_arg,
+	const Synt::FunctionArgument& in_param,
+	const FunctionType::Param& out_param,
 	const size_t arg_number )
 {
 	U_UNUSED(errors_container); // TODO - remove it.
@@ -22,22 +22,22 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 	if( function_type.return_value_is_reference && !func.return_value_reference_tag_.empty() )
 	{
 		// Arg reference to return reference
-		if( out_arg.is_reference && !in_arg.reference_tag_.empty() && in_arg.reference_tag_ == func.return_value_reference_tag_ )
+		if( out_param.is_reference && !in_param.reference_tag_.empty() && in_param.reference_tag_ == func.return_value_reference_tag_ )
 			function_type.return_references.emplace( arg_number, FunctionType::c_arg_reference_tag_number );
 
 		// Inner arg references to return reference
-		if( in_arg.inner_arg_reference_tag_ == func.return_value_reference_tag_ )
+		if( in_param.inner_arg_reference_tag_ == func.return_value_reference_tag_ )
 			function_type.return_references.emplace( arg_number, 0u );
 	}
 
 	if( !function_type.return_value_is_reference && !func.return_value_inner_reference_tag_.empty() )
 	{
 		// In arg reference to return value references
-		if( out_arg.is_reference && !in_arg.reference_tag_.empty() && in_arg.reference_tag_ == func.return_value_inner_reference_tag_ )
+		if( out_param.is_reference && !in_param.reference_tag_.empty() && in_param.reference_tag_ == func.return_value_inner_reference_tag_ )
 			function_type.return_references.emplace( arg_number, FunctionType::c_arg_reference_tag_number );
 
 		// Inner arg references to return value references
-		if( in_arg.inner_arg_reference_tag_ == func.return_value_inner_reference_tag_ )
+		if( in_param.inner_arg_reference_tag_ == func.return_value_inner_reference_tag_ )
 			function_type.return_references.emplace( arg_number, 0u );
 	}
 }
@@ -95,9 +95,9 @@ void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
 		}
 
 		// If there is no tag for return reference, assume, that it may refer to any reference argument, but not inner reference of any argument.
-		for( size_t i= 0u; i < function_type.args.size(); ++i )
+		for( size_t i= 0u; i < function_type.params.size(); ++i )
 		{
-			if( function_type.args[i].is_reference )
+			if( function_type.params[i].is_reference )
 				function_type.return_references.emplace( i, FunctionType::c_arg_reference_tag_number );
 		}
 	}
@@ -145,11 +145,11 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 	FunctionType& function_type )
 {
 	const auto get_references=
-	[&]( const std::string& name ) -> ArgsVector<FunctionType::ArgReference>
+	[&]( const std::string& name ) -> ArgsVector<FunctionType::ParamReference>
 	{
-		ArgsVector<FunctionType::ArgReference> result;
+		ArgsVector<FunctionType::ParamReference> result;
 
-		for( size_t arg_n= 0u; arg_n < function_type.args.size(); ++arg_n )
+		for( size_t arg_n= 0u; arg_n < function_type.params.size(); ++arg_n )
 		{
 			const Synt::FunctionArgument& in_arg= func.arguments_[ arg_n ];
 
@@ -173,10 +173,10 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 			continue;
 		}
 
-		const ArgsVector<FunctionType::ArgReference> dst_references= get_references( pollution.first );
-		const ArgsVector<FunctionType::ArgReference> src_references= get_references( pollution.second );
+		const ArgsVector<FunctionType::ParamReference> dst_references= get_references( pollution.first );
+		const ArgsVector<FunctionType::ParamReference> src_references= get_references( pollution.second );
 
-		for( const FunctionType::ArgReference& dst_ref : dst_references )
+		for( const FunctionType::ParamReference& dst_ref : dst_references )
 		{
 			if( dst_ref.second == FunctionType::c_arg_reference_tag_number )
 			{
@@ -184,7 +184,7 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 				continue;
 			}
 
-			for( const FunctionType::ArgReference& src_ref : src_references )
+			for( const FunctionType::ParamReference& src_ref : src_references )
 			{
 				FunctionType::ReferencePollution ref_pollution;
 				ref_pollution.dst= dst_ref;
@@ -278,13 +278,13 @@ ReferencesGraph CodeBuilder::MergeVariablesStateAfterIf(
 
 bool CodeBuilder::IsReferenceAllowedForReturn( FunctionContext& function_context, const ReferencesGraphNodePtr& variable_node )
 {
-	for( const FunctionType::ArgReference& arg_and_tag : function_context.function_type.return_references )
+	for( const FunctionType::ParamReference& param_and_tag : function_context.function_type.return_references )
 	{
-		const size_t arg_n= arg_and_tag.first;
+		const size_t arg_n= param_and_tag.first;
 		U_ASSERT( arg_n < function_context.args_nodes.size() );
-		if( arg_and_tag.second == FunctionType::c_arg_reference_tag_number && variable_node == function_context.args_nodes[arg_n].first )
+		if( param_and_tag.second == FunctionType::c_arg_reference_tag_number && variable_node == function_context.args_nodes[arg_n].first )
 			return true;
-		if( arg_and_tag.second == 0u && variable_node == function_context.args_nodes[arg_n].second )
+		if( param_and_tag.second == 0u && variable_node == function_context.args_nodes[arg_n].second )
 			return true;
 	}
 	return false;
@@ -295,9 +295,9 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc )
 {
-	for( size_t i= 0u; i < function_context.function_type.args.size(); ++i )
+	for( size_t i= 0u; i < function_context.function_type.params.size(); ++i )
 	{
-		if( !function_context.function_type.args[i].is_reference )
+		if( !function_context.function_type.params[i].is_reference )
 			continue;
 
 		const auto& node_pair= function_context.args_nodes[i];
@@ -311,13 +311,13 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 			if( accesible_variable == node_pair.second )
 				continue;
 
-			std::optional<FunctionType::ArgReference> reference;
-			for( size_t j= 0u; j < function_context.function_type.args.size(); ++j )
+			std::optional<FunctionType::ParamReference> reference;
+			for( size_t j= 0u; j < function_context.function_type.params.size(); ++j )
 			{
 				if( accesible_variable == function_context.args_nodes[j].first )
-					reference= FunctionType::ArgReference( j, FunctionType::c_arg_reference_tag_number );
+					reference= FunctionType::ParamReference( j, FunctionType::c_arg_reference_tag_number );
 				if( accesible_variable == function_context.args_nodes[j].second )
-					reference= FunctionType::ArgReference( j, 0u );
+					reference= FunctionType::ParamReference( j, 0u );
 			}
 
 			if( reference != std::nullopt )

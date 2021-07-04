@@ -1432,7 +1432,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	FunctionContext& function_context )
 {
 	// Know args types.
-	ArgsVector<FunctionType::Arg> args;
+	ArgsVector<FunctionType::Param> args;
 	const auto state= SaveInstructionsState( function_context );
 	{
 		const StackVariablesStorage dummy_stack_variables_storage( function_context );
@@ -1576,7 +1576,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
 	if( variable.type.GetClassType() == nullptr )
 		return std::nullopt;
 
-	ArgsVector<FunctionType::Arg> args;
+	ArgsVector<FunctionType::Param> args;
 	args.emplace_back();
 	args.back().type= variable.type;
 	args.back().is_mutable= variable.value_type == ValueType::Reference;
@@ -1613,7 +1613,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
-	ArgsVector<FunctionType::Arg> actual_args;
+	ArgsVector<FunctionType::Param> actual_args;
 	actual_args.reserve( 1 + synt_args.size() );
 
 	const auto state= SaveInstructionsState( function_context );
@@ -2323,9 +2323,9 @@ Value CodeBuilder::CallFunction(
 			function_context.have_non_constexpr_operations_inside= true; // Calling function, using pointer, is not constexpr. We can not garantee, that called function is constexpr.
 
 			// Call function pointer directly.
-			if( function_pointer->function.args.size() != synt_args.size() )
+			if( function_pointer->function.params.size() != synt_args.size() )
 			{
-				REPORT_ERROR( InvalidFunctionArgumentCount, names.GetErrors(), src_loc, synt_args.size(), function_pointer->function.args.size() );
+				REPORT_ERROR( InvalidFunctionArgumentCount, names.GetErrors(), src_loc, synt_args.size(), function_pointer->function.params.size() );
 				return ErrorValue();
 			}
 
@@ -2362,7 +2362,7 @@ Value CodeBuilder::CallFunction(
 
 	// Make preevaluation af arguments for selection of overloaded function.
 	{
-		ArgsVector<FunctionType::Arg> actual_args;
+		ArgsVector<FunctionType::Param> actual_args;
 		actual_args.reserve( total_args );
 
 		const auto state= SaveInstructionsState( function_context );
@@ -2465,7 +2465,7 @@ Value CodeBuilder::DoCallFunction(
 		REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names.GetErrors(), call_src_loc );
 
 	const size_t arg_count= preevaluated_args.size() + args.size();
-	U_ASSERT( arg_count == function_type.args.size() );
+	U_ASSERT( arg_count == function_type.params.size() );
 
 	ArgsVector<llvm::Value*> llvm_args;
 	ArgsVector<llvm::Constant*> constant_llvm_args;
@@ -2478,7 +2478,7 @@ Value CodeBuilder::DoCallFunction(
 	{
 		const size_t j= evaluate_args_in_reverse_order ? arg_count - i - 1u : i;
 
-		const FunctionType::Arg& arg= function_type.args[j];
+		const FunctionType::Param& param= function_type.params[j];
 
 		Variable expr;
 		SrcLoc src_loc;
@@ -2493,19 +2493,19 @@ Value CodeBuilder::DoCallFunction(
 			src_loc= Synt::GetExpressionSrcLoc( *args[ j - preevaluated_args.size() ] );
 		}
 
-		if( expr.constexpr_value != nullptr && !( arg.is_reference && arg.is_mutable ) )
+		if( expr.constexpr_value != nullptr && !( param.is_reference && param.is_mutable ) )
 			constant_llvm_args.push_back( expr.constexpr_value );
 
-		if( arg.is_reference )
+		if( param.is_reference )
 		{
-			if( !ReferenceIsConvertible( expr.type, arg.type, names.GetErrors(), call_src_loc ) &&
-				GetConversionConstructor( expr.type, arg.type, names.GetErrors(), src_loc ) == nullptr )
+			if( !ReferenceIsConvertible( expr.type, param.type, names.GetErrors(), call_src_loc ) &&
+				GetConversionConstructor( expr.type, param.type, names.GetErrors(), src_loc ) == nullptr )
 			{
-				REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, arg.type, expr.type );
+				REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, param.type, expr.type );
 				return ErrorValue();
 			}
 
-			if( arg.is_mutable )
+			if( param.is_mutable )
 			{
 				if( expr.value_type == ValueType::Value )
 				{
@@ -2518,10 +2518,10 @@ Value CodeBuilder::DoCallFunction(
 					return ErrorValue();
 				}
 
-				if( expr.type == arg.type )
+				if( expr.type == param.type )
 					llvm_args[j]= expr.llvm_value;
 				else
-					llvm_args[j]= CreateReferenceCast( expr.llvm_value, expr.type, arg.type, function_context );
+					llvm_args[j]= CreateReferenceCast( expr.llvm_value, expr.type, param.type, function_context );
 			}
 			else
 			{
@@ -2537,15 +2537,15 @@ Value CodeBuilder::DoCallFunction(
 				else
 					llvm_args[j]= expr.llvm_value;
 
-				if( expr.type != arg.type )
+				if( expr.type != param.type )
 				{
-					if( expr.type.ReferenceIsConvertibleTo( arg.type ) )
-						llvm_args[j]= CreateReferenceCast( llvm_args[j], expr.type, arg.type, function_context );
+					if( expr.type.ReferenceIsConvertibleTo( param.type ) )
+						llvm_args[j]= CreateReferenceCast( llvm_args[j], expr.type, param.type, function_context );
 					else
 					{
-						const auto conversion_constructor= GetConversionConstructor( expr.type, arg.type, names.GetErrors(), src_loc );
+						const auto conversion_constructor= GetConversionConstructor( expr.type, param.type, names.GetErrors(), src_loc );
 						U_ASSERT( conversion_constructor != nullptr );
-						expr= ConvertVariable( expr, arg.type, *conversion_constructor, names, function_context, src_loc );
+						expr= ConvertVariable( expr, param.type, *conversion_constructor, names, function_context, src_loc );
 						llvm_args[j]= expr.llvm_value;
 					}
 				}
@@ -2554,7 +2554,7 @@ Value CodeBuilder::DoCallFunction(
 			// Lock references.
 			args_nodes.emplace_back(
 				function_context,
-				arg.is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
+				param.is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
 				"reference_arg " + std::to_string(i) );
 
 			if( expr.node != nullptr && !function_context.variables_state.TryAddLink( expr.node, args_nodes.back().Node() ) )
@@ -2566,8 +2566,8 @@ Value CodeBuilder::DoCallFunction(
 				const auto inner_references= function_context.variables_state.GetAccessibleVariableNodesInnerReferences( expr.node );
 				if( !inner_references.empty() )
 				{
-					EnsureTypeComplete( arg.type );
-					if( arg.type.ReferencesTagsCount() > 0 )
+					EnsureTypeComplete( param.type );
+					if( param.type.ReferencesTagsCount() > 0 )
 					{
 						bool is_mutable= false;
 						for( const ReferencesGraphNodePtr& inner_reference : inner_references )
@@ -2591,38 +2591,38 @@ Value CodeBuilder::DoCallFunction(
 		{
 			args_nodes.emplace_back( function_context, ReferencesGraphNode::Kind::Variable, "value_arg_" + std::to_string(i) );
 
-			if( !ReferenceIsConvertible( expr.type, arg.type, names.GetErrors(), call_src_loc ) &&
-				GetConversionConstructor( expr.type, arg.type, names.GetErrors(), src_loc ) == nullptr )
+			if( !ReferenceIsConvertible( expr.type, param.type, names.GetErrors(), call_src_loc ) &&
+				GetConversionConstructor( expr.type, param.type, names.GetErrors(), src_loc ) == nullptr )
 			{
-				REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, arg.type, expr.type );
+				REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, param.type, expr.type );
 				return ErrorValue();
 			}
 
-			if( expr.type != arg.type )
+			if( expr.type != param.type )
 			{
-				if( expr.type.ReferenceIsConvertibleTo( arg.type ) ){}
+				if( expr.type.ReferenceIsConvertibleTo( param.type ) ){}
 				else
 				{
-					const auto conversion_constructor= GetConversionConstructor( expr.type, arg.type, names.GetErrors(), src_loc );
+					const auto conversion_constructor= GetConversionConstructor( expr.type, param.type, names.GetErrors(), src_loc );
 					U_ASSERT( conversion_constructor != nullptr );
-					expr= ConvertVariable( expr, arg.type, *conversion_constructor, names, function_context, src_loc );
+					expr= ConvertVariable( expr, param.type, *conversion_constructor, names, function_context, src_loc );
 				}
 			}
 
-			if( arg.type == void_type_ )
+			if( param.type == void_type_ )
 				llvm_args[j]= llvm::UndefValue::get( fundamental_llvm_types_.void_ ); // Hack for interpreter - it can not process regular constant values properly.
-			else if( arg.type.GetFundamentalType() != nullptr ||
-				arg.type.GetEnumType() != nullptr ||
-				arg.type.GetRawPointerType() != nullptr ||
-				arg.type.GetFunctionPointerType() != nullptr )
+			else if( param.type.GetFundamentalType() != nullptr ||
+				param.type.GetEnumType() != nullptr ||
+				param.type.GetRawPointerType() != nullptr ||
+				param.type.GetFunctionPointerType() != nullptr )
 				llvm_args[j]= CreateMoveToLLVMRegisterInstruction( expr, function_context );
-			else if( arg.type.GetClassType() != nullptr || arg.type.GetArrayType() != nullptr || arg.type.GetTupleType() != nullptr )
+			else if( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr )
 			{
 				// Lock inner references.
 				// Do it only if arg type can contain any reference inside.
 				// Do it before potential moving.
-				EnsureTypeComplete( arg.type ); // arg type for value arg must be already complete.
-				if( expr.node != nullptr && arg.type.ReferencesTagsCount() > 0u )
+				EnsureTypeComplete( param.type ); // arg type for value arg must be already complete.
+				if( expr.node != nullptr && param.type.ReferencesTagsCount() > 0u )
 				{
 					const auto inner_references= function_context.variables_state.GetAccessibleVariableNodesInnerReferences( expr.node );
 					if( !inner_references.empty() )
@@ -2642,7 +2642,7 @@ Value CodeBuilder::DoCallFunction(
 					}
 				}
 
-				if( expr.value_type == ValueType::Value && expr.type == arg.type )
+				if( expr.value_type == ValueType::Value && expr.type == param.type )
 				{
 					// Do not call copy constructors - just move.
 					if( expr.node != nullptr )
@@ -2651,21 +2651,21 @@ Value CodeBuilder::DoCallFunction(
 				}
 				else
 				{
-					if( !arg.type.IsCopyConstructible() )
+					if( !param.type.IsCopyConstructible() )
 					{
 						// Can not call function with value parameter, because for value parameter needs copy, but parameter type is not copyable.
 						// TODO - print more reliable message.
-						REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, arg.type );
+						REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, param.type );
 						return ErrorValue();
 					}
 
 					// Create copy of class or tuple value. Call copy constructor.
-					llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( arg.type.GetLLVMType() );
+					llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( param.type.GetLLVMType() );
 					llvm_args[j]= arg_copy;
 					BuildCopyConstructorPart(
 						arg_copy,
-						CreateReferenceCast( expr.llvm_value, expr.type, arg.type, function_context ),
-						arg.type,
+						CreateReferenceCast( expr.llvm_value, expr.type, param.type, function_context ),
+						param.type,
 						function_context );
 				}
 			}
@@ -2764,7 +2764,7 @@ Value CodeBuilder::DoCallFunction(
 	// Prepare result references.
 	if( function_type.return_value_is_reference )
 	{
-		for( const FunctionType::ArgReference& arg_reference : function_type.return_references )
+		for( const FunctionType::ParamReference& arg_reference : function_type.return_references )
 		{
 			if( arg_reference.second == FunctionType::c_arg_reference_tag_number )
 			{
@@ -2787,7 +2787,7 @@ Value CodeBuilder::DoCallFunction(
 		bool inner_reference_is_mutable= false;
 
 		// First, know, what kind of reference we needs - mutable or immutable.
-		for( const FunctionType::ArgReference& arg_reference : function_type.return_references )
+		for( const FunctionType::ParamReference& arg_reference : function_type.return_references )
 		{
 			if( arg_reference.second == FunctionType::c_arg_reference_tag_number )
 			{
@@ -2816,7 +2816,7 @@ Value CodeBuilder::DoCallFunction(
 		const auto inner_reference_node=
 			function_context.variables_state.CreateNodeInnerReference( result.node, inner_reference_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
 
-		for( const FunctionType::ArgReference& arg_reference : function_type.return_references )
+		for( const FunctionType::ParamReference& arg_reference : function_type.return_references )
 		{
 			if( arg_reference.second == FunctionType::c_arg_reference_tag_number )
 			{
@@ -2837,10 +2837,10 @@ Value CodeBuilder::DoCallFunction(
 	for( const FunctionType::ReferencePollution& referene_pollution : function_type.references_pollution )
 	{
 		const size_t dst_arg= referene_pollution.dst.first;
-		U_ASSERT( dst_arg < function_type.args.size() );
+		U_ASSERT( dst_arg < function_type.params.size() );
 
 		// It's possible that reference pollution is set for types without references inside.
-		if( function_type.args[ dst_arg ].type.ReferencesTagsCount() == 0 )
+		if( function_type.params[ dst_arg ].type.ReferencesTagsCount() == 0 )
 			continue;
 
 		bool src_variables_is_mut= false;
@@ -2848,10 +2848,10 @@ Value CodeBuilder::DoCallFunction(
 		if( referene_pollution.src.second == FunctionType::c_arg_reference_tag_number )
 		{
 			// Reference-arg itself
-			U_ASSERT( function_type.args[ referene_pollution.src.first ].is_reference );
+			U_ASSERT( function_type.params[ referene_pollution.src.first ].is_reference );
 			src_nodes.emplace( args_nodes[ referene_pollution.src.first ].Node() );
 
-			if( function_type.args[ referene_pollution.src.first ].is_mutable )
+			if( function_type.params[ referene_pollution.src.first ].is_mutable )
 				src_variables_is_mut= true;
 		}
 		else
@@ -2859,7 +2859,7 @@ Value CodeBuilder::DoCallFunction(
 			// Variables, referenced by inner argument references.
 			U_ASSERT( referene_pollution.src.second == 0u );// Currently we support one tag per struct.
 
-			if( function_type.args[ referene_pollution.src.first ].type.ReferencesTagsCount() == 0 )
+			if( function_type.params[ referene_pollution.src.first ].type.ReferencesTagsCount() == 0 )
 				continue;
 
 			for( const ReferencesGraphNodePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( args_nodes[ referene_pollution.src.first ].Node() ) )
@@ -2870,9 +2870,9 @@ Value CodeBuilder::DoCallFunction(
 			}
 		}
 
-		if( function_type.args[ dst_arg ].is_reference && !src_nodes.empty() )
+		if( function_type.params[ dst_arg ].is_reference && !src_nodes.empty() )
 		{
-			const bool dst_inner_reference_is_mut= function_type.args[ dst_arg ].type.GetInnerReferenceType() == InnerReferenceType::Mut;
+			const bool dst_inner_reference_is_mut= function_type.params[ dst_arg ].type.GetInnerReferenceType() == InnerReferenceType::Mut;
 			// Even if reference-pollution is mutable, but if src vars is immutable, link as immutable.
 			const bool result_node_is_mut= src_variables_is_mut && dst_inner_reference_is_mut;
 
@@ -2982,7 +2982,7 @@ Variable CodeBuilder::ConvertVariable(
 	return result;
 }
 
-FunctionType::Arg CodeBuilder::PreEvaluateArg( const Synt::Expression& expression, NamesScope& names, FunctionContext& function_context )
+FunctionType::Param CodeBuilder::PreEvaluateArg( const Synt::Expression& expression, NamesScope& names, FunctionContext& function_context )
 {
 	if( function_context.args_preevaluation_cache.count(&expression) == 0 )
 	{
@@ -2994,9 +2994,9 @@ FunctionType::Arg CodeBuilder::PreEvaluateArg( const Synt::Expression& expressio
 	return function_context.args_preevaluation_cache[&expression];
 }
 
-FunctionType::Arg CodeBuilder::GetArgExtendedType( const Variable& variable )
+FunctionType::Param CodeBuilder::GetArgExtendedType( const Variable& variable )
 {
-	FunctionType::Arg arg_type_extended;
+	FunctionType::Param arg_type_extended;
 	arg_type_extended.type= variable.type;
 	arg_type_extended.is_reference= variable.value_type != ValueType::Value;
 	arg_type_extended.is_mutable= variable.value_type == ValueType::Reference;

@@ -273,7 +273,7 @@ std::string_view EncodeFundamentalType( const U_FundamentalType t )
 	return "";
 }
 
-void EncodeFunctionParam( ManglerState& mangler_state, const FunctionType::Arg& param )
+void EncodeFunctionParam( ManglerState& mangler_state, const FunctionType::Param& param )
 {
 	if( param.is_reference )
 	{
@@ -292,9 +292,9 @@ void EncodeFunctionParam( ManglerState& mangler_state, const FunctionType::Arg& 
 		EncodeTypeName( mangler_state, param.type );
 }
 
-void EncodeFunctionParams( ManglerState& mangler_state, const ArgsVector<FunctionType::Arg>& params )
+void EncodeFunctionParams( ManglerState& mangler_state, const ArgsVector<FunctionType::Param>& params )
 {
-	for( const FunctionType::Arg& param : params )
+	for( const FunctionType::Param& param : params )
 		EncodeFunctionParam( mangler_state, param );
 
 	if( params.empty() )
@@ -379,14 +379,14 @@ void EncodeTypeName( ManglerState& mangler_state, const Type& type )
 		mangler_state.Push( "F" );
 
 		{
-			FunctionType::Arg ret;
+			FunctionType::Param ret;
 			ret.is_mutable= function->return_value_is_mutable;
 			ret.is_reference= function->return_value_is_reference;
 			ret.type= function->return_type;
 			EncodeFunctionParam( mangler_state, ret );
 		}
 
-		EncodeFunctionParams( mangler_state, function->args );
+		EncodeFunctionParams( mangler_state, function->params );
 
 		if( !function->return_references.empty() )
 		{
@@ -394,7 +394,7 @@ void EncodeTypeName( ManglerState& mangler_state, const Type& type )
 			mangler_state.Push( "_RR" );
 			mangler_state.Push( Base36Digit(function->return_references.size()) );
 
-			for( const FunctionType::ArgReference& arg_and_tag : function->return_references )
+			for( const FunctionType::ParamReference& arg_and_tag : function->return_references )
 			{
 				U_ASSERT( arg_and_tag.first  < 36u );
 				U_ASSERT( arg_and_tag.second < 36u || arg_and_tag.second == Function::c_arg_reference_tag_number );
@@ -560,7 +560,7 @@ std::string Mangler::MangleFunction(
 			state_.Push( name_prefixed );
 	}
 
-	EncodeFunctionParams( state_, function_type.args );
+	EncodeFunctionParams( state_, function_type.params );
 
 	return state_.TakeResult();
 }

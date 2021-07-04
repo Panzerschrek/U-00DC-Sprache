@@ -321,14 +321,14 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc,
 		const FunctionTemplatePtr& function_template_ptr,
-		const ArgsVector<FunctionType::Arg>& actual_args,
+		const ArgsVector<FunctionType::Param>& actual_args,
 		bool first_actual_arg_is_this );
 
 	TemplateFunctionPreparationResult PrepareTemplateFunction(
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc,
 		const FunctionTemplatePtr& function_template_ptr,
-		const ArgsVector<FunctionType::Arg>& actual_args,
+		const ArgsVector<FunctionType::Param>& actual_args,
 		bool first_actual_arg_is_this );
 
 	const FunctionVariable* FinishTemplateFunctionParametrization(
@@ -603,8 +603,8 @@ private:
 
 	// Preevaluate expresion to know it's extened type.
 	// Call this only inside save/state restore calls.
-	FunctionType::Arg PreEvaluateArg( const Synt::Expression& expression, NamesScope& names, FunctionContext& function_context );
-	FunctionType::Arg GetArgExtendedType( const Variable& variable );
+	FunctionType::Param PreEvaluateArg( const Synt::Expression& expression, NamesScope& names, FunctionContext& function_context );
+	FunctionType::Param GetArgExtendedType( const Variable& variable );
 
 	// Typeinfo
 
@@ -689,7 +689,7 @@ private:
 
 	const FunctionVariable* GetOverloadedFunction(
 		const OverloadedFunctionsSet& functions_set,
-		const ArgsVector<FunctionType::Arg>& actual_args,
+		const ArgsVector<FunctionType::Param>& actual_args,
 		bool first_actual_arg_is_this,
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc,
@@ -697,7 +697,7 @@ private:
 		bool enable_type_conversions= true);
 
 	const FunctionVariable* GetOverloadedOperator(
-		const ArgsVector<FunctionType::Arg>& actual_args,
+		const ArgsVector<FunctionType::Param>& actual_args,
 		OverloadedOperator op,
 		NamesScope& names,
 		const SrcLoc& src_loc );
@@ -763,12 +763,12 @@ private:
 	void CheckClassFieldsInitializers( const ClassProxyPtr& class_type );
 
 	// Reference-checking.
-	void ProcessFunctionArgReferencesTags(
+	void ProcessFunctionParamReferencesTags(
 		CodeBuilderErrorsContainer& errors_container,
 		const Synt::FunctionType& func,
 		FunctionType& function_type,
 		const Synt::FunctionArgument& in_arg,
-		const FunctionType::Arg& out_arg,
+		const FunctionType::Param& out_arg,
 		size_t arg_number );
 
 	void ProcessFunctionReturnValueReferenceTags(

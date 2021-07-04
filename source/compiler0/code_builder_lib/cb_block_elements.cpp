@@ -1635,7 +1635,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	if( variable->node != nullptr && function_context.variables_state.HaveOutgoingLinks( variable->node ) )
 		REPORT_ERROR( ReferenceProtectionError, block_names.GetErrors(), src_loc, variable->node->name );
 
-	ArgsVector<FunctionType::Arg> args;
+	ArgsVector<FunctionType::Param> args;
 	args.emplace_back();
 	args.back().type= variable->type;
 	args.back().is_mutable= variable->value_type == ValueType::Reference;

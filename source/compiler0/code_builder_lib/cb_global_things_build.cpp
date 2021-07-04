@@ -624,8 +624,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 		{
 			const FunctionType& constructor_type= *constructor.type.GetFunctionType();
 
-			U_ASSERT( constructor_type.args.size() >= 1u && constructor_type.args.front().type == class_type );
-			if( !( constructor_type.args.size() == 2u && constructor_type.args.back().type == class_type && !constructor_type.args.back().is_mutable ) )
+			U_ASSERT( constructor_type.params.size() >= 1u && constructor_type.params.front().type == class_type );
+			if( !( constructor_type.params.size() == 2u && constructor_type.params.back().type == class_type && !constructor_type.params.back().is_mutable ) )
 			{
 				the_class.have_explicit_noncopy_constructors= true;
 				break;

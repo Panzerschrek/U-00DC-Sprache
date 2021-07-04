@@ -537,17 +537,17 @@ std::string Type::ToString() const
 			result+= "fn ";
 			result+= function.return_type.ToString();
 			result+= " ( ";
-			for( const FunctionType::Arg& arg : function.args )
+			for( const FunctionType::Param& param : function.params )
 			{
-				if( arg.is_reference )
+				if( param.is_reference )
 					result+= "&";
-				if( arg.is_mutable )
+				if( param.is_mutable )
 					result+= "mut ";
 				else
 					result+= "imut ";
 
-				result+= arg.type.ToString();
-				if( &arg != &function.args.back() )
+				result+= param.type.ToString();
+				if( &param != &function.params.back() )
 					result+= ", ";
 			}
 			result+= " )";
@@ -611,8 +611,8 @@ size_t Type::Hash() const
 		size_t ProcessFunctionType( const FunctionType& function ) const
 		{
 			size_t hash= 0;
-			for( const FunctionType::Arg& arg : function.args )
-				hash= llvm::hash_combine( hash, arg.type.Hash(), arg.is_reference, arg.is_mutable );
+			for( const FunctionType::Param& param : function.params )
+				hash= llvm::hash_combine( hash, param.type.Hash(), param.is_reference, param.is_mutable );
 
 			hash=
 				llvm::hash_combine(
@@ -622,8 +622,8 @@ size_t Type::Hash() const
 					function.return_value_is_mutable,
 					function.unsafe );
 
-			for( const FunctionType::ArgReference& arg_reference : function.return_references )
-				hash= llvm::hash_combine( hash, arg_reference );
+			for( const FunctionType::ParamReference& param_reference : function.return_references )
+				hash= llvm::hash_combine( hash, param_reference );
 
 			for( const FunctionType::ReferencePollution& reference_pollution : function.references_pollution )
 				hash= llvm::hash_combine( hash, reference_pollution.dst, reference_pollution.src );
@@ -721,23 +721,23 @@ bool FunctionType::PointerCanBeConvertedTo( const FunctionType& other ) const
 	if( !src_function_type.return_value_is_mutable && dst_function_type.return_value_is_mutable )
 		return false; // Allow mutability conversions, except mut->imut
 
-	if( src_function_type.args.size() != dst_function_type.args.size() )
+	if( src_function_type.params.size() != dst_function_type.params.size() )
 		return false;
-	for( size_t i= 0u; i < src_function_type.args.size(); ++i )
+	for( size_t i= 0u; i < src_function_type.params.size(); ++i )
 	{
-		if( src_function_type.args[i].type != dst_function_type.args[i].type ||
-			src_function_type.args[i].is_reference != dst_function_type.args[i].is_reference )
+		if( src_function_type.params[i].type != dst_function_type.params[i].type ||
+			src_function_type.params[i].is_reference != dst_function_type.params[i].is_reference )
 			return false;
 
-		if( src_function_type.args[i].is_mutable && !dst_function_type.args[i].is_mutable )
+		if( src_function_type.params[i].is_mutable && !dst_function_type.params[i].is_mutable )
 			return false; // Allow mutability conversions, except mut->imut
 	}
 
 	// We can convert function, returning less references to function, returning more referenes.
-	for( const FunctionType::ArgReference& src_inner_arg_reference : src_function_type.return_references )
+	for( const FunctionType::ParamReference& src_inner_arg_reference : src_function_type.return_references )
 	{
 		bool found= false;
-		for( const FunctionType::ArgReference& dst_inner_arg_reference : dst_function_type.return_references )
+		for( const FunctionType::ParamReference& dst_inner_arg_reference : dst_function_type.return_references )
 		{
 			if( dst_inner_arg_reference == src_inner_arg_reference )
 			{
@@ -771,12 +771,12 @@ bool FunctionType::IsStructRet() const
 		( return_type.GetClassType() != nullptr || return_type.GetArrayType() != nullptr || return_type.GetTupleType() != nullptr );
 }
 
-bool operator==( const FunctionType::Arg& l, const FunctionType::Arg& r )
+bool operator==( const FunctionType::Param& l, const FunctionType::Param& r )
 {
 	return l.type == r.type && l.is_mutable == r.is_mutable && l.is_reference == r.is_reference;
 }
 
-bool operator!=( const FunctionType::Arg& l, const FunctionType::Arg& r )
+bool operator!=( const FunctionType::Param& l, const FunctionType::Param& r )
 {
 	return !( l == r );
 }
@@ -800,7 +800,7 @@ bool operator==( const FunctionType& l, const FunctionType& r )
 		l.return_type == r.return_type &&
 		l.return_value_is_mutable == r.return_value_is_mutable &&
 		l.return_value_is_reference == r.return_value_is_reference &&
-		l.args == r.args &&
+		l.params == r.params &&
 		l.return_references == r.return_references &&
 		l.references_pollution == r.references_pollution &&
 		l.unsafe == r.unsafe;

@@ -77,10 +77,10 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		// Generate function
 		FunctionType constructor_type;
 		constructor_type.return_type= void_type_;
-		constructor_type.args.emplace_back();
-		constructor_type.args.back().type= class_type;
-		constructor_type.args.back().is_mutable= true;
-		constructor_type.args.back().is_reference= true;
+		constructor_type.params.emplace_back();
+		constructor_type.params.back().type= class_type;
+		constructor_type.params.back().is_mutable= true;
+		constructor_type.params.back().is_reference= true;
 
 		constructor_type.llvm_type=
 			llvm::FunctionType::get(
@@ -248,13 +248,13 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		// Generate copy-constructor
 		FunctionType constructor_type;
 		constructor_type.return_type= void_type_;
-		constructor_type.args.resize(2u);
-		constructor_type.args[0].type= class_type;
-		constructor_type.args[0].is_mutable= true;
-		constructor_type.args[0].is_reference= true;
-		constructor_type.args[1].type= class_type;
-		constructor_type.args[1].is_mutable= false;
-		constructor_type.args[1].is_reference= true;
+		constructor_type.params.resize(2u);
+		constructor_type.params[0].type= class_type;
+		constructor_type.params[0].is_mutable= true;
+		constructor_type.params[0].is_reference= true;
+		constructor_type.params[1].type= class_type;
+		constructor_type.params[1].is_mutable= false;
+		constructor_type.params[1].is_reference= true;
 
 		// Generate default reference pollution for copying.
 		for( size_t i= 0u; i < class_type.ReferencesTagsCount(); ++i )
@@ -371,10 +371,10 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( Class& the_class, con
 {
 	FunctionType destructor_type;
 	destructor_type.return_type= void_type_;
-	destructor_type.args.resize(1u);
-	destructor_type.args[0].type= class_type;
-	destructor_type.args[0].is_mutable= true;
-	destructor_type.args[0].is_reference= true;
+	destructor_type.params.resize(1u);
+	destructor_type.params[0].type= class_type;
+	destructor_type.params[0].is_mutable= true;
+	destructor_type.params[0].is_reference= true;
 
 	llvm::Type* const this_llvm_type= class_type.GetLLVMType()->getPointerTo();
 	destructor_type.llvm_type=
@@ -528,13 +528,13 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 		// Generate assignment operator
 		FunctionType op_type;
 		op_type.return_type= void_type_;
-		op_type.args.resize(2u);
-		op_type.args[0].type= class_type;
-		op_type.args[0].is_mutable= true;
-		op_type.args[0].is_reference= true;
-		op_type.args[1].type= class_type;
-		op_type.args[1].is_mutable= false;
-		op_type.args[1].is_reference= true;
+		op_type.params.resize(2u);
+		op_type.params[0].type= class_type;
+		op_type.params[0].is_mutable= true;
+		op_type.params[0].is_reference= true;
+		op_type.params[1].type= class_type;
+		op_type.params[1].is_mutable= false;
+		op_type.params[1].is_reference= true;
 
 		// Generate default reference pollution for copying.
 		for( size_t i= 0u; i < class_type.ReferencesTagsCount(); ++i )
@@ -700,8 +700,8 @@ void CodeBuilder::BuildCopyConstructorPart(
 		{
 			const FunctionType& constructor_type= *candidate_constructor.type.GetFunctionType();
 
-			if( constructor_type.args.size() == 2u &&
-				constructor_type.args.back().type == field_class_type && !constructor_type.args.back().is_mutable )
+			if( constructor_type.params.size() == 2u &&
+				constructor_type.params.back().type == field_class_type && !constructor_type.params.back().is_mutable )
 			{
 				constructor= &candidate_constructor;
 				break;
@@ -780,8 +780,8 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 		{
 			const FunctionType& op_type= *candidate_op .type.GetFunctionType();
 
-			if( op_type.args[0u].type == type &&  op_type.args[0u].is_mutable && op_type.args[0u].is_reference &&
-				op_type.args[1u].type == type && !op_type.args[1u].is_mutable && op_type.args[1u].is_reference )
+			if( op_type.params[0u].type == type &&  op_type.params[0u].is_mutable && op_type.params[0u].is_reference &&
+				op_type.params[1u].type == type && !op_type.params[1u].is_mutable && op_type.params[1u].is_reference )
 			{
 				op= &candidate_op;
 				break;
@@ -865,24 +865,24 @@ void CodeBuilder::MoveConstantToMemory(
 bool CodeBuilder::IsDefaultConstructor( const FunctionType& function_type, const Type& base_class )
 {
 	return
-		function_type.args.size() == 1u &&
-		function_type.args[0].type == base_class &&  function_type.args[0].is_mutable && function_type.args[0].is_reference;
+		function_type.params.size() == 1u &&
+		function_type.params[0].type == base_class &&  function_type.params[0].is_mutable && function_type.params[0].is_reference;
 }
 
 bool CodeBuilder::IsCopyConstructor( const FunctionType& function_type, const Type& base_class )
 {
 	return
-		function_type.args.size() == 2u &&
-		function_type.args[0].type == base_class &&  function_type.args[0].is_mutable && function_type.args[0].is_reference &&
-		function_type.args[1].type == base_class && !function_type.args[1].is_mutable && function_type.args[1].is_reference;
+		function_type.params.size() == 2u &&
+		function_type.params[0].type == base_class &&  function_type.params[0].is_mutable && function_type.params[0].is_reference &&
+		function_type.params[1].type == base_class && !function_type.params[1].is_mutable && function_type.params[1].is_reference;
 }
 
 bool CodeBuilder::IsCopyAssignmentOperator( const FunctionType& function_type, const Type& base_class )
 {
 	return
-		function_type.args.size() == 2u &&
-		function_type.args[0].type == base_class &&  function_type.args[0].is_mutable && function_type.args[0].is_reference &&
-		function_type.args[1].type == base_class && !function_type.args[1].is_mutable && function_type.args[1].is_reference;
+		function_type.params.size() == 2u &&
+		function_type.params[0].type == base_class &&  function_type.params[0].is_mutable && function_type.params[0].is_reference &&
+		function_type.params[1].type == base_class && !function_type.params[1].is_mutable && function_type.params[1].is_reference;
 }
 
 } // namespace CodeBuilderPrivate

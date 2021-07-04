@@ -672,21 +672,21 @@ Variable CodeBuilder::BuildTypeinfoFunctionArguments( const FunctionType& functi
 	TupleType list_type;
 	std::vector< llvm::Type* > list_elements_llvm_types;
 	std::vector< llvm::Constant* > list_elements_initializers;
-	list_type.elements.reserve( function_type.args.size() );
-	list_elements_llvm_types.reserve( function_type.args.size() );
-	list_elements_initializers.reserve( function_type.args.size() );
+	list_type.elements.reserve( function_type.params.size() );
+	list_elements_llvm_types.reserve( function_type.params.size() );
+	list_elements_initializers.reserve( function_type.params.size() );
 
-	for( const FunctionType::Arg& arg : function_type.args )
+	for( const FunctionType::Param& param : function_type.params )
 	{
-		const size_t arg_index= size_t(&arg - function_type.args.data());
-		const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace, function_type, g_typeinfo_function_arguments_list_node_class_name + std::to_string(arg_index) );
+		const size_t param_index= size_t(&param - function_type.params.data());
+		const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace, function_type, g_typeinfo_function_arguments_list_node_class_name + std::to_string(param_index) );
 		Class& node_type_class= *node_type->class_;
 
 		ClassFieldsVector<llvm::Type*> fields_llvm_types;
 		ClassFieldsVector<llvm::Constant*> fields_initializers;
 
 		{
-			const Variable dependent_type_typeinfo= BuildTypeInfo( arg.type, root_namespace );
+			const Variable dependent_type_typeinfo= BuildTypeInfo( param.type, root_namespace );
 			ClassField field( node_type, dependent_type_typeinfo.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true );
 
 			node_type_class.members.AddName( g_type_field_name, Value( std::move(field), g_dummy_src_loc ) );
@@ -698,13 +698,13 @@ Variable CodeBuilder::BuildTypeinfoFunctionArguments( const FunctionType& functi
 			"is_reference",
 			Value( ClassField( node_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
-		fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, arg.is_reference ) ) );
+		fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, param.is_reference ) ) );
 
 		node_type_class.members.AddName(
 			"is_mutable",
 			Value( ClassField( node_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
-		fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, arg.is_mutable ) ) );
+		fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, param.is_mutable ) ) );
 
 		// SPRACHE_TODO - add reference pollution
 

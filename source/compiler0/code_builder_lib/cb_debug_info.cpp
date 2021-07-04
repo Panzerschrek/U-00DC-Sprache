@@ -255,7 +255,7 @@ llvm::DISubroutineType* CodeBuilder::CreateDIType( const FunctionType& type )
 	U_ASSERT(build_debug_info_);
 
 	ArgsVector<llvm::Metadata*> args;
-	args.reserve( type.args.size() + 1u );
+	args.reserve( type.params.size() + 1u );
 
 	{
 		llvm::DIType* di_type= CreateDIType( type.return_type );
@@ -264,11 +264,11 @@ llvm::DISubroutineType* CodeBuilder::CreateDIType( const FunctionType& type )
 		args.push_back( di_type );
 	}
 
-	for( const FunctionType::Arg& arg : type.args )
+	for( const FunctionType::Param& param : type.params )
 	{
-		llvm::DIType* di_type= CreateDIType( arg.type );
-		if( arg.is_reference )
-			di_type= debug_info_.builder->createPointerType( di_type, data_layout_.getTypeAllocSizeInBits( arg.type.GetLLVMType()->getPointerTo() ) );
+		llvm::DIType* di_type= CreateDIType( param.type );
+		if( param.is_reference )
+			di_type= debug_info_.builder->createPointerType( di_type, data_layout_.getTypeAllocSizeInBits( param.type.GetLLVMType()->getPointerTo() ) );
 		args.push_back( di_type );
 	}
 
