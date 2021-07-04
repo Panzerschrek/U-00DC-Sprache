@@ -70,10 +70,10 @@ class Type final
 {
 public:
 	Type()= default;
-	Type( const Type& other );
+	Type( const Type& other )= default;
 	Type( Type&& )= default;
 
-	Type& operator=( const Type& other );
+	Type& operator=( const Type& other )= default;
 	Type& operator=( Type&& )= default;
 
 	// Construct from different type kinds.
@@ -87,17 +87,11 @@ public:
 	Type( EnumPtr enum_type );
 
 	// Get different type kinds.
-	FundamentalType* GetFundamentalType();
 	const FundamentalType* GetFundamentalType() const;
-	Function* GetFunctionType();
 	const Function* GetFunctionType() const;
-	FunctionPointer* GetFunctionPointerType();
 	const FunctionPointer* GetFunctionPointerType() const;
-	Array* GetArrayType();
 	const Array* GetArrayType() const;
-	RawPointer* GetRawPointerType();
 	const RawPointer* GetRawPointerType() const;
-	Tuple* GetTupleType();
 	const Tuple* GetTupleType() const;
 	ClassProxyPtr GetClassTypeProxy() const;
 	Class* GetClassType() const;
@@ -126,10 +120,10 @@ public:
 private:
 	friend bool operator==( const Type&, const Type&);
 
-	using FunctionPtr= std::unique_ptr<Function>;
-	using FunctionPointerPtr= std::unique_ptr<FunctionPointer>;
-	using ArrayPtr= std::unique_ptr<Array>;
-	using RawPointerPtr= std::unique_ptr<RawPointer>;
+	using FunctionPtr= std::shared_ptr<const Function>;
+	using FunctionPointerPtr= std::shared_ptr<const FunctionPointer>;
+	using ArrayPtr= std::shared_ptr<const Array>;
+	using RawPointerPtr= std::shared_ptr<const RawPointer>;
 
 	using Variant= std::variant<
 		FundamentalType,
@@ -140,19 +134,6 @@ private:
 		EnumPtr,
 		FunctionPointerPtr,
 		Tuple >;
-
-	template<typename T>
-	static Variant CopyVariant( const std::unique_ptr<T>& boxed )
-	{
-		U_ASSERT(boxed != nullptr);
-		return std::make_unique<T>( *boxed );
-	}
-
-	template<typename T>
-	static Variant CopyVariant( const T& el )
-	{
-		return el;
-	}
 
 private:
 	Variant something_;

@@ -55,7 +55,7 @@ llvm::Type* GetLLVMTypeImpl( const T& el )
 }
 
 template<typename T>
-llvm::Type* GetLLVMTypeImpl( const std::unique_ptr<T>& boxed )
+llvm::Type* GetLLVMTypeImpl( const std::shared_ptr<const T>& boxed )
 {
 	U_ASSERT(boxed != nullptr);
 	return GetLLVMTypeImpl( *boxed );
@@ -121,11 +121,6 @@ bool operator!=( const Tuple& l, const Tuple& r )
 
 static_assert( sizeof(Type) <= 40u, "Type is too heavy!" );
 
-Type::Type( const Type& other )
-{
-	*this= other;
-}
-
 Type::Type( FundamentalType fundamental_type )
 	: something_( std::move(fundamental_type) )
 {}
@@ -158,28 +153,9 @@ Type::Type( EnumPtr enum_type )
 	: something_( std::move(enum_type) )
 {}
 
-Type& Type::operator=( const Type& other )
-{
-	something_= std::visit( [&]( const auto& el ) { return CopyVariant(el); }, other.something_ );
-	return *this;
-}
-
-FundamentalType* Type::GetFundamentalType()
-{
-	return std::get_if<FundamentalType>( &something_ );
-}
-
 const FundamentalType* Type::GetFundamentalType() const
 {
 	return std::get_if<FundamentalType>( &something_ );
-}
-
-Function* Type::GetFunctionType()
-{
-	const FunctionPtr* const function_type= std::get_if<FunctionPtr>( &something_ );
-	if( function_type == nullptr )
-		return nullptr;
-	return function_type->get();
 }
 
 const Function* Type::GetFunctionType() const
@@ -190,28 +166,12 @@ const Function* Type::GetFunctionType() const
 	return function_type->get();
 }
 
-FunctionPointer* Type::GetFunctionPointerType()
-{
-	const FunctionPointerPtr* const function_pointer_type= std::get_if<FunctionPointerPtr>( &something_ );
-	if( function_pointer_type == nullptr )
-		return nullptr;
-	return function_pointer_type->get();
-}
-
 const FunctionPointer* Type::GetFunctionPointerType() const
 {
 	const FunctionPointerPtr* const function_pointer_type= std::get_if<FunctionPointerPtr>( &something_ );
 	if( function_pointer_type == nullptr )
 		return nullptr;
 	return function_pointer_type->get();
-}
-
-Array* Type::GetArrayType()
-{
-	const ArrayPtr* const array_type= std::get_if<ArrayPtr>( &something_ );
-	if( array_type == nullptr )
-		return nullptr;
-	return array_type->get();
 }
 
 const Array* Type::GetArrayType() const
@@ -222,25 +182,12 @@ const Array* Type::GetArrayType() const
 	return array_type->get();
 }
 
-RawPointer* Type::GetRawPointerType()
-{
-	const RawPointerPtr* const raw_pointer_type= std::get_if<RawPointerPtr>( &something_ );
-	if( raw_pointer_type == nullptr )
-		return nullptr;
-	return raw_pointer_type->get();
-}
-
 const RawPointer* Type::GetRawPointerType() const
 {
 	const RawPointerPtr* const raw_pointer_type= std::get_if<RawPointerPtr>( &something_ );
 	if( raw_pointer_type == nullptr )
 		return nullptr;
 	return raw_pointer_type->get();
-}
-
-Tuple* Type::GetTupleType()
-{
-	return std::get_if<Tuple>( &something_ );
 }
 
 const Tuple* Type::GetTupleType() const

@@ -787,9 +787,8 @@ size_t CodeBuilder::PrepareFunction(
 	}
 
 	FunctionVariable func_variable;
-	func_variable.type= Function();
 	{ // Prepare function type
-		Function& function_type= *func_variable.type.GetFunctionType();
+		Function function_type;
 
 		if( func.type_.return_type_ == nullptr )
 			function_type.return_type= void_type_;
@@ -869,6 +868,9 @@ size_t CodeBuilder::PrepareFunction(
 		ProcessFunctionReferencesPollution( names_scope.GetErrors(), func, function_type, base_class );
 		CheckOverloadedOperator( base_class, function_type, func.overloaded_operator_, names_scope.GetErrors(), func.src_loc_ );
 
+		function_type.llvm_type= GetLLVMFunctionType( function_type );
+
+		func_variable.type= std::move(function_type);
 	} // end prepare function type
 
 	// Set constexpr.
@@ -1149,8 +1151,7 @@ Type CodeBuilder::BuildFuncCode(
 	const Synt::Block* const block,
 	const Synt::StructNamedInitializer* const constructor_initialization_list )
 {
-	Function& function_type= *func_variable.type.GetFunctionType();
-	function_type.llvm_type= GetLLVMFunctionType( function_type );
+	const Function& function_type= *func_variable.type.GetFunctionType();
 
 	const bool first_arg_is_sret= function_type.IsStructRet();
 

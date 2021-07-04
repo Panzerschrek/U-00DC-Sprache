@@ -278,11 +278,13 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 						function_variable.syntax_element->block_.get(),
 						function_variable.syntax_element->constructor_initialization_list_.get() );
 
-				function_variable.have_body= false;
-				function_variable.type.GetFunctionType()->return_type= return_type;
-				function_variable.return_type_is_auto= false;
+				Function function_type= *function_variable.type.GetFunctionType();
+				function_type.return_type= return_type;
+				function_type.llvm_type= GetLLVMFunctionType( function_type );
+				function_variable.type= std::move(function_type);
 
-				function_variable.type.GetFunctionType()->llvm_type= nullptr;
+				function_variable.have_body= false;
+				function_variable.return_type_is_auto= false;
 				function_variable.llvm_function->eraseFromParent();
 				function_variable.llvm_function= nullptr;
 
