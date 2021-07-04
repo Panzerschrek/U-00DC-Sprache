@@ -135,7 +135,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 			"",
 			module_.get() );
 
-	Function global_function_type;
+	FunctionType global_function_type;
 	global_function_type.return_type= void_type_;
 
 	FunctionContext global_function_context(
@@ -532,7 +532,7 @@ void CodeBuilder::TryCallCopyConstructor(
 	const FunctionVariable* constructor= nullptr;
 	for( const FunctionVariable& candidate : constructors->functions )
 	{
-		const Function& constructor_type= *candidate.type.GetFunctionType();
+		const FunctionType& constructor_type= *candidate.type.GetFunctionType();
 		if( candidate.is_this_call && constructor_type.args.size() == 2u &&
 			constructor_type.args.back().type == class_type && constructor_type.args.back().is_reference && !constructor_type.args.back().is_mutable )
 		{
@@ -641,7 +641,7 @@ void CodeBuilder::CallDestructor(
 		if( destructor.type.GetFunctionType()->unsafe && !function_context.is_in_unsafe_block )
 			REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, errors_container, src_loc );
 	}
-	else if( const Array* const array_type= type.GetArrayType() )
+	else if( const ArrayType* const array_type= type.GetArrayType() )
 	{
 		// SPRACHE_TODO - maybe call destructors of arrays in reverse order?
 		GenerateLoop(
@@ -657,7 +657,7 @@ void CodeBuilder::CallDestructor(
 			},
 			function_context );
 	}
-	else if( const Tuple* const tuple_type= type.GetTupleType() )
+	else if( const TupleType* const tuple_type= type.GetTupleType() )
 	{
 		for( const Type& element_type : tuple_type->elements )
 		{
@@ -788,7 +788,7 @@ size_t CodeBuilder::PrepareFunction(
 
 	FunctionVariable func_variable;
 	{ // Prepare function type
-		Function function_type;
+		FunctionType function_type;
 
 		if( func.type_.return_type_ == nullptr )
 			function_type.return_type= void_type_;
@@ -841,7 +841,7 @@ size_t CodeBuilder::PrepareFunction(
 				REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), arg.src_loc_ );
 
 			function_type.args.emplace_back();
-			Function::Arg& out_arg= function_type.args.back();
+			FunctionType::Arg& out_arg= function_type.args.back();
 
 			if( is_this )
 			{
@@ -924,7 +924,7 @@ size_t CodeBuilder::PrepareFunction(
 	if( func.body_kind != Synt::Function::BodyKind::None )
 	{
 		U_ASSERT( func.block_ == nullptr );
-		const Function& function_type= *func_variable.type.GetFunctionType();
+		const FunctionType& function_type= *func_variable.type.GetFunctionType();
 
 		bool invalid_func= false;
 		if( base_class == nullptr )
@@ -1023,7 +1023,7 @@ size_t CodeBuilder::PrepareFunction(
 
 void CodeBuilder::CheckOverloadedOperator(
 	const ClassProxyPtr& base_class,
-	const Function& func_type,
+	const FunctionType& func_type,
 	const OverloadedOperator overloaded_operator,
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc )
@@ -1038,7 +1038,7 @@ void CodeBuilder::CheckOverloadedOperator(
 	}
 
 	bool is_this_class= false;
-	for( const Function::Arg& arg : func_type.args )
+	for( const FunctionType::Arg& arg : func_type.args )
 	{
 		if( arg.type == base_class )
 		{
@@ -1151,7 +1151,7 @@ Type CodeBuilder::BuildFuncCode(
 	const Synt::Block* const block,
 	const Synt::StructNamedInitializer* const constructor_initialization_list )
 {
-	const Function& function_type= *func_variable.type.GetFunctionType();
+	const FunctionType& function_type= *func_variable.type.GetFunctionType();
 
 	const bool first_arg_is_sret= function_type.IsStructRet();
 
@@ -1173,7 +1173,7 @@ Type CodeBuilder::BuildFuncCode(
 		{
 			const auto arg_attr_index=
 				static_cast<unsigned int>(llvm::AttributeList::FirstArgIndex + i + (first_arg_is_sret ? 1u : 0u ));
-			const Function::Arg& arg= function_type.args[i];
+			const FunctionType::Arg& arg= function_type.args[i];
 
 			const bool arg_is_composite= arg.type.GetClassType() != nullptr || arg.type.GetArrayType() != nullptr || arg.type.GetTupleType() != nullptr;
 			// Mark pointer-parameters as nonnull.
@@ -1229,7 +1229,7 @@ Type CodeBuilder::BuildFuncCode(
 
 	// Ensure completeness only for functions body.
 	// Require full completeness even for reference arguments.
-	for( const Function::Arg& arg : function_type.args )
+	for( const FunctionType::Arg& arg : function_type.args )
 	{
 		if( !EnsureTypeComplete( arg.type ) )
 			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), args.front().src_loc_, arg.type );
@@ -1265,7 +1265,7 @@ Type CodeBuilder::BuildFuncCode(
 			continue;
 		}
 
-		const Function::Arg& arg= function_type.args[ arg_number ];
+		const FunctionType::Arg& arg= function_type.args[ arg_number ];
 
 		const Synt::FunctionArgument& declaration_arg= args[arg_number ];
 		const std::string& arg_name= declaration_arg.name_;
@@ -1433,7 +1433,7 @@ Type CodeBuilder::BuildFuncCode(
 		if( function_type.return_type.GetFunctionPointerType() != nullptr ) // Currently function pointers not supported.
 			can_be_constexpr= false;
 
-		for( const Function::Arg& arg : function_type.args )
+		for( const FunctionType::Arg& arg : function_type.args )
 		{
 			if( !auto_contexpr && !EnsureTypeComplete( arg.type ) )
 				REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), func_variable.body_src_loc, arg.type ); // Completeness required for constexpr possibility check.

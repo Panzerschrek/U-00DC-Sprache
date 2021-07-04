@@ -75,7 +75,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 	if( constructor_variable == nullptr )
 	{
 		// Generate function
-		Function constructor_type;
+		FunctionType constructor_type;
 		constructor_type.return_type= void_type_;
 		constructor_type.args.emplace_back();
 		constructor_type.args.back().type= class_type;
@@ -246,7 +246,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 	if( constructor_variable == nullptr )
 	{
 		// Generate copy-constructor
-		Function constructor_type;
+		FunctionType constructor_type;
 		constructor_type.return_type= void_type_;
 		constructor_type.args.resize(2u);
 		constructor_type.args[0].type= class_type;
@@ -259,7 +259,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		// Generate default reference pollution for copying.
 		for( size_t i= 0u; i < class_type.ReferencesTagsCount(); ++i )
 		{
-			Function::ReferencePollution pollution;
+			FunctionType::ReferencePollution pollution;
 			pollution.dst.first= 0u;
 			pollution.dst.second= i;
 			pollution.src.first= 1u;
@@ -369,7 +369,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 
 FunctionVariable CodeBuilder::GenerateDestructorPrototype( Class& the_class, const Type& class_type )
 {
-	Function destructor_type;
+	FunctionType destructor_type;
 	destructor_type.return_type= void_type_;
 	destructor_type.args.resize(1u);
 	destructor_type.args[0].type= class_type;
@@ -404,7 +404,7 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( Class& the_class, con
 
 void CodeBuilder::GenerateDestructorBody( Class& the_class, const Type& class_type, FunctionVariable& destructor_function )
 {
-	const Function& destructor_type= *destructor_function .type.GetFunctionType();
+	const FunctionType& destructor_type= *destructor_function .type.GetFunctionType();
 
 	llvm::Value* const this_llvm_value= &*destructor_function .llvm_function->args().begin();
 	this_llvm_value->setName( Keyword( Keywords::this_ ) );
@@ -526,7 +526,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 	if( operator_variable == nullptr )
 	{
 		// Generate assignment operator
-		Function op_type;
+		FunctionType op_type;
 		op_type.return_type= void_type_;
 		op_type.args.resize(2u);
 		op_type.args[0].type= class_type;
@@ -539,7 +539,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 		// Generate default reference pollution for copying.
 		for( size_t i= 0u; i < class_type.ReferencesTagsCount(); ++i )
 		{
-			Function::ReferencePollution pollution;
+			FunctionType::ReferencePollution pollution;
 			pollution.dst.first= 0u;
 			pollution.dst.second= i;
 			pollution.src.first= 1u;
@@ -654,9 +654,9 @@ void CodeBuilder::BuildCopyConstructorPart(
 			function_context.llvm_ir_builder.CreateStore( src, dst );
 		else U_ASSERT( false );
 	}
-	else if( const Array* const array_type_ptr= type.GetArrayType() )
+	else if( const ArrayType* const array_type_ptr= type.GetArrayType() )
 	{
-		const Array& array_type= *array_type_ptr;
+		const ArrayType& array_type= *array_type_ptr;
 
 		GenerateLoop(
 			array_type.size,
@@ -671,7 +671,7 @@ void CodeBuilder::BuildCopyConstructorPart(
 			},
 			function_context);
 	}
-	else if( const Tuple* const tuple_type= type.GetTupleType() )
+	else if( const TupleType* const tuple_type= type.GetTupleType() )
 	{
 		for( const Type& element_type : tuple_type->elements )
 		{
@@ -698,7 +698,7 @@ void CodeBuilder::BuildCopyConstructorPart(
 		const FunctionVariable* constructor= nullptr;;
 		for( const FunctionVariable& candidate_constructor : constructors_set->functions )
 		{
-			const Function& constructor_type= *candidate_constructor.type.GetFunctionType();
+			const FunctionType& constructor_type= *candidate_constructor.type.GetFunctionType();
 
 			if( constructor_type.args.size() == 2u &&
 				constructor_type.args.back().type == field_class_type && !constructor_type.args.back().is_mutable )
@@ -734,9 +734,9 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 			function_context.llvm_ir_builder.CreateStore( src, dst );
 		else U_ASSERT( false );
 	}
-	else if( const Array* const array_type_ptr= type.GetArrayType() )
+	else if( const ArrayType* const array_type_ptr= type.GetArrayType() )
 	{
-		const Array& array_type= *array_type_ptr;
+		const ArrayType& array_type= *array_type_ptr;
 
 		GenerateLoop(
 			array_type.size,
@@ -751,7 +751,7 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 			},
 			function_context);
 	}
-	else if( const Tuple* const tuple_type= type.GetTupleType() )
+	else if( const TupleType* const tuple_type= type.GetTupleType() )
 	{
 		for( const Type& element_type : tuple_type->elements )
 		{
@@ -778,7 +778,7 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 		const FunctionVariable* op= nullptr;;
 		for( const FunctionVariable& candidate_op : operators_set->functions )
 		{
-			const Function& op_type= *candidate_op .type.GetFunctionType();
+			const FunctionType& op_type= *candidate_op .type.GetFunctionType();
 
 			if( op_type.args[0u].type == type &&  op_type.args[0u].is_mutable && op_type.args[0u].is_reference &&
 				op_type.args[1u].type == type && !op_type.args[1u].is_mutable && op_type.args[1u].is_reference )
@@ -862,14 +862,14 @@ void CodeBuilder::MoveConstantToMemory(
 	else U_ASSERT(false);
 }
 
-bool CodeBuilder::IsDefaultConstructor( const Function& function_type, const Type& base_class )
+bool CodeBuilder::IsDefaultConstructor( const FunctionType& function_type, const Type& base_class )
 {
 	return
 		function_type.args.size() == 1u &&
 		function_type.args[0].type == base_class &&  function_type.args[0].is_mutable && function_type.args[0].is_reference;
 }
 
-bool CodeBuilder::IsCopyConstructor( const Function& function_type, const Type& base_class )
+bool CodeBuilder::IsCopyConstructor( const FunctionType& function_type, const Type& base_class )
 {
 	return
 		function_type.args.size() == 2u &&
@@ -877,7 +877,7 @@ bool CodeBuilder::IsCopyConstructor( const Function& function_type, const Type& 
 		function_type.args[1].type == base_class && !function_type.args[1].is_mutable && function_type.args[1].is_reference;
 }
 
-bool CodeBuilder::IsCopyAssignmentOperator( const Function& function_type, const Type& base_class )
+bool CodeBuilder::IsCopyAssignmentOperator( const FunctionType& function_type, const Type& base_class )
 {
 	return
 		function_type.args.size() == 2u &&

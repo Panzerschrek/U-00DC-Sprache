@@ -26,7 +26,7 @@ void StackVariablesStorage::RegisterVariable( Variable variable )
 }
 
 FunctionContext::FunctionContext(
-	Function in_function_type,
+	FunctionType in_function_type,
 	const std::optional<Type>& in_return_type,
 	llvm::LLVMContext& llvm_context,
 	llvm::Function* const in_function )

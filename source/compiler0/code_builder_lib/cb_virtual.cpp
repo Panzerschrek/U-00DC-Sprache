@@ -411,7 +411,7 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc )
 {
-	const Function& function_type= *function.type.GetFunctionType();
+	const FunctionType& function_type= *function.type.GetFunctionType();
 
 	if( !ReferenceIsConvertible( this_.type, function_type.args.front().type, errors_container, src_loc ) )
 		return std::make_pair( this_, function.llvm_function );

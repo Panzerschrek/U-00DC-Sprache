@@ -121,7 +121,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	const Variable index= BuildExpressionCodeEnsureVariable( *indexation_operator.index_, names, function_context );
 
-	if( const Array* const array_type= variable.type.GetArrayType() )
+	if( const ArrayType* const array_type= variable.type.GetArrayType() )
 	{
 		const FundamentalType* const index_fundamental_type= index.type.GetFundamentalType();
 		if( !( index_fundamental_type != nullptr && (
@@ -204,7 +204,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		RegisterTemporaryVariable( function_context, result );
 		return Value( std::move(result), indexation_operator.src_loc_ );
 	}
-	else if( const Tuple* const tuple_type= variable.type.GetTupleType() )
+	else if( const TupleType* const tuple_type= variable.type.GetTupleType() )
 	{
 		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), indexation_operator.src_loc_ ); // Destroy temporaries of index expression.
 
@@ -947,7 +947,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	// Reference to pointer conversion can break functional purity, so, disable such conversions in constexpr functions.
 	function_context.have_non_constexpr_operations_inside= true;
 
-	RawPointer raw_pointer_type;
+	RawPointerType raw_pointer_type;
 	raw_pointer_type.type= v.type;
 	raw_pointer_type.llvm_type= llvm::PointerType::get( v.type.GetLLVMType(), 0u );
 
@@ -971,7 +971,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		REPORT_ERROR( RawPointerToReferenceConversionOutsideUnsafeBlock, names.GetErrors(), raw_pointer_to_reference_operator.src_loc_ );
 
 	const Variable v= BuildExpressionCodeEnsureVariable( *raw_pointer_to_reference_operator.expression, names, function_context );
-	const RawPointer* const raw_pointer_type= v.type.GetRawPointerType();
+	const RawPointerType* const raw_pointer_type= v.type.GetRawPointerType();
 
 	if( raw_pointer_type == nullptr )
 	{
@@ -1160,7 +1160,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 	else
 	{
-		Array array_type;
+		ArrayType array_type;
 		array_type.type= FundamentalType( char_type, GetFundamentalLLVMType( char_type ) );
 		array_type.size= array_size;
 		array_type.llvm_type= llvm::ArrayType::get( GetFundamentalLLVMType( char_type ), array_size );
@@ -1432,7 +1432,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	FunctionContext& function_context )
 {
 	// Know args types.
-	ArgsVector<Function::Arg> args;
+	ArgsVector<FunctionType::Arg> args;
 	const auto state= SaveInstructionsState( function_context );
 	{
 		const StackVariablesStorage dummy_stack_variables_storage( function_context );
@@ -1576,7 +1576,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
 	if( variable.type.GetClassType() == nullptr )
 		return std::nullopt;
 
-	ArgsVector<Function::Arg> args;
+	ArgsVector<FunctionType::Arg> args;
 	args.emplace_back();
 	args.back().type= variable.type;
 	args.back().is_mutable= variable.value_type == ValueType::Reference;
@@ -1613,7 +1613,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
-	ArgsVector<Function::Arg> actual_args;
+	ArgsVector<FunctionType::Arg> actual_args;
 	actual_args.reserve( 1 + synt_args.size() );
 
 	const auto state= SaveInstructionsState( function_context );
@@ -2318,7 +2318,7 @@ Value CodeBuilder::CallFunction(
 	}
 	else if( const Variable* const callable_variable= function_value.GetVariable() )
 	{
-		if( const FunctionPointer* const function_pointer= callable_variable->type.GetFunctionPointerType() )
+		if( const FunctionPointerType* const function_pointer= callable_variable->type.GetFunctionPointerType() )
 		{
 			function_context.have_non_constexpr_operations_inside= true; // Calling function, using pointer, is not constexpr. We can not garantee, that called function is constexpr.
 
@@ -2362,7 +2362,7 @@ Value CodeBuilder::CallFunction(
 
 	// Make preevaluation af arguments for selection of overloaded function.
 	{
-		ArgsVector<Function::Arg> actual_args;
+		ArgsVector<FunctionType::Arg> actual_args;
 		actual_args.reserve( total_args );
 
 		const auto state= SaveInstructionsState( function_context );
@@ -2386,7 +2386,7 @@ Value CodeBuilder::CallFunction(
 	if( function_ptr == nullptr )
 		return ErrorValue();
 	const FunctionVariable& function= *function_ptr;
-	const Function& function_type= *function.type.GetFunctionType();
+	const FunctionType& function_type= *function.type.GetFunctionType();
 
 	if( this_ != nullptr && !function.is_this_call )
 	{
@@ -2429,7 +2429,7 @@ Value CodeBuilder::CallFunction(
 
 Value CodeBuilder::DoCallFunction(
 	llvm::Value* const function,
-	const Function& function_type,
+	const FunctionType& function_type,
 	const SrcLoc& call_src_loc,
 	const Variable* const this_, // optional
 	const llvm::ArrayRef<const Synt::Expression*>& args,
@@ -2452,7 +2452,7 @@ Value CodeBuilder::DoCallFunction(
 
 Value CodeBuilder::DoCallFunction(
 	llvm::Value* function,
-	const Function& function_type,
+	const FunctionType& function_type,
 	const SrcLoc& call_src_loc,
 	const llvm::ArrayRef<Variable>& preevaluated_args,
 	const llvm::ArrayRef<const Synt::Expression*>& args,
@@ -2478,7 +2478,7 @@ Value CodeBuilder::DoCallFunction(
 	{
 		const size_t j= evaluate_args_in_reverse_order ? arg_count - i - 1u : i;
 
-		const Function::Arg& arg= function_type.args[j];
+		const FunctionType::Arg& arg= function_type.args[j];
 
 		Variable expr;
 		SrcLoc src_loc;
@@ -2764,9 +2764,9 @@ Value CodeBuilder::DoCallFunction(
 	// Prepare result references.
 	if( function_type.return_value_is_reference )
 	{
-		for( const Function::ArgReference& arg_reference : function_type.return_references )
+		for( const FunctionType::ArgReference& arg_reference : function_type.return_references )
 		{
-			if( arg_reference.second == Function::c_arg_reference_tag_number )
+			if( arg_reference.second == FunctionType::c_arg_reference_tag_number )
 			{
 				const auto node= args_nodes[arg_reference.first].Node();
 				if( !function_context.variables_state.TryAddLink( node, result.node ) )
@@ -2787,9 +2787,9 @@ Value CodeBuilder::DoCallFunction(
 		bool inner_reference_is_mutable= false;
 
 		// First, know, what kind of reference we needs - mutable or immutable.
-		for( const Function::ArgReference& arg_reference : function_type.return_references )
+		for( const FunctionType::ArgReference& arg_reference : function_type.return_references )
 		{
-			if( arg_reference.second == Function::c_arg_reference_tag_number )
+			if( arg_reference.second == FunctionType::c_arg_reference_tag_number )
 			{
 				const auto node_kind= args_nodes[arg_reference.first].Node()->kind;
 
@@ -2816,9 +2816,9 @@ Value CodeBuilder::DoCallFunction(
 		const auto inner_reference_node=
 			function_context.variables_state.CreateNodeInnerReference( result.node, inner_reference_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
 
-		for( const Function::ArgReference& arg_reference : function_type.return_references )
+		for( const FunctionType::ArgReference& arg_reference : function_type.return_references )
 		{
-			if( arg_reference.second == Function::c_arg_reference_tag_number )
+			if( arg_reference.second == FunctionType::c_arg_reference_tag_number )
 			{
 				const auto node= args_nodes[arg_reference.first].Node();
 				if( !function_context.variables_state.TryAddLink( node, inner_reference_node ) )
@@ -2834,7 +2834,7 @@ Value CodeBuilder::DoCallFunction(
 	}
 
 	// Setup references after call.
-	for( const Function::ReferencePollution& referene_pollution : function_type.references_pollution )
+	for( const FunctionType::ReferencePollution& referene_pollution : function_type.references_pollution )
 	{
 		const size_t dst_arg= referene_pollution.dst.first;
 		U_ASSERT( dst_arg < function_type.args.size() );
@@ -2845,7 +2845,7 @@ Value CodeBuilder::DoCallFunction(
 
 		bool src_variables_is_mut= false;
 		ReferencesGraph::NodesSet src_nodes;
-		if( referene_pollution.src.second == Function::c_arg_reference_tag_number )
+		if( referene_pollution.src.second == FunctionType::c_arg_reference_tag_number )
 		{
 			// Reference-arg itself
 			U_ASSERT( function_type.args[ referene_pollution.src.first ].is_reference );
@@ -2982,7 +2982,7 @@ Variable CodeBuilder::ConvertVariable(
 	return result;
 }
 
-Function::Arg CodeBuilder::PreEvaluateArg( const Synt::Expression& expression, NamesScope& names, FunctionContext& function_context )
+FunctionType::Arg CodeBuilder::PreEvaluateArg( const Synt::Expression& expression, NamesScope& names, FunctionContext& function_context )
 {
 	if( function_context.args_preevaluation_cache.count(&expression) == 0 )
 	{
@@ -2994,9 +2994,9 @@ Function::Arg CodeBuilder::PreEvaluateArg( const Synt::Expression& expression, N
 	return function_context.args_preevaluation_cache[&expression];
 }
 
-Function::Arg CodeBuilder::GetArgExtendedType( const Variable& variable )
+FunctionType::Arg CodeBuilder::GetArgExtendedType( const Variable& variable )
 {
-	Function::Arg arg_type_extended;
+	FunctionType::Arg arg_type_extended;
 	arg_type_extended.type= variable.type;
 	arg_type_extended.is_reference= variable.value_type != ValueType::Value;
 	arg_type_extended.is_mutable= variable.value_type == ValueType::Reference;

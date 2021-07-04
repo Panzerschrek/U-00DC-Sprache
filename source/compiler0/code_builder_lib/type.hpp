@@ -16,11 +16,11 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-struct Function;
-struct FunctionPointer;
-struct Array;
-struct Tuple;
-struct RawPointer;
+struct FunctionType;
+struct FunctionPointerType;
+struct ArrayType;
+struct TupleType;
+struct RawPointerType;
 class Class;
 struct Enum;
 class Type;
@@ -57,14 +57,14 @@ struct FundamentalType final
 bool operator==( const FundamentalType& l, const FundamentalType& r );
 bool operator!=( const FundamentalType& l, const FundamentalType& r );
 
-struct Tuple final
+struct TupleType final
 {
 	std::vector<Type> elements;
 	llvm::StructType* llvm_type= nullptr;
 };
 
-bool operator==( const Tuple& l, const Tuple& r );
-bool operator!=( const Tuple& l, const Tuple& r );
+bool operator==( const TupleType& l, const TupleType& r );
+bool operator!=( const TupleType& l, const TupleType& r );
 
 class Type final
 {
@@ -78,21 +78,21 @@ public:
 
 	// Construct from different type kinds.
 	Type( FundamentalType fundamental_type );
-	Type( Function function_type );
-	Type( FunctionPointer function_pointer_type );
-	Type( Array array_type );
-	Type( RawPointer raw_pointer_type );
-	Type( Tuple tuple_type );
+	Type( FunctionType function_type );
+	Type( FunctionPointerType function_pointer_type );
+	Type( ArrayType array_type );
+	Type( RawPointerType raw_pointer_type );
+	Type( TupleType tuple_type );
 	Type( ClassProxyPtr class_type );
 	Type( EnumPtr enum_type );
 
 	// Get different type kinds.
 	const FundamentalType* GetFundamentalType() const;
-	const Function* GetFunctionType() const;
-	const FunctionPointer* GetFunctionPointerType() const;
-	const Array* GetArrayType() const;
-	const RawPointer* GetRawPointerType() const;
-	const Tuple* GetTupleType() const;
+	const FunctionType* GetFunctionType() const;
+	const FunctionPointerType* GetFunctionPointerType() const;
+	const ArrayType* GetArrayType() const;
+	const RawPointerType* GetRawPointerType() const;
+	const TupleType* GetTupleType() const;
 	ClassProxyPtr GetClassTypeProxy() const;
 	Class* GetClassType() const;
 	Enum* GetEnumType() const;
@@ -120,10 +120,10 @@ public:
 private:
 	friend bool operator==( const Type&, const Type&);
 
-	using FunctionPtr= std::shared_ptr<const Function>;
-	using FunctionPointerPtr= std::shared_ptr<const FunctionPointer>;
-	using ArrayPtr= std::shared_ptr<const Array>;
-	using RawPointerPtr= std::shared_ptr<const RawPointer>;
+	using FunctionPtr= std::shared_ptr<const FunctionType>;
+	using FunctionPointerPtr= std::shared_ptr<const FunctionPointerType>;
+	using ArrayPtr= std::shared_ptr<const ArrayType>;
+	using RawPointerPtr= std::shared_ptr<const RawPointerType>;
 
 	using Variant= std::variant<
 		FundamentalType,
@@ -133,7 +133,7 @@ private:
 		ClassProxyPtr,
 		EnumPtr,
 		FunctionPointerPtr,
-		Tuple >;
+		TupleType >;
 
 private:
 	Variant something_;
@@ -142,7 +142,7 @@ private:
 bool operator==( const Type& l, const Type& r );
 bool operator!=( const Type& l, const Type& r );
 
-struct Array final
+struct ArrayType final
 {
 	Type type;
 	uint64_t size= 0u;
@@ -150,19 +150,19 @@ struct Array final
 	llvm::ArrayType* llvm_type= nullptr;
 };
 
-bool operator==( const Array& r, const Array& l );
-bool operator!=( const Array& r, const Array& l );
+bool operator==( const ArrayType& r, const ArrayType& l );
+bool operator!=( const ArrayType& r, const ArrayType& l );
 
-struct RawPointer final
+struct RawPointerType final
 {
 	Type type;
 	llvm::PointerType* llvm_type= nullptr;
 };
 
-bool operator==( const RawPointer& r, const RawPointer& l );
-bool operator!=( const RawPointer& r, const RawPointer& l );
+bool operator==( const RawPointerType& r, const RawPointerType& l );
+bool operator!=( const RawPointerType& r, const RawPointerType& l );
 
-struct Function final
+struct FunctionType final
 {
 public:
 	struct Arg
@@ -184,7 +184,7 @@ public:
 		bool operator<( const ReferencePollution& other ) const;
 	};
 
-	bool PointerCanBeConvertedTo( const Function& other ) const;
+	bool PointerCanBeConvertedTo( const FunctionType& other ) const;
 	bool IsStructRet() const;
 
 public:
@@ -205,19 +205,19 @@ public:
 	llvm::FunctionType* llvm_type= nullptr;
 };
 
-bool operator==( const Function::Arg& l, const Function::Arg& r );
-bool operator!=( const Function::Arg& l, const Function::Arg& r );
-bool operator==( const Function& l, const Function& r );
-bool operator!=( const Function& l, const Function& r );
+bool operator==( const FunctionType::Arg& l, const FunctionType::Arg& r );
+bool operator!=( const FunctionType::Arg& l, const FunctionType::Arg& r );
+bool operator==( const FunctionType& l, const FunctionType& r );
+bool operator!=( const FunctionType& l, const FunctionType& r );
 
-struct FunctionPointer
+struct FunctionPointerType
 {
-	Function function;
+	FunctionType function;
 	llvm::PointerType* llvm_type= nullptr;
 };
 
-bool operator==( const FunctionPointer& l, const FunctionPointer& r );
-bool operator!=( const FunctionPointer& l, const FunctionPointer& r );
+bool operator==( const FunctionPointerType& l, const FunctionPointerType& r );
+bool operator!=( const FunctionPointerType& l, const FunctionPointerType& r );
 
 struct TypeHasher
 {

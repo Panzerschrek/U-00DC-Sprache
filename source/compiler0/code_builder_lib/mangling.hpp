@@ -50,7 +50,7 @@ public:
 	std::string MangleFunction(
 		const NamesScope& parent_scope,
 		const std::string& function_name,
-		const Function& function_type,
+		const FunctionType& function_type,
 		const TemplateArgs* template_args= nullptr );
 	std::string MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name );
 	std::string MangleType( const Type& type );

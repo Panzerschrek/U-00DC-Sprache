@@ -278,7 +278,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 						function_variable.syntax_element->block_.get(),
 						function_variable.syntax_element->constructor_initialization_list_.get() );
 
-				Function function_type= *function_variable.type.GetFunctionType();
+				FunctionType function_type= *function_variable.type.GetFunctionType();
 				function_type.return_type= return_type;
 				function_type.llvm_type= GetLLVMFunctionType( function_type );
 				function_variable.type= std::move(function_type);
@@ -622,7 +622,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 		U_ASSERT( constructors != nullptr );
 		for( const FunctionVariable& constructor : constructors->functions )
 		{
-			const Function& constructor_type= *constructor.type.GetFunctionType();
+			const FunctionType& constructor_type= *constructor.type.GetFunctionType();
 
 			U_ASSERT( constructor_type.args.size() >= 1u && constructor_type.args.front().type == class_type );
 			if( !( constructor_type.args.size() == 2u && constructor_type.args.back().type == class_type && !constructor_type.args.back().is_mutable ) )

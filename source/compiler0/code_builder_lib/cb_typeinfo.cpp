@@ -47,7 +47,7 @@ Variable FinalizeTypeinfoList( llvm::LLVMContext& llvm_context, std::vector<Type
 			return l.name_for_ordering < r.name_for_ordering;
 		} );
 
-	Tuple list_type;
+	TupleType list_type;
 	std::vector< llvm::Type* > list_elements_llvm_types;
 	std::vector< llvm::Constant* > list_elements_initializers;
 	list_type.elements.reserve( list.size() );
@@ -226,12 +226,12 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 		add_typeinfo_field( "underlaying_type", enum_type->underlaying_type );
 		add_list_field( "elements_list", BuildTypeinfoEnumElementsList( type.GetEnumTypePtr(), root_namespace ) );
 	}
-	else if( const Array* const array_type= type.GetArrayType() )
+	else if( const ArrayType* const array_type= type.GetArrayType() )
 	{
 		add_size_field( "element_count", array_type->size );
 		add_typeinfo_field( "element_type", array_type->type );
 	}
-	else if( const Tuple* const tuple_type= type.GetTupleType() )
+	else if( const TupleType* const tuple_type= type.GetTupleType() )
 	{
 		add_size_field( "element_count", tuple_type->elements.size() );
 		add_list_field( "elements_list", BuildTypeinfoTupleElements( *tuple_type, root_namespace ) );
@@ -280,15 +280,15 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 		add_bool_field( "is_typeinfo", class_type->typeinfo_type != std::nullopt );
 		add_bool_field( "shared", class_type->have_shared_state );
 	}
-	else if( const RawPointer* const raw_pointer_type= type.GetRawPointerType() )
+	else if( const RawPointerType* const raw_pointer_type= type.GetRawPointerType() )
 	{
 		add_typeinfo_field( "element_type", raw_pointer_type->type );
 	}
-	else if( const FunctionPointer* const function_pointer_type= type.GetFunctionPointerType() )
+	else if( const FunctionPointerType* const function_pointer_type= type.GetFunctionPointerType() )
 	{
 		add_typeinfo_field( "element_type", function_pointer_type->function );
 	}
-	else if( const Function* const function_type= type.GetFunctionType() )
+	else if( const FunctionType* const function_type= type.GetFunctionType() )
 	{
 		add_typeinfo_field( "return_type", function_type->return_type );
 		add_list_field( "arguments_list"      , BuildTypeinfoFunctionArguments( *function_type, root_namespace ) );
@@ -348,7 +348,7 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, N
 			fields_initializers.push_back( enum_member_value );
 
 			{
-				Array name_type;
+				ArrayType name_type;
 				name_type.type= FundamentalType( U_FundamentalType::char8, fundamental_llvm_types_.char8 );
 				name_type.size= name.size();
 				name_type.llvm_type= llvm::ArrayType::get( name_type.type.GetLLVMType(), name_type.size );
@@ -380,7 +380,7 @@ void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
 	Class& node_class= *node_class_proxy->class_;
 
 	{
-		Array name_type;
+		ArrayType name_type;
 		name_type.type= FundamentalType( U_FundamentalType::char8, fundamental_llvm_types_.char8 );
 		name_type.size= member_name.size();
 		name_type.llvm_type= llvm::ArrayType::get( name_type.type.GetLLVMType(), name_type.size );
@@ -617,7 +617,7 @@ Variable CodeBuilder::BuildTypeinfoClassParentsList( const ClassProxyPtr& class_
 	const Class& class_= *class_type->class_;
 	const llvm::StructLayout* const struct_layout= data_layout_.getStructLayout( class_.llvm_type );
 
-	Tuple list_type;
+	TupleType list_type;
 	std::vector< llvm::Type* > list_elements_llvm_types;
 	std::vector< llvm::Constant* > list_elements_initializers;
 	list_type.elements.reserve( class_.parents.size() );
@@ -667,16 +667,16 @@ Variable CodeBuilder::BuildTypeinfoClassParentsList( const ClassProxyPtr& class_
 			initializer );
 }
 
-Variable CodeBuilder::BuildTypeinfoFunctionArguments( const Function& function_type, NamesScope& root_namespace )
+Variable CodeBuilder::BuildTypeinfoFunctionArguments( const FunctionType& function_type, NamesScope& root_namespace )
 {
-	Tuple list_type;
+	TupleType list_type;
 	std::vector< llvm::Type* > list_elements_llvm_types;
 	std::vector< llvm::Constant* > list_elements_initializers;
 	list_type.elements.reserve( function_type.args.size() );
 	list_elements_llvm_types.reserve( function_type.args.size() );
 	list_elements_initializers.reserve( function_type.args.size() );
 
-	for( const Function::Arg& arg : function_type.args )
+	for( const FunctionType::Arg& arg : function_type.args )
 	{
 		const size_t arg_index= size_t(&arg - function_type.args.data());
 		const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace, function_type, g_typeinfo_function_arguments_list_node_class_name + std::to_string(arg_index) );
@@ -727,9 +727,9 @@ Variable CodeBuilder::BuildTypeinfoFunctionArguments( const Function& function_t
 			initializer );
 }
 
-Variable CodeBuilder::BuildTypeinfoTupleElements( const Tuple& tuple_type, NamesScope& root_namespace )
+Variable CodeBuilder::BuildTypeinfoTupleElements( const TupleType& tuple_type, NamesScope& root_namespace )
 {
-	Tuple list_type;
+	TupleType list_type;
 	std::vector< llvm::Type* > list_elements_llvm_types;
 	std::vector< llvm::Constant* > list_elements_initializers;
 	list_type.elements.reserve( tuple_type.elements.size() );

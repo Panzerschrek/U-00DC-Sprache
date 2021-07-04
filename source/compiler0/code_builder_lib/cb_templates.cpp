@@ -711,7 +711,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	{
 		if( const auto given_function_pointer_type= given_type->GetFunctionPointerType() )
 		{
-			const Function& given_function_type= given_function_pointer_type->function;
+			const FunctionType& given_function_type= given_function_pointer_type->function;
 
 			if( !(
 				given_function_type.unsafe == template_param.is_unsafe &&
@@ -953,7 +953,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc,
 	const FunctionTemplatePtr& function_template_ptr,
-	const ArgsVector<Function::Arg>& actual_args,
+	const ArgsVector<FunctionType::Arg>& actual_args,
 	const bool first_actual_arg_is_this )
 {
 	const auto res= PrepareTemplateFunction( errors_container, src_loc, function_template_ptr, actual_args, first_actual_arg_is_this );
@@ -966,13 +966,13 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc,
 	const FunctionTemplatePtr& function_template_ptr,
-	const ArgsVector<Function::Arg>& actual_args,
+	const ArgsVector<FunctionType::Arg>& actual_args,
 	const bool first_actual_arg_is_this )
 {
 	const FunctionTemplate& function_template= *function_template_ptr;
 	const Synt::Function& function_declaration= *function_template.syntax_element->function_;
 
-	const Function::Arg* given_args= actual_args.data();
+	const FunctionType::Arg* given_args= actual_args.data();
 	size_t given_arg_count= actual_args.size();
 
 	if( first_actual_arg_is_this &&

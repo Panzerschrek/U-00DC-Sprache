@@ -28,7 +28,7 @@ ArgOverloadingClass GetArgOverloadingClass( const bool is_reference, const bool 
 	return ArgOverloadingClass::ImmutableReference;
 }
 
-ArgOverloadingClass GetArgOverloadingClass( const Function::Arg& arg )
+ArgOverloadingClass GetArgOverloadingClass( const FunctionType::Arg& arg )
 {
 	return GetArgOverloadingClass( arg.is_reference, arg.is_mutable );
 }
@@ -79,9 +79,9 @@ ConversionsCompareResult CompareConversionsTypes(
 }
 
 ConversionsCompareResult CompareConversionsMutability(
-	const Function::Arg& src,
-	const Function::Arg& dst_left,
-	const Function::Arg& dst_right)
+	const FunctionType::Arg& src,
+	const FunctionType::Arg& dst_left,
+	const FunctionType::Arg& dst_right)
 {
 	U_UNUSED(src);
 	//const ArgOverloadingClass   src_overloding_class= GetArgOverloadingClass(src);
@@ -275,9 +275,9 @@ ConversionsCompareResult TemplateSpecializationCompare(
 }
 
 ConversionsCompareResult CompareConversions(
-	const Function::Arg& src,
-	const Function::Arg& dst_left,
-	const Function::Arg& dst_right)
+	const FunctionType::Arg& src,
+	const FunctionType::Arg& dst_left,
+	const FunctionType::Arg& dst_right)
 {
 	const ConversionsCompareResult types_compare= CompareConversionsTypes( src.type, dst_left.type, dst_right.type );
 	const ConversionsCompareResult mutability_compare= CompareConversionsMutability( src, dst_left, dst_right );
@@ -297,9 +297,9 @@ ConversionsCompareResult CompareConversions(
 }
 
 ConversionsCompareResult CompareConversions(
-	const Function::Arg& src,
-	const Function::Arg& dst_left,
-	const Function::Arg& dst_right,
+	const FunctionType::Arg& src,
+	const FunctionType::Arg& dst_left,
+	const FunctionType::Arg& dst_right,
 	const TemplateSignatureParam& dst_left_template_parameter,
 	const TemplateSignatureParam& dst_right_template_parameter )
 {
@@ -318,7 +318,7 @@ ConversionsCompareResult CompareConversions(
 } // namespace
 
 FunctionVariable* CodeBuilder::GetFunctionWithSameType(
-	const Function& function_type,
+	const FunctionType& function_type,
 	OverloadedFunctionsSet& functions_set )
 {
 	for( FunctionVariable& function_varaible : functions_set.functions )
@@ -342,7 +342,7 @@ bool CodeBuilder::ApplyOverloadedFunction(
 		return true;
 	}
 
-	const Function* function_type= function.type.GetFunctionType();
+	const FunctionType* function_type= function.type.GetFunctionType();
 	U_ASSERT(function_type);
 
 	/*
@@ -352,7 +352,7 @@ bool CodeBuilder::ApplyOverloadedFunction(
 	*/
 	for( const FunctionVariable& set_function : functions_set.functions )
 	{
-		const Function& set_function_type= *set_function.type.GetFunctionType(); // Must be function type 100 %
+		const FunctionType& set_function_type= *set_function.type.GetFunctionType(); // Must be function type 100 %
 
 		// If argument count differs - allow overloading.
 		// SPRACHE_TODO - handle default arguments.
@@ -362,8 +362,8 @@ bool CodeBuilder::ApplyOverloadedFunction(
 		unsigned int arg_is_same_count= 0u;
 		for( size_t i= 0u; i < function_type->args.size(); i++ )
 		{
-			const Function::Arg& arg= function_type->args[i];
-			const Function::Arg& set_arg= set_function_type.args[i];
+			const FunctionType::Arg& arg= function_type->args[i];
+			const FunctionType::Arg& set_arg= set_function_type.args[i];
 
 			if( arg.type != set_arg.type )
 				continue;
@@ -386,7 +386,7 @@ bool CodeBuilder::ApplyOverloadedFunction(
 
 const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	const OverloadedFunctionsSet& functions_set,
-	const ArgsVector<Function::Arg>& actual_args,
+	const ArgsVector<FunctionType::Arg>& actual_args,
 	const bool first_actual_arg_is_this,
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc,
@@ -400,10 +400,10 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	// First, found functions, compatible with given arguments.
 	for( const FunctionVariable& function : functions_set.functions )
 	{
-		const Function& function_type= *function.type.GetFunctionType();
+		const FunctionType& function_type= *function.type.GetFunctionType();
 
 		size_t actial_arg_count;
-		const Function::Arg* actual_args_begin;
+		const FunctionType::Arg* actual_args_begin;
 		if( first_actual_arg_is_this && !function.is_this_call )
 		{
 			// In case of static function call via "this" compare actual args without "this".
@@ -513,7 +513,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 				l_arg_n= arg_n - 1u;
 			}
 
-			const Function& l_type=* function_l->type.GetFunctionType();
+			const FunctionType& l_type=* function_l->type.GetFunctionType();
 
 			bool is_best_function_for_current_arg= true;
 			for( const FunctionVariable* const function_r : match_functions )
@@ -526,7 +526,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 					r_arg_n= arg_n - 1u;
 				}
 
-				const Function& r_type=* function_r->type.GetFunctionType();
+				const FunctionType& r_type=* function_r->type.GetFunctionType();
 
 				const ConversionsCompareResult comp=
 					CompareConversions(
@@ -558,7 +558,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 						r_arg_n= arg_n - 1u;
 					}
 
-					const Function& r_type=* function_r.type.GetFunctionType();
+					const FunctionType& r_type=* function_r.type.GetFunctionType();
 
 					const ConversionsCompareResult comp=
 						CompareConversions(
@@ -601,14 +601,14 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 }
 
 const FunctionVariable* CodeBuilder::GetOverloadedOperator(
-	const ArgsVector<Function::Arg>& actual_args,
+	const ArgsVector<FunctionType::Arg>& actual_args,
 	OverloadedOperator op,
 	NamesScope& names,
 	const SrcLoc& src_loc )
 {
 	const std::string op_name= OverloadedOperatorToString( op );
 
-	for( const Function::Arg& arg : actual_args )
+	for( const FunctionType::Arg& arg : actual_args )
 	{
 		if( (op == OverloadedOperator::Indexing || op == OverloadedOperator::Call) && &arg != &actual_args.front() )
 			break; // For indexing and call operators only check first argument.
@@ -665,7 +665,7 @@ const FunctionVariable* CodeBuilder::GetConversionConstructor(
 
 	const OverloadedFunctionsSet& constructors= *constructors_value->GetFunctionsSet();
 
-	ArgsVector<Function::Arg> actual_args;
+	ArgsVector<FunctionType::Arg> actual_args;
 	actual_args.resize(2u);
 	actual_args[0u].type= dst_type;
 	actual_args[0u].is_mutable= true;

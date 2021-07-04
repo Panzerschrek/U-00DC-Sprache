@@ -12,9 +12,9 @@ namespace CodeBuilderPrivate
 void CodeBuilder::ProcessFunctionArgReferencesTags(
 	CodeBuilderErrorsContainer& errors_container,
 	const Synt::FunctionType& func,
-	Function& function_type,
+	FunctionType& function_type,
 	const Synt::FunctionArgument& in_arg,
-	const Function::Arg& out_arg,
+	const FunctionType::Arg& out_arg,
 	const size_t arg_number )
 {
 	U_UNUSED(errors_container); // TODO - remove it.
@@ -23,7 +23,7 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 	{
 		// Arg reference to return reference
 		if( out_arg.is_reference && !in_arg.reference_tag_.empty() && in_arg.reference_tag_ == func.return_value_reference_tag_ )
-			function_type.return_references.emplace( arg_number, Function::c_arg_reference_tag_number );
+			function_type.return_references.emplace( arg_number, FunctionType::c_arg_reference_tag_number );
 
 		// Inner arg references to return reference
 		if( in_arg.inner_arg_reference_tag_ == func.return_value_reference_tag_ )
@@ -34,7 +34,7 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 	{
 		// In arg reference to return value references
 		if( out_arg.is_reference && !in_arg.reference_tag_.empty() && in_arg.reference_tag_ == func.return_value_inner_reference_tag_ )
-			function_type.return_references.emplace( arg_number, Function::c_arg_reference_tag_number );
+			function_type.return_references.emplace( arg_number, FunctionType::c_arg_reference_tag_number );
 
 		// Inner arg references to return value references
 		if( in_arg.inner_arg_reference_tag_ == func.return_value_inner_reference_tag_ )
@@ -45,7 +45,7 @@ void CodeBuilder::ProcessFunctionArgReferencesTags(
 void CodeBuilder::ProcessFunctionReturnValueReferenceTags(
 	CodeBuilderErrorsContainer& errors_container,
 	const Synt::FunctionType& func,
-	const Function& function_type )
+	const FunctionType& function_type )
 {
 	if( !function_type.return_value_is_reference )
 	{
@@ -71,7 +71,7 @@ void CodeBuilder::ProcessFunctionReturnValueReferenceTags(
 void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
 	CodeBuilderErrorsContainer& errors_container,
 	const Synt::FunctionType& func,
-	Function& function_type )
+	FunctionType& function_type )
 {
 	// Generate mapping of input references to output references, if reference tags are not specified explicitly.
 
@@ -98,7 +98,7 @@ void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
 		for( size_t i= 0u; i < function_type.args.size(); ++i )
 		{
 			if( function_type.args[i].is_reference )
-				function_type.return_references.emplace( i, Function::c_arg_reference_tag_number );
+				function_type.return_references.emplace( i, FunctionType::c_arg_reference_tag_number );
 		}
 	}
 }
@@ -106,7 +106,7 @@ void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
 void CodeBuilder::ProcessFunctionReferencesPollution(
 	CodeBuilderErrorsContainer& errors_container,
 	const Synt::Function& func,
-	Function& function_type,
+	FunctionType& function_type,
 	const ClassProxyPtr& base_class )
 {
 	if( func.name_.back() == Keywords::constructor_ && IsCopyConstructor( function_type, base_class ) )
@@ -115,7 +115,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 			REPORT_ERROR( ExplicitReferencePollutionForCopyConstructor, errors_container, func.src_loc_ );
 
 		// This is copy constructor. Generate reference pollution for it automatically.
-		Function::ReferencePollution ref_pollution;
+		FunctionType::ReferencePollution ref_pollution;
 		ref_pollution.dst.first= 0u;
 		ref_pollution.dst.second= 0u;
 		ref_pollution.src.first= 1u;
@@ -128,7 +128,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 			REPORT_ERROR( ExplicitReferencePollutionForCopyAssignmentOperator, errors_container, func.src_loc_ );
 
 		// This is copy assignment operator. Generate reference pollution for it automatically.
-		Function::ReferencePollution ref_pollution;
+		FunctionType::ReferencePollution ref_pollution;
 		ref_pollution.dst.first= 0u;
 		ref_pollution.dst.second= 0u;
 		ref_pollution.src.first= 1u;
@@ -142,19 +142,19 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 	CodeBuilderErrorsContainer& errors_container,
 	const Synt::FunctionType& func,
-	Function& function_type )
+	FunctionType& function_type )
 {
 	const auto get_references=
-	[&]( const std::string& name ) -> ArgsVector<Function::ArgReference>
+	[&]( const std::string& name ) -> ArgsVector<FunctionType::ArgReference>
 	{
-		ArgsVector<Function::ArgReference> result;
+		ArgsVector<FunctionType::ArgReference> result;
 
 		for( size_t arg_n= 0u; arg_n < function_type.args.size(); ++arg_n )
 		{
 			const Synt::FunctionArgument& in_arg= func.arguments_[ arg_n ];
 
 			if( name == in_arg.reference_tag_ )
-				result.emplace_back( arg_n, Function::c_arg_reference_tag_number );
+				result.emplace_back( arg_n, FunctionType::c_arg_reference_tag_number );
 			if( name == in_arg.inner_arg_reference_tag_ )
 				result.emplace_back( arg_n, 0u );
 		}
@@ -173,20 +173,20 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 			continue;
 		}
 
-		const ArgsVector<Function::ArgReference> dst_references= get_references( pollution.first );
-		const ArgsVector<Function::ArgReference> src_references= get_references( pollution.second );
+		const ArgsVector<FunctionType::ArgReference> dst_references= get_references( pollution.first );
+		const ArgsVector<FunctionType::ArgReference> src_references= get_references( pollution.second );
 
-		for( const Function::ArgReference& dst_ref : dst_references )
+		for( const FunctionType::ArgReference& dst_ref : dst_references )
 		{
-			if( dst_ref.second == Function::c_arg_reference_tag_number )
+			if( dst_ref.second == FunctionType::c_arg_reference_tag_number )
 			{
 				REPORT_ERROR( ArgReferencePollution, errors_container, func.src_loc_ );
 				continue;
 			}
 
-			for( const Function::ArgReference& src_ref : src_references )
+			for( const FunctionType::ArgReference& src_ref : src_references )
 			{
-				Function::ReferencePollution ref_pollution;
+				FunctionType::ReferencePollution ref_pollution;
 				ref_pollution.dst= dst_ref;
 				ref_pollution.src= src_ref;
 				function_type.references_pollution.emplace(ref_pollution);
@@ -278,11 +278,11 @@ ReferencesGraph CodeBuilder::MergeVariablesStateAfterIf(
 
 bool CodeBuilder::IsReferenceAllowedForReturn( FunctionContext& function_context, const ReferencesGraphNodePtr& variable_node )
 {
-	for( const Function::ArgReference& arg_and_tag : function_context.function_type.return_references )
+	for( const FunctionType::ArgReference& arg_and_tag : function_context.function_type.return_references )
 	{
 		const size_t arg_n= arg_and_tag.first;
 		U_ASSERT( arg_n < function_context.args_nodes.size() );
-		if( arg_and_tag.second == Function::c_arg_reference_tag_number && variable_node == function_context.args_nodes[arg_n].first )
+		if( arg_and_tag.second == FunctionType::c_arg_reference_tag_number && variable_node == function_context.args_nodes[arg_n].first )
 			return true;
 		if( arg_and_tag.second == 0u && variable_node == function_context.args_nodes[arg_n].second )
 			return true;
@@ -311,18 +311,18 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 			if( accesible_variable == node_pair.second )
 				continue;
 
-			std::optional<Function::ArgReference> reference;
+			std::optional<FunctionType::ArgReference> reference;
 			for( size_t j= 0u; j < function_context.function_type.args.size(); ++j )
 			{
 				if( accesible_variable == function_context.args_nodes[j].first )
-					reference= Function::ArgReference( j, Function::c_arg_reference_tag_number );
+					reference= FunctionType::ArgReference( j, FunctionType::c_arg_reference_tag_number );
 				if( accesible_variable == function_context.args_nodes[j].second )
-					reference= Function::ArgReference( j, 0u );
+					reference= FunctionType::ArgReference( j, 0u );
 			}
 
 			if( reference != std::nullopt )
 			{
-				Function::ReferencePollution pollution;
+				FunctionType::ReferencePollution pollution;
 				pollution.src= *reference;
 				pollution.dst.first= i;
 				pollution.dst.second= 0u;
