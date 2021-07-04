@@ -368,6 +368,9 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		}
 	}
 
+	// Use initial class members namespace for own fields initializers evaluation.
+	auto class_members_initial= class_type.members_initial;
+
 	// Apply default initializer for fields, missing in struct named initializer.
 	foreach( &field_name : class_type.fields_order )
 	{
@@ -414,11 +417,11 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		{
 			if( field.is_reference )
 			{
-				constexpr_initializer= InitializeReferenceField( class_type.members, function_context, variable, field, initializer );
+				constexpr_initializer= InitializeReferenceField( class_members_initial, function_context, variable, field, initializer );
 			}
 			else
 			{
-				constexpr_initializer= BuildInitializer( class_type.members, function_context, member_variable, initializer );
+				constexpr_initializer= BuildInitializer( class_members_initial, function_context, member_variable, initializer );
 			}
 		}
 
@@ -1282,6 +1285,10 @@ fn CodeBuilder::BuildConstructorInitialization(
 
 		BuildEmptyInitializer( names_scope, function_context, base_variable, KeywordToString( Keyword::base_ ), constructor_initialization_list.src_loc );
 	}
+
+	// Use initial class members namespace for own fields initializers evaluation.
+	auto class_members_initial= class_type.lock_imut().get_ref().members_initial;
+
 	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
 	{
 		if( initialized_fields.exists( field_name ) )
@@ -1323,11 +1330,11 @@ fn CodeBuilder::BuildConstructorInitialization(
 					.llvm_value= this_.llvm_value,
 					.node_id= this_.node_id,
 				};
-				InitializeReferenceField( class_members_ptr, function_context, this_variable, class_field, initializer );
+				InitializeReferenceField( class_members_initial, function_context, this_variable, class_field, initializer );
 			}
 			else
 			{
-				BuildInitializer( class_members_ptr, function_context, field_variable, initializer );
+				BuildInitializer( class_members_initial, function_context, field_variable, initializer );
 			}
 		}
 	}

@@ -173,6 +173,9 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		BuildEmptyInitializer( class_members_ptr, function_context, base_variable, KeywordToString( Keyword::base_ ), src_loc );
 	}
 
+	// Use initial class members namespace for own fields initializers evaluation.
+	auto class_members_initial= class_type.lock_imut().get_ref().members_initial;
+
 	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
 	{
 		auto field_ptr= class_members.GetThisScopeValue(field_name).get_ref().Get</ClassField/>();
@@ -198,11 +201,11 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 			if( class_field.is_reference )
 			{
 				var NamesScopeVariable this_variable{ .t= class_type, .llvm_value= this_llvm_value };
-				InitializeReferenceField( class_members_ptr, function_context, this_variable, class_field, initializer );
+				InitializeReferenceField( class_members_initial, function_context, this_variable, class_field, initializer );
 			}
 			else
 			{
-				BuildInitializer( class_members_ptr, function_context, field_variable, initializer );
+				BuildInitializer( class_members_initial, function_context, field_variable, initializer );
 			}
 		}
 	}

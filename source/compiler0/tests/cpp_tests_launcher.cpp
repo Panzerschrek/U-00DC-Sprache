@@ -72,6 +72,8 @@ bool FilterTest( const std::string& test_name )
 	{
 		"InvalidValueAsTemplateArgumentTest1",
 		"ImportInClassFieldInitializer_Test0",
+		"ImportInClassFieldInitializer_Test1",
+		"ImportInClassFieldInitializer_Test2",
 	};
 
 	const std::string test_name_without_file_name= test_name.substr(test_name.find_last_of(':') + 1);
