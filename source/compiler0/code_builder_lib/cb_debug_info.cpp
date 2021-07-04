@@ -183,7 +183,7 @@ llvm::DIType* CodeBuilder::CreateDIType( const FundamentalType& type )
 		type_encoding );
 }
 
-llvm::DICompositeType* CodeBuilder::CreateDIType( const Array& type )
+llvm::DICompositeType* CodeBuilder::CreateDIType( const ArrayType& type )
 {
 	U_ASSERT(build_debug_info_);
 
@@ -203,7 +203,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const Array& type )
 			debug_info_.builder->getOrCreateArray(subscripts) );
 }
 
-llvm::DICompositeType* CodeBuilder::CreateDIType( const Tuple& type )
+llvm::DICompositeType* CodeBuilder::CreateDIType( const TupleType& type )
 {
 	U_ASSERT(build_debug_info_);
 
@@ -250,12 +250,12 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const Tuple& type )
 		debug_info_.builder->getOrCreateArray(elements).get() );
 }
 
-llvm::DISubroutineType* CodeBuilder::CreateDIType( const Function& type )
+llvm::DISubroutineType* CodeBuilder::CreateDIType( const FunctionType& type )
 {
 	U_ASSERT(build_debug_info_);
 
 	ArgsVector<llvm::Metadata*> args;
-	args.reserve( type.args.size() + 1u );
+	args.reserve( type.params.size() + 1u );
 
 	{
 		llvm::DIType* di_type= CreateDIType( type.return_type );
@@ -264,18 +264,18 @@ llvm::DISubroutineType* CodeBuilder::CreateDIType( const Function& type )
 		args.push_back( di_type );
 	}
 
-	for( const Function::Arg& arg : type.args )
+	for( const FunctionType::Param& param : type.params )
 	{
-		llvm::DIType* di_type= CreateDIType( arg.type );
-		if( arg.is_reference )
-			di_type= debug_info_.builder->createPointerType( di_type, data_layout_.getTypeAllocSizeInBits( arg.type.GetLLVMType()->getPointerTo() ) );
+		llvm::DIType* di_type= CreateDIType( param.type );
+		if( param.is_reference )
+			di_type= debug_info_.builder->createPointerType( di_type, data_layout_.getTypeAllocSizeInBits( param.type.GetLLVMType()->getPointerTo() ) );
 		args.push_back( di_type );
 	}
 
 	return debug_info_.builder->createSubroutineType( debug_info_.builder->getOrCreateTypeArray(args) );
 }
 
-llvm::DIDerivedType* CodeBuilder::CreateDIType( const RawPointer& type )
+llvm::DIDerivedType* CodeBuilder::CreateDIType( const RawPointerType& type )
 {
 	U_ASSERT(build_debug_info_);
 
@@ -285,7 +285,7 @@ llvm::DIDerivedType* CodeBuilder::CreateDIType( const RawPointer& type )
 			data_layout_.getTypeAllocSizeInBits(type.llvm_type) );
 }
 
-llvm::DIDerivedType* CodeBuilder::CreateDIType( const FunctionPointer& type )
+llvm::DIDerivedType* CodeBuilder::CreateDIType( const FunctionPointerType& type )
 {
 	U_ASSERT(build_debug_info_);
 

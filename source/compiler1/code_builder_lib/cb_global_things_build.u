@@ -1109,7 +1109,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 			return;
 		}
 
-		var ust::optional_ref</Synt::Expression, false/> mut initializer_expression;
+		var ust::optional_ref_imut</Synt::Expression/> mut initializer_expression;
 		if_var( &expression_initializer : variable_declaration.initializer.get</Synt::Expression/>() )
 		{
 			initializer_expression.reset(expression_initializer);

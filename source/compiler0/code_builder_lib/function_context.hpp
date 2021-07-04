@@ -44,14 +44,14 @@ struct LoopFrame final
 struct FunctionContext
 {
 	FunctionContext(
-		Function function_type,
+		FunctionType function_type,
 		const std::optional<Type>& return_type,
 		llvm::LLVMContext& llvm_context,
 		llvm::Function* function );
 
 	FunctionContext(const FunctionContext&)= delete;
 
-	Function function_type;
+	FunctionType function_type;
 	const std::optional<Type> return_type; // std::nullopt if type not known yet and must be deduced.
 	std::optional<Type> deduced_return_type; // for functions with "auto" return type.
 
@@ -88,7 +88,7 @@ struct FunctionContext
 
 	// Cache result of arguments pre-evaluation for selection of overloaded functions and operators.
 	// This needed for reducing exponential expression evaluation complexity.
-	std::unordered_map< const Synt::Expression*, Function::Arg > args_preevaluation_cache;
+	std::unordered_map< const Synt::Expression*, FunctionType::Param > args_preevaluation_cache;
 
 	llvm::BasicBlock* destructor_end_block= nullptr; // exists, if function is destructor
 

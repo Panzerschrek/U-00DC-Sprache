@@ -135,7 +135,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 			"",
 			module_.get() );
 
-	Function global_function_type;
+	FunctionType global_function_type;
 	global_function_type.return_type= void_type_;
 
 	FunctionContext global_function_context(
@@ -532,9 +532,9 @@ void CodeBuilder::TryCallCopyConstructor(
 	const FunctionVariable* constructor= nullptr;
 	for( const FunctionVariable& candidate : constructors->functions )
 	{
-		const Function& constructor_type= *candidate.type.GetFunctionType();
-		if( candidate.is_this_call && constructor_type.args.size() == 2u &&
-			constructor_type.args.back().type == class_type && constructor_type.args.back().is_reference && !constructor_type.args.back().is_mutable )
+		const FunctionType& constructor_type= *candidate.type.GetFunctionType();
+		if( candidate.is_this_call && constructor_type.params.size() == 2u &&
+			constructor_type.params.back().type == class_type && constructor_type.params.back().is_reference && !constructor_type.params.back().is_mutable )
 		{
 			constructor= &candidate;
 			break;
@@ -641,7 +641,7 @@ void CodeBuilder::CallDestructor(
 		if( destructor.type.GetFunctionType()->unsafe && !function_context.is_in_unsafe_block )
 			REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, errors_container, src_loc );
 	}
-	else if( const Array* const array_type= type.GetArrayType() )
+	else if( const ArrayType* const array_type= type.GetArrayType() )
 	{
 		// SPRACHE_TODO - maybe call destructors of arrays in reverse order?
 		GenerateLoop(
@@ -657,7 +657,7 @@ void CodeBuilder::CallDestructor(
 			},
 			function_context );
 	}
-	else if( const Tuple* const tuple_type= type.GetTupleType() )
+	else if( const TupleType* const tuple_type= type.GetTupleType() )
 	{
 		for( const Type& element_type : tuple_type->elements )
 		{
@@ -748,7 +748,7 @@ size_t CodeBuilder::PrepareFunction(
 	const bool is_special_method= is_constructor || is_destructor;
 
 	if( is_destructor || is_constructor )
-		U_ASSERT( func.type_.arguments_.size() >= 1u && func.type_.arguments_.front().name_ == Keywords::this_ );
+		U_ASSERT( func.type_.params_.size() >= 1u && func.type_.params_.front().name_ == Keywords::this_ );
 
 	if( !is_special_method && IsKeyword( func_name ) )
 		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), func.src_loc_ );
@@ -763,7 +763,7 @@ size_t CodeBuilder::PrepareFunction(
 		REPORT_ERROR( InitializationListInNonconstructor, names_scope.GetErrors(), func.constructor_initialization_list_->src_loc_ );
 		return ~0u;
 	}
-	if( is_destructor && func.type_.arguments_.size() >= 2u )
+	if( is_destructor && func.type_.params_.size() >= 2u )
 	{
 		REPORT_ERROR( ExplicitArgumentsInDestructor, names_scope.GetErrors(), func.src_loc_ );
 		return ~0u;
@@ -787,9 +787,8 @@ size_t CodeBuilder::PrepareFunction(
 	}
 
 	FunctionVariable func_variable;
-	func_variable.type= Function();
 	{ // Prepare function type
-		Function& function_type= *func_variable.type.GetFunctionType();
+		FunctionType function_type;
 
 		if( func.type_.return_type_ == nullptr )
 			function_type.return_type= void_type_;
@@ -828,21 +827,21 @@ size_t CodeBuilder::PrepareFunction(
 
 		ProcessFunctionReturnValueReferenceTags( names_scope.GetErrors(), func.type_, function_type );
 
-		// Args.
-		function_type.args.reserve( func.type_.arguments_.size() );
+		// Params.
+		function_type.params.reserve( func.type_.params_.size() );
 
-		for( const Synt::FunctionArgument& arg : func.type_.arguments_ )
+		for( const Synt::FunctionParam& arg : func.type_.params_ )
 		{
 			const bool is_this=
-				&arg == &func.type_.arguments_.front() &&
+				&arg == &func.type_.params_.front() &&
 				arg.name_ == Keywords::this_ &&
 				std::get_if<Synt::EmptyVariant>(&arg.type_) != nullptr;
 
 			if( !is_this && IsKeyword( arg.name_ ) )
 				REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), arg.src_loc_ );
 
-			function_type.args.emplace_back();
-			Function::Arg& out_arg= function_type.args.back();
+			function_type.params.emplace_back();
+			FunctionType::Param& out_param= function_type.params.back();
 
 			if( is_this )
 			{
@@ -852,15 +851,15 @@ size_t CodeBuilder::PrepareFunction(
 					REPORT_ERROR( ThisInNonclassFunction, names_scope.GetErrors(), arg.src_loc_, func_name );
 					return ~0u;
 				}
-				out_arg.type= base_class;
+				out_param.type= base_class;
 			}
 			else
-				out_arg.type= PrepareType( arg.type_, names_scope, *global_function_context_ );
+				out_param.type= PrepareType( arg.type_, names_scope, *global_function_context_ );
 
-			out_arg.is_mutable= ( is_this && is_special_method ) || arg.mutability_modifier_ == MutabilityModifier::Mutable;
-			out_arg.is_reference= is_this || arg.reference_modifier_ == ReferenceModifier::Reference;
+			out_param.is_mutable= ( is_this && is_special_method ) || arg.mutability_modifier_ == MutabilityModifier::Mutable;
+			out_param.is_reference= is_this || arg.reference_modifier_ == ReferenceModifier::Reference;
 
-			ProcessFunctionArgReferencesTags( names_scope.GetErrors(), func.type_, function_type, arg, out_arg, function_type.args.size() - 1u );
+			ProcessFunctionParamReferencesTags( names_scope.GetErrors(), func.type_, function_type, arg, out_param, function_type.params.size() - 1u );
 		} // for arguments
 
 		function_type.unsafe= func.type_.unsafe_;
@@ -869,6 +868,9 @@ size_t CodeBuilder::PrepareFunction(
 		ProcessFunctionReferencesPollution( names_scope.GetErrors(), func, function_type, base_class );
 		CheckOverloadedOperator( base_class, function_type, func.overloaded_operator_, names_scope.GetErrors(), func.src_loc_ );
 
+		function_type.llvm_type= GetLLVMFunctionType( function_type );
+
+		func_variable.type= std::move(function_type);
 	} // end prepare function type
 
 	// Set constexpr.
@@ -914,7 +916,7 @@ size_t CodeBuilder::PrepareFunction(
 	// Set conversion constructor.
 	func_variable.is_conversion_constructor= func.is_conversion_constructor_;
 	U_ASSERT( !( func.is_conversion_constructor_ && !is_constructor ) );
-	if( func.is_conversion_constructor_ && func_variable.type.GetFunctionType()->args.size() != 2u )
+	if( func.is_conversion_constructor_ && func_variable.type.GetFunctionType()->params.size() != 2u )
 		REPORT_ERROR( ConversionConstructorMustHaveOneArgument, names_scope.GetErrors(), func.src_loc_ );
 	func_variable.is_constructor= is_constructor;
 
@@ -922,7 +924,7 @@ size_t CodeBuilder::PrepareFunction(
 	if( func.body_kind != Synt::Function::BodyKind::None )
 	{
 		U_ASSERT( func.block_ == nullptr );
-		const Function& function_type= *func_variable.type.GetFunctionType();
+		const FunctionType& function_type= *func_variable.type.GetFunctionType();
 
 		bool invalid_func= false;
 		if( base_class == nullptr )
@@ -1011,7 +1013,7 @@ size_t CodeBuilder::PrepareFunction(
 			base_class,
 			names_scope,
 			func_name,
-			func.type_.arguments_,
+			func.type_.params_,
 			nullptr,
 			func.constructor_initialization_list_.get() );
 
@@ -1021,7 +1023,7 @@ size_t CodeBuilder::PrepareFunction(
 
 void CodeBuilder::CheckOverloadedOperator(
 	const ClassProxyPtr& base_class,
-	const Function& func_type,
+	const FunctionType& func_type,
 	const OverloadedOperator overloaded_operator,
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc )
@@ -1036,7 +1038,7 @@ void CodeBuilder::CheckOverloadedOperator(
 	}
 
 	bool is_this_class= false;
-	for( const Function::Arg& arg : func_type.args )
+	for( const FunctionType::Param& arg : func_type.params )
 	{
 		if( arg.type == base_class )
 		{
@@ -1054,7 +1056,7 @@ void CodeBuilder::CheckOverloadedOperator(
 	{
 	case OverloadedOperator::Add:
 	case OverloadedOperator::Sub:
-		if( !( func_type.args.size() == 1u || func_type.args.size() == 2u ) )
+		if( !( func_type.params.size() == 1u || func_type.params.size() == 2u ) )
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, src_loc );
 		break;
 
@@ -1064,7 +1066,7 @@ void CodeBuilder::CheckOverloadedOperator(
 	case OverloadedOperator::LessEqual:
 	case OverloadedOperator::Greater:
 	case OverloadedOperator::GreaterEqual:
-		if( func_type.args.size() != 2u )
+		if( func_type.params.size() != 2u )
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, src_loc );
 		if( !( func_type.return_type == bool_type_ && !func_type.return_value_is_reference ) )
 			REPORT_ERROR( InvalidReturnTypeForOperator, errors_container, src_loc, bool_type_ );
@@ -1078,7 +1080,7 @@ void CodeBuilder::CheckOverloadedOperator(
 	case OverloadedOperator::Xor:
 	case OverloadedOperator::ShiftLeft :
 	case OverloadedOperator::ShiftRight:
-		if( func_type.args.size() != 2u )
+		if( func_type.params.size() != 2u )
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, src_loc );
 		break;
 
@@ -1092,7 +1094,7 @@ void CodeBuilder::CheckOverloadedOperator(
 	case OverloadedOperator::AssignXor:
 	case OverloadedOperator::AssignShiftLeft :
 	case OverloadedOperator::AssignShiftRight:
-		if( func_type.args.size() != 2u )
+		if( func_type.params.size() != 2u )
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, src_loc );
 		if( !ret_is_void )
 			REPORT_ERROR( InvalidReturnTypeForOperator, errors_container, src_loc, void_type_ );
@@ -1100,12 +1102,12 @@ void CodeBuilder::CheckOverloadedOperator(
 
 	case OverloadedOperator::LogicalNot:
 	case OverloadedOperator::BitwiseNot:
-		if( func_type.args.size() != 1u )
+		if( func_type.params.size() != 1u )
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, src_loc );
 		break;
 
 	case OverloadedOperator::Assign:
-		if( func_type.args.size() != 2u )
+		if( func_type.params.size() != 2u )
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, src_loc );
 		if( !ret_is_void )
 			REPORT_ERROR( InvalidReturnTypeForOperator, errors_container, src_loc, void_type_ );
@@ -1113,25 +1115,25 @@ void CodeBuilder::CheckOverloadedOperator(
 
 	case OverloadedOperator::Increment:
 	case OverloadedOperator::Decrement:
-		if( func_type.args.size() != 1u )
+		if( func_type.params.size() != 1u )
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, src_loc );
 		if( !ret_is_void )
 			REPORT_ERROR( InvalidReturnTypeForOperator, errors_container, src_loc, void_type_ );
 		break;
 
 	case OverloadedOperator::Indexing:
-		if( func_type.args.size() != 2u )
+		if( func_type.params.size() != 2u )
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, src_loc );
 		// Indexing operator must have first argument of parent class.
-		if( !func_type.args.empty() && func_type.args[0].type != base_class )
+		if( !func_type.params.empty() && func_type.params[0].type != base_class )
 			REPORT_ERROR( OperatorDoesNotHaveParentClassArguments, errors_container, src_loc );
 		break;
 
 	case OverloadedOperator::Call:
-		if( func_type.args.empty() )
+		if( func_type.params.empty() )
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, src_loc );
 		// Call operator must have first argument of parent class.
-		if( !func_type.args.empty() && func_type.args[0].type != base_class )
+		if( !func_type.params.empty() && func_type.params[0].type != base_class )
 			REPORT_ERROR( OperatorDoesNotHaveParentClassArguments, errors_container, src_loc );
 		break;
 
@@ -1145,12 +1147,11 @@ Type CodeBuilder::BuildFuncCode(
 	const ClassProxyPtr& base_class,
 	NamesScope& parent_names_scope,
 	const std::string& func_name,
-	const Synt::FunctionArgumentsDeclaration& args,
+	const Synt::FunctionParams& params,
 	const Synt::Block* const block,
 	const Synt::StructNamedInitializer* const constructor_initialization_list )
 {
-	Function& function_type= *func_variable.type.GetFunctionType();
-	function_type.llvm_type= GetLLVMFunctionType( function_type );
+	const FunctionType& function_type= *func_variable.type.GetFunctionType();
 
 	const bool first_arg_is_sret= function_type.IsStructRet();
 
@@ -1168,11 +1169,11 @@ Type CodeBuilder::BuildFuncCode(
 		// We doesn`t need different addresses for different functions.
 		llvm_function->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
 
-		for( size_t i= 0u; i < function_type.args.size(); i++ )
+		for( size_t i= 0u; i < function_type.params.size(); i++ )
 		{
 			const auto arg_attr_index=
 				static_cast<unsigned int>(llvm::AttributeList::FirstArgIndex + i + (first_arg_is_sret ? 1u : 0u ));
-			const Function::Arg& arg= function_type.args[i];
+			const FunctionType::Param& arg= function_type.params[i];
 
 			const bool arg_is_composite= arg.type.GetClassType() != nullptr || arg.type.GetArrayType() != nullptr || arg.type.GetTupleType() != nullptr;
 			// Mark pointer-parameters as nonnull.
@@ -1228,10 +1229,10 @@ Type CodeBuilder::BuildFuncCode(
 
 	// Ensure completeness only for functions body.
 	// Require full completeness even for reference arguments.
-	for( const Function::Arg& arg : function_type.args )
+	for( const FunctionType::Param& arg : function_type.params )
 	{
 		if( !EnsureTypeComplete( arg.type ) )
-			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), args.front().src_loc_, arg.type );
+			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), params.front().src_loc_, arg.type );
 	}
 	if( !function_type.return_value_is_reference && !EnsureTypeComplete( function_type.return_type ) )
 		REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_src_loc, function_type.return_type );
@@ -1244,7 +1245,7 @@ Type CodeBuilder::BuildFuncCode(
 		llvm_function );
 	const StackVariablesStorage args_storage( function_context );
 
-	function_context.args_nodes.resize( function_type.args.size() );
+	function_context.args_nodes.resize( function_type.params.size() );
 
 	SetCurrentDebugLocation( func_variable.body_src_loc, function_context );
 
@@ -1264,46 +1265,46 @@ Type CodeBuilder::BuildFuncCode(
 			continue;
 		}
 
-		const Function::Arg& arg= function_type.args[ arg_number ];
+		const FunctionType::Param& param= function_type.params[ arg_number ];
 
-		const Synt::FunctionArgument& declaration_arg= args[arg_number ];
+		const Synt::FunctionParam& declaration_arg= params[arg_number ];
 		const std::string& arg_name= declaration_arg.name_;
 
 		const bool is_this= arg_number == 0u && arg_name == Keywords::this_;
-		U_ASSERT( !( is_this && !arg.is_reference ) );
+		U_ASSERT( !( is_this && !param.is_reference ) );
 
 		Variable var;
 		var.location= Variable::Location::LLVMRegister;
 		var.value_type= ValueType::Reference;
-		var.type= arg.type;
+		var.type= param.type;
 		var.llvm_value= &llvm_arg;
 
 		if( declaration_arg.mutability_modifier_ != MutabilityModifier::Mutable )
 			var.value_type= ValueType::ConstReference;
 
-		if( arg.is_reference )
+		if( param.is_reference )
 		{
 			var.location= Variable::Location::Pointer;
 			CreateReferenceVariableDebugInfo( var, arg_name, declaration_arg.src_loc_, function_context );
 		}
 		else
 		{
-			if( arg.type.GetFundamentalType() != nullptr ||
-				arg.type.GetEnumType() != nullptr ||
-				arg.type.GetRawPointerType() != nullptr ||
-				arg.type.GetFunctionPointerType() != nullptr )
+			if( param.type.GetFundamentalType() != nullptr ||
+				param.type.GetEnumType() != nullptr ||
+				param.type.GetRawPointerType() != nullptr ||
+				param.type.GetFunctionPointerType() != nullptr )
 			{
 				// Move parameters to stack for assignment possibility.
 				// TODO - do it, only if parameters are not constant.
 				llvm::Value* address= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
 				address->setName( arg_name );
-				if( arg.type != void_type_ )
+				if( param.type != void_type_ )
 					function_context.llvm_ir_builder.CreateStore( var.llvm_value, address );
 
 				var.llvm_value= address;
 				var.location= Variable::Location::Pointer;
 			}
-			else if( arg.type.GetClassType() != nullptr || arg.type.GetArrayType() != nullptr || arg.type.GetTupleType() != nullptr )
+			else if( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr )
 			{
 				// Composite types use llvm-pointers.
 				var.location= Variable::Location::Pointer;
@@ -1317,10 +1318,10 @@ Type CodeBuilder::BuildFuncCode(
 		// Register arg on stack, only if it is value-argument.
 		const auto var_node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, arg_name );
 		function_context.args_nodes[ arg_number ].first= var_node;
-		if( arg.is_reference )
+		if( param.is_reference )
 		{
 			const auto reference_node= function_context.variables_state.AddNode(
-				arg.is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
+				param.is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
 				arg_name + " reference" );
 			function_context.variables_state.AddLink( var_node, reference_node );
 			var.node= reference_node;
@@ -1331,14 +1332,14 @@ Type CodeBuilder::BuildFuncCode(
 			function_context.stack_variables_stack.back()->RegisterVariable( var );
 		}
 
-		if (arg.type.ReferencesTagsCount() > 0u )
+		if (param.type.ReferencesTagsCount() > 0u )
 		{
 			// Create inner node + root variable.
 			const auto accesible_variable= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable , arg_name + " referenced variable" );
 
 			const auto inner_reference= function_context.variables_state.CreateNodeInnerReference(
 				var_node,
-				arg.type.GetInnerReferenceType() == InnerReferenceType::Mut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+				param.type.GetInnerReferenceType() == InnerReferenceType::Mut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
 			function_context.variables_state.AddLink( accesible_variable, inner_reference );
 
 			function_context.args_nodes[ arg_number ].second= accesible_variable;
@@ -1432,13 +1433,13 @@ Type CodeBuilder::BuildFuncCode(
 		if( function_type.return_type.GetFunctionPointerType() != nullptr ) // Currently function pointers not supported.
 			can_be_constexpr= false;
 
-		for( const Function::Arg& arg : function_type.args )
+		for( const FunctionType::Param& param : function_type.params )
 		{
-			if( !auto_contexpr && !EnsureTypeComplete( arg.type ) )
-				REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), func_variable.body_src_loc, arg.type ); // Completeness required for constexpr possibility check.
+			if( !auto_contexpr && !EnsureTypeComplete( param.type ) )
+				REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), func_variable.body_src_loc, param.type ); // Completeness required for constexpr possibility check.
 
-			if( !arg.type.CanBeConstexpr() || // Allowed only constexpr types. Incomplete types are not constexpr.
-				arg.type.GetFunctionPointerType() != nullptr )
+			if( !param.type.CanBeConstexpr() || // Allowed only constexpr types. Incomplete types are not constexpr.
+				param.type.GetFunctionPointerType() != nullptr )
 				can_be_constexpr= false;
 
 			// We support constexpr functions with mutable reference-arguments, but such functions can not be used as root for constexpr function evaluation.

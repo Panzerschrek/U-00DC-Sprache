@@ -18,8 +18,8 @@ bool FunctionVariable::VirtuallyEquals( const FunctionVariable& other ) const
 {
 	U_ASSERT( this->is_this_call && other.is_this_call );
 
-	const Function& l_type= *this->type.GetFunctionType();
-	const Function& r_type= *other.type.GetFunctionType();
+	const FunctionType& l_type= *this->type.GetFunctionType();
+	const FunctionType& r_type= *other.type.GetFunctionType();
 
 	return
 		l_type.return_type == r_type.return_type &&
@@ -28,9 +28,9 @@ bool FunctionVariable::VirtuallyEquals( const FunctionVariable& other ) const
 		l_type.return_references == r_type.return_references &&
 		l_type.references_pollution == r_type.references_pollution &&
 		l_type.unsafe == r_type.unsafe &&
-		l_type.args.size() == r_type.args.size() &&
-		l_type.args.size() > 0u && l_type.args.front().is_mutable == r_type.args.front().is_mutable &&
-		std::equal( l_type.args.begin() + 1, l_type.args.end(), r_type.args.begin() + 1 );  // Compare args, except first.
+		l_type.params.size() == r_type.params.size() &&
+		l_type.params.size() > 0u && l_type.params.front().is_mutable == r_type.params.front().is_mutable &&
+		std::equal( l_type.params.begin() + 1, l_type.params.end(), r_type.params.begin() + 1 );  // Compare args, except first.
 }
 
 //

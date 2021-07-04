@@ -273,7 +273,7 @@ std::string_view EncodeFundamentalType( const U_FundamentalType t )
 	return "";
 }
 
-void EncodeFunctionParam( ManglerState& mangler_state, const Function::Arg& param )
+void EncodeFunctionParam( ManglerState& mangler_state, const FunctionType::Param& param )
 {
 	if( param.is_reference )
 	{
@@ -292,9 +292,9 @@ void EncodeFunctionParam( ManglerState& mangler_state, const Function::Arg& para
 		EncodeTypeName( mangler_state, param.type );
 }
 
-void EncodeFunctionParams( ManglerState& mangler_state, const ArgsVector<Function::Arg>& params )
+void EncodeFunctionParams( ManglerState& mangler_state, const ArgsVector<FunctionType::Param>& params )
 {
-	for( const Function::Arg& param : params )
+	for( const FunctionType::Param& param : params )
 		EncodeFunctionParam( mangler_state, param );
 
 	if( params.empty() )
@@ -379,14 +379,14 @@ void EncodeTypeName( ManglerState& mangler_state, const Type& type )
 		mangler_state.Push( "F" );
 
 		{
-			Function::Arg ret;
+			FunctionType::Param ret;
 			ret.is_mutable= function->return_value_is_mutable;
 			ret.is_reference= function->return_value_is_reference;
 			ret.type= function->return_type;
 			EncodeFunctionParam( mangler_state, ret );
 		}
 
-		EncodeFunctionParams( mangler_state, function->args );
+		EncodeFunctionParams( mangler_state, function->params );
 
 		if( !function->return_references.empty() )
 		{
@@ -394,14 +394,14 @@ void EncodeTypeName( ManglerState& mangler_state, const Type& type )
 			mangler_state.Push( "_RR" );
 			mangler_state.Push( Base36Digit(function->return_references.size()) );
 
-			for( const Function::ArgReference& arg_and_tag : function->return_references )
+			for( const FunctionType::ParamReference& arg_and_tag : function->return_references )
 			{
 				U_ASSERT( arg_and_tag.first  < 36u );
 				U_ASSERT( arg_and_tag.second < 36u || arg_and_tag.second == Function::c_arg_reference_tag_number );
 
 				mangler_state.Push( Base36Digit(arg_and_tag.first) );
 				mangler_state.Push(
-					arg_and_tag.second == Function::c_arg_reference_tag_number
+					arg_and_tag.second == FunctionType::c_arg_reference_tag_number
 					? '_'
 					: Base36Digit(arg_and_tag.second) );
 			}
@@ -413,7 +413,7 @@ void EncodeTypeName( ManglerState& mangler_state, const Type& type )
 			U_ASSERT( function->references_pollution.size() < 36u );
 			mangler_state.Push( Base36Digit(function->references_pollution.size()) );
 
-			for( const Function::ReferencePollution& pollution : function->references_pollution )
+			for( const FunctionType::ReferencePollution& pollution : function->references_pollution )
 			{
 				U_ASSERT( pollution.dst.first  < 36u );
 				U_ASSERT( pollution.dst.second < 36u || pollution.dst.second == Function::c_arg_reference_tag_number );
@@ -422,12 +422,12 @@ void EncodeTypeName( ManglerState& mangler_state, const Type& type )
 
 				mangler_state.Push( Base36Digit(pollution.dst.first) );
 				mangler_state.Push(
-					pollution.dst.second == Function::c_arg_reference_tag_number
+					pollution.dst.second == FunctionType::c_arg_reference_tag_number
 					? '_'
 					: Base36Digit(pollution.dst.second) );
 				mangler_state.Push( Base36Digit(pollution.src.first) );
 				mangler_state.Push(
-					pollution.src.second == Function::c_arg_reference_tag_number
+					pollution.src.second == FunctionType::c_arg_reference_tag_number
 					? '_'
 					: Base36Digit(pollution.src.second) );
 			}
@@ -506,7 +506,7 @@ const std::string& DecodeOperator( const std::string& func_name )
 std::string Mangler::MangleFunction(
 	const NamesScope& parent_scope,
 	const std::string& function_name,
-	const Function& function_type,
+	const FunctionType& function_type,
 	const TemplateArgs* const template_args )
 {
 	state_.Push( "_Z" );
@@ -560,7 +560,7 @@ std::string Mangler::MangleFunction(
 			state_.Push( name_prefixed );
 	}
 
-	EncodeFunctionParams( state_, function_type.args );
+	EncodeFunctionParams( state_, function_type.params );
 
 	return state_.TakeResult();
 }

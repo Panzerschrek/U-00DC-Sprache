@@ -55,7 +55,7 @@ llvm::Type* GetLLVMTypeImpl( const T& el )
 }
 
 template<typename T>
-llvm::Type* GetLLVMTypeImpl( const std::unique_ptr<T>& boxed )
+llvm::Type* GetLLVMTypeImpl( const std::shared_ptr<const T>& boxed )
 {
 	U_ASSERT(boxed != nullptr);
 	return GetLLVMTypeImpl( *boxed );
@@ -105,12 +105,12 @@ bool operator!=( const FundamentalType& l, const FundamentalType& r )
 // Tuple
 //
 
-bool operator==( const Tuple& l, const Tuple& r )
+bool operator==( const TupleType& l, const TupleType& r )
 {
 	return l.elements == r.elements;
 }
 
-bool operator!=( const Tuple& l, const Tuple& r )
+bool operator!=( const TupleType& l, const TupleType& r )
 {
 	return !( l == r );
 }
@@ -121,32 +121,27 @@ bool operator!=( const Tuple& l, const Tuple& r )
 
 static_assert( sizeof(Type) <= 40u, "Type is too heavy!" );
 
-Type::Type( const Type& other )
-{
-	*this= other;
-}
-
 Type::Type( FundamentalType fundamental_type )
 	: something_( std::move(fundamental_type) )
 {}
 
-Type::Type( Function function_type )
-	: something_( std::make_unique<Function>( std::move(function_type) ) )
+Type::Type( FunctionType function_type )
+	: something_( std::make_unique<FunctionType>( std::move(function_type) ) )
 {}
 
-Type::Type( FunctionPointer function_pointer_type )
-	: something_( std::make_unique<FunctionPointer>( std::move(function_pointer_type) ) )
+Type::Type( FunctionPointerType function_pointer_type )
+	: something_( std::make_unique<FunctionPointerType>( std::move(function_pointer_type) ) )
 {}
 
-Type::Type( Array array_type )
-	: something_( std::make_unique<Array>( std::move(array_type) ) )
+Type::Type( ArrayType array_type )
+	: something_( std::make_unique<ArrayType>( std::move(array_type) ) )
 {}
 
-Type::Type( RawPointer raw_pointer_type )
-	: something_( std::make_unique<RawPointer>( std::move(raw_pointer_type) ) )
+Type::Type( RawPointerType raw_pointer_type )
+	: something_( std::make_unique<RawPointerType>( std::move(raw_pointer_type) ) )
 {}
 
-Type::Type( Tuple tuple_type )
+Type::Type( TupleType tuple_type )
 	: something_( std::move(tuple_type) )
 {}
 
@@ -158,23 +153,12 @@ Type::Type( EnumPtr enum_type )
 	: something_( std::move(enum_type) )
 {}
 
-Type& Type::operator=( const Type& other )
-{
-	something_= std::visit( [&]( const auto& el ) { return CopyVariant(el); }, other.something_ );
-	return *this;
-}
-
-FundamentalType* Type::GetFundamentalType()
-{
-	return std::get_if<FundamentalType>( &something_ );
-}
-
 const FundamentalType* Type::GetFundamentalType() const
 {
 	return std::get_if<FundamentalType>( &something_ );
 }
 
-Function* Type::GetFunctionType()
+const FunctionType* Type::GetFunctionType() const
 {
 	const FunctionPtr* const function_type= std::get_if<FunctionPtr>( &something_ );
 	if( function_type == nullptr )
@@ -182,15 +166,7 @@ Function* Type::GetFunctionType()
 	return function_type->get();
 }
 
-const Function* Type::GetFunctionType() const
-{
-	const FunctionPtr* const function_type= std::get_if<FunctionPtr>( &something_ );
-	if( function_type == nullptr )
-		return nullptr;
-	return function_type->get();
-}
-
-FunctionPointer* Type::GetFunctionPointerType()
+const FunctionPointerType* Type::GetFunctionPointerType() const
 {
 	const FunctionPointerPtr* const function_pointer_type= std::get_if<FunctionPointerPtr>( &something_ );
 	if( function_pointer_type == nullptr )
@@ -198,15 +174,7 @@ FunctionPointer* Type::GetFunctionPointerType()
 	return function_pointer_type->get();
 }
 
-const FunctionPointer* Type::GetFunctionPointerType() const
-{
-	const FunctionPointerPtr* const function_pointer_type= std::get_if<FunctionPointerPtr>( &something_ );
-	if( function_pointer_type == nullptr )
-		return nullptr;
-	return function_pointer_type->get();
-}
-
-Array* Type::GetArrayType()
+const ArrayType* Type::GetArrayType() const
 {
 	const ArrayPtr* const array_type= std::get_if<ArrayPtr>( &something_ );
 	if( array_type == nullptr )
@@ -214,15 +182,7 @@ Array* Type::GetArrayType()
 	return array_type->get();
 }
 
-const Array* Type::GetArrayType() const
-{
-	const ArrayPtr* const array_type= std::get_if<ArrayPtr>( &something_ );
-	if( array_type == nullptr )
-		return nullptr;
-	return array_type->get();
-}
-
-RawPointer* Type::GetRawPointerType()
+const RawPointerType* Type::GetRawPointerType() const
 {
 	const RawPointerPtr* const raw_pointer_type= std::get_if<RawPointerPtr>( &something_ );
 	if( raw_pointer_type == nullptr )
@@ -230,22 +190,9 @@ RawPointer* Type::GetRawPointerType()
 	return raw_pointer_type->get();
 }
 
-const RawPointer* Type::GetRawPointerType() const
+const TupleType* Type::GetTupleType() const
 {
-	const RawPointerPtr* const raw_pointer_type= std::get_if<RawPointerPtr>( &something_ );
-	if( raw_pointer_type == nullptr )
-		return nullptr;
-	return raw_pointer_type->get();
-}
-
-Tuple* Type::GetTupleType()
-{
-	return std::get_if<Tuple>( &something_ );
-}
-
-const Tuple* Type::GetTupleType() const
-{
-	return std::get_if<Tuple>( &something_ );
+	return std::get_if<TupleType>( &something_ );
 }
 
 ClassProxyPtr Type::GetClassTypeProxy() const
@@ -314,7 +261,7 @@ bool Type::IsDefaultConstructible() const
 		U_ASSERT( *array != nullptr );
 		return (*array)->size == 0u || (*array)->type.IsDefaultConstructible();
 	}
-	else if( const Tuple* const tuple= std::get_if<Tuple>( &something_ ) )
+	else if( const TupleType* const tuple= std::get_if<TupleType>( &something_ ) )
 	{
 		bool default_constructible= true;
 		for( const Type& element : tuple->elements )
@@ -342,7 +289,7 @@ bool Type::IsCopyConstructible() const
 		U_ASSERT( *array != nullptr );
 		return (*array)->size == 0u || (*array)->type.IsCopyConstructible();
 	}
-	else if( const Tuple* const tuple= std::get_if<Tuple>( &something_ ) )
+	else if( const TupleType* const tuple= std::get_if<TupleType>( &something_ ) )
 	{
 		bool copy_constructible= true;
 		for( const Type& element : tuple->elements )
@@ -370,7 +317,7 @@ bool Type::IsCopyAssignable() const
 		U_ASSERT( *array != nullptr );
 		return (*array)->size == 0u || (*array)->type.IsCopyAssignable();
 	}
-	else if( const Tuple* const tuple= std::get_if<Tuple>( &something_ ) )
+	else if( const TupleType* const tuple= std::get_if<TupleType>( &something_ ) )
 	{
 		bool copy_assignable= true;
 		for( const Type& element : tuple->elements )
@@ -393,7 +340,7 @@ bool Type::HaveDestructor() const
 		U_ASSERT( *array != nullptr );
 		return (*array)->type.HaveDestructor();
 	}
-	else if( const Tuple* const tuple= std::get_if<Tuple>( &something_ ) )
+	else if( const TupleType* const tuple= std::get_if<TupleType>( &something_ ) )
 	{
 		bool have_destructor= false;
 		for( const Type& element : tuple->elements )
@@ -422,7 +369,7 @@ bool Type::CanBeConstexpr() const
 	}
 	else if( const Class* const class_= GetClassType() )
 		return class_->can_be_constexpr;
-	else if( const Tuple* const tuple= std::get_if<Tuple>( &something_ ) )
+	else if( const TupleType* const tuple= std::get_if<TupleType>( &something_ ) )
 	{
 		bool can_be_constexpr= true;
 		for( const Type& element : tuple->elements )
@@ -448,7 +395,7 @@ bool Type::IsAbstract() const
 	}
 	else if( const Class* const class_= GetClassType() )
 		return class_->kind == Class::Kind::Abstract || class_->kind == Class::Kind::Interface;
-	else if( const Tuple* const tuple= std::get_if<Tuple>( &something_ ) )
+	else if( const TupleType* const tuple= std::get_if<TupleType>( &something_ ) )
 	{
 		bool is_abstract= false;
 		for( const Type& element : tuple->elements )
@@ -477,7 +424,7 @@ InnerReferenceType Type::GetInnerReferenceType() const
 		U_ASSERT( *array != nullptr );
 		result= (*array)->type.GetInnerReferenceType();
 	}
-	else if( const Tuple* const tuple= std::get_if<Tuple>( &something_ ) )
+	else if( const TupleType* const tuple= std::get_if<TupleType>( &something_ ) )
 	{
 		for( const Type& element : tuple->elements )
 			result= std::max( result, element.GetInnerReferenceType() );
@@ -517,7 +464,7 @@ std::string Type::ToString() const
 			return "$( " + raw_pointer->type.ToString() + " )";
 		}
 
-		std::string operator()( const Tuple& tuple ) const
+		std::string operator()( const TupleType& tuple ) const
 		{
 			std::string res= "tup[ ";
 
@@ -583,24 +530,24 @@ std::string Type::ToString() const
 		}
 
 	private:
-		std::string ProcessFunctionType( const Function& function ) const
+		std::string ProcessFunctionType( const FunctionType& function ) const
 		{
 			// TODO - actualize this
 			std::string result;
 			result+= "fn ";
 			result+= function.return_type.ToString();
 			result+= " ( ";
-			for( const Function::Arg& arg : function.args )
+			for( const FunctionType::Param& param : function.params )
 			{
-				if( arg.is_reference )
+				if( param.is_reference )
 					result+= "&";
-				if( arg.is_mutable )
+				if( param.is_mutable )
 					result+= "mut ";
 				else
 					result+= "imut ";
 
-				result+= arg.type.ToString();
-				if( &arg != &function.args.back() )
+				result+= param.type.ToString();
+				if( &param != &function.params.back() )
 					result+= ", ";
 			}
 			result+= " )";
@@ -637,7 +584,7 @@ size_t Type::Hash() const
 			return raw_pointer->type.Hash();
 		}
 
-		size_t operator()( const Tuple& tuple ) const
+		size_t operator()( const TupleType& tuple ) const
 		{
 			size_t hash= 0;
 			for( const Type& element : tuple.elements )
@@ -661,11 +608,11 @@ size_t Type::Hash() const
 		}
 
 	private:
-		size_t ProcessFunctionType( const Function& function ) const
+		size_t ProcessFunctionType( const FunctionType& function ) const
 		{
 			size_t hash= 0;
-			for( const Function::Arg& arg : function.args )
-				hash= llvm::hash_combine( hash, arg.type.Hash(), arg.is_reference, arg.is_mutable );
+			for( const FunctionType::Param& param : function.params )
+				hash= llvm::hash_combine( hash, param.type.Hash(), param.is_reference, param.is_mutable );
 
 			hash=
 				llvm::hash_combine(
@@ -675,10 +622,10 @@ size_t Type::Hash() const
 					function.return_value_is_mutable,
 					function.unsafe );
 
-			for( const Function::ArgReference& arg_reference : function.return_references )
-				hash= llvm::hash_combine( hash, arg_reference );
+			for( const FunctionType::ParamReference& param_reference : function.return_references )
+				hash= llvm::hash_combine( hash, param_reference );
 
-			for( const Function::ReferencePollution& reference_pollution : function.references_pollution )
+			for( const FunctionType::ReferencePollution& reference_pollution : function.references_pollution )
 				hash= llvm::hash_combine( hash, reference_pollution.dst, reference_pollution.src );
 
 			return hash;
@@ -739,22 +686,22 @@ bool operator!=( const Type& l, const Type& r )
 // Array
 //
 
-bool operator==( const Array& l, const Array& r )
+bool operator==( const ArrayType& l, const ArrayType& r )
 {
 	return l.type == r.type && l.size == r.size;
 }
 
-bool operator!=( const Array& l, const Array& r )
+bool operator!=( const ArrayType& l, const ArrayType& r )
 {
 	return !( l == r );
 }
 
-bool operator==( const RawPointer& l, const RawPointer& r )
+bool operator==( const RawPointerType& l, const RawPointerType& r )
 {
 	return l.type == r.type;
 }
 
-bool operator!=( const RawPointer& l, const RawPointer& r )
+bool operator!=( const RawPointerType& l, const RawPointerType& r )
 {
 	return !( l == r );
 }
@@ -763,10 +710,10 @@ bool operator!=( const RawPointer& l, const RawPointer& r )
 // Function
 //
 
-bool Function::PointerCanBeConvertedTo( const Function& other ) const
+bool FunctionType::PointerCanBeConvertedTo( const FunctionType& other ) const
 {
-	const Function&  src_function_type= *this;
-	const Function& dst_function_type= other;
+	const FunctionType&  src_function_type= *this;
+	const FunctionType& dst_function_type= other;
 	if( src_function_type.return_type != dst_function_type.return_type ||
 		src_function_type.return_value_is_reference != dst_function_type.return_value_is_reference )
 		return false;
@@ -774,23 +721,23 @@ bool Function::PointerCanBeConvertedTo( const Function& other ) const
 	if( !src_function_type.return_value_is_mutable && dst_function_type.return_value_is_mutable )
 		return false; // Allow mutability conversions, except mut->imut
 
-	if( src_function_type.args.size() != dst_function_type.args.size() )
+	if( src_function_type.params.size() != dst_function_type.params.size() )
 		return false;
-	for( size_t i= 0u; i < src_function_type.args.size(); ++i )
+	for( size_t i= 0u; i < src_function_type.params.size(); ++i )
 	{
-		if( src_function_type.args[i].type != dst_function_type.args[i].type ||
-			src_function_type.args[i].is_reference != dst_function_type.args[i].is_reference )
+		if( src_function_type.params[i].type != dst_function_type.params[i].type ||
+			src_function_type.params[i].is_reference != dst_function_type.params[i].is_reference )
 			return false;
 
-		if( src_function_type.args[i].is_mutable && !dst_function_type.args[i].is_mutable )
+		if( src_function_type.params[i].is_mutable && !dst_function_type.params[i].is_mutable )
 			return false; // Allow mutability conversions, except mut->imut
 	}
 
 	// We can convert function, returning less references to function, returning more referenes.
-	for( const Function::ArgReference& src_inner_arg_reference : src_function_type.return_references )
+	for( const FunctionType::ParamReference& src_inner_arg_reference : src_function_type.return_references )
 	{
 		bool found= false;
-		for( const Function::ArgReference& dst_inner_arg_reference : dst_function_type.return_references )
+		for( const FunctionType::ParamReference& dst_inner_arg_reference : dst_function_type.return_references )
 		{
 			if( dst_inner_arg_reference == src_inner_arg_reference )
 			{
@@ -803,7 +750,7 @@ bool Function::PointerCanBeConvertedTo( const Function& other ) const
 	}
 
 	// We can convert function, linkink less references to function, linking more references
-	for( const Function::ReferencePollution& src_pollution : src_function_type.references_pollution )
+	for( const FunctionType::ReferencePollution& src_pollution : src_function_type.references_pollution )
 	{
 		 // TODO - maybe compare with mutability conversion possibility?
 		if( dst_function_type.references_pollution.count(src_pollution) == 0u )
@@ -817,29 +764,29 @@ bool Function::PointerCanBeConvertedTo( const Function& other ) const
 	return true;
 }
 
-bool Function::IsStructRet() const
+bool FunctionType::IsStructRet() const
 {
 	return
 		!return_value_is_reference &&
 		( return_type.GetClassType() != nullptr || return_type.GetArrayType() != nullptr || return_type.GetTupleType() != nullptr );
 }
 
-bool operator==( const Function::Arg& l, const Function::Arg& r )
+bool operator==( const FunctionType::Param& l, const FunctionType::Param& r )
 {
 	return l.type == r.type && l.is_mutable == r.is_mutable && l.is_reference == r.is_reference;
 }
 
-bool operator!=( const Function::Arg& l, const Function::Arg& r )
+bool operator!=( const FunctionType::Param& l, const FunctionType::Param& r )
 {
 	return !( l == r );
 }
 
-bool Function::ReferencePollution::operator==( const ReferencePollution& other ) const
+bool FunctionType::ReferencePollution::operator==( const ReferencePollution& other ) const
 {
 	return this->dst == other.dst && this->src == other.src;
 }
 
-bool Function::ReferencePollution::operator<( const ReferencePollution& other ) const
+bool FunctionType::ReferencePollution::operator<( const ReferencePollution& other ) const
 {
 	// Order is significant, because references pollution is part of stable function type.
 	if( this->dst != other.dst )
@@ -847,34 +794,34 @@ bool Function::ReferencePollution::operator<( const ReferencePollution& other ) 
 	return this->src < other.src;
 }
 
-bool operator==( const Function& l, const Function& r )
+bool operator==( const FunctionType& l, const FunctionType& r )
 {
 	return
 		l.return_type == r.return_type &&
 		l.return_value_is_mutable == r.return_value_is_mutable &&
 		l.return_value_is_reference == r.return_value_is_reference &&
-		l.args == r.args &&
+		l.params == r.params &&
 		l.return_references == r.return_references &&
 		l.references_pollution == r.references_pollution &&
 		l.unsafe == r.unsafe;
 }
 
-bool operator!=( const Function& l, const Function& r )
+bool operator!=( const FunctionType& l, const FunctionType& r )
 {
 	return !( l == r );
 }
 
-constexpr size_t Function::c_arg_reference_tag_number;
+constexpr size_t FunctionType::c_arg_reference_tag_number;
 
 //
 // FunctionPointer
 //
 
-bool operator==( const FunctionPointer& l, const FunctionPointer& r )
+bool operator==( const FunctionPointerType& l, const FunctionPointerType& r )
 {
 	return l.function == r.function;
 }
-bool operator!=( const FunctionPointer& l, const FunctionPointer& r )
+bool operator!=( const FunctionPointerType& l, const FunctionPointerType& r )
 {
 	return !( r == l );
 }

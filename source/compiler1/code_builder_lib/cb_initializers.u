@@ -646,7 +646,7 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 		CallFunctionsSet(
 			names_scope,
 			function_context,
-			ust::optional_ref</ Variable, false />( this_ ),
+			ust::optional_ref_imut</ Variable />( this_ ),
 			constructors_ptr.lock_imut().get_ref().functions_set,
 			ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
 			src_loc );
@@ -937,7 +937,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 		CallFunctionsSet(
 			names_scope,
 			function_context,
-			ust::optional_ref</ Variable, false />( this_ ),
+			ust::optional_ref_imut</ Variable />( this_ ),
 			constructors_ptr.lock_imut().get_ref().functions_set,
 			args.range(),
 			src_loc );
@@ -982,7 +982,7 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 		return initializer_variable.constexpr_value;
 	}
 
-	var ust::optional_ref</FunctionsSet, false/> mut functions_set_opt;
+	var ust::optional_ref_imut</FunctionsSet/> mut functions_set_opt;
 	if_var( &functions_set : initializer_value.get</FunctionsSet/>() )
 	{
 		functions_set_opt.reset( functions_set );
@@ -1110,7 +1110,7 @@ fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, 
 {
 	auto initializer_src_loc= Synt::GetSrcLoc( initializer );
 
-	var ust::optional_ref</Synt::Expression, false/> mut initializer_expression;
+	var ust::optional_ref_imut</Synt::Expression/> mut initializer_expression;
 	if_var( &expression_initializer : initializer.get</Synt::Expression/>() )
 	{
 		initializer_expression.reset(expression_initializer);

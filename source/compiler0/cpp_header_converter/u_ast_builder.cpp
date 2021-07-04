@@ -394,11 +394,11 @@ Synt::FunctionPtr CppAstConsumer::ProcessFunction( const clang::FunctionDecl& fu
 	func->no_mangle_= externc;
 	func->type_.unsafe_= true; // All C/C++ functions is unsafe.
 
-	func->type_.arguments_.reserve( func_decl.param_size() );
+	func->type_.params_.reserve( func_decl.param_size() );
 	size_t i= 0u;
 	for( const clang::ParmVarDecl* const param : func_decl.parameters() )
 	{
-		Synt::FunctionArgument arg( g_dummy_src_loc );
+		Synt::FunctionParam arg( g_dummy_src_loc );
 		arg.name_= TranslateIdentifier( param->getName() );
 		if( arg.name_.empty() )
 			arg.name_= "arg" + std::to_string(i);
@@ -419,7 +419,7 @@ Synt::FunctionPtr CppAstConsumer::ProcessFunction( const clang::FunctionDecl& fu
 		}
 
 		arg.type_= TranslateType( *arg_type );
-		func->type_.arguments_.push_back(std::move(arg));
+		func->type_.params_.push_back(std::move(arg));
 		++i;
 	}
 
@@ -690,11 +690,11 @@ Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::Functi
 
 	function_type->unsafe_= true; // All C/C++ functions is unsafe.
 
-	function_type->arguments_.reserve( in_type.getNumParams() );
+	function_type->params_.reserve( in_type.getNumParams() );
 	size_t i= 0u;
 	for( const clang::QualType& param_qual : in_type.getParamTypes() )
 	{
-		Synt::FunctionArgument arg( g_dummy_src_loc );
+		Synt::FunctionParam arg( g_dummy_src_loc );
 		arg.name_= "arg" + std::to_string(i);
 
 		const clang::Type* arg_type= param_qual.getTypePtr();
@@ -711,7 +711,7 @@ Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::Functi
 		}
 
 		arg.type_= TranslateType( *arg_type );
-		function_type->arguments_.push_back(std::move(arg));
+		function_type->params_.push_back(std::move(arg));
 		++i;
 	}
 

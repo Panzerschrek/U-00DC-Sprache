@@ -574,7 +574,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			sequence_expression.value_type == ValueType::Reference ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
 			sequence_expression.node->name + " sequence lock" );
 
-	if( const Tuple* const tuple_type= sequence_expression.type.GetTupleType() )
+	if( const TupleType* const tuple_type= sequence_expression.type.GetTupleType() )
 	{
 		llvm::BasicBlock* const finish_basic_block= tuple_type->elements.empty() ? nullptr : llvm::BasicBlock::Create( llvm_context_ );
 
@@ -1635,7 +1635,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	if( variable->node != nullptr && function_context.variables_state.HaveOutgoingLinks( variable->node ) )
 		REPORT_ERROR( ReferenceProtectionError, block_names.GetErrors(), src_loc, variable->node->name );
 
-	ArgsVector<Function::Arg> args;
+	ArgsVector<FunctionType::Param> args;
 	args.emplace_back();
 	args.back().type= variable->type;
 	args.back().is_mutable= variable->value_type == ValueType::Reference;

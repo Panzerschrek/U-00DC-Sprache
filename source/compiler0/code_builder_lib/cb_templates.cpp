@@ -173,7 +173,7 @@ void CodeBuilder::PrepareFunctionTemplate(
 		function_template->template_params,
 		template_parameters_usage_flags );
 
-	for( const Synt::FunctionArgument& function_param : function_template_declaration.function_->type_.arguments_ )
+	for( const Synt::FunctionParam& function_param : function_template_declaration.function_->type_.params_ )
 	{
 		if( base_class != nullptr && function_param.name_ == Keyword( Keywords::this_ ) )
 			function_template->signature_params.push_back( TemplateSignatureParam::TypeParam{ Type(base_class) } );
@@ -404,7 +404,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 
 	all_types_are_known&= function_param.return_type->IsType();
 
-	for( const Synt::FunctionArgument& arg : function_pointer_type_name.arguments_ )
+	for( const Synt::FunctionParam& arg : function_pointer_type_name.params_ )
 	{
 		auto t= CreateTemplateSignatureParameter( arg.type_, names_scope, function_context, template_parameters, template_parameters_usage_flags );
 		all_types_are_known&= t.IsType();
@@ -711,23 +711,23 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	{
 		if( const auto given_function_pointer_type= given_type->GetFunctionPointerType() )
 		{
-			const Function& given_function_type= given_function_pointer_type->function;
+			const FunctionType& given_function_type= given_function_pointer_type->function;
 
 			if( !(
 				given_function_type.unsafe == template_param.is_unsafe &&
 				given_function_type.return_value_is_mutable == template_param.return_value_is_mutable &&
 				given_function_type.return_value_is_reference == template_param.return_value_is_reference &&
 				MatchTemplateArg( template_, args_names_scope, given_function_type.return_type, src_loc, *template_param.return_type ) &&
-				given_function_type.args.size() == template_param.params.size()
+				given_function_type.params.size() == template_param.params.size()
 				) )
 				return false;
 
 			for( size_t i= 0; i < template_param.params.size(); ++i )
 			{
 				if( !(
-					given_function_type.args[i].is_mutable == template_param.params[i].is_mutable &&
-					given_function_type.args[i].is_reference == template_param.params[i].is_reference &&
-					MatchTemplateArg( template_, args_names_scope, given_function_type.args[i].type, src_loc, *template_param.params[i].type )
+					given_function_type.params[i].is_mutable == template_param.params[i].is_mutable &&
+					given_function_type.params[i].is_reference == template_param.params[i].is_reference &&
+					MatchTemplateArg( template_, args_names_scope, given_function_type.params[i].type, src_loc, *template_param.params[i].type )
 					) )
 					return false;
 			}
@@ -953,7 +953,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc,
 	const FunctionTemplatePtr& function_template_ptr,
-	const ArgsVector<Function::Arg>& actual_args,
+	const ArgsVector<FunctionType::Param>& actual_args,
 	const bool first_actual_arg_is_this )
 {
 	const auto res= PrepareTemplateFunction( errors_container, src_loc, function_template_ptr, actual_args, first_actual_arg_is_this );
@@ -966,17 +966,17 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc,
 	const FunctionTemplatePtr& function_template_ptr,
-	const ArgsVector<Function::Arg>& actual_args,
+	const ArgsVector<FunctionType::Param>& actual_args,
 	const bool first_actual_arg_is_this )
 {
 	const FunctionTemplate& function_template= *function_template_ptr;
 	const Synt::Function& function_declaration= *function_template.syntax_element->function_;
 
-	const Function::Arg* given_args= actual_args.data();
+	const FunctionType::Param* given_args= actual_args.data();
 	size_t given_arg_count= actual_args.size();
 
 	if( first_actual_arg_is_this &&
-		!function_declaration.type_.arguments_.empty() && function_declaration.type_.arguments_.front().name_ != Keywords::this_ )
+		!function_declaration.type_.params_.empty() && function_declaration.type_.params_.front().name_ != Keywords::this_ )
 	{
 		++given_args;
 		--given_arg_count;
@@ -984,7 +984,7 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 
 	TemplateFunctionPreparationResult result;
 
-	if( given_arg_count != function_declaration.type_.arguments_.size() )
+	if( given_arg_count != function_declaration.type_.params_.size() )
 		return result;
 
 	result.template_args_namespace= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, function_template.parent_namespace );
@@ -1000,9 +1000,9 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 		result.template_args_namespace->AddName( function_template.template_params[i].name, std::move(v) );
 	}
 
-	for( size_t i= 0u; i < function_declaration.type_.arguments_.size(); ++i )
+	for( size_t i= 0u; i < function_declaration.type_.params_.size(); ++i )
 	{
-		const Synt::FunctionArgument& function_param= function_declaration.type_.arguments_[i];
+		const Synt::FunctionParam& function_param= function_declaration.type_.params_[i];
 
 		const bool expected_arg_is_mutalbe_reference=
 			function_param.mutability_modifier_ == Synt::MutabilityModifier::Mutable &&
@@ -1136,7 +1136,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 			function_template.base_class,
 			*template_args_namespace,
 			func_name,
-			function_declaration.type_.arguments_,
+			function_declaration.type_.params_,
 			function_declaration.block_.get(),
 			function_declaration.constructor_initialization_list_.get() );
 

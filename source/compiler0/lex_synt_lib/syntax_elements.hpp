@@ -272,8 +272,8 @@ struct RawPointerType final : public SyntaxElementBase
 using FunctionReferencesPollution= std::pair< std::string, std::string >;
 using FunctionReferencesPollutionList= std::vector<FunctionReferencesPollution>;
 
-struct FunctionArgument;
-using FunctionArgumentsDeclaration= std::vector<FunctionArgument>;
+struct FunctionParam;
+using FunctionParams= std::vector<FunctionParam>;
 
 struct FunctionType final : public SyntaxElementBase
 {
@@ -282,7 +282,7 @@ struct FunctionType final : public SyntaxElementBase
 	std::unique_ptr<TypeName> return_type_;
 	std::string return_value_reference_tag_;
 	FunctionReferencesPollutionList referecnces_pollution_list_;
-	FunctionArgumentsDeclaration arguments_;
+	FunctionParams params_;
 	std::string return_value_inner_reference_tag_;
 
 	MutabilityModifier return_value_mutability_modifier_= MutabilityModifier::None;
@@ -290,9 +290,9 @@ struct FunctionType final : public SyntaxElementBase
 	bool unsafe_= false;
 };
 
-struct FunctionArgument final : public SyntaxElementBase
+struct FunctionParam final : public SyntaxElementBase
 {
-	FunctionArgument( const SrcLoc& src_loc );
+	FunctionParam( const SrcLoc& src_loc );
 
 	std::string name_;
 	TypeName type_;

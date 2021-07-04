@@ -48,7 +48,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	FunctionContext& function_context,
 	const Synt::SequenceInitializer& initializer )
 {
-	if( const Array* const array_type= variable.type.GetArrayType() )
+	if( const ArrayType* const array_type= variable.type.GetArrayType() )
 	{
 		if(  initializer.initializers.size() != array_type->size )
 		{
@@ -91,7 +91,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		if( is_constant )
 			return llvm::ConstantArray::get( array_type->llvm_type, members_constants );
 	}
-	else if( const Tuple* const tuple_type= variable.type.GetTupleType() )
+	else if( const TupleType* const tuple_type= variable.type.GetTupleType() )
 	{
 		if( initializer.initializers.size() != tuple_type->elements.size() )
 		{
@@ -416,7 +416,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			function_context.llvm_ir_builder.CreateStore( zero_value, variable.llvm_value );
 		return zero_value;
 	}
-	else if( const Array* const array_type= variable.type.GetArrayType() )
+	else if( const ArrayType* const array_type= variable.type.GetArrayType() )
 	{
 		Variable array_member= variable;
 		array_member.type= array_type->type;
@@ -437,7 +437,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		else
 			return nullptr;
 	}
-	else if( const Tuple* const tuple_type= variable.type.GetTupleType() )
+	else if( const TupleType* const tuple_type= variable.type.GetTupleType() )
 	{
 		Variable tuple_member= variable;
 		tuple_member.location= Variable::Location::Pointer;
@@ -531,7 +531,7 @@ void CodeBuilder::ApplyEmptyInitializer(
 		// This type is not default-constructible, we should generate error about it before.
 		U_ASSERT( false );
 	}
-	else if( const Array* const array_type= variable.type.GetArrayType() )
+	else if( const ArrayType* const array_type= variable.type.GetArrayType() )
 	{
 		Variable array_member= variable;
 		array_member.type= array_type->type;
@@ -548,7 +548,7 @@ void CodeBuilder::ApplyEmptyInitializer(
 			},
 			function_context);
 	}
-	else if( const Tuple* const tuple_type= variable.type.GetTupleType() )
+	else if( const TupleType* const tuple_type= variable.type.GetTupleType() )
 	{
 		Variable tuple_member= variable;
 		tuple_member.location= Variable::Location::Pointer;
@@ -940,13 +940,13 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	U_ASSERT( variable.type.GetFunctionPointerType() != nullptr );
 
 	const SrcLoc initializer_expression_src_loc= Synt::GetExpressionSrcLoc( initializer_expression );
-	const FunctionPointer& function_pointer_type= *variable.type.GetFunctionPointerType();
+	const FunctionPointerType& function_pointer_type= *variable.type.GetFunctionPointerType();
 
 	const Value initializer_value= BuildExpressionCode( initializer_expression, block_names, function_context );
 
 	if( const Variable* const initializer_variable= initializer_value.GetVariable() )
 	{
-		const FunctionPointer* const intitializer_type= initializer_variable->type.GetFunctionPointerType();
+		const FunctionPointerType* const intitializer_type= initializer_variable->type.GetFunctionPointerType();
 		if( intitializer_type == nullptr ||
 			!intitializer_type->function.PointerCanBeConvertedTo( function_pointer_type.function ) )
 		{

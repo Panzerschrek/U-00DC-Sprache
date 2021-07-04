@@ -411,15 +411,15 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc )
 {
-	const Function& function_type= *function.type.GetFunctionType();
+	const FunctionType& function_type= *function.type.GetFunctionType();
 
-	if( !ReferenceIsConvertible( this_.type, function_type.args.front().type, errors_container, src_loc ) )
+	if( !ReferenceIsConvertible( this_.type, function_type.params.front().type, errors_container, src_loc ) )
 		return std::make_pair( this_, function.llvm_function );
 
 	Variable this_casted= this_;
-	if( this_.type != function_type.args.front().type )
+	if( this_.type != function_type.params.front().type )
 	{
-		this_casted.type= function_type.args.front().type;
+		this_casted.type= function_type.params.front().type;
 		this_casted.llvm_value= CreateReferenceCast( this_.llvm_value, this_.type, this_casted.type, function_context );
 	}
 	if( function.virtual_table_index == ~0u )

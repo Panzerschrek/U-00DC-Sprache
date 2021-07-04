@@ -195,7 +195,7 @@ struct ClassType
 		bool is_pure;
 		bool is_final;
 
-		// Virtual table may consist of many nested structs, because virtual table of child contains wirtual tables of parents.
+		// Virtual table may consist of many nested structs, because virtual table of child contains virtual tables of parents.
 		u32 index_in_table;
 		u32 parent_virtual_table_index;
 	}
@@ -221,8 +221,8 @@ class Type
 {
 public:
 	fn constructor() = default;
-	fn constructor( mut this, Type &imut other );
-	op=( mut this, Type &imut other );
+	fn constructor( mut this, Type &imut other )= default;
+	op=( mut this, Type &imut other )= default;
 
 	fn conversion_constructor( FundamentalType mut fundamental_type );
 	fn conversion_constructor( ArrayType mut array_type );
@@ -233,29 +233,14 @@ public:
 	fn conversion_constructor( ClassTypePtr mut class_type );
 	fn conversion_constructor( EnumTypePtr mut enum_type );
 
-	fn GetFundamentalType(  mut this ) : ust::optional_ref</FundamentalType, true  />'this';
-	fn GetFundamentalType( imut this ) : ust::optional_ref</FundamentalType, false />'this';
-
-	fn GetArrayType(  mut this ) : ust::optional_ref</ArrayType, true  />'this';
-	fn GetArrayType( imut this ) : ust::optional_ref</ArrayType, false />'this';
-
-	fn GetTupleType(  mut this ) : ust::optional_ref</TupleType, true  />'this';
-	fn GetTupleType( imut this ) : ust::optional_ref</TupleType, false />'this';
-
-	fn GetRawPointerType(  mut this ) : ust::optional_ref</RawPointerType, true  />'this';
-	fn GetRawPointerType( imut this ) : ust::optional_ref</RawPointerType, false />'this';
-
-	fn GetFunctionType(  mut this ) : ust::optional_ref</FunctionType, true  />'this';
-	fn GetFunctionType( imut this ) : ust::optional_ref</FunctionType, false />'this';
-
-	fn GetFunctionPointerType(  mut this ) : ust::optional_ref</FunctionPointerType, true  />'this';
-	fn GetFunctionPointerType( imut this ) : ust::optional_ref</FunctionPointerType, false />'this';
-
-	fn GetClassType(  mut this ) : ust::optional_ref</ClassTypePtr, true  />'this';
-	fn GetClassType( imut this ) : ust::optional_ref</ClassTypePtr, false />'this';
-
-	fn GetEnumType(  mut this ) : ust::optional_ref</EnumTypePtr, true  />'this';
-	fn GetEnumType( imut this ) : ust::optional_ref</EnumTypePtr, false />'this';
+	fn GetFundamentalType( imut this ) : ust::optional_ref_imut</FundamentalType />'this';
+	fn GetArrayType( imut this ) : ust::optional_ref_imut</ArrayType />'this';
+	fn GetTupleType( imut this ) : ust::optional_ref_imut</TupleType />'this';
+	fn GetRawPointerType( imut this ) : ust::optional_ref_imut</RawPointerType />'this';
+	fn GetFunctionType( imut this ) : ust::optional_ref_imut</FunctionType />'this';
+	fn GetFunctionPointerType( imut this ) : ust::optional_ref_imut</FunctionPointerType />'this';
+	fn GetClassType( imut this ) : ust::optional_ref_imut</ClassTypePtr />'this';
+	fn GetEnumType( imut this ) : ust::optional_ref_imut</EnumTypePtr />'this';
 
 	fn GetLLVMType( this ) : LLVMTypeRef;
 
@@ -278,11 +263,11 @@ public:
 private:
 	ust::variant</ tup[
 		FundamentalType,
-		ust::box</ArrayType/>,
-		ust::box</TupleType/>,
-		ust::box</RawPointerType/>,
-		ust::box</FunctionType/>,
-		ust::box</FunctionPointerType/>,
+		ust::shared_ptr_final</ArrayType/>,
+		ust::shared_ptr_final</TupleType/>,
+		ust::shared_ptr_final</RawPointerType/>,
+		ust::shared_ptr_final</FunctionType/>,
+		ust::shared_ptr_final</FunctionPointerType/>,
 		ClassTypePtr,
 		EnumTypePtr
 	] /> something_;
@@ -292,7 +277,7 @@ private:
 // Value
 //
 
-enum ValueType
+enum ValueType : u8
 {
 	Value,
 	ReferenceMut,
@@ -301,7 +286,7 @@ enum ValueType
 
 struct Variable
 {
-	enum Location
+	enum Location : u8
 	{
 		Pointer,
 		LLVMRegister,
@@ -598,14 +583,14 @@ public:
 	fn conversion_constructor( FunctionTypeParam mut function_type_param );
 	fn conversion_constructor( SpecializedTemplateParam mut specialized_template_param );
 
-	fn GetTemplateParam(this) : ust::optional_ref</ TemplateParam, false />'this';
-	fn GetTypeParam(this) : ust::optional_ref</ TypeParam, false />'this';
-	fn GetVariableParam(this) : ust::optional_ref</ VariableParam, false />'this';
-	fn GetArrayTypeParam(this) : ust::optional_ref</ ArrayTypeParam, false />'this';
-	fn GetTupleTypeParam(this) : ust::optional_ref</ TupleTypeParam, false />'this';
-	fn GetRawPointerTypeParam(this) : ust::optional_ref</ RawPointerTypeParam, false />'this';
-	fn GetFunctionTypeParam(this) : ust::optional_ref</ FunctionTypeParam, false />'this';
-	fn GetSpecializedTemplateParam(this) : ust::optional_ref</ SpecializedTemplateParam, false />'this';
+	fn GetTemplateParam(this) : ust::optional_ref_imut</ TemplateParam />'this';
+	fn GetTypeParam(this) : ust::optional_ref_imut</ TypeParam />'this';
+	fn GetVariableParam(this) : ust::optional_ref_imut</ VariableParam />'this';
+	fn GetArrayTypeParam(this) : ust::optional_ref_imut</ ArrayTypeParam />'this';
+	fn GetTupleTypeParam(this) : ust::optional_ref_imut</ TupleTypeParam />'this';
+	fn GetRawPointerTypeParam(this) : ust::optional_ref_imut</ RawPointerTypeParam />'this';
+	fn GetFunctionTypeParam(this) : ust::optional_ref_imut</ FunctionTypeParam />'this';
+	fn GetSpecializedTemplateParam(this) : ust::optional_ref_imut</ SpecializedTemplateParam />'this';
 
 private:
 	type Container= ust::variant</ tup[
@@ -715,9 +700,9 @@ class NamesScope
 public:
 	fn constructor( ust::string8 mut name, ust::shared_ptr_nullable_imut</NamesScope/>& parent );
 
-	fn GetThisScopeValue( this, ust::string8& name ) : ust::optional_ref</ NamesScopeValue, false />'this';
+	fn GetThisScopeValue( this, ust::string8& name ) : ust::optional_ref_imut</ NamesScopeValue />'this';
 
-	fn AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : ust::optional_ref</ NamesScopeValue, true />'this';
+	fn AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : ust::optional_ref_mut</ NamesScopeValue />'this';
 
 	fn GetParent( this ) : ust::shared_ptr_nullable_imut</NamesScope/>;
 

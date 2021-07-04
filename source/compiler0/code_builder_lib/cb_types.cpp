@@ -40,7 +40,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope&, FunctionContext&, const Synt::Em
 
 Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ArrayTypeName& array_type_name )
 {
-	Array array_type;
+	ArrayType array_type;
 	array_type.type= PrepareType( *array_type_name.element_type, names_scope, function_context );
 
 	const Synt::Expression& num= *array_type_name.size;
@@ -90,8 +90,8 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 {
 	const Synt::FunctionType& function_type_name= *function_type_name_ptr;
 
-	FunctionPointer function_pointer_type;
-	Function& function_type= function_pointer_type.function;
+	FunctionPointerType function_pointer_type;
+	FunctionType& function_type= function_pointer_type.function;
 
 	if( function_type_name.return_type_ == nullptr )
 		function_type.return_type= void_type_;
@@ -100,19 +100,19 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	function_type.return_value_is_mutable= function_type_name.return_value_mutability_modifier_ == MutabilityModifier::Mutable;
 	function_type.return_value_is_reference= function_type_name.return_value_reference_modifier_ == ReferenceModifier::Reference;
 
-	for( const Synt::FunctionArgument& arg : function_type_name.arguments_ )
+	for( const Synt::FunctionParam& arg : function_type_name.params_ )
 	{
 		if( IsKeyword( arg.name_ ) )
 			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), arg.src_loc_ );
 
-		function_type.args.emplace_back();
-		Function::Arg& out_arg= function_type.args.back();
-		out_arg.type= PrepareType( arg.type_, names_scope, function_context );
+		function_type.params.emplace_back();
+		FunctionType::Param& out_param= function_type.params.back();
+		out_param.type= PrepareType( arg.type_, names_scope, function_context );
 
-		out_arg.is_mutable= arg.mutability_modifier_ == MutabilityModifier::Mutable;
-		out_arg.is_reference= arg.reference_modifier_ == ReferenceModifier::Reference;
+		out_param.is_mutable= arg.mutability_modifier_ == MutabilityModifier::Mutable;
+		out_param.is_reference= arg.reference_modifier_ == ReferenceModifier::Reference;
 
-		ProcessFunctionArgReferencesTags( names_scope.GetErrors(), function_type_name, function_type, arg, out_arg, function_type.args.size() - 1u );
+		ProcessFunctionParamReferencesTags( names_scope.GetErrors(), function_type_name, function_type, arg, out_param, function_type.params.size() - 1u );
 	}
 
 	function_type.unsafe= function_type_name.unsafe_;
@@ -127,7 +127,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 
 Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TupleType& tuple_type_name )
 {
-	Tuple tuple;
+	TupleType tuple;
 	tuple.elements.reserve( tuple_type_name.element_types_.size() );
 
 	std::vector<llvm::Type*> elements_llvm_types;
@@ -150,7 +150,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 
 Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RawPointerType& raw_pointer_type_name )
 {
-	RawPointer raw_pointer;
+	RawPointerType raw_pointer;
 	raw_pointer.type= PrepareType( *raw_pointer_type_name.element_type, names_scope, function_context );
 	raw_pointer.llvm_type= raw_pointer.type.GetLLVMType()->getPointerTo();
 
@@ -168,7 +168,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	return invalid_type_;
 }
 
-llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const Function& function_type )
+llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& function_type )
 {
 	ArgsVector<llvm::Type*> args_llvm_types;
 
@@ -176,7 +176,7 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const Function& function_t
 	if( first_arg_is_sret )
 		args_llvm_types.push_back( function_type.return_type.GetLLVMType()->getPointerTo() );
 
-	for( const Function::Arg& arg : function_type.args )
+	for( const FunctionType::Param& arg : function_type.params )
 	{
 		llvm::Type* type= arg.type.GetLLVMType();
 		if( arg.is_reference )

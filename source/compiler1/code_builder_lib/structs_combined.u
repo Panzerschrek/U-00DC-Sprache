@@ -5,6 +5,13 @@ import "structs_combined.uh"
 namespace U1
 {
 
+// Sizes for 8-bit pointers.
+static_assert( typeinfo</Type/>.size_of <= 24s ); // 1 pointer for variant, 2 pointers for variant contents
+static_assert( typeinfo</Variable/>.size_of <= 48s ); // type, 2 pointers (llvm values), +8 bytes for value type/location/node_id.
+static_assert( typeinfo</FunctionsSet/>.size_of <= 72s ); // 3 vectors.
+static_assert( typeinfo</Value/>.size_of <= 72s + 48s + 8s ); // 1 pointer for variant + variable + functions set.
+static_assert( typeinfo</NamesScopeValue/>.size_of <= 24s ); // 1 pointer for variant and 2 pointers for contents.
+
 //
 // Type
 //
@@ -13,7 +20,7 @@ namespace ToStringHelper
 {
 
 template</type T/>
-fn ToString( ust::box</T/>& b ) : ust::string8
+fn ToString( ust::shared_ptr_final</T/>& b ) : ust::string8
 {
 	return ToStringHelper::ToString( b.get_ref() );
 }
@@ -378,79 +385,28 @@ op FunctionPointerType::!=( FunctionPointerType& l, FunctionPointerType& r ) : b
 	return !(l == r);
 }
 
-fn Type::constructor( mut this, Type &imut other )
-{
-	this= other;
-}
-
-op Type::=( mut this, Type &imut other )
-{
-	if_var( &fundamental_type : other.GetFundamentalType() )
-	{
-		this= Type( fundamental_type );
-		return;
-	}
-	if_var( &array_type : other.GetArrayType() )
-	{
-		this= Type( array_type );
-		return;
-	}
-	if_var( &tuple_type : other.GetTupleType() )
-	{
-		this= Type( tuple_type );
-		return;
-	}
-	if_var( &raw_pointer_type : other.GetRawPointerType() )
-	{
-		this= Type( raw_pointer_type );
-		return;
-	}
-	if_var( &function_type : other.GetFunctionType() )
-	{
-		this= Type( function_type );
-		return;
-	}
-	if_var( &function_pointer_type : other.GetFunctionPointerType() )
-	{
-		this= Type( function_pointer_type );
-		return;
-	}
-	if_var( &class_type_ptr : other.GetClassType() )
-	{
-		this= Type( class_type_ptr );
-		return;
-	}
-	if_var( &enum_type_ptr : other.GetEnumType() )
-	{
-		this= Type( enum_type_ptr );
-		return;
-	}
-
-	halt;
-}
-
 fn Type::conversion_constructor( FundamentalType mut fundamental_type )
 	( something_( move(fundamental_type) ) )
 {}
 
 fn Type::conversion_constructor( ArrayType mut array_type )
-	( something_( ust::make_box(move(array_type)) ) )
+	( something_( ust::make_shared_ptr_final(move(array_type)) ) )
 {}
 
 fn Type::conversion_constructor( TupleType mut tuple_type )
-	( something_( ust::make_box(move(tuple_type)) ) )
+	( something_( ust::make_shared_ptr_final(move(tuple_type)) ) )
 {}
 
 fn Type::conversion_constructor( RawPointerType mut raw_pointer_type )
-	( something_( ust::make_box(move(raw_pointer_type)) ) )
+	( something_( ust::make_shared_ptr_final(move(raw_pointer_type)) ) )
 {}
 
 fn Type::conversion_constructor( FunctionType mut function_type )
-	( something_( ust::make_box(move(function_type)) ) )
+	( something_( ust::make_shared_ptr_final(move(function_type)) ) )
 {}
 
 fn Type::conversion_constructor( FunctionPointerType mut function_pointer_type )
-	( something_( ust::make_box(move(function_pointer_type)) ) )
+	( something_( ust::make_shared_ptr_final(move(function_pointer_type)) ) )
 {}
 
 fn Type::conversion_constructor( ClassTypePtr mut class_type )
@@ -461,132 +417,67 @@ fn Type::conversion_constructor( EnumTypePtr mut enum_type )
 	( something_( move(enum_type) ) )
 {}
 
-fn Type::GetFundamentalType(  mut this ) : ust::optional_ref</FundamentalType, true  />'this'
+fn Type::GetFundamentalType( imut this ) : ust::optional_ref_imut</FundamentalType />'this'
 {
 	return something_.get</FundamentalType/>();
 }
 
-fn Type::GetFundamentalType( imut this ) : ust::optional_ref</FundamentalType, false />'this'
+fn Type::GetArrayType( imut this ) : ust::optional_ref_imut</ArrayType />'this'
 {
-	return something_.get</FundamentalType/>();
-}
-
-fn Type::GetArrayType(  mut this ) : ust::optional_ref</ArrayType, true  />'this'
-{
-	if_var( &mut b : something_.get</ust::box</ArrayType/>/>() )
+	if_var( &b : something_.get</ust::shared_ptr_final</ArrayType/>/>() )
 	{
-		return ust::optional_ref</ArrayType, true  />( b.get_ref() );
+		return ust::optional_ref_imut</ArrayType/>( b.get_ref() );
 	}
 
-	return ust::optional_ref</ArrayType, true  />();
+	return ust::optional_ref_imut</ArrayType />();
 }
 
-fn Type::GetArrayType( imut this ) : ust::optional_ref</ArrayType, false />'this'
+fn Type::GetTupleType( imut this ) : ust::optional_ref_imut</TupleType />'this'
 {
-	if_var( &b : something_.get</ust::box</ArrayType/>/>() )
+	if_var( &b : something_.get</ust::shared_ptr_final</TupleType/>/>() )
 	{
-		return ust::optional_ref</ArrayType, false />( b.get_ref() );
+		return ust::optional_ref_imut</TupleType/>( b.get_ref() );
 	}
 
-	return ust::optional_ref</ArrayType, false />();
+	return ust::optional_ref_imut</TupleType />();
 }
 
-fn Type::GetTupleType(  mut this ) : ust::optional_ref</TupleType, true  />'this'
+fn Type::GetRawPointerType( imut this ) : ust::optional_ref_imut</RawPointerType />'this'
 {
-	if_var( &mut b : something_.get</ust::box</TupleType/>/>() )
+	if_var( &b : something_.get</ust::shared_ptr_final</RawPointerType/>/>() )
 	{
-		return ust::optional_ref</TupleType, true  />( b.get_ref() );
+		return ust::optional_ref_imut</RawPointerType/>( b.get_ref() );
 	}
 
-	return ust::optional_ref</TupleType, true  />();
+	return ust::optional_ref_imut</RawPointerType />();
 }
 
-fn Type::GetTupleType( imut this ) : ust::optional_ref</TupleType, false />'this'
+fn Type::GetFunctionType( imut this ) : ust::optional_ref_imut</FunctionType />'this'
 {
-	if_var( &b : something_.get</ust::box</TupleType/>/>() )
+	if_var( &b : something_.get</ust::shared_ptr_final</FunctionType/>/>() )
 	{
-		return ust::optional_ref</TupleType, false />( b.get_ref() );
+		return ust::optional_ref_imut</FunctionType/>( b.get_ref() );
 	}
 
-	return ust::optional_ref</TupleType, false />();
+	return ust::optional_ref_imut</FunctionType />();
 }
 
-fn Type::GetRawPointerType(  mut this ) : ust::optional_ref</RawPointerType, true  />'this'
+fn Type::GetFunctionPointerType( imut this ) : ust::optional_ref_imut</FunctionPointerType />'this'
 {
-	if_var( &mut b : something_.get</ust::box</RawPointerType/>/>() )
+	if_var( &b : something_.get</ust::shared_ptr_final</FunctionPointerType/>/>() )
 	{
-		return ust::optional_ref</RawPointerType, true  />( b.get_ref() );
+		return ust::optional_ref_imut</FunctionPointerType/>( b.get_ref() );
 	}
 
-	return ust::optional_ref</RawPointerType, true  />();
+	return ust::optional_ref_imut</FunctionPointerType />();
 }
 
-fn Type::GetRawPointerType( imut this ) : ust::optional_ref</RawPointerType, false />'this'
-{
-	if_var( &b : something_.get</ust::box</RawPointerType/>/>() )
-	{
-		return ust::optional_ref</RawPointerType, false />( b.get_ref() );
-	}
-
-	return ust::optional_ref</RawPointerType, false />();
-}
-
-fn Type::GetFunctionType(  mut this ) : ust::optional_ref</FunctionType, true  />'this'
-{
-	if_var( &mut b : something_.get</ust::box</FunctionType/>/>() )
-	{
-		return ust::optional_ref</FunctionType, true  />( b.get_ref() );
-	}
-
-	return ust::optional_ref</FunctionType, true  />();
-}
-
-fn Type::GetFunctionType( imut this ) : ust::optional_ref</FunctionType, false />'this'
-{
-	if_var( &b : something_.get</ust::box</FunctionType/>/>() )
-	{
-		return ust::optional_ref</FunctionType, false />( b.get_ref() );
-	}
-
-	return ust::optional_ref</FunctionType, false  />();
-}
-
-fn Type::GetFunctionPointerType(  mut this ) : ust::optional_ref</FunctionPointerType, true  />'this'
-{
-	if_var( &mut b : something_.get</ust::box</FunctionPointerType/>/>() )
-	{
-		return ust::optional_ref</FunctionPointerType, true  />( b.get_ref() );
-	}
-
-	return ust::optional_ref</FunctionPointerType, true  />();
-}
-
-fn Type::GetFunctionPointerType( imut this ) : ust::optional_ref</FunctionPointerType, false />'this'
-{
-	if_var( &b : something_.get</ust::box</FunctionPointerType/>/>() )
-	{
-		return ust::optional_ref</FunctionPointerType, false />( b.get_ref() );
-	}
-
-	return ust::optional_ref</FunctionPointerType, false />();
-}
-
-fn Type::GetClassType(  mut this ) : ust::optional_ref</ClassTypePtr, true  />'this'
+fn Type::GetClassType( imut this ) : ust::optional_ref_imut</ClassTypePtr />'this'
 {
 	return something_.get</ClassTypePtr/>();
 }
 
-fn Type::GetClassType( imut this ) : ust::optional_ref</ClassTypePtr, false />'this'
-{
-	return something_.get</ClassTypePtr/>();
-}
-
-fn Type::GetEnumType(  mut this ) : ust::optional_ref</EnumTypePtr, true  />'this'
-{
-	return something_.get</EnumTypePtr/>();
-}
-
-fn Type::GetEnumType( imut this ) : ust::optional_ref</EnumTypePtr, false />'this'
+fn Type::GetEnumType( imut this ) : ust::optional_ref_imut</EnumTypePtr />'this'
 {
 	return something_.get</EnumTypePtr/>();
 }
@@ -846,11 +737,11 @@ op Type::==( Type& l, Type& r ) : bool
 	variant_visit( &l_t : l.something_ )
 	{
 		static_if(
-			ust::is_same_type</ typeof(l_t), ust::box</ArrayType/> />() ||
-			ust::is_same_type</ typeof(l_t), ust::box</TupleType/> />() ||
-			ust::is_same_type</ typeof(l_t), ust::box</RawPointerType/> />() ||
-			ust::is_same_type</ typeof(l_t), ust::box</FunctionType/> />() ||
-			ust::is_same_type</ typeof(l_t), ust::box</FunctionPointerType/> />() )
+			ust::is_same_type</ typeof(l_t), ust::shared_ptr_final</ArrayType/> />() ||
+			ust::is_same_type</ typeof(l_t), ust::shared_ptr_final</TupleType/> />() ||
+			ust::is_same_type</ typeof(l_t), ust::shared_ptr_final</RawPointerType/> />() ||
+			ust::is_same_type</ typeof(l_t), ust::shared_ptr_final</FunctionType/> />() ||
+			ust::is_same_type</ typeof(l_t), ust::shared_ptr_final</FunctionPointerType/> />() )
 		{
 			return l_t.get_ref() == r.something_.get</ typeof(l_t) />().get_ref().get_ref();
 		}
@@ -1085,70 +976,70 @@ fn TemplateSignatureParam::conversion_constructor( SpecializedTemplateParam mut 
 	( something_( ust::make_box( move(specialized_template_param) ) ) )
 {}
 
-fn TemplateSignatureParam::GetTemplateParam(this) : ust::optional_ref</ TemplateParam, false />'this'
+fn TemplateSignatureParam::GetTemplateParam(this) : ust::optional_ref_imut</ TemplateParam />'this'
 {
 	return something_.get</TemplateParam/>();
 }
 
-fn TemplateSignatureParam::GetTypeParam(this) : ust::optional_ref</ TypeParam, false />'this'
+fn TemplateSignatureParam::GetTypeParam(this) : ust::optional_ref_imut</ TypeParam />'this'
 {
 	return something_.get</TypeParam/>();
 }
 
-fn TemplateSignatureParam::GetVariableParam(this) : ust::optional_ref</ VariableParam, false />'this'
+fn TemplateSignatureParam::GetVariableParam(this) : ust::optional_ref_imut</ VariableParam />'this'
 {
 	return something_.get</VariableParam/>();
 }
 
-fn TemplateSignatureParam::GetArrayTypeParam(this) : ust::optional_ref</ ArrayTypeParam, false />'this'
+fn TemplateSignatureParam::GetArrayTypeParam(this) : ust::optional_ref_imut</ ArrayTypeParam />'this'
 {
 	if_var( &array_type_param : something_.get</ ust::box</ArrayTypeParam/> />() )
 	{
-		return ust::optional_ref</ ArrayTypeParam, false />(array_type_param.get_ref());
+		return ust::optional_ref_imut</ ArrayTypeParam />(array_type_param.get_ref());
 	}
 
-	return ust::optional_ref</ ArrayTypeParam, false />();
+	return ust::optional_ref_imut</ ArrayTypeParam />();
 }
 
-fn TemplateSignatureParam::GetTupleTypeParam(this) : ust::optional_ref</ TupleTypeParam, false />'this'
+fn TemplateSignatureParam::GetTupleTypeParam(this) : ust::optional_ref_imut</ TupleTypeParam />'this'
 {
 	if_var( &tuple_type_param : something_.get</ ust::box</TupleTypeParam/> />() )
 	{
-		return ust::optional_ref</ TupleTypeParam, false />(tuple_type_param.get_ref());
+		return ust::optional_ref_imut</ TupleTypeParam />(tuple_type_param.get_ref());
 	}
 
-	return ust::optional_ref</ TupleTypeParam, false />();
+	return ust::optional_ref_imut</ TupleTypeParam />();
 }
 
-fn TemplateSignatureParam::GetRawPointerTypeParam(this) : ust::optional_ref</ RawPointerTypeParam, false />'this'
+fn TemplateSignatureParam::GetRawPointerTypeParam(this) : ust::optional_ref_imut</ RawPointerTypeParam />'this'
 {
 	if_var( &raw_pointer_type_param : something_.get</ ust::box</RawPointerTypeParam/> />() )
 	{
-		return ust::optional_ref</ RawPointerTypeParam, false />(raw_pointer_type_param.get_ref());
+		return ust::optional_ref_imut</ RawPointerTypeParam />(raw_pointer_type_param.get_ref());
 	}
 
-	return ust::optional_ref</ RawPointerTypeParam, false />();
+	return ust::optional_ref_imut</ RawPointerTypeParam />();
 }
 
-fn TemplateSignatureParam::GetFunctionTypeParam(this) : ust::optional_ref</ FunctionTypeParam, false />'this'
+fn TemplateSignatureParam::GetFunctionTypeParam(this) : ust::optional_ref_imut</ FunctionTypeParam />'this'
 {
 	if_var( &function_type_param : something_.get</ ust::box</FunctionTypeParam/> />() )
 	{
-		return ust::optional_ref</ FunctionTypeParam, false />(function_type_param.get_ref());
+		return ust::optional_ref_imut</ FunctionTypeParam />(function_type_param.get_ref());
 	}
 
-	return ust::optional_ref</ FunctionTypeParam, false />();
+	return ust::optional_ref_imut</ FunctionTypeParam />();
 }
 
 
-fn TemplateSignatureParam::GetSpecializedTemplateParam(this) : ust::optional_ref</ SpecializedTemplateParam, false />'this'
+fn TemplateSignatureParam::GetSpecializedTemplateParam(this) : ust::optional_ref_imut</ SpecializedTemplateParam />'this'
 {
 	if_var( &specialized_template_param : something_.get</ ust::box</SpecializedTemplateParam/> />() )
 	{
-		return ust::optional_ref</ SpecializedTemplateParam, false />(specialized_template_param.get_ref());
+		return ust::optional_ref_imut</ SpecializedTemplateParam />(specialized_template_param.get_ref());
 	}
 
-	return ust::optional_ref</ SpecializedTemplateParam, false />();
+	return ust::optional_ref_imut</ SpecializedTemplateParam />();
 }
 
 op NamesScopeValue::==( NamesScopeValue&l, NamesScopeValue& r ) : bool
@@ -1185,7 +1076,7 @@ fn NamesScope::constructor(
 {
 }
 
-fn NamesScope::GetThisScopeValue( this, ust::string8& name ) : ust::optional_ref</ NamesScopeValue, false />'this'
+fn NamesScope::GetThisScopeValue( this, ust::string8& name ) : ust::optional_ref_imut</ NamesScopeValue />'this'
 {
 	return names_map_.find( name );
 }
@@ -1205,14 +1096,14 @@ fn NamesScope::IsInsideTemplate( this ) : bool
 	return false;
 }
 
-fn NamesScope::AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : ust::optional_ref</ NamesScopeValue, true />'this'
+fn NamesScope::AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : ust::optional_ref_mut</ NamesScopeValue />'this'
 {
 	if( !names_map_.find(name).empty() )
 	{
-		return ust::optional_ref</ NamesScopeValue, true />();
+		return ust::optional_ref_mut</ NamesScopeValue />();
 	}
 
-	return ust::optional_ref</ NamesScopeValue, true />( names_map_.insert(move(name), move(value) ) );
+	return ust::optional_ref_mut</ NamesScopeValue />( names_map_.insert(move(name), move(value) ) );
 }
 
 fn NamesScope::GetParent( this ) : ust::shared_ptr_nullable_imut</NamesScope/>

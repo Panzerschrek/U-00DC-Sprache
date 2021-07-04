@@ -122,7 +122,7 @@ private:
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RawPointerType& raw_pointer_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& named_type_name );
 
-	llvm::FunctionType* GetLLVMFunctionType( const Function& function_type );
+	llvm::FunctionType* GetLLVMFunctionType( const FunctionType& function_type );
 
 	// Virtual stuff
 	void PrepareClassVirtualTable( Class& the_class );
@@ -321,14 +321,14 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc,
 		const FunctionTemplatePtr& function_template_ptr,
-		const ArgsVector<Function::Arg>& actual_args,
+		const ArgsVector<FunctionType::Param>& actual_args,
 		bool first_actual_arg_is_this );
 
 	TemplateFunctionPreparationResult PrepareTemplateFunction(
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc,
 		const FunctionTemplatePtr& function_template_ptr,
-		const ArgsVector<Function::Arg>& actual_args,
+		const ArgsVector<FunctionType::Param>& actual_args,
 		bool first_actual_arg_is_this );
 
 	const FunctionVariable* FinishTemplateFunctionParametrization(
@@ -384,9 +384,9 @@ private:
 		const ClassProxyPtr& class_proxy,
 		FunctionContext& function_context );
 
-	bool IsDefaultConstructor( const Function& function_type, const Type& base_class );
-	bool IsCopyConstructor( const Function& function_type, const Type& base_class );
-	bool IsCopyAssignmentOperator( const Function& function_type, const Type& base_class );
+	bool IsDefaultConstructor( const FunctionType& function_type, const Type& base_class );
+	bool IsCopyConstructor( const FunctionType& function_type, const Type& base_class );
+	bool IsCopyAssignmentOperator( const FunctionType& function_type, const Type& base_class );
 
 	// Generates for loop from 0 to iteration_count - 1
 	// Calls callback with argument - size_type with index
@@ -428,7 +428,7 @@ private:
 
 	void CheckOverloadedOperator(
 		const ClassProxyPtr& base_class,
-		const Function& func_type,
+		const FunctionType& func_type,
 		OverloadedOperator overloaded_operator,
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc );
@@ -439,7 +439,7 @@ private:
 		const ClassProxyPtr& base_class,
 		NamesScope& parent_names_scope,
 		const std::string& func_name,
-		const Synt::FunctionArgumentsDeclaration& args,
+		const Synt::FunctionParams& params,
 		const Synt::Block* block, // null for prototypes.
 		const Synt::StructNamedInitializer* constructor_initialization_list );
 
@@ -566,7 +566,7 @@ private:
 
 	Value DoCallFunction(
 		llvm::Value* function,
-		const Function& function_type,
+		const FunctionType& function_type,
 		const SrcLoc& call_src_loc,
 		const Variable* this_, // optional
 		const llvm::ArrayRef<const Synt::Expression*>& args,
@@ -577,7 +577,7 @@ private:
 
 	Value DoCallFunction(
 		llvm::Value* function,
-		const Function& function_type,
+		const FunctionType& function_type,
 		const SrcLoc& call_src_loc,
 		const llvm::ArrayRef<Variable>& preevaluated_args,
 		const llvm::ArrayRef<const Synt::Expression*>& args,
@@ -603,8 +603,8 @@ private:
 
 	// Preevaluate expresion to know it's extened type.
 	// Call this only inside save/state restore calls.
-	Function::Arg PreEvaluateArg( const Synt::Expression& expression, NamesScope& names, FunctionContext& function_context );
-	Function::Arg GetArgExtendedType( const Variable& variable );
+	FunctionType::Param PreEvaluateArg( const Synt::Expression& expression, NamesScope& names, FunctionContext& function_context );
+	FunctionType::Param GetArgExtendedType( const Variable& variable );
 
 	// Typeinfo
 
@@ -623,8 +623,8 @@ private:
 	Variable BuildTypeinfoClassTypesList( const ClassProxyPtr& class_type, NamesScope& root_namespace );
 	Variable BuildTypeinfoClassFunctionsList( const ClassProxyPtr& class_type, NamesScope& root_namespace );
 	Variable BuildTypeinfoClassParentsList( const ClassProxyPtr& class_type, NamesScope& root_namespace );
-	Variable BuildTypeinfoFunctionArguments( const Function& function_type, NamesScope& root_namespace );
-	Variable BuildTypeinfoTupleElements( const Tuple& tuple_type, NamesScope& root_namespace );
+	Variable BuildTypeinfoFunctionArguments( const FunctionType& function_type, NamesScope& root_namespace );
+	Variable BuildTypeinfoTupleElements( const TupleType& tuple_type, NamesScope& root_namespace );
 
 	// Block elements
 	BlockBuildInfo BuildBlockElement( NamesScope& names, FunctionContext& function_context, const Synt::BlockElement& blocK_element );
@@ -677,7 +677,7 @@ private:
 	// Functions
 
 	FunctionVariable* GetFunctionWithSameType(
-		const Function& function_type,
+		const FunctionType& function_type,
 		OverloadedFunctionsSet& functions_set );
 
 	// Returns "false" on error.
@@ -689,7 +689,7 @@ private:
 
 	const FunctionVariable* GetOverloadedFunction(
 		const OverloadedFunctionsSet& functions_set,
-		const ArgsVector<Function::Arg>& actual_args,
+		const ArgsVector<FunctionType::Param>& actual_args,
 		bool first_actual_arg_is_this,
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc,
@@ -697,7 +697,7 @@ private:
 		bool enable_type_conversions= true);
 
 	const FunctionVariable* GetOverloadedOperator(
-		const ArgsVector<Function::Arg>& actual_args,
+		const ArgsVector<FunctionType::Param>& actual_args,
 		OverloadedOperator op,
 		NamesScope& names,
 		const SrcLoc& src_loc );
@@ -763,34 +763,34 @@ private:
 	void CheckClassFieldsInitializers( const ClassProxyPtr& class_type );
 
 	// Reference-checking.
-	void ProcessFunctionArgReferencesTags(
+	void ProcessFunctionParamReferencesTags(
 		CodeBuilderErrorsContainer& errors_container,
 		const Synt::FunctionType& func,
-		Function& function_type,
-		const Synt::FunctionArgument& in_arg,
-		const Function::Arg& out_arg,
+		FunctionType& function_type,
+		const Synt::FunctionParam& in_arg,
+		const FunctionType::Param& out_arg,
 		size_t arg_number );
 
 	void ProcessFunctionReturnValueReferenceTags(
 		CodeBuilderErrorsContainer& errors_container,
 		const Synt::FunctionType& func,
-		const Function& function_type );
+		const FunctionType& function_type );
 
 	void TryGenerateFunctionReturnReferencesMapping(
 		CodeBuilderErrorsContainer& errors_container,
 		const Synt::FunctionType& func,
-		Function& function_type );
+		FunctionType& function_type );
 
 	void ProcessFunctionReferencesPollution(
 		CodeBuilderErrorsContainer& errors_container,
 		const Synt::Function& func,
-		Function& function_type,
+		FunctionType& function_type,
 		const ClassProxyPtr& base_class );
 
 	void ProcessFunctionTypeReferencesPollution(
 		CodeBuilderErrorsContainer& errors_container,
 		const Synt::FunctionType& func,
-		Function& function_type );
+		FunctionType& function_type );
 
 	void SetupReferencesInCopyOrMove( FunctionContext& function_context, const Variable& dst_variable, const Variable& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
@@ -869,11 +869,11 @@ private:
 
 	llvm::DIType* CreateDIType( const Type& type );
 	llvm::DIType* CreateDIType( const FundamentalType& type );
-	llvm::DICompositeType* CreateDIType( const Array& type );
-	llvm::DICompositeType* CreateDIType( const Tuple& type );
-	llvm::DISubroutineType* CreateDIType( const Function& type );
-	llvm::DIDerivedType* CreateDIType( const RawPointer& type );
-	llvm::DIDerivedType* CreateDIType( const FunctionPointer& type );
+	llvm::DICompositeType* CreateDIType( const ArrayType& type );
+	llvm::DICompositeType* CreateDIType( const TupleType& type );
+	llvm::DISubroutineType* CreateDIType( const FunctionType& type );
+	llvm::DIDerivedType* CreateDIType( const RawPointerType& type );
+	llvm::DIDerivedType* CreateDIType( const FunctionPointerType& type );
 	llvm::DICompositeType* CreateDIType( const ClassProxyPtr& type );
 	llvm::DICompositeType* CreateDIType( const EnumPtr& type );
 

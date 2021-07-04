@@ -96,6 +96,10 @@ private:
 	$(T) ptr_= zero_init;
 }
 
-// TODO - add typedefs for mut/imut ref
+template</ type T />
+type optional_ref_mut = ust::optional_ref</T, true />;
+
+template</ type T />
+type optional_ref_imut= ust::optional_ref</T, false/>;
 
 } // namespace ust

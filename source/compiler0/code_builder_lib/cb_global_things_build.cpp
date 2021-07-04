@@ -274,15 +274,17 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 						functions_set.base_class,
 						names_scope,
 						functions_set_name,
-						function_variable.syntax_element->type_.arguments_,
+						function_variable.syntax_element->type_.params_,
 						function_variable.syntax_element->block_.get(),
 						function_variable.syntax_element->constructor_initialization_list_.get() );
 
-				function_variable.have_body= false;
-				function_variable.type.GetFunctionType()->return_type= return_type;
-				function_variable.return_type_is_auto= false;
+				FunctionType function_type= *function_variable.type.GetFunctionType();
+				function_type.return_type= return_type;
+				function_type.llvm_type= GetLLVMFunctionType( function_type );
+				function_variable.type= std::move(function_type);
 
-				function_variable.type.GetFunctionType()->llvm_type= nullptr;
+				function_variable.have_body= false;
+				function_variable.return_type_is_auto= false;
 				function_variable.llvm_function->eraseFromParent();
 				function_variable.llvm_function= nullptr;
 
@@ -292,7 +294,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 					functions_set.base_class,
 					names_scope,
 					functions_set_name,
-					function_variable.syntax_element->type_.arguments_,
+					function_variable.syntax_element->type_.params_,
 					function_variable.syntax_element->block_.get(),
 					function_variable.syntax_element->constructor_initialization_list_.get() );
 			}
@@ -321,7 +323,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 					functions_set.base_class,
 					names_scope,
 					function_variable.syntax_element->name_.back(),
-					function_variable.syntax_element->type_.arguments_,
+					function_variable.syntax_element->type_.params_,
 					function_variable.syntax_element->block_.get(),
 					function_variable.syntax_element->constructor_initialization_list_.get() );
 			}
@@ -340,7 +342,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 					functions_set.base_class,
 					names_scope,
 					function_variable.syntax_element->name_.back(),
-					function_variable.syntax_element->type_.arguments_,
+					function_variable.syntax_element->type_.params_,
 					function_variable.syntax_element->block_.get(),
 					function_variable.syntax_element->constructor_initialization_list_.get() );
 			}
@@ -620,10 +622,10 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 		U_ASSERT( constructors != nullptr );
 		for( const FunctionVariable& constructor : constructors->functions )
 		{
-			const Function& constructor_type= *constructor.type.GetFunctionType();
+			const FunctionType& constructor_type= *constructor.type.GetFunctionType();
 
-			U_ASSERT( constructor_type.args.size() >= 1u && constructor_type.args.front().type == class_type );
-			if( !( constructor_type.args.size() == 2u && constructor_type.args.back().type == class_type && !constructor_type.args.back().is_mutable ) )
+			U_ASSERT( constructor_type.params.size() >= 1u && constructor_type.params.front().type == class_type );
+			if( !( constructor_type.params.size() == 2u && constructor_type.params.back().type == class_type && !constructor_type.params.back().is_mutable ) )
 			{
 				the_class.have_explicit_noncopy_constructors= true;
 				break;
@@ -844,7 +846,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 						class_type,
 						the_class.members,
 						name,
-						function.syntax_element->type_.arguments_,
+						function.syntax_element->type_.params_,
 						function.syntax_element->block_.get(),
 						function.syntax_element->constructor_initialization_list_.get() );
 			}
