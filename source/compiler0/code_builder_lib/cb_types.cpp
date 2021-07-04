@@ -100,7 +100,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	function_type.return_value_is_mutable= function_type_name.return_value_mutability_modifier_ == MutabilityModifier::Mutable;
 	function_type.return_value_is_reference= function_type_name.return_value_reference_modifier_ == ReferenceModifier::Reference;
 
-	for( const Synt::FunctionArgument& arg : function_type_name.arguments_ )
+	for( const Synt::FunctionParam& arg : function_type_name.params_ )
 	{
 		if( IsKeyword( arg.name_ ) )
 			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), arg.src_loc_ );

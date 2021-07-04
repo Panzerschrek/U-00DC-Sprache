@@ -246,7 +246,7 @@ Enum::Enum( const SrcLoc& src_loc )
 	, underlaying_type_name(src_loc)
 {}
 
-FunctionArgument::FunctionArgument( const SrcLoc& src_loc )
+FunctionParam::FunctionParam( const SrcLoc& src_loc )
 	: SyntaxElementBase( src_loc )
 {}
 

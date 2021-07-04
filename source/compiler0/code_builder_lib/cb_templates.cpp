@@ -173,7 +173,7 @@ void CodeBuilder::PrepareFunctionTemplate(
 		function_template->template_params,
 		template_parameters_usage_flags );
 
-	for( const Synt::FunctionArgument& function_param : function_template_declaration.function_->type_.arguments_ )
+	for( const Synt::FunctionParam& function_param : function_template_declaration.function_->type_.params_ )
 	{
 		if( base_class != nullptr && function_param.name_ == Keyword( Keywords::this_ ) )
 			function_template->signature_params.push_back( TemplateSignatureParam::TypeParam{ Type(base_class) } );
@@ -404,7 +404,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 
 	all_types_are_known&= function_param.return_type->IsType();
 
-	for( const Synt::FunctionArgument& arg : function_pointer_type_name.arguments_ )
+	for( const Synt::FunctionParam& arg : function_pointer_type_name.params_ )
 	{
 		auto t= CreateTemplateSignatureParameter( arg.type_, names_scope, function_context, template_parameters, template_parameters_usage_flags );
 		all_types_are_known&= t.IsType();
@@ -976,7 +976,7 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 	size_t given_arg_count= actual_args.size();
 
 	if( first_actual_arg_is_this &&
-		!function_declaration.type_.arguments_.empty() && function_declaration.type_.arguments_.front().name_ != Keywords::this_ )
+		!function_declaration.type_.params_.empty() && function_declaration.type_.params_.front().name_ != Keywords::this_ )
 	{
 		++given_args;
 		--given_arg_count;
@@ -984,7 +984,7 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 
 	TemplateFunctionPreparationResult result;
 
-	if( given_arg_count != function_declaration.type_.arguments_.size() )
+	if( given_arg_count != function_declaration.type_.params_.size() )
 		return result;
 
 	result.template_args_namespace= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, function_template.parent_namespace );
@@ -1000,9 +1000,9 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 		result.template_args_namespace->AddName( function_template.template_params[i].name, std::move(v) );
 	}
 
-	for( size_t i= 0u; i < function_declaration.type_.arguments_.size(); ++i )
+	for( size_t i= 0u; i < function_declaration.type_.params_.size(); ++i )
 	{
-		const Synt::FunctionArgument& function_param= function_declaration.type_.arguments_[i];
+		const Synt::FunctionParam& function_param= function_declaration.type_.params_[i];
 
 		const bool expected_arg_is_mutalbe_reference=
 			function_param.mutability_modifier_ == Synt::MutabilityModifier::Mutable &&
@@ -1136,7 +1136,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 			function_template.base_class,
 			*template_args_namespace,
 			func_name,
-			function_declaration.type_.arguments_,
+			function_declaration.type_.params_,
 			function_declaration.block_.get(),
 			function_declaration.constructor_initialization_list_.get() );
 

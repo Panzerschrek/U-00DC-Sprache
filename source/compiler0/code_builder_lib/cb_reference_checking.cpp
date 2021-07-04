@@ -13,7 +13,7 @@ void CodeBuilder::ProcessFunctionParamReferencesTags(
 	CodeBuilderErrorsContainer& errors_container,
 	const Synt::FunctionType& func,
 	FunctionType& function_type,
-	const Synt::FunctionArgument& in_param,
+	const Synt::FunctionParam& in_param,
 	const FunctionType::Param& out_param,
 	const size_t arg_number )
 {
@@ -53,7 +53,7 @@ void CodeBuilder::ProcessFunctionReturnValueReferenceTags(
 		if( !func.return_value_inner_reference_tag_.empty() )
 		{
 			bool found= false;
-			for( const Synt::FunctionArgument& arg : func.arguments_ )
+			for( const Synt::FunctionParam& arg : func.params_ )
 			{
 				if( func.return_value_inner_reference_tag_ == arg.reference_tag_ ||
 					func.return_value_inner_reference_tag_ == arg.inner_arg_reference_tag_ )
@@ -80,7 +80,7 @@ void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
 		if( !func.return_value_reference_tag_.empty() )
 		{
 			bool tag_found= false;
-			for( const Synt::FunctionArgument& arg : func.arguments_ )
+			for( const Synt::FunctionParam& arg : func.params_ )
 			{
 				if( func.return_value_reference_tag_ == arg.inner_arg_reference_tag_ ||
 					func.return_value_reference_tag_ == arg.reference_tag_)
@@ -151,7 +151,7 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 
 		for( size_t arg_n= 0u; arg_n < function_type.params.size(); ++arg_n )
 		{
-			const Synt::FunctionArgument& in_arg= func.arguments_[ arg_n ];
+			const Synt::FunctionParam& in_arg= func.params_[ arg_n ];
 
 			if( name == in_arg.reference_tag_ )
 				result.emplace_back( arg_n, FunctionType::c_arg_reference_tag_number );

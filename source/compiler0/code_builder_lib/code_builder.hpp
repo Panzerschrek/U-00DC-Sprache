@@ -439,7 +439,7 @@ private:
 		const ClassProxyPtr& base_class,
 		NamesScope& parent_names_scope,
 		const std::string& func_name,
-		const Synt::FunctionArgumentsDeclaration& args,
+		const Synt::FunctionParams& params,
 		const Synt::Block* block, // null for prototypes.
 		const Synt::StructNamedInitializer* constructor_initialization_list );
 
@@ -767,7 +767,7 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const Synt::FunctionType& func,
 		FunctionType& function_type,
-		const Synt::FunctionArgument& in_arg,
+		const Synt::FunctionParam& in_arg,
 		const FunctionType::Param& out_arg,
 		size_t arg_number );
 

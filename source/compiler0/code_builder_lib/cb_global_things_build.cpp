@@ -274,7 +274,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 						functions_set.base_class,
 						names_scope,
 						functions_set_name,
-						function_variable.syntax_element->type_.arguments_,
+						function_variable.syntax_element->type_.params_,
 						function_variable.syntax_element->block_.get(),
 						function_variable.syntax_element->constructor_initialization_list_.get() );
 
@@ -294,7 +294,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 					functions_set.base_class,
 					names_scope,
 					functions_set_name,
-					function_variable.syntax_element->type_.arguments_,
+					function_variable.syntax_element->type_.params_,
 					function_variable.syntax_element->block_.get(),
 					function_variable.syntax_element->constructor_initialization_list_.get() );
 			}
@@ -323,7 +323,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 					functions_set.base_class,
 					names_scope,
 					function_variable.syntax_element->name_.back(),
-					function_variable.syntax_element->type_.arguments_,
+					function_variable.syntax_element->type_.params_,
 					function_variable.syntax_element->block_.get(),
 					function_variable.syntax_element->constructor_initialization_list_.get() );
 			}
@@ -342,7 +342,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 					functions_set.base_class,
 					names_scope,
 					function_variable.syntax_element->name_.back(),
-					function_variable.syntax_element->type_.arguments_,
+					function_variable.syntax_element->type_.params_,
 					function_variable.syntax_element->block_.get(),
 					function_variable.syntax_element->constructor_initialization_list_.get() );
 			}
@@ -846,7 +846,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 						class_type,
 						the_class.members,
 						name,
-						function.syntax_element->type_.arguments_,
+						function.syntax_element->type_.params_,
 						function.syntax_element->block_.get(),
 						function.syntax_element->constructor_initialization_list_.get() );
 			}

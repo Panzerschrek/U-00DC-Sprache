@@ -748,7 +748,7 @@ size_t CodeBuilder::PrepareFunction(
 	const bool is_special_method= is_constructor || is_destructor;
 
 	if( is_destructor || is_constructor )
-		U_ASSERT( func.type_.arguments_.size() >= 1u && func.type_.arguments_.front().name_ == Keywords::this_ );
+		U_ASSERT( func.type_.params_.size() >= 1u && func.type_.params_.front().name_ == Keywords::this_ );
 
 	if( !is_special_method && IsKeyword( func_name ) )
 		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), func.src_loc_ );
@@ -763,7 +763,7 @@ size_t CodeBuilder::PrepareFunction(
 		REPORT_ERROR( InitializationListInNonconstructor, names_scope.GetErrors(), func.constructor_initialization_list_->src_loc_ );
 		return ~0u;
 	}
-	if( is_destructor && func.type_.arguments_.size() >= 2u )
+	if( is_destructor && func.type_.params_.size() >= 2u )
 	{
 		REPORT_ERROR( ExplicitArgumentsInDestructor, names_scope.GetErrors(), func.src_loc_ );
 		return ~0u;
@@ -828,12 +828,12 @@ size_t CodeBuilder::PrepareFunction(
 		ProcessFunctionReturnValueReferenceTags( names_scope.GetErrors(), func.type_, function_type );
 
 		// Params.
-		function_type.params.reserve( func.type_.arguments_.size() );
+		function_type.params.reserve( func.type_.params_.size() );
 
-		for( const Synt::FunctionArgument& arg : func.type_.arguments_ )
+		for( const Synt::FunctionParam& arg : func.type_.params_ )
 		{
 			const bool is_this=
-				&arg == &func.type_.arguments_.front() &&
+				&arg == &func.type_.params_.front() &&
 				arg.name_ == Keywords::this_ &&
 				std::get_if<Synt::EmptyVariant>(&arg.type_) != nullptr;
 
@@ -1013,7 +1013,7 @@ size_t CodeBuilder::PrepareFunction(
 			base_class,
 			names_scope,
 			func_name,
-			func.type_.arguments_,
+			func.type_.params_,
 			nullptr,
 			func.constructor_initialization_list_.get() );
 
@@ -1147,7 +1147,7 @@ Type CodeBuilder::BuildFuncCode(
 	const ClassProxyPtr& base_class,
 	NamesScope& parent_names_scope,
 	const std::string& func_name,
-	const Synt::FunctionArgumentsDeclaration& args,
+	const Synt::FunctionParams& params,
 	const Synt::Block* const block,
 	const Synt::StructNamedInitializer* const constructor_initialization_list )
 {
@@ -1232,7 +1232,7 @@ Type CodeBuilder::BuildFuncCode(
 	for( const FunctionType::Param& arg : function_type.params )
 	{
 		if( !EnsureTypeComplete( arg.type ) )
-			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), args.front().src_loc_, arg.type );
+			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), params.front().src_loc_, arg.type );
 	}
 	if( !function_type.return_value_is_reference && !EnsureTypeComplete( function_type.return_type ) )
 		REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_src_loc, function_type.return_type );
@@ -1267,7 +1267,7 @@ Type CodeBuilder::BuildFuncCode(
 
 		const FunctionType::Param& param= function_type.params[ arg_number ];
 
-		const Synt::FunctionArgument& declaration_arg= args[arg_number ];
+		const Synt::FunctionParam& declaration_arg= params[arg_number ];
 		const std::string& arg_name= declaration_arg.name_;
 
 		const bool is_this= arg_number == 0u && arg_name == Keywords::this_;

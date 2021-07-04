@@ -261,7 +261,7 @@ private:
 	Expression TryParseExpressionComponentPostfixOperator( Expression expr );
 	Expression ParseExpressionComponentHelper();
 
-	FunctionArgument ParseFunctionArgument();
+	FunctionParam ParseFunctionArgument();
 	void ParseFunctionTypeEnding( FunctionType& result );
 	FunctionTypePtr ParseFunctionType();
 
@@ -1175,9 +1175,9 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 	};
 }
 
-FunctionArgument SyntaxAnalyzer::ParseFunctionArgument()
+FunctionParam SyntaxAnalyzer::ParseFunctionArgument()
 {
-	FunctionArgument result( it_->src_loc );
+	FunctionParam result( it_->src_loc );
 	result.type_= ParseTypeName();
 
 	result.reference_modifier_= ReferenceModifier::None;
@@ -1312,7 +1312,7 @@ FunctionTypePtr SyntaxAnalyzer::ParseFunctionType()
 			break;
 		}
 
-		result->arguments_.push_back( ParseFunctionArgument() );
+		result->params_.push_back( ParseFunctionArgument() );
 
 		if( it_->type == Lexem::Type::Comma )
 		{
@@ -2755,7 +2755,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 
 	ExpectLexem( Lexem::Type::BracketLeft );
 
-	FunctionArgumentsDeclaration& arguments= result->type_.arguments_;
+	FunctionParams& params= result->type_.params_;
 
 	// Try parse "this"
 	if( it_->type == Lexem::Type::Identifier )
@@ -2810,13 +2810,13 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 					PushErrorMessage();
 			}
 
-			FunctionArgument this_argument( src_loc );
+			FunctionParam this_argument( src_loc );
 			this_argument.name_= Keyword( Keywords::this_ );
 			this_argument.mutability_modifier_= mutability_modifier;
 			this_argument.reference_modifier_= ReferenceModifier::Reference;
 			this_argument.reference_tag_= Keyword( Keywords::this_ ); // Implicit set name for tag of "this" to "this".
 			this_argument.inner_arg_reference_tag_= std::move(inner_reference_tag);
-			arguments.push_back( std::move( this_argument ) );
+			params.push_back( std::move( this_argument ) );
 		}
 	}
 
@@ -2828,7 +2828,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			break;
 		}
 
-		arguments.push_back( ParseFunctionArgument() );
+		params.push_back( ParseFunctionArgument() );
 
 		if( it_->type == Lexem::Type::Comma )
 		{
@@ -2849,14 +2849,14 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 	// If method is constructor or destructor and "this" not explicitly specified, add it.
 	// It's easier add "this" here, than dealing with implicit "this" in CodeBuilder.
 	if( ( result->name_.back() == Keywords::constructor_ || result->name_.back() == Keywords::destructor_ ) &&
-		( arguments.empty() || arguments.front().name_ != Keywords::this_ ) )
+		( params.empty() || params.front().name_ != Keywords::this_ ) )
 	{
-		FunctionArgument this_argument( result->src_loc_ );
+		FunctionParam this_argument( result->src_loc_ );
 		this_argument.name_= Keyword( Keywords::this_ );
 		this_argument.mutability_modifier_= MutabilityModifier::Mutable;
 		this_argument.reference_modifier_= ReferenceModifier::Reference;
 		this_argument.reference_tag_= Keyword( Keywords::this_ );
-		arguments.insert( arguments.begin(), std::move( this_argument ) );
+		params.insert( params.begin(), std::move( this_argument ) );
 	}
 
 	ParseFunctionTypeEnding( result->type_ );

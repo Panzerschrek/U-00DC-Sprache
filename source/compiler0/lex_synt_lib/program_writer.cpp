@@ -23,7 +23,7 @@ void ElementWrite( const RawPointerType& raw_pointer_type_name, std::ostream& st
 void ElementWrite( const TypeofTypeName& typeof_type_name, std::ostream& stream );
 void ElementWriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& stream );
 void ElementWrite( const FunctionType& function_type_name, std::ostream& stream );
-void ElementWrite( const FunctionArgument& arg, std::ostream& stream );
+void ElementWrite( const FunctionParam& arg, std::ostream& stream );
 void ElementWrite( const TypeName& type_name, std::ostream& stream );
 void ElementWrite( const Expression& expression, std::ostream& stream );
 void ElementWrite( const Initializer& initializer, std::ostream& stream );
@@ -170,10 +170,10 @@ void ElementWriteFunctionTypeEnding( const FunctionType& function_type, std::ost
 void ElementWrite( const FunctionType& function_type_name, std::ostream& stream )
 {
 	stream << "( " << Keyword( Keywords::fn_ ) << "( ";
-	for( const FunctionArgument& arg : function_type_name.arguments_ )
+	for( const FunctionParam& arg : function_type_name.params_ )
 	{
 		ElementWrite( arg, stream );
-		if( &arg != &function_type_name.arguments_.back() )
+		if( &arg != &function_type_name.params_.back() )
 			stream << ", ";
 	}
 	stream << " ) ";
@@ -181,7 +181,7 @@ void ElementWrite( const FunctionType& function_type_name, std::ostream& stream 
 	stream << " )";
 }
 
-void ElementWrite( const FunctionArgument& arg, std::ostream& stream )
+void ElementWrite( const FunctionParam& arg, std::ostream& stream )
 {
 	ElementWrite( arg.type_, stream );
 	ElementWrite( arg.reference_modifier_, stream );
@@ -574,15 +574,15 @@ void ElementWrite( const Function& function, std::ostream& stream )
 			stream << "::";
 	}
 
-	if( function.type_.arguments_.empty() )
+	if( function.type_.params_.empty() )
 		stream << "()";
 	else
 	{
 		stream << "( ";
-		for( const FunctionArgument& arg : function.type_.arguments_ )
+		for( const FunctionParam& arg : function.type_.params_ )
 		{
 			ElementWrite( arg, stream );
-			if( &arg != &function.type_.arguments_.back() )
+			if( &arg != &function.type_.params_.back() )
 				stream << ", ";
 		}
 		stream << " )";
