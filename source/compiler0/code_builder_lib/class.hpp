@@ -58,6 +58,10 @@ public:
 
 	NamesScopePtr members;
 
+	// Initial namespace of internals of this class in file where it was declared.
+	// This does not changes in import.
+	NamesScopePtr members_initial;
+
 	// have no visibility for member, means it is public.
 	ProgramStringMap< ClassMemberVisibility > members_visibility;
 

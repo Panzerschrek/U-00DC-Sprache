@@ -1054,7 +1054,7 @@ llvm::Constant* CodeBuilder::InitializeClassFieldWithInClassIninitalizer(
 	llvm::Constant* const result=
 		ApplyInitializer(
 			field_variable,
-			*class_field.class_.lock()->class_->members, // Use class members names scope.
+			*class_field.class_.lock()->class_->members_initial, // Use initial class members names scope.
 			function_context,
 			*class_field.syntax_element->initializer );
 
@@ -1081,7 +1081,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceClassFieldWithInClassIninitalize
 			variable,
 			class_field,
 			*class_field.syntax_element->initializer,
-			*class_field.class_.lock()->class_->members, // Use class members names scope.
+			*class_field.class_.lock()->class_->members_initial, // Use initial class members names scope.
 			function_context );
 
 	function_context.this_= prev_this;
