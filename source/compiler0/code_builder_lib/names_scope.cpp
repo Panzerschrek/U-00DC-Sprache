@@ -102,22 +102,22 @@ const NamesScope* NamesScope::GetRoot() const
 	return root;
 }
 
-void NamesScope::SetClass(const ClassProxyPtr& in_class )
+void NamesScope::SetClass(const ClassPtr& in_class )
 {
 	this->class_= in_class;
 }
 
-ClassProxyPtr NamesScope::GetClass() const
+ClassPtr NamesScope::GetClass() const
 {
-	return class_.lock();
+	return class_;
 }
 
-void NamesScope::AddAccessRightsFor( const ClassProxyPtr& class_, const ClassMemberVisibility visibility )
+void NamesScope::AddAccessRightsFor( const ClassPtr& class_, const ClassMemberVisibility visibility )
 {
 	access_rights_[class_]= visibility;
 }
 
-ClassMemberVisibility NamesScope::GetAccessFor( const ClassProxyPtr& class_ ) const
+ClassMemberVisibility NamesScope::GetAccessFor( const ClassPtr& class_ ) const
 {
 	const auto it= access_rights_.find(class_);
 	const auto this_rights= it == access_rights_.end() ? ClassMemberVisibility::Public : it->second;

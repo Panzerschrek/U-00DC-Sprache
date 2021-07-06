@@ -633,7 +633,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 			if( func != nullptr )
 			{
 				// Check access rights after function selection.
-				if( names.GetAccessFor( arg.type.GetClassTypeProxy() ) < class_->GetMemberVisibility( op_name ) )
+				if( names.GetAccessFor( arg.type.GetClassType() ) < class_->GetMemberVisibility( op_name ) )
 					REPORT_ERROR( AccessingNonpublicClassMember, names.GetErrors(), src_loc, op_name, class_->members->GetThisNamespaceName() );
 
 				return func;

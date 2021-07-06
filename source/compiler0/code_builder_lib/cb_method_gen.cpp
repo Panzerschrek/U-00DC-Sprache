@@ -15,8 +15,10 @@ namespace U
 namespace CodeBuilderPrivate
 {
 
-void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& class_type )
+void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 {
+	Class& the_class= *class_type;
+
 	// Search for explicit default constructor.
 	FunctionVariable* constructor_variable= nullptr;
 	if( Value* const constructors_value=
@@ -62,7 +64,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 			all_fields_is_default_constructible= false;
 	}
 
-	if( the_class.base_class != nullptr && !the_class.base_class->class_->is_default_constructible )
+	if( the_class.base_class != nullptr && !the_class.base_class->is_default_constructible )
 		all_fields_is_default_constructible= false;
 
 	if( !all_fields_is_default_constructible )
@@ -85,7 +87,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 		constructor_type.llvm_type=
 			llvm::FunctionType::get(
 				fundamental_llvm_types_.void_for_ret,
-				{ class_type.GetLLVMType()->getPointerTo() },
+				{ the_class.llvm_type->getPointerTo() },
 				false );
 
 		llvm::Function* const llvm_constructor_function=
@@ -190,8 +192,10 @@ void CodeBuilder::TryGenerateDefaultConstructor( Class& the_class, const Type& c
 	the_class.is_default_constructible= true;
 }
 
-void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& class_type )
+void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr& class_type )
 {
+	Class& the_class= *class_type;
+
 	// Search for explicit copy constructor.
 	FunctionVariable* constructor_variable= nullptr;
 	if( Value* const constructors_value= the_class.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
@@ -233,7 +237,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 			all_fields_is_copy_constructible= false;
 	}
 
-	if( the_class.base_class != nullptr && !the_class.base_class->class_->is_copy_constructible )
+	if( the_class.base_class != nullptr && !the_class.base_class->is_copy_constructible )
 		all_fields_is_copy_constructible= false;
 
 	if( !all_fields_is_copy_constructible )
@@ -257,7 +261,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		constructor_type.params[1].is_reference= true;
 
 		// Generate default reference pollution for copying.
-		for( size_t i= 0u; i < class_type.ReferencesTagsCount(); ++i )
+		for( size_t i= 0u; i < Type(class_type).ReferencesTagsCount(); ++i )
 		{
 			FunctionType::ReferencePollution pollution;
 			pollution.dst.first= 0u;
@@ -270,7 +274,7 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 		constructor_type.llvm_type=
 			llvm::FunctionType::get(
 				fundamental_llvm_types_.void_for_ret,
-				{ class_type.GetLLVMType()->getPointerTo(), class_type.GetLLVMType()->getPointerTo() },
+				{ the_class.llvm_type->getPointerTo(), the_class.llvm_type->getPointerTo() },
 				false );
 
 		llvm::Function* const llvm_constructor_function=
@@ -367,8 +371,10 @@ void CodeBuilder::TryGenerateCopyConstructor( Class& the_class, const Type& clas
 	the_class.is_copy_constructible= true;
 }
 
-FunctionVariable CodeBuilder::GenerateDestructorPrototype( Class& the_class, const Type& class_type )
+FunctionVariable CodeBuilder::GenerateDestructorPrototype( const ClassPtr& class_type )
 {
+	Class& the_class= *class_type;
+
 	FunctionType destructor_type;
 	destructor_type.return_type= void_type_;
 	destructor_type.params.resize(1u);
@@ -376,7 +382,7 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( Class& the_class, con
 	destructor_type.params[0].is_mutable= true;
 	destructor_type.params[0].is_reference= true;
 
-	llvm::Type* const this_llvm_type= class_type.GetLLVMType()->getPointerTo();
+	llvm::Type* const this_llvm_type= the_class.llvm_type->getPointerTo();
 	destructor_type.llvm_type=
 		llvm::FunctionType::get(
 			fundamental_llvm_types_.void_for_ret,
@@ -402,8 +408,9 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( Class& the_class, con
 	return destructor_function;
 }
 
-void CodeBuilder::GenerateDestructorBody( Class& the_class, const Type& class_type, FunctionVariable& destructor_function )
+void CodeBuilder::GenerateDestructorBody( const ClassPtr& class_type, FunctionVariable& destructor_function )
 {
+	Class& the_class= *class_type;
 	const FunctionType& destructor_type= *destructor_function .type.GetFunctionType();
 
 	llvm::Value* const this_llvm_value= &*destructor_function .llvm_function->args().begin();
@@ -431,8 +438,9 @@ void CodeBuilder::GenerateDestructorBody( Class& the_class, const Type& class_ty
 	destructor_function.have_body= true;
 }
 
-void CodeBuilder::TryGenerateDestructor( Class& the_class, const Type& class_type )
+void CodeBuilder::TryGenerateDestructor( const ClassPtr& class_type )
 {
+	Class& the_class= *class_type;
 	// Search for explicit destructor.
 	if( Value* const destructor_value=
 		the_class.members->GetThisScopeValue( Keyword( Keywords::destructor_ ) ) )
@@ -443,7 +451,7 @@ void CodeBuilder::TryGenerateDestructor( Class& the_class, const Type& class_typ
 
 		FunctionVariable& destructor_function= destructors->functions.front();
 		if( destructor_function.is_generated && !destructor_function.have_body )
-			GenerateDestructorBody( the_class, class_type, destructor_function ); // Finish generating pre-generated destructor.
+			GenerateDestructorBody( class_type, destructor_function ); // Finish generating pre-generated destructor.
 
 		the_class.have_destructor= true;
 		return;
@@ -454,8 +462,8 @@ void CodeBuilder::TryGenerateDestructor( Class& the_class, const Type& class_typ
 
 	// Generate destructor.
 
-	FunctionVariable destructor_variable= GenerateDestructorPrototype( the_class, class_type );
-	GenerateDestructorBody( the_class, class_type, destructor_variable );
+	FunctionVariable destructor_variable= GenerateDestructorPrototype( class_type );
+	GenerateDestructorBody( class_type, destructor_variable );
 
 	// TODO - destructor have no overloads. Maybe store it as FunctionVariable, not as FunctionsSet?
 	OverloadedFunctionsSet destructors;
@@ -467,8 +475,9 @@ void CodeBuilder::TryGenerateDestructor( Class& the_class, const Type& class_typ
 	the_class.have_destructor= true;
 }
 
-void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Type& class_type )
+void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr& class_type )
 {
+	Class& the_class= *class_type;
 	const std::string op_name= OverloadedOperatorToString( OverloadedOperator::Assign );
 
 	// Search for explicit assignment operator.
@@ -513,7 +522,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 			all_fields_is_copy_assignable= false;
 	}
 
-	if( the_class.base_class != nullptr && !the_class.base_class->class_->is_copy_assignable )
+	if( the_class.base_class != nullptr && !the_class.base_class->is_copy_assignable )
 		all_fields_is_copy_assignable= false;
 
 	if( !all_fields_is_copy_assignable )
@@ -537,7 +546,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 		op_type.params[1].is_reference= true;
 
 		// Generate default reference pollution for copying.
-		for( size_t i= 0u; i < class_type.ReferencesTagsCount(); ++i )
+		for( size_t i= 0u; i < Type(class_type).ReferencesTagsCount(); ++i )
 		{
 			FunctionType::ReferencePollution pollution;
 			pollution.dst.first= 0u;
@@ -550,7 +559,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( Class& the_class, const Typ
 		op_type.llvm_type=
 			llvm::FunctionType::get(
 				fundamental_llvm_types_.void_for_ret,
-				{ class_type.GetLLVMType()->getPointerTo(), class_type.GetLLVMType()->getPointerTo() },
+				{ the_class.llvm_type->getPointerTo(), the_class.llvm_type->getPointerTo() },
 				false );
 
 		llvm::Function* const llvm_op_function=
@@ -683,10 +692,9 @@ void CodeBuilder::BuildCopyConstructorPart(
 				function_context );
 		}
 	}
-	else if( const ClassProxyPtr class_type_proxy= type.GetClassTypeProxy() )
+	else if( const ClassPtr class_type_ptr= type.GetClassType() )
 	{
-		const Type field_class_type= class_type_proxy;
-		const Class& class_type= *class_type_proxy->class_;
+		const Class& class_type= *class_type_ptr;
 
 		// Search copy constructor.
 		const Value* constructor_value=
@@ -701,7 +709,7 @@ void CodeBuilder::BuildCopyConstructorPart(
 			const FunctionType& constructor_type= *candidate_constructor.type.GetFunctionType();
 
 			if( constructor_type.params.size() == 2u &&
-				constructor_type.params.back().type == field_class_type && !constructor_type.params.back().is_mutable )
+				constructor_type.params.back().type == class_type_ptr && !constructor_type.params.back().is_mutable )
 			{
 				constructor= &candidate_constructor;
 				break;
@@ -763,10 +771,9 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 				function_context );
 		}
 	}
-	else if( const ClassProxyPtr class_type_proxy= type.GetClassTypeProxy() )
+	else if( const ClassPtr class_type_ptr= type.GetClassType() )
 	{
-		const Type field_class_type= class_type_proxy;
-		const Class& class_type= *class_type_proxy->class_;
+		const Class& class_type= *class_type_ptr;
 
 		// Search copy-assignment aoperator.
 		const Value* op_value=

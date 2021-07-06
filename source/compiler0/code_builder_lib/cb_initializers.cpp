@@ -191,7 +191,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			REPORT_ERROR( InitializerForNonfieldStructMember, names.GetErrors(), initializer.src_loc_, member_initializer.name );
 			continue;
 		}
-		if( field->class_.lock() != variable.type )
+		if( field->class_ != variable.type )
 		{
 			REPORT_ERROR( InitializerForBaseClassField, names.GetErrors(), initializer.src_loc_, member_initializer.name );
 			continue;
@@ -387,7 +387,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			if( expression_result.type != variable.type )
 				value_for_copy= CreateReferenceCast( value_for_copy, expression_result.type, variable.type, function_context );
 			TryCallCopyConstructor(
-				names.GetErrors(), src_loc, variable.llvm_value, value_for_copy, variable.type.GetClassTypeProxy(), function_context );
+				names.GetErrors(), src_loc, variable.llvm_value, value_for_copy, variable.type.GetClassType(), function_context );
 		}
 	}
 	else
@@ -842,7 +842,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	FunctionContext& function_context )
 {
 	U_ASSERT( variable.type.GetClassType() != nullptr );
-	U_ASSERT( variable.type.GetClassTypeProxy() == field.class_.lock() );
+	U_ASSERT( variable.type.GetClassType() == field.class_ );
 
 	const SrcLoc initializer_src_loc= Synt::GetInitializerSrcLoc( initializer );
 	const Synt::Expression* initializer_expression= nullptr;
@@ -1054,7 +1054,7 @@ llvm::Constant* CodeBuilder::InitializeClassFieldWithInClassIninitalizer(
 	llvm::Constant* const result=
 		ApplyInitializer(
 			field_variable,
-			*class_field.class_.lock()->class_->members_initial, // Use initial class members names scope.
+			*class_field.class_->members_initial, // Use initial class members names scope.
 			function_context,
 			*class_field.syntax_element->initializer );
 
@@ -1081,7 +1081,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceClassFieldWithInClassIninitalize
 			variable,
 			class_field,
 			*class_field.syntax_element->initializer,
-			*class_field.class_.lock()->class_->members_initial, // Use initial class members names scope.
+			*class_field.class_->members_initial, // Use initial class members names scope.
 			function_context );
 
 	function_context.this_= prev_this;
@@ -1089,12 +1089,12 @@ llvm::Constant* CodeBuilder::InitializeReferenceClassFieldWithInClassIninitalize
 	return result;
 }
 
-void CodeBuilder::CheckClassFieldsInitializers( const ClassProxyPtr& class_type )
+void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr& class_type )
 {
 	// Run code generation for initializers.
 	// We must check it, becauseinitializers may not be executed later.
 
-	const Class& class_= *class_type->class_;
+	const Class& class_= *class_type;
 	U_ASSERT( class_.is_complete );
 
 	FunctionContext& function_context= *global_function_context_;

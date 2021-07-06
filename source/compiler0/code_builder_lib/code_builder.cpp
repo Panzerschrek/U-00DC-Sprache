@@ -186,7 +186,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 
 	// Clear internal structures.
 	compiled_sources_.clear();
-	current_class_table_= nullptr;
+	current_class_table_.clear();
 	enums_table_.clear();
 	template_classes_cache_.clear();
 	typeinfo_cache_.clear();
@@ -213,23 +213,57 @@ void CodeBuilder::BuildSourceGraphNode( const SourceGraph& source_graph, const s
 
 	result.names_map= std::make_unique<NamesScope>( "", nullptr );
 	result.names_map->SetErrors( global_errors_ );
-	result.class_table= std::make_unique<ClassTable>();
 	FillGlobalNamesScope( *result.names_map );
 
 	U_ASSERT( node_index < source_graph.nodes_storage.size() );
 	const SourceGraph::Node& source_graph_node= source_graph.nodes_storage[ node_index ];
 
+	// Build dependent nodes.
 	for( const size_t child_node_inex : source_graph_node.child_nodes_indeces )
 		BuildSourceGraphNode( source_graph, child_node_inex );
 
-	for( const size_t child_node_inex : source_graph_node.child_nodes_indeces )
+	// Prepare class table.
 	{
-		SourceBuildResult& child_result= compiled_sources_[ child_node_inex ];
-		SetCurrentClassTable( *child_result.class_table ); // Before merge each ClassProxy must points to members of "dst.names_map".
-		MergeNameScopes( *result.names_map, *child_result.names_map, *result.class_table );
+		ClassTable tmp_class_table;
+		for( const size_t child_node_inex : source_graph_node.child_nodes_indeces )
+		{
+			for( const auto& class_table_entry : compiled_sources_[child_node_inex].class_table )
+			{
+				const auto prev_class_it= tmp_class_table.find( class_table_entry.first );
+				if( prev_class_it == tmp_class_table.end() )
+				{
+					tmp_class_table.emplace( class_table_entry.first, class_table_entry.second );
+					continue;
+				}
+
+				Class& prev_class_value= prev_class_it->second;
+				const Class& new_class_value= class_table_entry.second;
+
+				if( !prev_class_value.is_complete && !new_class_value.is_complete )
+				{} // Ok - both instances of class are incomplete.
+				else if( !prev_class_value.is_complete && new_class_value.is_complete )
+					prev_class_value= new_class_value; // Ok - replace incomplete class with complete.
+				else if( prev_class_value.is_complete && !new_class_value.is_complete )
+				{} // Ok - ignore incomplete class.
+				else if( prev_class_value.syntax_element != new_class_value.syntax_element )
+				{
+					// Different bodies from different files.
+					REPORT_ERROR( ClassBodyDuplication, global_errors_, prev_class_value.body_src_loc );
+				}
+			}
+		}
+
+		current_class_table_.clear();
+		for( auto& class_table_entry : tmp_class_table )
+		{
+			*class_table_entry.first= std::move(class_table_entry.second);
+			current_class_table_.push_back( class_table_entry.first );
+		}
 	}
 
-	SetCurrentClassTable( *result.class_table );
+	// Merge namespaces of imported files into one.
+	for( const size_t child_node_inex : source_graph_node.child_nodes_indeces )
+		MergeNameScopes( *result.names_map, *compiled_sources_[ child_node_inex ].names_map );
 
 	// Do work for this node.
 	NamesScopeFill( source_graph_node.ast.program_elements, *result.names_map );
@@ -264,9 +298,14 @@ void CodeBuilder::BuildSourceGraphNode( const SourceGraph& source_graph, const s
 			}
 		};
 	}
+
+	// Fill result class table
+	for( const auto& class_shared_ptr : current_class_table_ )
+		result.class_table.emplace(class_shared_ptr, *class_shared_ptr);
+	current_class_table_.clear();
 }
 
-void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, ClassTable& dst_class_table )
+void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src )
 {
 	src.ForEachInThisScope(
 		[&]( const std::string& src_name, const Value& src_member )
@@ -280,30 +319,33 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 					// We copy namespaces, instead of taking same shared pointer,
 					// because using same shared pointer we can change state of "src".
 					const NamesScopePtr names_scope_copy= std::make_shared<NamesScope>( names_scope->GetThisNamespaceName(), &dst );
-					MergeNameScopes( *names_scope_copy, *names_scope, dst_class_table );
+					MergeNameScopes( *names_scope_copy, *names_scope );
 					dst.AddName( src_name, Value( names_scope_copy, src_member.GetSrcLoc() ) );
 
 					names_scope_copy->CopyAccessRightsFrom( *names_scope );
 				}
 				else
 				{
-					bool class_copied= false;
 					if( const Type* const type= src_member.GetTypeName() )
 					{
-						if( const ClassProxyPtr class_proxy= type->GetClassTypeProxy() )
+						if( const ClassPtr class_= type->GetClassType() )
 						{
 							// If current namespace is parent for this class and name is primary.
-							if( class_proxy->class_->members->GetParent() == &src &&
-								class_proxy->class_->members->GetThisNamespaceName() == src_name )
+							if( class_->members->GetParent() == &src &&
+								class_->members->GetThisNamespaceName() == src_name )
 							{
-								CopyClass( src_member.GetSrcLoc(), class_proxy, dst_class_table, dst );
-								class_copied= true;
+								// Just take copy of internal namespace.
+								// It's fine to modify class itself here - anyway we keep copy of class in class table of each file.
+								const auto class_namespace_copy= std::make_shared<NamesScope>( class_->members->GetThisNamespaceName(), &dst );
+								MergeNameScopes( *class_namespace_copy, *class_->members );
+
+								class_namespace_copy->SetClass( class_ );
+								class_namespace_copy->CopyAccessRightsFrom( *class_->members );
+								class_->members= class_namespace_copy;
 							}
 						}
 					}
-
-					if( !class_copied )
-						dst.AddName( src_name, src_member );
+					dst.AddName( src_name, src_member );
 				}
 				return;
 			}
@@ -321,7 +363,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 				// TODO - detect here template instantiation namespaces.
 				const NamesScopePtr dst_sub_namespace= dst_member->GetNamespace();
 				U_ASSERT( dst_sub_namespace != nullptr );
-				MergeNameScopes( *dst_sub_namespace, *sub_namespace, dst_class_table );
+				MergeNameScopes( *dst_sub_namespace, *sub_namespace );
 				return;
 			}
 			else if(
@@ -367,40 +409,27 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 			}
 			else if( const Type* const type= dst_member->GetTypeName() )
 			{
-				if( const ClassProxyPtr dst_class_proxy= type->GetClassTypeProxy() )
+				if( ClassPtr dst_class= type->GetClassType() )
 				{
-					const ClassProxyPtr src_class_proxy= src_member.GetTypeName()->GetClassTypeProxy();
+					const ClassPtr src_class= src_member.GetTypeName()->GetClassType();
 
-					if( src_class_proxy == nullptr || dst_class_proxy != src_class_proxy )
+					if( src_class == nullptr || dst_class != src_class )
 					{
-						// Differnet proxy means 100% different classes.
+						// Different pointer value means 100% different classes.
 						REPORT_ERROR( Redefinition, dst.GetErrors(), src_member.GetSrcLoc(), src_name );
 						return;
 					}
-					if( src_class_proxy->class_->base_template != std::nullopt || dst_class_proxy->class_->base_template != std::nullopt )
+					if( dst_class->base_template != std::nullopt ) // TODO - maybe remove this check?
 						return; // Skip class templates.
 
-					const auto& dst_class= dst_class_table[dst_class_proxy];
-					U_ASSERT( dst_class != nullptr );
-					const Class& src_class= *src_class_proxy->class_;
+					// Just take copy of internal namespace.
+					// It's fine to modify class itself here - anyway we keep copy of class in class table of each file.
+					const auto class_namespace_copy= std::make_shared<NamesScope>( dst_class->members->GetThisNamespaceName(), &dst );
+					MergeNameScopes( *class_namespace_copy, *dst_class->members );
 
-					U_ASSERT( dst_class->forward_declaration_src_loc == src_class.forward_declaration_src_loc );
-
-					if( !dst_class->is_complete && !src_class.is_complete )
-					{} // Ok
-					if( dst_class->is_complete && !src_class.is_complete )
-					{} // Dst class is complete, so, use it.
-					if( dst_class->is_complete && src_class.is_complete &&
-						dst_class->body_src_loc != src_class.body_src_loc )
-					{
-						// Different bodies from different files.
-						REPORT_ERROR( ClassBodyDuplication, dst.GetErrors(), src_class.body_src_loc );
-					}
-					if( !dst_class->is_complete && src_class.is_complete )
-					{
-						// Take body of more complete class and store in destintation class table.
-						CopyClass( src_class.forward_declaration_src_loc, src_class_proxy, dst_class_table, dst );
-					}
+					class_namespace_copy->SetClass( dst_class );
+					class_namespace_copy->CopyAccessRightsFrom( *dst_class->members );
+					dst_class->members= class_namespace_copy;
 
 					return;
 				}
@@ -414,71 +443,6 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src, Class
 			// Can not merge other kinds of values.
 			REPORT_ERROR( Redefinition, dst.GetErrors(), src_member.GetSrcLoc(), src_name );
 		} );
-}
-
-void CodeBuilder::CopyClass(
-	const SrcLoc& src_loc,
-	const ClassProxyPtr& src_class,
-	ClassTable& dst_class_table,
-	NamesScope& dst_namespace )
-{
-	// We make deep copy of Class, imported from other file.
-	// This needs for prevention of modification of source class and affection of imported file.
-
-	const Class& src= *src_class->class_;
-	auto copy= std::make_unique<Class>( src.members->GetThisNamespaceName(), &dst_namespace );
-
-	// Make deep copy of inner namespace.
-	MergeNameScopes( *copy->members, *src.members, dst_class_table );
-	copy->members->CopyAccessRightsFrom( *src.members );
-	copy->members_initial= src.members_initial;
-
-	// Copy fields.
-	copy->members_visibility= src.members_visibility;
-
-	copy->syntax_element= src.syntax_element;
-	copy->field_count= src.field_count;
-	copy->inner_reference_type= src.inner_reference_type;
-	copy->is_complete= src.is_complete;
-
-	copy->have_explicit_noncopy_constructors= src.have_explicit_noncopy_constructors;
-	copy->is_default_constructible= src.is_default_constructible;
-	copy->is_copy_constructible= src.is_copy_constructible;
-	copy->have_destructor= src.have_destructor;
-	copy->is_copy_assignable= src.is_copy_assignable;
-	copy->can_be_constexpr= src.can_be_constexpr;
-	copy->have_shared_state= src.have_shared_state;
-
-	copy->forward_declaration_src_loc= src.forward_declaration_src_loc;
-	copy->body_src_loc= src.body_src_loc;
-
-	copy->fields_order= src.fields_order;
-
-	copy->llvm_type= src.llvm_type;
-	copy->base_template= src.base_template;
-	copy->typeinfo_type= src.typeinfo_type;
-
-	copy->kind= src.kind;
-	copy->base_class= src.base_class;
-	copy->parents= src.parents;
-
-	copy->virtual_table= src.virtual_table;
-	copy->virtual_table_llvm_type= src.virtual_table_llvm_type;
-	copy->virtual_table_llvm_variable= src.virtual_table_llvm_variable;
-	copy->polymorph_type_id= src.polymorph_type_id;
-
-	// Register copy in destination namespace and current class table.
-	dst_namespace.AddName( src.members->GetThisNamespaceName(), Value( src_class, src_loc ) );
-	dst_class_table[ src_class ]= std::move(copy);
-}
-
-void CodeBuilder::SetCurrentClassTable( ClassTable& table )
-{
-	current_class_table_= &table;
-
-	// Make all ClassProxy pointed to Classes from current table.
-	for( const ClassTable::value_type& table_entry : table )
-		table_entry.first->class_= table_entry.second.get();
 }
 
 void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
@@ -502,12 +466,11 @@ void CodeBuilder::TryCallCopyConstructor(
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc,
 	llvm::Value* const this_, llvm::Value* const src,
-	const ClassProxyPtr& class_proxy,
+	const ClassPtr& class_type,
 	FunctionContext& function_context )
 {
-	U_ASSERT( class_proxy != nullptr );
-	const Type class_type= class_proxy;
-	const Class& class_= *class_proxy->class_;
+	U_ASSERT( class_type != nullptr );
+	const Class& class_= *class_type;
 
 	if( !class_.is_copy_constructible )
 	{
@@ -696,7 +659,7 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, Cod
 
 	for( size_t i= 0u; i < class_->parents.size(); ++i )
 	{
-		U_ASSERT( class_->parents[i].class_->class_->have_destructor ); // Parents are polymorph, polymorph classes always have destructors.
+		U_ASSERT( class_->parents[i].class_->have_destructor ); // Parents are polymorph, polymorph classes always have destructors.
 		CallDestructor(
 			function_context.llvm_ir_builder.CreateGEP(
 				function_context.this_->llvm_value,
@@ -729,7 +692,7 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, Cod
 
 size_t CodeBuilder::PrepareFunction(
 	NamesScope& names_scope,
-	const ClassProxyPtr& base_class,
+	const ClassPtr& base_class,
 	OverloadedFunctionsSet& functions_set,
 	const Synt::Function& func,
 	const bool is_out_of_line_function )
@@ -887,7 +850,7 @@ size_t CodeBuilder::PrepareFunction(
 			REPORT_ERROR( VirtualForNonThisCallFunction, names_scope.GetErrors(), func.src_loc_, func_name );
 		if( is_constructor )
 			REPORT_ERROR( FunctionCanNotBeVirtual, names_scope.GetErrors(), func.src_loc_, func_name );
-		if( base_class != nullptr && ( base_class->class_->kind == Class::Kind::Struct || base_class->class_->kind == Class::Kind::NonPolymorph ) )
+		if( base_class != nullptr && ( base_class->kind == Class::Kind::Struct || base_class->kind == Class::Kind::NonPolymorph ) )
 			REPORT_ERROR( VirtualForNonpolymorphClass, names_scope.GetErrors(), func.src_loc_, func_name );
 		if( is_out_of_line_function )
 			REPORT_ERROR( VirtualForFunctionImplementation, names_scope.GetErrors(), func.src_loc_, func_name );
@@ -1014,7 +977,7 @@ size_t CodeBuilder::PrepareFunction(
 }
 
 void CodeBuilder::CheckOverloadedOperator(
-	const ClassProxyPtr& base_class,
+	const ClassPtr& base_class,
 	const FunctionType& func_type,
 	const OverloadedOperator overloaded_operator,
 	CodeBuilderErrorsContainer& errors_container,
@@ -1136,7 +1099,7 @@ void CodeBuilder::CheckOverloadedOperator(
 
 Type CodeBuilder::BuildFuncCode(
 	FunctionVariable& func_variable,
-	const ClassProxyPtr& base_class,
+	const ClassPtr& base_class,
 	NamesScope& parent_names_scope,
 	const std::string& func_name,
 	const Synt::FunctionParams& params,
@@ -1369,7 +1332,7 @@ Type CodeBuilder::BuildFuncCode(
 
 			BuildConstructorInitialization(
 				*function_context.this_,
-				*base_class->class_,
+				*base_class,
 				function_names,
 				function_context,
 				dumy_initialization_list );
@@ -1377,7 +1340,7 @@ Type CodeBuilder::BuildFuncCode(
 		else
 			BuildConstructorInitialization(
 				*function_context.this_,
-				*base_class->class_,
+				*base_class,
 				function_names,
 				function_context,
 				*constructor_initialization_list );
@@ -1385,12 +1348,12 @@ Type CodeBuilder::BuildFuncCode(
 		function_context.whole_this_is_unavailable= false;
 	}
 
-	if( ( is_constructor || is_destructor ) && ( base_class->class_->kind == Class::Kind::Abstract || base_class->class_->kind == Class::Kind::Interface ) )
+	if( ( is_constructor || is_destructor ) && ( base_class->kind == Class::Kind::Abstract || base_class->kind == Class::Kind::Interface ) )
 		function_context.whole_this_is_unavailable= true; // Whole "this" unavailable in body of constructors and destructors of abstract classes and interfaces.
 
 	if( is_destructor )
 	{
-		SetupVirtualTablePointers( this_.llvm_value, *base_class->class_, function_context );
+		SetupVirtualTablePointers( this_.llvm_value, *base_class, function_context );
 		function_context.destructor_end_block= llvm::BasicBlock::Create( llvm_context_ );
 	}
 
@@ -1552,7 +1515,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			REPORT_ERROR( InitializerForNonfieldStructMember, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field_initializer.name );
 			continue;
 		}
-		if( field->class_.lock()->class_ != &base_class )
+		if( field->class_ != &base_class )
 		{
 			have_fields_errors= true;
 			REPORT_ERROR( InitializerForBaseClassField, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field_initializer.name );
@@ -1619,7 +1582,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		base_variable.llvm_value=
 			function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( 0u /* base class is allways first field */ ) } );
 
-		ApplyEmptyInitializer( base_class.base_class->class_->members->GetThisNamespaceName(), constructor_initialization_list.src_loc_, base_variable, names_scope, function_context );
+		ApplyEmptyInitializer( base_class.base_class->members->GetThisNamespaceName(), constructor_initialization_list.src_loc_, base_variable, names_scope, function_context );
 		function_context.base_initialized= true;
 
 		CallDestructors( temp_variables_storage, names_scope, function_context, constructor_initialization_list.src_loc_ );
@@ -1758,7 +1721,7 @@ Value CodeBuilder::ResolveValue(
 			}
 			else if( const Type* const type= value->GetTypeName() )
 			{
-				if( Class* const class_= type->GetClassType() )
+				if( ClassPtr class_= type->GetClassType() )
 				{
 					if( class_->syntax_element != nullptr && class_->syntax_element->is_forward_declaration_ )
 					{
@@ -1766,9 +1729,9 @@ Value CodeBuilder::ResolveValue(
 						return ErrorValue();
 					}
 
-					GlobalThingBuildClass( type->GetClassTypeProxy() );
+					GlobalThingBuildClass( class_ );
 
-					if( names_scope.GetAccessFor( type->GetClassTypeProxy() ) < class_->GetMemberVisibility( *component_name ) )
+					if( names_scope.GetAccessFor( class_ ) < class_->GetMemberVisibility( *component_name ) )
 						REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), src_loc, *component_name, class_->members->GetThisNamespaceName() );
 
 					if( ( *component_name == Keywords::constructor_ || *component_name == Keywords::destructor_ ) && !function_context.is_in_unsafe_block )

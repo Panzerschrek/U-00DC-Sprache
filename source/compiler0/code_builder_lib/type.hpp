@@ -32,17 +32,12 @@ enum class InnerReferenceType
 	Mut, // Type have mutable inner reference
 };
 
-struct ClassProxy
-{
-	// Observer pointer to class.
-	// Class itself stored in class table.
-	Class* class_= nullptr;
-};
-using ClassProxyPtr= std::shared_ptr<ClassProxy>;
-using ClassProxyWeakPtr= std::weak_ptr<ClassProxy>;
-
 // Observer pointer to class.
-// Enum itself stored in class table.
+// Class itself stored in enum table.
+using ClassPtr= Class*;
+
+// Observer pointer to enum.
+// Enum itself stored in enum table.
 using EnumPtr= Enum*;
 
 struct FundamentalType final
@@ -83,7 +78,7 @@ public:
 	Type( ArrayType array_type );
 	Type( RawPointerType raw_pointer_type );
 	Type( TupleType tuple_type );
-	Type( ClassProxyPtr class_type );
+	Type( ClassPtr class_type );
 	Type( EnumPtr enum_type );
 
 	// Get different type kinds.
@@ -93,8 +88,7 @@ public:
 	const ArrayType* GetArrayType() const;
 	const RawPointerType* GetRawPointerType() const;
 	const TupleType* GetTupleType() const;
-	ClassProxyPtr GetClassTypeProxy() const;
-	Class* GetClassType() const;
+	ClassPtr GetClassType() const;
 	Enum* GetEnumType() const;
 	EnumPtr GetEnumTypePtr() const;
 
@@ -130,7 +124,7 @@ private:
 		FunctionPtr,
 		ArrayPtr,
 		RawPointerPtr,
-		ClassProxyPtr,
+		ClassPtr,
 		EnumPtr,
 		FunctionPointerPtr,
 		TupleType >;

@@ -12,10 +12,10 @@ namespace CodeBuilderPrivate
 namespace
 {
 
-void AddAncestorsAccessRights_r( Class& the_class, const ClassProxyPtr& ancestor_class )
+void AddAncestorsAccessRights_r( Class& the_class, const ClassPtr& ancestor_class )
 {
 	the_class.members->AddAccessRightsFor( ancestor_class, ClassMemberVisibility::Protected );
-	for( const Class::Parent& parent : ancestor_class->class_->parents )
+	for( const Class::Parent& parent : ancestor_class->parents )
 		AddAncestorsAccessRights_r( the_class, parent.class_ );
 }
 
@@ -138,8 +138,8 @@ bool CodeBuilder::IsTypeComplete( const Type& type ) const
 			all_complete= all_complete && IsTypeComplete( element_type );
 		return all_complete;
 	}
-	else if( const auto class_type= type.GetClassTypeProxy() )
-		return class_type->class_->is_complete;
+	else if( const auto class_type= type.GetClassType() )
+		return class_type->is_complete;
 	else
 	{
 		U_ASSERT(false);
@@ -169,10 +169,10 @@ bool CodeBuilder::EnsureTypeComplete( const Type& type )
 			ok&= EnsureTypeComplete( element_type );
 		return ok;
 	}
-	else if( const auto class_type= type.GetClassTypeProxy() )
+	else if( const auto class_type= type.GetClassType() )
 	{
 		GlobalThingBuildClass( class_type );
-		return class_type->class_->is_complete;
+		return class_type->is_complete;
 	}
 	else U_ASSERT(false);
 
@@ -209,14 +209,14 @@ void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 					type->GetRawPointerType() != nullptr ||
 					type->GetTupleType() != nullptr )
 				{}
-				else if( const ClassProxyPtr class_type= type->GetClassTypeProxy() )
+				else if( const ClassPtr class_type= type->GetClassType() )
 				{
 					// Build classes only from parent namespace.
 					// Otherwise we can get loop, using typedef.
-					if( class_type->class_->members->GetParent() == &names_scope )
+					if( class_type->members->GetParent() == &names_scope )
 					{
 						GlobalThingBuildClass( class_type );
-						GlobalThingBuildNamespace( *class_type->class_->members );
+						GlobalThingBuildNamespace( *class_type->members );
 					}
 				}
 				else if( const EnumPtr enum_type= type->GetEnumType() )
@@ -350,9 +350,9 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 	}
 }
 
-void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
+void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 {
-	Class& the_class= *class_type->class_;
+	Class& the_class= *class_type;
 
 	if( the_class.is_complete ||
 		( the_class.syntax_element != nullptr && the_class.syntax_element->is_forward_declaration_ ) )
@@ -361,7 +361,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 	if( the_class.typeinfo_type != std::nullopt )
 	{
 		const Type& type= *the_class.typeinfo_type;
-		BuildFullTypeinfo( type, typeinfo_cache_[type], *class_type->class_->members->GetRoot() );
+		BuildFullTypeinfo( type, typeinfo_cache_[type], *the_class.members->GetRoot() );
 		return;
 	}
 
@@ -384,8 +384,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 			continue;
 		}
 
-		const ClassProxyPtr parent_class_proxy= type_name->GetClassTypeProxy();
-		if( parent_class_proxy == nullptr )
+		const ClassPtr parent_class= type_name->GetClassType();
+		if( parent_class == nullptr )
 		{
 			REPORT_ERROR( CanNotDeriveFromThisType, class_parent_namespace.GetErrors(), class_declaration.src_loc_, type_name );
 			continue;
@@ -398,14 +398,14 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 
 		bool duplicated= false;
 		for( const Class::Parent& parent : the_class.parents )
-			duplicated= duplicated || parent.class_ == parent_class_proxy;
+			duplicated= duplicated || parent.class_ == parent_class;
 		if( duplicated )
 		{
 			REPORT_ERROR( DuplicatedParentClass, class_parent_namespace.GetErrors(), class_declaration.src_loc_, type_name );
 			continue;
 		}
 
-		const auto parent_kind= parent_class_proxy->class_->kind;
+		const auto parent_kind= parent_class->kind;
 		if( !( parent_kind == Class::Kind::Abstract || parent_kind == Class::Kind::Interface || parent_kind == Class::Kind::PolymorphNonFinal ) )
 		{
 			REPORT_ERROR( CanNotDeriveFromThisType, class_parent_namespace.GetErrors(), class_declaration.src_loc_, type_name );
@@ -419,12 +419,12 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 				REPORT_ERROR( DuplicatedBaseClass, class_parent_namespace.GetErrors(), class_declaration.src_loc_, type_name );
 				continue;
 			}
-			the_class.base_class= parent_class_proxy;
+			the_class.base_class= parent_class;
 		}
 
 		the_class.parents.emplace_back();
-		the_class.parents.back().class_= parent_class_proxy;
-		AddAncestorsAccessRights_r( the_class, parent_class_proxy );
+		the_class.parents.back().class_= parent_class;
+		AddAncestorsAccessRights_r( the_class, parent_class );
 	} // for parents
 
 	// Pre-mark class as polymorph. Later we know class kind exactly, now, we only needs to know, that is polymorph - for virtual functions preparation.
@@ -508,14 +508,14 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 		});
 
 	for( const Class::Parent& parent : the_class.parents )
-		the_class.inner_reference_type= std::max( the_class.inner_reference_type, parent.class_->class_->inner_reference_type );
+		the_class.inner_reference_type= std::max( the_class.inner_reference_type, parent.class_->inner_reference_type );
 
 	// Fill llvm struct type fields
 	ClassFieldsVector<llvm::Type*> fields_llvm_types;
 
 	// Base must be always first field.
 	if( the_class.base_class != nullptr )
-		fields_llvm_types.push_back( the_class.base_class->class_->llvm_type );
+		fields_llvm_types.push_back( the_class.base_class->llvm_type );
 	// Add non-base (interface) fields.
 	for( Class::Parent& parent : the_class.parents )
 	{
@@ -526,7 +526,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 		}
 
 		parent.field_number= static_cast<unsigned int>(fields_llvm_types.size());
-		fields_llvm_types.emplace_back( parent.class_->class_->llvm_type );
+		fields_llvm_types.emplace_back( parent.class_->llvm_type );
 	}
 
 	// Allocate virtual table pointer, if class have no parents.
@@ -602,7 +602,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 	// Generate destructor prototype before perparing virtual table to mark it as virtual and setup virtual table index.
 	if( the_class.members->GetThisScopeValue( Keyword( Keywords::destructor_ ) ) == nullptr )
 	{
-		FunctionVariable destructor_function_variable= GenerateDestructorPrototype( the_class, class_type );
+		FunctionVariable destructor_function_variable= GenerateDestructorPrototype( class_type );
 		OverloadedFunctionsSet destructors_set;
 		destructors_set.functions.push_back( std::move(destructor_function_variable) );
 		the_class.members->AddName( Keyword( Keywords::destructor_ ), std::move(destructors_set) );
@@ -746,7 +746,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 	// Merge namespaces of parents into result class.
 	for( const Class::Parent& parent : the_class.parents )
 	{
-		const Class* const parent_class= parent.class_->class_;
+		const auto parent_class= parent.class_;
 		parent_class->members->ForEachInThisScope(
 			[&]( const std::string& name, const Value& value )
 			{
@@ -822,10 +822,10 @@ void CodeBuilder::GlobalThingBuildClass( const ClassProxyPtr class_type )
 
 	the_class.is_complete= true;
 
-	TryGenerateDefaultConstructor( the_class, class_type );
-	TryGenerateDestructor( the_class, class_type );
-	TryGenerateCopyConstructor( the_class, class_type );
-	TryGenerateCopyAssignmentOperator( the_class, class_type );
+	TryGenerateDefaultConstructor( class_type );
+	TryGenerateDestructor( class_type );
+	TryGenerateCopyConstructor( class_type );
+	TryGenerateCopyAssignmentOperator( class_type );
 
 	CheckClassFieldsInitializers( class_type );
 

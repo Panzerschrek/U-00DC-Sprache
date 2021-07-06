@@ -16,13 +16,10 @@ public:
 public:
 	Class( std::string name, NamesScope* parent_scope );
 
-	Class( const Class& )= delete;
-	Class& operator=( const Class& )= delete;
-
 	ClassMemberVisibility GetMemberVisibility( const std::string& member_name ) const;
 	void SetMemberVisibility( const std::string& member_name, ClassMemberVisibility visibility );
 
-	bool HaveAncestor( const ClassProxyPtr& class_ ) const;
+	bool HaveAncestor( const ClassPtr& class_ ) const;
 
 public:
 	struct BaseTemplate
@@ -31,7 +28,7 @@ public:
 		TemplateArgs signature_args;
 	};
 
-	enum class Kind
+	enum class Kind : uint8_t
 	{
 		Struct,
 		NonPolymorph,
@@ -53,9 +50,13 @@ public:
 		uint32_t parent_virtual_table_index= ~0u;
 	};
 
-public:
-	// If you change this, you must change CodeBuilder::CopyClass too!
+	struct Parent
+	{
+		ClassPtr class_= nullptr;
+		unsigned int field_number= ~0u; // Allways 0 for base class.
+	};
 
+public:
 	NamesScopePtr members;
 
 	// Initial namespace of internals of this class in file where it was declared.
@@ -69,6 +70,8 @@ public:
 
 	size_t field_count= 0u;
 	InnerReferenceType inner_reference_type= InnerReferenceType::None;
+	Kind kind= Kind::Struct;
+
 	bool is_complete= false;
 	bool have_explicit_noncopy_constructors= false;
 	bool is_default_constructible= false;
@@ -81,7 +84,7 @@ public:
 	SrcLoc forward_declaration_src_loc;
 	SrcLoc body_src_loc;
 
-	llvm::StructType* llvm_type;
+	llvm::StructType* llvm_type= nullptr;
 
 	// Names of this class fields in order of field number. Empty string for parent classes fields.
 	std::vector<std::string> fields_order;
@@ -92,14 +95,7 @@ public:
 	// If this class is typeinfo, contains source type.
 	std::optional<Type> typeinfo_type;
 
-	Kind kind= Kind::Struct;
-
-	struct Parent
-	{
-		ClassProxyPtr class_;
-		unsigned int field_number= ~0u; // Allways 0 for base class.
-	};
-	ClassProxyPtr base_class;
+	ClassPtr base_class= nullptr;
 	std::vector<Parent> parents; // Parents, include base class.
 
 	std::vector<VirtualTableEntry> virtual_table;

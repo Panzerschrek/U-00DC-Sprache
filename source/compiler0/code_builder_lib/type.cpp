@@ -61,10 +61,10 @@ llvm::Type* GetLLVMTypeImpl( const std::shared_ptr<const T>& boxed )
 	return GetLLVMTypeImpl( *boxed );
 }
 
-llvm::Type* GetLLVMTypeImpl( const ClassProxyPtr& class_ )
+llvm::Type* GetLLVMTypeImpl( const ClassPtr& class_ )
 {
-	U_ASSERT( class_ != nullptr && class_->class_ != nullptr );
-	return class_->class_->llvm_type;
+	U_ASSERT( class_ != nullptr );
+	return class_->llvm_type;
 }
 
 llvm::Type* GetLLVMTypeImpl( const EnumPtr& enum_ )
@@ -145,7 +145,7 @@ Type::Type( TupleType tuple_type )
 	: something_( std::move(tuple_type) )
 {}
 
-Type::Type( ClassProxyPtr class_type )
+Type::Type( ClassPtr class_type )
 	: something_( std::move(class_type) )
 {}
 
@@ -195,20 +195,12 @@ const TupleType* Type::GetTupleType() const
 	return std::get_if<TupleType>( &something_ );
 }
 
-ClassProxyPtr Type::GetClassTypeProxy() const
+ClassPtr Type::GetClassType() const
 {
-	const ClassProxyPtr* const class_type= std::get_if<ClassProxyPtr>( &something_ );
+	const ClassPtr* const class_type= std::get_if<ClassPtr>( &something_ );
 	if( class_type == nullptr )
 		return nullptr;
 	return *class_type;
-}
-
-Class* Type::GetClassType() const
-{
-	const ClassProxyPtr class_proxy= GetClassTypeProxy();
-	if( class_proxy == nullptr )
-		return nullptr;
-	return class_proxy->class_;
 }
 
 Enum* Type::GetEnumType() const
@@ -238,7 +230,7 @@ bool Type::ReferenceIsConvertibleTo( const Type& other ) const
 	{
 		for( const Class::Parent& parent : class_type->parents )
 		{
-			if( parent.class_->class_ == other_class_type ||
+			if( parent.class_ == other_class_type ||
 				Type(parent.class_).ReferenceIsConvertibleTo( other ) )
 				return true;
 		}
@@ -251,10 +243,10 @@ bool Type::IsDefaultConstructible() const
 {
 	if( const auto fundamental_type= GetFundamentalType() )
 		return fundamental_type->fundamental_type == U_FundamentalType::Void;
-	else if( const ClassProxyPtr* const class_= std::get_if<ClassProxyPtr>( &something_ ) )
+	else if( const ClassPtr* const class_= std::get_if<ClassPtr>( &something_ ) )
 	{
-		U_ASSERT( *class_ != nullptr && (*class_)->class_ != nullptr );
-		return (*class_)->class_->is_default_constructible;
+		U_ASSERT( *class_ != nullptr );
+		return (*class_)->is_default_constructible;
 	}
 	else if( const ArrayPtr* const array= std::get_if<ArrayPtr>( &something_ ) )
 	{
@@ -279,10 +271,10 @@ bool Type::IsCopyConstructible() const
 		GetRawPointerType() != nullptr ||
 		GetFunctionPointerType() != nullptr )
 		return true;
-	else if( const ClassProxyPtr* const class_= std::get_if<ClassProxyPtr>( &something_ ) )
+	else if( const ClassPtr* const class_= std::get_if<ClassPtr>( &something_ ) )
 	{
-		U_ASSERT( *class_ != nullptr && (*class_)->class_ != nullptr );
-		return (*class_)->class_->is_copy_constructible;
+		U_ASSERT( *class_ != nullptr );
+		return (*class_)->is_copy_constructible;
 	}
 	else if( const ArrayPtr* const array= std::get_if<ArrayPtr>( &something_ ) )
 	{
@@ -307,10 +299,10 @@ bool Type::IsCopyAssignable() const
 		GetRawPointerType() != nullptr ||
 		GetFunctionPointerType() != nullptr )
 		return true;
-	else if( const ClassProxyPtr* const class_= std::get_if<ClassProxyPtr>( &something_ ) )
+	else if( const ClassPtr* const class_= std::get_if<ClassPtr>( &something_ ) )
 	{
-		U_ASSERT( *class_ != nullptr && (*class_)->class_ != nullptr );
-		return (*class_)->class_->is_copy_assignable;
+		U_ASSERT( *class_ != nullptr );
+		return (*class_)->is_copy_assignable;
 	}
 	else if( const ArrayPtr* const array= std::get_if<ArrayPtr>( &something_ ) )
 	{
@@ -330,10 +322,10 @@ bool Type::IsCopyAssignable() const
 
 bool Type::HaveDestructor() const
 {
-	if( const ClassProxyPtr* const class_= std::get_if<ClassProxyPtr>( &something_ ) )
+	if( const ClassPtr* const class_= std::get_if<ClassPtr>( &something_ ) )
 	{
-		U_ASSERT( *class_ != nullptr && (*class_)->class_ != nullptr );
-		return (*class_)->class_->have_destructor;
+		U_ASSERT( *class_ != nullptr );
+		return (*class_)->have_destructor;
 	}
 	else if( const ArrayPtr* const array= std::get_if<ArrayPtr>( &something_ ) )
 	{
@@ -478,30 +470,30 @@ std::string Type::ToString() const
 			return res;
 		}
 
-		std::string operator()( const ClassProxyPtr& class_ ) const
+		std::string operator()( const ClassPtr& class_ ) const
 		{
 			std::string result;
-			if( class_->class_->typeinfo_type != std::nullopt )
+			if( class_->typeinfo_type != std::nullopt )
 			{
 				result= Keyword(Keywords::typeof_);
 				result+= "(";
 				result+= Keyword(Keywords::typeinfo_);
 				result+= "</";
-				result+= class_->class_->typeinfo_type->ToString();
+				result+= class_->typeinfo_type->ToString();
 				result+= "/>";
 				result+=")";
 			}
-			else if( class_->class_->base_template != std::nullopt )
+			else if( class_->base_template != std::nullopt )
 			{
 				// Skip template parameters namespace.
-				const std::string template_namespace_name= class_->class_->members->GetParent()->GetParent()->ToString();
+				const std::string template_namespace_name= class_->members->GetParent()->GetParent()->ToString();
 				if( !template_namespace_name.empty() )
 					result+= template_namespace_name + "::";
 
-				const std::string& class_name= class_->class_->base_template->class_template->syntax_element->name_;
+				const std::string& class_name= class_->base_template->class_template->syntax_element->name_;
 				result+= class_name;
 				result+= "</";
-				for( const TemplateArg& arg : class_->class_->base_template->signature_args )
+				for( const TemplateArg& arg : class_->base_template->signature_args )
 				{
 					if( const Type* const param_as_type = std::get_if<Type>( &arg ) )
 						result+= param_as_type->ToString();
@@ -509,13 +501,13 @@ std::string Type::ToString() const
 						result+= ConstantVariableToString( *param_as_variable );
 					else U_ASSERT(false);
 
-					if( &arg != &class_->class_->base_template->signature_args.back() )
+					if( &arg != &class_->base_template->signature_args.back() )
 						result+= ", ";
 				}
 				result+= "/>";
 			}
 			else
-				result+= class_->class_->members->ToString();
+				result+= class_->members->ToString();
 			return result;
 		}
 
@@ -592,9 +584,9 @@ size_t Type::Hash() const
 			return hash;
 		}
 
-		size_t operator()( const ClassProxyPtr& class_ ) const
+		size_t operator()( const ClassPtr& class_ ) const
 		{
-			return size_t(reinterpret_cast<uintptr_t>(class_.get()));
+			return size_t(reinterpret_cast<uintptr_t>(class_));
 		}
 
 		size_t operator()( const EnumPtr& enum_ ) const
@@ -658,7 +650,7 @@ bool operator==( const Type& l, const Type& r )
 	}
 	else if( l.something_.index() == 4 )
 	{
-		return l.GetClassTypeProxy() == r.GetClassTypeProxy();
+		return l.GetClassType() == r.GetClassType();
 	}
 	else if( l.something_.index() == 5 )
 	{

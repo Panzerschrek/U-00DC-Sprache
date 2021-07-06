@@ -37,11 +37,11 @@ public:
 	const NamesScope* GetRoot() const;
 
 	// Store class for namespaces of classes.
-	void SetClass(const ClassProxyPtr& in_class );
-	ClassProxyPtr GetClass() const;
+	void SetClass(const ClassPtr& in_class );
+	ClassPtr GetClass() const;
 
-	void AddAccessRightsFor( const ClassProxyPtr& class_, ClassMemberVisibility visibility );
-	ClassMemberVisibility GetAccessFor( const ClassProxyPtr& class_ ) const;
+	void AddAccessRightsFor( const ClassPtr& class_, ClassMemberVisibility visibility );
+	ClassMemberVisibility GetAccessFor( const ClassPtr& class_ ) const;
 	void CopyAccessRightsFrom( const NamesScope& src );
 
 	static const std::string c_template_args_namespace_name;
@@ -100,13 +100,13 @@ private:
 	std::string name_;
 	NamesScope* parent_;
 
-	std::weak_ptr<ClassProxy> class_;
+	ClassPtr class_= nullptr;
 
 	llvm::StringMap< Value > names_map_;
 	size_t max_key_size_= 0u;
 
 	mutable size_t iterating_= 0u;
-	std::unordered_map<ClassProxyPtr, ClassMemberVisibility> access_rights_;
+	std::unordered_map<ClassPtr, ClassMemberVisibility> access_rights_;
 
 	CodeBuilderErrorsContainer* errors_= nullptr;
 };

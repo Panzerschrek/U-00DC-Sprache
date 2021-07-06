@@ -26,16 +26,16 @@ const std::string g_typeinfo_class_parents_list_node_class_name= "_TICPL_";
 const std::string g_typeinfo_function_arguments_list_node_class_name= "_TIAL_";
 const std::string g_typeinfo_tuple_elements_list_node_class_name= "_TITL_";
 
-std::string GetTypeinfoVariableName( const ClassProxyPtr& typeinfo_class )
+std::string GetTypeinfoVariableName( const ClassPtr& typeinfo_class )
 {
-	return "_val_of_" + std::string(typeinfo_class->class_->llvm_type->getName());
+	return "_val_of_" + std::string(typeinfo_class->llvm_type->getName());
 }
 
 struct TypeinfoListElement
 {
 	std::string name_for_ordering;
-	llvm::Constant* initializer;
-	ClassProxyPtr type;
+	llvm::Constant* initializer= nullptr;
+	ClassPtr type= nullptr;
 };
 
 Variable FinalizeTypeinfoList( llvm::LLVMContext& llvm_context, std::vector<TypeinfoListElement>& list )
@@ -57,7 +57,7 @@ Variable FinalizeTypeinfoList( llvm::LLVMContext& llvm_context, std::vector<Type
 	for( const TypeinfoListElement& list_element : list )
 	{
 		list_type.elements.emplace_back( list_element.type );
-		list_elements_llvm_types.push_back( list_element.type->class_->llvm_type );
+		list_elements_llvm_types.push_back( list_element.type->llvm_type );
 		list_elements_initializers.push_back( list_element.initializer );
 	}
 
@@ -85,38 +85,39 @@ Variable CodeBuilder::BuildTypeInfo( const Type& type, NamesScope& root_namespac
 	return var;
 }
 
-ClassProxyPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Type& src_type, std::string name )
+ClassPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Type& src_type, std::string name )
 {
 	// Currently, give "random" names for typeinfo classes.
 	llvm::StructType* const llvm_type= llvm::StructType::create( llvm_context_ );
 
-	const ClassProxyPtr typeinfo_class_proxy= std::make_shared<ClassProxy>();
-	typeinfo_class_table_[typeinfo_class_proxy]= std::make_unique<Class>( std::move(name), &root_namespace );
-	typeinfo_class_proxy->class_= typeinfo_class_table_[typeinfo_class_proxy].get();
-	typeinfo_class_proxy->class_->llvm_type= llvm_type;
-	typeinfo_class_proxy->class_->typeinfo_type= src_type;
+	const auto typeinfo_class_ptr= std::make_shared<Class>( std::move(name), &root_namespace );
+	typeinfo_class_table_.push_back(typeinfo_class_ptr);
+	ClassPtr typeinfo_class= typeinfo_class_ptr.get();
 
-	llvm_type->setName( mangler_.MangleType( typeinfo_class_proxy ) );
+	typeinfo_class->llvm_type= llvm_type;
+	typeinfo_class->typeinfo_type= src_type;
 
-	typeinfo_class_proxy->class_->inner_reference_type= InnerReferenceType::Imut; // Almost all typeinfo have references to another typeinfo.
+	llvm_type->setName( mangler_.MangleType( typeinfo_class ) );
 
-	return typeinfo_class_proxy;
+	typeinfo_class_ptr->inner_reference_type= InnerReferenceType::Imut; // Almost all typeinfo have references to another typeinfo.
+
+	return typeinfo_class_ptr.get();
 }
 
 Variable CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope& root_namespace )
 {
-	const ClassProxyPtr typeinfo_class_proxy= CreateTypeinfoClass( root_namespace, type, g_typeinfo_root_class_name );
-	Variable result( typeinfo_class_proxy, Variable::Location::Pointer, ValueType::ConstReference );
+	const ClassPtr typeinfo_class= CreateTypeinfoClass( root_namespace, type, g_typeinfo_root_class_name );
+	Variable result( typeinfo_class, Variable::Location::Pointer, ValueType::ConstReference );
 
-	result.constexpr_value= llvm::UndefValue::get( typeinfo_class_proxy->class_->llvm_type ); // Currently uninitialized.
+	result.constexpr_value= llvm::UndefValue::get( typeinfo_class->llvm_type ); // Currently uninitialized.
 	result.llvm_value=
 		CreateGlobalConstantVariable(
 			result.type,
-			GetTypeinfoVariableName( typeinfo_class_proxy ),
+			GetTypeinfoVariableName( typeinfo_class ),
 			result.constexpr_value );
 
 	// This allows to get typename itself, using typeinfo variable and use such type as normal.
-	typeinfo_class_proxy->class_->members->AddName( "src_type", Value( type, g_dummy_src_loc ) );
+	typeinfo_class->members->AddName( "src_type", Value( type, g_dummy_src_loc ) );
 
 	return result;
 }
@@ -131,9 +132,8 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 
 	U_ASSERT( typeinfo_variable.type.GetClassType() != nullptr );
 
-	const ClassProxyPtr typeinfo_class_proxy= typeinfo_variable.type.GetClassTypeProxy();
-	Class& typeinfo_class= *typeinfo_variable.type.GetClassType();
-	if( typeinfo_class.is_complete )
+	const ClassPtr typeinfo_class= typeinfo_variable.type.GetClassType();
+	if( typeinfo_class->is_complete )
 		return;
 
 	ClassFieldsVector<llvm::Type*> fields_llvm_types;
@@ -142,9 +142,9 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	const auto add_bool_field=
 	[&]( const std::string& name, const bool value )
 	{
-		typeinfo_class.members->AddName(
+		typeinfo_class->members->AddName(
 			name,
-			Value(ClassField( typeinfo_class_proxy, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+			Value(ClassField( typeinfo_class, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 		fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, uint64_t(value) ) ) );
 	};
@@ -152,9 +152,9 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	const auto add_size_field=
 	[&]( const std::string& name, const uint64_t value )
 	{
-		typeinfo_class.members->AddName(
+		typeinfo_class->members->AddName(
 			name,
-			Value( ClassField( typeinfo_class_proxy, size_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+			Value( ClassField( typeinfo_class, size_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( size_type_.GetLLVMType() );
 		fields_initializers.push_back(
 			llvm::Constant::getIntegerValue(
@@ -167,9 +167,9 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	{
 		const Variable dependent_type_typeinfo= BuildTypeInfo( dependent_type, root_namespace );
 
-		typeinfo_class.members->AddName(
+		typeinfo_class->members->AddName(
 			name,
-			Value( ClassField( typeinfo_class_proxy, dependent_type_typeinfo.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
+			Value( ClassField( typeinfo_class, dependent_type_typeinfo.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( dependent_type_typeinfo.type.GetLLVMType()->getPointerTo() );
 		fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( dependent_type_typeinfo.llvm_value ) );
 	};
@@ -177,9 +177,9 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	const auto add_list_field=
 	[&]( const std::string& name, const Variable& variable )
 	{
-		typeinfo_class.members->AddName(
+		typeinfo_class->members->AddName(
 			name,
-			Value( ClassField( typeinfo_class_proxy, variable.type, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+			Value( ClassField( typeinfo_class, variable.type, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( variable.type.GetLLVMType() );
 		fields_initializers.push_back( variable.constexpr_value );
 	};
@@ -236,7 +236,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 		add_size_field( "element_count", tuple_type->elements.size() );
 		add_list_field( "elements_list", BuildTypeinfoTupleElements( *tuple_type, root_namespace ) );
 	}
-	else if( const Class* const class_type= type.GetClassType() )
+	else if( const ClassPtr class_type= type.GetClassType() )
 	{
 		U_ASSERT( class_type->is_complete );
 
@@ -249,18 +249,17 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 		add_size_field( "field_count", class_type->field_count );
 		add_size_field( "parent_count", class_type->parents.size() );
 
-		const ClassProxyPtr class_proxy= type.GetClassTypeProxy();
-		add_list_field( "fields_list"   , BuildTypeinfoClassFieldsList(    class_proxy, root_namespace ) );
-		add_list_field( "types_list"    , BuildTypeinfoClassTypesList(     class_proxy, root_namespace ) );
-		add_list_field( "functions_list", BuildTypeinfoClassFunctionsList( class_proxy, root_namespace ) );
-		add_list_field( "parents_list"  , BuildTypeinfoClassParentsList(  class_proxy, root_namespace ) );
+		add_list_field( "fields_list"   , BuildTypeinfoClassFieldsList(    class_type, root_namespace ) );
+		add_list_field( "types_list"    , BuildTypeinfoClassTypesList(     class_type, root_namespace ) );
+		add_list_field( "functions_list", BuildTypeinfoClassFunctionsList( class_type, root_namespace ) );
+		add_list_field( "parents_list"  , BuildTypeinfoClassParentsList(  class_type, root_namespace ) );
 
 		if( is_polymorph )
 		{
 			U_ASSERT( class_type->polymorph_type_id != nullptr );
-			typeinfo_class.members->AddName(
+			typeinfo_class->members->AddName(
 				"type_id",
-				Value( ClassField( typeinfo_class_proxy, size_type_, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
+				Value( ClassField( typeinfo_class, size_type_, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
 			fields_llvm_types.push_back( fundamental_llvm_types_.int_ptr->getPointerTo() );
 			fields_initializers.push_back( class_type->polymorph_type_id );
 		}
@@ -299,15 +298,16 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	}
 	else U_ASSERT(false);
 
-	FinishTypeinfoClass( typeinfo_class, typeinfo_class_proxy, fields_llvm_types );
+	FinishTypeinfoClass( typeinfo_class, fields_llvm_types );
 
 	// Prepare result value
-	typeinfo_variable.constexpr_value= llvm::ConstantStruct::get( typeinfo_class.llvm_type, fields_initializers );
+	typeinfo_variable.constexpr_value= llvm::ConstantStruct::get( typeinfo_class->llvm_type, fields_initializers );
 	llvm::dyn_cast<llvm::GlobalVariable>(typeinfo_variable.llvm_value)->setInitializer( typeinfo_variable.constexpr_value );
 }
 
-void CodeBuilder::FinishTypeinfoClass( Class& class_, const ClassProxyPtr class_proxy, const ClassFieldsVector<llvm::Type*>& fields_llvm_types )
+void CodeBuilder::FinishTypeinfoClass( const ClassPtr& class_type, const ClassFieldsVector<llvm::Type*>& fields_llvm_types )
 {
+	Class& class_= *class_type;
 	class_.llvm_type->setBody( fields_llvm_types );
 	class_.kind= Class::Kind::Struct;
 	class_.is_complete= true;
@@ -315,7 +315,7 @@ void CodeBuilder::FinishTypeinfoClass( Class& class_, const ClassProxyPtr class_
 
 	// Generate only destructor, because almost all structs and classes must have it.
 	// Other methods - constructors, assignment operators does not needs for typeinfo classes.
-	TryGenerateDestructor( class_, class_proxy );
+	TryGenerateDestructor( class_type );
 
 	const FunctionVariable& destructor= class_.members->GetThisScopeValue( Keyword( Keywords::destructor_ ) )->GetFunctionsSet()->functions.front();
 	destructor.llvm_function->setName( mangler_.MangleFunction( *class_.members, Keyword( Keywords::destructor_ ), *destructor.type.GetFunctionType() ) );
@@ -331,12 +331,12 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, N
 		{
 			llvm::Constant* const enum_member_value= enum_member.GetVariable()->constexpr_value;
 
-			const ClassProxyPtr node_type=
+			const ClassPtr node_type=
 				CreateTypeinfoClass(
 					root_namespace,
 					enum_type,
 					g_typeinfo_enum_elements_list_node_class_name + std::to_string( enum_member_value->getUniqueInteger().getLimitedValue() ) );
-			Class& node_type_class= *node_type->class_;
+			Class& node_type_class= *node_type;
 
 			ClassFieldsVector<llvm::Type*> fields_llvm_types;
 			ClassFieldsVector<llvm::Constant*> fields_initializers;
@@ -360,7 +360,7 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, N
 				fields_initializers.push_back( llvm::ConstantDataArray::getString( llvm_context_, name, false /* not null terminated */ ) );
 			}
 
-			FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
+			FinishTypeinfoClass( node_type, fields_llvm_types );
 
 			list_elements.push_back(
 				TypeinfoListElement{
@@ -373,11 +373,11 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, N
 }
 
 void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
-	const Class& class_, const ClassProxyPtr& node_class_proxy,
+	const Class& class_, const ClassPtr& node_class_type,
 	const std::string& member_name,
 	ClassFieldsVector<llvm::Type*>& fields_llvm_types, ClassFieldsVector<llvm::Constant*>& fields_initializers )
 {
-	Class& node_class= *node_class_proxy->class_;
+	Class& node_class= *node_class_type;
 
 	{
 		ArrayType name_type;
@@ -387,7 +387,7 @@ void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
 
 		node_class.members->AddName(
 			g_name_field_name,
-			Value( ClassField( node_class_proxy, name_type, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+			Value( ClassField( node_class_type, name_type, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( name_type.llvm_type );
 		fields_initializers.push_back( llvm::ConstantDataArray::getString( llvm_context_, member_name, false /* not null terminated */ ) );
 	}
@@ -396,36 +396,36 @@ void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
 
 	node_class.members->AddName(
 		"is_public",
-		Value( ClassField( node_class_proxy, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+		Value( ClassField( node_class_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 	fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 	fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, member_visibility == ClassMemberVisibility::Public    ) ) );
 
 	node_class.members->AddName(
 		"is_protected",
-		Value( ClassField( node_class_proxy, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+		Value( ClassField( node_class_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 	fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 	fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, member_visibility == ClassMemberVisibility::Protected ) ) );
 
 	node_class.members->AddName(
 		"is_private",
-		Value( ClassField( node_class_proxy, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+		Value( ClassField( node_class_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 	fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 	fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, member_visibility == ClassMemberVisibility::Private   ) ) );
 }
 
-Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_type, NamesScope& root_namespace )
+Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassPtr& class_type, NamesScope& root_namespace )
 {
 	std::vector<TypeinfoListElement> list_elements;
 
-	class_type->class_->members->ForEachInThisScope(
+	class_type->members->ForEachInThisScope(
 		[&]( const std::string& member_name, const Value& class_member )
 		{
 			const ClassField* const class_field= class_member.GetClassField();
 			if( class_field == nullptr )
 				return;
 
-			const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace, class_type, g_typeinfo_class_fields_list_node_class_name + member_name );
-			Class& node_type_class= *node_type->class_;
+			const ClassPtr node_type= CreateTypeinfoClass( root_namespace, class_type, g_typeinfo_class_fields_list_node_class_name + member_name );
+			Class& node_type_class= *node_type;
 
 			ClassFieldsVector<llvm::Type*> fields_llvm_types;
 			ClassFieldsVector<llvm::Constant*> fields_initializers;
@@ -439,7 +439,7 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 				fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( field_type_typeinfo.llvm_value ) );
 			}
 			{
-				const Variable fields_class_type_typeinfo= BuildTypeInfo( class_field->class_.lock(), root_namespace );
+				const Variable fields_class_type_typeinfo= BuildTypeInfo( class_field->class_, root_namespace );
 				ClassField field( node_type, fields_class_type_typeinfo.type, static_cast<unsigned int>(fields_llvm_types.size()), false, true );
 
 				node_type_class.members->AddName( "class_type", Value( std::move(field), g_dummy_src_loc ) );
@@ -449,19 +449,19 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 			{
 				// For ancestor fields accumulate offset.
 				uint64_t offset= 0u;
-				ClassProxyPtr class_for_field_search= class_type;
+				ClassPtr class_for_field_search= class_type;
 				while(true)
 				{
-					if( class_for_field_search == class_field->class_.lock() )
+					if( class_for_field_search == class_field->class_ )
 					{
-						offset+= data_layout_.getStructLayout( class_for_field_search->class_->llvm_type )->getElementOffset( class_field->index );
+						offset+= data_layout_.getStructLayout( class_for_field_search->llvm_type )->getElementOffset( class_field->index );
 						break;
 					}
 					else
 					{
-						U_ASSERT( class_for_field_search->class_->base_class != nullptr );
-						offset+= data_layout_.getStructLayout( class_for_field_search->class_->llvm_type )->getElementOffset( 0u /*base class is allways first field */ );
-						class_for_field_search= class_for_field_search->class_->base_class;
+						U_ASSERT( class_for_field_search->base_class != nullptr );
+						offset+= data_layout_.getStructLayout( class_for_field_search->llvm_type )->getElementOffset( 0u /*base class is allways first field */ );
+						class_for_field_search= class_for_field_search->base_class;
 					}
 				}
 
@@ -484,9 +484,9 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 			fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 			fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, class_field->is_mutable ) ) );
 
-			CreateTypeinfoClassMembersListNodeCommonFields( *class_type->class_, node_type, member_name, fields_llvm_types, fields_initializers );
+			CreateTypeinfoClassMembersListNodeCommonFields( *class_type, node_type, member_name, fields_llvm_types, fields_initializers );
 
-			FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
+			FinishTypeinfoClass( node_type, fields_llvm_types );
 
 			list_elements.push_back(
 				TypeinfoListElement{
@@ -498,22 +498,22 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_t
 	return FinalizeTypeinfoList( llvm_context_, list_elements );
 }
 
-Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassProxyPtr& class_type, NamesScope& root_namespace )
+Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassPtr& class_type, NamesScope& root_namespace )
 {
 	std::vector<TypeinfoListElement> list_elements;
 
-	class_type->class_->members->ForEachInThisScope(
+	class_type->members->ForEachInThisScope(
 		[&]( const std::string& name, Value& class_member )
 		{
 			if( class_member.GetTypedef() != nullptr ) // Event in complete class typedefs may be not yet complete. Complete it now.
-				GlobalThingBuildTypedef( *class_type->class_->members, class_member );
+				GlobalThingBuildTypedef( *class_type->members, class_member );
 
 			const Type* const class_inner_type= class_member.GetTypeName();
 			if( class_inner_type == nullptr )
 				return;
 
-			const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace, class_type, g_typeinfo_class_types_list_node_class_name + name );
-			Class& node_type_class= *node_type->class_;
+			const ClassPtr node_type= CreateTypeinfoClass( root_namespace, class_type, g_typeinfo_class_types_list_node_class_name + name );
+			Class& node_type_class= *node_type;
 
 			ClassFieldsVector<llvm::Type*> fields_llvm_types;
 			ClassFieldsVector<llvm::Constant*> fields_initializers;
@@ -527,9 +527,9 @@ Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassProxyPtr& class_ty
 				fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( dependent_type_typeinfo.llvm_value ) );
 			}
 
-			CreateTypeinfoClassMembersListNodeCommonFields( *class_type->class_, node_type, name, fields_llvm_types, fields_initializers );
+			CreateTypeinfoClassMembersListNodeCommonFields( *class_type, node_type, name, fields_llvm_types, fields_initializers );
 
-			FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
+			FinishTypeinfoClass( node_type, fields_llvm_types );
 
 			list_elements.push_back(
 				TypeinfoListElement{
@@ -541,11 +541,11 @@ Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassProxyPtr& class_ty
 	return FinalizeTypeinfoList( llvm_context_, list_elements );
 }
 
-Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& class_type, NamesScope& root_namespace )
+Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPtr& class_type, NamesScope& root_namespace )
 {
 	std::vector<TypeinfoListElement> list_elements;
 
-	class_type->class_->members->ForEachInThisScope(
+	class_type->members->ForEachInThisScope(
 		[&]( const std::string& name, const Value& class_member )
 		{
 			const OverloadedFunctionsSet* const functions_set= class_member.GetFunctionsSet();
@@ -554,12 +554,12 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 
 			for( const FunctionVariable& function : functions_set->functions )
 			{
-				const ClassProxyPtr node_type=
+				const ClassPtr node_type=
 					CreateTypeinfoClass(
 						root_namespace,
 						class_type,
 						g_typeinfo_class_functions_list_node_class_name + std::string(function.llvm_function->getName()) ); // Use mangled name for type name.
-				Class& node_type_class= *node_type->class_;
+				Class& node_type_class= *node_type;
 
 				ClassFieldsVector<llvm::Type*> fields_llvm_types;
 				ClassFieldsVector<llvm::Constant*> fields_initializers;
@@ -597,9 +597,9 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 				fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 				fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, function.virtual_table_index != ~0u ) ) );
 
-				CreateTypeinfoClassMembersListNodeCommonFields( *class_type->class_, node_type, name, fields_llvm_types, fields_initializers );
+				CreateTypeinfoClassMembersListNodeCommonFields( *class_type, node_type, name, fields_llvm_types, fields_initializers );
 
-				FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
+				FinishTypeinfoClass( node_type, fields_llvm_types );
 
 				list_elements.push_back(
 					TypeinfoListElement{
@@ -612,9 +612,9 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassProxyPtr& clas
 	return FinalizeTypeinfoList( llvm_context_, list_elements );
 }
 
-Variable CodeBuilder::BuildTypeinfoClassParentsList( const ClassProxyPtr& class_type, NamesScope& root_namespace )
+Variable CodeBuilder::BuildTypeinfoClassParentsList( const ClassPtr& class_type, NamesScope& root_namespace )
 {
-	const Class& class_= *class_type->class_;
+	const Class& class_= *class_type;
 	const llvm::StructLayout* const struct_layout= data_layout_.getStructLayout( class_.llvm_type );
 
 	TupleType list_type;
@@ -626,8 +626,8 @@ Variable CodeBuilder::BuildTypeinfoClassParentsList( const ClassProxyPtr& class_
 
 	for( size_t i= 0u; i < class_.parents.size(); ++i )
 	{
-		const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace, class_type, g_typeinfo_class_parents_list_node_class_name + std::to_string(i) );
-		Class& node_type_class= *node_type->class_;
+		const ClassPtr node_type= CreateTypeinfoClass( root_namespace, class_type, g_typeinfo_class_parents_list_node_class_name + std::to_string(i) );
+		Class& node_type_class= *node_type;
 
 		ClassFieldsVector<llvm::Type*> fields_llvm_types;
 		ClassFieldsVector<llvm::Constant*> fields_initializers;
@@ -648,7 +648,7 @@ Variable CodeBuilder::BuildTypeinfoClassParentsList( const ClassProxyPtr& class_
 		fields_llvm_types.push_back( size_type_.GetLLVMType() );
 		fields_initializers.push_back( llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), parent_field_offset ) ) );
 
-		FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
+		FinishTypeinfoClass( node_type, fields_llvm_types );
 
 		list_type.elements.push_back( node_type );
 		list_elements_llvm_types.push_back( node_type_class.llvm_type );
@@ -679,8 +679,8 @@ Variable CodeBuilder::BuildTypeinfoFunctionArguments( const FunctionType& functi
 	for( const FunctionType::Param& param : function_type.params )
 	{
 		const size_t param_index= size_t(&param - function_type.params.data());
-		const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace, function_type, g_typeinfo_function_arguments_list_node_class_name + std::to_string(param_index) );
-		Class& node_type_class= *node_type->class_;
+		const ClassPtr node_type= CreateTypeinfoClass( root_namespace, function_type, g_typeinfo_function_arguments_list_node_class_name + std::to_string(param_index) );
+		Class& node_type_class= *node_type;
 
 		ClassFieldsVector<llvm::Type*> fields_llvm_types;
 		ClassFieldsVector<llvm::Constant*> fields_initializers;
@@ -708,7 +708,7 @@ Variable CodeBuilder::BuildTypeinfoFunctionArguments( const FunctionType& functi
 
 		// SPRACHE_TODO - add reference pollution
 
-		FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
+		FinishTypeinfoClass( node_type, fields_llvm_types );
 
 		list_type.elements.push_back( node_type );
 		list_elements_llvm_types.push_back( node_type_class.llvm_type );
@@ -742,8 +742,8 @@ Variable CodeBuilder::BuildTypeinfoTupleElements( const TupleType& tuple_type, N
 	{
 		const size_t element_index= size_t( &element_type - tuple_type.elements.data() );
 
-		const ClassProxyPtr node_type= CreateTypeinfoClass( root_namespace, tuple_type, g_typeinfo_tuple_elements_list_node_class_name + std::to_string(element_index) );
-		Class& node_type_class= *node_type->class_;
+		const ClassPtr node_type= CreateTypeinfoClass( root_namespace, tuple_type, g_typeinfo_tuple_elements_list_node_class_name + std::to_string(element_index) );
+		Class& node_type_class= *node_type;
 
 		ClassFieldsVector<llvm::Type*> fields_llvm_types;
 		ClassFieldsVector<llvm::Constant*> fields_initializers;
@@ -771,7 +771,7 @@ Variable CodeBuilder::BuildTypeinfoTupleElements( const TupleType& tuple_type, N
 			fields_llvm_types.push_back( size_type_.GetLLVMType() );
 			fields_initializers.push_back( llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), offset ) ) );
 		}
-		FinishTypeinfoClass( node_type_class, node_type, fields_llvm_types );
+		FinishTypeinfoClass( node_type, fields_llvm_types );
 
 		list_type.elements.push_back( node_type );
 		list_elements_llvm_types.push_back( node_type_class.llvm_type );
