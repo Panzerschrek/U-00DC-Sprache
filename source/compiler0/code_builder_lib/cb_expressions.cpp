@@ -286,7 +286,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
-	const Value* const class_member= class_type->members.GetThisScopeValue( member_access_operator.member_name_ );
+	const Value* const class_member= class_type->members->GetThisScopeValue( member_access_operator.member_name_ );
 	if( class_member == nullptr )
 	{
 		REPORT_ERROR( NameNotFound, names.GetErrors(), member_access_operator.src_loc_, member_access_operator.member_name_ );
@@ -297,8 +297,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		( member_access_operator.member_name_ == Keywords::constructor_ || member_access_operator.member_name_ == Keywords::destructor_ ) )
 		REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names.GetErrors(), member_access_operator.src_loc_,  member_access_operator.member_name_ );
 
-	if( names.GetAccessFor( variable.type.GetClassTypeProxy() ) < class_type->GetMemberVisibility( member_access_operator.member_name_ ) )
-		REPORT_ERROR( AccessingNonpublicClassMember, names.GetErrors(), member_access_operator.src_loc_, member_access_operator.member_name_, class_type->members.GetThisNamespaceName() );
+	if( names.GetAccessFor( variable.type.GetClassType() ) < class_type->GetMemberVisibility( member_access_operator.member_name_ ) )
+		REPORT_ERROR( AccessingNonpublicClassMember, names.GetErrors(), member_access_operator.src_loc_, member_access_operator.member_name_, class_type->members->GetThisNamespaceName() );
 
 	if( const OverloadedFunctionsSet* functions_set= class_member->GetFunctionsSet() )
 	{
@@ -341,23 +341,20 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	llvm::Value* index_list[2];
 	index_list[0]= GetZeroGEPIndex();
 
-	const ClassProxyPtr field_class_proxy= field->class_.lock();
-	U_ASSERT( field_class_proxy != nullptr );
-
 	llvm::Value* actual_field_class_ptr= nullptr;
-	if( field_class_proxy == variable.type.GetClassTypeProxy() )
+	if( field->class_ == variable.type.GetClassType() )
 		actual_field_class_ptr= variable.llvm_value;
 	else
 	{
 		// For parent field we needs make several GEP isntructions.
-		ClassProxyPtr actual_field_class= variable.type.GetClassTypeProxy();
+		ClassPtr actual_field_class= variable.type.GetClassType();
 		actual_field_class_ptr= variable.llvm_value;
-		while( actual_field_class != field_class_proxy )
+		while( actual_field_class != field->class_ )
 		{
 			index_list[1]= GetFieldGEPIndex( 0u /* base class is allways first field */ );
 			actual_field_class_ptr= function_context.llvm_ir_builder.CreateGEP( actual_field_class_ptr, index_list );
 
-			actual_field_class= actual_field_class->class_->base_class;
+			actual_field_class= actual_field_class->base_class;
 			U_ASSERT(actual_field_class != nullptr );
 		}
 	}
@@ -628,7 +625,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				REPORT_ERROR( BaseUnavailable, names.GetErrors(), named_operand.src_loc_ );
 				return ErrorValue();
 			}
-			if( function_context.whole_this_is_unavailable && ( !function_context.base_initialized || class_.base_class->class_->kind == Class::Kind::Abstract ) )
+			if( function_context.whole_this_is_unavailable && ( !function_context.base_initialized || class_.base_class->kind == Class::Kind::Abstract ) )
 			{
 				REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), named_operand.src_loc_, Keyword( Keywords::base_ ) );
 				return ErrorValue();
@@ -651,27 +648,25 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			return ErrorValue();
 		}
 
-		const ClassProxyPtr class_= field->class_.lock();
+		const ClassPtr class_= field->class_;
 		U_ASSERT( class_ != nullptr && "Class is dead? WTF?" );
 
 		// Make first index = 0 for array to pointer conversion.
 		llvm::Value* index_list[2];
 		index_list[0]= GetZeroGEPIndex();
 
-		const ClassProxyPtr field_class_proxy= field->class_.lock();
-		U_ASSERT( field_class_proxy != nullptr );
 
 		llvm::Value* actual_field_class_ptr= nullptr;
-		if( field_class_proxy == function_context.this_->type.GetClassTypeProxy() )
+		if( class_ == function_context.this_->type.GetClassType() )
 			actual_field_class_ptr= function_context.this_->llvm_value;
 		else
 		{
 			// For parent field we needs make several GEP isntructions.
-			ClassProxyPtr actual_field_class= function_context.this_->type.GetClassTypeProxy();
+			ClassPtr actual_field_class= function_context.this_->type.GetClassType();
 			actual_field_class_ptr= function_context.this_->llvm_value;
-			while( actual_field_class != field_class_proxy )
+			while( actual_field_class != class_ )
 			{
-				if( actual_field_class->class_->base_class == nullptr )
+				if( actual_field_class->base_class == nullptr )
 				{
 					REPORT_ERROR( AccessOfNonThisClassField, names.GetErrors(), named_operand.src_loc_, field->syntax_element->name );
 					return ErrorValue();
@@ -679,7 +674,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 				index_list[1]= GetFieldGEPIndex( 0u /* base class is allways first field */ );
 				actual_field_class_ptr= function_context.llvm_ir_builder.CreateGEP( actual_field_class_ptr, index_list );
-				actual_field_class= actual_field_class->class_->base_class;
+				actual_field_class= actual_field_class->base_class;
 			}
 		}
 
@@ -690,7 +685,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			return ErrorValue();
 		}
 		if( function_context.whole_this_is_unavailable &&
-			field_class_proxy != function_context.this_->type.GetClassTypeProxy() &&
+			class_ != function_context.this_->type.GetClassType() &&
 			!function_context.base_initialized )
 		{
 			REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), named_operand.src_loc_, Keyword( Keywords::base_ ) );
@@ -740,8 +735,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		if( function_context.this_ != nullptr )
 		{
 			// Trying add "this" to functions set, but only if whole "this" is available.
-			if( ( function_context.this_->type.GetClassTypeProxy() == overloaded_functions_set->base_class ||
-				  function_context.this_->type.GetClassTypeProxy()->class_->HaveAncestor( overloaded_functions_set->base_class ) ) &&
+			if( ( function_context.this_->type.GetClassType() == overloaded_functions_set->base_class ||
+				  function_context.this_->type.GetClassType()->HaveAncestor( overloaded_functions_set->base_class ) ) &&
 				!function_context.whole_this_is_unavailable )
 			{
 				ThisOverloadedMethodsSet this_overloaded_methods_set;
@@ -859,7 +854,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 					result.type.GetFunctionPointerType() != nullptr )
 					function_context.llvm_ir_builder.CreateStore( CreateMoveToLLVMRegisterInstruction( branch_result, function_context ), result.llvm_value );
 				else if(
-					result.type.GetClassTypeProxy() != nullptr ||
+					result.type.GetClassType() != nullptr ||
 					result.type.GetTupleType() != nullptr ||
 					result.type.GetArrayType() != nullptr )
 				{

@@ -77,7 +77,7 @@ struct OverloadedFunctionsSet
 	std::vector<const Synt::Function*> out_of_line_syntax_elements;
 	std::vector<const Synt::FunctionTemplate*> template_syntax_elements;
 
-	ClassProxyPtr base_class;
+	ClassPtr base_class= nullptr;
 
 	bool have_nomangle_function= false;
 };
@@ -127,7 +127,7 @@ std::string ConstantVariableToString( const Variable& variable );
 struct ClassField final
 {
 	Type type;
-	ClassProxyWeakPtr class_;
+	ClassPtr class_= nullptr;
 	const Synt::ClassField* syntax_element= nullptr;
 	unsigned int index= ~0u;
 	unsigned int original_index= ~0u;
@@ -135,7 +135,7 @@ struct ClassField final
 	bool is_reference= false;
 
 	ClassField()= default;
-	ClassField( const ClassProxyPtr& in_class, Type in_type, unsigned int in_index, bool in_is_mutable, bool in_is_reference );
+	ClassField( const ClassPtr& in_class, Type in_type, unsigned int in_index, bool in_is_mutable, bool in_is_reference );
 };
 
 // "this" + functions set of class of "this"

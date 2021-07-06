@@ -905,7 +905,7 @@ U_TEST( ImportInClassFieldInitializer_Test0 )
 
 			fn Foo()
 			{
-				var S s{}; // Here must be visible "::c", not "::A::c"
+				var S s{}; // "::c" must be visible in struct named initializer, not "::A::c"
 				static_assert( s.x == 55 );
 			}
 		}
@@ -917,6 +917,100 @@ U_TEST( ImportInClassFieldInitializer_Test0 )
 			{ "root", c_program_text_root }
 		},
 		"root" );
+}
+
+U_TEST( ImportInClassFieldInitializer_Test1 )
+{
+	static const char c_program_text_a[]=
+	R"(
+		auto c= 55;
+		namespace A
+		{
+			struct S
+			{
+				i32 x= c;
+			}
+		}
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+
+		namespace A
+		{
+			auto c= 777;
+
+			fn Foo()
+			{
+				var S s; // "::c" must be visible in default constructor, not "::A::c"
+				halt if ( s.x != 55 );
+			}
+		}
+	)";
+
+	const EnginePtr engine=
+		CreateEngine(
+		BuildMultisourceProgram(
+			{
+				{ "a", c_program_text_a },
+				{ "root", c_program_text_root }
+			},
+			"root" ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_ZN1A3FooEv" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+}
+
+U_TEST( ImportInClassFieldInitializer_Test2 )
+{
+	static const char c_program_text_a[]=
+	R"(
+		auto c= 55;
+		namespace A
+		{
+			struct S
+			{
+				i32 x= c;
+				fn constructor(mut this);
+			}
+		}
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+
+		namespace A
+		{
+			auto c= 777;
+
+			// "::c" must be visible in constructor initializer list, not "::A::c"
+			fn S::constructor(mut this){}
+
+			fn Foo()
+			{
+				var S s;
+				halt if ( s.x != 55 );
+			}
+		}
+	)";
+
+	const EnginePtr engine=
+		CreateEngine(
+		BuildMultisourceProgram(
+			{
+				{ "a", c_program_text_a },
+				{ "root", c_program_text_root }
+			},
+			"root" ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_ZN1A3FooEv" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
 }
 
 } // namespace U

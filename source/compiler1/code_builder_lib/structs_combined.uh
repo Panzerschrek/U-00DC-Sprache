@@ -143,6 +143,10 @@ struct ClassType
 {
 	NamesScopeMutPtr members; // Mutable, because it may be filled in class build process in case of inheritance.
 
+	// Namespace of class declaration.
+	// This namespace does not changes in import.
+	NamesScopeMutPtr members_initial;
+
 	ust::shared_ptr_final_nullable</ Synt::Class /> forward_declaration_syntax_element;
 	ust::shared_ptr_final_nullable</ Synt::Class /> syntax_element;
 

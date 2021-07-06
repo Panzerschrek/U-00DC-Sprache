@@ -686,7 +686,7 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 	}
 
 	var NamesScopeMutPtr class_members( NamesScope( class_name, names_scope_ptr ) );
-	var ClassType mut class_type{ .members= class_members };
+	var ClassType mut class_type{ .members= class_members, .members_initial= class_members };
 
 	select( class_.get_ref().is_forward_declaration ? class_type.forward_declaration_syntax_element : class_type.syntax_element )= class_;
 

@@ -10,6 +10,7 @@ fn ClearClassInternals( ClassTypePtr& class_type, NamesScopeMutPtr& dummy_class_
 	auto mut lock= class_type.lock_mut();
 	auto &mut class_= lock.get_ref();
 	class_.members= dummy_class_names_scope;
+	class_.members_initial= dummy_class_names_scope;
 	class_.parents.clear();
 	class_.virtual_table.clear();
 	class_.typeinfo_src_type_.reset();

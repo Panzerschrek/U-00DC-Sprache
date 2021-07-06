@@ -46,7 +46,7 @@ struct FunctionTemplate final : public TemplateBase
 	// Syntax tree must live longer, than this struct.
 	const Synt::FunctionTemplate* syntax_element= nullptr;
 
-	ClassProxyPtr base_class;
+	ClassPtr base_class= nullptr;
 
 	// In case of manual parameters specifying, like foo</A, B, C/> we create new template and store known arguments and reference to base template.
 	TemplateArgs known_template_args;

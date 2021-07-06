@@ -145,7 +145,7 @@ void CodeBuilder::PrepareFunctionTemplate(
 	const Synt::FunctionTemplate& function_template_declaration,
 	OverloadedFunctionsSet& functions_set,
 	NamesScope& names_scope,
-	const ClassProxyPtr& base_class )
+	const ClassPtr& base_class )
 {
 	const auto& full_name= function_template_declaration.function_->name_;
 	const std::string& function_template_name= full_name.front();
@@ -748,9 +748,9 @@ bool CodeBuilder::MatchTemplateArgImpl(
 {
 	if( const auto given_type= std::get_if<Type>( &template_arg ) )
 	{
-		if( const auto given_class_type= given_type->GetClassTypeProxy() )
+		if( const auto given_class_type= given_type->GetClassType() )
 		{
-			const Class& given_class= *given_class_type->class_;
+			const Class& given_class= *given_class_type;
 
 			if( !(
 					given_class.base_template != std::nullopt &&
@@ -919,19 +919,19 @@ Value* CodeBuilder::FinishTemplateTypeGeneration(
 					Value( cache_class_it->second, type_template.syntax_element->src_loc_ /* TODO - check src_loc */ ) );
 		}
 
-		const ClassProxyPtr class_proxy= NamesScopeFill( *class_ptr, *template_args_namespace, Class::c_template_class_name );
-		if( class_proxy == nullptr )
+		const ClassPtr class_type= NamesScopeFill( *class_ptr, *template_args_namespace, Class::c_template_class_name );
+		if( class_type == nullptr )
 			return nullptr;
 
-		Class& the_class= *class_proxy->class_;
+		Class& the_class= *class_type;
 		// Save in class info about its base template.
 		the_class.base_template.emplace();
 		the_class.base_template->class_template= type_template_ptr;
 		the_class.base_template->signature_args= template_type_preparation_result.signature_args;
 
-		template_classes_cache_[name_encoded]= class_proxy;
+		template_classes_cache_[name_encoded]= class_type;
 
-		class_proxy->class_->llvm_type->setName( mangler_.MangleType( class_proxy ) ); // Update llvm type name after setting base template.
+		class_type->llvm_type->setName( mangler_.MangleType( class_type ) ); // Update llvm type name after setting base template.
 
 		return template_args_namespace->GetThisScopeValue( Class::c_template_class_name );
 	}

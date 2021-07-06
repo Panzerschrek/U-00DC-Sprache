@@ -19,7 +19,7 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 	for( const Class::Parent& parent : the_class.parents )
 		if( parent.field_number == 0u )
 		{
-			the_class.virtual_table= parent.class_->class_->virtual_table;
+			the_class.virtual_table= parent.class_->virtual_table;
 
 			for( Class::VirtualTableEntry& entry : the_class.virtual_table )
 			{
@@ -36,7 +36,7 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 		if( parent.field_number == 0u )
 			continue;
 
-		for( const Class::VirtualTableEntry& parent_vtable_entry : parent.class_->class_->virtual_table )
+		for( const Class::VirtualTableEntry& parent_vtable_entry : parent.class_->virtual_table )
 		{
 			bool already_exists_in_vtable= false;
 			for( const Class::VirtualTableEntry& this_class_vtable_entry : the_class.virtual_table )
@@ -52,7 +52,7 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 			if( !already_exists_in_vtable )
 			{
 				Class::VirtualTableEntry vtable_entry_copy= parent_vtable_entry;
-				vtable_entry_copy.index_in_table= uint32_t( &parent_vtable_entry - parent.class_->class_->virtual_table.data() );
+				vtable_entry_copy.index_in_table= uint32_t( &parent_vtable_entry - parent.class_->virtual_table.data() );
 				vtable_entry_copy.parent_virtual_table_index= uint32_t( &parent - the_class.parents.data() );
 				the_class.virtual_table.push_back( std::move(vtable_entry_copy) );
 			}
@@ -67,7 +67,7 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 	};
 	std::vector<ClassFunction> class_functions;
 
-	the_class.members.ForEachInThisScope(
+	the_class.members->ForEachInThisScope(
 		[&]( const std::string& name, Value& value )
 		{
 			if( const auto functions_set= value.GetFunctionsSet() )
@@ -87,7 +87,7 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 
 		const std::string& function_name= class_function.name;
 		const SrcLoc& src_loc= function.syntax_element->src_loc_;
-		CodeBuilderErrorsContainer& errors_container= the_class.members.GetErrors();
+		CodeBuilderErrorsContainer& errors_container= the_class.members->GetErrors();
 
 		if( function.virtual_function_kind != Synt::VirtualFunctionKind::None &&
 			the_class.GetMemberVisibility( function_name ) == ClassMemberVisibility::Private )
@@ -199,7 +199,7 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 				if( function.syntax_element->block_ != nullptr )
 					REPORT_ERROR( BodyForPureVirtualFunction, errors_container, src_loc, function_name );
 				if( function_name == Keyword( Keywords::destructor_ ) )
-					REPORT_ERROR( PureDestructor, errors_container, src_loc, the_class.members.GetThisNamespaceName() );
+					REPORT_ERROR( PureDestructor, errors_container, src_loc, the_class.members->GetThisNamespaceName() );
 				function.have_body= true; // Mark pure function as "with body", because we needs to disable real body creation for pure function.
 
 				function.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
@@ -218,7 +218,7 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 	}
 }
 
-void CodeBuilder::PrepareClassVirtualTableType( const ClassProxyPtr& class_type )
+void CodeBuilder::PrepareClassVirtualTableType( const ClassPtr& class_type )
 {
 	/*
 	Virtual table layout for polymorph class without parens:
@@ -240,7 +240,7 @@ void CodeBuilder::PrepareClassVirtualTableType( const ClassProxyPtr& class_type 
 	If class inherits or even overrides virtual function, it uses functions table of some parent for such function.
 	*/
 
-	Class& the_class= *class_type->class_;
+	Class& the_class= *class_type;
 	U_ASSERT( !the_class.is_complete );
 	U_ASSERT( the_class.virtual_table_llvm_type == nullptr );
 
@@ -252,12 +252,12 @@ void CodeBuilder::PrepareClassVirtualTableType( const ClassProxyPtr& class_type 
 	// First, add first class virtual table, then, virtual tables of other parent classes.
 	for( const Class::Parent& parent : the_class.parents )
 		if( parent.field_number == 0u )
-			virtual_table_struct_fields.push_back( parent.class_->class_->virtual_table_llvm_type );
+			virtual_table_struct_fields.push_back( parent.class_->virtual_table_llvm_type );
 
 	for( const Class::Parent& parent : the_class.parents )
 	{
 		if( parent.field_number != 0u )
-			virtual_table_struct_fields.push_back( parent.class_->class_->virtual_table_llvm_type );
+			virtual_table_struct_fields.push_back( parent.class_->virtual_table_llvm_type );
 	}
 
 	if( virtual_table_struct_fields.empty() )
@@ -321,7 +321,7 @@ llvm::Constant* CodeBuilder::BuildClassVirtualTable_r(
 		{
 			llvm::Value* const offset_ptr=
 				global_function_context_->llvm_ir_builder.CreateGEP( dst_class_ptr_null_based, { GetZeroGEPIndex(), GetFieldGEPIndex( 0 ) } );
-			initializer_values.push_back( BuildClassVirtualTable_r( *parent.class_->class_, dst_class, offset_ptr ) );
+			initializer_values.push_back( BuildClassVirtualTable_r( *parent.class_, dst_class, offset_ptr ) );
 		}
 	}
 
@@ -331,7 +331,7 @@ llvm::Constant* CodeBuilder::BuildClassVirtualTable_r(
 		{
 			llvm::Value* const offset_ptr=
 				global_function_context_->llvm_ir_builder.CreateGEP( dst_class_ptr_null_based, { GetZeroGEPIndex(), GetFieldGEPIndex( parent.field_number ) } );
-			initializer_values.push_back( BuildClassVirtualTable_r( *parent.class_->class_, dst_class, offset_ptr ) );
+			initializer_values.push_back( BuildClassVirtualTable_r( *parent.class_, dst_class, offset_ptr ) );
 		}
 	}
 
@@ -461,7 +461,7 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 			function_virtual_table=
 				function_context.llvm_ir_builder.CreateGEP( function_virtual_table, { GetZeroGEPIndex(), GetFieldGEPIndex( field_index ) } );
 
-			const auto next_class= current_class->parents[ virtual_table_entry->parent_virtual_table_index ].class_->class_;
+			const auto next_class= current_class->parents[ virtual_table_entry->parent_virtual_table_index ].class_;
 			virtual_table_entry= &next_class->virtual_table[ virtual_table_entry->index_in_table ];
 			current_class= next_class;
 		}
@@ -492,7 +492,7 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 			for( const Class::Parent& parent : current_class->parents )
 				if( parent.field_number == 0 )
 				{
-					current_class= parent.class_->class_;
+					current_class= parent.class_;
 					break;
 				}
 		}
@@ -525,7 +525,7 @@ void CodeBuilder::SetupVirtualTablePointers_r(
 		llvm::Value* const vtable_ptr=
 			function_context.llvm_ir_builder.CreateGEP( ptr_to_vtable_ptr, { GetZeroGEPIndex(), GetFieldGEPIndex( parent.field_number == 0 ? 0 : vtable_field_number ) } );
 
-		SetupVirtualTablePointers_r( parent_ptr, vtable_ptr, *parent.class_->class_, function_context );
+		SetupVirtualTablePointers_r( parent_ptr, vtable_ptr, *parent.class_, function_context );
 
 		if( parent.field_number != 0 )
 			++vtable_field_number;

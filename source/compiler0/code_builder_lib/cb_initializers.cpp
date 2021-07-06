@@ -179,7 +179,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			continue;
 		}
 
-		const Value* const class_member= class_type->members.GetThisScopeValue( member_initializer.name );
+		const Value* const class_member= class_type->members->GetThisScopeValue( member_initializer.name );
 		if( class_member == nullptr )
 		{
 			REPORT_ERROR( NameNotFound, names.GetErrors(), initializer.src_loc_, member_initializer.name );
@@ -191,7 +191,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			REPORT_ERROR( InitializerForNonfieldStructMember, names.GetErrors(), initializer.src_loc_, member_initializer.name );
 			continue;
 		}
-		if( field->class_.lock() != variable.type )
+		if( field->class_ != variable.type )
 		{
 			REPORT_ERROR( InitializerForBaseClassField, names.GetErrors(), initializer.src_loc_, member_initializer.name );
 			continue;
@@ -225,7 +225,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		if( field_name.empty() )
 			continue;
 
-		const ClassField& field= *class_type->members.GetThisScopeValue( field_name )->GetClassField();
+		const ClassField& field= *class_type->members->GetThisScopeValue( field_name )->GetClassField();
 		if( initialized_members_names.count( field_name ) != 0 )
 			continue;
 
@@ -387,7 +387,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			if( expression_result.type != variable.type )
 				value_for_copy= CreateReferenceCast( value_for_copy, expression_result.type, variable.type, function_context );
 			TryCallCopyConstructor(
-				names.GetErrors(), src_loc, variable.llvm_value, value_for_copy, variable.type.GetClassTypeProxy(), function_context );
+				names.GetErrors(), src_loc, variable.llvm_value, value_for_copy, variable.type.GetClassType(), function_context );
 		}
 	}
 	else
@@ -472,7 +472,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			if( field_name.empty() )
 				continue;
 
-			const ClassField& field= *class_type->members.GetThisScopeValue( field_name )->GetClassField();
+			const ClassField& field= *class_type->members->GetThisScopeValue( field_name )->GetClassField();
 			if( field.is_reference )
 			{
 				all_fields_are_constant= false;
@@ -567,7 +567,7 @@ void CodeBuilder::ApplyEmptyInitializer(
 		// If initializer for class variable is empty, try to call default constructor.
 
 		const Value* constructor_value=
-			class_type->members.GetThisScopeValue( Keyword( Keywords::constructor_ ) );
+			class_type->members->GetThisScopeValue( Keyword( Keywords::constructor_ ) );
 		U_ASSERT( constructor_value != nullptr );
 		const OverloadedFunctionsSet* const constructors_set= constructor_value->GetFunctionsSet();
 		U_ASSERT( constructors_set != nullptr );
@@ -809,7 +809,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		}
 
 		const Value* constructor_value=
-			class_type->members.GetThisScopeValue( Keyword( Keywords::constructor_ ) );
+			class_type->members->GetThisScopeValue( Keyword( Keywords::constructor_ ) );
 		if( constructor_value == nullptr )
 		{
 			REPORT_ERROR( ClassHaveNoConstructors, block_names.GetErrors(), src_loc );
@@ -842,7 +842,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	FunctionContext& function_context )
 {
 	U_ASSERT( variable.type.GetClassType() != nullptr );
-	U_ASSERT( variable.type.GetClassTypeProxy() == field.class_.lock() );
+	U_ASSERT( variable.type.GetClassType() == field.class_ );
 
 	const SrcLoc initializer_src_loc= Synt::GetInitializerSrcLoc( initializer );
 	const Synt::Expression* initializer_expression= nullptr;
@@ -1054,7 +1054,7 @@ llvm::Constant* CodeBuilder::InitializeClassFieldWithInClassIninitalizer(
 	llvm::Constant* const result=
 		ApplyInitializer(
 			field_variable,
-			class_field.class_.lock()->class_->members, // Use class members names scope.
+			*class_field.class_->members_initial, // Use initial class members names scope.
 			function_context,
 			*class_field.syntax_element->initializer );
 
@@ -1081,7 +1081,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceClassFieldWithInClassIninitalize
 			variable,
 			class_field,
 			*class_field.syntax_element->initializer,
-			class_field.class_.lock()->class_->members, // Use class members names scope.
+			*class_field.class_->members_initial, // Use initial class members names scope.
 			function_context );
 
 	function_context.this_= prev_this;
@@ -1089,12 +1089,12 @@ llvm::Constant* CodeBuilder::InitializeReferenceClassFieldWithInClassIninitalize
 	return result;
 }
 
-void CodeBuilder::CheckClassFieldsInitializers( const ClassProxyPtr& class_type )
+void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr& class_type )
 {
 	// Run code generation for initializers.
 	// We must check it, becauseinitializers may not be executed later.
 
-	const Class& class_= *class_type->class_;
+	const Class& class_= *class_type;
 	U_ASSERT( class_.is_complete );
 
 	FunctionContext& function_context= *global_function_context_;
@@ -1108,7 +1108,7 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassProxyPtr& class_type 
 		if( field_name.empty() )
 			continue;
 
-		const ClassField& class_field= *class_.members.GetThisScopeValue( field_name )->GetClassField();
+		const ClassField& class_field= *class_.members->GetThisScopeValue( field_name )->GetClassField();
 
 		if( class_field.syntax_element->initializer == nullptr )
 			continue;

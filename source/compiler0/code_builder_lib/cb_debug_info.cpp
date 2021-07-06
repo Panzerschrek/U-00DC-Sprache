@@ -135,7 +135,7 @@ llvm::DIType* CodeBuilder::CreateDIType( const Type& type )
 		result_type= CreateDIType( *function_pointer_type );
 	else if( const auto raw_pointer_type= type.GetRawPointerType() )
 		result_type= CreateDIType( *raw_pointer_type );
-	else if( const auto class_type= type.GetClassTypeProxy() )
+	else if( const auto class_type= type.GetClassType() )
 		result_type= CreateDIType( class_type );
 	else if( const auto enum_type= type.GetEnumTypePtr() )
 		result_type= CreateDIType( enum_type );
@@ -295,11 +295,11 @@ llvm::DIDerivedType* CodeBuilder::CreateDIType( const FunctionPointerType& type 
 			data_layout_.getTypeAllocSizeInBits(type.llvm_type) );
 }
 
-llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
+llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassPtr& type )
 {
 	U_ASSERT(build_debug_info_);
 
-	const Class& the_class= *type->class_;
+	const Class& the_class= *type;
 
 	// Ignore incomplete type - do not create debug info for it.
 	if( !the_class.is_complete )
@@ -324,7 +324,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 			if( name.empty() )
 				continue;
 
-			const ClassField& class_field= *the_class.members.GetThisScopeValue( name )->GetClassField();
+			const ClassField& class_field= *the_class.members->GetThisScopeValue( name )->GetClassField();
 
 			llvm::Type* field_type_llvm= class_field.type.GetLLVMType();
 			llvm::DIType* field_type_di= CreateDIType( class_field.type );
@@ -355,14 +355,14 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassProxyPtr& type )
 
 		for( const Class::Parent& parent : the_class.parents )
 		{
-			llvm::Type* const parent_type_llvm= parent.class_->class_->llvm_type;
+			llvm::Type* const parent_type_llvm= parent.class_->llvm_type;
 			llvm::DIType* parent_type_di= CreateDIType( parent.class_ );
 
 			// If this type is complete, parent types are complete too.
 			const auto member =
 				debug_info_.builder->createMemberType(
 					di_file,
-					parent.class_->class_->members.GetThisNamespaceName(),
+					parent.class_->members->GetThisNamespaceName(),
 					di_file,
 					0u, // TODO - src_loc
 					data_layout_.getTypeAllocSizeInBits( parent_type_llvm ),

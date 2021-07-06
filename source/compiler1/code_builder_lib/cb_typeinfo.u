@@ -451,6 +451,7 @@ fn CodeBuilder::CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Ty
 	var ClassType mut class_type
 	{
 		.members= class_members,
+		.members_initial= class_members,
 		.typeinfo_src_type_(src_type),
 		.can_be_constexpr= true,
 	};

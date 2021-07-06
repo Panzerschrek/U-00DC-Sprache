@@ -86,7 +86,7 @@ void CodeBuilder::NamesScopeFill(
 void CodeBuilder::NamesScopeFill(
 	const Synt::FunctionPtr& function_declaration_ptr,
 	NamesScope& names_scope,
-	const ClassProxyPtr& base_class,
+	const ClassPtr& base_class,
 	const ClassMemberVisibility visibility )
 {
 	const auto& function_declaration= *function_declaration_ptr;
@@ -102,7 +102,7 @@ void CodeBuilder::NamesScopeFill(
 	{
 		if( OverloadedFunctionsSet* const functions_set= prev_value->GetFunctionsSet() )
 		{
-			if( base_class != nullptr && base_class->class_->GetMemberVisibility( func_name ) != visibility )
+			if( base_class != nullptr && base_class->GetMemberVisibility( func_name ) != visibility )
 				REPORT_ERROR( FunctionsVisibilityMismatch, names_scope.GetErrors(), function_declaration.src_loc_, func_name );
 
 			U_ASSERT( functions_set->base_class == base_class );
@@ -114,7 +114,7 @@ void CodeBuilder::NamesScopeFill(
 	else
 	{
 		if( base_class != nullptr )
-			base_class->class_->SetMemberVisibility( func_name, visibility );
+			base_class->SetMemberVisibility( func_name, visibility );
 
 		OverloadedFunctionsSet functions_set;
 		functions_set.base_class= base_class;
@@ -127,7 +127,7 @@ void CodeBuilder::NamesScopeFill(
 void CodeBuilder::NamesScopeFill(
 	const Synt::FunctionTemplate& function_template_declaration,
 	NamesScope& names_scope,
-	const ClassProxyPtr& base_class,
+	const ClassPtr& base_class,
 	const ClassMemberVisibility visibility )
 {
 	const auto& full_name = function_template_declaration.function_->name_;
@@ -142,7 +142,7 @@ void CodeBuilder::NamesScopeFill(
 	{
 		if( OverloadedFunctionsSet* const functions_set= prev_value->GetFunctionsSet() )
 		{
-			if( base_class != nullptr && base_class->class_->GetMemberVisibility( function_template_name ) != visibility )
+			if( base_class != nullptr && base_class->GetMemberVisibility( function_template_name ) != visibility )
 				REPORT_ERROR( FunctionsVisibilityMismatch, names_scope.GetErrors(), function_template_declaration.src_loc_, function_template_name );
 
 			U_ASSERT( functions_set->base_class == base_class );
@@ -154,7 +154,7 @@ void CodeBuilder::NamesScopeFill(
 	else
 	{
 		if( base_class != nullptr )
-			base_class->class_->SetMemberVisibility( function_template_name, visibility );
+			base_class->SetMemberVisibility( function_template_name, visibility );
 
 		OverloadedFunctionsSet functions_set;
 		functions_set.base_class= base_class;
@@ -164,7 +164,7 @@ void CodeBuilder::NamesScopeFill(
 	}
 }
 
-ClassProxyPtr CodeBuilder::NamesScopeFill(
+ClassPtr CodeBuilder::NamesScopeFill(
 	const Synt::ClassPtr& class_declaration_ptr,
 	NamesScope& names_scope,
 	const std::string& override_name )
@@ -175,17 +175,17 @@ ClassProxyPtr CodeBuilder::NamesScopeFill(
 	if( IsKeyword( class_name ) )
 		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), class_declaration.src_loc_ );
 
-	ClassProxyPtr class_type;
+	ClassPtr class_type= nullptr;
 	if( const Value* const prev_value= names_scope.GetThisScopeValue( class_name ) )
 	{
 		if( const Type* const type= prev_value->GetTypeName() )
 		{
-			if( const ClassProxyPtr prev_class_type= type->GetClassTypeProxy() )
+			if( const ClassPtr prev_class_type= type->GetClassType() )
 			{
 				class_type= prev_class_type;
-				if(  class_type->class_->syntax_element->is_forward_declaration_ &&  class_declaration.is_forward_declaration_ )
+				if(  class_type->syntax_element->is_forward_declaration_ &&  class_declaration.is_forward_declaration_ )
 					REPORT_ERROR( Redefinition, names_scope.GetErrors(), class_declaration.src_loc_, class_name );
-				if( !class_type->class_->syntax_element->is_forward_declaration_ && !class_declaration.is_forward_declaration_ )
+				if( !class_type->syntax_element->is_forward_declaration_ && !class_declaration.is_forward_declaration_ )
 					REPORT_ERROR( ClassBodyDuplication, names_scope.GetErrors(), class_declaration.src_loc_ );
 			}
 			else
@@ -202,19 +202,20 @@ ClassProxyPtr CodeBuilder::NamesScopeFill(
 	}
 	else
 	{
-		class_type= std::make_shared<ClassProxy>();
-		(*current_class_table_)[ class_type ]= std::make_unique<Class>( class_name, &names_scope );
-		class_type->class_= (*current_class_table_)[ class_type ].get();
+		const auto class_type_ptr= std::make_shared<Class>( class_name, &names_scope  );
+		current_class_table_.push_back(class_type_ptr);
+		class_type= class_type_ptr.get();
 
 		names_scope.AddName( class_name, Value( Type( class_type ), class_declaration.src_loc_ ) );
-		class_type->class_->syntax_element= &class_declaration;
-		class_type->class_->body_src_loc= class_type->class_->forward_declaration_src_loc= class_declaration.src_loc_;
-		class_type->class_->llvm_type= llvm::StructType::create( llvm_context_, mangler_.MangleType( class_type ) );
+		class_type->syntax_element= &class_declaration;
+		class_type->body_src_loc= class_type->forward_declaration_src_loc= class_declaration.src_loc_;
+		class_type->llvm_type= llvm::StructType::create( llvm_context_, mangler_.MangleType( class_type ) );
 
-		class_type->class_->members.AddAccessRightsFor( class_type, ClassMemberVisibility::Private );
+		class_type->members->AddAccessRightsFor( class_type, ClassMemberVisibility::Private );
+		class_type->members->SetClass( class_type );
 	}
 
-	Class& the_class= *class_type->class_;
+	Class& the_class= *class_type;
 
 	if( class_declaration.is_forward_declaration_ )
 		the_class.forward_declaration_src_loc= class_declaration.src_loc_;
@@ -230,13 +231,13 @@ ClassProxyPtr CodeBuilder::NamesScopeFill(
 		{
 			CodeBuilder& this_;
 			const Synt::Class& class_declaration;
-			ClassProxyPtr& class_type;
+			ClassPtr& class_type;
 			Class& the_class;
 			const std::string& class_name;
 			ClassMemberVisibility current_visibility= ClassMemberVisibility::Public;
 			unsigned int field_number= 0u;
 
-			Visitor( CodeBuilder& in_this, const Synt::Class& in_class_declaration, ClassProxyPtr& in_class_type, Class& in_the_class, const std::string& in_class_name )
+			Visitor( CodeBuilder& in_this, const Synt::Class& in_class_declaration, ClassPtr& in_class_type, Class& in_the_class, const std::string& in_class_name )
 				: this_(in_this), class_declaration(in_class_declaration), class_type(in_class_type), the_class(in_the_class), class_name(in_class_name)
 			{}
 
@@ -247,59 +248,59 @@ ClassProxyPtr CodeBuilder::NamesScopeFill(
 				class_field.original_index= field_number;
 
 				if( IsKeyword( in_class_field.name ) )
-					REPORT_ERROR( UsingKeywordAsName, the_class.members.GetErrors(), in_class_field.src_loc_ );
-				if( the_class.members.AddName( in_class_field.name, Value( class_field, in_class_field.src_loc_ ) ) == nullptr )
-					REPORT_ERROR( Redefinition, the_class.members.GetErrors(), in_class_field.src_loc_, in_class_field.name );
+					REPORT_ERROR( UsingKeywordAsName, the_class.members->GetErrors(), in_class_field.src_loc_ );
+				if( the_class.members->AddName( in_class_field.name, Value( class_field, in_class_field.src_loc_ ) ) == nullptr )
+					REPORT_ERROR( Redefinition, the_class.members->GetErrors(), in_class_field.src_loc_, in_class_field.name );
 
 				++field_number;
 				the_class.SetMemberVisibility( in_class_field.name, current_visibility );
 			}
 			void operator()( const Synt::FunctionPtr& func )
 			{
-				this_.NamesScopeFill( func, the_class.members, class_type, current_visibility );
+				this_.NamesScopeFill( func, *the_class.members, class_type, current_visibility );
 			}
 			void operator()( const Synt::FunctionTemplate& func_template )
 			{
-				this_.NamesScopeFill( func_template, the_class.members, class_type, current_visibility );
+				this_.NamesScopeFill( func_template, *the_class.members, class_type, current_visibility );
 			}
 			void operator()( const Synt::ClassVisibilityLabel& visibility_label )
 			{
 				if( class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Struct )
-					REPORT_ERROR( VisibilityForStruct, the_class.members.GetErrors(), visibility_label.src_loc_, class_name );
+					REPORT_ERROR( VisibilityForStruct, the_class.members->GetErrors(), visibility_label.src_loc_, class_name );
 				current_visibility= visibility_label.visibility_;
 			}
 			void operator()( const Synt::TypeTemplate& type_template )
 			{
-				this_.NamesScopeFill( type_template, the_class.members, class_type, current_visibility );
+				this_.NamesScopeFill( type_template, *the_class.members, class_type, current_visibility );
 			}
 			void operator()( const Synt::Enum& enum_ )
 			{
-				this_.NamesScopeFill( enum_, the_class.members );
+				this_.NamesScopeFill( enum_, *the_class.members );
 				the_class.SetMemberVisibility( enum_.name, current_visibility );
 			}
 			void operator()( const Synt::StaticAssert& static_assert_ )
 			{
-				this_.NamesScopeFill( static_assert_, the_class.members );
+				this_.NamesScopeFill( static_assert_, *the_class.members );
 			}
 			void operator()( const Synt::TypeAlias& type_alias )
 			{
-				this_.NamesScopeFill( type_alias, the_class.members );
+				this_.NamesScopeFill( type_alias, *the_class.members );
 				the_class.SetMemberVisibility( type_alias.name, current_visibility );
 			}
 			void operator()( const Synt::VariablesDeclaration& variables_declaration )
 			{
-				this_.NamesScopeFill( variables_declaration, the_class.members );
+				this_.NamesScopeFill( variables_declaration, *the_class.members );
 				for( const auto& variable_declaration : variables_declaration.variables )
 					the_class.SetMemberVisibility( variable_declaration.name, current_visibility );
 			}
 			void operator()( const Synt::AutoVariableDeclaration& auto_variable_declaration )
 			{
-				this_.NamesScopeFill( auto_variable_declaration, the_class.members );
+				this_.NamesScopeFill( auto_variable_declaration, *the_class.members );
 				the_class.SetMemberVisibility( auto_variable_declaration.name, current_visibility );
 			}
 			void operator()( const Synt::ClassPtr& inner_class )
 			{
-				this_.NamesScopeFill( inner_class, the_class.members );
+				this_.NamesScopeFill( inner_class, *the_class.members );
 				the_class.SetMemberVisibility( inner_class->name_, current_visibility );
 			}
 		};
@@ -315,7 +316,7 @@ ClassProxyPtr CodeBuilder::NamesScopeFill(
 void CodeBuilder::NamesScopeFill(
 	const Synt::TypeTemplate& type_template_declaration,
 	NamesScope& names_scope,
-	const ClassProxyPtr& base_class,
+	const ClassPtr& base_class,
 	const ClassMemberVisibility visibility )
 {
 	const std::string type_template_name= type_template_declaration.name_;
@@ -324,7 +325,7 @@ void CodeBuilder::NamesScopeFill(
 
 	if( Value* const prev_value= names_scope.GetThisScopeValue( type_template_name ) )
 	{
-		if( base_class != nullptr && base_class->class_->GetMemberVisibility( type_template_name ) != visibility )
+		if( base_class != nullptr && base_class->GetMemberVisibility( type_template_name ) != visibility )
 			REPORT_ERROR( TypeTemplatesVisibilityMismatch, names_scope.GetErrors(), type_template_declaration.src_loc_, type_template_name ); // TODO - use separate error code
 
 		if( TypeTemplatesSet* const type_templates_set= prev_value->GetTypeTemplatesSet() )
@@ -335,7 +336,7 @@ void CodeBuilder::NamesScopeFill(
 	else
 	{
 		if( base_class != nullptr )
-			base_class->class_->SetMemberVisibility( type_template_name, visibility );
+			base_class->SetMemberVisibility( type_template_name, visibility );
 
 		TypeTemplatesSet type_templates_set;
 		type_templates_set.syntax_elements.push_back( &type_template_declaration );
@@ -426,7 +427,7 @@ void CodeBuilder::NamesScopeFillOutOfLineElements(
 				else if( const auto type= prev_value->GetTypeName() )
 				{
 					if( const auto class_= type->GetClassType() )
-						prev_value= class_->members.GetThisScopeValue( func.name_[i] );
+						prev_value= class_->members->GetThisScopeValue( func.name_[i] );
 				}
 
 				if( prev_value == nullptr )

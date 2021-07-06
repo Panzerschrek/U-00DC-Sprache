@@ -41,11 +41,11 @@ public:
 	BuildResult BuildProgram( const SourceGraph& source_graph );
 
 private:
-	using ClassTable= std::unordered_map< ClassProxyPtr, std::unique_ptr<Class> >;
-	struct BuildResultInternal
+	using ClassTable= std::unordered_map<std::shared_ptr<Class>, Class>;
+	struct SourceBuildResult
 	{
 		std::unique_ptr<NamesScope> names_map;
-		std::unique_ptr<ClassTable> class_table;
+		ClassTable class_table;
 	};
 
 	struct BlockBuildInfo
@@ -99,16 +99,9 @@ private:
 	};
 
 private:
-	BuildResultInternal BuildProgramInternal( const SourceGraph& source_graph, size_t node_index );
+	void BuildSourceGraphNode( const SourceGraph& source_graph, size_t node_index );
 
-	void MergeNameScopes( NamesScope& dst, const NamesScope& src, ClassTable& dst_class_table );
-
-	void CopyClass(
-		const SrcLoc& src_loc, // SrcLoc or original class.
-		const ClassProxyPtr& src_class,
-		ClassTable& dst_class_table,
-		NamesScope& dst_namespace );
-	void SetCurrentClassTable( ClassTable& table );
+	void MergeNameScopes( NamesScope& dst, const NamesScope& src );
 
 	void FillGlobalNamesScope( NamesScope& global_names_scope );
 
@@ -126,7 +119,7 @@ private:
 
 	// Virtual stuff
 	void PrepareClassVirtualTable( Class& the_class );
-	void PrepareClassVirtualTableType( const ClassProxyPtr& class_type );
+	void PrepareClassVirtualTableType( const ClassPtr& class_type );
 
 	void BuildPolymorphClassTypeId( Class& the_class, const Type& class_type );
 
@@ -161,7 +154,7 @@ private:
 		const Synt::FunctionTemplate& function_template_declaration,
 		OverloadedFunctionsSet& functions_set,
 		NamesScope& names_scope,
-		const ClassProxyPtr& base_class );
+		const ClassPtr& base_class );
 
 	void ProcessTemplateParams(
 		const std::vector<Synt::TemplateBase::Param>& params,
@@ -351,12 +344,12 @@ private:
 	bool TypeIsValidForTemplateVariableArgument( const Type& type );
 
 	// Constructors/destructors
-	void TryGenerateDefaultConstructor( Class& the_class, const Type& class_type );
-	void TryGenerateCopyConstructor( Class& the_class, const Type& class_type );
-	FunctionVariable GenerateDestructorPrototype( Class& the_class, const Type& class_type );
-	void GenerateDestructorBody( Class& the_class, const Type& class_type, FunctionVariable& destructor_function );
-	void TryGenerateDestructor( Class& the_class, const Type& class_type );
-	void TryGenerateCopyAssignmentOperator( Class& the_class, const Type& class_type );
+	void TryGenerateDefaultConstructor( const ClassPtr& class_type );
+	void TryGenerateCopyConstructor( const ClassPtr& class_type );
+	FunctionVariable GenerateDestructorPrototype( const ClassPtr& class_type );
+	void GenerateDestructorBody( const ClassPtr& class_type, FunctionVariable& destructor_function );
+	void TryGenerateDestructor( const ClassPtr& class_type );
+	void TryGenerateCopyAssignmentOperator( const ClassPtr& class_type );
 
 	void BuildCopyConstructorPart(
 		llvm::Value* dst, llvm::Value* src,
@@ -381,7 +374,7 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc,
 		llvm::Value* this_, llvm::Value* src,
-		const ClassProxyPtr& class_proxy,
+		const ClassPtr& class_type,
 		FunctionContext& function_context );
 
 	bool IsDefaultConstructor( const FunctionType& function_type, const Type& base_class );
@@ -421,13 +414,13 @@ private:
 	// Returns index of function in set, if function successfuly prepared and inserted. Returns ~0 on fail.
 	size_t PrepareFunction(
 		NamesScope& names_scope,
-		const ClassProxyPtr& base_class,
+		const ClassPtr& base_class,
 		OverloadedFunctionsSet& functions_set,
 		const Synt::Function& function_declaration,
 		bool is_out_of_line_function );
 
 	void CheckOverloadedOperator(
-		const ClassProxyPtr& base_class,
+		const ClassPtr& base_class,
 		const FunctionType& func_type,
 		OverloadedOperator overloaded_operator,
 		CodeBuilderErrorsContainer& errors_container,
@@ -436,7 +429,7 @@ private:
 	// Returns type of return value.
 	Type BuildFuncCode(
 		FunctionVariable& func,
-		const ClassProxyPtr& base_class,
+		const ClassPtr& base_class,
 		NamesScope& parent_names_scope,
 		const std::string& func_name,
 		const Synt::FunctionParams& params,
@@ -609,20 +602,20 @@ private:
 	// Typeinfo
 
 	Variable BuildTypeInfo( const Type& type, NamesScope& root_namespace );
-	ClassProxyPtr CreateTypeinfoClass( NamesScope& root_namespace, const Type& src_type, std::string name );
+	ClassPtr CreateTypeinfoClass( NamesScope& root_namespace, const Type& src_type, std::string name );
 	Variable BuildTypeinfoPrototype( const Type& type, NamesScope& root_namespace );
 	void BuildFullTypeinfo( const Type& type, Variable& typeinfo_variable, NamesScope& root_namespace );
 	const Variable& GetTypeinfoListEndNode( NamesScope& root_namespace );
-	void FinishTypeinfoClass( Class& class_, const ClassProxyPtr class_proxy, const ClassFieldsVector<llvm::Type*>& fields_llvm_types );
+	void FinishTypeinfoClass( const ClassPtr& class_type, const ClassFieldsVector<llvm::Type*>& fields_llvm_types );
 	Variable BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, NamesScope& root_namespace );
 	void CreateTypeinfoClassMembersListNodeCommonFields(
-		const Class& class_, const ClassProxyPtr& node_class_proxy,
+		const Class& class_, const ClassPtr& node_class_type,
 		const std::string& member_name,
 		ClassFieldsVector<llvm::Type*>& fields_llvm_types, ClassFieldsVector<llvm::Constant*>& fields_initializers );
-	Variable BuildTypeinfoClassFieldsList( const ClassProxyPtr& class_type, NamesScope& root_namespace );
-	Variable BuildTypeinfoClassTypesList( const ClassProxyPtr& class_type, NamesScope& root_namespace );
-	Variable BuildTypeinfoClassFunctionsList( const ClassProxyPtr& class_type, NamesScope& root_namespace );
-	Variable BuildTypeinfoClassParentsList( const ClassProxyPtr& class_type, NamesScope& root_namespace );
+	Variable BuildTypeinfoClassFieldsList( const ClassPtr& class_type, NamesScope& root_namespace );
+	Variable BuildTypeinfoClassTypesList( const ClassPtr& class_type, NamesScope& root_namespace );
+	Variable BuildTypeinfoClassFunctionsList( const ClassPtr& class_type, NamesScope& root_namespace );
+	Variable BuildTypeinfoClassParentsList( const ClassPtr& class_type, NamesScope& root_namespace );
 	Variable BuildTypeinfoFunctionArguments( const FunctionType& function_type, NamesScope& root_namespace );
 	Variable BuildTypeinfoTupleElements( const TupleType& tuple_type, NamesScope& root_namespace );
 
@@ -760,7 +753,7 @@ private:
 		const ClassField& class_field,
 		FunctionContext& function_context );
 
-	void CheckClassFieldsInitializers( const ClassProxyPtr& class_type );
+	void CheckClassFieldsInitializers( const ClassPtr& class_type );
 
 	// Reference-checking.
 	void ProcessFunctionParamReferencesTags(
@@ -785,7 +778,7 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const Synt::Function& func,
 		FunctionType& function_type,
-		const ClassProxyPtr& base_class );
+		const ClassPtr& base_class );
 
 	void ProcessFunctionTypeReferencesPollution(
 		CodeBuilderErrorsContainer& errors_container,
@@ -815,10 +808,10 @@ private:
 	void NamesScopeFill( const Synt::NamespacePtr& namespace_, NamesScope& names_scope );
 	void NamesScopeFill( const Synt::VariablesDeclaration& variables_declaration , NamesScope& names_scope );
 	void NamesScopeFill( const Synt::AutoVariableDeclaration& variable_declaration, NamesScope& names_scope );
-	void NamesScopeFill( const Synt::FunctionPtr& function_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
-	void NamesScopeFill( const Synt::FunctionTemplate& function_template_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
-	ClassProxyPtr NamesScopeFill( const Synt::ClassPtr& class_declaration, NamesScope& names_scope, const std::string& override_name= "" );
-	void NamesScopeFill( const Synt::TypeTemplate& type_template_declaration, NamesScope& names_scope, const ClassProxyPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	void NamesScopeFill( const Synt::FunctionPtr& function_declaration, NamesScope& names_scope, const ClassPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	void NamesScopeFill( const Synt::FunctionTemplate& function_template_declaration, NamesScope& names_scope, const ClassPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	ClassPtr NamesScopeFill( const Synt::ClassPtr& class_declaration, NamesScope& names_scope, const std::string& override_name= "" );
+	void NamesScopeFill( const Synt::TypeTemplate& type_template_declaration, NamesScope& names_scope, const ClassPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( const Synt::Enum& enum_declaration, NamesScope& names_scope );
 	void NamesScopeFill( const Synt::TypeAlias& type_alias_declaration, NamesScope& names_scope );
 	void NamesScopeFill( const Synt::StaticAssert& static_assert_, NamesScope& names_scope );
@@ -832,7 +825,7 @@ private:
 
 	void GlobalThingBuildNamespace( NamesScope& names_scope );
 	void GlobalThingBuildFunctionsSet( NamesScope& names_scope, OverloadedFunctionsSet& functions_set, bool build_body );
-	void GlobalThingBuildClass( ClassProxyPtr class_type );
+	void GlobalThingBuildClass( ClassPtr class_type );
 	void GlobalThingBuildEnum( const EnumPtr enum_ );
 	void GlobalThingBuildTypeTemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set );
 	void GlobalThingBuildTypedef( NamesScope& names_scope, Value& typedef_value );
@@ -874,7 +867,7 @@ private:
 	llvm::DISubroutineType* CreateDIType( const FunctionType& type );
 	llvm::DIDerivedType* CreateDIType( const RawPointerType& type );
 	llvm::DIDerivedType* CreateDIType( const FunctionPointerType& type );
-	llvm::DICompositeType* CreateDIType( const ClassProxyPtr& type );
+	llvm::DICompositeType* CreateDIType( const ClassPtr& type );
 	llvm::DICompositeType* CreateDIType( const EnumPtr& type );
 
 	// Other stuff
@@ -955,8 +948,8 @@ private:
 	std::unique_ptr<llvm::Module> module_;
 	std::vector<CodeBuilderError> global_errors_; // Do not use directly. Use NamesScope::GetErrors() instead.
 
-	std::unordered_map< size_t, BuildResultInternal > compiled_sources_cache_;
-	ClassTable* current_class_table_= nullptr;
+	std::vector<SourceBuildResult> compiled_sources_;
+	std::vector<std::shared_ptr<Class>> current_class_table_;
 
 	// Storage for enum types. Do not use shared pointers for enums for loops preventing.
 	std::vector< std::unique_ptr<Enum> > enums_table_;
@@ -964,11 +957,11 @@ private:
 	// Cache needs for generating same classes as template instantiation result in different source files.
 	// We can use same classes in different files, because template classes are logically unchangeable after instantiation.
 	// Unchangeable they are because incomplete template classes ( or classes inside template classes, etc. ) currently forbidden.
-	ProgramStringMap< ClassProxyPtr > template_classes_cache_;
+	ProgramStringMap< ClassPtr > template_classes_cache_;
 
 	// We needs to generate same typeinfo classes for same types. Use cache for it.
 	std::unordered_map< Type, Variable, TypeHasher > typeinfo_cache_;
-	ClassTable typeinfo_class_table_;
+	std::vector<std::shared_ptr<Class>> typeinfo_class_table_;
 
 	// Names map for generated template types/functions. We can not insert it in regular namespaces, because we needs insert it, while iterating regular namespaces.
 	ProgramStringMap<Value> generated_template_things_storage_;
@@ -985,7 +978,7 @@ private:
 		llvm::DICompileUnit* compile_unit= nullptr;
 
 		// Build debug info for classes and enums once and put it to cache.
-		std::unordered_map<ClassProxyPtr, llvm::DICompositeType*> classes_di_cache;
+		std::unordered_map<ClassPtr, llvm::DICompositeType*> classes_di_cache;
 		std::unordered_map<EnumPtr, llvm::DICompositeType*> enums_di_cache;
 	} debug_info_;
 };

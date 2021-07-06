@@ -191,8 +191,8 @@ void EncodeTemplateClassName( ManglerState& mangler_state, const Class& the_clas
 		const ManglerState::NodeHolder name_node( mangler_state );
 
 		// Skip template parameters namespace.
-		U_ASSERT( the_class.members.GetParent() != nullptr );
-		if( const auto parent= the_class.members.GetParent()->GetParent() )
+		U_ASSERT( the_class.members->GetParent() != nullptr );
+		if( const auto parent= the_class.members->GetParent()->GetParent() )
 			if( !parent->GetThisNamespaceName().empty() )
 				EncodeNamespacePrefix_r( mangler_state, *parent );
 
@@ -208,13 +208,11 @@ void EncodeNamespacePrefix_r( ManglerState& mangler_state, const NamesScope& nam
 	if( name == Class::c_template_class_name )
 	{
 		// Assume, that "names_scope" is field "members" of "Class".
-		const auto names_scope_address= reinterpret_cast<const std::byte*>(&names_scope);
-		//const auto& the_class= *reinterpret_cast<const Class*>( names_scope_address - offsetof(Class, members) );
-		const auto& the_class= *reinterpret_cast<const Class*>( names_scope_address - 0 );
-		if( the_class.base_template != std::nullopt )
+		const ClassPtr the_class= names_scope.GetClass();
+		if( the_class->base_template != std::nullopt )
 		{
 			const ManglerState::NodeHolder result_node( mangler_state );
-			EncodeTemplateClassName( mangler_state, the_class );
+			EncodeTemplateClassName( mangler_state, *the_class );
 			return;
 		}
 	}
@@ -334,7 +332,7 @@ void EncodeTypeName( ManglerState& mangler_state, const Type& type )
 			const ManglerState::NodeHolder result_node( mangler_state );
 			{
 				const ManglerState::NodeHolder name_node( mangler_state );
-				mangler_state.PushLengthPrefixed( class_type->members.GetThisNamespaceName() );
+				mangler_state.PushLengthPrefixed( class_type->members->GetThisNamespaceName() );
 			}
 			{
 				const ManglerState::NodeHolder args_node( mangler_state );
@@ -357,7 +355,7 @@ void EncodeTypeName( ManglerState& mangler_state, const Type& type )
 				EncodeTemplateClassName( mangler_state, *class_type );
 		}
 		else
-			EncodeNestedName( mangler_state, class_type->members.GetThisNamespaceName(), *class_type->members.GetParent() );
+			EncodeNestedName( mangler_state, class_type->members->GetThisNamespaceName(), *class_type->members->GetParent() );
 	}
 	else if( const auto enum_type= type.GetEnumType() )
 		EncodeNestedName( mangler_state, enum_type->members.GetThisNamespaceName(), *enum_type->members.GetParent() );
@@ -397,7 +395,7 @@ void EncodeTypeName( ManglerState& mangler_state, const Type& type )
 			for( const FunctionType::ParamReference& arg_and_tag : function->return_references )
 			{
 				U_ASSERT( arg_and_tag.first  < 36u );
-				U_ASSERT( arg_and_tag.second < 36u || arg_and_tag.second == Function::c_arg_reference_tag_number );
+				U_ASSERT( arg_and_tag.second < 36u || arg_and_tag.second == FunctionType::c_arg_reference_tag_number );
 
 				mangler_state.Push( Base36Digit(arg_and_tag.first) );
 				mangler_state.Push(
@@ -416,9 +414,9 @@ void EncodeTypeName( ManglerState& mangler_state, const Type& type )
 			for( const FunctionType::ReferencePollution& pollution : function->references_pollution )
 			{
 				U_ASSERT( pollution.dst.first  < 36u );
-				U_ASSERT( pollution.dst.second < 36u || pollution.dst.second == Function::c_arg_reference_tag_number );
+				U_ASSERT( pollution.dst.second < 36u || pollution.dst.second == FunctionType::c_arg_reference_tag_number );
 				U_ASSERT( pollution.src.first  < 36u );
-				U_ASSERT( pollution.src.second < 36u || pollution.src.second == Function::c_arg_reference_tag_number );
+				U_ASSERT( pollution.src.second < 36u || pollution.src.second == FunctionType::c_arg_reference_tag_number );
 
 				mangler_state.Push( Base36Digit(pollution.dst.first) );
 				mangler_state.Push(
