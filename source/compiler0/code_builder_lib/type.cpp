@@ -119,30 +119,31 @@ bool operator!=( const TupleType& l, const TupleType& r )
 // Type
 //
 
-static_assert( sizeof(Type) <= 40u, "Type is too heavy!" );
+// No more, than 3 pointers on 64 bit platform.
+static_assert( sizeof(Type) <= 24u, "Type is too heavy!" );
 
 Type::Type( FundamentalType fundamental_type )
 	: something_( std::move(fundamental_type) )
 {}
 
 Type::Type( FunctionType function_type )
-	: something_( std::make_unique<FunctionType>( std::move(function_type) ) )
+	: something_( std::make_shared<FunctionType>( std::move(function_type) ) )
 {}
 
 Type::Type( FunctionPointerType function_pointer_type )
-	: something_( std::make_unique<FunctionPointerType>( std::move(function_pointer_type) ) )
+	: something_( std::make_shared<FunctionPointerType>( std::move(function_pointer_type) ) )
 {}
 
 Type::Type( ArrayType array_type )
-	: something_( std::make_unique<ArrayType>( std::move(array_type) ) )
+	: something_( std::make_shared<ArrayType>( std::move(array_type) ) )
 {}
 
 Type::Type( RawPointerType raw_pointer_type )
-	: something_( std::make_unique<RawPointerType>( std::move(raw_pointer_type) ) )
+	: something_( std::make_shared<RawPointerType>( std::move(raw_pointer_type) ) )
 {}
 
 Type::Type( TupleType tuple_type )
-	: something_( std::move(tuple_type) )
+	: something_( std::make_shared<TupleType>( std::move(tuple_type) ) )
 {}
 
 Type::Type( ClassPtr class_type )
@@ -192,7 +193,10 @@ const RawPointerType* Type::GetRawPointerType() const
 
 const TupleType* Type::GetTupleType() const
 {
-	return std::get_if<TupleType>( &something_ );
+	const TupleTypePtr* const tuple_type= std::get_if<TupleTypePtr>( &something_ );
+	if( tuple_type == nullptr )
+		return nullptr;
+	return tuple_type->get();
 }
 
 ClassPtr Type::GetClassType() const
@@ -253,10 +257,10 @@ bool Type::IsDefaultConstructible() const
 		U_ASSERT( *array != nullptr );
 		return (*array)->size == 0u || (*array)->type.IsDefaultConstructible();
 	}
-	else if( const TupleType* const tuple= std::get_if<TupleType>( &something_ ) )
+	else if( const TupleTypePtr* const tuple= std::get_if<TupleTypePtr>( &something_ ) )
 	{
 		bool default_constructible= true;
-		for( const Type& element : tuple->elements )
+		for( const Type& element : (*tuple)->elements )
 			default_constructible= default_constructible && element.IsDefaultConstructible();
 		return default_constructible;
 	}
@@ -281,10 +285,10 @@ bool Type::IsCopyConstructible() const
 		U_ASSERT( *array != nullptr );
 		return (*array)->size == 0u || (*array)->type.IsCopyConstructible();
 	}
-	else if( const TupleType* const tuple= std::get_if<TupleType>( &something_ ) )
+	else if( const TupleTypePtr* const tuple= std::get_if<TupleTypePtr>( &something_ ) )
 	{
 		bool copy_constructible= true;
-		for( const Type& element : tuple->elements )
+		for( const Type& element : (*tuple)->elements )
 			copy_constructible= copy_constructible && element.IsCopyConstructible();
 		return copy_constructible;
 	}
@@ -309,10 +313,10 @@ bool Type::IsCopyAssignable() const
 		U_ASSERT( *array != nullptr );
 		return (*array)->size == 0u || (*array)->type.IsCopyAssignable();
 	}
-	else if( const TupleType* const tuple= std::get_if<TupleType>( &something_ ) )
+	else if( const TupleTypePtr* const tuple= std::get_if<TupleTypePtr>( &something_ ) )
 	{
 		bool copy_assignable= true;
-		for( const Type& element : tuple->elements )
+		for( const Type& element : (*tuple)->elements )
 			copy_assignable= copy_assignable && element.IsCopyAssignable();
 		return copy_assignable;
 	}
@@ -332,10 +336,10 @@ bool Type::HaveDestructor() const
 		U_ASSERT( *array != nullptr );
 		return (*array)->type.HaveDestructor();
 	}
-	else if( const TupleType* const tuple= std::get_if<TupleType>( &something_ ) )
+	else if( const TupleTypePtr* const tuple= std::get_if<TupleTypePtr>( &something_ ) )
 	{
 		bool have_destructor= false;
-		for( const Type& element : tuple->elements )
+		for( const Type& element : (*tuple)->elements )
 			have_destructor= have_destructor || element.HaveDestructor();
 		return have_destructor;
 	}
@@ -361,10 +365,10 @@ bool Type::CanBeConstexpr() const
 	}
 	else if( const Class* const class_= GetClassType() )
 		return class_->can_be_constexpr;
-	else if( const TupleType* const tuple= std::get_if<TupleType>( &something_ ) )
+	else if( const TupleTypePtr* const tuple= std::get_if<TupleTypePtr>( &something_ ) )
 	{
 		bool can_be_constexpr= true;
-		for( const Type& element : tuple->elements )
+		for( const Type& element : (*tuple)->elements )
 			can_be_constexpr= can_be_constexpr && element.CanBeConstexpr();
 		return can_be_constexpr;
 	}
@@ -387,10 +391,10 @@ bool Type::IsAbstract() const
 	}
 	else if( const Class* const class_= GetClassType() )
 		return class_->kind == Class::Kind::Abstract || class_->kind == Class::Kind::Interface;
-	else if( const TupleType* const tuple= std::get_if<TupleType>( &something_ ) )
+	else if( const TupleTypePtr* const tuple= std::get_if<TupleTypePtr>( &something_ ) )
 	{
 		bool is_abstract= false;
-		for( const Type& element : tuple->elements )
+		for( const Type& element : (*tuple)->elements )
 			is_abstract= is_abstract || element.IsAbstract();
 		return is_abstract;
 	}
@@ -416,9 +420,9 @@ InnerReferenceType Type::GetInnerReferenceType() const
 		U_ASSERT( *array != nullptr );
 		result= (*array)->type.GetInnerReferenceType();
 	}
-	else if( const TupleType* const tuple= std::get_if<TupleType>( &something_ ) )
+	else if( const TupleTypePtr* const tuple= std::get_if<TupleTypePtr>( &something_ ) )
 	{
-		for( const Type& element : tuple->elements )
+		for( const Type& element : (*tuple)->elements )
 			result= std::max( result, element.GetInnerReferenceType() );
 	}
 
@@ -456,14 +460,14 @@ std::string Type::ToString() const
 			return "$( " + raw_pointer->type.ToString() + " )";
 		}
 
-		std::string operator()( const TupleType& tuple ) const
+		std::string operator()( const TupleTypePtr& tuple ) const
 		{
 			std::string res= "tup[ ";
 
-			for( const Type& element_type : tuple.elements )
+			for( const Type& element_type : tuple->elements )
 			{
 				res+= element_type.ToString();
-				if( &element_type != & tuple.elements.back() )
+				if( &element_type != & tuple->elements.back() )
 					res+= ", ";
 			}
 			res+= " ]";
@@ -576,10 +580,10 @@ size_t Type::Hash() const
 			return raw_pointer->type.Hash();
 		}
 
-		size_t operator()( const TupleType& tuple ) const
+		size_t operator()( const TupleTypePtr& tuple ) const
 		{
 			size_t hash= 0;
-			for( const Type& element : tuple.elements )
+			for( const Type& element : tuple->elements )
 				hash= llvm::hash_combine( hash, element.Hash() );
 			return hash;
 		}

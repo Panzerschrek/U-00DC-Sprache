@@ -159,7 +159,7 @@ const OverloadedFunctionsSet& ThisOverloadedMethodsSet::GetOverloadedFunctionsSe
 // Value
 //
 
-static_assert( sizeof(Value) <= 160u, "Value is too heavy!" );
+static_assert( sizeof(Value) <= 152u, "Value is too heavy!" );
 
 Value::Value( Variable variable, const SrcLoc& src_loc )
 	: src_loc_(src_loc)

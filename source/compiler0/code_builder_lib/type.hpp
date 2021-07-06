@@ -118,6 +118,7 @@ private:
 	using FunctionPointerPtr= std::shared_ptr<const FunctionPointerType>;
 	using ArrayPtr= std::shared_ptr<const ArrayType>;
 	using RawPointerPtr= std::shared_ptr<const RawPointerType>;
+	using TupleTypePtr= std::shared_ptr<const TupleType>;
 
 	using Variant= std::variant<
 		FundamentalType,
@@ -127,7 +128,7 @@ private:
 		ClassPtr,
 		EnumPtr,
 		FunctionPointerPtr,
-		TupleType >;
+		TupleTypePtr >;
 
 private:
 	Variant something_;
