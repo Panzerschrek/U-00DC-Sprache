@@ -7,7 +7,7 @@
 #define U_ASSERT(x) \
 	{ assert(x); }
 #else
-#define U_ASSERT(x) {}
+#define U_ASSERT(x) { if( false ) { (void)(x); } }
 #endif
 
 #define U_UNUSED(x) (void)x
