@@ -161,58 +161,51 @@ const FundamentalType* Type::GetFundamentalType() const
 
 const FunctionType* Type::GetFunctionType() const
 {
-	const FunctionPtr* const function_type= std::get_if<FunctionPtr>( &something_ );
-	if( function_type == nullptr )
-		return nullptr;
-	return function_type->get();
+	if( const auto function_type= std::get_if<FunctionPtr>( &something_ )  )
+		return function_type->get();
+	return nullptr;
 }
 
 const FunctionPointerType* Type::GetFunctionPointerType() const
 {
-	const FunctionPointerPtr* const function_pointer_type= std::get_if<FunctionPointerPtr>( &something_ );
-	if( function_pointer_type == nullptr )
-		return nullptr;
-	return function_pointer_type->get();
+	if( const auto function_pointer_type= std::get_if<FunctionPointerPtr>( &something_ ) )
+		return function_pointer_type->get();
+	return nullptr;
 }
 
 const ArrayType* Type::GetArrayType() const
 {
-	const ArrayPtr* const array_type= std::get_if<ArrayPtr>( &something_ );
-	if( array_type == nullptr )
-		return nullptr;
-	return array_type->get();
+	if( const auto array_type= std::get_if<ArrayPtr>( &something_ ) )
+		return array_type->get();
+	return nullptr;
 }
 
 const RawPointerType* Type::GetRawPointerType() const
 {
-	const RawPointerPtr* const raw_pointer_type= std::get_if<RawPointerPtr>( &something_ );
-	if( raw_pointer_type == nullptr )
-		return nullptr;
-	return raw_pointer_type->get();
+	if( const auto raw_pointer_type= std::get_if<RawPointerPtr>( &something_ ) )
+		return raw_pointer_type->get();
+	return nullptr;
 }
 
 const TupleType* Type::GetTupleType() const
 {
-	const TupleTypePtr* const tuple_type= std::get_if<TupleTypePtr>( &something_ );
-	if( tuple_type == nullptr )
-		return nullptr;
-	return tuple_type->get();
+	if( const auto tuple_type= std::get_if<TupleTypePtr>( &something_ ) )
+		return tuple_type->get();
+	return nullptr;
 }
 
 ClassPtr Type::GetClassType() const
 {
-	const ClassPtr* const class_type= std::get_if<ClassPtr>( &something_ );
-	if( class_type == nullptr )
-		return nullptr;
-	return *class_type;
+	if( const auto class_type= std::get_if<ClassPtr>( &something_ ) )
+		return *class_type;
+	return nullptr;
 }
 
 EnumPtr Type::GetEnumType() const
 {
-	const EnumPtr* enum_ptr= std::get_if<EnumPtr>( &something_ );
-	if( enum_ptr == nullptr )
-		return nullptr;
-	return *enum_ptr;
+	if( const auto enum_type= std::get_if<EnumPtr>( &something_ ) )
+		return *enum_type;
+	return nullptr;
 }
 
 bool Type::ReferenceIsConvertibleTo( const Type& other ) const
@@ -239,20 +232,14 @@ bool Type::IsDefaultConstructible() const
 {
 	if( const auto fundamental_type= GetFundamentalType() )
 		return fundamental_type->fundamental_type == U_FundamentalType::Void;
-	else if( const ClassPtr* const class_= std::get_if<ClassPtr>( &something_ ) )
-	{
-		U_ASSERT( *class_ != nullptr );
-		return (*class_)->is_default_constructible;
-	}
-	else if( const ArrayPtr* const array= std::get_if<ArrayPtr>( &something_ ) )
-	{
-		U_ASSERT( *array != nullptr );
-		return (*array)->size == 0u || (*array)->type.IsDefaultConstructible();
-	}
-	else if( const TupleTypePtr* const tuple= std::get_if<TupleTypePtr>( &something_ ) )
+	else if( const auto class_type= GetClassType() )
+		return class_type->is_default_constructible;
+	else if( const auto array_type= GetArrayType() )
+		return array_type->size == 0u || array_type->type.IsDefaultConstructible();
+	else if( const auto tuple_type= GetTupleType() )
 	{
 		bool default_constructible= true;
-		for( const Type& element : (*tuple)->elements )
+		for( const Type& element : tuple_type->elements )
 			default_constructible= default_constructible && element.IsDefaultConstructible();
 		return default_constructible;
 	}
@@ -267,20 +254,14 @@ bool Type::IsCopyConstructible() const
 		GetRawPointerType() != nullptr ||
 		GetFunctionPointerType() != nullptr )
 		return true;
-	else if( const ClassPtr* const class_= std::get_if<ClassPtr>( &something_ ) )
-	{
-		U_ASSERT( *class_ != nullptr );
-		return (*class_)->is_copy_constructible;
-	}
-	else if( const ArrayPtr* const array= std::get_if<ArrayPtr>( &something_ ) )
-	{
-		U_ASSERT( *array != nullptr );
-		return (*array)->size == 0u || (*array)->type.IsCopyConstructible();
-	}
-	else if( const TupleTypePtr* const tuple= std::get_if<TupleTypePtr>( &something_ ) )
+	else if( const auto class_type= GetClassType() )
+		return class_type->is_copy_constructible;
+	else if( const auto array_type= GetArrayType() )
+		return array_type->size == 0u || array_type->type.IsCopyConstructible();
+	else if( const auto tuple_type= GetTupleType() )
 	{
 		bool copy_constructible= true;
-		for( const Type& element : (*tuple)->elements )
+		for( const Type& element : tuple_type->elements )
 			copy_constructible= copy_constructible && element.IsCopyConstructible();
 		return copy_constructible;
 	}
@@ -295,20 +276,14 @@ bool Type::IsCopyAssignable() const
 		GetRawPointerType() != nullptr ||
 		GetFunctionPointerType() != nullptr )
 		return true;
-	else if( const ClassPtr* const class_= std::get_if<ClassPtr>( &something_ ) )
-	{
-		U_ASSERT( *class_ != nullptr );
-		return (*class_)->is_copy_assignable;
-	}
-	else if( const ArrayPtr* const array= std::get_if<ArrayPtr>( &something_ ) )
-	{
-		U_ASSERT( *array != nullptr );
-		return (*array)->size == 0u || (*array)->type.IsCopyAssignable();
-	}
-	else if( const TupleTypePtr* const tuple= std::get_if<TupleTypePtr>( &something_ ) )
+	else if( const auto class_type= GetClassType() )
+		return class_type->is_copy_assignable;
+	else if( const auto array_type= GetArrayType() )
+		return array_type->size == 0u || array_type->type.IsCopyAssignable();
+	else if( const auto tuple_type= GetTupleType() )
 	{
 		bool copy_assignable= true;
-		for( const Type& element : (*tuple)->elements )
+		for( const Type& element : tuple_type->elements )
 			copy_assignable= copy_assignable && element.IsCopyAssignable();
 		return copy_assignable;
 	}
@@ -318,20 +293,14 @@ bool Type::IsCopyAssignable() const
 
 bool Type::HaveDestructor() const
 {
-	if( const ClassPtr* const class_= std::get_if<ClassPtr>( &something_ ) )
-	{
-		U_ASSERT( *class_ != nullptr );
-		return (*class_)->have_destructor;
-	}
-	else if( const ArrayPtr* const array= std::get_if<ArrayPtr>( &something_ ) )
-	{
-		U_ASSERT( *array != nullptr );
-		return (*array)->type.HaveDestructor();
-	}
-	else if( const TupleTypePtr* const tuple= std::get_if<TupleTypePtr>( &something_ ) )
+	if( const auto class_type= GetClassType() )
+		return class_type->have_destructor;
+	else if( const auto array_type= GetArrayType() )
+		return array_type->type.HaveDestructor();
+	else if( const auto tuple_type= GetTupleType() )
 	{
 		bool have_destructor= false;
-		for( const Type& element : (*tuple)->elements )
+		for( const Type& element : tuple_type->elements )
 			have_destructor= have_destructor || element.HaveDestructor();
 		return have_destructor;
 	}
@@ -341,26 +310,20 @@ bool Type::HaveDestructor() const
 
 bool Type::CanBeConstexpr() const
 {
-	if( std::get_if<FundamentalType>( &something_ ) != nullptr ||
-		std::get_if<EnumPtr>( &something_ ) != nullptr ||
-		std::get_if<FunctionPointerPtr>( &something_ ) != nullptr )
-	{
+	if( GetFundamentalType() != nullptr ||
+		GetEnumType() != nullptr ||
+		GetFunctionPointerType() != nullptr )
 		return true;
-	}
-
-	// Raw pointer type is not constexpr.
-
-	else if( const ArrayPtr* const array= std::get_if<ArrayPtr>( &something_ ) )
-	{
-		U_ASSERT( *array != nullptr );
-		return (*array)->type.CanBeConstexpr();
-	}
-	else if( const Class* const class_= GetClassType() )
-		return class_->can_be_constexpr;
-	else if( const TupleTypePtr* const tuple= std::get_if<TupleTypePtr>( &something_ ) )
+	else if( GetRawPointerType() != nullptr )
+		return false; // Raw pointer type is not constexpr.
+	else if( const auto class_type= GetClassType() )
+		return class_type->can_be_constexpr;
+	else if( const auto array_type= GetArrayType() )
+		return array_type->type.CanBeConstexpr();
+	else if( const auto tuple_type= GetTupleType() )
 	{
 		bool can_be_constexpr= true;
-		for( const Type& element : (*tuple)->elements )
+		for( const Type& element : tuple_type->elements )
 			can_be_constexpr= can_be_constexpr && element.CanBeConstexpr();
 		return can_be_constexpr;
 	}
@@ -370,23 +333,19 @@ bool Type::CanBeConstexpr() const
 
 bool Type::IsAbstract() const
 {
-	if( std::get_if<FundamentalType>( &something_ ) != nullptr ||
-		std::get_if<EnumPtr>( &something_ ) != nullptr ||
-		std::get_if<FunctionPointerPtr>( &something_ ) != nullptr )
-	{
+	if( GetFundamentalType() != nullptr ||
+		GetEnumType() != nullptr ||
+		GetRawPointerType() != nullptr ||
+		GetFunctionPointerType() != nullptr )
 		return false;
-	}
-	else if( const ArrayPtr* const array= std::get_if<ArrayPtr>( &something_ ) )
-	{
-		U_ASSERT( *array != nullptr );
-		return (*array)->size > 0u && (*array)->type.IsAbstract();
-	}
-	else if( const Class* const class_= GetClassType() )
-		return class_->kind == Class::Kind::Abstract || class_->kind == Class::Kind::Interface;
-	else if( const TupleTypePtr* const tuple= std::get_if<TupleTypePtr>( &something_ ) )
+	else if( const auto class_type= GetClassType() )
+		return class_type->kind == Class::Kind::Abstract || class_type->kind == Class::Kind::Interface;
+	else if( const auto array_type= GetArrayType() )
+		return array_type->size > 0u && array_type->type.IsAbstract();
+	else if( const auto tuple_type= GetTupleType() )
 	{
 		bool is_abstract= false;
-		for( const Type& element : (*tuple)->elements )
+		for( const Type& element : tuple_type->elements )
 			is_abstract= is_abstract || element.IsAbstract();
 		return is_abstract;
 	}
@@ -401,24 +360,19 @@ size_t Type::ReferencesTagsCount() const
 
 InnerReferenceType Type::GetInnerReferenceType() const
 {
-	InnerReferenceType result= InnerReferenceType::None;
-
-	if( const Class* const class_type= GetClassType() )
+	if( const auto class_type= GetClassType() )
+		return class_type->inner_reference_type;
+	else if( const auto array_type= GetArrayType() )
+		return array_type->type.GetInnerReferenceType();
+	else if( const auto tuple_type= GetTupleType() )
 	{
-		result= class_type->inner_reference_type;
-	}
-	else if( const ArrayPtr* const array= std::get_if<ArrayPtr>( &something_ ) )
-	{
-		U_ASSERT( *array != nullptr );
-		result= (*array)->type.GetInnerReferenceType();
-	}
-	else if( const TupleTypePtr* const tuple= std::get_if<TupleTypePtr>( &something_ ) )
-	{
-		for( const Type& element : (*tuple)->elements )
+		InnerReferenceType result= InnerReferenceType::None;
+		for( const Type& element : tuple_type->elements )
 			result= std::max( result, element.GetInnerReferenceType() );
+		return result;
 	}
 
-	return result;
+	return InnerReferenceType::None;
 }
 
 llvm::Type* Type::GetLLVMType() const
