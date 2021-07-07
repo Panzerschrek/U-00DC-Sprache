@@ -14,9 +14,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 llvm::Constant* CodeBuilder::ApplyInitializer(
 	const Variable& variable,
 	NamesScope& names,
@@ -1134,7 +1131,5 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr& class_type )
 		}
 	}
 }
-
-} // namespace CodeBuilderPrivate
 
 } // namespace U

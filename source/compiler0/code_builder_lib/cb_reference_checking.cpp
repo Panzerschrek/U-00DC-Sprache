@@ -6,9 +6,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 void CodeBuilder::ProcessFunctionParamReferencesTags(
 	CodeBuilderErrorsContainer& errors_container,
 	const Synt::FunctionType& func,
@@ -333,7 +330,5 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 		}
 	}
 }
-
-} // namespace CodeBuilderPrivate
 
 } // namespace U

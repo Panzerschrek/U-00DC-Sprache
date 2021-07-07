@@ -7,9 +7,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 //
 // FunctionVariable
 //
@@ -380,7 +377,5 @@ const ErrorValue* Value::GetErrorValue() const
 {
 	return std::get_if<ErrorValue>( &something_ );
 }
-
-} //namespace CodeBuilderPrivate
 
 } // namespace U

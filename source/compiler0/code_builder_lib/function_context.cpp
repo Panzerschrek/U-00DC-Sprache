@@ -4,9 +4,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 StackVariablesStorage::StackVariablesStorage( FunctionContext& in_function_context )
 	: function_context_(in_function_context)
 {
@@ -40,7 +37,5 @@ FunctionContext::FunctionContext(
 	, current_debug_info_scope( function->getSubprogram() )
 {
 }
-
-} // namespace CodeBuilderPrivate
 
 } // namespace U

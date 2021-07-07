@@ -9,9 +9,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 bool ReferencesGraph::Link::operator==( const ReferencesGraph::Link& r ) const
 {
 	return this->src == r.src && this->dst == r.dst;
@@ -353,7 +350,5 @@ void ReferencesGraph::RemoveNodeLinks( const ReferencesGraphNodePtr& node )
 		for( const ReferencesGraphNodePtr& to : out_nodes )
 			AddLink( from, to );
 }
-
-} // namespace CodeBuilderPrivate
 
 } // namespace U

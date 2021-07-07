@@ -4,9 +4,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 llvm::DIFile* CodeBuilder::GetDIFile(const size_t file_index)
 {
 	U_ASSERT( file_index < debug_info_.source_file_entries.size() );
@@ -437,7 +434,5 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const EnumPtr& type )
 	debug_info_.enums_di_cache.insert( std::make_pair( type, result ) );
 	return result;
 }
-
-} // namespace CodeBuilderPrivate
 
 } // namespace U

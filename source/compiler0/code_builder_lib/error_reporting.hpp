@@ -9,10 +9,7 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-	class Type;
-} // namespace CodeBuilderPrivate
+class Type;
 
 // Macro for errors reporting.
 #define REPORT_ERROR( error_code, errors_container, ... ) errors_container.push_back( ErrorReportingImpl::ReportError( CodeBuilderErrorCode::error_code, __VA_ARGS__ ) )
@@ -26,7 +23,7 @@ namespace ErrorReportingImpl
 
 const char* GetErrorMessagePattern( CodeBuilderErrorCode code );
 
-std::string PreprocessArg( const CodeBuilderPrivate::Type& type );
+std::string PreprocessArg( const Type& type );
 std::string PreprocessArg( const Synt::ComplexName& name );
 template<class T> const T& PreprocessArg( const T& t ) { return t; }
 

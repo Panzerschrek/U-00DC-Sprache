@@ -15,9 +15,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 namespace
 {
 
@@ -1261,7 +1258,5 @@ bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
 
 	return false;
 }
-
-} // namespace CodeBuilderPrivate
 
 } // namespace U

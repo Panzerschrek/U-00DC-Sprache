@@ -8,9 +8,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 
 class TemplateSignatureParam
 {
@@ -111,7 +108,5 @@ private:
 		FunctionParam,
 		SpecializedTemplateParam> something_;
 };
-
-} // namespace CodeBuilderPrivate
 
 } // namespace U

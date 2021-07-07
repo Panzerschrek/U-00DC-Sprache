@@ -3,9 +3,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 TemplateSignatureParam::TemplateSignatureParam( TypeParam type )
 {
 	something_= std::move(type);
@@ -100,7 +97,5 @@ const TemplateSignatureParam::SpecializedTemplateParam* TemplateSignatureParam::
 {
 	return std::get_if<SpecializedTemplateParam>( &something_ );
 }
-
-} // namespace CodeBuilderPrivate
 
 } // namespace U

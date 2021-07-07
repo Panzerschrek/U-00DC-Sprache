@@ -7,8 +7,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
 
 using TemplateArg= std::variant< Variable, Type >;
 using TemplateArgs= std::vector<TemplateArg>;
@@ -52,7 +50,5 @@ struct FunctionTemplate final : public TemplateBase
 	TemplateArgs known_template_args;
 	FunctionTemplatePtr parent;
 };
-
-} //namespace CodeBuilderPrivate
 
 } // namespace U

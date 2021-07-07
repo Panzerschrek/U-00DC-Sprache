@@ -4,9 +4,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 using Synt::ClassMemberVisibility;
 
 class NamesScope final
@@ -110,8 +107,5 @@ private:
 
 	CodeBuilderErrorsContainer* errors_= nullptr;
 };
-
-
-} //namespace CodeBuilderPrivate
 
 } // namespace U

@@ -5,9 +5,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 class ManglerState
 {
 private:
@@ -60,7 +57,5 @@ public:
 private:
 	ManglerState state_;
 };
-
-} // namespace CodeBuilderPrivate
 
 } // namespace U

@@ -6,9 +6,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 {
 	U_ASSERT( !the_class.is_complete );
@@ -559,7 +556,5 @@ void CodeBuilder::SetupVirtualTablePointers(
 
 	SetupVirtualTablePointers_r( this_, the_class.virtual_table_llvm_variable, the_class, function_context );
 }
-
-} // namespace CodeBuilderPrivate
 
 } // namespace U

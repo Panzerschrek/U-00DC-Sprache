@@ -8,9 +8,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 struct ReferencesGraphNode
 {
 	enum class Kind
@@ -91,7 +88,5 @@ private:
 	std::unordered_map<ReferencesGraphNodePtr, NodeState> nodes_;
 	LinksSet links_;
 };
-
-} // namespace CodeBuilderPrivate
 
 } // namespace U

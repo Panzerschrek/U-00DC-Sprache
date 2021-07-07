@@ -12,9 +12,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 {
 	Class& the_class= *class_type;
@@ -891,7 +888,5 @@ bool CodeBuilder::IsCopyAssignmentOperator( const FunctionType& function_type, c
 		function_type.params[0].type == base_class &&  function_type.params[0].is_mutable && function_type.params[0].is_reference &&
 		function_type.params[1].type == base_class && !function_type.params[1].is_mutable && function_type.params[1].is_reference;
 }
-
-} // namespace CodeBuilderPrivate
 
 } //namespace U

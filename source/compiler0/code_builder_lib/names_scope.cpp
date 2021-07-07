@@ -7,9 +7,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 NamesScope::NamesScope( std::string name, NamesScope* const parent )
 	: name_(std::move(name) )
 	, parent_(parent)
@@ -152,7 +149,5 @@ CodeBuilderErrorsContainer& NamesScope::GetErrors() const
 		return *errors_;
 	return parent_->GetErrors();
 }
-
-} //namespace CodeBuilderPrivate
 
 } // namespace U

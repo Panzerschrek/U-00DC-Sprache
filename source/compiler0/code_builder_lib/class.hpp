@@ -5,9 +5,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 class Class final
 {
 public:
@@ -103,7 +100,5 @@ public:
 	llvm::GlobalVariable* virtual_table_llvm_variable= nullptr; // May be null for interfaces and abstract classes.
 	llvm::GlobalVariable* polymorph_type_id= nullptr; // Exists in polymorph classes.
 };
-
-} //namespace CodeBuilderPrivate
 
 } // namespace U

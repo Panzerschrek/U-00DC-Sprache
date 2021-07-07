@@ -6,9 +6,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 namespace
 {
 
@@ -738,7 +735,5 @@ const CodeBuilder::TemplateTypePreparationResult* CodeBuilder::SelectTemplateTyp
 
 	return selected_template;
 }
-
-} // namespace CodeBuilderPrivate
 
 } // namespace U

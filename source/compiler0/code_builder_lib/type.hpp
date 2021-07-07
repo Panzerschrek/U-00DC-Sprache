@@ -13,9 +13,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 struct FunctionType;
 struct FunctionPointerType;
 struct ArrayType;
@@ -217,7 +214,5 @@ struct TypeHasher
 {
 	size_t operator()(const Type& t) const { return t.Hash(); }
 };
-
-} //namespace CodeBuilderLLVMPrivate
 
 } // namespace U

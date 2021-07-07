@@ -4,9 +4,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 struct Enum
 {
 	Enum( std::string name, NamesScope* parent_scope );
@@ -17,7 +14,5 @@ struct Enum
 
 	const Synt::Enum* syntax_element= nullptr; // Null if completed
 };
-
-} //namespace CodeBuilderPrivate
 
 } // namespace U

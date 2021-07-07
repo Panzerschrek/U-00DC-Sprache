@@ -16,9 +16,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 CodeBuilder::ReferencesGraphNodeHolder::ReferencesGraphNodeHolder(
 	FunctionContext& function_context,
 	const ReferencesGraphNode::Kind node_kind,
@@ -2009,7 +2006,5 @@ void CodeBuilder::RestoreInstructionsState(
 		function_context.alloca_basic_block->getInstList().pop_back();
 	function_context.alloca_ir_builder.SetInsertPoint( function_context.alloca_basic_block, function_context.alloca_basic_block->end() );
 }
-
-} // namespace CodeBuilderPrivate
 
 } // namespace U

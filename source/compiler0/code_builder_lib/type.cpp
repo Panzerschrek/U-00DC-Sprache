@@ -13,8 +13,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
 
 namespace
 {
@@ -767,7 +765,5 @@ bool operator!=( const FunctionPointerType& l, const FunctionPointerType& r )
 {
 	return !( r == l );
 }
-
-} //namespace CodeBuilderLLVMPrivate
 
 } // namespace U

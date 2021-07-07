@@ -6,9 +6,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 void CodeBuilder::NamesScopeFill(
 	const Synt::ProgramElements& namespace_elements,
 	NamesScope& names_scope )
@@ -452,7 +449,5 @@ void CodeBuilder::NamesScopeFillOutOfLineElements(
 		}
 	}
 }
-
-} // namespace CodeBuilderPrivate
 
 } // namespace U

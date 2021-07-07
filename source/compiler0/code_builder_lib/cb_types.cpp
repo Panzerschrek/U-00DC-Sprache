@@ -15,9 +15,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 Type CodeBuilder::PrepareType(
 	const Synt::TypeName& type_name,
 	NamesScope& names_scope,
@@ -209,8 +206,5 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 
 	return llvm::FunctionType::get( llvm_function_return_type, args_llvm_types, false );
 }
-
-
-} // namespace CodeBuilderPrivate
 
 } // namespace U

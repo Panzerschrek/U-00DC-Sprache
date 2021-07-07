@@ -4,13 +4,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
-//
-// Class
-//
-
 const std::string Class::c_template_class_name= "_";
 
 Class::Class( std::string in_name, NamesScope* const parent_scope )
@@ -44,7 +37,5 @@ bool Class::HaveAncestor( const ClassPtr& class_ ) const
 	}
 	return false;
 }
-
-} //namespace CodeBuilderPrivate
 
 } // namespace U

@@ -6,9 +6,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 namespace
 {
 
@@ -1202,7 +1199,5 @@ void CodeBuilder::GlobalThingReportAboutLoop( const size_t loop_start_stack_inde
 
 	REPORT_ERROR( GlobalsLoopDetected, global_errors_, min_src_loc, description );
 }
-
-} // namespace CodeBuilderPrivate
 
 } // namespace U

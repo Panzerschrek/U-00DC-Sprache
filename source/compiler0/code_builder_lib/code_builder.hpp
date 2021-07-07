@@ -22,9 +22,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 class CodeBuilder
 {
 public:
@@ -985,9 +982,5 @@ private:
 
 using MutabilityModifier= Synt::MutabilityModifier;
 using ReferenceModifier= Synt::ReferenceModifier;
-
-} // namespace CodeBuilderPrivate
-
-using CodeBuilderPrivate::CodeBuilder;
 
 } // namespace U

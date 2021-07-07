@@ -128,7 +128,7 @@ const char* GetErrorMessagePattern( const CodeBuilderErrorCode code )
 	return "";
 }
 
-std::string PreprocessArg( const CodeBuilderPrivate::Type& type )
+std::string PreprocessArg( const Type& type )
 {
 	return type.ToString();
 }

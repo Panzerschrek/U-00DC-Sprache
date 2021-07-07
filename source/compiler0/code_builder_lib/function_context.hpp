@@ -8,9 +8,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 struct FunctionContext;
 
 // Usage - create this struct on stack. FunctionContext::stack_variables_stack will be controlled automatically.
@@ -94,7 +91,5 @@ struct FunctionContext
 
 	llvm::DIScope* current_debug_info_scope= nullptr;
 };
-
-} // namespace CodeBuilderPrivate
 
 } // namespace U

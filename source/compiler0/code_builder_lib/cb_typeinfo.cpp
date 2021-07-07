@@ -6,9 +6,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 namespace
 {
 
@@ -789,7 +786,5 @@ Variable CodeBuilder::BuildTypeinfoTupleElements( const TupleType& tuple_type, N
 			initializer,
 			initializer );
 }
-
-} // namespace CodeBuilderPrivate
 
 } // namespace U

@@ -9,9 +9,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 namespace
 {
 
@@ -593,7 +590,5 @@ std::string Mangler::MangleVirtualTable( const Type& type )
 	EncodeTypeName( state_, type );
 	return state_.TakeResult();
 }
-
-} // namespace CodeBuilderPrivate
 
 } // namespace U

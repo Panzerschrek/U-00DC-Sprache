@@ -16,9 +16,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 Value CodeBuilder::BuildExpressionCodeAndDestroyTemporaries(
 	const Synt::Expression& expression,
 	NamesScope& names,
@@ -2997,7 +2994,5 @@ FunctionType::Param CodeBuilder::GetArgExtendedType( const Variable& variable )
 	arg_type_extended.is_mutable= variable.value_type == ValueType::Reference;
 	return arg_type_extended;
 }
-
-} // namespace CodeBuilderPrivate
 
 } // namespace U

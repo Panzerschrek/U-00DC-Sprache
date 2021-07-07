@@ -15,9 +15,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
-
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	NamesScope& names,
 	FunctionContext& function_context,
@@ -1695,7 +1692,5 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 
 	CallDestructors( temp_variables_storage, block_names, function_context, src_loc );
 }
-
-} // namespace CodeBuilderPrivate
 
 } // namespace U

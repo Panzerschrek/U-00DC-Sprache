@@ -12,8 +12,6 @@
 namespace U
 {
 
-namespace CodeBuilderPrivate
-{
 
 class TemplateSignatureParam;
 
@@ -262,7 +260,5 @@ private:
 	// Not for all values SrcLoc required, so, fill it with zeros for it.
 	SrcLoc src_loc_;
 };
-
-} //namespace CodeBuilderPrivate
 
 } // namespace U
