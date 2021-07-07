@@ -1821,7 +1821,7 @@ Value CodeBuilder::ResolveValue(
 			GlobalThingBuildVariable( *last_space, *value );
 		else if( const Type* const type= value->GetTypeName() )
 		{
-			if( const EnumPtr enum_= type->GetEnumTypePtr() )
+			if( const EnumPtr enum_= type->GetEnumType() )
 				GlobalThingBuildEnum( enum_ );
 		}
 	}

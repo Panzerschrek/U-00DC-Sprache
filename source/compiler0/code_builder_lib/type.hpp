@@ -89,8 +89,7 @@ public:
 	const RawPointerType* GetRawPointerType() const;
 	const TupleType* GetTupleType() const;
 	ClassPtr GetClassType() const;
-	Enum* GetEnumType() const;
-	EnumPtr GetEnumTypePtr() const;
+	EnumPtr GetEnumType() const;
 
 	bool ReferenceIsConvertibleTo( const Type& other ) const;
 

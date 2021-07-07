@@ -137,7 +137,7 @@ llvm::DIType* CodeBuilder::CreateDIType( const Type& type )
 		result_type= CreateDIType( *raw_pointer_type );
 	else if( const auto class_type= type.GetClassType() )
 		result_type= CreateDIType( class_type );
-	else if( const auto enum_type= type.GetEnumTypePtr() )
+	else if( const auto enum_type= type.GetEnumType() )
 		result_type= CreateDIType( enum_type );
 
 	if( result_type != nullptr )

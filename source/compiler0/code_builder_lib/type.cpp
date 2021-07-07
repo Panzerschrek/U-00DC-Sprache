@@ -207,15 +207,7 @@ ClassPtr Type::GetClassType() const
 	return *class_type;
 }
 
-Enum* Type::GetEnumType() const
-{
-	const EnumPtr* enum_ptr= std::get_if<EnumPtr>( &something_ );
-	if( enum_ptr == nullptr )
-		return nullptr;
-	return *enum_ptr;
-}
-
-EnumPtr Type::GetEnumTypePtr() const
+EnumPtr Type::GetEnumType() const
 {
 	const EnumPtr* enum_ptr= std::get_if<EnumPtr>( &something_ );
 	if( enum_ptr == nullptr )

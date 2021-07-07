@@ -224,7 +224,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	{
 		add_size_field( "element_count", enum_type->element_count );
 		add_typeinfo_field( "underlaying_type", enum_type->underlaying_type );
-		add_list_field( "elements_list", BuildTypeinfoEnumElementsList( type.GetEnumTypePtr(), root_namespace ) );
+		add_list_field( "elements_list", BuildTypeinfoEnumElementsList( type.GetEnumType(), root_namespace ) );
 	}
 	else if( const ArrayType* const array_type= type.GetArrayType() )
 	{
