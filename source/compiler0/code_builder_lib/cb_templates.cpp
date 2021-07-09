@@ -79,7 +79,6 @@ void CodeBuilder::PrepareTypeTemplate(
 	*/
 
 	const auto type_template= std::make_shared<TypeTemplate>();
-	type_templates_set.type_templates.push_back( type_template );
 
 	type_template->parent_namespace= &names_scope;
 	type_template->syntax_element= &type_template_declaration;
@@ -136,6 +135,17 @@ void CodeBuilder::PrepareTypeTemplate(
 	for( size_t i= 0u; i < type_template->template_params.size(); ++i )
 		if( !template_parameters_usage_flags[i] )
 			REPORT_ERROR( TemplateArgumentNotUsedInSignature, names_scope.GetErrors(), type_template_declaration.src_loc_, type_template->template_params[i].name );
+
+	// Check for redefinition and insert.
+	for( const TypeTemplatePtr& prev_template : type_templates_set.type_templates )
+	{
+		if(type_template->signature_params == prev_template->signature_params )
+		{
+			REPORT_ERROR( TemplateArgumentNotUsedInSignature, names_scope.GetErrors(), type_template_declaration.src_loc_, type_template_declaration.name_ );
+			return;
+		}
+	}
+	type_templates_set.type_templates.push_back( type_template );
 }
 
 void CodeBuilder::PrepareFunctionTemplate(
