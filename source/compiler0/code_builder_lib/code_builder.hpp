@@ -807,7 +807,7 @@ private:
 	void NamesScopeFill( const Synt::AutoVariableDeclaration& variable_declaration, NamesScope& names_scope );
 	void NamesScopeFill( const Synt::FunctionPtr& function_declaration, NamesScope& names_scope, const ClassPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( const Synt::FunctionTemplate& function_template_declaration, NamesScope& names_scope, const ClassPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
-	ClassPtr NamesScopeFill( const Synt::ClassPtr& class_declaration, NamesScope& names_scope, const std::string& override_name= "" );
+	ClassPtr NamesScopeFill( const Synt::ClassPtr& class_declaration, NamesScope& names_scope );
 	void NamesScopeFill( const Synt::TypeTemplate& type_template_declaration, NamesScope& names_scope, const ClassPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( const Synt::Enum& enum_declaration, NamesScope& names_scope );
 	void NamesScopeFill( const Synt::TypeAlias& type_alias_declaration, NamesScope& names_scope );

@@ -161,14 +161,11 @@ void CodeBuilder::NamesScopeFill(
 	}
 }
 
-ClassPtr CodeBuilder::NamesScopeFill(
-	const Synt::ClassPtr& class_declaration_ptr,
-	NamesScope& names_scope,
-	const std::string& override_name )
+ClassPtr CodeBuilder::NamesScopeFill( const Synt::ClassPtr& class_declaration_ptr, NamesScope& names_scope )
 {
 	const auto& class_declaration= *class_declaration_ptr;
 
-	const std::string& class_name= override_name.empty() ? class_declaration.name_: override_name;
+	const std::string& class_name= class_declaration.name_;
 	if( IsKeyword( class_name ) )
 		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), class_declaration.src_loc_ );
 
