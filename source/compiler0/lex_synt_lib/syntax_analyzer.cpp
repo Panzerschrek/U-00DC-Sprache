@@ -3316,7 +3316,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 			if( class_ != nullptr )
 			{
 				class_->src_loc_= template_thing_src_loc;
-				class_->name_= std::move(name);
+				class_->name_= "_"; // // Give special name for all template classes
 				class_->kind_attribute_= class_kind_attribute;
 				class_->have_shared_state_= have_shared_state;
 				class_->keep_fields_order_= keep_fields_order;

@@ -918,6 +918,8 @@ Value* CodeBuilder::FinishTemplateTypeGeneration(
 
 	if( const auto class_ptr= std::get_if<Synt::ClassPtr>( &type_template.syntax_element->something_ ) )
 	{
+		U_ASSERT( (*class_ptr)->name_ == Class::c_template_class_name );
+
 		if( const auto cache_class_it= template_classes_cache_.find( name_encoded ); cache_class_it != template_classes_cache_.end() )
 		{
 			return
@@ -926,7 +928,7 @@ Value* CodeBuilder::FinishTemplateTypeGeneration(
 					Value( cache_class_it->second, type_template.syntax_element->src_loc_ /* TODO - check src_loc */ ) );
 		}
 
-		const ClassPtr class_type= NamesScopeFill( *class_ptr, *template_args_namespace, Class::c_template_class_name );
+		const ClassPtr class_type= NamesScopeFill( *class_ptr, *template_args_namespace );
 		if( class_type == nullptr )
 			return nullptr;
 

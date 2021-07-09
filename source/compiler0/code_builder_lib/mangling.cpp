@@ -201,11 +201,8 @@ void EncodeTemplateClassName( ManglerState& mangler_state, const Class& the_clas
 
 void EncodeNamespacePrefix_r( ManglerState& mangler_state, const NamesScope& names_scope )
 {
-	const std::string& name= names_scope.GetThisNamespaceName();
-	if( name == Class::c_template_class_name )
+	if( const ClassPtr the_class= names_scope.GetClass() )
 	{
-		// Assume, that "names_scope" is field "members" of "Class".
-		const ClassPtr the_class= names_scope.GetClass();
 		if( the_class->base_template != std::nullopt )
 		{
 			const ManglerState::NodeHolder result_node( mangler_state );
@@ -213,6 +210,8 @@ void EncodeNamespacePrefix_r( ManglerState& mangler_state, const NamesScope& nam
 			return;
 		}
 	}
+
+	const std::string& name= names_scope.GetThisNamespaceName();
 
 	const ManglerState::NodeHolder result_node( mangler_state );
 
