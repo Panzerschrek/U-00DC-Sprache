@@ -149,21 +149,7 @@ fn CodeBuilder::PrepareTypeTemplate(
 	// Check for redefinition.
 	foreach( &prev_template_ptr : out_templates_set.type_templates )
 	{
-		var TypeTemplate& prev_template= prev_template_ptr.get_ref();
-
-		// TODO - implement "op==" for vectors.
-		if( type_template.signature_params.size() != prev_template.signature_params.size() )
-		{
-			continue;
-		}
-
-		auto mut is_same= true;
-		for( auto mut i= 0s; i < type_template.signature_params.size(); ++i )
-		{
-			is_same&= type_template.signature_params[i] == prev_template.signature_params[i];
-		}
-
-		if( is_same )
+		if( TypeTemplate::SignatureParamsIsSame( type_template, prev_template_ptr.get_ref() ) )
 		{
 			REPORT_ERROR( TypeTemplateRedefinition, names_scope, syntax_element.src_loc, syntax_element.name )
 			return;

@@ -326,6 +326,12 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 						same_found= true;
 						break;
 					}
+					if( TypeTemplate::SignatureParamsIsSame( type_template.get_ref(), dst_type_template.get_ref() ) )
+					{
+						REPORT_ERROR( TypeTemplateRedefinition, target_names_scope, type_template.get_ref().syntax_element.get_ref().src_loc, name )
+						same_found= true;
+						break;
+					}
 				}
 				if( !same_found )
 				{

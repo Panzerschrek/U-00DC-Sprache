@@ -461,6 +461,8 @@ class TemplateBase polymorph
 			signature_params(move(in_signature_params))
 		)
 	{}
+
+	fn SignatureParamsIsSame( TemplateBase& l, TemplateBase& r ) : bool;
 }
 
 class TypeTemplate final : TemplateBase

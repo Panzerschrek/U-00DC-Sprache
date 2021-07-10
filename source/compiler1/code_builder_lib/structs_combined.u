@@ -944,6 +944,25 @@ fn GetValueKindName( Value& v ) : ust::array_view_imut</ char8 />
 // Templates
 //
 
+fn TypeTemplate::SignatureParamsIsSame( TemplateBase& l, TemplateBase& r ) : bool
+{
+	// TODO - implement "op==" for vectors.
+	if( l.signature_params.size() != r.signature_params.size() )
+	{
+		return false;
+	}
+
+	for( auto mut i= 0s; i < l.signature_params.size(); ++i )
+	{
+		if( !( l.signature_params[i] == r.signature_params[i] ) )
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
 fn TemplateSignatureParam::conversion_constructor( TemplateParam mut template_param )
 	( something_( move(template_param) ) )
 {}
