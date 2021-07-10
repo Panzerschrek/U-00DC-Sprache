@@ -170,20 +170,6 @@ def TypeTemplatesOvelroading_SpecializationErrors_Test0():
 	assert( HaveError( errors_list, "CouldNotSelectMoreSpicializedTypeTemplate", 5 ) )
 
 
-def TypeTemplatesOvelroading_SpecializationErrors_Test1():
-	c_program_text= """
-		template</ type T />
-		struct S</ i32, T= bool /> {}
-
-		template</ type T />
-		struct S</ i32, T= f32 /> {}
-
-		fn Foo( S</ i32 /> & s );  // Error, more-specialized template selection does not works here for only first argument.
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "CouldNotSelectMoreSpicializedTypeTemplate", 8 ) )
-
-
 def LessSpecializedTemplateTypesNotGenerated_Test0():
 	c_program_text= """
 		template</ type T />
