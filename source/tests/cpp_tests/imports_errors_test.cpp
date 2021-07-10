@@ -755,4 +755,100 @@ U_TEST( Redefineition_ForImports_Test6 )
 	U_TEST_ASSERT( result.errors[0u].src_loc.GetLine() == 2u );
 }
 
+U_TEST( TypeTemplateRedefinition_ForImports_Test0 )
+{
+	// Redefinition - same type template.
+
+	static const char c_program_text_a[]=
+	R"(
+		template</type U/> struct S{}
+	)";
+
+	static const char c_program_text_b[]=
+	R"(
+		template</type V/> struct S{}
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+		import "b"
+	)";
+
+	const ErrorTestBuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "a", c_program_text_a },
+				{ "b", c_program_text_b },
+				{ "root", c_program_text_root }
+			},
+			"root" );
+
+	U_TEST_ASSERT( HaveError( result.errors, CodeBuilderErrorCode::TypeTemplateRedefinition, 2u ) );
+}
+
+U_TEST( TypeTemplateRedefinition_ForImports_Test1 )
+{
+	static const char c_program_text_a[]=
+	R"(
+		template</type U/> struct S{}
+	)";
+
+	static const char c_program_text_b[]=
+	R"(
+		import "a"
+	)";
+
+	static const char c_program_text_c[]=
+	R"(
+		import "a"
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		// Import same type template from "a" via "b" and "c"
+		import "b"
+		import "c"
+	)";
+
+	BuildMultisourceProgram(
+		{
+			{ "a", c_program_text_a },
+			{ "b", c_program_text_b },
+			{ "c", c_program_text_c },
+			{ "root", c_program_text_root }
+		},
+		"root" );
+}
+
+U_TEST( TypeTemplateRedefinition_ForImports_Test2 )
+{
+	static const char c_program_text_a[]=
+	R"(
+		template</type U/> struct S{}
+	)";
+
+	static const char c_program_text_b[]=
+	R"(
+		template</type U, type V/> struct S{}
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		// Ok - take two diffetent type templates from imporded files.
+		import "a"
+		import "b"
+		type T0= S</i32/>;
+		type T1= S</f32, i8/>;
+	)";
+
+	BuildMultisourceProgram(
+		{
+			{ "a", c_program_text_a },
+			{ "b", c_program_text_b },
+			{ "root", c_program_text_root }
+		},
+		"root" );
+}
+
 } // namespace U

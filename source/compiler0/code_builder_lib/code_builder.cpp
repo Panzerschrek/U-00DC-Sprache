@@ -431,11 +431,37 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src )
 					return;
 				}
 			}
+			else if( const auto dst_type_templates_set= dst_member->GetTypeTemplatesSet() )
+			{
+				if( const auto src_type_templates_set= src_member.GetTypeTemplatesSet() )
+				{
+					for( const TypeTemplatePtr& src_type_template : src_type_templates_set->type_templates )
+					{
+						bool should_add= true;
+						for( const TypeTemplatePtr& dst_type_template : dst_type_templates_set->type_templates )
+						{
+							if( dst_type_template == src_type_template )
+							{
+								should_add= false;
+								break;
+							}
+							if( src_type_template->signature_params == dst_type_template->signature_params )
+							{
+								REPORT_ERROR( TypeTemplateRedefinition, dst.GetErrors(), src_type_template->src_loc, src_name );
+								should_add= false;
+								break;
+							}
+						}
+						if( should_add )
+							dst_type_templates_set->type_templates.push_back( src_type_template );
+					}
+
+					return;
+				}
+			}
 
 			if( dst_member->GetSrcLoc() == src_member.GetSrcLoc() )
 				return; // All ok - things from one source.
-
-			// TODO - what about merging type templates sets?
 
 			// Can not merge other kinds of values.
 			REPORT_ERROR( Redefinition, dst.GetErrors(), src_member.GetSrcLoc(), src_name );
