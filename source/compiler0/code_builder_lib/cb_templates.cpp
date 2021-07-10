@@ -141,7 +141,7 @@ void CodeBuilder::PrepareTypeTemplate(
 	{
 		if(type_template->signature_params == prev_template->signature_params )
 		{
-			REPORT_ERROR( TemplateArgumentNotUsedInSignature, names_scope.GetErrors(), type_template_declaration.src_loc_, type_template_declaration.name_ );
+			REPORT_ERROR( TypeTemplateRedefinition, names_scope.GetErrors(), type_template_declaration.src_loc_, type_template_declaration.name_ );
 			return;
 		}
 	}

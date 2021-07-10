@@ -167,9 +167,7 @@ def TypeTemplatesOvelroading_SpecializationErrors_Test0():
 		fn Foo( S</ i32, i32 /> & s );  // Error, different best-specialized templates for first and second template arguments.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 1 )
-	assert( errors_list[1].error_code == "CouldNotSelectMoreSpicializedTypeTemplate" )
-	assert( errors_list[1].src_loc.line == 5 )
+	assert( HaveError( errors_list, "CouldNotSelectMoreSpicializedTypeTemplate", 5 ) )
 
 
 def TypeTemplatesOvelroading_SpecializationErrors_Test1():
@@ -183,9 +181,7 @@ def TypeTemplatesOvelroading_SpecializationErrors_Test1():
 		fn Foo( S</ i32 /> & s );  // Error, more-specialized template selection does not works here for only first argument.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 1 )
-	assert( errors_list[1].error_code == "CouldNotSelectMoreSpicializedTypeTemplate" )
-	assert( errors_list[1].src_loc.line == 8 )
+	assert( HaveError( errors_list, "CouldNotSelectMoreSpicializedTypeTemplate", 8 ) )
 
 
 def LessSpecializedTemplateTypesNotGenerated_Test0():
@@ -215,3 +211,213 @@ def LessSpecializedTemplateTypesNotGenerated_Test0():
 		fn Foo( S</ [ i32, 4 ] />& s );  // Must here select 'S', specialized for arrays and not generate body of less specialized 'S'.
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TypeTemplateRedefinition_Test0():
+	c_program_text= """
+		// Simple redefinition.
+		template</ type T /> struct S{ T x; }
+		template</ type T /> struct S{ T x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "TypeTemplateRedefinition", 3 ) or HaveError( errors_list, "TypeTemplateRedefinition", 4 ) )
+
+
+def TypeTemplateRedefinition_Test1():
+	c_program_text= """
+		// Redefinition with different template param name.
+		template</ type U /> struct S{ U x; }
+		template</ type V /> struct S{ V x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "TypeTemplateRedefinition", 3 ) or HaveError( errors_list, "TypeTemplateRedefinition", 4 ) )
+
+
+def TypeTemplateRedefinition_Test2():
+	c_program_text= """
+		// Redefinition with long form.
+		template</ type U /> struct S</U/>{ U x; }
+		template</ type V /> struct S</V/>{ V x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "TypeTemplateRedefinition", 3 ) or HaveError( errors_list, "TypeTemplateRedefinition", 4 ) )
+
+
+def TypeTemplateRedefinition_Test3():
+	c_program_text= """
+		// Redefinition with long and short forms.
+		template</ type U /> struct S</U/>{ U x; }
+		template</ type V /> struct S{ V x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "TypeTemplateRedefinition", 3 ) or HaveError( errors_list, "TypeTemplateRedefinition", 4 ) )
+
+
+def TypeTemplateRedefinition_Test4():
+	c_program_text= """
+		// Redefinition with array signature param.
+		template</ type U /> struct S</ [ U, 4 ] />{ U x; }
+		template</ type V /> struct S</ [ V, 4 ] />{ V x; }
+
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "TypeTemplateRedefinition", 3 ) or HaveError( errors_list, "TypeTemplateRedefinition", 4 ) )
+
+
+def TypeTemplateRedefinition_Test5():
+	c_program_text= """
+		// Redefinition with array signature param with different size - this is not error.
+		template</ type U /> struct S</ [ U, 3 ] />{ T x; }
+		template</ type V /> struct S</ [ V, 4 ] />{ T x; }
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeTemplateRedefinition_Test6():
+	c_program_text= """
+		// Redefinition with tuple signature param.
+		template</ type U, type V /> struct S</ tup[ U, V ] />{ U x; }
+		template</ type X, type Y /> struct S</ tup[ X, Y ] />{ X x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "TypeTemplateRedefinition", 3 ) or HaveError( errors_list, "TypeTemplateRedefinition", 4 ) )
+
+
+def TypeTemplateRedefinition_Test7():
+	c_program_text= """
+		// Tuple signature param ok - different order.
+		template</ type U, type V /> struct S</ tup[ U, V ] />{ U x; }
+		template</ type X, type Y /> struct S</ tup[ Y, X ] />{ X x; }
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeTemplateRedefinition_Test8():
+	c_program_text= """
+		// Typle function param.
+		template</ type U, type V /> struct S</ fn(U u) : V />{ U x; }
+		template</ type X, type Y /> struct S</ fn(X x) : Y />{ X x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "TypeTemplateRedefinition", 3 ) or HaveError( errors_list, "TypeTemplateRedefinition", 4 ) )
+
+
+def TypeTemplateRedefinition_Test9():
+	c_program_text= """
+		// Typle function param - ok, different unsafe flag.
+		template</ type U, type V /> struct S</ fn(U u) unsafe : V />{ U x; }
+		template</ type X, type Y /> struct S</ fn(X x) : Y />{ X x; }
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeTemplateRedefinition_Test10():
+	c_program_text= """
+		// Typle function param - ok, different reference flag.
+		template</ type U, type V /> struct S</ fn(U u) : V />{ U x; }
+		template</ type X, type Y /> struct S</ fn(X& x) : Y />{ X x; }
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeTemplateRedefinition_Test11():
+	c_program_text= """
+		// Typle function param - ok, different parameters count.
+		template</ type U, type V /> struct S</ fn(U u, V v) : f32 />{ U x; }
+		template</ type X, type Y /> struct S</ fn(X x0, Y y, X x1) : f32 />{ X x; }
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeTemplateRedefinition_Test12():
+	c_program_text= """
+		type Int= i32;
+		// Redefinition with same type (via alias) in signature.
+		template</ type U /> struct S</ U, i32 />{ U x; }
+		template</ type V /> struct S</ V, Int />{ V x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "TypeTemplateRedefinition", 4 ) or HaveError( errors_list, "TypeTemplateRedefinition", 5 ) )
+
+
+def TypeTemplateRedefinition_Test13():
+	c_program_text= """
+		template</ type T /> struct Box{ T x; }
+		// Redefinition with same specialization for template.
+		template</ type U /> struct S</ Box</U/> />{ U x; }
+		template</ type V /> struct S</ Box</V/> />{ V x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "TypeTemplateRedefinition", 5 ) or HaveError( errors_list, "TypeTemplateRedefinition", 6 ) )
+
+
+def TypeTemplateRedefinition_Test14():
+	c_program_text= """
+		template</ type T /> struct Box{ T x; }
+		namespace N
+		{
+			template</ type T /> struct Box{ T x; }
+			// Ok - specialization for different templates from different namespaces with same name.
+			template</ type U /> struct S</ ::Box</U/> />{ U x; }
+			template</ type V /> struct S</ Box</V/> />{ V x; }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeTemplateRedefinition_Test15():
+	c_program_text= """
+		// Ok - different type signature param.
+		template</ type U /> struct S</ U, f32 />{ U t; }
+		template</ type V /> struct S</ V, i32 />{ V t; }
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeTemplateRedefinition_Test16():
+	c_program_text= """
+		// Redefinition - even if default signature params are different.
+		template</ type U, type V /> struct S</ U, V= f32 />{}
+		template</ type X, type Y /> struct S</ X, Y= u64 />{}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "TypeTemplateRedefinition", 3 ) or HaveError( errors_list, "TypeTemplateRedefinition", 4 ) )
+
+
+def TypeTemplateRedefinition_Test17():
+	c_program_text= """
+		// Redefinition - same variable signature param.
+		template<//> struct S</ 66u />{}
+		template<//> struct S</ 66u />{}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "TypeTemplateRedefinition", 3 ) or HaveError( errors_list, "TypeTemplateRedefinition", 4 ) )
+
+
+def TypeTemplateRedefinition_Test18():
+	c_program_text= """
+		// Ok - signature params of different types.
+		template<//> struct S</ 71u32 />{}
+		template<//> struct S</ 71i32 />{}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeTemplateRedefinition_Test19():
+	c_program_text= """
+		// Redefinition for type alias templates.
+		template</type U/> type S= [ U, 2 ];
+		template</type V/> type S= [ V, 4 ];
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "TypeTemplateRedefinition", 3 ) or HaveError( errors_list, "TypeTemplateRedefinition", 4 ) )
+
+
+def TypeTemplateRedefinition_Test20():
+	c_program_text= """
+		// Redefinition for same signature for type alias and struct template.
+		template</type T/> type S= [ T, 4 ];
+		template</type T/> struct S{}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "TypeTemplateRedefinition", 3 ) or HaveError( errors_list, "TypeTemplateRedefinition", 4 ) )
