@@ -146,7 +146,29 @@ fn CodeBuilder::PrepareTypeTemplate(
 		type_template_syntax_element,
 		first_default_param );
 
-	// TODO - compare here signature parameters for duplicated type templates detection.
+	// Check for redefinition.
+	foreach( &prev_template_ptr : out_templates_set.type_templates )
+	{
+		var TypeTemplate& prev_template= prev_template_ptr.get_ref();
+
+		// TODO - implement "op==" for vectors.
+		if( type_template.signature_params.size() != prev_template.signature_params.size() )
+		{
+			continue;
+		}
+
+		auto mut is_same= true;
+		for( auto mut i= 0s; i < type_template.signature_params.size(); ++i )
+		{
+			is_same&= type_template.signature_params[i] == prev_template.signature_params[i];
+		}
+
+		if( is_same )
+		{
+			REPORT_ERROR( TypeTemplateRedefinition, names_scope, syntax_element.src_loc, syntax_element.name )
+			return;
+		}
+	}
 
 	out_templates_set.type_templates.push_back( TypeTemplatePtr( move(type_template) ) );
 }

@@ -535,24 +535,47 @@ type TemplateArgsFinished= ust::vector</ TemplateArgFinished />;
 class TemplateSignatureParam
 {
 public:
-	struct TemplateParam{ size_type index; }
-	struct TypeParam{ Type t; }
-	struct VariableParam{ Variable v; }
+	struct TemplateParam
+	{
+		size_type index;
+
+		op==(TemplateParam& l, TemplateParam& r) : bool;
+	}
+
+	struct TypeParam
+	{
+		Type t;
+
+		op==(TypeParam& l, TypeParam& r) : bool;
+	}
+
+	struct VariableParam
+	{
+		Variable v;
+
+		op==(VariableParam& l, VariableParam& r) : bool;
+	}
 
 	struct ArrayTypeParam
 	{
 		TemplateSignatureParam element_type;
 		TemplateSignatureParam element_count;
+
+		op==(ArrayTypeParam& l, ArrayTypeParam& r) : bool;
 	}
 
 	struct TupleTypeParam
 	{
 		ust::vector</TemplateSignatureParam/> element_types;
+
+		op==(TupleTypeParam& l, TupleTypeParam& r) : bool;
 	}
 
 	struct RawPointerTypeParam
 	{
 		TemplateSignatureParam element_type;
+
+		op==(RawPointerTypeParam& l, RawPointerTypeParam& r) : bool;
 	}
 
 	struct FunctionTypeParam
@@ -568,14 +591,20 @@ public:
 			TemplateSignatureParam t;
 			bool is_mutable;
 			bool is_reference;
+
+			op==(Param& l, Param& r) : bool;
 		}
 		ust::vector</Param/> params;
+
+		op==(FunctionTypeParam& l, FunctionTypeParam& r) : bool;
 	}
 
 	struct SpecializedTemplateParam
 	{
 		ust::shared_ptr_imut</ TypeTemplatesSet /> type_templates_set;
 		ust::vector</ TemplateSignatureParam /> params;
+
+		op==(SpecializedTemplateParam& l, SpecializedTemplateParam& r) : bool;
 	}
 
 	fn conversion_constructor( TemplateParam mut template_param );
@@ -595,6 +624,8 @@ public:
 	fn GetRawPointerTypeParam(this) : ust::optional_ref_imut</ RawPointerTypeParam />'this';
 	fn GetFunctionTypeParam(this) : ust::optional_ref_imut</ FunctionTypeParam />'this';
 	fn GetSpecializedTemplateParam(this) : ust::optional_ref_imut</ SpecializedTemplateParam />'this';
+
+	op==(TemplateSignatureParam& l, TemplateSignatureParam& r) : bool;
 
 private:
 	type Container= ust::variant</ tup[

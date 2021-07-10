@@ -334,7 +334,7 @@ def TypeTemplateRedefinition_Test13():
 		template</ type V /> struct S</ Box</V/> />{ V x; }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "TypeTemplateRedefinition", 5 ) or HaveError( errors_list, "TypeTemplateRedefinition", 6 ) )
+	assert( HaveError( errors_list, "TypeTemplateRedefinition", 4 ) or HaveError( errors_list, "TypeTemplateRedefinition", 5 ) )
 
 
 def TypeTemplateRedefinition_Test14():
