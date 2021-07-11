@@ -146,7 +146,15 @@ fn CodeBuilder::PrepareTypeTemplate(
 		type_template_syntax_element,
 		first_default_param );
 
-	// TODO - compare here signature parameters for duplicated type templates detection.
+	// Check for redefinition.
+	foreach( &prev_template_ptr : out_templates_set.type_templates )
+	{
+		if( TypeTemplate::SignatureParamsIsSame( type_template, prev_template_ptr.get_ref() ) )
+		{
+			REPORT_ERROR( TypeTemplateRedefinition, names_scope, syntax_element.src_loc, syntax_element.name )
+			return;
+		}
+	}
 
 	out_templates_set.type_templates.push_back( TypeTemplatePtr( move(type_template) ) );
 }

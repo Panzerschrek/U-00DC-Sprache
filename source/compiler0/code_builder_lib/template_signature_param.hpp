@@ -15,35 +15,46 @@ public:
 	struct TypeParam
 	{
 		Type t;
+
+		bool operator==( const TypeParam& other ) const;
 	};
 
 	struct VariableParam
 	{
 		Variable v;
+
+		bool operator==( const VariableParam& other ) const;
 	};
 
 	struct TemplateParam
 	{
 		size_t index;
+
+		bool operator==( const TemplateParam& other ) const;
 	};
 
-	// HACK!
 	// use shared_ptr to avoid manual copy constructors creation.
 
 	struct ArrayParam
 	{
 		std::shared_ptr<const TemplateSignatureParam> size;
 		std::shared_ptr<const TemplateSignatureParam> type;
+
+		bool operator==( const ArrayParam& other ) const;
 	};
 
 	struct TupleParam
 	{
 		std::vector<TemplateSignatureParam> element_types;
+
+		bool operator==( const TupleParam& other ) const;
 	};
 
 	struct RawPointerParam
 	{
 		std::shared_ptr<const TemplateSignatureParam> type;
+
+		bool operator==( const RawPointerParam& other ) const;
 	};
 
 	struct FunctionParam
@@ -59,14 +70,20 @@ public:
 			std::shared_ptr<const TemplateSignatureParam> type;
 			bool is_mutable;
 			bool is_reference;
+
+			bool operator==( const Param& other ) const;
 		};
 		std::vector<Param> params;
+
+		bool operator==( const FunctionParam& other ) const;
 	};
 
 	struct SpecializedTemplateParam
 	{
 		std::vector<TypeTemplatePtr> type_templates;
 		std::vector<TemplateSignatureParam> params;
+
+		bool operator==( const SpecializedTemplateParam& other ) const;
 	};
 
 public:
@@ -96,6 +113,8 @@ public:
 	{
 		return std::visit( func, something_ );
 	}
+
+	bool operator==( const TemplateSignatureParam& other )const;
 
 private:
 	std::variant<
