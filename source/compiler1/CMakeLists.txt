@@ -65,7 +65,11 @@ endfunction()
 #
 # CodeBuilderErrors
 #
-file( READ ../errors_list.hpp ERRORS_LIST_CONTENT )
+
+set( ERRORS_LIST_FILE ${CMAKE_CURRENT_SOURCE_DIR}/../errors_list.hpp )
+set_property( DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${ERRORS_LIST_FILE} )
+
+file( READ ${ERRORS_LIST_FILE} ERRORS_LIST_CONTENT )
 
 set( ERRORS_LIST_REGEXP "PROCESS_ERROR\\( ([A-Za-z]+), (\\\"([^\\\"]|(\\\\\")|(\\\\\\n))+\\\") \\)" )
 
