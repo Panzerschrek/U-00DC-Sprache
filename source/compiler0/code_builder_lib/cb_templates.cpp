@@ -73,7 +73,6 @@ void CodeBuilder::PrepareTypeTemplate(
 {
 	/* SPRACHE_TODO:
 	 *) Support default template arguments for short form.
-	 *) Convert signature and template arguments to "default form" for equality comparison.
 	 *) Add "enable_if".
 	 *) Support template-dependent types for value parameters, such template</ type T, U</ T /> ut />.
 	*/
@@ -495,6 +494,7 @@ TemplateSignatureParam CodeBuilder::ValueToTemplateParam( const Value& value, Na
 		return TemplateSignatureParam::VariableParam{ *variable };
 	}
 
+	REPORT_ERROR( InvalidValueAsTemplateArgument, names_scope.GetErrors(), value.GetSrcLoc(), invalid_type_ );
 	return TemplateSignatureParam::TypeParam();
 }
 

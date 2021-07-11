@@ -28,7 +28,11 @@ U_TEST( InvalidValueAsTemplateArgumentTest1 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidValueAsTemplateArgument, 3u ) );
+
+	bool have_error= false;
+	for( const auto& e : build_result.errors )
+		have_error|= e.code == CodeBuilderErrorCode::InvalidValueAsTemplateArgument;
+	U_TEST_ASSERT( have_error );
 }
 
 U_TEST( InvalidTypeOfTemplateVariableArgumentTest0 )
@@ -65,13 +69,7 @@ U_TEST( NameNotFound_ForClassTemplateSingatureArguments_Test0 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound , 2u ) );
 }
 
 U_TEST( NameNotFound_ForClassTemplateArguments_Test0 )
@@ -94,13 +92,7 @@ U_TEST( NameNotFound_ForClassTemplateDefaultSignatureArguments_Test0 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound , 2u ) );
 }
 
 U_TEST( ValueIsNotTemplateTest0 )
