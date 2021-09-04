@@ -1,0 +1,9 @@
+// This file contains functions for telling some facts to compiler.
+// Such functiona are implemented in LL code.
+
+namespace ust
+{
+
+fn unlikely();
+
+} // namespace ust

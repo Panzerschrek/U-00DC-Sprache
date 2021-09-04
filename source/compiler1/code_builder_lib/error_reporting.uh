@@ -1,3 +1,4 @@
+import "/compiler_helpers.u"
 import "/random_access_range.u"
 import "/string_conversions.u"
 import "/type_traits.u"
@@ -11,6 +12,7 @@ import "structs_combined.uh"
 
 ?macro <? REPORT_ERROR:block ( ?error_code:ident, ?names_scope:expr, ?src_loc:expr ?args:rep<? , ?arg:expr ?> ) ?> ->
 <?
+	ust::unlikely();
 	PutErrorIntoContainer(
 		?names_scope,
 		ReportError( CodeBuilderErrorCode::?error_code, ?src_loc ?args<? , ?arg ?> ) );

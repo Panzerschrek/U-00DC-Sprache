@@ -95,6 +95,24 @@ define linkonce_odr void @__U_halt() unnamed_addr #0 comdat
 }
 
 ;
+; Cold call
+;
+
+$__U_unlikely_impl = comdat any
+define linkonce_odr void @__U_unlikely_impl() unnamed_addr nounwind cold comdat
+{
+	ret void
+}
+
+; fn ust::unlikely();
+$_ZN3ust8unlikelyEv = comdat any
+define linkonce_odr void @_ZN3ust8unlikelyEv() unnamed_addr nounwind comdat
+{
+	call void @__U_unlikely_impl()
+	ret void
+}
+
+;
 ; atomic
 ;
 
