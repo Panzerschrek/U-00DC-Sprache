@@ -632,16 +632,18 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		RestoreInstructionsState( function_context, instructions_state );
 	}
 
-	if( cast_imut(branches_types)[0].t != cast_imut(branches_types)[1].t )
+	auto& branches_types_imut = branches_types;
+
+	if( branches_types_imut[0].t != branches_types_imut[1].t )
 	{
-		REPORT_ERROR( TypesMismatch, names_scope, ternary_operator.src_loc, branches_types[0].t, branches_types[1].t )
+		REPORT_ERROR( TypesMismatch, names_scope, ternary_operator.src_loc, branches_types_imut[0].t, branches_types_imut[1].t )
 		return ErrorValue();
 	}
 
-	var Variable mut result{ .t= branches_types[0].t, .location= Variable::Location::Pointer };
+	var Variable mut result{ .t= branches_types_imut[0].t, .location= Variable::Location::Pointer };
 
 	var ReferencesGraph::NodeKind mut node_kind= zero_init;
-	if( branches_types[0].value_type == ValueType::Value || branches_types[1].value_type == ValueType::Value )
+	if( branches_types_imut[0].value_type == ValueType::Value || branches_types_imut[1].value_type == ValueType::Value )
 	{
 		result.value_type= ValueType::Value;
 		node_kind= ReferencesGraph::NodeKind::Variable;
@@ -653,7 +655,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		}
 		unsafe{  result.llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, result.t.GetLLVMType(), "select_result\0"[0] );  }
 	}
-	else if( branches_types[0].value_type == ValueType::ReferenceImut || branches_types[1].value_type == ValueType::ReferenceImut )
+	else if( branches_types_imut[0].value_type == ValueType::ReferenceImut || branches_types_imut[1].value_type == ValueType::ReferenceImut )
 	{
 		result.value_type= ValueType::ReferenceImut;
 		node_kind= ReferencesGraph::NodeKind::ReferenceImut;

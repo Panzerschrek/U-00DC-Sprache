@@ -162,11 +162,8 @@ fn CodeBuilder::DetectGlobalsLoop( this, NamesScopeValue& global_thing ) : bool
 
 	auto mut errors_container_lock= root_errors_container_.lock_mut();
 
-	var ust::vector</ust::string8/> mut args;
-	args.push_back( description );
-
 	errors_container_lock.get_ref().push_back(
-		ReportError( CodeBuilderErrorCode::GlobalsLoopDetected, GetValueSrcLoc(global_thing), args ) );
+		ReportError( CodeBuilderErrorCode::GlobalsLoopDetected, GetValueSrcLoc(global_thing), description ) );
 
 	return true;
 }

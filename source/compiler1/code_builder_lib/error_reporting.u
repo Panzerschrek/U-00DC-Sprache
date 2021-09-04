@@ -33,7 +33,7 @@ op CodeBuilderError::<(CodeBuilderError& l, CodeBuilderError& r) : bool
 	return l.text < r.text;
 }
 
-fn ReportError( CodeBuilderErrorCode code, SrcLoc& src_loc, ust::vector</ust::string8/>& format_args ) : CodeBuilderError
+fn ReportErrorImpl( CodeBuilderErrorCode code, SrcLoc& src_loc, ust::array_view_imut</ust::string8/> format_args ) : CodeBuilderError
 {
 	var ust::string8 mut result_error_text;
 
@@ -66,6 +66,13 @@ fn ReportError( CodeBuilderErrorCode code, SrcLoc& src_loc, ust::vector</ust::st
 	};
 
 	return move(err);
+}
+
+fn PutErrorIntoContainer( NamesScopePtr& names_scope, CodeBuilderError mut error )
+{
+	auto container_ptr= names_scope.lock_imut().get_ref().GetErrors();
+	auto mut lock= container_ptr.lock_mut();
+	lock.get_ref().push_back( move( error ) );
 }
 
 fn ComplexNameToString( Synt::ComplexName& complex_name ) : ust::string8

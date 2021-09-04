@@ -190,9 +190,7 @@ fn ReferencesGraph::MergeReferencesGraphsAfterConditionalBranches( ust::array_vi
 			var Node &mut dst_node= result.nodes_[ node_id ];
 			if( src_node.moved != dst_node.moved )
 			{
-				var ust::vector</ust::string8/> mut format_args;
-				format_args.push_back( src_node.name );
-				errors.push_back( ReportError( CodeBuilderErrorCode::ConditionalMove, src_loc, format_args ) );
+				errors.push_back( ReportError( CodeBuilderErrorCode::ConditionalMove, src_loc, src_node.name ) );
 			}
 
 			if( src_node.inner_reference_node == dst_node.inner_reference_node )
@@ -300,9 +298,7 @@ fn ReferencesGraph::MergeReferencesGraphsAfterConditionalBranches( ust::array_vi
 		}
 		if( mutable_links_count > 1s || ( immutable_links_count > 0s && mutable_links_count > 0s ) )
 		{
-			var ust::vector</ust::string8/> mut format_args;
-			format_args.push_back( node_pair.value().name );
-			errors.push_back( ReportError( CodeBuilderErrorCode::ReferenceProtectionError, src_loc, format_args ) );
+			errors.push_back( ReportError( CodeBuilderErrorCode::ReferenceProtectionError, src_loc, node_pair.value().name ) );
 		}
 	}
 
@@ -318,9 +314,7 @@ fn ReferencesGraph::CheckReferencesGraphAfterLoop( ReferencesGraph& state_before
 
 		if( !node_before.moved && node_after.moved )
 		{
-			var ust::vector</ust::string8/> mut format_args;
-			format_args.push_back( node_before.name );
-			errors.push_back( ReportError( CodeBuilderErrorCode::OuterVariableMoveInsideLoop, src_loc, format_args ) );
+			errors.push_back( ReportError( CodeBuilderErrorCode::OuterVariableMoveInsideLoop, src_loc, node_before.name ) );
 		}
 
 		if( node_before.inner_reference_node == c_empty_node_id && node_after.inner_reference_node  == c_empty_node_id )
@@ -343,10 +337,12 @@ fn ReferencesGraph::CheckReferencesGraphAfterLoop( ReferencesGraph& state_before
 
 		foreach( added_node_id : new_accessible_variables )
 		{
-			var ust::vector</ust::string8/> mut format_args;
-			format_args.push_back( node_before.name );
-			format_args.push_back( state_before.nodes_[added_node_id].name );
-			errors.push_back( ReportError( CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable, src_loc, format_args ) );
+			errors.push_back(
+				ReportError(
+					CodeBuilderErrorCode::ReferencePollutionOfOuterLoopVariable,
+					src_loc,
+					node_before.name,
+					state_before.nodes_[added_node_id].name ) );
 		}
 	}
 }
