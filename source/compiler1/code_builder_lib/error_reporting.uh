@@ -6,33 +6,43 @@ import "/code_builder_errors.uh"
 import "../lex_synt_lib/syntax_analyzer.uh"
 import "structs_combined.uh"
 
+// Perform almost all errors preprocessing code in separate function instead of doing this in inline macro.
+// Doing so prevent inlining of error processing code, because this code generally is rarely executed.
+
 ?macro <? REPORT_ERROR:block ( ?error_code:ident, ?names_scope:expr, ?src_loc:expr ?args:rep<? , ?arg:expr ?> ) ?> ->
 <?
-	{
-		var ust::vector</ust::string8/> mut ??format_args;
-		?args<? ??format_args.push_back( PreprocessErrorArg( ?arg ) ); ?>
-
-		auto ??container= ?names_scope.lock_imut().get_ref().GetErrors();
-		auto mut ??lock= ??container.lock_mut();
-		??lock.get_ref().push_back( ReportError( CodeBuilderErrorCode::?error_code, ?src_loc, ??format_args ) );
-	}
+	PutErrorIntoContainer(
+		?names_scope,
+		ReportError( CodeBuilderErrorCode::?error_code, ?src_loc ?args<? , ?arg ?> ) );
 ?>
 
 namespace U1
 {
 
-fn ReportError( CodeBuilderErrorCode code, SrcLoc& src_loc, ust::vector</ust::string8/>& format_args ) : CodeBuilderError;
-
 fn ReportError( CodeBuilderErrorCode code, SrcLoc& src_loc ) : CodeBuilderError
 {
-	return ReportError( code, src_loc, ust::vector</ust::string8/>() );
+	return ReportErrorImpl( code, src_loc, ust::array_view_imut</ust::string8/>() );
 }
 
-fn ReportError( CodeBuilderErrorCode code, SrcLoc& src_loc, ust::string8 mut arg ) : CodeBuilderError
+template</ type A />
+fn ReportError( CodeBuilderErrorCode code, SrcLoc& src_loc, A& param0 ) : CodeBuilderError
 {
-	var ust::vector</ust::string8/> mut args;
-	args.push_back( move(arg) );
-	return ReportError( code, src_loc, args );
+	var [ ust::string8, 1 ] args[ PreprocessErrorArg( param0 ) ];
+	return ReportErrorImpl( code, src_loc, args );
+}
+
+template</ type A, type B />
+fn ReportError( CodeBuilderErrorCode code, SrcLoc& src_loc, A& param0, B& param1 ) : CodeBuilderError
+{
+	var [ ust::string8, 2 ] args[ PreprocessErrorArg( param0 ), PreprocessErrorArg( param1 ) ];
+	return ReportErrorImpl( code, src_loc, args );
+}
+
+template</ type A, type B, type C />
+fn ReportError( CodeBuilderErrorCode code, SrcLoc& src_loc, A& param0, B& param1, C& param2 ) : CodeBuilderError
+{
+	var [ ust::string8, 3 ] args[ PreprocessErrorArg( param0 ), PreprocessErrorArg( param1 ), PreprocessErrorArg( param2 ) ];
+	return ReportErrorImpl( code, src_loc, args );
 }
 
 template</type T/>
@@ -59,6 +69,10 @@ fn PreprocessErrorArg( T& x ) : ust::string8
 		return ust::to_string8(x);
 	}
 }
+
+fn ReportErrorImpl( CodeBuilderErrorCode code, SrcLoc& src_loc, ust::array_view_imut</ust::string8/> format_args ) : CodeBuilderError;
+
+fn PutErrorIntoContainer( NamesScopePtr& names_scope, CodeBuilderError mut error );
 
 fn ComplexNameToString( Synt::ComplexName& complex_name ) : ust::string8;
 
