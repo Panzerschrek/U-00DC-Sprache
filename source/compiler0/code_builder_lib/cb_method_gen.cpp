@@ -138,7 +138,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 	{
 		Variable base_variable;
 		base_variable.type= the_class.base_class;
-		base_variable.value_type= ValueType::Reference;
+		base_variable.value_type= ValueType::ReferenceMut;
 
 		base_variable.llvm_value=
 			function_context.llvm_ir_builder.CreateGEP(
@@ -160,7 +160,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 			U_ASSERT( field.syntax_element->initializer != nullptr ); // Can initialize reference field only with class field initializer.
 			Variable variable;
 			variable.type= class_type;
-			variable.value_type= ValueType::Reference;
+			variable.value_type= ValueType::ReferenceMut;
 			variable.llvm_value= this_llvm_value;
 			InitializeReferenceClassFieldWithInClassIninitalizer( variable, field, function_context );
 		}
@@ -168,7 +168,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 		{
 			Variable field_variable;
 			field_variable.type= field.type;
-			field_variable.value_type= ValueType::Reference;
+			field_variable.value_type= ValueType::ReferenceMut;
 
 			field_variable.llvm_value=
 				function_context.llvm_ir_builder.CreateGEP( this_llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field.index ) } );
@@ -416,7 +416,7 @@ void CodeBuilder::GenerateDestructorBody( const ClassPtr& class_type, FunctionVa
 	Variable this_;
 	this_.type= class_type;
 	this_.location= Variable::Location::Pointer;
-	this_.value_type= ValueType::Reference;
+	this_.value_type= ValueType::ReferenceMut;
 	this_.llvm_value= this_llvm_value;
 
 	FunctionContext function_context(

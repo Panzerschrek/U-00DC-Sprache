@@ -891,7 +891,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 
 		var.type= enum_;
 		var.location= Variable::Location::Pointer;
-		var.value_type= ValueType::ConstReference;
+		var.value_type= ValueType::ReferenceImut;
 		var.constexpr_value=
 			llvm::Constant::getIntegerValue(
 				enum_->underlaying_type.llvm_type,
@@ -994,7 +994,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		Variable variable;
 		variable.type= type;
 		variable.location= Variable::Location::Pointer;
-		variable.value_type= ValueType::Reference;
+		variable.value_type= ValueType::ReferenceMut;
 
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
@@ -1007,7 +1007,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				ApplyEmptyInitializer( variable_declaration.name, variable_declaration.src_loc, variable, names_scope, function_context );
 
 			// Make immutable, if needed, only after initialization, because in initialization we need call constructors, which is mutable methods.
-			variable.value_type= ValueType::ConstReference;
+			variable.value_type= ValueType::ReferenceImut;
 
 			if( global_variable != nullptr && variable.constexpr_value != nullptr )
 				global_variable->setInitializer( variable.constexpr_value );
@@ -1020,7 +1020,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				FAIL_RETURN;
 			}
 
-			variable.value_type= ValueType::ConstReference;
+			variable.value_type= ValueType::ReferenceImut;
 
 			const Synt::Expression* initializer_expression= nullptr;
 			if( const auto expression_initializer= std::get_if<Synt::Expression>( variable_declaration.initializer.get() ) )
@@ -1052,7 +1052,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), variable_declaration.src_loc );
 				FAIL_RETURN;
 			}
-			if( expression_result.value_type == ValueType::ConstReference && variable.value_type == ValueType::Reference )
+			if( expression_result.value_type == ValueType::ReferenceImut && variable.value_type == ValueType::ReferenceMut )
 			{
 				REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), variable_declaration.src_loc );
 				FAIL_RETURN;
@@ -1108,7 +1108,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 		Variable variable;
 		variable.type= initializer_experrsion.type;
-		variable.value_type= ValueType::ConstReference;
+		variable.value_type= ValueType::ReferenceImut;
 		variable.location= Variable::Location::Pointer;
 
 		if( !EnsureTypeComplete( variable.type ) ) // Global variables are all constexpr. Full completeness required for constexpr.
@@ -1129,7 +1129,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), auto_variable_declaration->src_loc_ );
 				FAIL_RETURN;
 			}
-			if( initializer_experrsion.value_type == ValueType::ConstReference && variable.value_type != ValueType::ConstReference )
+			if( initializer_experrsion.value_type == ValueType::ReferenceImut && variable.value_type != ValueType::ReferenceImut )
 			{
 				REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), auto_variable_declaration->src_loc_ );
 				FAIL_RETURN;

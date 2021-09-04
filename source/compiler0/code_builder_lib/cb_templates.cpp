@@ -601,7 +601,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 			Variable variable_for_insertion;
 			variable_for_insertion.type= given_varaible->type;
 			variable_for_insertion.location= Variable::Location::Pointer;
-			variable_for_insertion.value_type= ValueType::ConstReference;
+			variable_for_insertion.value_type= ValueType::ReferenceImut;
 			variable_for_insertion.llvm_value=
 				CreateGlobalConstantVariable(
 					given_varaible->type,

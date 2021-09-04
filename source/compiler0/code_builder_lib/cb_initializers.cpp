@@ -875,7 +875,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	}
 	U_ASSERT( initializer_variable.location == Variable::Location::Pointer );
 
-	if( field.is_mutable && initializer_variable.value_type == ValueType::ConstReference )
+	if( field.is_mutable && initializer_variable.value_type == ValueType::ReferenceImut )
 	{
 		REPORT_ERROR( BindingConstReferenceToNonconstReference, block_names.GetErrors(), initializer_expression_src_loc );
 		return nullptr;
@@ -1114,7 +1114,7 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr& class_type )
 		{
 			Variable variable;
 			variable.type= class_type;
-			variable.value_type= ValueType::Reference;
+			variable.value_type= ValueType::ReferenceMut;
 			variable.llvm_value= variable_llvm_value;
 			InitializeReferenceClassFieldWithInClassIninitalizer( variable, class_field, function_context );
 		}
@@ -1122,7 +1122,7 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr& class_type )
 		{
 			Variable field_variable;
 			field_variable.type= class_field.type;
-			field_variable.value_type= ValueType::Reference;
+			field_variable.value_type= ValueType::ReferenceMut;
 			field_variable.llvm_value=
 				function_context.llvm_ir_builder.CreateGEP(
 					variable_llvm_value,

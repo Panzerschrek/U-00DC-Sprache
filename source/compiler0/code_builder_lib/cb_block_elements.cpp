@@ -82,7 +82,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		Variable variable;
 		variable.type= type;
 		variable.location= Variable::Location::Pointer;
-		variable.value_type= ValueType::Reference;
+		variable.value_type= ValueType::ReferenceMut;
 
 		ReferencesGraphNode::Kind node_kind;
 		if( variable_declaration.reference_modifier != ReferenceModifier::Reference )
@@ -111,13 +111,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			// Make immutable, if needed, only after initialization, because in initialization we need call constructors, which is mutable methods.
 			if( variable_declaration.mutability_modifier != MutabilityModifier::Mutable )
-				variable.value_type= ValueType::ConstReference;
+				variable.value_type= ValueType::ReferenceImut;
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
 			// Mark references immutable before initialization.
 			if( variable_declaration.mutability_modifier != MutabilityModifier::Mutable )
-				variable.value_type= ValueType::ConstReference;
+				variable.value_type= ValueType::ReferenceImut;
 
 			if( variable_declaration.initializer == nullptr )
 			{
@@ -160,7 +160,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				function_context.variables_state.RemoveNode( variable.node );
 				continue;
 			}
-			if( expression_result.value_type == ValueType::ConstReference && variable.value_type == ValueType::Reference )
+			if( expression_result.value_type == ValueType::ReferenceImut && variable.value_type == ValueType::ReferenceMut )
 			{
 				REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), variable_declaration.src_loc );
 				function_context.variables_state.RemoveNode( variable.node );
@@ -191,7 +191,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 
 		// Reset constexpr initial value for mutable variables.
-		if( variable.value_type != ValueType::ConstReference )
+		if( variable.value_type != ValueType::ReferenceImut )
 			variable.constexpr_value= nullptr;
 
 		const Value* const inserted_value=
@@ -231,7 +231,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	Variable variable;
 	variable.type= initializer_experrsion.type;
-	variable.value_type= auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::Reference : ValueType::ConstReference;
+	variable.value_type= auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 	variable.location= Variable::Location::Pointer;
 
 	ReferencesGraphNode::Kind node_kind;
@@ -267,7 +267,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	if( auto_variable_declaration.reference_modifier == ReferenceModifier::Reference )
 	{
-		if( initializer_experrsion.value_type == ValueType::ConstReference && variable.value_type != ValueType::ConstReference )
+		if( initializer_experrsion.value_type == ValueType::ReferenceImut && variable.value_type != ValueType::ReferenceImut )
 		{
 			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), auto_variable_declaration.src_loc_ );
 			function_context.variables_state.RemoveNode(variable.node);
@@ -339,7 +339,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	}
 
 	// Reset constexpr initial value for mutable variables.
-	if( variable.value_type != ValueType::ConstReference )
+	if( variable.value_type != ValueType::ReferenceImut )
 		variable.constexpr_value= nullptr;
 
 	const Value* const inserted_value=
@@ -432,7 +432,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), return_operator.src_loc_ );
 			return block_info;
 		}
-		if( expression_result.value_type == ValueType::ConstReference && function_context.function_type.return_value_is_mutable )
+		if( expression_result.value_type == ValueType::ReferenceImut && function_context.function_type.return_value_is_mutable )
 		{
 			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), return_operator.src_loc_ );
 			return block_info;
@@ -568,7 +568,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	if( sequence_expression.node != nullptr )
 		sequence_lock.emplace(
 			function_context,
-			sequence_expression.value_type == ValueType::Reference ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
+			sequence_expression.value_type == ValueType::ReferenceMut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
 			sequence_expression.node->name + " sequence lock" );
 
 	if( const TupleType* const tuple_type= sequence_expression.type.GetTupleType() )
@@ -587,7 +587,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			Variable variable;
 			variable.type= element_type;
-			variable.value_type= for_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::Reference : ValueType::ConstReference;
+			variable.value_type= for_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 
 			ReferencesGraphNode::Kind node_kind;
 			if( for_operator.reference_modifier_ != ReferenceModifier::Reference )
@@ -601,7 +601,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			if( for_operator.reference_modifier_ == ReferenceModifier::Reference )
 			{
-				if( for_operator.mutability_modifier_ == MutabilityModifier::Mutable && sequence_expression.value_type != ValueType::Reference )
+				if( for_operator.mutability_modifier_ == MutabilityModifier::Mutable && sequence_expression.value_type != ValueType::ReferenceMut )
 				{
 					REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), for_operator.src_loc_ );
 					function_context.variables_state.RemoveNode(variable.node);
@@ -972,7 +972,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	Variable variable;
 	variable.type= expr.type;
-	variable.value_type= with_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::Reference : ValueType::ConstReference;
+	variable.value_type= with_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 	variable.location= Variable::Location::Pointer;
 
 	ReferencesGraphNode::Kind node_kind;
@@ -1001,7 +1001,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	if( with_operator.reference_modifier_ == ReferenceModifier::Reference )
 	{
-		if( expr.value_type == ValueType::ConstReference && variable.value_type != ValueType::ConstReference )
+		if( expr.value_type == ValueType::ReferenceImut && variable.value_type != ValueType::ReferenceImut )
 		{
 			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), with_operator.src_loc_ );
 			function_context.variables_state.RemoveNode( variable.node );
@@ -1064,7 +1064,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	else U_ASSERT(false);
 
 	// Reset constexpr initial value for mutable variables.
-	if( variable.value_type != ValueType::ConstReference )
+	if( variable.value_type != ValueType::ReferenceImut )
 		variable.constexpr_value= nullptr;
 
 	if( IsKeyword( with_operator.variable_name_ ) )
@@ -1297,7 +1297,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( l_var.type == invalid_type_ || r_var.type == invalid_type_ )
 			return BlockBuildInfo();
 
-		if( l_var.value_type != ValueType::Reference )
+		if( l_var.value_type != ValueType::ReferenceMut )
 		{
 			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), assignment_operator.src_loc_ );
 			return BlockBuildInfo();
@@ -1383,7 +1383,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( l_var.type == invalid_type_ || r_var.type == invalid_type_ )
 			return BlockBuildInfo();
 
-		if( l_var.value_type != ValueType::Reference )
+		if( l_var.value_type != ValueType::ReferenceMut )
 		{
 			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), additive_assignment_operator.src_loc_ );
 			return BlockBuildInfo();
@@ -1623,7 +1623,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 		return;
 	}
 
-	if( variable->value_type != ValueType::Reference )
+	if( variable->value_type != ValueType::ReferenceMut )
 	{
 		REPORT_ERROR( ExpectedReferenceValue, block_names.GetErrors(), src_loc );
 		return;
@@ -1635,7 +1635,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	ArgsVector<FunctionType::Param> args;
 	args.emplace_back();
 	args.back().type= variable->type;
-	args.back().is_mutable= variable->value_type == ValueType::Reference;
+	args.back().is_mutable= variable->value_type == ValueType::ReferenceMut;
 	args.back().is_reference= variable->value_type != ValueType::Value;
 	const FunctionVariable* const overloaded_operator=
 		GetOverloadedOperator( args, positive ? OverloadedOperator::Increment : OverloadedOperator::Decrement, block_names, src_loc );

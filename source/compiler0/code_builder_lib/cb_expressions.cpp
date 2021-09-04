@@ -111,7 +111,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	// You SHOULD register variable in case if you call "TakeNode".
 	ReferencesGraphNodeHolder variable_lock(
 		function_context,
-		variable.value_type == ValueType::Reference ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
+		variable.value_type == ValueType::ReferenceMut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
 		"[]" );
 	if( variable.node != nullptr && !function_context.variables_state.TryAddLink( variable.node, variable_lock.Node() ) )
 		REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), indexation_operator.src_loc_, variable.node->name );
@@ -160,7 +160,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 		Variable result;
 		result.location= Variable::Location::Pointer;
-		result.value_type= variable.value_type == ValueType::Reference ? ValueType::Reference : ValueType::ConstReference;
+		result.value_type= variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		result.node= variable_lock.TakeNode();
 		result.type= array_type->type;
 
@@ -245,7 +245,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 		Variable result;
 		result.location= Variable::Location::Pointer;
-		result.value_type= variable.value_type == ValueType::Reference ? ValueType::Reference : ValueType::ConstReference;
+		result.value_type= variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		result.node= variable_lock.TakeNode();
 		result.type= tuple_type->elements[static_cast<size_t>(index_value)];
 		result.llvm_value= function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex(index_value) } );
@@ -365,7 +365,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	if( field->is_reference )
 	{
-		result.value_type= field->is_mutable ? ValueType::Reference : ValueType::ConstReference;
+		result.value_type= field->is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 
 		if( variable.constexpr_value != nullptr )
 		{
@@ -409,7 +409,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 	else
 	{
-		result.value_type= ( variable.value_type == ValueType::Reference && field->is_mutable ) ? ValueType::Reference : ValueType::ConstReference;
+		result.value_type= ( variable.value_type == ValueType::ReferenceMut && field->is_mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 
 		result.llvm_value= gep_result;
 		if( variable.constexpr_value != nullptr )
@@ -692,7 +692,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		Variable field_variable;
 		field_variable.type= field->type;
 		field_variable.location= Variable::Location::Pointer;
-		field_variable.value_type= ( function_context.this_->value_type == ValueType::Reference && field->is_mutable ) ? ValueType::Reference : ValueType::ConstReference;
+		field_variable.value_type= ( function_context.this_->value_type == ValueType::ReferenceMut && field->is_mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		field_variable.node= function_context.this_->node;
 
 		index_list[1]= GetFieldGEPIndex( field->index );
@@ -701,7 +701,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 		if( field->is_reference )
 		{
-			field_variable.value_type= field->is_mutable ? ValueType::Reference : ValueType::ConstReference;
+			field_variable.value_type= field->is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 			field_variable.llvm_value= function_context.llvm_ir_builder.CreateLoad( field_variable.llvm_value );
 
 			if( function_context.this_->node != nullptr )
@@ -806,14 +806,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( result.type.GetLLVMType() );
 		result.llvm_value->setName( "select_result" );
 	}
-	else if( branches_value_types[0] == ValueType::ConstReference || branches_value_types[1] == ValueType::ConstReference )
+	else if( branches_value_types[0] == ValueType::ReferenceImut || branches_value_types[1] == ValueType::ReferenceImut )
 	{
-		result.value_type= ValueType::ConstReference;
+		result.value_type= ValueType::ReferenceImut;
 		node_kind= ReferencesGraphNode::Kind::ReferenceImut;
 	}
 	else
 	{
-		result.value_type= ValueType::Reference;
+		result.value_type= ValueType::ReferenceMut;
 		node_kind= ReferencesGraphNode::Kind::ReferenceMut;
 	}
 	// Do not forget to remove node in case of error-return!!!
@@ -927,7 +927,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		REPORT_ERROR( ValueIsNotReference, names.GetErrors(), reference_to_raw_pointer_operator.src_loc_ );
 		return ErrorValue();
 	}
-	if( v.value_type == ValueType::ConstReference )
+	if( v.value_type == ValueType::ReferenceImut )
 	{
 		// Disable immutable reference to pointer conversion, because pointer dereference produces mutable value.
 		REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), reference_to_raw_pointer_operator.src_loc_ );
@@ -974,7 +974,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	Variable res;
 	res.type= raw_pointer_type->type;
 	res.llvm_value= CreateMoveToLLVMRegisterInstruction( v, function_context );
-	res.value_type= ValueType::Reference;
+	res.value_type= ValueType::ReferenceMut;
 	res.location= Variable::Location::Pointer;
 	res.node= nullptr; // There is no reference graph node associated with raw pointer.
 
@@ -1158,7 +1158,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		array_type.llvm_type= llvm::ArrayType::get( GetFundamentalLLVMType( char_type ), array_size );
 		result.type= std::move(array_type);
 
-		result.value_type= ValueType::ConstReference;
+		result.value_type= ValueType::ReferenceImut;
 		result.location= Variable::Location::Pointer;
 
 		// Use md5 for string literal names.
@@ -1215,7 +1215,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 
 	// TODO - maybe allow moving for immutable variables?
-	if( variable_for_move->value_type != ValueType::Reference )
+	if( variable_for_move->value_type != ValueType::ReferenceMut )
 	{
 		REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), move_operator.src_loc_ );
 		return ErrorValue();
@@ -1261,7 +1261,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( expression_result.value_type == ValueType::Value ) // If it is value - just pass it.
 		return Value( std::move(expression_result), take_operator.src_loc_ );
 
-	if( expression_result.value_type != ValueType::Reference )
+	if( expression_result.value_type != ValueType::ReferenceMut )
 	{
 		REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), take_operator.src_loc_ );
 		return ErrorValue();
@@ -1306,7 +1306,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	Variable result= var;
 	result.constexpr_value= nullptr; // Reset constexprness for mutable reference.
-	result.value_type= ValueType::Reference;
+	result.value_type= ValueType::ReferenceMut;
 
 	if( var.location == Variable::Location::LLVMRegister )
 	{
@@ -1326,7 +1326,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const Variable var= BuildExpressionCodeEnsureVariable( *cast_imut.expression_, names, function_context );
 
 	Variable result= var;
-	result.value_type= ValueType::ConstReference;
+	result.value_type= ValueType::ReferenceImut;
 
 	if( var.location == Variable::Location::LLVMRegister )
 	{
@@ -1533,7 +1533,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 			REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, l_var.type );
 			return ErrorValue();
 		}
-		if( l_var.value_type != ValueType::Reference )
+		if( l_var.value_type != ValueType::ReferenceMut )
 		{
 			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), src_loc );
 			return ErrorValue();
@@ -1571,7 +1571,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
 	ArgsVector<FunctionType::Param> args;
 	args.emplace_back();
 	args.back().type= variable.type;
-	args.back().is_mutable= variable.value_type == ValueType::Reference;
+	args.back().is_mutable= variable.value_type == ValueType::ReferenceMut;
 	args.back().is_reference= variable.value_type != ValueType::Value;
 
 	const FunctionVariable* const overloaded_operator= GetOverloadedOperator( args, op, names, src_loc );
@@ -2248,7 +2248,7 @@ Value CodeBuilder::DoReferenceCast(
 
 	Variable result;
 	result.type= type;
-	result.value_type= var.value_type == ValueType::Reference ? ValueType::Reference : ValueType::ConstReference; // "ValueType" here converts into ConstReference.
+	result.value_type= var.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut; // "ValueType" here converts into ConstReference.
 	result.location= Variable::Location::Pointer;
 	result.node= var.node;
 
@@ -2504,7 +2504,7 @@ Value CodeBuilder::DoCallFunction(
 					REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), src_loc );
 					return ErrorValue();
 				}
-				if( expr.value_type == ValueType::ConstReference )
+				if( expr.value_type == ValueType::ReferenceImut )
 				{
 					REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), src_loc );
 					return ErrorValue();
@@ -2740,7 +2740,7 @@ Value CodeBuilder::DoCallFunction(
 	if( function_type.return_value_is_reference )
 	{
 		result.location= Variable::Location::Pointer;
-		result.value_type= function_type.return_value_is_mutable ? ValueType::Reference : ValueType::ConstReference;
+		result.value_type= function_type.return_value_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		result.node= function_context.variables_state.AddNode( function_type.return_value_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut, "fn_result " + result.type.ToString() );
 	}
 	else
@@ -2920,7 +2920,7 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	Variable variable;
 	variable.type= type;
 	variable.location= Variable::Location::Pointer;
-	variable.value_type= ValueType::Reference;
+	variable.value_type= ValueType::ReferenceMut;
 	variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( type.GetLLVMType() );
 	variable.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "temp " + type.ToString() );
 	variable.constexpr_value= ApplyConstructorInitializer( variable, synt_args, src_loc, names, function_context );
@@ -2947,7 +2947,7 @@ Variable CodeBuilder::ConvertVariable(
 	Variable result;
 	result.type= dst_type;
 	result.location= Variable::Location::Pointer;
-	result.value_type= ValueType::Reference;
+	result.value_type= ValueType::ReferenceMut;
 	result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( dst_type.GetLLVMType() );
 	result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "temp " + dst_type.ToString() );
 
@@ -2991,7 +2991,7 @@ FunctionType::Param CodeBuilder::GetArgExtendedType( const Variable& variable )
 	FunctionType::Param arg_type_extended;
 	arg_type_extended.type= variable.type;
 	arg_type_extended.is_reference= variable.value_type != ValueType::Value;
-	arg_type_extended.is_mutable= variable.value_type == ValueType::Reference;
+	arg_type_extended.is_mutable= variable.value_type == ValueType::ReferenceMut;
 	return arg_type_extended;
 }
 

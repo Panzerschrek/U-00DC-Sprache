@@ -104,7 +104,7 @@ ClassPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Typ
 Variable CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope& root_namespace )
 {
 	const ClassPtr typeinfo_class= CreateTypeinfoClass( root_namespace, type, g_typeinfo_root_class_name );
-	Variable result( typeinfo_class, Variable::Location::Pointer, ValueType::ConstReference );
+	Variable result( typeinfo_class, Variable::Location::Pointer, ValueType::ReferenceImut );
 
 	result.constexpr_value= llvm::UndefValue::get( typeinfo_class->llvm_type ); // Currently uninitialized.
 	result.llvm_value=

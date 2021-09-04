@@ -91,8 +91,8 @@ struct TypeTemplatesSet
 enum class ValueType
 {
 	Value,
-	Reference,
-	ConstReference,
+	ReferenceMut,
+	ReferenceImut,
 };
 
 struct Variable final
@@ -105,7 +105,7 @@ struct Variable final
 
 	Type type;
 	Location location= Location::Pointer;
-	ValueType value_type= ValueType::ConstReference;
+	ValueType value_type= ValueType::ReferenceImut;
 	llvm::Value* llvm_value= nullptr;
 
 	// Exists only for constant expressions.
@@ -115,7 +115,7 @@ struct Variable final
 
 	Variable()= default;
 	Variable(Type in_type,
-		Location in_location= Location::Pointer, ValueType in_value_type= ValueType::ConstReference,
+		Location in_location= Location::Pointer, ValueType in_value_type= ValueType::ReferenceImut,
 		llvm::Value* in_llvm_value= nullptr, llvm::Constant* in_constexpr_value= nullptr );
 };
 

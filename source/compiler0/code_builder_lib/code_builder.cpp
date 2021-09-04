@@ -1253,12 +1253,12 @@ Type CodeBuilder::BuildFuncCode(
 
 		Variable var;
 		var.location= Variable::Location::LLVMRegister;
-		var.value_type= ValueType::Reference;
+		var.value_type= ValueType::ReferenceMut;
 		var.type= param.type;
 		var.llvm_value= &llvm_arg;
 
 		if( declaration_arg.mutability_modifier_ != MutabilityModifier::Mutable )
-			var.value_type= ValueType::ConstReference;
+			var.value_type= ValueType::ReferenceImut;
 
 		if( param.is_reference )
 		{
@@ -1580,7 +1580,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			Variable field_variable;
 			field_variable.type= field.type;
 			field_variable.location= Variable::Location::Pointer;
-			field_variable.value_type= ValueType::Reference;
+			field_variable.value_type= ValueType::ReferenceMut;
 
 			field_variable.llvm_value=
 				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field.index ) } );
@@ -1600,7 +1600,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		Variable base_variable;
 		base_variable.type= base_class.base_class;
 		base_variable.location= Variable::Location::Pointer;
-		base_variable.value_type= ValueType::Reference;
+		base_variable.value_type= ValueType::ReferenceMut;
 
 		base_variable.llvm_value=
 			function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( 0u /* base class is allways first field */ ) } );
@@ -1623,7 +1623,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			Variable base_variable;
 			base_variable.type= base_class.base_class;
 			base_variable.location= Variable::Location::Pointer;
-			base_variable.value_type= ValueType::Reference;
+			base_variable.value_type= ValueType::ReferenceMut;
 			base_variable.node= this_.node;
 
 			base_variable.llvm_value=
@@ -1649,7 +1649,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			Variable field_variable;
 			field_variable.type= field->type;
 			field_variable.location= Variable::Location::Pointer;
-			field_variable.value_type= ValueType::Reference;
+			field_variable.value_type= ValueType::ReferenceMut;
 			field_variable.node= this_.node;
 
 			field_variable.llvm_value=
