@@ -754,7 +754,7 @@ int Main( int argc, const char* argv[] )
 		break;
 
 	case Options::FileType::LL:
-		result_module->print( out_file_stream, nullptr );
+		// Handle this case later, because there is no LL code dumping pass.
 		break;
 	}
 
@@ -775,6 +775,10 @@ int Main( int argc, const char* argv[] )
 		llvm::raw_os_ostream stream(std::cout);
 		result_module->print( stream, nullptr );
 	}
+
+	// Write LL file (if needed) after running all passes.
+	if( Options::file_type == Options::FileType::LL )
+		result_module->print( out_file_stream, nullptr );
 
 	// Left only unique paths in dependencies list.
 	std::sort( deps_list.begin(), deps_list.end() );
