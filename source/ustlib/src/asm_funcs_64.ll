@@ -36,10 +36,18 @@ define linkonce_odr %__U_void* @_ZN3ust10int_to_refEy( i64 %int ) unnamed_addr c
 	ret %__U_void* %1
 }
 
+$__U_allocation_size_check = comdat any
+define linkonce_odr void @__U_allocation_size_check( i64 %size ) unnamed_addr comdat
+{
+	; It's almost impossible to get pointer difference overflow on 64bit platform. So, ignore allocation size check  here.
+	ret void
+}
+
 ; fn ust::memory_allocate( size_type size_bytes ) : void &mut;
 $_ZN3ust15memory_allocateEy = comdat any
 define linkonce_odr %__U_void* @_ZN3ust15memory_allocateEy( i64 %size ) unnamed_addr comdat
 {
+	call void  @__U_allocation_size_check( i64 %size )
 	%1= call %__U_void* @malloc( i64 %size )
 	%2= icmp ne %__U_void* %1, null
 	br i1 %2, label %3, label %4
@@ -54,6 +62,7 @@ define linkonce_odr %__U_void* @_ZN3ust15memory_allocateEy( i64 %size ) unnamed_
 $_ZN3ust17memory_reallocateERKvy = comdat any
 define linkonce_odr %__U_void* @_ZN3ust17memory_reallocateERKvy( %__U_void* %ptr, i64 %new_size ) unnamed_addr comdat
 {
+	call void  @__U_allocation_size_check( i64 %new_size )
 	%1= call %__U_void* @realloc( %__U_void* %ptr, i64 %new_size )
 	%2= icmp ne %__U_void* %1, null
 	br i1 %2, label %3, label %4
