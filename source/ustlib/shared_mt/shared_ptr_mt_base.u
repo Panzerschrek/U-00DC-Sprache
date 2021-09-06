@@ -51,6 +51,7 @@ public:
 			{
 				value_= $<( cast_ref</T/>( $>( ptr.get_value_ptr() ) ) );
 				counter_= ptr.get_counter_ptr();
+				// It's almost impossible to get counter owerflow here - so, ignore such possibility.
 				atomic_inc( $>(counter_).use_count_total  );
 				atomic_inc( $>(counter_).use_count_strong );
 			}
@@ -76,6 +77,7 @@ public:
 			{
 				value_= other.value_;
 				counter_= other.counter_;
+				// It's almost impossible to get counter owerflow here - so, ignore such possibility.
 				atomic_inc( $>(counter_).use_count_total  );
 				atomic_inc( $>(counter_).use_count_strong );
 			}
@@ -196,6 +198,7 @@ public:
 			counter_= ptr.get_counter_ptr();
 			if( counter_ != nullptr</shared_ptr_mt_impl::counter/>() )
 			{
+				// It's almost impossible to get counter owerflow here - so, ignore such possibility.
 				atomic_inc( $>(counter_).use_count_total );
 			}
 		}
@@ -211,6 +214,7 @@ public:
 			{
 				value_= $<( cast_ref</T/>( $>( ptr.get_value_ptr() ) ) );
 				counter_= ptr.get_counter_ptr();
+				// It's almost impossible to get counter owerflow here - so, ignore such possibility.
 				atomic_inc( $>(counter_).use_count_total );
 			}
 		}
@@ -235,6 +239,7 @@ public:
 			{
 				value_= other.value_;
 				counter_= other.counter_;
+				// It's almost impossible to get counter owerflow here - so, ignore such possibility.
 				atomic_inc( $>(counter_).use_count_total );
 			}
 		}
@@ -266,6 +271,7 @@ public:
 				return shared_ptr_mt_base</T/>();
 			}
 
+			// It's almost impossible to get counter owerflow here - so, ignore such possibility.
 			atomic_inc( $>(counter_).use_count_total );
 
 			var u32 mut count= atomic_read( $>(counter_).use_count_strong );
