@@ -69,6 +69,7 @@ public:
 
 	fn insert( mut this, key_type& key, value_type mut value ) : value_type &'this mut
 	{
+		// Size overflow is inpossible here - previous container size can't be greater than half of address space.
 		unsafe
 		{
 			rehash( size_ + size_type(1) );
