@@ -27,6 +27,7 @@ public:
 		unsafe
 		{
 			capacity_= max( get_first_allocation_size(), other.size_ );
+			// Multiplication overflow is not possible here because allocation of source string should not overflow.
 			ptr_= $<( cast_ref_unsafe</char_type/>( memory_allocate( capacity_ * c_element_size_ ) ) );
 
 			memory_copy( cast_ref_unsafe</void/>( $>(ptr_) ), cast_ref_unsafe</void/>( $>(other.ptr_) ), size_ * c_element_size_ );
@@ -43,6 +44,7 @@ public:
 		unsafe
 		{
 			capacity_= max( get_first_allocation_size(), array_size );
+			// It's impossible to get multiplication overflow here - source array should not occupy more than address space size.
 			ptr_= $<( cast_ref_unsafe</char_type/>( memory_allocate( capacity_ * c_element_size_ ) ) );
 
 			memory_copy( cast_ref_unsafe</void/>( $>(ptr_) ), cast_ref_unsafe</void/>( array ), size_ * c_element_size_ );
@@ -58,6 +60,7 @@ public:
 		unsafe
 		{
 			capacity_= max( get_first_allocation_size(), size_ );
+			// It's impossible to get multiplication overflow here - source range should not occupy more than address space size.
 			ptr_= $<( cast_ref_unsafe</char_type/>( memory_allocate( capacity_ * c_element_size_ ) ) );
 
 			memory_copy( cast_ref_unsafe</void/>( $>(ptr_) ), cast_ref_unsafe</void/>( $>(range.data()) ), size_ * c_element_size_ );
@@ -73,8 +76,8 @@ public:
 		unsafe
 		{
 			capacity_= max( get_first_allocation_size(), size_ );
-			ptr_= $<( cast_ref_unsafe</char_type/>( memory_allocate( capacity_ * c_element_size_ ) ) );
-
+			// Multiplication overflow check is needed here.
+			ptr_= $<( cast_ref_unsafe</char_type/>( memory_allocate( mul_overflow_check_halt( capacity_, c_element_size_ ) ) ) );
 
 			for( var size_type mut i(0); i < size_; ++i )
 			{
@@ -650,13 +653,15 @@ private:
 			else if( capacity_ == size_type(0) )
 			{
 				capacity_= max( get_first_allocation_size(), new_size );
-				ptr_= $<( cast_ref_unsafe</char_type/>( memory_allocate( capacity_ * c_element_size_ ) ) );
+				// Multiplication overflow check is needed here.
+				ptr_= $<( cast_ref_unsafe</char_type/>( memory_allocate( mul_overflow_check_halt( capacity_, c_element_size_ ) ) ) );
 			}
 			else // if( capacity_ < new_size )
 			{
 				// It's impossible to get capacity overflow here, because "new_size" can't be greater than address space size.
 				while( capacity_ < new_size ) { capacity_*= 2s; }
-				ptr_= $<( cast_ref_unsafe</char_type/>( memory_reallocate( cast_ref_unsafe</void/>( $>(ptr_) ), capacity_ * c_element_size_ ) ) );
+				// Multiplication overflow check is needed here.
+				ptr_= $<( cast_ref_unsafe</char_type/>( memory_reallocate( cast_ref_unsafe</void/>( $>(ptr_) ), mul_overflow_check_halt( capacity_, c_element_size_ ) ) ) );
 			}
 		}
 	}
