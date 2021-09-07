@@ -89,24 +89,14 @@ public:
 	// Copy assignment operator.
 	op=( mut this, this_type& other )
 	{
-		unsafe
-		{
-			ensure_capacity( other.size_ );
-			size_= other.size_;
-			memory_copy( cast_ref_unsafe</void/>( $>(this.ptr_) ), cast_ref_unsafe</void/>( $>(other.ptr_) ), size_ * c_element_size_ );
-		}
+		this = other.range();
 	}
 
 	// Assign char array.
 	template</ size_type array_size />
 	op=( mut this, [ char_type, array_size ]& array )
 	{
-		unsafe
-		{
-			ensure_capacity( array_size );
-			size_= array_size;
-			memory_copy(  cast_ref_unsafe</void/>( $>(this.ptr_) ), cast_ref_unsafe</void/>( array ), size_ * c_element_size_ );
-		}
+		this = range_imut(array);
 	}
 
 	// Assign char range.
@@ -259,23 +249,13 @@ public:
 
 	op==( this_type& l, this_type& r ) : bool
 	{
-		if( l.size_ != r.size_ ) { return false; }
-
-		unsafe
-		{
-			return memory_equals( cast_ref_unsafe</void/>( $>(l.ptr_) ), cast_ref_unsafe</void/>( $>(r.ptr_) ), l.size_ * c_element_size_ );
-		}
+		return l == r.range();
 	}
 
 	template</ size_type array_size />
 	op==( this_type& l, [ char_type, array_size ]& array ) : bool
 	{
-		if( l.size_ != array_size ) { return false; }
-
-		unsafe
-		{
-			return memory_equals(  cast_ref_unsafe</void/>( $>(l.ptr_) ), cast_ref_unsafe</void/>( array ), array_size * c_element_size_ );
-		}
+		return l == range_imut(array);
 	}
 
 	template</ size_type array_size />
@@ -504,52 +484,19 @@ public:
 
 	op+( this_type& l, this_type& r ) : this_type
 	{
-		var this_type mut result;
-		unsafe
-		{
-			// Overflow check is not needed here - size of single string can't be greater than size of half of address space.
-			auto result_size= l.size_ + r.size_;
-			result.ensure_capacity( result_size );
-			result.size_= result_size;
-			memory_copy( cast_ref_unsafe</void/>( $>(result.ptr_) ), cast_ref_unsafe</void/>( $>(l.ptr_) ), l.size_ * c_element_size_ );
-			memory_copy( cast_ref_unsafe</void/>( $>(result.ptr_ + l.size_) ), cast_ref_unsafe</void/>( $>(r.ptr_) ), r.size_ * c_element_size_ );
-		}
-
-		return move(result);
+		return l + r.range();
 	}
 
 	template</ size_type array_size />
 	op+( this_type& l, [ char_type, array_size ]& array ) : this_type
 	{
-		var this_type mut result;
-		unsafe
-		{
-			// Overflow check is not needed here - size of single string can't be greater than size of half of address space.
-			auto result_size= l.size_ + array_size;
-			result.ensure_capacity( result_size );
-			result.size_= result_size;
-			memory_copy( cast_ref_unsafe</void/>( $>(result.ptr_) ), cast_ref_unsafe</void/>( $>(l.ptr_) ), l.size_ * c_element_size_ );
-			memory_copy( cast_ref_unsafe</void/>( $>(result.ptr_ + l.size_) ), cast_ref_unsafe</void/>( array ), array_size * c_element_size_ );
-		}
-
-		return move(result);
+		return l + range_imut(array);
 	}
 
 	template</ size_type array_size />
 	op+( [ char_type, array_size ]& array, this_type& r ) : this_type
 	{
-		var this_type mut result;
-		unsafe
-		{
-			// Overflow check is not needed here - size of single string can't be greater than size of half of address space.
-			auto result_size= array_size + r.size_;
-			result.ensure_capacity( result_size );
-			result.size_= result_size;
-			memory_copy( cast_ref_unsafe</void/>( $>(result.ptr_) ), cast_ref_unsafe</void/>( array ), array_size * c_element_size_ );
-			memory_copy( cast_ref_unsafe</void/>( $>(result.ptr_ + array_size) ), cast_ref_unsafe</void/>( $>(r.ptr_) ), r.size_ * c_element_size_ );
-		}
-
-		return move(result);
+		return range_imut(array) + r;
 	}
 
 	op+( this_type& l, range_imut range ) : this_type
@@ -588,27 +535,13 @@ public:
 
 	op+=( mut this, this_type& other )
 	{
-		unsafe
-		{
-			// Overflow check is not needed here - size of single string can't be greater than size of half of address space.
-			auto new_size= this.size_ + other.size_;
-			ensure_capacity( new_size );
-			memory_copy( cast_ref_unsafe</void/>( $>( ptr_ + size_ ) ), cast_ref_unsafe</void/>( $>(other.ptr_) ), other.size_ * c_element_size_ );
-			size_= new_size;
-		}
+		this += other.range();
 	}
 
 	template</ size_type array_size />
 	op+=( mut this, [ char_type, array_size ]& array )
 	{
-		unsafe
-		{
-			// Overflow check is not needed here - size of single string can't be greater than size of half of address space.
-			auto new_size= this.size_ + array_size;
-			ensure_capacity( new_size );
-			memory_copy( cast_ref_unsafe</void/>( $>( ptr_ + size_ ) ), cast_ref_unsafe</void/>( array ), array_size * c_element_size_ );
-			size_= new_size;
-		}
+		this += range_imut(array);
 	}
 
 	op+=( mut this, range_imut range )
