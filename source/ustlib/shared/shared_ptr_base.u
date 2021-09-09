@@ -41,6 +41,7 @@ public:
 			{
 				value_= $<( cast_ref</T/>( $>(ptr.get_value_ptr() ) ) );
 				counter_= ptr.get_counter_ptr();
+				// It's almost impossible to get counter owerflow here - so, ignore such possibility.
 				++$>(counter_).use_count_total;
 				++$>(counter_).use_count_strong;
 			}
@@ -66,6 +67,7 @@ public:
 			{
 				value_= other.value_;
 				counter_= other.counter_;
+				// It's almost impossible to get counter owerflow here - so, ignore such possibility.
 				++$>(counter_).use_count_total;
 				++$>(counter_).use_count_strong;
 			}
@@ -191,6 +193,7 @@ public:
 			counter_= ptr.get_counter_ptr();
 			if( counter_ != nullptr</shared_ptr_impl::counter/>() )
 			{
+				// It's almost impossible to get counter owerflow here - so, ignore such possibility.
 				++$>(counter_).use_count_total;
 			}
 		}
@@ -206,6 +209,7 @@ public:
 			{
 				value_= $<( cast_ref</T/>( $>( ptr.get_value_ptr() ) ) ); // Convert reference here.
 				counter_= ptr.get_counter_ptr();
+				// It's almost impossible to get counter owerflow here - so, ignore such possibility.
 				++$>(counter_).use_count_total;
 			}
 		}
@@ -230,6 +234,7 @@ public:
 			{
 				value_= other.value_;
 				counter_= other.counter_;
+				// It's almost impossible to get counter owerflow here - so, ignore such possibility.
 				++$>(counter_).use_count_total;
 			}
 		}
@@ -260,6 +265,7 @@ public:
 			{
 				return shared_ptr_base</T/>();
 			}
+			// It's almost impossible to get counter owerflow here - so, ignore such possibility.
 			++$>(counter_).use_count_total;
 			++$>(counter_).use_count_strong;
 			return shared_ptr_base</T/>( value_, counter_ );
@@ -342,6 +348,7 @@ public:
 		unsafe
 		{
 			halt if( $>(counter_).lock_count < 0 ); // halt if have mutable locks
+			// It's almost impossible to get counter owerflow here - so, ignore such possibility.
 			++$>(counter_).lock_count;
 		}
 	}

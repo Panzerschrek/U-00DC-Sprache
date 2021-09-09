@@ -69,6 +69,7 @@ public:
 
 	fn insert( mut this, key_type& key, value_type mut value ) : value_type &'this mut
 	{
+		// Size overflow is inpossible here - previous container size can't be greater than half of address space.
 		unsafe
 		{
 			rehash( size_ + size_type(1) );
@@ -219,6 +220,9 @@ private:
 		{
 			auto new_capacity_mask= new_capacity - size_type(1);
 
+			// it's impossible to add more than one key into hash map in one call.
+			// Because of that it's impossible to get sizeof * capacity multiplication overflow here.
+			// Maximum allocation limit will be reached first.
 			// Allocate and initialize new table.
 			auto new_table= $<( cast_ref_unsafe</TableValue/>( memory_allocate( new_capacity * typeinfo</TableValue/>.size_of ) ) );
 			for( auto mut i= 0s; i < new_capacity; ++i )
