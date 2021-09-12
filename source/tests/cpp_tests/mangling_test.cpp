@@ -169,13 +169,32 @@ U_TEST( GlobalVariablesManglingTest0 )
 			struct Bar
 			{
 				auto constexpr abcdefg= 887;
+				var i32 mut BarMut= -123;
 			}
+
+			var tup[bool] mut namespace_mut[true];
 		}
 
 		struct Ball
 		{
 			auto constexpr rrtt= -8547;
 		}
+
+		template</type T/>
+		struct Box
+		{
+			auto size= 0s;
+
+			template</type U/>
+			struct Inner
+			{
+				auto inner_val= 0.25f;
+				var f32 mut inner_mut= inner_val;
+			}
+		}
+		type FBoxInner= Box</f32/>::Inner</u32/>;
+
+		auto mut GlobalMut= false;
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
@@ -187,7 +206,13 @@ U_TEST( GlobalVariablesManglingTest0 )
 	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "_ZN8SSS_Pace2piE", true ) != nullptr );
 	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "_ZN8SSS_Pace9pi_doubleE", true ) != nullptr );
 	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "_ZN8SSS_Pace3Bar7abcdefgE", true ) != nullptr );
+	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "_ZN8SSS_Pace3Bar6BarMutE", true ) != nullptr );
+	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "_ZN8SSS_Pace13namespace_mutE", true ) != nullptr );
 	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "_ZN4Ball4rrttE", true ) != nullptr );
+	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "_ZN3BoxIfE4sizeE", true ) != nullptr );
+	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "_ZN3BoxIfE5InnerIjE9inner_valE", true ) != nullptr );
+	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "_ZN3BoxIfE5InnerIjE9inner_mutE", true ) != nullptr );
+	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "GlobalMut", true ) != nullptr );
 }
 
 U_TEST( OperatorsManglingTest )
