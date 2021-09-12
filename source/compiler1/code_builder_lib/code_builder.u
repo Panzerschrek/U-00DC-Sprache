@@ -2114,6 +2114,25 @@ fn CodeBuilder::AddGlobalConstantVariable( this, ust::string8& name_null_termina
 	}
 }
 
+fn CodeBuilder::AddGlobalMutableVariable( this, ust::string8& name_null_terminated, LLVMTypeRef llvm_type ) : LLVMValueRef
+{
+	unsafe
+	{
+		// Use external linkage and comdat for global mutable variables to guarantee address uniqueness.
+
+		var LLVMValueRef global_variable= LLVMAddGlobal( module_, llvm_type, name_null_terminated.front_unsafe() );
+		LLVMSetLinkage( global_variable, LLVMLinkage::External );
+		LLVMSetUnnamedAddress( global_variable, LLVMUnnamedAddr::GlobalUnnamedAddr );
+		LLVMSetGlobalConstant( global_variable, LLVMBool::False );
+
+		auto comdat= LLVMGetOrInsertComdat( module_, name_null_terminated.front_unsafe() );
+		LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
+		LLVMSetComdat( global_variable, comdat );
+
+		return global_variable;
+	}
+}
+
 fn CodeBuilder::AddFunctionAttribute( this, LLVMValueRef llvm_function, u32 index, ust::array_view_imut</char8/> attr_name )
 {
 	unsafe

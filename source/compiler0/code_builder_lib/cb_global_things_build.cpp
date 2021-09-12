@@ -970,7 +970,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		const Synt::VariablesDeclaration::VariableEntry& variable_declaration= variables_declaration->variables[ incomplete_global_variable.element_index ];
 
 		const Type type= PrepareType( variables_declaration->type, names_scope, *global_function_context_ );
-		if( !EnsureTypeComplete( type ) ) // Global variables are all constexpr. Full completeness required for constexpr.
+		if( !EnsureTypeComplete( type ) ) // Type completeness required for variable or reference declaration.
 		{
 			REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), variable_declaration.src_loc, type );
 			FAIL_RETURN;
@@ -992,8 +992,13 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
+			const std::string name_mangled = mangler_.MangleGlobalVariable( names_scope, variable_declaration.name );
+
 			llvm::GlobalVariable* global_variable= nullptr;
-			variable.llvm_value= global_variable= CreateGlobalConstantVariable( type, mangler_.MangleGlobalVariable( names_scope, variable_declaration.name ) );
+			variable.llvm_value= global_variable=
+				variable_declaration.mutability_modifier == MutabilityModifier::Mutable
+					? CreateGlobalMutableVariable( type, name_mangled )
+					: CreateGlobalConstantVariable( type, name_mangled );
 
 			if( variable_declaration.initializer != nullptr )
 				variable.constexpr_value= ApplyInitializer( variable, names_scope, function_context, *variable_declaration.initializer );
@@ -1001,7 +1006,8 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				ApplyEmptyInitializer( variable_declaration.name, variable_declaration.src_loc, variable, names_scope, function_context );
 
 			// Make immutable, if needed, only after initialization, because in initialization we need call constructors, which is mutable methods.
-			variable.value_type= ValueType::ReferenceImut;
+			if( variable_declaration.mutability_modifier != MutabilityModifier::Mutable )
+				variable.value_type= ValueType::ReferenceImut;
 
 			if( global_variable != nullptr && variable.constexpr_value != nullptr )
 				global_variable->setInitializer( variable.constexpr_value );
@@ -1014,7 +1020,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				FAIL_RETURN;
 			}
 
-			variable.value_type= ValueType::ReferenceImut;
+			variable.value_type= variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 
 			const Synt::Expression* initializer_expression= nullptr;
 			if( const auto expression_initializer= std::get_if<Synt::Expression>( variable_declaration.initializer.get() ) )
@@ -1067,7 +1073,11 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			FAIL_RETURN;
 		}
 
-		// Do not call destructors, because global variables can be only constexpr and any constexpr type have trivial destructor.
+		// Reset constexpr initial value for mutable variables.
+		if( variable_declaration.mutability_modifier == MutabilityModifier::Mutable )
+			variable.constexpr_value = nullptr;
+
+		// Do not call destructors, because global variable initializer must be constexpr and any constexpr type have trivial destructor.
 
 		global_variable_value= Value( variable, variable_declaration.src_loc );
 	}
@@ -1096,10 +1106,10 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 		Variable variable;
 		variable.type= initializer_experrsion.type;
-		variable.value_type= ValueType::ReferenceImut;
+		variable.value_type= auto_variable_declaration->mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		variable.location= Variable::Location::Pointer;
 
-		if( !EnsureTypeComplete( variable.type ) ) // Global variables are all constexpr. Full completeness required for constexpr.
+		if( !EnsureTypeComplete( variable.type ) ) // Type completeness required for variable or reference declaration.
 		{
 			REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), auto_variable_declaration->src_loc_, variable.type );
 			FAIL_RETURN;
@@ -1128,7 +1138,12 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		}
 		else if( auto_variable_declaration->reference_modifier == ReferenceModifier::None )
 		{
-			llvm::GlobalVariable* const global_variable= CreateGlobalConstantVariable( variable.type, mangler_.MangleGlobalVariable( names_scope, auto_variable_declaration->name ) );
+			const std::string name_mangled = mangler_.MangleGlobalVariable( names_scope, auto_variable_declaration->name );
+			llvm::GlobalVariable* const global_variable=
+				auto_variable_declaration->mutability_modifier == MutabilityModifier::Mutable
+					? CreateGlobalMutableVariable( variable.type, name_mangled )
+					: CreateGlobalConstantVariable( variable.type, name_mangled );
+
 			variable.llvm_value= global_variable;
 			// Copy constructor for constexpr type is trivial, so, we can just take constexpr value of source.
 			variable.constexpr_value= initializer_experrsion.constexpr_value;
@@ -1154,6 +1169,10 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope.GetErrors(), auto_variable_declaration->src_loc_ );
 			FAIL_RETURN;
 		}
+
+		// Reset constexpr initial value for mutable variables.
+		if( auto_variable_declaration->mutability_modifier == MutabilityModifier::Mutable )
+			variable.constexpr_value = nullptr;
 
 		// Do not call destructors, because global variables can be only constexpr and any constexpr type have trivial destructor.
 
