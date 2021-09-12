@@ -85,7 +85,6 @@ PROCESS_ERROR( InitializerForBaseClassField, "Initializer for \"{0}\", which is 
 PROCESS_ERROR( DuplicatedStructMemberInitializer, "Duplicated initializer for \"{0}\"." )
 PROCESS_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, "This kind of initializer disabled for this class, because it have explicit noncopy constructor(s)." )
 PROCESS_ERROR( InvalidTypeForAutoVariable, "Invalid type for auto variable: \"{0}\"." )
-PROCESS_ERROR( GlobalVariableMustBeConstexpr, "Global variable \"{0}\" must be constexpr." )
 
 // Constructors errors
 PROCESS_ERROR( ConstructorOrDestructorOutsideClass, "Constructor or destructor outside class." )

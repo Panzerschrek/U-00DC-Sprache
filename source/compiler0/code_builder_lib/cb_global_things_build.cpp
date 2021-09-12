@@ -969,12 +969,6 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 	{
 		const Synt::VariablesDeclaration::VariableEntry& variable_declaration= variables_declaration->variables[ incomplete_global_variable.element_index ];
 
-		if( variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable )
-		{
-			REPORT_ERROR( GlobalVariableMustBeConstexpr, names_scope.GetErrors(), variable_declaration.src_loc, variable_declaration.name );
-			FAIL_RETURN;
-		}
-
 		const Type type= PrepareType( variables_declaration->type, names_scope, *global_function_context_ );
 		if( !EnsureTypeComplete( type ) ) // Global variables are all constexpr. Full completeness required for constexpr.
 		{
@@ -1079,12 +1073,6 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 	}
 	else if( const auto auto_variable_declaration= incomplete_global_variable.auto_variable_declaration )
 	{
-		if( auto_variable_declaration->mutability_modifier == MutabilityModifier::Mutable )
-		{
-			REPORT_ERROR( GlobalVariableMustBeConstexpr, names_scope.GetErrors(), auto_variable_declaration->src_loc_, auto_variable_declaration->name );
-			FAIL_RETURN;
-		}
-
 		// Destruction frame for temporary variables of initializer expression.
 		const StackVariablesStorage temp_variables_storage( function_context );
 

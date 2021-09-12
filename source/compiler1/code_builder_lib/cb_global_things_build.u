@@ -1070,11 +1070,6 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 		REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope_ptr, variable_declaration.src_loc )
 		return;
 	}
-	if( variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable )
-	{
-		REPORT_ERROR( GlobalVariableMustBeConstexpr, names_scope_ptr, variable_declaration.src_loc, variable_declaration.name )
-		return;
-	}
 
 	if( variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 	{
@@ -1179,11 +1174,6 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 	if( !variable.t.CanBeConstexpr() )
 	{
 		REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope_ptr, auto_variable_declaration.src_loc )
-		return;
-	}
-	if( auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable )
-	{
-		REPORT_ERROR( GlobalVariableMustBeConstexpr, names_scope_ptr, auto_variable_declaration.src_loc, auto_variable_declaration.name )
 		return;
 	}
 
