@@ -191,6 +191,7 @@ PROCESS_ERROR( ExplicitAccessToThisMethodIsUnsafe, "Explicit access to method \"
 PROCESS_ERROR( UnsafeReferenceCastOutsideUnsafeBlock, "Unsafe reference cast outside unsafe block." )
 PROCESS_ERROR( MutableReferenceCastOutsideUnsafeBlock, "Mutable reference cast outside unsafe block." )
 PROCESS_ERROR( UninitializedInitializerOutsideUnsafeBlock, "Unsafe initializer outside unsafe block." )
+PROCESS_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, "Accessing global mutable variable outside unsafe block." )
 
 // Raw pointers
 PROCESS_ERROR( ValueIsNotReference, "Value is not a reference. Expected mutable or immutable reference, got immediate value." )

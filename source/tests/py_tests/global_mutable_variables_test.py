@@ -113,3 +113,39 @@ def GlobalMutableVariableUsage_Test2():
 	assert( tests_lib.run_function( "_Z3Incv" ) == 0 )
 	assert( tests_lib.run_function( "_Z3Incv" ) == 1 )
 	assert( tests_lib.run_function( "_Z3Incv" ) == 2 )
+
+
+def GlobalMutableVariableAccesDoesNotAllowedOutsideUnsafeBlock_Test0():
+	c_program_text= """
+		var i32 mut x= 0;
+		fn Foo() : i32
+		{
+			return x;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "GlobalMutableVariableAccessOutsideUnsafeBlock", 5 ) )
+
+
+def GlobalMutableVariableAccesDoesNotAllowedOutsideUnsafeBlock_Test1():
+	c_program_text= """
+		auto mut ff= -456341.053;
+		fn Foo() : f64
+		{
+			return ff;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "GlobalMutableVariableAccessOutsideUnsafeBlock", 5 ) )
+
+
+def GlobalMutableVariableAccesDoesNotAllowedOutsideUnsafeBlock_Test2():
+	c_program_text= """
+		auto mut b= false;
+		// Even global mutable variable access in another global mutable variable initialization is forbidden, because global context is not usafe.
+		// Also this code should produce an error about non-constexpr global variable initializer.
+		auto mut b_copy= b;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "GlobalMutableVariableAccessOutsideUnsafeBlock", 5 ) )
+	assert( HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 5 ) )

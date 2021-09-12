@@ -528,6 +528,11 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 
 		if_var( &v : global_variable_ptr.lock_imut().get_ref().variable )
 		{
+			if( v.is_mutable && !function_context.is_in_unsafe_block )
+			{
+				REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names_scope, src_loc )
+			}
+
 			var Variable mut res
 			{
 				.t= v.t,
@@ -547,6 +552,11 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 
 		if_var( &v : global_auto_variable_ptr.lock_imut().get_ref().variable )
 		{
+			if( v.is_mutable && !function_context.is_in_unsafe_block )
+			{
+				REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names_scope, src_loc )
+			}
+
 			var Variable mut res
 			{
 				.t= v.t,
