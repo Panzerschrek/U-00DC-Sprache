@@ -11,3 +11,8 @@ fn PrivateA()
 	FunFromC();
 	InlineFromInc();
 }
+
+fn GetGlobalAddressA() : $(i32)
+{
+	unsafe{  return $<(global_x);  }
+}

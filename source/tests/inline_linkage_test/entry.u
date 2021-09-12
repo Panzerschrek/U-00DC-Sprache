@@ -3,11 +3,26 @@ fn FunFromB();
 fn FunFromC();
 fn InlineFromInc();
 
+fn GetGlobalAddressA() : $(i32);
+fn GetGlobalAddressB() : $(i32);
+
 fn nomangle main() : i32
 {
 	FunFromA();
 	FunFromB();
 	FunFromC();
 	InlineFromInc();
+
+	// Global mutable variable in common file should not be duplicated across multiple modules.
+	halt if(GetGlobalAddressA() != GetGlobalAddressB());
+	unsafe
+	{
+		$>(GetGlobalAddressA()) = 42;
+		halt if($>(GetGlobalAddressB()) != 42);
+
+		$>(GetGlobalAddressB()) = 34;
+		halt if($>(GetGlobalAddressA()) != 34);
+	}
+
 	return 0;
 }

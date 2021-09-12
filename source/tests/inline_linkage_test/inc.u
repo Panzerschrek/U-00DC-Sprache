@@ -13,3 +13,6 @@ fn FunFromC();
 fn InlineFromInc()
 {
 }
+
+// Should get single definition of this variable.
+var i32 mut global_x= 123;
