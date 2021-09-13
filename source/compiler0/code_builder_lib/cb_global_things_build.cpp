@@ -969,6 +969,14 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 	{
 		const Synt::VariablesDeclaration::VariableEntry& variable_declaration= variables_declaration->variables[ incomplete_global_variable.element_index ];
 
+		// Disable global mutable references because of problems with initializers and references protection.
+		if( variable_declaration.mutability_modifier == MutabilityModifier::Mutable &&
+			variable_declaration.reference_modifier == ReferenceModifier::Reference )
+		{
+			REPORT_ERROR( MutableGlobalReferencesAreNotAllowed, names_scope.GetErrors(), variable_declaration.src_loc );
+			FAIL_RETURN;
+		}
+
 		const Type type= PrepareType( variables_declaration->type, names_scope, *global_function_context_ );
 		if( !EnsureTypeComplete( type ) ) // Type completeness required for variable or reference declaration.
 		{
@@ -1052,11 +1060,6 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), variable_declaration.src_loc );
 				FAIL_RETURN;
 			}
-			if( expression_result.value_type == ValueType::ReferenceImut && variable.value_type == ValueType::ReferenceMut )
-			{
-				REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), variable_declaration.src_loc );
-				FAIL_RETURN;
-			}
 
 			// TODO - maybe make copy of varaible address in new llvm register?
 			llvm::Value* result_ref= expression_result.llvm_value;
@@ -1083,6 +1086,14 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 	}
 	else if( const auto auto_variable_declaration= incomplete_global_variable.auto_variable_declaration )
 	{
+		// Disable global mutable references because of problems with initializers and references protection.
+		if( auto_variable_declaration->mutability_modifier == MutabilityModifier::Mutable &&
+			auto_variable_declaration->reference_modifier == ReferenceModifier::Reference )
+		{
+			REPORT_ERROR( MutableGlobalReferencesAreNotAllowed, names_scope.GetErrors(), auto_variable_declaration->src_loc_ );
+			FAIL_RETURN;
+		}
+
 		// Destruction frame for temporary variables of initializer expression.
 		const StackVariablesStorage temp_variables_storage( function_context );
 
@@ -1125,11 +1136,6 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			if( initializer_experrsion.value_type == ValueType::Value )
 			{
 				REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), auto_variable_declaration->src_loc_ );
-				FAIL_RETURN;
-			}
-			if( initializer_experrsion.value_type == ValueType::ReferenceImut && variable.value_type != ValueType::ReferenceImut )
-			{
-				REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), auto_variable_declaration->src_loc_ );
 				FAIL_RETURN;
 			}
 

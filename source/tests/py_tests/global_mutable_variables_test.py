@@ -243,3 +243,21 @@ def GobalMutableVariableShoudHaveContexprType_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HaveError( errors_list, "InvalidTypeForConstantExpressionVariable", 4 ) )
+
+
+def MutableGlobalReferencesAreNotAllowed_Test0():
+	c_program_text= """
+		var i32 mut x= 0;
+		var i32 &mut x_ref= x;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "MutableGlobalReferencesAreNotAllowed", 3 ) )
+
+
+def MutableGlobalReferencesAreNotAllowed_Test1():
+	c_program_text= """
+		auto mut x= 0;
+		auto &mut x_ref= x;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "MutableGlobalReferencesAreNotAllowed", 3 ) )

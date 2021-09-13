@@ -28,6 +28,7 @@ PROCESS_ERROR( ExpectedInitializer, "Expected initializer or constructor for \"{
 PROCESS_ERROR( ExpectedReferenceValue, "Expected reference value." )
 PROCESS_ERROR( BindingConstReferenceToNonconstReference, "Binding constant reference to non-constant reference." )
 PROCESS_ERROR( ExpectedVariable, "Expected variable, got \"{0}\"." )
+PROCESS_ERROR( MutableGlobalReferencesAreNotAllowed, "Mutable global references are not allowed." )
 
 PROCESS_ERROR( InvalidFunctionArgumentCount, "Invalid function argument count. Required {0}, got {1}." )
 PROCESS_ERROR( CouldNotOverloadFunction, "Could not overload function." )
