@@ -501,6 +501,9 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 	Iterator it= &program_text.front();
 	const Iterator it_end= it + program_text.size();
 
+	if( program_text.size() >= 3u && program_text.substr(0, 3) == "\xEF\xBB\xBF" )
+		it+= 3; // Skip UTF-8 byte order mark.
+
 	int comments_depth= 0;
 
 	uint32_t line= 1; // Count lines from "1", in human-readable format.

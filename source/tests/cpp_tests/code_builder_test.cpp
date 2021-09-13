@@ -26,6 +26,15 @@ U_TEST( EmptyProgramTest1 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( UnicodeBOM_Test0 )
+{
+	static const char c_program_text[]= "\xEF\xBB\xBF fn Foo(){}";
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	const auto function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	engine->runFunction( function, {} );
+}
+
 U_TEST( AdditionalSymbolsForIdentifiersTest0 )
 {
 	static const char c_program_text[]=

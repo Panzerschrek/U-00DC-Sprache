@@ -547,6 +547,12 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 	var LexicalAnalysisResult mut result;
 
 	auto mut it= program_text;
+
+	if( !it.empty() && GetUTF8FirstChar(it) == char32(0xFEFF) )
+	{
+		ReadNextUTF8Char(it); // Skip UTF-8 byte order mark.
+	}
+
 	auto mut prev_it= it;
 
 	var u32 mut line= 1u; // Count lines from "1", in human-readable format.
