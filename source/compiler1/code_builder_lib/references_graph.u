@@ -1,10 +1,17 @@
+import "/atomic.u"
 import "error_reporting.uh"
 import "references_graph.uh"
 
-fn nomangle U1_ReferencesGraphGetNextUniqueId() : u32;
-
 namespace U1
 {
+
+// Use global unique identifiers for bugs prevention.
+var u32 mut g_references_graph_next_node_id = 1u;
+
+fn GetNextNodeId() : u32
+{
+	unsafe{  return ust::atomic_inc(g_references_graph_next_node_id);  }
+}
 
 struct NodeReplacement
 {
@@ -19,9 +26,7 @@ op ReferencesGraph::Link::==(Link& l, Link& r ) : bool
 
 fn ReferencesGraph::AddNode( mut this, NodeKind kind, ust::string8 mut name ) : NodeId
 {
-	// Use unique identifiers for bugs prevention.
-	// Use function implemented on C++ because we needs global mutable variable for it.
-	var NodeId node_id= U1_ReferencesGraphGetNextUniqueId();
+	var NodeId node_id= GetNextNodeId();
 
 	var Node mut node{ .kind= kind, .name= move(name), .inner_reference_node= c_empty_node_id, .moved= false };
 	nodes_.insert( node_id, move(node) );
