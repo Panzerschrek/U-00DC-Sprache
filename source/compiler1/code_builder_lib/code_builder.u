@@ -528,6 +528,11 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 
 		if_var( &v : global_variable_ptr.lock_imut().get_ref().variable )
 		{
+			if( v.is_mutable && !function_context.is_in_unsafe_block )
+			{
+				REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names_scope, src_loc )
+			}
+
 			var Variable mut res
 			{
 				.t= v.t,
@@ -547,6 +552,11 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 
 		if_var( &v : global_auto_variable_ptr.lock_imut().get_ref().variable )
 		{
+			if( v.is_mutable && !function_context.is_in_unsafe_block )
+			{
+				REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names_scope, src_loc )
+			}
+
 			var Variable mut res
 			{
 				.t= v.t,
@@ -2111,6 +2121,25 @@ fn CodeBuilder::AddGlobalConstantVariable( this, ust::string8& name_null_termina
 			LLVMSetInitializer( global_value, initializer );
 		}
 		return global_value;
+	}
+}
+
+fn CodeBuilder::AddGlobalMutableVariable( this, ust::string8& name_null_terminated, LLVMTypeRef llvm_type ) : LLVMValueRef
+{
+	unsafe
+	{
+		// Use external linkage and comdat for global mutable variables to guarantee address uniqueness.
+
+		var LLVMValueRef global_variable= LLVMAddGlobal( module_, llvm_type, name_null_terminated.front_unsafe() );
+		LLVMSetLinkage( global_variable, LLVMLinkage::External );
+		LLVMSetUnnamedAddress( global_variable, LLVMUnnamedAddr::GlobalUnnamedAddr );
+		LLVMSetGlobalConstant( global_variable, LLVMBool::False );
+
+		auto comdat= LLVMGetOrInsertComdat( module_, name_null_terminated.front_unsafe() );
+		LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
+		LLVMSetComdat( global_variable, comdat );
+
+		return global_variable;
 	}
 }
 

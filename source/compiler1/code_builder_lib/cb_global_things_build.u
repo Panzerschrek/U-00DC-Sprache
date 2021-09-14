@@ -1057,9 +1057,12 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 
 	var FunctionContext mut function_context= CreateGlobalFunctionContext();
 
-	var NamesScopeVariable mut variable;
+	var NamesScopeVariable mut variable
+	{
+		.t= PrepareType( names_scope_ptr, function_context, variables_declaration.t ),
+		.is_mutable = variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable
+	};
 
-	variable.t= PrepareType( names_scope_ptr, function_context, variables_declaration.t );
 	if( !EnsureTypeComplete( variable.t ) )
 	{
 		REPORT_ERROR( UsingIncompleteType, names_scope_ptr, variables_declaration.src_loc, variable.t )
@@ -1070,16 +1073,13 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 		REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope_ptr, variable_declaration.src_loc )
 		return;
 	}
-	if( variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable )
-	{
-		REPORT_ERROR( GlobalVariableMustBeConstexpr, names_scope_ptr, variable_declaration.src_loc, variable_declaration.name )
-		return;
-	}
 
 	if( variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 	{
 		auto name_mangled= mangler_.MangleGlobalVariable( names_scope_ptr.lock_imut().get_ref(), variable_declaration.name );
-		variable.llvm_value= AddGlobalConstantVariable( name_mangled, variable.t.GetLLVMType(), LLVMValueRef::Null );
+		variable.llvm_value= select( variable.is_mutable
+			? AddGlobalMutableVariable( name_mangled, variable.t.GetLLVMType() )
+			: AddGlobalConstantVariable( name_mangled, variable.t.GetLLVMType(), LLVMValueRef::Null ) );
 
 		if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
 		{
@@ -1090,16 +1090,16 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 			variable.constexpr_value= BuildInitializer( names_scope_ptr, function_context, variable, variable_declaration.initializer );
 		}
 
-		if( variable.constexpr_value == LLVMValueRef::Null )
-		{
-			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope_ptr, variable_declaration.src_loc )
-			return;
-		}
-
 		unsafe{  LLVMSetInitializer( variable.llvm_value, variable.constexpr_value );  }
 	}
 	else if( variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
 	{
+		if( variable.is_mutable ) // Disable global mutable references because of problems with initializers and references protection.
+		{
+			REPORT_ERROR( MutableGlobalReferencesAreNotAllowed, names_scope_ptr, variable_declaration.src_loc )
+			return;
+		}
+
 		if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
 		{
 			REPORT_ERROR( ExpectedInitializer, names_scope_ptr, variable_declaration.src_loc, variable_declaration.name )
@@ -1129,22 +1129,31 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 		}
 
 		auto expression_result= BuildExpressionCodeEnsureVariable( names_scope_ptr, function_context, initializer_expression.get_ref() );
-		// TODO - allow reference conversion
 		if( expression_result.t != variable.t )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope_ptr, variable_declaration.src_loc, variable.t, expression_result.t )
 			return;
 		}
+		if( expression_result.value_type == ValueType::Value )
+		{
+			REPORT_ERROR( ExpectedReferenceValue, names_scope_ptr, variable_declaration.src_loc )
+			return;
+		}
 
 		variable.llvm_value= expression_result.llvm_value;
 		variable.constexpr_value= expression_result.constexpr_value;
-
-		if( variable.constexpr_value == LLVMValueRef::Null )
-		{
-			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope_ptr, variable_declaration.src_loc )
-		}
 	}
 	else{ halt; }
+
+	if( variable.constexpr_value == LLVMValueRef::Null )
+	{
+		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope_ptr, variable_declaration.src_loc )
+	}
+	if( variable.is_mutable )
+	{
+		// Reset constexpr flag for mutable variable.
+		variable.constexpr_value = LLVMValueRef::Null;
+	}
 
 	// TODO - maybe clear here dummy global function?
 
@@ -1167,7 +1176,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 
 	var FunctionContext mut function_context= CreateGlobalFunctionContext();
 
-	var NamesScopeVariable mut variable;
+	var NamesScopeVariable mut variable{ .is_mutable = auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable };
 
 	var Variable expr= BuildExpressionCodeEnsureVariable( names_scope_ptr, function_context, auto_variable_declaration.initializer_expression );
 	variable.t= expr.t;
@@ -1181,9 +1190,11 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 		REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope_ptr, auto_variable_declaration.src_loc )
 		return;
 	}
-	if( auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable )
+
+	// Disable global mutable references because of problems with initializers and references protection.
+	if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference && variable.is_mutable )
 	{
-		REPORT_ERROR( GlobalVariableMustBeConstexpr, names_scope_ptr, auto_variable_declaration.src_loc, auto_variable_declaration.name )
+		REPORT_ERROR( MutableGlobalReferencesAreNotAllowed, names_scope_ptr, auto_variable_declaration.src_loc )
 		return;
 	}
 
@@ -1198,7 +1209,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 	{
 		if( expr.value_type == ValueType::Value )
 		{
-			REPORT_ERROR( ExpectedReferenceValue,  names_scope_ptr, auto_variable_declaration.src_loc )
+			REPORT_ERROR( ExpectedReferenceValue, names_scope_ptr, auto_variable_declaration.src_loc )
 			return;
 		}
 
@@ -1207,16 +1218,19 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 	else if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 	{
 		auto name_mangled= mangler_.MangleGlobalVariable( names_scope_ptr.lock_imut().get_ref(), auto_variable_declaration.name );
-		variable.llvm_value= AddGlobalConstantVariable( name_mangled, variable.t.GetLLVMType(), expr.constexpr_value );
+		variable.llvm_value= select( variable.is_mutable
+			? AddGlobalMutableVariable( name_mangled, variable.t.GetLLVMType() )
+			: AddGlobalConstantVariable( name_mangled, variable.t.GetLLVMType(), expr.constexpr_value ) );
 
-		if( !expr.t.IsCopyConstructible() )
-		{
-			REPORT_ERROR( OperationNotSupportedForThisType, names_scope_ptr, auto_variable_declaration.src_loc, variable.t )
-		}
-
-		BuildCopyConstructorPart( names_scope_ptr, function_context, variable.llvm_value, expr.llvm_value, variable.t, auto_variable_declaration.src_loc );
+		unsafe{  LLVMSetInitializer( variable.llvm_value, expr.constexpr_value );  }
 	}
 	else { halt; }
+
+	if( variable.is_mutable )
+	{
+		// Reset constexpr flag for mutable variables.
+		variable.constexpr_value = LLVMValueRef::Null;
+	}
 
 	// Finally, set result variable.
 	auto mut lock= global_auto_variable_ptr.lock_mut();

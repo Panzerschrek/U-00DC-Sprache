@@ -1983,6 +1983,27 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalConstantVariable(
 	return val;
 }
 
+llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable( const Type& type, const std::string& mangled_name )
+{
+	// Use external linkage and comdat for global mutable variables to guarantee address uniqueness.
+	const auto var=
+		new llvm::GlobalVariable(
+			*module_,
+			type.GetLLVMType(),
+			false, // is constant
+			llvm::GlobalValue::ExternalLinkage,
+			nullptr,
+			mangled_name );
+
+	llvm::Comdat* const comdat= module_->getOrInsertComdat( var->getName() );
+	comdat->setSelectionKind( llvm::Comdat::Any );
+	var->setComdat( comdat );
+
+	var->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
+
+	return var;
+}
+
 void CodeBuilder::SetupGeneratedFunctionAttributes( llvm::Function& function )
 {
 	// Merge functions with identical code.

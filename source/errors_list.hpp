@@ -28,6 +28,7 @@ PROCESS_ERROR( ExpectedInitializer, "Expected initializer or constructor for \"{
 PROCESS_ERROR( ExpectedReferenceValue, "Expected reference value." )
 PROCESS_ERROR( BindingConstReferenceToNonconstReference, "Binding constant reference to non-constant reference." )
 PROCESS_ERROR( ExpectedVariable, "Expected variable, got \"{0}\"." )
+PROCESS_ERROR( MutableGlobalReferencesAreNotAllowed, "Mutable global references are not allowed." )
 
 PROCESS_ERROR( InvalidFunctionArgumentCount, "Invalid function argument count. Required {0}, got {1}." )
 PROCESS_ERROR( CouldNotOverloadFunction, "Could not overload function." )
@@ -85,7 +86,6 @@ PROCESS_ERROR( InitializerForBaseClassField, "Initializer for \"{0}\", which is 
 PROCESS_ERROR( DuplicatedStructMemberInitializer, "Duplicated initializer for \"{0}\"." )
 PROCESS_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, "This kind of initializer disabled for this class, because it have explicit noncopy constructor(s)." )
 PROCESS_ERROR( InvalidTypeForAutoVariable, "Invalid type for auto variable: \"{0}\"." )
-PROCESS_ERROR( GlobalVariableMustBeConstexpr, "Global variable \"{0}\" must be constexpr." )
 
 // Constructors errors
 PROCESS_ERROR( ConstructorOrDestructorOutsideClass, "Constructor or destructor outside class." )
@@ -192,6 +192,7 @@ PROCESS_ERROR( ExplicitAccessToThisMethodIsUnsafe, "Explicit access to method \"
 PROCESS_ERROR( UnsafeReferenceCastOutsideUnsafeBlock, "Unsafe reference cast outside unsafe block." )
 PROCESS_ERROR( MutableReferenceCastOutsideUnsafeBlock, "Mutable reference cast outside unsafe block." )
 PROCESS_ERROR( UninitializedInitializerOutsideUnsafeBlock, "Unsafe initializer outside unsafe block." )
+PROCESS_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, "Accessing global mutable variable outside unsafe block." )
 
 // Raw pointers
 PROCESS_ERROR( ValueIsNotReference, "Value is not a reference. Expected mutable or immutable reference, got immediate value." )

@@ -747,6 +747,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	{
 		if( variable->node != nullptr && function_context.variables_state.NodeMoved( variable->node ) )
 			REPORT_ERROR( AccessingMovedVariable, names.GetErrors(), named_operand.src_loc_, variable->node->name );
+
+		// Forbid mutable global variables access outside unsafe block.
+		// Detect global variable by checking dynamic type of variable's LLVM value.
+		// TODO - what if variable is constant GEP result with global variable base?
+		if( variable->value_type == ValueType::ReferenceMut &&
+			llvm::dyn_cast<llvm::GlobalVariable>( variable->llvm_value ) != nullptr &&
+			!function_context.is_in_unsafe_block )
+			REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names.GetErrors(), named_operand.src_loc_ );
 	}
 
 	return value_entry;

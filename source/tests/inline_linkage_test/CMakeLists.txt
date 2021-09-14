@@ -8,3 +8,6 @@ CompileUSources( "${INLINE_LINKAGE_SOURCES}" INLINE_LINKAGE_OBJECTS )
 
 add_executable( InlineLinkageTest${CURRENT_COMPILER_GENERATION} ../dummy.cpp ${INLINE_LINKAGE_SOURCES} ${INLINE_LINKAGE_OBJECTS} )
 add_dependencies( InlineLinkageTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
+
+# Run inline linkage test
+add_custom_command( TARGET InlineLinkageTest${CURRENT_COMPILER_GENERATION} POST_BUILD COMMAND InlineLinkageTest${CURRENT_COMPILER_GENERATION} )
