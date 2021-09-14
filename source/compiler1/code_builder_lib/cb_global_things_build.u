@@ -1090,7 +1090,10 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 			variable.constexpr_value= BuildInitializer( names_scope_ptr, function_context, variable, variable_declaration.initializer );
 		}
 
-		unsafe{  LLVMSetInitializer( variable.llvm_value, variable.constexpr_value );  }
+		if( variable.constexpr_value != LLVMValueRef::Null ) // May be in case of error.
+		{
+			unsafe{  LLVMSetInitializer( variable.llvm_value, variable.constexpr_value );  }
+		}
 	}
 	else if( variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
 	{
@@ -1148,6 +1151,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 	if( variable.constexpr_value == LLVMValueRef::Null )
 	{
 		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope_ptr, variable_declaration.src_loc )
+		return;
 	}
 	if( variable.is_mutable )
 	{
