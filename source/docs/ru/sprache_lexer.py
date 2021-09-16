@@ -104,7 +104,7 @@ class SpracheLexer(RegexLexer):
 			(r'[a-zA-Z][a-zA-Z_0-9]*', token.Name),
 			# Other lexems
 			(r'(\()|(\)|(\[)|(\])|(\{)|(\}))', token.Punctuation),
-			(r'[,.:;?=+\-*/%<>&|\^~!\']', token.Operator),
+			(r'[,.:;?=+\-*/%<>&|\^~!\'\$]', token.Operator),
 			(r'(</)|(/>)|(::)|(\+\+)|(--)|(==)|(!=)|(<=)|(>=)|(&&)|(\|\|)|(\+=)|(-=)|(\*=)|(/=)|(%=)|(&=)|(\|=)|(\^=)|(<<)|(>>)|(<-)|(->)', token.Operator),
 			(r'(<<=)|(>>=)|(\.\.\.)', token.Operator),
 		]
