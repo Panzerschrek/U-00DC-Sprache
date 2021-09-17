@@ -34,5 +34,6 @@
    reference_casting
    typeinfo
    unsafe
+   macros
    modules
    c_interaction
