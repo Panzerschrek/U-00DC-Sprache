@@ -11,6 +11,7 @@
    fundametal_types_operations
    enums
    function_pointers
+   raw_pointers
    numeric_literals
    string_literals
    namespaces
@@ -33,5 +34,6 @@
    reference_casting
    typeinfo
    unsafe
+   macros
    modules
    c_interaction
