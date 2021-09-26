@@ -59,7 +59,7 @@ private:
 	void ReportConstantsStackOverflow();
 
 private:
-	using InstructionsMap= std::unordered_map< const llvm::Value*, llvm::GenericValue >;
+	using InstructionsMap= llvm::DenseMap< const llvm::Value*, llvm::GenericValue >;
 
 	const llvm::DataLayout data_layout_;
 
@@ -67,7 +67,7 @@ private:
 	std::vector<unsigned char> stack_;
 	std::vector<unsigned char> constants_stack_;
 
-	std::unordered_map<const llvm::Constant*, size_t> external_constant_mapping_;
+	llvm::DenseMap<const llvm::Constant*, size_t> external_constant_mapping_;
 
 	std::vector<std::string> errors_;
 };
