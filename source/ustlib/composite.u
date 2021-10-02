@@ -5,7 +5,7 @@ namespace ust
 // make_tuple overloads
 //
 
-fn make_tuple() : tup[]
+fn constexpr make_tuple() : tup[]
 {
 	var tup[] mut t;
 	return move(t);
