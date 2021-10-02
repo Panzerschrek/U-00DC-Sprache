@@ -78,7 +78,7 @@ fn nomangle main() : i32
 		halt if(t[3] != 7u16);
 		halt if(t[4] != 8u32);
 		halt if(t[5] != 9u64);
-	//	halt if(t[6] != 10u128);
+		halt if(t[6] != 10u128);
 		halt if(t[7] != true);
 	}
 	{ // make_tuple for non-copyable type.
