@@ -1,0 +1,115 @@
+//##success_test
+import "../ustlib/composite.u"
+import "../ustlib/string.u"
+
+class NonCopyable
+{
+public:
+	fn constructor(i32 x) (x_= x) {}
+	fn GetX(this) : i32 { return x_; }
+
+private:
+	i32 x_;
+}
+
+fn nomangle main() : i32
+{
+	//
+	// make_tuple test
+	//
+
+	{ // 0 elements
+		var tup[] t = ust::make_tuple();
+	}
+	{ // 1 element
+		var tup[i32] t = ust::make_tuple(765i32);
+		halt if(t[0] != 765);
+	}
+	{ // 2 elements
+		var tup[u64, f32] t = ust::make_tuple(98u64, 0.25f);
+		halt if(t[0] != 98u64);
+		halt if(t[1] != 0.25f);
+	}
+	{ // 3 elements
+		var tup[u32, bool, f64] t = ust::make_tuple(55u, false, 354.1);
+		halt if(t[0] != 55u);
+		halt if(t[1] != false);
+		halt if(t[2] != 354.1);
+	}
+	{ // 4 elements
+		var tup[f32, i16, char8, tup[]] t = ust::make_tuple(0.001f, 546i16, "G"c8, ust::make_tuple());
+		halt if(t[0] != 0.001f);
+		halt if(t[1] != 546i16);
+		halt if(t[2] != "G"c8);
+		//halt if(t[3] != ust::make_tuple());
+	}
+	{ // 5 elements
+		var tup[tup[f32], bool, bool, f64, i32] t = ust::make_tuple(ust::make_tuple(15.0f), false, true, 55.5, 315263);
+		halt if(t[0][0] != ust::make_tuple(15.0f)[0]);
+		halt if(t[1] != false);
+		halt if(t[2] != true);
+		halt if(t[3] != 55.5);
+		halt if(t[4] != 315263);
+	}
+	{ // 6 elements
+		var tup[i8, u8, i16, u16, i32, u32] t = ust::make_tuple(0i8, 1u8, 2i16, 3u16, 4i32, 5u32);
+		halt if(t[0] != 0i8);
+		halt if(t[1] != 1u8);
+		halt if(t[2] != 2i16);
+		halt if(t[3] != 3u16);
+		halt if(t[4] != 4i32);
+		halt if(t[5] != 5u32);
+	}
+	{ // 7 elements
+		var tup[char8, char16, char32, bool, f32, f64, void] t = ust::make_tuple("Q"c8, "W"c16, "E"c32, true, -34.4f, 34.4, void());
+		halt if(t[0] != "Q"c8);
+		halt if(t[1] != "W"c16);
+		halt if(t[2] != "E"c32);
+		halt if(t[3] != true);
+		halt if(t[4] != -34.4f);
+		halt if(t[5] != 34.4);
+		halt if(t[6] != void());
+	}
+	{ // 8 elements
+		var tup[void, char8, u8, u16, u32, u64, u128, bool] t = ust::make_tuple(void(), "~"c8, 6u8, 7u16, 8u32, 9u64, 10u128, true);
+		halt if(t[0] != void());
+		halt if(t[1] != "~"c8);
+		halt if(t[2] != 6u8);
+		halt if(t[3] != 7u16);
+		halt if(t[4] != 8u32);
+		halt if(t[5] != 9u64);
+	//	halt if(t[6] != 10u128);
+		halt if(t[7] != true);
+	}
+	{ // make_tuple for non-copyable type.
+		var tup[NonCopyable] t= ust::make_tuple(NonCopyable(66));
+		halt if(t[0].GetX() != 66);
+	}
+	{ // make_tuple for non-copyable type.
+		var tup[NonCopyable, NonCopyable] t= ust::make_tuple(NonCopyable(11), NonCopyable(22));
+		halt if(t[0].GetX() != 11);
+		halt if(t[1].GetX() != 22);
+	}
+	{ // make_tuple for non-copyable type.
+		var tup[NonCopyable, NonCopyable, NonCopyable] t= ust::make_tuple(NonCopyable(-11), NonCopyable(-22), NonCopyable(-33));
+		halt if(t[0].GetX() != -11);
+		halt if(t[1].GetX() != -22);
+		halt if(t[2].GetX() != -33);
+	}
+	{ // make_tuple for non-copyable type.
+		var tup[void, char8, u8, u16, u32, u64, NonCopyable, bool] t = ust::make_tuple(void(), "~"c8, 6u8, 8u16, 8u32, 9u64, NonCopyable(123), false);
+		halt if(t[6].GetX() != 123);
+	}
+	{ // make_tuple for string class
+		var tup[u32, ust::string8] t = ust::make_tuple(66u, ust::string8("fgbww6!"));
+		halt if(t[0] != 66u);
+		halt if(t[1] != "fgbww6!");
+	}
+	{ // make_tuple for arrays
+		var tup[[char8, 4], [char8, 7]] t = ust::make_tuple("1234", "ABCDEF!");
+		halt if(t[0] != ust::string8("1234"));
+		halt if(t[1] != ust::string8("ABCDEF!"));
+	}
+
+	return 0;
+}

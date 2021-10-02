@@ -1,0 +1,70 @@
+namespace ust
+{
+
+//
+// make_tuple overloads
+//
+
+fn make_tuple() : tup[]
+{
+	var tup[] mut t;
+	return move(t);
+}
+
+template</type A/>
+fn make_tuple(A mut a) : tup[A]
+{
+	var tup[A] mut t[move(a)];
+	return move(t);
+}
+
+template</type A, type B/>
+fn make_tuple(A mut a, B mut b) : tup[A, B]
+{
+	var tup[A, B] mut t[move(a), move(b)];
+	return move(t);
+}
+
+template</type A, type B, type C/>
+fn make_tuple(A mut a, B mut b, C mut c) : tup[A, B, C]
+{
+	var tup[A, B, C] mut t[move(a), move(b), move(c)];
+	return move(t);
+}
+
+template</type A, type B, type C, type D/>
+fn make_tuple(A mut a, B mut b, C mut c, D mut d) : tup[A, B, C, D]
+{
+	var tup[A, B, C, D] mut t[move(a), move(b), move(c), move(d)];
+	return move(t);
+}
+
+template</type A, type B, type C, type D, type E/>
+fn make_tuple(A mut a, B mut b, C mut c, D mut d, E mut e) : tup[A, B, C, D, E]
+{
+	var tup[A, B, C, D, E] mut t[move(a), move(b), move(c), move(d), move(e)];
+	return move(t);
+}
+
+template</type A, type B, type C, type D, type E, type F/>
+fn make_tuple(A mut a, B mut b, C mut c, D mut d, E mut e, F mut f) : tup[A, B, C, D, E, F]
+{
+	var tup[A, B, C, D, E, F] mut t[move(a), move(b), move(c), move(d), move(e), move(f)];
+	return move(t);
+}
+
+template</type A, type B, type C, type D, type E, type F, type G/>
+fn make_tuple(A mut a, B mut b, C mut c, D mut d, E mut e, F mut f, G mut g) : tup[A, B, C, D, E, F, G]
+{
+	var tup[A, B, C, D, E, F, G] mut t[move(a), move(b), move(c), move(d), move(e), move(f), move(g)];
+	return move(t);
+}
+
+template</type A, type B, type C, type D, type E, type F, type G, type H/>
+fn make_tuple(A mut a, B mut b, C mut c, D mut d, E mut e, F mut f, G mut g, H mut h) : tup[A, B, C, D, E, F, G, H]
+{
+	var tup[A, B, C, D, E, F, G, H] mut t[move(a), move(b), move(c), move(d), move(e), move(f), move(g), move(h)];
+	return move(t);
+}
+
+} // namespace ust
