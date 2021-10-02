@@ -2,6 +2,73 @@ namespace ust
 {
 
 //
+// make_array overloads
+//
+
+template</type T/>
+fn make_array() : [T,0]
+{
+	var [T, 0] mut arr[];
+	return move(arr);
+}
+
+template</type T/>
+fn make_array(T mut a) : [T, 1]
+{
+	var [T, 1] mut arr[move(a)];
+	return move(arr);
+}
+
+template</type T/>
+fn make_array(T mut a, T mut b) : [T, 2]
+{
+	var [T, 2] mut arr[move(a), move(b)];
+	return move(arr);
+}
+
+template</type T/>
+fn make_array(T mut a, T mut b, T mut c) : [T, 3]
+{
+	var [T, 3] mut arr[move(a), move(b), move(c)];
+	return move(arr);
+}
+
+template</type T/>
+fn make_array(T mut a, T mut b, T mut c, T mut d) : [T, 4]
+{
+	var [T, 4] mut arr[move(a), move(b), move(c), move(d)];
+	return move(arr);
+}
+
+template</type T/>
+fn make_array(T mut a, T mut b, T mut c, T mut d, T mut e) : [T, 5]
+{
+	var [T, 5] mut arr[move(a), move(b), move(c), move(d), move(e)];
+	return move(arr);
+}
+
+template</type T/>
+fn make_array(T mut a, T mut b, T mut c, T mut d, T mut e, T mut f) : [T, 6]
+{
+	var [T, 6] mut arr[move(a), move(b), move(c), move(d), move(e), move(f)];
+	return move(arr);
+}
+
+template</type T/>
+fn make_array(T mut a, T mut b, T mut c, T mut d, T mut e, T mut f, T mut g) : [T, 7]
+{
+	var [T, 7] mut arr[move(a), move(b), move(c), move(d), move(e), move(f), move(g)];
+	return move(arr);
+}
+
+template</type T/>
+fn make_array(T mut a, T mut b, T mut c, T mut d, T mut e, T mut f, T mut g, T mut h) : [T, 8]
+{
+	var [T, 8] mut arr[move(a), move(b), move(c), move(d), move(e), move(f), move(g), move(h)];
+	return move(arr);
+}
+
+//
 // make_tuple overloads
 //
 

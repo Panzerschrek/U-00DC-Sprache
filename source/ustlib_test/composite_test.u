@@ -15,6 +15,99 @@ private:
 fn nomangle main() : i32
 {
 	//
+	// make_array test
+	//
+
+	{ // 0 elements
+		var [bool, 0] constexpr arr = ust::make_array</bool/>();
+	}
+	{ // 0 elements
+		var [f64, 0] constexpr arr = ust::make_array</f64/>();
+	}
+	{ // 1 element
+		var [i32, 1] constexpr arr = ust::make_array(524);
+		halt if(arr[0] != 524);
+	}
+	{ // 2 elements
+		var [f32, 2] constexpr arr = ust::make_array(45.3f, 66.7f);
+		halt if(arr[0] != 45.3f);
+		halt if(arr[1] != 66.7f);
+	}
+	{ // 3 elements
+		var [u32, 3] constexpr arr = ust::make_array(888u, 999u, 222u);
+		halt if(arr[0] != 888u);
+		halt if(arr[1] != 999u);
+		halt if(arr[2] != 222u);
+	}
+	{ // 4 elements
+		var [char8, 4] constexpr arr = ust::make_array("S"c8, "P"c8, "Q"c8, "R"c8);
+		halt if(arr[0] != "S"c8);
+		halt if(arr[1] != "P"c8);
+		halt if(arr[2] != "Q"c8);
+		halt if(arr[3] != "R"c8);
+	}
+	{ // 5 elements
+		var [i32, 5] constexpr arr = ust::make_array(1, 2, 3, 4, 5);
+		halt if(arr[0] != 1);
+		halt if(arr[1] != 2);
+		halt if(arr[2] != 3);
+		halt if(arr[3] != 4);
+		halt if(arr[4] != 5);
+	}
+	{ // 6 elements
+		var [bool, 6] constexpr arr = ust::make_array(true, true, false, true, false, false);
+		halt if(arr[0] != true);
+		halt if(arr[1] != true);
+		halt if(arr[2] != false);
+		halt if(arr[3] != true);
+		halt if(arr[4] != false);
+		halt if(arr[5] != false);
+	}
+	{ // 7 elements
+		var [f32, 7] constexpr arr = ust::make_array(0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f);
+		halt if(arr[0] != 0.0f);
+		halt if(arr[1] != 1.0f);
+		halt if(arr[2] != 2.0f);
+		halt if(arr[3] != 3.0f);
+		halt if(arr[4] != 4.0f);
+		halt if(arr[5] != 5.0f);
+		halt if(arr[6] != 6.0f);
+	}
+	{ // 8 elements
+		var [u64, 8] constexpr arr = ust::make_array(7u64, 6u64, 5u64, 4u64, 3u64, 2u64, 1u64, 0u64);
+		halt if(arr[0] != 7u64);
+		halt if(arr[1] != 6u64);
+		halt if(arr[2] != 5u64);
+		halt if(arr[3] != 4u64);
+		halt if(arr[4] != 3u64);
+		halt if(arr[5] != 2u64);
+		halt if(arr[6] != 1u64);
+		halt if(arr[7] != 0u64);
+	}
+	{ // make_array for non-copyable type.
+		var [NonCopyable, 2] arr = ust::make_array(NonCopyable(11), NonCopyable(22));
+		halt if(arr[0].GetX() != 11);
+		halt if(arr[1].GetX() != 22);
+	}
+	{ // make_array for string class.
+		var [ust::string8, 3] arr = ust::make_array(ust::string8("Quick"), ust::string8("Brown"), ust::string8("Fox"));
+		halt if(arr[0] != "Quick");
+		halt if(arr[1] != "Brown");
+		halt if(arr[2] != "Fox");
+	}
+	{ // make_array with implicit type.
+		var [ust::string8, 3] arr = ust::make_array</ust::string8/>("Jumps", "Over", "The");
+		halt if(arr[0] != "Jumps");
+		halt if(arr[1] != "Over");
+		halt if(arr[2] != "The");
+	}
+	{ // make_array for arrays.
+		var [[char8, 4], 2] constexpr arr = ust::make_array("ABCD", "0123");
+		halt if(arr[0] != ust::string8("ABCD"));
+		halt if(arr[1] != ust::string8("0123"));
+	}
+
+	//
 	// make_tuple test
 	//
 
@@ -109,6 +202,24 @@ fn nomangle main() : i32
 		var tup[[char8, 4], [char8, 7]] constexpr t = ust::make_tuple("1234", "ABCDEF!");
 		halt if(t[0] != ust::string8("1234"));
 		halt if(t[1] != ust::string8("ABCDEF!"));
+	}
+
+	{ // Make array of tuples
+		var [ tup[f32, bool], 3 ] constexpr arr= ust::make_array(ust::make_tuple(0.25f, true), ust::make_tuple(1.25f, false), ust::make_tuple(77.8f, true));
+		halt if(arr[0][0] != 0.25f);
+		halt if(arr[0][1] != true);
+		halt if(arr[1][0] != 1.25f);
+		halt if(arr[1][1] != false);
+		halt if(arr[2][0] != 77.8f);
+		halt if(arr[2][1] != true);
+	}
+	{ // Make tuple of arrays
+		var tup[ [i32, 2], [u64, 3] ] constexpr t= ust::make_tuple(ust::make_array(6, 9), ust::make_array(6u64, 88u64, 123u64));
+		halt if(t[0][0] != 6);
+		halt if(t[0][1] != 9);
+		halt if(t[1][0] != 6u64);
+		halt if(t[1][1] != 88u64);
+		halt if(t[1][2] != 123u64);
 	}
 
 	return 0;
