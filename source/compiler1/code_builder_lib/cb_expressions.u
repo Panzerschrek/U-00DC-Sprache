@@ -887,8 +887,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	if( !variable.t.GetClassType().empty() )
 	{
 		// Try to call overloaded [] operator for class.
-		var [ ust::shared_ptr_final</Synt::Expression/>, 1 ] synt_args[ indexation_operator.index ];
-		if_var( &mut res : TryCallOverloadedPostfixOperator( names_scope, function_context, OverloadedOperator::Indexing, variable, synt_args, indexation_operator.src_loc ) )
+		if_var( &mut res : TryCallOverloadedPostfixOperator( names_scope, function_context, OverloadedOperator::Indexing, variable, ust::make_array(indexation_operator.index), indexation_operator.src_loc ) )
 		{
 			return take(res);
 		}
@@ -2253,7 +2252,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 	ArgsEvaluationOrder args_evaluation_order,
 	SrcLoc& src_loc ) : ust::optional</Value/>
 {
-	var [ ust::shared_ptr_final</Synt::Expression/>, 2 ] in_args[ arg_l, arg_r ];
+	auto in_args= ust::make_array( arg_l, arg_r );
 
 	var ust::vector</VariableTypeExtened/> mut args;
 
@@ -2691,12 +2690,11 @@ fn CodeBuilder::DoCallFunction(
 					var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 					auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
-					var [ Variable, 2 ] constructor_args[ arg_converted, arg ];
 					DoCallFunction(
 						names_scope,
 						function_context,
 						conversion_constructor_,
-						constructor_args,
+						ust::make_array( arg_converted, arg ),
 						ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
 						ArgsEvaluationOrder::Direct,
 						src_loc );

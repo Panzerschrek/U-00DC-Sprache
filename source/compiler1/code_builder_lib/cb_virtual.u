@@ -591,8 +591,7 @@ fn CodeBuilder::TryFetchVirtualFunction(
 	}
 	if( function.virtual_table_index == ~0u )
 	{
-		var tup[ Variable, LLVMValueRef ] mut res[ this_casted, function.llvm_function ];
-		return move(res);
+		return ust::make_tuple(move(this_casted), function.llvm_function);
 	}
 
 	auto class_type_ptr= this_casted.t.GetClassType().get_ref();
@@ -735,8 +734,7 @@ fn CodeBuilder::TryFetchVirtualFunction(
 			this_casted.llvm_value= LLVMBuildIntToPtr( function_context.llvm_ir_builder, this_sub_offset, LLVMPointerType( this_casted.t.GetLLVMType(), 0u ), "\0"[0] );
 		}
 
-		var tup[ Variable, LLVMValueRef ] mut res[ this_casted, function_ptr ];
-		return move(res);
+		return ust::make_tuple(move(this_casted), function_ptr);
 	}
 }
 

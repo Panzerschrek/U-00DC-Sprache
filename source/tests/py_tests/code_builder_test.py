@@ -262,6 +262,36 @@ def Int128_Test0():
 	assert( call_result == ( 1 * (-8) ) + int( 8657 / 12 ) )
 
 
+def Int128_Test1():
+	c_program_text= """
+	fn constexpr I128Add( i128 x, i128 y ) : i128
+	{
+		return x + y;
+	}
+	fn constexpr I128Mul( i128 x, i128 y ) : i128
+	{
+		return x * y;
+	}
+	fn constexpr I128Div( i128 x, i128 y ) : i128
+	{
+		return x / y;
+	}
+	fn constexpr I128Rem( i128 x, i128 y ) : i128
+	{
+		return x % y;
+	}
+
+	fn Foo() : i32
+	{
+		var i128 x(1), y(-8), z(8657), w(12), f= 1000000000i128;
+		return i32( I128Rem( I128Add( I128Mul(x, y), I128Div(z, w) ), f ) );
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ( 1 * (-8) ) + int( 8657 / 12 ) )
+
+
 def Comments_Test0():
 	c_program_text= """
 	fn Foo() : i32

@@ -271,8 +271,11 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 	}
 	else if( constant_type->isIntegerTy() )
 	{
-		const uint64_t val= constant.getUniqueInteger().getLimitedValue();
-		std::memcpy( constants_stack_.data() + stack_offset, &val, size_t(data_layout_.getTypeAllocSize( constant_type )) );
+		// TODO - check big-endian/little-endian correctness.
+		const llvm::APInt val = constant.getUniqueInteger();
+		if( val.getBitWidth() <= 64 || val.getBitWidth() % 64u == 0 )
+			std::memcpy( constants_stack_.data() + stack_offset, val.getRawData(), size_t(data_layout_.getTypeAllocSize( constant_type )) );
+		else U_ASSERT(false);
 	}
 	else if( constant_type->isFloatTy() )
 	{
@@ -298,9 +301,21 @@ llvm::Constant* ConstexprFunctionEvaluator::ReadConstantFromStack( llvm::Type* c
 {
 	if( const auto integer_type= llvm::dyn_cast<llvm::IntegerType>(type) )
 	{
-		uint64_t val; // TODO - check big-endian/little-endian correctness.
-		std::memcpy( &val, stack_.data() + value_ptr, sizeof(val) );
-		return llvm::Constant::getIntegerValue( type, llvm::APInt( integer_type->getBitWidth(), val ) );
+		if( integer_type->getBitWidth() <= 64u )
+		{
+			uint64_t val; // TODO - check big-endian/little-endian correctness.
+			std::memcpy( &val, stack_.data() + value_ptr, sizeof(val) );
+			return llvm::Constant::getIntegerValue( type, llvm::APInt( integer_type->getBitWidth(), val ) );
+		}
+		else if ( integer_type->getBitWidth() % 64u == 0u )
+			return
+				llvm::Constant::getIntegerValue(
+					type,
+					llvm::APInt(
+						static_cast<unsigned int>(integer_type->getBitWidth()),
+						static_cast<unsigned int>(integer_type->getBitWidth() / sizeof(uint64_t)),
+						reinterpret_cast<uint64_t*>(stack_.data() + value_ptr) ) );
+		else U_ASSERT(false);
 	}
 	else if( type->isFloatTy() )
 	{
@@ -528,8 +543,17 @@ void ConstexprFunctionEvaluator::ProcessStore( const llvm::Instruction* const in
 	llvm::Type* const element_type= llvm::dyn_cast<llvm::PointerType>(address->getType())->getElementType();
 	if( element_type->isIntegerTy() )
 	{
-		const uint64_t limited_value= val.IntVal.getLimitedValue();
-		std::memcpy( data_ptr, &limited_value, size_t(data_layout_.getTypeStoreSize( element_type )) );
+		if( element_type->getIntegerBitWidth() <= 64 )
+		{
+			const uint64_t limited_value= val.IntVal.getLimitedValue();
+			std::memcpy( data_ptr, &limited_value, size_t(data_layout_.getTypeStoreSize( element_type )) );
+		}
+		else if( element_type->getIntegerBitWidth() % 64u == 0 )
+			std::memcpy( data_ptr, val.IntVal.getRawData(), element_type->getIntegerBitWidth() / 8u );
+		else
+		{
+			U_ASSERT(false); // Not implemented yet.
+		}
 	}
 	else if( element_type->isFloatTy() )
 		std::memcpy( data_ptr, &val.FloatVal, size_t(data_layout_.getTypeAllocSize( element_type )) );
