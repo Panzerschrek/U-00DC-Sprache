@@ -1277,8 +1277,7 @@ Type CodeBuilder::BuildFuncCode(
 				param.type.GetFunctionPointerType() != nullptr )
 			{
 				// Move parameters to stack for assignment possibility.
-				var.llvm_value= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
-				var.llvm_value->setName( arg_name );
+				var.llvm_value= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType(), nullptr, arg_name );
 				CreateLifetimeStart( var, function_context );
 
 				if( param.type != void_type_ )
@@ -1287,7 +1286,7 @@ Type CodeBuilder::BuildFuncCode(
 			else if( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr )
 			{
 				// Composite types use llvm-pointers.
-				var.location= Variable::Location::Pointer;
+				var.llvm_value = &llvm_arg;
 			}
 			else U_ASSERT(false);
 
