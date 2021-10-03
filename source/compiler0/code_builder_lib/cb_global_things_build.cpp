@@ -1154,18 +1154,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			// Copy constructor for constexpr type is trivial, so, we can just take constexpr value of source.
 			variable.constexpr_value= initializer_experrsion.constexpr_value;
 
-			if( initializer_experrsion.value_type == ValueType::Value )
-			{
-				CopyBytes( initializer_experrsion.llvm_value, variable.llvm_value, variable.type, function_context );
-				variable.constexpr_value= initializer_experrsion.constexpr_value; // Move can preserve constexpr.
-			}
-			else
-				BuildCopyConstructorPart(
-					variable.llvm_value, initializer_experrsion.llvm_value,
-					variable.type,
-					function_context );
-
-			if( global_variable != nullptr && variable.constexpr_value != nullptr )
+			if( variable.constexpr_value != nullptr )
 				global_variable->setInitializer( variable.constexpr_value );
 		}
 		else U_ASSERT(false);
