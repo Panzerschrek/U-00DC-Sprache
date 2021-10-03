@@ -296,7 +296,16 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( !variable.type.CanBeConstexpr() )
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
-		variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType(), nullptr, auto_variable_declaration.name );
+		if( initializer_experrsion.value_type == ValueType::Value &&
+			llvm::dyn_cast<llvm::AllocaInst>(initializer_experrsion.llvm_value) != nullptr &&
+			initializer_experrsion.llvm_value->getType() == variable.type.GetLLVMType()->getPointerTo() )
+		{
+			// Just reuse "alloca" instruction for move-initialization, avoid copying value into new memory location.
+			variable.llvm_value= initializer_experrsion.llvm_value;
+			variable.llvm_value->setName( auto_variable_declaration.name );
+		}
+		else
+			variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType(), nullptr, auto_variable_declaration.name );
 
 		CreateVariableDebugInfo( variable, auto_variable_declaration.name, auto_variable_declaration.src_loc_, function_context );
 
@@ -313,7 +322,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				function_context.variables_state.MoveNode( variable_for_move );
 			}
 
-			CopyBytes( initializer_experrsion.llvm_value, variable.llvm_value, variable.type, function_context );
+			if( initializer_experrsion.llvm_value != variable.llvm_value )
+				CopyBytes( initializer_experrsion.llvm_value, variable.llvm_value, variable.type, function_context );
 		}
 		else
 		{
@@ -1031,7 +1041,16 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( !variable.type.CanBeConstexpr() )
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
-		variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType(), nullptr, with_operator.variable_name_ );
+		if( expr.value_type == ValueType::Value &&
+			llvm::dyn_cast<llvm::AllocaInst>(expr.llvm_value) != nullptr &&
+			expr.llvm_value->getType() == variable.type.GetLLVMType()->getPointerTo() )
+		{
+			// Just reuse "alloca" instruction for move-initialization, avoid copying value into new memory location.
+			variable.llvm_value= expr.llvm_value;
+			variable.llvm_value->setName( with_operator.variable_name_ );
+		}
+		else
+			variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType(), nullptr, with_operator.variable_name_ );
 
 		CreateVariableDebugInfo( variable, with_operator.variable_name_, with_operator.src_loc_, function_context );
 
@@ -1046,7 +1065,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				function_context.variables_state.MoveNode( variable_for_move );
 			}
 
-			CopyBytes( expr.llvm_value, variable.llvm_value, variable.type, function_context );
+			if( variable.llvm_value != expr.llvm_value )
+				CopyBytes( expr.llvm_value, variable.llvm_value, variable.type, function_context );
 		}
 		else
 		{
