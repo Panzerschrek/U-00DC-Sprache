@@ -1,0 +1,12 @@
+// Shared library functions.
+fn nomangle SomeUnmangledFunction() : i32;
+fn SomeMangledFunction(f32 x) : u32;
+
+fn nomangle main() : i32
+{
+	halt if(SomeUnmangledFunction() != 123098);
+	halt if(SomeMangledFunction(33.1f) != 33u);
+	halt if(SomeMangledFunction(1234.9f) != 1234u);
+
+	return 0;
+}

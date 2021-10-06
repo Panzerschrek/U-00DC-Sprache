@@ -1,0 +1,9 @@
+fn nomangle SomeUnmangledFunction() : i32
+{
+	return 123098;
+}
+
+fn SomeMangledFunction(f32 x) : u32
+{
+	return u32(x);
+}
