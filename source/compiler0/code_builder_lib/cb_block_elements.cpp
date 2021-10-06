@@ -508,7 +508,18 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			{
 				if( expression_result.node != nullptr )
 					function_context.variables_state.MoveNode( expression_result.node );
-				CopyBytes( expression_result.llvm_value, function_context.s_ret_, *function_context.return_type, function_context );
+
+				// Perform optimization for move-returning.
+				// Allocate returend variable in place of "s_ret".
+				// We can't apply this optimization for more than one allocation since we can't analyze lifetime of different allocations.
+				if( llvm::dyn_cast<llvm::AllocaInst>( expression_result.llvm_value ) != nullptr &&
+					(function_context.return_value_replaced_allocation == nullptr || function_context.return_value_replaced_allocation == expression_result.llvm_value ) )
+				{
+					expression_result.llvm_value->replaceAllUsesWith( function_context.s_ret_ );
+					function_context.return_value_replaced_allocation= expression_result.llvm_value;
+				}
+				else
+					CopyBytes( expression_result.llvm_value, function_context.s_ret_, *function_context.return_type, function_context );
 			}
 			else
 			{
