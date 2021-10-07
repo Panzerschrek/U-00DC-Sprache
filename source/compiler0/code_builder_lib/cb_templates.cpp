@@ -906,7 +906,7 @@ Value* CodeBuilder::FinishTemplateTypeGeneration(
 		U_ASSERT( template_parameters_space != nullptr );
 		return template_parameters_space->GetThisScopeValue( Class::c_template_class_name );
 	}
-	generated_template_things_storage_.emplace( name_encoded, Value( template_args_namespace, type_template.syntax_element->src_loc_ ) );
+	AddNewTemplateThing( name_encoded, Value( template_args_namespace, type_template.syntax_element->src_loc_ ) );
 
 	CreateTemplateErrorsContext(
 		arguments_names_scope.GetErrors(),
@@ -1123,7 +1123,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 		else
 			return nullptr; // May be in case of error or in case of "enable_if".
 	}
-	generated_template_things_storage_.emplace( name_encoded, Value( template_args_namespace, function_declaration.src_loc_ ) );
+	AddNewTemplateThing( std::move(name_encoded), Value( template_args_namespace, function_declaration.src_loc_ ) );
 
 	CreateTemplateErrorsContext( errors_container, src_loc, template_args_namespace, function_template, func_name, template_args );
 
@@ -1250,7 +1250,7 @@ Value* CodeBuilder::ParametrizeFunctionTemplate(
 		return nullptr;
 	}
 
-	return & generated_template_things_storage_.insert( std::make_pair( name_encoded, result ) ).first->second;
+	return AddNewTemplateThing( std::move(name_encoded), std::move(result) );
 }
 
 bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
@@ -1269,6 +1269,12 @@ bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
 	}
 
 	return false;
+}
+
+Value* CodeBuilder::AddNewTemplateThing( std::string key, Value thing )
+{
+	generated_template_things_sequence_.push_back( key );
+	return & generated_template_things_storage_.insert( std::make_pair( std::move(key), std::move(thing) ) ).first->second;
 }
 
 } // namespace U
