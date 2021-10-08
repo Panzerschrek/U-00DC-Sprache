@@ -74,6 +74,9 @@ bool FilterTest( const std::string& test_name )
 		"WithOperatorVariableMoveInitializationOptimization_Test1",
 		"MoveReturnVariableAllocationOptimization_Test0",
 		"MoveReturnVariableAllocationOptimization_Test1",
+		"MoveReturnVariableAllocationOptimization_Test2",
+		"MoveReturnVariableAllocationOptimization_Test3",
+		"ArgumentVariableAllocationOptimization_Test2",
 	};
 
 	return c_test_to_disable.count( test_name_without_file_name ) == 0;

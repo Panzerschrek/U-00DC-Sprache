@@ -211,6 +211,101 @@ U_TEST(MoveReturnVariableAllocationOptimization_Test1)
 	engine->runFunction( function, {} );
 }
 
+U_TEST(MoveReturnVariableAllocationOptimization_Test2)
+{
+	static const char c_program_text[]=
+	R"(
+	struct S
+		{
+			[ u64, 8 ] dummy;
+			$(S) self_ptr;
+			f32 payload;
+
+			fn constructor() ( dummy= zero_init, self_ptr= zero_init, payload= zero_init )
+			{
+				self_ptr= $<(this);
+			}
+		}
+		fn GetS(bool b) : S
+		{
+			// Allocation of result variable in "s_ret" here must be used in all return paths, because single variable used inside them.
+			var S mut s;
+			if(b)
+			{
+				return move(s);
+			}
+			s.payload= 1.0f;
+
+			return move(s);
+		}
+
+		fn Bar(bool b)
+		{
+			auto mut s= GetS(b);
+			halt if($<(s) != s.self_ptr);
+		}
+
+		fn Foo()
+		{
+			Bar(true);
+			Bar(false);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+}
+
+U_TEST(MoveReturnVariableAllocationOptimization_Test3)
+{
+	static const char c_program_text[]=
+	R"(
+	struct S
+		{
+			[ u64, 8 ] dummy;
+			$(S) self_ptr;
+			f32 payload;
+
+			fn constructor() ( dummy= zero_init, self_ptr= zero_init, payload= zero_init )
+			{
+				self_ptr= $<(this);
+			}
+		}
+		fn GetS(bool b) : S
+		{
+			// At least one of this variables must be allocated in "s_ret" but not both.
+			var S mut s0, mut s1;
+			halt if($<(s0) == $<(s1));
+			if(b)
+			{
+				return move(s0);
+			}
+			else
+			{
+				return move(s1);
+			}
+		}
+
+		fn Foo()
+		{
+			auto mut s0= GetS(false);
+			auto mut s1= GetS(true);
+			halt if( !( $<(s0) == s0.self_ptr || $<(s1) == s1.self_ptr ) );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+}
+
 U_TEST(ArgumentVariableAllocationOptimization_Test0)
 {
 	static const char c_program_text[]=
