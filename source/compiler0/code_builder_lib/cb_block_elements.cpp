@@ -297,10 +297,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
 		if( initializer_experrsion.value_type == ValueType::Value &&
-			llvm::dyn_cast<llvm::AllocaInst>(initializer_experrsion.llvm_value) != nullptr &&
-			initializer_experrsion.llvm_value->getType() == variable.type.GetLLVMType()->getPointerTo() )
+			initializer_experrsion.llvm_value->getType() == variable.type.GetLLVMType()->getPointerTo() &&
+			( llvm::dyn_cast<llvm::AllocaInst>(initializer_experrsion.llvm_value) != nullptr || llvm::dyn_cast<llvm::Argument>(initializer_experrsion.llvm_value) != nullptr ) )
 		{
-			// Just reuse "alloca" instruction for move-initialization, avoid copying value into new memory location.
+			// Just reuse "alloca" instruction or function argument for move-initialization, avoid copying value into new memory location.
 			variable.llvm_value= initializer_experrsion.llvm_value;
 			variable.llvm_value->setName( auto_variable_declaration.name );
 		}
@@ -1053,10 +1053,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
 		if( expr.value_type == ValueType::Value &&
-			llvm::dyn_cast<llvm::AllocaInst>(expr.llvm_value) != nullptr &&
-			expr.llvm_value->getType() == variable.type.GetLLVMType()->getPointerTo() )
+			expr.llvm_value->getType() == variable.type.GetLLVMType()->getPointerTo() &&
+			( llvm::dyn_cast<llvm::AllocaInst>(expr.llvm_value) != nullptr || llvm::dyn_cast<llvm::Argument>(expr.llvm_value) != nullptr ) )
 		{
-			// Just reuse "alloca" instruction for move-initialization, avoid copying value into new memory location.
+			// Just reuse "alloca" instruction or argument for move-initialization, avoid copying value into new memory location.
 			variable.llvm_value= expr.llvm_value;
 			variable.llvm_value->setName( with_operator.variable_name_ );
 		}
