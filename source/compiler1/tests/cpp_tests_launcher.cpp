@@ -67,6 +67,13 @@ bool FilterTest( const std::string& test_name )
 
 	static const std::unordered_set<std::string> c_test_to_disable
 	{
+		"AutoMoveInitializationOptimization_Test0",
+		"AutoMoveInitializationOptimization_Test1",
+		"AutoMoveInitializationOptimization_Test2",
+		"WithOperatorVariableMoveInitializationOptimization_Test0",
+		"WithOperatorVariableMoveInitializationOptimization_Test1",
+		"MoveReturnVariableAllocationOptimization_Test0",
+		"MoveReturnVariableAllocationOptimization_Test1",
 	};
 
 	return c_test_to_disable.count( test_name_without_file_name ) == 0;
