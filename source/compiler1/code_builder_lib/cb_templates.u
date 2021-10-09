@@ -802,7 +802,7 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 		auto mangled_llvm_type_name= mangler_.MangleType( ust::to_non_nullable( class_type ) );
 		unsafe{  U1_SetStructName( class_type.lock_imut().get_ref().llvm_type, mangled_llvm_type_name.front() );  }
 
-		generated_template_things_.insert( template_key, args_names_scope );
+		AddNewTemplateThing( template_key, args_names_scope );
 		return Type( ust::to_non_nullable( class_type ) );
 	}
 	if_var( &type_alias_syntax_element : syntax_element.something.get</ ust::shared_ptr_final</ Synt::TypeAlias /> />() )
@@ -820,7 +820,7 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 			names_scope_lock.get_ref().AddName( template_class_name, t );
 		}
 
-		generated_template_things_.insert( template_key, args_names_scope );
+		AddNewTemplateThing( template_key, args_names_scope );
 
 		return move(t);
 	}
@@ -1062,7 +1062,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 
 		return ust::optional</FunctionVariable/>();
 	}
-	generated_template_things_.insert( template_key, result_names_scope );
+	AddNewTemplateThing( template_key, result_names_scope );
 
 	CreateTemplateErrorsContext(
 		function_template,
@@ -1236,7 +1236,7 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 		auto mut lock= result_names_scope.lock_mut();
 		lock.get_ref().AddName( names_scope_value_key, names_scope_value );
 	}
-	generated_template_things_.insert( cache_key, result_names_scope );
+	AddNewTemplateThing( move(cache_key), result_names_scope );
 
 	return move(names_scope_value);
 }
@@ -1614,6 +1614,12 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 	}
 
 	return false;
+}
+
+fn CodeBuilder::AddNewTemplateThing( mut this, ust::string8 mut key, NamesScopePtr& thing )
+{
+	generated_template_things_.insert( key, thing );
+	generated_template_things_sequence_.push_back( move(key) );
 }
 
 fn CodeBuilder::TypeIsValidForTemplateVariableArgument( Type& t ) : bool
