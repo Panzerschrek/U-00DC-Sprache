@@ -1487,6 +1487,13 @@ Type CodeBuilder::BuildFuncCode(
 		function_context.llvm_ir_builder.CreateRetVoid();
 	}
 
+	// Replace allocations at end of function build process.
+	// We can do this only now, because now there is no "llvm_value"-s for these allocations stored in some intermediate structs.
+	for( const auto pair : function_context.allocations_relplacements )
+	{
+		pair.first->replaceAllUsesWith(pair.second);
+	}
+
 	return function_type.return_type;
 }
 

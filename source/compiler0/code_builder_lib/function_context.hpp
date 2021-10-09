@@ -61,6 +61,10 @@ struct FunctionContext
 	// Non-null if "s_ret_" reused for allocation of moved return value.
 	llvm::Value* return_value_replaced_allocation= nullptr;
 
+	// Mapping of replacement of allocation operations.
+	// Used in case of allocation optimizations for "return" and "select" operators.
+	llvm::DenseMap<llvm::Value*, llvm::Value*> allocations_relplacements;
+
 	std::unordered_set<std::string> uninitialized_this_fields;
 	bool base_initialized= false;
 	bool whole_this_is_unavailable= false; // May be true in constructor initializer list, in body of constructors and destructors of abstract classes.
