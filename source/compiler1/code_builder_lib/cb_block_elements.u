@@ -507,7 +507,6 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 						if( LLVMIsAAllocaInst( expr.llvm_value ) != LLVMValueRef::Null &&
 							( function_context.return_value_replaced_allocation == LLVMValueRef::Null || function_context.return_value_replaced_allocation == expr.llvm_value ) )
 						{
-							LLVMReplaceAllUsesWith( expr.llvm_value, s_ret );
 							function_context.return_value_replaced_allocation= expr.llvm_value;
 						}
 						else
