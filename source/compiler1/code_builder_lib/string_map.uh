@@ -1,0 +1,112 @@
+import "/optional_ref.u"
+import "/string_base.u"
+
+namespace U1
+{
+
+/*
+	Special map-like class optimized for string keys.
+	Deletion is not supported.
+
+	Optimization works (proof?) because of several reasons:
+		* All keys data are stored inside single allocation.
+		* Hash table value is a bit smaller because it combines data required by hash table itself with data required by string itself.
+		* Do not need to store string capacity for each string key because keys are immutable.
+*/
+
+template</ type CharType, type ValueType />
+class StringMap
+{
+	type this_type= U1::StringMap</ CharType, ValueType />;
+
+	type KeyType= ust::array_view_imut</CharType/>;
+
+	static_assert( typeinfo</CharType/>.is_char );
+
+public:
+	// Default constructor.
+	fn constructor() = default;
+
+	// Copy constructor.
+	fn enable_if( typeinfo</ValueType/>.is_copy_constructible )
+	constructor( mut this, this_type &imut other )
+	{
+		halt; // TODO
+	}
+
+	// Destructor.
+	fn destructor()
+	{
+		halt; // TODO
+	}
+
+	// Copy assignment operator.
+	op enable_if( typeinfo</ValueType/>.is_copy_constructible )
+	=( mut this, this_type &imut other )
+	{
+		this= this_type(other);
+	}
+
+	fn size( this ) : size_type
+	{
+		return size_;
+	}
+
+	fn empty( this ) : bool
+	{
+		return size_ == size_type(0);
+	}
+
+	fn insert( mut this, KeyType key, ValueType mut value ) : ValueType &'this mut
+	{
+		halt; // TODO
+	}
+
+	fn find( imut this, KeyType key ) : ust::optional_ref</ ValueType, false />'this'
+	{
+		halt; // TODO
+	}
+
+	fn find(  mut this, KeyType key ) : ust::optional_ref</ ValueType, true  />'this'
+	{
+		halt; // TODO
+	}
+
+	op[](  mut this, KeyType key ) : ValueType &'this  mut
+	{
+		return find(key).get_ref(); // "get_ref" will halt, if "find" returns empty result.
+	}
+
+	op[]( imut this, KeyType key ) : ValueType &'this imut
+	{
+		return find(key).get_ref(); // "get_ref" will halt, if "find" returns empty result.
+	}
+
+private:
+	// TODO - internal functions.
+
+private:
+	// 32 bits will be enough.
+	type KeySizeType= u32;
+	type KeyOffsetType= u32;
+
+	// Value of hash table. It's important to keep it as small as possible because hash table contains mostly (> 50%) empty values to minimize hash collisions.
+	struct TableValue
+	{
+		KeySizeType	size; // Size of string key (in chars).
+		KeyOffsetType offset; // Offset (in chars) in keys data array. Zero value means empty table value (keys data contains nothing in zero offset).
+		ValueType value_storage; // Contains garbage for empty value. Destructor called manually if value exists.
+	}
+
+	type TableValuePtr= $(TableValue);
+
+private:
+	ust::ContainerTag</ ValueType /> value_tag_;
+
+	TableValuePtr table_= zero_init;
+	size_type size_= zero_init; // Number of elements in map.
+	size_type capacity_= zero_init; // Table size. Always must be power of two.
+	ust::string_base</ CharType /> string_data_; // Actual keys data combined all together.
+}
+
+} // namespace U1
