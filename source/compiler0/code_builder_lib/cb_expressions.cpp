@@ -837,6 +837,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	llvm::BasicBlock* branches_end_basic_blocks[2]{ nullptr, nullptr };
 	ReferencesGraph variables_state_before= function_context.variables_state;
 	std::vector<ReferencesGraph> branches_variables_state(2u);
+	llvm::Value* branch_replaced_allocation= nullptr;
 	for( size_t i= 0u; i < 2u; ++i )
 	{
 		function_context.variables_state= variables_state_before;
@@ -870,7 +871,18 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 						// Move.
 						if( branch_result.node != nullptr )
 							function_context.variables_state.MoveNode( branch_result.node );
-						CopyBytes( branch_result.llvm_value, result.llvm_value, result.type, function_context );
+
+						// Perform minor optimization - allocate variable in place of "select" operator result.
+						// We can do this only for one of allocations since we can't analyze variable lifetimes.
+						// We can replace original allocation because it will never be used later - because it is temporary variable or because it is moved local variable or argument.
+						if( ( llvm::dyn_cast<llvm::AllocaInst>(branch_result.llvm_value) != nullptr || llvm::dyn_cast<llvm::Argument>(branch_result.llvm_value) != nullptr ) &&
+							( branch_replaced_allocation == nullptr || branch_replaced_allocation == branch_result.llvm_value ) )
+						{
+							branch_result.llvm_value->replaceAllUsesWith( result.llvm_value );
+							branch_replaced_allocation= branch_result.llvm_value;
+						}
+						else
+							CopyBytes( branch_result.llvm_value, result.llvm_value, result.type, function_context );
 					}
 					else
 					{

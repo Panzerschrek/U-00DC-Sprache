@@ -306,6 +306,41 @@ U_TEST(MoveReturnVariableAllocationOptimization_Test3)
 	engine->runFunction( function, {} );
 }
 
+U_TEST(MoveReturnVariableAllocationOptimization_Test4)
+{
+	static const char c_program_text[]=
+	R"(
+	struct S
+		{
+			[ u64, 8 ] dummy;
+			$(S) self_ptr;
+			f32 payload;
+
+			fn constructor() ( dummy= zero_init, self_ptr= zero_init, payload= zero_init )
+			{
+				self_ptr= $<(this);
+			}
+		}
+		fn Pass(S mut s) : S
+		{
+			// Memcpy should be executed here, because there is no way to reallocate value argument in "s_ret"
+			return move(s);
+		}
+		fn Foo()
+		{
+			auto mut s= Pass(S());
+			halt if($<(s) == s.self_ptr);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+}
+
 U_TEST(ArgumentVariableAllocationOptimization_Test0)
 {
 	static const char c_program_text[]=
@@ -398,6 +433,143 @@ U_TEST(ArgumentVariableAllocationOptimization_Test2)
 		fn Foo()
 		{
 			Bar(GetS()); // Address of call result variable of type "S" passed directly into function here.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+}
+
+U_TEST(TernaryOperatorBranchResultAllocationOptimization_Test0)
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			[ u64, 8 ] dummy;
+			$(S) self_ptr;
+			f32 payload;
+
+			fn constructor() ( dummy= zero_init, self_ptr= zero_init, payload= zero_init )
+			{
+				self_ptr= $<(this);
+			}
+		}
+		fn Bar(bool b)
+		{
+			var S mut s0;
+			auto s0_address= $<(s0);
+			// Same value used for both branches of "select". So, address of "select" result must be same as address of branch variables.
+			auto mut s1= select( b ? move(s0) : move(s0) );
+			auto s1_address= $<(s1);
+			halt if( s0_address != s1_address );
+		}
+		fn Foo()
+		{
+			Bar(true);
+			Bar(false);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+}
+
+U_TEST(TernaryOperatorBranchResultAllocationOptimization_Test1)
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			[ u64, 8 ] dummy;
+			$(S) self_ptr;
+			f32 payload;
+
+			fn constructor() ( dummy= zero_init, self_ptr= zero_init, payload= zero_init )
+			{
+				self_ptr= $<(this);
+			}
+		}
+		fn GetS42() : S
+		{
+			var S mut s;
+			s.payload= 42.0f;
+			return move(s);
+		}
+		fn GetS66() : S
+		{
+			var S mut s;
+			s.payload= 66.0f;
+			return move(s);
+		}
+		fn Bar(bool b, bool &mut is_self_ptr) : f32
+		{
+			auto mut s= select( b ? GetS42() : GetS66() );
+			is_self_ptr= $<(s) == s.self_ptr;
+			return s.payload;
+		}
+		fn Foo()
+		{
+			var bool mut is_self_ptr0= false, mut is_self_ptr1= false;
+			halt if(Bar(true, is_self_ptr0) != 42.0f);
+			halt if(Bar(false, is_self_ptr1) != 66.0f);
+
+			// At least one of branches of "select" operator must be allocated in place of branch result.
+			halt if( !( is_self_ptr0 || is_self_ptr1 ) );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+}
+
+U_TEST(TernaryOperatorBranchResultAllocationOptimization_Test2)
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			[ u64, 8 ] dummy;
+			$(S) self_ptr;
+			f32 payload;
+
+			fn constructor() ( dummy= zero_init, self_ptr= zero_init, payload= zero_init )
+			{
+				self_ptr= $<(this);
+			}
+		}
+		fn PassAndAdd5(S mut s) : S
+		{
+			s.payload+= 5.0f;
+			return move(s);
+		}
+		fn Bar(bool b) : f32
+		{
+			var S mut s0;
+			auto s0_address= $<(s0);
+			// First branch variable must be allocated in result of "select" operator.
+			auto mut s1= select( b ? move(s0) : PassAndAdd5(move(s0)) );
+			auto s1_address= $<(s1);
+			halt if(s0_address != s1_address);
+			return s1.payload;
+		}
+		fn Foo()
+		{
+			halt if(Bar(true) != 0.0f);
+			halt if(Bar(false) != 5.0f);
+
 		}
 	)";
 
