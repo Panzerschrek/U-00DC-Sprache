@@ -515,7 +515,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				if( llvm::dyn_cast<llvm::AllocaInst>( expression_result.llvm_value ) != nullptr &&
 					( function_context.return_value_replaced_allocation == nullptr || function_context.return_value_replaced_allocation == expression_result.llvm_value ) )
 				{
-					function_context.allocations_relplacements[expression_result.llvm_value]= function_context.s_ret_;
 					function_context.return_value_replaced_allocation = expression_result.llvm_value;
 				}
 				else

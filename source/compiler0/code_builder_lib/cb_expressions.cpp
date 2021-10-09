@@ -870,17 +870,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 						// Move.
 						if( branch_result.node != nullptr )
 							function_context.variables_state.MoveNode( branch_result.node );
-
-						// Perform minor optimization - allocate variable in place of "select" operator result.
-						// We can do this only for one of allocations since we can't analyze variable lifetimes.
-						// We can replace original allocation because it will never be used later - because it is temporary variable or because it is moved local variable or argument.
-						if( llvm::dyn_cast<llvm::AllocaInst>(branch_result.llvm_value) != nullptr &&
-							( function_context.allocations_relplacements.count(branch_result.llvm_value) == 0 || function_context.allocations_relplacements[branch_result.llvm_value] == result.llvm_value ) )
-						{
-							function_context.allocations_relplacements[branch_result.llvm_value]= result.llvm_value;
-						}
-						else
-							CopyBytes( branch_result.llvm_value, result.llvm_value, result.type, function_context );
+						CopyBytes( branch_result.llvm_value, result.llvm_value, result.type, function_context );
 					}
 					else
 					{
