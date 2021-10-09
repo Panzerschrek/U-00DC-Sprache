@@ -33,6 +33,8 @@ public:
 	ust::vector</ ReferencesGraph::NodeId /> mut args_inner_variable_nodes; // Contains inner variable nodes (if arg can have one).
 
 	LLVMValueRef s_ret= LLVMValueRef::Null;
+	// Non-null if "s_ret" reused for allocation of moved return value.
+	LLVMValueRef return_value_replaced_allocation= LLVMValueRef::Null;
 
 	ust::optional</Variable/> this_;
 	ust::unordered_set</ust::string8/> uninitialized_this_fields;

@@ -498,7 +498,23 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 					{
 						function_context.references_graph.MoveNode( expr.node_id );
 					}
-					CopyBytes( s_ret, expr.llvm_value, expr.t, function_context );
+
+					unsafe
+					{
+						// Perform optimization for move-returning.
+						// Allocate returend variable in place of "s_ret".
+						// We can't apply this optimization for more than one allocation since we can't analyze lifetime of different
+						if( LLVMIsAAllocaInst( expr.llvm_value ) != LLVMValueRef::Null &&
+							( function_context.return_value_replaced_allocation == LLVMValueRef::Null || function_context.return_value_replaced_allocation == expr.llvm_value ) )
+						{
+							LLVMReplaceAllUsesWith( expr.llvm_value, s_ret );
+							function_context.return_value_replaced_allocation= expr.llvm_value;
+						}
+						else
+						{
+							CopyBytes( s_ret, expr.llvm_value, expr.t, function_context );
+						}
+					}
 				}
 				else
 				{
