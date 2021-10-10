@@ -45,6 +45,8 @@ struct SourceEntry
 std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const std::string& root_file_path );
 ErrorTestBuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry> sources, const std::string& root_file_path );
 
+std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text );
+
 EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, bool needs_dump= false );
 
 bool HaveError( const std::vector<CodeBuilderError>& errors, CodeBuilderErrorCode code, unsigned int line );

@@ -57,11 +57,12 @@ ReferencesGraphNodePtr CodeBuilder::ReferencesGraphNodeHolder::TakeNode()
 CodeBuilder::CodeBuilder(
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
-	bool build_debug_info )
+	const CodeBuilderOptions& options )
 	: llvm_context_( llvm_context )
 	, data_layout_(data_layout)
-	, build_debug_info_( build_debug_info )
-	, create_lifetimes_( true )
+	, build_debug_info_( options.build_debug_info )
+	, create_lifetimes_( options.create_lifetimes )
+	, generate_lifetime_start_end_debug_calls_( options.generate_lifetime_start_end_debug_calls )
 	, constexpr_function_evaluator_( data_layout_ )
 {
 	fundamental_llvm_types_.i8 = llvm::Type::getInt8Ty( llvm_context_ );
@@ -123,6 +124,26 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	halt_func_->setDoesNotThrow();
 	halt_func_->addFnAttr(llvm::Attribute::Cold );
 	halt_func_->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
+
+	// Prepare debug lifetime_start/lifetime_end functions.
+	if( create_lifetimes_ && generate_lifetime_start_end_debug_calls_ )
+	{
+		llvm::Type* const arg_types[1]= { fundamental_llvm_types_.u8->getPointerTo() };
+
+		lifetime_start_debug_func_=
+			llvm::Function::Create(
+				llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret, arg_types, false ),
+				llvm::Function::ExternalLinkage,
+				"__U_debug_lifetime_start",
+				module_.get() );
+
+		lifetime_end_debug_func_=
+			llvm::Function::Create(
+				llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret, arg_types, false ),
+				llvm::Function::ExternalLinkage,
+				"__U_debug_lifetime_end",
+				module_.get() );
+	}
 
 	// In some places outside functions we need to execute expression evaluation.
 	// Create for this function context.
@@ -2026,6 +2047,13 @@ void CodeBuilder::CreateLifetimeStart( const Variable& variable, FunctionContext
 		llvm::ConstantInt::get(
 			fundamental_llvm_types_.u64,
 			data_layout_.getTypeAllocSize(variable.type.GetLLVMType()) ) );
+
+	if( generate_lifetime_start_end_debug_calls_ )
+		function_context.llvm_ir_builder.CreateCall(
+			lifetime_start_debug_func_,
+			{
+				function_context.llvm_ir_builder.CreatePointerCast( variable.llvm_value, lifetime_start_debug_func_->arg_begin()->getType() )
+			} );
 }
 
 void CodeBuilder::CreateLifetimeEnd( const Variable& variable, FunctionContext& function_context )
@@ -2044,6 +2072,13 @@ void CodeBuilder::CreateLifetimeEnd( const Variable& variable, FunctionContext& 
 		llvm::ConstantInt::get(
 			fundamental_llvm_types_.u64,
 			data_layout_.getTypeAllocSize(variable.type.GetLLVMType()) ) );
+
+	if( generate_lifetime_start_end_debug_calls_ )
+		function_context.llvm_ir_builder.CreateCall(
+			lifetime_end_debug_func_,
+			{
+				function_context.llvm_ir_builder.CreatePointerCast( variable.llvm_value, lifetime_end_debug_func_->arg_begin()->getType() )
+			} );
 }
 
 CodeBuilder::InstructionsState CodeBuilder::SaveInstructionsState( FunctionContext& function_context )

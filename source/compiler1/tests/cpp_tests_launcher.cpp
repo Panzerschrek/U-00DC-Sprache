@@ -67,6 +67,9 @@ bool FilterTest( const std::string& test_name )
 
 	static const std::unordered_set<std::string> c_test_to_disable
 	{
+		"StackVariableLifetime_Test0",
+		"StackVariableLifetime_Test1",
+		"StackVariableLifetime_Test2",
 	};
 
 	return c_test_to_disable.count( test_name_without_file_name ) == 0;
@@ -178,6 +181,12 @@ ErrorTestBuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry>
 	U_TEST_ASSERT( ok );
 
 	return build_result;
+}
+
+std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text )
+{
+	// TODO
+	return BuildProgram( text );
 }
 
 EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, const bool needs_dump )

@@ -24,11 +24,14 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	if( !result.lex_synt_errors.empty() )
 		return result;
 
+	CodeBuilderOptions options;
+	options.build_debug_info= generate_debug_info;
+
 	CodeBuilder::BuildResult build_result=
 		CodeBuilder(
 			llvm_context,
 			data_layout,
-			generate_debug_info ).BuildProgram( *source_graph );
+			options ).BuildProgram( *source_graph );
 
 	result.code_builder_errors= std::move( build_result.errors );
 	result.llvm_module= std::move( build_result.module );
