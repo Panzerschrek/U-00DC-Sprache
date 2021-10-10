@@ -224,6 +224,11 @@ fn nomangle LLVMGetInitializer(LLVMValueRef GlobalVar) unsafe : LLVMValueRef;
 fn nomangle LLVMIsConstant(LLVMValueRef Val) unsafe : LLVMBool;
 fn nomangle LLVMIsUndef(LLVMValueRef Val) unsafe : LLVMBool;
 
+fn nomangle LLVMReplaceAllUsesWith(LLVMValueRef OldVal, LLVMValueRef NewVal) unsafe;
+
+fn nomangle LLVMIsAArgument(LLVMValueRef Val) unsafe : LLVMValueRef;
+fn nomangle LLVMIsAAllocaInst(LLVMValueRef Val) unsafe : LLVMValueRef;
+
 // Global value
 
 fn nomangle LLVMAddFunction(LLVMModuleRef M, NullTerminatedString& Name, LLVMTypeRef FunctionTy) unsafe : LLVMValueRef;

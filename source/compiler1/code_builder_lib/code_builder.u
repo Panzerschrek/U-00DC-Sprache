@@ -176,6 +176,7 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 
 	compiled_sources_cache_.clear();
 	generated_template_things_.clear();
+	generated_template_things_sequence_.clear();
 	typeinfo_cache_.clear();
 
 	if( debug_info_.builder != LLVMDIBuilderRef::Null )
@@ -284,35 +285,15 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_
 	NamesScopeFillOutOfLineElements( global_names_scope, program_elements );
 	NamesScopeBuild( global_names_scope );
 
-	// Finalize building template classes.
-	// Save and update keys separately, because "generated_template_things_storage_" may change during iterations.
+	// Finalize building template things.
+	// Each new template thing added into this vector, so, by iterating through we will build all template things.
+	// It's important to use an index instead of iterators during iteration because this vector may be chaged in process.
+	for( auto mut i= 0s; i < generated_template_things_sequence_.size(); ++i )
 	{
-		var ust::unordered_set</ ust::string8 /> mut generated_template_things_keys;
-		foreach( &el : generated_template_things_ )
-		{
-			generated_template_things_keys.insert( el.key() );
-		}
-		auto mut new_generated_template_things_keys= generated_template_things_keys;
-
-		while( !new_generated_template_things_keys.empty() )
-		{
-			foreach( &key : new_generated_template_things_keys )
-			{
-				auto names_scope= generated_template_things_.find(key).get_ref();
-				NamesScopeBuild( names_scope );
-			}
-
-			new_generated_template_things_keys.clear();
-			foreach( &el : generated_template_things_ )
-			{
-				if( !generated_template_things_keys.exists( el.key() ) )
-				{
-					generated_template_things_keys.insert( el.key() );
-					new_generated_template_things_keys.insert( el.key() );
-				}
-			}
-		}
+		auto names_scope= cast_imut(generated_template_things_).find(cast_imut(generated_template_things_sequence_)[i]).get_ref();
+		NamesScopeBuild( names_scope );
 	}
+	generated_template_things_sequence_.clear();
 
 	auto class_table= take(current_class_table_);
 
@@ -1686,6 +1667,13 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				LLVMBuildRetVoid( function_context.llvm_ir_builder );
 			}
 		}
+	}
+
+	// Replace return value allocation at end of function build process.
+	// We can do this only now, because now there is no "llvm_value" for this allocation stored in some intermediate structs.
+	if( function_context.return_value_replaced_allocation != LLVMValueRef::Null )
+	{
+		unsafe{  LLVMReplaceAllUsesWith( function_context.return_value_replaced_allocation, function_context.s_ret );  }
 	}
 
 	if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )

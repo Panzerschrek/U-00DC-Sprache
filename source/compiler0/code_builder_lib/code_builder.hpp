@@ -340,6 +340,8 @@ private:
 
 	bool TypeIsValidForTemplateVariableArgument( const Type& type );
 
+	Value* AddNewTemplateThing( std::string key, Value thing );
+
 	// Constructors/destructors
 	void TryGenerateDefaultConstructor( const ClassPtr& class_type );
 	void TryGenerateCopyConstructor( const ClassPtr& class_type );
@@ -967,6 +969,8 @@ private:
 
 	// Names map for generated template types/functions. We can not insert it in regular namespaces, because we needs insert it, while iterating regular namespaces.
 	ProgramStringMap<Value> generated_template_things_storage_;
+	// Template things for current source graph node added sequentialy into this vector too.
+	std::vector<std::string> generated_template_things_sequence_;
 
 	std::vector<GlobalThing> global_things_stack_;
 

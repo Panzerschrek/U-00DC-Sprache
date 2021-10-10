@@ -572,6 +572,8 @@ private:
 		TemplateArgFinished& given_arg,
 		SrcLoc& src_loc ) : bool;
 
+	fn AddNewTemplateThing( mut this, ust::string8 mut key, NamesScopePtr& thing );
+
 	fn TypeIsValidForTemplateVariableArgument( Type& t ) : bool;
 
 	// Typeinfo
@@ -826,7 +828,10 @@ private:
 	// Class table of current source graph node.
 	ust::vector</ ClassTypePtr /> current_class_table_;
 
+	// Store template things in global container to use same things for same template arguments.
 	ust::unordered_map</ ust::string8, NamesScopePtr /> generated_template_things_;
+	// Template things for current source graph node added sequentialy into this vector too.
+	ust::vector</ ust::string8 /> generated_template_things_sequence_;
 
 	// TODO - use unorederd_map
 	struct TypeinfoStruct{ Type t; Variable v; }

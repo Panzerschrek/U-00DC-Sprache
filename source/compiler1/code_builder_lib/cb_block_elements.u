@@ -309,8 +309,18 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 
 		unsafe
 		{
-			out_variable.llvm_value=
-				LLVMBuildAlloca( function_context.alloca_ir_builder, out_variable.t.GetLLVMType(), (auto_variable_declaration.name + "\0").front() );
+			if( expr.value_type == ValueType::Value &&
+				LLVMTypeOf( expr.llvm_value ) == LLVMPointerType( out_variable.t.GetLLVMType(), 0u ) &&
+				( LLVMIsAAllocaInst( expr.llvm_value ) != LLVMValueRef::Null || LLVMIsAArgument( expr.llvm_value ) != LLVMValueRef::Null ) )
+			{
+				// Just reuse "alloca" instruction or argument for move-initialization, avoid copying value into new memory location.
+				out_variable.llvm_value= expr.llvm_value;
+			}
+			else
+			{
+				out_variable.llvm_value=
+					LLVMBuildAlloca( function_context.alloca_ir_builder, out_variable.t.GetLLVMType(), (auto_variable_declaration.name + "\0").front() );
+			}
 		}
 
 		CreateVariableDebugInfo( function_context, out_variable, auto_variable_declaration.name, auto_variable_declaration.src_loc );
@@ -324,8 +334,11 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			{
 				function_context.references_graph.MoveNode( expr.node_id );
 			}
-			CopyBytes( out_variable.llvm_value, expr.llvm_value, expr.t, function_context );
-			// TODO - maybe reuse here "alloca" instruction of temporary variable?
+
+			if( out_variable.llvm_value != expr.llvm_value )
+			{
+				CopyBytes( out_variable.llvm_value, expr.llvm_value, expr.t, function_context );
+			}
 		}
 		else
 		{
@@ -485,7 +498,22 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 					{
 						function_context.references_graph.MoveNode( expr.node_id );
 					}
-					CopyBytes( s_ret, expr.llvm_value, expr.t, function_context );
+
+					unsafe
+					{
+						// Perform optimization for move-returning.
+						// Allocate returend variable in place of "s_ret".
+						// We can't apply this optimization for more than one allocation since we can't analyze lifetime of different
+						if( LLVMIsAAllocaInst( expr.llvm_value ) != LLVMValueRef::Null &&
+							( function_context.return_value_replaced_allocation == LLVMValueRef::Null || function_context.return_value_replaced_allocation == expr.llvm_value ) )
+						{
+							function_context.return_value_replaced_allocation= expr.llvm_value;
+						}
+						else
+						{
+							CopyBytes( s_ret, expr.llvm_value, expr.t, function_context );
+						}
+					}
 				}
 				else
 				{
@@ -1425,8 +1453,18 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 		unsafe
 		{
-			out_variable.llvm_value=
-				LLVMBuildAlloca( function_context.alloca_ir_builder, out_variable.t.GetLLVMType(), (with_operator.variable_name + "\0").front() );
+			if( expr.value_type == ValueType::Value &&
+				LLVMTypeOf( expr.llvm_value ) == LLVMPointerType( out_variable.t.GetLLVMType(), 0u ) &&
+				( LLVMIsAAllocaInst( expr.llvm_value ) != LLVMValueRef::Null || LLVMIsAArgument( expr.llvm_value ) != LLVMValueRef::Null ) )
+			{
+				// Just reuse "alloca" instruction or argument for move-initialization, avoid copying value into new memory location.
+				out_variable.llvm_value= expr.llvm_value;
+			}
+			else
+			{
+				out_variable.llvm_value=
+					LLVMBuildAlloca( function_context.alloca_ir_builder, out_variable.t.GetLLVMType(), (with_operator.variable_name + "\0").front() );
+			}
 		}
 
 		CreateVariableDebugInfo( function_context, out_variable, with_operator.variable_name, with_operator.src_loc );
@@ -1440,8 +1478,11 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			{
 				function_context.references_graph.MoveNode( expr.node_id );
 			}
-			CopyBytes( out_variable.llvm_value, expr.llvm_value, expr.t, function_context );
-			// TODO - maybe reuse here "alloca" instruction of temporary variable?
+
+			if( out_variable.llvm_value != expr.llvm_value )
+			{
+				CopyBytes( out_variable.llvm_value, expr.llvm_value, expr.t, function_context );
+			}
 		}
 		else
 		{

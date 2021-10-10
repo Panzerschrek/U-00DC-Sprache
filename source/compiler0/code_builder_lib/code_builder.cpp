@@ -190,6 +190,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	typeinfo_cache_.clear();
 	typeinfo_class_table_.clear();
 	generated_template_things_storage_.clear();
+	generated_template_things_sequence_.clear();
 	debug_info_.builder= nullptr;
 	debug_info_.source_file_entries.clear();
 	debug_info_.classes_di_cache.clear();
@@ -268,34 +269,15 @@ void CodeBuilder::BuildSourceGraphNode( const SourceGraph& source_graph, const s
 	NamesScopeFillOutOfLineElements( source_graph_node.ast.program_elements, *result.names_map );
 	GlobalThingBuildNamespace( *result.names_map );
 
-	// Finalize building template classes.
-	// Save and update keys separately, because "generated_template_things_storage_" may change during iterations.
+	// Finalize building template things.
+	// Each new template thing added into this vector, so, by iterating through we will build all template things.
+	// It's important to use an index instead of iterators during iteration because this vector may be chaged in process.
+	for( size_t i= 0; i < generated_template_things_sequence_.size(); ++i )
 	{
-		ProgramStringSet generated_template_things_keys;
-		for( const auto& thing_pair : generated_template_things_storage_ )
-			generated_template_things_keys.insert(thing_pair.first);
-		ProgramStringSet new_generated_template_things_keys= generated_template_things_keys;
-
-		while(!new_generated_template_things_keys.empty())
-		{
-			for( const std::string& key : new_generated_template_things_keys )
-			{
-				if( const auto namespace_= generated_template_things_storage_[key].GetNamespace() )
-					GlobalThingBuildNamespace( *namespace_ );
-			}
-
-			// Collect keys of new things, replace keys set with new one.
-			new_generated_template_things_keys.clear();
-			for( const auto& thing_pair : generated_template_things_storage_ )
-			{
-				if( generated_template_things_keys.count(thing_pair.first) == 0 )
-				{
-					generated_template_things_keys.insert(thing_pair.first);
-					new_generated_template_things_keys.insert(thing_pair.first);
-				}
-			}
-		};
+		if( const auto namespace_= generated_template_things_storage_[generated_template_things_sequence_[i]].GetNamespace() )
+			GlobalThingBuildNamespace( *namespace_ );
 	}
+	generated_template_things_sequence_.clear();
 
 	// Fill result class table
 	for( const auto& class_shared_ptr : current_class_table_ )
@@ -1486,6 +1468,14 @@ Type CodeBuilder::BuildFuncCode(
 
 		CallMembersDestructors( function_context, function_names.GetErrors(), block->end_src_loc_ );
 		function_context.llvm_ir_builder.CreateRetVoid();
+	}
+
+	// Replace return value allocation at end of function build process.
+	// We can do this only now, because now there is no "llvm_value" for this allocation stored in some intermediate structs.
+	if( function_context.return_value_replaced_allocation != nullptr )
+	{
+		U_ASSERT( function_context.s_ret_ != nullptr );
+		function_context.return_value_replaced_allocation->replaceAllUsesWith( function_context.s_ret_ );
 	}
 
 	return function_type.return_type;
