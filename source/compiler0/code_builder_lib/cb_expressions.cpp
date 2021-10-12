@@ -2479,7 +2479,7 @@ Value CodeBuilder::DoCallFunction(
 	std::vector< ReferencesGraphNodeHolder > args_nodes;
 	std::vector< ReferencesGraphNodeHolder > locked_args_inner_references;
 
-	std::vector<Variable> allocated_value_args;
+	std::vector<Variable> value_args_for_lifetime_end_call;
 
 	for( size_t i= 0u; i < arg_count; ++i )
 	{
@@ -2539,6 +2539,7 @@ Value CodeBuilder::DoCallFunction(
 					if( expr.type != void_type_ )
 						function_context.llvm_ir_builder.CreateStore( expr.llvm_value, temp_storage );
 					llvm_args[j]= temp_storage;
+					// TODO - create lifetime.start/lifetime.end for this allocation?
 				}
 				else
 					llvm_args[j]= expr.llvm_value;
@@ -2654,6 +2655,7 @@ Value CodeBuilder::DoCallFunction(
 					if( expr.node != nullptr )
 						function_context.variables_state.MoveNode( expr.node );
 					llvm_args[j]= expr.llvm_value;
+					value_args_for_lifetime_end_call.push_back( expr );
 				}
 				else
 				{
@@ -2676,7 +2678,7 @@ Value CodeBuilder::DoCallFunction(
 						value_arg_var.type= param.type;
 						value_arg_var.llvm_value= arg_copy;
 						CreateLifetimeStart( value_arg_var, function_context );
-						allocated_value_args.push_back( value_arg_var );
+						value_args_for_lifetime_end_call.push_back( value_arg_var );
 					}
 
 					llvm_args[j]= arg_copy;
@@ -2760,7 +2762,7 @@ Value CodeBuilder::DoCallFunction(
 
 	// Call "lifetime.end" just right after call for value args, allocated on stack of this function.
 	// It is fine because there is no way to return reference to value arg (reference protection does not allow this).
-	for( const Variable& value_arg_var : allocated_value_args )
+	for( const Variable& value_arg_var : value_args_for_lifetime_end_call )
 		CreateLifetimeEnd( value_arg_var, function_context );
 
 	if( !return_value_is_sret )

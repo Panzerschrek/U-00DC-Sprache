@@ -192,4 +192,550 @@ U_TEST( StackVariableLifetime_Test2 )
 	U_TEST_ASSERT( g_lifetimes_call_sequence[4].captured_data.size() == sizeof(expected_y) && std::memcmp(g_lifetimes_call_sequence[4].captured_data.data(), &expected_y, sizeof(expected_y)) == 0 );
 }
 
+U_TEST( StackVariableLifetime_Test3 )
+{
+	LifetimesTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn nomangle CaptureValue([f32, 4]& data, u64 size);
+		fn Foo()
+		{
+			var [f32, 4] arr[ 0.25f, 2.0f, 17.6f, -0.1f ];
+			CaptureValue(arr, 16u64);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence.size() == 3 );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[2].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].call_result == CallResult::LifetimeStart );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].call_result == CallResult::LifetimeEnd );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].call_result == CallResult::CaptureValue );
+
+	const float expected_arr[4]= { 0.25f, 2.0f, 17.6f, -0.1f };
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].captured_data.size() == sizeof(expected_arr) && std::memcmp(g_lifetimes_call_sequence[1].captured_data.data(), &expected_arr, sizeof(expected_arr)) == 0 );
+}
+
+U_TEST( StackVariableLifetime_Test4 )
+{
+	LifetimesTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn nomangle CaptureValue(u64& data, u64 size);
+		fn Foo()
+		{
+			auto x= 55u64;
+			CaptureValue(x, 8u64);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence.size() == 3 );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[2].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].call_result == CallResult::LifetimeStart );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].call_result == CallResult::LifetimeEnd );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].call_result == CallResult::CaptureValue );
+
+	const uint64_t expected_x= 55;
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[1].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
+}
+
+U_TEST( StackVariableLifetime_Test5 )
+{
+	LifetimesTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn constructor()(x= 678){}
+		}
+		fn nomangle CaptureValue(S& data, u64 size);
+		fn Foo()
+		{
+			auto x= S(); // Lifetime declaration should be done once because of auto variable move initialization.
+			CaptureValue(x, 4u64);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence.size() == 3 );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[2].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].call_result == CallResult::LifetimeStart );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].call_result == CallResult::LifetimeEnd );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].call_result == CallResult::CaptureValue );
+
+	const int32_t expected_x= 678;
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[1].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
+}
+
+U_TEST( StackVariableLifetime_Test6 )
+{
+	LifetimesTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn nomangle CaptureValue(u64& data, u64 size);
+		fn Foo()
+		{
+			with( mut x : 785u64 ) // Lifetime for 'with' operator variable.
+			{
+				CaptureValue(x, 8u64);
+				x= 852u64;
+				CaptureValue(x, 8u64);
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence.size() == 4 );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[2].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].call_result == CallResult::LifetimeStart );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[3].call_result == CallResult::LifetimeEnd );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].call_result == CallResult::CaptureValue );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].call_result == CallResult::CaptureValue );
+
+	uint64_t expected_x= 785;
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[1].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
+
+	expected_x= 852;
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[2].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
+}
+
+U_TEST( StackVariableLifetime_Test7 )
+{
+	LifetimesTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn nomangle CaptureValue(u32& data, u64 size);
+		var u32 constexpr g_x= 102938u;
+		fn Foo()
+		{
+			// No lifetimes are created for reference.
+			var u32& x_ref= g_x;
+			CaptureValue(x_ref, 4u64);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence.size() == 1 );
+	const uint32_t expected_x= 102938;
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[0].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
+}
+
+U_TEST( StackVariableLifetime_Test8 )
+{
+	LifetimesTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn nomangle CaptureValue(u32& data, u64 size);
+		var u32 constexpr g_x= 951u;
+		fn Foo()
+		{
+			// No lifetimes are created for auto-reference.
+			auto& x_ref= g_x;
+			CaptureValue(x_ref, 4u64);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence.size() == 1 );
+	const uint32_t expected_x= 951;
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[0].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
+}
+
+U_TEST( ArgVariableLifetime_Test0 )
+{
+	LifetimesTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn nomangle CaptureValue(u8& data, u64 size);
+		fn Bar(u8 x)
+		{
+			CaptureValue(x, 1u64);
+		}
+		fn Foo()
+		{
+			Bar(67u8);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence.size() == 3 );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[2].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].call_result == CallResult::LifetimeStart );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].call_result == CallResult::LifetimeEnd );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].call_result == CallResult::CaptureValue );
+
+	const uint8_t expected_x= 67;
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[1].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
+}
+
+U_TEST( ArgVariableLifetime_Test1 )
+{
+	LifetimesTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn nomangle CaptureValue(char16& data, u64 size);
+		fn Bar(char16& x)
+		{
+			// Lifetime instructions are not created for reference arg.
+			CaptureValue(x, 2u64);
+		}
+		var char16 constexpr ccc(423);
+		fn Foo()
+		{
+			Bar(ccc);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence.size() == 1 );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].call_result == CallResult::CaptureValue );
+
+	const char16_t expected_x= 423;
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[0].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
+}
+
+U_TEST( ArgVariableLifetime_Test2 )
+{
+	LifetimesTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn constructor()(x= 99996){}
+		}
+		fn nomangle CaptureValue(S& data, u64 size);
+		fn Bar(S s)
+		{
+			// Lifetime declaration is not created for value arguments of composite types, because such arguments are passed by-reference.
+			CaptureValue(s, 4u64);
+		}
+		fn Foo()
+		{
+			Bar(S()); // Lifetime declarations are created here.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence.size() == 3 );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[2].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].call_result == CallResult::LifetimeStart );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].call_result == CallResult::LifetimeEnd );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].call_result == CallResult::CaptureValue );
+
+	const int32_t expected_x= 99996;
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[1].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
+}
+
+U_TEST( ReturnValueLifetime_Test0 )
+{
+	LifetimesTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn Bar() : i32
+		{
+			return 0; // No lifetimes created for return by-value.
+		}
+		fn Foo()
+		{
+			Bar();
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence.size() == 0 );
+}
+
+U_TEST( ReturnValueLifetime_Test1 )
+{
+	LifetimesTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn constructor()(x= 444555){}
+		}
+		fn nomangle CaptureValue(S& data, u64 size);
+		fn Bar() : S
+		{
+			return S(); // Lifetime is created here for temp variable allocation, but after that temp variable allocation will be replaced with 's_ret'.
+			// TODO - maybe remove "lifetime.start" for "s_ret" in such cases? Is it normal? Can such behaviour lead to unexpected bugs during LLVM optimization passes?
+		}
+		fn Foo()
+		{
+			auto s= Bar(); // Lifetime is created here for 's_ret'. Move initialization of auto variable is used here too.
+			CaptureValue(s, 4u64);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence.size() == 4 );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].call_result == CallResult::LifetimeStart ); // s_ret
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].call_result == CallResult::LifetimeStart ); // internal lifetime declaration for s_ret
+	U_TEST_ASSERT( g_lifetimes_call_sequence[3].call_result == CallResult::LifetimeEnd );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[3].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].call_result == CallResult::CaptureValue );
+
+	const int32_t expected_x= 444555;
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[2].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
+}
+
+U_TEST( LifetimeEndDuringInitialization_Test0 )
+{
+	LifetimesTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn nomangle CaptureValue(i32& data, u64 size);
+		fn Foo()
+		{
+			var i32 mut x= 678;
+			CaptureValue(x, 4u64);
+			var i32 x_moved= move(x); // Move-initialization via expression initializer.
+			CaptureValue(x_moved, 4u64);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence.size() == 6 );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].call_result == CallResult::LifetimeStart ); // x
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].call_result == CallResult::CaptureValue ); // x
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].call_result == CallResult::LifetimeStart ); // x_moved
+	U_TEST_ASSERT( g_lifetimes_call_sequence[3].call_result == CallResult::LifetimeEnd ); // x
+	U_TEST_ASSERT( g_lifetimes_call_sequence[4].call_result == CallResult::CaptureValue ); // x_moved
+	U_TEST_ASSERT( g_lifetimes_call_sequence[5].call_result == CallResult::LifetimeEnd ); // x_moved
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[1].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[3].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].address == g_lifetimes_call_sequence[4].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].address == g_lifetimes_call_sequence[5].address );
+
+	const int32_t expected_x= 678;
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[1].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[4].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[4].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
+}
+
+U_TEST( LifetimeEndDuringInitialization_Test1 )
+{
+	LifetimesTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		fn nomangle CaptureValue(i32& data, u64 size);
+		fn Foo()
+		{
+			var i32 mut x= 9514789;
+			CaptureValue(x, 4u64);
+			var i32 x_moved(move(x)); // Move-initialization via constructor initializer.
+			CaptureValue(x_moved, 4u64);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence.size() == 6 );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].call_result == CallResult::LifetimeStart ); // x
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].call_result == CallResult::CaptureValue ); // x
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].call_result == CallResult::LifetimeStart ); // x_moved
+	U_TEST_ASSERT( g_lifetimes_call_sequence[3].call_result == CallResult::LifetimeEnd ); // x
+	U_TEST_ASSERT( g_lifetimes_call_sequence[4].call_result == CallResult::CaptureValue ); // x_moved
+	U_TEST_ASSERT( g_lifetimes_call_sequence[5].call_result == CallResult::LifetimeEnd ); // x_moved
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[1].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[3].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].address == g_lifetimes_call_sequence[4].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].address == g_lifetimes_call_sequence[5].address );
+
+	const int32_t expected_x= 9514789;
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[1].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[4].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[4].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
+}
+
+U_TEST( LifetimeEndDuringInitialization_Test2 )
+{
+	LifetimesTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn constructor()(x= 66665){}
+		}
+		fn nomangle CaptureValue(S& data, u64 size);
+		fn Foo()
+		{
+			var S mut s;
+			CaptureValue(s, 4u64);
+			var S s_moved(move(s)); // Move-initialization via constructor initializer.
+			CaptureValue(s_moved, 4u64);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence.size() == 6 );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].call_result == CallResult::LifetimeStart ); // s
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].call_result == CallResult::CaptureValue ); // s
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].call_result == CallResult::LifetimeStart ); // s_moved
+	U_TEST_ASSERT( g_lifetimes_call_sequence[3].call_result == CallResult::LifetimeEnd ); // s
+	U_TEST_ASSERT( g_lifetimes_call_sequence[4].call_result == CallResult::CaptureValue ); // s_moved
+	U_TEST_ASSERT( g_lifetimes_call_sequence[5].call_result == CallResult::LifetimeEnd ); // s_moved
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[1].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[3].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].address == g_lifetimes_call_sequence[4].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].address == g_lifetimes_call_sequence[5].address );
+
+	const int32_t expected_x= 66665;
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[1].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[4].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[4].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
+}
+
+U_TEST( LifetimesForTakeOperator_Test )
+{
+	LifetimesTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn constructor()(x= 66665){}
+		}
+		fn nomangle CaptureValue(S& data, u64 size);
+		fn Foo()
+		{
+			var S mut s; // Create lifetime for 's'
+			CaptureValue(s, 4u64);
+			s.x= 111;
+			auto s_moved= take(s); // Create temporary variable and lifetime for it.
+			CaptureValue(s_moved, 4u64);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence.size() == 6 );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].call_result == CallResult::LifetimeStart ); // s
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].call_result == CallResult::CaptureValue ); // s
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].call_result == CallResult::LifetimeStart ); // s_moved
+	U_TEST_ASSERT( g_lifetimes_call_sequence[3].call_result == CallResult::CaptureValue ); // s_moved
+	U_TEST_ASSERT( g_lifetimes_call_sequence[4].call_result == CallResult::LifetimeEnd ); // s_moved
+	U_TEST_ASSERT( g_lifetimes_call_sequence[5].call_result == CallResult::LifetimeEnd ); // s
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[1].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[5].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].address == g_lifetimes_call_sequence[3].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].address == g_lifetimes_call_sequence[4].address );
+
+	int32_t expected_x= 66665;
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[1].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
+	expected_x= 111;
+	U_TEST_ASSERT( g_lifetimes_call_sequence[3].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[3].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
+}
+
 } // namespace U

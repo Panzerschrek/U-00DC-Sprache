@@ -70,6 +70,21 @@ bool FilterTest( const std::string& test_name )
 		"StackVariableLifetime_Test0",
 		"StackVariableLifetime_Test1",
 		"StackVariableLifetime_Test2",
+		"StackVariableLifetime_Test3",
+		"StackVariableLifetime_Test4",
+		"StackVariableLifetime_Test5",
+		"StackVariableLifetime_Test6",
+		"StackVariableLifetime_Test7",
+		"StackVariableLifetime_Test8",
+		"ArgVariableLifetime_Test0",
+		"ArgVariableLifetime_Test1",
+		"ArgVariableLifetime_Test2",
+		"ReturnValueLifetime_Test0",
+		"ReturnValueLifetime_Test1",
+		"LifetimeEndDuringInitialization_Test0",
+		"LifetimeEndDuringInitialization_Test1",
+		"LifetimeEndDuringInitialization_Test2",
+		"LifetimesForTakeOperator_Test",
 	};
 
 	return c_test_to_disable.count( test_name_without_file_name ) == 0;
