@@ -758,6 +758,9 @@ private:
 
 	fn CopyBytes( this, LLVMValueRef dst, LLVMValueRef src, Type& t, FunctionContext &mut function_context );
 
+	fn CreateLifetimeStart( this, LLVMValueRef llvm_value, FunctionContext &mut function_context );
+	fn CreateLifetimeEnd( this, LLVMValueRef llvm_value, FunctionContext &mut function_context );
+
 	struct InstructionsState
 	{
 		LLVMValueRef current_block_last_instruction;
@@ -864,6 +867,12 @@ private:
 		ust::unordered_map</ EnumTypePtr, LLVMMetadataRef /> enums_di_types;
 	}
 	DebugInfo debug_info_;
+
+	// Lifetimes.
+	bool imut create_lifetimes_;
+	LLVMValueRef lifetime_start_intrinsic_= LLVMValueRef::Null;
+	LLVMValueRef lifetime_end_intrinsic_= LLVMValueRef::Null;
+	LLVMTypeRef lifetime_function_arg_type_= LLVMTypeRef::Null;
 }
 
 } // namespace U1
