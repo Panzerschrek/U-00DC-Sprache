@@ -814,7 +814,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( result.type.GetLLVMType() );
 		result.llvm_value->setName( "select_result" );
 
-		CreateLifetimeStart( result, function_context );
+		CreateLifetimeStart( function_context, result.llvm_value );
 	}
 	else if( branches_value_types[0] == ValueType::ReferenceImut || branches_value_types[1] == ValueType::ReferenceImut )
 	{
@@ -1292,7 +1292,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "_moved_" + expression_result.node->name );
 	result.llvm_value->setName( result.node->name );
 
-	CreateLifetimeStart( result, function_context );
+	CreateLifetimeStart( function_context, result.llvm_value );
 
 	SetupReferencesInCopyOrMove( function_context, result, expression_result, names.GetErrors(), take_operator.src_loc_ );
 
@@ -1477,7 +1477,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			function_context.variables_state.MoveNode( r_var_real.node );
 
 		CopyBytes( r_var_real.llvm_value, l_var_real.llvm_value, l_var_real.type, function_context );
-		CreateLifetimeEnd( r_var_real, function_context );
+		CreateLifetimeEnd( function_context, r_var_real.llvm_value );
 
 		Variable move_result;
 		move_result.type= void_type_;
@@ -2476,10 +2476,10 @@ Value CodeBuilder::DoCallFunction(
 	ArgsVector<llvm::Constant*> constant_llvm_args;
 	llvm_args.resize( arg_count, nullptr );
 
-	std::vector< ReferencesGraphNodeHolder > args_nodes;
-	std::vector< ReferencesGraphNodeHolder > locked_args_inner_references;
+	ArgsVector< ReferencesGraphNodeHolder > args_nodes;
+	ArgsVector< ReferencesGraphNodeHolder > locked_args_inner_references;
 
-	std::vector<Variable> value_args_for_lifetime_end_call;
+	ArgsVector<llvm::Value*> value_args_for_lifetime_end_call;
 
 	for( size_t i= 0u; i < arg_count; ++i )
 	{
@@ -2655,7 +2655,7 @@ Value CodeBuilder::DoCallFunction(
 					if( expr.node != nullptr )
 						function_context.variables_state.MoveNode( expr.node );
 					llvm_args[j]= expr.llvm_value;
-					value_args_for_lifetime_end_call.push_back( expr );
+					value_args_for_lifetime_end_call.push_back( expr.llvm_value );
 				}
 				else
 				{
@@ -2672,14 +2672,8 @@ Value CodeBuilder::DoCallFunction(
 
 					// Create lifetime.start instruction for value arg.
 					// Save it into temporary container to call lifetime.end after call.
-					{
-						Variable value_arg_var;
-						value_arg_var.value_type= ValueType::Value;
-						value_arg_var.type= param.type;
-						value_arg_var.llvm_value= arg_copy;
-						CreateLifetimeStart( value_arg_var, function_context );
-						value_args_for_lifetime_end_call.push_back( value_arg_var );
-					}
+					CreateLifetimeStart( function_context, arg_copy );
+					value_args_for_lifetime_end_call.push_back( arg_copy );
 
 					llvm_args[j]= arg_copy;
 					BuildCopyConstructorPart(
@@ -2712,7 +2706,7 @@ Value CodeBuilder::DoCallFunction(
 		llvm_args.insert( llvm_args.begin(), result.llvm_value );
 		constant_llvm_args.insert( constant_llvm_args.begin(), nullptr );
 
-		CreateLifetimeStart( result, function_context );
+		CreateLifetimeStart( function_context, result.llvm_value );
 	}
 
 	llvm::Value* call_result= nullptr;
@@ -2762,8 +2756,8 @@ Value CodeBuilder::DoCallFunction(
 
 	// Call "lifetime.end" just right after call for value args, allocated on stack of this function.
 	// It is fine because there is no way to return reference to value arg (reference protection does not allow this).
-	for( const Variable& value_arg_var : value_args_for_lifetime_end_call )
-		CreateLifetimeEnd( value_arg_var, function_context );
+	for( llvm::Value* const value_arg_var : value_args_for_lifetime_end_call )
+		CreateLifetimeEnd( function_context, value_arg_var );
 
 	if( !return_value_is_sret )
 		result.llvm_value= call_result;
@@ -2956,7 +2950,7 @@ Variable CodeBuilder::BuildTempVariableConstruction(
 	variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( type.GetLLVMType() );
 	variable.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "temp " + type.ToString() );
 
-	CreateLifetimeStart( variable, function_context );
+	CreateLifetimeStart( function_context, variable.llvm_value );
 
 	variable.constexpr_value= ApplyConstructorInitializer( variable, synt_args, src_loc, names, function_context );
 	variable.value_type= ValueType::Value; // Make value after construction
@@ -2986,7 +2980,7 @@ Variable CodeBuilder::ConvertVariable(
 	result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( dst_type.GetLLVMType() );
 	result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "temp " + dst_type.ToString() );
 
-	CreateLifetimeStart( result, function_context );
+	CreateLifetimeStart( function_context, result.llvm_value );
 
 	{
 		// Create temp variables frame to prevent destruction of "src".

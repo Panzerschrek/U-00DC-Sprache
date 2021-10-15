@@ -765,8 +765,8 @@ private:
 
 	fn CopyBytes( this, LLVMValueRef dst, LLVMValueRef src, Type& t, FunctionContext &mut function_context );
 
-	fn CreateLifetimeStart( this, LLVMValueRef llvm_value, FunctionContext &mut function_context );
-	fn CreateLifetimeEnd( this, LLVMValueRef llvm_value, FunctionContext &mut function_context );
+	fn CreateLifetimeStart( this, FunctionContext &mut function_context, LLVMValueRef llvm_value );
+	fn CreateLifetimeEnd( this, FunctionContext &mut function_context, LLVMValueRef llvm_value );
 
 	struct InstructionsState
 	{

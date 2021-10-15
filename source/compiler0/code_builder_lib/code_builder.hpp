@@ -895,8 +895,8 @@ private:
 
 	void SetupGeneratedFunctionAttributes( llvm::Function& function );
 
-	void CreateLifetimeStart( const Variable& variable, FunctionContext& function_context );
-	void CreateLifetimeEnd( const Variable& variable, FunctionContext& function_context );
+	void CreateLifetimeStart( FunctionContext& function_context, llvm::Value* address );
+	void CreateLifetimeEnd( FunctionContext& function_context, llvm::Value* address );
 
 	struct InstructionsState
 	{

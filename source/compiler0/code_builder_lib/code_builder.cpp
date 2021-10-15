@@ -589,7 +589,7 @@ void CodeBuilder::CallDestructorsImpl(
 					REPORT_ERROR( DestroyedVariableStillHaveReferences, errors_container, src_loc, stored_variable.node->name );
 				if( stored_variable.type.HaveDestructor() )
 					CallDestructor( stored_variable.llvm_value, stored_variable.type, function_context, errors_container, src_loc );
-				CreateLifetimeEnd( stored_variable, function_context );
+				CreateLifetimeEnd( function_context, stored_variable.llvm_value );
 			}
 		}
 		function_context.variables_state.RemoveNode( stored_variable.node );
@@ -1281,7 +1281,7 @@ Type CodeBuilder::BuildFuncCode(
 			{
 				// Move parameters to stack for assignment possibility.
 				var.llvm_value= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType(), nullptr, arg_name );
-				CreateLifetimeStart( var, function_context );
+				CreateLifetimeStart( function_context, var.llvm_value );
 
 				if( param.type != void_type_ )
 					function_context.llvm_ir_builder.CreateStore( &llvm_arg, var.llvm_value );
@@ -2031,53 +2031,55 @@ void CodeBuilder::SetupGeneratedFunctionAttributes( llvm::Function& function )
 }
 
 
-void CodeBuilder::CreateLifetimeStart( const Variable& variable, FunctionContext& function_context )
+void CodeBuilder::CreateLifetimeStart( FunctionContext& function_context, llvm::Value* const address )
 {
 	if( !create_lifetimes_ )
 		return;
 
-	if( !IsTypeComplete( variable.type ) )
-		return; // May be in case of error.
-
-	if( llvm::dyn_cast<llvm::AllocaInst>(variable.llvm_value) == nullptr )
+	if( llvm::dyn_cast<llvm::AllocaInst>(address) == nullptr )
 		return;
 
+	llvm::Type* const type= address->getType()->getPointerElementType();
+	if( !type->isSized() )
+		return; // May be in case of error.
+
 	function_context.llvm_ir_builder.CreateLifetimeStart(
-		variable.llvm_value,
+		address,
 		llvm::ConstantInt::get(
 			fundamental_llvm_types_.u64,
-			data_layout_.getTypeAllocSize(variable.type.GetLLVMType()) ) );
+			data_layout_.getTypeAllocSize(type) ) );
 
 	if( generate_lifetime_start_end_debug_calls_ )
 		function_context.llvm_ir_builder.CreateCall(
 			lifetime_start_debug_func_,
 			{
-				function_context.llvm_ir_builder.CreatePointerCast( variable.llvm_value, lifetime_start_debug_func_->arg_begin()->getType() )
+				function_context.llvm_ir_builder.CreatePointerCast( address, lifetime_start_debug_func_->arg_begin()->getType() )
 			} );
 }
 
-void CodeBuilder::CreateLifetimeEnd( const Variable& variable, FunctionContext& function_context )
+void CodeBuilder::CreateLifetimeEnd( FunctionContext& function_context, llvm::Value* const address )
 {
 	if( !create_lifetimes_ )
 		return;
 
-	if( !IsTypeComplete( variable.type ) )
-		return; // May be in case of error.
-
-	if( llvm::dyn_cast<llvm::AllocaInst>(variable.llvm_value) == nullptr )
+	if( llvm::dyn_cast<llvm::AllocaInst>(address) == nullptr )
 		return;
 
+	llvm::Type* const type= address->getType()->getPointerElementType();
+	if( !type->isSized() )
+		return; // May be in case of error.
+
 	function_context.llvm_ir_builder.CreateLifetimeEnd(
-		variable.llvm_value,
+		address,
 		llvm::ConstantInt::get(
 			fundamental_llvm_types_.u64,
-			data_layout_.getTypeAllocSize(variable.type.GetLLVMType()) ) );
+			data_layout_.getTypeAllocSize(type) ) );
 
 	if( generate_lifetime_start_end_debug_calls_ )
 		function_context.llvm_ir_builder.CreateCall(
 			lifetime_end_debug_func_,
 			{
-				function_context.llvm_ir_builder.CreatePointerCast( variable.llvm_value, lifetime_end_debug_func_->arg_begin()->getType() )
+				function_context.llvm_ir_builder.CreatePointerCast( address, lifetime_end_debug_func_->arg_begin()->getType() )
 			} );
 }
 
