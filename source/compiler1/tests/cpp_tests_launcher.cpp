@@ -67,24 +67,8 @@ bool FilterTest( const std::string& test_name )
 
 	static const std::unordered_set<std::string> c_test_to_disable
 	{
-		"StackVariableLifetime_Test0",
-		"StackVariableLifetime_Test1",
-		"StackVariableLifetime_Test2",
-		"StackVariableLifetime_Test3",
-		"StackVariableLifetime_Test4",
-		"StackVariableLifetime_Test5",
-		"StackVariableLifetime_Test6",
-		"StackVariableLifetime_Test7",
-		"StackVariableLifetime_Test8",
-		"ArgVariableLifetime_Test0",
 		"ArgVariableLifetime_Test1",
 		"ArgVariableLifetime_Test2",
-		"ReturnValueLifetime_Test0",
-		"ReturnValueLifetime_Test1",
-		"LifetimeEndDuringInitialization_Test0",
-		"LifetimeEndDuringInitialization_Test1",
-		"LifetimeEndDuringInitialization_Test2",
-		"LifetimesForTakeOperator_Test",
 	};
 
 	return c_test_to_disable.count( test_name_without_file_name ) == 0;
@@ -200,8 +184,20 @@ ErrorTestBuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry>
 
 std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text )
 {
-	// TODO
-	return BuildProgram( text );
+	const U1_StringView text_view{ text, std::strlen(text) };
+
+	llvm::LLVMContext& llvm_context= *g_llvm_context;
+
+	llvm::DataLayout data_layout( GetTestsDataLayout() );
+
+	auto ptr=
+		U1_BuildProgramForLifetimesTest(
+			text_view,
+			llvm::wrap(&llvm_context),
+			llvm::wrap(&data_layout) );
+	U_TEST_ASSERT( ptr != nullptr );
+
+	return std::unique_ptr<llvm::Module>( reinterpret_cast<llvm::Module*>(ptr) );
 }
 
 EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, const bool needs_dump )
