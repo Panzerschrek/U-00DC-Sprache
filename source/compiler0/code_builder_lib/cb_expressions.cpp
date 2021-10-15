@@ -2539,7 +2539,7 @@ Value CodeBuilder::DoCallFunction(
 					if( expr.type != void_type_ )
 						function_context.llvm_ir_builder.CreateStore( expr.llvm_value, temp_storage );
 					llvm_args[j]= temp_storage;
-					// TODO - create lifetime.start/lifetime.end for this allocation?
+					// Do not call here lifetime.start since there is no way to call lifetime.end for this value, because this allocation logically linked with some temp variable and can extend it's lifetime.
 				}
 				else
 					llvm_args[j]= expr.llvm_value;
