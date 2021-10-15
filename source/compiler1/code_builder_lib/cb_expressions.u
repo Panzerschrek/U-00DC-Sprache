@@ -715,6 +715,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 							function_context.references_graph.MoveNode( branch_result.node_id );
 						}
 						CopyBytes( result.llvm_value, branch_result.llvm_value, result.t, function_context );
+						CreateLifetimeEnd( branch_result.llvm_value, function_context );
 					}
 					else
 					{
@@ -2316,6 +2317,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 			function_context.references_graph.MoveNode( r_var.node_id );
 		}
 		CopyBytes( l_var.llvm_value, r_var.llvm_value, r_var.t, function_context );
+		CreateLifetimeEnd( r_var.llvm_value, function_context );
 
 		var Variable mut move_result{ .t= void_type_ };
 		return Value( move(move_result) );

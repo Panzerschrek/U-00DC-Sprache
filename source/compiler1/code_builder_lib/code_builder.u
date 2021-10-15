@@ -1773,6 +1773,7 @@ fn CodeBuilder::CallDestructorsForVariablesFrame( this, NamesScopePtr& names_sco
 				if( !function_context.references_graph.NodeIsMoved( variable.node_id ) )
 				{
 					BuildDestructorPart( names_scope, function_context, variable.llvm_value, variable.t, src_loc );
+					CreateLifetimeEnd( variable.llvm_value, function_context );
 				}
 			}
 
@@ -1829,6 +1830,7 @@ fn CodeBuilder::DestroyUnusedTemporaryVariables( this, NamesScopePtr& names_scop
 					var LLVMValueRef llvm_value= function_context.variables_frames.back()[i].llvm_value;
 					var Type t= function_context.variables_frames.back()[i].t;
 					BuildDestructorPart( names_scope, function_context, llvm_value, t, src_loc );
+					CreateLifetimeEnd( llvm_value, function_context );
 				}
 			}
 		}
@@ -2486,6 +2488,13 @@ fn CodeBuilder::CreateLifetimeEnd( this, LLVMValueRef llvm_value, FunctionContex
 		{
 			return;
 		}
+
+		var u64 size_of= LLVMABISizeOfType( data_layout_, t );
+		var LLVMValueRef size_of_value= LLVMConstInt( fundamental_llvm_types_.u64_, size_of, LLVMBool::False );
+		var LLVMValueRef ptr_converted= LLVMBuildPointerCast( function_context.llvm_ir_builder, llvm_value, lifetime_function_arg_type_, "\0"[0] );
+
+		var [ LLVMValueRef, 2 ] args[ size_of_value, ptr_converted ];
+		LLVMBuildCall( function_context.llvm_ir_builder, lifetime_end_intrinsic_, args[0], 2u, "\0"[0] );
 	}
 }
 
