@@ -319,7 +319,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				U_ASSERT( expression_result.node->kind == ReferencesGraphNode::Kind::Variable );
 				function_context.variables_state.MoveNode( expression_result.node );
 			}
-			CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
+			CopyBytes( variable.llvm_value, expression_result.llvm_value, variable.type, function_context );
 			CreateLifetimeEnd( function_context, expression_result.llvm_value );
 
 			DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), src_loc );
@@ -373,7 +373,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				U_ASSERT( expression_result.node->kind == ReferencesGraphNode::Kind::Variable );
 				function_context.variables_state.MoveNode( expression_result.node );
 			}
-			CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
+			CopyBytes( variable.llvm_value, expression_result.llvm_value, variable.type, function_context );
 			CreateLifetimeEnd( function_context, expression_result.llvm_value );
 
 			DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), src_loc );
@@ -758,7 +758,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			if( expression_result.node != nullptr )
 				function_context.variables_state.MoveNode( expression_result.node );
 
-			CopyBytes( expression_result.llvm_value, variable.llvm_value, variable.type, function_context );
+			CopyBytes( variable.llvm_value, expression_result.llvm_value, variable.type, function_context );
 			CreateLifetimeEnd( function_context, expression_result.llvm_value );
 		}
 		else
@@ -803,7 +803,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			if( initializer_variable.node != nullptr )
 				function_context.variables_state.MoveNode( initializer_variable.node );
 
-			CopyBytes( initializer_variable.llvm_value, variable.llvm_value, variable.type, function_context );
+			CopyBytes( variable.llvm_value, initializer_variable.llvm_value, variable.type, function_context );
 			CreateLifetimeEnd( function_context, initializer_variable.llvm_value );
 
 			return initializer_variable.constexpr_value; // Move can preserve constexpr.

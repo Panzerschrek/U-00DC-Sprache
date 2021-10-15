@@ -801,7 +801,7 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 }
 
 void CodeBuilder::CopyBytes(
-	llvm::Value* const src, llvm::Value* const dst,
+	llvm::Value* const dst, llvm::Value* const src,
 	const Type& type,
 	FunctionContext& function_context )
 {

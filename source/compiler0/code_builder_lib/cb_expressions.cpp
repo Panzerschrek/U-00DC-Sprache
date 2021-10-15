@@ -872,7 +872,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 						// Move.
 						if( branch_result.node != nullptr )
 							function_context.variables_state.MoveNode( branch_result.node );
-						CopyBytes( branch_result.llvm_value, result.llvm_value, result.type, function_context );
+						CopyBytes( result.llvm_value, branch_result.llvm_value, result.type, function_context );
+						CreateLifetimeEnd( function_context, branch_result.llvm_value );
 					}
 					else
 					{
@@ -1297,7 +1298,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	SetupReferencesInCopyOrMove( function_context, result, expression_result, names.GetErrors(), take_operator.src_loc_ );
 
 	// Copy content to new variable.
-	CopyBytes( expression_result.llvm_value, result.llvm_value, result.type, function_context );
+	CopyBytes( result.llvm_value, expression_result.llvm_value, result.type, function_context );
 
 	// Construct empty value in old place.
 	ApplyEmptyInitializer( expression_result.node->name, take_operator.src_loc_, expression_result, names, function_context );
@@ -1476,7 +1477,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		if( r_var_real.node != nullptr )
 			function_context.variables_state.MoveNode( r_var_real.node );
 
-		CopyBytes( r_var_real.llvm_value, l_var_real.llvm_value, l_var_real.type, function_context );
+		CopyBytes( l_var_real.llvm_value, r_var_real.llvm_value, l_var_real.type, function_context );
 		CreateLifetimeEnd( function_context, r_var_real.llvm_value );
 
 		Variable move_result;

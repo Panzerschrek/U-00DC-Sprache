@@ -328,7 +328,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			if( initializer_experrsion.llvm_value != variable.llvm_value )
 			{
-				CopyBytes( initializer_experrsion.llvm_value, variable.llvm_value, variable.type, function_context );
+				CopyBytes( variable.llvm_value, initializer_experrsion.llvm_value, variable.type, function_context );
 				CreateLifetimeEnd( function_context, initializer_experrsion.llvm_value );
 			}
 		}
@@ -526,7 +526,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				}
 				else
 				{
-					CopyBytes( expression_result.llvm_value, function_context.s_ret_, *function_context.return_type, function_context );
+					CopyBytes( function_context.s_ret_, expression_result.llvm_value, *function_context.return_type, function_context );
 					CreateLifetimeEnd( function_context, expression_result.llvm_value );
 				}
 			}
@@ -1090,7 +1090,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			if( variable.llvm_value != expr.llvm_value )
 			{
-				CopyBytes( expr.llvm_value, variable.llvm_value, variable.type, function_context );
+				CopyBytes( variable.llvm_value, expr.llvm_value, variable.type, function_context );
 				CreateLifetimeEnd( function_context, expr.llvm_value );
 			}
 		}
