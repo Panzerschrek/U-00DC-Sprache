@@ -57,10 +57,12 @@ ReferencesGraphNodePtr CodeBuilder::ReferencesGraphNodeHolder::TakeNode()
 CodeBuilder::CodeBuilder(
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
-	bool build_debug_info )
+	const CodeBuilderOptions& options )
 	: llvm_context_( llvm_context )
 	, data_layout_(data_layout)
-	, build_debug_info_( build_debug_info )
+	, build_debug_info_( options.build_debug_info )
+	, create_lifetimes_( options.create_lifetimes )
+	, generate_lifetime_start_end_debug_calls_( options.generate_lifetime_start_end_debug_calls )
 	, constexpr_function_evaluator_( data_layout_ )
 {
 	fundamental_llvm_types_.i8 = llvm::Type::getInt8Ty( llvm_context_ );
@@ -122,6 +124,26 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	halt_func_->setDoesNotThrow();
 	halt_func_->addFnAttr(llvm::Attribute::Cold );
 	halt_func_->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
+
+	// Prepare debug lifetime_start/lifetime_end functions.
+	if( create_lifetimes_ && generate_lifetime_start_end_debug_calls_ )
+	{
+		llvm::Type* const arg_types[1]= { fundamental_llvm_types_.u8->getPointerTo() };
+
+		lifetime_start_debug_func_=
+			llvm::Function::Create(
+				llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret, arg_types, false ),
+				llvm::Function::ExternalLinkage,
+				"__U_debug_lifetime_start",
+				module_.get() );
+
+		lifetime_end_debug_func_=
+			llvm::Function::Create(
+				llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret, arg_types, false ),
+				llvm::Function::ExternalLinkage,
+				"__U_debug_lifetime_end",
+				module_.get() );
+	}
 
 	// In some places outside functions we need to execute expression evaluation.
 	// Create for this function context.
@@ -559,12 +581,16 @@ void CodeBuilder::CallDestructorsImpl(
 	{
 		const Variable& stored_variable= *it;
 
-		if( stored_variable.node->kind == ReferencesGraphNode::Kind::Variable && !function_context.variables_state.NodeMoved( stored_variable.node ) )
+		if( stored_variable.node->kind == ReferencesGraphNode::Kind::Variable )
 		{
-			if( function_context.variables_state.HaveOutgoingLinks( stored_variable.node ) )
-				REPORT_ERROR( DestroyedVariableStillHaveReferences, errors_container, src_loc, stored_variable.node->name );
-			if( stored_variable.type.HaveDestructor() )
-				CallDestructor( stored_variable.llvm_value, stored_variable.type, function_context, errors_container, src_loc );
+			if( !function_context.variables_state.NodeMoved( stored_variable.node ) )
+			{
+				if( function_context.variables_state.HaveOutgoingLinks( stored_variable.node ) )
+					REPORT_ERROR( DestroyedVariableStillHaveReferences, errors_container, src_loc, stored_variable.node->name );
+				if( stored_variable.type.HaveDestructor() )
+					CallDestructor( stored_variable.llvm_value, stored_variable.type, function_context, errors_container, src_loc );
+				CreateLifetimeEnd( function_context, stored_variable.llvm_value );
+			}
 		}
 		function_context.variables_state.RemoveNode( stored_variable.node );
 	}
@@ -1234,17 +1260,16 @@ Type CodeBuilder::BuildFuncCode(
 		U_ASSERT( !( is_this && !param.is_reference ) );
 
 		Variable var;
-		var.location= Variable::Location::LLVMRegister;
+		var.location= Variable::Location::Pointer;
 		var.value_type= ValueType::ReferenceMut;
 		var.type= param.type;
-		var.llvm_value= &llvm_arg;
 
 		if( declaration_arg.mutability_modifier_ != MutabilityModifier::Mutable )
 			var.value_type= ValueType::ReferenceImut;
 
 		if( param.is_reference )
 		{
-			var.location= Variable::Location::Pointer;
+			var.llvm_value= &llvm_arg;
 			CreateReferenceVariableDebugInfo( var, arg_name, declaration_arg.src_loc_, function_context );
 		}
 		else
@@ -1255,19 +1280,16 @@ Type CodeBuilder::BuildFuncCode(
 				param.type.GetFunctionPointerType() != nullptr )
 			{
 				// Move parameters to stack for assignment possibility.
-				// TODO - do it, only if parameters are not constant.
-				llvm::Value* address= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
-				address->setName( arg_name );
-				if( param.type != void_type_ )
-					function_context.llvm_ir_builder.CreateStore( var.llvm_value, address );
+				var.llvm_value= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType(), nullptr, arg_name );
+				CreateLifetimeStart( function_context, var.llvm_value );
 
-				var.llvm_value= address;
-				var.location= Variable::Location::Pointer;
+				if( param.type != void_type_ )
+					function_context.llvm_ir_builder.CreateStore( &llvm_arg, var.llvm_value );
 			}
 			else if( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr )
 			{
 				// Composite types use llvm-pointers.
-				var.location= Variable::Location::Pointer;
+				var.llvm_value = &llvm_arg;
 			}
 			else U_ASSERT(false);
 
@@ -2006,6 +2028,59 @@ void CodeBuilder::SetupGeneratedFunctionAttributes( llvm::Function& function )
 
 	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
 		function.addFnAttr( llvm::Attribute::UWTable );
+}
+
+
+void CodeBuilder::CreateLifetimeStart( FunctionContext& function_context, llvm::Value* const address )
+{
+	if( !create_lifetimes_ )
+		return;
+
+	if( llvm::dyn_cast<llvm::AllocaInst>(address) == nullptr )
+		return;
+
+	llvm::Type* const type= address->getType()->getPointerElementType();
+	if( !type->isSized() )
+		return; // May be in case of error.
+
+	function_context.llvm_ir_builder.CreateLifetimeStart(
+		address,
+		llvm::ConstantInt::get(
+			fundamental_llvm_types_.u64,
+			data_layout_.getTypeAllocSize(type) ) );
+
+	if( generate_lifetime_start_end_debug_calls_ )
+		function_context.llvm_ir_builder.CreateCall(
+			lifetime_start_debug_func_,
+			{
+				function_context.llvm_ir_builder.CreatePointerCast( address, lifetime_start_debug_func_->arg_begin()->getType() )
+			} );
+}
+
+void CodeBuilder::CreateLifetimeEnd( FunctionContext& function_context, llvm::Value* const address )
+{
+	if( !create_lifetimes_ )
+		return;
+
+	if( llvm::dyn_cast<llvm::AllocaInst>(address) == nullptr )
+		return;
+
+	llvm::Type* const type= address->getType()->getPointerElementType();
+	if( !type->isSized() )
+		return; // May be in case of error.
+
+	function_context.llvm_ir_builder.CreateLifetimeEnd(
+		address,
+		llvm::ConstantInt::get(
+			fundamental_llvm_types_.u64,
+			data_layout_.getTypeAllocSize(type) ) );
+
+	if( generate_lifetime_start_end_debug_calls_ )
+		function_context.llvm_ir_builder.CreateCall(
+			lifetime_end_debug_func_,
+			{
+				function_context.llvm_ir_builder.CreatePointerCast( address, lifetime_end_debug_func_->arg_begin()->getType() )
+			} );
 }
 
 CodeBuilder::InstructionsState CodeBuilder::SaveInstructionsState( FunctionContext& function_context )

@@ -580,7 +580,9 @@ void ConstexprFunctionEvaluator::ProcessCall( const llvm::Instruction* const ins
 
 	if( function->isIntrinsic() )
 	{
-		if( function->getIntrinsicID() == llvm::Intrinsic::dbg_declare )
+		if( function->getIntrinsicID() == llvm::Intrinsic::dbg_declare ||
+			function->getIntrinsicID() == llvm::Intrinsic::lifetime_start ||
+			function->getIntrinsicID() == llvm::Intrinsic::lifetime_end)
 			return;
 		if( function->getIntrinsicID() == llvm::Intrinsic::memcpy || function->getIntrinsicID() == llvm::Intrinsic::memmove )
 		{

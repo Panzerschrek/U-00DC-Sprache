@@ -180,6 +180,24 @@ ErrorTestBuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry>
 	return build_result;
 }
 
+std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text )
+{
+	const U1_StringView text_view{ text, std::strlen(text) };
+
+	llvm::LLVMContext& llvm_context= *g_llvm_context;
+
+	llvm::DataLayout data_layout( GetTestsDataLayout() );
+
+	auto ptr=
+		U1_BuildProgramForLifetimesTest(
+			text_view,
+			llvm::wrap(&llvm_context),
+			llvm::wrap(&data_layout) );
+	U_TEST_ASSERT( ptr != nullptr );
+
+	return std::unique_ptr<llvm::Module>( reinterpret_cast<llvm::Module*>(ptr) );
+}
+
 EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, const bool needs_dump )
 {
 	U_TEST_ASSERT( module != nullptr );

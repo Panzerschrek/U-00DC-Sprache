@@ -56,6 +56,11 @@ fn nomangle U1_BuildMultisourceProgramWithErrors(
 	ErrorsHandlingCallbacks& errors_handling_callbacks,
 	UserHandle data ) unsafe : bool;
 
+fn nomangle U1_BuildProgramForLifetimesTest(
+	U1_StringView& program_text,
+	LLVMContextRef llvm_context,
+	LLVMTargetDataRef data_layout ) unsafe : LLVMModuleRef;
+
 struct IVfsInterface ordered
 {
 	type FillStringCallback= fn( UserHandle user_data, U1_StringView& result_path_normalized );

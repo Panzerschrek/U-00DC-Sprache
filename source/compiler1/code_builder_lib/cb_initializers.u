@@ -67,6 +67,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				function_context.references_graph.MoveNode( expr_result.node_id );
 			}
 			CopyBytes( variable.llvm_value, expr_result.llvm_value, variable.t, function_context );
+			CreateLifetimeEnd( function_context, expr_result.llvm_value );
 		}
 		else
 		{
@@ -101,6 +102,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 					function_context.references_graph.MoveNode( expr_result.node_id );
 				}
 				CopyBytes( variable.llvm_value, expr_result.llvm_value, variable.t, function_context );
+				CreateLifetimeEnd( function_context, expr_result.llvm_value );
 			}
 			else
 			{
@@ -835,6 +837,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 				function_context.references_graph.MoveNode( expr_result.node_id );
 			}
 			CopyBytes( variable.llvm_value, expr_result.llvm_value, variable.t, function_context );
+			CreateLifetimeEnd( function_context, expr_result.llvm_value );
 		}
 		else
 		{
@@ -912,6 +915,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 				function_context.references_graph.MoveNode( expr_result.node_id );
 			}
 			CopyBytes( variable.llvm_value, expr_result.llvm_value, variable.t, function_context );
+			CreateLifetimeEnd( function_context, expr_result.llvm_value );
 
 			return expr_result.constexpr_value; // Move can preserve constexpr.
 		}

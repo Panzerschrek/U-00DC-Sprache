@@ -22,13 +22,21 @@
 namespace U
 {
 
+struct CodeBuilderOptions
+{
+	bool build_debug_info= false;
+	bool create_lifetimes= true;
+	bool generate_lifetime_start_end_debug_calls= false;
+};
+
 class CodeBuilder
 {
 public:
+
 	CodeBuilder(
 		llvm::LLVMContext& llvm_context,
 		const llvm::DataLayout& data_layout,
-		bool build_debug_info );
+		const CodeBuilderOptions& options= CodeBuilderOptions() );
 
 	struct BuildResult
 	{
@@ -887,6 +895,9 @@ private:
 
 	void SetupGeneratedFunctionAttributes( llvm::Function& function );
 
+	void CreateLifetimeStart( FunctionContext& function_context, llvm::Value* address );
+	void CreateLifetimeEnd( FunctionContext& function_context, llvm::Value* address );
+
 	struct InstructionsState
 	{
 		ReferencesGraph variables_state;
@@ -904,6 +915,8 @@ private:
 	llvm::LLVMContext& llvm_context_;
 	const llvm::DataLayout data_layout_;
 	const bool build_debug_info_;
+	const bool create_lifetimes_;
+	const bool generate_lifetime_start_end_debug_calls_;
 
 	struct
 	{
@@ -934,6 +947,9 @@ private:
 	} fundamental_llvm_types_;
 
 	llvm::Function* halt_func_= nullptr;
+
+	llvm::Function* lifetime_start_debug_func_= nullptr;
+	llvm::Function* lifetime_end_debug_func_= nullptr;
 
 	Type invalid_type_;
 	Type void_type_;

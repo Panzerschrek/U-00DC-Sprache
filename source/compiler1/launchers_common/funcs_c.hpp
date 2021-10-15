@@ -62,6 +62,11 @@ bool U1_BuildMultisourceProgramWithErrors(
 	const ErrorsHandlingCallbacks& errors_handling_callbacks,
 	UserHandle data );
 
+LLVMModuleRef U1_BuildProgramForLifetimesTest(
+	const U1_StringView& program_text_start,
+	LLVMContextRef llvm_context,
+	LLVMTargetDataRef data_layout );
+
 struct IVfsInterface
 {
 	using FillStringCallback= void(*)( UserHandle user_data, const U1_StringView& result_path_normalized );

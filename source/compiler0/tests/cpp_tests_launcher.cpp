@@ -21,8 +21,6 @@ namespace U
 namespace
 {
 
-const bool g_build_debug_info= true;
-
 llvm::ManagedStatic<llvm::LLVMContext> g_llvm_context;
 
 class MultiFileVfs final : public IVfs
@@ -90,6 +88,13 @@ static void PrinteErrors_r( const CodeBuilderErrorsContainer& errors )
 	}
 }
 
+static CodeBuilderOptions GetCodeBuilderOptionsForTests()
+{
+	CodeBuilderOptions options;
+	options.build_debug_info= true;
+	return options;
+}
+
 std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 {
 	const std::string file_path= "_";
@@ -104,7 +109,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 		CodeBuilder(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
-			g_build_debug_info ).BuildProgram( *source_graph );
+			GetCodeBuilderOptionsForTests() ).BuildProgram( *source_graph );
 
 	PrinteErrors_r( build_result.errors );
 	U_TEST_ASSERT( build_result.errors.empty() );
@@ -126,7 +131,7 @@ ErrorTestBuildResult BuildProgramWithErrors( const char* const text )
 		{ CodeBuilder(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
-			g_build_debug_info ).BuildProgram( *source_graph ).errors };
+			GetCodeBuilderOptionsForTests() ).BuildProgram( *source_graph ).errors };
 }
 
 std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const std::string& root_file_path )
@@ -142,7 +147,7 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 		CodeBuilder(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
-			g_build_debug_info ).BuildProgram( *source_graph );
+			GetCodeBuilderOptionsForTests() ).BuildProgram( *source_graph );
 
 	PrinteErrors_r( build_result.errors );
 	U_TEST_ASSERT( build_result.errors.empty() );
@@ -163,7 +168,32 @@ ErrorTestBuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry>
 		{ CodeBuilder(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
-			g_build_debug_info ).BuildProgram( *source_graph ).errors };
+			GetCodeBuilderOptionsForTests() ).BuildProgram( *source_graph ).errors };
+}
+
+std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text )
+{
+	const std::string file_path= "_";
+	const SourceGraphPtr source_graph=
+		SourceGraphLoader( std::make_shared<MultiFileVfs>( file_path, text ) ).LoadSource( file_path );
+
+	U_TEST_ASSERT( source_graph != nullptr );
+	PrintLexSyntErrors( *source_graph );
+	U_TEST_ASSERT( source_graph->errors.empty() );
+
+	CodeBuilderOptions options= GetCodeBuilderOptionsForTests();
+	options.generate_lifetime_start_end_debug_calls= true;
+
+	CodeBuilder::BuildResult build_result=
+		CodeBuilder(
+			*g_llvm_context,
+			llvm::DataLayout( GetTestsDataLayout() ),
+			options ).BuildProgram( *source_graph );
+
+	PrinteErrors_r( build_result.errors );
+	U_TEST_ASSERT( build_result.errors.empty() );
+
+	return std::move( build_result.module );
 }
 
 EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, const bool needs_dump )

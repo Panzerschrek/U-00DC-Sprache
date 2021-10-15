@@ -213,6 +213,8 @@ fn nomangle LLVMGetElementType(LLVMTypeRef Ty) unsafe : LLVMTypeRef;
 
 fn nomangle LLVMGetTypeKind(LLVMTypeRef Ty) unsafe : LLVMTypeKind;
 
+fn nomangle LLVMTypeIsSized(LLVMTypeRef Ty) unsafe : LLVMBool;
+
 // Value
 
 fn nomangle LLVMTypeOf(LLVMValueRef Val) unsafe : LLVMTypeRef;
@@ -378,6 +380,13 @@ fn nomangle LLVMBuildMemCpy(
 	LLVMValueRef Dst, u32 DstAlign,
 	LLVMValueRef Src, u32 SrcAlign,
 	LLVMValueRef Size) unsafe : LLVMValueRef;
+
+fn nomangle LLVMLookupIntrinsicID(char8& Name, size_type NameLen) unsafe : u32;
+
+fn nomangle LLVMGetIntrinsicDeclaration(
+	LLVMModuleRef Mod,
+	u32 ID,
+	LLVMTypeRef& ParamTypes, size_type ParamCount) unsafe : LLVMValueRef;
 
 // Attributes
 fn nomangle LLVMCreateEnumAttribute(LLVMContextRef C, u32 KindID, u64 Val) unsafe : LLVMAttributeRef;

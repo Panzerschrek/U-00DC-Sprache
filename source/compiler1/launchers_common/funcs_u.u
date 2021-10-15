@@ -4,8 +4,6 @@ import "../code_builder_lib/code_builder.uh"
 import "print.uh"
 import "funcs_u.uh"
 
-var bool constexpr g_tests_bild_debug_info = true;
-
 fn U1_ProcessCodeBuilderErrors(
 	ErrorsHandlingCallbacks& errors_handling_callbacks,
 	UserHandle data,
@@ -60,7 +58,7 @@ fn nomangle U1_BuildProgram(
 				return LLVMModuleRef::Null;
 			}
 
-			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, g_tests_bild_debug_info );
+			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetCodeBuilderOptionsForTests() );
 			auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 			U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
@@ -97,7 +95,7 @@ fn nomangle U1_BuildProgramWithErrors(
 				return false;
 			}
 
-			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, g_tests_bild_debug_info );
+			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetCodeBuilderOptionsForTests() );
 			auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 			unsafe{  LLVMDisposeModule( code_builder_res.llvm_module );  }
@@ -179,7 +177,8 @@ fn nomangle U1_BuildProgrammUsingVFS(
 			return LLVMModuleRef::Null;
 		}
 
-		var U1::CodeBuilder mut code_builder( llvm_context, data_layout, build_debug_info );
+		var U1::CodeBuilderOptions options{ .build_debug_info= build_debug_info };
+		var U1::CodeBuilder mut code_builder( llvm_context, data_layout, options );
 		auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 		U1_ProcessCodeBuilderErrors( errors_handling_callbacks, error_processing_data, code_builder_res.errors );
@@ -212,7 +211,7 @@ fn nomangle U1_BuildMultisourceProgram(
 		return LLVMModuleRef::Null;
 	}
 
-	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, g_tests_bild_debug_info );
+	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetCodeBuilderOptionsForTests() );
 	auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 	U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
@@ -245,7 +244,7 @@ fn nomangle U1_BuildMultisourceProgramWithErrors(
 		return false;
 	}
 
-	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, g_tests_bild_debug_info );
+	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetCodeBuilderOptionsForTests() );
 	auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 	unsafe{  LLVMDisposeModule( code_builder_res.llvm_module );  }
@@ -255,8 +254,50 @@ fn nomangle U1_BuildMultisourceProgramWithErrors(
 	return true;
 }
 
+fn nomangle U1_BuildProgramForLifetimesTest(
+	U1_StringView& program_text,
+	LLVMContextRef llvm_context,
+	LLVMTargetDataRef data_layout ) unsafe : LLVMModuleRef
+{
+	unsafe
+	{
+		auto program_text= U1::StringToArrayView( program_text.data, program_text.size );
+
+		safe
+		{
+			var U1::TestVfs mut test_vfs( program_text );
+			auto source_graph= U1::LoadSourceGraph( test_vfs, "_" );
+
+			U1::PrintLexSyntErrors( source_graph );
+			if( !source_graph.errors.empty() || source_graph.nodes.empty() )
+			{
+				return LLVMModuleRef::Null;
+			}
+
+			var U1::CodeBuilderOptions options{ .build_debug_info= true, .create_lifetimes= true, .generate_lifetime_start_end_debug_calls= true };
+			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, options );
+			auto code_builder_res= code_builder.BuildProgram( source_graph );
+
+			U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
+			if( !code_builder_res.errors.empty() )
+			{
+				unsafe{  LLVMDisposeModule( code_builder_res.llvm_module );  }
+				return LLVMModuleRef::Null;
+			}
+
+			return code_builder_res.llvm_module;
+		}
+	}
+}
+
 namespace U1
 {
+
+fn GetCodeBuilderOptionsForTests() : CodeBuilderOptions
+{
+	var CodeBuilderOptions mut options{ .build_debug_info= true };
+	return move(options);
+}
 
 fn StringToArrayView( char8 &'x string_start, size_type string_size ) unsafe : ust::array_view_imut</ char8 />'x'
 {

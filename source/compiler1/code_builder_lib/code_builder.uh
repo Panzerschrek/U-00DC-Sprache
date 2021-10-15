@@ -52,11 +52,18 @@ namespace U1
 type GlobalThingsStack= ust::vector</NamesScopeValue/>;
 type GlobalThingsStackPtr= ust::shared_ptr_mut</GlobalThingsStack/>;
 
+struct CodeBuilderOptions
+{
+	bool build_debug_info= false;
+	bool create_lifetimes= true;
+	bool generate_lifetime_start_end_debug_calls= false;
+}
+
 class CodeBuilder
 {
 public:
 	// llvm context, data layout should live longer, than this class.
-	fn constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data_layout, bool build_debug_info );
+	fn constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data_layout, CodeBuilderOptions& options );
 
 	struct BuildResult
 	{
@@ -758,6 +765,9 @@ private:
 
 	fn CopyBytes( this, LLVMValueRef dst, LLVMValueRef src, Type& t, FunctionContext &mut function_context );
 
+	fn CreateLifetimeStart( this, FunctionContext &mut function_context, LLVMValueRef llvm_value );
+	fn CreateLifetimeEnd( this, FunctionContext &mut function_context, LLVMValueRef llvm_value );
+
 	struct InstructionsState
 	{
 		LLVMValueRef current_block_last_instruction;
@@ -864,6 +874,15 @@ private:
 		ust::unordered_map</ EnumTypePtr, LLVMMetadataRef /> enums_di_types;
 	}
 	DebugInfo debug_info_;
+
+	// Lifetimes.
+	bool imut create_lifetimes_;
+	bool imut generate_lifetime_start_end_debug_calls_;
+	LLVMValueRef lifetime_start_intrinsic_= LLVMValueRef::Null;
+	LLVMValueRef lifetime_end_intrinsic_= LLVMValueRef::Null;
+	LLVMValueRef lifetime_start_debug_func_= LLVMValueRef::Null;
+	LLVMValueRef lifetime_end_debug_func_= LLVMValueRef::Null;
+	LLVMTypeRef lifetime_function_arg_type_= LLVMTypeRef::Null;
 }
 
 } // namespace U1
