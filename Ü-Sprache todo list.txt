@@ -25,6 +25,7 @@ General:
 *) Lambdas.
 *) Function pointers inside constexpr functions
 *) Reference result of constexpr function evaluation
+*) More advanced macros - more context, elements, string manipulations
 *) Some code customization mechanism (like preprocessor directives and ifdef/endif in C++).
 
 References:
@@ -39,10 +40,10 @@ Templates:
 *) Variadic templates
 *) Function templates with template-dependent reference and mutability modifiers
 	for arguments. Conditional move for such arguments.
-*) Equality comparison for type and function templates with same name
 
 Standart library:
 *) Associative containers - map, set, string_map
+*) Forbid dangerous calls of "get_ref" method of nullable containers (box, shared_ptr, final_ptr, optional_ref). Allow "get_ref" only for non-nullable containers.
 *) Forbid non-thread-safe shared pointers in thread-safe shared pointers
 *) "memory_copy" with alignment
 *) More algorithms
