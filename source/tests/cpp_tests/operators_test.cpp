@@ -398,11 +398,11 @@ U_TEST(RightShiftTest2)
 
 	llvm::GenericValue args[2];
 	args[0].IntVal= llvm::APInt( 32, 357 );
-	args[1].IntVal= llvm::APInt( 8, 45 );
+	args[1].IntVal= llvm::APInt( 8, 35 );
 
 	const llvm::GenericValue result_value= engine->runFunction( function, args );
 
-	U_TEST_ASSERT( uint32_t(result_value.IntVal.getLimitedValue()) == 0 );
+	U_TEST_ASSERT( uint32_t(result_value.IntVal.getLimitedValue()) == 357 >> (35&31) );
 }
 
 U_TEST(RightShiftTest3)
@@ -410,7 +410,7 @@ U_TEST(RightShiftTest3)
 	// Constexpr shift value is greater, than type bit width. Should properly handle such case.
 	static const char c_program_text[]=
 	R"(
-		static_assert( (357u >> 35u) == 0u );
+		static_assert( (357u >> 35u) == (357u >> (35u&31u)) );
 	)";
 
 	BuildProgram( c_program_text );

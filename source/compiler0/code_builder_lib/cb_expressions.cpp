@@ -1960,6 +1960,12 @@ Value CodeBuilder::BuildBinaryOperator(
 			else if( r_type_size < l_type_size )
 				r_value_converted= function_context.llvm_ir_builder.CreateZExt( r_value_converted, l_var.type.GetLLVMType() );
 
+			// Cut upper bits of shift value to avoid undefined behaviour.
+			r_value_converted =
+				function_context.llvm_ir_builder.CreateAnd(
+					r_value_converted,
+					llvm::ConstantInt::get( l_var.type.GetLLVMType(), l_type_size * 8 - 1 ) );
+
 			if( binary_operator == BinaryOperatorType::ShiftLeft )
 				result.llvm_value= function_context.llvm_ir_builder.CreateShl( l_value_for_op, r_value_converted );
 			else if( binary_operator == BinaryOperatorType::ShiftRight )

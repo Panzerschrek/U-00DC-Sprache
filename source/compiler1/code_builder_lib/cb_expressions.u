@@ -1960,6 +1960,17 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 				r_value_for_op= LLVMBuildZExt( function_context.llvm_ir_builder, r_value_for_op, l_type.GetLLVMType(), "\0"[0] );
 			}
 
+			// Cut upper bits of shift value to avoid undefined behaviour.
+			r_value_for_op =
+				LLVMBuildAnd(
+					function_context.llvm_ir_builder,
+					r_value_for_op,
+					LLVMConstInt(
+						l_type.GetLLVMType(),
+						l_fundamental_type.get_ref().GetSize() * 8u64 - 1u64,
+						LLVMBool::False ),
+					"\0"[0] );
+
 			if( operator == BinaryOperatorType::ShiftLeft )
 			{
 				res.llvm_value= LLVMBuildShl( function_context.llvm_ir_builder, l_value_for_op, r_value_for_op, "\0"[0] );
