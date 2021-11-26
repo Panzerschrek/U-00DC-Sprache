@@ -270,6 +270,41 @@ U_TEST(LeftShiftTest1)
 	}
 }
 
+U_TEST(LeftShiftTest2)
+{
+	// Shift value is greater, than type bit width. Should properly handle such case.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( u32 x, u8 y ) : u32
+		{
+			return x << y;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foojh" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue args[2];
+	args[0].IntVal= llvm::APInt( 32, 357 );
+	args[1].IntVal= llvm::APInt( 8, 35 );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, args );
+
+	U_TEST_ASSERT( uint32_t(result_value.IntVal.getLimitedValue()) == (357 << (35&31)) );
+}
+
+U_TEST(LeftShiftTest3)
+{
+	// Constexpr shift value is greater, than type bit width. Should properly handle such case.
+	static const char c_program_text[]=
+	R"(
+		static_assert( (357u << 35u) == (357u << (35u&31u)) );
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 U_TEST(RightShiftTest0)
 {
 	// Shift signed value.
@@ -345,6 +380,42 @@ U_TEST(RightShiftTest1)
 		}
 	}
 }
+
+U_TEST(RightShiftTest2)
+{
+	// Shift value is greater, than type bit width. Should properly handle such case.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( u32 x, u8 y ) : u32
+		{
+			return x >> y;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foojh" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue args[2];
+	args[0].IntVal= llvm::APInt( 32, 357 );
+	args[1].IntVal= llvm::APInt( 8, 45 );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, args );
+
+	U_TEST_ASSERT( uint32_t(result_value.IntVal.getLimitedValue()) == 0 );
+}
+
+U_TEST(RightShiftTest3)
+{
+	// Constexpr shift value is greater, than type bit width. Should properly handle such case.
+	static const char c_program_text[]=
+	R"(
+		static_assert( (357u >> 35u) == 0u );
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 
 U_TEST(RightShiftAndAssignTest0)
 {
