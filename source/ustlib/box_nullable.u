@@ -61,7 +61,6 @@ public:
 	{
 		unsafe
 		{
-			// TODO - do not call "get_ref", because it checks value.
 			ptr_= $<( cast_ref</T/>( val.deref() ) ); // Convert reference here.
 			move_into_nowhere( move(val) );
 		}
