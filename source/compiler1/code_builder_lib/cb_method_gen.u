@@ -78,7 +78,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	{
 		if( constructor_index != ~0s )
 		{
-			REPORT_ERROR( MethodBodyGenerationFailed, class_members_ptr, constructors.functions[constructor_index].prototype_syntax_element.get_ref().src_loc )
+			REPORT_ERROR( MethodBodyGenerationFailed, class_members_ptr, constructors.functions[constructor_index].prototype_syntax_element.try_deref().src_loc )
 		}
 		return;
 	}
@@ -159,7 +159,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	auto mut this_llvm_value= LLVMValueRef::Null;
 	unsafe{  this_llvm_value= LLVMGetParam( function_variable.llvm_function, 0u );  }
 
-	auto src_loc= class_type.lock_imut().get_ref().syntax_element.get_ref().src_loc;
+	auto src_loc= class_type.lock_imut().get_ref().syntax_element.try_deref().src_loc;
 
 	if( !base_class.empty() )
 	{
@@ -277,7 +277,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 	{
 		if( constructor_index != ~0s )
 		{
-			REPORT_ERROR( MethodBodyGenerationFailed, class_members_ptr, constructors.functions[constructor_index].prototype_syntax_element.get_ref().src_loc )
+			REPORT_ERROR( MethodBodyGenerationFailed, class_members_ptr, constructors.functions[constructor_index].prototype_syntax_element.try_deref().src_loc )
 		}
 		return;
 	}
@@ -394,7 +394,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		src_llvm_value= LLVMGetParam( function_variable.llvm_function, 1u );
 	}
 
-	auto src_loc= class_type.lock_imut().get_ref().syntax_element.get_ref().src_loc;
+	auto src_loc= class_type.lock_imut().get_ref().syntax_element.try_deref().src_loc;
 
 	if( !base_class.empty() )
 	{
@@ -498,7 +498,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 	{
 		if( operator_index != ~0s )
 		{
-			REPORT_ERROR( MethodBodyGenerationFailed, class_members_ptr, operators.functions[operator_index].prototype_syntax_element.get_ref().src_loc )
+			REPORT_ERROR( MethodBodyGenerationFailed, class_members_ptr, operators.functions[operator_index].prototype_syntax_element.try_deref().src_loc )
 		}
 		return;
 	}
@@ -615,7 +615,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		src_llvm_value= LLVMGetParam( function_variable.llvm_function, 1u );
 	}
 
-	auto src_loc= class_type.lock_imut().get_ref().syntax_element.get_ref().src_loc;
+	auto src_loc= class_type.lock_imut().get_ref().syntax_element.try_deref().src_loc;
 
 	if( !base_class.empty() )
 	{		
@@ -1007,7 +1007,7 @@ fn CodeBuilder::BuildMembersDestructors( this, FunctionContext &mut function_con
 		auto syntax_element= class_type.lock_imut().get_ref().syntax_element;
 		if( !syntax_element.empty() )
 		{
-			src_loc= syntax_element.get_ref().src_loc;
+			src_loc= syntax_element.try_deref().src_loc;
 		}
 	}
 

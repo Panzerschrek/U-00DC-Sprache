@@ -56,13 +56,13 @@ fn GlobalValueToString( NamesScopeValue& global_thing ) : ust::string8
 
 			foreach( &function : functions_set.functions_set.functions )
 			{
-				if( !function.prototype_syntax_element.empty() )
+				if_var( &el : function.prototype_syntax_element )
 				{
-					return function.prototype_syntax_element.get_ref().name.back();
+					return el.name.back();
 				}
-				if( !function.body_syntax_element.empty() )
+				if_var( &el : function.body_syntax_element )
 				{
-					return function.body_syntax_element.get_ref().name.back();
+					return el.name.back();
 				}
 			}
 
@@ -258,7 +258,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	GLOBALS_LOOP_DETECT( class_type )
 
 	auto syntax_element_ptr= class_type.lock_imut().get_ref().syntax_element;
-	auto& syntax_element= syntax_element_ptr.get_ref();
+	auto& syntax_element= syntax_element_ptr.try_deref();
 
 	auto mut global_function_context= CreateGlobalFunctionContext();
 
@@ -855,13 +855,13 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 					if( !result_functions_set.functions_set.functions.empty() )
 					{
 						auto& f= result_functions_set.functions_set.functions.front();
-						if( !f.prototype_syntax_element.empty() )
+						if_var( &prototype_syntax_element : f.prototype_syntax_element )
 						{
-							src_loc= f.prototype_syntax_element.get_ref().src_loc;
+							src_loc= prototype_syntax_element.src_loc;
 						}
-						else if( !f.body_syntax_element.empty() )
+						if_var( &body_syntax_element : f.body_syntax_element )
 						{
-							src_loc= f.body_syntax_element.get_ref().src_loc;
+							src_loc= body_syntax_element.src_loc;
 						}
 					}
 					else if( !result_functions_set.functions_set.function_templates.empty() )

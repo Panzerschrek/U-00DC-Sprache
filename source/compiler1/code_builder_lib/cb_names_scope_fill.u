@@ -8,7 +8,7 @@ namespace U1
 fn CodeBuilder::NamesScopeFillClass( mut this, NamesScopeMutPtr& names_scope_ptr, Synt::ClassElements& class_elements, ClassTypePtr& class_type )
 {
 	auto mut current_visibility= Synt::ClassVisibility::Public;
-	var bool is_struct= class_type.lock_imut().get_ref().syntax_element.get_ref().kind_attribute == Synt::Class::KindAttribute::Struct;
+	var bool is_struct= class_type.lock_imut().get_ref().syntax_element.try_deref().kind_attribute == Synt::Class::KindAttribute::Struct;
 	var size_type mut field_index= 0s;
 	foreach( & class_element : class_elements )
 	{

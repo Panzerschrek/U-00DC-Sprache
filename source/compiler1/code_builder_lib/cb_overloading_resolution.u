@@ -614,8 +614,8 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 						actual_args[arg_n],
 						l_type.params[l_arg_n],
 						r_type.params[r_arg_n],
-						select( l_function.base_template.empty() ? dummy_template_param : l_function.base_template.get_ref().signature_params[l_arg_n] ),
-						select( r_function.base_template.empty() ? dummy_template_param : r_function.base_template.get_ref().signature_params[r_arg_n] ) );
+						select( l_function.base_template.empty() ? dummy_template_param : l_function.base_template.try_deref().signature_params[l_arg_n] ),
+						select( r_function.base_template.empty() ? dummy_template_param : r_function.base_template.try_deref().signature_params[r_arg_n] ) );
 
 				if( comp == ConversionsCompareResult::Same || comp == ConversionsCompareResult::LeftIsBetter )
 				{}
@@ -649,8 +649,8 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 							actual_args[arg_n],
 							l_type.params[l_arg_n],
 							r_type.params[r_arg_n],
-							select( l_function.base_template.empty() ? dummy_template_param : l_function.base_template.get_ref().signature_params[l_arg_n] ),
-							select( r_function.base_template.empty() ? dummy_template_param : r_function.base_template.get_ref().signature_params[r_arg_n] ) );
+							select( l_function.base_template.empty() ? dummy_template_param : l_function.base_template.try_deref().signature_params[l_arg_n] ),
+							select( r_function.base_template.empty() ? dummy_template_param : r_function.base_template.try_deref().signature_params[r_arg_n] ) );
 					if( comp != ConversionsCompareResult::Same )
 					{
 						best_functions[func_n]= false;

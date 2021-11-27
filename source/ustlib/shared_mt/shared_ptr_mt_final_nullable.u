@@ -41,7 +41,7 @@ public:
 		return impl_.empty();
 	}
 
-	fn get_ref( this ) : T &imut
+	fn try_deref( this ) : T &imut
 	{
 		halt if( empty() );
 		unsafe

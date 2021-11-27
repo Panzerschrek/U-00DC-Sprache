@@ -156,15 +156,13 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 
 		var SrcLoc mut src_loc;
 		var Synt::Function::VirtualKind mut virtual_kind= Synt::Function::VirtualKind::None;
-		if( !function.body_syntax_element.empty() )
+		if_var( &el : function.prototype_syntax_element )
 		{
-			auto& el= function.body_syntax_element.get_ref();
 			src_loc= el.src_loc;
 			virtual_kind= el.virtual_kind;
 		}
-		else if( !function.prototype_syntax_element.empty() )
+		if_var( &el : function.body_syntax_element )
 		{
-			auto& el= function.prototype_syntax_element.get_ref();
 			src_loc= el.src_loc;
 			virtual_kind= el.virtual_kind;
 		}
