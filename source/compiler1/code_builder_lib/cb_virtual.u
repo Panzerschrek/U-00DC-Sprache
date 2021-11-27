@@ -103,7 +103,7 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 			continue;
 		}
 
-		auto mut functions_set_lock= functions_set_ptr.lock_mut();
+		auto mut functions_set_lock= functions_set_ptr.try_lock_mut();
 		var FunctionsSet& functions_set= functions_set_lock.deref().functions_set;
 		for( auto mut i= 0s; i < functions_set.functions.size(); ++i )
 		{

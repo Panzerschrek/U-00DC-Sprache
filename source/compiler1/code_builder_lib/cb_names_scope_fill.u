@@ -91,20 +91,20 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		if( prev_functions_set_ptr.empty() )
 		{
 			auto errors_container= names_scope.GetErrors();
-			auto mut errors_container_lock= errors_container.lock_mut();
+			auto mut errors_container_lock= errors_container.try_lock_mut();
 			errors_container_lock.deref().push_back( ReportError( CodeBuilderErrorCode::Redefinition, function.deref().src_loc ) );
 			return;
 		}
 
-		if( !class_type.empty() && class_type.lock_imut().deref().GetMemberVisibility( func_name ) != visibility )
+		if( !class_type.empty() && class_type.try_lock_imut().deref().GetMemberVisibility( func_name ) != visibility )
 		{
 			auto errors_container= names_scope.GetErrors();
-			auto mut errors_container_lock= errors_container.lock_mut();
+			auto mut errors_container_lock= errors_container.try_lock_mut();
 			errors_container_lock.deref().push_back( ReportError( CodeBuilderErrorCode::FunctionsVisibilityMismatch, function.deref().src_loc, func_name ) );
 			return;
 		}
 
-		auto mut lock= prev_functions_set_ptr.lock_mut();
+		auto mut lock= prev_functions_set_ptr.try_lock_mut();
 		lock.deref().syntax_elements.push_back( function );
 		return;
 	}
@@ -118,7 +118,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 
 	if( !class_type.empty() )
 	{
-		auto mut class_lock= class_type.lock_mut();
+		auto mut class_lock= class_type.try_lock_mut();
 		class_lock.deref().SetMemberVisibility( func_name, visibility );
 	}
 }
@@ -162,20 +162,20 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		if( prev_functions_set_ptr.empty() )
 		{
 			auto errors_container= names_scope.GetErrors();
-			auto mut errors_container_lock= errors_container.lock_mut();
+			auto mut errors_container_lock= errors_container.try_lock_mut();
 			errors_container_lock.deref().push_back( ReportError( CodeBuilderErrorCode::Redefinition, function_template.deref().src_loc ) );
 			return;
 		}
 
-		if( !class_type.empty() && class_type.lock_imut().deref().GetMemberVisibility( func_name ) != visibility )
+		if( !class_type.empty() && class_type.try_lock_imut().deref().GetMemberVisibility( func_name ) != visibility )
 		{
 			auto errors_container= names_scope.GetErrors();
-			auto mut errors_container_lock= errors_container.lock_mut();
+			auto mut errors_container_lock= errors_container.try_lock_mut();
 			errors_container_lock.deref().push_back( ReportError( CodeBuilderErrorCode::FunctionsVisibilityMismatch, function_template.deref().src_loc, func_name ) );
 			return;
 		}
 
-		auto mut lock= prev_functions_set_ptr.lock_mut();
+		auto mut lock= prev_functions_set_ptr.try_lock_mut();
 		lock.deref().function_templates_syntax_elements.push_back( function_template );
 		return;
 	}
@@ -189,7 +189,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 
 	if( !class_type.empty() )
 	{
-		auto mut class_lock= class_type.lock_mut();
+		auto mut class_lock= class_type.try_lock_mut();
 		class_lock.deref().SetMemberVisibility( func_name, visibility );
 	}
 }
@@ -203,7 +203,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 {
 	if( !class_type.empty() )
 	{
-		auto mut class_lock= class_type.lock_mut();
+		auto mut class_lock= class_type.try_lock_mut();
 		class_lock.deref().SetMemberVisibility( class_.deref().name, visibility );
 	}
 	NamesScopeFill( names_scope_ptr, class_ );
@@ -240,7 +240,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 {
 	if( !class_type.empty() )
 	{
-		auto mut class_lock= class_type.lock_mut();
+		auto mut class_lock= class_type.try_lock_mut();
 		class_lock.deref().SetMemberVisibility( enum_.deref().name, visibility );
 	}
 	NamesScopeFill( names_scope_ptr, enum_ );
@@ -273,7 +273,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 {
 	if( !class_type.empty() )
 	{
-		auto mut class_lock= class_type.lock_mut();
+		auto mut class_lock= class_type.try_lock_mut();
 		class_lock.deref().SetMemberVisibility( type_alias.deref().name, visibility );
 	}
 	NamesScopeFill( names_scope_ptr, type_alias );
@@ -296,20 +296,20 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		if( prev_type_templates_set_ptr.empty() )
 		{
 			auto errors_container= names_scope.GetErrors();
-			auto mut errors_container_lock= errors_container.lock_mut();
+			auto mut errors_container_lock= errors_container.try_lock_mut();
 			errors_container_lock.deref().push_back( ReportError( CodeBuilderErrorCode::Redefinition, type_template.deref().src_loc ) );
 			return;
 		}
 
-		if( !class_type.empty() && class_type.lock_imut().deref().GetMemberVisibility( template_name ) != visibility )
+		if( !class_type.empty() && class_type.try_lock_imut().deref().GetMemberVisibility( template_name ) != visibility )
 		{
 			auto errors_container= names_scope.GetErrors();
-			auto mut errors_container_lock= errors_container.lock_mut();
+			auto mut errors_container_lock= errors_container.try_lock_mut();
 			errors_container_lock.deref().push_back( ReportError( CodeBuilderErrorCode::TypeTemplatesVisibilityMismatch, type_template.deref().src_loc, template_name ) );
 			return;
 		}
 
-		auto mut lock= prev_type_templates_set_ptr.lock_mut();
+		auto mut lock= prev_type_templates_set_ptr.try_lock_mut();
 		lock.deref().syntax_elements.push_back( type_template );
 		return;
 	}
@@ -321,7 +321,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 
 	if( !class_type.empty() )
 	{
-		auto mut class_lock= class_type.lock_mut();
+		auto mut class_lock= class_type.try_lock_mut();
 		class_lock.deref().SetMemberVisibility( template_name, visibility );
 	}
 }
@@ -361,7 +361,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 {
 	if( !class_type.empty() )
 	{
-		auto mut class_lock= class_type.lock_mut();
+		auto mut class_lock= class_type.try_lock_mut();
 		foreach( &variable_declaration : variables_declaration.deref().variables )
 		{
 			class_lock.deref().SetMemberVisibility( variable_declaration.name, visibility );
@@ -396,7 +396,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 {
 	if( !class_type.empty() )
 	{
-		auto mut class_lock= class_type.lock_mut();
+		auto mut class_lock= class_type.try_lock_mut();
 		class_lock.deref().SetMemberVisibility( auto_variable_declaration.deref().name, visibility );
 	}
 	NamesScopeFill( names_scope_ptr, auto_variable_declaration );
@@ -412,7 +412,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		auto prev_static_asserts= prev_name.Get</GlobalStaticAssertsSet/>();
 		if( !prev_static_asserts.empty() )
 		{
-			auto mut lock= prev_static_asserts.lock_mut();
+			auto mut lock= prev_static_asserts.try_lock_mut();
 			lock.deref().push_back(static_asert);
 		}
 		else
@@ -498,7 +498,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		REPORT_ERROR( Redefinition, names_scope_ptr, class_field.deref().src_loc, field_name )
 	}
 
-	auto mut class_lock= class_type.lock_mut();
+	auto mut class_lock= class_type.try_lock_mut();
 	class_lock.deref().SetMemberVisibility( field_name, visibility );
 }
 
@@ -524,7 +524,7 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 				// Global name - search in root namespace.
 				while( true )
 				{
-					auto parent= current_scope.lock_imut().deref().GetParent();
+					auto parent= current_scope.try_lock_imut().deref().GetParent();
 					if( parent.empty() )
 					{
 						break;
@@ -532,7 +532,7 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 					current_scope= parent;
 				}
 
-				if_var( mut names_scope_value : current_scope.lock_imut().deref().GetThisScopeValue( name_components[1s] ) )
+				if_var( mut names_scope_value : current_scope.try_lock_imut().deref().GetThisScopeValue( name_components[1s] ) )
 				{
 					current_value= move(names_scope_value);
 				}
@@ -543,12 +543,12 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 			{
 				while( !current_scope.empty() )
 				{
-					if_var( mut names_scope_value : current_scope.lock_imut().deref().GetThisScopeValue( name_components.front() ) )
+					if_var( mut names_scope_value : current_scope.try_lock_imut().deref().GetThisScopeValue( name_components.front() ) )
 					{
 						current_value= move(names_scope_value);
 						break;
 					}
-					current_scope= current_scope.lock_imut().deref().GetParent();
+					current_scope= current_scope.try_lock_imut().deref().GetParent();
 				}
 				start_component_index= 1s;
 			}
@@ -565,7 +565,7 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 				auto class_= current_value.try_deref().Get</ClassType/>();
 				if( !namespace_.empty() )
 				{
-					auto namespace_lock= namespace_.lock_imut();
+					auto namespace_lock= namespace_.try_lock_imut();
 					auto new_value= namespace_lock.deref().GetThisScopeValue( name_component );
 					if( new_value.empty() )
 					{
@@ -579,7 +579,7 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 				}
 				else if( !class_.empty() )
 				{
-					auto class_lock= class_.lock_imut();
+					auto class_lock= class_.try_lock_imut();
 					auto namespace_lock= class_lock.deref().members.lock_imut();
 					auto new_value= namespace_lock.deref().GetThisScopeValue( name_component );
 					if( new_value.empty() )
@@ -605,7 +605,7 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 				auto functions_set= current_value.try_deref().Get</NamesScopeFunctionsSet/>();
 				if( !functions_set.empty() )
 				{
-					auto mut lock= functions_set.lock_mut();
+					auto mut lock= functions_set.try_lock_mut();
 					lock.deref().out_of_line_syntax_elements.push_back( function_declaration_ptr );
 				}
 				else
@@ -644,7 +644,7 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 		if( !class_type_ptr.empty() )
 		{
 			{
-				auto mut lock= class_type_ptr.lock_mut();
+				auto mut lock= class_type_ptr.try_lock_mut();
 				var ClassType &mut class_type= lock.deref();
 
 				if( class_.deref().is_forward_declaration )
@@ -671,7 +671,7 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 				}
 			}
 
-			auto class_members= class_type_ptr.lock_imut().deref().members;
+			auto class_members= class_type_ptr.try_lock_imut().deref().members;
 			if( !class_.deref().is_forward_declaration )
 			{
 				NamesScopeFillClass( class_members, class_.deref().class_elements, ust::to_non_nullable(class_type_ptr) );

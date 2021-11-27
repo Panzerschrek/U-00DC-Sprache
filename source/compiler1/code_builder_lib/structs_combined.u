@@ -1238,7 +1238,7 @@ fn NamesScope::IsInsideTemplate( this ) : bool
 	auto parent= GetParent();
 	if( !parent.empty() )
 	{
-		return parent.lock_imut().deref().IsInsideTemplate();
+		return parent.try_lock_imut().deref().IsInsideTemplate();
 	}
 
 	return false;
@@ -1268,7 +1268,7 @@ fn NamesScope::GetErrors( this ) : ErrorsContainerPtr
 {
 	if( errors_container_.empty() )
 	{
-		return parent_.lock().lock_imut().deref().GetErrors();
+		return parent_.lock().try_lock_imut().deref().GetErrors();
 	}
 
 	return errors_container_;
@@ -1288,7 +1288,7 @@ fn NamesScope::ToString( this ) : ust::string8
 {
 	if( !class_.empty() )
 	{
-		auto class_lock= class_.lock_imut();
+		auto class_lock= class_.try_lock_imut();
 		auto& class_type= class_lock.deref();
 		if( !class_type.base_template.empty() )
 		{
@@ -1300,10 +1300,10 @@ fn NamesScope::ToString( this ) : ust::string8
 			{
 				var ust::string8 mut res;
 
-				auto parent_lock= parent.lock_imut();
+				auto parent_lock= parent.try_lock_imut();
 				if( !parent_lock.deref().GetParent().empty() )
 				{
-					res+= parent.lock_imut().deref().ToString();
+					res+= parent.try_lock_imut().deref().ToString();
 					res+= "::";
 				}
 				res+= type_template.syntax_element.deref().name;
@@ -1349,7 +1349,7 @@ fn NamesScope::ToString( this ) : ust::string8
 	auto mut parent= parent_.lock();
 	if( !parent.empty() )
 	{
-		auto parent_lock= parent.lock_imut();
+		auto parent_lock= parent.try_lock_imut();
 		if( !parent_lock.deref().GetParent().empty() )
 		{
 			res+= parent_lock.deref().ToString();
@@ -1388,7 +1388,7 @@ fn NamesScope::GetAccessFor( this, ClassTypePtr& class_type ) : Synt::ClassVisib
 	auto parent= GetParent();
 	if( !parent.empty() )
 	{
-		parent_namespace_visibility= parent.lock_imut().deref().GetAccessFor( class_type );
+		parent_namespace_visibility= parent.try_lock_imut().deref().GetAccessFor( class_type );
 	}
 
 	// TODO - maybe add to language possibility to order compare enum values?

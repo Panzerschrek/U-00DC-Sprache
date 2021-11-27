@@ -449,7 +449,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
 		foreach( &field_name : class_type.fields_order )
 		{
 			auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
-			auto field_lock= field_ptr.lock_imut();
+			auto field_lock= field_ptr.try_lock_imut();
 			var ClassField& field= field_lock.deref();
 
 			if( field.index == ~0s ){ continue; } // May be in case of error

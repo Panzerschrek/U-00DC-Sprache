@@ -1190,7 +1190,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				REPORT_ERROR( ValueIsNotTemplate, names_scope, member_access_operator.src_loc )
 			}
 
-			auto field_lock= field_ptr.lock_imut();
+			auto field_lock= field_ptr.try_lock_imut();
 			auto& field= field_lock.deref();
 
 			if( field.index == ~0s ){ return ErrorValue(); } // May be in case of error
@@ -1302,7 +1302,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 				if( !member_access_operator.template_args.empty() )
 				{
-					auto functions_set_lock= functions_set_ptr.lock_imut();
+					auto functions_set_lock= functions_set_ptr.try_lock_imut();
 					auto& functions_set= functions_set_lock.deref().functions_set;
 
 					if( functions_set.function_templates.empty() )
@@ -1340,11 +1340,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 						return ErrorValue();
 					}
 
-					this_methods_set.functions_set= val.try_deref().Get</NamesScopeFunctionsSet/>().lock_imut().deref().functions_set;
+					this_methods_set.functions_set= val.try_deref().Get</NamesScopeFunctionsSet/>().try_lock_imut().deref().functions_set;
 				}
 				else
 				{
-					this_methods_set.functions_set= functions_set_ptr.lock_imut().deref().functions_set;
+					this_methods_set.functions_set= functions_set_ptr.try_lock_imut().deref().functions_set;
 				}
 
 				return move(this_methods_set);
@@ -2954,7 +2954,7 @@ fn CodeBuilder::DoCallFunction(
 		else
 		{
 			auto errors_container_ptr= names_scope.lock_imut().deref().GetErrors();
-			auto mut lock= errors_container_ptr.lock_mut();
+			auto mut lock= errors_container_ptr.try_lock_mut();
 			auto &mut errors_container= lock.deref();
 			foreach( &err : res.errors )
 			{

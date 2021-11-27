@@ -32,7 +32,7 @@ fn CreateTemplateErrorsContext(
 			result.args_description+= " = ";
 
 			auto arg_ptr= args_names_scope.GetThisScopeValue( param.name ).try_deref().Get</TemplateArg/>();
-			auto arg_lock= arg_ptr.lock_imut();
+			auto arg_lock= arg_ptr.try_lock_imut();
 			var TemplateArg& arg= arg_lock.deref();
 			if_var( &t : arg.something.get</Type/>() )
 			{
@@ -60,7 +60,7 @@ fn CreateTemplateErrorsContext(
 		};
 
 		auto parent_errors_container= instantiation_point_names_scope_ptr.lock_imut().deref().GetErrors();
-		auto mut errors_container_lock= parent_errors_container.lock_mut();
+		auto mut errors_container_lock= parent_errors_container.try_lock_mut();
 		errors_container_lock.deref().push_back( move(template_context_error) );
 	}
 	{
@@ -766,7 +766,7 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 			auto t= result_name.Get</Type/>();
 			if( !t.empty() )
 			{
-				return t.lock_imut().deref();
+				return t.try_lock_imut().deref();
 			}
 		}
 	}
@@ -795,12 +795,12 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 				.signature_args= template_args_evaluation_result.signature_args,
 			};
 
-			auto mut lock= class_type.lock_mut();
+			auto mut lock= class_type.try_lock_mut();
 			lock.deref().base_template= move(base_template);
 		}
 
 		auto mangled_llvm_type_name= mangler_.MangleType( ust::to_non_nullable( class_type ) );
-		unsafe{  U1_SetStructName( class_type.lock_imut().deref().llvm_type, mangled_llvm_type_name.front() );  }
+		unsafe{  U1_SetStructName( class_type.try_lock_imut().deref().llvm_type, mangled_llvm_type_name.front() );  }
 
 		AddNewTemplateThing( template_key, args_names_scope );
 		return Type( ust::to_non_nullable( class_type ) );
@@ -922,7 +922,7 @@ fn CodeBuilder::GenTemplateFunction(
 			auto template_arg_value= result_names_scope.lock_imut().deref().GetThisScopeValue( param_name ).try_deref();
 			auto template_arg_ptr= template_arg_value.Get</TemplateArg/>();
 
-			auto template_arg_lock= template_arg_ptr.lock_imut();
+			auto template_arg_lock= template_arg_ptr.try_lock_imut();
 			auto& template_arg= template_arg_lock.deref();
 
 			if_var( &t : template_arg.something.get</Type/>() )
@@ -1020,7 +1020,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 			auto arg_value= result_names_scope_lock.deref().GetThisScopeValue( function_template.params[i].name ).try_deref();
 			auto template_arg_ptr= arg_value.Get</TemplateArg/>();
 
-			auto template_arg_lock= template_arg_ptr.lock_imut();
+			auto template_arg_lock= template_arg_ptr.try_lock_imut();
 			auto& something= template_arg_lock.deref().something;
 			if_var( &t : something.get</Type/>() )
 			{
@@ -1052,7 +1052,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 		auto namespace_value= prev_names_scope.lock_imut().deref().GetThisScopeValue( function_name ).try_deref();
 
 		auto functions_set_ptr= namespace_value.Get</NamesScopeFunctionsSet/>();
-		auto functions_set_lock= functions_set_ptr.lock_imut();
+		auto functions_set_lock= functions_set_ptr.try_lock_imut();
 		auto & functions_set= functions_set_lock.deref();
 
 		if( functions_set.functions_set.functions.size() == 1s )
@@ -1076,24 +1076,24 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 	auto result_functions_set_ptr= result_namespace_value.Get</NamesScopeFunctionsSet/>();
 	BuildFunctionsSet( result_names_scope, ust::to_non_nullable(result_functions_set_ptr), false );
 
-	if( result_functions_set_ptr.lock_imut().deref().functions_set.functions.size() != 1s )
+	if( result_functions_set_ptr.try_lock_imut().deref().functions_set.functions.size() != 1s )
 	{
 		return ust::optional</FunctionVariable/>();
 	}
 
 	// Set base template and mangled name.
-	auto mut function_variable= result_functions_set_ptr.lock_imut().deref().functions_set.functions.front();
+	auto mut function_variable= result_functions_set_ptr.try_lock_imut().deref().functions_set.functions.front();
 	function_variable.base_template= function_template_ptr;
 
 	auto name_mangled=
-		mangler_.MangleFunction( function_template.parent_names_scope.lock().lock_imut().deref(), function_name, function_variable.t, result_template_args );
+		mangler_.MangleFunction( function_template.parent_names_scope.lock().try_lock_imut().deref(), function_name, function_variable.t, result_template_args );
 	unsafe
 	{
 		LLVMSetValueName2( function_variable.llvm_function, name_mangled.front(), name_mangled.size() - 1s );
 	}
 
 	{
-		auto mut lock= result_functions_set_ptr.lock_mut();
+		auto mut lock= result_functions_set_ptr.try_lock_mut();
 		lock.deref().functions_set.functions.front()= function_variable;
 	}
 
@@ -1106,7 +1106,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 	}
 
 	{
-		auto mut lock= result_functions_set_ptr.lock_mut();
+		auto mut lock= result_functions_set_ptr.try_lock_mut();
 		lock.deref().functions_set.functions.front()= function_variable;
 	}
 
@@ -1297,7 +1297,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 	auto template_arg_value= names_scope.lock_imut().deref().GetThisScopeValue( param_name ).try_deref();
 	auto template_arg_ptr= template_arg_value.Get</TemplateArg/>();
 
-	auto mut template_arg_lock= template_arg_ptr.lock_mut();
+	auto mut template_arg_lock= template_arg_ptr.try_lock_mut();
 	auto &mut template_arg= template_arg_lock.deref();
 
 	auto& param_type= template_.params[template_param.index].t;

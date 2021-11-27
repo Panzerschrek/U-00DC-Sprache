@@ -649,7 +649,7 @@ fn CodeBuilder::BuildTypeinfoClassFunctionsList( mut this, NamesScopePtr& root_n
 				continue;
 			}
 
-			foreach( &function : functions_set_ptr.lock_imut().deref().functions_set.functions )
+			foreach( &function : functions_set_ptr.try_lock_imut().deref().functions_set.functions )
 			{
 				var ClassFunctionForTypeinfo mut f{ .function= function, .name= class_member.key() };
 
@@ -724,11 +724,11 @@ fn CodeBuilder::BuildTypeinfoClassTypesList( mut this, NamesScopePtr& root_names
 			auto enum_ptr= class_member.value().Get</Enum/>();
 			if( !type_ptr.empty() )
 			{
-				t= type_ptr.lock_imut().deref();
+				t= type_ptr.try_lock_imut().deref();
 			}
 			else if( !type_alias_ptr.empty() )
 			{
-				var ust::optional</ Type /> inner_type= type_alias_ptr.lock_imut().deref().t;
+				var ust::optional</ Type /> inner_type= type_alias_ptr.try_lock_imut().deref().t;
 				if( inner_type.empty() ) { continue; }// WTF?
 				t= inner_type.try_deref();
 			}

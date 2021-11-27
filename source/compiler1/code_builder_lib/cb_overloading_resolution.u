@@ -719,7 +719,7 @@ fn CodeBuilder::GetOverloadedOperator(
 				{
 					BuildFunctionsSet( class_members, ust::to_non_nullable( functions_set_ptr ), false );
 
-					auto functions_set_lock= functions_set_ptr.lock_imut();
+					auto functions_set_lock= functions_set_ptr.try_lock_imut();
 					if_var( &function_selected : GetOverloadedFunctionImpl( functions_set_lock.deref().functions_set, args, false, names_scope, src_loc, true, false ) )
 					{
 						// Check access rights after function selection.
@@ -760,7 +760,7 @@ fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, 
 	auto dst_class_members= dst_class.lock_imut().deref().members;
 
 	auto constructors_ptr= dst_class_members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
-	auto constructors_lock= constructors_ptr.lock_imut();
+	auto constructors_lock= constructors_ptr.try_lock_imut();
 	auto& constructors= constructors_lock.deref().functions_set;
 
 	var [ VariableTypeExtened, 2 ] constructor_args

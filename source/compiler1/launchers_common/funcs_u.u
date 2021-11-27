@@ -18,7 +18,7 @@ fn U1_ProcessCodeBuilderErrors(
 			var UserHandle error_data= errors_handling_callbacks.error_callback( data, err.src_loc.GetFileIndex(), err.src_loc.GetLine(), err.src_loc.GetColumn(), u32(err.code), text_view );
 			if( !err.errors_context.empty() )
 			{
-				auto lock= err.errors_context.lock_imut();
+				auto lock= err.errors_context.try_lock_imut();
 				var U1::TemplateErrorsContext& errors_context= lock.deref();
 
 				var U1_StringView context_name{ .data= errors_context.context_name.front_unchecked(), .size= errors_context.context_name.size() };

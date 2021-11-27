@@ -326,7 +326,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			REPORT_ERROR( InitializerForNonfieldStructMember, names_scope, member_initializer.src_loc, member_initializer.name )
 			return LLVMValueRef::Null;
 		}
-		auto field_lock= field_ptr.lock_imut();
+		auto field_lock= field_ptr.try_lock_imut();
 		var ClassField& class_field= field_lock.deref();
 
 		if( class_field.source_class.lock() != class_type_ptr )
@@ -391,7 +391,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			continue;
 		}
 
-		auto field_lock= field_ptr.lock_imut();
+		auto field_lock= field_ptr.try_lock_imut();
 		var ClassField & field= field_lock.deref();
 
 		if( field.index == ~0s ){ continue; } // May be in case of error
@@ -537,7 +537,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		foreach( &field_name : class_type.fields_order )
 		{
 			auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
-			auto field_lock= field_ptr.lock_imut();
+			auto field_lock= field_ptr.try_lock_imut();
 			var ClassField& field= field_lock.deref();
 
 			if( field.index == ~0s ){ continue; } // May be in case of error
@@ -652,7 +652,7 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 			names_scope,
 			function_context,
 			ust::optional_ref_imut</ Variable />( this_ ),
-			constructors_ptr.lock_imut().deref().functions_set,
+			constructors_ptr.try_lock_imut().deref().functions_set,
 			ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
 			src_loc );
 
@@ -945,7 +945,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			names_scope,
 			function_context,
 			ust::optional_ref_imut</ Variable />( this_ ),
-			constructors_ptr.lock_imut().deref().functions_set,
+			constructors_ptr.try_lock_imut().deref().functions_set,
 			args.range(),
 			src_loc );
 
@@ -1257,7 +1257,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 			REPORT_ERROR( InitializerForNonfieldStructMember, names_scope, member_initializer.src_loc, member_initializer.name )
 			continue;
 		}
-		if( class_field_ptr.lock_imut().deref().source_class.lock() != class_type )
+		if( class_field_ptr.try_lock_imut().deref().source_class.lock() != class_type )
 		{
 			have_fields_errors= true;
 			REPORT_ERROR( InitializerForBaseClassField, names_scope, member_initializer.src_loc, member_initializer.name )
@@ -1300,7 +1300,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 			continue;
 		}
 		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
-		auto field_lock= field_ptr.lock_imut();
+		auto field_lock= field_ptr.try_lock_imut();
 		var ClassField & class_field= field_lock.deref();
 
 		if( class_field.index == ~0s ){ continue; } // May be in case of error
@@ -1368,7 +1368,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 		}
 
 		auto field_ptr= class_members.GetThisScopeValue( member_initializer.name ).try_deref().Get</ClassField/>();
-		auto field_lock= field_ptr.lock_imut();
+		auto field_lock= field_ptr.try_lock_imut();
 		var ClassField & class_field= field_lock.deref();
 
 		if( class_field.index == ~0s ){ continue; } // May be in case of error
@@ -1416,7 +1416,7 @@ fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type
 	foreach( &field_name : class_type.lock_imut().deref().fields_order )
 	{
 		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
-		auto field_lock= field_ptr.lock_imut();
+		auto field_lock= field_ptr.try_lock_imut();
 		var ClassField & class_field= field_lock.deref();
 
 		if( class_field.index == ~0s ){ continue; } // May be in case of error

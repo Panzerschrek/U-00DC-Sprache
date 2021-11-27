@@ -16,7 +16,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 
 	// Constructors value should always exists and should always be NamesScopeFunctionsSet.
 	auto constructors_ptr= class_members.GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
-	auto mut constructors_lock= constructors_ptr.lock_mut();
+	auto mut constructors_lock= constructors_ptr.try_lock_mut();
 	auto &mut constructors= constructors_lock.deref().functions_set;
 
 	// Search for copy constructor.
@@ -57,7 +57,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	{
 		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
 
-		auto field_lock= field_ptr.lock_imut();
+		auto field_lock= field_ptr.try_lock_imut();
 		auto& field= field_lock.deref();
 
 		if( !field.syntax_element.deref().initializer.get</Synt::EmptyVariant/>().empty() &&
@@ -69,7 +69,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	}
 
 	auto base_class= class_type.lock_imut().deref().base_class;
-	if( !base_class.empty() && !base_class.lock_imut().deref().is_default_constructible )
+	if( !base_class.empty() && !base_class.try_lock_imut().deref().is_default_constructible )
 	{
 		all_fields_is_default_constructible= false;
 	}
@@ -179,7 +179,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	foreach( &field_name : class_type.lock_imut().deref().fields_order )
 	{
 		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
-		auto field_lock= field_ptr.lock_imut();
+		auto field_lock= field_ptr.try_lock_imut();
 		var ClassField & class_field= field_lock.deref();
 
 		if( class_field.index == ~0s ){ continue; } // May be in case of error
@@ -228,7 +228,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 
 	// Constructors value should always exists and should always be NamesScopeFunctionsSet.
 	auto constructors_ptr= class_members.GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
-	auto mut constructors_lock= constructors_ptr.lock_mut();
+	auto mut constructors_lock= constructors_ptr.try_lock_mut();
 	auto &mut constructors= constructors_lock.deref().functions_set;
 
 	// Search for copy constructor.
@@ -258,7 +258,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 	{
 		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
 
-		auto field_lock= field_ptr.lock_imut();
+		auto field_lock= field_ptr.try_lock_imut();
 		auto& field= field_lock.deref();
 		if( !field.is_reference && !field.t.IsCopyConstructible() )
 		{
@@ -268,7 +268,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 	}
 
 	auto base_class= class_type.lock_imut().deref().base_class;
-	if( !base_class.empty() && !base_class.lock_imut().deref().is_copy_constructible )
+	if( !base_class.empty() && !base_class.try_lock_imut().deref().is_copy_constructible )
 	{
 		all_fields_is_copy_constructible= false;
 	}
@@ -407,7 +407,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 	foreach( &field_name : class_type.lock_imut().deref().fields_order )
 	{
 		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
-		auto field_lock= field_ptr.lock_imut();
+		auto field_lock= field_ptr.try_lock_imut();
 		var ClassField & class_field= field_lock.deref();
 
 		if( class_field.index == ~0s ){ continue; } // May be in case of error
@@ -449,7 +449,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 
 	// Assignment operators value should always exists and should always be NamesScopeFunctionsSet.
 	auto operators_ptr= class_members.GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Assign ) ).try_deref().Get</NamesScopeFunctionsSet/>();
-	auto mut operators_lock= operators_ptr.lock_mut();
+	auto mut operators_lock= operators_ptr.try_lock_mut();
 	auto &mut operators= operators_lock.deref().functions_set;
 
 	// Search for copy assignment operator.
@@ -479,7 +479,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 	{
 		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
 
-		auto field_lock= field_ptr.lock_imut();
+		auto field_lock= field_ptr.try_lock_imut();
 		auto& field= field_lock.deref();
 		if( field.is_reference || !field.is_mutable || !field.t.IsCopyAssignable() )
 		{
@@ -489,7 +489,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 	}
 
 	auto base_class= class_type.lock_imut().deref().base_class;
-	if( !base_class.empty() && !base_class.lock_imut().deref().is_copy_assignable )
+	if( !base_class.empty() && !base_class.try_lock_imut().deref().is_copy_assignable )
 	{
 		all_fields_is_copy_assignable= false;
 	}
@@ -628,7 +628,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 	foreach( &field_name : class_type.lock_imut().deref().fields_order )
 	{
 		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
-		auto field_lock= field_ptr.lock_imut();
+		auto field_lock= field_ptr.try_lock_imut();
 		var ClassField & class_field= field_lock.deref();
 
 		if( class_field.index == ~0s ){ continue; } // May be in case of error
@@ -655,7 +655,7 @@ fn CodeBuilder::TryGenerateDestructorPrototype( mut this, ClassTypePtr& class_ty
 
 	// Destructors value should always exists and should always be NamesScopeFunctionsSet.
 	auto destructors_ptr= class_members.GetThisScopeValue( KeywordToString( Keyword::destructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
-	auto mut destructors_lock= destructors_ptr.lock_mut();
+	auto mut destructors_lock= destructors_ptr.try_lock_mut();
 	auto &mut destructors= destructors_lock.deref().functions_set;
 
 	if( !destructors.functions.empty() )
@@ -723,7 +723,7 @@ fn CodeBuilder::TryGenerateDestructor( mut this, ClassTypePtr& class_type )
 
 	// Destructors value should always exists and should always be NamesScopeFunctionsSet.
 	auto destructors_ptr= class_members.GetThisScopeValue( KeywordToString( Keyword::destructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
-	auto mut destructors_lock= destructors_ptr.lock_mut();
+	auto mut destructors_lock= destructors_ptr.try_lock_mut();
 	auto &mut destructors= destructors_lock.deref().functions_set;
 
 	auto mut use_existing_destructor_variable= false;
@@ -826,7 +826,7 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 		auto constructors_ptr= class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
 
 		// Search for copy constructor.
-		foreach( &constructor_ : constructors_ptr.lock_imut().deref().functions_set.functions )
+		foreach( &constructor_ : constructors_ptr.try_lock_imut().deref().functions_set.functions )
 		{
 			if( IsCopyConstructor( constructor_, class_type ) )
 			{
@@ -920,7 +920,7 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 		auto operators_ptr= class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Assign ) ).try_deref().Get</NamesScopeFunctionsSet/>();
 
 		// Search for copy assignment operator.
-		foreach( &operator_ : operators_ptr.lock_imut().deref().functions_set.functions )
+		foreach( &operator_ : operators_ptr.try_lock_imut().deref().functions_set.functions )
 		{
 			if( IsCopyAssignmentOperator( operator_, class_type ) )
 			{
@@ -979,7 +979,7 @@ fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionC
 		auto destructors_ptr= class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::destructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
 
 		// Destructors set should contain exactly one function.
-		auto destructors_lock= destructors_ptr.lock_imut();
+		auto destructors_lock= destructors_ptr.try_lock_imut();
 		auto& destructor_= destructors_lock.deref().functions_set.functions.front();
 
 		// SPRACHE_TODO - maybe disallow unsafe destructors?
@@ -1020,7 +1020,7 @@ fn CodeBuilder::BuildMembersDestructors( this, FunctionContext &mut function_con
 	foreach( &field_name : class_type.lock_imut().deref().fields_order )
 	{
 		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
-		auto field_lock= field_ptr.lock_imut();
+		auto field_lock= field_ptr.try_lock_imut();
 		var ClassField& class_field= field_lock.deref();
 
 		if( class_field.index == ~0s ){ continue; } // May be in case of error

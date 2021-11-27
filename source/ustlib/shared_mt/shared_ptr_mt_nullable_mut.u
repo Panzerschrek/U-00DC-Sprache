@@ -47,12 +47,12 @@ public:
 		return impl_.empty();
 	}
 
-	fn lock_mut ( this ) : shared_ptr_mt_impl::lock_mut </T/>'this'
+	fn try_lock_mut ( this ) : shared_ptr_mt_impl::lock_mut </T/>'this'
 	{
 		return impl_.lock_mut ();
 	}
 
-	fn lock_imut( this ) : shared_ptr_mt_impl::lock_imut</T/>'this'
+	fn try_lock_imut( this ) : shared_ptr_mt_impl::lock_imut</T/>'this'
 	{
 		return impl_.lock_imut();
 	}
