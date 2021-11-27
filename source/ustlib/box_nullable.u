@@ -48,7 +48,7 @@ public:
 		{
 			if( !val.empty() )
 			{
-				ptr_= $<( cast_ref</T/>( val.get_ref_unchecked() ) );
+				ptr_= $<( cast_ref</T/>( val.deref_unchecked() ) );
 			}
 			move_into_nowhere( move(val) );
 		}
@@ -62,7 +62,7 @@ public:
 		unsafe
 		{
 			// TODO - do not call "get_ref", because it checks value.
-			ptr_= $<( cast_ref</T/>( val.get_ref() ) ); // Convert reference here.
+			ptr_= $<( cast_ref</T/>( val.deref() ) ); // Convert reference here.
 			move_into_nowhere( move(val) );
 		}
 	}
@@ -84,21 +84,21 @@ public:
 	fn try_deref( mut this ) : T &mut
 	{
 		halt if( empty() );
-		unsafe{  return get_ref_unchecked();  }
+		unsafe{  return deref_unchecked();  }
 	}
 
 	fn try_deref( imut this ) : T &imut
 	{
 		halt if( empty() );
-		unsafe{  return get_ref_unchecked();  }
+		unsafe{  return deref_unchecked();  }
 	}
 
-	fn get_ref_unchecked( mut this ) unsafe : T &mut
+	fn deref_unchecked( mut this ) unsafe : T &mut
 	{
 		unsafe{  return $>(ptr_);  }
 	}
 
-	fn get_ref_unchecked( imut this ) unsafe : T &imut
+	fn deref_unchecked( imut this ) unsafe : T &imut
 	{
 		unsafe{  return $>(ptr_);  }
 	}

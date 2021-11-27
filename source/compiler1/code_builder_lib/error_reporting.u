@@ -70,9 +70,9 @@ fn ReportErrorImpl( CodeBuilderErrorCode code, SrcLoc& src_loc, ust::array_view_
 
 fn PutErrorIntoContainer( NamesScopePtr& names_scope, CodeBuilderError mut error )
 {
-	auto container_ptr= names_scope.lock_imut().get_ref().GetErrors();
+	auto container_ptr= names_scope.lock_imut().deref().GetErrors();
 	auto mut lock= container_ptr.lock_mut();
-	lock.get_ref().push_back( move( error ) );
+	lock.deref().push_back( move( error ) );
 }
 
 fn ComplexNameToString( Synt::ComplexName& complex_name ) : ust::string8
@@ -120,9 +120,9 @@ fn RemoveEmptyErrorsContexts( ErrorsContainer &mut errors )
 		{
 			var bool mut is_empty= false;
 			{
-				auto sub_errors_ptr= errors[i].errors_context.lock_imut().get_ref().errors;
+				auto sub_errors_ptr= errors[i].errors_context.lock_imut().deref().errors;
 				auto mut sub_errors_lock= sub_errors_ptr.lock_mut();
-				var ErrorsContainer &mut sub_errors= sub_errors_lock.get_ref();
+				var ErrorsContainer &mut sub_errors= sub_errors_lock.deref();
 				RemoveEmptyErrorsContexts( sub_errors );
 				is_empty= sub_errors.empty();
 			}
@@ -174,9 +174,9 @@ fn ExpandErrorsInMacros( ErrorsContainer& in_errors, Synt::MacroExpansionContext
 		var CodeBuilderError mut error= in_error;
 		if( !error.errors_context.empty() )
 		{
-			auto sub_errors_ptr= error.errors_context.lock_imut().get_ref().errors;
+			auto sub_errors_ptr= error.errors_context.lock_imut().deref().errors;
 			auto mut sub_errors_lock= sub_errors_ptr.lock_mut();
-			var ErrorsContainer &mut sub_errors= sub_errors_lock.get_ref();
+			var ErrorsContainer &mut sub_errors= sub_errors_lock.deref();
 			sub_errors= ExpandErrorsInMacros( sub_errors, macro_expansion_contexts );
 		}
 
@@ -184,7 +184,7 @@ fn ExpandErrorsInMacros( ErrorsContainer& in_errors, Synt::MacroExpansionContext
 		if( macro_expansion_index < macro_contexts_errors_internals.size() )
 		{
 			auto mut lock= macro_contexts_errors_internals[ macro_expansion_index ].lock_mut();
-			lock.get_ref().push_back( move(error) );
+			lock.deref().push_back( move(error) );
 		}
 		else
 		{
@@ -198,7 +198,7 @@ fn ExpandErrorsInMacros( ErrorsContainer& in_errors, Synt::MacroExpansionContext
 		if( macro_expansion_index < macro_contexts_errors_internals.size() )
 		{
 			auto mut lock= macro_contexts_errors_internals[ macro_expansion_index ].lock_mut();
-			lock.get_ref().push_back( macro_context_error );
+			lock.deref().push_back( macro_context_error );
 		}
 		else
 		{
@@ -226,9 +226,9 @@ fn SortErrorsAndRemoveDuplicates( ErrorsContainer &mut errors )
 			var CodeBuilderError &mut src_error= errors[src];
 			if( !src_error.errors_context.empty() )
 			{
-				auto sub_errors_ptr= src_error.errors_context.lock_imut().get_ref().errors;
+				auto sub_errors_ptr= src_error.errors_context.lock_imut().deref().errors;
 				auto mut sub_errors_lock= sub_errors_ptr.lock_mut();
-				SortErrorsAndRemoveDuplicates( sub_errors_lock.get_ref() );
+				SortErrorsAndRemoveDuplicates( sub_errors_lock.deref() );
 			}
 		}
 

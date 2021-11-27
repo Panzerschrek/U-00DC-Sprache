@@ -30,7 +30,7 @@ public:
 	{
 		unsafe
 		{
-			ptr_= $<( cast_ref</T/>(val.get_ref()) );
+			ptr_= $<( cast_ref</T/>(val.deref()) );
 			move_into_nowhere( move(val) );
 		}
 	}
@@ -46,22 +46,22 @@ public:
 		}
 	}
 
-	fn get_ref( mut this ) : T &mut
+	fn deref( mut this ) : T &mut
 	{
-		unsafe{  return get_ref_unchecked();  }
+		unsafe{  return deref_unchecked();  }
 	}
 
-	fn get_ref( imut this ) : T &imut
+	fn deref( imut this ) : T &imut
 	{
-		unsafe{  return get_ref_unchecked();  }
+		unsafe{  return deref_unchecked();  }
 	}
 
-	fn get_ref_unchecked( mut this ) unsafe : T &mut
+	fn deref_unchecked( mut this ) unsafe : T &mut
 	{
 		unsafe{  return $>(ptr_);  }
 	}
 
-	fn get_ref_unchecked( imut this ) unsafe : T &imut
+	fn deref_unchecked( imut this ) unsafe : T &imut
 	{
 		unsafe{  return $>(ptr_);  }
 	}
@@ -83,7 +83,7 @@ struct box_hasher
 	template</ type T />
 	fn hash( box</T/>& b ) : size_type
 	{
-		return ust::default_hasher::hash(b.get_ref());
+		return ust::default_hasher::hash(b.deref());
 	}
 }
 

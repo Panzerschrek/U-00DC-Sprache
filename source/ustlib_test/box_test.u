@@ -42,7 +42,7 @@ fn nomangle main() : i32
 
 	{ // box constructs with value.
 		var ust::box</ i32 /> box(42);
-		halt if( box.get_ref() != 42 );
+		halt if( box.deref() != 42 );
 	}
 	{ // box calls destructor.
 		var i32 mut x= 0;
@@ -53,8 +53,8 @@ fn nomangle main() : i32
 	}
 	{ // can change value.
 		var ust::box</ i32 /> mut box(0);
-		box.get_ref()= 666;
-		halt if( box.get_ref() != 666 );
+		box.deref()= 666;
+		halt if( box.deref() != 666 );
 	}
 	{ // is convertible form other box.
 		var ust::box</ B /> mut box_b( B() );
@@ -75,7 +75,7 @@ fn nomangle main() : i32
 	// make_box
 	{
 		auto box= ust::make_box( 77 );
-		halt if( box.get_ref() != 77 );
+		halt if( box.deref() != 77 );
 	}
 
 	return 0;

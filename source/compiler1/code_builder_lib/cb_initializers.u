@@ -186,7 +186,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				element_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] );
 			}
 
-			auto element_constant= BuildInitializer( names_scope, function_context, element_variable, element_initializer.get_ref() );
+			auto element_constant= BuildInitializer( names_scope, function_context, element_variable, element_initializer.deref() );
 
 			if( is_constant )
 			{
@@ -237,7 +237,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				.node_id= variable.node_id,
 			};
 
-			auto element_constant= BuildInitializer( names_scope, function_context, element_variable, sequence_initializer.elements_initializers[i].get_ref() );
+			auto element_constant= BuildInitializer( names_scope, function_context, element_variable, sequence_initializer.elements_initializers[i].deref() );
 
 			if( is_constant )
 			{
@@ -277,10 +277,10 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	}
 	var ClassTypePtr& class_type_ptr= class_type_ref.try_deref();
 	auto class_type_lock= class_type_ptr.lock_imut();
-	var ClassType& class_type= class_type_lock.get_ref();
+	var ClassType& class_type= class_type_lock.deref();
 
 	auto members_lock= class_type.members.lock_imut();
-	var NamesScope& class_members= members_lock.get_ref();
+	var NamesScope& class_members= members_lock.deref();
 
 	if( class_type.have_explicit_noncopy_constructors )
 	{
@@ -327,7 +327,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			return LLVMValueRef::Null;
 		}
 		auto field_lock= field_ptr.lock_imut();
-		var ClassField& class_field= field_lock.get_ref();
+		var ClassField& class_field= field_lock.deref();
 
 		if( class_field.source_class.lock() != class_type_ptr )
 		{
@@ -339,7 +339,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 		if( class_field.is_reference )
 		{
-			auto initializer= InitializeReferenceField( names_scope, function_context, variable, class_field, member_initializer.initializer.get_ref() );
+			auto initializer= InitializeReferenceField( names_scope, function_context, variable, class_field, member_initializer.initializer.deref() );
 			if( initializer == LLVMValueRef::Null )
 			{
 				is_constexpr= false;
@@ -358,7 +358,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				.node_id= variable.node_id,
 			};
 
-			auto initializer= BuildInitializer( names_scope, function_context, member_variable, member_initializer.initializer.get_ref() );
+			auto initializer= BuildInitializer( names_scope, function_context, member_variable, member_initializer.initializer.deref() );
 			if( initializer == LLVMValueRef::Null )
 			{
 				is_constexpr= false;
@@ -392,7 +392,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		}
 
 		auto field_lock= field_ptr.lock_imut();
-		var ClassField & field= field_lock.get_ref();
+		var ClassField & field= field_lock.deref();
 
 		if( field.index == ~0s ){ continue; } // May be in case of error
 
@@ -404,7 +404,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		};
 
 		auto mut constexpr_initializer= LLVMValueRef::Null;
-		auto& initializer= field.syntax_element.get_ref().initializer;
+		auto& initializer= field.syntax_element.deref().initializer;
 		if( !initializer.get</Synt::EmptyVariant/>().empty() )
 		{
 			if( field.is_reference )
@@ -520,7 +520,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	if_var( &class_type_ptr : variable.t.GetClassType() )
 	{
 		auto class_type_lock= class_type_ptr.lock_imut();
-		var ClassType& class_type= class_type_lock.get_ref();
+		var ClassType& class_type= class_type_lock.deref();
 
 		if( class_type.have_explicit_noncopy_constructors )
 		{
@@ -532,13 +532,13 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		}
 
 		auto members_lock= class_type.members.lock_imut();
-		var NamesScope& class_members= members_lock.get_ref();
+		var NamesScope& class_members= members_lock.deref();
 
 		foreach( &field_name : class_type.fields_order )
 		{
 			auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
 			auto field_lock= field_ptr.lock_imut();
-			var ClassField& field= field_lock.get_ref();
+			var ClassField& field= field_lock.deref();
 
 			if( field.index == ~0s ){ continue; } // May be in case of error
 
@@ -627,10 +627,10 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 	}
 	if_var( &class_type_ptr : variable.t.GetClassType() )
 	{
-		auto class_members= class_type_ptr.lock_imut().get_ref().members;
+		auto class_members= class_type_ptr.lock_imut().deref().members;
 		auto members_lock= class_members.lock_imut();
 
-		auto member= members_lock.get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) );
+		auto member= members_lock.deref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) );
 		if( member.empty() )
 		{
 			// May be in case of error
@@ -652,7 +652,7 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 			names_scope,
 			function_context,
 			ust::optional_ref_imut</ Variable />( this_ ),
-			constructors_ptr.lock_imut().get_ref().functions_set,
+			constructors_ptr.lock_imut().deref().functions_set,
 			ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
 			src_loc );
 
@@ -677,7 +677,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			return LLVMValueRef::Null;
 		}
 
-		var Variable src_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().get_ref() );
+		var Variable src_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().deref() );
 
 		var FundamentalType mut src_type;
 		if_var( &fundamental_type : src_var.t.GetFundamentalType() )
@@ -686,7 +686,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 		}
 		if_var( &enum_type : src_var.t.GetEnumType() )
 		{
-			src_type= enum_type.lock_imut().get_ref().underlaying_type;
+			src_type= enum_type.lock_imut().deref().underlaying_type;
 		}
 
 		if( src_type.llvm_type == LLVMTypeRef::Null )
@@ -820,7 +820,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			return LLVMValueRef::Null;
 		}
 
-		auto expr_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().get_ref() );
+		auto expr_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().deref() );
 		if( expr_result.t != variable.t )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope, src_loc, variable.t, expr_result.t )
@@ -864,7 +864,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			return LLVMValueRef::Null;
 		}
 
-		var Variable expr= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().get_ref() );
+		var Variable expr= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().deref() );
 		if( expr.t != variable.t )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope, src_loc, variable.t, expr.t )
@@ -888,7 +888,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			return LLVMValueRef::Null;
 		}
 
-		return InitializeFunctionPointer( names_scope, function_context, variable, args.front().get_ref() );
+		return InitializeFunctionPointer( names_scope, function_context, variable, args.front().deref() );
 	}
 	if_var( &class_type : variable.t.GetClassType() )
 	{
@@ -899,7 +899,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 			auto instructions_state= SaveInstructionsState( function_context );
 
-			var Variable arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().get_ref() );
+			var Variable arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().deref() );
 			needs_move_construct= arg.t == variable.t && arg.value_type == ValueType::Value;
 
 			RestoreInstructionsState( function_context, instructions_state );
@@ -907,7 +907,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 
 		if( needs_move_construct )
 		{
-			var Variable expr_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().get_ref() );
+			var Variable expr_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().deref() );
 			SetupReferencesInCopyOrMove( names_scope, function_context, variable.t, variable.node_id, expr_result.node_id, src_loc );
 
 			if( expr_result.node_id != ReferencesGraph::c_empty_node_id )
@@ -920,10 +920,10 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			return expr_result.constexpr_value; // Move can preserve constexpr.
 		}
 
-		auto class_members= class_type.lock_imut().get_ref().members;
+		auto class_members= class_type.lock_imut().deref().members;
 		auto members_lock= class_members.lock_imut();
 
-		auto member= members_lock.get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) );
+		auto member= members_lock.deref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) );
 		if( member.empty() )
 		{
 			REPORT_ERROR( ClassHaveNoConstructors, names_scope, src_loc )
@@ -945,7 +945,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			names_scope,
 			function_context,
 			ust::optional_ref_imut</ Variable />( this_ ),
-			constructors_ptr.lock_imut().get_ref().functions_set,
+			constructors_ptr.lock_imut().deref().functions_set,
 			args.range(),
 			src_loc );
 
@@ -1017,7 +1017,7 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 
 		foreach( &parametrized_function_template : functions_set.parametrized_function_templates )
 		{
-			if( parametrized_function_template.known_args.size() != parametrized_function_template.base_template.get_ref().params.size() )
+			if( parametrized_function_template.known_args.size() != parametrized_function_template.base_template.deref().params.size() )
 			{
 				continue;
 			}
@@ -1037,7 +1037,7 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 
 		foreach( &function_template : functions_set.function_templates )
 		{
-			if( !function_template.get_ref().params.empty() )
+			if( !function_template.deref().params.empty() )
 			{
 				continue;
 			}
@@ -1130,7 +1130,7 @@ fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, 
 			return LLVMValueRef::Null;
 		}
 
-		initializer_expression.reset( constructor_initializer.args.front().get_ref() );
+		initializer_expression.reset( constructor_initializer.args.front().deref() );
 	}
 
 	if( initializer_expression.empty() )
@@ -1213,10 +1213,10 @@ fn CodeBuilder::BuildConstructorInitialization(
 
 	// Function context should contain "this" with class type
 	auto class_type= function_context.this_.try_deref().t.GetClassType().try_deref();
-	auto class_members_ptr= class_type.lock_imut().get_ref().members;
+	auto class_members_ptr= class_type.lock_imut().deref().members;
 	auto class_members_lock= class_members_ptr.lock_imut();
-	var NamesScope& class_members= class_members_lock.get_ref();
-	auto base_class= class_type.lock_imut().get_ref().base_class;
+	var NamesScope& class_members= class_members_lock.deref();
+	auto base_class= class_type.lock_imut().deref().base_class;
 
 	// Check for errors, build list of initialized fields.
 	var ust::unordered_set</ust::string8/> mut initialized_fields;
@@ -1257,7 +1257,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 			REPORT_ERROR( InitializerForNonfieldStructMember, names_scope, member_initializer.src_loc, member_initializer.name )
 			continue;
 		}
-		if( class_field_ptr.lock_imut().get_ref().source_class.lock() != class_type )
+		if( class_field_ptr.lock_imut().deref().source_class.lock() != class_type )
 		{
 			have_fields_errors= true;
 			REPORT_ERROR( InitializerForBaseClassField, names_scope, member_initializer.src_loc, member_initializer.name )
@@ -1291,9 +1291,9 @@ fn CodeBuilder::BuildConstructorInitialization(
 	}
 
 	// Use initial class members namespace for own fields initializers evaluation.
-	auto class_members_initial= class_type.lock_imut().get_ref().members_initial;
+	auto class_members_initial= class_type.lock_imut().deref().members_initial;
 
-	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
+	foreach( &field_name : class_type.lock_imut().deref().fields_order )
 	{
 		if( initialized_fields.exists( field_name ) )
 		{
@@ -1301,7 +1301,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 		}
 		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
 		auto field_lock= field_ptr.lock_imut();
-		var ClassField & class_field= field_lock.get_ref();
+		var ClassField & class_field= field_lock.deref();
 
 		if( class_field.index == ~0s ){ continue; } // May be in case of error
 
@@ -1313,7 +1313,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 			.node_id= this_.node_id,
 		};
 
-		auto& initializer= class_field.syntax_element.get_ref().initializer;
+		auto& initializer= class_field.syntax_element.deref().initializer;
 		if( !initializer.get</Synt::EmptyVariant/>().empty() )
 		{
 			if( class_field.is_reference )
@@ -1361,7 +1361,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 				.node_id= this_.node_id,
 			};
 
-			BuildInitializer( names_scope, function_context, base_variable, member_initializer.initializer.get_ref() );
+			BuildInitializer( names_scope, function_context, base_variable, member_initializer.initializer.deref() );
 
 			function_context.uninitialized_this_fields.drop( KeywordToString( Keyword::base_ ) );
 			continue;
@@ -1369,7 +1369,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 
 		auto field_ptr= class_members.GetThisScopeValue( member_initializer.name ).try_deref().Get</ClassField/>();
 		auto field_lock= field_ptr.lock_imut();
-		var ClassField & class_field= field_lock.get_ref();
+		var ClassField & class_field= field_lock.deref();
 
 		if( class_field.index == ~0s ){ continue; } // May be in case of error
 
@@ -1381,7 +1381,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 				.llvm_value= this_.llvm_value,
 				.node_id= this_.node_id,
 			};
-			InitializeReferenceField( names_scope, function_context, this_copy, class_field, member_initializer.initializer.get_ref() );
+			InitializeReferenceField( names_scope, function_context, this_copy, class_field, member_initializer.initializer.deref() );
 		}
 		else
 		{
@@ -1393,7 +1393,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 				.node_id= this_.node_id,
 			};
 
-			BuildInitializer( names_scope, function_context, field_variable, member_initializer.initializer.get_ref() );
+			BuildInitializer( names_scope, function_context, field_variable, member_initializer.initializer.deref() );
 		}
 
 		function_context.uninitialized_this_fields.drop( member_initializer.name );
@@ -1402,26 +1402,26 @@ fn CodeBuilder::BuildConstructorInitialization(
 
 fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type )
 {
-	auto class_members_ptr= class_type.lock_imut().get_ref().members;
+	auto class_members_ptr= class_type.lock_imut().deref().members;
 	auto class_members_lock= class_members_ptr.lock_imut();
-	var NamesScope& class_members= class_members_lock.get_ref();
+	var NamesScope& class_members= class_members_lock.deref();
 
 	auto mut global_function_context= CreateGlobalFunctionContext();
 	var VariablesFrameHolder temp_variables_frame_hodler(global_function_context);
 	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
 	var NamesScopeVariable mut this_variable{ .t= class_type };
-	unsafe{  this_variable.llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, class_type.lock_imut().get_ref().llvm_type, "\0"[0] );  }
+	unsafe{  this_variable.llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, class_type.lock_imut().deref().llvm_type, "\0"[0] );  }
 
-	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
+	foreach( &field_name : class_type.lock_imut().deref().fields_order )
 	{
 		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
 		auto field_lock= field_ptr.lock_imut();
-		var ClassField & class_field= field_lock.get_ref();
+		var ClassField & class_field= field_lock.deref();
 
 		if( class_field.index == ~0s ){ continue; } // May be in case of error
 
-		auto& initializer= class_field.syntax_element.get_ref().initializer;
+		auto& initializer= class_field.syntax_element.deref().initializer;
 		if( !initializer.get</Synt::EmptyVariant/>().empty() )
 		{
 			continue; // Skip empty initializers.

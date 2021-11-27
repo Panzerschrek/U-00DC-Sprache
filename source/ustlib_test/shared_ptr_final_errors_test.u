@@ -21,7 +21,7 @@ fn nomangle main() : i32
 	}
 	{ // Can not modify value
 		var IntPtr mut ptr(0);
-		++ptr.get_ref(); //##expect_error ExpectedReferenceValue
+		++ptr.deref(); //##expect_error ExpectedReferenceValue
 	}
 	return 0;
 }

@@ -352,7 +352,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		var Variable& this_= function_context.this_.try_deref();
 
 		auto class_type= this_.t.GetClassType().try_deref();
-		auto base_class= class_type.lock_imut().get_ref().base_class;
+		auto base_class= class_type.lock_imut().deref().base_class;
 		if( base_class.empty() )
 		{
 			REPORT_ERROR( BaseUnavailable, names_scope, named_operand.src_loc )
@@ -384,7 +384,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	var NamesScopePtr mut root_names_scope= names_scope;
 	while(true)
 	{
-		auto parent= root_names_scope.lock_imut().get_ref().GetParent();
+		auto parent= root_names_scope.lock_imut().deref().GetParent();
 		if( parent.empty() )
 		{
 			break;
@@ -404,7 +404,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CastRef& cast_ref_ ) : Value
 {
-	return DoReferenceCast( names_scope, function_context, cast_ref_.t, cast_ref_.expression.get_ref(), cast_ref_.src_loc, false );
+	return DoReferenceCast( names_scope, function_context, cast_ref_.t, cast_ref_.expression.deref(), cast_ref_.src_loc, false );
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CastRefUnsafe& cast_ref_unsafe_ ) : Value
@@ -413,12 +413,12 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	{
 		REPORT_ERROR( UnsafeReferenceCastOutsideUnsafeBlock, names_scope, cast_ref_unsafe_.src_loc )
 	}
-	return DoReferenceCast( names_scope, function_context, cast_ref_unsafe_.t, cast_ref_unsafe_.expression.get_ref(), cast_ref_unsafe_.src_loc, true );
+	return DoReferenceCast( names_scope, function_context, cast_ref_unsafe_.t, cast_ref_unsafe_.expression.deref(), cast_ref_unsafe_.src_loc, true );
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CastImut& cast_imut_ ) : Value
 {
-	var Variable v= BuildExpressionCodeEnsureVariable( names_scope, function_context, cast_imut_.expression.get_ref() );
+	var Variable v= BuildExpressionCodeEnsureVariable( names_scope, function_context, cast_imut_.expression.deref() );
 
 	var Variable mut r
 	{
@@ -455,7 +455,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		REPORT_ERROR( MutableReferenceCastOutsideUnsafeBlock, names_scope, cast_mut_.src_loc )
 	}
 
-	var Variable v= BuildExpressionCodeEnsureVariable( names_scope, function_context, cast_mut_.expression.get_ref() );
+	var Variable v= BuildExpressionCodeEnsureVariable( names_scope, function_context, cast_mut_.expression.deref() );
 
 	var Variable mut r
 	{
@@ -542,7 +542,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TakeOperator& take_operator ) : Value
 {
-	var Variable variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, take_operator.expression.get_ref() );
+	var Variable variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, take_operator.expression.deref() );
 	if( variable.value_type == ValueType::Value )
 	{
 		return variable; // If it is value - just pass it.
@@ -607,7 +607,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TernaryOperator& ternary_operator ) : Value
 {
-	var Variable condition= BuildExpressionCodeEnsureVariable( names_scope, function_context, ternary_operator.condition.get_ref() );
+	var Variable condition= BuildExpressionCodeEnsureVariable( names_scope, function_context, ternary_operator.condition.deref() );
 	if( condition.t != bool_type_ )
 	{
 		REPORT_ERROR( TypesMismatch, names_scope, ternary_operator.src_loc, bool_type_, condition.t )
@@ -625,7 +625,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 			auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
-			var Variable branch_value= BuildExpressionCodeEnsureVariable( names_scope, function_context, ternary_operator.branches[i].get_ref() );
+			var Variable branch_value= BuildExpressionCodeEnsureVariable( names_scope, function_context, ternary_operator.branches[i].deref() );
 			branches_types[i].t= branch_value.t;
 			branches_types[i].value_type= branch_value.value_type;
 			DestroyUnusedTemporaryVariables( names_scope, function_context, ternary_operator.src_loc );
@@ -698,7 +698,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, branches_blocks[i] );
 			}
 
-			var Variable branch_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, ternary_operator.branches[i].get_ref() );
+			var Variable branch_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, ternary_operator.branches[i].deref() );
 
 			branches_constexpr_values[i]= branch_result.constexpr_value;
 
@@ -781,7 +781,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 {
 	// TODO - maybe allow reference to pointer conversion only in unsafe code?
 
-	var Variable v= BuildExpressionCodeEnsureVariable( names_scope, function_context, reference_to_raw_pointer_operator.expression.get_ref() );
+	var Variable v= BuildExpressionCodeEnsureVariable( names_scope, function_context, reference_to_raw_pointer_operator.expression.deref() );
 	if( v.value_type == ValueType::Value )
 	{
 		REPORT_ERROR( ValueIsNotReference, names_scope, reference_to_raw_pointer_operator.src_loc )
@@ -828,7 +828,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		REPORT_ERROR( RawPointerToReferenceConversionOutsideUnsafeBlock, names_scope, raw_pointer_to_reference_operator.src_loc )
 	}
 
-	var Variable v= BuildExpressionCodeEnsureVariable( names_scope, function_context, raw_pointer_to_reference_operator.expression.get_ref() );
+	var Variable v= BuildExpressionCodeEnsureVariable( names_scope, function_context, raw_pointer_to_reference_operator.expression.deref() );
 
 	auto pointer_type_ref= v.t.GetRawPointerType();
 	if( pointer_type_ref.empty() )
@@ -869,7 +869,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return res;
 	}
 
-	auto mut l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.l.get_ref() );
+	auto mut l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.l.deref() );
 	// Save l_var in register, prevent its modification during r_var calculation.
 	l_var.llvm_value= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
 	l_var.location= Variable::Location::LLVMRegister;
@@ -878,14 +878,14 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	// Destroy temporaries of left part.
 	DestroyUnusedTemporaryVariables( names_scope, function_context, binary_operator.src_loc );
 
-	auto r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.r.get_ref() );
+	auto r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.r.deref() );
 
 	return BuildBinaryOperator( names_scope, function_context, l_var, r_var, binary_operator.operator, binary_operator.src_loc );
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IndexationOperator& indexation_operator ) : Value
 {
-	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.value.get_ref() );
+	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.value.deref() );
 
 	if( !variable.t.GetClassType().empty() )
 	{
@@ -909,7 +909,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		REPORT_ERROR( ReferenceProtectionError, names_scope, indexation_operator.src_loc, function_context.references_graph.GetNodeName( variable.node_id ) )
 	}
 
-	auto index= BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.index.get_ref() );
+	auto index= BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.index.deref() );
 
 	if_var( &variable_array_type : variable.t.GetArrayType() )
 	{
@@ -1082,7 +1082,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CallOperator& call_operator ) : Value
 {
-	auto function= BuildExpressionCode( names_scope, function_context, call_operator.value.get_ref() );
+	auto function= BuildExpressionCode( names_scope, function_context, call_operator.value.deref() );
 
 	var ust::optional_ref_imut</ FunctionsSet /> mut functions_set;
 	var ust::optional_ref_imut</ Variable /> mut this_;
@@ -1147,7 +1147,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		}
 	}
 
-	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, member_access_operator.value.get_ref() );
+	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, member_access_operator.value.deref() );
 	if( !EnsureTypeComplete( variable.t ) )
 	{
 		REPORT_ERROR( UsingIncompleteType, names_scope, member_access_operator.src_loc, variable.t )
@@ -1163,8 +1163,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	var ClassTypePtr class_type= class_type_ref.try_deref();
 
 	var ust::optional</NamesScopeValue/> mut class_member;
-	auto class_members= class_type.lock_imut().get_ref().members;
-	if_var( &member : class_members.lock_imut().get_ref().GetThisScopeValue( member_access_operator.member_name ) )
+	auto class_members= class_type.lock_imut().deref().members;
+	if_var( &member : class_members.lock_imut().deref().GetThisScopeValue( member_access_operator.member_name ) )
 	{
 		class_member= member;
 	}
@@ -1175,8 +1175,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return ErrorValue();
 	}
 
-	if( u32( names_scope.lock_imut().get_ref().GetAccessFor( class_type ) ) <
-		u32( class_type.lock_imut().get_ref().GetMemberVisibility( member_access_operator.member_name ) ) )
+	if( u32( names_scope.lock_imut().deref().GetAccessFor( class_type ) ) <
+		u32( class_type.lock_imut().deref().GetMemberVisibility( member_access_operator.member_name ) ) )
 	{
 		REPORT_ERROR( AccessingNonpublicClassMember, names_scope, member_access_operator.src_loc, member_access_operator.member_name, variable.t.ToString() )
 	}
@@ -1191,7 +1191,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			}
 
 			auto field_lock= field_ptr.lock_imut();
-			auto& field= field_lock.get_ref();
+			auto& field= field_lock.deref();
 
 			if( field.index == ~0s ){ return ErrorValue(); } // May be in case of error
 
@@ -1201,7 +1201,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				auto field_source_class= field.source_class.lock();
 				while( current_class_type != field_source_class )
 				{
-					auto base_class= current_class_type.lock_imut().get_ref().base_class;
+					auto base_class= current_class_type.lock_imut().deref().base_class;
 					if( base_class.empty() )
 					{
 						// May be in case of errors.
@@ -1258,7 +1258,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					{
 						var ust::string8 mut node_name= function_context.references_graph.GetNodeName( variable.node_id );
 						node_name+= ".";
-						node_name+= field.syntax_element.get_ref().name;
+						node_name+= field.syntax_element.deref().name;
 						auto reference_field_node= function_context.references_graph.AddNode(
 							select( field.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
 							move(node_name) );
@@ -1296,14 +1296,14 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			auto functions_set_ptr= class_member.try_deref().Get</NamesScopeFunctionsSet/>();
 			if( !functions_set_ptr.empty() )
 			{
-				BuildFunctionsSet( class_type.lock_imut().get_ref().members, ust::to_non_nullable( functions_set_ptr ), false );
+				BuildFunctionsSet( class_type.lock_imut().deref().members, ust::to_non_nullable( functions_set_ptr ), false );
 
 				var ThisMethodsSet mut this_methods_set{ .this_= variable };
 
 				if( !member_access_operator.template_args.empty() )
 				{
 					auto functions_set_lock= functions_set_ptr.lock_imut();
-					auto& functions_set= functions_set_lock.get_ref().functions_set;
+					auto& functions_set= functions_set_lock.deref().functions_set;
 
 					if( functions_set.function_templates.empty() )
 					{
@@ -1340,11 +1340,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 						return ErrorValue();
 					}
 
-					this_methods_set.functions_set= val.try_deref().Get</NamesScopeFunctionsSet/>().lock_imut().get_ref().functions_set;
+					this_methods_set.functions_set= val.try_deref().Get</NamesScopeFunctionsSet/>().lock_imut().deref().functions_set;
 				}
 				else
 				{
-					this_methods_set.functions_set= functions_set_ptr.lock_imut().get_ref().functions_set;
+					this_methods_set.functions_set= functions_set_ptr.lock_imut().deref().functions_set;
 				}
 
 				return move(this_methods_set);
@@ -1360,12 +1360,12 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 {
 	// Do nothing with unary plus.
 	// TODO - maybe check type or do something else?
-	return BuildExpressionCode( names_scope, function_context, unary_plus.expr.get_ref() );
+	return BuildExpressionCode( names_scope, function_context, unary_plus.expr.deref() );
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnaryMinus& unary_minus ) : Value
 {
-	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, unary_minus.expr.get_ref() );
+	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, unary_minus.expr.deref() );
 
 	if_var( &mut res : TryCallOverloadedUnaryOperator( names_scope, function_context, OverloadedOperator::Sub, variable, unary_minus.src_loc ) )
 	{
@@ -1415,7 +1415,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::LogicalNot& logical_not ) : Value
 {
-	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, logical_not.expr.get_ref() );
+	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, logical_not.expr.deref() );
 
 	if_var( &mut res : TryCallOverloadedUnaryOperator( names_scope, function_context, OverloadedOperator::LogicalNot, variable, logical_not.src_loc ) )
 	{
@@ -1453,7 +1453,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BitwiseNot& bitwise_not ) : Value
 {
-	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, bitwise_not.expr.get_ref() );
+	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, bitwise_not.expr.deref() );
 
 	if_var( &mut res : TryCallOverloadedUnaryOperator( names_scope, function_context, OverloadedOperator::BitwiseNot, variable, bitwise_not.src_loc ) )
 	{
@@ -2153,7 +2153,7 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
 {
-	var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.l.get_ref() );
+	var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.l.deref() );
 	if( l_var.t != bool_type_ )
 	{
 		REPORT_ERROR( TypesMismatch, names_scope, binary_operator.src_loc, bool_type_, l_var.t )
@@ -2195,7 +2195,7 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
-		var Variable r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.r.get_ref() );
+		var Variable r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.r.deref() );
 		if( r_var.t != bool_type_ )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope, binary_operator.src_loc, bool_type_, r_var.t )
@@ -2279,7 +2279,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 		{
 			if( function_context.args_preevaluation_cache.find( in_arg ).empty() )
 			{
-				auto arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.get_ref() );
+				auto arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.deref() );
 				var VariableTypeExtened mut f_arg{ .t(arg.t), .value_type= arg.value_type };
 				function_context.args_preevaluation_cache.insert( in_arg, move(f_arg) );
 				DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
@@ -2301,7 +2301,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 		// Do move assign.
 		// TODO - what exact evaluation order should be here?
 
-		var Variable r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.get_ref() );
+		var Variable r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.deref() );
 
 		// Prevent modification of r_var during l_val calculation.
 		var ReferencesGraph::NodeId mut r_var_lock_node= ReferencesGraph::c_empty_node_id;
@@ -2312,7 +2312,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 			function_context.references_graph.AddLink( r_var.node_id, r_var_lock_node );
 		}
 
-		var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.get_ref() );
+		var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() );
 
 		if( r_var_lock_node != ReferencesGraph::c_empty_node_id )
 		{
@@ -2371,12 +2371,12 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 	// Currently only copy assignment supported for arrays and tuples.
 	if( operator != OverloadedOperator::Assign )
 	{
-		var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.get_ref() );
+		var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() );
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_var.t )
 		return ErrorValue();
 	}
 
-	var Variable r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.get_ref() );
+	var Variable r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.deref() );
 
 	// Prevent modification of r_var during l_val calculation.
 	var ReferencesGraph::NodeId mut r_var_lock_node= ReferencesGraph::c_empty_node_id;
@@ -2390,7 +2390,7 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		}
 	}
 
-	var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.get_ref() );
+	var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() );
 	halt if( r_var.t != l_var.t ); // Checked before
 
 	if( r_var_lock_node != ReferencesGraph::c_empty_node_id )
@@ -2476,7 +2476,7 @@ fn CodeBuilder::TryCallOverloadedPostfixOperator(
 
 		foreach( &in_arg : synt_args )
 		{
-			var Variable arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.get_ref() );
+			var Variable arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.deref() );
 			var VariableTypeExtened mut type_extended{ .t(arg.t), .value_type= arg.value_type };
 			args.push_back( move(type_extended) );
 			DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
@@ -2529,7 +2529,7 @@ fn CodeBuilder::CallFunctionsSet(
 		{
 			if( function_context.args_preevaluation_cache.find( arg ).empty() )
 			{
-				auto arg_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg.get_ref() );
+				auto arg_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg.deref() );
 				var VariableTypeExtened mut out_arg{ .t( arg_variable.t ), .value_type= arg_variable.value_type };
 				function_context.args_preevaluation_cache.insert( arg, move(out_arg) );
 				DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
@@ -2686,7 +2686,7 @@ fn CodeBuilder::DoCallFunction(
 		var Variable mut arg=
 			select( arg_n < preevaluated_args.size()
 				? preevaluated_args[arg_n]
-				: BuildExpressionCodeEnsureVariable( names_scope, function_context, args[ arg_n - preevaluated_args.size() ].get_ref() ) );
+				: BuildExpressionCodeEnsureVariable( names_scope, function_context, args[ arg_n - preevaluated_args.size() ].deref() ) );
 
 		// Convert variable in function call.
 		if( arg.t != expected_arg_type )
@@ -2953,9 +2953,9 @@ fn CodeBuilder::DoCallFunction(
 		}
 		else
 		{
-			auto errors_container_ptr= names_scope.lock_imut().get_ref().GetErrors();
+			auto errors_container_ptr= names_scope.lock_imut().deref().GetErrors();
 			auto mut lock= errors_container_ptr.lock_mut();
-			auto &mut errors_container= lock.get_ref();
+			auto &mut errors_container= lock.deref();
 			foreach( &err : res.errors )
 			{
 				var CodeBuilderError mut out_error

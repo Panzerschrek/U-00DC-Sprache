@@ -119,10 +119,10 @@ fn LoadSourceGraph_r(
 				{
 					dst_map.insert( macro.key(), macro.value() );
 				}
-				else if( dst_map[ macro.key() ].get_ref().src_loc != macro.value().get_ref().src_loc )
+				else if( dst_map[ macro.key() ].deref().src_loc != macro.value().deref().src_loc )
 				{
 					macro_errors.push_back( LexSyntError(
-						macro.value().get_ref().src_loc ,
+						macro.value().deref().src_loc ,
 						"Macro \"" + macro.key() + "\" redefinition." ) );
 				}
 			}

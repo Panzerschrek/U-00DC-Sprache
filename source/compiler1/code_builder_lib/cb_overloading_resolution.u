@@ -707,9 +707,9 @@ fn CodeBuilder::GetOverloadedOperator(
 	{
 		if_var( &class_type : arg.t.GetClassType() )
 		{
-			auto class_members= class_type.lock_imut().get_ref().members;
+			auto class_members= class_type.lock_imut().deref().members;
 			auto members_lock= class_members.lock_imut();
-			auto& members= members_lock.get_ref();
+			auto& members= members_lock.deref();
 
 			auto overloaded_operator_str= OverloadedOperatorToString( operator );
 			if_var( &operators_value : members.GetThisScopeValue( overloaded_operator_str ) )
@@ -720,11 +720,11 @@ fn CodeBuilder::GetOverloadedOperator(
 					BuildFunctionsSet( class_members, ust::to_non_nullable( functions_set_ptr ), false );
 
 					auto functions_set_lock= functions_set_ptr.lock_imut();
-					if_var( &function_selected : GetOverloadedFunctionImpl( functions_set_lock.get_ref().functions_set, args, false, names_scope, src_loc, true, false ) )
+					if_var( &function_selected : GetOverloadedFunctionImpl( functions_set_lock.deref().functions_set, args, false, names_scope, src_loc, true, false ) )
 					{
 						// Check access rights after function selection.
-						if( u32( names_scope.lock_imut().get_ref().GetAccessFor(class_type ) ) <
-							u32( class_type.lock_imut().get_ref().GetMemberVisibility( overloaded_operator_str ) ) )
+						if( u32( names_scope.lock_imut().deref().GetAccessFor(class_type ) ) <
+							u32( class_type.lock_imut().deref().GetMemberVisibility( overloaded_operator_str ) ) )
 						{
 							REPORT_ERROR( AccessingNonpublicClassMember, names_scope, src_loc, overloaded_operator_str, arg.t.ToString() )
 						}
@@ -757,11 +757,11 @@ fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, 
 	}
 
 	auto dst_class= dst.GetClassType().try_deref();
-	auto dst_class_members= dst_class.lock_imut().get_ref().members;
+	auto dst_class_members= dst_class.lock_imut().deref().members;
 
-	auto constructors_ptr= dst_class_members.lock_imut().get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
+	auto constructors_ptr= dst_class_members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
 	auto constructors_lock= constructors_ptr.lock_imut();
-	auto& constructors= constructors_lock.get_ref().functions_set;
+	auto& constructors= constructors_lock.deref().functions_set;
 
 	var [ VariableTypeExtened, 2 ] constructor_args
 	[
@@ -807,8 +807,8 @@ fn CodeBuilder::SelectMoreSpecializedTemplate(
 			foreach( &candidate_r : type_templates )
 			{
 				auto comp= CompareTemplateSpecialization(
-					candidate_l.get_ref().signature_params[arg_n],
-					candidate_r.get_ref().signature_params[arg_n] );
+					candidate_l.deref().signature_params[arg_n],
+					candidate_r.deref().signature_params[arg_n] );
 				if( comp == ConversionsCompareResult::Incomparable || comp == ConversionsCompareResult::RightIsBetter )
 				{
 					is_best_template_for_current_arg= false;
@@ -825,8 +825,8 @@ fn CodeBuilder::SelectMoreSpecializedTemplate(
 			{
 				auto& candidate_r= type_templates[index_r];
 				auto comp= CompareTemplateSpecialization(
-					candidate_l.get_ref().signature_params[arg_n],
-					candidate_r.get_ref().signature_params[arg_n] );
+					candidate_l.deref().signature_params[arg_n],
+					candidate_r.deref().signature_params[arg_n] );
 
 				if( comp != ConversionsCompareResult::Same )
 				{

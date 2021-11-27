@@ -25,7 +25,7 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 	// Also, parent namespaces should not be merged into class namespace before call of this function.
 
 	auto mut class_lock= class_type_ptr.lock_mut();
-	var ClassType &mut class_type= class_lock.get_ref();
+	var ClassType &mut class_type= class_lock.deref();
 
 	// First, borrow virtual table of parent with 0 offset.
 	// Class reuses virtual table pointer of first parent, so, virtual table layout must be equal.
@@ -38,7 +38,7 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 
 		auto parent_ptr= class_type.parents[i].class_;
 		auto parent_lock= parent_ptr.lock_imut();
-		var ClassType& parent= parent_lock.get_ref();
+		var ClassType& parent= parent_lock.deref();
 
 		for( auto mut j= 0s; j < parent.virtual_table.size(); ++j )
 		{
@@ -60,7 +60,7 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 
 		auto parent_ptr= class_type.parents[i].class_;
 		auto parent_lock= parent_ptr.lock_imut();
-		var ClassType& parent= parent_lock.get_ref();
+		var ClassType& parent= parent_lock.deref();
 
 		for( auto mut j= 0s; j < parent.virtual_table.size(); ++j )
 		{
@@ -95,7 +95,7 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 	var ust::vector</ VirtualFunctionWithName /> mut this_virtual_functions;
 
 	auto class_members_ptr= class_type.members;
-	foreach( &class_member : class_members_ptr.lock_imut().get_ref() )
+	foreach( &class_member : class_members_ptr.lock_imut().deref() )
 	{
 		auto functions_set_ptr= class_member.value().Get</NamesScopeFunctionsSet/>();
 		if( functions_set_ptr.empty() )
@@ -104,7 +104,7 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 		}
 
 		auto mut functions_set_lock= functions_set_ptr.lock_mut();
-		var FunctionsSet& functions_set= functions_set_lock.get_ref().functions_set;
+		var FunctionsSet& functions_set= functions_set_lock.deref().functions_set;
 		for( auto mut i= 0s; i < functions_set.functions.size(); ++i )
 		{
 			if( !functions_set.functions[i].is_this_call )
@@ -141,7 +141,7 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 		var ust::string8& function_name= f.name;
 
 		auto mut functions_set_lock= f.functions_set.lock_mut();
-		var FunctionVariable &mut function= functions_set_lock.get_ref().functions_set.functions[ f.index ];
+		var FunctionVariable &mut function= functions_set_lock.deref().functions_set.functions[ f.index ];
 
 		auto mut virtual_table_index= ~0u;
 		for( auto mut i= 0s; i < class_type.virtual_table.size(); ++i )
@@ -315,7 +315,7 @@ fn CodeBuilder::PrepareClassVirtualTableType( mut this, ClassTypePtr& class_type
 	virtual_table_type_name+= mangler_.MangleType( class_type_ptr );
 
 	auto mut class_lock= class_type_ptr.lock_mut();
-	var ClassType &mut class_type= class_lock.get_ref();
+	var ClassType &mut class_type= class_lock.deref();
 
 	var ust::vector</LLVMTypeRef/> mut virtual_table_struct_fields;
 
@@ -324,14 +324,14 @@ fn CodeBuilder::PrepareClassVirtualTableType( mut this, ClassTypePtr& class_type
 	{
 		if( parent.field_number == 0u )
 		{
-			virtual_table_struct_fields.push_back( parent.class_.lock_imut().get_ref().virtual_table_llvm_type );
+			virtual_table_struct_fields.push_back( parent.class_.lock_imut().deref().virtual_table_llvm_type );
 		}
 	}
 	foreach( &parent : class_type.parents )
 	{
 		if( parent.field_number != 0u )
 		{
-			virtual_table_struct_fields.push_back( parent.class_.lock_imut().get_ref().virtual_table_llvm_type );
+			virtual_table_struct_fields.push_back( parent.class_.lock_imut().deref().virtual_table_llvm_type );
 		}
 	}
 
@@ -368,7 +368,7 @@ fn CodeBuilder::PrepareClassVirtualTableType( mut this, ClassTypePtr& class_type
 
 fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_ptr )
 {
-	var ClassType::Kind class_kind= class_type_ptr.lock_imut().get_ref().kind;
+	var ClassType::Kind class_kind= class_type_ptr.lock_imut().deref().kind;
 	if( !(
 		class_kind == ClassType::Kind::Interface ||
 		class_kind == ClassType::Kind::Abstract ||
@@ -393,7 +393,7 @@ fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_pt
 		LLVMSetComdat( global_value, comdat );
 
 		auto mut lock= class_type_ptr.lock_mut();
-		var ClassType& mut class_type= lock.get_ref();
+		var ClassType& mut class_type= lock.deref();
 		halt if( class_type.polymorph_type_id != LLVMValueRef::Null );
 		class_type.polymorph_type_id= global_value;
 	}
@@ -410,7 +410,7 @@ fn CodeBuilder::BuildClassVirtualTable_r( this, ClassType& ancestor_class, Class
 		if( parent.field_number == 0u )
 		{
 			auto offset_ptr= CreateBaseClassFieldGEP( dst_class_ptr_null_based, function_context );
-			initializer_values.push_back( BuildClassVirtualTable_r( parent.class_.lock_imut().get_ref(), dst_class, offset_ptr ) );
+			initializer_values.push_back( BuildClassVirtualTable_r( parent.class_.lock_imut().deref(), dst_class, offset_ptr ) );
 		}
 	}
 	foreach( &parent : ancestor_class.parents )
@@ -418,7 +418,7 @@ fn CodeBuilder::BuildClassVirtualTable_r( this, ClassType& ancestor_class, Class
 		if( parent.field_number != 0u )
 		{
 			auto offset_ptr= CreateParentFieldGEP( dst_class_ptr_null_based, parent, function_context );
-			initializer_values.push_back( BuildClassVirtualTable_r( parent.class_.lock_imut().get_ref(), dst_class, offset_ptr ) );
+			initializer_values.push_back( BuildClassVirtualTable_r( parent.class_.lock_imut().deref(), dst_class, offset_ptr ) );
 		}
 	}
 
@@ -475,7 +475,7 @@ fn CodeBuilder::BuildClassVirtualTable( mut this, ClassTypePtr& class_type_ptr )
 	auto mut virtual_table_initializer= LLVMValueRef::Null;
 	{
 		auto class_lock= class_type_ptr.lock_imut();
-		auto& class_= class_lock.get_ref();
+		auto& class_= class_lock.deref();
 
 		// Build virtual table only for polymorph non-abstract classes.
 		if( !(
@@ -486,7 +486,7 @@ fn CodeBuilder::BuildClassVirtualTable( mut this, ClassTypePtr& class_type_ptr )
 		}
 
 		auto mut this_nullptr= LLVMValueRef::Null;
-		unsafe{  this_nullptr= LLVMConstNull( LLVMPointerType( class_type_ptr.lock_imut().get_ref().llvm_type, 0u ) );  }
+		unsafe{  this_nullptr= LLVMConstNull( LLVMPointerType( class_type_ptr.lock_imut().deref().llvm_type, 0u ) );  }
 
 		virtual_table_initializer= BuildClassVirtualTable_r( class_, class_, this_nullptr );
 	}
@@ -494,7 +494,7 @@ fn CodeBuilder::BuildClassVirtualTable( mut this, ClassTypePtr& class_type_ptr )
 	auto name_mangled= mangler_.MangleVirtualTable( class_type_ptr );
 
 	auto mut class_lock= class_type_ptr.lock_mut();
-	auto &mut class_= class_lock.get_ref();
+	auto &mut class_= class_lock.deref();
 
 	class_.virtual_table_llvm_variable=
 		AddGlobalConstantVariable( name_mangled, class_.virtual_table_llvm_type, virtual_table_initializer );
@@ -522,7 +522,7 @@ fn CodeBuilder::SetupVirtualTablePointers_r(
 			];
 			auto vtable_ptr= LLVMBuildGEP( function_context.llvm_ir_builder, ptr_to_vtable_ptr, vtable_indexes[0], 2u, "\0"[0] );
 
-			SetupVirtualTablePointers_r( parent_ptr, vtable_ptr, parent.class_.lock_imut().get_ref(), function_context );
+			SetupVirtualTablePointers_r( parent_ptr, vtable_ptr, parent.class_.lock_imut().deref(), function_context );
 
 		}
 		if( parent.field_number != 0u )
@@ -551,7 +551,7 @@ fn CodeBuilder::SetupVirtualTablePointers(
 	FunctionContext &mut function_context )
 {
 	auto class_type_lock= class_type_ptr.lock_imut();
-	auto& class_type= class_type_lock.get_ref();
+	auto& class_type= class_type_lock.deref();
 
 	if( !(
 		class_type.kind == ClassType::Kind::PolymorphNonFinal ||
@@ -594,7 +594,7 @@ fn CodeBuilder::TryFetchVirtualFunction(
 
 	var ClassTypePtr class_type_ptr= this_casted.t.GetClassType().try_deref();
 	auto class_type_lock= class_type_ptr.lock_imut();
-	var ClassType& class_type= class_type_lock.get_ref();
+	var ClassType& class_type= class_type_lock.deref();
 
 	unsafe // Unsafe because a lot of C calls.
 	{
@@ -619,7 +619,7 @@ fn CodeBuilder::TryFetchVirtualFunction(
 		{
 			auto current_class_ptr_copy= current_class_ptr;
 			auto current_class_lock= current_class_ptr_copy.lock_imut();
-			auto& current_class= current_class_lock.get_ref();
+			auto& current_class= current_class_lock.deref();
 
 			auto mut field_index= ~0u;
 			if( current_class.parents[ parent_virtual_table_index ].field_number == 0u )
@@ -651,7 +651,7 @@ fn CodeBuilder::TryFetchVirtualFunction(
 			auto next_class_ptr= current_class.parents[ parent_virtual_table_index ].class_;
 
 			auto next_class_lock= next_class_ptr.lock_imut();
-			auto& next_class= next_class_lock.get_ref();
+			auto& next_class= next_class_lock.deref();
 			var ClassType::VirtualTableEntry& next_virtual_table_entry= next_class.virtual_table[ index_in_table ];
 			parent_virtual_table_index= next_virtual_table_entry.parent_virtual_table_index;
 			index_in_table= next_virtual_table_entry.index_in_table;
@@ -662,7 +662,7 @@ fn CodeBuilder::TryFetchVirtualFunction(
 		var u32 mut functions_table_field_number= ~0u;
 		{
 			auto current_class_lock= current_class_ptr.lock_imut();
-			auto& current_class= current_class_lock.get_ref();
+			auto& current_class= current_class_lock.deref();
 			functions_table_field_number= select( current_class.parents.empty() ? c_funcs_table_field_number : u32( current_class.parents.size() ) );
 		}
 
@@ -700,14 +700,14 @@ fn CodeBuilder::TryFetchVirtualFunction(
 			// Fetch "this" pointer offset. It is located in deepest first virtual table (actual offset should always be zero).
 			var LLVMValueRef mut first_root_virtual_table= virtual_table_ptr;
 
-			for( auto mut current_class_ptr= class_type_ptr; !current_class_ptr.lock_imut().get_ref().parents.empty(); )
+			for( auto mut current_class_ptr= class_type_ptr; !current_class_ptr.lock_imut().deref().parents.empty(); )
 			{
 				var [ LLVMValueRef, 2 ] index_list[ GetZeroGEPIndex(), GetZeroGEPIndex() ];
 				first_root_virtual_table=
 					LLVMBuildGEP( function_context.llvm_ir_builder, first_root_virtual_table, index_list[0], 2u, "\0"[0] );
 
 				auto current_class_ptr_copy= current_class_ptr;
-				foreach( &parent : current_class_ptr_copy.lock_imut().get_ref().parents )
+				foreach( &parent : current_class_ptr_copy.lock_imut().deref().parents )
 				{
 					if( parent.field_number == 0u )
 					{

@@ -244,13 +244,13 @@ fn EncodeTemplateClassName( ManglerState &mut mangler_state, ClassType& class_ty
 	ADD_NODE( mangler_state )
 	{
 		// Skip template parameters namespace.
-		auto parent= class_type.members.lock_imut().get_ref().GetParent().lock_imut().get_ref().GetParent();
-		if( !parent.lock_imut().get_ref().GetThisNamespaceName().empty() )
+		auto parent= class_type.members.lock_imut().deref().GetParent().lock_imut().deref().GetParent();
+		if( !parent.lock_imut().deref().GetThisNamespaceName().empty() )
 		{
-			EncodeNamespacePrefix_r( mangler_state, parent.lock_imut().get_ref() );
+			EncodeNamespacePrefix_r( mangler_state, parent.lock_imut().deref() );
 		}
 
-		auto& class_name= class_type.base_template.try_deref().class_template.get_ref().syntax_element.get_ref().name;
+		auto& class_name= class_type.base_template.try_deref().class_template.deref().syntax_element.deref().name;
 		mangler_state.PushLengthPrefixed( class_name.range() );
 	}
 
@@ -296,10 +296,10 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 	if_var( &class_type_ptr : t.GetClassType() )
 	{
 		auto class_lock= class_type_ptr.lock_imut();
-		auto& class_type= class_lock.get_ref();
+		auto& class_type= class_lock.deref();
 		auto class_members= class_type.members;
 		auto class_members_lock= class_members.lock_imut();
-		auto& class_members_ref= class_members_lock.get_ref();
+		auto& class_members_ref= class_members_lock.deref();
 
 		if( !class_type.typeinfo_src_type_.empty() )
 		{
@@ -307,7 +307,7 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 			{
 				ADD_NODE( mangler_state )
 				{
-					mangler_state.PushLengthPrefixed( class_type.members.lock_imut().get_ref().GetThisNamespaceName().range() );
+					mangler_state.PushLengthPrefixed( class_type.members.lock_imut().deref().GetThisNamespaceName().range() );
 				}
 				ADD_NODE( mangler_state )
 				{
@@ -322,8 +322,8 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 			ADD_NODE( mangler_state )
 			{
 				auto t= class_type.base_template.try_deref().class_template;
-				auto t_namespace= t.get_ref().parent_names_scope.lock();
-				if( !t_namespace.empty() && !t_namespace.lock_imut().get_ref().GetParent().empty() )
+				auto t_namespace= t.deref().parent_names_scope.lock();
+				if( !t_namespace.empty() && !t_namespace.lock_imut().deref().GetParent().empty() )
 				{
 					mangler_state.Push( "N" );
 					EncodeTemplateClassName( mangler_state, class_type );
@@ -337,17 +337,17 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 		}
 		else
 		{
-			EncodeNestedName( mangler_state, class_members_ref.GetThisNamespaceName(), class_members_ref.GetParent().lock_imut().get_ref() );
+			EncodeNestedName( mangler_state, class_members_ref.GetThisNamespaceName(), class_members_ref.GetParent().lock_imut().deref() );
 		}
 		return;
 	}
 	if_var( &enum_type : t.GetEnumType() )
 	{
-		auto enum_members= enum_type.lock_imut().get_ref().names_scope;
+		auto enum_members= enum_type.lock_imut().deref().names_scope;
 		auto enum_members_lock= enum_members.lock_imut();
-		auto& enum_members_ref= enum_members_lock.get_ref();
+		auto& enum_members_ref= enum_members_lock.deref();
 
-		EncodeNestedName( mangler_state, enum_members_ref.GetThisNamespaceName(), enum_members_ref.GetParent().lock_imut().get_ref() );
+		EncodeNestedName( mangler_state, enum_members_ref.GetThisNamespaceName(), enum_members_ref.GetParent().lock_imut().deref() );
 		return;
 	}
 	if_var( &raw_poiter_type : t.GetRawPointerType() )
@@ -459,7 +459,7 @@ fn EncodeNamespacePrefix_r( ManglerState& mut mangler_state, NamesScope& names_s
 	if( !class_ptr.empty() )
 	{
 		auto class_lock= class_ptr.lock_imut();
-		auto& class_= class_lock.get_ref();
+		auto& class_= class_lock.deref();
 		if( !class_.base_template.empty() )
 		{
 			ADD_NODE( mangler_state )
@@ -476,7 +476,7 @@ fn EncodeNamespacePrefix_r( ManglerState& mut mangler_state, NamesScope& names_s
 		if( !parent.empty() )
 		{
 			auto parent_lock= parent.lock_imut();
-			auto& parent_ref= parent_lock.get_ref();
+			auto& parent_ref= parent_lock.deref();
 			if( !parent_ref.GetThisNamespaceName().empty() )
 			{
 				EncodeNamespacePrefix_r( mangler_state, parent_ref );
@@ -509,7 +509,7 @@ fn EncodeTemplateArgs( ManglerState &mut mangler_state, TemplateArgsFinished& te
 			}
 			if_var( enum_type : v.t.GetEnumType() )
 			{
-				is_signed= IsSignedInteger( enum_type.lock_imut().get_ref().underlaying_type.fundamental_type );
+				is_signed= IsSignedInteger( enum_type.lock_imut().deref().underlaying_type.fundamental_type );
 			}
 
 			if( v.constexpr_value != LLVMValueRef::Null )

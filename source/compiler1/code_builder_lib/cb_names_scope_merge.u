@@ -12,7 +12,7 @@ fn CodeBuilder::NamesScopeMerge( NamesScopeMutPtr& dst_ptr, NamesScope& src )
 	{
 		{
 			auto dst_lock= dst_ptr.lock_imut();
-			auto& dst= dst_lock.get_ref();
+			auto& dst= dst_lock.deref();
 			if_var ( &dst_value : dst.GetThisScopeValue( el.key() ) )
 			{
 				NamesScopeMergeValues( dst_value, el.value(), el.key(), dst_ptr );
@@ -21,7 +21,7 @@ fn CodeBuilder::NamesScopeMerge( NamesScopeMutPtr& dst_ptr, NamesScope& src )
 		}
 		{
 			auto mut dst_lock= dst_ptr.lock_mut();
-			auto &mut dst= dst_lock.get_ref();
+			auto &mut dst= dst_lock.deref();
 			dst.AddName( el.key(), DeepCopyNamesScopeValue( el.value(), dst_ptr ) );
 		}
 	}
@@ -48,13 +48,13 @@ fn CodeBuilder::DeepCopyNamesScopeValue( NamesScopeValue& value, NamesScopePtr& 
 fn CodeBuilder::DeepCopyNamesScopeValue( NamesScopeMutPtr& namespace_, NamesScopePtr& target_names_scope ) : NamesScopeValue
 {
 	auto src_lock= namespace_.lock_imut();
-	auto& src= src_lock.get_ref();
+	auto& src= src_lock.deref();
 
 	var NamesScopeMutPtr mut copy_ptr( NamesScope( src.GetThisNamespaceName(), target_names_scope ) );
 
 	{
 		auto mut copy_lock= copy_ptr.lock_mut();
-		copy_lock.get_ref().CopyAccessRightsFrom( src );
+		copy_lock.deref().CopyAccessRightsFrom( src );
 	}
 
 	NamesScopeMerge( copy_ptr, src );
@@ -67,22 +67,22 @@ fn CodeBuilder::DeepCopyNamesScopeValue( ClassTypePtr& class_type, NamesScopePtr
 	// Take copy of internal class namespace to prevent modification of source namespace.
 	// We can freely modify class structure itself because we anyway save class table for each source file.
 
-	auto src_namespace= class_type.lock_imut().get_ref().members;
+	auto src_namespace= class_type.lock_imut().deref().members;
 	auto src_lock= src_namespace.lock_imut();
-	auto& src= src_lock.get_ref();
+	auto& src= src_lock.deref();
 
 	var NamesScopeMutPtr mut dst_namespace( NamesScope( src.GetThisNamespaceName(), target_names_scope ) );
 
 	{
 		auto mut dst_namespace_lock= dst_namespace.lock_mut();
-		dst_namespace_lock.get_ref().CopyAccessRightsFrom( src );
-		dst_namespace_lock.get_ref().SetClass( class_type );
+		dst_namespace_lock.deref().CopyAccessRightsFrom( src );
+		dst_namespace_lock.deref().SetClass( class_type );
 	}
 
 	NamesScopeMerge( dst_namespace, src );
 
 	auto mut class_lock= class_type.lock_mut();
-	class_lock.get_ref().members= dst_namespace;
+	class_lock.deref().members= dst_namespace;
 
 	return class_type;
 }
@@ -102,7 +102,7 @@ fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</NamesScopeVariable
 fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</NamesScopeFunctionsSet/>& functions_set ) : NamesScopeValue
 {
 	// Functions set may be extended, so, copy it.
-	return NamesScopeValue( functions_set.lock_imut().get_ref() );
+	return NamesScopeValue( functions_set.lock_imut().deref() );
 }
 
 fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</ClassField/>& class_field ) : NamesScopeValue
@@ -128,7 +128,7 @@ fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</TypeAlias/>& type_
 fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set ) : NamesScopeValue
 {
 	// Type templates set may be extended, so, take copy of value.
-	return NamesScopeValue( type_templates_set.lock_imut().get_ref() );
+	return NamesScopeValue( type_templates_set.lock_imut().deref() );
 }
 
 fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</TemplateArg/>& template_arg ) : NamesScopeValue
@@ -172,7 +172,7 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 		auto src_namespace= src.Get</NamesScope/>();
 		if( !dst_namespace.empty() )
 		{
-			NamesScopeMerge( ust::to_non_nullable(dst_namespace), src_namespace.lock_imut().get_ref() );
+			NamesScopeMerge( ust::to_non_nullable(dst_namespace), src_namespace.lock_imut().deref() );
 			return;
 		}
 	}
@@ -181,7 +181,7 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 		auto src_type_ptr= src.Get</Type/>();
 		if( !dst_type_ptr.empty() )
 		{
-			if( dst_type_ptr.lock_imut().get_ref() != src_type_ptr.lock_imut().get_ref() )
+			if( dst_type_ptr.lock_imut().deref() != src_type_ptr.lock_imut().deref() )
 			{
 				REPORT_ERROR( Redefinition, target_names_scope, SrcLoc() /* TODO - src_loc */, name )
 				return;
@@ -195,10 +195,10 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 		if( !dst_functions_set_ptr.empty() )
 		{
 			auto mut dst_lock= dst_functions_set_ptr.lock_mut();
-			auto &mut dst= dst_lock.get_ref();
+			auto &mut dst= dst_lock.deref();
 
 			auto mut src_lock= src_functions_set_ptr.lock_mut();
-			auto& src= src_lock.get_ref();
+			auto& src= src_lock.deref();
 
 			foreach( &function : src.functions_set.functions )
 			{
@@ -271,7 +271,7 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 			if( dst_class_type_ptr != src_class_type_ptr )
 			{
 				auto class_lock= src_class_type_ptr.lock_imut();
-				auto& class_= class_lock.get_ref();
+				auto& class_= class_lock.deref();
 				auto src_loc=
 					select( class_.syntax_element.empty()
 						? class_.forward_declaration_syntax_element.try_deref().src_loc
@@ -288,7 +288,7 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 		{
 			if( dst_enum_type_ptr != src_enum_type_ptr )
 			{
-				REPORT_ERROR( Redefinition, target_names_scope, src_enum_type_ptr.lock_imut().get_ref().syntax_element.get_ref().src_loc, name )
+				REPORT_ERROR( Redefinition, target_names_scope, src_enum_type_ptr.lock_imut().deref().syntax_element.deref().src_loc, name )
 			}
 			return;
 		}
@@ -298,9 +298,9 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 		auto src_type_alias_ptr= src.Get</TypeAlias/>();
 		if( !dst_type_alias_ptr.empty() )
 		{
-			if( dst_type_alias_ptr.lock_imut().get_ref().syntax_element != src_type_alias_ptr.lock_imut().get_ref().syntax_element )
+			if( dst_type_alias_ptr.lock_imut().deref().syntax_element != src_type_alias_ptr.lock_imut().deref().syntax_element )
 			{
-				REPORT_ERROR( Redefinition, target_names_scope, src_type_alias_ptr.lock_imut().get_ref().syntax_element.get_ref().src_loc, name )
+				REPORT_ERROR( Redefinition, target_names_scope, src_type_alias_ptr.lock_imut().deref().syntax_element.deref().src_loc, name )
 			}
 			return;
 		}
@@ -311,10 +311,10 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 		if( !dst_type_templates_set_ptr.empty() )
 		{
 			auto src_lock= src_type_templates_set_ptr.lock_imut();
-			auto& src= src_lock.get_ref();
+			auto& src= src_lock.deref();
 
 			auto mut dst_lock= dst_type_templates_set_ptr.lock_mut();
-			auto &mut dst= dst_lock.get_ref();
+			auto &mut dst= dst_lock.deref();
 
 			foreach( &type_template : src.type_templates )
 			{
@@ -326,9 +326,9 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 						same_found= true;
 						break;
 					}
-					if( TypeTemplate::SignatureParamsIsSame( type_template.get_ref(), dst_type_template.get_ref() ) )
+					if( TypeTemplate::SignatureParamsIsSame( type_template.deref(), dst_type_template.deref() ) )
 					{
-						REPORT_ERROR( TypeTemplateRedefinition, target_names_scope, type_template.get_ref().syntax_element.get_ref().src_loc, name )
+						REPORT_ERROR( TypeTemplateRedefinition, target_names_scope, type_template.deref().syntax_element.deref().src_loc, name )
 						same_found= true;
 						break;
 					}
@@ -347,9 +347,9 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 		auto src_global_variable_ptr= src.Get</GlobalVariable/>();
 		if( !dst_global_variable_ptr.empty() )
 		{
-			if( dst_global_variable_ptr.lock_imut().get_ref().syntax_element != src_global_variable_ptr.lock_imut().get_ref().syntax_element )
+			if( dst_global_variable_ptr.lock_imut().deref().syntax_element != src_global_variable_ptr.lock_imut().deref().syntax_element )
 			{
-				REPORT_ERROR( Redefinition, target_names_scope, src_global_variable_ptr.lock_imut().get_ref().syntax_element.get_ref().src_loc, name )
+				REPORT_ERROR( Redefinition, target_names_scope, src_global_variable_ptr.lock_imut().deref().syntax_element.deref().src_loc, name )
 			}
 			return;
 		}
@@ -359,9 +359,9 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 		auto src_global_auto_variable_ptr= src.Get</GlobalAutoVariable/>();
 		if( !dst_global_auto_variable_ptr.empty() )
 		{
-			if( dst_global_auto_variable_ptr.lock_imut().get_ref().syntax_element != src_global_auto_variable_ptr.lock_imut().get_ref().syntax_element )
+			if( dst_global_auto_variable_ptr.lock_imut().deref().syntax_element != src_global_auto_variable_ptr.lock_imut().deref().syntax_element )
 			{
-				REPORT_ERROR( Redefinition, target_names_scope, src_global_auto_variable_ptr.lock_imut().get_ref().syntax_element.get_ref().src_loc, name )
+				REPORT_ERROR( Redefinition, target_names_scope, src_global_auto_variable_ptr.lock_imut().deref().syntax_element.deref().src_loc, name )
 			}
 			return;
 		}
@@ -386,19 +386,19 @@ fn CodeBuilder::GetValueSrcLoc( NamesScopeValue& value ) : SrcLoc
 			var SrcLoc mut min_src_loc( SrcLoc::c_max_file_index, SrcLoc::c_max_line, SrcLoc::c_max_column );
 
 			auto lock= functions_set_ptr.lock_imut();
-			var NamesScopeFunctionsSet& functions_set= lock.get_ref();
+			var NamesScopeFunctionsSet& functions_set= lock.deref();
 
 			foreach( &syntax_element : functions_set.syntax_elements )
 			{
-				min_src_loc= ust::min( SrcLoc(min_src_loc), syntax_element.get_ref().src_loc );
+				min_src_loc= ust::min( SrcLoc(min_src_loc), syntax_element.deref().src_loc );
 			}
 			foreach( &syntax_element : functions_set.out_of_line_syntax_elements )
 			{
-				min_src_loc= ust::min( SrcLoc(min_src_loc), syntax_element.get_ref().src_loc );
+				min_src_loc= ust::min( SrcLoc(min_src_loc), syntax_element.deref().src_loc );
 			}
 			foreach( &syntax_element : functions_set.function_templates_syntax_elements )
 			{
-				min_src_loc= ust::min( SrcLoc(min_src_loc), syntax_element.get_ref().src_loc );
+				min_src_loc= ust::min( SrcLoc(min_src_loc), syntax_element.deref().src_loc );
 			}
 
 			foreach( &function : functions_set.functions_set.functions )
@@ -414,7 +414,7 @@ fn CodeBuilder::GetValueSrcLoc( NamesScopeValue& value ) : SrcLoc
 			}
 			foreach( &function_template_ptr : functions_set.functions_set.function_templates )
 			{
-				min_src_loc= ust::min( SrcLoc(min_src_loc), function_template_ptr.get_ref().syntax_element.get_ref().src_loc );
+				min_src_loc= ust::min( SrcLoc(min_src_loc), function_template_ptr.deref().syntax_element.deref().src_loc );
 			}
 
 			return min_src_loc;
@@ -424,7 +424,7 @@ fn CodeBuilder::GetValueSrcLoc( NamesScopeValue& value ) : SrcLoc
 		auto type_alias_ptr= value.Get</TypeAlias/>();
 		if( !type_alias_ptr.empty() )
 		{
-			return type_alias_ptr.lock_imut().get_ref().syntax_element.get_ref().src_loc;
+			return type_alias_ptr.lock_imut().deref().syntax_element.deref().src_loc;
 		}
 	}
 	{
@@ -434,15 +434,15 @@ fn CodeBuilder::GetValueSrcLoc( NamesScopeValue& value ) : SrcLoc
 			var SrcLoc mut min_src_loc( SrcLoc::c_max_file_index, SrcLoc::c_max_line, SrcLoc::c_max_column );
 
 			auto lock= type_templates_set_ptr.lock_imut();
-			var TypeTemplatesSet& type_templates_set= lock.get_ref();
+			var TypeTemplatesSet& type_templates_set= lock.deref();
 
 			foreach( &syntax_element : type_templates_set.syntax_elements )
 			{
-				min_src_loc= ust::min( SrcLoc(min_src_loc), syntax_element.get_ref().src_loc );
+				min_src_loc= ust::min( SrcLoc(min_src_loc), syntax_element.deref().src_loc );
 			}
 			foreach( &type_template_ptr : type_templates_set.type_templates )
 			{
-				min_src_loc= ust::min( SrcLoc(min_src_loc), type_template_ptr.get_ref().syntax_element.get_ref().src_loc );
+				min_src_loc= ust::min( SrcLoc(min_src_loc), type_template_ptr.deref().syntax_element.deref().src_loc );
 			}
 
 			return min_src_loc;
@@ -453,7 +453,7 @@ fn CodeBuilder::GetValueSrcLoc( NamesScopeValue& value ) : SrcLoc
 		if( !class_type_ptr.empty() )
 		{
 			auto class_lock= class_type_ptr.lock_imut();
-			auto& class_= class_lock.get_ref();
+			auto& class_= class_lock.deref();
 			return
 				select( class_.syntax_element.empty()
 					? class_.forward_declaration_syntax_element.try_deref().src_loc
@@ -464,21 +464,21 @@ fn CodeBuilder::GetValueSrcLoc( NamesScopeValue& value ) : SrcLoc
 		auto enum_type_ptr= value.Get</Enum/>();
 		if( !enum_type_ptr.empty() )
 		{
-			return enum_type_ptr.lock_imut().get_ref().syntax_element.get_ref().src_loc;
+			return enum_type_ptr.lock_imut().deref().syntax_element.deref().src_loc;
 		}
 	}
 	{
 		auto global_variable_ptr= value.Get</GlobalVariable/>();
 		if( !global_variable_ptr.empty() )
 		{
-			return global_variable_ptr.lock_imut().get_ref().syntax_element.get_ref().src_loc;
+			return global_variable_ptr.lock_imut().deref().syntax_element.deref().src_loc;
 		}
 	}
 	{
 		auto global_auto_variable_ptr= value.Get</GlobalAutoVariable/>();
 		if( !global_auto_variable_ptr.empty() )
 		{
-			return global_auto_variable_ptr.lock_imut().get_ref().syntax_element.get_ref().src_loc;
+			return global_auto_variable_ptr.lock_imut().deref().syntax_element.deref().src_loc;
 		}
 	}
 

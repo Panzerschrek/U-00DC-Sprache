@@ -30,7 +30,7 @@ fn nomangle main() : i32
 	}
 	{ // box saves mutability.
 		var ust::box</ i32 /> imut b(0);
-		b.get_ref()= 0; //##expect_error ExpectedReferenceValue
+		b.deref()= 0; //##expect_error ExpectedReferenceValue
 	}
 	{ // is convertible form other box, only if reference is convertible.
 		var ust::box</ B /> mut box_b( B() );

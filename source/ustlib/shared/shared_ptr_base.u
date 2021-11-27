@@ -325,7 +325,7 @@ public:
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
-	fn get_ref( mut this ) : T &'this  mut
+	fn deref( mut this ) : T &'this  mut
 	{
 		unsafe
 		{
@@ -359,7 +359,7 @@ public:
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
-	fn get_ref( this ) : T &'this imut
+	fn deref( this ) : T &'this imut
 	{
 		unsafe
 		{

@@ -19,7 +19,7 @@ fn U1_ProcessCodeBuilderErrors(
 			if( !err.errors_context.empty() )
 			{
 				auto lock= err.errors_context.lock_imut();
-				var U1::TemplateErrorsContext& errors_context= lock.get_ref();
+				var U1::TemplateErrorsContext& errors_context= lock.deref();
 
 				var U1_StringView context_name{ .data= errors_context.context_name.front_unchecked(), .size= errors_context.context_name.size() };
 				var U1_StringView args_description{ .data= errors_context.args_description.front_unchecked(), .size= errors_context.args_description.size() };
@@ -32,7 +32,7 @@ fn U1_ProcessCodeBuilderErrors(
 					context_name,
 					args_description );
 
-				U1_ProcessCodeBuilderErrors( errors_handling_callbacks, context_user_handle, errors_context.errors.lock_imut().get_ref() );
+				U1_ProcessCodeBuilderErrors( errors_handling_callbacks, context_user_handle, errors_context.errors.lock_imut().deref() );
 			}
 		}
 	}

@@ -7,9 +7,9 @@ namespace U1
 
 fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_type )
 {
-	auto class_members_ptr= class_type.lock_imut().get_ref().members;
+	auto class_members_ptr= class_type.lock_imut().deref().members;
 	auto class_members_lock= class_members_ptr.lock_imut();
-	auto& class_members= class_members_lock.get_ref();
+	auto& class_members= class_members_lock.deref();
 
 	// Search for explicit default constructor.
 	auto mut have_explicit_noncopy_constructors= false;
@@ -17,7 +17,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	// Constructors value should always exists and should always be NamesScopeFunctionsSet.
 	auto constructors_ptr= class_members.GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
 	auto mut constructors_lock= constructors_ptr.lock_mut();
-	auto &mut constructors= constructors_lock.get_ref().functions_set;
+	auto &mut constructors= constructors_lock.deref().functions_set;
 
 	// Search for copy constructor.
 	auto mut constructor_index= ~0s;
@@ -34,7 +34,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 			else
 			{
 				auto mut class_lock= class_type.lock_mut();
-				class_lock.get_ref().is_default_constructible= !constructor_.is_deleted;
+				class_lock.deref().is_default_constructible= !constructor_.is_deleted;
 				return;
 			}
 		}
@@ -53,14 +53,14 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 
 	// Check if all fields is default-constructible.
 	auto mut all_fields_is_default_constructible= true;
-	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
+	foreach( &field_name : class_type.lock_imut().deref().fields_order )
 	{
 		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
 
 		auto field_lock= field_ptr.lock_imut();
-		auto& field= field_lock.get_ref();
+		auto& field= field_lock.deref();
 
-		if( !field.syntax_element.get_ref().initializer.get</Synt::EmptyVariant/>().empty() &&
+		if( !field.syntax_element.deref().initializer.get</Synt::EmptyVariant/>().empty() &&
 			( field.is_reference || !field.t.IsDefaultConstructible() ) )
 		{
 			all_fields_is_default_constructible= false;
@@ -68,8 +68,8 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		}
 	}
 
-	auto base_class= class_type.lock_imut().get_ref().base_class;
-	if( !base_class.empty() && !base_class.lock_imut().get_ref().is_default_constructible )
+	auto base_class= class_type.lock_imut().deref().base_class;
+	if( !base_class.empty() && !base_class.lock_imut().deref().is_default_constructible )
 	{
 		all_fields_is_default_constructible= false;
 	}
@@ -86,7 +86,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	// All ok - set default constructible flag.
 	{
 		auto mut class_lock= class_type.lock_mut();
-		class_lock.get_ref().is_default_constructible= true;
+		class_lock.deref().is_default_constructible= true;
 	}
 
 	if( constructor_index == ~0s )
@@ -113,7 +113,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 			function_type.llvm_type=
 				LLVMFunctionType(
 					fundamental_llvm_types_.void_for_ret_,
-					LLVMPointerType( class_type.lock_imut().get_ref().llvm_type, 0u ),
+					LLVMPointerType( class_type.lock_imut().deref().llvm_type, 0u ),
 					1u,
 					LLVMBool::False );
 		}
@@ -124,7 +124,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 			.is_this_call= true,
 			.is_generated= true,
 			.t= function_type,
-			.constexpr_kind= select( class_type.lock_imut().get_ref().can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr ),
+			.constexpr_kind= select( class_type.lock_imut().deref().can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr ),
 		};
 
 		unsafe
@@ -159,7 +159,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	auto mut this_llvm_value= LLVMValueRef::Null;
 	unsafe{  this_llvm_value= LLVMGetParam( function_variable.llvm_function, 0u );  }
 
-	auto src_loc= class_type.lock_imut().get_ref().syntax_element.try_deref().src_loc;
+	auto src_loc= class_type.lock_imut().deref().syntax_element.try_deref().src_loc;
 
 	if( !base_class.empty() )
 	{
@@ -174,13 +174,13 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	}
 
 	// Use initial class members namespace for own fields initializers evaluation.
-	auto class_members_initial= class_type.lock_imut().get_ref().members_initial;
+	auto class_members_initial= class_type.lock_imut().deref().members_initial;
 
-	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
+	foreach( &field_name : class_type.lock_imut().deref().fields_order )
 	{
 		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
 		auto field_lock= field_ptr.lock_imut();
-		var ClassField & class_field= field_lock.get_ref();
+		var ClassField & class_field= field_lock.deref();
 
 		if( class_field.index == ~0s ){ continue; } // May be in case of error
 
@@ -191,7 +191,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 			.llvm_value= CreateFieldGEP( this_llvm_value, class_field, function_context )
 		};
 
-		auto& initializer= class_field.syntax_element.get_ref().initializer;
+		auto& initializer= class_field.syntax_element.deref().initializer;
 		if( !initializer.get</Synt::EmptyVariant/>().empty() )
 		{
 			BuildEmptyInitializer( class_members_ptr, function_context, field_variable, field_name, src_loc );
@@ -222,14 +222,14 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 
 fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 {
-	auto class_members_ptr= class_type.lock_imut().get_ref().members;
+	auto class_members_ptr= class_type.lock_imut().deref().members;
 	auto class_members_lock= class_members_ptr.lock_imut();
-	auto& class_members= class_members_lock.get_ref();
+	auto& class_members= class_members_lock.deref();
 
 	// Constructors value should always exists and should always be NamesScopeFunctionsSet.
 	auto constructors_ptr= class_members.GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
 	auto mut constructors_lock= constructors_ptr.lock_mut();
-	auto &mut constructors= constructors_lock.get_ref().functions_set;
+	auto &mut constructors= constructors_lock.deref().functions_set;
 
 	// Search for copy constructor.
 	auto mut constructor_index= ~0s;
@@ -246,7 +246,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 			else
 			{
 				auto mut class_lock= class_type.lock_mut();
-				class_lock.get_ref().is_copy_constructible= !constructor_.is_deleted;
+				class_lock.deref().is_copy_constructible= !constructor_.is_deleted;
 				return;
 			}
 		}
@@ -254,12 +254,12 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 
 	// Check if all fields is copy-constructible.
 	auto mut all_fields_is_copy_constructible= true;
-	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
+	foreach( &field_name : class_type.lock_imut().deref().fields_order )
 	{
 		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
 
 		auto field_lock= field_ptr.lock_imut();
-		auto& field= field_lock.get_ref();
+		auto& field= field_lock.deref();
 		if( !field.is_reference && !field.t.IsCopyConstructible() )
 		{
 			all_fields_is_copy_constructible= false;
@@ -267,8 +267,8 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		}
 	}
 
-	auto base_class= class_type.lock_imut().get_ref().base_class;
-	if( !base_class.empty() && !base_class.lock_imut().get_ref().is_copy_constructible )
+	auto base_class= class_type.lock_imut().deref().base_class;
+	if( !base_class.empty() && !base_class.lock_imut().deref().is_copy_constructible )
 	{
 		all_fields_is_copy_constructible= false;
 	}
@@ -285,7 +285,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 	// All ok - set copy constructible flag.
 	{
 		auto mut class_lock= class_type.lock_mut();
-		auto &mut class_= class_lock.get_ref();
+		auto &mut class_= class_lock.deref();
 
 		if( class_.kind != ClassType::Kind::Struct && constructor_index == ~0s )
 		{
@@ -335,8 +335,8 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		{
 			var[ LLVMTypeRef, 2 ] args_llvm_types
 			[
-				LLVMPointerType( class_type.lock_imut().get_ref().llvm_type, 0u ),
-				LLVMPointerType( class_type.lock_imut().get_ref().llvm_type, 0u ),
+				LLVMPointerType( class_type.lock_imut().deref().llvm_type, 0u ),
+				LLVMPointerType( class_type.lock_imut().deref().llvm_type, 0u ),
 			];
 
 			function_type.llvm_type=
@@ -353,7 +353,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 			.is_this_call= true,
 			.is_generated= true,
 			.t= function_type,
-			.constexpr_kind= select( class_type.lock_imut().get_ref().can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr ),
+			.constexpr_kind= select( class_type.lock_imut().deref().can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr ),
 		};
 
 		unsafe
@@ -394,7 +394,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		src_llvm_value= LLVMGetParam( function_variable.llvm_function, 1u );
 	}
 
-	auto src_loc= class_type.lock_imut().get_ref().syntax_element.try_deref().src_loc;
+	auto src_loc= class_type.lock_imut().deref().syntax_element.try_deref().src_loc;
 
 	if( !base_class.empty() )
 	{
@@ -404,11 +404,11 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		BuildCopyConstructorPart( class_members_ptr, function_context, dst_member_value, src_member_value, ust::to_non_nullable(base_class), src_loc );
 	}
 
-	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
+	foreach( &field_name : class_type.lock_imut().deref().fields_order )
 	{
 		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
 		auto field_lock= field_ptr.lock_imut();
-		var ClassField & class_field= field_lock.get_ref();
+		var ClassField & class_field= field_lock.deref();
 
 		if( class_field.index == ~0s ){ continue; } // May be in case of error
 
@@ -443,14 +443,14 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 
 fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class_type )
 {
-	auto class_members_ptr= class_type.lock_imut().get_ref().members;
+	auto class_members_ptr= class_type.lock_imut().deref().members;
 	auto class_members_lock= class_members_ptr.lock_imut();
-	auto& class_members= class_members_lock.get_ref();
+	auto& class_members= class_members_lock.deref();
 
 	// Assignment operators value should always exists and should always be NamesScopeFunctionsSet.
 	auto operators_ptr= class_members.GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Assign ) ).try_deref().Get</NamesScopeFunctionsSet/>();
 	auto mut operators_lock= operators_ptr.lock_mut();
-	auto &mut operators= operators_lock.get_ref().functions_set;
+	auto &mut operators= operators_lock.deref().functions_set;
 
 	// Search for copy assignment operator.
 	auto mut operator_index= ~0s;
@@ -467,7 +467,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 			else
 			{
 				auto mut class_lock= class_type.lock_mut();
-				class_lock.get_ref().is_copy_assignable= !operator.is_deleted;
+				class_lock.deref().is_copy_assignable= !operator.is_deleted;
 				return;
 			}
 		}
@@ -475,12 +475,12 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 
 	// Check if all fields is copy-assignable.
 	auto mut all_fields_is_copy_assignable= true;
-	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
+	foreach( &field_name : class_type.lock_imut().deref().fields_order )
 	{
 		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
 
 		auto field_lock= field_ptr.lock_imut();
-		auto& field= field_lock.get_ref();
+		auto& field= field_lock.deref();
 		if( field.is_reference || !field.is_mutable || !field.t.IsCopyAssignable() )
 		{
 			all_fields_is_copy_assignable= false;
@@ -488,8 +488,8 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		}
 	}
 
-	auto base_class= class_type.lock_imut().get_ref().base_class;
-	if( !base_class.empty() && !base_class.lock_imut().get_ref().is_copy_assignable )
+	auto base_class= class_type.lock_imut().deref().base_class;
+	if( !base_class.empty() && !base_class.lock_imut().deref().is_copy_assignable )
 	{
 		all_fields_is_copy_assignable= false;
 	}
@@ -506,7 +506,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 	// All ok - set copy constructible flag.
 	{
 		auto mut class_lock= class_type.lock_mut();
-		auto &mut class_= class_lock.get_ref();
+		auto &mut class_= class_lock.deref();
 
 		if( class_.kind != ClassType::Kind::Struct && operator_index == ~0s )
 		{
@@ -556,8 +556,8 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		{
 			var[ LLVMTypeRef, 2 ] args_llvm_types
 			[
-				LLVMPointerType( class_type.lock_imut().get_ref().llvm_type, 0u ),
-				LLVMPointerType( class_type.lock_imut().get_ref().llvm_type, 0u ),
+				LLVMPointerType( class_type.lock_imut().deref().llvm_type, 0u ),
+				LLVMPointerType( class_type.lock_imut().deref().llvm_type, 0u ),
 			];
 
 			function_type.llvm_type=
@@ -574,7 +574,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 			.is_this_call= true,
 			.is_generated= true,
 			.t= function_type,
-			.constexpr_kind= select( class_type.lock_imut().get_ref().can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr ),
+			.constexpr_kind= select( class_type.lock_imut().deref().can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr ),
 		};
 
 		unsafe
@@ -615,7 +615,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		src_llvm_value= LLVMGetParam( function_variable.llvm_function, 1u );
 	}
 
-	auto src_loc= class_type.lock_imut().get_ref().syntax_element.try_deref().src_loc;
+	auto src_loc= class_type.lock_imut().deref().syntax_element.try_deref().src_loc;
 
 	if( !base_class.empty() )
 	{		
@@ -625,11 +625,11 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		BuildCopyAssignmentOperatorPart( class_members_ptr, function_context, dst_member_value, src_member_value, ust::to_non_nullable(base_class), src_loc );
 	}
 
-	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
+	foreach( &field_name : class_type.lock_imut().deref().fields_order )
 	{
 		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
 		auto field_lock= field_ptr.lock_imut();
-		var ClassField & class_field= field_lock.get_ref();
+		var ClassField & class_field= field_lock.deref();
 
 		if( class_field.index == ~0s ){ continue; } // May be in case of error
 
@@ -649,14 +649,14 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 
 fn CodeBuilder::TryGenerateDestructorPrototype( mut this, ClassTypePtr& class_type )
 {
-	auto class_members_ptr= class_type.lock_imut().get_ref().members;
+	auto class_members_ptr= class_type.lock_imut().deref().members;
 	auto class_members_lock= class_members_ptr.lock_imut();
-	auto& class_members= class_members_lock.get_ref();
+	auto& class_members= class_members_lock.deref();
 
 	// Destructors value should always exists and should always be NamesScopeFunctionsSet.
 	auto destructors_ptr= class_members.GetThisScopeValue( KeywordToString( Keyword::destructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
 	auto mut destructors_lock= destructors_ptr.lock_mut();
-	auto &mut destructors= destructors_lock.get_ref().functions_set;
+	auto &mut destructors= destructors_lock.deref().functions_set;
 
 	if( !destructors.functions.empty() )
 	{
@@ -685,7 +685,7 @@ fn CodeBuilder::TryGenerateDestructorPrototype( mut this, ClassTypePtr& class_ty
 		function_type.llvm_type=
 			LLVMFunctionType(
 				fundamental_llvm_types_.void_for_ret_,
-				LLVMPointerType( class_type.lock_imut().get_ref().llvm_type, 0u ),
+				LLVMPointerType( class_type.lock_imut().deref().llvm_type, 0u ),
 				1u,
 				LLVMBool::False );
 	}
@@ -717,14 +717,14 @@ fn CodeBuilder::TryGenerateDestructorPrototype( mut this, ClassTypePtr& class_ty
 
 fn CodeBuilder::TryGenerateDestructor( mut this, ClassTypePtr& class_type )
 {
-	auto class_members_ptr= class_type.lock_imut().get_ref().members;
+	auto class_members_ptr= class_type.lock_imut().deref().members;
 	auto class_members_lock= class_members_ptr.lock_imut();
-	auto& class_members= class_members_lock.get_ref();
+	auto& class_members= class_members_lock.deref();
 
 	// Destructors value should always exists and should always be NamesScopeFunctionsSet.
 	auto destructors_ptr= class_members.GetThisScopeValue( KeywordToString( Keyword::destructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
 	auto mut destructors_lock= destructors_ptr.lock_mut();
-	auto &mut destructors= destructors_lock.get_ref().functions_set;
+	auto &mut destructors= destructors_lock.deref().functions_set;
 
 	auto mut use_existing_destructor_variable= false;
 	if( !destructors.functions.back().is_generated ) // Should be nonempty - contain user-specified destructor of prepared prototype.
@@ -816,17 +816,17 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 	}
 	if_var( &class_type : t.GetClassType() )
 	{
-		if( !class_type.lock_imut().get_ref().is_copy_constructible )
+		if( !class_type.lock_imut().deref().is_copy_constructible )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, Type(class_type) )
 			return;
 		}
 
 		// Constructors value should always exists and should always be NamesScopeFunctionsSet.
-		auto constructors_ptr= class_type.lock_imut().get_ref().members.lock_imut().get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
+		auto constructors_ptr= class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
 
 		// Search for copy constructor.
-		foreach( &constructor_ : constructors_ptr.lock_imut().get_ref().functions_set.functions )
+		foreach( &constructor_ : constructors_ptr.lock_imut().deref().functions_set.functions )
 		{
 			if( IsCopyConstructor( constructor_, class_type ) )
 			{
@@ -910,17 +910,17 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 	}
 	if_var( &class_type : t.GetClassType() )
 	{
-		if( !class_type.lock_imut().get_ref().is_copy_assignable )
+		if( !class_type.lock_imut().deref().is_copy_assignable )
 		{
 			// TODO - maybe generate error here?
 			return;
 		}
 
 		// Assignment operators value should always exists and should always be NamesScopeFunctionsSet.
-		auto operators_ptr= class_type.lock_imut().get_ref().members.lock_imut().get_ref().GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Assign ) ).try_deref().Get</NamesScopeFunctionsSet/>();
+		auto operators_ptr= class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Assign ) ).try_deref().Get</NamesScopeFunctionsSet/>();
 
 		// Search for copy assignment operator.
-		foreach( &operator_ : operators_ptr.lock_imut().get_ref().functions_set.functions )
+		foreach( &operator_ : operators_ptr.lock_imut().deref().functions_set.functions )
 		{
 			if( IsCopyAssignmentOperator( operator_, class_type ) )
 			{
@@ -976,11 +976,11 @@ fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionC
 	if_var( &class_type : t.GetClassType() )
 	{
 		// Destructors value should always exists and should always be NamesScopeFunctionsSet.
-		auto destructors_ptr= class_type.lock_imut().get_ref().members.lock_imut().get_ref().GetThisScopeValue( KeywordToString( Keyword::destructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
+		auto destructors_ptr= class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::destructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
 
 		// Destructors set should contain exactly one function.
 		auto destructors_lock= destructors_ptr.lock_imut();
-		auto& destructor_= destructors_lock.get_ref().functions_set.functions.front();
+		auto& destructor_= destructors_lock.deref().functions_set.functions.front();
 
 		// SPRACHE_TODO - maybe disallow unsafe destructors?
 		if( destructor_.t.is_unsafe && !function_context.is_in_unsafe_block )
@@ -998,30 +998,30 @@ fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionC
 
 fn CodeBuilder::BuildMembersDestructors( this, FunctionContext &mut function_context, LLVMValueRef value, ClassTypePtr& class_type )
 {
-	auto class_members_ptr= class_type.lock_imut().get_ref().members;
+	auto class_members_ptr= class_type.lock_imut().deref().members;
 	auto class_members_lock= class_members_ptr.lock_imut();
-	auto& class_members= class_members_lock.get_ref();
+	auto& class_members= class_members_lock.deref();
 
 	var SrcLoc mut src_loc;
 	{
-		auto syntax_element= class_type.lock_imut().get_ref().syntax_element;
+		auto syntax_element= class_type.lock_imut().deref().syntax_element;
 		if( !syntax_element.empty() )
 		{
 			src_loc= syntax_element.try_deref().src_loc;
 		}
 	}
 
-	foreach( &parent : class_type.lock_imut().get_ref().parents )
+	foreach( &parent : class_type.lock_imut().deref().parents )
 	{
 		auto parent_llvm_value= CreateParentFieldGEP( value, parent, function_context );
 		BuildDestructorPart( class_members_ptr, function_context, parent_llvm_value, parent.class_, src_loc );
 	}
 
-	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
+	foreach( &field_name : class_type.lock_imut().deref().fields_order )
 	{
 		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
 		auto field_lock= field_ptr.lock_imut();
-		var ClassField& class_field= field_lock.get_ref();
+		var ClassField& class_field= field_lock.deref();
 
 		if( class_field.index == ~0s ){ continue; } // May be in case of error
 		if( class_field.is_reference ) { continue; }

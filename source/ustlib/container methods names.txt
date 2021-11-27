@@ -72,12 +72,12 @@ fn reset( mut thus );
 fn reset( mut thus, T mut t );
 
 // Element access for single element containers (box, optional). "halt", if container is empty.
-fn get_ref( imut this ) : T &imut;
-fn get_ref(  mut this ) : T & mut;
+fn deref( imut this ) : T &imut;
+fn deref(  mut this ) : T & mut;
 
 // Methods for single element containers (box, optional). Coontainer must be nonempty.
-fn get_ref_unchecked( imut this ) unsafe : T &imut;
-fn get_ref_unchecked(  mut this ) unsafe : T & mut;
+fn deref_unchecked( imut this ) unsafe : T &imut;
+fn deref_unchecked(  mut this ) unsafe : T & mut;
 
 // Get range (for containers for many elements).
 fn range( imut this ) : range_type_imut;

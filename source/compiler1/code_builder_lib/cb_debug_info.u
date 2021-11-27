@@ -431,7 +431,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
 	debug_info_.classes_di_types.insert( t, LLVMMetadataRef::Null );
 
 	auto class_lock= t.lock_imut();
-	var ClassType& class_type= class_lock.get_ref();
+	var ClassType& class_type= class_lock.deref();
 	var SrcLoc mut src_loc;
 	if_var( &syntax_element : class_type.syntax_element )
 	{
@@ -445,12 +445,12 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
 	if( class_type.typeinfo_src_type_.empty() ) // Skip typeinfo struucts because of potential dependency loops.
 	{
 		auto class_members_lock= class_type.members.lock_imut();
-		var NamesScope& class_members= class_members_lock.get_ref();
+		var NamesScope& class_members= class_members_lock.deref();
 		foreach( &field_name : class_type.fields_order )
 		{
 			auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
 			auto field_lock= field_ptr.lock_imut();
-			var ClassField& field= field_lock.get_ref();
+			var ClassField& field= field_lock.deref();
 
 			if( field.index == ~0s ){ continue; } // May be in case of error
 
@@ -489,7 +489,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
 		foreach( &parent : class_type.parents )
 		{
 			var LLVMMetadataRef parent_di_type= CreateDIType( parent.class_ );
-			var LLVMTypeRef llvm_element_type= parent.class_.lock_imut().get_ref().llvm_type;
+			var LLVMTypeRef llvm_element_type= parent.class_.lock_imut().deref().llvm_type;
 			var ust::string8 name= Type(parent.class_).ToString();
 
 			unsafe
@@ -542,7 +542,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadataRef
 	}
 
 	auto enum_lock= t.lock_imut();
-	var Enum& enum_= enum_lock.get_ref();
+	var Enum& enum_= enum_lock.deref();
 
 	var bool is_unsigned= IsUnsignedInteger( enum_.underlaying_type.fundamental_type );
 
@@ -563,7 +563,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadataRef
 		}
 	}
 
-	var SrcLoc& src_loc= enum_.syntax_element.get_ref().src_loc;
+	var SrcLoc& src_loc= enum_.syntax_element.deref().src_loc;
 	auto di_file= debug_info_.source_file_entries[ src_loc.GetFileIndex() ];
 
 	var ust::string8 name= Type(t).ToString();

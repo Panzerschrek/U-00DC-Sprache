@@ -105,10 +105,10 @@ fn nomangle main() : i32
 		var ust::box_nullable</ i32 /> mut box0( 46 );
 		auto addr0= ust::ref_to_int( cast_ref_unsafe</void/>( box0.try_deref() ) );
 		var ust::box</ i32 /> box1= ust::to_non_nullable( move(box0) );
-		auto addr1= ust::ref_to_int( cast_ref_unsafe</void/>( box1.get_ref() ) );
+		auto addr1= ust::ref_to_int( cast_ref_unsafe</void/>( box1.deref() ) );
 
 		halt if( addr0 != addr1 );
-		halt if( box1.get_ref() != 46 );
+		halt if( box1.deref() != 46 );
 	}
 	{ // is convertible form other box.
 		var ust::box_nullable</ ImplDerived /> mut box0( ImplDerived() );

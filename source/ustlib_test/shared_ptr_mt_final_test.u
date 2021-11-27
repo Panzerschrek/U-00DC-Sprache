@@ -15,28 +15,28 @@ fn nomangle main() : i32
 		var IntPtr ptr(52);
 		halt if( ptr != ptr );
 		halt if( ptr.empty() );
-		halt if( ptr.get_ref() != 52 );
+		halt if( ptr.deref() != 52 );
 	}
 	{ // Value is shared
 		var IntPtr ptr0(14);
 		var IntPtr ptr1(ptr0);
 		halt if( ptr0 != ptr1 );
-		halt if( ptr1.get_ref() != 14 );
-		halt if( !ust::ref_cmp_eq( ptr0.get_ref(), ptr1.get_ref() ) );
+		halt if( ptr1.deref() != 14 );
+		halt if( !ust::ref_cmp_eq( ptr0.deref(), ptr1.deref() ) );
 	}
 	{ //Can convert non-nullable to nullable
 		var IntPtr ptr0(58);
 		var IntPtrNullable ptr1(ptr0);
 		halt if( ptr0 != ptr1 );
 		halt if( ptr1.try_deref() != 58 );
-		halt if( !ust::ref_cmp_eq( ptr0.get_ref(), ptr1.try_deref() ) );
+		halt if( !ust::ref_cmp_eq( ptr0.deref(), ptr1.try_deref() ) );
 	}
 	{ //Can convert nullable to non-nullable
 		var IntPtrNullable ptr0(92);
 		var IntPtr ptr1= ust::to_non_nullable(ptr0);
 		halt if( ptr0 != ptr1 );
-		halt if( ptr1.get_ref() != 92 );
-		halt if( !ust::ref_cmp_eq( ptr0.try_deref(), ptr1.get_ref() ) );
+		halt if( ptr1.deref() != 92 );
+		halt if( !ust::ref_cmp_eq( ptr0.try_deref(), ptr1.deref() ) );
 	}
 	{ // Can reset ptr with value.
 		var IntPtr mut ptr0(74);
@@ -46,9 +46,9 @@ fn nomangle main() : i32
 		ptr0.reset( 85 );
 
 		halt if( ptr0 == ptr1 );
-		halt if( ptr0.get_ref() != 85 );
-		halt if( ptr1.get_ref() != 74 );
-		halt if( ust::ref_cmp_eq( ptr0.get_ref(), ptr1.get_ref() ) );
+		halt if( ptr0.deref() != 85 );
+		halt if( ptr1.deref() != 74 );
+		halt if( ust::ref_cmp_eq( ptr0.deref(), ptr1.deref() ) );
 	}
 	{ // Can create empty nullable ptr.
 		var IntPtrNullable ptr;
@@ -136,7 +136,7 @@ fn nomangle main() : i32
 	{
 		var IntPtr ptr0= ust::make_shared_ptr_mt_final( 675 );
 		var IntPtrNullable ptr1= ust::make_shared_ptr_mt_final( 951 );
-		halt if( ptr0.get_ref() != 675 );
+		halt if( ptr0.deref() != 675 );
 		halt if( ptr1.try_deref() != 951 );
 	}
 

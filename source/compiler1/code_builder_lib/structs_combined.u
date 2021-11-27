@@ -22,7 +22,7 @@ namespace ToStringHelper
 template</type T/>
 fn ToString( ust::shared_ptr_final</T/>& b ) : ust::string8
 {
-	return ToStringHelper::ToString( b.get_ref() );
+	return ToStringHelper::ToString( b.deref() );
 }
 
 fn ToString( FundamentalType& fundamental_type ) : ust::string8
@@ -111,12 +111,12 @@ fn ToString( FunctionPointerType& function_pointer_type ) : ust::string8
 
 fn ToString( ClassTypePtr& class_type ) : ust::string8
 {
-	return class_type.lock_imut().get_ref().members.lock_imut().get_ref().ToString();
+	return class_type.lock_imut().deref().members.lock_imut().deref().ToString();
 }
 
 fn ToString( EnumTypePtr& enum_type ) : ust::string8
 {
-	return enum_type.lock_imut().get_ref().names_scope.lock_imut().get_ref().ToString();
+	return enum_type.lock_imut().deref().names_scope.lock_imut().deref().ToString();
 }
 
 } // namespace ToStringHelper
@@ -426,7 +426,7 @@ fn Type::GetArrayType( imut this ) : ust::optional_ref_imut</ArrayType />'this'
 {
 	if_var( &b : something_.get</ust::shared_ptr_final</ArrayType/>/>() )
 	{
-		return ust::optional_ref_imut</ArrayType/>( b.get_ref() );
+		return ust::optional_ref_imut</ArrayType/>( b.deref() );
 	}
 
 	return ust::optional_ref_imut</ArrayType />();
@@ -436,7 +436,7 @@ fn Type::GetTupleType( imut this ) : ust::optional_ref_imut</TupleType />'this'
 {
 	if_var( &b : something_.get</ust::shared_ptr_final</TupleType/>/>() )
 	{
-		return ust::optional_ref_imut</TupleType/>( b.get_ref() );
+		return ust::optional_ref_imut</TupleType/>( b.deref() );
 	}
 
 	return ust::optional_ref_imut</TupleType />();
@@ -446,7 +446,7 @@ fn Type::GetRawPointerType( imut this ) : ust::optional_ref_imut</RawPointerType
 {
 	if_var( &b : something_.get</ust::shared_ptr_final</RawPointerType/>/>() )
 	{
-		return ust::optional_ref_imut</RawPointerType/>( b.get_ref() );
+		return ust::optional_ref_imut</RawPointerType/>( b.deref() );
 	}
 
 	return ust::optional_ref_imut</RawPointerType />();
@@ -456,7 +456,7 @@ fn Type::GetFunctionType( imut this ) : ust::optional_ref_imut</FunctionType />'
 {
 	if_var( &b : something_.get</ust::shared_ptr_final</FunctionType/>/>() )
 	{
-		return ust::optional_ref_imut</FunctionType/>( b.get_ref() );
+		return ust::optional_ref_imut</FunctionType/>( b.deref() );
 	}
 
 	return ust::optional_ref_imut</FunctionType />();
@@ -466,7 +466,7 @@ fn Type::GetFunctionPointerType( imut this ) : ust::optional_ref_imut</FunctionP
 {
 	if_var( &b : something_.get</ust::shared_ptr_final</FunctionPointerType/>/>() )
 	{
-		return ust::optional_ref_imut</FunctionPointerType/>( b.get_ref() );
+		return ust::optional_ref_imut</FunctionPointerType/>( b.deref() );
 	}
 
 	return ust::optional_ref_imut</FunctionPointerType />();
@@ -510,11 +510,11 @@ fn Type::GetLLVMType( this ) : LLVMTypeRef
 	}
 	if_var( &class_type_ptr : GetClassType() )
 	{
-		return class_type_ptr.lock_imut().get_ref().llvm_type;
+		return class_type_ptr.lock_imut().deref().llvm_type;
 	}
 	if_var( &enum_type_ptr : GetEnumType() )
 	{
-		return enum_type_ptr.lock_imut().get_ref().underlaying_type.llvm_type;
+		return enum_type_ptr.lock_imut().deref().underlaying_type.llvm_type;
 	}
 
 	halt;
@@ -543,7 +543,7 @@ fn Type::IsDefaultConstructible( this ) : bool
 	}
 	if_var( &class_type : GetClassType() )
 	{
-		return class_type.lock_imut().get_ref().is_default_constructible;
+		return class_type.lock_imut().deref().is_default_constructible;
 	}
 	return false;
 }
@@ -574,7 +574,7 @@ fn Type::IsCopyConstructible( this ) : bool
 	}
 	if_var( &class_type : GetClassType() )
 	{
-		return class_type.lock_imut().get_ref().is_copy_constructible;
+		return class_type.lock_imut().deref().is_copy_constructible;
 	}
 	return false;
 }
@@ -605,7 +605,7 @@ fn Type::IsCopyAssignable( this ) : bool
 	}
 	if_var( &class_type : GetClassType() )
 	{
-		return class_type.lock_imut().get_ref().is_copy_assignable;
+		return class_type.lock_imut().deref().is_copy_assignable;
 	}
 	return false;
 }
@@ -636,7 +636,7 @@ fn Type::CanBeConstexpr( this ) : bool
 	}
 	if_var( &class_type : GetClassType() )
 	{
-		return class_type.lock_imut().get_ref().can_be_constexpr;
+		return class_type.lock_imut().deref().can_be_constexpr;
 	}
 
 	return false;
@@ -661,7 +661,7 @@ fn Type::IsAbstract( this ) : bool
 	}
 	if_var( &class_type : GetClassType() )
 	{
-		auto kind= class_type.lock_imut().get_ref().kind;
+		auto kind= class_type.lock_imut().deref().kind;
 		return kind == ClassType::Kind::Abstract || kind == ClassType::Kind::Interface;
 	}
 
@@ -689,7 +689,7 @@ fn Type::GetInnerReferenceKind( this ) : InnerReferenceKind
 	}
 	if_var( &class_type : GetClassType() )
 	{
-		return class_type.lock_imut().get_ref().inner_reference_kind;
+		return class_type.lock_imut().deref().inner_reference_kind;
 	}
 
 	return InnerReferenceKind::None;
@@ -706,7 +706,7 @@ fn Type::ReferenceIsConvertibleTo( this, Type& dst ) : bool
 	{
 		if_var( &dst_class_type : dst.GetClassType() )
 		{
-			foreach( &parent : src_class_type.lock_imut().get_ref().parents )
+			foreach( &parent : src_class_type.lock_imut().deref().parents )
 			{
 				if( dst_class_type == parent.class_ || Type(parent.class_).ReferenceIsConvertibleTo(dst) )
 				{
@@ -743,7 +743,7 @@ op Type::==( Type& l, Type& r ) : bool
 			ust::is_same_type</ typeof(l_t), ust::shared_ptr_final</FunctionType/> />() ||
 			ust::is_same_type</ typeof(l_t), ust::shared_ptr_final</FunctionPointerType/> />() )
 		{
-			return l_t.get_ref() == r.something_.get</ typeof(l_t) />().try_deref().get_ref();
+			return l_t.deref() == r.something_.get</ typeof(l_t) />().try_deref().deref();
 		}
 		else
 		{
@@ -839,7 +839,7 @@ fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::strin
 	}
 	if_var( &enum_type : t.GetEnumType() )
 	{
-		foreach( &element : enum_type.lock_imut().get_ref().elements )
+		foreach( &element : enum_type.lock_imut().deref().elements )
 		{
 			unsafe
 			{
@@ -1014,7 +1014,7 @@ fn TemplateSignatureParam::GetArrayTypeParam(this) : ust::optional_ref_imut</ Ar
 {
 	if_var( &array_type_param : something_.get</ ust::box</ArrayTypeParam/> />() )
 	{
-		return ust::optional_ref_imut</ ArrayTypeParam />(array_type_param.get_ref());
+		return ust::optional_ref_imut</ ArrayTypeParam />(array_type_param.deref());
 	}
 
 	return ust::optional_ref_imut</ ArrayTypeParam />();
@@ -1024,7 +1024,7 @@ fn TemplateSignatureParam::GetTupleTypeParam(this) : ust::optional_ref_imut</ Tu
 {
 	if_var( &tuple_type_param : something_.get</ ust::box</TupleTypeParam/> />() )
 	{
-		return ust::optional_ref_imut</ TupleTypeParam />(tuple_type_param.get_ref());
+		return ust::optional_ref_imut</ TupleTypeParam />(tuple_type_param.deref());
 	}
 
 	return ust::optional_ref_imut</ TupleTypeParam />();
@@ -1034,7 +1034,7 @@ fn TemplateSignatureParam::GetRawPointerTypeParam(this) : ust::optional_ref_imut
 {
 	if_var( &raw_pointer_type_param : something_.get</ ust::box</RawPointerTypeParam/> />() )
 	{
-		return ust::optional_ref_imut</ RawPointerTypeParam />(raw_pointer_type_param.get_ref());
+		return ust::optional_ref_imut</ RawPointerTypeParam />(raw_pointer_type_param.deref());
 	}
 
 	return ust::optional_ref_imut</ RawPointerTypeParam />();
@@ -1044,7 +1044,7 @@ fn TemplateSignatureParam::GetFunctionTypeParam(this) : ust::optional_ref_imut</
 {
 	if_var( &function_type_param : something_.get</ ust::box</FunctionTypeParam/> />() )
 	{
-		return ust::optional_ref_imut</ FunctionTypeParam />(function_type_param.get_ref());
+		return ust::optional_ref_imut</ FunctionTypeParam />(function_type_param.deref());
 	}
 
 	return ust::optional_ref_imut</ FunctionTypeParam />();
@@ -1055,7 +1055,7 @@ fn TemplateSignatureParam::GetSpecializedTemplateParam(this) : ust::optional_ref
 {
 	if_var( &specialized_template_param : something_.get</ ust::box</SpecializedTemplateParam/> />() )
 	{
-		return ust::optional_ref_imut</ SpecializedTemplateParam />(specialized_template_param.get_ref());
+		return ust::optional_ref_imut</ SpecializedTemplateParam />(specialized_template_param.deref());
 	}
 
 	return ust::optional_ref_imut</ SpecializedTemplateParam />();
@@ -1179,7 +1179,7 @@ op TemplateSignatureParam::==(TemplateSignatureParam& l, TemplateSignatureParam&
 			ust::is_same_type</ typeof(l_t), ust::box</FunctionTypeParam/> />() ||
 			ust::is_same_type</ typeof(l_t), ust::box</SpecializedTemplateParam/> />() )
 		{
-			return l_t.get_ref() == r.something_.get</ typeof(l_t) />().try_deref().get_ref();
+			return l_t.deref() == r.something_.get</ typeof(l_t) />().try_deref().deref();
 		}
 		else
 		{
@@ -1238,7 +1238,7 @@ fn NamesScope::IsInsideTemplate( this ) : bool
 	auto parent= GetParent();
 	if( !parent.empty() )
 	{
-		return parent.lock_imut().get_ref().IsInsideTemplate();
+		return parent.lock_imut().deref().IsInsideTemplate();
 	}
 
 	return false;
@@ -1268,7 +1268,7 @@ fn NamesScope::GetErrors( this ) : ErrorsContainerPtr
 {
 	if( errors_container_.empty() )
 	{
-		return parent_.lock().lock_imut().get_ref().GetErrors();
+		return parent_.lock().lock_imut().deref().GetErrors();
 	}
 
 	return errors_container_;
@@ -1289,24 +1289,24 @@ fn NamesScope::ToString( this ) : ust::string8
 	if( !class_.empty() )
 	{
 		auto class_lock= class_.lock_imut();
-		auto& class_type= class_lock.get_ref();
+		auto& class_type= class_lock.deref();
 		if( !class_type.base_template.empty() )
 		{
 			// This is class template. So, parent namespace is arguments names scope.
 
-			auto& type_template= class_type.base_template.try_deref().class_template.get_ref();
+			auto& type_template= class_type.base_template.try_deref().class_template.deref();
 			auto parent= type_template.parent_names_scope.lock();
 			if( !parent.empty() )
 			{
 				var ust::string8 mut res;
 
 				auto parent_lock= parent.lock_imut();
-				if( !parent_lock.get_ref().GetParent().empty() )
+				if( !parent_lock.deref().GetParent().empty() )
 				{
-					res+= parent.lock_imut().get_ref().ToString();
+					res+= parent.lock_imut().deref().ToString();
 					res+= "::";
 				}
-				res+= type_template.syntax_element.get_ref().name;
+				res+= type_template.syntax_element.deref().name;
 
 				res+= "</";
 				foreach( &arg : class_type.base_template.try_deref().signature_args )
@@ -1350,9 +1350,9 @@ fn NamesScope::ToString( this ) : ust::string8
 	if( !parent.empty() )
 	{
 		auto parent_lock= parent.lock_imut();
-		if( !parent_lock.get_ref().GetParent().empty() )
+		if( !parent_lock.deref().GetParent().empty() )
 		{
-			res+= parent_lock.get_ref().ToString();
+			res+= parent_lock.deref().ToString();
 			res+= "::";
 		}
 	}
@@ -1388,7 +1388,7 @@ fn NamesScope::GetAccessFor( this, ClassTypePtr& class_type ) : Synt::ClassVisib
 	auto parent= GetParent();
 	if( !parent.empty() )
 	{
-		parent_namespace_visibility= parent.lock_imut().get_ref().GetAccessFor( class_type );
+		parent_namespace_visibility= parent.lock_imut().deref().GetAccessFor( class_type );
 	}
 
 	// TODO - maybe add to language possibility to order compare enum values?

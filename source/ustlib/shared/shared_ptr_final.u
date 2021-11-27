@@ -28,11 +28,11 @@ public:
 		return false;
 	}
 
-	fn get_ref( this ) : T &imut
+	fn deref( this ) : T &imut
 	{
 		unsafe
 		{
-			return impl_.get_ref_unchecked();
+			return impl_.deref_unchecked();
 		}
 	}
 
