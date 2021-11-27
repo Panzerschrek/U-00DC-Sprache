@@ -561,8 +561,8 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 			{
 				auto& name_component= name_components[i];
 
-				auto namespace_= current_value.get_ref().Get</NamesScope/>();
-				auto class_= current_value.get_ref().Get</ClassType/>();
+				auto namespace_= current_value.try_deref().Get</NamesScope/>();
+				auto class_= current_value.try_deref().Get</ClassType/>();
 				if( !namespace_.empty() )
 				{
 					auto namespace_lock= namespace_.lock_imut();
@@ -574,7 +574,7 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 						break;
 					}
 
-					current_value.get_ref()= new_value.get_ref();
+					current_value.try_deref()= new_value.try_deref();
 					current_scope= namespace_;
 				}
 				else if( !class_.empty() )
@@ -589,7 +589,7 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 						break;
 					}
 
-					current_value.get_ref()= new_value.get_ref();
+					current_value.try_deref()= new_value.try_deref();
 					current_scope= class_lock.get_ref().members;
 				}
 				else
@@ -602,7 +602,7 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 
 			if( !current_value.empty() )
 			{
-				auto functions_set= current_value.get_ref().Get</NamesScopeFunctionsSet/>();
+				auto functions_set= current_value.try_deref().Get</NamesScopeFunctionsSet/>();
 				if( !functions_set.empty() )
 				{
 					auto mut lock= functions_set.lock_mut();

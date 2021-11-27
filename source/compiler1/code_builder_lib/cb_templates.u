@@ -31,7 +31,7 @@ fn CreateTemplateErrorsContext(
 			result.args_description+= param.name;
 			result.args_description+= " = ";
 
-			auto arg_ptr= args_names_scope.GetThisScopeValue( param.name ).get_ref().Get</TemplateArg/>();
+			auto arg_ptr= args_names_scope.GetThisScopeValue( param.name ).try_deref().Get</TemplateArg/>();
 			auto arg_lock= arg_ptr.lock_imut();
 			var TemplateArg& arg= arg_lock.get_ref();
 			if_var( &t : arg.something.get</Type/>() )
@@ -257,7 +257,7 @@ fn CodeBuilder::FillVariableTemplateParamsTypes(
 		{
 			template_params[i].t=
 				CreateTemplateSignatureParam( names_scope, global_function_context, template_params, template_param.t, template_params_usage_flags );
-			if_var( &type_param : template_params[i].t.get_ref().GetTypeParam() )
+			if_var( &type_param : template_params[i].t.try_deref().GetTypeParam() )
 			{
 				if( !TypeIsValidForTemplateVariableArgument(type_param.t) )
 				{
@@ -509,7 +509,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	if( !signature_param.return_type.empty() )
 	{
 		function_type_param.return_type=
-			CreateTemplateSignatureParam( names_scope, function_context, template_params, signature_param.return_type.get_ref(), template_params_usage_flags );
+			CreateTemplateSignatureParam( names_scope, function_context, template_params, signature_param.return_type.try_deref(), template_params_usage_flags );
 		all_types_are_known &= !function_type_param.return_type.GetTypeParam().empty();
 	}
 	else
@@ -588,7 +588,7 @@ fn CodeBuilder::GenTemplateType(
 			template_instantiation_src_loc );
 		if( !res.empty() )
 		{
-			candidate_type_templates.push_back( res.get_ref() );
+			candidate_type_templates.push_back( res.try_deref() );
 		}
 	}
 
@@ -919,7 +919,7 @@ fn CodeBuilder::GenTemplateFunction(
 		if_var( &template_param : param.GetTemplateParam() )
 		{
 			auto& param_name= function_template.params[template_param.index].name;
-			auto template_arg_value= result_names_scope.lock_imut().get_ref().GetThisScopeValue( param_name ).get_ref();
+			auto template_arg_value= result_names_scope.lock_imut().get_ref().GetThisScopeValue( param_name ).try_deref();
 			auto template_arg_ptr= template_arg_value.Get</TemplateArg/>();
 
 			auto template_arg_lock= template_arg_ptr.lock_imut();
@@ -1017,7 +1017,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 		auto mut result_names_scope_lock= result_names_scope.lock_imut();
 		for( auto mut i= 0s; i < function_template.params.size(); ++i )
 		{
-			auto arg_value= result_names_scope_lock.get_ref().GetThisScopeValue( function_template.params[i].name ).get_ref();
+			auto arg_value= result_names_scope_lock.get_ref().GetThisScopeValue( function_template.params[i].name ).try_deref();
 			auto template_arg_ptr= arg_value.Get</TemplateArg/>();
 
 			auto template_arg_lock= template_arg_ptr.lock_imut();
@@ -1049,7 +1049,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 	auto& function_name= function_syntax_element.name.back();
 	if_var( prev_names_scope : generated_template_things_.find( template_key ) )
 	{
-		auto namespace_value= prev_names_scope.lock_imut().get_ref().GetThisScopeValue( function_name ).get_ref();
+		auto namespace_value= prev_names_scope.lock_imut().get_ref().GetThisScopeValue( function_name ).try_deref();
 
 		auto functions_set_ptr= namespace_value.Get</NamesScopeFunctionsSet/>();
 		auto functions_set_lock= functions_set_ptr.lock_imut();
@@ -1071,7 +1071,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 		src_loc );
 
 	NamesScopeFill( result_names_scope, template_syntax_element.function, function_template.class_, Synt::ClassVisibility::Public /* TODO - set correct visibility */ );
-	auto result_namespace_value= result_names_scope.lock_imut().get_ref().GetThisScopeValue( function_name ).get_ref();
+	auto result_namespace_value= result_names_scope.lock_imut().get_ref().GetThisScopeValue( function_name ).try_deref();
 
 	auto result_functions_set_ptr= result_namespace_value.Get</NamesScopeFunctionsSet/>();
 	BuildFunctionsSet( result_names_scope, ust::to_non_nullable(result_functions_set_ptr), false );
@@ -1168,7 +1168,7 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 	if_var( &prev_namespace_ptr : generated_template_things_.find( cache_key ) )
 	{
 		auto lock= prev_namespace_ptr.lock_imut();
-		return lock.get_ref().GetThisScopeValue( names_scope_value_key ).get_ref();
+		return lock.get_ref().GetThisScopeValue( names_scope_value_key ).try_deref();
 	}
 
 	var NamesScopeFunctionsSet mut result_functions_set;
@@ -1294,7 +1294,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 	SrcLoc& src_loc ) : bool
 {
 	auto& param_name= template_.params[template_param.index].name;
-	auto template_arg_value= names_scope.lock_imut().get_ref().GetThisScopeValue( param_name ).get_ref();
+	auto template_arg_value= names_scope.lock_imut().get_ref().GetThisScopeValue( param_name ).try_deref();
 	auto template_arg_ptr= template_arg_value.Get</TemplateArg/>();
 
 	auto mut template_arg_lock= template_arg_ptr.lock_mut();
@@ -1317,7 +1317,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				return false;
 			}
 
-			if( !MatchTemplateArgument( names_scope, template_, param_type.get_ref(), given_variable.t, src_loc ) )
+			if( !MatchTemplateArgument( names_scope, template_, param_type.try_deref(), given_variable.t, src_loc ) )
 			{
 				return false;
 			}

@@ -172,7 +172,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 				continue;
 			}
 
-			auto expression_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, initializer_expression.get_ref() );
+			var Variable expression_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, initializer_expression.try_deref() );
 			if( expression_result.t != t && !expression_result.t.ReferenceIsConvertibleTo( t ) )
 			{
 				REPORT_ERROR( TypesMismatch, names_scope, variable_declaration.src_loc, t, expression_result.t )
@@ -709,9 +709,9 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			return BlockElementBuildInfo();
 		}
 
-		if( op_result_variable_ref.get_ref().t != l_var.t )
+		if( op_result_variable_ref.try_deref().t != l_var.t )
 		{
-			REPORT_ERROR( TypesMismatch, names_scope, additive_assignment_operator.src_loc, l_var.t, op_result_variable_ref.get_ref().t )
+			REPORT_ERROR( TypesMismatch, names_scope, additive_assignment_operator.src_loc, l_var.t, op_result_variable_ref.try_deref().t )
 			return BlockElementBuildInfo();
 		}
 
@@ -719,7 +719,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		{
 			LLVMBuildStore(
 				function_context.llvm_ir_builder,
-				CreateMoveToLLVMRegisterInstruction( op_result_variable_ref.get_ref(), function_context ),
+				CreateMoveToLLVMRegisterInstruction( op_result_variable_ref.try_deref(), function_context ),
 				l_var.llvm_value );
 		}
 	}
@@ -1045,7 +1045,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 	if( !sequence_expression.t.GetTupleType().empty() )
 	{
-		var TupleType& tuple_type= sequence_expression.t.GetTupleType().get_ref();
+		var TupleType& tuple_type= sequence_expression.t.GetTupleType().try_deref();
 
 		auto mut finish_basic_block= LLVMBasicBlockRef::Null;
 		if( !tuple_type.element_types.empty() )
@@ -1691,7 +1691,7 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 	if( !variable.t.GetFundamentalType().empty() )
 	{
 		// Process operator for fundamental type.
-		if( !IsInteger( variable.t.GetFundamentalType().get_ref().fundamental_type ) )
+		if( !IsInteger( variable.t.GetFundamentalType().try_deref().fundamental_type ) )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, variable.t )
 			return;
@@ -1709,7 +1709,7 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 	}
 	else if( !variable.t.GetRawPointerType().empty() )
 	{
-		var Type& element_type= variable.t.GetRawPointerType().get_ref().element_type;
+		var Type& element_type= variable.t.GetRawPointerType().try_deref().element_type;
 		if( !EnsureTypeComplete( element_type ) )
 		{
 			// Complete types required for pointer arithmetic.

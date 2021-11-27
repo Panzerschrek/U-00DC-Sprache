@@ -58,7 +58,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 	else if( type_suffix == ust::string8("s") )
 	{
-		t= size_type_.GetFundamentalType().get_ref().fundamental_type;
+		t= size_type_.GetFundamentalType().try_deref().fundamental_type;
 	}
 	else if( type_suffix == ust::string8("f") )
 	{
@@ -201,7 +201,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				}
 				else
 				{
-					global_value= string_literals_cache_[0].find( string_literal.value ).get_ref();
+					global_value= string_literals_cache_[0].find( string_literal.value ).try_deref();
 				}
 			}
 			else if( char_type == U_FundamentalType::char16_ )
@@ -223,7 +223,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				}
 				else
 				{
-					global_value= string_literals_cache_[1].find( buff ).get_ref();
+					global_value= string_literals_cache_[1].find( buff ).try_deref();
 				}
 			}
 			else if( char_type == U_FundamentalType::char32_ )
@@ -245,7 +245,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				}
 				else
 				{
-					global_value= string_literals_cache_[2].find( buff ).get_ref();
+					global_value= string_literals_cache_[2].find( buff ).try_deref();
 				}
 			}
 			else { halt; }
@@ -331,7 +331,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	// Process special simple names here.
-	var ust::string8& name= named_operand.start.get</ust::string8/>().get_ref();
+	var ust::string8& name= named_operand.start.get</ust::string8/>().try_deref();
 	if( name == KeywordToString( Keyword::this_ ) )
 	{
 		if( function_context.this_.empty() || function_context.whole_this_is_unavailable )
@@ -339,7 +339,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			REPORT_ERROR( ThisUnavailable, names_scope, named_operand.src_loc )
 			return ErrorValue();
 		}
-		return function_context.this_.get_ref();
+		return function_context.this_.try_deref();
 	}
 	if( name == KeywordToString( Keyword::base_ ) )
 	{
@@ -349,9 +349,9 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			return ErrorValue();
 		}
 
-		auto &this_= function_context.this_.get_ref();
+		var Variable& this_= function_context.this_.try_deref();
 
-		auto class_type= this_.t.GetClassType().get_ref();
+		auto class_type= this_.t.GetClassType().try_deref();
 		auto base_class= class_type.lock_imut().get_ref().base_class;
 		if( base_class.empty() )
 		{
@@ -495,7 +495,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return ErrorValue();
 	}
 
-	var Variable& variable= value.get</Variable/>().get_ref();
+	var Variable& variable= value.get</Variable/>().try_deref();
 	if( variable.node_id == ReferencesGraph::c_empty_node_id )
 	{
 		REPORT_ERROR( ExpectedVariable, names_scope, move_operator.src_loc, ust::string8( "global constant" ) )
@@ -839,7 +839,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	var Variable mut res
 	{
-		.t= pointer_type_ref.get_ref().element_type,
+		.t= pointer_type_ref.try_deref().element_type,
 		.location= Variable::Location::Pointer,
 		.value_type= ValueType::ReferenceMut, // Unlike C++ all raw pointers in Ü are mutable.
 		.llvm_value= CreateMoveToLLVMRegisterInstruction( v, function_context ), // llvm value of reference is actually value of pointer
@@ -951,7 +951,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				{
 					auto mut index_value_for_compare= index_value;
 					auto index_type_size= index_fundamental_type.GetSize();
-					auto size_type_size= size_type_.GetFundamentalType().get_ref().GetSize();
+					auto size_type_size= size_type_.GetFundamentalType().try_deref().GetSize();
 					if( index_type_size > size_type_size )
 					{
 						index_value_for_compare= LLVMBuildTrunc( function_context.llvm_ir_builder, index_value_for_compare, fundamental_llvm_types_.int_ptr, "\0"[0] );
@@ -1133,7 +1133,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return ErrorValue();
 	}
 
-	return CallFunctionsSet( names_scope, function_context, this_, functions_set.get_ref(), call_operator.args.range(), call_operator.src_loc );
+	return CallFunctionsSet( names_scope, function_context, this_, functions_set.try_deref(), call_operator.args.range(), call_operator.src_loc );
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MemberAccessOperator& member_access_operator ) : Value
@@ -1160,7 +1160,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, member_access_operator.src_loc, variable.t )
 		return ErrorValue();
 	}
-	var ClassTypePtr class_type= class_type_ref.get_ref();
+	var ClassTypePtr class_type= class_type_ref.try_deref();
 
 	var ust::optional</NamesScopeValue/> mut class_member;
 	auto class_members= class_type.lock_imut().get_ref().members;
@@ -1182,7 +1182,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	{
-		auto field_ptr= class_member.get_ref().Get</ClassField/>();
+		auto field_ptr= class_member.try_deref().Get</ClassField/>();
 		if( !field_ptr.empty() )
 		{
 			if( !member_access_operator.template_args.empty() )
@@ -1293,7 +1293,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			return move(result);
 		}
 		{
-			auto functions_set_ptr= class_member.get_ref().Get</NamesScopeFunctionsSet/>();
+			auto functions_set_ptr= class_member.try_deref().Get</NamesScopeFunctionsSet/>();
 			if( !functions_set_ptr.empty() )
 			{
 				BuildFunctionsSet( class_type.lock_imut().get_ref().members, ust::to_non_nullable( functions_set_ptr ), false );
@@ -1327,7 +1327,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 						names_scope,
 						function_context,
 						functions_set,
-						member_access_operator.template_args.get_ref(),
+						member_access_operator.template_args.try_deref(),
 						member_access_operator.src_loc );
 
 					if( variable_lock_node != ReferencesGraph::c_empty_node_id )
@@ -1340,7 +1340,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 						return ErrorValue();
 					}
 
-					this_methods_set.functions_set= val.get_ref().Get</NamesScopeFunctionsSet/>().lock_imut().get_ref().functions_set;
+					this_methods_set.functions_set= val.try_deref().Get</NamesScopeFunctionsSet/>().lock_imut().get_ref().functions_set;
 				}
 				else
 				{
@@ -1390,11 +1390,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "-" ),
 	};
 
-	if( IsInteger( fundamental_type.get_ref().fundamental_type ) )
+	if( IsInteger( fundamental_type.try_deref().fundamental_type ) )
 	{
 		unsafe{  result.llvm_value= LLVMBuildNeg( function_context.llvm_ir_builder, value_in_register, "-\0"[0] );  }
 	}
-	else if( IsFloatingPoint( fundamental_type.get_ref().fundamental_type ) )
+	else if( IsFloatingPoint( fundamental_type.try_deref().fundamental_type ) )
 	{
 		unsafe{  result.llvm_value= LLVMBuildFNeg( function_context.llvm_ir_builder, value_in_register, "-\0"[0] );  }
 	}
@@ -1461,7 +1461,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	auto fundamental_type= variable.t.GetFundamentalType();
-	if( fundamental_type.empty() || !IsInteger( fundamental_type.get_ref().fundamental_type ) )
+	if( fundamental_type.empty() || !IsInteger( fundamental_type.try_deref().fundamental_type ) )
 	{
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, bitwise_not.src_loc, variable.t )
 		return ErrorValue();
@@ -1595,7 +1595,7 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 	var bool mut is_float= false, mut is_integer= false, mut is_signed= false, mut is_void= false;
 	if( !l_fundamental_type.empty() )
 	{
-		auto t= l_fundamental_type.get_ref().fundamental_type;
+		auto& t= l_fundamental_type.try_deref().fundamental_type;
 		is_float= IsFloatingPoint(t);
 		is_integer= IsInteger(t);
 		is_signed= IsSignedInteger(t);
@@ -1611,7 +1611,7 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 	if( operator == BinaryOperatorType::Add && ( !l_raw_pointer_type.empty() || !r_raw_pointer_type.empty() ) )
 	{
 		// Add pointer and integer.
-		var size_type pointer_size= size_type_.GetFundamentalType().get_ref().GetSize();
+		var size_type pointer_size= size_type_.GetFundamentalType().try_deref().GetSize();
 		var size_type mut int_size(0);
 
 		var LLVMValueRef mut ptr_value= LLVMValueRef::Null, mut index_value= LLVMValueRef::Null;
@@ -1624,8 +1624,8 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, r_type )
 				return ErrorValue();
 			}
-			int_type= r_fundamental_type.get_ref().fundamental_type;
-			int_size= r_fundamental_type.get_ref().GetSize();
+			int_type= r_fundamental_type.try_deref().fundamental_type;
+			int_size= r_fundamental_type.try_deref().GetSize();
 
 			res.t= l_type;
 			ptr_value= l_in_register;
@@ -1638,8 +1638,8 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
 				return ErrorValue();
 			}
-			int_type= l_fundamental_type.get_ref().fundamental_type;
-			int_size= l_fundamental_type.get_ref().GetSize();
+			int_type= l_fundamental_type.try_deref().fundamental_type;
+			int_size= l_fundamental_type.try_deref().GetSize();
 
 			res.t= r_type;
 			ptr_value= r_in_register;
@@ -1652,7 +1652,7 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 		}
 
 		{
-			var Type& element_type= res.t.GetRawPointerType().get_ref().element_type;
+			var Type& element_type= res.t.GetRawPointerType().try_deref().element_type;
 			if( !EnsureTypeComplete( element_type ) )
 			{
 				// Complete types required for pointer arithmetic.
@@ -1693,7 +1693,7 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 			return ErrorValue();
 		}
 
-		var Type& element_type= l_raw_pointer_type.get_ref().element_type;
+		var Type& element_type= l_raw_pointer_type.try_deref().element_type;
 		if( !EnsureTypeComplete( element_type ) )
 		{
 			// Complete types required for pointer arithmetic.
@@ -1701,7 +1701,7 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 			return ErrorValue();
 		}
 
-		var size_type pointer_size= size_type_.GetFundamentalType().get_ref().GetSize();
+		var size_type pointer_size= size_type_.GetFundamentalType().try_deref().GetSize();
 		var U_FundamentalType diff_type= select( pointer_size == 4s ? U_FundamentalType::i32_ : U_FundamentalType::i64_ );
 		var LLVMTypeRef diff_llvm_type= GetFundamentalLLVMType( diff_type );
 
@@ -1709,7 +1709,7 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 
 		unsafe
 		{
-			var u64 element_size= LLVMABISizeOfType( data_layout_, l_raw_pointer_type.get_ref().element_type.GetLLVMType() );
+			var u64 element_size= LLVMABISizeOfType( data_layout_, l_raw_pointer_type.try_deref().element_type.GetLLVMType() );
 
 			if( element_size == 0u64 )
 			{
@@ -1736,11 +1736,11 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 			return ErrorValue();
 		}
 
-		var U_FundamentalType int_type= r_fundamental_type.get_ref().fundamental_type;
+		var U_FundamentalType int_type= r_fundamental_type.try_deref().fundamental_type;
 
 		var size_type
-			int_size= r_fundamental_type.get_ref().GetSize(),
-			pointer_size= size_type_.GetFundamentalType().get_ref().GetSize();
+			int_size= r_fundamental_type.try_deref().GetSize(),
+			pointer_size= size_type_.GetFundamentalType().try_deref().GetSize();
 
 		if( !IsInteger( int_type ) || int_size > pointer_size )
 		{
@@ -1748,7 +1748,7 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 			return ErrorValue();
 		}
 
-		var Type& element_type= l_raw_pointer_type.get_ref().element_type;
+		var Type& element_type= l_raw_pointer_type.try_deref().element_type;
 		if( !EnsureTypeComplete( element_type ) )
 		{
 			// Complete types required for pointer arithmetic.
@@ -1795,7 +1795,7 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
 			return ErrorValue();
 		}
-		if( l_fundamental_type.get_ref().GetSize() < 4s )
+		if( l_fundamental_type.try_deref().GetSize() < 4s )
 		{
 			// Operation supported only for 32 and 64bit operands
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
@@ -1904,7 +1904,7 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
 			return ErrorValue();
 		}
-		if( !( IsInteger( l_fundamental_type.get_ref().fundamental_type ) || l_fundamental_type.get_ref().fundamental_type == U_FundamentalType::bool_ ) )
+		if( !( IsInteger( l_fundamental_type.try_deref().fundamental_type ) || l_fundamental_type.try_deref().fundamental_type == U_FundamentalType::bool_ ) )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
 			return ErrorValue();
@@ -1937,7 +1937,7 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
 			return ErrorValue();
 		}
-		if( r_fundamental_type.empty() || !IsUnsignedInteger( r_fundamental_type.get_ref().fundamental_type ) )
+		if( r_fundamental_type.empty() || !IsUnsignedInteger( r_fundamental_type.try_deref().fundamental_type ) )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope,src_loc, r_type )
 			return ErrorValue();
@@ -1951,11 +1951,11 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 		unsafe
 		{
 			// Convert value of shift to type of shifted value. LLVM Reuqired this.
-			if( r_fundamental_type.get_ref().GetSize() > l_fundamental_type.get_ref().GetSize() )
+			if( r_fundamental_type.try_deref().GetSize() > l_fundamental_type.try_deref().GetSize() )
 			{
 				r_value_for_op= LLVMBuildTrunc( function_context.llvm_ir_builder, r_value_for_op, l_type.GetLLVMType(), "\0"[0] );
 			}
-			else if( r_fundamental_type.get_ref().GetSize() < l_fundamental_type.get_ref().GetSize() )
+			else if( r_fundamental_type.try_deref().GetSize() < l_fundamental_type.try_deref().GetSize() )
 			{
 				r_value_for_op= LLVMBuildZExt( function_context.llvm_ir_builder, r_value_for_op, l_type.GetLLVMType(), "\0"[0] );
 			}
@@ -1967,7 +1967,7 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 					r_value_for_op,
 					LLVMConstInt(
 						l_type.GetLLVMType(),
-						l_fundamental_type.get_ref().GetSize() * 8u64 - 1u64,
+						l_fundamental_type.try_deref().GetSize() * 8u64 - 1u64,
 						LLVMBool::False ),
 					"\0"[0] );
 
@@ -1977,7 +1977,7 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 			}
 			else if( operator == BinaryOperatorType::ShiftRight )
 			{
-				if( IsSignedInteger( l_fundamental_type.get_ref().fundamental_type ) )
+				if( IsSignedInteger( l_fundamental_type.try_deref().fundamental_type ) )
 				{
 					res.llvm_value= LLVMBuildAShr( function_context.llvm_ir_builder, l_value_for_op, r_value_for_op, "\0"[0] );
 				}
@@ -2059,7 +2059,7 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 			return ErrorValue();
 		}
 
-		if( !l_fundamental_type.empty() && !( is_integer || is_float || IsChar( l_fundamental_type.get_ref().fundamental_type ) ) )
+		if( !l_fundamental_type.empty() && !( is_integer || is_float || IsChar( l_fundamental_type.try_deref().fundamental_type ) ) )
 		{
 				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
 				return ErrorValue();
@@ -2521,7 +2521,7 @@ fn CodeBuilder::CallFunctionsSet(
 
 		if( !this_.empty() )
 		{
-			var VariableTypeExtened mut out_arg{ .t( this_.get_ref().t ), .value_type= this_.get_ref().value_type };
+			var VariableTypeExtened mut out_arg{ .t( this_.try_deref().t ), .value_type= this_.try_deref().value_type };
 			args_evaluated.push_back( move(out_arg) );
 		}
 
@@ -2552,26 +2552,26 @@ fn CodeBuilder::CallFunctionsSet(
 		return ErrorValue();
 	}
 
-	if( function_selected.get_ref().is_deleted )
+	if( function_selected.try_deref().is_deleted )
 	{
 		REPORT_ERROR( AccessingDeletedMethod, names_scope, src_loc )
 		return ErrorValue();
 	}
 
-	if( !this_.empty() && !function_selected.get_ref().is_this_call )
+	if( !this_.empty() && !function_selected.try_deref().is_this_call )
 	{
 		this_.reset();
 	}
 
 	if( !this_.empty() )
 	{
-		auto fetch_res= TryFetchVirtualFunction( this_.get_ref(), function_selected.get_ref(), function_context );
-		function_selected.get_ref().llvm_function= fetch_res[1];
+		auto fetch_res= TryFetchVirtualFunction( this_.try_deref(), function_selected.try_deref(), function_context );
+		function_selected.try_deref().llvm_function= fetch_res[1];
 		return DoCallFunction(
 			names_scope,
 			function_context,
 			ust::optional_ref_imut</Variable/>( fetch_res[0] ),
-			function_selected.get_ref(),
+			function_selected.try_deref(),
 			args,
 			src_loc );
 	}
@@ -2580,7 +2580,7 @@ fn CodeBuilder::CallFunctionsSet(
 		names_scope,
 		function_context,
 		this_,
-		function_selected.get_ref(),
+		function_selected.try_deref(),
 		args,
 		src_loc );
 }
@@ -2597,7 +2597,7 @@ fn CodeBuilder::DoCallFunction(
 	var ust::vector</ Variable /> mut preevaluated_args;
 	if( !this_.empty() )
 	{
-		preevaluated_args.push_back( this_.get_ref() );
+		preevaluated_args.push_back( this_.try_deref() );
 	}
 
 	return DoCallFunction(

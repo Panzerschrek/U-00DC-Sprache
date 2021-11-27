@@ -50,13 +50,13 @@ fn nomangle main() : i32
 	{ // optional can be constructed from value.
 		var ust::optional</i32/> opt( 524 );
 		halt if( opt.empty() );
-		halt if( opt.get_ref() != 524 );
+		halt if( opt.try_deref() != 524 );
 	}
 	{ // optional is copyable (if contained type is copyable)
 		var ust::optional</f32/> pi( 3.14f );
 		var ust::optional</f32/> pi_copy( 3.14f );
 		halt if( pi_copy.empty() );
-		halt if( pi_copy.get_ref() != 3.14f );
+		halt if( pi_copy.try_deref() != 3.14f );
 	}
 	// Optional is noncopyable for noncopyable types.
 	static_assert( !typeinfo</ ust::optional</Noncopyable/> />.is_copy_constructible );
@@ -65,13 +65,13 @@ fn nomangle main() : i32
 		var ust::optional</i32/> mut opt0, opt1(8884);
 		opt0= opt1;
 		halt if( opt0.empty() );
-		halt if( opt0.get_ref() != 8884 );
+		halt if( opt0.try_deref() != 8884 );
 	}
 	{ // Can assign value to optional.
 		var ust::optional</i32/> mut opt0;
 		opt0= -95477;
 		halt if( opt0.empty() );
-		halt if( opt0.get_ref() != -95477 );
+		halt if( opt0.try_deref() != -95477 );
 	}
 	{ // Can assign value to optional, even if type is noncopyable.
 		var ust::optional</Noncopyable/> mut opt;
@@ -81,7 +81,7 @@ fn nomangle main() : i32
 		var ust::optional</i32/> mut opt0( 2221 );
 		opt0= 1112;
 		halt if( opt0.empty() );
-		halt if( opt0.get_ref() != 1112 );
+		halt if( opt0.try_deref() != 1112 );
 	}
 	{ // Can reset optional.
 		var ust::optional</f64/> mut e( 2.718281828 );
@@ -92,10 +92,10 @@ fn nomangle main() : i32
 	{ // Can reset optional with other value.
 		var ust::optional</u32/> mut opt( 1917u );
 		halt if( opt.empty() );
-		halt if( opt.get_ref() != 1917u );
+		halt if( opt.try_deref() != 1917u );
 		opt.reset( 1991u );
 		halt if( opt.empty() );
-		halt if( opt.get_ref() != 1991u );
+		halt if( opt.try_deref() != 1991u );
 	}
 	{ // Destructor calls destructor of stored value.
 		var i32 mut x= 0;
@@ -130,8 +130,8 @@ fn nomangle main() : i32
 	}
 	{ // Can modify stored value.
 		var ust::optional</i32/> mut opt(0);
-		opt.get_ref()= 666;
-		halt if( opt.get_ref() != 666 );
+		opt.try_deref()= 666;
+		halt if( opt.try_deref() != 666 );
 	}
 
 	return 0;

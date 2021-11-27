@@ -270,7 +270,7 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_
 					continue;
 				}
 
-				var ClassType &mut prev_class_value= tmp_class_table.find( class_table_entry.key() ).get_ref();
+				var ClassType &mut prev_class_value= tmp_class_table.find( class_table_entry.key() ).try_deref();
 				var ClassType& new_class_value= class_table_entry.value();
 
 				if( !prev_class_value.syntax_element.empty() && !new_class_value.syntax_element.empty() &&
@@ -319,7 +319,7 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_
 	// It's important to use an index instead of iterators during iteration because this vector may be chaged in process.
 	for( auto mut i= 0s; i < generated_template_things_sequence_.size(); ++i )
 	{
-		auto names_scope= cast_imut(generated_template_things_).find(cast_imut(generated_template_things_sequence_)[i]).get_ref();
+		auto names_scope= cast_imut(generated_template_things_).find(cast_imut(generated_template_things_sequence_)[i]).try_deref();
 		NamesScopeBuild( names_scope );
 	}
 	generated_template_things_sequence_.clear();
@@ -354,12 +354,12 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 		auto class_type= names_scope.lock_imut().get_ref().GetClass();
 		if( !class_type.empty() &&
 			!function_context.this_.empty() &&
-			ust::to_non_nullable( class_type ) == function_context.this_.get_ref().t &&
+			ust::to_non_nullable( class_type ) == function_context.this_.try_deref().t &&
 			!function_context.whole_this_is_unavailable )
 		{
 			var ThisMethodsSet mut this_methods_set
 			{
-				.this_= function_context.this_.get_ref(),
+				.this_= function_context.this_.try_deref(),
 				.functions_set= f_ptr.lock_imut().get_ref().functions_set,
 			};
 			return move(this_methods_set);
@@ -406,9 +406,9 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 			return ErrorValue();
 		}
 
-		auto mut this_value_corrected= function_context.this_.get_ref().llvm_value;
+		auto mut this_value_corrected= function_context.this_.try_deref().llvm_value;
 
-		var ClassTypePtr this_class= function_context.this_.get_ref().t.GetClassType().get_ref();
+		var ClassTypePtr this_class= function_context.this_.try_deref().t.GetClassType().try_deref();
 		auto field_source_class= field.source_class.lock();
 		var ust::shared_ptr_nullable_imut</ClassType/> mut current_class= this_class;
 		while( !current_class.empty() && current_class != field_source_class )
@@ -451,7 +451,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 			auto ptr_value= CreateFieldGEP( this_value_corrected, field, function_context );
 			unsafe{  result.llvm_value= LLVMBuildLoad( function_context.llvm_ir_builder, ptr_value, op_name_nt.front() );  }
 
-			auto node_id= function_context.this_.get_ref().node_id;
+			auto node_id= function_context.this_.try_deref().node_id;
 			if( node_id != ReferencesGraph::c_empty_node_id )
 			{
 				auto inner_nodes = function_context.references_graph.GetAccessibleVariableNodesInnerReferences( node_id );
@@ -491,9 +491,9 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 			{
 				.t= field.t,
 				.location= Variable::Location::Pointer,
-				.value_type= function_context.this_.get_ref().value_type,
+				.value_type= function_context.this_.try_deref().value_type,
 				.llvm_value= CreateFieldGEP( this_value_corrected, field, function_context ),
-				.node_id= function_context.this_.get_ref().node_id,
+				.node_id= function_context.this_.try_deref().node_id,
 			};
 
 			if( !field.is_mutable )
@@ -639,7 +639,7 @@ fn CodeBuilder::ResolveValue(
 			current_scope= parent;
 		}
 
-		if_var( mut names_scope_value : current_scope.lock_imut().get_ref().GetThisScopeValue( complex_name.tail.front().get</ust::string8/>().get_ref() ) )
+		if_var( mut names_scope_value : current_scope.lock_imut().get_ref().GetThisScopeValue( complex_name.tail.front().get</ust::string8/>().try_deref() ) )
 		{
 			current_value= move(names_scope_value);
 		}
@@ -650,14 +650,14 @@ fn CodeBuilder::ResolveValue(
 		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
 		auto instructions_state= SaveInstructionsState( function_context );
-		var Variable variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, complex_name.start.get</Synt::Typeof/>().get_ref().expr.get_ref() );
+		var Variable variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, complex_name.start.get</Synt::Typeof/>().try_deref().expr.get_ref() );
 		RestoreInstructionsState( function_context, instructions_state );
 
 		current_value= NamesScopeValue( variable.t );
 	}
 	else
 	{
-		var ust::string8& start_name= complex_name.start.get</ust::string8/>().get_ref();
+		var ust::string8& start_name= complex_name.start.get</ust::string8/>().try_deref();
 		while( !current_scope.empty() )
 		{
 			if_var( mut names_scope_value : current_scope.lock_imut().get_ref().GetThisScopeValue( start_name ) )
@@ -691,13 +691,13 @@ fn CodeBuilder::ResolveValue(
 		auto& name_component= complex_name.tail[i];
 		if_var( &name_component_name : name_component.get</ ust::string8 />() )
 		{
-			var ust::shared_ptr_nullable_imut</NamesScope/> mut namespace_= current_value.get_ref().Get</NamesScope/>();
-			auto mut class_= current_value.get_ref().Get</ClassType/>();
-			auto mut enum_= current_value.get_ref().Get</Enum/>();
-			auto type_templates_set= current_value.get_ref().Get</TypeTemplatesSet/>();
-			auto t= current_value.get_ref().Get</Type/>();
-			auto type_alias= current_value.get_ref().Get</TypeAlias/>();
-			auto template_arg= current_value.get_ref().Get</TemplateArg/>();
+			var ust::shared_ptr_nullable_imut</NamesScope/> mut namespace_= current_value.try_deref().Get</NamesScope/>();
+			auto mut class_= current_value.try_deref().Get</ClassType/>();
+			auto mut enum_= current_value.try_deref().Get</Enum/>();
+			auto type_templates_set= current_value.try_deref().Get</TypeTemplatesSet/>();
+			auto t= current_value.try_deref().Get</Type/>();
+			auto type_alias= current_value.try_deref().Get</TypeAlias/>();
+			auto template_arg= current_value.try_deref().Get</TemplateArg/>();
 
 			if( !t.empty() )
 			{
@@ -769,7 +769,7 @@ fn CodeBuilder::ResolveValue(
 					return ErrorValue();
 				}
 
-				current_value.get_ref()= new_value.get_ref();
+				current_value.try_deref()= new_value.try_deref();
 				current_scope= namespace_;
 			}
 			else if( !enum_.empty() )
@@ -790,8 +790,8 @@ fn CodeBuilder::ResolveValue(
 				{
 					.t= enum_non_null,
 					.is_mutable= false,
-					.llvm_value= element.get_ref().llvm_value,
-					.constexpr_value= element.get_ref().constexpr_value,
+					.llvm_value= element.try_deref().llvm_value,
+					.constexpr_value= element.try_deref().constexpr_value,
 				};
 
 				current_value= move(v);
@@ -818,8 +818,8 @@ fn CodeBuilder::ResolveValue(
 		}
 		if_var( &template_args : name_component.get</ ust::box</Synt::TemplateArgs/> />() )
 		{
-			auto type_templates_set= current_value.get_ref().Get</TypeTemplatesSet/>();
-			auto functions_set= current_value.get_ref().Get</NamesScopeFunctionsSet/>();
+			auto type_templates_set= current_value.try_deref().Get</TypeTemplatesSet/>();
+			auto functions_set= current_value.try_deref().Get</NamesScopeFunctionsSet/>();
 			if( !type_templates_set.empty() )
 			{
 				BuiltTypeTemplatesSet( ust::to_non_nullable(current_scope), ust::to_non_nullable(type_templates_set) );
@@ -837,8 +837,8 @@ fn CodeBuilder::ResolveValue(
 					complex_name.src_loc );
 				if( !generated_type.empty() )
 				{
-					current_value.get_ref()= generated_type.get_ref();
-					if_var( generated_class : generated_type.get_ref().GetClassType() )
+					current_value.try_deref()= generated_type.try_deref();
+					if_var( generated_class : generated_type.try_deref().GetClassType() )
 					{
 						current_value= NamesScopeValue( generated_class );
 						current_scope= generated_class.lock_imut().get_ref().members;
@@ -882,7 +882,7 @@ fn CodeBuilder::ResolveValue(
 	}
 
 	{
-		auto template_arg_ptr= current_value.get_ref().Get</TemplateArg/>();
+		auto template_arg_ptr= current_value.try_deref().Get</TemplateArg/>();
 		if( !template_arg_ptr.empty() )
 		{
 			auto template_arg_lock= template_arg_ptr.lock_imut();
@@ -895,7 +895,7 @@ fn CodeBuilder::ResolveValue(
 		}
 	}
 
-	return NamesScopeValueToValue( ust::to_non_nullable(current_scope), function_context, current_value.get_ref(), complex_name.src_loc );
+	return NamesScopeValueToValue( ust::to_non_nullable(current_scope), function_context, current_value.try_deref(), complex_name.src_loc );
 }
 
 fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
@@ -942,17 +942,18 @@ fn CodeBuilder::PrepareFunction(
 
 	if( !function_declaration.constructor_initializer_list.empty() && func_name != KeywordToString( Keyword::constructor_ ) )
 	{
-		REPORT_ERROR( InitializationListInNonconstructor, names_scope_ptr, function_declaration.constructor_initializer_list.get_ref().src_loc )
+		REPORT_ERROR( InitializationListInNonconstructor, names_scope_ptr, function_declaration.constructor_initializer_list.try_deref().src_loc )
 	}
 
 	// TODO - maybe clear global constext after it's usage?
 	auto mut global_function_context= CreateGlobalFunctionContext();
 
 	// enable_if
+	//if_var( &expr : function_declaration.condition ) // TODO - fix and use "if_var" here
 	if( !function_declaration.condition.empty() )
 	{
-		auto& expr= function_declaration.condition.get_ref();
-		auto condition_variable= BuildExpressionCodeEnsureVariable( names_scope_ptr, global_function_context, expr );
+		auto& expr= function_declaration.condition.try_deref();
+		var Variable condition_variable= BuildExpressionCodeEnsureVariable( names_scope_ptr, global_function_context, expr );
 		if( condition_variable.t == bool_type_ )
 		{
 			if( condition_variable.constexpr_value != LLVMValueRef::Null )
@@ -1602,21 +1603,22 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 	}
 
 	{
-		auto& block= func_variable.body_syntax_element.get_ref().block.get_ref();
+		auto& body_syntax_element= func_variable.body_syntax_element.get_ref();
+		auto& block= body_syntax_element.block.try_deref();
 
-		auto& func_name= func_variable.body_syntax_element.get_ref().name.back();
+		auto& func_name= body_syntax_element.name.back();
 		auto is_constructor= func_name == KeywordToString( Keyword::constructor_ );
 		auto is_destructor = func_name == KeywordToString( Keyword::destructor_  );
 		if( is_constructor )
 		{
 			function_context.whole_this_is_unavailable= true;
 
-			if( !func_variable.body_syntax_element.get_ref().constructor_initializer_list.empty() )
+			if( !body_syntax_element.constructor_initializer_list.empty() )
 			{
 				BuildConstructorInitialization(
 					args_names_scope_ptr,
 					function_context,
-					func_variable.body_syntax_element.get_ref().constructor_initializer_list.get_ref() );
+					body_syntax_element.constructor_initializer_list.try_deref() );
 			}
 			else
 			{
@@ -1637,14 +1639,14 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		if( is_constructor || is_destructor )
 		{
 			// Setup virtual table pointers before main body of constructor/destructor and after constructor initialization list.
-			auto this_llvm_value= function_context.this_.get_ref().llvm_value;
-			auto class_type_ptr= function_context.this_.get_ref().t.GetClassType().get_ref();
+			auto this_llvm_value= function_context.this_.try_deref().llvm_value;
+			auto class_type_ptr= function_context.this_.try_deref().t.GetClassType().try_deref();
 			SetupVirtualTablePointers( this_llvm_value, class_type_ptr, function_context );
 		}
 
-		if( ( is_constructor || is_destructor ) && !function_context.this_.get_ref().t.GetClassType().empty() )
+		if( ( is_constructor || is_destructor ) && !function_context.this_.try_deref().t.GetClassType().empty() )
 		{
-			auto class_type= function_context.this_.get_ref().t.GetClassType().get_ref();
+			auto class_type= function_context.this_.try_deref().t.GetClassType().try_deref();
 			auto class_kind= class_type.lock_imut().get_ref().kind;
 			if( class_kind == ClassType::Kind::Interface || class_kind == ClassType::Kind::Abstract )
 			{
@@ -1689,7 +1691,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				LLVMAppendExistingBasicBlock( function_context.llvm_function, function_context.destructor_end_block );
 				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, function_context.destructor_end_block );
 
-				auto this_copy= function_context.this_.get_ref();
+				var Variable this_copy= function_context.this_.try_deref();
 				if_var( &class_type : this_copy.t.GetClassType() )
 				{
 					BuildMembersDestructors( function_context, this_copy.llvm_value, class_type );
@@ -1934,7 +1936,7 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 			var FunctionType::ReferencePollution actual_reference_pollution
 			{
 				.dst{ .param_index= u8(i), .reference_index= 0u8 },
-				.src= param_reference.get_ref(),
+				.src= param_reference.try_deref(),
 			};
 
 			var bool mut found= false;
@@ -2280,7 +2282,7 @@ fn CodeBuilder::CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Typ
 		return ref;
 	}
 
-	auto src_class_type= src_type.GetClassType().get_ref();
+	auto src_class_type= src_type.GetClassType().try_deref();
 	foreach( &parent : src_class_type.lock_imut().get_ref().parents )
 	{
 		auto mut sub_ref= LLVMValueRef::Null;

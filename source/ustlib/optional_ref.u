@@ -49,14 +49,14 @@ public:
 	}
 
 	fn enable_if( is_mutable )
-	get_ref( this'x' ) : T &'x mut
+	try_deref( this'x' ) : T &'x mut
 	{
 		halt if(empty());
 		unsafe{ return get_ref_unchecked(); }
 	}
 
 	fn enable_if( !is_mutable )
-	get_ref( this'x' ) : T &'x imut
+	try_deref( this'x' ) : T &'x imut
 	{
 		halt if(empty());
 		unsafe{ return get_ref_unchecked(); }

@@ -124,13 +124,13 @@ public:
 		return !has_value_;
 	}
 
-	fn get_ref( mut this ) : T &mut
+	fn try_deref( mut this ) : T &mut
 	{
 		halt if( empty() );
 		unsafe{  return get_ref_unchecked();  }
 	}
 
-	fn get_ref( imut this ) : T &imut
+	fn try_deref( imut this ) : T &imut
 	{
 		halt if( empty() );
 		unsafe{  return get_ref_unchecked();  }

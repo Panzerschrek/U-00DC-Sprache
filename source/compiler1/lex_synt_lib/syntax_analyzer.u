@@ -1863,7 +1863,7 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 				var AdditiveAssignmentOperator mut additive_assignment_operator
 				{
 					.src_loc= src_loc,
-					.operator= additive_assignment_operator_type.get_ref(),
+					.operator= additive_assignment_operator_type.try_deref(),
 					.l(move(expr)),
 					.r(ParseExpression()),
 				};
@@ -2221,7 +2221,7 @@ fn SyntaxAnalyzer::ParseCStyleForOperator( mut this ) : CStyleForOperator
 				var AdditiveAssignmentOperator mut additive_assignment_operator
 				{
 					.src_loc= src_loc,
-					.operator= additive_assignment_operator_type.get_ref(),
+					.operator= additive_assignment_operator_type.try_deref(),
 					.l(move(expression_l)),
 					.r(ParseExpression()),
 				};
@@ -3186,8 +3186,8 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 		if( element_kind == Macro::MatchElementKind::Optional )
 		{
 			if( !start_lexem.empty() && !end_lexem.empty() &&
-				start_lexem.get_ref().lexem_type == end_lexem.get_ref().lexem_type &&
-				start_lexem.get_ref().text == end_lexem.get_ref().text )
+				start_lexem.try_deref().lexem_type == end_lexem.try_deref().lexem_type &&
+				start_lexem.try_deref().text == end_lexem.try_deref().text )
 			{
 				PushMacroErrorMessage( match_element_src_loc, "Start lexem of optional macro block must be different from first lexem after optional block." );
 			}
@@ -3197,8 +3197,8 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 			if( match_elements[i].lexem.lexem_type != Lexem::Type::EndOfFile ) // Non-empty separator
 			{
 				if( !end_lexem.empty() &&
-					match_elements[i].lexem.lexem_type == end_lexem.get_ref().lexem_type &&
-					match_elements[i].lexem.text == end_lexem.get_ref().text )
+					match_elements[i].lexem.lexem_type == end_lexem.try_deref().lexem_type &&
+					match_elements[i].lexem.text == end_lexem.try_deref().text )
 				{
 					PushMacroErrorMessage( match_element_src_loc, "Separator lexem of repeated macro block must be different from first lexem after repeated block." );
 				}
@@ -3206,8 +3206,8 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 			else // Empty separator
 			{
 				if( !start_lexem.empty() && !end_lexem.empty() &&
-					start_lexem.get_ref().lexem_type == end_lexem.get_ref().lexem_type &&
-					start_lexem.get_ref().text == end_lexem.get_ref().text )
+					start_lexem.try_deref().lexem_type == end_lexem.try_deref().lexem_type &&
+					start_lexem.try_deref().text == end_lexem.try_deref().text )
 				{
 					PushMacroErrorMessage( match_element_src_loc, "Start lexem of repeated macro block without separator must be different from first lexem after repeated block." );
 				}
@@ -3550,7 +3550,7 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 				continue;
 			}
 
-			foreach( &lexem : variable_opt.get_ref().lexems )
+			foreach( &lexem : variable_opt.try_deref().lexems )
 			{
 				lexems_expanded.push_back( lexem );
 			}
@@ -3564,7 +3564,7 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 				continue;
 			}
 
-			var ParsedMacroElement& variable= variable_opt.get_ref();
+			var ParsedMacroElement& variable= variable_opt.try_deref();
 			if( !( variable.kind == Macro::MatchElementKind::Optional || variable.kind == Macro::MatchElementKind::Repeated ) )
 			{
 				PushMacroErrorMessage( expansion_src_loc, "Expected optional or repated" );
@@ -3603,7 +3603,7 @@ fn SyntaxAnalyzer::FetchMacroVariable( MacroVariablesMapsStack& macro_variables_
 		auto ref= macro_variables_map.find( variable_name );
 		if( !ref.empty() )
 		{
-			return ref.get_ref();
+			return ref.try_deref();
 		}
 	}
 

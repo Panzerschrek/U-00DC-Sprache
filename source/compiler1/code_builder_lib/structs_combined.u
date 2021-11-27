@@ -743,11 +743,11 @@ op Type::==( Type& l, Type& r ) : bool
 			ust::is_same_type</ typeof(l_t), ust::shared_ptr_final</FunctionType/> />() ||
 			ust::is_same_type</ typeof(l_t), ust::shared_ptr_final</FunctionPointerType/> />() )
 		{
-			return l_t.get_ref() == r.something_.get</ typeof(l_t) />().get_ref().get_ref();
+			return l_t.get_ref() == r.something_.get</ typeof(l_t) />().try_deref().get_ref();
 		}
 		else
 		{
-			return l_t == r.something_.get</ typeof(l_t) />().get_ref();
+			return l_t == r.something_.get</ typeof(l_t) />().try_deref();
 		}
 	}
 
@@ -1179,11 +1179,11 @@ op TemplateSignatureParam::==(TemplateSignatureParam& l, TemplateSignatureParam&
 			ust::is_same_type</ typeof(l_t), ust::box</FunctionTypeParam/> />() ||
 			ust::is_same_type</ typeof(l_t), ust::box</SpecializedTemplateParam/> />() )
 		{
-			return l_t.get_ref() == r.something_.get</ typeof(l_t) />().get_ref().get_ref();
+			return l_t.get_ref() == r.something_.get</ typeof(l_t) />().try_deref().get_ref();
 		}
 		else
 		{
-			return l_t == r.something_.get</ typeof(l_t) />().get_ref();
+			return l_t == r.something_.get</ typeof(l_t) />().try_deref();
 		}
 	}
 
@@ -1199,7 +1199,7 @@ op NamesScopeValue::==( NamesScopeValue&l, NamesScopeValue& r ) : bool
 
 	variant_visit( &el : l.something_ )
 	{
-		return el == r.something_.get</typeof(el)/>().get_ref();
+		return el == r.something_.get</typeof(el)/>().try_deref();
 	}
 
 	halt;
@@ -1294,7 +1294,7 @@ fn NamesScope::ToString( this ) : ust::string8
 		{
 			// This is class template. So, parent namespace is arguments names scope.
 
-			auto& type_template= class_type.base_template.get_ref().class_template.get_ref();
+			auto& type_template= class_type.base_template.try_deref().class_template.get_ref();
 			auto parent= type_template.parent_names_scope.lock();
 			if( !parent.empty() )
 			{
@@ -1309,7 +1309,7 @@ fn NamesScope::ToString( this ) : ust::string8
 				res+= type_template.syntax_element.get_ref().name;
 
 				res+= "</";
-				foreach( &arg : class_type.base_template.get_ref().signature_args )
+				foreach( &arg : class_type.base_template.try_deref().signature_args )
 				{
 					if_var( t : arg.get</Type/>() )
 					{
@@ -1320,7 +1320,7 @@ fn NamesScope::ToString( this ) : ust::string8
 						res+= ConstantVariableToString( v.t, v.constexpr_value );
 					}
 
-					if( ust::ref_cmp_ne( arg, class_type.base_template.get_ref().signature_args.back() ) )
+					if( ust::ref_cmp_ne( arg, class_type.base_template.try_deref().signature_args.back() ) )
 					{
 						res+= ", ";
 					}
@@ -1337,7 +1337,7 @@ fn NamesScope::ToString( this ) : ust::string8
 			res+= "(";
 			res+= KeywordToString(Keyword::typeinfo_);
 			res+= "</";
-			res+= class_type.typeinfo_src_type_.get_ref().ToString();
+			res+= class_type.typeinfo_src_type_.try_deref().ToString();
 			res+= "/>";
 			res+=")";
 			return move(res);

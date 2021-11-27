@@ -594,9 +594,9 @@ fn CodeBuilder::TryFetchVirtualFunction(
 		return ust::make_tuple(move(this_casted), function.llvm_function);
 	}
 
-	auto class_type_ptr= this_casted.t.GetClassType().get_ref();
+	var ClassTypePtr class_type_ptr= this_casted.t.GetClassType().try_deref();
 	auto class_type_lock= class_type_ptr.lock_imut();
-	auto& class_type= class_type_lock.get_ref();
+	var ClassType& class_type= class_type_lock.get_ref();
 
 	unsafe // Unsafe because a lot of C calls.
 	{

@@ -168,12 +168,12 @@ public:
 
 	op[](  mut this, key_type& key ) : value_type &'this  mut
 	{
-		return find(key).get_ref(); // "get_ref" will halt, if "find" returns empty result.
+		return find(key).try_deref(); // "try_deref" will halt, if "find" returns empty result.
 	}
 
 	op[]( imut this, key_type& key ) : value_type &'this imut
 	{
-		return find(key).get_ref(); // "get_ref" will halt, if "find" returns empty result.
+		return find(key).try_deref(); // "try_deref" will halt, if "find" returns empty result.
 	}
 
 	fn clear( mut this )

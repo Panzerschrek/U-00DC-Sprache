@@ -24,10 +24,10 @@ public:
 			var pthread_t mut thread_id(0);
 
 			halt if( pthread_attr_init( attr ) != 0 );
-			halt if( pthread_create( thread_id, attr, fn_ptr, $<( cast_ref_unsafe</void/>(impl_.get_ref()) ) ) != 0 );
+			halt if( pthread_create( thread_id, attr, fn_ptr, $<( cast_ref_unsafe</void/>(impl_.try_deref()) ) ) != 0 );
 			halt if( pthread_attr_destroy( attr ) != 0 );
 
-			impl_.get_ref().thread_id= thread_id;
+			impl_.try_deref().thread_id= thread_id;
 		}
 	}
 
@@ -37,7 +37,7 @@ public:
 	fn join( this_type mut this_ ) : ResultType
 	{
 		this_.join_impl();
-		auto mut res= this_.impl_.get_ref().result.get_ref(); // TODO - move result out of Impl::result.
+		auto mut res= this_.impl_.try_deref().result.try_deref(); // TODO - move result out of Impl::result.
 		this_.impl_.reset();
 		return move(res);
 	}
@@ -78,7 +78,7 @@ private:
 	{
 		unsafe
 		{
-			halt if( pthread_join( impl_.get_ref().thread_id, nullptr</$(void)/>() ) != 0 );
+			halt if( pthread_join( impl_.try_deref().thread_id, nullptr</$(void)/>() ) != 0 );
 		}
 	}
 

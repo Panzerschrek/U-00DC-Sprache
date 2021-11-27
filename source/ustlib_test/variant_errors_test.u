@@ -36,7 +36,7 @@ fn nomangle main() : i32
 	}
 	{ // Reference returned by "get" method linked to variant.
 		var ust::variant</ tup[ i32, f32 ] /> mut v(0);
-		var i32 &imut i= v.get</i32/>().get_ref();
+		var i32 &imut i= v.get</i32/>().try_deref();
 		v= 0.25f; //##expect_error ReferenceProtectionError
 	}
 

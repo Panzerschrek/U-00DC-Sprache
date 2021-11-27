@@ -442,25 +442,25 @@ fn nomangle main() : i32
 		halt if( m.size() != 2s );
 
 		halt if( m.find( ptr0 ).empty() );
-		halt if( m.find( ptr0 ).get_ref() != -33 );
+		halt if( m.find( ptr0 ).try_deref() != -33 );
 		halt if( m.find( ptr2 ).empty() );
-		halt if( m.find( ptr2 ).get_ref() != -44 );
+		halt if( m.find( ptr2 ).try_deref() != -44 );
 
 		halt if( m.find( ptr1 ).empty() );
-		halt if( m.find( ptr1 ).get_ref() != -33 );
+		halt if( m.find( ptr1 ).try_deref() != -33 );
 
 		m.insert( ptr3, 666 ); // Copy of pointer already exists. value will be replaced.
 		halt if( m.size() != 2s );
 		halt if( m.find( ptr3 ).empty() );
-		halt if( m.find( ptr3 ).get_ref() != 666 );
+		halt if( m.find( ptr3 ).try_deref() != 666 );
 
 		halt if( m.find( ptr2 ).empty() );
-		halt if( m.find( ptr2 ).get_ref() != 666 );
+		halt if( m.find( ptr2 ).try_deref() != 666 );
 
 		m.insert( IntPtrNullableMut(), 999 ); // change existing value, use null pointer key.
 		halt if( m.size() != 3s );
 		halt if( m.find( IntPtrNullableMut() ).empty() );
-		halt if( m.find( IntPtrNullableMut() ).get_ref() != 999 );
+		halt if( m.find( IntPtrNullableMut() ).try_deref() != 999 );
 	}
 	// make_shared_ptr_mt
 	{

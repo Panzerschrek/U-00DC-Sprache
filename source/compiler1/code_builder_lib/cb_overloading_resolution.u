@@ -506,7 +506,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 					allow_type_conversions &&
 					parameter_overloading_class == ArgOverloadingClass::ImmutableReference &&
 					!function.is_conversion_constructor && // Disable conversion for conversion constructor.
-					!( function.is_constructor && !dst_type.GetClassType().empty() && IsCopyConstructor( function, dst_type.GetClassType().get_ref() ) ) && // Disable conversion for copy constructor.
+					!( function.is_constructor && !dst_type.GetClassType().empty() && IsCopyConstructor( function, dst_type.GetClassType().try_deref() ) ) && // Disable conversion for copy constructor.
 					!GetConversionConstructor( names_scope, dst_type, src_type, src_loc ).empty() )
 				{} // Ok, can convert arg.
 				else
@@ -557,7 +557,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 				src_loc );
 		if( !generated_function.empty() )
 		{
-			match_functions.push_back( generated_function.get_ref() );
+			match_functions.push_back( generated_function.try_deref() );
 		}
 	}
 
@@ -756,10 +756,10 @@ fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, 
 		return ust::optional</FunctionVariable/>();
 	}
 
-	auto dst_class= dst.GetClassType().get_ref();
+	auto dst_class= dst.GetClassType().try_deref();
 	auto dst_class_members= dst_class.lock_imut().get_ref().members;
 
-	auto constructors_ptr= dst_class_members.lock_imut().get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).get_ref().Get</NamesScopeFunctionsSet/>();
+	auto constructors_ptr= dst_class_members.lock_imut().get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
 	auto constructors_lock= constructors_ptr.lock_imut();
 	auto& constructors= constructors_lock.get_ref().functions_set;
 
@@ -774,7 +774,7 @@ fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, 
 	{
 		return move(function_selected);
 	}
-	if( function_selected.get_ref().is_conversion_constructor )
+	if( function_selected.try_deref().is_conversion_constructor )
 	{
 		return move(function_selected);
 	}

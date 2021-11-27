@@ -694,7 +694,7 @@ public:
 		{
 			return ust::shared_ptr_nullable_mut</T/>();
 		}
-		return ust::shared_ptr_nullable_mut</T/>(x.get_ref());
+		return ust::shared_ptr_nullable_mut</T/>(x.try_deref());
 	}
 
 	// Compare shared pointers

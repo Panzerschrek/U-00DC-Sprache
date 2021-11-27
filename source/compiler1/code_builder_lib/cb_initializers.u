@@ -275,7 +275,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		REPORT_ERROR( StructInitializerForNonStruct, names_scope, struct_named_initializer.src_loc )
 		return LLVMValueRef::Null;
 	}
-	var ClassTypePtr& class_type_ptr= class_type_ref.get_ref();
+	var ClassTypePtr& class_type_ptr= class_type_ref.try_deref();
 	auto class_type_lock= class_type_ptr.lock_imut();
 	var ClassType& class_type= class_type_lock.get_ref();
 
@@ -320,7 +320,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			REPORT_ERROR( NameNotFound, names_scope, member_initializer.src_loc, member_initializer.name )
 			return LLVMValueRef::Null;
 		}
-		auto field_ptr= member_ref.get_ref().Get</ClassField/>();
+		auto field_ptr= member_ref.try_deref().Get</ClassField/>();
 		if( field_ptr.empty() )
 		{
 			REPORT_ERROR( InitializerForNonfieldStructMember, names_scope, member_initializer.src_loc, member_initializer.name )
@@ -376,7 +376,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	// Apply default initializer for fields, missing in struct named initializer.
 	foreach( &field_name : class_type.fields_order )
 	{
-		auto field_ptr= class_members.GetThisScopeValue(field_name).get_ref().Get</ClassField/>();
+		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
 		auto mut found= false;
 		foreach( &member_initializer : struct_named_initializer.members_initializers )
 		{
@@ -536,7 +536,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 		foreach( &field_name : class_type.fields_order )
 		{
-			auto field_ptr= class_members.GetThisScopeValue(field_name).get_ref().Get</ClassField/>();
+			auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
 			auto field_lock= field_ptr.lock_imut();
 			var ClassField& field= field_lock.get_ref();
 
@@ -637,7 +637,7 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 			return;
 		}
 
-		auto constructors_ptr= member.get_ref().Get</NamesScopeFunctionsSet/>();
+		auto constructors_ptr= member.try_deref().Get</NamesScopeFunctionsSet/>();
 		// Should be functions set 100%
 		// Should be complete here.
 
@@ -930,7 +930,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			return LLVMValueRef::Null;
 		}
 
-		auto constructors_ptr= member.get_ref().Get</NamesScopeFunctionsSet/>();
+		auto constructors_ptr= member.try_deref().Get</NamesScopeFunctionsSet/>();
 		// Should be functions set 100%
 		// Should be complete here.
 
@@ -963,12 +963,12 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 	auto initializer_src_loc= Synt::GetSrcLoc( initializer_expression );
 	auto initializer_value= BuildExpressionCode( names_scope, function_context, initializer_expression );
 
-	var FunctionType& function_type= variable.t.GetFunctionPointerType().get_ref().function_type;
+	var FunctionType& function_type= variable.t.GetFunctionPointerType().try_deref().function_type;
 
 	if_var( &initializer_variable : initializer_value.get</Variable/>() )
 	{
 		if( !( !initializer_variable.t.GetFunctionPointerType().empty() &&
-			initializer_variable.t.GetFunctionPointerType().get_ref().function_type.PointerCanBeConvertedTo( function_type ) ) )
+			initializer_variable.t.GetFunctionPointerType().try_deref().function_type.PointerCanBeConvertedTo( function_type ) ) )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope, initializer_src_loc, variable.t, initializer_variable.t )
 			return LLVMValueRef::Null;
@@ -1139,8 +1139,8 @@ fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, 
 		return LLVMValueRef::Null;
 	}
 
-	var Variable initializer_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, initializer_expression.get_ref() );
-	auto initializer_expression_src_loc= Synt::GetSrcLoc( initializer_expression.get_ref() );
+	var Variable initializer_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, initializer_expression.try_deref() );
+	var SrcLoc initializer_expression_src_loc= Synt::GetSrcLoc( initializer_expression.try_deref() );
 	if( initializer_variable.t != field.t && !initializer_variable.t.ReferenceIsConvertibleTo( field.t ) )
 	{
 		REPORT_ERROR( TypesMismatch, names_scope, initializer_expression_src_loc, field.t, initializer_variable.t )
@@ -1212,7 +1212,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
 	// Function context should contain "this" with class type
-	auto class_type= function_context.this_.get_ref().t.GetClassType().get_ref();
+	auto class_type= function_context.this_.try_deref().t.GetClassType().try_deref();
 	auto class_members_ptr= class_type.lock_imut().get_ref().members;
 	auto class_members_lock= class_members_ptr.lock_imut();
 	var NamesScope& class_members= class_members_lock.get_ref();
@@ -1250,7 +1250,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 			REPORT_ERROR( NameNotFound, names_scope, member_initializer.src_loc, member_initializer.name )
 			continue;
 		}
-		auto class_field_ptr= member.get_ref().Get</ClassField/>();
+		auto class_field_ptr= member.try_deref().Get</ClassField/>();
 		if( class_field_ptr.empty() )
 		{
 			have_fields_errors= true;
@@ -1275,7 +1275,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 		function_context.uninitialized_this_fields.insert( member_initializer.name );
 	}
 
-	var Variable this_= function_context.this_.get_ref();
+	var Variable this_= function_context.this_.try_deref();
 
 	// Initialize fields, missing in initializer list.
 	if( !base_class.empty() && !base_initialized )
@@ -1299,7 +1299,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 		{
 			continue;
 		}
-		auto field_ptr= class_members.GetThisScopeValue(field_name).get_ref().Get</ClassField/>();
+		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
 		auto field_lock= field_ptr.lock_imut();
 		var ClassField & class_field= field_lock.get_ref();
 
@@ -1367,7 +1367,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 			continue;
 		}
 
-		auto field_ptr= class_members.GetThisScopeValue( member_initializer.name ).get_ref().Get</ClassField/>();
+		auto field_ptr= class_members.GetThisScopeValue( member_initializer.name ).try_deref().Get</ClassField/>();
 		auto field_lock= field_ptr.lock_imut();
 		var ClassField & class_field= field_lock.get_ref();
 
@@ -1415,7 +1415,7 @@ fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type
 
 	foreach( &field_name : class_type.lock_imut().get_ref().fields_order )
 	{
-		auto field_ptr= class_members.GetThisScopeValue(field_name).get_ref().Get</ClassField/>();
+		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
 		auto field_lock= field_ptr.lock_imut();
 		var ClassField & class_field= field_lock.get_ref();
 

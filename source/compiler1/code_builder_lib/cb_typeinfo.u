@@ -279,7 +279,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 		}
 	}
 
-	var ClassTypePtr typeinfo_class= typeinfo_cache_[entry_index].v.t.GetClassType().get_ref();
+	var ClassTypePtr typeinfo_class= typeinfo_cache_[entry_index].v.t.GetClassType().try_deref();
 	if( typeinfo_class.lock_imut().get_ref().is_complete )
 	{
 		return typeinfo_cache_[entry_index].v;
@@ -730,7 +730,7 @@ fn CodeBuilder::BuildTypeinfoClassTypesList( mut this, NamesScopePtr& root_names
 			{
 				var ust::optional</ Type /> inner_type= type_alias_ptr.lock_imut().get_ref().t;
 				if( inner_type.empty() ) { continue; }// WTF?
-				t= inner_type.get_ref();
+				t= inner_type.try_deref();
 			}
 			else if( !class_ptr.empty() )
 			{
