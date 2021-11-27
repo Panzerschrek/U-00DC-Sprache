@@ -33,7 +33,7 @@ public:
 
 			for( var size_type mut i(0); i < size_; ++i )
 			{
-				move_unsafe( $>(ptr_ + i), $>(other.ptr_ + i) ); // Copy-constructor called here.
+				move_into_uninitialized( $>(ptr_ + i), $>(other.ptr_ + i) ); // Copy-constructor called here.
 			}
 		}
 	}
@@ -52,7 +52,7 @@ public:
 
 			for( var size_type mut i(0); i < size_; ++i )
 			{
-				move_unsafe( $>(ptr_ + i), value ); // Copy-constructor called here.
+				move_into_uninitialized( $>(ptr_ + i), value ); // Copy-constructor called here.
 			}
 		}
 	}
@@ -107,7 +107,7 @@ public:
 
 				while( i < other.size_ )
 				{
-					move_unsafe( $>(ptr_ + i), $>(other.ptr_ + i) ); // Copy-constructor called here.
+					move_into_uninitialized( $>(ptr_ + i), $>(other.ptr_ + i) ); // Copy-constructor called here.
 					++i;
 				}
 			}
@@ -287,7 +287,7 @@ public:
 			auto new_size= size_ + 1s;
 			ensure_capacity( new_size );
 
-			move_unsafe</T/>( $>(ptr_ + size_), move(val) );
+			move_into_uninitialized( $>(ptr_ + size_), move(val) );
 			size_= new_size;
 		}
 	}
@@ -301,7 +301,7 @@ public:
 
 			for( var size_type mut i(0); i < count; ++i )
 			{
-				move_unsafe</T/>( $>(ptr_ + size_ + i), val );
+				move_into_uninitialized( $>(ptr_ + size_ + i), val );
 			}
 			size_= new_size;
 		}

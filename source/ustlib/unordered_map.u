@@ -91,8 +91,8 @@ public:
 
 					auto &mut dst_value= $>(table_ + insert_index);
 
-					move_unsafe( dst_value.key_storage, key );
-					move_unsafe( dst_value.value_storage, move(value) );
+					move_into_uninitialized( dst_value.key_storage, key );
+					move_into_uninitialized( dst_value.value_storage, move(value) );
 					dst_value.cell_content= TableValue::CellContent::HaveValue;
 					return dst_value.value_storage;
 				}

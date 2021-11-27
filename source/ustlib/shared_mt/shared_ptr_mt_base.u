@@ -28,7 +28,7 @@ public:
 		unsafe
 		{
 			value_= $<( cast_ref_unsafe</T/>( memory_allocate( typeinfo</T/>.size_of ) ) );
-			move_unsafe( $>(value_), move(value) );
+			move_into_uninitialized( $>(value_), move(value) );
 
 			counter_= $<( cast_ref_unsafe</ shared_ptr_mt_impl::counter />( memory_allocate( typeinfo</ shared_ptr_mt_impl::counter />.size_of ) ) );
 			$>(counter_).use_count_total = 1u;

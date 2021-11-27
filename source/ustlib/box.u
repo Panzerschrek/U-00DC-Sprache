@@ -20,7 +20,7 @@ public:
 		unsafe
 		{
 			ptr_= $<( cast_ref_unsafe</T/>( memory_allocate( typeinfo</T/>.size_of ) ) );
-			move_unsafe</T/>( $>(ptr_), move(val) );
+			move_into_uninitialized( $>(ptr_), move(val) );
 		}
 	}
 

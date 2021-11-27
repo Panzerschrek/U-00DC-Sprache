@@ -22,7 +22,7 @@ public:
 	{
 		unsafe
 		{
-			move_unsafe</T/>( get_ref_unchecked(), move(val) );
+			move_into_uninitialized( get_ref_unchecked(), move(val) );
 		}
 	}
 
@@ -34,7 +34,7 @@ public:
 		{
 			unsafe
 			{
-				move_unsafe</T/>( get_ref_unchecked(), other.get_ref_unchecked() );
+				move_into_uninitialized( get_ref_unchecked(), other.get_ref_unchecked() );
 			}
 		}
 	}
@@ -65,7 +65,7 @@ public:
 					}
 					else
 					{
-						move_unsafe</T/>( get_ref_unchecked(), other.get_ref_unchecked() );
+						move_into_uninitialized( get_ref_unchecked(), other.get_ref_unchecked() );
 					}
 				}
 				else
@@ -84,7 +84,7 @@ public:
 				}
 				if( other.has_value_ )
 				{
-					move_unsafe</T/>( get_ref_unchecked(), other.get_ref_unchecked() );
+					move_into_uninitialized( get_ref_unchecked(), other.get_ref_unchecked() );
 				}
 			}
 			has_value_= other.has_value_;
@@ -104,7 +104,7 @@ public:
 				}
 				else
 				{
-					move_unsafe</T/>( get_ref_unchecked(), move(val) );
+					move_into_uninitialized( get_ref_unchecked(), move(val) );
 				}
 			}
 			else
@@ -113,7 +113,7 @@ public:
 				{
 					call_destructor( get_ref_unchecked() );
 				}
-				move_unsafe</T/>( get_ref_unchecked(), move(val) );
+				move_into_uninitialized( get_ref_unchecked(), move(val) );
 			}
 			has_value_= true;
 		}
@@ -166,7 +166,7 @@ public:
 			{
 				call_destructor( get_ref_unchecked() );
 			}
-			move_unsafe</T/>( get_ref_unchecked(), move(val) );
+			move_into_uninitialized( get_ref_unchecked(), move(val) );
 			has_value_ = true;
 		}
 	}
