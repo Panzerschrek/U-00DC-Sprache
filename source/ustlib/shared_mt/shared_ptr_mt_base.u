@@ -376,7 +376,7 @@ public:
 	{
 		unsafe
 		{
-			return cast_ref_unsafe</T/>( int_to_ref( ref_to_int( cast_ref_unsafe</void/>( value_ ) ) ) );
+			return $>($<(cast_mut(value_)));
 		}
 	}
 
