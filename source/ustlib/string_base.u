@@ -150,12 +150,12 @@ public:
 		unsafe{  return $>(ptr_ + index );  }
 	}
 
-	fn index_unsafe( mut this, size_type index ) unsafe : char_type &mut
+	fn index_unchecked( mut this, size_type index ) unsafe : char_type &mut
 	{
 		unsafe{  return $>(ptr_ + index );  }
 	}
 
-	fn index_unsafe( imut this, size_type index ) unsafe : char_type &imut
+	fn index_unchecked( imut this, size_type index ) unsafe : char_type &imut
 	{
 		unsafe{  return $>(ptr_ + index );  }
 	}
@@ -208,22 +208,22 @@ public:
 		unsafe{  return $>(ptr_ + size_ - 1s);  }
 	}
 
-	fn front_unsafe( mut this ) unsafe : char_type &mut
+	fn front_unchecked( mut this ) unsafe : char_type &mut
 	{
 		unsafe{  return $>(ptr_);  }
 	}
 
-	fn front_unsafe( imut this ) unsafe : char_type &imut
+	fn front_unchecked( imut this ) unsafe : char_type &imut
 	{
 		unsafe{  return $>(ptr_);  }
 	}
 
-	fn back_unsafe( mut this ) unsafe : char_type &mut
+	fn back_unchecked( mut this ) unsafe : char_type &mut
 	{
 		unsafe{  return $>(ptr_ + size_ - 1s);  }
 	}
 
-	fn back_unsafe( imut this ) unsafe : char_type &imut
+	fn back_unchecked( imut this ) unsafe : char_type &imut
 	{
 		unsafe{  return $>(ptr_ + size_ - 1s);  }
 	}
@@ -432,7 +432,7 @@ public:
 		}
 	}
 
-	fn pop_back_unsafe( mut this ) unsafe : char_type
+	fn pop_back_unchecked( mut this ) unsafe : char_type
 	{
 		unsafe
 		{

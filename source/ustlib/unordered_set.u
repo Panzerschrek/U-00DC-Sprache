@@ -85,9 +85,9 @@ public:
 			return impl_.drop_front();
 		}
 
-		fn drop_front_unsafe( mut this ) unsafe
+		fn drop_front_unchecked( mut this ) unsafe
 		{
-			unsafe{  return impl_.drop_front_unsafe();  }
+			unsafe{  return impl_.drop_front_unchecked();  }
 		}
 
 		fn front( this'x' ) : T &'x
@@ -95,9 +95,9 @@ public:
 			return impl_.front().key();
 		}
 
-		fn front_unsafe( this'x' ) unsafe : T &'x
+		fn front_unchecked( this'x' ) unsafe : T &'x
 		{
-			unsafe{  return impl_.front_unsafe().key();  }
+			unsafe{  return impl_.front_unchecked().key();  }
 		}
 
 	private:

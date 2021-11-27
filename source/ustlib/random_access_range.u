@@ -63,43 +63,43 @@ public:
 	fn enable_if(  is_mutable ) front( this'x' ) : T &'x  mut
 	{
 		halt if(empty());
-		unsafe{  return front_unsafe();  }
+		unsafe{  return front_unchecked();  }
 	}
 
 	fn enable_if( !is_mutable ) front( this'x' ) : T &'x imut
 	{
 		halt if(empty());
-		unsafe{  return front_unsafe();  }
+		unsafe{  return front_unchecked();  }
 	}
 
 	fn enable_if(  is_mutable ) back ( this'x' ) : T &'x  mut
 	{
 		halt if(empty());
-		unsafe{  return back_unsafe ();  }
+		unsafe{  return back_unchecked ();  }
 	}
 
 	fn enable_if( !is_mutable ) back ( this'x' ) : T &'x imut
 	{
 		halt if(empty());
-		unsafe{  return back_unsafe ();  }
+		unsafe{  return back_unchecked ();  }
 	}
 
-	fn enable_if(  is_mutable ) front_unsafe( this'x' ) unsafe : T &'x  mut
+	fn enable_if(  is_mutable ) front_unchecked( this'x' ) unsafe : T &'x  mut
 	{
 		unsafe{  return $>(begin_);  }
 	}
 
-	fn enable_if( !is_mutable ) front_unsafe( this'x' ) unsafe : T &'x imut
+	fn enable_if( !is_mutable ) front_unchecked( this'x' ) unsafe : T &'x imut
 	{
 		unsafe{  return $>(begin_);  }
 	}
 
-	fn enable_if(  is_mutable ) back_unsafe ( this'x' ) unsafe : T &'x  mut
+	fn enable_if(  is_mutable ) back_unchecked ( this'x' ) unsafe : T &'x  mut
 	{
 		unsafe{  return $>(begin_ + size_ - 1s);  }
 	}
 
-	fn enable_if( !is_mutable ) back_unsafe ( this'x' ) unsafe : T &'x imut
+	fn enable_if( !is_mutable ) back_unchecked ( this'x' ) unsafe : T &'x imut
 	{
 		unsafe{  return $>(begin_ + size_ - 1s);  }
 	}
@@ -135,14 +135,14 @@ public:
 	}
 
 	// Precondition - range is nonempty.
-	fn drop_front_unsafe( mut this ) unsafe
+	fn drop_front_unchecked( mut this ) unsafe
 	{
 		++begin_;
 		--size_;
 	}
 
 	// Precondition - range is nonempty.
-	fn drop_back_unsafe( mut this ) unsafe
+	fn drop_back_unchecked( mut this ) unsafe
 	{
 		--size_;
 	}

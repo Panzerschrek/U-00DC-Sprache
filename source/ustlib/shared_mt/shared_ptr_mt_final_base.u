@@ -78,7 +78,7 @@ public:
 		return ptr_ == nullptr</storage/>();
 	}
 
-	fn get_ref_unsafe( this ) unsafe : T &imut
+	fn get_ref_unchecked( this ) unsafe : T &imut
 	{
 		unsafe
 		{
@@ -116,7 +116,7 @@ struct shared_ptr_mt_final_base_hasher
 	{
 		unsafe
 		{
-			return ust::ref_to_int( cast_ref_unsafe</void/>( ptr.get_ref_unsafe() ) );
+			return ust::ref_to_int( cast_ref_unsafe</void/>( ptr.get_ref_unchecked() ) );
 		}
 	}
 }

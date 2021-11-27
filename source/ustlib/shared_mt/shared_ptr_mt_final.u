@@ -32,7 +32,7 @@ public:
 	{
 		unsafe
 		{
-			return impl_.get_ref_unsafe();
+			return impl_.get_ref_unchecked();
 		}
 	}
 

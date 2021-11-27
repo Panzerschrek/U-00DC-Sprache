@@ -107,7 +107,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 
 	unsafe
 	{
-		out_tuple_type.llvm_type= LLVMStructTypeInContext( llvm_context_, element_llvm_types.front_unsafe(), u32(element_llvm_types.size()), LLVMBool::False );
+		out_tuple_type.llvm_type= LLVMStructTypeInContext( llvm_context_, element_llvm_types.front_unchecked(), u32(element_llvm_types.size()), LLVMBool::False );
 	}
 
 	return move(out_tuple_type);
@@ -246,7 +246,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 			ret_llvm_type= fundamental_llvm_types_.void_for_ret_;
 		}
 
-		res.llvm_type= LLVMFunctionType( ret_llvm_type, llvm_param_types.front_unsafe(), u32(llvm_param_types.size()), LLVMBool::False );
+		res.llvm_type= LLVMFunctionType( ret_llvm_type, llvm_param_types.front_unchecked(), u32(llvm_param_types.size()), LLVMBool::False );
 	}
 
 	// Setup return references mapping.

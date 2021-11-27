@@ -35,7 +35,7 @@ public:
 	{
 		if( !other.empty() )
 		{
-			unsafe{ reset( other.get_ref_unsafe() ); }
+			unsafe{ reset( other.get_ref_unchecked() ); }
 		}
 		else
 		{
@@ -52,24 +52,24 @@ public:
 	get_ref( this'x' ) : T &'x mut
 	{
 		halt if(empty());
-		unsafe{ return get_ref_unsafe(); }
+		unsafe{ return get_ref_unchecked(); }
 	}
 
 	fn enable_if( !is_mutable )
 	get_ref( this'x' ) : T &'x imut
 	{
 		halt if(empty());
-		unsafe{ return get_ref_unsafe(); }
+		unsafe{ return get_ref_unchecked(); }
 	}
 
 	fn enable_if( is_mutable )
-	get_ref_unsafe( this'x' ) unsafe : T &'x mut
+	get_ref_unchecked( this'x' ) unsafe : T &'x mut
 	{
 		unsafe{  return $>(ptr_);  }
 	}
 
 	fn enable_if( !is_mutable )
-	get_ref_unsafe( this'x' ) unsafe : T &'x imut
+	get_ref_unchecked( this'x' ) unsafe : T &'x imut
 	{
 		unsafe{  return $>(ptr_);  }
 	}

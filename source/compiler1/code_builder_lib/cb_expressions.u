@@ -191,7 +191,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		{
 			if( char_type == U_FundamentalType::char8_ )
 			{
-				constexpr_value= LLVMConstStringInContext( llvm_context_, string_literal.value.front_unsafe(), u32(string_literal.value.size()), LLVMBool::True );
+				constexpr_value= LLVMConstStringInContext( llvm_context_, string_literal.value.front_unchecked(), u32(string_literal.value.size()), LLVMBool::True );
 				array_size= string_literal.value.size();
 
 				if( string_literals_cache_[0].find( string_literal.value ).empty() )
@@ -210,11 +210,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				auto buff_size= string_literal.value.size() * 4s;
 				buff.resize( buff_size, "\0"c16 ); // Reserve enough space.
 
-				array_size= U1_ConvertUTF8ToUTF16( string_literal.value.front_unsafe(), string_literal.value.size(), buff.front_unsafe(), buff_size );
+				array_size= U1_ConvertUTF8ToUTF16( string_literal.value.front_unchecked(), string_literal.value.size(), buff.front_unchecked(), buff_size );
 				halt if(array_size > buff.size());
 				buff.resize( array_size, "\0"c16  );
 
-				constexpr_value= U1_ConstDataArray( element_llvm_type, cast_ref_unsafe</void/>( buff.front_unsafe() ), array_size * typeinfo</char16/>.size_of, array_size );
+				constexpr_value= U1_ConstDataArray( element_llvm_type, cast_ref_unsafe</void/>( buff.front_unchecked() ), array_size * typeinfo</char16/>.size_of, array_size );
 
 				if( string_literals_cache_[1].find( buff ).empty() )
 				{
@@ -232,11 +232,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				auto buff_size= string_literal.value.size() * 4s;
 				buff.resize( buff_size, "\0"c32 ); // Reserve enough space.
 
-				array_size= U1_ConvertUTF8ToUTF32( string_literal.value.front_unsafe(), string_literal.value.size(), buff.front_unsafe(), buff_size );
+				array_size= U1_ConvertUTF8ToUTF32( string_literal.value.front_unchecked(), string_literal.value.size(), buff.front_unchecked(), buff_size );
 				halt if(array_size > buff.size());
 				buff.resize( array_size, "\0"c32 );
 
-				constexpr_value= U1_ConstDataArray( element_llvm_type, cast_ref_unsafe</void/>( buff.front_unsafe() ), array_size * typeinfo</char32/>.size_of, array_size );
+				constexpr_value= U1_ConstDataArray( element_llvm_type, cast_ref_unsafe</void/>( buff.front_unchecked() ), array_size * typeinfo</char32/>.size_of, array_size );
 
 				if( string_literals_cache_[2].find( buff ).empty() )
 				{
@@ -288,7 +288,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			{
 				var char16 mut c= zero_init;
 				if( string_literal.value.empty() ||
-					U1_ConvertUTF8ToUTF16( string_literal.value.front_unsafe(), string_literal.value.size(), c, 1s ) != 1s )
+					U1_ConvertUTF8ToUTF16( string_literal.value.front_unchecked(), string_literal.value.size(), c, 1s ) != 1s )
 				{
 					REPORT_ERROR( InvalidSizeForCharLiteral, names_scope, string_literal.src_loc, string_literal.value )
 					return ErrorValue();
@@ -300,7 +300,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			{
 				var char32 mut c= zero_init;
 				if( string_literal.value.empty() ||
-					U1_ConvertUTF8ToUTF32( string_literal.value.front_unsafe(), string_literal.value.size(), c, 1s ) != 1s )
+					U1_ConvertUTF8ToUTF32( string_literal.value.front_unchecked(), string_literal.value.size(), c, 1s ) != 1s )
 				{
 					REPORT_ERROR( InvalidSizeForCharLiteral, names_scope, string_literal.src_loc, string_literal.value )
 					return ErrorValue();
@@ -2974,7 +2974,7 @@ fn CodeBuilder::DoCallFunction(
 		// Perform regular call for non-constexpr function or in case of error in constexpr function evaluation.
 		unsafe
 		{
-			auto call_result= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, llvm_args.front_unsafe(), u32(llvm_args.size()), "\0"[0] );
+			auto call_result= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, llvm_args.front_unchecked(), u32(llvm_args.size()), "\0"[0] );
 			if( !is_s_ret ){  result.llvm_value= call_result;  }
 			else if( !function.t.return_value_is_reference && function.t.return_type == void_type_ )
 			{

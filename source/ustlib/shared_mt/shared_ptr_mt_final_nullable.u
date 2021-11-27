@@ -46,7 +46,7 @@ public:
 		halt if( empty() );
 		unsafe
 		{
-			return impl_.get_ref_unsafe();
+			return impl_.get_ref_unchecked();
 		}
 	}
 

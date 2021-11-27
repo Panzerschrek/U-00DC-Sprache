@@ -366,10 +366,10 @@ public:
 		fn drop_front( mut this )
 		{
 			halt if( empty() );
-			unsafe{  drop_front_unsafe();  }
+			unsafe{  drop_front_unchecked();  }
 		}
 
-		fn drop_front_unsafe( mut this ) unsafe
+		fn drop_front_unchecked( mut this ) unsafe
 		{
 			halt if(empty());
 			--size_;
@@ -382,24 +382,24 @@ public:
 		front( this'x' ) : element_mut'x'
 		{
 			halt if(empty());
-			unsafe {  return front_unsafe();  }
+			unsafe {  return front_unchecked();  }
 		}
 
 		fn enable_if( !is_mutable )
 		front( this'x' ) : element_imut'x'
 		{
 			halt if(empty());
-			unsafe {  return front_unsafe();  }
+			unsafe {  return front_unchecked();  }
 		}
 
 		fn enable_if( is_mutable )
-		front_unsafe( this'x' ) unsafe : element_mut'x'
+		front_unchecked( this'x' ) unsafe : element_mut'x'
 		{
 			unsafe{  return element_mut( $>(table_) );  }
 		}
 
 		fn enable_if( !is_mutable )
-		front_unsafe( this'x' ) unsafe : element_imut'x'
+		front_unchecked( this'x' ) unsafe : element_imut'x'
 		{
 			unsafe{  return element_imut( $>(table_) );  }
 		}

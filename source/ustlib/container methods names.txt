@@ -18,15 +18,15 @@ fn back ( imut this ) : T &imut;
 fn back (  mut this ) : T & mut;
 
 // Unsafe element access. Index or key must exists.
-fn index_unsafe( imut this, size_type i ) unsafe : T &imut;
-fn index_unsafe(  mut this, size_type i ) unsafe : T & mut;
-fn index_unsafe( imut this, key_type& k ) unsafe : T &imut;
-fn index_unsafe(  mut this, key_type& k ) unsafe : T & mut;
+fn index_unchecked( imut this, size_type i ) unsafe : T &imut;
+fn index_unchecked(  mut this, size_type i ) unsafe : T & mut;
+fn index_unchecked( imut this, key_type& k ) unsafe : T &imut;
+fn index_unchecked(  mut this, key_type& k ) unsafe : T & mut;
 // Unsafe access for sequential containers. Container must be nonempty.
-fn front_unsafe( imut this ) unsafe : T &imut;
-fn front_unsafe(  mut this ) unsafe : T & mut;
-fn back_unsafe ( imut this ) unsafe : T &imut;
-fn back_unsafe (  mut this ) unsafe : T & mut;
+fn front_unchecked( imut this ) unsafe : T &imut;
+fn front_unchecked(  mut this ) unsafe : T & mut;
+fn back_unchecked ( imut this ) unsafe : T &imut;
+fn back_unchecked (  mut this ) unsafe : T & mut;
 
 // Safe swap elements. "halt", if indexes out of range or keys does not exists.
 fn swap( mut this, size_type i0, size_type i1 );
@@ -47,10 +47,10 @@ fn drop_front( mut this );
 fn drop_back ( mut this );
 
 // Unsafe remove element from sequential containers. Container must be nonempty.
-fn pop_front_unsafe( mut this ) unsafe : T;
-fn pop_back_unsafe ( mut this ) unsafe : T;
-fn drop_front_unsafe( mut this ) unsafe;
-fn drop_back_unsafe ( mut this ) unsafe;
+fn pop_front_unchecked( mut this ) unsafe : T;
+fn pop_back_unchecked ( mut this ) unsafe : T;
+fn drop_front_unchecked( mut this ) unsafe;
+fn drop_back_unchecked ( mut this ) unsafe;
 
 // Safe remove for random-access or key-value containers. "halt", if index out of range or key does not exists.
 fn erase( mut this, size_type i ) : T;
@@ -59,10 +59,10 @@ fn erase( mut this, key_type& k ) : T;
 fn drop ( mut this, key_type& k );
 
 // Unsafe remove for random-access or key-value containers. Index must be in range or key must exists in container.
-fn erase_unsafe( mut this, size_type i ) unsafe : T;
-fn drop_unsafe ( mut this, size_type i ) unsafe;
-fn erase_unsafe( mut this, key_type& k ) unsafe : T;
-fn drop_unsafe ( mut this, key_type& k ) unsafe;
+fn erase_unchecked( mut this, size_type i ) unsafe : T;
+fn drop_unchecked ( mut this, size_type i ) unsafe;
+fn erase_unchecked( mut this, key_type& k ) unsafe : T;
+fn drop_unchecked ( mut this, key_type& k ) unsafe;
 
 // Clear container, if container may be empty.
 fn clear( mut this );
@@ -76,8 +76,8 @@ fn get_ref( imut this ) : T &imut;
 fn get_ref(  mut this ) : T & mut;
 
 // Methods for single element containers (box, optional). Coontainer must be nonempty.
-fn get_ref_unsafe( imut this ) unsafe : T &imut;
-fn get_ref_unsafe(  mut this ) unsafe : T & mut;
+fn get_ref_unchecked( imut this ) unsafe : T &imut;
+fn get_ref_unchecked(  mut this ) unsafe : T & mut;
 
 // Get range (for containers for many elements).
 fn range( imut this ) : range_type_imut;

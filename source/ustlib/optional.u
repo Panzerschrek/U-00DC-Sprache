@@ -22,7 +22,7 @@ public:
 	{
 		unsafe
 		{
-			move_unsafe</T/>( get_ref_unsafe(), move(val) );
+			move_unsafe</T/>( get_ref_unchecked(), move(val) );
 		}
 	}
 
@@ -34,7 +34,7 @@ public:
 		{
 			unsafe
 			{
-				move_unsafe</T/>( get_ref_unsafe(), other.get_ref_unsafe() );
+				move_unsafe</T/>( get_ref_unchecked(), other.get_ref_unchecked() );
 			}
 		}
 	}
@@ -45,7 +45,7 @@ public:
 		{
 			unsafe
 			{
-				call_destructor( get_ref_unsafe() );
+				call_destructor( get_ref_unchecked() );
 			}
 		}
 	}
@@ -61,18 +61,18 @@ public:
 				{
 					if( this.has_value_ )
 					{
-						get_ref_unsafe()= other.get_ref_unsafe();
+						get_ref_unchecked()= other.get_ref_unchecked();
 					}
 					else
 					{
-						move_unsafe</T/>( get_ref_unsafe(), other.get_ref_unsafe() );
+						move_unsafe</T/>( get_ref_unchecked(), other.get_ref_unchecked() );
 					}
 				}
 				else
 				{
 					if( this.has_value_ )
 					{
-						call_destructor( get_ref_unsafe() );
+						call_destructor( get_ref_unchecked() );
 					}
 				}
 			}
@@ -80,11 +80,11 @@ public:
 			{
 				if( this.has_value_ )
 				{
-					call_destructor( get_ref_unsafe() );
+					call_destructor( get_ref_unchecked() );
 				}
 				if( other.has_value_ )
 				{
-					move_unsafe</T/>( get_ref_unsafe(), other.get_ref_unsafe() );
+					move_unsafe</T/>( get_ref_unchecked(), other.get_ref_unchecked() );
 				}
 			}
 			has_value_= other.has_value_;
@@ -100,20 +100,20 @@ public:
 			{
 				if( has_value_ )
 				{
-					get_ref_unsafe()= move(val);
+					get_ref_unchecked()= move(val);
 				}
 				else
 				{
-					move_unsafe</T/>( get_ref_unsafe(), move(val) );
+					move_unsafe</T/>( get_ref_unchecked(), move(val) );
 				}
 			}
 			else
 			{
 				if( has_value_ )
 				{
-					call_destructor( get_ref_unsafe() );
+					call_destructor( get_ref_unchecked() );
 				}
-				move_unsafe</T/>( get_ref_unsafe(), move(val) );
+				move_unsafe</T/>( get_ref_unchecked(), move(val) );
 			}
 			has_value_= true;
 		}
@@ -127,21 +127,21 @@ public:
 	fn get_ref( mut this ) : T &mut
 	{
 		halt if( empty() );
-		unsafe{  return get_ref_unsafe();  }
+		unsafe{  return get_ref_unchecked();  }
 	}
 
 	fn get_ref( imut this ) : T &imut
 	{
 		halt if( empty() );
-		unsafe{  return get_ref_unsafe();  }
+		unsafe{  return get_ref_unchecked();  }
 	}
 
-	fn get_ref_unsafe( mut this ) unsafe : T &mut
+	fn get_ref_unchecked( mut this ) unsafe : T &mut
 	{
 		unsafe{  return cast_ref_unsafe</T/>(storage_);  }
 	}
 
-	fn get_ref_unsafe( imut this ) unsafe : T &imut
+	fn get_ref_unchecked( imut this ) unsafe : T &imut
 	{
 		unsafe{  return cast_ref_unsafe</T/>(storage_);  }
 	}
@@ -152,7 +152,7 @@ public:
 		{
 			unsafe
 			{
-				call_destructor( get_ref_unsafe() );
+				call_destructor( get_ref_unchecked() );
 			}
 			has_value_= false;
 		} 
@@ -164,9 +164,9 @@ public:
 		{
 			if( has_value_ )
 			{
-				call_destructor( get_ref_unsafe() );
+				call_destructor( get_ref_unchecked() );
 			}
-			move_unsafe</T/>( get_ref_unsafe(), move(val) );
+			move_unsafe</T/>( get_ref_unchecked(), move(val) );
 			has_value_ = true;
 		}
 	}

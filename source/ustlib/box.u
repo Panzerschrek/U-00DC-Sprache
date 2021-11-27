@@ -48,20 +48,20 @@ public:
 
 	fn get_ref( mut this ) : T &mut
 	{
-		unsafe{  return get_ref_unsafe();  }
+		unsafe{  return get_ref_unchecked();  }
 	}
 
 	fn get_ref( imut this ) : T &imut
 	{
-		unsafe{  return get_ref_unsafe();  }
+		unsafe{  return get_ref_unchecked();  }
 	}
 
-	fn get_ref_unsafe( mut this ) unsafe : T &mut
+	fn get_ref_unchecked( mut this ) unsafe : T &mut
 	{
 		unsafe{  return $>(ptr_);  }
 	}
 
-	fn get_ref_unsafe( imut this ) unsafe : T &imut
+	fn get_ref_unchecked( imut this ) unsafe : T &imut
 	{
 		unsafe{  return $>(ptr_);  }
 	}
