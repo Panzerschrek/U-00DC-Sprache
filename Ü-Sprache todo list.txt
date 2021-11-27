@@ -56,6 +56,7 @@ Compiler:
 *) Use TBAA from LLVM.
 *) Faster calling convention for non-cross-language functions.
 *) MSVC mangling.
+*) Fix possible UB in float->int conversion.
 *) Virtual call for final function optimization
 *) Do not crash in some cases of code with errors
 *) Prevent execution of constexpr functions with errors

@@ -657,6 +657,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			else if( IsInteger( dst_type->fundamental_type ) && IsFloatingPoint( src_type->fundamental_type ) )
 			{
 				// float to int
+				// TODO - fix this. Use something like "llvm.fptosi.sat" to avoid undefined behaviour in cases where result can't fit into destination.
 				if( IsSignedInteger( dst_type->fundamental_type ) )
 					value_for_assignment= function_context.llvm_ir_builder.CreateFPToSI( value_for_assignment, dst_type->llvm_type );
 				else
