@@ -37,7 +37,7 @@ fn nomangle main() : i32
 	}
 	{ // optional saves mutability.
 		var ust::optional</ i32 /> imut opt(0);
-		opt.get_ref()= 0; //##expect_error ExpectedReferenceValue
+		opt.try_deref()= 0; //##expect_error ExpectedReferenceValue
 	}
 	return 0;
 }

@@ -56,7 +56,7 @@ fn nomangle main() : i32
 	}
 	{ // box constructs with value.
 		var ust::box_nullable</ i32 /> box(42);
-		halt if( box.get_ref() != 42 );
+		halt if( box.try_deref() != 42 );
 	}
 	{ // box calls destructor.
 		var i32 mut x= 0;
@@ -67,8 +67,8 @@ fn nomangle main() : i32
 	}
 	{ // can change value.
 		var ust::box_nullable</ i32 /> mut box(0);
-		box.get_ref()= 666;
-		halt if( box.get_ref() != 666 );
+		box.try_deref()= 666;
+		halt if( box.try_deref() != 666 );
 	}
 	{ // can reset.
 		var ust::box_nullable</ i32 /> mut box(0);
@@ -81,12 +81,12 @@ fn nomangle main() : i32
 		halt if( !box.empty() );
 		box.reset( 66 );
 		halt if( box.empty() );
-		halt if( box.get_ref() != 66 );
+		halt if( box.try_deref() != 66 );
 	}
 	{ // can construct from non-nullable box
 		var ust::box</ i32 /> mut b(42);
 		var ust::box_nullable</ i32 /> b_n( move(b) );
-		halt if( b_n.get_ref() != 42 );
+		halt if( b_n.try_deref() != 42 );
 	}
 	{ // can construct from non-nullable box of other type
 		var ust::box</ B /> mut b_box(B());
@@ -103,12 +103,12 @@ fn nomangle main() : i32
 	unsafe
 	{ // box_nullable can be converted to box.
 		var ust::box_nullable</ i32 /> mut box0( 46 );
-		auto addr0= ust::ref_to_int( cast_ref_unsafe</void/>( box0.get_ref() ) );
+		auto addr0= ust::ref_to_int( cast_ref_unsafe</void/>( box0.try_deref() ) );
 		var ust::box</ i32 /> box1= ust::to_non_nullable( move(box0) );
-		auto addr1= ust::ref_to_int( cast_ref_unsafe</void/>( box1.get_ref() ) );
+		auto addr1= ust::ref_to_int( cast_ref_unsafe</void/>( box1.deref() ) );
 
 		halt if( addr0 != addr1 );
-		halt if( box1.get_ref() != 46 );
+		halt if( box1.deref() != 46 );
 	}
 	{ // is convertible form other box.
 		var ust::box_nullable</ ImplDerived /> mut box0( ImplDerived() );
@@ -121,7 +121,7 @@ fn nomangle main() : i32
 	// make_box
 	{
 		var ust::box_nullable</i32/> box= ust::make_box( 77 );
-		halt if( box.get_ref() != 77 );
+		halt if( box.try_deref() != 77 );
 	}
 
 	return 0;

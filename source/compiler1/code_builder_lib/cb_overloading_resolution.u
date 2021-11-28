@@ -506,7 +506,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 					allow_type_conversions &&
 					parameter_overloading_class == ArgOverloadingClass::ImmutableReference &&
 					!function.is_conversion_constructor && // Disable conversion for conversion constructor.
-					!( function.is_constructor && !dst_type.GetClassType().empty() && IsCopyConstructor( function, dst_type.GetClassType().get_ref() ) ) && // Disable conversion for copy constructor.
+					!( function.is_constructor && !dst_type.GetClassType().empty() && IsCopyConstructor( function, dst_type.GetClassType().try_deref() ) ) && // Disable conversion for copy constructor.
 					!GetConversionConstructor( names_scope, dst_type, src_type, src_loc ).empty() )
 				{} // Ok, can convert arg.
 				else
@@ -557,7 +557,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 				src_loc );
 		if( !generated_function.empty() )
 		{
-			match_functions.push_back( generated_function.get_ref() );
+			match_functions.push_back( generated_function.try_deref() );
 		}
 	}
 
@@ -614,8 +614,8 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 						actual_args[arg_n],
 						l_type.params[l_arg_n],
 						r_type.params[r_arg_n],
-						select( l_function.base_template.empty() ? dummy_template_param : l_function.base_template.get_ref().signature_params[l_arg_n] ),
-						select( r_function.base_template.empty() ? dummy_template_param : r_function.base_template.get_ref().signature_params[r_arg_n] ) );
+						select( l_function.base_template.empty() ? dummy_template_param : l_function.base_template.try_deref().signature_params[l_arg_n] ),
+						select( r_function.base_template.empty() ? dummy_template_param : r_function.base_template.try_deref().signature_params[r_arg_n] ) );
 
 				if( comp == ConversionsCompareResult::Same || comp == ConversionsCompareResult::LeftIsBetter )
 				{}
@@ -649,8 +649,8 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 							actual_args[arg_n],
 							l_type.params[l_arg_n],
 							r_type.params[r_arg_n],
-							select( l_function.base_template.empty() ? dummy_template_param : l_function.base_template.get_ref().signature_params[l_arg_n] ),
-							select( r_function.base_template.empty() ? dummy_template_param : r_function.base_template.get_ref().signature_params[r_arg_n] ) );
+							select( l_function.base_template.empty() ? dummy_template_param : l_function.base_template.try_deref().signature_params[l_arg_n] ),
+							select( r_function.base_template.empty() ? dummy_template_param : r_function.base_template.try_deref().signature_params[r_arg_n] ) );
 					if( comp != ConversionsCompareResult::Same )
 					{
 						best_functions[func_n]= false;
@@ -707,9 +707,9 @@ fn CodeBuilder::GetOverloadedOperator(
 	{
 		if_var( &class_type : arg.t.GetClassType() )
 		{
-			auto class_members= class_type.lock_imut().get_ref().members;
+			auto class_members= class_type.lock_imut().deref().members;
 			auto members_lock= class_members.lock_imut();
-			auto& members= members_lock.get_ref();
+			auto& members= members_lock.deref();
 
 			auto overloaded_operator_str= OverloadedOperatorToString( operator );
 			if_var( &operators_value : members.GetThisScopeValue( overloaded_operator_str ) )
@@ -719,12 +719,12 @@ fn CodeBuilder::GetOverloadedOperator(
 				{
 					BuildFunctionsSet( class_members, ust::to_non_nullable( functions_set_ptr ), false );
 
-					auto functions_set_lock= functions_set_ptr.lock_imut();
-					if_var( &function_selected : GetOverloadedFunctionImpl( functions_set_lock.get_ref().functions_set, args, false, names_scope, src_loc, true, false ) )
+					auto functions_set_lock= functions_set_ptr.try_lock_imut();
+					if_var( &function_selected : GetOverloadedFunctionImpl( functions_set_lock.deref().functions_set, args, false, names_scope, src_loc, true, false ) )
 					{
 						// Check access rights after function selection.
-						if( u32( names_scope.lock_imut().get_ref().GetAccessFor(class_type ) ) <
-							u32( class_type.lock_imut().get_ref().GetMemberVisibility( overloaded_operator_str ) ) )
+						if( u32( names_scope.lock_imut().deref().GetAccessFor(class_type ) ) <
+							u32( class_type.lock_imut().deref().GetMemberVisibility( overloaded_operator_str ) ) )
 						{
 							REPORT_ERROR( AccessingNonpublicClassMember, names_scope, src_loc, overloaded_operator_str, arg.t.ToString() )
 						}
@@ -756,12 +756,12 @@ fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, 
 		return ust::optional</FunctionVariable/>();
 	}
 
-	auto dst_class= dst.GetClassType().get_ref();
-	auto dst_class_members= dst_class.lock_imut().get_ref().members;
+	auto dst_class= dst.GetClassType().try_deref();
+	auto dst_class_members= dst_class.lock_imut().deref().members;
 
-	auto constructors_ptr= dst_class_members.lock_imut().get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).get_ref().Get</NamesScopeFunctionsSet/>();
-	auto constructors_lock= constructors_ptr.lock_imut();
-	auto& constructors= constructors_lock.get_ref().functions_set;
+	auto constructors_ptr= dst_class_members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
+	auto constructors_lock= constructors_ptr.try_lock_imut();
+	auto& constructors= constructors_lock.deref().functions_set;
 
 	var [ VariableTypeExtened, 2 ] constructor_args
 	[
@@ -774,7 +774,7 @@ fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, 
 	{
 		return move(function_selected);
 	}
-	if( function_selected.get_ref().is_conversion_constructor )
+	if( function_selected.try_deref().is_conversion_constructor )
 	{
 		return move(function_selected);
 	}
@@ -807,8 +807,8 @@ fn CodeBuilder::SelectMoreSpecializedTemplate(
 			foreach( &candidate_r : type_templates )
 			{
 				auto comp= CompareTemplateSpecialization(
-					candidate_l.get_ref().signature_params[arg_n],
-					candidate_r.get_ref().signature_params[arg_n] );
+					candidate_l.deref().signature_params[arg_n],
+					candidate_r.deref().signature_params[arg_n] );
 				if( comp == ConversionsCompareResult::Incomparable || comp == ConversionsCompareResult::RightIsBetter )
 				{
 					is_best_template_for_current_arg= false;
@@ -825,8 +825,8 @@ fn CodeBuilder::SelectMoreSpecializedTemplate(
 			{
 				auto& candidate_r= type_templates[index_r];
 				auto comp= CompareTemplateSpecialization(
-					candidate_l.get_ref().signature_params[arg_n],
-					candidate_r.get_ref().signature_params[arg_n] );
+					candidate_l.deref().signature_params[arg_n],
+					candidate_r.deref().signature_params[arg_n] );
 
 				if( comp != ConversionsCompareResult::Same )
 				{

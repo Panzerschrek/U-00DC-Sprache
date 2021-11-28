@@ -81,7 +81,7 @@ fn move_into_nowhere( T mut t ) unsafe
 }
 
 template</ type T />
-fn move_unsafe( T& mut uninitialized_dst, T mut src ) unsafe
+fn move_into_uninitialized( T& mut uninitialized_dst, T mut src ) unsafe
 {
 	unsafe
 	{

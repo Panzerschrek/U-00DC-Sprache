@@ -21,7 +21,7 @@ public:
 		unsafe
 		{
 			ptr_= $<( cast_ref_unsafe</storage/>( memory_allocate( typeinfo</storage/>.size_of ) ) );
-			move_unsafe( $>(ptr_).value, move(value) );
+			move_into_uninitialized( $>(ptr_).value, move(value) );
 			$>(ptr_).counter= 1u;
 		}
 	}
@@ -74,7 +74,7 @@ public:
 		return ptr_ == nullptr</storage/>();
 	}
 
-	fn get_ref_unsafe( this ) unsafe : T &imut
+	fn deref_unchecked( this ) unsafe : T &imut
 	{
 		unsafe
 		{
@@ -112,7 +112,7 @@ struct shared_ptr_final_base_hasher
 	{
 		unsafe
 		{
-			return ust::ref_to_int( cast_ref_unsafe</void/>( ptr.get_ref_unsafe() ) );
+			return ust::ref_to_int( cast_ref_unsafe</void/>( ptr.deref_unchecked() ) );
 		}
 	}
 }

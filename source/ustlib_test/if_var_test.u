@@ -27,7 +27,7 @@ fn nomangle main() : i32
 			value= 0; // Must modify copy of value
 		}
 		halt if( !has_value );
-		halt if( box.get_ref() != 5556 );
+		halt if( box.try_deref() != 5556 );
 	}
 	{
 		var IntBox mut box(-14);
@@ -39,7 +39,7 @@ fn nomangle main() : i32
 			value= 741; // Must modify content of box
 		}
 		halt if( !has_value );
-		halt if( box.get_ref() != 741 );
+		halt if( box.try_deref() != 741 );
 	}
 	{
 		var IntBox box;
@@ -77,7 +77,7 @@ fn nomangle main() : i32
 			value= 0; // Must modify copy of value
 		}
 		halt if( !has_value );
-		halt if( opt.get_ref() != 5556 );
+		halt if( opt.try_deref() != 5556 );
 	}
 	{
 		var IntOpt mut opt(-14);
@@ -89,7 +89,7 @@ fn nomangle main() : i32
 			value= 741; // Must modify content of box
 		}
 		halt if( !has_value );
-		halt if( opt.get_ref() != 741 );
+		halt if( opt.try_deref() != 741 );
 	}
 	{
 		var IntOpt opt;

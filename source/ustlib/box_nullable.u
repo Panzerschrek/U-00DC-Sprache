@@ -24,7 +24,7 @@ public:
 		unsafe
 		{
 			ptr_= $<( cast_ref_unsafe</T/>( memory_allocate( typeinfo</T/>.size_of ) ) );
-			move_unsafe</T/>( $>(ptr_), move(val) );
+			move_into_uninitialized( $>(ptr_), move(val) );
 		}
 	}
 
@@ -48,8 +48,7 @@ public:
 		{
 			if( !val.empty() )
 			{
-				// TODO - do not call "get_ref", because it checks value.
-				ptr_= $<( cast_ref</T/>( val.get_ref() ) );
+				ptr_= $<( cast_ref</T/>( val.deref_unchecked() ) );
 			}
 			move_into_nowhere( move(val) );
 		}
@@ -62,8 +61,7 @@ public:
 	{
 		unsafe
 		{
-			// TODO - do not call "get_ref", because it checks value.
-			ptr_= $<( cast_ref</T/>( val.get_ref() ) ); // Convert reference here.
+			ptr_= $<( cast_ref</T/>( val.deref() ) ); // Convert reference here.
 			move_into_nowhere( move(val) );
 		}
 	}
@@ -82,24 +80,24 @@ public:
 		}
 	}
 
-	fn get_ref( mut this ) : T &mut
+	fn try_deref( mut this ) : T &mut
 	{
 		halt if( empty() );
-		unsafe{  return get_ref_unsafe();  }
+		unsafe{  return deref_unchecked();  }
 	}
 
-	fn get_ref( imut this ) : T &imut
+	fn try_deref( imut this ) : T &imut
 	{
 		halt if( empty() );
-		unsafe{  return get_ref_unsafe();  }
+		unsafe{  return deref_unchecked();  }
 	}
 
-	fn get_ref_unsafe( mut this ) unsafe : T &mut
+	fn deref_unchecked( mut this ) unsafe : T &mut
 	{
 		unsafe{  return $>(ptr_);  }
 	}
 
-	fn get_ref_unsafe( imut this ) unsafe : T &imut
+	fn deref_unchecked( imut this ) unsafe : T &imut
 	{
 		unsafe{  return $>(ptr_);  }
 	}
@@ -129,7 +127,7 @@ public:
 			if( empty() )
 			{
 				ptr_= $<( cast_ref_unsafe</T/>( memory_allocate( typeinfo</T/>.size_of ) ) );
-				move_unsafe</T/>( $>(ptr_), move(val) );
+				move_into_uninitialized( $>(ptr_), move(val) );
 			}
 			else
 			{

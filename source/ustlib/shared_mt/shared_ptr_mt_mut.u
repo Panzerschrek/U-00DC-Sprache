@@ -36,12 +36,12 @@ public:
 
 	fn lock_mut ( this ) : shared_ptr_mt_impl::lock_mut </T/>'this'
 	{
-		return impl_.lock_mut ();
+		unsafe{  return impl_.lock_mut_unchecked ();  }
 	}
 
 	fn lock_imut( this ) : shared_ptr_mt_impl::lock_imut</T/>'this'
 	{
-		return impl_.lock_imut();
+		unsafe{  return impl_.lock_imut_unchecked();  }
 	}
 
 	op==( this_type& l, this_type& r ) : bool

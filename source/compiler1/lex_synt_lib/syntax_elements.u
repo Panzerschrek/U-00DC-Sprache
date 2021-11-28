@@ -36,19 +36,19 @@ fn GetSrcLoc( Expression& expression ) : SrcLoc
 		}
 		else if( ust::is_same_type</ typeof(el), ust::box</ArrayType/> />() )
 		{
-			return el.get_ref().src_loc;
+			return el.deref().src_loc;
 		}
 		else if( ust::is_same_type</ typeof(el), ust::box</FunctionType/> />() )
 		{
-			return el.get_ref().src_loc;
+			return el.deref().src_loc;
 		}
 		else if( ust::is_same_type</ typeof(el), ust::box</TupleType/> />() )
 		{
-			return el.get_ref().src_loc;
+			return el.deref().src_loc;
 		}
 		else if( ust::is_same_type</ typeof(el), ust::box</RawPointerType/> />() )
 		{
-			return el.get_ref().src_loc;
+			return el.deref().src_loc;
 		}
 		else
 		{
@@ -68,7 +68,7 @@ fn GetSrcLoc( BlockElement& block_element ) : SrcLoc
 		}
 		else if( ust::is_same_type</ typeof(el), ust::box</Block/> />() )
 		{
-			return el.get_ref().src_loc;
+			return el.deref().src_loc;
 		}
 		else
 		{

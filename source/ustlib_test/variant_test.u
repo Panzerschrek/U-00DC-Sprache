@@ -64,20 +64,20 @@ fn nomangle main() : i32
 
 		halt if(  vi.get</i32/>().empty() );
 		halt if( !vi.get</f32/>().empty() );
-		halt if(  vi.get</i32/>().get_ref() != 4 );
+		halt if(  vi.get</i32/>().try_deref() != 4 );
 
 		halt if( !vf.get</i32/>().empty() );
 		halt if(  vf.get</f32/>().empty() );
-		halt if(  vf.get</f32/>().get_ref() != 0.5f );
+		halt if(  vf.get</f32/>().try_deref() != 0.5f );
 	}
 	{ // Can modify contents of variant.
 		var ust::variant</ tup[ i32, f32 ] /> mut vi(66), mut vf(7.5f);
 
-		vi.get</i32/>().get_ref() /= 11;
-		halt if( vi.get</i32/>().get_ref() != 6 );
+		vi.get</i32/>().try_deref() /= 11;
+		halt if( vi.get</i32/>().try_deref() != 6 );
 
-		vf.get</f32/>().get_ref() *= 2.0f;
-		halt if( vf.get</f32/>().get_ref() != 15.0f );
+		vf.get</f32/>().try_deref() *= 2.0f;
+		halt if( vf.get</f32/>().try_deref() != 15.0f );
 	}
 	{ // Variant calls destructor.
 		var i32 mut x= 66;
@@ -90,7 +90,7 @@ fn nomangle main() : i32
 	{
 		var IntOrS i(66);
 		halt if( i.get</i32/>().empty() );
-		halt if( i.get</i32/>().get_ref() != 66 );
+		halt if( i.get</i32/>().try_deref() != 66 );
 	}
 	{ // Destructor called in assignment.
 
@@ -103,7 +103,7 @@ fn nomangle main() : i32
 		v= 32;
 		halt if( !v.get</S/>().empty() );
 		halt if(  v.get</i32/>().empty() );
-		halt if(  v.get</i32/>().get_ref() != 32 );
+		halt if(  v.get</i32/>().try_deref() != 32 );
 		halt if( x != 0 );
 	}
 	{ // Destructor called after assignment.
@@ -112,7 +112,7 @@ fn nomangle main() : i32
 		{
 			var IntOrS mut v(55);
 			halt if( v.get</i32/>().empty() );
-			halt if( v.get</i32/>().get_ref() != 55 );
+			halt if( v.get</i32/>().try_deref() != 55 );
 
 			v= S(x);
 			halt if( !v.get</i32/>().empty() );
@@ -123,9 +123,9 @@ fn nomangle main() : i32
 	{ // Variant is default constructible if first element is default constructible.
 		var ust::variant</ tup[ DC, S ] /> dc;
 		halt if( dc.get</DC/>().empty() );
-		halt if( dc.get</DC/>().get_ref().x != -1 );
-		halt if( dc.get</DC/>().get_ref().y != 3.14f );
-		halt if( dc.get</DC/>().get_ref().z != u64(123456) );
+		halt if( dc.get</DC/>().try_deref().x != -1 );
+		halt if( dc.get</DC/>().try_deref().y != 3.14f );
+		halt if( dc.get</DC/>().try_deref().z != u64(123456) );
 	}
 	{ // Copy constructor vor variant.
 		var ust::variant</ tup[ i32, f32 ] /> vi(4), vf( 0.5f );
@@ -133,35 +133,35 @@ fn nomangle main() : i32
 
 		halt if(  vic.get</i32/>().empty() );
 		halt if( !vic.get</f32/>().empty() );
-		halt if(  vic.get</i32/>().get_ref() != 4 );
+		halt if(  vic.get</i32/>().try_deref() != 4 );
 
 		halt if( !vfc.get</i32/>().empty() );
 		halt if(  vfc.get</f32/>().empty() );
-		halt if(  vfc.get</f32/>().get_ref() != 0.5f );
+		halt if(  vfc.get</f32/>().try_deref() != 0.5f );
 	}
 	{ // Copy assignment for variant.
 		var ust::variant</ tup[ i32, f32 ] /> mut v0( 33 ), v1(34.0f); // Different index of variant.
 
 		halt if( v0.get</i32/>().empty() );
-		halt if( v0.get</i32/>().get_ref() != 33 );
+		halt if( v0.get</i32/>().try_deref() != 33 );
 		halt if( v1.get</f32/>().empty() );
-		halt if( v1.get</f32/>().get_ref() != 34.0f );
+		halt if( v1.get</f32/>().try_deref() != 34.0f );
 
 		v0= v1;
 		halt if( v0.get</f32/>().empty() );
-		halt if( v0.get</f32/>().get_ref() != 34.0f );
+		halt if( v0.get</f32/>().try_deref() != 34.0f );
 	}
 	{
 		var ust::variant</ tup[ i32, f32 ] /> mut v0( 11 ), v1(12); // Both variants have same index.
 
 		halt if( v0.get</i32/>().empty() );
-		halt if( v0.get</i32/>().get_ref() != 11 );
+		halt if( v0.get</i32/>().try_deref() != 11 );
 		halt if( v1.get</i32/>().empty() );
-		halt if( v1.get</i32/>().get_ref() != 12 );
+		halt if( v1.get</i32/>().try_deref() != 12 );
 
 		v0= v1;
 		halt if( v0.get</i32/>().empty() );
-		halt if( v0.get</i32/>().get_ref() != 12 );
+		halt if( v0.get</i32/>().try_deref() != 12 );
 	}
 	return 0;
 }

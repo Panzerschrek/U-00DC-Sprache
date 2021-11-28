@@ -14,14 +14,14 @@ fn nomangle main() : i32
 		auto x= 44;
 		var IntRefImut ref( x );
 		halt if( ref.empty() );
-		halt if( ref.get_ref() != 44 );
+		halt if( ref.try_deref() != 44 );
 	}
 	{  // Mutable 'optional_ref'.
 		auto mut x= 55;
 		{
 			var IntRefMut ref( x );
 			halt if( ref.empty() );
-			ref.get_ref() = 8888;
+			ref.try_deref() = 8888;
 		}
 		halt if( x != 8888 );
 	}
@@ -38,7 +38,7 @@ fn nomangle main() : i32
 		halt if( ref.empty() );
 		ref.reset( y );
 		halt if( ref.empty() );
-		halt if( ref.get_ref() != y );
+		halt if( ref.try_deref() != y );
 	}
 	{ // assign 'optional_ref'.
 		var i32 x= 1234, y= 5678;
@@ -46,7 +46,7 @@ fn nomangle main() : i32
 		halt if( ref.empty() );
 		ref= IntRefImut(y);
 		halt if( ref.empty() );
-		halt if( ref.get_ref() != y );
+		halt if( ref.try_deref() != y );
 	}
 	{ // assign mutable 'optional_ref' to immutable 'optional_ref'.
 		var i32 x= -8, mut y= -80;
@@ -54,7 +54,7 @@ fn nomangle main() : i32
 		halt if( ref.empty() );
 		ref= IntRefMut(y);
 		halt if( ref.empty() );
-		halt if( ref.get_ref() != y );
+		halt if( ref.try_deref() != y );
 	}
 
 

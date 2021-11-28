@@ -30,7 +30,7 @@ fn nomangle main() : i32
 		{
 			el= typeof(el)(33);
 		}
-		halt if( v.get</f64/>().get_ref() != 33.0 );
+		halt if( v.get</f64/>().try_deref() != 33.0 );
 	}
 	{
 		var ust::variant</ tup[ char8, f64 ] /> mut v( "S"c8 );
@@ -39,7 +39,7 @@ fn nomangle main() : i32
 		{
 			el= typeof(el)(33);
 		}
-		halt if( v.get</char8/>().get_ref() != "!"c8 );
+		halt if( v.get</char8/>().try_deref() != "!"c8 );
 	}
 
 	return 0;

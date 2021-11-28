@@ -73,7 +73,7 @@ fn polymorph_cast( From &'x imut from ) : optional_ref</ To, false />'x'
 		auto res= polymorph_impl::polymorph_cast_impl</To/>( cast_mut(from) );
 		if( !res.empty() )
 		{
-			return optional_ref</ To, false />( res.get_ref_unsafe() );
+			return optional_ref</ To, false />( res.deref_unchecked() );
 		}
 		else
 		{

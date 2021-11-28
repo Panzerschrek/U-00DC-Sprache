@@ -114,10 +114,10 @@ fn nomangle main() : i32
 	}
 	{ // // dynamic cast.
 		var B imut b;
-		halt if( !RefEq( ust::polymorph_cast</B/>( cast_ref</B />(b) ).get_ref(), b ) );
-		halt if( !RefEq( ust::polymorph_cast</B/>( cast_ref</A />(b) ).get_ref(), b ) );
-		halt if( !RefEq( ust::polymorph_cast</B/>( cast_ref</I0/>(b) ).get_ref(), b ) );
-		halt if( !RefEq( ust::polymorph_cast</B/>( cast_ref</I1/>(b) ).get_ref(), b ) );
+		halt if( !RefEq( ust::polymorph_cast</B/>( cast_ref</B />(b) ).try_deref(), b ) );
+		halt if( !RefEq( ust::polymorph_cast</B/>( cast_ref</A />(b) ).try_deref(), b ) );
+		halt if( !RefEq( ust::polymorph_cast</B/>( cast_ref</I0/>(b) ).try_deref(), b ) );
+		halt if( !RefEq( ust::polymorph_cast</B/>( cast_ref</I1/>(b) ).try_deref(), b ) );
 
 		halt if( !ust::polymorph_cast</C/>( cast_ref</I0/>(b) ).empty() );
 		halt if( !ust::polymorph_cast</C/>( cast_ref</I1/>(b) ).empty() );

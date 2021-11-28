@@ -68,7 +68,7 @@ fn LoadSourceGraph_r(
 	auto node_index= source_graph.nodes.size();
 	source_graph.nodes.push_back( SourceGraph::Node() );
 
-	auto mut lex_result= LexicalAnalysis( file_content_opt.get_ref().range() );
+	auto mut lex_result= LexicalAnalysis( file_content_opt.try_deref().range() );
 	foreach( &error : lex_result.errors )
 	{
 		source_graph.errors.push_back( error );
@@ -119,10 +119,10 @@ fn LoadSourceGraph_r(
 				{
 					dst_map.insert( macro.key(), macro.value() );
 				}
-				else if( dst_map[ macro.key() ].get_ref().src_loc != macro.value().get_ref().src_loc )
+				else if( dst_map[ macro.key() ].deref().src_loc != macro.value().deref().src_loc )
 				{
 					macro_errors.push_back( LexSyntError(
-						macro.value().get_ref().src_loc ,
+						macro.value().deref().src_loc ,
 						"Macro \"" + macro.key() + "\" redefinition." ) );
 				}
 			}

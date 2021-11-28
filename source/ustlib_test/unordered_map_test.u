@@ -41,7 +41,7 @@ fn nomangle main() : i32
 		{
 			auto find_result= m.find( 55 );
 			halt if( find_result.empty() );
-			halt if( find_result.get_ref() != -7 );
+			halt if( find_result.try_deref() != -7 );
 		}
 		m.clear();
 		halt if( ! m.empty() );
@@ -82,7 +82,7 @@ fn nomangle main() : i32
 		{
 			auto ref= m.find( OneBitHash(i) );
 			halt if( ref.empty() );
-			halt if( ref.get_ref() != i * i );
+			halt if( ref.try_deref() != i * i );
 			++i;
 		}
 
@@ -99,14 +99,14 @@ fn nomangle main() : i32
 	{ // Can modify map value.
 		var ust::unordered_map</ i32, ust::string8 /> mut m;
 		m.insert( 17, "abc" );
-		halt if( m.find(17).get_ref() != "abc" );
+		halt if( m.find(17).try_deref() != "abc" );
 
 		m[17]+= "DEF";
-		halt if( m.find(17).get_ref() != "abcDEF" );
+		halt if( m.find(17).try_deref() != "abcDEF" );
 		halt if( m[17] != "abcDEF" );
 
-		m.find(17).get_ref()+= "ghi";
-		halt if( m.find(17).get_ref() != "abcDEFghi" );
+		m.find(17).try_deref()+= "ghi";
+		halt if( m.find(17).try_deref() != "abcDEFghi" );
 		halt if( m[17] != "abcDEFghi" );
 	}
 	{ // Iteration

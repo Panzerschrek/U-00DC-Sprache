@@ -5,7 +5,7 @@
 	{
 		if( !??e_result.empty() )
 		{
-			with( ?r<? & ?> ?m<? mut ?> ?var_name : ??e_result.get_ref() )
+			with( ?r<? & ?> ?m<? mut ?> ?var_name : ??e_result.try_deref() )
 			?b
 		}
 	}
@@ -33,9 +33,9 @@
 		{
 			unsafe
 			{
-				for( auto mut ??r= ??e_result.range(); !??r.empty(); ??r.drop_front_unsafe() )
+				for( auto mut ??r= ??e_result.range(); !??r.empty(); ??r.drop_front_unchecked() )
 				{
-					with( ?r<? & ?> ?m<? mut ?> ?var_name : ??r.front_unsafe() )
+					with( ?r<? & ?> ?m<? mut ?> ?var_name : ??r.front_unchecked() )
 					{
 						safe{ ?b }
 					}

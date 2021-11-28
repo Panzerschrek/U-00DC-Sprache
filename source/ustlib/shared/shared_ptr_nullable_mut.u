@@ -47,14 +47,16 @@ public:
 		return impl_.empty();
 	}
 
-	fn lock_mut ( this ) : shared_ptr_impl::lock_mut </T/>'this'
+	fn try_lock_mut ( this ) : shared_ptr_impl::lock_mut </T/>'this'
 	{
-		return impl_.lock_mut ();
+		halt if(empty());
+		unsafe{  return impl_.lock_mut_unchecked ();  }
 	}
 
-	fn lock_imut( this ) : shared_ptr_impl::lock_imut</T/>'this'
+	fn try_lock_imut( this ) : shared_ptr_impl::lock_imut</T/>'this'
 	{
-		return impl_.lock_imut();
+		halt if(empty());
+		unsafe{  return impl_.lock_imut_unchecked();  }
 	}
 
 	op==( this_type& l, this_type& r ) : bool

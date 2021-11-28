@@ -19,7 +19,7 @@ fn nomangle main() : i32
 	{
 		auto mut x= 0;
 		var IntRefImut ref(x);
-		++ref.get_ref(); //##expect_error ExpectedReferenceValue
+		++ref.try_deref(); //##expect_error ExpectedReferenceValue
 	}
 	{
 		auto x= 0;

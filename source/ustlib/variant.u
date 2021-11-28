@@ -13,7 +13,7 @@ import "type_traits.u"
 			auto ??ref= ??variant.get</ typeof(??element_type_typeinfo.type)::src_type />();
 			if( !??ref.empty() )
 			{
-				with( ?r<? & ?> ?m<? mut ?> ?var_name : ??ref.get_ref() )
+				with( ?r<? & ?> ?m<? mut ?> ?var_name : ??ref.try_deref() )
 				?b
 			}
 		}
@@ -113,7 +113,7 @@ public:
 		var typeof(element_type_typeinfo)::src_type mut val;
 		unsafe
 		{
-			move_unsafe( cast_ref_unsafe</ typeof(element_type_typeinfo)::src_type />(storage_), move(val) );
+			move_into_uninitialized( cast_ref_unsafe</ typeof(element_type_typeinfo)::src_type />(storage_), move(val) );
 		}
 	}
 
@@ -130,7 +130,7 @@ public:
 				unsafe
 				{
 					auto mut copy = cast_ref_unsafe</ typeof(element.type)::src_type />(other.storage_);
-					move_unsafe( cast_ref_unsafe</ typeof(element.type)::src_type />(storage_), move(copy) );
+					move_into_uninitialized( cast_ref_unsafe</ typeof(element.type)::src_type />(storage_), move(copy) );
 				}
 				return;
 			}
@@ -150,7 +150,7 @@ public:
 			{
 				unsafe
 				{
-					move_unsafe( cast_ref_unsafe</T/>(storage_), move(val) );
+					move_into_uninitialized( cast_ref_unsafe</T/>(storage_), move(val) );
 				}
 
 				index_= u8(cur_index);

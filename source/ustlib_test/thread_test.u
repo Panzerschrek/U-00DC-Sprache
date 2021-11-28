@@ -13,7 +13,7 @@ struct CallableObject
 	op()( mut this )
 	{
 		auto mut l= x.lock_mut();
-		++l.get_ref();
+		++l.deref();
 	}
 }
 
@@ -28,7 +28,7 @@ struct Incrementer
 	op()( mut this )
 	{
 		auto mut lock= ptr.lock_mut();
-		++lock.get_ref();
+		++lock.deref();
 	}
 }
 
@@ -49,7 +49,7 @@ fn nomangle main() : i32
 			// While thread is alive, we can do something.
 			++y;
 		}
-		halt if( x.lock_imut().get_ref() != 1 );
+		halt if( x.lock_imut().deref() != 1 );
 		halt if( y != 1 );
 	}
 	{
@@ -69,10 +69,10 @@ fn nomangle main() : i32
 			++i;
 		}
 
-		while( ptr.lock_imut().get_ref() < 4 ) {} // Wait a bit.
+		while( ptr.lock_imut().deref() < 4 ) {} // Wait a bit.
 
 		threads.clear(); // Make join here.
-		halt if( ptr.lock_imut().get_ref() != 64 );
+		halt if( ptr.lock_imut().deref() != 64 );
 	}
 
 	return 0;

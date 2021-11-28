@@ -19,13 +19,13 @@ public:
 		( stack_(move(stack)) )
 	{
 		auto mut lock= stack_.lock_mut();
-		lock.get_ref().push_back( move(value) );
+		lock.deref().push_back( move(value) );
 	}
 
 	fn destructor()
 	{
 		auto mut lock= stack_.lock_mut();
-		lock.get_ref().drop_back();
+		lock.deref().drop_back();
 	}
 
 private:
@@ -38,37 +38,37 @@ fn GlobalValueToString( NamesScopeValue& global_thing ) : ust::string8
 		auto functions_set_ptr= global_thing.Get</NamesScopeFunctionsSet/>();
 		if( !functions_set_ptr.empty() )
 		{
-			auto lock= functions_set_ptr.lock_imut();
-			var NamesScopeFunctionsSet& functions_set= lock.get_ref();
+			auto lock= functions_set_ptr.try_lock_imut();
+			var NamesScopeFunctionsSet& functions_set= lock.deref();
 
 			if( !functions_set.syntax_elements.empty() )
 			{
-				return functions_set.syntax_elements.front().get_ref().name.back();
+				return functions_set.syntax_elements.front().deref().name.back();
 			}
 			if( !functions_set.out_of_line_syntax_elements.empty() )
 			{
-				return functions_set.out_of_line_syntax_elements.front().get_ref().name.back();
+				return functions_set.out_of_line_syntax_elements.front().deref().name.back();
 			}
 			if( !functions_set.function_templates_syntax_elements.empty() )
 			{
-				return functions_set.function_templates_syntax_elements.front().get_ref().name;
+				return functions_set.function_templates_syntax_elements.front().deref().name;
 			}
 
 			foreach( &function : functions_set.functions_set.functions )
 			{
-				if( !function.prototype_syntax_element.empty() )
+				if_var( &el : function.prototype_syntax_element )
 				{
-					return function.prototype_syntax_element.get_ref().name.back();
+					return el.name.back();
 				}
-				if( !function.body_syntax_element.empty() )
+				if_var( &el : function.body_syntax_element )
 				{
-					return function.body_syntax_element.get_ref().name.back();
+					return el.name.back();
 				}
 			}
 
 			if( !functions_set.functions_set.function_templates.empty() )
 			{
-				return functions_set.functions_set.function_templates.front().get_ref().syntax_element.get_ref().name;
+				return functions_set.functions_set.function_templates.front().deref().syntax_element.deref().name;
 			}
 		}
 	}
@@ -90,23 +90,23 @@ fn GlobalValueToString( NamesScopeValue& global_thing ) : ust::string8
 		auto type_alias_ptr= global_thing.Get</Enum/>();
 		if( !type_alias_ptr.empty() )
 		{
-			return type_alias_ptr.lock_imut().get_ref().syntax_element.get_ref().name;
+			return type_alias_ptr.try_lock_imut().deref().syntax_element.deref().name;
 		}
 	}
 	{
 		auto type_templates_set_ptr= global_thing.Get</TypeTemplatesSet/>();
 		if( !type_templates_set_ptr.empty() )
 		{
-			auto lock= type_templates_set_ptr.lock_imut();
-			var TypeTemplatesSet& type_templates_set= lock.get_ref();
+			auto lock= type_templates_set_ptr.try_lock_imut();
+			var TypeTemplatesSet& type_templates_set= lock.deref();
 
 			if( !type_templates_set.syntax_elements.empty() )
 			{
-				return type_templates_set.syntax_elements.front().get_ref().name;
+				return type_templates_set.syntax_elements.front().deref().name;
 			}
 			if( !type_templates_set.type_templates.empty() )
 			{
-				return type_templates_set.type_templates.front().get_ref().syntax_element.get_ref().name;
+				return type_templates_set.type_templates.front().deref().syntax_element.deref().name;
 			}
 		}
 	}
@@ -114,16 +114,16 @@ fn GlobalValueToString( NamesScopeValue& global_thing ) : ust::string8
 		auto global_variable_ptr= global_thing.Get</GlobalVariable/>();
 		if( !global_variable_ptr.empty() )
 		{
-			auto lock= global_variable_ptr.lock_imut();
-			var GlobalVariable& global_variable= lock.get_ref();
-			return global_variable.syntax_element.get_ref().variables[ global_variable.variable_index ].name;
+			auto lock= global_variable_ptr.try_lock_imut();
+			var GlobalVariable& global_variable= lock.deref();
+			return global_variable.syntax_element.deref().variables[ global_variable.variable_index ].name;
 		}
 	}
 	{
 		auto global_auto_variable_ptr= global_thing.Get</GlobalAutoVariable/>();
 		if( !global_auto_variable_ptr.empty() )
 		{
-			return global_auto_variable_ptr.lock_imut().get_ref().syntax_element.get_ref().name;
+			return global_auto_variable_ptr.try_lock_imut().deref().syntax_element.deref().name;
 		}
 	}
 
@@ -133,7 +133,7 @@ fn GlobalValueToString( NamesScopeValue& global_thing ) : ust::string8
 fn AddAncestorsAccessRights_r( NamesScope &mut dst_class_members, ClassTypePtr& ancestor_class )
 {
 	dst_class_members.AddAccessRightsFor( ancestor_class, Synt::ClassVisibility::Protected );
-	foreach( &parent : ancestor_class.lock_imut().get_ref().parents )
+	foreach( &parent : ancestor_class.lock_imut().deref().parents )
 	{
 		AddAncestorsAccessRights_r( dst_class_members, parent.class_ );
 	}
@@ -142,7 +142,7 @@ fn AddAncestorsAccessRights_r( NamesScope &mut dst_class_members, ClassTypePtr& 
 fn CodeBuilder::DetectGlobalsLoop( this, NamesScopeValue& global_thing ) : bool
 {
 	auto lock= global_things_stack_ptr_.lock_imut();
-	var GlobalThingsStack& stack= lock.get_ref();
+	var GlobalThingsStack& stack= lock.deref();
 
 	auto mut i= 0s;
 	while( i < stack.size() && stack[i] != global_thing ){ ++i; }
@@ -160,9 +160,9 @@ fn CodeBuilder::DetectGlobalsLoop( this, NamesScopeValue& global_thing ) : bool
 	}
 	description+= GlobalValueToString(global_thing);
 
-	auto mut errors_container_lock= root_errors_container_.lock_mut();
+	auto mut errors_container_lock= root_errors_container_.try_lock_mut();
 
-	errors_container_lock.get_ref().push_back(
+	errors_container_lock.deref().push_back(
 		ReportError( CodeBuilderErrorCode::GlobalsLoopDetected, GetValueSrcLoc(global_thing), description ) );
 
 	return true;
@@ -174,7 +174,7 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 	{
 		{ // First, lock as imut and check if complete.
 			auto l= functions_set_ptr.lock_imut();
-			var NamesScopeFunctionsSet& functions_set= l.get_ref();
+			var NamesScopeFunctionsSet& functions_set= l.deref();
 			if( functions_set.syntax_elements.empty() &&
 				functions_set.out_of_line_syntax_elements.empty() &&
 				functions_set.function_templates_syntax_elements.empty() ) // Already complete
@@ -187,7 +187,7 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 	GLOBALS_LOOP_DETECT( functions_set_ptr )
 
 	// Take copy, and make manipulations only with it. Update value inside shareed pointer in one operation.
-	var NamesScopeFunctionsSet mut functions_set= functions_set_ptr.lock_imut().get_ref();
+	var NamesScopeFunctionsSet mut functions_set= functions_set_ptr.lock_imut().deref();
 
 	// Preapare functions set itself.
 	while( !functions_set.syntax_elements.empty() )
@@ -215,7 +215,7 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 	// Update functions set after prepareation process.
 	{
 		auto mut lock= functions_set_ptr.lock_mut();
-		lock.get_ref()= functions_set;
+		lock.deref()= functions_set;
 	}
 
 	var bool is_class_method= !functions_set.class_.empty();
@@ -232,33 +232,33 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 	// Update functions set again after body build process.
 	{
 		auto mut lock= functions_set_ptr.lock_mut();
-		lock.get_ref()= move(functions_set);
+		lock.deref()= move(functions_set);
 	}
 }
 
 fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypePtr& class_type )
 {
-	if( class_type.lock_imut().get_ref().is_complete )
+	if( class_type.lock_imut().deref().is_complete )
 	{
 		return;
 	}
 	{
-		auto typeinfo_src_type= class_type.lock_imut().get_ref().typeinfo_src_type_;
+		auto typeinfo_src_type= class_type.lock_imut().deref().typeinfo_src_type_;
 		if( !typeinfo_src_type.empty() )
 		{
-			BuildFullTypeinfo( typeinfo_src_type.get_ref() );
+			BuildFullTypeinfo( typeinfo_src_type.try_deref() );
 			return;
 		}
 	}
-	if( class_type.lock_imut().get_ref().syntax_element.empty() )
+	if( class_type.lock_imut().deref().syntax_element.empty() )
 	{
 		return;
 	}
 
 	GLOBALS_LOOP_DETECT( class_type )
 
-	auto syntax_element_ptr= class_type.lock_imut().get_ref().syntax_element;
-	auto& syntax_element= syntax_element_ptr.get_ref();
+	auto syntax_element_ptr= class_type.lock_imut().deref().syntax_element;
+	auto& syntax_element= syntax_element_ptr.try_deref();
 
 	auto mut global_function_context= CreateGlobalFunctionContext();
 
@@ -278,10 +278,10 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			continue;
 		}
 
-		auto parent_class= parent_type.GetClassType().get_ref();
+		var ClassTypePtr parent_class= parent_type.GetClassType().try_deref();
 
 		auto mut class_lock= class_type.lock_mut();
-		auto &mut class_= class_lock.get_ref();
+		auto &mut class_= class_lock.deref();
 
 		auto mut duplicated= false;
 		foreach( &prev_parent : class_.parents )
@@ -294,7 +294,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			continue;
 		}
 
-		auto parent_kind= parent_class.lock_imut().get_ref().kind;
+		auto parent_kind= parent_class.lock_imut().deref().kind;
 		if( !( parent_kind == ClassType::Kind::Abstract || parent_kind == ClassType::Kind::Interface || parent_kind == ClassType::Kind::PolymorphNonFinal ) )
 		{
 			REPORT_ERROR( CanNotDeriveFromThisType, names_scope_ptr, syntax_element.src_loc, parent_type )
@@ -313,7 +313,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 		{ // Give access from this class to protected members of all ancestor classes.
 			auto mut members_lock= class_.members.lock_mut();
-			AddAncestorsAccessRights_r( members_lock.get_ref(), parent_class );
+			AddAncestorsAccessRights_r( members_lock.deref(), parent_class );
 		}
 
 		var ClassType::Parent mut parent{ .class_= parent_class };
@@ -322,7 +322,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 	{ // Pre-mark class as polymorph, because it's needed for functions checks. Exact kind of class we will known later.
 		auto mut lock= class_type.lock_mut();
-		auto &mut class_= lock.get_ref();
+		auto &mut class_= lock.deref();
 
 		class_.have_shared_state= syntax_element.have_shared_state;
 
@@ -344,34 +344,34 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	}
 
 	// Prepare fields types.
-	auto class_members= class_type.lock_imut().get_ref().members;
+	auto class_members= class_type.lock_imut().deref().members;
 	auto mut field_count= 0u;
-	foreach( &member : class_members.lock_imut().get_ref() )
+	foreach( &member : class_members.lock_imut().deref() )
 	{
 		auto field_ptr= member.value().Get</ ClassField />();
 		if( !field_ptr.empty() )
 		{
 			++field_count;
 
-			auto mut field_lock= field_ptr.lock_mut();
-			var ClassField &mut field= field_lock.get_ref();
+			auto mut field_lock= field_ptr.try_lock_mut();
+			var ClassField &mut field= field_lock.deref();
 
-			field.t= PrepareType( class_members, global_function_context, field.syntax_element.get_ref().t );
+			field.t= PrepareType( class_members, global_function_context, field.syntax_element.deref().t );
 
 			if( !EnsureTypeComplete( field.t ) )
 			{
-				REPORT_ERROR( UsingIncompleteType, class_members, field.syntax_element.get_ref().src_loc, field.t )
+				REPORT_ERROR( UsingIncompleteType, class_members, field.syntax_element.deref().src_loc, field.t )
 				field.t= invalid_type_;
 				continue;
 			}
 			if( !field.is_reference && field.t.IsAbstract() )
 			{
-				REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope_ptr, field.syntax_element.get_ref().src_loc, field.t )
+				REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope_ptr, field.syntax_element.deref().src_loc, field.t )
 				continue;
 			}
 			if( field.is_reference && field.t.GetInnerReferenceKind() != InnerReferenceKind::None )
 			{
-				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names_scope_ptr, field.syntax_element.get_ref().src_loc, field.syntax_element.get_ref().name )
+				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names_scope_ptr, field.syntax_element.deref().src_loc, field.syntax_element.deref().name )
 				field.t= invalid_type_;
 				continue;
 			}
@@ -408,12 +408,12 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	{
 		// Make base class first field. Add parent classes fields.
 		auto mut lock= class_type.lock_mut();
-		auto &mut class_= lock.get_ref();
+		auto &mut class_= lock.deref();
 
 		auto base_class= class_.base_class;
 		if( !base_class.empty() )
 		{
-			fields_llvm_types.push_back( base_class.lock_imut().get_ref().llvm_type );
+			fields_llvm_types.push_back( base_class.try_lock_imut().deref().llvm_type );
 		}
 
 		foreach( &mut parent : class_.parents )
@@ -421,7 +421,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			if( parent.class_ != base_class )
 			{
 				parent.field_number= u32(fields_llvm_types.size());
-				fields_llvm_types.push_back( parent.class_.lock_imut().get_ref().llvm_type );
+				fields_llvm_types.push_back( parent.class_.lock_imut().deref().llvm_type );
 			}
 			else
 			{
@@ -431,7 +431,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	}
 	{
 		var ust::vector</ ust::shared_ptr_mut</ClassField/> /> mut fields_left;
-		foreach( &member : class_members.lock_imut().get_ref() )
+		foreach( &member : class_members.lock_imut().deref() )
 		{
 			auto field_ptr= member.value().Get</ ClassField />();
 			if( !field_ptr.empty() )
@@ -453,7 +453,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			}
 		}
 
-		var ust::vector</ust::string8/> mut fields_order;
+		var ust::vector</tup[ust::string8, ClassFieldPtr]/> mut fields_order;
 		if( syntax_element.keep_fields_order )
 		{
 			// Sort fields by original index.
@@ -465,7 +465,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				for( auto mut i= 0s; i < fields_left.size(); ++i )
 				{
 					auto field_lock= fields_left[i].lock_imut();
-					var ClassField& field= field_lock.get_ref();
+					var ClassField& field= field_lock.deref();
 					if( field.original_index < min_index )
 					{
 						min_index= field.original_index;
@@ -483,14 +483,14 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				fields_left.pop_back();
 
 				auto mut field_lock= field_ptr.lock_mut();
-				var ClassField &mut field= field_lock.get_ref();
+				var ClassField &mut field= field_lock.deref();
 
 				auto mut llvm_type= field.t.GetLLVMType();
 				if( field.is_reference ) { unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  } }
 
 				field.index= fields_llvm_types.size();
 				fields_llvm_types.push_back( llvm_type );
-				fields_order.push_back( field.syntax_element.get_ref().name );
+				fields_order.push_back( ust::make_tuple( field.syntax_element.deref().name, field_ptr ) );
 			}
 		}
 		else
@@ -503,7 +503,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				for( auto mut i= 0s; i < fields_left.size(); ++i )
 				{
 					auto field_lock= fields_left[i].lock_imut();
-					var ClassField& field= field_lock.get_ref();
+					var ClassField& field= field_lock.deref();
 					auto mut llvm_type= field.t.GetLLVMType();
 					if( field.is_reference ) { unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  } }
 
@@ -519,7 +519,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 						else if( padding == best_field_padding )
 						{
 							// Prefer first field with same padding.
-							if( field.original_index < cast_imut(fields_left)[best_padding_field_index].lock_imut().get_ref().original_index )
+							if( field.original_index < cast_imut(fields_left)[best_padding_field_index].lock_imut().deref().original_index )
 							{
 								best_padding_field_index= i;
 							}
@@ -537,14 +537,14 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				fields_left.pop_back();
 
 				auto mut field_lock= field_ptr.lock_mut();
-				var ClassField &mut field= field_lock.get_ref();
+				var ClassField &mut field= field_lock.deref();
 
 				auto mut llvm_type= field.t.GetLLVMType();
 				if( field.is_reference ) { unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  } }
 
 				field.index= fields_llvm_types.size();
 				fields_llvm_types.push_back( llvm_type );
-				fields_order.push_back( field.syntax_element.get_ref().name );
+				fields_order.push_back( ust::make_tuple( field.syntax_element.deref().name, field_ptr ) );
 
 				unsafe
 				{
@@ -555,7 +555,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		}
 
 		auto mut lock= class_type.lock_mut();
-		lock.get_ref().fields_order= move(fields_order);
+		lock.deref().fields_order= move(fields_order);
 	}
 
 	// Generate destructor prototype before perparing virtual table to mark it as virtual and setup virtual table index.
@@ -572,21 +572,21 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		{
 			unsafe
 			{
-				fields_llvm_types.front()= LLVMPointerType( class_type.lock_imut().get_ref().virtual_table_llvm_type, 0u );
+				fields_llvm_types.front()= LLVMPointerType( class_type.lock_imut().deref().virtual_table_llvm_type, 0u );
 			}
 		}
 	}
 
 	{
 		auto mut class_lock= class_type.lock_mut();
-		var ClassType &mut class_= class_lock.get_ref();
+		var ClassType &mut class_= class_lock.deref();
 
 		unsafe
 		{
 			// Check opaque before set body for cases of errors (class body duplication).
 			if( LLVMIsOpaqueStruct( class_.llvm_type ) == LLVMBool::True )
 			{
-				LLVMStructSetBody( class_.llvm_type, fields_llvm_types.front_unsafe(), u32(fields_llvm_types.size()), LLVMBool::False );
+				LLVMStructSetBody( class_.llvm_type, fields_llvm_types.front_unchecked(), u32(fields_llvm_types.size()), LLVMBool::False );
 			}
 		}
 	}
@@ -594,7 +594,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	// Setup class kind.
 	{
 		auto mut lock= class_type.lock_mut();
-		auto &mut class_= lock.get_ref();
+		auto &mut class_= lock.deref();
 
 		auto mut class_contains_pure_virtual_functions= false;
 		foreach( &virtual_table_entry : class_.virtual_table )
@@ -647,9 +647,9 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 			{
 				// Constructors value should always exists and should always be NamesScopeFunctionsSet.
-				auto constructors_ptr= class_members.lock_imut().get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).get_ref().Get</NamesScopeFunctionsSet/>();
-				auto constructors_lock= constructors_ptr.lock_imut();
-				auto& constructors= constructors_lock.get_ref();
+				auto constructors_ptr= class_members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
+				auto constructors_lock= constructors_ptr.try_lock_imut();
+				auto& constructors= constructors_lock.deref();
 				if( !constructors.functions_set.functions.empty() || !constructors.functions_set.function_templates.empty() )
 				{
 					REPORT_ERROR( ConstructorForInterface, names_scope_ptr, syntax_element.src_loc )
@@ -676,17 +676,17 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 	{ // Setup "constexpr" property. Do this before methods generation.
 		auto mut class_lock= class_type.lock_mut();
-		auto &mut class_= class_lock.get_ref();
+		auto &mut class_= class_lock.deref();
 
 		class_.can_be_constexpr= class_.kind == ClassType::Kind::Struct;
 
-		foreach( &member : class_members.lock_imut().get_ref() )
+		foreach( &member : class_members.lock_imut().deref() )
 		{
 			auto field_ptr= member.value().Get</ ClassField />();
 			if( !field_ptr.empty() )
 			{
-				auto field_lock= field_ptr.lock_imut();
-				auto& field= field_lock.get_ref();
+				auto field_lock= field_ptr.try_lock_imut();
+				auto& field= field_lock.deref();
 				// Disable constexpr, if field type can not be constexpr, or if field is mutable reference.
 				class_.can_be_constexpr&= field.t.CanBeConstexpr() && !( field.is_mutable && field.is_reference );
 			}
@@ -694,7 +694,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			auto functions_set_ptr= member.value().Get</ NamesScopeFunctionsSet />();
 			if( !functions_set_ptr.empty() )
 			{
-				foreach( &function : functions_set_ptr.lock_imut().get_ref().functions_set.functions )
+				foreach( &function : functions_set_ptr.try_lock_imut().deref().functions_set.functions )
 				{
 					// Disable constexpr possibility for structs with explicit destructors, non-default copy-assignment operators and non-default copy constructors.
 					if( member.key() == KeywordToString( Keyword::destructor_ ) &&
@@ -719,13 +719,13 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 	{ // Setup inner reference kind. Do this before methods generation.
 		auto mut class_lock= class_type.lock_mut();
-		auto &mut class_= class_lock.get_ref();
+		auto &mut class_= class_lock.deref();
 
 		var InnerReferenceKind mut class_inner_reference_kind= InnerReferenceKind::None;
 
 		foreach( &parent : class_.parents )
 		{
-			auto parent_inner_reference_kind= parent.class_.lock_imut().get_ref().inner_reference_kind;
+			auto parent_inner_reference_kind= parent.class_.lock_imut().deref().inner_reference_kind;
 			if( u32(parent_inner_reference_kind) > u32(class_inner_reference_kind) )
 			{
 				class_inner_reference_kind= parent_inner_reference_kind;
@@ -734,11 +734,10 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 		auto class_members_lock= class_members.lock_imut();
 
-		foreach( &field_name : class_.fields_order )
+		foreach( &field_pair : class_.fields_order )
 		{
-			auto field_ptr= class_members_lock.get_ref().GetThisScopeValue(field_name).get_ref().Get</ClassField/>();
-			auto field_lock= field_ptr.lock_imut();
-			var ClassField& field= field_lock.get_ref();
+			auto field_lock= field_pair[1].lock_imut();
+			var ClassField& field= field_lock.deref();
 
 			auto field_inner_reference_kind=
 				select( field.is_reference
@@ -764,14 +763,14 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 	{
 		auto mut class_lock= class_type.lock_mut();
-		var ClassType &mut class_= class_lock.get_ref();
+		var ClassType &mut class_= class_lock.deref();
 
 		// Search for explicit noncopy constructors.
-		if_var( constructors : class_members.lock_imut().get_ref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ) )
+		if_var( constructors : class_members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ) )
 		{
 			auto functions_set_ptr= constructors.Get</NamesScopeFunctionsSet/>();
 			// Should be functions set 100%
-			foreach( &function_variable : functions_set_ptr.lock_imut().get_ref().functions_set.functions )
+			foreach( &function_variable : functions_set_ptr.try_lock_imut().deref().functions_set.functions )
 			{
 				if( function_variable.is_generated )
 				{
@@ -792,19 +791,19 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	}
 
 	// Merge namespaces of parents.
-	foreach( &parent : class_type.lock_imut().get_ref().parents )
+	foreach( &parent : class_type.lock_imut().deref().parents )
 	{
-		auto parent_members= parent.class_.lock_imut().get_ref().members;
-		foreach( &member_value : parent_members.lock_imut().get_ref() )
+		auto parent_members= parent.class_.lock_imut().deref().members;
+		foreach( &member_value : parent_members.lock_imut().deref() )
 		{
-			auto parent_member_visibility= parent.class_.lock_imut().get_ref().GetMemberVisibility( member_value.key() );
+			auto parent_member_visibility= parent.class_.lock_imut().deref().GetMemberVisibility( member_value.key() );
 			if( parent_member_visibility == Synt::ClassVisibility::Private )
 			{
 				continue; // Do not inherit private members.
 			}
 
 			auto mut dst_members_lock= class_members.lock_mut();
-			auto &mut dst_members_= dst_members_lock.get_ref();
+			auto &mut dst_members_= dst_members_lock.deref();
 
 			if( !member_value.value().Get</ClassType/>().empty() ||
 				!member_value.value().Get</ClassField/>().empty() ||
@@ -836,37 +835,37 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				}
 
 				auto result_class_value= dst_members_.GetThisScopeValue( member_value.key() );
-				auto result_functions_set_ptr= result_class_value.get_ref().Get</NamesScopeFunctionsSet/>();
+				auto result_functions_set_ptr= result_class_value.try_deref().Get</NamesScopeFunctionsSet/>();
 				if( result_functions_set_ptr.empty() )
 				{
 					continue; // Name in new class shadows name with different kind in parent class.
 				}
 				// Merge functions sets.
 
-				auto src_functions_set_lock= src_functions_set_ptr.lock_imut();
-				auto& src_functions_set= src_functions_set_lock.get_ref();
+				auto src_functions_set_lock= src_functions_set_ptr.try_lock_imut();
+				auto& src_functions_set= src_functions_set_lock.deref();
 
-				auto mut result_functions_set_lock= result_functions_set_ptr.lock_mut();
-				auto &mut result_functions_set= result_functions_set_lock.get_ref();
+				auto mut result_functions_set_lock= result_functions_set_ptr.try_lock_mut();
+				auto &mut result_functions_set= result_functions_set_lock.deref();
 
-				if( parent_member_visibility != class_type.lock_imut().get_ref().GetMemberVisibility( member_value.key() ) )
+				if( parent_member_visibility != class_type.lock_imut().deref().GetMemberVisibility( member_value.key() ) )
 				{
 					var SrcLoc mut src_loc= syntax_element.src_loc;
 					if( !result_functions_set.functions_set.functions.empty() )
 					{
 						auto& f= result_functions_set.functions_set.functions.front();
-						if( !f.prototype_syntax_element.empty() )
+						if_var( &prototype_syntax_element : f.prototype_syntax_element )
 						{
-							src_loc= f.prototype_syntax_element.get_ref().src_loc;
+							src_loc= prototype_syntax_element.src_loc;
 						}
-						else if( !f.body_syntax_element.empty() )
+						if_var( &body_syntax_element : f.body_syntax_element )
 						{
-							src_loc= f.body_syntax_element.get_ref().src_loc;
+							src_loc= body_syntax_element.src_loc;
 						}
 					}
 					else if( !result_functions_set.functions_set.function_templates.empty() )
 					{
-						src_loc= result_functions_set.functions_set.function_templates.front().get_ref().syntax_element.get_ref().src_loc;
+						src_loc= result_functions_set.functions_set.function_templates.front().deref().syntax_element.deref().src_loc;
 					}
 					REPORT_ERROR( FunctionsVisibilityMismatch, names_scope_ptr, src_loc, member_value.key() )
 				}
@@ -893,13 +892,13 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	// Finally, make class complete.
 	{
 		auto mut class_lock= class_type.lock_mut();
-		class_lock.get_ref().is_complete= true;
+		class_lock.deref().is_complete= true;
 	}
 
 	CheckClassFieldsInitializers( class_type );
 
 	// Build constexpr methods after class completion.
-	foreach( &member : class_members.lock_imut().get_ref() )
+	foreach( &member : class_members.lock_imut().deref() )
 	{
 		auto functions_set_ptr= member.value().Get</ NamesScopeFunctionsSet />();
 		if( functions_set_ptr.empty() )
@@ -908,7 +907,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		}
 
 		// Build body for copy, then update it. This needed to prevent function body build under lock.
-		auto mut functions_set_copy= functions_set_ptr.lock_imut().get_ref().functions_set.functions;
+		auto mut functions_set_copy= functions_set_ptr.try_lock_imut().deref().functions_set.functions;
 		foreach( &mut func_variable : functions_set_copy )
 		{
 			if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
@@ -917,24 +916,24 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			}
 		}
 
-		auto mut lock= functions_set_ptr.lock_mut();
-		lock.get_ref().functions_set.functions= move(functions_set_copy);
+		auto mut lock= functions_set_ptr.try_lock_mut();
+		lock.deref().functions_set.functions= move(functions_set_copy);
 	}
 }
 
 fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr& enum_type )
 {
-	if( enum_type.lock_imut().get_ref().underlaying_type.llvm_type != LLVMTypeRef::Null )
+	if( enum_type.lock_imut().deref().underlaying_type.llvm_type != LLVMTypeRef::Null )
 	{
 		return;
 	}
 
 	GLOBALS_LOOP_DETECT( enum_type )
 
-	var NamesScopePtr enum_inernal_names_scope= enum_type.lock_imut().get_ref().names_scope;
+	var NamesScopePtr enum_inernal_names_scope= enum_type.lock_imut().deref().names_scope;
 
-	auto enum_declaration_ptr= enum_type.lock_imut().get_ref().syntax_element;
-	auto& enum_declaration= enum_declaration_ptr.get_ref();
+	auto enum_declaration_ptr= enum_type.lock_imut().deref().syntax_element;
+	auto& enum_declaration= enum_declaration_ptr.deref();
 
 	// Default underlaying type is 32bit. TODO - maybe do it platform-dependent?
 	var FundamentalType mut underlaying_type( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ );
@@ -944,14 +943,14 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 		auto t= PrepareType( names_scope_ptr, function_context, enum_declaration.underlaying_type );
 
 		auto fundamental_type= t.GetFundamentalType();
-		if( fundamental_type.empty() || !IsInteger( fundamental_type.get_ref().fundamental_type ) )
+		if( fundamental_type.empty() || !IsInteger( fundamental_type.try_deref().fundamental_type ) )
 		{
 			// SPRACHE_TODO - maybe allow inheritance of enums?
 			REPORT_ERROR( TypesMismatch, names_scope_ptr, enum_declaration.src_loc, ust::string8("any integer type"), t )
 		}
 		else
 		{
-			underlaying_type= fundamental_type.get_ref();
+			underlaying_type= fundamental_type.try_deref();
 		}
 	}
 
@@ -970,7 +969,7 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 
 		var Enum::Element mut out_element;
 
-		auto name_mangled= mangler_.MangleGlobalVariable( enum_inernal_names_scope.lock_imut().get_ref(), element.name );
+		auto name_mangled= mangler_.MangleGlobalVariable( enum_inernal_names_scope.lock_imut().deref(), element.name );
 		unsafe{  out_element.constexpr_value= LLVMConstInt( underlaying_type.llvm_type, u64(enum_elements.size()), LLVMBool::False );  }
 		out_element.llvm_value= AddGlobalConstantVariable( name_mangled, underlaying_type.llvm_type, out_element.constexpr_value );
 
@@ -992,33 +991,33 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 
 	// Finally, update enum itself.
 	auto mut lock= enum_type.lock_mut();
-	var Enum &mut enum_= lock.get_ref();
+	var Enum &mut enum_= lock.deref();
 	enum_.underlaying_type= move(underlaying_type);
 	enum_.elements= move(enum_elements);
 }
 
 fn CodeBuilder::BuildTypeAlias( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</TypeAlias/>& type_alias_ptr )
 {
-	if( !type_alias_ptr.lock_imut().get_ref().t.empty() )
+	if( !type_alias_ptr.lock_imut().deref().t.empty() )
 	{
 		return;
 	}
 
 	GLOBALS_LOOP_DETECT( type_alias_ptr )
 
-	auto syntax_element_ptr= type_alias_ptr.lock_imut().get_ref().syntax_element;
+	auto syntax_element_ptr= type_alias_ptr.lock_imut().deref().syntax_element;
 
 	var FunctionContext mut function_context= CreateGlobalFunctionContext();
-	var Type mut t= PrepareType( names_scope_ptr, function_context, syntax_element_ptr.get_ref().type_name );
+	var Type mut t= PrepareType( names_scope_ptr, function_context, syntax_element_ptr.deref().type_name );
 
 	// Finally, update type alias.
 	auto mut lock= type_alias_ptr.lock_mut();
-	lock.get_ref().t.reset( move(t) );
+	lock.deref().t.reset( move(t) );
 }
 
 fn CodeBuilder::BuiltTypeTemplatesSet( mut this, NamesScopePtr& names_scope, ust::shared_ptr_mut</TypeTemplatesSet/>& type_templates_set_ptr )
 {
-	if( type_templates_set_ptr.lock_imut().get_ref().syntax_elements.empty() )
+	if( type_templates_set_ptr.lock_imut().deref().syntax_elements.empty() )
 	{
 		return;
 	}
@@ -1026,7 +1025,7 @@ fn CodeBuilder::BuiltTypeTemplatesSet( mut this, NamesScopePtr& names_scope, ust
 	GLOBALS_LOOP_DETECT( type_templates_set_ptr )
 
 	// Process copy of shared pointer value.
-	var TypeTemplatesSet mut type_templates_set= type_templates_set_ptr.lock_imut().get_ref();
+	var TypeTemplatesSet mut type_templates_set= type_templates_set_ptr.lock_imut().deref();
 
 	while( !type_templates_set.syntax_elements.empty() )
 	{
@@ -1039,21 +1038,21 @@ fn CodeBuilder::BuiltTypeTemplatesSet( mut this, NamesScopePtr& names_scope, ust
 
 	// Finally, update value in shared pointer.
 	auto mut lock= type_templates_set_ptr.lock_mut();
-	lock.get_ref()= move(type_templates_set);
+	lock.deref()= move(type_templates_set);
 }
 
 fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalVariable/>& global_variable_ptr )
 {
-	if( !global_variable_ptr.lock_imut().get_ref().variable.empty() )
+	if( !global_variable_ptr.lock_imut().deref().variable.empty() )
 	{
 		return;
 	}
 
 	GLOBALS_LOOP_DETECT( global_variable_ptr )
 
-	auto variables_declaration_ptr= global_variable_ptr.lock_imut().get_ref().syntax_element;
-	auto& variables_declaration= variables_declaration_ptr.get_ref();
-	auto& variable_declaration= variables_declaration.variables[ global_variable_ptr.lock_imut().get_ref().variable_index ];
+	auto variables_declaration_ptr= global_variable_ptr.lock_imut().deref().syntax_element;
+	auto& variables_declaration= variables_declaration_ptr.deref();
+	auto& variable_declaration= variables_declaration.variables[ global_variable_ptr.lock_imut().deref().variable_index ];
 
 	var FunctionContext mut function_context= CreateGlobalFunctionContext();
 
@@ -1076,7 +1075,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 
 	if( variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 	{
-		auto name_mangled= mangler_.MangleGlobalVariable( names_scope_ptr.lock_imut().get_ref(), variable_declaration.name );
+		auto name_mangled= mangler_.MangleGlobalVariable( names_scope_ptr.lock_imut().deref(), variable_declaration.name );
 		variable.llvm_value= select( variable.is_mutable
 			? AddGlobalMutableVariable( name_mangled, variable.t.GetLLVMType() )
 			: AddGlobalConstantVariable( name_mangled, variable.t.GetLLVMType(), LLVMValueRef::Null ) );
@@ -1122,7 +1121,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 				return;
 			}
 
-			initializer_expression.reset( constructor_initializer.args.front().get_ref() );
+			initializer_expression.reset( constructor_initializer.args.front().deref() );
 		}
 
 		if( initializer_expression.empty() )
@@ -1131,7 +1130,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 			return;
 		}
 
-		auto expression_result= BuildExpressionCodeEnsureVariable( names_scope_ptr, function_context, initializer_expression.get_ref() );
+		var Variable expression_result= BuildExpressionCodeEnsureVariable( names_scope_ptr, function_context, initializer_expression.try_deref() );
 		if( expression_result.t != variable.t )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope_ptr, variable_declaration.src_loc, variable.t, expression_result.t )
@@ -1163,20 +1162,20 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 
 	// Finally, set result variable.
 	auto mut lock= global_variable_ptr.lock_mut();
-	lock.get_ref().variable.reset( move(variable) );
+	lock.deref().variable.reset( move(variable) );
 }
 
 fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</GlobalAutoVariable/>& global_auto_variable_ptr )
 {
-	if( !global_auto_variable_ptr.lock_imut().get_ref().variable.empty() )
+	if( !global_auto_variable_ptr.lock_imut().deref().variable.empty() )
 	{
 		return;
 	}
 
 	GLOBALS_LOOP_DETECT( global_auto_variable_ptr )
 
-	auto auto_variable_declaration_ptr= global_auto_variable_ptr.lock_imut().get_ref().syntax_element;
-	auto& auto_variable_declaration= auto_variable_declaration_ptr.get_ref();
+	auto auto_variable_declaration_ptr= global_auto_variable_ptr.lock_imut().deref().syntax_element;
+	auto& auto_variable_declaration= auto_variable_declaration_ptr.deref();
 
 	var FunctionContext mut function_context= CreateGlobalFunctionContext();
 
@@ -1221,7 +1220,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 	}
 	else if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 	{
-		auto name_mangled= mangler_.MangleGlobalVariable( names_scope_ptr.lock_imut().get_ref(), auto_variable_declaration.name );
+		auto name_mangled= mangler_.MangleGlobalVariable( names_scope_ptr.lock_imut().deref(), auto_variable_declaration.name );
 		variable.llvm_value= select( variable.is_mutable
 			? AddGlobalMutableVariable( name_mangled, variable.t.GetLLVMType() )
 			: AddGlobalConstantVariable( name_mangled, variable.t.GetLLVMType(), expr.constexpr_value ) );
@@ -1238,7 +1237,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 
 	// Finally, set result variable.
 	auto mut lock= global_auto_variable_ptr.lock_mut();
-	lock.get_ref().variable.reset( move(variable) );
+	lock.deref().variable.reset( move(variable) );
 }
 
 } // namespace U1

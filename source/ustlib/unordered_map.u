@@ -91,8 +91,8 @@ public:
 
 					auto &mut dst_value= $>(table_ + insert_index);
 
-					move_unsafe( dst_value.key_storage, key );
-					move_unsafe( dst_value.value_storage, move(value) );
+					move_into_uninitialized( dst_value.key_storage, key );
+					move_into_uninitialized( dst_value.value_storage, move(value) );
 					dst_value.cell_content= TableValue::CellContent::HaveValue;
 					return dst_value.value_storage;
 				}
@@ -168,12 +168,12 @@ public:
 
 	op[](  mut this, key_type& key ) : value_type &'this  mut
 	{
-		return find(key).get_ref(); // "get_ref" will halt, if "find" returns empty result.
+		return find(key).try_deref(); // "try_deref" will halt, if "find" returns empty result.
 	}
 
 	op[]( imut this, key_type& key ) : value_type &'this imut
 	{
-		return find(key).get_ref(); // "get_ref" will halt, if "find" returns empty result.
+		return find(key).try_deref(); // "try_deref" will halt, if "find" returns empty result.
 	}
 
 	fn clear( mut this )
@@ -366,10 +366,10 @@ public:
 		fn drop_front( mut this )
 		{
 			halt if( empty() );
-			unsafe{  drop_front_unsafe();  }
+			unsafe{  drop_front_unchecked();  }
 		}
 
-		fn drop_front_unsafe( mut this ) unsafe
+		fn drop_front_unchecked( mut this ) unsafe
 		{
 			halt if(empty());
 			--size_;
@@ -382,24 +382,24 @@ public:
 		front( this'x' ) : element_mut'x'
 		{
 			halt if(empty());
-			unsafe {  return front_unsafe();  }
+			unsafe {  return front_unchecked();  }
 		}
 
 		fn enable_if( !is_mutable )
 		front( this'x' ) : element_imut'x'
 		{
 			halt if(empty());
-			unsafe {  return front_unsafe();  }
+			unsafe {  return front_unchecked();  }
 		}
 
 		fn enable_if( is_mutable )
-		front_unsafe( this'x' ) unsafe : element_mut'x'
+		front_unchecked( this'x' ) unsafe : element_mut'x'
 		{
 			unsafe{  return element_mut( $>(table_) );  }
 		}
 
 		fn enable_if( !is_mutable )
-		front_unsafe( this'x' ) unsafe : element_imut'x'
+		front_unchecked( this'x' ) unsafe : element_imut'x'
 		{
 			unsafe{  return element_imut( $>(table_) );  }
 		}
