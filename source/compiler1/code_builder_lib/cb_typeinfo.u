@@ -600,8 +600,6 @@ fn CodeBuilder::BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_name
 		auto field_lock= class_field_for_typeinfo.class_field.lock_imut();
 		var ClassField& field= field_lock.deref();
 
-		auto field_source_class= ust::to_non_nullable( field.source_class.lock() );
-
 		var ClassTypePtr typeinfo_class= CreateTypeinfoClass( root_namespace, class_type, g_typeinfo_class_fields_list_node_class_name + ust::to_string8(list_types.size()) );
 		var NamesScopeMutPtr class_members= typeinfo_class.lock_imut().deref().members;
 
@@ -609,11 +607,11 @@ fn CodeBuilder::BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_name
 		var ust::vector</LLVMValueRef/> mut fields_initializers;
 
 		ADD_TYPEINFO_FIELD( "type", field.t )
-		ADD_TYPEINFO_FIELD( "class_type", field_source_class )
+		ADD_TYPEINFO_FIELD( "class_type", field.source_class )
 
 		// Base class always have zero offset, so, we can just use offset of class field in its own class.
 		auto mut offset= 0u64;
-		auto field_source_class_llvm_type= field_source_class.lock_imut().deref().llvm_type;
+		auto field_source_class_llvm_type= field.source_class.lock_imut().deref().llvm_type;
 		unsafe{  offset+= LLVMOffsetOfElement( data_layout_, field_source_class_llvm_type, u32(field.index) );  }
 
 		ADD_SIZE_FIELD( "offset", offset )

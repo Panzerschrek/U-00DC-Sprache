@@ -460,6 +460,8 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility, size_type field_index )
 {
+	var ClassTypePtr class_type_non_null = ust::to_non_nullable(class_type);
+
 	auto& field_name= class_field.deref().name;
 	if( IsKeyword( field_name ) )
 	{
@@ -473,7 +475,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		.is_reference= class_field.deref().reference_modifier == Synt::ReferenceModifier::Reference,
 		.is_mutable= true,
 		.original_index= field_index,
-		.source_class= class_type,
+		.source_class= class_type_non_null,
 	};
 
 	if( field.is_reference )
@@ -498,7 +500,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		REPORT_ERROR( Redefinition, names_scope_ptr, class_field.deref().src_loc, field_name )
 	}
 
-	auto mut class_lock= class_type.try_lock_mut();
+	auto mut class_lock= class_type_non_null.lock_mut();
 	class_lock.deref().SetMemberVisibility( field_name, visibility );
 }
 

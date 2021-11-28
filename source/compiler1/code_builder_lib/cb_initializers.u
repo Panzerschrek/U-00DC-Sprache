@@ -329,7 +329,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		auto field_lock= field_ptr.try_lock_imut();
 		var ClassField& class_field= field_lock.deref();
 
-		if( class_field.source_class.lock() != class_type_ptr )
+		if( class_field.source_class != class_type_ptr )
 		{
 			REPORT_ERROR( InitializerForBaseClassField, names_scope, member_initializer.src_loc, member_initializer.name )
 			return LLVMValueRef::Null;
@@ -1257,7 +1257,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 			REPORT_ERROR( InitializerForNonfieldStructMember, names_scope, member_initializer.src_loc, member_initializer.name )
 			continue;
 		}
-		if( class_field_ptr.try_lock_imut().deref().source_class.lock() != class_type )
+		if( class_field_ptr.try_lock_imut().deref().source_class != class_type )
 		{
 			have_fields_errors= true;
 			REPORT_ERROR( InitializerForBaseClassField, names_scope, member_initializer.src_loc, member_initializer.name )

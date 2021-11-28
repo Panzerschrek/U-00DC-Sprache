@@ -1198,7 +1198,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			auto mut this_value_corrected= variable.llvm_value;
 			{
 				var ClassTypePtr mut current_class_type= class_type;
-				auto field_source_class= field.source_class.lock();
+				auto field_source_class= field.source_class;
 				while( current_class_type != field_source_class )
 				{
 					auto base_class= current_class_type.lock_imut().deref().base_class;

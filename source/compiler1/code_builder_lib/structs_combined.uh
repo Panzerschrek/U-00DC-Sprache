@@ -406,7 +406,7 @@ struct ClassField
 	ust::shared_ptr_final</ Synt::ClassField /> syntax_element;
 
 	// Class, where this field is defined. May be not same class in case of inheritance.
-	ust::weak_ptr_mut</ClassType/> source_class;
+	ClassTypePtr source_class;
 }
 
 struct Enum
