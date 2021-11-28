@@ -380,6 +380,34 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 	halt; // Unhandled combination of template signature parameter kinds.
 }
 
+fn ReportOverloadingResolutionError(
+	ust::array_view_imut</VariableTypeExtened/> actual_args,
+	NamesScopePtr& names_scope,
+	SrcLoc& src_loc,
+	CodeBuilderErrorCode code )
+{
+	var ust::string8 mut note_text;
+	foreach( &type_extended : actual_args )
+	{
+		if( type_extended.value_type == ValueType::ReferenceMut )
+		{
+			note_text+= "& mut ";
+		}
+		else if( type_extended.value_type == ValueType::ReferenceImut )
+		{
+			note_text+= "& imut ";
+		}
+		note_text+= type_extended.t.ToString();
+
+		if( ust::ref_cmp_ne( type_extended, actual_args.back() ) )
+		{
+			note_text+= ", ";
+		}
+	}
+
+	PutErrorIntoContainer( names_scope, ReportError( code, src_loc, note_text ) );
+}
+
 fn CodeBuilder::GetFunctionWithSameType( FunctionsSet &'x mut functions_set, Type& function_type ) : ust::optional_ref_mut</ FunctionVariable />'x'
 {
 	foreach( &mut function : functions_set.functions )
@@ -494,7 +522,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 				{
 					if( produce_errors )
 					{
-						REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, src_loc )
+						ReportOverloadingResolutionError( actual_args, names_scope, src_loc, CodeBuilderErrorCode::CouldNotSelectOverloadedFunction );
 					}
 					all_args_is_compatible= false;
 					break;
@@ -565,7 +593,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 	{
 		if( produce_errors )
 		{
-			REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, src_loc )
+			ReportOverloadingResolutionError( actual_args, names_scope, src_loc, CodeBuilderErrorCode::CouldNotSelectOverloadedFunction );
 		}
 		return ust::optional</FunctionVariable/>();
 	}
@@ -679,7 +707,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 
 	if( selected_function.empty() && produce_errors )
 	{
-		REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope, src_loc )
+		ReportOverloadingResolutionError( actual_args, names_scope, src_loc, CodeBuilderErrorCode::TooManySuitableOverloadedFunctions );
 	}
 
 	return selected_function;

@@ -3,7 +3,6 @@
 // Usage - define macro PROCESS_ERROR, include this file, undefune macro PROCESS_ERROR.
 PROCESS_ERROR( BuildFailed, "Build failed" ) // Common error code for all reasons.
 
-
 PROCESS_ERROR( TemplateContext, "Requered from here" )
 PROCESS_ERROR( MacroExpansionContext, "Requered from here" )
 
@@ -32,8 +31,8 @@ PROCESS_ERROR( MutableGlobalReferencesAreNotAllowed, "Mutable global references 
 
 PROCESS_ERROR( InvalidFunctionArgumentCount, "Invalid function argument count. Required {0}, got {1}." )
 PROCESS_ERROR( CouldNotOverloadFunction, "Could not overload function." )
-PROCESS_ERROR( TooManySuitableOverloadedFunctions, "Could not select function for overloading - too many candidates." )
-PROCESS_ERROR( CouldNotSelectOverloadedFunction, "Could not select function for overloading - no candidates." )
+PROCESS_ERROR( TooManySuitableOverloadedFunctions, "Could not select function for overloading - too many candidates. Args are: {0}." )
+PROCESS_ERROR( CouldNotSelectOverloadedFunction, "Could not select function for overloading - no candidates. Args are: {0}." )
 PROCESS_ERROR( FunctionPrototypeDuplication, "Duplicated prototype of function \"{0}\"." )
 PROCESS_ERROR( FunctionBodyDuplication, "Body fo function \"{0}\" already exists." )
 PROCESS_ERROR( BodyForGeneratedFunction, "Body for generated function \"{0}\"." )
