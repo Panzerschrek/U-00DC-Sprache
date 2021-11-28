@@ -1290,11 +1290,11 @@ fn NamesScope::ToString( this ) : ust::string8
 	{
 		auto class_lock= class_.try_lock_imut();
 		auto& class_type= class_lock.deref();
-		if( !class_type.base_template.empty() )
+		if_var( &base_template : class_type.base_template )
 		{
 			// This is class template. So, parent namespace is arguments names scope.
 
-			auto& type_template= class_type.base_template.try_deref().class_template.deref();
+			auto& type_template= base_template.class_template.deref();
 			auto parent= type_template.parent_names_scope.lock();
 			if( !parent.empty() )
 			{
@@ -1309,7 +1309,7 @@ fn NamesScope::ToString( this ) : ust::string8
 				res+= type_template.syntax_element.deref().name;
 
 				res+= "</";
-				foreach( &arg : class_type.base_template.try_deref().signature_args )
+				foreach( &arg : base_template.signature_args )
 				{
 					if_var( t : arg.get</Type/>() )
 					{
@@ -1320,7 +1320,7 @@ fn NamesScope::ToString( this ) : ust::string8
 						res+= ConstantVariableToString( v.t, v.constexpr_value );
 					}
 
-					if( ust::ref_cmp_ne( arg, class_type.base_template.try_deref().signature_args.back() ) )
+					if( ust::ref_cmp_ne( arg, base_template.signature_args.back() ) )
 					{
 						res+= ", ";
 					}
@@ -1330,14 +1330,14 @@ fn NamesScope::ToString( this ) : ust::string8
 				return move(res);
 			}
 		}
-		if( !class_type.typeinfo_src_type_.empty() )
+		if_var( &typeinfo_src_type : class_type.typeinfo_src_type_ )
 		{
 			var ust::string8 mut res;
 			res= KeywordToString(Keyword::typeof_);
 			res+= "(";
 			res+= KeywordToString(Keyword::typeinfo_);
 			res+= "</";
-			res+= class_type.typeinfo_src_type_.try_deref().ToString();
+			res+= typeinfo_src_type.ToString();
 			res+= "/>";
 			res+=")";
 			return move(res);

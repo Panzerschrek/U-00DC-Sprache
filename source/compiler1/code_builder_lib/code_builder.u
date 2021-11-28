@@ -1439,6 +1439,9 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		}
 	}
 
+	auto body_syntax_element_ptr= ust::to_non_nullable(func_variable.body_syntax_element);
+	var Synt::Function& body_syntax_element= body_syntax_element_ptr.deref();
+
 	SetupLLVMFunctionAttributes( names_scope.lock_imut().deref(), func_variable );
 
 	CreateFunctionDebugInfo( func_variable );
@@ -1456,7 +1459,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 	// TODO - maybe forbid incomplete types even for references?
 	if( !func_variable.t.return_value_is_reference && !EnsureTypeComplete( func_variable.t.return_type ) )
 	{
-		REPORT_ERROR( UsingIncompleteType, names_scope, func_variable.body_syntax_element.try_deref().src_loc, func_variable.t.return_type )
+		REPORT_ERROR( UsingIncompleteType, names_scope, body_syntax_element.src_loc, func_variable.t.return_type )
 	}
 
 	{
@@ -1479,7 +1482,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		function_context.args_inner_variable_nodes.resize( func_variable.t.params.size(), ReferencesGraph::c_empty_node_id );
 		for( auto mut arg_n= 0s; arg_n < func_variable.t.params.size(); ++arg_n )
 		{
-			auto& in_param= func_variable.body_syntax_element.try_deref().function_type.params[arg_n];
+			auto& in_param= body_syntax_element.function_type.params[arg_n];
 			var FunctionType::Param& type_param= cast_imut(func_variable).t.params[arg_n];
 			var u32 llvm_arg_n= first_llvm_arg + u32(arg_n);
 
@@ -1602,7 +1605,6 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 	}
 
 	{
-		auto& body_syntax_element= func_variable.body_syntax_element.try_deref();
 		auto& block= body_syntax_element.block.try_deref();
 
 		auto& func_name= body_syntax_element.name.back();
@@ -1730,7 +1732,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		{
 			if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::ConstexprAuto )
 			{
-				REPORT_ERROR( InvalidTypeForConstexprFunction, names_scope, func_variable.body_syntax_element.try_deref().src_loc )
+				REPORT_ERROR( InvalidTypeForConstexprFunction, names_scope, body_syntax_element.src_loc )
 			}
 			func_variable.constexpr_kind= FunctionVariable::ConstexprKind::NonConstexpr;
 		}
@@ -1738,7 +1740,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		{
 			if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::ConstexprAuto )
 			{
-				REPORT_ERROR( ConstexprFunctionContainsUnallowedOperations, names_scope, func_variable.body_syntax_element.try_deref().src_loc )
+				REPORT_ERROR( ConstexprFunctionContainsUnallowedOperations, names_scope, body_syntax_element.src_loc )
 			}
 			func_variable.constexpr_kind= FunctionVariable::ConstexprKind::NonConstexpr;
 		}

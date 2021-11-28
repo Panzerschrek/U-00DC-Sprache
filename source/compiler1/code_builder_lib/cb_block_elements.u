@@ -708,10 +708,11 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		{
 			return BlockElementBuildInfo();
 		}
+		var Variable& op_result_variable= op_result_variable_ref.try_deref();
 
-		if( op_result_variable_ref.try_deref().t != l_var.t )
+		if( op_result_variable.t != l_var.t )
 		{
-			REPORT_ERROR( TypesMismatch, names_scope, additive_assignment_operator.src_loc, l_var.t, op_result_variable_ref.try_deref().t )
+			REPORT_ERROR( TypesMismatch, names_scope, additive_assignment_operator.src_loc, l_var.t, op_result_variable.t )
 			return BlockElementBuildInfo();
 		}
 
@@ -719,7 +720,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		{
 			LLVMBuildStore(
 				function_context.llvm_ir_builder,
-				CreateMoveToLLVMRegisterInstruction( op_result_variable_ref.try_deref(), function_context ),
+				CreateMoveToLLVMRegisterInstruction( op_result_variable, function_context ),
 				l_var.llvm_value );
 		}
 	}

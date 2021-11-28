@@ -241,6 +241,7 @@ fn EncodeFunctionParams( ManglerState& mut mangler_state, ust::vector</FunctionT
 
 fn EncodeTemplateClassName( ManglerState &mut mangler_state, ClassType& class_type )
 {
+	auto& base_template= class_type.base_template.try_deref();
 	ADD_NODE( mangler_state )
 	{
 		// Skip template parameters namespace.
@@ -250,11 +251,11 @@ fn EncodeTemplateClassName( ManglerState &mut mangler_state, ClassType& class_ty
 			EncodeNamespacePrefix_r( mangler_state, parent.try_lock_imut().deref() );
 		}
 
-		auto& class_name= class_type.base_template.try_deref().class_template.deref().syntax_element.deref().name;
+		auto& class_name= base_template.class_template.deref().syntax_element.deref().name;
 		mangler_state.PushLengthPrefixed( class_name.range() );
 	}
 
-	EncodeTemplateArgs( mangler_state, class_type.base_template.try_deref().signature_args );
+	EncodeTemplateArgs( mangler_state, base_template.signature_args );
 }
 
 fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
