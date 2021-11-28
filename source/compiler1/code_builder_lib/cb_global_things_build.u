@@ -453,7 +453,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			}
 		}
 
-		var ust::vector</ust::string8/> mut fields_order;
+		var ust::vector</tup[ust::string8, ClassFieldPtr]/> mut fields_order;
 		if( syntax_element.keep_fields_order )
 		{
 			// Sort fields by original index.
@@ -490,7 +490,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 				field.index= fields_llvm_types.size();
 				fields_llvm_types.push_back( llvm_type );
-				fields_order.push_back( field.syntax_element.deref().name );
+				fields_order.push_back( ust::make_tuple( field.syntax_element.deref().name, field_ptr ) );
 			}
 		}
 		else
@@ -544,7 +544,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 				field.index= fields_llvm_types.size();
 				fields_llvm_types.push_back( llvm_type );
-				fields_order.push_back( field.syntax_element.deref().name );
+				fields_order.push_back( ust::make_tuple( field.syntax_element.deref().name, field_ptr ) );
 
 				unsafe
 				{
@@ -734,10 +734,9 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 		auto class_members_lock= class_members.lock_imut();
 
-		foreach( &field_name : class_.fields_order )
+		foreach( &field_pair : class_.fields_order )
 		{
-			auto field_ptr= class_members_lock.deref().GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
-			auto field_lock= field_ptr.try_lock_imut();
+			auto field_lock= field_pair[1].lock_imut();
 			var ClassField& field= field_lock.deref();
 
 			auto field_inner_reference_kind=

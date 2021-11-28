@@ -151,7 +151,7 @@ struct ClassType
 	ust::shared_ptr_final_nullable</ Synt::Class /> syntax_element;
 
 	// This class fields names ordered by offset.
-	ust::vector</ust::string8/> fields_order;
+	ust::vector</tup[ust::string8, ClassFieldPtr]/> fields_order;
 
 	struct BaseTemplate
 	{
@@ -408,6 +408,8 @@ struct ClassField
 	// Class, where this field is defined. May be not same class in case of inheritance.
 	ClassTypePtr source_class;
 }
+
+type ClassFieldPtr = ust::shared_ptr_mut</ClassField/>;
 
 struct Enum
 {
@@ -712,7 +714,7 @@ public:
 		ust::shared_ptr_mut</NamesScopeVariable/>,
 		ust::shared_ptr_mut</NamesScopeFunctionsSet/>,
 		ClassTypePtr,
-		ust::shared_ptr_mut</ClassField/>,
+		ClassFieldPtr,
 		EnumTypePtr,
 		ust::shared_ptr_mut</TypeAlias/>,
 		ust::shared_ptr_mut</TypeTemplatesSet/>,

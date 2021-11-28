@@ -11,6 +11,7 @@ fn ClearClassInternals( ClassTypePtr& class_type, NamesScopeMutPtr& dummy_class_
 	auto &mut class_= lock.deref();
 	class_.members= dummy_class_names_scope;
 	class_.members_initial= dummy_class_names_scope;
+	class_.fields_order.clear();
 	class_.parents.clear();
 	class_.virtual_table.clear();
 	class_.typeinfo_src_type_.reset();

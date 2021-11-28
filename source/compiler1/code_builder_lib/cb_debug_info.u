@@ -446,10 +446,10 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
 	{
 		auto class_members_lock= class_type.members.lock_imut();
 		var NamesScope& class_members= class_members_lock.deref();
-		foreach( &field_name : class_type.fields_order )
+		foreach( &field_pair : class_type.fields_order )
 		{
-			auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
-			auto field_lock= field_ptr.try_lock_imut();
+			var ust::string8& field_name= field_pair[0];
+			auto field_lock= field_pair[1].lock_imut();
 			var ClassField& field= field_lock.deref();
 
 			if( field.index == ~0s ){ continue; } // May be in case of error

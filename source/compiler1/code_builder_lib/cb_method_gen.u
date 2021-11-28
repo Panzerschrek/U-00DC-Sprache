@@ -53,11 +53,9 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 
 	// Check if all fields is default-constructible.
 	auto mut all_fields_is_default_constructible= true;
-	foreach( &field_name : class_type.lock_imut().deref().fields_order )
+	foreach( &field_pair : class_type.lock_imut().deref().fields_order )
 	{
-		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
-
-		auto field_lock= field_ptr.try_lock_imut();
+		auto field_lock= field_pair[1].lock_imut();
 		auto& field= field_lock.deref();
 
 		if( !field.syntax_element.deref().initializer.get</Synt::EmptyVariant/>().empty() &&
@@ -176,10 +174,9 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	// Use initial class members namespace for own fields initializers evaluation.
 	auto class_members_initial= class_type.lock_imut().deref().members_initial;
 
-	foreach( &field_name : class_type.lock_imut().deref().fields_order )
+	foreach( &field_pair : class_type.lock_imut().deref().fields_order )
 	{
-		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
-		auto field_lock= field_ptr.try_lock_imut();
+		auto field_lock= field_pair[1].lock_imut();
 		var ClassField & class_field= field_lock.deref();
 
 		if( class_field.index == ~0s ){ continue; } // May be in case of error
@@ -194,7 +191,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		auto& initializer= class_field.syntax_element.deref().initializer;
 		if( !initializer.get</Synt::EmptyVariant/>().empty() )
 		{
-			BuildEmptyInitializer( class_members_ptr, function_context, field_variable, field_name, src_loc );
+			BuildEmptyInitializer( class_members_ptr, function_context, field_variable, field_pair[0], src_loc );
 		}
 		else
 		{
@@ -254,11 +251,9 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 
 	// Check if all fields is copy-constructible.
 	auto mut all_fields_is_copy_constructible= true;
-	foreach( &field_name : class_type.lock_imut().deref().fields_order )
+	foreach( &field_pair : class_type.lock_imut().deref().fields_order )
 	{
-		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
-
-		auto field_lock= field_ptr.try_lock_imut();
+		auto field_lock= field_pair[1].lock_imut();
 		auto& field= field_lock.deref();
 		if( !field.is_reference && !field.t.IsCopyConstructible() )
 		{
@@ -404,10 +399,9 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		BuildCopyConstructorPart( class_members_ptr, function_context, dst_member_value, src_member_value, ust::to_non_nullable(base_class), src_loc );
 	}
 
-	foreach( &field_name : class_type.lock_imut().deref().fields_order )
+	foreach( &field_pair : class_type.lock_imut().deref().fields_order )
 	{
-		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
-		auto field_lock= field_ptr.try_lock_imut();
+		auto field_lock= field_pair[1].lock_imut();
 		var ClassField & class_field= field_lock.deref();
 
 		if( class_field.index == ~0s ){ continue; } // May be in case of error
@@ -475,11 +469,9 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 
 	// Check if all fields is copy-assignable.
 	auto mut all_fields_is_copy_assignable= true;
-	foreach( &field_name : class_type.lock_imut().deref().fields_order )
+	foreach( &field_pair : class_type.lock_imut().deref().fields_order )
 	{
-		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
-
-		auto field_lock= field_ptr.try_lock_imut();
+		auto field_lock= field_pair[1].lock_imut();
 		auto& field= field_lock.deref();
 		if( field.is_reference || !field.is_mutable || !field.t.IsCopyAssignable() )
 		{
@@ -625,10 +617,9 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		BuildCopyAssignmentOperatorPart( class_members_ptr, function_context, dst_member_value, src_member_value, ust::to_non_nullable(base_class), src_loc );
 	}
 
-	foreach( &field_name : class_type.lock_imut().deref().fields_order )
+	foreach( &field_pair : class_type.lock_imut().deref().fields_order )
 	{
-		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
-		auto field_lock= field_ptr.try_lock_imut();
+		auto field_lock= field_pair[1].lock_imut();
 		var ClassField & class_field= field_lock.deref();
 
 		if( class_field.index == ~0s ){ continue; } // May be in case of error
@@ -1014,10 +1005,9 @@ fn CodeBuilder::BuildMembersDestructors( this, FunctionContext &mut function_con
 		BuildDestructorPart( class_members_ptr, function_context, parent_llvm_value, parent.class_, src_loc );
 	}
 
-	foreach( &field_name : class_type.lock_imut().deref().fields_order )
+	foreach( &field_pair : class_type.lock_imut().deref().fields_order )
 	{
-		auto field_ptr= class_members.GetThisScopeValue(field_name).try_deref().Get</ClassField/>();
-		auto field_lock= field_ptr.try_lock_imut();
+		auto field_lock= field_pair[1].lock_imut();
 		var ClassField& class_field= field_lock.deref();
 
 		if( class_field.index == ~0s ){ continue; } // May be in case of error
