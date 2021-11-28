@@ -586,9 +586,9 @@ fn CodeBuilder::GenTemplateType(
 			type_template_ptr,
 			template_args,
 			template_instantiation_src_loc );
-		if( !res.empty() )
+		if_var( &r : res )
 		{
-			candidate_type_templates.push_back( res.try_deref() );
+			candidate_type_templates.push_back(r);
 		}
 	}
 

@@ -403,13 +403,13 @@ fn CodeBuilder::GetValueSrcLoc( NamesScopeValue& value ) : SrcLoc
 
 			foreach( &function : functions_set.functions_set.functions )
 			{
-				if( !function.prototype_syntax_element.empty() )
+				if_var( &syntax_element : function.prototype_syntax_element )
 				{
-					min_src_loc= ust::min( SrcLoc(min_src_loc), function.prototype_syntax_element.try_deref().src_loc );
+					min_src_loc= ust::min( SrcLoc(min_src_loc), syntax_element.src_loc );
 				}
-				if( !function.body_syntax_element.empty() )
+				if_var( &syntax_element : function.body_syntax_element )
 				{
-					min_src_loc= ust::min( SrcLoc(min_src_loc), function.body_syntax_element.try_deref().src_loc );
+					min_src_loc= ust::min( SrcLoc(min_src_loc), syntax_element.src_loc );
 				}
 			}
 			foreach( &function_template_ptr : functions_set.functions_set.function_templates )

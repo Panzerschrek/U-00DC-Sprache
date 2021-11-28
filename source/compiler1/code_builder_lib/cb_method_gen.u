@@ -1003,12 +1003,9 @@ fn CodeBuilder::BuildMembersDestructors( this, FunctionContext &mut function_con
 	auto& class_members= class_members_lock.deref();
 
 	var SrcLoc mut src_loc;
+	if_var( &syntax_element : class_type.lock_imut().deref().syntax_element )
 	{
-		auto syntax_element= class_type.lock_imut().deref().syntax_element;
-		if( !syntax_element.empty() )
-		{
-			src_loc= syntax_element.try_deref().src_loc;
-		}
+		src_loc= syntax_element.src_loc;
 	}
 
 	foreach( &parent : class_type.lock_imut().deref().parents )

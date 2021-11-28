@@ -3594,10 +3594,9 @@ fn SyntaxAnalyzer::FetchMacroVariable( MacroVariablesMapsStack& macro_variables_
 	{
 		auto j= macro_variables_maps_stack.size() - i - 1s;
 		var MacroVariablesMap& macro_variables_map= macro_variables_maps_stack[j].deref();
-		auto ref= macro_variables_map.find( variable_name );
-		if( !ref.empty() )
+		if_var( &ref : macro_variables_map.find( variable_name ) )
 		{
-			return ref.try_deref();
+			return ref;
 		}
 	}
 

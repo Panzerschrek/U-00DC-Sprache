@@ -2519,9 +2519,9 @@ fn CodeBuilder::CallFunctionsSet(
 
 		auto instructions_state= SaveInstructionsState( function_context );
 
-		if( !this_.empty() )
+		if_var( &thi : this_ )
 		{
-			var VariableTypeExtened mut out_arg{ .t( this_.try_deref().t ), .value_type= this_.try_deref().value_type };
+			var VariableTypeExtened mut out_arg{ .t( thi.t ), .value_type= thi.value_type };
 			args_evaluated.push_back( move(out_arg) );
 		}
 
@@ -2563,9 +2563,9 @@ fn CodeBuilder::CallFunctionsSet(
 		this_.reset();
 	}
 
-	if( !this_.empty() )
+	if_var( &thi : this_ )
 	{
-		auto fetch_res= TryFetchVirtualFunction( this_.try_deref(), function_selected.try_deref(), function_context );
+		auto fetch_res= TryFetchVirtualFunction( thi, function_selected.try_deref(), function_context );
 		function_selected.try_deref().llvm_function= fetch_res[1];
 		return DoCallFunction(
 			names_scope,
@@ -2595,9 +2595,9 @@ fn CodeBuilder::DoCallFunction(
 	SrcLoc& src_loc ) : Value
 {
 	var ust::vector</ Variable /> mut preevaluated_args;
-	if( !this_.empty() )
+	if_var( &thi : this_ )
 	{
-		preevaluated_args.push_back( this_.try_deref() );
+		preevaluated_args.push_back( thi );
 	}
 
 	return DoCallFunction(
