@@ -950,10 +950,8 @@ fn CodeBuilder::PrepareFunction(
 	auto mut global_function_context= CreateGlobalFunctionContext();
 
 	// enable_if
-	//if_var( &expr : function_declaration.condition ) // TODO - fix and use "if_var" here
-	if( !function_declaration.condition.empty() )
+	if_var( &expr : function_declaration.condition )
 	{
-		auto& expr= function_declaration.condition.try_deref();
 		var Variable condition_variable= BuildExpressionCodeEnsureVariable( names_scope_ptr, global_function_context, expr );
 		if( condition_variable.t == bool_type_ )
 		{
