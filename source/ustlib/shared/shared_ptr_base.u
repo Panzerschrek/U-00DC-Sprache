@@ -107,15 +107,13 @@ public:
 		return value_ == nullptr</T/>();
 	}
 
-	fn lock_mut ( this ) : lock_mut_t 'this'
+	fn lock_mut_unchecked ( this ) unsafe : lock_mut_t 'this'
 	{
-		halt if( empty() );
 		unsafe{  return lock_mut_t ( $>(value_), counter_ );  }
 	}
 
-	fn lock_imut( this ) : lock_imut_t'this'
+	fn lock_imut_unchecked( this ) unsafe : lock_imut_t'this'
 	{
-		halt if( empty() );
 		unsafe{  return lock_imut_t( $>(value_), counter_ );  }
 	}
 
