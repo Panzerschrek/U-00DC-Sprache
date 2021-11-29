@@ -380,32 +380,28 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 	halt; // Unhandled combination of template signature parameter kinds.
 }
 
-fn ReportOverloadingResolutionError(
-	ust::array_view_imut</VariableTypeExtened/> actual_args,
-	NamesScopePtr& names_scope,
-	SrcLoc& src_loc,
-	CodeBuilderErrorCode code )
+fn ActualArgsToString( ust::array_view_imut</VariableTypeExtened/> actual_args ) : ust::string8
 {
-	var ust::string8 mut note_text;
+	var ust::string8 mut result;
 	foreach( &type_extended : actual_args )
 	{
 		if( type_extended.value_type == ValueType::ReferenceMut )
 		{
-			note_text+= "& mut ";
+			result+= "& mut ";
 		}
 		else if( type_extended.value_type == ValueType::ReferenceImut )
 		{
-			note_text+= "& imut ";
+			result+= "& imut ";
 		}
-		note_text+= type_extended.t.ToString();
+		result+= type_extended.t.ToString();
 
 		if( ust::ref_cmp_ne( type_extended, actual_args.back() ) )
 		{
-			note_text+= ", ";
+			result+= ", ";
 		}
 	}
 
-	PutErrorIntoContainer( names_scope, ReportError( code, src_loc, note_text ) );
+	return move(result);
 }
 
 fn CodeBuilder::GetFunctionWithSameType( FunctionsSet &'x mut functions_set, Type& function_type ) : ust::optional_ref_mut</ FunctionVariable />'x'
@@ -522,7 +518,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 				{
 					if( produce_errors )
 					{
-						ReportOverloadingResolutionError( actual_args, names_scope, src_loc, CodeBuilderErrorCode::CouldNotSelectOverloadedFunction );
+						REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, src_loc, ActualArgsToString(actual_args) )
 					}
 					all_args_is_compatible= false;
 					break;
@@ -593,7 +589,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 	{
 		if( produce_errors )
 		{
-			ReportOverloadingResolutionError( actual_args, names_scope, src_loc, CodeBuilderErrorCode::CouldNotSelectOverloadedFunction );
+			REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, src_loc, ActualArgsToString(actual_args) )
 		}
 		return ust::optional</FunctionVariable/>();
 	}
@@ -707,7 +703,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 
 	if( selected_function.empty() && produce_errors )
 	{
-		ReportOverloadingResolutionError( actual_args, names_scope, src_loc, CodeBuilderErrorCode::TooManySuitableOverloadedFunctions );
+		REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope, src_loc, ActualArgsToString(actual_args) )
 	}
 
 	return selected_function;

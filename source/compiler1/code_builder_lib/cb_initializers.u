@@ -1077,7 +1077,7 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 		}
 		else if( exact_type_functions.size() > 1s )
 		{
-			REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope, initializer_src_loc, ust::string8("TODO - args here") )
+			REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope, initializer_src_loc, FunctionParamsToString( function_type.params.range() ) )
 		}
 		else if( functions_with_conversion.size() == 1s )
 		{

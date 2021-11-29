@@ -278,6 +278,7 @@ private:
 		EnumTypePtr
 	] /> something_;
 }
+
 //
 // Value
 //

@@ -3,6 +3,7 @@
 // Usage - define macro PROCESS_ERROR, include this file, undefune macro PROCESS_ERROR.
 PROCESS_ERROR( BuildFailed, "Build failed" ) // Common error code for all reasons.
 
+
 PROCESS_ERROR( TemplateContext, "Requered from here" )
 PROCESS_ERROR( MacroExpansionContext, "Requered from here" )
 
