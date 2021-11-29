@@ -424,3 +424,62 @@ def TemplateParametersInErrorInsideTemplate_Test6():
 	assert( errors_list[0].template_errors.errors[0].src_loc.line == 6 )
 	assert( errors_list[0].template_errors.parameters_description.find( "e = ErT::Two2" ) != -1 )
 	assert( errors_list[0].template_errors.template_name.find( "Box" ) != -1 )
+
+
+def TypeNameInErrorMessage_ActualArgsList_Test0():
+	c_program_text= """
+		fn Foo();
+		fn Bar()
+		{
+			var i32 mut x= 0;
+			var f32 imut y= zero_init;
+			Foo(x, y, false);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
+	assert( errors_list[0].src_loc.line == 7 )
+	assert( errors_list[0].text.find( "Args are" ) != -1 )
+	assert( errors_list[0].text.find( "mut i32" ) != -1 )
+	assert( errors_list[0].text.find( "f32" ) != -1 )
+	assert( errors_list[0].text.find( "bool" ) != -1 )
+
+
+def TypeNameInErrorMessage_ActualArgsList_Test1():
+	c_program_text= """
+		fn Foo( i32 &mut x, i32 &imut y );
+		fn Foo( i32 &imut x, i32 &mut y );
+		fn Bar()
+		{
+			var i32 mut x= 0, mut y= 0;
+			Foo(x, y);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TooManySuitableOverloadedFunctions" )
+	assert( errors_list[0].src_loc.line == 7 )
+	assert( errors_list[0].text.find( "Args are" ) != -1 )
+	assert( errors_list[0].text.count( "i32" ) == 2 )
+	assert( errors_list[0].text.count( "&" ) == 2 )
+	assert( errors_list[0].text.count( "mut" ) == 2 )
+	assert( errors_list[0].text.count( "imut" ) == 0 )
+
+
+def TypeNameInErrorMessage_ActualArgsList_Test2():
+	c_program_text= """
+		fn Foo( i32 &mut x, i32 &imut y );
+		fn Foo( i32 &imut x, i32 &mut y );
+		fn Bar()
+		{
+			var (fn( i32 &imut x, i32 &imut y )) foo= Foo;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
+	assert( errors_list[0].src_loc.line == 6 )
+	assert( errors_list[0].text.find( "Args are" ) != -1 )
+	assert( errors_list[0].text.count( "i32" ) == 2 )
+	assert( errors_list[0].text.count( "&" ) == 2 )
