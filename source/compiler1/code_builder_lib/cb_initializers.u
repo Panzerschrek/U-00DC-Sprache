@@ -1098,11 +1098,11 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 		}
 		else if( functions_with_conversion.empty() )
 		{
-			REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, initializer_src_loc, ust::string8("TODO - args here") )
+			REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, initializer_src_loc, FunctionParamsToString( function_type.params.range() ) )
 		}
 		else
 		{
-			REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope, initializer_src_loc, ust::string8("TODO - args here") )
+			REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope, initializer_src_loc, FunctionParamsToString( function_type.params.range() ) )
 		}
 		return LLVMValueRef::Null;
 	}

@@ -130,6 +130,8 @@ struct FunctionType
 	fn IsStructRet( this ) : bool;
 }
 
+fn FunctionParamsToString( ust::array_view_imut</FunctionType::Param/> params ) : ust::string8;
+
 struct FunctionPointerType
 {
 	FunctionType function_type;
@@ -276,7 +278,6 @@ private:
 		EnumTypePtr
 	] /> something_;
 }
-
 //
 // Value
 //

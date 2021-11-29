@@ -1026,11 +1026,11 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	}
 	if( function_variable == nullptr )
 	{
-		REPORT_ERROR( CouldNotSelectOverloadedFunction, block_names.GetErrors(), initializer_expression_src_loc );
+		REPORT_ERROR( CouldNotSelectOverloadedFunction, block_names.GetErrors(), initializer_expression_src_loc, FunctionParamsToString(function_pointer_type.function.params) );
 		return nullptr;
 	}
 	if( function_variable->is_deleted )
-		REPORT_ERROR( AccessingDeletedMethod, block_names.GetErrors(), initializer_expression_src_loc );
+		REPORT_ERROR( AccessingDeletedMethod, block_names.GetErrors(), initializer_expression_src_loc, FunctionParamsToString(function_pointer_type.function.params) );
 
 	llvm::Value* function_value= function_variable->llvm_function;
 	if( function_variable->type != function_pointer_type.function )

@@ -477,19 +477,7 @@ std::string Type::ToString() const
 			result+= "fn ";
 			result+= function.return_type.ToString();
 			result+= " ( ";
-			for( const FunctionType::Param& param : function.params )
-			{
-				if( param.is_reference )
-					result+= "&";
-				if( param.is_mutable )
-					result+= "mut ";
-				else
-					result+= "imut ";
-
-				result+= param.type.ToString();
-				if( &param != &function.params.back() )
-					result+= ", ";
-			}
+			result+= FunctionParamsToString( function.params );
 			result+= " )";
 			if( function.unsafe )
 				result+= " unsafe";
@@ -647,8 +635,10 @@ bool operator!=( const RawPointerType& l, const RawPointerType& r )
 }
 
 //
-// Function
+// FunctionType
 //
+
+constexpr size_t FunctionType::c_arg_reference_tag_number;
 
 bool FunctionType::PointerCanBeConvertedTo( const FunctionType& other ) const
 {
@@ -751,7 +741,23 @@ bool operator!=( const FunctionType& l, const FunctionType& r )
 	return !( l == r );
 }
 
-constexpr size_t FunctionType::c_arg_reference_tag_number;
+std::string FunctionParamsToString( const ArgsVector<FunctionType::Param>& params )
+{
+	std::string result;
+	for( const FunctionType::Param& param : params )
+	{
+		if( param.is_reference )
+			result+= "& ";
+		if( param.is_mutable )
+			result+= "mut ";
+
+		result+= param.type.ToString();
+		if( &param != &params.back() )
+			result+= ", ";
+	}
+
+	return result;
+}
 
 //
 // FunctionPointer

@@ -432,7 +432,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 				if( !( EnsureTypeComplete( function_type.params[i].type ) && EnsureTypeComplete( actual_args_begin[i].type ) ) )
 				{
 					if( produce_errors )
-						REPORT_ERROR( CouldNotSelectOverloadedFunction, errors_container, src_loc );
+						REPORT_ERROR( CouldNotSelectOverloadedFunction, errors_container, src_loc, FunctionParamsToString(actual_args) );
 					all_args_is_compatible= false;
 					break;
 				}
@@ -486,7 +486,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	if( match_functions.empty() )
 	{
 		if( produce_errors )
-			REPORT_ERROR( CouldNotSelectOverloadedFunction, errors_container, src_loc );
+			REPORT_ERROR( CouldNotSelectOverloadedFunction, errors_container, src_loc, FunctionParamsToString(actual_args) );
 		return nullptr;
 	}
 	else if( match_functions.size() == 1u )
@@ -592,7 +592,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 
 	if( selected_function == nullptr )
 		if( produce_errors )
-			REPORT_ERROR( TooManySuitableOverloadedFunctions, errors_container, src_loc );
+			REPORT_ERROR( TooManySuitableOverloadedFunctions, errors_container, src_loc, FunctionParamsToString(actual_args) );
 
 	return selected_function;
 }
