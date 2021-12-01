@@ -380,6 +380,30 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 	halt; // Unhandled combination of template signature parameter kinds.
 }
 
+fn ActualArgsToString( ust::array_view_imut</VariableTypeExtened/> actual_args ) : ust::string8
+{
+	var ust::string8 mut result;
+	foreach( &type_extended : actual_args )
+	{
+		if( type_extended.value_type == ValueType::ReferenceMut )
+		{
+			result+= "& mut ";
+		}
+		else if( type_extended.value_type == ValueType::ReferenceImut )
+		{
+			result+= "& imut ";
+		}
+		result+= type_extended.t.ToString();
+
+		if( ust::ref_cmp_ne( type_extended, actual_args.back() ) )
+		{
+			result+= ", ";
+		}
+	}
+
+	return move(result);
+}
+
 fn CodeBuilder::GetFunctionWithSameType( FunctionsSet &'x mut functions_set, Type& function_type ) : ust::optional_ref_mut</ FunctionVariable />'x'
 {
 	foreach( &mut function : functions_set.functions )
@@ -494,7 +518,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 				{
 					if( produce_errors )
 					{
-						REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, src_loc )
+						REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, src_loc, ActualArgsToString(actual_args) )
 					}
 					all_args_is_compatible= false;
 					break;
@@ -565,7 +589,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 	{
 		if( produce_errors )
 		{
-			REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, src_loc )
+			REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, src_loc, ActualArgsToString(actual_args) )
 		}
 		return ust::optional</FunctionVariable/>();
 	}
@@ -679,7 +703,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 
 	if( selected_function.empty() && produce_errors )
 	{
-		REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope, src_loc )
+		REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope, src_loc, ActualArgsToString(actual_args) )
 	}
 
 	return selected_function;

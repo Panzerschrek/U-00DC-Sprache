@@ -201,6 +201,8 @@ bool operator!=( const FunctionType::Param& l, const FunctionType::Param& r );
 bool operator==( const FunctionType& l, const FunctionType& r );
 bool operator!=( const FunctionType& l, const FunctionType& r );
 
+std::string FunctionParamsToString( const ArgsVector<FunctionType::Param>& params );
+
 struct FunctionPointerType
 {
 	FunctionType function;

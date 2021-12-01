@@ -999,9 +999,9 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 			{
 				if( exact_match_function_variable != nullptr )
 				{
-					// Error, exist more, then one non-exact match function.
+					// Error, exists more,then one non-exact match function.
 					// TODO - maybe generate separate error?
-					REPORT_ERROR( TooManySuitableOverloadedFunctions, block_names.GetErrors(), initializer_expression_src_loc );
+					REPORT_ERROR( TooManySuitableOverloadedFunctions, block_names.GetErrors(), initializer_expression_src_loc, FunctionParamsToString(function_pointer_type.function.params) );
 					return nullptr;
 				}
 				exact_match_function_variable= func;
@@ -1018,7 +1018,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 		{
 			// Error, exist more, then one non-exact match function.
 			// TODO - maybe generate separate error?
-			REPORT_ERROR( TooManySuitableOverloadedFunctions, block_names.GetErrors(), initializer_expression_src_loc );
+			REPORT_ERROR( TooManySuitableOverloadedFunctions, block_names.GetErrors(), initializer_expression_src_loc, FunctionParamsToString(function_pointer_type.function.params) );
 			return nullptr;
 		}
 		else if( !convertible_function_variables.empty() )
@@ -1026,7 +1026,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	}
 	if( function_variable == nullptr )
 	{
-		REPORT_ERROR( CouldNotSelectOverloadedFunction, block_names.GetErrors(), initializer_expression_src_loc );
+		REPORT_ERROR( CouldNotSelectOverloadedFunction, block_names.GetErrors(), initializer_expression_src_loc, FunctionParamsToString(function_pointer_type.function.params) );
 		return nullptr;
 	}
 	if( function_variable->is_deleted )

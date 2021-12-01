@@ -79,16 +79,7 @@ fn ToString( FunctionType& function_type ) : ust::string8
 	result+= KeywordToString( Keyword::fn_ );
 
 	result+= "(";
-	foreach( &param : function_type.params )
-	{
-		result+= param.t.ToString();
-		result+= " param";
-
-		if( ust::ref_cmp_ne( param, function_type.params.back() ) )
-		{
-			result+= ", ";
-		}
-	}
+	result+= FunctionParamsToString( function_type.params.range() );
 	result+= ") ";
 
 	if( function_type.is_unsafe )
@@ -373,6 +364,32 @@ op FunctionType::==( FunctionType& l, FunctionType& r ) : bool
 op FunctionType::!=( FunctionType& l, FunctionType& r ) : bool
 {
 	return !(l == r);
+}
+
+fn FunctionParamsToString( ust::array_view_imut</FunctionType::Param/> params ) : ust::string8
+{
+	var ust::string8 mut result;
+
+	foreach( &param : params )
+	{
+		if( param.is_reference )
+		{
+			result+= "& ";
+		}
+		if( param.is_mutable )
+		{
+			result+= "mut ";
+		}
+
+		result+= param.t.ToString();
+
+		if( ust::ref_cmp_ne( param, params.back() ) )
+		{
+			result+= ", ";
+		}
+	}
+
+	return move(result);
 }
 
 op FunctionPointerType::==( FunctionPointerType& l, FunctionPointerType& r ) : bool
