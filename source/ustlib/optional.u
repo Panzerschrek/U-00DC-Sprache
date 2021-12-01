@@ -9,6 +9,7 @@ namespace ust
 template</ type T />
 class optional
 {
+	// TODO - disable optional for types with references inside?
 public:
 	type hasher= optional_hasher;
 
@@ -193,6 +194,19 @@ public:
 		else
 		{
 			return optional_ref_imut</T/>();
+		}
+	}
+
+	// Take value, leave optional empty.
+	fn try_take( mut this'a' ) : T'a'
+	{
+		halt if(empty());
+		has_value_ = false;
+		unsafe
+		{
+			var T mut t= uninitialized;
+			memory_copy( cast_ref_unsafe</void/>(t), cast_ref_unsafe</void/>(deref_unchecked()), typeinfo</T/>.size_of );
+			return move(t);
 		}
 	}
 
