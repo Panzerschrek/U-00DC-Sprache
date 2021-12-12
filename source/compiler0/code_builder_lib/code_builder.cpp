@@ -1159,17 +1159,18 @@ Type CodeBuilder::BuildFuncCode(
 		{
 			const auto arg_attr_index=
 				static_cast<unsigned int>(llvm::AttributeList::FirstArgIndex + i + (first_arg_is_sret ? 1u : 0u ));
-			const FunctionType::Param& arg= function_type.params[i];
+			const FunctionType::Param& param= function_type.params[i];
 
-			const bool arg_is_composite= arg.type.GetClassType() != nullptr || arg.type.GetArrayType() != nullptr || arg.type.GetTupleType() != nullptr;
+			const bool param_is_composite= param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr;
 			// Mark pointer-parameters as nonnull.
-			if( arg.is_reference || arg_is_composite )
+			if( param.is_reference || param_is_composite )
 				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NonNull );
 			// Mutable reference args or composite value-args must not alias.
-			if( ( arg.is_reference && arg.is_mutable ) || ( !arg.is_reference && arg_is_composite ) )
+			// Also we can mark as "noalias" non-mutable references. See https://releases.llvm.org/9.0.0/docs/AliasAnalysis.html#must-may-or-no.
+			if( param.is_reference || param_is_composite )
 				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NoAlias );
 			// Mark as "readonly" immutable reference params and immutable value params of composite types.
-			if( !arg.is_mutable && ( arg.is_reference || arg_is_composite ) )
+			if( !param.is_mutable && ( param.is_reference || param_is_composite ) )
 				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::ReadOnly );
 		}
 
