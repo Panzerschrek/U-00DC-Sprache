@@ -52,7 +52,6 @@ Standart library:
 *) More math functions
 
 Compiler:
-*) Make sure "noalias" for function arguments is used properly.
 *) Use TBAA from LLVM.
 *) Pass/return by-value composite values with single scalar inside.
 *) Faster calling convention for non-cross-language functions.

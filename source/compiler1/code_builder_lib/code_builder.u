@@ -1265,7 +1265,8 @@ fn CodeBuilder::PrepareFunction(
 			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "nonnull" );
 		}
 		// Mutable reference args or composite value-args must not alias.
-		if( ( param.is_reference && param.is_mutable ) || ( !param.is_reference && param_type_is_composite ) )
+		// Also we can mark as "noalias" non-mutable references. See https://releases.llvm.org/9.0.0/docs/AliasAnalysis.html#must-may-or-no.
+		if( param.is_reference || param_type_is_composite )
 		{
 			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "noalias" );
 		}
