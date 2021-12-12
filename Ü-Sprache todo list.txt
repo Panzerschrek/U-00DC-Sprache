@@ -43,7 +43,6 @@ Templates:
 
 Standart library:
 *) Associative containers - map, set, string_map
-*) Forbid dangerous calls of "get_ref" method of nullable containers (box, shared_ptr, final_ptr, optional_ref). Allow "get_ref" only for non-nullable containers.
 *) Forbid non-thread-safe shared pointers in thread-safe shared pointers
 *) "memory_copy" with alignment
 *) More algorithms
@@ -53,7 +52,9 @@ Standart library:
 *) More math functions
 
 Compiler:
+*) Make sure "noalias" for function arguments is used properly.
 *) Use TBAA from LLVM.
+*) Pass/return by-value composite values with single scalar inside.
 *) Faster calling convention for non-cross-language functions.
 *) MSVC mangling.
 *) Fix possible UB in float->int conversion.
