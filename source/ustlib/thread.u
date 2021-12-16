@@ -23,21 +23,24 @@ public:
 			var pthread_start_function fn_ptr(thread_function);
 			var pthread_t mut thread_id(0);
 
+			auto &mut impl= impl_.try_deref();
+
 			halt if( pthread_attr_init( attr ) != 0 );
-			halt if( pthread_create( thread_id, attr, fn_ptr, $<( cast_ref_unsafe</void/>(impl_.try_deref()) ) ) != 0 );
+			halt if( pthread_create( thread_id, attr, fn_ptr, $<( cast_ref_unsafe</void/>(impl) ) ) != 0 );
 			halt if( pthread_attr_destroy( attr ) != 0 );
 
-			impl_.try_deref().thread_id= thread_id;
+			impl.thread_id= thread_id;
 		}
 	}
 
 	fn constructor( mut this, this_type &imut other )= delete;
 	op=( mut this, this_type &imut other )= delete;
 
+	// Implement "join" as non-this-call method to enforce user to move thread to join it and avoid calling "join" again.
 	fn join( this_type mut this_ ) : ResultType
 	{
 		this_.join_impl();
-		auto mut res= this_.impl_.try_deref().result.try_deref(); // TODO - move result out of Impl::result.
+		auto mut res= this_.impl_.try_deref().result.try_take();
 		this_.impl_.reset();
 		return move(res);
 	}
@@ -84,7 +87,7 @@ private:
 
 private:
 	// Store content inside box, because we send raw pointer to it to thread function.
-	ust::box_nullable</Impl/> impl_;
+	box_nullable</Impl/> impl_;
 }
 
 template</ type Func />
