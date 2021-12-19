@@ -473,7 +473,7 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedMethodsAttrsTest )
 	const auto module= BuildProgram( c_program_text );
 
 	// "this" as mutable reference param should be marked with "nonnull" and "noalias".
-	// "src" (for copy methods) should be marked only as "nonnull" and "readonly", as any other immutable reference param.
+	// "src" (for copy methods) should be marked as "nonnull", "noalias", "readonly", as any other immutable reference param.
 
 	{
 		const llvm::Function* const default_constructor= module->getFunction( "_ZN1S11constructorERS_" );
@@ -492,7 +492,7 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedMethodsAttrsTest )
 		U_TEST_ASSERT( !copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 
 		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
-		U_TEST_ASSERT( !copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
+		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
 		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	}
 	{
@@ -504,7 +504,7 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedMethodsAttrsTest )
 		U_TEST_ASSERT( !copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 
 		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
-		U_TEST_ASSERT( !copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
+		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
 		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	}
 	{

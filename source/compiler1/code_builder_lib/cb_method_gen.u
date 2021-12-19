@@ -365,6 +365,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 0u, "nonnull" );
 		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 0u, "noalias" );
 		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 1u, "nonnull" );
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 1u, "noalias" );
 		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 1u, "readonly" );
 
 		constructor_index= constructors.functions.size();
@@ -583,6 +584,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 0u, "nonnull" );
 		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 0u, "noalias" );
 		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 1u, "nonnull" );
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 1u, "noalias" );
 		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 1u, "readonly" );
 
 		operator_index= operators.functions.size();
