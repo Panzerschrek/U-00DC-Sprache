@@ -1,0 +1,197 @@
+#include "../../lex_synt_lib_common/assert.hpp"
+#include "mangling.hpp"
+
+namespace U
+{
+
+namespace
+{
+
+class ManglerMSVC final : public IMangler
+{
+public:
+	std::string MangleFunction(
+		const NamesScope& parent_scope,
+		const std::string& function_name,
+		const FunctionType& function_type,
+		const TemplateArgs* template_args ) override;
+	std::string MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name )  override;
+	std::string MangleType( const Type& type ) override;
+	std::string MangleTemplateArgs( const TemplateArgs& template_args ) override;
+	std::string MangleVirtualTable( const Type& type ) override;
+
+private:
+};
+
+void EncodeNamespacePrefix_r(
+	const NamesScope& scope,
+	std::string& res )
+{
+	if( scope.GetParent() == nullptr ) // Root namespace.
+		return;
+
+	EncodeNamespacePrefix_r( *scope.GetParent(), res );
+
+	res+= "@";
+	res+= scope.GetThisNamespaceName();
+}
+
+std::string_view EncodeFundamentalType( const U_FundamentalType t )
+{
+	switch( t )
+	{
+	case U_FundamentalType::InvalidType:
+	case U_FundamentalType::LastType:
+		return "";
+	case U_FundamentalType::Void: return "X";
+	case U_FundamentalType::Bool: return "_N";
+	case U_FundamentalType:: i8: return "_D";
+	case U_FundamentalType:: u8: return "_E";
+	case U_FundamentalType::i16: return "_F";
+	case U_FundamentalType::u16: return "_G";
+	case U_FundamentalType::i32: return "_H";
+	case U_FundamentalType::u32: return "_I";
+	case U_FundamentalType::i64: return "_J";
+	case U_FundamentalType::u64: return "_K";
+	case U_FundamentalType::i128: return "_L";
+	case U_FundamentalType::u128: return "_M";
+	case U_FundamentalType::f32: return "M";
+	case U_FundamentalType::f64: return "N";
+	case U_FundamentalType::char8 : return "D";
+	case U_FundamentalType::char16: return "_S";
+	case U_FundamentalType::char32: return "_U";
+	};
+
+	U_ASSERT(false);
+	return "";
+}
+
+void EncodeType( const Type& type, std::string& res )
+{
+	if( const auto fundamental_type= type.GetFundamentalType() )
+	{
+		res+= EncodeFundamentalType( fundamental_type->fundamental_type );
+	}
+	else if( const auto array_type= type.GetArrayType() )
+	{
+	}
+	else if( const auto tuple_type= type.GetTupleType() )
+	{
+	}
+	else if( const auto class_type= type.GetClassType() )
+	{
+	}
+	else if( const auto enum_type= type.GetEnumType() )
+	{
+	}
+	else if( const auto raw_pointer= type.GetRawPointerType() )
+	{
+		res+= "PEA";
+		EncodeType( raw_pointer->type, res );
+	}
+	else if( const auto function_pointer= type.GetFunctionPointerType() )
+	{
+	}
+	else if( const auto function= type.GetFunctionType() )
+	{
+	}
+	else U_ASSERT(false);
+}
+
+std::string ManglerMSVC::MangleFunction(
+	const NamesScope& parent_scope,
+	const std::string& function_name,
+	const FunctionType& function_type,
+	const TemplateArgs* const template_args )
+{
+	std::string res;
+
+	res+= "?";
+	if( parent_scope.GetParent() != nullptr )
+	{
+		EncodeNamespacePrefix_r( parent_scope, res );
+		res+= "@";
+	}
+	res+= function_name;
+	res+= "@@";
+
+	// Access label
+	res+= "Y";
+
+	// Calling convention code
+	res+= "A";
+
+	// Encode return type
+	if( function_type.return_value_is_reference )
+	{
+		if( function_type.return_value_is_mutable )
+			res+= "AEA";
+		else
+			res+= "AEB";
+	}
+
+	EncodeType( function_type.return_type, res );
+
+	// Encode params
+	for( const FunctionType::Param& param : function_type.params )
+	{
+		if( param.is_reference )
+		{
+			if( param.is_mutable )
+				res+= "AEA";
+			else
+				res+= "AEB";
+		}
+
+		EncodeType( param.type, res );
+	}
+
+	if( function_type.params.empty() )
+		res+= EncodeFundamentalType( U_FundamentalType::Void );
+	else
+		res+= "@"; // Terminate list of params in case of non-empty params list.
+
+	// Finish name
+	res+= "Z";
+
+	return res;
+}
+
+std::string ManglerMSVC::MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name )
+{
+	// TODO
+	return variable_name;
+}
+
+std::string ManglerMSVC::MangleType( const Type& type )
+{
+	std::string res;
+	EncodeType( type, res );
+	return res;
+}
+
+std::string ManglerMSVC::MangleTemplateArgs( const TemplateArgs& template_args )
+{
+	// TODO
+	return "";
+}
+
+std::string ManglerMSVC::MangleVirtualTable( const Type& type )
+{
+	std::string res;
+	res+= "??";
+
+	res+= "_7"; // Special name for virtual functions table
+
+	EncodeType( type, res );
+
+	// TODO - finish this
+
+	return res;
+}
+
+} // namespace
+
+std::unique_ptr<IMangler> CreateManglerMSVC();
+
+} // namespace U

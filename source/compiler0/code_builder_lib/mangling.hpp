@@ -22,5 +22,6 @@ public:
 };
 
 std::unique_ptr<IMangler> CreateManglerItaniumABI();
+std::unique_ptr<IMangler> CreateManglerMSVC();
 
 } // namespace U

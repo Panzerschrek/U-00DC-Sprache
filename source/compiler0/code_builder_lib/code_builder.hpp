@@ -22,11 +22,14 @@
 namespace U
 {
 
+enum class ManglingScheme{ ItaniumABI, MSVC };
+
 struct CodeBuilderOptions
 {
 	bool build_debug_info= false;
 	bool create_lifetimes= true;
 	bool generate_lifetime_start_end_debug_calls= false;
+	ManglingScheme mangling_scheme= ManglingScheme::ItaniumABI;
 };
 
 class CodeBuilder
