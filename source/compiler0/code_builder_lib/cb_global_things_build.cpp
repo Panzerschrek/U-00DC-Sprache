@@ -899,7 +899,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 		var.llvm_value=
 			CreateGlobalConstantVariable(
 				var.type,
-				mangler_.MangleGlobalVariable( enum_->members, in_member.name ),
+				mangler_->MangleGlobalVariable( enum_->members, in_member.name ),
 				var.constexpr_value );
 
 		if( enum_->members.AddName( in_member.name, Value( var, in_member.src_loc ) ) == nullptr )
@@ -1000,7 +1000,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
-			const std::string name_mangled = mangler_.MangleGlobalVariable( names_scope, variable_declaration.name );
+			const std::string name_mangled = mangler_->MangleGlobalVariable( names_scope, variable_declaration.name );
 
 			llvm::GlobalVariable* global_variable= nullptr;
 			variable.llvm_value= global_variable=
@@ -1144,7 +1144,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		}
 		else if( auto_variable_declaration->reference_modifier == ReferenceModifier::None )
 		{
-			const std::string name_mangled = mangler_.MangleGlobalVariable( names_scope, auto_variable_declaration->name );
+			const std::string name_mangled = mangler_->MangleGlobalVariable( names_scope, auto_variable_declaration->name );
 			llvm::GlobalVariable* const global_variable=
 				auto_variable_declaration->mutability_modifier == MutabilityModifier::Mutable
 					? CreateGlobalMutableVariable( variable.type, name_mangled )

@@ -64,6 +64,7 @@ CodeBuilder::CodeBuilder(
 	, create_lifetimes_( options.create_lifetimes )
 	, generate_lifetime_start_end_debug_calls_( options.generate_lifetime_start_end_debug_calls )
 	, constexpr_function_evaluator_( data_layout_ )
+	, mangler_( CreateManglerItaniumABI() )
 {
 	fundamental_llvm_types_.i8 = llvm::Type::getInt8Ty( llvm_context_ );
 	fundamental_llvm_types_.u8 = llvm::Type::getInt8Ty( llvm_context_ );
@@ -1148,7 +1149,7 @@ Type CodeBuilder::BuildFuncCode(
 			llvm::Function::Create(
 				function_type.llvm_type,
 				llvm::Function::LinkageTypes::ExternalLinkage, // External - for prototype.
-				func_variable.no_mangle ? func_name : mangler_.MangleFunction( parent_names_scope, func_name, function_type ),
+				func_variable.no_mangle ? func_name : mangler_->MangleFunction( parent_names_scope, func_name, function_type ),
 				module_.get() );
 
 		// Merge functions with identical code.

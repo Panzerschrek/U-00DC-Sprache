@@ -957,7 +957,7 @@ private:
 	Type size_type_; // Alias for u32 or u64
 
 	ConstexprFunctionEvaluator constexpr_function_evaluator_;
-	Mangler mangler_;
+	const std::unique_ptr<IMangler> mangler_;
 
 	FunctionContext* global_function_context_= nullptr;
 

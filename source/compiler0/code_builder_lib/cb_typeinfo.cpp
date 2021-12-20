@@ -94,7 +94,7 @@ ClassPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Typ
 	typeinfo_class->llvm_type= llvm_type;
 	typeinfo_class->typeinfo_type= src_type;
 
-	llvm_type->setName( mangler_.MangleType( typeinfo_class ) );
+	llvm_type->setName( mangler_->MangleType( typeinfo_class ) );
 
 	typeinfo_class_ptr->inner_reference_type= InnerReferenceType::Imut; // Almost all typeinfo have references to another typeinfo.
 
@@ -315,7 +315,7 @@ void CodeBuilder::FinishTypeinfoClass( const ClassPtr& class_type, const ClassFi
 	TryGenerateDestructor( class_type );
 
 	const FunctionVariable& destructor= class_.members->GetThisScopeValue( Keyword( Keywords::destructor_ ) )->GetFunctionsSet()->functions.front();
-	destructor.llvm_function->setName( mangler_.MangleFunction( *class_.members, Keyword( Keywords::destructor_ ), *destructor.type.GetFunctionType() ) );
+	destructor.llvm_function->setName( mangler_->MangleFunction( *class_.members, Keyword( Keywords::destructor_ ), *destructor.type.GetFunctionType() ) );
 }
 
 Variable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, NamesScope& root_namespace )
