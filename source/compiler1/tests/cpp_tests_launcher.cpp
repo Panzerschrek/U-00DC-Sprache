@@ -198,6 +198,12 @@ std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text )
 	return std::unique_ptr<llvm::Module>( reinterpret_cast<llvm::Module*>(ptr) );
 }
 
+std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const char* text )
+{
+	// TODO
+	return BuildProgram(text);
+}
+
 EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, const bool needs_dump )
 {
 	U_TEST_ASSERT( module != nullptr );

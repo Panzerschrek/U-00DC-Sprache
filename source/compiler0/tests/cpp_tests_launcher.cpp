@@ -196,6 +196,31 @@ std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text )
 	return std::move( build_result.module );
 }
 
+std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const char* text )
+{
+	const std::string file_path= "_";
+	const SourceGraphPtr source_graph=
+		SourceGraphLoader( std::make_shared<MultiFileVfs>( file_path, text ) ).LoadSource( file_path );
+
+	U_TEST_ASSERT( source_graph != nullptr );
+	PrintLexSyntErrors( *source_graph );
+	U_TEST_ASSERT( source_graph->errors.empty() );
+
+	CodeBuilderOptions options= GetCodeBuilderOptionsForTests();
+	options.mangling_scheme= ManglingScheme::MSVC;
+
+	CodeBuilder::BuildResult build_result=
+		CodeBuilder(
+			*g_llvm_context,
+			llvm::DataLayout( GetTestsDataLayout() ),
+			options ).BuildProgram( *source_graph );
+
+	PrinteErrors_r( build_result.errors );
+	U_TEST_ASSERT( build_result.errors.empty() );
+
+	return std::move( build_result.module );
+}
+
 EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, const bool needs_dump )
 {
 	U_TEST_ASSERT( module != nullptr );

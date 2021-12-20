@@ -45,21 +45,21 @@ std::string_view EncodeFundamentalType( const U_FundamentalType t )
 		return "";
 	case U_FundamentalType::Void: return "X";
 	case U_FundamentalType::Bool: return "_N";
-	case U_FundamentalType:: i8: return "_D";
-	case U_FundamentalType:: u8: return "_E";
-	case U_FundamentalType::i16: return "_F";
-	case U_FundamentalType::u16: return "_G";
-	case U_FundamentalType::i32: return "_H";
-	case U_FundamentalType::u32: return "_I";
-	case U_FundamentalType::i64: return "_J";
-	case U_FundamentalType::u64: return "_K";
-	case U_FundamentalType::i128: return "_L";
-	case U_FundamentalType::u128: return "_M";
-	case U_FundamentalType::f32: return "M";
-	case U_FundamentalType::f64: return "N";
-	case U_FundamentalType::char8 : return "D";
-	case U_FundamentalType::char16: return "_S";
-	case U_FundamentalType::char32: return "_U";
+	case U_FundamentalType:: i8: return "C"; // C++ "signed char"
+	case U_FundamentalType:: u8: return "E"; // C++ "unsigned char"
+	case U_FundamentalType::i16: return "F"; // C++ "short"
+	case U_FundamentalType::u16: return "G"; // C++ "unsigned short"
+	case U_FundamentalType::i32: return "H"; // C++ "int"
+	case U_FundamentalType::u32: return "I"; // C++ "unsigned short"
+	case U_FundamentalType::i64: return "_J"; // C++ "int64_t"
+	case U_FundamentalType::u64: return "_K"; // C++ "uuint64_t"
+	case U_FundamentalType::i128: return "_L"; // C++ "__int128"
+	case U_FundamentalType::u128: return "_M"; // "unsigned __int128"
+	case U_FundamentalType::f32: return "M";  // C++ "float"
+	case U_FundamentalType::f64: return "N"; // C++ "double"
+	case U_FundamentalType::char8 : return "D"; // C++ "char"
+	case U_FundamentalType::char16: return "_S"; // C++ "char16_t"
+	case U_FundamentalType::char32: return "_U"; // C++ "char32_t"
 	};
 
 	U_ASSERT(false);
@@ -192,6 +192,9 @@ std::string ManglerMSVC::MangleVirtualTable( const Type& type )
 
 } // namespace
 
-std::unique_ptr<IMangler> CreateManglerMSVC();
+std::unique_ptr<IMangler> CreateManglerMSVC()
+{
+	return std::make_unique<ManglerMSVC>();
+}
 
 } // namespace U

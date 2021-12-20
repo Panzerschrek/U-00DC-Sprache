@@ -12,6 +12,7 @@
 
 #include "../lex_synt_lib/source_graph_loader.hpp"
 #include "../../code_builder_lib_common/constexpr_function_evaluator.hpp"
+#include "../../code_builder_lib_common/mangling.hpp"
 #include "class.hpp"
 #include "enum.hpp"
 #include "function_context.hpp"
@@ -21,8 +22,6 @@
 
 namespace U
 {
-
-enum class ManglingScheme{ ItaniumABI, MSVC };
 
 struct CodeBuilderOptions
 {
