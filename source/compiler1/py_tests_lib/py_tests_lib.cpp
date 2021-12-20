@@ -43,7 +43,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	if( ptr == nullptr )
 		return nullptr;
 
-	return std::unique_ptr<llvm::Module>( reinterpret_cast<llvm::Module*>(ptr) );
+	return std::unique_ptr<llvm::Module>( llvm::unwrap(ptr) );
 }
 
 class HaltException final : public std::exception
