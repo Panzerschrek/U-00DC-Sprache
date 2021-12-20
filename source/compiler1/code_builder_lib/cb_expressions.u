@@ -1967,7 +1967,7 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 					r_value_for_op,
 					LLVMConstInt(
 						l_type.GetLLVMType(),
-						l_fundamental_type.try_deref().GetSize() * 8u64 - 1u64,
+						u64(l_fundamental_type.try_deref().GetSize()) * 8u64 - 1u64,
 						LLVMBool::False ),
 					"\0"[0] );
 
