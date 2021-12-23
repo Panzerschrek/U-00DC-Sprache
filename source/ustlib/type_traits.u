@@ -1,6 +1,135 @@
 namespace ust
 {
 
+template</ type A, type B />
+fn constexpr is_same_type() : bool
+{
+	return type_traits_impl::is_same_type_impl</A/>::same</B/>::value;
+}
+
+template</ type A, type B />
+fn is_parent_for() : bool
+{
+	static_if( typeinfo</A/>.is_class & typeinfo</B/>.is_class )
+	{
+		return type_traits_impl::has_parent</ A />( typeinfo</B/>.parents_list );
+	}
+	else{ return false; }
+}
+
+template</ type A, type B />
+fn is_ancestor_for() : bool
+{
+	static_if( typeinfo</A/>.is_class & typeinfo</B/>.is_class )
+	{
+		return type_traits_impl::has_ancestor</ A />( typeinfo</B/>.parents_list );
+	}
+	else{ return false; }
+}
+
+template</type T/>
+fn constexpr is_polymorph_non_final_class() : bool
+{
+	static_if( typeinfo</T/>.is_class )
+	{
+		return typeinfo</T/>.is_polymorph && !typeinfo</T/>.is_final;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+template</ type ListType, size_type name_size />
+fn constexpr class_have_field( ListType& fields_list, [ char8, name_size ]& name ) : bool
+{
+	for( &list_element : fields_list )
+	{
+		if( type_traits_impl::string_equals( list_element.name, name ) )
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+template</ type T />
+fn constexpr is_class_typeinfo_type() : bool
+{
+	static_if( typeinfo</T/>.is_class )
+	{
+		static_if( typeinfo</T/>.is_typeinfo )
+		{
+			return
+				class_have_field( typeinfo</T/>.fields_list, "fields_list" ) &&
+				class_have_field( typeinfo</T/>.fields_list, "types_list" ) &&
+				class_have_field( typeinfo</T/>.fields_list, "functions_list" ) &&
+				class_have_field( typeinfo</T/>.fields_list, "parents_list" );
+		}
+		else { return false; }
+	}
+	else { return false; }
+}
+
+template</ type T />
+fn constexpr is_array_typeinfo_type() : bool
+{
+	static_if( typeinfo</T/>.is_class )
+	{
+		static_if( typeinfo</T/>.is_typeinfo )
+		{
+			return
+				class_have_field( typeinfo</T/>.fields_list, "element_count" ) &&
+				class_have_field( typeinfo</T/>.fields_list, "element_type" );
+		}
+		else { return false; }
+	}
+	else { return false; }
+}
+
+template</ type T />
+fn constexpr is_tuple_typeinfo_type() : bool
+{
+	static_if( typeinfo</T/>.is_class )
+	{
+		static_if( typeinfo</T/>.is_typeinfo )
+		{
+			return
+				class_have_field( typeinfo</T/>.fields_list, "element_count" ) &&
+				class_have_field( typeinfo</T/>.fields_list, "elements_list" ) &&
+				!class_have_field( typeinfo</T/>.fields_list, "underlaying_type" );
+		}
+		else { return false; }
+	}
+	else { return false; }
+}
+
+template</ type T />
+fn constexpr have_shared_state() : bool
+{
+	return type_traits_impl::have_shared_state_impl( typeinfo</T/> );
+}
+
+template</ type T, type FnT, size_type name_size />
+fn constexpr class_have_method( [ char8, name_size ]& name ) : bool
+{
+	static_assert( typeinfo</FnT/>.is_function_pointer );
+	static_if( typeinfo</T/>.is_class )
+	{
+		for( &list_element : typeinfo</T/>.functions_list )
+		{
+			if( type_traits_impl::string_equals( list_element.name, name ) )
+			{
+				// Same type of typeinfo means same type
+				if( type_traits_impl::args_are_same( list_element.type, typeinfo</FnT/>.element_type ) )
+				{ return true; }
+			}
+		}
+	}
+
+	return false;
+}
+
 namespace type_traits_impl
 {
 
@@ -135,134 +264,5 @@ fn constexpr class_have_shared_state_parents( ListType& parents_list ) : bool
 }
 
 } // namespace type_traits_impl
-
-template</ type A, type B />
-fn constexpr is_same_type() : bool
-{
-	return type_traits_impl::is_same_type_impl</A/>::same</B/>::value;
-}
-
-template</ type A, type B />
-fn is_parent_for() : bool
-{
-	static_if( typeinfo</A/>.is_class & typeinfo</B/>.is_class )
-	{
-		return type_traits_impl::has_parent</ A />( typeinfo</B/>.parents_list );
-	}
-	else{ return false; }
-}
-
-template</ type A, type B />
-fn is_ancestor_for() : bool
-{
-	static_if( typeinfo</A/>.is_class & typeinfo</B/>.is_class )
-	{
-		return type_traits_impl::has_ancestor</ A />( typeinfo</B/>.parents_list );
-	}
-	else{ return false; }
-}
-
-template</type T/>
-fn constexpr is_polymorph_non_final_class() : bool
-{
-	static_if( typeinfo</T/>.is_class )
-	{
-		return typeinfo</T/>.is_polymorph && !typeinfo</T/>.is_final;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-template</ type ListType, size_type name_size />
-fn constexpr class_have_field( ListType& fields_list, [ char8, name_size ]& name ) : bool
-{
-	for( &list_element : fields_list )
-	{
-		if( type_traits_impl::string_equals( list_element.name, name ) )
-		{
-			return true;
-		}
-	}
-	return false;
-}
-
-template</ type T />
-fn constexpr is_class_typeinfo_type() : bool
-{
-	static_if( typeinfo</T/>.is_class )
-	{
-		static_if( typeinfo</T/>.is_typeinfo )
-		{
-			return
-				class_have_field( typeinfo</T/>.fields_list, "fields_list" ) &&
-				class_have_field( typeinfo</T/>.fields_list, "types_list" ) &&
-				class_have_field( typeinfo</T/>.fields_list, "functions_list" ) &&
-				class_have_field( typeinfo</T/>.fields_list, "parents_list" );
-		}
-		else { return false; }
-	}
-	else { return false; }
-}
-
-template</ type T />
-fn constexpr is_array_typeinfo_type() : bool
-{
-	static_if( typeinfo</T/>.is_class )
-	{
-		static_if( typeinfo</T/>.is_typeinfo )
-		{
-			return
-				class_have_field( typeinfo</T/>.fields_list, "element_count" ) &&
-				class_have_field( typeinfo</T/>.fields_list, "element_type" );
-		}
-		else { return false; }
-	}
-	else { return false; }
-}
-
-template</ type T />
-fn constexpr is_tuple_typeinfo_type() : bool
-{
-	static_if( typeinfo</T/>.is_class )
-	{
-		static_if( typeinfo</T/>.is_typeinfo )
-		{
-			return
-				class_have_field( typeinfo</T/>.fields_list, "element_count" ) &&
-				class_have_field( typeinfo</T/>.fields_list, "elements_list" ) &&
-				!class_have_field( typeinfo</T/>.fields_list, "underlaying_type" );
-		}
-		else { return false; }
-	}
-	else { return false; }
-}
-
-template</ type T />
-fn constexpr have_shared_state() : bool
-{
-	return type_traits_impl::have_shared_state_impl( typeinfo</T/> );
-}
-
-template</ type T, type FnT, size_type name_size />
-fn constexpr class_have_method( [ char8, name_size ]& name ) : bool
-{
-	static_assert( typeinfo</FnT/>.is_function_pointer );
-	static_if( typeinfo</T/>.is_class )
-	{
-		for( &list_element : typeinfo</T/>.functions_list )
-		{
-			if( type_traits_impl::string_equals( list_element.name, name ) )
-			{
-				// Same type of typeinfo means same type
-				if( type_traits_impl::args_are_same( list_element.type, typeinfo</FnT/>.element_type ) )
-				{ return true; }
-			}
-		}
-	}
-
-	return false;
-}
 
 } // namespace ust
