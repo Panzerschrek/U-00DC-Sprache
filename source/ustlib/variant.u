@@ -3,6 +3,7 @@ import "container_utils.u"
 import "minmax.u"
 import "optional_ref.u"
 import "type_traits.u"
+
 ?macro <? variant_visit:block ( ?r:opt<? & ?> ?m:opt<? mut ?> ?var_name:ident : ?e:expr ) ?b:block ?>
 ->
 <?
@@ -23,82 +24,16 @@ import "type_traits.u"
 namespace ust
 {
 
-template</ type T />
-fn constexpr get_max_tuple_element_size() : size_type
-{
-	var size_type mut s(0);
-	for( & element : typeinfo</T/>.elements_list )
-	{
-		s = max( s, element.type.size_of );
-	}
-	return s;
-}
-
-template</ type T />
-fn constexpr get_max_tuple_element_alignment() : size_type
-{
-	var size_type mut a(0);
-	for( & element : typeinfo</T/>.elements_list )
-	{
-		a = max( a, element.type.align_of );
-	}
-	return a;
-}
-
-template</ type T />
-fn constexpr all_tuple_elements_is_copy_constructible() : bool
-{
-	for( & element : typeinfo</T/>.elements_list )
-	{
-		if( !element.type.is_copy_constructible )
-		{
-			return false;
-		}
-	}
-	return true;
-}
-
-template</ type T />
-fn constexpr all_tuple_elements_is_unique() : bool
-{
-	auto mut i= 0s;
-	for( & element_i : typeinfo</T/>.elements_list )
-	{
-		auto mut j= 0s;
-		for( & element_j : typeinfo</T/>.elements_list )
-		{
-			if( i != j && is_same_type</ typeof(element_i.type), typeof(element_j.type) />() )
-			{
-				return false;
-			}
-
-			++j;
-		}
-		++i;
-	}
-	return true;
-}
-
-template</ type C, type Tup />
-fn constexpr type_is_one_of_tuple_elements() : bool
-{
-	for( & element : typeinfo</Tup/>.elements_list )
-	{
-		if( is_same_type</ typeof(element.type)::src_type, C />() )
-		{
-			return true;
-		}
-	}
-	return false;
-}
-
-template</ type Y /> // Param - nonempty tuple with unique types.
+// Param - nonempty tuple with unique types.
+template</ type Y />
 class variant
 {
 public:
 	static_assert( typeinfo</Y/>.is_tuple );
 	static_assert( typeinfo</Y/>.element_count > 0s );
-	static_assert( all_tuple_elements_is_unique</Y/>() );
+	static_assert( variant_impl::all_tuple_elements_are_unique</Y/>() );
+	// Cant' use type with references inside since we use "optional_ref" to access variants.
+	static_assert( typeinfo</Y/>.references_tags_count == 0s );
 
 	type this_type= variant</ Y />;
 	type elements_tuple= Y;
@@ -118,7 +53,7 @@ public:
 	}
 
 	fn
-	enable_if( all_tuple_elements_is_copy_constructible</Y/>() )
+	enable_if( variant_impl::all_tuple_elements_are_copy_constructible</Y/>() )
 	constructor( this_type& other )
 		( index_(other.index_), storage_= zero_init )
 	{
@@ -139,7 +74,7 @@ public:
 	}
 	
 	template</ type T />
-	fn enable_if( type_is_one_of_tuple_elements</ T, Y />() )
+	fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
 	conversion_constructor(T mut val)
 		( index_(0), storage_= zero_init )
 	{
@@ -181,14 +116,14 @@ public:
 	}
 
 	template</ type T />
-	op enable_if( type_is_one_of_tuple_elements</ T, Y />() )
+	op enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
 	=( mut this, T mut val )
 	{
 		this = this_type( move(val) );
 	}
 
 	op
-	enable_if( all_tuple_elements_is_copy_constructible</Y/>() )
+	enable_if( variant_impl::all_tuple_elements_are_copy_constructible</Y/>() )
 	=( mut this, this_type& other )
 	{
 		// Implement assignment operator, using copy constructor.
@@ -202,7 +137,7 @@ public:
 	}
 
 	template</ type T />
-	fn enable_if( type_is_one_of_tuple_elements</ T, Y />() )
+	fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
 	get( this ) : optional_ref</ T, false />'this'
 	{
 		var optional_ref</ T, false /> mut res;
@@ -228,7 +163,7 @@ public:
 	}
 
 	template</ type T />
-	fn enable_if( type_is_one_of_tuple_elements</ T, Y />() )
+	fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
 	get(mut this) : optional_ref</ T, true />'this'
 	{
 		var optional_ref</ T, true /> mut res;
@@ -254,17 +189,88 @@ public:
 	}
 
 private:
-	fn check_type()
-	{
-		static_assert( typeinfo</Y/>.references_tags_count == 0s );
-	}
-
 	type element_type_for_shared_check= Y;
 
 private:
-	aligned_storage</ get_max_tuple_element_size</Y/>(), get_max_tuple_element_alignment</Y/>() /> storage_;
+	aligned_storage</
+		variant_impl::get_max_tuple_element_size</Y/>(),
+		variant_impl::get_max_tuple_element_alignment</Y/>()
+		/> storage_;
 	u8 index_;
 }
 
+namespace variant_impl
+{
+
+template</ type T />
+fn constexpr get_max_tuple_element_size() : size_type
+{
+	var size_type mut s(0);
+	for( & element : typeinfo</T/>.elements_list )
+	{
+		s = max( s, element.type.size_of );
+	}
+	return s;
+}
+
+template</ type T />
+fn constexpr get_max_tuple_element_alignment() : size_type
+{
+	var size_type mut a(0);
+	for( & element : typeinfo</T/>.elements_list )
+	{
+		a = max( a, element.type.align_of );
+	}
+	return a;
+}
+
+template</ type T />
+fn constexpr all_tuple_elements_are_copy_constructible() : bool
+{
+	for( & element : typeinfo</T/>.elements_list )
+	{
+		if( !element.type.is_copy_constructible )
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+template</ type T />
+fn constexpr all_tuple_elements_are_unique() : bool
+{
+	auto mut i= 0s;
+	for( & element_i : typeinfo</T/>.elements_list )
+	{
+		auto mut j= 0s;
+		for( & element_j : typeinfo</T/>.elements_list )
+		{
+			if( i != j && is_same_type</ typeof(element_i.type), typeof(element_j.type) />() )
+			{
+				return false;
+			}
+
+			++j;
+		}
+		++i;
+	}
+	return true;
+}
+
+template</ type C, type Tup />
+fn constexpr type_is_one_of_tuple_elements() : bool
+{
+	for( & element : typeinfo</Tup/>.elements_list )
+	{
+		if( is_same_type</ typeof(element.type)::src_type, C />() )
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+} // namespace variant_impl
 
 } // namespace ust
