@@ -43,4 +43,35 @@ U_TEST( BasicFunctionManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?ImutValueArg@@YAXH@Z" ) != nullptr );
 }
 
+U_TEST( BasicGlobalVariablesManglingTest )
+{
+	static const char c_program_text[]=
+	R"(
+		var i32 IntGlobalVar= 0;
+		var i32 mut MutGlobalVar = 0;
+
+		var f32 FloatVar= 0.0f;
+		var f64 DoubleVar = 0.0;
+
+		auto some_auto_var= 666u64;
+		auto mut mutable_auto_var= "$"c16;
+
+		struct SomeStruct{}
+		var SomeStruct struct_type_var= zero_init;
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "?IntGlobalVar@@3HB", true ) != nullptr );
+	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "?MutGlobalVar@@3HA", true ) != nullptr );
+
+	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "?FloatVar@@3MB", true ) != nullptr );
+	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "?DoubleVar@@3NB", true ) != nullptr );
+
+	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "?some_auto_var@@3_KB", true ) != nullptr );
+	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "?mutable_auto_var@@3_SA", true ) != nullptr );
+
+	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "?struct_type_var@@3USomeStruct@@B", true ) != nullptr );
+}
+
 } // namespace U

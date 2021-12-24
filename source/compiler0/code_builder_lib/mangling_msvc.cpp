@@ -80,6 +80,9 @@ void EncodeType( const Type& type, std::string& res )
 	}
 	else if( const auto class_type= type.GetClassType() )
 	{
+		res+= "U";
+		res+= class_type->members->GetThisNamespaceName();
+		res+= "@@";
 	}
 	else if( const auto enum_type= type.GetEnumType() )
 	{
@@ -172,9 +175,8 @@ std::string ManglerMSVC::MangleGlobalVariable( const NamesScope& parent_scope, c
 	}
 	res+= "@@";
 
-	EncodeType( type, res );
-
 	res+= "3"; // Means "global variable"
+	EncodeType( type, res );
 	res+= is_constant ? "B" : "A";
 
 	return res;
