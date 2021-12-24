@@ -104,15 +104,17 @@ std::string ManglerMSVC::MangleFunction(
 	const FunctionType& function_type,
 	const TemplateArgs* const template_args )
 {
+	(void)template_args; // TODO - use this
+
 	std::string res;
 
 	res+= "?";
+	res+= function_name;
 	if( parent_scope.GetParent() != nullptr )
 	{
-		EncodeNamespacePrefix_r( parent_scope, res );
 		res+= "@";
+		EncodeNamespacePrefix_r( parent_scope, res );
 	}
-	res+= function_name;
 	res+= "@@";
 
 	// Access label
@@ -159,8 +161,25 @@ std::string ManglerMSVC::MangleFunction(
 
 std::string ManglerMSVC::MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name )
 {
-	// TODO
-	return variable_name;
+	std::string res;
+
+	res+= "?";
+	res+= variable_name;
+	if( parent_scope.GetParent() != nullptr )
+	{
+		res+= "@";
+		EncodeNamespacePrefix_r( parent_scope, res );
+	}
+	res+= "@@";
+
+	// In Ü there is no reason to use real type for variables since we have no global variables overloading.
+	// TODO - use real type anyway?
+	res+= EncodeFundamentalType(U_FundamentalType::Void);
+
+	res+= "3"; // Means "global variable"
+	res+= "A"; // const/non-const flag. TODO - set this?
+
+	return res;
 }
 
 std::string ManglerMSVC::MangleType( const Type& type )
@@ -173,20 +192,16 @@ std::string ManglerMSVC::MangleType( const Type& type )
 std::string ManglerMSVC::MangleTemplateArgs( const TemplateArgs& template_args )
 {
 	// TODO
+	(void)template_args;
 	return "";
 }
 
 std::string ManglerMSVC::MangleVirtualTable( const Type& type )
 {
 	std::string res;
-	res+= "??";
-
-	res+= "_7"; // Special name for virtual functions table
-
+	res+= "??_7"; // "_7" is special name for virtual functions table
 	EncodeType( type, res );
-
-	// TODO - finish this
-
+	res+= "6B"; // "6" for "vftable" and "B" for "const"
 	return res;
 }
 
