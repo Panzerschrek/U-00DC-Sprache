@@ -342,7 +342,7 @@ U_TEST( TemplateFunctionsManglingTest )
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ), true );
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
 
 	U_TEST_ASSERT( engine->FindFunctionNamed( "??$NoArgs@@@YAXXZ" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetZero@H@@YAHXZ" ) != nullptr );

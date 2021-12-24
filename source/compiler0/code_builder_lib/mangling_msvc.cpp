@@ -80,6 +80,44 @@ void EncodeName( std::string& res, ManglerState& mangler_state, const std::strin
 	res+= "@";
 }
 
+void EncodeNumber( std::string& res, const llvm::APInt& num, const bool is_signed )
+{
+	uint64_t abs_value= 0;
+	if( is_signed )
+	{
+		const int64_t value_signed= num.getSExtValue();
+		if( value_signed >= 0 )
+			abs_value= value_signed;
+		else
+		{
+			res+= "?";
+			abs_value= -value_signed;
+		}
+	}
+	else
+		abs_value= num.getZExtValue();
+
+	if( abs_value == 0 )
+		res+= "A@";
+	else if( abs_value <= 10 )
+		res+= char(abs_value - 1 + '0');
+	else
+	{
+		// Use hex numbers with digits in range [A;Q)
+		int64_t hex_digit= 15;
+		while((abs_value & (uint64_t(0xF) << (hex_digit << 2))) == 0)
+			--hex_digit; // It's impossible to reach zero here since "abs_value" is non-zero.
+
+		while(hex_digit >= 0)
+		{
+			res+= char('A' + ((abs_value >> (hex_digit << 2)) & 0xF));
+			--hex_digit;
+		}
+
+		res+= "@";
+	}
+}
+
 std::string_view GetFundamentalTypeMangledName( const U_FundamentalType t )
 {
 	switch( t )
@@ -116,8 +154,28 @@ void EncodeType( std::string& res, ManglerState& mangler_state, const Type& type
 	{
 		res+= GetFundamentalTypeMangledName( fundamental_type->fundamental_type );
 	}
-	else if( const auto array_type= type.GetArrayType() )
+	else if( type.GetArrayType() != nullptr )
 	{
+		// Process nested arrays.
+		llvm::SmallVector<uint64_t, 8> dimensions;
+
+		const Type* element_type= &type;
+		while( true )
+		{
+			if( const auto element_type_as_array_type= element_type->GetArrayType() )
+			{
+				dimensions.push_back(element_type_as_array_type->size);
+				element_type= &element_type_as_array_type->type;
+			}
+			else
+				break;
+		}
+
+		res+= "Y";
+		EncodeNumber( res, llvm::APInt(64, dimensions.size()), false );
+		for( const uint64_t dimension_size : dimensions )
+			EncodeNumber( res, llvm::APInt(54, dimension_size), false );
+		EncodeType( res, mangler_state, *element_type );
 	}
 	else if( const auto tuple_type= type.GetTupleType() )
 	{
@@ -212,42 +270,7 @@ void EncodeTemplateArgs( std::string& res, ManglerState& mangler_state, const Te
 			else U_ASSERT(false);
 
 			U_ASSERT( variable->constexpr_value != nullptr );
-			const llvm::APInt arg_value= variable->constexpr_value->getUniqueInteger();
-			uint64_t abs_value= 0;
-			if( is_signed )
-			{
-				const int64_t value_signed= arg_value.getSExtValue();
-				if( value_signed >= 0 )
-					abs_value= value_signed;
-				else
-				{
-					res+= "?";
-					abs_value= -value_signed;
-				}
-			}
-			else
-				abs_value= arg_value.getZExtValue();
-
-			if( abs_value == 0 )
-				res+= "A@";
-			else if( abs_value <= 10 )
-				res+= char(abs_value - 1 + '0');
-			else
-			{
-				// Use hex numbers with digits in range [A;Q)
-				int64_t hex_digit= 15;
-				while((abs_value & (uint64_t(0xF) << (hex_digit << 2))) == 0)
-					--hex_digit; // It's impossible to reach zero here since "abs_value" is non-zero.
-
-				while(hex_digit >= 0)
-				{
-					res+= char('A' + ((abs_value >> (hex_digit << 2)) & 0xF));
-					--hex_digit;
-				}
-
-				res+= "@";
-			}
-
+			EncodeNumber( res, variable->constexpr_value->getUniqueInteger(), is_signed );
 		}
 		else U_ASSERT(false);
 	}
