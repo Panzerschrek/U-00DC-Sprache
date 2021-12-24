@@ -1,5 +1,6 @@
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "enum.hpp"
+#include "keywords.hpp"
 #include "mangling.hpp"
 
 namespace U
@@ -62,6 +63,8 @@ private:
 	// Reuse mangler state to reduce number of allocations.
 	ManglerState mangler_state_;
 };
+
+void EncodeTemplateArgs( std::string& res, ManglerState& mangler_state, const TemplateArgs& template_args );
 
 void EncodeNamespacePostfix_r( std::string& res, ManglerState& mangler_state, const NamesScope& scope )
 {
@@ -179,6 +182,17 @@ void EncodeType( std::string& res, ManglerState& mangler_state, const Type& type
 	}
 	else if( const auto tuple_type= type.GetTupleType() )
 	{
+		// Encode tuples, like type templates.
+		TemplateArgs template_args;
+		template_args.reserve( tuple_type->elements.size() );
+		for( const Type& element : tuple_type->elements )
+			template_args.push_back( element );
+
+		res+= "U";
+		res+= "?$";
+		mangler_state.EncodeName( Keyword( Keywords::tup_ ), res );
+		EncodeTemplateArgs( res, mangler_state, template_args );
+		res+= "@";
 	}
 	else if( const auto class_type= type.GetClassType() )
 	{

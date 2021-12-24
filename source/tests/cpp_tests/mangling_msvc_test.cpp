@@ -359,4 +359,27 @@ U_TEST( TemplateFunctionsManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetSomeConst64@$0HPPPPPPPPPPPPPPP@@@YA_KXZ" ) != nullptr );
 }
 
+U_TEST( TuplesManglingTest )
+{
+	static const char c_program_text[]=
+	R"(
+		template</type T/> fn AllocT() { var T t= zero_init; }
+
+		fn Foo()
+		{
+			AllocT</ tup[ i32, f64, bool ] />();
+		}
+
+		fn PassTuple( tup[ f32, u64 ] t ){}
+		fn PassTupleRef( tup[ bool, f64, i32 ]& t ){}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??$AllocT@U?$tup@HN_N@@@@YAXXZ" ) != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?PassTuple@@YAXU?$tup@M_K@@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?PassTupleRef@@YAXAEBU?$tup@_NNH@@@Z" ) != nullptr );
+}
+
 } // namespace U
