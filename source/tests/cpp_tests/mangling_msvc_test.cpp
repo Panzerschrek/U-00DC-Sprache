@@ -278,4 +278,33 @@ U_TEST( ReturnValueManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?StructPtrRet@@YAPEAUKpssSs@@XZ" ) != nullptr );
 }
 
+U_TEST( EnumsManglingTest )
+{
+	static const char c_program_text[]=
+	R"(
+		enum SomeEnum{ One, Two, Three }
+		fn RetEnum() : SomeEnum { return SomeEnum::One; }
+		fn TakeEnum(SomeEnum e){}
+		fn Pass(SomeEnum e) : SomeEnum { return e; }
+		fn EnumCmp(SomeEnum a, SomeEnum b) : bool { return a == b; }
+
+		namespace qwe
+		{
+			namespace wasd
+			{
+				enum Another{ Zero, One }
+				fn Select(Another a, Another b) : Another { return a; }
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?RetEnum@@YA?AW4SomeEnum@@XZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?TakeEnum@@YAXW4SomeEnum@@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Pass@@YA?AW4SomeEnum@@W41@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?EnumCmp@@YA_NW4SomeEnum@@0@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Select@wasd@qwe@@YA?AW4Another@12@W4312@0@Z" ) != nullptr );
+}
+
 } // namespace U

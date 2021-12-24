@@ -1,4 +1,5 @@
 #include "../../lex_synt_lib_common/assert.hpp"
+#include "enum.hpp"
 #include "mangling.hpp"
 
 namespace U
@@ -128,6 +129,9 @@ void EncodeType( std::string& res, ManglerState& mangler_state, const Type& type
 	}
 	else if( const auto enum_type= type.GetEnumType() )
 	{
+		res+= "W";
+		res+= "4"; // Underlaying type. Modern MSVC uses "4" for all enums independent on underlaying type.
+		EncodeName( res, mangler_state, enum_type->members.GetThisNamespaceName(), *enum_type->members.GetParent() );
 	}
 	else if( const auto raw_pointer= type.GetRawPointerType() )
 	{
@@ -219,7 +223,7 @@ std::string ManglerMSVC::MangleFunction(
 		else
 			res+= "AEB";
 	}
-	else if( function_type.return_type.GetClassType() != nullptr )
+	else if( function_type.return_type.GetClassType() != nullptr || function_type.return_type.GetEnumType() != nullptr )
 	{
 		res += "?";
 		res+= "A"; // Return value is mutable
