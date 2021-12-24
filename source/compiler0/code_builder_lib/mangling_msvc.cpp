@@ -219,6 +219,11 @@ std::string ManglerMSVC::MangleFunction(
 		else
 			res+= "AEB";
 	}
+	else if( function_type.return_type.GetClassType() != nullptr )
+	{
+		res += "?";
+		res+= "A"; // Return value is mutable
+	}
 
 	EncodeType( res, mangler_state_, function_type.return_type );
 

@@ -223,6 +223,9 @@ U_TEST( ParamsBackReferencesTest )
 
 		// Should use params backreferences together with name component backreferences
 		fn FourFF( Abc::FF abc0, Def::FF def0, Abc::FF abc1, Def::FF def1 ) {}
+
+		// Should not use backreference for return type
+		fn Pass( SomeStruct mut s ) : SomeStruct  { return move(s); }
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
@@ -240,6 +243,39 @@ U_TEST( ParamsBackReferencesTest )
 
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?TwoFF@@YAXUFF@Abc@@U1Def@@@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?FourFF@@YAXUFF@Abc@@U1Def@@01@Z" ) != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Pass@@YA?AUSomeStruct@@U1@@Z" ) != nullptr );
+}
+
+U_TEST( ReturnValueManglingTest )
+{
+	static const char c_program_text[]=
+	R"(
+		auto g_zero= 0;
+		fn IntRet() : i32 { return g_zero; }
+		fn IntRefRet() : i32& { return g_zero; }
+		fn IntMutRefRet() : i32 &mut { unsafe{ return cast_mut(g_zero); } }
+		fn IntPtrRet() : $(i32) { unsafe{ return $<(IntMutRefRet()); } }
+
+		struct KpssSs{}
+		var KpssSs g_kpss_ss= zero_init;
+		fn StructRet() : KpssSs { return g_kpss_ss; }
+		fn StructRefRet() : KpssSs& { return g_kpss_ss; }
+		fn StructMutRefRet() : KpssSs &mut { unsafe{ return cast_mut(StructRefRet()); } }
+		fn StructPtrRet() : $(KpssSs) { unsafe{ return $<(StructMutRefRet()); } }
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?IntRet@@YAHXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?IntRefRet@@YAAEBHXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?IntMutRefRet@@YAAEAHXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?IntPtrRet@@YAPEAHXZ" ) != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?StructRet@@YA?AUKpssSs@@XZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?StructRefRet@@YAAEBUKpssSs@@XZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?StructMutRefRet@@YAAEAUKpssSs@@XZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?StructPtrRet@@YAPEAUKpssSs@@XZ" ) != nullptr );
 }
 
 } // namespace U
