@@ -307,4 +307,56 @@ U_TEST( EnumsManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?Select@wasd@qwe@@YA?AW4Another@12@W4312@0@Z" ) != nullptr );
 }
 
+U_TEST( TemplateFunctionsManglingTest )
+{
+	static const char c_program_text[]=
+	R"(
+		template<//> fn NoArgs(){}
+
+		template</type T/> fn GetZero() : T { return T(0); }
+
+		namespace Qwerty
+		{
+			template</type A, type B/> fn PerformCast(A a) : B { return B(a); }
+		}
+
+		template</i32 RES/> fn GetSomeConst() : i32 { return RES; }
+
+		template</u64 RES/> fn GetSomeConst64() : u64 { return RES; }
+
+		fn Foo()
+		{
+			NoArgs();
+			GetZero</i32/>();
+			GetZero</f64/>();
+			Qwerty::PerformCast</f32, u32/>(0.25f);
+
+			GetSomeConst</3/>();
+			GetSomeConst</42/>();
+			GetSomeConst</-7/>();
+			GetSomeConst</-65784/>();
+			GetSomeConst</654328757/>();
+
+			GetSomeConst64</0xFFFFFFFFFFFFFFFFu64/>();
+			GetSomeConst64</0x7FFFFFFFFFFFFFFFu64/>();
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ), true );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??$NoArgs@@@YAXXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetZero@H@@YAHXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetZero@N@@YANXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??$PerformCast@MI@Qwerty@@YAIM@Z" ) != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetSomeConst@$02@@YAHXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetSomeConst@$0CK@@@YAHXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetSomeConst@$0?6@@YAHXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetSomeConst@$0?BAAPI@@@YAHXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetSomeConst@$0CHAAEDLF@@@YAHXZ" ) != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetSomeConst64@$0PPPPPPPPPPPPPPPP@@@YA_KXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetSomeConst64@$0HPPPPPPPPPPPPPPP@@@YA_KXZ" ) != nullptr );
+}
+
 } // namespace U

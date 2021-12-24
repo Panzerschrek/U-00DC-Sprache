@@ -194,6 +194,67 @@ void EncodeFunctionParams( std::string& res, ManglerState& mangler_state, const 
 	}
 }
 
+void EncodeTemplateArgs( std::string& res, ManglerState& mangler_state, const TemplateArgs& template_args )
+{
+	for( const TemplateArg& template_arg : template_args )
+	{
+		if( const auto type= std::get_if<Type>(&template_arg) )
+			EncodeType( res, mangler_state, *type );
+		else if( const auto variable= std::get_if<Variable>(&template_arg) )
+		{
+			res+= "$0";
+
+			bool is_signed= false;
+			if( const auto fundamental_type= variable->type.GetFundamentalType() )
+				is_signed= IsSignedInteger( fundamental_type->fundamental_type );
+			else if( const auto enum_type= variable->type.GetEnumType() )
+				is_signed= IsSignedInteger( enum_type->underlaying_type.fundamental_type );
+			else U_ASSERT(false);
+
+			U_ASSERT( variable->constexpr_value != nullptr );
+			const llvm::APInt arg_value= variable->constexpr_value->getUniqueInteger();
+			uint64_t abs_value= 0;
+			if( is_signed )
+			{
+				const int64_t value_signed= arg_value.getSExtValue();
+				if( value_signed >= 0 )
+					abs_value= value_signed;
+				else
+				{
+					res+= "?";
+					abs_value= -value_signed;
+				}
+			}
+			else
+				abs_value= arg_value.getZExtValue();
+
+			if( abs_value == 0 )
+				res+= "A@";
+			else if( abs_value <= 10 )
+				res+= char(abs_value - 1 + '0');
+			else
+			{
+				// Use hex numbers with digits in range [A;Q)
+				int64_t hex_digit= 15;
+				while((abs_value & (uint64_t(0xF) << (hex_digit << 2))) == 0)
+					--hex_digit; // It's impossible to reach zero here since "abs_value" is non-zero.
+
+				while(hex_digit >= 0)
+				{
+					res+= char('A' + ((abs_value >> (hex_digit << 2)) & 0xF));
+					--hex_digit;
+				}
+
+				res+= "@";
+			}
+
+		}
+		else U_ASSERT(false);
+	}
+
+	res+= "@";
+}
+
 std::string ManglerMSVC::MangleFunction(
 	const NamesScope& parent_scope,
 	const std::string& function_name,
@@ -202,12 +263,21 @@ std::string ManglerMSVC::MangleFunction(
 {
 	mangler_state_.Clear();
 
-	(void)template_args; // TODO - use this
-
 	std::string res;
 
 	res+= "?";
-	EncodeName( res, mangler_state_, function_name, parent_scope );
+	if( template_args != nullptr )
+	{
+		res+= "?$";
+		mangler_state_.EncodeName( function_name, res );
+		EncodeTemplateArgs( res, mangler_state_, *template_args );
+
+		if( parent_scope.GetParent() != nullptr )
+			EncodeNamespacePostfix_r( res, mangler_state_, parent_scope );
+		res+= "@";
+	}
+	else
+		EncodeName( res, mangler_state_, function_name, parent_scope );
 
 	// Access label
 	res+= "Y";
@@ -273,9 +343,9 @@ std::string ManglerMSVC::MangleTemplateArgs( const TemplateArgs& template_args )
 {
 	mangler_state_.Clear();
 
-	// TODO
-	(void)template_args;
-	return "";
+	std::string res;
+	EncodeTemplateArgs( res, mangler_state_, template_args );
+	return res;
 }
 
 std::string ManglerMSVC::MangleVirtualTable( const Type& type )
