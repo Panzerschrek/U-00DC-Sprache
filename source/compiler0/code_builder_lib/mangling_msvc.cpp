@@ -7,12 +7,14 @@ namespace U
 namespace
 {
 
+constexpr size_t g_num_back_references= 10;
+
 class ManglerState
 {
 public:
 	void EncodeName( const std::string_view str, std::string& res )
 	{
-		for( size_t i= 0; i < c_num_back_references; ++i )
+		for( size_t i= 0; i < g_num_back_references; ++i )
 		{
 			if( back_references_[i] == str )
 			{
@@ -39,8 +41,7 @@ public:
 	}
 
 private:
-	constexpr static size_t c_num_back_references= 10;
-	std::string back_references_[c_num_back_references];
+	std::string back_references_[g_num_back_references];
 };
 
 class ManglerMSVC final : public IMangler
@@ -142,6 +143,53 @@ void EncodeType( std::string& res, ManglerState& mangler_state, const Type& type
 	else U_ASSERT(false);
 }
 
+void EncodeFunctionParams( std::string& res, ManglerState& mangler_state, const ArgsVector<FunctionType::Param>& params )
+{
+	ArgsVector<FunctionType::Param> back_references;
+
+	for( const FunctionType::Param& param : params )
+	{
+		if( !param.is_reference && param.type.GetFundamentalType() != nullptr )
+		{
+			// For trivial params (fundamentals with no reference modifiers) do not create backreferences.
+			EncodeType( res, mangler_state, param.type );
+		}
+		else
+		{
+			FunctionType::Param param_copy= param;
+			if( !param_copy.is_reference )
+				param_copy.is_mutable= false; // We do not care about mutability modifier for value params.
+
+			bool found = false;
+			for( size_t i= 0; i < back_references.size(); ++i )
+			{
+				if( param_copy == back_references[i] )
+				{
+					res+= char(i + '0');
+					found= true;
+					break;
+				}
+			}
+
+			if( !found )
+			{
+				if( param.is_reference )
+				{
+					if( param.is_mutable )
+						res+= "AEA";
+					else
+						res+= "AEB";
+				}
+
+				EncodeType( res, mangler_state, param.type );
+
+				if( back_references.size() < g_num_back_references )
+					back_references.push_back( std::move(param_copy) );
+			}
+		}
+	}
+}
+
 std::string ManglerMSVC::MangleFunction(
 	const NamesScope& parent_scope,
 	const std::string& function_name,
@@ -174,19 +222,7 @@ std::string ManglerMSVC::MangleFunction(
 
 	EncodeType( res, mangler_state_, function_type.return_type );
 
-	// Encode params
-	for( const FunctionType::Param& param : function_type.params )
-	{
-		if( param.is_reference )
-		{
-			if( param.is_mutable )
-				res+= "AEA";
-			else
-				res+= "AEB";
-		}
-
-		EncodeType( res, mangler_state_, param.type );
-	}
+	EncodeFunctionParams( res, mangler_state_, function_type.params );
 
 	if( function_type.params.empty() )
 		res+= GetFundamentalTypeMangledName( U_FundamentalType::Void );

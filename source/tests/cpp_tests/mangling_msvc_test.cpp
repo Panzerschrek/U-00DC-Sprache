@@ -200,4 +200,46 @@ U_TEST( NameBackReferencesTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?Zero@One@Two@Three@Four@Five@Six@Seven@Eight@Nine@Ten@5Ten@@YAXXZ" ) != nullptr );
 }
 
+U_TEST( ParamsBackReferencesTest )
+{
+	static const char c_program_text[]=
+	R"(
+		fn IntArgs( i32 a, i32 b, i32 c ){} // Simple fundamental type params should not be compressed
+		fn ConstRefFundamentalArgs( i32 a, i32& b, i32& c, f32 d, f32& f, f32& g ){} // Simple fundamental type params doesn't count, but reference params should use backreferences
+
+		struct SomeStruct{}
+		fn SameStructArg(SomeStruct a, SomeStruct b){} // Should use back-reference for type
+		fn SameStructRefArg(SomeStruct& a, SomeStruct& b) {} // Should use back-reference for type including reference prefix
+		fn SameStructValueAndRefArg(SomeStruct a, SomeStruct& b){} // Should use here only name backreference
+		fn SameStructRefAndValueArg(SomeStruct& a, SomeStruct b){} // Should use here only name backreference
+		fn SameStructMutAndImutRefArg(SomeStruct &mut a, SomeStruct &imut b){} // Should use here only name backreference
+		fn SameStructImutAndMutRefArg(SomeStruct &imut a, SomeStruct &mut b){} // Should use here only name backreference
+		fn ValueArgDifferentMutability(SomeStruct mut a, SomeStruct imut b){} // Should use back-reference since value arg mutability doesn't matter
+
+		// Should not use params backreference, only name component backreference
+		namespace Abc { struct FF{} }
+		namespace Def { struct FF{} }
+		fn TwoFF( Abc::FF abc, Def::FF def ){}
+
+		// Should use params backreferences together with name component backreferences
+		fn FourFF( Abc::FF abc0, Def::FF def0, Abc::FF abc1, Def::FF def1 ) {}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?IntArgs@@YAXHHH@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?ConstRefFundamentalArgs@@YAXHAEBH0MAEBM1@Z" ) != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?SameStructArg@@YAXUSomeStruct@@0@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?SameStructRefArg@@YAXAEBUSomeStruct@@0@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?SameStructValueAndRefArg@@YAXUSomeStruct@@AEBU1@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?SameStructRefAndValueArg@@YAXAEBUSomeStruct@@U1@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?SameStructMutAndImutRefArg@@YAXAEAUSomeStruct@@AEBU1@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?SameStructImutAndMutRefArg@@YAXAEBUSomeStruct@@AEAU1@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?ValueArgDifferentMutability@@YAXUSomeStruct@@0@Z" ) != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?TwoFF@@YAXUFF@Abc@@U1Def@@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?FourFF@@YAXUFF@Abc@@U1Def@@01@Z" ) != nullptr );
+}
+
 } // namespace U
