@@ -100,4 +100,104 @@ U_TEST( BasicNestedNamesTest )
 	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "?wer_hat_angst@Baz@Qwerty@@3MB", true ) != nullptr );
 }
 
+U_TEST( NameBackReferencesTest )
+{
+	static const char c_program_text[]=
+	R"(
+		namespace Foo
+		{
+			fn Foo(){} // Should compress namespace name 'Foo' to '0'
+		}
+
+		namespace Bar
+		{
+			namespace Bar
+			{
+				fn Third(){} // Should compress second usage of 'Bar' to '1'
+			}
+		}
+
+		namespace Lol
+		{
+			namespace Wat
+			{
+				fn Lol(){} // Should compress second usage of 'Lol' to '0'
+			}
+		}
+
+		namespace Same
+		{
+			namespace Same
+			{
+				namespace Same
+				{
+					fn WTF(){} // Should compress all usage of 'Same' to '1'
+					fn Same(){} // Should compress all usage of 'Same' to '0'
+				}
+			}
+		}
+
+		namespace Qwerty
+		{
+			struct Abc{}
+			struct Def{}
+			fn Ghi(Abc abc, Def def){} // Should reuse 'Qwerty' for type names
+		}
+
+		fn ExternalGhi(Qwerty::Abc abc, Qwerty::Def def) {} // Should reuse 'Qwerty' for type names
+
+		namespace MitDemLebenKommtDerTod
+		{
+			namespace DieSonneSchlucktDasMorgenrot
+			{
+				struct MitDemLebenKommtDerTod {}
+				fn EinHerzVerliertDieLetzteSchlacht( MitDemLebenKommtDerTod m ){} // Should reuse namespace name for type name.
+			}
+		}
+
+		namespace Fisting
+		{
+			namespace Is
+			{
+				namespace ThreeHundred
+				{
+					namespace Bucks
+					{
+						struct Cum{}
+						fn RipOffOurPants(Cum cum){} // Should create series of backreferences for param type name, like '1234'
+					}
+				}
+			}
+		}
+
+		namespace Ten { // Can't use backreference here - limit is reached
+		namespace Five { // duplicate - should back-reference it
+		namespace Ten {
+		namespace Nine {
+		namespace Eight {
+		namespace Seven {
+		namespace Six {
+		namespace Five {
+		namespace Four {
+		namespace Three {
+		namespace Two {
+		namespace One {
+		fn Zero(){}
+		} } } } } } } } } } } }
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Foo@0@YAXXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Third@Bar@1@YAXXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Lol@Wat@0@YAXXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?WTF@Same@11@YAXXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Same@000@YAXXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Ghi@Qwerty@@YAXUAbc@1@UDef@1@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?ExternalGhi@@YAXUAbc@Qwerty@@UDef@2@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?EinHerzVerliertDieLetzteSchlacht@DieSonneSchlucktDasMorgenrot@MitDemLebenKommtDerTod@@YAXU212@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?RipOffOurPants@Bucks@ThreeHundred@Is@Fisting@@YAXUCum@1234@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Zero@One@Two@Three@Four@Five@Six@Seven@Eight@Nine@Ten@5Ten@@YAXXZ" ) != nullptr );
+}
+
 } // namespace U

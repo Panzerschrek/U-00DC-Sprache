@@ -7,6 +7,42 @@ namespace U
 namespace
 {
 
+class ManglerState
+{
+public:
+	void EncodeName( const std::string_view str, std::string& res )
+	{
+		for( size_t i= 0; i < c_num_back_references; ++i )
+		{
+			if( back_references_[i] == str )
+			{
+				res+= char(i + '0');
+				return;
+			}
+			if( back_references_[i].empty() )
+			{
+				// Reached empty space - fill it.
+				back_references_[i].assign(str);
+				break;
+			}
+		}
+
+		// Not found or reached backreferences limit.
+		res+= str;
+		res+= "@";
+	}
+
+	void Clear()
+	{
+		for( std::string& back_reference : back_references_ )
+			back_reference.clear();
+	}
+
+private:
+	constexpr static size_t c_num_back_references= 10;
+	std::string back_references_[c_num_back_references];
+};
+
 class ManglerMSVC final : public IMangler
 {
 public:
@@ -21,20 +57,28 @@ public:
 	std::string MangleVirtualTable( const Type& type ) override;
 
 private:
+	// Reuse mangler state to reduce number of allocations.
+	ManglerState mangler_state_;
 };
 
-void EncodeNamespacePostfix_r( const NamesScope& scope, std::string& res )
+void EncodeNamespacePostfix_r( std::string& res, ManglerState& mangler_state, const NamesScope& scope )
 {
 	if( scope.GetParent() == nullptr ) // Root namespace.
 		return;
 
-	res+= scope.GetThisNamespaceName();
-	res+= "@";
+	mangler_state.EncodeName( scope.GetThisNamespaceName(), res );
 
-	EncodeNamespacePostfix_r( *scope.GetParent(), res );
+	EncodeNamespacePostfix_r( res, mangler_state, *scope.GetParent() );
 }
 
-std::string_view EncodeFundamentalType( const U_FundamentalType t )
+void EncodeName( std::string& res, ManglerState& mangler_state, const std::string_view name, const NamesScope& scope )
+{
+	mangler_state.EncodeName( name, res );
+	EncodeNamespacePostfix_r( res, mangler_state, scope );
+	res+= "@";
+}
+
+std::string_view GetFundamentalTypeMangledName( const U_FundamentalType t )
 {
 	switch( t )
 	{
@@ -64,11 +108,11 @@ std::string_view EncodeFundamentalType( const U_FundamentalType t )
 	return "";
 }
 
-void EncodeType( const Type& type, std::string& res )
+void EncodeType( std::string& res, ManglerState& mangler_state, const Type& type )
 {
 	if( const auto fundamental_type= type.GetFundamentalType() )
 	{
-		res+= EncodeFundamentalType( fundamental_type->fundamental_type );
+		res+= GetFundamentalTypeMangledName( fundamental_type->fundamental_type );
 	}
 	else if( const auto array_type= type.GetArrayType() )
 	{
@@ -79,8 +123,7 @@ void EncodeType( const Type& type, std::string& res )
 	else if( const auto class_type= type.GetClassType() )
 	{
 		res+= "U";
-		res+= class_type->members->GetThisNamespaceName();
-		res+= "@@";
+		EncodeName( res, mangler_state, class_type->members->GetThisNamespaceName(), *class_type->members->GetParent() );
 	}
 	else if( const auto enum_type= type.GetEnumType() )
 	{
@@ -88,7 +131,7 @@ void EncodeType( const Type& type, std::string& res )
 	else if( const auto raw_pointer= type.GetRawPointerType() )
 	{
 		res+= "PEA";
-		EncodeType( raw_pointer->type, res );
+		EncodeType( res, mangler_state, raw_pointer->type );
 	}
 	else if( const auto function_pointer= type.GetFunctionPointerType() )
 	{
@@ -105,15 +148,14 @@ std::string ManglerMSVC::MangleFunction(
 	const FunctionType& function_type,
 	const TemplateArgs* const template_args )
 {
+	mangler_state_.Clear();
+
 	(void)template_args; // TODO - use this
 
 	std::string res;
 
 	res+= "?";
-	res+= function_name;
-	res+= "@";
-	EncodeNamespacePostfix_r( parent_scope, res );
-	res+= "@";
+	EncodeName( res, mangler_state_, function_name, parent_scope );
 
 	// Access label
 	res+= "Y";
@@ -130,7 +172,7 @@ std::string ManglerMSVC::MangleFunction(
 			res+= "AEB";
 	}
 
-	EncodeType( function_type.return_type, res );
+	EncodeType( res, mangler_state_, function_type.return_type );
 
 	// Encode params
 	for( const FunctionType::Param& param : function_type.params )
@@ -143,11 +185,11 @@ std::string ManglerMSVC::MangleFunction(
 				res+= "AEB";
 		}
 
-		EncodeType( param.type, res );
+		EncodeType( res, mangler_state_, param.type );
 	}
 
 	if( function_type.params.empty() )
-		res+= EncodeFundamentalType( U_FundamentalType::Void );
+		res+= GetFundamentalTypeMangledName( U_FundamentalType::Void );
 	else
 		res+= "@"; // Terminate list of params in case of non-empty params list.
 
@@ -159,16 +201,15 @@ std::string ManglerMSVC::MangleFunction(
 
 std::string ManglerMSVC::MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name, const Type& type, const bool is_constant )
 {
+	mangler_state_.Clear();
+
 	std::string res;
 
 	res+= "?";
-	res+= variable_name;
-	res+= "@";
-	EncodeNamespacePostfix_r( parent_scope, res );
-	res+= "@";
+	EncodeName( res, mangler_state_, variable_name, parent_scope );
 
 	res+= "3"; // Means "global variable"
-	EncodeType( type, res );
+	EncodeType( res, mangler_state_, type );
 	res+= is_constant ? "B" : "A";
 
 	return res;
@@ -176,13 +217,17 @@ std::string ManglerMSVC::MangleGlobalVariable( const NamesScope& parent_scope, c
 
 std::string ManglerMSVC::MangleType( const Type& type )
 {
+	mangler_state_.Clear();
+
 	std::string res;
-	EncodeType( type, res );
+	EncodeType( res, mangler_state_, type );
 	return res;
 }
 
 std::string ManglerMSVC::MangleTemplateArgs( const TemplateArgs& template_args )
 {
+	mangler_state_.Clear();
+
 	// TODO
 	(void)template_args;
 	return "";
@@ -190,9 +235,11 @@ std::string ManglerMSVC::MangleTemplateArgs( const TemplateArgs& template_args )
 
 std::string ManglerMSVC::MangleVirtualTable( const Type& type )
 {
+	mangler_state_.Clear();
+
 	std::string res;
 	res+= "??_7"; // "_7" is special name for virtual functions table
-	EncodeType( type, res );
+	EncodeType( res, mangler_state_, type );
 	res+= "6B"; // "6" for "vftable" and "B" for "const"
 	return res;
 }
