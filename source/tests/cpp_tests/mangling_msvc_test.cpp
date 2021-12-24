@@ -74,4 +74,30 @@ U_TEST( BasicGlobalVariablesManglingTest )
 	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "?struct_type_var@@3USomeStruct@@B", true ) != nullptr );
 }
 
+U_TEST( BasicNestedNamesTest )
+{
+	static const char c_program_text[]=
+	R"(
+		namespace Qwerty
+		{
+			fn Foo(){}
+			auto blab= 0;
+
+			namespace Baz
+			{
+				fn Bar(){}
+				var f32 wer_hat_angst= 0.0f;
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Foo@Qwerty@@YAXXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "?blab@Qwerty@@3HB", true ) != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Bar@Baz@Qwerty@@YAXXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "?wer_hat_angst@Baz@Qwerty@@3MB", true ) != nullptr );
+}
+
 } // namespace U

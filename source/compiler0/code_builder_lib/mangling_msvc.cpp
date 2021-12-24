@@ -23,17 +23,15 @@ public:
 private:
 };
 
-void EncodeNamespacePrefix_r(
-	const NamesScope& scope,
-	std::string& res )
+void EncodeNamespacePostfix_r( const NamesScope& scope, std::string& res )
 {
 	if( scope.GetParent() == nullptr ) // Root namespace.
 		return;
 
-	EncodeNamespacePrefix_r( *scope.GetParent(), res );
-
-	res+= "@";
 	res+= scope.GetThisNamespaceName();
+	res+= "@";
+
+	EncodeNamespacePostfix_r( *scope.GetParent(), res );
 }
 
 std::string_view EncodeFundamentalType( const U_FundamentalType t )
@@ -113,12 +111,9 @@ std::string ManglerMSVC::MangleFunction(
 
 	res+= "?";
 	res+= function_name;
-	if( parent_scope.GetParent() != nullptr )
-	{
-		res+= "@";
-		EncodeNamespacePrefix_r( parent_scope, res );
-	}
-	res+= "@@";
+	res+= "@";
+	EncodeNamespacePostfix_r( parent_scope, res );
+	res+= "@";
 
 	// Access label
 	res+= "Y";
@@ -168,12 +163,9 @@ std::string ManglerMSVC::MangleGlobalVariable( const NamesScope& parent_scope, c
 
 	res+= "?";
 	res+= variable_name;
-	if( parent_scope.GetParent() != nullptr )
-	{
-		res+= "@";
-		EncodeNamespacePrefix_r( parent_scope, res );
-	}
-	res+= "@@";
+	res+= "@";
+	EncodeNamespacePostfix_r( parent_scope, res );
+	res+= "@";
 
 	res+= "3"; // Means "global variable"
 	EncodeType( type, res );
