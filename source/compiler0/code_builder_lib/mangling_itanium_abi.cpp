@@ -56,7 +56,7 @@ public:
 		const std::string& function_name,
 		const FunctionType& function_type,
 		const TemplateArgs* template_args ) override;
-	std::string MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name )  override;
+	std::string MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name, const Type& type, bool is_constant ) override;
 	std::string MangleType( const Type& type ) override;
 	std::string MangleTemplateArgs( const TemplateArgs& template_args ) override;
 	std::string MangleVirtualTable( const Type& type ) override;
@@ -610,8 +610,11 @@ std::string ManglerItaniumABI::MangleFunction(
 	return state_.TakeResult();
 }
 
-std::string ManglerItaniumABI::MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name )
+std::string ManglerItaniumABI::MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name, const Type& type, const bool is_constant )
 {
+	(void)type;
+	(void)is_constant;
+
 	// Variables inside global namespace have simple names.
 	if( parent_scope.GetParent() == nullptr )
 		return variable_name;

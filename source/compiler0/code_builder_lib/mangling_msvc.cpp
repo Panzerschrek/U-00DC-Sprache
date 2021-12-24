@@ -15,7 +15,7 @@ public:
 		const std::string& function_name,
 		const FunctionType& function_type,
 		const TemplateArgs* template_args ) override;
-	std::string MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name )  override;
+	std::string MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name, const Type& type, bool is_constant ) override;
 	std::string MangleType( const Type& type ) override;
 	std::string MangleTemplateArgs( const TemplateArgs& template_args ) override;
 	std::string MangleVirtualTable( const Type& type ) override;
@@ -159,7 +159,7 @@ std::string ManglerMSVC::MangleFunction(
 	return res;
 }
 
-std::string ManglerMSVC::MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name )
+std::string ManglerMSVC::MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name, const Type& type, const bool is_constant )
 {
 	std::string res;
 
@@ -172,12 +172,10 @@ std::string ManglerMSVC::MangleGlobalVariable( const NamesScope& parent_scope, c
 	}
 	res+= "@@";
 
-	// In Ü there is no reason to use real type for variables since we have no global variables overloading.
-	// TODO - use real type anyway?
-	res+= EncodeFundamentalType(U_FundamentalType::Void);
+	EncodeType( type, res );
 
 	res+= "3"; // Means "global variable"
-	res+= "A"; // const/non-const flag. TODO - set this?
+	res+= is_constant ? "B" : "A";
 
 	return res;
 }
