@@ -357,7 +357,12 @@ void EncodeTemplateArgs( std::string& res, ManglerState& mangler_state, const Te
 	for( const TemplateArg& template_arg : template_args )
 	{
 		if( const auto type= std::get_if<Type>(&template_arg) )
+		{
+			if( type->GetArrayType() != nullptr )
+				res+= "$$B";
+
 			EncodeType( res, mangler_state, *type );
+		}
 		else if( const auto variable= std::get_if<Variable>(&template_arg) )
 		{
 			res+= "$0";

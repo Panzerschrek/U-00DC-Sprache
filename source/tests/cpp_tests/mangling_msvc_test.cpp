@@ -500,6 +500,33 @@ U_TEST( TemplateClassesManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?Lol@JWST@@YAXU?$StrangeStruct@U0JWST@@@@@Z" ) != nullptr );
 }
 
+U_TEST( ArraysManglingTest )
+{
+	static const char c_program_text[]=
+	R"(
+		template</type T/> struct Box { T t; }
+
+		fn Box4Int( Box</[i32, 4]/> b ){}
+		fn Box100Float(Box</[f32, 100]/> b ) {}
+		fn BoxMat4x7x23(Box</[[[bool, 23], 7], 4]/> b ) {}
+
+		fn FooIntVec4( [ i32, 4 ] v ){}
+		fn FooFloatVec123456Ref( [f32, 123456 ] & v ){}
+
+		type Mat4= [ [ f64, 4 ], 4 ];
+		fn MultiplyMat4( Mat4& a, Mat4& b ) : Mat4 { return a; }
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ), true );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Box4Int@@YAXU?$Box@$$BY03H@@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Box100Float@@YAXU?$Box@$$BY0GE@M@@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?BoxMat4x7x23@@YAXU?$Box@$$BY236BH@_N@@@Z" ) != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?FooIntVec4@@YAXY03H@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?MultiplyMat4@@YAY133NAEBY133N0@Z" ) != nullptr );
+}
+
 U_TEST( TuplesManglingTest )
 {
 	static const char c_program_text[]=
