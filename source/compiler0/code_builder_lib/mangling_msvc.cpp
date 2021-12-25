@@ -109,7 +109,6 @@ void EncodeName( std::string& res, ManglerState& mangler_state, const std::strin
 {
 	mangler_state.EncodeName( name, res );
 	EncodeNamespacePostfix_r( res, mangler_state, scope );
-	res+= "@";
 }
 
 void EncodeNumber( std::string& res, const llvm::APInt& num, const bool is_signed )
@@ -317,18 +316,18 @@ void EncodeType( std::string& res, ManglerState& mangler_state, const Type& type
 			// TODO
 		}
 		else if( class_type->base_template != std::nullopt )
-		{
 			EncodeTemplateClassName( res, mangler_state, class_type );
-			res+= "@";
-		}
 		else
 			EncodeName( res, mangler_state, class_type->members->GetThisNamespaceName(), *class_type->members->GetParent() );
+
+		res+= "@";
 	}
 	else if( const auto enum_type= type.GetEnumType() )
 	{
 		res+= "W";
 		res+= "4"; // Underlaying type. Modern MSVC uses "4" for all enums independent on underlaying type.
 		EncodeName( res, mangler_state, enum_type->members.GetThisNamespaceName(), *enum_type->members.GetParent() );
+		res+= "@";
 	}
 	else if( const auto raw_pointer= type.GetRawPointerType() )
 	{
@@ -399,10 +398,10 @@ std::string ManglerMSVC::MangleFunction(
 
 		if( parent_scope.GetParent() != nullptr )
 			EncodeNamespacePostfix_r( res, mangler_state_, parent_scope );
-		res+= "@";
 	}
 	else
 		EncodeName( res, mangler_state_, function_name, parent_scope );
+	res+= "@";
 
 	// Access label
 	res+= "Y";
@@ -420,6 +419,7 @@ std::string ManglerMSVC::MangleGlobalVariable( const NamesScope& parent_scope, c
 
 	res+= "?";
 	EncodeName( res, mangler_state_, variable_name, parent_scope );
+	res+= "@";
 
 	res+= "3"; // Means "global variable"
 	EncodeType( res, mangler_state_, type );
