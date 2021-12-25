@@ -207,7 +207,7 @@ std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const char* text 
 	U_TEST_ASSERT( source_graph->errors.empty() );
 
 	CodeBuilderOptions options= GetCodeBuilderOptionsForTests();
-	options.mangling_scheme= ManglingScheme::MSVC;
+	options.mangling_scheme= ManglingScheme::MSVC64; // Test only 64-bit scheme
 
 	CodeBuilder::BuildResult build_result=
 		CodeBuilder(

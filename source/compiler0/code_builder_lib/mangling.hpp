@@ -22,6 +22,6 @@ public:
 };
 
 std::unique_ptr<IMangler> CreateManglerItaniumABI();
-std::unique_ptr<IMangler> CreateManglerMSVC();
+std::unique_ptr<IMangler> CreateManglerMSVC(bool is_32_bit);
 
 } // namespace U

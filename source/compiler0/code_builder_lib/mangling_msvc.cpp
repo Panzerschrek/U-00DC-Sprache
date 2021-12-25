@@ -9,17 +9,103 @@ namespace U
 namespace
 {
 
-// TODO - maybe avoid hardcoding 'E' for 64-bit pointers?
-
 constexpr size_t g_num_back_references= 10;
 constexpr char g_name_prefix= '?'; // All names (function, variables) should start with it.
 constexpr char g_terminator= '@';
-constexpr char g_reference_mut_prefix[]= "AEA"; // 'A' for reference, 'E' for 64bit pointer, 'A' for non-const.
-constexpr char g_reference_imut_prefix[]= "AEB"; // 'A' for reference, 'E' for 64bit pointer, 'B' for const.
 constexpr char g_template_prefix[]= "?$";
 constexpr char g_class_type_prefix = 'U';
-constexpr char g_mut_flag= 'A';
-constexpr char g_imut_flag= 'B';
+constexpr char g_reference_prefix = 'A';
+constexpr char g_pointer_prefix = 'P';
+constexpr char g_mut_prefix= 'A';
+constexpr char g_imut_prefix= 'B';
+
+std::string_view GetFundamentalTypeMangledName( const U_FundamentalType t )
+{
+	switch( t )
+	{
+	case U_FundamentalType::InvalidType:
+	case U_FundamentalType::LastType:
+		return "";
+	case U_FundamentalType::Void: return "X";
+	case U_FundamentalType::Bool: return "_N";
+	case U_FundamentalType:: i8: return "C"; // C++ "signed char"
+	case U_FundamentalType:: u8: return "E"; // C++ "unsigned char"
+	case U_FundamentalType::i16: return "F"; // C++ "short"
+	case U_FundamentalType::u16: return "G"; // C++ "unsigned short"
+	case U_FundamentalType::i32: return "H"; // C++ "int"
+	case U_FundamentalType::u32: return "I"; // C++ "unsigned short"
+	case U_FundamentalType::i64: return "_J"; // C++ "int64_t"
+	case U_FundamentalType::u64: return "_K"; // C++ "uuint64_t"
+	case U_FundamentalType::i128: return "_L"; // C++ "__int128"
+	case U_FundamentalType::u128: return "_M"; // "unsigned __int128"
+	case U_FundamentalType::f32: return "M";  // C++ "float"
+	case U_FundamentalType::f64: return "N"; // C++ "double"
+	case U_FundamentalType::char8 : return "D"; // C++ "char"
+	case U_FundamentalType::char16: return "_S"; // C++ "char16_t"
+	case U_FundamentalType::char32: return "_U"; // C++ "char32_t"
+	};
+
+	U_ASSERT(false);
+	return "";
+}
+
+const ProgramStringMap<std::string> g_op_names
+{
+	{ "+", "?H" },
+	{ "-", "?G" },
+	{ "*", "?D" },
+	{ "/", "?K" },
+	{ "%", "?L" },
+
+	{ "==", "?8" },
+	{ "!=", "?9" },
+	{  ">", "?O" },
+	{ ">=", "?P" },
+	{  "<", "?M" },
+	{ "<=", "?N" },
+
+	{ "&", "?I" },
+	{ "|", "?U" },
+	{ "^", "?T" },
+
+	{ "<<", "?6" },
+	{ ">>", "?5" },
+
+	{ "+=", "?Y" },
+	{ "-=", "?Z" },
+	{ "*=", "?X" },
+	{ "/=", "?_0" },
+	{ "%=", "?_1" },
+
+	{ "&=", "?_4" },
+	{ "|=", "?_5" },
+	{ "^=", "?_6" },
+
+	{ "<<=", "?_3" },
+	{ ">>=", "?_2" },
+
+	{ "!", "?7" },
+	{ "~", "?S" },
+
+	{ "=", "?4" },
+	{ "++", "?E" },
+	{ "--", "?F" },
+
+	{ "()", "?R" },
+	{ "[]", "?A" },
+};
+
+const std::string g_empty_op_name;
+
+// Returns empty string if func_name is not special.
+const std::string& DecodeOperator( const std::string& func_name )
+{
+	const auto it= g_op_names.find( func_name );
+	if( it != g_op_names.end() )
+		return it->second;
+
+	return g_empty_op_name;
+}
 
 class ManglerState
 {
@@ -59,6 +145,9 @@ private:
 class ManglerMSVC final : public IMangler
 {
 public:
+	explicit ManglerMSVC(bool is_32_bit);
+
+public: // IMangler
 	std::string MangleFunction(
 		const NamesScope& parent_scope,
 		const std::string& function_name,
@@ -70,201 +159,120 @@ public:
 	std::string MangleVirtualTable( const Type& type ) override;
 
 private:
+	void EncodeType( std::string& res, ManglerState& mangler_state, const Type& type ) const;
+	void EncodeFunctionType( std::string& res, ManglerState& mangler_state, const FunctionType& function_type ) const;
+	void EncodeFunctionParams( std::string& res, ManglerState& mangler_state, const ArgsVector<FunctionType::Param>& params ) const;
+	void EncodeTemplateArgs( std::string& res, ManglerState& mangler_state, const TemplateArgs& template_args ) const;
+	void EncodeFullName( std::string& res, ManglerState& mangler_state, const std::string_view name, const NamesScope& scope ) const;
+	void EncodeNamespacePostfix_r( std::string& res, ManglerState& mangler_state, const NamesScope& scope ) const;
+	void EncodeTemplateClassName( std::string& res, ManglerState& mangler_state, const ClassPtr& the_class ) const;
+	void EncodeNumber( std::string& res, const llvm::APInt& num, bool is_signed ) const;
+
+private:
+	const std::string pointer_types_modifier_;
 	// Reuse mangler state to reduce number of allocations.
 	ManglerState mangler_state_;
 };
 
-void EncodeTemplateArgs( std::string& res, ManglerState& mangler_state, const TemplateArgs& template_args );
-void EncodeType( std::string& res, ManglerState& mangler_state, const Type& type );
-void EncodeNamespacePostfix_r( std::string& res, ManglerState& mangler_state, const NamesScope& scope );
+ManglerMSVC::ManglerMSVC(const bool is_32_bit)
+	: pointer_types_modifier_(is_32_bit ? "" : "E")
+{}
 
-void EncodeTemplateClassName( std::string& res, ManglerState& mangler_state, const ClassPtr& the_class )
+std::string ManglerMSVC::MangleFunction(
+	const NamesScope& parent_scope,
+	const std::string& function_name,
+	const FunctionType& function_type,
+	const TemplateArgs* const template_args )
 {
-	U_ASSERT( the_class->base_template != std::nullopt );
+	// For class methods do not encode stuff like access labels, or methods-related stuff.
+	// Just encode class methods as regular functions inside namespaces, with "this" as regular param.
 
-	const TypeTemplatePtr& type_template= the_class->base_template->class_template;
-	const auto namespace_containing_template= type_template->parent_namespace;
+	mangler_state_.Clear();
 
-	// Use separate backreferences table.
-	ManglerState template_mangler_state;
+	std::string res;
 
-	res+= g_template_prefix;
-	template_mangler_state.EncodeName( type_template->syntax_element->name_, res );
-	EncodeTemplateArgs( res, template_mangler_state, the_class->base_template->signature_args );
+	res+= g_name_prefix;
 
-	if( namespace_containing_template->GetParent() != nullptr )
-		EncodeNamespacePostfix_r( res, mangler_state, *namespace_containing_template );
-}
-
-void EncodeNamespacePostfix_r( std::string& res, ManglerState& mangler_state, const NamesScope& scope )
-{
-	if( scope.GetParent() == nullptr ) // Root namespace.
-		return;
-
-	if( const ClassPtr the_class= scope.GetClass() )
+	const std::string& op_name= DecodeOperator( function_name );
+	if( template_args != nullptr )
 	{
-		if( the_class->base_template != std::nullopt )
-		{
-			EncodeTemplateClassName( res, mangler_state, the_class );
-			return;
-		}
+		// Use separate backreferences table.
+		ManglerState template_mangler_state;
+
+		res+= g_template_prefix;
+		if( !op_name.empty() )
+			res+= op_name;
+		else
+			template_mangler_state.EncodeName( function_name, res );
+		EncodeTemplateArgs( res, template_mangler_state, *template_args );
 	}
-
-	mangler_state.EncodeName( scope.GetThisNamespaceName(), res );
-
-	EncodeNamespacePostfix_r( res, mangler_state, *scope.GetParent() );
-}
-
-void EncodeFullName( std::string& res, ManglerState& mangler_state, const std::string_view name, const NamesScope& scope )
-{
-	mangler_state.EncodeName( name, res );
-	EncodeNamespacePostfix_r( res, mangler_state, scope );
+	else
+	{
+		if( !op_name.empty() )
+			res+= op_name;
+		else
+			mangler_state_.EncodeName( function_name, res );
+	}
+	EncodeNamespacePostfix_r( res, mangler_state_, parent_scope );
 	// Finish list of name components.
 	res+= g_terminator;
+
+	// Access label. Use global access modifier. There is no reason to use real access modifiers for class members
+	res+= "Y";
+
+	EncodeFunctionType( res, mangler_state_, function_type );
+
+	return res;
 }
 
-void EncodeNumber( std::string& res, const llvm::APInt& num, const bool is_signed )
+std::string ManglerMSVC::MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name, const Type& type, const bool is_constant )
 {
-	uint64_t abs_value= 0;
-	if( is_signed )
-	{
-		const int64_t value_signed= num.getSExtValue();
-		if( value_signed >= 0 )
-			abs_value= value_signed;
-		else
-		{
-			res+= "?";
-			abs_value= -value_signed;
-		}
-	}
-	else
-		abs_value= num.getZExtValue();
+	mangler_state_.Clear();
 
-	if( abs_value == 0 )
-		res+= "A@";
-	else if( abs_value <= 10 )
-		res+= char(abs_value - 1 + '0');
-	else
-	{
-		// Use hex numbers with digits in range [A;Q)
-		int64_t hex_digit= 15;
-		while((abs_value & (uint64_t(0xF) << (hex_digit << 2))) == 0)
-			--hex_digit; // It's impossible to reach zero here since "abs_value" is non-zero.
+	std::string res;
 
-		while(hex_digit >= 0)
-		{
-			res+= char('A' + ((abs_value >> (hex_digit << 2)) & 0xF));
-			--hex_digit;
-		}
+	res+= g_name_prefix;
+	EncodeFullName( res, mangler_state_, variable_name, parent_scope );
 
-		// Finish list of digits.
-		res+= g_terminator;
-	}
+	res+= "3"; // Special name for global variables.
+	EncodeType( res, mangler_state_, type );
+	res+= is_constant ? g_imut_prefix : g_mut_prefix;
+
+	return res;
 }
 
-std::string_view GetFundamentalTypeMangledName( const U_FundamentalType t )
+std::string ManglerMSVC::MangleType( const Type& type )
 {
-	switch( t )
-	{
-	case U_FundamentalType::InvalidType:
-	case U_FundamentalType::LastType:
-		return "";
-	case U_FundamentalType::Void: return "X";
-	case U_FundamentalType::Bool: return "_N";
-	case U_FundamentalType:: i8: return "C"; // C++ "signed char"
-	case U_FundamentalType:: u8: return "E"; // C++ "unsigned char"
-	case U_FundamentalType::i16: return "F"; // C++ "short"
-	case U_FundamentalType::u16: return "G"; // C++ "unsigned short"
-	case U_FundamentalType::i32: return "H"; // C++ "int"
-	case U_FundamentalType::u32: return "I"; // C++ "unsigned short"
-	case U_FundamentalType::i64: return "_J"; // C++ "int64_t"
-	case U_FundamentalType::u64: return "_K"; // C++ "uuint64_t"
-	case U_FundamentalType::i128: return "_L"; // C++ "__int128"
-	case U_FundamentalType::u128: return "_M"; // "unsigned __int128"
-	case U_FundamentalType::f32: return "M";  // C++ "float"
-	case U_FundamentalType::f64: return "N"; // C++ "double"
-	case U_FundamentalType::char8 : return "D"; // C++ "char"
-	case U_FundamentalType::char16: return "_S"; // C++ "char16_t"
-	case U_FundamentalType::char32: return "_U"; // C++ "char32_t"
-	};
+	mangler_state_.Clear();
 
-	U_ASSERT(false);
-	return "";
+	std::string res;
+	EncodeType( res, mangler_state_, type );
+	return res;
 }
 
-void EncodeFunctionParams( std::string& res, ManglerState& mangler_state, const ArgsVector<FunctionType::Param>& params )
+std::string ManglerMSVC::MangleTemplateArgs( const TemplateArgs& template_args )
 {
-	ArgsVector<FunctionType::Param> back_references;
+	mangler_state_.Clear();
 
-	for( const FunctionType::Param& param : params )
-	{
-		if( !param.is_reference && param.type.GetFundamentalType() != nullptr )
-		{
-			// For trivial params (fundamentals with no reference modifiers) do not create backreferences.
-			EncodeType( res, mangler_state, param.type );
-		}
-		else
-		{
-			FunctionType::Param param_copy= param;
-			if( !param_copy.is_reference )
-				param_copy.is_mutable= false; // We do not care about mutability modifier for value params.
-
-			bool found = false;
-			for( size_t i= 0; i < back_references.size(); ++i )
-			{
-				if( param_copy == back_references[i] )
-				{
-					res+= char(i + '0');
-					found= true;
-					break;
-				}
-			}
-
-			if( !found )
-			{
-				if( param.is_reference )
-					res+= param.is_mutable ? g_reference_mut_prefix : g_reference_imut_prefix;
-
-				EncodeType( res, mangler_state, param.type );
-
-				if( back_references.size() < g_num_back_references )
-					back_references.push_back( std::move(param_copy) );
-			}
-		}
-	}
+	std::string res;
+	EncodeTemplateArgs( res, mangler_state_, template_args );
+	return res;
 }
 
-void EncodeFunctionType( std::string& res, ManglerState& mangler_state, const FunctionType& function_type )
+std::string ManglerMSVC::MangleVirtualTable( const Type& type )
 {
-	// Calling convention code
-	res+= "A";
+	mangler_state_.Clear();
 
-	if( function_type.return_value_is_reference )
-		res+= function_type.return_value_is_mutable ? g_reference_mut_prefix : g_reference_imut_prefix;
-	else if(
-		function_type.return_type.GetClassType() != nullptr ||
-		function_type.return_type.GetEnumType() != nullptr ||
-		function_type.return_type.GetTupleType() != nullptr )
-	{
-		res += "?";
-		res+= g_mut_flag; // Return value is mutable
-	}
-
-	EncodeType( res, mangler_state, function_type.return_type );
-
-	EncodeFunctionParams( res, mangler_state, function_type.params );
-
-	if( !function_type.params.empty() )
-		res+= g_terminator; // Finish list of params.
-	else
-		res+= GetFundamentalTypeMangledName( U_FundamentalType::Void ); // In case of empty params just leave single type - "void" without terminator symbol.
-
-	res+= "Z";
-
-	// TODO - encode unsafe flag, return references, references pollution
+	std::string res;
+	res+= g_name_prefix;
+	res+= "?_7"; // Special name for virtual functions table.
+	EncodeType( res, mangler_state_, type );
+	res+= "6"; // "6" for "vftable"
+	res+= g_imut_prefix;
+	return res;
 }
 
-void EncodeType( std::string& res, ManglerState& mangler_state, const Type& type )
+void ManglerMSVC::EncodeType( std::string& res, ManglerState& mangler_state, const Type& type ) const
 {
 	if( const auto fundamental_type= type.GetFundamentalType() )
 	{
@@ -336,12 +344,14 @@ void EncodeType( std::string& res, ManglerState& mangler_state, const Type& type
 	}
 	else if( const auto raw_pointer= type.GetRawPointerType() )
 	{
-		res+= "PEA"; // P for pointer, 'E' for 64 bit, 'A' for non-const.
+		res+= g_pointer_prefix;
+		res+= pointer_types_modifier_;
+		res+= g_mut_prefix;
 		EncodeType( res, mangler_state, raw_pointer->type );
 	}
 	else if( const auto function_pointer= type.GetFunctionPointerType() )
 	{
-		res+= "P";
+		res+= g_pointer_prefix;
 		res+= "6";
 		EncodeFunctionType( res, mangler_state, function_pointer->function );
 	}
@@ -352,7 +362,87 @@ void EncodeType( std::string& res, ManglerState& mangler_state, const Type& type
 	else U_ASSERT(false);
 }
 
-void EncodeTemplateArgs( std::string& res, ManglerState& mangler_state, const TemplateArgs& template_args )
+void ManglerMSVC::EncodeFunctionType( std::string& res, ManglerState& mangler_state, const FunctionType& function_type ) const
+{
+	// Calling convention code
+	res+= "A";
+
+	if( function_type.return_value_is_reference )
+	{
+		res+= g_reference_prefix;
+		res+= pointer_types_modifier_;
+		res+= function_type.return_value_is_mutable ? g_mut_prefix : g_imut_prefix;
+	}
+	else if(
+		function_type.return_type.GetClassType() != nullptr ||
+		function_type.return_type.GetEnumType() != nullptr ||
+		function_type.return_type.GetTupleType() != nullptr )
+	{
+		res += "?";
+		res+= g_mut_prefix; // Return value is mutable
+	}
+
+	EncodeType( res, mangler_state, function_type.return_type );
+
+	EncodeFunctionParams( res, mangler_state, function_type.params );
+
+	if( !function_type.params.empty() )
+		res+= g_terminator; // Finish list of params.
+	else
+		res+= GetFundamentalTypeMangledName( U_FundamentalType::Void ); // In case of empty params just leave single type - "void" without terminator symbol.
+
+	res+= "Z";
+
+	// TODO - encode unsafe flag, return references, references pollution
+}
+
+void ManglerMSVC::EncodeFunctionParams( std::string& res, ManglerState& mangler_state, const ArgsVector<FunctionType::Param>& params ) const
+{
+	ArgsVector<FunctionType::Param> back_references;
+
+	for( const FunctionType::Param& param : params )
+	{
+		if( !param.is_reference && param.type.GetFundamentalType() != nullptr )
+		{
+			// For trivial params (fundamentals with no reference modifiers) do not create backreferences.
+			EncodeType( res, mangler_state, param.type );
+		}
+		else
+		{
+			FunctionType::Param param_copy= param;
+			if( !param_copy.is_reference )
+				param_copy.is_mutable= false; // We do not care about mutability modifier for value params.
+
+			bool found = false;
+			for( size_t i= 0; i < back_references.size(); ++i )
+			{
+				if( param_copy == back_references[i] )
+				{
+					res+= char(i + '0');
+					found= true;
+					break;
+				}
+			}
+
+			if( !found )
+			{
+				if( param.is_reference )
+				{
+					res+= g_reference_prefix;
+					res+= pointer_types_modifier_;
+					res+= param.is_mutable ? g_mut_prefix : g_imut_prefix;
+				}
+
+				EncodeType( res, mangler_state, param.type );
+
+				if( back_references.size() < g_num_back_references )
+					back_references.push_back( std::move(param_copy) );
+			}
+		}
+	}
+}
+
+void ManglerMSVC::EncodeTemplateArgs( std::string& res, ManglerState& mangler_state, const TemplateArgs& template_args ) const
 {
 	for( const TemplateArg& template_arg : template_args )
 	{
@@ -384,163 +474,95 @@ void EncodeTemplateArgs( std::string& res, ManglerState& mangler_state, const Te
 	res+= g_terminator;
 }
 
-const ProgramStringMap<std::string> g_op_names
+void ManglerMSVC::EncodeFullName( std::string& res, ManglerState& mangler_state, const std::string_view name, const NamesScope& scope ) const
 {
-	{ "+", "?H" },
-	{ "-", "?G" },
-	{ "*", "?D" },
-	{ "/", "?K" },
-	{ "%", "?L" },
-
-	{ "==", "?8" },
-	{ "!=", "?9" },
-	{  ">", "?O" },
-	{ ">=", "?P" },
-	{  "<", "?M" },
-	{ "<=", "?N" },
-
-	{ "&", "?I" },
-	{ "|", "?U" },
-	{ "^", "?T" },
-
-	{ "<<", "?6" },
-	{ ">>", "?5" },
-
-	{ "+=", "?Y" },
-	{ "-=", "?Z" },
-	{ "*=", "?X" },
-	{ "/=", "?_0" },
-	{ "%=", "?_1" },
-
-	{ "&=", "?_4" },
-	{ "|=", "?_5" },
-	{ "^=", "?_6" },
-
-	{ "<<=", "?_3" },
-	{ ">>=", "?_2" },
-
-	{ "!", "?7" },
-	{ "~", "?S" },
-
-	{ "=", "?4" },
-	{ "++", "?E" },
-	{ "--", "?F" },
-
-	{ "()", "?R" },
-	{ "[]", "?A" },
-};
-
-const std::string g_empty_op_name;
-
-// Returns empty string if func_name is not special.
-const std::string& DecodeOperator( const std::string& func_name )
-{
-	const auto it= g_op_names.find( func_name );
-	if( it != g_op_names.end() )
-		return it->second;
-
-	return g_empty_op_name;
-}
-
-std::string ManglerMSVC::MangleFunction(
-	const NamesScope& parent_scope,
-	const std::string& function_name,
-	const FunctionType& function_type,
-	const TemplateArgs* const template_args )
-{
-	// For class methods do not encode stuff like access labels, or methods-related stuff.
-	// Just encode class methods as regular functions inside namespaces, with "this" as regular param.
-
-	mangler_state_.Clear();
-
-	std::string res;
-
-	res+= g_name_prefix;
-
-	const std::string& op_name= DecodeOperator( function_name );
-	if( template_args != nullptr )
-	{
-		// Use separate backreferences table.
-		ManglerState template_mangler_state;
-
-		res+= g_template_prefix;
-		if( !op_name.empty() )
-			res+= op_name;
-		else
-			template_mangler_state.EncodeName( function_name, res );
-		EncodeTemplateArgs( res, template_mangler_state, *template_args );
-	}
-	else
-	{
-		if( !op_name.empty() )
-			res+= op_name;
-		else
-			mangler_state_.EncodeName( function_name, res );
-	}
-	EncodeNamespacePostfix_r( res, mangler_state_, parent_scope );
+	mangler_state.EncodeName( name, res );
+	EncodeNamespacePostfix_r( res, mangler_state, scope );
 	// Finish list of name components.
 	res+= g_terminator;
-
-	// Access label. Use global access modifier. There is no reason to use real access modifiers for class members
-	res+= "Y";
-
-	EncodeFunctionType( res, mangler_state_, function_type );
-
-	return res;
 }
 
-std::string ManglerMSVC::MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name, const Type& type, const bool is_constant )
+void ManglerMSVC::EncodeNamespacePostfix_r( std::string& res, ManglerState& mangler_state, const NamesScope& scope ) const
 {
-	mangler_state_.Clear();
+	if( scope.GetParent() == nullptr ) // Root namespace.
+		return;
 
-	std::string res;
+	if( const ClassPtr the_class= scope.GetClass() )
+	{
+		if( the_class->base_template != std::nullopt )
+		{
+			EncodeTemplateClassName( res, mangler_state, the_class );
+			return;
+		}
+	}
 
-	res+= g_name_prefix;
-	EncodeFullName( res, mangler_state_, variable_name, parent_scope );
+	mangler_state.EncodeName( scope.GetThisNamespaceName(), res );
 
-	res+= "3"; // Special name for global variables.
-	EncodeType( res, mangler_state_, type );
-	res+= is_constant ? g_imut_flag : g_mut_flag;
-
-	return res;
+	EncodeNamespacePostfix_r( res, mangler_state, *scope.GetParent() );
 }
 
-std::string ManglerMSVC::MangleType( const Type& type )
+void ManglerMSVC::EncodeTemplateClassName( std::string& res, ManglerState& mangler_state, const ClassPtr& the_class ) const
 {
-	mangler_state_.Clear();
+	U_ASSERT( the_class->base_template != std::nullopt );
 
-	std::string res;
-	EncodeType( res, mangler_state_, type );
-	return res;
+	const TypeTemplatePtr& type_template= the_class->base_template->class_template;
+	const auto namespace_containing_template= type_template->parent_namespace;
+
+	// Use separate backreferences table.
+	ManglerState template_mangler_state;
+
+	res+= g_template_prefix;
+	template_mangler_state.EncodeName( type_template->syntax_element->name_, res );
+	EncodeTemplateArgs( res, template_mangler_state, the_class->base_template->signature_args );
+
+	if( namespace_containing_template->GetParent() != nullptr )
+		EncodeNamespacePostfix_r( res, mangler_state, *namespace_containing_template );
 }
 
-std::string ManglerMSVC::MangleTemplateArgs( const TemplateArgs& template_args )
+void ManglerMSVC::EncodeNumber( std::string& res, const llvm::APInt& num, const bool is_signed ) const
 {
-	mangler_state_.Clear();
+	uint64_t abs_value= 0;
+	if( is_signed )
+	{
+		const int64_t value_signed= num.getSExtValue();
+		if( value_signed >= 0 )
+			abs_value= value_signed;
+		else
+		{
+			res+= "?";
+			abs_value= -value_signed;
+		}
+	}
+	else
+		abs_value= num.getZExtValue();
 
-	std::string res;
-	EncodeTemplateArgs( res, mangler_state_, template_args );
-	return res;
-}
+	if( abs_value == 0 )
+		res+= "A@";
+	else if( abs_value <= 10 )
+		res+= char(abs_value - 1 + '0');
+	else
+	{
+		// Use hex numbers with digits in range [A;Q)
+		int64_t hex_digit= 15;
+		while((abs_value & (uint64_t(0xF) << (hex_digit << 2))) == 0)
+			--hex_digit; // It's impossible to reach zero here since "abs_value" is non-zero.
 
-std::string ManglerMSVC::MangleVirtualTable( const Type& type )
-{
-	mangler_state_.Clear();
+		while(hex_digit >= 0)
+		{
+			res+= char('A' + ((abs_value >> (hex_digit << 2)) & 0xF));
+			--hex_digit;
+		}
 
-	std::string res;
-	res+= g_name_prefix;
-	res+= "?_7"; // Special name for virtual functions table.
-	EncodeType( res, mangler_state_, type );
-	res+= "6"; // "6" for "vftable"
-	res+= g_imut_flag;
-	return res;
+		// Finish list of digits.
+		res+= g_terminator;
+	}
 }
 
 } // namespace
 
-std::unique_ptr<IMangler> CreateManglerMSVC()
+std::unique_ptr<IMangler> CreateManglerMSVC(const bool is_32_bit)
 {
-	return std::make_unique<ManglerMSVC>();
+	return std::make_unique<ManglerMSVC>(is_32_bit);
 }
 
 } // namespace U

@@ -16,6 +16,25 @@
 namespace U
 {
 
+namespace
+{
+
+std::unique_ptr<IMangler> CreateMangler(const ManglingScheme scheme, const llvm::DataLayout& data_layout)
+{
+	switch(scheme)
+	{
+	case ManglingScheme::ItaniumABI: return CreateManglerItaniumABI();
+	case ManglingScheme::MSVC: return CreateManglerMSVC(data_layout.getPointerSize() == 4);
+	case ManglingScheme::MSVC32: return CreateManglerMSVC(true);
+	case ManglingScheme::MSVC64: return CreateManglerMSVC(false);
+	};
+
+	U_ASSERT(false);
+	return CreateManglerItaniumABI();
+}
+
+} // namespace
+
 CodeBuilder::ReferencesGraphNodeHolder::ReferencesGraphNodeHolder(
 	FunctionContext& function_context,
 	const ReferencesGraphNode::Kind node_kind,
@@ -64,7 +83,7 @@ CodeBuilder::CodeBuilder(
 	, create_lifetimes_( options.create_lifetimes )
 	, generate_lifetime_start_end_debug_calls_( options.generate_lifetime_start_end_debug_calls )
 	, constexpr_function_evaluator_( data_layout_ )
-	, mangler_( options.mangling_scheme == ManglingScheme::MSVC ? CreateManglerMSVC() : CreateManglerItaniumABI() )
+	, mangler_( CreateMangler( options.mangling_scheme, data_layout_ ) )
 {
 	fundamental_llvm_types_.i8 = llvm::Type::getInt8Ty( llvm_context_ );
 	fundamental_llvm_types_.u8 = llvm::Type::getInt8Ty( llvm_context_ );
