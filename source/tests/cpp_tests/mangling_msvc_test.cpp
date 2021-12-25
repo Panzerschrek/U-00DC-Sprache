@@ -478,4 +478,47 @@ U_TEST( TuplesManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?PassTupleRef@@YAXAEBU?$tup@_NNH@@@Z" ) != nullptr );
 }
 
+U_TEST( FunctionPointersManglingTest )
+{
+	static const char c_program_text[]=
+	R"(
+		fn VoidFunc( (fn()) ptr ){}
+		fn IntArgFunc( (fn(i32 x)) ptr ){}
+		fn IntRetFunc( (fn() : i32) ptr ){}
+		fn IntArgAndRetFunc( (fn(i32 x) : i32) ptr ){}
+		fn RefArgFunc( (fn(f32& x)) ptr ){}
+		fn MutRefArgFunc( (fn(f32 &mut x)) ptr ){}
+		fn RefRetFunc( (fn() : char16&) ptr ){}
+		fn MutRefRetFunc( (fn() : char16 &mut) ptr ){}
+		fn TwoRefArgsFunc( (fn( u32& x, u32& y ) ) ptr ){}
+		fn PassRefFunc( (fn( u8& x ) : u8& ) ptr ){}
+
+		struct SomeStruct{}
+		fn PassStructRefFunc( (fn( SomeStruct& x ) : SomeStruct& ) ptr ){}
+		fn TwoStructMutRefArgsFunc( (fn( SomeStruct &mut x, SomeStruct &mut y ) ) ptr ){}
+		fn StructRetFunc( (fn() : SomeStruct ) ptr ){}
+
+		fn TwoFuncsArgs( (fn()) ptr0, (fn()) ptr1 ) {}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?VoidFunc@@YAXP6AXXZ@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?IntArgFunc@@YAXP6AXH@Z@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?IntRetFunc@@YAXP6AHXZ@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?IntArgAndRetFunc@@YAXP6AHH@Z@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?RefArgFunc@@YAXP6AXAEBM@Z@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?MutRefArgFunc@@YAXP6AXAEAM@Z@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?RefRetFunc@@YAXP6AAEB_SXZ@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?MutRefRetFunc@@YAXP6AAEA_SXZ@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?TwoRefArgsFunc@@YAXP6AXAEBI0@Z@Z" ) != nullptr ); // Should use params backreferences here
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?PassRefFunc@@YAXP6AAEBEAEBE@Z@Z" ) != nullptr ); // Should not use backreference - return value doesn't count
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?PassStructRefFunc@@YAXP6AAEBUSomeStruct@@AEBU1@@Z@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?TwoStructMutRefArgsFunc@@YAXP6AXAEAUSomeStruct@@0@Z@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?StructRetFunc@@YAXP6A?AUSomeStruct@@XZ@Z" ) != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?TwoFuncsArgs@@YAXP6AXXZ0@Z" ) != nullptr );
+}
+
 } // namespace U

@@ -65,6 +65,7 @@ private:
 };
 
 void EncodeTemplateArgs( std::string& res, ManglerState& mangler_state, const TemplateArgs& template_args );
+void EncodeType( std::string& res, ManglerState& mangler_state, const Type& type );
 
 void EncodeNamespacePostfix_r( std::string& res, ManglerState& mangler_state, const NamesScope& scope )
 {
@@ -149,6 +150,85 @@ std::string_view GetFundamentalTypeMangledName( const U_FundamentalType t )
 
 	U_ASSERT(false);
 	return "";
+}
+
+void EncodeFunctionParams( std::string& res, ManglerState& mangler_state, const ArgsVector<FunctionType::Param>& params )
+{
+	ArgsVector<FunctionType::Param> back_references;
+
+	for( const FunctionType::Param& param : params )
+	{
+		if( !param.is_reference && param.type.GetFundamentalType() != nullptr )
+		{
+			// For trivial params (fundamentals with no reference modifiers) do not create backreferences.
+			EncodeType( res, mangler_state, param.type );
+		}
+		else
+		{
+			FunctionType::Param param_copy= param;
+			if( !param_copy.is_reference )
+				param_copy.is_mutable= false; // We do not care about mutability modifier for value params.
+
+			bool found = false;
+			for( size_t i= 0; i < back_references.size(); ++i )
+			{
+				if( param_copy == back_references[i] )
+				{
+					res+= char(i + '0');
+					found= true;
+					break;
+				}
+			}
+
+			if( !found )
+			{
+				if( param.is_reference )
+				{
+					if( param.is_mutable )
+						res+= "AEA";
+					else
+						res+= "AEB";
+				}
+
+				EncodeType( res, mangler_state, param.type );
+
+				if( back_references.size() < g_num_back_references )
+					back_references.push_back( std::move(param_copy) );
+			}
+		}
+	}
+}
+
+void EncodeFunctionType( std::string& res, ManglerState& mangler_state, const FunctionType& function_type )
+{
+	// Calling convention code
+	res+= "A";
+
+	if( function_type.return_value_is_reference )
+	{
+		if( function_type.return_value_is_mutable )
+			res+= "AEA";
+		else
+			res+= "AEB";
+	}
+	else if( function_type.return_type.GetClassType() != nullptr || function_type.return_type.GetEnumType() != nullptr )
+	{
+		res += "?";
+		res+= "A"; // Return value is mutable
+	}
+
+	EncodeType( res, mangler_state, function_type.return_type );
+
+	EncodeFunctionParams( res, mangler_state, function_type.params );
+
+	if( function_type.params.empty() )
+		res+= GetFundamentalTypeMangledName( U_FundamentalType::Void );
+	else
+		res+= "@"; // Terminate list of params in case of non-empty params list.
+
+	res+= "Z";
+
+	// TODO - encode unsafe flag, return references, references pollution
 }
 
 void EncodeType( std::string& res, ManglerState& mangler_state, const Type& type )
@@ -240,58 +320,15 @@ void EncodeType( std::string& res, ManglerState& mangler_state, const Type& type
 	}
 	else if( const auto function_pointer= type.GetFunctionPointerType() )
 	{
+		res+= "P";
+		res+= "6";
+		EncodeFunctionType( res, mangler_state, function_pointer->function );
 	}
 	else if( const auto function= type.GetFunctionType() )
 	{
+		EncodeFunctionType( res, mangler_state, *function );
 	}
 	else U_ASSERT(false);
-}
-
-void EncodeFunctionParams( std::string& res, ManglerState& mangler_state, const ArgsVector<FunctionType::Param>& params )
-{
-	ArgsVector<FunctionType::Param> back_references;
-
-	for( const FunctionType::Param& param : params )
-	{
-		if( !param.is_reference && param.type.GetFundamentalType() != nullptr )
-		{
-			// For trivial params (fundamentals with no reference modifiers) do not create backreferences.
-			EncodeType( res, mangler_state, param.type );
-		}
-		else
-		{
-			FunctionType::Param param_copy= param;
-			if( !param_copy.is_reference )
-				param_copy.is_mutable= false; // We do not care about mutability modifier for value params.
-
-			bool found = false;
-			for( size_t i= 0; i < back_references.size(); ++i )
-			{
-				if( param_copy == back_references[i] )
-				{
-					res+= char(i + '0');
-					found= true;
-					break;
-				}
-			}
-
-			if( !found )
-			{
-				if( param.is_reference )
-				{
-					if( param.is_mutable )
-						res+= "AEA";
-					else
-						res+= "AEB";
-				}
-
-				EncodeType( res, mangler_state, param.type );
-
-				if( back_references.size() < g_num_back_references )
-					back_references.push_back( std::move(param_copy) );
-			}
-		}
-	}
 }
 
 void EncodeTemplateArgs( std::string& res, ManglerState& mangler_state, const TemplateArgs& template_args )
@@ -350,34 +387,7 @@ std::string ManglerMSVC::MangleFunction(
 	// Access label
 	res+= "Y";
 
-	// Calling convention code
-	res+= "A";
-
-	// Encode return type
-	if( function_type.return_value_is_reference )
-	{
-		if( function_type.return_value_is_mutable )
-			res+= "AEA";
-		else
-			res+= "AEB";
-	}
-	else if( function_type.return_type.GetClassType() != nullptr || function_type.return_type.GetEnumType() != nullptr )
-	{
-		res += "?";
-		res+= "A"; // Return value is mutable
-	}
-
-	EncodeType( res, mangler_state_, function_type.return_type );
-
-	EncodeFunctionParams( res, mangler_state_, function_type.params );
-
-	if( function_type.params.empty() )
-		res+= GetFundamentalTypeMangledName( U_FundamentalType::Void );
-	else
-		res+= "@"; // Terminate list of params in case of non-empty params list.
-
-	// Finish name
-	res+= "Z";
+	EncodeFunctionType( res, mangler_state_, function_type );
 
 	return res;
 }
