@@ -66,11 +66,39 @@ private:
 
 void EncodeTemplateArgs( std::string& res, ManglerState& mangler_state, const TemplateArgs& template_args );
 void EncodeType( std::string& res, ManglerState& mangler_state, const Type& type );
+void EncodeNamespacePostfix_r( std::string& res, ManglerState& mangler_state, const NamesScope& scope );
+
+void EncodeTemplateClassName( std::string& res, ManglerState& mangler_state, const ClassPtr& the_class )
+{
+	U_ASSERT( the_class->base_template != std::nullopt );
+
+	const TypeTemplatePtr& type_template= the_class->base_template->class_template;
+	const auto namespace_containing_template= type_template->parent_namespace;
+
+	// Use separate backreferences table.
+	ManglerState template_mangler_state;
+
+	res+= "?$";
+	template_mangler_state.EncodeName( type_template->syntax_element->name_, res );
+	EncodeTemplateArgs( res, template_mangler_state, the_class->base_template->signature_args );
+
+	if( namespace_containing_template->GetParent() != nullptr )
+		EncodeNamespacePostfix_r( res, mangler_state, *namespace_containing_template );
+}
 
 void EncodeNamespacePostfix_r( std::string& res, ManglerState& mangler_state, const NamesScope& scope )
 {
 	if( scope.GetParent() == nullptr ) // Root namespace.
 		return;
+
+	if( const ClassPtr the_class= scope.GetClass() )
+	{
+		if( the_class->base_template != std::nullopt )
+		{
+			EncodeTemplateClassName( res, mangler_state, the_class );
+			return;
+		}
+	}
 
 	mangler_state.EncodeName( scope.GetThisNamespaceName(), res );
 
@@ -282,33 +310,19 @@ void EncodeType( std::string& res, ManglerState& mangler_state, const Type& type
 	}
 	else if( const auto class_type= type.GetClassType() )
 	{
+		res += "U";
+
 		if( class_type->typeinfo_type != std::nullopt )
 		{
 			// TODO
 		}
 		else if( class_type->base_template != std::nullopt )
 		{
-			const TypeTemplatePtr& type_template= class_type->base_template->class_template;
-			const auto namespace_containing_template= type_template->parent_namespace;
-
-			// Use separate backreferences table.
-			ManglerState template_mangler_state;
-
-			res+= "U";
-			res+= "?$";
-			template_mangler_state.EncodeName( type_template->syntax_element->name_, res );
-			EncodeTemplateArgs( res, template_mangler_state, class_type->base_template->signature_args );
-
-			if( namespace_containing_template->GetParent() != nullptr )
-				EncodeNamespacePostfix_r( res, mangler_state, *namespace_containing_template );
-
+			EncodeTemplateClassName( res, mangler_state, class_type );
 			res+= "@";
 		}
 		else
-		{
-			res+= "U";
 			EncodeName( res, mangler_state, class_type->members->GetThisNamespaceName(), *class_type->members->GetParent() );
-		}
 	}
 	else if( const auto enum_type= type.GetEnumType() )
 	{
@@ -366,6 +380,9 @@ std::string ManglerMSVC::MangleFunction(
 	const FunctionType& function_type,
 	const TemplateArgs* const template_args )
 {
+	// For class methods do not encode stuff like access labels, or methods-related stuff.
+	// Just encode class methods as regular functions inside namespaces, with "this" as regular param.
+
 	mangler_state_.Clear();
 
 	std::string res;

@@ -307,6 +307,51 @@ U_TEST( EnumsManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?Select@wasd@qwe@@YA?AW4Another@12@W4312@0@Z" ) != nullptr );
 }
 
+U_TEST( ClassMembersManglingTest )
+{
+	static const char c_program_text[]=
+	R"(
+		class SomeClass
+		{
+			fn Foo(){}
+			fn Bar(this){}
+			fn Baz(mut this){}
+			fn Compare(SomeClass& a, SomeClass& b){}
+		}
+
+		template</type T/>
+		struct Box
+		{
+			fn BoxFunc(){}
+		}
+		type IntBox= Box</i32/>;
+
+		namespace Qwerty
+		{
+			template</type A, type B/> struct Pair
+			{
+				A a; B b;
+
+				fn PairFunc(){}
+			}
+
+			struct InnerStruct{}
+			type InnerStructPair = Pair</InnerStruct, InnerStruct/>;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Foo@SomeClass@@YAXXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Bar@SomeClass@@YAXAEBU1@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Baz@SomeClass@@YAXAEAU1@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Compare@SomeClass@@YAXAEBU1@0@Z" ) != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?BoxFunc@?$Box@H@@YAXXZ" ) != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?PairFunc@?$Pair@UInnerStruct@Qwerty@@U12@@Qwerty@@YAXXZ" ) != nullptr );
+}
+
 U_TEST( TemplateFunctionsManglingTest )
 {
 	static const char c_program_text[]=
