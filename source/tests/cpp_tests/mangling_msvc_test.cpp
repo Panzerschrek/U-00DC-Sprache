@@ -478,7 +478,6 @@ U_TEST( TuplesManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?PassTuple@@YAXU?$tup@M_K@@@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?PassTupleRef@@YAXAEBU?$tup@_NNH@@@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?TupleRet@@YA?AU?$tup@_ND@@XZ" ) != nullptr );
-
 }
 
 U_TEST( FunctionPointersManglingTest )
@@ -526,6 +525,33 @@ U_TEST( FunctionPointersManglingTest )
 
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?TwoFuncsArgs@@YAXP6AXXZ0@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?Foo@@YAXU?$Box@P6AHH@Z@@@Z" ) != nullptr );
+}
+
+U_TEST( VirtualTableMangling_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		class SukaBlat polymorph{}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "??_7SukaBlat@@6B@", true ) != nullptr );
+}
+
+U_TEST( VirtualTableMangling_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		namespace Lol
+		{
+			class WTF polymorph{}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "??_7WTF@Lol@@6B@", true ) != nullptr );
 }
 
 } // namespace U
