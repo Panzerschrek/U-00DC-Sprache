@@ -14,8 +14,8 @@ namespace
 constexpr size_t g_num_back_references= 10;
 constexpr char g_name_prefix= '?'; // All names (function, variables) should start with it.
 constexpr char g_terminator= '@';
-constexpr char g_reference_mut_prefix[]= "AEA"; // 'A' for reference, 'E' for 64bit pointer, 'A' for const.
-constexpr char g_reference_imut_prefix[]= "AEB"; // 'A' for reference, 'E' for 64bit pointer, 'B' for non-const.
+constexpr char g_reference_mut_prefix[]= "AEA"; // 'A' for reference, 'E' for 64bit pointer, 'A' for non-const.
+constexpr char g_reference_imut_prefix[]= "AEB"; // 'A' for reference, 'E' for 64bit pointer, 'B' for const.
 constexpr char g_template_prefix[]= "?$";
 constexpr char g_class_type_prefix = 'U';
 constexpr char g_mut_flag= 'A';

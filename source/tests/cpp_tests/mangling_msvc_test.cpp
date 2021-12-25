@@ -515,9 +515,11 @@ U_TEST( ArraysManglingTest )
 
 		type Mat4= [ [ f64, 4 ], 4 ];
 		fn MultiplyMat4( Mat4& a, Mat4& b ) : Mat4 { return a; }
+
+		fn FloatVec3Len( [ f32, 3 ]& v ) : f32 { return 0.0f; }
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ), true );
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
 
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?Box4Int@@YAXU?$Box@$$BY03H@@@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?Box100Float@@YAXU?$Box@$$BY0GE@M@@@Z" ) != nullptr );
@@ -525,6 +527,35 @@ U_TEST( ArraysManglingTest )
 
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?FooIntVec4@@YAXY03H@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?MultiplyMat4@@YAY133NAEBY133N0@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?FloatVec3Len@@YAMAEBY02M@Z" ) != nullptr );
+}
+
+U_TEST( RawPointersManglingTest )
+{
+	static const char c_program_text[]=
+	R"(
+		template</type T/> struct Box { T t; }
+
+		fn BoxIntPtr( Box</$(i32)/> b ){}
+		fn BoxIntPtrPtr( Box</$($(i32))/> b ){}
+		fn BoxVec4IntPtr( Box</$([i32, 4])/> b ){}
+
+		struct SomeStruct{}
+		fn BoxSomeStructPtr(Box</$(SomeStruct)/> b) {}
+
+		fn SomeStructPtr($(SomeStruct) ptr){}
+		fn SomeStructPtrPtrx2($($(SomeStruct)) ptr0, $($(SomeStruct)) ptr1){}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?BoxIntPtr@@YAXU?$Box@PEAH@@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?BoxIntPtrPtr@@YAXU?$Box@PEAPEAH@@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?BoxVec4IntPtr@@YAXU?$Box@PEAY03H@@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?BoxSomeStructPtr@@YAXU?$Box@PEAUSomeStruct@@@@@Z" ) != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?SomeStructPtr@@YAXPEAUSomeStruct@@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?SomeStructPtrPtrx2@@YAXPEAPEAUSomeStruct@@0@Z" ) != nullptr );
 }
 
 U_TEST( TuplesManglingTest )
