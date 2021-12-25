@@ -211,7 +211,10 @@ void EncodeFunctionType( std::string& res, ManglerState& mangler_state, const Fu
 		else
 			res+= "AEB";
 	}
-	else if( function_type.return_type.GetClassType() != nullptr || function_type.return_type.GetEnumType() != nullptr )
+	else if(
+		function_type.return_type.GetClassType() != nullptr ||
+		function_type.return_type.GetEnumType() != nullptr ||
+		function_type.return_type.GetTupleType() != nullptr )
 	{
 		res += "?";
 		res+= "A"; // Return value is mutable

@@ -468,6 +468,7 @@ U_TEST( TuplesManglingTest )
 
 		fn PassTuple( tup[ f32, u64 ] t ){}
 		fn PassTupleRef( tup[ bool, f64, i32 ]& t ){}
+		fn TupleRet() : tup[bool, char8] { var tup[bool, char8] t= zero_init; return t; }
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
@@ -476,6 +477,8 @@ U_TEST( TuplesManglingTest )
 
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?PassTuple@@YAXU?$tup@M_K@@@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?PassTupleRef@@YAXAEBU?$tup@_NNH@@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?TupleRet@@YA?AU?$tup@_ND@@XZ" ) != nullptr );
+
 }
 
 U_TEST( FunctionPointersManglingTest )
@@ -499,6 +502,9 @@ U_TEST( FunctionPointersManglingTest )
 		fn StructRetFunc( (fn() : SomeStruct ) ptr ){}
 
 		fn TwoFuncsArgs( (fn()) ptr0, (fn()) ptr1 ) {}
+
+		template</type A, type B/> struct Box</ fn(B b) : A /> {}
+		fn Foo( Box</ fn(i32 arg) : i32 /> b ){}
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
@@ -519,6 +525,7 @@ U_TEST( FunctionPointersManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?StructRetFunc@@YAXP6A?AUSomeStruct@@XZ@Z" ) != nullptr );
 
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?TwoFuncsArgs@@YAXP6AXXZ0@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Foo@@YAXU?$Box@P6AHH@Z@@@Z" ) != nullptr );
 }
 
 } // namespace U
