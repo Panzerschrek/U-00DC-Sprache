@@ -324,6 +324,15 @@ U_TEST( TemplateFunctionsManglingTest )
 
 		template</u64 RES/> fn GetSomeConst64() : u64 { return RES; }
 
+		template</type T/> fn MakeItZero( T &mut t ) : T &mut { return t; }
+		struct SomeStruct{}
+
+		namespace Bar
+		{
+			template</type T/> fn PassMut( T &mut t ) : T &mut { return t; }
+			struct Gothminister{}
+		}
+
 		fn Foo()
 		{
 			NoArgs();
@@ -339,6 +348,12 @@ U_TEST( TemplateFunctionsManglingTest )
 
 			GetSomeConst64</0xFFFFFFFFFFFFFFFFu64/>();
 			GetSomeConst64</0x7FFFFFFFFFFFFFFFu64/>();
+
+			var SomeStruct mut s= zero_init;
+			MakeItZero(s);
+
+			var Bar::Gothminister mut gm= zero_init;
+			Bar::PassMut(gm);
 		}
 	)";
 
@@ -357,6 +372,11 @@ U_TEST( TemplateFunctionsManglingTest )
 
 	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetSomeConst64@$0PPPPPPPPPPPPPPPP@@@YA_KXZ" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetSomeConst64@$0HPPPPPPPPPPPPPPP@@@YA_KXZ" ) != nullptr );
+
+	// Should duplicate "SomeStruct" because separate backreferences table created for template.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??$MakeItZero@USomeStruct@@@@YAAEAUSomeStruct@@AEAU0@@Z" ) != nullptr );
+	// Should duplicate both "UGothminister" and "Bar".
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??$PassMut@UGothminister@Bar@@@Bar@@YAAEAUGothminister@0@AEAU10@@Z" ) != nullptr );
 }
 
 U_TEST( TemplateClassesManglingTest )

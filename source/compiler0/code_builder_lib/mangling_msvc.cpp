@@ -333,9 +333,12 @@ std::string ManglerMSVC::MangleFunction(
 	res+= "?";
 	if( template_args != nullptr )
 	{
+		// Use separate backreferences table.
+		ManglerState template_mangler_state;
+
 		res+= "?$";
-		mangler_state_.EncodeName( function_name, res );
-		EncodeTemplateArgs( res, mangler_state_, *template_args );
+		template_mangler_state.EncodeName( function_name, res );
+		EncodeTemplateArgs( res, template_mangler_state, *template_args );
 
 		if( parent_scope.GetParent() != nullptr )
 			EncodeNamespacePostfix_r( res, mangler_state_, parent_scope );
