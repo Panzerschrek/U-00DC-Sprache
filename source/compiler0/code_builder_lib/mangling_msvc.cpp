@@ -188,10 +188,13 @@ void EncodeType( std::string& res, ManglerState& mangler_state, const Type& type
 		for( const Type& element : tuple_type->elements )
 			template_args.push_back( element );
 
+		// Use separate backreferences table.
+		ManglerState template_mangler_state;
+
 		res+= "U";
 		res+= "?$";
-		mangler_state.EncodeName( Keyword( Keywords::tup_ ), res );
-		EncodeTemplateArgs( res, mangler_state, template_args );
+		template_mangler_state.EncodeName( Keyword( Keywords::tup_ ), res );
+		EncodeTemplateArgs( res, template_mangler_state, template_args );
 		res+= "@";
 	}
 	else if( const auto class_type= type.GetClassType() )
@@ -205,10 +208,13 @@ void EncodeType( std::string& res, ManglerState& mangler_state, const Type& type
 			const TypeTemplatePtr& type_template= class_type->base_template->class_template;
 			const auto namespace_containing_template= type_template->parent_namespace;
 
+			// Use separate backreferences table.
+			ManglerState template_mangler_state;
+
 			res+= "U";
 			res+= "?$";
-			mangler_state.EncodeName( type_template->syntax_element->name_, res );
-			EncodeTemplateArgs( res, mangler_state, class_type->base_template->signature_args );
+			template_mangler_state.EncodeName( type_template->syntax_element->name_, res );
+			EncodeTemplateArgs( res, template_mangler_state, class_type->base_template->signature_args );
 
 			if( namespace_containing_template->GetParent() != nullptr )
 				EncodeNamespacePostfix_r( res, mangler_state, *namespace_containing_template );

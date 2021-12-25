@@ -379,18 +379,60 @@ U_TEST( TemplateClassesManglingTest )
 			struct Pair{ A a; B b; }
 
 			fn ZeroPair( Pair</f32, f64/> &mut p ) {}
+
+			struct InnerStruct{}
+			fn ZeroPairOfStructs( Pair</ InnerStruct, InnerStruct /> &mut p ) {}
 		}
 
 		fn GetFirst( Qwerty::Pair</u32, u64/> p ) : u32 { return p.a; }
+
+		template</type A, type B, type C/>
+		struct MyTuple
+		{
+			A a; B b; C c;
+		}
+
+		struct SomeStruct{}
+
+		fn Foo(MyTuple</SomeStruct, SomeStruct, SomeStruct/> t){}
+
+		template</type T/>
+		struct StrangeStruct{ T t; }
+
+		namespace Cvb
+		{
+			template</type T/>
+			struct StrangeStruct{ T t; }
+
+			fn Baz(::StrangeStruct</Cvb::StrangeStruct</f32/>/> arg){}
+		}
+
+		namespace JWST
+		{
+			struct StrangeStruct{}
+			fn Lol(::StrangeStruct</JWST::StrangeStruct/> arg){}
+		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ), true );
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
 
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?UnboxInt@@YAHU?$Box@H@@@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?SwapBoxes@@YAXAEAU?$Box@D@@0@Z" ) != nullptr );
 
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?ZeroPair@Qwerty@@YAXAEAU?$Pair@MN@1@@Z" ) != nullptr );
+
+	// "Qwerty" is duplicated here because separate table of backreferences is used for template name + args.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?ZeroPairOfStructs@Qwerty@@YAXAEAU?$Pair@UInnerStruct@Qwerty@@U12@@1@@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?GetFirst@@YAIU?$Pair@I_K@Qwerty@@@Z" ) != nullptr );
+
+	// There is no backreferences for class template args.
+	// backreferences table is created separately for template args.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Foo@@YAXU?$MyTuple@USomeStruct@@U1@U1@@@@Z" ) != nullptr );
+
+	// Should duplicate here "StrangeStruct" since new template context created.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Baz@Cvb@@YAXU?$StrangeStruct@U?$StrangeStruct@M@Cvb@@@@@Z" ) != nullptr );
+	// Should not duplicate here "StrangeStruct" because arg is simple struct and no new template context created.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Lol@JWST@@YAXU?$StrangeStruct@U0JWST@@@@@Z" ) != nullptr );
 }
 
 U_TEST( TuplesManglingTest )
