@@ -373,6 +373,64 @@ void EncodeTemplateArgs( std::string& res, ManglerState& mangler_state, const Te
 	res+= "@";
 }
 
+const ProgramStringMap<std::string> g_op_names
+{
+	{ "+", "?H" },
+	{ "-", "?G" },
+	{ "*", "?D" },
+	{ "/", "?K" },
+	{ "%", "?L" },
+
+	{ "==", "?8" },
+	{ "!=", "?9" },
+	{  ">", "?O" },
+	{ ">=", "?P" },
+	{  "<", "?M" },
+	{ "<=", "?N" },
+
+	{ "&", "?I" },
+	{ "|", "?U" },
+	{ "^", "?T" },
+
+	{ "<<", "?6" },
+	{ ">>", "?5" },
+
+	{ "+=", "?Y" },
+	{ "-=", "?Z" },
+	{ "*=", "?X" },
+	{ "/=", "?_0" },
+	{ "%=", "?_1" },
+
+	{ "&=", "?_4" },
+	{ "|=", "?_5" },
+	{ "^=", "?_6" },
+
+	{ "<<=", "?_3" },
+	{ ">>=", "?_2" },
+
+	{ "!", "?7" },
+	{ "~", "?S" },
+
+	{ "=", "?4" },
+	{ "++", "?E" },
+	{ "--", "?F" },
+
+	{ "()", "?R" },
+	{ "[]", "?A" },
+};
+
+const std::string g_empty_op_name;
+
+// Returns empty string if func_name is not special.
+const std::string& DecodeOperator( const std::string& func_name )
+{
+	const auto it= g_op_names.find( func_name );
+	if( it != g_op_names.end() )
+		return it->second;
+
+	return g_empty_op_name;
+}
+
 std::string ManglerMSVC::MangleFunction(
 	const NamesScope& parent_scope,
 	const std::string& function_name,
@@ -386,6 +444,8 @@ std::string ManglerMSVC::MangleFunction(
 
 	std::string res;
 
+	const std::string& op_name= DecodeOperator( function_name );
+
 	res+= "?";
 	if( template_args != nullptr )
 	{
@@ -393,14 +453,20 @@ std::string ManglerMSVC::MangleFunction(
 		ManglerState template_mangler_state;
 
 		res+= "?$";
-		template_mangler_state.EncodeName( function_name, res );
+		if( !op_name.empty() )
+			res+= op_name;
+		else
+			template_mangler_state.EncodeName( function_name, res );
 		EncodeTemplateArgs( res, template_mangler_state, *template_args );
-
-		if( parent_scope.GetParent() != nullptr )
-			EncodeNamespacePostfix_r( res, mangler_state_, parent_scope );
 	}
 	else
-		EncodeName( res, mangler_state_, function_name, parent_scope );
+	{
+		if( !op_name.empty() )
+			res+= op_name;
+		else
+			mangler_state_.EncodeName( function_name, res );
+	}
+	EncodeNamespacePostfix_r( res, mangler_state_, parent_scope );
 	res+= "@";
 
 	// Access label

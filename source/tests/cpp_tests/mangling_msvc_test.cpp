@@ -572,6 +572,242 @@ U_TEST( FunctionPointersManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?Foo@@YAXU?$Box@P6AHH@Z@@@Z" ) != nullptr );
 }
 
+U_TEST( OperatorsMangling_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct Box
+		{
+			u32 x;
+
+			op+( Box &imut b ) : Box
+			{
+				return b;
+			}
+			op-( Box &imut b ) : Box
+			{
+				var Box r{ .x= -b.x };
+				return r;
+			}
+
+			op+( Box &imut a, Box &imut b ) : Box
+			{
+				var Box r{ .x= a.x + b.x };
+				return r;
+			}
+			op-( Box &imut a, Box &imut b ) : Box
+			{
+				var Box r{ .x= a.x - b.x };
+				return r;
+			}
+			op*( Box &imut a, Box &imut b ) : Box
+			{
+				var Box r{ .x= a.x * b.x };
+				return r;
+			}
+			op/( Box &imut a, Box &imut b ) : Box
+			{
+				var Box r{ .x= a.x / b.x };
+				return r;
+			}
+			op%( Box &imut a, Box &imut b ) : Box
+			{
+				var Box r{ .x= a.x % b.x };
+				return r;
+			}
+
+			op==( Box &imut a, Box &imut b ) : bool
+			{
+				return a.x == b.x;
+			}
+			op!=( Box &imut a, Box &imut b ) : bool
+			{
+				return a.x != b.x;
+			}
+			op>( Box &imut a, Box &imut b ) : bool
+			{
+				return a.x > b.x;
+			}
+			op>=( Box &imut a, Box &imut b ) : bool
+			{
+				return a.x >= b.x;
+			}
+			op<( Box &imut a, Box &imut b ) : bool
+			{
+				return a.x < b.x;
+			}
+			op<=( Box &imut a, Box &imut b ) : bool
+			{
+				return a.x <= b.x;
+			}
+
+			op&( Box &imut a, Box &imut b ) : Box
+			{
+				var Box r{ .x= a.x & b.x };
+				return r;
+			}
+			op|( Box &imut a, Box &imut b ) : Box
+			{
+				var Box r{ .x= a.x | b.x };
+				return r;
+			}
+			op^( Box &imut a, Box &imut b ) : Box
+			{
+				var Box r{ .x= a.x ^ b.x };
+				return r;
+			}
+
+			op<<( Box &imut a, Box &imut b ) : Box
+			{
+				var Box r{ .x= a.x << b.x };
+				return r;
+			}
+			op>>( Box &imut a, Box &imut b ) : Box
+			{
+				var Box r{ .x= a.x >> b.x };
+				return r;
+			}
+
+			op+=( Box &mut a, Box &imut b )
+			{
+				a.x+= b.x;
+			}
+			op-=( Box &mut a, Box &imut b )
+			{
+				a.x-= b.x;
+			}
+			op*=( Box &mut a, Box &imut b )
+			{
+				a.x*= b.x;
+			}
+			op/=( Box &mut a, Box &imut b )
+			{
+				a.x/= b.x;
+			}
+			op%=( Box &mut a, Box &imut b )
+			{
+				a.x%= b.x;
+			}
+
+			op&=( Box &mut a, Box &imut b )
+			{
+				a.x&= b.x;
+			}
+			op|=( Box &mut a, Box &imut b )
+			{
+				a.x|= b.x;
+			}
+			op^=( Box &mut a, Box &imut b )
+			{
+				a.x^= b.x;
+			}
+
+			op<<=( Box &mut a, Box &imut b )
+			{
+				a.x <<= b.x;
+			}
+			op>>=( Box &mut a, Box &imut b )
+			{
+				a.x >>= b.x;
+			}
+
+			op!( Box &imut b ) : bool
+			{
+				return b.x != 0u;
+			}
+			op~( Box &imut b ) : Box
+			{
+				var Box r{ .x= ~b.x };
+				return r;
+			}
+
+			op++( Box &mut a )
+			{
+				++a.x;
+			}
+			op--( Box &mut a )
+			{
+				--a.x;
+			}
+
+			op=( Box &mut a, Box &imut b )
+			{
+				a.x= b.x;
+			}
+
+			op()( Box &imut this_ )
+			{
+			}
+
+			template</type T/>
+			op()( Box &imut this_, T t )
+			{
+			}
+
+			op[]( Box &imut this_, u32 ind ) : u32
+			{
+				return this_.x + ind;
+			}
+		}
+
+		fn Foo()
+		{
+			var Box box{ .x= 0u };
+			box(14.2f);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??HBox@@YA?AU0@AEBU0@@Z" ) != nullptr ); // unary +
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??GBox@@YA?AU0@AEBU0@@Z" ) != nullptr ); // unary -
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??HBox@@YA?AU0@AEBU0@0@Z" ) != nullptr ); // binary +
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??GBox@@YA?AU0@AEBU0@0@Z" ) != nullptr ); // binary -
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??DBox@@YA?AU0@AEBU0@0@Z" ) != nullptr ); // *
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??KBox@@YA?AU0@AEBU0@0@Z" ) != nullptr ); // /
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??LBox@@YA?AU0@AEBU0@0@Z" ) != nullptr ); // %
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??8Box@@YA_NAEBU0@0@Z" ) != nullptr ); // ==
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??9Box@@YA_NAEBU0@0@Z" ) != nullptr ); // !=
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??OBox@@YA_NAEBU0@0@Z" ) != nullptr ); // >
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??PBox@@YA_NAEBU0@0@Z" ) != nullptr ); // >=
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??MBox@@YA_NAEBU0@0@Z" ) != nullptr ); // <
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??NBox@@YA_NAEBU0@0@Z" ) != nullptr ); // <=
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??IBox@@YA?AU0@AEBU0@0@Z" ) != nullptr ); // &
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??UBox@@YA?AU0@AEBU0@0@Z" ) != nullptr ); // |
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??TBox@@YA?AU0@AEBU0@0@Z" ) != nullptr ); // ^
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??6Box@@YA?AU0@AEBU0@0@Z" ) != nullptr ); // <<
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??5Box@@YA?AU0@AEBU0@0@Z" ) != nullptr ); // >>
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??YBox@@YAXAEAU0@AEBU0@@Z" ) != nullptr ); // +=
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??ZBox@@YAXAEAU0@AEBU0@@Z" ) != nullptr ); // -=
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??XBox@@YAXAEAU0@AEBU0@@Z" ) != nullptr ); // *=
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??_0Box@@YAXAEAU0@AEBU0@@Z" ) != nullptr ); // /=
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??_1Box@@YAXAEAU0@AEBU0@@Z" ) != nullptr ); // %=
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??_4Box@@YAXAEAU0@AEBU0@@Z" ) != nullptr ); // &=
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??_5Box@@YAXAEAU0@AEBU0@@Z" ) != nullptr ); // |=
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??_6Box@@YAXAEAU0@AEBU0@@Z" ) != nullptr ); // ^=
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??_3Box@@YAXAEAU0@AEBU0@@Z" ) != nullptr ); // <<=
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??_2Box@@YAXAEAU0@AEBU0@@Z" ) != nullptr ); // >>=
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??7Box@@YA_NAEBU0@@Z" ) != nullptr ); // !
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??SBox@@YA?AU0@AEBU0@@Z" ) != nullptr ); // !
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??EBox@@YAXAEAU0@@Z" ) != nullptr ); // ++
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??FBox@@YAXAEAU0@@Z" ) != nullptr ); // --
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??4Box@@YAXAEAU0@AEBU0@@Z" ) != nullptr ); // =
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??RBox@@YAXAEBU0@@Z" ) != nullptr ); // ()
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??ABox@@YAIAEBU0@I@Z" ) != nullptr ); // []
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??$?RM@Box@@YAXAEBU0@M@Z" ) != nullptr ); // Template op()</f32/>
+}
+
 U_TEST( VirtualTableMangling_Test0 )
 {
 	static const char c_program_text[]=
