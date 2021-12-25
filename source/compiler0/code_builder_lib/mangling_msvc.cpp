@@ -196,8 +196,30 @@ void EncodeType( std::string& res, ManglerState& mangler_state, const Type& type
 	}
 	else if( const auto class_type= type.GetClassType() )
 	{
-		res+= "U";
-		EncodeName( res, mangler_state, class_type->members->GetThisNamespaceName(), *class_type->members->GetParent() );
+		if( class_type->typeinfo_type != std::nullopt )
+		{
+			// TODO
+		}
+		else if( class_type->base_template != std::nullopt )
+		{
+			const TypeTemplatePtr& type_template= class_type->base_template->class_template;
+			const auto namespace_containing_template= type_template->parent_namespace;
+
+			res+= "U";
+			res+= "?$";
+			mangler_state.EncodeName( type_template->syntax_element->name_, res );
+			EncodeTemplateArgs( res, mangler_state, class_type->base_template->signature_args );
+
+			if( namespace_containing_template->GetParent() != nullptr )
+				EncodeNamespacePostfix_r( res, mangler_state, *namespace_containing_template );
+
+			res+= "@";
+		}
+		else
+		{
+			res+= "U";
+			EncodeName( res, mangler_state, class_type->members->GetThisNamespaceName(), *class_type->members->GetParent() );
+		}
 	}
 	else if( const auto enum_type= type.GetEnumType() )
 	{

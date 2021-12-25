@@ -359,6 +359,40 @@ U_TEST( TemplateFunctionsManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetSomeConst64@$0HPPPPPPPPPPPPPPP@@@YA_KXZ" ) != nullptr );
 }
 
+U_TEST( TemplateClassesManglingTest )
+{
+	static const char c_program_text[]=
+	R"(
+		template</type T/>
+		struct Box
+		{
+			T boxed;
+		}
+
+		fn UnboxInt(Box</i32/> b) : i32 { return b.boxed; }
+
+		fn SwapBoxes(Box</char8/> &mut a, Box</char8/> &mut b){}
+
+		namespace Qwerty
+		{
+			template</type A, type B/>
+			struct Pair{ A a; B b; }
+
+			fn ZeroPair( Pair</f32, f64/> &mut p ) {}
+		}
+
+		fn GetFirst( Qwerty::Pair</u32, u64/> p ) : u32 { return p.a; }
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ), true );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?UnboxInt@@YAHU?$Box@H@@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?SwapBoxes@@YAXAEAU?$Box@D@@0@Z" ) != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?ZeroPair@Qwerty@@YAXAEAU?$Pair@MN@1@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?GetFirst@@YAIU?$Pair@I_K@Qwerty@@@Z" ) != nullptr );
+}
+
 U_TEST( TuplesManglingTest )
 {
 	static const char c_program_text[]=
