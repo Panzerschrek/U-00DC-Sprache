@@ -620,9 +620,9 @@ U_TEST( FunctionPointersManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?RefRetFunc@@YAXP6AAEB_SXZ@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?MutRefRetFunc@@YAXP6AAEA_SXZ@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?TwoRefArgsFunc@@YAXP6AXAEBI0@Z@Z" ) != nullptr ); // Should use params backreferences here
-	U_TEST_ASSERT( engine->FindFunctionNamed( "?PassRefFunc@@YAXP6AAEBEAEBE@Z@Z" ) != nullptr ); // Should not use backreference - return value doesn't count
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?PassRefFunc@@YAXP6AAEBEAEBEU?$_RR@$0A@$0PPPPPPPP@@@@Z@Z" ) != nullptr ); // Should not use backreference - return value doesn't count
 
-	U_TEST_ASSERT( engine->FindFunctionNamed( "?PassStructRefFunc@@YAXP6AAEBUSomeStruct@@AEBU1@@Z@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?PassStructRefFunc@@YAXP6AAEBUSomeStruct@@AEBU1@U?$_RR@$0A@$0PPPPPPPP@@@@Z@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?TwoStructMutRefArgsFunc@@YAXP6AXAEAUSomeStruct@@0@Z@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?StructRetFunc@@YAXP6A?AUSomeStruct@@XZ@Z" ) != nullptr );
 
@@ -891,6 +891,28 @@ U_TEST( VirtualTableMangling_Test1 )
 	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
 
 	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "??_7WTF@Lol@@6B@", true ) != nullptr );
+}
+
+U_TEST( SpecialFunctionTypeDataManglingTest )
+{
+	static const char c_program_text[]=
+	R"(
+		// Should encode unsafe flag
+		fn VoidParamUnsafeFunction( ( fn() unsafe ) f ) { }
+		fn IntParamUnsafeFunction( ( fn( i32 x ) unsafe ) f ) {}
+
+		fn RefPassFunction( ( fn( i32& x ) : i32& ) f ) {}
+
+		struct S{ i32& x; }
+		fn RefPollutionFunction( ( fn( i32 &'a x, S &mut s'b' ) ' b <- a ' ) f ) {}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?VoidParamUnsafeFunction@@YAXP6AXUunsafe@@@Z@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?IntParamUnsafeFunction@@YAXP6AXHUunsafe@@@Z@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?RefPassFunction@@YAXP6AAEBHAEBHU?$_RR@$0A@$0PPPPPPPP@@@@Z@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?RefPollutionFunction@@YAXP6AXAEBHAEAUS@@U?$_RP@$00$0A@$0A@$0PPPPPPPP@@@@Z@Z" ) != nullptr );
 }
 
 } // namespace U

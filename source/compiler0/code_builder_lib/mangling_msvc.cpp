@@ -13,6 +13,7 @@ constexpr size_t g_num_back_references= 10;
 constexpr char g_name_prefix= '?'; // All names (function, variables) should start with it.
 constexpr char g_terminator= '@';
 constexpr char g_template_prefix[]= "?$";
+constexpr char g_numeric_template_arg_prefix[]= "$0";
 constexpr char g_class_type_prefix = 'U';
 constexpr char g_reference_prefix = 'A';
 constexpr char g_pointer_prefix = 'P';
@@ -160,7 +161,7 @@ public: // IMangler
 
 private:
 	void EncodeType( std::string& res, ManglerState& mangler_state, const Type& type ) const;
-	void EncodeFunctionType( std::string& res, ManglerState& mangler_state, const FunctionType& function_type ) const;
+	void EncodeFunctionType( std::string& res, ManglerState& mangler_state, const FunctionType& function_type, bool encode_full_type ) const;
 	void EncodeFunctionParams( std::string& res, ManglerState& mangler_state, const ArgsVector<FunctionType::Param>& params ) const;
 	void EncodeTemplateArgs( std::string& res, ManglerState& mangler_state, const TemplateArgs& template_args ) const;
 	void EncodeFullName( std::string& res, ManglerState& mangler_state, const std::string_view name, const NamesScope& scope ) const;
@@ -220,7 +221,10 @@ std::string ManglerMSVC::MangleFunction(
 	// Access label. Use global access modifier. There is no reason to use real access modifiers for class members
 	res+= "Y";
 
-	EncodeFunctionType( res, mangler_state_, function_type );
+	// No need to encode full function type, like "unsafe" flag or return references/references pollution,
+	// since it's not possible to overload function unsing only such data.
+	const bool encode_full_function_type= false;
+	EncodeFunctionType( res, mangler_state_, function_type, encode_full_function_type );
 
 	return res;
 }
@@ -353,16 +357,16 @@ void ManglerMSVC::EncodeType( std::string& res, ManglerState& mangler_state, con
 	{
 		res+= g_pointer_prefix;
 		res+= "6";
-		EncodeFunctionType( res, mangler_state, function_pointer->function );
+		EncodeFunctionType( res, mangler_state, function_pointer->function, true );
 	}
 	else if( const auto function= type.GetFunctionType() )
 	{
-		EncodeFunctionType( res, mangler_state, *function );
+		EncodeFunctionType( res, mangler_state, *function, true );
 	}
 	else U_ASSERT(false);
 }
 
-void ManglerMSVC::EncodeFunctionType( std::string& res, ManglerState& mangler_state, const FunctionType& function_type ) const
+void ManglerMSVC::EncodeFunctionType( std::string& res, ManglerState& mangler_state, const FunctionType& function_type, const bool encode_full_type ) const
 {
 	// Calling convention code
 	res+= "A";
@@ -386,10 +390,79 @@ void ManglerMSVC::EncodeFunctionType( std::string& res, ManglerState& mangler_st
 
 	EncodeFunctionParams( res, mangler_state, function_type.params );
 
-	if( !function_type.params.empty() )
-		res+= g_terminator; // Finish list of params.
-	else
+	bool params_empty= function_type.params.empty();
+
+	if( encode_full_type )
+	{
+		// Encode additional function properties as params.
+		if( function_type.unsafe )
+		{
+			// Encode "unsafe" flag as param of type "unsafe".
+			params_empty= false;
+
+			res+= g_class_type_prefix;
+			res+= Keyword( Keywords::unsafe_ );
+			// Finish list of name components.
+			res+= g_terminator;
+			// Finish class name.
+			res+= g_terminator;
+		}
+		if( !function_type.return_references.empty() )
+		{
+			// Encode return references, like template class with special name and numeric args.
+			params_empty= false;
+
+			// Use separate backreferences table.
+			ManglerState template_mangler_state;
+
+			res+= g_class_type_prefix;
+			res+= g_template_prefix;
+			template_mangler_state.EncodeName( "_RR", res );
+			for( const FunctionType::ParamReference& arg_and_tag : function_type.return_references )
+			{
+				res+= g_numeric_template_arg_prefix;
+				EncodeNumber( res, llvm::APInt( 64, arg_and_tag.first ), false );
+				res+= g_numeric_template_arg_prefix;
+				EncodeNumber( res, llvm::APInt( 64, arg_and_tag.second), true  );
+			}
+			// Finish list of template args.
+			res+= g_terminator;
+			// Finish template class name.
+			res+= g_terminator;
+		}
+		if( !function_type.references_pollution.empty() )
+		{
+			// Encode references pollution like template class with special name and numeric args.
+			params_empty= false;
+
+			// Use separate backreferences table.
+			ManglerState template_mangler_state;
+
+			res+= g_class_type_prefix;
+			res+= g_template_prefix;
+			template_mangler_state.EncodeName( "_RP", res );
+			for( const FunctionType::ReferencePollution& pollution : function_type.references_pollution )
+			{
+				res+= g_numeric_template_arg_prefix;
+				EncodeNumber( res, llvm::APInt( 64, pollution.dst.first ), false );
+				res+= g_numeric_template_arg_prefix;
+				EncodeNumber( res, llvm::APInt( 64, pollution.dst.second), true  );
+				res+= g_numeric_template_arg_prefix;
+				EncodeNumber( res, llvm::APInt( 64, pollution.src.first ), false );
+				res+= g_numeric_template_arg_prefix;
+				EncodeNumber( res, llvm::APInt( 64, pollution.src.second), true  );
+			}
+			// Finish list of template args.
+			res+= g_terminator;
+			// Finish template class name.
+			res+= g_terminator;
+		}
+	}
+
+	if( params_empty )
 		res+= GetFundamentalTypeMangledName( U_FundamentalType::Void ); // In case of empty params just leave single type - "void" without terminator symbol.
+	else
+		res+= g_terminator; // Finish list of params.
 
 	res+= "Z";
 
@@ -455,7 +528,7 @@ void ManglerMSVC::EncodeTemplateArgs( std::string& res, ManglerState& mangler_st
 		}
 		else if( const auto variable= std::get_if<Variable>(&template_arg) )
 		{
-			res+= "$0";
+			res+= g_numeric_template_arg_prefix;
 
 			bool is_signed= false;
 			if( const auto fundamental_type= variable->type.GetFundamentalType() )
