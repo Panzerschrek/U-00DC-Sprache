@@ -108,39 +108,67 @@ const std::string& DecodeOperator( const std::string& func_name )
 	return g_empty_op_name;
 }
 
+// Use special class for backreferences table tracking and usage.
 class ManglerState
 {
 public:
-	void EncodeName( const std::string_view str, std::string& res )
+	ManglerState( std::string& res )
+		: res_(res)
+	{}
+
+	// Construct state with same destination but different table
+	struct LinkedTag{};
+	ManglerState( ManglerState& prev, LinkedTag )
+		: res_(prev.res_)
+	{}
+
+	ManglerState( const ManglerState& )= delete;
+	ManglerState& operator=( const ManglerState& )= delete;
+
+	// Push name and possible create or use backreferences.
+	void EncodeName( const std::string_view str )
 	{
 		for( size_t i= 0; i < g_num_back_references; ++i )
 		{
-			if( back_references_[i] == str )
+			BackReference& br= back_references_[i];
+			if( std::string_view(res_).substr( br.pos, br.count ) == str )
 			{
-				res+= char(i + '0');
+				res_+= char(i + '0');
 				return;
 			}
-			if( back_references_[i].empty() )
+			if( br.count == 0 )
 			{
 				// Reached empty space - fill it.
-				back_references_[i].assign(str);
+				br.pos= uint32_t(res_.size());
+				br.count= uint32_t(str.size());
 				break;
 			}
 		}
 
 		// Not found or reached backreferences limit.
-		res+= str;
-		res+= g_terminator;
+		res_+= str;
+		res_+= g_terminator;
 	}
 
-	void Clear()
+	// Push non-name element (no need to create backreferences for it).
+	void PushElement( const std::string_view str )
 	{
-		for( std::string& back_reference : back_references_ )
-			back_reference.clear();
+		res_+= str;
+	}
+
+	void PushElement( const char c )
+	{
+		res_+= c;
 	}
 
 private:
-	std::string back_references_[g_num_back_references];
+	// Store backreference as position and length in destination string.
+	// Do not use pointers (or std::string_view) because it's not possible because container may be reallocated.
+	struct BackReference{ uint32_t pos= 0; uint32_t count= 0; };
+
+private:
+	BackReference back_references_[g_num_back_references];
+	std::string& res_;
 };
 
 class ManglerMSVC final : public IMangler
@@ -160,19 +188,18 @@ public: // IMangler
 	std::string MangleVirtualTable( const Type& type ) override;
 
 private:
-	void EncodeType( std::string& res, ManglerState& mangler_state, const Type& type ) const;
-	void EncodeFunctionType( std::string& res, ManglerState& mangler_state, const FunctionType& function_type, bool encode_full_type ) const;
-	void EncodeFunctionParams( std::string& res, ManglerState& mangler_state, const ArgsVector<FunctionType::Param>& params ) const;
-	void EncodeTemplateArgs( std::string& res, ManglerState& mangler_state, const TemplateArgs& template_args ) const;
-	void EncodeFullName( std::string& res, ManglerState& mangler_state, const std::string_view name, const NamesScope& scope ) const;
-	void EncodeNamespacePostfix_r( std::string& res, ManglerState& mangler_state, const NamesScope& scope ) const;
-	void EncodeTemplateClassName( std::string& res, ManglerState& mangler_state, const ClassPtr& the_class ) const;
-	void EncodeNumber( std::string& res, const llvm::APInt& num, bool is_signed ) const;
+	void EncodeType( ManglerState& mangler_state, const Type& type ) const;
+	void EncodeFunctionType( ManglerState& mangler_state, const FunctionType& function_type, bool encode_full_type ) const;
+	void EncodeFunctionParams( ManglerState& mangler_state, const ArgsVector<FunctionType::Param>& params ) const;
+	void EncodeTemplateArgs( ManglerState& mangler_state, const TemplateArgs& template_args ) const;
+	void EncodeFullName( ManglerState& mangler_state, const std::string_view name, const NamesScope& scope ) const;
+	void EncodeNamespacePostfix_r( ManglerState& mangler_state, const NamesScope& scope ) const;
+	void EncodeTemplateClassName( ManglerState& mangler_state, const ClassPtr& the_class ) const;
+	void EncodeNumber( ManglerState& mangler_state, const llvm::APInt& num, bool is_signed ) const;
 
 private:
 	const std::string pointer_types_modifier_;
 	// Reuse mangler state to reduce number of allocations.
-	ManglerState mangler_state_;
 };
 
 ManglerMSVC::ManglerMSVC(const bool is_32_bit)
@@ -188,9 +215,8 @@ std::string ManglerMSVC::MangleFunction(
 	// For class methods do not encode stuff like access labels, or methods-related stuff.
 	// Just encode class methods as regular functions inside namespaces, with "this" as regular param.
 
-	mangler_state_.Clear();
-
 	std::string res;
+	ManglerState mangler_state( res );
 
 	res+= g_name_prefix;
 
@@ -198,23 +224,23 @@ std::string ManglerMSVC::MangleFunction(
 	if( template_args != nullptr )
 	{
 		// Use separate backreferences table.
-		ManglerState template_mangler_state;
+		ManglerState template_mangler_state( mangler_state, ManglerState::LinkedTag{} );
 
 		res+= g_template_prefix;
 		if( !op_name.empty() )
 			res+= op_name;
 		else
-			template_mangler_state.EncodeName( function_name, res );
-		EncodeTemplateArgs( res, template_mangler_state, *template_args );
+			template_mangler_state.EncodeName( function_name );
+		EncodeTemplateArgs( template_mangler_state, *template_args );
 	}
 	else
 	{
 		if( !op_name.empty() )
 			res+= op_name;
 		else
-			mangler_state_.EncodeName( function_name, res );
+			mangler_state.EncodeName( function_name );
 	}
-	EncodeNamespacePostfix_r( res, mangler_state_, parent_scope );
+	EncodeNamespacePostfix_r( mangler_state, parent_scope );
 	// Finish list of name components.
 	res+= g_terminator;
 
@@ -224,22 +250,21 @@ std::string ManglerMSVC::MangleFunction(
 	// No need to encode full function type, like "unsafe" flag or return references/references pollution,
 	// since it's not possible to overload function unsing only such data.
 	const bool encode_full_function_type= false;
-	EncodeFunctionType( res, mangler_state_, function_type, encode_full_function_type );
+	EncodeFunctionType( mangler_state, function_type, encode_full_function_type );
 
 	return res;
 }
 
 std::string ManglerMSVC::MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name, const Type& type, const bool is_constant )
 {
-	mangler_state_.Clear();
-
 	std::string res;
+	ManglerState mangler_state( res );
 
 	res+= g_name_prefix;
-	EncodeFullName( res, mangler_state_, variable_name, parent_scope );
+	EncodeFullName( mangler_state, variable_name, parent_scope );
 
 	res+= "3"; // Special name for global variables.
-	EncodeType( res, mangler_state_, type );
+	EncodeType( mangler_state, type );
 	res+= is_constant ? g_imut_prefix : g_mut_prefix;
 
 	return res;
@@ -247,40 +272,37 @@ std::string ManglerMSVC::MangleGlobalVariable( const NamesScope& parent_scope, c
 
 std::string ManglerMSVC::MangleType( const Type& type )
 {
-	mangler_state_.Clear();
-
 	std::string res;
-	EncodeType( res, mangler_state_, type );
+	ManglerState mangler_state( res );
+	EncodeType( mangler_state, type );
 	return res;
 }
 
 std::string ManglerMSVC::MangleTemplateArgs( const TemplateArgs& template_args )
 {
-	mangler_state_.Clear();
-
 	std::string res;
-	EncodeTemplateArgs( res, mangler_state_, template_args );
+	ManglerState mangler_state( res );
+	EncodeTemplateArgs( mangler_state, template_args );
 	return res;
 }
 
 std::string ManglerMSVC::MangleVirtualTable( const Type& type )
 {
-	mangler_state_.Clear();
-
 	std::string res;
+	ManglerState mangler_state( res );
 	res+= g_name_prefix;
 	res+= "?_7"; // Special name for virtual functions table.
-	EncodeType( res, mangler_state_, type );
+	EncodeType( mangler_state, type );
 	res+= "6"; // "6" for "vftable"
 	res+= g_imut_prefix;
 	return res;
 }
 
-void ManglerMSVC::EncodeType( std::string& res, ManglerState& mangler_state, const Type& type ) const
+void ManglerMSVC::EncodeType( ManglerState& mangler_state, const Type& type ) const
 {
 	if( const auto fundamental_type= type.GetFundamentalType() )
 	{
-		res+= GetFundamentalTypeMangledName( fundamental_type->fundamental_type );
+		mangler_state.PushElement( GetFundamentalTypeMangledName( fundamental_type->fundamental_type ) );
 	}
 	else if( type.GetArrayType() != nullptr )
 	{
@@ -299,11 +321,11 @@ void ManglerMSVC::EncodeType( std::string& res, ManglerState& mangler_state, con
 				break;
 		}
 
-		res+= "Y";
-		EncodeNumber( res, llvm::APInt(64, dimensions.size()), false );
+		mangler_state.PushElement( "Y" );
+		EncodeNumber( mangler_state, llvm::APInt(64, dimensions.size()), false );
 		for( const uint64_t dimension_size : dimensions )
-			EncodeNumber( res, llvm::APInt(54, dimension_size), false );
-		EncodeType( res, mangler_state, *element_type );
+			EncodeNumber( mangler_state, llvm::APInt(54, dimension_size), false );
+		EncodeType( mangler_state, *element_type );
 	}
 	else if( const auto tuple_type= type.GetTupleType() )
 	{
@@ -314,18 +336,18 @@ void ManglerMSVC::EncodeType( std::string& res, ManglerState& mangler_state, con
 			template_args.push_back( element );
 
 		// Use separate backreferences table.
-		ManglerState template_mangler_state;
+		ManglerState template_mangler_state( mangler_state, ManglerState::LinkedTag{} );
 
-		res+= g_class_type_prefix;
-		res+= g_template_prefix;
-		template_mangler_state.EncodeName( Keyword( Keywords::tup_ ), res );
-		EncodeTemplateArgs( res, template_mangler_state, template_args );
+		mangler_state.PushElement( g_class_type_prefix );
+		mangler_state.PushElement( g_template_prefix );
+		template_mangler_state.EncodeName( Keyword( Keywords::tup_ ) );
+		EncodeTemplateArgs( template_mangler_state, template_args );
 		// Finish list of dimensions.
-		res+= g_terminator;
+		mangler_state.PushElement( g_terminator );
 	}
 	else if( const auto class_type= type.GetClassType() )
 	{
-		res += g_class_type_prefix;
+		mangler_state.PushElement( g_class_type_prefix );
 
 		if( class_type->typeinfo_type != std::nullopt )
 		{
@@ -333,62 +355,62 @@ void ManglerMSVC::EncodeType( std::string& res, ManglerState& mangler_state, con
 		}
 		else if( class_type->base_template != std::nullopt )
 		{
-			EncodeTemplateClassName( res, mangler_state, class_type );
+			EncodeTemplateClassName( mangler_state, class_type );
 			// Finish list of name components.
-			res+= g_terminator;
+			mangler_state.PushElement( g_terminator );
 		}
 		else
-			EncodeFullName( res, mangler_state, class_type->members->GetThisNamespaceName(), *class_type->members->GetParent() );
+			EncodeFullName( mangler_state, class_type->members->GetThisNamespaceName(), *class_type->members->GetParent() );
 	}
 	else if( const auto enum_type= type.GetEnumType() )
 	{
-		res+= "W";
-		res+= "4"; // Underlaying type. Modern MSVC uses "4" for all enums independent on underlaying type.
-		EncodeFullName( res, mangler_state, enum_type->members.GetThisNamespaceName(), *enum_type->members.GetParent() );
+		mangler_state.PushElement( "W" );
+		mangler_state.PushElement( "4" ); // Underlaying type. Modern MSVC uses "4" for all enums independent on underlaying type.
+		EncodeFullName( mangler_state, enum_type->members.GetThisNamespaceName(), *enum_type->members.GetParent() );
 	}
 	else if( const auto raw_pointer= type.GetRawPointerType() )
 	{
-		res+= g_pointer_prefix;
-		res+= pointer_types_modifier_;
-		res+= g_mut_prefix;
-		EncodeType( res, mangler_state, raw_pointer->type );
+		mangler_state.PushElement( g_pointer_prefix );
+		mangler_state.PushElement( pointer_types_modifier_ );
+		mangler_state.PushElement( g_mut_prefix );
+		EncodeType( mangler_state, raw_pointer->type );
 	}
 	else if( const auto function_pointer= type.GetFunctionPointerType() )
 	{
-		res+= g_pointer_prefix;
-		res+= "6";
-		EncodeFunctionType( res, mangler_state, function_pointer->function, true );
+		mangler_state.PushElement( g_pointer_prefix );
+		mangler_state.PushElement( "6" );
+		EncodeFunctionType(  mangler_state, function_pointer->function, true );
 	}
 	else if( const auto function= type.GetFunctionType() )
 	{
-		EncodeFunctionType( res, mangler_state, *function, true );
+		EncodeFunctionType( mangler_state, *function, true );
 	}
 	else U_ASSERT(false);
 }
 
-void ManglerMSVC::EncodeFunctionType( std::string& res, ManglerState& mangler_state, const FunctionType& function_type, const bool encode_full_type ) const
+void ManglerMSVC::EncodeFunctionType( ManglerState& mangler_state, const FunctionType& function_type, const bool encode_full_type ) const
 {
 	// Calling convention code
-	res+= "A";
+	mangler_state.PushElement( "A" );
 
 	if( function_type.return_value_is_reference )
 	{
-		res+= g_reference_prefix;
-		res+= pointer_types_modifier_;
-		res+= function_type.return_value_is_mutable ? g_mut_prefix : g_imut_prefix;
+		mangler_state.PushElement( g_reference_prefix );
+		mangler_state.PushElement( pointer_types_modifier_ );
+		mangler_state.PushElement( function_type.return_value_is_mutable ? g_mut_prefix : g_imut_prefix );
 	}
 	else if(
 		function_type.return_type.GetClassType() != nullptr ||
 		function_type.return_type.GetEnumType() != nullptr ||
 		function_type.return_type.GetTupleType() != nullptr )
 	{
-		res += "?";
-		res+= g_mut_prefix; // Return value is mutable
+		mangler_state.PushElement( "?" );
+		mangler_state.PushElement( g_mut_prefix ); // Return value is mutable
 	}
 
-	EncodeType( res, mangler_state, function_type.return_type );
+	EncodeType(  mangler_state, function_type.return_type );
 
-	EncodeFunctionParams( res, mangler_state, function_type.params );
+	EncodeFunctionParams( mangler_state, function_type.params );
 
 	bool params_empty= function_type.params.empty();
 
@@ -400,12 +422,12 @@ void ManglerMSVC::EncodeFunctionType( std::string& res, ManglerState& mangler_st
 			// Encode "unsafe" flag as param of type "unsafe".
 			params_empty= false;
 
-			res+= g_class_type_prefix;
-			res+= Keyword( Keywords::unsafe_ );
+			mangler_state.PushElement( g_class_type_prefix );
+			mangler_state.PushElement( Keyword( Keywords::unsafe_ ) );
 			// Finish list of name components.
-			res+= g_terminator;
+			mangler_state.PushElement( g_terminator );
 			// Finish class name.
-			res+= g_terminator;
+			mangler_state.PushElement( g_terminator );
 		}
 		if( !function_type.return_references.empty() )
 		{
@@ -413,22 +435,22 @@ void ManglerMSVC::EncodeFunctionType( std::string& res, ManglerState& mangler_st
 			params_empty= false;
 
 			// Use separate backreferences table.
-			ManglerState template_mangler_state;
+			ManglerState template_mangler_state( mangler_state, ManglerState::LinkedTag{} );
 
-			res+= g_class_type_prefix;
-			res+= g_template_prefix;
-			template_mangler_state.EncodeName( "_RR", res );
+			mangler_state.PushElement( g_class_type_prefix );
+			mangler_state.PushElement( g_template_prefix );
+			template_mangler_state.EncodeName( "_RR" );
 			for( const FunctionType::ParamReference& arg_and_tag : function_type.return_references )
 			{
-				res+= g_numeric_template_arg_prefix;
-				EncodeNumber( res, llvm::APInt( 64, arg_and_tag.first ), false );
-				res+= g_numeric_template_arg_prefix;
-				EncodeNumber( res, llvm::APInt( 64, arg_and_tag.second), true  );
+				mangler_state.PushElement( g_numeric_template_arg_prefix );
+				EncodeNumber( template_mangler_state, llvm::APInt( 64, arg_and_tag.first ), false );
+				mangler_state.PushElement( g_numeric_template_arg_prefix );
+				EncodeNumber( template_mangler_state, llvm::APInt( 64, arg_and_tag.second), true  );
 			}
 			// Finish list of template args.
-			res+= g_terminator;
+			mangler_state.PushElement( g_terminator );
 			// Finish template class name.
-			res+= g_terminator;
+			mangler_state.PushElement( g_terminator );
 		}
 		if( !function_type.references_pollution.empty() )
 		{
@@ -436,40 +458,38 @@ void ManglerMSVC::EncodeFunctionType( std::string& res, ManglerState& mangler_st
 			params_empty= false;
 
 			// Use separate backreferences table.
-			ManglerState template_mangler_state;
+			ManglerState template_mangler_state( mangler_state, ManglerState::LinkedTag{} );
 
-			res+= g_class_type_prefix;
-			res+= g_template_prefix;
-			template_mangler_state.EncodeName( "_RP", res );
+			mangler_state.PushElement( g_class_type_prefix );
+			mangler_state.PushElement( g_template_prefix );
+			template_mangler_state.EncodeName( "_RP" );
 			for( const FunctionType::ReferencePollution& pollution : function_type.references_pollution )
 			{
-				res+= g_numeric_template_arg_prefix;
-				EncodeNumber( res, llvm::APInt( 64, pollution.dst.first ), false );
-				res+= g_numeric_template_arg_prefix;
-				EncodeNumber( res, llvm::APInt( 64, pollution.dst.second), true  );
-				res+= g_numeric_template_arg_prefix;
-				EncodeNumber( res, llvm::APInt( 64, pollution.src.first ), false );
-				res+= g_numeric_template_arg_prefix;
-				EncodeNumber( res, llvm::APInt( 64, pollution.src.second), true  );
+				mangler_state.PushElement( g_numeric_template_arg_prefix );
+				EncodeNumber( template_mangler_state, llvm::APInt( 64, pollution.dst.first ), false );
+				mangler_state.PushElement( g_numeric_template_arg_prefix );
+				EncodeNumber( template_mangler_state, llvm::APInt( 64, pollution.dst.second), true  );
+				mangler_state.PushElement( g_numeric_template_arg_prefix );
+				EncodeNumber( template_mangler_state, llvm::APInt( 64, pollution.src.first ), false );
+				mangler_state.PushElement( g_numeric_template_arg_prefix );
+				EncodeNumber( template_mangler_state, llvm::APInt( 64, pollution.src.second), true  );
 			}
 			// Finish list of template args.
-			res+= g_terminator;
+			mangler_state.PushElement( g_terminator );
 			// Finish template class name.
-			res+= g_terminator;
+			mangler_state.PushElement( g_terminator );
 		}
 	}
 
 	if( params_empty )
-		res+= GetFundamentalTypeMangledName( U_FundamentalType::Void ); // In case of empty params just leave single type - "void" without terminator symbol.
+		mangler_state.PushElement( GetFundamentalTypeMangledName( U_FundamentalType::Void ) ); // In case of empty params just leave single type - "void" without terminator symbol.
 	else
-		res+= g_terminator; // Finish list of params.
+		mangler_state.PushElement( g_terminator ); // Finish list of params.
 
-	res+= "Z";
-
-	// TODO - encode unsafe flag, return references, references pollution
+	mangler_state.PushElement( "Z" );
 }
 
-void ManglerMSVC::EncodeFunctionParams( std::string& res, ManglerState& mangler_state, const ArgsVector<FunctionType::Param>& params ) const
+void ManglerMSVC::EncodeFunctionParams( ManglerState& mangler_state, const ArgsVector<FunctionType::Param>& params ) const
 {
 	ArgsVector<FunctionType::Param> back_references;
 
@@ -478,7 +498,7 @@ void ManglerMSVC::EncodeFunctionParams( std::string& res, ManglerState& mangler_
 		if( !param.is_reference && param.type.GetFundamentalType() != nullptr )
 		{
 			// For trivial params (fundamentals with no reference modifiers) do not create backreferences.
-			EncodeType( res, mangler_state, param.type );
+			EncodeType( mangler_state, param.type );
 		}
 		else
 		{
@@ -491,7 +511,7 @@ void ManglerMSVC::EncodeFunctionParams( std::string& res, ManglerState& mangler_
 			{
 				if( param_copy == back_references[i] )
 				{
-					res+= char(i + '0');
+					mangler_state.PushElement( char(i + '0') );
 					found= true;
 					break;
 				}
@@ -501,12 +521,12 @@ void ManglerMSVC::EncodeFunctionParams( std::string& res, ManglerState& mangler_
 			{
 				if( param.is_reference )
 				{
-					res+= g_reference_prefix;
-					res+= pointer_types_modifier_;
-					res+= param.is_mutable ? g_mut_prefix : g_imut_prefix;
+					mangler_state.PushElement( g_reference_prefix );
+					mangler_state.PushElement(pointer_types_modifier_ );
+					mangler_state.PushElement( param.is_mutable ? g_mut_prefix : g_imut_prefix );
 				}
 
-				EncodeType( res, mangler_state, param.type );
+				EncodeType( mangler_state, param.type );
 
 				if( back_references.size() < g_num_back_references )
 					back_references.push_back( std::move(param_copy) );
@@ -515,16 +535,16 @@ void ManglerMSVC::EncodeFunctionParams( std::string& res, ManglerState& mangler_
 	}
 }
 
-void ManglerMSVC::EncodeTemplateArgs( std::string& res, ManglerState& mangler_state, const TemplateArgs& template_args ) const
+void ManglerMSVC::EncodeTemplateArgs( ManglerState& mangler_state, const TemplateArgs& template_args ) const
 {
 	for( const TemplateArg& template_arg : template_args )
 	{
 		if( const auto type= std::get_if<Type>(&template_arg) )
 		{
 			if( type->GetArrayType() != nullptr )
-				res+= "$$B";
+				mangler_state.PushElement( "$$B" );
 
-			EncodeType( res, mangler_state, *type );
+			EncodeType( mangler_state, *type );
 		}
 		else if( const auto variable= std::get_if<Variable>(&template_arg) )
 		{
@@ -536,9 +556,9 @@ void ManglerMSVC::EncodeTemplateArgs( std::string& res, ManglerState& mangler_st
 			// And it's possible to use same numeric value with diffirent types for instantiation of different type templates.
 			// So, we need to distinguish between such template types.
 			// Because of that prefix each numeric arg with type, like this is just hidden type param for each value param.
-			EncodeType( res, mangler_state, variable->type );
+			EncodeType( mangler_state, variable->type );
 
-			res+= g_numeric_template_arg_prefix;
+			mangler_state.PushElement( g_numeric_template_arg_prefix );
 
 			bool is_signed= false;
 			if( const auto fundamental_type= variable->type.GetFundamentalType() )
@@ -548,24 +568,24 @@ void ManglerMSVC::EncodeTemplateArgs( std::string& res, ManglerState& mangler_st
 			else U_ASSERT(false);
 
 			U_ASSERT( variable->constexpr_value != nullptr );
-			EncodeNumber( res, variable->constexpr_value->getUniqueInteger(), is_signed );
+			EncodeNumber( mangler_state, variable->constexpr_value->getUniqueInteger(), is_signed );
 		}
 		else U_ASSERT(false);
 	}
 
 	// Finish list of arguments.
-	res+= g_terminator;
+	mangler_state.PushElement( g_terminator );
 }
 
-void ManglerMSVC::EncodeFullName( std::string& res, ManglerState& mangler_state, const std::string_view name, const NamesScope& scope ) const
+void ManglerMSVC::EncodeFullName( ManglerState& mangler_state, const std::string_view name, const NamesScope& scope ) const
 {
-	mangler_state.EncodeName( name, res );
-	EncodeNamespacePostfix_r( res, mangler_state, scope );
+	mangler_state.EncodeName( name );
+	EncodeNamespacePostfix_r( mangler_state, scope );
 	// Finish list of name components.
-	res+= g_terminator;
+	mangler_state.PushElement(g_terminator );
 }
 
-void ManglerMSVC::EncodeNamespacePostfix_r( std::string& res, ManglerState& mangler_state, const NamesScope& scope ) const
+void ManglerMSVC::EncodeNamespacePostfix_r( ManglerState& mangler_state, const NamesScope& scope ) const
 {
 	if( scope.GetParent() == nullptr ) // Root namespace.
 		return;
@@ -574,17 +594,17 @@ void ManglerMSVC::EncodeNamespacePostfix_r( std::string& res, ManglerState& mang
 	{
 		if( the_class->base_template != std::nullopt )
 		{
-			EncodeTemplateClassName( res, mangler_state, the_class );
+			EncodeTemplateClassName( mangler_state, the_class );
 			return;
 		}
 	}
 
-	mangler_state.EncodeName( scope.GetThisNamespaceName(), res );
+	mangler_state.EncodeName( scope.GetThisNamespaceName() );
 
-	EncodeNamespacePostfix_r( res, mangler_state, *scope.GetParent() );
+	EncodeNamespacePostfix_r( mangler_state, *scope.GetParent() );
 }
 
-void ManglerMSVC::EncodeTemplateClassName( std::string& res, ManglerState& mangler_state, const ClassPtr& the_class ) const
+void ManglerMSVC::EncodeTemplateClassName( ManglerState& mangler_state, const ClassPtr& the_class ) const
 {
 	U_ASSERT( the_class->base_template != std::nullopt );
 
@@ -592,17 +612,17 @@ void ManglerMSVC::EncodeTemplateClassName( std::string& res, ManglerState& mangl
 	const auto namespace_containing_template= type_template->parent_namespace;
 
 	// Use separate backreferences table.
-	ManglerState template_mangler_state;
+	ManglerState template_mangler_state( mangler_state, ManglerState::LinkedTag{} );
 
-	res+= g_template_prefix;
-	template_mangler_state.EncodeName( type_template->syntax_element->name_, res );
-	EncodeTemplateArgs( res, template_mangler_state, the_class->base_template->signature_args );
+	mangler_state.PushElement( g_template_prefix );
+	template_mangler_state.EncodeName( type_template->syntax_element->name_ );
+	EncodeTemplateArgs( template_mangler_state, the_class->base_template->signature_args );
 
 	if( namespace_containing_template->GetParent() != nullptr )
-		EncodeNamespacePostfix_r( res, mangler_state, *namespace_containing_template );
+		EncodeNamespacePostfix_r( mangler_state, *namespace_containing_template );
 }
 
-void ManglerMSVC::EncodeNumber( std::string& res, const llvm::APInt& num, const bool is_signed ) const
+void ManglerMSVC::EncodeNumber( ManglerState& mangler_state, const llvm::APInt& num, const bool is_signed ) const
 {
 	uint64_t abs_value= 0;
 	if( is_signed )
@@ -612,7 +632,7 @@ void ManglerMSVC::EncodeNumber( std::string& res, const llvm::APInt& num, const 
 			abs_value= value_signed;
 		else
 		{
-			res+= "?";
+			mangler_state.PushElement( "?" );
 			abs_value= -value_signed;
 		}
 	}
@@ -620,9 +640,9 @@ void ManglerMSVC::EncodeNumber( std::string& res, const llvm::APInt& num, const 
 		abs_value= num.getZExtValue();
 
 	if( abs_value == 0 )
-		res+= "A@";
+		mangler_state.PushElement( "A@" );
 	else if( abs_value <= 10 )
-		res+= char(abs_value - 1 + '0');
+		mangler_state.PushElement( char(abs_value - 1 + '0') );
 	else
 	{
 		// Use hex numbers with digits in range [A;Q)
@@ -632,12 +652,12 @@ void ManglerMSVC::EncodeNumber( std::string& res, const llvm::APInt& num, const 
 
 		while(hex_digit >= 0)
 		{
-			res+= char('A' + ((abs_value >> (hex_digit << 2)) & 0xF));
+			mangler_state.PushElement( char('A' + ((abs_value >> (hex_digit << 2)) & 0xF)) );
 			--hex_digit;
 		}
 
 		// Finish list of digits.
-		res+= g_terminator;
+		mangler_state.PushElement( g_terminator );
 	}
 }
 
