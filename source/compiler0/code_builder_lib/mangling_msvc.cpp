@@ -528,6 +528,16 @@ void ManglerMSVC::EncodeTemplateArgs( std::string& res, ManglerState& mangler_st
 		}
 		else if( const auto variable= std::get_if<Variable>(&template_arg) )
 		{
+			// HACK!
+			// This is not how C++ compiler encodes value template args.
+			// In C++ this is just numbers.
+			// In Ü it's possible to create several type templates with same name and single value template param
+			// but with different param type.
+			// And it's possible to use same numeric value with diffirent types for instantiation of different type templates.
+			// So, we need to distinguish between such template types.
+			// Because of that prefix each numeric arg with type, like this is just hidden type param for each value param.
+			EncodeType( res, mangler_state, variable->type );
+
 			res+= g_numeric_template_arg_prefix;
 
 			bool is_signed= false;

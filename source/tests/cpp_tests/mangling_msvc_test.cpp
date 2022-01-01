@@ -409,14 +409,14 @@ U_TEST( TemplateFunctionsManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetZero@N@@YANXZ" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "??$PerformCast@MI@Qwerty@@YAIM@Z" ) != nullptr );
 
-	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetSomeConst@$02@@YAHXZ" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetSomeConst@$0CK@@@YAHXZ" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetSomeConst@$0?6@@YAHXZ" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetSomeConst@$0?BAAPI@@@YAHXZ" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetSomeConst@$0CHAAEDLF@@@YAHXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetSomeConst@H$02@@YAHXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetSomeConst@H$0CK@@@YAHXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetSomeConst@H$0?6@@YAHXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetSomeConst@H$0?BAAPI@@@YAHXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetSomeConst@H$0CHAAEDLF@@@YAHXZ" ) != nullptr );
 
-	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetSomeConst64@$0PPPPPPPPPPPPPPPP@@@YA_KXZ" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetSomeConst64@$0HPPPPPPPPPPPPPPP@@@YA_KXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetSomeConst64@_K$0PPPPPPPPPPPPPPPP@@@YA_KXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "??$GetSomeConst64@_K$0HPPPPPPPPPPPPPPP@@@YA_KXZ" ) != nullptr );
 
 	// Should duplicate "SomeStruct" because separate backreferences table created for template.
 	U_TEST_ASSERT( engine->FindFunctionNamed( "??$MakeItZero@USomeStruct@@@@YAAEAUSomeStruct@@AEAU0@@Z" ) != nullptr );
