@@ -915,4 +915,16 @@ U_TEST( SpecialFunctionTypeDataManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?RefPollutionFunction@@YAXP6AXAEBHAEAUS@@U?$_RP@$00$0A@$0A@$0PPPPPPPP@@@@Z@Z" ) != nullptr );
 }
 
+U_TEST( TypeinfoClassManglingTest )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( typeof(typeinfo</i32/>) tt ){}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Foo@@YAXU?$_TI@H@@@Z" ) != nullptr );
+}
+
 } // namespace U

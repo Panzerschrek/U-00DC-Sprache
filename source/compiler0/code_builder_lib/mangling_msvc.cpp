@@ -342,7 +342,7 @@ void ManglerMSVC::EncodeType( ManglerState& mangler_state, const Type& type ) co
 		mangler_state.PushElement( g_template_prefix );
 		template_mangler_state.EncodeName( Keyword( Keywords::tup_ ) );
 		EncodeTemplateArgs( template_mangler_state, template_args );
-		// Finish list of dimensions.
+		// Finish list of name components.
 		mangler_state.PushElement( g_terminator );
 	}
 	else if( const auto class_type= type.GetClassType() )
@@ -351,7 +351,18 @@ void ManglerMSVC::EncodeType( ManglerState& mangler_state, const Type& type ) co
 
 		if( class_type->typeinfo_type != std::nullopt )
 		{
-			// TODO
+			// Encode typeinfo, like type template.
+
+			// Use separate backreferences table.
+			ManglerState template_mangler_state( mangler_state, ManglerState::LinkedTag{} );
+
+			mangler_state.PushElement( g_template_prefix );
+			template_mangler_state.EncodeName( class_type->members->GetThisNamespaceName() );
+			EncodeType( template_mangler_state, *class_type->typeinfo_type );
+			// Finish list of template arguments.
+			mangler_state.PushElement( g_terminator );
+			// Finish template.
+			mangler_state.PushElement( g_terminator );
 		}
 		else if( class_type->base_template != std::nullopt )
 		{
