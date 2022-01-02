@@ -218,7 +218,7 @@ std::string ManglerMSVC::MangleFunction(
 	std::string res;
 	ManglerState mangler_state( res );
 
-	res+= g_name_prefix;
+	mangler_state.PushElement( g_name_prefix );
 
 	const std::string& op_name= DecodeOperator( function_name );
 	if( template_args != nullptr )
@@ -226,9 +226,9 @@ std::string ManglerMSVC::MangleFunction(
 		// Use separate backreferences table.
 		ManglerState template_mangler_state( mangler_state, ManglerState::LinkedTag{} );
 
-		res+= g_template_prefix;
+		template_mangler_state.PushElement( g_template_prefix );
 		if( !op_name.empty() )
-			res+= op_name;
+			template_mangler_state.PushElement( op_name );
 		else
 			template_mangler_state.EncodeName( function_name );
 		EncodeTemplateArgs( template_mangler_state, *template_args );
@@ -236,16 +236,16 @@ std::string ManglerMSVC::MangleFunction(
 	else
 	{
 		if( !op_name.empty() )
-			res+= op_name;
+			mangler_state.PushElement( op_name );
 		else
 			mangler_state.EncodeName( function_name );
 	}
 	EncodeNamespacePostfix_r( mangler_state, parent_scope );
 	// Finish list of name components.
-	res+= g_terminator;
+	mangler_state.PushElement( g_terminator );
 
 	// Access label. Use global access modifier. There is no reason to use real access modifiers for class members
-	res+= "Y";
+	mangler_state.PushElement( "Y" );
 
 	// No need to encode full function type, like "unsafe" flag or return references/references pollution,
 	// since it's not possible to overload function unsing only such data.
@@ -260,12 +260,12 @@ std::string ManglerMSVC::MangleGlobalVariable( const NamesScope& parent_scope, c
 	std::string res;
 	ManglerState mangler_state( res );
 
-	res+= g_name_prefix;
+	mangler_state.PushElement( g_name_prefix );
 	EncodeFullName( mangler_state, variable_name, parent_scope );
 
-	res+= "3"; // Special name for global variables.
+	mangler_state.PushElement( "3" ); // Special name for global variables.
 	EncodeType( mangler_state, type );
-	res+= is_constant ? g_imut_prefix : g_mut_prefix;
+	mangler_state.PushElement( is_constant ? g_imut_prefix : g_mut_prefix );
 
 	return res;
 }
@@ -290,22 +290,20 @@ std::string ManglerMSVC::MangleVirtualTable( const Type& type )
 {
 	std::string res;
 	ManglerState mangler_state( res );
-	res+= g_name_prefix;
-	res+= "?_7"; // Special name for virtual functions table.
+	mangler_state.PushElement( g_name_prefix );
+	mangler_state.PushElement( "?_7" ); // Special name for virtual functions table.
 	EncodeNamespacePostfix_r( mangler_state, *type.GetClassType()->members );
-	res+= g_terminator; // Finish list of name components
-	res+= "6"; // "6" for "vftable"
-	res+= g_imut_prefix;
-	res+= g_terminator;
+	mangler_state.PushElement( g_terminator ); // Finish list of name components
+	mangler_state.PushElement( "6" ); // "6" for "vftable"
+	mangler_state.PushElement( g_imut_prefix );
+	mangler_state.PushElement( g_terminator );
 	return res;
 }
 
 void ManglerMSVC::EncodeType( ManglerState& mangler_state, const Type& type ) const
 {
 	if( const auto fundamental_type= type.GetFundamentalType() )
-	{
 		mangler_state.PushElement( GetFundamentalTypeMangledName( fundamental_type->fundamental_type ) );
-	}
 	else if( type.GetArrayType() != nullptr )
 	{
 		// Process nested arrays.
@@ -316,7 +314,7 @@ void ManglerMSVC::EncodeType( ManglerState& mangler_state, const Type& type ) co
 		{
 			if( const auto element_type_as_array_type= element_type->GetArrayType() )
 			{
-				dimensions.push_back(element_type_as_array_type->size);
+				dimensions.push_back( element_type_as_array_type->size );
 				element_type= &element_type_as_array_type->type;
 			}
 			else
@@ -395,9 +393,7 @@ void ManglerMSVC::EncodeType( ManglerState& mangler_state, const Type& type ) co
 		EncodeFunctionType(  mangler_state, function_pointer->function, true );
 	}
 	else if( const auto function= type.GetFunctionType() )
-	{
 		EncodeFunctionType( mangler_state, *function, true );
-	}
 	else U_ASSERT(false);
 }
 
@@ -421,7 +417,7 @@ void ManglerMSVC::EncodeFunctionType( ManglerState& mangler_state, const Functio
 		mangler_state.PushElement( g_mut_prefix ); // Return value is mutable
 	}
 
-	EncodeType(  mangler_state, function_type.return_type );
+	EncodeType( mangler_state, function_type.return_type );
 
 	EncodeFunctionParams( mangler_state, function_type.params );
 
