@@ -1,4 +1,5 @@
 %__U_void = type {}
+declare void @__U_halt()
 
 ;
 ; external functions from glibc.
@@ -9,12 +10,6 @@ declare void @free( %__U_void* )
 declare %__U_void* @realloc( %__U_void*, i64 )
 declare %__U_void* @memcpy( %__U_void*, %__U_void*, i64 )
 declare i32 @memcmp( %__U_void*, %__U_void*, i64 )
-
-;
-; halt
-;
-
-declare void @__U_halt()
 
 ;
 ; stdlib functions for targets with 64-bit pointers.
