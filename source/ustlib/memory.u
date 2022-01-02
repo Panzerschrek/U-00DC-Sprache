@@ -12,17 +12,67 @@ template<//> struct get_unsigned_type</ i64 /> { type t= u64; }
 
 type ptr_diff_type= get_signed_type</ size_type />::t;
 
-// Base ingerger to reference and back conversion functions. Implemented externally.
-fn ref_to_int( void& v ) : size_type;
-fn int_to_ref( size_type size ) unsafe : void&;
+// Base ingerger to reference and back conversion functions.
+fn ref_to_int( void& v ) : size_type
+{
+	unsafe
+	{
+		auto ptr= $<(cast_mut(v));
+		return cast_ref_unsafe</size_type/>(ptr); // Cast reference to pointer to reference to integer, read integer value.
+	}
+}
 
-// Allocation-deallocation functions. Implemented externally.
+fn int_to_ref( size_type i ) unsafe : void&
+{
+	unsafe
+	{
+		auto ptr= cast_ref_unsafe</$(void)/>(i); // Cast reference to integer to reference to pointer, read poibnter value.
+		return $>(ptr);
+	}
+}
+
+// Allocation-deallocation functions.
 // If allocation function can not allocate memory block with requested size - program will be halted.
-fn memory_allocate( size_type size_bytes ) unsafe : void &mut;
-fn memory_reallocate( void& mem, size_type new_size_bytes ) unsafe : void &mut;
-fn memory_free( void& mem ) unsafe;
-fn memory_copy( void&mut dst, void & src, size_type size_bytes ) unsafe;
-fn memory_equals( void& a, void& b, size_type size ) unsafe : bool;
+
+fn memory_allocate( size_type size_bytes ) unsafe : void &mut
+{
+	memory_impl::allocation_size_check( size_bytes );
+	unsafe
+	{
+		auto ptr= malloc( size_bytes );
+		halt if( ptr == nullptr</void/>() );
+		return $>(ptr);
+	}
+}
+
+fn memory_reallocate( void& mem, size_type new_size_bytes ) unsafe : void &mut
+{
+	memory_impl::allocation_size_check( new_size_bytes );
+	unsafe
+	{
+		auto ptr= realloc( $<(cast_mut(mem)), new_size_bytes );
+		halt if( ptr == nullptr</void/>() );
+		return $>(ptr);
+	}
+}
+
+fn memory_free( void& mem ) unsafe
+{
+	unsafe{  free( $<(cast_mut(mem)) );  }
+}
+
+fn memory_copy( void &mut dst, void & src, size_type size_bytes ) unsafe
+{
+	unsafe{  memcpy( $<(dst), $<(cast_mut(src)), size_bytes );  }
+}
+
+fn memory_equals( void& a, void& b, size_type size ) unsafe : bool
+{
+	unsafe
+	{
+		return memcmp( $<(cast_mut(a)), $<(cast_mut(b)), size ) == 0;
+	}
+}
 
 template</type T/>
 fn nullptr() : $(T)
@@ -67,4 +117,30 @@ fn ref_cmp_ge( T& l, T& r ) : bool
 	unsafe{ return $<(cast_mut(l)) >= $<(cast_mut(r)); }
 }
 
+namespace memory_impl
+{
+
+fn allocation_size_check( size_type size )
+{
+	if( typeinfo</size_type/>.size_of == 8s )
+	{
+		// It's almost impossible to get pointer difference overflow on 64bit platform. So, ignore allocation size check  here.
+	}
+	else
+	{
+		// Do not allow allocations greater than half of address space to avoid pointer difference overflow.
+		// TODO - do this only if underlaying "malloc" function have no such functionality.
+		halt if( size >= 2147483647s );
+	}
+}
+
+} // namespace memory_impl
+
 } // namespace ust
+
+// C standard library functions, used to implement memory functions for Ü.
+fn nomangle malloc( size_type size ) unsafe : $(void);
+fn nomangle free( $(void) ptr )unsafe ;
+fn nomangle realloc( $(void) ptr, size_type size ) unsafe : $(void);
+fn nomangle memcpy( $(void) dst, $(void) src, size_type size ) unsafe;
+fn nomangle memcmp( $(void) a, $(void) b, size_type size ) unsafe : i32;
