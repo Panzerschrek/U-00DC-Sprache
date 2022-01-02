@@ -642,11 +642,11 @@ void ManglerMSVC::EncodeNumber( ManglerState& mangler_state, const llvm::APInt& 
 	{
 		const int64_t value_signed= num.getSExtValue();
 		if( value_signed >= 0 )
-			abs_value= value_signed;
+			abs_value= uint64_t(value_signed);
 		else
 		{
 			mangler_state.PushElement( "?" );
-			abs_value= -value_signed;
+			abs_value= uint64_t(-value_signed);
 		}
 	}
 	else
