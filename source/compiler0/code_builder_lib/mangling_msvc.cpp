@@ -292,9 +292,11 @@ std::string ManglerMSVC::MangleVirtualTable( const Type& type )
 	ManglerState mangler_state( res );
 	res+= g_name_prefix;
 	res+= "?_7"; // Special name for virtual functions table.
-	EncodeType( mangler_state, type );
+	EncodeNamespacePostfix_r( mangler_state, *type.GetClassType()->members );
+	res+= g_terminator; // Finish list of name components
 	res+= "6"; // "6" for "vftable"
 	res+= g_imut_prefix;
+	res+= g_terminator;
 	return res;
 }
 

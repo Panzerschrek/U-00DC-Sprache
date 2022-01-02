@@ -866,31 +866,25 @@ U_TEST( OperatorsMangling_Test0 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "??$?RM@Box@@YAXAEBU0@M@Z" ) != nullptr ); // Template op()</f32/>
 }
 
-U_TEST( VirtualTableMangling_Test0 )
+U_TEST( VirtualTableManglingTest )
 {
 	static const char c_program_text[]=
 	R"(
 		class SukaBlat polymorph{}
-	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
-
-	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "??_7SukaBlat@@6B@", true ) != nullptr );
-}
-
-U_TEST( VirtualTableMangling_Test1 )
-{
-	static const char c_program_text[]=
-	R"(
 		namespace Lol
 		{
 			class WTF polymorph{}
+
+			template</type T/> class Hämatom polymorph { T t; }
+			type Musik= Hämatom</bool/>;
 		}
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
-
+	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "??_7SukaBlat@@6B@", true ) != nullptr );
 	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "??_7WTF@Lol@@6B@", true ) != nullptr );
+	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "??_7?$Hämatom@_N@Lol@@6B@", true ) != nullptr );
 }
 
 U_TEST( SpecialFunctionTypeDataManglingTest )
