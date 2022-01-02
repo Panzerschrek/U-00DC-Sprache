@@ -10,7 +10,8 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const IVfsPtr& vfs,
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
-	const bool generate_debug_info )
+	const bool generate_debug_info,
+	const ManglingScheme mangling_scheme )
 {
 	CodeBuilderLaunchResult result;
 
@@ -26,6 +27,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 
 	CodeBuilderOptions options;
 	options.build_debug_info= generate_debug_info;
+	options.mangling_scheme= mangling_scheme;
 
 	CodeBuilder::BuildResult build_result=
 		CodeBuilder(

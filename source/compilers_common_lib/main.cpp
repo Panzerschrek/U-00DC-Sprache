@@ -522,7 +522,13 @@ int Main( int argc, const char* argv[] )
 		for( const std::string& input_file : Options::input_files )
 		{
 			CodeBuilderLaunchResult code_builder_launch_result=
-				LaunchCodeBuilder( input_file, vfs, llvm_context, data_layout, Options::generate_debug_info );
+				LaunchCodeBuilder(
+					input_file,
+					vfs,
+					llvm_context,
+					data_layout,
+					Options::generate_debug_info,
+					is_msvc ? ManglingScheme::MSVC : ManglingScheme::ItaniumABI );
 
 			deps_list.insert( deps_list.end(), code_builder_launch_result.dependent_files.begin(), code_builder_launch_result.dependent_files.end() );
 
