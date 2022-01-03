@@ -28,12 +28,19 @@ public:
 		FunctionType& function_type,
 		TemplateArgsFinished& template_args ) : ust::string8;
 
-	fn virtual override MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string8& variable_name ) : ust::string8;
+	fn virtual override MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string8& variable_name, Type& t, bool is_constant ) : ust::string8;
 	fn virtual override MangleType( mut this, Type& t ) : ust::string8;
 	fn virtual override MangleTemplateArgs( mut this, TemplateArgsFinished& template_args ) : ust::string8;
 	fn virtual override MangleVirtualTable( mut this, Type& t ) : ust::string8;
 
 private:
+	fn MangleFunctionImpl(
+		mut this,
+		NamesScope& parent_scope,
+		ust::string8& name,
+		FunctionType& function_type,
+		ust::optional_ref_imut</TemplateArgsFinished/> template_args ) : ust::string8;
+
 	fn EncodeType( this, ManglerStateMSVC &mut mangler_state, Type& t );
 	fn EncodeFunctionType( this, ManglerStateMSVC &mut mangler_state, FunctionType& function_type, bool encode_full_type );
 	fn EncodeFunctionParams( this, ManglerStateMSVC &mut mangler_state, ust::vector</FunctionType::Param/>& params );
@@ -41,8 +48,8 @@ private:
 	fn EncodeFullName( this, ManglerStateMSVC &mut mangler_state, ust::array_view_imut</char8/> name, NamesScope& scope );
 	fn EncodeNamespacePostfix_r( this, ManglerStateMSVC &mut mangler_state, NamesScope& scope );
 	fn EncodeTemplateClassName( this, ManglerStateMSVC &mut mangler_state, ClassType& the_class );
-	fn EncodeSignedNumber( this, ManglerStateMSVC &mut mangler_state, i64 num );
-	fn EncodeNumber( this, ManglerStateMSVC &mut mangler_state, u64 num, bool is_negative );
+	fn EncodeNumber( this, ManglerStateMSVC &mut mangler_state, i64 num );
+	fn EncodeNumber( this, ManglerStateMSVC &mut mangler_state, u64 num );
 
 private:
 	ust::string8 imut pointer_types_modifier_;
@@ -59,28 +66,7 @@ fn ManglerMSVC::MangleFunction(
 	ust::string8& name,
 	FunctionType& function_type ) : ust::string8
 {
-	// For class methods do not encode stuff like access labels, or methods-related stuff.
-	// Just encode class methods as regular functions inside namespaces, with "this" as regular param.
-
-	var ManglerStateMSVC mut mangler_state;
-
-	mangler_state.PushElement( g_name_prefix );
-
-	mangler_state.EncodeName( name.range() );
-
-	EncodeNamespacePostfix_r( mangler_state, parent_scope );
-	// Finish list of name components.
-	mangler_state.PushElement( g_terminator );
-
-	// Access label. Use global access modifier. There is no reason to use real access modifiers for class members
-	mangler_state.PushElement( "Y" );
-
-	// No need to encode full function type, like "unsafe" flag or return references/references pollution,
-	// since it's not possible to overload function unsing only such data.
-	auto encode_full_function_type= false;
-	EncodeFunctionType( mangler_state, function_type, encode_full_function_type );
-
-	return MakeNullTerminatedString( mangler_state.TakeRes() );
+	return MangleFunctionImpl( parent_scope, name, function_type, ust::optional_ref_imut</TemplateArgsFinished/>() );
 }
 
 fn ManglerMSVC::MangleFunction(
@@ -90,15 +76,20 @@ fn ManglerMSVC::MangleFunction(
 	FunctionType& function_type,
 	TemplateArgsFinished& template_args ) : ust::string8
 {
-	var ManglerStateMSVC mut mangler_state;
-	// TODO
-	return MakeNullTerminatedString( mangler_state.TakeRes() );
+	return MangleFunctionImpl( parent_scope, name, function_type, ust::optional_ref_imut</TemplateArgsFinished/>(template_args) );
 }
 
-fn ManglerMSVC::MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string8& variable_name ) : ust::string8
+fn ManglerMSVC::MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string8& variable_name, Type& t, bool is_constant ) : ust::string8
 {
 	var ManglerStateMSVC mut mangler_state;
-	// TODO
+
+	mangler_state.PushElement( g_name_prefix );
+	EncodeFullName( mangler_state, variable_name.range(), parent_scope );
+
+	mangler_state.PushElement( "3"c8 ); // Special name for global variables.
+	EncodeType( mangler_state, t );
+	mangler_state.PushElement( select( is_constant ? g_imut_prefix : g_mut_prefix ) );
+
 	return MakeNullTerminatedString( mangler_state.TakeRes() );
 }
 
@@ -119,7 +110,77 @@ fn ManglerMSVC::MangleTemplateArgs( mut this, TemplateArgsFinished& template_arg
 fn ManglerMSVC::MangleVirtualTable( mut this, Type& t ) : ust::string8
 {
 	var ManglerStateMSVC mut mangler_state;
-	// TODO
+
+	mangler_state.PushElement( g_name_prefix );
+	mangler_state.PushElement( "?_7" ); // Special name for virtual functions table.
+	EncodeNamespacePostfix_r( mangler_state, t.GetClassType().try_deref().lock_imut().deref().members.lock_imut().deref() );
+	mangler_state.PushElement( g_terminator ); // Finish list of name components
+	mangler_state.PushElement( "6" ); // "6" for "vftable"
+	mangler_state.PushElement( g_imut_prefix );
+	mangler_state.PushElement( g_terminator );
+
+	return MakeNullTerminatedString( mangler_state.TakeRes() );
+}
+
+fn ManglerMSVC::MangleFunctionImpl(
+	mut this,
+	NamesScope& parent_scope,
+	ust::string8& name,
+	FunctionType& function_type,
+	ust::optional_ref_imut</TemplateArgsFinished/> template_args ) : ust::string8
+{
+	// For class methods do not encode stuff like access labels, or methods-related stuff.
+	// Just encode class methods as regular functions inside namespaces, with "this" as regular param.
+
+	var ManglerStateMSVC mut mangler_state;
+
+	mangler_state.PushElement( g_name_prefix );
+
+	auto op_name= GetOperatorNameMSVC( name );
+
+	if( !template_args.empty() )
+	{
+		// Use separate backreferences table.
+		var ManglerStateMSVC mut template_mangler_state;
+		{
+			template_mangler_state.PushElement( g_template_prefix );
+			if( !op_name.empty() )
+			{
+				template_mangler_state.PushElement( op_name );
+			}
+			else
+			{
+				template_mangler_state.EncodeName( name.range() );
+			}
+			EncodeTemplateArgs( template_mangler_state, template_args.try_deref() );
+		}
+		// Do not create backreference for template name, just push template name instead.
+		mangler_state.PushElement( template_mangler_state.TakeRes().range() );
+	}
+	else
+	{
+		if( !op_name.empty() )
+		{
+			mangler_state.PushElement( op_name );
+		}
+		else
+		{
+			mangler_state.EncodeName( name.range() );
+		}
+	}
+
+	EncodeNamespacePostfix_r( mangler_state, parent_scope );
+	// Finish list of name components.
+	mangler_state.PushElement( g_terminator );
+
+	// Access label. Use global access modifier. There is no reason to use real access modifiers for class members
+	mangler_state.PushElement( "Y" );
+
+	// No need to encode full function type, like "unsafe" flag or return references/references pollution,
+	// since it's not possible to overload function unsing only such data.
+	auto encode_full_function_type= false;
+	EncodeFunctionType( mangler_state, function_type, encode_full_function_type );
+
 	return MakeNullTerminatedString( mangler_state.TakeRes() );
 }
 
@@ -149,10 +210,10 @@ fn ManglerMSVC::EncodeType( this, ManglerStateMSVC &mut mangler_state, Type& t )
 		}
 
 		mangler_state.PushElement( "Y" );
-		EncodeNumber( mangler_state, u64(dimensions.size()), false );
+		EncodeNumber( mangler_state, u64(dimensions.size()) );
 		foreach( dimension_size : dimensions )
 		{
-			EncodeNumber( mangler_state, dimension_size, false );
+			EncodeNumber( mangler_state, dimension_size );
 		}
 		EncodeType( mangler_state, element_type );
 
@@ -192,13 +253,32 @@ fn ManglerMSVC::EncodeType( this, ManglerStateMSVC &mut mangler_state, Type& t )
 		auto class_members_lock= class_members.lock_imut();
 		auto& class_members_ref= class_members_lock.deref();
 
+		mangler_state.PushElement( g_class_type_prefix );
+
 		if( !class_type.typeinfo_src_type_.empty() )
 		{
+			// Encode typeinfo, like type template.
 
+			// Use separate backreferences table.
+			{
+				var ManglerStateMSVC mut template_mangler_state;
+
+				template_mangler_state.PushElement( g_template_prefix );
+				template_mangler_state.EncodeName( class_members_ref.GetThisNamespaceName().range() );
+				EncodeType( template_mangler_state, class_type.typeinfo_src_type_.try_deref() );
+				// Finish list of template arguments.
+				template_mangler_state.PushElement( g_terminator );
+
+				mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes().range() );
+			}
+			// Finish class name.
+			mangler_state.PushElement( g_terminator );
 		}
 		else if( !class_type.base_template.empty() )
 		{
-
+			EncodeTemplateClassName( mangler_state, class_type );
+			// Finish list of name components.
+			mangler_state.PushElement( g_terminator );
 		}
 		else
 		{
@@ -229,7 +309,7 @@ fn ManglerMSVC::EncodeType( this, ManglerStateMSVC &mut mangler_state, Type& t )
 	{
 		mangler_state.PushElement( g_pointer_prefix );
 		mangler_state.PushElement( "6" );
-		EncodeFunctionType(  mangler_state, function_pointer_type.function_type, true );
+		EncodeFunctionType( mangler_state, function_pointer_type.function_type, true );
 		return;
 	}
 	if_var( &function_type : t.GetFunctionType() )
@@ -298,9 +378,9 @@ fn ManglerMSVC::EncodeFunctionType( this, ManglerStateMSVC &mut mangler_state, F
 				foreach( &arg_and_tag : function_type.return_references )
 				{
 					template_mangler_state.PushElement( g_numeric_template_arg_prefix );
-					EncodeNumber( template_mangler_state, u64(arg_and_tag.param_index) , false );
+					EncodeNumber( template_mangler_state, u64(arg_and_tag.param_index)  );
 					template_mangler_state.PushElement( g_numeric_template_arg_prefix );
-					EncodeSignedNumber( template_mangler_state, i64(arg_and_tag.reference_index) );
+					EncodeNumber( template_mangler_state, u64(arg_and_tag.reference_index) );
 				}
 				// Finish list of template args.
 				template_mangler_state.PushElement( g_terminator );
@@ -326,13 +406,13 @@ fn ManglerMSVC::EncodeFunctionType( this, ManglerStateMSVC &mut mangler_state, F
 				foreach( &pollution : function_type.references_pollution )
 				{
 					template_mangler_state.PushElement( g_numeric_template_arg_prefix );
-					EncodeNumber( template_mangler_state, u64(pollution.dst.param_index), false );
+					EncodeNumber( template_mangler_state, u64(pollution.dst.param_index) );
 					template_mangler_state.PushElement( g_numeric_template_arg_prefix );
-					EncodeSignedNumber( template_mangler_state, i64(pollution.dst.reference_index) );
+					EncodeNumber( template_mangler_state, u64(pollution.dst.reference_index) );
 					template_mangler_state.PushElement( g_numeric_template_arg_prefix );
-					EncodeNumber( template_mangler_state, u64(pollution.src.param_index), false );
+					EncodeNumber( template_mangler_state, u64(pollution.src.param_index) );
 					template_mangler_state.PushElement( g_numeric_template_arg_prefix );
-					EncodeSignedNumber( template_mangler_state, i64(pollution.src.reference_index) );
+					EncodeNumber( template_mangler_state, u64(pollution.src.reference_index) );
 				}
 				// Finish list of template args.
 				template_mangler_state.PushElement( g_terminator );
@@ -447,11 +527,11 @@ fn ManglerMSVC::EncodeTemplateArgs( this, ManglerStateMSVC &mut mangler_state, T
 			{
 				if( is_signed )
 				{
-					EncodeSignedNumber( mangler_state, LLVMConstIntGetSExtValue( v.constexpr_value ) );
+					EncodeNumber( mangler_state, LLVMConstIntGetSExtValue( v.constexpr_value ) );
 				}
 				else
 				{
-					EncodeNumber( mangler_state, LLVMConstIntGetZExtValue( v.constexpr_value ), false );
+					EncodeNumber( mangler_state, LLVMConstIntGetZExtValue( v.constexpr_value ) );
 				}
 			}
 		}
@@ -495,40 +575,38 @@ fn ManglerMSVC::EncodeNamespacePostfix_r( this, ManglerStateMSVC &mut mangler_st
 
 fn ManglerMSVC::EncodeTemplateClassName( this, ManglerStateMSVC &mut mangler_state, ClassType& the_class )
 {
-	var TypeTemplatePtr& type_template= the_class.base_template.try_deref().class_template;
-	auto namespace_containing_template= type_template.deref().parent_names_scope;
+	var TypeTemplatePtr& type_template_ptr= the_class.base_template.try_deref().class_template;
+	var TypeTemplate& type_template= type_template_ptr.deref();
 
 	// Use separate backreferences table.
 	{
 		var ManglerStateMSVC mut template_mangler_state;
 
 		template_mangler_state.PushElement( g_template_prefix );
-		template_mangler_state.EncodeName( type_template.deref().syntax_element.deref().name.range() );
+		template_mangler_state.EncodeName( type_template.syntax_element.deref().name.range() );
 		EncodeTemplateArgs( template_mangler_state, the_class.base_template.try_deref().signature_args );
 
 		mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes().range() );
 	}
+
+	EncodeNamespacePostfix_r( mangler_state, type_template.parent_names_scope.lock().try_lock_imut().deref() );
 }
 
-fn ManglerMSVC::EncodeSignedNumber( this, ManglerStateMSVC &mut mangler_state, i64 num )
+fn ManglerMSVC::EncodeNumber( this, ManglerStateMSVC &mut mangler_state, i64 num )
 {
 	if( num < 0i64 )
 	{
-		EncodeNumber( mangler_state, u64(-num), true );
+		mangler_state.PushElement( "?" );
+		EncodeNumber( mangler_state, u64(-num) );
 	}
 	else
 	{
-		EncodeNumber( mangler_state, u64(num), false );
+		EncodeNumber( mangler_state, u64(num) );
 	}
 }
 
-fn ManglerMSVC::EncodeNumber( this, ManglerStateMSVC &mut mangler_state, u64 num, bool is_negative )
+fn ManglerMSVC::EncodeNumber( this, ManglerStateMSVC &mut mangler_state, u64 num )
 {
-	if( is_negative )
-	{
-		mangler_state.PushElement( "?" );
-	}
-
 	if( num == 0u64 )
 	{
 		mangler_state.PushElement( "A@" );

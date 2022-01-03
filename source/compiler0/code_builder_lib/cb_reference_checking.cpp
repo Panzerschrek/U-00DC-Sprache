@@ -325,7 +325,7 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 			{
 				FunctionType::ReferencePollution pollution;
 				pollution.src= *reference;
-				pollution.dst.first= i;
+				pollution.dst.first= uint8_t(i);
 				pollution.dst.second= 0u;
 				if( function_context.function_type.references_pollution.count( pollution ) != 0u )
 					continue;

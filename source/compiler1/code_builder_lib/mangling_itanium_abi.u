@@ -35,7 +35,7 @@ public:
 		FunctionType& function_type,
 		TemplateArgsFinished& template_args ) : ust::string8;
 
-	fn virtual override MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string8& variable_name ) : ust::string8;
+	fn virtual override MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string8& variable_name, Type& t, bool is_constant ) : ust::string8;
 	fn virtual override MangleType( mut this, Type& t ) : ust::string8;
 	fn virtual override MangleTemplateArgs( mut this, TemplateArgsFinished& template_args ) : ust::string8;
 	fn virtual override MangleVirtualTable( mut this, Type& t ) : ust::string8;
@@ -71,7 +71,7 @@ fn ManglerItaniumABI::MangleFunction(
 	return MangleFunctionImpl( parent_scope, name, function_type, ust::optional_ref_imut</TemplateArgsFinished/>(template_args) );
 }
 
-fn ManglerItaniumABI::MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string8& variable_name ) : ust::string8
+fn ManglerItaniumABI::MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string8& variable_name, Type& t, bool is_constant ) : ust::string8
 {
 	// Variables inside global namespace have simple names.
 	if( parent_scope.GetParent().empty() )

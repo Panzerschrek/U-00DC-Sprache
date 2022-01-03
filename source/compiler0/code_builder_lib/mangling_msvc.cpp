@@ -409,7 +409,7 @@ void ManglerMSVC::EncodeType( ManglerState& mangler_state, const Type& type ) co
 	{
 		mangler_state.PushElement( g_pointer_prefix );
 		mangler_state.PushElement( "6" );
-		EncodeFunctionType(  mangler_state, function_pointer->function, true );
+		EncodeFunctionType( mangler_state, function_pointer->function, true );
 	}
 	else if( const auto function= type.GetFunctionType() )
 		EncodeFunctionType( mangler_state, *function, true );
