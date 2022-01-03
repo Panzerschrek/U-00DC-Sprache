@@ -26,6 +26,7 @@ fn CodeBuilder::constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data
 		constexpr_function_evaluator_(data_layout),
 		global_things_stack_ptr_(GlobalThingsStack()),
 		build_debug_info_(options.build_debug_info)
+		mangler_(CreateManglerItaniumABI())
 	)
 {
 	unsafe
@@ -1226,7 +1227,7 @@ fn CodeBuilder::PrepareFunction(
 	else
 	{
 		llvm_function_name=
-			mangler_.MangleFunction(
+			mangler_.deref().MangleFunction(
 				names_scope_ptr.lock_imut().deref(),
 				func_name,
 				function_variable.t );

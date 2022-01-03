@@ -245,7 +245,7 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 	};
 
 	var ust::string8 mut variable_name = "_val_of_";
-	variable_name+= mangler_.MangleType(typeinfo_class);
+	variable_name+= mangler_.deref().MangleType(typeinfo_class);
 	unsafe
 	{
 		auto llvm_type= v.t.GetLLVMType();
@@ -471,7 +471,7 @@ fn CodeBuilder::CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Ty
 		lock.deref().SetClass( class_type_ptr );
 	}
 
-	auto name_mangled= mangler_.MangleType( class_type_ptr );
+	auto name_mangled= mangler_.deref().MangleType( class_type_ptr );
 	unsafe
 	{
 		auto mut lock= class_type_ptr.lock_mut();

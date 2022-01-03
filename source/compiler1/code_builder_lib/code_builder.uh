@@ -786,7 +786,7 @@ private:
 	LLVMContextRef imut llvm_context_;
 	LLVMTargetDataRef imut data_layout_;
 	ConstexprFunctionEvaluator constexpr_function_evaluator_;
-	Mangler mangler_;
+	ust::box</IMangler/> mangler_;
 
 	struct FundamentalLLVMTypes
 	{

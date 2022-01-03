@@ -752,7 +752,7 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 	unsafe{  int_ptr= ust::ref_to_int( cast_ref_unsafe</void/>( type_template_ptr.deref() ) );  }
 	auto template_key=
 		ust::to_string8( int_ptr ) +
-		mangler_.MangleTemplateArgs( template_args_evaluation_result.signature_args );
+		mangler_.deref().MangleTemplateArgs( template_args_evaluation_result.signature_args );
 
 	var ust::string8 template_class_name= "_";
 
@@ -801,7 +801,7 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 			lock.deref().base_template= move(base_template);
 		}
 
-		auto mangled_llvm_type_name= mangler_.MangleType( ust::to_non_nullable( class_type ) );
+		auto mangled_llvm_type_name= mangler_.deref().MangleType( ust::to_non_nullable( class_type ) );
 		unsafe{  U1_SetStructName( class_type.try_lock_imut().deref().llvm_type, mangled_llvm_type_name.front() );  }
 
 		AddNewTemplateThing( template_key, args_names_scope );
@@ -1046,7 +1046,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 	unsafe{  int_ptr= ust::ref_to_int( cast_ref_unsafe</void/>( function_template_ptr.deref() ) );  }
 	auto template_key=
 		ust::to_string8( int_ptr ) +
-		mangler_.MangleTemplateArgs( result_template_args );
+		mangler_.deref().MangleTemplateArgs( result_template_args );
 
 	auto& function_name= function_syntax_element.name.back();
 	if_var( prev_names_scope : generated_template_things_.find( template_key ) )
@@ -1088,7 +1088,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 	function_variable.base_template= function_template_ptr;
 
 	auto name_mangled=
-		mangler_.MangleFunction( function_template.parent_names_scope.lock().try_lock_imut().deref(), function_name, function_variable.t, result_template_args );
+		mangler_.deref().MangleFunction( function_template.parent_names_scope.lock().try_lock_imut().deref(), function_name, function_variable.t, result_template_args );
 	unsafe
 	{
 		LLVMSetValueName2( function_variable.llvm_function, name_mangled.front(), name_mangled.size() - 1s );
@@ -1163,7 +1163,7 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 		}
 		cache_key+= "_";
 	}
-	cache_key+= mangler_.MangleTemplateArgs( template_args_finished );
+	cache_key+= mangler_.deref().MangleTemplateArgs( template_args_finished );
 
 	var ust::string8 names_scope_value_key= "_";
 
