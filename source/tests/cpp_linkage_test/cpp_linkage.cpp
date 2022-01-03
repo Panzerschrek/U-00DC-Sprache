@@ -18,17 +18,6 @@ namespace NameSpace
 
 extern void TakeS( const NameSpace::S& );
 
-struct TheClass final
-{
-	static void StaticMethod();
-	static void StaticMethod2( int x );
-};
-
-void TheClass::StaticMethod2( int x )
-{
-	std::cout << "Call StaticMethod2: " << x << std::endl;
-}
-
 void U32ToStr( unsigned int x, char (&str)[64] );
 
 void CondHalt( bool cond );
@@ -45,8 +34,6 @@ int main()
 	// Call some Ü-Sprache functions
 	NameSpace::Nested();
 	TakeS( NameSpace::S() );
-	TheClass the_class;
-	the_class.StaticMethod();
 
 	// Real usable function - convert number to string.
 	char str[64];
