@@ -52,11 +52,21 @@ namespace U1
 type GlobalThingsStack= ust::vector</NamesScopeValue/>;
 type GlobalThingsStackPtr= ust::shared_ptr_mut</GlobalThingsStack/>;
 
+// This enum must match same enum in Compiler0 code!
+enum ManglingScheme : u8
+{
+	ItaniumABI,
+	MSVC, // Auto-select 32-bit or 64-bit scheme.
+	MSVC32,
+	MSVC64,
+}
+
 struct CodeBuilderOptions
 {
 	bool build_debug_info= false;
 	bool create_lifetimes= true;
 	bool generate_lifetime_start_end_debug_calls= false;
+	ManglingScheme mangling_scheme= ManglingScheme::ItaniumABI;
 }
 
 class CodeBuilder

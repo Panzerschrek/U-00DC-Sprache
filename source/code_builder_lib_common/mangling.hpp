@@ -4,6 +4,7 @@
 namespace U
 {
 
+// This enum must match same enum in Compiler1 code!
 enum class ManglingScheme : uint8_t
 {
 	ItaniumABI,

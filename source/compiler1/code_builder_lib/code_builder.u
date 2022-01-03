@@ -5,6 +5,28 @@ import "code_builder.uh"
 namespace U1
 {
 
+fn CreateMangler(ManglingScheme scheme, LLVMTargetDataRef data_layout) : ust::box</IMangler/>
+{
+	if( scheme == ManglingScheme::ItaniumABI )
+	{
+		return CreateManglerItaniumABI();
+	}
+	if( scheme == ManglingScheme::MSVC )
+	{
+		return CreateManglerMSVC( LLVMPointerSize( data_layout ) == 4u );
+	}
+	if( scheme == ManglingScheme::MSVC32 )
+	{
+		return CreateManglerMSVC(true);
+	}
+	if( scheme == ManglingScheme::MSVC64 )
+	{
+		return CreateManglerMSVC(false);
+	}
+
+	halt;
+}
+
 fn ClearClassInternals( ClassTypePtr& class_type, NamesScopeMutPtr& dummy_class_names_scope )
 {
 	auto mut lock= class_type.lock_mut();
@@ -26,7 +48,7 @@ fn CodeBuilder::constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data
 		constexpr_function_evaluator_(data_layout),
 		global_things_stack_ptr_(GlobalThingsStack()),
 		build_debug_info_(options.build_debug_info)
-		mangler_(CreateManglerItaniumABI())
+		mangler_(CreateMangler(options.mangling_scheme, data_layout))
 	)
 {
 	unsafe

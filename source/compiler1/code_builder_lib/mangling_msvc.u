@@ -1,0 +1,203 @@
+import "/string_conversions.u"
+import "/keywords.uh"
+import "mangling.uh"
+
+namespace U1
+{
+
+fn CreateManglerMSVC(bool is_32_bit) : ust::box</IMangler/>
+{
+	return ust::make_box(ManglerMSVC(is_32_bit));
+}
+
+class ManglerMSVC final : IMangler
+{
+public:
+	fn constructor(bool is_32_bit);
+
+	fn virtual override MangleFunction(
+		mut this,
+		NamesScope& parent_scope,
+		ust::string8& name,
+		FunctionType& function_type ) : ust::string8;
+
+	fn virtual override MangleFunction(
+		mut this,
+		NamesScope& parent_scope,
+		ust::string8& name,
+		FunctionType& function_type,
+		TemplateArgsFinished& template_args ) : ust::string8;
+
+	fn virtual override MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string8& variable_name ) : ust::string8;
+	fn virtual override MangleType( mut this, Type& t ) : ust::string8;
+	fn virtual override MangleTemplateArgs( mut this, TemplateArgsFinished& template_args ) : ust::string8;
+	fn virtual override MangleVirtualTable( mut this, Type& t ) : ust::string8;
+
+
+private:
+	fn EncodeType( this, ManglerStateMSVC& mangler_state, Type& t );
+	fn EncodeFunctionType( this, ManglerStateMSVC& mangler_state, FunctionType& function_type, bool encode_full_type );
+	fn EncodeFunctionParams( this, ManglerStateMSVC& mangler_state, ust::vector</FunctionType::Param/>& params );
+	fn EncodeTemplateArgs( this, ManglerStateMSVC& mangler_state, TemplateArgsFinished& template_args );
+	fn EncodeFullName( this, ManglerStateMSVC& mangler_state, ust::array_view_imut</char8/> name, NamesScope& scope );
+	fn EncodeNamespacePostfix_r( this, ManglerStateMSVC& mangler_state, NamesScope& scope );
+
+private:
+	ust::string8 imut pointer_types_modifier_;
+}
+
+fn ManglerMSVC::constructor(bool is_32_bit)
+	( pointer_types_modifier_( select( is_32_bit ? ust::string8("") : ust::string8("E") ) ) )
+{
+}
+
+fn ManglerMSVC::MangleFunction(
+	mut this,
+	NamesScope& parent_scope,
+	ust::string8& name,
+	FunctionType& function_type ) : ust::string8
+{
+	var ManglerStateMSVC mut mangler_state;
+	// TODO
+	return mangler_state.TakeRes();
+}
+
+fn ManglerMSVC::MangleFunction(
+	mut this,
+	NamesScope& parent_scope,
+	ust::string8& name,
+	FunctionType& function_type,
+	TemplateArgsFinished& template_args ) : ust::string8
+{
+	var ManglerStateMSVC mut mangler_state;
+	// TODO
+	return mangler_state.TakeRes();
+}
+
+fn ManglerMSVC::MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string8& variable_name ) : ust::string8
+{
+	var ManglerStateMSVC mut mangler_state;
+	// TODO
+	return mangler_state.TakeRes();
+}
+
+fn ManglerMSVC::MangleType( mut this, Type& t ) : ust::string8
+{
+	var ManglerStateMSVC mut mangler_state;
+	EncodeType( mangler_state, t );
+	return mangler_state.TakeRes();
+}
+
+fn ManglerMSVC::MangleTemplateArgs( mut this, TemplateArgsFinished& template_args ) : ust::string8
+{
+	var ManglerStateMSVC mut mangler_state;
+	EncodeTemplateArgs( mangler_state, template_args );
+	return mangler_state.TakeRes();
+}
+
+fn ManglerMSVC::MangleVirtualTable( mut this, Type& t ) : ust::string8
+{
+	var ManglerStateMSVC mut mangler_state;
+	// TODO
+	return mangler_state.TakeRes();
+}
+
+class ManglerStateMSVC
+{
+public:
+
+	// Push name and possible create or use backreferences.
+	fn EncodeName( mut this, ust::array_view_imut</char8/> str )
+	{
+		EncodeNameImpl( str, true );
+	}
+
+	fn EncodeNameNoTerminator( mut this, ust::array_view_imut</char8/> str )
+	{
+		EncodeNameImpl( str, false );
+	}
+
+	// Push non-name element (no need to create backreferences for it).
+	fn PushElement( mut this, ust::array_view_imut</char8/> str )
+	{
+		res_+= str;
+	}
+
+	fn PushElement( mut this, char8 c )
+	{
+		res_.push_back( c );
+	}
+
+	fn TakeRes( mut this ) : ust::string8
+	{
+		return take(res_);
+	}
+
+private:
+	fn EncodeNameImpl( mut this, ust::array_view_imut</char8/> str, bool use_terminator )
+	{
+		for( auto mut i= 0s; i < g_num_back_references; ++i )
+		{
+			var BackReference br= back_references_[i];
+			if( StringViewEq( res_.range().subrange( size_type(br.pos), size_type(br.pos + br.count) ), str ) )
+			{
+				res_.push_back( char8(i + size_type("0"c8) ) );
+				return;
+			}
+			if( br.count == 0u )
+			{
+				// Reached empty space - fill it.
+				back_references_[i].pos= u32(res_.size());
+				back_references_[i].count= u32(str.size());
+				break;
+			}
+		}
+
+		// Not found or reached backreferences limit.
+		res_+= str;
+		if( use_terminator )
+		{
+			res_.push_back( g_terminator );
+		}
+	}
+
+private:
+	// Store backreference as position and length in destination string.
+	struct BackReference{ u32 pos= 0u; u32 count= 0u; }
+
+private:
+	[ BackReference, g_num_back_references ] back_references_;
+	ust::string8 res_;
+}
+
+// TODO - implement library method for range comparing.
+fn StringViewEq( ust::array_view_imut</char8/> s0, ust::array_view_imut</char8/> s1 ) : bool
+{
+	if( s0.size() != s1.size() )
+	{
+		return false;
+	}
+
+	for( auto mut i= 0s; i < s0.size(); ++i )
+	{
+		if( s0[i] != s1[i] )
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+auto g_num_back_references= 10s;
+auto g_name_prefix= "?"c8; // All names (function, variables) should start with it.
+auto g_terminator= "@"c8;
+auto& g_template_prefix= "?$";
+auto& g_numeric_template_arg_prefix= "$0";
+auto g_class_type_prefix = "U"c8;
+auto g_reference_prefix = "A"c8;
+auto g_pointer_prefix = "P"c8;
+auto g_mut_prefix= "A"c8;
+auto g_imut_prefix= "B"c8;
+
+} // namespace U1
