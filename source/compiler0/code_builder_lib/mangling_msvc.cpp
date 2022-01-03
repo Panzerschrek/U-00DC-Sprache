@@ -116,17 +116,33 @@ public:
 		: res_(res)
 	{}
 
-	// Construct state with same destination but different table
-	struct LinkedTag{};
-	ManglerState( ManglerState& prev, LinkedTag )
-		: res_(prev.res_)
-	{}
-
 	ManglerState( const ManglerState& )= delete;
 	ManglerState& operator=( const ManglerState& )= delete;
 
 	// Push name and possible create or use backreferences.
 	void EncodeName( const std::string_view str )
+	{
+		EncodeNameImpl( str, true );
+	}
+
+	void EncodeNameNoTerminator( const std::string_view str )
+	{
+		EncodeNameImpl( str, false );
+	}
+
+	// Push non-name element (no need to create backreferences for it).
+	void PushElement( const std::string_view str )
+	{
+		res_+= str;
+	}
+
+	void PushElement( const char c )
+	{
+		res_+= c;
+	}
+
+private:
+	void EncodeNameImpl( const std::string_view str, const bool use_terminator )
 	{
 		for( size_t i= 0; i < g_num_back_references; ++i )
 		{
@@ -147,18 +163,8 @@ public:
 
 		// Not found or reached backreferences limit.
 		res_+= str;
-		res_+= g_terminator;
-	}
-
-	// Push non-name element (no need to create backreferences for it).
-	void PushElement( const std::string_view str )
-	{
-		res_+= str;
-	}
-
-	void PushElement( const char c )
-	{
-		res_+= c;
+		if( use_terminator )
+			res_+= g_terminator;
 	}
 
 private:
@@ -224,14 +230,18 @@ std::string ManglerMSVC::MangleFunction(
 	if( template_args != nullptr )
 	{
 		// Use separate backreferences table.
-		ManglerState template_mangler_state( mangler_state, ManglerState::LinkedTag{} );
-
-		template_mangler_state.PushElement( g_template_prefix );
-		if( !op_name.empty() )
-			template_mangler_state.PushElement( op_name );
-		else
-			template_mangler_state.EncodeName( function_name );
-		EncodeTemplateArgs( template_mangler_state, *template_args );
+		std::string template_name;
+		ManglerState template_mangler_state( template_name );
+		{
+			template_mangler_state.PushElement( g_template_prefix );
+			if( !op_name.empty() )
+				template_mangler_state.PushElement( op_name );
+			else
+				template_mangler_state.EncodeName( function_name );
+			EncodeTemplateArgs( template_mangler_state, *template_args );
+		}
+		// Do not create backreference for template name, just push template name instead.
+		mangler_state.PushElement( template_name );
 	}
 	else
 	{
@@ -335,14 +345,19 @@ void ManglerMSVC::EncodeType( ManglerState& mangler_state, const Type& type ) co
 		for( const Type& element : tuple_type->elements )
 			template_args.push_back( element );
 
-		// Use separate backreferences table.
-		ManglerState template_mangler_state( mangler_state, ManglerState::LinkedTag{} );
-
 		mangler_state.PushElement( g_class_type_prefix );
-		mangler_state.PushElement( g_template_prefix );
-		template_mangler_state.EncodeName( Keyword( Keywords::tup_ ) );
-		EncodeTemplateArgs( template_mangler_state, template_args );
-		// Finish list of name components.
+
+		// Use separate backreferences table.
+		std::string template_name;
+		{
+			ManglerState template_mangler_state(template_name );
+
+			template_mangler_state.PushElement( g_template_prefix );
+			template_mangler_state.EncodeName( Keyword( Keywords::tup_ ) );
+			EncodeTemplateArgs( template_mangler_state, template_args );
+		}
+		mangler_state.EncodeNameNoTerminator( template_name );
+		// Finish class name.
 		mangler_state.PushElement( g_terminator );
 	}
 	else if( const auto class_type= type.GetClassType() )
@@ -354,14 +369,18 @@ void ManglerMSVC::EncodeType( ManglerState& mangler_state, const Type& type ) co
 			// Encode typeinfo, like type template.
 
 			// Use separate backreferences table.
-			ManglerState template_mangler_state( mangler_state, ManglerState::LinkedTag{} );
+			std::string template_name;
+			{
+				ManglerState template_mangler_state( template_name );
 
-			mangler_state.PushElement( g_template_prefix );
-			template_mangler_state.EncodeName( class_type->members->GetThisNamespaceName() );
-			EncodeType( template_mangler_state, *class_type->typeinfo_type );
-			// Finish list of template arguments.
-			mangler_state.PushElement( g_terminator );
-			// Finish template.
+				template_mangler_state.PushElement( g_template_prefix );
+				template_mangler_state.EncodeName( class_type->members->GetThisNamespaceName() );
+				EncodeType( template_mangler_state, *class_type->typeinfo_type );
+				// Finish list of template arguments.
+				template_mangler_state.PushElement( g_terminator );
+			}
+			mangler_state.EncodeNameNoTerminator( template_name );
+			// Finish class name.
 			mangler_state.PushElement( g_terminator );
 		}
 		else if( class_type->base_template != std::nullopt )
@@ -443,22 +462,27 @@ void ManglerMSVC::EncodeFunctionType( ManglerState& mangler_state, const Functio
 			// Encode return references, like template class with special name and numeric args.
 			params_empty= false;
 
-			// Use separate backreferences table.
-			ManglerState template_mangler_state( mangler_state, ManglerState::LinkedTag{} );
-
 			mangler_state.PushElement( g_class_type_prefix );
-			mangler_state.PushElement( g_template_prefix );
-			template_mangler_state.EncodeName( "_RR" );
-			for( const FunctionType::ParamReference& arg_and_tag : function_type.return_references )
+
+			// Use separate backreferences table.
+			std::string template_name;
 			{
-				mangler_state.PushElement( g_numeric_template_arg_prefix );
-				EncodeNumber( template_mangler_state, llvm::APInt( 64, arg_and_tag.first ), false );
-				mangler_state.PushElement( g_numeric_template_arg_prefix );
-				EncodeNumber( template_mangler_state, llvm::APInt( 64, arg_and_tag.second), true  );
+				ManglerState template_mangler_state( template_name );
+
+				template_mangler_state.PushElement( g_template_prefix );
+				template_mangler_state.EncodeName( "_RR" );
+				for( const FunctionType::ParamReference& arg_and_tag : function_type.return_references )
+				{
+					template_mangler_state.PushElement( g_numeric_template_arg_prefix );
+					EncodeNumber( template_mangler_state, llvm::APInt( 64, arg_and_tag.first ), false );
+					template_mangler_state.PushElement( g_numeric_template_arg_prefix );
+					EncodeNumber( template_mangler_state, llvm::APInt( 64, arg_and_tag.second), true  );
+				}
+				// Finish list of template args.
+				template_mangler_state.PushElement( g_terminator );
 			}
-			// Finish list of template args.
-			mangler_state.PushElement( g_terminator );
-			// Finish template class name.
+			mangler_state.EncodeNameNoTerminator( template_name );
+			// Finish class name.
 			mangler_state.PushElement( g_terminator );
 		}
 		if( !function_type.references_pollution.empty() )
@@ -466,26 +490,31 @@ void ManglerMSVC::EncodeFunctionType( ManglerState& mangler_state, const Functio
 			// Encode references pollution like template class with special name and numeric args.
 			params_empty= false;
 
-			// Use separate backreferences table.
-			ManglerState template_mangler_state( mangler_state, ManglerState::LinkedTag{} );
-
 			mangler_state.PushElement( g_class_type_prefix );
-			mangler_state.PushElement( g_template_prefix );
-			template_mangler_state.EncodeName( "_RP" );
-			for( const FunctionType::ReferencePollution& pollution : function_type.references_pollution )
+
+			// Use separate backreferences table.
+			std::string template_name;
 			{
-				mangler_state.PushElement( g_numeric_template_arg_prefix );
-				EncodeNumber( template_mangler_state, llvm::APInt( 64, pollution.dst.first ), false );
-				mangler_state.PushElement( g_numeric_template_arg_prefix );
-				EncodeNumber( template_mangler_state, llvm::APInt( 64, pollution.dst.second), true  );
-				mangler_state.PushElement( g_numeric_template_arg_prefix );
-				EncodeNumber( template_mangler_state, llvm::APInt( 64, pollution.src.first ), false );
-				mangler_state.PushElement( g_numeric_template_arg_prefix );
-				EncodeNumber( template_mangler_state, llvm::APInt( 64, pollution.src.second), true  );
+				ManglerState template_mangler_state( template_name );
+
+				template_mangler_state.PushElement( g_template_prefix );
+				template_mangler_state.EncodeName( "_RP" );
+				for( const FunctionType::ReferencePollution& pollution : function_type.references_pollution )
+				{
+					template_mangler_state.PushElement( g_numeric_template_arg_prefix );
+					EncodeNumber( template_mangler_state, llvm::APInt( 64, pollution.dst.first ), false );
+					template_mangler_state.PushElement( g_numeric_template_arg_prefix );
+					EncodeNumber( template_mangler_state, llvm::APInt( 64, pollution.dst.second), true  );
+					template_mangler_state.PushElement( g_numeric_template_arg_prefix );
+					EncodeNumber( template_mangler_state, llvm::APInt( 64, pollution.src.first ), false );
+					template_mangler_state.PushElement( g_numeric_template_arg_prefix );
+					EncodeNumber( template_mangler_state, llvm::APInt( 64, pollution.src.second), true  );
+				}
+				// Finish list of template args.
+				template_mangler_state.PushElement( g_terminator );
 			}
-			// Finish list of template args.
-			mangler_state.PushElement( g_terminator );
-			// Finish template class name.
+			mangler_state.EncodeNameNoTerminator( template_name );
+			// Finish class name.
 			mangler_state.PushElement( g_terminator );
 		}
 	}
@@ -621,11 +650,15 @@ void ManglerMSVC::EncodeTemplateClassName( ManglerState& mangler_state, const Cl
 	const auto namespace_containing_template= type_template->parent_namespace;
 
 	// Use separate backreferences table.
-	ManglerState template_mangler_state( mangler_state, ManglerState::LinkedTag{} );
+	std::string template_name;
+	{
+		ManglerState template_mangler_state( template_name );
 
-	mangler_state.PushElement( g_template_prefix );
-	template_mangler_state.EncodeName( type_template->syntax_element->name_ );
-	EncodeTemplateArgs( template_mangler_state, the_class->base_template->signature_args );
+		template_mangler_state.PushElement( g_template_prefix );
+		template_mangler_state.EncodeName( type_template->syntax_element->name_ );
+		EncodeTemplateArgs( template_mangler_state, the_class->base_template->signature_args );
+	}
+	mangler_state.EncodeNameNoTerminator( template_name );
 
 	if( namespace_containing_template->GetParent() != nullptr )
 		EncodeNamespacePostfix_r( mangler_state, *namespace_containing_template );

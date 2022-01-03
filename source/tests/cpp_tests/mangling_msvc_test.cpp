@@ -424,7 +424,7 @@ U_TEST( TemplateFunctionsManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "??$PassMut@UGothminister@Bar@@@Bar@@YAAEAUGothminister@0@AEAU10@@Z" ) != nullptr );
 }
 
-U_TEST( TemplateClassesManglingTest )
+U_TEST( TemplateClassesManglingTest0 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -500,6 +500,43 @@ U_TEST( TemplateClassesManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?Lol@JWST@@YAXU?$StrangeStruct@U0JWST@@@@@Z" ) != nullptr );
 }
 
+U_TEST( TemplateClassesManglingTest1 )
+{
+	static const char c_program_text[]=
+	R"(
+		namespace ust
+		{
+			template</type T/> struct vector{ T t; }
+		}
+
+		namespace Q9
+		{
+			struct TemplateBase
+			{
+				struct Param{}
+				struct SignatureParam{}
+			}
+
+			struct FunctionTemplate
+			{
+				fn constructor( ust::vector</TemplateBase::Param/> params, ust::vector</TemplateBase::SignatureParam/> signature_params ){}
+			}
+		}
+
+		template</type A, type B/> struct MyPair{ A a; B b; }
+		type SomePair= MyPair</i16, u16/>;
+		fn ProcessPairs( SomePair a, SomePair &imut b, SomePair &mut c ){}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ), true );
+
+	// Should create backreferences for template types.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?constructor@FunctionTemplate@Q9@@YAXAEAU12@U?$vector@UParam@TemplateBase@Q9@@@ust@@U?$vector@USignatureParam@TemplateBase@Q9@@@4@@Z" ) != nullptr );
+
+	// Should reuse backreference for template class name.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?ProcessPairs@@YAXU?$MyPair@FG@@AEBU1@AEAU1@@Z" ) != nullptr );
+}
+
 U_TEST( ArraysManglingTest )
 {
 	static const char c_program_text[]=
@@ -572,6 +609,9 @@ U_TEST( TuplesManglingTest )
 		fn PassTuple( tup[ f32, u64 ] t ){}
 		fn PassTupleRef( tup[ bool, f64, i32 ]& t ){}
 		fn TupleRet() : tup[bool, char8] { var tup[bool, char8] t= zero_init; return t; }
+
+		type Qwerty= tup[ f64, f32, bool, i64, char8 ];
+		fn QwertyFunc( Qwerty a, Qwerty &mut b, Qwerty &imut c ){}
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
@@ -581,6 +621,9 @@ U_TEST( TuplesManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?PassTuple@@YAXU?$tup@M_K@@@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?PassTupleRef@@YAXAEBU?$tup@_NNH@@@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?TupleRet@@YA?AU?$tup@_ND@@XZ" ) != nullptr );
+
+	// Should compress tuple type like regular template type.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?QwertyFunc@@YAXU?$tup@NM_N_JD@@AEAU1@AEBU1@@Z" ) != nullptr );
 }
 
 U_TEST( FunctionPointersManglingTest )
