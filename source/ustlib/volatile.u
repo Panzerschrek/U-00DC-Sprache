@@ -1,26 +1,50 @@
 namespace ust
 {
 
-fn volatile_read(  i8& addr) :   i8;
-fn volatile_read(  u8& addr) :   u8;
-fn volatile_read( i16& addr) :  i16;
-fn volatile_read( u16& addr) :  u16;
-fn volatile_read( i32& addr) :  i32;
-fn volatile_read( u32& addr) :  u32;
-fn volatile_read( i64& addr) :  i64;
-fn volatile_read( u64& addr) :  u64;
-fn volatile_read(i128& addr) : i128;
-fn volatile_read(u128& addr) : u128;
+fn volatile_read(  i8& addr) :   i8 { return ust_volatile_read_i8_impl  ( addr ); }
+fn volatile_read(  u8& addr) :   u8 { return ust_volatile_read_u8_impl  ( addr ); }
+fn volatile_read( i16& addr) :  i16 { return ust_volatile_read_i16_impl ( addr ); }
+fn volatile_read( u16& addr) :  u16 { return ust_volatile_read_u16_impl ( addr ); }
+fn volatile_read( i32& addr) :  i32 { return ust_volatile_read_i32_impl ( addr ); }
+fn volatile_read( u32& addr) :  u32 { return ust_volatile_read_u32_impl ( addr ); }
+fn volatile_read( i64& addr) :  i64 { return ust_volatile_read_i64_impl ( addr ); }
+fn volatile_read( u64& addr) :  u64 { return ust_volatile_read_u64_impl ( addr ); }
+fn volatile_read(i128& addr) : i128 { return ust_volatile_read_i128_impl( addr ); }
+fn volatile_read(u128& addr) : u128 { return ust_volatile_read_u128_impl( addr ); }
 
-fn volatile_write(  i8 &mut addr,   i8 x);
-fn volatile_write(  u8 &mut addr,   u8 x);
-fn volatile_write( i16 &mut addr,  i16 x);
-fn volatile_write( u16 &mut addr,  u16 x);
-fn volatile_write( i32 &mut addr,  i32 x);
-fn volatile_write( u32 &mut addr,  u32 x);
-fn volatile_write( i64 &mut addr,  i64 x);
-fn volatile_write( u64 &mut addr,  u64 x);
-fn volatile_write(i128 &mut addr, i128 x);
-fn volatile_write(u128 &mut addr, u128 x);
+fn volatile_write(  i8 &mut addr,   i8 x) { ust_volatile_write_i8_impl  ( addr, x ); }
+fn volatile_write(  u8 &mut addr,   u8 x) { ust_volatile_write_u8_impl  ( addr, x ); }
+fn volatile_write( i16 &mut addr,  i16 x) { ust_volatile_write_i16_impl ( addr, x ); }
+fn volatile_write( u16 &mut addr,  u16 x) { ust_volatile_write_u16_impl ( addr, x ); }
+fn volatile_write( i32 &mut addr,  i32 x) { ust_volatile_write_i32_impl ( addr, x ); }
+fn volatile_write( u32 &mut addr,  u32 x) { ust_volatile_write_u32_impl ( addr, x ); }
+fn volatile_write( i64 &mut addr,  i64 x) { ust_volatile_write_i64_impl ( addr, x ); }
+fn volatile_write( u64 &mut addr,  u64 x) { ust_volatile_write_u64_impl ( addr, x ); }
+fn volatile_write(i128 &mut addr, i128 x) { ust_volatile_write_i128_impl( addr, x ); }
+fn volatile_write(u128 &mut addr, u128 x) { ust_volatile_write_u128_impl( addr, x ); }
 
 }
+
+// External implementation functions. Do not use directly!
+
+fn nomangle ust_volatile_read_i8_impl  (  i8& addr) :   i8;
+fn nomangle ust_volatile_read_u8_impl  (  u8& addr) :   u8;
+fn nomangle ust_volatile_read_i16_impl ( i16& addr) :  i16;
+fn nomangle ust_volatile_read_u16_impl ( u16& addr) :  u16;
+fn nomangle ust_volatile_read_i32_impl ( i32& addr) :  i32;
+fn nomangle ust_volatile_read_u32_impl ( u32& addr) :  u32;
+fn nomangle ust_volatile_read_i64_impl ( i64& addr) :  i64;
+fn nomangle ust_volatile_read_u64_impl ( u64& addr) :  u64;
+fn nomangle ust_volatile_read_i128_impl(i128& addr) : i128;
+fn nomangle ust_volatile_read_u128_impl(u128& addr) : u128;
+
+fn nomangle ust_volatile_write_i8_impl  (  i8 &mut addr,   i8 x);
+fn nomangle ust_volatile_write_u8_impl  (  u8 &mut addr,   u8 x);
+fn nomangle ust_volatile_write_i16_impl ( i16 &mut addr,  i16 x);
+fn nomangle ust_volatile_write_u16_impl ( u16 &mut addr,  u16 x);
+fn nomangle ust_volatile_write_i32_impl ( i32 &mut addr,  i32 x);
+fn nomangle ust_volatile_write_u32_impl ( u32 &mut addr,  u32 x);
+fn nomangle ust_volatile_write_i64_impl ( i64 &mut addr,  i64 x);
+fn nomangle ust_volatile_write_u64_impl ( u64 &mut addr,  u64 x);
+fn nomangle ust_volatile_write_i128_impl(i128 &mut addr, i128 x);
+fn nomangle ust_volatile_write_u128_impl(u128 &mut addr, u128 x);

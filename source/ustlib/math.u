@@ -36,66 +36,66 @@ abs( T x ) : T
 	return select( x >= T(0) ? x : -x );
 }
 
-fn sqrt( f32 x ) : f32;
-fn sqrt( f64 x ) : f64;
+fn sqrt( f32 x ) : f32 { return ust_sqrt_f32_impl( x ); }
+fn sqrt( f64 x ) : f64 { return ust_sqrt_f64_impl( x ); }
 
-fn pow( f32 x, f32 exp ) : f32;
-fn pow( f64 x, f64 exp ) : f64;
+fn pow( f32 x, f32 exp ) : f32 { return ust_pow_f32_impl( x, exp ); }
+fn pow( f64 x, f64 exp ) : f64 { return ust_pow_f64_impl( x, exp ); }
 
-fn exp( f32 x ) : f32;
-fn exp( f64 x ) : f64;
+fn exp( f32 x ) : f32 { return ust_exp_f32_impl( x ); }
+fn exp( f64 x ) : f64 { return ust_exp_f64_impl( x ); }
 
-fn exp2( f32 x ) : f32;
-fn exp2( f64 x ) : f64;
+fn exp2( f32 x ) : f32 { return ust_exp2_f32_impl( x ); }
+fn exp2( f64 x ) : f64 { return ust_exp2_f64_impl( x ); }
 
-fn expm1( f32 x ) : f32;
-fn expm1( f64 x ) : f64;
+fn expm1( f32 x ) : f32 { return ust_expm1_f32_impl( x ); }
+fn expm1( f64 x ) : f64 { return ust_expm1_f64_impl( x ); }
 
-fn log( f32 x ) : f32;
-fn log( f64 x ) : f64;
+fn log( f32 x ) : f32 { return ust_log_f32_impl( x ); }
+fn log( f64 x ) : f64 { return ust_log_f64_impl( x ); }
 
-fn log2( f32 x ) : f32;
-fn log2( f64 x ) : f64;
+fn log2( f32 x ) : f32 { return ust_log2_f32_impl( x ); }
+fn log2( f64 x ) : f64 { return ust_log2_f64_impl( x ); }
 
-fn log1p( f32 x ) : f32;
-fn log1p( f64 x ) : f64;
+fn log1p( f32 x ) : f32 { return ust_log1p_f32_impl( x ); }
+fn log1p( f64 x ) : f64 { return ust_log1p_f64_impl( x ); }
 
-fn sin( f32 x ) : f32;
-fn sin( f64 x ) : f64;
+fn sin( f32 x ) : f32 { return ust_sin_f32_impl( x ); }
+fn sin( f64 x ) : f64 { return ust_sin_f64_impl( x ); }
 
-fn cos( f32 x ) : f32;
-fn cos( f64 x ) : f64;
+fn cos( f32 x ) : f32 { return ust_cos_f32_impl( x ); }
+fn cos( f64 x ) : f64 { return ust_cos_f64_impl( x ); }
 
-fn tan( f32 x ) : f32;
-fn tan( f64 x ) : f64;
+fn tan( f32 x ) : f32 { return ust_tan_f32_impl( x ); }
+fn tan( f64 x ) : f64 { return ust_tan_f64_impl( x ); }
 
-fn asin( f32 x ) : f32;
-fn asin( f64 x ) : f64;
+fn asin( f32 x ) : f32 { return ust_asin_f32_impl( x ); }
+fn asin( f64 x ) : f64 { return ust_asin_f64_impl( x ); }
 
-fn acos( f32 x ) : f32;
-fn acos( f64 x ) : f64;
+fn acos( f32 x ) : f32 { return ust_acos_f32_impl( x ); }
+fn acos( f64 x ) : f64 { return ust_acos_f64_impl( x ); }
 
-fn atan( f32 x ) : f32;
-fn atan( f64 x ) : f64;
+fn atan( f32 x ) : f32 { return ust_atan_f32_impl( x ); }
+fn atan( f64 x ) : f64 { return ust_atan_f64_impl( x ); }
 
-fn atan2( f32 y, f32 x ) : f32;
-fn atan2( f64 y, f64 x ) : f64;
+fn atan2( f32 y, f32 x ) : f32 { return ust_atan2_f32_impl( y, x ); }
+fn atan2( f64 y, f64 x ) : f64 { return ust_atan2_f64_impl( y, x ); }
 
 // round downward
-fn floor( f32 x ) : f32;
-fn floor( f64 x ) : f64;
+fn floor( f32 x ) : f32 { return ust_floor_f32_impl( x ); }
+fn floor( f64 x ) : f64 { return ust_floor_f64_impl( x ); }
 
 // round upward
-fn ceil( f32 x ) : f32;
-fn ceil( f64 x ) : f64;
+fn ceil( f32 x ) : f32 { return ust_ceil_f32_impl( x ); }
+fn ceil( f64 x ) : f64 { return ust_ceil_f64_impl( x ); }
 
 // round to nearest integer
-fn round( f32 x ) : f32;
-fn round( f64 x ) : f64;
+fn round( f32 x ) : f32 { return ust_round_f32_impl( x ); }
+fn round( f64 x ) : f64 { return ust_round_f64_impl( x ); }
 
 // round toward zero
-fn trunc( f32 x ) : f32;
-fn trunc( f64 x ) : f64;
+fn trunc( f32 x ) : f32 { return ust_trunc_f32_impl( x ); }
+fn trunc( f64 x ) : f64 { return ust_trunc_f64_impl( x ); }
 
 // TODO:
 // * add hyperbolic trigonometric functions
@@ -136,3 +136,62 @@ fn constexpr is_numeric() : bool
 } // namespace math_impl
 
 } // namespace ust
+
+// External implementation functions. Do not use directly!
+
+fn nomangle ust_sqrt_f32_impl( f32 x ) : f32;
+fn nomangle ust_sqrt_f64_impl( f64 x ) : f64;
+
+fn nomangle ust_pow_f32_impl( f32 x, f32 exp ) : f32;
+fn nomangle ust_pow_f64_impl( f64 x, f64 exp ) : f64;
+
+fn nomangle ust_exp_f32_impl( f32 x ) : f32;
+fn nomangle ust_exp_f64_impl( f64 x ) : f64;
+
+fn nomangle ust_exp2_f32_impl( f32 x ) : f32;
+fn nomangle ust_exp2_f64_impl( f64 x ) : f64;
+
+fn nomangle ust_expm1_f32_impl( f32 x ) : f32;
+fn nomangle ust_expm1_f64_impl( f64 x ) : f64;
+
+fn nomangle ust_log_f32_impl( f32 x ) : f32;
+fn nomangle ust_log_f64_impl( f64 x ) : f64;
+
+fn nomangle ust_log2_f32_impl( f32 x ) : f32;
+fn nomangle ust_log2_f64_impl( f64 x ) : f64;
+
+fn nomangle ust_log1p_f32_impl( f32 x ) : f32;
+fn nomangle ust_log1p_f64_impl( f64 x ) : f64;
+
+fn nomangle ust_sin_f32_impl( f32 x ) : f32;
+fn nomangle ust_sin_f64_impl( f64 x ) : f64;
+
+fn nomangle ust_cos_f32_impl( f32 x ) : f32;
+fn nomangle ust_cos_f64_impl( f64 x ) : f64;
+
+fn nomangle ust_tan_f32_impl( f32 x ) : f32;
+fn nomangle ust_tan_f64_impl( f64 x ) : f64;
+
+fn nomangle ust_asin_f32_impl( f32 x ) : f32;
+fn nomangle ust_asin_f64_impl( f64 x ) : f64;
+
+fn nomangle ust_acos_f32_impl( f32 x ) : f32;
+fn nomangle ust_acos_f64_impl( f64 x ) : f64;
+
+fn nomangle ust_atan_f32_impl( f32 x ) : f32;
+fn nomangle ust_atan_f64_impl( f64 x ) : f64;
+
+fn nomangle ust_atan2_f32_impl( f32 y, f32 x ) : f32;
+fn nomangle ust_atan2_f64_impl( f64 y, f64 x ) : f64;
+
+fn nomangle ust_floor_f32_impl( f32 x ) : f32;
+fn nomangle ust_floor_f64_impl( f64 x ) : f64;
+
+fn nomangle ust_ceil_f32_impl( f32 x ) : f32;
+fn nomangle ust_ceil_f64_impl( f64 x ) : f64;
+
+fn nomangle ust_round_f32_impl( f32 x ) : f32;
+fn nomangle ust_round_f64_impl( f64 x ) : f64;
+
+fn nomangle ust_trunc_f32_impl( f32 x ) : f32;
+fn nomangle ust_trunc_f64_impl( f64 x ) : f64;
