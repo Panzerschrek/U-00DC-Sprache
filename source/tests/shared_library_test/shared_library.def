@@ -2,5 +2,5 @@ EXPORTS
 
 SomeUnmangledFunction
 
-_Z19SomeMangledFunctionf
+?SomeMangledFunction@@YAIM@Z
 
