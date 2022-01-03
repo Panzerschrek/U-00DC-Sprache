@@ -6,7 +6,7 @@ from sphinx.highlighting import lexers
 
 project = "Ü Sprache"
 author = "Panzerschrek"
-copyright = "Panzerschrek 2019-2021"
+copyright = "Panzerschrek 2019-2022"
 html_theme = "sphinxdoc"
 language = "ru"
 html_title = "Ü документация"
