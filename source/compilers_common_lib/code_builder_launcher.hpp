@@ -3,6 +3,7 @@
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib_common/lex_synt_error.hpp"
+#include "../code_builder_lib_common/mangling.hpp"
 #include "../compiler0/lex_synt_lib/source_graph_loader.hpp"
 #include "../code_builder_lib_common/code_builder_errors.hpp"
 
@@ -25,7 +26,8 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const IVfsPtr& vfs,
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
-	bool generate_debug_info );
+	bool generate_debug_info,
+	ManglingScheme mangling_scheme );
 
 uint32_t GetCompilerGeneration();
 

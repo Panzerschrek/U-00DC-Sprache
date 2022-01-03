@@ -899,7 +899,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 		var.llvm_value=
 			CreateGlobalConstantVariable(
 				var.type,
-				mangler_.MangleGlobalVariable( enum_->members, in_member.name ),
+				mangler_->MangleGlobalVariable( enum_->members, in_member.name, enum_, true ),
 				var.constexpr_value );
 
 		if( enum_->members.AddName( in_member.name, Value( var, in_member.src_loc ) ) == nullptr )
@@ -969,9 +969,9 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 	{
 		const Synt::VariablesDeclaration::VariableEntry& variable_declaration= variables_declaration->variables[ incomplete_global_variable.element_index ];
 
+		const bool is_mutable = variable_declaration.mutability_modifier == MutabilityModifier::Mutable;
 		// Disable global mutable references because of problems with initializers and references protection.
-		if( variable_declaration.mutability_modifier == MutabilityModifier::Mutable &&
-			variable_declaration.reference_modifier == ReferenceModifier::Reference )
+		if( is_mutable && variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
 			REPORT_ERROR( MutableGlobalReferencesAreNotAllowed, names_scope.GetErrors(), variable_declaration.src_loc );
 			FAIL_RETURN;
@@ -1000,11 +1000,11 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
-			const std::string name_mangled = mangler_.MangleGlobalVariable( names_scope, variable_declaration.name );
+			const std::string name_mangled = mangler_->MangleGlobalVariable( names_scope, variable_declaration.name, type, !is_mutable );
 
 			llvm::GlobalVariable* global_variable= nullptr;
 			variable.llvm_value= global_variable=
-				variable_declaration.mutability_modifier == MutabilityModifier::Mutable
+				is_mutable
 					? CreateGlobalMutableVariable( type, name_mangled )
 					: CreateGlobalConstantVariable( type, name_mangled );
 
@@ -1014,7 +1014,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				ApplyEmptyInitializer( variable_declaration.name, variable_declaration.src_loc, variable, names_scope, function_context );
 
 			// Make immutable, if needed, only after initialization, because in initialization we need call constructors, which is mutable methods.
-			if( variable_declaration.mutability_modifier != MutabilityModifier::Mutable )
+			if( !is_mutable )
 				variable.value_type= ValueType::ReferenceImut;
 
 			if( global_variable != nullptr && variable.constexpr_value != nullptr )
@@ -1028,7 +1028,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				FAIL_RETURN;
 			}
 
-			variable.value_type= variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
+			variable.value_type= is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 
 			const Synt::Expression* initializer_expression= nullptr;
 			if( const auto expression_initializer= std::get_if<Synt::Expression>( variable_declaration.initializer.get() ) )
@@ -1077,7 +1077,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		}
 
 		// Reset constexpr initial value for mutable variables.
-		if( variable_declaration.mutability_modifier == MutabilityModifier::Mutable )
+		if( is_mutable )
 			variable.constexpr_value = nullptr;
 
 		// Do not call destructors, because global variable initializer must be constexpr and any constexpr type have trivial destructor.
@@ -1086,9 +1086,10 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 	}
 	else if( const auto auto_variable_declaration= incomplete_global_variable.auto_variable_declaration )
 	{
+		const bool is_mutable = auto_variable_declaration->mutability_modifier == MutabilityModifier::Mutable;
+
 		// Disable global mutable references because of problems with initializers and references protection.
-		if( auto_variable_declaration->mutability_modifier == MutabilityModifier::Mutable &&
-			auto_variable_declaration->reference_modifier == ReferenceModifier::Reference )
+		if( is_mutable && auto_variable_declaration->reference_modifier == ReferenceModifier::Reference )
 		{
 			REPORT_ERROR( MutableGlobalReferencesAreNotAllowed, names_scope.GetErrors(), auto_variable_declaration->src_loc_ );
 			FAIL_RETURN;
@@ -1117,7 +1118,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 		Variable variable;
 		variable.type= initializer_experrsion.type;
-		variable.value_type= auto_variable_declaration->mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
+		variable.value_type= is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		variable.location= Variable::Location::Pointer;
 
 		if( !EnsureTypeComplete( variable.type ) ) // Type completeness required for variable or reference declaration.
@@ -1144,9 +1145,9 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		}
 		else if( auto_variable_declaration->reference_modifier == ReferenceModifier::None )
 		{
-			const std::string name_mangled = mangler_.MangleGlobalVariable( names_scope, auto_variable_declaration->name );
+			const std::string name_mangled = mangler_->MangleGlobalVariable( names_scope, auto_variable_declaration->name, variable.type, !is_mutable );
 			llvm::GlobalVariable* const global_variable=
-				auto_variable_declaration->mutability_modifier == MutabilityModifier::Mutable
+				is_mutable
 					? CreateGlobalMutableVariable( variable.type, name_mangled )
 					: CreateGlobalConstantVariable( variable.type, name_mangled );
 
@@ -1166,7 +1167,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		}
 
 		// Reset constexpr initial value for mutable variables.
-		if( auto_variable_declaration->mutability_modifier == MutabilityModifier::Mutable )
+		if( is_mutable )
 			variable.constexpr_value = nullptr;
 
 		// Do not call destructors, because global variables can be only constexpr and any constexpr type have trivial destructor.

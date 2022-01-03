@@ -156,12 +156,12 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 
 		var SrcLoc mut src_loc;
 		var Synt::Function::VirtualKind mut virtual_kind= Synt::Function::VirtualKind::None;
-		if_var( &el : function.prototype_syntax_element )
+		if_var( &el : function.body_syntax_element )
 		{
 			src_loc= el.src_loc;
 			virtual_kind= el.virtual_kind;
 		}
-		if_var( &el : function.body_syntax_element )
+		if_var( &el : function.prototype_syntax_element )
 		{
 			src_loc= el.src_loc;
 			virtual_kind= el.virtual_kind;
@@ -280,7 +280,7 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 			{
 				if( !function.body_syntax_element.empty() )
 				{
-					REPORT_ERROR( BodyForPureVirtualFunction, class_members_ptr, src_loc, function_name )
+					REPORT_ERROR( BodyForPureVirtualFunction, class_members_ptr, function.body_syntax_element.try_deref().src_loc, function_name )
 				}
 				if( function_name == KeywordToString( Keyword::destructor_ ) )
 				{
@@ -312,7 +312,7 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 fn CodeBuilder::PrepareClassVirtualTableType( mut this, ClassTypePtr& class_type_ptr )
 {
 	var ust::string8 mut virtual_table_type_name= "_vtable_type_";
-	virtual_table_type_name+= mangler_.MangleType( class_type_ptr );
+	virtual_table_type_name+= mangler_.deref().MangleType( class_type_ptr );
 
 	auto mut class_lock= class_type_ptr.lock_mut();
 	var ClassType &mut class_type= class_lock.deref();
@@ -379,7 +379,7 @@ fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_pt
 	}
 
 	var LLVMTypeRef type_id_type= fundamental_llvm_types_.int_ptr;
-	var ust::string8 name_mangled_null_terminated= "_type_id_for_" + mangler_.MangleType( class_type_ptr );
+	var ust::string8 name_mangled_null_terminated= "_type_id_for_" + mangler_.deref().MangleType( class_type_ptr );
 
 	unsafe
 	{
@@ -491,7 +491,7 @@ fn CodeBuilder::BuildClassVirtualTable( mut this, ClassTypePtr& class_type_ptr )
 		virtual_table_initializer= BuildClassVirtualTable_r( class_, class_, this_nullptr );
 	}
 
-	auto name_mangled= mangler_.MangleVirtualTable( class_type_ptr );
+	auto name_mangled= mangler_.deref().MangleVirtualTable( class_type_ptr );
 
 	auto mut class_lock= class_type_ptr.lock_mut();
 	auto &mut class_= class_lock.deref();

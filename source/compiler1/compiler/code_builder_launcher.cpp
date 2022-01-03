@@ -112,9 +112,9 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const IVfsPtr& vfs,
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
-	const bool generate_debug_info )
+	const bool generate_debug_info,
+	const ManglingScheme mangling_scheme )
 {
-	(void)generate_debug_info;
 
 	CodeBuilderLaunchResult result;
 
@@ -125,6 +125,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout ),
 			generate_debug_info,
+			mangling_scheme,
 			SourceFilePathProcessingFunction,
 			reinterpret_cast<UserHandle>(&result.dependent_files),
 			LexSyntErrorProcessingFunction,

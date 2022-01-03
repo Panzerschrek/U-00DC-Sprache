@@ -166,13 +166,13 @@ if( U_BUILD_COMPILER )
 
 	function( CompileLLFile ll_file )
 		get_filename_component( source_name ${ll_file} NAME_WE )
-		set( bc_name ${source_name}.bc )
-		set( bc_header_path ${CMAKE_CURRENT_BINARY_DIR}/${source_name}.h )
+		set( bc_name ${CMAKE_CURRENT_BINARY_DIR}/bc_files/${source_name}.bc )
+		set( bc_header_path ${CMAKE_CURRENT_BINARY_DIR}/bc_files_headers/${source_name}.h )
 		add_custom_command(
 			OUTPUT ${bc_name}
-			DEPENDS ${CMAKE_SOURCE_DIR}/ustlib/src/${ll_file}
+			DEPENDS ${ll_file}
 			DEPENDS llvm-as
-			COMMAND llvm-as ${CMAKE_SOURCE_DIR}/ustlib/src/${ll_file} -o ${bc_name}
+			COMMAND llvm-as ${ll_file} -o ${bc_name}
 			)
 		add_custom_command(
 			OUTPUT ${bc_header_path}
@@ -183,12 +183,11 @@ if( U_BUILD_COMPILER )
 		set( BC_FILE ${bc_header_path} PARENT_SCOPE )
 	endfunction()
 
-	CompileLLFile( asm_funcs.ll )
-	list( APPEND bc_files ${BC_FILE} )
-	CompileLLFile( asm_funcs_32.ll )
-	list( APPEND bc_files ${BC_FILE} )
-	CompileLLFile( asm_funcs_64.ll )
-	list( APPEND bc_files ${BC_FILE} )
+	file( GLOB LL_FILES ${CMAKE_SOURCE_DIR}/ustlib/src/* )
+	foreach( LL_FILE ${LL_FILES} )
+		CompileLLFile( ${LL_FILE} )
+		list( APPEND bc_files ${BC_FILE} )
+	endforeach()
 
 	# Show in editor also ustlib and ustlib tests files
 	file( GLOB_RECURSE USTLIB_SOURCES "ustlib/*.u" "ustlib/src/*.ll" )

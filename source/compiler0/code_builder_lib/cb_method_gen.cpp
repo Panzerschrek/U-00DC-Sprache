@@ -91,7 +91,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 			llvm::Function::Create(
 				constructor_type.llvm_type,
 				llvm::Function::LinkageTypes::ExternalLinkage,
-				mangler_.MangleFunction( *the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
+				mangler_->MangleFunction( *the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
 				module_.get() );
 
 		FunctionVariable new_constructor_variable;
@@ -262,9 +262,9 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr& class_type )
 		{
 			FunctionType::ReferencePollution pollution;
 			pollution.dst.first= 0u;
-			pollution.dst.second= i;
+			pollution.dst.second= uint8_t(i);
 			pollution.src.first= 1u;
-			pollution.src.second= i;
+			pollution.src.second= uint8_t(i);
 			constructor_type.references_pollution.emplace(pollution);
 		}
 
@@ -278,7 +278,7 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr& class_type )
 			llvm::Function::Create(
 				constructor_type.llvm_type,
 				llvm::Function::LinkageTypes::ExternalLinkage,
-				mangler_.MangleFunction( *the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
+				mangler_->MangleFunction( *the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
 				module_.get() );
 
 		// Add generated constructor
@@ -397,7 +397,7 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( const ClassPtr& class
 		llvm::Function::Create(
 			destructor_type.llvm_type,
 			llvm::Function::LinkageTypes::ExternalLinkage,
-			mangler_.MangleFunction( *the_class.members, Keyword( Keywords::destructor_ ), destructor_type ),
+			mangler_->MangleFunction( *the_class.members, Keyword( Keywords::destructor_ ), destructor_type ),
 			module_.get() );
 
 	destructor_function.llvm_function->addAttribute( 1u, llvm::Attribute::NonNull );
@@ -548,9 +548,9 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr& class_type 
 		{
 			FunctionType::ReferencePollution pollution;
 			pollution.dst.first= 0u;
-			pollution.dst.second= i;
+			pollution.dst.second= uint8_t(i);
 			pollution.src.first= 1u;
-			pollution.src.second= i;
+			pollution.src.second= uint8_t(i);
 			op_type.references_pollution.emplace(pollution);
 		}
 
@@ -564,7 +564,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr& class_type 
 			llvm::Function::Create(
 				op_type.llvm_type,
 				llvm::Function::LinkageTypes::ExternalLinkage,
-				mangler_.MangleFunction( *the_class.members, op_name, op_type ),
+				mangler_->MangleFunction( *the_class.members, op_name, op_type ),
 				module_.get() );
 
 		// Add generated assignment operator

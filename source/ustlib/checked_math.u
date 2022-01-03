@@ -3,19 +3,81 @@ namespace ust
 
 // add/sub/mul with overflow check. If overflow occurs - functions halted.
 
-fn add_overflow_check_halt( i32 a, i32 b ) : i32;
-fn add_overflow_check_halt( u32 a, u32 b ) : u32;
-fn add_overflow_check_halt( i64 a, i64 b ) : i64;
-fn add_overflow_check_halt( u64 a, u64 b ) : u64;
+fn add_overflow_check_halt( i32 a, i32 b ) : i32
+{
+	return ust_add_overflow_check_halt_i32_impl( a, b );
+}
 
-fn sub_overflow_check_halt( i32 a, i32 b ) : i32;
-fn sub_overflow_check_halt( u32 a, u32 b ) : u32;
-fn sub_overflow_check_halt( i64 a, i64 b ) : i64;
-fn sub_overflow_check_halt( u64 a, u64 b ) : u64;
+fn add_overflow_check_halt( u32 a, u32 b ) : u32
+{
+	return ust_add_overflow_check_halt_u32_impl( a, b );
+}
 
-fn mul_overflow_check_halt( i32 a, i32 b ) : i32;
-fn mul_overflow_check_halt( u32 a, u32 b ) : u32;
-fn mul_overflow_check_halt( i64 a, i64 b ) : i64;
-fn mul_overflow_check_halt( u64 a, u64 b ) : u64;
+fn add_overflow_check_halt( i64 a, i64 b ) : i64
+{
+	return ust_add_overflow_check_halt_i64_impl( a, b );
+}
+
+fn add_overflow_check_halt( u64 a, u64 b ) : u64
+{
+	return ust_add_overflow_check_halt_u64_impl( a, b );
+}
+
+fn sub_overflow_check_halt( i32 a, i32 b ) : i32
+{
+	return ust_sub_overflow_check_halt_i32_impl( a, b );
+}
+
+fn sub_overflow_check_halt( u32 a, u32 b ) : u32
+{
+	return ust_sub_overflow_check_halt_u32_impl( a, b );
+}
+
+fn sub_overflow_check_halt( i64 a, i64 b ) : i64
+{
+	return ust_sub_overflow_check_halt_i64_impl( a, b );
+}
+
+fn sub_overflow_check_halt( u64 a, u64 b ) : u64
+{
+	return ust_sub_overflow_check_halt_u64_impl( a, b );
+}
+
+fn mul_overflow_check_halt( i32 a, i32 b ) : i32
+{
+	return ust_mul_overflow_check_halt_i32_impl( a, b );
+}
+
+fn mul_overflow_check_halt( u32 a, u32 b ) : u32
+{
+	return ust_mul_overflow_check_halt_u32_impl( a, b );
+}
+
+fn mul_overflow_check_halt( i64 a, i64 b ) : i64
+{
+	return ust_mul_overflow_check_halt_i64_impl( a, b );
+}
+
+fn mul_overflow_check_halt( u64 a, u64 b ) : u64
+{
+	return ust_mul_overflow_check_halt_u64_impl( a, b );
+}
 
 } // namespace ust
+
+// External implementation functions. Do not use directly!
+
+fn nomangle ust_add_overflow_check_halt_i32_impl( i32 a, i32 b ) : i32;
+fn nomangle ust_add_overflow_check_halt_u32_impl( u32 a, u32 b ) : u32;
+fn nomangle ust_add_overflow_check_halt_i64_impl( i64 a, i64 b ) : i64;
+fn nomangle ust_add_overflow_check_halt_u64_impl( u64 a, u64 b ) : u64;
+
+fn nomangle ust_sub_overflow_check_halt_i32_impl( i32 a, i32 b ) : i32;
+fn nomangle ust_sub_overflow_check_halt_u32_impl( u32 a, u32 b ) : u32;
+fn nomangle ust_sub_overflow_check_halt_i64_impl( i64 a, i64 b ) : i64;
+fn nomangle ust_sub_overflow_check_halt_u64_impl( u64 a, u64 b ) : u64;
+
+fn nomangle ust_mul_overflow_check_halt_i32_impl( i32 a, i32 b ) : i32;
+fn nomangle ust_mul_overflow_check_halt_u32_impl( u32 a, u32 b ) : u32;
+fn nomangle ust_mul_overflow_check_halt_i64_impl( i64 a, i64 b ) : i64;
+fn nomangle ust_mul_overflow_check_halt_u64_impl( u64 a, u64 b ) : u64;

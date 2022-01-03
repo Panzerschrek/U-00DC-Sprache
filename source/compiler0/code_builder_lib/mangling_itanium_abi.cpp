@@ -12,6 +12,59 @@ namespace U
 namespace
 {
 
+class ManglerState
+{
+private:
+	using LenType = uint16_t;
+
+public:
+	void Push( char c );
+	void Push( std::string_view name );
+	void PushLengthPrefixed( std::string_view name );
+
+	std::string TakeResult();
+
+public:
+	class NodeHolder;
+
+private:
+	LenType GetCurrentPos() const;
+	LenType GetCurrentCompressedPos() const;
+	void FinalizePart( LenType start, LenType compressed_start );
+
+private:
+	struct Substitution
+	{
+		LenType start;
+		LenType size;
+	};
+
+private:
+	std::vector<Substitution> substitutions_;
+	std::string result_full_;
+	std::string result_compressed_;
+};
+
+// Mangling with Itanium ABI rules.
+// Use class instead of set of free functions for possibility of reu-use of internal buffers.
+
+class ManglerItaniumABI final : public IMangler
+{
+public:
+	std::string MangleFunction(
+		const NamesScope& parent_scope,
+		const std::string& function_name,
+		const FunctionType& function_type,
+		const TemplateArgs* template_args ) override;
+	std::string MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name, const Type& type, bool is_constant ) override;
+	std::string MangleType( const Type& type ) override;
+	std::string MangleTemplateArgs( const TemplateArgs& template_args ) override;
+	std::string MangleVirtualTable( const Type& type ) override;
+
+private:
+	ManglerState state_;
+};
+
 char Base36Digit( const size_t value )
 {
 	U_ASSERT( value < 36u );
@@ -20,8 +73,6 @@ char Base36Digit( const size_t value )
 	else
 		return char('A' + ( value - 10 ) );
 }
-
-} // namespace
 
 //
 // ManglerState
@@ -497,7 +548,7 @@ const std::string& DecodeOperator( const std::string& func_name )
 
 } // namespace
 
-std::string Mangler::MangleFunction(
+std::string ManglerItaniumABI::MangleFunction(
 	const NamesScope& parent_scope,
 	const std::string& function_name,
 	const FunctionType& function_type,
@@ -559,8 +610,11 @@ std::string Mangler::MangleFunction(
 	return state_.TakeResult();
 }
 
-std::string Mangler::MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name )
+std::string ManglerItaniumABI::MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name, const Type& type, const bool is_constant )
 {
+	(void)type;
+	(void)is_constant;
+
 	// Variables inside global namespace have simple names.
 	if( parent_scope.GetParent() == nullptr )
 		return variable_name;
@@ -571,23 +625,30 @@ std::string Mangler::MangleGlobalVariable( const NamesScope& parent_scope, const
 	return state_.TakeResult();
 }
 
-std::string Mangler::MangleType( const Type& type )
+std::string ManglerItaniumABI::MangleType( const Type& type )
 {
 	EncodeTypeName( state_, type );
 	return state_.TakeResult();
 }
 
-std::string Mangler::MangleTemplateArgs( const TemplateArgs& template_parameters )
+std::string ManglerItaniumABI::MangleTemplateArgs( const TemplateArgs& template_parameters )
 {
 	EncodeTemplateArgs( state_, template_parameters );
 	return state_.TakeResult();
 }
 
-std::string Mangler::MangleVirtualTable( const Type& type )
+std::string ManglerItaniumABI::MangleVirtualTable( const Type& type )
 {
 	state_.Push( "_ZTV" );
 	EncodeTypeName( state_, type );
 	return state_.TakeResult();
+}
+
+} // namespace
+
+std::unique_ptr<IMangler> CreateManglerItaniumABI()
+{
+	return std::make_unique<ManglerItaniumABI>();
 }
 
 } // namespace U

@@ -21,17 +21,6 @@ fn TakeS( NameSpace::S &imut s )
 {
 }
 
-struct TheClass
-{
-	fn StaticMethod();
-	fn StaticMethod2( i32 x );
-}
-
-fn TheClass::StaticMethod()
-{
-	StaticMethod2( 666 );
-}
-
 fn U32ToStr( u32 mut x, [ char8, 64 ] &mut out_str )
 {
 	auto constexpr zero_char= "0"[0u];

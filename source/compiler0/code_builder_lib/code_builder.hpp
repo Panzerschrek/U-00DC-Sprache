@@ -12,6 +12,7 @@
 
 #include "../lex_synt_lib/source_graph_loader.hpp"
 #include "../../code_builder_lib_common/constexpr_function_evaluator.hpp"
+#include "../../code_builder_lib_common/mangling.hpp"
 #include "class.hpp"
 #include "enum.hpp"
 #include "function_context.hpp"
@@ -27,6 +28,7 @@ struct CodeBuilderOptions
 	bool build_debug_info= false;
 	bool create_lifetimes= true;
 	bool generate_lifetime_start_end_debug_calls= false;
+	ManglingScheme mangling_scheme= ManglingScheme::ItaniumABI;
 };
 
 class CodeBuilder
@@ -957,7 +959,7 @@ private:
 	Type size_type_; // Alias for u32 or u64
 
 	ConstexprFunctionEvaluator constexpr_function_evaluator_;
-	Mangler mangler_;
+	const std::unique_ptr<IMangler> mangler_;
 
 	FunctionContext* global_function_context_= nullptr;
 

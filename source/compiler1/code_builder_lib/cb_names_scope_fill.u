@@ -716,7 +716,7 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 
 	unsafe
 	{
-		auto name_mangled= mangler_.MangleType( class_type_ptr );
+		auto name_mangled= mangler_.deref().MangleType( class_type_ptr );
 		auto mut lock= class_type_ptr.lock_mut();
 		lock.deref().llvm_type= LLVMStructCreateNamed( llvm_context_, name_mangled.front() );
 	}
