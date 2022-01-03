@@ -334,7 +334,7 @@ void ManglerMSVC::EncodeType( ManglerState& mangler_state, const Type& type ) co
 		mangler_state.PushElement( "Y" );
 		EncodeNumber( mangler_state, llvm::APInt(64, dimensions.size()), false );
 		for( const uint64_t dimension_size : dimensions )
-			EncodeNumber( mangler_state, llvm::APInt(54, dimension_size), false );
+			EncodeNumber( mangler_state, llvm::APInt(64, dimension_size), false );
 		EncodeType( mangler_state, *element_type );
 	}
 	else if( const auto tuple_type= type.GetTupleType() )
