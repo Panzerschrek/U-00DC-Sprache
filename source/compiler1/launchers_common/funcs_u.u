@@ -290,6 +290,42 @@ fn nomangle U1_BuildProgramForLifetimesTest(
 	}
 }
 
+fn nomangle U1_BuildProgramForMSVCManglingTest(
+	U1_StringView& program_text,
+	LLVMContextRef llvm_context,
+	LLVMTargetDataRef data_layout ) unsafe : LLVMModuleRef
+{
+	unsafe
+	{
+		auto program_text= U1::StringToArrayView( program_text.data, program_text.size );
+
+		safe
+		{
+			var U1::TestVfs mut test_vfs( program_text );
+			auto source_graph= U1::LoadSourceGraph( test_vfs, "_" );
+
+			U1::PrintLexSyntErrors( source_graph );
+			if( !source_graph.errors.empty() || source_graph.nodes.empty() )
+			{
+				return LLVMModuleRef::Null;
+			}
+
+			var U1::CodeBuilderOptions options{ .build_debug_info= true, .mangling_scheme= U1::ManglingScheme::MSVC64 };
+			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, options );
+			auto code_builder_res= code_builder.BuildProgram( source_graph );
+
+			U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
+			if( !code_builder_res.errors.empty() )
+			{
+				unsafe{  LLVMDisposeModule( code_builder_res.llvm_module );  }
+				return LLVMModuleRef::Null;
+			}
+
+			return code_builder_res.llvm_module;
+		}
+	}
+}
+
 namespace U1
 {
 

@@ -80,7 +80,7 @@ fn ManglerMSVC::MangleFunction(
 	auto encode_full_function_type= false;
 	EncodeFunctionType( mangler_state, function_type, encode_full_function_type );
 
-	return mangler_state.TakeRes();
+	return MakeNullTerminatedString( mangler_state.TakeRes() );
 }
 
 fn ManglerMSVC::MangleFunction(
@@ -92,35 +92,35 @@ fn ManglerMSVC::MangleFunction(
 {
 	var ManglerStateMSVC mut mangler_state;
 	// TODO
-	return mangler_state.TakeRes();
+	return MakeNullTerminatedString( mangler_state.TakeRes() );
 }
 
 fn ManglerMSVC::MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string8& variable_name ) : ust::string8
 {
 	var ManglerStateMSVC mut mangler_state;
 	// TODO
-	return mangler_state.TakeRes();
+	return MakeNullTerminatedString( mangler_state.TakeRes() );
 }
 
 fn ManglerMSVC::MangleType( mut this, Type& t ) : ust::string8
 {
 	var ManglerStateMSVC mut mangler_state;
 	EncodeType( mangler_state, t );
-	return mangler_state.TakeRes();
+	return MakeNullTerminatedString( mangler_state.TakeRes() );
 }
 
 fn ManglerMSVC::MangleTemplateArgs( mut this, TemplateArgsFinished& template_args ) : ust::string8
 {
 	var ManglerStateMSVC mut mangler_state;
 	EncodeTemplateArgs( mangler_state, template_args );
-	return mangler_state.TakeRes();
+	return MakeNullTerminatedString( mangler_state.TakeRes() );
 }
 
 fn ManglerMSVC::MangleVirtualTable( mut this, Type& t ) : ust::string8
 {
 	var ManglerStateMSVC mut mangler_state;
 	// TODO
-	return mangler_state.TakeRes();
+	return MakeNullTerminatedString( mangler_state.TakeRes() );
 }
 
 fn ManglerMSVC::EncodeType( this, ManglerStateMSVC &mut mangler_state, Type& t )
@@ -714,6 +714,12 @@ fn GetFundamentalTypeNameMSVC( U_FundamentalType t ) : ust::array_view_imut</ ch
 	if( t == U_FundamentalType::char16_		){ return "_S"; }
 	if( t == U_FundamentalType::char32_		){ return "_U"; }
 	return "";
+}
+
+fn MakeNullTerminatedString( ust::string8 mut str ) : ust::string8
+{
+	str.push_back( "\0"c8 );
+	return move(str);
 }
 
 auto g_num_back_references= 10s;

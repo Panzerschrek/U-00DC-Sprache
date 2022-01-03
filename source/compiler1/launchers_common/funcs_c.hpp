@@ -67,6 +67,11 @@ LLVMModuleRef U1_BuildProgramForLifetimesTest(
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout );
 
+LLVMModuleRef U1_BuildProgramForMSVCManglingTest(
+	const U1_StringView& program_text_start,
+	LLVMContextRef llvm_context,
+	LLVMTargetDataRef data_layout );
+
 struct IVfsInterface
 {
 	using FillStringCallback= void(*)( UserHandle user_data, const U1_StringView& result_path_normalized );

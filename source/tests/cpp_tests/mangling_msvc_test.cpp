@@ -528,7 +528,7 @@ U_TEST( TemplateClassesManglingTest1 )
 		fn ProcessPairs( SomePair a, SomePair &imut b, SomePair &mut c ){}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ), true );
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
 
 	// Should create backreferences for template types.
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?constructor@FunctionTemplate@Q9@@YAXAEAU12@U?$vector@UParam@TemplateBase@Q9@@@ust@@U?$vector@USignatureParam@TemplateBase@Q9@@@4@@Z" ) != nullptr );
