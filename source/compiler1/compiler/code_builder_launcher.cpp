@@ -115,7 +115,6 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const bool generate_debug_info,
 	const ManglingScheme mangling_scheme )
 {
-	(void)mangling_scheme; // TODO - use it
 
 	CodeBuilderLaunchResult result;
 
@@ -126,6 +125,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout ),
 			generate_debug_info,
+			mangling_scheme,
 			SourceFilePathProcessingFunction,
 			reinterpret_cast<UserHandle>(&result.dependent_files),
 			LexSyntErrorProcessingFunction,

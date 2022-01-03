@@ -1,4 +1,4 @@
-import "../code_builder_lib/llvm.uh"
+import "../code_builder_lib/code_builder.uh"
 
 // If contents of this file changed, funcs_c.hpp must be changed too!
 
@@ -80,6 +80,7 @@ fn nomangle U1_BuildProgrammUsingVFS(
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
 	bool build_debug_info,
+	U1::ManglingScheme mangling_scheme,
 	SourceFilePathCallback result_source_file_path_callback,
 	UserHandle result_source_file_path_processing_data,
 	LexSyntErrorCallback lex_synt_error_callback,

@@ -47,7 +47,7 @@ fn CodeBuilder::constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data
 		generate_lifetime_start_end_debug_calls_(options.generate_lifetime_start_end_debug_calls),
 		constexpr_function_evaluator_(data_layout),
 		global_things_stack_ptr_(GlobalThingsStack()),
-		build_debug_info_(options.build_debug_info)
+		build_debug_info_(options.build_debug_info),
 		mangler_(CreateMangler(options.mangling_scheme, data_layout))
 	)
 {

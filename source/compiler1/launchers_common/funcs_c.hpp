@@ -2,6 +2,8 @@
 #include <llvm-c/Target.h>
 #include <llvm-c/Types.h>
 
+#include "../../code_builder_lib_common/mangling.hpp"
+
 // If contents of this file changed, funcs_u.uh must be changed too!
 
 extern "C"
@@ -91,6 +93,7 @@ extern "C" LLVMModuleRef U1_BuildProgrammUsingVFS(
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
 	bool build_debug_info,
+	U::ManglingScheme mangling_scheme,
 	SourceFilePathCallback result_source_file_path_callback,
 	UserHandle result_source_file_path_processing_data,
 	LexSyntErrorCallback lex_synt_error_callback,
