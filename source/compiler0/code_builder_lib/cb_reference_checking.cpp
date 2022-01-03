@@ -18,22 +18,22 @@ void CodeBuilder::ProcessFunctionParamReferencesTags(
 	{
 		// Arg reference to return reference
 		if( out_param.value_type != ValueType::Value && !in_param.reference_tag_.empty() && in_param.reference_tag_ == func.return_value_reference_tag_ )
-			function_type.return_references.emplace( arg_number, FunctionType::c_arg_reference_tag_number );
+			function_type.return_references.emplace( uint8_t(arg_number), FunctionType::c_arg_reference_tag_number );
 
 		// Inner arg references to return reference
 		if( in_param.inner_arg_reference_tag_ == func.return_value_reference_tag_ )
-			function_type.return_references.emplace( arg_number, 0u );
+			function_type.return_references.emplace( uint8_t(arg_number), 0u );
 	}
 
 	if( function_type.return_value_type == ValueType::Value && !func.return_value_inner_reference_tag_.empty() )
 	{
 		// In arg reference to return value references
 		if( out_param.value_type != ValueType::Value && !in_param.reference_tag_.empty() && in_param.reference_tag_ == func.return_value_inner_reference_tag_ )
-			function_type.return_references.emplace( arg_number, FunctionType::c_arg_reference_tag_number );
+			function_type.return_references.emplace( uint8_t(arg_number), FunctionType::c_arg_reference_tag_number );
 
 		// Inner arg references to return value references
 		if( in_param.inner_arg_reference_tag_ == func.return_value_inner_reference_tag_ )
-			function_type.return_references.emplace( arg_number, 0u );
+			function_type.return_references.emplace( uint8_t(arg_number), 0u );
 	}
 }
 
@@ -315,9 +315,9 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 			for( size_t j= 0u; j < function_context.function_type.params.size(); ++j )
 			{
 				if( accesible_variable == function_context.args_nodes[j].first )
-					reference= FunctionType::ParamReference( j, FunctionType::c_arg_reference_tag_number );
+					reference= FunctionType::ParamReference( uint8_t(j), FunctionType::c_arg_reference_tag_number );
 				if( accesible_variable == function_context.args_nodes[j].second )
-					reference= FunctionType::ParamReference( j, 0u );
+					reference= FunctionType::ParamReference( uint8_t(j), 0u );
 			}
 
 			if( reference != std::nullopt )
