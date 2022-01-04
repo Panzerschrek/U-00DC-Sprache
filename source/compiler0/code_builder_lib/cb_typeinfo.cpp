@@ -113,15 +113,26 @@ Variable CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope& root
 			GetTypeinfoVariableName( typeinfo_class ),
 			result.constexpr_value );
 
+	Type src_type= type;
+
+	// Replace function type alias with function pointer type alias to forbid usage of function type in user code.
+	if( const auto function_type= type.GetFunctionType() )
+	{
+		FunctionPointerType function_pointer_type;
+		function_pointer_type.function= *function_type;
+		function_pointer_type.llvm_type= function_type->llvm_type->getPointerTo();
+		src_type= std::move(function_pointer_type);
+	}
+
 	// This allows to get typename itself, using typeinfo variable and use such type as normal.
-	typeinfo_class->members->AddName( "src_type", Value( type, g_dummy_src_loc ) );
+	typeinfo_class->members->AddName( "src_type", Value( src_type, g_dummy_src_loc ) );
 
 	return result;
 }
 
 void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variable, NamesScope& root_namespace )
 {
-	if( !EnsureTypeComplete( type ) )
+	if( !( EnsureTypeComplete( type ) || type.GetFunctionType() != nullptr ) )
 	{
 		// Just ignore here incomplete types, report about error while building "typeinfo" operator.
 		return;

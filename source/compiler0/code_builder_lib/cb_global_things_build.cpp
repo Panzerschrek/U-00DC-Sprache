@@ -120,7 +120,9 @@ bool CodeBuilder::IsTypeComplete( const Type& type ) const
 {
 	if( type.GetFundamentalType() != nullptr )
 		return true;
-	else if( type.GetFunctionType() != nullptr || type.GetFunctionPointerType() != nullptr )
+	else if( type.GetFunctionType() != nullptr )
+		return false; // Function type is always incomplete.
+	else if( type.GetFunctionPointerType() != nullptr )
 		return true;
 	else if( const auto enum_type= type.GetEnumType() )
 		return enum_type->syntax_element == nullptr;
@@ -148,7 +150,9 @@ bool CodeBuilder::EnsureTypeComplete( const Type& type )
 {
 	if( type.GetFundamentalType() != nullptr )
 		return true;
-	else if( type.GetFunctionType() != nullptr || type.GetFunctionPointerType() != nullptr )
+	else if( type.GetFunctionType() != nullptr )
+		return false; // Function type is always incomplete.
+	else if( type.GetFunctionPointerType() != nullptr )
 		return true;
 	else if( const auto enum_type= type.GetEnumType() )
 	{

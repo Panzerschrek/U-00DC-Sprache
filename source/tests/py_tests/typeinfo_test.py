@@ -948,3 +948,24 @@ def Typeinfo_SrcType_Test0():
 	"""
 
 	tests_lib.build_program( c_program_text )
+
+
+def Typeinfo_SrcType_Test1():
+	c_program_text= """
+		struct S{}
+
+		static_assert( typeinfo</S/>.functions_list[0].type.is_function );
+
+		// Should get function pointer type for "src_type" for function type.
+		// Function type itself should be unobtainable.
+		type FuncType = typeof( typeinfo</S/>.functions_list[0].type )::src_type;
+
+		static_assert( typeinfo</FuncType/>.is_function_pointer );
+
+		fn Foo()
+		{
+			var FuncType ptr= zero_init;
+		}
+	"""
+
+	tests_lib.build_program( c_program_text )

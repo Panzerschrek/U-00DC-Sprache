@@ -261,7 +261,18 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 	{
 		auto class_members= typeinfo_class.lock_imut().deref().members;
 		auto mut members_lock= class_members.lock_mut();
-		members_lock.deref().AddName( "src_type", t );
+
+		auto mut src_type= t;
+
+		// Replace function type alias with function pointer type alias to forbid usage of function type in user code.
+		if_var( &function_type : t.GetFunctionType() )
+		{
+			var FunctionPointerType mut function_pointer_type{ .function_type= function_type };
+			unsafe{  function_pointer_type.llvm_type= LLVMPointerType( function_pointer_type.function_type.llvm_type, 0u );  }
+			src_type= move(function_pointer_type);
+		}
+
+		members_lock.deref().AddName( "src_type", src_type );
 	}
 
 	return v;
@@ -285,7 +296,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 		return typeinfo_cache_[entry_index].v;
 	}
 
-	if( !EnsureTypeComplete( t ) )
+	if( !( EnsureTypeComplete( t ) || !t.GetFunctionType().empty() ) )
 	{
 		// Ignore incomplete types here, generate error in "typeinfo" operator evaluation instead.
 		// TODO - what if user try to access incomplete member of incomplete typeinfo class?
