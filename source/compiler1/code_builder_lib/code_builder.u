@@ -1293,8 +1293,8 @@ fn CodeBuilder::PrepareFunction(
 		{
 			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "noalias" );
 		}
-		// Mark as "readonly" immutable reference params and immutable value params of composite types.
-		if( !param.is_mutable && ( param.is_reference || param_type_is_composite ) )
+		// Mark as "readonly" immutable reference params.
+		if( !param.is_mutable && param.is_reference )
 		{
 			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "readonly" );
 		}
